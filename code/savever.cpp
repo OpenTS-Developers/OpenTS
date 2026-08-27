@@ -658,9 +658,9 @@ HRESULT SaveVersionInfo::Load_String(IStorage *storage, int id, char *string)
 		return(res);
 	}
 
+	WCHAR buf[128];
 	int i = 0;
-	while (true) {
-		WCHAR buf[128];
+	while (i < ARRAY_SIZE(buf) - 1) {
 		res = stm->Read(&buf[i], sizeof(buf[i]), NULL);
 		if (FAILED(res)) {
 			return(res);
