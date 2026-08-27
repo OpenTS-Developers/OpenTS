@@ -12,6 +12,7 @@
 | Host and architecture | Windows, 32-bit (`Win32`) target |
 | Processor | SSE2, so a Pentium 4 or Athlon 64 onward |
 | Generator and compiler | Visual Studio 2022 MSVC 19.30 or newer |
+| ATL and MFC | The Visual Studio C++ ATL and C++ MFC components |
 | Windows SDK | A Visual Studio-installed Windows SDK |
 | CMake | 3.23 or newer |
 | C++ language level | C++20 |
@@ -22,6 +23,14 @@ supported by the current tree.
 
 Install Visual Studio 2022 with the **Desktop development with C++** workload,
 a Windows SDK, CMake 3.23 or newer, and Git for Windows.
+
+The workload alone is not sufficient, even with its recommended components: the
+engine includes `atlbase.h` and its resource scripts include `afxres.h`, so the
+**C++ ATL** and **C++ MFC** components for the current build tools must be
+selected as well. In an unattended install, these are
+`Microsoft.VisualStudio.Component.VC.ATL` and
+`Microsoft.VisualStudio.Component.VC.ATLMFC`. Without them the build fails at
+`code/wonline.cpp` and `code/Sun.rc`.
 
 ## Dependencies
 
@@ -146,6 +155,13 @@ Studio 2022 Community 17.14.37328.6, MSVC 19.44.35228, and Windows SDK
 10.0.26100. Fresh Win32 Debug and Release builds completed successfully. The
 builds retain inherited MSVC warnings; warnings are not treated as errors, but
 contributions should not add new warnings.
+
+The ATL and MFC requirement was established on August 27, 2026 with MSVC
+19.44.35228, Windows SDK 10.0.26100, and CMake 4.4.2: a fresh Visual Studio
+2022 Build Tools install with only the **Desktop development with C++**
+workload and its recommended components failed to build, first at
+`code/wonline.cpp` on the missing `atlbase.h` and, with ATL added, at
+`code/Sun.rc` on the missing `afxres.h`.
 
 Build verification establishes that the supported toolchain compiles and links
 the configured targets and produces the listed artifacts. Runtime behavior is
