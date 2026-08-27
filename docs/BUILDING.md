@@ -32,6 +32,12 @@ selected as well. In an unattended install, these are
 `Microsoft.VisualStudio.Component.VC.ATLMFC`. Without them the build fails at
 `code/wonline.cpp` and `code/Sun.rc`.
 
+`.vsconfig` at the repository root records the workload and both components in
+the Visual Studio installation configuration format. Importing it in the Visual
+Studio Installer, or passing it to an unattended install with `--config`,
+selects them in one step, and Visual Studio offers to install missing listed
+components when it detects the file near an open solution or folder.
+
 ## Dependencies
 
 The renderer is built on [bgfx](https://github.com/bkaradzic/bgfx), vendored as the
