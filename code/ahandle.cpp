@@ -207,7 +207,7 @@ long __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, lon
 		index++;
 	}
 
-	if (index != 1 && b == 16) {
+	if (index != 1 && b == sizeof(AhandleInitParams)) {
 
 		VQAConfig *config = &vqap->Config;
 
