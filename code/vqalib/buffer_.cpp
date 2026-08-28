@@ -775,9 +775,9 @@ long VQA_Configure_Buffer(VQAHandleP *vqap)
 }
 
 
-long __cdecl VQA_Memory_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes)
+intptr_t __cdecl VQA_Memory_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes)
 {
-	long error = 0;
+	intptr_t error = 0;
 
 	switch (action) {
 		default:
@@ -787,7 +787,7 @@ long __cdecl VQA_Memory_Handler(VQAHandle *vqa, long action, void *buffer, long 
 			break;
 
 		case VQAMEM_ALLOC:
-			error = (long)malloc(nbytes);
+			error = (intptr_t)malloc(nbytes);
 			break;
 
 		case VQAMEM_FREE:
@@ -795,11 +795,11 @@ long __cdecl VQA_Memory_Handler(VQAHandle *vqa, long action, void *buffer, long 
 			break;
 
 		case VQAMEM_LOCK:
-			error = (long)buffer;
+			error = (intptr_t)buffer;
 			break;
 
 		case VQAMEM_UNLOCK:
-			error = (long)buffer;
+			error = (intptr_t)buffer;
 			break;
 
 		case VQAMEM_QUERYSIZE:

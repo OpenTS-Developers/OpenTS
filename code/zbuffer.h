@@ -11,6 +11,8 @@
 
 #include "rect.h"
 
+#include <cstdint>
+
 class Surface;
 
 #define ZBUFFER_MAX    0x8000
@@ -29,7 +31,7 @@ class ZBuffer
 
 		void Copy_To(Surface * surface, Rect rect);
 
-		void Set(unsigned int dst, int size, unsigned short value);
+		void Set(uintptr_t dst, int size, unsigned short value);
 
 		void Pan(int x_delta, int y_delta, unsigned short value);
 
@@ -38,16 +40,16 @@ class ZBuffer
 
 		void Update(Rect rect);
 
-		unsigned int Get_Buffer_Offset(Point2D position);
+		uintptr_t Get_Buffer_Offset(Point2D position);
 
-		unsigned int Wrap_Overflow(unsigned int position) const;
-		unsigned int Wrap_Underflow(unsigned int position) const;
+		uintptr_t Wrap_Overflow(uintptr_t position) const;
+		uintptr_t Wrap_Underflow(uintptr_t position) const;
 
 		Surface * Get_Surface(void) const { return(SurfacePtr); }
 
 		Rect const & Get_Bounds(void) const { return(Bounds); }
 		unsigned int Get_Buffer_Width(void) const { return(BufferWidth); }
-		unsigned int Get_Buffer_End(void) const { return(BufferEnd); }
+		uintptr_t Get_Buffer_End(void) const { return(BufferEnd); }
 
 	private:
 		void Release_Surface(void);
@@ -78,8 +80,8 @@ class ZBuffer
 		 * and the number of bytes between the two. The buffer is treated as a ring, so an
 		 * address that walks off either end is folded back around by that size.
 		 */
-		unsigned int BufferStart;
-		unsigned int BufferEnd;
+		uintptr_t BufferStart;
+		uintptr_t BufferEnd;
 		unsigned int BufferSize;
 
 		/*
@@ -99,7 +101,7 @@ class ZBuffer
 		int BufferHeight;
 };
 
-inline unsigned int ZBuffer::Wrap_Overflow(unsigned int position) const
+inline uintptr_t ZBuffer::Wrap_Overflow(uintptr_t position) const
 {
 	if (position >= BufferEnd) {
 		position -= BufferSize;
@@ -108,7 +110,7 @@ inline unsigned int ZBuffer::Wrap_Overflow(unsigned int position) const
 }
 
 
-inline unsigned int ZBuffer::Wrap_Underflow(unsigned int position) const
+inline uintptr_t ZBuffer::Wrap_Underflow(uintptr_t position) const
 {
 	if (position < BufferStart) {
 		position += BufferSize;
@@ -122,6 +124,6 @@ extern ZBuffer *DepthBuffer;
 
 inline unsigned short *Blit_Wrap_Z_Buffer(unsigned short *buf)
 {
-	return((unsigned short *)DepthBuffer->Wrap_Overflow((unsigned int)buf));
+	return((unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)buf));
 }
 

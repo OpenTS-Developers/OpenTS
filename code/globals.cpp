@@ -351,7 +351,7 @@ bool GameActive;
 **	a long, but the value wasn't supplied to a function. This is used
 **	specifically for the default reference value. As such, it is not stable.
 */
-int LParam;
+intptr_t LParam;
 
 
 #ifdef _DEBUG

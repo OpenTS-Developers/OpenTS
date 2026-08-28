@@ -219,7 +219,7 @@ class UnitClass : public FootClass
 		*/
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const override;
 		virtual FacingType Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) const override;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param) override;
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual void AI(void) override;
 		virtual bool Ready_To_Commence(void) override;
 		virtual int Do_MISSION_ATTACK(void) override;

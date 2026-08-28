@@ -2642,7 +2642,7 @@ AbstractClass * AircraftClass::New_LZ(AbstractClass * oldlz) const
  * HISTORY:                                                                                    *
  *   06/19/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageType message, int & param)
+RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param)
 {
 	AbstractClass * target;
 
@@ -2743,7 +2743,7 @@ RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageT
 						**	already at the staging location, then tell it to move onto the transport
 						**	directly.
 						*/
-						param = (int)this;
+						param = (intptr_t)this;
 						if (Transmit_Message(RADIO_MOVE_HERE, param, from) != RADIO_ROGER) {
 							Transmit_Message(RADIO_OVER_OUT, from);
 						} else {

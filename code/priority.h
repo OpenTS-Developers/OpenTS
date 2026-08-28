@@ -13,6 +13,7 @@
 
 #include <cassert>
 #include <climits>
+#include <cstdint>
 
 
 #define PARENT(index) (index >> 1)
@@ -73,8 +74,8 @@ class PriorityQueueClass
 		T ** Heap;
 
 		/// Unused
-		unsigned MaxNodePointer;
-		unsigned MinNodePointer;
+		uintptr_t MaxNodePointer;
+		uintptr_t MinNodePointer;
 };
 
 
@@ -82,7 +83,7 @@ template<typename T>
 PriorityQueueClass<T>::PriorityQueueClass(int size)
 {
 	MaxNodePointer = 0;
-	MinNodePointer = UINT_MAX;
+	MinNodePointer = UINTPTR_MAX;
 	ActiveCount = 0;
 	Size = size;
 	Heap = new T * [size + 1]();
@@ -132,12 +133,12 @@ inline bool PriorityQueueClass<T>::Insert(T & node)
 	Heap[index] = &node;
 	ActiveCount++;
 
-	if ((unsigned)&node > MaxNodePointer) {
-		MaxNodePointer = (unsigned)&node;
+	if ((uintptr_t)&node > MaxNodePointer) {
+		MaxNodePointer = (uintptr_t)&node;
 	}
 
-	if ((unsigned)&node < MinNodePointer) {
-		MinNodePointer = (unsigned)&node;
+	if ((uintptr_t)&node < MinNodePointer) {
+		MinNodePointer = (uintptr_t)&node;
 	}
 
 	return(true);
@@ -274,11 +275,11 @@ void PriorityQueueClass<T>::Serialize(S & stream, T * nodes)
 		if (stream.Is_Loading()) {
 			Heap[slot] = &nodes[index];
 
-			if ((unsigned)Heap[slot] > MaxNodePointer) {
-				MaxNodePointer = (unsigned)Heap[slot];
+			if ((uintptr_t)Heap[slot] > MaxNodePointer) {
+				MaxNodePointer = (uintptr_t)Heap[slot];
 			}
-			if ((unsigned)Heap[slot] < MinNodePointer) {
-				MinNodePointer = (unsigned)Heap[slot];
+			if ((uintptr_t)Heap[slot] < MinNodePointer) {
+				MinNodePointer = (uintptr_t)Heap[slot];
 			}
 		}
 	}

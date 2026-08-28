@@ -99,8 +99,8 @@ long Load_CLIP(VQAHandleP *vqap, unsigned long iffsize);
 long Load_MFCI(VQAHandleP *vqap);
 long Load_MSCI(VQAHandleP *vqap);
 
-long __cdecl VQA_Memory_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes);
-long __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes);
+intptr_t __cdecl VQA_Memory_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes);
+intptr_t __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes);
 
 long VQA_LargestLoop(VQAHandleP *vqap, long);
 
@@ -1680,11 +1680,11 @@ long User_Update(VQAHandle *vqa)
 
 	if (config->EventHandler != NULL) {
 		if (curframe->Flags & VQAFRMF_LOOPED) {
-			config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPED, (void *)curframe->FrameNum, vqap->LoopID);
+			config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPED, (void *)(intptr_t)curframe->FrameNum, vqap->LoopID);
 			curframe->Flags &= ~VQAFRMF_LOOPED;
 		}
 		if (curframe->Flags & VQAFRMF_LOOPJMP) {
-			config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPJUMP, (void *)curframe->FrameNum, vqap->LoopID);
+			config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPJUMP, (void *)(intptr_t)curframe->FrameNum, vqap->LoopID);
 			curframe->Flags &= ~VQAFRMF_LOOPJMP;
 		}
 		if (curframe->Flags & VQAFRMF_CHUNKS) {

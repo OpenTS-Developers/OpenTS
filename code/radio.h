@@ -93,8 +93,8 @@ class RadioClass : public MissionClass
 		// Inherited from base class(es).
 		virtual void Detach(AbstractClass const * target, bool all = true) override;
 		virtual void Compute_CRC(CRCEngine &) const override;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param) override;
-		virtual RadioMessageType Transmit_Message(RadioMessageType message, int & param=LParam, RadioClass * to=NULL);
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
+		virtual RadioMessageType Transmit_Message(RadioMessageType message, intptr_t & param=LParam, RadioClass * to=NULL);
 		virtual RadioMessageType Transmit_Message(RadioMessageType message, RadioClass * to);
 #ifdef _DEBUG
 		virtual void Debug_Dump(MonoClass *mono) const override;

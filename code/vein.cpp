@@ -985,7 +985,7 @@ bool VeinholeMonsterClass::Save_All(IStream * stream)
 	}
 
 	for (int i = 0; i < monster_count; i++) {
-		LONG id = (LONG)VeinholeMonsters[i];
+		uintptr_t id = (uintptr_t)VeinholeMonsters[i];
 		if (FAILED(stream->Write(&id, sizeof(id), NULL))) {
 			return(false);
 		}

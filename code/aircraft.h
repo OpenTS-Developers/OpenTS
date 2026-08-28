@@ -157,7 +157,7 @@ class AircraftClass : public FootClass, public IFlyControl
 		void Drop_Off_Cargo(void);
 		virtual void AI(void) override;
 		virtual bool Enter_Idle_Mode(bool initial = false, bool = true) override;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param) override;
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual void Scatter(Coord const & threat, bool forced=false, bool nokidding=false) override;
 
 		/*

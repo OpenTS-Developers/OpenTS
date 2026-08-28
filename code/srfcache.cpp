@@ -687,7 +687,7 @@ bool SurfaceCacheClass::DrawMasked(Rect const & rect, Surface & tosurface, Surfa
 				}
 			} else if (src_x < image_width - right_clip) {
 				unsigned char * mptr = mask_row;
-				int source_delta = (int)palsource - (int)mask;
+				int source_delta = (int)(palsource - mask);
 				unsigned short * dptr = dest + dst_index;
 				int count = image_width - right_clip - src_x;
 				do {

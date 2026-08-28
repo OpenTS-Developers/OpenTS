@@ -1430,7 +1430,7 @@ Point2D RadarClass::Coord_To_Radar_Pixel(Coord const & coord, bool clip)
 
 int RadarTrackingStruct::Hash_Old(RadarTrackingStruct const & s)
 {
-	return(((unsigned int)s.Object) + 251 * s.Position.X);
+	return((int)((uintptr_t)s.Object + 251 * s.Position.X));
 }
 
 int RadarTrackingStruct::Hash2(RadarTrackingStruct const & s)

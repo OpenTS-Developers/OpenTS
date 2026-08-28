@@ -2057,11 +2057,11 @@ void CellClass::Draw_Shroud_Or_Fog_Shape(Point2D const & drawpoint, Rect const &
 					*alphaptr = pixel;
 				}
 				alphaptr++;
-				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
 			}
 			shapeptr += shape_skip;
 			alphaptr += alpha_skip;
-			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
 		}
 	} else {
 		for (int i = inter_top; i < inter_bottom; i++) {
@@ -2133,11 +2133,11 @@ void CellClass::Draw_Fog_Shape(Point2D const & drawpoint, Rect const & cliprect,
 					}
 				}
 				alphaptr++;
-				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
 			}
 			shapeptr += shape_skip;
 			alphaptr += alpha_skip;
-			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
 		}
 	} else {
 		for (int i = inter_top; i < inter_bottom; i++) {

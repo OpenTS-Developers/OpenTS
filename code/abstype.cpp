@@ -47,8 +47,8 @@ AbstractTypeClass::AbstractTypeClass(char const * ininame) :
 	GivenName()
 {
 	if (ininame == NULL) {
-		char pstr[16];
-		sprintf(pstr, "%08X", (unsigned int)this);
+		char pstr[24];
+		sprintf(pstr, "%p", (void *)this);
 		IniName = TStringID<24>(pstr);
 	} else {
 		IniName = TStringID<24>(ininame);

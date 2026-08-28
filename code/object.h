@@ -335,7 +335,7 @@ class ObjectClass : public AbstractClass
 		*/
 		virtual void Per_Cell_Process(PCPType) {}
 		virtual BuildingClass * Who_Can_Build_Me(bool intheory, bool legal) const;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param);
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param);
 		virtual bool Revealed(HouseClass * house);
 		virtual void Repair(int);
 		virtual void Sell_Back(int);

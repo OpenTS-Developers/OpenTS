@@ -389,7 +389,7 @@ class FootClass : public TechnoClass
 
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual Coord Destination_Coord(void) const override;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param) override;
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual bool Can_Demolish(void) const override;
 		bool Is_Recruitable(HouseClass const * house=NULL) const;
 		bool Is_On_Priority_Mission(void) const;

@@ -1111,7 +1111,7 @@ void UnitClass::Jellyfish_AI(void)
  * HISTORY:                                                                                    *
  *   05/22/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType message, int & param)
+RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param)
 {
 	switch (message) {
 
@@ -1248,7 +1248,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 						**	already at the staging location, then tell it to move onto the transport
 						**	directly.
 						*/
-						param = (int)this;
+						param = (intptr_t)this;
 						if (Transmit_Message(RADIO_MOVE_HERE, param, from) != RADIO_ROGER) {
 							Transmit_Message(RADIO_OVER_OUT, from);
 						}

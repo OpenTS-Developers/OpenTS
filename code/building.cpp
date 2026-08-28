@@ -384,7 +384,7 @@ BuildingClass::~BuildingClass(void)
  *   06/26/1995 JLB : Forces refinery load anim to start immediately.                          *
  *   08/13/1995 JLB : Uses ScenarioInit for special loose "CAN_LOAD" check.                    *
  *=============================================================================================*/
-RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageType message, int & param)
+RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param)
 {
 	switch (message) {
 
@@ -493,7 +493,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 					}
 					Transmit_Message(RADIO_RUN_AWAY);
 				} else {
-					param = (int)&Map[Get_Coord()];
+					param = (intptr_t)&Map[Get_Coord()];
 					Transmit_Message(RADIO_MOVE_HERE, param);
 				}
 				return(RADIO_ROGER);
@@ -528,9 +528,9 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 			}
 
 			if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER || needs_to_move) {
-				param = (int)this;
+				param = (intptr_t)this;
 				if (Class->IsDockUnload || Class->IsWeeder) {
-					param = (int)&Map[Get_Cell() + Cell(2, 1)];
+					param = (intptr_t)&Map[Get_Cell() + Cell(2, 1)];
 
 					/*
 					**	Tell the harvester to move to the docking pad of the building.
@@ -547,7 +547,7 @@ RadioMessageType BuildingClass::Receive_Message(RadioClass * from, RadioMessageT
 						}
 					}
 				} else if (Class->IsHelipad) {
-					param = (int)this;
+					param = (intptr_t)this;
 					if (Transmit_Message(RADIO_MOVE_HERE, param) == RADIO_YEA_NOW_WHAT) {
 						Transmit_Message(RADIO_TETHER);
 					}
