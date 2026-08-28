@@ -1069,7 +1069,6 @@ BEGIN
     LTEXT           "Map:",-1,22,97,36,10,NOT WS_GROUP
     LTEXT           "None",IDC_SCENARIONAME,22,111,268,10,NOT WS_GROUP
     CTEXT           "Preview",-1,22,165,215,13,SS_CENTERIMAGE | NOT WS_GROUP
-    GROUPBOX        "",-1,294,12,110,181
     CONTROL         "Bases",IDC_SKIRMISH_BASES,"Button",BS_AUTOCHECKBOX,123,
                     21,157,10
     CONTROL         "Crates",IDC_SKIRMISH_CRATES,"Button",BS_AUTOCHECKBOX,
@@ -1078,7 +1077,6 @@ BEGIN
                     123,45,157,10
     CONTROL         "Bridges Destroyable",IDC_SKIRMISH_BRIDGES,"Button",
                     BS_AUTOCHECKBOX,123,57,157,10
-    GROUPBOX        "",-1,117,12,167,96
     CONTROL         "Re-Deployable MCV",IDC_REDEPLOY_MCV,"Button",
                     BS_AUTOCHECKBOX,123,69,157,10
     CONTROL         "Short Game",IDC_SHORT_GAME,"Button",BS_AUTOCHECKBOX,123,
@@ -1089,6 +1087,8 @@ BEGIN
                     NOT WS_GROUP
     CONTROL         "Multi Engineer",IDC_MULTI_ENGINEER,"Button",
                     BS_AUTOCHECKBOX,123,93,108,10
+    GROUPBOX        "",-1,294,12,110,181
+    GROUPBOX        "",-1,117,12,167,96
 END
 
 IDD_SOUND_OPTIONS_DIALOG DIALOG DISCARDABLE  0, 0, 294, 215
