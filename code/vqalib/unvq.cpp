@@ -11,6 +11,7 @@
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
 
+#include <stddef.h>
 #include <string.h>
 
 typedef signed char int8_t;
@@ -133,7 +134,7 @@ void __cdecl UnVQ2_C1_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 			}
 
 			/* final pointer correction: dst += count*8 - bufwidth*4 */
-			dst += (count * 8u) - block_row_stride;
+			dst += (ptrdiff_t)(count * 8u) - (ptrdiff_t)block_row_stride;
 		} break;
 
 		case 0x3000u: {
@@ -168,7 +169,7 @@ void __cdecl UnVQ2_C1_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u * count - block_row_stride;
+			dst += (ptrdiff_t)(8u * count) - (ptrdiff_t)block_row_stride;
 		} break;
 
 
@@ -330,7 +331,7 @@ void __cdecl UnVQ1_C4_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -356,7 +357,7 @@ void __cdecl UnVQ1_C4_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -497,7 +498,7 @@ void __cdecl UnVQ2_C4_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -531,7 +532,7 @@ void __cdecl UnVQ2_C4_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u * height - block_row_stride;
+			dst += (ptrdiff_t)(8u * height) - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -579,7 +580,7 @@ void __cdecl UnVQ2_C4_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 					dst += bufwidth;
 				}
 
-				dst += 8u * height - block_row_stride;
+				dst += (ptrdiff_t)(8u * height) - (ptrdiff_t)block_row_stride;
 			}
 			break;
 
@@ -603,7 +604,7 @@ void __cdecl UnVQ2_C4_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 		}
 
@@ -662,7 +663,7 @@ void __cdecl UnVQ1_C4_4x2(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -688,7 +689,7 @@ void __cdecl UnVQ1_C4_4x2(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -831,7 +832,7 @@ void __cdecl UnVQ2_C4_4x2(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -864,7 +865,7 @@ void __cdecl UnVQ2_C4_4x2(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u * height - block_row_stride;
+			dst += (ptrdiff_t)(8u * height) - (ptrdiff_t)block_row_stride;
 		} break;
 
 		/* ------------------------------------------------------------ */
@@ -912,7 +913,7 @@ void __cdecl UnVQ2_C4_4x2(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 					dst += bufwidth;
 				}
 
-				dst += 8u * height - block_row_stride;
+				dst += (ptrdiff_t)(8u * height) - (ptrdiff_t)block_row_stride;
 			}
 			break;
 
@@ -936,7 +937,7 @@ void __cdecl UnVQ2_C4_4x2(uint8_t * codebook, uint8_t * pointers, uint8_t * buff
 				dst += bufwidth;
 			}
 
-			dst += 8u - block_row_stride;
+			dst += (ptrdiff_t)8 - (ptrdiff_t)block_row_stride;
 		} break;
 		}
 
