@@ -120,3 +120,8 @@ void __cdecl operator delete(void * ptr);
 #ifndef _stricmp
 #define _stricmp stricmp
 #endif
+
+// x64 Windows defaults to wchar apis, our code is not wchar compatible
+#ifdef UNICODE
+#undef UNICODE
+#endif
