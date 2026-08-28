@@ -119,13 +119,11 @@ extern "C" {
 
 DeformPointStruct * DeformPoints = NULL;
 
-extern int DeformPointXAdd;
-extern int DeformPointYAdd;
+int DeformPointXAdd = 0;
+int DeformPointYAdd = 0;
 
-extern int DeformPointWidth;
-extern int DeformPointHeight;
-
-extern bool Asm_Ripple_Deform_Points(int startpointx, int startpointy, int general_direction, bool forced);
+int DeformPointWidth = 0;
+int DeformPointHeight = 0;
 
 }
 
