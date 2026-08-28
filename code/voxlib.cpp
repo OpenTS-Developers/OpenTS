@@ -36,38 +36,12 @@ void __cdecl Draw_Voxel_Reverse(VoxelFuncArgumentStruct * state);
 void __cdecl Draw_Voxel_Regular_ZBuffer(VoxelFuncArgumentStruct * state);
 void __cdecl Draw_Voxel_Reverse_ZBuffer(VoxelFuncArgumentStruct * state);
 
-extern "C" {
-void __cdecl Draw_Voxel_Regular_Normals_ASM(VoxelFuncArgumentStruct * state);
-void __cdecl Draw_Voxel_Reverse_Normals_ASM(VoxelFuncArgumentStruct * state);
-void __cdecl Draw_Voxel_Regular_Lighting_Normals_ASM(VoxelFuncArgumentStruct * state);
-void __cdecl Draw_Voxel_Reverse_Lighting_Normals_ASM(VoxelFuncArgumentStruct * state);
-void __cdecl Draw_Voxel_Regular_ASM(VoxelFuncArgumentStruct * state);
-void __cdecl Draw_Voxel_Reverse_ASM(VoxelFuncArgumentStruct * state);
-void __cdecl Draw_Voxel_UNUSED1_ASM(VoxelFuncArgumentStruct * state);
-void __cdecl Draw_Voxel_UNUSED2_ASM(VoxelFuncArgumentStruct * state);
-}
-
-VoxelFuncPtr VoxelDrawFunctions[32] = {
-
-	/// Assembly routines
-	&Draw_Voxel_Regular_Normals_ASM,
-	&Draw_Voxel_Reverse_Normals_ASM,
-	&Draw_Voxel_Regular_Normals_ZBuffer,
-	&Draw_Voxel_Reverse_Normals_ZBuffer,
-	&Draw_Voxel_Regular_Lighting_Normals_ASM,
-	&Draw_Voxel_Reverse_Lighting_Normals_ASM,
-	&Draw_Voxel_Regular_Normals_ZBuffer_Lighting,
-	&Draw_Voxel_Reverse_Normals_ZBuffer_Lighting,
-	&Draw_Voxel_Regular_ASM,
-	&Draw_Voxel_Reverse_ASM,
-	&Draw_Voxel_Regular_ZBuffer,
-	&Draw_Voxel_Reverse_ZBuffer,
-	&Draw_Voxel_Regular_ASM,
-	&Draw_Voxel_Reverse_ASM,
-	&Draw_Voxel_Regular_ZBuffer,
-	&Draw_Voxel_Reverse_ZBuffer,
-
-	/// The same set again, with the C++ drawers in place of the assembly ones.
+/*
+ * Indexed by the orientation's direction together with the depth buffer, lighting and normal
+ * type switches, which is why the last four entries repeat the four before them: the normal
+ * type does not change which drawer is wanted once lighting is off.
+ */
+VoxelFuncPtr VoxelDrawFunctions[16] = {
 	&Draw_Voxel_Regular_Normals,
 	&Draw_Voxel_Reverse_Normals,
 	&Draw_Voxel_Regular_Normals_ZBuffer,
@@ -1120,9 +1094,11 @@ void __cdecl Draw_Voxel_Regular_Normals(VoxelFuncArgumentStruct * state)
 							 */
 							ptr++;
 
-							/// Compute buffer index and write color
+							/// Compute buffer index and write color. A voxel covers two
+							/// buffer bytes, so the colour goes down twice.
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
+							VoxelDrawBuffer[buffer_index + 1] = color_index;
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -1206,9 +1182,11 @@ void __cdecl Draw_Voxel_Reverse_Normals(VoxelFuncArgumentStruct * state)
 							unsigned char color_index = *ptr;
 							ptr--;
 
-							/// Compute buffer index and write color
+							/// Compute buffer index and write color. A voxel covers two
+							/// buffer bytes, so the colour goes down twice.
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
+							VoxelDrawBuffer[buffer_index + 1] = color_index;
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -1986,10 +1964,16 @@ void __cdecl Draw_Voxel_Regular(VoxelFuncArgumentStruct * state)
 							unsigned char color_index = *ptr;
 							ptr++;
 
+<<<<<<< HEAD
 							/// Compute buffer index and write color
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
 							VoxelDrawBuffer[buffer_index + 1] = color_index;
+=======
+							/// Compute buffer index and write color. Unlike the shaded
+							/// drawers, this one covers a single buffer byte per voxel.
+							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
+>>>>>>> 0fef683 (Translate voxel drawing and colour operations to C++)
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -2067,10 +2051,16 @@ void __cdecl Draw_Voxel_Reverse(VoxelFuncArgumentStruct * state)
 							unsigned char color_index = *ptr;
 							ptr--;
 
+<<<<<<< HEAD
 							/// Compute buffer index and write color
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
 							VoxelDrawBuffer[buffer_index + 1] = color_index;
+=======
+							/// Compute buffer index and write color. Unlike the shaded
+							/// drawers, this one covers a single buffer byte per voxel.
+							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
+>>>>>>> 0fef683 (Translate voxel drawing and colour operations to C++)
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
