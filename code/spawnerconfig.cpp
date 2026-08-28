@@ -1,0 +1,354 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#include "spawnerconfig.h"
+
+#include "crc.h"
+#include "ini.h"
+
+#include <algorithm>
+#include <cstdio>
+#include <cstring>
+#include <filesystem>
+#include <vector>
+
+
+namespace {
+
+/*
+ * The section a launch file keeps the match's settings in. It doubles as the section the
+ * machine reading the file describes itself in, so the first seat is read from here.
+ */
+char const * const SETTINGS = "Settings";
+
+
+/// <summary>
+/// Reads a string entry.
+/// </summary>
+/// <param name="ini">The launch file being read.</param>
+/// <param name="section">The section to read from.</param>
+/// <param name="entry">The key to read.</param>
+/// <param name="fallback">What an absent key means.</param>
+/// <returns>The value written, or the fallback.</returns>
+std::string Read_Text(INIClass const & ini, char const * section, char const * entry, std::string const & fallback)
+{
+	char buffer[512];
+	if (ini.Get_String(section, entry, "", buffer, sizeof(buffer)) == 0) {
+		return(fallback);
+	}
+	return(buffer);
+}
+
+
+/// <summary>
+/// Reads one of the eight numbered entries a section names its seats by.
+/// </summary>
+/// <param name="ini">The launch file being read.</param>
+/// <param name="section">The section holding the numbered entries.</param>
+/// <param name="slot">Which seat to read, counted from zero.</param>
+/// <param name="fallback">What an absent entry means.</param>
+/// <returns>The value written for that seat.</returns>
+int Read_Slot_Int(INIClass const & ini, char const * section, int slot, int fallback)
+{
+	std::string entry = "Multi" + std::to_string(slot + 1);
+	return(ini.Get_Int(section, entry.c_str(), fallback));
+}
+
+}
+
+
+/// <summary>
+/// Reads the match's seats.
+/// A seat is human because the file wrote a section for it, so an unwritten section is what
+/// makes a seat a computer player. The seats are read in the order the file names them,
+/// then sorted into the order their houses will be created in -- humans by ascending color,
+/// then computer players -- because everything naming a seat by position afterwards means
+/// that order.
+/// </summary>
+/// <param name="ini">The launch file to read.</param>
+void SpawnerConfigClass::Read_Slots(INIClass const & ini)
+{
+	std::array<SlotType, SLOT_COUNT> staging;
+
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		std::string section = index == 0 ? SETTINGS : "Other" + std::to_string(index);
+
+		SlotType & slot = staging[index];
+		if (ini.Section_Present(section.c_str())) {
+			slot.Occupancy = OccupancyType::Human;
+			slot.Name = Read_Text(ini, section.c_str(), "Name", "");
+			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
+			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
+			slot.Address = Read_Text(ini, section.c_str(), "Ip", slot.Address);
+			slot.Port = ini.Get_Int(section.c_str(), "Port", -1);
+		} else {
+			slot.Color = Read_Slot_Int(ini, "HouseColors", index, -1);
+			slot.Country = Read_Slot_Int(ini, "HouseCountries", index, -1);
+			slot.Handicap = Read_Slot_Int(ini, "HouseHandicaps", index, -1);
+		}
+	}
+
+	/*
+	 * The houses are created humans first, in the order their colors fall. Sorting here is
+	 * what makes a seat's index the index of the house it becomes. Every machine writes
+	 * its own file with itself first, so the order must come from what the seats say and
+	 * never from where the file said it: names break a color tie, which a well-formed
+	 * launcher never writes but a hand-edited file otherwise turns into a different match
+	 * on every machine.
+	 */
+	std::vector<int> humans;
+	std::vector<int> rest;
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		(staging[index].Occupancy == OccupancyType::Human ? humans : rest).push_back(index);
+	}
+	std::stable_sort(humans.begin(), humans.end(), [&staging](int left, int right) {
+		if (staging[left].Color != staging[right].Color) {
+			return(staging[left].Color < staging[right].Color);
+		}
+		return(_stricmp(staging[left].Name.c_str(), staging[right].Name.c_str()) < 0);
+	});
+
+	HumanCount = (int)humans.size();
+	LocalSlot = 0;
+
+	int filled = 0;
+	for (int index : humans) {
+		if (index == 0) {
+			LocalSlot = filled;
+		}
+		Slots[filled++] = staging[index];
+	}
+
+	/*
+	 * What the file wrote for a seat no section claimed describes a computer player, and the
+	 * options say how many of those are playing.
+	 */
+	for (int index : rest) {
+		SlotType & slot = Slots[filled];
+		slot = staging[index];
+		slot.Occupancy = (filled - HumanCount) < AIPlayers ? OccupancyType::Computer : OccupancyType::Empty;
+		filled++;
+	}
+
+	/*
+	 * These name their seats by the sorted order, so they are read once the sorting is done.
+	 */
+	static char const * const _ordinals[SLOT_COUNT] = {
+		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
+		"HouseAllyFive", "HouseAllySix", "HouseAllySeven", "HouseAllyEight"
+	};
+
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		SlotType & slot = Slots[index];
+
+		std::string entry = "Multi" + std::to_string(index + 1);
+		slot.IsSpectator = ini.Get_Bool("IsSpectator", entry.c_str(), false);
+		slot.StartingPosition = Read_Slot_Int(ini, "SpawnLocations", index, -1);
+
+		/*
+		 * A start position the map cannot hold is one the game picks instead, which is what
+		 * a file asking for no particular position already means.
+		 */
+		if (slot.StartingPosition < -1 || slot.StartingPosition >= SLOT_COUNT) {
+			slot.StartingPosition = -1;
+		}
+
+		std::string section = "Multi" + std::to_string(index + 1) + "_Alliances";
+		if (!ini.Section_Present(section.c_str())) {
+			continue;
+		}
+
+		for (int ally = 0; ally < SLOT_COUNT; ally++) {
+			slot.Alliances[ally] = ini.Get_Int(section.c_str(), _ordinals[ally], -1);
+		}
+	}
+}
+
+
+/// <summary>
+/// What kind of game this file asks for. Resuming a saved game answers the question by
+/// itself, because the save carries the type, the options and the houses the game had.
+/// </summary>
+/// <returns>The kind of game to launch.</returns>
+SpawnerConfigClass::LaunchType SpawnerConfigClass::Launch_Type(void) const
+{
+	if (LoadSaveGame) {
+		return(LaunchType::Resume);
+	}
+	if (IsCampaign) {
+		return(LaunchType::Campaign);
+	}
+	if (HumanCount > 1) {
+		return(LaunchType::Multiplayer);
+	}
+	return(LaunchType::Skirmish);
+}
+
+
+/// <summary>
+/// The identity of the match this file asks for.
+/// This gathers every value the course of the match depends upon, and nothing that is only
+/// shown to a player, so that two machines handed the same match agree on the number while
+/// a difference in what either displays cannot move it. The version leads, since the same
+/// file read by two different readings is not the same match.
+/// </summary>
+/// <returns>The identity of the configured match.</returns>
+int SpawnerConfigClass::Session_Identity_CRC(void) const
+{
+	CRCEngine crc;
+
+	crc(SCHEMA_VERSION);
+
+	crc(ScenarioName.c_str());
+	crc(IsCampaign);
+	crc(CampaignID);
+	crc(CampaignDifficulty);
+	crc(CampaignCDifficulty);
+
+	crc(Bases);
+	crc(Credits);
+	crc(BridgeDestroy);
+	crc(Crates);
+	crc(ShortGame);
+	crc(BuildOffAlly);
+	crc(GameSpeed);
+	crc(MultiEngineer);
+	crc(UnitCount);
+	crc(AIPlayers);
+	crc(AIDifficulty);
+	crc(AlliesAllowed);
+	crc(HarvesterTruce);
+	crc(FogOfWar);
+	crc(MCVRedeploy);
+	crc(Seed);
+	crc(TechLevel);
+	crc(Firestorm);
+	crc(AttackNeutralUnits);
+	crc(ScrapMetal);
+
+	for (bool flag : GlobalFlags) {
+		crc(flag);
+	}
+
+	for (SlotType const & slot : Slots) {
+		crc(static_cast<int>(slot.Occupancy));
+		crc(slot.Color);
+		crc(slot.Country);
+		crc(slot.Handicap);
+		crc(slot.IsSpectator);
+		crc(slot.StartingPosition);
+
+		for (int ally : slot.Alliances) {
+			crc(ally);
+		}
+	}
+
+	return(crc());
+}
+
+
+/// <summary>
+/// Reads what the CnCNet client asked the game to launch. Reading cannot fail: every key has a
+/// settled meaning when absent, a value the reader cannot make sense of keeps that meaning,
+/// and a key the game does not know is passed over.
+/// </summary>
+/// <param name="ini">The launch file to read.</param>
+void SpawnerConfigClass::Read_INI(INIClass const & ini)
+{
+	IsCampaign = ini.Get_Bool(SETTINGS, "IsSinglePlayer", IsCampaign);
+	IsHost = ini.Get_Bool(SETTINGS, "Host", IsHost);
+	CampaignID = ini.Get_Int(SETTINGS, "CampaignID", CampaignID);
+	Tournament = ini.Get_Int(SETTINGS, "Tournament", Tournament);
+	GameID = ini.Get_Int(SETTINGS, "GameID", GameID);
+
+	ScenarioName = Read_Text(ini, SETTINGS, "Scenario", ScenarioName);
+	MapName = Read_Text(ini, SETTINGS, "UIMapName", MapName);
+	MapHash = Read_Text(ini, SETTINGS, "MapHash", MapHash);
+
+	LoadSaveGame = ini.Get_Bool(SETTINGS, "LoadSaveGame", LoadSaveGame);
+
+	/*
+	 * A saved game is opened by name in the game's own folder, so a name written with a
+	 * path is reduced to its last element.
+	 */
+	SaveGameName = std::filesystem::path(Read_Text(ini, SETTINGS, "SaveGameName", SaveGameName)).filename().string();
+
+	AutoSaveInterval = ini.Get_Int(SETTINGS, "AutoSaveGame", AutoSaveInterval);
+
+	/*
+	 * The client counts its automatic saves from one, while the game numbers them from zero.
+	 */
+	NextCampaignAutoSave = ini.Get_Int(SETTINGS, "NextSPAutoSaveId", 1) - 1;
+	NextSkirmishAutoSave = ini.Get_Int(SETTINGS, "NextSkirmishAutoSaveId", 1) - 1;
+
+	Bases = ini.Get_Bool(SETTINGS, "Bases", Bases);
+	Credits = ini.Get_Int(SETTINGS, "Credits", Credits);
+	BridgeDestroy = ini.Get_Bool(SETTINGS, "BridgeDestroy", BridgeDestroy);
+	Crates = ini.Get_Bool(SETTINGS, "Crates", Crates);
+	ShortGame = ini.Get_Bool(SETTINGS, "ShortGame", ShortGame);
+	BuildOffAlly = ini.Get_Bool(SETTINGS, "BuildOffAlly", BuildOffAlly);
+	GameSpeed = ini.Get_Int(SETTINGS, "GameSpeed", GameSpeed);
+	MultiEngineer = ini.Get_Bool(SETTINGS, "MultiEngineer", MultiEngineer);
+	UnitCount = ini.Get_Int(SETTINGS, "UnitCount", UnitCount);
+	AIPlayers = ini.Get_Int(SETTINGS, "AIPlayers", AIPlayers);
+	AIDifficulty = ini.Get_Int(SETTINGS, "AIDifficulty", AIDifficulty);
+	AlliesAllowed = ini.Get_Bool(SETTINGS, "AlliesAllowed", AlliesAllowed);
+	HarvesterTruce = ini.Get_Bool(SETTINGS, "HarvesterTruce", HarvesterTruce);
+	FogOfWar = ini.Get_Bool(SETTINGS, "FogOfWar", FogOfWar);
+	MCVRedeploy = ini.Get_Bool(SETTINGS, "MCVRedeploy", MCVRedeploy);
+	Seed = ini.Get_Int(SETTINGS, "Seed", Seed);
+	TechLevel = ini.Get_Int(SETTINGS, "TechLevel", TechLevel);
+	Firestorm = ini.Get_Bool(SETTINGS, "Firestorm", Firestorm);
+	CampaignDifficulty = ini.Get_Int(SETTINGS, "DifficultyModeHuman", CampaignDifficulty);
+	CampaignCDifficulty = ini.Get_Int(SETTINGS, "DifficultyModeComputer", CampaignCDifficulty);
+
+	ReconnectTimeout = ini.Get_Int(SETTINGS, "ReconnectTimeout", ReconnectTimeout);
+	ConnTimeout = ini.Get_Int(SETTINGS, "ConnTimeout", ConnTimeout);
+
+	/*
+	 * One key carries the port twice: a machine listens on it, and a tunnel names that
+	 * machine by it. They part company only when the key is absent, where a tunnel has no
+	 * name to go by while the game still has a port to listen on.
+	 */
+	TunnelId = ini.Get_Int(SETTINGS, "Port", TunnelId);
+	ListenPort = ini.Get_Int(SETTINGS, "Port", ListenPort);
+	TunnelAddress = Read_Text(ini, "Tunnel", "Ip", TunnelAddress);
+	TunnelPort = ini.Get_Int("Tunnel", "Port", TunnelPort);
+
+	QuickMatch = ini.Get_Bool(SETTINGS, "QuickMatch", QuickMatch);
+	SkipScoreScreen = ini.Get_Bool(SETTINGS, "SkipScoreScreen", SkipScoreScreen);
+	WriteStatistics = ini.Get_Bool(SETTINGS, "WriteStatistics", WriteStatistics);
+	AINamesByDifficulty = ini.Get_Bool(SETTINGS, "DifficultyBasedAINames", AINamesByDifficulty);
+	CoachMode = ini.Get_Bool(SETTINGS, "CoachMode", CoachMode);
+	AutoSurrender = ini.Get_Bool(SETTINGS, "AutoSurrender", AutoSurrender);
+	AttackNeutralUnits = ini.Get_Bool(SETTINGS, "AttackNeutralUnits", AttackNeutralUnits);
+	ScrapMetal = ini.Get_Bool(SETTINGS, "ScrapMetal", ScrapMetal);
+	ContinueWithoutHumans = ini.Get_Bool(SETTINGS, "ContinueWithoutHumans", ContinueWithoutHumans);
+	PlayMoviesInMultiplayer = ini.Get_Bool(SETTINGS, "PlayMoviesInMultiplayer", PlayMoviesInMultiplayer);
+	CustomLoadScreen = Read_Text(ini, SETTINGS, "CustomLoadScreen", CustomLoadScreen);
+	DifficultyName = Read_Text(ini, SETTINGS, "DifficultyName", DifficultyName);
+
+	std::string position = Read_Text(ini, SETTINGS, "CustomLoadScreenPos", "");
+	if (!position.empty()) {
+		int x = 0;
+		int y = 0;
+		if (std::sscanf(position.c_str(), "%d,%d", &x, &y) == 2) {
+			CustomLoadScreenX = x;
+			CustomLoadScreenY = y;
+		}
+	}
+
+	for (int index = 0; index < GLOBAL_FLAG_COUNT; index++) {
+		std::string entry = "GlobalFlag" + std::to_string(index);
+		GlobalFlags[index] = ini.Get_Bool("GlobalFlags", entry.c_str(), false);
+	}
+
+	Read_Slots(ini);
+}
