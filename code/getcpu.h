@@ -20,7 +20,16 @@ extern "C" {
 	bool __cdecl Detect_CMOV_Availability(void);
 
 	extern char CPUType;
-	extern char VendorID;
+	extern char VendorID[];
+
+	/*
+	 * Written by the two detection routines above. HasCMOV records that the instruction
+	 * exists, UseCMOV that the detection considers it worth taking; a Pentium reporting CMOV
+	 * still runs the path that avoids it.
+	 */
+	extern char UseCMOV;
+	extern char HasCMOV;
+	extern char UseMMX;
 }
 
 /*

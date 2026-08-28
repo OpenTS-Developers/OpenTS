@@ -43,17 +43,6 @@
 #include <cstdio>
 #include <cstring>
 
-/*
-**	Prototypes for linkage to assembly module
-*/
-extern "C" {
-	bool __cdecl Detect_MMX_Availability (void);
-	bool __cdecl Detect_CMOV_Availability (void);
-
-	extern char CPUType;
-	extern char VendorID;
-}
-
 
 /***********************************************************************************************
  * Get_CPU_Type -- Find out what kind of CPU we are running on                                 *
@@ -86,7 +75,6 @@ void Get_CPU_Type(int & cpu_type, bool & mmx, char * vendor_id, int vendor_id_le
 	cpu_type = (int)CPUType;
 
 	if (vendor_id != NULL) {
-		char * vendor_ptr = &VendorID;
-		strncpy(vendor_id, vendor_ptr, vendor_id_length);
+		strncpy(vendor_id, VendorID, vendor_id_length);
 	}
 }
