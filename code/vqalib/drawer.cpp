@@ -71,6 +71,7 @@
 #include	<stdio.h>
 #include	<string.h>
 #include	"video.h"
+#include    "../lcw.h"
 
 //forward declarations
 _STATIC long Select_Frame(VQAHandleP *vqap);
@@ -404,7 +405,7 @@ STATIC long Select_Frame(VQAHandleP *vqap)
 
 			/* Un-LCW if needed */
 			if (curframe->Flags & VQAFRMF_PALCOMP) {
-				curframe->PaletteSize = VQA_LCW_Uncompress((char *)curframe->Palette
+				curframe->PaletteSize = LCW_Uncomp((char *)curframe->Palette
 						+ curframe->PalOffset, (char *)curframe->Palette,
 						vqap->Max_Pal_Size);
 
@@ -747,7 +748,7 @@ STATIC void Prepare_Frame(VQAHandleP *vqap)
 			cbbuffer = codebook->Buffer;
 		}
 
-		codebook->CodebookSize = VQA_LCW_Uncompress((char *)(codebook->Buffer + codebook->CBOffset), (char *)cbbuffer, vqap->CBBufferSize);
+		codebook->CodebookSize = LCW_Uncomp((char *)(codebook->Buffer + codebook->CBOffset), (char *)cbbuffer, vqap->CBBufferSize);
 
 		/* Mark as uncompressed for the next time we use it */
 		codebook->Flags &= (~VQACBF_CBCOMP);
@@ -755,7 +756,7 @@ STATIC void Prepare_Frame(VQAHandleP *vqap)
 
 	/* Decompress the palette, if needed */
 	if (curframe->Flags & VQAFRMF_PALCOMP) {
-		curframe->PaletteSize = VQA_LCW_Uncompress((char *)curframe->Palette +
+		curframe->PaletteSize = LCW_Uncomp((char *)curframe->Palette +
 				curframe->PalOffset,(char *)curframe->Palette,vqap->Max_Pal_Size);
 
 		/* Mark as uncompressed */
@@ -771,7 +772,7 @@ STATIC void Prepare_Frame(VQAHandleP *vqap)
 		} else {
 			ptrbuffer = curframe->Pointers;
 		}
-		VQA_LCW_Uncompress((char *)curframe->Pointers + curframe->PtrOffset,
+		LCW_Uncomp((char *)curframe->Pointers + curframe->PtrOffset,
 				(char *)ptrbuffer, vqap->PtrBufferSize);
 
 		/* Mark as uncompressed */

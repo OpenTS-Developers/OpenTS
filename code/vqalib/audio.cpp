@@ -536,3 +536,127 @@ long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, unsigned long buffer)
 static void EndAddr(void)
 {
 }
+
+enum SCodeType {
+	CODE_2BIT,				// Bit packed 2 bit delta.
+	CODE_4BIT,				// Nibble packed 4 bit delta.
+	CODE_RAW,				// Raw sample.
+	CODE_SILENCE			// Run of silence.
+};
+signed int _2bitdecode[4] = {-2, -1, 0, 1};
+signed int _4bitdecode[16] = {-9, -8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8};
+
+extern "C" size_t AudioUnzap(void * source, void * dest, size_t size)
+{
+	unsigned int	previous = 0x0080;
+	signed char		*s = (signed char *)source;
+	unsigned char	*d = (unsigned char *)dest;
+	size_t incount = 0;
+
+	/*
+	**	Uncompress the source data until the buffer is filled.
+	*/
+	while (size > 0) {
+		signed char code;		// Compression code.
+		int counter;
+
+		code = *s++;
+		counter = (code & 0x3F) + 1;
+		incount++;
+
+		switch ((code >> 6) & 0x03) {
+			case CODE_RAW:
+
+				/*
+				**	The "raw" code could actually contain an embedded 5 bit delta.
+				**	If this is the case then this is a self contained code.  Extract
+				**	and process the delta.
+				*/
+				if ((counter-1) & 0x20) {
+					counter = (counter-1) & 0x1F;
+					if (counter & 0x10) counter |= 0xFFE0;
+					previous = *d++ = previous + counter;
+					size--;
+
+				} else {
+
+					/*
+					**	Normal run of raw samples.
+					*/
+					memcpy(d, s, counter);
+					incount += counter;
+					size -= counter;
+					d += counter-1;
+					s += counter;
+					previous = *d++;
+				}
+				break;
+
+			case CODE_4BIT:
+				while (counter) {
+					int delta;
+
+					delta = *s++;
+					incount++;
+
+					previous += (signed)_4bitdecode[delta & 0x0F];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_4bitdecode[(delta >> 4) & 0x0F];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					counter--;
+				}
+				break;
+
+			case CODE_2BIT:
+				while (counter) {
+					int delta;
+
+					delta = *s++;
+					incount++;
+
+					previous += (signed)_2bitdecode[delta & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_2bitdecode[(delta >> 2) & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_2bitdecode[(delta >> 4) & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_2bitdecode[(delta >> 6) & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					counter--;
+				}
+				break;
+
+			default:
+			case CODE_SILENCE:
+				memset(d, previous, counter);
+				d += counter;
+				size -= counter;
+				break;
+		}
+	}
+	return (incount);
+}

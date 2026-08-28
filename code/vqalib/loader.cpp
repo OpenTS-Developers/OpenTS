@@ -66,6 +66,7 @@
 #include <stdio.h>
 #include <memory.h>
 #include "vqaplayp.h"
+#include "../lcw.h"
 
 /*---------------------------------------------------------------------------
  * PRIVATE DECLARATIONS
@@ -1726,17 +1727,6 @@ long Load_VQF(VQAHandleP *vqap, unsigned long frame_iffsize, char flags)
 					return(VQAERR_READ);
 				}
 
-				#if 0
-				/* If this is the first occurance of a palette then store it now.
-				 * This functionality is needed for Monopoly!
-				 */
-				if (drawer->CurPalSize == 0) {
-					drawer->CurPalSize = VQA_LCW_Uncompress((char *)curframe->Palette
-							+ curframe->PalOffset, (char *)drawer->Palette_24,
-							vqap->Max_Pal_Size);
-				}
-				#endif
-
 				/* Flag this frame as having a palette. */
 				curframe->Flags |= VQAFRMF_PALETTE;
 
@@ -3077,7 +3067,7 @@ long Load_CPLZ(VQAHandleP *vqap, unsigned long iffsize)
 	}
 
 	if (vqap->PaletteInfo.Header.Count == 1) {
-		curframe->PaletteSize = VQA_LCW_Uncompress((char *)(curframe->Palette + curframe->PalOffset), (char *)curframe->Palette, vqap->Max_Pal_Size);
+		curframe->PaletteSize = LCW_Uncomp((char *)(curframe->Palette + curframe->PalOffset), (char *)curframe->Palette, vqap->Max_Pal_Size);
 		curframe->Flags &= ~VQAFRMF_PALCOMP;
 		memcpy(drawer->Palette_24, curframe->Palette, curframe->PaletteSize);
 		drawer->CurPalSize = curframe->PaletteSize;

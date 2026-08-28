@@ -33,23 +33,16 @@ struct _VQA_SOS_COMPRESS_INFO
 
 typedef _VQA_SOS_COMPRESS_INFO VQASOS;
 
-
-extern "C" {
-unsigned long __cdecl VQA_LCW_Uncompress(char const *source, char *dest, unsigned long length);
-}
-
-//#define VQA_LCW_Uncompress LCW_Uncompress
-
-extern "C" {
-long __cdecl AudioUnzap(void *source, void *dest, long);
-}
-
 extern "C" {
 void __cdecl VQA_sosCODECInitStream(_VQA_SOS_COMPRESS_INFO *);
 void __cdecl VQA_sosCODECDecompressData(void *src, void *dst, unsigned short wBitSize, unsigned short wChannels, uint32_t dwUnCompSize, _VQA_SOS_COMPRESS_INFO *sosinfo);
 }
 
 //#define VQA_sosCODECDecompressData sosCODECDecompressData
+
+extern "C" {
+	size_t AudioUnzap(void * source, void * dest, size_t size);
+}
 
 #if defined(__WATCOMC__) || defined(_MSC_VER)
 #pragma pack(pop)

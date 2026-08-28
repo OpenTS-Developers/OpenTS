@@ -34,52 +34,64 @@
 #include	"always.h"
 #include	"lcw.h"
 
-/***************************************************************************
- * LCW_Uncomp -- Decompress an LCW encoded data block.                     *
- *                                                                         *
- * Uncompress data to the following codes in the format b = byte, w = word *
- * n = byte code pulled from compressed data.                              *
- *                                                                         *
- *   Command code, n        |Description                                   *
- * ------------------------------------------------------------------------*
- * n=0xxxyyyy,yyyyyyyy      |short copy back y bytes and run x+3 from dest *
- * n=10xxxxxx,n1,n2,...,nx+1|med length copy the next x+1 bytes from source*
- * n=11xxxxxx,w1            |med copy from dest x+3 bytes from offset w1   *
- * n=11111111,w1,w2         |long copy from dest w1 bytes from offset w2   *
- * n=11111110,w1,b1         |long run of byte b1 for w1 bytes              *
- * n=10000000               |end of data reached                           *
- *                                                                         *
- *                                                                         *
- * INPUT:                                                                  *
- *      void * source ptr                                                  *
- *      void * destination ptr                                             *
- *      unsigned long length of uncompressed data                          *
- *                                                                         *
- *                                                                         *
- * OUTPUT:                                                                 *
- *     unsigned long # of destination bytes written                        *
- *                                                                         *
- * WARNINGS:                                                               *
- *     3rd argument is dummy. It exists to provide cross-platform          *
- *      compatibility. Note therefore that this implementation does not    *
- *      check for corrupt source data by testing the uncompressed length.  *
- *                                                                         *
- * HISTORY:                                                                *
- *    03/20/1995 IML : Created.                                            *
- *=========================================================================*/
-int LCW_Uncomp(void const * source, void * dest, unsigned long )
+
+/// <summary>
+/// Decompresses an LCW encoded data block.
+///
+/// A leading zero byte selects the relative form, where the two offset-carrying copies reach
+/// back from the current position instead of forward from the start of the destination. VQA
+/// stores its palettes, codebooks and pointer data that way, because an absolute offset is a
+/// word and cannot address past 64K.
+/// </summary>
+/// <param name="source">Compressed data.</param>
+/// <param name="dest">Buffer to decompress into.</param>
+/// <param name="length">Size of the destination buffer, or zero to decode without a bound. A
+/// bounded call clamps every command against the room left, so a stream claiming more than the
+/// caller allowed is truncated instead of running past the buffer.</param>
+/// <returns>uint32_t; The number of destination bytes written.</returns>
+uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
 {
+	/*
+	** Uncompress data to the following codes in the format b = byte, w = word
+	** n = byte code pulled from compressed data.
+	**
+	**   Command code, n        |Description
+	** -----------------------------------------------------------------------
+	** n=0xxxyyyy,yyyyyyyy      |short copy back y bytes and run x+3 from dest
+	** n=10xxxxxx,n1,n2,...,nx+1|med length copy the next x+1 bytes from source
+	** n=11xxxxxx,w1            |med copy from dest x+3 bytes from offset w1
+	** n=11111111,w1,w2         |long copy from dest w1 bytes from offset w2
+	** n=11111110,w1,b1         |long run of byte b1 for w1 bytes
+	** n=10000000               |end of data reached
+	*/
+
 	unsigned char * source_ptr, * dest_ptr, * copy_ptr;
 	unsigned char op_code, data;
 	unsigned count;
-	unsigned * word_dest_ptr;
-	unsigned word_data;
 
 	/* Copy the source and destination ptrs. */
 	source_ptr = (unsigned char*) source;
 	dest_ptr   = (unsigned char*) dest;
 
+	bool const relative = (*source_ptr == 0);
+	bool const bounded = (length != 0);
+	unsigned char * const end = (unsigned char*) dest + length;
+
+	if (relative) {
+		source_ptr++;
+	}
+
 	for (;;) {
+
+		long maxlen = 0;
+
+		if (bounded) {
+			maxlen = (long)(end - dest_ptr);
+
+			if (maxlen <= 0) {
+				return((uint32_t) (dest_ptr - (unsigned char*) dest));
+			}
+		}
 
 		/* Read in the operation code. */
 		op_code = *source_ptr++;
@@ -90,7 +102,13 @@ int LCW_Uncomp(void const * source, void * dest, unsigned long )
 			count = (op_code >> 4) + 3;
 			copy_ptr = dest_ptr - ((unsigned) *source_ptr++ + (((unsigned) op_code & 0x0f) << 8));
 
-			while (count--) *dest_ptr++ = *copy_ptr++;
+			if (bounded && (count > (unsigned) maxlen)) {
+				count = (unsigned) maxlen;
+			} 
+
+			while (count--) {
+				*dest_ptr++ = *copy_ptr++;
+			} 
 
 		} else {
 
@@ -106,7 +124,13 @@ int LCW_Uncomp(void const * source, void * dest, unsigned long )
 					/* Do a medium copy from source. */
 					count = op_code & 0x3f;
 
-					while (count--) *dest_ptr++ = *source_ptr++;
+					if (bounded && (count > (unsigned) maxlen)) {
+						count = (unsigned) maxlen;
+					}
+
+					while (count--) {
+						*dest_ptr++ = *source_ptr++;
+					}
 				}
 
 			} else {
@@ -115,26 +139,17 @@ int LCW_Uncomp(void const * source, void * dest, unsigned long )
 
 					/* Do a long run. */
 					count = *source_ptr + ((unsigned) *(source_ptr + 1) << 8);
-					word_data = data = *(source_ptr + 2);
-					word_data  = (word_data << 24) + (word_data << 16) + (word_data << 8) + word_data;
+					data = *(source_ptr + 2);
 					source_ptr += 3;
 
-					copy_ptr = dest_ptr + 4 - ((unsigned) dest_ptr & 0x3);
-					count -= (copy_ptr - dest_ptr);
-					while (dest_ptr < copy_ptr) *dest_ptr++ = data;
-
-					word_dest_ptr = (unsigned*) dest_ptr;
-
-					dest_ptr += (count & 0xfffffffc);
-
-					while (word_dest_ptr < (unsigned*) dest_ptr) {
-						*word_dest_ptr		= word_data;
-						*(word_dest_ptr + 1) = word_data;
-						word_dest_ptr += 2;
+					if (bounded && (count > (unsigned) maxlen)) {
+						count = (unsigned) maxlen;
 					}
 
-					copy_ptr = dest_ptr + (count & 0x3);
-					while (dest_ptr < copy_ptr) *dest_ptr++ = data;
+
+					while (count--) { 
+						*dest_ptr++ = data;
+					}
 
 				} else {
 
@@ -142,19 +157,29 @@ int LCW_Uncomp(void const * source, void * dest, unsigned long )
 
 						/* Do a long copy from destination. */
 						count = *source_ptr + ((unsigned) *(source_ptr + 1) << 8);
-						copy_ptr = (unsigned char*) dest + *(source_ptr + 2) + ((unsigned) *(source_ptr + 3) << 8);
+						size_t const offset = *(source_ptr + 2) + ((unsigned) *(source_ptr + 3) << 8);
+						copy_ptr = relative ? (dest_ptr - offset) : ((unsigned char*)dest + offset);
 						source_ptr += 4;
 
-						while (count--) *dest_ptr++ = *copy_ptr++;
+						if (bounded && (count > (unsigned) maxlen)) count = (unsigned) maxlen;
+
+						while (count--) { 
+							*dest_ptr++ = *copy_ptr++;
+						}
 
 					} else {
 
 						/* Do a medium copy from destination. */
 						count = (op_code & 0x3f) + 3;
-						copy_ptr = (unsigned char*) dest + *source_ptr + ((unsigned) *(source_ptr + 1) << 8);
+						size_t const offset = *source_ptr + ((unsigned) *(source_ptr + 1) << 8);
+						copy_ptr = relative ? (dest_ptr - offset) : ((unsigned char*)dest + offset);
 						source_ptr += 2;
 
-						while (count--) *dest_ptr++ = *copy_ptr++;
+						if (bounded && (count > (unsigned) maxlen)) count = (unsigned) maxlen;
+
+						while (count--) { 
+							*dest_ptr++ = *copy_ptr++;
+						}
 					}
 				}
 			}

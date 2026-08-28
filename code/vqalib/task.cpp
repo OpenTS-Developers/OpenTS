@@ -58,6 +58,7 @@
 #include "vqaplayp.h"
 #include "video.h"
 #include "ahandle.h"
+#include "lcw.h"
 #include "vqadebug.h"
 
 
@@ -361,7 +362,7 @@ long VQA_Open(char const *filename, VQAConfig *_config, VQAHandle **handle)
 					}
 
 					/* Decompress the captions. */
-					LCW_Uncompress((ptr + i), ptr, size);
+					LCW_Uncomp((ptr + i), ptr, size);
 					vqap->Caption = OpenCaptions(ptr, config->CapFont);
 
 					if (vqap->Caption == NULL) {
@@ -409,7 +410,7 @@ long VQA_Open(char const *filename, VQAConfig *_config, VQAHandle **handle)
 					}
 
 					/* Decompress the captions. */
-					LCW_Uncompress((ptr + i), ptr, size);
+					LCW_Uncomp((ptr + i), ptr, size);
 					vqap->EVA = OpenCaptions(ptr, config->EVAFont);
 
 					if (vqap->EVA == NULL) {
