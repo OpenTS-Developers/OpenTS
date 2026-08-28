@@ -57,9 +57,9 @@ static void Unjoin_Game(int game_index);
 static void Send_Join_Queries(int gamenow, int playernow, int chatnow, int init = 0);
 static void Get_Join_Responses(void);
 
-BOOL CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-BOOL CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-BOOL CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 bool Net2ReadyToGo(int load_game);
 
 int CurGame;
@@ -1082,7 +1082,7 @@ bool Net2Remote_Connect(void)
 /// pressed so that the driver loop knows whether to move on to the host or guest dialog.
 /// </summary>
 /// <returns>Returns with TRUE if the message was consumed by this dialog.</returns>
-BOOL CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	switch (message) {
 
@@ -1264,7 +1264,7 @@ BOOL CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wp
 /// kick somebody out of it -- and finally the button that starts the match.
 /// </summary>
 /// <returns>Returns with TRUE if the message was consumed by this dialog.</returns>
-BOOL CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	/*
 	 * ------------------------------------------------------------------------
@@ -3270,7 +3270,7 @@ bool Net2ReadyToGo(int load_game)
 /// host when it is happy for the game to begin.
 /// </summary>
 /// <returns>Returns with TRUE if the message was consumed by this dialog.</returns>
-BOOL CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	switch (message) {
 

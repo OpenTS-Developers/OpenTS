@@ -50,7 +50,7 @@
 
 class ListClass;
 
-BOOL CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 /// <summary>
 /// Prompts the player for which kind of multiplayer game to start.
@@ -76,7 +76,7 @@ GameType Select_MPlayer_Game (void)
 	if (dialog) {
 
 		int rc;
-		SetWindowLong(dialog, DWL_USER, (LONG)&rc);
+		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
 
 		bool process = true;
 		while (process) {
@@ -121,12 +121,12 @@ GameType Select_MPlayer_Game (void)
 /// </summary>
 /// <returns>Returns with the result of the ownerdraw handler, or false when the message was
 /// left unhandled.</returns>
-BOOL CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	int * retval;
 	HWND handle;
 
-	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
 	if (message == WM_INITDIALOG) {
 		// Neither the online service these led to nor the tour it hosted can be reached,
@@ -146,7 +146,7 @@ BOOL CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM 
 	}
 
 	if (message == WM_COMMAND) {
-		retval = (int *)GetWindowLong(window, DWL_USER);
+		retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 		*retval = LOWORD(wparam);
 	}
 	return(false);

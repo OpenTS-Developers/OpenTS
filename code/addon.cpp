@@ -17,7 +17,7 @@
 #include "language/language.h"
 #include "ownrdraw.h"
 
-BOOL CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 int AvailableAddOns = 1 << ADDON_BASE_GAME;
 int ActiveAddOns = 1 << ADDON_BASE_GAME;
@@ -63,7 +63,7 @@ bool Select_Game_Type_Dialog(AddonType &type)
 		HWND dialog = OwnerDraw::Begin_Dialog(IDD_SELECT_GAME_TYPE, Select_Game_Type_Dialog_Proc);
 		if (dialog != 0) {
 
-			SetWindowLong(dialog, DWL_USER, (LONG)&retval);
+			SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&retval);
 			OwnerDraw::Display_Dialog(dialog);
 
 			retval = -1;
@@ -108,16 +108,16 @@ bool Select_Game_Type_Dialog(AddonType &type)
 /// This routine stashes the control that the player pressed into the caller's result
 /// variable, which is what lets the dialog loop know it can stop.
 /// </summary>
-BOOL CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	int * retval;
 
-	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
 	if (rc == 0) {
 		switch (message) {
 			case WM_COMMAND:
-				retval = (int *)GetWindowLong(window, DWL_USER);
+				retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 				*retval = LOWORD(wparam);
 				break;
 		}

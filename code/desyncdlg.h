@@ -63,7 +63,7 @@ class DesyncDialogClass
 		void Start_Countdown(void);
 		void Update_Countdown_Text(void);
 		void Draw_Countdown_Bar(HWND window);
-		static BOOL CALLBACK Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+		static INT_PTR CALLBACK Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 		HWND Window = NULL;
 		bool IsHostDialog = false;

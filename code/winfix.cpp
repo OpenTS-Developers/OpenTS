@@ -184,9 +184,9 @@ item_data TreeView_get_item_data(DWORD xy)
 	point.x = LOWORD(xy);
 	point.y = HIWORD(xy);
 
-	HWND hwnd1 = ChildWindowFromPoint((HWND)GetWindowLong(TreeView_LastHandle, GWL_HWNDPARENT), point);
-	HWND hwnd2 = (HWND)GetWindowLong(hwnd1, GWL_HWNDPARENT);
-	if ((LONG)hwnd1 == GetWindowLong(TreeView_LastHandle, GWL_HWNDPARENT)) {
+	HWND hwnd1 = ChildWindowFromPoint((HWND)GetWindowLongPtr(TreeView_LastHandle, GWLP_HWNDPARENT), point);
+	HWND hwnd2 = (HWND)GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT);
+	if (hwnd1 == (HWND)GetWindowLongPtr(TreeView_LastHandle, GWLP_HWNDPARENT)) {
 		hwnd2 = hwnd1;
 	}
 
@@ -238,7 +238,7 @@ void TreeView_handle_item_drag(int timer_id)
 		if (i3 > 0) {
 			int time = 500 - 40 * i3;
 			time = std::max(time, 5);
-			SetTimer((HWND)GetWindowLong(TreeView_LastHandle, GWL_HWNDPARENT), 1, time, NULL);
+			SetTimer((HWND)GetWindowLongPtr(TreeView_LastHandle, GWLP_HWNDPARENT), 1, time, NULL);
 			HTREEITEM item;
 			HTREEITEM visible;
 
@@ -412,7 +412,7 @@ BOOL On_WM_CONTEXTMENU(WPARAM window)
 
 	identifiers[0] = GetWindowLong((HWND)window, GWL_ID);
 	identifiers[1] = GetWindowContextHelpId((HWND)window);
-	return(WinHelp((HWND)window, "SUN.HLP", HELP_CONTEXTMENU, (ULONG)identifiers));
+	return(WinHelp((HWND)window, "SUN.HLP", HELP_CONTEXTMENU, (ULONG_PTR)identifiers));
 }
 
 
@@ -842,7 +842,7 @@ char *WindowsVersionInfo::Version_String(void)
 /// <param name="window">The window to be moved.</param>
 void Center_Window_Within_Window(HWND window)
 {
-	HWND parent = (HWND)GetWindowLong(window, GWL_HWNDPARENT);
+	HWND parent = (HWND)GetWindowLongPtr(window, GWLP_HWNDPARENT);
 	if (parent != NULL) {
 		Center_Window_Within_Window(window, parent);
 	}

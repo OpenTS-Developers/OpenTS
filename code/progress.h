@@ -46,7 +46,7 @@ class ProgressScreenClass
 		void Begin_Dialog(void);
 		void End_Dialog(void);
 	private:
-		static BOOL CALLBACK Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+		static INT_PTR CALLBACK Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 	public:
 		/*

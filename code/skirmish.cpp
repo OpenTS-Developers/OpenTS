@@ -28,7 +28,7 @@
 #include "win.h"
 
 
-BOOL CALLBACK Skirmish_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Skirmish_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 BOOL Skirmish_On_WM_INITDIALOG(HWND window, WPARAM wparam, LPARAM lparam);
 
 
@@ -43,7 +43,7 @@ BOOL Skirmish_On_WM_INITDIALOG(HWND window, WPARAM wparam, LPARAM lparam);
 /// <param name="lparam">The notification code that came with the command.</param>
 void Skirmish_On_WM_COMMAND(HWND window, int message, WPARAM wparam, LPARAM lparam)
 {
-	int * rc = (int *)GetWindowLong(window, DWL_USER);
+	int * rc = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 	char buffer[256];
 	HWND handle;
 
@@ -228,7 +228,7 @@ bool Skirmish_Mode_Dialog(void)
 
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_SKIRMISH, Skirmish_Dialog_Proc);
 	if (dialog) {
-		SetWindowLong(dialog, DWL_USER, (LONG)&rc);
+		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
 		OwnerDraw::Display_Dialog(dialog);
 		while (rc != IDOK && rc != IDCANCEL) {
 			if (OwnerDraw::Dialog_Message_Handler() == IDOK) {
@@ -268,9 +268,9 @@ bool Skirmish_Mode_Dialog(void)
 /// </summary>
 /// <returns>Returns with TRUE if the message was handled, otherwise FALSE so that Windows
 /// performs its default processing.</returns>
-BOOL CALLBACK Skirmish_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Skirmish_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
 	if (rc == 0) {
 

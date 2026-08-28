@@ -602,7 +602,7 @@ void WWKeyboardClass::Clear(void)
  * HISTORY:                                                                                    *
  *   09/30/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-int WWKeyboardClass::Message_Handler(HWND window, UINT message, UINT wParam, LONG lParam)
+int WWKeyboardClass::Message_Handler(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
 {
 	bool processed = false;
 

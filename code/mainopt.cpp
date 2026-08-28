@@ -39,11 +39,11 @@
 #include "color.hh"
 
 
-BOOL CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-BOOL CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
-BOOL CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 GameOptionsClass TempOptions;
 
@@ -71,7 +71,7 @@ void Main_Options_Dialog(void)
 			main_rc = -1;
 			main_handle = OwnerDraw::Begin_Dialog(IDD_OPT_MAIN, Main_Options_Dialog_Proc);
 		} while (main_handle == 0);
-		SetWindowLong(main_handle, DWL_USER, (LONG)&main_rc);
+		SetWindowLongPtr(main_handle, GWLP_USERDATA, (LONG_PTR)&main_rc);
 
 		OwnerDraw::Move_Dialog(main_handle, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
 		OwnerDraw::Display_Dialog(main_handle);
@@ -97,7 +97,7 @@ void Main_Options_Dialog(void)
 						in_rc = -1;
 						in_handle = OwnerDraw::Begin_Dialog(IDD_OPT_DISPLAY, Display_Options_Dialog_Proc);
 					} while (in_handle == 0);
-					SetWindowLong(in_handle, DWL_USER, (LONG)&in_rc);
+					SetWindowLongPtr(in_handle, GWLP_USERDATA, (LONG_PTR)&in_rc);
 					OwnerDraw::Display_Dialog(in_handle);
 
 					while (in_rc < 0) {
@@ -152,14 +152,14 @@ void Main_Options_Dialog(void)
 /// that it can bring up the appropriate sub dialog. The sound button is disabled when there
 /// is no audio hardware to talk to.
 /// </summary>
-BOOL CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	int *result;
 	HWND handle;
 
-	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (rc == 0) {
-		result = (int *)GetWindowLong(window, DWL_USER);
+		result = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 		switch (message) {
 
 			case WM_COMMAND:
@@ -339,7 +339,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CONFIRM_MODE, Test_Display_Mode_Dialog_Proc);
 	if (dialog) {
-		SetWindowLong(dialog, DWL_USER, (LONG)&rc);
+		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
 		OwnerDraw::Display_Dialog(dialog);
 
 		CDTimerClass<SystemTimerClass> timer = 10 * TIMER_SECOND;
@@ -374,14 +374,14 @@ bool Test_Display_Mode_Dialog(int width, int height)
 /// This routine records the button the player pressed so that the mode test can tell
 /// whether the new resolution was accepted or rejected.
 /// </summary>
-BOOL CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	int * result;
 	int id;
 
-	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (rc == 0) {
-		result = (int *)GetWindowLong(window, DWL_USER);
+		result = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 		switch (message) {
 			case WM_COMMAND:
 				id = LOWORD(wparam);
@@ -417,7 +417,7 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 	static int _previous_mode = -1;
 	static bool _initialized = true;
 
-	int * result = (int *)GetWindowLong(window, DWL_USER);
+	int * result = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 	switch (message) {
 		case WM_COMMAND:
 			switch (LOWORD(wparam)) {
@@ -499,9 +499,9 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 /// This routine gives the owner draw dialog system first refusal on the message and only
 /// deals with what it leaves behind.
 /// </summary>
-BOOL CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (rc == 0) {
 		return(Display_Options_Dialog_Body(window, message, wparam));
 	}

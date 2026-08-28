@@ -70,7 +70,7 @@
 
 bool (*RMGCallback)() = MapGen_Call_Back;
 
-BOOL CALLBACK Map_Seed_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Map_Seed_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 
 double Random_Fraction(void);
@@ -3276,7 +3276,7 @@ int Do_Random_Map_Dialog(bool (*callback)())
 	if (dialog) {
 		RMGCallback = callback;
 		RandomMapGen.SeedData.Callback = callback;
-		SetWindowLongA(dialog, DWL_USER, (LONG)&res);
+		SetWindowLongPtrA(dialog, GWLP_USERDATA, (LONG_PTR)&res);
 		OwnerDraw::Display_Dialog(dialog);
 		while (res == 0) {
 			if (OwnerDraw::Dialog_Message_Handler() == 1) {
@@ -3478,24 +3478,25 @@ void Do_Random_Map(HWND dialog, bool (*callback)())
 /// <summary>
 /// Dialog procedure for the random map generator ("Map Seed") dialog.
 /// Handles previewing, generating, saving, loading and deleting random maps, and randomizing
-/// the generator settings. The dialog's result code is written through the DWL_USER pointer set
-/// up by Do_Random_Map_Dialog so that writing it ends that dialog's modal message loop.
+/// the generator settings. The dialog's result code is written through the GWLP_USERDATA
+/// pointer set up by Do_Random_Map_Dialog so that writing it ends that dialog's modal
+/// message loop.
 /// </summary>
 /// <param name="window">Handle to the dialog window.</param>
 /// <param name="message">Window message identifier.</param>
 /// <param name="wparam">Message-specific first parameter.</param>
 /// <param name="lparam">Message-specific second parameter.</param>
 /// <returns>TRUE if the message was processed, FALSE otherwise.</returns>
-BOOL CALLBACK Map_Seed_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Map_Seed_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	static int _unused = -1;
 
-	BOOL result = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR result = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (result) {
 		return(result);
 	}
 
-	LONG * state = (LONG *)GetWindowLongA(window, DWL_USER);
+	LONG * state = (LONG *)GetWindowLongPtrA(window, GWLP_USERDATA);
 
 	switch (message) {
 

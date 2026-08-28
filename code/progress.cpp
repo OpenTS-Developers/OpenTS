@@ -360,7 +360,7 @@ void ProgressScreenClass::Begin_Dialog(void)
 {
 	Dialog = OwnerDraw::Begin_Dialog(IDD_PROGRESS_WAIT, ProgressScreenClass::Dialog_Proc);
 	if (Dialog != NULL) {
-		SetWindowLong(Dialog, DWL_USER, (LONG)this);
+		SetWindowLongPtr(Dialog, GWLP_USERDATA, (LONG_PTR)this);
 		OwnerDraw::Display_Dialog(Dialog);
 		SendMessage(Dialog, WM_PAINT, 0, 0);
 	}
@@ -388,12 +388,12 @@ void ProgressScreenClass::End_Dialog(void)
 /// unhandled.
 /// </summary>
 /// <returns>Returns with the dialog result, zero if the message was left unhandled.</returns>
-BOOL CALLBACK ProgressScreenClass::Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK ProgressScreenClass::Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	HRESULT res = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR res = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (res == 0) {
 		if (message == WM_PAINT) {
-			ProgressScreenClass *screen = (ProgressScreenClass *)GetWindowLong(window, DWL_USER);
+			ProgressScreenClass *screen = (ProgressScreenClass *)GetWindowLongPtr(window, GWLP_USERDATA);
 			screen->Display_Progress();
 		}
 		res = 0;

@@ -116,7 +116,7 @@ LRESULT CALLBACK ProgressBarCtrlProc(HWND window, UINT message, WPARAM wparam, L
 LRESULT CALLBACK TrackBarCtrlProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 LRESULT CALLBACK GroupBoxCtrlProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 LRESULT CALLBACK HotkeyCtrlProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-LRESULT CALLBACK Custom_Message_Box_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Custom_Message_Box_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 BOOL CALLBACK ODRemoveFromDict(HWND window, LPARAM);
 int WINAPI ODUpdateWindowRect(HWND window, RECT *rect);
@@ -166,7 +166,7 @@ unsigned int Hash_HWND(HWND &key)
 /// <returns>Returns with the hash value formed from the window and the message.</returns>
 unsigned int Hash_CtrlMsg(CtrlMsgData &key)
 {
-	return((unsigned int)((int)key.message * (int)key.window));
+	return((unsigned int)((uintptr_t)key.message * (uintptr_t)key.window));
 }
 
 
@@ -873,7 +873,7 @@ BOOL CALLBACK InitializeCtrl(HWND window, LPARAM lparam)
 		customProc = DefaultCtrlProc;
 	}
 
-	WNDPROC originalProc = (WNDPROC)SetWindowLong(window, GWL_WNDPROC, (LONG)CtrlProc);
+	WNDPROC originalProc = (WNDPROC)SetWindowLongPtr(window, GWLP_WNDPROC, (LONG_PTR)CtrlProc);
 
 	if (!CustomWndProcs.contains(window)) {
 		CustomWndProcs.add(window, customProc);
@@ -1615,7 +1615,7 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 			 */
 			owner = window;
 			while (owner != NULL) {
-				if (GetWindowLong(owner, DWL_DLGPROC) != 0) {
+				if (GetWindowLongPtr(owner, DWLP_DLGPROC) != 0) {
 					break;
 				}
 				owner = GetParent(owner);
@@ -1705,7 +1705,7 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 					if (sibling == NULL) {
 						break;
 					}
-					if (GetWindowLong(sibling, DWL_DLGPROC)) {
+					if (GetWindowLongPtr(sibling, DWLP_DLGPROC)) {
 						Rect sibling_rect;
 						Get_Display_Rect(sibling, (LPRECT)&sibling_rect);
 						RECT intersect;
@@ -1727,7 +1727,7 @@ cleanup:
 	ctrlmessages.remove(key);
 
 	if (is_paint) {
-		if (GetWindowLong(window, DWL_DLGPROC)) {
+		if (GetWindowLongPtr(window, DWLP_DLGPROC)) {
 			if (num_rect_updates > 1) {
 				data->animState = 2;
 			}
@@ -1747,7 +1747,7 @@ cleanup:
 				screen_rect.Width = max_update_rect.x - min_update_rect.x;
 				screen_rect.Height = max_update_rect.y - min_update_rect.y;
 
-				if (GetWindowLong(window, DWL_DLGPROC) && data->animState == 1) {
+				if (GetWindowLongPtr(window, DWLP_DLGPROC) && data->animState == 1) {
 
 					/*
 					 * Animated dialog reveal -- the screen wipes open from the
@@ -3331,7 +3331,7 @@ LRESULT CALLBACK ListBoxCtrlProc(HWND window, UINT message, WPARAM wparam, LPARA
 		}
 		needs_scrollbar = (count * item_height > client_rect.bottom - client_rect.top);
 		max_position = count - (client_rect.bottom - client_rect.top) / item_height;
-		if ((unsigned int)data->attachedWindow > 1) {
+		if ((uintptr_t)data->attachedWindow > 1) {
 			SCROLLINFO info;
 			info.fMask = SIF_RANGE | SIF_POS;
 			info.nMin = 0;
@@ -3523,7 +3523,7 @@ LRESULT CALLBACK ListBoxCtrlProc(HWND window, UINT message, WPARAM wparam, LPARA
 		}
 
 		case WM_SIZE: {
-			if ((int)data->attachedWindow > 1) {
+			if ((uintptr_t)data->attachedWindow > 1) {
 				RECT parent_display;
 				Get_Display_Rect(GetParent(window), &parent_display);
 				Rect win_display;
@@ -4021,7 +4021,7 @@ LRESULT CALLBACK ListBoxCtrlProc(HWND window, UINT message, WPARAM wparam, LPARA
 	if (needs_scrollbar == 1) {
 		if (data->attachedWindow == NULL) {
 			data->attachedWindow = (HWND)1;
-			GetWindowLong(window, GWL_WNDPROC);
+			GetWindowLongPtr(window, GWLP_WNDPROC);
 			parent = GetParent(window);
 			RECT parent_display;
 			Get_Display_Rect(parent, &parent_display);
@@ -6725,7 +6725,7 @@ int OwnerDraw::Release_Mouse(void)
 /// <remarks>Every dialog begun with this routine must be finished with End_Dialog.</remarks>
 HWND OwnerDraw::Begin_Dialog(int id, DLGPROC proc)
 {
-	LPCDLGTEMPLATE templ = (LPCDLGTEMPLATE)Fetch_Resource((LPCSTR)(int)MAKEINTRESOURCE(id), (LPCSTR)RT_DIALOG);
+	LPCDLGTEMPLATE templ = (LPCDLGTEMPLATE)Fetch_Resource(MAKEINTRESOURCE(id), (LPCSTR)RT_DIALOG);
 	if (templ == NULL) {
 		return(NULL);
 	}
@@ -6742,14 +6742,14 @@ HWND OwnerDraw::Begin_Dialog(int id, DLGPROC proc)
 	}
 
 	g_Dialogs[idx].handle = handle;
-	g_Dialogs[idx].id = (int)MAKEINTRESOURCE(id);
+	g_Dialogs[idx].id = LOWORD(id);
 
 	Capture_Mouse();
 
 	Add_Modeless_Dialog(handle);
 
 	g_TopWindow = handle;
-	g_TopWindowID = (int)MAKEINTRESOURCE(id);
+	g_TopWindowID = LOWORD(id);
 
 	return(handle);
 }
@@ -6817,7 +6817,7 @@ void OwnerDraw::Display_Dialog(HWND window)
 /// background painting and control coloring that all dialogs share is performed.
 /// </summary>
 /// <returns>Returns with the message result, or zero if the caller should handle it.</returns>
-int OwnerDraw::Default_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR OwnerDraw::Default_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	switch (message) {
 		case WM_DRAWITEM:
@@ -6853,7 +6853,7 @@ int OwnerDraw::Default_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPA
 		case WM_CTLCOLORDLG:
 		case WM_CTLCOLORSCROLLBAR:
 		case WM_CTLCOLORSTATIC:
-			return((int)GetStockObject(BLACK_BRUSH));
+			return((INT_PTR)GetStockObject(BLACK_BRUSH));
 
 		case OD_SUBCLASSED:
 			SendMessage(window, OD_SETTOP, (WPARAM)window, 1);
@@ -6953,9 +6953,9 @@ int OwnerDraw::Move_Dialog(HWND window, int x, int y)
 /// created.</returns>
 HWND OwnerDraw::Custom_Message_Box(const char *btn1txt, const char *btn2txt, bool * cancelled)
 {
-	HWND dlg = OwnerDraw::Begin_Dialog(IDD_MSGBOX_1, (DLGPROC)Custom_Message_Box_Proc);
+	HWND dlg = OwnerDraw::Begin_Dialog(IDD_MSGBOX_1, Custom_Message_Box_Proc);
 
-	SetWindowLong(dlg, 8, (LONG)cancelled);
+	SetWindowLongPtr(dlg, GWLP_USERDATA, (LONG_PTR)cancelled);
 	SetDlgItemText(dlg, IDC_MSGBOX_TEXT, btn1txt);
 
 	if (btn2txt) {
@@ -6976,13 +6976,13 @@ HWND OwnerDraw::Custom_Message_Box(const char *btn1txt, const char *btn2txt, boo
 /// keyboard and raises the flag the box was opened with.
 /// </summary>
 /// <returns>Returns with the message result, or zero when the message was consumed here.</returns>
-LRESULT CALLBACK Custom_Message_Box_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Custom_Message_Box_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	LRESULT res = Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR res = Default_Dialog_Proc(window, message, wparam, lparam);
 
 	if (res == 0) {
 		if (message == WM_COMMAND && wparam == IDCANCEL) {
-			bool * cancelled = (bool *)GetWindowLong(window, DWL_USER);
+			bool * cancelled = (bool *)GetWindowLongPtr(window, GWLP_USERDATA);
 			if (cancelled) {
 				Keyboard->Put(KN_ESC);
 				*cancelled = true;

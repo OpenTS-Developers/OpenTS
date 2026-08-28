@@ -17,7 +17,7 @@
 class HouseClass;
 
 int ODMessageBox(const char *text, int type, bool (*callback)(void), bool large = false);
-int CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 bool Set_Scenario_Info_From_Index(int index);
 void Commit_Session_Specials(void);

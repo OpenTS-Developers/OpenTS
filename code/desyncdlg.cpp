@@ -652,7 +652,7 @@ void DesyncDialogClass::Draw_Countdown_Bar(HWND window)
 }
 
 
-BOOL CALLBACK DesyncDialogClass::Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK DesyncDialogClass::Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	switch (message) {
 		case WM_INITDIALOG:

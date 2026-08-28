@@ -404,7 +404,7 @@ int ODMessageBox(const char * text, int type, bool (*callback)(void), bool large
 /// whichever of the buttons the player pressed.
 /// </summary>
 /// <returns>Returns with TRUE if the message was dealt with here, FALSE otherwise.</returns>
-int CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	switch (message) {
 		case WM_DRAWITEM:
@@ -1154,7 +1154,7 @@ bool Scenario_Select_Callback(void)
 	return(false);
 }
 
-int CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+INT_PTR CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 
 /// <summary>
@@ -1170,7 +1170,7 @@ int Scenario_Dialog(HWND top)
 	Hide_Mouse();
 	Draw_Menu_Background();
 	Show_Mouse();
-	ScenarioPick = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_SELECT_MAP, top, (DLGPROC)Scenario_DlgProc, FALSE);
+	ScenarioPick = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_SELECT_MAP, top, Scenario_DlgProc, FALSE);
 	Center_Window_Within_Window(ScenarioPick);
 	OwnerDraw::Subclass_Dialog(ScenarioPick, 0);
 	ShowWindow(ScenarioPick, SW_NORMAL);
@@ -1185,7 +1185,7 @@ int Scenario_Dialog(HWND top)
 /// </summary>
 /// <returns>Returns with TRUE if the message was dealt with here, FALSE to leave it to the
 /// dialog manager.</returns>
-int CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	switch (message) {
 		case WM_NCDESTROY:

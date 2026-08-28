@@ -604,7 +604,7 @@ bool ScrollClass::Is_Scrolling(void) const
 /// drag survives the cursor leaving the window. Messages arriving while the game is not
 /// running, or while input is being ignored, are quietly dropped.
 /// </summary>
-void ScrollClass::Message_Handler(HWND hwnd, UINT & message, UINT & wParam, LONG & lParam)
+void ScrollClass::Message_Handler(HWND hwnd, UINT & message, WPARAM & wParam, LPARAM & lParam)
 {
 	if (!TacticalActive) {
 		return;

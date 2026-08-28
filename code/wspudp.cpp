@@ -527,7 +527,7 @@ void UDPInterfaceClass::Broadcast (void *buffer, int buffer_len)
  * HISTORY:                                                                                    *
  *    3/20/96 3:05PM ST : Created                                                              *
  *=============================================================================================*/
-int UDPInterfaceClass::Message_Handler(HWND, UINT message, UINT, LONG lParam)
+int UDPInterfaceClass::Message_Handler(HWND, UINT message, WPARAM, LPARAM lParam)
 {
 	struct 	sockaddr_in addr;
 	int	 	rc;

@@ -135,7 +135,7 @@ class WinsockInterfaceClass {
 			return(false);
 		};
 
-		virtual int Message_Handler(HWND, UINT, UINT, LONG) {
+		virtual int Message_Handler(HWND, UINT, WPARAM, LPARAM) {
 			return(1);
 		}
 

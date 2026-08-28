@@ -48,7 +48,7 @@ class UDPInterfaceClass : public WinsockInterfaceClass {
 		UDPInterfaceClass (void);
 		virtual ~UDPInterfaceClass(void) override;
 
-		virtual int Message_Handler(HWND window, UINT message, UINT wParam, LONG lParam) override;
+		virtual int Message_Handler(HWND window, UINT message, WPARAM wParam, LPARAM lParam) override;
 		virtual bool Open_Socket ( SOCKET socketnum ) override;
 		virtual void Set_Broadcast_Address ( const IPXAddressClass &address ) override;
 		virtual void Clear_Broadcast_Addresses(void) override;

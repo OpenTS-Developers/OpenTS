@@ -44,5 +44,5 @@ class SoundControlsClass
 		SoundControlsClass(void) {}
 		void Dialog(void);
 
-		static BOOL CALLBACK Sound_Option_Dialog_Func(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+		static INT_PTR CALLBACK Sound_Option_Dialog_Func(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 };

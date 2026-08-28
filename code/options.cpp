@@ -605,18 +605,18 @@ int OptionsClass::Normalize_Volume(int volume) const
 /// KEYBOARD.INI; canceling puts the previous assignments back.
 /// </summary>
 /// <returns>Returns with TRUE if the message was consumed by this dialog.</returns>
-BOOL CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	char buffer[64];
 	int * retval;
 	static int current_selection = -1;
 
-	int result = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR result = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (result) {
 		return(result);
 	}
 
-	retval = (int *)GetWindowLong(window, DWL_USER);
+	retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 
 	switch (message) {
 		case WM_COMMAND:
@@ -822,7 +822,7 @@ bool OptionsClass::Hotkey_Dialog(void)
 	handle = OwnerDraw::Begin_Dialog(IDD_OPT_KEYBOARD, Hotkey_Dialog_Proc);
 
 	if (handle != NULL) {
-		SetWindowLong(handle, DWL_USER, (LONG)&res);
+		SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)&res);
 		OwnerDraw::Display_Dialog(handle);
 
 		while (res < 0) {

@@ -47,17 +47,17 @@ extern WDTPointer<Campaign> g_WDTResumedCampaign;
 /// <returns>
 /// Returns with the result of the owner draw handler, or FALSE if it left the message alone.
 /// </returns>
-BOOL CALLBACK WDT_Faction_Choice_Menu_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
+INT_PTR CALLBACK WDT_Faction_Choice_Menu_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	int* retval;
 
-	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
+	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
 	if (rc == 0) {
 
 		switch (message) {
 			case WM_COMMAND: {
-				retval = (int *)GetWindowLong(window, DWL_USER);
+				retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
 				switch (LOWORD(wparam)) {
 					case IDC_PICKCLAN_JOIN:
 						*retval = 1;
