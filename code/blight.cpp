@@ -56,6 +56,7 @@ BuildingLightClass::BuildingLightClass(TechnoClass * owner) :
 	RotationPivot(COORD_NONE),
 	RotationTarget(COORD_NONE),
 	Acceleration(0),
+	IsDetectionSource(false),
 	IsOppositeDirection(false),
 	Behavior(0),
 	Target(NULL),
@@ -177,6 +178,8 @@ void BuildingLightClass::AI(void)
 		return;
 	}
 
+	bool resumed_sweep = false;
+
 	Coord coord = PositionCoord;
 	switch (Behavior) {
 		default:
@@ -188,6 +191,8 @@ void BuildingLightClass::AI(void)
 				coord = Lerp(PositionCoord, Target->PositionCoord, 0.25);
 			} else {
 				Set_Behavior_Type(LIGHT_BEHAVIOR_SWEEP);
+
+				resumed_sweep = true;
 			}
 			break;
 
@@ -248,7 +253,7 @@ void BuildingLightClass::AI(void)
 
 	BuildingClass * owner_building = (Owner->RTTI == RTTI_BUILDING) ? (BuildingClass *)Owner : NULL;
 
-	if (Behavior == LIGHT_BEHAVIOR_SWEEP) {
+	if (Behavior == LIGHT_BEHAVIOR_SWEEP && !resumed_sweep) {
 		if (owner_building != NULL && owner_building->IsActive && owner_building->Is_Powered_On() && owner_building->Tag != NULL) {
 			bool found = false;
 			Cell cell = PositionCell;
@@ -272,8 +277,12 @@ void BuildingLightClass::AI(void)
 			}
 
 			if (found) {
+				IsDetectionSource = true;
+
 				owner_building->Tag->Spring(TEVENT_ENEMY_IN_SPOTLIGHT, owner_building);
 				owner_building->Tag->Spring(TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING, owner_building);
+
+				IsDetectionSource = false;
 			}
 		}
 	}

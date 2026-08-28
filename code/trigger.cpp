@@ -293,7 +293,13 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 		TEventClass * tevent = Class->FirstEvent;
 		int index = 0;
 		while (tevent != NULL) {
-			if (Is_Event_Tripped(index) || tevent->operator()(event, House_From_HousesType((HousesType)Class->House->HeapID), object, Timer, persistent, source)) {
+			bool event_tripped = Is_Event_Tripped(index);
+
+			if (event_tripped && tevent->Event == TEVENT_ENEMY_IN_SPOTLIGHT && Class->FirstEvent->Next == NULL && event != TEVENT_ENEMY_IN_SPOTLIGHT) {
+				event_tripped = false;
+			}
+
+			if (event_tripped || tevent->operator()(event, House_From_HousesType((HousesType)Class->House->HeapID), object, Timer, persistent, source)) {
 				if (persistent) {
 					if (tevent->Is_Time_Based() && tevent->Is_To_Flag_As_Tripped()) {
 						Flag_Event_Tripped(index);
