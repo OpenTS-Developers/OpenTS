@@ -104,10 +104,6 @@ class CDFileClass : public BufferIOFileClass
 		*/
 		static SearchDriveType * First;
 
-		// Where this player's own files are kept, ending in a separator. NULL when the
-		// player has no directory of their own and everything belongs together.
-		static char const * UserPath;
-
 		// A file object owns the name it captured, so it is not copied.
 		CDFileClass(CDFileClass const & file);
 		CDFileClass & operator = (CDFileClass const & file);

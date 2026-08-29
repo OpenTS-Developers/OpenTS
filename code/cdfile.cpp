@@ -41,13 +41,17 @@
 
 #include "cdfile.h"
 
+#include <string>
+
 /*
 **	Pointer to the first search path record.
 */
 CDFileClass::SearchDriveType * CDFileClass::First = NULL;
 
-// Where this player's own files are kept.
-char const * CDFileClass::UserPath = NULL;
+// Where this player's own files are kept, ending in a separator, or empty when the player
+// has no directory of their own. It is kept here rather than in the class so that the file
+// classes, which nearly every part of the game includes, need no standard library header.
+static std::string UserPath;
 
 
 /// <summary>
@@ -164,38 +168,28 @@ void CDFileClass::Add_Search_Drive(char const * path)
 /// <param name="path">The directory to keep the player's own files in.</param>
 void CDFileClass::Set_User_Path(char const * path)
 {
-	if (UserPath != NULL) {
-		free((char *)UserPath);
-		UserPath = NULL;
-	}
+	UserPath.clear();
 
 	if (path == NULL || *path == '\0') return;
 
-	char terminated[MAX_PATH];
+	UserPath = path;
 
-	// A directory with no room left for a trailing separator cannot become half of a
-	// pathname, so it is refused rather than kept in a form nothing can be appended to.
-	if (strlen(path) + 1 >= sizeof(terminated)) return;
-
-	strcpy(terminated, path);
-	switch (terminated[strlen(terminated)-1]) {
+	switch (UserPath[UserPath.length()-1]) {
 		case ':':
 		case '/':
 		case '\\':
 			break;
 
 		default:
-			strcat(terminated, "\\");
+			UserPath += '\\';
 			break;
 	}
-
-	UserPath = strdup(terminated);
 }
 
 
 char const * CDFileClass::User_Path(void)
 {
-	return(UserPath);
+	return(UserPath.empty() ? NULL : UserPath.c_str());
 }
 
 
@@ -222,11 +216,11 @@ bool CDFileClass::Has_Directory(char const * filename)
 /// own, when the caller has already named one, or when the two will not make one pathname.</returns>
 bool CDFileClass::User_Path_For(char const * filename, char * buffer, int size)
 {
-	if (UserPath == NULL || filename == NULL) return(false);
+	if (UserPath.empty() || filename == NULL) return(false);
 	if (Has_Directory(filename)) return(false);
-	if ((int)(strlen(UserPath) + strlen(filename)) >= size) return(false);
+	if ((int)(UserPath.length() + strlen(filename)) >= size) return(false);
 
-	strcpy(buffer, UserPath);
+	strcpy(buffer, UserPath.c_str());
 	strcat(buffer, filename);
 	return(true);
 }
