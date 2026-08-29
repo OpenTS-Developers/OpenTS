@@ -310,25 +310,6 @@ std::string User_File_Write_Name(char const * filename)
 }
 
 
-std::string User_File_Read_Name(char const * filename)
-{
-	if (UserDirectory.empty()) {
-		return(filename);
-	}
-
-	std::string const path = UserDirectory + filename;
-	if (RawFileClass(path.c_str()).Is_Available()) {
-		return(path);
-	}
-
-	/*
-	 * A game only just pointed at a user directory still finds what it wrote beside itself,
-	 * so a player keeps the settings and the saved games they already had.
-	 */
-	return(filename);
-}
-
-
 static void Scan_Folder(char const * prefix, char const * pattern, std::vector<std::string> & names)
 {
 	std::string const search = std::string(prefix) + pattern;

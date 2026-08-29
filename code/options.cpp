@@ -68,7 +68,6 @@
 #include "command.h"
 #include "dbgprint.h"
 #include "dsurface.h"
-#include "gamedirs.h"
 #include "globals.h"
 #include "init.h"
 #include "ipxmgr.h"
@@ -442,8 +441,7 @@ void OptionsClass::Load_Settings(void)
  *=============================================================================================*/
 void OptionsClass::Save_Settings (void)
 {
-	std::string const path = User_File_Write_Name(CONFIG_FILE_NAME);
-	RawFileClass file(path.c_str());
+	CCFileClass file(CONFIG_FILE_NAME);
 
 	DebugString("Saving game settings\n");
 
@@ -616,8 +614,7 @@ BOOL CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARA
 							ini.Put_Int("Hotkey", cmd->Get_Unique_Name(), key);
 						}
 
-						std::string const path = User_File_Write_Name("Keyboard.ini");
-						RawFileClass file(path.c_str());
+						CDFileClass file("Keyboard.ini");
 						ini.Save(file, false);
 						*retval = IDOK;
 						return(TRUE);
@@ -672,8 +669,7 @@ BOOL CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARA
 							DebugString("Deleting users KEYBOARD.INI\n");
 							// Only the player's own file is discarded; the defaults a
 							// deployment ships are what the reset falls back on.
-							std::string const path = User_File_Write_Name("KEYBOARD.INI");
-							RawFileClass file(path.c_str());
+							CCFileClass file("KEYBOARD.INI");
 							file.Delete();
 							Init_Hotkeys();
 							SendMessage(window, HKD_REINIT, 0, 0);

@@ -15,7 +15,6 @@
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "gamedirs.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ipxmgr.h"
@@ -1484,8 +1483,7 @@ void Receive_Random_Map_Preview(void)
 	}
 
 	DebugString("Loading the compressed preview image\n");
-	std::string const preview_path = User_File_Read_Name(preview_name);
-	RawFileClass file(preview_path.c_str());
+	CDFileClass file(preview_name);
 	int size = file.Size();
 	char * buffer = new char[size];
 	file.Read(buffer, size);
@@ -1634,8 +1632,7 @@ void Send_Preview_To_Guests(void)
 
 					DebugString("Compressed preview image is %d bytes\n", comp_size);
 
-					std::string const preview_path = User_File_Write_Name("Preview.bin");
-					RawFileClass file(preview_path.c_str());
+					CDFileClass file("Preview.bin");
 					if (file.Is_Available()) {
 						file.Delete();
 					}

@@ -562,12 +562,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		Init_Search_Folders();
 
 		// The recording's name was settled during static initialization, before there was
-		// anywhere for a player's files to go. It is not searched for.
-		Session.RecordFile.Searching(false);
-		Session.RecordFile.Set_Name(User_File_Write_Name("RECORD.BIN").c_str());
+		// anywhere for a player's files to go. Naming it again settles it where it belongs.
+		Session.RecordFile.Set_Name("RECORD.BIN");
 
-		std::string const config_path = User_File_Read_Name(CONFIG_FILE_NAME);
-		RawFileClass *cfile = new RawFileClass(config_path.c_str());
+		CDFileClass *cfile = new CDFileClass(CONFIG_FILE_NAME);
 
 		ConfigINI.Load(*cfile, false);
 		Options.ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", Options.ScreenWidth);
@@ -672,13 +670,11 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		*/
 		if (Special.IsFromInstall == true) {
 			ConfigINI.Put_Bool("Intro", "PlayIntro", false);
-			cfile->Close();
 
-			// Written where the player's files belong, which is not necessarily where
-			// they were read from.
-			std::string const settings_path = User_File_Write_Name(CONFIG_FILE_NAME);
-			RawFileClass settings(settings_path.c_str());
-			ConfigINI.Save(settings, false);
+			// Left closed, so that saving opens it for writing. Reopening it here for
+			// reading gave the save a handle it could not write through.
+			cfile->Close();
+			ConfigINI.Save(*cfile, false);
 		}
 
 		cfile->Close();

@@ -31,14 +31,10 @@ void Init_Search_Folders(void);
 char const * Game_Directory_Error(void);
 
 /*
- * Where a file the game itself writes belongs, and where one should be read from. The two
- * differ while a player still has settings and saved games beside the executable: those
- * are read where they are, and written where they now belong.
- *
- * A file object built from one of these keeps the pointer it is given rather than copying
- * the name, so hold the string for as long as the file object lives.
+ * Where a file the game itself writes belongs. The file classes place their own files, so
+ * this is for the few things that never reach them: structured storage, and the directory
+ * searches and disk queries the game makes of Windows directly.
  */
-std::string User_File_Read_Name(char const * filename);
 std::string User_File_Write_Name(char const * filename);
 
 std::vector<std::string> Parse_Search_Folders(char const * list);

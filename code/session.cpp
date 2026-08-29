@@ -56,7 +56,7 @@
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "gamedirs.h"
+#include "gamedirs.h"		// for Search_Files.
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language\language.h"
@@ -602,8 +602,7 @@ bool SessionClass::Log_To_File(FILE *out)
  *=========================================================================*/
 void SessionClass::Write_MultiPlayer_Settings(void)
 {
-	std::string const path = User_File_Write_Name(CONFIG_FILE_NAME);
-	RawFileClass file(path.c_str());
+	CDFileClass file(CONFIG_FILE_NAME);
 	{
 		// Save the player's last-used Handle & Color
 		ConfigINI.Put_Int("MultiPlayer", "Color", (int)PrefColor);
