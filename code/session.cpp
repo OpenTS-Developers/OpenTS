@@ -65,6 +65,7 @@
 #include "rules.h"
 #include "savestream.h"
 #include "scenario.h"
+#include "spawner.h"
 #include "special.h"
 #include "wonline.h"
 #include "xstraw.h"
@@ -284,7 +285,11 @@ SessionClass::~SessionClass(void)
 void SessionClass::One_Time(void)
 {
 	//Read_MultiPlayer_Settings();
-	Read_Scenario_Descriptions();
+
+	// A client-launched game names its scenario outright and never shows the map list.
+	if (!Spawner_Is_Requested()) {
+		Read_Scenario_Descriptions();
+	}
 
 	UniqueID = Compute_Unique_ID();
 	DebugString("Session one time init. UniqueID is %08x\n", UniqueID);

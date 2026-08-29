@@ -152,6 +152,7 @@
 #include "scheme.h"
 #include "script.h"
 #include "session.h"
+#include "spawner.h"
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
@@ -383,18 +384,21 @@ int Init_Game(int , char * [])
 	/*
 	**	Play the startup animation.
 	*/
-	if (Special.IsFromInstall == true) {
-		DebugString("Playing first time intro sequence.\n");
-		Play_Movie("EVA.VQA", THEME_NONE, false);
-	}
+	// A client launching straight into a game expects the handoff, not the trailers.
+	if (!Spawner_Is_Requested()) {
+		if (Special.IsFromInstall == true) {
+			DebugString("Playing first time intro sequence.\n");
+			Play_Movie("EVA.VQA", THEME_NONE, false);
+		}
 
-	DebugString("Playing startup movies.\n");
-	Play_Movie("WWLOGO.VQA", THEME_NONE);
-	if (!Get_New_Menu()->MixFile) {
-		if (CCFileClass("FS_TITLE.VQA").Is_Available() == true) {
-			Play_Movie("FS_TITLE.VQA", THEME_NONE, false);
-		} else {
-			Play_Movie("STARTUP.VQA", THEME_NONE, false);
+		DebugString("Playing startup movies.\n");
+		Play_Movie("WWLOGO.VQA", THEME_NONE);
+		if (!Get_New_Menu()->MixFile) {
+			if (CCFileClass("FS_TITLE.VQA").Is_Available() == true) {
+				Play_Movie("FS_TITLE.VQA", THEME_NONE, false);
+			} else {
+				Play_Movie("STARTUP.VQA", THEME_NONE, false);
+			}
 		}
 	}
 
@@ -1122,6 +1126,19 @@ restart:
 			}
 		}
 
+		/*
+		 * A client-requested launch takes the place of the menu, once. A spawned match that
+		 * has ended, or a launch that was refused, answers false so the process leaves and
+		 * the client sees it go.
+		 */
+		if (Spawner_Is_Requested()) {
+			if (!Spawner_Prepare(gameloaded)) {
+				return(false);
+			}
+			process = false;
+			Theme.Stop(true);
+		}
+
 		while (process) {
 
 			/*
@@ -1816,6 +1833,12 @@ bool Parse_Command_Line(int argc, char * argv[])
 		*/
 		if (strstr(string, "-CD")) {
 			CCFileClass::Set_Search_Drives(&string[3]);
+			continue;
+		}
+
+		// A client asking the game to launch what SPAWN.INI describes.
+		if (stricmp(string, "-SPAWN") == 0) {
+			Spawner_Request();
 			continue;
 		}
 
