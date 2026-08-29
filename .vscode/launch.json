@@ -1,9 +1,4 @@
 {
-  // The builds copy the exe and PDB into Run/, and the game runs with Run/ as
-  // its working directory.
-  // - F5 runs the selected config with the debugger attached.
-  // - Ctrl+F5 runs the same config with no debugger attached (plain launch).
-  // - "Attach to running OpenTS" attaches to a game already running.
   "version": "0.2.0",
   "configurations": [
     {
