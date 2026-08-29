@@ -75,6 +75,31 @@ void Write_File(std::string const & path, char const * contents)
 }
 
 
+std::string Read_File(std::string const & path)
+{
+	RawFileClass file(path.c_str());
+
+	if (!file.Is_Available()) {
+		return(std::string());
+	}
+
+	int const size = file.Size();
+	std::string contents(size, '\0');
+
+	file.Open(FileClass::READ);
+	file.Read(contents.data(), size);
+	file.Close();
+
+	return(contents);
+}
+
+
+bool File_Exists(std::string const & path)
+{
+	return(GetFileAttributes(path.c_str()) != INVALID_FILE_ATTRIBUTES);
+}
+
+
 void Make_Directory(std::string const & path)
 {
 	CreateDirectory(path.c_str(), NULL);
@@ -301,6 +326,145 @@ void Test_Long_Names(void)
 }
 
 
+/*
+ * The file layer places what the game writes and finds what it reads. These are the rules a
+ * caller never states, so they are checked here rather than at any one of them.
+ */
+void Test_The_File_Layer_Places_Written_Files(void)
+{
+	Reset();
+	Set_User_Directory((Root + "\\User\\Own").c_str());
+	Apply_Game_Directories();
+	Init_Search_Folders();
+
+	std::string const own = Root + "\\User\\Own\\";
+
+	CDFileClass written("OWN.DAT");
+	written.Open(FileClass::WRITE);
+	written.Write("mine", 4);
+	written.Close();
+
+	Check(std::string(written.File_Name()) == own + "OWN.DAT", "a written file is named in the user directory");
+	Check(File_Exists(own + "OWN.DAT"), "a written file is in the user directory");
+	Check(!File_Exists(Root + "\\OWN.DAT"), "a written file is not beside the game");
+
+	/*
+	 * A second object, made once both copies exist, so that what answers is the search and
+	 * not the object that did the writing.
+	 */
+	Write_File(Root + "\\MIX\\SHARED.DAT", "shipped");
+	Write_File(own + "SHARED.DAT", "own");
+
+	CDFileClass shared("SHARED.DAT");
+	Check(Read_File(shared.File_Name()) == "own", "a read prefers the player's own copy");
+
+	// A created file is read back from where it was created, which is what a game storing
+	// its progress does every time it starts.
+	CDFileClass progress("PROGRESS.INI");
+	Check(!progress.Is_Available(), "a file the player has never had is not there yet");
+	progress.Create();
+	progress.Close();
+
+	CDFileClass reopened("PROGRESS.INI");
+	Check(reopened.Is_Available(), "a created file is found again");
+	Check(std::string(reopened.File_Name()) == own + "PROGRESS.INI", "a created file is found in the user directory");
+}
+
+
+void Test_The_File_Layer_Deletes_Only_The_Player_Copy(void)
+{
+	Reset();
+	Set_User_Directory((Root + "\\User\\Own").c_str());
+	Apply_Game_Directories();
+	Init_Search_Folders();
+
+	std::string const own = Root + "\\User\\Own\\";
+
+	Write_File(Root + "\\MIX\\GONE.DAT", "shipped");
+	Write_File(own + "GONE.DAT", "own");
+
+	CDFileClass discard("GONE.DAT");
+	discard.Delete();
+
+	Check(!File_Exists(own + "GONE.DAT"), "the player's own copy is thrown away");
+	Check(File_Exists(Root + "\\MIX\\GONE.DAT"), "the copy a deployment ships is left alone");
+
+	CDFileClass again("GONE.DAT");
+	Check(Read_File(again.File_Name()) == "shipped", "what a deployment ships answers once the player's copy is gone");
+}
+
+
+void Test_A_Name_With_A_Directory_Is_Left_Alone(void)
+{
+	Reset();
+	Set_User_Directory((Root + "\\User\\Own").c_str());
+	Apply_Game_Directories();
+
+	CDFileClass rooted("MIX\\ROOTED.DAT");
+	rooted.Open(FileClass::WRITE);
+	rooted.Write("here", 4);
+	rooted.Close();
+
+	Check(std::string(rooted.File_Name()) == "MIX\\ROOTED.DAT", "a name with a directory keeps it");
+	Check(File_Exists(Root + "\\MIX\\ROOTED.DAT"), "a name with a directory is written where it says");
+	Check(!File_Exists(Root + "\\User\\Own\\ROOTED.DAT"), "a name with a directory is not moved");
+}
+
+
+void Test_Placing_A_File_Is_Repeatable(void)
+{
+	Reset();
+	Set_User_Directory((Root + "\\User\\Own").c_str());
+	Apply_Game_Directories();
+
+	CDFileClass file("AGAIN.DAT");
+	file.Open(FileClass::WRITE);
+	file.Close();
+	std::string const once = file.File_Name();
+
+	file.Open(FileClass::WRITE);
+	file.Close();
+
+	Check(std::string(file.File_Name()) == once, "opening a file for writing twice names it the same place");
+
+	// The buffered path opens the file a second time itself, with read access added.
+	CDFileClass buffered("BUFFERED.DAT");
+	buffered.Cache(1024);
+	buffered.Open(FileClass::WRITE);
+	buffered.Write("cached", 6);
+	buffered.Close();
+
+	Check(File_Exists(Root + "\\User\\Own\\BUFFERED.DAT"), "a buffered write lands in the user directory");
+}
+
+
+void Test_Without_A_User_Directory_Nothing_Moves(void)
+{
+	Reset();
+	Init_Search_Folders();
+
+	Write_File(Root + "\\MIX\\STILL.DAT", "shipped");
+
+	CDFileClass written("STILL.DAT");
+	written.Open(FileClass::WRITE);
+	written.Write("here", 4);
+	written.Close();
+
+	Check(std::string(written.File_Name()) == "STILL.DAT", "a written file keeps its plain name");
+	Check(File_Exists(Root + "\\STILL.DAT"), "a written file lands beside the game");
+	Check(Read_File(Root + "\\MIX\\STILL.DAT") == "shipped", "a searched folder's copy is untouched");
+
+	CDFileClass discard("STILL.DAT");
+	discard.Delete();
+
+	Check(!File_Exists(Root + "\\STILL.DAT"), "a delete takes the copy beside the game");
+	Check(File_Exists(Root + "\\MIX\\STILL.DAT"), "a delete leaves the searched folder's copy");
+
+	CDFileClass shipped("STILL.DAT");
+	Check(std::string(shipped.File_Name()) == "MIX\\STILL.DAT", "a read still falls through to the searched folders");
+}
+
+
 bool Make_Root(void)
 {
 	char temp[MAX_PATH];
@@ -355,6 +519,11 @@ int main(void)
 	Test_Search_Files();
 	Test_Writes_Do_Not_Search();
 	Test_Long_Names();
+	Test_The_File_Layer_Places_Written_Files();
+	Test_The_File_Layer_Deletes_Only_The_Player_Copy();
+	Test_A_Name_With_A_Directory_Is_Left_Alone();
+	Test_Placing_A_File_Is_Repeatable();
+	Test_Without_A_User_Directory_Nothing_Moves();
 
 	Reset();
 	Remove_Root();
