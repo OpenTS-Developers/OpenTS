@@ -278,7 +278,7 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 
 /// <summary>
 /// The difficulty a seat is played at, given the one it asked for.
-/// A client may offer more easy settings than the game holds; the gentlest one the game has
+/// A client may offer more easy settings than the game holds; the easiest one the game has
 /// is what any easier request comes to. A seat asking for nothing keeps the session default.
 /// </summary>
 /// <param name="asked">The difficulty the launch file asked for.</param>

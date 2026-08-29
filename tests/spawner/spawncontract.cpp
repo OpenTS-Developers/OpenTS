@@ -526,7 +526,7 @@ int main(void)
 		Check(!Judge(past_difficulty, sizeof(past_difficulty) - 1, 2, 8, fault),
 			"a difficulty naming none is refused");
 
-		char const gentle_difficulty[] =
+		char const easy_difficulty[] =
 			"[Settings]\n"
 			"Name=Commander\n"
 			"Side=0\n"
@@ -535,13 +535,13 @@ int main(void)
 			"\n"
 			"[HouseHandicaps]\n"
 			"Multi2=6\n";
-		Check(Judge(gentle_difficulty, sizeof(gentle_difficulty) - 1, 2, 8, fault),
-			"a difficulty gentler than the game holds is played, not refused");
+		Check(Judge(easy_difficulty, sizeof(easy_difficulty) - 1, 2, 8, fault),
+			"a difficulty easier than the game holds is played, not refused");
 
 		Check(SpawnerConfigClass::Playable_Handicap(-1) == -1 && SpawnerConfigClass::Playable_Handicap(0) == 0 &&
 			SpawnerConfigClass::Playable_Handicap(2) == 2 && SpawnerConfigClass::Playable_Handicap(3) == 0 &&
 			SpawnerConfigClass::Playable_Handicap(6) == 0,
-			"an easier setting than the game has comes to the gentlest it has");
+			"an easier setting than the game has comes to the easiest it has");
 
 		char const past_seats[] =
 			"[Settings]\n"

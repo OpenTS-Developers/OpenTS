@@ -96,8 +96,8 @@ when it asks for more computer players than there are seats, names a country or 
 loaded rules do not have, names a difficulty that is not one, allies a seat with one the
 match does not hold, or asks for a seat that watches rather than plays.
 
-A difficulty gentler than the three the game has is not refused: the seat is played at the
-gentlest one the game does have.
+A difficulty easier than the three the game has is not refused: the seat is played at the
+easiest one the game does have.
 
 ## What the game does not take from a launch file
 
