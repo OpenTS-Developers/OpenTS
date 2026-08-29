@@ -1775,6 +1775,17 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:spawn
+  route_id: spawn
+  kind: launch
+  title: Client launch
+  description: Launches the game SPAWN.INI describes, in place of the startup movies and the menu.
+  audience: player
+  availability: *id001
+  syntax: -SPAWN
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:tournament-time
   route_id: tournament-time
   kind: launch

@@ -474,6 +474,14 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-CD' }
+  - id: launch:spawn
+    title: Client launch
+    syntax: -SPAWN
+    description: Launches the game SPAWN.INI describes, in place of the startup movies and the menu.
+    audience: player
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-SPAWN' }
   - id: launch:tournament-time
     title: Tournament time limit
     syntax: -TIME=<minutes>
