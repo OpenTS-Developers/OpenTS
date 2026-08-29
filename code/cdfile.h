@@ -59,8 +59,10 @@ class CDFileClass : public BufferIOFileClass
 		void Searching(int on) {IsDisabled = !on;};
 
 		static int Set_Search_Drives(char * pathlist);
-		static void Add_Search_Drive(char *path);
+		static void Add_Search_Drive(char const * path);
+		static void Add_Search_Drive_Front(char const * path);
 		static void Clear_Search_Drives(void);
+		static char const * Search_Path(int index);
 
 		static bool Find_First_File(char *buffer);
 		static bool Find_Next_File(char *buffer);

@@ -118,6 +118,13 @@ int CDFileClass::Set_Search_Drives(char * pathlist)
 
 			char path[MAX_PATH];						// Working path buffer.
 
+			// A directory with no room left for a trailing separator cannot become half
+			// of a pathname, so it is passed over.
+			if (strlen(ptr) + 1 >= sizeof(path)) {
+				ptr = strtok(NULL, ";");
+				continue;
+			}
+
 			/*
 			**	Fixup the path to be legal. Legal is defined as all that is necessary to
 			**	create a pathname is to append the actual filename submitted to the
@@ -166,7 +173,7 @@ int CDFileClass::Set_Search_Drives(char * pathlist)
  * HISTORY:                                                                                    *
  *    5/22/96 10:12AM ST : Created                                                             *
  *=============================================================================================*/
-void CDFileClass::Add_Search_Drive(char *path)
+void CDFileClass::Add_Search_Drive(char const * path)
 {
 	SearchDriveType *srch;					// Working pointer to path object.
 	/*
@@ -193,6 +200,41 @@ void CDFileClass::Add_Search_Drive(char *path)
 		}
 		chain->Next = srch;
 	}
+}
+
+
+/// <summary>
+/// Adds a path to the front of the search chain, so that it is tried before every path
+/// already added. The current directory is still examined first.
+/// </summary>
+/// <param name="path">The path to search before all the others.</param>
+void CDFileClass::Add_Search_Drive_Front(char const * path)
+{
+	SearchDriveType * srch = new SearchDriveType;
+
+	srch->Path = strdup(path);
+	srch->Next = First;
+
+	First = srch;
+}
+
+
+/// <summary>
+/// Reports the search path at a position in the chain, counting from zero in the order the
+/// paths are tried. This is how a scan covers the same folders a file open would.
+/// </summary>
+/// <param name="index">The position in the search chain.</param>
+/// <returns>The path at that position, or NULL once the end of the chain is passed.</returns>
+char const * CDFileClass::Search_Path(int index)
+{
+	SearchDriveType const * srch = First;
+
+	while (srch != NULL && index > 0) {
+		srch = (SearchDriveType const *)srch->Next;
+		index--;
+	}
+
+	return(srch != NULL ? srch->Path : NULL);
 }
 
 
@@ -257,17 +299,22 @@ char const * CDFileClass::Set_Name(char const *filename)
 	while (srch) {
 		char path[_MAX_PATH];
 
-		/*
-		**	Build a pathname to search for.
-		*/
-		strcpy(path, srch->Path);
-		strcat(path, filename);
+		// A directory and a name that will not make one pathname between them are passed
+		// over rather than truncated into a different name.
+		if (strlen(srch->Path) + strlen(filename) < sizeof(path)) {
 
-		// Check this path. Is_Available returns false when the file cannot be opened,
-		// allowing the search to continue with the next configured path.
-		BASECLASS::Set_Name(path);
-		if (BASECLASS::Is_Available()) {
-			return(File_Name());
+			/*
+			**	Build a pathname to search for.
+			*/
+			strcpy(path, srch->Path);
+			strcat(path, filename);
+
+			// Check this path. Is_Available returns false when the file cannot be opened,
+			// allowing the search to continue with the next configured path.
+			BASECLASS::Set_Name(path);
+			if (BASECLASS::Is_Available()) {
+				return(File_Name());
+			}
 		}
 
 		/*
@@ -323,7 +370,7 @@ int CDFileClass::Open(char const *filename, int rights)
 	/*
 	**	If writing is requested, then multiple drive searching is not performed.
 	*/
-	if (IsDisabled || rights == WRITE) {
+	if (IsDisabled || (rights & WRITE) != 0) {
 
 		BASECLASS::Set_Name( filename );
 		return( BASECLASS::Open( rights ) );
