@@ -29,4 +29,4 @@ Do not place game data in the CMake build directory. The build copies OpenTS exe
 
 `-DATADIR=<path>` reads the game's data from the directory named instead of requiring it beside the executable, and `-USERDIR=<path>` keeps what the game writes — settings, saved games, recordings and downloaded maps — in a directory of its own. Together they let one copy of the data serve several people, each writing only to their own directory and reading their own files ahead of the shared ones.
 
-The data may be sorted into folders rather than left in one directory. Without any configuration the game also searches `INI` and `MIX`; [`OPENTS.INI`](/formats/opents-ini/) names other folders and the order they are searched in.
+The data may be sorted into folders rather than left in one directory. Without any configuration the game also searches `INI`, `MIX` and `Maps`; [`OPENTS.INI`](/formats/opents-ini/) names other folders and the order they are searched in.

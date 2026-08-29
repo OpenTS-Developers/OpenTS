@@ -144,7 +144,9 @@ void Test_Defaults(void)
 		"with no configuration the INI folder is searched");
 	Check(CDFileClass::Search_Path(1) != NULL && std::string(CDFileClass::Search_Path(1)) == "MIX\\",
 		"with no configuration the MIX folder is searched");
-	Check(CDFileClass::Search_Path(2) == NULL, "nothing else is searched");
+	Check(CDFileClass::Search_Path(2) != NULL && std::string(CDFileClass::Search_Path(2)) == "Maps\\",
+		"with no configuration the Maps folder is searched");
+	Check(CDFileClass::Search_Path(3) == NULL, "nothing else is searched");
 }
 
 

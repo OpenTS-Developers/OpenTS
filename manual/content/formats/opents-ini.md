@@ -20,12 +20,12 @@ A distribution ships this file beside its game data to say where that data is ke
 
 ```ini title="OPENTS.INI"
 [Paths]
-SearchPaths=INI,MIX,Addons
+SearchPaths=INI,MIX,Maps,Addons
 ```
 
 `SearchPaths` names folders separated by commas, which the game searches in the order written. The whitespace around a name is dropped, a trailing separator is supplied if the name lacks one, and a folder named twice is searched once. Commas separate the entries because a semicolon opens a comment on the line it appears in.
 
-Without the file, and without the key, the game behaves as though `SearchPaths=INI,MIX` were written: a distribution can sort its files into `INI` and `MIX` folders and ship no configuration at all. A written list **replaces** that default rather than adding to it, so a deployment that wants the default folders as well as its own names them again.
+Without the file, and without the key, the game behaves as though `SearchPaths=INI,MIX,Maps` were written: a distribution can sort its files into `INI`, `MIX` and `Maps` folders and ship no configuration at all. A written list **replaces** that default rather than adding to it, so a deployment that wants the default folders as well as its own names them again.
 
 The game's own directory is examined before any listed folder, so naming it adds nothing. Naming only it, as `SearchPaths=.`, is how a deployment asks for no other folder to be searched — an entry with nothing after the equals sign is passed over by the file reader and would leave the default in force.
 

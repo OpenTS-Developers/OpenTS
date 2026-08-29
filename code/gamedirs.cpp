@@ -29,7 +29,7 @@ static std::string UserDirectory;
  * The folders a deployment's files are looked for in when no configuration names any. A
  * configuration's list replaces this rather than adding to it.
  */
-static char const * const DefaultSearchFolders = "INI,MIX";
+static char const * const DefaultSearchFolders = "INI,MIX,Maps";
 
 static char const * const ConfigName = "OPENTS.INI";
 

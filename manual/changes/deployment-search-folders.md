@@ -4,7 +4,8 @@ category: feature
 release: 0.2.0
 breaking: true
 migration:
-- Rename an `INI` or `MIX` directory beside the game whose files are not meant to be loaded, or ship an `OPENTS.INI` naming only the game's own directory as `SearchPaths=.`.
+- Rename an `INI`, `MIX` or `Maps` directory beside the game whose files are not meant to be loaded, or ship an `OPENTS.INI` naming only the game's own directory as `SearchPaths=.`.
+- Check a `Maps` directory in particular, since the maps it holds now appear in the game's own lists.
 targets:
 - type: format
   id: opents-ini
@@ -13,8 +14,8 @@ credit: [ZivDero]
 ---
 
 A distribution can sort its files into folders and name them in an `OPENTS.INI`
-beside its game data. With no such file the game searches `INI` and `MIX`,
-so a deployment can sort its files and ship no configuration at all.
+beside its game data. With no such file the game searches `INI`, `MIX` and
+`Maps`, so a deployment can sort its files and ship no configuration at all.
 
 Wildcard searches now cover every folder the game searches rather than stopping
 at the first one holding a match. Rules files, battle files, map packets, loose
