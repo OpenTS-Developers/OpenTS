@@ -2483,12 +2483,6 @@ static void Create_Units(bool official)
 	int max_value = unit_count * average_cost;
 
 	/*
-	**	Build a list of the valid waypoints. This normally shouldn't be
-	**	necessary because the scenario level designer should have assigned
-	**	valid locations to the first N waypoints, but just in case, this
-	**	loop verifies that.
-	*/
-	/*
 	 * A house only asks for a position by number when a session source chose one for it,
 	 * and that is what decides whether the numbers have to keep their identity.
 	 */
@@ -2500,6 +2494,12 @@ static void Create_Units(bool official)
 		}
 	}
 
+	/*
+	**	Build a list of the valid waypoints. This normally shouldn't be
+	**	necessary because the scenario level designer should have assigned
+	**	valid locations to the first N waypoints, but just in case, this
+	**	loop verifies that.
+	*/
 	DynamicVectorClass<Cell> waypts = Build_Start_Waypoint_List(official, choices);
 	bool taken[START_WAYPOINT_COUNT * 2];
 	for (int index = 0; index < ARRAY_SIZE(taken); index++) {

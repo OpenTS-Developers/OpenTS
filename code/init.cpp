@@ -384,7 +384,6 @@ int Init_Game(int , char * [])
 	/*
 	**	Play the startup animation.
 	*/
-	// A client launching straight into a game expects the handoff, not the trailers.
 	if (!Spawner_Is_Requested()) {
 		if (Special.IsFromInstall == true) {
 			DebugString("Playing first time intro sequence.\n");
