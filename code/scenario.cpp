@@ -164,14 +164,6 @@
 CDTimerClass<SystemTimerClass> ScenUnusedTimer;
 
 
-/*
- * The start positions a multiplayer map declares, and the highest a session source may name
- * a seat's own position by. A launch file's chosen positions are read against this same
- * count, so the two have to agree.
- */
-static int const START_WAYPOINT_COUNT = 8;
-
-
 static void Remove_AI_Players(void);
 static void Create_Units(bool official);
 static Cell const Clip_Scatter(Cell const & cell, int maxdist);
@@ -2378,7 +2370,7 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool ke
 
 	if (keep_identity) {
 		int usable = 0;
-		for (int waycount = 0; waycount < START_WAYPOINT_COUNT; waycount++) {
+		for (int waycount = 0; waycount < MAX_PLAYERS; waycount++) {
 			bool declared = Scen->Is_Valid_Waypoint(waycount);
 			waypts.Add(declared ? Scen->Get_Waypoint_Cell(waycount) : CELL_NONE);
 			if (declared) {
@@ -2396,7 +2388,7 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool ke
 	}
 
 	int num_waypts = 0;
-	for (int i = 0; i < START_WAYPOINT_COUNT; i++) {
+	for (int i = 0; i < MAX_PLAYERS; i++) {
 		if (Scen->Is_Valid_Waypoint(i)) {
 			num_waypts++;
 		} else {
@@ -2412,7 +2404,7 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool ke
 	*/
 	int look_for = std::max(num_waypts, Session.Players.Count()+Session.Options.AIPlayers);
 	if (!official) {
-		look_for = START_WAYPOINT_COUNT;
+		look_for = MAX_PLAYERS;
 	}
 
 	for (int waycount = 0; waycount < look_for; waycount++) {
@@ -2505,7 +2497,7 @@ static void Create_Units(bool official)
 	**	loop verifies that.
 	*/
 	DynamicVectorClass<Cell> waypts = Build_Start_Waypoint_List(official, choices);
-	bool taken[START_WAYPOINT_COUNT * 2];
+	bool taken[MAX_PLAYERS * 2];
 	for (int index = 0; index < ARRAY_SIZE(taken); index++) {
 		taken[index] = choices && index < waypts.Count() && waypts[index] == CELL_NONE;
 	}
