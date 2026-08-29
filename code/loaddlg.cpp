@@ -44,6 +44,7 @@
 #include "campaign.h"
 #include "conquer.h"
 #include "data.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "houstype.h"
 #include "init.h"
@@ -661,9 +662,9 @@ void LoadOptionsClass::Fill_List(HWND window)
 	sprintf(buffer, "*.%3s", Extension);
 
 	/*
-	**	Find all savegame files
+	**	Find all savegame files, where this player's own files are kept.
 	*/
-	HANDLE hFind = FindFirstFile(buffer, &ff);
+	HANDLE hFind = FindFirstFile(User_File_Write_Name(buffer).c_str(), &ff);
 	fdata = NULL;
 
 	if (hFind != INVALID_HANDLE_VALUE) {
@@ -776,7 +777,7 @@ bool LoadOptionsClass::Files_Present(void)
 	sprintf(pattern, "*.%3s", Extension);
 
 	WIN32_FIND_DATAA find_data;
-	HANDLE hFind = FindFirstFile(pattern, &find_data);
+	HANDLE hFind = FindFirstFile(User_File_Write_Name(pattern).c_str(), &find_data);
 
 	if (hFind != INVALID_HANDLE_VALUE) {
 		while (true) {
@@ -881,7 +882,7 @@ bool LoadOptionsClass::Save_File(const char * file_name, const char * descr)
 /// <returns>bool; Was the file deleted?</returns>
 bool LoadOptionsClass::Delete_File(const char * file_name)
 {
-	if (DeleteFile(file_name) == TRUE) {
+	if (DeleteFile(User_File_Write_Name(file_name).c_str()) == TRUE) {
 		return(true);
 	}
 	return(false);

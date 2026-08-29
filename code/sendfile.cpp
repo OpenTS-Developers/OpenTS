@@ -40,6 +40,7 @@
 
 #include "conquer.h"
 #include "dbgprint.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "ini.h"
 #include "ipxmgr.h"
@@ -194,7 +195,8 @@ bool Receive_Remote_File ( char *file_name, unsigned int file_length, bool show_
 
 	DebugString("Receiving download of file %s\n", (const char *)file_name);
 
-	RawFileClass save_file (file_name);
+	std::string const save_path = User_File_Write_Name(file_name);
+	RawFileClass save_file (save_path.c_str());
 
 	/*
 	**	If the file already exists then delete it and re-create it.

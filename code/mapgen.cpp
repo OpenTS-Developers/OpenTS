@@ -29,6 +29,7 @@
 #include "coord.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "gamedirs.h"
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -4379,7 +4380,8 @@ bool MapSeedClass::Save_File(const char * file_name, const char * descr)
 {
 	if (file_name != NULL) {
 		DebugString("Saving random map: %s - %s\n", file_name, descr);
-		CCFileClass file(file_name);
+		std::string const path = User_File_Write_Name(file_name);
+		RawFileClass file(path.c_str());
 		INIClass ini;
 		ini.Put_String("RandomMap", "Description", descr);
 		ini.Put_Int("RandomMap", "Width", Width, 0);

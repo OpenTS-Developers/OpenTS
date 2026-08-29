@@ -58,6 +58,7 @@
 #include "draw.h"
 #include "dsaudio.h"
 #include "dsurface.h"
+#include "gamedirs.h"
 #include "goptions.h"
 #include "houstype.h"
 #include "keyboard.h"
@@ -66,6 +67,7 @@
 #include "mixfile.h"
 #include "movie.h"
 #include "msgloop.h"
+#include "rawfile.h"
 #include "scenario.h"
 #include "session.h"
 #include "shapeset.h"
@@ -382,12 +384,16 @@ void ScoreClass::Presentation(void)
 	x = XPos - FullFont->String_Width(str) / 2 + 84;
 	Alloc_Object(obj = new ScorePrintClass(str, x, YPos + 217, FullFont, false));
 
+	// The hall of fame is the player's own, so it is not looked for in the folders the
+	// shared file object searches.
 	memset(hallfame, 0, sizeof(hallfame));
 	file.Close();
-	file.Set_Name(FAME_FILE_NAME);
-	if (file.Is_Available() == true) {
-		file.Read(hallfame, sizeof(hallfame));
-		file.Close();
+
+	std::string const fame_path = User_File_Read_Name(FAME_FILE_NAME);
+	RawFileClass fame(fame_path.c_str());
+	if (fame.Is_Available() == true) {
+		fame.Read(hallfame, sizeof(hallfame));
+		fame.Close();
 	}
 
 	/*
@@ -448,9 +454,9 @@ void ScoreClass::Presentation(void)
 
 	Keyboard->Clear();
 
-	if (file.Open(FAME_FILE_NAME, FileClass::WRITE)) {
-		file.Write(hallfame, sizeof(hallfame));
-		file.Close();
+	if (fame.Open(User_File_Write_Name(FAME_FILE_NAME).c_str(), FileClass::WRITE)) {
+		fame.Write(hallfame, sizeof(hallfame));
+		fame.Close();
 	}
 
 	Theme.Stop(true);

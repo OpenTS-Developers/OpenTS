@@ -80,6 +80,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "dsaudio.h"
+#include "gamedirs.h"
 #include "gamedlg.h"
 #include "globals.h"
 #include "houstype.h"
@@ -1170,6 +1171,13 @@ unsigned int Disk_Space_Available(void)
 
 	DebugString("Checking available disk space\n");
 
+	/*
+	 * Measured where the game's saved games will actually go, which is not the current
+	 * directory once a player has one of their own.
+	 */
+	std::string const user_directory = User_File_Write_Name("");
+	LPCTSTR const disk = user_directory.empty() ? NULL : user_directory.c_str();
+
 	// Get the free disk space on the drive.
 	// NOTE IML: For Win'95, must query for support for GetDiskFreeSpaceEx before using it - otherwise use GetDiskFreeSpace().
 	HINSTANCE kernel = GetModuleHandle("KERNEL32.DLL");
@@ -1180,7 +1188,7 @@ unsigned int Disk_Space_Available(void)
 			DebugString("Using GetDiskFreeSpaceEx\n");
 
 			// NOTE: This function uses GetDiskFreeSpaceEx() and therefore assumes Win '95 OSR2 or greater.
-			if (!getfreediskspaceex(NULL, &freebytecount, &totalbytecount, &totalfreebytecount)) {
+			if (!getfreediskspaceex(disk, &freebytecount, &totalbytecount, &totalfreebytecount)) {
 				DWORD const error = GetLastError();
 				DebugString("GetDiskFreeSpaceEx failed with error code %d - %s\n", error, Last_Error_Text(error));
 			} else {
@@ -1203,7 +1211,7 @@ unsigned int Disk_Space_Available(void)
 	// QUESTION: SDK docs say that values returned by this function are erroneous if partition > 2Gb.
 	//				 Does that mean that the partition is guaranteed to be <= 2Gb if Ex is not available?
 
-	if (GetDiskFreeSpace(NULL, &sectorspercluster, &bytespersector, &freeclustercount, &totalclustercount)) {
+	if (GetDiskFreeSpace(disk, &sectorspercluster, &bytespersector, &freeclustercount, &totalclustercount)) {
 		diskspace = ((sectorspercluster * bytespersector) / 1024) * freeclustercount;
 		DebugString("Free disk space is %d Mb\n", diskspace / 1024);
 		return(diskspace);

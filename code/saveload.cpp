@@ -73,6 +73,7 @@
 #include "enviro.h"
 #include "factory.h"
 #include "fog.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "goptions.h"
 #include "houstype.h"
@@ -923,11 +924,11 @@ static bool Get_All(IStream *stream, bool save_net)
  *=========================================================================*/
 static bool Save_Game(const char *file_name, char const * descr)
 {
-	WCHAR name[64];
+	WCHAR name[MAX_PATH];
 
 	DebugString("\nSAVING GAME [%s - %s]\n", file_name, descr);
 
-	MultiByteToWideChar(0,0, file_name, -1, name, sizeof(name)/sizeof(WCHAR));
+	MultiByteToWideChar(0,0, User_File_Write_Name(file_name).c_str(), -1, name, sizeof(name)/sizeof(WCHAR));
 
 	/*
 	**	Open the file
@@ -1151,7 +1152,7 @@ bool Is_Multiplayer_Saving_Allowed(void)
  *=========================================================================*/
 bool Load_Game(const char *file_name)
 {
-	WCHAR name[64];
+	WCHAR name[MAX_PATH];
 
 	DebugString("\nLOADING GAME [%s]\n", file_name);
 
@@ -1179,7 +1180,7 @@ bool Load_Game(const char *file_name)
 	**	Open the file
 	*/
 	IStoragePtr storage;
-	MultiByteToWideChar(0,0,file_name, -1, name, (sizeof(name)/sizeof(WCHAR)));
+	MultiByteToWideChar(0,0,User_File_Read_Name(file_name).c_str(), -1, name, (sizeof(name)/sizeof(WCHAR)));
 
 	if (FAILED(StgOpenStorage(name, 0, STGM_SHARE_DENY_WRITE, 0, 0, &storage))) {
 		return(false);
@@ -1323,9 +1324,9 @@ int Load_Misc_Values(IStream * stream)
 bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)
 {
 	IStoragePtr storage;
-	WCHAR wname[64];
+	WCHAR wname[MAX_PATH];
 
-	MultiByteToWideChar(0, 0, name, -1, wname, sizeof(wname) / sizeof(WCHAR));
+	MultiByteToWideChar(0, 0, User_File_Read_Name(name).c_str(), -1, wname, sizeof(wname) / sizeof(WCHAR));
 
 	HRESULT result = StgOpenStorage(wname, NULL, STGM_SHARE_EXCLUSIVE|STGM_READWRITE, NULL, 0, &storage);
 	if (FAILED(result)) {

@@ -26,6 +26,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "dict.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "goptions.h"
 #include "houstype.h"
@@ -746,7 +747,8 @@ void Read_WOL_Settings(void)
 /// </summary>
 void Write_WOL_Settings(void)
 {
-	RawFileClass file(CONFIG_FILE_NAME);
+	std::string const path = User_File_Write_Name(CONFIG_FILE_NAME);
+	RawFileClass file(path.c_str());
 	ConfigINI.Put_Int("WOnline", "AllowPage", g_AllowPage);
 	ConfigINI.Put_Int("WOnline", "AllowFind", g_AllowFind);
 	ConfigINI.Put_Int("WOnline", "LangFilter", g_LangFilter);
