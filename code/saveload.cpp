@@ -1179,9 +1179,9 @@ bool Load_Game(const char *file_name)
 	/*
 	**	Open the file
 	*/
-	// Structured storage does not go through the game's file system, so the file layer is
-	// asked where the save is before the name is handed over.
 	IStoragePtr storage;
+
+	// Structured storage goes straight to Windows, so the file layer locates the save first.
 	MultiByteToWideChar(0,0,CDFileClass(file_name).File_Name(), -1, name, (sizeof(name)/sizeof(WCHAR)));
 
 	if (FAILED(StgOpenStorage(name, 0, STGM_SHARE_DENY_WRITE, 0, 0, &storage))) {
@@ -1328,6 +1328,7 @@ bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)
 	IStoragePtr storage;
 	WCHAR wname[MAX_PATH];
 
+	// Structured storage goes straight to Windows, so the file layer locates the save first.
 	MultiByteToWideChar(0, 0, CDFileClass(name).File_Name(), -1, wname, sizeof(wname) / sizeof(WCHAR));
 
 	HRESULT result = StgOpenStorage(wname, NULL, STGM_SHARE_EXCLUSIVE|STGM_READWRITE, NULL, 0, &storage);
