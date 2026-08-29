@@ -417,6 +417,11 @@ class HouseClass : public AbstractClass
 		DynamicVectorClass<SuperClass *> SuperWeapon;
 
 		/*
+		** Superweapon class currently in targeting mode for house.
+		*/
+		SuperClass * TargetingSW;
+
+		/*
 		**	This is a record of the last building that was built. For buildings that
 		**	were built as a part of scenario creation, it will be the last one
 		**	discovered.

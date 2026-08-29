@@ -355,7 +355,8 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	EnemyArmorForcePrediction(0.33f),
 	EnemyAirForcePrediction(0.33f),
 	EnemyInfantryForcePrediction(0.34f),
-	PowerSurplus(0)
+	PowerSurplus(0),
+	TargetingSW(NULL)
 {
 	int index;
 
@@ -6491,6 +6492,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EnemyAirForcePrediction);
 	stream.Serialize(EnemyInfantryForcePrediction);
 	stream.Serialize(PowerSurplus);
+	stream.Serialize(TargetingSW);
 }
 
 

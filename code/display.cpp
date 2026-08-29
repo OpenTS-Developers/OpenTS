@@ -136,6 +136,7 @@
 #include "smudtype.h"
 #include "sidebar.h"
 #include "suprtype.h"
+#include "super.h"
 #include "surface.h"
 #include "tactical.h"
 #include "tag.h"
@@ -1831,6 +1832,7 @@ void DisplayClass::Mouse_Right_Release(Point2D const & point)
 				} else {
 					if (IsTargettingMode != SUPER_NONE) {
 						IsTargettingMode = SUPER_NONE;
+						PlayerPtr->TargetingSW = NULL;
 					} else {
 						if (IsWaypointMode) {
 							Waypoint_Mode_Control(0);
@@ -2427,10 +2429,18 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 					}
 				}
 
-				SuperWeaponTypeClass *stype = SuperWeaponTypeClass::From_Action(action);
+				SuperWeaponTypeClass *stype;
+				if (PlayerPtr->TargetingSW != NULL) {
+					stype = PlayerPtr->TargetingSW->Class;
+				} else {
+					stype = SuperWeaponTypeClass::From_Action(action);
+				}
+
 				if (stype != NULL) {
 					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, stype->HeapID, cell));
 				}
+
+				PlayerPtr->TargetingSW = NULL;
 			}
 
 			IsTentative = false;
