@@ -293,6 +293,9 @@ void WWMouseClass::Release_Mouse(void)
 		ClipCursor(NULL);
 		if (GetCapture() == Window) ReleaseCapture();
 		while (ShowCursor(TRUE) < 0) {}
+
+		SetCursor(LoadCursor(NULL, IDC_ARROW));
+
 		Show_Mouse();
 	}
 }
