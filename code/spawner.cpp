@@ -245,7 +245,8 @@ static void Spawner_Bind_Options(void)
 	 *   ScrapMetal, ContinueWithoutHumans,
 	 *   PlayMoviesInMultiplayer       - behaviors no part of this game offers yet.
 	 *   CustomLoadScreen,
-	 *   CustomLoadScreenX/Y           - the loading backdrop belongs to the campaign path.
+	 *   CustomLoadScreenX,
+	 *   CustomLoadScreenY             - the loading backdrop belongs to the campaign path.
 	 *   DifficultyName                - shown, never played by.
 	 *   IsCampaign, CampaignID,
 	 *   CampaignDifficulty,

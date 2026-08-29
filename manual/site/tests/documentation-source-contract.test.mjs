@@ -192,3 +192,83 @@ test('Building main-shape Image is additive to the inherited ObjectType Image re
 	], 'Building main-shape selection');
 	assert.doesNotMatch(fetchImage, /\bGraphicName\s*=/);
 });
+
+test('Every field the launch file reader carries is bound or named as unhonored', () => {
+	const header = source('code/spawnerconfig.h');
+	const spawner = source('code/spawner.cpp');
+
+	assert.match(
+		spawner,
+		/Read, not honored/,
+		'the binding step keeps its ledger of fields it deliberately leaves alone',
+	);
+
+	const fields = [];
+	for (const line of header.split('\n')) {
+		const declaration = /^\t{2,3}(?!static |enum |struct |\/)[A-Za-z_][^;(]*?[\s>*&]([A-Za-z_]\w*)\s*(?:=[^;]*)?;\s*$/.exec(line);
+		if (declaration) fields.push(declaration[1]);
+	}
+	assert.ok(fields.length > 30, `expected the reader to carry many fields, found ${fields.length}`);
+
+	for (const field of fields) {
+		assert.match(
+			spawner,
+			new RegExp(String.raw`\b${field}\b`),
+			`${field} is read from a launch file but code/spawner.cpp neither binds it nor names it in the "Read, not honored" ledger`,
+		);
+	}
+});
+
+test('A session node is left to its own constructor rather than zeroed by hand', () => {
+	assert.doesNotMatch(
+		source('code/netdlg2.cpp'),
+		/memset\(who, 0, sizeof\(\*who\)\)/,
+		'zeroing a node by hand would wipe the defaults its constructor sets',
+	);
+});
+
+test('House assignment takes each seat as written before the neutral houses exist', () => {
+	const assign = functionBody(source('code/scenario.cpp'), 'void Assign_Houses(void)');
+
+	assertOrdered(assign, [
+		'housep->SpawnWaypoint = player->Player.SpawnChoice;',
+		'seat->Player.House != -1',
+		'seat->Player.Color != -1',
+		'seat->Player.Handicap >= 0',
+		'housep->SpawnWaypoint = seat->Player.SpawnChoice;',
+		'seat->Player.ID = housep->HeapID;',
+	], 'a seated house takes its country, color, difficulty and start position');
+
+	assertOrdered(assign, [
+		'Seated_Node(seatnum)',
+		'Make_Ally',
+		'HouseTypeClass::From_Name("Neutral")',
+	], 'the alliance table names seats, so it is applied before any house that is not one');
+});
+
+test('A chosen start position keeps its number and is claimed before the game picks', () => {
+	const scenario = source('code/scenario.cpp');
+
+	const build = functionBody(
+		scenario,
+		'static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool keep_identity)',
+	);
+	assertOrdered(build, [
+		'if (keep_identity) {',
+		'waypts.Add(declared ? Scen->Get_Waypoint_Cell(waycount) : CELL_NONE);',
+		'Append_Open_Start_Positions(',
+		'return(waypts);',
+	], 'the numbered list keeps an undeclared position as a hole and appends any shortfall past it');
+
+	const create = functionBody(
+		scenario.slice(scenario.search(/static void Create_Units\(bool official\)\s*\{/)),
+		'static void Create_Units(bool official)',
+	);
+	assertOrdered(create, [
+		'Houses[index]->SpawnWaypoint >= 0',
+		'Build_Start_Waypoint_List(official, choices)',
+		'taken[index] = choices && index < waypts.Count() && waypts[index] == CELL_NONE;',
+		'if (choices && hptr->SpawnWaypoint >= 0',
+		'} else if (numtaken == 0) {',
+	], 'holes are spoken for before the claim, and the claim comes before the game picks');
+});
