@@ -671,8 +671,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		if (Special.IsFromInstall == true) {
 			ConfigINI.Put_Bool("Intro", "PlayIntro", false);
 
-			// Left closed, so that saving opens it for writing. Reopening it here for
-			// reading gave the save a handle it could not write through.
+			// Left closed, so that saving opens it for writing itself.
 			cfile->Close();
 			ConfigINI.Save(*cfile, false);
 		}

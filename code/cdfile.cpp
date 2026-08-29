@@ -49,8 +49,7 @@
 CDFileClass::SearchDriveType * CDFileClass::First = NULL;
 
 // Where this player's own files are kept, ending in a separator, or empty when the player
-// has no directory of their own. It is kept here rather than in the class so that the file
-// classes, which nearly every part of the game includes, need no standard library header.
+// has no directory of their own.
 static std::string UserPath;
 
 
