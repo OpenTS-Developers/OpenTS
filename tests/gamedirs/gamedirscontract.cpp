@@ -394,6 +394,45 @@ void Test_The_File_Layer_Deletes_Only_The_Player_Copy(void)
 }
 
 
+/*
+ * A deployment ships default hotkeys in a folder it searches, and the player saves their own
+ * over the top. Throwing the player's away has to leave the deployment's alone, or the reset
+ * takes with it the very defaults it is meant to fall back on.
+ */
+void Test_Resetting_Keeps_The_Shipped_Default(void)
+{
+	Reset();
+	Set_User_Directory((Root + "\\User\\Own").c_str());
+	Apply_Game_Directories();
+	Init_Search_Folders();
+
+	Write_File(Root + "\\INI\\KEYBOARD.INI", "shipped");
+
+	// A player who has never saved their own asks for the defaults back.
+	CDFileClass untouched("KEYBOARD.INI");
+	Check(std::string(untouched.File_Name()) == "INI\\KEYBOARD.INI",
+		"a player with none of their own reads the shipped default");
+	untouched.Delete();
+	Check(File_Exists(Root + "\\INI\\KEYBOARD.INI"),
+		"a reset with nothing of the player's own leaves the shipped default");
+
+	// And now one who has.
+	Write_File(Root + "\\User\\Own\\KEYBOARD.INI", "mine");
+
+	CDFileClass owned("KEYBOARD.INI");
+	Check(Read_File(owned.File_Name()) == "mine", "the player's own hotkeys are the ones read");
+	owned.Delete();
+
+	Check(!File_Exists(Root + "\\User\\Own\\KEYBOARD.INI"), "a reset throws the player's own away");
+	Check(File_Exists(Root + "\\INI\\KEYBOARD.INI"), "a reset leaves the shipped default");
+
+	CDFileClass fallback("KEYBOARD.INI");
+	Check(Read_File(fallback.File_Name()) == "shipped", "the shipped default answers again after a reset");
+
+	DeleteFile((Root + "\\INI\\KEYBOARD.INI").c_str());
+}
+
+
 void Test_A_Name_With_A_Directory_Is_Left_Alone(void)
 {
 	Reset();
@@ -521,6 +560,7 @@ int main(void)
 	Test_Long_Names();
 	Test_The_File_Layer_Places_Written_Files();
 	Test_The_File_Layer_Deletes_Only_The_Player_Copy();
+	Test_Resetting_Keeps_The_Shipped_Default();
 	Test_A_Name_With_A_Directory_Is_Left_Alone();
 	Test_Placing_A_File_Is_Repeatable();
 	Test_Without_A_User_Directory_Nothing_Moves();
