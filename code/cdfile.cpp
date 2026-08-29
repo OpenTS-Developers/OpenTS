@@ -418,6 +418,21 @@ char const * CDFileClass::Set_Name(char const *filename)
 	filename = Capture_Name(filename);
 
 	/*
+	**	A file this player's own game wrote is the one that answers, whatever a deployment
+	**	ships under the same name.
+	*/
+	if (!IsDisabled) {
+		char path[_MAX_PATH];
+
+		if (User_Path_For(filename, path, sizeof(path))) {
+			BASECLASS::Set_Name(path);
+			if (BASECLASS::Is_Available()) {
+				return(File_Name());
+			}
+		}
+	}
+
+	/*
 	**	Try to find the file in the current directory first. If it can be found, then
 	**	just return with the normal file name setting process. Do the same if there is
 	**	no multi-drive search path.
