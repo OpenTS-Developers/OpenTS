@@ -12,10 +12,10 @@
   search_aliases:
     - Local data path
     - -CD
-  summary: Added the path following -CD to the local file-search list. Replaced by the game data directory and the deployment's own search folders.
+  summary: Added the path following -CD to the local file-search list. The directories the game searches are now named by the data and user directory options and by the deployment's own search folders.
   replacement:
-    type: command
-    id: launch:data-directory
+    type: format
+    id: opents-ini
 - type: key
   id: ModemName
   route: /keys/modemname/
