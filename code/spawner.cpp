@@ -317,6 +317,18 @@ bool Spawner_Is_Requested(void)
 
 
 /// <summary>
+/// Is the game being played the one a launch file described?
+/// This answers for the game itself rather than for the command line, so a path that must
+/// leave a client's choices alone can tell that a launch file made them.
+/// </summary>
+/// <returns>bool; Was the game assembled from a launch file?</returns>
+bool Spawner_Is_Active(void)
+{
+	return(SpawnConsumed);
+}
+
+
+/// <summary>
 /// Reads the launch file and assembles the game it describes.
 /// This stands in place of the menu, and answers false once the game it launched has ended,
 /// so that the process leaves rather than showing a menu the client never meant to show.

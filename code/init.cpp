@@ -1156,33 +1156,6 @@ restart:
 						break;
 					}
 
-					switch (Options.Difficulty) {
-						case 0:
-							Scen->CDifficulty = DIFF_HARD;
-							Scen->Difficulty = DIFF_EASY;
-							break;
-
-						case 1:
-							Scen->CDifficulty = DIFF_HARD;
-							Scen->Difficulty = DIFF_NORMAL;
-							break;
-
-						case 2:
-							Scen->CDifficulty = DIFF_NORMAL;
-							Scen->Difficulty = DIFF_NORMAL;
-							break;
-
-						case 3:
-							Scen->CDifficulty = DIFF_EASY;
-							Scen->Difficulty = DIFF_NORMAL;
-							break;
-
-						case 4:
-							Scen->CDifficulty = DIFF_EASY;
-							Scen->Difficulty = DIFF_HARD;
-							break;
-					}
-
 					Theme.Stop(true);
 
 					int timeout = (TickCount + 5 * TIMER_SECOND);
@@ -1543,6 +1516,15 @@ restart:
 
 		if (Session.Type != GAME_NORMAL) {
 			Session.PlayerIsGDI = stricmp(HouseTypes[Session.Players[0]->Player.House]->Name(), "GDI") == 0;
+		}
+
+		/*
+		 * The campaign handicap pair follows the menu's difficulty setting on every path but
+		 * a client launch, which chose the pair itself.
+		 */
+		if (!Spawner_Is_Active()) {
+			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
+			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
 		}
 
 		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Session.Play) {

@@ -175,6 +175,8 @@ SessionClass::SessionClass(void)
 
 	ObiWan = 0;
 	Solo = 0;
+	CampaignDifficulty = DIFF_NORMAL;
+	CampaignCDifficulty = DIFF_NORMAL;
 
 	PreferredServer = NULL;
 

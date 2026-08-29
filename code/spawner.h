@@ -13,4 +13,5 @@
 
 void Spawner_Request(void);
 bool Spawner_Is_Requested(void);
+bool Spawner_Is_Active(void);
 bool Spawner_Prepare(bool & gameloaded);

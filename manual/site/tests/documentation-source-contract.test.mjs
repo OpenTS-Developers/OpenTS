@@ -272,3 +272,30 @@ test('A chosen start position keeps its number and is claimed before the game pi
 		'} else if (numtaken == 0) {',
 	], 'holes are spoken for before the claim, and the claim comes before the game picks');
 });
+
+test('The campaign handicap pair lives on the session, and the mission reader never asks the spawner', () => {
+	const scenario = source('code/scenario.cpp');
+
+	assertOrdered(
+		functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'),
+		[
+			'Scen->Difficulty = Session.CampaignDifficulty;',
+			'Scen->CDifficulty = Session.CampaignCDifficulty;',
+		],
+		'the mission takes the pair the session carries',
+	);
+	assert.doesNotMatch(
+		scenario,
+		/#include "spawner\.h"/,
+		'the mission reader has no line to the spawner',
+	);
+
+	assertOrdered(
+		functionBody(source('code/init.cpp'), 'bool Select_Game(bool )'),
+		[
+			'Session.CampaignDifficulty = (DiffType)Options.Difficulty;',
+			'Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);',
+		],
+		'the menu derives the pair the mission reader used to compute, ahead of the start',
+	);
+});

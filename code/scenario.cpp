@@ -1582,8 +1582,8 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	Clear_Scenario();
 
 	if (Session.Type == GAME_NORMAL) {
-		Scen->Difficulty = (DiffType)Options.Difficulty;
-		Scen->CDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
+		Scen->Difficulty = Session.CampaignDifficulty;
+		Scen->CDifficulty = Session.CampaignCDifficulty;
 		Scen->Special.IsFogOfWar = false;
 		Special.IsFogOfWar = false;
 	} else {

@@ -527,6 +527,14 @@ class SessionClass
 		int Solo;                           // 1 = player can play alone
 
 		/*
+		 * The handicap pair a campaign mission is played at, set by whichever path starts
+		 * the campaign. It lives here because the scenario's own copy is wiped before every
+		 * mission is read, while a restart or the next mission must keep the pair chosen.
+		 */
+		DiffType CampaignDifficulty;
+		DiffType CampaignCDifficulty;
+
+		/*
 		 * This is the name of the Westwood Online server the player would rather log on to,
 		 * remembered between runs. If NULL, then the service is left to pick one for him.
 		 */
