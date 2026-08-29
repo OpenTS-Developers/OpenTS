@@ -53,3 +53,6 @@ __pycache__/
 # Manual tooling temp snapshots (interrupted manage.py runs)
 manual/data/.manual-check-*/
 manual/data/.manual-generate-*/
+
+# Agent worktrees, which are checkouts of this repository placed inside it
+/.claude/worktrees/

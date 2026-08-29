@@ -2662,16 +2662,12 @@ int DSAudio::Sample_Copy(SampleTrackerType *st, void ** source, int * ssize, voi
 						if (s < fsize) {
 							return(datasize);
 						}
-						if (0/*scomp == SCOMP_WESTWOOD*/) {
-							//Decompress_Frame(UncompBuffer, dest, dsize);
+						st->sosinfo.lpSource = (char *)UncompBuffer;
+						st->sosinfo.lpDest	 = (char *)dest;
+						if (st->sosinfo.wBitSize==16 && st->sosinfo.wChannels==1){
+							sosCODECDecompressData(&st->sosinfo, dsize);
 						} else {
-							st->sosinfo.lpSource = (char *)UncompBuffer;
-							st->sosinfo.lpDest	 = (char *)dest;
-							if (st->sosinfo.wBitSize==16 && st->sosinfo.wChannels==1){
-								sosCODECDecompressData(&st->sosinfo, dsize);
-							} else {
-								General_sosCODECDecompressData(&st->sosinfo, dsize);
-							}
+							General_sosCODECDecompressData(&st->sosinfo, dsize);
 						}
 						dest = Audio_Add_Long_To_Pointer(dest, dsize);
 					}

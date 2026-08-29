@@ -94,11 +94,6 @@ void __cdecl Shake_Screen(int shakes);
 extern WORD __cdecl  Processor(void);
 extern WORD __cdecl Operating_System(void);
 
-extern int __cdecl Clip_Rect ( int * x , int * y , int * dw , int * dh ,
-	       	   			 int width , int height ) ;
-extern int __cdecl Confine_Rect ( int * x , int * y , int dw , int dh ,
-	      	      			 int width , int height ) ;
-
 
 
 /*=========================================================================*/

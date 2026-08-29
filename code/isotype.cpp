@@ -1571,11 +1571,8 @@ Cell const * IsometricTileTypeClass::Shadow_Caster_List(void) const
 	return(NULL);
 }
 
-/// Scratch state for the iso-tile rasterizer. Shared with the hand-written asm blitters
-/// (Iso_Blit_Asm1/Iso_Blit_Asm2 in isoasm.asm), but the asm path is gated behind
-/// IsoTileUseAsmDrawFunc which is never enabled, so the live renderer is the C++ loop in
-/// IsometricTileTypeClass::Draw_Tile. The field names below describe how that C++ loop uses
-/// them; the asm reads the same offsets differently, but that path never runs.
+/// Scratch state for the iso-tile rasterizer, the C++ loop in
+/// IsometricTileTypeClass::Draw_Tile. The field names below describe how that loop uses them.
 ///
 /// The rasterizer walks the iso diamond one scanline at a time using three precomputed span
 /// tables (RowSrcOffset/RowStartCol/RowRunLength), reading a palette index per pixel, looking
@@ -1640,11 +1637,6 @@ unsigned char _iso_start_cols[ISO_DRAW_WIDTH*ISO_DRAW_HEIGHT];
  */
 unsigned char _iso_run_lengths[ISO_DRAW_WIDTH][ISO_DRAW_WIDTH*ISO_DRAW_HEIGHT];
 char IsoSpanTablesBuilt;
-char IsoTileUseAsmDrawFunc;
-
-extern "C" {
-void __cdecl Iso_Blit_Asm2(IsoBlitState *state);
-}
 
 
 /// <summary>
@@ -2124,7 +2116,7 @@ void IsometricTileTypeClass::Draw_Tile(LightConvertClass * drawer, int subtile, 
 										IsoDrawData.RowRunLength += ISO_DRAW_WIDTH;
 									}
 								}
-							} else if (!IsoTileUseAsmDrawFunc || depth_only || fill || fog) {
+							} else {
 								if (fill) {
 									unsigned char * destrow = (unsigned char *)IsoDrawData.DestPtr;
 									for (int row = 0; row < IsoDrawData.SpanHeight; ++row) {
@@ -2419,8 +2411,6 @@ void IsometricTileTypeClass::Draw_Tile(LightConvertClass * drawer, int subtile, 
 											IsoDrawData.AlphaPtr = &IsoDrawData.AlphaPtr[IsoDrawData.AlphaWidth];
 											IsoDrawData.AlphaPtr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned int)IsoDrawData.AlphaPtr);
 										}
-									} else if (IsoTileUseAsmDrawFunc) {
-										Iso_Blit_Asm2((IsoBlitState *)&IsoDrawData);
 									} else {
 
 										/*
