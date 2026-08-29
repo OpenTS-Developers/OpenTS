@@ -1527,8 +1527,8 @@ restart:
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
 		}
 
-		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Session.Play) {
-			if (!Start_Scenario(Scen->ScenarioName, true, CAMPAIGN_NONE)) {
+		if (Session.Type != GAME_NORMAL || Debug_ForceScenario || Session.Play || Spawner_Is_Active()) {
+			if (!Start_Scenario(Scen->ScenarioName, true, Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE)) {
 				if (Debug_Map) {
 					return(false);
 				} else {
@@ -1542,6 +1542,18 @@ restart:
 				} else {
 					goto restart;
 				}
+			}
+		}
+
+		/*
+		 * A mission reached through a client's launch file starts with the scenario flags
+		 * that file carried over, which the mission read has just cleared. The flags a
+		 * mission chain carries between its own missions arrive the same way, once the
+		 * mission after this one is started.
+		 */
+		if (Spawner_Is_Active() && Session.Type == GAME_NORMAL) {
+			for (int index = 0; index < ARRAY_SIZE(Environment.Globals); index++) {
+				Scen->Set_Global_To(index, Environment.Globals[index]);
 			}
 		}
 

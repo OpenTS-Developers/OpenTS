@@ -15,9 +15,11 @@
 #include "spawnerconfig.h"
 
 #include "addon.h"
+#include "campaign.h"
 #include "ccfile.h"
 #include "ccini.h"
 #include "dbgprint.h"
+#include "enviro.h"
 #include "globals.h"
 #include "goptions.h"
 #include "houstype.h"
@@ -232,8 +234,6 @@ static void Spawner_Bind_Options(void)
 	 *   NextCampaignAutoSave,
 	 *   NextSkirmishAutoSave          - saving by itself is not wired up.
 	 *   BuildOffAlly                  - the game has no such option to give it to.
-	 *   GlobalFlags                   - scenario flags are a campaign's, and a campaign is
-	 *                                   refused here.
 	 *   ReconnectTimeout, ConnTimeout,
 	 *   TunnelId, ListenPort,
 	 *   TunnelAddress, TunnelPort,
@@ -248,11 +248,9 @@ static void Spawner_Bind_Options(void)
 	 *   CustomLoadScreenX,
 	 *   CustomLoadScreenY             - the loading backdrop belongs to the campaign path.
 	 *   DifficultyName                - shown, never played by.
-	 *   IsCampaign, CampaignID,
-	 *   CampaignDifficulty,
-	 *   CampaignCDifficulty,
-	 *   LoadSaveGame, SaveGameName    - read to decide what kind of launch this is, which is
-	 *                                   how the three this game cannot start are refused.
+	 *   IsCampaign, LoadSaveGame,
+	 *   SaveGameName                  - read to decide what kind of launch this is, which is
+	 *                                   how the two this game cannot start are refused.
 	 *   Slots[].IsSpectator           - read to refuse a launch.
 	 *
 	 * The timing keys a client writes are not read at all: the game keeps its own.
@@ -275,6 +273,44 @@ static void Spawner_Bind_Scenario(void)
 	Session.ScenarioFileLength = CCFileClass(Scen->ScenarioName).Size();
 	Session.ScenarioIsOfficial = false;
 	Session.ScenarioDigest[0] = '\0';
+}
+
+
+/// <summary>
+/// Assembles the campaign mission a launch asks for: the mission, the handicap pair, and the
+/// scenario flags a client carries over from an earlier mission.
+/// </summary>
+/// <returns>bool; Can the campaign the file describes be played?</returns>
+static bool Spawner_Setup_Campaign(void)
+{
+	if (SpawnConfig.CampaignDifficulty < 0 || SpawnConfig.CampaignDifficulty >= DIFF_COUNT ||
+		SpawnConfig.CampaignCDifficulty < 0 || SpawnConfig.CampaignCDifficulty >= DIFF_COUNT) {
+		return(Spawner_Refuse("A campaign is played at difficulty 0, 1 or 2, and the file says %d and %d.",
+			SpawnConfig.CampaignDifficulty, SpawnConfig.CampaignCDifficulty));
+	}
+
+	if (SpawnConfig.CampaignID < -1 || SpawnConfig.CampaignID >= Campaigns.Count()) {
+		return(Spawner_Refuse("The file names campaign %d, and there are %d.",
+			SpawnConfig.CampaignID, Campaigns.Count()));
+	}
+
+	Session.Type = GAME_NORMAL;
+	Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;
+	Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;
+	Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;
+
+	/*
+	 * The flags are left where a mission carries them over from the one before it, since a
+	 * fresh launch has nothing else of its own to carry.
+	 */
+	new (&Environment) EnvironmentClass;
+	for (int index = 0; index < SpawnerConfigClass::GLOBAL_FLAG_COUNT; index++) {
+		Environment.Globals[index] = SpawnConfig.GlobalFlags[index];
+	}
+
+	std::snprintf(Scen->ScenarioName, sizeof(Scen->ScenarioName), "%s", SpawnConfig.ScenarioName.c_str());
+
+	return(true);
 }
 
 
@@ -368,19 +404,12 @@ bool Spawner_Prepare(bool & gameloaded)
 		case SpawnerConfigClass::LaunchType::Resume:
 			return(Spawner_Refuse("Resuming a saved game from a launch file is not supported yet."));
 
-		case SpawnerConfigClass::LaunchType::Campaign:
-			return(Spawner_Refuse("Launching a campaign mission from a launch file is not supported yet."));
-
 		case SpawnerConfigClass::LaunchType::Multiplayer:
 			return(Spawner_Refuse("Launching a game against other machines is not supported yet."));
 
+		case SpawnerConfigClass::LaunchType::Campaign:
 		case SpawnerConfigClass::LaunchType::Skirmish:
 			break;
-	}
-
-	std::string fault;
-	if (!SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)) {
-		return(Spawner_Refuse("%s", fault.c_str()));
 	}
 
 	Disable_Addon(ADDON_ANY);
@@ -389,7 +418,18 @@ bool Spawner_Prepare(bool & gameloaded)
 		Set_Required_Addon(ADDON_FIRESTORM);
 	}
 
-	Spawner_Setup_Skirmish();
+	if (SpawnConfig.Launch_Type() == SpawnerConfigClass::LaunchType::Campaign) {
+		if (!Spawner_Setup_Campaign()) {
+			return(false);
+		}
+	} else {
+		std::string fault;
+		if (!SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)) {
+			return(Spawner_Refuse("%s", fault.c_str()));
+		}
+
+		Spawner_Setup_Skirmish();
+	}
 
 	DebugString("[Spawner] Launching %s with session identity %08x.\n",
 		Scen->ScenarioName, SpawnConfig.Session_Identity_CRC());

@@ -299,3 +299,21 @@ test('The campaign handicap pair lives on the session, and the mission reader ne
 		'the menu derives the pair the mission reader used to compute, ahead of the start',
 	);
 });
+
+test('A campaign spawn writes the game its own state and nothing more', () => {
+	const spawner = source('code/spawner.cpp');
+
+	assertOrdered(functionBody(spawner, 'static bool Spawner_Setup_Campaign(void)'), [
+		'Session.Type = GAME_NORMAL;',
+		'Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;',
+		'Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;',
+		'Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;',
+		'new (&Environment) EnvironmentClass;',
+		'Environment.Globals[index] = SpawnConfig.GlobalFlags[index];',
+	], 'a campaign launch lands in the game’s own state');
+
+	assertOrdered(functionBody(source('code/init.cpp'), 'bool Select_Game(bool )'), [
+		'Spawner_Is_Active() ? Scen->Campaign : CAMPAIGN_NONE',
+		'Scen->Set_Global_To(index, Environment.Globals[index]);',
+	], 'a spawned mission is named by the file and starts with the flags it carried');
+});

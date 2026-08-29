@@ -36,9 +36,27 @@ The `[Settings]` section says what kind of game to start.
 | `IsSinglePlayer` | Play a campaign mission rather than a match. |
 | `LoadSaveGame`, `SaveGameName` | Resume the named saved game. |
 
-Only a skirmish is currently launched this way. A file asking for a campaign mission, a
-saved game, or a game against other machines is refused with the reason shown, and the game
-exits.
+A file asking for a saved game or a game against other machines is refused with the reason
+shown, and the game exits.
+
+## A campaign mission
+
+`IsSinglePlayer=yes` plays the mission `Scenario` names. `CampaignID` says which campaign
+the mission belongs to, counted from zero in the order the battle files declare them, or
+`-1` for a mission outside any campaign. The campaign decides what the mission leads on to
+and which ending it plays, and it is what the game's own introduction is gated on, exactly
+as when a campaign is chosen from the menu.
+
+`DifficultyModeHuman` and `DifficultyModeComputer` each name a difficulty from 0 to 2 — the
+player's houses and the computer's, applied independently, so all nine pairings can be
+played where the menu offers only its three. A restart or the next mission keeps the pair.
+
+`[GlobalFlags]` seeds the scenario flags a mission chain carries forward: entries
+`GlobalFlag0` through `GlobalFlag49` are set on the mission as it starts, so a mission
+launched partway through a chain begins in the state the missions before it left.
+
+The mission's own briefing and opening movies play as they do from the menu; only the
+game's startup movies are skipped.
 
 ## The options every house plays under
 
