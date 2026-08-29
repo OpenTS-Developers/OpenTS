@@ -662,7 +662,7 @@ void LoadOptionsClass::Fill_List(HWND window)
 	sprintf(buffer, "*.%3s", Extension);
 
 	/*
-	**	Find all savegame files, where this player's own files are kept.
+	**	Find all savegame files
 	*/
 	HANDLE hFind = FindFirstFile(User_File_Write_Name(buffer).c_str(), &ff);
 	fdata = NULL;

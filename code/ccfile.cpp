@@ -386,10 +386,8 @@ void CCFileClass::Close(void)
 /// <returns>int; Was the file opened successfully?</returns>
 int CCFileClass::Open(char const * filename, int rights)
 {
-	/*
-	**	A file being written is looked for in the current directory alone, and never in a
-	**	mixfile, since nothing can be written into one.
-	*/
+	// A file being written is looked for in the current directory alone, and never in a
+	// mixfile, since nothing can be written into one.
 	if ((rights & WRITE) != 0) {
 		return(CDFileClass::Open(filename, rights));
 	}
