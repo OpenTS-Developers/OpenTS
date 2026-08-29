@@ -474,6 +474,22 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-CD' }
+  - id: launch:data-directory
+    title: Game data directory
+    syntax: -DATADIR=<path>
+    description: Reads the game's data from the directory named, which the game never writes to.
+    audience: player
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-DATADIR=' }
+  - id: launch:user-directory
+    title: User data directory
+    syntax: -USERDIR=<path>
+    description: Keeps the settings, saved games and other files the game writes in the directory named, creating it when it is not there.
+    audience: player
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-USERDIR=' }
   - id: launch:tournament-time
     title: Tournament time limit
     syntax: -TIME=<minutes>
