@@ -46,15 +46,21 @@
 */
 CDFileClass::SearchDriveType * CDFileClass::First = NULL;
 
+/*
+**	Where this player's own files are kept.
+*/
+char const * CDFileClass::UserPath = NULL;
+
 
 /// <summary>
 /// Constructs a CD file object for the file specified.
-/// The name is searched in the current directory and every configured path, so the object
-/// refers to the first matching local file.
+/// The name is searched for in the player's own directory, the current directory and every
+/// configured path, so the object refers to the first matching local file.
 /// </summary>
 /// <param name="filename">The name of the file this object should refer to.</param>
 CDFileClass::CDFileClass(char const *filename) :
-	IsDisabled(false)
+	IsDisabled(false),
+	RequestedName(NULL)
 {
 	CDFileClass::Set_Name(filename);
 //	memset (RawPath, 0, sizeof(RawPath));
@@ -66,8 +72,15 @@ CDFileClass::CDFileClass(char const *filename) :
 /// Use Set_Name to give the object a file to work with before trying to open it.
 /// </summary>
 CDFileClass::CDFileClass(void) :
-	IsDisabled(false)
+	IsDisabled(false),
+	RequestedName(NULL)
 {
+}
+
+
+CDFileClass::~CDFileClass(void)
+{
+	Capture_Name(NULL);
 }
 
 
@@ -89,6 +102,15 @@ CDFileClass::CDFileClass(void) :
  *=============================================================================================*/
 int CDFileClass::Open(int rights)
 {
+	/*
+	**	A file being written belongs to the player, so it is opened where the player's own
+	**	files are kept rather than wherever a copy happened to be found. What a deployment
+	**	ships is read from and never written over.
+	*/
+	if ((rights & WRITE) != 0) {
+		Point_At_Own_Copy();
+	}
+
 	return(BASECLASS::Open(rights));
 }
 
@@ -220,6 +242,114 @@ void CDFileClass::Add_Search_Drive_Front(char const * path)
 
 
 /// <summary>
+/// Records where this player's own files are kept.
+/// A file the game writes, creates or deletes goes here, and a file it reads is looked for
+/// here before anywhere else. Passing nothing puts the game back to keeping everything
+/// together in the directory it is run from.
+/// </summary>
+/// <param name="path">The directory to keep the player's own files in.</param>
+void CDFileClass::Set_User_Path(char const * path)
+{
+	if (UserPath != NULL) {
+		free((char *)UserPath);
+		UserPath = NULL;
+	}
+
+	if (path == NULL || *path == '\0') return;
+
+	char terminated[MAX_PATH];
+
+	// A directory with no room left for a trailing separator cannot become half of a
+	// pathname, so it is refused rather than kept in a form nothing can be appended to.
+	if (strlen(path) + 1 >= sizeof(terminated)) return;
+
+	strcpy(terminated, path);
+	switch (terminated[strlen(terminated)-1]) {
+		case ':':
+		case '/':
+		case '\\':
+			break;
+
+		default:
+			strcat(terminated, "\\");
+			break;
+	}
+
+	UserPath = strdup(terminated);
+}
+
+
+char const * CDFileClass::User_Path(void)
+{
+	return(UserPath);
+}
+
+
+/*
+**	A name that names a directory of its own has already said where it goes, so neither the
+**	search nor the player's own directory touches it. The characters are the ones a
+**	directory is allowed to end with.
+*/
+bool CDFileClass::Has_Directory(char const * filename)
+{
+	return(filename != NULL && strpbrk(filename, "\\/:") != NULL);
+}
+
+
+/*
+**	Where a file belongs once it is the player's own. Fails when there is no such directory,
+**	when the caller has already named one, or when the two will not make one pathname.
+*/
+bool CDFileClass::User_Path_For(char const * filename, char * buffer, int size)
+{
+	if (UserPath == NULL || filename == NULL) return(false);
+	if (Has_Directory(filename)) return(false);
+	if ((int)(strlen(UserPath) + strlen(filename)) >= size) return(false);
+
+	strcpy(buffer, UserPath);
+	strcat(buffer, filename);
+	return(true);
+}
+
+
+/*
+**	Keeps a copy of the name the game asked for. The copy is this object's own, so that the
+**	name survives the object being pointed at a copy found elsewhere, and survives a mixfile
+**	lookup writing over the name in place.
+*/
+char const * CDFileClass::Capture_Name(char const * filename)
+{
+	char * captured = (filename != NULL) ? strdup(filename) : NULL;
+
+	if (RequestedName != NULL) {
+		free((char *)RequestedName);
+	}
+	RequestedName = captured;
+
+	return(RequestedName);
+}
+
+
+/*
+**	Points the object at the file this player's own game owns, which is where a write and a
+**	delete both belong. Worked out from the name that was asked for rather than from the one
+**	the object carries, so that it lands in the same place however often it is done.
+*/
+void CDFileClass::Point_At_Own_Copy(void)
+{
+	if (IsDisabled || RequestedName == NULL) return;
+
+	char path[_MAX_PATH];
+
+	if (User_Path_For(RequestedName, path, sizeof(path))) {
+		BASECLASS::Set_Name(path);
+	} else {
+		BASECLASS::Set_Name(RequestedName);
+	}
+}
+
+
+/// <summary>
 /// Reports the search path at a position in the chain, counting from zero in the order the
 /// paths are tried. This is how a scan covers the same folders a file open would.
 /// </summary>
@@ -282,12 +412,18 @@ void CDFileClass::Clear_Search_Drives(void)
 char const * CDFileClass::Set_Name(char const *filename)
 {
 	/*
+	**	Kept before anything else, because the name the object ends up carrying records
+	**	where a copy was found, and a write has to go back to what was asked for.
+	*/
+	filename = Capture_Name(filename);
+
+	/*
 	**	Try to find the file in the current directory first. If it can be found, then
 	**	just return with the normal file name setting process. Do the same if there is
 	**	no multi-drive search path.
 	*/
 	BASECLASS::Set_Name(filename);
-	if (IsDisabled || !First || BASECLASS::Is_Available()) return(File_Name());
+	if (IsDisabled || !First || filename == NULL || BASECLASS::Is_Available()) return(File_Name());
 
 	/*
 	**	Attempt to find the file first. Check the current directory. If not found there, then
@@ -372,8 +508,8 @@ int CDFileClass::Open(char const *filename, int rights)
 	*/
 	if (IsDisabled || (rights & WRITE) != 0) {
 
-		BASECLASS::Set_Name( filename );
-		return( BASECLASS::Open( rights ) );
+		BASECLASS::Set_Name( Capture_Name(filename) );
+		return( CDFileClass::Open( rights ) );
 	}
 
 	/*
@@ -382,6 +518,20 @@ int CDFileClass::Open(char const *filename, int rights)
 	*/
 	Set_Name(filename);
 	return(BASECLASS::Open(rights));
+}
+
+
+/// <summary>
+/// Deletes this player's own copy of the file.
+/// What a deployment ships is read from and never removed, so a file thrown away here falls
+/// back to the copy it shipped with rather than disappearing altogether.
+/// </summary>
+/// <returns>int; Was a file deleted?</returns>
+int CDFileClass::Delete(void)
+{
+	Point_At_Own_Copy();
+
+	return(BASECLASS::Delete());
 }
 
 
