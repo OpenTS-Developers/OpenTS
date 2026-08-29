@@ -46,9 +46,7 @@
 */
 CDFileClass::SearchDriveType * CDFileClass::First = NULL;
 
-/*
-**	Where this player's own files are kept.
-*/
+// Where this player's own files are kept.
 char const * CDFileClass::UserPath = NULL;
 
 
@@ -102,11 +100,9 @@ CDFileClass::~CDFileClass(void)
  *=============================================================================================*/
 int CDFileClass::Open(int rights)
 {
-	/*
-	**	A file being written belongs to the player, so it is opened where the player's own
-	**	files are kept rather than wherever a copy happened to be found. What a deployment
-	**	ships is read from and never written over.
-	*/
+	// A file being written belongs to the player, so it is opened where the player's own
+	// files are kept rather than wherever a copy happened to be found. What a deployment
+	// ships is read from and never written over.
 	if ((rights & WRITE) != 0) {
 		Point_At_Own_Copy();
 	}
@@ -203,21 +199,17 @@ char const * CDFileClass::User_Path(void)
 }
 
 
-/*
-**	A name that names a directory of its own has already said where it goes, so neither the
-**	search nor the player's own directory touches it. The characters are the ones a
-**	directory is allowed to end with.
-*/
+// A name that names a directory of its own has already said where it goes, so neither the
+// search nor the player's own directory touches it. The characters are the ones a directory
+// is allowed to end with.
 bool CDFileClass::Has_Directory(char const * filename)
 {
 	return(filename != NULL && strpbrk(filename, "\\/:") != NULL);
 }
 
 
-/*
-**	Where a file belongs once it is the player's own. Fails when there is no such directory,
-**	when the caller has already named one, or when the two will not make one pathname.
-*/
+// Where a file belongs once it is the player's own. Fails when there is no such directory,
+// when the caller has already named one, or when the two will not make one pathname.
 bool CDFileClass::User_Path_For(char const * filename, char * buffer, int size)
 {
 	if (UserPath == NULL || filename == NULL) return(false);
@@ -230,11 +222,9 @@ bool CDFileClass::User_Path_For(char const * filename, char * buffer, int size)
 }
 
 
-/*
-**	Keeps a copy of the name the game asked for. The copy is this object's own, so that the
-**	name survives the object being pointed at a copy found elsewhere, and survives a mixfile
-**	lookup writing over the name in place.
-*/
+// Keeps a copy of the name the game asked for. The copy is this object's own, so that the
+// name survives the object being pointed at a copy found elsewhere, and survives a mixfile
+// lookup writing over the name in place.
 char const * CDFileClass::Capture_Name(char const * filename)
 {
 	char * captured = (filename != NULL) ? strdup(filename) : NULL;
@@ -248,11 +238,9 @@ char const * CDFileClass::Capture_Name(char const * filename)
 }
 
 
-/*
-**	Points the object at the file this player's own game owns, which is where a write and a
-**	delete both belong. Worked out from the name that was asked for rather than from the one
-**	the object carries, so that it lands in the same place however often it is done.
-*/
+// Points the object at the file this player's own game owns, which is where a write and a
+// delete both belong. Worked out from the name that was asked for rather than from the one
+// the object carries, so that it lands in the same place however often it is done.
 void CDFileClass::Point_At_Own_Copy(void)
 {
 	if (IsDisabled || RequestedName == NULL) return;
@@ -329,16 +317,12 @@ void CDFileClass::Clear_Search_Drives(void)
 /// <returns>The selected file name, including a configured path when one supplies the match.</returns>
 char const * CDFileClass::Set_Name(char const *filename)
 {
-	/*
-	**	Kept before anything else, because the name the object ends up carrying records
-	**	where a copy was found, and a write has to go back to what was asked for.
-	*/
+	// Kept before anything else, because the name the object ends up carrying records where
+	// a copy was found, and a write has to go back to what was asked for.
 	filename = Capture_Name(filename);
 
-	/*
-	**	A file this player's own game wrote is the one that answers, whatever a deployment
-	**	ships under the same name.
-	*/
+	// A file this player's own game wrote is the one that answers, whatever a deployment
+	// ships under the same name.
 	if (!IsDisabled) {
 		char path[_MAX_PATH];
 

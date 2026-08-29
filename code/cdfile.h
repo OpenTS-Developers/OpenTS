@@ -85,11 +85,9 @@ class CDFileClass : public BufferIOFileClass
 		*/
 		bool IsDisabled;
 
-		/*
-		**	The name the game asked for. Every later decision is made from this rather than
-		**	from the name the object carries, because that one records where a copy was
-		**	found and answers a different question.
-		*/
+		// The name the game asked for. Every later decision is made from this rather than
+		// from the name the object carries, because that one records where a copy was
+		// found and answers a different question.
 		char const * RequestedName;
 
 		/*
@@ -106,10 +104,8 @@ class CDFileClass : public BufferIOFileClass
 		*/
 		static SearchDriveType * First;
 
-		/*
-		**	Where this player's own files are kept, ending in a separator. NULL when the
-		**	player has no directory of their own and everything belongs together.
-		*/
+		// Where this player's own files are kept, ending in a separator. NULL when the
+		// player has no directory of their own and everything belongs together.
 		static char const * UserPath;
 
 		// A file object owns the name it captured, so it is not copied.

@@ -681,7 +681,7 @@ void LoadOptionsClass::Fill_List(HWND window)
 	sprintf(buffer, "*.%3s", Extension);
 
 	/*
-	**	Find all savegame files, wherever the game reads and writes them.
+	**	Find all savegame files
 	*/
 	fdata = NULL;
 
