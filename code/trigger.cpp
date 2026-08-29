@@ -295,7 +295,16 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 		while (tevent != NULL) {
 			bool event_tripped = Is_Event_Tripped(index);
 
-			if (event_tripped && tevent->Event == TEVENT_ENEMY_IN_SPOTLIGHT && Class->FirstEvent->Next == NULL && event != TEVENT_ENEMY_IN_SPOTLIGHT) {
+			/*
+			** A latched event only helps a persistent trigger when another event
+			** still needs to be satisfied. Keep this exception scoped to Event 35
+			** rather than changing latch behavior for other trigger events.
+			*/
+			if (event_tripped &&
+				tevent->Event == TEVENT_ENEMY_IN_SPOTLIGHT &&
+				index == 0 &&
+				tevent->Next == NULL &&
+				event != TEVENT_ENEMY_IN_SPOTLIGHT) {
 				event_tripped = false;
 			}
 

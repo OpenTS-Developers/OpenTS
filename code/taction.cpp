@@ -2046,62 +2046,33 @@ bool TActionClass::TAction_RESHROUD(HouseClass * , ObjectClass * , TriggerClass 
 /// the new behavior, so a scenario can have the searchlights start hunting on cue.
 /// </summary>
 /// <returns>bool; Was at least one spotlight changed?</returns>
-bool TActionClass::TAction_CHANGE_SPOTLIGHT_BEHAVIOR(HouseClass * , ObjectClass * object, TriggerClass * trig, Cell const & )
+bool TActionClass::TAction_CHANGE_SPOTLIGHT_BEHAVIOR(HouseClass*, ObjectClass* object, TriggerClass* trig, Cell const&)
 {
-	bool spotlight_event = false;
-
-	if (trig != NULL && trig->Class != NULL) {
-		TEventClass* tevent = trig->Class->FirstEvent;
-
-		while (tevent != NULL) {
-			if (tevent->Event == TEVENT_ENEMY_IN_SPOTLIGHT || tevent->Event == TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING) {
-
-				spotlight_event = true;
-				break;
-			}
-
-			tevent = tevent->Next;
-		}
-	}
-
-	if (Data.LightBehavior == LIGHT_BEHAVIOR_FOLLOW && spotlight_event) {
-		if (object == NULL || object->RTTI != RTTI_BUILDING) {
-			return(false);
-		}
-
-		BuildingClass* building = (BuildingClass*)object;
-
-		if (building->Strength > 0 &&
-				building->IsActive &&
-				building->IsDown &&
-				!building->IsInLimbo &&
-				building->Class->HasSpotlight &&
-				building->BuildingLight != NULL &&
-				building->BuildingLight->IsDetectionSource) {
-
-			building->BuildingLight->Set_Behavior_Type(LIGHT_BEHAVIOR_FOLLOW);
-
-			return(true);
-		}
-
-		return(false);
-	}
+	bool restrict_to_source =
+		Data.LightBehavior == LIGHT_BEHAVIOR_FOLLOW &&
+		object != NULL &&
+		object->RTTI == RTTI_BUILDING;
 
 	bool success = false;
+
 	for (int index = 0; index < Buildings.Count(); index++) {
-		BuildingClass * ptr = Buildings[index];
+		BuildingClass* ptr = Buildings[index];
+
 		if (ptr->Strength > 0 &&
-				ptr->IsActive &&
-				ptr->IsDown &&
-				!ptr->IsInLimbo &&
-				ptr->Class->HasSpotlight &&
-				ptr->BuildingLight != NULL &&
-				ptr->Tag != NULL &&
-				ptr->Tag->Is_Trigger_Attached(trig)) {
+			ptr->IsActive &&
+			ptr->IsDown &&
+			!ptr->IsInLimbo &&
+			ptr->Class->HasSpotlight &&
+			ptr->BuildingLight != NULL &&
+			ptr->Tag != NULL &&
+			ptr->Tag->Is_Trigger_Attached(trig) &&
+			(!restrict_to_source || ptr == object)) {
+
 			ptr->BuildingLight->Set_Behavior_Type(Data.LightBehavior);
 			success = true;
 		}
 	}
+
 	return(success);
 }
 

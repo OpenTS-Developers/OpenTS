@@ -90,13 +90,6 @@ class BuildingLightClass : public ObjectClass
 		double Acceleration;
 
 		/*
-		 * Used to ensure that Follow behavior is only applied to the
-		 * spotlight that actually detected the enemy, rather than to
-		 * other spotlights sharing the same trigger/tag.
-		 */
-		bool IsDetectionSource;
-
-		/*
 		 * If the beam is sweeping back the other way along its arc, then this flag will be
 		 * true. Alternate lights are created with it already set, so that a row of spotlights
 		 * does not swing in unison.

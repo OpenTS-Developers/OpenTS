@@ -56,7 +56,6 @@ BuildingLightClass::BuildingLightClass(TechnoClass * owner) :
 	RotationPivot(COORD_NONE),
 	RotationTarget(COORD_NONE),
 	Acceleration(0),
-	IsDetectionSource(false),
 	IsOppositeDirection(false),
 	Behavior(0),
 	Target(NULL),
@@ -277,12 +276,8 @@ void BuildingLightClass::AI(void)
 			}
 
 			if (found) {
-				IsDetectionSource = true;
-
 				owner_building->Tag->Spring(TEVENT_ENEMY_IN_SPOTLIGHT, owner_building);
 				owner_building->Tag->Spring(TEVENT_ENEMY_IN_SPOTLIGHT_REPEATING, owner_building);
-
-				IsDetectionSource = false;
 			}
 		}
 	}
