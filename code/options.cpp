@@ -359,7 +359,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("GameSpeed = %d\n", GameSpeed);
 
 	Difficulty = ConfigINI.Get_Int("Options", "Difficulty", Difficulty);
-	Difficulty = std::min(Difficulty, 4);
+	Difficulty = std::min(Difficulty, (int)DIFF_COUNT - 1);
 	Difficulty = std::max(Difficulty, 0);
 	DebugString("Difficulty = %d\n", Difficulty);
 
