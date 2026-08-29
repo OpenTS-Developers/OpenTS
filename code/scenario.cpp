@@ -2070,6 +2070,27 @@ void Write_Scenario_INI(char const * fname, bool mplayer)
 }
 
 
+/// <summary>
+/// Fetches the node a seat of the match was described by.
+/// The seats are numbered in the order their houses are created: the players first, then the
+/// computer players a session source seated.
+/// </summary>
+/// <param name="seat">The seat to fetch, counted from zero.</param>
+/// <returns>The node describing that seat, or NULL if the match does not hold it.</returns>
+static NodeNameType * Seated_Node(int seat)
+{
+	if (seat < 0) {
+		return(NULL);
+	}
+	if (seat < Session.Players.Count()) {
+		return(Session.Players[seat]);
+	}
+
+	seat -= Session.Players.Count();
+	return(seat < Session.Computers.Count() ? Session.Computers[seat] : NULL);
+}
+
+
 /***********************************************************************************************
  * Assign_Houses -- Assigns multiplayer houses to various players                              *
  *                                                                                             *
@@ -2242,6 +2263,31 @@ void Assign_Houses(void)
 		if (seat != NULL) {
 			housep->SpawnWaypoint = seat->Player.SpawnChoice;
 			seat->Player.ID = housep->HeapID;
+		}
+	}
+
+	/*
+	 * The alliance table names seats, in the order the houses above were created. While the
+	 * scenario is still assembling, a pact is always permitted and is made quietly, so the
+	 * table stands before the first frame is played. The seats are walked before the neutral
+	 * and special houses exist, since neither is a seat of the match.
+	 */
+	int seated = Session.Players.Count() + Session.Computers.Count();
+	for (int seatnum = 0; seatnum < seated; seatnum++) {
+		NodeNameType * node = Seated_Node(seatnum);
+		if (node == NULL || node->Player.AlliesMask == 0) {
+			continue;
+		}
+
+		for (int target = 0; target < seated; target++) {
+			if (target == seatnum || (node->Player.AlliesMask & (1u << target)) == 0) {
+				continue;
+			}
+
+			NodeNameType * other = Seated_Node(target);
+			if (other != NULL) {
+				Houses[node->Player.ID]->Make_Ally(Houses[other->Player.ID]);
+			}
 		}
 	}
 
