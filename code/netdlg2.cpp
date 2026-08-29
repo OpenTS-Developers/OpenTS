@@ -852,7 +852,6 @@ bool Net2Remote_Connect(void)
 				// Add myself to the list, and to the Players vector.
 				//------------------------------------------------------------------------
 				NodeNameType * who = new NodeNameType;
-				memset(who, 0, sizeof(*who));
 				strcpy(who->Name, Session.Handle);
 				strcpy(who->Player.Serial, SerialNumber);
 				who->Player.House = Session.House;
@@ -2474,7 +2473,6 @@ static void Get_Join_Responses(void)
 				// Create & add a node to the Vector
 				//..................................................................
 				who = new NodeNameType;
-				memset(who, 0, sizeof(*who));
 				strcpy(who->Name, Session.GPacket.Name);
 				strcpy(who->Player.Serial, Session.GPacket.Serial);
 				who->Address = Session.GAddress;
@@ -2531,7 +2529,6 @@ static void Get_Join_Responses(void)
 				Clear_Vector(&Session.Players);
 
 				who = new NodeNameType;
-				memset(who, 0, sizeof(*who));
 				strcpy(who->Name, Session.Handle);
 				who->Player.House = Session.House;
 				who->Player.Color = Session.ColorIdx;
@@ -3105,7 +3102,6 @@ static void Get_Join_Responses(void)
 				// Add node to the Vector list
 				//..................................................................
 				who = new NodeNameType;
-				memset(who, 0, sizeof(*who));
 				strcpy(who->Name, Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
