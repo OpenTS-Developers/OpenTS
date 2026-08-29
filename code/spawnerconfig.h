@@ -88,6 +88,15 @@ class SpawnerConfigClass
 		int Session_Identity_CRC(void) const;
 
 		/*
+		 * Reading cannot fail, so what was read is judged separately, against the tables
+		 * the game has loaded by the time a launch is attempted. Those are handed in rather
+		 * than reached for, so that a reading can be judged without the game running.
+		 */
+		bool Is_Playable(int countries, int colors, std::string & fault) const;
+
+		static int Playable_Handicap(int asked);
+
+		/*
 		 * What kind of game to start.
 		 */
 		bool IsCampaign = false;

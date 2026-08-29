@@ -14,6 +14,7 @@
 
 #include <cstdio>
 #include <cstring>
+#include <string>
 
 #include "ini.h"
 #include "spawnerconfig.h"
@@ -141,6 +142,14 @@ SpawnerConfigClass Read(char const * text, int length)
 	SpawnerConfigClass config;
 	config.Read_INI(ini);
 	return(config);
+}
+
+
+bool Judge(char const * text, int length, int countries, int colors, std::string & fault)
+{
+	SpawnerConfigClass config = Read(text, length);
+	fault.clear();
+	return(config.Is_Playable(countries, colors, fault));
 }
 
 }
@@ -416,6 +425,148 @@ int main(void)
 
 		Check(config.CustomLoadScreenX == 0 && config.CustomLoadScreenY == 0,
 			"half a position is no position either");
+	}
+
+	/*
+	 * Reading a launch file cannot fail, so whether what it describes can be played is
+	 * judged separately, against the tables the game has loaded by the time it launches.
+	 */
+	{
+		std::string fault;
+
+		Check(Judge(_Skirmish, sizeof(_Skirmish) - 1, 2, 8, fault),
+			"a match the loaded rules can hold is played");
+
+		char const crowded[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"AIPlayers=8\n";
+		Check(!Judge(crowded, sizeof(crowded) - 1, 2, 8, fault) &&
+			fault.find("8") != std::string::npos && fault.find("7") != std::string::npos,
+			"more computer players than seats names both counts");
+
+		char const negative[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"AIPlayers=-1\n";
+		Check(!Judge(negative, sizeof(negative) - 1, 2, 8, fault),
+			"fewer than no computer players is refused");
+
+		char const nameless_country[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Color=0\n";
+		Check(!Judge(nameless_country, sizeof(nameless_country) - 1, 2, 8, fault),
+			"a person's country is never the game's to draw");
+
+		char const nameless_color[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n";
+		Check(!Judge(nameless_color, sizeof(nameless_color) - 1, 2, 8, fault),
+			"a person's color is never the game's to draw either");
+
+		char const drawn_computer[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"AIPlayers=1\n"
+			"\n"
+			"[HouseColors]\n"
+			"Multi2=-1\n"
+			"\n"
+			"[HouseCountries]\n"
+			"Multi2=-1\n";
+		Check(Judge(drawn_computer, sizeof(drawn_computer) - 1, 2, 8, fault),
+			"a computer seat may leave its country and color to the game");
+
+		char const past_countries[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=2\n"
+			"Color=0\n";
+		Check(!Judge(past_countries, sizeof(past_countries) - 1, 2, 8, fault),
+			"a country the rules did not declare is refused");
+
+		char const past_colors[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=8\n";
+		Check(!Judge(past_colors, sizeof(past_colors) - 1, 2, 8, fault),
+			"a color the game has no scheme for is refused");
+
+		char const shared_color[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=3\n";
+		Check(Judge(shared_color, sizeof(shared_color) - 1, 2, 8, fault),
+			"a cooperative team shares one color on purpose");
+
+		char const past_difficulty[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"AIPlayers=1\n"
+			"\n"
+			"[HouseHandicaps]\n"
+			"Multi2=7\n";
+		Check(!Judge(past_difficulty, sizeof(past_difficulty) - 1, 2, 8, fault),
+			"a difficulty naming none is refused");
+
+		char const easy_difficulty[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"AIPlayers=1\n"
+			"\n"
+			"[HouseHandicaps]\n"
+			"Multi2=6\n";
+		Check(Judge(easy_difficulty, sizeof(easy_difficulty) - 1, 2, 8, fault),
+			"a difficulty easier than the game holds is played, not refused");
+
+		Check(SpawnerConfigClass::Playable_Handicap(-1) == -1 && SpawnerConfigClass::Playable_Handicap(0) == 0 &&
+			SpawnerConfigClass::Playable_Handicap(2) == 2 && SpawnerConfigClass::Playable_Handicap(3) == 0 &&
+			SpawnerConfigClass::Playable_Handicap(6) == 0,
+			"an easier setting than the game has comes to the easiest it has");
+
+		char const past_seats[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"\n"
+			"[Multi1_Alliances]\n"
+			"HouseAllyOne=8\n";
+		Check(!Judge(past_seats, sizeof(past_seats) - 1, 2, 8, fault),
+			"an alliance with a seat the match does not hold is refused");
+
+		char const watcher[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"\n"
+			"[IsSpectator]\n"
+			"Multi1=Yes\n";
+		Check(!Judge(watcher, sizeof(watcher) - 1, 2, 8, fault),
+			"a seat that watches rather than plays is refused");
+
+		Check(!Judge(_Skirmish, sizeof(_Skirmish) - 1, 0, 8, fault),
+			"a match is refused rather than read against countries the rules never declared");
 	}
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

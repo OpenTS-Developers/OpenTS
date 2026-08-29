@@ -44,6 +44,8 @@
 #include "version.h"
 #include "win.h"
 
+#include <cstring>
+
 #include "dialog.hh"
 #include "diff.hh"
 
@@ -217,6 +219,9 @@ struct NodeNameType {
 			int ProcessTime;			// Length of time to process players main loop
 			int Status;					//
 			int SquadID;				//
+			int SpawnChoice;			// starting waypoint asked for; -1 = the engine picks
+			int Handicap;				// difficulty asked for; -1 = the session default
+			unsigned AlliesMask;		// seats allied with, one bit per seat index
 		} Player;
 		struct {
 			unsigned int LastTime;		// last time we heard from this guy
@@ -224,6 +229,17 @@ struct NodeNameType {
 			int Color;					// chat player's color
 		} Chat;
 	};
+
+	/*
+	 * A node starts with nothing asked for, so that a session source which names none of
+	 * these leaves the game its own choice of start position and difficulty.
+	 */
+	NodeNameType(void)
+	{
+		memset(this, 0, sizeof(*this));
+		Player.SpawnChoice = -1;
+		Player.Handicap = -1;
+	}
 };
 
 
@@ -715,6 +731,13 @@ class SessionClass
 		DynamicVectorClass <NodeNameType *> Games;      // list of games
 		DynamicVectorClass <NodeNameType *> Players;    // list of players
 		DynamicVectorClass <NodeNameType *> Chat;       // list of chat nodes
+
+		/*
+		 * The computer players a session source seated, in the order their houses are
+		 * created, after the human ones. The menu leaves this empty and lets the game draw
+		 * its own computer players.
+		 */
+		DynamicVectorClass <NodeNameType *> Computers;
 		int Suspended;
 
 		/*

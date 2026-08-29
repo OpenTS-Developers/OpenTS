@@ -220,11 +220,7 @@ bool Skirmish_Mode_Dialog(void)
 {
 	int rc = -1;
 
-	Rule->Do_HouseTypes(*RuleINI);
-	Rule->Do_Sides(*RuleINI);
-	for (int i = 0; i < HouseTypes.Count(); i++) {
-		HouseTypes[i]->Read_INI(*RuleINI);
-	}
+	Prepare_Side_Roster();
 
 	Hide_Mouse();
 	Draw_Menu_Background();
@@ -417,6 +413,7 @@ BOOL Skirmish_On_WM_INITDIALOG(HWND window, WPARAM wparam, LPARAM lparam)
 	Session.Options.ScenarioIndex = 0;
 	SendDlgItemMessage(window, IDC_SCENARIONAME, WM_SETTEXT, 0, (LPARAM)Session.Options.ScenarioDescription);
 	Clear_Vector(&Session.Players);
+	Clear_Vector(&Session.Computers);
 
 	handle = GetDlgItem(window, IDC_SKIRMISH_BASES);
 	if (handle) Button_SetCheck(handle, Session.Options.Bases ? BST_CHECKED : BST_UNCHECKED);

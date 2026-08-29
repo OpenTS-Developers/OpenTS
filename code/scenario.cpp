@@ -2062,6 +2062,27 @@ void Write_Scenario_INI(char const * fname, bool mplayer)
 }
 
 
+/// <summary>
+/// Fetches the node a seat of the match was described by.
+/// The seats are numbered in the order their houses are created: the players first, then the
+/// computer players a session source seated.
+/// </summary>
+/// <param name="seat">The seat to fetch, counted from zero.</param>
+/// <returns>The node describing that seat, or NULL if the match does not hold it.</returns>
+static NodeNameType * Seated_Node(int seat)
+{
+	if (seat < 0) {
+		return(NULL);
+	}
+	if (seat < Session.Players.Count()) {
+		return(Session.Players[seat]);
+	}
+
+	seat -= Session.Players.Count();
+	return(seat < Session.Computers.Count() ? Session.Computers[seat] : NULL);
+}
+
+
 /***********************************************************************************************
  * Assign_Houses -- Assigns multiplayer houses to various players                              *
  *                                                                                             *
@@ -2160,6 +2181,8 @@ void Assign_Houses(void)
 
 		housep->Assign_Handicap(DIFF_NORMAL);
 
+		housep->SpawnWaypoint = player->Player.SpawnChoice;
+
 		//.....................................................................
 		// Record where we placed this player
 		//.....................................................................
@@ -2172,7 +2195,18 @@ void Assign_Houses(void)
 	// Now assign computer players to the remaining houses.
 	//------------------------------------------------------------------------
 	for (i = Session.Players.Count(); i < Session.Players.Count() + Session.Options.AIPlayers; i++) {
+
+		/*
+		 * A session source may have seated this computer player itself. What it left
+		 * unnamed the game draws, exactly as it does for a game set up from the menu.
+		 */
+		int seatnum = i - Session.Players.Count();
+		NodeNameType * seat = seatnum < Session.Computers.Count() ? Session.Computers[seatnum] : NULL;
+
 		pref_house = (HousesType)Random_Pick(0, 1);
+		if (seat != NULL && seat->Player.House != -1) {
+			pref_house = (HousesType)seat->Player.House;
+		}
 
 		// Pick a color for this house; keep looping until we find one.
 		int color = -1;
@@ -2181,6 +2215,14 @@ void Assign_Houses(void)
 			if (color_used[color] == false) {
 				break;
 			}
+		}
+
+		/*
+		 * A seated color is taken as written, repeats included, since a cooperative team
+		 * shares one.
+		 */
+		if (seat != NULL && seat->Player.Color != -1) {
+			color = seat->Player.Color;
 		}
 		color_used[color] = true;
 
@@ -2195,7 +2237,7 @@ void Assign_Houses(void)
 		housep->Init_Data(color, pref_house, Session.Options.Credits);
 		housep->Scheme = Session.Color_Index_To_Scheme(color);
 		housep->Initialize_Radar_Color();
-		housep->IniName = Fetch_String(TXT_COMPUTER);
+		housep->IniName = (seat != NULL && seat->Name[0] != '\0') ? seat->Name : Fetch_String(TXT_COMPUTER);
 
 		if (Session.Type != GAME_NORMAL) {
 			housep->IQ = Rule->MaxIQ;
@@ -2205,7 +2247,40 @@ void Assign_Houses(void)
 		if (Session.Players.Count() > 1 && Rule->IsCompEasyBonus && difficulty > DIFF_EASY) {
 			difficulty = (DiffType)(difficulty - 1);
 		}
+		if (seat != NULL && seat->Player.Handicap >= 0) {
+			difficulty = (DiffType)seat->Player.Handicap;
+		}
 		housep->Assign_Handicap(difficulty);
+
+		if (seat != NULL) {
+			housep->SpawnWaypoint = seat->Player.SpawnChoice;
+			seat->Player.ID = housep->HeapID;
+		}
+	}
+
+	/*
+	 * The alliance table names seats, in the order the houses above were created. While the
+	 * scenario is still assembling, a pact is always permitted and is made quietly, so the
+	 * table stands before the first frame is played. The seats are walked before the neutral
+	 * and special houses exist, since neither is a seat of the match.
+	 */
+	int seated = Session.Players.Count() + Session.Computers.Count();
+	for (int seatnum = 0; seatnum < seated; seatnum++) {
+		NodeNameType * node = Seated_Node(seatnum);
+		if (node == NULL || node->Player.AlliesMask == 0) {
+			continue;
+		}
+
+		for (int target = 0; target < seated; target++) {
+			if (target == seatnum || (node->Player.AlliesMask & (1u << target)) == 0) {
+				continue;
+			}
+
+			NodeNameType * other = Seated_Node(target);
+			if (other != NULL) {
+				Houses[node->Player.ID]->Make_Ally(Houses[other->Player.ID]);
+			}
+		}
 	}
 
 	HouseClass * neutral_house = new HouseClass(HouseTypes[HouseTypeClass::From_Name("Neutral")]);
@@ -2249,18 +2324,71 @@ static void Remove_AI_Players(void)
 
 
 /// <summary>
+/// Makes up a shortfall of starting locations with open ground.
+/// A map is not obliged to declare a start position for everybody playing, so spots are
+/// drawn until there are enough of them to go round.
+/// </summary>
+/// <param name="waypts">The list of starting locations to append to.</param>
+/// <param name="usable">How many of the locations may actually be started from; raised as
+/// spots are appended.</param>
+/// <param name="wanted">How many are needed.</param>
+static void Append_Open_Start_Positions(DynamicVectorClass<Cell> & waypts, int & usable, int wanted)
+{
+	if (usable >= wanted) {
+		return;
+	}
+
+	DebugString("Multiplayer start waypoint deficiency - looking for more start positions\n");
+
+	while (usable < wanted) {
+		Cell trycell = Cell(Map.MapRect.X + Random_Pick(10, Map.MapRect.Width - 10), Map.MapRect.Y + 10 + Random_Pick(0, Map.MapRect.Height - 10));
+
+		trycell = Map.Nearby_Location(trycell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(8, 8));
+		if (trycell != CELL_NONE) {
+			waypts.Add(trycell);
+			usable++;
+			DebugString("Random multiplayer start waypoint added at cell %d,%d\n", trycell.X, trycell.Y);
+		}
+	}
+}
+
+
+/// <summary>
 /// Fetches the starting locations available to a multiplayer game.
 /// The scenario's own waypoints are preferred, but a map that does not supply enough of
 /// them for everyone playing has the shortfall made up with random spots on open ground.
+/// When a house has asked for a position by number, the list is built so that an entry's
+/// place in it is the waypoint of that number, and a waypoint the map does not declare
+/// keeps its place as a hole rather than letting the ones after it slide down.
 /// </summary>
 /// <param name="official">Is this one of the maps that shipped with the game?</param>
+/// <param name="keep_identity">Must an entry's place in the list be its waypoint number?</param>
 /// <returns>Returns with the list of cells that players may be started from.</returns>
-static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official)
+static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool keep_identity)
 {
 	DynamicVectorClass<Cell> waypts;
 
+	if (keep_identity) {
+		int usable = 0;
+		for (int waycount = 0; waycount < MAX_PLAYERS; waycount++) {
+			bool declared = Scen->Is_Valid_Waypoint(waycount);
+			waypts.Add(declared ? Scen->Get_Waypoint_Cell(waycount) : CELL_NONE);
+			if (declared) {
+				usable++;
+			}
+		}
+
+		/*
+		 * The spots making up a shortfall are appended past the numbered ones, so that no
+		 * number comes to mean a place the map never named.
+		 */
+		Append_Open_Start_Positions(waypts, usable, Session.Players.Count() + Session.Options.AIPlayers);
+
+		return(waypts);
+	}
+
 	int num_waypts = 0;
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < MAX_PLAYERS; i++) {
 		if (Scen->Is_Valid_Waypoint(i)) {
 			num_waypts++;
 		} else {
@@ -2276,7 +2404,7 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official)
 	*/
 	int look_for = std::max(num_waypts, Session.Players.Count()+Session.Options.AIPlayers);
 	if (!official) {
-		look_for = 8;
+		look_for = MAX_PLAYERS;
 	}
 
 	for (int waycount = 0; waycount < look_for; waycount++) {
@@ -2286,24 +2414,8 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official)
 		}
 	}
 
-	/*
-	**	If there are insufficient waypoints to account for all players, then randomly assign
-	**	starting points until there is enough.
-	*/
-	int deficiency = look_for - waypts.Count();
-	if (deficiency > 0) {
-		DebugString("Multiplayer start waypoint deficiency - looking for more start positions\n");
-
-		while (waypts.Count() < look_for) {
-			Cell trycell = Cell(Map.MapRect.X + Random_Pick(10, Map.MapRect.Width - 10), Map.MapRect.Y + 10 + Random_Pick(0, Map.MapRect.Height - 10));
-
-			trycell = Map.Nearby_Location(trycell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(8, 8));
-			if (trycell != CELL_NONE) {
-				waypts.Add(trycell);
-				DebugString("Random multiplayer start waypoint added at cell %d,%d\n", trycell.X, trycell.Y);
-			}
-		}
-	}
+	int usable = waypts.Count();
+	Append_Open_Start_Positions(waypts, usable, look_for);
 
 	return(waypts);
 }
@@ -2367,15 +2479,27 @@ static void Create_Units(bool official)
 	int max_value = unit_count * average_cost;
 
 	/*
+	 * A house only asks for a position by number when a session source chose one for it,
+	 * and that is what decides whether the numbers have to keep their identity.
+	 */
+	bool choices = false;
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index] != NULL && Houses[index]->SpawnWaypoint >= 0) {
+			choices = true;
+			break;
+		}
+	}
+
+	/*
 	**	Build a list of the valid waypoints. This normally shouldn't be
 	**	necessary because the scenario level designer should have assigned
 	**	valid locations to the first N waypoints, but just in case, this
 	**	loop verifies that.
 	*/
-	DynamicVectorClass<Cell> waypts = Build_Start_Waypoint_List(official);
-	bool taken[16];
+	DynamicVectorClass<Cell> waypts = Build_Start_Waypoint_List(official, choices);
+	bool taken[MAX_PLAYERS * 2];
 	for (int index = 0; index < ARRAY_SIZE(taken); index++) {
-		taken[index] = false;
+		taken[index] = choices && index < waypts.Count() && waypts[index] == CELL_NONE;
 	}
 
 	/*
@@ -2425,10 +2549,18 @@ static void Create_Units(bool official)
 		**	one of the valid locations at random. The other houses pick the furthest
 		**	wapoint from the existing houses.
 		*/
-		if (numtaken == 0) {
-			int pick = Random_Pick(0, waypts.Count() - 1);
+		if (choices && hptr->SpawnWaypoint >= 0 && hptr->SpawnWaypoint < waypts.Count() && !taken[hptr->SpawnWaypoint]) {
+			centroid = waypts[hptr->SpawnWaypoint];
+			taken[hptr->SpawnWaypoint] = true;
+			numtaken++;
+		} else if (numtaken == 0) {
+			int pick;
+			do {
+				pick = Random_Pick(0, waypts.Count() - 1);
+			} while (taken[pick]);
 			centroid = waypts[pick];
 			taken[pick] = true;
+			hptr->SpawnWaypoint = pick;
 			numtaken++;
 		} else {
 
@@ -2453,7 +2585,7 @@ static void Create_Units(bool official)
 				if (!taken[index]) {
 					for (int trypoint = 0; trypoint < waypts.Count(); trypoint++) {
 
-						if (taken[trypoint]) {
+						if (taken[trypoint] && waypts[trypoint] != CELL_NONE) {
 							score[index] += Distance(waypts[index], waypts[trypoint]);
 						}
 					}
@@ -2467,6 +2599,9 @@ static void Create_Units(bool official)
 			int best = 0;
 			int bestvalue = 0;
 			for (int searchindex = 0; searchindex < waypts.Count(); searchindex++) {
+				if (waypts[searchindex] == CELL_NONE) {
+					continue;
+				}
 				if (score[searchindex] > bestvalue || bestvalue == 0) {
 					bestvalue = score[searchindex];
 					best = searchindex;
@@ -2478,6 +2613,7 @@ static void Create_Units(bool official)
 			*/
 			centroid = waypts[best];
 			taken[best] = true;
+			hptr->SpawnWaypoint = best;
 			numtaken++;
 		}
 

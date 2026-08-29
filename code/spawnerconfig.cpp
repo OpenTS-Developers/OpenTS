@@ -11,9 +11,11 @@
 #include "spawnerconfig.h"
 
 #include "crc.h"
+#include "diff.hh"
 #include "ini.h"
 
 #include <algorithm>
+#include <cstdarg>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -59,6 +61,26 @@ int Read_Slot_Int(INIClass const & ini, char const * section, int slot, int fall
 {
 	std::string entry = "Multi" + std::to_string(slot + 1);
 	return(ini.Get_Int(section, entry.c_str(), fallback));
+}
+
+
+/// <summary>
+/// Names the fault that refuses a launch.
+/// </summary>
+/// <param name="fault">Where to leave the sentence describing the fault.</param>
+/// <param name="format">A printf style description of the fault.</param>
+/// <returns>false, so a caller can name a fault and refuse in one statement.</returns>
+bool Fault(std::string & fault, char const * format, ...)
+{
+	char buffer[256];
+
+	va_list args;
+	va_start(args, format);
+	std::vsnprintf(buffer, sizeof(buffer), format, args);
+	va_end(args);
+
+	fault = buffer;
+	return(false);
 }
 
 }
@@ -251,6 +273,90 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	}
 
 	return(crc());
+}
+
+
+/// <summary>
+/// The difficulty a seat is played at, given the one it asked for.
+/// A client may offer more easy settings than the game holds; the easiest one the game has
+/// is what any easier request comes to. A seat asking for nothing keeps the session default.
+/// </summary>
+/// <param name="asked">The difficulty the launch file asked for.</param>
+/// <returns>The difficulty to play the seat at, or -1 for the session default.</returns>
+int SpawnerConfigClass::Playable_Handicap(int asked)
+{
+	if (asked < 0) {
+		return(-1);
+	}
+	if (asked > DIFF_HARD) {
+		return(DIFF_EASY);
+	}
+	return(asked);
+}
+
+
+/// <summary>
+/// Judges whether this reading describes a game that can be played.
+/// The countries and colors are handed in because they are the rules', settled only once the
+/// game has loaded them, while everything else a launch is refused for is here in the file.
+/// </summary>
+/// <param name="countries">How many countries the rules declared.</param>
+/// <param name="colors">How many colors a house may be given.</param>
+/// <param name="fault">Where to leave the sentence describing the first fault found.</param>
+/// <returns>bool; Can the game this file describes be played?</returns>
+bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const
+{
+	int free_seats = SLOT_COUNT - HumanCount;
+	if (AIPlayers < 0 || AIPlayers > free_seats) {
+		return(Fault(fault, "The file asks for %d computer players, and %d seats are left.",
+			AIPlayers, free_seats));
+	}
+
+	for (int index = 0; index < SLOT_COUNT; index++) {
+		SlotType const & slot = Slots[index];
+		if (slot.Occupancy == OccupancyType::Empty) {
+			continue;
+		}
+
+		bool human = slot.Occupancy == OccupancyType::Human;
+
+		/*
+		 * A computer seat may leave its country and its color to the game, as a game set up
+		 * from the menu does. A person's seat names both.
+		 */
+		if ((human || slot.Country != -1) && (slot.Country < 0 || slot.Country >= countries)) {
+			return(Fault(fault, "Seat %d is given country %d, and there are %d to choose from.",
+				index + 1, slot.Country, countries));
+		}
+
+		/*
+		 * A shared color is not a fault: co-op matches deliberately give one team's houses
+		 * the same color. Only a color the game has no scheme for refuses.
+		 */
+		if ((human || slot.Color != -1) && (slot.Color < 0 || slot.Color >= colors)) {
+			return(Fault(fault, "Seat %d is given color %d, and there are %d to choose from.",
+				index + 1, slot.Color, colors));
+		}
+
+		if (slot.Handicap < -1 || slot.Handicap > 6) {
+			return(Fault(fault, "Seat %d is given difficulty %d, which names none.",
+				index + 1, slot.Handicap));
+		}
+
+		for (int ally : slot.Alliances) {
+			if (ally < -1 || ally >= SLOT_COUNT) {
+				return(Fault(fault, "Seat %d is allied to seat %d, which the match does not hold.",
+					index + 1, ally + 1));
+			}
+		}
+
+		if (slot.IsSpectator) {
+			return(Fault(fault, "Seat %d watches rather than plays, which this game cannot yet do.",
+				index + 1));
+		}
+	}
+
+	return(true);
 }
 
 
