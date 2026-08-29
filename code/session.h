@@ -731,6 +731,13 @@ class SessionClass
 		DynamicVectorClass <NodeNameType *> Games;      // list of games
 		DynamicVectorClass <NodeNameType *> Players;    // list of players
 		DynamicVectorClass <NodeNameType *> Chat;       // list of chat nodes
+
+		/*
+		 * The computer players a session source seated, in the order their houses are
+		 * created, after the human ones. The menu leaves this empty and lets the game draw
+		 * its own computer players.
+		 */
+		DynamicVectorClass <NodeNameType *> Computers;
 		int Suspended;
 
 		/*

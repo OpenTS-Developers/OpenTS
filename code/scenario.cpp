@@ -2182,7 +2182,18 @@ void Assign_Houses(void)
 	// Now assign computer players to the remaining houses.
 	//------------------------------------------------------------------------
 	for (i = Session.Players.Count(); i < Session.Players.Count() + Session.Options.AIPlayers; i++) {
+
+		/*
+		 * A session source may have seated this computer player itself. What it left
+		 * unnamed the game draws, exactly as it does for a game set up from the menu.
+		 */
+		int seatnum = i - Session.Players.Count();
+		NodeNameType * seat = seatnum < Session.Computers.Count() ? Session.Computers[seatnum] : NULL;
+
 		pref_house = (HousesType)Random_Pick(0, 1);
+		if (seat != NULL && seat->Player.House != -1) {
+			pref_house = (HousesType)seat->Player.House;
+		}
 
 		// Pick a color for this house; keep looping until we find one.
 		int color = -1;
@@ -2191,6 +2202,14 @@ void Assign_Houses(void)
 			if (color_used[color] == false) {
 				break;
 			}
+		}
+
+		/*
+		 * A seated color is taken as written, repeats included, since a cooperative team
+		 * shares one.
+		 */
+		if (seat != NULL && seat->Player.Color != -1) {
+			color = seat->Player.Color;
 		}
 		color_used[color] = true;
 
@@ -2205,7 +2224,7 @@ void Assign_Houses(void)
 		housep->Init_Data(color, pref_house, Session.Options.Credits);
 		housep->Scheme = Session.Color_Index_To_Scheme(color);
 		housep->Initialize_Radar_Color();
-		housep->IniName = Fetch_String(TXT_COMPUTER);
+		housep->IniName = (seat != NULL && seat->Name[0] != '\0') ? seat->Name : Fetch_String(TXT_COMPUTER);
 
 		if (Session.Type != GAME_NORMAL) {
 			housep->IQ = Rule->MaxIQ;
@@ -2215,7 +2234,15 @@ void Assign_Houses(void)
 		if (Session.Players.Count() > 1 && Rule->IsCompEasyBonus && difficulty > DIFF_EASY) {
 			difficulty = (DiffType)(difficulty - 1);
 		}
+		if (seat != NULL && seat->Player.Handicap >= 0) {
+			difficulty = (DiffType)seat->Player.Handicap;
+		}
 		housep->Assign_Handicap(difficulty);
+
+		if (seat != NULL) {
+			housep->SpawnWaypoint = seat->Player.SpawnChoice;
+			seat->Player.ID = housep->HeapID;
+		}
 	}
 
 	HouseClass * neutral_house = new HouseClass(HouseTypes[HouseTypeClass::From_Name("Neutral")]);

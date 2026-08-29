@@ -413,6 +413,7 @@ BOOL Skirmish_On_WM_INITDIALOG(HWND window, WPARAM wparam, LPARAM lparam)
 	Session.Options.ScenarioIndex = 0;
 	SendDlgItemMessage(window, IDC_SCENARIONAME, WM_SETTEXT, 0, (LPARAM)Session.Options.ScenarioDescription);
 	Clear_Vector(&Session.Players);
+	Clear_Vector(&Session.Computers);
 
 	handle = GetDlgItem(window, IDC_SKIRMISH_BASES);
 	if (handle) Button_SetCheck(handle, Session.Options.Bases ? BST_CHECKED : BST_UNCHECKED);
