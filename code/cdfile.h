@@ -54,6 +54,10 @@ class CDFileClass : public BufferIOFileClass
 		CDFileClass(void);
 		virtual ~CDFileClass(void) override;
 
+		// A file object owns the name it captured, so it is not copied.
+		CDFileClass(CDFileClass const & file) = delete;
+		CDFileClass & operator = (CDFileClass const & file) = delete;
+
 		virtual char const * Set_Name(char const *filename) override;
 		virtual int Open(char const *filename, int rights=READ) override;
 		virtual int Open(int rights=READ) override;
@@ -103,8 +107,4 @@ class CDFileClass : public BufferIOFileClass
 		**	This points to the first path record.
 		*/
 		static SearchDriveType * First;
-
-		// A file object owns the name it captured, so it is not copied.
-		CDFileClass(CDFileClass const & file);
-		CDFileClass & operator = (CDFileClass const & file);
 };
