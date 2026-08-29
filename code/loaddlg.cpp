@@ -508,7 +508,7 @@ bool LoadOptionsClass::Dialog(void)
 							}
 
 							if (filename != NULL) {
-								bool exists = RawFileClass(filename).Is_Available() == true;
+								bool exists = CDFileClass(filename).Is_Available() == true;
 								if (exists && WWMessageBox()._Process(TXT_CONFIRM_SAVE, 1, TXT_YES, TXT_NO, TXT_NONE))
 									State = STATE_PENDING;
 								else {
@@ -606,6 +606,25 @@ void LoadOptionsClass::Clear_List(void)
 }
 
 
+/*
+ * Recovers the directory entry for a saved game the scan turned up. The scan reports bare
+ * names, so the file is located the way an open would locate it and then asked about by the
+ * name it actually has. The entry names the file alone, without the directory it sits in.
+ */
+static bool Find_Saved_Game(char const * name, WIN32_FIND_DATAA * entry)
+{
+	CDFileClass located(name);
+
+	HANDLE handle = FindFirstFile(located.File_Name(), entry);
+	if (handle == INVALID_HANDLE_VALUE) {
+		return(false);
+	}
+
+	FindClose(handle);
+	return(true);
+}
+
+
 /***********************************************************************************************
  * LoadOptionsClass::Fill_List -- fills the list box & GameNum arrays                          *
  *                                                                                             *
@@ -662,40 +681,30 @@ void LoadOptionsClass::Fill_List(HWND window)
 	sprintf(buffer, "*.%3s", Extension);
 
 	/*
-	**	Find all savegame files
+	**	Find all savegame files, wherever the game reads and writes them.
 	*/
-	HANDLE hFind = FindFirstFile(User_File_Write_Name(buffer).c_str(), &ff);
 	fdata = NULL;
 
-	if (hFind != INVALID_HANDLE_VALUE) {
-		while (true) {
-			if ((ff.dwFileAttributes & (FILE_ATTRIBUTE_TEMPORARY|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)) == 0) {
-				if (fdata == NULL) {
-					fdata = new FileEntryClass;
-				}
-
-				/*
-				**	get the game's info; if success, add it to the list
-				*/
-				if (Read_File(fdata, &ff) == true) {
-					Files.Add(fdata);
-					fdata = NULL;
-				}
-			}
-
-			/*
-			**	Find the next file
-			*/
-			if (!FindNextFile(hFind, &ff)) {
-				break;
-			}
+	for (std::string const & name : Search_Files(buffer)) {
+		if (!Find_Saved_Game(name.c_str(), &ff)) {
+			continue;
 		}
 
-		if (fdata != NULL) {
-			delete fdata;
+		if (fdata == NULL) {
+			fdata = new FileEntryClass;
 		}
 
-		FindClose(hFind);
+		/*
+		**	get the game's info; if success, add it to the list
+		*/
+		if (Read_File(fdata, &ff) == true) {
+			Files.Add(fdata);
+			fdata = NULL;
+		}
+	}
+
+	if (fdata != NULL) {
+		delete fdata;
 	}
 
 	if (Files.Count() > 0) {
@@ -777,30 +786,22 @@ bool LoadOptionsClass::Files_Present(void)
 	sprintf(pattern, "*.%3s", Extension);
 
 	WIN32_FIND_DATAA find_data;
-	HANDLE hFind = FindFirstFile(User_File_Write_Name(pattern).c_str(), &find_data);
 
-	if (hFind != INVALID_HANDLE_VALUE) {
-		while (true) {
-			if ((find_data.dwFileAttributes & (FILE_ATTRIBUTE_TEMPORARY|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)) == 0) {
-				if (_stricmp(find_data.cFileName, NET_SAVE_FILE_NAME) != 0) {
-					FileEntryClass entry;
-					if (Read_File(&entry, &find_data) == true) {
-						files_found = true;
-						break;
-					}
-				}
-			}
+	for (std::string const & name : Search_Files(pattern)) {
+		if (_stricmp(name.c_str(), NET_SAVE_FILE_NAME) == 0) {
+			continue;
+		}
 
-			/*
-			**	Find the next file
-			*/
-			if (!FindNextFile(hFind, &find_data)) {
-				break;
-			}
+		if (!Find_Saved_Game(name.c_str(), &find_data)) {
+			continue;
+		}
+
+		FileEntryClass entry;
+		if (Read_File(&entry, &find_data) == true) {
+			files_found = true;
+			break;
 		}
 	}
-
-	FindClose(hFind);
 
 	return(files_found);
 }
