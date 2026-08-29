@@ -1,6 +1,4 @@
 {
-  // Local workspace settings for OpenTS. .vscode/ is gitignored, so this is personal.
-
   // CMake Tools: pin the generator/platform to match docs/BUILDING.md.
   "cmake.sourceDirectory": "${workspaceFolder}",
   "cmake.buildDirectory": "${workspaceFolder}/build",

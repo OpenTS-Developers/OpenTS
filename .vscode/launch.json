@@ -12,10 +12,7 @@
       "request": "launch",
       "preLaunchTask": "Build OpenTS: Debug",
       "program": "${workspaceFolder}/Run/GameD.exe",
-      "args": [],
-      "stopAtEntry": false,
       "cwd": "${workspaceFolder}/Run",
-      "environment": [],
       "console": "internalConsole",
       "symbolSearchPath": "${workspaceFolder}/Run"
     },
@@ -25,10 +22,7 @@
       "request": "launch",
       "preLaunchTask": "Build OpenTS: Release",
       "program": "${workspaceFolder}/Run/Game.exe",
-      "args": [],
-      "stopAtEntry": false,
       "cwd": "${workspaceFolder}/Run",
-      "environment": [],
       "console": "internalConsole",
       "symbolSearchPath": "${workspaceFolder}/Run"
     },

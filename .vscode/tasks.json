@@ -1,6 +1,4 @@
 {
-  // VS Code tasks for OpenTS. Build commands mirror docs/BUILDING.md.
-  // Note: .vscode/ is gitignored in this repo, so this file is local to your checkout.
   "version": "2.0.0",
   "tasks": [
     {
