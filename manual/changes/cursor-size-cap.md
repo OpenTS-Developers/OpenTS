@@ -1,7 +1,7 @@
 ---
 title: Keep the pointer within the system cursor size
 category: fix
-release: 0.1.0
+release: 0.2.0
 targets:
 - type: key
   id: CursorScale

@@ -1,7 +1,7 @@
 ---
 title: Show the pointer when a dialog takes the mouse
 category: fix
-release: 0.1.0
+release: 0.2.0
 targets:
 - type: key
   id: CursorScale
