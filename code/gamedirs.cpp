@@ -51,10 +51,12 @@ static std::string Trim_Path(std::string const & path)
 }
 
 
-/*
- * A directory is kept in the form a file name can simply be appended to, which is what the
- * search chain has always expected of one.
- */
+/// <summary>
+/// Puts a directory in the form a file name can simply be appended to, which is what the
+/// search chain has always expected of one.
+/// </summary>
+/// <param name="path">The directory to terminate.</param>
+/// <returns>The directory, ending in a separator.</returns>
 static std::string Terminate_Path(std::string const & path)
 {
 	if (path.empty()) {
@@ -94,10 +96,12 @@ static bool Is_Registered(std::string const & path)
 }
 
 
-/*
- * Where a deployment's files are, which is the data directory when one is named and the
- * game's own directory otherwise. Everything a configuration names is relative to it.
- */
+/// <summary>
+/// Reports where a deployment's files are, which is the data directory when one is named
+/// and the game's own directory otherwise. Everything a configuration names is relative
+/// to it.
+/// </summary>
+/// <returns>The directory a deployment's files are kept in.</returns>
 static std::string Data_Home(void)
 {
 	return(DataDirectory);

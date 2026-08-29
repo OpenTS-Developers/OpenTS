@@ -199,17 +199,27 @@ char const * CDFileClass::User_Path(void)
 }
 
 
-// A name that names a directory of its own has already said where it goes, so neither the
-// search nor the player's own directory touches it. The characters are the ones a directory
-// is allowed to end with.
+/// <summary>
+/// Reports whether a name already carries a directory of its own.
+/// Such a name has said where it goes, so neither the search nor the player's own directory
+/// touches it. The characters are the ones a directory is allowed to end with.
+/// </summary>
+/// <param name="filename">The name to examine.</param>
+/// <returns>bool; Does the name carry a directory?</returns>
 bool CDFileClass::Has_Directory(char const * filename)
 {
 	return(filename != NULL && strpbrk(filename, "\\/:") != NULL);
 }
 
 
-// Where a file belongs once it is the player's own. Fails when there is no such directory,
-// when the caller has already named one, or when the two will not make one pathname.
+/// <summary>
+/// Works out where a file belongs once it is the player's own.
+/// </summary>
+/// <param name="filename">The name the game asked for.</param>
+/// <param name="buffer">Receives the pathname when one can be built.</param>
+/// <param name="size">The size of that buffer.</param>
+/// <returns>bool; Was a pathname built? It fails when the player has no directory of their
+/// own, when the caller has already named one, or when the two will not make one pathname.</returns>
 bool CDFileClass::User_Path_For(char const * filename, char * buffer, int size)
 {
 	if (UserPath == NULL || filename == NULL) return(false);
@@ -222,9 +232,13 @@ bool CDFileClass::User_Path_For(char const * filename, char * buffer, int size)
 }
 
 
-// Keeps a copy of the name the game asked for. The copy is this object's own, so that the
-// name survives the object being pointed at a copy found elsewhere, and survives a mixfile
-// lookup writing over the name in place.
+/// <summary>
+/// Keeps a copy of the name the game asked for.
+/// The copy is this object's own, so that the name survives the object being pointed at a
+/// copy found elsewhere, and survives a mixfile lookup writing over the name in place.
+/// </summary>
+/// <param name="filename">The name to keep, or NULL to let go of the one kept.</param>
+/// <returns>The kept copy, which lasts until the next name is kept.</returns>
 char const * CDFileClass::Capture_Name(char const * filename)
 {
 	char * captured = (filename != NULL) ? strdup(filename) : NULL;
@@ -238,9 +252,11 @@ char const * CDFileClass::Capture_Name(char const * filename)
 }
 
 
-// Points the object at the file this player's own game owns, which is where a write and a
-// delete both belong. Worked out from the name that was asked for rather than from the one
-// the object carries, so that it lands in the same place however often it is done.
+/// <summary>
+/// Points the object at the file this player's own game owns, where a write and a delete
+/// both belong. Worked out from the name that was asked for rather than from the one the
+/// object carries, so that it lands in the same place however often it is done.
+/// </summary>
 void CDFileClass::Point_At_Own_Copy(void)
 {
 	if (IsDisabled || RequestedName == NULL) return;
