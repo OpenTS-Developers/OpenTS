@@ -17,25 +17,23 @@ void Get_CPU_Type(int & cpu_type, bool & mmx, char * vendor_id = 0, int vendor_i
 
 extern "C" {
 	bool __cdecl Detect_MMX_Availability(void);
-	bool __cdecl Detect_CMOV_Availability(void);
 
 	extern char CPUType;
 	extern char VendorID[];
 
 	/*
-	 * Written by the two detection routines above. HasCMOV records that the instruction
-	 * exists, UseCMOV that the detection considers it worth taking; a Pentium reporting CMOV
-	 * still runs the path that avoids it.
+	 * Fixed true rather than probed: the supported minimum hardware (SSE2, so a Pentium 4 or
+	 * Athlon 64 onward) always has CMOV and MMX.
 	 */
 	extern char UseCMOV;
 	extern char HasCMOV;
 	extern char UseMMX;
 }
 
-/*
-**	The type of processor running on this system as
-**	returned by Processor().
-*/
+// Processor family constants. Get_CPU_Type reports the CPUID base family through its
+// cpu_type parameter; callers compare it against these to scale behavior with CPU
+// generation. PROC_80386 and PROC_80486 are unreachable on the supported minimum hardware
+// (SSE2, so a Pentium 4 or Athlon 64 onward), which always carries CPUID.
 #define	PROC_80386			0
 #define	PROC_80486			1
 #define	PROC_PENTIUM		2

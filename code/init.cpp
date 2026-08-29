@@ -304,14 +304,12 @@ int Init_Game(int , char * [])
 	}
 
 	/*
-	**	Allocate the benchmark tracking objects only if the machine and
-	**	compile flags indicate.
+	**	Allocate the benchmark tracking objects in debug builds; no runtime capability check
+	**	is needed since the supported minimum hardware always qualifies.
 	*/
 #ifdef _DEBUG
-	if (Processor() >= 2) {
 		DebugString("Creating benchmarks\n");
 		Benches = new Benchmark [BENCH_COUNT];
-	}
 #endif
 
 	/*

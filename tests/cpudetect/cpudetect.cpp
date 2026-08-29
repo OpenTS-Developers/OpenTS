@@ -7,10 +7,10 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Checks the processor detection in detproc.cpp against CPUID read directly here. The
+// Checks the processor detection in getcpu.cpp against CPUID read directly here. The
 // detection used to be hand-written assembly, so the point is to confirm the C++ reports the
-// same family, vendor and feature flags the instruction does, on whatever machine runs it.
-// Needs no game data.
+// same family and vendor the instruction does, and that MMX and CMOV are reported available
+// unconditionally, as required by the supported minimum hardware. Needs no game data.
 
 #include <windows.h>
 
@@ -19,7 +19,6 @@
 #include <intrin.h>
 
 #include "getcpu.h"
-#include "misc.h"
 #include "mpu.h"
 
 namespace {
@@ -98,17 +97,15 @@ int main(void)
 	expected[13] = '\0';
 	Check(std::strcmp(reported, expected) == 0, "Vendor string matches CPUID");
 
-	bool const expect_mmx = (family >= 5) && ((edx & 0x00800000) != 0);
-	Check(mmx == expect_mmx, "MMX result matches CPUID feature bit");
-	Check((UseMMX != 0) == expect_mmx, "UseMMX global matches CPUID feature bit");
-
-	bool const cmov_bit = ((edx & 0x00008000) != 0);
-	bool const expect_has = (family >= 5) && cmov_bit;
-	bool const expect_use = (family > 5) && cmov_bit;
-	Check((HasCMOV != 0) == expect_has, "HasCMOV matches CPUID feature bit");
-	Check((UseCMOV != 0) == expect_use, "UseCMOV set only above family 5");
-
-	Check(Processor() == PROC_PENTIUM, "Processor reports a CPUID-capable part");
+	/*
+	 * The supported minimum hardware (SSE2, so a Pentium 4 or Athlon 64 onward) always carries
+	 * MMX and CMOV, so detection reports both available unconditionally rather than reading
+	 * the CPUID feature bits.
+	 */
+	Check(mmx, "Get_CPU_Type reports MMX available");
+	Check(UseMMX != 0, "UseMMX global reports available");
+	Check(HasCMOV != 0, "HasCMOV global reports available");
+	Check(UseCMOV != 0, "UseCMOV global reports available");
 
 	/*
 	 * The clock accumulator only ever counts up, so a later read cannot be the smaller of

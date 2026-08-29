@@ -81,38 +81,21 @@ unsigned int Get_CPU_Rate(unsigned int & high)
 }
 
 
-#if 0
-/***********************************************************************************************
- * Get_CPU_Clock -- Fetches the current CPU clock time.                                        *
- *                                                                                             *
- *    This routine will return the internal Pentium clock accumulator. This accumulator is     *
- *    incremented every clock tick. Since this clock value can get very very large, the value  *
- *    returned is in 64 bits. The low half is returned directly, the high half is stored in    *
- *    location specified.                                                                      *
- *                                                                                             *
- * INPUT:   high  -- Reference to the high value of the 64 bit clock number.                   *
- *                                                                                             *
- * OUTPUT:  Returns with the low half of the CPU clock value.                                  *
- *                                                                                             *
- * WARNINGS:   This instruction is only available on Pentium or later processors.              *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/17/1996 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Fetches the processor's time stamp counter, which increments every clock tick. The value
+/// is 64 bits wide; the low half is returned and the high half stored through the reference.
+/// RDTSC is available on every processor the supported minimum hardware covers (SSE2, so a
+/// Pentium 4 or Athlon 64 onward).
+/// </summary>
+/// <param name="high">Receives the high half of the 64 bit clock value.</param>
+/// <returns>unsigned int; the low half of the clock value.</returns>
 unsigned int Get_CPU_Clock(unsigned int & high)
 {
-	int h;
-	int l;
-	__asm {
-		_emit 0Fh
-		_emit 31h
-		mov	[h],edx
-		mov	[l],eax
-	}
-	high = h;
-	return(l);
+	unsigned long long const stamp = __rdtsc();
+
+	high = (unsigned int)(stamp >> 32);
+	return((unsigned int)stamp);
 }
-#endif
 
 
 /*

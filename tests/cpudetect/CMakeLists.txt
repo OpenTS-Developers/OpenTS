@@ -2,8 +2,8 @@
 # that the recursive glob building OpenTS cannot pick this target's entry point up.
 add_executable(CpuDetect
     "${CMAKE_CURRENT_SOURCE_DIR}/cpudetect.cpp"
-    "${CMAKE_SOURCE_DIR}/code/detproc.cpp"
     "${CMAKE_SOURCE_DIR}/code/getcpu.cpp"
+    "${CMAKE_SOURCE_DIR}/code/mpu.cpp"
 )
 
 target_compile_features(CpuDetect PRIVATE cxx_std_20)
