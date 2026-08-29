@@ -2332,6 +2332,36 @@ static void Remove_AI_Players(void)
 
 
 /// <summary>
+/// Makes up a shortfall of starting locations with open ground.
+/// A map is not obliged to declare a start position for everybody playing, so spots are
+/// drawn until there are enough of them to go round.
+/// </summary>
+/// <param name="waypts">The list of starting locations to append to.</param>
+/// <param name="usable">How many of the locations may actually be started from; raised as
+/// spots are appended.</param>
+/// <param name="wanted">How many are needed.</param>
+static void Append_Open_Start_Positions(DynamicVectorClass<Cell> & waypts, int & usable, int wanted)
+{
+	if (usable >= wanted) {
+		return;
+	}
+
+	DebugString("Multiplayer start waypoint deficiency - looking for more start positions\n");
+
+	while (usable < wanted) {
+		Cell trycell = Cell(Map.MapRect.X + Random_Pick(10, Map.MapRect.Width - 10), Map.MapRect.Y + 10 + Random_Pick(0, Map.MapRect.Height - 10));
+
+		trycell = Map.Nearby_Location(trycell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(8, 8));
+		if (trycell != CELL_NONE) {
+			waypts.Add(trycell);
+			usable++;
+			DebugString("Random multiplayer start waypoint added at cell %d,%d\n", trycell.X, trycell.Y);
+		}
+	}
+}
+
+
+/// <summary>
 /// Fetches the starting locations available to a multiplayer game.
 /// The scenario's own waypoints are preferred, but a map that does not supply enough of
 /// them for everyone playing has the shortfall made up with random spots on open ground.
@@ -2347,30 +2377,20 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool ke
 	DynamicVectorClass<Cell> waypts;
 
 	if (keep_identity) {
-		int valid = 0;
+		int usable = 0;
 		for (int waycount = 0; waycount < START_WAYPOINT_COUNT; waycount++) {
 			bool declared = Scen->Is_Valid_Waypoint(waycount);
 			waypts.Add(declared ? Scen->Get_Waypoint_Cell(waycount) : CELL_NONE);
 			if (declared) {
-				valid++;
+				usable++;
 			}
 		}
 
 		/*
-		 * A map short of start positions still seats everybody, from spots appended past
-		 * the numbered ones so that no number comes to mean a place the map never named.
+		 * The spots making up a shortfall are appended past the numbered ones, so that no
+		 * number comes to mean a place the map never named.
 		 */
-		int needed = Session.Players.Count() + Session.Options.AIPlayers;
-		while (valid < needed) {
-			Cell trycell = Cell(Map.MapRect.X + Random_Pick(10, Map.MapRect.Width - 10), Map.MapRect.Y + 10 + Random_Pick(0, Map.MapRect.Height - 10));
-
-			trycell = Map.Nearby_Location(trycell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(8, 8));
-			if (trycell != CELL_NONE) {
-				waypts.Add(trycell);
-				valid++;
-				DebugString("Random multiplayer start waypoint added at cell %d,%d\n", trycell.X, trycell.Y);
-			}
-		}
+		Append_Open_Start_Positions(waypts, usable, Session.Players.Count() + Session.Options.AIPlayers);
 
 		return(waypts);
 	}
@@ -2402,24 +2422,8 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool ke
 		}
 	}
 
-	/*
-	**	If there are insufficient waypoints to account for all players, then randomly assign
-	**	starting points until there is enough.
-	*/
-	int deficiency = look_for - waypts.Count();
-	if (deficiency > 0) {
-		DebugString("Multiplayer start waypoint deficiency - looking for more start positions\n");
-
-		while (waypts.Count() < look_for) {
-			Cell trycell = Cell(Map.MapRect.X + Random_Pick(10, Map.MapRect.Width - 10), Map.MapRect.Y + 10 + Random_Pick(0, Map.MapRect.Height - 10));
-
-			trycell = Map.Nearby_Location(trycell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(8, 8));
-			if (trycell != CELL_NONE) {
-				waypts.Add(trycell);
-				DebugString("Random multiplayer start waypoint added at cell %d,%d\n", trycell.X, trycell.Y);
-			}
-		}
-	}
+	int usable = waypts.Count();
+	Append_Open_Start_Positions(waypts, usable, look_for);
 
 	return(waypts);
 }
