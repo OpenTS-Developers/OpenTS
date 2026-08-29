@@ -220,11 +220,7 @@ bool Skirmish_Mode_Dialog(void)
 {
 	int rc = -1;
 
-	Rule->Do_HouseTypes(*RuleINI);
-	Rule->Do_Sides(*RuleINI);
-	for (int i = 0; i < HouseTypes.Count(); i++) {
-		HouseTypes[i]->Read_INI(*RuleINI);
-	}
+	Prepare_Side_Roster();
 
 	Hide_Mouse();
 	Draw_Menu_Background();

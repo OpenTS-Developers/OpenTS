@@ -662,6 +662,23 @@ void Init_Campaigns(void)
 
 
 /// <summary>
+/// Reads the countries and the sides they belong to from the rules.
+/// This runs before a game is set up, so that a house's side is known before anything asks
+/// for it. The side roster is only established by reading it: a country carries the name of
+/// its side, and the rules' own side list decides what order the sides are registered in.
+/// </summary>
+void Prepare_Side_Roster(void)
+{
+	Rule->Do_HouseTypes(*RuleINI);
+	Rule->Do_Sides(*RuleINI);
+
+	for (int index = 0; index < HouseTypes.Count(); index++) {
+		HouseTypes[index]->Read_INI(*RuleINI);
+	}
+}
+
+
+/// <summary>
 /// Can this campaign be played with the addons that are enabled?
 /// A base game campaign is offered only when no addon is running, and an addon's own
 /// campaign only when that particular addon is running.
