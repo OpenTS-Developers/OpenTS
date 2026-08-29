@@ -311,6 +311,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	BuildingsLost(0),
 	WhoLastHurtMe(HOUSE_NONE),
 	Center(0,0,0),
+	SpawnWaypoint(-1),
 	Radius(0),
 	LATime(0),
 	LAEnemy(HOUSE_NONE),
@@ -6491,6 +6492,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EnemyAirForcePrediction);
 	stream.Serialize(EnemyInfantryForcePrediction);
 	stream.Serialize(PowerSurplus);
+	stream.Serialize(SpawnWaypoint);
 }
 
 
