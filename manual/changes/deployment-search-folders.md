@@ -31,7 +31,13 @@ searched folder instead of the game's own directory alone. They are still
 required to be loose files, so an expansion archive cannot be hidden inside
 another archive.
 
-Files the game writes are never written into a searched folder. The settings
-file, the hotkey file, the hall of fame and a saved random map were opened
-through the search before being written, so a copy a deployment had shipped in
-one of these folders could be overwritten, or deleted by the hotkey reset.
+Files the game writes are never written into a searched folder, and a file it
+deletes is never one of theirs. The settings file, the hotkey file, the hall of
+fame and a saved random map were opened through the search before being written,
+so a copy a deployment had shipped in one of these folders could be overwritten,
+and the hotkey reset could delete it. Both now settle on the game's own copy
+before writing.
+
+The settings written when the intro is first shown are saved again. The file was
+reopened for reading beforehand, which left the save with a file it could not
+write through.

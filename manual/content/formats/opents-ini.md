@@ -39,16 +39,18 @@ The game data directory is what [`-DATADIR`](/using/command-line/data-directory/
 
 ## The order files are searched for in
 
-1. the game's own directory, always examined first;
-2. the user data directory, when [`-USERDIR`](/using/command-line/user-directory/) names one;
+1. the user data directory, when [`-USERDIR`](/using/command-line/user-directory/) names one;
+2. the game's own directory;
 3. the folders [`-CD`](/using/command-line/cd-path/) added, in the order given;
 4. the game data directory, when `-DATADIR` names one;
 5. the folders `SearchPaths` lists, in the order written.
 
-Everything the game opens through its file layer follows that order: archives, rules, artwork, scenarios and launch files alike. A loose file still stands in for an archived one, so a copy found in any of these folders is used ahead of an archived copy of the same name.
+Everything the game opens follows that order: archives, rules, artwork, scenarios and launch files alike. A loose file still stands in for an archived one, so a copy found in any of these folders is used ahead of an archived copy of the same name.
 
-Wildcard searches — for rules, battle files, map packs, map archives and movie archives — cover every folder in the list rather than stopping at the first that holds a match. A name held by more than one folder is used once, from the folder that comes first, which is the same copy an ordinary open of that name would land on.
+A player's own copy is therefore the one the game reads, whatever a deployment ships under the same name. That is what makes a shared installation work: the settings, hotkeys and saved games a player has are theirs, and the rest is read from the copy everyone shares.
+
+Wildcard searches — for rules, battle files, map packs, saved games, map archives and movie archives — cover every directory in the list rather than stopping at the first that holds a match. A name held by more than one is used once, from the one that comes first, which is the same copy an ordinary open of that name would land on.
 
 :::caution[Files the game writes are not searched for]
-Settings, saved games, recordings and other files the game writes are never written into a searched folder. They belong to the player, and go to the user data directory, or to the game's own directory when there is none. A folder listed here is only ever read from.
+Settings, saved games, recordings and everything else the game writes go to the user data directory, or to the game's own directory when there is none. A file the game deletes is its own copy, so throwing away a player's hotkeys falls back to the ones a deployment shipped rather than removing them. Nothing listed here is ever written to or deleted from.
 :::

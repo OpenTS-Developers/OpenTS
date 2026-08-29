@@ -9,15 +9,20 @@ targets:
 credit: [ZivDero]
 ---
 
-`-USERDIR=<path>` tells the game where to keep what it writes: the settings
-file, hotkeys, saved games, the hall of fame, recordings, saved random maps and
-the files a multiplayer game downloads. The directory is created when it is not
-there yet, and it is searched ahead of the game's own folders, so a map a player
-received is found before a copy the deployment shipped.
+`-USERDIR=<path>` tells the game where to keep what it writes. Every file the
+game writes, creates or deletes goes there — the settings file, hotkeys, saved
+games, the hall of fame, recordings, saved random maps, screenshots and the
+files a multiplayer game downloads — and the directory is created when it is not
+there yet.
 
-Settings and saved games a player already has beside the executable are still
-read from there until the game writes them to the new directory, so pointing an
-existing installation at one carries them forward.
+It is read from before anywhere else, so a player's own copy of a file is the one
+the game uses, whatever a deployment ships under the same name. Files a player
+already has beside the executable are still read until their own copy exists, so
+pointing an existing installation at a user directory carries them forward.
+
+A file the game throws away is its own copy. Resetting the hotkeys discards the
+player's and falls back to the ones a deployment shipped, rather than removing
+what everyone shares.
 
 Without the option every one of these files stays where it has always been,
 beside the executable.
