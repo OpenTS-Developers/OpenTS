@@ -115,72 +115,6 @@ int CDFileClass::Open(int rights)
 }
 
 
-/// <summary>
-/// Adds a list of directories to search when a file is not in the current directory.
-/// The list is written the way DOS wrote a PATH -- entries separated by semicolons, with
-/// or without a trailing backslash. Each entry is appended to the search chain in the
-/// order given, so the first directory named is the first one tried.
-/// </summary>
-/// <param name="pathlist">The semicolon separated list of directories to add.</param>
-/// <returns>int; Zero if at least one directory was added, or 1 if the list held none.</returns>
-int CDFileClass::Set_Search_Drives(char * pathlist)
-{
-	bool found = false;
-
-	/*
-	**	If there is no pathlist to add, then just return.
-	*/
-	if (!pathlist) return(0);
-
-	char *copy_pathlist = strdup(pathlist);
-
-	char const * ptr = strtok(copy_pathlist, ";");
-	while (ptr != NULL) {
-		if (strlen(ptr) > 0) {
-
-			char path[MAX_PATH];						// Working path buffer.
-
-			// A directory with no room left for a trailing separator cannot become half
-			// of a pathname, so it is passed over.
-			if (strlen(ptr) + 1 >= sizeof(path)) {
-				ptr = strtok(NULL, ";");
-				continue;
-			}
-
-			/*
-			**	Fixup the path to be legal. Legal is defined as all that is necessary to
-			**	create a pathname is to append the actual filename submitted to the
-			**	file system. This means that it must have either a trailing ':' or '\'
-			**	character.
-			*/
-			strcpy(path, ptr);
-			switch (path[strlen(path)-1]) {
-				case ':':
-				case '\\':
-					break;
-
-				default:
-					strcat(path, "\\");
-					break;
-			}
-
-			found	= true;
-			Add_Search_Drive(path);
-		}
-
-		/*
-		**	Find the next path string and resubmit.
-		*/
-		ptr = strtok(NULL, ";");
-	}
-
-	free(copy_pathlist);
-
-	if (!found) return(1);
-	return(0);
-}
-
-
 /***********************************************************************************************
  * CDFC::Add_Search_Drive -- Add a new path to the search path list                            *
  *                                                                                             *
@@ -355,7 +289,7 @@ char const * CDFileClass::Search_Path(int index)
 /***********************************************************************************************
  * CDFileClass::Clear_Search_Drives -- Removes all record of a search path.                    *
  *                                                                                             *
- *    Use this routine to clear out any previous path(s) set with Set_Search_Drives()          *
+ *    Use this routine to clear out any previous path(s) set with Add_Search_Drive()           *
  *    function.                                                                                *
  *                                                                                             *
  * INPUT:   none                                                                               *

@@ -12,8 +12,6 @@ related:
     id: launch:data-directory
   - type: command
     id: launch:user-directory
-  - type: command
-    id: launch:cd-path
   - type: using
     id: game-data
 ---
@@ -41,9 +39,8 @@ The game data directory is what [`-DATADIR`](/using/command-line/data-directory/
 
 1. the user data directory, when [`-USERDIR`](/using/command-line/user-directory/) names one;
 2. the game's own directory;
-3. the folders [`-CD`](/using/command-line/cd-path/) added, in the order given;
-4. the game data directory, when `-DATADIR` names one;
-5. the folders `SearchPaths` lists, in the order written.
+3. the game data directory, when [`-DATADIR`](/using/command-line/data-directory/) names one;
+4. the folders `SearchPaths` lists, in the order written.
 
 Everything the game opens follows that order: archives, rules, artwork, scenarios and launch files alike. A loose file still stands in for an archived one, so a copy found in any of these folders is used ahead of an archived copy of the same name.
 

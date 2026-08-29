@@ -9,9 +9,6 @@ targets:
 - type: format
   id: opents-ini
   effect: added
-- type: command
-  id: launch:cd-path
-  effect: changed
 credit: [ZivDero]
 ---
 
@@ -21,8 +18,7 @@ so a deployment can sort its files and ship no configuration at all.
 
 Wildcard searches now cover every folder the game searches rather than stopping
 at the first one holding a match. Rules files, battle files, map packets, loose
-maps, and the map and movie archives are all found across the folders, which
-also means the folders a `-CD` argument adds now contribute to them. Names are
+maps, and the map and movie archives are all found across the folders. Names are
 gathered in a fixed order, so which copy of a repeated name is used no longer
 depends on the order a file system reported it in.
 

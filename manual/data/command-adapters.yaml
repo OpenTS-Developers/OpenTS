@@ -466,14 +466,6 @@ launch_options:
     availability: *debug
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-CHECKMAP', guard: _DEBUG }
-  - id: launch:cd-path
-    title: Local data path
-    syntax: -CD<path>
-    description: Adds the path following -CD to the local file-search list.
-    audience: developer
-    availability: *all
-    sites:
-      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-CD' }
   - id: launch:data-directory
     title: Game data directory
     syntax: -DATADIR=<path>

@@ -1764,14 +1764,6 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 #endif
 
-		/*
-		**	File search path override.
-		*/
-		if (strnicmp(string, "-CD", strlen("-CD")) == 0) {
-			CCFileClass::Set_Search_Drives(&original[strlen("-CD")]);
-			continue;
-		}
-
 		if (strnicmp(string, "-DATADIR=", strlen("-DATADIR=")) == 0) {
 			Set_Data_Directory(&original[strlen("-DATADIR=")]);
 			continue;

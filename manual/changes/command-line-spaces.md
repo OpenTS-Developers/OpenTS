@@ -19,8 +19,5 @@ working buffer wrote its terminator one position past the end of it.
 
 The number of arguments a launch can carry is no longer capped at nineteen.
 
-`-CD` is now matched at the start of an argument rather than anywhere within
-one, and keeps the case its path was written in, so an unrelated argument that
-happens to contain those letters no longer adds a search path built from the
-wrong part of it. A directory too long to have a file name appended to it is
-passed over by the search rather than truncated into a different one.
+A directory too long to have a file name appended to it is passed over by the
+file search rather than truncated into a different one.

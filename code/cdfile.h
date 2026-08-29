@@ -43,8 +43,7 @@
  * the player's own directory, so that what a deployment ships is read from and never written
  * over. A name that already carries a directory of its own is left exactly as it was given.
  *
- * The search order is whatever order the directories were handed to Set_Search_Drives(),
- * which takes them in the same semicolon separated form the DOS PATH variable used.
+ * The search order is whatever order the directories were handed to Add_Search_Drive().
  */
 class CDFileClass : public BufferIOFileClass
 {
@@ -62,7 +61,6 @@ class CDFileClass : public BufferIOFileClass
 
 		void Searching(int on) {IsDisabled = !on;};
 
-		static int Set_Search_Drives(char * pathlist);
 		static void Add_Search_Drive(char const * path);
 		static void Clear_Search_Drives(void);
 		static char const * Search_Path(int index);

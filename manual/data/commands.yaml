@@ -1764,17 +1764,6 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: _DEBUG
-- id: launch:cd-path
-  route_id: cd-path
-  kind: launch
-  title: Local data path
-  description: Adds the path following -CD to the local file-search list.
-  audience: developer
-  availability: *id001
-  syntax: -CD<path>
-  _provenance:
-    source: code/init.cpp
-    guard: null
 - id: launch:data-directory
   route_id: data-directory
   kind: launch

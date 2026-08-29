@@ -6,6 +6,16 @@
   search_aliases:
     - Cancel modem operation
   summary: Cancelled a dial, answer, or modem-command wait. Removed with modem and null-modem play.
+- type: command
+  id: launch:cd-path
+  route: /using/command-line/cd-path/
+  search_aliases:
+    - Local data path
+    - -CD
+  summary: Added the path following -CD to the local file-search list. Replaced by the game data directory and the deployment's own search folders.
+  replacement:
+    type: command
+    id: launch:data-directory
 - type: key
   id: ModemName
   route: /keys/modemname/
