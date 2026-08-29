@@ -226,22 +226,6 @@ void CDFileClass::Add_Search_Drive(char const * path)
 
 
 /// <summary>
-/// Adds a path to the front of the search chain, so that it is tried before every path
-/// already added. The current directory is still examined first.
-/// </summary>
-/// <param name="path">The path to search before all the others.</param>
-void CDFileClass::Add_Search_Drive_Front(char const * path)
-{
-	SearchDriveType * srch = new SearchDriveType;
-
-	srch->Path = strdup(path);
-	srch->Next = First;
-
-	First = srch;
-}
-
-
-/// <summary>
 /// Records where this player's own files are kept.
 /// A file the game writes, creates or deletes goes here, and a file it reads is looked for
 /// here before anywhere else. Passing nothing puts the game back to keeping everything

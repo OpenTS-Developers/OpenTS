@@ -64,7 +64,6 @@ class CDFileClass : public BufferIOFileClass
 
 		static int Set_Search_Drives(char * pathlist);
 		static void Add_Search_Drive(char const * path);
-		static void Add_Search_Drive_Front(char const * path);
 		static void Clear_Search_Drives(void);
 		static char const * Search_Path(int index);
 

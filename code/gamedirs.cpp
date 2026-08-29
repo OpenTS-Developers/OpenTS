@@ -146,6 +146,10 @@ void Set_Data_Directory(char const * path)
 void Set_User_Directory(char const * path)
 {
 	UserDirectory = Terminate_Path(Trim_Path(path != NULL ? path : ""));
+
+	// The file layer places and finds the player's own files; this is the only thing that
+	// tells it where they go.
+	CDFileClass::Set_User_Path(UserDirectory.c_str());
 }
 
 
@@ -218,7 +222,7 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 
 
 /// <summary>
-/// Installs the directories the command line named.
+/// Makes the directories the command line named usable.
 /// The user directory is created when it is not there yet, because it is the game's own to
 /// write. A named data directory must already exist, a missing one being reported here
 /// rather than as the missing files it would become later.
@@ -232,11 +236,6 @@ bool Apply_Game_Directories(void)
 			return(false);
 		}
 
-		/*
-		 * Ahead of everything the command line and a deployment supply, so that a file a
-		 * player's own game acquired is the one found.
-		 */
-		CDFileClass::Add_Search_Drive_Front(UserDirectory.c_str());
 		DebugString("[GameDirs] User directory is %s.\n", UserDirectory.c_str());
 	}
 
@@ -363,9 +362,9 @@ static void Scan_Folder(char const * prefix, char const * pattern, std::vector<s
 
 
 /// <summary>
-/// Finds the files matching a pattern in the game's own directory and every folder searched.
-/// A name held by more than one folder is reported once, and opening that name afterwards
-/// lands on the same file this scan saw, because both walk the folders in the same order.
+/// Finds the files matching a pattern in every directory the game reads from.
+/// A name held by more than one directory is reported once, and opening that name afterwards
+/// lands on the same file this scan saw, because both walk the directories in the same order.
 /// The names come back sorted, so what the game makes of them does not depend on the order
 /// a file system happened to hand them over in.
 /// </summary>
@@ -374,6 +373,15 @@ static void Scan_Folder(char const * prefix, char const * pattern, std::vector<s
 std::vector<std::string> Search_Files(char const * pattern)
 {
 	std::vector<std::string> names;
+
+	/*
+	 * Asked of the file layer rather than kept here, so that a scan and an open are reading
+	 * the very same directory.
+	 */
+	char const * user = CDFileClass::User_Path();
+	if (user != NULL) {
+		Scan_Folder(user, pattern, names);
+	}
 
 	Scan_Folder("", pattern, names);
 

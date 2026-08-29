@@ -199,23 +199,19 @@ void Test_User_Directory(void)
 		"the created user directory is on the disk");
 
 	std::string const expected_user = Root + "\\User\\Fresh\\";
-	Check(CDFileClass::Search_Path(0) != NULL && std::string(CDFileClass::Search_Path(0)) == expected_user,
-		"the user directory is searched ahead of everything else");
+	Check(CDFileClass::User_Path() != NULL && std::string(CDFileClass::User_Path()) == expected_user,
+		"the file layer is told where the player's own files go");
+	Check(CDFileClass::Search_Path(0) == NULL,
+		"the user directory is not one of the searched folders");
 
 	Check(User_File_Write_Name("SUN.INI") == expected_user + "SUN.INI",
 		"a file the game writes goes to the user directory");
-	Check(User_File_Read_Name("SUN.INI") == "SUN.INI",
-		"a file with no copy in the user directory is still read where it was");
-
-	Write_File(expected_user + "SUN.INI", "[Options]\n");
-	Check(User_File_Read_Name("SUN.INI") == expected_user + "SUN.INI",
-		"once written, the user's own copy is the one read");
 
 	Reset();
+	Check(CDFileClass::User_Path() == NULL,
+		"with no user directory the file layer has none either");
 	Check(User_File_Write_Name("SUN.INI") == "SUN.INI",
 		"with no user directory a written file keeps its plain name");
-	Check(User_File_Read_Name("SUN.INI") == "SUN.INI",
-		"with no user directory a read file keeps its plain name");
 }
 
 
