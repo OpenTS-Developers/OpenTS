@@ -1,0 +1,9 @@
+{
+  // Recommended extensions for OpenTS. .vscode/ is gitignored, so this is local.
+  "recommendations": [
+    "ms-vscode.cmake-tools",
+    "ms-vscode.cpptools",
+    "editorconfig.editorconfig",
+    "shardulm94.trailing-spaces"
+  ]
+}

@@ -36,7 +36,11 @@ cmake_install.cmake
 *.swp
 *.code-workspace
 .idea/
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/settings.json
 .history/
 /.cache/
 /.clangd

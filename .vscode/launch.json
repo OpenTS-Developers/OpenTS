@@ -1,0 +1,43 @@
+{
+  // Local debugging configs. The builds copy the exe and PDB into Run/, and the
+  // game runs with Run/ as its working directory.
+  // - F5 runs the selected config with the debugger attached.
+  // - Ctrl+F5 runs the same config with no debugger attached (plain launch).
+  // - "Attach to running OpenTS" attaches to a game already running.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug OpenTS: Debug build (GameD.exe)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "preLaunchTask": "Build OpenTS: Debug",
+      "program": "${workspaceFolder}/Run/GameD.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/Run",
+      "environment": [],
+      "console": "internalConsole",
+      "symbolSearchPath": "${workspaceFolder}/Run"
+    },
+    {
+      "name": "Debug OpenTS: Release build (Game.exe)",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "preLaunchTask": "Build OpenTS: Release",
+      "program": "${workspaceFolder}/Run/Game.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/Run",
+      "environment": [],
+      "console": "internalConsole",
+      "symbolSearchPath": "${workspaceFolder}/Run"
+    },
+    {
+      "name": "Attach to running OpenTS",
+      "type": "cppvsdbg",
+      "request": "attach",
+      "processId": "${command:pickProcess}",
+      "symbolSearchPath": "${workspaceFolder}/Run"
+    }
+  ]
+}
