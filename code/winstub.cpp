@@ -249,8 +249,8 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, UINT wPa
 			if (GameInFocus == true || WindowedMode == true) {
 				if (MouseCursor != NULL && VisibleSurface != NULL && HiddenSurface != NULL && CompositeSurface != NULL) {
 					if (ScenarioActive == true) {
-						Update_Visible_Surface(CompositeSurface);
 						Map.Blit_Sidebar(true);
+						Update_Visible_Surface(CompositeSurface);
 					} else if (Movie_Is_Playing() == true) {
 						Movie_Update_Visible_Surface();
 					} else {

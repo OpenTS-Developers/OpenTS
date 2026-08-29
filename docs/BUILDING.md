@@ -64,6 +64,18 @@ name and copy the runtime files into `TS_RUN_DIR`, which defaults to `Run/`:
 built configuration replaces the previous copy in `Run/`. Compiler and linker
 intermediates remain under the selected build directory.
 
+## Build from Visual Studio Code
+
+Visual Studio Code (VSCode) support includes (assuming recommended extensions are installed):
+
+- pre-configured CMake Tools settings;
+- build tasks corresponding to the configs (a configure task and a config
+  picker, plus two hidden per-configuration ones backing the launch configs);
+- launch and attach configs;
+- full Test Explorer integration.
+
+Standard VSCode shortcuts (`Ctrl+Shift+B`, `F5`, `Ctrl+F5`) and interface apply.
+
 ## Build identity
 
 The project version is declared once, by `project(OpenTS VERSION ...)` in the

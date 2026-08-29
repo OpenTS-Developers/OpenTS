@@ -1,0 +1,19 @@
+{
+  // CMake Tools: pin the generator/platform to match docs/BUILDING.md.
+  "cmake.sourceDirectory": "${workspaceFolder}",
+  "cmake.buildDirectory": "${workspaceFolder}/build",
+  "cmake.generator": "Visual Studio 17 2022",
+  "cmake.platform": "Win32",
+  "cmake.configureOnOpen": true,
+  "cmake.buildBeforeRun": true,
+
+  // C/C++ (cpptools): use CMake Tools as the code model provider (MSVC, Win32).
+  "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+  "C_Cpp.errorSquiggles": "enabled",
+
+  // This repo uses .hh for definition headers; map them to C++.
+  "files.associations": {
+    "*.hh": "cpp",
+    "*.rh": "cpp"
+  }
+}

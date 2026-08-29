@@ -224,7 +224,7 @@ void MapPreviewClass::Create_Preview(void)
 		cptr = Map.Iterate();
 	}
 
-	for (int i = 0; i < FACING_COUNT; i++) {
+	for (int i = 0; i < MAX_PLAYERS; i++) {
 		if (Scen->Is_Valid_Waypoint(i)) {
 			Cell cell = Scen->Get_Waypoint_Cell(i);
 			Point2D pixel = Cell_To_Preview_Pixel(cell);

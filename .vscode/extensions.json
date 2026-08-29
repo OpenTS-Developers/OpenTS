@@ -1,0 +1,8 @@
+{
+  "recommendations": [
+    "ms-vscode.cmake-tools",
+    "ms-vscode.cpptools",
+    "editorconfig.editorconfig",
+    "shardulm94.trailing-spaces"
+  ]
+}

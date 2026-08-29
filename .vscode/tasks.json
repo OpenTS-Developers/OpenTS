@@ -1,0 +1,65 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "CMake: Configure (Win32 VS2022)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["-S", ".", "-B", "build", "-G", "Visual Studio 17 2022", "-A", "Win32"],
+      "group": "build",
+      "detail": "Configure the Win32 Debug/Release solution into build/.",
+      "problemMatcher": []
+    },
+    {
+      "label": "Build OpenTS (pick configuration)",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build", "--config", "${input:buildConfig}"],
+      "group": { "kind": "build", "isDefault": true },
+      "dependsOn": ["CMake: Configure (Win32 VS2022)"],
+      "detail": "Build a configuration you choose.",
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Build OpenTS: Debug",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build", "--config", "Debug"],
+      "group": "build",
+      "hide": true,
+      "dependsOn": ["CMake: Configure (Win32 VS2022)"],
+      "detail": "Hidden build used by F5 on the Debug launch config.",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "close": true
+      },
+      "problemMatcher": ["$msCompile"]
+    },
+    {
+      "label": "Build OpenTS: Release",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "build", "--config", "Release"],
+      "group": "build",
+      "hide": true,
+      "dependsOn": ["CMake: Configure (Win32 VS2022)"],
+      "detail": "Hidden build used by F5 on the Release launch config.",
+      "presentation": {
+        "reveal": "silent",
+        "panel": "shared",
+        "close": true
+      },
+      "problemMatcher": ["$msCompile"]
+    }
+  ],
+  "inputs": [
+    {
+      "id": "buildConfig",
+      "type": "pickString",
+      "options": ["Debug", "Release"],
+      "default": "Debug",
+      "description": "Build configuration"
+    }
+  ]
+}

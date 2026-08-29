@@ -43,7 +43,6 @@ long __cdecl AudioUnzap(void *source, void *dest, long);
 }
 
 extern "C" {
-void __cdecl sosCODECInitStream_VQASNJ(_VQA_SOS_COMPRESS_INFO *, unsigned short idx, unsigned int pred);
 void __cdecl VQA_sosCODECInitStream(_VQA_SOS_COMPRESS_INFO *);
 void __cdecl VQA_sosCODECDecompressData(void *src, void *dst, unsigned short wBitSize, unsigned short wChannels, unsigned long dwUnCompSize, _VQA_SOS_COMPRESS_INFO *sosinfo);
 }
