@@ -56,6 +56,7 @@
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "gamedirs.h"
 #include "globals.h"
 #include "ipxmgr.h"
 #include "language\language.h"
@@ -463,9 +464,6 @@ void SessionClass::Read_MultiPlayer_Settings(void)
 
 	Rule->Do_HouseTypes(*RuleINI);
 
-	// Create filename and read the file.
-	CCFileClass file(CONFIG_FILE_NAME);
-
 	// Get the player's last-used Handle
 	ConfigINI.Get_String("MultiPlayer", "Handle", Fetch_String(TXT_NONAME), Handle, sizeof(Handle));
 
@@ -604,7 +602,8 @@ bool SessionClass::Log_To_File(FILE *out)
  *=========================================================================*/
 void SessionClass::Write_MultiPlayer_Settings(void)
 {
-	RawFileClass file(CONFIG_FILE_NAME);
+	std::string const path = User_File_Write_Name(CONFIG_FILE_NAME);
+	RawFileClass file(path.c_str());
 	{
 		// Save the player's last-used Handle & Color
 		ConfigINI.Put_Int("MultiPlayer", "Color", (int)PrefColor);
@@ -700,38 +699,20 @@ void SessionClass::Read_Scenario_Descriptions(void)
 		}
 	}
 
-	WIN32_FIND_DATA block;
-	HANDLE handle = FindFirstFile("*.PKT", &block);
-	while (handle != INVALID_HANDLE_VALUE) {
-		if ((block.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_TEMPORARY)) == 0) {
-			char const * name = &block.cAlternateFileName[0];
-			if (strlen(name) == 0) name = &block.cFileName[0];
-//Mono_Printf("Found file '%s'.\n", block.cAlternateFileName);
-//Mono_Printf("Found file '%s'.\n", block.cFileName);
-//DebugString("Found file '%s'.\n", block.cAlternateFileName);
-//DebugString("Found file '%s'.\n", block.cFileName);
-//DebugString( "Found alternate PKT file.\n" );
+	for (std::string const & name : Search_Files("*.PKT")) {
+		if (stricmp(name.c_str(), "MISSIONS.PKT")) {
+			file.Close();
+			file.Set_Name(name.c_str());
+			ini.Clear();
+			ini.Load(file);
 
-			if (stricmp(name, "MISSIONS.PKT")) {
-				file.Close();
-				file.Set_Name(name);
-				ini.Clear();
-				ini.Load(file);
-
-				int count = ini.Entry_Count("MultiMaps");
-				for (int index = 0; index < count; index++) {
-					if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
-						Scenarios.Add(new MultiMission(ini, name_buffer));
-					}
+			int count = ini.Entry_Count("MultiMaps");
+			for (int index = 0; index < count; index++) {
+				if (ini.Get_String("MultiMaps", ini.Get_Entry("MultiMaps", index), "", name_buffer, sizeof(name_buffer))) {
+					Scenarios.Add(new MultiMission(ini, name_buffer));
 				}
 			}
 		}
-
-		if (FindNextFile(handle, &block) == 0) break;
-	}
-
-	if (handle != INVALID_HANDLE_VALUE) {
-		FindClose(handle);
 	}
 
 	ini.Clear();
@@ -742,28 +723,15 @@ void SessionClass::Read_Scenario_Descriptions(void)
 	**	Scan the current directory for any loose .MPR files and build the appropriate entries
 	**	into the scenario list list
 	*/
-	char const * file_name;
 	char digest_buffer[32];
 
-	handle = FindFirstFile( "*.MPR" , &block );
-	while (handle != INVALID_HANDLE_VALUE) {
-		if ((block.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_TEMPORARY)) == 0) {
-			file_name = &block.cAlternateFileName[0];
-			if (strlen(file_name) == 0) file_name = &block.cFileName[0];
-//DebugString( "Found MPR '%s'\n", file_name );
-			file.Set_Name(file_name);
-			ini.Load(file);
+	for (std::string const & file_name : Search_Files("*.MPR")) {
+		file.Set_Name(file_name.c_str());
+		ini.Load(file);
 
-			ini.Get_String("Basic", "Name", "No Name", name_buffer, sizeof(name_buffer) );
-			ini.Get_String("Digest", "1", "No Digest", digest_buffer, sizeof(digest_buffer) );
-			Scenarios.Add(new MultiMission(file_name, name_buffer, digest_buffer,ini.Get_Bool("Basic", "Official", false)));
-		}
-
-		if (FindNextFile(handle, &block) == 0) break;
-	}
-
-	if (handle != INVALID_HANDLE_VALUE) {
-		FindClose(handle);
+		ini.Get_String("Basic", "Name", "No Name", name_buffer, sizeof(name_buffer) );
+		ini.Get_String("Digest", "1", "No Digest", digest_buffer, sizeof(digest_buffer) );
+		Scenarios.Add(new MultiMission(file_name.c_str(), name_buffer, digest_buffer,ini.Get_Bool("Basic", "Official", false)));
 	}
 
 	Options.ScenarioIndex = 0;

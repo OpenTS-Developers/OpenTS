@@ -77,6 +77,7 @@
 #include "factory.h"
 #include "fly.h"
 #include "fog.h"
+#include "gamedirs.h"
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
@@ -155,9 +156,13 @@
 #include "wwmouse.h"
 #include "zbuffer.h"
 
+#include <shellapi.h>
+
 #include <conio.h>
 #include <io.h>
 #include <cfloat>
+#include <string>
+#include <vector>
 
 extern	HINSTANCE LanguageResources;
 
@@ -351,6 +356,50 @@ static bool RegisterClasses(void)
 
 }
 
+/// <summary>
+/// Builds the argument list the game parses from the command line the shell handed over.
+/// The shell's own quoting decides where one argument ends and the next begins, so a
+/// directory whose name holds spaces arrives as the single argument it was written as.
+/// </summary>
+/// <param name="path_to_exe">Full path to the running executable, which becomes the first
+/// argument the way a DOS program received it.</param>
+/// <param name="argv">Receives the argument array, which lasts as long as the process.</param>
+/// <returns>The number of arguments, which is never less than one.</returns>
+static int Build_Arguments(char const * path_to_exe, char ** & argv)
+{
+	static std::vector<std::string> arguments;
+	static std::vector<char *> pointers;
+
+	arguments.clear();
+	pointers.clear();
+	arguments.push_back(path_to_exe);
+
+	int wide_count = 0;
+	LPWSTR * wide_argv = CommandLineToArgvW(GetCommandLineW(), &wide_count);
+
+	if (wide_argv != NULL) {
+		// Index zero names the executable, which the caller has already established.
+		for (int index = 1; index < wide_count; index++) {
+			int length = WideCharToMultiByte(CP_ACP, 0, wide_argv[index], -1, NULL, 0, NULL, NULL);
+			if (length <= 1) continue;
+
+			std::string argument(length - 1, '\0');
+			WideCharToMultiByte(CP_ACP, 0, wide_argv[index], -1, argument.data(), length, NULL, NULL);
+			arguments.push_back(argument);
+		}
+
+		LocalFree(wide_argv);
+	}
+
+	for (std::string & argument : arguments) {
+		pointers.push_back(argument.data());
+	}
+
+	argv = pointers.data();
+	return((int)pointers.size());
+}
+
+
 /***********************************************************************************************
  * main -- Initial startup routine (preps library systems).                                    *
  *                                                                                             *
@@ -368,11 +417,11 @@ static bool RegisterClasses(void)
  * HISTORY:                                                                                    *
  *   03/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * command_line , int command_show )
+int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_show )
 {
 	int		argc;       //Command line argument count
-	char *	argv[20];   //Pointers to command line arguments
-	char	path_to_exe[132];
+	char **	argv;       //Pointers to command line arguments
+	char	path_to_exe[MAX_PATH];
 	char	buffer[512];
 
 #ifdef STEVES_NEW_CATCHER
@@ -484,21 +533,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * command_line , in
 	GetModuleFileName (instance, &path_to_exe[0], sizeof(path_to_exe));
 
 	/*
-	**	First argument is supposed to be a pointer to the .EXE that is running
-	**
-	*/
-	argc=1;                     //Set argument count to 1
-	argv[0]=&path_to_exe[0];    //Set 1st command line argument to point to full path
-
-	/*
 	**	Get pointers to command line arguments just like if we were in DOS
 	**
 	*/
-	char *token = strtok(command_line, " ");
-	while (argc < ARRAY_SIZE(argv) && token != NULL) {
-		argv[argc++] = strtrim(token);
-		token = strtok(NULL, " ");
-	}
+	argc = Build_Arguments(path_to_exe, argv);
 
 	/*
 	**	Change directory to the where the executable is located. Handle the
@@ -513,11 +551,23 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * command_line , in
 
 	int error_code = EXIT_FAILURE;
 
-	if (Parse_Command_Line(argc, argv)) {
+	if (Parse_Command_Line(argc, argv) && Apply_Game_Directories()) {
 
 		Exception_Run_Immediate_Test();
 
-		RawFileClass *cfile = new RawFileClass(CONFIG_FILE_NAME);
+		/*
+		 * Before anything is read, so that every file the game goes on to open is looked
+		 * for where this deployment actually keeps it.
+		 */
+		Init_Search_Folders();
+
+		// The recording's name was settled during static initialization, before there was
+		// anywhere for a player's files to go. It is not searched for.
+		Session.RecordFile.Searching(false);
+		Session.RecordFile.Set_Name(User_File_Write_Name("RECORD.BIN").c_str());
+
+		std::string const config_path = User_File_Read_Name(CONFIG_FILE_NAME);
+		RawFileClass *cfile = new RawFileClass(config_path.c_str());
 
 		ConfigINI.Load(*cfile, false);
 		Options.ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", Options.ScreenWidth);
@@ -623,8 +673,12 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * command_line , in
 		if (Special.IsFromInstall == true) {
 			ConfigINI.Put_Bool("Intro", "PlayIntro", false);
 			cfile->Close();
-			cfile->Open();
-			ConfigINI.Save(*cfile, false);
+
+			// Written where the player's files belong, which is not necessarily where
+			// they were read from.
+			std::string const settings_path = User_File_Write_Name(CONFIG_FILE_NAME);
+			RawFileClass settings(settings_path.c_str());
+			ConfigINI.Save(settings, false);
 		}
 
 		cfile->Close();
@@ -660,6 +714,14 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * command_line , in
 		error_code = EXIT_SUCCESS;
 
 	} else {
+
+		/*
+		 * A startup this early has no window of its own, and may have been given no console
+		 * either, so a directory the game cannot use is reported where it will be seen.
+		 */
+		if (*Game_Directory_Error() != '\0') {
+			MessageBox(NULL, Game_Directory_Error(), Fetch_String(TXT_SHORT_TITLE), MB_ICONEXCLAMATION|MB_OK);
+		}
 
 		// The help and the invalid option message are of no use if the console closes with
 		// the process a moment later.

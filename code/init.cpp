@@ -109,6 +109,7 @@
 #include "expand.h"
 #include "factory.h"
 #include "fog.h"
+#include "gamedirs.h"
 #include "gamedlg.h"
 #include "getcpu.h"
 #include "globals.h"
@@ -605,36 +606,18 @@ static BOOL CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPARAM 
 void Init_Campaigns(void)
 {
 	bool found = false;
-	WIN32_FIND_DATA fd;
-	HANDLE handle = FindFirstFile("BATTLE*.INI", &fd);
 
-	while (handle != INVALID_HANDLE_VALUE) {
-		if ((fd.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_TEMPORARY)) == false) {
+	for (std::string const & name : Search_Files("BATTLE*.INI")) {
+		CCFileClass file(name.c_str());
+		CCINIClass * ini = new CCINIClass;
+		ini->Load(file, false);
 
-			const char * name = &fd.cAlternateFileName[0];
-			if (strlen(name) == 0) {
-				name = &fd.cFileName[0];
-			}
-
-			CCFileClass file(name);
-			CCINIClass * ini = new CCINIClass;
-			ini->Load(file, false);
-
-			if (stricmp(name, "BATTLE.INI") == 0) {
-				found = true;
-			}
-
-			Read_Battle_INI(*ini);
-			delete ini;
+		if (stricmp(name.c_str(), "BATTLE.INI") == 0) {
+			found = true;
 		}
 
-		if (FindNextFile(handle, &fd) == 0) {
-			break;
-		}
-	}
-
-	if (handle != INVALID_HANDLE_VALUE) {
-		FindClose(handle);
+		Read_Battle_INI(*ini);
+		delete ini;
 	}
 
 	if (!found) {
@@ -851,37 +834,19 @@ static bool Init_Rules(void)
 	DynamicVectorClass<CCINIClass*> Rules;
 
 	bool found = false;
-	WIN32_FIND_DATA fd;
-	HANDLE handle = FindFirstFile("RULE*.INI", &fd);
 
-	while (handle != INVALID_HANDLE_VALUE) {
-		if ((fd.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_TEMPORARY)) == 0) {
-			const char * name = &fd.cAlternateFileName[0];
+	for (std::string const & name : Search_Files("RULE*.INI")) {
+		CCFileClass file(name.c_str());
+		CCINIClass * rule = new CCINIClass;
 
-			if (*name == '\0') {
-				name = &fd.cFileName[0];
-			}
+		rule->Load(file, false);
 
-			CCFileClass file(name);
-			CCINIClass * rule = new CCINIClass;
-
-			rule->Load(file, false);
-
-			if (stricmp(name, "RULES.INI") == 0) {
-				found = true;
-				Rules.Add_Head(rule);
-			} else {
-				Rules.Add(rule);
-			}
+		if (stricmp(name.c_str(), "RULES.INI") == 0) {
+			found = true;
+			Rules.Add_Head(rule);
+		} else {
+			Rules.Add(rule);
 		}
-
-		if (FindNextFile(handle, &fd) == 0) {
-			break;
-		}
-	}
-
-	if (handle != INVALID_HANDLE_VALUE) {
-		FindClose(handle);
 	}
 
 	if (!found) {
@@ -1731,6 +1696,11 @@ bool Parse_Command_Line(int argc, char * argv[])
 			}
 		}
 		*dest = '\0';
+
+		// Matching is done on an upper case copy, so that an option carrying a directory
+		// can still take it in the case it was written.
+		char original[512];
+		strcpy(original, arg_string);
 		strupr(string);
 
 		/*
@@ -1797,8 +1767,18 @@ bool Parse_Command_Line(int argc, char * argv[])
 		/*
 		**	File search path override.
 		*/
-		if (strstr(string, "-CD")) {
-			CCFileClass::Set_Search_Drives(&string[3]);
+		if (strnicmp(string, "-CD", strlen("-CD")) == 0) {
+			CCFileClass::Set_Search_Drives(&original[strlen("-CD")]);
+			continue;
+		}
+
+		if (strnicmp(string, "-DATADIR=", strlen("-DATADIR=")) == 0) {
+			Set_Data_Directory(&original[strlen("-DATADIR=")]);
+			continue;
+		}
+
+		if (strnicmp(string, "-USERDIR=", strlen("-USERDIR=")) == 0) {
+			Set_User_Directory(&original[strlen("-USERDIR=")]);
 			continue;
 		}
 
@@ -2391,7 +2371,9 @@ static void Init_Expand_Mixfiles(void)
 
 	for (index = 99; index >= 0; index--) {
 		sprintf(name, "EXPAND%02d.MIX", index);
-		if (RawFileClass(name).Is_Available()) {
+		// Searched for as a loose file wherever the game's files are kept, but never
+		// inside another archive.
+		if (CDFileClass(name).Is_Available()) {
 			expand = new MFCD(name, &FastKey);
 			assert(expand != NULL);
 
@@ -2427,7 +2409,9 @@ static void Init_Patch_Mixfiles(void)
 {
 	MFCD * expand;
 
-	if (RawFileClass("PATCH.MIX").Is_Available()) {
+	// As with the expansion archives, found loose in any of the game's folders but never
+	// inside another archive.
+	if (CDFileClass("PATCH.MIX").Is_Available()) {
 		expand = new MFCD("PATCH.MIX", &FastKey);
 		assert(expand != NULL);
 
@@ -2534,8 +2518,6 @@ static bool Init_Bootstrap_Mixfiles(void)
  *=============================================================================================*/
 static bool Init_Secondary_Mixfiles(void)
 {
-	char name[_MAX_PATH];
-
 	/*
 	**	Inform the file system of the various MIX files.
 	*/
@@ -2552,26 +2534,29 @@ static bool Init_Secondary_Mixfiles(void)
 
 	MFCD * mix;
 
-		strcpy(name, "MAPS*.MIX");
+	{
+		std::vector<std::string> const maps = Search_Files("MAPS*.MIX");
 
-		if (CDFileClass::Find_First_File(name) == true) {
+		for (unsigned int index = 0; index < maps.size(); index++) {
+			char const * found = maps[index].c_str();
+			DebugStringNoPrefix(" %s", found);
 
-			DebugStringNoPrefix(" %s", name);
-			MapsMix = new MFCD(name, &FastKey);
-			assert(MapsMix != NULL);
-
-			while (CDFileClass::Find_Next_File(name) == true) {
-				DebugStringNoPrefix(" %s", name);
-				mix = new MFCD(name, &FastKey);
-				assert(mix != NULL);
-
-				if (mix != NULL) {
-					MapsMixLocal.Add(mix);
-				}
+			// The first archive found is the game's own; the rest are whatever else is
+			// installed alongside it.
+			if (index == 0) {
+				MapsMix = new MFCD(found, &FastKey);
+				assert(MapsMix != NULL);
+				continue;
 			}
 
-			CDFileClass::Find_Close();
+			mix = new MFCD(found, &FastKey);
+			assert(mix != NULL);
+
+			if (mix != NULL) {
+				MapsMixLocal.Add(mix);
+			}
 		}
+	}
 
 #ifndef _DEMO
 
@@ -2640,26 +2625,27 @@ static bool Init_Secondary_Mixfiles(void)
 	ScoresPresent = true;
 	Theme.Scan();
 
-		strcpy(name, "MOVIES*.MIX");
+	{
+		std::vector<std::string> const movies = Search_Files("MOVIES*.MIX");
 
-		if (CDFileClass::Find_First_File(name) == true) {
+		for (unsigned int index = 0; index < movies.size(); index++) {
+			char const * found = movies[index].c_str();
+			DebugStringNoPrefix(" %s", found);
 
-			DebugStringNoPrefix(" %s", name);
-			MoviesMix = new MFCD(name, &FastKey);
-			assert(MoviesMix != NULL);
-
-			while (CDFileClass::Find_Next_File(name) == true) {
-				DebugStringNoPrefix(" %s", name);
-				mix = new MFCD(name, &FastKey);
-				assert(mix != NULL);
-
-				if (mix != NULL) {
-					MoviesMixLocal.Add(mix);
-				}
+			if (index == 0) {
+				MoviesMix = new MFCD(found, &FastKey);
+				assert(MoviesMix != NULL);
+				continue;
 			}
 
-			CDFileClass::Find_Close();
+			mix = new MFCD(found, &FastKey);
+			assert(mix != NULL);
+
+			if (mix != NULL) {
+				MoviesMixLocal.Add(mix);
+			}
 		}
+	}
 
 	if (MoviesMix == NULL) {
 		return(false);
