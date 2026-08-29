@@ -66,13 +66,15 @@ intermediates remain under the selected build directory.
 
 ## Build from Visual Studio Code
 
-VSCode support includes (assuming recommended extensions are installed):
+Visual Studio Code (VSCode) support includes (assuming recommended extensions are installed):
 
-- pre-configured CMake Tools settings
+- pre-configured CMake Tools settings;
 - build tasks corresponding to the configs (a configure task and a config
-  picker, plus two hidden per-configuration ones backing the launch configs)
-- launch and attach configs
-- full Test Explorer integration
+  picker, plus two hidden per-configuration ones backing the launch configs);
+- launch and attach configs;
+- full Test Explorer integration.
+
+Standard VSCode shortcuts (`Ctrl+Shift+B`, `F5`, `Ctrl+F5`) and interface apply.
 
 ## Build identity
 
