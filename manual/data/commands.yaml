@@ -1764,14 +1764,26 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: _DEBUG
-- id: launch:cd-path
-  route_id: cd-path
+- id: launch:data-directory
+  route_id: data-directory
   kind: launch
-  title: Local data path
-  description: Adds the path following -CD to the local file-search list.
-  audience: developer
+  title: Game data directory
+  description: Reads the game's data from the directory named, which the game never writes to.
+  audience: player
   availability: *id001
-  syntax: -CD<path>
+  syntax: -DATADIR=<path>
+  _provenance:
+    source: code/init.cpp
+    guard: null
+- id: launch:user-directory
+  route_id: user-directory
+  kind: launch
+  title: User data directory
+  description: Keeps the settings, saved games and other files the game writes in the directory named,
+    creating it when it is not there.
+  audience: player
+  availability: *id001
+  syntax: -USERDIR=<path>
   _provenance:
     source: code/init.cpp
     guard: null

@@ -39,6 +39,7 @@
 #include "always.h"
 
 #include "conquer.h"
+#include "cdfile.h"
 #include "dbgprint.h"
 #include "globals.h"
 #include "ini.h"
@@ -194,7 +195,7 @@ bool Receive_Remote_File ( char *file_name, unsigned int file_length, bool show_
 
 	DebugString("Receiving download of file %s\n", (const char *)file_name);
 
-	RawFileClass save_file (file_name);
+	CDFileClass save_file (file_name);
 
 	/*
 	**	If the file already exists then delete it and re-create it.

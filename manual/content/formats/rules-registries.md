@@ -37,7 +37,7 @@ The two exceptions read their keys. In `[Sides]` the key is the Side ID and the 
 
 Registering an ID and defining it are separate passes. Registration creates the type carrying the built-in defaults for its kind, and the section named by the ID is read afterwards, so an ID registered with no section of its own is kept with those defaults rather than dropped.
 
-OpenTS processes the selected `RULE*.INI`, then `LANGRULE.INI`, then `FIRESTRM.INI` when Firestorm is enabled, and finally `LANGFS.INI` when present.
+OpenTS processes the selected `RULE*.INI`, then `LANGRULE.INI`, then `FIRESTRM.INI` when Firestorm is enabled, and finally `LANGFS.INI` when present. [Game data](/using/game-data/) covers what makes Firestorm count as installed.
 
 ```ini title="rules.ini"
 [InfantryTypes]

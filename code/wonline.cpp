@@ -746,7 +746,7 @@ void Read_WOL_Settings(void)
 /// </summary>
 void Write_WOL_Settings(void)
 {
-	RawFileClass file(CONFIG_FILE_NAME);
+	CDFileClass file(CONFIG_FILE_NAME);
 	ConfigINI.Put_Int("WOnline", "AllowPage", g_AllowPage);
 	ConfigINI.Put_Int("WOnline", "AllowFind", g_AllowFind);
 	ConfigINI.Put_Int("WOnline", "LangFilter", g_LangFilter);

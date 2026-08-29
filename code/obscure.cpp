@@ -108,6 +108,13 @@ int Obfuscate(char const * string)
 		if (((length+3) & 0x00FC) > maxlen) {
 			maxlen = ((length+3) & 0x00FC);
 		}
+
+		// Rounding a phrase that fills the buffer up to the next multiple of four would
+		// put its terminator one position past the end.
+		if (maxlen > (int)sizeof(buffer)-1) {
+			maxlen = (int)sizeof(buffer)-1;
+		}
+
 		int index;
 		for (index = length; index < maxlen; index++) {
 			buffer[index] = (char)('A' + ((('?' ^ buffer[index-length]) + index) % 26));

@@ -19,6 +19,8 @@ Registered MIX archives expose their members through the ordinary file layer, so
 
 An archive is mounted by name, and the order archives are mounted in is the order they are searched. Startup mounts the patch archives first, then the numbered expansion archives counted down from the highest number present, then the shipped archives; a theater or a side mounts its own later and drops them again when the theater or side changes. The first archive holding a member of the requested name answers for it, so an archive mounted earlier shadows that name in every archive mounted after it.
 
+Startup insists on a few of them: `CACHE.MIX`, and then `CONQUER.MIX`, `SOUNDS.MIX`, `SCORES.MIX`, a movie archive, and `SOUNDS01.MIX` where the expansion is installed. The game stops during startup without one of those. Every other archive is mounted when present and passed over when not, the map and multiplayer archives among them, so a deployment holding the maps and the multiplayer content loose or in archives of its own still starts.
+
 Names are matched without regard to case. Each archive carries an index of its members sorted by a checksum of the member name, and a lookup is a binary search over that index rather than a scan, so nothing depends on the order members were packed in.
 
 Mounting an archive that is not there registers nothing and reports nothing: the object is created, finds no file, and never joins the list of archives to search. A name that no archive holds is not recorded anywhere either — the request falls through to opening a real file of that name, and fails when there is none.

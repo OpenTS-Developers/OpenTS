@@ -57,7 +57,7 @@ class CCFileClass : public CDFileClass
 		bool Is_Resident(void) const {return(Data.Get_Buffer() != NULL);}
 		virtual bool Is_Available(int forced=false) override;
 		virtual bool Is_Open(void) const override;
-		virtual int Open(char const * filename, int rights=READ) override {Set_Name(filename);return(Open(rights));};
+		virtual int Open(char const * filename, int rights=READ) override;
 		virtual int Open(int rights=READ) override;
 		virtual int Read(void * buffer, int size) override;
 		virtual int Seek(int pos, int dir=SEEK_CUR) override;

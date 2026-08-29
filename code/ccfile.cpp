@@ -378,6 +378,25 @@ void CCFileClass::Close(void)
 }
 
 
+/// <summary>
+/// Assigns a name to this file object and opens it in one operation.
+/// </summary>
+/// <param name="filename">The name of the file to open.</param>
+/// <param name="rights">The access rights to open the file with.</param>
+/// <returns>int; Was the file opened successfully?</returns>
+int CCFileClass::Open(char const * filename, int rights)
+{
+	// A file being written is looked for in the current directory alone, and never in a
+	// mixfile, since nothing can be written into one.
+	if ((rights & WRITE) != 0) {
+		return(CDFileClass::Open(filename, rights));
+	}
+
+	Set_Name(filename);
+	return(Open(rights));
+}
+
+
 /***********************************************************************************************
  * CCFileClass::Open -- Opens a file from either the mixfile system or the rawfile system.     *
  *                                                                                             *

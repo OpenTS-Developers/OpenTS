@@ -130,15 +130,16 @@ BOOL CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 
 /// <summary>
 /// Determines which addons are installed on this machine.
-/// This routine is called during startup and looks for the data files that each expansion
-/// ships with. What it finds decides whether the player is offered a game type at all.
+/// This routine is called during startup and looks for the rules file that each expansion
+/// ships with, wherever the game reads its files from. What it finds decides whether the
+/// player is offered a game type at all.
 /// </summary>
 void Detect_Addons(void)
 {
 	AvailableAddOns = (1 << ADDON_BASE_GAME);
 	ActiveAddOns = (1 << ADDON_BASE_GAME);
 
-	if (CCFileClass("EXPAND01.MIX").Is_Available() == true && CCFileClass("FIRESTRM.INI").Is_Available() == true) {
+	if (CCFileClass("FIRESTRM.INI").Is_Available() == true) {
 		AvailableAddOns |= (1 << ADDON_FIRESTORM);
 	}
 }

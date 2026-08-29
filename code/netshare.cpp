@@ -1483,7 +1483,7 @@ void Receive_Random_Map_Preview(void)
 	}
 
 	DebugString("Loading the compressed preview image\n");
-	RawFileClass file(preview_name);
+	CDFileClass file(preview_name);
 	int size = file.Size();
 	char * buffer = new char[size];
 	file.Read(buffer, size);
@@ -1632,7 +1632,7 @@ void Send_Preview_To_Guests(void)
 
 					DebugString("Compressed preview image is %d bytes\n", comp_size);
 
-					RawFileClass file("Preview.bin");
+					CDFileClass file("Preview.bin");
 					if (file.Is_Available()) {
 						file.Delete();
 					}

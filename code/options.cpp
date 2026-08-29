@@ -614,7 +614,7 @@ BOOL CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARA
 							ini.Put_Int("Hotkey", cmd->Get_Unique_Name(), key);
 						}
 
-						RawFileClass file("Keyboard.ini");
+						CDFileClass file("Keyboard.ini");
 						ini.Save(file, false);
 						*retval = IDOK;
 						return(TRUE);
@@ -667,6 +667,8 @@ BOOL CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARA
 					if (HIWORD(wparam) == BN_CLICKED) {
 						if (WWMessageBox()._Process(TXT_RESET_HOTKEYS, IDOK, TXT_YES, TXT_NO, TXT_NONE, false) == 0) {
 							DebugString("Deleting users KEYBOARD.INI\n");
+							// Only the player's own file is discarded; the defaults a
+							// deployment ships are what the reset falls back on.
 							CCFileClass file("KEYBOARD.INI");
 							file.Delete();
 							Init_Hotkeys();

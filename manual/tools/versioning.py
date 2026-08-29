@@ -584,7 +584,11 @@ def validate_changes(
                 elif target["scope"] in scope_ids(keys[target["id"]]):
                     errors.append(
                         f"{target_context}: removed key scope is still active")
-            elif not active_entity(target, keys, scripts, formats, enums, entities):
+            elif (not active_entity(target, keys, scripts, formats, enums, entities)
+                    and (target["scope"] is not None
+                         or (target["type"], target["id"]) not in tombstone_map)):
+                # History may cite an entity that was removed later; the lifecycle
+                # ordering check keeps such events ahead of the removal.
                 errors.append(
                     f"{target_context}: unknown active entity "
                     f"{target_description(target)}")

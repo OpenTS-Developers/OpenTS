@@ -109,6 +109,7 @@
 #include "expand.h"
 #include "factory.h"
 #include "fog.h"
+#include "gamedirs.h"
 #include "gamedlg.h"
 #include "getcpu.h"
 #include "globals.h"
@@ -269,6 +270,38 @@ static void Cheat_Disable(void);
 static bool Cheat_Key_Process(char chr);
 static void Cheat_Version_Suffix(char * string);
 
+
+
+/// <summary>
+/// Reads a base game file and the expansion's counterpart into one database.
+/// The expansion's file is read over the base one, and either file on its own is enough, so a
+/// deployment may ship the content in whichever of the two it belongs in.
+/// </summary>
+/// <param name="ini">The database both files are read into.</param>
+/// <param name="basename">The name of the base game's file.</param>
+/// <param name="expansion">The name of the expansion's file.</param>
+/// <returns>bool; Was either file read?</returns>
+static bool Read_INI_And_Expansion(CCINIClass & ini, char const * basename, char const * expansion)
+{
+	char const * const names[] = {basename, expansion};
+	bool read = false;
+
+	for (char const * name : names) {
+		CCFileClass file(name);
+
+		if (file.Is_Available() == false) {
+			continue;
+		}
+
+		if (ini.Load(file, false)) {
+			read = true;
+		} else {
+			DebugString("Failed to load %s!\n", name);
+		}
+	}
+
+	return(read);
+}
 
 
 /***********************************************************************************************
@@ -443,23 +476,12 @@ int Init_Game(int , char * [])
 	*/
 	DebugString("Reading SOUND.INI\n");
 
-	CCFileClass voc_file;
-	if (Addon_Installed(ADDON_FIRESTORM)) {
-		voc_file.Set_Name("SOUND01.INI");
-	} else {
-		voc_file.Set_Name("SOUND.INI");
-	}
-
-	if (voc_file.Is_Available() == false) {
-		DebugString("Failed to find SOUND.INI!\n");
-		return(-1);
-	}
-
 	CCINIClass voc_ini;
-	if (!voc_ini.Load(voc_file, false)) {
-		DebugString("Failed to load SOUND.INI!\n");
+	if (!Read_INI_And_Expansion(voc_ini, "SOUND.INI", "SOUND01.INI")) {
+		DebugString("Failed to read SOUND.INI or SOUND01.INI!\n");
 		return(-1);
 	}
+
 	Free_Vocs();
 	Init_Vocs(voc_ini);
 
@@ -467,25 +489,11 @@ int Init_Game(int , char * [])
 	**
 	*/
 	DebugString("Reading THEME.INI\n");
-	CCFileClass theme_file("THEME.INI");
-
-	if (theme_file.Is_Available() == false) {
-		DebugString("Failed to find THEME.INI!\n");
-		return(-1);
-	}
 
 	CCINIClass theme_ini;
-	if (!theme_ini.Load(theme_file, false)) {
-		DebugString("Failed to load THEME.INI!\n");
+	if (!Read_INI_And_Expansion(theme_ini, "THEME.INI", "THEME01.INI")) {
+		DebugString("Failed to read THEME.INI or THEME01.INI!\n");
 		return(-1);
-	}
-
-	if (Addon_Installed(ADDON_FIRESTORM)) {
-		theme_file.Close();
-		theme_file.Set_Name("THEME01.INI");
-		if (theme_file.Is_Available() == true && !theme_ini.Load(theme_file, false)) {
-			DebugString("Failed to load THEME01.INI!\n");
-		}
 	}
 
 	Theme.Free_Themes();
@@ -608,36 +616,18 @@ static BOOL CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPARAM 
 void Init_Campaigns(void)
 {
 	bool found = false;
-	WIN32_FIND_DATA fd;
-	HANDLE handle = FindFirstFile("BATTLE*.INI", &fd);
 
-	while (handle != INVALID_HANDLE_VALUE) {
-		if ((fd.dwFileAttributes & (FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_TEMPORARY)) == false) {
+	for (std::string const & name : Search_Files("BATTLE*.INI")) {
+		CCFileClass file(name.c_str());
+		CCINIClass * ini = new CCINIClass;
+		ini->Load(file, false);
 
-			const char * name = &fd.cAlternateFileName[0];
-			if (strlen(name) == 0) {
-				name = &fd.cFileName[0];
-			}
-
-			CCFileClass file(name);
-			CCINIClass * ini = new CCINIClass;
-			ini->Load(file, false);
-
-			if (stricmp(name, "BATTLE.INI") == 0) {
-				found = true;
-			}
-
-			Read_Battle_INI(*ini);
-			delete ini;
+		if (stricmp(name.c_str(), "BATTLE.INI") == 0) {
+			found = true;
 		}
 
-		if (FindNextFile(handle, &fd) == 0) {
-			break;
-		}
-	}
-
-	if (handle != INVALID_HANDLE_VALUE) {
-		FindClose(handle);
+		Read_Battle_INI(*ini);
+		delete ini;
 	}
 
 	if (!found) {
@@ -871,37 +861,19 @@ static bool Init_Rules(void)
 	DynamicVectorClass<CCINIClass*> Rules;
 
 	bool found = false;
-	WIN32_FIND_DATA fd;
-	HANDLE handle = FindFirstFile("RULE*.INI", &fd);
 
-	while (handle != INVALID_HANDLE_VALUE) {
-		if ((fd.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_HIDDEN|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_TEMPORARY)) == 0) {
-			const char * name = &fd.cAlternateFileName[0];
+	for (std::string const & name : Search_Files("RULE*.INI")) {
+		CCFileClass file(name.c_str());
+		CCINIClass * rule = new CCINIClass;
 
-			if (*name == '\0') {
-				name = &fd.cFileName[0];
-			}
+		rule->Load(file, false);
 
-			CCFileClass file(name);
-			CCINIClass * rule = new CCINIClass;
-
-			rule->Load(file, false);
-
-			if (stricmp(name, "RULES.INI") == 0) {
-				found = true;
-				Rules.Add_Head(rule);
-			} else {
-				Rules.Add(rule);
-			}
+		if (stricmp(name.c_str(), "RULES.INI") == 0) {
+			found = true;
+			Rules.Add_Head(rule);
+		} else {
+			Rules.Add(rule);
 		}
-
-		if (FindNextFile(handle, &fd) == 0) {
-			break;
-		}
-	}
-
-	if (handle != INVALID_HANDLE_VALUE) {
-		FindClose(handle);
 	}
 
 	if (!found) {
@@ -1764,6 +1736,11 @@ bool Parse_Command_Line(int argc, char * argv[])
 			}
 		}
 		*dest = '\0';
+
+		// Matching is done on an upper case copy, so that an option carrying a directory
+		// can still take it in the case it was written.
+		char original[512];
+		strcpy(original, arg_string);
 		strupr(string);
 
 		/*
@@ -1827,11 +1804,13 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 #endif
 
-		/*
-		**	File search path override.
-		*/
-		if (strstr(string, "-CD")) {
-			CCFileClass::Set_Search_Drives(&string[3]);
+		if (strnicmp(string, "-DATADIR=", strlen("-DATADIR=")) == 0) {
+			Set_Data_Directory(&original[strlen("-DATADIR=")]);
+			continue;
+		}
+
+		if (strnicmp(string, "-USERDIR=", strlen("-USERDIR=")) == 0) {
+			Set_User_Directory(&original[strlen("-USERDIR=")]);
 			continue;
 		}
 
@@ -2201,12 +2180,9 @@ static bool Init_Expansion_Files(void)
 		if ((ff.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY)) == 0) {
 
 			ptr = new MFCD(ff.cFileName, &FastKey);
-			assert(ptr != NULL);
 
-			if (ptr != NULL) {
-				ExpandMix.Add(ptr);
-				ptr->Cache();
-			}
+			ExpandMix.Add(ptr);
+			ptr->Cache();
 		}
 
 		if (FindNextFile(handle, &ff) == false) {
@@ -2224,11 +2200,8 @@ static bool Init_Expansion_Files(void)
 		if ((ff.dwFileAttributes & (FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_TEMPORARY)) == 0) {
 
 			ptr = new MFCD(ff.cFileName, &FastKey);
-			assert(ptr != NULL);
 
-			if (ptr != NULL) {
-				ExpandMix.Add(ptr);
-			}
+			ExpandMix.Add(ptr);
 		}
 
 		if (FindNextFile(handle, &ff) == false) {
@@ -2381,13 +2354,10 @@ static bool Add_Raw_Expansion_Mix(const char *name)
 {
 	if (RawFileClass(name).Is_Available()) {
 		MFCD * expand = new MFCD(name, &FastKey);
-		assert(expand != NULL);
 
-		if (expand != NULL) {
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
-			return(true);
-		}
+		ExpandMix.Add(expand);
+		DebugStringNoPrefix(" %s", name);
+		return(true);
 	}
 	return(false);
 }
@@ -2404,14 +2374,11 @@ static bool Add_CC_Expansion_Mix(const char *name)
 {
 	if (CCFileClass(name).Is_Available()) {
 		MFCD * expand = new MFCD(name, &FastKey);
-		assert(expand != NULL);
 
-		if (expand != NULL) {
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", name);
-			expand->Cache();
-			return(true);
-		}
+		ExpandMix.Add(expand);
+		DebugStringNoPrefix(" %s", name);
+		expand->Cache();
+		return(true);
 	}
 	return(false);
 }
@@ -2430,14 +2397,13 @@ static void Init_Expand_Mixfiles(void)
 
 	for (index = 99; index >= 0; index--) {
 		sprintf(name, "EXPAND%02d.MIX", index);
-		if (RawFileClass(name).Is_Available()) {
+		// Searched for as a loose file wherever the game's files are kept, but never
+		// inside another archive.
+		if (CDFileClass(name).Is_Available()) {
 			expand = new MFCD(name, &FastKey);
-			assert(expand != NULL);
 
-			if (expand != NULL) {
-				ExpandMix.Add(expand);
-				DebugStringNoPrefix(" %s", name);
-			}
+			ExpandMix.Add(expand);
+			DebugStringNoPrefix(" %s", name);
 		}
 	}
 
@@ -2445,13 +2411,10 @@ static void Init_Expand_Mixfiles(void)
 		sprintf(name, "ECACHE%02d.MIX", index);
 		if (CCFileClass(name).Is_Available()) {
 			expand = new MFCD(name, &FastKey);
-			assert(expand != NULL);
 
-			if (expand != NULL) {
-				ExpandMix.Add(expand);
-				DebugStringNoPrefix(" %s", name);
-				expand->Cache();
-			}
+			ExpandMix.Add(expand);
+			DebugStringNoPrefix(" %s", name);
+			expand->Cache();
 		}
 	}
 }
@@ -2466,26 +2429,22 @@ static void Init_Patch_Mixfiles(void)
 {
 	MFCD * expand;
 
-	if (RawFileClass("PATCH.MIX").Is_Available()) {
+	// As with the expansion archives, found loose in any of the game's folders but never
+	// inside another archive.
+	if (CDFileClass("PATCH.MIX").Is_Available()) {
 		expand = new MFCD("PATCH.MIX", &FastKey);
-		assert(expand != NULL);
 
-		if (expand != NULL) {
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", "PATCH.MIX");
-		}
+		ExpandMix.Add(expand);
+		DebugStringNoPrefix(" %s", "PATCH.MIX");
 	}
 
 
 	if (CCFileClass("PCACHE.MIX").Is_Available()) {
 		expand = new MFCD("PCACHE.MIX", &FastKey);
-		assert(expand != NULL);
 
-		if (expand != NULL) {
-			ExpandMix.Add(expand);
-			DebugStringNoPrefix(" %s", "PCACHE.MIX");
-			expand->Cache();
-		}
+		ExpandMix.Add(expand);
+		DebugStringNoPrefix(" %s", "PCACHE.MIX");
+		expand->Cache();
 	}
 
 }
@@ -2521,11 +2480,6 @@ static bool Init_Bootstrap_Mixfiles(void)
 	Detect_Addons();
 
 	GameMix = new MFCD("TIBSUN.MIX", &FastKey);
-	assert(GameMix != NULL);
-
-	if (GameMix == NULL) {
-		return(false);
-	}
 #endif
 
 	/*
@@ -2535,20 +2489,14 @@ static bool Init_Bootstrap_Mixfiles(void)
 	DebugStringNoPrefix(" CACHE.MIX");
 
 	CacheMix = new MFCD("CACHE.MIX", &FastKey);
-	assert(CacheMix != NULL);
 
-	if ((CacheMix == NULL) || (MFCD::Cache("CACHE.MIX") == false)) {
+	if (MFCD::Cache("CACHE.MIX") == false) {
 		return(false);
 	}
 
 	DebugStringNoPrefix(" CACHE.MIX");
 
 	LocalMix = new MFCD("LOCAL.MIX", &FastKey);
-	assert(LocalMix != NULL);
-
-	if (LocalMix == NULL) {
-		return(false);
-	}
 
 	DebugStringNoPrefix(" LOCAL.MIX");
 
@@ -2573,14 +2521,11 @@ static bool Init_Bootstrap_Mixfiles(void)
  *=============================================================================================*/
 static bool Init_Secondary_Mixfiles(void)
 {
-	char name[_MAX_PATH];
-
 	/*
 	**	Inform the file system of the various MIX files.
 	*/
 	if (CCFileClass("CONQUER.MIX").Is_Available()) {
 		ConquerMix = new MFCD("CONQUER.MIX", &FastKey);
-		assert(ConquerMix != NULL);
 	}
 
 	DebugStringNoPrefix(" CONQUER.MIX");
@@ -2591,42 +2536,34 @@ static bool Init_Secondary_Mixfiles(void)
 
 	MFCD * mix;
 
-		strcpy(name, "MAPS*.MIX");
+	{
+		// The map and multiplayer archives are not required. A deployment may keep the maps
+		// and the multiplayer content loose or in archives of its own.
+		std::vector<std::string> const maps = Search_Files("MAPS*.MIX");
 
-		if (CDFileClass::Find_First_File(name) == true) {
+		for (unsigned int index = 0; index < maps.size(); index++) {
+			char const * found = maps[index].c_str();
+			DebugStringNoPrefix(" %s", found);
 
-			DebugStringNoPrefix(" %s", name);
-			MapsMix = new MFCD(name, &FastKey);
-			assert(MapsMix != NULL);
-
-			while (CDFileClass::Find_Next_File(name) == true) {
-				DebugStringNoPrefix(" %s", name);
-				mix = new MFCD(name, &FastKey);
-				assert(mix != NULL);
-
-				if (mix != NULL) {
-					MapsMixLocal.Add(mix);
-				}
+			// The first archive found is the game's own; the rest are whatever else is
+			// installed alongside it.
+			if (index == 0) {
+				MapsMix = new MFCD(found, &FastKey);
+				continue;
 			}
 
-			CDFileClass::Find_Close();
+			mix = new MFCD(found, &FastKey);
+
+			MapsMixLocal.Add(mix);
 		}
+	}
 
 #ifndef _DEMO
 
-	if (MapsMix == NULL) {
-		return(false);
-	}
-
 	if (CCFileClass("MULTI.MIX").Is_Available()) {
 		MultiMix = new MFCD("MULTI.MIX", &FastKey);
-		assert(MultiMix != NULL);
-	}
 
-	DebugStringNoPrefix(" MULTI.MIX");
-
-	if (MultiMix == NULL) {
-		return(false);
+		DebugStringNoPrefix(" MULTI.MIX");
 	}
 
 #endif
@@ -2634,7 +2571,6 @@ static bool Init_Secondary_Mixfiles(void)
 	if (Addon_Installed(ADDON_FIRESTORM) == true) {
 		if (CCFileClass("SOUNDS01.MIX").Is_Available()) {
 			Sounds01Mix = new MFCD("SOUNDS01.MIX", &FastKey);
-			assert(Sounds01Mix != NULL);
 		}
 
 		DebugStringNoPrefix(" SOUNDS01.MIX");
@@ -2646,7 +2582,6 @@ static bool Init_Secondary_Mixfiles(void)
 
 	if (CCFileClass("SOUNDS.MIX").Is_Available()) {
 		SoundsMix = new MFCD("SOUNDS.MIX", &FastKey);
-		assert(SoundsMix != NULL);
 	}
 
 	DebugStringNoPrefix(" SOUNDS.MIX");
@@ -2660,7 +2595,6 @@ static bool Init_Secondary_Mixfiles(void)
 	*/
 	if (CCFileClass("SCORES.MIX").Is_Available()) {
 		ScoresMix = new MFCD("SCORES.MIX", &FastKey);
-		assert(ScoresMix != NULL);
 	}
 
 	DebugStringNoPrefix(" SCORES.MIX");
@@ -2671,7 +2605,6 @@ static bool Init_Secondary_Mixfiles(void)
 
 	if (CCFileClass("SCORES01.MIX").Is_Available()) {
 		Scores01Mix = new MFCD("SCORES01.MIX", &FastKey);
-		assert(Scores01Mix != NULL);
 	}
 
 	DebugStringNoPrefix(" SCORES01.MIX");
@@ -2679,26 +2612,23 @@ static bool Init_Secondary_Mixfiles(void)
 	ScoresPresent = true;
 	Theme.Scan();
 
-		strcpy(name, "MOVIES*.MIX");
+	{
+		std::vector<std::string> const movies = Search_Files("MOVIES*.MIX");
 
-		if (CDFileClass::Find_First_File(name) == true) {
+		for (unsigned int index = 0; index < movies.size(); index++) {
+			char const * found = movies[index].c_str();
+			DebugStringNoPrefix(" %s", found);
 
-			DebugStringNoPrefix(" %s", name);
-			MoviesMix = new MFCD(name, &FastKey);
-			assert(MoviesMix != NULL);
-
-			while (CDFileClass::Find_Next_File(name) == true) {
-				DebugStringNoPrefix(" %s", name);
-				mix = new MFCD(name, &FastKey);
-				assert(mix != NULL);
-
-				if (mix != NULL) {
-					MoviesMixLocal.Add(mix);
-				}
+			if (index == 0) {
+				MoviesMix = new MFCD(found, &FastKey);
+				continue;
 			}
 
-			CDFileClass::Find_Close();
+			mix = new MFCD(found, &FastKey);
+
+			MoviesMixLocal.Add(mix);
 		}
+	}
 
 	if (MoviesMix == NULL) {
 		return(false);
@@ -5504,7 +5434,6 @@ void Init_Theater(TheaterType theater)
 			delete TheaterData;
 		}
 		TheaterData = new MFCD(fullname, &FastKey);
-		assert(TheaterData != NULL);
 
 		if (TheaterDat != NULL) {
 			delete TheaterDat;
@@ -5648,9 +5577,6 @@ bool Prep_For_Side(SideType side)
 
 				DebugString("     Initializing %s\n", name);
 				MFCD * mix = new MFCD(name, &FastKey);
-				if (mix == NULL) {
-					return(false);
-				}
 				ExpandSideMix.Add(mix);
 				mix->Cache();
 			}
@@ -5679,9 +5605,6 @@ bool Prep_For_Side(SideType side)
 
 				DebugString("     Initializing %s\n", name);
 				MFCD *mix = new MFCD(name, &FastKey);
-				if (mix == NULL) {
-					return(false);
-				}
 				ExpandSideMix.Add(mix);
 			}
 		}
@@ -5753,10 +5676,8 @@ bool Prep_Speech_For_Side(SideType side)
 
 			if (CCFileClass(name).Is_Available()) {
 				MFCD *mix = new MFCD(name, &FastKey);
-				if (mix != NULL) {
-					ExpandSpeechMix.Add(mix);
-					DebugStringNoPrefix(" %s", name);
-				}
+				ExpandSpeechMix.Add(mix);
+				DebugStringNoPrefix(" %s", name);
 			}
 		}
 	}

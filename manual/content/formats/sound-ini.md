@@ -18,7 +18,7 @@ source_files:
   - code/voc.cpp
 ---
 
-Without Firestorm, startup loads `SOUND.INI`. With Firestorm installed, it loads `SOUND01.INI` instead. Only one of the two is read; they are not layered, and failure to find or parse the selected one stops initialization.
+Startup reads `SOUND.INI` and `SOUND01.INI` into one database, whichever of the two are there, the expansion's file over the base one. A sound both files name comes from `SOUND01.INI`, and one only `SOUND.INI` names is kept. Either file alone is enough, and initialization stops only when neither can be read. Whether Firestorm is installed does not decide which file is read.
 
 `[SoundList]` values register sound IDs. Each ID names a section and an `.AUD` sample with the same base name.
 

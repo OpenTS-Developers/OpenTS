@@ -287,6 +287,85 @@ class LifecycleEntityExpansionTests(unittest.TestCase):
                 errors, manual, {}, {}, {}, {}, entities)
             self.assertEqual(errors, [])
 
+    def test_history_may_cite_an_entity_removed_later(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            manual = Path(temporary)
+            (manual / "changes").mkdir()
+            (manual / "changes" / "old-behavior.md").write_text(
+                "---\n"
+                "title: Change the old command\n"
+                "category: feature\n"
+                "release: 1.0.0\n"
+                "targets:\n"
+                "  - type: command\n"
+                "    id: OldCommand\n"
+                "    effect: changed\n"
+                "credit: [Programmer]\n"
+                "---\n",
+                encoding="utf-8",
+            )
+            (manual / "changes" / "old-removal.md").write_text(
+                "---\n"
+                "title: Remove the old command\n"
+                "category: feature\n"
+                "release: 2.0.0\n"
+                "targets:\n"
+                "  - type: command\n"
+                "    id: OldCommand\n"
+                "    effect: removed\n"
+                "credit: [Programmer]\n"
+                "---\n",
+                encoding="utf-8",
+            )
+            registry = {
+                "development": "2.0.0",
+                "by_version": {
+                    "1.0.0": {"version": "1.0.0", "status": "released"},
+                    "2.0.0": {"version": "2.0.0", "status": "development"},
+                },
+            }
+            tombstones = [{
+                "type": "command",
+                "id": "OldCommand",
+                "route": "/commands/oldcommand/",
+                "search_aliases": [],
+                "summary": "Removed command.",
+            }]
+            errors = []
+            versioning.validate_changes(
+                errors, manual, registry, {}, {}, {}, tombstones,
+                entities={"command": {}})
+            self.assertEqual(errors, [])
+
+            # A tombstone answers only for the entity itself, never for a scope of one.
+            (manual / "changes" / "old-behavior.md").write_text(
+                "---\n"
+                "title: Change the old key\n"
+                "category: feature\n"
+                "release: 1.0.0\n"
+                "targets:\n"
+                "  - type: key\n"
+                "    id: OldKey\n"
+                "    effect: changed\n"
+                "    scope: campaign\n"
+                "credit: [Programmer]\n"
+                "---\n",
+                encoding="utf-8",
+            )
+            tombstones.append({
+                "type": "key",
+                "id": "OldKey",
+                "route": "/keys/oldkey/",
+                "search_aliases": [],
+                "summary": "Removed key.",
+            })
+            errors = []
+            versioning.validate_changes(
+                errors, manual, registry, {}, {}, {}, tombstones,
+                entities={"command": {}})
+            self.assertTrue(
+                any("unknown active entity" in error for error in errors))
+
     def test_command_deltas_ignore_provenance_and_require_lifecycle(self):
         base = {
             "registered_commands": [

@@ -41,20 +41,27 @@
 
 #include "cdfile.h"
 
+#include <string>
+
 /*
 **	Pointer to the first search path record.
 */
 CDFileClass::SearchDriveType * CDFileClass::First = NULL;
 
+// Where this player's own files are kept, ending in a separator, or empty when the player
+// has no directory of their own.
+static std::string UserPath;
+
 
 /// <summary>
 /// Constructs a CD file object for the file specified.
-/// The name is searched in the current directory and every configured path, so the object
-/// refers to the first matching local file.
+/// The name is searched for in the player's own directory, the current directory and every
+/// configured path, so the object refers to the first matching local file.
 /// </summary>
 /// <param name="filename">The name of the file this object should refer to.</param>
 CDFileClass::CDFileClass(char const *filename) :
-	IsDisabled(false)
+	IsDisabled(false),
+	RequestedName(NULL)
 {
 	CDFileClass::Set_Name(filename);
 //	memset (RawPath, 0, sizeof(RawPath));
@@ -66,8 +73,15 @@ CDFileClass::CDFileClass(char const *filename) :
 /// Use Set_Name to give the object a file to work with before trying to open it.
 /// </summary>
 CDFileClass::CDFileClass(void) :
-	IsDisabled(false)
+	IsDisabled(false),
+	RequestedName(NULL)
 {
+}
+
+
+CDFileClass::~CDFileClass(void)
+{
+	Capture_Name(NULL);
 }
 
 
@@ -89,66 +103,14 @@ CDFileClass::CDFileClass(void) :
  *=============================================================================================*/
 int CDFileClass::Open(int rights)
 {
-	return(BASECLASS::Open(rights));
-}
-
-
-/// <summary>
-/// Adds a list of directories to search when a file is not in the current directory.
-/// The list is written the way DOS wrote a PATH -- entries separated by semicolons, with
-/// or without a trailing backslash. Each entry is appended to the search chain in the
-/// order given, so the first directory named is the first one tried.
-/// </summary>
-/// <param name="pathlist">The semicolon separated list of directories to add.</param>
-/// <returns>int; Zero if at least one directory was added, or 1 if the list held none.</returns>
-int CDFileClass::Set_Search_Drives(char * pathlist)
-{
-	bool found = false;
-
-	/*
-	**	If there is no pathlist to add, then just return.
-	*/
-	if (!pathlist) return(0);
-
-	char *copy_pathlist = strdup(pathlist);
-
-	char const * ptr = strtok(copy_pathlist, ";");
-	while (ptr != NULL) {
-		if (strlen(ptr) > 0) {
-
-			char path[MAX_PATH];						// Working path buffer.
-
-			/*
-			**	Fixup the path to be legal. Legal is defined as all that is necessary to
-			**	create a pathname is to append the actual filename submitted to the
-			**	file system. This means that it must have either a trailing ':' or '\'
-			**	character.
-			*/
-			strcpy(path, ptr);
-			switch (path[strlen(path)-1]) {
-				case ':':
-				case '\\':
-					break;
-
-				default:
-					strcat(path, "\\");
-					break;
-			}
-
-			found	= true;
-			Add_Search_Drive(path);
-		}
-
-		/*
-		**	Find the next path string and resubmit.
-		*/
-		ptr = strtok(NULL, ";");
+	// A file being written belongs to the player, so it is opened where the player's own
+	// files are kept rather than wherever a copy happened to be found. What a deployment
+	// ships is read from and never written over.
+	if ((rights & WRITE) != 0) {
+		Point_At_Own_Copy();
 	}
 
-	free(copy_pathlist);
-
-	if (!found) return(1);
-	return(0);
+	return(BASECLASS::Open(rights));
 }
 
 
@@ -166,7 +128,7 @@ int CDFileClass::Set_Search_Drives(char * pathlist)
  * HISTORY:                                                                                    *
  *    5/22/96 10:12AM ST : Created                                                             *
  *=============================================================================================*/
-void CDFileClass::Add_Search_Drive(char *path)
+void CDFileClass::Add_Search_Drive(char const * path)
 {
 	SearchDriveType *srch;					// Working pointer to path object.
 	/*
@@ -196,10 +158,135 @@ void CDFileClass::Add_Search_Drive(char *path)
 }
 
 
+/// <summary>
+/// Records where this player's own files are kept.
+/// A file the game writes, creates or deletes goes here, and a file it reads is looked for
+/// here before anywhere else. Passing nothing puts the game back to keeping everything
+/// together in the directory it is run from.
+/// </summary>
+/// <param name="path">The directory to keep the player's own files in.</param>
+void CDFileClass::Set_User_Path(char const * path)
+{
+	UserPath.clear();
+
+	if (path == NULL || *path == '\0') return;
+
+	UserPath = path;
+
+	switch (UserPath[UserPath.length()-1]) {
+		case ':':
+		case '/':
+		case '\\':
+			break;
+
+		default:
+			UserPath += '\\';
+			break;
+	}
+}
+
+
+char const * CDFileClass::User_Path(void)
+{
+	return(UserPath.empty() ? NULL : UserPath.c_str());
+}
+
+
+/// <summary>
+/// Reports whether a name already carries a directory of its own.
+/// Such a name has said where it goes, so neither the search nor the player's own directory
+/// touches it. The characters are the ones a directory is allowed to end with.
+/// </summary>
+/// <param name="filename">The name to examine.</param>
+/// <returns>bool; Does the name carry a directory?</returns>
+bool CDFileClass::Has_Directory(char const * filename)
+{
+	return(filename != NULL && strpbrk(filename, "\\/:") != NULL);
+}
+
+
+/// <summary>
+/// Works out where a file belongs once it is the player's own.
+/// </summary>
+/// <param name="filename">The name the game asked for.</param>
+/// <param name="buffer">Receives the pathname when one can be built.</param>
+/// <param name="size">The size of that buffer.</param>
+/// <returns>bool; Was a pathname built? It fails when the player has no directory of their
+/// own, when the caller has already named one, or when the two will not make one pathname.</returns>
+bool CDFileClass::User_Path_For(char const * filename, char * buffer, int size)
+{
+	if (UserPath.empty() || filename == NULL) return(false);
+	if (Has_Directory(filename)) return(false);
+	if ((int)(UserPath.length() + strlen(filename)) >= size) return(false);
+
+	strcpy(buffer, UserPath.c_str());
+	strcat(buffer, filename);
+	return(true);
+}
+
+
+/// <summary>
+/// Keeps a copy of the name the game asked for.
+/// The copy is this object's own, so that the name survives the object being pointed at a
+/// copy found elsewhere, and survives a mixfile lookup writing over the name in place.
+/// </summary>
+/// <param name="filename">The name to keep, or NULL to let go of the one kept.</param>
+/// <returns>The kept copy, which lasts until the next name is kept.</returns>
+char const * CDFileClass::Capture_Name(char const * filename)
+{
+	char * captured = (filename != NULL) ? strdup(filename) : NULL;
+
+	if (RequestedName != NULL) {
+		free((char *)RequestedName);
+	}
+	RequestedName = captured;
+
+	return(RequestedName);
+}
+
+
+/// <summary>
+/// Points the object at the file this player's own game owns, where a write and a delete
+/// both belong. Worked out from the name that was asked for rather than from the one the
+/// object carries, so that it lands in the same place however often it is done.
+/// </summary>
+void CDFileClass::Point_At_Own_Copy(void)
+{
+	if (IsDisabled || RequestedName == NULL) return;
+
+	char path[_MAX_PATH];
+
+	if (User_Path_For(RequestedName, path, sizeof(path))) {
+		BASECLASS::Set_Name(path);
+	} else {
+		BASECLASS::Set_Name(RequestedName);
+	}
+}
+
+
+/// <summary>
+/// Reports the search path at a position in the chain, counting from zero in the order the
+/// paths are tried. This is how a scan covers the same folders a file open would.
+/// </summary>
+/// <param name="index">The position in the search chain.</param>
+/// <returns>The path at that position, or NULL once the end of the chain is passed.</returns>
+char const * CDFileClass::Search_Path(int index)
+{
+	SearchDriveType const * srch = First;
+
+	while (srch != NULL && index > 0) {
+		srch = (SearchDriveType const *)srch->Next;
+		index--;
+	}
+
+	return(srch != NULL ? srch->Path : NULL);
+}
+
+
 /***********************************************************************************************
  * CDFileClass::Clear_Search_Drives -- Removes all record of a search path.                    *
  *                                                                                             *
- *    Use this routine to clear out any previous path(s) set with Set_Search_Drives()          *
+ *    Use this routine to clear out any previous path(s) set with Add_Search_Drive()           *
  *    function.                                                                                *
  *                                                                                             *
  * INPUT:   none                                                                               *
@@ -239,13 +326,30 @@ void CDFileClass::Clear_Search_Drives(void)
 /// <returns>The selected file name, including a configured path when one supplies the match.</returns>
 char const * CDFileClass::Set_Name(char const *filename)
 {
+	// Kept before anything else, because the name the object ends up carrying records where
+	// a copy was found, and a write has to go back to what was asked for.
+	filename = Capture_Name(filename);
+
+	// A file this player's own game wrote is the one that answers, whatever a deployment
+	// ships under the same name.
+	if (!IsDisabled) {
+		char path[_MAX_PATH];
+
+		if (User_Path_For(filename, path, sizeof(path))) {
+			BASECLASS::Set_Name(path);
+			if (BASECLASS::Is_Available()) {
+				return(File_Name());
+			}
+		}
+	}
+
 	/*
 	**	Try to find the file in the current directory first. If it can be found, then
 	**	just return with the normal file name setting process. Do the same if there is
 	**	no multi-drive search path.
 	*/
 	BASECLASS::Set_Name(filename);
-	if (IsDisabled || !First || BASECLASS::Is_Available()) return(File_Name());
+	if (IsDisabled || !First || filename == NULL || BASECLASS::Is_Available()) return(File_Name());
 
 	/*
 	**	Attempt to find the file first. Check the current directory. If not found there, then
@@ -257,17 +361,22 @@ char const * CDFileClass::Set_Name(char const *filename)
 	while (srch) {
 		char path[_MAX_PATH];
 
-		/*
-		**	Build a pathname to search for.
-		*/
-		strcpy(path, srch->Path);
-		strcat(path, filename);
+		// A directory and a name that will not make one pathname between them are passed
+		// over rather than truncated into a different name.
+		if (strlen(srch->Path) + strlen(filename) < sizeof(path)) {
 
-		// Check this path. Is_Available returns false when the file cannot be opened,
-		// allowing the search to continue with the next configured path.
-		BASECLASS::Set_Name(path);
-		if (BASECLASS::Is_Available()) {
-			return(File_Name());
+			/*
+			**	Build a pathname to search for.
+			*/
+			strcpy(path, srch->Path);
+			strcat(path, filename);
+
+			// Check this path. Is_Available returns false when the file cannot be opened,
+			// allowing the search to continue with the next configured path.
+			BASECLASS::Set_Name(path);
+			if (BASECLASS::Is_Available()) {
+				return(File_Name());
+			}
 		}
 
 		/*
@@ -323,10 +432,10 @@ int CDFileClass::Open(char const *filename, int rights)
 	/*
 	**	If writing is requested, then multiple drive searching is not performed.
 	*/
-	if (IsDisabled || rights == WRITE) {
+	if (IsDisabled || (rights & WRITE) != 0) {
 
-		BASECLASS::Set_Name( filename );
-		return( BASECLASS::Open( rights ) );
+		BASECLASS::Set_Name( Capture_Name(filename) );
+		return( CDFileClass::Open( rights ) );
 	}
 
 	/*
@@ -335,6 +444,20 @@ int CDFileClass::Open(char const *filename, int rights)
 	*/
 	Set_Name(filename);
 	return(BASECLASS::Open(rights));
+}
+
+
+/// <summary>
+/// Deletes this player's own copy of the file.
+/// What a deployment ships is read from and never removed, so a file thrown away here falls
+/// back to the copy it shipped with rather than disappearing altogether.
+/// </summary>
+/// <returns>int; Was a file deleted?</returns>
+int CDFileClass::Delete(void)
+{
+	Point_At_Own_Copy();
+
+	return(BASECLASS::Delete());
 }
 
 

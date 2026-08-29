@@ -140,6 +140,13 @@ site_exclusions:
     keys: [Name]
     classification: excluded
     reason: This dynamic region lookup reads a legacy online-service endpoint record, not a mod setting.
+
+  - path: code/gamedirs.cpp
+    function: Init_Search_Folders
+    keys: [SearchPaths]
+    classification: excluded
+    reason: The folder list belongs to the deployment file that describes where a distribution keeps its own files, and is documented as part of that format rather than as game data.
+
   - path: code/spawnerconfig.cpp
     function: SpawnerConfigClass::Read_Slots
     keys: [Color, Side, Port]
