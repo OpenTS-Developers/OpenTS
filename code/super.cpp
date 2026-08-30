@@ -609,6 +609,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 			Drop_Pods(cell);
 			if (player) {
 				Map.IsTargettingMode = SUPER_NONE;
+				PlayerPtr->TargetingSW = NULL;
 			}
 			House->IsRecalcNeeded = true;
 			break;
@@ -619,6 +620,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				if (coord != COORD_NONE) {
 					if (player) {
 						Map.IsTargettingMode = SUPER_NONE;
+						PlayerPtr->TargetingSW = NULL;
 					}
 					House->IsRecalcNeeded = true;
 					new IonBlastClass(coord);
@@ -656,6 +658,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 				}
 				if (player) {
 					Map.IsTargettingMode = SUPER_NONE;
+					PlayerPtr->TargetingSW = NULL;
 				}
 				House->IsRecalcNeeded = true;
 			}
@@ -698,6 +701,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 					}
 					if (player) {
 						Map.IsTargettingMode = SUPER_NONE;
+						PlayerPtr->TargetingSW = NULL;
 					}
 					House->IsRecalcNeeded = true;
 				} else {
@@ -726,6 +730,7 @@ void SuperClass::Place(Cell const & cell, bool player)
 					}
 					if (player) {
 						Map.IsTargettingMode = SUPER_NONE;
+						PlayerPtr->TargetingSW = NULL;
 					}
 					House->IsRecalcNeeded = true;
 				}

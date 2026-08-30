@@ -4927,6 +4927,7 @@ class ManualPlaceCommandClass : public CommandClass
 
 			// Drop any superweapon cursor, so that placing the building does not return to it.
 			Map.IsTargettingMode = SUPER_NONE;
+			PlayerPtr->TargetingSW = NULL;
 
 			PlayerPtr->Manual_Place(builder, (BuildingClass *)pending);
 		}

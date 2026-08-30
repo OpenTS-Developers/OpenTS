@@ -8728,6 +8728,7 @@ void HouseClass::Update_Present_Super_Weapons(void)
 						if (PlayerPtr != NULL && Fetch_ID() == PlayerPtr->Fetch_ID()) {
 							if (Map.IsTargettingMode == s) {
 								Map.IsTargettingMode = SUPER_NONE;
+								PlayerPtr->TargetingSW = NULL;
 							}
 							Map.Column[1].Flag_To_Redraw();
 						}
@@ -8738,6 +8739,7 @@ void HouseClass::Update_Present_Super_Weapons(void)
 						if (PlayerPtr != NULL && Fetch_ID() == PlayerPtr->Fetch_ID()) {
 							if (s == Map.IsTargettingMode) {
 								Map.IsTargettingMode = SUPER_NONE;
+								PlayerPtr->TargetingSW = NULL;
 							}
 							Map.Column[1].Flag_To_Redraw();
 						}
@@ -8748,6 +8750,7 @@ void HouseClass::Update_Present_Super_Weapons(void)
 						if (Fetch_ID() == PlayerPtr->Fetch_ID()) {
 							if (Map.IsTargettingMode == s) {
 								Map.IsTargettingMode = SUPER_NONE;
+								PlayerPtr->TargetingSW = NULL;
 							}
 							Map.Column[1].Flag_To_Redraw();
 						}
