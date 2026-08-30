@@ -556,7 +556,9 @@ long VQA_Open(char const *filename, VQAConfig *_config, VQAHandle **handle)
 		audio->Flags |= VQAAUDF_MEMLOCKED;
 
 		/* Initialize ADPCM information structure for audio stream. */
-		VQA_sosCODECInitStream(&audio->ADPCM_Info);
+		audio->ADPCM_Info.wBitSize = vqap->BitsPerSample;
+		audio->ADPCM_Info.wChannels = vqap->Channels;
+		sosCODECInitStream(&audio->ADPCM_Info);
 
 
 	} else {

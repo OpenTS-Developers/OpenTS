@@ -16,21 +16,11 @@
 
 #pragma once
 
+#include "../soscomp.h"
+
 #if defined(__WATCOMC__) || defined(_MSC_VER)
 #pragma pack(push,1)
 #endif
-
-struct _VQA_SOS_COMPRESS_INFO
-
-{
-	long dwPredicted;
-	short wIndex;
-	long dwPredicted2;
-	short wIndex2;
-};
-
-typedef _VQA_SOS_COMPRESS_INFO VQASOS;
-
 
 extern "C" {
 unsigned long __cdecl VQA_LCW_Uncompress(char const *source, char *dest, unsigned long length);
@@ -42,12 +32,12 @@ extern "C" {
 long __cdecl AudioUnzap(void *source, void *dest, long);
 }
 
+/* VQA's SND2 chunks carry a stereo stream as two consecutive per-channel
+   blocks rather than interleaved nybbles, unlike sosCODECDecompressData's
+   AUD-derived layout. */
 extern "C" {
-void __cdecl VQA_sosCODECInitStream(_VQA_SOS_COMPRESS_INFO *);
-void __cdecl VQA_sosCODECDecompressData(void *src, void *dst, unsigned short wBitSize, unsigned short wChannels, unsigned long dwUnCompSize, _VQA_SOS_COMPRESS_INFO *sosinfo);
+unsigned int sosCODECDecompressDataPlanar(_SOS_COMPRESS_INFO *, unsigned int);
 }
-
-//#define VQA_sosCODECDecompressData sosCODECDecompressData
 
 #if defined(__WATCOMC__) || defined(_MSC_VER)
 #pragma pack(pop)

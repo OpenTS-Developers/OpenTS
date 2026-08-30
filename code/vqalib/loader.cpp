@@ -3475,7 +3475,9 @@ long Load_SND2(VQAHandleP *vqap, unsigned long iffsize)
 		}
 
 		/* Uncompress the audio frame. */
-		VQA_sosCODECDecompressData(loadbuf, (char *)audio->Buffer, vqap->BitsPerSample, vqap->Channels, uncomp_size, &audio->ADPCM_Info);
+		audio->ADPCM_Info.lpSource = (char *)loadbuf;
+		audio->ADPCM_Info.lpDest = (char *)audio->Buffer;
+		sosCODECDecompressDataPlanar(&audio->ADPCM_Info, uncomp_size);
 
 		if (audio->BufferOffset) {
 			uncomp_size -= audio->BufferOffset;
@@ -3501,7 +3503,9 @@ long Load_SND2(VQAHandleP *vqap, unsigned long iffsize)
 	}
 
 	/* Uncompress the audio frame. */
-	VQA_sosCODECDecompressData(loadbuf, (char *)audio->TempBuf, vqap->BitsPerSample, vqap->Channels, uncomp_size, &audio->ADPCM_Info);
+	audio->ADPCM_Info.lpSource = (char *)loadbuf;
+	audio->ADPCM_Info.lpDest = (char *)audio->TempBuf;
+	sosCODECDecompressDataPlanar(&audio->ADPCM_Info, uncomp_size);
 
 	/* Set the TempBufLen */
 	audio->TempBufLen = uncomp_size;
@@ -3555,11 +3559,13 @@ long Load_SN2J(VQAHandleP *vqap, unsigned long iffsize)
 		return(VQAERR_READ);
 	}
 
-	audio->ADPCM_Info.dwPredicted = data.dwPredicted;
-	audio->ADPCM_Info.wIndex = data.wIndex;
+	/* The chunk stores the step index scaled by 32, the form the retired table-driven
+	   VQA decoder persisted between calls; the current decoder wants a plain 0-88 index. */
+	audio->ADPCM_Info.Channels[0].dwPredicted = data.dwPredicted;
+	audio->ADPCM_Info.Channels[0].wIndex = data.wIndex / 32;
 	if (vqap->Channels == 2) {
-		audio->ADPCM_Info.dwPredicted2 = data.dwPredicted2;
-		audio->ADPCM_Info.wIndex2 = data.wIndex2;
+		audio->ADPCM_Info.Channels[1].dwPredicted = data.dwPredicted2;
+		audio->ADPCM_Info.Channels[1].wIndex = data.wIndex2 / 32;
 	}
 
 	return(VQAERR_NONE);

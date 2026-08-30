@@ -989,11 +989,8 @@ int DSAudio::Play_Sample_Handle(void const *sample, int priority, int volume, in
 		st->sosinfo.wBitSize             = (RawHeader.Flags & AUD_FLAG_16BIT)  ? 16 : 8;
 		st->sosinfo.dwCompSize   = RawHeader.Size;
 		st->sosinfo.dwUnCompSize = RawHeader.Size * ( st->sosinfo.wBitSize / 4 );
-		if (st->sosinfo.wBitSize == 16 && st->sosinfo.wChannels == 1) {
-			sosCODECInitStream(&st->sosinfo);
-		} else {
-			General_sosCODECInitStream(&st->sosinfo);
-		}
+		sosCODECInitStream(&st->sosinfo);
+
 	}
 
 	/*
@@ -2664,11 +2661,7 @@ int DSAudio::Sample_Copy(SampleTrackerType *st, void ** source, int * ssize, voi
 						}
 						st->sosinfo.lpSource = (char *)UncompBuffer;
 						st->sosinfo.lpDest	 = (char *)dest;
-						if (st->sosinfo.wBitSize==16 && st->sosinfo.wChannels==1){
-							sosCODECDecompressData(&st->sosinfo, dsize);
-						} else {
-							General_sosCODECDecompressData(&st->sosinfo, dsize);
-						}
+						sosCODECDecompressData(&st->sosinfo, dsize);
 						dest = Audio_Add_Long_To_Pointer(dest, dsize);
 					}
 					datasize += dsize;
