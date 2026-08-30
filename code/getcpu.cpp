@@ -87,16 +87,10 @@ char VendorID[20] = "Not available";
 /// feature bit.
 /// </summary>
 /// <returns>bool; always true on the supported minimum hardware.</returns>
-
 bool __cdecl Detect_MMX_Availability(void)
 {
 	int regs[4];
 
-	/*
-	 * The original probed the EFLAGS AC and ID bits here to separate a 386 from a 486 from a
-	 * processor carrying CPUID. Every processor the current build supports carries CPUID, so
-	 * the family comes straight from it and the 386 and 486 answers are unreachable.
-	 */
 	char cputype = 4;
 
 	__cpuid(regs, 0);

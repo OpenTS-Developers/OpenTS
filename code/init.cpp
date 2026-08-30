@@ -308,8 +308,8 @@ int Init_Game(int , char * [])
 	**	is needed since the supported minimum hardware always qualifies.
 	*/
 #ifdef _DEBUG
-		DebugString("Creating benchmarks\n");
-		Benches = new Benchmark [BENCH_COUNT];
+	DebugString("Creating benchmarks\n");
+	Benches = new Benchmark [BENCH_COUNT];
 #endif
 
 	/*
