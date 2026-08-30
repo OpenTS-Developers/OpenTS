@@ -53,6 +53,9 @@
  *   Build_Send_Packet -- Builds a big packet from a bunch of little ones. *
  *   Add_Uncompressed_Events -- adds uncompressed events to a packet       *
  *   Add_Compressed_Events -- adds compressed events to a packet           *
+ *   Breakup_Receive_Packet -- Splits a big packet into little ones.       *
+ *   Extract_Uncompressed_Events -- extracts events from a packet          *
+ *   Extract_Compressed_Events -- extracts events from a packet            *
  *                                                                         *
  * DoList Management:                                                      *
  *   Execute_DoList -- Executes commands from the DoList                   *
@@ -299,7 +302,6 @@ static void Queue_AI_Multiplayer(void);
 static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 	int resend_delta, int dialog_time, int timeout, char *multi_packet_buf,
 	int multi_packet_max, int my_sent, FrameSyncStruct *their);
-static void Generate_Timing_Event(ConnManClass *net, int my_sent);
 static void Generate_Real_Timing_Event(void);
 static void Generate_Network_Report_Event(ConnManClass *net);
 static int Process_Send_Period(ConnManClass *net);	//, int init);
@@ -829,22 +831,7 @@ static void Queue_AI_Multiplayer(void)
 	//------------------------------------------------------------------------
 
 	else if (Frame % NetTiming::REPORT_INTERVAL == 0) {
-		//
-		// If we're using the new spiffy protocol, do proper timing handling.
-		// If we're the net "master", compute our desired frame rate & new
-		// 'MaxAhead' value.
-		//
-		//if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-
-			// Every peer reports its processing time and worst local RTT.
-			Generate_Network_Report_Event(net);
-
-		//} else {
-		// 	//
-		// 	// For the older protocols, do the old broken timing handling.
-		// 	//
-		// 	Generate_Timing_Event(net, SentCommandCount);
-		// }
+		Generate_Network_Report_Event(net);
 	}
 
 	// The deterministic master periodically evaluates the shared reports.
@@ -1462,81 +1449,6 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 }	// end of Wait_For_Players
 
 
-/***************************************************************************
- * Generate_Timing_Event -- computes & queues a RESPONSE_TIME event        *
- *                                                                         *
- * This routine adjusts the connection timing on the local system; it also *
- * optionally generates a RESPONSE_TIME event, to tell all systems to      *
- * dynamically adjust the current MaxAhead value.  This allows both the    *
- * MaxAhead & the connection retry logic to have dynamic timing, to adjust *
- * to varying line conditions.                                             *
- *                                                                         *
- * INPUT:                                                                  *
- *      net         ptr to connection manager                              *
- *      my_sent      # commands I've sent out so far                       *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   11/21/1995 BRR : Created.                                             *
- *=========================================================================*/
-static void Generate_Timing_Event(ConnManClass *net, int my_sent)
-{
-	unsigned int resp_time;			// connection response time, in ticks
-	EventClass ev;
-
-	//------------------------------------------------------------------------
-	// Measure the current connection response time.  This time will be in
-	// 60ths of a second, and represents full round-trip time of a packet.
-	// To convert to one-way packet time, divide by 2; to convert to game
-	// frames, divide again by 4, assuming a game rate of 15 fps.
-	//------------------------------------------------------------------------
-	resp_time = net->Response_Time();
-
-	//------------------------------------------------------------------------
-	//	Adjust my connection retry timing; only do this if I've sent out more
-	// than 5 commands, so I know I have a measure of the response time.
-	//------------------------------------------------------------------------
-	if (my_sent > 5) {
-
-		net->Set_Timing (resp_time + TIMER_SECOND / 6, -1, (resp_time * 4) + TIMER_SECOND / 4);
-
-		//.....................................................................
-		// If I'm the network "master", I'm also responsible for updating the
-		// MaxAhead value on all systems, so do that here too.
-		//.....................................................................
-		if (Session.Am_I_Master()) {
-			ev.Type = EventClass::RESPONSE_TIME;
-			//..................................................................
-			// For multi-frame compressed events, the MaxAhead must be an even
-			// multiple of the FrameSendRate.
-			//..................................................................
-			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				ev.Data.FrameInfo.Delay = std::max( ((((resp_time / 8) +
-					(Session.FrameSendRate - 1)) / Session.FrameSendRate) *
-					Session.FrameSendRate), (Session.FrameSendRate * 2) );
-			}
-			//..................................................................
-			// For sending packets every frame, just use the 1-way connection
-			// response time.
-			//..................................................................
-			else {
-				if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
-					ev.Data.FrameInfo.Delay = std::max<unsigned int>( (resp_time / 8),
-						 NETWORK_MIN_MAX_AHEAD );
-				}
-			}
-			OutList.push_back(ev);
-		}
-	}
-
-}	// end of Generate_Timing_Event
-
-
 /// <summary>Maps the validated game-speed setting to its historical frame-rate target.</summary>
 static int Game_Speed_Frame_Rate(void)
 {
@@ -1553,21 +1465,7 @@ static int Game_Speed_Frame_Rate(void)
 }
 
 
-/***************************************************************************
- * Generate_Real_Timing_Event -- Generates a TIMING event                  *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      none.                                                              *
- *                                                                         *
- * WARNINGS:                                                               *
- *      Only the deterministic session master may call this routine.       *
- *                                                                         *
- * HISTORY:                                                                *
- *   07/02/1996 BRR : Created.                                             *
- *=========================================================================*/
+/// <summary>Queues timing selected from the synchronized report census.</summary>
 static void Generate_Real_Timing_Event(void)
 {
 	EventClass event;

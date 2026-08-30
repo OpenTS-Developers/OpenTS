@@ -302,7 +302,7 @@ void Net2ServiceGameList(void)
 			Net2DisplayUsers();
 		} else if (TickCount - Session.Chat[i]->Chat.LastTime > 5 * TIMER_SECOND &&
 			Session.Chat[i]->Chat.LastChance == 0) {
-			GlobalPacketType packet = {};
+			GlobalPacketType packet;
 			memset (&packet, 0, sizeof(GlobalPacketType));
 			strcpy(packet.Name, Session.Handle);
 			packet.Command = NET_CHAT_REQUEST;
@@ -748,7 +748,7 @@ bool Net2Remote_Connect(void)
 					// If I'm not joined to a game, send a SIGN_OFF to all players
 					// in my Chat vector (but not to myself, index 0)
 					//...............................................................
-					GlobalPacketType gpacket = {};
+					GlobalPacketType gpacket;
 					memset(&gpacket, 0, sizeof(gpacket));
 					gpacket.Command = NET_SIGN_OFF;
 					strcpy(gpacket.Name, Session.Handle);
@@ -976,7 +976,7 @@ bool Net2Remote_Connect(void)
 				// Send all players the NET_GO packet.  Wait until all ACK's have been
 				// received.
 				//.....................................................................
-				GlobalPacketType gpacket = {};
+				GlobalPacketType gpacket;
 				memset(&gpacket, 0, sizeof(gpacket));
 				gpacket.Command = NET_GO;
 				gpacket.ResponseTime.OneWay = Session.MaxAhead;
@@ -1150,7 +1150,7 @@ BOOL CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wp
 
 					PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
 
-					GlobalPacketType gpacket = {};
+					GlobalPacketType gpacket;
 					memset(&gpacket, 0, sizeof(gpacket));
 
 					gpacket.Command = NET_MESSAGE;
@@ -1543,7 +1543,7 @@ BOOL CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 
 			PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
 
-			GlobalPacketType gpacket = {};
+			GlobalPacketType gpacket;
 			memset(&gpacket, 0, sizeof(gpacket));
 
 			gpacket.Command = NET_MESSAGE;
@@ -1978,7 +1978,7 @@ static int Request_To_Join(int join_index)
 static void Unjoin_Game(int game_index)
 {
 	int i;
-	GlobalPacketType packet = {};
+	GlobalPacketType packet;
 
 	//------------------------------------------------------------------------
 	// Fill in a SIGN_OFF packet
@@ -2554,7 +2554,7 @@ static void Get_Join_Responses(void)
 			// properly removed from their dialogs.
 			//.....................................................................
 			if ( JoinState == JOIN_CONFIRMED) {
-				GlobalPacketType packet = {};
+				GlobalPacketType packet;
 
 				memset (&packet, 0, sizeof(GlobalPacketType));
 				packet.Command = NET_SIGN_OFF;
@@ -2918,7 +2918,7 @@ static void Get_Join_Responses(void)
 		//------------------------------------------------------------------------
 		if (Session.GPacket.Command==NET_CHAT_REQUEST) {
 			if (JoinState != JOIN_WAIT_CONFIRM && JoinState != JOIN_CONFIRMED) {
-				GlobalPacketType packet = {};
+				GlobalPacketType packet;
 
 				memset (&packet, 0, sizeof(GlobalPacketType));
 
@@ -3382,7 +3382,7 @@ BOOL CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wparam
 				if (len > 2) {
 					PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
 
-					GlobalPacketType gpacket = {};
+					GlobalPacketType gpacket;
 					memset(&gpacket, 0, sizeof(gpacket));
 
 					gpacket.Command = NET_MESSAGE;

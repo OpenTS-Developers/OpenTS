@@ -431,41 +431,6 @@ void WinsockInterfaceClass::Build_Packet_CRC(WinsockBufferType * packet)
 }
 
 
-/***********************************************************************************************
- * WIC::Passes_CRC_Check -- Checks the CRC for a packet                                        *
- *                                                                                             *
- *                                                                                             *
- *                                                                                             *
- * INPUT:    ptr to packet                                                                     *
- *                                                                                             *
- * OUTPUT:   true if packet passes CRC check                                                   *
- *                                                                                             *
- * WARNINGS: None                                                                              *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   10/5/99 1:26PM ST : Created                                                               *
- *=============================================================================================*/
-bool WinsockInterfaceClass::Passes_CRC_Check(WinsockBufferType * packet)
-{
-	fw_assert (packet->InUse);
-	fw_assert (packet->BufferLen <= WS_INTERNET_BUFFER_LEN);
-
-	if (packet->BufferLen <= 0 || packet->BufferLen > WS_INTERNET_BUFFER_LEN) {
-		return(false);
-	}
-
-	unsigned int crc = Calculate_Packet_CRC(packet->Buffer, packet->BufferLen);
-
-	if (crc == packet->CRC) {
-		return(true);
-	}
-
-	fw_assert (crc == packet->CRC);
-	DebugString("Error in Winsock packet CRC\n");
-	return(false);
-}
-
-
 /// <summary>Calculates the transport checksum.</summary>
 unsigned int WinsockInterfaceClass::Calculate_Packet_CRC(void const * buffer, int buffer_len) const
 {

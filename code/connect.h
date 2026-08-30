@@ -300,9 +300,7 @@ class ConnectionClass
 		.....................................................................*/
 		unsigned int Timeout;
 
-		/*.....................................................................
-		The adaptive retry estimator and its monotonic millisecond clock.
-		.....................................................................*/
+		// An injected clock must outlive the connection.
 		NetTiming::MillisecondClock const *MillisecondTime;
 		NetTiming::RttEstimator RoundTripEstimator;
 
