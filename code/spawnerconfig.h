@@ -82,7 +82,6 @@ class SpawnerConfigClass
 		// The scenario and the saved game.
 		std::string ScenarioName = "spawnmap.ini";
 		std::string MapName;
-		std::string MapHash;
 		bool LoadSaveGame = false;
 		std::string SaveGameName;
 		int AutoSaveInterval = 10800;
@@ -113,8 +112,6 @@ class SpawnerConfigClass
 		std::array<bool, GLOBAL_FLAG_COUNT> GlobalFlags = {};
 
 		// Where the machines reach one another, settled by whatever service arranged the match.
-		int ReconnectTimeout = 2400;
-		int ConnTimeout = 3600;
 		int TunnelId = 0;
 		int ListenPort = 1234;
 		std::string TunnelAddress = "0.0.0.0";

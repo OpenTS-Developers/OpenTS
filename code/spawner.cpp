@@ -232,29 +232,29 @@ static void Spawner_Bind_Options(void)
 	/*
 	 * Read, not honored. Every field the reader carries is bound above, consumed to refuse a
 	 * launch, or named here, so a new field forces a decision rather than a silent omission.
+	 * A key this game will never take is not read at all, so everything below awaits the
+	 * feature that will honor it.
 	 *
-	 *   IsHost, Tournament, GameID    - the client's own bookkeeping of the match.
 	 *   MapName                       - shown while loading; bound with the scenario below.
-	 *   MapHash                       - the client checks that the machines hold one map.
+	 *   IsCampaign, LoadSaveGame,
+	 *   SaveGameName                  - read to decide the kind of launch and name the save.
+	 *   Slots[].IsSpectator           - read to refuse a launch.
+	 *   IsHost                        - which machine hosts matters once one can leave.
+	 *   Tournament, GameID,
+	 *   WriteStatistics               - naming a match and reporting how it went.
 	 *   AutoSaveInterval,
 	 *   NextCampaignAutoSave,
-	 *   NextSkirmishAutoSave          - saving by itself is not wired up.
-	 *   BuildOffAlly                  - the game has no such option to give it to.
-	 *   ReconnectTimeout, ConnTimeout - how patiently to wait for a machine that has gone
-	 *                                   quiet is part of the timing the game keeps for itself.
+	 *   NextSkirmishAutoSave          - saving on a schedule.
+	 *   BuildOffAlly, AttackNeutralUnits,
+	 *   ScrapMetal, AutoSurrender,
+	 *   ContinueWithoutHumans         - options the game has no setting of its own for yet.
+	 *   CoachMode                     - watching and advising rather than playing.
 	 *   QuickMatch, SkipScoreScreen,
-	 *   WriteStatistics, CoachMode,
-	 *   AutoSurrender, AttackNeutralUnits,
-	 *   ScrapMetal, ContinueWithoutHumans,
-	 *   PlayMoviesInMultiplayer       - behaviors no part of this game offers yet.
+	 *   PlayMoviesInMultiplayer,
 	 *   CustomLoadScreen,
 	 *   CustomLoadScreenX,
-	 *   CustomLoadScreenY             - the loading backdrop belongs to the campaign path.
-	 *   DifficultyName                - shown, never played by.
-	 *   IsCampaign, LoadSaveGame,
-	 *   SaveGameName                  - read to decide what kind of launch this is, and to
-	 *                                   name the saved game a resume restores.
-	 *   Slots[].IsSpectator           - read to refuse a launch.
+	 *   CustomLoadScreenY,
+	 *   DifficultyName                - what a player is shown around the match.
 	 */
 }
 

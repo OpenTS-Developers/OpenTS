@@ -159,13 +159,15 @@ easiest one the game does have.
 
 ## What the game does not take from a launch file
 
-The file's timing keys are not read at all. How far ahead the machines run and how often
-they exchange their orders is the game's own business, and no launch file changes it.
+The timing keys are not read at all, `ReconnectTimeout` and `ConnTimeout` among them. How
+far ahead the machines run, how often they exchange their orders, and how long they wait for
+one that has gone quiet are the game's own business, and no launch file changes them.
+`MapHash` is not read either: the machines compare the games they have loaded before play
+begins, which settles the same question for themselves.
 
-These keys are read but do not yet change anything, because the game has no such behavior
-to give them to: `Tournament`, `GameID`, `MapHash`, `BuildOffAlly`, the automatic-save
-scheduling keys, `QuickMatch`, `SkipScoreScreen`, `WriteStatistics`, `CoachMode`, `AutoSurrender`,
-`AttackNeutralUnits`, `ScrapMetal`, `ContinueWithoutHumans`, `PlayMoviesInMultiplayer`,
-`CustomLoadScreen`, `CustomLoadScreenPos`, `DifficultyName`, and the two timeout keys,
-`ReconnectTimeout` and `ConnTimeout` — how patiently to wait for a machine that has gone
-quiet is part of the timing the game keeps for itself.
+These keys are read but do not change anything yet, each awaiting the behavior that will
+honor it: `IsHost`, `Tournament`, `GameID`, `WriteStatistics`, the automatic-save scheduling
+keys, `BuildOffAlly`, `AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`,
+`ContinueWithoutHumans`, `CoachMode`, `QuickMatch`, `SkipScoreScreen`,
+`PlayMoviesInMultiplayer`, `CustomLoadScreen`, `CustomLoadScreenPos`, and
+`DifficultyName`.

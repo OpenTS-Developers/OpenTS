@@ -364,7 +364,6 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 
 	ScenarioName = Read_Text(ini, SETTINGS, "Scenario", ScenarioName);
 	MapName = Read_Text(ini, SETTINGS, "UIMapName", MapName);
-	MapHash = Read_Text(ini, SETTINGS, "MapHash", MapHash);
 
 	LoadSaveGame = ini.Get_Bool(SETTINGS, "LoadSaveGame", LoadSaveGame);
 
@@ -402,9 +401,6 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	Firestorm = ini.Get_Bool(SETTINGS, "Firestorm", Firestorm);
 	CampaignDifficulty = ini.Get_Int(SETTINGS, "DifficultyModeHuman", CampaignDifficulty);
 	CampaignCDifficulty = ini.Get_Int(SETTINGS, "DifficultyModeComputer", CampaignCDifficulty);
-
-	ReconnectTimeout = ini.Get_Int(SETTINGS, "ReconnectTimeout", ReconnectTimeout);
-	ConnTimeout = ini.Get_Int(SETTINGS, "ConnTimeout", ConnTimeout);
 
 	/*
 	 * One key carries the port twice: a machine listens on it and a tunnel names the machine
