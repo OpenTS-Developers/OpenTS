@@ -60,6 +60,7 @@
 #include "house.h"
 #include "language\language.h"
 #include "mouse.h"
+#include "netsemantic.h"
 #include "rules.h"
 #include "saveload.h"
 #include "scenario.h"
@@ -74,6 +75,62 @@
 #include "house.hh"
 #include "ramp.hh"
 #include "special.hh"
+
+
+namespace {
+	static_assert(EventClass::NETWORK_RTT_UNAVAILABLE == NetTiming::MAXIMUM_REPORTED_RTT + 1u);
+
+	enum class EventRejectReason : unsigned int {
+		InvalidType,
+		InvalidOrigin,
+		MissingOrigin,
+		InvalidAllyHouse,
+		InvalidAnimationType,
+		InvalidAnimationOwner,
+		InvalidGameSpeed,
+		InvalidRemovedHouse,
+		InvalidLatencyFudge,
+		UnauthorizedTiming,
+		InvalidTimingArithmetic,
+		InvalidTimingValues,
+		UnschedulableTiming,
+		InvalidNetworkReport,
+		Count,
+	};
+
+	char const * const EventRejectReasonNames[] = {
+		"invalid type",
+		"invalid origin",
+		"missing origin",
+		"invalid ally house",
+		"invalid animation type",
+		"invalid animation owner",
+		"invalid game speed",
+		"invalid removed house",
+		"invalid latency fudge",
+		"unauthorized timing",
+		"invalid timing arithmetic",
+		"invalid timing values",
+		"unschedulable timing",
+		"invalid network report",
+	};
+
+	static_assert(ARRAY_SIZE(EventRejectReasonNames) == (int)EventRejectReason::Count);
+	unsigned int EventRejectCounts[(unsigned int)EventRejectReason::Count] = {};
+
+
+	/// <summary>Records a rejected synchronized event.</summary>
+	void Log_Event_Rejection(EventRejectReason reason, unsigned int type, int origin, int detail)
+	{
+		unsigned int const reason_index = (unsigned int)reason;
+		unsigned int const count = ++EventRejectCounts[reason_index];
+		if (count == 0 || (count & (count - 1)) != 0) {
+			return;
+		}
+
+		DebugString("Rejected network event: %s, type %u, origin %d, detail %d (count %u)\n", EventRejectReasonNames[reason_index], type, origin, detail, count);
+	}
+}
 
 
 /***********************************************************************************************
@@ -549,6 +606,19 @@ void EventClass::Execute(void)
 	TechnoClass * techno = NULL;
 	BuildingClass * building = NULL;
 	AnimClass * anim = NULL;
+	if (Type == EMPTY || Type >= LAST_EVENT) {
+		Log_Event_Rejection(EventRejectReason::InvalidType, Type, -1, Type);
+		return;
+	}
+	if (!NetSemantic::Index_Is_Valid(ID, Houses.Count())) {
+		Log_Event_Rejection(EventRejectReason::InvalidOrigin, Type, ID, ID);
+		return;
+	}
+	if (Houses[ID] == NULL) {
+		Log_Event_Rejection(EventRejectReason::MissingOrigin, Type, ID, ID);
+		return;
+	}
+
 	HouseClass * house = Houses[ID];
 	HouseClass * hptr = NULL;
 	const char *str = NULL;
@@ -559,7 +629,6 @@ void EventClass::Execute(void)
 //	bool formation = false;
 	int i;
 	int index;
-	unsigned int ul;
 //	RTTIType rt;
 
 	//if (Debug_Print_Events) {
@@ -597,11 +666,16 @@ void EventClass::Execute(void)
 		**	Make or break alliance.
 		*/
 		case ALLY:
-			hptr = Houses[Data.General.Value];
+			index = Data.General.Value;
+			if (!NetSemantic::Index_Is_Valid(index, Houses.Count()) || Houses[index] == NULL) {
+				Log_Event_Rejection(EventRejectReason::InvalidAllyHouse, Type, ID, index);
+				break;
+			}
+			hptr = Houses[index];
 			if (house->Is_Ally(hptr)) {
-				house->Make_Enemy((HousesType)Data.General.Value);
+				house->Make_Enemy((HousesType)index);
 			} else {
-				house->Make_Ally((HousesType)Data.General.Value);
+				house->Make_Ally((HousesType)index);
 			}
 			break;
 
@@ -672,6 +746,19 @@ void EventClass::Execute(void)
 		*/
 		case ANIMATION:
 		{
+			int const animation_type = (int)Data.Anim.What;
+			int const owner = (int)Data.Anim.Owner;
+			if (!NetSemantic::Animation_Type_Is_Valid(animation_type, ANIM_NONE, AnimTypes.Count()) ||
+				(animation_type != ANIM_NONE && AnimTypes[animation_type] == NULL)) {
+				Log_Event_Rejection(EventRejectReason::InvalidAnimationType, Type, ID, animation_type);
+				break;
+			}
+			if (!NetSemantic::Animation_Owner_Is_Valid(owner, HOUSE_NONE, Houses.Count()) ||
+				(owner != HOUSE_NONE && Houses[owner] == NULL)) {
+				Log_Event_Rejection(EventRejectReason::InvalidAnimationOwner, Type, ID, owner);
+				break;
+			}
+
 			Coord coord(Data.Anim.Where.X, Data.Anim.Where.Y);
 			coord.Z = Map.Get_Height_GL(coord);
 			if (Map[coord].IsUnderBridge) {
@@ -683,7 +770,7 @@ void EventClass::Execute(void)
 				anim = new AnimClass(AnimTypes[Data.Anim.What], coord);
 			}
 			if (anim) {
-				if (Data.Anim.Owner != HOUSE_NONE && !Houses[Data.Anim.Owner]->Is_Player_Control()) {
+				if (owner != HOUSE_NONE && !Houses[owner]->Is_Player_Control()) {
 					anim->Make_Invisible();
 				}
 			}
@@ -996,6 +1083,10 @@ void EventClass::Execute(void)
 		**	Process the options Game Speed
 		*/
 		case GAMESPEED:
+			if (!NetSemantic::Game_Speed_Is_Valid(Data.General.Value)) {
+				Log_Event_Rejection(EventRejectReason::InvalidGameSpeed, Type, ID, Data.General.Value);
+				break;
+			}
 			Options.GameSpeed = Data.General.Value;
 
 			house = Houses[ID];
@@ -1041,10 +1132,15 @@ void EventClass::Execute(void)
 			break;
 
 		case REMOVEPLAYER:
+			index = Data.General.Value;
+			if (!NetSemantic::Index_Is_Valid(index, Houses.Count()) || Houses[index] == NULL) {
+				Log_Event_Rejection(EventRejectReason::InvalidRemovedHouse, Type, ID, index);
+				break;
+			}
+
 			DebugString("Executing REMOVEPLAYER event. Frame is %d\n", ::Frame);
 			Disable_Multiplayer_Saving();
-			index = Data.General.Value;
-
+			Session.Remove_Network_Timing_Player(index);
 			house = Houses[index];
 			if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
 				house->Flag_To_Die();
@@ -1056,6 +1152,10 @@ void EventClass::Execute(void)
 			break;
 
 		case LATENCYFUDGE:
+			if (!NetSemantic::Latency_Fudge_Is_Valid(Data.General.Value)) {
+				Log_Event_Rejection(EventRejectReason::InvalidLatencyFudge, Type, ID, Data.General.Value);
+				break;
+			}
 			DebugString("Executing LATENCYFUDGE event. Frame is %d\n", ::Frame);
 			Session.LatencyFudge = Data.General.Value;
 			DebugString("LatencyFudge is %d\n", Session.LatencyFudge);
@@ -1076,7 +1176,34 @@ void EventClass::Execute(void)
 		// COMM_MULTI_E_COMP protocol.
 		//
 		case TIMING:
-			Data.Timing.MaxAhead -= Scen->Special.IsFogOfWar ? 10 : 0;
+		{
+			int const master_id = Session.Master_Player_ID();
+			if (!NetSemantic::Timing_Authority_Is_Valid(ID, master_id)) {
+				Log_Event_Rejection(EventRejectReason::UnauthorizedTiming, Type, ID, master_id);
+				break;
+			}
+
+			unsigned int const fog_padding = Scen->Special.IsFogOfWar ? 10u : 0u;
+			if (Data.Timing.MaxAhead < fog_padding || Frame < 0) {
+				Log_Event_Rejection(EventRejectReason::InvalidTimingArithmetic, Type, ID, Data.Timing.MaxAhead);
+				break;
+			}
+
+			std::optional<NetTiming::TimingSettings> const decoded_settings = NetSemantic::Decode_Timing_Settings(
+				Data.Timing.DesiredFrameRate, Data.Timing.MaxAhead, Data.Timing.FrameSendRate, fog_padding);
+			if (!decoded_settings) {
+				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.Timing.MaxAhead);
+				break;
+			}
+			NetTiming::TimingSettings const settings = *decoded_settings;
+
+			unsigned int const old_frame_send_rate = Session.FrameSendRate;
+			unsigned int const old_max_ahead = Session.MaxAhead;
+			NetworkTimingScheduleResult const result = Session.Schedule_Network_Timing(settings, Data.Timing.DesiredFrameRate, (unsigned int)Frame);
+			if (result == NetworkTimingScheduleResult::Rejected) {
+				Log_Event_Rejection(EventRejectReason::UnschedulableTiming, Type, ID, (int)settings.MaxAhead);
+				break;
+			}
 
 #if (TIMING_FIX)
 			//
@@ -1086,27 +1213,17 @@ void EventClass::Execute(void)
 			// period of vulnerability's frame start & end values, so we
 			// can reschedule these events to execute after it's over.
 			//
-			if (Data.Timing.MaxAhead > Session.MaxAhead || Data.Timing.FrameSendRate > Session.FrameSendRate) {
+			if (result == NetworkTimingScheduleResult::Applied &&
+				(settings.MaxAhead > old_max_ahead || settings.FrameSendRate > old_frame_send_rate)) {
 				NewMaxAheadFrame1 = Frame;
-				NewMaxAheadFrame2 = Data.Timing.FrameSendRate * ((Data.Timing.FrameSendRate + Data.Timing.MaxAhead + Frame - 1) / Data.Timing.FrameSendRate);
+				NewMaxAheadFrame2 = settings.FrameSendRate * ((settings.FrameSendRate + settings.MaxAhead + Frame - 1) / settings.FrameSendRate);
 			} else {
 				NewMaxAheadFrame1 = 0;
 				NewMaxAheadFrame2 = 0;
 			}
 #endif
-
-			ul = Session.MaxMaxAhead;
-
-			Session.DesiredFrameRate = Data.Timing.DesiredFrameRate;
-			Session.MaxAhead = Data.Timing.MaxAhead;
-
-			if (ul <= Session.MaxAhead) {
-				Session.MaxMaxAhead = Session.MaxAhead;
-			}
-
-			Session.FrameSendRate = Data.Timing.FrameSendRate;
-
 			break;
+		}
 
 		//
 		// This event tells all systems what the other systems' process
@@ -1119,6 +1236,14 @@ void EventClass::Execute(void)
 					Session.Players[i]->Player.ProcessTime = Data.ProcessTime.AverageTicks;
 					break;
 				}
+			}
+			break;
+
+		case NETWORK_REPORT:
+			if (Frame < 0 ||
+				!NetSemantic::Network_Report_Is_Valid(Data.NetworkReport.AverageProcessMilliseconds, Data.NetworkReport.WorstRoundTripMilliseconds) ||
+				!Session.Record_Network_Report(ID, Data.NetworkReport.AverageProcessMilliseconds, Data.NetworkReport.WorstRoundTripMilliseconds, (unsigned int)Frame)) {
+				Log_Event_Rejection(EventRejectReason::InvalidNetworkReport, Type, ID, Data.NetworkReport.WorstRoundTripMilliseconds);
 			}
 			break;
 

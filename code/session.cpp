@@ -189,6 +189,7 @@ SessionClass::SessionClass(void)
 
 	MaxAhead = FrameSendRate * 3;
 	MaxMaxAhead = MaxAhead;
+	Reset_Network_Timing();
 
 	memset(ConnectionStats, 0, sizeof(ConnectionStats));
 
@@ -333,6 +334,7 @@ int SessionClass::Create_Connections(void)
 	if (Session.Type != GAME_IPX && Session.Type != GAME_INTERNET) {
 		return(0);
 	}
+	Reset_Network_Timing();
 
 	//------------------------------------------------------------------------
 	// Loop through all entries in 'Players'
@@ -428,6 +430,185 @@ bool SessionClass::Am_I_Master(void)
 	return(false);
 
 }	// end of Am_I_Master
+
+
+/// <summary>Returns the player ID authorized to issue timing updates.</summary>
+int SessionClass::Master_Player_ID(void) const
+{
+	if (MasterPlayerID >= 0 && Is_Network_Player_ID(MasterPlayerID)) {
+		return(MasterPlayerID);
+	}
+
+	if (MasterPlayerName[0] != '\0') {
+		for (int i = 0; i < Players.Count(); i++) {
+			if (Players[i] != NULL && Is_Network_Player_ID(Players[i]->Player.ID) && stricmp(Players[i]->Name, MasterPlayerName) == 0) {
+				return(Players[i]->Player.ID);
+			}
+		}
+	}
+
+	for (int i = 0; i < Houses.Count(); i++) {
+		HouseClass const * house = Houses[i];
+		if (house != NULL && house->IsHuman && Is_Network_Player_ID(house->HeapID)) {
+			return(house->HeapID);
+		}
+	}
+
+	return(-1);
+}
+
+
+/// <summary>Tests whether a player ID still belongs to the network session.</summary>
+bool SessionClass::Is_Network_Player_ID(int id) const
+{
+	if (id < 0 || id >= (int)NetTiming::MAX_TIMING_PLAYERS || RemovedNetworkTimingPlayers[id]) {
+		return(false);
+	}
+	for (int i = 0; i < Players.Count(); i++) {
+		if (Players[i] != NULL && Players[i]->Player.ID == id) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>Starts a fresh adaptive-timing census.</summary>
+void SessionClass::Reset_Network_Timing(void)
+{
+	NetworkTimingReports.Reset();
+	NetworkTimingPolicy.Reset();
+	PendingNetworkTiming.reset();
+	PendingNetworkDesiredFrameRate = 0;
+	for (bool & removed : RemovedNetworkTimingPlayers) {
+		removed = false;
+	}
+
+	for (int i = 0; i < Players.Count(); i++) {
+		int const id = Players[i] != NULL ? Players[i]->Player.ID : -1;
+		if (id >= 0 && id < (int)NetTiming::MAX_TIMING_PLAYERS) {
+			NetworkTimingReports.Set_Player_Active(id, true);
+		}
+	}
+}
+
+
+/// <summary>Validates and records a seated player's synchronized timing report.</summary>
+bool SessionClass::Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int frame)
+{
+	if (id < 0 || id >= (int)NetTiming::MAX_TIMING_PLAYERS || RemovedNetworkTimingPlayers[id] ||
+		process_milliseconds > NetTiming::MAXIMUM_PROCESS_MILLISECONDS ||
+		(round_trip_milliseconds != EventClass::NETWORK_RTT_UNAVAILABLE && round_trip_milliseconds > NetTiming::MAXIMUM_REPORTED_RTT)) {
+		return(false);
+	}
+
+	NodeNameType * player = NULL;
+	for (int i = 0; i < Players.Count(); i++) {
+		if (Players[i] != NULL && Players[i]->Player.ID == id) {
+			player = Players[i];
+			break;
+		}
+	}
+	if (player == NULL) {
+		return(false);
+	}
+
+	player->Player.ProcessTime = process_milliseconds;
+	NetworkTimingReports.Set_Player_Active(id, true);
+	if (round_trip_milliseconds == EventClass::NETWORK_RTT_UNAVAILABLE) {
+		// The player remains in the census while its missing RTT prevents a complete sample set.
+		return(NetworkTimingReports.Clear_Report(id));
+	}
+	return(NetworkTimingReports.Record_Report(id, round_trip_milliseconds, frame));
+}
+
+
+/// <summary>Removes a departed player from the timing census.</summary>
+void SessionClass::Remove_Network_Timing_Player(int id)
+{
+	if (id >= 0 && id < (int)NetTiming::MAX_TIMING_PLAYERS) {
+		RemovedNetworkTimingPlayers[id] = true;
+		NetworkTimingReports.Set_Player_Active(id, false);
+	}
+}
+
+
+/// <summary>Returns a freshness-aware census of seated players.</summary>
+NetTiming::TimingCensus SessionClass::Network_Timing_Census(unsigned int frame)
+{
+	bool active[NetTiming::MAX_TIMING_PLAYERS] = {};
+	for (int i = 0; i < Players.Count(); i++) {
+		int const id = Players[i] != NULL ? Players[i]->Player.ID : -1;
+		if (id >= 0 && id < (int)NetTiming::MAX_TIMING_PLAYERS) {
+			active[id] = true;
+		}
+	}
+	for (unsigned int id = 0; id < NetTiming::MAX_TIMING_PLAYERS; id++) {
+		NetworkTimingReports.Set_Player_Active(id, active[id] && !RemovedNetworkTimingPlayers[id]);
+	}
+	return(NetworkTimingReports.Inspect(frame));
+}
+
+
+/// <summary>Evaluates the adaptive-timing policy against the current census.</summary>
+NetTiming::TimingEvaluation SessionClass::Evaluate_Network_Timing(unsigned int target_fps, unsigned int frame)
+{
+	int const fudge = std::clamp(LatencyFudge, 0, 3);
+	return(NetworkTimingPolicy.Evaluate(Network_Timing_Census(frame), target_fps, static_cast<NetTiming::LatencyFudge>(fudge), frame));
+}
+
+
+/// <summary>Applies a timing increase or safely stages a decrease.</summary>
+NetworkTimingScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame)
+{
+	if (desired_frame_rate == 0 || desired_frame_rate > 60 || !NetTiming::Timing_Settings_Are_Valid(settings)) {
+		return(NetworkTimingScheduleResult::Rejected);
+	}
+
+	NetTiming::TimingSettings const current{FrameSendRate, MaxAhead};
+	std::optional<NetTiming::StagedTimingUpdate> staged;
+	if (NetTiming::Timing_Settings_Are_Valid(current)) {
+		staged = NetTiming::Stage_Timing_Update(current, settings, event_frame);
+	} else {
+		staged = NetTiming::StagedTimingUpdate{settings, event_frame, false};
+	}
+	if (!staged) {
+		return(NetworkTimingScheduleResult::Rejected);
+	}
+
+	// Decreases wait until commands scheduled under the old horizon have drained.
+	if (staged->Deferred) {
+		PendingNetworkTiming = staged;
+		PendingNetworkDesiredFrameRate = desired_frame_rate;
+		return(NetworkTimingScheduleResult::Staged);
+	}
+
+	PendingNetworkTiming.reset();
+	PendingNetworkDesiredFrameRate = 0;
+	DesiredFrameRate = desired_frame_rate;
+	FrameSendRate = settings.FrameSendRate;
+	MaxAhead = settings.MaxAhead;
+	MaxMaxAhead = std::max(MaxMaxAhead, (int)MaxAhead);
+	return(NetworkTimingScheduleResult::Applied);
+}
+
+
+/// <summary>Activates a staged timing decrease once its safe frame is reached.</summary>
+bool SessionClass::Apply_Staged_Network_Timing(unsigned int frame)
+{
+	if (!PendingNetworkTiming || !NetTiming::Timing_Update_Is_Due(frame, PendingNetworkTiming->ActivationFrame)) {
+		return(false);
+	}
+
+	NetTiming::TimingSettings const settings = PendingNetworkTiming->Settings;
+	DesiredFrameRate = PendingNetworkDesiredFrameRate;
+	FrameSendRate = settings.FrameSendRate;
+	MaxAhead = settings.MaxAhead;
+	MaxMaxAhead = std::max(MaxMaxAhead, (int)MaxAhead);
+	PendingNetworkTiming.reset();
+	PendingNetworkDesiredFrameRate = 0;
+	return(true);
+}
 
 
 /***************************************************************************

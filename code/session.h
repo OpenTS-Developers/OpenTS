@@ -38,6 +38,7 @@
 #include "house.h" /// needed for HOUSE_NAME_MAX
 #include "ipxaddr.h"
 #include "msglist.h"
+#include "nettiming.h"
 #include "special.h"
 #include "sun.h" /// needed for MAX_PLAYERS
 #include "typelist.h"
@@ -426,6 +427,13 @@ struct MPStatsType {
 	IPXAddressClass Address;	/// Address these stats were gathered from.
 };
 
+
+enum class NetworkTimingScheduleResult {
+	Rejected,
+	Applied,
+	Staged,
+};
+
 //---------------------------------------------------------------------------
 // Class Definition
 //---------------------------------------------------------------------------
@@ -460,6 +468,15 @@ class SessionClass
 		//.....................................................................
 		int Create_Connections(void);
 		bool Am_I_Master(void);
+		int Master_Player_ID(void) const;
+		bool Is_Network_Player_ID(int id) const;
+		void Reset_Network_Timing(void);
+		bool Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int frame);
+		void Remove_Network_Timing_Player(int id);
+		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
+		NetTiming::TimingEvaluation Evaluate_Network_Timing(unsigned int target_fps, unsigned int frame);
+		NetworkTimingScheduleResult Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame);
+		bool Apply_Staged_Network_Timing(unsigned int frame);
 		unsigned int Compute_Unique_ID(void);
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);
@@ -530,6 +547,11 @@ class SessionClass
 		//.....................................................................
 		unsigned int MaxAhead;
 		unsigned int FrameSendRate;
+		NetTiming::TimingReportCensus NetworkTimingReports;
+		NetTiming::BalancedTimingPolicy NetworkTimingPolicy;
+		std::optional<NetTiming::StagedTimingUpdate> PendingNetworkTiming;
+		unsigned int PendingNetworkDesiredFrameRate;
+		bool RemovedNetworkTimingPlayers[NetTiming::MAX_TIMING_PLAYERS];
 
 		int			DesiredFrameRate;
 

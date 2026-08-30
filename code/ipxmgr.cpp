@@ -1011,8 +1011,7 @@ int IPXManagerClass::Service(void)
 				memcpy(&address, temp_address, sizeof(address));
 
 				memset(&packet_header, 0, sizeof(packet_header));
-				memcpy(&packet_header, temp_receive_buffer,
-					std::min(packetlen, (int)sizeof(packet_header)));
+				memcpy(&packet_header, temp_receive_buffer, std::min(packetlen, (int)sizeof(packet_header)));
 				packet = &packet_header;
 				if (packet->MagicNumber == GlobalChannel->Magic_Num()) {
 
@@ -1055,8 +1054,7 @@ int IPXManagerClass::Service(void)
 								**	This packet came from an unknown source. If it looks like one of our players
 								**	packets then it might be from a player whos IP has changed.
 								*/
-								int frame_info_size = sizeof(CommHeaderType) + offsetof(EventClass, Data) +
-									size_of(EventClass, Data.FrameInfo);
+								int frame_info_size = sizeof(CommHeaderType) + offsetof(EventClass, Data) + size_of(EventClass, Data.FrameInfo);
 								if (Frame > 8 && packetlen >= frame_info_size) {
 									if (packet->Code == ConnectionClass::PACKET_DATA_NOACK){
 										/*
@@ -1353,6 +1351,28 @@ unsigned int IPXManagerClass::Response_Time(void)
 	return(maxresp);
 
 }	/* end of Response_Time */
+
+
+/// <summary>Returns the worst measured private-link round trip, once all links have a sample.</summary>
+std::optional<NetTiming::Milliseconds> IPXManagerClass::Worst_Local_Round_Trip_MS(void) const
+{
+	if (NumConnections == 0) {
+		return(std::nullopt);
+	}
+
+	std::optional<NetTiming::Milliseconds> worst;
+	for (int i = 0; i < NumConnections; i++) {
+		std::optional<NetTiming::Milliseconds> const round_trip = Connection[i]->Smoothed_Round_Trip_MS();
+		if (!round_trip) {
+			return(std::nullopt);
+		}
+		if (!worst || *round_trip > *worst) {
+			worst = round_trip;
+		}
+	}
+
+	return(worst);
+}
 
 
 /// <summary>

@@ -60,6 +60,10 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma once
 
+#include "nettime.h"
+
+#include <optional>
+
 
 /*
 ***************************** Class Declaration *****************************
@@ -95,10 +99,8 @@ class ConnManClass
 		/*.....................................................................
 		Sending & receiving data
 		.....................................................................*/
-		virtual int Send_Private_Message (void *buf, int buflen,
-			int ack_req = 1, int conn_id = CONNECTION_NONE) = 0;
-		virtual int Get_Private_Message (void *buf, int capacity, int *buflen,
-			int *conn_id) = 0;
+		virtual int Send_Private_Message (void *buf, int buflen, int ack_req = 1, int conn_id = CONNECTION_NONE) = 0;
+		virtual int Get_Private_Message (void *buf, int capacity, int *buflen, int *conn_id) = 0;
 
 		/*.....................................................................
 		Connection management
@@ -120,10 +122,9 @@ class ConnManClass
 		.....................................................................*/
 		virtual void Reset_Response_Time(bool zero) = 0;
 		virtual unsigned int Response_Time(void) = 0;
-		virtual void Set_Timing (unsigned int retrydelta,
-			unsigned int maxretries, unsigned int timeout, bool set_external = true) = 0;
-		virtual void Set_External_Timing (unsigned int retrydelta,
-			unsigned int maxretries, unsigned int timeout) = 0;
+		virtual std::optional<NetTiming::Milliseconds> Worst_Local_Round_Trip_MS(void) const = 0;
+		virtual void Set_Timing (unsigned int retrydelta, unsigned int maxretries, unsigned int timeout, bool set_external = true) = 0;
+		virtual void Set_External_Timing (unsigned int retrydelta, unsigned int maxretries, unsigned int timeout) = 0;
 
 		/*.....................................................................
 		Debugging

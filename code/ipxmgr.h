@@ -196,13 +196,10 @@ class IPXManagerClass : public ConnManClass
 		/*.....................................................................
 		This is how the application sends & receives messages.
 		.....................................................................*/
-		int Send_Global_Message (void *buf, int buflen, int ack_req = 0,
-			IPXAddressClass *address = NULL);
-		int Get_Global_Message (void *buf, int capacity, int *buflen, IPXAddressClass *address,
-			unsigned short *product_id);
+		int Send_Global_Message (void *buf, int buflen, int ack_req = 0, IPXAddressClass *address = NULL);
+		int Get_Global_Message (void *buf, int capacity, int *buflen, IPXAddressClass *address, unsigned short *product_id);
 
-		virtual int Send_Private_Message (void *buf, int buflen,
-			int ack_req = 1, int conn_id = CONNECTION_NONE) override;
+		virtual int Send_Private_Message (void *buf, int buflen, int ack_req = 1, int conn_id = CONNECTION_NONE) override;
 		virtual int Get_Private_Message (void *buf, int capacity, int *buflen, int *conn_id) override;
 
 		/*.....................................................................
@@ -230,6 +227,7 @@ class IPXManagerClass : public ConnManClass
 		reset the response time for all queues.
 		.....................................................................*/
 		virtual unsigned int Response_Time(void) override;
+		virtual std::optional<NetTiming::Milliseconds> Worst_Local_Round_Trip_MS(void) const override;
 		unsigned int Global_Response_Time(void);
 		virtual void Reset_Response_Time(bool zero) override;
 

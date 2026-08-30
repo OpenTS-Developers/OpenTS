@@ -47,8 +47,11 @@
 #include "_timer.h"
 #include "dbgprint.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <sys\timeb.h>
 
 
@@ -60,6 +63,27 @@ char const * ConnectionClass::Commands[PACKET_COUNT] = {
 	"NDATA",
 	"ACK"
 };
+
+namespace {
+
+/// <summary>Converts engine ticks to milliseconds.</summary>
+NetTiming::Milliseconds Ticks_To_Milliseconds(unsigned int ticks)
+{
+	std::uint64_t const milliseconds = (static_cast<std::uint64_t>(ticks) * 1000 + TIMER_SECOND - 1) / TIMER_SECOND;
+	if (milliseconds > std::numeric_limits<NetTiming::Milliseconds>::max()) {
+		return(std::numeric_limits<NetTiming::Milliseconds>::max());
+	}
+	return(static_cast<NetTiming::Milliseconds>(milliseconds));
+}
+
+
+/// <summary>Converts and bounds a legacy connection timeout.</summary>
+NetTiming::Milliseconds Legacy_Connection_Timeout(unsigned int ticks)
+{
+	return(std::clamp(Ticks_To_Milliseconds(ticks), NetTiming::MINIMUM_CONNECTION_TIMEOUT, NetTiming::MAXIMUM_CONNECTION_TIMEOUT));
+}
+
+}
 
 
 /***************************************************************************
@@ -76,6 +100,7 @@ char const * ConnectionClass::Commands[PACKET_COUNT] = {
  *      timeout         the max amount of time before we give up on a packet*
  *                     (-1 means retry forever, based on this parameter)   *
  *      extralen         max size of app-specific extra bytes (optional)   *
+ *      clock            monotonic millisecond clock (default if NULL)     *
  *                                                                         *
  * OUTPUT:                                                                 *
  *      none.                                                              *
@@ -88,7 +113,7 @@ char const * ConnectionClass::Commands[PACKET_COUNT] = {
  *=========================================================================*/
 ConnectionClass::ConnectionClass (int numsend, int numreceive,
 	int maxlen, unsigned short magicnum, unsigned int retry_delta,
-	unsigned int max_retries, unsigned int timeout, int extralen)
+	unsigned int max_retries, unsigned int timeout, int extralen, NetTiming::MillisecondClock const * clock)
 {
 	/*------------------------------------------------------------------------
 	Compute our maximum packet length
@@ -115,6 +140,7 @@ ConnectionClass::ConnectionClass (int numsend, int numreceive,
 	Set the timeout for this connection.
 	------------------------------------------------------------------------*/
 	Timeout = timeout;
+	MillisecondTime = clock != nullptr ? clock : &NetTiming::Default_Clock();
 
 	/*------------------------------------------------------------------------
 	Allocate the packet staging buffer.  This will be used to
@@ -191,6 +217,7 @@ void ConnectionClass::Init (void)
 
 	LastSeqID = 0xffffffff;
 	LastReadID = 0xffffffff;
+	RoundTripEstimator.Reset();
 
 	Queue->Init();
 
@@ -287,7 +314,7 @@ int ConnectionClass::Send_Packet (void * buf, int buflen, int ack_req)
  *=========================================================================*/
 int ConnectionClass::Receive_Packet (void * buf, int buflen)
 {
-	CommHeaderType packet_header;   // packet header
+	CommHeaderType packet_header;
 	CommHeaderType *packet;         // ptr to packet header
 	SendQueueType *send_entry;      // ptr to send entry header
 	ReceiveQueueType *rec_entry;    // ptr to recv entry header
@@ -300,8 +327,7 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 	if (buf != NULL && buflen > 0) {
 		packet_bytes = {static_cast<std::byte const *>(buf), static_cast<std::size_t>(buflen)};
 	}
-	NetConnectionAdmission const admission = Admit_Connection_Packet(
-		packet_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+	NetConnectionAdmission const admission = Admit_Connection_Packet(packet_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 	if (!admission.Succeeded()) {
 		Record_Admission_Drop(admission.Error, admission.Code);
 		return(1);
@@ -337,17 +363,14 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 			if (send_entry != NULL) {
 				std::span<std::byte const> entry_bytes;
 				if (send_entry->Buffer != NULL && send_entry->BufLen > 0) {
-					entry_bytes = {reinterpret_cast<std::byte const *>(send_entry->Buffer),
-						static_cast<std::size_t>(send_entry->BufLen)};
+					entry_bytes = {reinterpret_cast<std::byte const *>(send_entry->Buffer), static_cast<std::size_t>(send_entry->BufLen)};
 				}
-				NetConnectionAdmission const entry = Admit_Connection_Packet(
-					entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+				NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 				/*...............................................................
 				If ACK is for this entry, mark it
 				...............................................................*/
-				if (entry.Succeeded() && packet->PacketID == entry.PacketID &&
-					entry.Code == PACKET_DATA_ACK) {
+				if (entry.Succeeded() && packet->PacketID == entry.PacketID && entry.Code == PACKET_DATA_ACK) {
 					send_entry->IsACK = 1;
 					break;
 				}
@@ -412,17 +435,14 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 				if (rec_entry) {
 					std::span<std::byte const> entry_bytes;
 					if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
-						entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer),
-							static_cast<std::size_t>(rec_entry->BufLen)};
+						entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
 					}
-					NetConnectionAdmission const entry = Admit_Connection_Packet(
-						entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+					NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 					/*...........................................................
 					Packet is found; it's a resend
 					...........................................................*/
-					if (entry.Succeeded() && entry.Code == PACKET_DATA_ACK &&
-						entry.PacketID == packet->PacketID) {
+					if (entry.Succeeded() && entry.Code == PACKET_DATA_ACK && entry.PacketID == packet->PacketID) {
 						save_packet = 0;
 						break;
 					}
@@ -475,18 +495,14 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 						if (rec_entry) {
 							std::span<std::byte const> entry_bytes;
 							if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
-								entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer),
-									static_cast<std::size_t>(rec_entry->BufLen)};
+								entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
 							}
-							NetConnectionAdmission const entry = Admit_Connection_Packet(
-								entry_bytes, sizeof(CommHeaderType),
-								static_cast<std::size_t>(MaxPacketLen));
+							NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 							/*......................................................
 							Entry is found
 							......................................................*/
-							if (entry.Succeeded() && entry.Code == PACKET_DATA_ACK &&
-								entry.PacketID == (LastSeqID + 1)) {
+							if (entry.Succeeded() && entry.Code == PACKET_DATA_ACK && entry.PacketID == (LastSeqID + 1)) {
 
 								LastSeqID = entry.PacketID;
 								found = 1;
@@ -557,11 +573,9 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 		if (rec_entry && rec_entry->IsRead==0) {
 			std::span<std::byte const> entry_bytes;
 			if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
-				entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer),
-					static_cast<std::size_t>(rec_entry->BufLen)};
+				entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
 			}
-			NetConnectionAdmission const admission = Admit_Connection_Packet(
-				entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+			NetConnectionAdmission const admission = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 			if (!admission.Succeeded()) {
 				rec_entry->IsRead = 1;
 				Record_Admission_Drop(admission.Error, admission.Code);
@@ -583,8 +597,7 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 				LastReadID = admission.PacketID;
 				rec_entry->IsRead = 1;
 
-				NetAdmissionError const destination = Validate_Network_Destination(
-					admission.Payload, static_cast<std::size_t>(capacity));
+				NetAdmissionError const destination = Validate_Network_Destination(admission.Payload, static_cast<std::size_t>(capacity));
 				if (destination != NetAdmissionError::NONE) {
 					Record_Admission_Drop(destination, admission.Code);
 					continue;
@@ -599,8 +612,7 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 			else if (admission.Code == PACKET_DATA_NOACK) {
 				rec_entry->IsRead = 1;
 
-				NetAdmissionError const destination = Validate_Network_Destination(
-					admission.Payload, static_cast<std::size_t>(capacity));
+				NetAdmissionError const destination = Validate_Network_Destination(admission.Payload, static_cast<std::size_t>(capacity));
 				if (destination != NetAdmissionError::NONE) {
 					Record_Admission_Drop(destination, admission.Code);
 					continue;
@@ -619,6 +631,7 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 
 namespace {
 
+/// <summary>Names a stable connection rejection reason.</summary>
 char const * Packet_Drop_Name(ConnectionClass::PacketDropReasonType reason)
 {
 	switch (reason) {
@@ -635,7 +648,7 @@ char const * Packet_Drop_Name(ConnectionClass::PacketDropReasonType reason)
 }	// namespace
 
 
-/// <summary>Returns the number of packets rejected for one stable admission reason.</summary>
+/// <summary>Returns a packet rejection count.</summary>
 unsigned int ConnectionClass::Dropped_Packets(PacketDropReasonType reason) const
 {
 	if (reason < 0 || reason >= CONNECTION_DROP_COUNT) {
@@ -646,7 +659,7 @@ unsigned int ConnectionClass::Dropped_Packets(PacketDropReasonType reason) const
 }
 
 
-/// <summary>Records and rate-limits diagnostics for one rejected packet.</summary>
+/// <summary>Records a packet rejection.</summary>
 void ConnectionClass::Record_Packet_Drop(PacketDropReasonType reason)
 {
 	if (reason < 0 || reason >= CONNECTION_DROP_COUNT) {
@@ -660,7 +673,7 @@ void ConnectionClass::Record_Packet_Drop(PacketDropReasonType reason)
 }
 
 
-/// <summary>Maps one shared admission failure to the connection's stable drop counters.</summary>
+/// <summary>Maps a shared admission rejection to the connection counters.</summary>
 void ConnectionClass::Record_Admission_Drop(NetAdmissionError error, unsigned char code)
 {
 	switch (error) {
@@ -676,8 +689,7 @@ void ConnectionClass::Record_Admission_Drop(NetAdmissionError error, unsigned ch
 			Record_Packet_Drop(CONNECTION_DROP_INVALID_CODE);
 			break;
 		case NetAdmissionError::INVALID_PACKET_LENGTH:
-			Record_Packet_Drop(code == PACKET_ACK
-				? CONNECTION_DROP_INVALID_LENGTH : CONNECTION_DROP_EMPTY_DATA);
+			Record_Packet_Drop(code == PACKET_ACK ? CONNECTION_DROP_INVALID_LENGTH : CONNECTION_DROP_EMPTY_DATA);
 			break;
 		case NetAdmissionError::DESTINATION_TOO_SMALL:
 			Record_Packet_Drop(CONNECTION_DROP_OUTPUT_TOO_SMALL);
@@ -748,7 +760,7 @@ int ConnectionClass::Service_Send_Queue (void)
 	int i;
 	int num_entries;
 	SendQueueType *send_entry;  // ptr to send queue entry
-	CommHeaderType *packet_hdr; // packet header
+	CommHeaderType packet_header; // packet header
 	unsigned int curtime;      // current time
 	int bad_conn = 0;
 
@@ -769,9 +781,15 @@ int ConnectionClass::Service_Send_Queue (void)
 			/*..................................................................
 			Update this queue's response time
 			..................................................................*/
-			packet_hdr = (CommHeaderType *)send_entry->Buffer;
-			if (packet_hdr->Code == PACKET_DATA_ACK) {
-				Queue->Add_Delay(Time() - send_entry->FirstTime);
+			if (send_entry->BufLen >= (int)sizeof(CommHeaderType)) {
+				CommHeaderType header;
+				memcpy(&header, send_entry->Buffer, sizeof(header));
+				if (header.Code == PACKET_DATA_ACK) {
+					Queue->Add_Delay(Time() - send_entry->FirstTime);
+					if (send_entry->SendCount == 1 && Adaptive_Timing_Enabled()) {
+						RoundTripEstimator.Acknowledge(send_entry->FirstTimeMilliseconds, send_entry->SendCount, *MillisecondTime);
+					}
+				}
 			}
 
 			/*..................................................................
@@ -795,13 +813,29 @@ int ConnectionClass::Service_Send_Queue (void)
 			continue;
 		}
 
-		/*.....................................................................
-		Only send the message if time has elapsed.  (The message's Time
-		fields are init'd to 0 when a message is queue'd or unqueue'd, so the
-		first time through, the delta time will appear large.)
-		.....................................................................*/
-		curtime = Time();
-		if (curtime - send_entry->LastTime > RetryDelta) {
+		// New packets send immediately; retransmissions follow the connection's current timeout.
+		NetTiming::Milliseconds const current_milliseconds = MillisecondTime->Now();
+		bool const adaptive_channel = Adaptive_Timing_Enabled();
+		bool const adaptive_timing = adaptive_channel && RoundTripEstimator.Has_Sample();
+		bool const timeout_enabled = Timeout != (unsigned int)-1;
+		NetTiming::Milliseconds const connection_timeout = !timeout_enabled
+			? NetTiming::MAXIMUM_CONNECTION_TIMEOUT
+			: (adaptive_timing ? NetTiming::Connection_Timeout(RoundTripEstimator.Smoothed_Rtt())
+				: (adaptive_channel ? Legacy_Connection_Timeout(Timeout)
+					: Ticks_To_Milliseconds(Timeout)));
+
+		if (send_entry->SendCount != 0 && timeout_enabled &&
+			NetTiming::Milliseconds_Have_Elapsed(send_entry->FirstTimeMilliseconds, current_milliseconds, connection_timeout)) {
+			bad_conn = 1;
+			send_entry->IsUndeliverable = true;
+			continue;
+		}
+
+		NetTiming::Milliseconds const retry_timeout = send_entry->SendCount == 0
+			? (adaptive_timing ? RoundTripEstimator.Retransmit_Timeout() : Ticks_To_Milliseconds(RetryDelta)) : send_entry->RetransmitTimeoutMilliseconds;
+		unsigned int const prior_retransmissions = send_entry->SendCount == 0 ? 0 : send_entry->SendCount - 1;
+		if (send_entry->SendCount == 0 ||
+			NetTiming::Retransmit_Is_Due(send_entry->LastTimeMilliseconds, current_milliseconds, retry_timeout, prior_retransmissions, connection_timeout)) {
 
 			/*..................................................................
 			Send the message
@@ -812,17 +846,21 @@ int ConnectionClass::Service_Send_Queue (void)
 			/*..................................................................
 			Fill in Time fields
 			..................................................................*/
+			curtime = Time();
 			send_entry->LastTime = curtime;
+			send_entry->LastTimeMilliseconds = current_milliseconds;
 			if (send_entry->SendCount==0) {
 				send_entry->FirstTime = curtime;
+				send_entry->FirstTimeMilliseconds = current_milliseconds;
+				send_entry->RetransmitTimeoutMilliseconds = retry_timeout;
 
 				/*...............................................................
 				If this is the 1st time we're sending this packet, and it doesn't
 				require an ACK, mark it as ACK'd; then, the next time through,
 				it will just be removed from the queue.
 				...............................................................*/
-				packet_hdr = (CommHeaderType *)send_entry->Buffer;
-				if (packet_hdr->Code == PACKET_DATA_NOACK) {
+				memcpy(&packet_header, send_entry->Buffer, sizeof(packet_header));
+				if (packet_header.Code == PACKET_DATA_NOACK) {
 					send_entry->IsACK = 1;
 				}
 			} else {
@@ -842,11 +880,6 @@ int ConnectionClass::Service_Send_Queue (void)
 				send_entry->IsUndeliverable = true;
 			}
 
-			if (Timeout != -1 &&
-				(send_entry->LastTime - send_entry->FirstTime) > Timeout) {
-				bad_conn = 1;
-				send_entry->IsUndeliverable = true;
-			}
 		}
 	}
 
@@ -892,7 +925,7 @@ int ConnectionClass::Discard_Undeliverable_Packets(void)
 int ConnectionClass::Service_Receive_Queue (void)
 {
 	ReceiveQueueType *rec_entry;    // ptr to receive entry header
-	CommHeaderType *packet_hdr;     // packet header
+	CommHeaderType packet_header;   // packet header
 	int i;
 
 	/*------------------------------------------------------------------------
@@ -905,13 +938,18 @@ int ConnectionClass::Service_Receive_Queue (void)
 		rec_entry = Queue->Get_Receive(i);
 
 		if (rec_entry->IsRead) {
-			packet_hdr = (CommHeaderType *)(rec_entry->Buffer);
+			if (rec_entry->BufLen < (int)sizeof(packet_header)) {
+				Queue->UnQueue_Receive(NULL, NULL, i, NULL, NULL);
+				i--;
+				continue;
+			}
+			memcpy(&packet_header, rec_entry->Buffer, sizeof(packet_header));
 
-			if (packet_hdr->Code == PACKET_DATA_NOACK) {
+			if (packet_header.Code == PACKET_DATA_NOACK) {
 				Queue->UnQueue_Receive(NULL,NULL,i,NULL,NULL);
 				i--;
 
-			} else if (packet_hdr->PacketID < LastSeqID) {
+			} else if (packet_header.PacketID < LastSeqID) {
 				Queue->UnQueue_Receive(NULL,NULL,i,NULL,NULL);
 				i--;
 			}
