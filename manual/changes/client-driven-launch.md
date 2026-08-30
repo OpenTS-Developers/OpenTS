@@ -12,7 +12,7 @@ targets:
 - type: format
   id: save-games
   effect: changed
-credit: [ZivDero]
+credit: [ZivDero, Rampastring, dkeeton, FunkyFr3sh, CCHyper, Belonit, hifi, Iran]
 ---
 
 Starting the game with `-SPAWN` now plays the match `SPAWN.INI` describes: a skirmish
@@ -31,3 +31,7 @@ always lacked.
 The campaign handicap pair became session state, so a client may combine all nine pairings
 where the menu offers its three coupled ones, and a restart or the next mission keeps the
 pair. A game set up from the menu is assembled exactly as before.
+
+The launch file's vocabulary is not this project's. It was settled by the CnCNet client and
+by the spawners written for it before this one, and the game reads it as they wrote it; the
+people who built those are credited above alongside this reading of it.
