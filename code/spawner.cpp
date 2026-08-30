@@ -37,6 +37,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <string>
+#include <winsock.h>
 
 
 /*
@@ -124,7 +125,8 @@ static void Spawner_Seat_Local(void)
 
 
 /// <summary>
-/// Puts the people playing into the list the houses are created from.
+/// Puts the people playing into the list the houses are created from, each with the address
+/// its machine is reached on when the match is against other machines.
 /// </summary>
 static void Spawner_Seat_Humans(void)
 {
@@ -139,6 +141,17 @@ static void Spawner_Seat_Humans(void)
 		node->Player.ProcessTime = -1;
 		node->Player.SpawnChoice = seat.StartingPosition;
 		node->Player.AlliesMask = Spawner_Allies_Mask(seat);
+
+		/*
+		 * Through a tunnel a machine is named by its tunnel number alone, carried where a port
+		 * would go; reached directly, it is named by the address it answers on.
+		 */
+		if (SpawnConfig.TunnelPort != 0) {
+			node->Address.Set_Address(0, htons((unsigned short)seat.Port));
+		} else if (seat.Port > 0) {
+			node->Address.Set_Address(inet_addr(seat.Address.c_str()), htons((unsigned short)seat.Port));
+		}
+
 		Session.Players.Add(node);
 	}
 
@@ -239,9 +252,8 @@ static void Spawner_Bind_Options(void)
 	 *   BuildOffAlly                  - the game has no such option to give it to.
 	 *   ReconnectTimeout, ConnTimeout,
 	 *   TunnelId, ListenPort,
-	 *   TunnelAddress, TunnelPort,
-	 *   Slots[].Address, Slots[].Port - where machines reach one another; a skirmish reaches
-	 *                                   none of them.
+	 *   TunnelAddress                 - the socket this machine opens and the tunnel it joins
+	 *                                   through, neither of which anything opens yet.
 	 *   QuickMatch, SkipScoreScreen,
 	 *   WriteStatistics, CoachMode,
 	 *   AutoSurrender, AttackNeutralUnits,
@@ -359,12 +371,13 @@ static bool Spawner_Setup_Campaign(void)
 
 
 /// <summary>
-/// Assembles the session a skirmish launch asks for, in place of what the skirmish dialog
+/// Assembles the session a launch asks for, in place of what the skirmish or the lobby dialog
 /// commits when a player presses OK.
 /// </summary>
-static void Spawner_Setup_Skirmish(void)
+static void Spawner_Setup_Session(void)
 {
-	Session.Type = GAME_SKIRMISH;
+	Session.Type = SpawnConfig.Launch_Type() == SpawnerConfigClass::LaunchType::Multiplayer
+		? GAME_INTERNET : GAME_SKIRMISH;
 
 	Clear_Vector(&Session.Players);
 	Clear_Vector(&Session.Computers);
@@ -447,8 +460,6 @@ bool Spawner_Prepare(bool & gameloaded)
 			return(Spawner_Resume(gameloaded));
 
 		case SpawnerConfigClass::LaunchType::Multiplayer:
-			return(Spawner_Refuse("Launching a game against other machines is not supported yet."));
-
 		case SpawnerConfigClass::LaunchType::Campaign:
 		case SpawnerConfigClass::LaunchType::Skirmish:
 			break;
@@ -470,11 +481,19 @@ bool Spawner_Prepare(bool & gameloaded)
 			return(Spawner_Refuse("%s", fault.c_str()));
 		}
 
-		Spawner_Setup_Skirmish();
+		Spawner_Setup_Session();
 	}
 
 	DebugString("[Spawner] Launching %s with session identity %08x.\n",
 		Scen->ScenarioName, SpawnConfig.Session_Identity_CRC());
+
+	/*
+	 * The session is assembled whole, so that wiring the network is all that remains; the
+	 * sockets themselves are the one thing this game does not reach yet.
+	 */
+	if (Session.Type == GAME_INTERNET) {
+		return(Spawner_Refuse("A game against other machines needs its network, which is not wired up yet."));
+	}
 
 	return(true);
 }

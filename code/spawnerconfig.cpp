@@ -308,6 +308,8 @@ int SpawnerConfigClass::Playable_Handicap(int asked)
 /// <returns>bool; Can the game this file describes be played?</returns>
 bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const
 {
+	bool multiplayer = Launch_Type() == LaunchType::Multiplayer;
+
 	int free_seats = SLOT_COUNT - HumanCount;
 	if (AIPlayers < 0 || AIPlayers > free_seats) {
 		return(Fault(fault, "The file asks for %d computer players, and %d seats are left.",
@@ -355,6 +357,26 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 		if (slot.IsSpectator) {
 			return(Fault(fault, "Seat %d watches rather than plays, which this game cannot yet do.",
 				index + 1));
+		}
+
+		/*
+		 * Against other machines a person's name is what breaks a tie between two seats of one
+		 * color, and what tells one seat from another at the connection it is reached on. An
+		 * unnamed person, or two under one name, leaves the match without the single seat order
+		 * every machine has to arrive at from its own file.
+		 */
+		if (human && multiplayer) {
+			if (slot.Name.empty()) {
+				return(Fault(fault, "Seat %d is played by somebody the file does not name.", index + 1));
+			}
+
+			for (int other = 0; other < index; other++) {
+				if (Slots[other].Occupancy == OccupancyType::Human &&
+					_stricmp(Slots[other].Name.c_str(), slot.Name.c_str()) == 0) {
+					return(Fault(fault, "Seats %d and %d are both played by %s.",
+						other + 1, index + 1, slot.Name.c_str()));
+				}
+			}
 		}
 	}
 

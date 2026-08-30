@@ -19,10 +19,8 @@ never meant to show. The settings file a client manages is no longer written bac
 a launch is in progress.
 
 The file names the options every house plays under, who is playing, each seat's country,
-color, difficulty and start position, and the alliances between them. A file describing a
-game against other machines is refused with the reason shown; that launch arrives
-separately. Anything the file asks for that the game cannot honor is listed on the launch
-file's own page.
+color, difficulty and start position, and the alliances between them. Anything the file asks
+for that the game cannot honor is listed on the launch file's own page.
 
 The node the player and lobby lists are made of now initializes itself rather than starting
 as whatever the heap last held, and carries the start position, difficulty and alliances a

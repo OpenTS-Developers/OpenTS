@@ -36,8 +36,7 @@ The `[Settings]` section says what kind of game to start.
 | `IsSinglePlayer` | Play a campaign mission rather than a match. |
 | `LoadSaveGame`, `SaveGameName` | Resume the named saved game. |
 
-A file asking for a game against other machines is refused with the reason shown, and the
-game exits.
+A file that seats more than one person asks for a game against other machines.
 
 ## Resuming a saved game
 
@@ -118,13 +117,31 @@ forbids new pacts still starts with the ones it wrote.
 Two seats may share a color deliberately — a cooperative team does — and the game does not
 refuse it.
 
+## A game against other machines
+
+Each machine writes its own file, with itself in `[Settings]` and everybody else in the
+`[OtherN]` sections. Those sections carry `Ip` and `Port` as well, naming the address a
+machine answers on. A `[Tunnel]` section with its own `Ip` and `Port` routes the match
+through a tunnel instead, and each machine is then named by the tunnel number its own `Port`
+key carries rather than by its address.
+
+Every person must be named, and no two may be named the same, whatever the letters' case.
+The seats are ordered by color, and a name is what breaks a tie between two of one color, so
+a match without those names is not the same match on every machine. Colors themselves may
+still be shared.
+
+The game reads the file, judges it, and assembles the whole match — the options, the seats,
+the alliances, the start positions and the addresses — before it is refused at the network,
+which this game does not yet open. The reason is shown and the game exits.
+
 ## When something is wrong
 
 A file describing a game that cannot be played is refused: the reason is shown and written
 to the log, and the game exits rather than falling back to its menu. A launch is refused
 when it asks for more computer players than there are seats, names a country or color the
 loaded rules do not have, names a difficulty that is not one, allies a seat with one the
-match does not hold, or asks for a seat that watches rather than plays.
+match does not hold, or asks for a seat that watches rather than plays. A match against
+other machines is refused as well when a person is left unnamed or two are named the same.
 
 A difficulty easier than the three the game has is not refused: the seat is played at the
 easiest one the game does have.
@@ -138,5 +155,6 @@ These keys are read but do not yet change anything, because the game has no such
 to give them to: `Tournament`, `GameID`, `MapHash`, `BuildOffAlly`, the automatic-save
 scheduling keys, `QuickMatch`, `SkipScoreScreen`, `WriteStatistics`, `CoachMode`, `AutoSurrender`,
 `AttackNeutralUnits`, `ScrapMetal`, `ContinueWithoutHumans`, `PlayMoviesInMultiplayer`,
-`CustomLoadScreen`, `CustomLoadScreenPos`, and `DifficultyName`. The tunnel and timeout
-keys describe how machines reach one another, which a skirmish never needs.
+`CustomLoadScreen`, `CustomLoadScreenPos`, and `DifficultyName`. The timeout keys, the port
+this machine listens on, and the tunnel's own address wait on the network the game does not
+yet open.

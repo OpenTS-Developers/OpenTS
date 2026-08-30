@@ -372,6 +372,20 @@ int main(void)
 		seven.SaveGameName = "SAVEGAME.002";
 		Check(six.Session_Identity_CRC() != seven.Session_Identity_CRC(),
 			"resuming another saved game moves the identity");
+
+		/*
+		 * Where the machines reach one another is how a match is carried rather than what it
+		 * plays out as, and each machine writes its own view of it, so it is left out as well.
+		 */
+		SpawnerConfigClass eight = Read(_Network, sizeof(_Network) - 1);
+		SpawnerConfigClass nine = Read(_Network, sizeof(_Network) - 1);
+		nine.TunnelAddress = "203.0.113.9";
+		nine.TunnelPort = 50010;
+		nine.ListenPort = 60000;
+		nine.Slots[0].Address = "10.0.0.8";
+		nine.Slots[0].Port = 50003;
+		Check(eight.Session_Identity_CRC() == nine.Session_Identity_CRC(),
+			"where the machines reach one another is left out of the identity");
 	}
 
 	/*
@@ -557,6 +571,54 @@ int main(void)
 			SpawnerConfigClass::Playable_Handicap(2) == 2 && SpawnerConfigClass::Playable_Handicap(3) == 0 &&
 			SpawnerConfigClass::Playable_Handicap(6) == 0,
 			"an easier setting than the game has comes to the easiest it has");
+
+		char const two_machines[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Ip=10.0.0.9\n"
+			"Port=50002\n";
+		Check(Judge(two_machines, sizeof(two_machines) - 1, 2, 8, fault),
+			"a match against another machine with everybody named is played");
+
+		char const nameless_machine[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Side=1\n"
+			"Color=5\n";
+		Check(!Judge(nameless_machine, sizeof(nameless_machine) - 1, 2, 8, fault),
+			"a person the file leaves unnamed is refused against other machines");
+
+		char const one_name[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Name=alpha\n"
+			"Side=1\n"
+			"Color=5\n";
+		Check(!Judge(one_name, sizeof(one_name) - 1, 2, 8, fault) &&
+			fault.find("1") != std::string::npos && fault.find("2") != std::string::npos,
+			"two people under one name are refused however either is spelled");
+
+		char const alone[] =
+			"[Settings]\n"
+			"Side=0\n"
+			"Color=0\n";
+		Check(Judge(alone, sizeof(alone) - 1, 2, 8, fault),
+			"somebody playing alone need not be named");
 
 		char const past_seats[] =
 			"[Settings]\n"

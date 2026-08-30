@@ -366,3 +366,40 @@ test('Saved games are named in one folder rather than searched for', () => {
 		'the listing no longer scans the folders the game reads from',
 	);
 });
+
+test('A match against other machines is assembled whole and refused at the network', () => {
+	const spawner = source('code/spawner.cpp');
+
+	assertOrdered(functionBody(spawner, 'bool Spawner_Prepare(bool & gameloaded)'), [
+		'SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)',
+		'Spawner_Setup_Session();',
+		'SpawnConfig.Session_Identity_CRC()',
+		'if (Session.Type == GAME_INTERNET) {',
+	], 'the match is judged, assembled and named before the missing network refuses it');
+
+	assert.match(
+		functionBody(spawner, 'static void Spawner_Setup_Session(void)'),
+		/LaunchType::Multiplayer\s*\n?\s*\?\s*GAME_INTERNET : GAME_SKIRMISH;/,
+		'one assembly serves both kinds of match',
+	);
+
+	assertOrdered(functionBody(spawner, 'static void Spawner_Seat_Humans(void)'), [
+		'if (SpawnConfig.TunnelPort != 0) {',
+		'node->Address.Set_Address(0, htons((unsigned short)seat.Port));',
+		'inet_addr(seat.Address.c_str())',
+	], 'a tunnelled machine is named by its tunnel number before an address is read');
+
+	assertOrdered(
+		functionBody(
+			source('code/spawnerconfig.cpp'),
+			'bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const',
+		),
+		[
+			'bool multiplayer = Launch_Type() == LaunchType::Multiplayer;',
+			'if (human && multiplayer) {',
+			'slot.Name.empty()',
+			'_stricmp(Slots[other].Name.c_str(), slot.Name.c_str()) == 0',
+		],
+		'the seat order the machines share is what the name rules are held for',
+	);
+});
