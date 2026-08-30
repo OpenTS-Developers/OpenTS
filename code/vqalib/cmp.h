@@ -32,13 +32,6 @@ extern "C" {
 long __cdecl AudioUnzap(void *source, void *dest, long);
 }
 
-/* VQA's SND2 chunks carry a stereo stream as two consecutive per-channel
-   blocks rather than interleaved nybbles, unlike sosCODECDecompressData's
-   AUD-derived layout. */
-extern "C" {
-unsigned int sosCODECDecompressDataPlanar(_SOS_COMPRESS_INFO *, unsigned int);
-}
-
 #if defined(__WATCOMC__) || defined(_MSC_VER)
 #pragma pack(pop)
 #endif
