@@ -17,6 +17,9 @@
 #include "voxlib.h"
 #include "wwfile.h"
 
+#include <algorithm>
+#include <iterator>
+
 BOOL VoxelDrawSystem::EnableLighting;
 BOOL VoxelDrawSystem::EnableZBuffer;
 
@@ -430,7 +433,7 @@ SurfaceRegion VoxelDrawSystem::Render(void)
 /// </summary>
 void VoxelDrawSystem::Clear_Buffer(void)
 {
-	memset(VoxelDrawBuffer, 0, sizeof(VoxelDrawBuffer));
+	std::fill(std::begin(VoxelDrawBuffer), std::end(VoxelDrawBuffer), 0);
 }
 
 
@@ -439,5 +442,5 @@ void VoxelDrawSystem::Clear_Buffer(void)
 /// </summary>
 void VoxelDrawSystem::Clear_Z_Buffer(void)
 {
-	memset(VoxelDrawZBuffer, 0, sizeof(VoxelDrawZBuffer));
+	std::fill(std::begin(VoxelDrawZBuffer), std::end(VoxelDrawZBuffer), 0);
 }
