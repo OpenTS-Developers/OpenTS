@@ -58,12 +58,18 @@ one new send period at each boundary. Replacement targets rebase this process.
 A successor master inherits the target and change count, then clears
 improvement evidence and starts a cooldown.
 
-Latency margin remains 1×, 1.5×, 2×, or 3× RTT. Game speed keeps its existing
-mapping, including speed zero as 60 FPS.
+The disabled Connection slider in the WOL Options menu shows the synchronized
+target: send rates 1–2 are Fast, 3–5 Normal, 6–8 Poor, and 9–10 Bad. An
+extended look-ahead is also Bad. The message list reports each tier change.
+The separate Speed slider still controls game speed, including speed zero as
+60 FPS.
+
+New matches start with a 1× RTT margin. The menu no longer emits the legacy
+`LATENCYFUDGE` event.
 
 ## Compatibility
 
 Network events and recorded multiplayer commands include the timing reports.
 All players must use the same OpenTS snapshot, and a recording should be played
-by the snapshot that wrote it. There is no player-facing timing setting to
-migrate.
+by the snapshot that wrote it. The former manual margin was not saved as a
+player setting, so there is nothing to migrate.

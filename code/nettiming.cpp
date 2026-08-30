@@ -142,6 +142,25 @@ namespace NetTiming
 	}
 
 
+	/// <summary>Maps balanced timing settings to player-facing connection quality.</summary>
+	ConnectionQuality Connection_Quality_For_Settings(TimingSettings settings)
+	{
+		if (!Timing_Settings_Are_Valid(settings) || settings.MaxAhead > Settings_For_Rung(settings.FrameSendRate).MaxAhead) {
+			return(ConnectionQuality::Bad);
+		}
+		if (settings.FrameSendRate <= 2) {
+			return(ConnectionQuality::Fast);
+		}
+		if (settings.FrameSendRate <= 5) {
+			return(ConnectionQuality::Normal);
+		}
+		if (settings.FrameSendRate <= 8) {
+			return(ConnectionQuality::Poor);
+		}
+		return(ConnectionQuality::Bad);
+	}
+
+
 	/// <summary>Checks timing bounds and send-period alignment.</summary>
 	bool Timing_Settings_Are_Valid(TimingSettings settings)
 	{

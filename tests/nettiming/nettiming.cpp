@@ -346,6 +346,27 @@ namespace
 	}
 
 
+	void Test_Connection_Quality(void)
+	{
+		using namespace NetTiming;
+
+		Expect("rung one reports fast", Connection_Quality_For_Settings(Settings_For_Rung(1)) == ConnectionQuality::Fast);
+		Expect("rung two reports fast", Connection_Quality_For_Settings(Settings_For_Rung(2)) == ConnectionQuality::Fast);
+		Expect("rung three reports normal", Connection_Quality_For_Settings(Settings_For_Rung(3)) == ConnectionQuality::Normal);
+		Expect("rung four reports normal", Connection_Quality_For_Settings(Settings_For_Rung(4)) == ConnectionQuality::Normal);
+		Expect("rung five reports normal", Connection_Quality_For_Settings(Settings_For_Rung(5)) == ConnectionQuality::Normal);
+		Expect("rung six reports poor", Connection_Quality_For_Settings(Settings_For_Rung(6)) == ConnectionQuality::Poor);
+		Expect("rung seven reports poor", Connection_Quality_For_Settings(Settings_For_Rung(7)) == ConnectionQuality::Poor);
+		Expect("rung eight reports poor", Connection_Quality_For_Settings(Settings_For_Rung(8)) == ConnectionQuality::Poor);
+		Expect("rung nine reports bad", Connection_Quality_For_Settings(Settings_For_Rung(9)) == ConnectionQuality::Bad);
+		Expect("rung ten reports bad", Connection_Quality_For_Settings(Settings_For_Rung(10)) == ConnectionQuality::Bad);
+		Expect("initial settings report normal", Connection_Quality_For_Settings({3, 9}) == ConnectionQuality::Normal);
+		Expect("extended conservative settings report bad", Connection_Quality_For_Settings({10, 250}) == ConnectionQuality::Bad);
+		Expect("invalid settings report bad", Connection_Quality_For_Settings({0, 0}) == ConnectionQuality::Bad);
+		Expect("extended fast-rung horizon reports bad", Connection_Quality_For_Settings({2, 8}) == ConnectionQuality::Bad);
+	}
+
+
 	void Test_Event_Semantics(void)
 	{
 		using namespace NetSemantic;
@@ -721,6 +742,7 @@ int main(void)
 	Test_Loss_Jitter_And_Reordering();
 	Test_Census();
 	Test_Rungs_And_Fudge();
+	Test_Connection_Quality();
 	Test_Event_Semantics();
 	Test_Hysteresis_And_Cooldown();
 	Test_Stale_And_Transition_Budget();

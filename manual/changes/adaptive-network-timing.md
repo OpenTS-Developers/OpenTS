@@ -20,6 +20,11 @@ Reductions drain the old scheduling horizon and step down at aligned send
 boundaries. A successor master inherits the synchronized target and change
 budget before restarting improvement hysteresis.
 
+The disabled WOL Connection slider shows the synchronized Fast, Normal, Poor,
+or Bad tier, and the message list announces tier changes. Game speed remains a
+separate setting; the menu no longer sends manual `LATENCYFUDGE` changes, and
+new matches start with a 1× RTT margin.
+
 Timing reports extend the network and multiplayer-recording event stream, so
 players and recordings require the same OpenTS snapshot. Existing event IDs
 and packet layouts are unchanged, fog of war adds no timing offset, and there

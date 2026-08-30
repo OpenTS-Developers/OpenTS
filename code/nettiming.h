@@ -78,7 +78,15 @@ namespace NetTiming
 		bool operator==(TimingSettings const &) const = default;
 	};
 
+	enum class ConnectionQuality : unsigned char {
+		Bad,
+		Poor,
+		Normal,
+		Fast,
+	};
+
 	TimingSettings Settings_For_Rung(unsigned int rung);
+	ConnectionQuality Connection_Quality_For_Settings(TimingSettings settings);
 	bool Timing_Settings_Are_Valid(TimingSettings settings);
 	bool Timing_Transition_Source_Is_Valid(TimingSettings settings);
 	Milliseconds Apply_Latency_Fudge(Milliseconds round_trip, LatencyFudge fudge);
