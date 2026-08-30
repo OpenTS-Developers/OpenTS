@@ -181,6 +181,10 @@ double AStarClass::Get_Movement_Cost(CellClass **from, CellClass **to, bool brid
 						clear = true;
 						break;
 					}
+
+					if (facing == FACING_COUNT) {
+						break;
+					}
 				} else {
 					facing = occupier->PrimaryFacing.Current().As_Dir8();
 				}
