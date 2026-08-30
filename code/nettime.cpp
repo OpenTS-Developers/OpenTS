@@ -11,6 +11,7 @@
 #include "nettime.h"
 
 #include <windows.h>
+#include <mmsystem.h>
 
 
 namespace NetTiming
@@ -28,7 +29,7 @@ namespace NetTiming
 	/// <summary>Reads the system's wrapping millisecond clock.</summary>
 	Milliseconds SystemMillisecondClock::Now(void) const
 	{
-		return(static_cast<Milliseconds>(GetTickCount()));
+		return(static_cast<Milliseconds>(::timeGetTime()));
 	}
 
 

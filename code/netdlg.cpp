@@ -231,7 +231,6 @@ void Destroy_Connection(int id, int error)
 	int i;
 	HouseClass *housep;
 	char txt[80];
-	int const removal_authority = Session.Removal_Authority_Player_ID(id);
 
 	housep = Houses[(HousesType)id];
 
@@ -284,7 +283,8 @@ void Destroy_Connection(int id, int error)
 	//------------------------------------------------------------------------
 	Ipx.Delete_Connection(id);
 
-	if (PlayerPtr != NULL && PlayerPtr->HeapID == removal_authority) {
+	// Every survivor reports the departure; execution makes later copies no-ops.
+	if (PlayerPtr != NULL) {
 		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REMOVEPLAYER, id));
 	}
 

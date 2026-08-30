@@ -42,14 +42,6 @@ namespace NetTiming
 	constexpr std::uint32_t CHANGE_COOLDOWN = 256;
 	constexpr std::uint32_t REPORT_EXPIRY = 512;
 	constexpr unsigned int GOOD_EVALUATIONS_REQUIRED = 3;
-	constexpr unsigned int REVERSIBLE_CHANGE_LIMIT = 8;
-
-	enum class LatencyFudge : unsigned char {
-		None,
-		Half,
-		Double,
-		Triple,
-	};
 
 	class RttEstimator
 	{
@@ -93,10 +85,8 @@ namespace NetTiming
 	ConnectionQuality Connection_Quality_For_Settings(TimingSettings settings);
 	bool Timing_Settings_Are_Valid(TimingSettings settings);
 	bool Timing_Transition_Source_Is_Valid(TimingSettings settings);
-	Milliseconds Apply_Latency_Fudge(Milliseconds round_trip, LatencyFudge fudge);
 	std::optional<unsigned int> Align_Max_Ahead(unsigned int required, unsigned int frame_send_rate);
-	TimingSettings Select_Timing_Settings(Milliseconds worst_round_trip, unsigned int target_fps, LatencyFudge fudge, bool require_headroom = false);
-	unsigned int Select_Timing_Rung(Milliseconds worst_round_trip, unsigned int target_fps, LatencyFudge fudge, bool require_headroom = false);
+	TimingSettings Select_Timing_Settings(Milliseconds worst_round_trip, unsigned int target_fps, bool require_headroom = false);
 	bool Report_Is_Due(std::uint32_t elapsed_frames);
 	bool Evaluation_Is_Due(std::uint32_t elapsed_frames);
 
@@ -148,12 +138,11 @@ namespace NetTiming
 	{
 		public:
 			void Reset(std::uint32_t frame = 0);
-			void Reset_From(TimingSettings settings, unsigned int reversible_changes, std::uint32_t frame);
-			TimingEvaluation Evaluate(TimingCensus const & census, unsigned int target_fps, LatencyFudge fudge, std::uint32_t frame);
+			void Reset_From(TimingSettings settings, std::uint32_t frame);
+			TimingEvaluation Evaluate(TimingCensus const & census, unsigned int target_fps, std::uint32_t frame);
 
 			unsigned int Current_Rung(void) const {return(CurrentRung);}
 			TimingSettings Current_Settings(void) const {return(CurrentSettings);}
-			unsigned int Reversible_Changes(void) const {return(ReversibleChanges);}
 			unsigned int Good_Evaluations(void) const {return(GoodEvaluations);}
 			bool Is_Bootstrapping(void) const {return(Bootstrapping);}
 			std::uint32_t Cadence_Origin(void) const {return(BootstrapStartFrame);}
@@ -165,7 +154,6 @@ namespace NetTiming
 			unsigned int CurrentRung = INITIAL_TIMING_RUNG;
 			TimingSettings CurrentSettings = {2, 6};
 			unsigned int GoodEvaluations = 0;
-			unsigned int ReversibleChanges = 0;
 			std::uint32_t BootstrapStartFrame = 0;
 			std::uint32_t LastEvaluationFrame = 0;
 			std::uint32_t LastChangeFrame = 0;

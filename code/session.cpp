@@ -61,7 +61,6 @@
 #include "ipxmgr.h"
 #include "language\language.h"
 #include "msgloop.h"
-#include "netsemantic.h"
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
@@ -456,24 +455,6 @@ int SessionClass::Master_Player_ID(void) const
 }
 
 
-/// <summary>Returns the player authorized to remove a synchronized peer.</summary>
-int SessionClass::Removal_Authority_Player_ID(int target) const
-{
-	int const master = Master_Player_ID();
-	int successor = -1;
-	if (target == master) {
-		for (int i = 0; i < Houses.Count(); i++) {
-			HouseClass const * house = Houses[i];
-			if (house != NULL && house->HeapID != target && house->IsHuman && Is_Network_Player_ID(house->HeapID)) {
-				successor = house->HeapID;
-				break;
-			}
-		}
-	}
-	return(NetSemantic::Removal_Authority(target, master, successor));
-}
-
-
 /// <summary>Tests whether a player ID still belongs to the network session.</summary>
 bool SessionClass::Is_Network_Player_ID(int id) const
 {
@@ -500,7 +481,6 @@ void SessionClass::Reset_Network_Timing(unsigned int frame)
 	NetworkTimingReports.Reset();
 	NetworkTimingPolicy.Reset(frame);
 	PendingNetworkTiming.reset();
-	NetworkTimingChangeCount = 0;
 	NetworkTimingPolicyOwner = -1;
 
 	for (int i = 0; i < Players.Count(); i++) {
@@ -516,12 +496,6 @@ void SessionClass::Reset_Network_Timing(unsigned int frame)
 /// <summary>Validates and records a seated player's synchronized timing report.</summary>
 bool SessionClass::Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int frame)
 {
-	if (!Is_Network_Timing_Player_Active(id) ||
-		process_milliseconds > NetTiming::MAXIMUM_PROCESS_MILLISECONDS ||
-		(round_trip_milliseconds != EventClass::NETWORK_RTT_UNAVAILABLE && round_trip_milliseconds > NetTiming::MAXIMUM_REPORTED_RTT)) {
-		return(false);
-	}
-
 	std::optional<NetTiming::Milliseconds> round_trip;
 	if (round_trip_milliseconds != EventClass::NETWORK_RTT_UNAVAILABLE) {
 		round_trip = round_trip_milliseconds;
@@ -560,8 +534,7 @@ NetTiming::TimingCensus SessionClass::Network_Timing_Census(unsigned int frame)
 /// <summary>Evaluates the adaptive-timing policy against the current census.</summary>
 NetTiming::TimingEvaluation SessionClass::Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame)
 {
-	int const fudge = std::clamp(LatencyFudge, 0, 3);
-	return(NetworkTimingPolicy.Evaluate(census, target_fps, static_cast<NetTiming::LatencyFudge>(fudge), frame));
+	return(NetworkTimingPolicy.Evaluate(census, target_fps, frame));
 }
 
 
@@ -579,7 +552,7 @@ void SessionClass::Prepare_Network_Timing_Master(int master_id, unsigned int fra
 		return;
 	}
 	if (NetworkTimingPolicyOwner >= 0 && master_id >= 0) {
-		NetworkTimingPolicy.Reset_From(Network_Timing_Target(), NetworkTimingChangeCount, frame);
+		NetworkTimingPolicy.Reset_From(Network_Timing_Target(), frame);
 	}
 	NetworkTimingPolicyOwner = master_id;
 }
@@ -592,7 +565,7 @@ void SessionClass::Apply_Network_Response_Time(unsigned int max_ahead, unsigned 
 	MaxAhead = max_ahead;
 	MaxMaxAhead = std::max(MaxMaxAhead, static_cast<int>(MaxAhead));
 	if (CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-		NetworkTimingPolicy.Reset_From({FrameSendRate, MaxAhead}, NetworkTimingChangeCount, event_frame);
+		NetworkTimingPolicy.Reset_From({FrameSendRate, MaxAhead}, event_frame);
 	}
 }
 
@@ -609,7 +582,6 @@ NetTiming::ScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::Timin
 		return(NetTiming::ScheduleResult::Rejected);
 	}
 
-	NetTiming::TimingSettings const old_target = Network_Timing_Target();
 	if (PendingNetworkTiming && settings == PendingNetworkTiming->Timing.Plan.Settings) {
 		PendingNetworkTiming->DesiredFrameRate = desired_frame_rate;
 		if (PendingNetworkTiming->Timing.Activated) {
@@ -622,10 +594,6 @@ NetTiming::ScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::Timin
 	if (!staged) {
 		return(NetTiming::ScheduleResult::Rejected);
 	}
-	if (settings != old_target && NetworkTimingChangeCount < NetTiming::REVERSIBLE_CHANGE_LIMIT) {
-		NetworkTimingChangeCount++;
-	}
-
 	if (staged->Deferred) {
 		NetworkTimingTransition transition;
 		transition.Timing.Plan = *staged;

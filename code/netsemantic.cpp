@@ -9,37 +9,12 @@
 
 #include "netsemantic.h"
 
-#include "event.h"
-
 namespace NetSemantic
 {
 	/// <summary>Checks a signed index against a collection size.</summary>
 	bool Index_Is_Valid(int index, std::size_t count) noexcept
 	{
 		return(index >= 0 && static_cast<std::size_t>(index) < count);
-	}
-
-
-	/// <summary>Identifies events whose resolved object must belong to their sender.</summary>
-	bool Event_Requires_Owned_Subject(unsigned int event_type) noexcept
-	{
-		switch (event_type) {
-			case EventClass::POWERON:
-			case EventClass::POWEROFF:
-			case EventClass::ARCHIVE:
-			case EventClass::REPAIR:
-			case EventClass::PRIMARY:
-			case EventClass::MEGAMISSION:
-			case EventClass::MEGAMISSION_F:
-			case EventClass::IDLE:
-			case EventClass::DEPLOY:
-			case EventClass::SCATTER:
-			case EventClass::SELL:
-				return(true);
-
-			default:
-				return(false);
-		}
 	}
 
 
@@ -94,28 +69,7 @@ namespace NetSemantic
 		if (!compressed) {
 			return(true);
 		}
-		return(frame_send_rate >= NetTiming::MINIMUM_TIMING_RUNG && frame_send_rate <= NetTiming::MAXIMUM_TIMING_RUNG
-			&& delay >= 2 * frame_send_rate && delay % frame_send_rate == 0);
-	}
-
-
-	/// <summary>Resolves the synchronized authority for one player removal.</summary>
-	int Removal_Authority(int target, int master, int successor) noexcept
-	{
-		if (target < 0 || master < 0) {
-			return(-1);
-		}
-		if (target != master) {
-			return(master);
-		}
-		return(successor >= 0 && successor != target ? successor : -1);
-	}
-
-
-	/// <summary>Checks a player-removal sender against the deterministic authority.</summary>
-	bool Removal_Authority_Is_Valid(int sender, int target, int master, int successor) noexcept
-	{
-		return(sender != target && sender == Removal_Authority(target, master, successor));
+		return(NetTiming::Timing_Transition_Source_Is_Valid({frame_send_rate, delay}));
 	}
 
 
@@ -130,11 +84,4 @@ namespace NetSemantic
 		return(NetTiming::Timing_Settings_Are_Valid(settings) ? std::optional<NetTiming::TimingSettings>(settings) : std::nullopt);
 	}
 
-
-	/// <summary>Checks reported process and round-trip times.</summary>
-	bool Network_Report_Is_Valid(std::uint16_t process_milliseconds, std::uint16_t round_trip_milliseconds) noexcept
-	{
-		return(process_milliseconds <= NetTiming::MAXIMUM_PROCESS_MILLISECONDS
-			&& (round_trip_milliseconds <= NetTiming::MAXIMUM_REPORTED_RTT || round_trip_milliseconds == UINT16_MAX));
-	}
 }

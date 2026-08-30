@@ -34,7 +34,7 @@ namespace NetTiming
 
 
 		/// <summary>Selects timing for the current report census.</summary>
-		TimingSettings Desired_Settings(TimingCensus const & census, unsigned int target_fps, LatencyFudge fudge, bool require_headroom)
+		TimingSettings Desired_Settings(TimingCensus const & census, unsigned int target_fps, bool require_headroom)
 		{
 			if (census.RequiresConservativeTiming) {
 				return(TimingSettings{MAXIMUM_TIMING_RUNG, MAXIMUM_MAX_AHEAD});
@@ -42,7 +42,7 @@ namespace NetTiming
 			if (census.ActivePlayers == 0) {
 				return(Settings_For_Rung(INITIAL_TIMING_RUNG));
 			}
-			return(Select_Timing_Settings(census.WorstRoundTrip, target_fps, fudge, require_headroom));
+			return(Select_Timing_Settings(census.WorstRoundTrip, target_fps, require_headroom));
 		}
 
 
@@ -179,31 +179,6 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Applies the selected RTT safety margin.</summary>
-	Milliseconds Apply_Latency_Fudge(Milliseconds round_trip, LatencyFudge fudge)
-	{
-		std::uint64_t numerator = round_trip;
-		std::uint64_t denominator = 1;
-
-		switch (fudge) {
-			case LatencyFudge::None:
-				break;
-			case LatencyFudge::Half:
-				numerator *= 3;
-				denominator = 2;
-				break;
-			case LatencyFudge::Double:
-				numerator *= 2;
-				break;
-			case LatencyFudge::Triple:
-				numerator *= 3;
-				break;
-		}
-
-		return(static_cast<Milliseconds>(std::min<std::uint64_t>(Divide_Round_Up(numerator, denominator), std::numeric_limits<Milliseconds>::max())));
-	}
-
-
 	/// <summary>Rounds a scheduling horizon up to a complete send period.</summary>
 	std::optional<unsigned int> Align_Max_Ahead(unsigned int required, unsigned int frame_send_rate)
 	{
@@ -220,11 +195,11 @@ namespace NetTiming
 
 
 	/// <summary>Chooses the lowest rung that covers the adjusted RTT.</summary>
-	TimingSettings Select_Timing_Settings(Milliseconds worst_round_trip, unsigned int target_fps, LatencyFudge fudge, bool require_headroom)
+	TimingSettings Select_Timing_Settings(Milliseconds worst_round_trip, unsigned int target_fps, bool require_headroom)
 	{
 		target_fps = std::clamp(target_fps, 1u, 60u);
 
-		std::uint64_t adjusted = Apply_Latency_Fudge(worst_round_trip, fudge);
+		std::uint64_t adjusted = worst_round_trip;
 		if (require_headroom) {
 			adjusted = Divide_Round_Up(adjusted * 5, 4);
 		}
@@ -253,13 +228,6 @@ namespace NetTiming
 			settings.MaxAhead = *Align_Max_Ahead(static_cast<unsigned int>(needed), settings.FrameSendRate);
 		}
 		return(settings);
-	}
-
-
-	/// <summary>Returns the policy rung selected for an adjusted RTT.</summary>
-	unsigned int Select_Timing_Rung(Milliseconds worst_round_trip, unsigned int target_fps, LatencyFudge fudge, bool require_headroom)
-	{
-		return(Select_Timing_Settings(worst_round_trip, target_fps, fudge, require_headroom).FrameSendRate);
 	}
 
 
@@ -382,7 +350,6 @@ namespace NetTiming
 		CurrentRung = INITIAL_TIMING_RUNG;
 		CurrentSettings = Settings_For_Rung(INITIAL_TIMING_RUNG);
 		GoodEvaluations = 0;
-		ReversibleChanges = 0;
 		BootstrapStartFrame = frame;
 		LastEvaluationFrame = frame;
 		LastChangeFrame = 0;
@@ -393,12 +360,11 @@ namespace NetTiming
 
 
 	/// <summary>Restores synchronized policy state after a master handoff.</summary>
-	void BalancedTimingPolicy::Reset_From(TimingSettings settings, unsigned int reversible_changes, std::uint32_t frame)
+	void BalancedTimingPolicy::Reset_From(TimingSettings settings, std::uint32_t frame)
 	{
 		CurrentRung = std::clamp(settings.FrameSendRate, MINIMUM_TIMING_RUNG, MAXIMUM_TIMING_RUNG);
 		CurrentSettings = settings;
 		GoodEvaluations = 0;
-		ReversibleChanges = std::min(reversible_changes, REVERSIBLE_CHANGE_LIMIT);
 		LastEvaluationFrame = frame;
 		LastChangeFrame = frame;
 		HasEvaluated = true;
@@ -415,9 +381,6 @@ namespace NetTiming
 		GoodEvaluations = 0;
 		LastChangeFrame = frame;
 		HasChanged = true;
-		if (ReversibleChanges < REVERSIBLE_CHANGE_LIMIT) {
-			ReversibleChanges++;
-		}
 	}
 
 
@@ -431,8 +394,8 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Applies cadence, hysteresis, and the change budget.</summary>
-	TimingEvaluation BalancedTimingPolicy::Evaluate(TimingCensus const & census, unsigned int target_fps, LatencyFudge fudge, std::uint32_t frame)
+	/// <summary>Applies cadence, hysteresis, and improvement headroom.</summary>
+	TimingEvaluation BalancedTimingPolicy::Evaluate(TimingCensus const & census, unsigned int target_fps, std::uint32_t frame)
 	{
 		TimingEvaluation result{Current_Settings(), CurrentRung, false, false};
 		if (Bootstrapping) {
@@ -446,8 +409,8 @@ namespace NetTiming
 			result.Evaluated = true;
 			bool const complete = census.ProcessComplete && census.RoundTripComplete;
 			if (census.RequiresConservativeTiming || complete || elapsed_frames >= BOOTSTRAP_FINAL_EVALUATION) {
-				TimingSettings const selected = census.RequiresConservativeTiming ? Desired_Settings(census, target_fps, fudge, false)
-					: complete ? Desired_Settings(census, target_fps, fudge, true) : Settings_For_Rung(BOOTSTRAP_FALLBACK_RUNG);
+				TimingSettings const selected = census.RequiresConservativeTiming ? Desired_Settings(census, target_fps, false)
+					: complete ? Desired_Settings(census, target_fps, true) : Settings_For_Rung(BOOTSTRAP_FALLBACK_RUNG);
 				if (selected != CurrentSettings) {
 					Change_To(selected, frame);
 					result.Changed = true;
@@ -471,14 +434,13 @@ namespace NetTiming
 			return(result);
 		}
 
-		// Worsening is immediate; improvement must clear the headroom, cadence, and change-budget gates.
-		TimingSettings const desired_settings = Desired_Settings(census, target_fps, fudge, false);
+		// Worsening is immediate; improvement must clear the headroom, cadence, and cooldown gates.
+		TimingSettings const desired_settings = Desired_Settings(census, target_fps, false);
 		if (Timing_Is_Worse(desired_settings, CurrentSettings)) {
 			Change_To(desired_settings, frame);
 			result.Changed = true;
-		} else if (Timing_Is_Better(desired_settings, CurrentSettings) && ReversibleChanges < REVERSIBLE_CHANGE_LIMIT
-			&& (!HasChanged || frame - LastChangeFrame >= CHANGE_COOLDOWN)) {
-			TimingSettings const headroom = Desired_Settings(census, target_fps, fudge, true);
+		} else if (Timing_Is_Better(desired_settings, CurrentSettings) && (!HasChanged || frame - LastChangeFrame >= CHANGE_COOLDOWN)) {
+			TimingSettings const headroom = Desired_Settings(census, target_fps, true);
 			if (Timing_Is_Better(headroom, CurrentSettings)) {
 				GoodEvaluations++;
 				if (GoodEvaluations >= GOOD_EVALUATIONS_REQUIRED) {

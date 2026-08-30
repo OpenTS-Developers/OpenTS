@@ -805,6 +805,16 @@ int ConnectionClass::Service_Send_Queue (void)
 	need it.
 	------------------------------------------------------------------------*/
 	num_entries = Queue->Num_Send();
+	curtime = Time();
+	NetTiming::Milliseconds const current_milliseconds = MillisecondTime->Now();
+	bool const adaptive_channel = Adaptive_Timing_Enabled();
+	bool const adaptive_timing = adaptive_channel && RoundTripEstimator.Has_Sample();
+	bool const timeout_enabled = Timeout != (unsigned int)-1;
+	NetTiming::Milliseconds const connection_timeout = !timeout_enabled
+		? NetTiming::MAXIMUM_CONNECTION_TIMEOUT
+		: (adaptive_timing ? NetTiming::Connection_Timeout(RoundTripEstimator.Smoothed_Rtt())
+			: (adaptive_channel ? Legacy_Connection_Timeout(Timeout) : Ticks_To_Milliseconds(Timeout)));
+	NetTiming::Milliseconds const base_retry_timeout = adaptive_timing ? RoundTripEstimator.Retransmit_Timeout() : Ticks_To_Milliseconds(RetryDelta);
 
 	for (i = 0; i < num_entries; i++) {
 		send_entry = Queue->Get_Send(i);
@@ -813,17 +823,6 @@ int ConnectionClass::Service_Send_Queue (void)
 			continue;
 		}
 
-		// New packets send immediately; retransmissions follow the connection's current timeout.
-		NetTiming::Milliseconds const current_milliseconds = MillisecondTime->Now();
-		bool const adaptive_channel = Adaptive_Timing_Enabled();
-		bool const adaptive_timing = adaptive_channel && RoundTripEstimator.Has_Sample();
-		bool const timeout_enabled = Timeout != (unsigned int)-1;
-		NetTiming::Milliseconds const connection_timeout = !timeout_enabled
-			? NetTiming::MAXIMUM_CONNECTION_TIMEOUT
-			: (adaptive_timing ? NetTiming::Connection_Timeout(RoundTripEstimator.Smoothed_Rtt())
-				: (adaptive_channel ? Legacy_Connection_Timeout(Timeout)
-					: Ticks_To_Milliseconds(Timeout)));
-
 		if (send_entry->SendCount != 0 && timeout_enabled &&
 			NetTiming::Milliseconds_Have_Elapsed(send_entry->FirstTimeMilliseconds, current_milliseconds, connection_timeout)) {
 			bad_conn = 1;
@@ -831,11 +830,14 @@ int ConnectionClass::Service_Send_Queue (void)
 			continue;
 		}
 
-		NetTiming::Milliseconds const retry_timeout = send_entry->SendCount == 0
-			? (adaptive_timing ? RoundTripEstimator.Retransmit_Timeout() : Ticks_To_Milliseconds(RetryDelta)) : send_entry->RetransmitTimeoutMilliseconds;
+		NetTiming::Milliseconds const retry_timeout = !adaptive_channel || send_entry->SendCount == 0
+			? base_retry_timeout : send_entry->RetransmitTimeoutMilliseconds;
 		unsigned int const prior_retransmissions = send_entry->SendCount == 0 ? 0 : send_entry->SendCount - 1;
-		if (send_entry->SendCount == 0 ||
-			NetTiming::Retransmit_Is_Due(send_entry->LastTimeMilliseconds, current_milliseconds, retry_timeout, prior_retransmissions, connection_timeout)) {
+		// Lobby traffic keeps its fixed retry cadence; private links back off.
+		bool const retry_due = send_entry->SendCount == 0 || (adaptive_channel
+			? NetTiming::Retransmit_Is_Due(send_entry->LastTimeMilliseconds, current_milliseconds, retry_timeout, prior_retransmissions, connection_timeout)
+			: NetTiming::Milliseconds_Have_Elapsed(send_entry->LastTimeMilliseconds, current_milliseconds, retry_timeout));
+		if (retry_due) {
 
 			/*..................................................................
 			Send the message
@@ -846,7 +848,6 @@ int ConnectionClass::Service_Send_Queue (void)
 			/*..................................................................
 			Fill in Time fields
 			..................................................................*/
-			curtime = Time();
 			send_entry->LastTime = curtime;
 			send_entry->LastTimeMilliseconds = current_milliseconds;
 			if (send_entry->SendCount==0) {

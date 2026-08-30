@@ -8,7 +8,6 @@
  ******************************************************************************/
 
 
-#include "event.h"
 #include "netsemantic.h"
 #include "nettiming.h"
 
@@ -249,7 +248,7 @@ namespace
 		Expect("fresh RTT census complete", result.RoundTripComplete);
 		Expect("fresh census is not conservative", !result.RequiresConservativeTiming);
 		BalancedTimingPolicy aggregate;
-		TimingEvaluation const guest_degradation = aggregate.Evaluate(result, 60, LatencyFudge::None, 200);
+		TimingEvaluation const guest_degradation = aggregate.Evaluate(result, 60, 200);
 		Expect("a guest-to-guest slow path worsens the master policy", guest_degradation.Changed && guest_degradation.Rung == MAXIMUM_TIMING_RUNG);
 
 		result = census.Inspect(100 + REPORT_EXPIRY);
@@ -308,7 +307,7 @@ namespace
 	}
 
 
-	void Test_Rungs_And_Fudge(void)
+	void Test_Rungs(void)
 	{
 		using namespace NetTiming;
 
@@ -322,22 +321,14 @@ namespace
 		Expect("legacy two-period horizon can source a transition", Timing_Transition_Source_Is_Valid({3, 6}));
 		Expect("unaligned settings invalid", !Timing_Settings_Are_Valid({3, 10}));
 
-		Expect_Equal("no latency fudge", Apply_Latency_Fudge(100, LatencyFudge::None), 100u);
-		Expect_Equal("half latency fudge", Apply_Latency_Fudge(100, LatencyFudge::Half), 150u);
-		Expect_Equal("double latency fudge", Apply_Latency_Fudge(100, LatencyFudge::Double), 200u);
-		Expect_Equal("triple latency fudge", Apply_Latency_Fudge(100, LatencyFudge::Triple), 300u);
-		Expect_Equal("half fudge rounds up", Apply_Latency_Fudge(1, LatencyFudge::Half), 2u);
-
-		Expect_Equal("zero RTT selects best rung", Select_Timing_Rung(0, 60, LatencyFudge::None), 1u);
-		Expect_Equal("100 ms fits best rung", Select_Timing_Rung(100, 60, LatencyFudge::None), 1u);
-		Expect_Equal("101 ms advances a rung", Select_Timing_Rung(101, 60, LatencyFudge::None), 2u);
-		Expect_Equal("300 ms selects balanced rung", Select_Timing_Rung(300, 60, LatencyFudge::None), 5u);
-		Expect_Equal("fudge raises selected rung", Select_Timing_Rung(100, 60, LatencyFudge::Half), 3u);
-		TimingSettings const high_rtt = Select_Timing_Settings(2000, 60, LatencyFudge::None);
+		Expect_Equal("zero RTT selects best rung", Select_Timing_Settings(0, 60).FrameSendRate, 1u);
+		Expect_Equal("100 ms fits best rung", Select_Timing_Settings(100, 60).FrameSendRate, 1u);
+		Expect_Equal("101 ms advances a rung", Select_Timing_Settings(101, 60).FrameSendRate, 2u);
+		Expect_Equal("300 ms selects balanced rung", Select_Timing_Settings(300, 60).FrameSendRate, 5u);
+		TimingSettings const high_rtt = Select_Timing_Settings(2000, 60);
 		Expect_Equal("two-second RTT selects highest FSR", high_rtt.FrameSendRate, 10u);
 		Expect_Equal("two-second RTT carries needed aligned MaxAhead", high_rtt.MaxAhead, 70u);
-		TimingSettings const capped = Select_Timing_Settings(
-			MAXIMUM_REPORTED_RTT, 60, LatencyFudge::Triple);
+		TimingSettings const capped = Select_Timing_Settings(MAXIMUM_REPORTED_RTT, 60);
 		Expect_Equal("wire-maximum RTT selects highest FSR", capped.FrameSendRate, 10u);
 		Expect_Equal("highest rung caps at largest aligned horizon", capped.MaxAhead, 250u);
 
@@ -396,30 +387,20 @@ namespace
 		Expect("guest timing authority is rejected", !Timing_Authority_Is_Valid(3, 2));
 		Expect("unresolved timing authority is rejected", !Timing_Authority_Is_Valid(2, -1));
 
-		for (unsigned int type = 0; type < EventClass::LAST_EVENT; type++) {
-			bool const expected = type == EventClass::POWERON || type == EventClass::POWEROFF || type == EventClass::ARCHIVE
-				|| type == EventClass::REPAIR || type == EventClass::PRIMARY || type == EventClass::MEGAMISSION
-				|| type == EventClass::MEGAMISSION_F || type == EventClass::IDLE || type == EventClass::DEPLOY
-				|| type == EventClass::SCATTER || type == EventClass::SELL;
-			Expect("ownership-required event classification is exact", Event_Requires_Owned_Subject(type) == expected);
-		}
 		Expect("matching subject ownership is accepted", Subject_Owner_Is_Valid(3, 3));
 		Expect("captured subject ownership is rejected", !Subject_Owner_Is_Valid(3, 4));
 		Expect("missing subject owner is rejected", !Subject_Owner_Is_Valid(3, -1));
 
 		Expect("legacy response-time minimum is accepted", Response_Time_Is_Valid(2, 2, 0, false));
+		Expect("legacy response time above the compressed cap is accepted", Response_Time_Is_Valid(255, 2, 0, false));
 		Expect("legacy response time below minimum is rejected", !Response_Time_Is_Valid(1, 2, 0, false));
 		Expect("compressed response time accepts two aligned periods", Response_Time_Is_Valid(6, 2, 3, true));
+		Expect("compressed response time accepts the highest aligned horizon", Response_Time_Is_Valid(250, 2, 10, true));
+		Expect("compressed response time accepts the highest rate-three horizon", Response_Time_Is_Valid(249, 2, 3, true));
+		Expect("compressed response time rejects wire maximum above the cap", !Response_Time_Is_Valid(255, 2, 3, true));
 		Expect("compressed response time rejects an invalid period", !Response_Time_Is_Valid(6, 2, 0, true));
 		Expect("compressed response time rejects one period", !Response_Time_Is_Valid(3, 2, 3, true));
 		Expect("compressed response time rejects misalignment", !Response_Time_Is_Valid(7, 2, 3, true));
-
-		Expect_Equal("master removes a guest", Removal_Authority(4, 2, -1), 2);
-		Expect_Equal("successor removes the master", Removal_Authority(2, 2, 3), 3);
-		Expect_Equal("master removal without a successor is unresolved", Removal_Authority(2, 2, -1), -1);
-		Expect("resolved removal authority is accepted", Removal_Authority_Is_Valid(2, 4, 2, -1));
-		Expect("unauthorized removal is rejected", !Removal_Authority_Is_Valid(3, 4, 2, -1));
-		Expect("self-removal is rejected", !Removal_Authority_Is_Valid(4, 4, 4, 2));
 
 		std::optional<NetTiming::TimingSettings> settings = Decode_Timing_Settings(60, 9, 3);
 		Expect("timing look-ahead decodes directly", settings && *settings == NetTiming::TimingSettings{3, 9});
@@ -430,10 +411,6 @@ namespace
 		Expect("unaligned horizon is rejected", !Decode_Timing_Settings(60, 10, 3));
 		Expect("aligned 250-frame horizon is valid", Decode_Timing_Settings(60, 250, 10).has_value());
 		Expect("horizon above 250 is rejected", !Decode_Timing_Settings(60, 251, 10));
-
-		Expect("bounded report is valid", Network_Report_Is_Valid(1000, 65534));
-		Expect("unavailable RTT sentinel is valid", Network_Report_Is_Valid(0, UINT16_MAX));
-		Expect("process time above engine cap is rejected", !Network_Report_Is_Valid(1001, 10));
 	}
 
 
@@ -475,49 +452,46 @@ namespace
 		BalancedTimingPolicy low;
 		Expect("new policy starts in bootstrap", low.Is_Bootstrapping());
 		Expect("bootstrap starts at 2/6", low.Current_Settings() == TimingSettings{2, 6});
-		TimingEvaluation result = low.Evaluate(low_reports.Inspect(32), 60, LatencyFudge::None, 32);
+		TimingEvaluation result = low.Evaluate(low_reports.Inspect(32), 60, 32);
 		Expect("bootstrap does not evaluate before frame 64", !result.Evaluated);
 		Record_One(low_reports, 0, 38);
-		result = low.Evaluate(low_reports.Inspect(64), 60, LatencyFudge::None, 64);
+		result = low.Evaluate(low_reports.Inspect(64), 60, 64);
 		Expect("complete low-latency census finishes at frame 64", result.Evaluated && result.Changed && !low.Is_Bootstrapping());
 		Expect("low-latency bootstrap jumps directly to 1/4", low.Current_Settings() == TimingSettings{1, 4});
-		Expect_Equal("changed bootstrap consumes one transition", low.Reversible_Changes(), 1u);
-		result = low.Evaluate(low_reports.Inspect(255), 60, LatencyFudge::None, 255);
+		result = low.Evaluate(low_reports.Inspect(255), 60, 255);
 		Expect("steady evaluation remains anchored before frame 256", !result.Evaluated);
 		Record_One(low_reports, 0, 256);
-		result = low.Evaluate(low_reports.Inspect(256), 60, LatencyFudge::None, 256);
+		result = low.Evaluate(low_reports.Inspect(256), 60, 256);
 		Expect("steady evaluation is anchored at frame 256", result.Evaluated && !result.Changed);
 
 		Expect("100 ms would select 1/4 without bootstrap headroom",
-			Select_Timing_Settings(100, 60, LatencyFudge::None, false) == TimingSettings{1, 4});
+			Select_Timing_Settings(100, 60, false) == TimingSettings{1, 4});
 		Expect("100 ms retains 2/6 with bootstrap headroom",
-			Select_Timing_Settings(100, 60, LatencyFudge::None, true) == TimingSettings{2, 6});
+			Select_Timing_Settings(100, 60, true) == TimingSettings{2, 6});
 		TimingReportCensus marginal_reports;
 		marginal_reports.Set_Player_Active(1, true, 0);
 		Record_One(marginal_reports, 100, 38);
 		BalancedTimingPolicy marginal;
-		result = marginal.Evaluate(marginal_reports.Inspect(64), 60, LatencyFudge::None, 64);
+		result = marginal.Evaluate(marginal_reports.Inspect(64), 60, 64);
 		Expect("marginal bootstrap completes without changing 2/6", result.Evaluated && !result.Changed && !marginal.Is_Bootstrapping());
-		Expect_Equal("equal bootstrap target preserves transition budget", marginal.Reversible_Changes(), 0u);
 
 		TimingReportCensus high_reports;
 		high_reports.Set_Player_Active(1, true, 0);
 		Record_One(high_reports, 2000, 38);
 		BalancedTimingPolicy high;
-		result = high.Evaluate(high_reports.Inspect(64), 60, LatencyFudge::None, 64);
+		result = high.Evaluate(high_reports.Inspect(64), 60, 64);
 		Expect("high-latency bootstrap worsens directly", result.Changed && high.Current_Settings() == TimingSettings{10, 90});
-		Expect_Equal("high-latency bootstrap consumes one transition", high.Reversible_Changes(), 1u);
 
 		TimingReportCensus delayed_reports;
 		delayed_reports.Set_Player_Active(1, true, 0);
 		delayed_reports.Record_Report(1, 10, std::nullopt, 38);
 		BalancedTimingPolicy delayed;
-		result = delayed.Evaluate(delayed_reports.Inspect(64), 60, LatencyFudge::None, 64);
+		result = delayed.Evaluate(delayed_reports.Inspect(64), 60, 64);
 		Expect("incomplete frame 64 census keeps bootstrap open", result.Evaluated && !result.Changed && delayed.Is_Bootstrapping());
 		delayed_reports.Record_Report(1, 10, 0, 70);
-		result = delayed.Evaluate(delayed_reports.Inspect(100), 60, LatencyFudge::None, 100);
+		result = delayed.Evaluate(delayed_reports.Inspect(100), 60, 100);
 		Expect("completed census waits for frame 128", !result.Evaluated && delayed.Is_Bootstrapping());
-		result = delayed.Evaluate(delayed_reports.Inspect(128), 60, LatencyFudge::None, 128);
+		result = delayed.Evaluate(delayed_reports.Inspect(128), 60, 128);
 		Expect("second bootstrap evaluation accepts a complete census", result.Evaluated && result.Changed && !delayed.Is_Bootstrapping());
 		Expect("frame 128 completion selects the measured target", delayed.Current_Settings() == TimingSettings{1, 4});
 
@@ -525,12 +499,11 @@ namespace
 		incomplete_reports.Set_Player_Active(1, true, 0);
 		incomplete_reports.Record_Report(1, 10, std::nullopt, 38);
 		BalancedTimingPolicy incomplete;
-		incomplete.Evaluate(incomplete_reports.Inspect(64), 60, LatencyFudge::None, 64);
+		incomplete.Evaluate(incomplete_reports.Inspect(64), 60, 64);
 		incomplete_reports.Record_Report(1, 10, std::nullopt, 70);
-		result = incomplete.Evaluate(incomplete_reports.Inspect(128), 60, LatencyFudge::None, 128);
+		result = incomplete.Evaluate(incomplete_reports.Inspect(128), 60, 128);
 		Expect("incomplete final census falls back immediately", result.Evaluated && result.Changed && !incomplete.Is_Bootstrapping());
 		Expect("incomplete bootstrap falls back to 3/9", incomplete.Current_Settings() == TimingSettings{3, 9});
-		Expect_Equal("fallback consumes one transition", incomplete.Reversible_Changes(), 1u);
 
 		TimingReportCensus lost_reports;
 		lost_reports.Set_Player_Active(1, true, 0);
@@ -538,44 +511,41 @@ namespace
 		lost_reports.Record_Report(1, 10, 20, 38);
 		lost_reports.Record_Report(2, 10, std::nullopt, 38);
 		BalancedTimingPolicy lost;
-		result = lost.Evaluate(lost_reports.Inspect(64), 60, LatencyFudge::None, 64);
+		result = lost.Evaluate(lost_reports.Inspect(64), 60, 64);
 		Expect("initial missing RTT keeps bootstrap open", result.Evaluated && !result.Changed && lost.Is_Bootstrapping());
 		lost_reports.Record_Report(1, 10, std::nullopt, 70);
-		result = lost.Evaluate(lost_reports.Inspect(128), 60, LatencyFudge::None, 128);
+		result = lost.Evaluate(lost_reports.Inspect(128), 60, 128);
 		Expect("established RTT loss remains immediately conservative", result.Changed && lost.Current_Settings() == TimingSettings{10, 250});
 
 		for (std::uint32_t frame : {256u, 512u, 768u}) {
 			Record_One(high_reports, 0, frame);
-			result = high.Evaluate(high_reports.Inspect(frame), 60, LatencyFudge::None, frame);
+			result = high.Evaluate(high_reports.Inspect(frame), 60, frame);
 		}
 		Expect("bootstrap cooldown leaves only two good evaluations by frame 768", !result.Changed && high.Good_Evaluations() == 2);
 		Record_One(high_reports, 0, 1024);
-		result = high.Evaluate(high_reports.Inspect(1024), 60, LatencyFudge::None, 1024);
+		result = high.Evaluate(high_reports.Inspect(1024), 60, 1024);
 		Expect("normal hysteresis resumes after bootstrap cooldown", result.Changed && high.Current_Settings() == TimingSettings{9, 27});
-		Expect_Equal("post-bootstrap improvement consumes another transition", high.Reversible_Changes(), 2u);
 
 		high.Reset();
 		Expect("reset starts a new bootstrap", high.Is_Bootstrapping());
 		Expect("reset restores 2/6", high.Current_Settings() == TimingSettings{2, 6});
-		Expect_Equal("reset restores transition budget", high.Reversible_Changes(), 0u);
 
 		BalancedTimingPolicy handoff;
-		handoff.Reset_From({10, 70}, 5, 0);
+		handoff.Reset_From({10, 70}, 0);
 		Expect("handoff does not regain bootstrap", !handoff.Is_Bootstrapping());
 		Record_One(high_reports, 0, 64);
-		result = handoff.Evaluate(high_reports.Inspect(64), 60, LatencyFudge::None, 64);
+		result = handoff.Evaluate(high_reports.Inspect(64), 60, 64);
 		Expect("handoff ignores bootstrap evaluation", !result.Evaluated && handoff.Current_Settings() == TimingSettings{10, 70});
-		Expect_Equal("handoff preserves its transition budget", handoff.Reversible_Changes(), 5u);
 
 		TimingReportCensus resumed_reports;
 		resumed_reports.Set_Player_Active(1, true, 1024);
 		BalancedTimingPolicy resumed;
 		resumed.Reset(1024);
 		Expect_Equal("resumed bootstrap records its cadence origin", resumed.Cadence_Origin(), 1024u);
-		result = resumed.Evaluate(resumed_reports.Inspect(1056), 60, LatencyFudge::None, 1056);
+		result = resumed.Evaluate(resumed_reports.Inspect(1056), 60, 1056);
 		Expect("resumed bootstrap does not evaluate after only 32 frames", !result.Evaluated);
 		Record_One(resumed_reports, 0, 1062);
-		result = resumed.Evaluate(resumed_reports.Inspect(1088), 60, LatencyFudge::None, 1088);
+		result = resumed.Evaluate(resumed_reports.Inspect(1088), 60, 1088);
 		Expect("resumed bootstrap evaluates after 64 frames", result.Evaluated && result.Changed && !resumed.Is_Bootstrapping());
 		Expect("resumed bootstrap selects its measured target", resumed.Current_Settings() == TimingSettings{1, 4});
 	}
@@ -588,36 +558,36 @@ namespace
 		TimingReportCensus reports;
 		reports.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy policy;
-		policy.Reset_From({3, 9}, 0, 0);
+		policy.Reset_From({3, 9}, 0);
 
 		Record_One(reports, 0, 256);
-		TimingEvaluation result = policy.Evaluate(reports.Inspect(256), 60, LatencyFudge::None, 256);
+		TimingEvaluation result = policy.Evaluate(reports.Inspect(256), 60, 256);
 		Expect("first good evaluation does not change", !result.Changed);
 		Record_One(reports, 0, 512);
-		result = policy.Evaluate(reports.Inspect(512), 60, LatencyFudge::None, 512);
+		result = policy.Evaluate(reports.Inspect(512), 60, 512);
 		Expect("second good evaluation does not change", !result.Changed);
 		Record_One(reports, 0, 768);
-		result = policy.Evaluate(reports.Inspect(768), 60, LatencyFudge::None, 768);
+		result = policy.Evaluate(reports.Inspect(768), 60, 768);
 		Expect("third good evaluation improves one rung", result.Changed);
 		Expect_Equal("one-rung improvement", policy.Current_Rung(), 2u);
 
 		Record_One(reports, 0, 800);
-		result = policy.Evaluate(reports.Inspect(800), 60, LatencyFudge::None, 800);
+		result = policy.Evaluate(reports.Inspect(800), 60, 800);
 		Expect("evaluation interval enforced", !result.Evaluated);
 		Expect_Equal("cooldown leaves rung", policy.Current_Rung(), 2u);
 
 		BalancedTimingPolicy headroom;
-		headroom.Reset_From({3, 9}, 0, 0);
+		headroom.Reset_From({3, 9}, 0);
 		TimingReportCensus edge;
 		edge.Set_Player_Active(1, true, 0);
 		for (std::uint32_t frame : {256u, 512u, 768u}) {
 			Record_One(edge, 120, frame);
-			headroom.Evaluate(edge.Inspect(frame), 60, LatencyFudge::None, frame);
+			headroom.Evaluate(edge.Inspect(frame), 60, frame);
 		}
 		Expect_Equal("20 percent headroom blocks marginal improvement", headroom.Current_Rung(), 3u);
 
 		Record_One(reports, 2000, 1024);
-		result = policy.Evaluate(reports.Inspect(1024), 60, LatencyFudge::None, 1024);
+		result = policy.Evaluate(reports.Inspect(1024), 60, 1024);
 		Expect("worsening is immediate", result.Changed);
 		Expect_Equal("worsening reaches required rung", policy.Current_Rung(), 10u);
 		Expect_Equal("highest rung retains measured horizon",
@@ -625,7 +595,7 @@ namespace
 
 		for (std::uint32_t frame : {1280u, 1536u, 1792u}) {
 			Record_One(reports, 1300, frame);
-			result = policy.Evaluate(reports.Inspect(frame), 60, LatencyFudge::None, frame);
+			result = policy.Evaluate(reports.Inspect(frame), 60, frame);
 		}
 		Expect("same-rung horizon reduction uses hysteresis", result.Changed);
 		Expect_Equal("same-rung horizon retains aligned need",
@@ -633,63 +603,54 @@ namespace
 	}
 
 
-	void Test_Stale_And_Transition_Budget(void)
+	void Test_Stale_And_Long_Term_Recovery(void)
 	{
 		using namespace NetTiming;
 
 		TimingReportCensus stale;
 		stale.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy stale_policy;
-		stale_policy.Reset_From({3, 9}, 0, 0);
-		TimingEvaluation result = stale_policy.Evaluate(stale.Inspect(0), 60, LatencyFudge::None, 0);
+		stale_policy.Reset_From({3, 9}, 0);
+		TimingEvaluation result = stale_policy.Evaluate(stale.Inspect(0), 60, 0);
 		Expect("startup waits for a complete census", !result.Changed);
 		Expect_Equal("startup keeps initial rung", stale_policy.Current_Rung(), 3u);
 
 		stale.Record_Report(1, 10, 100, 256);
-		stale_policy.Evaluate(stale.Inspect(256), 60, LatencyFudge::None, 256);
-		result = stale_policy.Evaluate(stale.Inspect(256 + REPORT_EXPIRY), 60,
-			LatencyFudge::None, 256 + REPORT_EXPIRY);
+		stale_policy.Evaluate(stale.Inspect(256), 60, 256);
+		result = stale_policy.Evaluate(stale.Inspect(256 + REPORT_EXPIRY), 60, 256 + REPORT_EXPIRY);
 		Expect("established stale report worsens policy", result.Changed);
 		Expect_Equal("established stale report chooses worst rung", stale_policy.Current_Rung(), 10u);
 		Expect_Equal("established stale report chooses conservative horizon", stale_policy.Current_Settings().MaxAhead, MAXIMUM_MAX_AHEAD);
 
 		stale.Set_Player_Active(1, false, 1024);
 		for (std::uint32_t frame : {1024u, 1280u, 1536u}) {
-			stale_policy.Evaluate(stale.Inspect(frame), 60, LatencyFudge::None, frame);
+			stale_policy.Evaluate(stale.Inspect(frame), 60, frame);
 		}
 		Expect_Equal("departed peer allows recovery", stale_policy.Current_Rung(), 9u);
 
 		TimingReportCensus reports;
 		reports.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy policy;
-		policy.Reset_From({3, 9}, 0, 0);
+		policy.Reset_From({3, 9}, 0);
 		std::uint32_t frame = EVALUATION_INTERVAL;
 
 		auto evaluate = [&](Milliseconds rtt) {
 			Record_One(reports, rtt, frame);
-			policy.Evaluate(reports.Inspect(frame), 60, LatencyFudge::None, frame);
+			policy.Evaluate(reports.Inspect(frame), 60, frame);
 			frame += EVALUATION_INTERVAL;
 		};
 
-		evaluate(2000); // 1: 3 -> 10
-		for (int cycle = 0; cycle < 3; cycle++) {
+		for (int cycle = 0; cycle < 5; cycle++) {
+			evaluate(2000);
 			evaluate(0);
 			evaluate(0);
-			evaluate(0);    // even transition: 10 -> 9
-			evaluate(2000); // odd transition: 9 -> 10
-		}
-		evaluate(0);
-		evaluate(0);
-		evaluate(0); // 8: 10 -> 9
-
-		Expect_Equal("transition budget reached", policy.Reversible_Changes(), REVERSIBLE_CHANGE_LIMIT);
-		Expect_Equal("eighth transition leaves rung nine", policy.Current_Rung(), 9u);
-		for (int i = 0; i < 6; i++) {
 			evaluate(0);
 		}
-		Expect_Equal("budget locks further improvement", policy.Current_Rung(), 9u);
-		evaluate(2000);
-		Expect_Equal("worsening remains available after budget", policy.Current_Rung(), 10u);
+		Expect_Equal("repeated degradation and recovery remains stable", policy.Current_Rung(), 9u);
+		evaluate(0);
+		evaluate(0);
+		evaluate(0);
+		Expect_Equal("recovery remains possible after more than eight changes", policy.Current_Rung(), 8u);
 	}
 
 
@@ -700,42 +661,34 @@ namespace
 		TimingReportCensus reports;
 		reports.Set_Player_Active(1, true, 1000);
 		BalancedTimingPolicy policy;
-		policy.Reset_From({10, 70}, REVERSIBLE_CHANGE_LIMIT + 5, 1000);
+		policy.Reset_From({10, 70}, 1000);
 		Expect("handoff restores authoritative settings", policy.Current_Settings() == TimingSettings{10, 70});
-		Expect_Equal("handoff saturates the transition budget", policy.Reversible_Changes(), REVERSIBLE_CHANGE_LIMIT);
 		Expect_Equal("handoff discards improvement evidence", policy.Good_Evaluations(), 0u);
 
 		Record_One(reports, 0, 1000);
-		TimingEvaluation result = policy.Evaluate(reports.Inspect(1000), 60, LatencyFudge::None, 1000);
+		TimingEvaluation result = policy.Evaluate(reports.Inspect(1000), 60, 1000);
 		Expect("handoff starts an evaluation cooldown", !result.Evaluated);
-		for (std::uint32_t frame : {1256u, 1512u, 1768u, 2024u}) {
-			Record_One(reports, 0, frame);
-			result = policy.Evaluate(reports.Inspect(frame), 60, LatencyFudge::None, frame);
-		}
-		Expect("restored transition budget prevents improvement", policy.Current_Settings() == TimingSettings{10, 70});
-
-		Record_One(reports, MAXIMUM_REPORTED_RTT, 2280);
-		result = policy.Evaluate(reports.Inspect(2280), 60, LatencyFudge::Triple, 2280);
-		Expect("conservative worsening remains after handoff budget", result.Changed && policy.Current_Settings() == TimingSettings{10, 250});
-		Expect_Equal("worsening leaves saturated budget intact", policy.Reversible_Changes(), REVERSIBLE_CHANGE_LIMIT);
+		Record_One(reports, 0, 1256);
+		result = policy.Evaluate(reports.Inspect(1256), 60, 1256);
+		Expect("one good evaluation preserves the handoff target", result.Evaluated && !result.Changed && policy.Current_Settings() == TimingSettings{10, 70});
 
 		TimingReportCensus recovery_reports;
 		recovery_reports.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy recover;
-		recover.Reset_From({10, 250}, 2, 0);
+		recover.Reset_From({10, 250}, 0);
 		for (std::uint32_t frame : {256u, 512u, 768u}) {
 			Record_One(recovery_reports, 0, frame);
-			result = recover.Evaluate(recovery_reports.Inspect(frame), 60, LatencyFudge::None, frame);
+			result = recover.Evaluate(recovery_reports.Inspect(frame), 60, frame);
 		}
 		Expect("10/250 improves one rung after hysteresis", result.Changed && recover.Current_Settings() == TimingSettings{9, 27});
 
 		TimingReportCensus same_rung_reports;
 		same_rung_reports.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy same_rung;
-		same_rung.Reset_From({10, 70}, 0, 0);
+		same_rung.Reset_From({10, 70}, 0);
 		for (std::uint32_t frame : {256u, 512u, 768u}) {
 			Record_One(same_rung_reports, 1300, frame);
-			result = same_rung.Evaluate(same_rung_reports.Inspect(frame), 60, LatencyFudge::None, frame);
+			result = same_rung.Evaluate(same_rung_reports.Inspect(frame), 60, frame);
 		}
 		Expect("10/70 catches up toward 10/50 after hysteresis", result.Changed && same_rung.Current_Settings() == TimingSettings{10, 50});
 
@@ -743,8 +696,8 @@ namespace
 		legacy_reports.Set_Player_Active(1, true, 0);
 		legacy_reports.Record_Report(1, 10, 200, 256);
 		BalancedTimingPolicy legacy;
-		legacy.Reset_From({3, 6}, 0, 0);
-		result = legacy.Evaluate(legacy_reports.Inspect(256), 60, LatencyFudge::None, 256);
+		legacy.Reset_From({3, 6}, 0);
+		result = legacy.Evaluate(legacy_reports.Inspect(256), 60, 256);
 		Expect("adaptive policy recovers from a legacy two-period horizon", result.Changed && legacy.Current_Settings() == TimingSettings{3, 9});
 	}
 
@@ -885,13 +838,13 @@ int main(void)
 	Test_Retransmit_Backoff();
 	Test_Loss_Jitter_And_Reordering();
 	Test_Census();
-	Test_Rungs_And_Fudge();
+	Test_Rungs();
 	Test_Connection_Quality();
 	Test_Event_Semantics();
 	Test_Bootstrap_Cadence();
 	Test_Bootstrap_Policy();
 	Test_Hysteresis_And_Cooldown();
-	Test_Stale_And_Transition_Budget();
+	Test_Stale_And_Long_Term_Recovery();
 	Test_Master_Handoff_State();
 	Test_Staged_Decrease();
 	Test_Transition_Sequences();

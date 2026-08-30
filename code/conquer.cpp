@@ -657,7 +657,15 @@ void IPX_Call_Back(void)
 									Sound_Effect(Rule->IncomingMessage);
 								}
 
+								/*
+								**	Tell the map to do a partial update (just to force the messages
+								**	to redraw).
+								*/
 								Map.Flag_To_Redraw(GS_REDRAW_ALL);
+
+								/*
+								**	Save this message in our last-message buffer
+								*/
 								strcpy(Session.LastMessage, Session.GPacket.Message.Buf);
 							}
 							break;

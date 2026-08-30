@@ -27,7 +27,7 @@ target_compile_options(NetTiming PRIVATE
     $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
 )
 
-target_link_libraries(NetTiming PRIVATE kernel32)
+target_link_libraries(NetTiming PRIVATE kernel32 winmm)
 
 set_target_properties(NetTiming PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

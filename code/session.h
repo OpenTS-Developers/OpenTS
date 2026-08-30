@@ -469,7 +469,6 @@ class SessionClass
 		int Create_Connections(void);
 		bool Am_I_Master(void);
 		int Master_Player_ID(void) const;
-		int Removal_Authority_Player_ID(int target) const;
 		bool Is_Network_Player_ID(int id) const;
 		bool Is_Network_Timing_Player_Active(int id) const;
 		void Reset_Network_Timing(unsigned int frame);
@@ -555,7 +554,6 @@ class SessionClass
 		NetTiming::TimingReportCensus NetworkTimingReports;
 		NetTiming::BalancedTimingPolicy NetworkTimingPolicy;
 		std::optional<NetworkTimingTransition> PendingNetworkTiming;
-		unsigned int NetworkTimingChangeCount;
 		int NetworkTimingPolicyOwner;
 
 		int			DesiredFrameRate;
@@ -710,11 +708,7 @@ class SessionClass
 		 */
 		int PlayerLatency[MAX_PLAYERS];
 
-		/*
-		 * This scales up the measured connection response time when the frame timing is
-		 * computed (0 - 3), buying tolerance of a laggy link at the cost of responsiveness.
-		 */
-		int LatencyFudge;
+		int LatencyFudge; // Legacy synchronized option retained for event and replay compatibility.
 
 		//.....................................................................
 		// For finding Sync Bugs

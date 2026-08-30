@@ -91,7 +91,6 @@ namespace {
 		InvalidRemovedHouse,
 		InvalidLatencyFudge,
 		UnauthorizedSubject,
-		UnauthorizedRemoval,
 		UnauthorizedTiming,
 		InvalidTimingArithmetic,
 		InvalidTimingValues,
@@ -111,7 +110,6 @@ namespace {
 		"invalid removed house",
 		"invalid latency fudge",
 		"unauthorized subject",
-		"unauthorized removal",
 		"unauthorized timing",
 		"invalid timing arithmetic",
 		"invalid timing values",
@@ -137,8 +135,9 @@ namespace {
 
 
 	/// <summary>Resolves the object controlled by an ownership-gated event.</summary>
-	TechnoClass * Event_Subject(EventClass const & event)
+	TechnoClass * Event_Subject(EventClass const & event, bool & requires_ownership)
 	{
+		requires_ownership = true;
 		switch (event.Type) {
 			case EventClass::POWERON:
 			case EventClass::POWEROFF:
@@ -158,6 +157,7 @@ namespace {
 				return(event.Data.MegaMission.Whom.As_Techno());
 
 			default:
+				requires_ownership = false;
 				return(NULL);
 		}
 	}
@@ -651,15 +651,18 @@ void EventClass::Execute(void)
 	}
 
 	HouseClass * house = Houses[ID];
-	if ((Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) && NetSemantic::Event_Requires_Owned_Subject(Type)) {
-		TechnoClass * subject = Event_Subject(*this);
-		if (subject == NULL || !subject->IsActive || subject->Strength <= 0) {
-			return;
-		}
-		int const owner = subject->House != NULL ? subject->House->HeapID : -1;
-		if (!NetSemantic::Subject_Owner_Is_Valid(ID, owner)) {
-			Log_Event_Rejection(EventRejectReason::UnauthorizedSubject, Type, ID, owner);
-			return;
+	if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
+		bool requires_ownership = false;
+		TechnoClass * subject = Event_Subject(*this, requires_ownership);
+		if (requires_ownership) {
+			if (subject == NULL || !subject->IsActive || subject->Strength <= 0) {
+				return;
+			}
+			int const owner = subject->House != NULL ? subject->House->HeapID : -1;
+			if (!NetSemantic::Subject_Owner_Is_Valid(ID, owner)) {
+				Log_Event_Rejection(EventRejectReason::UnauthorizedSubject, Type, ID, owner);
+				return;
+			}
 		}
 	}
 	HouseClass * hptr = NULL;
@@ -1194,11 +1197,6 @@ void EventClass::Execute(void)
 			if (!Houses[index]->Is_Human_Player()) {
 				break;
 			}
-			if (!Session.Play && ID != Session.Removal_Authority_Player_ID(index)) {
-				Log_Event_Rejection(EventRejectReason::UnauthorizedRemoval, Type, ID, index);
-				break;
-			}
-
 			DebugString("Executing REMOVEPLAYER event. Frame is %d\n", ::Frame);
 			Disable_Multiplayer_Saving();
 			Session.Remove_Network_Timing_Player(index, Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
@@ -1313,7 +1311,6 @@ void EventClass::Execute(void)
 
 		case NETWORK_REPORT:
 			if (Frame < 0 ||
-				!NetSemantic::Network_Report_Is_Valid(Data.NetworkReport.AverageProcessMilliseconds, Data.NetworkReport.WorstRoundTripMilliseconds) ||
 				!Session.Record_Network_Report(ID, Data.NetworkReport.AverageProcessMilliseconds, Data.NetworkReport.WorstRoundTripMilliseconds, (unsigned int)Frame)) {
 				Log_Event_Rejection(EventRejectReason::InvalidNetworkReport, Type, ID, Data.NetworkReport.WorstRoundTripMilliseconds);
 			}
