@@ -46,6 +46,7 @@
 #include "dbgprint.h"
 #include "misc.h"
 #include "msgloop.h"
+#include "netadmit.h"
 #include "vector.h"
 
 #include <cstdio>
@@ -152,9 +153,8 @@ int UDPInterfaceClass::Send_To(const char *buffer, int buffer_len, sockaddr_in *
 		return(SOCKET_ERROR);
 	}
 
-	unsigned short *header = reinterpret_cast<unsigned short *>(tunnelled);
-	header[0] = TunnelID;
-	header[1] = destination->sin_port;
+	unsigned short header[] = { TunnelID, destination->sin_port };
+	std::memcpy(tunnelled, header, sizeof(header));
 	std::memcpy(tunnelled + TUNNEL_HEADER_SIZE, buffer, buffer_len);
 
 	sockaddr_in server = {};
@@ -187,7 +187,9 @@ int UDPInterfaceClass::Receive_From(char *buffer, int buffer_len, sockaddr_in *s
 
 	if (rc == SOCKET_ERROR) return(SOCKET_ERROR);
 
-	const unsigned short *header = reinterpret_cast<const unsigned short *>(tunnelled);
+	unsigned short header[2];
+	if (rc < (int)sizeof(header)) return(SOCKET_ERROR);
+	std::memcpy(header, tunnelled, sizeof(header));
 
 	// Anything too short to carry a header, or addressed to somebody else, is not ours.
 	if (rc <= TUNNEL_HEADER_SIZE || header[1] != TunnelID) {
@@ -459,12 +461,20 @@ void UDPInterfaceClass::Register_Local_Addresses()
  *=============================================================================================*/
 void UDPInterfaceClass::Broadcast (void *buffer, int buffer_len)
 {
+	if (buffer == NULL || buffer_len <= 0 || buffer_len > WS_INTERNET_BUFFER_LEN) {
+		Record_Packet_Drop(WS_DROP_SEND_LENGTH);
+		return;
+	}
+
 	for ( int i=0 ; i<BroadcastAddresses.Count() ; i++ ) {
 
 		/*
 		**	Create a temporary holding area for the packet.
 		*/
 		WinsockBufferType *packet = (WinsockBufferType *)Get_New_Out_Buffer();
+		if (packet == NULL) {
+			return;
+		}
 
 		/*
 		**	Copy the packet into the holding buffer.
@@ -537,7 +547,7 @@ int UDPInterfaceClass::Message_Handler(HWND, UINT message, UINT, LONG lParam)
 		/*
 		**	Read event. Winsock has data it would like to give us.
 		*/
-		case FD_READ:
+		case FD_READ: {
 			/*
 			**	Clear any outstanding errors on the socket.
 			*/
@@ -556,10 +566,24 @@ int UDPInterfaceClass::Message_Handler(HWND, UINT message, UINT, LONG lParam)
 				return(0);;
 			}
 
-			/*
-			**	rc is the number of bytes received from Winsock
-			*/
-			if ( rc ) {
+			std::span<std::byte const> const datagram(reinterpret_cast<std::byte const *>(ReceiveBuffer), rc > 0 ? static_cast<std::size_t>(rc) : 0);
+			NetDatagramAdmission const admission = Admit_Network_Datagram(datagram, WS_INTERNET_BUFFER_LEN);
+			if (!admission.Succeeded()) {
+				switch (admission.Error) {
+					case NetAdmissionError::DATAGRAM_TOO_LARGE:
+						Record_Packet_Drop(WS_DROP_RECEIVE_TOO_LARGE);
+						break;
+					case NetAdmissionError::BAD_CRC:
+						Record_Packet_Drop(WS_DROP_BAD_CRC);
+						break;
+					default:
+						Record_Packet_Drop(WS_DROP_RECEIVE_TOO_SHORT);
+						break;
+				}
+				return(0);
+			}
+
+			{
 
 				/*
 				**	Make sure this packet didn't come from us. If it did then throw it away.
@@ -572,32 +596,12 @@ int UDPInterfaceClass::Message_Handler(HWND, UINT message, UINT, LONG lParam)
 				**	Create a new buffer and store this packet in it.
 				*/
 				packet = (WinsockBufferType *)Get_New_In_Buffer();
-				packet->BufferLen = rc - sizeof(packet->CRC);
-
-				// A datagram this long is not ours; truncating it lets the CRC check reject it.
-				if (packet->BufferLen > (int)sizeof(packet->Buffer)) {
-					packet->BufferLen = (int)sizeof(packet->Buffer);
+				if (packet == NULL) {
+					return(0);
 				}
-
-				packet->CRC = *((unsigned int*) (&ReceiveBuffer[0]));
-				memcpy ( packet->Buffer, ReceiveBuffer + sizeof(packet->CRC), packet->BufferLen);
-
-				/*
-				**	Make sure the CRC looks right.
-				*/
-				if (!Passes_CRC_Check(packet)) {
-
-					/*
-					**	Bad CRC, throw away the packet.
-					*/
-					DebugString("Throwing away malformed packet\n");
-					if (packet->IsAllocated) {
-						delete packet;
-					} else {
-						packet->InUse = false;
-						InBuffersUsed--;
-					}
-				} else {
+				packet->BufferLen = static_cast<int>(admission.Payload.size());
+				packet->CRC = admission.WireCRC;
+				memcpy(packet->Buffer, admission.Payload.data(), admission.Payload.size());
 
 					/*
 					**	Copy the address data into the holding buffer address area.
@@ -610,9 +614,9 @@ int UDPInterfaceClass::Message_Handler(HWND, UINT message, UINT, LONG lParam)
 					**	Add the holding buffer to the packet list.
 					*/
 					InBuffers.Add (packet);
-				}
 			}
 			return(0);
+		}
 
 
 		/*

@@ -58,12 +58,30 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "keyboard.h"
+#include "netadmit.h"
 #include "vector.h"
 
 #include <cassert>
 #include <cstdio>
+#include <cstring>
 
-extern void Add_CRC(unsigned int *crc, unsigned int val);
+namespace {
+
+/// <summary>Names a stable transport rejection reason.</summary>
+char const * Packet_Drop_Name(WinsockInterfaceClass::PacketDropReasonType reason)
+{
+	switch (reason) {
+		case WinsockInterfaceClass::WS_DROP_RECEIVE_TOO_SHORT: return("udp-too-short");
+		case WinsockInterfaceClass::WS_DROP_RECEIVE_TOO_LARGE: return("udp-too-large");
+		case WinsockInterfaceClass::WS_DROP_BAD_CRC: return("udp-bad-crc");
+		case WinsockInterfaceClass::WS_DROP_READ_BUFFER_TOO_SMALL: return("transport-output-too-small");
+		case WinsockInterfaceClass::WS_DROP_SEND_LENGTH: return("transport-send-length");
+		case WinsockInterfaceClass::WS_DROP_SEND_ADDRESS: return("transport-send-address");
+		default: return("transport-unknown");
+	}
+}
+
+}
 
 /***********************************************************************************************
  * WIC::WinsockInterfaceClass -- constructor for the WinsockInterfaceClass                     *
@@ -100,6 +118,7 @@ Socket(INVALID_SOCKET)
 
 	InBufferArrayPos = 0;
 	OutBufferArrayPos = 0;
+	memset(PacketDrops, 0, sizeof(PacketDrops));
 
 	DebugString("WinsockInterface constructed\n");
 
@@ -408,21 +427,7 @@ void WinsockInterfaceClass::Build_Packet_CRC(WinsockBufferType * packet)
 	fw_assert (packet->InUse);
 	fw_assert (packet->BufferLen);
 
-	packet->CRC = 0;
-
-	unsigned int *crc_ptr = &(packet->CRC);
-	unsigned int *packetptr = (unsigned int*) &(packet->Buffer[0]);
-
-	for (int i=0 ; i<packet->BufferLen/4 ; i++) {
-		Add_CRC (crc_ptr, *packetptr++);
-	}
-
-	int leftover = packet->BufferLen & 3;
-	if (leftover) {
-		unsigned int val = *packetptr;
-		val = val & (0xffffffff >> ((4-leftover) << 3));
-		Add_CRC (crc_ptr, val);
-	}
+	packet->CRC = Calculate_Packet_CRC(packet->Buffer, packet->BufferLen);
 }
 
 
@@ -443,27 +448,13 @@ void WinsockInterfaceClass::Build_Packet_CRC(WinsockBufferType * packet)
 bool WinsockInterfaceClass::Passes_CRC_Check(WinsockBufferType * packet)
 {
 	fw_assert (packet->InUse);
-	fw_assert (packet->BufferLen < WS_INTERNET_BUFFER_LEN);
+	fw_assert (packet->BufferLen <= WS_INTERNET_BUFFER_LEN);
 
-	if (packet->BufferLen >= WS_INTERNET_BUFFER_LEN) {
+	if (packet->BufferLen <= 0 || packet->BufferLen > WS_INTERNET_BUFFER_LEN) {
 		return(false);
 	}
 
-	unsigned int crc = 0;
-
-	unsigned int *crc_ptr = &crc;
-	unsigned int *packetptr = (unsigned int*) &(packet->Buffer[0]);
-
-	for (int i=0 ; i<packet->BufferLen/4 ; i++) {
-		Add_CRC (crc_ptr, *packetptr++);
-	}
-
-	int leftover = packet->BufferLen & 3;
-	if (leftover) {
-		unsigned int val = *packetptr;
-		val = val & (0xffffffff >> ((4-leftover) << 3));
-		Add_CRC (crc_ptr, val);
-	}
+	unsigned int crc = Calculate_Packet_CRC(packet->Buffer, packet->BufferLen);
 
 	if (crc == packet->CRC) {
 		return(true);
@@ -472,6 +463,41 @@ bool WinsockInterfaceClass::Passes_CRC_Check(WinsockBufferType * packet)
 	fw_assert (crc == packet->CRC);
 	DebugString("Error in Winsock packet CRC\n");
 	return(false);
+}
+
+
+/// <summary>Calculates the transport checksum.</summary>
+unsigned int WinsockInterfaceClass::Calculate_Packet_CRC(void const * buffer, int buffer_len) const
+{
+	if (buffer == NULL || buffer_len <= 0) {
+		return(0);
+	}
+	return(Calculate_Network_Datagram_CRC(std::span<std::byte const>(static_cast<std::byte const *>(buffer), static_cast<std::size_t>(buffer_len))));
+}
+
+
+/// <summary>Returns the number of transport packets rejected for one stable reason.</summary>
+unsigned int WinsockInterfaceClass::Dropped_Packets(PacketDropReasonType reason) const
+{
+	if (reason < 0 || reason >= WS_DROP_COUNT) {
+		return(0);
+	}
+
+	return(PacketDrops[reason]);
+}
+
+
+/// <summary>Records a transport rejection and rate-limits its diagnostic.</summary>
+void WinsockInterfaceClass::Record_Packet_Drop(PacketDropReasonType reason)
+{
+	if (reason < 0 || reason >= WS_DROP_COUNT) {
+		return;
+	}
+
+	unsigned int count = ++PacketDrops[reason];
+	if (count == 1 || (count & (count - 1)) == 0) {
+		DebugString("Network packet drop [%s]: %u\n", Packet_Drop_Name(reason), count);
+	}
 }
 
 
@@ -601,7 +627,6 @@ void *WinsockInterfaceClass::Get_New_In_Buffer(void)
  *=============================================================================================*/
 int WinsockInterfaceClass::Read(void *buffer, int &buffer_len, void *address, int &address_len)
 {
-	address_len = address_len;
 	/*
 	**	Call the message loop in case there are any outstanding winsock READ messages.
 	*/
@@ -624,8 +649,22 @@ int WinsockInterfaceClass::Read(void *buffer, int &buffer_len, void *address, in
 
 	fw_assert(packet->InUse);
 
-	fw_assert( buffer_len >= packet->BufferLen );
-	assert ( address_len >= sizeof (packet->Address) );
+	int buffer_capacity = buffer_len;
+	int address_capacity = address_len;
+	if (buffer == NULL || address == NULL || packet->BufferLen <= 0 || packet->BufferLen > WS_INTERNET_BUFFER_LEN ||
+		buffer_capacity < packet->BufferLen || address_capacity < (int)sizeof(packet->Address)) {
+		InBuffers.Delete_Index(packetnum);
+		if (packet->IsAllocated) {
+			delete packet;
+		} else {
+			packet->InUse = false;
+			InBuffersUsed--;
+		}
+		buffer_len = 0;
+		address_len = 0;
+		Record_Packet_Drop(WS_DROP_READ_BUFFER_TOO_SMALL);
+		return(0);
+	}
 
 	/*
 	**	Copy the data and the address it came from into the supplied buffers.
@@ -637,6 +676,7 @@ int WinsockInterfaceClass::Read(void *buffer, int &buffer_len, void *address, in
 	**	Return the length of the packet in buffer_len.
 	*/
 	buffer_len = packet->BufferLen;
+	address_len = sizeof(packet->Address);
 
 	/*
 	**	Delete the temporary storage for the packet now that it is being passed to the game.
@@ -671,11 +711,23 @@ int WinsockInterfaceClass::Read(void *buffer, int &buffer_len, void *address, in
  *=============================================================================================*/
 void WinsockInterfaceClass::WriteTo(void *buffer, int buffer_len, void *address, int address_len)
 {
+	if (buffer == NULL || buffer_len <= 0 || buffer_len > WS_INTERNET_BUFFER_LEN) {
+		Record_Packet_Drop(WS_DROP_SEND_LENGTH);
+		return;
+	}
+	if (address == NULL || address_len <= 0 || address_len > (int)sizeof(WinsockBufferType::Address)) {
+		Record_Packet_Drop(WS_DROP_SEND_ADDRESS);
+		return;
+	}
+
 	/*
 	**	Create a temporary holding area for the packet.
 	*/
 	WinsockBufferType *packet = (WinsockBufferType*) Get_New_Out_Buffer();
 	fw_assert (packet != NULL);
+	if (packet == NULL) {
+		return;
+	}
 
 	/*
 	**	Copy the packet into the holding buffer.
@@ -722,11 +774,19 @@ void WinsockInterfaceClass::WriteTo(void *buffer, int buffer_len, void *address,
  *=============================================================================================*/
 void WinsockInterfaceClass::Broadcast (void *buffer, int buffer_len)
 {
+	if (buffer == NULL || buffer_len <= 0 || buffer_len > WS_INTERNET_BUFFER_LEN) {
+		Record_Packet_Drop(WS_DROP_SEND_LENGTH);
+		return;
+	}
+
 	/*
 	**	Create a temporary holding area for the packet.
 	*/
 	WinsockBufferType *packet = (WinsockBufferType*) Get_New_Out_Buffer();
 	fw_assert(packet != NULL);
+	if (packet == NULL) {
+		return;
+	}
 
 	/*
 	**	Copy the packet into the holding buffer.

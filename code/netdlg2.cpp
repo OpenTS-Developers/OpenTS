@@ -301,7 +301,7 @@ void Net2ServiceGameList(void)
 			Net2DisplayUsers();
 		} else if (TickCount - Session.Chat[i]->Chat.LastTime > 5 * TIMER_SECOND &&
 			Session.Chat[i]->Chat.LastChance == 0) {
-			GlobalPacketType packet;
+			GlobalPacketType packet = {};
 			memset (&packet, 0, sizeof(GlobalPacketType));
 			strcpy(packet.Name, Session.Handle);
 			packet.Command = NET_CHAT_REQUEST;
@@ -747,7 +747,7 @@ bool Net2Remote_Connect(void)
 					// If I'm not joined to a game, send a SIGN_OFF to all players
 					// in my Chat vector (but not to myself, index 0)
 					//...............................................................
-					GlobalPacketType gpacket;
+					GlobalPacketType gpacket = {};
 					memset(&gpacket, 0, sizeof(gpacket));
 					gpacket.Command = NET_SIGN_OFF;
 					strcpy(gpacket.Name, Session.Handle);
@@ -985,7 +985,7 @@ bool Net2Remote_Connect(void)
 				// Send all players the NET_GO packet.  Wait until all ACK's have been
 				// received.
 				//.....................................................................
-				GlobalPacketType gpacket;
+				GlobalPacketType gpacket = {};
 				memset(&gpacket, 0, sizeof(gpacket));
 				gpacket.Command = NET_GO;
 				gpacket.ResponseTime.OneWay = Session.MaxAhead;
@@ -1015,7 +1015,7 @@ bool Net2Remote_Connect(void)
 
 				do {
 					Call_Back();
-					int retcode = Ipx.Get_Global_Message(&Session.GPacket, &Session.GPacketlen, &Session.GAddress, &Session.GProductID);
+					int retcode = Ipx.Get_Global_Message(&Session.GPacket, sizeof(Session.GPacket), &Session.GPacketlen, &Session.GAddress, &Session.GProductID);
 					if (retcode && Session.GProductID == IPXGlobalConnClass::COMMAND_AND_CONQUER2) {
 						for (int i = 1; i < Session.Players.Count(); i++) {
 							if (Session.Players[i]->Address == Session.GAddress) {
@@ -1159,7 +1159,7 @@ BOOL CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wp
 
 					PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
 
-					GlobalPacketType gpacket;
+					GlobalPacketType gpacket = {};
 					memset(&gpacket, 0, sizeof(gpacket));
 
 					gpacket.Command = NET_MESSAGE;
@@ -1552,7 +1552,7 @@ BOOL CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 
 			PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
 
-			GlobalPacketType gpacket;
+			GlobalPacketType gpacket = {};
 			memset(&gpacket, 0, sizeof(gpacket));
 
 			gpacket.Command = NET_MESSAGE;
@@ -1987,7 +1987,7 @@ static int Request_To_Join(int join_index)
 static void Unjoin_Game(int game_index)
 {
 	int i;
-	GlobalPacketType packet;
+	GlobalPacketType packet = {};
 
 	//------------------------------------------------------------------------
 	// Fill in a SIGN_OFF packet
@@ -2078,7 +2078,7 @@ static void Unjoin_Game(int game_index)
  *=============================================================================================*/
 static void Send_Join_Queries(int gamenow, int playernow, int chatnow, int init)
 {
-	GlobalPacketType packet;
+	GlobalPacketType packet = {};
 
 	//........................................................................
 	// These values control the timeouts for sending various types of packets;
@@ -2185,7 +2185,7 @@ static void Send_Join_Queries(int gamenow, int playernow, int chatnow, int init)
  *=============================================================================================*/
 bool Process_Global_Packet(GlobalPacketType *packet, IPXAddressClass *address)
 {
-	GlobalPacketType mypacket;
+	GlobalPacketType mypacket = {};
 #if 0
 	//------------------------------------------------------------------------
 	// If our Players vector is empty, just return.
@@ -2303,7 +2303,8 @@ static void Get_Join_Responses(void)
 	//------------------------------------------------------------------------
 	// If there is no incoming packet, just return
 	//------------------------------------------------------------------------
-	for (Call_Back(); (rc = Ipx.Get_Global_Message (&Session.GPacket, &Session.GPacketlen, &Session.GAddress, &Session.GProductID)) != 0; Call_Back()) {
+	for (Call_Back(); (rc = Ipx.Get_Global_Message (&Session.GPacket, sizeof(Session.GPacket),
+		&Session.GPacketlen, &Session.GAddress, &Session.GProductID)) != 0; Call_Back()) {
 		if (Session.GProductID != IPXGlobalConnClass::COMMAND_AND_CONQUER2) {
 			continue;
 		}
@@ -2562,7 +2563,7 @@ static void Get_Join_Responses(void)
 			// properly removed from their dialogs.
 			//.....................................................................
 			if ( JoinState == JOIN_CONFIRMED) {
-				GlobalPacketType packet;
+				GlobalPacketType packet = {};
 
 				memset (&packet, 0, sizeof(GlobalPacketType));
 				packet.Command = NET_SIGN_OFF;
@@ -2910,7 +2911,7 @@ static void Get_Join_Responses(void)
 		//------------------------------------------------------------------------
 		if (Session.GPacket.Command==NET_CHAT_REQUEST) {
 			if (JoinState != JOIN_WAIT_CONFIRM && JoinState != JOIN_CONFIRMED) {
-				GlobalPacketType packet;
+				GlobalPacketType packet = {};
 
 				memset (&packet, 0, sizeof(GlobalPacketType));
 
@@ -2955,7 +2956,7 @@ static void Get_Join_Responses(void)
 		// NET_QUERY_JOIN:
 		//------------------------------------------------------------------------
 		if (Session.GPacket.Command==NET_QUERY_JOIN) {
-			GlobalPacketType packet;
+			GlobalPacketType packet = {};
 
 			if (!Session.Players.Count()) {
 				memset (&packet, 0, sizeof(GlobalPacketType));
@@ -3191,7 +3192,7 @@ static void Get_Join_Responses(void)
 /// <returns>bool; Is this machine ready to go?</returns>
 bool Net2ReadyToGo(int load_game)
 {
-	GlobalPacketType packet;
+	GlobalPacketType packet = {};
 	int i;
 
 	Ipx.Set_Timing(Ipx.Global_Response_Time() + 2 > 30 ? Ipx.Global_Response_Time () + 2 : 30, (unsigned int) -1, 1000);
@@ -3374,7 +3375,7 @@ BOOL CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wparam
 				if (len > 2) {
 					PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
 
-					GlobalPacketType gpacket;
+					GlobalPacketType gpacket = {};
 					memset(&gpacket, 0, sizeof(gpacket));
 
 					gpacket.Command = NET_MESSAGE;

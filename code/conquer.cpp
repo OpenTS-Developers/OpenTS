@@ -96,6 +96,7 @@
 #include "msgloop.h"
 #include "netdlg.h"
 #include "netdlg2.h"
+#include "netglobal.h"
 #include "netshare.h"
 #include "progress.h"
 #include "queue.h"
@@ -523,6 +524,54 @@ bool MapGen_Call_Back(void)
 }
 
 
+static NetGlobalRejectionCounters GlobalPacketRejections;
+
+
+/// <summary>Records a rejected global packet.</summary>
+static void Record_Global_Packet_Rejection(NetGlobalDecodeError error)
+{
+	NetGlobalRejectionRecord const record = GlobalPacketRejections.Record(error);
+	if (record.ShouldLog) {
+		DebugString("In-game global packet drop [%s]: %u\n", Net_Global_Error_Name(error), record.Count);
+	}
+}
+
+
+/// <summary>Resolves a registered packet source.</summary>
+static NodeNameType * Session_Member_From_Address(IPXAddressClass & address, int & player_index)
+{
+	player_index = -1;
+	for (int index = 0; index < Session.Players.Count(); index++) {
+		NodeNameType * player = Session.Players[index];
+		if (player != NULL && player->Address == address) {
+			player_index = index;
+			return(player);
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>Builds the membership facts used to validate a global packet.</summary>
+static NetGlobalValidationContext Global_Validation_Context(NodeNameType const * sender)
+{
+	NetGlobalValidationContext context;
+	for (int index = 0; index < Session.Players.Count(); index++) {
+		NodeNameType const * player = Session.Players[index];
+		if (player != NULL && player->Player.ID >= 0 && player->Player.ID < static_cast<int>(context.ActivePlayers.size())) {
+			context.ActivePlayers[player->Player.ID] = true;
+		}
+	}
+
+	if (sender != NULL) {
+		context.SenderIsMember = true;
+		context.SenderPlayerID = sender->Player.ID;
+		context.SenderPlayerColor = sender->Player.Color;
+	}
+	return(context);
+}
+
+
 /// <summary>
 /// Handles the network maintenance for a network game.
 /// This routine services the network connection and deals with the global packets that
@@ -540,113 +589,68 @@ void IPX_Call_Back(void)
 	**	messages from the connection dialogs.
 	*/
 	if (!Session.NetOpen) {
-		while (Ipx.Get_Global_Message (&Session.GPacket, &Session.GPacketlen, &Session.GAddress, &Session.GProductID)) {
+		while (Ipx.Get_Global_Message (&Session.GPacket, sizeof(Session.GPacket), &Session.GPacketlen, &Session.GAddress, &Session.GProductID)) {
 
 			if (Session.GProductID == IPXGlobalConnClass::COMMAND_AND_CONQUER2) {
+				int sender_index = -1;
+				NodeNameType * sender = Session_Member_From_Address(Session.GAddress, sender_index);
+				NetGlobalValidationContext const context = Global_Validation_Context(sender);
+				NetGlobalDecodeError error = Validate_In_Game_Global(Session.GPacket, Session.GPacketlen, context);
 
-				switch (Session.GPacket.Command)
-				{
+				if (error != NetGlobalDecodeError::NONE) {
+					Record_Global_Packet_Rejection(error);
+				} else {
+					switch (Session.GPacket.Command) {
+						case NET_QUERY_GAME:
+						case NET_QUERY_PLAYER:
+							Process_Global_Packet(&Session.GPacket, &Session.GAddress);
+							break;
 
-					case NET_PROPOSE_KICK:
-					{
-						Kick_Packet_Received(Session.GPacket, Session.GAddress);
-						break;
-					}
-
-					/*
-					**	If this is another player signing off, remove the connection &
-					**	mark that player's house as non-human, so the computer will take
-					**	it over.
-					*/
-					case NET_SIGN_OFF:
-					{
-						for (int i = 0; i < Ipx.Num_Connections(); i++) {
-
-							int id = Ipx.Connection_ID(i);
-
-							if (Session.GAddress == (*Ipx.Connection_Address(id))) {
-								Destroy_Connection(id, 0);
+						case NET_PROPOSE_KICK:
+							error = Kick_Packet_Received(sender->Player.ID, static_cast<int>(Session.GPacket.Kick.KickeeID));
+							if (error != NetGlobalDecodeError::NONE) {
+								Record_Global_Packet_Rejection(error);
 							}
-						}
-						break;
-					}
+							break;
 
-					/*
-					**	Process a message from another user.
-					*/
-					case NET_MESSAGE:
-					{
-						bool msg_ok = false;
-
-						/*
-						**	If NetProtect is set, make sure this message came from within
-						**	this game.
-						*/
-						if (!Session.NetProtect) {
-							msg_ok = true;
-						} else {
-							if (Session.GPacket.Message.NameCRC ==
-								Compute_Name_CRC(Session.GameName)) {
-								msg_ok = true;
-							} else {
-								msg_ok = false;
+						case NET_SIGN_OFF: {
+							int const connection = Ipx.Connection_Index(sender->Player.ID);
+							if (connection >= 0) {
+								Forget_Kick_Player(sender->Player.ID);
+								Destroy_Connection(sender->Player.ID, 0);
 							}
+							break;
 						}
 
-						if (msg_ok) {
-							if (!Session.Messages.Concat_Message(Session.GPacket.Name,
-								Session.GPacket.Message.Color,
-								Session.GPacket.Message.Buf, int(Rule->MessageDelay * TICKS_PER_MINUTE))) {
-								Session.Messages.Add_Message (Session.GPacket.Name,
-									Session.GPacket.Message.Color,
-									Session.GPacket.Message.Buf,
-									Session.Color_Index_To_Scheme(Session.GPacket.Message.Color),
-									(TextPrintType)(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW),
-									int(Rule->MessageDelay * TICKS_PER_MINUTE));
+						case NET_MESSAGE:
+							if (!Session.NetProtect || Session.GPacket.Message.NameCRC == Compute_Name_CRC(Session.GameName)) {
+								int const color = sender->Player.Color;
+								if (!Session.Messages.Concat_Message(sender->Name, color, Session.GPacket.Message.Buf, int(Rule->MessageDelay * TICKS_PER_MINUTE))) {
+									Session.Messages.Add_Message(sender->Name, color,
+										Session.GPacket.Message.Buf,
+										Session.Color_Index_To_Scheme(color),
+										(TextPrintType)(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW),
+										int(Rule->MessageDelay * TICKS_PER_MINUTE));
 
-								Sound_Effect(Rule->IncomingMessage);
+									Sound_Effect(Rule->IncomingMessage);
+								}
+
+								Map.Flag_To_Redraw(GS_REDRAW_ALL);
+								strcpy(Session.LastMessage, Session.GPacket.Message.Buf);
 							}
+							break;
 
-							/*
-							**	Tell the map to do a partial update (just to force the messages
-							**	to redraw).
-							*/
-							Map.Flag_To_Redraw(GS_REDRAW_ALL);
+						case NET_PROGRESS_REPORT:
+							DebugString("Received progress message - %d%% from %s\n", Session.GPacket.Progress.Percent, sender->Name);
+							Progress.Set_Progress_Percent(sender_index, Session.GPacket.Progress.Percent);
+							break;
 
-							/*
-							**	Save this message in our last-message buffer
-							*/
-							strcpy(Session.LastMessage, Session.GPacket.Message.Buf);
-						}
-						break;
-					}
+						case NET_READY_TO_GO:
+							break;
 
-					case NET_PROGRESS_REPORT:
-					{
-						for (int i = 0; i < Session.Players.Count(); i++) {
-							if (Session.Players[i]->Address == Session.GAddress) {
-								DebugString("Received progress message - %d%% from %s\n", Session.GPacket.Progress.Percent, Session.Players[i]->Name);
-								Progress.Set_Progress_Percent(i, Session.GPacket.Progress.Percent);
-								break;
-							}
-						}
-						break;
-					}
-
-					case NET_REQ_SCENARIO:
-					{
-						break;
-					}
-
-					case NET_READY_TO_GO:
-					{
-						break;
-					}
-
-					default:
-					{
-						Process_Global_Packet(&Session.GPacket, &Session.GAddress);
-						break;
+						default:
+							Record_Global_Packet_Rejection(NetGlobalDecodeError::INVALID_COMMAND);
+							break;
 					}
 				}
 			}

@@ -141,6 +141,15 @@ int IPXGlobalConnClass::Send_Packet (void * buf, int buflen,
 {
 	IPXAddressClass dest_addr;
 
+	if (buf == NULL || buflen <= 0) {
+		Record_Packet_Drop(CONNECTION_DROP_EMPTY_DATA);
+		return(0);
+	}
+	if (buflen > MaxPacketLen - (int)sizeof(GlobalHeaderType)) {
+		Record_Packet_Drop(CONNECTION_DROP_OVERSIZED_DATA);
+		return(0);
+	}
+
 	/*------------------------------------------------------------------------
 	Store the packet's Magic Number
 	------------------------------------------------------------------------*/
@@ -212,25 +221,37 @@ int IPXGlobalConnClass::Send_Packet (void * buf, int buflen,
 int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 	IPXAddressClass *address)
 {
-	GlobalHeaderType *packet;       // ptr to this packet
 	SendQueueType *send_entry;      // ptr to send entry header
-	GlobalHeaderType *entry_data;   // ptr to queue entry data
 	GlobalHeaderType ackpacket;     // ACK packet to send
 	int i;
 	int resend;
 
+	if (address == NULL) {
+		Record_Packet_Drop(CONNECTION_DROP_SHORT_HEADER);
+		return(1);
+	}
+
+	std::span<std::byte const> packet_bytes;
+	if (buf != NULL && buflen > 0) {
+		packet_bytes = {static_cast<std::byte const *>(buf), static_cast<std::size_t>(buflen)};
+	}
+	NetConnectionAdmission const packet = Admit_Connection_Packet(packet_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
+	if (!packet.Succeeded()) {
+		Record_Admission_Drop(packet.Error, packet.Code);
+		return(1);
+	}
+
 	/*------------------------------------------------------------------------
 	Check the magic #
 	------------------------------------------------------------------------*/
-	packet = (GlobalHeaderType *)buf;
-	if (packet->Header.MagicNumber!=MagicNum) {
+	if (packet.Magic != MagicNum) {
 		return(0);
 	}
 
 	/*------------------------------------------------------------------------
 	Process the packet based on its Code
 	------------------------------------------------------------------------*/
-	switch (packet->Header.Code) {
+	switch (packet.Code) {
 		//.....................................................................
 		// DATA_ACK: Check for a resend by comparing the source address &
 		// ID of this packet with our last 4 received packets.
@@ -248,7 +269,7 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 					break;
 				}
 				if ((*address)==LastAddress[i] &&
-					packet->Header.PacketID==LastPacketID[i]) {
+					packet.PacketID == LastPacketID[i]) {
 					resend = 1;
 					break;
 				}
@@ -263,7 +284,7 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 			if (!resend) {
 				if (Queue->Queue_Receive (buf, buflen, address, sizeof(IPXAddressClass))) {
 					LastAddress[LastRXIndex] = (*address);
-					LastPacketID[LastRXIndex] = packet->Header.PacketID;
+					LastPacketID[LastRXIndex] = packet.PacketID;
 					LastRXIndex++;
 					if (LastRXIndex >= MaxRXIndex) {
 						LastRXIndex = 0;
@@ -284,7 +305,7 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 			if (send_ack) {
 				ackpacket.Header.MagicNumber = MagicNum;
 				ackpacket.Header.Code = PACKET_ACK;
-				ackpacket.Header.PacketID = packet->Header.PacketID;
+				ackpacket.Header.PacketID = packet.PacketID;
 				ackpacket.ProductID = ProductID;
 				if (!Send ((char *)&ackpacket, sizeof(GlobalHeaderType),
 					address, sizeof(IPXAddressClass))) {
@@ -320,13 +341,19 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 				/*...............................................................
 				If ptr is valid, get ptr to its data
 				...............................................................*/
-				entry_data = (GlobalHeaderType *)(send_entry->Buffer);
+				if (send_entry == NULL) {
+					continue;
+				}
+				std::span<std::byte const> entry_bytes;
+				if (send_entry->Buffer != NULL && send_entry->BufLen > 0) {
+					entry_bytes = {reinterpret_cast<std::byte const *>(send_entry->Buffer), static_cast<std::size_t>(send_entry->BufLen)};
+				}
+				NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 				/*...............................................................
 				If ACK is for this entry, mark it
 				...............................................................*/
-				if (packet->Header.PacketID==entry_data->Header.PacketID &&
-					entry_data->Header.Code == PACKET_DATA_ACK) {
+				if (entry.Succeeded() && packet.PacketID == entry.PacketID && entry.Code == PACKET_DATA_ACK) {
 					send_entry->IsACK = 1;
 					break;
 				}
@@ -350,6 +377,7 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
  *                                                                         *
  * INPUT:                                                                  *
  *      buf         location to store buffer                               *
+ *      capacity    maximum bytes the caller's buffer can store            *
  *      buflen      filled in with length of 'buf'                         *
  *      address      filled in with sender's address                       *
  *      product_id   filled in with sender's ProductID                     *
@@ -363,12 +391,17 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
  * HISTORY:                                                                *
  *   12/20/1994 BR : Created.                                              *
  *=========================================================================*/
-int IPXGlobalConnClass::Get_Packet (void * buf, int *buflen,
+int IPXGlobalConnClass::Get_Packet (void * buf, int capacity, int *buflen,
 	IPXAddressClass *address, unsigned short *product_id)
 {
 	ReceiveQueueType *rec_entry;					// ptr to receive entry header
-	GlobalHeaderType *packet;
-	int packetlen;										// size of received packet
+
+	if (buflen != NULL) {
+		(*buflen) = 0;
+	}
+	if (buf == NULL || buflen == NULL || address == NULL || product_id == NULL || capacity <= 0) {
+		return(0);
+	}
 
 	/*------------------------------------------------------------------------
 	Return if nothing to do
@@ -386,6 +419,21 @@ int IPXGlobalConnClass::Get_Packet (void * buf, int *buflen,
 	Read it if it's un-read
 	------------------------------------------------------------------------*/
 	if (rec_entry!=NULL && rec_entry->IsRead==0) {
+		std::span<std::byte const> entry_bytes;
+		if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
+			entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
+		}
+		NetConnectionAdmission const admission = Admit_Connection_Packet(entry_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
+		if (!admission.Succeeded()) {
+			rec_entry->IsRead = 1;
+			Record_Admission_Drop(admission.Error, admission.Code);
+			return(0);
+		}
+		if (admission.Code == PACKET_ACK) {
+			rec_entry->IsRead = 1;
+			Record_Packet_Drop(CONNECTION_DROP_INVALID_CODE);
+			return(0);
+		}
 
 		/*.....................................................................
 		Mark as read
@@ -395,14 +443,15 @@ int IPXGlobalConnClass::Get_Packet (void * buf, int *buflen,
 		/*.....................................................................
 		Copy data packet
 		.....................................................................*/
-		packet = (GlobalHeaderType *)(rec_entry->Buffer);
-		packetlen = rec_entry->BufLen - sizeof(GlobalHeaderType);
-		if (packetlen > 0) {
-			memcpy(buf, rec_entry->Buffer + sizeof(GlobalHeaderType), packetlen);
+		NetAdmissionError const destination = Validate_Network_Destination(admission.Payload, static_cast<std::size_t>(capacity));
+		if (destination != NetAdmissionError::NONE) {
+			Record_Admission_Drop(destination, admission.Code);
+			return(0);
 		}
-		(*buflen) = packetlen;
-		(*product_id) = packet->ProductID;
-		(*address) = (*((IPXAddressClass *)(rec_entry->ExtraBuffer)));
+		memcpy(buf, admission.Payload.data(), admission.Payload.size());
+		(*buflen) = static_cast<int>(admission.Payload.size());
+		memcpy(product_id, entry_bytes.data() + offsetof(GlobalHeaderType, ProductID), sizeof(*product_id));
+		memcpy(address, rec_entry->ExtraBuffer, sizeof(*address));
 
 		return(1);
 	}
@@ -566,9 +615,9 @@ int IPXGlobalConnClass::Receive_Packet(void * buf, int buflen)
 /// </summary>
 /// <param name="buflen">Pointer to the value to fill in with the length of the packet.</param>
 /// <returns>Returns with non-zero if a packet was pulled off the queue.</returns>
-int IPXGlobalConnClass::Get_Packet(void * buf, int * buflen)
+int IPXGlobalConnClass::Get_Packet(void * buf, int capacity, int * buflen)
 {
-	return(ConnectionClass::Get_Packet(buf, buflen));
+	return(ConnectionClass::Get_Packet(buf, capacity, buflen));
 }
 
 

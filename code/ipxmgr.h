@@ -198,12 +198,12 @@ class IPXManagerClass : public ConnManClass
 		.....................................................................*/
 		int Send_Global_Message (void *buf, int buflen, int ack_req = 0,
 			IPXAddressClass *address = NULL);
-		int Get_Global_Message (void *buf, int *buflen, IPXAddressClass *address,
+		int Get_Global_Message (void *buf, int capacity, int *buflen, IPXAddressClass *address,
 			unsigned short *product_id);
 
 		virtual int Send_Private_Message (void *buf, int buflen,
 			int ack_req = 1, int conn_id = CONNECTION_NONE) override;
-		virtual int Get_Private_Message (void *buf, int *buflen, int *conn_id) override;
+		virtual int Get_Private_Message (void *buf, int capacity, int *buflen, int *conn_id) override;
 
 		/*.....................................................................
 		The main polling routine; should be called as often as possible.
@@ -214,6 +214,7 @@ class IPXManagerClass : public ConnManClass
 		This routine reports which connection has an error on it.
 		.....................................................................*/
 		int Get_Bad_Connection(void);
+		int Receive_Discards(void) const { return(ReceiveDiscards); }
 
 		/*.....................................................................
 		Queue utility routines.  The application can determine how many
@@ -304,6 +305,7 @@ class IPXManagerClass : public ConnManClass
 		.....................................................................*/
 		int SendOverflows;
 		int ReceiveOverflows;
+		int ReceiveDiscards;
 		int BadConnection;
 };
 

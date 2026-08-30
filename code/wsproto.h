@@ -87,6 +87,15 @@ enum ProtocolEnum {
 class WinsockInterfaceClass {
 
 	public:
+		enum PacketDropReasonType {
+			WS_DROP_RECEIVE_TOO_SHORT,
+			WS_DROP_RECEIVE_TOO_LARGE,
+			WS_DROP_BAD_CRC,
+			WS_DROP_READ_BUFFER_TOO_SMALL,
+			WS_DROP_SEND_LENGTH,
+			WS_DROP_SEND_ADDRESS,
+			WS_DROP_COUNT
+		};
 
 		WinsockInterfaceClass(void);
 		virtual ~WinsockInterfaceClass(void);
@@ -149,6 +158,7 @@ class WinsockInterfaceClass {
 		};
 
 		inline ConnectStatusEnum Get_Connection_Status(void) {return(ConnectStatus);}
+		unsigned int Dropped_Packets(PacketDropReasonType reason) const;
 
 	protected:
 
@@ -177,6 +187,8 @@ class WinsockInterfaceClass {
 		*/
 		virtual void Build_Packet_CRC(WinsockBufferType *packet);
 		virtual bool Passes_CRC_Check(WinsockBufferType *packet);
+		unsigned int Calculate_Packet_CRC(void const *buffer, int buffer_len) const;
+		void Record_Packet_Drop(PacketDropReasonType reason);
 
 		/*
 		**	Array of buffers to temporarily store incoming and outgoing packets.
@@ -226,4 +238,5 @@ class WinsockInterfaceClass {
 		**	Current connection status.
 		*/
 		ConnectStatusEnum	ConnectStatus;
+		unsigned int		PacketDrops[WS_DROP_COUNT];
 };

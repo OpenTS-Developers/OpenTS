@@ -50,9 +50,11 @@ void Add_CRC(unsigned int *crc, unsigned int val);
 
 void Wait_For_End_Of_Queue(void);
 
-class IPXAddressClass;
-struct GlobalPacketType;
-void Kick_Packet_Received(GlobalPacketType & packet, IPXAddressClass & address);
+enum class NetGlobalDecodeError;
+
+NetGlobalDecodeError Kick_Packet_Received(int kicker, int kickee);
+
+void Forget_Kick_Player(int player);
 
 extern BasicTimerClass<SystemTimerClass> SentFrameSyncTimer;
 extern int SentFrameSyncCount;
