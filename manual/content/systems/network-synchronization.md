@@ -14,87 +14,52 @@ available for delivery and the delay before a player's command takes effect.
 ## Packet admission
 
 Every synchronized-event packet passes through bounded transport, connection,
-and event decoders before it can change the simulation. Its envelope is the
-leading `FRAMEINFO` or sole `FRAMESYNC` record that carries the sender and frame
-information for the packet. The receiver checks that envelope, the declared
-event sizes, the complete event stream, and the player identity of the
-connection that delivered it. A malformed, truncated, oversized, or
-misattributed packet is discarded as one packet; no events from it enter the
-simulation queue.
+and event decoders. Its envelope is the leading `FRAMEINFO` or sole
+`FRAMESYNC`, which carries sender and frame information. The whole event stream
+must validate before anything enters the simulation queue.
 
-The connection identity becomes the origin of every compressed event in that
-packet. Object commands for power, archive targets, repair, primary factories,
-missions, idle, deployment, scattering, and selling also require the resolved
-object to belong to that origin when the event executes. A missing or destroyed
-object remains a no-op; an object captured before execution is rejected.
+Compressed events inherit the delivering connection's identity. Power,
+archive-target, repair, primary-factory, mission, idle, deploy, scatter, and
+sell events also require their object to still belong to that sender. Missing
+or destroyed objects remain no-ops; captured objects are rejected.
 
-Only the resolved session master may change timing. The master may remove any
-other player. When the master is the player being removed, the first remaining
-network-human house in house order becomes the removal authority. Every
-machine recomputes that rule when the removal event executes, and a repeated
-removal has no further effect.
+Network timing is master-only. The master removes other players; the first
+remaining network-human house in house order removes a departing master. Each
+machine recomputes that authority when the event executes.
 
-Public game and player discovery still accepts queries from outside the
-session. Once a match is running, chat, loading progress, sign-off, ready, and
-kick-control packets require one unique player-list endpoint. Resolution first
-looks for an exact IP address and port. If none exists, it accepts one same-IP
-entry whose stored port is zero; duplicate exact or fallback matches are
-rejected. The recorded player identity, rather than the name or voter claimed
-by the packet, owns that action.
-
-The packet checksum detects damaged bytes. It is not authentication or
-encryption. Global sender resolution does not pin or update the matched roster
-address, and a network game still assumes that its players and the path carrying
-their traffic are trusted.
+Public discovery remains public. In-game chat, progress, sign-off, ready, and
+kick controls require one unique roster endpoint: an exact IP/port match, or
+one same-IP entry whose stored port is zero. Roster identity supplies chat and
+kick attribution. Checksums and endpoint matching detect damage and attribute
+traffic, but do not authenticate participants or pin addresses.
 
 ## Link measurement and retransmission
 
-Each connection measures its own round-trip time. An acknowledgement measures
-the link only when its packet was transmitted once, because an acknowledgement
-after a retry cannot identify which transmission it answers. Lost packets use
-progressively longer retry intervals, while a healthy connection keeps the
-interval derived from its own measurements instead of inheriting the slowest
-other link in the match.
+Each connection estimates its own round trip. Only first-transmission
+acknowledgements contribute samples; retries use exponential backoff. One slow
+link therefore does not set every connection's retry interval.
 
 ## Match timing
 
-Every player periodically reports two bounded measurements as one record: the
-processing time of its simulation frames and an optional worst round-trip time
-among its active connections. The deterministic session master combines fresh
-reports, chooses one timing rung, and sends the resulting frame rate, send
-period, and look-ahead as a synchronized event. Reports from other players can
-influence that decision, but a timing event sent by any of them is ignored.
+Every player reports process time and optional worst-local RTT as one record.
+Reports expire after 512 frames. Missing initial RTT has that long to appear;
+missing or stale established RTT selects `10/250` immediately. Stale process
+data retains the last synchronized frame rate, and authorized removal clears
+the player's report.
 
-The match begins with commands sent every three frames and a nine-frame
-look-ahead; a guest accepts a compressed start only when the host advertises
-that same look-ahead. A worse measured path can move directly to a more
-conservative rung. Returning toward a more responsive rung requires sustained
-headroom and moves one rung at a time, so short spikes do not make the timing
-oscillate. A decrease waits until commands scheduled with the previous
-look-ahead have cleared that horizon. It activates on a frame aligned to both
-send periods, uses a temporary look-ahead that preserves the next command
-target, and then removes one new send period at each later send boundary until
-it reaches the requested value. A replacement target rebases the remaining
-transition.
+Compressed matches start at send rate 3 with nine frames of look-ahead. Worse
+conditions apply immediately. Improvement needs three evaluations with 20%
+headroom and a cooldown, moving one rung at a time. After eight changes, only
+conservative increases remain.
 
-A player without an initial round-trip sample receives a 512-frame grace
-period. A missing or expired sample after one was established is conservative
-immediately; a sample that never becomes available is conservative when that
-grace expires. Process time expires with the same report, and incomplete
-process data retains the last synchronized frame rate. Timing membership begins
-from the seated roster. An authorized removal clears the departing player's
-whole report, allowing the remaining links to determine later decisions.
+A reduction activates after the old horizon drains, on a frame aligned to both
+send periods. It switches to the new rate with temporary look-ahead, then drops
+one new send period at each boundary. Replacement targets rebase this process.
+A successor master inherits the target and change count, then clears
+improvement evidence and starts a cooldown.
 
-If the master leaves, its successor inherits the authoritative timing target
-and the saturated eight-change budget. The successor discards prior improvement
-evidence and begins with a cooldown instead of restarting from the initial
-timing state. Once that budget is exhausted, later measurements can still make
-timing more conservative but cannot reduce its rung or look-ahead.
-
-The latency-margin setting keeps its existing four steps. They apply one,
-one-and-a-half, two, or three times the measured round trip before a rung is
-chosen. The game-speed setting also keeps its existing frame-rate mapping,
-including speed zero as 60 frames per second.
+Latency margin remains 1×, 1.5×, 2×, or 3× RTT. Game speed keeps its existing
+mapping, including speed zero as 60 FPS.
 
 ## Compatibility
 
