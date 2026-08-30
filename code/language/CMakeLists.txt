@@ -5,6 +5,7 @@ file(GLOB_RECURSE LANG_SRC CONFIGURE_DEPENDS
 
 add_library(Language SHARED ${LANG_SRC})
 target_compile_features(Language PRIVATE cxx_std_20)
+target_compile_definitions(Language PRIVATE NOMINMAX)
 
 # The version resource is stamped from the generated headers, which the resource compiler
 # reaches through the target's include paths.

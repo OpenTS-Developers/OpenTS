@@ -30,6 +30,7 @@ target_compile_definitions(VQALib PRIVATE
     WIN32
     _WINDOWS
     _MBCS
+    NOMINMAX
 )
 
 # Callers reach the vqaplay.h family through the library, while the player itself reaches

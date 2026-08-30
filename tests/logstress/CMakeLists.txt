@@ -15,7 +15,7 @@ target_include_directories(LogStress PRIVATE
 
 add_dependencies(LogStress OpenTSBuildStamp)
 
-target_compile_definitions(LogStress PRIVATE WIN32 _WINDOWS _MBCS)
+target_compile_definitions(LogStress PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(LogStress PRIVATE
     $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>

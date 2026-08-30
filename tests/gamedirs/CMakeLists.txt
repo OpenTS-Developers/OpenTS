@@ -36,7 +36,7 @@ target_include_directories(GameDirs PRIVATE
 
 add_dependencies(GameDirs OpenTSBuildStamp)
 
-target_compile_definitions(GameDirs PRIVATE WIN32 _WINDOWS _MBCS)
+target_compile_definitions(GameDirs PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(GameDirs PRIVATE
     $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>
