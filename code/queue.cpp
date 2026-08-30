@@ -1576,7 +1576,7 @@ static void Generate_Real_Timing_Event(void)
 		if (Session.PrecalcDesiredFrameRate > 0 && Session.PrecalcDesiredFrameRate <= 60 && NetTiming::Timing_Settings_Are_Valid(settings)) {
 			event.Type = EventClass::TIMING;
 			event.Data.Timing.DesiredFrameRate = Session.PrecalcDesiredFrameRate;
-			event.Data.Timing.MaxAhead = settings.MaxAhead + (Scen->Special.IsFogOfWar ? 10u : 0u);
+			event.Data.Timing.MaxAhead = settings.MaxAhead;
 			event.Data.Timing.FrameSendRate = settings.FrameSendRate;
 			OutList.push_back(event);
 		} else {
@@ -1606,7 +1606,7 @@ static void Generate_Real_Timing_Event(void)
 
 	event.Type = EventClass::TIMING;
 	event.Data.Timing.DesiredFrameRate = desired_frame_rate;
-	event.Data.Timing.MaxAhead = evaluation.Settings.MaxAhead + (Scen->Special.IsFogOfWar ? 10u : 0u);
+	event.Data.Timing.MaxAhead = evaluation.Settings.MaxAhead;
 	event.Data.Timing.FrameSendRate = evaluation.Settings.FrameSendRate;
 	OutList.push_back(event);
 }

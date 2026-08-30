@@ -322,16 +322,15 @@ namespace
 		Expect("guest timing authority is rejected", !Timing_Authority_Is_Valid(3, 2));
 		Expect("unresolved timing authority is rejected", !Timing_Authority_Is_Valid(2, -1));
 
-		std::optional<NetTiming::TimingSettings> settings =
-			Decode_Timing_Settings(60, 19, 3, 10);
-		Expect("fog-padded timing decodes", settings && *settings == NetTiming::TimingSettings{3, 9});
-		Expect("zero desired FPS is rejected", !Decode_Timing_Settings(0, 19, 3, 10));
-		Expect("desired FPS above 60 is rejected", !Decode_Timing_Settings(61, 19, 3, 10));
-		Expect("fog subtraction underflow is rejected", !Decode_Timing_Settings(60, 9, 3, 10));
-		Expect("zero send period is rejected", !Decode_Timing_Settings(60, 19, 0, 10));
-		Expect("unaligned horizon is rejected", !Decode_Timing_Settings(60, 20, 3, 10));
-		Expect("aligned 250-frame horizon is valid", Decode_Timing_Settings(60, 260, 10, 10).has_value());
-		Expect("horizon above 250 is rejected", !Decode_Timing_Settings(60, 261, 10, 10));
+		std::optional<NetTiming::TimingSettings> settings = Decode_Timing_Settings(60, 9, 3);
+		Expect("timing look-ahead decodes directly", settings && *settings == NetTiming::TimingSettings{3, 9});
+		Expect("zero desired FPS is rejected", !Decode_Timing_Settings(0, 9, 3));
+		Expect("desired FPS above 60 is rejected", !Decode_Timing_Settings(61, 9, 3));
+		Expect("zero send period is rejected", !Decode_Timing_Settings(60, 9, 0));
+		Expect("below-minimum horizon is rejected", !Decode_Timing_Settings(60, 2, 3));
+		Expect("unaligned horizon is rejected", !Decode_Timing_Settings(60, 10, 3));
+		Expect("aligned 250-frame horizon is valid", Decode_Timing_Settings(60, 250, 10).has_value());
+		Expect("horizon above 250 is rejected", !Decode_Timing_Settings(60, 251, 10));
 
 		Expect("bounded report is valid", Network_Report_Is_Valid(1000, 65534));
 		Expect("unavailable RTT sentinel is valid", Network_Report_Is_Valid(0, UINT16_MAX));

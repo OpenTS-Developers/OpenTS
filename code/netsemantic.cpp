@@ -9,9 +9,6 @@
 
 #include "netsemantic.h"
 
-#include <limits>
-
-
 namespace NetSemantic
 {
 	/// <summary>Checks a signed index against a collection size.</summary>
@@ -57,15 +54,13 @@ namespace NetSemantic
 
 
 	/// <summary>Validates and decodes settings carried by a timing event.</summary>
-	std::optional<NetTiming::TimingSettings> Decode_Timing_Settings(std::uint16_t desired_frame_rate, std::uint16_t wire_max_ahead,
-		std::uint8_t frame_send_rate, unsigned int fog_padding) noexcept
+	std::optional<NetTiming::TimingSettings> Decode_Timing_Settings(std::uint16_t desired_frame_rate, std::uint16_t max_ahead, std::uint8_t frame_send_rate) noexcept
 	{
-		if (desired_frame_rate == 0 || desired_frame_rate > 60 || fog_padding > std::numeric_limits<std::uint16_t>::max()
-			|| wire_max_ahead < fog_padding) {
+		if (desired_frame_rate == 0 || desired_frame_rate > 60) {
 			return(std::nullopt);
 		}
 
-		NetTiming::TimingSettings const settings{frame_send_rate, wire_max_ahead - fog_padding};
+		NetTiming::TimingSettings const settings{frame_send_rate, max_ahead};
 		return(NetTiming::Timing_Settings_Are_Valid(settings) ? std::optional<NetTiming::TimingSettings>(settings) : std::nullopt);
 	}
 

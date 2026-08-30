@@ -17,4 +17,5 @@ setting after a temporary slowdown clears.
 
 Timing reports extend the network and multiplayer-recording event stream. Run
 every player with the same OpenTS snapshot and play a recording with the
-snapshot that created it; there is no configuration to migrate.
+snapshot that created it. Timing events carry the selected look-ahead directly;
+fog of war no longer adds an offset. There is no configuration to migrate.

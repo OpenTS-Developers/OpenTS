@@ -1183,14 +1183,13 @@ void EventClass::Execute(void)
 				break;
 			}
 
-			unsigned int const fog_padding = Scen->Special.IsFogOfWar ? 10u : 0u;
-			if (Data.Timing.MaxAhead < fog_padding || Frame < 0) {
+			if (Frame < 0) {
 				Log_Event_Rejection(EventRejectReason::InvalidTimingArithmetic, Type, ID, Data.Timing.MaxAhead);
 				break;
 			}
 
 			std::optional<NetTiming::TimingSettings> const decoded_settings = NetSemantic::Decode_Timing_Settings(
-				Data.Timing.DesiredFrameRate, Data.Timing.MaxAhead, Data.Timing.FrameSendRate, fog_padding);
+				Data.Timing.DesiredFrameRate, Data.Timing.MaxAhead, Data.Timing.FrameSendRate);
 			if (!decoded_settings) {
 				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.Timing.MaxAhead);
 				break;

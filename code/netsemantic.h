@@ -30,8 +30,7 @@ namespace NetSemantic
 
 	bool Timing_Authority_Is_Valid(int sender, int master) noexcept;
 
-	std::optional<NetTiming::TimingSettings> Decode_Timing_Settings(std::uint16_t desired_frame_rate, std::uint16_t wire_max_ahead,
-		std::uint8_t frame_send_rate, unsigned int fog_padding) noexcept;
+	std::optional<NetTiming::TimingSettings> Decode_Timing_Settings(std::uint16_t desired_frame_rate, std::uint16_t max_ahead, std::uint8_t frame_send_rate) noexcept;
 
 	bool Network_Report_Is_Valid(std::uint16_t process_milliseconds, std::uint16_t round_trip_milliseconds) noexcept;
 }
