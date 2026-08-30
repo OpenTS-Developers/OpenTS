@@ -506,6 +506,49 @@ void Test_Without_A_User_Directory_Nothing_Moves(void)
 }
 
 
+/*
+ * Saved games are the one thing the game both writes and browses, so they keep to a folder of
+ * their own that is named outright rather than searched for.
+ */
+void Test_Saved_Games_Folder(void)
+{
+	Reset();
+	Init_Search_Folders();
+
+	Check(Saved_Game_Name("SAVE0001.SAV") == "Saved Games\\SAVE0001.SAV",
+		"a saved game is named inside the folder saved games are kept in");
+	Check(File_Exists(Root + "\\Saved Games"),
+		"asking for a saved game makes the folder to keep it in");
+
+	for (int index = 0; ; index++) {
+		char const * path = CDFileClass::Search_Path(index);
+		if (path == NULL) {
+			break;
+		}
+
+		Check(std::string(path).find("Saved Games") == std::string::npos,
+			"the folder saved games are kept in is not one of the searched folders");
+	}
+
+	Reset();
+	Set_User_Directory((Root + "\\User\\Saves").c_str());
+	Apply_Game_Directories();
+
+	std::string const expected = Root + "\\User\\Saves\\Saved Games";
+	Check(Saved_Game_Name("SAVE0002.SAV") == expected + "\\SAVE0002.SAV",
+		"a user directory takes the saved games with it");
+	Check(File_Exists(expected),
+		"the folder is made inside the user directory");
+
+	/*
+	 * A pattern is named the same way a file is, since the listing scans the one folder rather
+	 * than every folder the game reads from.
+	 */
+	Check(Saved_Game_Name("*.SAV") == expected + "\\*.SAV",
+		"a pattern is named in the same folder the saved games are");
+}
+
+
 bool Make_Root(void)
 {
 	char temp[MAX_PATH];
@@ -566,6 +609,7 @@ int main(void)
 	Test_A_Name_With_A_Directory_Is_Left_Alone();
 	Test_Placing_A_File_Is_Repeatable();
 	Test_Without_A_User_Directory_Nothing_Moves();
+	Test_Saved_Games_Folder();
 
 	Reset();
 	Remove_Root();

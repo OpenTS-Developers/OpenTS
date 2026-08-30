@@ -13,7 +13,7 @@ credit: [ZivDero]
 game writes, creates or deletes goes there — the settings file, hotkeys, saved
 games, the hall of fame, recordings, saved random maps, screenshots and the
 files a multiplayer game downloads — and the directory is created when it is not
-there yet.
+there yet. Saved games take a `Saved Games` folder of their own inside it.
 
 It is read from before anywhere else, so a player's own copy of a file is the one
 the game uses, whatever a deployment ships under the same name. Files a player

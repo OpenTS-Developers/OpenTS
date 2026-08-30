@@ -36,8 +36,20 @@ The `[Settings]` section says what kind of game to start.
 | `IsSinglePlayer` | Play a campaign mission rather than a match. |
 | `LoadSaveGame`, `SaveGameName` | Resume the named saved game. |
 
-A file asking for a saved game or a game against other machines is refused with the reason
-shown, and the game exits.
+A file asking for a game against other machines is refused with the reason shown, and the
+game exits.
+
+## Resuming a saved game
+
+`LoadSaveGame=yes` resumes the saved game `SaveGameName` names, and settles the question by
+itself: a saved game carries the kind of game it was, the options it was played under and
+the houses that played it, so nothing else in the file decides those. A client resuming a
+campaign writes little more than the name of the save.
+
+The name is a file inside the game's saved-games folder, and a name written with a path of
+its own is reduced to its last part. A save the folder does not hold, one made by another
+version of the game, and one made in a game against other machines each refuse the launch
+with the reason shown.
 
 ## A campaign mission
 
@@ -124,7 +136,7 @@ they exchange their orders is the game's own business, and no launch file change
 
 These keys are read but do not yet change anything, because the game has no such behavior
 to give them to: `Tournament`, `GameID`, `MapHash`, `BuildOffAlly`, the automatic-save
-keys, `QuickMatch`, `SkipScoreScreen`, `WriteStatistics`, `CoachMode`, `AutoSurrender`,
+scheduling keys, `QuickMatch`, `SkipScoreScreen`, `WriteStatistics`, `CoachMode`, `AutoSurrender`,
 `AttackNeutralUnits`, `ScrapMetal`, `ContinueWithoutHumans`, `PlayMoviesInMultiplayer`,
 `CustomLoadScreen`, `CustomLoadScreenPos`, and `DifficultyName`. The tunnel and timeout
 keys describe how machines reach one another, which a skirmish never needs.

@@ -357,6 +357,21 @@ int main(void)
 		four.GlobalFlags[49] = !four.GlobalFlags[49];
 		Check(one.Session_Identity_CRC() != four.Session_Identity_CRC(),
 			"a scenario flag moves the identity");
+
+		/*
+		 * A resume is a match of its own: the saved game decides everything the fields above
+		 * would otherwise have decided, so which save is being resumed is part of the identity.
+		 */
+		SpawnerConfigClass five = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		five.LoadSaveGame = !five.LoadSaveGame;
+		Check(one.Session_Identity_CRC() != five.Session_Identity_CRC(),
+			"resuming a save rather than starting one moves the identity");
+
+		SpawnerConfigClass six = Read(_Resume, sizeof(_Resume) - 1);
+		SpawnerConfigClass seven = Read(_Resume, sizeof(_Resume) - 1);
+		seven.SaveGameName = "SAVEGAME.002";
+		Check(six.Session_Identity_CRC() != seven.Session_Identity_CRC(),
+			"resuming another saved game moves the identity");
 	}
 
 	/*

@@ -358,6 +358,19 @@ LRESULT CALLBACK LoadOptionsClass::Delete_Dialog_Proc(HWND window, UINT message,
 }
 
 
+/// <summary>
+/// Is a saved game of this name already there?
+/// Asked before one is written, since a name the folder already holds is written over
+/// rather than added to.
+/// </summary>
+/// <param name="name">The name of the saved game to look for.</param>
+/// <returns>bool; Does the saved games folder already hold this name?</returns>
+static bool Saved_Game_Exists(char const * name)
+{
+	return(GetFileAttributes(Saved_Game_Name(name).c_str()) != INVALID_FILE_ATTRIBUTES);
+}
+
+
 /***********************************************************************************************
  * LoadOptionsClass::Process -- main processing routine                                        *
  *                                                                                             *
@@ -490,25 +503,17 @@ bool LoadOptionsClass::Dialog(void)
 							}
 
 							const char * filename = NULL;
+							char test_filename[256];
 
 							if (entry && entry->Valid) {
 								filename = entry->Filename;
 							} else {
-								char test_filename[256];
-
-								{ /// the scope is important to make it match - temp_file nedes to be destroyed before assigning the string
-									CCFileClass temp_file;
-									do {
-										sprintf(test_filename, "SAVE%04lX.%3s", rand(), Extension);
-										temp_file.Set_Name(test_filename);
-									} while (temp_file.Is_Available() == true);
-								}
-
+								Pick_Filename(test_filename);
 								filename = test_filename;
 							}
 
 							if (filename != NULL) {
-								bool exists = CDFileClass(filename).Is_Available() == true;
+								bool exists = Saved_Game_Exists(filename);
 								if (exists && WWMessageBox()._Process(TXT_CONFIRM_SAVE, 1, TXT_YES, TXT_NO, TXT_NONE))
 									State = STATE_PENDING;
 								else {
@@ -569,11 +574,9 @@ bool LoadOptionsClass::Dialog(void)
 /// <remarks>Be sure the buffer is big enough to hold a complete filename.</remarks>
 void LoadOptionsClass::Pick_Filename(char *name)
 {
-	CCFileClass file;
 	do {
 		sprintf(name, "SAVE%04lX.%3s", rand(), Extension);
-		file.Set_Name(name);
-	} while (file.Is_Available() == true);
+	} while (Saved_Game_Exists(name));
 }
 
 
@@ -603,25 +606,6 @@ void LoadOptionsClass::Clear_List(void)
 		delete Files[i];
 	}
 	Files.Clear();
-}
-
-
-/*
- * Recovers the directory entry for a saved game the scan turned up. The scan reports bare
- * names, so the file is located the way an open would locate it and then asked about by the
- * name it actually has. The entry names the file alone, without the directory it sits in.
- */
-static bool Find_Saved_Game(char const * name, WIN32_FIND_DATAA * entry)
-{
-	CDFileClass located(name);
-
-	HANDLE handle = FindFirstFile(located.File_Name(), entry);
-	if (handle == INVALID_HANDLE_VALUE) {
-		return(false);
-	}
-
-	FindClose(handle);
-	return(true);
 }
 
 
@@ -685,22 +669,28 @@ void LoadOptionsClass::Fill_List(HWND window)
 	*/
 	fdata = NULL;
 
-	for (std::string const & name : Search_Files(buffer)) {
-		if (!Find_Saved_Game(name.c_str(), &ff)) {
-			continue;
-		}
+	HANDLE hFind = FindFirstFile(Saved_Game_Name(buffer).c_str(), &ff);
 
-		if (fdata == NULL) {
-			fdata = new FileEntryClass;
-		}
+	if (hFind != INVALID_HANDLE_VALUE) {
+		do {
+			if ((ff.dwFileAttributes & (FILE_ATTRIBUTE_TEMPORARY|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)) != 0) {
+				continue;
+			}
 
-		/*
-		**	get the game's info; if success, add it to the list
-		*/
-		if (Read_File(fdata, &ff) == true) {
-			Files.Add(fdata);
-			fdata = NULL;
-		}
+			if (fdata == NULL) {
+				fdata = new FileEntryClass;
+			}
+
+			/*
+			**	get the game's info; if success, add it to the list
+			*/
+			if (Read_File(fdata, &ff) == true) {
+				Files.Add(fdata);
+				fdata = NULL;
+			}
+		} while (FindNextFile(hFind, &ff));
+
+		FindClose(hFind);
 	}
 
 	if (fdata != NULL) {
@@ -786,21 +776,26 @@ bool LoadOptionsClass::Files_Present(void)
 	sprintf(pattern, "*.%3s", Extension);
 
 	WIN32_FIND_DATAA find_data;
+	HANDLE hFind = FindFirstFile(Saved_Game_Name(pattern).c_str(), &find_data);
 
-	for (std::string const & name : Search_Files(pattern)) {
-		if (_stricmp(name.c_str(), NET_SAVE_FILE_NAME) == 0) {
-			continue;
-		}
+	if (hFind != INVALID_HANDLE_VALUE) {
+		do {
+			if ((find_data.dwFileAttributes & (FILE_ATTRIBUTE_TEMPORARY|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN)) != 0) {
+				continue;
+			}
 
-		if (!Find_Saved_Game(name.c_str(), &find_data)) {
-			continue;
-		}
+			if (_stricmp(find_data.cFileName, NET_SAVE_FILE_NAME) == 0) {
+				continue;
+			}
 
-		FileEntryClass entry;
-		if (Read_File(&entry, &find_data) == true) {
-			files_found = true;
-			break;
-		}
+			FileEntryClass entry;
+			if (Read_File(&entry, &find_data) == true) {
+				files_found = true;
+				break;
+			}
+		} while (FindNextFile(hFind, &find_data));
+
+		FindClose(hFind);
 	}
 
 	return(files_found);
@@ -883,7 +878,7 @@ bool LoadOptionsClass::Save_File(const char * file_name, const char * descr)
 /// <returns>bool; Was the file deleted?</returns>
 bool LoadOptionsClass::Delete_File(const char * file_name)
 {
-	if (DeleteFile(User_File_Write_Name(file_name).c_str()) == TRUE) {
+	if (DeleteFile(Saved_Game_Name(file_name).c_str()) == TRUE) {
 		return(true);
 	}
 	return(false);

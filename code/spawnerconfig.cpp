@@ -233,6 +233,8 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(CampaignID);
 	crc(CampaignDifficulty);
 	crc(CampaignCDifficulty);
+	crc(LoadSaveGame);
+	crc(SaveGameName.c_str());
 
 	crc(Bases);
 	crc(Credits);

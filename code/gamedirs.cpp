@@ -34,6 +34,11 @@ static char const * const DefaultSearchFolders = "INI,MIX,Maps";
 static char const * const ConfigName = "OPENTS.INI";
 
 /*
+ * The folder saved games are kept in, under whichever directory the player's own files go.
+ */
+static char const * const SavedGamesFolder = "Saved Games";
+
+/*
  * The folders the configuration itself is looked for in, relative to the data directory.
  */
 static char const * const ConfigProbes[] = {"", "INI\\", "MIX\\"};
@@ -311,6 +316,25 @@ std::string User_File_Write_Name(char const * filename)
 	}
 
 	return(UserDirectory + filename);
+}
+
+
+/// <summary>
+/// Names a saved game inside the folder they are kept in, which sits with the rest of the
+/// player's own files. Saved games are written, so the folder is deliberately not one of the
+/// searched ones: every save, load, listing and deletion names it. It is created the first
+/// time the game asks for a saved game, so a launcher browsing for them finds it whether or
+/// not one has been written yet.
+/// </summary>
+/// <param name="filename">The name of a saved game, or a pattern matching several.</param>
+/// <returns>The name to open, delete or scan for.</returns>
+std::string Saved_Game_Name(char const * filename)
+{
+	std::string const folder = UserDirectory + SavedGamesFolder;
+
+	CreateDirectory(folder.c_str(), NULL);
+
+	return(folder + '\\' + filename);
 }
 
 

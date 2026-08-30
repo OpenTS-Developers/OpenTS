@@ -317,3 +317,52 @@ test('A campaign spawn writes the game its own state and nothing more', () => {
 		'Scen->Set_Global_To(index, Environment.Globals[index]);',
 	], 'a spawned mission is named by the file and starts with the flags it carried');
 });
+
+test('A resume is judged before it is loaded, and the save answers for the rest', () => {
+	assertOrdered(functionBody(source('code/spawner.cpp'), 'static bool Spawner_Resume(bool & gameloaded)'), [
+		'SpawnConfig.SaveGameName.empty()',
+		'Get_Savefile_Info(SpawnConfig.SaveGameName.c_str(), &info)',
+		'info.Get_Internal_Version() != ExpectedGameVersion',
+		'type != GAME_NORMAL && type != GAME_SKIRMISH',
+		'LoadOptionsClass().Load_File(SpawnConfig.SaveGameName.c_str())',
+		'gameloaded = true;',
+	], 'a save is named, found, stamped and of a kind that can be resumed before it is read');
+
+	assertOrdered(functionBody(source('code/saveload.cpp'), 'bool Load_Game(const char *file_name)'), [
+		'Session.Type = (GameType)info.Get_Game_Type();',
+		'Post_Load_Game();',
+		'Session.CampaignDifficulty = Scen->Difficulty;',
+		'Session.CampaignCDifficulty = Scen->CDifficulty;',
+	], 'a load takes the kind of game and the campaign pair from the save');
+});
+
+test('Saved games are named in one folder rather than searched for', () => {
+	const gamedirs = source('code/gamedirs.cpp');
+
+	assertOrdered(functionBody(gamedirs, 'std::string Saved_Game_Name(char const * filename)'), [
+		'UserDirectory + SavedGamesFolder',
+		'CreateDirectory(folder.c_str(), NULL);',
+	], 'a saved game is named inside the user directory, and the folder is made on the way');
+
+	for (const [file, signature] of [
+		['code/saveload.cpp', 'static bool Save_Game(const char *file_name, char const * descr)'],
+		['code/saveload.cpp', 'bool Load_Game(const char *file_name)'],
+		['code/saveload.cpp', 'bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)'],
+		['code/loaddlg.cpp', 'void LoadOptionsClass::Fill_List(HWND window)'],
+		['code/loaddlg.cpp', 'bool LoadOptionsClass::Files_Present(void)'],
+		['code/loaddlg.cpp', 'bool LoadOptionsClass::Delete_File(const char * file_name)'],
+	]) {
+		assert.match(
+			functionBody(source(file), signature),
+			/Saved_Game_Name\(/,
+			`${signature} names the folder saved games are kept in`,
+		);
+	}
+
+	assert.doesNotMatch(
+		functionBody(source('code/loaddlg.cpp'), 'void LoadOptionsClass::Fill_List(HWND window)') +
+			functionBody(source('code/loaddlg.cpp'), 'bool LoadOptionsClass::Files_Present(void)'),
+		/Search_Files\(/,
+		'the listing no longer scans the folders the game reads from',
+	);
+});

@@ -25,8 +25,11 @@
 #include "houstype.h"
 #include "init.h"
 #include "language\language.h"
+#include "loaddlg.h"
 #include "mplayer.h"
 #include "msgbox.h"
+#include "saveload.h"
+#include "savever.h"
 #include "scenario.h"
 #include "session.h"
 
@@ -249,8 +252,8 @@ static void Spawner_Bind_Options(void)
 	 *   CustomLoadScreenY             - the loading backdrop belongs to the campaign path.
 	 *   DifficultyName                - shown, never played by.
 	 *   IsCampaign, LoadSaveGame,
-	 *   SaveGameName                  - read to decide what kind of launch this is, which is
-	 *                                   how the two this game cannot start are refused.
+	 *   SaveGameName                  - read to decide what kind of launch this is, and to
+	 *                                   name the saved game a resume restores.
 	 *   Slots[].IsSpectator           - read to refuse a launch.
 	 *
 	 * The timing keys a client writes are not read at all: the game keeps its own.
@@ -273,6 +276,47 @@ static void Spawner_Bind_Scenario(void)
 	Session.ScenarioFileLength = CCFileClass(Scen->ScenarioName).Size();
 	Session.ScenarioIsOfficial = false;
 	Session.ScenarioDigest[0] = '\0';
+}
+
+
+/// <summary>
+/// Resumes the saved game a launch file names. The save carries the kind of game, the options
+/// and the houses, so nothing else in the file is consulted, and the expansion comes back with
+/// the save rather than from the file.
+/// </summary>
+/// <param name="gameloaded">Set when the save loads, so the caller starts no scenario.</param>
+/// <returns>bool; Is the saved game running?</returns>
+static bool Spawner_Resume(bool & gameloaded)
+{
+	if (SpawnConfig.SaveGameName.empty()) {
+		return(Spawner_Refuse("The file asks to resume a saved game without naming one."));
+	}
+
+	SaveVersionInfo info;
+	if (!Get_Savefile_Info(SpawnConfig.SaveGameName.c_str(), &info)) {
+		return(Spawner_Refuse("The saved game %s is missing or unreadable.", SpawnConfig.SaveGameName.c_str()));
+	}
+
+	if (info.Get_Internal_Version() != ExpectedGameVersion) {
+		return(Spawner_Refuse("The saved game was made by another version of the game."));
+	}
+
+	/*
+	 * A save made against other machines restores the connections along with everything else,
+	 * and there are none to restore it into until the network is wired up.
+	 */
+	GameType type = (GameType)info.Get_Game_Type();
+	if (type != GAME_NORMAL && type != GAME_SKIRMISH) {
+		return(Spawner_Refuse("Resuming a game against other machines is not supported yet."));
+	}
+
+	if (!LoadOptionsClass().Load_File(SpawnConfig.SaveGameName.c_str())) {
+		return(Spawner_Refuse("The saved game %s could not be loaded.", SpawnConfig.SaveGameName.c_str()));
+	}
+
+	gameloaded = true;
+
+	return(true);
 }
 
 
@@ -373,8 +417,6 @@ bool Spawner_Is_Active(void)
 /// <returns>bool; Is a game ready to start?</returns>
 bool Spawner_Prepare(bool & gameloaded)
 {
-	(void)gameloaded;
-
 	if (SpawnConsumed) {
 		return(false);
 	}
@@ -402,7 +444,7 @@ bool Spawner_Prepare(bool & gameloaded)
 
 	switch (SpawnConfig.Launch_Type()) {
 		case SpawnerConfigClass::LaunchType::Resume:
-			return(Spawner_Refuse("Resuming a saved game from a launch file is not supported yet."));
+			return(Spawner_Resume(gameloaded));
 
 		case SpawnerConfigClass::LaunchType::Multiplayer:
 			return(Spawner_Refuse("Launching a game against other machines is not supported yet."));

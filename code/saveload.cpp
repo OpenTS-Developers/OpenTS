@@ -928,7 +928,7 @@ static bool Save_Game(const char *file_name, char const * descr)
 
 	DebugString("\nSAVING GAME [%s - %s]\n", file_name, descr);
 
-	MultiByteToWideChar(0,0, User_File_Write_Name(file_name).c_str(), -1, name, sizeof(name)/sizeof(WCHAR));
+	MultiByteToWideChar(0,0, Saved_Game_Name(file_name).c_str(), -1, name, sizeof(name)/sizeof(WCHAR));
 
 	/*
 	**	Open the file
@@ -1181,8 +1181,8 @@ bool Load_Game(const char *file_name)
 	*/
 	IStoragePtr storage;
 
-	// Structured storage goes straight to Windows, so the file layer locates the save first.
-	MultiByteToWideChar(0,0,CDFileClass(file_name).File_Name(), -1, name, (sizeof(name)/sizeof(WCHAR)));
+	// Structured storage goes straight to Windows, so the saved game is named in full first.
+	MultiByteToWideChar(0,0,Saved_Game_Name(file_name).c_str(), -1, name, (sizeof(name)/sizeof(WCHAR)));
 
 	if (FAILED(StgOpenStorage(name, 0, STGM_SHARE_DENY_WRITE, 0, 0, &storage))) {
 		return(false);
@@ -1216,6 +1216,10 @@ bool Load_Game(const char *file_name)
 	**	data loaded.
 	*/
 	Post_Load_Game();
+
+	// The next mission of a resumed campaign is played at the pair the save carries.
+	Session.CampaignDifficulty = Scen->Difficulty;
+	Session.CampaignCDifficulty = Scen->CDifficulty;
 
 	Map.Init_IO();
 	Map.Activate(1);
@@ -1328,8 +1332,8 @@ bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)
 	IStoragePtr storage;
 	WCHAR wname[MAX_PATH];
 
-	// Structured storage goes straight to Windows, so the file layer locates the save first.
-	MultiByteToWideChar(0, 0, CDFileClass(name).File_Name(), -1, wname, sizeof(wname) / sizeof(WCHAR));
+	// Structured storage goes straight to Windows, so the saved game is named in full first.
+	MultiByteToWideChar(0, 0, Saved_Game_Name(name).c_str(), -1, wname, sizeof(wname) / sizeof(WCHAR));
 
 	HRESULT result = StgOpenStorage(wname, NULL, STGM_SHARE_EXCLUSIVE|STGM_READWRITE, NULL, 0, &storage);
 	if (FAILED(result)) {
