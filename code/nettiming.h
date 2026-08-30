@@ -30,9 +30,13 @@ namespace NetTiming
 	constexpr unsigned int MAX_TIMING_PLAYERS = 8;
 	constexpr unsigned int MINIMUM_TIMING_RUNG = 1;
 	constexpr unsigned int MAXIMUM_TIMING_RUNG = 10;
-	constexpr unsigned int INITIAL_TIMING_RUNG = 3;
+	constexpr unsigned int INITIAL_TIMING_RUNG = 2;
+	constexpr unsigned int BOOTSTRAP_FALLBACK_RUNG = 3;
 	constexpr unsigned int MAXIMUM_MAX_AHEAD = 250;
 
+	constexpr std::uint32_t BOOTSTRAP_REPORT_INTERVAL = 32;
+	constexpr std::uint32_t BOOTSTRAP_FIRST_EVALUATION = 64;
+	constexpr std::uint32_t BOOTSTRAP_FINAL_EVALUATION = 128;
 	constexpr std::uint32_t REPORT_INTERVAL = 128;
 	constexpr std::uint32_t EVALUATION_INTERVAL = 256;
 	constexpr std::uint32_t CHANGE_COOLDOWN = 256;
@@ -72,8 +76,8 @@ namespace NetTiming
 		unsigned int prior_retransmissions, Milliseconds maximum_delay = MAXIMUM_RTO);
 
 	struct TimingSettings {
-		unsigned int FrameSendRate = 3;
-		unsigned int MaxAhead = 9;
+		unsigned int FrameSendRate = 2;
+		unsigned int MaxAhead = 6;
 
 		bool operator==(TimingSettings const &) const = default;
 	};
@@ -93,6 +97,8 @@ namespace NetTiming
 	std::optional<unsigned int> Align_Max_Ahead(unsigned int required, unsigned int frame_send_rate);
 	TimingSettings Select_Timing_Settings(Milliseconds worst_round_trip, unsigned int target_fps, LatencyFudge fudge, bool require_headroom = false);
 	unsigned int Select_Timing_Rung(Milliseconds worst_round_trip, unsigned int target_fps, LatencyFudge fudge, bool require_headroom = false);
+	bool Report_Is_Due(std::uint32_t elapsed_frames);
+	bool Evaluation_Is_Due(std::uint32_t elapsed_frames);
 
 	struct TimingCensus {
 		unsigned int ActivePlayers = 0;
@@ -141,7 +147,7 @@ namespace NetTiming
 	class BalancedTimingPolicy
 	{
 		public:
-			void Reset(void);
+			void Reset(std::uint32_t frame = 0);
 			void Reset_From(TimingSettings settings, unsigned int reversible_changes, std::uint32_t frame);
 			TimingEvaluation Evaluate(TimingCensus const & census, unsigned int target_fps, LatencyFudge fudge, std::uint32_t frame);
 
@@ -149,18 +155,23 @@ namespace NetTiming
 			TimingSettings Current_Settings(void) const {return(CurrentSettings);}
 			unsigned int Reversible_Changes(void) const {return(ReversibleChanges);}
 			unsigned int Good_Evaluations(void) const {return(GoodEvaluations);}
+			bool Is_Bootstrapping(void) const {return(Bootstrapping);}
+			std::uint32_t Cadence_Origin(void) const {return(BootstrapStartFrame);}
 
 		private:
 			void Change_To(TimingSettings settings, std::uint32_t frame);
+			void Finish_Bootstrap(void);
 
 			unsigned int CurrentRung = INITIAL_TIMING_RUNG;
-			TimingSettings CurrentSettings = {3, 9};
+			TimingSettings CurrentSettings = {2, 6};
 			unsigned int GoodEvaluations = 0;
 			unsigned int ReversibleChanges = 0;
+			std::uint32_t BootstrapStartFrame = 0;
 			std::uint32_t LastEvaluationFrame = 0;
 			std::uint32_t LastChangeFrame = 0;
 			bool HasEvaluated = false;
 			bool HasChanged = false;
+			bool Bootstrapping = true;
 	};
 
 	struct StagedTimingUpdate {

@@ -47,10 +47,13 @@ missing or stale established RTT selects `10/250` immediately. Stale process
 data retains the last synchronized frame rate, and authorized removal clears
 the player's report.
 
-Compressed matches start at send rate 3 with nine frames of look-ahead. Worse
-conditions apply immediately. Improvement needs three evaluations with 20%
-headroom and a cooldown, moving one rung at a time. After eight changes, only
-conservative increases remain.
+Compressed matches bootstrap with a two-frame send period and six-frame look-ahead.
+Players report 32 and 64 frames after a match starts or resumes, then every 128 frames. The master evaluates after 64 frames and, if calibration is incomplete,
+again after 128. The first complete census selects its target directly with 20% headroom; missing initial measurements at the second evaluation fall back to a
+three-frame period and nine-frame look-ahead.
+
+After bootstrap, the master evaluates every 256 frames. Worse conditions apply immediately. Improvement needs three evaluations with 20% headroom and a
+cooldown, moving one rung at a time. After eight changes, only conservative increases remain.
 
 A reduction activates after the old horizon drains, on a frame aligned to both
 send periods. It switches to the new rate with temporary look-ahead, then drops

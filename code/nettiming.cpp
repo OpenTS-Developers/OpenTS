@@ -263,6 +263,22 @@ namespace NetTiming
 	}
 
 
+	/// <summary>Uses two early reports before settling on the normal cadence.</summary>
+	bool Report_Is_Due(std::uint32_t elapsed_frames)
+	{
+		return(elapsed_frames > 0 && ((elapsed_frames <= BOOTSTRAP_FIRST_EVALUATION && elapsed_frames % BOOTSTRAP_REPORT_INTERVAL == 0)
+			|| elapsed_frames % REPORT_INTERVAL == 0));
+	}
+
+
+	/// <summary>Schedules two bootstrap evaluations and the steady-state cadence.</summary>
+	bool Evaluation_Is_Due(std::uint32_t elapsed_frames)
+	{
+		return(elapsed_frames == BOOTSTRAP_FIRST_EVALUATION || elapsed_frames == BOOTSTRAP_FINAL_EVALUATION
+			|| (elapsed_frames > 0 && elapsed_frames % EVALUATION_INTERVAL == 0));
+	}
+
+
 	/// <summary>Clears the active-player report census.</summary>
 	void TimingReportCensus::Reset(void)
 	{
@@ -361,16 +377,18 @@ namespace NetTiming
 
 
 	/// <summary>Restores the balanced policy's initial state.</summary>
-	void BalancedTimingPolicy::Reset(void)
+	void BalancedTimingPolicy::Reset(std::uint32_t frame)
 	{
 		CurrentRung = INITIAL_TIMING_RUNG;
 		CurrentSettings = Settings_For_Rung(INITIAL_TIMING_RUNG);
 		GoodEvaluations = 0;
 		ReversibleChanges = 0;
-		LastEvaluationFrame = 0;
+		BootstrapStartFrame = frame;
+		LastEvaluationFrame = frame;
 		LastChangeFrame = 0;
 		HasEvaluated = false;
 		HasChanged = false;
+		Bootstrapping = true;
 	}
 
 
@@ -385,6 +403,7 @@ namespace NetTiming
 		LastChangeFrame = frame;
 		HasEvaluated = true;
 		HasChanged = true;
+		Bootstrapping = false;
 	}
 
 
@@ -402,10 +421,44 @@ namespace NetTiming
 	}
 
 
+	/// <summary>Anchors steady-state evaluations to 256 frames after reset.</summary>
+	void BalancedTimingPolicy::Finish_Bootstrap(void)
+	{
+		Bootstrapping = false;
+		GoodEvaluations = 0;
+		LastEvaluationFrame = BootstrapStartFrame;
+		HasEvaluated = true;
+	}
+
+
 	/// <summary>Applies cadence, hysteresis, and the change budget.</summary>
 	TimingEvaluation BalancedTimingPolicy::Evaluate(TimingCensus const & census, unsigned int target_fps, LatencyFudge fudge, std::uint32_t frame)
 	{
 		TimingEvaluation result{Current_Settings(), CurrentRung, false, false};
+		if (Bootstrapping) {
+			std::uint32_t const elapsed_frames = frame - BootstrapStartFrame;
+			if (elapsed_frames < BOOTSTRAP_FIRST_EVALUATION || (HasEvaluated && elapsed_frames < BOOTSTRAP_FINAL_EVALUATION)) {
+				return(result);
+			}
+
+			HasEvaluated = true;
+			LastEvaluationFrame = frame;
+			result.Evaluated = true;
+			bool const complete = census.ProcessComplete && census.RoundTripComplete;
+			if (census.RequiresConservativeTiming || complete || elapsed_frames >= BOOTSTRAP_FINAL_EVALUATION) {
+				TimingSettings const selected = census.RequiresConservativeTiming ? Desired_Settings(census, target_fps, fudge, false)
+					: complete ? Desired_Settings(census, target_fps, fudge, true) : Settings_For_Rung(BOOTSTRAP_FALLBACK_RUNG);
+				if (selected != CurrentSettings) {
+					Change_To(selected, frame);
+					result.Changed = true;
+				}
+				Finish_Bootstrap();
+				result.Settings = Current_Settings();
+				result.Rung = CurrentRung;
+			}
+			return(result);
+		}
+
 		if (HasEvaluated && frame - LastEvaluationFrame < EVALUATION_INTERVAL) {
 			return(result);
 		}

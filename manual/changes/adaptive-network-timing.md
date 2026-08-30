@@ -10,11 +10,10 @@ credit:
 - ZivDero
 ---
 
-Each connection measures its own round trip and retry timing. Peers report
-process time and optional RTT together, letting the deterministic master adapt
-the shared command delay from the whole match. Compressed games start at a
-three-frame send period and nine-frame look-ahead; missing established reports
-select conservative timing.
+Each connection measures its own round trip and retry timing. Compressed games
+start with a two-frame send period and six-frame look-ahead, then calibrate early
+from the whole match. Complete data can select the measured target directly;
+missing initial measurements fall back to a three-frame period and nine-frame look-ahead.
 
 Reductions drain the old scheduling horizon and step down at aligned send
 boundaries. A successor master inherits the synchronized target and change

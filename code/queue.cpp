@@ -730,6 +730,8 @@ static void Queue_AI_Multiplayer(void)
 	// If we've just started a game, or loaded a multiplayer game, we must
 	// wait for all other systems to signal ready.
 	//------------------------------------------------------------------------
+	std::uint32_t const network_timing_frame = Frame > 0
+		? static_cast<std::uint32_t>(Frame) - Session.NetworkTimingPolicy.Cadence_Origin() : 0;
 	if (Frame==0 || Session.LoadGame) {
 		//.....................................................................
 		// Initialize static locals
@@ -827,16 +829,16 @@ static void Queue_AI_Multiplayer(void)
 	} 	// end of Frame 0 wait
 
 	//------------------------------------------------------------------------
-	// Adjust connection timing parameters every 128 frames.
+	// Report sooner during bootstrap, then continue at the normal cadence.
 	//------------------------------------------------------------------------
 
-	else if (Frame % NetTiming::REPORT_INTERVAL == 0) {
+	else if (Frame > 0 && NetTiming::Report_Is_Due(network_timing_frame)) {
 		Generate_Network_Report_Event(net);
 	}
 
-	// The deterministic master periodically evaluates the shared reports.
+	// The deterministic master evaluates bootstrap and steady-state reports.
 	int const timing_master = Session.Master_Player_ID();
-	if (PlayerPtr != NULL && PlayerPtr->HeapID == timing_master && Frame % NetTiming::EVALUATION_INTERVAL == 0) {
+	if (PlayerPtr != NULL && PlayerPtr->HeapID == timing_master && Frame > 0 && NetTiming::Evaluation_Is_Due(network_timing_frame)) {
 		Generate_Real_Timing_Event();
 	}
 
