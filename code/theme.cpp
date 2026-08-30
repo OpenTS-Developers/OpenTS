@@ -316,7 +316,12 @@ ThemeType ThemeClass::Next_Song(ThemeType theme) const
 {
 	int i;
 
-	if (theme > THEME_NONE && (!Themes[theme]->Repeat && !IsRepeat) || theme < THEME_FIRST) {
+	/*
+	 * A score that repeats is played again, but only while the game actually holds it. One
+	 * it does not would otherwise answer this forever, and nothing else would ever be picked.
+	 */
+	if ((unsigned)theme >= (unsigned)Themes.Count() || !Themes[theme]->Available ||
+		(!Themes[theme]->Repeat && !IsRepeat)) {
 		if (IsShuffle == true) {
 
 			/*
@@ -427,10 +432,23 @@ int ThemeClass::Play_Song(ThemeType theme)
 		Stop(false);
 		if (theme != THEME_NONE && theme != THEME_QUIET) {
 			if (theme > THEME_NONE && Volume > 0) {
-				Score = theme;
 				Audio.StreamLowImpact = true;
 				Current = Audio.File_Stream_Sample_Vol(Theme_File_Name(theme), Volume, true);
 				Audio.StreamLowImpact = false;
+
+				/*
+				 * A score that would not start is not the one playing. Recording it as the
+				 * current one silences the game for good: stopping a score that never
+				 * started does nothing, so the one that failed would stay current.
+				 */
+				if (Current == -1) {
+					DebugString("Theme::PlaySong(%d) - Unavailable\n", theme);
+					Score = THEME_NONE;
+					Pending = THEME_NONE;
+					return(Current);
+				}
+
+				Score = theme;
 				DebugString("Theme::PlaySong(%d) - %s\n", Score, IsRepeat == true || Themes[theme]->Repeat == true ? "Repeating" : "Playing");
 				if (IsRepeat == true || Themes[theme]->Repeat == true) {
 					Pending = theme;
