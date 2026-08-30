@@ -1,57 +1,20 @@
 name: Bug report
-description: Report a reproducible OpenTS source, build, or engine defect
+description: Report an OpenTS source, build, or engine defect
 title: "[Bug] "
 body:
-  - type: markdown
-    attributes:
-      value: |
-        Report the narrow result you observed and do not upload game assets or
-        original executables.
   - type: input
     id: revision
     attributes:
       label: OpenTS version
-      description: The version as the game displays it, or a commit SHA, branch, or other exact source identifier.
+      description: The version as the game displays it, or a commit SHA or branch.
       placeholder: 0.1.0 (ab12cd3)
     validations:
       required: true
-  - type: dropdown
-    id: area
-    attributes:
-      label: Area
-      options:
-        - Configure or build
-        - Engine behavior
-        - Data or mod compatibility
-        - Documentation
-        - Repository tooling
-    validations:
-      required: true
   - type: textarea
-    id: environment
+    id: what-happened
     attributes:
-      label: Environment and configuration
-      description: Operating system, tool versions, build configuration, content or mod setup, and other relevant context.
-    validations:
-      required: true
-  - type: textarea
-    id: observed
-    attributes:
-      label: Observed result
-      description: State exactly what happened and include relevant logs or screenshots.
-    validations:
-      required: true
-  - type: textarea
-    id: expected
-    attributes:
-      label: Expected result
-      description: State what should have happened and the evidence supporting that expectation.
-    validations:
-      required: true
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: Reproduction steps
+      label: What happened?
+      description: What you did, what happened, and what you expected instead. Include logs or screenshots, but never game assets or original executables.
       placeholder: |
         1. Start from...
         2. Run or configure...
@@ -59,16 +22,7 @@ body:
     validations:
       required: true
   - type: textarea
-    id: compatibility
+    id: environment
     attributes:
-      label: Compatibility context
-      description: Note affected data, mods, saves, replays, peers, ABI consumers, or a TibSun comparison when known.
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Submission checks
-      options:
-        - label: I searched existing issues for this problem.
-          required: true
-        - label: This report contains no credentials, personal data, game assets, original executables, or proprietary SDKs.
-          required: true
+      label: Environment
+      description: Operating system, build configuration, and any mods or custom content, when relevant.

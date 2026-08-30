@@ -118,7 +118,7 @@
 #include "rules.h"
 #include "saveload.h"
 #include "session.h"
-#include "wonline.h"
+#include "stats.h"
 #include "wsproto.h"
 
 #include <ctime>
@@ -147,8 +147,6 @@ static JoinEventType Get_Join_Responses(JoinStateType *joinstate,
 static int Net_New_Dialog(void);
 static JoinEventType Get_NewGame_Responses(ColorListClass *playerlist,
 	int *color_used);
-void Start_WWChat(ColorListClass *playerlist);
-int Update_WWChat(void);
 
 
 #define PCOLOR_BROWN	PCOLOR_GREY

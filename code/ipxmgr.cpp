@@ -222,16 +222,16 @@ void IPXManagerClass::Configure_LAN(unsigned short port)
 
 
 /// <summary>
-/// Sets the manager up to play over Westwood Online.
-/// The lobby hands us the address of every other player, so nothing has to be discovered
-/// here; the transport is left with its default port and no broadcasting.
+/// Sets the manager up to play against addresses a lobby outside the game supplied.
+/// Every other player is already known, so nothing has to be discovered here; the
+/// transport is left with its default port and no broadcasting.
 /// </summary>
-void IPXManagerClass::Configure_WOL()
+void IPXManagerClass::Configure_Direct()
 {
 	Shutdown();
 
 	PacketTransport = new UDPInterfaceClass;
-	TransportMode = TRANSPORT_WOL;
+	TransportMode = TRANSPORT_DIRECT;
 }
 
 

@@ -12,6 +12,7 @@
 #include "wdtnet.h"
 
 bool WDT_Setup_Game(bool first_time);
+bool Request_WDT_Cycle(void);
 WDTState * WDT_Get_New_State(void);
 void WDT_Start_New_Campaign(WDTState *state);
 WDTTerritory *WDT_Get_Territory(int index);

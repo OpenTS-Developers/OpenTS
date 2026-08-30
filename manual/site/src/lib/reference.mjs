@@ -38,7 +38,7 @@ export const OTHER_INI_FILES = [
 		sourceFiles: ['sun.ini'],
 		purpose: 'Local player options, display and audio preferences, and multiplayer connection settings.',
 		loadBehavior: 'The game reads and writes this per-install options file. Its settings use named sections.',
-		groupOrder: ['options', 'video', 'audio', 'network', 'wonline', 'multiplayer', 'serialdefaults', 'syncbug'],
+		groupOrder: ['options', 'video', 'audio', 'network', 'multiplayer', 'serialdefaults', 'syncbug'],
 	},
 	{
 		id: 'campaigns',

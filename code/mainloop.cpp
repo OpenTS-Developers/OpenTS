@@ -36,7 +36,6 @@
 #include "fog.h"
 #include "globals.h"
 #include "goptions.h"
-#include "internet.h"
 #include "ipxmgr.h"
 #include "language\language.h"
 #include "logic.h"
@@ -60,7 +59,6 @@
 #include "theme.h"
 #include "timer.h"
 #include "tracker.h"
-#include "wonline.h"
 
 #include "bench.hh"
 #include "special.hh"
@@ -366,9 +364,7 @@ bool Main_Loop(void)
 		**	Check for player wins or loses according to global event flag.
 		*/
 		if (PlayerWins) {
-			/*
-			**	Send the game statistics to WChat.
-			*/
+			// Build the game results.
 			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
 				if (WestwoodOnline_Tournament) {
 					Session.SawGameCompletion = true;
@@ -383,9 +379,7 @@ bool Main_Loop(void)
 			Do_Win();
 			done = true;
 		} else if (PlayerLoses) {
-			/*
-			**	Send the game statistics to WChat.
-			*/
+			// Build the game results.
 			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
 				if (WestwoodOnline_Tournament) {
 					Session.SawGameCompletion = true;

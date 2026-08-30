@@ -535,37 +535,6 @@ class SessionClass
 		DiffType CampaignCDifficulty;
 
 		/*
-		 * This is the name of the Westwood Online server the player would rather log on to,
-		 * remembered between runs. If NULL, then the service is left to pick one for him.
-		 */
-		char *PreferredServer;
-
-		/*
-		 * This is the part of the world the player chats from, as Westwood Online numbers
-		 * them. If 0, then he has not chosen a locale yet.
-		 */
-		int Locale;
-
-		/*
-		 * This is the locale the player chatted from last time, kept so that a login which
-		 * comes back without one can fall back on it rather than ask him again.
-		 */
-		int LastLocale;
-
-		/*
-		 * If the player's Westwood Online nickname and password are to be remembered between
-		 * runs, then this flag will be true.
-		 */
-		bool StoreNickname;
-
-		/*
-		 * This is the stored nickname slot that was written last. Once all the slots are in
-		 * use a new login overwrites the one after it, so they are recycled in turn. If -1,
-		 * then no nickname has been stored yet.
-		 */
-		int LastNicknameSlot;
-
-		/*
 		 * If the local player is playing a GDI house, then this flag will be true. A starting
 		 * multiplayer scenario takes its side and its speech set from it.
 		 */
@@ -696,7 +665,6 @@ class SessionClass
 		MessageListClass Messages;
 		IPXAddressClass MessageAddress;
 		char LastMessage[MAX_MESSAGE_LENGTH];
-		unsigned WWChat		: 1;	// 1 = go into special WW Chat mode
 
 		//.....................................................................
 		// This is the multiplayer scorekeeping system

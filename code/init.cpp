@@ -177,8 +177,6 @@
 #include "wave.h"
 #include "waypoint.h"
 #include "winstub.h"
-#include "wonline.h"
-#include "worlddom.h"
 #include "wsproto.h"
 #include "wspudp.h"
 #include "wwfont.h"
@@ -1067,8 +1065,6 @@ restart:
 	*/
 	if (Session.Type == GAME_NORMAL) {
 		selection = SEL_NONE;
-	} else if (Session.Type == GAME_INTERNET) {
-		selection = SEL_INTERNET_RETURN;
 	} else {
 		selection = SEL_MULTIPLAYER_GAME;
 	}
@@ -1187,7 +1183,6 @@ restart:
 				/*
 				**	SEL_MULTIPLAYER_GAME: set 'Session.Type' to network play.
 				*/
-				case SEL_INTERNET_RETURN:
 				case SEL_MULTIPLAYER_GAME: {
 						Session.Read_MultiPlayer_Settings();
 
@@ -1206,18 +1201,12 @@ restart:
 						case GAME_NORMAL:
 							if (Get_New_Menu()->MixFile == NULL) {
 								Session.Type = Select_MPlayer_Game();
-								if (Session.Type == GAME_WDT) {
-									Session.Type = GAME_INTERNET;
-									Session.IsWDT = true;
+								Session.IsWDT = false;
+								if (Session.Type == GAME_NORMAL) {
+									selection = SEL_NONE;
+								}
+								if (Session.Type == GAME_SKIRMISH) {
 									continue;
-								} else {
-									Session.IsWDT = false;
-									if (Session.Type == GAME_NORMAL) {
-										selection = SEL_NONE;
-									}
-									if (Session.Type == GAME_INTERNET || Session.Type == GAME_SKIRMISH) {
-										continue;
-									}
 								}
 							} else {
 								selection = SEL_NONE;
@@ -1232,119 +1221,6 @@ restart:
 							}
 							break;
 
-						/*
-						**	Handle being spawned from WChat. Internet play based on IPX code.
-						*/
-						case GAME_INTERNET: {
-							Cheat_Disable();
-
-							OwnerDraw::Capture_Mouse();
-
-							/*
-							**	Fetch the house attribute override values.
-							*/
-							for (int house = 0; house < HouseTypes.Count(); house++) {
-								HouseTypes[house]->Read_INI(*RuleINI);
-							}
-
-							Ipx.Configure_WOL();
-							Session.CommProtocol = COMM_PROTOCOL_MULTI_E_COMP;
-
-							Ipx.Set_Timing(TIMER_SECOND / 2, (unsigned int)-1, 10 * TIMER_SECOND);
-							DebugString("About to initialise the network code\n");
-							bool success = Init_Network();
-
-							OwnerDraw::Release_Mouse();
-
-							Session.NetOpen = true;
-
-							WonlineResult res;
-
-							if (selection == SEL_INTERNET_RETURN) {
-								Title_Screen_Restore(true);
-								if (!Session.IsWDT) {
-									res = (WonlineResult)Join_WOL_Lobby(0);
-								} else {
-									while (true) {
-										res = (WonlineResult)Join_WOL_Lobby(0);
-										if (res == WONLINE_OK) {
-											break;
-										}
-										if (Request_WDT_Cycle() && WDT_Setup_Game(false)) {
-											Session.IsWDT = true;
-										} else {
-											Logout_WOnline();
-											res = WONLINE_BACK;
-											Session.Type = GAME_NORMAL;
-											Session.IsWDT = false;
-											selection = SEL_MULTIPLAYER_GAME;
-											break;
-										}
-
-									}
-								}
-
-							} else {
-								res = Login_WOL();
-								if (res == WONLINE_OK) {
-									if (!Session.IsWDT) {
-										res = (WonlineResult)Join_WOL_Lobby(0);
-									} else {
-										bool end = false;
-										bool initial = true;
-										while (!end) {
-											if (WDT_Setup_Game(initial)) {
-												initial = false;
-												Session.IsWDT = true;
-												res = (WonlineResult)Join_WOL_Lobby(0);
-												end = (res != WONLINE_BACK);
-											} else {
-												Logout_WOnline();
-												res = WONLINE_BACK;
-												Session.Type = GAME_NORMAL;
-												Session.IsWDT = false;
-												selection = SEL_MULTIPLAYER_GAME;
-												end = true;
-											}
-										}
-									}
-								}
-							}
-
-							Session.NetOpen = false;
-
-							if (res == WONLINE_DOWNLOAD_PATCH) {
-								Theme.Stop(true);
-
-								Ipx.Shutdown();
-								return(false);
-							}
-
-							if (res == WONLINE_BACK) {
-								Ipx.Shutdown();
-								selection = SEL_NONE;
-								Session.Type = GAME_NORMAL;
-								Theme.Play_Song(Fetch_Main_Menu_Theme());
-							} else {
-								DebugString("Return from WOL to play a %d player game\n", Session.Players.Count());
-								if (success) {
-									process = false;
-									protocol = 2;
-									Theme.Stop(true);
-								} else {
-									/*
-									** We failed to connect to the other player
-									*/
-									Session.Type = GAME_NORMAL;
-									selection = SEL_NONE;
-
-									Ipx.Shutdown();
-									protocol = -1;
-								}
-							}
-
-							break;
-						}
 						}
 					}
 					switch (Session.Type) {
@@ -4760,30 +4636,6 @@ class ScreenCaptureCommandClass : public CommandClass
 };
 
 
-class PageUserCommandClass : public CommandClass
-{
-	public:
-		virtual char const * Get_Unique_Name(void) const {
-			return("PageUser");
-		}
-		virtual char const * Get_Display_Name(void) const {
-			return(Fetch_String(TXT_PAGEUSER));
-		}
-		virtual char const * Get_Category(void) const {
-			return(Fetch_String((TXT_INTERFACE)));
-		}
-		virtual char const * Get_Description(void) const {
-			return(Fetch_String(TXT_PAGEUSER_DESC));
-		}
-
-		virtual void Execute(void) const {
-			if (Session.Type == GAME_INTERNET) {
-				Queue_PageUser();
-			}
-		}
-};
-
-
 class SelectSameTypeCommandClass : public CommandClass
 {
 	public:
@@ -5047,7 +4899,6 @@ static void Init_Commands(void)
 	AllCommands.Add(new WaypointCommandClass);
 
 	AllCommands.Add(new ScreenCaptureCommandClass);
-	AllCommands.Add(new PageUserCommandClass);
 
 	AllCommands.Add(new SelectSameTypeCommandClass);
 
@@ -5801,17 +5652,8 @@ int New_Main_Menu(void)
 			Session.Type = GAME_IPX;
 			break;
 
-		case NSEL_INTERNET:
-			Session.Type = GAME_INTERNET;
-			break;
-
 		case NSEL_SKIRMISH:
 			Session.Type = GAME_SKIRMISH;
-			break;
-
-		case NSEL_WDT:
-			Session.Type = GAME_INTERNET;
-			Session.IsWDT = true;
 			break;
 
 		case NSEL_OPTIONS:

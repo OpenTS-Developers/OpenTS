@@ -66,8 +66,10 @@ GraphicMenuItem * GM_Read_Image_Item(const char * name, INIClass const & ini, MS
 /// Constructs an image based menu item.
 /// This routine loads the normal, highlighted and disabled artwork as animations and
 /// hands them to the menu engine to display. Only the normal image starts out visible;
-/// the others are activated as the item gains the selection or is disabled. Any of the
-/// images may be omitted, in which case that state simply shows nothing.
+/// the others are activated as the item gains the selection or is disabled. The
+/// highlighted and disabled artwork may be omitted: an item with no highlight simply does
+/// not light up, and one with no disabled artwork keeps its normal image while it is
+/// unavailable rather than vanishing from the menu.
 /// </summary>
 /// <param name="origin">The screen position to display the artwork at.</param>
 /// <param name="rect">The screen area the mouse must be within to select this item.</param>
@@ -151,7 +153,7 @@ bool GraphicMenuImageItem::Is_Mouse_Over(Point2D const & mouse)
 void GraphicMenuImageItem::On_Selected_Change(bool selected)
 {
 	if (Image != NULL) {
-		Image->Set_Active(Enabled && !selected);
+		Image->Set_Active(!selected && (Enabled || DisabledImage == NULL));
 	}
 	if (HighlightImage != NULL) {
 		HighlightImage->Set_Active(Enabled && selected);
@@ -178,7 +180,7 @@ void GraphicMenuImageItem::On_Selected_Change(bool selected)
 void GraphicMenuImageItem::On_Enabled_Change(bool active)
 {
 	if (Image != NULL) {
-		Image->Set_Active(active && !Selected);
+		Image->Set_Active(!Selected && (active || DisabledImage == NULL));
 	}
 	if (HighlightImage != NULL) {
 		HighlightImage->Set_Active(active && Selected);

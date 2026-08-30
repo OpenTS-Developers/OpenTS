@@ -146,3 +146,64 @@
     - "-XE"
     - Disable exception trap
   summary: Left a crash to the debugger instead of the engine's own handler. Removed because a debugger now takes a crash first without being asked.
+- type: command
+  id: PageUser
+  route: /commands/pageuser/
+  search_aliases:
+    - Page User
+    - PageUser
+  summary: Paged another player through the Westwood Online chat service while a match was running. Removed with the online client.
+- type: key
+  id: AllowFind
+  route: /keys/allowfind/
+  search_aliases:
+    - AllowFind
+  summary: Let other Westwood Online players locate the account. Removed with the online client.
+- type: key
+  id: AllowPage
+  route: /keys/allowpage/
+  search_aliases:
+    - AllowPage
+  summary: Let other Westwood Online players page the account. Removed with the online client.
+- type: key
+  id: LangFilter
+  route: /keys/langfilter/
+  search_aliases:
+    - LangFilter
+  summary: Asked the Westwood Online chat service to filter offensive words out of the messages it delivered. Removed with the online client.
+- type: key
+  id: LobMusic
+  route: /keys/lobmusic/
+  search_aliases:
+    - LobMusic
+  summary: Played music while the player waited in the Westwood Online lobby. Removed with the online client.
+- type: key
+  id: ShowAll
+  route: /keys/showall/
+  search_aliases:
+    - ShowAll
+  summary: Listed games from every Westwood Online lobby rather than the player's own. Removed with the online client.
+- type: key
+  id: LastNickSlot
+  route: /keys/lastnickslot/
+  search_aliases:
+    - LastNickSlot
+  summary: Recorded which stored Westwood Online login slot a new login would overwrite. Removed with the online client.
+- type: key
+  id: Locale
+  route: /keys/locale/
+  search_aliases:
+    - Locale
+  summary: Named the Westwood Online location the player chatted from. Removed with the online client.
+- type: key
+  id: PreferredServer
+  route: /keys/preferredserver/
+  search_aliases:
+    - PreferredServer
+  summary: Named the Westwood Online server the login dialog opened on. Removed with the online client.
+- type: key
+  id: StoreNick
+  route: /keys/storenick/
+  search_aliases:
+    - StoreNick
+  summary: Kept the Westwood Online nickname and password between runs. Removed with the online client.

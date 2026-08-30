@@ -86,7 +86,6 @@
 #include "houstype.h"
 #include "incdec.h"
 #include "init.h"
-#include "internet.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
 #include "language\language.h"
@@ -111,8 +110,6 @@
 #include "theme.h"
 #include "voc.h"
 #include "vox.h"
-#include "wolapi\wolapi.h"
-#include "wonline.h"
 #include "wsproto.h"
 
 #include "special.hh"
@@ -273,11 +270,6 @@ void Ingame_Menu_Dialog(void)
 							_special_dialog_flag = false;
 						}
 					}
-					SpecialDialog = SDLG_NONE;
-					break;
-
-				case SDLG_WOL_OPTIONS:
-					DoFindPage();
 					SpecialDialog = SDLG_NONE;
 					break;
 
@@ -514,22 +506,6 @@ void Call_Back(void)
 	 */
 	if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
 		IPX_Call_Back();
-	}
-
-	/*
-	 * Internet game maintenance.
-	 */
-	if (Session.Type == GAME_INTERNET) {
-		static int _last_pump_time = 0;
-		if (time(0) != _last_pump_time) {
-			if (g_pChat != NULL && !g_SuspendChatPump) {
-				g_pChat->PumpMessages();
-			}
-			if (g_pNetUtil != NULL) {
-				g_pNetUtil->PumpMessages();
-			}
-			_last_pump_time = time(0);
-		}
 	}
 }
 

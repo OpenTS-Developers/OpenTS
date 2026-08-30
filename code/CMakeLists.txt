@@ -29,9 +29,6 @@ file(GLOB_RECURSE OPENTS_RAW CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/*.hpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.rc"
     "${CMAKE_CURRENT_SOURCE_DIR}/*.asm"
-
-    # Submodules of OpenTS
-    "${CMAKE_CURRENT_SOURCE_DIR}/wolapi/*"
 )
 
 #
@@ -307,7 +304,6 @@ set(INTERFACE_FILES
     ilocos.h         ilocos_i.c
     ipiggy.h         ipiggy_i.c
     isun.h           isun_i.c
-    wolapi/wolapi_i.c
 )
 
 # Convert to full paths relative to source dir

@@ -47,7 +47,7 @@
 #include "restate.h"
 #include "saveload.h"
 #include "scenario.h"
-#include "wonline.h"
+#include "stats.h"
 
 #include "special.hh"
 

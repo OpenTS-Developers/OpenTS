@@ -24,7 +24,7 @@ enum {
 	SEL_OPTIONS,
 	SEL_EXIT,						// exit to DOS
 	SEL_FAME,						// view the hall o' fame
-	SEL_INTERNET_RETURN,
+	SEL_INTERNET_RETURN,			// retired; slot kept to keep the button order aligned
 	SEL_VIEW_CREDITS,
 	SEL_VERSION,
 	SEL_NONE,						// placeholder default value

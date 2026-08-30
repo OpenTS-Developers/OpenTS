@@ -8,7 +8,7 @@ when_omitted:
   value: "no"
 ---
 
-The value seeds a multiplayer session option of the same name as the rules are read, alongside the other `[MultiplayerDefaults]` options. That option is sent to the other machines during setup, a guest takes the host's, and a Westwood Online game advertises it — but nothing carries it into the scenario flag the game logic consults.
+The value seeds a multiplayer session option of the same name as the rules are read, alongside the other `[MultiplayerDefaults]` options. That option is sent to the other machines during setup and a guest takes the host's — but nothing carries it into the scenario flag the game logic consults.
 
 :::caution[The mode cannot be turned on]
 The scenario flag starts false and no routine sets it. The one screen that used to write it belonged to modem play and went with it, no scenario file carries the flag, and the routine that would broadcast a change of it is never called. Everything below describes a mode that nothing can now enter.

@@ -47,7 +47,6 @@
 #include "msgbox.h"
 #include "ownrdraw.h"
 #include "session.h"
-#include "worlddom.h"
 
 class ListClass;
 
@@ -94,13 +93,6 @@ GameType Select_MPlayer_Game (void)
 			ShowWindow(dialog, SW_HIDE);
 			UpdateWindow(MainWindow);
 			switch (rc) {
-				case IDC_INTERNET:
-					retval = GAME_INTERNET;
-					break;
-
-				case IDC_WORLDDOM:
-					retval = GAME_WDT;
-					break;
 				case IDC_NETWORK:
 					retval = GAME_IPX;
 					break;
@@ -126,9 +118,9 @@ GameType Select_MPlayer_Game (void)
 
 /// <summary>
 /// Handles the messages for the multiplayer game type dialog.
-/// This routine gives the ownerdraw system first crack at the message, disables the world
-/// domination button when that mode is not available, and hands the control the player
-/// pressed back to Select_MPlayer_Game.
+/// This routine gives the ownerdraw system first crack at the message, disables the
+/// buttons that lead nowhere, and hands the control the player pressed back to
+/// Select_MPlayer_Game.
 /// </summary>
 /// <returns>Returns with the result of the ownerdraw handler, or false when the message was
 /// left unhandled.</returns>
@@ -140,9 +132,15 @@ BOOL CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM 
 	int rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
 	if (message == WM_INITDIALOG) {
+		// Neither the online service these led to nor the tour it hosted can be reached,
+		// so the buttons are left on the dialog but never answer.
+		handle = GetDlgItem(window, IDC_INTERNET);
+		if (handle) {
+			EnableWindow(handle, FALSE);
+		}
 		handle = GetDlgItem(window, IDC_WORLDDOM);
 		if (handle) {
-			EnableWindow(handle, WDT_Is_Allowed());
+			EnableWindow(handle, FALSE);
 		}
 	}
 

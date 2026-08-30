@@ -104,7 +104,7 @@ class EventClass
 			TIMING,				// new timing values for all systems to use
 			PROCESS_TIME,		// a system's average processing time, in ticks per frame
 
-			PAGEUSER,
+			PAGEUSER,			// retired; slot kept, the event type travels in network packets
 			REMOVEPLAYER,
 
 			LATENCYFUDGE,

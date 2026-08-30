@@ -34,8 +34,6 @@
 #include "stimer.h"
 #include "wdtnet.h"
 #include "windlg.h"
-#include "wolapi\wolapi.h"
-#include "wonline.h"
 #include "worlddom.h"
 #include "wstring.h"
 #include "xpipe.h"
@@ -44,10 +42,6 @@
 #include <algorithm>
 #include <ctime>
 
-
-struct IChat * g_pChat;
-struct INetUtil * g_pNetUtil;
-struct IDownload * g_pDownload;
 
 const COLORREF ColorSystem     = RGB(255, 255, 255)|(255<<24);  /// 0xFFFFFFFF
 const COLORREF ColorUser       = RGB(240, 240, 0);              /// 0x0000F0F0
@@ -117,14 +111,6 @@ HWND GameoptWindow(void)
 {
 	HWND dialog;
 
-	dialog = WS_Find_Dialog(IDD_WOL_GAMEOPT);
-	if (dialog) {
-		return(dialog);
-	}
-	dialog = WS_Find_Dialog(IDD_WOL_GUEST);
-	if (dialog) {
-		return(dialog);
-	}
 	dialog = WS_Find_Dialog(IDD_MPLAYER_HOST);
 	if (dialog) {
 		return(dialog);
@@ -535,7 +521,6 @@ void DisplayGameopts(HWND window, BOOL initialize)
 }
 
 
-void Encode_Game_Options(char *out);
 void Net2EncodeGameopt(char *out);
 
 
@@ -599,14 +584,8 @@ void PumpGameopts(bool force, bool now)
 		}
 		_need_to_pump = false;
 
-		if (g_pChat != NULL) {
-			if (time(NULL) - _last_pump_time >= 5) {
-				do_pump = true;
-			}
-		} else {
-			if (time(NULL) - _last_pump_time >= 2) {
-				do_pump = true;
-			}
+		if (time(NULL) - _last_pump_time >= 2) {
+			do_pump = true;
 		}
 
 		if (force == true) {
@@ -669,11 +648,7 @@ void PumpGameopts(bool force, bool now)
 			char buffer[513];
 			memset(buffer, '\0', sizeof(buffer));
 
-			if (g_pChat != NULL) {
-				Encode_Game_Options(buffer);
-			} else {
-				Net2EncodeGameopt(buffer);
-			}
+			Net2EncodeGameopt(buffer);
 
 			SendPublicGameopts(buffer);
 		}
@@ -683,58 +658,43 @@ void PumpGameopts(bool force, bool now)
 
 /// <summary>
 /// Sends an encoded game options string to every player.
-/// This routine hides the difference between the internet chat service and the direct
-/// network layer, so the game options only have to be encoded once.
 /// </summary>
 /// <param name="options">The encoded option string to send.</param>
 void SendPublicGameopts(char const * options)
 {
-	if (g_pChat != NULL) {
-		g_pChat->RequestPublicGameOptions((LPCSTR)options);
-	} else {
-		GlobalPacketType packet;
-		memset(&packet, 0, sizeof(packet));
-		packet.Command = NET_PUB_GAMEOPT;
-		strcpy(packet.Name, Session.Handle);
-		strcpy(packet.Options.Buf, options);
-		packet.Options.Color = Session.ColorIdx;
-		packet.Options.NameCRC = Compute_Name_CRC(Session.GameName);
-		for (int i = 1; i < Session.Players.Count(); i++) {
-			DebugString("Sending public game options to %s\n", Session.Players[i]->Name);
-			Ipx.Send_Global_Message(&packet, sizeof(packet), 1, &Session.Players[i]->Address);
-			Call_Back();
-		}
+	GlobalPacketType packet;
+	memset(&packet, 0, sizeof(packet));
+	packet.Command = NET_PUB_GAMEOPT;
+	strcpy(packet.Name, Session.Handle);
+	strcpy(packet.Options.Buf, options);
+	packet.Options.Color = Session.ColorIdx;
+	packet.Options.NameCRC = Compute_Name_CRC(Session.GameName);
+	for (int i = 1; i < Session.Players.Count(); i++) {
+		DebugString("Sending public game options to %s\n", Session.Players[i]->Name);
+		Ipx.Send_Global_Message(&packet, sizeof(packet), 1, &Session.Players[i]->Address);
+		Call_Back();
 	}
 }
 
 
 /// <summary>
 /// Sends an encoded game options string to one player.
-/// This routine hides the difference between the internet chat service and the direct
-/// network layer, so the caller only has to name the player who is to receive the options.
 /// </summary>
 /// <param name="player">Name of the player to send the options to.</param>
 /// <param name="options">The encoded option string to send.</param>
 void SendPrivateGameopts(char const * player, char const * options)
 {
-	if (g_pChat != NULL) {
-		User user;
-		memset(&user, '\0', sizeof(user));
-		strcpy((char *)user.name, player);
-		g_pChat->RequestPrivateGameOptions(&user, (LPCSTR)options);
-	} else {
-		memset(&Session.GPacket, 0, sizeof(Session.GPacket));
-		Session.GPacket.Command = NET_PRIV_GAMEOPT;
-		strcpy(Session.GPacket.Name, Session.Handle);
-		strcpy(Session.GPacket.Options.Buf, options);
-		Session.GPacket.Options.Color = Session.ColorIdx;
-		Session.GPacket.Options.NameCRC = Compute_Name_CRC(Session.GameName);
-		for (int i = 1; i < Session.Players.Count(); i++) {
-			if (stricmp(Session.Players[i]->Name, player) == 0) {
-				DebugString("Sending private game options to %s\n", Session.Players[i]->Name);
-				Ipx.Send_Global_Message(&Session.GPacket, sizeof(Session.GPacket), 1, &Session.Players[i]->Address);
-				Call_Back();
-			}
+	memset(&Session.GPacket, 0, sizeof(Session.GPacket));
+	Session.GPacket.Command = NET_PRIV_GAMEOPT;
+	strcpy(Session.GPacket.Name, Session.Handle);
+	strcpy(Session.GPacket.Options.Buf, options);
+	Session.GPacket.Options.Color = Session.ColorIdx;
+	Session.GPacket.Options.NameCRC = Compute_Name_CRC(Session.GameName);
+	for (int i = 1; i < Session.Players.Count(); i++) {
+		if (stricmp(Session.Players[i]->Name, player) == 0) {
+			DebugString("Sending private game options to %s\n", Session.Players[i]->Name);
+			Ipx.Send_Global_Message(&Session.GPacket, sizeof(Session.GPacket), 1, &Session.Players[i]->Address);
+			Call_Back();
 		}
 	}
 }
@@ -775,11 +735,7 @@ bool DecodePubGameopt(char * options, char * name)
 	char *token = string;
 	if (token[0] == 'A') {
 		int status = atol(&token[1]);
-		if (g_pChat != NULL) {
-			SetPlayerAccepted(name, status);
-		} else {
-			Net2SetAccept(name, status);
-		}
+		Net2SetAccept(name, status);
 		return(false);
 	}
 
@@ -968,9 +924,7 @@ bool DecodePubGameopt(char * options, char * name)
 			IsColorChangePending = false;
 		}
 
-		if (g_pChat != NULL && Assign_House_And_Color(handle, house, color) ||
-			g_pChat == NULL && Net2SetHouseAndColor(handle, house, color)) {
-
+		if (Net2SetHouseAndColor(handle, house, color)) {
 			do_decode = true;
 		}
 	}
@@ -997,19 +951,10 @@ bool DecodePubGameopt(char * options, char * name)
 	if (_last_crap_engineers != Session.Options.CrapEngineers) do_decode = true;
 
 	if (!same_scenario || do_decode) {
-		int accept;
-		if (g_pChat != NULL) {
-			accept = GetPlayerAccepted(NULL);
-		} else {
-			accept = Net2GetAccept(NULL);
-		}
+		int accept = Net2GetAccept(NULL);
 
 		if (accept == 1) {
-			if (g_pChat != NULL) {
-				SetPlayerAccepted(NULL, 0);
-			} else {
-				Net2SetAccept(NULL, 0);
-			}
+			Net2SetAccept(NULL, 0);
 
 			PMessagePrintf(-1, Fetch_String(TXT_HOST_CHANGED_OPTIONS));
 
@@ -1029,11 +974,7 @@ bool DecodePubGameopt(char * options, char * name)
 
 	SendDlgItemMessage(GameoptWindow(), IDC_USERS, OD_DISABLEPAINT, 0, 0);
 
-	if (g_pChat != NULL) {
-		Display_Users();
-	} else {
-		Net2DisplayUsers();
-	}
+	Net2DisplayUsers();
 
 	_last_unit_count = Session.Options.UnitCount;
 	_last_tech_level = BuildLevel;
@@ -1371,58 +1312,6 @@ void Update_Network_Dialog_Preview(HWND win)
 				return;
 			}
 			break;
-
-		case GAME_INTERNET:
-			if (!Is_Channel_Owner(NULL)) {
-				if (WS_Top_Window_ID() == IDD_WOL_GUEST) {
-					HWND handle = GetDlgItem(WS_Top_Window(), IDC_WOLGUEST_STAT1);
-					if (handle) {
-						SendMessage(handle, WM_SETTEXT, 0, (LPARAM)"");
-						handle = GetDlgItem(WS_Top_Window(), IDC_WOLGUEST_STAT2);
-						if (handle) {
-							SendMessage(handle, WM_SETTEXT, 0, (LPARAM)"");
-						}
-						handle = GetDlgItem(WS_Top_Window(), IDC_WOLGUEST_STAT3);
-						if (handle) {
-							SendMessage(handle, WM_SETTEXT, 0, (LPARAM)"");
-						}
-						handle = GetDlgItem(WS_Top_Window(), IDC_WOLGUEST_STAT4);
-						if (handle) {
-							SendMessage(handle, WM_SETTEXT, 0, (LPARAM)"");
-						}
-						handle = GetDlgItem(WS_Top_Window(), IDC_WOLGUEST_STAT5);
-						if (handle) {
-							SendMessage(handle, WM_SETTEXT, 0, (LPARAM)"");
-						}
-					}
-				}
-				bool file_available = false;
-				bool is_local = false;
-				if (Find_Local_Scenario(Session.ScenarioFileName, Session.ScenarioFileLength, Session.ScenarioDigest, Session.ScenarioIsOfficial)) {
-					is_local = true;
-				} else {
-					file_available = true;
-				}
-
-				if (is_local) {
-					RawFileClass r(Session.ScenarioFileName);
-					if (r.Is_Available()) {
-						file_available = true;
-					}
-				}
-
-				if (file_available) {
-					if (stricmp(Session.ScenarioFileName, RANDOM_MAP_FILE_NAME) != 0 && MultiplayerMapPreview != NULL) {
-						delete MultiplayerMapPreview;
-						MultiplayerMapPreview = NULL;
-					}
-					InvalidateRect(win, NULL, FALSE);
-					return;
-				}
-				break;
-			}
-			break;
-
 	}
 
 	bool unavailable = CCFileClass(Session.ScenarioFileName).Is_Available() == false;

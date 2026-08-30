@@ -30,9 +30,6 @@
 #include "wdtnet.h"
 #include "worlddom.h"
 
-#define IID_DEFINED
-#include "wolapi\wolapi.h"
-
 typedef VectorClass<Point2D> POINT2D_LIST;
 
 typedef VectorClass<Rect> RECT_LIST;
@@ -367,7 +364,6 @@ Territory * Selection::Pick_Territory(void)
 	Keyboard->Clear();
 
 	while (!canceled) {
-		g_pChat->PumpMessages();
 		Wait_For_Focus();
 		Point2D point(MouseCursor->Get_Mouse_X(), MouseCursor->Get_Mouse_Y());
 

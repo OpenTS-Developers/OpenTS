@@ -146,7 +146,7 @@ class IPXManagerClass : public ConnManClass
 		enum TransportModeType {
 			TRANSPORT_NONE = 0,     // not configured; Init() will fail
 			TRANSPORT_LAN,          // broadcast onto the local network to find games
-			TRANSPORT_WOL,          // send to the addresses Westwood Online hands us
+			TRANSPORT_DIRECT,       // send to the addresses a lobby outside the game supplied
 			TRANSPORT_TUNNEL,       // send through a CnCNet tunnel server
 			TRANSPORT_DIRECT_PEERS  // send straight to a known set of peers
 		};
@@ -163,7 +163,7 @@ class IPXManagerClass : public ConnManClass
 		 * already in place and creates the one its mode needs; Shutdown() takes it down.
 		 */
 		void Configure_LAN(unsigned short port = 0);
-		void Configure_WOL();
+		void Configure_Direct();
 		void Configure_Tunnel(unsigned short local_id, unsigned long tunnel_ip, unsigned short tunnel_port);
 		void Configure_Direct_Peers(unsigned short listen_port);
 		void Add_Peer(const IPXAddressClass &address);

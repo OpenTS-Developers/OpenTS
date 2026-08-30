@@ -100,8 +100,6 @@ ADAPTER_UNITS = [
       }}),
     ("startup.cpp", "Startup", [":WinMain"],
      {"file": "sun.ini", "group": "client settings"}),
-    ("wonline.cpp", "WOnline", [":Read_WOL_Settings"],
-     {"file": "sun.ini", "group": "online settings"}),
 ]
 
 

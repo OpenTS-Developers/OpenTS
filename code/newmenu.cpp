@@ -286,6 +286,9 @@ int NewMenuClass::Display_Tiberian_Sun_Menu(void)
 		options.Add(NSEL_LOAD_MISSION);
 	}
 
+	// The button is drawn by the menu artwork, so it is disabled rather than taken away.
+	options.Add(NSEL_INTERNET);
+
 	return(Display_Menu("TiberianSunMenu", options));
 }
 
@@ -306,6 +309,11 @@ int NewMenuClass::Display_Firestorm_Menu(void)
 	if (!LoadOptionsClass().Files_Present()) {
 		options.Add(NSEL_LOAD_MISSION);
 	}
+
+	// Both buttons are drawn by the menu artwork, so they are disabled rather than taken
+	// away. Neither the online service they led to nor the tour it hosted can be reached.
+	options.Add(NSEL_INTERNET);
+	options.Add(NSEL_WDT);
 
 	return(Display_Menu("FirestormMenu", options));
 }

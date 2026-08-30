@@ -1462,42 +1462,6 @@ AllowBurrowing:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
-AllowFind:
-  key: AllowFind
-  scopes:
-  - applies_to:
-    - online settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: WOnline
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: WOnline
-      member: g_AllowFind
-      source: code/wonline.cpp
-      guard: null
-    level: WOnline
-AllowPage:
-  key: AllowPage
-  scopes:
-  - applies_to:
-    - online settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: WOnline
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: WOnline
-      member: g_AllowPage
-      source: code/wonline.cpp
-      guard: null
-    level: WOnline
 AllowShroudedSubteranneanMoves:
   key: AllowShroudedSubteranneanMoves
   scopes:
@@ -12160,24 +12124,6 @@ Landable:
       source: code/airctype.cpp
       guard: null
     level: AircraftTypeClass
-LangFilter:
-  key: LangFilter
-  scopes:
-  - applies_to:
-    - online settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: WOnline
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: WOnline
-      member: g_LangFilter
-      source: code/wonline.cpp
-      guard: null
-    level: WOnline
 LargeFire:
   key: LargeFire
   scopes:
@@ -12364,24 +12310,6 @@ LaserOuterSpread:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
-LastNickSlot:
-  key: LastNickSlot
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: MultiPlayer
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '-1'
-      declared_in: SessionClass
-      member: LastNicknameSlot
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 LastTilesInSet:
   key: LastTilesInSet
   scopes:
@@ -12688,24 +12616,6 @@ Loadable:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
-LobMusic:
-  key: LobMusic
-  scopes:
-  - applies_to:
-    - online settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: WOnline
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: WOnline
-      member: g_LobbyMusic
-      source: code/wonline.cpp
-      guard: null
-    level: WOnline
 Lobber:
   key: Lobber
   scopes:
@@ -12741,24 +12651,6 @@ LocalSize:
       source: code/display.cpp
       guard: null
     level: DisplayClass
-Locale:
-  key: Locale
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: MultiPlayer
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: '0'
-      declared_in: SessionClass
-      member: Locale
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 Locomotor:
   key: Locomotor
   scopes:
@@ -15942,24 +15834,6 @@ Prebuild:
       source: code/teamtype.cpp
       guard: null
     level: TeamTypeClass
-PreferredServer:
-  key: PreferredServer
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: MultiPlayer
-    value_type: string
-    status: generated
-    _provenance:
-      default_candidate: ''
-      declared_in: SessionClass
-      member: null
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 Prefix:
   key: Prefix
   scopes:
@@ -18752,24 +18626,6 @@ ShouldUseCellDrawer:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-ShowAll:
-  key: ShowAll
-  scopes:
-  - applies_to:
-    - online settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: WOnline
-    value_type: integer
-    status: generated
-    _provenance:
-      default_candidate: null
-      declared_in: WOnline
-      member: g_ShowAllChannels
-      source: code/wonline.cpp
-      guard: null
-    level: WOnline
 ShroudGrow:
   key: ShroudGrow
   scopes:
@@ -20573,24 +20429,6 @@ Storage:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
-StoreNick:
-  key: StoreNick
-  scopes:
-  - applies_to:
-    - multiplayer settings
-    file: sun.ini
-    section:
-      kind: literal
-      name: MultiPlayer
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'yes'
-      declared_in: SessionClass
-      member: StoreNickname
-      source: code/session.cpp
-      guard: null
-    level: SessionClass
 Stray:
   key: Stray
   scopes:

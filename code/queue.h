@@ -44,7 +44,6 @@
 bool Queue_Mission(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination);
 bool Queue_Mission(TargetClass whom, MissionType mission, TargetClass & target, TargetClass & destination, SpeedType speed, MPHType maxspeed);
 bool Queue_Options(void);
-bool Queue_PageUser(void);
 bool Queue_Exit(void);
 void Queue_AI(void);
 void Add_CRC(unsigned int *crc, unsigned int val);

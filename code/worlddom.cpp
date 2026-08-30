@@ -20,10 +20,14 @@
 #include "mixfile.h"
 #include "ownrdraw.h"
 #include "wdtnet.h"
-#include "wonline.h"
 
 
 using namespace WorldDominationTour;
+
+
+// The name a tour campaign is recorded under. The online service that supplied it is
+// gone, so it stays empty until a tour server can be reached again.
+static char g_NickName[40];
 
 
 extern WDTPointer<WDTState> g_WDTNewState;
@@ -104,6 +108,18 @@ int g_WDTChosenSide;
 
 
 /// <summary>
+/// Asks the tour server for the campaign cycle the player is to fight in next.
+/// </summary>
+/// <returns>bool; Was a cycle obtained? Never, at present: the tour was reached over an
+/// online service that has been retired, and nothing has taken over its side of this
+/// exchange, so a tour game can get no further than the side choice.</returns>
+bool Request_WDT_Cycle(void)
+{
+	return(false);
+}
+
+
+/// <summary>
 /// Sets up a World Domination Tour game for play.
 /// This routine mounts the tour data files, asks the player which side to fight for,
 /// negotiates a cycle with the tour server and then hands the campaign to the mission
@@ -161,7 +177,6 @@ bool WDT_Setup_Game(bool first_time)
 				valid = WDT_Select_Campaign(campaign, first_time);
 				intro_pending = false;
 				if (valid) {
-					g_MaxPlayers = 0;
 					RandomMapGen.SeedData.Fixup_WDT_Settings();
 				} else {
 					choose = true;

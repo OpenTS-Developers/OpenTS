@@ -116,7 +116,6 @@
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
-#include "internet.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
 #include "language\language.h"
@@ -166,8 +165,6 @@
 #include "weapon.h"
 #include "windlg.h"
 #include "winstub.h"
-#include "wolapi/wolapi.h"
-#include "wonline.h"
 #include "wsproto.h"
 
 #include "special.hh"
@@ -427,24 +424,6 @@ bool Queue_Options(void)
 	return(true);
 
 }		/* end of Queue_Options */
-
-
-/// <summary>
-/// Adds the page-user event to the outgoing queue.
-/// This routine is used to nudge the other player when the game is sitting around waiting
-/// on them. A player whose own game has already been decided has nothing to page about.
-/// </summary>
-/// <returns>bool; Was the event queued?</returns>
-bool Queue_PageUser(void)
-{
-	if (PlayerPtr->IsToWin || PlayerPtr->IsToLose || PlayerPtr->IsToDie) {
-		return(false);
-	}
-
-	OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::PAGEUSER));
-	return(true);
-
-}		/* end of Queue_PageUser */
 
 
 /***************************************************************************
@@ -1449,10 +1428,6 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 
 	if (reconnect_dlg) {
 		Close_Reconnect_Dialog();
-		if (net->Num_Connections() > 0) {
-			g_PingsSent = 0;
-			g_PingsReceived = 0;
-		}
 	}
 	if (stall_drawn && Session.ShowInternetDebug) {
 		Rect rect(100, 475, 540, 4);
@@ -2562,11 +2537,8 @@ void Cast_Kick_Vote(int kicker, int kickee)
 /// <summary>
 /// Handles the messages for the reconnect dialog.
 /// This is the dialog that appears when the game stalls waiting on somebody. It paints the
-/// per-player sync bars, offers a kick button for each player in the game, and keeps
-/// pinging the game server for the duration of an internet game stall.
+/// per-player sync bars and offers a kick button for each player in the game.
 /// </summary>
-#define PING_TIMER 1
-#define PING_TIMEOUT 1000
 BOOL CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	int * rc = (int *)GetWindowLong(window, DWL_USER);
@@ -2611,12 +2583,6 @@ BOOL CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LP
 					DestroyWindow(bar);
 				}
 			}
-
-			if (Session.Type == GAME_INTERNET) {
-				g_PingsSent = 0;
-				g_PingsReceived = 0;
-				SetTimer(window, PING_TIMER, PING_TIMEOUT, NULL);
-			}
 			break;
 		}
 
@@ -2631,17 +2597,6 @@ BOOL CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LP
 		case WM_CTLCOLORSCROLLBAR:
 		case WM_CTLCOLORSTATIC:
 			return((BOOL)GetStockObject(BLACK_BRUSH));
-
-		case WM_TIMER:
-			if (Session.Type == GAME_INTERNET && wparam == PING_TIMER && g_PingsSent < 5) {
-				int handle;
-				g_pNetUtil->RequestPing(g_GameServerHost, PING_TIMEOUT, &handle);
-				g_PingsSent++;
-				if (g_PingsSent < 5) {
-					SetTimer(window, PING_TIMER, PING_TIMEOUT, NULL);
-				}
-			}
-			break;
 
 		case WM_ERASEBKGND:
 			return(TRUE);

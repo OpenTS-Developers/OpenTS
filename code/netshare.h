@@ -29,10 +29,6 @@ int CountAliveTeams(HouseClass * house);
 int RandomMapWaypointCount(int index);
 int Scenario_Dialog(HWND hWndParent);
 
-extern struct IChat *g_pChat;
-extern struct INetUtil * g_pNetUtil;
-extern struct IDownload * g_pDownload;
-
 unsigned int Wstring_Hash(Wstring & string);
 
 

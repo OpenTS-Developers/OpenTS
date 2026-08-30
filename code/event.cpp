@@ -64,11 +64,11 @@
 #include "saveload.h"
 #include "scenario.h"
 #include "session.h"
+#include "stats.h"
 #include "surface.h"
 #include "techno.h"
 #include "unit.h"
 #include "unittype.h"
-#include "wonline.h"
 
 #include "color.hh"
 #include "house.hh"
@@ -1202,12 +1202,6 @@ void EventClass::Execute(void)
 					Session.Players[i]->Player.ProcessTime = Data.ProcessTime.AverageTicks;
 					break;
 				}
-			}
-			break;
-
-		case PAGEUSER:
-			if (!Session.Play) {
-				SpecialDialog = SDLG_WOL_OPTIONS;
 			}
 			break;
 

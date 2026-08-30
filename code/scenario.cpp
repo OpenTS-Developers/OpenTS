@@ -134,6 +134,7 @@
 #include "script.h"
 #include "session.h"
 #include "smudge.h"
+#include "stats.h"
 #include "surface.h"
 #include "swizzle.h"
 #include "tactical.h"
@@ -154,7 +155,6 @@
 #include "vox.h"
 #include "wave.h"
 #include "waypoint.h"
-#include "wonline.h"
 #include "wsproto.h"
 
 #include "bench.hh"
@@ -609,7 +609,7 @@ bool Read_Scenario(char const * fname)
 		Progress.Set_Graphic_Data((players > 1) ? "PROGBARM.SHP" : "PROGBAR.SHP", background, prog_msg, prog_bar_pos);
 		Progress.Display_Progress();
 
-		if (PacketTransport != NULL && Ipx.Transport_Mode() == IPXManagerClass::TRANSPORT_WOL && Session.Players.Count() > 1) {
+		if (PacketTransport != NULL && Ipx.Transport_Mode() == IPXManagerClass::TRANSPORT_DIRECT && Session.Players.Count() > 1) {
 			DebugString("Setting addresses for UDP broadcast\n");
 			PacketTransport->Clear_Broadcast_Addresses();
 

@@ -51,18 +51,16 @@ int WestwoodOnline_PortNumber = 1234;
 #include "house.h"
 #include "infantry.h"
 #include "infatype.h"
-#include "internet.h"
 #include "misc.h"
 #include "netshare.h"
 #include "packet.h"
 #include "session.h"
+#include "stats.h"
 #include "stimer.h"
 #include "timer.h"
 #include "unit.h"
 #include "unittype.h"
 #include "win.h"
-#include "wolapi\wolapi.h"
-#include "wonline.h"
 
 #define FIELD_GAME_ID							"IDNO"
 #define FIELD_START_CREDITS						"CRED"
@@ -116,6 +114,25 @@ bool								GameTimerInUse = false;
 BasicTimerClass<SystemTimerClass>	GameTimer;
 int								GameEndTime;
 void								*PacketLater = NULL;
+bool								GameStatisticsPacketSent;
+
+/*
+ * These describe the match the results packet reports on. The online service that used
+ * to name a game, a product and a tournament was retired, so nothing assigns them and
+ * the packet goes out describing a match with no identity.
+ */
+int WestwoodOnline_StartTime = 0;
+int WestwoodOnline_Tournament = 0;
+int WestwoodOnline_GameID = 0;
+int WestwoodOnline_GameSKU_TS = 0;
+int WestwoodOnline_GameSKU_FS = 0;
+int WestwoodOnline_GameSKU_WDT = 0;
+char WestwoodOnline_LoginName[36];
+char WestwoodOnline_UserName[16];
+char WestwoodOnline_Clan1_Players[136];
+char WestwoodOnline_Clan2_Players[136];
+int g_PingsSent;
+int g_PingsReceived;
 
 int Get_Unit_Count(int *buf, int count);
 
@@ -177,11 +194,10 @@ void Send_Statistics_Packet(void)
 	static char field_player_clan[5]				= { "CID?" };
 	static char field_player_lost_connection[5]		= { "LCN?" };
 
-	DebugString("Sending game results.  SawCompletion=%d\n", Session.SawGameCompletion);
+	DebugString("Building game results.  SawCompletion=%d\n", Session.SawGameCompletion);
 
-	/*
-	**	Game ID. A unique game identifier assigned by WChat.
-	*/
+	// The identifier that tells one match from another, assigned by whoever set the match
+	// up. Nobody does, at present.
 	stats.Add_Field(FIELD_GAME_ID, (unsigned int)WestwoodOnline_GameID);
 
 	/*
@@ -612,10 +628,10 @@ void Send_Statistics_Packet(void)
 	*/
 	packet = stats.Create_Comms_Packet(packet_size);
 
-	/*
-	**	Send it.....
-	*/
-	g_pNetUtil->RequestGameresSend(g_GameServerHost, g_GameServerPort, (unsigned char*)packet, packet_size);
+	// The packet has nowhere to go. The results server it was addressed to went with the
+	// online client that knew its address, and no replacement has been given one. It is
+	// still built, so that the fields above keep describing a real match.
+	DebugString("Built a %d byte game results packet with no server to send it to.\n", packet_size);
 
 	/*
 	**	Save it to disk as well so I can see it

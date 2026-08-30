@@ -1245,21 +1245,6 @@ registered_commands:
     source: code/init.cpp
     class: ScreenCaptureCommandClass
     guard: null
-- id: PageUser
-  route_id: pageuser
-  kind: registered
-  title: Page User
-  description: Page a Westwood Online user. (Internet play only)
-  category: Interface
-  audience: player
-  availability:
-    builds:
-    - release
-    - debug
-  _provenance:
-    source: code/init.cpp
-    class: PageUserCommandClass
-    guard: null
 - id: SelectType
   route_id: selecttype
   kind: registered

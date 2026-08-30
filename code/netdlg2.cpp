@@ -44,7 +44,6 @@
 #include "timer.h"
 #include "windlg.h"
 #include "winstub.h"
-#include "wonline.h"
 #include "wsproto.h"
 
 #include <algorithm>

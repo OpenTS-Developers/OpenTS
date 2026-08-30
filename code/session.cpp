@@ -68,7 +68,7 @@
 #include "scenario.h"
 #include "spawner.h"
 #include "special.h"
-#include "wonline.h"
+#include "stats.h"
 #include "xstraw.h"
 
 #include <algorithm>
@@ -178,14 +178,6 @@ SessionClass::SessionClass(void)
 	CampaignDifficulty = DIFF_NORMAL;
 	CampaignCDifficulty = DIFF_NORMAL;
 
-	PreferredServer = NULL;
-
-	Locale = 0;
-	LastLocale = 0;
-
-	StoreNickname = true;
-	LastNicknameSlot = -1;
-
 	MasterPlayerID = -1;
 	memset(MasterPlayerName, 0, sizeof(MasterPlayerName));
 
@@ -212,7 +204,6 @@ SessionClass::SessionClass(void)
 	EmergencySave = 0;
 
 	LastMessage[0] = 0;
-	WWChat = 0;
 
 	RecordFile.Set_Name("RECORD.BIN");  // always uses this name
 	Record= 0;                          // set via command line
@@ -263,10 +254,6 @@ SessionClass::SessionClass(void)
  *=========================================================================*/
 SessionClass::~SessionClass(void)
 {
-	if (PreferredServer != NULL) {
-		delete [] PreferredServer;
-		PreferredServer = NULL;
-	}
 }	// end of ~SessionClass
 
 
@@ -483,20 +470,6 @@ void SessionClass::Read_MultiPlayer_Settings(void)
 
 	TrapCheckHeap = ConfigINI.Get_Int("MultiPlayer", "CheckHeap", 0);
 
-	buf[0] = 0;
-	ConfigINI.Get_String("MultiPlayer", "PreferredServer", "", buf, sizeof(buf));
-	if (strlen(buf) != 0) {
-		delete [] PreferredServer;
-		PreferredServer = new char [strlen(buf) + 1];
-		strcpy(PreferredServer, buf);
-	}
-
-	Locale = ConfigINI.Get_Int("MultiPlayer", "Locale", 0);
-	LastLocale = Locale;
-
-	StoreNickname = ConfigINI.Get_Bool("MultiPlayer", "StoreNick", true);
-	LastNicknameSlot = ConfigINI.Get_Int("MultiPlayer", "LastNickSlot", -1);
-
 	// Read special recording playback values, to help find sync bugs
 	if (Session.Play) {
 		TrapFrame = ConfigINI.Get_Int("SyncBug", "Frame", 0x7fffffff);
@@ -615,18 +588,6 @@ void SessionClass::Write_MultiPlayer_Settings(void)
 		ConfigINI.Put_Int("MultiPlayer", "Color", (int)PrefColor);
 		ConfigINI.Put_HousesType("MultiPlayer", "Side", (HousesType)House);
 		ConfigINI.Put_String("MultiPlayer", "Handle", Handle);
-
-		if (PreferredServer) {
-			ConfigINI.Put_String("MultiPlayer", "PreferredServer", PreferredServer);
-		}
-
-		if (Locale == 0) {
-			Locale = LastLocale;
-		}
-
-		ConfigINI.Put_Int("MultiPlayer", "Locale", Locale);
-		ConfigINI.Put_Bool("MultiPlayer", "StoreNick", StoreNickname);
-		ConfigINI.Put_Int("MultiPlayer", "LastNickSlot", LastNicknameSlot);
 
 		// Write the INI data out to a file.
 		ConfigINI.Save(file, false);

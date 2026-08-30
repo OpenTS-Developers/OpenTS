@@ -37,8 +37,6 @@ int g_LastResponse;
 WSDialogStruct g_Dialogs[64];
 int g_DialogCount;
 
-extern bool g_PlayingNetGame;
-
 
 /// <summary>
 /// Fetches a window's rectangle relative to the main game window.
@@ -306,9 +304,7 @@ int WS_Wait_Dialog(HWND window, bool (*callback)(void), bool, bool place_on_top)
 				WS_Destroy_Dialog(window, IDCANCEL);
 			}
 		}
-		if (!g_PlayingNetGame) {
-			Title_Screen_Restore(false);
-		}
+		Title_Screen_Restore(false);
 
 		while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
 			TranslateMessage(&msg);

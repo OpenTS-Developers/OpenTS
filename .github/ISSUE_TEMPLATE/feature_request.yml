@@ -2,43 +2,21 @@ name: Feature proposal
 description: Propose an OpenTS engine, platform, or modding capability
 title: "[Feature] "
 body:
+  - type: markdown
+    attributes:
+      value: |
+        Large or breaking changes need agreement here before implementation.
   - type: textarea
     id: problem
     attributes:
-      label: Problem or opportunity
-      description: Describe the player, modder, or engine-development need.
+      label: Problem
+      description: The player, modder, or engine-development need this would solve.
     validations:
       required: true
   - type: textarea
-    id: outcome
+    id: proposal
     attributes:
-      label: Proposed outcome
-      description: Describe the intended behavior and completion criteria, not only an implementation.
+      label: Proposal
+      description: The outcome you want. Note known compatibility impact or alternatives if any.
     validations:
       required: true
-  - type: textarea
-    id: compatibility
-    attributes:
-      label: Compatibility and migration
-      description: Identify affected configuration, data, mods, saves, replays, networking, determinism, COM, or ABI surfaces and any migration needed.
-    validations:
-      required: true
-  - type: textarea
-    id: evidence
-    attributes:
-      label: Supporting evidence
-      description: Link relevant issues, source paths, experiments, specifications, or prior behavior.
-  - type: textarea
-    id: alternatives
-    attributes:
-      label: Alternatives considered
-      description: Describe current workarounds or other approaches considered.
-  - type: checkboxes
-    id: terms
-    attributes:
-      label: Submission checks
-      options:
-        - label: I searched existing issues and proposals.
-          required: true
-        - label: I understand that large or breaking changes need agreement before implementation.
-          required: true

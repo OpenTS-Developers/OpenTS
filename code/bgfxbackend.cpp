@@ -12,6 +12,7 @@
 
 #include "bgfxbackend.h"
 
+#include "dbgprint.h"
 #include "except.h"
 
 #include <bgfx/bgfx.h>
@@ -82,6 +83,16 @@ class BackendCallback : public bgfx::CallbackI
 
 		virtual void fatal(const char * filepath, uint16_t line, bgfx::Fatal::Enum code, const char * str) override
 		{
+			// A debug check is the library's own assertion, not a renderer failure. The ones it
+			// runs while shutting down compare reference counts on interfaces that an overlay
+			// or the Direct3D debug layer is free to hold, so ending the process over one would
+			// report somebody else's reference as a crash.
+			if (code == bgfx::Fatal::DebugCheck) {
+				DebugString("Renderer check failed at %s(%u): %s\n",
+							filepath != NULL ? filepath : "", (unsigned)line, str != NULL ? str : "");
+				return;
+			}
+
 			Fatal("Renderer error %d at %s(%u): %s", (int)code,
 						filepath != NULL ? filepath : "", (unsigned)line, str != NULL ? str : "");
 		}

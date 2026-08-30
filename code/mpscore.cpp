@@ -33,10 +33,10 @@
 #include "msfont.h"
 #include "scheme.h"
 #include "session.h"
+#include "stats.h"
 #include "surface.h"
 #include "windlg.h"
 #include "winstub.h"
-#include "wonline.h"
 
 #include "color.hh"
 
