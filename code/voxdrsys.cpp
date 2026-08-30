@@ -29,8 +29,6 @@ BSurface VoxelZSurface(VOXEL_BITMAP_WIDTH, VOXEL_BITMAP_HEIGHT, VOXEL_BITMAP_BPP
 Vector3 MinVoxelBounds;
 Vector3 MaxVoxelBounds;
 
-Rect LastRenderRect(0,0,VOXEL_BITMAP_WIDTH-1, VOXEL_BITMAP_HEIGHT-1);
-
 VoxelRenderStruct VoxelRenderData[64];
 VoxelShadowRenderStruct VoxelShadowRenderData[64];
 
@@ -176,31 +174,13 @@ void VoxelDrawSystem::Precalculate_Light(VoxelLibrary * voxlib, int layer, int i
 /// <remarks>Forget this routine and the previous object is still sitting in the buffer.</remarks>
 void VoxelDrawSystem::Reset(void)
 {
-	static int _need_buffer_init = true;
-
 	VoxelRenderDataCount = 0;
 	VoxelShadowRenderDataCount = 0;
 
-	if (_need_buffer_init) {
-		Clear_Buffer();
+	/* Cached images must never retain a pixel outside a previous render's bounds. */
+	Clear_Buffer();
+	if (VoxelDrawSystem::EnableZBuffer) {
 		Clear_Z_Buffer();
-		_need_buffer_init = false;
-	} else {
-		//Clear_Buffer(VoxelRect.X, VoxelRect.Y, VoxelRect.Width, VoxelRect.Height);
-		if (LastRenderRect.X >= 0 && LastRenderRect.Y >= 0 && LastRenderRect.X + LastRenderRect.Width <= VOXEL_BITMAP_WIDTH-1 && LastRenderRect.Y + LastRenderRect.Height <= VOXEL_BITMAP_HEIGHT-1) {
-			for (int i = LastRenderRect.Y; i <= LastRenderRect.Y + LastRenderRect.Height; i++) {
-				memset(&VoxelDrawBuffer[VOXEL_BITMAP_HEIGHT * i + LastRenderRect.X], 0, LastRenderRect.Width + 1);
-			}
-		} else {
-			memset(VoxelDrawBuffer, 0, sizeof(VoxelDrawBuffer));
-		}
-		if (VoxelDrawSystem::EnableZBuffer) {
-			if (LastRenderRect.Y <= LastRenderRect.Height + LastRenderRect.Y) {
-				for (int i = LastRenderRect.Y; i <= LastRenderRect.Y + LastRenderRect.Height; i++) {
-					memset(&VoxelDrawZBuffer[VOXEL_BITMAP_HEIGHT * i + LastRenderRect.X], 0, LastRenderRect.Width + 1);
-				}
-			}
-		}
 	}
 
 	MinVoxelBounds = Vector3(10000, 10000, 10000);
@@ -378,7 +358,6 @@ void VoxelDrawSystem::Render(Rect & rect, int & x, int & y)
 
 	rect.X -= 4;
 	rect.Y -= 4;
-	LastRenderRect = rect;
 
 	x = (int)center.X - rect.Width / 2;
 	y = (int)center.Y - rect.Height / 2;
@@ -434,8 +413,6 @@ SurfaceRegion VoxelDrawSystem::Render(void)
 	int width = MaxVoxelBounds.X - MinVoxelBounds.X;
 	int height = MaxVoxelBounds.Y - MinVoxelBounds.Y;
 
-	LastRenderRect = Rect(VOXEL_BITMAP_WIDTH / 2 - width / 2 - 4, VOXEL_BITMAP_HEIGHT / 2 - height / 2 - 4, width + 8, height + 8);
-
 	SurfaceRegion region;
 	region.Point.X = (int)center.X - (width + 8) / 2;
 	region.Point.Y = (int)center.Y - (height + 8) / 2;
@@ -458,71 +435,9 @@ void VoxelDrawSystem::Clear_Buffer(void)
 
 
 /// <summary>
-/// Clears a rectangle of the voxel drawing buffer.
-/// This routine is used to wipe only the part of the buffer that a drawn object occupied.
-/// A rectangle that would stray outside the voxel bitmap is treated as a request to clear
-/// the whole buffer.
-/// </summary>
-void VoxelDrawSystem::Clear_Buffer(int x, int y, int width, int height)
-{
-	if (x >= 0 && y >= 0 && x + width <= VOXEL_BITMAP_WIDTH-1 && y + height <= VOXEL_BITMAP_HEIGHT-1) {
-		for (int i = y; i <= y + height; i++) {
-			memset(&VoxelDrawBuffer[VOXEL_BITMAP_HEIGHT * i + x], 0, width);
-		}
-	} else {
-		memset(VoxelDrawBuffer, 0, sizeof(VoxelDrawBuffer));
-	}
-}
-
-
-/// <summary>
-/// Clears a region of the voxel drawing buffer.
-/// This routine is used to wipe only the part of the buffer that a drawn object occupied.
-/// A region that would stray outside the voxel bitmap is treated as a request to clear
-/// the whole buffer.
-/// </summary>
-void VoxelDrawSystem::Clear_Buffer(SurfaceRegion & region)
-{
-	if (region.Point.X >= 0 && region.Point.Y >= 0 && region.Point.X + region.Bounds.X <= VOXEL_BITMAP_WIDTH-1 && region.Point.Y + region.Bounds.Y <= VOXEL_BITMAP_HEIGHT-1) {
-		for (int i = region.Point.Y; i <= region.Point.Y + region.Bounds.Y; i++) {
-			memset(&VoxelDrawBuffer[VOXEL_BITMAP_HEIGHT * i + region.Point.X], 0, region.Bounds.X+1);
-		}
-	} else {
-		memset(VoxelDrawBuffer, 0, sizeof(VoxelDrawBuffer));
-	}
-}
-
-
-/// <summary>
 /// Clears the entire voxel depth buffer.
 /// </summary>
 void VoxelDrawSystem::Clear_Z_Buffer(void)
 {
 	memset(VoxelDrawZBuffer, 0, sizeof(VoxelDrawZBuffer));
-}
-
-
-/// <summary>
-/// Clears a rectangle of the voxel depth buffer.
-/// This routine is used to wipe only the part of the depth buffer that a drawn object
-/// occupied, which is cheaper than erasing the whole thing between objects.
-/// </summary>
-void VoxelDrawSystem::Clear_Z_Buffer(int x, int y, int width, int height)
-{
-	for (int i = y; i <= y + height; i++) {
-		memset(&VoxelDrawZBuffer[VOXEL_BITMAP_HEIGHT * i + x], 0, width);
-	}
-}
-
-
-/// <summary>
-/// Clears a region of the voxel depth buffer.
-/// This routine is used to wipe only the part of the depth buffer that a drawn object
-/// occupied, which is cheaper than erasing the whole thing between objects.
-/// </summary>
-void VoxelDrawSystem::Clear_Z_Buffer(SurfaceRegion & region)
-{
-	for (int i = region.Point.Y; i <= region.Point.Y + region.Bounds.Y; i++) {
-		memset(&VoxelDrawZBuffer[VOXEL_BITMAP_HEIGHT * i + region.Point.X], 0, region.Bounds.X+1);
-	}
 }

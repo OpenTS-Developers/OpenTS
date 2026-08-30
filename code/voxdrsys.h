@@ -63,12 +63,8 @@ namespace VoxelDrawSystem
 	SurfaceRegion Render(void);
 
 	void Clear_Buffer(void);
-	void Clear_Buffer(int x, int y, int width, int height);
-	void Clear_Buffer(SurfaceRegion & region);
 
 	void Clear_Z_Buffer(void);
-	void Clear_Z_Buffer(int x, int y, int width, int height);
-	void Clear_Z_Buffer(SurfaceRegion & region);
 };
 
 
