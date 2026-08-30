@@ -219,9 +219,35 @@ a scoped removal target but no tombstone for the parent.
 Every record carries an author: `credit` names at least one person, followed by
 anyone else the change credits. The published change page renders the list.
 
-New records target the current development release. Released lifecycle data and
-existing change IDs are immutable. Release and route maintenance are described
-in [Maintaining](MAINTAINING.md).
+New records target the current development release. Released lifecycle data is
+immutable, as is any change ID present in the base a check compares against;
+records still local to a branch may be reorganized until it merges, verified
+with `--base-ref` against that branch's own base. Release and route maintenance
+are described in [Maintaining](MAINTAINING.md).
+
+### What a record says
+
+A record is read by someone on a released build asking what changed for them.
+Give the visible change and its compatibility impact as briefly as it can be
+said, then stop. Two or three sentences carry most records, and length is the
+sign that the detail belongs on the page that owns it.
+
+- Be brief before being complete. Cut any sentence a reader would not miss;
+  background, qualification, and restatement are the usual surplus.
+- State the outcome, not the machinery: what a reader can now do, see, or must
+  migrate.
+- Leave out what carries no consequence a reader can act on, such as an
+  internal field, a refactor, or a structure a format gained.
+- Never describe the development cycle. Interoperability between unreleased
+  builds, work that landed in stages, and what an earlier draft said are not
+  part of the record.
+- Write one record per visible change, not per commit or pull request. While a
+  release is in development, fold a new record into the existing one whenever
+  both describe one change to a reader.
+- Keep a record true to the code as it stands. A change that supersedes an
+  unreleased record rewrites it rather than adding a second.
+- Say in one sentence what a credit is for when the list alone would not show
+  it, as when a change follows a prior implementation.
 
 ## Handoff
 
