@@ -1,6 +1,6 @@
 {
   "hooks": {
-    "PreToolUse": [
+    "PostToolUse": [
       {
         "matcher": "Edit|Write",
         "hooks": [
@@ -8,8 +8,8 @@
             "type": "command",
             "command": "python",
             "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/comment-rules.py"],
-            "timeout": 10,
-            "statusMessage": "Reading the comment rules"
+            "timeout": 15,
+            "statusMessage": "Checking comment style"
           }
         ]
       }

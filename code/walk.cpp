@@ -287,8 +287,7 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 					Cell cell = tube_ptr->Exit;
 					HeadToCoord = Coord(cell, 0);
 
-					memcpy(&LinkedTo->Path[0], &LinkedTo->Path[1], sizeof(LinkedTo->Path[0]) * (ARRAY_SIZE(LinkedTo->Path) - 1));
-					LinkedTo->Path[ARRAY_SIZE(LinkedTo->Path) - 1] = FACING_NONE;
+					LinkedTo->Advance_Path(1);
 
 					LinkedTo->CurrentTube = tube;
 					LinkedTo->CurrentTubeDir = FACING_FIRST;
@@ -459,8 +458,7 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 				LinkedTo->Path[1] = FACING_NONE;
 			}
 
-			memcpy(&LinkedTo->Path[0], &LinkedTo->Path[1], sizeof(LinkedTo->Path[0]) * (ARRAY_SIZE(LinkedTo->Path) - 1));
-			LinkedTo->Path[ARRAY_SIZE(LinkedTo->Path) - 1] = FACING_NONE;
+			LinkedTo->Advance_Path(1);
 
 			LinkedTo->Set_Coord(HeadToCoord);
 			LinkedTo->LastPathingCell = HeadToCoord.As_Cell();

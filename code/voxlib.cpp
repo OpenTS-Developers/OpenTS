@@ -15,8 +15,6 @@
 #include "wwfile.h"
 
 #include <algorithm>
-#include <climits>
-
 
 short VoxelPixelDeltaTable[VOXEL_BITMAP_WIDTH][2];
 unsigned char VoxelNormalTranslateTable[VOXEL_PALETTE_SIZE];
@@ -820,22 +818,22 @@ void VoxelLibrary::Render_Object(VoxelRenderStruct & voxel, Vector3 & center)
 
 	/// The drawer sums these deltas down the length of the model, so an error of
 	/// one unit here becomes one unit per voxel by the far end.
-	arg.TransformMatrix[0].I = short(float((double)corner_0.X + 128 - (double)center.X) * 256);
-	arg.TransformMatrix[0].J = short(float((double)corner_0.Y + 128 - (double)center.Y) * 256);
-	arg.TransformMatrix[0].K = short(float((double)corner_0.Z + 128 - (double)center.Z) * 256);
+	arg.TransformMatrix[0].I = static_cast<unsigned short>(static_cast<int>(((double)corner_0.X + 128 - (double)center.X) * 256.0));
+	arg.TransformMatrix[0].J = static_cast<unsigned short>(static_cast<int>(((double)corner_0.Y + 128 - (double)center.Y) * 256.0));
+	arg.TransformMatrix[0].K = static_cast<unsigned short>(static_cast<int>(((double)corner_0.Z + 128 - (double)center.Z) * 256.0));
 
-	arg.TransformMatrix[1].I = short(float(corner_x.X - corner_0.X) / (double)x_size * 256);
-	arg.TransformMatrix[2].I = short(float(corner_y.X - corner_0.X) / (double)y_size * 256);
-	arg.TransformMatrix[3].I = short(float(corner_z.X - corner_0.X) / (double)z_size * 256);
+	arg.TransformMatrix[1].I = static_cast<unsigned short>(static_cast<int>((corner_x.X - corner_0.X) / (double)x_size * 256.0));
+	arg.TransformMatrix[2].I = static_cast<unsigned short>(static_cast<int>((corner_y.X - corner_0.X) / (double)y_size * 256.0));
+	arg.TransformMatrix[3].I = static_cast<unsigned short>(static_cast<int>((corner_z.X - corner_0.X) / (double)z_size * 256.0));
 
-	arg.TransformMatrix[1].J = short(float(corner_x.Y - corner_0.Y) / (double)x_size * 256);
-	arg.TransformMatrix[2].J = short(float(corner_y.Y - corner_0.Y) / (double)y_size * 256);
-	arg.TransformMatrix[3].J = short(float(corner_z.Y - corner_0.Y) / (double)z_size * 256);
+	arg.TransformMatrix[1].J = static_cast<unsigned short>(static_cast<int>((corner_x.Y - corner_0.Y) / (double)x_size * 256.0));
+	arg.TransformMatrix[2].J = static_cast<unsigned short>(static_cast<int>((corner_y.Y - corner_0.Y) / (double)y_size * 256.0));
+	arg.TransformMatrix[3].J = static_cast<unsigned short>(static_cast<int>((corner_z.Y - corner_0.Y) / (double)z_size * 256.0));
 
 	if (VoxelDrawSystem::EnableZBuffer) {
-		arg.TransformMatrix[1].K = short(float(corner_x.Z - corner_0.Z) / (double)x_size * 256);
-		arg.TransformMatrix[2].K = short(float(corner_y.Z - corner_0.Z) / (double)y_size * 256);
-		arg.TransformMatrix[3].K = short(float(corner_z.Z - corner_0.Z) / (double)z_size * 256);
+		arg.TransformMatrix[1].K = static_cast<unsigned short>(static_cast<int>((corner_x.Z - corner_0.Z) / (double)x_size * 256.0));
+		arg.TransformMatrix[2].K = static_cast<unsigned short>(static_cast<int>((corner_y.Z - corner_0.Z) / (double)y_size * 256.0));
+		arg.TransformMatrix[3].K = static_cast<unsigned short>(static_cast<int>((corner_z.Z - corner_0.Z) / (double)z_size * 256.0));
 	}
 
 	int funcnum = VoxelRenderOrientations[orientation].Reversed;
@@ -936,14 +934,14 @@ void VoxelLibrary::Render_Shadow(VoxelShadowRenderStruct & voxel, Vector3 & cent
 	arg.StrideY = x_size;
 	arg.StartIndex = 0;
 
-	arg.TransformMatrix[0].I = short(float(corner_0.X + 128 - center.X) * 256);
-	arg.TransformMatrix[0].J = short(float(corner_0.Y + 128 - center.Y) * 256);
+	arg.TransformMatrix[0].I = static_cast<unsigned short>(static_cast<int>((corner_0.X + 128 - center.X) * 256.0));
+	arg.TransformMatrix[0].J = static_cast<unsigned short>(static_cast<int>((corner_0.Y + 128 - center.Y) * 256.0));
 
-	arg.TransformMatrix[1].I = short(float(corner_x.X - corner_0.X) / x_size * 256);
-	arg.TransformMatrix[2].I = short(float(corner_y.X - corner_0.X) / y_size * 256);
+	arg.TransformMatrix[1].I = static_cast<unsigned short>(static_cast<int>((corner_x.X - corner_0.X) / x_size * 256.0));
+	arg.TransformMatrix[2].I = static_cast<unsigned short>(static_cast<int>((corner_y.X - corner_0.X) / y_size * 256.0));
 
-	arg.TransformMatrix[1].J = short(float(corner_x.Y - corner_0.Y) / x_size * 256);
-	arg.TransformMatrix[2].J = short(float(corner_y.Y - corner_0.Y) / y_size * 256);
+	arg.TransformMatrix[1].J = static_cast<unsigned short>(static_cast<int>((corner_x.Y - corner_0.Y) / x_size * 256.0));
+	arg.TransformMatrix[2].J = static_cast<unsigned short>(static_cast<int>((corner_y.Y - corner_0.Y) / y_size * 256.0));
 
 	_voxel_draw_shadow(&arg);
 }
@@ -1989,8 +1987,9 @@ void __cdecl Draw_Voxel_Regular(VoxelFuncArgumentStruct * state)
 							ptr++;
 
 							/// Compute buffer index and write color
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00) + 1] = color_index;
+							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
+							VoxelDrawBuffer[buffer_index] = color_index;
+							VoxelDrawBuffer[buffer_index + 1] = color_index;
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -2069,8 +2068,9 @@ void __cdecl Draw_Voxel_Reverse(VoxelFuncArgumentStruct * state)
 							ptr--;
 
 							/// Compute buffer index and write color
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00) + 1] = color_index;
+							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
+							VoxelDrawBuffer[buffer_index] = color_index;
+							VoxelDrawBuffer[buffer_index + 1] = color_index;
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;

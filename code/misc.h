@@ -87,11 +87,6 @@ void __cdecl Shake_Screen(int shakes);
 //void * Build_Fading_Table(PaletteClass const & palette, void * dest, int color, int frac);
 //void * __cdecl Build_Fading_Table(void const *palette, void const *dest, long int color, long int frac);
 
-/*=========================================================================*/
-/* The following prototypes are for the file: DETPROC.ASM						*/
-/*=========================================================================*/
-
-extern WORD __cdecl  Processor(void);
 extern WORD __cdecl Operating_System(void);
 
 

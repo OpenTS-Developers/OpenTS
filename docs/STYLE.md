@@ -66,22 +66,19 @@ where the representation requires them.
 
 ## Comments and notices
 
-Historical file headers and legal notices remain verbatim, including a
-header's `Functions:` table, which is not maintained as the functions it
-lists change. Preserve accurate ordinary historical comments; correct one
-narrowly when current code or stronger evidence proves it inaccurate. A
-historical function banner that needs substantial rewriting is replaced with
-`///` XML documentation, not re-authored in the historical form; an ordinary
-Westwood comment that needs one is restated as `//` prose rather than
-extended in its original block form.
+Keep comments sparse: one concise sentence on what the code cannot show — an
+invariant, a compatibility constraint, a surprise. Describe the code as it
+stands, never the edit that produced it, and never restate what the code
+already says. New prose takes `//` or a plain `/* */` block, never the
+Westwood `**` decoration; `///` is for genuine XML documentation only, not
+the trailing prose much of the inherited tree carries. Comment syntax does
+not establish authorship.
 
-Keep comments sparse and concise. Comment the invariants, compatibility
-constraints, and surprising behavior the code cannot show; never narrate the
-edit itself or restate what the code already says. Use `//` or a plain
-`/* */` block for ordinary prose; new code does not reproduce the Westwood
-`**` continuation prefix. Reserve `///` for genuine XML documentation
-consumed as such, not for the trailing prose much of the inherited tree puts
-there. Comment syntax does not establish authorship.
+Historical file headers and legal notices stay verbatim, a header's
+unmaintained `Functions:` table included. Accurate historical comments stay;
+correct an inaccurate one narrowly. A function banner that needs substantial
+rewriting becomes `///` XML documentation; an ordinary Westwood comment
+becomes `//` prose.
 
 Preserve SPDX identifiers, copyright and modification notices, Westwood source
 headers, and GPL Section 7 notices. If a notice's history is uncertain, retain

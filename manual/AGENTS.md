@@ -25,9 +25,9 @@ instructions.
   explicitly changes that contract.
 - Give each fact one page owner and let structured fields render their own
   data. Do not copy generated lists into prose.
-- Write change fragments under `changes/` with comment discipline: a few
-  concise sentences stating the visible change and its compatibility impact.
-  Detail belongs to the pages that own it.
+- Write change records under `changes/` as briefly as the change can be said,
+  to the rules in [AUTHORING](AUTHORING.md). Detail belongs to the pages that
+  own it.
 - Support every public behavioral claim with the current source or a stated
   runtime observation. Narrow or omit claims that the evidence does not
   establish.

@@ -38,52 +38,32 @@ structures as compatibility boundaries.
 
 ## Comments
 
-Keep comments sparse; most edits need none.
+Keep comments sparse; most edits need none. Comment only what the code cannot
+show — an invariant, a compatibility constraint, a surprise — in one concise
+sentence. Describe the code as it stands, never the edit that produced it:
+`// removed the modem branch` narrates a diff, and that history belongs to
+git. Preserve accurate historical comments; correct a wrong one narrowly.
 
-- Comment only what the code cannot show: an invariant, a compatibility
-  constraint, or genuinely surprising behavior. One concise sentence usually
-  suffices. Do not annotate declarations, branches, or edits out of habit.
-- A comment describes the code as it now stands, never the edit that produced
-  it. `// retired; slot kept, save headers store these values` on a kept enum
-  slot states a live constraint; `// removed the modem branch` narrates a
-  diff, and that history belongs to git.
-- Preserve accurate historical comments. Correct an inaccurate ordinary
-  comment narrowly when current code or stronger evidence proves it wrong.
+The tree mixes comment forms. Match the surrounding indentation and width but
+not the choice of form: inherited usage records what Westwood wrote and does
+not authorize writing more of it. These rules beat the neighboring lines.
 
-## Comment styles
+- Historical file headers are frozen verbatim, `Functions:` table included,
+  even when the listed functions change (edits need explicit legal or
+  attribution review).
+- Historical `/*** Name -- ***/` banners stay while accurate. One that needs
+  substantial rewriting becomes `///` XML documentation; never author a new
+  banner.
+- Westwood `/* ** */` blocks and old `//` prose keep their form through a
+  narrow correction; a substantial amendment becomes plain `//` prose.
+- `///` is XML documentation (`<summary>` etc.) and nothing else. Inherited
+  trailing `///` prose is noise, not a convention; new trailing comments take
+  `//`.
+- New prose takes `//` or a plain `/* */` block (`//----` separators
+  included). Never write the `**` continuation prefix or invent decoration.
 
-The tree mixes distinct comment forms. Follow the surrounding file for
-indentation, placement, and width, but not for the choice of form: inherited
-usage records what Westwood wrote and does not authorize writing more of it.
-Where a rule below and the neighboring lines disagree, the rule decides.
-
-- **Historical file headers** — the Westwood banner at the top of an inherited
-  file, including its `Functions:` table — are frozen verbatim. Do not edit
-  them even when the functions they list change or disappear. Header
-  maintenance requires an explicit legal or attribution change with
-  repository-wide review.
-- **Historical function banners** (`/*** Name -- purpose ... HISTORY ***/`)
-  stay while they are accurate; correct a wrong detail narrowly. When a
-  banner needs substantial rewriting, replace it with `///` XML documentation
-  instead of re-authoring it in the historical form, and never write a new
-  Westwood-style banner.
-- **Ordinary historical comments** (Westwood `/* ** */` blocks and old `//`
-  prose) keep their form through a narrow correction. A substantial amendment
-  restates the comment as `//` OpenTS prose instead of extending the Westwood
-  block decoration.
-- **`///` marks XML documentation and nothing else** (`<summary>`, `<param>`,
-  `<returns>`), the form for new or substantially rewritten function
-  documentation. Much of the inherited tree trails ordinary prose after `///`
-  instead. Read that as inherited noise rather than as the local convention: a
-  new trailing comment takes `//` however its neighbors are written.
-- **`//` and plain `/* */` blocks** (including the `//----` and `//....`
-  separator lines) carry ordinary prose inside code. Where Westwood decorated
-  blocks are prevalent, a plain `/* */` block is the way to sit alongside
-  them; new code does not reproduce the `**` continuation prefix. Follow the
-  local indentation and spacing, and introduce no new decoration styles.
-
-Preserve SPDX identifiers, copyright notices, modification notices, and GPL
-Section 7 notices. Comment syntax does not establish authorship.
+Preserve SPDX, copyright, modification, and GPL Section 7 notices; comment
+syntax does not establish authorship.
 
 ## Documentation, validation, and handoff
 

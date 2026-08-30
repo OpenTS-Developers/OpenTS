@@ -46,12 +46,8 @@ A build result is not runtime evidence.
   before moving state or replacing a subsystem.
 - Preserve historical file headers and all SPDX, copyright, modification, and
   GPL Section 7 notices.
-- Correct an inaccurate ordinary historical comment narrowly; a substantial
-  amendment adopts the current comment style. Keep new comments sparse and
-  concise; comment what the code cannot show, never the edit itself. Use `//`
-  or a plain `/* */` block for ordinary new prose rather than the Westwood
-  `**` decoration, and reserve `///` for genuine XML documentation however
-  the surrounding lines use it.
+- Keep comments sparse and brief: one sentence on what the code cannot show,
+  never the edit itself. `code/AGENTS.md` owns the comment-form rules.
 
 ## Documentation and validation
 

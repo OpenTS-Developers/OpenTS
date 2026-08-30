@@ -412,9 +412,8 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 			TubeClass * tube = Tubes[tubenum];
 			Cell exit = tube->Exit;
 			HeadToCoord = exit.As_Coord();
-			memcpy((char*)&LinkedTo->Path, (char*)&LinkedTo->Path[1], sizeof(LinkedTo->Path[0]) * (CONQUER_PATH_MAX-1));
+			LinkedTo->Advance_Path(1);
 			LinkedTo->LastPathingCell = HeadToCoord.As_Cell();
-			LinkedTo->Path[CONQUER_PATH_MAX-1] = FACING_NONE;
 			LinkedTo->CurrentTube = tubenum;
 			LinkedTo->CurrentTubeDir = FACING_FIRST;
 			LinkedTo->LastTubeCoord = Map[Adjacent_Cell((Cell)tube->Enter, tube->Dirs[0])].Cell_Coord() - Coord((Cell)tube->Enter) + LinkedTo->PositionCoord;
@@ -515,8 +514,7 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 			if (LinkedTo->IsLocked) {
 				LinkedTo->Set_Occupy_Bit(HeadToCoord);
 			}
-			memcpy((char *)&LinkedTo->Path, (char *)&LinkedTo->Path[1], sizeof(LinkedTo->Path[0]) * (CONQUER_PATH_MAX - 1));
-			LinkedTo->Path[CONQUER_PATH_MAX - 1] = FACING_NONE;
+			LinkedTo->Advance_Path(1);
 			LinkedTo->LastPathingCell = HeadToCoord.As_Cell();
 			return(ok);
 

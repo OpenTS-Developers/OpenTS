@@ -181,6 +181,10 @@ double AStarClass::Get_Movement_Cost(CellClass **from, CellClass **to, bool brid
 						clear = true;
 						break;
 					}
+
+					if (facing == FACING_COUNT) {
+						break;
+					}
 				} else {
 					facing = occupier->PrimaryFacing.Current().As_Dir8();
 				}
@@ -900,7 +904,7 @@ void AStarClass::Apply_Path_Collision_Avoidance(FootClass * foot)
 				}
 
 				marked_path = true;
-				while (blocker->Path[index] != FACING_NONE && index < ARRAY_SIZE(blocker->Path)) {
+				while (index < ARRAY_SIZE(blocker->Path) && blocker->Path[index] != FACING_NONE) {
 					blocker_cell = Next_Cell(blocker_cell, blocker->Path[index]);
 					Map[blocker_cell].IsPredictedPath = !Map[blocker_cell].IsPredictedPath;
 					index++;
