@@ -1989,8 +1989,9 @@ void __cdecl Draw_Voxel_Regular(VoxelFuncArgumentStruct * state)
 							ptr++;
 
 							/// Compute buffer index and write color
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00) + 1] = color_index;
+							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
+							VoxelDrawBuffer[buffer_index] = color_index;
+							VoxelDrawBuffer[buffer_index + 1] = color_index;
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
@@ -2069,8 +2070,9 @@ void __cdecl Draw_Voxel_Reverse(VoxelFuncArgumentStruct * state)
 							ptr--;
 
 							/// Compute buffer index and write color
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00)] = color_index;
-							VoxelDrawBuffer[(pixel_x >> 8) | (pixel_y & 0xFF00) + 1] = color_index;
+							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
+							VoxelDrawBuffer[buffer_index] = color_index;
+							VoxelDrawBuffer[buffer_index + 1] = color_index;
 
 							pixel_x += state->TransformMatrix[3].I;
 							pixel_y += state->TransformMatrix[3].J;
