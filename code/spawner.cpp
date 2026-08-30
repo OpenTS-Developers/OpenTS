@@ -24,6 +24,7 @@
 #include "goptions.h"
 #include "houstype.h"
 #include "init.h"
+#include "ipxmgr.h"
 #include "language\language.h"
 #include "loaddlg.h"
 #include "mplayer.h"
@@ -125,34 +126,51 @@ static void Spawner_Seat_Local(void)
 
 
 /// <summary>
-/// Puts the people playing into the list the houses are created from, each with the address
-/// its machine is reached on when the match is against other machines.
+/// Puts one person's seat into the list the houses are created from, with the address the
+/// machine playing it is reached on when the match is against other machines.
+/// </summary>
+/// <param name="index">Which seat, counted from zero.</param>
+static void Spawner_Seat_Human(int index)
+{
+	SpawnerConfigClass::SlotType const & seat = SpawnConfig.Slots[index];
+
+	NodeNameType * node = new NodeNameType;
+	std::snprintf(node->Name, sizeof(node->Name), "%s",
+		seat.Name.empty() ? "Player" : seat.Name.c_str());
+	node->Player.House = seat.Country;
+	node->Player.Color = seat.Color;
+	node->Player.ProcessTime = -1;
+	node->Player.SpawnChoice = seat.StartingPosition;
+	node->Player.AlliesMask = Spawner_Allies_Mask(seat);
+
+	/*
+	 * Through a tunnel a machine is named by its tunnel number alone, carried where a port
+	 * would go; reached directly, it is named by the address it answers on.
+	 */
+	if (SpawnConfig.TunnelPort != 0) {
+		node->Address.Set_Address(0, htons((unsigned short)seat.Port));
+	} else if (seat.Port > 0) {
+		node->Address.Set_Address(inet_addr(seat.Address.c_str()), htons((unsigned short)seat.Port));
+	}
+
+	Session.Players.Add(node);
+}
+
+
+/// <summary>
+/// Puts the people playing into the list the houses are created from. The game takes the
+/// first entry of this list to be the player at this machine, so the local seat leads and
+/// the rest follow in seat order; the houses take their own order from what the seats say
+/// rather than from this list.
 /// </summary>
 static void Spawner_Seat_Humans(void)
 {
+	Spawner_Seat_Human(SpawnConfig.LocalSlot);
+
 	for (int index = 0; index < SpawnConfig.HumanCount; index++) {
-		SpawnerConfigClass::SlotType const & seat = SpawnConfig.Slots[index];
-
-		NodeNameType * node = new NodeNameType;
-		std::snprintf(node->Name, sizeof(node->Name), "%s",
-			seat.Name.empty() ? "Player" : seat.Name.c_str());
-		node->Player.House = seat.Country;
-		node->Player.Color = seat.Color;
-		node->Player.ProcessTime = -1;
-		node->Player.SpawnChoice = seat.StartingPosition;
-		node->Player.AlliesMask = Spawner_Allies_Mask(seat);
-
-		/*
-		 * Through a tunnel a machine is named by its tunnel number alone, carried where a port
-		 * would go; reached directly, it is named by the address it answers on.
-		 */
-		if (SpawnConfig.TunnelPort != 0) {
-			node->Address.Set_Address(0, htons((unsigned short)seat.Port));
-		} else if (seat.Port > 0) {
-			node->Address.Set_Address(inet_addr(seat.Address.c_str()), htons((unsigned short)seat.Port));
+		if (index != SpawnConfig.LocalSlot) {
+			Spawner_Seat_Human(index);
 		}
-
-		Session.Players.Add(node);
 	}
 
 	Session.NumPlayers = SpawnConfig.HumanCount;
@@ -250,10 +268,8 @@ static void Spawner_Bind_Options(void)
 	 *   NextCampaignAutoSave,
 	 *   NextSkirmishAutoSave          - saving by itself is not wired up.
 	 *   BuildOffAlly                  - the game has no such option to give it to.
-	 *   ReconnectTimeout, ConnTimeout,
-	 *   TunnelId, ListenPort,
-	 *   TunnelAddress                 - the socket this machine opens and the tunnel it joins
-	 *                                   through, neither of which anything opens yet.
+	 *   ReconnectTimeout, ConnTimeout - how patiently to wait for a machine that has gone
+	 *                                   quiet is part of the timing the game keeps for itself.
 	 *   QuickMatch, SkipScoreScreen,
 	 *   WriteStatistics, CoachMode,
 	 *   AutoSurrender, AttackNeutralUnits,
@@ -379,6 +395,14 @@ static void Spawner_Setup_Session(void)
 	Session.Type = SpawnConfig.Launch_Type() == SpawnerConfigClass::LaunchType::Multiplayer
 		? GAME_INTERNET : GAME_SKIRMISH;
 
+	/*
+	 * Against other machines the random numbers must fall the same way everywhere, and no
+	 * lobby is there to hand a seed around, so the file's own is taken exactly as written.
+	 */
+	if (Session.Type == GAME_INTERNET) {
+		Seed = SpawnConfig.Seed;
+	}
+
 	Clear_Vector(&Session.Players);
 	Clear_Vector(&Session.Computers);
 
@@ -387,6 +411,35 @@ static void Spawner_Setup_Session(void)
 	Spawner_Seat_Humans();
 	Spawner_Seat_Computers();
 	Spawner_Bind_Scenario();
+}
+
+
+/// <summary>
+/// Opens the network a game against other machines is played over. Through a tunnel every
+/// machine is named by its tunnel number; otherwise each is reached at its own address,
+/// and this machine listens where the file told the others to find it. The other players'
+/// seats become the addresses a broadcast fans out to.
+/// </summary>
+/// <returns>bool; Is the network ready to carry the match?</returns>
+static bool Spawner_Wire_Network(void)
+{
+	if (SpawnConfig.TunnelPort != 0) {
+		Ipx.Configure_Tunnel(htons((unsigned short)SpawnConfig.TunnelId),
+			inet_addr(SpawnConfig.TunnelAddress.c_str()), htons((unsigned short)SpawnConfig.TunnelPort));
+	} else {
+		Ipx.Configure_Direct_Peers((unsigned short)SpawnConfig.ListenPort);
+	}
+
+	// The local seat leads the player list, so everybody after it is another machine.
+	for (int index = 1; index < Session.Players.Count(); index++) {
+		Ipx.Add_Peer(Session.Players[index]->Address);
+	}
+
+	if (!Ipx.Init()) {
+		return(Spawner_Refuse("The network could not be opened."));
+	}
+
+	return(true);
 }
 
 
@@ -488,11 +541,10 @@ bool Spawner_Prepare(bool & gameloaded)
 		Scen->ScenarioName, SpawnConfig.Session_Identity_CRC());
 
 	/*
-	 * The session is assembled whole, so that wiring the network is all that remains; the
-	 * sockets themselves are the one thing this game does not reach yet.
+	 * The network comes last, once the session it will carry is assembled whole.
 	 */
-	if (Session.Type == GAME_INTERNET) {
-		return(Spawner_Refuse("A game against other machines needs its network, which is not wired up yet."));
+	if (Session.Type == GAME_INTERNET && !Spawner_Wire_Network()) {
+		return(false);
 	}
 
 	return(true);

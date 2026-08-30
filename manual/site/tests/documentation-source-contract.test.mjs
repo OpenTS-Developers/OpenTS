@@ -367,15 +367,33 @@ test('Saved games are named in one folder rather than searched for', () => {
 	);
 });
 
-test('A match against other machines is assembled whole and refused at the network', () => {
+test('A match against other machines is assembled whole and wired to its network last', () => {
 	const spawner = source('code/spawner.cpp');
 
 	assertOrdered(functionBody(spawner, 'bool Spawner_Prepare(bool & gameloaded)'), [
 		'SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)',
 		'Spawner_Setup_Session();',
 		'SpawnConfig.Session_Identity_CRC()',
-		'if (Session.Type == GAME_INTERNET) {',
-	], 'the match is judged, assembled and named before the missing network refuses it');
+		'Session.Type == GAME_INTERNET && !Spawner_Wire_Network()',
+	], 'the match is judged, assembled and named before its network is opened');
+
+	assertOrdered(functionBody(spawner, 'static bool Spawner_Wire_Network(void)'), [
+		'Ipx.Configure_Tunnel(',
+		'Ipx.Configure_Direct_Peers(',
+		'Ipx.Add_Peer(Session.Players[index]->Address);',
+		'if (!Ipx.Init()) {',
+	], 'the transport is chosen, the peers named, and only then the network opened');
+
+	assertOrdered(functionBody(source('code/scenario.cpp'), 'void Assign_Houses(void)'), [
+		'stricmp(Session.Players[j]->Name, Session.Players[index]->Name) < 0',
+		'PlayerPtr = housep;',
+	], 'a color tie is settled by name, so every machine creates the houses in one order');
+
+	assertOrdered(functionBody(source('code/scenario.cpp'), 'static NodeNameType * Seated_Node(int seat)'), [
+		'Session.Players[i]->Player.ID == seat',
+		'Session.Computers[i]->Player.ID == seat',
+	], 'a seat is found by the house it was assigned, not by its place in the list');
+
 
 	assert.match(
 		functionBody(spawner, 'static void Spawner_Setup_Session(void)'),
@@ -383,11 +401,21 @@ test('A match against other machines is assembled whole and refused at the netwo
 		'one assembly serves both kinds of match',
 	);
 
-	assertOrdered(functionBody(spawner, 'static void Spawner_Seat_Humans(void)'), [
+	assertOrdered(functionBody(spawner, 'static void Spawner_Seat_Human(int index)'), [
 		'if (SpawnConfig.TunnelPort != 0) {',
 		'node->Address.Set_Address(0, htons((unsigned short)seat.Port));',
 		'inet_addr(seat.Address.c_str())',
 	], 'a tunnelled machine is named by its tunnel number before an address is read');
+
+	assertOrdered(functionBody(spawner, 'static void Spawner_Seat_Humans(void)'), [
+		'Spawner_Seat_Human(SpawnConfig.LocalSlot);',
+		'if (index != SpawnConfig.LocalSlot) {',
+	], 'the local seat leads the player list the rest of the game reads');
+
+	assertOrdered(functionBody(spawner, 'static void Spawner_Setup_Session(void)'), [
+		'GAME_INTERNET : GAME_SKIRMISH;',
+		'Seed = SpawnConfig.Seed;',
+	], 'one seed is taken as written, since no lobby hands one around');
 
 	assertOrdered(
 		functionBody(

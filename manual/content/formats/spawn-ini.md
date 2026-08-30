@@ -130,9 +130,12 @@ The seats are ordered by color, and a name is what breaks a tie between two of o
 a match without those names is not the same match on every machine. Colors themselves may
 still be shared.
 
-The game reads the file, judges it, and assembles the whole match — the options, the seats,
-the alliances, the start positions and the addresses — before it is refused at the network,
-which this game does not yet open. The reason is shown and the game exits.
+The seed is taken exactly as written, the same on every machine — including `0`, which in a
+match against other machines is a seed like any other rather than a draw from chance.
+
+When a `[Tunnel]` section names a server, the match is played through it; otherwise each
+machine is reached straight at the address its section carries, while this machine listens
+on the port its own `Port` key names.
 
 ## When something is wrong
 
@@ -155,6 +158,6 @@ These keys are read but do not yet change anything, because the game has no such
 to give them to: `Tournament`, `GameID`, `MapHash`, `BuildOffAlly`, the automatic-save
 scheduling keys, `QuickMatch`, `SkipScoreScreen`, `WriteStatistics`, `CoachMode`, `AutoSurrender`,
 `AttackNeutralUnits`, `ScrapMetal`, `ContinueWithoutHumans`, `PlayMoviesInMultiplayer`,
-`CustomLoadScreen`, `CustomLoadScreenPos`, and `DifficultyName`. The timeout keys, the port
-this machine listens on, and the tunnel's own address wait on the network the game does not
-yet open.
+`CustomLoadScreen`, `CustomLoadScreenPos`, `DifficultyName`, and the two timeout keys,
+`ReconnectTimeout` and `ConnTimeout` — how patiently to wait for a machine that has gone
+quiet is part of the timing the game keeps for itself.

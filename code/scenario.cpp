@@ -2065,21 +2065,26 @@ void Write_Scenario_INI(char const * fname, bool mplayer)
 /// <summary>
 /// Fetches the node a seat of the match was described by.
 /// The seats are numbered in the order their houses are created: the players first, then the
-/// computer players a session source seated.
+/// computer players a session source seated. The player list is held in each machine's own
+/// order, so a seat is found by the house it was assigned rather than by list position.
 /// </summary>
 /// <param name="seat">The seat to fetch, counted from zero.</param>
 /// <returns>The node describing that seat, or NULL if the match does not hold it.</returns>
 static NodeNameType * Seated_Node(int seat)
 {
-	if (seat < 0) {
-		return(NULL);
-	}
-	if (seat < Session.Players.Count()) {
-		return(Session.Players[seat]);
+	for (int i = 0; i < Session.Players.Count(); i++) {
+		if (Session.Players[i]->Player.ID == seat) {
+			return(Session.Players[i]);
+		}
 	}
 
-	seat -= Session.Players.Count();
-	return(seat < Session.Computers.Count() ? Session.Computers[seat] : NULL);
+	for (int i = 0; i < Session.Computers.Count(); i++) {
+		if (Session.Computers[i]->Player.ID == seat) {
+			return(Session.Computers[i]);
+		}
+	}
+
+	return(NULL);
 }
 
 
@@ -2127,8 +2132,8 @@ void Assign_Houses(void)
 //	DebugString( "Assign_Houses()\n" );
 	//------------------------------------------------------------------------
 	// Assign each player in 'Players' to a multiplayer house.  Players will
-	// be sorted by their chosen color value (this value must be unique among
-	// all the players).
+	// be sorted by their chosen color value (a tie between colors is
+	// settled by the players' names).
 	//------------------------------------------------------------------------
 	for (i = 0; i < Session.Players.Count(); i++) {
 
@@ -2141,7 +2146,17 @@ void Assign_Houses(void)
 			//..................................................................
 			// If we've already assigned this house, skip it.
 			//..................................................................
-			if (!assigned[j] && (lowest_color == -1 || Session.Players[j]->Player.Color < lowest_color)) {
+			if (assigned[j]) {
+				continue;
+			}
+
+			/*
+			 * Each machine holds this list in its own order, with itself first, so a color
+			 * tie is settled by name to keep the houses created in one order everywhere.
+			 */
+			if (index == -1 || Session.Players[j]->Player.Color < lowest_color ||
+				(Session.Players[j]->Player.Color == lowest_color &&
+					stricmp(Session.Players[j]->Name, Session.Players[index]->Name) < 0)) {
 				lowest_color = Session.Players[j]->Player.Color;
 				index = j;
 			}
