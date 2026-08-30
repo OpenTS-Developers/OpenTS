@@ -481,14 +481,8 @@ bool Spawner_Prepare(bool & gameloaded)
 	// A seat names its country by the rules' own numbering, so the roster is read first.
 	Prepare_Side_Roster();
 
-	switch (SpawnConfig.Launch_Type()) {
-		case SpawnerConfigClass::LaunchType::Resume:
-			return(Spawner_Resume(gameloaded));
-
-		case SpawnerConfigClass::LaunchType::Multiplayer:
-		case SpawnerConfigClass::LaunchType::Campaign:
-		case SpawnerConfigClass::LaunchType::Skirmish:
-			break;
+	if (SpawnConfig.Launch_Type() == SpawnerConfigClass::LaunchType::Resume) {
+		return(Spawner_Resume(gameloaded));
 	}
 
 	Disable_Addon(ADDON_ANY);
