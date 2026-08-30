@@ -17,73 +17,76 @@
 #include <vector>
 
 
-enum class NetPacketEncoding
+namespace NetPacket
 {
-	UNCOMPRESSED,
-	COMPRESSED,
-};
+	enum class Encoding
+	{
+		UNCOMPRESSED,
+		COMPRESSED,
+	};
 
 
-enum class NetPacketDecodeError
-{
-	NONE,
-	EMPTY_PACKET,
-	INVALID_EVENT_TYPE,
-	INVALID_PREFIX,
-	TRUNCATED_ENVELOPE,
-	FRAMESYNC_NOT_ALONE,
-	NESTED_ENVELOPE,
-	SENDER_MISMATCH,
-	INVALID_EVENT_LENGTH,
-	TRUNCATED_EVENT,
-	ZERO_MEGAMISSION_COUNT,
-	TRUNCATED_MEGAMISSION,
-	TRUNCATED_ADDPLAYER,
-	TRAILING_BYTES,
-	INVALID_CONNECTION,
-	COUNT,
-};
+	enum class DecodeError
+	{
+		NONE,
+		EMPTY_PACKET,
+		INVALID_EVENT_TYPE,
+		INVALID_PREFIX,
+		TRUNCATED_ENVELOPE,
+		FRAMESYNC_NOT_ALONE,
+		NESTED_ENVELOPE,
+		SENDER_MISMATCH,
+		INVALID_EVENT_LENGTH,
+		TRUNCATED_EVENT,
+		ZERO_MEGAMISSION_COUNT,
+		TRUNCATED_MEGAMISSION,
+		TRUNCATED_ADDPLAYER,
+		TRAILING_BYTES,
+		INVALID_CONNECTION,
+		COUNT,
+	};
 
 
-constexpr std::uint8_t NET_PACKET_NO_EVENT_TYPE = UINT8_MAX;
+	constexpr std::uint8_t NO_EVENT_TYPE = UINT8_MAX;
 
 
-struct NetPacketDecodeFailure
-{
-	NetPacketDecodeError Code = NetPacketDecodeError::NONE;
-	std::size_t Offset = 0;
-	std::uint8_t EventType = NET_PACKET_NO_EVENT_TYPE;
-};
+	struct DecodeFailure
+	{
+		DecodeError Code = DecodeError::NONE;
+		std::size_t Offset = 0;
+		std::uint8_t EventType = NO_EVENT_TYPE;
+	};
 
 
-struct NetDecodedEvent
-{
-	NetDecodedEvent(void) noexcept;
-	NetDecodedEvent(EventClass const & event, std::vector<std::byte> add_player_data) noexcept;
-	NetDecodedEvent(NetDecodedEvent const & other);
-	NetDecodedEvent(NetDecodedEvent && other) noexcept;
-	NetDecodedEvent & operator=(NetDecodedEvent const & other);
-	NetDecodedEvent & operator=(NetDecodedEvent && other) noexcept;
+	struct DecodedEvent
+	{
+		DecodedEvent(void) noexcept;
+		DecodedEvent(EventClass const & event, std::vector<std::byte> add_player_data) noexcept;
+		DecodedEvent(DecodedEvent const & other);
+		DecodedEvent(DecodedEvent && other) noexcept;
+		DecodedEvent & operator=(DecodedEvent const & other);
+		DecodedEvent & operator=(DecodedEvent && other) noexcept;
 
-	EventClass Event;
-	std::vector<std::byte> AddPlayerData;
+		EventClass Event;
+		std::vector<std::byte> AddPlayerData;
 
-	private:
-		void Bind_AddPlayer_Data(void) noexcept;
-};
-
-
-struct NetPacketDecodeResult
-{
-	bool Succeeded(void) const noexcept;
-
-	NetPacketDecodeFailure Failure;
-	EventClass Envelope;
-	bool HasEnvelope = false;
-	std::vector<NetDecodedEvent> Events;
-};
+		private:
+			void Bind_AddPlayer_Data(void) noexcept;
+	};
 
 
-NetPacketDecodeResult Decode_Event_Packet(std::span<std::byte const> packet, NetPacketEncoding encoding, int expected_sender);
+	struct DecodeResult
+	{
+		bool Succeeded(void) const noexcept;
 
-char const * Net_Packet_Error_Name(NetPacketDecodeError error) noexcept;
+		DecodeFailure Failure;
+		EventClass Envelope;
+		bool HasEnvelope = false;
+		std::vector<DecodedEvent> Events;
+	};
+
+
+	DecodeResult Decode_Event_Packet(std::span<std::byte const> packet, Encoding encoding, int expected_sender);
+
+	char const * Error_Name(DecodeError error) noexcept;
+}

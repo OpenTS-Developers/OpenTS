@@ -327,9 +327,9 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 	if (buf != NULL && buflen > 0) {
 		packet_bytes = {static_cast<std::byte const *>(buf), static_cast<std::size_t>(buflen)};
 	}
-	NetConnectionAdmission const admission = Admit_Connection_Packet(packet_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+	NetAdmission::ConnectionResult const admission = NetAdmission::Admit_Connection_Packet(packet_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 	if (!admission.Succeeded()) {
-		Record_Admission_Drop(admission.Error, admission.Code);
+		Record_Admission_Drop(admission.ErrorCode, admission.Code);
 		return(1);
 	}
 
@@ -365,7 +365,7 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 				if (send_entry->Buffer != NULL && send_entry->BufLen > 0) {
 					entry_bytes = {reinterpret_cast<std::byte const *>(send_entry->Buffer), static_cast<std::size_t>(send_entry->BufLen)};
 				}
-				NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+				NetAdmission::ConnectionResult const entry = NetAdmission::Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 				/*...............................................................
 				If ACK is for this entry, mark it
@@ -437,7 +437,7 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 					if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
 						entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
 					}
-					NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+					NetAdmission::ConnectionResult const entry = NetAdmission::Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 					/*...........................................................
 					Packet is found; it's a resend
@@ -497,7 +497,7 @@ int ConnectionClass::Receive_Packet (void * buf, int buflen)
 							if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
 								entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
 							}
-							NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+							NetAdmission::ConnectionResult const entry = NetAdmission::Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 							/*......................................................
 							Entry is found
@@ -575,10 +575,10 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 			if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
 				entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
 			}
-			NetConnectionAdmission const admission = Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
+			NetAdmission::ConnectionResult const admission = NetAdmission::Admit_Connection_Packet(entry_bytes, sizeof(CommHeaderType), static_cast<std::size_t>(MaxPacketLen));
 			if (!admission.Succeeded()) {
 				rec_entry->IsRead = 1;
-				Record_Admission_Drop(admission.Error, admission.Code);
+				Record_Admission_Drop(admission.ErrorCode, admission.Code);
 				continue;
 			}
 			if (admission.Code == PACKET_ACK) {
@@ -597,8 +597,8 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 				LastReadID = admission.PacketID;
 				rec_entry->IsRead = 1;
 
-				NetAdmissionError const destination = Validate_Network_Destination(admission.Payload, static_cast<std::size_t>(capacity));
-				if (destination != NetAdmissionError::NONE) {
+				NetAdmission::Error const destination = NetAdmission::Validate_Destination(admission.Payload, static_cast<std::size_t>(capacity));
+				if (destination != NetAdmission::Error::NONE) {
 					Record_Admission_Drop(destination, admission.Code);
 					continue;
 				}
@@ -612,8 +612,8 @@ int ConnectionClass::Get_Packet (void * buf, int capacity, int *buflen)
 			else if (admission.Code == PACKET_DATA_NOACK) {
 				rec_entry->IsRead = 1;
 
-				NetAdmissionError const destination = Validate_Network_Destination(admission.Payload, static_cast<std::size_t>(capacity));
-				if (destination != NetAdmissionError::NONE) {
+				NetAdmission::Error const destination = NetAdmission::Validate_Destination(admission.Payload, static_cast<std::size_t>(capacity));
+				if (destination != NetAdmission::Error::NONE) {
 					Record_Admission_Drop(destination, admission.Code);
 					continue;
 				}
@@ -674,31 +674,31 @@ void ConnectionClass::Record_Packet_Drop(PacketDropReasonType reason)
 
 
 /// <summary>Maps a shared admission rejection to the connection counters.</summary>
-void ConnectionClass::Record_Admission_Drop(NetAdmissionError error, unsigned char code)
+void ConnectionClass::Record_Admission_Drop(NetAdmission::Error error, unsigned char code)
 {
 	switch (error) {
-		case NetAdmissionError::HEADER_TOO_SHORT:
-		case NetAdmissionError::DATAGRAM_TOO_SHORT:
+		case NetAdmission::Error::HEADER_TOO_SHORT:
+		case NetAdmission::Error::DATAGRAM_TOO_SHORT:
 			Record_Packet_Drop(CONNECTION_DROP_SHORT_HEADER);
 			break;
-		case NetAdmissionError::PACKET_TOO_LARGE:
-		case NetAdmissionError::DATAGRAM_TOO_LARGE:
+		case NetAdmission::Error::PACKET_TOO_LARGE:
+		case NetAdmission::Error::DATAGRAM_TOO_LARGE:
 			Record_Packet_Drop(CONNECTION_DROP_OVERSIZED_DATA);
 			break;
-		case NetAdmissionError::INVALID_PACKET_CODE:
+		case NetAdmission::Error::INVALID_PACKET_CODE:
 			Record_Packet_Drop(CONNECTION_DROP_INVALID_CODE);
 			break;
-		case NetAdmissionError::INVALID_PACKET_LENGTH:
+		case NetAdmission::Error::INVALID_PACKET_LENGTH:
 			Record_Packet_Drop(code == PACKET_ACK ? CONNECTION_DROP_INVALID_LENGTH : CONNECTION_DROP_EMPTY_DATA);
 			break;
-		case NetAdmissionError::DESTINATION_TOO_SMALL:
+		case NetAdmission::Error::DESTINATION_TOO_SMALL:
 			Record_Packet_Drop(CONNECTION_DROP_OUTPUT_TOO_SMALL);
 			break;
-		case NetAdmissionError::BAD_CRC:
+		case NetAdmission::Error::BAD_CRC:
 			Record_Packet_Drop(CONNECTION_DROP_INVALID_LENGTH);
 			break;
-		case NetAdmissionError::NONE:
-		case NetAdmissionError::COUNT:
+		case NetAdmission::Error::NONE:
+		case NetAdmission::Error::COUNT:
 			break;
 	}
 }

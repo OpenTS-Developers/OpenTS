@@ -15,6 +15,16 @@
 
 namespace NetTiming
 {
+	namespace
+	{
+		class SystemMillisecondClock final : public MillisecondClock
+		{
+			public:
+				Milliseconds Now(void) const override;
+		};
+	}
+
+
 	/// <summary>Reads the system's wrapping millisecond clock.</summary>
 	Milliseconds SystemMillisecondClock::Now(void) const
 	{

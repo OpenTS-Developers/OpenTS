@@ -50,14 +50,14 @@ void Check(bool condition, char const * what)
 
 
 void Check_Error(
-	NetPacketDecodeResult const & result,
-	NetPacketDecodeError expected,
+	NetPacket::DecodeResult const & result,
+	NetPacket::DecodeError expected,
 	char const * what)
 {
 	bool const matches = !result.Succeeded() && result.Failure.Code == expected && result.Events.empty();
 	Check(matches, what);
 	if (!matches) {
-		std::printf("    got %s at %zu\n", Net_Packet_Error_Name(result.Failure.Code), result.Failure.Offset);
+		std::printf("    got %s at %zu\n", NetPacket::Error_Name(result.Failure.Code), result.Failure.Offset);
 	}
 }
 
@@ -129,7 +129,7 @@ void Test_Reader(void)
 	Append_Value(bytes, first);
 	Append_Value(bytes, second);
 
-	NetReaderClass reader(bytes);
+	NetPacket::Reader reader(bytes);
 	auto got_first = reader.Read_Value<std::uint16_t>();
 	Check(got_first && *got_first == first, "reader copies a fixed-width value");
 	Check(reader.Offset() == sizeof(first), "reader reports its consumed offset");
@@ -158,27 +158,27 @@ void Test_Event_Contract(void)
 void Test_Envelope_Rules(void)
 {
 	Check_Error(
-		Decode_Event_Packet({}, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::EMPTY_PACKET,
+		NetPacket::Decode_Event_Packet({}, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::EMPTY_PACKET,
 		"an empty compressed packet is rejected");
 
 	Bytes invalid_prefix{static_cast<std::byte>(EventClass::GAMESPEED)};
 	Check_Error(
-		Decode_Event_Packet(invalid_prefix, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::INVALID_PREFIX,
+		NetPacket::Decode_Event_Packet(invalid_prefix, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_PREFIX,
 		"a compressed packet must begin with FRAMEINFO or FRAMESYNC");
 
 	Bytes unknown{static_cast<std::byte>(0xFF)};
 	Check_Error(
-		Decode_Event_Packet(unknown, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::INVALID_EVENT_TYPE,
+		NetPacket::Decode_Event_Packet(unknown, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_EVENT_TYPE,
 		"an unknown prefix type is rejected before table lookup");
 
 	Bytes complete = Compressed_Packet();
 	for (std::size_t size = 1; size < complete.size(); size++) {
 		Bytes truncated(complete.begin(), complete.begin() + size);
-		NetPacketDecodeResult result = Decode_Event_Packet(truncated, NetPacketEncoding::COMPRESSED, Sender);
-		if (result.Failure.Code != NetPacketDecodeError::TRUNCATED_ENVELOPE || !result.Events.empty()) {
+		NetPacket::DecodeResult result = NetPacket::Decode_Event_Packet(truncated, NetPacket::Encoding::COMPRESSED, Sender);
+		if (result.Failure.Code != NetPacket::DecodeError::TRUNCATED_ENVELOPE || !result.Events.empty()) {
 			Check(false, "every incomplete compressed envelope is rejected transactionally");
 			break;
 		}
@@ -187,7 +187,7 @@ void Test_Envelope_Rules(void)
 		}
 	}
 
-	NetPacketDecodeResult header = Decode_Event_Packet(complete, NetPacketEncoding::COMPRESSED, Sender);
+	NetPacket::DecodeResult header = NetPacket::Decode_Event_Packet(complete, NetPacket::Encoding::COMPRESSED, Sender);
 	Check(header.Succeeded() && header.Events.size() == 1, "a complete FRAMEINFO-only packet decodes");
 	if (header.Succeeded() && header.Events.size() == 1) {
 		Check(header.Events[0].Event.Type == EventClass::FRAMEINFO, "FRAMEINFO is retained for the execution queue");
@@ -198,35 +198,35 @@ void Test_Envelope_Rules(void)
 	}
 
 	Check_Error(
-		Decode_Event_Packet(complete, NetPacketEncoding::COMPRESSED, Sender + 1),
-		NetPacketDecodeError::SENDER_MISMATCH,
+		NetPacket::Decode_Event_Packet(complete, NetPacket::Encoding::COMPRESSED, Sender + 1),
+		NetPacket::DecodeError::SENDER_MISMATCH,
 		"the envelope sender must match the demultiplexer sender");
 
-	for (NetPacketEncoding encoding : {NetPacketEncoding::COMPRESSED, NetPacketEncoding::UNCOMPRESSED}) {
+	for (NetPacket::Encoding encoding : {NetPacket::Encoding::COMPRESSED, NetPacket::Encoding::UNCOMPRESSED}) {
 		Bytes framesync = Envelope(EventClass::FRAMESYNC);
-		NetPacketDecodeResult result = Decode_Event_Packet(framesync, encoding, Sender);
+		NetPacket::DecodeResult result = NetPacket::Decode_Event_Packet(framesync, encoding, Sender);
 		Check(result.Succeeded() && result.Events.empty() && result.HasEnvelope
 			&& result.Envelope.Type == EventClass::FRAMESYNC,
 			"a sole short FRAMESYNC is accepted, exposed, and not queued");
 
 		framesync.push_back(std::byte{0});
 		Check_Error(
-			Decode_Event_Packet(framesync, encoding, Sender),
-			NetPacketDecodeError::FRAMESYNC_NOT_ALONE,
+			NetPacket::Decode_Event_Packet(framesync, encoding, Sender),
+			NetPacket::DecodeError::FRAMESYNC_NOT_ALONE,
 			"FRAMESYNC rejects every trailing byte");
 	}
 
 	Bytes nested = Compressed_Packet();
 	Add_Compressed_Event(nested, EventClass::FRAMEINFO);
 	Check_Error(
-		Decode_Event_Packet(nested, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::NESTED_ENVELOPE,
+		NetPacket::Decode_Event_Packet(nested, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::NESTED_ENVELOPE,
 		"a compressed packet rejects a nested envelope");
 
 	Bytes short_uncompressed = Envelope(EventClass::FRAMEINFO);
 	Check_Error(
-		Decode_Event_Packet(short_uncompressed, NetPacketEncoding::UNCOMPRESSED, Sender),
-		NetPacketDecodeError::TRUNCATED_ENVELOPE,
+		NetPacket::Decode_Event_Packet(short_uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::TRUNCATED_ENVELOPE,
 		"an uncompressed FRAMEINFO must carry the complete full event");
 }
 
@@ -259,7 +259,7 @@ void Test_Full_Compressed_Table(void)
 		}
 
 		Bytes packet = Valid_Compressed_Event(type);
-		NetPacketDecodeResult result = Decode_Event_Packet(packet, NetPacketEncoding::COMPRESSED, Sender);
+		NetPacket::DecodeResult result = NetPacket::Decode_Event_Packet(packet, NetPacket::Encoding::COMPRESSED, Sender);
 
 		char label[96];
 		std::snprintf(label, sizeof(label), "compressed event %-18s decodes at its exact length", EventClass::EventNames[type]);
@@ -272,21 +272,21 @@ void Test_Full_Compressed_Table(void)
 		}
 
 		packet.pop_back();
-		NetPacketDecodeError expected = NetPacketDecodeError::TRUNCATED_EVENT;
+		NetPacket::DecodeError expected = NetPacket::DecodeError::TRUNCATED_EVENT;
 		if (type == EventClass::ADDPLAYER) {
-			expected = NetPacketDecodeError::TRUNCATED_ADDPLAYER;
+			expected = NetPacket::DecodeError::TRUNCATED_ADDPLAYER;
 		} else if (type == EventClass::MEGAMISSION) {
-			expected = NetPacketDecodeError::TRUNCATED_MEGAMISSION;
+			expected = NetPacket::DecodeError::TRUNCATED_MEGAMISSION;
 		}
 
 		std::snprintf(label, sizeof(label), "compressed event %-18s rejects one byte short", EventClass::EventNames[type]);
-		Check_Error(Decode_Event_Packet(packet, NetPacketEncoding::COMPRESSED, Sender), expected, label);
+		Check_Error(NetPacket::Decode_Event_Packet(packet, NetPacket::Encoding::COMPRESSED, Sender), expected, label);
 	}
 
 	Bytes response = Compressed_Packet();
 	std::byte const delay{42};
 	Add_Compressed_Event(response, EventClass::RESPONSE_TIME, std::span<std::byte const>(&delay, 1));
-	NetPacketDecodeResult decoded_response = Decode_Event_Packet(response, NetPacketEncoding::COMPRESSED, Sender);
+	NetPacket::DecodeResult decoded_response = NetPacket::Decode_Event_Packet(response, NetPacket::Encoding::COMPRESSED, Sender);
 	Check(decoded_response.Succeeded() && decoded_response.Events.size() == 2
 		&& decoded_response.Events[1].Event.Data.FrameInfo.Delay == 42,
 		"RESPONSE_TIME materializes its byte at FrameInfo.Delay");
@@ -298,7 +298,7 @@ void Test_Full_Compressed_Table(void)
 	Append_Value(report_data, average);
 	Append_Value(report_data, worst);
 	Add_Compressed_Event(report, EventClass::NETWORK_REPORT, report_data);
-	NetPacketDecodeResult decoded_report = Decode_Event_Packet(report, NetPacketEncoding::COMPRESSED, Sender);
+	NetPacket::DecodeResult decoded_report = NetPacket::Decode_Event_Packet(report, NetPacket::Encoding::COMPRESSED, Sender);
 	Check(decoded_report.Succeeded() && decoded_report.Events.size() == 2
 		&& decoded_report.Events[1].Event.Data.NetworkReport.AverageProcessMilliseconds == average
 		&& decoded_report.Events[1].Event.Data.NetworkReport.WorstRoundTripMilliseconds == worst,
@@ -324,7 +324,7 @@ void Test_Mega_Mission(void)
 	Append_Value(packet, whom2);
 	Append_Value(packet, whom3);
 
-	NetPacketDecodeResult result = Decode_Event_Packet(packet, NetPacketEncoding::COMPRESSED, Sender);
+	NetPacket::DecodeResult result = NetPacket::Decode_Event_Packet(packet, NetPacket::Encoding::COMPRESSED, Sender);
 	Check(result.Succeeded() && result.Events.size() == 4, "a three-unit MEGAMISSION expands to three events");
 	if (result.Succeeded() && result.Events.size() == 4) {
 		Check(std::memcmp(&result.Events[1].Event.Data.MegaMission.Whom, whom1.data(), sizeof(whom1)) == 0,
@@ -345,23 +345,23 @@ void Test_Mega_Mission(void)
 	zero.push_back(std::byte{0});
 	zero.insert(zero.end(), data_size, std::byte{0});
 	Check_Error(
-		Decode_Event_Packet(zero, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::ZERO_MEGAMISSION_COUNT,
+		NetPacket::Decode_Event_Packet(zero, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::ZERO_MEGAMISSION_COUNT,
 		"a zero MEGAMISSION count is rejected");
 
 	packet.pop_back();
 	Check_Error(
-		Decode_Event_Packet(packet, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::TRUNCATED_MEGAMISSION,
+		NetPacket::Decode_Event_Packet(packet, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::TRUNCATED_MEGAMISSION,
 		"a truncated repeated MEGAMISSION rejects the whole packet");
 }
 
 
-void Check_Add_Player(NetPacketDecodeResult const & result, char const * what)
+void Check_Add_Player(NetPacket::DecodeResult const & result, char const * what)
 {
 	bool valid = result.Succeeded() && result.Events.size() == 2;
 	if (valid) {
-		NetDecodedEvent const & event = result.Events[1];
+		NetPacket::DecodedEvent const & event = result.Events[1];
 		valid = event.Event.Type == EventClass::ADDPLAYER
 			&& event.Event.Data.Variable.Size == 3
 			&& event.AddPlayerData.size() == 3
@@ -382,10 +382,10 @@ void Test_Add_Player(void)
 	Append_Value(compressed, size);
 	Append_Bytes(compressed, payload);
 
-	NetPacketDecodeResult result = Decode_Event_Packet(compressed, NetPacketEncoding::COMPRESSED, Sender);
+	NetPacket::DecodeResult result = NetPacket::Decode_Event_Packet(compressed, NetPacket::Encoding::COMPRESSED, Sender);
 	Check_Add_Player(result, "compressed ADDPLAYER owns and binds its variable data");
 
-	NetPacketDecodeResult copied = result;
+	NetPacket::DecodeResult copied = result;
 	Check_Add_Player(copied, "copying a decoded packet rebinds ADDPLAYER to the copied bytes");
 	Check(copied.Events.size() == 2 && result.Events.size() == 2
 		&& copied.Events[1].Event.Data.Variable.Pointer != result.Events[1].Event.Data.Variable.Pointer,
@@ -394,8 +394,8 @@ void Test_Add_Player(void)
 	Bytes truncated = compressed;
 	truncated.pop_back();
 	Check_Error(
-		Decode_Event_Packet(truncated, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::Decode_Event_Packet(truncated, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
 		"compressed ADDPLAYER rejects a payload shorter than its declared size");
 
 	Bytes transactional = Compressed_Packet();
@@ -407,8 +407,8 @@ void Test_Add_Player(void)
 	Append_Value(transactional, size);
 	transactional.push_back(std::byte{0x11});
 	Check_Error(
-		Decode_Event_Packet(transactional, NetPacketEncoding::COMPRESSED, Sender),
-		NetPacketDecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::Decode_Event_Packet(transactional, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
 		"a late ADDPLAYER error discards every previously decoded event");
 
 	Bytes uncompressed = Full_Event(EventClass::FRAMEINFO);
@@ -417,13 +417,13 @@ void Test_Add_Player(void)
 	Append_Bytes(uncompressed, add);
 	Append_Bytes(uncompressed, payload);
 	Check_Add_Player(
-		Decode_Event_Packet(uncompressed, NetPacketEncoding::UNCOMPRESSED, Sender),
+		NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
 		"uncompressed ADDPLAYER owns and binds its variable data");
 
 	uncompressed.pop_back();
 	Check_Error(
-		Decode_Event_Packet(uncompressed, NetPacketEncoding::UNCOMPRESSED, Sender),
-		NetPacketDecodeError::TRUNCATED_ADDPLAYER,
+		NetPacket::Decode_Event_Packet(uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::TRUNCATED_ADDPLAYER,
 		"uncompressed ADDPLAYER rejects a truncated owned payload");
 }
 
@@ -436,7 +436,7 @@ void Test_Uncompressed(void)
 	Write_Value(speed, DataOffset, value);
 	Append_Bytes(packet, speed);
 
-	NetPacketDecodeResult result = Decode_Event_Packet(packet, NetPacketEncoding::UNCOMPRESSED, Sender);
+	NetPacket::DecodeResult result = NetPacket::Decode_Event_Packet(packet, NetPacket::Encoding::UNCOMPRESSED, Sender);
 	Check(result.Succeeded() && result.Events.size() == 2, "two complete uncompressed events decode transactionally");
 	if (result.Succeeded() && result.Events.size() == 2) {
 		Check(result.Events[1].Event.Frame == Frame + 6 && result.Events[1].Event.Data.General.Value == value,
@@ -447,29 +447,29 @@ void Test_Uncompressed(void)
 	Bytes wrong_sender = Full_Event(EventClass::FRAMEINFO);
 	Append_Bytes(wrong_sender, Full_Event(EventClass::GAMESPEED, Sender + 1));
 	Check_Error(
-		Decode_Event_Packet(wrong_sender, NetPacketEncoding::UNCOMPRESSED, Sender),
-		NetPacketDecodeError::SENDER_MISMATCH,
+		NetPacket::Decode_Event_Packet(wrong_sender, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::SENDER_MISMATCH,
 		"every uncompressed event is bound to the demultiplexer sender");
 
 	Bytes nested = Full_Event(EventClass::FRAMEINFO);
 	Append_Bytes(nested, Full_Event(EventClass::FRAMEINFO));
 	Check_Error(
-		Decode_Event_Packet(nested, NetPacketEncoding::UNCOMPRESSED, Sender),
-		NetPacketDecodeError::NESTED_ENVELOPE,
+		NetPacket::Decode_Event_Packet(nested, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::NESTED_ENVELOPE,
 		"an uncompressed packet rejects a nested envelope");
 
 	Bytes unknown = Full_Event(EventClass::FRAMEINFO);
 	Append_Bytes(unknown, Full_Event(0xFF));
 	Check_Error(
-		Decode_Event_Packet(unknown, NetPacketEncoding::UNCOMPRESSED, Sender),
-		NetPacketDecodeError::INVALID_EVENT_TYPE,
+		NetPacket::Decode_Event_Packet(unknown, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_EVENT_TYPE,
 		"an uncompressed unknown type is rejected before table lookup");
 
 	Bytes trailing = packet;
 	trailing.push_back(std::byte{0});
 	Check_Error(
-		Decode_Event_Packet(trailing, NetPacketEncoding::UNCOMPRESSED, Sender),
-		NetPacketDecodeError::TRAILING_BYTES,
+		NetPacket::Decode_Event_Packet(trailing, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::TRAILING_BYTES,
 		"an uncompressed packet rejects a trailing partial record");
 }
 
@@ -477,7 +477,7 @@ void Test_Uncompressed(void)
 Bytes Datagram(Bytes const & payload)
 {
 	Bytes datagram;
-	std::uint32_t const crc = Calculate_Network_Datagram_CRC(payload);
+	std::uint32_t const crc = NetAdmission::Calculate_Datagram_CRC(payload);
 	Append_Value(datagram, crc);
 	Append_Bytes(datagram, payload);
 	return(datagram);
@@ -496,11 +496,11 @@ Bytes Connection_Packet(std::size_t header_size, std::uint8_t code, std::size_t 
 }
 
 
-void Check_Admission_Error(NetAdmissionError actual, NetAdmissionError expected, char const * what)
+void Check_Admission_Error(NetAdmission::Error actual, NetAdmission::Error expected, char const * what)
 {
 	Check(actual == expected, what);
 	if (actual != expected) {
-		std::printf("    got %s\n", Net_Admission_Error_Name(actual));
+		std::printf("    got %s\n", NetAdmission::Error_Name(actual));
 	}
 }
 
@@ -509,32 +509,32 @@ void Test_Datagram_Admission(void)
 {
 	for (std::size_t size = 0; size <= sizeof(std::uint32_t); size++) {
 		Bytes short_datagram(size, std::byte{0});
-		Check_Admission_Error(Admit_Network_Datagram(short_datagram).Error,
-			NetAdmissionError::DATAGRAM_TOO_SHORT,
+		Check_Admission_Error(NetAdmission::Admit_Datagram(short_datagram).ErrorCode,
+			NetAdmission::Error::DATAGRAM_TOO_SHORT,
 			"every CRC-only or shorter datagram is rejected");
 	}
 
 	for (std::size_t payload_size : {1u, 2u, 3u, 4u, 5u, 767u, 768u}) {
 		Bytes payload(payload_size, std::byte{0x5A});
-		NetDatagramAdmission const admission = Admit_Network_Datagram(Datagram(payload));
+		NetAdmission::DatagramResult const admission = NetAdmission::Admit_Datagram(Datagram(payload));
 		Check(admission.Succeeded() && admission.Payload.size() == payload_size,
 			"every legal datagram word/capacity boundary is accepted intact");
 	}
 
-	Bytes oversized_payload(NET_DATAGRAM_PAYLOAD_CAPACITY + 1, std::byte{0x33});
-	Check_Admission_Error(Admit_Network_Datagram(Datagram(oversized_payload)).Error,
-		NetAdmissionError::DATAGRAM_TOO_LARGE,
+	Bytes oversized_payload(NetAdmission::DATAGRAM_PAYLOAD_CAPACITY + 1, std::byte{0x33});
+	Check_Admission_Error(NetAdmission::Admit_Datagram(Datagram(oversized_payload)).ErrorCode,
+		NetAdmission::Error::DATAGRAM_TOO_LARGE,
 		"a 769-byte transport payload is rejected rather than truncated");
 
 	Bytes damaged = Datagram(Bytes{std::byte{1}, std::byte{2}, std::byte{3}});
 	damaged.back() ^= std::byte{0x80};
-	Check_Admission_Error(Admit_Network_Datagram(damaged).Error,
-		NetAdmissionError::BAD_CRC, "a damaged transport payload fails CRC admission");
+	Check_Admission_Error(NetAdmission::Admit_Datagram(damaged).ErrorCode,
+		NetAdmission::Error::BAD_CRC, "a damaged transport payload fails CRC admission");
 
 	Bytes aligned = Datagram(Bytes{std::byte{9}, std::byte{8}, std::byte{7}, std::byte{6}});
 	Bytes unaligned(1, std::byte{0});
 	Append_Bytes(unaligned, aligned);
-	NetDatagramAdmission const admitted_unaligned = Admit_Network_Datagram(
+	NetAdmission::DatagramResult const admitted_unaligned = NetAdmission::Admit_Datagram(
 		std::span<std::byte const>(unaligned).subspan(1));
 	Check(admitted_unaligned.Succeeded() && admitted_unaligned.Payload.size() == 4,
 		"an unaligned datagram is decoded with copied packed reads");
@@ -543,72 +543,72 @@ void Test_Datagram_Admission(void)
 
 void Test_Connection_Admission(void)
 {
-	for (std::size_t size = 0; size < NET_PRIVATE_HEADER_SIZE; size++) {
+	for (std::size_t size = 0; size < NetAdmission::PRIVATE_HEADER_SIZE; size++) {
 		Bytes packet(size, std::byte{0});
-		Check_Admission_Error(Admit_Connection_Packet(
-			packet, NET_PRIVATE_HEADER_SIZE, 64).Error,
-			NetAdmissionError::HEADER_TOO_SHORT,
+		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
+			packet, NetAdmission::PRIVATE_HEADER_SIZE, 64).ErrorCode,
+			NetAdmission::Error::HEADER_TOO_SHORT,
 			"every incomplete seven-byte private header is rejected");
 	}
-	for (std::size_t size = 0; size < NET_GLOBAL_HEADER_SIZE; size++) {
+	for (std::size_t size = 0; size < NetAdmission::GLOBAL_HEADER_SIZE; size++) {
 		Bytes packet(size, std::byte{0});
-		Check_Admission_Error(Admit_Connection_Packet(
-			packet, NET_GLOBAL_HEADER_SIZE, 64).Error,
-			NetAdmissionError::HEADER_TOO_SHORT,
+		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
+			packet, NetAdmission::GLOBAL_HEADER_SIZE, 64).ErrorCode,
+			NetAdmission::Error::HEADER_TOO_SHORT,
 			"every incomplete nine-byte global header is rejected");
 	}
 
-	for (std::size_t header_size : {NET_PRIVATE_HEADER_SIZE, NET_GLOBAL_HEADER_SIZE}) {
+	for (std::size_t header_size : {NetAdmission::PRIVATE_HEADER_SIZE, NetAdmission::GLOBAL_HEADER_SIZE}) {
 		Bytes ack = Connection_Packet(header_size,
-			static_cast<std::uint8_t>(NetPacketCode::ACK), 0);
-		NetConnectionAdmission admitted = Admit_Connection_Packet(ack, header_size, ack.size());
+			static_cast<std::uint8_t>(NetAdmission::PacketCode::ACK), 0);
+		NetAdmission::ConnectionResult admitted = NetAdmission::Admit_Connection_Packet(ack, header_size, ack.size());
 		Check(admitted.Succeeded() && admitted.Magic == 0xCAFE
 			&& admitted.PacketID == 0x12345678 && admitted.Payload.empty(),
 			"an exact private/global ACK header is admitted and decoded");
 
 		ack.push_back(std::byte{0});
-		Check_Admission_Error(Admit_Connection_Packet(ack, header_size, ack.size()).Error,
-			NetAdmissionError::INVALID_PACKET_LENGTH,
+		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(ack, header_size, ack.size()).ErrorCode,
+			NetAdmission::Error::INVALID_PACKET_LENGTH,
 			"an ACK with application bytes is rejected");
 
 		Bytes empty_data = Connection_Packet(header_size,
-			static_cast<std::uint8_t>(NetPacketCode::DATA_ACK), 0);
-		Check_Admission_Error(Admit_Connection_Packet(
-			empty_data, header_size, empty_data.size()).Error,
-			NetAdmissionError::INVALID_PACKET_LENGTH,
+			static_cast<std::uint8_t>(NetAdmission::PacketCode::DATA_ACK), 0);
+		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
+			empty_data, header_size, empty_data.size()).ErrorCode,
+			NetAdmission::Error::INVALID_PACKET_LENGTH,
 			"a data header without application payload is rejected");
 
 		Bytes data = Connection_Packet(header_size,
-			static_cast<std::uint8_t>(NetPacketCode::DATA_NOACK), 1);
-		admitted = Admit_Connection_Packet(data, header_size, data.size());
+			static_cast<std::uint8_t>(NetAdmission::PacketCode::DATA_NOACK), 1);
+		admitted = NetAdmission::Admit_Connection_Packet(data, header_size, data.size());
 		Check(admitted.Succeeded() && admitted.Payload.size() == 1,
 			"the minimum one-byte application payload is accepted");
-		Check_Admission_Error(Validate_Network_Destination(admitted.Payload, 0),
-			NetAdmissionError::DESTINATION_TOO_SMALL,
+		Check_Admission_Error(NetAdmission::Validate_Destination(admitted.Payload, 0),
+			NetAdmission::Error::DESTINATION_TOO_SMALL,
 			"a destination overflow is rejected before copying");
-		Check_Admission_Error(Validate_Network_Destination(admitted.Payload, 1),
-			NetAdmissionError::NONE,
+		Check_Admission_Error(NetAdmission::Validate_Destination(admitted.Payload, 1),
+			NetAdmission::Error::NONE,
 			"an exact-capacity destination accepts the payload");
 
-		Check_Admission_Error(Admit_Connection_Packet(
-			data, header_size, data.size() - 1).Error,
-			NetAdmissionError::PACKET_TOO_LARGE,
+		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
+			data, header_size, data.size() - 1).ErrorCode,
+			NetAdmission::Error::PACKET_TOO_LARGE,
 			"a message above its connection capacity is rejected");
 	}
 
-	Bytes invalid_code = Connection_Packet(NET_PRIVATE_HEADER_SIZE,
-		static_cast<std::uint8_t>(NetPacketCode::COUNT), 1);
-	Check_Admission_Error(Admit_Connection_Packet(
-		invalid_code, NET_PRIVATE_HEADER_SIZE, invalid_code.size()).Error,
-		NetAdmissionError::INVALID_PACKET_CODE,
+	Bytes invalid_code = Connection_Packet(NetAdmission::PRIVATE_HEADER_SIZE,
+		static_cast<std::uint8_t>(NetAdmission::PacketCode::COUNT), 1);
+	Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
+		invalid_code, NetAdmission::PRIVATE_HEADER_SIZE, invalid_code.size()).ErrorCode,
+		NetAdmission::Error::INVALID_PACKET_CODE,
 		"a packet code outside DATA/ACK is rejected");
 
-	Bytes aligned = Connection_Packet(NET_PRIVATE_HEADER_SIZE,
-		static_cast<std::uint8_t>(NetPacketCode::DATA_ACK), 1);
+	Bytes aligned = Connection_Packet(NetAdmission::PRIVATE_HEADER_SIZE,
+		static_cast<std::uint8_t>(NetAdmission::PacketCode::DATA_ACK), 1);
 	Bytes unaligned(1, std::byte{0});
 	Append_Bytes(unaligned, aligned);
-	NetConnectionAdmission const admitted_unaligned = Admit_Connection_Packet(
-		std::span<std::byte const>(unaligned).subspan(1), NET_PRIVATE_HEADER_SIZE, aligned.size());
+	NetAdmission::ConnectionResult const admitted_unaligned = NetAdmission::Admit_Connection_Packet(
+		std::span<std::byte const>(unaligned).subspan(1), NetAdmission::PRIVATE_HEADER_SIZE, aligned.size());
 	Check(admitted_unaligned.Succeeded() && admitted_unaligned.PacketID == 0x12345678,
 		"an unaligned reliable-message header is decoded with memcpy");
 }
@@ -624,9 +624,9 @@ GlobalPacketType Global_Packet(NetCommandType command)
 }
 
 
-NetGlobalValidationContext Member_Context(void)
+NetGlobal::ValidationContext Member_Context(void)
 {
-	NetGlobalValidationContext context;
+	NetGlobal::ValidationContext context;
 	context.SenderIsMember = true;
 	context.SenderPlayerID = 2;
 	context.SenderPlayerColor = 3;
@@ -639,14 +639,14 @@ NetGlobalValidationContext Member_Context(void)
 void Check_Global_Error(
 	GlobalPacketType const & packet,
 	std::size_t length,
-	NetGlobalValidationContext const & context,
-	NetGlobalDecodeError expected,
+	NetGlobal::ValidationContext const & context,
+	NetGlobal::DecodeError expected,
 	char const * what)
 {
-	NetGlobalDecodeError const actual = Validate_In_Game_Global(packet, length, context);
+	NetGlobal::DecodeError const actual = NetGlobal::Validate_In_Game_Packet(packet, length, context);
 	Check(actual == expected, what);
 	if (actual != expected) {
-		std::printf("    got %s\n", Net_Global_Error_Name(actual));
+		std::printf("    got %s\n", NetGlobal::Error_Name(actual));
 	}
 }
 
@@ -654,12 +654,12 @@ void Check_Global_Error(
 void Test_Global_Packets(void)
 {
 	constexpr std::size_t packet_size = sizeof(GlobalPacketType);
-	NetGlobalValidationContext member = Member_Context();
-	NetGlobalValidationContext outsider;
+	NetGlobal::ValidationContext member = Member_Context();
+	NetGlobal::ValidationContext outsider;
 	GlobalPacketType packet = Global_Packet(NET_QUERY_GAME);
 	GlobalPacketType poisoned;
 	std::memset(&poisoned, 0xA5, sizeof(poisoned));
-	Initialize_Global_Packet(poisoned, NET_PROPOSE_KICK);
+	NetGlobal::Initialize_Packet(poisoned, NET_PROPOSE_KICK);
 	NetCommandType const initialized_command = NET_PROPOSE_KICK;
 	std::byte const * initialized_bytes = reinterpret_cast<std::byte const *>(&poisoned);
 	std::byte const * command_bytes = reinterpret_cast<std::byte const *>(&initialized_command);
@@ -672,89 +672,89 @@ void Test_Global_Packets(void)
 
 	Check(fully_initialized,
 		"global packet initialization overwrites poison across the current packet shape");
-	Check_Global_Error(packet, packet_size - 1, outsider, NetGlobalDecodeError::INVALID_LENGTH,
+	Check_Global_Error(packet, packet_size - 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
 		"a short global packet is rejected before dispatch");
-	Check_Global_Error(packet, packet_size + 1, outsider, NetGlobalDecodeError::INVALID_LENGTH,
+	Check_Global_Error(packet, packet_size + 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
 		"an oversized global packet is rejected before dispatch");
-	Check_Global_Error(packet, packet_size, outsider, NetGlobalDecodeError::NONE,
+	Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::NONE,
 		"game discovery remains public during a match");
 
 	packet = Global_Packet(NET_QUERY_PLAYER);
-	Check_Global_Error(packet, packet_size, outsider, NetGlobalDecodeError::NONE,
+	Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::NONE,
 		"player discovery remains public during a match");
 	std::memset(packet.Name, 'x', sizeof(packet.Name));
-	Check_Global_Error(packet, packet_size, outsider, NetGlobalDecodeError::UNTERMINATED_NAME,
+	Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::UNTERMINATED_NAME,
 		"player discovery requires a terminated game name");
 
 	for (NetCommandType command : {
 		NET_SIGN_OFF, NET_MESSAGE, NET_PROGRESS_REPORT, NET_READY_TO_GO, NET_PROPOSE_KICK}) {
 		packet = Global_Packet(command);
 		packet.Kick.KickeeID = 5;
-		Check_Global_Error(packet, packet_size, outsider, NetGlobalDecodeError::SENDER_NOT_MEMBER,
+		Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::SENDER_NOT_MEMBER,
 			"session-control commands reject a source outside Session.Players");
 	}
 	for (NetCommandType command : {NET_SIGN_OFF, NET_READY_TO_GO}) {
 		packet = Global_Packet(command);
-		Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::NONE,
+		Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::NONE,
 			"sign-off and ready commands accept a matched session member");
 	}
 
 	packet = Global_Packet(static_cast<NetCommandType>(999));
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::INVALID_COMMAND,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_COMMAND,
 		"the in-game callback rejects commands outside its explicit allowlist");
 
 	packet = Global_Packet(NET_MESSAGE);
 	std::memset(packet.Name, 'n', sizeof(packet.Name));
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::UNTERMINATED_NAME,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::UNTERMINATED_NAME,
 		"chat rejects an unterminated claimed name before ignoring it");
 	packet = Global_Packet(NET_MESSAGE);
 	std::memset(packet.Message.Buf, 'm', sizeof(packet.Message.Buf));
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::UNTERMINATED_MESSAGE,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::UNTERMINATED_MESSAGE,
 		"chat rejects an unterminated message body");
 	packet = Global_Packet(NET_MESSAGE);
 	packet.Message.Color = 999;
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::NONE,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::NONE,
 		"chat ignores the wire color in favor of the matched member's color");
-	NetGlobalValidationContext bad_color = member;
+	NetGlobal::ValidationContext bad_color = member;
 	bad_color.SenderPlayerColor = MAX_MPLAYER_COLORS;
-	Check_Global_Error(packet, packet_size, bad_color, NetGlobalDecodeError::INVALID_COLOR,
+	Check_Global_Error(packet, packet_size, bad_color, NetGlobal::DecodeError::INVALID_COLOR,
 		"chat refuses an invalid canonical session color");
 
 	packet = Global_Packet(NET_PROGRESS_REPORT);
 	packet.Progress.Percent = -1;
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::INVALID_PROGRESS,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_PROGRESS,
 		"progress rejects a negative percentage");
 	packet.Progress.Percent = 101;
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::INVALID_PROGRESS,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_PROGRESS,
 		"progress rejects a percentage above 100");
 	packet.Progress.Percent = 100;
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::NONE,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::NONE,
 		"progress preserves the legal 100-percent edge");
 
 	packet = Global_Packet(NET_PROPOSE_KICK);
 	packet.Kick.KickerID = UINT32_MAX;
 	packet.Kick.KickeeID = 5;
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::NONE,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::NONE,
 		"kick validation ignores the claimed voter and uses the matched member");
 	packet.Kick.KickeeID = 2;
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::SELF_KICK,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::SELF_KICK,
 		"a member cannot vote to kick itself");
 	packet.Kick.KickeeID = 7;
-	Check_Global_Error(packet, packet_size, member, NetGlobalDecodeError::INVALID_KICK_PLAYER,
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_KICK_PLAYER,
 		"a kick target must be a current session member");
 
-	NetGlobalRejectionCounters counters;
-	NetGlobalRejectionRecord first = counters.Record(NetGlobalDecodeError::INVALID_LENGTH);
-	NetGlobalRejectionRecord second = counters.Record(NetGlobalDecodeError::INVALID_LENGTH);
-	NetGlobalRejectionRecord third = counters.Record(NetGlobalDecodeError::INVALID_LENGTH);
-	NetGlobalRejectionRecord fourth = counters.Record(NetGlobalDecodeError::INVALID_LENGTH);
+	NetGlobal::RejectionCounters counters;
+	NetGlobal::RejectionRecord first = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);
+	NetGlobal::RejectionRecord second = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);
+	NetGlobal::RejectionRecord third = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);
+	NetGlobal::RejectionRecord fourth = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);
 	Check(first.Count == 1 && first.ShouldLog, "the first global rejection is reported");
 	Check(second.Count == 2 && second.ShouldLog, "the second global rejection is reported");
 	Check(third.Count == 3 && !third.ShouldLog, "non-power-of-two global rejections stay quiet");
 	Check(fourth.Count == 4 && fourth.ShouldLog, "power-of-two global rejections are reported");
-	Check(counters.Count(NetGlobalDecodeError::INVALID_LENGTH) == 4,
+	Check(counters.Count(NetGlobal::DecodeError::INVALID_LENGTH) == 4,
 		"global rejection counters retain a stable per-error total");
-	Check(counters.Record(NetGlobalDecodeError::NONE).Count == 0,
+	Check(counters.Record(NetGlobal::DecodeError::NONE).Count == 0,
 		"successful packets do not enter rejection counters");
 }
 

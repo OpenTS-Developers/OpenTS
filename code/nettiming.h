@@ -150,6 +150,13 @@ namespace NetTiming
 		bool Deferred = false;
 	};
 
+	enum class ScheduleResult
+	{
+		Rejected,
+		Applied,
+		Staged,
+	};
+
 	std::optional<StagedTimingUpdate> Stage_Timing_Update(TimingSettings current, TimingSettings requested, std::uint32_t event_frame);
 	bool Timing_Update_Is_Due(std::uint32_t frame, std::uint32_t activation_frame);
 }

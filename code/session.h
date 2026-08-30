@@ -428,12 +428,6 @@ struct MPStatsType {
 };
 
 
-enum class NetworkTimingScheduleResult {
-	Rejected,
-	Applied,
-	Staged,
-};
-
 //---------------------------------------------------------------------------
 // Class Definition
 //---------------------------------------------------------------------------
@@ -475,7 +469,7 @@ class SessionClass
 		void Remove_Network_Timing_Player(int id);
 		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
 		NetTiming::TimingEvaluation Evaluate_Network_Timing(unsigned int target_fps, unsigned int frame);
-		NetworkTimingScheduleResult Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame);
+		NetTiming::ScheduleResult Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame);
 		bool Apply_Staged_Network_Timing(unsigned int frame);
 		unsigned int Compute_Unique_ID(void);
 		void Update_Progress(int percent);

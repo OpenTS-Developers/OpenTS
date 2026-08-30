@@ -135,10 +135,10 @@ class ConnectionClass
 		These are the possible values for the Code field of the CommHeaderType:
 		.....................................................................*/
 		enum ConnectionEnum {
-			PACKET_DATA_ACK = static_cast<int>(NetPacketCode::DATA_ACK),       // this is a data packet requiring an ACK
-			PACKET_DATA_NOACK = static_cast<int>(NetPacketCode::DATA_NOACK),   // this is a data packet not requiring an ACK
-			PACKET_ACK = static_cast<int>(NetPacketCode::ACK),                 // this is an ACK for a packet
-			PACKET_COUNT = static_cast<int>(NetPacketCode::COUNT)              // for computational purposes
+			PACKET_DATA_ACK = static_cast<int>(NetAdmission::PacketCode::DATA_ACK),       // this is a data packet requiring an ACK
+			PACKET_DATA_NOACK = static_cast<int>(NetAdmission::PacketCode::DATA_NOACK),   // this is a data packet not requiring an ACK
+			PACKET_ACK = static_cast<int>(NetAdmission::PacketCode::ACK),                 // this is an ACK for a packet
+			PACKET_COUNT = static_cast<int>(NetAdmission::PacketCode::COUNT)              // for computational purposes
 		};
 
 		/*.....................................................................
@@ -237,7 +237,7 @@ class ConnectionClass
 		virtual int Send(char *buf, int buflen, void *extrabuf, int extralen) = 0;
 		virtual bool Adaptive_Timing_Enabled(void) const {return(true);}
 		void Record_Packet_Drop(PacketDropReasonType reason);
-		void Record_Admission_Drop(NetAdmissionError error, unsigned char code);
+		void Record_Admission_Drop(NetAdmission::Error error, unsigned char code);
 
 		/*
 		 * This is the number of times a packet had to be transmitted again because no ACK

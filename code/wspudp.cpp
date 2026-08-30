@@ -567,13 +567,13 @@ int UDPInterfaceClass::Message_Handler(HWND, UINT message, UINT, LONG lParam)
 			}
 
 			std::span<std::byte const> const datagram(reinterpret_cast<std::byte const *>(ReceiveBuffer), rc > 0 ? static_cast<std::size_t>(rc) : 0);
-			NetDatagramAdmission const admission = Admit_Network_Datagram(datagram, WS_INTERNET_BUFFER_LEN);
+			NetAdmission::DatagramResult const admission = NetAdmission::Admit_Datagram(datagram, WS_INTERNET_BUFFER_LEN);
 			if (!admission.Succeeded()) {
-				switch (admission.Error) {
-					case NetAdmissionError::DATAGRAM_TOO_LARGE:
+				switch (admission.ErrorCode) {
+					case NetAdmission::Error::DATAGRAM_TOO_LARGE:
 						Record_Packet_Drop(WS_DROP_RECEIVE_TOO_LARGE);
 						break;
-					case NetAdmissionError::BAD_CRC:
+					case NetAdmission::Error::BAD_CRC:
 						Record_Packet_Drop(WS_DROP_BAD_CRC);
 						break;
 					default:

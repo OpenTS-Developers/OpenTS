@@ -235,9 +235,9 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 	if (buf != NULL && buflen > 0) {
 		packet_bytes = {static_cast<std::byte const *>(buf), static_cast<std::size_t>(buflen)};
 	}
-	NetConnectionAdmission const packet = Admit_Connection_Packet(packet_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
+	NetAdmission::ConnectionResult const packet = NetAdmission::Admit_Connection_Packet(packet_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
 	if (!packet.Succeeded()) {
-		Record_Admission_Drop(packet.Error, packet.Code);
+		Record_Admission_Drop(packet.ErrorCode, packet.Code);
 		return(1);
 	}
 
@@ -348,7 +348,7 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 				if (send_entry->Buffer != NULL && send_entry->BufLen > 0) {
 					entry_bytes = {reinterpret_cast<std::byte const *>(send_entry->Buffer), static_cast<std::size_t>(send_entry->BufLen)};
 				}
-				NetConnectionAdmission const entry = Admit_Connection_Packet(entry_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
+				NetAdmission::ConnectionResult const entry = NetAdmission::Admit_Connection_Packet(entry_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
 
 				/*...............................................................
 				If ACK is for this entry, mark it
@@ -423,10 +423,10 @@ int IPXGlobalConnClass::Get_Packet (void * buf, int capacity, int *buflen,
 		if (rec_entry->Buffer != NULL && rec_entry->BufLen > 0) {
 			entry_bytes = {reinterpret_cast<std::byte const *>(rec_entry->Buffer), static_cast<std::size_t>(rec_entry->BufLen)};
 		}
-		NetConnectionAdmission const admission = Admit_Connection_Packet(entry_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
+		NetAdmission::ConnectionResult const admission = NetAdmission::Admit_Connection_Packet(entry_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
 		if (!admission.Succeeded()) {
 			rec_entry->IsRead = 1;
-			Record_Admission_Drop(admission.Error, admission.Code);
+			Record_Admission_Drop(admission.ErrorCode, admission.Code);
 			return(0);
 		}
 		if (admission.Code == PACKET_ACK) {
@@ -443,8 +443,8 @@ int IPXGlobalConnClass::Get_Packet (void * buf, int capacity, int *buflen,
 		/*.....................................................................
 		Copy data packet
 		.....................................................................*/
-		NetAdmissionError const destination = Validate_Network_Destination(admission.Payload, static_cast<std::size_t>(capacity));
-		if (destination != NetAdmissionError::NONE) {
+		NetAdmission::Error const destination = NetAdmission::Validate_Destination(admission.Payload, static_cast<std::size_t>(capacity));
+		if (destination != NetAdmission::Error::NONE) {
 			Record_Admission_Drop(destination, admission.Code);
 			return(0);
 		}

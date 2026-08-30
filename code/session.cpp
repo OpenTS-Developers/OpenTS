@@ -559,10 +559,10 @@ NetTiming::TimingEvaluation SessionClass::Evaluate_Network_Timing(unsigned int t
 
 
 /// <summary>Applies a timing increase or safely stages a decrease.</summary>
-NetworkTimingScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame)
+NetTiming::ScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame)
 {
 	if (desired_frame_rate == 0 || desired_frame_rate > 60 || !NetTiming::Timing_Settings_Are_Valid(settings)) {
-		return(NetworkTimingScheduleResult::Rejected);
+		return(NetTiming::ScheduleResult::Rejected);
 	}
 
 	NetTiming::TimingSettings const current{FrameSendRate, MaxAhead};
@@ -573,14 +573,14 @@ NetworkTimingScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::Tim
 		staged = NetTiming::StagedTimingUpdate{settings, event_frame, false};
 	}
 	if (!staged) {
-		return(NetworkTimingScheduleResult::Rejected);
+		return(NetTiming::ScheduleResult::Rejected);
 	}
 
 	// Decreases wait until commands scheduled under the old horizon have drained.
 	if (staged->Deferred) {
 		PendingNetworkTiming = staged;
 		PendingNetworkDesiredFrameRate = desired_frame_rate;
-		return(NetworkTimingScheduleResult::Staged);
+		return(NetTiming::ScheduleResult::Staged);
 	}
 
 	PendingNetworkTiming.reset();
@@ -589,7 +589,7 @@ NetworkTimingScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::Tim
 	FrameSendRate = settings.FrameSendRate;
 	MaxAhead = settings.MaxAhead;
 	MaxMaxAhead = std::max(MaxMaxAhead, (int)MaxAhead);
-	return(NetworkTimingScheduleResult::Applied);
+	return(NetTiming::ScheduleResult::Applied);
 }
 
 

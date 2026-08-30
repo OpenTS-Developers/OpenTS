@@ -1198,8 +1198,8 @@ void EventClass::Execute(void)
 
 			unsigned int const old_frame_send_rate = Session.FrameSendRate;
 			unsigned int const old_max_ahead = Session.MaxAhead;
-			NetworkTimingScheduleResult const result = Session.Schedule_Network_Timing(settings, Data.Timing.DesiredFrameRate, (unsigned int)Frame);
-			if (result == NetworkTimingScheduleResult::Rejected) {
+			NetTiming::ScheduleResult const result = Session.Schedule_Network_Timing(settings, Data.Timing.DesiredFrameRate, (unsigned int)Frame);
+			if (result == NetTiming::ScheduleResult::Rejected) {
 				Log_Event_Rejection(EventRejectReason::UnschedulableTiming, Type, ID, (int)settings.MaxAhead);
 				break;
 			}
@@ -1212,7 +1212,7 @@ void EventClass::Execute(void)
 			// period of vulnerability's frame start & end values, so we
 			// can reschedule these events to execute after it's over.
 			//
-			if (result == NetworkTimingScheduleResult::Applied &&
+			if (result == NetTiming::ScheduleResult::Applied &&
 				(settings.MaxAhead > old_max_ahead || settings.FrameSendRate > old_frame_send_rate)) {
 				NewMaxAheadFrame1 = Frame;
 				NewMaxAheadFrame2 = settings.FrameSendRate * ((settings.FrameSendRate + settings.MaxAhead + Frame - 1) / settings.FrameSendRate);

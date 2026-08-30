@@ -50,9 +50,12 @@ void Add_CRC(unsigned int *crc, unsigned int val);
 
 void Wait_For_End_Of_Queue(void);
 
-enum class NetGlobalDecodeError;
+namespace NetGlobal
+{
+	enum class DecodeError;
+}
 
-NetGlobalDecodeError Kick_Packet_Received(int kicker, int kickee);
+NetGlobal::DecodeError Kick_Packet_Received(int kicker, int kickee);
 
 void Forget_Kick_Player(int player);
 

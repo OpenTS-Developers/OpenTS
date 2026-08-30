@@ -524,15 +524,15 @@ bool MapGen_Call_Back(void)
 }
 
 
-static NetGlobalRejectionCounters GlobalPacketRejections;
+static NetGlobal::RejectionCounters GlobalPacketRejections;
 
 
 /// <summary>Records a rejected global packet.</summary>
-static void Record_Global_Packet_Rejection(NetGlobalDecodeError error)
+static void Record_Global_Packet_Rejection(NetGlobal::DecodeError error)
 {
-	NetGlobalRejectionRecord const record = GlobalPacketRejections.Record(error);
+	NetGlobal::RejectionRecord const record = GlobalPacketRejections.Record(error);
 	if (record.ShouldLog) {
-		DebugString("In-game global packet drop [%s]: %u\n", Net_Global_Error_Name(error), record.Count);
+		DebugString("In-game global packet drop [%s]: %u\n", NetGlobal::Error_Name(error), record.Count);
 	}
 }
 
@@ -553,9 +553,9 @@ static NodeNameType * Session_Member_From_Address(IPXAddressClass & address, int
 
 
 /// <summary>Builds the membership facts used to validate a global packet.</summary>
-static NetGlobalValidationContext Global_Validation_Context(NodeNameType const * sender)
+static NetGlobal::ValidationContext Global_Validation_Context(NodeNameType const * sender)
 {
-	NetGlobalValidationContext context;
+	NetGlobal::ValidationContext context;
 	for (int index = 0; index < Session.Players.Count(); index++) {
 		NodeNameType const * player = Session.Players[index];
 		if (player != NULL && player->Player.ID >= 0 && player->Player.ID < static_cast<int>(context.ActivePlayers.size())) {
@@ -594,10 +594,10 @@ void IPX_Call_Back(void)
 			if (Session.GProductID == IPXGlobalConnClass::COMMAND_AND_CONQUER2) {
 				int sender_index = -1;
 				NodeNameType * sender = Session_Member_From_Address(Session.GAddress, sender_index);
-				NetGlobalValidationContext const context = Global_Validation_Context(sender);
-				NetGlobalDecodeError error = Validate_In_Game_Global(Session.GPacket, Session.GPacketlen, context);
+				NetGlobal::ValidationContext const context = Global_Validation_Context(sender);
+				NetGlobal::DecodeError error = NetGlobal::Validate_In_Game_Packet(Session.GPacket, Session.GPacketlen, context);
 
-				if (error != NetGlobalDecodeError::NONE) {
+				if (error != NetGlobal::DecodeError::NONE) {
 					Record_Global_Packet_Rejection(error);
 				} else {
 					switch (Session.GPacket.Command) {
@@ -608,7 +608,7 @@ void IPX_Call_Back(void)
 
 						case NET_PROPOSE_KICK:
 							error = Kick_Packet_Received(sender->Player.ID, static_cast<int>(Session.GPacket.Kick.KickeeID));
-							if (error != NetGlobalDecodeError::NONE) {
+							if (error != NetGlobal::DecodeError::NONE) {
 								Record_Global_Packet_Rejection(error);
 							}
 							break;
@@ -649,7 +649,7 @@ void IPX_Call_Back(void)
 							break;
 
 						default:
-							Record_Global_Packet_Rejection(NetGlobalDecodeError::INVALID_COMMAND);
+							Record_Global_Packet_Rejection(NetGlobal::DecodeError::INVALID_COMMAND);
 							break;
 					}
 				}

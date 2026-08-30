@@ -472,7 +472,7 @@ unsigned int WinsockInterfaceClass::Calculate_Packet_CRC(void const * buffer, in
 	if (buffer == NULL || buffer_len <= 0) {
 		return(0);
 	}
-	return(Calculate_Network_Datagram_CRC(std::span<std::byte const>(static_cast<std::byte const *>(buffer), static_cast<std::size_t>(buffer_len))));
+	return(NetAdmission::Calculate_Datagram_CRC(std::span<std::byte const>(static_cast<std::byte const *>(buffer), static_cast<std::size_t>(buffer_len))));
 }
 
 

@@ -24,12 +24,6 @@ namespace NetTiming
 			virtual Milliseconds Now(void) const = 0;
 	};
 
-	class SystemMillisecondClock final : public MillisecondClock
-	{
-		public:
-			Milliseconds Now(void) const override;
-	};
-
 	MillisecondClock const & Default_Clock(void);
 
 	constexpr Milliseconds Elapsed_Milliseconds(Milliseconds start, Milliseconds finish)

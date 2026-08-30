@@ -269,20 +269,20 @@ BasicTimerClass<SystemTimerClass> SentFrameSyncTimer;
 FrameSyncStruct TheirFrameSync[MAX_PLAYERS - 1];
 unsigned short SentCommandCount;								// # cmds I've sent out
 
-static std::array<unsigned int, static_cast<std::size_t>(NetPacketDecodeError::COUNT)> NetworkPacketDrops = {};
+static std::array<unsigned int, static_cast<std::size_t>(NetPacket::DecodeError::COUNT)> NetworkPacketDrops = {};
 
 
 /// <summary>Records and rate-limits one stable event-packet rejection reason.</summary>
-void Record_Network_Packet_Drop(NetPacketDecodeError error)
+static void Record_Network_Packet_Drop(NetPacket::DecodeError error)
 {
 	std::size_t const index = static_cast<std::size_t>(error);
-	if (error == NetPacketDecodeError::NONE || index >= NetworkPacketDrops.size()) {
+	if (error == NetPacket::DecodeError::NONE || index >= NetworkPacketDrops.size()) {
 		return;
 	}
 
 	unsigned int const count = ++NetworkPacketDrops[index];
 	if (count == 1 || (count & (count - 1)) == 0) {
-		DebugString("Network event packet drop [%s]: %u\n", Net_Packet_Error_Name(error), count);
+		DebugString("Network event packet drop [%s]: %u\n", NetPacket::Error_Name(error), count);
 	}
 }
 
@@ -1867,13 +1867,13 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	char *multi_packet_buf, int id, int packetlen, FrameSyncStruct *their, BasicTimerClass<SystemTimerClass> *timer)
 {
 	RetcodeType retcode = RC_NORMAL;
-	NetPacketEncoding const encoding = Session.CommProtocol == COMM_PROTOCOL_SINGLE_NO_COMP
-		? NetPacketEncoding::UNCOMPRESSED : NetPacketEncoding::COMPRESSED;
+	NetPacket::Encoding const encoding = Session.CommProtocol == COMM_PROTOCOL_SINGLE_NO_COMP
+		? NetPacket::Encoding::UNCOMPRESSED : NetPacket::Encoding::COMPRESSED;
 	std::span<std::byte const> const packet(reinterpret_cast<std::byte const *>(multi_packet_buf), packetlen > 0 ? static_cast<std::size_t>(packetlen) : 0);
 	// Validate the complete packet before mutating peer state or DoList.
-	NetPacketDecodeResult decoded = Decode_Event_Packet(packet, encoding, id);
+	NetPacket::DecodeResult decoded = NetPacket::Decode_Event_Packet(packet, encoding, id);
 	if (!decoded.Succeeded() || !decoded.HasEnvelope) {
-		Record_Network_Packet_Drop(decoded.Succeeded() ? NetPacketDecodeError::INVALID_PREFIX : decoded.Failure.Code);
+		Record_Network_Packet_Drop(decoded.Succeeded() ? NetPacket::DecodeError::INVALID_PREFIX : decoded.Failure.Code);
 		return(RC_NORMAL);
 	}
 
@@ -1884,7 +1884,7 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	//------------------------------------------------------------------------
 	int const index = net->Connection_Index(id);
 	if (index < 0 || index >= net->Num_Connections()) {
-		Record_Network_Packet_Drop(NetPacketDecodeError::INVALID_CONNECTION);
+		Record_Network_Packet_Drop(NetPacket::DecodeError::INVALID_CONNECTION);
 		return(RC_NORMAL);
 	}
 
@@ -1950,7 +1950,7 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	//   FRAMEINFO packets received
 	//------------------------------------------------------------------------
 	if (event.Type != EventClass::FRAMESYNC) {
-		for (NetDecodedEvent const & source : decoded.Events) {
+		for (NetPacket::DecodedEvent const & source : decoded.Events) {
 			EventClass queued = source.Event;
 			if (queued.Type == EventClass::ADDPLAYER) {
 				queued.Data.Variable.Pointer = NULL;
@@ -2449,7 +2449,7 @@ void Propose_Kick_Player(HWND window, int id)
 	}
 
 	GlobalPacketType gpacket;
-	Initialize_Global_Packet(gpacket, NET_PROPOSE_KICK);
+	NetGlobal::Initialize_Packet(gpacket, NET_PROPOSE_KICK);
 	strncpy(gpacket.Name, Session.Players[0]->Name, ARRAY_SIZE(gpacket.Name) - 1);
 	gpacket.Name[ARRAY_SIZE(gpacket.Name) - 1] = '\0';
 	gpacket.Kick.KickerID = static_cast<unsigned int>(kicker);
@@ -2465,35 +2465,35 @@ void Propose_Kick_Player(HWND window, int id)
 
 
 /// <summary>Queues a bounded, canonical kick proposal from a session member.</summary>
-NetGlobalDecodeError Kick_Packet_Received(int kicker, int kickee)
+NetGlobal::DecodeError Kick_Packet_Received(int kicker, int kickee)
 {
 	NodeNameType * kicker_player = Current_Player_From_ID(kicker);
 	NodeNameType * kickee_player = Current_Player_From_ID(kickee);
 	if (kicker_player == NULL || kickee_player == NULL) {
-		return(NetGlobalDecodeError::INVALID_KICK_PLAYER);
+		return(NetGlobal::DecodeError::INVALID_KICK_PLAYER);
 	}
 	if (kicker == kickee) {
-		return(NetGlobalDecodeError::SELF_KICK);
+		return(NetGlobal::DecodeError::SELF_KICK);
 	}
 	if (Kick_Vote_Already_Cast(kicker, kickee) || Kick_Proposal_Already_Pending(kicker, kickee)) {
-		return(NetGlobalDecodeError::DUPLICATE_KICK_PROPOSAL);
+		return(NetGlobal::DecodeError::DUPLICATE_KICK_PROPOSAL);
 	}
 	if (Session.KickProposals.Count() >= MAX_PLAYERS * MAX_PLAYERS) {
-		return(NetGlobalDecodeError::KICK_PROPOSAL_QUEUE_FULL);
+		return(NetGlobal::DecodeError::KICK_PROPOSAL_QUEUE_FULL);
 	}
 
 	GlobalPacketType * newpacket = new GlobalPacketType;
-	Initialize_Global_Packet(*newpacket, NET_PROPOSE_KICK);
+	NetGlobal::Initialize_Packet(*newpacket, NET_PROPOSE_KICK);
 	strncpy(newpacket->Name, kicker_player->Name, ARRAY_SIZE(newpacket->Name) - 1);
 	newpacket->Name[ARRAY_SIZE(newpacket->Name) - 1] = '\0';
 	newpacket->Kick.KickerID = static_cast<unsigned int>(kicker);
 	newpacket->Kick.KickeeID = static_cast<unsigned int>(kickee);
 	if (!Session.KickProposals.Add(newpacket)) {
 		delete newpacket;
-		return(NetGlobalDecodeError::KICK_PROPOSAL_QUEUE_FULL);
+		return(NetGlobal::DecodeError::KICK_PROPOSAL_QUEUE_FULL);
 	}
 
-	return(NetGlobalDecodeError::NONE);
+	return(NetGlobal::DecodeError::NONE);
 }
 
 
