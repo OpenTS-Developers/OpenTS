@@ -80,6 +80,7 @@ namespace NetTiming
 
 	TimingSettings Settings_For_Rung(unsigned int rung);
 	bool Timing_Settings_Are_Valid(TimingSettings settings);
+	bool Timing_Transition_Source_Is_Valid(TimingSettings settings);
 	Milliseconds Apply_Latency_Fudge(Milliseconds round_trip, LatencyFudge fudge);
 	std::optional<unsigned int> Align_Max_Ahead(unsigned int required, unsigned int frame_send_rate);
 	TimingSettings Select_Timing_Settings(Milliseconds worst_round_trip, unsigned int target_fps, LatencyFudge fudge, bool require_headroom = false);
@@ -87,30 +88,40 @@ namespace NetTiming
 
 	struct TimingCensus {
 		unsigned int ActivePlayers = 0;
-		unsigned int FreshReports = 0;
+		unsigned int FreshProcessReports = 0;
+		unsigned int FreshRoundTripReports = 0;
+		Milliseconds WorstProcessMilliseconds = 0;
 		Milliseconds WorstRoundTrip = 0;
-		bool Complete = true;
+		bool ProcessComplete = true;
+		bool RoundTripComplete = true;
+		bool RequiresConservativeTiming = false;
 	};
 
 	class TimingReportCensus
 	{
 		public:
 			void Reset(void);
-			bool Set_Player_Active(unsigned int player, bool active);
-			bool Record_Report(unsigned int player, Milliseconds round_trip, std::uint32_t frame);
-			bool Clear_Report(unsigned int player);
+			bool Set_Player_Active(unsigned int player, bool active, std::uint32_t frame);
+			bool Is_Player_Active(unsigned int player) const;
+			bool Record_Report(unsigned int player, Milliseconds process_milliseconds, std::optional<Milliseconds> round_trip, std::uint32_t frame);
 			TimingCensus Inspect(std::uint32_t frame) const;
 
 		private:
 			struct PlayerReport {
 				bool Active = false;
-				bool Present = false;
+				bool HasReport = false;
+				bool HasRoundTrip = false;
+				bool EverHadRoundTrip = false;
+				Milliseconds ProcessMilliseconds = 0;
 				Milliseconds RoundTrip = 0;
-				std::uint32_t Frame = 0;
+				std::uint32_t ActiveSinceFrame = 0;
+				std::uint32_t ReportFrame = 0;
 			};
 
 			std::array<PlayerReport, MAX_TIMING_PLAYERS> Reports = {};
 	};
+
+	unsigned int Select_Desired_Frame_Rate(TimingCensus const & census, unsigned int synchronized_fps, unsigned int game_speed_fps);
 
 	struct TimingEvaluation {
 		TimingSettings Settings;
@@ -123,6 +134,7 @@ namespace NetTiming
 	{
 		public:
 			void Reset(void);
+			void Reset_From(TimingSettings settings, unsigned int reversible_changes, std::uint32_t frame);
 			TimingEvaluation Evaluate(TimingCensus const & census, unsigned int target_fps, LatencyFudge fudge, std::uint32_t frame);
 
 			unsigned int Current_Rung(void) const {return(CurrentRung);}
@@ -141,13 +153,25 @@ namespace NetTiming
 			std::uint32_t LastChangeFrame = 0;
 			bool HasEvaluated = false;
 			bool HasChanged = false;
-			bool HasCompleteCensus = false;
 	};
 
 	struct StagedTimingUpdate {
 		TimingSettings Settings;
+		unsigned int InitialMaxAhead = 0;
 		std::uint32_t ActivationFrame = 0;
 		bool Deferred = false;
+	};
+
+	struct TimingTransitionState {
+		StagedTimingUpdate Plan;
+		std::uint32_t LastStepFrame = 0;
+		bool Activated = false;
+	};
+
+	struct TimingTransitionAdvance {
+		TimingSettings Settings;
+		bool Changed = false;
+		bool Complete = false;
 	};
 
 	enum class ScheduleResult
@@ -158,5 +182,7 @@ namespace NetTiming
 	};
 
 	std::optional<StagedTimingUpdate> Stage_Timing_Update(TimingSettings current, TimingSettings requested, std::uint32_t event_frame);
+	std::optional<unsigned int> Next_Transition_Max_Ahead(TimingSettings current, TimingSettings requested);
+	std::optional<TimingTransitionAdvance> Advance_Timing_Transition(TimingTransitionState & transition, TimingSettings current, std::uint32_t frame);
 	bool Timing_Update_Is_Due(std::uint32_t frame, std::uint32_t activation_frame);
 }

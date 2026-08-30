@@ -82,6 +82,7 @@
 #include "wspudp.h"
 
 #include <algorithm>
+#include <array>
 
 
 /***************************************************************************
@@ -1353,21 +1354,29 @@ unsigned int IPXManagerClass::Response_Time(void)
 }	/* end of Response_Time */
 
 
-/// <summary>Returns the worst measured private-link round trip, once all links have a sample.</summary>
+/// <summary>Returns the worst measured round trip among active private links.</summary>
 std::optional<NetTiming::Milliseconds> IPXManagerClass::Worst_Local_Round_Trip_MS(void) const
 {
-	if (NumConnections == 0) {
-		return(std::nullopt);
-	}
-
-	std::optional<NetTiming::Milliseconds> worst;
+	NetTiming::Milliseconds worst = 0;
+	std::array<bool, NetTiming::MAX_TIMING_PLAYERS> connected = {};
 	for (int i = 0; i < NumConnections; i++) {
+		int const id = Connection[i]->ID;
+		if (!Session.Is_Network_Timing_Player_Active(id)) {
+			continue;
+		}
+		connected[id] = true;
+
 		std::optional<NetTiming::Milliseconds> const round_trip = Connection[i]->Smoothed_Round_Trip_MS();
 		if (!round_trip) {
 			return(std::nullopt);
 		}
-		if (!worst || *round_trip > *worst) {
-			worst = round_trip;
+		worst = std::max(worst, *round_trip);
+	}
+
+	int const local_id = PlayerPtr != NULL ? PlayerPtr->HeapID : -1;
+	for (unsigned int id = 0; id < connected.size(); id++) {
+		if (static_cast<int>(id) != local_id && Session.Is_Network_Timing_Player_Active(id) && !connected[id]) {
+			return(std::nullopt);
 		}
 	}
 

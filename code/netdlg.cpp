@@ -284,17 +284,8 @@ void Destroy_Connection(int id, int error)
 	//------------------------------------------------------------------------
 	Ipx.Delete_Connection(id);
 
-	if (error) {
-		if (PlayerPtr != NULL && PlayerPtr->HeapID == removal_authority) {
-			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REMOVEPLAYER, id));
-		}
-	} else if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
-		housep->Flag_To_Die();
-	} else {
-		//------------------------------------------------------------------------
-		// Turn the player's house over to the computer's AI
-		//------------------------------------------------------------------------
-		housep->AI_Takeover();
+	if (PlayerPtr != NULL && PlayerPtr->HeapID == removal_authority) {
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REMOVEPLAYER, id));
 	}
 
 	Session.NumPlayers--;

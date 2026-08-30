@@ -15,7 +15,10 @@
 #include <cstdint>
 #include <iostream>
 #include <limits>
+#include <optional>
 #include <string>
+#include <utility>
+#include <vector>
 
 
 namespace
@@ -225,37 +228,83 @@ namespace
 		using namespace NetTiming;
 
 		TimingReportCensus census;
-		Expect("activate first peer", census.Set_Player_Active(1, true));
-		Expect("activate second peer", census.Set_Player_Active(2, true));
-		Expect("reject out of range peer", !census.Set_Player_Active(MAX_TIMING_PLAYERS, true));
-		Expect("record first peer", census.Record_Report(1, 80, 100));
-		Expect("record second peer", census.Record_Report(2, 180, 100));
-		Expect("accept RTT above retransmit clamp", census.Record_Report(2, MAXIMUM_RTO + 1, 100));
-		Expect("reject RTT beyond wire range", !census.Record_Report(2, MAXIMUM_REPORTED_RTT + 1, 100));
+		Expect("activate first peer", census.Set_Player_Active(1, true, 100));
+		Expect("activate second peer", census.Set_Player_Active(2, true, 100));
+		Expect("reject out of range peer", !census.Set_Player_Active(MAX_TIMING_PLAYERS, true, 100));
+		Expect("active membership is queryable", census.Is_Player_Active(1));
+		Expect("out of range membership is inactive", !census.Is_Player_Active(MAX_TIMING_PLAYERS));
+		Expect("record first peer", census.Record_Report(1, 12, 80, 100));
+		Expect("record second peer", census.Record_Report(2, 20, 180, 100));
+		Expect("accept RTT above retransmit clamp", census.Record_Report(2, 20, MAXIMUM_RTO + 1, 100));
+		Expect("reject process time beyond engine range", !census.Record_Report(2, MAXIMUM_PROCESS_MILLISECONDS + 1, 100, 150));
+		Expect("reject RTT beyond wire range", !census.Record_Report(2, 1, MAXIMUM_REPORTED_RTT + 1, 150));
 
 		TimingCensus result = census.Inspect(200);
 		Expect_Equal("active peer count", result.ActivePlayers, 2u);
-		Expect_Equal("fresh report count", result.FreshReports, 2u);
+		Expect_Equal("fresh process report count", result.FreshProcessReports, 2u);
+		Expect_Equal("fresh RTT report count", result.FreshRoundTripReports, 2u);
+		Expect_Equal("worst process time", result.WorstProcessMilliseconds, 20u);
 		Expect_Equal("unequal links publish worst", result.WorstRoundTrip, MAXIMUM_RTO + 1);
-		Expect("fresh census complete", result.Complete);
+		Expect("fresh process census complete", result.ProcessComplete);
+		Expect("fresh RTT census complete", result.RoundTripComplete);
+		Expect("fresh census is not conservative", !result.RequiresConservativeTiming);
 		BalancedTimingPolicy aggregate;
-		TimingEvaluation const guest_degradation = aggregate.Evaluate(
-			result, 60, LatencyFudge::None, 200);
-		Expect("a guest-to-guest slow path worsens the master policy",
-			guest_degradation.Changed && guest_degradation.Rung == MAXIMUM_TIMING_RUNG);
+		TimingEvaluation const guest_degradation = aggregate.Evaluate(result, 60, LatencyFudge::None, 200);
+		Expect("a guest-to-guest slow path worsens the master policy", guest_degradation.Changed && guest_degradation.Rung == MAXIMUM_TIMING_RUNG);
 
 		result = census.Inspect(100 + REPORT_EXPIRY);
-		Expect("reports expire on boundary", !result.Complete);
-		Expect_Equal("expired reports not fresh", result.FreshReports, 0u);
+		Expect("process reports expire on boundary", !result.ProcessComplete);
+		Expect("RTT reports expire on boundary", !result.RoundTripComplete);
+		Expect("established RTT expiry is conservative", result.RequiresConservativeTiming);
+		Expect_Equal("expired process reports not fresh", result.FreshProcessReports, 0u);
+		Expect_Equal("expired RTT reports not fresh", result.FreshRoundTripReports, 0u);
+		Expect_Equal("expired process time excluded", result.WorstProcessMilliseconds, 0u);
 
-		Expect("departed peer removed", census.Set_Player_Active(2, false));
-		Expect("remaining peer refreshed", census.Record_Report(1, 90, 700));
+		Expect("departed peer removed", census.Set_Player_Active(2, false, 700));
+		Expect("remaining peer refreshed", census.Record_Report(1, 15, 90, 700));
 		result = census.Inspect(700);
-		Expect("departure restores complete census", result.Complete);
+		Expect("departure restores complete process census", result.ProcessComplete);
+		Expect("departure restores complete RTT census", result.RoundTripComplete);
 		Expect_Equal("departed peer excluded", result.ActivePlayers, 1u);
 		Expect_Equal("remaining peer wins census", result.WorstRoundTrip, 90u);
-		Expect("clear unavailable report", census.Clear_Report(1));
-		Expect("cleared active report makes census incomplete", !census.Inspect(700).Complete);
+
+		Expect("established unavailable RTT report accepted", census.Record_Report(1, 16, std::nullopt, 701));
+		result = census.Inspect(701);
+		Expect("unavailable RTT retains fresh process time", result.ProcessComplete && result.FreshProcessReports == 1);
+		Expect("established unavailable RTT is incomplete", !result.RoundTripComplete);
+		Expect("established unavailable RTT is immediately conservative", result.RequiresConservativeTiming);
+
+		TimingReportCensus grace;
+		Expect("activate grace peer", grace.Set_Player_Active(3, true, 1000));
+		Expect("process-only initial report is accepted", grace.Record_Report(3, 30, std::nullopt, 1000));
+		result = grace.Inspect(1000 + REPORT_EXPIRY - 1);
+		Expect("process-only report remains complete before expiry", result.ProcessComplete);
+		Expect("missing initial RTT is tolerated before expiry", !result.RequiresConservativeTiming);
+		result = grace.Inspect(1000 + REPORT_EXPIRY);
+		Expect("never-valid RTT becomes conservative at exact expiry", result.RequiresConservativeTiming);
+		Expect("never-valid RTT remains incomplete", !result.RoundTripComplete);
+		Expect("process data expires with its report", !result.ProcessComplete);
+		Expect_Equal("stale process data retains synchronized FPS", Select_Desired_Frame_Rate(result, 42, 60), 42u);
+		TimingCensus fresh_process;
+		fresh_process.WorstProcessMilliseconds = 50;
+		Expect_Equal("fresh process data respects game-speed FPS", Select_Desired_Frame_Rate(fresh_process, 42, 15), 15u);
+		fresh_process.WorstProcessMilliseconds = 0;
+		Expect_Equal("zero process time permits 60 FPS", Select_Desired_Frame_Rate(fresh_process, 42, 60), 60u);
+
+		TimingReportCensus atomic;
+		atomic.Set_Player_Active(4, true, 0);
+		Expect("atomic baseline report accepted", atomic.Record_Report(4, 25, 125, 10));
+		Expect("invalid process report rejected atomically", !atomic.Record_Report(4, MAXIMUM_PROCESS_MILLISECONDS + 1, 200, 20));
+		Expect("invalid RTT report rejected atomically", !atomic.Record_Report(4, 50, MAXIMUM_REPORTED_RTT + 1, 20));
+		result = atomic.Inspect(20);
+		Expect_Equal("invalid report preserves process time", result.WorstProcessMilliseconds, 25u);
+		Expect_Equal("invalid report preserves RTT", result.WorstRoundTrip, 125u);
+		Expect("removing a peer clears its complete report", atomic.Set_Player_Active(4, false, 30));
+		Expect_Equal("removed peer no longer contributes", atomic.Inspect(30).ActivePlayers, 0u);
+		Expect("reactivated peer starts with a clean report", atomic.Set_Player_Active(4, true, 40));
+		result = atomic.Inspect(40);
+		Expect("reactivated peer has no inherited process report", !result.ProcessComplete);
+		Expect("reactivated peer receives fresh RTT grace", !result.RequiresConservativeTiming);
 	}
 
 
@@ -269,6 +318,7 @@ namespace
 		Expect_Equal("worst rung MaxAhead", Settings_For_Rung(10).MaxAhead, 30u);
 		Expect("rung settings valid", Timing_Settings_Are_Valid(Settings_For_Rung(10)));
 		Expect("below-rung minimum invalid", !Timing_Settings_Are_Valid({3, 6}));
+		Expect("legacy two-period horizon can source a transition", Timing_Transition_Source_Is_Valid({3, 6}));
 		Expect("unaligned settings invalid", !Timing_Settings_Are_Valid({3, 10}));
 
 		Expect_Equal("no latency fudge", Apply_Latency_Fudge(100, LatencyFudge::None), 100u);
@@ -364,10 +414,9 @@ namespace
 	}
 
 
-	void Record_One(NetTiming::TimingReportCensus & census, NetTiming::Milliseconds rtt,
-		std::uint32_t frame)
+	void Record_One(NetTiming::TimingReportCensus & census, NetTiming::Milliseconds rtt, std::uint32_t frame)
 	{
-		census.Record_Report(1, rtt, frame);
+		census.Record_Report(1, 10, rtt, frame);
 	}
 
 
@@ -376,7 +425,7 @@ namespace
 		using namespace NetTiming;
 
 		TimingReportCensus reports;
-		reports.Set_Player_Active(1, true);
+		reports.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy policy;
 
 		Record_One(reports, 0, 0);
@@ -397,7 +446,7 @@ namespace
 
 		BalancedTimingPolicy headroom;
 		TimingReportCensus edge;
-		edge.Set_Player_Active(1, true);
+		edge.Set_Player_Active(1, true, 0);
 		for (std::uint32_t frame : {0u, 256u, 512u}) {
 			Record_One(edge, 120, frame);
 			headroom.Evaluate(edge.Inspect(frame), 60, LatencyFudge::None, frame);
@@ -426,27 +475,28 @@ namespace
 		using namespace NetTiming;
 
 		TimingReportCensus stale;
-		stale.Set_Player_Active(1, true);
+		stale.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy stale_policy;
 		TimingEvaluation result = stale_policy.Evaluate(stale.Inspect(0), 60, LatencyFudge::None, 0);
 		Expect("startup waits for a complete census", !result.Changed);
 		Expect_Equal("startup keeps initial rung", stale_policy.Current_Rung(), 3u);
 
-		stale.Record_Report(1, 100, 256);
+		stale.Record_Report(1, 10, 100, 256);
 		stale_policy.Evaluate(stale.Inspect(256), 60, LatencyFudge::None, 256);
 		result = stale_policy.Evaluate(stale.Inspect(256 + REPORT_EXPIRY), 60,
 			LatencyFudge::None, 256 + REPORT_EXPIRY);
 		Expect("established stale report worsens policy", result.Changed);
 		Expect_Equal("established stale report chooses worst rung", stale_policy.Current_Rung(), 10u);
+		Expect_Equal("established stale report chooses conservative horizon", stale_policy.Current_Settings().MaxAhead, MAXIMUM_MAX_AHEAD);
 
-		stale.Set_Player_Active(1, false);
+		stale.Set_Player_Active(1, false, 1024);
 		for (std::uint32_t frame : {1024u, 1280u, 1536u}) {
 			stale_policy.Evaluate(stale.Inspect(frame), 60, LatencyFudge::None, frame);
 		}
 		Expect_Equal("departed peer allows recovery", stale_policy.Current_Rung(), 9u);
 
 		TimingReportCensus reports;
-		reports.Set_Player_Active(1, true);
+		reports.Set_Player_Active(1, true, 0);
 		BalancedTimingPolicy policy;
 		std::uint32_t frame = 0;
 
@@ -478,6 +528,62 @@ namespace
 	}
 
 
+	void Test_Master_Handoff_State(void)
+	{
+		using namespace NetTiming;
+
+		TimingReportCensus reports;
+		reports.Set_Player_Active(1, true, 1000);
+		BalancedTimingPolicy policy;
+		policy.Reset_From({10, 70}, REVERSIBLE_CHANGE_LIMIT + 5, 1000);
+		Expect("handoff restores authoritative settings", policy.Current_Settings() == TimingSettings{10, 70});
+		Expect_Equal("handoff saturates the transition budget", policy.Reversible_Changes(), REVERSIBLE_CHANGE_LIMIT);
+		Expect_Equal("handoff discards improvement evidence", policy.Good_Evaluations(), 0u);
+
+		Record_One(reports, 0, 1000);
+		TimingEvaluation result = policy.Evaluate(reports.Inspect(1000), 60, LatencyFudge::None, 1000);
+		Expect("handoff starts an evaluation cooldown", !result.Evaluated);
+		for (std::uint32_t frame : {1256u, 1512u, 1768u, 2024u}) {
+			Record_One(reports, 0, frame);
+			result = policy.Evaluate(reports.Inspect(frame), 60, LatencyFudge::None, frame);
+		}
+		Expect("restored transition budget prevents improvement", policy.Current_Settings() == TimingSettings{10, 70});
+
+		Record_One(reports, MAXIMUM_REPORTED_RTT, 2280);
+		result = policy.Evaluate(reports.Inspect(2280), 60, LatencyFudge::Triple, 2280);
+		Expect("conservative worsening remains after handoff budget", result.Changed && policy.Current_Settings() == TimingSettings{10, 250});
+		Expect_Equal("worsening leaves saturated budget intact", policy.Reversible_Changes(), REVERSIBLE_CHANGE_LIMIT);
+
+		TimingReportCensus recovery_reports;
+		recovery_reports.Set_Player_Active(1, true, 0);
+		BalancedTimingPolicy recover;
+		recover.Reset_From({10, 250}, 2, 0);
+		for (std::uint32_t frame : {256u, 512u, 768u}) {
+			Record_One(recovery_reports, 0, frame);
+			result = recover.Evaluate(recovery_reports.Inspect(frame), 60, LatencyFudge::None, frame);
+		}
+		Expect("10/250 improves one rung after hysteresis", result.Changed && recover.Current_Settings() == TimingSettings{9, 27});
+
+		TimingReportCensus same_rung_reports;
+		same_rung_reports.Set_Player_Active(1, true, 0);
+		BalancedTimingPolicy same_rung;
+		same_rung.Reset_From({10, 70}, 0, 0);
+		for (std::uint32_t frame : {256u, 512u, 768u}) {
+			Record_One(same_rung_reports, 1300, frame);
+			result = same_rung.Evaluate(same_rung_reports.Inspect(frame), 60, LatencyFudge::None, frame);
+		}
+		Expect("10/70 catches up toward 10/50 after hysteresis", result.Changed && same_rung.Current_Settings() == TimingSettings{10, 50});
+
+		TimingReportCensus legacy_reports;
+		legacy_reports.Set_Player_Active(1, true, 0);
+		legacy_reports.Record_Report(1, 10, 200, 256);
+		BalancedTimingPolicy legacy;
+		legacy.Reset_From({3, 6}, 0, 0);
+		result = legacy.Evaluate(legacy_reports.Inspect(256), 60, LatencyFudge::None, 256);
+		Expect("adaptive policy recovers from a legacy two-period horizon", result.Changed && legacy.Current_Settings() == TimingSettings{3, 9});
+	}
+
+
 	void Test_Staged_Decrease(void)
 	{
 		using namespace NetTiming;
@@ -485,23 +591,124 @@ namespace
 		std::optional<StagedTimingUpdate> staged = Stage_Timing_Update({3, 9}, {1, 4}, 100);
 		Expect("decrease stages", staged && staged->Deferred);
 		Expect_Equal("old horizon and periods align", staged->ActivationFrame, 111u);
+		Expect_Equal("activation preserves most of the old horizon", staged->InitialMaxAhead, 6u);
 		Expect("staged update not early", !Timing_Update_Is_Due(110, staged->ActivationFrame));
 		Expect("staged update due", Timing_Update_Is_Due(111, staged->ActivationFrame));
+		Expect_Equal("first catch-up step removes one new period", *Next_Transition_Max_Ahead({1, 6}, {1, 4}), 5u);
+		Expect_Equal("second catch-up step reaches target", *Next_Transition_Max_Ahead({1, 5}, {1, 4}), 4u);
+		Expect_Equal("catch-up stays at target", *Next_Transition_Max_Ahead({1, 4}, {1, 4}), 4u);
 
 		staged = Stage_Timing_Update({3, 9}, {2, 6}, 100);
 		Expect_Equal("both periods use LCM", staged->ActivationFrame, 114u);
+		Expect_Equal("adjacent decrease activates at target horizon", staged->InitialMaxAhead, 6u);
+
+		staged = Stage_Timing_Update({10, 250}, {9, 27}, 100);
+		Expect_Equal("wide decrease aligns activation to both periods", staged->ActivationFrame, 360u);
+		Expect_Equal("wide decrease preserves a safe initial horizon", staged->InitialMaxAhead, 243u);
+		Expect_Equal("wide catch-up removes one new period", *Next_Transition_Max_Ahead({9, 243}, {9, 27}), 234u);
+
+		staged = Stage_Timing_Update({10, 70}, {10, 50}, 100);
+		Expect_Equal("same-rate decrease drains at old horizon", staged->ActivationFrame, 170u);
+		Expect_Equal("same-rate decrease keeps one intermediate period", staged->InitialMaxAhead, 60u);
+		Expect_Equal("same-rate catch-up reaches requested horizon", *Next_Transition_Max_Ahead({10, 60}, {10, 50}), 50u);
+
+		staged = Stage_Timing_Update({9, 234}, {8, 24}, 360);
+		Expect("replacement decrease restages from effective settings", staged && staged->Deferred);
+		Expect_Equal("replacement decrease safely rebases its horizon", staged->InitialMaxAhead, 232u);
 
 		std::optional<StagedTimingUpdate> immediate = Stage_Timing_Update({1, 4}, {5, 15}, 100);
 		Expect("worsening applies immediately", immediate && !immediate->Deferred);
 		Expect_Equal("immediate frame", immediate->ActivationFrame, 100u);
+		Expect_Equal("immediate update uses requested horizon", immediate->InitialMaxAhead, 15u);
 		staged = immediate;
-		Expect("an immediate worse update replaces a pending decrease",
-			staged && !staged->Deferred && staged->Settings == TimingSettings{5, 15});
+		Expect("an immediate worse update replaces a pending decrease", staged && !staged->Deferred && staged->Settings == TimingSettings{5, 15});
+
+		immediate = Stage_Timing_Update({9, 234}, {10, 250}, 360);
+		Expect("conservative update cancels catch-up immediately", immediate && !immediate->Deferred && immediate->InitialMaxAhead == 250);
 
 		Expect("zero-period staging rejected", !Stage_Timing_Update({0, 9}, {1, 4}, 100));
 		Expect("unaligned staging rejected", !Stage_Timing_Update({3, 10}, {1, 4}, 100));
-		Expect("overflowing staging rejected", !Stage_Timing_Update({10, 30}, {9, 27},
-			(std::numeric_limits<std::uint32_t>::max)() - 10));
+		std::optional<StagedTimingUpdate> const legacy_recovery = Stage_Timing_Update({3, 6}, {3, 9}, 100);
+		Expect("legacy response horizon can recover immediately", legacy_recovery && !legacy_recovery->Deferred);
+		Expect("overflowing staging rejected", !Stage_Timing_Update({10, 30}, {9, 27}, (std::numeric_limits<std::uint32_t>::max)() - 10));
+		Expect("catch-up rejects mismatched send periods", !Next_Transition_Max_Ahead({9, 243}, {8, 24}));
+		Expect("catch-up rejects invalid effective settings", !Next_Transition_Max_Ahead({9, 242}, {9, 27}));
+	}
+
+
+	struct TransitionTrace
+	{
+		std::vector<std::pair<std::uint32_t, NetTiming::TimingSettings>> Changes;
+		std::vector<std::uint64_t> CommandTargets;
+
+		bool operator==(TransitionTrace const &) const = default;
+	};
+
+
+	TransitionTrace Run_Transition(NetTiming::TimingSettings current, NetTiming::TimingSettings requested, std::uint32_t event_frame, std::uint32_t final_frame)
+	{
+		TransitionTrace trace;
+		std::optional<NetTiming::StagedTimingUpdate> const plan = NetTiming::Stage_Timing_Update(current, requested, event_frame);
+		if (!plan || !plan->Deferred) {
+			return(trace);
+		}
+
+		NetTiming::TimingTransitionState transition{*plan};
+		std::uint32_t const first_frame = event_frame - event_frame % current.FrameSendRate;
+		for (std::uint32_t frame = first_frame; frame <= final_frame; frame++) {
+			std::optional<NetTiming::TimingTransitionAdvance> const advance = NetTiming::Advance_Timing_Transition(transition, current, frame);
+			if (!advance) {
+				trace.CommandTargets.clear();
+				return(trace);
+			}
+			if (advance->Changed) {
+				current = advance->Settings;
+				trace.Changes.emplace_back(frame, current);
+			}
+			if (frame % current.FrameSendRate == 0) {
+				trace.CommandTargets.push_back(static_cast<std::uint64_t>(frame) + current.MaxAhead);
+			}
+			if (advance->Complete) {
+				break;
+			}
+		}
+		return(trace);
+	}
+
+
+	void Test_Transition_Sequences(void)
+	{
+		using namespace NetTiming;
+
+		for (std::pair<TimingSettings, TimingSettings> const & transition : {
+			std::pair{TimingSettings{10, 250}, TimingSettings{9, 27}},
+			std::pair{TimingSettings{10, 70}, TimingSettings{10, 50}},
+			std::pair{TimingSettings{3, 9}, TimingSettings{2, 6}},
+			std::pair{TimingSettings{2, 6}, TimingSettings{1, 4}}}) {
+			TransitionTrace const live = Run_Transition(transition.first, transition.second, 100, 700);
+			TransitionTrace const replay = Run_Transition(transition.first, transition.second, 100, 700);
+			Expect("live and replay transition steps are identical", live == replay);
+			Expect("a transition reaches its requested settings", !live.Changes.empty() && live.Changes.back().second == transition.second);
+			bool nondecreasing = !live.CommandTargets.empty();
+			for (std::size_t index = 1; index < live.CommandTargets.size(); index++) {
+				nondecreasing = nondecreasing && live.CommandTargets[index] >= live.CommandTargets[index - 1];
+			}
+			Expect("transition command targets never move backward", nondecreasing);
+		}
+
+		std::optional<StagedTimingUpdate> const plan = Stage_Timing_Update({10, 250}, {9, 27}, 100);
+		TimingTransitionState state{*plan};
+		TimingSettings current{10, 250};
+		for (std::uint32_t frame = 100; frame <= 369; frame++) {
+			std::optional<TimingTransitionAdvance> const advance = Advance_Timing_Transition(state, current, frame);
+			if (advance && advance->Changed) {
+				current = advance->Settings;
+			}
+		}
+		std::optional<StagedTimingUpdate> const replacement = Stage_Timing_Update(current, {8, 24}, 369);
+		Expect("an active catch-up can be safely replaced", replacement && replacement->Deferred && replacement->InitialMaxAhead >= current.MaxAhead - current.FrameSendRate);
+		std::optional<StagedTimingUpdate> const conservative = Stage_Timing_Update(current, {10, 250}, 369);
+		Expect("a fully conservative replacement applies immediately", conservative && !conservative->Deferred);
 	}
 }
 
@@ -517,7 +724,9 @@ int main(void)
 	Test_Event_Semantics();
 	Test_Hysteresis_And_Cooldown();
 	Test_Stale_And_Transition_Budget();
+	Test_Master_Handoff_State();
 	Test_Staged_Decrease();
+	Test_Transition_Sequences();
 
 	if (Failures != 0) {
 		std::cerr << Failures << " network timing checks failed\n";

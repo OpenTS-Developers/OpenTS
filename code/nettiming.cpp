@@ -36,11 +36,11 @@ namespace NetTiming
 		/// <summary>Selects timing for the current report census.</summary>
 		TimingSettings Desired_Settings(TimingCensus const & census, unsigned int target_fps, LatencyFudge fudge, bool require_headroom)
 		{
+			if (census.RequiresConservativeTiming) {
+				return(TimingSettings{MAXIMUM_TIMING_RUNG, MAXIMUM_MAX_AHEAD});
+			}
 			if (census.ActivePlayers == 0) {
 				return(Settings_For_Rung(INITIAL_TIMING_RUNG));
-			}
-			if (!census.Complete) {
-				return(TimingSettings{MAXIMUM_TIMING_RUNG, MAXIMUM_MAX_AHEAD});
 			}
 			return(Select_Timing_Settings(census.WorstRoundTrip, target_fps, fudge, require_headroom));
 		}
@@ -151,6 +151,15 @@ namespace NetTiming
 	}
 
 
+	/// <summary>Accepts a legacy aligned horizon as the source of a safe transition.</summary>
+	bool Timing_Transition_Source_Is_Valid(TimingSettings settings)
+	{
+		return(settings.FrameSendRate >= MINIMUM_TIMING_RUNG && settings.FrameSendRate <= MAXIMUM_TIMING_RUNG
+			&& settings.MaxAhead >= 2 * settings.FrameSendRate && settings.MaxAhead <= MAXIMUM_MAX_AHEAD
+			&& settings.MaxAhead % settings.FrameSendRate == 0);
+	}
+
+
 	/// <summary>Applies the selected RTT safety margin.</summary>
 	Milliseconds Apply_Latency_Fudge(Milliseconds round_trip, LatencyFudge fudge)
 	{
@@ -243,7 +252,7 @@ namespace NetTiming
 
 
 	/// <summary>Adds or removes a player from the census.</summary>
-	bool TimingReportCensus::Set_Player_Active(unsigned int player, bool active)
+	bool TimingReportCensus::Set_Player_Active(unsigned int player, bool active, std::uint32_t frame)
 	{
 		if (player >= Reports.size()) {
 			return(false);
@@ -253,36 +262,34 @@ namespace NetTiming
 		if (report.Active != active) {
 			report = {};
 			report.Active = active;
+			report.ActiveSinceFrame = frame;
 		}
 		return(true);
 	}
 
 
-	/// <summary>Records one active player's fresh RTT report.</summary>
-	bool TimingReportCensus::Record_Report(unsigned int player, Milliseconds round_trip, std::uint32_t frame)
+	/// <summary>Checks whether a player belongs to the timing census.</summary>
+	bool TimingReportCensus::Is_Player_Active(unsigned int player) const
 	{
-		if (player >= Reports.size() || !Reports[player].Active || round_trip > MAXIMUM_REPORTED_RTT) {
+		return(player < Reports.size() && Reports[player].Active);
+	}
+
+
+	/// <summary>Records process time and optional RTT as one report.</summary>
+	bool TimingReportCensus::Record_Report(unsigned int player, Milliseconds process_milliseconds, std::optional<Milliseconds> round_trip, std::uint32_t frame)
+	{
+		if (player >= Reports.size() || !Reports[player].Active || process_milliseconds > MAXIMUM_PROCESS_MILLISECONDS
+			|| (round_trip && *round_trip > MAXIMUM_REPORTED_RTT)) {
 			return(false);
 		}
 
 		PlayerReport & report = Reports[player];
-		report.Present = true;
-		report.RoundTrip = round_trip;
-		report.Frame = frame;
-		return(true);
-	}
-
-
-	/// <summary>Marks an active player's RTT as unavailable.</summary>
-	bool TimingReportCensus::Clear_Report(unsigned int player)
-	{
-		if (player >= Reports.size() || !Reports[player].Active) {
-			return(false);
-		}
-
-		Reports[player].Present = false;
-		Reports[player].RoundTrip = 0;
-		Reports[player].Frame = 0;
+		report.HasReport = true;
+		report.HasRoundTrip = round_trip.has_value();
+		report.EverHadRoundTrip |= round_trip.has_value();
+		report.ProcessMilliseconds = process_milliseconds;
+		report.RoundTrip = round_trip.value_or(0);
+		report.ReportFrame = frame;
 		return(true);
 	}
 
@@ -297,15 +304,40 @@ namespace NetTiming
 			}
 
 			result.ActivePlayers++;
-			if (!report.Present || frame - report.Frame >= REPORT_EXPIRY) {
-				result.Complete = false;
-				continue;
+			bool const fresh = report.HasReport && frame - report.ReportFrame < REPORT_EXPIRY;
+			if (fresh) {
+				result.FreshProcessReports++;
+				result.WorstProcessMilliseconds = std::max(result.WorstProcessMilliseconds, report.ProcessMilliseconds);
+			} else {
+				result.ProcessComplete = false;
 			}
 
-			result.FreshReports++;
-			result.WorstRoundTrip = std::max(result.WorstRoundTrip, report.RoundTrip);
+			if (fresh && report.HasRoundTrip) {
+				result.FreshRoundTripReports++;
+				result.WorstRoundTrip = std::max(result.WorstRoundTrip, report.RoundTrip);
+			} else {
+				result.RoundTripComplete = false;
+				if (report.EverHadRoundTrip || frame - report.ActiveSinceFrame >= REPORT_EXPIRY) {
+					result.RequiresConservativeTiming = true;
+				}
+			}
 		}
 		return(result);
+	}
+
+
+	/// <summary>Uses fresh process reports without discarding the synchronized frame rate.</summary>
+	unsigned int Select_Desired_Frame_Rate(TimingCensus const & census, unsigned int synchronized_fps, unsigned int game_speed_fps)
+	{
+		synchronized_fps = std::clamp(synchronized_fps, 1u, 60u);
+		game_speed_fps = std::clamp(game_speed_fps, 1u, 60u);
+		if (!census.ProcessComplete) {
+			return(synchronized_fps);
+		}
+
+		unsigned int const process_fps = census.WorstProcessMilliseconds == 0 ? 60u
+			: static_cast<unsigned int>(std::max<Milliseconds>(1, 1000 / census.WorstProcessMilliseconds));
+		return(std::min(process_fps, game_speed_fps));
 	}
 
 
@@ -320,7 +352,20 @@ namespace NetTiming
 		LastChangeFrame = 0;
 		HasEvaluated = false;
 		HasChanged = false;
-		HasCompleteCensus = false;
+	}
+
+
+	/// <summary>Restores synchronized policy state after a master handoff.</summary>
+	void BalancedTimingPolicy::Reset_From(TimingSettings settings, unsigned int reversible_changes, std::uint32_t frame)
+	{
+		CurrentRung = std::clamp(settings.FrameSendRate, MINIMUM_TIMING_RUNG, MAXIMUM_TIMING_RUNG);
+		CurrentSettings = settings;
+		GoodEvaluations = 0;
+		ReversibleChanges = std::min(reversible_changes, REVERSIBLE_CHANGE_LIMIT);
+		LastEvaluationFrame = frame;
+		LastChangeFrame = frame;
+		HasEvaluated = true;
+		HasChanged = true;
 	}
 
 
@@ -349,10 +394,8 @@ namespace NetTiming
 		HasEvaluated = true;
 		LastEvaluationFrame = frame;
 		result.Evaluated = true;
-		if (census.Complete && census.ActivePlayers > 0) {
-			HasCompleteCensus = true;
-		}
-		if (!HasCompleteCensus && !census.Complete) {
+		if (!census.RequiresConservativeTiming && census.ActivePlayers > 0 && !census.RoundTripComplete) {
+			GoodEvaluations = 0;
 			return(result);
 		}
 
@@ -388,16 +431,15 @@ namespace NetTiming
 	/// <summary>Delays decreases until the old scheduling horizon drains.</summary>
 	std::optional<StagedTimingUpdate> Stage_Timing_Update(TimingSettings current, TimingSettings requested, std::uint32_t event_frame)
 	{
-		if (!Timing_Settings_Are_Valid(current) || !Timing_Settings_Are_Valid(requested)) {
+		if (!Timing_Transition_Source_Is_Valid(current) || !Timing_Settings_Are_Valid(requested)) {
 			return(std::nullopt);
 		}
 
 		bool const decrease = requested.FrameSendRate < current.FrameSendRate || requested.MaxAhead < current.MaxAhead;
 		if (!decrease) {
-			return(StagedTimingUpdate{requested, event_frame, false});
+			return(StagedTimingUpdate{requested, requested.MaxAhead, event_frame, false});
 		}
 
-		// Aligning to both periods keeps already scheduled commands on the old horizon.
 		std::uint64_t const period = std::lcm(current.FrameSendRate, requested.FrameSendRate);
 		std::uint64_t const old_horizon = static_cast<std::uint64_t>(event_frame) + current.MaxAhead;
 		std::uint64_t const activation = Divide_Round_Up(old_horizon, period) * period;
@@ -405,7 +447,61 @@ namespace NetTiming
 			return(std::nullopt);
 		}
 
-		return(StagedTimingUpdate{requested, static_cast<std::uint32_t>(activation), true});
+		unsigned int const minimum_horizon = std::max(requested.MaxAhead, current.MaxAhead - current.FrameSendRate);
+		std::optional<unsigned int> const initial_max_ahead = Align_Max_Ahead(minimum_horizon, requested.FrameSendRate);
+		if (!initial_max_ahead) {
+			return(std::nullopt);
+		}
+
+		return(StagedTimingUpdate{requested, *initial_max_ahead, static_cast<std::uint32_t>(activation), true});
+	}
+
+
+	/// <summary>Advances one catch-up step without dropping below the target horizon.</summary>
+	std::optional<unsigned int> Next_Transition_Max_Ahead(TimingSettings current, TimingSettings requested)
+	{
+		if (!Timing_Settings_Are_Valid(current) || !Timing_Settings_Are_Valid(requested) || current.FrameSendRate != requested.FrameSendRate) {
+			return(std::nullopt);
+		}
+
+		if (current.MaxAhead <= requested.MaxAhead) {
+			return(requested.MaxAhead);
+		}
+		return(std::max(requested.MaxAhead, current.MaxAhead - requested.FrameSendRate));
+	}
+
+
+	/// <summary>Advances one deterministic drain or catch-up boundary.</summary>
+	std::optional<TimingTransitionAdvance> Advance_Timing_Transition(TimingTransitionState & transition, TimingSettings current, std::uint32_t frame)
+	{
+		bool const current_is_valid = transition.Activated ? Timing_Settings_Are_Valid(current) : Timing_Transition_Source_Is_Valid(current);
+		if (!transition.Plan.Deferred || !current_is_valid || !Timing_Settings_Are_Valid(transition.Plan.Settings)
+			|| !Timing_Settings_Are_Valid({transition.Plan.Settings.FrameSendRate, transition.Plan.InitialMaxAhead})) {
+			return(std::nullopt);
+		}
+
+		TimingTransitionAdvance result{current};
+		if (!transition.Activated) {
+			if (!Timing_Update_Is_Due(frame, transition.Plan.ActivationFrame)) {
+				return(result);
+			}
+			result.Settings = {transition.Plan.Settings.FrameSendRate, transition.Plan.InitialMaxAhead};
+			result.Changed = result.Settings != current;
+			transition.LastStepFrame = frame;
+			transition.Activated = true;
+		} else if (current.MaxAhead > transition.Plan.Settings.MaxAhead && frame > transition.LastStepFrame
+			&& frame % transition.Plan.Settings.FrameSendRate == 0) {
+			std::optional<unsigned int> const next = Next_Transition_Max_Ahead(current, transition.Plan.Settings);
+			if (!next) {
+				return(std::nullopt);
+			}
+			result.Settings.MaxAhead = *next;
+			result.Changed = result.Settings != current;
+			transition.LastStepFrame = frame;
+		}
+
+		result.Complete = transition.Activated && result.Settings == transition.Plan.Settings;
+		return(result);
 	}
 
 

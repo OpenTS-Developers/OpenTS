@@ -1156,7 +1156,7 @@ void EventClass::Execute(void)
 				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.FrameInfo.Delay);
 				break;
 			}
-			Session.MaxAhead = Data.FrameInfo.Delay;
+			Session.Apply_Network_Response_Time(Data.FrameInfo.Delay, Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
 			break;
 		}
 
@@ -1201,7 +1201,7 @@ void EventClass::Execute(void)
 
 			DebugString("Executing REMOVEPLAYER event. Frame is %d\n", ::Frame);
 			Disable_Multiplayer_Saving();
-			Session.Remove_Network_Timing_Player(index);
+			Session.Remove_Network_Timing_Player(index, Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
 			house = Houses[index];
 			if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
 				house->Flag_To_Die();

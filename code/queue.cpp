@@ -483,8 +483,8 @@ bool Queue_Exit(void)
  *=========================================================================*/
 void Queue_AI(void)
 {
-	if (Frame >= 0) {
-		Session.Apply_Staged_Network_Timing(static_cast<unsigned int>(Frame));
+	if (Frame >= 0 && (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET)) {
+		Session.Advance_Network_Timing(static_cast<unsigned int>(Frame));
 	}
 
 	if (Session.Play) {
@@ -828,7 +828,7 @@ static void Queue_AI_Multiplayer(void)
 	// Adjust connection timing parameters every 128 frames.
 	//------------------------------------------------------------------------
 
-	else if ( (Frame & 0x007f) == 0) {
+	else if (Frame % NetTiming::REPORT_INTERVAL == 0) {
 		//
 		// If we're using the new spiffy protocol, do proper timing handling.
 		// If we're the net "master", compute our desired frame rate & new
@@ -848,8 +848,8 @@ static void Queue_AI_Multiplayer(void)
 	}
 
 	// The deterministic master periodically evaluates the shared reports.
-	if (Session.Am_I_Master() && (Session.PrecalcMaxAhead != 0 || Session.PrecalcDesiredFrameRate != 0 ||
-		(Frame & (NetTiming::EVALUATION_INTERVAL - 1)) == 0)) {
+	int const timing_master = Session.Master_Player_ID();
+	if (PlayerPtr != NULL && PlayerPtr->HeapID == timing_master && Frame % NetTiming::EVALUATION_INTERVAL == 0) {
 		Generate_Real_Timing_Event();
 	}
 
@@ -1573,35 +1573,21 @@ static void Generate_Real_Timing_Event(void)
 	EventClass event;
 	memset(&event, 0, sizeof(event));
 
-	if (Session.PrecalcMaxAhead != 0 || Session.PrecalcDesiredFrameRate != 0) {
-		NetTiming::TimingSettings const settings{Session.PrecalcDesiredFrameRate > 30u ? 10u : 5u, static_cast<unsigned int>(Session.PrecalcMaxAhead)};
-		if (Session.PrecalcDesiredFrameRate > 0 && Session.PrecalcDesiredFrameRate <= 60 && NetTiming::Timing_Settings_Are_Valid(settings)) {
-			event.Type = EventClass::TIMING;
-			event.Data.Timing.DesiredFrameRate = Session.PrecalcDesiredFrameRate;
-			event.Data.Timing.MaxAhead = settings.MaxAhead;
-			event.Data.Timing.FrameSendRate = settings.FrameSendRate;
-			OutList.push_back(event);
-		} else {
-			DebugString("Ignoring invalid precalculated network timing values\n");
-		}
-
-		Session.PrecalcMaxAhead = 0;
-		Session.PrecalcDesiredFrameRate = 0;
+	if (Frame < 0) {
 		return;
 	}
 
-	int highest_process_milliseconds = 0;
-	for (int index = 0; index < Session.Players.Count(); index++) {
-		NodeNameType const * player = Session.Players[index];
-		if (player == NULL || player->Player.ProcessTime < 0) {
-			return;
-		}
-		highest_process_milliseconds = std::max(highest_process_milliseconds, player->Player.ProcessTime);
+	unsigned int const frame = static_cast<unsigned int>(Frame);
+	int const master_id = Session.Master_Player_ID();
+	if (PlayerPtr == NULL || PlayerPtr->HeapID != master_id) {
+		return;
 	}
+	Session.Prepare_Network_Timing_Master(master_id, frame);
 
-	unsigned int process_frame_rate = highest_process_milliseconds == 0 ? 60u : static_cast<unsigned int>(std::max(1, 1000 / highest_process_milliseconds));
-	unsigned int const desired_frame_rate = std::min(process_frame_rate, static_cast<unsigned int>(Game_Speed_Frame_Rate()));
-	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(desired_frame_rate, static_cast<unsigned int>(Frame));
+	NetTiming::TimingCensus const census = Session.Network_Timing_Census(frame);
+	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(
+		census, static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), static_cast<unsigned int>(Game_Speed_Frame_Rate()));
+	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
 	if (!evaluation.Changed && desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate)) {
 		return;
 	}

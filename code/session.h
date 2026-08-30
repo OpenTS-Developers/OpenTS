@@ -437,6 +437,12 @@ class SessionClass
 	// Public interface
 	//------------------------------------------------------------------------
 	public:
+		struct NetworkTimingTransition
+		{
+			NetTiming::TimingTransitionState Timing;
+			unsigned int DesiredFrameRate = 30;
+		};
+
 		//.....................................................................
 		// Constructor/Destructor
 		//.....................................................................
@@ -465,13 +471,17 @@ class SessionClass
 		int Master_Player_ID(void) const;
 		int Removal_Authority_Player_ID(int target) const;
 		bool Is_Network_Player_ID(int id) const;
-		void Reset_Network_Timing(void);
+		bool Is_Network_Timing_Player_Active(int id) const;
+		void Reset_Network_Timing(unsigned int frame);
 		bool Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int frame);
-		void Remove_Network_Timing_Player(int id);
+		void Remove_Network_Timing_Player(int id, unsigned int frame);
 		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
-		NetTiming::TimingEvaluation Evaluate_Network_Timing(unsigned int target_fps, unsigned int frame);
+		NetTiming::TimingEvaluation Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame);
+		NetTiming::TimingSettings Network_Timing_Target(void) const;
+		void Prepare_Network_Timing_Master(int master_id, unsigned int frame);
+		void Apply_Network_Response_Time(unsigned int max_ahead, unsigned int event_frame);
 		NetTiming::ScheduleResult Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame);
-		bool Apply_Staged_Network_Timing(unsigned int frame);
+		bool Advance_Network_Timing(unsigned int frame);
 		unsigned int Compute_Unique_ID(void);
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);
@@ -544,9 +554,9 @@ class SessionClass
 		unsigned int FrameSendRate;
 		NetTiming::TimingReportCensus NetworkTimingReports;
 		NetTiming::BalancedTimingPolicy NetworkTimingPolicy;
-		std::optional<NetTiming::StagedTimingUpdate> PendingNetworkTiming;
-		unsigned int PendingNetworkDesiredFrameRate;
-		bool RemovedNetworkTimingPlayers[NetTiming::MAX_TIMING_PLAYERS];
+		std::optional<NetworkTimingTransition> PendingNetworkTiming;
+		unsigned int NetworkTimingChangeCount;
+		int NetworkTimingPolicyOwner;
 
 		int			DesiredFrameRate;
 
@@ -559,14 +569,6 @@ class SessionClass
 		 * The sync bug report carries it as a measure of how bad the connection ever got.
 		 */
 		int			MaxMaxAhead;
-
-		/*
-		 * These are the frame timings Westwood Online worked out from the players' connection
-		 * speeds. While either is non-zero the host sends them out instead of measuring the
-		 * connections itself, and clears both once it has.
-		 */
-		int			PrecalcMaxAhead;
-		int			PrecalcDesiredFrameRate;
 
 		/*
 		 * These are the network statistics gathered for each player over the course of the
