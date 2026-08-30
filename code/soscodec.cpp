@@ -11,20 +11,6 @@
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
 
-/****************************************************************************
-*
-*  File              : soscodec.asm
-*  Date Created      : 6/1/94
-*  Description       : ADPCM decompression for the SOS audio streams.
-*
-*  Programmer(s)     : Nick Skrepetos
-*  Last Modification : 10/1/94 - 11:37:9 AM
-*  Additional Notes  : Modified by Denzil E. Long, Jr.
-*
-*****************************************************************************
-*            Copyright (c) 1994,  HMI, Inc.  All Rights Reserved            *
-****************************************************************************/
-
 #include "always.h"
 
 #include <cstdint>
