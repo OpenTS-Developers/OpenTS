@@ -20,6 +20,10 @@ namespace NetSemantic
 {
 	bool Index_Is_Valid(int index, std::size_t count) noexcept;
 
+	bool Event_Requires_Owned_Subject(unsigned int event_type) noexcept;
+
+	bool Subject_Owner_Is_Valid(int sender, int owner) noexcept;
+
 	bool Game_Speed_Is_Valid(int game_speed) noexcept;
 
 	bool Latency_Fudge_Is_Valid(int latency_fudge) noexcept;
@@ -29,6 +33,12 @@ namespace NetSemantic
 	bool Animation_Owner_Is_Valid(int owner, int none, std::size_t count) noexcept;
 
 	bool Timing_Authority_Is_Valid(int sender, int master) noexcept;
+
+	bool Response_Time_Is_Valid(unsigned int delay, unsigned int minimum_delay, unsigned int frame_send_rate, bool compressed) noexcept;
+
+	int Removal_Authority(int target, int master, int successor) noexcept;
+
+	bool Removal_Authority_Is_Valid(int sender, int target, int master, int successor) noexcept;
 
 	std::optional<NetTiming::TimingSettings> Decode_Timing_Settings(std::uint16_t desired_frame_rate, std::uint16_t max_ahead, std::uint8_t frame_send_rate) noexcept;
 

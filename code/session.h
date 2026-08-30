@@ -463,6 +463,7 @@ class SessionClass
 		int Create_Connections(void);
 		bool Am_I_Master(void);
 		int Master_Player_ID(void) const;
+		int Removal_Authority_Player_ID(int target) const;
 		bool Is_Network_Player_ID(int id) const;
 		void Reset_Network_Timing(void);
 		bool Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int frame);

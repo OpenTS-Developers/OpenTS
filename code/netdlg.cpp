@@ -231,6 +231,7 @@ void Destroy_Connection(int id, int error)
 	int i;
 	HouseClass *housep;
 	char txt[80];
+	int const removal_authority = Session.Removal_Authority_Player_ID(id);
 
 	housep = Houses[(HousesType)id];
 
@@ -284,7 +285,9 @@ void Destroy_Connection(int id, int error)
 	Ipx.Delete_Connection(id);
 
 	if (error) {
-		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REMOVEPLAYER, id));
+		if (PlayerPtr != NULL && PlayerPtr->HeapID == removal_authority) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REMOVEPLAYER, id));
+		}
 	} else if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
 		housep->Flag_To_Die();
 	} else {

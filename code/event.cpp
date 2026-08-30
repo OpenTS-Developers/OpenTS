@@ -90,6 +90,8 @@ namespace {
 		InvalidGameSpeed,
 		InvalidRemovedHouse,
 		InvalidLatencyFudge,
+		UnauthorizedSubject,
+		UnauthorizedRemoval,
 		UnauthorizedTiming,
 		InvalidTimingArithmetic,
 		InvalidTimingValues,
@@ -108,6 +110,8 @@ namespace {
 		"invalid game speed",
 		"invalid removed house",
 		"invalid latency fudge",
+		"unauthorized subject",
+		"unauthorized removal",
 		"unauthorized timing",
 		"invalid timing arithmetic",
 		"invalid timing values",
@@ -129,6 +133,33 @@ namespace {
 		}
 
 		DebugString("Rejected network event: %s, type %u, origin %d, detail %d (count %u)\n", EventRejectReasonNames[reason_index], type, origin, detail, count);
+	}
+
+
+	/// <summary>Resolves the object controlled by an ownership-gated event.</summary>
+	TechnoClass * Event_Subject(EventClass const & event)
+	{
+		switch (event.Type) {
+			case EventClass::POWERON:
+			case EventClass::POWEROFF:
+			case EventClass::REPAIR:
+			case EventClass::PRIMARY:
+			case EventClass::IDLE:
+			case EventClass::DEPLOY:
+			case EventClass::SCATTER:
+			case EventClass::SELL:
+				return(event.Data.Target.Whom.As_Techno());
+
+			case EventClass::ARCHIVE:
+				return(event.Data.NavCom.Whom.As_Techno());
+
+			case EventClass::MEGAMISSION:
+			case EventClass::MEGAMISSION_F:
+				return(event.Data.MegaMission.Whom.As_Techno());
+
+			default:
+				return(NULL);
+		}
 	}
 }
 
@@ -620,6 +651,17 @@ void EventClass::Execute(void)
 	}
 
 	HouseClass * house = Houses[ID];
+	if ((Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) && NetSemantic::Event_Requires_Owned_Subject(Type)) {
+		TechnoClass * subject = Event_Subject(*this);
+		if (subject == NULL || !subject->IsActive || subject->Strength <= 0) {
+			return;
+		}
+		int const owner = subject->House != NULL ? subject->House->HeapID : -1;
+		if (!NetSemantic::Subject_Owner_Is_Valid(ID, owner)) {
+			Log_Event_Rejection(EventRejectReason::UnauthorizedSubject, Type, ID, owner);
+			return;
+		}
+	}
 	HouseClass * hptr = NULL;
 	const char *str = NULL;
 //	Cell cell;
@@ -1103,8 +1145,20 @@ void EventClass::Execute(void)
 		**	Adjust connection timing for multiplayer games
 		*/
 		case RESPONSE_TIME:
+		{
+			int const master_id = Session.Master_Player_ID();
+			if (!Session.Play && !NetSemantic::Timing_Authority_Is_Valid(ID, master_id)) {
+				Log_Event_Rejection(EventRejectReason::UnauthorizedTiming, Type, ID, master_id);
+				break;
+			}
+			bool const compressed = Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP;
+			if (!NetSemantic::Response_Time_Is_Valid(Data.FrameInfo.Delay, NETWORK_MIN_MAX_AHEAD, Session.FrameSendRate, compressed)) {
+				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.FrameInfo.Delay);
+				break;
+			}
 			Session.MaxAhead = Data.FrameInfo.Delay;
 			break;
+		}
 
 		/*
 		**	Save a multiplayer game (this event is only generated in multiplayer mode)
@@ -1135,6 +1189,13 @@ void EventClass::Execute(void)
 			index = Data.General.Value;
 			if (!NetSemantic::Index_Is_Valid(index, Houses.Count()) || Houses[index] == NULL) {
 				Log_Event_Rejection(EventRejectReason::InvalidRemovedHouse, Type, ID, index);
+				break;
+			}
+			if (!Houses[index]->Is_Human_Player()) {
+				break;
+			}
+			if (!Session.Play && ID != Session.Removal_Authority_Player_ID(index)) {
+				Log_Event_Rejection(EventRejectReason::UnauthorizedRemoval, Type, ID, index);
 				break;
 			}
 
@@ -1178,7 +1239,7 @@ void EventClass::Execute(void)
 		case TIMING:
 		{
 			int const master_id = Session.Master_Player_ID();
-			if (!NetSemantic::Timing_Authority_Is_Valid(ID, master_id)) {
+			if (!Session.Play && !NetSemantic::Timing_Authority_Is_Valid(ID, master_id)) {
 				Log_Event_Rejection(EventRejectReason::UnauthorizedTiming, Type, ID, master_id);
 				break;
 			}

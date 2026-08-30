@@ -61,6 +61,7 @@
 #include "ipxmgr.h"
 #include "language\language.h"
 #include "msgloop.h"
+#include "netsemantic.h"
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
@@ -455,6 +456,24 @@ int SessionClass::Master_Player_ID(void) const
 	}
 
 	return(-1);
+}
+
+
+/// <summary>Returns the player authorized to remove a synchronized peer.</summary>
+int SessionClass::Removal_Authority_Player_ID(int target) const
+{
+	int const master = Master_Player_ID();
+	int successor = -1;
+	if (target == master) {
+		for (int i = 0; i < Houses.Count(); i++) {
+			HouseClass const * house = Houses[i];
+			if (house != NULL && house->HeapID != target && house->IsHuman && Is_Network_Player_ID(house->HeapID)) {
+				successor = house->HeapID;
+				break;
+			}
+		}
+	}
+	return(NetSemantic::Removal_Authority(target, master, successor));
 }
 
 

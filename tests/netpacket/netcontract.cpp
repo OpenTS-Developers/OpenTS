@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <span>
 #include <utility>
 #include <vector>
@@ -33,7 +34,9 @@ using NetworkReportType = decltype(std::declval<EventClass>().Data.NetworkReport
 constexpr int Sender = 3;
 constexpr int Frame = 120;
 constexpr std::size_t DataOffset = offsetof(EventClass, Data);
+constexpr std::size_t FrameOffset = offsetof(EventClass, Frame);
 constexpr std::size_t EnvelopeSize = DataOffset + sizeof(std::declval<EventClass>().Data.FrameInfo);
+constexpr std::size_t FrameDelayOffset = DataOffset + offsetof(decltype(std::declval<EventClass>().Data.FrameInfo), Delay);
 constexpr std::size_t VariableSizeOffset = offsetof(VariableDataType, Size);
 constexpr std::size_t MegaWhomSize = sizeof(std::declval<EventClass>().Data.MegaMission.Whom);
 
@@ -228,6 +231,37 @@ void Test_Envelope_Rules(void)
 		NetPacket::Decode_Event_Packet(short_uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
 		NetPacket::DecodeError::TRUNCATED_ENVELOPE,
 		"an uncompressed FRAMEINFO must carry the complete full event");
+}
+
+
+void Test_Frame_Arithmetic(void)
+{
+	Bytes negative = Compressed_Packet();
+	int const negative_frame = -1;
+	Write_Value(negative, FrameOffset, negative_frame);
+	Check_Error(NetPacket::Decode_Event_Packet(negative, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_FRAME_ARITHMETIC, "a negative FRAMEINFO frame is rejected transactionally");
+
+	Bytes underflow = Compressed_Packet();
+	int const early_frame = 3;
+	std::uint8_t const excessive_delay = 4;
+	Write_Value(underflow, FrameOffset, early_frame);
+	Write_Value(underflow, FrameDelayOffset, excessive_delay);
+	Check_Error(NetPacket::Decode_Event_Packet(underflow, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_FRAME_ARITHMETIC, "a FRAMEINFO delay larger than its frame is rejected");
+
+	Bytes minimum = Envelope(EventClass::FRAMESYNC);
+	int const minimum_frame = (std::numeric_limits<int>::min)();
+	Write_Value(minimum, FrameOffset, minimum_frame);
+	Check_Error(NetPacket::Decode_Event_Packet(minimum, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_FRAME_ARITHMETIC, "the minimum signed FRAMESYNC frame cannot overflow subtraction");
+
+	Check(NetPacket::Compute_Reported_Frame(4, 4) == 0, "a delay equal to its frame reports frame zero");
+	Check(!NetPacket::Compute_Reported_Frame(3, 4), "checked sender-frame subtraction rejects underflow");
+	Check(NetPacket::Compute_Reported_Frame(350, 0, 100, 250) == 350, "the maximum 250-frame sender lead is accepted");
+	Check(!NetPacket::Compute_Reported_Frame(351, 0, 100, 250), "an excessive future sender frame is rejected");
+	Check(NetPacket::Compute_Reported_Frame((std::numeric_limits<int>::max)(), 0, (std::numeric_limits<int>::max)(), 250).has_value(),
+		"receiver lead arithmetic remains safe at the signed-frame limit");
 }
 
 
@@ -672,6 +706,22 @@ void Test_Global_Packets(void)
 
 	Check(fully_initialized,
 		"global packet initialization overwrites poison across the current packet shape");
+
+	std::array<NetGlobal::Endpoint, 3> endpoints{{{0x01020304, 1000}, {0x01020304, 2000}, {0x01020304, 0}}};
+	NetGlobal::EndpointResolution resolution = NetGlobal::Resolve_Sender({0x01020304, 2000}, endpoints);
+	Check(resolution.Error == NetGlobal::DecodeError::NONE && resolution.Match == NetGlobal::EndpointMatch::EXACT && resolution.RosterIndex == 1,
+		"an exact IP and port selects the matching same-NAT player");
+	resolution = NetGlobal::Resolve_Sender({0x01020304, 3000}, endpoints);
+	Check(resolution.Error == NetGlobal::DecodeError::NONE && resolution.Match == NetGlobal::EndpointMatch::ZERO_PORT && resolution.RosterIndex == 2,
+		"one zero-port roster entry provides the legacy same-IP fallback");
+	std::array<NetGlobal::Endpoint, 2> duplicate_exact{{{0x01020304, 1000}, {0x01020304, 1000}}};
+	Check(NetGlobal::Resolve_Sender({0x01020304, 1000}, duplicate_exact).Error == NetGlobal::DecodeError::AMBIGUOUS_SENDER,
+		"duplicate exact endpoints are rejected as ambiguous");
+	std::array<NetGlobal::Endpoint, 2> duplicate_wildcard{{{0x01020304, 0}, {0x01020304, 0}}};
+	Check(NetGlobal::Resolve_Sender({0x01020304, 1000}, duplicate_wildcard).Error == NetGlobal::DecodeError::AMBIGUOUS_SENDER,
+		"multiple zero-port candidates on one IP are rejected as ambiguous");
+	Check(NetGlobal::Resolve_Sender({0x05060708, 1000}, endpoints).Error == NetGlobal::DecodeError::SENDER_NOT_MEMBER,
+		"an unknown endpoint remains outside the session roster");
 	Check_Global_Error(packet, packet_size - 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
 		"a short global packet is rejected before dispatch");
 	Check_Global_Error(packet, packet_size + 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
@@ -766,6 +816,7 @@ int main(void)
 	Test_Reader();
 	Test_Event_Contract();
 	Test_Envelope_Rules();
+	Test_Frame_Arithmetic();
 	Test_Full_Compressed_Table();
 	Test_Mega_Mission();
 	Test_Add_Player();

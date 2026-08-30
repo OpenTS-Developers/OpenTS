@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 
+#include "event.h"
 #include "netsemantic.h"
 #include "nettiming.h"
 
@@ -322,6 +323,31 @@ namespace
 		Expect("guest timing authority is rejected", !Timing_Authority_Is_Valid(3, 2));
 		Expect("unresolved timing authority is rejected", !Timing_Authority_Is_Valid(2, -1));
 
+		for (unsigned int type = 0; type < EventClass::LAST_EVENT; type++) {
+			bool const expected = type == EventClass::POWERON || type == EventClass::POWEROFF || type == EventClass::ARCHIVE
+				|| type == EventClass::REPAIR || type == EventClass::PRIMARY || type == EventClass::MEGAMISSION
+				|| type == EventClass::MEGAMISSION_F || type == EventClass::IDLE || type == EventClass::DEPLOY
+				|| type == EventClass::SCATTER || type == EventClass::SELL;
+			Expect("ownership-required event classification is exact", Event_Requires_Owned_Subject(type) == expected);
+		}
+		Expect("matching subject ownership is accepted", Subject_Owner_Is_Valid(3, 3));
+		Expect("captured subject ownership is rejected", !Subject_Owner_Is_Valid(3, 4));
+		Expect("missing subject owner is rejected", !Subject_Owner_Is_Valid(3, -1));
+
+		Expect("legacy response-time minimum is accepted", Response_Time_Is_Valid(2, 2, 0, false));
+		Expect("legacy response time below minimum is rejected", !Response_Time_Is_Valid(1, 2, 0, false));
+		Expect("compressed response time accepts two aligned periods", Response_Time_Is_Valid(6, 2, 3, true));
+		Expect("compressed response time rejects an invalid period", !Response_Time_Is_Valid(6, 2, 0, true));
+		Expect("compressed response time rejects one period", !Response_Time_Is_Valid(3, 2, 3, true));
+		Expect("compressed response time rejects misalignment", !Response_Time_Is_Valid(7, 2, 3, true));
+
+		Expect_Equal("master removes a guest", Removal_Authority(4, 2, -1), 2);
+		Expect_Equal("successor removes the master", Removal_Authority(2, 2, 3), 3);
+		Expect_Equal("master removal without a successor is unresolved", Removal_Authority(2, 2, -1), -1);
+		Expect("resolved removal authority is accepted", Removal_Authority_Is_Valid(2, 4, 2, -1));
+		Expect("unauthorized removal is rejected", !Removal_Authority_Is_Valid(3, 4, 2, -1));
+		Expect("self-removal is rejected", !Removal_Authority_Is_Valid(4, 4, 4, 2));
+
 		std::optional<NetTiming::TimingSettings> settings = Decode_Timing_Settings(60, 9, 3);
 		Expect("timing look-ahead decodes directly", settings && *settings == NetTiming::TimingSettings{3, 9});
 		Expect("zero desired FPS is rejected", !Decode_Timing_Settings(0, 9, 3));
@@ -475,7 +501,7 @@ namespace
 		Expect("zero-period staging rejected", !Stage_Timing_Update({0, 9}, {1, 4}, 100));
 		Expect("unaligned staging rejected", !Stage_Timing_Update({3, 10}, {1, 4}, 100));
 		Expect("overflowing staging rejected", !Stage_Timing_Update({10, 30}, {9, 27},
-			std::numeric_limits<std::uint32_t>::max() - 10));
+			(std::numeric_limits<std::uint32_t>::max)() - 10));
 	}
 }
 

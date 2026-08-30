@@ -48,6 +48,38 @@ namespace NetGlobal
 	}
 
 
+	/// <summary>Resolves a sender through an exact endpoint or one unique zero-port roster entry.</summary>
+	EndpointResolution Resolve_Sender(Endpoint const & sender, std::span<Endpoint const> roster) noexcept
+	{
+		int match = -1;
+		for (std::size_t index = 0; index < roster.size(); index++) {
+			if (roster[index].IP == sender.IP && roster[index].Port == sender.Port) {
+				if (match >= 0) {
+					return(EndpointResolution{DecodeError::AMBIGUOUS_SENDER});
+				}
+				match = static_cast<int>(index);
+			}
+		}
+		if (match >= 0) {
+			return(EndpointResolution{DecodeError::NONE, EndpointMatch::EXACT, match});
+		}
+
+		for (std::size_t index = 0; index < roster.size(); index++) {
+			if (roster[index].IP == sender.IP && roster[index].Port == 0) {
+				if (match >= 0) {
+					return(EndpointResolution{DecodeError::AMBIGUOUS_SENDER});
+				}
+				match = static_cast<int>(index);
+			}
+		}
+		if (match >= 0) {
+			return(EndpointResolution{DecodeError::NONE, EndpointMatch::ZERO_PORT, match});
+		}
+
+		return(EndpointResolution{});
+	}
+
+
 	/// <summary>Identifies public in-game discovery commands.</summary>
 	static bool Command_Is_Public(NetCommandType command)
 	{
@@ -173,6 +205,7 @@ namespace NetGlobal
 			case DecodeError::SELF_KICK: return("self kick proposal");
 			case DecodeError::DUPLICATE_KICK_PROPOSAL: return("duplicate kick proposal");
 			case DecodeError::KICK_PROPOSAL_QUEUE_FULL: return("kick proposal queue full");
+			case DecodeError::AMBIGUOUS_SENDER: return("ambiguous session-member endpoint");
 			case DecodeError::COUNT: break;
 		}
 
