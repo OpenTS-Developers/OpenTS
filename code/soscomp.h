@@ -26,6 +26,8 @@
 ****************************************************************************/
 #pragma once
 
+#include <cstdint>
+
 /* compression types */
 enum {
 	_ADPCM_TYPE_1,
@@ -35,19 +37,19 @@ enum {
 struct _SOS_COMPRESS_INFO {
 	char       *lpSource;
 	char       *lpDest;
-	unsigned long dwCompSize;
-	unsigned long dwUnCompSize;
-	unsigned long dwSampleIndex;
-	long          dwPredicted;
-	long          dwDifference;
+	uint32_t      dwCompSize;
+	uint32_t      dwUnCompSize;
+	uint32_t      dwSampleIndex;
+	int32_t       dwPredicted;
+	int32_t       dwDifference;
 	short         wCodeBuf;
 	short         wCode;
 	short         wStep;
 	short         wIndex;
 
-	unsigned long dwSampleIndex2;   //added BP for channel 2
-	long          dwPredicted2;     //added BP for channel 2
-	long          dwDifference2;    //added BP for channel 2
+	uint32_t      dwSampleIndex2;   //added BP for channel 2
+	int32_t       dwPredicted2;     //added BP for channel 2
+	int32_t       dwDifference2;    //added BP for channel 2
 	short         wCodeBuf2;        //added BP for channel 2
 	short         wCode2;           //added BP for channel 2
 	short         wStep2;           //added BP for channel 2
@@ -58,10 +60,10 @@ struct _SOS_COMPRESS_INFO {
 
 /* compressed file type header */
 struct _SOS_COMPRESS_HEADER {
-	unsigned long dwType;              // type of compression
-	unsigned long dwCompressedSize;    // compressed file size
-	unsigned long dwUnCompressedSize;  // uncompressed file size
-	unsigned long dwSourceBitSize;     // original bit size
+	uint32_t      dwType;              // type of compression
+	uint32_t      dwCompressedSize;    // compressed file size
+	uint32_t      dwUnCompressedSize;  // uncompressed file size
+	uint32_t      dwSourceBitSize;     // original bit size
 	char          szName[16];          // file type, for error checking
 	};
 
@@ -69,6 +71,6 @@ struct _SOS_COMPRESS_HEADER {
 extern "C" {
 	void __cdecl sosCODECInitStream(_SOS_COMPRESS_INFO *);
 	void __cdecl General_sosCODECInitStream(_SOS_COMPRESS_INFO *);
-	unsigned long __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO *, unsigned long);
-	unsigned long __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO *, unsigned long);
+	uint32_t __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO *, uint32_t);
+	uint32_t __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO *, uint32_t);
 }

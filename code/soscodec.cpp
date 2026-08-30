@@ -27,6 +27,8 @@
 
 #include "always.h"
 
+#include <cstdint>
+
 #include "soscomp.h"
 #include "vqalib/cmp.h"
 
@@ -446,8 +448,8 @@ unsigned short const _SosIndexTable[89 * 16] = {
 /// Holds a running sample inside the range a 16 bit sample can carry.
 /// </summary>
 /// <param name="sample">The sample to bring back into range.</param>
-/// <returns>long; The sample, clamped.</returns>
-inline long Clamp_Sample(long sample)
+/// <returns>int32_t; The sample, clamped.</returns>
+inline int32_t Clamp_Sample(int32_t sample)
 {
 	if (sample > 32767) {
 		return(32767);
@@ -471,9 +473,9 @@ inline long Clamp_Sample(long sample)
 /// <param name="deststride">Distance in shorts between one sample and the next.</param>
 /// <param name="predicted">Running sample, carried in and out.</param>
 /// <param name="index">Step index times 32, carried in and out.</param>
-void Decode_Table_16(unsigned char const * source, short * dest, int samples, int deststride, long & predicted, unsigned short & index)
+void Decode_Table_16(unsigned char const * source, short * dest, int samples, int deststride, int32_t & predicted, unsigned short & index)
 {
-	long sample = predicted;
+	int32_t sample = predicted;
 	unsigned int slotbase = index;
 
 	for (int i = 0; i < samples; i++) {
@@ -503,11 +505,11 @@ void Decode_Table_16(unsigned char const * source, short * dest, int samples, in
  * reaches it through pointers rather than naming the structure's fields twice.
  */
 struct SosChannel {
-	unsigned long * SampleIndex;
+	uint32_t * SampleIndex;
 	short * CodeBuf;
 	short * Code;
-	long * Predicted;
-	long * Difference;
+	int32_t * Predicted;
+	int32_t * Difference;
 	short * Index;
 	short * Step;
 };
@@ -540,9 +542,9 @@ void Decode_General(SosChannel const & channel, unsigned char const * source, un
 		}
 
 		int const code = *channel.Code;
-		long const step = (long)(unsigned short)*channel.Step;
+		int32_t const step = (int32_t)(unsigned short)*channel.Step;
 
-		long difference = 0;
+		int32_t difference = 0;
 
 		if ((code & 4) != 0) {
 			difference += step;
@@ -564,7 +566,7 @@ void Decode_General(SosChannel const & channel, unsigned char const * source, un
 
 		*channel.Difference = difference;
 
-		long const sample = Clamp_Sample(*channel.Predicted + difference);
+		int32_t const sample = Clamp_Sample(*channel.Predicted + difference);
 		*channel.Predicted = sample;
 
 		if (bits == 16) {
@@ -574,7 +576,7 @@ void Decode_General(SosChannel const & channel, unsigned char const * source, un
 			/*
 			 * An 8 bit stream carries the top half of the sample, biased to unsigned.
 			 */
-			*dest = (unsigned char)((((unsigned long)sample >> 8) & 0xFF) ^ 0x80);
+			*dest = (unsigned char)((((uint32_t)sample >> 8) & 0xFF) ^ 0x80);
 		}
 
 		dest += deststride;
@@ -648,8 +650,8 @@ void __cdecl sosCODECInitStream(_SOS_COMPRESS_INFO * info)
 /// </summary>
 /// <param name="info">Stream state, source and destination.</param>
 /// <param name="bytes">How many bytes of samples to produce.</param>
-/// <returns>unsigned long; The byte count asked for, or zero if the shape is not handled.</returns>
-unsigned long __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO * info, unsigned long bytes)
+/// <returns>uint32_t; The byte count asked for, or zero if the shape is not handled.</returns>
+uint32_t __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t bytes)
 {
 	if (info->wBitSize != 16 || info->wChannels != 1) {
 		return(0);
@@ -690,8 +692,8 @@ void __cdecl General_sosCODECInitStream(_SOS_COMPRESS_INFO * info)
 /// </summary>
 /// <param name="info">Stream state, source and destination.</param>
 /// <param name="bytes">How many bytes of samples to produce.</param>
-/// <returns>unsigned long; The byte count asked for.</returns>
-unsigned long __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO * info, unsigned long bytes)
+/// <returns>uint32_t; The byte count asked for.</returns>
+uint32_t __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t bytes)
 {
 	info->dwSampleIndex = 0;
 	info->dwSampleIndex2 = 0;
@@ -750,7 +752,7 @@ void __cdecl VQA_sosCODECInitStream(_VQA_SOS_COMPRESS_INFO * info)
 /// <param name="channels">1 or 2.</param>
 /// <param name="bytes">How many bytes of samples to produce.</param>
 /// <param name="info">Stream state carried between calls.</param>
-void __cdecl VQA_sosCODECDecompressData(void * src, void * dst, unsigned short bits, unsigned short channels, unsigned long bytes, _VQA_SOS_COMPRESS_INFO * info)
+void __cdecl VQA_sosCODECDecompressData(void * src, void * dst, unsigned short bits, unsigned short channels, uint32_t bytes, _VQA_SOS_COMPRESS_INFO * info)
 {
 	if (bits != 16) {
 		return;
