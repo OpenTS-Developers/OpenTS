@@ -42,9 +42,8 @@
 
 
 /*
- * A spawned launch happens at most once for the life of the process: the client that asked
- * for it watches for the process to exit, so a finished or refused spawn ends the program
- * rather than falling into the menu.
+ * A launch is spent once for the life of the process: the client watches for the game to
+ * exit, so a finished or refused spawn ends it rather than falling into the menu.
  */
 static bool SpawnRequested = false;
 static bool SpawnConsumed = false;
@@ -75,7 +74,6 @@ static bool Spawner_Refuse(char const * fault, ...)
 /// <summary>
 /// Folds a seat's alliance list into the bitfield the houses are allied by.
 /// </summary>
-/// <param name="seat">The seat whose alliances are wanted.</param>
 /// <returns>One bit set per seat this one is allied with.</returns>
 static unsigned Spawner_Allies_Mask(SpawnerConfigClass::SlotType const & seat)
 {
@@ -94,8 +92,6 @@ static unsigned Spawner_Allies_Mask(SpawnerConfigClass::SlotType const & seat)
 /// <summary>
 /// The difficulty one seat is played at, saying so when it is not the one asked for.
 /// </summary>
-/// <param name="index">Which seat, counted from zero.</param>
-/// <param name="asked">The difficulty the launch file asked for.</param>
 /// <returns>The difficulty to play the seat at, or -1 for the session default.</returns>
 static int Spawner_Seat_Handicap(int index, int asked)
 {
@@ -126,10 +122,8 @@ static void Spawner_Seat_Local(void)
 
 
 /// <summary>
-/// Puts one person's seat into the list the houses are created from, with the address the
-/// machine playing it is reached on when the match is against other machines.
+/// Puts one person's seat into the list the houses are created from.
 /// </summary>
-/// <param name="index">Which seat, counted from zero.</param>
 static void Spawner_Seat_Human(int index)
 {
 	SpawnerConfigClass::SlotType const & seat = SpawnConfig.Slots[index];
@@ -143,10 +137,7 @@ static void Spawner_Seat_Human(int index)
 	node->Player.SpawnChoice = seat.StartingPosition;
 	node->Player.AlliesMask = Spawner_Allies_Mask(seat);
 
-	/*
-	 * Through a tunnel a machine is named by its tunnel number alone, carried where a port
-	 * would go; reached directly, it is named by the address it answers on.
-	 */
+	// Through a tunnel a machine is named by its tunnel number, carried where a port would go.
 	if (SpawnConfig.TunnelPort != 0) {
 		node->Address.Set_Address(0, htons((unsigned short)seat.Port));
 	} else if (seat.Port > 0) {
@@ -158,10 +149,8 @@ static void Spawner_Seat_Human(int index)
 
 
 /// <summary>
-/// Puts the people playing into the list the houses are created from. The game takes the
-/// first entry of this list to be the player at this machine, so the local seat leads and
-/// the rest follow in seat order; the houses take their own order from what the seats say
-/// rather than from this list.
+/// Puts the people playing into the list the houses are created from, this machine's own
+/// seat first, since the game takes the first entry to be the local player.
 /// </summary>
 static void Spawner_Seat_Humans(void)
 {
@@ -197,10 +186,7 @@ static void Spawner_Seat_Computers(void)
 		node->Player.SpawnChoice = seat.StartingPosition;
 		node->Player.AlliesMask = Spawner_Allies_Mask(seat);
 
-		/*
-		 * A computer player is named for the difficulty it is actually played at, which is
-		 * the one its seat asked for, or else the one the session gives every computer.
-		 */
+		// The session's difficulty runs the other way from a seat's, so it is turned around here.
 		if (SpawnConfig.AINamesByDifficulty) {
 			int played = node->Player.Handicap >= 0
 				? node->Player.Handicap
@@ -215,9 +201,7 @@ static void Spawner_Seat_Computers(void)
 
 
 /// <summary>
-/// Tells the session what every house plays under.
-/// The order below follows the launch file's own, so that what the game takes from a launch
-/// can be read against what the file carries.
+/// Tells the session what every house plays under, in the launch file's own order.
 /// </summary>
 static void Spawner_Bind_Options(void)
 {
@@ -235,31 +219,19 @@ static void Spawner_Bind_Options(void)
 	Session.Options.FogOfWar = SpawnConfig.FogOfWar;
 	Session.Options.MCVRedeploy = SpawnConfig.MCVRedeploy;
 
-	/*
-	 * A skirmish never reaches the pregame setup that hands this to the simulation, so the
-	 * session records what was asked for while the map's own setting still decides it.
-	 */
+	// A skirmish takes harvester immunity from the map, so this is recorded but not obeyed.
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
-	/*
-	 * These two are options as much as anything above, but they live outside the block the
-	 * session keeps them in; the menu's own commit sets both the same way.
-	 */
+	// Game options too, though the session keeps these two outside its own block.
 	Options.GameSpeed = SpawnConfig.GameSpeed;
 	BuildLevel = SpawnConfig.TechLevel;
 
-	/*
-	 * The seed is left where a launch option leaves it, since the random numbers are only
-	 * settled once the session type is known. A file naming no seed leaves it to the clock.
-	 */
+	// Init_Random settles this for a game played alone, and draws its own when it is zero.
 	CustomSeed = SpawnConfig.Seed;
 
 	/*
-	 * Read, not honored. Every field the reader carries is either bound above, consumed to
-	 * refuse a launch, or named here with the reason, so that adding a field to the reader
-	 * forces a decision rather than a silent omission. A field named here is not a defect:
-	 * the launch file is the client's vocabulary, and much of it describes machinery this
-	 * game does not have yet.
+	 * Read, not honored. Every field the reader carries is bound above, consumed to refuse a
+	 * launch, or named here, so a new field forces a decision rather than a silent omission.
 	 *
 	 *   IsHost, Tournament, GameID    - the client's own bookkeeping of the match.
 	 *   MapName                       - shown while loading; bound with the scenario below.
@@ -283,15 +255,12 @@ static void Spawner_Bind_Options(void)
 	 *   SaveGameName                  - read to decide what kind of launch this is, and to
 	 *                                   name the saved game a resume restores.
 	 *   Slots[].IsSpectator           - read to refuse a launch.
-	 *
-	 * The timing keys a client writes are not read at all: the game keeps its own.
 	 */
 }
 
 
 /// <summary>
-/// Tells the session which scenario is being played, in place of the map list the menu picks
-/// from, which a client-launched game never shows.
+/// Tells the session which scenario is being played, in place of the menu's map list.
 /// </summary>
 static void Spawner_Bind_Scenario(void)
 {
@@ -308,10 +277,8 @@ static void Spawner_Bind_Scenario(void)
 
 
 /// <summary>
-/// Opens the network a game against other machines is played over. Through a tunnel every
-/// machine is named by its tunnel number; otherwise each is reached at its own address,
-/// and this machine listens where the file told the others to find it. The other players'
-/// seats become the addresses a broadcast fans out to.
+/// Opens the network a game against other machines is played over, through the tunnel the
+/// file names or straight to the addresses its seats carry.
 /// </summary>
 /// <returns>bool; Is the network ready to carry the match?</returns>
 static bool Spawner_Wire_Network(void)
@@ -323,7 +290,7 @@ static bool Spawner_Wire_Network(void)
 		Ipx.Configure_Direct_Peers((unsigned short)SpawnConfig.ListenPort);
 	}
 
-	// The local seat leads the player list, so everybody after it is another machine.
+	// The local seat leads the list, so everybody after it is another machine.
 	for (int index = 1; index < Session.Players.Count(); index++) {
 		Ipx.Add_Peer(Session.Players[index]->Address);
 	}
@@ -337,10 +304,9 @@ static bool Spawner_Wire_Network(void)
 
 
 /// <summary>
-/// Resumes the saved game a launch file names. The save carries the kind of game, the options
-/// and the houses, and the expansion comes back with it rather than from the file. A game
-/// played alone takes nothing else from the file; one against other machines takes its seats,
-/// which name the same people at the addresses their machines answer on now.
+/// Resumes the saved game a launch file names. The save carries the game and its houses; a
+/// match against other machines takes its seats from the file, at the addresses they answer
+/// on now.
 /// </summary>
 /// <param name="gameloaded">Set when the save loads, so the caller starts no scenario.</param>
 /// <returns>bool; Is the saved game running?</returns>
@@ -359,19 +325,15 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("The saved game was made by another version of the game."));
 	}
 
-	/*
-	 * A game the menu arranged over the local network is nothing a client launched, so no
-	 * launch file describes the match such a save would resume.
-	 */
+	// No client launches a game the menu arranged, so no file describes such a match.
 	GameType type = (GameType)info.Get_Game_Type();
 	if (type == GAME_IPX) {
 		return(Spawner_Refuse("Resuming a game arranged over the local network is not supported."));
 	}
 
 	/*
-	 * Against other machines the save restores the houses while the file seats the same
-	 * people afresh, so the seats are judged and the network opened before the save is
-	 * read, and the queue is told to shake hands again at the resumed frame.
+	 * The save restores the houses while the file seats the same people afresh, so the
+	 * network is open before the load and the queue shakes hands at the resumed frame.
 	 */
 	if (type == GAME_INTERNET) {
 		std::string fault;
@@ -429,10 +391,7 @@ static bool Spawner_Setup_Campaign(void)
 	Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;
 	Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;
 
-	/*
-	 * The flags are left where a mission carries them over from the one before it, since a
-	 * fresh launch has nothing else of its own to carry.
-	 */
+	// A fresh launch carries nothing over from an earlier mission, so the file's flags stand in.
 	new (&Environment) EnvironmentClass;
 	for (int index = 0; index < SpawnerConfigClass::GLOBAL_FLAG_COUNT; index++) {
 		Environment.Globals[index] = SpawnConfig.GlobalFlags[index];
@@ -445,18 +404,14 @@ static bool Spawner_Setup_Campaign(void)
 
 
 /// <summary>
-/// Assembles the session a launch asks for, in place of what the skirmish or the lobby dialog
-/// commits when a player presses OK.
+/// Assembles the session a launch asks for, in place of what a setup dialog commits.
 /// </summary>
 static void Spawner_Setup_Session(void)
 {
 	Session.Type = SpawnConfig.Launch_Type() == SpawnerConfigClass::LaunchType::Multiplayer
 		? GAME_INTERNET : GAME_SKIRMISH;
 
-	/*
-	 * Against other machines the random numbers must fall the same way everywhere, and no
-	 * lobby is there to hand a seed around, so the file's own is taken exactly as written.
-	 */
+	// Every machine must draw alike, and no lobby is there to hand a seed around.
 	if (Session.Type == GAME_INTERNET) {
 		Seed = SpawnConfig.Seed;
 	}
@@ -484,7 +439,6 @@ void Spawner_Request(void)
 /// <summary>
 /// Did a client ask the game to launch what its file describes?
 /// </summary>
-/// <returns>bool; Was a launch requested on the command line?</returns>
 bool Spawner_Is_Requested(void)
 {
 	return(SpawnRequested);
@@ -492,11 +446,9 @@ bool Spawner_Is_Requested(void)
 
 
 /// <summary>
-/// Is the game being played the one a launch file described?
-/// This answers for the game itself rather than for the command line, so a path that must
-/// leave a client's choices alone can tell that a launch file made them.
+/// Is the game being played the one a launch file described? A path that must leave a
+/// client's choices alone asks this rather than the command line.
 /// </summary>
-/// <returns>bool; Was the game assembled from a launch file?</returns>
 bool Spawner_Is_Active(void)
 {
 	return(SpawnConsumed);
@@ -504,9 +456,8 @@ bool Spawner_Is_Active(void)
 
 
 /// <summary>
-/// Reads the launch file and assembles the game it describes.
-/// This stands in place of the menu, and answers false once the game it launched has ended,
-/// so that the process leaves rather than showing a menu the client never meant to show.
+/// Reads the launch file and assembles the game it describes, in place of the menu. Answers
+/// false once that game has ended, so the process leaves instead of showing one.
 /// </summary>
 /// <param name="gameloaded">Set when the launch resumed a saved game.</param>
 /// <returns>bool; Is a game ready to start?</returns>
@@ -525,16 +476,9 @@ bool Spawner_Prepare(bool & gameloaded)
 	ini.Load(file, false);
 	SpawnConfig.Read_INI(ini);
 
-	/*
-	 * A launch is spent as soon as it is read, so that a refusal ends the process the same
-	 * way a finished game does.
-	 */
 	SpawnConsumed = true;
 
-	/*
-	 * The countries a seat may name are the rules', so the roster is read before the seats
-	 * are judged, as the menu paths setting up a game do.
-	 */
+	// A seat names its country by the rules' own numbering, so the roster is read first.
 	Prepare_Side_Roster();
 
 	switch (SpawnConfig.Launch_Type()) {
@@ -569,9 +513,7 @@ bool Spawner_Prepare(bool & gameloaded)
 	DebugString("[Spawner] Launching %s with session identity %08x.\n",
 		Scen->ScenarioName, SpawnConfig.Session_Identity_CRC());
 
-	/*
-	 * The network comes last, once the session it will carry is assembled whole.
-	 */
+	// The network comes last, once the session it will carry is assembled whole.
 	if (Session.Type == GAME_INTERNET && !Spawner_Wire_Network()) {
 		return(false);
 	}

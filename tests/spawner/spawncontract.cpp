@@ -287,9 +287,8 @@ int main(void)
 	}
 
 	/*
-	 * Every machine writes its own file with itself first, so a color tie must be broken
-	 * by what the seats say rather than where the file said it, or two machines would
-	 * assemble two different matches.
+	 * Every machine writes its own file with itself first, so a color tie must be broken by
+	 * what the seats say rather than where the file said it, or the matches would differ.
 	 */
 	{
 		char const view_a[] =

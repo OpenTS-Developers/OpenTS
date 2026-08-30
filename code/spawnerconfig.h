@@ -17,36 +17,21 @@ class INIClass;
 
 
 /*
- * What a client asked the game to launch.
- *
- * The file this is read from belongs to the CnCNet client, not to the game: its spelling, its
- * defaults and its shape are fixed by what that client already writes. This class is the game's
- * own reading of it, so that nothing downstream has to parse anything, and so that the
- * values a match's outcome depends upon can be told apart from the ones only shown to a
- * player. Reading cannot fail; whether what was read describes a playable game is judged
- * where the launch is attempted, against the tables the game has loaded by then.
+ * What a client asked the game to launch. The file's spelling, defaults and shape belong to
+ * the CnCNet client; reading cannot fail, and what was read is judged where a launch begins.
  */
 class SpawnerConfigClass
 {
 	public:
 
-		/*
-		 * The version of this reading. It counts changes to what the game makes of a launch
-		 * file, never changes to the file's own vocabulary, which belongs to the client.
-		 */
+		// Counts changes to what the game makes of a launch file, never the file's own vocabulary.
 		static constexpr int SCHEMA_VERSION = 1;
 
-		/*
-		 * A match holds this many seats, one per house it may hold. The scenario flags are
-		 * the fifty the engine keeps; a client allowing more writes ones the game passes over.
-		 */
+		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
 		static constexpr int SLOT_COUNT = 8;
 		static constexpr int GLOBAL_FLAG_COUNT = 50;
 
-		/*
-		 * What kind of game the file asks for. Resume overrides the rest: a saved game
-		 * carries its own type, options and houses, so nothing else in the file decides them.
-		 */
+		// Resume overrides the rest: a saved game carries its own type, options and houses.
 		enum class LaunchType {
 			Skirmish,
 			Campaign,
@@ -54,10 +39,7 @@ class SpawnerConfigClass
 			Resume,
 		};
 
-		/*
-		 * Who occupies a seat. A launch file marks a seat human by writing a section for it,
-		 * so an unwritten section is what makes a seat a computer player or nothing at all.
-		 */
+		// A file marks a seat human by writing a section for it; an unwritten one is a computer.
 		enum class OccupancyType {
 			Empty,
 			Human,
@@ -65,10 +47,8 @@ class SpawnerConfigClass
 		};
 
 		/*
-		 * One seat of the match. The seats are held in the order the houses are created in --
-		 * humans first by ascending color, then computer players -- so that a seat's index is
-		 * the index of the house it becomes, which is what alliances and start positions are
-		 * named by.
+		 * One seat of the match, held in the order the houses are created in, so a seat's index
+		 * is the house it becomes -- which is what alliances and start positions name.
 		 */
 		struct SlotType {
 			OccupancyType Occupancy = OccupancyType::Empty;
@@ -87,27 +67,19 @@ class SpawnerConfigClass
 		LaunchType Launch_Type(void) const;
 		int Session_Identity_CRC(void) const;
 
-		/*
-		 * Reading cannot fail, so what was read is judged separately, against the tables
-		 * the game has loaded by the time a launch is attempted. Those are handed in rather
-		 * than reached for, so that a reading can be judged without the game running.
-		 */
+		// The rules' tables are handed in, so a reading can be judged without the game running.
 		bool Is_Playable(int countries, int colors, std::string & fault) const;
 
 		static int Playable_Handicap(int asked);
 
-		/*
-		 * What kind of game to start.
-		 */
+		// What kind of game to start.
 		bool IsCampaign = false;
 		bool IsHost = false;
 		int CampaignID = -1;
 		int Tournament = 0;
 		int GameID = 0;
 
-		/*
-		 * The scenario and the saved game.
-		 */
+		// The scenario and the saved game.
 		std::string ScenarioName = "spawnmap.ini";
 		std::string MapName;
 		std::string MapHash;
@@ -117,9 +89,7 @@ class SpawnerConfigClass
 		int NextCampaignAutoSave = 0;
 		int NextSkirmishAutoSave = 0;
 
-		/*
-		 * The options every house plays under.
-		 */
+		// The options every house plays under.
 		bool Bases = true;
 		int Credits = 10000;
 		bool BridgeDestroy = true;
@@ -142,11 +112,7 @@ class SpawnerConfigClass
 		int CampaignCDifficulty = 1;
 		std::array<bool, GLOBAL_FLAG_COUNT> GlobalFlags = {};
 
-		/*
-		 * Where the machines reach one another. A launcher settles these with the service
-		 * that arranged the match, so they are the one part of the network it decides; the
-		 * timing the machines keep is the game's own and is not read from a launch file.
-		 */
+		// Where the machines reach one another, settled by whatever service arranged the match.
 		int ReconnectTimeout = 2400;
 		int ConnTimeout = 3600;
 		int TunnelId = 0;
@@ -154,9 +120,7 @@ class SpawnerConfigClass
 		std::string TunnelAddress = "0.0.0.0";
 		int TunnelPort = 0;
 
-		/*
-		 * What a player is shown.
-		 */
+		// What a player is shown.
 		bool QuickMatch = false;
 		bool SkipScoreScreen = false;
 		bool WriteStatistics = false;
@@ -172,9 +136,7 @@ class SpawnerConfigClass
 		int CustomLoadScreenY = 0;
 		std::string DifficultyName;
 
-		/*
-		 * The match's seats, and where in them the machine reading the file sits.
-		 */
+		// The match's seats, and where in them the machine reading the file sits.
 		std::array<SlotType, SLOT_COUNT> Slots;
 		int HumanCount = 0;
 		int LocalSlot = 0;

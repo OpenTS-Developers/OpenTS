@@ -2063,12 +2063,9 @@ void Write_Scenario_INI(char const * fname, bool mplayer)
 
 
 /// <summary>
-/// Fetches the node a seat of the match was described by.
-/// The seats are numbered in the order their houses are created: the players first, then the
-/// computer players a session source seated. The player list is held in each machine's own
-/// order, so a seat is found by the house it was assigned rather than by list position.
+/// Fetches the node a seat of the match was described by. The player list is held in each
+/// machine's own order, so a seat is found by the house it was assigned, not by position.
 /// </summary>
-/// <param name="seat">The seat to fetch, counted from zero.</param>
 /// <returns>The node describing that seat, or NULL if the match does not hold it.</returns>
 static NodeNameType * Seated_Node(int seat)
 {
@@ -2150,10 +2147,7 @@ void Assign_Houses(void)
 				continue;
 			}
 
-			/*
-			 * Each machine holds this list in its own order, with itself first, so a color
-			 * tie is settled by name to keep the houses created in one order everywhere.
-			 */
+			// Each machine holds this list itself-first, so a color tie is settled by name.
 			if (index == -1 || Session.Players[j]->Player.Color < lowest_color ||
 				(Session.Players[j]->Player.Color == lowest_color &&
 					stricmp(Session.Players[j]->Name, Session.Players[index]->Name) < 0)) {
@@ -2274,10 +2268,8 @@ void Assign_Houses(void)
 	}
 
 	/*
-	 * The alliance table names seats, in the order the houses above were created. While the
-	 * scenario is still assembling, a pact is always permitted and is made quietly, so the
-	 * table stands before the first frame is played. The seats are walked before the neutral
-	 * and special houses exist, since neither is a seat of the match.
+	 * The alliance table names seats in the order the houses above were created, and is
+	 * applied before the neutral and special houses exist, since neither is a seat.
 	 */
 	int seated = Session.Players.Count() + Session.Computers.Count();
 	for (int seatnum = 0; seatnum < seated; seatnum++) {
@@ -2339,9 +2331,8 @@ static void Remove_AI_Players(void)
 
 
 /// <summary>
-/// Makes up a shortfall of starting locations with open ground.
-/// A map is not obliged to declare a start position for everybody playing, so spots are
-/// drawn until there are enough of them to go round.
+/// Makes up a shortfall of starting locations with open ground, since a map need not declare
+/// a start position for everybody playing.
 /// </summary>
 /// <param name="waypts">The list of starting locations to append to.</param>
 /// <param name="usable">How many of the locations may actually be started from; raised as
@@ -2369,12 +2360,8 @@ static void Append_Open_Start_Positions(DynamicVectorClass<Cell> & waypts, int &
 
 
 /// <summary>
-/// Fetches the starting locations available to a multiplayer game.
-/// The scenario's own waypoints are preferred, but a map that does not supply enough of
-/// them for everyone playing has the shortfall made up with random spots on open ground.
-/// When a house has asked for a position by number, the list is built so that an entry's
-/// place in it is the waypoint of that number, and a waypoint the map does not declare
-/// keeps its place as a hole rather than letting the ones after it slide down.
+/// Fetches the starting locations a multiplayer game may use, making up any shortfall with
+/// open ground. Keeping identity numbers each entry by waypoint, undeclared ones left as holes.
 /// </summary>
 /// <param name="official">Is this one of the maps that shipped with the game?</param>
 /// <param name="keep_identity">Must an entry's place in the list be its waypoint number?</param>

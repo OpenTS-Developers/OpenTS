@@ -316,10 +316,7 @@ ThemeType ThemeClass::Next_Song(ThemeType theme) const
 {
 	int i;
 
-	/*
-	 * A score that repeats is played again, but only while the game actually holds it. One
-	 * it does not would otherwise answer this forever, and nothing else would ever be picked.
-	 */
+	// A score the game does not hold would repeat forever, and nothing else be picked.
 	if ((unsigned)theme >= (unsigned)Themes.Count() || !Themes[theme]->Available ||
 		(!Themes[theme]->Repeat && !IsRepeat)) {
 		if (IsShuffle == true) {
@@ -437,9 +434,8 @@ int ThemeClass::Play_Song(ThemeType theme)
 				Audio.StreamLowImpact = false;
 
 				/*
-				 * A score that would not start is not the one playing. Recording it as the
-				 * current one silences the game for good: stopping a score that never
-				 * started does nothing, so the one that failed would stay current.
+				 * Stopping a score that never started does nothing, so recording one that failed to
+				 * start as the current score would silence the game for good.
 				 */
 				if (Current == -1) {
 					DebugString("Theme::PlaySong(%d) - Unavailable\n", theme);

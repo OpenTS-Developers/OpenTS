@@ -38,8 +38,8 @@ char const * Game_Directory_Error(void);
 std::string User_File_Write_Name(char const * filename);
 
 /*
- * Where the player's saved games are. They are written, so they are never searched for: the
- * folder is named outright wherever a saved game is opened, listed or removed.
+ * Where the player's saved games are. They are never searched for: the folder is named
+ * outright wherever a saved game is opened, listed or removed.
  */
 std::string Saved_Game_Name(char const * filename);
 

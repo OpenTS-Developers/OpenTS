@@ -230,10 +230,7 @@ struct NodeNameType {
 		} Chat;
 	};
 
-	/*
-	 * A node starts with nothing asked for, so that a session source which names none of
-	 * these leaves the game its own choice of start position and difficulty.
-	 */
+	// A node asks for nothing, leaving the game its own start position and difficulty.
 	NodeNameType(void)
 	{
 		memset(this, 0, sizeof(*this));
@@ -527,9 +524,8 @@ class SessionClass
 		int Solo;                           // 1 = player can play alone
 
 		/*
-		 * The handicap pair a campaign mission is played at, set by whichever path starts
-		 * the campaign. It lives here because the scenario's own copy is wiped before every
-		 * mission is read, while a restart or the next mission must keep the pair chosen.
+		 * The pair a campaign mission is played at. It lives here because the scenario's own
+		 * copy is wiped before each mission, while a restart or the next one must keep it.
 		 */
 		DiffType CampaignDifficulty;
 		DiffType CampaignCDifficulty;
@@ -708,11 +704,7 @@ class SessionClass
 		DynamicVectorClass <NodeNameType *> Players;    // list of players
 		DynamicVectorClass <NodeNameType *> Chat;       // list of chat nodes
 
-		/*
-		 * The computer players a session source seated, in the order their houses are
-		 * created, after the human ones. The menu leaves this empty and lets the game draw
-		 * its own computer players.
-		 */
+		// The computer players a session source seated, after the humans; the menu leaves it empty.
 		DynamicVectorClass <NodeNameType *> Computers;
 		int Suspended;
 

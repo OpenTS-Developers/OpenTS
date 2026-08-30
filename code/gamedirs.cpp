@@ -320,13 +320,10 @@ std::string User_File_Write_Name(char const * filename)
 
 
 /// <summary>
-/// Names a saved game inside the folder they are kept in, which sits with the rest of the
-/// player's own files. Saved games are written, so the folder is deliberately not one of the
-/// searched ones: every save, load, listing and deletion names it. It is created the first
-/// time the game asks for a saved game, so a launcher browsing for them finds it whether or
-/// not one has been written yet.
+/// Names a saved game inside the folder they are kept in. That folder is deliberately not
+/// one of the searched ones, and is made on the way so a launcher can browse it before the
+/// first save is written.
 /// </summary>
-/// <param name="filename">The name of a saved game, or a pattern matching several.</param>
 /// <returns>The name to open, delete or scan for.</returns>
 std::string Saved_Game_Name(char const * filename)
 {

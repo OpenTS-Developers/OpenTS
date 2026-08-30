@@ -359,12 +359,9 @@ LRESULT CALLBACK LoadOptionsClass::Delete_Dialog_Proc(HWND window, UINT message,
 
 
 /// <summary>
-/// Is a saved game of this name already there?
-/// Asked before one is written, since a name the folder already holds is written over
-/// rather than added to.
+/// Is a saved game of this name already there? Asked before one is written, since a name the
+/// folder holds is written over rather than added to.
 /// </summary>
-/// <param name="name">The name of the saved game to look for.</param>
-/// <returns>bool; Does the saved games folder already hold this name?</returns>
 static bool Saved_Game_Exists(char const * name)
 {
 	return(GetFileAttributes(Saved_Game_Name(name).c_str()) != INVALID_FILE_ATTRIBUTES);

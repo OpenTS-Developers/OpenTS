@@ -653,10 +653,8 @@ void Init_Campaigns(void)
 
 
 /// <summary>
-/// Reads the countries and the sides they belong to from the rules.
-/// This runs before a game is set up, so that a house's side is known before anything asks
-/// for it. The side roster is only established by reading it: a country carries the name of
-/// its side, and the rules' own side list decides what order the sides are registered in.
+/// Reads the countries and the sides they belong to from the rules, so a house's side is
+/// known before anything asks for it. Only this reading establishes the roster.
 /// </summary>
 void Prepare_Side_Roster(void)
 {
@@ -1094,9 +1092,8 @@ restart:
 		}
 
 		/*
-		 * A client-requested launch takes the place of the menu, once. A spawned match that
-		 * has ended, or a launch that was refused, answers false so the process leaves and
-		 * the client sees it go.
+		 * A launch takes the place of the menu once; an ended match or a refusal answers false,
+		 * so the process leaves and the client sees it go.
 		 */
 		if (Spawner_Is_Requested()) {
 			if (!Spawner_Prepare(gameloaded)) {
@@ -1394,10 +1391,7 @@ restart:
 			Session.PlayerIsGDI = stricmp(HouseTypes[Session.Players[0]->Player.House]->Name(), "GDI") == 0;
 		}
 
-		/*
-		 * The campaign handicap pair follows the menu's difficulty setting on every path but
-		 * a client launch, which chose the pair itself.
-		 */
+		// The menu sets the pair on every path but a client launch, which chose it itself.
 		if (!Spawner_Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);
@@ -1421,12 +1415,7 @@ restart:
 			}
 		}
 
-		/*
-		 * A mission reached through a client's launch file starts with the scenario flags
-		 * that file carried over, which the mission read has just cleared. The flags a
-		 * mission chain carries between its own missions arrive the same way, once the
-		 * mission after this one is started.
-		 */
+		// The mission read clears these, so a launch file's carried-over flags are set after it.
 		if (Spawner_Is_Active() && Session.Type == GAME_NORMAL) {
 			for (int index = 0; index < ARRAY_SIZE(Environment.Globals); index++) {
 				Scen->Set_Global_To(index, Environment.Globals[index]);

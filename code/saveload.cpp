@@ -1348,12 +1348,8 @@ bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)
 
 
 /// <summary>
-/// Marries the players a session source seated to the houses a saved game restored.
-/// Each seat is given the house carrying its name, so the connections formed afterwards
-/// reach the right houses. The save must hold a house for everybody seated, and this
-/// machine's own seat must be the house this machine played, or the resumed game is not
-/// the one the file describes. A house whose player was not seated again fights on under
-/// the computer. Nothing here forms connections; the seats are only named.
+/// Gives each seated player the restored house carrying its name, so the connections formed
+/// afterwards reach the right houses.
 /// </summary>
 /// <returns>bool; Do the seats and the saved houses agree?</returns>
 bool Reconcile_Players(void)
@@ -1379,10 +1375,7 @@ bool Reconcile_Players(void)
 		Session.Players[i]->Player.ID = found->HeapID;
 	}
 
-	/*
-	 * The first seat is the player at this machine, and PlayerPtr is the house the machine
-	 * that wrote the save was playing; the two agreeing is what makes this save its own.
-	 */
+	// The first seat is this machine, and PlayerPtr the house that wrote the save.
 	if (Houses[Session.Players[0]->Player.ID] != PlayerPtr) {
 		return(false);
 	}
@@ -1401,9 +1394,7 @@ bool Reconcile_Players(void)
 			}
 		}
 
-		/*
-		 * A player who did not return leaves their house fighting on under the computer.
-		 */
+		// A player who did not return leaves their house fighting on under the computer.
 		if (!seated) {
 			housep->IsHuman = false;
 			housep->IsStarted = true;
