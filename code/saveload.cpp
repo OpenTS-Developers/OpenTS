@@ -149,8 +149,6 @@ static bool MultiplayerSavePending = false;
 static std::string PendingSaveFileName;
 static std::string PendingSaveDescription;
 
-static int Reconcile_Players(void);
-
 _COM_SMARTPTR_TYPEDEF(ILinkStream, __uuidof(ILinkStream));
 
 
@@ -1349,134 +1347,72 @@ bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)
 }
 
 
-/***************************************************************************
- * Reconcile_Players -- Reconciles loaded data with the 'Players' vector   *
- *                                                                         *
- * This function is for supporting loading a saved multiplayer game.       *
- * When the game is loaded, we have to figure out which house goes with    *
- * which entry in the Players vector.  We also have to figure out if       *
- * everyone who was originally in the game is still with us, and if not,   *
- * turn their stuff over to the computer.                                  *
- *                                                                         *
- * So, this function does the following:                                   *
- * - For every name in 'Players', makes sure that name is in the House     *
- *   array; if not, it's a fatal error.                                    *
- * - For every human-controlled house, makes sure there's a player         *
- *   with that name; if not, it turns that house over to the computer.     *
- * - Fills in the Player's house ID                                        *
- *                                                                         *
- * This assumes that each player MUST keep their name the same as it was   *
- * when the game was saved!  It's also assumed that the network            *
- * connections have not been formed yet, since Player[i]->Player.ID will   *
- * be invalid until this routine has been called.                          *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      true = OK, false = error                                           *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   09/29/1995 BRR : Created.                                             *
- *=========================================================================*/
-static int Reconcile_Players(void)
+/// <summary>
+/// Marries the players a session source seated to the houses a saved game restored.
+/// Each seat is given the house carrying its name, so the connections formed afterwards
+/// reach the right houses. The save must hold a house for everybody seated, and this
+/// machine's own seat must be the house this machine played, or the resumed game is not
+/// the one the file describes. A house whose player was not seated again fights on under
+/// the computer. Nothing here forms connections; the seats are only named.
+/// </summary>
+/// <returns>bool; Do the seats and the saved houses agree?</returns>
+bool Reconcile_Players(void)
 {
-	#if 0
-	int i;
-	int found;
-	HousesType house;
-	HouseClass * housep;
-
-	/*
-	**	If there are no players, there's nothing to do.
-	*/
-	if (Session.Players.Count()==0)
+	if (Session.Players.Count() == 0) {
 		return(true);
+	}
 
-	/*
-	**	Make sure every name we're connected to can be found in a House
-	*/
-	for (i = 0; i < Session.Players.Count(); i++) {
-		found = 0;
-		for (house = HOUSE_MULTI1; house < HOUSE_MULTI1 +
-			Session.MaxPlayers; house++) {
+	for (int i = 0; i < Session.Players.Count(); i++) {
+		HouseClass * found = NULL;
 
-			housep = Houses[house];
-			if (!housep) {
-				continue;
-			}
-
-			if (!stricmp(Session.Players[i]->Name, housep->IniName)) {
-				found = 1;
+		for (int house = 0; house < Houses.Count(); house++) {
+			if (Houses[house]->IsHuman && stricmp(Session.Players[i]->Name, Houses[house]->IniName) == 0) {
+				found = Houses[house];
 				break;
 			}
 		}
-		if (!found)
-			return(false);
-	}
 
-	//
-	// Loop through all Houses; if we find a human-owned house that we're
-	// not connected to, turn it over to the computer.
-	//
-	for (house = HOUSE_MULTI1; house < HOUSE_MULTI1 +
-		Session.MaxPlayers; house++) {
-		housep = Houses[house];
-		if (!housep) {
-			continue;
+		if (found == NULL) {
+			return(false);
 		}
 
-		//
-		// Skip this house if it wasn't human to start with.
-		//
+		Session.Players[i]->Player.ID = found->HeapID;
+	}
+
+	/*
+	 * The first seat is the player at this machine, and PlayerPtr is the house the machine
+	 * that wrote the save was playing; the two agreeing is what makes this save its own.
+	 */
+	if (Houses[Session.Players[0]->Player.ID] != PlayerPtr) {
+		return(false);
+	}
+
+	for (int house = 0; house < Houses.Count(); house++) {
+		HouseClass * housep = Houses[house];
 		if (!housep->IsHuman) {
 			continue;
 		}
 
-		//
-		// Try to find this name in the Players vector; if it's found, set
-		// its ID to this house.
-		//
-		found = 0;
-		for (i = 0; i < Session.Players.Count(); i++) {
-			if (!stricmp(Session.Players[i]->Name, housep->IniName)) {
-				found = 1;
-				Session.Players[i]->Player.ID = house;
+		bool seated = false;
+		for (int i = 0; i < Session.Players.Count(); i++) {
+			if (Session.Players[i]->Player.ID == housep->HeapID) {
+				seated = true;
 				break;
 			}
 		}
 
 		/*
-		**	If this name wasn't found, remove it
-		*/
-		if (!found) {
-
-			/*
-			**	Turn the player's house over to the computer's AI
-			*/
+		 * A player who did not return leaves their house fighting on under the computer.
+		 */
+		if (!seated) {
 			housep->IsHuman = false;
 			housep->IsStarted = true;
-//			housep->Smartness = IQ_MENSA;
 			housep->IQ = Rule->MaxIQ;
-			housep->IniName = Text_String(TXT_COMPUTER);
-
-			Session.NumPlayers--;
+			housep->IniName = Fetch_String(TXT_COMPUTER);
 		}
 	}
 
-	//
-	// If all went well, our Session.NumPlayers value should now equal the value
-	// from the saved game, minus any players we removed.
-	//
-	if (Session.NumPlayers == Session.Players.Count()) {
-		return(true);
-	} else {
-		return(false);
-	}
-	#endif
+	return(true);
 }
 
 

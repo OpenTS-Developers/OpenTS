@@ -308,9 +308,39 @@ static void Spawner_Bind_Scenario(void)
 
 
 /// <summary>
+/// Opens the network a game against other machines is played over. Through a tunnel every
+/// machine is named by its tunnel number; otherwise each is reached at its own address,
+/// and this machine listens where the file told the others to find it. The other players'
+/// seats become the addresses a broadcast fans out to.
+/// </summary>
+/// <returns>bool; Is the network ready to carry the match?</returns>
+static bool Spawner_Wire_Network(void)
+{
+	if (SpawnConfig.TunnelPort != 0) {
+		Ipx.Configure_Tunnel(htons((unsigned short)SpawnConfig.TunnelId),
+			inet_addr(SpawnConfig.TunnelAddress.c_str()), htons((unsigned short)SpawnConfig.TunnelPort));
+	} else {
+		Ipx.Configure_Direct_Peers((unsigned short)SpawnConfig.ListenPort);
+	}
+
+	// The local seat leads the player list, so everybody after it is another machine.
+	for (int index = 1; index < Session.Players.Count(); index++) {
+		Ipx.Add_Peer(Session.Players[index]->Address);
+	}
+
+	if (!Ipx.Init()) {
+		return(Spawner_Refuse("The network could not be opened."));
+	}
+
+	return(true);
+}
+
+
+/// <summary>
 /// Resumes the saved game a launch file names. The save carries the kind of game, the options
-/// and the houses, so nothing else in the file is consulted, and the expansion comes back with
-/// the save rather than from the file.
+/// and the houses, and the expansion comes back with it rather than from the file. A game
+/// played alone takes nothing else from the file; one against other machines takes its seats,
+/// which name the same people at the addresses their machines answer on now.
 /// </summary>
 /// <param name="gameloaded">Set when the save loads, so the caller starts no scenario.</param>
 /// <returns>bool; Is the saved game running?</returns>
@@ -330,16 +360,44 @@ static bool Spawner_Resume(bool & gameloaded)
 	}
 
 	/*
-	 * A save made against other machines restores the connections along with everything else,
-	 * and there are none to restore it into until the network is wired up.
+	 * A game the menu arranged over the local network is nothing a client launched, so no
+	 * launch file describes the match such a save would resume.
 	 */
 	GameType type = (GameType)info.Get_Game_Type();
-	if (type != GAME_NORMAL && type != GAME_SKIRMISH) {
-		return(Spawner_Refuse("Resuming a game against other machines is not supported yet."));
+	if (type == GAME_IPX) {
+		return(Spawner_Refuse("Resuming a game arranged over the local network is not supported."));
+	}
+
+	/*
+	 * Against other machines the save restores the houses while the file seats the same
+	 * people afresh, so the seats are judged and the network opened before the save is
+	 * read, and the queue is told to shake hands again at the resumed frame.
+	 */
+	if (type == GAME_INTERNET) {
+		std::string fault;
+		if (!SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)) {
+			return(Spawner_Refuse("%s", fault.c_str()));
+		}
+
+		Clear_Vector(&Session.Players);
+		Clear_Vector(&Session.Computers);
+
+		Spawner_Seat_Local();
+		Spawner_Seat_Humans();
+
+		if (!Spawner_Wire_Network()) {
+			return(false);
+		}
+
+		Session.LoadGame = true;
 	}
 
 	if (!LoadOptionsClass().Load_File(SpawnConfig.SaveGameName.c_str())) {
 		return(Spawner_Refuse("The saved game %s could not be loaded.", SpawnConfig.SaveGameName.c_str()));
+	}
+
+	if (type == GAME_INTERNET && !Reconcile_Players()) {
+		return(Spawner_Refuse("The saved game and the file do not agree on who is playing."));
 	}
 
 	gameloaded = true;
@@ -411,35 +469,6 @@ static void Spawner_Setup_Session(void)
 	Spawner_Seat_Humans();
 	Spawner_Seat_Computers();
 	Spawner_Bind_Scenario();
-}
-
-
-/// <summary>
-/// Opens the network a game against other machines is played over. Through a tunnel every
-/// machine is named by its tunnel number; otherwise each is reached at its own address,
-/// and this machine listens where the file told the others to find it. The other players'
-/// seats become the addresses a broadcast fans out to.
-/// </summary>
-/// <returns>bool; Is the network ready to carry the match?</returns>
-static bool Spawner_Wire_Network(void)
-{
-	if (SpawnConfig.TunnelPort != 0) {
-		Ipx.Configure_Tunnel(htons((unsigned short)SpawnConfig.TunnelId),
-			inet_addr(SpawnConfig.TunnelAddress.c_str()), htons((unsigned short)SpawnConfig.TunnelPort));
-	} else {
-		Ipx.Configure_Direct_Peers((unsigned short)SpawnConfig.ListenPort);
-	}
-
-	// The local seat leads the player list, so everybody after it is another machine.
-	for (int index = 1; index < Session.Players.Count(); index++) {
-		Ipx.Add_Peer(Session.Players[index]->Address);
-	}
-
-	if (!Ipx.Init()) {
-		return(Spawner_Refuse("The network could not be opened."));
-	}
-
-	return(true);
 }
 
 

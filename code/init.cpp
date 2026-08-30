@@ -1865,7 +1865,11 @@ void Init_Random(void)
 	**	a recording; the random number generator is initialized by loading
 	**	the game.
 	*/
-	if (Session.LoadGame || Session.Play) {
+	if (Session.LoadGame) {
+		return;
+	}
+
+	if (Session.Play) {
 		Scen->RandomNumber = Seed;
 		NonCriticalRandomNumber = Seed;
 		DebugString("Seed is %08x\n", Seed);

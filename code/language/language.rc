@@ -866,16 +866,18 @@ BEGIN
                     47,97,115,14
 END
 
-IDD_OPT_CTRL_MP DIALOG DISCARDABLE  0, 0, 209, 75
+IDD_OPT_CTRL_MP DIALOG DISCARDABLE  0, 0, 209, 93
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
-                    BS_OWNERDRAW,55,48,99,14
+                    BS_OWNERDRAW,55,66,99,14
     CONTROL         "Game Controls",IDC_GAME_CONTROLS,"Button",BS_OWNERDRAW,
                     55,12,99,14
-    CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
+    CONTROL         "Save Game",IDC_SAVE_GAME,"Button",BS_OWNERDRAW,
                     55,30,99,14
+    CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
+                    55,48,99,14
 END
 
 IDD_SERIAL_PHONE_LIST DIALOG DISCARDABLE  0, 0, 344, 167
@@ -1426,11 +1428,13 @@ STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
-                    BS_OWNERDRAW,120,48,99,14
+                    BS_OWNERDRAW,120,59,99,14
     CONTROL         "Game Controls",IDC_GAME_CONTROLS,"Button",BS_OWNERDRAW,
-                    120,12,99,14
+                    120,8,99,14
+    CONTROL         "Save Game",IDC_SAVE_GAME,"Button",BS_OWNERDRAW,
+                    120,25,99,14
     CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
-                    120,30,99,14
+                    120,42,99,14
     CONTROL         "Slider1",IDC_GAME_SPEED_SLIDER,"msctls_trackbar32",
                     TBS_BOTH | TBS_NOTICKS,95,115,148,13
     LTEXT           "Game Speed",-1,39,115,58,13,SS_CENTERIMAGE | NOT 

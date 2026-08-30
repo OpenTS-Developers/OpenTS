@@ -323,10 +323,33 @@ test('A resume is judged before it is loaded, and the save answers for the rest'
 		'SpawnConfig.SaveGameName.empty()',
 		'Get_Savefile_Info(SpawnConfig.SaveGameName.c_str(), &info)',
 		'info.Get_Internal_Version() != ExpectedGameVersion',
-		'type != GAME_NORMAL && type != GAME_SKIRMISH',
+		'type == GAME_IPX',
+		'SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)',
+		'Spawner_Seat_Humans();',
+		'Spawner_Wire_Network()',
+		'Session.LoadGame = true;',
 		'LoadOptionsClass().Load_File(SpawnConfig.SaveGameName.c_str())',
+		'Reconcile_Players()',
 		'gameloaded = true;',
-	], 'a save is named, found, stamped and of a kind that can be resumed before it is read');
+	], 'a network resume seats the players and opens the network before the save is read');
+
+	for (const dialog of ['IDD_OPT_CTRL_MP', 'IDD_OPT_CTRL_WOL']) {
+		const template = source('code/language/language.rc');
+		const body = template.slice(template.indexOf(dialog + ' DIALOG'));
+		assert.match(
+			body.slice(0, body.indexOf('END')),
+			/IDC_SAVE_GAME/,
+			`${dialog} offers the synchronized save the options handler has always known`,
+		);
+	}
+
+	assertOrdered(functionBody(source('code/saveload.cpp'), 'bool Reconcile_Players(void)'), [
+		'stricmp(Session.Players[i]->Name, Houses[house]->IniName) == 0',
+		'Session.Players[i]->Player.ID = found->HeapID;',
+		'Houses[Session.Players[0]->Player.ID] != PlayerPtr',
+		'housep->IsHuman = false;',
+		'housep->IniName = Fetch_String(TXT_COMPUTER);',
+	], 'every seat is matched and this machine identified before any house changes hands');
 
 	assertOrdered(functionBody(source('code/saveload.cpp'), 'bool Load_Game(const char *file_name)'), [
 		'Session.Type = (GameType)info.Get_Game_Type();',

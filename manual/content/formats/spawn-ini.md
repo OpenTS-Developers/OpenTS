@@ -46,9 +46,17 @@ the houses that played it, so nothing else in the file decides those. A client r
 campaign writes little more than the name of the save.
 
 The name is a file inside the game's saved-games folder, and a name written with a path of
-its own is reduced to its last part. A save the folder does not hold, one made by another
-version of the game, and one made in a game against other machines each refuse the launch
-with the reason shown.
+its own is reduced to its last part. A save the folder does not hold, or one made by
+another version of the game, refuses the launch with the reason shown.
+
+A save from a game against other machines resumes as well. Every machine loads its own
+copy of the save — the synchronized in-game save writes one on each of them, named
+`SAVEGAME.NET` — while the file seats the same people again, with the addresses their
+machines answer on now. A player who does not return leaves their house fighting on under
+the computer, and before play resumes the machines compare the games they loaded, so
+mismatched saves refuse rather than drift apart. The launch is refused when the seats and
+the save disagree on who is playing, or when the save came from a game the menu arranged
+over the local network.
 
 ## A campaign mission
 
