@@ -117,7 +117,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_SUN                 ICON    DISCARDABLE     "sun.ico"
+IDI_SUN                 ICON    DISCARDABLE     "resources/app-icon/opents.ico"
 IDI_CHECKED             ICON    DISCARDABLE     "checked.ico"
 IDI_UNCHECKED           ICON    DISCARDABLE     "unchecked.ico"
 IDI_GREYED              ICON    DISCARDABLE     "greyed.ico"
