@@ -137,7 +137,7 @@ static void Build_Convert_Table(void)
 /// <summary>
 /// Submits one textured rectangle covering the given destination.
 /// </summary>
-static void Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags)
+static void Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false)
 {
 	bgfx::TransientVertexBuffer buffer;
 
@@ -150,12 +150,15 @@ static void Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 	BackendVertex * vertex = (BackendVertex *)buffer.data;
 	const unsigned int white = 0xFFFFFFFF;
 
-	vertex[0] = { x, y, 0.0f, 0.0f, white };
-	vertex[1] = { x + width, y, 1.0f, 0.0f, white };
-	vertex[2] = { x + width, y + height, 1.0f, 1.0f, white };
-	vertex[3] = { x, y, 0.0f, 0.0f, white };
-	vertex[4] = { x + width, y + height, 1.0f, 1.0f, white };
-	vertex[5] = { x, y + height, 0.0f, 1.0f, white };
+	const float vtop = flipv ? 1.0f : 0.0f;
+	const float vbottom = flipv ? 0.0f : 1.0f;
+
+	vertex[0] = { x, y, 0.0f, vtop, white };
+	vertex[1] = { x + width, y, 1.0f, vtop, white };
+	vertex[2] = { x + width, y + height, 1.0f, vbottom, white };
+	vertex[3] = { x, y, 0.0f, vtop, white };
+	vertex[4] = { x + width, y + height, 1.0f, vbottom, white };
+	vertex[5] = { x, y + height, 0.0f, vbottom, white };
 
 	bgfx::setVertexBuffer(0, &buffer);
 	bgfx::setTexture(0, _TextureSampler, texture, samplerflags);
@@ -461,6 +464,7 @@ void Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	bgfx::TextureHandle source = _FrameTexture;
 	unsigned int samplerflags = BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP;
+	bool from_prescale = false;
 
 	if (mode == BACKEND_SCALE_NEAREST) {
 		samplerflags |= BGFX_SAMPLER_POINT;
@@ -486,6 +490,7 @@ void Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 				Set_View_Transform(VIEW_PRESCALE, _PrescaleWidth, _PrescaleHeight);
 				Submit_Quad(VIEW_PRESCALE, _FrameTexture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT);
 				source = bgfx::getTexture(_PrescaleTarget);
+				from_prescale = true;
 			}
 		}
 	}
@@ -495,7 +500,9 @@ void Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	bgfx::setViewFrameBuffer(VIEW_PRESENT, BGFX_INVALID_HANDLE);
 	bgfx::setViewClear(VIEW_PRESENT, BGFX_CLEAR_COLOR, 0x000000FF);
 	Set_View_Transform(VIEW_PRESENT, _WindowWidth, _WindowHeight);
-	Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags);
+
+	bool flipv = from_prescale && bgfx::getCaps()->originBottomLeft;
+	Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv);
 
 	bgfx::frame();
 }
