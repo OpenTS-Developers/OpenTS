@@ -429,12 +429,15 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 	PathStruct		* path;			// Pointer to path control structure.
 	int 			skip_path = false;
 
-	if (path_offset == 0) {
-		Path[0] = FACING_NONE;
+	if (path_offset < 0 || path_offset >= ARRAY_SIZE(Path)) {
+		std::fill(std::begin(Path), std::end(Path), FACING_NONE);
+		return(false);
 	}
 
+	// Keep an existing path prefix, but always terminate the new suffix.
+	std::fill(std::begin(Path) + path_offset, std::end(Path), FACING_NONE);
+
 	if (!Is_In_Same_Zone(cell)) {
-		Path[0] = FACING_NONE;
 		return(false);
 	}
 
@@ -485,9 +488,6 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 
 	if (!skip_path) {
 		Mark(MARK_UP);
-		if (path_offset == 0) {
-			Path[0] = FACING_NONE;		// Probably not necessary, but...
-		}
 
 		/*
 		**	Try to find a path to the destination. If a failure occurs, then keep trying
@@ -512,7 +512,8 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 		*/
 		if (found) {
 			Fixup_Path(&path1);
-			memcpy(&Path[path_offset], &workpath[0], std::min(path->Length, ARRAY_SIZE(Path) - path_offset) * sizeof(Path[0]));
+			int length = std::clamp(path->Length, 0, ARRAY_SIZE(Path) - path_offset);
+			memcpy(&Path[path_offset], &workpath[0], length * sizeof(Path[0]));
 		}
 
 		Mark(MARK_DOWN);
