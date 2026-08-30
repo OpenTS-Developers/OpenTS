@@ -134,6 +134,8 @@
 #include "tube.hh"
 
 #include <algorithm>
+#include <cstring>
+#include <iterator>
 
 
 DynamicVectorClass<FootClass *> Feet;
@@ -195,7 +197,7 @@ FootClass::FootClass(HouseClass * house) :
 	CurrentTubeDir(0),
 	NextWaypoint(0)
 {
-	Path[0] = FACING_NONE;
+	std::fill(std::begin(Path), std::end(Path), FACING_NONE);
 	Feet.Add(this);
 	TeamPtrTracker.Add(this);
 }
@@ -580,6 +582,21 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 
 	return(false);
 }
+
+/// <summary>
+/// Removes completed steps from the front of the active movement path.
+/// </summary>
+void FootClass::Advance_Path(int count)
+{
+	if (count <= 0) {
+		return;
+	}
+
+	int const advance = std::min(count, ARRAY_SIZE(Path));
+	std::memmove(Path, Path + advance, (ARRAY_SIZE(Path) - advance) * sizeof(Path[0]));
+	std::fill(std::end(Path) - advance, std::end(Path), FACING_NONE);
+}
+
 
 
 /***********************************************************************************************

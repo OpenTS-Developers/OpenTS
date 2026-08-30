@@ -385,6 +385,7 @@ class FootClass : public TechnoClass
 		**	Member function prototypes.
 		*/
 		bool Basic_Path(Cell cell, int path_offset = 0, int avoidance = 0);
+		void Advance_Path(int count);
 
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual Coord Destination_Coord(void) const override;

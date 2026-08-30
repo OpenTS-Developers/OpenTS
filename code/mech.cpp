@@ -178,7 +178,6 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 
 	if (HeadToCoord == COORD_NONE) {
 		if (DestinationCoord != COORD_NONE) {
-
 			/*
 			 * A destination exists. If there is no current path then try to build
 			 * one. If a path already exists, fall through to dispatch the next leg.
@@ -261,8 +260,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 					Cell cell = tubeptr->Exit;
 					HeadToCoord = Coord(cell, 0);
 
-					memcpy(&LinkedTo->Path[0], &LinkedTo->Path[1], 92);
-					LinkedTo->Path[23] = FACING_NONE;
+					LinkedTo->Advance_Path(1);
 
 					LinkedTo->CurrentTube = tube;
 					LinkedTo->CurrentTubeDir = FACING_FIRST;
@@ -491,8 +489,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 				LinkedTo->Path[1] = FACING_NONE;
 			}
 
-			memcpy(&LinkedTo->Path[0], &LinkedTo->Path[1], 92);
-			LinkedTo->Path[23] = FACING_NONE;
+			LinkedTo->Advance_Path(1);
 
 			LinkedTo->Set_Coord(HeadToCoord);
 			LinkedTo->LastPathingCell = HeadToCoord.As_Cell();

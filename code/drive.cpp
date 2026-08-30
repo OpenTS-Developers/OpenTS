@@ -1012,8 +1012,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 			TubeClass * tube = Tubes[tubenum];
 			Cell c = tube->Exit;
 			HeadToCoord = c.As_Coord();
-			memcpy((char*)&LinkedTo->Path, (char*)&LinkedTo->Path[1], sizeof(LinkedTo->Path[0]) * (CONQUER_PATH_MAX-1));
-			LinkedTo->Path[CONQUER_PATH_MAX-1] = FACING_NONE;
+			LinkedTo->Advance_Path(1);
 			LinkedTo->CurrentTube = tubenum;
 			LinkedTo->CurrentTubeDir = FACING_FIRST;
 			LinkedTo->LastTubeCoord = Map[Adjacent_Cell((Cell)tube->Enter, tube->Dirs[0])].Cell_Coord();
@@ -1196,8 +1195,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 								if (LinkedTo == NULL || !LinkedTo->IsActive || LinkedTo->IsInLimbo || LinkedTo->IsFalling) return(false);
 								if (Start_Driver(c)) {
 									LinkedTo->Set_Speed(oldspeed);
-									memcpy((char*)&LinkedTo->Path, (char*)&LinkedTo->Path[1], sizeof(LinkedTo->Path[0]) * (CONQUER_PATH_MAX-1));
-									LinkedTo->Path[CONQUER_PATH_MAX-1] = FACING_NONE;
+									LinkedTo->Advance_Path(1);
 								}
 								break;
 
@@ -1992,15 +1990,12 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 				}
 
 			} else {
-				memcpy((char*)&LinkedTo->Path[0], (char*)&LinkedTo->Path[2], sizeof(LinkedTo->Path[0]) * (CONQUER_PATH_MAX-2));
-				LinkedTo->Path[CONQUER_PATH_MAX-2] = FACING_NONE;
+				LinkedTo->Advance_Path(2);
 				LinkedTo->IsPlanningToLook = true;
 			}
 		} else {
-			memcpy((char*)&LinkedTo->Path[0], (char*)&LinkedTo->Path[1], sizeof(LinkedTo->Path[0]) * (CONQUER_PATH_MAX-1));
+			LinkedTo->Advance_Path(1);
 		}
-
-		LinkedTo->Path[CONQUER_PATH_MAX-1] = FACING_NONE;
 		LinkedTo->LastPathingCell = dest.As_Cell();
 		LinkedTo->IsNewNavCom = false;
 		TrackIndex = 0;
