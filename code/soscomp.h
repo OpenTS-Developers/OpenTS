@@ -3,6 +3,7 @@
  *******************************************************************************
  * SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright 2025 Electronic Arts Inc.
+ * Copyright 2026 Vanilla-Conquer contributors
  * Copyright 2026 OpenTS contributors
  *
  * Contains material derived from Electronic Arts source code.
@@ -65,8 +66,9 @@ typedef struct _tagCOMPRESS_HEADER
     char szName[16];                 // file type, for error checking
 } _SOS_COMPRESS_HEADER;
 
-extern "C" {
 /* Prototypes */
-void sosCODECInitStream(_SOS_COMPRESS_INFO *);
-unsigned int sosCODECDecompressData(_SOS_COMPRESS_INFO *, unsigned int);
+extern "C" {
+	void sosCODECInitStream(_SOS_COMPRESS_INFO *);
+	unsigned int sosCODECDecompressData(_SOS_COMPRESS_INFO *, unsigned int);
+	unsigned int sosCODECDecompressDataPlanar(_SOS_COMPRESS_INFO *, unsigned int);
 }
