@@ -31,7 +31,7 @@
 
 #include "always.h"
 
-#include "_WSProto.h"
+#include "_wsproto.h"
 
 
 WinsockInterfaceClass	*PacketTransport = 0;			//The object for interfacing with Winsock
