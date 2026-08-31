@@ -2328,9 +2328,8 @@ inline void BlitTrans<unsigned char>::BlitForward(void * dest, void const * sour
 		mov	ecx,[len]
 		dec	edi
 		inc	ecx
-	}
-again:
-	__asm {
+
+		again:
 		dec	ecx
 		jz		fini
 		mov	al,[esi]
@@ -2340,8 +2339,9 @@ again:
 		jz		again
 		mov	[edi],al
 		jmp	again
+
+		fini:
 	}
-fini:;
 }
 
 
@@ -2358,9 +2358,8 @@ inline void BlitTransXlat<unsigned short>::BlitForward(void * dest, void const *
 		sub	edi,2
 		mov	esi,[source]
 		xor	eax,eax
-	}
-again:
-	__asm {
+
+		again:
 		dec	ecx
 		jz		over
 		add	edi,2
@@ -2371,8 +2370,9 @@ again:
 		mov	dx,[ebx+eax*2]
 		mov	[edi],dx
 		jmp	again
+
+		over:
 	}
-over:;
 }
 
 
@@ -2390,14 +2390,12 @@ inline void BlitTransRemapXlat<unsigned short>::BlitForward(void * dest, void co
 		mov	ebx,[remapper]
 		mov	edx,[translator]
 		xor	eax,eax
-	}
 
+	again:
 	/*
 	**	This block is 11 cycles per pixel, if not transparent, and 5
 	**	cycles per pixel, if transparent.
 	*/
-again:
-	__asm {
 		dec	ecx
 		jz		over
 		add	edi,2
@@ -2409,8 +2407,9 @@ again:
 		mov	ax,[edx+eax*2]				// Second remap step (8 bit to 16 bit).
 		mov	[edi],ax
 		jmp	again
+
+	over:
 	}
-over:;
 }
 
 

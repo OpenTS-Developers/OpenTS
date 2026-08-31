@@ -241,16 +241,13 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 		stosb			//; write out a len of 1
 		lodsb			//; get the byte
 		stosb			//; save it
-	}
 
-loopstart:
-	__asm {
+		loopstart:
 		mov	[ndest],edi	//; save offset of compressed data
 		mov	edi,[a1stsrc]	//; get the offset to the first byte of data
 		mov	[count],1	//; set the count of run to 0
-	}
-searchloop:
-	__asm {
+
+		searchloop:
 		sub	eax,eax
 		mov	al,[esi]	//; get the current byte of data
 		cmp	al,[esi+64]
@@ -284,14 +281,12 @@ searchloop:
 		mov	[ndest],edi	//; save offset of compressed data
 		mov	edi,ebx
 		jmp	searchloop
-	}
-notlongenough:
-	__asm {
+
+		notlongenough:
 		mov	edi,ebx
-	}
-notrunlength:
-oploop:
-	__asm {
+
+		notrunlength:
+		oploop:
 		mov	ecx,esi		//; get the address of the last byte +1
 		sub	ecx,edi		//; get the total number of bytes left to comp
 		jz	short searchdone
@@ -316,9 +311,8 @@ oploop:
 		jne	short notend	//; if found mismatch then di - bx = match count
 
 		inc	edi		//; else cx = 0 and di + 1 - bx = match count
-	}
-notend:
-	__asm {
+
+		notend:
 		mov	esi,edx		//; restore si
 		mov	eax,edi		//; get the dest
 		sub	eax,ebx		//; sub the start for total bytes that match
@@ -330,9 +324,8 @@ notend:
 		dec	ebx		//; back it up for the actual match offset
 		mov	[matchoff],ebx //; save the offset for later
 		jmp	searchloop	//; loop until we searched it all
-	}
-searchdone:
-	__asm {
+
+		searchdone:
 		mov	ecx,[count]	//; get the count of the longest run
 		mov	edi,[ndest]	//; get the offset of our compressed data
 		cmp	ecx,2		//; see if its not enough run to matter
@@ -345,9 +338,8 @@ searchdone:
 		sub	eax,[matchoff] //; sub the offset of the match
 		cmp	eax,0FFFh	//; if its less than 12 bits its a short
 		ja	short medrun	//; if its not, its a medium
-	}
-//shortrun:
-	__asm {
+
+		//shortrun:
 		sub	ebx,ebx
 		mov	bl,cl		//; get the length (3-10)
 		sub	bl,3		//; sub 3 for a 3 bit number 0-7
@@ -355,9 +347,8 @@ searchdone:
 		add	ah,bl		//; add in the length for the high nibble
 		xchg	ah,al		//; reverse the bytes for a word store
 		jmp	short srunnxt	//; do the run fixup code
-	}
-medrun:
-	__asm {
+
+		medrun:
 		cmp	ecx,64		//; see if its a short run
 		ja	short longrun	//; if not, oh well at least its long
 
@@ -366,66 +357,57 @@ medrun:
 		mov	al,cl		//; put it in al for the stosb
 		stosb			//; store it
 		jmp	short medrunnxt //; do the run fixup code
-	}
-lenin:
-	__asm {
+
+		lenin:
 		cmp	[inlen],0	//; is it doing a length?
 //		cmp	[DWORD PTR inlen],0	//; is it doing a length?
 		jnz	short len	//; if so, skip code
-	}
-lenin1:
-	__asm {
+
+		lenin1:
 		mov	[lenoff],edi	//; save the length code offset
 		mov	al,80h		//; set the length to 0
 		stosb			//; save it
-	}
-len:
-	__asm {
+
+		len:
 		mov	ebx,[lenoff]	//; get the offset of the length code
-		cmp	[ebx],0BFh	//; see if its maxed out
+		cmp	byte ptr [ebx],0BFh	//; see if its maxed out
 //		cmp	[BYTE PTR ebx],0BFh	//; see if its maxed out
 		je	lenin1	//; if so put out a new len code
-	}
-//stolen:
-	__asm {
-		inc	[ebx] //; inc the count code
+
+		//stolen:
+		inc	byte ptr [ebx] //; inc the count code
 //		inc	[BYTE PTR ebx] //; inc the count code
 		lodsb			//; get the byte
 		stosb			//; store it
 		mov	[inlen],1	//; we are now in a length so save it
 //		mov	[DWORD PTR inlen],1	//; we are now in a length so save it
 		jmp	short nxt	//; do the next code
-	}
-longrun:
-	__asm {
+
+		longrun:
 		mov	al,0ffh		//; its a long so set a code of FF
 		stosb			//; store it
 
 		mov	eax,[count]	//; send out the count
 		stosw			//; store it
-	}
-medrunnxt:
-	__asm {
+
+		medrunnxt:
 		mov	eax,[matchoff] //; get the offset
 		sub	eax,[a1stsrc]	//; make it relative tot he start of data
-	}
-srunnxt:
-	__asm {
+
+		srunnxt:
 		stosw			//; store it
 		//; this code common to all runs
 		add	esi,[count]	//; add in the length of the run to the source
 		mov	[inlen],0	//; set the in leght flag to false
 //		mov	[DWORD PTR inlen],0	//; set the in leght flag to false
-	}
-nxt:
-	__asm {
+
+		nxt:
 		cmp	esi,[end_of_data]		//; see if we did the whole pic
 		jae	short outofhere		//; if so, cool! were done
 
 		jmp	loopstart
-	}
-outofhere:
-	__asm {
+
+		outofhere:
 		mov	ax,080h		//; remember to send an end of data code
 		stosb			//; store it
 		mov	eax,edi		//; get the last compressed address
@@ -436,4 +418,3 @@ outofhere:
 	return(retval);
 }
 #endif
-
