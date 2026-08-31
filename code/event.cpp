@@ -60,6 +60,7 @@
 #include "house.h"
 #include "language\language.h"
 #include "mouse.h"
+#include "netsemantic.h"
 #include "rules.h"
 #include "saveload.h"
 #include "scenario.h"
@@ -74,6 +75,82 @@
 #include "house.hh"
 #include "ramp.hh"
 #include "special.hh"
+
+
+namespace {
+	enum class EventRejectReason : unsigned int {
+		InvalidType,
+		InvalidOrigin,
+		MissingOrigin,
+		InvalidAllyHouse,
+		InvalidAnimationType,
+		InvalidAnimationOwner,
+		InvalidGameSpeed,
+		InvalidRemovedHouse,
+		InvalidLatencyFudge,
+		UnauthorizedSubject,
+		Count,
+	};
+
+	char const * const EventRejectReasonNames[] = {
+		"invalid type",
+		"invalid origin",
+		"missing origin",
+		"invalid ally house",
+		"invalid animation type",
+		"invalid animation owner",
+		"invalid game speed",
+		"invalid removed house",
+		"invalid latency fudge",
+		"unauthorized subject",
+	};
+
+	static_assert(ARRAY_SIZE(EventRejectReasonNames) == (int)EventRejectReason::Count);
+	unsigned int EventRejectCounts[(unsigned int)EventRejectReason::Count] = {};
+
+
+	/// <summary>Records a rejected synchronized event.</summary>
+	void Log_Event_Rejection(EventRejectReason reason, unsigned int type, int origin, int detail)
+	{
+		unsigned int const reason_index = (unsigned int)reason;
+		unsigned int const count = ++EventRejectCounts[reason_index];
+		if (count == 0 || (count & (count - 1)) != 0) {
+			return;
+		}
+
+		DebugString("Rejected network event: %s, type %u, origin %d, detail %d (count %u)\n",
+			EventRejectReasonNames[reason_index], type, origin, detail, count);
+	}
+
+
+	/// <summary>Resolves the object controlled by an ownership-gated event.</summary>
+	TechnoClass * Event_Subject(EventClass const & event, bool & requires_ownership)
+	{
+		requires_ownership = true;
+		switch (event.Type) {
+			case EventClass::POWERON:
+			case EventClass::POWEROFF:
+			case EventClass::REPAIR:
+			case EventClass::PRIMARY:
+			case EventClass::IDLE:
+			case EventClass::DEPLOY:
+			case EventClass::SCATTER:
+			case EventClass::SELL:
+				return(event.Data.Target.Whom.As_Techno());
+
+			case EventClass::ARCHIVE:
+				return(event.Data.NavCom.Whom.As_Techno());
+
+			case EventClass::MEGAMISSION:
+			case EventClass::MEGAMISSION_F:
+				return(event.Data.MegaMission.Whom.As_Techno());
+
+			default:
+				requires_ownership = false;
+				return(NULL);
+		}
+	}
+}
 
 
 /***********************************************************************************************
@@ -549,7 +626,34 @@ void EventClass::Execute(void)
 	TechnoClass * techno = NULL;
 	BuildingClass * building = NULL;
 	AnimClass * anim = NULL;
+	if (Type == EMPTY || Type >= LAST_EVENT) {
+		Log_Event_Rejection(EventRejectReason::InvalidType, Type, -1, Type);
+		return;
+	}
+	if (!NetSemantic::Index_Is_Valid(ID, Houses.Count())) {
+		Log_Event_Rejection(EventRejectReason::InvalidOrigin, Type, ID, ID);
+		return;
+	}
+	if (Houses[ID] == NULL) {
+		Log_Event_Rejection(EventRejectReason::MissingOrigin, Type, ID, ID);
+		return;
+	}
+
 	HouseClass * house = Houses[ID];
+	if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
+		bool requires_ownership = false;
+		TechnoClass * subject = Event_Subject(*this, requires_ownership);
+		if (requires_ownership) {
+			if (subject == NULL || !subject->IsActive || subject->Strength <= 0) {
+				return;
+			}
+			int const owner = subject->House != NULL ? subject->House->HeapID : -1;
+			if (!NetSemantic::Subject_Owner_Is_Valid(ID, owner)) {
+				Log_Event_Rejection(EventRejectReason::UnauthorizedSubject, Type, ID, owner);
+				return;
+			}
+		}
+	}
 	HouseClass * hptr = NULL;
 	const char *str = NULL;
 //	Cell cell;
@@ -597,11 +701,16 @@ void EventClass::Execute(void)
 		**	Make or break alliance.
 		*/
 		case ALLY:
-			hptr = Houses[Data.General.Value];
+			index = Data.General.Value;
+			if (!NetSemantic::Index_Is_Valid(index, Houses.Count()) || Houses[index] == NULL) {
+				Log_Event_Rejection(EventRejectReason::InvalidAllyHouse, Type, ID, index);
+				break;
+			}
+			hptr = Houses[index];
 			if (house->Is_Ally(hptr)) {
-				house->Make_Enemy((HousesType)Data.General.Value);
+				house->Make_Enemy((HousesType)index);
 			} else {
-				house->Make_Ally((HousesType)Data.General.Value);
+				house->Make_Ally((HousesType)index);
 			}
 			break;
 
@@ -672,6 +781,19 @@ void EventClass::Execute(void)
 		*/
 		case ANIMATION:
 		{
+			int const animation_type = (int)Data.Anim.What;
+			int const owner = (int)Data.Anim.Owner;
+			if (!NetSemantic::Animation_Type_Is_Valid(animation_type, ANIM_NONE, AnimTypes.Count()) ||
+				(animation_type != ANIM_NONE && AnimTypes[animation_type] == NULL)) {
+				Log_Event_Rejection(EventRejectReason::InvalidAnimationType, Type, ID, animation_type);
+				break;
+			}
+			if (!NetSemantic::Animation_Owner_Is_Valid(owner, HOUSE_NONE, Houses.Count()) ||
+				(owner != HOUSE_NONE && Houses[owner] == NULL)) {
+				Log_Event_Rejection(EventRejectReason::InvalidAnimationOwner, Type, ID, owner);
+				break;
+			}
+
 			Coord coord(Data.Anim.Where.X, Data.Anim.Where.Y);
 			coord.Z = Map.Get_Height_GL(coord);
 			if (Map[coord].IsUnderBridge) {
@@ -683,7 +805,7 @@ void EventClass::Execute(void)
 				anim = new AnimClass(AnimTypes[Data.Anim.What], coord);
 			}
 			if (anim) {
-				if (Data.Anim.Owner != HOUSE_NONE && !Houses[Data.Anim.Owner]->Is_Player_Control()) {
+				if (owner != HOUSE_NONE && !Houses[owner]->Is_Player_Control()) {
 					anim->Make_Invisible();
 				}
 			}
@@ -996,6 +1118,10 @@ void EventClass::Execute(void)
 		**	Process the options Game Speed
 		*/
 		case GAMESPEED:
+			if (!NetSemantic::Game_Speed_Is_Valid(Data.General.Value)) {
+				Log_Event_Rejection(EventRejectReason::InvalidGameSpeed, Type, ID, Data.General.Value);
+				break;
+			}
 			Options.GameSpeed = Data.General.Value;
 
 			house = Houses[ID];
@@ -1041,10 +1167,17 @@ void EventClass::Execute(void)
 			break;
 
 		case REMOVEPLAYER:
+			index = Data.General.Value;
+			if (!NetSemantic::Index_Is_Valid(index, Houses.Count()) || Houses[index] == NULL) {
+				Log_Event_Rejection(EventRejectReason::InvalidRemovedHouse, Type, ID, index);
+				break;
+			}
+			if (!Houses[index]->Is_Human_Player()) {
+				break;
+			}
+
 			DebugString("Executing REMOVEPLAYER event. Frame is %d\n", ::Frame);
 			Disable_Multiplayer_Saving();
-			index = Data.General.Value;
-
 			house = Houses[index];
 			if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
 				house->Flag_To_Die();
@@ -1056,6 +1189,10 @@ void EventClass::Execute(void)
 			break;
 
 		case LATENCYFUDGE:
+			if (!NetSemantic::Latency_Fudge_Is_Valid(Data.General.Value)) {
+				Log_Event_Rejection(EventRejectReason::InvalidLatencyFudge, Type, ID, Data.General.Value);
+				break;
+			}
 			DebugString("Executing LATENCYFUDGE event. Frame is %d\n", ::Frame);
 			Session.LatencyFudge = Data.General.Value;
 			DebugString("LatencyFudge is %d\n", Session.LatencyFudge);

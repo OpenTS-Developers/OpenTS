@@ -237,7 +237,7 @@ int IPXGlobalConnClass::Receive_Packet (void * buf, int buflen,
 	}
 	NetAdmission::ConnectionResult const packet = NetAdmission::Admit_Connection_Packet(packet_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
 	if (!packet.Succeeded()) {
-		Record_Admission_Drop(packet.ErrorCodeCode, packet.Code);
+		Record_Admission_Drop(packet.ErrorCode, packet.Code);
 		return(1);
 	}
 
@@ -426,7 +426,7 @@ int IPXGlobalConnClass::Get_Packet (void * buf, int capacity, int *buflen,
 		NetAdmission::ConnectionResult const admission = NetAdmission::Admit_Connection_Packet(entry_bytes, sizeof(GlobalHeaderType), static_cast<std::size_t>(MaxPacketLen));
 		if (!admission.Succeeded()) {
 			rec_entry->IsRead = 1;
-			Record_Admission_Drop(admission.ErrorCodeCode, admission.Code);
+			Record_Admission_Drop(admission.ErrorCode, admission.Code);
 			return(0);
 		}
 		if (admission.Code == PACKET_ACK) {

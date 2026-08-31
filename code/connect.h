@@ -229,8 +229,6 @@ class ConnectionClass
 		.....................................................................*/
 		virtual int Send(char *buf, int buflen, void *extrabuf,
 			int extralen) = 0;
-		/// <summary>Returns whether this channel represents one peer with adaptive link timing.</summary>
-		virtual bool Adaptive_Timing_Enabled(void) const {return(true);}
 		void Record_Packet_Drop(PacketDropReasonType reason);
 		/// <summary>Maps a shared admission failure to this connection's stable counter.</summary>
 		void Record_Admission_Drop(NetAdmission::Error error, unsigned char code);

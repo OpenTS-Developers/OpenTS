@@ -13,12 +13,14 @@
 #include "netpacket.h"
 #include "netreader.h"
 #include "netglobal.h"
+#include "netsemantic.h"
 
 #include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <span>
 #include <utility>
 #include <vector>
@@ -33,7 +35,9 @@ using NetworkReportType = decltype(std::declval<EventClass>().Data.NetworkReport
 constexpr int Sender = 3;
 constexpr int Frame = 120;
 constexpr std::size_t DataOffset = offsetof(EventClass, Data);
+constexpr std::size_t FrameOffset = offsetof(EventClass, Frame);
 constexpr std::size_t EnvelopeSize = DataOffset + sizeof(std::declval<EventClass>().Data.FrameInfo);
+constexpr std::size_t FrameDelayOffset = DataOffset + offsetof(decltype(std::declval<EventClass>().Data.FrameInfo), Delay);
 constexpr std::size_t VariableSizeOffset = offsetof(VariableDataType, Size);
 constexpr std::size_t MegaWhomSize = sizeof(std::declval<EventClass>().Data.MegaMission.Whom);
 
@@ -226,6 +230,57 @@ void Test_Envelope_Rules(void)
 		NetPacket::Decode_Event_Packet(short_uncompressed, NetPacket::Encoding::UNCOMPRESSED, Sender),
 		NetPacket::DecodeError::TRUNCATED_ENVELOPE,
 		"an uncompressed FRAMEINFO must carry the complete full event");
+}
+
+
+void Test_Frame_Arithmetic(void)
+{
+	Bytes negative = Compressed_Packet();
+	int const negative_frame = -1;
+	Write_Value(negative, FrameOffset, negative_frame);
+	Check_Error(NetPacket::Decode_Event_Packet(negative, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_FRAME_ARITHMETIC, "a negative FRAMEINFO frame is rejected transactionally");
+
+	Bytes underflow = Compressed_Packet();
+	int const early_frame = 3;
+	std::uint8_t const excessive_delay = 4;
+	Write_Value(underflow, FrameOffset, early_frame);
+	Write_Value(underflow, FrameDelayOffset, excessive_delay);
+	Check_Error(NetPacket::Decode_Event_Packet(underflow, NetPacket::Encoding::COMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_FRAME_ARITHMETIC, "a FRAMEINFO delay larger than its frame is rejected");
+
+	Bytes minimum = Envelope(EventClass::FRAMESYNC);
+	int const minimum_frame = (std::numeric_limits<int>::min)();
+	Write_Value(minimum, FrameOffset, minimum_frame);
+	Check_Error(NetPacket::Decode_Event_Packet(minimum, NetPacket::Encoding::UNCOMPRESSED, Sender),
+		NetPacket::DecodeError::INVALID_FRAME_ARITHMETIC, "the minimum signed FRAMESYNC frame cannot overflow subtraction");
+
+	Check(NetPacket::Compute_Reported_Frame(4, 4) == 0, "a delay equal to its frame reports frame zero");
+	Check(!NetPacket::Compute_Reported_Frame(3, 4), "checked sender-frame subtraction rejects underflow");
+	Check(NetPacket::Compute_Reported_Frame(350, 0, 100, 250) == 350, "the maximum 250-frame sender lead is accepted");
+	Check(!NetPacket::Compute_Reported_Frame(351, 0, 100, 250), "an excessive future sender frame is rejected");
+	Check(NetPacket::Compute_Reported_Frame((std::numeric_limits<int>::max)(), 0,
+		(std::numeric_limits<int>::max)(), 250).has_value(), "receiver lead arithmetic remains safe at the signed-frame limit");
+}
+
+
+void Test_Event_Semantics(void)
+{
+	Check(NetSemantic::Index_Is_Valid(0, 1), "index validation accepts the first collection entry");
+	Check(!NetSemantic::Index_Is_Valid(-1, 1), "index validation rejects a negative entry");
+	Check(!NetSemantic::Index_Is_Valid(1, 1), "index validation rejects the one-past entry");
+	Check(NetSemantic::Subject_Owner_Is_Valid(3, 3), "a synchronized subject may be controlled by its owner");
+	Check(!NetSemantic::Subject_Owner_Is_Valid(3, 4), "a synchronized subject rejects another player's identity");
+	Check(NetSemantic::Game_Speed_Is_Valid(0) && NetSemantic::Game_Speed_Is_Valid(6), "game-speed validation accepts both legal edges");
+	Check(!NetSemantic::Game_Speed_Is_Valid(-1) && !NetSemantic::Game_Speed_Is_Valid(7), "game-speed validation rejects both outside edges");
+	Check(NetSemantic::Latency_Fudge_Is_Valid(0) && NetSemantic::Latency_Fudge_Is_Valid(3), "latency-margin validation accepts both legal edges");
+	Check(!NetSemantic::Latency_Fudge_Is_Valid(-1) && !NetSemantic::Latency_Fudge_Is_Valid(4), "latency-margin validation rejects both outside edges");
+	Check(NetSemantic::Animation_Type_Is_Valid(-1, -1, 5) && NetSemantic::Animation_Type_Is_Valid(4, -1, 5),
+		"animation validation accepts its sentinel and last entry");
+	Check(!NetSemantic::Animation_Type_Is_Valid(5, -1, 5), "animation validation rejects its one-past entry");
+	Check(NetSemantic::Animation_Owner_Is_Valid(-1, -1, 5) && NetSemantic::Animation_Owner_Is_Valid(4, -1, 5),
+		"animation-owner validation accepts its sentinel and last entry");
+	Check(!NetSemantic::Animation_Owner_Is_Valid(5, -1, 5), "animation-owner validation rejects its one-past entry");
 }
 
 
@@ -494,7 +549,7 @@ void Test_Datagram_Admission(void)
 {
 	for (std::size_t size = 0; size <= sizeof(std::uint32_t); size++) {
 		Bytes short_datagram(size, std::byte{0});
-		Check_Admission_Error(NetAdmission::Admit_Datagram(short_datagram).ErrorCodeCode,
+		Check_Admission_Error(NetAdmission::Admit_Datagram(short_datagram).ErrorCode,
 			NetAdmission::Error::DATAGRAM_TOO_SHORT,
 			"every CRC-only or shorter datagram is rejected");
 	}
@@ -507,13 +562,13 @@ void Test_Datagram_Admission(void)
 	}
 
 	Bytes oversized_payload(NetAdmission::DATAGRAM_PAYLOAD_CAPACITY + 1, std::byte{0x33});
-	Check_Admission_Error(NetAdmission::Admit_Datagram(Datagram(oversized_payload)).ErrorCodeCode,
+	Check_Admission_Error(NetAdmission::Admit_Datagram(Datagram(oversized_payload)).ErrorCode,
 		NetAdmission::Error::DATAGRAM_TOO_LARGE,
 		"a 769-byte transport payload is rejected rather than truncated");
 
 	Bytes damaged = Datagram(Bytes{std::byte{1}, std::byte{2}, std::byte{3}});
 	damaged.back() ^= std::byte{0x80};
-	Check_Admission_Error(NetAdmission::Admit_Datagram(damaged).ErrorCodeCode,
+	Check_Admission_Error(NetAdmission::Admit_Datagram(damaged).ErrorCode,
 		NetAdmission::Error::BAD_CRC, "a damaged transport payload fails CRC admission");
 
 	Bytes aligned = Datagram(Bytes{std::byte{9}, std::byte{8}, std::byte{7}, std::byte{6}});
@@ -531,14 +586,14 @@ void Test_Connection_Admission(void)
 	for (std::size_t size = 0; size < NetAdmission::PRIVATE_HEADER_SIZE; size++) {
 		Bytes packet(size, std::byte{0});
 		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
-			packet, NetAdmission::PRIVATE_HEADER_SIZE, 64).ErrorCodeCode,
+			packet, NetAdmission::PRIVATE_HEADER_SIZE, 64).ErrorCode,
 			NetAdmission::Error::HEADER_TOO_SHORT,
 			"every incomplete seven-byte private header is rejected");
 	}
 	for (std::size_t size = 0; size < NetAdmission::GLOBAL_HEADER_SIZE; size++) {
 		Bytes packet(size, std::byte{0});
 		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
-			packet, NetAdmission::GLOBAL_HEADER_SIZE, 64).ErrorCodeCode,
+			packet, NetAdmission::GLOBAL_HEADER_SIZE, 64).ErrorCode,
 			NetAdmission::Error::HEADER_TOO_SHORT,
 			"every incomplete nine-byte global header is rejected");
 	}
@@ -552,14 +607,14 @@ void Test_Connection_Admission(void)
 			"an exact private/global ACK header is admitted and decoded");
 
 		ack.push_back(std::byte{0});
-		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(ack, header_size, ack.size()).ErrorCodeCode,
+		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(ack, header_size, ack.size()).ErrorCode,
 			NetAdmission::Error::INVALID_PACKET_LENGTH,
 			"an ACK with application bytes is rejected");
 
 		Bytes empty_data = Connection_Packet(header_size,
 			static_cast<std::uint8_t>(NetAdmission::PacketCode::DATA_ACK), 0);
 		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
-			empty_data, header_size, empty_data.size()).ErrorCodeCode,
+			empty_data, header_size, empty_data.size()).ErrorCode,
 			NetAdmission::Error::INVALID_PACKET_LENGTH,
 			"a data header without application payload is rejected");
 
@@ -576,7 +631,7 @@ void Test_Connection_Admission(void)
 			"an exact-capacity destination accepts the payload");
 
 		Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
-			data, header_size, data.size() - 1).ErrorCodeCode,
+			data, header_size, data.size() - 1).ErrorCode,
 			NetAdmission::Error::PACKET_TOO_LARGE,
 			"a message above its connection capacity is rejected");
 	}
@@ -584,7 +639,7 @@ void Test_Connection_Admission(void)
 	Bytes invalid_code = Connection_Packet(NetAdmission::PRIVATE_HEADER_SIZE,
 		static_cast<std::uint8_t>(NetAdmission::PacketCode::COUNT), 1);
 	Check_Admission_Error(NetAdmission::Admit_Connection_Packet(
-		invalid_code, NetAdmission::PRIVATE_HEADER_SIZE, invalid_code.size()).ErrorCodeCode,
+		invalid_code, NetAdmission::PRIVATE_HEADER_SIZE, invalid_code.size()).ErrorCode,
 		NetAdmission::Error::INVALID_PACKET_CODE,
 		"a packet code outside DATA/ACK is rejected");
 
@@ -657,6 +712,22 @@ void Test_Global_Packets(void)
 
 	Check(fully_initialized,
 		"global packet initialization overwrites poison across the current packet shape");
+
+	std::array<NetGlobal::Endpoint, 3> endpoints{{{0x01020304, 1000}, {0x01020304, 2000}, {0x01020304, 0}}};
+	NetGlobal::EndpointResolution resolution = NetGlobal::Resolve_Sender({0x01020304, 2000}, endpoints);
+	Check(resolution.Error == NetGlobal::DecodeError::NONE && resolution.Match == NetGlobal::EndpointMatch::EXACT && resolution.RosterIndex == 1,
+		"an exact IP and port selects the matching same-NAT player");
+	resolution = NetGlobal::Resolve_Sender({0x01020304, 3000}, endpoints);
+	Check(resolution.Error == NetGlobal::DecodeError::NONE && resolution.Match == NetGlobal::EndpointMatch::ZERO_PORT && resolution.RosterIndex == 2,
+		"one zero-port roster entry provides the legacy same-IP fallback");
+	std::array<NetGlobal::Endpoint, 2> duplicate_exact{{{0x01020304, 1000}, {0x01020304, 1000}}};
+	Check(NetGlobal::Resolve_Sender({0x01020304, 1000}, duplicate_exact).Error == NetGlobal::DecodeError::AMBIGUOUS_SENDER,
+		"duplicate exact endpoints are rejected as ambiguous");
+	std::array<NetGlobal::Endpoint, 2> duplicate_wildcard{{{0x01020304, 0}, {0x01020304, 0}}};
+	Check(NetGlobal::Resolve_Sender({0x01020304, 1000}, duplicate_wildcard).Error == NetGlobal::DecodeError::AMBIGUOUS_SENDER,
+		"multiple zero-port candidates on one IP are rejected as ambiguous");
+	Check(NetGlobal::Resolve_Sender({0x05060708, 1000}, endpoints).Error == NetGlobal::DecodeError::SENDER_NOT_MEMBER,
+		"an unknown endpoint remains outside the session roster");
 	Check_Global_Error(packet, packet_size - 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
 		"a short global packet is rejected before dispatch");
 	Check_Global_Error(packet, packet_size + 1, outsider, NetGlobal::DecodeError::INVALID_LENGTH,
@@ -751,6 +822,8 @@ int main(void)
 	Test_Reader();
 	Test_Event_Contract();
 	Test_Envelope_Rules();
+	Test_Frame_Arithmetic();
+	Test_Event_Semantics();
 	Test_Full_Compressed_Table();
 	Test_Mega_Mission();
 	Test_Add_Player();

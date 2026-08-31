@@ -32,7 +32,9 @@ namespace NetPacket
 		using EventExecutedField = decltype(std::declval<EventClass>().IsExecuted);
 		using EventSenderField = decltype(std::declval<EventClass>().ID);
 
+		constexpr std::size_t EVENT_FRAME_OFFSET = offsetof(EventClass, Frame);
 		constexpr std::size_t EVENT_SENDER_OFFSET = offsetof(EventClass, ID);
+		constexpr std::size_t EVENT_DATA_OFFSET = offsetof(EventClass, Data);
 		constexpr std::size_t EVENT_DATA_SIZE = sizeof(EventDataType);
 		constexpr std::size_t FRAMEINFO_DELAY_OFFSET = offsetof(FrameInfoType, Delay);
 		constexpr std::size_t VARIABLE_SIZE_OFFSET = offsetof(VariableDataType, Size);
@@ -111,6 +113,22 @@ namespace NetPacket
 			envelope.Sender = *sender;
 			std::memcpy(envelope.FrameInfo.data(), frame_info->data(), envelope.FrameInfo.size());
 			return(true);
+		}
+
+
+		/// <summary>Validates the sender-frame arithmetic retained in an envelope.</summary>
+		bool Validate_Envelope_Frame(int frame, std::span<std::byte const> frame_info, std::uint8_t type, DecodeFailure & failure)
+		{
+			std::uint8_t delay = 0;
+			std::memcpy(&delay, frame_info.data() + FRAMEINFO_DELAY_OFFSET, sizeof(delay));
+			if (Compute_Reported_Frame(frame, delay)) {
+				return(true);
+			}
+
+			failure.Code = DecodeError::INVALID_FRAME_ARITHMETIC;
+			failure.Offset = frame < 0 ? EVENT_FRAME_OFFSET : EVENT_DATA_OFFSET + FRAMEINFO_DELAY_OFFSET;
+			failure.EventType = type;
+			return(false);
 		}
 
 
@@ -292,7 +310,17 @@ namespace NetPacket
 				if (!reader.Empty()) {
 					return(Failed(DecodeError::FRAMESYNC_NOT_ALONE, reader.Offset(), envelope.Type));
 				}
+				if (!Validate_Envelope_Frame(envelope.Frame, envelope.FrameInfo, envelope.Type, failure)) {
+					DecodeResult result;
+					result.Failure = failure;
+					return(result);
+				}
 				return(Materialize_Frame_Sync(envelope));
+			}
+			if (!Validate_Envelope_Frame(envelope.Frame, envelope.FrameInfo, envelope.Type, failure)) {
+				DecodeResult result;
+				result.Failure = failure;
+				return(result);
 			}
 
 			// Compact children inherit the identity from the already validated envelope.
@@ -447,6 +475,11 @@ namespace NetPacket
 				if (!reader.Empty()) {
 					return(Failed(DecodeError::FRAMESYNC_NOT_ALONE, reader.Offset(), envelope.Type));
 				}
+				if (!Validate_Envelope_Frame(envelope.Frame, envelope.FrameInfo, envelope.Type, failure)) {
+					DecodeResult result;
+					result.Failure = failure;
+					return(result);
+				}
 				return(Materialize_Frame_Sync(envelope));
 			}
 			if (packet.size() < sizeof(EventClass)) {
@@ -474,6 +507,11 @@ namespace NetPacket
 				if (events.empty()) {
 					if (event.Type != EventClass::FRAMEINFO) {
 						return(Failed(DecodeError::INVALID_PREFIX, event_offset, event.Type));
+					}
+					if (!Validate_Envelope_Frame(event.Frame, event.Data, event.Type, failure)) {
+						DecodeResult result;
+						result.Failure = failure;
+						return(result);
 					}
 				} else if (Is_Envelope(event.Type)) {
 					return(Failed(DecodeError::NESTED_ENVELOPE, event_offset, event.Type));
@@ -573,6 +611,28 @@ namespace NetPacket
 	}
 
 
+	/// <summary>Computes the sender frame without signed underflow.</summary>
+	std::optional<std::int64_t> Compute_Reported_Frame(int event_frame, std::uint8_t delay) noexcept
+	{
+		std::int64_t const frame = event_frame;
+		std::int64_t const frame_delay = delay;
+		if (frame < 0 || frame_delay > frame) {
+			return(std::nullopt);
+		}
+
+		return(frame - frame_delay);
+	}
+
+
+	/// <summary>Bounds a reported sender frame against the receiver's current frame.</summary>
+	std::optional<std::int64_t> Compute_Reported_Frame(int event_frame, std::uint8_t delay, int receiver_frame, std::uint32_t maximum_lead) noexcept
+	{
+		std::optional<std::int64_t> const reported = Compute_Reported_Frame(event_frame, delay);
+		std::int64_t const maximum = static_cast<std::int64_t>(receiver_frame) + maximum_lead;
+		return(reported && *reported <= maximum ? reported : std::nullopt);
+	}
+
+
 	/// <summary>Decodes a complete event packet using its negotiated encoding.</summary>
 	DecodeResult Decode_Event_Packet(std::span<std::byte const> packet, Encoding encoding, int expected_sender)
 	{
@@ -604,6 +664,7 @@ namespace NetPacket
 			case DecodeError::FRAMESYNC_NOT_ALONE: return("framesync is not alone");
 			case DecodeError::NESTED_ENVELOPE: return("nested packet envelope");
 			case DecodeError::SENDER_MISMATCH: return("sender identity mismatch");
+			case DecodeError::INVALID_FRAME_ARITHMETIC: return("invalid frame arithmetic");
 			case DecodeError::INVALID_EVENT_LENGTH: return("invalid event length");
 			case DecodeError::TRUNCATED_EVENT: return("truncated event");
 			case DecodeError::ZERO_MEGAMISSION_COUNT: return("zero megamission count");
