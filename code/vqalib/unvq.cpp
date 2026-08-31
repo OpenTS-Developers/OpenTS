@@ -956,7 +956,7 @@ void __cdecl UnVQ2_C0_4x4_TRANS(unsigned char * codebook, unsigned char * pointe
 {
 	uint8_t * dst = (uint8_t *)buffer;
 	uint8_t * row_base = (uint8_t *)buffer;
-	register uint16_t * src = (uint16_t *)pointers;
+	uint16_t * src = (uint16_t *)pointers;
 	uint32_t blocks = 0;
 	uint32_t total = blocksperrow * numrows;
 
@@ -1222,7 +1222,7 @@ void __cdecl UnVQ2_C0_4x4_KEY(unsigned char * codebook, unsigned char * pointers
 {
 	uint8_t * dst = (uint8_t *)buffer;
 	uint8_t * row_base = (uint8_t *)buffer;
-	register uint16_t * src = (uint16_t *)pointers;
+	uint16_t * src = (uint16_t *)pointers;
 	uint32_t blocks = 0;
 	uint32_t total = numrows * blocksperrow;
 
@@ -2010,7 +2010,7 @@ void __cdecl UnVQ2_C0_4x2_KEY(unsigned char * codebook, unsigned char * pointers
 {
 	uint8_t * dst = (uint8_t *)buffer;
 	uint8_t * row_base = (uint8_t *)buffer;
-	register uint16_t * src = (uint16_t *)pointers;
+	uint16_t * src = (uint16_t *)pointers;
 	uint32_t blocks = 0;
 	uint32_t total = numrows * blocksperrow;
 

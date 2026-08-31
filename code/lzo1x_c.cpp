@@ -121,7 +121,7 @@ static int do_compress(const lzo_byte * in, lzo_uint  in_len,
 	lzo_voidp wrkmem )
 {
 
-	register const lzo_byte *ip;
+	const lzo_byte *ip;
 	lzo_uint dv;
 	lzo_byte *op;
 	const lzo_byte * const in_end = in + in_len;
@@ -139,7 +139,7 @@ static int do_compress(const lzo_byte * in, lzo_uint  in_len,
 	DVAL_NEXT(dv,ip);  UPDATE_D(dict,cycle,dv,ip); ip++;
 
 	for (;;) {
-		register const lzo_byte *m_pos;
+		const lzo_byte *m_pos;
 		lzo_uint m_len;
 		lzo_ptrdiff_t m_off;
 		lzo_uint lit;
@@ -197,7 +197,7 @@ match:
 
 		/* store current literal run */
 		if (lit > 0) {
-			register lzo_uint t = lit;
+			lzo_uint t = lit;
 
 			if (t <= 3) {
 				assert(op - 2 > out);
@@ -206,7 +206,7 @@ match:
 				if (t <= 18) {
 					*op++ = LZO_BYTE(t - 3);
 				} else {
-					register lzo_uint tt = t - 18;
+					lzo_uint tt = t - 18;
 
 					*op++ = 0;
 					while (tt > 255) {
@@ -304,7 +304,7 @@ m3_m4_offset:
 
 	/* store final literal run */
 	if (in_end - ii > 0) {
-		register lzo_uint t = in_end - ii;
+		lzo_uint t = in_end - ii;
 
 		if (op == out && t <= 238) {
 			*op++ = LZO_BYTE(17 + t);
@@ -315,7 +315,7 @@ m3_m4_offset:
 				if (t <= 18) {
 					*op++ = LZO_BYTE(t - 3);
 				} else {
-					register lzo_uint tt = t - 18;
+					lzo_uint tt = t - 18;
 
 					*op++ = 0;
 					while (tt > 255) {
