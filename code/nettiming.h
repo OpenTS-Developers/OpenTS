@@ -20,6 +20,21 @@ namespace NetTiming
 	constexpr Milliseconds MINIMUM_CONNECTION_TIMEOUT = 2000;
 	constexpr Milliseconds MAXIMUM_CONNECTION_TIMEOUT = 30000;
 
+	enum class RetryDecision
+	{
+		WAIT,
+		SEND,
+		TIMED_OUT
+	};
+
+	struct RetransmitState
+	{
+		Milliseconds FirstSend = 0;
+		Milliseconds LastSend = 0;
+		Milliseconds CapturedRto = MINIMUM_RTO;
+		unsigned int TransmissionCount = 0;
+	};
+
 	class RttEstimator
 	{
 		public:
@@ -43,4 +58,6 @@ namespace NetTiming
 	Milliseconds Retransmit_Delay(Milliseconds base_rto, unsigned int prior_retransmissions, Milliseconds maximum_delay = MAXIMUM_RTO);
 	bool Retransmit_Is_Due(Milliseconds last_send, Milliseconds now, Milliseconds base_rto,
 		unsigned int prior_retransmissions, Milliseconds maximum_delay = MAXIMUM_RTO);
+	RetryDecision Evaluate_Retry(RetransmitState const & state, Milliseconds now, Milliseconds current_rto, Milliseconds connection_timeout,
+		bool timeout_enabled, bool adaptive);
 }

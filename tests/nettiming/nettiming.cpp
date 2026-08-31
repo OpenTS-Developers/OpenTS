@@ -168,6 +168,34 @@ namespace
 	}
 
 
+	void Test_Retry_Decisions(void)
+	{
+		using namespace NetTiming;
+
+		RetransmitState state;
+		Expect("new packet sends immediately", Evaluate_Retry(state, 1000, 800, 2000, true, true) == RetryDecision::SEND);
+
+		state = {1000, 1000, 100, 1};
+		Expect("adaptive packet keeps captured RTO", Evaluate_Retry(state, 1099, 800, 2000, true, true) == RetryDecision::WAIT);
+		Expect("adaptive packet sends at captured RTO", Evaluate_Retry(state, 1100, 800, 2000, true, true) == RetryDecision::SEND);
+
+		state = {1000, 1100, 100, 2};
+		Expect("adaptive retry waits through backoff", Evaluate_Retry(state, 1299, 800, 2000, true, true) == RetryDecision::WAIT);
+		Expect("adaptive retry sends after backoff", Evaluate_Retry(state, 1300, 800, 2000, true, true) == RetryDecision::SEND);
+
+		state = {1000, 1000, 100, 4};
+		Expect("fixed channel uses current retry delay", Evaluate_Retry(state, 1399, 400, 2000, true, false) == RetryDecision::WAIT);
+		Expect("fixed channel does not back off", Evaluate_Retry(state, 1400, 400, 2000, true, false) == RetryDecision::SEND);
+
+		state = {1000, 1900, 100, 1};
+		Expect("connection timeout wins over retry", Evaluate_Retry(state, 3000, 100, 2000, true, true) == RetryDecision::TIMED_OUT);
+		Expect("disabled connection timeout still retries", Evaluate_Retry(state, 3000, 100, 2000, false, true) == RetryDecision::SEND);
+
+		state = {0xffffff00u, 0xfffffff0u, 100, 1};
+		Expect("retry decision handles clock wrap", Evaluate_Retry(state, 0x00000054u, 800, 2000, true, true) == RetryDecision::SEND);
+	}
+
+
 	void Test_Loss_Jitter_And_Reordering(void)
 	{
 		using namespace NetTiming;
@@ -216,6 +244,7 @@ int main(void)
 	Test_Rtt_Estimator();
 	Test_Clock_And_Wrap();
 	Test_Retransmit_Backoff();
+	Test_Retry_Decisions();
 	Test_Loss_Jitter_And_Reordering();
 
 	if (Failures != 0) {

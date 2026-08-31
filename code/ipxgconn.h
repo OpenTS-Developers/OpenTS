@@ -166,6 +166,8 @@ class IPXGlobalConnClass : public IPXConnClass
 		// stored in the extra buffer within the Queue.
 		//.....................................................................
 		virtual int Send (char *buf, int buflen, void *extrabuf, int extralen) override;
+		virtual bool Adaptive_Timing_Enabled(void) const override {return(false);}
+
 		//.....................................................................
 		// This routine is overloaded from SequencedConnClass, because the
 		// Global Connection needs to ACK its packets differently from the
