@@ -174,7 +174,8 @@ static void Spawner_Seat_Humans(void)
 /// </summary>
 static void Spawner_Seat_Computers(void)
 {
-	static char const * const _ai_names[DIFF_COUNT] = { "Easy AI", "Medium AI", "Hard AI" };
+	// A seat played at the gentlest of the rules' tables is the hardest opponent to beat.
+	static char const * const _ai_names[DIFF_COUNT] = { "Hard AI", "Medium AI", "Easy AI" };
 
 	for (int index = SpawnConfig.HumanCount; index < SpawnerConfigClass::SLOT_COUNT; index++) {
 		SpawnerConfigClass::SlotType const & seat = SpawnConfig.Slots[index];

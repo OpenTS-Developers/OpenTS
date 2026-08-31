@@ -282,8 +282,8 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 
 
 /// <summary>
-/// The difficulty a seat is played at. A client may offer more easy settings than the game
-/// holds, and any easier request comes to the easiest one it has.
+/// The difficulty a seat is played at. A client may offer gentler settings than the game
+/// holds, and any gentler request comes to the gentlest opponent it has.
 /// </summary>
 /// <returns>The difficulty to play the seat at, or -1 for the session default.</returns>
 int SpawnerConfigClass::Playable_Handicap(int asked)
@@ -291,8 +291,12 @@ int SpawnerConfigClass::Playable_Handicap(int asked)
 	if (asked < 0) {
 		return(-1);
 	}
+	/*
+	 * The tables run the other way from the opponent they make: a seat played at the hardest
+	 * of them is the gentlest to play against, and that is what a gentler request comes to.
+	 */
 	if (asked > DIFF_HARD) {
-		return(DIFF_EASY);
+		return(DIFF_HARD);
 	}
 	return(asked);
 }

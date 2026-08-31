@@ -159,8 +159,8 @@ rather than plays. A match against other machines is refused as well when a pers
 unnamed, when two are named the same or given one color, and when a machine other than this
 one is given no port to answer on or no address to answer at.
 
-A difficulty easier than the three the game has is not refused: the seat is played at the
-easiest one the game does have.
+A difficulty gentler than the three the game has is not refused: the seat is played as the
+gentlest opponent the game does have.
 
 ## What the game does not take from a launch file
 
