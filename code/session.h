@@ -480,6 +480,7 @@ class SessionClass
 		//.....................................................................
 		int Create_Connections(void);
 		bool Am_I_Master(void);
+		int Master_Player_ID(void) const;
 		unsigned int Compute_Unique_ID(void);
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);

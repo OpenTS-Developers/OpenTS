@@ -186,7 +186,6 @@ class WinsockInterfaceClass {
 		**	Packet CRCs.
 		*/
 		virtual void Build_Packet_CRC(WinsockBufferType *packet);
-		virtual bool Passes_CRC_Check(WinsockBufferType *packet);
 		unsigned int Calculate_Packet_CRC(void const *buffer, int buffer_len) const;
 		void Record_Packet_Drop(PacketDropReasonType reason);
 

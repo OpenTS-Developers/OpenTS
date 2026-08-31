@@ -16,6 +16,7 @@ legacy latency selector are checked before use. Power, archive-target, repair,
 primary-factory, mission, idle, deploy, scatter, and sell commands require the
 affected object to still belong to their sender. A missing or destroyed object
 remains a no-op, while a captured object rejects its former owner's command.
+Timing changes require the deterministic master and bounded, aligned values.
 
 Public discovery remains public. In-game chat, progress, sign-off, ready, and
 kick controls require one unique roster endpoint: an exact IP and port, or one
