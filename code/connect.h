@@ -97,6 +97,7 @@
 ********************************* Includes **********************************
 */
 #include "combuf.h"
+#include "netadmit.h"
 
 /*
 ********************************** Defines **********************************
@@ -114,9 +115,9 @@ PacketID:		This is a unique numerical ID for this packet.  The Connection
 					sets this ID on all packets sent out.
 ---------------------------------------------------------------------------*/
 struct CommHeaderType {
-	unsigned short MagicNumber;
-	unsigned char Code;
-	unsigned int PacketID;
+	std::uint16_t MagicNumber;
+	std::uint8_t Code;
+	std::uint32_t PacketID;
 };
 #pragma pack(pop)
 
@@ -133,10 +134,10 @@ class ConnectionClass
 		These are the possible values for the Code field of the CommHeaderType:
 		.....................................................................*/
 		enum ConnectionEnum {
-			PACKET_DATA_ACK,    // this is a data packet requiring an ACK
-			PACKET_DATA_NOACK,  // this is a data packet not requiring an ACK
-			PACKET_ACK,         // this is an ACK for a packet
-			PACKET_COUNT        // for computational purposes
+			PACKET_DATA_ACK = static_cast<int>(NetAdmission::PacketCode::DATA_ACK),       // this is a data packet requiring an ACK
+			PACKET_DATA_NOACK = static_cast<int>(NetAdmission::PacketCode::DATA_NOACK),   // this is a data packet not requiring an ACK
+			PACKET_ACK = static_cast<int>(NetAdmission::PacketCode::ACK),                 // this is an ACK for a packet
+			PACKET_COUNT = static_cast<int>(NetAdmission::PacketCode::COUNT)              // for computational purposes
 		};
 
 		/*.....................................................................
@@ -157,7 +158,7 @@ class ConnectionClass
 		.....................................................................*/
 		virtual int Send_Packet (void * buf, int buflen, int ack_req);
 		virtual int Receive_Packet (void * buf, int buflen);
-		virtual int Get_Packet (void * buf, int * buflen);
+		virtual int Get_Packet (void * buf, int capacity, int * buflen);
 
 		/*.....................................................................
 		The main polling routine for the connection.  Should be called as often
@@ -192,6 +193,18 @@ class ConnectionClass
 		int Missed_Overall(void) const { return(MissedOverall); }
 		int Missed_Magic(void) const { return(MissedMagic); }
 
+		enum PacketDropReasonType {
+			CONNECTION_DROP_SHORT_HEADER,
+			CONNECTION_DROP_INVALID_CODE,
+			CONNECTION_DROP_INVALID_LENGTH,
+			CONNECTION_DROP_EMPTY_DATA,
+			CONNECTION_DROP_OVERSIZED_DATA,
+			CONNECTION_DROP_OUTPUT_TOO_SMALL,
+			CONNECTION_DROP_COUNT
+		};
+
+		unsigned int Dropped_Packets(PacketDropReasonType reason) const;
+
 		/*.....................................................................
 		The packet "queue"; this non-sequenced version isn't really much of
 		a queue, but more of a repository.
@@ -216,6 +229,11 @@ class ConnectionClass
 		.....................................................................*/
 		virtual int Send(char *buf, int buflen, void *extrabuf,
 			int extralen) = 0;
+		/// <summary>Returns whether this channel represents one peer with adaptive link timing.</summary>
+		virtual bool Adaptive_Timing_Enabled(void) const {return(true);}
+		void Record_Packet_Drop(PacketDropReasonType reason);
+		/// <summary>Maps a shared admission failure to this connection's stable counter.</summary>
+		void Record_Admission_Drop(NetAdmission::Error error, unsigned char code);
 
 		/*
 		 * This is the number of times a packet had to be transmitted again because no ACK
@@ -242,6 +260,7 @@ class ConnectionClass
 		 * match this connection's, meaning they came from some other product.
 		 */
 		int MissedMagic;
+		unsigned int DroppedPackets[CONNECTION_DROP_COUNT];
 
 		/*.....................................................................
 		This is the maximum packet length, including our own internal header.

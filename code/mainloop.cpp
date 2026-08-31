@@ -746,6 +746,7 @@ void Message_Input(KeyNumType &input)
 			/*
 			**	Network game: fill in a GlobalPacketType & send it.
 			*/
+			memset(&Session.GPacket, 0, sizeof(Session.GPacket));
 			Session.GPacket.Command = NET_MESSAGE;
 			strcpy (Session.GPacket.Name, Session.Players[0]->Name);
 			Session.GPacket.Message.Color = Session.ColorIdx;

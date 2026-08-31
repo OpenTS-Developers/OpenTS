@@ -53,9 +53,6 @@
  *   Build_Send_Packet -- Builds a big packet from a bunch of little ones. *
  *   Add_Uncompressed_Events -- adds uncompressed events to a packet       *
  *   Add_Compressed_Events -- adds compressed events to a packet           *
- *   Breakup_Receive_Packet -- Splits a big packet into little ones.       *
- *   Extract_Uncompressed_Events -- extracts events from a packet          *
- *   Extract_Compressed_Events -- extracts events from a packet            *
  *                                                                         *
  * DoList Management:                                                      *
  *   Execute_DoList -- Executes commands from the DoList                   *
@@ -125,6 +122,8 @@
 #include "msgbox.h"
 #include "msgloop.h"
 #include "netdlg.h"
+#include "netglobal.h"
+#include "netpacket.h"
 #include "netshare.h"
 #include "opents_build.h"
 #include "overlay.h"
@@ -170,6 +169,7 @@
 #include "special.hh"
 
 #include <algorithm>
+#include <array>
 #include <ctime>
 
 
@@ -268,6 +268,24 @@ BasicTimerClass<SystemTimerClass> SentFrameSyncTimer;
 FrameSyncStruct TheirFrameSync[MAX_PLAYERS - 1];
 unsigned short SentCommandCount;								// # cmds I've sent out
 
+static std::array<unsigned int, static_cast<std::size_t>(NetPacket::DecodeError::COUNT)>
+	NetworkPacketDrops = {};
+
+
+/// <summary>Records and rate-limits one stable event-packet rejection reason.</summary>
+void Record_Network_Packet_Drop(NetPacket::DecodeError error)
+{
+	std::size_t const index = static_cast<std::size_t>(error);
+	if (error == NetPacket::DecodeError::NONE || index >= NetworkPacketDrops.size()) {
+		return;
+	}
+
+	unsigned int const count = ++NetworkPacketDrops[index];
+	if (count == 1 || (count & (count - 1)) == 0) {
+		DebugString("Network event packet drop [%s]: %u\n", NetPacket::Error_Name(error), count);
+	}
+}
+
 
 
 /********************************* Prototypes *******************************/
@@ -278,7 +296,7 @@ static void Queue_AI_Normal(void);
 static void Queue_AI_Multiplayer(void);
 static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 	int resend_delta, int dialog_time, int timeout, char *multi_packet_buf,
-	int my_sent, FrameSyncStruct *their);
+	int multi_packet_max, int my_sent, FrameSyncStruct *their);
 static void Generate_Timing_Event(ConnManClass *net, int my_sent);
 static void Generate_Real_Timing_Event(ConnManClass *net, int my_sent);
 static void Generate_Process_Time_Event(ConnManClass *net);
@@ -297,7 +315,7 @@ static void Stop_Game(bool=false);
 BOOL CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 static void Close_Reconnect_Dialog(void);
 void Kick_Player_Now(ConnManClass *net, int kickee, FrameSyncStruct * their, bool error);
-void Cast_Kick_Vote(int kicker, int kickee);
+bool Cast_Kick_Vote(int kicker, int kickee);
 void Multiplayer_Debug_Print(bool noframecheck);
 
 //...........................................................................
@@ -309,9 +327,6 @@ int Add_Uncompressed_Events(void *buf, int bufsize, int frame_delay, int size,
 	int cap);
 int Add_Compressed_Events(void *buf, int bufsize, int frame_delay, int size,
 	int cap,  int & processed);
-static int Breakup_Receive_Packet(void *buf, int bufsize );
-int Extract_Uncompressed_Events(void *buf, int bufsize);
-int Extract_Compressed_Events(void *buf, int bufsize);
 
 //...........................................................................
 // DoList management:
@@ -746,7 +761,8 @@ static void Queue_AI_Multiplayer(void)
 		// Wait for the other guys
 		//.....................................................................
 		rc = Wait_For_Players (1, net, _timings[Session.Type].MIXFILE_RESEND_DELTA, _timings[Session.Type].FRAMESYNC_DLG_TIME,
-			_timings[Session.Type].MIXFILE_TIMEOUT, multi_packet_buf, SentCommandCount, TheirFrameSync);
+			_timings[Session.Type].MIXFILE_TIMEOUT, multi_packet_buf, multi_packet_max,
+			SentCommandCount, TheirFrameSync);
 
 		if (rc != RC_NORMAL) {
 			if (Session.Type == GAME_INTERNET){
@@ -869,7 +885,7 @@ static void Queue_AI_Multiplayer(void)
 	TIMER_SECOND, /// (Session.MaxAhead << 3),
 	std::max((int) net->Response_Time() * 3, _timings[Session.Type].FRAMESYNC_TIMEOUT ),
 	_timings[Session.Type].MIXFILE_TIMEOUT,
-	multi_packet_buf, SentCommandCount, TheirFrameSync);
+	multi_packet_buf, multi_packet_max, SentCommandCount, TheirFrameSync);
 
 	if (rc != RC_NORMAL) {
 		DebugString("Wait_For_Players returned %d\n", rc);
@@ -1038,7 +1054,7 @@ void Wait_For_End_Of_Queue(void)
 		message_limit = MAX_EVENTS;
 
 		while ( (messages_this_loop++ < message_limit) &&
-			net->Get_Private_Message (multi_packet_buf, &packetlen, &id) ) {
+			net->Get_Private_Message (multi_packet_buf, multi_packet_max, &packetlen, &id) ) {
 
 			Keyboard->Check();
 
@@ -1134,7 +1150,7 @@ void Wait_For_End_Of_Queue(void)
 static int SyncWaitElapsed;		/// how long Wait_For_Players has been waiting
 static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 	int resend_delta, int dialog_time, int timeout, char *multi_packet_buf,
-	int my_sent, FrameSyncStruct *their)
+	int multi_packet_max, int my_sent, FrameSyncStruct *their)
 {
 	//........................................................................
 	// Variables for sending, receiving & parsing packets:
@@ -1243,7 +1259,12 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 			 * ..................................................................
 			 */
 			for (int i = 0; i < Session.Players.Count(); i++) {
-				int votes = Session.KickVoteCount[Session.Players[i]->Player.ID];
+				int const player_id = Session.Players[i]->Player.ID;
+				if (player_id < 0 || player_id >= MAX_PLAYERS) {
+					continue;
+				}
+
+				int votes = Session.KickVoteCount[player_id];
 				if (votes >= Session.Players.Count() - 1) {
 					DebugString("Kicking player %s from the game due to %d votes\n", Session.Players[i]->Name, votes);
 					if (i == 0) {
@@ -1253,7 +1274,7 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 						}
 						return(RC_CANCEL);
 					}
-					Kick_Player_Now(net, net->Connection_Index(Session.Players[i]->Player.ID), their, true);
+					Kick_Player_Now(net, net->Connection_Index(player_id), their, true);
 				}
 			}
 
@@ -1308,7 +1329,7 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 		message_limit = MAX_EVENTS;
 
 		while ( (messages_this_loop++ < message_limit) &&
-			net->Get_Private_Message (multi_packet_buf, &packetlen, &id) ) {
+			net->Get_Private_Message (multi_packet_buf, multi_packet_max, &packetlen, &id) ) {
 
 			Keyboard->Check();
 
@@ -1987,26 +2008,34 @@ static void Send_FrameSync(ConnManClass *net, int cmd_count)
 static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	char *multi_packet_buf, int id, int packetlen, FrameSyncStruct *their, BasicTimerClass<SystemTimerClass> *timer)
 {
-	EventClass *event;
-	int index;
 	RetcodeType retcode = RC_NORMAL;
-	int i;
-	int frame;
+	NetPacket::Encoding const encoding = Session.CommProtocol == COMM_PROTOCOL_SINGLE_NO_COMP
+		? NetPacket::Encoding::UNCOMPRESSED : NetPacket::Encoding::COMPRESSED;
+	std::span<std::byte const> const packet(
+		reinterpret_cast<std::byte const *>(multi_packet_buf),
+		packetlen > 0 ? static_cast<std::size_t>(packetlen) : 0);
+	NetPacket::DecodeResult decoded = NetPacket::Decode_Event_Packet(packet, encoding, id);
+	if (!decoded.Succeeded() || !decoded.HasEnvelope) {
+		Record_Network_Packet_Drop(decoded.Succeeded()
+			? NetPacket::DecodeError::INVALID_PREFIX : decoded.Failure.Code);
+		return(RC_NORMAL);
+	}
 
-	//------------------------------------------------------------------------
-	// Get an event ptr to the incoming message
-	//------------------------------------------------------------------------
-	event = (EventClass *)multi_packet_buf;
+	EventClass const & event = decoded.Envelope;
 
 	//------------------------------------------------------------------------
 	// Get the index of the sender
 	//------------------------------------------------------------------------
-	index = net->Connection_Index(id);
+	int const index = net->Connection_Index(id);
+	if (index < 0 || index >= net->Num_Connections()) {
+		Record_Network_Packet_Drop(NetPacket::DecodeError::INVALID_CONNECTION);
+		return(RC_NORMAL);
+	}
 
 	//------------------------------------------------------------------------
 	//	Compute the other player's frame # (at the time this packet was sent)
 	//------------------------------------------------------------------------
-	frame = (event->Frame - event->Data.FrameInfo.Delay);
+	int const frame = event.Frame - event.Data.FrameInfo.Delay;
 	if (their[index].frame < frame) {
 
 		//.....................................................................
@@ -2032,29 +2061,30 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	// Extract the other player's CommandCount.  This count will include
 	// the commands in this packet, if there are any.
 	//------------------------------------------------------------------------
-	if (event->Data.FrameInfo.CommandCount > their[index].sent) {
+	if (event.Data.FrameInfo.CommandCount > their[index].sent) {
 
-		if ( abs((int)(their[index].sent - event->Data.FrameInfo.CommandCount)) > 500) {
+		if ( abs((int)(their[index].sent - event.Data.FrameInfo.CommandCount)) > 500) {
 			FILE *fp;
 			fp = fopen("badcount.txt","wt");
 			if (fp) {
-				fprintf(fp,"Event Type:%s\n",EventClass::EventNames[event->Type]);
+				fprintf(fp,"Event Type:%s\n",EventClass::EventNames[event.Type]);
 				fprintf(fp,"Frame:%d  ID:%d  IsExec:%d\n",
-					event->Frame,
-					event->ID,
-					event->IsExecuted);
-				if (event->Type != EventClass::FRAMEINFO) {
+					event.Frame,
+					event.ID,
+					event.IsExecuted);
+				if (event.Type != EventClass::FRAMEINFO) {
 					fprintf(fp,"!!!!!!!!! bad bug, bad bug !!!!!!!!!\n");//fprintf(fp,"Wrong Event Type!\n");
 				} else {
 					fprintf(fp,"CRC:%x  CommandCount:%d  Delay:%d\n",
-						event->Data.FrameInfo.CRC,
-						event->Data.FrameInfo.CommandCount,
-						event->Data.FrameInfo.Delay);
+						event.Data.FrameInfo.CRC,
+						event.Data.FrameInfo.CommandCount,
+						event.Data.FrameInfo.Delay);
 				}
+				fclose(fp);
 			}
 		}
 
-		their[index].sent = event->Data.FrameInfo.CommandCount;
+		their[index].sent = event.Data.FrameInfo.CommandCount;
 	}
 
 	//------------------------------------------------------------------------
@@ -2063,28 +2093,30 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	// - Increment our commands-received counter by the number of non-
 	//   FRAMEINFO packets received
 	//------------------------------------------------------------------------
-	if (event->Type != EventClass::FRAMESYNC) {
-		//.....................................................................
-		// Break up the packet into its component events.
-		//.....................................................................
-		i = Breakup_Receive_Packet( multi_packet_buf, packetlen);
-		//.....................................................................
-		// Compute the actual # commands in the packet by subtracting off the
-		// FRAMEINFO event
-		//.....................................................................
-		if ( (event->Type==EventClass::FRAMEINFO) && (i > 0)) {
-			i--;
+	if (event.Type != EventClass::FRAMESYNC) {
+		for (NetPacket::DecodedEvent const & source : decoded.Events) {
+			EventClass queued = source.Event;
+			if (queued.Type == EventClass::ADDPLAYER) {
+				queued.Data.Variable.Pointer = NULL;
+				if (!source.AddPlayerData.empty()) {
+					queued.Data.Variable.Pointer = new char[source.AddPlayerData.size()];
+					memcpy(queued.Data.Variable.Pointer, source.AddPlayerData.data(),
+						source.AddPlayerData.size());
+				}
+			}
+			DoList.push_back(queued);
 		}
 
-		their[index].recv += (i & 0xFFFF); /// This mask should not be necessary.
+		std::size_t const commands = decoded.Events.empty() ? 0 : decoded.Events.size() - 1;
+		their[index].recv += static_cast<unsigned short>(commands);
 	}
 
 	//------------------------------------------------------------------------
 	// If the event was a FRAMESYNC packet, there will be no commands to add,
 	// but we must check the ScenarioCRC value.
 	//------------------------------------------------------------------------
-	else if (event->Type == EventClass::FRAMESYNC) {
-		if (event->Data.FrameInfo.CRC != ScenarioCRC) {
+	else if (event.Type == EventClass::FRAMESYNC) {
+		if (event.Data.FrameInfo.CRC != ScenarioCRC) {
 			return(RC_SCENARIO_MISMATCH);
 		}
 		their[index].timing = *timer;
@@ -2417,7 +2449,109 @@ void Draw_Sync_Bars(HWND window)
 	}
 }
 
-void Cast_Kick_Vote(int kicker, int kickee);
+bool Cast_Kick_Vote(int kicker, int kickee);
+
+
+/// <summary>
+/// Finds a current session player by the stable ID used in the kick-vote arrays.
+/// </summary>
+/// <param name="player">The player ID to find.</param>
+/// <returns>The matching current player, or NULL when the ID is not active.</returns>
+static NodeNameType * Current_Player_From_ID(int player)
+{
+	if (player < 0 || player >= MAX_PLAYERS) {
+		return(NULL);
+	}
+
+	for (int index = 0; index < Session.Players.Count(); index++) {
+		NodeNameType * current = Session.Players[index];
+		if (current != NULL && current->Player.ID == player) {
+			return(current);
+		}
+	}
+	return(NULL);
+}
+
+
+/// <summary>
+/// Reports whether one player has already cast a counted vote against another.
+/// </summary>
+static bool Kick_Vote_Already_Cast(int kicker, int kickee)
+{
+	if (kicker < 0 || kicker >= MAX_PLAYERS || kickee < 0 || kickee >= MAX_PLAYERS) {
+		return(false);
+	}
+
+	int const votes = Session.KickVoteCount[kickee];
+	if (votes < 0 || votes > MAX_PLAYERS) {
+		return(false);
+	}
+	for (int index = 0; index < votes; index++) {
+		if (Session.KickVoteWho[kickee][index] == kicker) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Reports whether the bounded pending queue already contains this exact vote.
+/// </summary>
+static bool Kick_Proposal_Already_Pending(int kicker, int kickee)
+{
+	for (int index = 0; index < Session.KickProposals.Count(); index++) {
+		GlobalPacketType const * proposal = Session.KickProposals[index];
+		if (proposal != NULL
+			&& proposal->Kick.KickerID == static_cast<unsigned int>(kicker)
+			&& proposal->Kick.KickeeID == static_cast<unsigned int>(kickee)) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
+/// <summary>
+/// Removes a departing player as both a kick target and a voter, including pending proposals.
+/// </summary>
+/// <param name="player">The stable player ID leaving the current session.</param>
+void Forget_Kick_Player(int player)
+{
+	if (player < 0 || player >= MAX_PLAYERS) {
+		return;
+	}
+
+	for (int index = Session.KickProposals.Count() - 1; index >= 0; index--) {
+		GlobalPacketType * proposal = Session.KickProposals[index];
+		if (proposal == NULL
+			|| proposal->Kick.KickerID == static_cast<unsigned int>(player)
+			|| proposal->Kick.KickeeID == static_cast<unsigned int>(player)) {
+			delete proposal;
+			Session.KickProposals.Delete_Index(index);
+		}
+	}
+
+	for (int target = 0; target < MAX_PLAYERS; target++) {
+		int retained[MAX_PLAYERS];
+		int retained_count = 0;
+		int const votes = Session.KickVoteCount[target];
+		if (target != player && votes >= 0 && votes <= MAX_PLAYERS) {
+			for (int index = 0; index < votes; index++) {
+				int const voter = Session.KickVoteWho[target][index];
+				if (voter != player && Current_Player_From_ID(voter) != NULL) {
+					retained[retained_count++] = voter;
+				}
+			}
+		}
+
+		memset(Session.KickVoteWho[target], 0xFF, sizeof(Session.KickVoteWho[target]));
+		if (retained_count > 0) {
+			memcpy(Session.KickVoteWho[target], retained, retained_count * sizeof(retained[0]));
+		}
+		Session.KickVoteCount[target] = retained_count;
+	}
+}
 
 /// <summary>
 /// Trims the message list box and scrolls it to the end.
@@ -2466,32 +2600,67 @@ void Propose_Kick_Player(HWND window, int id)
 		return;
 	}
 
+	int const kicker = Session.Players[0]->Player.ID;
+	int const kickee = Session.Players[id]->Player.ID;
+	if (Current_Player_From_ID(kicker) == NULL || Current_Player_From_ID(kickee) == NULL
+		|| Kick_Vote_Already_Cast(kicker, kickee)) {
+		return;
+	}
+
 	GlobalPacketType gpacket;
-	gpacket.Command = NET_PROPOSE_KICK;
-	strncpy(gpacket.Name, Session.Players[0]->Name, ARRAY_SIZE(gpacket.Name));
-	gpacket.Kick.KickerID = Session.Players[0]->Player.ID;
-	gpacket.Kick.KickeeID = Session.Players[id]->Player.ID;
+	NetGlobal::Initialize_Packet(gpacket, NET_PROPOSE_KICK);
+	strncpy(gpacket.Name, Session.Players[0]->Name, ARRAY_SIZE(gpacket.Name) - 1);
+	gpacket.Name[ARRAY_SIZE(gpacket.Name) - 1] = '\0';
+	gpacket.Kick.KickerID = static_cast<unsigned int>(kicker);
+	gpacket.Kick.KickeeID = static_cast<unsigned int>(kickee);
 
 	for (int i = 1; i < Session.Players.Count(); i++) {
 		DebugString("Sending kick proposal to %s\n", Session.Players[i]->Name);
 		Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &Session.Players[i]->Address);
 	}
 
-	Cast_Kick_Vote(Session.Players[0]->Player.ID, Session.Players[id]->Player.ID);
+	Cast_Kick_Vote(kicker, kickee);
 }
 
 
 /// <summary>
 /// Handles a kick proposal arriving from another player.
-/// The packet is copied and queued up on the session, so that the wait-for-players loop
-/// can act on the proposal when it next gets the chance.
+/// The canonical voter and target are copied into a bounded, deduplicated queue so that the
+/// wait-for-players loop can act on the proposal when it next gets the chance.
 /// </summary>
-/// <param name="packet">The global packet that carries the kick proposal.</param>
-void Kick_Packet_Received(GlobalPacketType & packet, IPXAddressClass & address)
+/// <param name="kicker">The current member matched from the packet's source address.</param>
+/// <param name="kickee">The current member that voter wants removed.</param>
+/// <returns>NONE when queued, otherwise the reason the proposal was refused.</returns>
+NetGlobal::DecodeError Kick_Packet_Received(int kicker, int kickee)
 {
-	GlobalPacketType *newpacket = new GlobalPacketType;
-	memcpy(newpacket, &packet, sizeof(*newpacket));
-	Session.KickProposals.Add(newpacket);
+	NodeNameType * kicker_player = Current_Player_From_ID(kicker);
+	NodeNameType * kickee_player = Current_Player_From_ID(kickee);
+	if (kicker_player == NULL || kickee_player == NULL) {
+		return(NetGlobal::DecodeError::INVALID_KICK_PLAYER);
+	}
+	if (kicker == kickee) {
+		return(NetGlobal::DecodeError::SELF_KICK);
+	}
+	if (Kick_Vote_Already_Cast(kicker, kickee)
+		|| Kick_Proposal_Already_Pending(kicker, kickee)) {
+		return(NetGlobal::DecodeError::DUPLICATE_KICK_PROPOSAL);
+	}
+	if (Session.KickProposals.Count() >= MAX_PLAYERS * MAX_PLAYERS) {
+		return(NetGlobal::DecodeError::KICK_PROPOSAL_QUEUE_FULL);
+	}
+
+	GlobalPacketType * newpacket = new GlobalPacketType;
+	NetGlobal::Initialize_Packet(*newpacket, NET_PROPOSE_KICK);
+	strncpy(newpacket->Name, kicker_player->Name, ARRAY_SIZE(newpacket->Name) - 1);
+	newpacket->Name[ARRAY_SIZE(newpacket->Name) - 1] = '\0';
+	newpacket->Kick.KickerID = static_cast<unsigned int>(kicker);
+	newpacket->Kick.KickeeID = static_cast<unsigned int>(kickee);
+	if (!Session.KickProposals.Add(newpacket)) {
+		delete newpacket;
+		return(NetGlobal::DecodeError::KICK_PROPOSAL_QUEUE_FULL);
+	}
+
+	return(NetGlobal::DecodeError::NONE);
 }
 
 
@@ -2503,34 +2672,40 @@ void Kick_Packet_Received(GlobalPacketType & packet, IPXAddressClass & address)
 /// </summary>
 /// <param name="kicker">Player ID of the one casting the vote.</param>
 /// <param name="kickee">Player ID of the one being voted against.</param>
-void Cast_Kick_Vote(int kicker, int kickee)
+/// <returns>True when a new bounded vote was recorded.</returns>
+bool Cast_Kick_Vote(int kicker, int kickee)
 {
 	char buffer[256];
+	NodeNameType * kicker_player = Current_Player_From_ID(kicker);
+	NodeNameType * kickee_player = Current_Player_From_ID(kickee);
+	if (kicker_player == NULL || kickee_player == NULL || kicker == kickee) {
+		return(false);
+	}
+	if (Kick_Vote_Already_Cast(kicker, kickee)) {
+		return(false);
+	}
 
 	int votes = Session.KickVoteCount[kickee];
-	for (int i = 0; i < votes; i++) {
-		if (Session.KickVoteWho[kickee][i] == kicker) {
-			return;
-		}
+	if (votes < 0 || votes >= MAX_PLAYERS) {
+		return(false);
 	}
 
 	Session.KickVoteWho[kickee][votes] = kicker;
 	Session.KickVoteCount[kickee]++;
 
 	if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
-		char const * kicker_name = Ipx.Connection_Name(kicker);
-		if (kicker_name == NULL) {
-			kicker_name = Session.Players[0]->Name;
-		}
-
-		DebugString("Player %s votes to kick player %s from the game\n", kicker_name, Ipx.Connection_Name(kickee));
-		sprintf(buffer, Fetch_String(TXT_RECONNECT_KICK_RECEIVED), kicker_name, Ipx.Connection_Name(kickee));
+		DebugString("Player %s votes to kick player %s from the game\n",
+			kicker_player->Name, kickee_player->Name);
+		snprintf(buffer, sizeof(buffer), Fetch_String(TXT_RECONNECT_KICK_RECEIVED),
+			kicker_player->Name, kickee_player->Name);
 
 		HWND topwindow = WS_Top_Window();
 		HWND listbox = GetDlgItem(topwindow, IDC_DISCONNECT_MESSAGES);
 		ListBox_AddString(listbox, buffer);
 		ListBox_Trim(listbox);
 	}
+
+	return(true);
 }
 
 
@@ -2724,10 +2899,9 @@ void Kick_Player_Now(ConnManClass *net, int kickee, FrameSyncStruct * their, boo
 
 	for (int i = kickee; i < net->Num_Connections() - 1; i++) {
 		their[i] = their[i+1];
-		Session.KickVoteCount[i] = Session.KickVoteCount[i+1];
-		memcpy(Session.KickVoteWho[i], Session.KickVoteWho[i+1], sizeof(Session.KickVoteWho[i]));
 	}
 
+	Forget_Kick_Player(id);
 	Destroy_Connection(id, error);
 }
 
@@ -3350,305 +3524,6 @@ static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay,
 	return(size);
 
 }	// end of Add_Compressed_Events
-
-
-/***************************************************************************
- * Breakup_Receive_Packet -- Splits a big packet into little ones.         *
- *                                                                         *
- * INPUT:                                                                  *
- *      buf         buffer to break up                                     *
- *      bufsize      length of buffer                                      *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      # events added to queue, -1 if fatal error (queue is full)         *
- *    (return value includes any FRAMEINFO packets encountered;            *
- *      FRAMESYNC's are ignored)                                           *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   11/21/1995 BRR : Created.                                             *
- *=========================================================================*/
-static int Breakup_Receive_Packet(void *buf, int bufsize )
-{
-	int count = 0;
-
-	/*
-	**	is there enough leftover for another record
-	*/
-	switch (Session.CommProtocol) {
-		case (COMM_PROTOCOL_SINGLE_NO_COMP):
-			count = Extract_Uncompressed_Events(buf, bufsize);
-			break;
-
-		default:
-			count = Extract_Compressed_Events(buf, bufsize);
-			break;
-	}
-
-	return(count);
-
-}	/* end of Breakup_Receive_Packet */
-
-
-/***************************************************************************
- * Extract_Uncompressed_Events -- extracts events from a packet            *
- *                                                                         *
- * INPUT:                                                                  *
- *      buf         buffer containing events to extract                    *
- *      bufsize      length of 'buf'                                       *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      # events extracted                                                 *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   11/21/1995 DRD : Created.                                             *
- *=========================================================================*/
-static int Extract_Uncompressed_Events(void *buf, int bufsize)
-{
-	int count = 0;
-	int pos = 0;
-	int leftover = bufsize;
-	EventClass *event;
-
-	//------------------------------------------------------------------------
-	// Loop until there are no more events in the packet
-	//------------------------------------------------------------------------
-	while (leftover >= sizeof(EventClass) ) {
-
-		event = (EventClass *)(((char *)buf) + pos);
-
-		//.....................................................................
-		// add event to the DoList, only if it's not a FRAMESYNC
-		// (but FRAMEINFO's do get added.)
-		//.....................................................................
-		if (event->Type != EventClass::FRAMESYNC) {
-			event->IsExecuted = 0;
-
-			//..................................................................
-			// Special processing for variable-sized events
-			//..................................................................
-			if (event->Type == EventClass::ADDPLAYER) {
-				event->Data.Variable.Pointer = new char[event->Data.Variable.Size];
-				memcpy (event->Data.Variable.Pointer,
-					((char *)buf) + sizeof(EventClass),
-					event->Data.Variable.Size);
-
-				pos += event->Data.Variable.Size;
-				leftover -= event->Data.Variable.Size;
-			}
-
-			DoList.push_back( *event );
-
-			//..................................................................
-			// Keep count of how many events we add to the queue
-			//..................................................................
-			count++;
-		}
-
-		//.....................................................................
-		// Point to the next position in the buffer; decrement our 'leftover'
-		//.....................................................................
-		pos += sizeof(EventClass);
-		leftover -= sizeof(EventClass);
-	}
-
-	return(count);
-
-}	// end of Extract_Uncompressed_Events
-
-
-/***************************************************************************
- * Extract_Compressed_Events -- extracts events from a packet              *
- *                                                                         *
- * INPUT:                                                                  *
- *      buf         buffer containing events to extract                    *
- *      bufsize      length of 'buf'                                       *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      # events extracted                                                 *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   11/21/1995 DRD : Created.                                             *
- *=========================================================================*/
-static int Extract_Compressed_Events(void *buf, int bufsize)
-{
-	int pos = 0;                // current buffer parsing position
-	int leftover = bufsize;     // # bytes left to process
-	EventClass *event;          // event ptr for parsing buffer
-	int count = 0;              // # events processed
-	int datasize = 0;           // size of data to copy
-	EventClass eventdata;       // stores Frame, ID, etc
-	unsigned char numunits = 0; // # units stored in compressed MegaMissions
-
-	//------------------------------------------------------------------------
-	// Clear work event structure
-	//------------------------------------------------------------------------
-	memset (&eventdata, 0, sizeof(EventClass));
-
-	//------------------------------------------------------------------------
-	// Assume the first event is a FRAMEINFO event
-	// Init 'datasize' to the amount of data to copy, minus the EventType value
-	// For the 1st packet only, this will include all info before the Data
-	// union, plus the size of the FrameInfo structure, minus the EventType size.
-	//------------------------------------------------------------------------
-	datasize = (offsetof(EventClass, Data) +
-		size_of(EventClass, Data.FrameInfo)) - size_of(EventClass, Type);
-	event = (EventClass *)(((char *)buf) + pos);
-
-	while ((unsigned)leftover >= (datasize + size_of(EventClass, Type)) ) {
-
-		//.....................................................................
-		// add event to the DoList, only if it's not a FRAMESYNC
-		// (but FRAMEINFO's do get added.)
-		//.....................................................................
-		if (event->Type != EventClass::FRAMESYNC) {
-			//..................................................................
-			// initialize the common data from the FRAMEINFO event
-			// keeping IsExecuted 0
-			//..................................................................
-			if (event->Type == EventClass::FRAMEINFO) {
-				eventdata.Frame = event->Frame;
-				eventdata.ID = event->ID;
-
-				//...............................................................
-				// Adjust position past the common data
-				//...............................................................
-				pos += (offsetof(EventClass, Data) -
-						 size_of(EventClass, Type));
-				leftover -= (offsetof(EventClass, Data) -
-								size_of(EventClass, Type));
-			}
-			//..................................................................
-			// if MEGAMISSION event get the number of units (events to generate)
-			//..................................................................
-			else if (event->Type == EventClass::MEGAMISSION) {
-				numunits = *(((unsigned char *)buf) + pos + sizeof(eventdata.Type));
-				pos += sizeof(numunits);
-				leftover -= sizeof(numunits);
-			}
-
-			//..................................................................
-			// clear the union data portion of the event
-			//..................................................................
-			memset (&eventdata.Data, 0, sizeof(eventdata.Data));
-			eventdata.Type = event->Type;
-			datasize = EventClass::EventLength[ eventdata.Type ];
-
-			switch (eventdata.Type) {
-				case (EventClass::RESPONSE_TIME):
-					memcpy ( &eventdata.Data.FrameInfo.Delay,
-						((char *)buf) + pos + size_of(EventClass, Type),
-						datasize );
-					break;
-
-				case (EventClass::ADDPLAYER):
-
-					memcpy ( &eventdata.Data.Variable.Size,
-						((char *)buf) + pos + size_of(EventClass, Type),
-						datasize );
-
-					eventdata.Data.Variable.Pointer =
-						new char[eventdata.Data.Variable.Size];
-					memcpy (eventdata.Data.Variable.Pointer,
-						((char *)buf) + pos + size_of(EventClass, Type) + datasize,
-						eventdata.Data.Variable.Size);
-
-					pos += eventdata.Data.Variable.Size;
-					leftover -= eventdata.Data.Variable.Size;
-
-					break;
-
-				case (EventClass::MEGAMISSION):
-					memcpy ( &eventdata.Data.MegaMission,
-						((char *)buf) + pos + size_of(EventClass, Type),
-						datasize );
-
-					if (numunits > 1) {
-						pos += (datasize + size_of(EventClass, Type));
-						leftover -= (datasize + size_of(EventClass, Type));
-						datasize = sizeof(eventdata.Data.MegaMission.Whom);
-
-						while (numunits) {
-
-							DoList.push_back( eventdata );
-
-							//......................................................
-							// Keep count of how many events we add to the queue
-							//......................................................
-							count++;
-							numunits--;
-							memcpy ( &eventdata.Data.MegaMission.Whom,
-								((char *)buf) + pos, datasize );
-
-							//......................................................
-							// if one unit left fall thru to normal code
-							//......................................................
-							if (numunits == 1) {
-								datasize -= size_of(EventClass, Type);
-								break;
-							}
-							else {
-								pos += datasize;
-								leftover -= datasize;
-							}
-						}
-					}
-					break;
-
-				default:
-					memcpy ( &eventdata.Data,
-						((char *)buf) + pos + size_of(EventClass, Type),
-						datasize );
-					break;
-			}
-
-			DoList.push_back( eventdata );
-
-			//..................................................................
-			// Keep count of how many events we add to the queue
-			//..................................................................
-			count++;
-
-			pos += (datasize + size_of(EventClass, Type));
-			leftover -= (datasize + size_of(EventClass, Type));
-
-			if (leftover) {
-				event = (EventClass *)(((char *)buf) + pos);
-				datasize = EventClass::EventLength[ event->Type ];
-				if (event->Type == EventClass::MEGAMISSION) {
-					datasize += sizeof(numunits);
-				}
-			}
-		}
-		//.....................................................................
-		// FRAMESYNC event: This >should< be the only event in the buffer,
-		// and it will be uncompressed.
-		//.....................................................................
-		else {
-			pos += (datasize + size_of(EventClass, Type));
-			leftover -= (datasize + size_of(EventClass, Type));
-			event = (EventClass *)(((char *)buf) + pos);
-
-			//..................................................................
-			// size of FRAMESYNC event - EventType size
-			//..................................................................
-			datasize = (offsetof(EventClass, Data) +
-							size_of(EventClass, Data.FrameInfo)) -
-							size_of(EventClass, Type);
-		}
-	}
-
-	return(count);
-
-}	// end of Extract_Compressed_Events
 
 
 /***************************************************************************
