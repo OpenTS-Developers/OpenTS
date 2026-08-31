@@ -1,0 +1,46 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#pragma once
+
+#include "nettime.h"
+
+
+namespace NetTiming
+{
+	constexpr Milliseconds MINIMUM_RTO = 100;
+	constexpr Milliseconds MAXIMUM_RTO = 2000;
+	constexpr Milliseconds MINIMUM_CONNECTION_TIMEOUT = 2000;
+	constexpr Milliseconds MAXIMUM_CONNECTION_TIMEOUT = 30000;
+
+	class RttEstimator
+	{
+		public:
+			void Reset(void);
+			bool Add_Sample(Milliseconds round_trip, bool retransmitted = false);
+			bool Acknowledge(Milliseconds sent_at, unsigned int transmission_count, MillisecondClock const & clock = Default_Clock());
+
+			bool Has_Sample(void) const {return(Initialized);}
+			Milliseconds Smoothed_Rtt(void) const {return(SmoothedRtt);}
+			Milliseconds Rtt_Variation(void) const {return(RttVariation);}
+			Milliseconds Retransmit_Timeout(void) const {return(RetransmitTimeout);}
+
+		private:
+			bool Initialized = false;
+			Milliseconds SmoothedRtt = 0;
+			Milliseconds RttVariation = 0;
+			Milliseconds RetransmitTimeout = MINIMUM_RTO;
+	};
+
+	Milliseconds Connection_Timeout(Milliseconds smoothed_rtt);
+	Milliseconds Retransmit_Delay(Milliseconds base_rto, unsigned int prior_retransmissions, Milliseconds maximum_delay = MAXIMUM_RTO);
+	bool Retransmit_Is_Due(Milliseconds last_send, Milliseconds now, Milliseconds base_rto,
+		unsigned int prior_retransmissions, Milliseconds maximum_delay = MAXIMUM_RTO);
+}
