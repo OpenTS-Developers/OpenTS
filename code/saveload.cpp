@@ -618,8 +618,12 @@ static bool Put_All(IStream *stream, int save_net)
 		return(false);
 	}
 
-	if (Session.Type == GAME_SKIRMISH) {
-		DebugString("Writing Skirmish Session.Options\n");
+	/*
+	 * A campaign takes its options from the mission; every other kind was told them once,
+	 * when the game was set up, so the save is the only place a resume can find them.
+	 */
+	if (Session.Type != GAME_NORMAL) {
+		DebugString("Writing Session.Options\n");
 		if (!Session.Options.Save(stream)) {
 			DebugString("\t***** FAILED!\n");
 			return(false);
@@ -868,8 +872,8 @@ static bool Get_All(IStream *stream, bool save_net)
 		return(false);
 	}
 
-	if (Session.Type == GAME_SKIRMISH) {
-		DebugString("Reading Skirmish Session.Options\n");
+	if (Session.Type != GAME_NORMAL) {
+		DebugString("Reading Session.Options\n");
 		if (!Session.Options.Load(stream)) {
 			DebugString("\t***** FAILED!\n");
 			return(false);
