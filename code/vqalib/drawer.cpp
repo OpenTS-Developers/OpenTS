@@ -73,21 +73,21 @@
 #include	"video.h"
 
 //forward declarations
-_STATIC long Select_Frame(VQAHandleP *vqap);
+_STATIC VQAErrorType Select_Frame(VQAHandleP *vqap);
 _STATIC void Prepare_Frame(VQAHandleP *vqap);
 
-long DrawFrame_MCGABuf(VQAHandle *vqa);
-long PageFlip_MCGABuf(VQAHandle *vqa);
-long DrawFrame_MCGA(VQAHandle *vqa);
-long PageFlip_MCGA(VQAHandle *vqa);
+VQAErrorType DrawFrame_MCGABuf(VQAHandle *vqa);
+VQAErrorType PageFlip_MCGABuf(VQAHandle *vqa);
+VQAErrorType DrawFrame_MCGA(VQAHandle *vqa);
+VQAErrorType PageFlip_MCGA(VQAHandle *vqa);
 
 void __cdecl UnVQ_Nop(unsigned char *codebook, unsigned char *pointers, unsigned char *buffer, unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth);
-long PageFlip_Nop(VQAHandle *vqa);
+VQAErrorType PageFlip_Nop(VQAHandle *vqa);
 
 void VQA_SetTimer(VQAHandleP *vqap, long time);
 void VQA_StepTimer(VQAHandleP *vqap, long step);
 unsigned long VQA_GetTime(VQAHandleP *vqap);
-_STATIC long VQA_SetCurrentFrameAsLast(VQAHandleP *vqap);
+_STATIC VQAErrorType VQA_SetCurrentFrameAsLast(VQAHandleP *vqap);
 _STATIC void VQA_SetPreviousFrameNode(VQAHandleP *vqap);
 _STATIC long VQA_CalcFramesSinceDrawn(VQAHandleP *vqap);
 
@@ -102,7 +102,7 @@ void VQA_DispatchFrameChunks(VQAHandleP *vqap, long frame);
 /// no frame has been drawn yet.
 /// </summary>
 /// <returns>Returns with VQAERR_NONE.</returns>
-long VQA_ResetLastFrameNum(VQAHandle *vqa)
+VQAErrorType VQA_ResetLastFrameNum(VQAHandle *vqa)
 {
 	VQAHandleP *vqap;
 	VQADrawer *drawer;
@@ -138,7 +138,7 @@ long VQA_ResetLastFrameNum(VQAHandle *vqa)
 *
 ****************************************************************************/
 
-long VQA_Configure_Drawer(VQAHandleP *vqap)
+VQAErrorType VQA_Configure_Drawer(VQAHandleP *vqap)
 {
 	VQAConfig *config;
 	VQAHeader *header;
@@ -265,7 +265,7 @@ long VQA_Configure_Drawer(VQAHandleP *vqap)
 *
 ****************************************************************************/
 
-STATIC long Select_Frame(VQAHandleP *vqap)
+STATIC VQAErrorType Select_Frame(VQAHandleP *vqap)
 {
 	VQADrawer    *drawer;
 	VQAConfig    *config;
@@ -668,7 +668,7 @@ long VQA_CalcFramesSinceDrawn(VQAHandleP *vqap)
 /// notion of playback progress once a frame has been committed.
 /// </summary>
 /// <returns>Returns with VQAERR_NONE.</returns>
-long VQA_SetCurrentFrameAsLast(VQAHandleP *vqap)
+VQAErrorType VQA_SetCurrentFrameAsLast(VQAHandleP *vqap)
 {
 	VQADrawer * drawer;
 
@@ -893,12 +893,12 @@ void VQA_UnVQFrame(VQAHandleP *vqap, VQAFrameNode *frame)
 *
 ****************************************************************************/
 
-long DrawFrame_MCGA(VQAHandle *vqa)
+VQAErrorType DrawFrame_MCGA(VQAHandle *vqa)
 {
 	VQAHandleP *vqap;
 	VQADrawer    *drawer;
 	VQAFrameNode *curframe;
-	long         rc;
+	VQAErrorType         rc;
 
 	/* Dereference commonly used data members for quicker access */
 	vqap = (VQAHandleP *)vqa;
@@ -952,7 +952,7 @@ long DrawFrame_MCGA(VQAHandle *vqa)
 *
 ****************************************************************************/
 
-STATIC long PageFlip_MCGA(VQAHandle *vqa)
+STATIC VQAErrorType PageFlip_MCGA(VQAHandle *vqa)
 {
 	VQAHandleP *vqap;
 	VQADrawer     *drawer;
@@ -1053,9 +1053,9 @@ STATIC long PageFlip_MCGA(VQAHandle *vqa)
 *
 ****************************************************************************/
 
-STATIC long DrawFrame_MCGABuf(VQAHandle *vqa)
+STATIC VQAErrorType DrawFrame_MCGABuf(VQAHandle *vqa)
 {
-	long rc;
+	VQAErrorType rc;
 	VQAHandleP *vqap;
 	VQADrawer *drawer;
 	VQAFrameNode *curframe;
@@ -1111,7 +1111,7 @@ STATIC long DrawFrame_MCGABuf(VQAHandle *vqa)
 *
 ****************************************************************************/
 
-STATIC long PageFlip_MCGABuf(VQAHandle *vqa)
+STATIC VQAErrorType PageFlip_MCGABuf(VQAHandle *vqa)
 {
 	VQAHandleP *vqap;
 	VQADrawer *drawer;
@@ -1237,7 +1237,7 @@ STATIC void __cdecl UnVQ_Nop(unsigned char *codebook, unsigned char *pointers,
 *
 ****************************************************************************/
 
-STATIC long PageFlip_Nop(VQAHandle *vqa)
+STATIC VQAErrorType PageFlip_Nop(VQAHandle *vqa)
 {
 	//shut up compiler warnings
 	vqa = vqa;

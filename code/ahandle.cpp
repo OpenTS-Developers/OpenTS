@@ -38,14 +38,14 @@ AHANDLE_CALLBACK_2 _AHandleCallbackFunc2;
 
 /// private, call handler instead
 
-long __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, long);
-long __cdecl Close_Audio_Handler(VQAHandleP *vqap);
-long __cdecl Start_Audio_Handler(VQAHandleP *vqap);
-long __cdecl Stop_Audio_Handler(VQAHandleP *vqap);
-long __cdecl Play_Audio_Handler(VQAHandleP *vqap);
-long __cdecl Pause_Audio_Handler(VQAHandleP *vqap);
+VQAErrorType __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, long);
+VQAErrorType __cdecl Close_Audio_Handler(VQAHandleP *vqap);
+VQAErrorType __cdecl Start_Audio_Handler(VQAHandleP *vqap);
+VQAErrorType __cdecl Stop_Audio_Handler(VQAHandleP *vqap);
+VQAErrorType __cdecl Play_Audio_Handler(VQAHandleP *vqap);
+VQAErrorType __cdecl Pause_Audio_Handler(VQAHandleP *vqap);
 long __cdecl Resume_Audio_Handler(VQAHandleP *vqap);
-long __cdecl Load_Audio_Handler(VQAHandleP *vqap, void *buffer, long nbytes);
+VQAErrorType __cdecl Load_Audio_Handler(VQAHandleP *vqap, void *buffer, long nbytes);
 void CALLBACK AudioCallback(UINT uTimerID, UINT, DWORD dwUser, DWORD, DWORD);
 _STATIC unsigned long Get_Playback_Position(VQAHandle *vqa, Ahandle *handle, VQAConfig *config);
 
@@ -188,7 +188,7 @@ long __cdecl Stream_Audio_Handler(VQAHandle *vqa, long action, void *buffer, lon
 }
 
 
-long __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, long b)
+VQAErrorType __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, long b)
 {
 	DSCAPS dscaps;
 
@@ -297,7 +297,7 @@ long __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, lon
 }
 
 
-long __cdecl Close_Audio_Handler(VQAHandleP *vqap)
+VQAErrorType __cdecl Close_Audio_Handler(VQAHandleP *vqap)
 {
 	DebugString("Closing VQ audio handler\n");
 
@@ -346,7 +346,7 @@ long __cdecl Close_Audio_Handler(VQAHandleP *vqap)
 }
 
 
-long __cdecl Start_Audio_Handler(VQAHandleP *vqap)
+VQAErrorType __cdecl Start_Audio_Handler(VQAHandleP *vqap)
 {
 	/* Dereference commonly used data members for quicker access. */
 	VQAConfig *config = &vqap->Config;
@@ -421,7 +421,7 @@ long __cdecl Start_Audio_Handler(VQAHandleP *vqap)
 }
 
 
-long __cdecl Load_Audio_Handler(VQAHandleP *vqap, void *buffer, long nbytes)
+VQAErrorType __cdecl Load_Audio_Handler(VQAHandleP *vqap, void *buffer, long nbytes)
 {
 	Ahandle *handle = &_handles[vqap->AudioHandleIndex];
 
@@ -448,7 +448,7 @@ long __cdecl Load_Audio_Handler(VQAHandleP *vqap, void *buffer, long nbytes)
 }
 
 
-long __cdecl Pause_Audio_Handler(VQAHandleP *vqap)
+VQAErrorType __cdecl Pause_Audio_Handler(VQAHandleP *vqap)
 {
 	Ahandle *handle = &_handles[vqap->AudioHandleIndex];
 
@@ -465,19 +465,19 @@ long __cdecl Pause_Audio_Handler(VQAHandleP *vqap)
 }
 
 
-long __cdecl Play_Audio_Handler(VQAHandleP *vqap)
+VQAErrorType __cdecl Play_Audio_Handler(VQAHandleP *vqap)
 {
 	Ahandle *handle = &_handles[vqap->AudioHandleIndex];
 
-	long rc;
+	VQAErrorType rc;
 	if (!handle->Used || handle->SecondaryBufferPtr == NULL) {
 		return(VQAERR_AUDIO);
 	}
 
 	EnterCriticalSection(&handle->CriticalSection);
 
-	rc = handle->SecondaryBufferPtr->Play(0, 0, DSBPLAY_LOOPING);
-	if (rc == S_OK) {
+	HRESULT const return_code = handle->SecondaryBufferPtr->Play(0, 0, DSBPLAY_LOOPING);
+	if (return_code == S_OK) {
 		handle->PauseAdjust = Simple_Timer_Callback_Audio_Handler(NULL) - handle->LastTimerTick;
 		DebugString("Ahandle: PauseAdjust %ld\n", handle->PauseAdjust);
 		handle->Flags &= ~AHANDLEF_IS_PAUSED;
@@ -491,7 +491,7 @@ long __cdecl Play_Audio_Handler(VQAHandleP *vqap)
 }
 
 
-long __cdecl Stop_Audio_Handler(VQAHandleP *vqap)
+VQAErrorType __cdecl Stop_Audio_Handler(VQAHandleP *vqap)
 {
 	Ahandle *handle = &_handles[vqap->AudioHandleIndex];
 
