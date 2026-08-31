@@ -16,8 +16,10 @@ per-link RTT and retry behavior belongs to
 
 Compressed matches begin at `2/6`: a two-frame send period and six-frame
 look-ahead. Each player reports process time and optional worst-local RTT after
-32 and 64 frames, then every 128 frames. The deterministic master evaluates at
-64 and 128 frames, then every 256 frames.
+32 and 64 frames, then every 128 frames. A player omits the RTT while any of its
+links has no measurement or a
+[stale one](/systems/network-transport-timing/). The deterministic master
+evaluates at 64 and 128 frames, then every 256 frames.
 
 A report is one atomic process/RTT record and expires after 512 frames. Initial
 missing RTT has that long to appear; missing or stale established RTT selects
