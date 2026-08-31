@@ -583,7 +583,7 @@ int main(void)
 		Check(SpawnerConfigClass::Playable_Handicap(-1) == -1 && SpawnerConfigClass::Playable_Handicap(0) == 0 &&
 			SpawnerConfigClass::Playable_Handicap(2) == 2 && SpawnerConfigClass::Playable_Handicap(3) == 2 &&
 			SpawnerConfigClass::Playable_Handicap(6) == 2,
-			"a gentler setting than the game has comes to the gentlest opponent it has");
+			"an easier opponent than the game has comes to the easiest opponent it has");
 
 		char const two_machines[] =
 			"[Settings]\n"

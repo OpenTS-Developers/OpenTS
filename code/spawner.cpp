@@ -175,7 +175,7 @@ static void Spawner_Seat_Humans(void)
 /// </summary>
 static void Spawner_Seat_Computers(void)
 {
-	// A seat played at the gentlest of the rules' tables is the hardest opponent to beat.
+	// A seat played at the easiest of the rules' tables is the hardest opponent to beat.
 	static char const * const _ai_names[DIFF_COUNT] = { "Hard AI", "Medium AI", "Easy AI" };
 
 	for (int index = SpawnConfig.HumanCount; index < SpawnerConfigClass::SLOT_COUNT; index++) {
