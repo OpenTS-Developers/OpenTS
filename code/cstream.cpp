@@ -28,7 +28,7 @@ CStreamClass::CStreamClass(void) :
 	IsWriting(false),
 	CurOffset(0),
 	DataBuffer(new unsigned char[BUFFER_SIZE]),
-	StreamBuffer(new unsigned char[BUFFER_SIZE]),
+	StreamBuffer(new unsigned char[COMP_BUFFER_SIZE]),
 	// The dictionary holds pointer-wide entries, so its byte size follows the target.
 	LZODictionary(new unsigned char[LZO1X_MEM_COMPRESS])
 {
