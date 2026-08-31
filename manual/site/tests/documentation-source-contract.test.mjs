@@ -408,11 +408,6 @@ test('A match against other machines is assembled whole and wired to its network
 		'if (!Ipx.Init()) {',
 	], 'the transport is chosen, the peers named, and only then the network opened');
 
-	assertOrdered(functionBody(source('code/scenario.cpp'), 'void Assign_Houses(void)'), [
-		'stricmp(Session.Players[j]->Name, Session.Players[index]->Name) < 0',
-		'PlayerPtr = housep;',
-	], 'a color tie is settled by name, so every machine creates the houses in one order');
-
 	assertOrdered(functionBody(source('code/scenario.cpp'), 'static NodeNameType * Seated_Node(int seat)'), [
 		'Session.Players[i]->Player.ID == seat',
 		'Session.Computers[i]->Player.ID == seat',

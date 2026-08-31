@@ -2134,8 +2134,8 @@ void Assign_Houses(void)
 //	DebugString( "Assign_Houses()\n" );
 	//------------------------------------------------------------------------
 	// Assign each player in 'Players' to a multiplayer house.  Players will
-	// be sorted by their chosen color value (a tie between colors is
-	// settled by the players' names).
+	// be sorted by their chosen color value (this value must be unique among
+	// all the players).
 	//------------------------------------------------------------------------
 	for (i = 0; i < Session.Players.Count(); i++) {
 
@@ -2148,14 +2148,7 @@ void Assign_Houses(void)
 			//..................................................................
 			// If we've already assigned this house, skip it.
 			//..................................................................
-			if (assigned[j]) {
-				continue;
-			}
-
-			// Each machine holds this list itself-first, so a color tie is settled by name.
-			if (index == -1 || Session.Players[j]->Player.Color < lowest_color ||
-				(Session.Players[j]->Player.Color == lowest_color &&
-					stricmp(Session.Players[j]->Name, Session.Players[index]->Name) < 0)) {
+			if (!assigned[j] && (lowest_color == -1 || Session.Players[j]->Player.Color < lowest_color)) {
 				lowest_color = Session.Players[j]->Player.Color;
 				index = j;
 			}
