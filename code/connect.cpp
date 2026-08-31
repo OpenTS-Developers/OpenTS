@@ -880,6 +880,9 @@ int ConnectionClass::Service_Send_Queue (void)
 				}
 			} else {
 				NumResends++;
+				if (adaptive_channel) {
+					RoundTripEstimator.Note_Retransmit(send_entry->RetransmitTimeoutMilliseconds, current_milliseconds);
+				}
 			}
 
 			/*..................................................................

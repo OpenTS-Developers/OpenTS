@@ -32,6 +32,8 @@ namespace NetTiming
 		SmoothedRtt = 0;
 		RttVariation = 0;
 		RetransmitTimeout = MINIMUM_RTO;
+		RetransmitEpochAt = 0;
+		RetransmittedSinceLastSample = false;
 	}
 
 
@@ -55,6 +57,7 @@ namespace NetTiming
 
 		std::uint64_t const variation = std::max<std::uint64_t>(1, 4ull * RttVariation);
 		RetransmitTimeout = Clamp_Rto(static_cast<std::uint64_t>(SmoothedRtt) + variation);
+		RetransmittedSinceLastSample = false;
 		return(true);
 	}
 
@@ -66,6 +69,33 @@ namespace NetTiming
 			return(false);
 		}
 		return(Add_Sample(Elapsed_Milliseconds(sent_at, clock.Now())));
+	}
+
+
+	/// <summary>Backs the timeout off once per retransmission era so a slower link stays measurable.</summary>
+	void RttEstimator::Note_Retransmit(Milliseconds captured_rto, Milliseconds now)
+	{
+		if (!Initialized) {
+			return;
+		}
+
+		if (!RetransmittedSinceLastSample) {
+			RetransmittedSinceLastSample = true;
+			RetransmitEpochAt = now;
+		}
+
+		// Only a packet sent under the current timeout proves that timeout too short.
+		if (captured_rto >= RetransmitTimeout) {
+			RetransmitTimeout = Clamp_Rto(2ull * RetransmitTimeout);
+		}
+	}
+
+
+	/// <summary>Reports whether the estimate still reflects a measured acknowledgement.</summary>
+	bool RttEstimator::Has_Fresh_Sample(Milliseconds now) const
+	{
+		return(Initialized && (!RetransmittedSinceLastSample
+			|| Elapsed_Milliseconds(RetransmitEpochAt, now) < RTT_SAMPLE_LIFETIME));
 	}
 
 

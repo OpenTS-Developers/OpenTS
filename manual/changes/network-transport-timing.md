@@ -8,5 +8,7 @@ credit:
 ---
 
 Each private connection now estimates its own round trip and backs off repeated
-transmissions. Lobby traffic keeps its fixed retry cadence. Packet layouts,
-event IDs, and configuration remain unchanged.
+transmissions. The retry timeout backs off with them, so a link whose latency
+rises above it stays measurable instead of retransmitting every packet. Lobby
+traffic keeps its fixed retry cadence. Packet layouts, event IDs, and
+configuration remain unchanged.
