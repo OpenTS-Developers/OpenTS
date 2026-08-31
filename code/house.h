@@ -83,8 +83,6 @@ class ObjectTypeClass;
 class SaveStreamClass;
 template<class T> class DynamicVectorClass;
 
-#define HOUSE_NAME_MAX	20
-
 
 /****************************************************************************
 **	Certain aspects of the house "country" are initially set by the scenario

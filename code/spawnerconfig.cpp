@@ -116,7 +116,8 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		SlotType & slot = staging[index];
 		if (ini.Section_Present(section.c_str())) {
 			slot.Occupancy = OccupancyType::Human;
-			slot.Name = Read_Text(ini, section.c_str(), "Name", "").substr(0, NAME_KEPT);
+			// A seat is judged and ordered by the name the game keeps, as every machine is.
+			slot.Name = Read_Text(ini, section.c_str(), "Name", "").substr(0, HOUSE_NAME_MAX - 1);
 			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
 			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
 			slot.Address = Read_Text(ini, section.c_str(), "Ip", slot.Address);

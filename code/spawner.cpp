@@ -46,7 +46,7 @@
  * A launch is spent once for the life of the process: the client watches for the game to
  * exit, so a finished or refused spawn ends it rather than falling into the menu.
  */
-static_assert(SpawnerConfigClass::NAME_KEPT == MPLAYER_NAME_MAX - 1,
+static_assert(HOUSE_NAME_MAX == MPLAYER_NAME_MAX,
 	"a seat is judged and ordered by the name the session carries");
 
 static bool SpawnRequested = false;
