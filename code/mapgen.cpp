@@ -4368,6 +4368,17 @@ bool MapSeedClass::Save(const char * name)
 
 
 /// <summary>
+/// Is this the generator's own map rather than settings a player saved? That one travels to
+/// the other machines with the match, so it is kept where the game's own files are.
+/// </summary>
+/// <returns>bool; Is this the map a match is played on rather than a saved setting?</returns>
+static bool Is_Shared_Map_File(char const * file_name)
+{
+	return(stricmp(file_name, RANDOM_MAP_FILE_NAME) == 0);
+}
+
+
+/// <summary>
 /// Writes the map generator settings to a file.
 /// This routine records everything the random map dialog offers, so that loading the file
 /// back and generating again lays down the very same terrain.
@@ -4376,16 +4387,6 @@ bool MapSeedClass::Save(const char * name)
 /// <param name="descr">Description to keep with the settings. This is the text the load
 /// dialog lists the map under.</param>
 /// <returns>bool; Were the settings written?</returns>
-/// <summary>
-/// Is this the generator's own map rather than settings a player saved? That one travels to
-/// the other machines with the match, so it is kept where the game's own files are.
-/// </summary>
-static bool Is_Shared_Map_File(char const * file_name)
-{
-	return(stricmp(file_name, RANDOM_MAP_FILE_NAME) == 0);
-}
-
-
 bool MapSeedClass::Save_File(const char * file_name, const char * descr)
 {
 	if (file_name != NULL) {
