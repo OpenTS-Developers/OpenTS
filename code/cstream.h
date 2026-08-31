@@ -46,6 +46,10 @@ class CStreamClass : public IStream, public ILinkStream
 
 		enum {
 			BUFFER_SIZE = 64*1024,
+
+			// A block that will not compress comes out bigger than it went in, up to
+			// the LZO worst case, and the compressed side has to hold that.
+			COMP_BUFFER_SIZE = BUFFER_SIZE + BUFFER_SIZE / 16 + 64 + 3,
 		};
 
 	private:
