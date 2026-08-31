@@ -274,8 +274,8 @@ HRESULT CStreamClass::Read(void *pv, ULONG cb, ULONG *pcbRead)
 		if (lzo1x_decompress_safe(in, inlen, out, &out_len, NULL) != LZO_E_OK) {
 			return(E_FAIL);
 		}
-		// Compress records the whole buffer size rather than the block's own length, so only
-		// the decompressor's count says how much of the buffer is real.
+		// A save written before the block header carried a partial block's own length claims
+		// the whole buffer, so the decompressor's count is what says how much of it is real.
 		BlockHead.UncompSize = out_len;
 		CurOffset = out_len;
 	}
@@ -499,7 +499,9 @@ HRESULT CStreamClass::Compress(void *in_buffer, ULONG length)
 	HRESULT hr;
 	lzo_uint out_len = length;
 	lzo1x_1_compress((lzo_byte *)in_buffer, length, (lzo_byte *)StreamBuffer, &out_len, (lzo_byte *)LZODictionary);
-	BlockHead.UncompSize = BUFFER_SIZE;
+	// The last block of a stream is usually partial, and this header states what the
+	// block expands to rather than what a whole one would.
+	BlockHead.UncompSize = length;
 	length = 0;
 	BlockHead.CompSize = out_len;
 
