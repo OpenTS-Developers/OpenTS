@@ -2265,10 +2265,7 @@ void Assign_Houses(void)
 		}
 	}
 
-	/*
-	 * The alliance table names seats in the order the houses above were created, and is
-	 * applied before the neutral and special houses exist, since neither is a seat.
-	 */
+	// A seat's mask names other seats, not the houses they became.
 	int seated = Session.Players.Count() + Session.Computers.Count();
 	for (int seatnum = 0; seatnum < seated; seatnum++) {
 		NodeNameType * node = Seated_Node(seatnum);
