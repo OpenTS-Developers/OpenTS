@@ -27,7 +27,7 @@ The save dialog creates `.SAV` files. Each file is an OLE compound document: the
 
 Saved games keep to a `Saved Games` folder of their own, beside the game or inside the [user directory](/using/game-data/) when one is named, created the first time the game asks for a saved game. Every save, load, listing and deletion names that folder outright: unlike the files the game reads, a saved game is never looked for anywhere else. A client that browses saved games therefore finds them in one place, whichever layout the game was installed in.
 
-The dialog names a new save `SAVE` followed by four hexadecimal digits, drawing again until it finds a name no existing file answers to; saving over a listed game reuses that game's name. A multiplayer save is written under one fixed name instead and is never offered in the list.
+The dialog names a new save `SAVE` followed by four hexadecimal digits, drawing again until it finds a name no existing file answers to; saving over a listed game reuses that game's name. A multiplayer save is written under one fixed name instead and is never offered in the list. The random map generator keeps its saved settings in the same folder, under names of its own; the map a host generates for a match is not one of them, and stays with the game's files so that it can travel to the other machines.
 
 ## When the file is written
 

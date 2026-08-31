@@ -13,7 +13,8 @@ Saved games now live in a `Saved Games` folder, beside the game or inside the us
 directory when one is named. Every save, load, listing and deletion names that folder, which
 is where launchers that browse saved games look.
 
-Saves made by earlier builds sit beside the game and are no longer listed; moving the `.SAV`
-files into `Saved Games` restores them.
+The settings the random map generator saves keep to that folder too. Saves made by earlier
+builds sit beside the game, or in the user data directory when one is named, and are no
+longer listed; moving the files into `Saved Games` restores them.
 
 After a load, the campaign difficulty now comes from the save rather than the menu setting.

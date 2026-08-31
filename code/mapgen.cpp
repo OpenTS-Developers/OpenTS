@@ -29,6 +29,7 @@
 #include "coord.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "gamedirs.h"
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -4375,11 +4376,23 @@ bool MapSeedClass::Save(const char * name)
 /// <param name="descr">Description to keep with the settings. This is the text the load
 /// dialog lists the map under.</param>
 /// <returns>bool; Were the settings written?</returns>
+/// <summary>
+/// Is this the generator's own map rather than settings a player saved? That one travels to
+/// the other machines with the match, so it is kept where the game's own files are.
+/// </summary>
+static bool Is_Shared_Map_File(char const * file_name)
+{
+	return(stricmp(file_name, RANDOM_MAP_FILE_NAME) == 0);
+}
+
+
 bool MapSeedClass::Save_File(const char * file_name, const char * descr)
 {
 	if (file_name != NULL) {
 		DebugString("Saving random map: %s - %s\n", file_name, descr);
-		CCFileClass file(file_name);
+		CCFileClass shared(file_name);
+		RawFileClass owned(Saved_Game_Name(file_name).c_str());
+		FileClass & file = Is_Shared_Map_File(file_name) ? (FileClass &)shared : (FileClass &)owned;
 		INIClass ini;
 		ini.Put_String("RandomMap", "Description", descr);
 		ini.Put_Int("RandomMap", "Width", Width, 0);
@@ -4439,7 +4452,9 @@ bool MapSeedClass::Load_File(const char * file_name)
 {
 	if (file_name != NULL) {
 		DebugString("Loading random map: %s\n", file_name);
-		CCFileClass file(file_name);
+		CCFileClass shared(file_name);
+		RawFileClass owned(Saved_Game_Name(file_name).c_str());
+		FileClass & file = Is_Shared_Map_File(file_name) ? (FileClass &)shared : (FileClass &)owned;
 		INIClass ini;
 
 		if (ini.Load(file)) {
@@ -4511,7 +4526,7 @@ bool MapSeedClass::Read_File(FileEntryClass * entry, WIN32_FIND_DATAA * ff)
 
 	if (entry != NULL && ff != NULL) {
 		if (stricmp(ff->cFileName, RANDOM_MAP_FILE_NAME)) {
-			CCFileClass file(ff->cFileName);
+			RawFileClass file(Saved_Game_Name(ff->cFileName).c_str());
 			INIClass ini;
 			if (ini.Load(file)) {
 				if (ini.Get_String("RandomMap", "Description", 0, buffer, sizeof(buffer)) > 0 )
