@@ -114,10 +114,10 @@ void Run_Case(SosGoldenCase const & test)
 		return;
 	}
 
-	_SOS_COMPRESS_INFO info;
+	SosCompressInfo info;
 	std::memset(&info, 0, sizeof(info));
-	info.wBitSize = (short)test.BitSize;
-	info.wChannels = (short)test.Channels;
+	info.BitSize = (short)test.BitSize;
+	info.ChannelCount = (short)test.Channels;
 
 	if (test.Codec == 0) {
 		sosCODECInitStream(&info);
@@ -125,10 +125,10 @@ void Run_Case(SosGoldenCase const & test)
 		General_sosCODECInitStream(&info);
 	}
 
-	info.wBitSize = (short)test.BitSize;
-	info.wChannels = (short)test.Channels;
-	info.lpSource = (char *)(SourceStore + test.SourceAlign);
-	info.lpDest = (char *)DestStore;
+	info.BitSize = (short)test.BitSize;
+	info.ChannelCount = (short)test.Channels;
+	info.Source = (char *)(SourceStore + test.SourceAlign);
+	info.Dest = (char *)DestStore;
 
 	unsigned long returned = 0;
 
@@ -164,15 +164,15 @@ void Check_Runaway_Inputs(void)
 		Fill_Source(999u);
 		std::memset(DestStore, GUARD, sizeof(DestStore));
 
-		_SOS_COMPRESS_INFO info;
+		SosCompressInfo info;
 		std::memset(&info, 0, sizeof(info));
-		info.wBitSize = (short)bits[i];
-		info.wChannels = (short)channels[i];
+		info.BitSize = (short)bits[i];
+		info.ChannelCount = (short)channels[i];
 		General_sosCODECInitStream(&info);
-		info.wBitSize = (short)bits[i];
-		info.wChannels = (short)channels[i];
-		info.lpSource = (char *)SourceStore;
-		info.lpDest = (char *)DestStore;
+		info.BitSize = (short)bits[i];
+		info.ChannelCount = (short)channels[i];
+		info.Source = (char *)SourceStore;
+		info.Dest = (char *)DestStore;
 
 		General_sosCODECDecompressData(&info, (unsigned long)bytes[i]);
 

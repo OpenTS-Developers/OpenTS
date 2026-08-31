@@ -186,7 +186,7 @@ void Decode_General(SosChannel & channel, unsigned char const * source, unsigned
 /// Starts a compression stream, clearing the running sample and step index for both channels.
 /// </summary>
 /// <param name="info">The stream to initialize.</param>
-void __cdecl sosCODECInitStream(_SOS_COMPRESS_INFO * info)
+void __cdecl sosCODECInitStream(SosCompressInfo * info)
 {
 	info->Channels[0].Index = 0;
 	info->Channels[0].Predicted = 0;
@@ -202,15 +202,15 @@ void __cdecl sosCODECInitStream(_SOS_COMPRESS_INFO * info)
 /// <param name="info">Stream state, source and destination.</param>
 /// <param name="bytes">How many bytes of samples to produce.</param>
 /// <returns>uint32_t; The byte count asked for, or zero if the shape is not handled.</returns>
-uint32_t __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t bytes)
+uint32_t __cdecl sosCODECDecompressData(SosCompressInfo * info, uint32_t bytes)
 {
-	if (info->wBitSize != 16 || info->wChannels != 1) {
+	if (info->BitSize != 16 || info->ChannelCount != 1) {
 		return(0);
 	}
 
 	unsigned short index = (unsigned short)info->Channels[0].Index;
 
-	Decode_Table_16((unsigned char const *)info->lpSource, (short *)info->lpDest, (int)(bytes / 2), 1, info->Channels[0].Predicted, index);
+	Decode_Table_16((unsigned char const *)info->Source, (short *)info->Dest, (int)(bytes / 2), 1, info->Channels[0].Predicted, index);
 
 	info->Channels[0].Index = (short)index;
 	return(bytes);
@@ -221,7 +221,7 @@ uint32_t __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t byte
 /// Starts a compression stream for the general decoder.
 /// </summary>
 /// <param name="info">The stream to initialize.</param>
-void __cdecl General_sosCODECInitStream(_SOS_COMPRESS_INFO * info)
+void __cdecl General_sosCODECInitStream(SosCompressInfo * info)
 {
 	info->Channels[0].Index = 0;
 	info->Channels[0].Predicted = 0;
@@ -245,22 +245,22 @@ void __cdecl General_sosCODECInitStream(_SOS_COMPRESS_INFO * info)
 /// <param name="info">Stream state, source and destination.</param>
 /// <param name="bytes">How many bytes of samples to produce.</param>
 /// <returns>uint32_t; The byte count asked for.</returns>
-uint32_t __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t bytes)
+uint32_t __cdecl General_sosCODECDecompressData(SosCompressInfo * info, uint32_t bytes)
 {
 	info->Channels[0].SampleIndex = 0;
 	info->Channels[1].SampleIndex = 0;
 
-	int const bits = info->wBitSize;
+	int const bits = info->BitSize;
 	int const samples = (bits == 16) ? (int)(bytes / 2) : (int)bytes;
 
 	if (samples <= 0) {
 		return(bytes);
 	}
 
-	unsigned char const * source = (unsigned char const *)info->lpSource;
-	unsigned char * dest = (unsigned char *)info->lpDest;
+	unsigned char const * source = (unsigned char const *)info->Source;
+	unsigned char * dest = (unsigned char *)info->Dest;
 
-	if (info->wChannels == 2) {
+	if (info->ChannelCount == 2) {
 		if ((samples % 2) != 0) {
 			return(bytes);
 		}

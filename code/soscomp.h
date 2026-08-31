@@ -44,29 +44,20 @@ struct SosChannel {
 };
 
 /* define compression structure */
-struct _SOS_COMPRESS_INFO {
-	char       *lpSource;
-	char       *lpDest;
-	uint32_t      dwCompSize;
-	uint32_t      dwUnCompSize;
-	struct SosChannel Channels[2];
-	short         wBitSize;
-	short			  wChannels;		//added BP for # of channels
-	};
-
-/* compressed file type header */
-struct _SOS_COMPRESS_HEADER {
-	uint32_t      dwType;              // type of compression
-	uint32_t      dwCompressedSize;    // compressed file size
-	uint32_t      dwUnCompressedSize;  // uncompressed file size
-	uint32_t      dwSourceBitSize;     // original bit size
-	char          szName[16];          // file type, for error checking
-	};
+struct SosCompressInfo {
+	char *     Source;
+	char *     Dest;
+	uint32_t   CompSize;
+	uint32_t   UnCompSize;
+	SosChannel Channels[2];
+	short      BitSize;
+	short      ChannelCount;		//added BP for # of channels
+};
 
 /* Prototypes */
 extern "C" {
-	void __cdecl sosCODECInitStream(_SOS_COMPRESS_INFO *);
-	void __cdecl General_sosCODECInitStream(_SOS_COMPRESS_INFO *);
-	uint32_t __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO *, uint32_t);
-	uint32_t __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO *, uint32_t);
+	void __cdecl sosCODECInitStream(SosCompressInfo *);
+	void __cdecl General_sosCODECInitStream(SosCompressInfo *);
+	uint32_t __cdecl sosCODECDecompressData(SosCompressInfo *, uint32_t);
+	uint32_t __cdecl General_sosCODECDecompressData(SosCompressInfo *, uint32_t);
 }

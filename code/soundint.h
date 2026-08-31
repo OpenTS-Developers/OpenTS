@@ -240,7 +240,7 @@ struct SampleTrackerType {
 	**	the sos 16 bit compression Codec.
 	*/
 
-	_SOS_COMPRESS_INFO sosinfo;
+	SosCompressInfo sosinfo;
 
 
 };
