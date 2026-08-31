@@ -1443,7 +1443,7 @@ BEGIN
                     TBS_BOTH | TBS_NOTICKS,95,93,148,13
     LTEXT           "Connection",-1,39,93,58,13,SS_CENTERIMAGE | NOT 
                     WS_GROUP
-    RTEXT           "Better",IDC_SCROLL_SPEED_LABEL,247,93,45,13,
+    RTEXT           "Better",IDC_SCROLL_SPEED_LABEL,247,93,64,13,
                     SS_CENTERIMAGE | NOT WS_GROUP
     GROUPBOX        "Internet Game Controls",-1,28,75,283,68
 END
@@ -2435,6 +2435,8 @@ BEGIN
     TXT_CHAT_TO_ALL_DESC    "Starts a message to every player."
     TXT_CHAT_TO_ALLIES      "Message to Team"
     TXT_CHAT_TO_ALLIES_DESC "Starts a message to your allies, or to the other observers while you watch."
+    TXT_CONNECTION_QUALITY_STATUS "Connection quality target: %s."
+    TXT_CONNECTION_QUALITY_RUNG "%s (rung %u)"
 END
 
 #endif    // English (U.S.) resources

@@ -1314,6 +1314,7 @@ void EventClass::Execute(void)
 			}
 
 			NetTiming::TimingSettings const settings{Data.Timing.FrameSendRate, Data.Timing.MaxAhead};
+			NetTiming::ConnectionQuality const old_quality = NetTiming::Connection_Quality_For_Settings(Session.Network_Timing_Target());
 			unsigned int const old_frame_send_rate = Session.FrameSendRate;
 			unsigned int const old_max_ahead = Session.MaxAhead;
 
@@ -1330,6 +1331,17 @@ void EventClass::Execute(void)
 			if (result == NetTiming::ScheduleResult::Rejected) {
 				Log_Event_Rejection(EventRejectReason::UnschedulableTiming, Type, ID, static_cast<int>(settings.MaxAhead));
 				break;
+			}
+
+			NetTiming::ConnectionQuality const quality = NetTiming::Connection_Quality_For_Settings(settings);
+			if (quality != old_quality) {
+				char const * format = Fetch_String(TXT_CONNECTION_QUALITY_STATUS);
+				char const * quality_name = Fetch_String(Network_Quality_Text_ID(quality));
+				if (format != NULL && quality_name != NULL && format[0] != '\0' && quality_name[0] != '\0') {
+					snprintf(msg, sizeof(msg), format, quality_name);
+					Session.Messages.Add_Message(NULL, 0, msg, house->Scheme,
+						TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+				}
 			}
 
 #if (TIMING_FIX)
