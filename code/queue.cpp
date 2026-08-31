@@ -1486,7 +1486,9 @@ static void Generate_Real_Timing_Event(void)
 	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
 		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), static_cast<unsigned int>(Game_Speed_Frame_Rate()));
 	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
-	if (!evaluation.Changed && desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate)) {
+	// Comparing against applied state resends timing the session never adopted.
+	if (!evaluation.Evaluated || (evaluation.Settings == Session.Network_Timing_Target()
+		&& desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate))) {
 		return;
 	}
 
