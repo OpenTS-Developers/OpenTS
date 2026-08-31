@@ -20,6 +20,7 @@ int ODMessageBox(const char *text, int type, bool (*callback)(void), bool large 
 int CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 bool Set_Scenario_Info_From_Index(int index);
+void Commit_Session_Specials(void);
 void PregameSetup(void);
 void Update_Network_Dialog_Preview(HWND win);
 void Receive_Random_Map_Preview(void);

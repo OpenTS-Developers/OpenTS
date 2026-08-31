@@ -28,6 +28,7 @@
 #include "language\language.h"
 #include "loaddlg.h"
 #include "mplayer.h"
+#include "netshare.h"
 #include "msgbox.h"
 #include "saveload.h"
 #include "savever.h"
@@ -223,7 +224,10 @@ static void Spawner_Bind_Options(void)
 	Session.Options.FogOfWar = SpawnConfig.FogOfWar;
 	Session.Options.MCVRedeploy = SpawnConfig.MCVRedeploy;
 
-	// A skirmish takes harvester immunity from the map, so this is recorded but not obeyed.
+	/*
+	 * Recorded for every kind of launch, but only a match against other machines commits it
+	 * to the simulation; a skirmish has never played by it, from a file or from the menu.
+	 */
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
 	// Game options too, though the session keeps these two outside its own block.
@@ -424,6 +428,11 @@ static void Spawner_Setup_Session(void)
 	Clear_Vector(&Session.Computers);
 
 	Spawner_Bind_Options();
+
+	if (Session.Type == GAME_INTERNET) {
+		Commit_Session_Specials();
+	}
+
 	Spawner_Seat_Local();
 	Spawner_Seat_Humans();
 	Spawner_Seat_Computers();

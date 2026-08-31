@@ -87,9 +87,9 @@ A written `Seed` makes a launch repeatable: the same file played twice places ev
 the same way. A seed of `0` leaves the placement to chance, which is also what an absent
 `Seed` means.
 
-`HarvesterTruce` is read and recorded with the rest of the match's options, but a skirmish
-takes harvester immunity from the scenario's own `[SPECIAL]` section, so the key does not
-change how a skirmish is played.
+`HarvesterTruce` is played by in a game against other machines. A skirmish records it with
+the rest of the match's options but is not played by it, as a skirmish set up from the menu
+is not: only a match against other machines commits harvester immunity to the simulation.
 
 ## Who is playing
 

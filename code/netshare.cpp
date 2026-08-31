@@ -1262,6 +1262,20 @@ int CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPARAM l
 
 
 /// <summary>
+/// Puts the options every machine agreed on into the globals the simulation reads, so a match
+/// against other machines is played under one set of rules however it was set up.
+/// </summary>
+void Commit_Session_Specials(void)
+{
+	Special.IsHarvesterImmune = Session.Options.HarvTruce;
+	Special.IsDestroyBridges = Session.Options.BridgeDestruction;
+	Special.IsTGrowth = true;
+	Special.IsTSpread = true;
+	Special.Apply_To_Game();
+}
+
+
+/// <summary>
 /// Performs the last setup step before a multiplayer game begins.
 /// This routine copies the agreed session options into the globals the game logic actually
 /// reads, so that every machine starts the scenario with the same rules in force.
@@ -1274,11 +1288,7 @@ void PregameSetup(void)
 	DebugString("Pregame setup for %d players.\n", Session.NumPlayers);
 	Options.GameSpeed = Session.Options.GameSpeed;
 	Session.CommProtocol = DEFAULT_COMM_PROTOCOL;
-	Special.IsHarvesterImmune = Session.Options.HarvTruce;
-	Special.IsDestroyBridges = Session.Options.BridgeDestruction;
-	Special.IsTGrowth = true;
-	Special.IsTSpread = true;
-	Special.Apply_To_Game();
+	Commit_Session_Specials();
 }
 
 
