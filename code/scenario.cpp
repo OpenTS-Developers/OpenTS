@@ -342,7 +342,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	Theme.Stop();
 
 	if ((briefing == true) && (campaign != CAMPAIGN_NONE) && (Scen->Scenario == 1) && (Campaigns[Scen->Campaign]->CDNumber < 2)) {
-		Play_Movie("INTRO.VQA", THEME_NONE, true);
+		Play_Campaign_Intro(Campaigns[Scen->Campaign]->CDNumber);
 	}
 
 	DebugString("Reading scenario: %s\n", name);

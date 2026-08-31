@@ -520,7 +520,8 @@ void MixFileClass::Free(void)
  * HISTORY:                                                                                    *
  *   10/17/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass ** mixfile, int * offset, int * size)
+bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass ** mixfile, int * offset,
+	int * size, MixFileSearchFilter const * filter)
 {
 	MixFileClass * ptr;
 
@@ -545,6 +546,11 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	ptr = List.First();
 	while (ptr->Is_Valid()) {
 		SubBlock * block;
+
+		if (filter != NULL && filter->Accepts != NULL && !filter->Accepts(ptr, filter->Context)) {
+			ptr = ptr->Next();
+			continue;
+		}
 
 		/*
 		**	Binary search for the file in this mixfile. If it is found, then extract the

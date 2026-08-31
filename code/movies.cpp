@@ -104,9 +104,11 @@ void Movie_Blit_To_Screen(void)
 /// <param name="volume">Volume to play the movie's sound track at.</param>
 /// <param name="fullscreen">Should each finished frame go straight to the screen rather than
 /// wait for the normal screen update?</param>
+/// <param name="filter">Optional archive filter used when the movie is opened from a mixfile.</param>
 /// <returns>Returns with a pointer to the movie created. Otherwise, NULL is returned if the
 /// file is missing or the movie could not be opened.</returns>
-VQHandle * Movie_Create(char const * name, Surface * surface, Rect rect1, Rect rect2, int volume, bool fullscreen)
+VQHandle * Movie_Create(char const * name, Surface * surface, Rect rect1, Rect rect2, int volume,
+	bool fullscreen, MixFileSearchFilter const * filter)
 {
 	VQA_SURF_DRAW_CALLBACK callback = NULL;
 	VQHandle *handle = new VQHandle;
@@ -132,7 +134,8 @@ VQHandle * Movie_Create(char const * name, Surface * surface, Rect rect1, Rect r
 			callback = Movie_Blit_To_Screen;
 		}
 
-		handle->VQA = new VQAClass(name, flags, Movie_Lock_Surface, Movie_Unlock_Surface, callback);
+		handle->VQA = new VQAClass(name, flags, Movie_Lock_Surface, Movie_Unlock_Surface, callback,
+			-1, -1, filter);
 		if (handle->VQA == NULL) {
 			delete handle;
 			return(NULL);

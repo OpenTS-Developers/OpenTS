@@ -76,7 +76,9 @@ bool VQA_Message_Handler(void)
  *                                                                         *
  * HISTORY: See PVCS log                                                   *
  *=========================================================================*/
-VQAClass::VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock, VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw, int frame_rate, int draw_rate)
+VQAClass::VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock,
+	VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw,
+	int frame_rate, int draw_rate, MixFileSearchFilter const * filter)
 {
 	unsigned char buffer;
 
@@ -207,6 +209,7 @@ VQAClass::VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surf
 	SurfaceLockCallback = surface_lock;
 	SurfaceUnlockCallback = surface_unlock;
 	SurfaceDrawCallback = surface_draw;
+	MixFilter = filter != NULL ? *filter : MixFileSearchFilter{NULL, NULL};
 	IsFileOpen = false;
 
 	// Initially, vqa is not open.
@@ -937,7 +940,7 @@ long VQAClass::MixFileHandler(long action, void * buffer, long nbytes)
 		case VQACMD_OPEN: {
 			int offset = 0;
 			MixFileClass * mixfile = NULL;
-			if (MixFileClass::Offset(Filename, NULL, &mixfile, &offset)) {
+			if (MixFileClass::Offset(Filename, NULL, &mixfile, &offset, NULL, &MixFilter)) {
 				IsFileOpen = FileHandle.Open(mixfile->Filename, FileClass::READ) != 0;
 				error = FileHandle.Seek(offset, SEEK_CUR) == 0;
 			} else {

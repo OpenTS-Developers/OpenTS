@@ -22,6 +22,13 @@
 #include <cstdlib>
 
 class PKey;
+class MixFileClass;
+
+
+struct MixFileSearchFilter {
+	bool (*Accepts)(MixFileClass const * mixfile, void const * context);
+	void const * Context;
+};
 
 class MixFileClass : public Node<MixFileClass *>
 {
@@ -36,7 +43,9 @@ class MixFileClass : public Node<MixFileClass *>
 		void Free(void);
 		bool Cache(Buffer const * buffer = NULL);
 		static bool Cache(char const *filename, Buffer const * buffer=NULL);
-		static bool Offset(char const *filename, void ** realptr = 0, MixFileClass ** mixfile = 0, int * offset = 0, int * size = 0);
+		static MixFileClass * Finder(char const * filename);
+		static bool Offset(char const *filename, void ** realptr = 0, MixFileClass ** mixfile = 0,
+			int * offset = 0, int * size = 0, MixFileSearchFilter const * filter = NULL);
 		static void const * Retrieve(char const *filename);
 
 		struct SubBlock {
@@ -50,7 +59,6 @@ class MixFileClass : public Node<MixFileClass *>
 		};
 
 	private:
-		static MixFileClass * Finder(char const * filename);
 		int Offset(int crc, int * size = 0) const;
 
 		/*

@@ -18,6 +18,7 @@
 //==========================================================================
 
 #include "ccfile.h"
+#include "mixfile.h"
 
 #include <vqaplay.h>
 
@@ -112,12 +113,15 @@ class VQAClass
 		VQA_SURF_LOCK_CALLBACK SurfaceLockCallback;
 		VQA_SURF_UNLOCK_CALLBACK SurfaceUnlockCallback;
 		VQA_SURF_DRAW_CALLBACK SurfaceDrawCallback;
+		MixFileSearchFilter MixFilter;
 		int Event3Frame;
 		bool IsPaused;
 		bool IsAdvanceReady;
 
 	public:
-		VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock, VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw, int frame_rate = -1, int draw_rate = -1);
+		VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock,
+			VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw,
+			int frame_rate = -1, int draw_rate = -1, MixFileSearchFilter const * filter = NULL);
 		~VQAClass (void);
 
 		bool Open_And_Load_Buffers(void);

@@ -11,6 +11,7 @@ source_files:
   - code/mixfile.cpp
   - code/ccfile.cpp
   - code/init.cpp
+  - code/movie.cpp
 ---
 
 Registered MIX archives expose their members through the ordinary file layer, so a member is opened by name exactly as a file on disk is. A loose file with the requested name takes precedence over a member in a loaded archive, which permits local override files. Archive members are read-only through this file layer; a file opened for writing is always a real file on disk.
@@ -24,6 +25,8 @@ Startup insists on a few of them: `CACHE.MIX`, and then `CONQUER.MIX`, `SOUNDS.M
 Names are matched without regard to case. Each archive carries an index of its members sorted by a checksum of the member name, and a lookup is a binary search over that index rather than a scan, so nothing depends on the order members were packed in.
 
 Mounting an archive that is not there registers nothing and reports nothing: the object is created, finds no file, and never joins the list of archives to search. A name that no archive holds is not recorded anywhere either — the request falls through to opening a real file of that name, and fails when there is none.
+
+A lookup can omit selected archives without changing the mounted archive list. Campaign opening cinematics use this to search only the movie archive selected by [`CD=`](/keys/cd/#scope-campaign) while retaining the priority of earlier override archives. If the selected movie archive is not mounted, the normal search order applies.
 
 ## Caching
 

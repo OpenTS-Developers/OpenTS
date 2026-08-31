@@ -15,13 +15,15 @@
 
 class VQAClass;
 class Surface;
+struct MixFileSearchFilter;
 struct VQHandle;
 template<class T> class DynamicVectorClass;
 
 void * Movie_Lock_Surface(void);
 bool Movie_Unlock_Surface(void);
 void Movie_Blit_To_Screen(void);
-VQHandle * Movie_Create(char const * name, Surface * surface, Rect rect1, Rect rect2, int volume, bool fullscreen);
+VQHandle * Movie_Create(char const * name, Surface * surface, Rect rect1, Rect rect2, int volume,
+	bool fullscreen, MixFileSearchFilter const * filter = NULL);
 void Movie_Destroy(VQHandle * handle);
 void Movie_Play(VQHandle *movie, bool hide_mouse, ThemeType theme, bool user_break_not_allowed);
 bool Movie_Advance_Frame(VQHandle * handle, bool &finished);

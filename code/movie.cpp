@@ -17,6 +17,7 @@
 
 #include "_keyboar.h"
 #include "_map.h"
+#include "_mixfile.h"
 #include "_rect.h"
 #include "_surface.h"
 #include "ccfile.h"
@@ -25,6 +26,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "gscreen.h"
+#include "mixfile.h"
 #include "movies.h"
 #include "session.h"
 #include "vector.h"
@@ -74,7 +76,8 @@ unsigned			PaletteCounter;
  * HISTORY:                                                                                    *
  *   12/19/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool stretch, bool clrscrn_before)
+void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool stretch,
+	bool clrscrn_before, MixFileSearchFilter const * filter)
 {
 	if (!CCFileClass(name).Is_Available()) {
 		return;
@@ -89,7 +92,8 @@ void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool str
 
 	Keyboard->Clear();
 
-	VQHandle * vqa = Movie_Create(name, HiddenSurface, Rect(0,0,0,0), Rect(0,0,0,0), int(Options.SoundVolume * 255.0), 1);
+	VQHandle * vqa = Movie_Create(name, HiddenSurface, Rect(0,0,0,0), Rect(0,0,0,0),
+		int(Options.SoundVolume * 255.0), 1, filter);
 
 	if (vqa != NULL) {
 
@@ -164,6 +168,45 @@ void _Play_Movie(char const * name, ThemeType theme)
 			delete vqa;
 			Keyboard->Clear();
 		}
+	}
+}
+
+
+static bool Campaign_Intro_Archive(MixFileClass const * mixfile, void const * context)
+{
+	MixFileClass const * wanted = (MixFileClass const *)context;
+
+	if (mixfile == MoviesMix) {
+		return(mixfile == wanted);
+	}
+	for (int index = 0; index < MoviesMixLocal.Count(); index++) {
+		if (mixfile == MoviesMixLocal[index]) {
+			return(mixfile == wanted);
+		}
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Plays the opening film of a campaign.
+/// </summary>
+/// <param name="disc">The disc the campaign's files are on, as its CD number.</param>
+/// <remarks>Both base-game movie archives contain INTRO.VQA. Normal overrides retain their
+/// priority, but only the movie archive selected by the campaign is searched. If that archive
+/// is not mounted, the ordinary search order is used.</remarks>
+void Play_Campaign_Intro(int disc)
+{
+	char filename[64];
+
+	sprintf(filename, "MOVIES%02d.MIX", disc + 1);
+
+	MixFileClass * wanted = MFCD::Finder(filename);
+	if (wanted != NULL) {
+		MixFileSearchFilter const filter = {Campaign_Intro_Archive, wanted};
+		Play_Movie("INTRO.VQA", THEME_NONE, true, true, true, &filter);
+	} else {
+		Play_Movie("INTRO.VQA", THEME_NONE, true);
 	}
 }
 
