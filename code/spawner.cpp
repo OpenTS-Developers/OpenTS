@@ -370,6 +370,12 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("The saved game and the file do not agree on who is playing."));
 	}
 
+	/*
+	 * A save carries the options it was played under, but the speed is the player's own and
+	 * is taken from the file that asked for the resume.
+	 */
+	Options.GameSpeed = SpawnConfig.GameSpeed;
+
 	gameloaded = true;
 
 	return(true);
@@ -395,6 +401,7 @@ static bool Spawner_Setup_Campaign(void)
 	}
 
 	Session.Type = GAME_NORMAL;
+	Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;
 	Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;
 	Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;
