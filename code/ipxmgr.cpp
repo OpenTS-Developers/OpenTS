@@ -1478,6 +1478,9 @@ void IPXManagerClass::Reset_Response_Time(bool zero)
 
 	for (i = 0; i < NumConnections; i++) {
 		Connection[i]->Queue->Reset_Response_Time(zero);
+		if (zero) {
+			Connection[i]->Reset_Round_Trip_Time();
+		}
 	}
 
 	if (GlobalChannel)
