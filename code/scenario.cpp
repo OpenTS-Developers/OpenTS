@@ -2513,6 +2513,30 @@ static void Create_Units(bool official)
 	}
 
 	/*
+	 * A house that named a position holds it before anybody draws, so a house that named
+	 * none cannot take one somebody asked for. Two naming the same position: first keeps it.
+	 */
+	int reserved[MAX_PLAYERS * 2];
+	for (int index = 0; index < ARRAY_SIZE(reserved); index++) {
+		reserved[index] = -1;
+	}
+
+	if (choices) {
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * housep = Houses[index];
+			if (housep == NULL || housep->Class->IsMultiplayPassive) {
+				continue;
+			}
+
+			int spot = housep->SpawnWaypoint;
+			if (spot >= 0 && spot < waypts.Count() && !taken[spot]) {
+				reserved[spot] = index;
+				taken[spot] = true;
+			}
+		}
+	}
+
+	/*
 	**	Loop through all houses.  Computer-controlled houses, with Session.Options.Bases
 	**	ON, are treated as though bases are OFF (since we have no base-building
 	**	AI logic.)
@@ -2559,9 +2583,9 @@ static void Create_Units(bool official)
 		**	one of the valid locations at random. The other houses pick the furthest
 		**	wapoint from the existing houses.
 		*/
-		if (choices && hptr->SpawnWaypoint >= 0 && hptr->SpawnWaypoint < waypts.Count() && !taken[hptr->SpawnWaypoint]) {
+		if (choices && hptr->SpawnWaypoint >= 0 && hptr->SpawnWaypoint < waypts.Count() &&
+			reserved[hptr->SpawnWaypoint] == (int)house) {
 			centroid = waypts[hptr->SpawnWaypoint];
-			taken[hptr->SpawnWaypoint] = true;
 			numtaken++;
 		} else if (numtaken == 0) {
 			int pick;

@@ -268,9 +268,10 @@ test('A chosen start position keeps its number and is claimed before the game pi
 		'Houses[index]->SpawnWaypoint >= 0',
 		'Build_Start_Waypoint_List(official, choices)',
 		'taken[index] = choices && index < waypts.Count() && waypts[index] == CELL_NONE;',
-		'if (choices && hptr->SpawnWaypoint >= 0',
+		'reserved[spot] = index;',
+		'reserved[hptr->SpawnWaypoint] == (int)house',
 		'} else if (numtaken == 0) {',
-	], 'holes are spoken for before the claim, and the claim comes before the game picks');
+	], 'every named position is held before the game picks for anybody who named none');
 });
 
 test('The campaign handicap pair lives on the session, and the mission reader never asks the spawner', () => {
@@ -446,11 +447,14 @@ test('A match against other machines is assembled whole and wired to its network
 			'bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const',
 		),
 		[
-			'bool multiplayer = Launch_Type() == LaunchType::Multiplayer;',
+			'kind == LaunchType::Multiplayer ||',
+			'(kind == LaunchType::Resume && HumanCount > 1)',
 			'if (human && multiplayer) {',
 			'slot.Name.empty()',
 			'_stricmp(Slots[other].Name.c_str(), slot.Name.c_str()) == 0',
+			'Slots[other].Color == slot.Color',
+			'slot.Port < 1 || slot.Port > 65535',
 		],
-		'the seat order the machines share is what the name rules are held for',
+		'the seat order the machines share is what the name and color rules are held for',
 	);
 });
