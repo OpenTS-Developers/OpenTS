@@ -12,7 +12,7 @@ target_include_directories(CpuDetect PRIVATE
     "${CMAKE_SOURCE_DIR}/code"
 )
 
-target_compile_definitions(CpuDetect PRIVATE WIN32 _WINDOWS _MBCS)
+target_compile_definitions(CpuDetect PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 # The engine builds these sources with SSE2 and precise floating point. The harness matches
 # that so a result here carries over to the engine.

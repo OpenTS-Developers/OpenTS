@@ -81,18 +81,6 @@ void __cdecl operator delete(void * ptr);
 #define WWINLINE inline
 #endif
 
-// Windows headers define 'min' and 'max' as macros, which would break every
-// std::min and std::max call in the tree.
-#define NOMINMAX
-
-#ifdef min
-#undef min
-#endif
-
-#ifdef max
-#undef max
-#endif
-
 
 /*
 **	This includes the minimum set of compiler defines and pragmas in order to bring the
