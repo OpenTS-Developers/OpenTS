@@ -45,6 +45,9 @@
  * A launch is spent once for the life of the process: the client watches for the game to
  * exit, so a finished or refused spawn ends it rather than falling into the menu.
  */
+static_assert(SpawnerConfigClass::NAME_KEPT == MPLAYER_NAME_MAX - 1,
+	"a seat is judged and ordered by the name the session carries");
+
 static bool SpawnRequested = false;
 static bool SpawnConsumed = false;
 static SpawnerConfigClass SpawnConfig;
@@ -477,6 +480,14 @@ bool Spawner_Prepare(bool & gameloaded)
 	SpawnConfig.Read_INI(ini);
 
 	SpawnConsumed = true;
+
+	/*
+	 * Every kind of launch is played at this speed, so it is judged before they part.
+	 */
+	if (SpawnConfig.GameSpeed < 0 || SpawnConfig.GameSpeed >= OptionsClass::MAX_SPEED_SETTING) {
+		return(Spawner_Refuse("The file asks for game speed %d, and the game has 0 through %d.",
+			SpawnConfig.GameSpeed, OptionsClass::MAX_SPEED_SETTING - 1));
+	}
 
 	// A seat names its country by the rules' own numbering, so the roster is read first.
 	Prepare_Side_Roster();

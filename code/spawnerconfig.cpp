@@ -57,6 +57,30 @@ int Read_Slot_Int(INIClass const & ini, char const * section, int slot, int fall
 
 
 /// <summary>
+/// Reads a dotted address, so that a seat naming an unreachable machine is refused where
+/// every other fault is. The game's own resolver is not reachable from here.
+/// </summary>
+/// <returns>bool; Is this four numbers between 0 and 255?</returns>
+bool Is_Address(std::string const & text)
+{
+	unsigned quad[4] = {};
+	char tail = '\0';
+
+	if (std::sscanf(text.c_str(), "%u.%u.%u.%u%c", &quad[0], &quad[1], &quad[2], &quad[3], &tail) != 4) {
+		return(false);
+	}
+
+	for (unsigned part : quad) {
+		if (part > 255) {
+			return(false);
+		}
+	}
+
+	return(quad[0] != 0 || quad[1] != 0 || quad[2] != 0 || quad[3] != 0);
+}
+
+
+/// <summary>
 /// Names the fault that refuses a launch.
 /// </summary>
 /// <param name="format">A printf style description of the fault.</param>
@@ -92,7 +116,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		SlotType & slot = staging[index];
 		if (ini.Section_Present(section.c_str())) {
 			slot.Occupancy = OccupancyType::Human;
-			slot.Name = Read_Text(ini, section.c_str(), "Name", "");
+			slot.Name = Read_Text(ini, section.c_str(), "Name", "").substr(0, NAME_KEPT);
 			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
 			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
 			slot.Address = Read_Text(ini, section.c_str(), "Ip", slot.Address);
@@ -282,7 +306,22 @@ int SpawnerConfigClass::Playable_Handicap(int asked)
 /// <returns>bool; Can the game this file describes be played?</returns>
 bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const
 {
-	bool multiplayer = Launch_Type() == LaunchType::Multiplayer;
+	/*
+	 * A resumed match against other machines is seated from the file like any other, so it
+	 * is held to the same rules; its kind is the save's rather than the file's.
+	 */
+	LaunchType kind = Launch_Type();
+	bool multiplayer = kind == LaunchType::Multiplayer ||
+		(kind == LaunchType::Resume && HumanCount > 1);
+
+	if (kind != LaunchType::Campaign && HumanCount == 0) {
+		return(Fault(fault, "The file seats nobody at this machine."));
+	}
+
+	if (AIDifficulty < 0 || AIDifficulty >= DIFF_COUNT) {
+		return(Fault(fault, "The file plays the computer at difficulty %d, and there are %d.",
+			AIDifficulty, DIFF_COUNT));
+	}
 
 	int free_seats = SLOT_COUNT - HumanCount;
 	if (AIPlayers < 0 || AIPlayers > free_seats) {
@@ -304,7 +343,7 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 				index + 1, slot.Country, countries));
 		}
 
-		// A co-op team shares one color deliberately; only a color with no scheme refuses.
+		// A computer seat may share a color; only a color with no scheme refuses outright.
 		if ((human || slot.Color != -1) && (slot.Color < 0 || slot.Color >= colors)) {
 			return(Fault(fault, "Seat %d is given color %d, and there are %d to choose from.",
 				index + 1, slot.Color, colors));
@@ -316,7 +355,8 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 		}
 
 		for (int ally : slot.Alliances) {
-			if (ally < -1 || ally >= SLOT_COUNT) {
+			if (ally < -1 || ally >= SLOT_COUNT ||
+				(ally >= 0 && Slots[ally].Occupancy == OccupancyType::Empty)) {
 				return(Fault(fault, "Seat %d is allied to seat %d, which the match does not hold.",
 					index + 1, ally + 1));
 			}
@@ -328,8 +368,10 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 		}
 
 		/*
-		 * A name breaks a tie between two seats of one color, so without one every machine
-		 * reading its own file would arrive at a different seat order.
+		 * The seats are ordered by color, and the client keys what it writes for each of them
+		 * by an order of its own that no other machine can rebuild. Two people of one color
+		 * would therefore take each other's start position and alliances, so a match against
+		 * other machines gives every person a color and a name of their own.
 		 */
 		if (human && multiplayer) {
 			if (slot.Name.empty()) {
@@ -337,10 +379,34 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 			}
 
 			for (int other = 0; other < index; other++) {
-				if (Slots[other].Occupancy == OccupancyType::Human &&
-					_stricmp(Slots[other].Name.c_str(), slot.Name.c_str()) == 0) {
+				if (Slots[other].Occupancy != OccupancyType::Human) {
+					continue;
+				}
+
+				if (_stricmp(Slots[other].Name.c_str(), slot.Name.c_str()) == 0) {
 					return(Fault(fault, "Seats %d and %d are both played by %s.",
 						other + 1, index + 1, slot.Name.c_str()));
+				}
+
+				if (Slots[other].Color == slot.Color) {
+					return(Fault(fault, "Seats %d and %d are both given color %d.",
+						other + 1, index + 1, slot.Color));
+				}
+			}
+
+			/*
+			 * Through a tunnel a machine is named by the number carried where its port would
+			 * go, so every seat but this one needs that number either way.
+			 */
+			if (index != LocalSlot) {
+				if (slot.Port < 1 || slot.Port > 65535) {
+					return(Fault(fault, "Seat %d is reached on port %d, which names no machine.",
+						index + 1, slot.Port));
+				}
+
+				if (TunnelPort == 0 && !Is_Address(slot.Address)) {
+					return(Fault(fault, "Seat %d is reached at %s, which names no machine.",
+						index + 1, slot.Address.c_str()));
 				}
 			}
 		}

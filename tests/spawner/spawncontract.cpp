@@ -538,9 +538,23 @@ int main(void)
 			"[Other1]\n"
 			"Name=Bravo\n"
 			"Side=1\n"
-			"Color=3\n";
-		Check(Judge(shared_color, sizeof(shared_color) - 1, 2, 8, fault),
-			"a cooperative team shares one color on purpose");
+			"Color=3\n"
+			"Ip=10.0.0.9\n"
+			"Port=50002\n";
+		Check(!Judge(shared_color, sizeof(shared_color) - 1, 2, 8, fault),
+			"two people of one color are refused against other machines");
+
+		char const shared_with_computer[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=3\n"
+			"AIPlayers=1\n"
+			"\n"
+			"[HouseColors]\n"
+			"Multi2=3\n";
+		Check(Judge(shared_with_computer, sizeof(shared_with_computer) - 1, 2, 8, fault),
+			"a computer player may take the color its opponent plays");
 
 		char const past_difficulty[] =
 			"[Settings]\n"
@@ -594,7 +608,9 @@ int main(void)
 			"\n"
 			"[Other1]\n"
 			"Side=1\n"
-			"Color=5\n";
+			"Color=5\n"
+			"Ip=10.0.0.9\n"
+			"Port=50002\n";
 		Check(!Judge(nameless_machine, sizeof(nameless_machine) - 1, 2, 8, fault),
 			"a person the file leaves unnamed is refused against other machines");
 
@@ -607,7 +623,9 @@ int main(void)
 			"[Other1]\n"
 			"Name=alpha\n"
 			"Side=1\n"
-			"Color=5\n";
+			"Color=5\n"
+			"Ip=10.0.0.9\n"
+			"Port=50002\n";
 		Check(!Judge(one_name, sizeof(one_name) - 1, 2, 8, fault) &&
 			fault.find("1") != std::string::npos && fault.find("2") != std::string::npos,
 			"two people under one name are refused however either is spelled");
@@ -618,6 +636,94 @@ int main(void)
 			"Color=0\n";
 		Check(Judge(alone, sizeof(alone) - 1, 2, 8, fault),
 			"somebody playing alone need not be named");
+
+		char const nobody[] =
+			"[GlobalFlags]\n"
+			"GlobalFlag0=yes\n";
+		Check(!Judge(nobody, sizeof(nobody) - 1, 2, 8, fault),
+			"a file seating nobody at this machine is refused");
+
+		char const past_ai_difficulty[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"AIDifficulty=7\n";
+		Check(!Judge(past_ai_difficulty, sizeof(past_ai_difficulty) - 1, 2, 8, fault),
+			"a computer difficulty the game does not have is refused");
+
+		char const unreachable[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Ip=10.0.0.9\n";
+		Check(!Judge(unreachable, sizeof(unreachable) - 1, 2, 8, fault),
+			"a machine the file gives no port is refused");
+
+		char const nowhere[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Ip=10.0.0.\n"
+			"Port=50002\n";
+		Check(!Judge(nowhere, sizeof(nowhere) - 1, 2, 8, fault),
+			"an address naming no machine is refused");
+
+		char const tunnelled[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Port=50002\n"
+			"\n"
+			"[Tunnel]\n"
+			"Ip=88.99.11.22\n"
+			"Port=50010\n";
+		Check(Judge(tunnelled, sizeof(tunnelled) - 1, 2, 8, fault),
+			"a tunnelled machine is named by its number rather than an address");
+
+		char const one_kept_name[] =
+			"[Settings]\n"
+			"Name=CommanderAlphaOmegaX\n"
+			"Side=0\n"
+			"Color=3\n"
+			"\n"
+			"[Other1]\n"
+			"Name=CommanderAlphaOmegaY\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Ip=10.0.0.9\n"
+			"Port=50002\n";
+		Check(!Judge(one_kept_name, sizeof(one_kept_name) - 1, 2, 8, fault),
+			"two names the game keeps as one are refused");
+
+		char const unheld_ally[] =
+			"[Settings]\n"
+			"Name=Commander\n"
+			"Side=0\n"
+			"Color=0\n"
+			"\n"
+			"[Multi1_Alliances]\n"
+			"HouseAllyOne=5\n";
+		Check(!Judge(unheld_ally, sizeof(unheld_ally) - 1, 2, 8, fault),
+			"an alliance with a seat nobody occupies is refused");
 
 		char const past_seats[] =
 			"[Settings]\n"

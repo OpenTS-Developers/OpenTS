@@ -39,6 +39,12 @@ class SpawnerConfigClass
 			Resume,
 		};
 
+		/*
+		 * How much of a person's name the game keeps. A seat is judged and ordered by what is
+		 * kept, since that is what every machine compares.
+		 */
+		static constexpr int NAME_KEPT = 19;
+
 		// A file marks a seat human by writing a section for it; an unwritten one is a computer.
 		enum class OccupancyType {
 			Empty,

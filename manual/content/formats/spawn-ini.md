@@ -122,8 +122,10 @@ to the game to choose, which is also what writing no position means. Alliances a
 exactly as written, before the first frame is played, and quietly: a match whose file
 forbids new pacts still starts with the ones it wrote.
 
-Two seats may share a color deliberately — a cooperative team does — and the game does not
-refuse it.
+A computer player may share the color a person plays. Two people may not, in a game against
+other machines: the seats are ordered by color, and the client keys what it writes for each
+of them by an order no other machine can rebuild, so two people of one color would take each
+other's start position and alliances.
 
 ## A game against other machines
 
@@ -149,10 +151,13 @@ on the port its own `Port` key names.
 
 A file describing a game that cannot be played is refused: the reason is shown and written
 to the log, and the game exits rather than falling back to its menu. A launch is refused
-when it asks for more computer players than there are seats, names a country or color the
-loaded rules do not have, names a difficulty that is not one, allies a seat with one the
-match does not hold, or asks for a seat that watches rather than plays. A match against
-other machines is refused as well when a person is left unnamed or two are named the same.
+when it seats nobody at this machine, asks for more computer players than there are seats,
+names a country or color the loaded rules do not have, plays the computer at a difficulty
+the game does not have, asks for a game speed it does not have, names a difficulty that is
+not one, allies a seat with one the match does not hold, or asks for a seat that watches
+rather than plays. A match against other machines is refused as well when a person is left
+unnamed, when two are named the same or given one color, and when a machine other than this
+one is given no port to answer on or no address to answer at.
 
 A difficulty easier than the three the game has is not refused: the seat is played at the
 easiest one the game does have.
