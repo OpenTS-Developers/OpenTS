@@ -116,6 +116,7 @@
 
 #include "special.hh"
 
+#include <array>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -125,6 +126,7 @@
 #include <fcntl.h>
 #include <io.h>
 #include <share.h>
+#include <span>
 
 
 /****************************************
@@ -539,17 +541,33 @@ static void Record_Global_Packet_Rejection(NetGlobal::DecodeError error)
 
 
 /// <summary>Resolves a registered packet source.</summary>
-static NodeNameType * Session_Member_From_Address(IPXAddressClass & address, int & player_index)
+static NodeNameType * Session_Member_From_Address(IPXAddressClass const & address, int & player_index, NetGlobal::DecodeError & error)
 {
+	std::array<NetGlobal::Endpoint, MAX_PLAYERS> endpoints = {};
+	std::array<NodeNameType *, MAX_PLAYERS> players = {};
+	std::array<int, MAX_PLAYERS> player_indices = {};
+	std::size_t count = 0;
+
 	player_index = -1;
 	for (int index = 0; index < Session.Players.Count(); index++) {
 		NodeNameType * player = Session.Players[index];
-		if (player != NULL && player->Address == address) {
-			player_index = index;
-			return(player);
+		if (player != NULL && count < endpoints.size()) {
+			endpoints[count] = {player->Address.Get_IP(), player->Address.Get_Port()};
+			players[count] = player;
+			player_indices[count] = index;
+			count++;
 		}
 	}
-	return(NULL);
+
+	NetGlobal::Endpoint const source{address.Get_IP(), address.Get_Port()};
+	NetGlobal::EndpointResolution const resolution = NetGlobal::Resolve_Sender(source, std::span<NetGlobal::Endpoint const>(endpoints.data(), count));
+	error = resolution.Error;
+	if (resolution.Error != NetGlobal::DecodeError::NONE || resolution.RosterIndex < 0) {
+		return(NULL);
+	}
+
+	player_index = player_indices[resolution.RosterIndex];
+	return(players[resolution.RosterIndex]);
 }
 
 
@@ -594,9 +612,13 @@ void IPX_Call_Back(void)
 
 			if (Session.GProductID == IPXGlobalConnClass::COMMAND_AND_CONQUER2) {
 				int sender_index = -1;
-				NodeNameType * sender = Session_Member_From_Address(Session.GAddress, sender_index);
+				NetGlobal::DecodeError resolution_error = NetGlobal::DecodeError::SENDER_NOT_MEMBER;
+				NodeNameType * sender = Session_Member_From_Address(Session.GAddress, sender_index, resolution_error);
 				NetGlobal::ValidationContext const context = Global_Validation_Context(sender);
 				NetGlobal::DecodeError error = NetGlobal::Validate_In_Game_Packet(Session.GPacket, Session.GPacketlen, context);
+				if (error == NetGlobal::DecodeError::SENDER_NOT_MEMBER && resolution_error == NetGlobal::DecodeError::AMBIGUOUS_SENDER) {
+					error = resolution_error;
+				}
 
 				if (error != NetGlobal::DecodeError::NONE) {
 					Record_Global_Packet_Rejection(error);

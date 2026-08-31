@@ -170,7 +170,9 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <ctime>
+#include <optional>
 
 
 /********************************** Defines *********************************/
@@ -270,6 +272,7 @@ unsigned short SentCommandCount;								// # cmds I've sent out
 
 static std::array<unsigned int, static_cast<std::size_t>(NetPacket::DecodeError::COUNT)>
 	NetworkPacketDrops = {};
+static constexpr std::uint32_t MAXIMUM_REPORTED_FRAME_LEAD = 250;
 
 
 /// <summary>Records and rate-limits one stable event-packet rejection reason.</summary>
@@ -2022,6 +2025,12 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	}
 
 	EventClass const & event = decoded.Envelope;
+	std::optional<std::int64_t> const reported_frame =
+		NetPacket::Compute_Reported_Frame(event.Frame, event.Data.FrameInfo.Delay, Frame, MAXIMUM_REPORTED_FRAME_LEAD);
+	if (!reported_frame) {
+		Record_Network_Packet_Drop(NetPacket::DecodeError::INVALID_FRAME_ARITHMETIC);
+		return(RC_NORMAL);
+	}
 
 	//------------------------------------------------------------------------
 	// Get the index of the sender
@@ -2035,7 +2044,7 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	//------------------------------------------------------------------------
 	//	Compute the other player's frame # (at the time this packet was sent)
 	//------------------------------------------------------------------------
-	int const frame = event.Frame - event.Data.FrameInfo.Delay;
+	int const frame = static_cast<int>(*reported_frame);
 	if (their[index].frame < frame) {
 
 		//.....................................................................
@@ -2063,7 +2072,8 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	//------------------------------------------------------------------------
 	if (event.Data.FrameInfo.CommandCount > their[index].sent) {
 
-		if ( abs((int)(their[index].sent - event.Data.FrameInfo.CommandCount)) > 500) {
+		unsigned int const command_count_delta = static_cast<unsigned int>(event.Data.FrameInfo.CommandCount) - their[index].sent;
+		if (command_count_delta > 500) {
 			FILE *fp;
 			fp = fopen("badcount.txt","wt");
 			if (fp) {

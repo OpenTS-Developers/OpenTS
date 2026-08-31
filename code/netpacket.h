@@ -13,6 +13,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <optional>
 #include <span>
 #include <vector>
 
@@ -36,6 +37,7 @@ namespace NetPacket
 		FRAMESYNC_NOT_ALONE,
 		NESTED_ENVELOPE,
 		SENDER_MISMATCH,
+		INVALID_FRAME_ARITHMETIC,
 		INVALID_EVENT_LENGTH,
 		TRUNCATED_EVENT,
 		ZERO_MEGAMISSION_COUNT,
@@ -87,6 +89,9 @@ namespace NetPacket
 
 
 	DecodeResult Decode_Event_Packet(std::span<std::byte const> packet, Encoding encoding, int expected_sender);
+
+	std::optional<std::int64_t> Compute_Reported_Frame(int event_frame, std::uint8_t delay) noexcept;
+	std::optional<std::int64_t> Compute_Reported_Frame(int event_frame, std::uint8_t delay, int receiver_frame, std::uint32_t maximum_lead) noexcept;
 
 	char const * Error_Name(DecodeError error) noexcept;
 }

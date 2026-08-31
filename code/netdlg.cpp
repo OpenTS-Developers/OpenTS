@@ -283,18 +283,9 @@ void Destroy_Connection(int id, int error)
 	//------------------------------------------------------------------------
 	Ipx.Delete_Connection(id);
 
-	// A departing observer's house has nothing to hand over, so only a player's is taken over.
-	if (error) {
+	// Every survivor reports the departure; execution makes later copies no-ops.
+	if (PlayerPtr != NULL) {
 		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::REMOVEPLAYER, id));
-	} else if (!housep->IsObserver) {
-		if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
-			housep->Flag_To_Die();
-		} else {
-			//------------------------------------------------------------------------
-			// Turn the player's house over to the computer's AI
-			//------------------------------------------------------------------------
-			housep->AI_Takeover();
-		}
 	}
 
 	Session.NumPlayers--;

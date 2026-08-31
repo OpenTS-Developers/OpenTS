@@ -1045,54 +1045,6 @@ int IPXManagerClass::Service(void)
 								break;
 							}
 						}
-
-						if (!found_address) {
-							// A tunnel ID names a player rather than a place, so it cannot
-							// go stale the way an address a player moved away from can.
-							if ( TransportMode != TRANSPORT_TUNNEL && !ScenarioInit)
-							{
-								/*
-								**	This packet came from an unknown source. If it looks like one of our players
-								**	packets then it might be from a player whos IP has changed.
-								*/
-								int frame_info_size = sizeof(CommHeaderType) + offsetof(EventClass, Data) +
-									size_of(EventClass, Data.FrameInfo);
-								if (Frame > 8 && packetlen >= frame_info_size) {
-									if (packet->Code == ConnectionClass::PACKET_DATA_NOACK){
-										/*
-										**	Magic number and packet code are valid. It's probably a C&C packet.
-										*/
-										unsigned char event_type;
-										int id;
-										memcpy(&event_type, temp_receive_buffer + sizeof(CommHeaderType), sizeof(event_type));
-										memcpy(&id, temp_receive_buffer + sizeof(CommHeaderType) + offsetof(EventClass, ID), sizeof(id));
-
-										/*
-										**	If this is a framesync packet then grab the address and match it to an existing player.
-										*/
-										if (event_type == EventClass::FRAMESYNC) {
-											assert (id != PlayerPtr->ID);
-											for ( int i=1 ; i<Session.Players.Count() ; i++) {
-												if (Session.Players[i]->Player.ID == id) {
-
-													Session.Players[i]->Address = address;
-
-													if ( Connection_Index(id) != CONNECTION_NONE ) //	(else Create_Connections() has not yet been called)
-													{
-														/*
-														**	Found a likely candidate. Update his address. It should be OK to drop this
-														**	packet since it's a framesync packet and will will pick up the next one.
-														*/
-														Connection[Connection_Index(id)]->Address = address;
-													}
-													break;
-												}
-											}
-										}
-									}
-								}
-							}
-						}
 					}
 				}
 			}
