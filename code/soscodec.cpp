@@ -263,6 +263,8 @@ uint32_t __cdecl General_sosCODECDecompressData(SosCompressInfo * info, uint32_t
 	unsigned char const * source = (unsigned char const *)info->Source;
 	unsigned char * dest = (unsigned char *)info->Dest;
 
+	
+	int const stride = (bits == 16) ? 2 : 1; 
 	if (info->ChannelCount == 2) {
 		if ((samples % 2) != 0) {
 			return(bytes);
@@ -272,9 +274,9 @@ uint32_t __cdecl General_sosCODECDecompressData(SosCompressInfo * info, uint32_t
 		int const sampled = (bits == 16) ? 4 : 2;
 
 		Decode_General(info->Channels[0], source, dest, perchannel, 2, sampled, bits);
-		Decode_General(info->Channels[1], source + 1, dest + (bits == 16 ? 2 : 1), perchannel, 2, sampled, bits);
+		Decode_General(info->Channels[1], source + 1, dest + stride, perchannel, 2, sampled, bits);
 	} else {
-		Decode_General(info->Channels[0], source, dest, samples, 1, (bits == 16) ? 2 : 1, bits);
+		Decode_General(info->Channels[0], source, dest, samples, 1, stride, bits);
 	}
 
 	return(bytes);
