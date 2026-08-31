@@ -52,4 +52,37 @@ namespace NetSemantic
 	{
 		return(owner == none || Index_Is_Valid(owner, count));
 	}
+
+
+	/// <summary>Checks that a timing event came from the resolved master.</summary>
+	bool Timing_Authority_Is_Valid(int sender, int master) noexcept
+	{
+		return(master >= 0 && sender == master);
+	}
+
+
+	/// <summary>Validates legacy propagation delay for its negotiated protocol.</summary>
+	bool Response_Time_Is_Valid(unsigned int delay, unsigned int minimum_delay, unsigned int frame_send_rate, bool compressed) noexcept
+	{
+		if (delay < minimum_delay) {
+			return(false);
+		}
+		if (!compressed) {
+			return(true);
+		}
+		return(frame_send_rate >= 1 && frame_send_rate <= 10 && delay >= 2 * frame_send_rate
+			&& delay <= 250 && delay % frame_send_rate == 0);
+	}
+
+
+	/// <summary>Checks synchronized frame-rate and scheduling bounds.</summary>
+	bool Timing_Values_Are_Valid(unsigned int desired_frame_rate, unsigned int max_ahead, unsigned int frame_send_rate) noexcept
+	{
+		if (desired_frame_rate == 0 || desired_frame_rate > 60 || frame_send_rate == 0 || frame_send_rate > 10) {
+			return(false);
+		}
+
+		unsigned int const minimum_max_ahead = frame_send_rate == 1 ? 4 : 3 * frame_send_rate;
+		return(max_ahead >= minimum_max_ahead && max_ahead <= 250 && max_ahead % frame_send_rate == 0);
+	}
 }

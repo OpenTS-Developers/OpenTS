@@ -892,7 +892,7 @@ int ConnectionClass::Discard_Undeliverable_Packets(void)
 int ConnectionClass::Service_Receive_Queue (void)
 {
 	ReceiveQueueType *rec_entry;    // ptr to receive entry header
-	CommHeaderType *packet_hdr;     // packet header
+	CommHeaderType packet_header;   // packet header
 	int i;
 
 	/*------------------------------------------------------------------------
@@ -905,13 +905,18 @@ int ConnectionClass::Service_Receive_Queue (void)
 		rec_entry = Queue->Get_Receive(i);
 
 		if (rec_entry->IsRead) {
-			packet_hdr = (CommHeaderType *)(rec_entry->Buffer);
+			if (rec_entry->BufLen < (int)sizeof(packet_header)) {
+				Queue->UnQueue_Receive(NULL, NULL, i, NULL, NULL);
+				i--;
+				continue;
+			}
+			memcpy(&packet_header, rec_entry->Buffer, sizeof(packet_header));
 
-			if (packet_hdr->Code == PACKET_DATA_NOACK) {
+			if (packet_header.Code == PACKET_DATA_NOACK) {
 				Queue->UnQueue_Receive(NULL,NULL,i,NULL,NULL);
 				i--;
 
-			} else if (packet_hdr->PacketID < LastSeqID) {
+			} else if (packet_header.PacketID < LastSeqID) {
 				Queue->UnQueue_Receive(NULL,NULL,i,NULL,NULL);
 				i--;
 			}

@@ -30,7 +30,6 @@ namespace {
 
 using Bytes = std::vector<std::byte>;
 using VariableDataType = decltype(std::declval<EventClass>().Data.Variable);
-using NetworkReportType = decltype(std::declval<EventClass>().Data.NetworkReport);
 
 constexpr int Sender = 3;
 constexpr int Frame = 120;
@@ -281,6 +280,18 @@ void Test_Event_Semantics(void)
 	Check(NetSemantic::Animation_Owner_Is_Valid(-1, -1, 5) && NetSemantic::Animation_Owner_Is_Valid(4, -1, 5),
 		"animation-owner validation accepts its sentinel and last entry");
 	Check(!NetSemantic::Animation_Owner_Is_Valid(5, -1, 5), "animation-owner validation rejects its one-past entry");
+	Check(NetSemantic::Timing_Authority_Is_Valid(2, 2), "the resolved master may send timing events");
+	Check(!NetSemantic::Timing_Authority_Is_Valid(3, 2), "a guest may not send timing events");
+	Check(NetSemantic::Response_Time_Is_Valid(2, 2, 0, false), "legacy response time accepts its minimum");
+	Check(NetSemantic::Response_Time_Is_Valid(255, 2, 0, false), "legacy response time preserves its byte range");
+	Check(NetSemantic::Response_Time_Is_Valid(6, 2, 3, true), "compressed response time accepts two aligned periods");
+	Check(!NetSemantic::Response_Time_Is_Valid(3, 2, 3, true), "compressed response time rejects one period");
+	Check(!NetSemantic::Response_Time_Is_Valid(7, 2, 3, true), "compressed response time rejects misalignment");
+	Check(!NetSemantic::Response_Time_Is_Valid(255, 2, 3, true), "compressed response time enforces the scheduling cap");
+	Check(NetSemantic::Timing_Values_Are_Valid(60, 9, 3), "timing values accept a balanced setting");
+	Check(!NetSemantic::Timing_Values_Are_Valid(0, 9, 3), "timing values reject zero desired FPS");
+	Check(!NetSemantic::Timing_Values_Are_Valid(60, 10, 3), "timing values reject an unaligned horizon");
+	Check(!NetSemantic::Timing_Values_Are_Valid(60, 251, 10), "timing values reject a horizon above the cap");
 }
 
 

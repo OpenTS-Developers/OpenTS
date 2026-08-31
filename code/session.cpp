@@ -430,6 +430,32 @@ bool SessionClass::Am_I_Master(void)
 }	// end of Am_I_Master
 
 
+/// <summary>Returns the first active network-human house in deterministic order.</summary>
+int SessionClass::Master_Player_ID(void) const
+{
+	if (Type == GAME_INTERNET) {
+		for (int i = 0; i < Houses.Count(); i++) {
+			HouseClass const * house = Houses[i];
+			if (house == NULL || !house->IsHuman) {
+				continue;
+			}
+			if ((MasterPlayerID >= 0 && house->HeapID == MasterPlayerID)
+				|| (MasterPlayerID < 0 && stricmp(house->IniName, MasterPlayerName) == 0)) {
+				return(house->HeapID);
+			}
+		}
+	}
+
+	for (int i = 0; i < Houses.Count(); i++) {
+		HouseClass const * house = Houses[i];
+		if (house != NULL && house->IsHuman) {
+			return(house->HeapID);
+		}
+	}
+	return(-1);
+}
+
+
 /***************************************************************************
  * SessionClass::Read_MultiPlayer_Settings -- reads settings INI           *
  *                                                                         *

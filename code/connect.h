@@ -230,7 +230,6 @@ class ConnectionClass
 		virtual int Send(char *buf, int buflen, void *extrabuf,
 			int extralen) = 0;
 		void Record_Packet_Drop(PacketDropReasonType reason);
-		/// <summary>Maps a shared admission failure to this connection's stable counter.</summary>
 		void Record_Admission_Drop(NetAdmission::Error error, unsigned char code);
 
 		/*

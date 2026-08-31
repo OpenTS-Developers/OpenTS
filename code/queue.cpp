@@ -53,6 +53,9 @@
  *   Build_Send_Packet -- Builds a big packet from a bunch of little ones. *
  *   Add_Uncompressed_Events -- adds uncompressed events to a packet       *
  *   Add_Compressed_Events -- adds compressed events to a packet           *
+ *   Breakup_Receive_Packet -- Splits a big packet into little ones.       *
+ *   Extract_Uncompressed_Events -- extracts events from a packet          *
+ *   Extract_Compressed_Events -- extracts events from a packet            *
  *                                                                         *
  * DoList Management:                                                      *
  *   Execute_DoList -- Executes commands from the DoList                   *

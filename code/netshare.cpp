@@ -662,7 +662,7 @@ void PumpGameopts(bool force, bool now)
 /// <param name="options">The encoded option string to send.</param>
 void SendPublicGameopts(char const * options)
 {
-	GlobalPacketType packet = {};
+	GlobalPacketType packet;
 	memset(&packet, 0, sizeof(packet));
 	packet.Command = NET_PUB_GAMEOPT;
 	strcpy(packet.Name, Session.Handle);
@@ -1297,7 +1297,7 @@ void Update_Network_Dialog_Preview(HWND win)
 	switch (Session.Type) {
 		case GAME_IPX:
 			if (WS_Top_Window_ID() == IDD_MPLAYER_GUEST && !Find_Local_Scenario(Session.ScenarioFileName, Session.ScenarioFileLength, Session.ScenarioDigest, Session.ScenarioIsOfficial)) {
-				GlobalPacketType packet = {};
+				GlobalPacketType packet;
 				memset(&packet, 0, sizeof(packet));
 				packet.Command = NET_REQ_PREVIEW;
 				while (true) {
@@ -1346,7 +1346,7 @@ void Receive_Random_Map_Preview(void)
 	Ipx.Set_Timing(50, -1, 5000);
 	DebugString("Starting map preview download\n");
 
-	GlobalPacketType packet = {};
+	GlobalPacketType packet;
 	memset(&packet, 0, sizeof(packet));
 	packet.Command = NET_PREVIEW_ACK;
 	DebugString("Sending preview mode acks\n");
@@ -1454,7 +1454,7 @@ void Send_Preview_To_Guests(void)
 	if (MultiplayerMapPreview != NULL && stricmp(Session.ScenarioFileName, RANDOM_MAP_FILE_NAME) == 0 && Session.Players.Count() > 1) {
 		DebugString("Starting map preview upload\n");
 
-		GlobalPacketType packet = {};
+		GlobalPacketType packet;
 		memset(&packet, 0, sizeof(packet));
 		packet.Command = NET_PREVIEW_MODE;
 		strcpy(packet.Name, Session.Handle);

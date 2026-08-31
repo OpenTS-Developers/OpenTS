@@ -89,6 +89,8 @@ namespace {
 		InvalidRemovedHouse,
 		InvalidLatencyFudge,
 		UnauthorizedSubject,
+		UnauthorizedTiming,
+		InvalidTimingValues,
 		Count,
 	};
 
@@ -103,6 +105,8 @@ namespace {
 		"invalid removed house",
 		"invalid latency fudge",
 		"unauthorized subject",
+		"unauthorized timing",
+		"invalid timing values",
 	};
 
 	static_assert(ARRAY_SIZE(EventRejectReasonNames) == (int)EventRejectReason::Count);
@@ -1138,8 +1142,20 @@ void EventClass::Execute(void)
 		**	Adjust connection timing for multiplayer games
 		*/
 		case RESPONSE_TIME:
+		{
+			int const master = Session.Master_Player_ID();
+			if (!Session.Play && !NetSemantic::Timing_Authority_Is_Valid(ID, master)) {
+				Log_Event_Rejection(EventRejectReason::UnauthorizedTiming, Type, ID, master);
+				break;
+			}
+			if (!NetSemantic::Response_Time_Is_Valid(Data.FrameInfo.Delay, NETWORK_MIN_MAX_AHEAD, Session.FrameSendRate,
+				Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP)) {
+				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.FrameInfo.Delay);
+				break;
+			}
 			Session.MaxAhead = Data.FrameInfo.Delay;
 			break;
+		}
 
 		/*
 		**	Save a multiplayer game (this event is only generated in multiplayer mode)
@@ -1213,7 +1229,23 @@ void EventClass::Execute(void)
 		// COMM_MULTI_E_COMP protocol.
 		//
 		case TIMING:
-			Data.Timing.MaxAhead -= Scen->Special.IsFogOfWar ? 10 : 0;
+		{
+			int const master = Session.Master_Player_ID();
+			if (!Session.Play && !NetSemantic::Timing_Authority_Is_Valid(ID, master)) {
+				Log_Event_Rejection(EventRejectReason::UnauthorizedTiming, Type, ID, master);
+				break;
+			}
+
+			unsigned int const padding = Scen->Special.IsFogOfWar ? 10 : 0;
+			if (Data.Timing.MaxAhead < padding) {
+				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.Timing.MaxAhead);
+				break;
+			}
+			unsigned int const max_ahead = Data.Timing.MaxAhead - padding;
+			if (!NetSemantic::Timing_Values_Are_Valid(Data.Timing.DesiredFrameRate, max_ahead, Data.Timing.FrameSendRate)) {
+				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, max_ahead);
+				break;
+			}
 
 #if (TIMING_FIX)
 			//
@@ -1223,9 +1255,9 @@ void EventClass::Execute(void)
 			// period of vulnerability's frame start & end values, so we
 			// can reschedule these events to execute after it's over.
 			//
-			if (Data.Timing.MaxAhead > Session.MaxAhead || Data.Timing.FrameSendRate > Session.FrameSendRate) {
+			if (max_ahead > Session.MaxAhead || Data.Timing.FrameSendRate > Session.FrameSendRate) {
 				NewMaxAheadFrame1 = Frame;
-				NewMaxAheadFrame2 = Data.Timing.FrameSendRate * ((Data.Timing.FrameSendRate + Data.Timing.MaxAhead + Frame - 1) / Data.Timing.FrameSendRate);
+				NewMaxAheadFrame2 = Data.Timing.FrameSendRate * ((Data.Timing.FrameSendRate + max_ahead + Frame - 1) / Data.Timing.FrameSendRate);
 			} else {
 				NewMaxAheadFrame1 = 0;
 				NewMaxAheadFrame2 = 0;
@@ -1235,7 +1267,7 @@ void EventClass::Execute(void)
 			ul = Session.MaxMaxAhead;
 
 			Session.DesiredFrameRate = Data.Timing.DesiredFrameRate;
-			Session.MaxAhead = Data.Timing.MaxAhead;
+			Session.MaxAhead = max_ahead;
 
 			if (ul <= Session.MaxAhead) {
 				Session.MaxMaxAhead = Session.MaxAhead;
@@ -1244,6 +1276,7 @@ void EventClass::Execute(void)
 			Session.FrameSendRate = Data.Timing.FrameSendRate;
 
 			break;
+		}
 
 		//
 		// This event tells all systems what the other systems' process
