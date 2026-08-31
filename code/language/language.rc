@@ -866,18 +866,16 @@ BEGIN
                     47,97,115,14
 END
 
-IDD_OPT_CTRL_MP DIALOG DISCARDABLE  0, 0, 209, 93
+IDD_OPT_CTRL_MP DIALOG DISCARDABLE  0, 0, 209, 75
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
-                    BS_OWNERDRAW,55,66,99,14
+                    BS_OWNERDRAW,55,48,99,14
     CONTROL         "Game Controls",IDC_GAME_CONTROLS,"Button",BS_OWNERDRAW,
                     55,12,99,14
-    CONTROL         "Save Game",IDC_SAVE_GAME,"Button",BS_OWNERDRAW,
-                    55,30,99,14
     CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
-                    55,48,99,14
+                    55,30,99,14
 END
 
 IDD_SERIAL_PHONE_LIST DIALOG DISCARDABLE  0, 0, 344, 167

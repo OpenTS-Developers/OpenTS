@@ -334,7 +334,7 @@ test('A resume is judged before it is loaded, and the save answers for the rest'
 		'gameloaded = true;',
 	], 'a network resume seats the players and opens the network before the save is read');
 
-	for (const dialog of ['IDD_OPT_CTRL_MP', 'IDD_OPT_CTRL_WOL']) {
+	for (const dialog of ['IDD_OPT_CTRL_WOL']) {
 		const template = source('code/language/language.rc');
 		const body = template.slice(template.indexOf(dialog + ' DIALOG'));
 		assert.match(
