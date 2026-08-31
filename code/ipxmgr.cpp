@@ -1310,6 +1310,22 @@ unsigned int IPXManagerClass::Response_Time(void)
 }	/* end of Response_Time */
 
 
+/// <summary>Returns the worst measured round trip among active private links.</summary>
+std::optional<NetTiming::Milliseconds> IPXManagerClass::Worst_Local_Round_Trip_MS(void) const
+{
+	NetTiming::Milliseconds worst = 0;
+	for (int i = 0; i < NumConnections; i++) {
+		std::optional<NetTiming::Milliseconds> const round_trip = Connection[i]->Smoothed_Round_Trip_MS();
+		if (!round_trip) {
+			return(std::nullopt);
+		}
+		worst = std::max(worst, *round_trip);
+	}
+
+	return(worst);
+}
+
+
 /// <summary>
 /// Fetches the average response time of a single connection.
 /// This routine is used by the network queue logic to pace itself against the slowest

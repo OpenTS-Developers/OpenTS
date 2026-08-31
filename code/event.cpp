@@ -76,6 +76,9 @@
 #include "ramp.hh"
 #include "special.hh"
 
+#include <cstdint>
+#include <limits>
+
 
 namespace {
 	enum class EventRejectReason : unsigned int {
@@ -93,7 +96,10 @@ namespace {
 		InvalidLatencyFudge,
 		UnauthorizedSubject,
 		UnauthorizedTiming,
+		InvalidTimingArithmetic,
 		InvalidTimingValues,
+		UnschedulableTiming,
+		InvalidNetworkReport,
 		Count,
 	};
 
@@ -112,7 +118,10 @@ namespace {
 		"invalid latency fudge",
 		"unauthorized subject",
 		"unauthorized timing",
+		"invalid timing arithmetic",
 		"invalid timing values",
+		"unschedulable timing",
+		"invalid network report",
 	};
 
 	static_assert(ARRAY_SIZE(EventRejectReasonNames) == (int)EventRejectReason::Count);
@@ -707,7 +716,6 @@ void EventClass::Execute(void)
 //	bool formation = false;
 	int i;
 	int index;
-	unsigned int ul;
 //	RTTIType rt;
 
 	//if (Debug_Print_Events) {
@@ -1209,7 +1217,7 @@ void EventClass::Execute(void)
 				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.FrameInfo.Delay);
 				break;
 			}
-			Session.MaxAhead = Data.FrameInfo.Delay;
+			Session.Apply_Network_Response_Time(Data.FrameInfo.Delay, Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
 			break;
 		}
 
@@ -1250,6 +1258,7 @@ void EventClass::Execute(void)
 
 			DebugString("Executing REMOVEPLAYER event. Frame is %d\n", ::Frame);
 			Disable_Multiplayer_Saving();
+			Session.Remove_Network_Timing_Player(index, Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
 			house = Houses[index];
 			if (house->IsObserver) {
 				break;
@@ -1295,14 +1304,31 @@ void EventClass::Execute(void)
 				break;
 			}
 
-			unsigned int const padding = Scen->Special.IsFogOfWar ? 10 : 0;
-			if (Data.Timing.MaxAhead < padding) {
+			if (Session.CommProtocol != COMM_PROTOCOL_MULTI_E_COMP || Frame < 0) {
+				Log_Event_Rejection(EventRejectReason::InvalidTimingArithmetic, Type, ID, Frame);
+				break;
+			}
+			if (!NetSemantic::Timing_Values_Are_Valid(Data.Timing.DesiredFrameRate, Data.Timing.MaxAhead, Data.Timing.FrameSendRate)) {
 				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, Data.Timing.MaxAhead);
 				break;
 			}
-			unsigned int const max_ahead = Data.Timing.MaxAhead - padding;
-			if (!NetSemantic::Timing_Values_Are_Valid(Data.Timing.DesiredFrameRate, max_ahead, Data.Timing.FrameSendRate)) {
-				Log_Event_Rejection(EventRejectReason::InvalidTimingValues, Type, ID, max_ahead);
+
+			NetTiming::TimingSettings const settings{Data.Timing.FrameSendRate, Data.Timing.MaxAhead};
+			unsigned int const old_frame_send_rate = Session.FrameSendRate;
+			unsigned int const old_max_ahead = Session.MaxAhead;
+
+			if (settings.MaxAhead > old_max_ahead || settings.FrameSendRate > old_frame_send_rate) {
+				std::uint64_t const boundary = settings.FrameSendRate * ((static_cast<std::uint64_t>(Frame) + NetTiming::MAXIMUM_MAX_AHEAD
+					+ settings.FrameSendRate - 1) / settings.FrameSendRate);
+				if (boundary > static_cast<std::uint64_t>((std::numeric_limits<int>::max)())) {
+					Log_Event_Rejection(EventRejectReason::InvalidTimingArithmetic, Type, ID, Frame);
+					break;
+				}
+			}
+
+			NetTiming::ScheduleResult const result = Session.Schedule_Network_Timing(settings, Data.Timing.DesiredFrameRate, static_cast<unsigned int>(Frame));
+			if (result == NetTiming::ScheduleResult::Rejected) {
+				Log_Event_Rejection(EventRejectReason::UnschedulableTiming, Type, ID, static_cast<int>(settings.MaxAhead));
 				break;
 			}
 
@@ -1314,26 +1340,16 @@ void EventClass::Execute(void)
 			// period of vulnerability's frame start & end values, so we
 			// can reschedule these events to execute after it's over.
 			//
-			if (max_ahead > Session.MaxAhead || Data.Timing.FrameSendRate > Session.FrameSendRate) {
+			if (result == NetTiming::ScheduleResult::Applied && (Session.MaxAhead > old_max_ahead || Session.FrameSendRate > old_frame_send_rate)) {
+				std::uint64_t const boundary = Session.FrameSendRate * ((static_cast<std::uint64_t>(Frame) + Session.MaxAhead
+					+ Session.FrameSendRate - 1) / Session.FrameSendRate);
 				NewMaxAheadFrame1 = Frame;
-				NewMaxAheadFrame2 = Data.Timing.FrameSendRate * ((Data.Timing.FrameSendRate + max_ahead + Frame - 1) / Data.Timing.FrameSendRate);
+				NewMaxAheadFrame2 = static_cast<int>(boundary);
 			} else {
 				NewMaxAheadFrame1 = 0;
 				NewMaxAheadFrame2 = 0;
 			}
 #endif
-
-			ul = Session.MaxMaxAhead;
-
-			Session.DesiredFrameRate = Data.Timing.DesiredFrameRate;
-			Session.MaxAhead = max_ahead;
-
-			if (ul <= Session.MaxAhead) {
-				Session.MaxMaxAhead = Session.MaxAhead;
-			}
-
-			Session.FrameSendRate = Data.Timing.FrameSendRate;
-
 			break;
 		}
 
@@ -1348,6 +1364,14 @@ void EventClass::Execute(void)
 					Session.Players[i]->Player.ProcessTime = Data.ProcessTime.AverageTicks;
 					break;
 				}
+			}
+			break;
+
+		case NETWORK_REPORT:
+			if (Session.CommProtocol != COMM_PROTOCOL_MULTI_E_COMP || Frame < 0
+				|| !Session.Record_Network_Report(ID, Data.NetworkReport.AverageProcessMilliseconds,
+					Data.NetworkReport.WorstRoundTripMilliseconds, static_cast<unsigned int>(Frame))) {
+				Log_Event_Rejection(EventRejectReason::InvalidNetworkReport, Type, ID, Data.NetworkReport.WorstRoundTripMilliseconds);
 			}
 			break;
 
