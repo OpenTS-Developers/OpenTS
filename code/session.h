@@ -236,6 +236,9 @@ struct NodeNameType {
 		memset(this, 0, sizeof(*this));
 		Player.SpawnChoice = -1;
 		Player.Handicap = -1;
+
+		// Zeroing the node above wipes an address that names nobody in particular.
+		Address = IPXAddressClass();
 	}
 };
 
