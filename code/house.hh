@@ -14,13 +14,12 @@
 #pragma once
 
 
+#define HOUSE_NAME_MAX	20
+
 /**********************************************************************
 **	The houses that can be played are listed here. Each has their own
 **	personality and strengths.
 */
-#define HOUSE_NAME_MAX	20
-
-
 enum HousesType {
 	HOUSE_NONE=-1,
 
