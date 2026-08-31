@@ -15,10 +15,9 @@ manual guides.
 
 ## Project intent
 
-OpenTS gives equal weight to a maintained, playable engine and to a capable
-modding and engine-development platform. Internal implementation may evolve,
-while externally consumed behavior changes deliberately and with migration
-guidance when compatibility is broken.
+OpenTS maintains both a playable engine and a platform for modding and engine
+development. Internal implementation may change, but compatibility breaks
+need an explicit decision and migration guidance.
 
 The archived TibSun reconstruction and original executable are historical
 evidence. Binary matching is not the acceptance criterion for active OpenTS
@@ -26,6 +25,31 @@ development.
 
 Visual Studio 2022 Win32 Debug and Release are the supported build target.
 A build result is not runtime evidence.
+
+## Writing prose
+
+Write documentation and project communication in plain, direct English. Use
+concrete claims and familiar words. Cut restatement, stock caveats,
+meta-commentary about the writing or edit, and ceremonial conclusions that
+only recap the preceding text.
+
+Keep reference and workflow documents dense and easy to scan. History,
+rationale, and other narrative documents may keep the context, detail, and
+transitions needed to explain why events or decisions matter. Never remove a
+useful distinction, qualification, or example merely to make a document
+shorter.
+
+Treat AI-assisted prose as a draft. Verify every claim, then rewrite and trim
+it before submission. The contrasts below illustrate the style; they are not
+project facts or templates to copy.
+
+- Reference prose: avoid "This option is used in order to select which output
+  directory will be used." Prefer "`OutputDirectory=` selects the output
+  directory."
+- Narrative prose: avoid "The team adopted the library. Problems led to its
+  replacement." Prefer "The team first adopted the library because it matched
+  the existing API. Testing later exposed timing differences, so it was
+  replaced."
 
 ## Source changes
 
@@ -44,21 +68,19 @@ A build result is not runtime evidence.
   compatibility boundaries.
 - Trace initialization, ownership, callers, persistence, and external effects
   before moving state or replacing a subsystem.
-- Preserve historical file headers and all SPDX, copyright, modification, and
-  GPL Section 7 notices.
+- Leave historical file headers and legal notices unchanged.
 - Keep comments sparse and brief: one sentence on what the code cannot show,
-  never the edit itself. `code/AGENTS.md` owns the comment-form rules.
+  never the edit itself. `code/AGENTS.md` supplies the hook's comment rules.
 
 ## Documentation and validation
 
-- Every change must account for its documentation impact. Update the owning
-  documentation with every material behavior, interface, configuration, build,
-  architecture, compatibility, or workflow change.
+- Update the owning documentation for material changes to behavior,
+  interfaces, configuration, builds, architecture, compatibility, or workflow.
 - If no documentation changes are needed, state why the existing documentation
   remains accurate.
 - Give each fact one owner and link to it instead of copying it.
 - Run the narrowest relevant checks first and report exact commands,
-  configurations, environments, results, and material checks not run.
+  configurations, environments, results, and relevant checks not run.
 - Use `docs/BUILDING.md` as the authority for build support. Never turn a
   configuration or build result into a runtime claim.
 - Automated tests must not require proprietary game assets or original game

@@ -31,7 +31,7 @@
 
 #pragma once
 
-#include "_WSProto.h"
+#include "_wsproto.h"
 #include "ipxaddr.h"
 #include "vector.h"
 

@@ -34,6 +34,7 @@
 
 #include "control.h"
 #include "dialog.h"
+#include "font.h"
 #include "shapebtn.h"
 #include "slider.h"
 #include "vector.h"

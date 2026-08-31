@@ -1,14 +1,14 @@
 # OpenTS manual source
 
 `manual/` contains the public OpenTS manual for players, modders, and engine
-contributors. It is built with Astro and Starlight, but its source is a
-separate documentation product from the repository policy and build guidance
-in [CONTRIBUTING.md](../CONTRIBUTING.md), [BUILDING.md](../docs/BUILDING.md),
-and [STYLE.md](../docs/STYLE.md).
+contributors. Astro and Starlight build the site. Repository policy, build
+instructions, and source conventions remain in
+[CONTRIBUTING.md](../CONTRIBUTING.md), [BUILDING.md](../docs/BUILDING.md), and
+[STYLE.md](../docs/STYLE.md).
 
-The manual combines catalogs derived from the current engine with authored
-explanations. Generated records establish what the source reads or registers;
-authored pages explain behavior, structure, compatibility, and use.
+The manual combines catalogs from the current engine with written guides.
+Catalogs record what the source reads or registers; pages explain behavior,
+structure, compatibility, and use.
 
 ## Governance
 
@@ -18,8 +18,7 @@ authored pages explain behavior, structure, compatibility, and use.
   and Markdown vocabulary.
 - [Maintaining](MAINTAINING.md) defines generated contracts, releases, routes,
   extraction changes, and publication behavior.
-- [Agent instructions](AGENTS.md) add a small set of rules for agents working
-  in this directory.
+- [Agent instructions](AGENTS.md) apply these guides to agent work.
 
 ## Directory map
 
@@ -32,20 +31,17 @@ authored pages explain behavior, structure, compatibility, and use.
 | `tools/` | Extraction, validation, scaffolding, and the contributor launcher |
 | `site/` | The Astro/Starlight application, tests, and rendered-artifact checks |
 
-Do not commit game assets, original executables, extracted media, credentials,
-or build output anywhere in the manual tree.
-
 ## Setup
 
-The Python version is pinned in `tools/.python-version`. The Node and npm
-versions are pinned in `site/.nvmrc` and `site/package.json`. From the repository
-root, inspect the local toolchain first:
+Python is pinned in `tools/.python-version`; Node and npm are pinned in
+`site/.nvmrc` and `site/package.json`. Check the local toolchain from the
+repository root:
 
 ```powershell
 python manual/tools/manage.py doctor
 ```
 
-Install the pinned dependencies when required:
+Install missing pinned dependencies:
 
 ```powershell
 python -m pip install -r manual/tools/requirements.txt
@@ -55,8 +51,7 @@ Set-Location ../..
 python manual/tools/manage.py doctor
 ```
 
-`doctor --verbose` also prints the resolved executable and version-authority
-paths.
+`doctor --verbose` prints the resolved executables and version files.
 
 ## Contributor commands
 
@@ -69,7 +64,7 @@ python manual/tools/manage.py check
 python manual/tools/manage.py scaffold --help
 ```
 
-The launcher has these exact roles:
+The launcher commands are:
 
 | Command | Behavior |
 | --- | --- |
@@ -80,20 +75,14 @@ The launcher has these exact roles:
 | `scaffold` | Creates minimal authored content for a supported page or change type and refuses to overwrite an existing file. Scaffolds remain invalid until every `TODO:` is replaced. |
 | `release-notes` | Renders the change records assigned to one release as Markdown on standard output, for the release workflow and release authors. It changes nothing. |
 
-`update`, `serve`, and `check` accept `--base-ref <revision>`. Without it, the
-launcher compares against `HEAD`; continuous integration supplies the relevant
-pull-request or pre-push revision.
+`update`, `serve`, and `check` accept `--base-ref <revision>`. The default is
+`HEAD`; continuous integration supplies the pull-request or pre-push revision.
 
-`check` builds with the removed-entity fixtures, so its `dist` carries three
-pages that no published build has and is not a publish artifact; run `npm run
-build` in `site` for one. The GitHub workflow additionally installs
-production-only site dependencies, builds the publish artifact from that clean
-dependency set, and verifies that the artifact leaves the fixture pages out.
-Therefore `check` is the complete local manual gate, but it is not a
-byte-for-byte replay of every CI setup step.
-
-Each step of `check` prints its own wall clock, so a slow gate can be attributed
-rather than guessed at.
+`check` includes removed-entity fixtures, so its `dist` contains three pages
+that a published build does not. Run `npm run build` in `site` for a publishable
+artifact. CI also installs production-only site dependencies and verifies that
+the clean build excludes the fixtures. `check` is the complete local gate, but
+it does not reproduce every CI setup step.
 
 Use `update` while changing engine-facing documentation, `serve` when visual
 review is useful, and `check` before handoff. Continue with

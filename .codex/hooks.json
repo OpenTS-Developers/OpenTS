@@ -1,0 +1,46 @@
+{
+  "description": "Keep OpenTS prose and comment rules in context while agents edit.",
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$(git rev-parse --show-toplevel)/.agents/hooks/style-rules.py\"",
+            "timeout": 15,
+            "statusMessage": "Applying writing style rules",
+            "additionalContextLimit": 6000
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$(git rev-parse --show-toplevel)/.agents/hooks/style-rules.py\"",
+            "timeout": 15,
+            "statusMessage": "Loading writing style rules",
+            "additionalContextLimit": 6000
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"$(git rev-parse --show-toplevel)/.agents/hooks/style-rules.py\"",
+            "timeout": 15,
+            "statusMessage": "Restoring writing style rules",
+            "additionalContextLimit": 6000
+          }
+        ]
+      }
+    ]
+  }
+}

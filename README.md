@@ -12,25 +12,26 @@
 # OpenTS
 
 OpenTS is a community-led, open-source reconstruction of *Command & Conquer:
-Tiberian Sun*. It forgoes patching and extensions to rebuild the original
-engine standalone from scratch. The project gives equal weight to maintaining
-a playable engine and providing a capable platform for modding and engine
-development.
+Tiberian Sun*. Instead of patching or extending the retail executable, it
+rebuilds the engine as a standalone program.
+
+OpenTS gives equal weight to two goals: maintaining a playable engine and
+providing a capable platform for modding and engine development. Work on one
+goal should not come at the expense of the other.
 
 OpenTS is:
 
-- an independent, community-led source reconstruction targeting the behavior
-  of Tiberian Sun 2.03 Firestorm;
-- a playable engine built from Electronic Arts' GPL-released source for
-  related Command & Conquer games and Tiberian Sun-specific reverse
-  engineering;
-- the active foundation for continued maintenance, documentation, technical
-  modernization, bug fixes, and new modding capabilities.
+- an independent, community-led source reconstruction targeting Tiberian Sun
+  2.03 Firestorm;
+- a playable engine based on Electronic Arts' GPL-released source for related
+  Command & Conquer games and Tiberian Sun-specific reverse engineering; and
+- the active base for maintenance, documentation, modernization, bug fixes,
+  and new modding capabilities.
 
 OpenTS is not:
 
-- a remaster or a remake;
-- an official Electronic Arts source release;
+- a remaster or remake;
+- an official Electronic Arts source release; or
 - a distribution of the original game assets.
 
 OpenTS is an independent community project and is not affiliated with or
@@ -44,17 +45,15 @@ endorsed by Electronic Arts.
 
 ## Downloads
 
-- **Releases** are the stable, recommended builds, published on the
-  [releases page](https://github.com/OpenTS-Developers/OpenTS/releases). Each
-  release carries a zip with `Game.exe`, `Language.dll`, and the `Game.pdb`
-  symbol file.
-- **Nightly builds** are development snapshots produced by the
+- **Releases** are the recommended builds. Each zip on the
+  [releases page](https://github.com/OpenTS-Developers/OpenTS/releases)
+  contains `Game.exe`, `Language.dll`, and `Game.pdb`.
+- **Nightly builds** are development snapshots from the
   [Engine nightly](https://github.com/OpenTS-Developers/OpenTS/actions/workflows/engine-nightly.yml)
-  workflow on days with new work. The latest nightly can be downloaded
-  without a GitHub account through
+  workflow. Download the latest one without a GitHub account through
   [nightly.link](https://nightly.link/OpenTS-Developers/OpenTS/workflows/engine-nightly/main).
-  Nightlies carry the latest merged changes without release validation and
-  expire after 90 days. Use them for testing, at your own risk.
+  Nightlies contain the latest merged changes without release validation and
+  expire after 90 days.
 
 ## Installing
 
@@ -64,10 +63,9 @@ endorsed by Electronic Arts.
 3. Run `Game.exe`.
 
 OpenTS supplies the engine, not the game data: the installation above
-provides the original assets, which OpenTS does not distribute. There is no
-installer, and no additional runtime libraries or launch arguments are
-required. Windows is the supported platform; Wine is expected to work but is
-not officially supported, and there is no native Linux build.
+provides the original assets. There is no installer, and no extra runtime
+library or launch argument is required. Windows is supported; Wine may work,
+but there is no supported native Linux build.
 
 ## Documentation
 
@@ -77,17 +75,15 @@ internals.
 
 ## State and plans
 
-Release 0.1.0 delivers the complete Tiberian Sun 2.03 Firestorm game,
-together with the bug fixes and improvements listed in its release notes.
-The GDI and Nod campaigns, the Firestorm campaigns, skirmish, and saving and
-loading are
-functional and have received full play-through testing; LAN multiplayer is
-functional with more limited testing. No user-visible regression from the
-original game is currently known. The renderer is built on
+Release 0.1.0 runs the full Tiberian Sun 2.03 Firestorm game. The GDI, Nod,
+and Firestorm campaigns, skirmish, and save/load have received full
+play-through testing. LAN multiplayer has had more limited testing. No
+user-visible regression from the original game is currently known. The
+renderer uses
 [bgfx](https://github.com/bkaradzic/bgfx) and supports modern resolutions
 through 4K, including ultrawide.
 
-Development continues toward:
+The first of the project's three development milestones is the current focus:
 
 1. CnCNet and CnCNet client support, including porting the parts of
    [ts-patches](https://github.com/CnCNet/ts-patches) this requires.
@@ -100,7 +96,7 @@ Development continues toward:
 
 Alongside these goals, the engine is modernized incrementally toward an
 entity-component architecture, and new development is shaped so that
-migration stays possible. [Project direction](docs/DIRECTION.md) records the
+migration stays possible. [Project direction](docs/DIRECTION.md) explains the
 reasoning.
 
 ## Building
@@ -112,8 +108,10 @@ commands, and outputs.
 ## Contributing
 
 Bug reports, proposals, documentation improvements, and focused pull requests
-are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before starting a
-change. Source conventions are in [Style](docs/STYLE.md).
+are welcome. Review capacity is limited, so discuss non-trivial work with the
+maintainers before implementing it. [CONTRIBUTING.md](CONTRIBUTING.md)
+explains the current priorities and review policy; source conventions are in
+[Style](docs/STYLE.md).
 
 ## Origins
 

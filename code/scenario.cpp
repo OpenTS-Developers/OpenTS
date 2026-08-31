@@ -103,6 +103,7 @@
 #include "infatype.h"
 #include "init.h"
 #include "inline.h"
+#include "intro.h"
 #include "ion.h"
 #include "ipxmgr.h"
 #include "isotype.h"
@@ -342,7 +343,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	Theme.Stop();
 
 	if ((briefing == true) && (campaign != CAMPAIGN_NONE) && (Scen->Scenario == 1) && (Campaigns[Scen->Campaign]->CDNumber < 2)) {
-		Play_Movie("INTRO.VQA", THEME_NONE, true);
+		Choose_Side(Campaigns[Scen->Campaign]->CDNumber);
 	}
 
 	DebugString("Reading scenario: %s\n", name);
@@ -926,7 +927,7 @@ void Clear_Scenario(void)
 
 	Map.ZoneConnections.Clear();
 
-	TagClass::Init();
+	TagClass::Delete_All();
 
 	for (index = 0; index < ARRAY_SIZE(Scen->GlobalFlags); index++) {
 		Scen->Set_Global_To(index, false);

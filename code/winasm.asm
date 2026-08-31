@@ -983,8 +983,8 @@ Draw_Voxel_Regular_Normals_ASM proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		xor	ecx, ecx
 		mov	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -1112,8 +1112,8 @@ Draw_Voxel_Reverse_Normals_ASM proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		xor	ecx, ecx
 		mov	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -1242,8 +1242,8 @@ Draw_Voxel_Regular_Lighting_Normals_ASM  proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		xor	ecx, ecx
 		mov	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -1375,8 +1375,8 @@ Draw_Voxel_Reverse_Lighting_Normals_ASM proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		xor	ecx, ecx
 		mov	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -1508,8 +1508,8 @@ Draw_Voxel_Regular_ASM proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		mov	ecx, 0FFh
 		sub	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -1636,8 +1636,8 @@ Draw_Voxel_Reverse_ASM proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		mov	ecx, 0FFh
 		sub	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -1764,8 +1764,8 @@ Draw_Voxel_Regular_UNUSED_ASM proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		mov	ecx, 0FFh
 		sub	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -1893,8 +1893,8 @@ Draw_Voxel_Reverse_UNUSED_ASM proc C uses esi edi ebx ecx edx \
 
 		mov	esi, arg1
 		push	ebp
-		movsx ebp, [esi + TRANSFORM_COMPONENT(3,I)]
-		movsx edx, [esi + TRANSFORM_COMPONENT(3,J)]
+		movsx ebp, WORD PTR [esi + TRANSFORM_COMPONENT(3,I)]
+		movsx edx, WORD PTR [esi + TRANSFORM_COMPONENT(3,J)]
 		mov	ecx, 0FFh
 		sub	cl, [esi].ZSize
 		mov	edi, offset VoxelPixelDeltaTable
@@ -2024,6 +2024,7 @@ _Int3 endp
 ;endp
 
 
+		_TEXT$mmx ends
 		_TEXT$mycode segment page public use32 'CODE' ; segment mycode page public use32 'code'	; Need stricter segment alignment
 
 public		C	Asm_Interpolate
@@ -2250,13 +2251,14 @@ Asm_Interpolate_Line_Double endp
 
 		;ends
 
+		_TEXT$mycode ends
 		.data;dataseg
 
 TopLine		dd	640 dup (?)
 BottomLine	dd	640 dup (?)
 LineBuffer	dd	640 dup (?)
 
-		.code _TEXT$mycode ; segment mycode page public use32 'code'	; Need stricter segment alignment
+		_TEXT$mycode segment page public use32 'CODE' ; segment mycode page public use32 'code'	; Need stricter segment alignment
 
 
 Interpolate_Single_Line proc near \
@@ -2530,5 +2532,7 @@ Asm_Create_Palette_Interpolation_Table proc near
 
 Asm_Create_Palette_Interpolation_Table endp
 
+
+		_TEXT$mycode ends
 
 end

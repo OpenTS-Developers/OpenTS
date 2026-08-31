@@ -333,7 +333,7 @@ void TagClass::Set_Position(Cell cell)
 /// This routine is called when a scenario is torn down so that no tag from the previous
 /// mission survives into the next one.
 /// </summary>
-void TagClass::Init(void)
+void TagClass::Delete_All(void)
 {
 	while (Tags.Count() > 0) {
 		delete Tags[0];

@@ -34,16 +34,16 @@
 
 #include "intro.h"
 
-#include "conquer.h"
-#include "globals.h"
+#include "ccfile.h"
 #include "movie.h"
-#include "special.h"
+
+#include <cstdio>
 
 
 /***********************************************************************************************
  * Choose_Side -- play the introduction movies, select house                                   *
  *                                                                                             *
- * INPUT:   none                                                                               *
+ * INPUT:   side  -- the side whose intro to play, as its disc number.                         *
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
@@ -52,9 +52,17 @@
  * HISTORY:                                                                                    *
  *   5/08/1995 BWG : Created.                                                                  *
  *=============================================================================================*/
-void Choose_Side(void)		// ajw - In RA, all this did was play a movie. Denzil is using it in its original sense.
+void Choose_Side(int side)
 {
-	if (Special.IsFromInstall) {
-		Play_Movie(VQ_From_Name("INTRO"), THEME_NONE, false);
+	char name[16];
+	std::snprintf(name, sizeof(name), "INTR%d.VQA", side);
+
+	// Each side's intro was INTRO.VQA on its own disc, so an installation
+	// holding both has to keep them apart by name.
+	if (CCFileClass(name).Is_Available()) {
+		Play_Movie(name);
+		return;
 	}
+
+	Play_Movie("INTRO.VQA");
 }

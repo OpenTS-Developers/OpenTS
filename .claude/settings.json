@@ -6,10 +6,9 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python",
-            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/comment-rules.py"],
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.agents/hooks/style-rules.py\"",
             "timeout": 15,
-            "statusMessage": "Checking comment style"
+            "statusMessage": "Applying writing style rules"
           }
         ]
       }

@@ -39,10 +39,10 @@
 extern "C" {
 #endif
 
-void cdecl SetPalette(unsigned char *palette,long numbytes,unsigned long slowpal);
-void cdecl ReadPalette(void *palette);
-void cdecl SetDAC(long color, long red, long green, long blue);
-void cdecl TranslatePalette(void *pal24, void *pal15, long numbytes);
+void __cdecl SetPalette(unsigned char *palette,long numbytes,unsigned long slowpal);
+void __cdecl ReadPalette(void *palette);
+void __cdecl SetDAC(long color, long red, long green, long blue);
+void __cdecl TranslatePalette(void *pal24, void *pal15, long numbytes);
 
 #ifdef __cplusplus
 }

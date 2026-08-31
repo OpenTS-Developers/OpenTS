@@ -1,40 +1,36 @@
 # Style
 
-OpenTS keeps inherited source recognizable while using C++20 for new and
-substantially rewritten C++ code. Follow the surrounding file unless this guide
-or an explicit compatibility requirement says otherwise.
+OpenTS follows the Westwood conventions found in Electronic Arts' source
+releases and the inherited tree. This keeps old and new code consistent and
+makes historical comparisons easier. Follow the surrounding file unless this
+guide or a compatibility requirement says otherwise.
 
-The conventions here are Westwood's own, documented in Electronic Arts' source
-releases and surviving in the inherited tree. Keeping them means
-reconstructed, inherited, and new code read as one codebase, and a change
-stays reviewable against the historical evidence instead of fighting it.
-Modernization happens incrementally in substance — language level, ownership,
-subsystem structure — rather than in surface formatting sweeps.
+Use C++20 for new and substantially rewritten code. Modernize language,
+ownership, and structure incrementally, without broad formatting passes.
 
-Contribution structure, documentation obligations, and validation belong in
-[CONTRIBUTING.md](../CONTRIBUTING.md).
+See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution structure,
+documentation, and validation.
 
 ## Editing discipline
 
-- Format only code touched by the change.
-- Do not mix repository-wide formatting or renaming with behavior changes.
-- Preserve local vertical layout and naming when editing inherited code.
+- Format only touched code. Keep broad formatting and renaming separate from
+  behavior changes.
+- Preserve local layout and naming in inherited code.
 - Keep reconstruction placeholders such as `func_XXXXXX`, `field_XXX`, and
   `entry_XX` until evidence supports a precise name.
 
-The repository `.clang-format` file is the mechanical reference. Automatic
-comment reflow is disabled. Do not run the formatter across unrelated source.
+Use the repository `.clang-format` file for mechanical formatting; it does not
+reflow comments. Do not run it across unrelated source.
 
 ## Language and ownership
 
-New and substantially rewritten C++ targets C++20. Prefer RAII,
-standard-library ownership types, explicit initialization, `nullptr`,
-`override`, scoped enumerations, and compiler-checked interfaces.
+Prefer RAII, standard-library ownership types, explicit initialization,
+`nullptr`, `override`, scoped enumerations, and compiler-checked interfaces.
 
-Modernize inherited code incrementally. Before changing types or ownership at
-a serialized, network, COM, ABI, deterministic, or hardware-facing boundary,
-establish the representation and consumer requirements. Use fixed-width types
-where the representation requires them.
+Before changing types or ownership at a serialized, network, COM, ABI,
+deterministic, or hardware-facing boundary, establish its representation and
+consumer requirements. Use fixed-width types when the representation requires
+them.
 
 ## Formatting
 
@@ -57,29 +53,27 @@ where the representation requires them.
 - Constants and enumerators use uppercase names with appropriate subsystem
   prefixes.
 - Do not introduce `m_` prefixes into inherited classes.
-- Definitions and enumerations live in their own `.hh` headers, which carry
-  no static initializations and no nontrivial inline functions.
+- Definitions and enumerations normally live in their own `.hh` headers. Keep
+  new `.hh` files free of static initialization and avoid nontrivial inline code.
 - Globals and static initializations live in the underscore-prefixed init
   files. [Rationale](RATIONALE.md) records why both conventions exist.
-- Preserve external names unless a change deliberately versions or migrates
-  the interface.
+- Preserve external names unless the change versions or migrates the
+  interface.
 
 ## Comments and notices
 
-Keep comments sparse: one concise sentence on what the code cannot show — an
-invariant, a compatibility constraint, a surprise. Describe the code as it
-stands, never the edit that produced it, and never restate what the code
-already says. New prose takes `//` or a plain `/* */` block, never the
-Westwood `**` decoration; `///` is for genuine XML documentation only, not
-the trailing prose much of the inherited tree carries. Comment syntax does
-not establish authorship.
+Comment only what the code does not make clear, such as unexpected behavior,
+an invariant, or a compatibility constraint. A function comment describes its
+effect for the caller, not its implementation. A clearly named private helper
+needs no comment. Do not restate the code or narrate the edit that produced it.
 
-Historical file headers and legal notices stay verbatim, a header's
-unmaintained `Functions:` table included. Accurate historical comments stay;
-correct an inaccurate one narrowly. A function banner that needs substantial
-rewriting becomes `///` XML documentation; an ordinary Westwood comment
-becomes `//` prose.
+Use `//` or a plain `/* */` block for new prose. Reserve `///` for genuine XML
+documentation; inherited trailing `///` prose is not a convention to follow.
+Do not add Westwood-style `**` decoration.
 
-Preserve SPDX identifiers, copyright and modification notices, Westwood source
-headers, and GPL Section 7 notices. If a notice's history is uncertain, retain
-it and investigate before making a legal or attribution change.
+Keep accurate historical comments and correct inaccurate ones narrowly. A
+function banner that needs substantial rewriting becomes `///` XML
+documentation. An ordinary Westwood comment that needs substantial rewriting
+becomes `//` prose. Comment syntax does not establish authorship. Keep
+historical file headers and legal notices unchanged, including an unmaintained
+`Functions:` table.

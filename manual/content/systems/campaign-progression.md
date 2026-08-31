@@ -126,3 +126,5 @@ Abandoning the mission instead sets the campaign level number back to `1` and re
 ## The campaign level number
 
 The number counts missions started in the current campaign, beginning at `1`, and it is not part of any scenario file. Three things read it. The animated introduction plays only while the number is still `1`, and only for a campaign whose [`CD=`](/keys/cd/#scope-campaign) is below `2`. A house section that omits [`TechLevel=`](/keys/techlevel/#scope-house-per-scenario) is given this number instead, so tech level tracks campaign progress by default. And a score whose [`Scenario=`](/keys/scenario/#scope-themes) is above the current number is refused by the music rotation, which is how a campaign's later music is held back.
+
+The introduction played is `INTR<n>.VQA`, where `n` is the campaign's [`CD=`](/keys/cd/#scope-campaign). Where a deployment holds no such file, `INTRO.VQA` plays instead. Each campaign shipped its own introduction under that one name, on its own disc, so a deployment holding every campaign at once needs the numbered names to reach more than the first.

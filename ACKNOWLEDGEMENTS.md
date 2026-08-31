@@ -1,7 +1,8 @@
 # Acknowledgements
 
-OpenTS builds on years of reconstruction, engineering, testing, and community
-support.
+OpenTS follows years of community research, reconstruction, engineering, and
+testing. This page honors the people, projects, and communities whose earlier
+work made OpenTS possible.
 
 ## Project leads
 
@@ -9,12 +10,15 @@ support.
   ([Patreon](https://www.patreon.com/c/ZivDero))
 - [tomsons26](https://github.com/tomsons26) — project co-lead and developer
 
-## Prior research
+## Previous work and research
 
-OpenTS builds on prior research by Command & Conquer community members,
-including [CCHyper](https://github.com/CCHyper), whose work on the Command &
-Conquer Remastered Collection and the 2025 The Ultimate Collection releases
-helped bring about the Electronic Arts source code releases below.
+OpenTS builds on work by Command & Conquer community members who studied,
+documented, patched, tested, and extended Tiberian Sun before this project.
+
+[CCHyper](https://github.com/CCHyper) worked on Electronic Arts' Command &
+Conquer open-source releases for the Remastered Collection and the 2025 The
+Ultimate Collection. Those releases provide much of OpenTS's source
+foundation.
 
 ## Special thanks
 
@@ -23,8 +27,7 @@ helped bring about the Electronic Arts source code releases below.
 
 ## Electronic Arts source releases
 
-Electronic Arts released the source of related Command & Conquer titles under
-the GPL, and OpenTS is built from that material:
+OpenTS uses GPL-licensed source from these Electronic Arts releases:
 
 - [Command & Conquer Remastered Collection](https://github.com/electronicarts/CnC_Remastered_Collection)
 - [Command & Conquer Red Alert](https://github.com/electronicarts/CnC_Red_Alert)
@@ -37,11 +40,11 @@ The additional GPL Section 7 terms covering that material are in
 
 ## ts-patches and Vinifera contributors
 
-Years of community fixes for the original executable live in
+Community fixes for the original executable live in
 [ts-patches](https://github.com/CnCNet/ts-patches), and
 [Vinifera](https://github.com/Vinifera-Developers/Vinifera) carries that work
-into a source-level engine extension. Fixes OpenTS ports from either credit
-their authors by name when possible in the manual's change records.
+into a source-level engine extension. When OpenTS ports a fix, its manual
+change record credits the author where possible.
 
 ## Artwork
 

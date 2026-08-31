@@ -1,17 +1,18 @@
 # Claude Code instructions
 
 `AGENTS.md` is the canonical instruction set for every agent. The files are
-imported here so their rules are in context from the start of a session rather
-than behind a link. Do not restate their rules in this file.
+imported here so Claude receives their rules at the start of a session. Do not
+repeat those rules in this file.
 
 @AGENTS.md
 @code/AGENTS.md
 @manual/AGENTS.md
 
-## Comment-rule hook
+## Writing-rule hook
 
-`.claude/settings.json` runs `.claude/hooks/comment-rules.py` after every Edit
-and Write. For C and C++ files under `code/`, an edit that touches comment
-lines gets the comment sections of `code/AGENTS.md` re-injected as context,
-and added comments that break those rules come back as findings to fix
-immediately. `code/AGENTS.md` stays the single owner of the rules.
+`.claude/settings.json` runs the shared `.agents/hooks/style-rules.py` after
+every Edit and Write. Markdown edits re-inject the writing rules from
+`AGENTS.md`. C and C++ edits under `code/` re-inject the comment rules from
+`code/AGENTS.md` when they touch comments and report objective violations.
+Codex uses the same script through `.codex/hooks.json`; the `AGENTS.md` files
+remain the only source of the rules.

@@ -173,7 +173,7 @@ class Int {
 
 		// Friend helper functions.
 		template<class T>
-		friend T Generate_Prime(Straw & rng, int pbits, T const * = 0);
+		friend T Generate_Prime(Straw & rng, int pbits, T const *);
 		template<class T>
 		friend T Gcd(const Int<PRECISION> & a, const T & b);
 //		friend bool NextPrime(Int<PRECISION> & p, const Int<PRECISION> & max, bool blumInt=false);

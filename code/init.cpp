@@ -116,6 +116,7 @@
 #include "houstype.h"
 #include "incdec.h"
 #include "infatype.h"
+#include "intro.h"
 #include "ionblast.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
@@ -205,7 +206,7 @@ struct ChooseCampaignStruct {
 **	Enable the set of limited cheat key options.
 */
 #ifdef _DEBUG
-#define	PARM_PLAYTEST		0xF7DDC227		// "PLAYTEST"
+#define	PARM_PLAYTEST		static_cast<int>(0xF7DDC227u)		// "PLAYTEST"
 #endif
 
 /*
@@ -213,11 +214,11 @@ struct ChooseCampaignStruct {
 */
 #ifdef _DEBUG
 #ifndef PARM_PLAYTEST
-#define	PARM_PLAYTEST		0xF7DDC227		// "PLAYTEST"
+#define	PARM_PLAYTEST		static_cast<int>(0xF7DDC227u)		// "PLAYTEST"
 #endif
 #endif
 
-#define	PARM_INSTALL		0xD95C68A2		//	"FROMINSTALL"
+#define	PARM_INSTALL		static_cast<int>(0xD95C68A2u)		//	"FROMINSTALL"
 
 
 /****************************************
@@ -1275,7 +1276,7 @@ restart:
 					if (Debug_Flag) {
 						Play_Intro(Debug_Flag);
 					} else {
-						Play_Movie("INTRO.VQA");
+						Choose_Side();
 						Clear_Option(OPTION_PLAY_FROM_MIXFILE);
 						Play_Movie("SIZZLE1.VQA");
 						Set_Option(OPTION_PLAY_FROM_MIXFILE);

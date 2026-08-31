@@ -811,12 +811,12 @@ static void *surface_quick_fill(void *buf, int count, int color)
 		mov edi, [buf]
 
 		cmp ecx, 0
-		jle short $end
+		jle short fill_end
 
 		mov eax, [color]
 		rep stosd
 
-	$end:
+	fill_end:
 		mov eax, edi
 		pop edi /// Bug fixed in TS but not in ShapeSet
 	}

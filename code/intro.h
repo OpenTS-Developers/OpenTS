@@ -32,4 +32,4 @@
 
 #pragma once
 
-void Choose_Side(void);
+void Choose_Side(int side = 0);

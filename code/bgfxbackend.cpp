@@ -15,15 +15,18 @@
 #include "dbgprint.h"
 #include "except.h"
 
+#include <bx/allocator.h>
 #include <bgfx/bgfx.h>
 #include <bgfx/embedded_shader.h>
 
 #include <vs_ocornut_imgui.bin.h>
 #include <fs_ocornut_imgui.bin.h>
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <malloc.h>
 
 
 static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
@@ -117,6 +120,30 @@ class BackendCallback : public bgfx::CallbackI
 };
 
 static BackendCallback _Callback;
+
+
+// bgfx contains cache-line-aligned render records but requests their backing arrays with
+// the allocator's default alignment. The Win32 CRT only guarantees eight-byte alignment,
+// which is insufficient when clang-cl copies those records with aligned SSE instructions.
+class BackendAllocator : public bx::AllocatorI
+{
+	public:
+		virtual ~BackendAllocator(void) override {}
+
+		virtual void * realloc(void * ptr, size_t size, size_t alignment, const char *, uint32_t) override
+		{
+			if (size == 0) {
+				_aligned_free(ptr);
+				return(NULL);
+			}
+
+			const size_t cachelinealignment = BX_CACHE_LINE_SIZE;
+			alignment = std::max(alignment, cachelinealignment);
+			return(_aligned_realloc(ptr, size, alignment));
+		}
+};
+
+static BackendAllocator _Allocator;
 
 
 /// <summary>
@@ -273,6 +300,7 @@ bool Backend_Init(HWND window, int windowwidth, int windowheight, BackendRendere
 	init.resolution.height = (uint32_t)windowheight;
 	init.resolution.reset = _ResetFlags;
 	init.callback = &_Callback;
+	init.allocator = &_Allocator;
 
 	switch (renderer) {
 		case BACKEND_RENDERER_D3D11:

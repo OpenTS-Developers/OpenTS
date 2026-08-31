@@ -1,16 +1,20 @@
 # Project direction
 
-The [README](../README.md) states the goals development moves toward; this
-document records the architectural direction behind them.
+The [README](../README.md) tracks current development priorities. This page
+explains the architectural direction behind them.
 
 ## Toward an entity-component architecture
 
-The inherited object model concentrates state and behavior in one deep class
-hierarchy, which is what makes so much of the original game hard-coded. The
-project's long-term direction is to modernize the engine incrementally toward
-an entity-component architecture, because that is the shape that supports the
-de-hardcoding, extensibility, and feature goals on the roadmap. There is no
-big-bang rewrite: the engine stays playable throughout, and new development
-is shaped so that the migration stays possible — prefer composition over
-deepening the inherited hierarchy, keep new state separable from behavior,
-and avoid new hard couplings to the class tree.
+The inherited object model puts state and behavior in one deep class hierarchy,
+leaving much of the original game hard-coded. OpenTS is moving gradually toward
+an entity-component architecture to reduce hard-coding and make the engine
+easier to extend.
+
+There will be no full rewrite. Changes must keep the engine playable throughout
+the migration. Prefer composition to a deeper inheritance tree, keep new state
+separable from behavior, and avoid adding tight couplings to the existing class
+hierarchy.
+
+Portability follows the same incremental approach. Preparatory changes do not
+make a compiler or platform supported; [Building OpenTS](BUILDING.md) lists the
+current target.
