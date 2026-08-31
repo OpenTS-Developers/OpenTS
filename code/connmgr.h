@@ -97,7 +97,7 @@ class ConnManClass
 		.....................................................................*/
 		virtual int Send_Private_Message (void *buf, int buflen,
 			int ack_req = 1, int conn_id = CONNECTION_NONE) = 0;
-		virtual int Get_Private_Message (void *buf, int *buflen,
+		virtual int Get_Private_Message (void *buf, int capacity, int *buflen,
 			int *conn_id) = 0;
 
 		/*.....................................................................

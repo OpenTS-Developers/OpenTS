@@ -89,10 +89,9 @@
 //---------------------------------------------------------------------------
 struct GlobalHeaderType {
 	CommHeaderType Header;
-	unsigned short ProductID;
+	std::uint16_t ProductID;
 };
 #pragma pack(pop)
-
 
 /*
 ***************************** Class Declaration *****************************
@@ -143,14 +142,11 @@ class IPXGlobalConnClass : public IPXConnClass
 		//.....................................................................
 		virtual int Send_Packet (void * buf, int buflen, int ack_req) override;
 		virtual int Receive_Packet (void * buf, int buflen) override;
-		virtual int Get_Packet (void * buf, int * buflen) override;
+		virtual int Get_Packet (void * buf, int capacity, int * buflen) override;
 
-		virtual int Send_Packet (void * buf, int buflen,
-			IPXAddressClass *address, int ack_req);
-		virtual int Receive_Packet (void * buf, int buflen,
-			IPXAddressClass *address);
-		virtual int Get_Packet (void * buf, int *buflen,
-			IPXAddressClass *address, unsigned short *product_id);
+		virtual int Send_Packet (void * buf, int buflen, IPXAddressClass *address, int ack_req);
+		virtual int Receive_Packet (void * buf, int buflen, IPXAddressClass *address);
+		virtual int Get_Packet (void * buf, int capacity, int *buflen, IPXAddressClass *address, unsigned short *product_id);
 
 		virtual int Discard_Undeliverable_Packets(void) override;
 
@@ -170,6 +166,7 @@ class IPXGlobalConnClass : public IPXConnClass
 		// stored in the extra buffer within the Queue.
 		//.....................................................................
 		virtual int Send (char *buf, int buflen, void *extrabuf, int extralen) override;
+		virtual bool Adaptive_Timing_Enabled(void) const override {return(false);}
 
 		//.....................................................................
 		// This routine is overloaded from SequencedConnClass, because the

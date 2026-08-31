@@ -128,6 +128,7 @@ void Chat_Send(char const * text)
 {
 	ChatScopeType scope = Session.MessageScope;
 
+	std::memset(&Session.GPacket, 0, sizeof(Session.GPacket));
 	Session.GPacket.Command = NET_MESSAGE;
 	std::strcpy(Session.GPacket.Name, Session.Players[0]->Name);
 	Session.GPacket.Message.Color = Session.ColorIdx;

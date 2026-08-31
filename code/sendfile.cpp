@@ -77,8 +77,8 @@ bool Get_File_From_Host(char *return_name, bool show_progress)
 
 	unsigned int file_length = 0;
 
-	GlobalPacketType	net_send_packet;
-	GlobalPacketType	net_receive_packet;
+	GlobalPacketType	net_send_packet = {};
+	GlobalPacketType	net_receive_packet = {};
 	unsigned short		product_id;
 
 	IPXAddressClass	sender_address;
@@ -116,8 +116,7 @@ bool Get_File_From_Host(char *return_name, bool show_progress)
 	do {
 		Call_Back();
 		int receive_packet_length = sizeof (net_receive_packet);
-		if (Ipx.Get_Global_Message (&net_receive_packet, &receive_packet_length,
-			&sender_address, &product_id)){
+		if (Ipx.Get_Global_Message (&net_receive_packet, sizeof(net_receive_packet), &receive_packet_length, &sender_address, &product_id)){
 
 			//DebugString ("RA95 - Got packet from host\n");
 			if (net_receive_packet.Command == NET_FILE_INFO && sender_address == Session.HostAddress) {
@@ -244,8 +243,7 @@ bool Receive_Remote_File ( char *file_name, unsigned int file_length, bool show_
 		Call_Back();
 
 		int receive_packet_length = sizeof (RemoteFileTransferType);
-		if (Ipx.Get_Global_Message (receive_packet, &receive_packet_length,
-			&sender_address, &product_id)) {
+		if (Ipx.Get_Global_Message (receive_packet, sizeof(*receive_packet), &receive_packet_length, &sender_address, &product_id)) {
 
 			if (receive_packet->Command == NET_FILE_CHUNK && sender_address == Session.HostAddress){
 
@@ -339,9 +337,9 @@ bool Send_Remote_File ( char const *file_name, bool send_to_all, bool show_progr
 	/// RemoteFileTransferType would overrun a packet, so the buffer stays raw
 	/// and is written through a reference.
 	char						send_packet[200];
-	GlobalPacketType			net_file_info;
+	GlobalPacketType			net_file_info = {};
 
-	GlobalPacketType			net_receive_packet;
+	GlobalPacketType			net_receive_packet = {};
 
 	CCFileClass send_file (file_name);
 
@@ -407,7 +405,7 @@ bool Send_Remote_File ( char const *file_name, bool send_to_all, bool show_progr
 	do {
 		Call_Back();
 		net_packetlen = sizeof (net_receive_packet);
-		if (Ipx.Get_Global_Message (&net_receive_packet, &net_packetlen, &sender_address, &product_id)) {
+		if (Ipx.Get_Global_Message (&net_receive_packet, sizeof(net_receive_packet), &net_packetlen, &sender_address, &product_id)) {
 			if (net_receive_packet.Command == NET_FILE_INFO_ACK) {
 				acks++;
 			}

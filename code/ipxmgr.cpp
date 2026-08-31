@@ -143,6 +143,7 @@ IPXManagerClass::IPXManagerClass (int glb_maxlen, int pvt_maxlen,
 
 	SendOverflows = 0;
 	ReceiveOverflows = 0;
+	ReceiveDiscards = 0;
 	BadConnection = CONNECTION_NONE;
 
 	//------------------------------------------------------------------------
@@ -794,7 +795,7 @@ int IPXManagerClass::Send_Global_Message(void *buf, int buflen,
  * HISTORY:                                                                *
  *   01/25/1995 BR : Created.                                              *
  *=========================================================================*/
-int IPXManagerClass::Get_Global_Message(void *buf, int *buflen,
+int IPXManagerClass::Get_Global_Message(void *buf, int capacity, int *buflen,
 	IPXAddressClass *address, unsigned short *product_id)
 {
 	//------------------------------------------------------------------------
@@ -802,7 +803,7 @@ int IPXManagerClass::Get_Global_Message(void *buf, int *buflen,
 	//------------------------------------------------------------------------
 	if (!Listening) return(0);
 
-	return(GlobalChannel->Get_Packet (buf, buflen, address, product_id));
+	return(GlobalChannel->Get_Packet (buf, capacity, buflen, address, product_id));
 
 }	/* end of Get_Global_Message */
 
@@ -909,7 +910,7 @@ int IPXManagerClass::Send_Private_Message(void *buf, int buflen, int ack_req,
  * HISTORY:                                                                *
  *   01/25/1995 BR : Created.                                              *
  *=========================================================================*/
-int IPXManagerClass::Get_Private_Message(void *buf, int *buflen, int *conn_id)
+int IPXManagerClass::Get_Private_Message(void *buf, int capacity, int *buflen, int *conn_id)
 {
 	int i;
 	int rc;
@@ -937,7 +938,7 @@ int IPXManagerClass::Get_Private_Message(void *buf, int *buflen, int *conn_id)
 		//.....................................................................
 		// Check this connection for a packet
 		//.....................................................................
-		rc = Connection[CurConnection]->Get_Packet (buf, buflen);
+		rc = Connection[CurConnection]->Get_Packet (buf, capacity, buflen);
 		c_id = Connection[CurConnection]->ID;
 
 		//.....................................................................
@@ -981,6 +982,7 @@ int IPXManagerClass::Service(void)
 {
 	int rc = 1;
 	int i;
+	CommHeaderType packet_header;
 	CommHeaderType *packet;
 	int packetlen;
 	IPXAddressClass address;
@@ -999,15 +1001,25 @@ int IPXManagerClass::Service(void)
 			temp_address_len = sizeof (temp_address);
 			packetlen = PacketTransport->Read ( temp_receive_buffer, temp_receive_buffer_len, temp_address, temp_address_len );
 			if ( packetlen ) {
-				address = *((IPXAddressClass*) temp_address);
+				if (packetlen < (int)sizeof(unsigned short)) {
+					ReceiveDiscards++;
+					if (ReceiveDiscards == 1 || (ReceiveDiscards & (ReceiveDiscards - 1)) == 0) {
+						DebugString("Network packet drop [manager-short-magic]: %d\n", ReceiveDiscards);
+					}
+					continue;
+				}
+				memcpy(&address, temp_address, sizeof(address));
 
-				packet = (CommHeaderType *)temp_receive_buffer;
+				memset(&packet_header, 0, sizeof(packet_header));
+				memcpy(&packet_header, temp_receive_buffer,
+					std::min(packetlen, (int)sizeof(packet_header)));
+				packet = &packet_header;
 				if (packet->MagicNumber == GlobalChannel->Magic_Num()) {
 
 					/*
 					**	Put the packet in the Global Queue
 					*/
-					if (!GlobalChannel->Receive_Packet (packet, packetlen, &address)) {
+					if (!GlobalChannel->Receive_Packet (temp_receive_buffer, packetlen, &address)) {
 						ReceiveOverflows++;
 						DebugString("GlobalChannel recive buffer overflow %d\n", ReceiveOverflows);
 						break;
@@ -1026,7 +1038,7 @@ int IPXManagerClass::Service(void)
 							}
 						}
 						if (found_address) {
-							if (!Connection[i]->Receive_Packet (packet, packetlen)) {
+							if (!Connection[i]->Receive_Packet (temp_receive_buffer, packetlen)) {
 								ReceiveOverflows++;
 								DebugString("Recive buffer overflow %d\n", ReceiveOverflows);
 								packetlen = 0;
@@ -1043,19 +1055,22 @@ int IPXManagerClass::Service(void)
 								**	This packet came from an unknown source. If it looks like one of our players
 								**	packets then it might be from a player whos IP has changed.
 								*/
-								if (Frame > 8 && packetlen > 8U) {
+								int frame_info_size = sizeof(CommHeaderType) + offsetof(EventClass, Data) +
+									size_of(EventClass, Data.FrameInfo);
+								if (Frame > 8 && packetlen >= frame_info_size) {
 									if (packet->Code == ConnectionClass::PACKET_DATA_NOACK){
 										/*
 										**	Magic number and packet code are valid. It's probably a C&C packet.
 										*/
-										EventClass *event = (EventClass*) (((char*) packet) + sizeof (CommHeaderType));
+										unsigned char event_type;
+										int id;
+										memcpy(&event_type, temp_receive_buffer + sizeof(CommHeaderType), sizeof(event_type));
+										memcpy(&id, temp_receive_buffer + sizeof(CommHeaderType) + offsetof(EventClass, ID), sizeof(id));
 
 										/*
 										**	If this is a framesync packet then grab the address and match it to an existing player.
 										*/
-										if (event->Type == EventClass::FRAMESYNC) {
-											int id = event->ID;
-
+										if (event_type == EventClass::FRAMESYNC) {
 											assert (id != PlayerPtr->ID);
 											for ( int i=1 ; i<Session.Players.Count() ; i++) {
 												if (Session.Players[i]->Player.ID == id) {
