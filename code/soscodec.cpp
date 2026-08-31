@@ -24,7 +24,7 @@
  *
  * sosCODECDecompressData is the fast path for 16 bit mono. It walks a difference table
  * indexed by the step index and the token together, and its stream state is that combined
- * index rather than a plain step index: wIndex holds the step index times 32, which is the
+ * index rather than a plain step index: Index holds the step index times 32, which is the
  * form the table wants and the form the assembly persisted between calls.
  *
  * General_sosCODECDecompressData handles every other shape. It computes the difference
@@ -82,8 +82,8 @@ void Decode_Table_16(unsigned char const * source, short * dest, int samples, in
 		 */
 		unsigned int const slot = (slotbase | (token * 2)) >> 1;
 
-		sample += _SosDiffTable[slot];
-		slotbase = _SosIndexTable[slot];
+		sample += sosCODECDiffTable[slot];
+		slotbase = sosCODECIndexTable[slot];
 		sample = Clamp_Sample(sample);
 
 		dest[i * deststride] = (short)sample;
@@ -92,21 +92,6 @@ void Decode_Table_16(unsigned char const * source, short * dest, int samples, in
 	predicted = sample;
 	index = (unsigned short)slotbase;
 }
-
-
-/*
- * The general decoder keeps a separate copy of this state per channel, so the loop below
- * reaches it through pointers rather than naming the structure's fields twice.
- */
-struct SosChannel {
-	uint32_t * SampleIndex;
-	short * CodeBuf;
-	short * Code;
-	int32_t * Predicted;
-	int32_t * Difference;
-	short * Index;
-	short * Step;
-};
 
 
 /// <summary>
@@ -119,7 +104,7 @@ struct SosChannel {
 /// <param name="sourcestride">Distance in bytes between one source byte and the next.</param>
 /// <param name="deststride">Distance in bytes between one sample and the next.</param>
 /// <param name="bits">8 or 16, the width of a written sample.</param>
-void Decode_General(SosChannel const & channel, unsigned char const * source, unsigned char * dest, int samples, int sourcestride, int deststride, int bits)
+void Decode_General(SosChannel & channel, unsigned char const * source, unsigned char * dest, int samples, int sourcestride, int deststride, int bits)
 {
 	for (int i = 0; i < samples; i++) {
 
@@ -127,16 +112,16 @@ void Decode_General(SosChannel const & channel, unsigned char const * source, un
 		 * A byte carries two tokens. Odd samples take the half already fetched, which is
 		 * why the sample counter and the code buffer are stream state rather than locals.
 		 */
-		if ((*channel.SampleIndex & 1) != 0) {
-			*channel.Code = (short)(((unsigned short)*channel.CodeBuf >> 4) & 0x0F);
+		if ((channel.SampleIndex & 1) != 0) {
+			channel.Code = (short)(((unsigned short)channel.CodeBuf >> 4) & 0x0F);
 		} else {
-			*channel.CodeBuf = (short)(unsigned short)*source;
+			channel.CodeBuf = (short)(unsigned short)*source;
 			source += sourcestride;
-			*channel.Code = (short)(*channel.CodeBuf & 0x0F);
+			channel.Code = (short)(channel.CodeBuf & 0x0F);
 		}
 
-		int const code = *channel.Code;
-		int32_t const step = (int32_t)(unsigned short)*channel.Step;
+		int const code = channel.Code;
+		int32_t const step = (int32_t)(unsigned short)channel.Step;
 
 		int32_t difference = 0;
 
@@ -158,10 +143,10 @@ void Decode_General(SosChannel const & channel, unsigned char const * source, un
 			difference = -difference;
 		}
 
-		*channel.Difference = difference;
+		channel.Difference = difference;
 
-		int32_t const sample = Clamp_Sample(*channel.Predicted + difference);
-		*channel.Predicted = sample;
+		int32_t const sample = Clamp_Sample(channel.Predicted + difference);
+		channel.Predicted = sample;
 
 		if (bits == 16) {
 			*(short *)dest = (short)sample;
@@ -179,7 +164,7 @@ void Decode_General(SosChannel const & channel, unsigned char const * source, un
 		 * The assembly tests the index as unsigned, so an adjustment that takes it below
 		 * zero shows up as a very large value and folds back to zero.
 		 */
-		unsigned short next = (unsigned short)((unsigned short)*channel.Index + (unsigned short)_SosIndexAdjust[code]);
+		unsigned short next = (unsigned short)((unsigned short)channel.Index + (unsigned short)sosCODECIndexAdjust[code]);
 
 		if (next >= 0x8000) {
 			next = 0;
@@ -187,39 +172,11 @@ void Decode_General(SosChannel const & channel, unsigned char const * source, un
 			next = 88;
 		}
 
-		*channel.Index = (short)next;
-		*channel.Step = (short)_SosStepTable[next];
+		channel.Index = (short)next;
+		channel.Step = (short)sosCODECStepTable[next];
 
-		(*channel.SampleIndex)++;
+		(channel.SampleIndex)++;
 	}
-}
-
-
-SosChannel Left_Channel(_SOS_COMPRESS_INFO * info)
-{
-	SosChannel channel;
-	channel.SampleIndex = &info->dwSampleIndex;
-	channel.CodeBuf = &info->wCodeBuf;
-	channel.Code = &info->wCode;
-	channel.Predicted = &info->dwPredicted;
-	channel.Difference = &info->dwDifference;
-	channel.Index = &info->wIndex;
-	channel.Step = &info->wStep;
-	return(channel);
-}
-
-
-SosChannel Right_Channel(_SOS_COMPRESS_INFO * info)
-{
-	SosChannel channel;
-	channel.SampleIndex = &info->dwSampleIndex2;
-	channel.CodeBuf = &info->wCodeBuf2;
-	channel.Code = &info->wCode2;
-	channel.Predicted = &info->dwPredicted2;
-	channel.Difference = &info->dwDifference2;
-	channel.Index = &info->wIndex2;
-	channel.Step = &info->wStep2;
-	return(channel);
 }
 
 }	// namespace
@@ -231,10 +188,10 @@ SosChannel Right_Channel(_SOS_COMPRESS_INFO * info)
 /// <param name="info">The stream to initialize.</param>
 void __cdecl sosCODECInitStream(_SOS_COMPRESS_INFO * info)
 {
-	info->wIndex = 0;
-	info->dwPredicted = 0;
-	info->wIndex2 = 0;
-	info->dwPredicted2 = 0;
+	info->Channels[0].Index = 0;
+	info->Channels[0].Predicted = 0;
+	info->Channels[1].Index = 0;
+	info->Channels[1].Predicted = 0;
 }
 
 
@@ -251,11 +208,11 @@ uint32_t __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t byte
 		return(0);
 	}
 
-	unsigned short index = (unsigned short)info->wIndex;
+	unsigned short index = (unsigned short)info->Channels[0].Index;
 
-	Decode_Table_16((unsigned char const *)info->lpSource, (short *)info->lpDest, (int)(bytes / 2), 1, info->dwPredicted, index);
+	Decode_Table_16((unsigned char const *)info->lpSource, (short *)info->lpDest, (int)(bytes / 2), 1, info->Channels[0].Predicted, index);
 
-	info->wIndex = (short)index;
+	info->Channels[0].Index = (short)index;
 	return(bytes);
 }
 
@@ -266,14 +223,15 @@ uint32_t __cdecl sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t byte
 /// <param name="info">The stream to initialize.</param>
 void __cdecl General_sosCODECInitStream(_SOS_COMPRESS_INFO * info)
 {
-	info->wIndex = 0;
-	info->wStep = (short)_SosStepTable[0];
-	info->dwPredicted = 0;
-	info->dwSampleIndex = 0;
-	info->wIndex2 = 0;
-	info->wStep2 = (short)_SosStepTable[0];
-	info->dwPredicted2 = 0;
-	info->dwSampleIndex2 = 0;
+	info->Channels[0].Index = 0;
+	info->Channels[0].Predicted = 0;
+	info->Channels[0].Step = (short)sosCODECStepTable[0];
+	info->Channels[0].SampleIndex = 0;
+
+	info->Channels[1].Index = 0;
+	info->Channels[1].Predicted = 0;
+	info->Channels[1].Step = (short)sosCODECStepTable[0];
+	info->Channels[1].SampleIndex = 0;
 }
 
 
@@ -289,8 +247,8 @@ void __cdecl General_sosCODECInitStream(_SOS_COMPRESS_INFO * info)
 /// <returns>uint32_t; The byte count asked for.</returns>
 uint32_t __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint32_t bytes)
 {
-	info->dwSampleIndex = 0;
-	info->dwSampleIndex2 = 0;
+	info->Channels[0].SampleIndex = 0;
+	info->Channels[1].SampleIndex = 0;
 
 	int const bits = info->wBitSize;
 	int const samples = (bits == 16) ? (int)(bytes / 2) : (int)bytes;
@@ -310,10 +268,10 @@ uint32_t __cdecl General_sosCODECDecompressData(_SOS_COMPRESS_INFO * info, uint3
 		int const perchannel = samples / 2;
 		int const sampled = (bits == 16) ? 4 : 2;
 
-		Decode_General(Left_Channel(info), source, dest, perchannel, 2, sampled, bits);
-		Decode_General(Right_Channel(info), source + 1, dest + (bits == 16 ? 2 : 1), perchannel, 2, sampled, bits);
+		Decode_General(info->Channels[0], source, dest, perchannel, 2, sampled, bits);
+		Decode_General(info->Channels[1], source + 1, dest + (bits == 16 ? 2 : 1), perchannel, 2, sampled, bits);
 	} else {
-		Decode_General(Left_Channel(info), source, dest, samples, 1, (bits == 16) ? 2 : 1, bits);
+		Decode_General(info->Channels[0], source, dest, samples, 1, (bits == 16) ? 2 : 1, bits);
 	}
 
 	return(bytes);

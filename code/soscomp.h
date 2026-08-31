@@ -33,27 +33,23 @@ enum {
 	_ADPCM_TYPE_1,
 	};
 
+struct SosChannel {
+	uint32_t SampleIndex;
+	short CodeBuf;
+	short Code;
+	int32_t Predicted;
+	int32_t Difference;
+	short Index;
+	short Step;
+};
+
 /* define compression structure */
 struct _SOS_COMPRESS_INFO {
 	char       *lpSource;
 	char       *lpDest;
 	uint32_t      dwCompSize;
 	uint32_t      dwUnCompSize;
-	uint32_t      dwSampleIndex;
-	int32_t       dwPredicted;
-	int32_t       dwDifference;
-	short         wCodeBuf;
-	short         wCode;
-	short         wStep;
-	short         wIndex;
-
-	uint32_t      dwSampleIndex2;   //added BP for channel 2
-	int32_t       dwPredicted2;     //added BP for channel 2
-	int32_t       dwDifference2;    //added BP for channel 2
-	short         wCodeBuf2;        //added BP for channel 2
-	short         wCode2;           //added BP for channel 2
-	short         wStep2;           //added BP for channel 2
-	short         wIndex2;          //added BP for channel 2
+	struct SosChannel Channels[2];
 	short         wBitSize;
 	short			  wChannels;		//added BP for # of channels
 	};

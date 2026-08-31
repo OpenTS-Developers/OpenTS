@@ -23,12 +23,12 @@ namespace {
  * Step index adjustment per token, and the step size per index. These belong to the general
  * decoder; the other two reach the same numbers through the difference table below.
  */
-short const _SosIndexAdjust[16] = {
+short const sosCODECIndexAdjust[16] = {
 	-1, -1, -1, -1, 2, 4, 6, 8,
 	-1, -1, -1, -1, 2, 4, 6, 8
 };
 
-unsigned short const _SosStepTable[89] = {
+unsigned short const sosCODECStepTable[89] = {
 	7, 8, 9, 10, 11, 12, 13, 14,
 	16, 17, 19, 21, 23, 25, 28, 31,
 	34, 37, 41, 45, 50, 55, 60, 66,
@@ -47,7 +47,7 @@ unsigned short const _SosStepTable[89] = {
  * Difference to add to the running sample, and the next step index scaled by 32, both keyed
  * on the step index and token together. Transcribed from the tables the assembly carried.
  */
-int const _SosDiffTable[89 * 16] = {
+int const sosCODECDiffTable[89 * 16] = {
 	0, 1, 3, 4, 7, 8, 10, 11,
 	0, -1, -3, -4, -7, -8, -10, -11,
 	1, 3, 5, 7, 9, 11, 13, 15,
@@ -229,7 +229,7 @@ int const _SosDiffTable[89 * 16] = {
 
 };
 
-unsigned short const _SosIndexTable[89 * 16] = {
+unsigned short const sosCODECIndexTable[89 * 16] = {
 	0, 0, 0, 0, 64, 128, 192, 256,
 	0, 0, 0, 0, 64, 128, 192, 256,
 	0, 0, 0, 0, 96, 160, 224, 288,

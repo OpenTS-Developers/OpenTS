@@ -140,10 +140,10 @@ void Run_Case(SosGoldenCase const & test)
 
 	Check(test, "hash", (long long)test.Hash, (long long)Dest_Hash(test.Bytes));
 	Check(test, "return", (long long)test.Returned, (long long)returned);
-	Check(test, "predicted", test.Predicted, info.dwPredicted);
-	Check(test, "index", test.Index, info.wIndex);
-	Check(test, "predicted2", test.Predicted2, info.dwPredicted2);
-	Check(test, "index2", test.Index2, info.wIndex2);
+	Check(test, "predicted", test.Predicted, info.Channels[0].Predicted);
+	Check(test, "index", test.Index, info.Channels[0].Index);
+	Check(test, "predicted2", test.Predicted2, info.Channels[1].Predicted);
+	Check(test, "index2", test.Index2, info.Channels[1].Index);
 	Checked++;
 }
 
