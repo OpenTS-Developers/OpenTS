@@ -926,7 +926,7 @@ void Clear_Scenario(void)
 
 	Map.ZoneConnections.Clear();
 
-	TagClass::Init();
+	TagClass::Delete_All();
 
 	for (index = 0; index < ARRAY_SIZE(Scen->GlobalFlags); index++) {
 		Scen->Set_Global_To(index, false);

@@ -59,7 +59,7 @@ class TagClass : public AbstractClass
 		static void All_Timer_Global_Reset(int global);
 		static void All_Timer_Local_Reset(int local);
 
-		static void Init(void);
+		static void Delete_All(void);
 
 		void Link(TriggerClass *trigger);
 		bool Unlink(TriggerClass *trigger);
