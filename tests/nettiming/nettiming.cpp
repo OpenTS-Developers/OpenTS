@@ -49,6 +49,7 @@ namespace
 				}
 				LastSend = now;
 				TransmissionCount++;
+				Estimator.Note_Retransmit(BaseRto, now);
 				return(true);
 			}
 
@@ -59,6 +60,7 @@ namespace
 			}
 
 			NetTiming::RttEstimator const & Rtt(void) const {return(Estimator);}
+			NetTiming::Milliseconds Base_Rto(void) const {return(BaseRto);}
 
 		private:
 			FakeClock Clock;
@@ -236,6 +238,105 @@ namespace
 		Expect("fake transport applies Karn after loss", !lossy_transport.Acknowledge(1180));
 		Expect("lossy fake transport has no ambiguous RTT sample", !lossy_transport.Rtt().Has_Sample());
 	}
+
+
+	void Test_Backoff_Persistence(void)
+	{
+		using namespace NetTiming;
+
+		FakeTransport transport;
+		transport.Send(0);
+		Expect("fast link samples cleanly", transport.Acknowledge(10));
+		Expect_Equal("fast link floors the RTO", transport.Rtt().Retransmit_Timeout(), MINIMUM_RTO);
+
+		// The link now takes 500 ms, so every packet is retransmitted before its ACK arrives.
+		transport.Send(1000);
+		Expect("first era retransmits at the floor RTO", transport.Retry(1100));
+		Expect_Equal("first era doubles the RTO", transport.Rtt().Retransmit_Timeout(), 200u);
+		Expect("same era retransmits again", transport.Retry(1300));
+		Expect_Equal("same era does not double twice", transport.Rtt().Retransmit_Timeout(), 200u);
+		Expect("ambiguous ACK is excluded", !transport.Acknowledge(1500));
+
+		transport.Send(2000);
+		Expect_Equal("new packet captures the backed off RTO", transport.Base_Rto(), 200u);
+		Expect("second era retransmits", transport.Retry(2200));
+		Expect_Equal("second era doubles the RTO", transport.Rtt().Retransmit_Timeout(), 400u);
+
+		transport.Send(3000);
+		Expect_Equal("third packet captures the backed off RTO", transport.Base_Rto(), 400u);
+		Expect("third era retransmits", transport.Retry(3400));
+		Expect_Equal("third era doubles the RTO", transport.Rtt().Retransmit_Timeout(), 800u);
+
+		// The RTO now exceeds the real round trip, so a first transmission is acknowledged.
+		transport.Send(4000);
+		Expect("backed off RTO lets a clean sample through", transport.Acknowledge(4500));
+		Expect_Equal("recovered smoothed RTT", transport.Rtt().Smoothed_Rtt(), 71u);
+		Expect_Equal("recovered variation", transport.Rtt().Rtt_Variation(), 126u);
+		Expect_Equal("recovered RTO covers the slower link", transport.Rtt().Retransmit_Timeout(), 575u);
+		Expect("recovered estimate is fresh", transport.Rtt().Has_Fresh_Sample(4500));
+	}
+
+
+	void Test_Sample_Staleness(void)
+	{
+		using namespace NetTiming;
+
+		RttEstimator idle;
+		Expect("unsampled estimator is never fresh", !idle.Has_Fresh_Sample(0));
+		idle.Add_Sample(100);
+		Expect("quiet link stays fresh indefinitely", idle.Has_Fresh_Sample(1000000));
+
+		RttEstimator starved;
+		starved.Add_Sample(100);
+		starved.Note_Retransmit(starved.Retransmit_Timeout(), 1000);
+		Expect("estimate is fresh before the lifetime", starved.Has_Fresh_Sample(1000 + RTT_SAMPLE_LIFETIME - 1));
+		Expect("estimate is stale at the lifetime", !starved.Has_Fresh_Sample(1000 + RTT_SAMPLE_LIFETIME));
+		Expect("stale estimate still paces retries", starved.Has_Sample());
+
+		FakeClock clock;
+		clock.Set(9500);
+		Expect("clean ACK restores the estimate", starved.Acknowledge(9400, 1, clock));
+		Expect("restored estimate is fresh again", starved.Has_Fresh_Sample(1000000));
+
+		starved.Reset();
+		Expect("reset clears freshness", !starved.Has_Fresh_Sample(0));
+
+		RttEstimator wrapped;
+		wrapped.Add_Sample(100);
+		wrapped.Note_Retransmit(wrapped.Retransmit_Timeout(), 0xfffff000u);
+		Expect("freshness survives the clock wrap", wrapped.Has_Fresh_Sample(0));
+		Expect("staleness is measured across the wrap", !wrapped.Has_Fresh_Sample(0x00001000u));
+	}
+
+
+	void Test_Note_Retransmit_Guards(void)
+	{
+		using namespace NetTiming;
+
+		RttEstimator unsampled;
+		unsampled.Note_Retransmit(MINIMUM_RTO, 1000);
+		Expect("retransmission does not invent a sample", !unsampled.Has_Sample());
+		Expect_Equal("unsampled RTO is unchanged", unsampled.Retransmit_Timeout(), MINIMUM_RTO);
+
+		RttEstimator ceiling;
+		ceiling.Add_Sample(300);
+		Expect_Equal("sampled RTO", ceiling.Retransmit_Timeout(), 900u);
+		ceiling.Note_Retransmit(900, 1000);
+		Expect_Equal("backoff doubles below the ceiling", ceiling.Retransmit_Timeout(), 1800u);
+		ceiling.Note_Retransmit(1800, 2000);
+		Expect_Equal("backoff clamps at the ceiling", ceiling.Retransmit_Timeout(), MAXIMUM_RTO);
+		ceiling.Note_Retransmit(MAXIMUM_RTO, 3000);
+		Expect_Equal("backoff stays at the ceiling", ceiling.Retransmit_Timeout(), MAXIMUM_RTO);
+
+		// A packet captured during backoff can double a freshly lowered RTO once.
+		RttEstimator recovered;
+		recovered.Add_Sample(300);
+		recovered.Note_Retransmit(900, 1000);
+		recovered.Add_Sample(300);
+		Expect_Equal("clean sample lowers the RTO", recovered.Retransmit_Timeout(), 752u);
+		recovered.Note_Retransmit(1800, 2000);
+		Expect_Equal("stale capture doubles the RTO once", recovered.Retransmit_Timeout(), 1504u);
+	}
 }
 
 
@@ -246,6 +347,9 @@ int main(void)
 	Test_Retransmit_Backoff();
 	Test_Retry_Decisions();
 	Test_Loss_Jitter_And_Reordering();
+	Test_Backoff_Persistence();
+	Test_Sample_Staleness();
+	Test_Note_Retransmit_Guards();
 
 	if (Failures != 0) {
 		std::cerr << Failures << " network timing checks failed\n";
