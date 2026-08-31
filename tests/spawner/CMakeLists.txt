@@ -26,7 +26,7 @@ target_compile_features(SpawnContract PRIVATE cxx_std_20)
 
 target_include_directories(SpawnContract PRIVATE "${CMAKE_SOURCE_DIR}/code")
 
-target_compile_definitions(SpawnContract PRIVATE WIN32 _WINDOWS _MBCS)
+target_compile_definitions(SpawnContract PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(SpawnContract PRIVATE
     $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>
