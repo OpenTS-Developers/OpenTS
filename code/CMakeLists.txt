@@ -57,6 +57,12 @@ endforeach()
 #
 message(STATUS "${PROJECT_NAME}: Creating '${PROJECT_NAME}' executable...")
 
+if(OPENTS_EXPERIMENTAL_CLANG_CL)
+    set(CMAKE_DEPFILE_FLAGS_RC "")
+    set(CMAKE_RC_COMPILE_OBJECT
+        "<CMAKE_RC_COMPILER> /C 1252 <DEFINES> <INCLUDES> <FLAGS> /fo<OBJECT> <SOURCE>")
+endif()
+
 add_executable(OpenTS WIN32 ${OPENTS_SRC})
 target_compile_features(OpenTS PRIVATE cxx_std_20)
 
@@ -92,6 +98,16 @@ set_target_properties(OpenTS PROPERTIES
 #
 message(STATUS "${PROJECT_NAME}: Applying compiler flags...")
 
+if(OPENTS_EXPERIMENTAL_CLANG_CL)
+    set(OPENTS_ASM_MASM_OPTIONS -Zi -c -coff -Cx -safeseh)
+    set(OPENTS_ASM_MASM_SOURCE_OPTIONS "-Zi -c -coff -Cx -safeseh")
+    set(OPENTS_PARALLEL_COMPILE_OPTION "")
+else()
+    set(OPENTS_ASM_MASM_OPTIONS /Zi /c /coff /Cx /safeseh)
+    set(OPENTS_ASM_MASM_SOURCE_OPTIONS "/Zi /c /coff /Cx /safeseh")
+    set(OPENTS_PARALLEL_COMPILE_OPTION /MP)
+endif()
+
 set(OPENTS_COMPILE_OPTIONS
 
     # ================= DEBUG =================
@@ -101,17 +117,17 @@ set(OPENTS_COMPILE_OPTIONS
         # /arch:SSE2 -- IEEE-754 single precision, no x87 excess precision.
         # /fp:precise -- no reassociation of the engine's accumulations.
         $<$<COMPILE_LANGUAGE:CXX>:
-            /Zi /Od /RTC1 /GR /MP /EHsc /Oy- /MTd /Zc:__cplusplus /arch:SSE2 /fp:precise
+            /Zi /Od /RTC1 /GR ${OPENTS_PARALLEL_COMPILE_OPTION} /EHsc /Oy- /MTd /Zc:__cplusplus /arch:SSE2 /fp:precise
         >
 
         # ---------- C ----------
         $<$<COMPILE_LANGUAGE:C>:
-            /Zi /Od /RTC1 /MP /Oy- /arch:SSE2 /fp:precise
+            /Zi /Od /RTC1 ${OPENTS_PARALLEL_COMPILE_OPTION} /Oy- /arch:SSE2 /fp:precise
         >
 
         # ---------- MASM ----------
         $<$<COMPILE_LANGUAGE:ASM_MASM>:
-            /Zi /c /coff /Cx /safeseh
+            ${OPENTS_ASM_MASM_OPTIONS}
         >
     >
 
@@ -122,17 +138,17 @@ set(OPENTS_COMPILE_OPTIONS
         # /arch:SSE2 -- IEEE-754 single precision, no x87 excess precision.
         # /fp:precise -- no reassociation of the engine's accumulations.
         $<$<COMPILE_LANGUAGE:CXX>:
-            /Zi /O2 /GF /GR /MP /EHsc /MT /Zc:__cplusplus /arch:SSE2 /fp:precise
+            /Zi /O2 /GF /GR ${OPENTS_PARALLEL_COMPILE_OPTION} /EHsc /MT /Zc:__cplusplus /arch:SSE2 /fp:precise
         >
 
         # ---------- C ----------
         $<$<COMPILE_LANGUAGE:C>:
-            /Zi /O2 /GF /MP /arch:SSE2 /fp:precise
+            /Zi /O2 /GF ${OPENTS_PARALLEL_COMPILE_OPTION} /arch:SSE2 /fp:precise
         >
 
         # ---------- MASM ----------
         $<$<COMPILE_LANGUAGE:ASM_MASM>:
-            /Zi /c /coff /Cx /safeseh
+            ${OPENTS_ASM_MASM_OPTIONS}
         >
     >
 )
@@ -167,6 +183,15 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" PROPER
         "BX_CONFIG_DEBUG=$<IF:$<CONFIG:Debug>,1,$<BOOL:${BX_CONFIG_DEBUG}>>"
     COMPILE_OPTIONS "/Zc:preprocessor"
 )
+
+# bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
+# compatibility header into the renderer translation unit as well as bx/bgfx so the
+# MSVC standard-library headers that follow still see the Win32 calling convention.
+if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
+        COMPILE_OPTIONS "/FI${CMAKE_SOURCE_DIR}/cmake/clang-compat.h"
+    )
+endif()
 
 message(STATUS "${PROJECT_NAME}: Adding compilier definitions...")
 target_compile_definitions(OpenTS PRIVATE
@@ -220,7 +245,7 @@ target_link_libraries(OpenTS PRIVATE
     ole32 oleaut32 uuid odbc32 odbccp32
 )
 
-if (MSVC)
+if (OPENTS_MSVC_ABI_COMPILER)
     target_link_options(OpenTS PRIVATE
         /SUBSYSTEM:WINDOWS
         /DEBUG
@@ -245,12 +270,12 @@ message(STATUS "${PROJECT_NAME}: Adding MASM support...")
 
 enable_language(ASM_MASM)
 
-# All .asm files compile automatically using ML.EXE with appropriate flags.
+# The experimental clang-cl toolchain uses native UASM; Visual Studio uses ML.EXE.
 foreach(f ${OPENTS_SRC})
     if(f MATCHES "\\.asm$")
         set_source_files_properties(${f} PROPERTIES
             LANGUAGE ASM_MASM
-            COMPILE_FLAGS "-Zi -c -coff -Cx"
+            COMPILE_FLAGS "${OPENTS_ASM_MASM_SOURCE_OPTIONS}"
         )
     endif()
 endforeach()

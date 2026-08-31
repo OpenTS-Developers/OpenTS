@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.23)
 
 project(OpenTS VERSION 0.2.0 LANGUAGES C CXX ASM_MASM)
+enable_language(RC)
 
 # A SemVer prerelease label, which project() cannot carry because it takes numbers only. Set it
 # to "beta1" and the version reads 0.1.0-beta1; leave it empty outside a prerelease series. The
@@ -11,8 +12,27 @@ set(OPENTS_VERSION_PRERELEASE "")
 # alone. Every other build names the commit it came from as well.
 option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared version" OFF)
 
-if(NOT MSVC OR MSVC_VERSION LESS 1930)
-    message(FATAL_ERROR "OpenTS requires the Visual Studio 2022 MSVC toolchain.")
+option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF)
+
+set(OPENTS_MSVC_ABI_COMPILER OFF)
+if(MSVC)
+    if(MSVC_VERSION LESS 1930)
+        message(FATAL_ERROR "OpenTS requires MSVC 19.30 or newer.")
+    endif()
+    set(OPENTS_MSVC_ABI_COMPILER ON)
+elseif(OPENTS_EXPERIMENTAL_CLANG_CL
+       AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
+       AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+    set(OPENTS_MSVC_ABI_COMPILER ON)
+    set(CMAKE_DEPFILE_FLAGS_RC "" CACHE STRING "" FORCE)
+    set(CMAKE_RC_COMPILE_OBJECT
+        "<CMAKE_RC_COMPILER> /C 1252 <DEFINES> <INCLUDES> <FLAGS> /fo<OBJECT> <SOURCE>"
+        CACHE STRING "" FORCE)
+else()
+    message(FATAL_ERROR
+        "OpenTS requires the Visual Studio 2022 MSVC toolchain. "
+        "The unsupported clang-cl experiment must be configured with "
+        "-DOPENTS_EXPERIMENTAL_CLANG_CL=ON.")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
