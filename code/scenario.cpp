@@ -1429,10 +1429,7 @@ char const * Pick_Load_Background_Name(Point2D & pos)
 		player = Session.Players[player]->Player.House;
 	}
 
-	/*
-	 * Only the two sides of the war have loading art, so a house from anywhere else in the
-	 * rules is shown the first side's rather than a name from past the list.
-	 */
+	// Only two sides have loading art, so any other house is shown the first side's.
 	if (player < 0 || player > 1) {
 		player = 0;
 	}
