@@ -35,5 +35,4 @@ if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     # The ASTC encoder selects a 64-bit popcount intrinsic when SSE4.2 is enabled,
     # but that intrinsic is unavailable for the Win32 target. Its SSE2 path is portable.
     target_compile_definitions(bimg PRIVATE ASTCENC_POPCNT=0 ASTCENC_SSE=20)
-
 endif()

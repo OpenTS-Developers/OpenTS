@@ -92,16 +92,6 @@ set_target_properties(OpenTS PROPERTIES
 #
 message(STATUS "${PROJECT_NAME}: Applying compiler flags...")
 
-if(OPENTS_EXPERIMENTAL_CLANG_CL)
-    set(OPENTS_ASM_MASM_OPTIONS -Zi -c -coff -Cx -safeseh)
-    set(OPENTS_ASM_MASM_SOURCE_OPTIONS "-Zi -c -coff -Cx -safeseh")
-    set(OPENTS_PARALLEL_COMPILE_OPTION "")
-else()
-    set(OPENTS_ASM_MASM_OPTIONS /Zi /c /coff /Cx /safeseh)
-    set(OPENTS_ASM_MASM_SOURCE_OPTIONS "/Zi /c /coff /Cx /safeseh")
-    set(OPENTS_PARALLEL_COMPILE_OPTION /MP)
-endif()
-
 set(OPENTS_COMPILE_OPTIONS
 
     # ================= DEBUG =================
@@ -111,17 +101,17 @@ set(OPENTS_COMPILE_OPTIONS
         # /arch:SSE2 -- IEEE-754 single precision, no x87 excess precision.
         # /fp:precise -- no reassociation of the engine's accumulations.
         $<$<COMPILE_LANGUAGE:CXX>:
-            /Zi /Od /RTC1 /GR ${OPENTS_PARALLEL_COMPILE_OPTION} /EHsc /Oy- /MTd /Zc:__cplusplus /arch:SSE2 /fp:precise
+            /Zi /Od /RTC1 /GR $<$<CXX_COMPILER_ID:MSVC>:/MP> /EHsc /Oy- /MTd /Zc:__cplusplus /arch:SSE2 /fp:precise
         >
 
         # ---------- C ----------
         $<$<COMPILE_LANGUAGE:C>:
-            /Zi /Od /RTC1 ${OPENTS_PARALLEL_COMPILE_OPTION} /Oy- /arch:SSE2 /fp:precise
+            /Zi /Od /RTC1 $<$<C_COMPILER_ID:MSVC>:/MP> /Oy- /arch:SSE2 /fp:precise
         >
 
         # ---------- MASM ----------
         $<$<COMPILE_LANGUAGE:ASM_MASM>:
-            ${OPENTS_ASM_MASM_OPTIONS}
+            -Zi -c -coff -Cx -safeseh
         >
     >
 
@@ -132,17 +122,17 @@ set(OPENTS_COMPILE_OPTIONS
         # /arch:SSE2 -- IEEE-754 single precision, no x87 excess precision.
         # /fp:precise -- no reassociation of the engine's accumulations.
         $<$<COMPILE_LANGUAGE:CXX>:
-            /Zi /O2 /GF /GR ${OPENTS_PARALLEL_COMPILE_OPTION} /EHsc /MT /Zc:__cplusplus /arch:SSE2 /fp:precise
+            /Zi /O2 /GF /GR $<$<CXX_COMPILER_ID:MSVC>:/MP> /EHsc /MT /Zc:__cplusplus /arch:SSE2 /fp:precise
         >
 
         # ---------- C ----------
         $<$<COMPILE_LANGUAGE:C>:
-            /Zi /O2 /GF ${OPENTS_PARALLEL_COMPILE_OPTION} /arch:SSE2 /fp:precise
+            /Zi /O2 /GF $<$<C_COMPILER_ID:MSVC>:/MP> /arch:SSE2 /fp:precise
         >
 
         # ---------- MASM ----------
         $<$<COMPILE_LANGUAGE:ASM_MASM>:
-            ${OPENTS_ASM_MASM_OPTIONS}
+            -Zi -c -coff -Cx -safeseh
         >
     >
 )
@@ -264,12 +254,12 @@ message(STATUS "${PROJECT_NAME}: Adding MASM support...")
 
 enable_language(ASM_MASM)
 
-# The experimental clang-cl toolchain uses native UASM; Visual Studio uses ML.EXE.
+# Dash-form options assemble under both ML.EXE and the clang-cl toolchain's UASM.
 foreach(f ${OPENTS_SRC})
     if(f MATCHES "\\.asm$")
         set_source_files_properties(${f} PROPERTIES
             LANGUAGE ASM_MASM
-            COMPILE_FLAGS "${OPENTS_ASM_MASM_SOURCE_OPTIONS}"
+            COMPILE_FLAGS "-Zi -c -coff -Cx"
         )
     endif()
 endforeach()
