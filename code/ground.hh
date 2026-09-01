@@ -25,7 +25,7 @@ struct GroundType {
 	float	Cost[SPEED_COUNT];			// Terrain effect cost (normal).
 	bool				Build;			// Can build on this terrain?
 
-	/// Carries the terrain characteristics to or from a save game.
+	// Carries the terrain characteristics to or from a save game.
 	template<typename S>
 	void Serialize(S & stream)
 	{

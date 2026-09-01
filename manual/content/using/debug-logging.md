@@ -28,8 +28,7 @@ second, the second one adds its process id to the name.
 
 ## What the log opens with
 
-Every log begins with a banner naming the build that wrote it, so a log is worth reading on
-its own without having to ask which version produced it:
+Every log begins with a banner naming the build that wrote it:
 
 ```
 Version  : OpenTS 0.1.0 (release build)
@@ -41,8 +40,7 @@ Options  : -XC
 ```
 
 `modified` means the build was made from a working copy with edits, so it is not exactly the
-named commit. `Options` lists the launch options the game was started with. If a bug report
-includes the log, it carries all of this already.
+named commit. `Options` lists the launch options the game was started with.
 
 ## Reading the rest
 

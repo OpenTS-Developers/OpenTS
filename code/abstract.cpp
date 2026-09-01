@@ -281,8 +281,8 @@ void AbstractClass::Serialize(SaveStreamClass & stream)
 
 /// <summary>
 /// Fetches the number of bytes that Save will write.
-/// A record is now as long as the members a class names, and the count is not known
-/// before the members have been written. Nothing in the game asks for it, so rather than
+/// A record is as long as the members a class names, so the count is not known before
+/// the members have been written. Nothing in the game asks for it, so rather than
 /// walk the object twice this reports that the size cannot be supplied.
 /// </summary>
 /// <param name="pcbSize">Receives the maximum size, in bytes.</param>

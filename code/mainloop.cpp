@@ -346,7 +346,7 @@ bool Main_Loop(void)
 	//
 	// Measure how long it took to process the AI
 	//
-	Session.ProcessTicks += std::min<int>(1000, (timeGetTime() - Session.ProcessTimer)); /// (TickCount - Session.ProcessTimer)
+	Session.ProcessTicks += std::min<int>(1000, (timeGetTime() - Session.ProcessTimer)); // (TickCount - Session.ProcessTimer)
 	Session.ProcessFrames++;
 
 	/*
@@ -364,7 +364,6 @@ bool Main_Loop(void)
 		**	Check for player wins or loses according to global event flag.
 		*/
 		if (PlayerWins) {
-			// Build the game results.
 			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
 				if (WestwoodOnline_Tournament) {
 					Session.SawGameCompletion = true;
@@ -379,7 +378,6 @@ bool Main_Loop(void)
 			Do_Win();
 			done = true;
 		} else if (PlayerLoses) {
-			// Build the game results.
 			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
 				if (WestwoodOnline_Tournament) {
 					Session.SawGameCompletion = true;

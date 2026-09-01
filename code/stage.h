@@ -76,7 +76,7 @@ class StageClass {
 		void Just_Set_Rate(int rate) {Rate = rate;}
 		void AI(void) {};
 
-		/// Carries the animation stage to or from a save game.
+		// Carries the animation stage to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

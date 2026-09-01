@@ -15,8 +15,7 @@
 /*
  * The directories the game keeps its files in. The data directory holds what a deployment
  * ships and is never written to. The user directory holds what a player's game writes.
- * Either one unnamed means the game's own directory, which is where everything lived when
- * a game was one directory belonging to one person.
+ * Either one unnamed means the game's own directory.
  */
 
 void Set_Data_Directory(char const * path);

@@ -118,9 +118,6 @@ GameType Select_MPlayer_Game (void)
 
 /// <summary>
 /// Handles the messages for the multiplayer game type dialog.
-/// This routine gives the ownerdraw system first crack at the message, disables the
-/// buttons that lead nowhere, and hands the control the player pressed back to
-/// Select_MPlayer_Game.
 /// </summary>
 /// <returns>Returns with the result of the ownerdraw handler, or false when the message was
 /// left unhandled.</returns>

@@ -11,4 +11,4 @@ The kill test is made on the type that dealt the fatal damage, at the moment the
 
 The key also gates the radius sweep of a veterancy crate. An object of a `Trainable=no` type is skipped without losing any rank it already holds. The crate still ignores ownership, so eligible enemy and neutral objects are promoted alongside the collector's own.
 
-Other ways of assigning a rank ignore this key. An object promoted by deploying from a promoted vehicle, a reinforcement's [`VeteranLevel`](/keys/veteranlevel/), or an armory holds that rank and everything it unlocks regardless of this setting. Setting `Trainable=yes` on a BuildingType lets a defensive structure climb the ranks by its own shooting and receive a veterancy-crate promotion.
+Other ways of assigning a rank ignore this key. An object promoted by deploying from a promoted vehicle, a reinforcement's [`VeteranLevel`](/keys/veteranlevel/), or an armory holds that rank and everything it unlocks regardless of this setting.

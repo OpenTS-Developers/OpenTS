@@ -47,6 +47,7 @@
 #include "building.h"
 #include "cell.h"
 #include "dbgprint.h"
+#include "gametime.h"
 #include "goptions.h"
 #include "house.h"
 #include "incdec.h"
@@ -73,6 +74,20 @@ extern FacingType Facing_Between_Points(Point2D const & pt1, Point2D const & pt2
 #define	SCROLL_DELAY	1
 
 CDTimerClass<SystemTimerClass> ScrollClass::Counter;
+
+// Steps from the scroll tables are paced off the clock at this rate, not off the frames drawn.
+#define	SCROLL_STEPS_PER_SECOND	30
+
+// Caps what a poll may cover, so a wait on a dialog or a load does not return as one long jump.
+#define	MAX_SCROLL_STEPS_PER_POLL	2.0
+
+static unsigned int _LastScrollPollTime = 0;
+static double _ScrollFraction = 0.0;
+
+// Sub-pixel parts of a scaled step, which truncation would otherwise drop at every poll.
+static double _EdgeScrollRemainder = 0.0;
+static double _CoastRemainderX = 0.0;
+static double _CoastRemainderY = 0.0;
 
 
 /***********************************************************************************************
@@ -109,8 +124,8 @@ void ScrollClass::Serialize(SaveStreamClass & stream)
 {
 	BASECLASS::Serialize(stream);
 
-	// Counter -- it paces the scroll off the system clock, so a saved value would carry the time
-	// of the save into the loaded game.
+	// Counter -- it paces the inertia ramp off the system clock, so a saved value would carry the
+	// time of the save into the loaded game.
 	// Inertia -- the state of a drag on the tactical map, which no held button survives to
 	// continue.
 	// IsCoastScrollAllowed
@@ -124,7 +139,7 @@ void ScrollClass::Serialize(SaveStreamClass & stream)
 /***********************************************************************************************
  * ScrollClass::AI -- Handles scroll AI processing.                                            *
  *                                                                                             *
- *    This routine is called every game frame for purposes of input processing.                *
+ *    This routine is called on every input poll for purposes of input processing.             *
  *                                                                                             *
  * INPUT:   input    -- Reference to the keyboard/mouse event that just occurred.              *
  *                                                                                             *
@@ -497,11 +512,10 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 				} else {
 					Override_Mouse_Shape((MouseType)(MOUSE_N+control), false);
 
-					/*
-					**	If the mouse button is pressed or auto scrolling is active, then scroll
-					**	the map if the delay counter indicates.
-					*/
-					distance = int(_rate[rate] * Rule->ScrollMultiplier);
+					int step = int(_rate[rate] * Rule->ScrollMultiplier);
+					double scaled = step * _ScrollFraction + _EdgeScrollRemainder;
+					distance = int(scaled);
+					_EdgeScrollRemainder = scaled - distance;
 					Scroll_Map(facing, distance, true);
 
 					if (Counter == 0 && player_scrolled) {
@@ -522,14 +536,19 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 }
 
 
-/// <summary>
-/// Handles the per frame mouse tracking for the tactical map.
-/// This routine is called from the scroll AI every game frame. It feeds the current mouse
-/// position to the map as a held drag, a coast scroll, or a plain hover that keeps the action
-/// cursor up to date, and lets the map scroll when the cursor rests against a screen edge.
-/// </summary>
+/// <summary>Handles the mouse tracking for the tactical map.
+/// This routine is called on every input poll. It feeds the current mouse position to the map as
+/// a held drag, a coast scroll, or a plain hover that keeps the action cursor up to date, and
+/// lets the map scroll when the cursor rests against a screen edge.</summary>
 void ScrollClass::Scroll_AI(void)
 {
+	unsigned int now = Get_Game_Time();
+	_ScrollFraction = 0.0;
+	if (_LastScrollPollTime != 0) {
+		_ScrollFraction = std::min((now - _LastScrollPollTime) * (SCROLL_STEPS_PER_SECOND / 1000.0), MAX_SCROLL_STEPS_PER_POLL);
+	}
+	_LastScrollPollTime = now;
+
 	if (!IgnoreInput) {
 		Point2D tacti = TacticalRect.Top_Left();
 		Point2D mouse = MouseCursor->Get_Mouse_Point();
@@ -747,15 +766,25 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 				_facing[0] = face;
 			}
 
-			int distx;
-			int disty;
+			int distx = 0;
+			int disty = 0;
 
 			switch (Options.Get_Scroll_Method()) {
 
-				case 0:
-					distx = abs(int((double)posx * (1.0 / (double)(Options.ScrollRate + 1))));
-					disty = abs(int((double)posy * (1.0 / (double)(Options.ScrollRate + 1))));
+				case 0: {
+					// This offset stands until the hand moves; the methods below warp the
+					// pointer back and so consume it once.
+					int stepx = abs(int((double)posx * (1.0 / (double)(Options.ScrollRate + 1))));
+					int stepy = abs(int((double)posy * (1.0 / (double)(Options.ScrollRate + 1))));
+
+					double scaledx = stepx * _ScrollFraction + _CoastRemainderX;
+					double scaledy = stepy * _ScrollFraction + _CoastRemainderY;
+					distx = int(scaledx);
+					disty = int(scaledy);
+					_CoastRemainderX = scaledx - distx;
+					_CoastRemainderY = scaledy - disty;
 					break;
+				}
 
 				case 1:
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));

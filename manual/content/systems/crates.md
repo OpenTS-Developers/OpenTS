@@ -85,7 +85,7 @@ A tracked crate's lifetime is drawn at placement, uniformly, between half of [`C
 A crate lasts somewhere between half `CrateRegen` and twice it, so the setting is the lower quarter-point of the range rather than its middle, and the average life is a quarter longer than the figure written. Raising it stretches both ends at once.
 :::
 
-Outside a campaign, and while crates are enabled for the match, every logic frame sweeps the tracking slots. An expired slot has its crate removed and a fresh random crate placed. Collecting a crate also places a replacement when both the match option and [`Crates`](/keys/crates/) in the rules are enabled. The two paths therefore still differ: the expiry sweep reads only the match option, while pickup replacement requires both switches.
+Outside a campaign, and while crates are enabled for the match, every logic frame sweeps the tracking slots. An expired slot has its crate removed and a fresh random crate placed. Collecting a crate also places a replacement when both the match option and [`Crates`](/keys/crates/) in the rules are enabled.
 
 :::caution[The rules can still suppress pickup replacements]
 `Crates=yes` seeds the match setting that the game setup screen then overwrites, so the two can end up opposed. With `Crates=no` in the rules and crates switched on for the match, collected crates are not replaced although the expiry sweep keeps working. Switching crates off for the match suppresses both replacement paths whatever the rules say.
@@ -219,7 +219,7 @@ The chosen vehicle is created for the collector's house in [limbo](/glossary/#li
 
 The armor multiplier divides incoming damage while the speed and firepower multipliers multiply their quantities directly. All three store the third field as written: an armor value of `2` halves ordinary incoming damage, while `0.5` doubles it.
 
-The armor sweep changes only an object whose armor multiplier is exactly `1`. An earlier armor crate therefore leaves that object unchanged, and a collector whose armor multiplier has already changed can convert the whole result to money before this sweep runs.
+The armor sweep changes only an object whose armor multiplier is exactly `1`. An object an earlier armor crate has already boosted is therefore left as it is, and a collector whose armor multiplier has already changed can convert the whole result to money before this sweep runs.
 
 :::caution[An armor value of zero leaves a zero divisor]
 The armor value is not clamped. Ordinary positive damage divides by the stored multiplier, so do not set the `Armor` row's third field to `0`.

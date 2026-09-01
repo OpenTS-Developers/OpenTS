@@ -110,7 +110,7 @@ struct ZoneConnectionClass
 		bool operator==(const ZoneConnectionClass & that) const { return(From == that.From && To == that.To); }
 		bool operator!=(const ZoneConnectionClass & that) const { return(From != that.From || To != that.To); }
 
-		/// Carries the connection to or from a save game.
+		// Carries the connection to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

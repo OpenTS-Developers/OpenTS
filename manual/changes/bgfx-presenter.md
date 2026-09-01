@@ -48,12 +48,8 @@ credit: [ZivDero]
 
 The finished picture reaches the screen through bgfx, which draws it with Direct3D, Vulkan, or OpenGL depending on the machine. The game still renders every frame in software exactly as it did, so nothing about how the game looks or plays depends on the graphics card; only the last step, getting that picture in front of the player, has changed. DirectDraw is gone from the engine entirely.
 
-The game no longer changes the desktop's resolution. A full-screen game covers the screen with a borderless window, and the picture it renders is scaled into that window, keeping its shape and adding black bars where the shapes differ. Switching away from the game and back no longer disturbs the rest of the desktop, and a game that stops responding no longer leaves the display in its resolution. `Fullscreen`, `WindowWidth`, and `WindowHeight` size the window, while `ScaleMode` and `IntegerScaling` control how the picture is filtered on the way into it.
+The game no longer changes the desktop's resolution. A full-screen game covers the screen with a borderless window, and the picture it renders is scaled into that window, keeping its shape and adding black bars where the shapes differ. Switching away from the game and back no longer disturbs the rest of the desktop, and a game that stops responding no longer leaves the display in its resolution.
 
-The mouse pointer is now a real system cursor built from the game's own artwork. It is drawn over the picture by the system rather than into the frame, so it keeps moving smoothly while the game is busy, and `CursorScale` sets how large it is drawn.
+The mouse pointer is now a real system cursor built from the game's own artwork, drawn over the picture by the system rather than into the frame.
 
-The display options screen offers every resolution the display reports between 640 by 400 and 4096 by 4096. `AllowHiResModes` no longer filters that list and has been removed, along with the `HIRES` cheat that used to bypass it. `AllowModeToggle` and its `TOGGLE` cheat are also gone: the game no longer switches resolution between the menus and play, because the picture is scaled to the window instead. `VideoBackBuffer` was already unused. Entries left in `sun.ini` for any of the three are ignored.
-
-`VSync` and `Renderer` are new and both default to leaving the choice alone. Presents are already limited to the display's refresh rate without waiting for it, so `VSync` is only needed to remove tearing, and `Renderer` exists to work around a driver.
-
-The `-16` command line option has been removed. It set a high-color flag that no longer has any readers, since the game always renders in high color.
+The display options screen offers every resolution the display reports between 640 by 400 and 4096 by 4096. `AllowHiResModes` no longer filters that list and has been removed, along with the `HIRES` cheat that used to bypass it. `AllowModeToggle` and its `TOGGLE` cheat are also gone: the game no longer switches resolution between the menus and play, because the picture is scaled to the window instead. `VideoBackBuffer` was already unused.

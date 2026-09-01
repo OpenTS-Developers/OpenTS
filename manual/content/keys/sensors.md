@@ -1,6 +1,6 @@
 ---
 key: Sensors
-summary: Whether the object reveals a nearby hidden object whose house its owner does not consider allied.
+summary: Whether the object reveals a nearby hidden object belonging to a house its own owner does not consider allied.
 see_also: [SensorArray, "system:cloaking"]
 when_omitted:
   kind: context-dependent

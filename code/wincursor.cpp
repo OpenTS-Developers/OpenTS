@@ -172,9 +172,6 @@ static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hot
 }
 
 
-/// <summary>
-/// Destroys every cached cursor.
-/// </summary>
 static void Flush_Cursor_Cache(void)
 {
 	for (int index = 0; index < _CursorCacheCount; index++) {

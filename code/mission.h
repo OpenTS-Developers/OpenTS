@@ -207,7 +207,7 @@ class MissionControlClass
 		*/
 		double AARate;
 
-		/// Carries the mission controls to or from a save game.
+		// Carries the mission controls to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

@@ -460,7 +460,7 @@ class MapClass: public GScreenClass
 			bool operator==(const CrackedIceStruct & that) const { return(that.CellID == CellID && that.SolidifyFrame == SolidifyFrame); }
 			bool operator!=(const CrackedIceStruct & that) const { return(that.CellID != CellID || that.SolidifyFrame != SolidifyFrame); }
 
-			/// Carries the cracked ice record to or from a save game.
+			// Carries the cracked ice record to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{

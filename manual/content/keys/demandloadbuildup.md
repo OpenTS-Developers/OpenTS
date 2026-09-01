@@ -11,4 +11,4 @@ By default the file [`Buildup=`](/keys/buildup/) names is fetched from the archi
 
 The deferred read builds the filename with a `.SHP` extension and the structure-art theater rewrite whatever the type's own theater settings say, so a `Theater=yes` structure that defers its construction artwork looks for the plain file rather than the theater-suffixed one. It gives the step count and the rate their ordinary treatment — half the frames in the file, divided into [`BuildupTime`](/keys/builduptime/) — where the theater fetch does not.
 
-This is also the setting that makes [`FreeBuildup=yes`](/keys/freebuildup/) safe to use, since only artwork read this way is a block the type may give back.
+Only artwork read this way is released by [`FreeBuildup=yes`](/keys/freebuildup/). Without `DemandLoadBuildup=yes`, `FreeBuildup=yes` has no effect.

@@ -184,7 +184,7 @@ class SidebarClass : public PowerClass
 					OBJECT_HEIGHT=51,				// Pixel height of each buildable object.
 					OBJECT_WIDTH=64,				// Pixel width of each buildable object.
 					MAX_VISIBLE=4,					// Number of object slots visible at any one time.
-					MAX_SLOTS=60,					/// Maximum number of object slots at any resolution.
+					MAX_SLOTS=60,					// Maximum number of object slots at any resolution.
 					SCROLL_RATE=OBJECT_HEIGHT,		// The pixel jump while scrolling (larger is faster).
 					UP_X_OFFSET=5,					// Scroll up arrow coordinates.
 					UP_Y_OFFSET=25,					/// Y offset of the scroll arrows below the last object slot.
@@ -314,7 +314,7 @@ class SidebarClass : public PowerClass
 						return(BuildableID != other.BuildableID || BuildableType != other.BuildableType);
 					}
 
-					/// Carries the sidebar slot to or from a save game.
+					// Carries the sidebar slot to or from a save game.
 					template<typename S>
 					void Serialize(S & stream)
 					{

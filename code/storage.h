@@ -28,7 +28,7 @@ class StorageClass
 		StorageClass operator-(StorageClass &that) const;
 		StorageClass operator-=(StorageClass &that);
 
-		/// Carries the stored amounts to or from a save game.
+		// Carries the stored amounts to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

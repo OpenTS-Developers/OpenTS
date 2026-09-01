@@ -288,6 +288,159 @@ class HookTests(unittest.TestCase):
         self.assertIn("fail-open", context)
 
 
+class ScanTests(unittest.TestCase):
+    """Baseline-and-scan coverage over a real throwaway git repository."""
+
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name).resolve()
+        self.git("init", "-q")
+        self.git("config", "user.email", "hook@test")
+        self.git("config", "user.name", "Hook Test")
+        self.git("config", "commit.gpgsign", "false")
+        (self.root / "code").mkdir()
+        (self.root / "AGENTS.md").write_text(
+            "# Root\n\n## Writing prose\n\nUse plain English.\n\n## Source\n",
+            encoding="utf-8",
+        )
+        (self.root / "code" / "AGENTS.md").write_text(
+            "# Code\n\n## Comments\n\nExplain only hidden constraints.\n\n## Tests\n",
+            encoding="utf-8",
+        )
+        (self.root / "code" / "example.cpp").write_text(
+            "void Run();\n", encoding="utf-8"
+        )
+        (self.root / "notes.md").write_text("Notes.\n", encoding="utf-8")
+        self.git("add", "-A")
+        self.git("commit", "-q", "-m", "seed")
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def git(self, *args: str) -> None:
+        subprocess.run(
+            ["git", "-C", str(self.root), *args],
+            capture_output=True,
+            check=True,
+        )
+
+    def event(self, name: str, **extra: object) -> dict | None:
+        payload = {
+            "hook_event_name": name,
+            "session_id": "scan-test",
+            "cwd": str(self.root),
+            **extra,
+        }
+        return STYLE.handle_payload(payload, self.root)
+
+    def baseline(self) -> None:
+        self.assertIsNone(self.event("SessionStart", source="startup"))
+
+    def test_baseline_records_dirty_and_untracked_files(self) -> None:
+        (self.root / "notes.md").write_text("Dirty.\n", encoding="utf-8")
+        (self.root / "extra.md").write_text("Untracked.\n", encoding="utf-8")
+        self.baseline()
+        session_dir = STYLE.record_baseline(self.root, "scan-test")
+        assert session_dir is not None
+        manifest = json.loads((session_dir / "manifest.json").read_text())
+        self.assertEqual(set(manifest["files"]), {"notes.md", "extra.md"})
+        result = self.event("PostToolUse", tool_name="Bash", tool_input={"command": "true"})
+        self.assertIsNone(result)
+
+    def test_shell_write_is_scanned_and_blocks(self) -> None:
+        self.baseline()
+        (self.root / "code" / "example.cpp").write_text(
+            "/// Runs the operation.\nvoid Run();\n", encoding="utf-8"
+        )
+        result = self.event("PostToolUse", tool_name="Bash", tool_input={"command": "python x"})
+        assert result is not None
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("without XML tags", result["reason"])
+
+    def test_preexisting_dirt_is_not_flagged(self) -> None:
+        (self.root / "code" / "example.cpp").write_text(
+            "/// Runs the operation.\nvoid Run();\n", encoding="utf-8"
+        )
+        self.baseline()
+        result = self.event("PostToolUse", tool_name="Bash", tool_input={"command": "true"})
+        self.assertIsNone(result)
+
+    def test_full_write_blocks_using_baseline_old_content(self) -> None:
+        self.baseline()
+        (self.root / "code" / "example.cpp").write_text(
+            "/// Runs the operation.\nvoid Run();\n", encoding="utf-8"
+        )
+        result = self.event(
+            "PostToolUse",
+            tool_name="Write",
+            tool_input={
+                "file_path": str(self.root / "code" / "example.cpp"),
+                "content": "/// Runs the operation.\nvoid Run();\n",
+            },
+        )
+        assert result is not None
+        self.assertEqual(result["decision"], "block")
+
+    def test_commit_does_not_hide_session_changes(self) -> None:
+        self.baseline()
+        (self.root / "code" / "example.cpp").write_text(
+            "// This change removes the old path.\nvoid Run();\n", encoding="utf-8"
+        )
+        self.git("commit", "-q", "-am", "mid-session")
+        result = self.event("Stop")
+        assert result is not None
+        self.assertEqual(result["decision"], "block")
+        self.assertIn("narrates the edit", result["reason"])
+
+    def test_scan_context_is_injected_once_per_file(self) -> None:
+        self.baseline()
+        (self.root / "notes.md").write_text("Session change.\n", encoding="utf-8")
+        first = self.event("PostToolUse", tool_name="Bash", tool_input={"command": "true"})
+        assert first is not None
+        self.assertIn("## Writing prose", first["hookSpecificOutput"]["additionalContext"])
+        second = self.event("PostToolUse", tool_name="Bash", tool_input={"command": "true"})
+        self.assertIsNone(second)
+
+    def test_stop_forces_a_single_review_pass(self) -> None:
+        self.baseline()
+        (self.root / "notes.md").write_text("Session change.\n", encoding="utf-8")
+        first = self.event("Stop")
+        assert first is not None
+        self.assertEqual(first["decision"], "block")
+        self.assertIn("## Writing prose", first["reason"])
+        self.assertIn("notes.md", first["reason"])
+        self.assertIsNone(self.event("Stop"))
+        self.assertIsNone(self.event("Stop", stop_hook_active=True))
+
+    def test_subagent_stop_blocks_findings_but_skips_review_pass(self) -> None:
+        self.baseline()
+        (self.root / "notes.md").write_text("Session change.\n", encoding="utf-8")
+        self.assertIsNone(self.event("SubagentStop"))
+        (self.root / "code" / "example.cpp").write_text(
+            "/// Runs the operation.\nvoid Run();\n", encoding="utf-8"
+        )
+        result = self.event("SubagentStop")
+        assert result is not None
+        self.assertEqual(result["decision"], "block")
+
+    def test_compact_resets_scan_context_flags(self) -> None:
+        self.baseline()
+        (self.root / "notes.md").write_text("Session change.\n", encoding="utf-8")
+        self.event("PostToolUse", tool_name="Bash", tool_input={"command": "true"})
+        result = self.event("SessionStart", source="compact")
+        assert result is not None
+        self.assertIn("## Comments", result["hookSpecificOutput"]["additionalContext"])
+        again = self.event("PostToolUse", tool_name="Bash", tool_input={"command": "true"})
+        assert again is not None
+        self.assertIn("## Writing prose", again["hookSpecificOutput"]["additionalContext"])
+
+    def test_failures_are_logged(self) -> None:
+        STYLE._log_failure("boom", self.root)
+        log = self.root / ".git" / "style-scan" / "errors.log"
+        self.assertTrue(log.exists())
+        self.assertIn("boom", log.read_text(encoding="utf-8"))
+
+
 class RepositoryIntegrationTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -303,16 +456,26 @@ class RepositoryIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(completed.returncode, 0, completed.stderr)
 
-    def test_claude_uses_shared_script(self) -> None:
+    def test_claude_uses_shared_script_on_every_event(self) -> None:
         settings = json.loads((self.root / ".claude" / "settings.json").read_text())
-        entry = settings["hooks"]["PostToolUse"][0]
-        self.assertEqual(entry["matcher"], "Edit|Write")
-        command = entry["hooks"][0]["command"]
-        self.assertIn(".agents/hooks/style-rules.py", command.replace("\\", "/"))
+        hooks = settings["hooks"]
+        self.assertEqual(
+            set(hooks),
+            {"PostToolUse", "SessionStart", "SubagentStart", "Stop", "SubagentStop"},
+        )
+        self.assertEqual(
+            hooks["PostToolUse"][0]["matcher"],
+            "Edit|Write|NotebookEdit|Bash|PowerShell",
+        )
+        for groups in hooks.values():
+            for group in groups:
+                for handler in group["hooks"]:
+                    command = handler["command"].replace("\\", "/")
+                    self.assertIn(".agents/hooks/style-rules.py", command)
         self.assertFalse((self.root / ".claude" / "hooks" / "comment-rules.py").exists())
 
-    def test_codex_candidate_uses_supported_events_and_shared_script(self) -> None:
-        path = self.root / ".agents" / "hooks" / "codex-hooks.candidate.json"
+    def test_codex_hooks_use_supported_events_and_shared_script(self) -> None:
+        path = self.root / ".codex" / "hooks.json"
         config = json.loads(path.read_text(encoding="utf-8"))
         hooks = config["hooks"]
         self.assertEqual(set(hooks), {"PostToolUse", "SubagentStart", "SessionStart"})

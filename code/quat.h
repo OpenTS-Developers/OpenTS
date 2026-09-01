@@ -50,7 +50,7 @@ class Quaternion
 
 		void Invert(void);
 
-		/// Carries the quaternion to or from a save game.
+		// Carries the quaternion to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

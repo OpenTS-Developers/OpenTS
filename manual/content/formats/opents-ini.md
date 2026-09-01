@@ -16,7 +16,7 @@ related:
     id: game-data
 ---
 
-A distribution ships this file beside its game data to say where that data is kept. It is the deployment's own file, as against `SUN.INI`, which the game writes a player's settings back to.
+This is the deployment's own file, as against `SUN.INI`, which the game writes a player's settings back to.
 
 ```ini title="OPENTS.INI"
 [Paths]
@@ -27,7 +27,7 @@ SearchPaths=INI,MIX,Maps,Addons
 
 Without the file, and without the key, the game behaves as though `SearchPaths=INI,MIX,Maps` were written: a distribution can sort its files into `INI`, `MIX` and `Maps` folders and ship no configuration at all. A written list **replaces** that default rather than adding to it, so a deployment that wants the default folders as well as its own names them again.
 
-The game's own directory is examined before any listed folder, so naming it adds nothing. Naming only it, as `SearchPaths=.`, is how a deployment asks for no other folder to be searched — an entry with nothing after the equals sign is passed over by the file reader and would leave the default in force.
+The game's own directory is examined before any listed folder, so naming it adds nothing. Naming only it, as `SearchPaths=.`, is how a deployment asks for no other folder to be searched. An empty `SearchPaths=` does not do this: the file reader passes over an entry with nothing after the equals sign, leaving the default in force.
 
 ## Where the file is looked for
 
@@ -44,12 +44,12 @@ The game data directory is what [`-DATADIR`](/using/command-line/data-directory/
 
 Everything the game opens follows that order: archives, rules, artwork, scenarios and launch files alike. A loose file still stands in for an archived one, so a copy found in any of these folders is used ahead of an archived copy of the same name.
 
-A player's own copy is therefore the one the game reads, whatever a deployment ships under the same name. That is what makes a shared installation work: the settings and hotkeys a player has are theirs, and the rest is read from the copy everyone shares.
+A player's own copy is therefore the one the game reads, whatever a deployment ships under the same name. In a shared installation the settings and hotkeys a player has are theirs, and the rest is read from the copy everyone shares.
 
 Wildcard searches — for rules, battle files, map packs, map archives and movie archives — cover every directory in the list rather than stopping at the first that holds a match. A name held by more than one is used once, from the one that comes first, which is the same copy an ordinary open of that name would land on.
 
 [Saved games](/formats/save-games/) are the exception to all of this. They keep to a `Saved Games` folder inside the user data directory, and are named there outright rather than searched for, so that a launcher browsing them finds them in one place.
 
 :::caution[Files the game writes are not searched for]
-Settings, saved games, recordings and everything else the game writes go to the user data directory, or to the game's own directory when there is none. A file the game deletes is its own copy, so throwing away a player's hotkeys falls back to the ones a deployment shipped rather than removing them. Nothing listed here is ever written to or deleted from.
+Settings, saved games, recordings and everything else the game writes go to the user data directory, or to the game's own directory when there is none. A file the game deletes is its own copy, so deleting a player's hotkeys returns the game to the ones a deployment shipped rather than leaving it with none. Nothing listed here is ever written to or deleted from.
 :::

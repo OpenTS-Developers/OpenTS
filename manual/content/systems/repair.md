@@ -123,7 +123,7 @@ With no `RepairBay=` in the rules the setting names no building type at all, and
 
 ### Reaching the pad
 
-Five routes end on a pad, and they do not agree about which of the two settings decides that a building will do. That is what the middle column holds; the last column carries the conditions the route then imposes. What the middle column settles is the split above: three routes accept any `UnitRepair=yes` building, and two steer toward the one type `RepairBay` names, so a depot the key does not name still serves whatever arrives at it, while the named type without the flag turns everything away at the door.
+Five routes end on a pad, and they do not agree about which of the two settings decides that a building will do.
 
 | Route | Keys on | Conditions |
 | --- | --- | --- |

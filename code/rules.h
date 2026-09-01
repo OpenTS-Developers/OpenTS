@@ -70,7 +70,7 @@ class DifficultyClass
 		bool IsWallDestroyer;
 		bool IsContentScan;
 
-		/// Carries one difficulty level's settings to or from a save game.
+		// Carries one difficulty level's settings to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

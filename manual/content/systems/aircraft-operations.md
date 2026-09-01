@@ -12,7 +12,7 @@ Aircraft use their destination as a landing-zone reservation while they approach
 
 ## Landing-zone conflicts
 
-Inside the playable area, a landing-zone scan rejects a cell when a foot object is already present. The aircraft performing the scan does not block itself unless the caller requests a strict check, and a carryall does not treat the vehicle it is collecting as a blocker. An actual occupant blocks the cell regardless of who owns it or how the houses are allied.
+Inside the playable area, a landing-zone scan rejects a cell when a foot object is already present. The aircraft performing the scan does not count itself as a blocker, except where the scan is looking for somewhere else for that aircraft to go, and a carryall does not treat the vehicle it is collecting as a blocker. An actual occupant blocks the cell regardless of who owns it or how the houses are allied.
 
 A destination held by another active aircraft also blocks the cell in either of these cases:
 

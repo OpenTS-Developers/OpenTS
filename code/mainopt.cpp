@@ -182,9 +182,8 @@ BOOL CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 
 /// <summary>
 /// Switches the game over to a new render resolution.
-/// The presenter is moved first, since it leaves the previous mode in place when it
-/// cannot make the change. Every drawing surface is then rebuilt at the new size and the
-/// tactical map is given its new dimensions.
+/// Every drawing surface is destroyed and recreated at the new size, so any pointer held
+/// across this call is stale.
 /// </summary>
 /// <param name="width">The width to render at.</param>
 /// <param name="height">The height to render at.</param>

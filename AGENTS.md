@@ -33,6 +33,10 @@ concrete claims and familiar words. Cut restatement, stock caveats,
 meta-commentary about the writing or edit, and ceremonial conclusions that
 only recap the preceding text.
 
+These prose rules apply to repository files and durable project communication.
+They do not constrain chat-only execution plans or status updates. Plans should
+prioritize clarity, dependencies, risks, and verification over brevity.
+
 Keep reference and workflow documents dense and easy to scan. History,
 rationale, and other narrative documents may keep the context, detail, and
 transitions needed to explain why events or decisions matter. Never remove a
@@ -40,7 +44,9 @@ useful distinction, qualification, or example merely to make a document
 shorter.
 
 Treat AI-assisted prose as a draft. Verify every claim, then rewrite and trim
-it before submission. The contrasts below illustrate the style; they are not
+it before submission. These rules bind every edit path, including files
+written through scripts or shell commands; review the final diff against them
+before handing off. The contrasts below illustrate the style; they are not
 project facts or templates to copy.
 
 - Reference prose: avoid "This option is used in order to select which output

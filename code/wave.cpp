@@ -363,8 +363,8 @@ void WaveClass::Sonic_Add_Cell(Cell const & cell)
 /// <returns>Returns with the coordinate that lies that far along the line between them.</returns>
 Coord Lerp(Coord const & a, Coord const & b, float t)
 {
-	/// std::lerp returns the second endpoint exactly when t is one, which the
-	/// a*(1-t) + b*t form does not.
+	// std::lerp returns the second endpoint exactly when t is one, which the
+	// a*(1-t) + b*t form does not.
 	return(Coord(int(std::lerp((double)a.X, (double)b.X, (double)t)),
 				 int(std::lerp((double)a.Y, (double)b.Y, (double)t)),
 				 int(std::lerp((double)a.Z, (double)b.Z, (double)t))));

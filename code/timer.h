@@ -231,7 +231,7 @@ class TTimerClass : public BasicTimerClass<T> {
 		// Queries whether the timer is currently active.
 		bool Is_Active(void) const;
 
-		/// Carries the counting up timer to or from a save game.
+		// Carries the counting up timer to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{
@@ -460,7 +460,7 @@ class CDTimerClass : public BasicTimerClass<T> {
 		// Queries whether the timer is currently active.
 		bool Is_Active(void) const;
 
-		/// Carries the countdown timer to or from a save game.
+		// Carries the countdown timer to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{
@@ -708,7 +708,7 @@ class ProgressTimerClass : protected CDTimerClass<T>
 
 		void Reverse(void) { DelayTime = Time_Spent(); }
 
-		/// Carries the progress timer to or from a save game.
+		// Carries the progress timer to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

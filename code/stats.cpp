@@ -628,9 +628,8 @@ void Send_Statistics_Packet(void)
 	*/
 	packet = stats.Create_Comms_Packet(packet_size);
 
-	// The packet has nowhere to go. The results server it was addressed to went with the
-	// online client that knew its address, and no replacement has been given one. It is
-	// still built, so that the fields above keep describing a real match.
+	// The results server went with the online client that knew its address, and none has
+	// replaced it, so the packet is built for its fields' sake alone.
 	DebugString("Built a %d byte game results packet with no server to send it to.\n", packet_size);
 
 	/*

@@ -2015,7 +2015,7 @@ int AStarClass::Test_Cell_Walk(Cell const & from, Cell const & to, FootClass con
 	}
 
 	if (Find_Path_Hierarchical(hs_from, hs_to, mzone, foot)) {
-		int radius = std::max(abs(from.X - to.X), abs(from.Y - to.Y));	/// The Chebyshev distance between the cells
+		int radius = std::max(abs(from.X - to.X), abs(from.Y - to.Y));	// The Chebyshev distance between the cells
 		int node_count = HierSubzonePathCount[SUBZONE_FINE];		/// Number of nodes in the finest level path graph
 		int distance = 2 * node_count - 2;							/// Number of edges between these nodes
 

@@ -11,7 +11,7 @@ credit: [JoyfulShush, ZivDero]
 
 Select Same Type now adds to the selection rather than replacing it. The command dropped
 everything that was selected before hunting for matches, so units standing off screen were
-lost from a selection that was only meant to grow. They now stay selected.
+lost from a selection that was only meant to grow.
 
 Units the player does not control no longer decide what is hunted for. A selection that
 included an enemy or neutral object used to sweep the view for the player's own units of

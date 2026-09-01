@@ -15,7 +15,7 @@ Theme=APPROACH
 
 The value names a score declared in [the theme control file](/formats/theme-ini/), and it is consulted at one moment: the point between the briefing and the mission where [`Action`](/keys/action/#scope-scenarios) would play.
 
-A mission that names no action movie queues the score there, and does so whether or not the mission was started with its briefing, so a restarted mission gets its score back. A mission that does name one hands the score to the movie, which queues it as the movie opens; the score system is then asked for a fresh track as soon as the movie ends, a request it passes over while the queued score is still waiting its turn and takes — fading the score out — once that score has begun.
+A mission that names no action movie queues the score there, and does so whether or not the mission was started with its briefing, so a restarted mission gets its score back. A mission that does name one hands the score to the movie, which queues it as the movie opens. The score system is then asked for a fresh track as soon as the movie ends. That request is passed over while the queued score is still waiting its turn, and taken — fading the score out — once that score has begun.
 
 Nothing returns to the setting afterwards. Once the queued score has played, normal track rotation chooses the next allowed score.
 

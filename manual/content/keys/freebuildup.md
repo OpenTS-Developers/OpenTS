@@ -7,8 +7,6 @@ when_omitted:
   value: "no"
 ---
 
-With the flag set, the construction artwork is released at three moments: as each structure of the type is created and has been asked whether it may ever be sold, as a structure of the type finishes its buildup and opens, and as a structure of the type is taken off the map. Only [`DemandLoadBuildup=yes`](/keys/demandloadbuildup/) fetches it again afterwards.
+With [`DemandLoadBuildup=yes`](/keys/demandloadbuildup/), this flag releases construction art after draw-area measurement, structure creation and its sellability check, buildup completion, and structure destruction. The next request reloads it.
 
-:::danger[On its own the release hands back memory the type never allocated]
-Without `DemandLoadBuildup=yes` the artwork was read straight out of the archive that holds it, and what is released is a pointer into that archive's own block. Handing it back corrupts the heap, and the game may fault there or at a later, unrelated allocation. Nothing reloads the artwork either, so every structure of the type is drawn as nothing while it builds, and every one after the first is marked unsellable as well. Set the two together or leave both off.
-:::
+Without `DemandLoadBuildup=yes`, it does nothing and leaves archive art attached. Prior OpenTS stripped that art after the first structure, so later structures lost construction and deconstruction, sellability, and technician conversion for nominal crew on destruction.

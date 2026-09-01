@@ -62,7 +62,7 @@ struct AbilityFlagsType {
 		bool const & operator[](AbilityType type) const { return(AbilitiesFlag[type]); }
 		bool & operator[](AbilityType type) { return(AbilitiesFlag[type]); }
 
-		/// Carries the ability set to or from a save game.
+		// Carries the ability set to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

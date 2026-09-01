@@ -7,7 +7,7 @@ when_omitted:
   note: Zero lets the renderer choose the interface it considers best for the machine.
 ---
 
-The game asks the graphics card for one of several interfaces. Left at `0` it takes whichever the renderer judges best for the machine, which is the right answer on almost every machine. The setting exists so that a driver problem can be worked around without a new build:
+The game asks the graphics card for one of several interfaces. The setting exists so that a driver problem can be worked around without a new build:
 
 | Value | Interface |
 | --- | --- |

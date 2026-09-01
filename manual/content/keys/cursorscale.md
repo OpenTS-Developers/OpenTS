@@ -7,7 +7,7 @@ when_omitted:
   note: Zero matches the pointer to how much the picture itself is enlarged on screen.
 ---
 
-The pointer is a real system cursor built from the game's own artwork, so it stays crisp and keeps moving smoothly whatever the game is doing. It is drawn over the picture rather than inside it, which means it does not grow with the picture on its own and needs its own size.
+The pointer is a real system cursor built from the game's own artwork, so the system keeps drawing and moving it even while the game is busy. It is drawn over the picture rather than inside it, which means it does not grow with the picture on its own and needs its own size.
 
 Left at `0` it follows the picture: the enlargement is rounded to the nearest whole number and used as the pointer's size, so a picture displayed at roughly double size gets a double-size pointer. A value above zero sets the size directly, and eight is the largest accepted. A value below zero draws the pointer at the size the artwork was drawn at, however large the picture is displayed.
 

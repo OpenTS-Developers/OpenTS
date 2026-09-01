@@ -90,7 +90,7 @@ Every event below drops the cloak outright and starts the fade back into view. N
 - **Losing cover.** An object hidden only because a field covered its cell, the moment that cover is lifted.
 - **Being immobilized.** An [EM pulse](/systems/emp-pulse/) and anything else that stuns. The cloak ability and standing in cloaking cover both override this.
 - **Critical damage part way out.** While the fade out sits in its darkened band and health is at or below `ConditionRed`, a 10% chance on each frame gives the cloak up. The fade holds that band for several frames, so a critically damaged object more often abandons a cloak than finishes one. This is the one uncloak that starts without `CloakSound`.
-- **A detector beside a structure.** A hidden structure with a `Sensors=yes` object whose owner does not consider the structure allied within one cell of its footprint.
+- **A detector beside a structure.** A hidden structure with a `Sensors=yes` object standing within one cell of its footprint, when that object's owner does not consider the structure allied.
 
 Sensor coverage is not on the list. Marking a cell as sensed never touches the cloak state of anything standing on it.
 

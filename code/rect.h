@@ -108,7 +108,7 @@ class TRect
 		*/
 		[[nodiscard]] constexpr bool Is_Point_Within(TPoint2D<T> const & point) const {return(point.X >= X && point.X < X+Width && point.Y >= Y && point.Y < Y+Height);}
 
-		/// Carries the rectangle to or from a save game.
+		// Carries the rectangle to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

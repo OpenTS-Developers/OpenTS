@@ -1,20 +1,27 @@
 #!/usr/bin/env python3
 """Give editing agents the repository's prose and comment rules.
 
-Claude Code and Codex both call this script with a hook payload on stdin.  A
+Claude Code and Codex call this script with a hook payload on stdin.  A
 Markdown edit gets the ``## Writing prose`` section of the root ``AGENTS.md``
 as nonblocking context.  A C or C++ edit under ``code/`` gets the ``##
-Comments`` section of ``code/AGENTS.md`` whenever it touches comments.  The
-small set of mechanical comment checks may also block the tool result.
+Comments`` section of ``code/AGENTS.md`` whenever it touches comments, and a
+small set of mechanical comment checks may block the tool result.
 
-Edit and apply-patch payloads contain both sides of a change, so only newly
-added comment text is checked.  A Claude ``Write`` payload does not always
-include the previous content.  In that case the hook still sends a reminder
-when the written file contains comments, but deliberately skips blocking
-checks instead of comparing the file with Git HEAD and misclassifying an
-already-dirty working tree.
+Edits arrive on two paths.  Edit and apply-patch payloads carry both sides of
+the change, so only newly added text is checked.  Everything else -- shell
+commands, scripts, and full-file writes -- is covered by a git-based scan: a
+SessionStart hook snapshots the worktree under ``.git/style-scan/<session>/``,
+and later hooks diff the tree against that baseline, so the checks see only
+what the session itself changed, whatever tool changed it.
 
-Runtime failures are fail-open.  ``--check`` is the strict mode for tests: it
+Stop and SubagentStop run the same scan as a completion gate.  Outstanding
+mechanical violations always block.  When a session changed Markdown or
+source comments without tripping a check, Stop blocks once to require a
+review of the diff against the rule sections; a per-session flag and the
+``stop_hook_active`` field keep that from looping.
+
+Runtime failures stay fail-open for the edit but are appended to
+``.git/style-scan/errors.log``.  ``--check`` is the strict mode for tests: it
 fails if a canonical rule section is missing or renamed.
 """
 
@@ -24,7 +31,11 @@ import argparse
 import difflib
 import json
 import re
+import shutil
+import subprocess
 import sys
+import time
+import traceback
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -35,6 +46,12 @@ COMMENT_RULES = (Path("code/AGENTS.md"), "Comments")
 
 MARKDOWN_SUFFIXES = {".md", ".mdx"}
 SOURCE_SUFFIXES = {".h", ".hpp", ".hh", ".inl", ".c", ".cpp", ".cc"}
+
+# Tools whose edits do not arrive as old/new payloads and need the git scan.
+SHELL_TOOLS = {"bash", "powershell", "shell", "local_shell", "exec_command"}
+STATE_DIR_NAME = "style-scan"
+STATE_MAX_AGE = 7 * 24 * 3600
+GIT_TIMEOUT = 10
 
 WESTWOOD_OPEN = re.compile(r"^\s*/\*\*")
 WESTWOOD_CONT = re.compile(r"^\s*\*\*")
@@ -462,10 +479,263 @@ def _display_path(path: Path, root: Path) -> str:
         return str(path)
 
 
+def _git(root: Path, *args: str) -> str | None:
+    """Run one git command and return its stdout, or None on any failure."""
+    try:
+        completed = subprocess.run(
+            ["git", "-C", str(root), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=GIT_TIMEOUT,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if completed.returncode != 0:
+        return None
+    return completed.stdout
+
+
+def _state_root(root: Path) -> Path | None:
+    out = _git(root, "rev-parse", "--git-path", STATE_DIR_NAME)
+    if out is None:
+        return None
+    path = Path(out.strip())
+    if not path.is_absolute():
+        path = root / path
+    return path
+
+
+def _session_id(payload: dict) -> str:
+    raw = str(payload.get("session_id") or "default")
+    return re.sub(r"[^A-Za-z0-9_-]", "_", raw)[:64] or "default"
+
+
+def _relevant_suffix(rel: str) -> bool:
+    suffix = Path(rel).suffix.lower()
+    return suffix in MARKDOWN_SUFFIXES or suffix in SOURCE_SUFFIXES
+
+
+def _status_paths(line: str) -> str:
+    rel = line[3:].strip().strip('"')
+    if " -> " in rel:
+        rel = rel.split(" -> ", 1)[1].strip().strip('"')
+    return rel
+
+
+def _prune_stale_sessions(state_root: Path, keep: Path) -> None:
+    cutoff = time.time() - STATE_MAX_AGE
+    try:
+        entries = list(state_root.iterdir())
+    except OSError:
+        return
+    for entry in entries:
+        if entry == keep or not entry.is_dir():
+            continue
+        try:
+            if entry.stat().st_mtime < cutoff:
+                shutil.rmtree(entry, ignore_errors=True)
+        except OSError:
+            continue
+
+
+def record_baseline(root: Path, session: str) -> Path | None:
+    """Snapshot the worktree so later scans see only this session's changes.
+
+    An existing baseline is kept, so a resumed or compacted session keeps
+    measuring against the state its work actually started from.  Returns the
+    session state directory, or None outside a git worktree.
+    """
+    state_root = _state_root(root)
+    if state_root is None:
+        return None
+    session_dir = state_root / session
+    manifest_path = session_dir / "manifest.json"
+    if manifest_path.exists():
+        return session_dir
+    head = (_git(root, "rev-parse", "HEAD") or "").strip()
+    status = _git(root, "status", "--porcelain", "-uall")
+    if status is None:
+        return None
+    blobs_dir = session_dir / "blobs"
+    try:
+        blobs_dir.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        return None
+    files: dict[str, str | None] = {}
+    for line in status.splitlines():
+        if len(line) < 4:
+            continue
+        rel = _status_paths(line)
+        if not _relevant_suffix(rel):
+            continue
+        source = root / rel
+        if not source.is_file():
+            files[rel] = None
+            continue
+        blob = f"{len(files)}{Path(rel).suffix.lower()}"
+        try:
+            shutil.copyfile(source, blobs_dir / blob)
+        except OSError:
+            continue
+        files[rel] = blob
+    try:
+        manifest_path.write_text(
+            json.dumps({"head": head, "files": files}), encoding="utf-8"
+        )
+    except OSError:
+        return None
+    _prune_stale_sessions(state_root, keep=session_dir)
+    return session_dir
+
+
+def _manifest(session_dir: Path) -> dict:
+    try:
+        return json.loads((session_dir / "manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {"head": "", "files": {}}
+
+
+def _load_state(session_dir: Path) -> dict:
+    try:
+        state = json.loads((session_dir / "state.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        state = {}
+    state.setdefault("prose_files", [])
+    state.setdefault("comment_files", [])
+    state.setdefault("reported", [])
+    state.setdefault("stop_reported", [])
+    state.setdefault("final_review_done", False)
+    return state
+
+
+def _save_state(session_dir: Path, state: dict) -> None:
+    try:
+        (session_dir / "state.json").write_text(json.dumps(state), encoding="utf-8")
+    except OSError:
+        pass
+
+
+def baseline_content(root: Path, session_dir: Path, rel: str) -> str | None:
+    """Return the file's content as the session began, or None when unknown."""
+    manifest = _manifest(session_dir)
+    files = manifest.get("files") or {}
+    if rel in files:
+        blob = files[rel]
+        if blob is None:
+            return ""
+        try:
+            return (session_dir / "blobs" / blob).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except OSError:
+            return None
+    head = manifest.get("head") or ""
+    if not head:
+        return ""
+    if _git(root, "cat-file", "-e", f"{head}:{rel}") is None:
+        return ""
+    return _git(root, "show", f"{head}:{rel}")
+
+
+def scan_worktree(
+    root: Path, session_dir: Path
+) -> tuple[list[Path], list[Path], list[tuple[str, str, str]]]:
+    """Run the comment checks over everything changed since the baseline.
+
+    Returns the changed Markdown paths, the source paths whose comments
+    changed, and the mechanical findings, no matter which tool made the
+    changes.
+    """
+    manifest = _manifest(session_dir)
+    head = manifest.get("head") or ""
+    candidates: set[str] = set()
+    if head:
+        diff = _git(root, "diff", "--name-only", head)
+        if diff is not None:
+            candidates.update(
+                line.strip().strip('"') for line in diff.splitlines() if line.strip()
+            )
+    status = _git(root, "status", "--porcelain", "-uall")
+    if status is not None:
+        for line in status.splitlines():
+            if line.startswith("??"):
+                candidates.add(_status_paths(line))
+    candidates.update(manifest.get("files") or {})
+
+    markdown: list[Path] = []
+    comment_paths: list[Path] = []
+    findings: list[tuple[str, str, str]] = []
+    code_root = (root / "code").resolve()
+    for rel in sorted(candidates):
+        if not _relevant_suffix(rel):
+            continue
+        path = (root / rel).resolve()
+        if not _inside(path, root.resolve()):
+            continue
+        try:
+            new = path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        old = baseline_content(root, session_dir, rel)
+        if old is None or old == new:
+            continue
+        if Path(rel).suffix.lower() in MARKDOWN_SUFFIXES:
+            markdown.append(path)
+            continue
+        if not _inside(path, code_root):
+            continue
+        touched, file_findings = inspect_source_edit(
+            FileEdit(path, [EditPair(old, new)])
+        )
+        if touched:
+            comment_paths.append(path)
+        findings.extend(
+            (_display_path(path, root), excerpt, message)
+            for excerpt, message in file_findings
+        )
+    return markdown, comment_paths, findings
+
+
+def _finding_key(finding: tuple[str, str, str]) -> str:
+    return "|".join(finding)
+
+
+def _findings_block(findings: list[tuple[str, str, str]]) -> dict:
+    bullets = "\n".join(
+        f'- {path}: "{excerpt}" — {message}' for path, excerpt, message in findings[:8]
+    )
+    return {
+        "decision": "block",
+        "reason": (
+            "Comments added by this edit break the objective checks derived from "
+            f"`code/AGENTS.md`.\n{bullets}\nFix each flagged comment before continuing."
+        ),
+    }
+
+
 def post_tool_result(payload: dict, root: Path = ROOT) -> dict | None:
     edits = payload_edits(payload, root)
     if not edits:
+        tool = str(payload.get("tool_name") or "").lower()
+        if tool in SHELL_TOOLS:
+            return scan_tool_result(payload, root)
         return None
+
+    # A full-file write carries no old content; the session baseline supplies
+    # it so such writes are checked like any other edit.
+    if any(not pair.checkable for edit in edits for pair in edit.pairs):
+        session_dir = record_baseline(root, _session_id(payload))
+        if session_dir is not None:
+            for edit in edits:
+                for index, pair in enumerate(edit.pairs):
+                    if pair.checkable:
+                        continue
+                    old = baseline_content(root, session_dir, _display_path(edit.path, root))
+                    if old is not None:
+                        edit.pairs[index] = EditPair(old, pair.new)
 
     markdown = [edit.path for edit in edits if edit.path.suffix.lower() in MARKDOWN_SUFFIXES]
     code_root = (root / "code").resolve()
@@ -494,21 +764,115 @@ def post_tool_result(payload: dict, root: Path = ROOT) -> dict | None:
             "additionalContext": "\n\n".join(contexts),
         }
     if findings:
-        bullets = "\n".join(
-            f'- {path}: "{excerpt}" — {message}' for path, excerpt, message in findings[:8]
-        )
-        result["decision"] = "block"
-        result["reason"] = (
-            "Comments added by this edit break the objective checks derived from "
-            f"`code/AGENTS.md`.\n{bullets}\nFix each flagged comment before continuing."
-        )
+        result.update(_findings_block(findings))
     return result
+
+
+def scan_tool_result(payload: dict, root: Path = ROOT) -> dict | None:
+    """Check the session's whole delta after a tool the edit path cannot see."""
+    session_dir = record_baseline(root, _session_id(payload))
+    if session_dir is None:
+        return None
+    state = _load_state(session_dir)
+    markdown, comment_paths, findings = scan_worktree(root, session_dir)
+
+    new_markdown = [
+        path for path in markdown if _display_path(path, root) not in state["prose_files"]
+    ]
+    new_comments = [
+        path for path in comment_paths if _display_path(path, root) not in state["comment_files"]
+    ]
+    new_findings = [
+        finding for finding in findings if _finding_key(finding) not in state["reported"]
+    ]
+
+    state["prose_files"] = sorted(
+        set(state["prose_files"]) | {_display_path(path, root) for path in markdown}
+    )
+    state["comment_files"] = sorted(
+        set(state["comment_files"]) | {_display_path(path, root) for path in comment_paths}
+    )
+    state["reported"] = sorted(
+        set(state["reported"]) | {_finding_key(finding) for finding in findings}
+    )
+    _save_state(session_dir, state)
+
+    contexts = []
+    if new_markdown:
+        contexts.append(prose_context(root, markdown))
+    if new_comments:
+        contexts.append(comment_context(root))
+    if not contexts and not new_findings:
+        return None
+
+    result = {}
+    if contexts:
+        result["hookSpecificOutput"] = {
+            "hookEventName": "PostToolUse",
+            "additionalContext": "\n\n".join(contexts),
+        }
+    if new_findings:
+        result.update(_findings_block(new_findings))
+    return result
+
+
+def stop_result(payload: dict, root: Path = ROOT) -> dict | None:
+    """Gate the end of a turn on the session delta being clean."""
+    session_dir = record_baseline(root, _session_id(payload))
+    if session_dir is None:
+        return None
+    state = _load_state(session_dir)
+    markdown, comment_paths, findings = scan_worktree(root, session_dir)
+    keys = {_finding_key(finding) for finding in findings}
+
+    if payload.get("stop_hook_active"):
+        fresh = [
+            finding for finding in findings
+            if _finding_key(finding) not in state["stop_reported"]
+        ]
+        if not fresh:
+            return None
+        state["stop_reported"] = sorted(set(state["stop_reported"]) | keys)
+        _save_state(session_dir, state)
+        return _findings_block(fresh)
+
+    if findings:
+        state["stop_reported"] = sorted(set(state["stop_reported"]) | keys)
+        _save_state(session_dir, state)
+        return _findings_block(findings)
+
+    if (
+        payload.get("hook_event_name") == "Stop"
+        and (markdown or comment_paths)
+        and not state["final_review_done"]
+    ):
+        state["final_review_done"] = True
+        _save_state(session_dir, state)
+        head = (_manifest(session_dir).get("head") or "")[:12]
+        names = sorted(
+            _display_path(path, root) for path in [*markdown, *comment_paths]
+        )
+        listing = "\n".join(f"- {name}" for name in names[:20])
+        return {
+            "decision": "block",
+            "reason": (
+                "This session changed documentation or source comments. Before "
+                "finishing, re-read `## Writing prose` in `AGENTS.md` and "
+                "`## Comments` in `code/AGENTS.md`, review the changes to the "
+                f"files below against those rules (`git diff {head} -- <file>`), "
+                "and fix what the review finds. This gate fires once per "
+                f"session.\n{listing}"
+            ),
+        }
+    return None
 
 
 def handle_payload(payload: dict, root: Path = ROOT) -> dict | None:
     event = payload.get("hook_event_name")
     if event == "PostToolUse":
         return post_tool_result(payload, root)
+    if event in ("Stop", "SubagentStop"):
+        return stop_result(payload, root)
     if event == "SubagentStart":
         return {
             "hookSpecificOutput": {
@@ -516,7 +880,18 @@ def handle_payload(payload: dict, root: Path = ROOT) -> dict | None:
                 "additionalContext": combined_context(root),
             }
         }
-    if event == "SessionStart" and payload.get("source") == "compact":
+    if event == "SessionStart":
+        session_dir = record_baseline(root, _session_id(payload))
+        if payload.get("source") != "compact":
+            return None
+        if session_dir is not None:
+            # Compaction wipes the conversation, so let the next scan inject
+            # the rules and outstanding findings again.
+            state = _load_state(session_dir)
+            state["prose_files"] = []
+            state["comment_files"] = []
+            state["reported"] = []
+            _save_state(session_dir, state)
         return {
             "hookSpecificOutput": {
                 "hookEventName": "SessionStart",
@@ -524,6 +899,22 @@ def handle_payload(payload: dict, root: Path = ROOT) -> dict | None:
             }
         }
     return None
+
+
+def _log_failure(text: str, root: Path = ROOT) -> None:
+    try:
+        state_root = _state_root(root)
+        if state_root is None:
+            return
+        state_root.mkdir(parents=True, exist_ok=True)
+        with open(state_root / "errors.log", "a", encoding="utf-8") as handle:
+            handle.write(f"{time.strftime('%Y-%m-%d %H:%M:%S')}\n{text}\n")
+        print(
+            f"style-rules hook failed; see {state_root / 'errors.log'}",
+            file=sys.stderr,
+        )
+    except Exception:
+        pass
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -541,7 +932,9 @@ def main(argv: list[str] | None = None) -> int:
         payload = json.load(sys.stdin)
         result = handle_payload(payload, ROOT)
     except Exception:
-        # Hook bugs must not prevent source or documentation edits.
+        # Hook bugs must not prevent source or documentation edits, but they
+        # must leave a trace.
+        _log_failure(traceback.format_exc())
         return 0
     if result is not None:
         json.dump(result, sys.stdout)

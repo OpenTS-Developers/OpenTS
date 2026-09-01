@@ -112,7 +112,7 @@ public:
 	inline friend Vector3 operator + (const Vector3 &a,const Vector3 &b);
 	inline friend Vector3 operator - (const Vector3 &a,const Vector3 &b);
 
-	/// Carries the vector to or from a save game.
+	// Carries the vector to or from a save game.
 	template<typename S>
 	void Serialize(S & stream)
 	{
@@ -224,7 +224,6 @@ inline Vector3 operator - (const Vector3 &a,const Vector3 &b)
  *========================================================================*/
 inline float operator * (const Vector3 &a,const Vector3 &b)
 {
-	/// Accumulated in double, then narrowed once.
 	return	(float)((double)a.X*(double)b.X +
 			 (double)a.Y*(double)b.Y +
 			 (double)a.Z*(double)b.Z);

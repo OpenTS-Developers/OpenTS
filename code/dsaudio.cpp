@@ -985,11 +985,11 @@ int DSAudio::Play_Sample_Handle(void const *sample, int priority, int volume, in
 	**	to set up for uncompressing it.
 	*/
 	if (st->Compression == SCOMP_SOS) {
-		st->sosinfo.wChannels    = (RawHeader.Flags & AUD_FLAG_STEREO) ? 2  : 1;
-		st->sosinfo.wBitSize             = (RawHeader.Flags & AUD_FLAG_16BIT)  ? 16 : 8;
-		st->sosinfo.dwCompSize   = RawHeader.Size;
-		st->sosinfo.dwUnCompSize = RawHeader.Size * ( st->sosinfo.wBitSize / 4 );
-		if (st->sosinfo.wBitSize == 16 && st->sosinfo.wChannels == 1) {
+		st->sosinfo.ChannelCount = (RawHeader.Flags & AUD_FLAG_STEREO) ? 2  : 1;
+		st->sosinfo.BitSize      = (RawHeader.Flags & AUD_FLAG_16BIT)  ? 16 : 8;
+		st->sosinfo.CompSize     = RawHeader.Size;
+		st->sosinfo.UnCompSize   = RawHeader.Size * ( st->sosinfo.BitSize / 4 );
+		if (st->sosinfo.BitSize == 16 && st->sosinfo.ChannelCount == 1) {
 			sosCODECInitStream(&st->sosinfo);
 		} else {
 			General_sosCODECInitStream(&st->sosinfo);
@@ -2662,9 +2662,9 @@ int DSAudio::Sample_Copy(SampleTrackerType *st, void ** source, int * ssize, voi
 						if (s < fsize) {
 							return(datasize);
 						}
-						st->sosinfo.lpSource = (char *)UncompBuffer;
-						st->sosinfo.lpDest	 = (char *)dest;
-						if (st->sosinfo.wBitSize==16 && st->sosinfo.wChannels==1){
+						st->sosinfo.Source = (char *)UncompBuffer;
+						st->sosinfo.Dest   = (char *)dest;
+						if (st->sosinfo.BitSize==16 && st->sosinfo.ChannelCount==1){
 							sosCODECDecompressData(&st->sosinfo, dsize);
 						} else {
 							General_sosCODECDecompressData(&st->sosinfo, dsize);

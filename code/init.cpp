@@ -3017,7 +3017,7 @@ BOOL CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPAR
 #endif
 			ListBox_AddString(handle, buffer);
 
-			/// The braces keep the 'case' label from jumping over these initializations.
+			// The braces keep the 'case' label from jumping over these initializations.
 			{
 				int cpu_type = 5;
 				bool mmx = false;

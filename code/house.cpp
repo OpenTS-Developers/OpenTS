@@ -543,7 +543,6 @@ int HouseClass::Power_Output(void)
 
 /// <summary>
 /// Fetches the power draw of this house's base.
-/// This is paired with Power_Output; a base whose drain exceeds its output suffers for it.
 /// </summary>
 /// <returns>Returns with the power that the house's buildings consume.</returns>
 int HouseClass::Power_Drain(void)

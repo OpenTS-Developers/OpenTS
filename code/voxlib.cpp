@@ -816,8 +816,8 @@ void VoxelLibrary::Render_Object(VoxelRenderStruct & voxel, Vector3 & center)
 	arg.StrideY = x_size * VoxelRenderOrientations[orientation].YIndexStride;
 	arg.StartIndex = (x_size - 1) * VoxelRenderOrientations[orientation].ZIndexFactor + x_size * (y_size - 1) * VoxelRenderOrientations[orientation].YIndexFactor;
 
-	/// The drawer sums these deltas down the length of the model, so an error of
-	/// one unit here becomes one unit per voxel by the far end.
+	// The drawer sums these deltas down the length of the model, so an error of
+	// one unit here becomes one unit per voxel by the far end.
 	arg.TransformMatrix[0].I = static_cast<unsigned short>(static_cast<int>(((double)corner_0.X + 128 - (double)center.X) * 256.0));
 	arg.TransformMatrix[0].J = static_cast<unsigned short>(static_cast<int>(((double)corner_0.Y + 128 - (double)center.Y) * 256.0));
 	arg.TransformMatrix[0].K = static_cast<unsigned short>(static_cast<int>(((double)corner_0.Z + 128 - (double)center.Z) * 256.0));

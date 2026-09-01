@@ -129,10 +129,7 @@ BOOL CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 
 
 /// <summary>
-/// Determines which addons are installed on this machine.
-/// This routine is called during startup and looks for the rules file that each expansion
-/// ships with, wherever the game reads its files from. What it finds decides whether the
-/// player is offered a game type at all.
+/// Rebuilds the installed and active addon sets from the expansion rules files present.
 /// </summary>
 void Detect_Addons(void)
 {

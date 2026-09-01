@@ -214,7 +214,7 @@ Rank, abilities and the elite weapon [survive the change intact](/systems/vetera
 
 ### Arming a structure
 
-Arming requires the sabotage mission, a `Repairable=yes` structure as the destination, and the type still carrying that flag when the soldier arrives. A stale or directly assigned sabotage mission against another structure is canceled and the soldier returns to idle behavior. There is no alliance test, so force fire can still send a saboteur against a qualifying structure belonging to its own house. Unless the structure is already deconstructing, the charge is set, the structure begins flashing as a designated target, the countdown is set to [`C4Delay`](/keys/c4delay/) minutes' worth of frames — 27 frames, about 1.8 seconds, at the default — and the saboteur is recorded against it. The saboteur then clears its destination, uncloaks, takes a rearm delay and scatters away from the structure's center.
+Arming requires the sabotage mission, a `Repairable=yes` structure as the destination, and the type still carrying that flag when the soldier arrives. A sabotage mission whose destination is a structure without that flag — stale or assigned directly — is canceled, and the soldier is put back on guard. There is no alliance test, so force fire can still send a saboteur against a qualifying structure belonging to its own house. Unless the structure is already deconstructing, the charge is set, the structure begins flashing as a designated target, the countdown is set to [`C4Delay`](/keys/c4delay/) minutes' worth of frames — 27 frames, about 1.8 seconds, at the default — and the saboteur is recorded against it. The saboteur then clears its destination, uncloaks, takes a rearm delay and scatters away from the structure's center.
 
 ### Detonation
 

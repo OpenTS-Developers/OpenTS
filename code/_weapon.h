@@ -43,7 +43,7 @@ struct WeaponDataStruct {
 	 */
 	int BarrelThickness;
 
-	/// Carries the weapon slot to or from a save game.
+	// Carries the weapon slot to or from a save game.
 	template<typename S>
 	void Serialize(S & stream)
 	{

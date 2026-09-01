@@ -149,6 +149,7 @@ class Tactical : public AbstractClass
 		Point2D Get_Tactical_Position(void);
 		Point2D Get_Relative_Tactical_Position(void);
 
+		void Tactical_Position_Limits(Point2D & minimum, Point2D & maximum);
 		bool Clamp_To_Tactical_Rect(Point2D & pixel);
 		Point2D Clamp_Pixel_To_Tactical(Point2D const & pixel);
 
@@ -192,6 +193,7 @@ class Tactical : public AbstractClass
 		void Render_Shroud(Rect const & xpanrect, Rect const & ypanrect, Rect const & cliprect, bool fullredraw);
 		void Render_Buildings(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);
 		void Render_Terrain(Rect const & xpanrect, Rect const & ypanrect, bool fullredraw);
+		void Render_Outside_Map(Surface & surface);
 		void Render(Surface & surface, bool fullredraw, int drawpass);
 		bool Blit_Tiles(void);
 

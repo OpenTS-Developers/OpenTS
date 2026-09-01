@@ -142,7 +142,7 @@ The panel occupies the right edge of the screen and nothing moves it. The engine
 
 The one figure that does vary is how many cameo slots a strip shows, and it is not a setting either: it is the height left over after the backdrop's top piece and bottom cap, divided by the height of its repeating middle piece. A taller screen therefore shows more cameos and a shorter one fewer.
 
-A strip stops at 60 slots however tall the picture is. The backdrop is built from that same count, so a picture tall enough for more than 60 rows ends its sidebar art below the sixtieth one rather than at the foot of the screen.
+A strip stops at 60 slots however tall the screen is. The backdrop is built from that same count, so on a screen with room for more than 60 rows the sidebar art ends below the sixtieth slot rather than at the foot of the screen.
 
 None of the art filenames comes from a setting either. The table gives each file the panel loads and what that file draws; which of them resolve to different art for each side is settled by the paragraph below it rather than by anything in the rules.
 

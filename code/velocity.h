@@ -66,7 +66,7 @@ class TVelocity2D
 			}
 		}
 
-		/// Carries the velocity to or from a save game.
+		// Carries the velocity to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{
@@ -186,7 +186,7 @@ class TVelocity3D : public TVelocity2D<T>
 			return(*this);
 		}
 
-		/// Carries the velocity to or from a save game.
+		// Carries the velocity to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

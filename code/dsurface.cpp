@@ -377,7 +377,7 @@ bool DSurface::Can_Lock(int x, int y) const
 
 /// <summary>
 /// Determines if the blitter is free to take more work.
-/// Blits are done on this thread now, so it always is.
+/// Blits are done on this thread, so it always is.
 /// </summary>
 /// <returns>bool; Is the blitter ready for another operation?</returns>
 bool DSurface::Can_Blit(void) const

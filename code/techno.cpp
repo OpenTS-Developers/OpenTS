@@ -7923,8 +7923,8 @@ void TechnoClass::Rock(Coord const & coord, float force)
 			vec2.Y = (float)+(vec1.Z * cangle);
 			vec2.Z = (float)((vec1.X * sangle) - (vec1.Y * cangle));
 			float dist2 = vec2.Length();
-			/// This flips the sign of dist2, so it decides which way the object
-			/// rocks, and that reaches the multiplayer checksum.
+			// This flips the sign of dist2, so it decides which way the object
+			// rocks, and that reaches the multiplayer checksum.
 			if (fabs(cangle * dist1 - sangle * dist2 - vec1.X) > 0.0002 || fabs(cangle * dist2 + sangle * dist1 - vec1.Y) > 0.0002) {
 				dist2 = -dist2;
 			}

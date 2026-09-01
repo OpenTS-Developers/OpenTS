@@ -77,7 +77,7 @@ The clamp is applied to the total, not to the increment, so an elite object whos
 
 ## Promotion without kills
 
-Five settings-driven paths set a rank with no experience earned, and a map's placed-object records can write an experience figure directly besides. None of them consults `VeteranCap` or the kill formula. The veterancy crate alone consults `Trainable`; the other four settings-driven paths do not.
+Five settings-driven paths set a rank with no experience earned, and a map's placed-object records can write an experience figure directly besides. None of them consults `VeteranCap` or the kill formula. The veterancy crate alone consults `Trainable`.
 
 | Source | Result |
 | --- | --- |

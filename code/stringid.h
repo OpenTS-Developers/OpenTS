@@ -147,7 +147,7 @@ struct TStringID
 		[[nodiscard]] size_type rfind(std::string_view string, size_type pos = std::string_view::npos) const noexcept {return(View().rfind(string, pos));}
 		[[nodiscard]] std::string_view substr(size_type pos, size_type count = std::string_view::npos) const {return(View().substr(pos, count));}
 
-		/// Carries the string to or from a save game.
+		// Carries the string to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

@@ -54,7 +54,7 @@ class FlasherClass {
 		FlasherClass(void) {FlashCount = 0; IsBlushing = false;};
 		~FlasherClass(void) {};
 
-		/// Carries the flash state to or from a save game.
+		// Carries the flash state to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

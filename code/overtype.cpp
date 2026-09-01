@@ -77,6 +77,16 @@
 #include "tracker.h"
 
 
+/// <summary>
+/// Releases shape data that this type loaded through the file layer.
+/// </summary>
+static void Free_Demand_Loaded_Shape(void const *& data)
+{
+	delete [] (char *)data;
+	data = NULL;
+}
+
+
 /***********************************************************************************************
  * OverlayTypeClass::OverlayTypeClass -- Constructor for overlay type objects.                 *
  *                                                                                             *
@@ -133,8 +143,7 @@ OverlayTypeClass::OverlayTypeClass(char const * ininame) :
 OverlayTypeClass::~OverlayTypeClass(void)
 {
 	if (DemandLoad && ImageData != NULL) {
-		delete (ShapeSet *)ImageData;
-		ImageData = NULL;
+		Free_Demand_Loaded_Shape(ImageData);
 	}
 	Detach_This_From_All(this, true);
 	OverlayTypes.Delete(this);
@@ -301,8 +310,7 @@ void OverlayTypeClass::Init(TheaterType theater)
 		} else {
 			if (overlay.IsTheater || overlay.IsNewTheater) {
 				if (overlay.ImageData != NULL) {
-					delete [] (char*) overlay.ImageData;
-					overlay.ImageData = NULL;
+					Free_Demand_Loaded_Shape(overlay.ImageData);
 				}
 			}
 		}
@@ -321,6 +329,14 @@ bool OverlayTypeClass::Read_INI(CCINIClass const & ini)
 {
 	char fullname[_MAX_FNAME+_MAX_EXT];
 
+	if (!ini.Section_Present(IniName)) {
+		return(false);
+	}
+
+	if (DemandLoad && ImageData != NULL) {
+		Free_Demand_Loaded_Shape(ImageData);
+	}
+
 	if (BASECLASS::Read_INI(ini)) {
 		Land = ini.Get_LandType(IniName, "Land", Land);
 		DamagePoints = ini.Get_Int(IniName, "Strength", DamagePoints);
@@ -336,6 +352,9 @@ bool OverlayTypeClass::Read_INI(CCINIClass const & ini)
 
 		DamageLevels = ArtINI.Get_Int(GraphicName, "DamageLevels", DamageLevels);
 		DemandLoad = ArtINI.Get_Bool(GraphicName, "DemandLoad", DemandLoad);
+		if (DemandLoad) {
+			ImageData = NULL;
+		}
 
 		if (IsTiberium) {
 			Armor = ARMOR_WOOD;
@@ -417,9 +436,9 @@ void OverlayTypeClass::Post_Load(void)
 	BASECLASS::Post_Load();
 
 	Fetch_Voxel_Image();
-	Fetch_Normal_Image();
 
 	if (!DemandLoad) {
+		Fetch_Normal_Image();
 		char fullname[_MAX_FNAME+_MAX_EXT];
 		if (IsTheater) {
 			_makepath(fullname, NULL, NULL, GraphicName, Theaters[Scen->Theater].Suffix);
@@ -546,10 +565,9 @@ void const * OverlayTypeClass::Get_Image_Data(void) const
 	DebugString("Demand loading image for %s\n", (char const *)GivenName);
 	if (IsTheater) {
 		_makepath(fullname, NULL, NULL, GraphicName, Theaters[Scen->Theater].Suffix);
-
 	} else {
+		_makepath(fullname, NULL, NULL, GraphicName, ".SHP");
 		if (IsNewTheater) {
-			_makepath(fullname, NULL, NULL, GraphicName, ".SHP");
 			_this->Theater_Naming_Convention( fullname, Scen->Theater);
 		}
 	}

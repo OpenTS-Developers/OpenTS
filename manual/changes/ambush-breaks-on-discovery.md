@@ -9,4 +9,4 @@ credit: [ZivDero, tomsons26]
 An object sitting in ambush now breaks cover and hunts once it is discovered, which is what
 the mission is for. The test asked whether the house doing the discovering was computer
 controlled rather than whether the ambusher's own house was, so an ambusher found by a human
-player — the case the mission exists to handle — stayed put and never attacked.
+player stayed put and never attacked.

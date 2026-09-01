@@ -126,7 +126,7 @@ class HouseStaticClass {
 		*/
 		SourceType Edge;
 
-		/// Carries the scenario supplied house control to or from a save game.
+		// Carries the scenario supplied house control to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{
@@ -570,7 +570,7 @@ class HouseClass : public AbstractClass
 			int ArmorDefense;
 			int InfantryDefense;
 
-			/// Carries one zone's defense ratings to or from a save game.
+			// Carries one zone's defense ratings to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{
@@ -654,7 +654,7 @@ class HouseClass : public AbstractClass
 			unsigned InitialAttack;
 			AttackStruct(void) { InitialAttack = 0; }
 
-			/// Carries the all out attack schedule to or from a save game.
+			// Carries the all out attack schedule to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{

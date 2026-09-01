@@ -43,8 +43,7 @@ credit: [ZivDero]
 
 The Westwood Online client has been removed. The service it logged in to, chatted
 through, listed games on and reported ladder results to has not answered for years, so
-the login, lobby, ladder and paging screens are gone, and with them the `[WOnline]`
-settings and the four `[MultiPlayer]` settings that only the login remembered.
+the login, lobby, ladder and paging screens are gone.
 
 The Internet button remains on the main menu and in the multiplayer game-type dialog, but
 it is disabled. So is the World Domination Tour button: the tour was reached over the same

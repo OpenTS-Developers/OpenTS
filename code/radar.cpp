@@ -2122,11 +2122,22 @@ void RadarClass::Render_Radar(void)
 	RadarViewRect.Height = ((2 * TacticalRect.Height) / (ISO_TILE_PIXEL_H / ZoomFactor));
 	RadarViewRect -= Point2D(TacticalRect.Width / (ISO_TILE_PIXEL_W / ZoomFactor), (2 * TacticalRect.Height) / (ISO_TILE_PIXEL_H / ZoomFactor) * 0.5f);
 
+	if (RadarViewRect.Width > RadarRect.Width) {
+		RadarViewRect.Width = RadarRect.Width;
+	}
+
+	if (RadarViewRect.Height > RadarRect.Height) {
+		RadarViewRect.Height = RadarRect.Height;
+	}
+
 	if (RadarViewRect.X < RadarRect.X) {
 		RadarViewRect.X = RadarRect.X;
 	} else {
 		if (RadarViewRect.X + RadarViewRect.Width >= RadarRect.X + RadarRect.Width) {
 			RadarViewRect.X = RadarRect.X - (RadarViewRect.Width - RadarRect.Width) - 1;
+			if (RadarViewRect.X < RadarRect.X) {
+				RadarViewRect.X = RadarRect.X;
+			}
 		}
 	}
 
@@ -2135,6 +2146,9 @@ void RadarClass::Render_Radar(void)
 	} else {
 		if (RadarViewRect.Y + RadarViewRect.Height >= RadarRect.Y + RadarRect.Height) {
 			RadarViewRect.Y = RadarRect.Y - (RadarViewRect.Height - RadarRect.Height) - 1;
+			if (RadarViewRect.Y < RadarRect.Y) {
+				RadarViewRect.Y = RadarRect.Y;
+			}
 		}
 	}
 

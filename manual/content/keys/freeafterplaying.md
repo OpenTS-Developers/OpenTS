@@ -13,4 +13,4 @@ Where it does apply, the artwork is released as the animation object is destroye
 
 An animation that has chained through [`Next=`](/keys/next/) releases the artwork of the type it was holding when it was destroyed, not the type it started as, so the earlier types in a chain keep theirs for the rest of the scenario.
 
-[Animation shape](/keys/demandload/#scope-animtype) covers the release itself, including what happens when the artwork the type gives back was never the type's to give.
+[Animation shape](/keys/demandload/#scope-animtype) covers shape ownership and loading.

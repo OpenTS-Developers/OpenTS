@@ -177,10 +177,8 @@ class Node : public GenericNode {
 template<class T>
 class List : public GenericList {
 	public:
-		/*
-		**	Walks the real nodes of the list. The end of the list is the first node
-		**	that is not linked on both sides, which is the tail sentinel.
-		*/
+		// Walks the real nodes of the list. The end of the list is the first node
+		// that is not linked on both sides, which is the tail sentinel.
 		class Iterator {
 			public:
 				Iterator(T node) : Node(node) {}

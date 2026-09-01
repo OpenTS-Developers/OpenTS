@@ -114,7 +114,7 @@ class FoggedObjectClass : public AbstractClass
 			bool operator == (DrawRecord const & that) { return(TypeClass == that.TypeClass && FrameNumber == that.FrameNumber); }
 			bool operator != (DrawRecord const & that) { return(TypeClass != that.TypeClass || FrameNumber != that.FrameNumber); }
 
-			/// Carries the recorded shape to or from a save game.
+			// Carries the recorded shape to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{

@@ -33,17 +33,8 @@ used. Games are found by broadcasting on every network the machine is attached
 to, and each player answering is recorded at the address the answer came from.
 Internet, skirmish, and campaign play are unaffected.
 
-Every player must reach the others on one of the networks their machine is
-attached to, and all of them play over the same port, 1234. A router between two
-players normally stops the broadcast that finds a game, and one machine can host
-only one game at a time. The `-DESTNET` option that once reached a network across
-a bridge has no counterpart, because it addressed a bridge that only IPX had.
-
-The network options screen is gone, along with the adapter, socket, and
-destination network it set. `sun.ini` no longer reads or writes `[Network]
-Socket`, `NetCard`, or `DestNet`, and entries left in the file are ignored.
+One machine can host only one game at a time. The network options screen is
+gone, along with the adapter, socket, and destination network it set.
 
 Network messages, save games, and recordings changed shape, so different OpenTS
-release-cycle versions refuse one another. Development snapshots within one
-cycle are not promised to interoperate and all players should run the same
-snapshot.
+release-cycle versions refuse one another.

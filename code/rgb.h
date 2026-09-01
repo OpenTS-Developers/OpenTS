@@ -77,7 +77,7 @@ class RGBClass
 		RGBClass & Set(RGBClass const & rgb, float value);
 		void Adjust(int ratio, RGBClass const & rgb);
 		int Difference(RGBClass const & rgb) const;
-		/// Carries the color to or from a save game.
+		// Carries the color to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

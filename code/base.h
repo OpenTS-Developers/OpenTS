@@ -68,7 +68,7 @@ class BaseNodeClass
 		 */
 		Cell CellID;
 
-		/// Carries this base node to or from a save game.
+		// Carries this base node to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

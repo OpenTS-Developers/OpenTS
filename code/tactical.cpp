@@ -1022,6 +1022,40 @@ void Tactical::Render_Terrain(Rect const & xpanrect, Rect const & ypanrect, bool
 
 
 /// <summary>
+/// Blacks out the parts of the tactical view that the map does not reach.
+/// </summary>
+/// <param name="surface">The composite surface to paint on. It must already be locked.</param>
+void Tactical::Render_Outside_Map(Surface & surface)
+{
+	Point2D minimum;
+	Point2D maximum;
+	Tactical_Position_Limits(minimum, maximum);
+
+	// The box spans everything the view can show across the whole legal scroll range.
+	int left = minimum.X - TacticalRect.Width / 2 - TacPixelX;
+	int right = maximum.X + TacticalRect.Width / 2 - TacPixelX;
+	int top = TacticalRect.Y + minimum.Y - TacticalRect.Height / 2 - TacPixelY;
+	int bottom = TacticalRect.Y + maximum.Y + TacticalRect.Height / 2 - TacPixelY;
+
+	if (left > TacticalRect.X) {
+		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, left - TacticalRect.X, TacticalRect.Height), TBLACK);
+	}
+
+	if (right < TacticalRect.X + TacticalRect.Width) {
+		surface.Fill_Rect(Rect(right, TacticalRect.Y, TacticalRect.X + TacticalRect.Width - right, TacticalRect.Height), TBLACK);
+	}
+
+	if (top > TacticalRect.Y) {
+		surface.Fill_Rect(Rect(TacticalRect.X, TacticalRect.Y, TacticalRect.Width, top - TacticalRect.Y), TBLACK);
+	}
+
+	if (bottom < TacticalRect.Y + TacticalRect.Height) {
+		surface.Fill_Rect(Rect(TacticalRect.X, bottom, TacticalRect.Width, TacticalRect.Y + TacticalRect.Height - bottom), TBLACK);
+	}
+}
+
+
+/// <summary>
 /// Renders the tactical map for one display pass.
 /// A frame is assembled from several passes. The pan pass scrolls the cached surfaces, the
 /// background pass rebuilds the terrain layers into them, and the foreground pass draws the
@@ -1284,6 +1318,8 @@ void Tactical::Render(Surface & surface, bool fullredraw, int drawpass)
 				}
 			}
 		}
+
+		Render_Outside_Map(*composite);
 
 		LogicalSurface = savedlogical;
 		composite->Unlock();
@@ -2413,11 +2449,9 @@ Point2D Tactical::Clamp_Pixel_To_Tactical(Point2D const & pixel)
 }
 
 
-/// <summary>
-/// Scrolls the tactical map in the direction specified.
-/// This routine nudges the desired view position rather than the view itself; the tactical
-/// AI eases the view toward it over the frames that follow.
-/// </summary>
+/// <summary>Scrolls the tactical map in the direction specified.
+/// This routine moves the desired view position rather than the view itself; the tactical AI
+/// commits the view to it on its next pass.</summary>
 /// <param name="facing">The direction to scroll the view in.</param>
 /// <param name="distance">The number of pixels to scroll by.</param>
 void Tactical::Scroll_Map(FacingType facing, int distance)
@@ -2449,6 +2483,21 @@ void Tactical::Scroll_Map(FacingType facing, int distance)
 
 
 /// <summary>
+/// Works out the limits a tactical view position may take.
+/// An axis whose playable area is smaller than the view comes back with its maximum below its
+/// minimum.
+/// </summary>
+void Tactical::Tactical_Position_Limits(Point2D & minimum, Point2D & maximum)
+{
+	minimum.X = TacticalRect.Width / 2 - (ISO_TILE_PIXEL_W >> 1) * (Map.PlayRect.Width - 2 * Map.LocalRect.X);
+	maximum.X = minimum.X + ISO_TILE_PIXEL_W * Map.LocalRect.Width - TacticalRect.Width;
+
+	minimum.Y = TacticalRect.Height / 2 + (ISO_TILE_PIXEL_H >> 1) * (Map.PlayRect.Width + 2 * Map.LocalRect.Y - 5);
+	maximum.Y = minimum.Y + ISO_TILE_PIXEL_H * (2 * Map.LocalRect.Height + 9) / 2 - TacticalRect.Height;
+}
+
+
+/// <summary>
 /// Clamps a tactical view position to the limits of the map.
 /// This routine is used by the scroll logic to keep the view from wandering off the edge of
 /// the playable area. The position is adjusted in place.
@@ -2457,27 +2506,33 @@ void Tactical::Scroll_Map(FacingType facing, int distance)
 /// <returns>bool; Did the position have to be pulled back?</returns>
 bool Tactical::Clamp_To_Tactical_Rect(Point2D & pixel)
 {
-	int xmin = TacticalRect.Width / 2 - (ISO_TILE_PIXEL_W >> 1) * (Map.PlayRect.Width - 2 * Map.LocalRect.X);
-	int xmax = xmin + ISO_TILE_PIXEL_W * Map.LocalRect.Width - TacticalRect.Width;
+	Point2D minimum;
+	Point2D maximum;
+	Tactical_Position_Limits(minimum, maximum);
 
-	int ymin = TacticalRect.Height / 2 + (ISO_TILE_PIXEL_H >> 1) * (Map.PlayRect.Width + 2 * Map.LocalRect.Y - 5);
-	int ymax = ymin + ISO_TILE_PIXEL_H * (2 * Map.LocalRect.Height + 9) / 2 - TacticalRect.Height;
+	if (maximum.X < minimum.X) {
+		minimum.X = maximum.X = (minimum.X + maximum.X) / 2;
+	}
+
+	if (maximum.Y < minimum.Y) {
+		minimum.Y = maximum.Y = (minimum.Y + maximum.Y) / 2;
+	}
 
 	bool clamped = false;
 
-	if (pixel.Y < ymin) {
+	if (pixel.Y < minimum.Y) {
 		clamped = true;
-		pixel.Y = ymin;
-	} else if (pixel.Y > ymax) {
-		pixel.Y = ymax;
+		pixel.Y = minimum.Y;
+	} else if (pixel.Y > maximum.Y) {
+		pixel.Y = maximum.Y;
 		clamped = true;
 	}
 
-	if (pixel.X < xmin) {
-		pixel.X = xmin;
+	if (pixel.X < minimum.X) {
+		pixel.X = minimum.X;
 		clamped = true;
-	} else if (pixel.X > xmax) {
-		pixel.X = xmax;
+	} else if (pixel.X > maximum.X) {
+		pixel.X = maximum.X;
 		clamped = true;
 	}
 

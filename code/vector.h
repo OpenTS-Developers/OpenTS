@@ -577,7 +577,6 @@ class DynamicVectorClass : public VectorClass<T>
 
 	protected:
 
-		// Growing is refused when the growth step is zero.
 		bool Grow(void);
 
 		using BASECLASS::VectorMax;

@@ -23,7 +23,7 @@ Numbered sections are read in order from `[TileSet0000]` upward, with the number
 Reading stops at the first missing [`TilesInSet`](/keys/tilesinset/), not at the highest number present. A set appended above a gap is never read and its tiles never join the theater's list; a `[General]` role naming the gap or a number above it stays unresolved. A negative value other than the missing `-1` sentinel is reported and ends the same contiguous load.
 :::
 
-The numbered-set lookup grows with the sections and has no 255-set ceiling. A set's
+The number of tile sets a theater may declare is not capped. A set's
 [`MarbleMadness`](/keys/marblemadness/) and
 [`NonMarbleMadness`](/keys/nonmarblemadness/) values name another numbered set; the tile's
 offset inside its own set is applied inside that target. An absent target or an offset past

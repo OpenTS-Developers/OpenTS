@@ -8,6 +8,6 @@ when_omitted:
 
 This is the size of the window's drawable area rather than its outer size, so the border and title bar are added on top of it. The window opens centered on the screen.
 
-It works with [`WindowWidth`](/keys/windowwidth/), which covers how the pair behaves, when the window stops following the rendering resolution, and why a window that does not match the picture's shape shows bars rather than stretching it.
+[`WindowWidth`](/keys/windowwidth/) owns how the pair behaves, when the window stops following the rendering resolution, and why a window whose shape does not match the picture's shows bars rather than stretching it.
 
 The value applies only while the game is windowed. A full-screen game covers the desktop and ignores it.

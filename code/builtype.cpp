@@ -98,6 +98,15 @@ void const * BuildingTypeClass::WrenchShapes;
 
 BSurface * CloakingSurface;
 
+/// <summary>
+/// Releases shape data that this type loaded through the file layer.
+/// </summary>
+static void Free_Demand_Loaded_Shape(void const *& data)
+{
+	delete [] (char *)data;
+	data = NULL;
+}
+
 Cell const BuildingTypeClass::OccupyLists[BSIZE_COUNT][24] = {
 	/* BSIZE_11,	*/ { Cell(0,0),REFRESH_EOL },
 	/* BSIZE_21,	*/ { Cell(0,0),Cell(1,0),REFRESH_EOL },
@@ -366,12 +375,10 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 BuildingTypeClass::~BuildingTypeClass(void)
 {
 	if (IsDemandLoad && ImageData != NULL) {
-		delete (ShapeSet *)ImageData;
-		ImageData = NULL;
+		Free_Demand_Loaded_Shape(ImageData);
 	}
 	if (IsDemandLoadBuildup && BuildupData != NULL) {
-		delete (ShapeSet *)BuildupData;
-		BuildupData = NULL;
+		Free_Demand_Loaded_Shape(BuildupData);
 	}
 	Detach_This_From_All(this, true);
 	BuildingTypes.Delete(this);
@@ -603,8 +610,7 @@ void BuildingTypeClass::Init(TheaterType theater)
 				classptr->ImageData = MFCD::Retrieve(fullname);
 			} else {
 				if (classptr->ImageData != NULL) {
-					delete (ShapeSet *)classptr->ImageData;
-					classptr->ImageData = NULL;
+					Free_Demand_Loaded_Shape(classptr->ImageData);
 				}
 			}
 
@@ -617,8 +623,7 @@ void BuildingTypeClass::Init(TheaterType theater)
 				classptr->BuildupData = MFCD::Retrieve(fullname);
 			} else {
 				if (classptr->BuildupData != NULL) {
-					delete (ShapeSet *)classptr->BuildupData;
-					classptr->BuildupData = NULL;
+					Free_Demand_Loaded_Shape(classptr->BuildupData);
 				}
 			}
 
@@ -633,14 +638,12 @@ void BuildingTypeClass::Init(TheaterType theater)
 		} else if (classptr->IsNewTheater) {
 			if (classptr->IsDemandLoad) {
 				if (classptr->ImageData != NULL) {
-					delete (ShapeSet *)classptr->ImageData;
-					classptr->ImageData = NULL;
+					Free_Demand_Loaded_Shape(classptr->ImageData);
 				}
 			}
 			if (classptr->IsDemandLoadBuildup) {
 				if (classptr->BuildupData != NULL) {
-					delete (ShapeSet *)classptr->BuildupData;
-					classptr->BuildupData = NULL;
+					Free_Demand_Loaded_Shape(classptr->BuildupData);
 				}
 			}
 			classptr->Fetch_Building_Normal_Image(theater);
@@ -1131,6 +1134,17 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 {
 	char buffer[128];
 
+	if (!ini.Section_Present(IniName)) {
+		return(false);
+	}
+
+	if (IsDemandLoad && ImageData != NULL) {
+		Free_Demand_Loaded_Shape(ImageData);
+	}
+	if (IsDemandLoadBuildup && BuildupData != NULL) {
+		Free_Demand_Loaded_Shape(BuildupData);
+	}
+
 	if (BASECLASS::Read_INI(ini)) {
 
 		HasSpotlight = ini.Get_Bool(Name(), "HasSpotlight", HasSpotlight);
@@ -1267,6 +1281,12 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsDemandLoad = ArtINI.Get_Bool(Graphic_Name(), "DemandLoad", IsDemandLoad);
 		IsDemandLoadBuildup = ArtINI.Get_Bool(Graphic_Name(), "DemandLoadBuildup", IsDemandLoadBuildup);
 		IsFreeBuildup = ArtINI.Get_Bool(Graphic_Name(), "FreeBuildup", IsFreeBuildup);
+		if (IsDemandLoad) {
+			ImageData = NULL;
+		}
+		if (IsDemandLoadBuildup) {
+			BuildupData = NULL;
+		}
 
 		OccupyList = OccupyLists[Size];
 		ExitList = ExitLists[Size];
@@ -1722,7 +1742,11 @@ void BuildingTypeClass::Post_Load(void)
 	BASECLASS::Post_Load();
 
 	Fetch_Building_Voxel_Image();
-	Fetch_Normal_Image();
+	if (IsDemandLoad) {
+		ImageData = NULL;
+	} else {
+		Fetch_Normal_Image();
+	}
 
 	ToTile = NULL;
 	OccupyList = OccupyLists[Size];
@@ -2047,10 +2071,9 @@ void const * BuildingTypeClass::Get_Buildup_Data(void) const
 /// </summary>
 void BuildingTypeClass::Free_Buildup_Data(void)
 {
-	if (IsFreeBuildup) {
+	if (IsFreeBuildup && IsDemandLoadBuildup) {
 		if (BuildupData != NULL) {
-			delete (ShapeSet *)BuildupData;
-			BuildupData = NULL;
+			Free_Demand_Loaded_Shape(BuildupData);
 		}
 	}
 }

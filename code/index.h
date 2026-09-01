@@ -77,9 +77,7 @@ class IndexClass
 		IndexClass(void);
 		~IndexClass(void);
 
-		/*
-		**	Copying would leave the archive pointer referring into another index's table.
-		*/
+		// Copying would leave the archive pointer referring into another index's table.
 		IndexClass(IndexClass const &) = delete;
 		IndexClass & operator = (IndexClass const &) = delete;
 
@@ -189,9 +187,7 @@ class IndexClass
 		*/
 		NodeElement const * Search_For_Node(INDEX const & id) const;
 
-		/*
-		**	Put the table in ID order, which searching and position fetching both rely on.
-		*/
+		// Put the table in ID order, which searching and position fetching both rely on.
 		void Sort_Table(void) const;
 };
 

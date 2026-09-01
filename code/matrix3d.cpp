@@ -949,7 +949,7 @@ void Matrix3D::Obj_Look_At(const Vector3 &p, const Vector3 &t, float roll)
 *=============================================================================================*/
 inline void Matrix3D::Multiply(const Matrix3D & A, const Matrix3D & B, Matrix3D * set_result)
 {
-	/// Widened so the sums below accumulate in double and narrow once, on store.
+	// Widened so the sums below accumulate in double and narrow once, on store.
 	double a00 = A.Row[0].X;
 	double a01 = A.Row[0].Y;
 	double a02 = A.Row[0].Z;
@@ -1014,7 +1014,7 @@ Matrix3D operator * (const Matrix3D & a, const Matrix3D & b)
 /// <returns>Returns with the transformed point.</returns>
 Vector3 operator * (const Matrix3D & m, const Vector3 & vect)
 {
-	/// Accumulated in double; the drawer truncates the result into fixed point.
+	// Accumulated in double; the drawer truncates the result into fixed point.
 	double x = (double)vect.X;
 	double y = (double)vect.Y;
 	double z = (double)vect.Z;

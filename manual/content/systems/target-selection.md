@@ -107,7 +107,7 @@ These are the entry points that scan: the object missions that run one, plus the
 | Team attack | Whole map | The category comes from the team mission's [Quarry](/reference/enums/quarry/) |
 | Team patrol | Ring, guard radius | Re-scanned from the team leader every [`PatrolScan`](/keys/patrolscan/) minutes |
 
-On Guard, a non-engineer ground object and a human-controlled aircraft pass an existing target back through the range scan. A target that is no longer legal or within the guard radius is cleared before another candidate is considered, so the object does not keep chasing a stale target outside the area it guards. A computer-controlled aircraft keeps an existing target without this revalidation; with no target it scans normally.
+On Guard, a non-engineer ground object and a human-controlled aircraft pass an existing target back through the range scan. A target that is no longer legal or within the guard radius is cleared before another candidate is considered, so the object does not keep chasing a stale target outside the area it guards. A computer-controlled aircraft keeps an existing target without this revalidation; with no target it runs the ring scan the table gives.
 
 Three settings stop the scan before it starts. **Any of** them is enough, and each is read only on a human-owned object — a computer house ignores all three:
 

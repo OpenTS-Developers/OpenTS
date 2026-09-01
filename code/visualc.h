@@ -113,7 +113,7 @@
 #define M_SQRT2     1.41421356237309504880
 #define M_SQRT_2    0.707106781186547524401
 
-/// Single precision pi, for the float paths that would otherwise round M_PI at every use.
+// Single precision pi, for the float paths that would otherwise round M_PI at every use.
 #define M_FPI 3.141592654f
 
 /*

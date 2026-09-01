@@ -18,7 +18,7 @@ source_files:
   - code/theme.cpp
 ---
 
-Startup reads `THEME.INI` and `THEME01.INI` into one database, whichever of the two are there, the expansion's file over the base one, and builds the theme list from what both named. Either file alone is enough, and initialization stops only when neither can be read. Whether Firestorm is installed does not decide which file is read.
+Startup reads `THEME.INI` and `THEME01.INI` into one database and builds the theme list from it. Whichever files are present are read, the expansion's file over the base one. Either file alone is enough, and initialization stops only when neither can be read. Whether Firestorm is installed does not decide which file is read.
 
 `[Themes]` values register theme IDs. Each ID names a section and an `.AUD` music file with the same base name. A later definition updates an existing ID instead of creating a duplicate.
 

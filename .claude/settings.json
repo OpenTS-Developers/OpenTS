@@ -2,13 +2,61 @@
   "hooks": {
     "PostToolUse": [
       {
-        "matcher": "Edit|Write",
+        "matcher": "Edit|Write|NotebookEdit|Bash|PowerShell",
         "hooks": [
           {
             "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR}/.agents/hooks/style-rules.py\"",
             "timeout": 15,
             "statusMessage": "Applying writing style rules"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.agents/hooks/style-rules.py\"",
+            "timeout": 15,
+            "statusMessage": "Recording style baseline"
+          }
+        ]
+      }
+    ],
+    "SubagentStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.agents/hooks/style-rules.py\"",
+            "timeout": 15,
+            "statusMessage": "Loading writing style rules"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.agents/hooks/style-rules.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking session changes against the writing rules"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PROJECT_DIR}/.agents/hooks/style-rules.py\"",
+            "timeout": 15,
+            "statusMessage": "Checking subagent changes against the writing rules"
           }
         ]
       }

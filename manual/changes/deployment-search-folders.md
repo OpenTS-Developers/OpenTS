@@ -15,7 +15,7 @@ credit: [ZivDero]
 
 A distribution can sort its files into folders and name them in an `OPENTS.INI`
 beside its game data. With no such file the game searches `INI`, `MIX` and
-`Maps`, so a deployment can sort its files and ship no configuration at all.
+`Maps`, so a deployment sorted that way needs no configuration at all.
 
 Wildcard searches now cover every folder the game searches rather than stopping
 at the first one holding a match. Rules files, battle files, map packets, loose
@@ -32,9 +32,8 @@ Files the game writes are never written into a searched folder, and a file it
 deletes is never one of theirs. The settings file, the hotkey file, the hall of
 fame and a saved random map were opened through the search before being written,
 so a copy a deployment had shipped in one of these folders could be overwritten,
-and the hotkey reset could delete it. Both now settle on the game's own copy
-before writing.
+and the hotkey reset could delete it.
 
-The settings written when the intro is first shown are saved again. The file was
-reopened for reading beforehand, which left the save with a file it could not
-write through.
+The settings written when the intro is first shown are saved again. Reopening the
+file for reading beforehand had left the save with a file it could not write
+through.

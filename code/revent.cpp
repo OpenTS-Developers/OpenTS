@@ -433,8 +433,8 @@ void RadarEventClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRotating);
 	stream.Serialize(IsVisible);
 
-}
 	// RadarEvents -- the master list, rebuilt as the events are constructed.
+}
 
 
 /// <summary>

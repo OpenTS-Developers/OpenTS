@@ -80,18 +80,18 @@ const double RAD_60 = 60 * ONE_RAD;
 const double RAD_90 = 90 * ONE_RAD;
 
 /// Cell diagonal length
-const double CELL_LEPTON_DIAG = std::sqrt(pow((double)CELL_LEPTON_H, 2) * 2);					/// 362.038665771484
+const double CELL_LEPTON_DIAG = std::sqrt(pow((double)CELL_LEPTON_H, 2) * 2);					// 362.038665771484
 
 /// Isometric tile size
-const double ISO_TILE_SIZE = std::sqrt(pow(34, 2) * 2);                                        /// 48.0832595825195
+const double ISO_TILE_SIZE = std::sqrt(pow(34, 2) * 2);                                        // 48.0832595825195
 const int ISO_TILE_PIXEL_W = (int)(ISO_TILE_SIZE);                                                  // 48
 const int ISO_TILE_PIXEL_H = (int)(std::cos(RAD_60) * ISO_TILE_SIZE);                          // 24
 
 /// Height-related
-const int LEVEL_LEPTON_H = (int)(std::tan(RAD_90 - RAD_60) * CELL_LEPTON_DIAG / 2);            /// 104
+const int LEVEL_LEPTON_H = (int)(std::tan(RAD_90 - RAD_60) * CELL_LEPTON_DIAG / 2);            // 104
 const int LEVEL_PIXEL_H = ISO_TILE_PIXEL_H / 2;                                                     // 12
-const double CELL_SLOPE_ANGLE = std::atan(LEVEL_LEPTON_H * (1 / (double)CELL_LEPTON_H));       /// 0.372388541698456
-const double CELL_DIAG_SLOPE_ANGLE = std::atan((LEVEL_LEPTON_H * 2) / CELL_LEPTON_DIAG);       /// 0.511634767055511
+const double CELL_SLOPE_ANGLE = std::atan(LEVEL_LEPTON_H * (1 / (double)CELL_LEPTON_H));       // 0.372388541698456
+const double CELL_DIAG_SLOPE_ANGLE = std::atan((LEVEL_LEPTON_H * 2) / CELL_LEPTON_DIAG);       // 0.511634767055511
 const int LEVEL_PIXEL_H_1 = LEVEL_PIXEL_H;                                                          // 12
 const int BRIDGE_LEPTON_HEIGHT = (int)((LEVEL_LEPTON_H * BRIDGE_CELL_HEIGHT) + 0.5);                /// 416
 

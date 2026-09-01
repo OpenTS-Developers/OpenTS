@@ -320,7 +320,7 @@ class ScenarioClass {
 			char VariableName[40];
 			bool Value;
 
-			/// Carries the scenario flag to or from a save game.
+			// Carries the scenario flag to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{

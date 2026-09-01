@@ -241,7 +241,7 @@ void WWMouseClass::Capture_Mouse(void)
 		IsCaptured = true;
 
 		/*
-		 * The game's pointer is now the O/S pointer, so its display count has to come
+		 * The game's pointer is the O/S pointer, so its display count has to come
 		 * back up; it was left negative while the game drew a pointer of its own.
 		 */
 		while (ShowCursor(TRUE) < 0) {}

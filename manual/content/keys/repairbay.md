@@ -11,7 +11,7 @@ The match is on the exact type: a repair order looks for the nearest building of
 
 Whether the building can actually repair anything is [`UnitRepair`](/keys/unitrepair/)'s business. A type named here without that flag turns every arrival away, and a unit ordered to repair keeps searching for as long as its house owns one of them.
 
-This setting does not decide whether a selected player-controlled aircraft can enter a clicked building. That direct action accepts any idle, empty `UnitRepair=yes` building or helipad. Repair orders and a computer house's damaged-aircraft search still use the type named here.
+This setting does not decide whether a selected player-controlled aircraft can enter a clicked building. That direct action accepts any idle, empty `UnitRepair=yes` building or helipad.
 
 :::danger[Leaving this unset crashes the game]
 The value starts as no type at all, and both the search and the ownership test behind it read through it without checking. The first unit to take a repair order ends the game — including a computer harvester that has run out of Tiberium, which heads for the pad on its own to be sold.

@@ -9,7 +9,7 @@ when_omitted:
 
 The firing object keeps a running count of where it stands in the burst. Every shot but the last is followed by a short gap; the last shot of the burst is the one that pays [`ROF`](/keys/rof/), scaled by the house's rate of fire bias, raised by a random zero to two frames and shortened by the veteran rate of fire ability. The count then returns to the start.
 
-Losing the target partway through a burst keeps that count and starts the same full rearm interval that the last shot would have paid. Acquiring another valid target before the interval ends cancels the reset, so firing resumes with the next shot of the partial burst. Remaining without a target until the interval ends returns the count to the first shot. Clearing and immediately reissuing a target therefore cannot turn every shot into the first shot of a burst.
+Losing the target partway through a burst keeps that count and starts the same full rearm interval that the last shot would have paid. Remaining without a target until the interval ends returns the count to the first shot. Acquiring another valid target before then keeps the count, so firing resumes with the next shot of the partial burst. Clearing and immediately reissuing a target therefore cannot turn every shot into the first shot of a burst.
 
 ```ini title="rules.ini"
 [MyTwinCannon] ; example WeaponType

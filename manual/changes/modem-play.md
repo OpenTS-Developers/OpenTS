@@ -52,9 +52,8 @@ modem settings editor are all gone. Network, internet, skirmish, and campaign
 play are unaffected.
 
 `sun.ini` no longer reads or writes the `[SerialDefaults]`, `[InitStrings]`, and
-`[PhoneBook]` sections, nor `[MultiPlayer] PhoneIndex`. Sections left in the file
-are ignored, and the game stops rewriting them when it saves its settings.
+`[PhoneBook]` sections, nor `[MultiPlayer] PhoneIndex`, and stops rewriting them
+when it saves its settings.
 
-The two session types the removed modes used keep their stored values, so this
-change does not itself alter how a same-snapshot save is restored. The ordinary
-release-version and development-snapshot compatibility rules still apply.
+The two session types the removed modes used keep their stored values, so saves
+are unaffected.

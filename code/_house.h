@@ -32,7 +32,7 @@ struct AngerStruct
 	 */
 	int Level;
 
-	/// Carries this anger record to or from a save game.
+	// Carries this anger record to or from a save game.
 	template<typename S>
 	void Serialize(S & stream)
 	{
@@ -61,7 +61,7 @@ struct ScoutStruct
 	 */
 	bool IsScouted;
 
-	/// Carries this scouting record to or from a save game.
+	// Carries this scouting record to or from a save game.
 	template<typename S>
 	void Serialize(S & stream)
 	{

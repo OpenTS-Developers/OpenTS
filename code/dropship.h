@@ -57,7 +57,7 @@ class DropshipLoadoutClass
 		/// Unused
 		int TotalCost;
 
-		/// Carries this loadout to or from a save game.
+		// Carries this loadout to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

@@ -101,7 +101,7 @@ void SwizzleManagerClass::Here_I_Am(uintptr_t id, void * pointer)
 
 /// <summary>
 /// Fills in every outstanding pointer request.
-/// This is the heart of the swizzler. The requests registered by Swizzle are matched
+/// The requests registered by Swizzle are matched
 /// against the addresses announced by Here_I_Am, and each real address is written into the
 /// pointer that asked for it. Both tables are emptied once the matching is done.
 /// </summary>

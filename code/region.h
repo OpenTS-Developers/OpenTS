@@ -49,7 +49,7 @@ class RegionClass {
 		void Adjust_Threat(int threat, int neg) {if (neg) Threat -= threat; else Threat+= threat; if (Threat < 0) Threat = 0;};
 		int Threat_Value(void) const {return(Threat);};
 
-		/// Carries this region's threat rating to or from a save game.
+		// Carries this region's threat rating to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

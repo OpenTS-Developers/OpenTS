@@ -53,7 +53,7 @@ class DelayTimerClass
 		/// of them is always true and this can never return true.
 		bool Is_Ready_To_Close(void) const {return(!Is_Count_Up_Active() && !Is_Count_Down_Active() && !Is_Count_Up_Complete() && !Is_Count_Down_Complete());}
 
-		/// Carries the count in progress to or from a save game.
+		// Carries the count in progress to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

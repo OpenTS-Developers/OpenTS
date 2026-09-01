@@ -287,8 +287,8 @@ unsigned char VoxelPaletteLibrary::Closest_Color(float red, float green, float b
 		b = Colors[index].Blue;
 		float fb = blue  - b;
 
-		/// Ties are broken by iteration order, so a last-bit difference picks a
-		/// different colour outright.
+		// Ties are broken by iteration order, so a last-bit difference picks a
+		// different colour outright.
 		float difference = (float)((double)fr * fr + (double)fg * fg + (double)fb * fb);
 		if (difference < value) {
 			value = difference;

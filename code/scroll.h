@@ -48,9 +48,9 @@ class ScrollClass: public TabClass
 
 	private:
 		/*
-		**	Scroll speed is regulated by this count down timer. When this value reaches zero,
-		**	scroll the map in the direction required and reset this timer.
-		*/
+		 * The inertia ramp climbs or decays a step each time this count down timer reaches
+		 * zero. The scroll distance itself is paced off the clock, not off this.
+		 */
 		static CDTimerClass<SystemTimerClass> Counter;
 
 		/*

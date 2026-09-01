@@ -101,12 +101,6 @@ static bool Is_Registered(std::string const & path)
 }
 
 
-/// <summary>
-/// Reports where a deployment's files are, which is the data directory when one is named
-/// and the game's own directory otherwise. Everything a configuration names is relative
-/// to it.
-/// </summary>
-/// <returns>The directory a deployment's files are kept in.</returns>
 static std::string Data_Home(void)
 {
 	return(DataDirectory);
@@ -371,8 +365,7 @@ static void Scan_Folder(char const * prefix, char const * pattern, std::vector<s
 /// Finds the files matching a pattern in every directory the game reads from.
 /// A name held by more than one directory is reported once, and opening that name afterwards
 /// lands on the same file this scan saw, because both walk the directories in the same order.
-/// The names come back sorted, so what the game makes of them does not depend on the order
-/// a file system happened to hand them over in.
+/// The names come back sorted, so the order does not depend on the file system.
 /// </summary>
 /// <param name="pattern">The wildcard pattern to match, with no directory attached.</param>
 /// <returns>The matching file names, without the directory they were found in.</returns>

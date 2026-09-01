@@ -21,9 +21,7 @@ credit: [ZivDero]
 Two settings now decide who sees through a disguise. A type set `DetectDisguise=yes` scores a
 disguised soldier like any other candidate, and `AIDetectDisguise=yes` in `[AI]` gives every
 computer-controlled house the same sight while leaving a player's own units passing the
-soldier over. Both are off unless the rules ask for them, so nothing changes for a game that
-states neither.
+soldier over.
 
-The rejection used to read the candidate's type alone, with no way to grant an exception —
-not even to the dog a source comment claimed was already exempt. Ability now belongs to
-whatever the rules name, rather than to nothing at all.
+The rejection used to read the candidate's type alone, with no way for the rules to grant an
+exception — not even to the dog, which the engine's own source comments described as exempt.

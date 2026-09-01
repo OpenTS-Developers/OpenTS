@@ -17,5 +17,5 @@ The name suggests chat, but the sound sits inside the routine that adds any line
 Chat received from another player is added the same way, and only when it starts a new line: a fragment that continues the sender's previous line is appended in silence.
 
 :::caution[One message can play the sound more than once]
-The LAN and serial handlers each play it again immediately after the line is added, so a message arriving from another player over those links is heard twice. A message the game raises for itself is heard once, and a line too long for the message area is split, playing the sound once per piece.
+The LAN handler plays it again immediately after the line is added, so a message arriving from another player over that link is heard twice. A message the game raises for itself is heard once, and a line too long for the message area is split, playing the sound once per piece.
 :::

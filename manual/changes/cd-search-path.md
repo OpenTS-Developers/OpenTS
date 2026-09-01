@@ -36,7 +36,6 @@ mounted.
 setting for `EVA.VQA`. When that path is selected, the game writes the setting
 back as `no`.
 
-Maps no longer name the discs they may be played from, so `CD` is read from
-neither a map packet entry nor a loose map's `[Multiplay]` section. A campaign
-still carries its number, but nothing asks for the disc: it now decides only
-whether the opening cinematic plays and which loading backdrop is shown.
+A campaign still carries its `CD` number, but nothing asks for the disc: it now
+decides only whether the opening cinematic plays and which loading backdrop is
+shown.

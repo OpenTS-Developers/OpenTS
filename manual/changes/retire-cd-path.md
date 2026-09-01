@@ -15,10 +15,7 @@ credit: [ZivDero]
 ---
 
 `-CD<path>` no longer adds a local file-search path; an argument beginning with
-it is ignored like any other the game does not recognize. Everything it was used
-for is now said another way: the game data directory points the game at its data,
-the user data directory holds the files a player puts ahead of it, and a
-deployment's own `OPENTS.INI` names the folders its data is sorted into.
+it is ignored like any other the game does not recognize.
 
 With it goes the last of its disc-era plumbing: the semicolon-separated list it
 accepted, and the upper-casing its path could not escape while every other

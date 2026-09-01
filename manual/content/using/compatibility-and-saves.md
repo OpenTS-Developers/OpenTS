@@ -19,8 +19,6 @@ Every save file's header carries an internal version stamp. The load dialog list
 OpenTS does not read save games written by the vanilla game or by a different
 OpenTS release-cycle version, and no converter is provided. Development
 snapshots within one cycle share a version stamp, so a save from an older
-snapshot can appear in the list even though loading it is unsupported and may
-fail. Finish or abandon a game in progress before replacing a development
+snapshot can appear in the list even though its stored layout may not match the
+one the running snapshot reads. Finish or abandon a game in progress before replacing a development
 snapshot.
-
-A save game stores each object member by member rather than as a copy of its memory.

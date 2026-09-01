@@ -187,7 +187,7 @@ The country and difficulty multipliers are combined once, when the house is assi
 
 The full price is charged in installments across the 54 steps. The installment is recomputed at every step as the outstanding balance divided by the number of steps left, so integer division never loses or gains credits; whatever remains at step 54 is charged in one final payment and the balance reaches exactly zero.
 
-An installment larger than the house's credits and stored tiberium put together stops the build: the step is rolled back, nothing is charged, and the same step is attempted again after another delay. Progress stays exactly where it stood until money arrives. Starting or resuming a build that the house cannot yet afford is allowed, and it simply sits at its first step on the same terms until the money is there.
+An installment larger than the house's credits and stored tiberium put together stops the build: the step is rolled back, nothing is charged, and the same step is attempted again after another delay. Progress stays exactly where it stood until money arrives. Starting or resuming a build that the house cannot yet afford is allowed, and it sits at its first step on the same terms until the money is there.
 
 Putting a build on hold moves no money and keeps the step it had reached. Canceling refunds the price less the outstanding balance — exactly what has been paid so far — deletes the object under construction, and frees the slot. Because the refund is worked out from the price at the moment of canceling, a price multiplier that changed mid-game skews it.
 

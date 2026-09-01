@@ -366,8 +366,8 @@ void LocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPowered);
 	stream.Serialize(Dirty);
 
-}
 	// RefCount -- belongs to the running session rather than the record.
+}
 
 
 /// <summary>
@@ -381,8 +381,8 @@ void LocomotionClass::Post_Load(void)
 
 /// <summary>
 /// Fetches the number of bytes needed to save this locomotor.
-/// A record is now as long as the members a class names, and the count is not known
-/// before the members have been written. Nothing in the game asks for it, so rather than
+/// A record is as long as the members a class names, so the count is not known before
+/// the members have been written. Nothing in the game asks for it, so rather than
 /// walk the locomotor twice this reports that the size cannot be supplied.
 /// </summary>
 /// <param name="pcbSize">Pointer to the value to fill in with the required byte count.</param>

@@ -47,7 +47,7 @@ inline bool TypeList<T>::Is_In_List(T const & object) const
 }
 
 
-/// An empty list picks nothing rather than dividing by zero.
+// An empty list picks nothing rather than dividing by zero.
 template<typename T>
 inline T const TypeList<T>::Pick(int index) const
 {
@@ -58,7 +58,7 @@ inline T const TypeList<T>::Pick(int index) const
 }
 
 
-/// An empty list picks nothing rather than drawing from an empty range.
+// An empty list picks nothing rather than drawing from an empty range.
 template<typename T>
 inline T const TypeList<T>::Random_Pick(Random2Class & rand) const
 {

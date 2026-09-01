@@ -53,7 +53,7 @@ class CreditClass {
 		void Graphic_Logic(bool forced=false);
 		void AI(bool forced=false);
 
-		/// Carries the credit readout to or from a save game.
+		// Carries the credit readout to or from a save game.
 		template<typename S>
 		void Serialize(S & stream)
 		{

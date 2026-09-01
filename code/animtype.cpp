@@ -64,6 +64,16 @@
 #include "warhead.h"
 
 
+/// <summary>
+/// Releases shape data that this type loaded through the file layer.
+/// </summary>
+static void Free_Demand_Loaded_Shape(void const *& data)
+{
+	delete [] (char *)data;
+	data = NULL;
+}
+
+
 /***********************************************************************************************
  * AnimTypeClass::AnimTypeClass -- Constructor for animation types.                            *
  *                                                                                             *
@@ -172,8 +182,7 @@ AnimTypeClass::AnimTypeClass(char const *ininame) :
 AnimTypeClass::~AnimTypeClass(void)
 {
 	if (IsDemandLoad && ImageData) {
-		delete [] (char*) ImageData;
-		ImageData = NULL;
+		Free_Demand_Loaded_Shape(ImageData);
 	}
 
 	AbstractTypePtrTracker.Delete(this);
@@ -219,8 +228,7 @@ void AnimTypeClass::Init(TheaterType theater)
 			} else {
 				if (anim->IsTheater || anim->IsNewTheater) {
 					if (anim->ImageData != NULL) {
-						delete [] (char*) anim->ImageData;
-						anim->ImageData = NULL;
+						Free_Demand_Loaded_Shape(anim->ImageData);
 					}
 				}
 			}
@@ -358,6 +366,14 @@ AnimType AnimTypeClass::From_Name(char const * name)
 /// <returns>bool; Was the animation type's data read?</returns>
 bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 {
+	if (!ini.Section_Present(IniName)) {
+		return(false);
+	}
+
+	if (IsDemandLoad && ImageData != NULL) {
+		Free_Demand_Loaded_Shape(ImageData);
+	}
+
 	if (BASECLASS::Read_INI(ini)) {
 		if (!GraphicName.empty()) {
 			if (ImageData == NULL) {
@@ -407,6 +423,9 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 
 		IsDemandLoad = ini.Get_Bool(Name(), "DemandLoad", IsDemandLoad);
 		IsFreeAfterPlaying = ini.Get_Bool(Name(), "FreeAfterPlaying", IsFreeAfterPlaying);
+		if (IsDemandLoad) {
+			ImageData = NULL;
+		}
 
 		Elasticity = ini.Get_Float(Name(), "Elasticity", Elasticity);
 		MaxXYVel = ini.Get_Float(Name(), "MaxXYVel", MaxXYVel);
@@ -463,8 +482,7 @@ bool AnimTypeClass::Read_INI(CCINIClass const & ini)
 
 
 /// <summary>
-/// Re-attaches the artwork this animation type names.
-/// This routine reacquires the artwork appropriate for the theater the scenario is
+/// Re-attaches the artwork this animation type names, for the theater the scenario is
 /// being restored into.
 /// </summary>
 void AnimTypeClass::Post_Load(void)
@@ -472,9 +490,9 @@ void AnimTypeClass::Post_Load(void)
 	BASECLASS::Post_Load();
 
 	Fetch_Voxel_Image();
-	Fetch_Normal_Image();
 
 	if (!IsDemandLoad) {
+		Fetch_Normal_Image();
 		if (IsTheater) {
 			char fullname[_MAX_FNAME+_MAX_EXT];	// Fully constructed iconset name.
 			_makepath(fullname, NULL, NULL, Name(), Theaters[Scen->Theater].Suffix);
@@ -681,7 +699,6 @@ void AnimTypeClass::Free_Image(void)
 {
 	if (IsDemandLoad && ImageData != NULL && IsFreeAfterPlaying) {
 		DebugString("Freeing loaded image for %s\n", Full_Name());
-		delete [] (char*) ImageData;
-		ImageData = NULL;
+		Free_Demand_Loaded_Shape(ImageData);
 	}
 }

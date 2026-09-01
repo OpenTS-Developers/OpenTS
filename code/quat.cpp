@@ -55,8 +55,8 @@ void Quaternion::Set(float x, float y, float z, float w)
 /// </summary>
 void Quaternion::Normalize(void)
 {
-	/// len2 stays a float: it is the divisor below, so widening it would change
-	/// the quotient rather than just the way the sum is reached.
+	// len2 stays a float: it is the divisor below, so widening it would change
+	// the quotient rather than just the way the sum is reached.
 	float len2 = (float)((double)X * (double)X + (double)Y * (double)Y +
 						 (double)Z * (double)Z + (double)W * (double)W);
 
@@ -360,7 +360,7 @@ Quaternion Slerp(const Quaternion &a, const Quaternion &b, float t)
 	double sin_t, cos_t; 		// sine, cosine of theta
 
 	// cos theta = dot product of p and q
-	/// Accumulated in double; the two epsilon tests below turn it into a branch.
+	// Accumulated in double; the two epsilon tests below turn it into a branch.
 	cos_t = (double)a.X * (double)b.X + (double)a.Y * (double)b.Y +
 			(double)a.Z * (double)b.Z + (double)a.W * (double)b.W;
 
@@ -373,8 +373,8 @@ Quaternion Slerp(const Quaternion &a, const Quaternion &b, float t)
 		 */
 		if ((1.0 - cos_t) > SLERP_EPSILON) {
 			// normal slerp!
-			/// The epsilon test bounds cos_t away from one but not from just
-			/// outside the domain, where acos would answer with a NaN.
+			// The epsilon test bounds cos_t away from one but not from just
+			// outside the domain, where acos would answer with a NaN.
 			theta = std::acos(std::clamp(cos_t, -1.0, 1.0));
 			sin_t = std::sin(theta);
 			beta = std::sin((1.0 - (double)t) * theta) / sin_t;

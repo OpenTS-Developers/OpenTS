@@ -205,7 +205,7 @@ class BuildingTypeClass : public TechnoTypeClass
 			int	Count;			// Number of frames in this animation.
 			int	Rate;			// Number of ticks to delay between each frame.
 
-			/// Carries the animation control to or from a save game.
+			// Carries the animation control to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{
@@ -259,7 +259,7 @@ class BuildingTypeClass : public TechnoTypeClass
 			 */
 			bool PoweredLight;
 
-			/// Carries the animation entry to or from a save game.
+			// Carries the animation entry to or from a save game.
 			template<typename S>
 			void Serialize(S & stream)
 			{

@@ -8,10 +8,10 @@ when_omitted:
   value: "no"
 ---
 
-The value seeds a multiplayer session option of the same name as the rules are read, alongside the other `[MultiplayerDefaults]` options. That option is sent to the other machines during setup and a guest takes the host's — but nothing carries it into the scenario flag the game logic consults.
+As the rules are read, the value seeds a multiplayer session option of the same name, alongside the other `[MultiplayerDefaults]` options. That option is sent to the other machines during setup and a guest takes the host's — but nothing carries it into the scenario flag the game logic consults.
 
 :::caution[The mode cannot be turned on]
-The scenario flag starts false and no routine sets it. The one screen that used to write it belonged to modem play and went with it, no scenario file carries the flag, and the routine that would broadcast a change of it is never called. Everything below describes a mode that nothing can now enter.
+The scenario flag starts false and no routine sets it. The one screen that used to write it belonged to modem play and went with it, no scenario file carries the flag, and the routine that would broadcast a change of it is never called.
 :::
 
 With the flag on, and with [`Bases`](/keys/bases/) on as well, each house's [`BaseUnit`](/keys/baseunit/) is given that house's own flag as it is placed. Carrying it halves the unit's speed and stops it cloaking — it shimmers instead — and the flag drops back onto the ground when the unit deploys or is otherwise taken off the map. A house that is defeated has its flag taken away.
