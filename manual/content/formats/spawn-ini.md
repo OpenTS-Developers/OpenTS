@@ -24,7 +24,7 @@ The vocabulary below is the client's, not the game's: the spelling of every key,
 each means when it is left out, are settled by what clients already write. Reading the file
 never fails. A key the game does not know is passed over, a value it cannot make sense of
 keeps the meaning an absent key would have, and whether the result describes a game that
-can be played is judged once, at the moment the launch is attempted.
+can be played is judged once, when the launch is attempted.
 
 ## What the file asks for
 
@@ -40,31 +40,31 @@ A file that seats more than one person asks for a game against other machines.
 
 ## Resuming a saved game
 
-`LoadSaveGame=yes` resumes the saved game `SaveGameName` names, and settles the question by
-itself: a saved game carries the kind of game it was, the options it was played under and
-the houses that played it, so nothing else in the file decides those. A client resuming a
+`LoadSaveGame=yes` resumes the saved game `SaveGameName` names, and decides the kind of game
+on its own: a saved game carries the kind of game it was, the options it was played under
+and the houses that played it, so nothing else in the file decides those. A client resuming a
 campaign writes little more than the name of the save.
 
 The name is a file inside the game's saved-games folder, and a name written with a path of
 its own is reduced to its last part. A save the folder does not hold, or one made by
-another version of the game, refuses the launch with the reason shown.
+another version of the game, is refused, and the reason is shown.
 
 A save from a game against other machines resumes as well. Every machine loads its own
 copy of the save — the synchronized in-game save writes one on each of them, named
 `SAVEGAME.NET` — while the file seats the same people again, with the addresses their
 machines answer on now. A player who does not return leaves their house fighting on under
 the computer, and before play resumes the machines compare the games they loaded, so
-mismatched saves refuse rather than drift apart. The launch is refused when the seats and
-the save disagree on who is playing, or when the save came from a game the menu arranged
-over the local network.
+mismatched saves are refused rather than drifting apart. The launch is refused when the
+seats and the save disagree on who is playing, or when the save came from a game the menu
+arranged over the local network.
 
 ## A campaign mission
 
 `IsSinglePlayer=yes` plays the mission `Scenario` names. `CampaignID` says which campaign
 the mission belongs to, counted from zero in the order the battle files declare them, or
-`-1` for a mission outside any campaign. The campaign decides what the mission leads on to
-and which ending it plays, and it is what the game's own introduction is gated on, exactly
-as when a campaign is chosen from the menu.
+`-1` for a mission outside any campaign. The campaign decides what the mission leads on to,
+which ending it plays, and which of the game's own introductions plays, exactly as when a
+campaign is chosen from the menu.
 
 `DifficultyModeHuman` and `DifficultyModeComputer` each name a difficulty from 0 to 2 — the
 player's houses and the computer's, applied independently, so all nine pairings can be
@@ -87,9 +87,9 @@ A written `Seed` makes a launch repeatable: the same file played twice places ev
 the same way. A seed of `0` leaves the placement to chance, which is also what an absent
 `Seed` means.
 
-`HarvesterTruce` is played by in a game against other machines. A skirmish records it with
-the rest of the match's options but is not played by it, as a skirmish set up from the menu
-is not: only a match against other machines commits harvester immunity to the simulation.
+`HarvesterTruce` applies in a game against other machines. A skirmish records it with the
+rest of the match's options but does not apply it, exactly as a skirmish set up from the
+menu does not.
 
 ## Who is playing
 
@@ -119,13 +119,12 @@ color — and everything below that names a seat by number means that order.
 
 A start position the map does not declare, or one another seat has already taken, is left
 to the game to choose, which is also what writing no position means. Alliances are made
-exactly as written, before the first frame is played, and quietly: a match whose file
-forbids new pacts still starts with the ones it wrote.
+exactly as written, before the first frame: a match whose file forbids new alliances still
+starts with the ones it wrote.
 
-A computer player may share the color a person plays. Two people may not, in a game against
-other machines: the seats are ordered by color, and the client keys what it writes for each
-of them by an order no other machine can rebuild, so two people of one color would take each
-other's start position and alliances.
+A computer player may share the color a person plays; in a game against other machines, two
+people may not. The client keys each seat by an order no other machine can rebuild, so two
+people of one color would take each other's start position and alliances.
 
 ## A game against other machines
 
@@ -136,9 +135,9 @@ through a tunnel instead, and each machine is then named by the tunnel number it
 key carries rather than by its address.
 
 Every person must be named, and no two may be named the same, whatever the letters' case.
-The seats are ordered by color, and a name is what breaks a tie between two of one color, so
-a match without those names is not the same match on every machine. Colors themselves may
-still be shared.
+Each machine writes its own file with itself first, so the seats are ordered by color and
+name rather than by the order the file wrote them; without those names the machines would
+not seat the same match.
 
 The seed is taken exactly as written, the same on every machine — including `0`, which in a
 match against other machines is a seed like any other rather than a draw from chance.
@@ -151,29 +150,35 @@ on the port its own `Port` key names.
 
 A file describing a game that cannot be played is refused: the reason is shown and written
 to the log, and the game exits rather than falling back to its menu. A launch is refused
-when it seats nobody at this machine, asks for more computer players than there are seats,
-names a country or color the loaded rules do not have, plays the computer at a difficulty
-the game does not have, asks for a game speed it does not have, names a difficulty that is
-not one, allies a seat with one the match does not hold, or asks for a seat that watches
-rather than plays. A match against other machines is refused as well when a person is left
-unnamed, when two are named the same or given one color, and when a machine other than this
-one is given no port to answer on or no address to answer at.
+when it
+
+- seats nobody at this machine;
+- asks for more computer players than there are seats;
+- names a country or color the loaded rules do not have;
+- plays the computer at a difficulty the game does not have;
+- asks for a game speed the game does not have;
+- gives a seat a difficulty outside `-1` to `6`;
+- allies a seat with one the match does not hold;
+- asks for a seat that watches rather than plays.
+
+A match against other machines is refused as well when a person is left unnamed, when two
+are named the same or given one color, and when a machine other than this one is given no
+port to answer on or no address to answer at.
 
 A difficulty easier than the three the game has is not refused: the seat is played as the
-easiest opponent the game does have. The two run opposite ways: the easiest opponent is the
-one played at the hardest of the game's three settings.
+easiest opponent the game does have. The two run opposite ways: the easiest opponent plays
+at the hardest of the game's three settings.
 
 ## What the game does not take from a launch file
 
 The timing keys are not read at all, `ReconnectTimeout` and `ConnTimeout` among them. How
 far ahead the machines run, how often they exchange their orders, and how long they wait for
-one that has gone quiet are the game's own business, and no launch file changes them.
-`MapHash` is not read either: the machines compare the games they have loaded before play
-begins, which settles the same question for themselves.
+one that has gone quiet are set by the game, and no launch file changes them. `MapHash` is
+not read either: the machines compare the games they have loaded before play begins, which
+settles the same question for themselves.
 
-These keys are read but do not change anything yet, each awaiting the behavior that will
-honor it: `IsHost`, `Tournament`, `GameID`, `WriteStatistics`, the automatic-save scheduling
-keys, `BuildOffAlly`, `AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`,
-`ContinueWithoutHumans`, `CoachMode`, `QuickMatch`, `SkipScoreScreen`,
-`PlayMoviesInMultiplayer`, `CustomLoadScreen`, `CustomLoadScreenPos`, and
-`DifficultyName`.
+These keys are read but change nothing yet: `IsHost`, `Tournament`, `GameID`,
+`WriteStatistics`, the automatic-save scheduling keys, `BuildOffAlly`,
+`AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`, `CoachMode`,
+`QuickMatch`, `SkipScoreScreen`, `PlayMoviesInMultiplayer`, `CustomLoadScreen`,
+`CustomLoadScreenPos`, and `DifficultyName`.

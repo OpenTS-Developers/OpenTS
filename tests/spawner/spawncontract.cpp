@@ -7,10 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Pins the launch file the CnCNet client writes to start a game, without the engine or any game
-// data: what an unwritten key means, the order the seats end up in, the repairs the reader
-// makes silently, and which values two machines have to agree on. Whether a reading
-// describes a playable game is judged at launch, so nothing here refuses anything.
+// Pins the launch file the CnCNet client writes, with no engine and no game data: unwritten
+// keys, seat order, the reader's silent repairs, and the values two machines must agree on.
 
 #include <cstdio>
 #include <cstring>
@@ -68,8 +66,8 @@ char const _Campaign[] =
 	"DifficultyModeComputer=2\n";
 
 
-// What the client writes to start a game against computer players. The player describes
-// himself in the settings, and the computer players are named by position.
+// What the client writes to start a game against computer players. The player is described
+// in the settings, and the computer players are named by position.
 char const _Skirmish[] =
 	"[Settings]\n"
 	"Scenario=spawnmap.ini\n"
@@ -105,7 +103,7 @@ char const _Skirmish[] =
 
 
 // What the client writes for a game against other machines. The player who wrote it holds the
-// higher color, so the sorting puts him second.
+// higher color, so the sort puts that seat second.
 char const _Network[] =
 	"[Settings]\n"
 	"Scenario=spawnmap.ini\n"
@@ -287,8 +285,8 @@ int main(void)
 	}
 
 	/*
-	 * Every machine writes its own file with itself first, so a color tie must be broken by
-	 * what the seats say rather than where the file said it, or the matches would differ.
+	 * Every machine writes its own file with itself first, so a color tie must be broken by what
+	 * the seats say rather than by file order.
 	 */
 	{
 		char const view_a[] =
@@ -373,8 +371,8 @@ int main(void)
 			"resuming another saved game moves the identity");
 
 		/*
-		 * Where the machines reach one another is how a match is carried rather than what it
-		 * plays out as, and each machine writes its own view of it, so it is left out as well.
+		 * Where the machines reach one another carries the match rather than shaping it, and each
+		 * machine writes its own view, so it is left out as well.
 		 */
 		SpawnerConfigClass eight = Read(_Network, sizeof(_Network) - 1);
 		SpawnerConfigClass nine = Read(_Network, sizeof(_Network) - 1);

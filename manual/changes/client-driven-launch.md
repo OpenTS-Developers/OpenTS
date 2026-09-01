@@ -20,7 +20,6 @@ campaign mission, a game against other machines through a CnCNet tunnel or strai
 them, or any of those resumed from a saved game. The startup movies and the menu are
 skipped, and the game exits when the match ends.
 
-A client-launched game against other machines can now be saved from its options dialog. A
-game set up from the menu is assembled as before.
+A client-launched game against other machines can now be saved from its options dialog.
 
 The people credited here wrote the earlier spawners this one follows.

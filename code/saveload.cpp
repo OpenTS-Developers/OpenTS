@@ -619,8 +619,8 @@ static bool Put_All(IStream *stream, int save_net)
 	}
 
 	/*
-	 * A campaign takes its options from the mission; every other kind was told them once,
-	 * when the game was set up, so the save is the only place a resume can find them.
+	 * A campaign takes its options from the mission. Every other kind is given them at setup, so
+	 * the save is the only place a resume can find them.
 	 */
 	if (Session.Type != GAME_NORMAL) {
 		DebugString("Writing Session.Options\n");

@@ -653,7 +653,7 @@ void Init_Campaigns(void)
 
 /// <summary>
 /// Reads the countries and the sides they belong to from the rules, so a house's side is
-/// known before anything asks for it. Only this reading establishes the roster.
+/// known before anything asks for it.
 /// </summary>
 void Prepare_Side_Roster(void)
 {
@@ -1091,8 +1091,8 @@ restart:
 		}
 
 		/*
-		 * A launch takes the place of the menu once; an ended match or a refusal answers false,
-		 * so the process leaves and the client sees it go.
+		 * A launch replaces the menu once. An ended match or a refusal answers false, so the
+		 * process exits and the client sees it go.
 		 */
 		if (Spawner_Is_Requested()) {
 			if (!Spawner_Prepare(gameloaded)) {
@@ -1390,7 +1390,7 @@ restart:
 			Session.PlayerIsGDI = stricmp(HouseTypes[Session.Players[0]->Player.House]->Name(), "GDI") == 0;
 		}
 
-		// The menu sets the pair on every path but a client launch, which chose it itself.
+		// The menu sets the difficulty pair on every path but a client launch, which chose it.
 		if (!Spawner_Is_Active()) {
 			Session.CampaignDifficulty = (DiffType)Options.Difficulty;
 			Session.CampaignCDifficulty = (DiffType)(DIFF_COUNT - 1 - Options.Difficulty);

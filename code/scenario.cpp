@@ -2069,8 +2069,8 @@ void Write_Scenario_INI(char const * fname, bool mplayer)
 
 
 /// <summary>
-/// Fetches the node a seat of the match was described by. The player list is held in each
-/// machine's own order, so a seat is found by the house it was assigned, not by position.
+/// Fetches the node describing one seat of the match. The player list is in each machine's
+/// own order, so a seat is found by the house it was assigned, not by position.
 /// </summary>
 /// <returns>The node describing that seat, or NULL if the match does not hold it.</returns>
 static NodeNameType * Seated_Node(int seat)
@@ -2205,8 +2205,8 @@ void Assign_Houses(void)
 	for (i = Session.Players.Count(); i < Session.Players.Count() + Session.Options.AIPlayers; i++) {
 
 		/*
-		 * A session source may have seated this computer player itself. What it left
-		 * unnamed the game draws, exactly as it does for a game set up from the menu.
+		 * A launch file may have seated this computer player. Anything it left unnamed the game
+		 * picks, as it does for a game set up from the menu.
 		 */
 		int seatnum = i - Session.Players.Count();
 		NodeNameType * seat = seatnum < Session.Computers.Count() ? Session.Computers[seatnum] : NULL;
@@ -2226,8 +2226,7 @@ void Assign_Houses(void)
 		}
 
 		/*
-		 * A seated color is taken as written, repeats included, since a cooperative team
-		 * shares one.
+		 * A seated color is taken as written, repeats included: a cooperative team shares one.
 		 */
 		if (seat != NULL && seat->Player.Color != -1) {
 			color = seat->Player.Color;
@@ -2357,7 +2356,8 @@ static void Append_Open_Start_Positions(DynamicVectorClass<Cell> & waypts, int &
 
 /// <summary>
 /// Fetches the starting locations a multiplayer game may use, making up any shortfall with
-/// open ground. Keeping identity numbers each entry by waypoint, undeclared ones left as holes.
+/// open ground. When identity is kept, each entry is numbered by its waypoint and undeclared
+/// ones are left as holes.
 /// </summary>
 /// <param name="official">Is this one of the maps that shipped with the game?</param>
 /// <param name="keep_identity">Must an entry's place in the list be its waypoint number?</param>
@@ -2377,8 +2377,8 @@ static DynamicVectorClass<Cell> Build_Start_Waypoint_List(bool official, bool ke
 		}
 
 		/*
-		 * The spots making up a shortfall are appended past the numbered ones, so that no
-		 * number comes to mean a place the map never named.
+		 * Spots making up a shortfall are appended past the numbered ones, so no number comes to
+		 * mean a place the map never declared.
 		 */
 		Append_Open_Start_Positions(waypts, usable, Session.Players.Count() + Session.Options.AIPlayers);
 
@@ -2477,8 +2477,8 @@ static void Create_Units(bool official)
 	int max_value = unit_count * average_cost;
 
 	/*
-	 * A house only asks for a position by number when a session source chose one for it,
-	 * and that is what decides whether the numbers have to keep their identity.
+	 * A house only asks for a position by number when a launch file chose one for it, which is
+	 * what decides whether the numbers must keep their identity.
 	 */
 	bool choices = false;
 	for (int index = 0; index < Houses.Count(); index++) {
@@ -2501,8 +2501,8 @@ static void Create_Units(bool official)
 	}
 
 	/*
-	 * A house that named a position holds it before anybody draws, so a house that named
-	 * none cannot take one somebody asked for. Two naming the same position: first keeps it.
+	 * A house that named a position holds it before anybody draws, so a house that named none
+	 * cannot take it. When two name the same position, the first keeps it.
 	 */
 	int reserved[MAX_PLAYERS * 2];
 	for (int index = 0; index < ARRAY_SIZE(reserved); index++) {

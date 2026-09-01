@@ -20,7 +20,7 @@ class INIClass;
 
 /*
  * What a client asked the game to launch. The file's spelling, defaults and shape belong to
- * the CnCNet client; reading cannot fail, and what was read is judged where a launch begins.
+ * the CnCNet client; reading cannot fail, and the result is judged at the launch.
  */
 class SpawnerConfigClass
 {
@@ -49,8 +49,8 @@ class SpawnerConfigClass
 		};
 
 		/*
-		 * One seat of the match, held in the order the houses are created in, so a seat's index
-		 * is the house it becomes -- which is what alliances and start positions name.
+		 * A seat is held in the order the houses are created in, so its index is the house it
+		 * becomes, which is what alliances and start positions name.
 		 */
 		struct SlotType {
 			OccupancyType Occupancy = OccupancyType::Empty;

@@ -4368,10 +4368,9 @@ bool MapSeedClass::Save(const char * name)
 
 
 /// <summary>
-/// Is this the generator's own map rather than settings a player saved? That one travels to
+/// Is this the generator's own map rather than settings a player saved? The map travels to
 /// the other machines with the match, so it is kept where the game's own files are.
 /// </summary>
-/// <returns>bool; Is this the map a match is played on rather than a saved setting?</returns>
 static bool Is_Shared_Map_File(char const * file_name)
 {
 	return(stricmp(file_name, RANDOM_MAP_FILE_NAME) == 0);

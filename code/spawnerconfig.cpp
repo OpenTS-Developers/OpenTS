@@ -25,8 +25,8 @@
 namespace {
 
 /*
- * The section a launch file keeps the match's settings in. It doubles as the section the
- * machine reading the file describes itself in, so the first seat is read from here.
+ * The section holding the match's settings. It describes the machine reading the file as
+ * well, so the first seat is read from here.
  */
 char const * const SETTINGS = "Settings";
 
@@ -57,8 +57,8 @@ int Read_Slot_Int(INIClass const & ini, char const * section, int slot, int fall
 
 
 /// <summary>
-/// Reads a dotted address, so that a seat naming an unreachable machine is refused where
-/// every other fault is. The game's own resolver is not reachable from here.
+/// Checks a dotted address, so a seat naming no real machine is refused with every other
+/// fault. The game's own resolver cannot be reached from here.
 /// </summary>
 /// <returns>bool; Is this four numbers between 0 and 255?</returns>
 bool Is_Address(std::string const & text)
@@ -102,9 +102,9 @@ bool Fault(std::string & fault, char const * format, ...)
 
 
 /// <summary>
-/// Reads the match's seats. A seat is human because the file wrote a section for it, and the
-/// seats are then sorted into the order their houses will be created in, because everything
-/// naming a seat by position afterwards means that order.
+/// Reads the match's seats and sorts them into the order their houses are created in, which
+/// is the order everything naming a seat by position means. A seat is human because the file
+/// wrote a section for it.
 /// </summary>
 void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 {
@@ -116,7 +116,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		SlotType & slot = staging[index];
 		if (ini.Section_Present(section.c_str())) {
 			slot.Occupancy = OccupancyType::Human;
-			// A seat is judged and ordered by the name the game keeps, as every machine is.
+			// A seat is judged and ordered by the name the game keeps, the same on every machine.
 			slot.Name = Read_Text(ini, section.c_str(), "Name", "").substr(0, HOUSE_NAME_MAX - 1);
 			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
 			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
@@ -157,8 +157,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 	}
 
 	/*
-	 * What the file wrote for a seat no section claimed describes a computer player, and the
-	 * options say how many of those are playing.
+	 * A seat no section claimed is a computer player, and the options say how many of those play.
 	 */
 	for (int index : rest) {
 		SlotType & slot = Slots[filled];
@@ -168,7 +167,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 	}
 
 	/*
-	 * These name their seats by the sorted order, so they are read once the sorting is done.
+	 * The alliance sections name seats by the sorted order, so they are read after the sort.
 	 */
 	static char const * const _ordinals[SLOT_COUNT] = {
 		"HouseAllyOne", "HouseAllyTwo", "HouseAllyThree", "HouseAllyFour",
@@ -183,8 +182,7 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		slot.StartingPosition = Read_Slot_Int(ini, "SpawnLocations", index, -1);
 
 		/*
-		 * A start position the map cannot hold is one the game picks instead, which is what
-		 * a file asking for no particular position already means.
+		 * A start position outside the map's range is left to the game, as no position at all is.
 		 */
 		if (slot.StartingPosition < -1 || slot.StartingPosition >= SLOT_COUNT) {
 			slot.StartingPosition = -1;
@@ -203,8 +201,8 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 
 
 /// <summary>
-/// What kind of game this file asks for. Resuming a saved game answers by itself, since the
-/// save carries the type, the options and the houses.
+/// What kind of game this file asks for. A resume answers by itself, because the save carries
+/// the type, the options and the houses.
 /// </summary>
 SpawnerConfigClass::LaunchType SpawnerConfigClass::Launch_Type(void) const
 {
@@ -222,9 +220,9 @@ SpawnerConfigClass::LaunchType SpawnerConfigClass::Launch_Type(void) const
 
 
 /// <summary>
-/// The identity of the match this file asks for. It gathers every value the course of the
-/// match depends upon and nothing merely shown, so two machines handed the same match agree.
-/// The version leads: one file under two readings is not one match.
+/// The identity of the match this file asks for. It covers every value the course of the
+/// match depends on and nothing merely displayed, so two machines handed the same match
+/// agree. The version comes first: one file read two ways is not one match.
 /// </summary>
 int SpawnerConfigClass::Session_Identity_CRC(void) const
 {
@@ -284,7 +282,7 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 
 /// <summary>
 /// The difficulty a seat is played at. A client may ask for an easier opponent than the game
-/// holds, and any easier request comes to the easiest opponent it has.
+/// has, and any such request comes to the easiest one it does have.
 /// </summary>
 /// <returns>The difficulty to play the seat at, or -1 for the session default.</returns>
 int SpawnerConfigClass::Playable_Handicap(int asked)
@@ -293,8 +291,7 @@ int SpawnerConfigClass::Playable_Handicap(int asked)
 		return(-1);
 	}
 	/*
-	 * A table makes the opposite of what it is named: a seat played at the hardest of them is
-	 * the easiest opponent, and that is what a request for an easier one comes to.
+	 * The rules' hardest table makes the easiest opponent, so an easier request lands there.
 	 */
 	if (asked > DIFF_HARD) {
 		return(DIFF_HARD);
@@ -304,16 +301,16 @@ int SpawnerConfigClass::Playable_Handicap(int asked)
 
 
 /// <summary>
-/// Judges whether this reading describes a game that can be played. The countries and colors
-/// are handed in because they are the rules', settled only once the game has loaded them.
+/// Judges whether this reading describes a game that can be played. The country and color
+/// counts are passed in because they come from the rules, which only a running game holds.
 /// </summary>
 /// <param name="fault">Where to leave the sentence describing the first fault found.</param>
 /// <returns>bool; Can the game this file describes be played?</returns>
 bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const
 {
 	/*
-	 * A resumed match against other machines is seated from the file like any other, so it
-	 * is held to the same rules; its kind is the save's rather than the file's.
+	 * A resumed match against other machines is seated from the file like any other, so the same
+	 * rules hold for it.
 	 */
 	LaunchType kind = Launch_Type();
 	bool multiplayer = kind == LaunchType::Multiplayer ||
@@ -348,7 +345,7 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 				index + 1, slot.Country, countries));
 		}
 
-		// A computer seat may share a color; only a color with no scheme refuses outright.
+		// A computer seat may leave its color to the game; only a color the rules lack refuses.
 		if ((human || slot.Color != -1) && (slot.Color < 0 || slot.Color >= colors)) {
 			return(Fault(fault, "Seat %d is given color %d, and there are %d to choose from.",
 				index + 1, slot.Color, colors));
@@ -373,10 +370,8 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 		}
 
 		/*
-		 * The seats are ordered by color, and the client keys what it writes for each of them
-		 * by an order of its own that no other machine can rebuild. Two people of one color
-		 * would therefore take each other's start position and alliances, so a match against
-		 * other machines gives every person a color and a name of their own.
+		 * The client keys a seat by an order no other machine can rebuild, so two people sharing a
+		 * name or a color would take each other's start position and alliances.
 		 */
 		if (human && multiplayer) {
 			if (slot.Name.empty()) {
@@ -400,8 +395,8 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 			}
 
 			/*
-			 * Through a tunnel a machine is named by the number carried where its port would
-			 * go, so every seat but this one needs that number either way.
+			 * Through a tunnel the port carries the tunnel number, so every seat but this one needs
+			 * it either way.
 			 */
 			if (index != LocalSlot) {
 				if (slot.Port < 1 || slot.Port > 65535) {
@@ -422,8 +417,8 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 
 
 /// <summary>
-/// Reads what the CnCNet client asked the game to launch. Reading cannot fail: an unwritten
-/// key has a settled meaning, a nonsense value keeps it, and an unknown key is passed over.
+/// Reads what the client asked the game to launch. Reading cannot fail: an unwritten key has
+/// a settled meaning, an unusable value keeps it, and an unknown key is passed over.
 /// </summary>
 void SpawnerConfigClass::Read_INI(INIClass const & ini)
 {
@@ -439,8 +434,8 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	LoadSaveGame = ini.Get_Bool(SETTINGS, "LoadSaveGame", LoadSaveGame);
 
 	/*
-	 * A saved game is opened by name in the game's own folder, so a name written with a
-	 * path is reduced to its last element.
+	 * A saved game is opened by name in the game's own folder, so a name written with a path is
+	 * reduced to its last element.
 	 */
 	SaveGameName = std::filesystem::path(Read_Text(ini, SETTINGS, "SaveGameName", SaveGameName)).filename().string();
 
@@ -474,8 +469,8 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	CampaignCDifficulty = ini.Get_Int(SETTINGS, "DifficultyModeComputer", CampaignCDifficulty);
 
 	/*
-	 * One key carries the port twice: a machine listens on it and a tunnel names the machine
-	 * by it. Absent, a tunnel has no name while the game still has a port to listen on.
+	 * One key serves twice: the game listens on this port, and a tunnel names the machine by it.
+	 * Absent, the tunnel number is zero and the listen port keeps its default.
 	 */
 	TunnelId = ini.Get_Int(SETTINGS, "Port", TunnelId);
 	ListenPort = ini.Get_Int(SETTINGS, "Port", ListenPort);

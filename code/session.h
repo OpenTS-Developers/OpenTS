@@ -230,14 +230,14 @@ struct NodeNameType {
 		} Chat;
 	};
 
-	// A node asks for nothing, leaving the game its own start position and difficulty.
+	// A new node asks for nothing, leaving the start position and difficulty to the game.
 	NodeNameType(void)
 	{
 		memset(this, 0, sizeof(*this));
 		Player.SpawnChoice = -1;
 		Player.Handicap = -1;
 
-		// Zeroing the node above wipes an address that names nobody in particular.
+		// The memset above wipes the broadcast address the default constructor supplies.
 		Address = IPXAddressClass();
 	}
 };
@@ -707,7 +707,7 @@ class SessionClass
 		DynamicVectorClass <NodeNameType *> Players;    // list of players
 		DynamicVectorClass <NodeNameType *> Chat;       // list of chat nodes
 
-		// The computer players a session source seated, after the humans; the menu leaves it empty.
+		// The computer players a launch file seated, after the humans; the menu leaves this empty.
 		DynamicVectorClass <NodeNameType *> Computers;
 		int Suspended;
 
