@@ -10,6 +10,7 @@
         "CLANG_BUILD_DIR": "${workspaceFolder}/build/clang-cl",
         "CLANG_COMPILER_ARGS": [
             "--target=i686-pc-windows-msvc",
+            // Match the 14.44 MSVC toolset; update both together.
             "/clang:-fms-compatibility-version=19.44"
         ],
         "CLANG_INCLUDE_PATH": [
