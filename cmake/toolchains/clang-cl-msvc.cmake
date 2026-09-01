@@ -14,10 +14,46 @@ if(NOT OPENTS_MSVC_ROOT)
         "Set OPENTS_MSVC_ROOT to the directory containing MSVC and the Windows SDK.")
 endif()
 
-set(_opents_msvc_version "14.44.35207")
-set(_opents_sdk_version "10.0.26100.0")
+set(_opents_msvc_version_file
+    "${OPENTS_MSVC_ROOT}/VC/Auxiliary/Build/Microsoft.VCToolsVersion.default.txt")
+if(NOT EXISTS "${_opents_msvc_version_file}")
+    message(FATAL_ERROR
+        "Default MSVC toolset version not found: ${_opents_msvc_version_file}")
+endif()
+
+file(STRINGS "${_opents_msvc_version_file}" _opents_msvc_version LIMIT_COUNT 1)
+string(STRIP "${_opents_msvc_version}" _opents_msvc_version)
+if(NOT _opents_msvc_version MATCHES "^14\\.([0-9]+)\\.")
+    message(FATAL_ERROR "Unsupported MSVC toolset version: ${_opents_msvc_version}")
+endif()
+set(_opents_msvc_compatibility_version "19.${CMAKE_MATCH_1}")
+
 set(_opents_msvc_dir "${OPENTS_MSVC_ROOT}/VC/Tools/MSVC/${_opents_msvc_version}")
 set(_opents_sdk_dir "${OPENTS_MSVC_ROOT}/Windows Kits/10")
+
+file(GLOB _opents_sdk_candidates
+    LIST_DIRECTORIES TRUE
+    RELATIVE "${_opents_sdk_dir}/Include"
+    "${_opents_sdk_dir}/Include/*")
+list(SORT _opents_sdk_candidates COMPARE NATURAL ORDER DESCENDING)
+
+unset(_opents_sdk_version)
+foreach(_candidate IN LISTS _opents_sdk_candidates)
+    if(_candidate MATCHES "^[0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?$"
+       AND IS_DIRECTORY "${_opents_sdk_dir}/Include/${_candidate}/shared"
+       AND IS_DIRECTORY "${_opents_sdk_dir}/Include/${_candidate}/ucrt"
+       AND IS_DIRECTORY "${_opents_sdk_dir}/Include/${_candidate}/um"
+       AND IS_DIRECTORY "${_opents_sdk_dir}/Include/${_candidate}/winrt"
+       AND IS_DIRECTORY "${_opents_sdk_dir}/Lib/${_candidate}/ucrt/x86"
+       AND IS_DIRECTORY "${_opents_sdk_dir}/Lib/${_candidate}/um/x86")
+        set(_opents_sdk_version "${_candidate}")
+        break()
+    endif()
+endforeach()
+
+if(NOT _opents_sdk_version)
+    message(FATAL_ERROR "No complete Windows SDK found under: ${_opents_sdk_dir}")
+endif()
 
 foreach(_required_path
         "${_opents_msvc_dir}/include"
@@ -38,8 +74,10 @@ set(CMAKE_C_COMPILER "${_opents_clang_cl}")
 set(CMAKE_CXX_COMPILER "${_opents_clang_cl}")
 set(CMAKE_C_COMPILER_TARGET i686-pc-windows-msvc)
 set(CMAKE_CXX_COMPILER_TARGET i686-pc-windows-msvc)
-set(CMAKE_C_FLAGS_INIT "/clang:-fms-compatibility-version=19.44")
-set(CMAKE_CXX_FLAGS_INIT "/clang:-fms-compatibility-version=19.44")
+set(CMAKE_C_FLAGS_INIT
+    "/clang:-fms-compatibility-version=${_opents_msvc_compatibility_version}")
+set(CMAKE_CXX_FLAGS_INIT
+    "/clang:-fms-compatibility-version=${_opents_msvc_compatibility_version}")
 set(CMAKE_LINKER "${_opents_lld_link}")
 set(CMAKE_AR "${_opents_llvm_lib}")
 set(CMAKE_RC_COMPILER "${_opents_llvm_rc}" CACHE FILEPATH "" FORCE)

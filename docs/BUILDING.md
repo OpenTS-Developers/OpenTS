@@ -34,8 +34,9 @@ The reconstructed codebase may still contain undefined behavior that the
 supported MSVC build happens not to expose. A successful clang-cl build may
 therefore run incorrectly or fail at runtime; validate any result separately.
 
-Provide a directory containing MSVC 14.44.35207 and Windows SDK 10.0.26100.0,
-then configure a single-configuration Ninja build:
+Provide a directory containing a Visual Studio layout and Windows SDK. The
+cross-build uses the layout's default MSVC toolset and newest complete SDK.
+Configure a single-configuration Ninja build:
 
 ```bash
 cmake -S . -B build/clang-cl -G Ninja \
