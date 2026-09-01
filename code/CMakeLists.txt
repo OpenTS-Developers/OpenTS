@@ -57,12 +57,6 @@ endforeach()
 #
 message(STATUS "${PROJECT_NAME}: Creating '${PROJECT_NAME}' executable...")
 
-if(OPENTS_EXPERIMENTAL_CLANG_CL)
-    set(CMAKE_DEPFILE_FLAGS_RC "")
-    set(CMAKE_RC_COMPILE_OBJECT
-        "<CMAKE_RC_COMPILER> /C 1252 <DEFINES> <INCLUDES> <FLAGS> /fo<OBJECT> <SOURCE>")
-endif()
-
 add_executable(OpenTS WIN32 ${OPENTS_SRC})
 target_compile_features(OpenTS PRIVATE cxx_std_20)
 
@@ -245,7 +239,7 @@ target_link_libraries(OpenTS PRIVATE
     ole32 oleaut32 uuid odbc32 odbccp32
 )
 
-if (OPENTS_MSVC_ABI_COMPILER)
+if(MSVC)
     target_link_options(OpenTS PRIVATE
         /SUBSYSTEM:WINDOWS
         /DEBUG

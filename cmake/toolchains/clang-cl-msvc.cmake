@@ -46,6 +46,9 @@ set(CMAKE_RC_COMPILER "${_opents_llvm_rc}" CACHE FILEPATH "" FORCE)
 set(CMAKE_MT "${_opents_llvm_mt}")
 set(CMAKE_ASM_MASM_COMPILER "${_opents_uasm}" CACHE FILEPATH "" FORCE)
 
+set(CMAKE_USER_MAKE_RULES_OVERRIDE
+    "${CMAKE_CURRENT_LIST_DIR}/clang-cl-rc-rules.cmake")
+
 set(CMAKE_C_STANDARD_INCLUDE_DIRECTORIES
     "${_opents_msvc_dir}/atlmfc/include"
     "${_opents_msvc_dir}/include"
