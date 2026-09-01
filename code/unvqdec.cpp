@@ -10,40 +10,11 @@
  * EA's GPLv3 Section 7 additional terms and supplemental warranty
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
-
-/****************************************************************************
-*
-*  File              : unvq_asm.asm
-*  Description       : VQA UnVQ1 full-frame decoders, drawing a VQ compressed
-*                      video frame into a pixel buffer.
-*
-****************************************************************************/
-
 #include "always.h"
 
 #include "vqalib/unvq.h"
 
 #include "_vqa.h"
-
-/*
- * Six full-frame decoders, each replacing an assembly routine of the same name. They share a
- * shape: a frame is a grid of blocks, and every block carries a pointer into the codebook.
- *
- * The pointers arrive as two planes rather than as pairs -- every block's low byte first, then
- * every block's high byte -- so a block's codebook index is assembled from the two.
- *
- * A block is either a codebook entry copied out, or a single colour filling the whole block.
- * The two families differ in how they say which: an 8 bit frame marks a solid block with a
- * high byte of 0xFF and takes the colour from the low byte, while a 16 bit frame marks it with
- * the top bit and takes the remaining 15 as the colour. Of the 16 bit decoders, the two named
- * TABLE run that colour through HicolorTable; ASM_UnVQ1_C1_4x4 uses it as the pixel directly.
- *
- * Names carry the block size the codebook holds, not always the size written: 4x4_HALF reads a
- * 4x4 entry and writes every other pixel of every other row, and TABLE_ALT reads a 4x4 entry
- * and writes its first and third rows two screen rows apart.
- */
-
-namespace {
 
 /// <summary>
 /// Assembles one block's codebook index from the two pointer planes.
@@ -76,20 +47,6 @@ inline void Fill32(unsigned char * dest, unsigned int value)
 }
 
 
-inline void Put16(unsigned char * dest, unsigned char const * source)
-{
-	dest[0] = source[0];
-	dest[1] = source[1];
-}
-
-
-inline void Fill16(unsigned char * dest, unsigned int value)
-{
-	dest[0] = (unsigned char)(value & 0xFF);
-	dest[1] = (unsigned char)((value >> 8) & 0xFF);
-}
-
-
 /*
  * Spreads a 16 bit pixel across a doubleword so a solid block is filled four bytes at a time,
  * the way the assembly did it.
@@ -106,9 +63,6 @@ inline unsigned int Quad8(unsigned int colour)
 	return((pair << 16) | pair);
 }
 
-}	// namespace
-
-
 /// <summary>
 /// Draws a 16 bit frame from 4x4 codebook entries, taking a solid block's colour from
 /// HicolorTable.
@@ -119,7 +73,7 @@ inline unsigned int Quad8(unsigned int colour)
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl ASM_UnVQ1_C1_TABLE(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
+void __cdecl UnVQ1_C1_TABLE(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
 	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
 {
 	if (blocksperrow == 0) {
@@ -174,7 +128,7 @@ void __cdecl ASM_UnVQ1_C1_TABLE(unsigned char * codebook, unsigned char * pointe
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl ASM_UnVQ1_C1_TABLE_ALT(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
+void __cdecl UnVQ1_C1_TABLE_ALT(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
 	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
 {
 	if (blocksperrow == 0) {
@@ -228,7 +182,7 @@ void __cdecl ASM_UnVQ1_C1_TABLE_ALT(unsigned char * codebook, unsigned char * po
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl ASM_UnVQ_4x2(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
+void __cdecl UnVQ_4x2(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
 	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
 {
 	if (blocksperrow == 0) {
@@ -277,7 +231,7 @@ void __cdecl ASM_UnVQ_4x2(unsigned char * codebook, unsigned char * pointers, un
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl ASM_UnVQ_4x4(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
+void __cdecl UnVQ_4x4(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
 	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
 {
 	if (blocksperrow == 0) {
@@ -329,7 +283,7 @@ void __cdecl ASM_UnVQ_4x4(unsigned char * codebook, unsigned char * pointers, un
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl ASM_UnVQ_4x4_HALF(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
+void __cdecl UnVQ_4x4_HALF(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
 	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
 {
 	if (blocksperrow == 0) {
@@ -383,7 +337,7 @@ void __cdecl ASM_UnVQ_4x4_HALF(unsigned char * codebook, unsigned char * pointer
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl ASM_UnVQ1_C1_4x4(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
+void __cdecl UnVQ1_C1_4x4(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
 	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
 {
 	if (blocksperrow == 0) {

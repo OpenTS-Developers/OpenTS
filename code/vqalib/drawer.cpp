@@ -185,7 +185,7 @@ long VQA_Configure_Drawer(VQAHandleP *vqap)
 		case BLOCK_4X2:
 			switch (header->ColorMode) {
 				case 0:
-					vqap->UnVQ1 = ASM_UnVQ_4x2;
+					vqap->UnVQ1 = UnVQ_4x2;
 
 					if (header->Flags & VQAHDF_TRANS) {
 						if (vqap->Config.DrawFlags & VQACFGF_NOTRANS) {
@@ -214,12 +214,12 @@ long VQA_Configure_Drawer(VQAHandleP *vqap)
 					break;
 
 				case 1:
-					vqap->UnVQ1 = ASM_UnVQ1_C1_4x4;
+					vqap->UnVQ1 = UnVQ1_C1_4x4;
 					vqap->UnVQ2 = UnVQ2_C1_4x4;
 					break;
 
 				case 0:
-					vqap->UnVQ1 = ASM_UnVQ_4x4;
+					vqap->UnVQ1 = UnVQ_4x4;
 
 					if (header->Flags & VQAHDF_TRANS) {
 						if (vqap->Config.DrawFlags & VQACFGF_NOTRANS) {
@@ -231,7 +231,7 @@ long VQA_Configure_Drawer(VQAHandleP *vqap)
 						}
 					} else {
 						if (vqap->Config.DrawFlags & VQACFGF_HALFSIZE) {
-							vqap->UnVQ1 = ASM_UnVQ_4x4_HALF;
+							vqap->UnVQ1 = UnVQ_4x4_HALF;
 						}
 					}
 					break;

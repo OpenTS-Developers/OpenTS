@@ -119,37 +119,37 @@ int main(void)
 		switch (test.Which) {
 			case 0:
 				Build_Pointers(test.Seed, entries, 2048, true, solid);
-				ASM_UnVQ1_C1_TABLE(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
+				UnVQ1_C1_TABLE(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
 				span = Span(test, 2, 4);
 				break;
 
 			case 1:
 				Build_Pointers(test.Seed, entries, 2048, true, solid);
-				ASM_UnVQ1_C1_TABLE_ALT(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
+				UnVQ1_C1_TABLE_ALT(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
 				span = Span(test, 2, 4);
 				break;
 
 			case 2:
 				Build_Pointers(test.Seed, entries, 8192, false, solid);
-				ASM_UnVQ_4x2(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
+				UnVQ_4x2(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
 				span = Span(test, 1, 2);
 				break;
 
 			case 3:
 				Build_Pointers(test.Seed, entries, 4096, false, solid);
-				ASM_UnVQ_4x4(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
+				UnVQ_4x4(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
 				span = Span(test, 1, 4);
 				break;
 
 			case 4:
 				Build_Pointers(test.Seed, entries, 4096, false, solid);
-				ASM_UnVQ_4x4_HALF(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
+				UnVQ_4x4_HALF(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
 				span = Span(test, 1, 2);
 				break;
 
 			default:
 				Build_Pointers(test.Seed, entries, 2048, true, solid);
-				ASM_UnVQ1_C1_4x4(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
+				UnVQ1_C1_4x4(Codebook, Pointers, DestStore, test.BlocksPerRow, test.NumRows, test.BufWidth);
 				span = Span(test, 2, 4);
 				break;
 		}

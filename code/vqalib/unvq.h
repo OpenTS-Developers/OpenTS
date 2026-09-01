@@ -84,27 +84,27 @@ void __cdecl UnVQ2_C0_4x2_KEY(unsigned char *codebook, unsigned char *pointers,
 #ifdef __cplusplus
 extern "C" {
 #endif
-void __cdecl ASM_UnVQ1_C1_TABLE(unsigned char *codebook, unsigned char *pointers,
+void __cdecl UnVQ1_C1_TABLE(unsigned char *codebook, unsigned char *pointers,
 		unsigned char *buffer, unsigned long blocksperrow,
 		unsigned long numrows, unsigned long bufwidth);
 
-void __cdecl ASM_UnVQ1_C1_TABLE_ALT(unsigned char *codebook, unsigned char *pointers,
+void __cdecl UnVQ1_C1_TABLE_ALT(unsigned char *codebook, unsigned char *pointers,
 		unsigned char *buffer, unsigned long blocksperrow,
 		unsigned long numrows, unsigned long bufwidth);
 
-void __cdecl ASM_UnVQ_4x2(unsigned char *codebook, unsigned char *pointers,
+void __cdecl UnVQ_4x2(unsigned char *codebook, unsigned char *pointers,
 		unsigned char *buffer, unsigned long blocksperrow,
 		unsigned long numrows, unsigned long bufwidth);
 
-void __cdecl ASM_UnVQ_4x4(unsigned char *codebook, unsigned char *pointers,
+void __cdecl UnVQ_4x4(unsigned char *codebook, unsigned char *pointers,
 		unsigned char *buffer, unsigned long blocksperrow,
 		unsigned long numrows, unsigned long bufwidth);
 
-void __cdecl ASM_UnVQ_4x4_HALF(unsigned char *codebook, unsigned char *pointers,
+void __cdecl UnVQ_4x4_HALF(unsigned char *codebook, unsigned char *pointers,
 		unsigned char *buffer, unsigned long blocksperrow,
 		unsigned long numrows, unsigned long bufwidth);
 
-void __cdecl ASM_UnVQ1_C1_4x4(unsigned char *codebook, unsigned char *pointers,
+void __cdecl UnVQ1_C1_4x4(unsigned char *codebook, unsigned char *pointers,
 		unsigned char *buffer, unsigned long blocksperrow,
 		unsigned long numrows, unsigned long bufwidth);
 

@@ -495,9 +495,9 @@ int VQAClass::Play_VQA(int last_frame_to_play, bool nobreakout)
 		if (cmode == 1) {
 			Hicolor_Init_Table(PrimaryColorMode);
 			if (Get_Option(OPTION_ALTERNATE_UNVQ)) {
-				VQA_SetUnVQ(Handle, ASM_UnVQ1_C1_TABLE_ALT, UnVQ2_4x2_Table);
+				VQA_SetUnVQ(Handle, UnVQ1_C1_TABLE_ALT, UnVQ2_4x2_Table);
 			} else {
-				VQA_SetUnVQ(Handle, ASM_UnVQ1_C1_TABLE, UnVQ2_4x4_Table);
+				VQA_SetUnVQ(Handle, UnVQ1_C1_TABLE, UnVQ2_4x4_Table);
 			}
 		} else if (cmode == 4) {
 			Hicolor_Init_Table(PrimaryColorMode);
@@ -629,7 +629,7 @@ bool VQAClass::Advance_Frame(bool & finished)
 			if (cmode == 1 || cmode == 4) {
 				Hicolor_Init_Table(PrimaryColorMode);
 				if (cmode == 1) {
-					VQA_SetUnVQ(Handle, ASM_UnVQ1_C1_TABLE, UnVQ2_4x4_Table);
+					VQA_SetUnVQ(Handle, UnVQ1_C1_TABLE, UnVQ2_4x4_Table);
 				}
 			}
 		}
