@@ -20,12 +20,15 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_subdirectory(bgfx.cmake)
 
+# These libraries support the disabled texture tools and are not linked into OpenTS.
+set_target_properties(bimg_decode bimg_encode PROPERTIES EXCLUDE_FROM_ALL TRUE)
+
 if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     # bx treats Clang with the MSVC CRT like a non-x86 compiler and erases
     # __stdcall. Restore it before Windows declarations are parsed.
     foreach(target bx bimg bgfx)
         target_compile_options(${target} PRIVATE
-            "$<$<COMPILE_LANGUAGE:CXX>:/FI${PROJECT_SOURCE_DIR}/cmake/clang-compat.h>"
+            "$<$<COMPILE_LANGUAGE:CXX>:/FI${PROJECT_SOURCE_DIR}/thirdparty/bx-clang-compat.h>"
         )
     endforeach()
 
@@ -33,6 +36,4 @@ if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     # but that intrinsic is unavailable for the Win32 target. Its SSE2 path is portable.
     target_compile_definitions(bimg PRIVATE ASTCENC_POPCNT=0 ASTCENC_SSE=20)
 
-    # These libraries support the disabled texture tools and are not linked into OpenTS.
-    set_target_properties(bimg_decode bimg_encode PROPERTIES EXCLUDE_FROM_ALL TRUE)
 endif()

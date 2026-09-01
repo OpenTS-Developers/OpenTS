@@ -183,7 +183,7 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" PROPER
 # MSVC standard-library headers that follow still see the Win32 calling convention.
 if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
-        COMPILE_OPTIONS "/FI${CMAKE_SOURCE_DIR}/cmake/clang-compat.h"
+        COMPILE_OPTIONS "/FI${CMAKE_SOURCE_DIR}/thirdparty/bx-clang-compat.h"
     )
 endif()
 
