@@ -28,8 +28,9 @@ CStreamClass::CStreamClass(void) :
 	IsWriting(false),
 	CurOffset(0),
 	DataBuffer(new unsigned char[BUFFER_SIZE]),
-	StreamBuffer(new unsigned char[BUFFER_SIZE]),
-	LZODictionary(new unsigned char[BUFFER_SIZE])
+	StreamBuffer(new unsigned char[COMP_BUFFER_SIZE]),
+	// The dictionary holds pointer-wide entries, so its byte size follows the target.
+	LZODictionary(new unsigned char[LZO1X_MEM_COMPRESS])
 {
 	BlockHead.CompSize = BUFFER_SIZE - 1;
 }
@@ -490,7 +491,9 @@ HRESULT CStreamClass::Compress(void *in_buffer, ULONG length)
 	HRESULT hr;
 	unsigned int out_len = length;
 	lzo1x_1_compress((lzo_byte *)in_buffer, length, (lzo_byte *)StreamBuffer, &out_len, (lzo_byte *)LZODictionary);
-	BlockHead.UncompSize = BUFFER_SIZE;
+	// The final block of a stream is usually partial, and the reader takes this
+	// header as the number of bytes the block expands to.
+	BlockHead.UncompSize = length;
 	length = 0;
 	BlockHead.CompSize = out_len;
 
