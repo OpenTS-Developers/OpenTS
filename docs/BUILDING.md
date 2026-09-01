@@ -88,7 +88,7 @@ cmake --build build/clang-cl
 ```
 
 The toolchain requires `clang-cl`, `lld-link`, `llvm-lib`, `llvm-mt`, `llvm-rc`,
-and `uasm` on `PATH`. It exports `compile_commands.json`;
+and `uasm` on `PATH`. It exports `compile_commands.json`; one configuration in
 `.vscode/c_cpp_properties.clang.example.json` reads that file for IntelliSense.
 
 ## Build from Visual Studio Code
