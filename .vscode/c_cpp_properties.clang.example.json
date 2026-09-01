@@ -1,50 +1,72 @@
 {
-    // Copy this file to c_cpp_properties.json and adjust these paths if needed.
+    // Copy this file to c_cpp_properties.json and launch VS Code from a Visual Studio
+    // Developer Command Prompt so the selected toolset and SDK are available.
     "env": {
         // LLVM installed with its default Windows installer location.
         "CLANG_CL_PATH": "${env:ProgramFiles}/LLVM/bin/clang-cl.exe",
-        // Visual Studio 2022 Community. Change the edition or installation path as needed.
-        "MSVC_ROOT": "${env:ProgramFiles}/Microsoft Visual Studio/2022/Community",
-        "MSVC_VERSION": "14.44.35207",
-        // The Windows SDK is normally installed under Program Files (x86).
-        "WINDOWS_SDK_ROOT": "${env:ProgramFiles(x86)}/Windows Kits/10",
-        "WINDOWS_SDK_VERSION": "10.0.26100.0",
+        "MSVC_TOOLS_DIR": "${env:VCToolsInstallDir}",
+        "WINDOWS_SDK_INCLUDE_DIR": "${env:WindowsSdkDir}/Include/${env:WindowsSDKVersion}",
         // Set this to the CMake binary directory used for the clang-cl build.
-        "CLANG_BUILD_DIR": "${workspaceFolder}/build/clang-cl"
+        "CLANG_BUILD_DIR": "${workspaceFolder}/build/clang-cl",
+        "CLANG_COMPILER_ARGS": [
+            "--target=i686-pc-windows-msvc",
+            "/clang:-fms-compatibility-version=19.44"
+        ],
+        "CLANG_INCLUDE_PATH": [
+            "${workspaceFolder}/code",
+            "${workspaceFolder}/code/vqalib",
+            "${workspaceFolder}/thirdparty/**",
+            "${CLANG_BUILD_DIR}/generated",
+            "${MSVC_TOOLS_DIR}/include",
+            "${MSVC_TOOLS_DIR}/atlmfc/include",
+            "${WINDOWS_SDK_INCLUDE_DIR}/ucrt",
+            "${WINDOWS_SDK_INCLUDE_DIR}/shared",
+            "${WINDOWS_SDK_INCLUDE_DIR}/um",
+            "${WINDOWS_SDK_INCLUDE_DIR}/winrt",
+            "${WINDOWS_SDK_INCLUDE_DIR}/cppwinrt"
+        ],
+        "CLANG_DEFINES": [
+            "WIN32",
+            "_WIN32",
+            "_WINDOWS",
+            "_MBCS",
+            "NOMINMAX",
+            "NO_BLOWFISH_DLL"
+        ]
     },
     "configurations": [
         {
-            "name": "Win32 clang-cl with MSVC headers",
+            "name": "Win32 clang-cl Debug",
+            // Do not let the workspace's Visual Studio CMake provider override this configuration.
+            "configurationProvider": "",
             "compilerPath": "${CLANG_CL_PATH}",
-            "compilerArgs": [
-                "--target=i686-pc-windows-msvc",
-                "/clang:-fms-compatibility-version=19.44"
-            ],
+            "compilerArgs": ["${CLANG_COMPILER_ARGS}"],
             "intelliSenseMode": "windows-clang-x86",
             "cStandard": "c17",
             "cppStandard": "c++20",
-            "includePath": [
-                "${workspaceFolder}/code",
-                "${workspaceFolder}/code/vqalib",
-                "${workspaceFolder}/thirdparty/**",
-                "${CLANG_BUILD_DIR}/generated",
-                "${MSVC_ROOT}/VC/Tools/MSVC/${MSVC_VERSION}/include",
-                "${MSVC_ROOT}/VC/Tools/MSVC/${MSVC_VERSION}/atlmfc/include",
-                "${WINDOWS_SDK_ROOT}/Include/${WINDOWS_SDK_VERSION}/ucrt",
-                "${WINDOWS_SDK_ROOT}/Include/${WINDOWS_SDK_VERSION}/shared",
-                "${WINDOWS_SDK_ROOT}/Include/${WINDOWS_SDK_VERSION}/um",
-                "${WINDOWS_SDK_ROOT}/Include/${WINDOWS_SDK_VERSION}/winrt",
-                "${WINDOWS_SDK_ROOT}/Include/${WINDOWS_SDK_VERSION}/cppwinrt"
-            ],
-            "defines": [
-                "WIN32",
-                "_WIN32",
-                "_WINDOWS",
-                "_MBCS",
-                "NOMINMAX",
-                "NO_BLOWFISH_DLL",
-                "BX_CONFIG_DEBUG=0"
-            ]
+            "includePath": ["${CLANG_INCLUDE_PATH}"],
+            "defines": ["${CLANG_DEFINES}", "_DEBUG", "BX_CONFIG_DEBUG=1"]
+        },
+        {
+            "name": "Win32 clang-cl Release",
+            // Do not let the workspace's Visual Studio CMake provider override this configuration.
+            "configurationProvider": "",
+            "compilerPath": "${CLANG_CL_PATH}",
+            "compilerArgs": ["${CLANG_COMPILER_ARGS}"],
+            "intelliSenseMode": "windows-clang-x86",
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "includePath": ["${CLANG_INCLUDE_PATH}"],
+            "defines": ["${CLANG_DEFINES}", "NDEBUG", "BX_CONFIG_DEBUG=0"]
+        },
+        {
+            "name": "Win32 clang-cl compilation database",
+            // Configure the clang-cl Ninja build before selecting this configuration.
+            "configurationProvider": "",
+            "compileCommands": "${CLANG_BUILD_DIR}/compile_commands.json",
+            "intelliSenseMode": "windows-clang-x86",
+            "cStandard": "c17",
+            "cppStandard": "c++20"
         }
     ],
     "version": 4
