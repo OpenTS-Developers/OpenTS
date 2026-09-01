@@ -684,6 +684,7 @@ int main(void)
 			"Name=Alpha\n"
 			"Side=0\n"
 			"Color=3\n"
+			"Port=50000\n"
 			"\n"
 			"[Other1]\n"
 			"Name=Bravo\n"
@@ -696,6 +697,102 @@ int main(void)
 			"Port=50010\n";
 		Check(Judge(tunnelled, sizeof(tunnelled) - 1, 2, 8, fault),
 			"a tunnelled machine is named by its number rather than an address");
+
+		/*
+		 * A client that runs the tunnel beside the game points the match at the loopback
+		 * address, so that is an address like any other.
+		 */
+		char const bridged[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=48000\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Port=47999\n"
+			"\n"
+			"[Tunnel]\n"
+			"Ip=127.0.0.1\n"
+			"Port=48000\n";
+		Check(Judge(bridged, sizeof(bridged) - 1, 2, 8, fault),
+			"a tunnel beside the game is reached like any other");
+
+		char const strange_tunnel[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=50000\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Port=50002\n"
+			"\n"
+			"[Tunnel]\n"
+			"Ip=88.99.11\n"
+			"Port=50010\n";
+		Check(!Judge(strange_tunnel, sizeof(strange_tunnel) - 1, 2, 8, fault),
+			"a tunnel at an address naming no machine is refused");
+
+		char const wide_tunnel_port[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=50000\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Port=50002\n"
+			"\n"
+			"[Tunnel]\n"
+			"Ip=88.99.11.22\n"
+			"Port=65536\n";
+		Check(!Judge(wide_tunnel_port, sizeof(wide_tunnel_port) - 1, 2, 8, fault),
+			"a tunnel port too wide to carry is refused rather than cut down");
+
+		char const wide_tunnel_number[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=70000\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Port=50002\n"
+			"\n"
+			"[Tunnel]\n"
+			"Ip=88.99.11.22\n"
+			"Port=50010\n";
+		Check(!Judge(wide_tunnel_number, sizeof(wide_tunnel_number) - 1, 2, 8, fault),
+			"a tunnel number too wide to carry is refused rather than cut down");
+
+		char const wide_listen_port[] =
+			"[Settings]\n"
+			"Name=Alpha\n"
+			"Side=0\n"
+			"Color=3\n"
+			"Port=70000\n"
+			"\n"
+			"[Other1]\n"
+			"Name=Bravo\n"
+			"Side=1\n"
+			"Color=5\n"
+			"Ip=10.0.0.9\n"
+			"Port=50002\n";
+		Check(!Judge(wide_listen_port, sizeof(wide_listen_port) - 1, 2, 8, fault),
+			"a listening port too wide to bind is refused rather than cut down");
 
 		char const one_kept_name[] =
 			"[Settings]\n"

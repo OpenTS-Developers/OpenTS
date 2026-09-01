@@ -146,6 +146,11 @@ When a `[Tunnel]` section names a server, the match is played through it; otherw
 machine is reached straight at the address its section carries, while this machine listens
 on the port its own `Port` key names.
 
+A tunnel server may run beside the game rather than across the internet, in which case
+`[Tunnel] Ip` is the loopback address. The tunnel's port and the number it knows this
+machine by are both carried as sixteen-bit values, so each must fall between `1` and
+`65535`.
+
 ## When something is wrong
 
 A file describing a game that cannot be played is refused: the reason is shown and written
@@ -161,9 +166,14 @@ when it
 - allies a seat with one the match does not hold;
 - asks for a seat that watches rather than plays.
 
-A match against other machines is refused as well when a person is left unnamed, when two
-are named the same or given one color, and when a machine other than this one is given no
-port to answer on or no address to answer at.
+A match against other machines is refused as well when
+
+- a person is left unnamed, or two are named the same or given one color;
+- a machine other than this one is given no port to answer on or no address to answer at;
+- a `[Tunnel]` section carries no address, or one that names no machine;
+- `[Tunnel] Port`, or the `[Settings] Port` the tunnel knows this machine by, falls outside
+  `1` to `65535`;
+- `[Settings] Port` falls outside `1` to `65535` when no tunnel carries the match.
 
 A difficulty easier than the three the game has is not refused: the seat is played as the
 easiest opponent the game does have. The two run opposite ways: the easiest opponent plays

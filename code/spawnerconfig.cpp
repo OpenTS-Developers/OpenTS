@@ -331,6 +331,31 @@ bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fa
 			AIPlayers, free_seats));
 	}
 
+	/*
+	 * These reach the network as sixteen bit values, so a wider number would be truncated
+	 * without a word.
+	 */
+	if (multiplayer) {
+		if (TunnelPort != 0) {
+			if (TunnelPort < 1 || TunnelPort > 65535) {
+				return(Fault(fault, "The tunnel is reached on port %d, which names no machine.",
+					TunnelPort));
+			}
+
+			if (!Is_Address(TunnelAddress)) {
+				return(Fault(fault, "The tunnel is reached at %s, which names no machine.",
+					TunnelAddress.c_str()));
+			}
+
+			if (TunnelId < 1 || TunnelId > 65535) {
+				return(Fault(fault, "The tunnel knows this machine as %d, which is not a tunnel number.",
+					TunnelId));
+			}
+		} else if (ListenPort < 1 || ListenPort > 65535) {
+			return(Fault(fault, "This machine listens on port %d, which is not a port.", ListenPort));
+		}
+	}
+
 	for (int index = 0; index < SLOT_COUNT; index++) {
 		SlotType const & slot = Slots[index];
 		if (slot.Occupancy == OccupancyType::Empty) {
