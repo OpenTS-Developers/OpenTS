@@ -49,7 +49,7 @@ namespace
 				}
 				LastSend = now;
 				TransmissionCount++;
-				Estimator.Note_Retransmit(BaseRto, now);
+				Estimator.Note_Retransmit(BaseRto);
 				return(true);
 			}
 
@@ -286,39 +286,7 @@ namespace
 		Expect_Equal("recovered smoothed RTT", transport.Rtt().Smoothed_Rtt(), 71u);
 		Expect_Equal("recovered variation", transport.Rtt().Rtt_Variation(), 126u);
 		Expect_Equal("recovered RTO covers the slower link", transport.Rtt().Retransmit_Timeout(), 575u);
-		Expect("recovered estimate is fresh", transport.Rtt().Has_Fresh_Sample(4500));
-	}
-
-
-	void Test_Sample_Staleness(void)
-	{
-		using namespace NetTiming;
-
-		RttEstimator idle;
-		Expect("unsampled estimator is never fresh", !idle.Has_Fresh_Sample(0));
-		idle.Add_Sample(100);
-		Expect("quiet link stays fresh indefinitely", idle.Has_Fresh_Sample(1000000));
-
-		RttEstimator starved;
-		starved.Add_Sample(100);
-		starved.Note_Retransmit(starved.Retransmit_Timeout(), 1000);
-		Expect("estimate is fresh before the lifetime", starved.Has_Fresh_Sample(1000 + RTT_SAMPLE_LIFETIME - 1));
-		Expect("estimate is stale at the lifetime", !starved.Has_Fresh_Sample(1000 + RTT_SAMPLE_LIFETIME));
-		Expect("stale estimate still paces retries", starved.Has_Sample());
-
-		FakeClock clock;
-		clock.Set(9500);
-		Expect("clean ACK restores the estimate", starved.Acknowledge(9400, 1, clock));
-		Expect("restored estimate is fresh again", starved.Has_Fresh_Sample(1000000));
-
-		starved.Reset();
-		Expect("reset clears freshness", !starved.Has_Fresh_Sample(0));
-
-		RttEstimator wrapped;
-		wrapped.Add_Sample(100);
-		wrapped.Note_Retransmit(wrapped.Retransmit_Timeout(), 0xfffff000u);
-		Expect("freshness survives the clock wrap", wrapped.Has_Fresh_Sample(0));
-		Expect("staleness is measured across the wrap", !wrapped.Has_Fresh_Sample(0x00001000u));
+		Expect("recovered estimate is measured", transport.Rtt().Has_Sample());
 	}
 
 
@@ -327,27 +295,27 @@ namespace
 		using namespace NetTiming;
 
 		RttEstimator unsampled;
-		unsampled.Note_Retransmit(MINIMUM_RTO, 1000);
+		unsampled.Note_Retransmit(MINIMUM_RTO);
 		Expect("retransmission does not invent a sample", !unsampled.Has_Sample());
 		Expect_Equal("unsampled RTO is unchanged", unsampled.Retransmit_Timeout(), MINIMUM_RTO);
 
 		RttEstimator ceiling;
 		ceiling.Add_Sample(300);
 		Expect_Equal("sampled RTO", ceiling.Retransmit_Timeout(), 900u);
-		ceiling.Note_Retransmit(900, 1000);
+		ceiling.Note_Retransmit(900);
 		Expect_Equal("backoff doubles below the ceiling", ceiling.Retransmit_Timeout(), 1800u);
-		ceiling.Note_Retransmit(1800, 2000);
+		ceiling.Note_Retransmit(1800);
 		Expect_Equal("backoff clamps at the ceiling", ceiling.Retransmit_Timeout(), MAXIMUM_RTO);
-		ceiling.Note_Retransmit(MAXIMUM_RTO, 3000);
+		ceiling.Note_Retransmit(MAXIMUM_RTO);
 		Expect_Equal("backoff stays at the ceiling", ceiling.Retransmit_Timeout(), MAXIMUM_RTO);
 
 		// A packet captured during backoff can double a freshly lowered RTO once.
 		RttEstimator recovered;
 		recovered.Add_Sample(300);
-		recovered.Note_Retransmit(900, 1000);
+		recovered.Note_Retransmit(900);
 		recovered.Add_Sample(300);
 		Expect_Equal("clean sample lowers the RTO", recovered.Retransmit_Timeout(), 752u);
-		recovered.Note_Retransmit(1800, 2000);
+		recovered.Note_Retransmit(1800);
 		Expect_Equal("stale capture doubles the RTO once", recovered.Retransmit_Timeout(), 1504u);
 	}
 }
@@ -361,7 +329,6 @@ int main(void)
 	Test_Retry_Decisions();
 	Test_Loss_Jitter_And_Reordering();
 	Test_Backoff_Persistence();
-	Test_Sample_Staleness();
 	Test_Note_Retransmit_Guards();
 
 	if (Failures != 0) {

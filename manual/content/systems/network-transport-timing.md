@@ -22,6 +22,5 @@ per retransmission proven against the current value. This keeps a link whose
 latency has risen above its timeout measurable, because every packet would
 otherwise be retransmitted before its acknowledgement arrived and no
 unambiguous sample could be taken. The next clean acknowledgement recomputes the
-timeout from the measured latency. An estimate that has gone 8 seconds of
-retransmissions without such an acknowledgement is treated as stale while still
-pacing retries.
+timeout from the measured latency; until then the estimate keeps its last
+measured value while pacing retries.
