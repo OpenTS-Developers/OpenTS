@@ -46,6 +46,12 @@ every machine. Replacement targets rebase this process; local connection
 teardown does not transfer authority. Accepted removal selects the first
 remaining human, which inherits the target and restarts the cooldown.
 
+Frame pacing follows the desired frame rate alone. The inherited slowdown that
+stretched every frame by up to 30 ms while a player's newest frame packet
+looked a quarter of the look-ahead old is gone: at the adaptive send periods
+that packet is always at least that old, so the slowdown ran on every frame
+and held the game well under its frame rate on an idle link.
+
 ## Player feedback
 
 The disabled Connection slider shows the effective send-period rung. Rungs 1–2

@@ -268,28 +268,6 @@ bool Main_Loop(void)
 			FrameTimer = framedelay;
 			framedelay = 1000 / Session.DesiredFrameRate;
 			NetFrameTimer = framedelay;
-
-			int maxahead = Session.MaxAhead;
-			int worst_latency = 0;
-			if (Session.Type == GAME_INTERNET) {
-				for (int i = 0; i < Ipx.Num_Connections(); i++) {
-					if (worst_latency <= Session.PlayerLatency[i]) {
-						worst_latency = Session.PlayerLatency[i];
-					}
-				}
-
-				if (worst_latency) {
-					if (worst_latency >= maxahead / 4) {
-						NetFrameTimer = NetFrameTimer + 10;
-					}
-					if (worst_latency >= maxahead / 2) {
-						NetFrameTimer = NetFrameTimer + 10;
-					}
-					if (worst_latency >= (3 * maxahead) / 4) {
-						NetFrameTimer = NetFrameTimer + 10;
-					}
-				}
-			}
 		}
 	} else {
 		FrameTimer = Options.GameSpeed;
