@@ -12,6 +12,7 @@ set(OPENTS_VERSION_PRERELEASE "")
 option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared version" OFF)
 
 option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF)
+option(OPENTS_EXPERIMENTAL_NATIVE "Configure a native build for the host platform" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
    AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
@@ -24,14 +25,20 @@ elseif(MSVC)
     if(MSVC_VERSION LESS 1930)
         message(FATAL_ERROR "OpenTS requires MSVC 19.30 or newer.")
     endif()
+elseif(OPENTS_EXPERIMENTAL_NATIVE)
+    message(STATUS "OpenTS: configuring an unsupported native build for the host platform.")
 else()
     message(FATAL_ERROR
         "OpenTS requires the Visual Studio 2022 MSVC toolchain. "
         "For the unsupported clang-cl experiment, configure with "
-        "-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/clang-cl-msvc.cmake.")
+        "-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/clang-cl-msvc.cmake. "
+        "For the unsupported native build, configure with "
+        "-DOPENTS_EXPERIMENTAL_NATIVE=ON.")
 endif()
 
-enable_language(RC)
+if(WIN32)
+    enable_language(RC)
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
