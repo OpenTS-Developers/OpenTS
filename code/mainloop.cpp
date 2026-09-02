@@ -287,9 +287,6 @@ bool Main_Loop(void)
 			}
 			Update_Fogged_Objects();
 			Map.Render();
-			if (Session.ShowInternetDebug) {
-				Multiplayer_Debug_Print();
-			}
 		}
 	}
 
@@ -727,34 +724,30 @@ void Multiplayer_Debug_Print(void)
 		return;
 	}
 
-	Hide_Mouse();
-
-	int const top = VisibleSurface->Get_Height() - 80;
-	VisibleSurface->Fill_Rect(Rect(0, top, VisibleSurface->Get_Width(), 80), 0);
+	int const top = LogicalSurface->Get_Height() - 80;
+	LogicalSurface->Fill_Rect(Rect(0, top, LogicalSurface->Get_Width(), 80), 0);
 
 	char buffer[256];
 
 	sprintf(buffer, "Frame : %d", Frame);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 2), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 2), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "FPS : %d", LastFramesPerSecond);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 10), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 10), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "MaxAhead : %d", Session.MaxAhead);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 18), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 18), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "Resp Time : %d ms", (int)(Ipx.Response_Time() * 1000) / TIMER_SECOND);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 26), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 26), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "Req fps : %d", Session.DesiredFrameRate);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 34), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 34), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "Process : %d", Session.Players[0]->Player.ProcessTime);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 42), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 42), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	Ipx.Multiplayer_Debug_Print(top);
-
-	Show_Mouse();
 }
 
 
