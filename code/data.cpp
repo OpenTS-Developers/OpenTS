@@ -39,7 +39,7 @@
 
 #include "utf8.h"
 
-#include <new.h>
+#include <new>
 
 HINSTANCE LanguageResources;
 
