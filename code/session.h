@@ -492,7 +492,8 @@ class SessionClass
 		int Master_Player_ID(void) const;
 		bool Is_Network_Timing_Player_Active(int id) const;
 		void Reset_Network_Timing(unsigned int frame);
-		bool Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int frame);
+		bool Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int stall_milliseconds,
+			unsigned int frame);
 		void Remove_Network_Timing_Player(int id, unsigned int frame);
 		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
 		NetTiming::TimingEvaluation Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame);
@@ -589,6 +590,9 @@ class SessionClass
 		int			ProcessTimer;
 		int			ProcessTicks;
 		int			ProcessFrames;
+		// Longest single wait for other players in ticks; reports cover two intervals.
+		int			WorstStallTicks;
+		int			PreviousWorstStallTicks;
 
 		/*
 		 * This is the largest MaxAhead the game has run at, since the value only ever grows.

@@ -15,8 +15,9 @@ per-link RTT and retry behavior belongs to
 ## Adaptive policy
 
 Compressed matches begin at `2/6`: a two-frame send period and six-frame
-look-ahead. Each player reports process time and optional worst-local RTT after
-32 and 64 frames, then every 128 frames. A player omits the RTT while any of its
+look-ahead. Each player reports process time, its longest wait for other
+players, and optional worst-local RTT after 32 and 64 frames, then every
+128 frames. A player omits the RTT while any of its
 links has no [clean measurement](/systems/network-transport-timing/); a link
 keeps reporting its last measurement while it retransmits. The deterministic
 master evaluates at 64 and 128 frames, then every 256 frames.
@@ -31,10 +32,11 @@ clears that player's report.
 
 The first complete census may select its measured target with 20% headroom.
 Incomplete bootstrap falls back to `3/9` after 128 frames. Later worsening is
-immediate. The first improvement needs three evaluations with 20% headroom;
-while the headroom persists, each following evaluation steps one more rung. A
-worsening or an evaluation without headroom restores the three-evaluation
-requirement.
+immediate. The first improvement needs three evaluations with 20% headroom and
+no wait of 0.1 s or longer within any player's last two report intervals;
+while both hold, each following evaluation steps one more rung. A worsening or
+an evaluation without headroom or with such a wait restores the
+three-evaluation requirement.
 
 Timing decreases activate only after the old horizon drains on a frame aligned
 to both send periods. They switch rate with temporary look-ahead, then remove

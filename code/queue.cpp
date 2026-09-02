@@ -1443,6 +1443,9 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 
 	}	/* end of while */
 
+	if (!first_time && (int)timer > Session.WorstStallTicks) {
+		Session.WorstStallTicks = (int)timer;
+	}
 	if (reconnect_dlg) {
 		Close_Reconnect_Dialog();
 	}
@@ -1505,7 +1508,7 @@ static void Generate_Real_Timing_Event(void)
 }
 
 
-/// <summary>Queues the local process-time and worst-RTT report.</summary>
+/// <summary>Queues the local process-time, waiting-time and worst-RTT report.</summary>
 static void Generate_Network_Report_Event(ConnManClass *net)
 {
 	if (Session.ProcessFrames <= 0) {
@@ -1522,10 +1525,15 @@ static void Generate_Network_Report_Event(ConnManClass *net)
 	event.Data.NetworkReport.AverageProcessMilliseconds = static_cast<std::uint16_t>(average_process_milliseconds);
 	event.Data.NetworkReport.WorstRoundTripMilliseconds = !worst_round_trip || *worst_round_trip >= EventClass::NETWORK_RTT_UNAVAILABLE
 		? EventClass::NETWORK_RTT_UNAVAILABLE : static_cast<std::uint16_t>(*worst_round_trip);
+	// Evaluations run every other report, so each report covers the last two intervals.
+	int const worst_stall_ticks = std::max(Session.WorstStallTicks, Session.PreviousWorstStallTicks);
+	event.Data.NetworkReport.StallMilliseconds = static_cast<std::uint16_t>(std::clamp(worst_stall_ticks * 1000 / TIMER_SECOND, 0, 65535));
 	OutList.push_back(event);
 
 	Session.ProcessTicks = 0;
 	Session.ProcessFrames = 0;
+	Session.PreviousWorstStallTicks = Session.WorstStallTicks;
+	Session.WorstStallTicks = 0;
 }
 
 

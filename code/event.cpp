@@ -1383,7 +1383,7 @@ void EventClass::Execute(void)
 			// A recording started without a roster has nobody to attribute reports to.
 			if ((Session.CommProtocol != COMM_PROTOCOL_MULTI_E_COMP || Frame < 0
 				|| !Session.Record_Network_Report(ID, Data.NetworkReport.AverageProcessMilliseconds,
-					Data.NetworkReport.WorstRoundTripMilliseconds, static_cast<unsigned int>(Frame)))
+					Data.NetworkReport.WorstRoundTripMilliseconds, Data.NetworkReport.StallMilliseconds, static_cast<unsigned int>(Frame)))
 				&& !Session.Play) {
 				Log_Event_Rejection(EventRejectReason::InvalidNetworkReport, Type, ID, Data.NetworkReport.WorstRoundTripMilliseconds);
 			}
