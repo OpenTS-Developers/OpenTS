@@ -152,7 +152,9 @@ match against other machines is a seed like any other rather than a draw from ch
 
 When a `[Tunnel]` section names a server, the match is played through it; otherwise each
 machine is reached straight at the address its section carries, while this machine listens
-on the port its own `Port` key names.
+on the port its own `Port` key names. Loading progress reaches the other machines with the
+in-game retry cadence: a second between retries and ten seconds before a report is given
+up.
 
 A tunnel server may run beside the game rather than across the internet, in which case
 `[Tunnel] Ip` is the loopback address. The tunnel's port and the number it knows this

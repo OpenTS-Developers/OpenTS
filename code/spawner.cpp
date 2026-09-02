@@ -34,6 +34,7 @@
 #include "savever.h"
 #include "scenario.h"
 #include "session.h"
+#include "stimer.h"
 
 #include <algorithm>
 #include <cstdarg>
@@ -303,6 +304,10 @@ static bool Spawner_Wire_Network(void)
 	if (!Ipx.Init()) {
 		return(Spawner_Refuse("The network could not be opened."));
 	}
+
+	// Loading-screen progress goes out before the in-game timing is set, and the manager's
+	// default 33 ms retry floods a slow link.
+	Ipx.Set_Timing(TIMER_SECOND, (unsigned int)-1, 10 * TIMER_SECOND);
 
 	return(true);
 }
