@@ -383,7 +383,9 @@ namespace NetTiming
 				result.WorstRoundTrip = std::max(result.WorstRoundTrip, report.RoundTrip);
 			} else {
 				result.RoundTripComplete = false;
-				if (report.EverHadRoundTrip || frame - report.ActiveSinceFrame >= REPORT_EXPIRY) {
+				// Only a link that has never been measured forces conservative timing; a measured
+				// link holds the current timing until its next report.
+				if (!report.EverHadRoundTrip && frame - report.ActiveSinceFrame >= REPORT_EXPIRY) {
 					result.RequiresConservativeTiming = true;
 				}
 			}
@@ -493,7 +495,17 @@ namespace NetTiming
 		LastEvaluationFrame = frame;
 		result.Evaluated = true;
 		if (!census.RequiresConservativeTiming && census.ActivePlayers > 0 && !census.RoundTripComplete) {
+			// A lapsed report holds the current timing, but the reports that did arrive can still worsen it.
 			GoodEvaluations = 0;
+			if (census.FreshRoundTripReports > 0) {
+				TimingSettings const desired_settings = Desired_Settings(census, target_fps, false);
+				if (Timing_Is_Worse(desired_settings, CurrentSettings)) {
+					Change_To(desired_settings, frame);
+					result.Changed = true;
+					result.Settings = Current_Settings();
+					result.Rung = CurrentRung;
+				}
+			}
 			return(result);
 		}
 

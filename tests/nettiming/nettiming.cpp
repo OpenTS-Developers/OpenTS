@@ -416,7 +416,7 @@ namespace
 		result = census.Inspect(100 + REPORT_EXPIRY);
 		Expect("process reports expire on boundary", !result.ProcessComplete);
 		Expect("RTT reports expire on boundary", !result.RoundTripComplete);
-		Expect("established RTT expiry is conservative", result.RequiresConservativeTiming);
+		Expect("expired established RTT holds instead of forcing conservative timing", !result.RequiresConservativeTiming);
 		Expect_Equal("expired process reports not fresh", result.FreshProcessReports, 0u);
 		Expect_Equal("expired RTT reports not fresh", result.FreshRoundTripReports, 0u);
 		Expect_Equal("expired process time excluded", result.WorstProcessMilliseconds, 0u);
@@ -433,7 +433,7 @@ namespace
 		result = census.Inspect(701);
 		Expect("unavailable RTT retains fresh process time", result.ProcessComplete && result.FreshProcessReports == 1);
 		Expect("established unavailable RTT is incomplete", !result.RoundTripComplete);
-		Expect("established unavailable RTT is immediately conservative", result.RequiresConservativeTiming);
+		Expect("established unavailable RTT is not conservative", !result.RequiresConservativeTiming);
 
 		TimingReportCensus grace;
 		Expect("activate grace peer", grace.Set_Player_Active(3, true, 1000));
@@ -618,7 +618,7 @@ namespace
 		Expect("initial missing RTT keeps bootstrap open", result.Evaluated && !result.Changed && lost.Is_Bootstrapping());
 		lost_reports.Record_Report(1, 10, std::nullopt, 70);
 		result = lost.Evaluate(lost_reports.Inspect(128), 60, 128);
-		Expect("established RTT loss remains immediately conservative", result.Changed && lost.Current_Settings() == TimingSettings{10, 250});
+		Expect("established RTT loss during bootstrap falls back to 3/9", result.Changed && lost.Current_Settings() == TimingSettings{3, 9});
 
 		for (std::uint32_t frame : {256u, 512u, 768u}) {
 			Record_One(high_reports, 0, frame);
@@ -719,15 +719,30 @@ namespace
 		stale.Record_Report(1, 10, 100, 256);
 		stale_policy.Evaluate(stale.Inspect(256), 60, 256);
 		result = stale_policy.Evaluate(stale.Inspect(256 + REPORT_EXPIRY), 60, 256 + REPORT_EXPIRY);
-		Expect("established stale report worsens policy", result.Changed);
-		Expect_Equal("established stale report chooses worst rung", stale_policy.Current_Rung(), 10u);
-		Expect_Equal("established stale report chooses conservative horizon", stale_policy.Current_Settings().MaxAhead, MAXIMUM_MAX_AHEAD);
+		Expect("expired established report holds the current timing", result.Evaluated && !result.Changed);
+		Expect_Equal("expired established report keeps the rung", stale_policy.Current_Rung(), 3u);
+		Expect_Equal("expired established report discards improvement evidence", stale_policy.Good_Evaluations(), 0u);
 
 		stale.Set_Player_Active(1, false, 1024);
 		for (std::uint32_t frame : {1024u, 1280u, 1536u}) {
 			stale_policy.Evaluate(stale.Inspect(frame), 60, frame);
 		}
-		Expect_Equal("departed peer allows recovery", stale_policy.Current_Rung(), 9u);
+		Expect_Equal("departed peer allows recovery", stale_policy.Current_Rung(), 2u);
+
+		TimingReportCensus partial;
+		partial.Set_Player_Active(1, true, 0);
+		partial.Set_Player_Active(2, true, 0);
+		BalancedTimingPolicy partial_policy;
+		partial_policy.Reset_From({3, 9}, 0);
+		partial.Record_Report(2, 10, 50, 0);
+		partial.Record_Report(1, 10, 2000, 256);
+		partial.Record_Report(2, 10, std::nullopt, 256);
+		result = partial_policy.Evaluate(partial.Inspect(256), 60, 256);
+		Expect("incomplete census still applies a worsening", result.Changed && partial_policy.Current_Settings() == TimingSettings{10, 70});
+		partial.Record_Report(1, 10, 0, 512);
+		partial.Record_Report(2, 10, std::nullopt, 512);
+		result = partial_policy.Evaluate(partial.Inspect(512), 60, 512);
+		Expect("incomplete census never improves", result.Evaluated && !result.Changed && partial_policy.Good_Evaluations() == 0);
 
 		TimingReportCensus reports;
 		reports.Set_Player_Active(1, true, 0);
