@@ -15,7 +15,9 @@
 
 #include "sun.h"
 
+#ifdef _WIN32
 #include <sal.h>
+#endif
 
 void Debug_Init(void);
 void Debug_Init_Console(void);
