@@ -11,14 +11,6 @@
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
 
-/****************************************************************************
-*
-*  File              : winasm.asm
-*  Description       : Palette tinting and spot light brightening for each of
-*                      the supported hicolor pixel layouts.
-*
-****************************************************************************/
-
 #include "always.h"
 
 #include <cstdint>
