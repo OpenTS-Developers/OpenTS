@@ -15,9 +15,12 @@ then calibrate from every player's process time and worst local round trip.
 Early reports can select the measured target after 64 frames; incomplete
 calibration falls back to `3/9` after 128 frames.
 
-Worsening applies immediately. Recovery requires sustained headroom, and timing
-decreases drain the old scheduling horizon before stepping down on aligned send
-boundaries.
+Worsening applies immediately. Recovery needs sustained headroom for its first
+step and then continues one rung per evaluation; timing decreases drain the old
+scheduling horizon before stepping down on aligned send boundaries. An event
+scheduled for a frame that a decrease skips executes on the next send frame,
+and a player whose measured RTT lapses holds the current timing instead of
+selecting `10/250`.
 
 The disabled WOL Connection slider shows the effective 1–10 rung and tier; the
 message list announces target-tier changes. Game speed remains separate.

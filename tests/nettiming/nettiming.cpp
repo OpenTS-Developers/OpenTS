@@ -701,6 +701,35 @@ namespace
 		}
 		Expect("same-rung horizon reduction uses hysteresis", result.Changed);
 		Expect_Equal("same-rung horizon retains aligned need", policy.Current_Settings().MaxAhead, 50u);
+
+		Record_One(reports, 0, 2048);
+		result = policy.Evaluate(reports.Inspect(2048), 60, 2048);
+		Expect("descent continues one rung per evaluation", result.Changed && policy.Current_Settings() == TimingSettings{9, 27});
+		Record_One(reports, 0, 2304);
+		result = policy.Evaluate(reports.Inspect(2304), 60, 2304);
+		Expect("descent keeps stepping while headroom holds", result.Changed && policy.Current_Settings() == TimingSettings{8, 24});
+		Record_One(reports, 2000, 2560);
+		result = policy.Evaluate(reports.Inspect(2560), 60, 2560);
+		Expect("worsening interrupts the descent", result.Changed && policy.Current_Rung() == 10u);
+		Record_One(reports, 0, 2816);
+		result = policy.Evaluate(reports.Inspect(2816), 60, 2816);
+		Expect("worsening restores the three-evaluation requirement", !result.Changed && policy.Good_Evaluations() == 1);
+
+		TimingReportCensus marginal_reports;
+		marginal_reports.Set_Player_Active(1, true, 0);
+		BalancedTimingPolicy marginal;
+		marginal.Reset_From({5, 15}, 0);
+		for (std::uint32_t frame : {256u, 512u, 768u}) {
+			Record_One(marginal_reports, 0, frame);
+			result = marginal.Evaluate(marginal_reports.Inspect(frame), 60, frame);
+		}
+		Expect("descent starts after three good evaluations", result.Changed && marginal.Current_Settings() == TimingSettings{4, 12});
+		Record_One(marginal_reports, 250, 1024);
+		result = marginal.Evaluate(marginal_reports.Inspect(1024), 60, 1024);
+		Expect("evaluation without headroom holds the rung", !result.Changed && marginal.Current_Settings() == TimingSettings{4, 12});
+		Record_One(marginal_reports, 0, 1280);
+		result = marginal.Evaluate(marginal_reports.Inspect(1280), 60, 1280);
+		Expect("a held evaluation ends the descent streak", !result.Changed && marginal.Good_Evaluations() == 1);
 	}
 
 
@@ -765,7 +794,7 @@ namespace
 		evaluate(0);
 		evaluate(0);
 		evaluate(0);
-		Expect_Equal("recovery remains possible after more than eight changes", policy.Current_Rung(), 8u);
+		Expect_Equal("descent continues after more than eight changes", policy.Current_Rung(), 6u);
 	}
 
 
@@ -796,6 +825,9 @@ namespace
 			result = recover.Evaluate(recovery_reports.Inspect(frame), 60, frame);
 		}
 		Expect("10/250 improves one rung after hysteresis", result.Changed && recover.Current_Settings() == TimingSettings{9, 27});
+		Record_One(recovery_reports, 0, 1024);
+		result = recover.Evaluate(recovery_reports.Inspect(1024), 60, 1024);
+		Expect("10/250 keeps descending one rung per evaluation", result.Changed && recover.Current_Settings() == TimingSettings{8, 24});
 
 		TimingReportCensus same_rung_reports;
 		same_rung_reports.Set_Player_Active(1, true, 0);
