@@ -37,7 +37,7 @@
 
 #include "data.h"
 
-#include <new.h>
+#include <new>
 
 HINSTANCE LanguageResources;
 
