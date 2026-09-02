@@ -37,6 +37,7 @@
 
 #include "gametime.h"
 
+#include "hostclock.h"
 #include "win.h"
 
 //==========================================================================
@@ -59,7 +60,7 @@ GameTimeClass Game_Time;
  *=========================================================================*/
 GameTimeClass::GameTimeClass( void )
 {
-	game_start_time = timeGetTime();
+	game_start_time = Host_Milliseconds();
 }
 
 
@@ -81,7 +82,7 @@ unsigned int GameTimeClass::Get_Time( void )
 	unsigned int curr_windows_time;
 	unsigned int game_time;
 
-	curr_windows_time = timeGetTime();
+	curr_windows_time = Host_Milliseconds();
 	if ( curr_windows_time <= game_start_time ) {
 		// Handles the case if the windows time wraps while playing the game.
 		game_time = MAX_ULONG - game_start_time + curr_windows_time;

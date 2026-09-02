@@ -22,7 +22,7 @@ class MillisecondTimerClass
 		/*
 		 * This is the number of processor clock cycles that pass in one millisecond, and
 		 * the raw cycle count is divided by it to yield a time. If it is 1.0, then the
-		 * processor would not report its rate and the multimedia timer is read instead.
+		 * processor would not report its rate and the host clock is read instead.
 		 */
 		double Frequency;
 };
