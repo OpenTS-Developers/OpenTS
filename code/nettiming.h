@@ -45,6 +45,8 @@ namespace NetTiming
 	constexpr std::uint32_t REPORT_EXPIRY = 512;
 	constexpr unsigned int GOOD_EVALUATIONS_REQUIRED = 3;
 	constexpr unsigned int DESCENT_EVALUATIONS_REQUIRED = 1;
+	// Longest single wait that still allows a step down.
+	constexpr Milliseconds STALL_IMPROVE_MILLISECONDS = 100;
 
 	struct RetryDecision
 	{
@@ -120,6 +122,7 @@ namespace NetTiming
 		unsigned int FreshRoundTripReports = 0;
 		Milliseconds WorstProcessMilliseconds = 0;
 		Milliseconds WorstRoundTrip = 0;
+		Milliseconds WorstStallMilliseconds = 0;
 		bool ProcessComplete = true;
 		bool RoundTripComplete = true;
 		bool RequiresConservativeTiming = false;
@@ -131,7 +134,8 @@ namespace NetTiming
 			void Reset(void);
 			bool Set_Player_Active(unsigned int player, bool active, std::uint32_t frame);
 			bool Is_Player_Active(unsigned int player) const;
-			bool Record_Report(unsigned int player, Milliseconds process_milliseconds, std::optional<Milliseconds> round_trip, std::uint32_t frame);
+			bool Record_Report(unsigned int player, Milliseconds process_milliseconds, std::optional<Milliseconds> round_trip, std::uint32_t frame,
+				Milliseconds stall_milliseconds = 0);
 			TimingCensus Inspect(std::uint32_t frame) const;
 
 		private:
@@ -142,6 +146,7 @@ namespace NetTiming
 				bool EverHadRoundTrip = false;
 				Milliseconds ProcessMilliseconds = 0;
 				Milliseconds RoundTrip = 0;
+				Milliseconds StallMilliseconds = 0;
 				std::uint32_t ActiveSinceFrame = 0;
 				std::uint32_t ReportFrame = 0;
 			};

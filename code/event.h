@@ -243,6 +243,7 @@ class EventClass
 			struct {
 				std::uint16_t AverageProcessMilliseconds;
 				std::uint16_t WorstRoundTripMilliseconds;
+				std::uint16_t StallMilliseconds;
 			} NetworkReport;
 
 		} Data;
