@@ -1409,17 +1409,17 @@ void IPXManagerClass::Multiplayer_Debug_Print(int top)
 	char buffer[256];
 
 	sprintf(buffer, "Rtr delta : %d", 1000 * RetryDelta / TIMER_SECOND);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 50), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 50), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 
 	sprintf(buffer, "Rtr timeout : %d", 1000 * Timeout / TIMER_SECOND);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 58), Fetch_Scheme_By_Name("Grey"), 0, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 58), Fetch_Scheme_By_Name("Grey"), 0, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 
 	sprintf(buffer, "Lat Fudge : %d", Session.LatencyFudge);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 66), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
+	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 66), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 
 	if (SentFrameSyncTimer / TIMER_SECOND) {
 		sprintf(buffer, "FSPS : %d", SentFrameSyncCount / (SentFrameSyncTimer / TIMER_SECOND));
-		Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 74), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
+		Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 74), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 		if ((Frame & 0x7F) == 0x7F) {
 			SentFrameSyncTimer = 0;
 			SentFrameSyncCount = 0;
@@ -1431,27 +1431,27 @@ void IPXManagerClass::Multiplayer_Debug_Print(int top)
 		if (house != NULL && house != PlayerPtr) {
 			int scheme = house->Scheme;
 
-			Fancy_Text_Print(Connection[i]->Name, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 2), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(Connection[i]->Name, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 2), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int avg = Connection[i]->Queue->Avg_Response_Time();
 			sprintf(buffer, "Average  : %d", 1000 * avg / TIMER_SECOND);
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 11), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 11), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int max = Connection[i]->Queue->Max_Response_Time();
 			sprintf(buffer, "Max      : %d", 1000 * max / TIMER_SECOND);
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 18), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 18), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int resends = Connection[i]->Num_Resends();
 			sprintf(buffer, "Resends  : %d", resends);
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 25), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 25), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int numlost = std::max(0, Connection[i]->Num_Lost());
 			sprintf(buffer, "Num lost : %d", numlost);
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 32), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 32), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int pcnt_lost = Connection[i]->Percent_Lost();
 			sprintf(buffer, "Pcnt lost: %d", pcnt_lost);
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 39), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 39), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int process_time = 0;
 			for (int j = 0; j < Session.Players.Count(); ++j) {
@@ -1461,16 +1461,16 @@ void IPXManagerClass::Multiplayer_Debug_Print(int top)
 				}
 			}
 			sprintf(buffer, "Process : %d", process_time);
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 46), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 46), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			sprintf(buffer, "Frame   : %d", -Session.PlayerLatency[i]);
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 53), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 53), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			sprintf(buffer, "Queue s/r: %d/%d", Connection[i]->Queue->Num_Send(), Connection[i]->Queue->Num_Receive());
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 60), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 60), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			sprintf(buffer, "Missed o/m: %d/%d", Connection[i]->Missed_Overall(), Connection[i]->Missed_Magic());
-			Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D((i + 1) * 100, top + 67), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 67), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 		}
 	}
 }
