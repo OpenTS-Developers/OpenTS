@@ -126,20 +126,19 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Chooses the next action for one queued packet without changing its timing state.</summary>
+	/// <summary>Chooses the next action for one queued packet; a timed-out packet still retries at its capped backoff.</summary>
 	RetryDecision Evaluate_Retry(RetransmitState const & state, Milliseconds now, Milliseconds current_rto, Milliseconds connection_timeout,
 		bool timeout_enabled, bool adaptive)
 	{
 		if (state.TransmissionCount == 0) {
-			return(RetryDecision::SEND);
-		}
-		if (timeout_enabled && Milliseconds_Have_Elapsed(state.FirstSend, now, connection_timeout)) {
-			return(RetryDecision::TIMED_OUT);
+			return(RetryDecision{true, false});
 		}
 
-		bool const retry_due = adaptive
+		RetryDecision decision;
+		decision.TimedOut = timeout_enabled && Milliseconds_Have_Elapsed(state.FirstSend, now, connection_timeout);
+		decision.Send = adaptive
 			? Retransmit_Is_Due(state.LastSend, now, state.CapturedRto, state.TransmissionCount - 1, connection_timeout)
 			: Milliseconds_Have_Elapsed(state.LastSend, now, current_rto);
-		return(retry_due ? RetryDecision::SEND : RetryDecision::WAIT);
+		return(decision);
 	}
 }

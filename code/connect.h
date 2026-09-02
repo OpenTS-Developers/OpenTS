@@ -193,6 +193,7 @@ class ConnectionClass
 		int Percent_Lost(void) const { return(PercentLost); }
 		int Missed_Overall(void) const { return(MissedOverall); }
 		int Missed_Magic(void) const { return(MissedMagic); }
+		bool Is_Bad(void) const { return(IsBad); }
 
 		enum PacketDropReasonType {
 			CONNECTION_DROP_SHORT_HEADER,
@@ -297,6 +298,7 @@ class ConnectionClass
 		// An injected clock must outlive the connection.
 		NetTiming::MillisecondClock const *MillisecondTime;
 		NetTiming::RttEstimator RoundTripEstimator;
+		bool IsBad = false;
 
 		/*.....................................................................
 		Running totals of # of packets we send & receive which require an ACK,

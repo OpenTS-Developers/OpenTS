@@ -11,8 +11,11 @@ ambiguous measurements after a retry.
 
 The retry timeout is limited to 100–2000 ms. Repeated private transmissions
 double their wait up to the connection timeout; that timeout follows measured
-latency with a 2-second minimum and 30-second ceiling. With no measurement, the
-bounded legacy timing is used. Global lobby traffic retains its fixed cadence.
+latency with a 2-second minimum and 30-second ceiling. A packet older than that
+timeout marks the connection bad but is still retransmitted at the capped wait
+until it is acknowledged, so a link that recovers drains its backlog. With no
+measurement, the bounded legacy timing is used. Global lobby traffic retains its
+fixed cadence.
 
 A link that is retransmitting also doubles the timeout it measures against, once
 per retransmission proven against the current value. This keeps a link whose

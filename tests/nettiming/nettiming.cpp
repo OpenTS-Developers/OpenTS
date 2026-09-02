@@ -175,26 +175,39 @@ namespace
 		using namespace NetTiming;
 
 		RetransmitState state;
-		Expect("new packet sends immediately", Evaluate_Retry(state, 1000, 800, 2000, true, true) == RetryDecision::SEND);
+		RetryDecision decision = Evaluate_Retry(state, 1000, 800, 2000, true, true);
+		Expect("new packet sends immediately", decision.Send && !decision.TimedOut);
 
 		state = {1000, 1000, 100, 1};
-		Expect("adaptive packet keeps captured RTO", Evaluate_Retry(state, 1099, 800, 2000, true, true) == RetryDecision::WAIT);
-		Expect("adaptive packet sends at captured RTO", Evaluate_Retry(state, 1100, 800, 2000, true, true) == RetryDecision::SEND);
+		Expect("adaptive packet keeps captured RTO", !Evaluate_Retry(state, 1099, 800, 2000, true, true).Send);
+		Expect("adaptive packet sends at captured RTO", Evaluate_Retry(state, 1100, 800, 2000, true, true).Send);
 
 		state = {1000, 1100, 100, 2};
-		Expect("adaptive retry waits through backoff", Evaluate_Retry(state, 1299, 800, 2000, true, true) == RetryDecision::WAIT);
-		Expect("adaptive retry sends after backoff", Evaluate_Retry(state, 1300, 800, 2000, true, true) == RetryDecision::SEND);
+		Expect("adaptive retry waits through backoff", !Evaluate_Retry(state, 1299, 800, 2000, true, true).Send);
+		Expect("adaptive retry sends after backoff", Evaluate_Retry(state, 1300, 800, 2000, true, true).Send);
 
 		state = {1000, 1000, 100, 4};
-		Expect("fixed channel uses current retry delay", Evaluate_Retry(state, 1399, 400, 2000, true, false) == RetryDecision::WAIT);
-		Expect("fixed channel does not back off", Evaluate_Retry(state, 1400, 400, 2000, true, false) == RetryDecision::SEND);
+		Expect("fixed channel uses current retry delay", !Evaluate_Retry(state, 1399, 400, 2000, true, false).Send);
+		decision = Evaluate_Retry(state, 1400, 400, 2000, true, false);
+		Expect("fixed channel does not back off", decision.Send && !decision.TimedOut);
 
 		state = {1000, 1900, 100, 1};
-		Expect("connection timeout wins over retry", Evaluate_Retry(state, 3000, 100, 2000, true, true) == RetryDecision::TIMED_OUT);
-		Expect("disabled connection timeout still retries", Evaluate_Retry(state, 3000, 100, 2000, false, true) == RetryDecision::SEND);
+		decision = Evaluate_Retry(state, 3000, 100, 2000, true, true);
+		Expect("connection timeout flags the link", decision.TimedOut);
+		Expect("timed-out packet still retries when due", decision.Send);
+		decision = Evaluate_Retry(state, 3000, 100, 2000, false, true);
+		Expect("disabled connection timeout still retries", !decision.TimedOut && decision.Send);
+
+		state = {1000, 2950, 100, 1};
+		decision = Evaluate_Retry(state, 3000, 100, 2000, true, true);
+		Expect("timed-out packet waits for its backoff", decision.TimedOut && !decision.Send);
+
+		state = {1000, 5000, 100, 6};
+		Expect("timed-out packet waits for the connection timeout cap", !Evaluate_Retry(state, 6999, 100, 2000, true, true).Send);
+		Expect("timed-out packet retries at the connection timeout cap", Evaluate_Retry(state, 7000, 100, 2000, true, true).Send);
 
 		state = {0xffffff00u, 0xfffffff0u, 100, 1};
-		Expect("retry decision handles clock wrap", Evaluate_Retry(state, 0x00000054u, 800, 2000, true, true) == RetryDecision::SEND);
+		Expect("retry decision handles clock wrap", Evaluate_Retry(state, 0x00000054u, 800, 2000, true, true).Send);
 	}
 
 

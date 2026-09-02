@@ -218,6 +218,7 @@ void ConnectionClass::Init (void)
 	LastSeqID = 0xffffffff;
 	LastReadID = 0xffffffff;
 	RoundTripEstimator.Reset();
+	IsBad = false;
 
 	Queue->Init();
 
@@ -746,11 +747,8 @@ int ConnectionClass::Service (void)
 	been ACK'd yet.  Entries that the app has read, and have been ACK'd,
 	should be removed.
 	------------------------------------------------------------------------*/
-	if ( Service_Send_Queue() && Service_Receive_Queue() ) {
-		return(1);
-	} else {
-		return(0);
-	}
+	IsBad = !(Service_Send_Queue() && Service_Receive_Queue());
+	return(IsBad ? 0 : 1);
 
 }	/* end of Service */
 
@@ -846,12 +844,11 @@ int ConnectionClass::Service_Send_Queue (void)
 		};
 		NetTiming::RetryDecision const retry_decision = NetTiming::Evaluate_Retry(
 			retransmit_state, current_milliseconds, base_retry_timeout, connection_timeout, timeout_enabled, adaptive_channel);
-		if (retry_decision == NetTiming::RetryDecision::TIMED_OUT) {
+		if (retry_decision.TimedOut) {
 			bad_conn = 1;
 			send_entry->IsUndeliverable = true;
-			continue;
 		}
-		if (retry_decision == NetTiming::RetryDecision::SEND) {
+		if (retry_decision.Send) {
 
 			/*..................................................................
 			Send the message

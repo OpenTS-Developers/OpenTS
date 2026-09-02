@@ -1066,10 +1066,13 @@ int IPXManagerClass::Service(void)
 		}
 	}
 	for (i = 0; i < NumConnections; i++) {
+		bool const was_bad = Connection[i]->Is_Bad();
 		if (!Connection[i]->Service()) {
 			rc = 0;
 			BadConnection = Connection[i]->ID;
-			DebugString("Error - Connection %d has gone bad\n", BadConnection);
+			if (!was_bad) {
+				DebugString("Error - Connection %d has gone bad\n", BadConnection);
+			}
 		}
 	}
 
