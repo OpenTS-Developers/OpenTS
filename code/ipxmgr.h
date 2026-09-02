@@ -250,7 +250,7 @@ class IPXManagerClass : public ConnManClass
 
 		virtual void Mono_Debug_Print(int index, int refresh = 0);
 
-		void Multiplayer_Debug_Print(void);
+		void Multiplayer_Debug_Print(int top);
 
 	/*
 	--------------------------- Private Interface ----------------------------
