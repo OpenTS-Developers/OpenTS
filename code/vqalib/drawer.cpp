@@ -82,7 +82,7 @@ long PageFlip_MCGABuf(VQAHandle *vqa);
 long DrawFrame_MCGA(VQAHandle *vqa);
 long PageFlip_MCGA(VQAHandle *vqa);
 
-void __cdecl UnVQ_Nop(unsigned char *codebook, unsigned char *pointers, unsigned char *buffer, unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth);
+void __cdecl UnVQ_Nop(uint8_t *codebook, uint8_t *pointers, uint8_t *buffer, size_t blocksperrow, size_t numrows, size_t bufwidth);
 long PageFlip_Nop(VQAHandle *vqa);
 
 void VQA_SetTimer(VQAHandleP *vqap, long time);
@@ -1187,8 +1187,8 @@ STATIC long PageFlip_MCGABuf(VQAHandle *vqa)
 * SYNOPSIS
 *     UnVQ_Nop(Codebook, Pointers, Buffer, BPR, Rows, BufWidth)
 *
-*     void UnVQ_Nop(unsigned char *, unsigned char *, unsigned char *,
-*                   unsigned long, unsigned long, unsigned long);
+*     void UnVQ_Nop(uint8_t *, uint8_t *, uint8_t *,
+*                   size_t, size_t, size_t);
 * FUNCTION
 *
 * INPUTS
@@ -1204,9 +1204,9 @@ STATIC long PageFlip_MCGABuf(VQAHandle *vqa)
 *
 ****************************************************************************/
 
-STATIC void __cdecl UnVQ_Nop(unsigned char *codebook, unsigned char *pointers,
-		unsigned char *buffer, unsigned long blocksperrow,
-		unsigned long numrows, unsigned long bufwidth)
+STATIC void __cdecl UnVQ_Nop(uint8_t *codebook, uint8_t *pointers,
+		uint8_t *buffer, size_t blocksperrow,
+		size_t numrows, size_t bufwidth)
 {
 	/* Suppress compiler warnings */
 	codebook = codebook;

@@ -13,6 +13,8 @@
 #include "always.h"
 
 #include "vqalib/unvq.h"
+#include <cstring>
+#include <cstdint>
 
 #include "_vqa.h"
 
@@ -22,28 +24,17 @@
 /// <param name="pointers">Base of the pointer data.</param>
 /// <param name="entries">Total block count, which is where the high plane starts.</param>
 /// <param name="block">Which block to read.</param>
-/// <returns>unsigned int; The codebook index.</returns>
-inline unsigned int Block_Index(unsigned char const * pointers, unsigned long entries, unsigned long block)
+/// <returns>uint32_t; The codebook index.</returns>
+inline uint32_t Block_Index(uint8_t const * pointers, size_t entries, size_t block)
 {
-	return(((unsigned int)pointers[entries + block] << 8) | (unsigned int)pointers[block]);
+	return((static_cast<uint32_t>(pointers[entries + block]) << 8) | static_cast<uint32_t>(pointers[block]));
 }
 
 
-inline void Put32(unsigned char * dest, unsigned char const * source)
+inline void Fill32(uint8_t * dest, uint32_t value)
 {
-	dest[0] = source[0];
-	dest[1] = source[1];
-	dest[2] = source[2];
-	dest[3] = source[3];
-}
-
-
-inline void Fill32(unsigned char * dest, unsigned int value)
-{
-	dest[0] = (unsigned char)(value & 0xFF);
-	dest[1] = (unsigned char)((value >> 8) & 0xFF);
-	dest[2] = (unsigned char)((value >> 16) & 0xFF);
-	dest[3] = (unsigned char)((value >> 24) & 0xFF);
+	// memcpy folds to one store where MSVC won't optimize a byte-wise copy; assumes a little-endian host.
+	std::memcpy(dest, reinterpret_cast<void*>(&value), 4);
 }
 
 
@@ -51,15 +42,15 @@ inline void Fill32(unsigned char * dest, unsigned int value)
  * Spreads a 16 bit pixel across a doubleword so a solid block is filled four bytes at a time,
  * the way the assembly did it.
  */
-inline unsigned int Pair16(unsigned int pixel)
+inline uint32_t Pair16(uint16_t pixel)
 {
-	return((pixel << 16) | pixel);
+	return((static_cast<uint32_t>(pixel) << 16) | pixel);
 }
 
 
-inline unsigned int Quad8(unsigned int colour)
+inline uint32_t Quad8(uint8_t colour)
 {
-	unsigned int const pair = (colour << 8) | colour;
+	uint32_t const pair = (static_cast<uint32_t>(colour) << 8) | colour;
 	return((pair << 16) | pair);
 }
 
@@ -73,40 +64,39 @@ inline unsigned int Quad8(unsigned int colour)
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl UnVQ1_C1_TABLE(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
-	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ1_C1_TABLE(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer,
+	size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	if (blocksperrow == 0) {
 		return;
 	}
 
-	unsigned long const pitch = bufwidth * 2;
-	unsigned long const rowoffset = pitch * 4;
-	unsigned long const entries = numrows * blocksperrow;
+	size_t const pitch = bufwidth * 2;
+	size_t const rowoffset = pitch * 4;
+	size_t const entries = numrows * blocksperrow;
 
-	unsigned char * rowstart = buffer;
-	unsigned long block = 0;
+	uint8_t * rowstart = buffer;
+	size_t block = 0;
 
 	do {
-		unsigned char * dest = rowstart;
+		uint8_t * dest = rowstart;
 
-		for (unsigned long i = 0; i < blocksperrow; i++) {
-			unsigned int const index = Block_Index(pointers, entries, block);
+		for (size_t i = 0; i < blocksperrow; i++) {
+			uint32_t const index = Block_Index(pointers, entries, block);
 			block++;
 
 			if ((index & 0x8000) != 0) {
-				unsigned int const pixels = Pair16(HicolorTable[index & 0x7FFF]);
+				uint32_t const pixels = Pair16(HicolorTable[index & 0x7FFF]);
 
 				for (int row = 0; row < 4; row++) {
 					Fill32(dest + row * pitch, pixels);
 					Fill32(dest + row * pitch + 4, pixels);
 				}
 			} else {
-				unsigned char const * word = codebook + index * 32;
+				uint8_t const * word = codebook + index * 32;
 
 				for (int row = 0; row < 4; row++) {
-					Put32(dest + row * pitch, word + row * 8);
-					Put32(dest + row * pitch + 4, word + row * 8 + 4);
+					std::memcpy(dest + row * pitch, word + row * 8, 8);
 				}
 			}
 
@@ -128,41 +118,39 @@ void __cdecl UnVQ1_C1_TABLE(unsigned char * codebook, unsigned char * pointers, 
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl UnVQ1_C1_TABLE_ALT(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
-	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ1_C1_TABLE_ALT(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer,
+	size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	if (blocksperrow == 0) {
 		return;
 	}
 
-	unsigned long const pitch = bufwidth * 2;
-	unsigned long const rowoffset = pitch * 4;
-	unsigned long const entries = numrows * blocksperrow;
+	size_t const pitch = bufwidth * 2;
+	size_t const rowoffset = pitch * 4;
+	size_t const entries = numrows * blocksperrow;
 
-	unsigned char * rowstart = buffer;
-	unsigned long block = 0;
+	uint8_t * rowstart = buffer;
+	size_t block = 0;
 
 	do {
-		unsigned char * dest = rowstart;
+		uint8_t * dest = rowstart;
 
-		for (unsigned long i = 0; i < blocksperrow; i++) {
-			unsigned int const index = Block_Index(pointers, entries, block);
+		for (size_t i = 0; i < blocksperrow; i++) {
+			uint32_t const index = Block_Index(pointers, entries, block);
 			block++;
 
 			if ((index & 0x8000) != 0) {
-				unsigned int const pixels = Pair16(HicolorTable[index & 0x7FFF]);
+				uint32_t const pixels = Pair16(HicolorTable[index & 0x7FFF]);
 
 				Fill32(dest, pixels);
 				Fill32(dest + 4, pixels);
 				Fill32(dest + pitch * 2, pixels);
 				Fill32(dest + pitch * 2 + 4, pixels);
 			} else {
-				unsigned char const * word = codebook + index * 32;
+				uint8_t const * word = codebook + index * 32;
 
-				Put32(dest, word);
-				Put32(dest + 4, word + 4);
-				Put32(dest + pitch * 2, word + 16);
-				Put32(dest + pitch * 2 + 4, word + 20);
+				std::memcpy(dest, word, 8);
+				std::memcpy(dest + pitch * 2, word + 16, 8);
 			}
 
 			dest += 8;
@@ -182,36 +170,36 @@ void __cdecl UnVQ1_C1_TABLE_ALT(unsigned char * codebook, unsigned char * pointe
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl UnVQ_4x2(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
-	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ_4x2(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer,
+	size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	if (blocksperrow == 0) {
 		return;
 	}
 
-	unsigned long const rowoffset = bufwidth * 2;
-	unsigned long const entries = numrows * blocksperrow;
+	size_t const rowoffset = bufwidth * 2;
+	size_t const entries = numrows * blocksperrow;
 
-	unsigned char * rowstart = buffer;
-	unsigned long block = 0;
+	uint8_t * rowstart = buffer;
+	size_t block = 0;
 
 	do {
-		unsigned char * dest = rowstart;
+		uint8_t * dest = rowstart;
 
-		for (unsigned long i = 0; i < blocksperrow; i++) {
-			unsigned int const index = Block_Index(pointers, entries, block);
+		for (size_t i = 0; i < blocksperrow; i++) {
+			uint32_t const index = Block_Index(pointers, entries, block);
 			block++;
 
 			if ((index >> 8) == 0xFF) {
-				unsigned int const pixels = Quad8(index & 0xFF);
+				uint32_t const pixels = Quad8(index & 0xFF);
 
 				Fill32(dest, pixels);
 				Fill32(dest + bufwidth, pixels);
 			} else {
-				unsigned char const * word = codebook + index * 8;
+				uint8_t const * word = codebook + index * 8;
 
-				Put32(dest, word);
-				Put32(dest + bufwidth, word + 4);
+				std::memcpy(dest, word, 4);
+				std::memcpy(dest + bufwidth, word + 4, 4);
 			}
 
 			dest += 4;
@@ -231,37 +219,37 @@ void __cdecl UnVQ_4x2(unsigned char * codebook, unsigned char * pointers, unsign
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl UnVQ_4x4(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
-	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer,
+	size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	if (blocksperrow == 0) {
 		return;
 	}
 
-	unsigned long const rowoffset = bufwidth * 4;
-	unsigned long const entries = numrows * blocksperrow;
+	size_t const rowoffset = bufwidth * 4;
+	size_t const entries = numrows * blocksperrow;
 
-	unsigned char * rowstart = buffer;
-	unsigned long block = 0;
+	uint8_t * rowstart = buffer;
+	size_t block = 0;
 
 	do {
-		unsigned char * dest = rowstart;
+		uint8_t * dest = rowstart;
 
-		for (unsigned long i = 0; i < blocksperrow; i++) {
-			unsigned int const index = Block_Index(pointers, entries, block);
+		for (size_t i = 0; i < blocksperrow; i++) {
+			uint32_t const index = Block_Index(pointers, entries, block);
 			block++;
 
 			if ((index >> 8) == 0xFF) {
-				unsigned int const pixels = Quad8(index & 0xFF);
+				uint32_t const pixels = Quad8(index & 0xFF);
 
 				for (int row = 0; row < 4; row++) {
 					Fill32(dest + row * bufwidth, pixels);
 				}
 			} else {
-				unsigned char const * word = codebook + index * 16;
+				uint8_t const * word = codebook + index * 16;
 
 				for (int row = 0; row < 4; row++) {
-					Put32(dest + row * bufwidth, word + row * 4);
+					std::memcpy(dest + row * bufwidth, word + row * 4, 4);
 				}
 			}
 
@@ -283,35 +271,35 @@ void __cdecl UnVQ_4x4(unsigned char * codebook, unsigned char * pointers, unsign
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl UnVQ_4x4_HALF(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
-	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ_4x4_HALF(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer,
+	size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	if (blocksperrow == 0) {
 		return;
 	}
 
-	unsigned long const rowoffset = bufwidth * 2;
-	unsigned long const entries = numrows * blocksperrow;
+	size_t const rowoffset = bufwidth * 2;
+	size_t const entries = numrows * blocksperrow;
 
-	unsigned char * rowstart = buffer;
-	unsigned long block = 0;
+	uint8_t * rowstart = buffer;
+	size_t block = 0;
 
 	do {
-		unsigned char * dest = rowstart;
+		uint8_t * dest = rowstart;
 
-		for (unsigned long i = 0; i < blocksperrow; i++) {
-			unsigned int const index = Block_Index(pointers, entries, block);
+		for (size_t i = 0; i < blocksperrow; i++) {
+			uint32_t const index = Block_Index(pointers, entries, block);
 			block++;
 
 			if ((index >> 8) == 0xFF) {
-				unsigned char const colour = (unsigned char)(index & 0xFF);
+				uint8_t const colour = static_cast<uint8_t>(index & 0xFF);
 
 				dest[0] = colour;
 				dest[1] = colour;
 				dest[bufwidth] = colour;
 				dest[bufwidth + 1] = colour;
 			} else {
-				unsigned char const * word = codebook + index * 16;
+				uint8_t const * word = codebook + index * 16;
 
 				dest[0] = word[0];
 				dest[1] = word[2];
@@ -337,40 +325,39 @@ void __cdecl UnVQ_4x4_HALF(unsigned char * codebook, unsigned char * pointers, u
 /// <param name="blocksperrow">Blocks across one row of the frame.</param>
 /// <param name="numrows">Rows of blocks in the frame.</param>
 /// <param name="bufwidth">Destination width in pixels.</param>
-void __cdecl UnVQ1_C1_4x4(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer,
-	unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ1_C1_4x4(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer,
+	size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	if (blocksperrow == 0) {
 		return;
 	}
 
-	unsigned long const pitch = bufwidth * 2;
-	unsigned long const rowoffset = pitch * 4;
-	unsigned long const entries = numrows * blocksperrow;
+	size_t const pitch = bufwidth * 2;
+	size_t const rowoffset = pitch * 4;
+	size_t const entries = numrows * blocksperrow;
 
-	unsigned char * rowstart = buffer;
-	unsigned long block = 0;
+	uint8_t * rowstart = buffer;
+	size_t block = 0;
 
 	do {
-		unsigned char * dest = rowstart;
+		uint8_t * dest = rowstart;
 
-		for (unsigned long i = 0; i < blocksperrow; i++) {
-			unsigned int const index = Block_Index(pointers, entries, block);
+		for (size_t i = 0; i < blocksperrow; i++) {
+			uint32_t const index = Block_Index(pointers, entries, block);
 			block++;
 
 			if ((index & 0x8000) != 0) {
-				unsigned int const pixels = Pair16(index & 0x7FFF);
+				uint32_t const pixels = Pair16(index & 0x7FFF);
 
 				for (int row = 0; row < 4; row++) {
 					Fill32(dest + row * pitch, pixels);
 					Fill32(dest + row * pitch + 4, pixels);
 				}
 			} else {
-				unsigned char const * word = codebook + index * 32;
+				uint8_t const * word = codebook + index * 32;
 
 				for (int row = 0; row < 4; row++) {
-					Put32(dest + row * pitch, word + row * 8);
-					Put32(dest + row * pitch + 4, word + row * 8 + 4);
+					std::memcpy(dest + row * pitch, word + row * 8, 8);
 				}
 			}
 

@@ -13,6 +13,9 @@
 
 #ifndef VQAPLAY_H
 #define VQAPLAY_H
+
+#include <cstddef>
+#include <cstdint>
 /****************************************************************************
 *
 *         C O N F I D E N T I A L -- W E S T W O O D  S T U D I O S
@@ -158,7 +161,7 @@ class VQAClass;
  typedef struct _VQAHandle VQAHandle;
 
 // UnVQ functions must be this type
-typedef void  (__cdecl *UNVQ_FUNC)(unsigned char *codebook, unsigned char *pointers, unsigned char *buffer, unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth);
+typedef void  (__cdecl *UNVQ_FUNC)(uint8_t *codebook, uint8_t *pointers, uint8_t *buffer, size_t blocksperrow, size_t numrows, size_t bufwidth);
 
 // Handlers must be this type
 typedef long (__cdecl *VQA_H_FUNC)(VQAHandle *vqa, long action, void *buffer, long nbytes);

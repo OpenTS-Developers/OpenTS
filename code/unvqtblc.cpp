@@ -110,8 +110,7 @@ static inline void memset32(void * D, unsigned int val, unsigned int n)
 	for (i = 0; i < n; i++) dst[i] = val;
 }
 
-
-void __cdecl UnVQ2_4x4_Table(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer, unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ2_4x4_Table(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer, size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	assert(HicolorTable != 0);
 	assert(codebook != 0);
@@ -298,7 +297,7 @@ void __cdecl UnVQ2_4x4_Table(unsigned char * codebook, unsigned char * pointers,
 }
 
 
-void __cdecl UnVQ2_4x2_Table(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer, unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ2_4x2_Table(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer, size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	assert(HicolorTable != 0);
 	assert(codebook != 0);
@@ -481,7 +480,7 @@ void __cdecl UnVQ2_4x2_Table(unsigned char * codebook, unsigned char * pointers,
 #define __int16 short
 #define __int32 long
 
-void __cdecl UnVQ1_4x4_Table(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer, unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ1_4x4_Table(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer, size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	assert(codebook != 0);
 	assert(pointers != 0);
@@ -568,7 +567,7 @@ void __cdecl UnVQ1_4x4_Table(unsigned char * codebook, unsigned char * pointers,
 }
 
 
-void __cdecl UnVQ1_4x2_Table(unsigned char * codebook, unsigned char * pointers, unsigned char * buffer, unsigned long blocksperrow, unsigned long numrows, unsigned long bufwidth)
+void __cdecl UnVQ1_4x2_Table(uint8_t * codebook, uint8_t * pointers, uint8_t * buffer, size_t blocksperrow, size_t numrows, size_t bufwidth)
 {
 	assert(codebook != 0);
 	assert(pointers != 0);

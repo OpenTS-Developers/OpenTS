@@ -103,9 +103,9 @@ long __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, 
 
 long VQA_LargestLoop(VQAHandleP *vqap, long);
 
-extern void __cdecl UnVQ_Nop(unsigned char *codebook, unsigned char *pointers,
-		unsigned char *buffer, unsigned long blocksperrow,
-		unsigned long numrows, unsigned long bufwidth);
+extern void __cdecl UnVQ_Nop(uint8_t *codebook, uint8_t *pointers,
+		uint8_t *buffer, size_t blocksperrow,
+		size_t numrows, size_t bufwidth);
 
 /****************************************************************************
 *
