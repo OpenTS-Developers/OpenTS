@@ -113,6 +113,7 @@
 #include "gamedlg.h"
 #include "getcpu.h"
 #include "globals.h"
+#include "hostclock.h"
 #include "houstype.h"
 #include "incdec.h"
 #include "infatype.h"
@@ -1888,7 +1889,7 @@ void Init_Random(void)
 			Seed = CustomSeed;
 		} else {
 			CryptRandom.Get(&Seed, sizeof(Seed));
-			Seed = GetTickCount();
+			Seed = Host_Milliseconds();
 			//srand(time(NULL));
 			//Seed = rand();
 		}
