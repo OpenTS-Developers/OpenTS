@@ -17,15 +17,17 @@ per-link RTT and retry behavior belongs to
 Compressed matches begin at `2/6`: a two-frame send period and six-frame
 look-ahead. Each player reports process time and optional worst-local RTT after
 32 and 64 frames, then every 128 frames. A player omits the RTT while any of its
-links has no measurement or a
-[stale one](/systems/network-transport-timing/). The deterministic master
-evaluates at 64 and 128 frames, then every 256 frames.
+links has no [clean measurement](/systems/network-transport-timing/); a link
+keeps reporting its last measurement while it retransmits. The deterministic
+master evaluates at 64 and 128 frames, then every 256 frames.
 
-A report is one atomic process/RTT record and expires after 512 frames. Initial
-missing RTT has that long to appear; missing or stale established RTT selects
-the conservative `10/250` target immediately. Stale process data retains the
-last synchronized frame rate. Membership comes from the initial synchronized
-roster, and accepted removal clears that player's report.
+A report is one atomic process/RTT record and expires after 512 frames. A
+player whose RTT never appears within that time selects the conservative
+`10/250` target. An established player whose report expires or omits the RTT
+holds the current timing, though fresh reports from other players can still
+worsen it. Stale process data retains the last synchronized frame rate.
+Membership comes from the initial synchronized roster, and accepted removal
+clears that player's report.
 
 The first complete census may select its measured target with 20% headroom.
 Incomplete bootstrap falls back to `3/9` after 128 frames. Later worsening is
