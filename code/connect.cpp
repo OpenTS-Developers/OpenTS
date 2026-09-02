@@ -800,7 +800,8 @@ int ConnectionClass::Service_Send_Queue (void)
 				if (header.Code == PACKET_DATA_ACK) {
 					Queue->Add_Delay(Time() - send_entry->FirstTime);
 					if (Adaptive_Timing_Enabled()) {
-						RoundTripEstimator.Acknowledge(send_entry->FirstTimeMilliseconds, send_entry->SendCount, *MillisecondTime);
+						RoundTripEstimator.Acknowledge(send_entry->FirstTimeMilliseconds, send_entry->LastTimeMilliseconds, send_entry->SendCount,
+							send_entry->RetransmitTimeoutMilliseconds, *MillisecondTime);
 					}
 				}
 			}
