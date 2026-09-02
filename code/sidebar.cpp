@@ -2146,7 +2146,6 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 		*/
 		if (flags & RIGHTPRESS) {
 			Map.IsTargettingMode = SUPER_NONE;
-			PlayerPtr->TargetingSW = NULL;
 		}
 		/*
 		**	A left mouse press signal "activate".  If our weapon type is
@@ -2155,19 +2154,16 @@ int SidebarClass::StripClass::SelectClass::Action(unsigned flags, KeyNumType & k
 		if (flags & LEFTPRESS) {
 
 			if ((unsigned)spc < (unsigned)PlayerPtr->SuperWeapon.Count()) {
-				SuperClass* curr_sw = PlayerPtr->SuperWeapon[spc];
-				if (curr_sw->Can_Place()) {
-					if (curr_sw->Class->Action == ACTION_NONE) {
+				if (PlayerPtr->SuperWeapon[spc]->Can_Place()) {
+					if (PlayerPtr->SuperWeapon[spc]->Class->Action == ACTION_NONE) {
 						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, PlayerPtr->SuperWeapon[spc]->Class->HeapID, Cell(0, 0)));
 					} else {
-						PlayerPtr->TargetingSW = curr_sw;
 						Map.IsTargettingMode = spc;
 						Unselect_All();
 						Speak(VOX_SELECT_TARGET);
 					}
 				} else {
 					PlayerPtr->SuperWeapon[spc]->Impatient_Click();
-					PlayerPtr->TargetingSW = NULL;
 				}
 			}
 		}

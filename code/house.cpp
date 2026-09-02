@@ -355,8 +355,7 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 	EnemyArmorForcePrediction(0.33f),
 	EnemyAirForcePrediction(0.33f),
 	EnemyInfantryForcePrediction(0.34f),
-	PowerSurplus(0),
-	TargetingSW(NULL)
+	PowerSurplus(0)
 {
 	int index;
 
@@ -6492,7 +6491,6 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(EnemyAirForcePrediction);
 	stream.Serialize(EnemyInfantryForcePrediction);
 	stream.Serialize(PowerSurplus);
-	stream.Serialize(TargetingSW);
 }
 
 
@@ -8728,7 +8726,6 @@ void HouseClass::Update_Present_Super_Weapons(void)
 						if (PlayerPtr != NULL && Fetch_ID() == PlayerPtr->Fetch_ID()) {
 							if (Map.IsTargettingMode == s) {
 								Map.IsTargettingMode = SUPER_NONE;
-								PlayerPtr->TargetingSW = NULL;
 							}
 							Map.Column[1].Flag_To_Redraw();
 						}
@@ -8739,7 +8736,6 @@ void HouseClass::Update_Present_Super_Weapons(void)
 						if (PlayerPtr != NULL && Fetch_ID() == PlayerPtr->Fetch_ID()) {
 							if (s == Map.IsTargettingMode) {
 								Map.IsTargettingMode = SUPER_NONE;
-								PlayerPtr->TargetingSW = NULL;
 							}
 							Map.Column[1].Flag_To_Redraw();
 						}
@@ -8750,7 +8746,6 @@ void HouseClass::Update_Present_Super_Weapons(void)
 						if (Fetch_ID() == PlayerPtr->Fetch_ID()) {
 							if (Map.IsTargettingMode == s) {
 								Map.IsTargettingMode = SUPER_NONE;
-								PlayerPtr->TargetingSW = NULL;
 							}
 							Map.Column[1].Flag_To_Redraw();
 						}
