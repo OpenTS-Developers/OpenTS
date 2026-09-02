@@ -23,7 +23,10 @@
 /// </summary>
 MillisecondSystemTimerClass::MillisecondSystemTimerClass(void)
 {
+	// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 	timeBeginPeriod(1);
+#endif
 }
 
 
@@ -34,7 +37,10 @@ MillisecondSystemTimerClass::MillisecondSystemTimerClass(void)
 /// </summary>
 MillisecondSystemTimerClass::~MillisecondSystemTimerClass(void)
 {
+	// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 	timeEndPeriod(1);
+#endif
 }
 
 
