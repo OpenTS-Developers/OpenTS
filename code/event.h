@@ -42,6 +42,7 @@
 #include "mph.hh"
 #include "speed.hh"
 
+#include <cstdint>
 #include <cstring>
 
 /*
@@ -108,9 +109,12 @@ class EventClass
 			REMOVEPLAYER,
 
 			LATENCYFUDGE,
+			NETWORK_REPORT,
 
 			LAST_EVENT,			// one past the last event
 		};
+
+		static constexpr std::uint16_t NETWORK_RTT_UNAVAILABLE = UINT16_MAX;
 
 		unsigned char Type;		// Type of queue command object.
 
@@ -235,6 +239,12 @@ class EventClass
 			struct {
 				unsigned short AverageTicks;
 			} ProcessTime;
+
+			struct {
+				std::uint16_t AverageProcessMilliseconds;
+				std::uint16_t WorstRoundTripMilliseconds;
+				std::uint16_t StallMilliseconds;
+			} NetworkReport;
 
 		} Data;
 

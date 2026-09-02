@@ -69,6 +69,8 @@
 
 #include <algorithm>
 
+void Multiplayer_Debug_Print(void);
+
 GadgetClass * GScreenClass::Buttons = NULL;
 
 
@@ -413,6 +415,9 @@ void GScreenClass::Render(void)
 	**	This way, they'll Blit along with the rest of the map.
 	*/
 	Session.Messages.Draw();
+	if (Session.ShowInternetDebug) {
+		Multiplayer_Debug_Print();
+	}
 
 	if (ToolTips != NULL) {
 		ToolTips->Draw_Current();

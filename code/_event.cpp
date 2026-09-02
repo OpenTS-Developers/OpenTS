@@ -57,6 +57,7 @@ unsigned char EventClass::EventLength[EventClass::LAST_EVENT] = {
 	0,                                               // PAGEUSER
 	size_of(EventClass, Data.General),               // REMOVEPLAYER
 	size_of(EventClass, Data.General),               // LATENCYFUDGE
+	size_of(EventClass, Data.NetworkReport),         // NETWORK_REPORT
 };
 
 char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
@@ -96,4 +97,5 @@ char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
 	"PAGEUSER",
 	"REMOVEPLAYER",
 	"LATENCYFUDGE",
+	"NETWORK_REPORT",
 };

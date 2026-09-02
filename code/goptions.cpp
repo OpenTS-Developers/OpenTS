@@ -115,24 +115,30 @@ void Game_Options_Dialog(void)
 }
 
 
+/// <summary>Returns the localized label for a synchronized connection-quality tier.</summary>
+int Network_Quality_Text_ID(NetTiming::ConnectionQuality quality)
+{
+	switch (quality) {
+		case NetTiming::ConnectionQuality::Fast: return(TXT_BEST_CONNECTION);
+		case NetTiming::ConnectionQuality::Normal: return(TXT_GOOD_CONNECTION);
+		case NetTiming::ConnectionQuality::Poor: return(TXT_POOR_CONNECTION);
+		case NetTiming::ConnectionQuality::Bad: return(TXT_WORST_CONNECTION);
+	}
+	return(TXT_WORST_CONNECTION);
+}
+
+
 /// <summary>
 /// Handles messages for the in game options dialog.
 /// This routine offers every message to the owner draw system first. What is left it uses
 /// to service the option buttons -- save, load, delete, briefing, resume, abort and
 /// settings -- either acting on them directly or noting the player's choice for
-/// Game_Options_Dialog to deal with once the dialog comes down. Dragging the game speed or
-/// connection quality slider updates the label beside it.
+/// Game_Options_Dialog to deal with once the dialog comes down. Dragging the game speed
+/// slider updates the label beside it.
 /// </summary>
 /// <returns>Returns with TRUE if the owner draw system consumed the message.</returns>
 BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	static int GameConnectionQualityNames[] = {
-		TXT_WORST_CONNECTION,
-		TXT_POOR_CONNECTION,
-		TXT_GOOD_CONNECTION,
-		TXT_BEST_CONNECTION
-	};
-
 	BOOL rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
 	HWND handle;
@@ -204,14 +210,6 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 				case IDC_RESUME_MISSION:
 					if (!code) {
 						if (Session.Type == GAME_INTERNET) {
-							handle = GetDlgItem(window, IDC_CTRLWOL_CONNECTION);
-							if (handle) {
-								int fudge = 3 - SendMessage(handle, TBM_GETPOS, 0, 0);
-								if (fudge != Session.LatencyFudge) {
-									OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::LATENCYFUDGE, fudge));
-									DebugString("LATENCYFUDGE event created - %d\n", fudge);
-								}
-							}
 							handle = GetDlgItem(window, IDC_GAME_SPEED_SLIDER);
 							if (handle) {
 								int speed = (OptionsClass::MAX_SPEED_SETTING-1) - SendMessage(handle, TBM_GETPOS, 0, 0);
@@ -254,20 +252,11 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 		case WM_HSCROLL: {
 			if (LOWORD(wparam) == SB_THUMBTRACK) {
 				int pos = HIWORD(wparam);
-				int textid;
-
 				if ((HWND)lparam == GetDlgItem(window, IDC_GAME_SPEED_SLIDER)) {
-					textid = GameSpeedNames[pos];
 					handle = GetDlgItem(window, IDC_GAME_SPEED_LABEL);
-				} else if ((HWND)lparam == GetDlgItem(window, IDC_CTRLWOL_CONNECTION)) {
-					textid = GameConnectionQualityNames[pos];
-					handle = GetDlgItem(window, IDC_SCROLL_SPEED_LABEL);
-				} else {
-					break;
-				}
-
-				if (handle) {
-					Static_SetText(handle, Fetch_String(textid));
+					if (handle) {
+						Static_SetText(handle, Fetch_String(GameSpeedNames[pos]));
+					}
 				}
 			}
 			break;
@@ -285,7 +274,7 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 /// Prepares the controls of the game options dialog.
 /// This routine is called when the dialog is created, and again whenever a save or delete
 /// has changed what is on disk. It decides which buttons the current game type allows the
-/// player to use and primes the game speed and connection quality sliders.
+/// player to use and primes the game speed and connection-quality controls.
 /// </summary>
 void Game_Options_On_INITDIALOG(HWND window)
 {
@@ -313,10 +302,23 @@ void Game_Options_On_INITDIALOG(HWND window)
 	}
 
 	if (Session.Type == GAME_INTERNET) {
+		NetTiming::TimingSettings const settings{Session.FrameSendRate, Session.MaxAhead};
+		NetTiming::ConnectionQuality const quality = NetTiming::Connection_Quality_For_Settings(settings);
 
 		handle = GetDlgItem(window, IDC_CTRLWOL_CONNECTION);
 		if (handle) {
-			SetSliderRangeAndPos(handle, 0, 3, 3 - Session.LatencyFudge);
+			unsigned int const displayed_rung = settings.FrameSendRate >= NetTiming::MINIMUM_TIMING_RUNG
+				&& settings.FrameSendRate <= NetTiming::MAXIMUM_TIMING_RUNG ? settings.FrameSendRate : NetTiming::MAXIMUM_TIMING_RUNG;
+			int const mirrored_rung = NetTiming::MINIMUM_TIMING_RUNG + NetTiming::MAXIMUM_TIMING_RUNG - displayed_rung;
+			SetSliderRangeAndPos(handle, NetTiming::MINIMUM_TIMING_RUNG, NetTiming::MAXIMUM_TIMING_RUNG, mirrored_rung);
+			EnableWindow(handle, FALSE);
+		}
+
+		handle = GetDlgItem(window, IDC_SCROLL_SPEED_LABEL);
+		if (handle) {
+			char label[64];
+			snprintf(label, sizeof(label), Fetch_String(TXT_CONNECTION_QUALITY_RUNG), Fetch_String(Network_Quality_Text_ID(quality)), settings.FrameSendRate);
+			Static_SetText(handle, label);
 		}
 
 		handle = GetDlgItem(window, IDC_GAME_SPEED_SLIDER);

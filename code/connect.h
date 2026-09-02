@@ -100,6 +100,8 @@
 #include "netadmit.h"
 #include "nettiming.h"
 
+#include <optional>
+
 /*
 ********************************** Defines **********************************
 */
@@ -186,6 +188,7 @@ class ConnectionClass
 		void Set_TimeOut (unsigned int t) { Timeout = t;}
 		unsigned int Max_Packet_Len (void) { return(MaxPacketLen); }
 		void Reset_Round_Trip_Time(void) {RoundTripEstimator.Reset();}
+		std::optional<NetTiming::Milliseconds> Smoothed_Round_Trip_MS(void) const;
 		static const char * Command_Name(int command);
 
 		int Num_Resends(void) const { return(NumResends); }

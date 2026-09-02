@@ -30,6 +30,7 @@ namespace {
 
 using Bytes = std::vector<std::byte>;
 using VariableDataType = decltype(std::declval<EventClass>().Data.Variable);
+using NetworkReportType = decltype(std::declval<EventClass>().Data.NetworkReport);
 
 constexpr int Sender = 3;
 constexpr int Frame = 120;
@@ -151,8 +152,11 @@ void Test_Reader(void)
 void Test_Event_Contract(void)
 {
 	Check(EventClass::LATENCYFUDGE == 35, "the last inherited event keeps numeric ID 35");
-	Check(EventClass::LAST_EVENT == 36, "the decoder preserves the inherited event range");
-	Check(sizeof(EventClass) == 46 && EnvelopeSize == 17, "full and envelope event layouts match the legacy wire");
+	Check(EventClass::NETWORK_REPORT == 36 && EventClass::LAST_EVENT == 37, "the timing report appends without renumbering inherited events");
+	Check(EventClass::EventLength[EventClass::NETWORK_REPORT] == sizeof(NetworkReportType) && sizeof(NetworkReportType) == 6, "NETWORK_REPORT uses its six-byte payload");
+	Check(std::strcmp(EventClass::EventNames[EventClass::NETWORK_REPORT], "NETWORK_REPORT") == 0, "NETWORK_REPORT has a diagnostic name");
+	Check(EventClass::NETWORK_RTT_UNAVAILABLE == UINT16_MAX, "the unavailable RTT sentinel is uint16 max");
+	Check(sizeof(EventClass) == 46 && EnvelopeSize == 17, "the report fits without changing full or envelope event layouts");
 }
 
 
@@ -358,6 +362,22 @@ void Test_Full_Compressed_Table(void)
 	Check(decoded_response.Succeeded() && decoded_response.Events.size() == 2
 		&& decoded_response.Events[1].Event.Data.FrameInfo.Delay == 42,
 		"RESPONSE_TIME materializes its byte at FrameInfo.Delay");
+
+	Bytes report = Compressed_Packet();
+	std::uint16_t const average = 17;
+	std::uint16_t const worst = 240;
+	std::uint16_t const stalled = 350;
+	Bytes report_data;
+	Append_Value(report_data, average);
+	Append_Value(report_data, worst);
+	Append_Value(report_data, stalled);
+	Add_Compressed_Event(report, EventClass::NETWORK_REPORT, report_data);
+	NetPacket::DecodeResult decoded_report = NetPacket::Decode_Event_Packet(report, NetPacket::Encoding::COMPRESSED, Sender);
+	Check(decoded_report.Succeeded() && decoded_report.Events.size() == 2
+		&& decoded_report.Events[1].Event.Data.NetworkReport.AverageProcessMilliseconds == average
+		&& decoded_report.Events[1].Event.Data.NetworkReport.WorstRoundTripMilliseconds == worst
+		&& decoded_report.Events[1].Event.Data.NetworkReport.StallMilliseconds == stalled,
+		"NETWORK_REPORT preserves all three millisecond fields");
 }
 
 

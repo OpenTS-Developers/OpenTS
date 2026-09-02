@@ -1037,6 +1037,8 @@ restart:
 
 	Session.ProcessTicks = 0;
 	Session.ProcessFrames = 0;
+	Session.WorstStallTicks = 0;
+	Session.PreviousWorstStallTicks = 0;
 	Session.DesiredFrameRate = 30;
 	NewMaxAheadFrame1 = 0;
 	NewMaxAheadFrame2 = 0;
@@ -1457,6 +1459,8 @@ restart:
 				Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND, Ipx.Global_Response_Time() + 2), (unsigned int) -1, 10 * TIMER_SECOND);
 			}
 		}
+	} else if (Session.Play && (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET)) {
+		Session.Reset_Network_Timing(Frame >= 0 ? static_cast<unsigned int>(Frame) : 0u);
 	}
 
 	/*
