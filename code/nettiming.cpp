@@ -341,8 +341,9 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Records process time and optional RTT as one report.</summary>
-	bool TimingReportCensus::Record_Report(unsigned int player, Milliseconds process_milliseconds, std::optional<Milliseconds> round_trip, std::uint32_t frame)
+	/// <summary>Records process time, optional RTT, and longest wait as one report.</summary>
+	bool TimingReportCensus::Record_Report(unsigned int player, Milliseconds process_milliseconds, std::optional<Milliseconds> round_trip, std::uint32_t frame,
+		Milliseconds stall_milliseconds)
 	{
 		if (player >= Reports.size() || !Reports[player].Active || process_milliseconds > MAXIMUM_PROCESS_MILLISECONDS
 			|| (round_trip && *round_trip > MAXIMUM_REPORTED_RTT)) {
@@ -355,6 +356,7 @@ namespace NetTiming
 		report.EverHadRoundTrip |= round_trip.has_value();
 		report.ProcessMilliseconds = process_milliseconds;
 		report.RoundTrip = round_trip.value_or(0);
+		report.StallMilliseconds = stall_milliseconds;
 		report.ReportFrame = frame;
 		return(true);
 	}
@@ -374,6 +376,7 @@ namespace NetTiming
 			if (fresh) {
 				result.FreshProcessReports++;
 				result.WorstProcessMilliseconds = std::max(result.WorstProcessMilliseconds, report.ProcessMilliseconds);
+				result.WorstStallMilliseconds = std::max(result.WorstStallMilliseconds, report.StallMilliseconds);
 			} else {
 				result.ProcessComplete = false;
 			}
@@ -514,13 +517,13 @@ namespace NetTiming
 			return(result);
 		}
 
-		// Worsening is immediate; the first improvement must clear the headroom, cadence, and cooldown
-		// gates, and a descent then continues one rung per evaluation while the headroom holds.
+		// Worsening is immediate; the first improvement must clear the headroom, waiting, cadence, and
+		// cooldown gates, and a descent then continues one rung per evaluation while the headroom holds.
 		TimingSettings const desired_settings = Desired_Settings(census, target_fps, false);
 		if (Timing_Is_Worse(desired_settings, CurrentSettings)) {
 			Change_To(desired_settings, frame);
 			result.Changed = true;
-		} else if (Timing_Is_Better(desired_settings, CurrentSettings)
+		} else if (Timing_Is_Better(desired_settings, CurrentSettings) && census.WorstStallMilliseconds < STALL_IMPROVE_MILLISECONDS
 			&& (!HasChanged || ImprovementStreak || frame - LastChangeFrame >= CHANGE_COOLDOWN)) {
 			TimingSettings const headroom = Desired_Settings(census, target_fps, true);
 			if (Timing_Is_Better(headroom, CurrentSettings)) {

@@ -1037,6 +1037,8 @@ restart:
 
 	Session.ProcessTicks = 0;
 	Session.ProcessFrames = 0;
+	Session.WorstStallTicks = 0;
+	Session.PreviousWorstStallTicks = 0;
 	Session.DesiredFrameRate = 30;
 	NewMaxAheadFrame1 = 0;
 	NewMaxAheadFrame2 = 0;

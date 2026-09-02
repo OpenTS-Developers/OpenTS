@@ -798,6 +798,43 @@ namespace
 	}
 
 
+	void Test_Stall_Feedback(void)
+	{
+		using namespace NetTiming;
+
+		TimingReportCensus reports;
+		reports.Set_Player_Active(1, true, 0);
+		reports.Set_Player_Active(2, true, 0);
+		reports.Record_Report(1, 10, 0, 256, 50);
+		reports.Record_Report(2, 10, 0, 256, 400);
+		TimingCensus census = reports.Inspect(256);
+		Expect_Equal("census publishes the longest wait", census.WorstStallMilliseconds, 400u);
+
+		BalancedTimingPolicy policy;
+		policy.Reset_From({4, 12}, 0);
+		TimingEvaluation result = policy.Evaluate(census, 60, 256);
+		Expect("a long wait never steps the timing up", result.Evaluated && !result.Changed && policy.Current_Settings() == TimingSettings{4, 12});
+		Expect_Equal("a long wait resets the improvement count", policy.Good_Evaluations(), 0u);
+
+		reports.Record_Report(1, 10, 0, 512, 0);
+		reports.Record_Report(2, 10, 0, 512, 200);
+		result = policy.Evaluate(reports.Inspect(512), 60, 512);
+		Expect("waiting above the improvement limit holds the timing", result.Evaluated && !result.Changed && policy.Good_Evaluations() == 0);
+
+		for (std::uint32_t frame : {768u, 1024u, 1280u}) {
+			reports.Record_Report(1, 10, 0, frame, 0);
+			reports.Record_Report(2, 10, 0, frame, 20);
+			result = policy.Evaluate(reports.Inspect(frame), 60, frame);
+		}
+		Expect("quiet waiting allows the normal descent", result.Changed && policy.Current_Settings() == TimingSettings{3, 9});
+
+		reports.Record_Report(1, 10, 0, 1536, 0);
+		reports.Record_Report(2, 10, 0, 1536, 150);
+		result = policy.Evaluate(reports.Inspect(1536), 60, 1536);
+		Expect("a wait during the descent ends the streak", result.Evaluated && !result.Changed && policy.Good_Evaluations() == 0);
+	}
+
+
 	void Test_Master_Handoff_State(void)
 	{
 		using namespace NetTiming;
@@ -1010,6 +1047,7 @@ int main(void)
 	Test_Bootstrap_Policy();
 	Test_Hysteresis_And_Cooldown();
 	Test_Stale_And_Long_Term_Recovery();
+	Test_Stall_Feedback();
 	Test_Master_Handoff_State();
 	Test_Staged_Decrease();
 	Test_Transition_Sequences();

@@ -519,13 +519,14 @@ void SessionClass::Reset_Network_Timing(unsigned int frame)
 
 
 /// <summary>Validates and records a seated player's synchronized timing report.</summary>
-bool SessionClass::Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int frame)
+bool SessionClass::Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int stall_milliseconds,
+	unsigned int frame)
 {
 	std::optional<NetTiming::Milliseconds> round_trip;
 	if (round_trip_milliseconds != EventClass::NETWORK_RTT_UNAVAILABLE) {
 		round_trip = round_trip_milliseconds;
 	}
-	if (!NetworkTimingReports.Record_Report(id, process_milliseconds, round_trip, frame)) {
+	if (!NetworkTimingReports.Record_Report(id, process_milliseconds, round_trip, frame, stall_milliseconds)) {
 		return(false);
 	}
 

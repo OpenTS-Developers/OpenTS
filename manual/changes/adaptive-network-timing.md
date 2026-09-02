@@ -20,7 +20,8 @@ step and then continues one rung per evaluation; timing decreases drain the old
 scheduling horizon before stepping down on aligned send boundaries. An event
 scheduled for a frame that a decrease skips executes on the next send frame,
 and a player whose measured RTT lapses holds the current timing instead of
-selecting `10/250`.
+selecting `10/250`. Reports also carry each player's longest wait for the
+others, and improvement waits until nobody has waited 0.1 s or longer.
 
 The disabled WOL Connection slider shows the effective 1–10 rung and tier; the
 message list announces target-tier changes. Game speed remains separate.
