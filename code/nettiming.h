@@ -23,11 +23,10 @@ namespace NetTiming
 	// still measure a clean acknowledgement, so a recovering link is not reported stale.
 	constexpr Milliseconds RTT_SAMPLE_LIFETIME = 8000;
 
-	enum class RetryDecision
+	struct RetryDecision
 	{
-		WAIT,
-		SEND,
-		TIMED_OUT
+		bool Send = false;
+		bool TimedOut = false;
 	};
 
 	struct RetransmitState
