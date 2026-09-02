@@ -1333,6 +1333,8 @@ void EventClass::Execute(void)
 				break;
 			}
 
+			DebugString("Network timing event at frame %d from player %d: %u/%u at %u fps %s\n", Frame, ID, settings.FrameSendRate, settings.MaxAhead,
+				Data.Timing.DesiredFrameRate, result == NetTiming::ScheduleResult::Applied ? "applied" : "staged");
 			NetTiming::ConnectionQuality const quality = NetTiming::Connection_Quality_For_Settings(settings);
 			if (quality != old_quality) {
 				char const * format = Fetch_String(TXT_CONNECTION_QUALITY_STATUS);
@@ -1386,6 +1388,11 @@ void EventClass::Execute(void)
 					Data.NetworkReport.WorstRoundTripMilliseconds, Data.NetworkReport.StallMilliseconds, static_cast<unsigned int>(Frame)))
 				&& !Session.Play) {
 				Log_Event_Rejection(EventRejectReason::InvalidNetworkReport, Type, ID, Data.NetworkReport.WorstRoundTripMilliseconds);
+			} else if (!Session.Play) {
+				DebugString("Network report at frame %d from player %d: process %u ms, RTT %d ms, longest wait %u ms\n", Frame, ID,
+					(unsigned int)Data.NetworkReport.AverageProcessMilliseconds,
+					Data.NetworkReport.WorstRoundTripMilliseconds == NETWORK_RTT_UNAVAILABLE ? -1 : (int)Data.NetworkReport.WorstRoundTripMilliseconds,
+					(unsigned int)Data.NetworkReport.StallMilliseconds);
 			}
 			break;
 
