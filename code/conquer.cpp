@@ -131,7 +131,9 @@
 #include <direct.h>
 #include <dos.h>
 #include <fcntl.h>
+#ifdef _WIN32
 #include <io.h>
+#endif
 #include <share.h>
 #include <span>
 

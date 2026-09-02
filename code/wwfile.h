@@ -40,7 +40,9 @@
 
 #include <cstddef>
 #include <cstdio>
+#ifdef _WIN32
 #include <io.h>
+#endif
 
 #ifndef SEEK_SET
 #define SEEK_SET					0	// Seek from start of file.
