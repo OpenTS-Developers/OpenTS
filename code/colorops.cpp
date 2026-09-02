@@ -21,24 +21,6 @@
 
 #include "always.h"
 
-/*
- * Two families of routine, each replacing four assembly routines of the same names, one per
- * hicolor layout.
- *
- * Adjust_Color_* builds a palette translation table: every colour is scaled and packed into a
- * pixel. A colour whose mask entry is set is scaled by the separate red, green and blue tints;
- * one whose entry is clear is scaled by the single intensity instead.
- *
- * Brighten_Color_* and MMX_Brighten_Color_* lighten a hicolor image through a per-pixel
- * multiplier. The two reach the same shape by different routes -- the first unpacks each pixel
- * with shifts, the second reads the channels out of a caller-supplied 65536 entry table -- and
- * they are kept apart here rather than folded together, because only the caller knows whether
- * the table it built agrees with the shifts.
- *
- * The assembly had three hand-written paths through Adjust_Color, chosen at run time by the
- * MMX and CMOV flags. All three computed the same thing, so one routine replaces them.
- */
-
 namespace {
 
 /*
@@ -108,32 +90,6 @@ void Adjust_Color(unsigned char const * palette, unsigned short * translator, in
 }
 
 
-/*
- * How one layout is taken apart and put back together by the brightening routines. The names
- * follow the order the assembly worked in rather than red, green, blue.
- */
-struct BrightenFormat {
-	unsigned int ShiftA;
-	unsigned int ShiftB;
-	unsigned int MaskA;
-	unsigned int MaskB;
-	unsigned int ScaleShiftA;
-	unsigned int ScaleShiftB;
-	unsigned int DownA;
-	unsigned int DownB;
-	unsigned int UpA;
-	unsigned int UpB;
-	unsigned int ShiftC;
-	unsigned int ScaleShiftC;
-	unsigned int DownC;
-};
-
-BrightenFormat const _Brighten565 = {8, 3, 0xF8, 0xFC, 8, 8, 3, 2, 11, 5, 3, 8, 3};
-BrightenFormat const _Brighten655 = {8, 2, 0xFC, 0xF8, 8, 8, 2, 3, 10, 5, 3, 8, 3};
-BrightenFormat const _Brighten556 = {8, 3, 0xF8, 0xF8, 8, 8, 3, 3, 11, 6, 2, 8, 2};
-BrightenFormat const _Brighten555 = {7, 2, 0xF8, 0xF8, 8, 8, 3, 3, 10, 5, 3, 8, 3};
-
-
 /// <summary>
 /// Adds two channel values, holding the result at 255 rather than letting it wrap.
 /// </summary>
@@ -144,47 +100,6 @@ inline unsigned int Add_Saturated(unsigned int left, unsigned int right)
 {
 	unsigned int const sum = (left & 0xFF) + (right & 0xFF);
 	return((sum > 255) ? 255 : sum);
-}
-
-
-void Brighten_Color(unsigned char const * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth,
-	int colorbuffwidth, int width, int height, BrightenFormat const & format)
-{
-	unsigned char const * mulrow = mulbuffer;
-	unsigned char * colorrow = (unsigned char *)colorbuffer;
-
-	for (int y = 0; y < height; y++) {
-		unsigned char const * mul = mulrow;
-		unsigned short * color = (unsigned short *)colorrow;
-
-		for (int x = 0; x < width; x++) {
-			unsigned int const multiplier = *mul;
-
-			if (multiplier != 0) {
-				unsigned int const pixel = *color;
-
-				unsigned int const a = (pixel >> format.ShiftA) & format.MaskA;
-				unsigned int const b = (pixel >> format.ShiftB) & format.MaskB;
-				unsigned int const c = (pixel << format.ShiftC) & 0xFF;
-
-				unsigned int outa = Add_Saturated((a * multiplier) >> format.ScaleShiftA, a);
-				unsigned int outb = Add_Saturated((b * multiplier) >> format.ScaleShiftB, b);
-				unsigned int outc = Add_Saturated((c * multiplier) >> format.ScaleShiftC, c);
-
-				outa = (outa >> format.DownA) << format.UpA;
-				outb = (outb >> format.DownB) << format.UpB;
-				outc = outc >> format.DownC;
-
-				*color = (unsigned short)(outa | outb | outc);
-			}
-
-			mul++;
-			color++;
-		}
-
-		mulrow += mulbuffwidth;
-		colorrow += colorbuffwidth;
-	}
 }
 
 
@@ -296,30 +211,6 @@ void __cdecl Adjust_Color_556(void * palette, void * translator, int red, int gr
 void __cdecl Adjust_Color_655(void * palette, void * translator, int red, int green, int blue, int intensity, void * mask)
 {
 	Adjust_Color((unsigned char const *)palette, (unsigned short *)translator, red, green, blue, intensity, (unsigned char const *)mask, _Format655);
-}
-
-
-void __cdecl Brighten_Color_565(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height)
-{
-	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, _Brighten565);
-}
-
-
-void __cdecl Brighten_Color_555(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height)
-{
-	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, _Brighten555);
-}
-
-
-void __cdecl Brighten_Color_556(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height)
-{
-	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, _Brighten556);
-}
-
-
-void __cdecl Brighten_Color_655(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height)
-{
-	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, _Brighten655);
 }
 
 

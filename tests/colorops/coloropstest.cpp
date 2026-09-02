@@ -24,11 +24,6 @@ void __cdecl Adjust_Color_555(void *pal, void *xlat, int r, int g, int b, int i,
 void __cdecl Adjust_Color_556(void *pal, void *xlat, int r, int g, int b, int i, void *mask);
 void __cdecl Adjust_Color_655(void *pal, void *xlat, int r, int g, int b, int i, void *mask);
 
-void __cdecl Brighten_Color_565(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h);
-void __cdecl Brighten_Color_555(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h);
-void __cdecl Brighten_Color_556(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h);
-void __cdecl Brighten_Color_655(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h);
-
 void __cdecl MMX_Brighten_Color_565(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *mmx);
 void __cdecl MMX_Brighten_Color_555(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *mmx);
 void __cdecl MMX_Brighten_Color_556(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *mmx);
@@ -71,11 +66,9 @@ unsigned long long Hash(void const * data, int size)
 
 
 typedef void (__cdecl * AdjustFunc)(void *, void *, int, int, int, int, void *);
-typedef void (__cdecl * BrightenFunc)(unsigned char *, unsigned short *, int, int, int, int);
 typedef void (__cdecl * MmxBrightenFunc)(unsigned char *, unsigned short *, int, int, int, int, int *);
 
 AdjustFunc const Adjusts[4] = {Adjust_Color_565, Adjust_Color_555, Adjust_Color_556, Adjust_Color_655};
-BrightenFunc const Brightens[4] = {Brighten_Color_565, Brighten_Color_555, Brighten_Color_556, Brighten_Color_655};
 MmxBrightenFunc const MmxBrightens[4] = {MMX_Brighten_Color_565, MMX_Brighten_Color_555, MMX_Brighten_Color_556, MMX_Brighten_Color_655};
 
 char const * const ModeNames[4] = {"565", "555", "556", "655"};
@@ -137,6 +130,11 @@ int main(void)
 	for (int i = 0; i < BrightenGoldenCaseCount; i++) {
 		BrightenGoldenCase const & test = BrightenGoldenCases[i];
 
+		// The non-MMX vectors record a path colorops.cpp no longer has.
+		if (test.Mmx == 0) {
+			continue;
+		}
+
 		Seed = test.Seed;
 
 		for (int j = 0; j < 256 * 256; j++) {
@@ -149,17 +147,13 @@ int main(void)
 			MmxBuffer[j] = (int)(Next_Random() & 0x00FFFFFF);
 		}
 
-		if (test.Mmx != 0) {
-			MmxBrightens[test.Mode](MulBuffer, ColorBuffer, 256, 512 * 2, test.Width, test.Height, MmxBuffer);
-		} else {
-			Brightens[test.Mode](MulBuffer, ColorBuffer, 256, 512 * 2, test.Width, test.Height);
-		}
+		MmxBrightens[test.Mode](MulBuffer, ColorBuffer, 256, 512 * 2, test.Width, test.Height, MmxBuffer);
 
 		unsigned long long const hash = Hash(ColorBuffer, 512 * 512 * 2);
 
 		if (hash != test.Hash) {
-			std::printf("FAILED %sBrighten_Color_%s %dx%d: expected %llu, got %llu\n",
-				test.Mmx ? "MMX_" : "", ModeNames[test.Mode], test.Width, test.Height, test.Hash, hash);
+			std::printf("FAILED MMX_Brighten_Color_%s %dx%d: expected %llu, got %llu\n",
+				ModeNames[test.Mode], test.Width, test.Height, test.Hash, hash);
 			Failures++;
 		}
 

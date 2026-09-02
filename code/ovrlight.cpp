@@ -36,17 +36,12 @@ BSurface *SpotLightSurfaces[SpotLightClass::SPOTLIGHT_SURFACE_COUNT + SpotLightC
 
 extern "C" {
 /*
- * Externs to assembly routines from winasm.asm
+ * Externs to the colour routines in colorops.cpp
  */
 void __cdecl Adjust_Color_565(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);
 void __cdecl Adjust_Color_555(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);
 void __cdecl Adjust_Color_556(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);
 void __cdecl Adjust_Color_655(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);
-
-void __cdecl Brighten_Color_565(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int width, int height);
-void __cdecl Brighten_Color_555(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int width, int height);
-void __cdecl Brighten_Color_556(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int width, int height);
-void __cdecl Brighten_Color_655(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int width, int height);
 
 void __cdecl MMX_Brighten_Color_565(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *mmx_buffer);
 void __cdecl MMX_Brighten_Color_555(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *mmx_buffer);
@@ -240,39 +235,23 @@ void SpotLightClass::Draw_It(void)
 				unsigned char *sptr_row = sptr;
 				unsigned short *dptr_row = dptr;
 
-				if (SpotLightDontUseMMX != 1) {
+				if (SpotLightDontUseMMX != 1 && SpotLightMMXBuffer != NULL) {
 					switch (SpotLightColorMode) {
 
 						case COLORMODE_555:
-							if (SpotLightMMXBuffer) {
-								MMX_Brighten_Color_555(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
-							} else {
-								Brighten_Color_555(sptr, dptr, 256, stride, srect.Width, srect.Height);
-							}
+							MMX_Brighten_Color_555(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						case COLORMODE_556:
-							if (SpotLightMMXBuffer) {
-								MMX_Brighten_Color_556(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
-							} else {
-								Brighten_Color_556(sptr, dptr, 256, stride, srect.Width, srect.Height);
-							}
+							MMX_Brighten_Color_556(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						case COLORMODE_565:
-							if (SpotLightMMXBuffer) {
-								MMX_Brighten_Color_565(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
-							} else {
-								Brighten_Color_565(sptr, dptr, 256, stride, srect.Width, srect.Height);
-							}
+							MMX_Brighten_Color_565(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						case COLORMODE_655:
-							if (SpotLightMMXBuffer) {
-								MMX_Brighten_Color_655(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
-							} else {
-								Brighten_Color_655(sptr, dptr, 256, stride, srect.Width, srect.Height);
-							}
+							MMX_Brighten_Color_655(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						default:
