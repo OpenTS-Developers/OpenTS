@@ -44,6 +44,7 @@ namespace NetTiming
 	constexpr std::uint32_t CHANGE_COOLDOWN = 256;
 	constexpr std::uint32_t REPORT_EXPIRY = 512;
 	constexpr unsigned int GOOD_EVALUATIONS_REQUIRED = 3;
+	constexpr unsigned int DESCENT_EVALUATIONS_REQUIRED = 1;
 
 	struct RetryDecision
 	{
@@ -183,6 +184,8 @@ namespace NetTiming
 			bool HasEvaluated = false;
 			bool HasChanged = false;
 			bool Bootstrapping = true;
+			// Set by an improvement; while it holds, each evaluation with headroom steps one more rung.
+			bool ImprovementStreak = false;
 	};
 
 	struct StagedTimingUpdate {
