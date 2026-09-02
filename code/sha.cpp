@@ -78,7 +78,7 @@ void SHAEngine::Process_Partial(void const * & data, int & length)
 	**	Attach as many bytes as possible from the source data into
 	**	the staging buffer.
 	*/
-	int add_count = std::min((int)length, SRC_BLOCK_SIZE - PartialCount);
+	int add_count = std::min<int>((int)length, SRC_BLOCK_SIZE - PartialCount);
 	memcpy(&Partial[PartialCount], data, add_count);
 	data = ((char const *&)data) + add_count;
 	PartialCount += add_count;
