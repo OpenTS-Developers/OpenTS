@@ -41,7 +41,10 @@ MillisecondTimerClass::MillisecondTimerClass(void)
 	unsigned int low = Get_CPU_Rate(high);
 
 	if (low == 0 && high == 0) {
+		// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 		timeBeginPeriod(PERIOD_RESOLUTION);
+#endif
 
 	} else {
 		double dl = low;
@@ -63,7 +66,10 @@ MillisecondTimerClass::MillisecondTimerClass(void)
 MillisecondTimerClass::~MillisecondTimerClass(void)
 {
 	if (Frequency != 1.0) {
+		// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 		timeEndPeriod(PERIOD_RESOLUTION);
+#endif
 	}
 }
 
