@@ -74,7 +74,7 @@ int TeamNumber = 0;			// which team was selected? (1-9)
 
 void Message_Input(KeyNumType &input);
 void Sync_Delay(void);
-void Multiplayer_Debug_Print(bool noframecheck);
+void Multiplayer_Debug_Print(void);
 static void Do_Record_Playback(void);
 
 
@@ -304,14 +304,14 @@ bool Main_Loop(void)
 			if (input) {
 				Keyboard_Process(input);
 			}
-			if (Session.ShowInternetDebug) {
-				Multiplayer_Debug_Print(false);
-			}
 			if ((Frame & 7) == 7 && Session.Type == GAME_INTERNET) {
 				Ipx.Store_Stats();
 			}
 			Update_Fogged_Objects();
 			Map.Render();
+			if (Session.ShowInternetDebug) {
+				Multiplayer_Debug_Print();
+			}
 		}
 	}
 
@@ -743,43 +743,38 @@ void Message_Input(KeyNumType &input)
 /// per-connection display. It is used while debugging a multiplayer game and does
 /// nothing at all in a single player game.
 /// </summary>
-/// <param name="noframecheck">Should the display be drawn regardless of the frame
-/// counter?</param>
-void Multiplayer_Debug_Print(bool noframecheck)
+void Multiplayer_Debug_Print(void)
 {
-	if (!noframecheck && (Frame & 7) != 7) {
-		return;
-	}
-
 	if (Session.Type == GAME_NORMAL) {
 		return;
 	}
 
 	Hide_Mouse();
 
-	VisibleSurface->Fill_Rect(Rect(0, 400, 639, 80), 0);
+	int const top = VisibleSurface->Get_Height() - 80;
+	VisibleSurface->Fill_Rect(Rect(0, top, VisibleSurface->Get_Width(), 80), 0);
 
 	char buffer[256];
 
 	sprintf(buffer, "Frame : %d", Frame);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, 402), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 2), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "FPS : %d", LastFramesPerSecond);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, 410), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 10), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "MaxAhead : %d", Session.MaxAhead);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, 418), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 18), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "Resp Time : %d ms", (int)(Ipx.Response_Time() * 1000) / TIMER_SECOND);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, 426), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 26), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "Req fps : %d", Session.DesiredFrameRate);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, 434), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 34), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "Process : %d", Session.Players[0]->Player.ProcessTime);
-	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, 442), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
+	Fancy_Text_Print(buffer, *VisibleSurface, VisibleSurface->Get_Rect(), Point2D(0, top + 42), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
-	Ipx.Multiplayer_Debug_Print();
+	Ipx.Multiplayer_Debug_Print(top);
 
 	Show_Mouse();
 }
