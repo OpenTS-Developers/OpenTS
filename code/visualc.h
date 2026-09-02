@@ -116,6 +116,9 @@
 // Single precision pi, for the float paths that would otherwise round M_PI at every use.
 #define M_FPI 3.141592654f
 
+#endif
+
+
 /*
 **	Macros to convert between degrees and radians
 */
@@ -133,7 +136,4 @@
 
 #ifndef DEG_TO_RADF
 #define DEG_TO_RADF(x)	(((float)x)*M_PI/180.0f)
-#endif
-
-
 #endif
