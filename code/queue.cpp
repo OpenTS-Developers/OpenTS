@@ -328,7 +328,7 @@ BOOL CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LP
 static void Close_Reconnect_Dialog(void);
 void Kick_Player_Now(ConnManClass *net, int kickee, FrameSyncStruct * their, bool error);
 bool Cast_Kick_Vote(int kicker, int kickee);
-void Multiplayer_Debug_Print(bool noframecheck);
+void Multiplayer_Debug_Print(void);
 
 //...........................................................................
 // Packet compression/decompression:
@@ -1406,7 +1406,7 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 			 */
 			int show_stall = 1;
 			if (Session.ShowInternetDebug && loop_count > 0 && (!stall_drawn || frame_stall != -1 || count_stall != -1)) {
-				Multiplayer_Debug_Print(true);
+				Multiplayer_Debug_Print();
 			} else if (stall_drawn) {
 				show_stall = 0;
 			}
