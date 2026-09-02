@@ -6,10 +6,12 @@ keys: []
 ---
 
 Each private connection maintains smoothed round trip, variation, and a retry
-timeout. Only acknowledgements for first transmissions become samples, avoiding
-ambiguous measurements after a retry.
+timeout. Acknowledgements of first transmissions are the measurements. Until a
+link has one, its first acknowledgement seeds a provisional estimate even after
+a retry, so a link slower than the initial retry delay becomes measurable; the
+first clean acknowledgement replaces the seed.
 
-The retry timeout is limited to 100–2000 ms. Repeated private transmissions
+The retry timeout is limited to 100–4000 ms. Repeated private transmissions
 double their wait up to the connection timeout; that timeout follows measured
 latency with a 2-second minimum and 30-second ceiling. A packet older than that
 timeout marks the connection bad but is still retransmitted at the capped wait

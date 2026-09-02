@@ -32,6 +32,7 @@ namespace NetTiming
 		SmoothedRtt = 0;
 		RttVariation = 0;
 		RetransmitTimeout = MINIMUM_RTO;
+		Provisional = false;
 	}
 
 
@@ -59,13 +60,28 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Samples an acknowledgement when its send time is unambiguous.</summary>
+	/// <summary>Samples an acknowledgement; an unmeasured link takes an ambiguous one as a provisional upper bound.</summary>
 	bool RttEstimator::Acknowledge(Milliseconds sent_at, unsigned int transmission_count, MillisecondClock const & clock)
 	{
-		if (transmission_count != 1) {
+		if (transmission_count == 0) {
 			return(false);
 		}
-		return(Add_Sample(Elapsed_Milliseconds(sent_at, clock.Now())));
+
+		Milliseconds const elapsed = Elapsed_Milliseconds(sent_at, clock.Now());
+		if (transmission_count != 1) {
+			if (Initialized) {
+				return(false);
+			}
+			Provisional = Add_Sample(elapsed);
+			return(Provisional);
+		}
+
+		// The first clean sample replaces a provisional seed instead of blending with it.
+		if (Provisional) {
+			Initialized = false;
+			Provisional = false;
+		}
+		return(Add_Sample(elapsed));
 	}
 
 

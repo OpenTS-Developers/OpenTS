@@ -248,8 +248,15 @@ namespace
 		FakeTransport lossy_transport;
 		lossy_transport.Send(1000);
 		Expect("fake transport retries a lost packet", lossy_transport.Retry(1100));
-		Expect("fake transport applies Karn after loss", !lossy_transport.Acknowledge(1180));
-		Expect("lossy fake transport has no ambiguous RTT sample", !lossy_transport.Rtt().Has_Sample());
+		Expect("ambiguous first ACK seeds a provisional sample", lossy_transport.Acknowledge(1180));
+		Expect("provisional seed is the elapsed upper bound", lossy_transport.Rtt().Smoothed_Rtt() == 180u && lossy_transport.Rtt().Is_Provisional());
+		lossy_transport.Send(2000);
+		Expect_Equal("provisional seed paces the next packet", lossy_transport.Base_Rto(), 540u);
+		Expect("clean sample replaces the provisional seed", lossy_transport.Acknowledge(2080));
+		Expect_Equal("replaced smoothed RTT", lossy_transport.Rtt().Smoothed_Rtt(), 80u);
+		Expect_Equal("replaced variation", lossy_transport.Rtt().Rtt_Variation(), 40u);
+		Expect_Equal("replaced RTO", lossy_transport.Rtt().Retransmit_Timeout(), 240u);
+		Expect("replaced estimate is measured", !lossy_transport.Rtt().Is_Provisional());
 	}
 
 
@@ -286,7 +293,46 @@ namespace
 		Expect_Equal("recovered smoothed RTT", transport.Rtt().Smoothed_Rtt(), 71u);
 		Expect_Equal("recovered variation", transport.Rtt().Rtt_Variation(), 126u);
 		Expect_Equal("recovered RTO covers the slower link", transport.Rtt().Retransmit_Timeout(), 575u);
-		Expect("recovered estimate is measured", transport.Rtt().Has_Sample());
+		Expect("recovered estimate is measured", transport.Rtt().Has_Sample() && !transport.Rtt().Is_Provisional());
+	}
+
+
+	void Test_Provisional_Seed(void)
+	{
+		using namespace NetTiming;
+
+		FakeClock clock;
+		RttEstimator estimator;
+		Expect("unsent packet never samples", !estimator.Acknowledge(0, 0, clock));
+		Expect("unsent acknowledgement leaves the estimator empty", !estimator.Has_Sample());
+
+		clock.Set(2000);
+		Expect("two-second link seeds through a retransmitted ACK", estimator.Acknowledge(0, 2, clock));
+		Expect("seed is provisional", estimator.Has_Sample() && estimator.Is_Provisional());
+		Expect_Equal("seed smoothed RTT", estimator.Smoothed_Rtt(), 2000u);
+		Expect_Equal("seed RTO reaches the ceiling", estimator.Retransmit_Timeout(), MAXIMUM_RTO);
+
+		clock.Set(4500);
+		Expect("second ambiguous ACK does not move a provisional seed", !estimator.Acknowledge(1000, 3, clock));
+		Expect_Equal("seed unchanged by a second ambiguous ACK", estimator.Smoothed_Rtt(), 2000u);
+
+		clock.Set(6900);
+		Expect("clean sample replaces the seed", estimator.Acknowledge(5000, 1, clock));
+		Expect_Equal("clean sample replaces rather than blends", estimator.Smoothed_Rtt(), 1900u);
+		Expect("replaced seed is measured", !estimator.Is_Provisional());
+
+		clock.Set(9000);
+		Expect("Karn applies once the estimate is measured", !estimator.Acknowledge(7000, 2, clock));
+
+		RttEstimator backed_off;
+		clock.Set(300);
+		backed_off.Acknowledge(0, 2, clock);
+		Expect_Equal("provisional RTO", backed_off.Retransmit_Timeout(), 900u);
+		backed_off.Note_Retransmit(900);
+		Expect_Equal("provisional estimate backs off like a measured one", backed_off.Retransmit_Timeout(), 1800u);
+
+		backed_off.Reset();
+		Expect("reset clears the provisional flag", !backed_off.Is_Provisional() && !backed_off.Has_Sample());
 	}
 
 
@@ -305,6 +351,8 @@ namespace
 		ceiling.Note_Retransmit(900);
 		Expect_Equal("backoff doubles below the ceiling", ceiling.Retransmit_Timeout(), 1800u);
 		ceiling.Note_Retransmit(1800);
+		Expect_Equal("backoff doubles again below the ceiling", ceiling.Retransmit_Timeout(), 3600u);
+		ceiling.Note_Retransmit(3600);
 		Expect_Equal("backoff clamps at the ceiling", ceiling.Retransmit_Timeout(), MAXIMUM_RTO);
 		ceiling.Note_Retransmit(MAXIMUM_RTO);
 		Expect_Equal("backoff stays at the ceiling", ceiling.Retransmit_Timeout(), MAXIMUM_RTO);
@@ -329,6 +377,7 @@ int main(void)
 	Test_Retry_Decisions();
 	Test_Loss_Jitter_And_Reordering();
 	Test_Backoff_Persistence();
+	Test_Provisional_Seed();
 	Test_Note_Retransmit_Guards();
 
 	if (Failures != 0) {
