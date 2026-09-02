@@ -90,10 +90,10 @@ long __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, 
 			error = 1;
 			break;
 
-		/* VQACMD_SEEK asks that you perform a seek relative to the current
-		 * position. NBytes is a signed number, indicating seek direction
-		 * (positive for forward, negative for backward). Buffer has no meaning
-		 * here.
+		/* VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		 * names, which is SEEK_SET or SEEK_CUR cast to a pointer. NBytes is a
+		 * signed number, indicating seek direction (positive for forward,
+		 * negative for backward).
 		 *
 		 * Any error code returned will be remapped by VQA library into
 		 * VQAERR_SEEK.
@@ -187,10 +187,10 @@ long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer
 			error = 1;
 			break;
 
-		/* VQACMD_SEEK asks that you perform a seek relative to the current
-		 * position. NBytes is a signed number, indicating seek direction
-		 * (positive for forward, negative for backward). Buffer has no meaning
-		 * here.
+		/* VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		 * names, which is SEEK_SET or SEEK_CUR cast to a pointer. NBytes is a
+		 * signed number, indicating seek direction (positive for forward,
+		 * negative for backward).
 		 *
 		 * Any error code returned will be remapped by VQA library into
 		 * VQAERR_SEEK.
