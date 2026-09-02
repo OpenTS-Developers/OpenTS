@@ -273,6 +273,8 @@ FrameSyncStruct SyncBarFrameSync[MAX_PLAYERS - 1];
 BasicTimerClass<SystemTimerClass> SentFrameSyncTimer;
 FrameSyncStruct TheirFrameSync[MAX_PLAYERS - 1];
 unsigned short SentCommandCount;								// # cmds I've sent out
+// Frame of the previous Execute_DoList call; a send-period decrease can skip an event's frame.
+static int LastExecutedFrame = -1;
 
 static std::array<unsigned int, static_cast<std::size_t>(NetPacket::DecodeError::COUNT)>
 	NetworkPacketDrops = {};
@@ -746,6 +748,7 @@ static void Queue_AI_Multiplayer(void)
 		}
 		skip_crc = Frame + ARRAY_SIZE(CRC);
 		SentCommandCount = 0;
+		LastExecutedFrame = Frame - 1;
 		for (i = 0; i < ARRAY_SIZE(CRC); i++)
 			CRC[i] = 0;
 
@@ -3321,6 +3324,8 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 	int i,j,k;
 	int index;
 	int check_crc;
+	int const previous_execution_frame = LastExecutedFrame;
+	LastExecutedFrame = Frame;
 
 #if (TIMING_FIX)
 	//
@@ -3391,7 +3396,7 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 				// Error if it's too late to execute this packet!
 				// (Hack: disable this check for solo or skirmish mode.)
 				//...............................................................
-				if (Frame > DoList[j].Frame && DoList[j].Type !=
+				if (DoList[j].Frame <= previous_execution_frame && DoList[j].Type !=
 					EventClass::FRAMEINFO && Session.Type != GAME_NORMAL &&
 					Session.Type != GAME_SKIRMISH) {
 					Dump_Packet_Too_Late_Stuff(&DoList[j]);
@@ -3719,6 +3724,9 @@ static void Queue_Playback(void)
 	//	routine didn't write anything the first time through); do this after the
 	// CRC is computed, since we'll still need a CRC for Frame 0.
 	//------------------------------------------------------------------------
+	if (Frame == 0) {
+		LastExecutedFrame = -1;
+	}
 	if (Frame==0 && Session.Type!=GAME_NORMAL) {
 		return;
 	}
