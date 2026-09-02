@@ -161,15 +161,17 @@ the latest successful scheduled run attached to downloadable artifacts.
 Both use the reusable `Engine build` workflow. On a Windows runner with Visual
 Studio 2022, it configures and builds Win32 Debug and Release with the commands
 above, runs CTest, and uploads each configuration's executable, language
-library, and symbol file. Artifact names contain the configuration and short
-commit. Linker maps are omitted because the symbol files are sufficient.
+library, symbol file, and license notices. Artifact names contain the
+configuration and short commit. Linker maps are omitted because the symbol
+files are sufficient.
 After a successful pull-request build, `Engine build comment` maintains one
 pull-request comment with direct nightly.link downloads.
 
 Publishing a GitHub release runs `Engine release`. It builds the release commit
-with `-DOPENTS_OFFICIAL_BUILD=ON`, packages `Game.exe`, `Language.dll`, and
-`Game.pdb` in a zip named after the release tag, and attaches it to the
-release. It also appends notes generated from the manual's change records by
+with `-DOPENTS_OFFICIAL_BUILD=ON`, packages `Game.exe`, `Language.dll`,
+`Game.pdb`, and the project and third-party license notices in a zip named
+after the release tag, and attaches it to the release. It also appends notes
+generated from the manual's change records by
 `python manual/tools/manage.py release-notes`. See
 [Maintaining](../manual/MAINTAINING.md) for the full release procedure.
 

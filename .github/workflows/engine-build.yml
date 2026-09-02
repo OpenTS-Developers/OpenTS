@@ -71,6 +71,22 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --output-on-failure
 
+      - name: Stage license notices
+        shell: bash
+        run: |
+          cp LICENSE.md THIRD_PARTY_NOTICES.md artifact/
+          mkdir -p artifact/OpenTS_THIRD_PARTY_LICENSES
+          cp thirdparty/bgfx.cmake/bgfx/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/bgfx.txt
+          cp thirdparty/bgfx.cmake/bx/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/bx.txt
+          cp thirdparty/bgfx.cmake/bimg/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/bimg.txt
+          cp thirdparty/bgfx.cmake/bgfx/3rdparty/directx-headers/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/directx-headers.txt
+          cp thirdparty/bgfx.cmake/bx/include/tinystl/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/tinystl.txt
+          cp thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt artifact/OpenTS_THIRD_PARTY_LICENSES/astc-encoder.txt
+          cp thirdparty/licenses/khronos-opengl.txt artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-opengl.txt
+          cat thirdparty/licenses/khronos-vulkan-notice.txt \
+              thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt \
+              > artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-vulkan.txt
+
       - name: Upload runtime files
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:

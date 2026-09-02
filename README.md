@@ -126,6 +126,8 @@ completed through reverse engineering against the original executable.
 OpenTS is licensed under the GNU General Public License, version 3 or later.
 Material derived from Electronic Arts source remains subject to the additional
 GPL Section 7 terms in [LICENSE.md](LICENSE.md).
+[Third-party notices](THIRD_PARTY_NOTICES.md) identify bundled dependencies
+and their licenses.
 
 [ACKNOWLEDGEMENTS.md](ACKNOWLEDGEMENTS.md) thanks the people, projects, and
 communities whose work made OpenTS possible.
