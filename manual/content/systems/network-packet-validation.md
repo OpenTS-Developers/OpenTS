@@ -11,12 +11,16 @@ before any event enters the simulation queue. Its leading `FRAMEINFO`, or sole
 `FRAMESYNC`, supplies the frame and the identity already assigned to that
 connection; compact events inherit that identity.
 
-Frame arithmetic, collection indexes, animation selectors, game speed, and the
-legacy latency selector are checked before use. Power, archive-target, repair,
-primary-factory, mission, idle, deploy, scatter, and sell commands require the
-affected object to still belong to their sender. A missing or destroyed object
-remains a no-op, while a captured object rejects its former owner's command.
-Timing changes require the deterministic master and bounded, aligned values.
+Frame arithmetic, collection indexes, animation selectors, production and
+superweapon selectors, unit mission numbers, game speed, and the legacy latency
+selector are checked before use. A production order names an existing vehicle,
+infantry, aircraft, or structure type. A superweapon strike names one of the
+sender's superweapons. A mission order carries a defined mission or none.
+Power, archive-target, repair, primary-factory, mission, idle, deploy, scatter,
+and sell commands require the affected object to still belong to their sender.
+A missing or destroyed object remains a no-op, while a captured object rejects
+its former owner's command. Timing changes require the deterministic master and
+bounded, aligned values.
 
 Public discovery remains public. In-game chat, progress, sign-off, ready, and
 kick controls require one unique roster endpoint: an exact IP and port, or one

@@ -85,6 +85,9 @@ namespace {
 		InvalidAllyHouse,
 		InvalidAnimationType,
 		InvalidAnimationOwner,
+		InvalidProductionSelector,
+		InvalidSuperWeapon,
+		InvalidMission,
 		InvalidGameSpeed,
 		InvalidRemovedHouse,
 		InvalidLatencyFudge,
@@ -101,6 +104,9 @@ namespace {
 		"invalid ally house",
 		"invalid animation type",
 		"invalid animation owner",
+		"invalid production selector",
+		"invalid super weapon",
+		"invalid mission",
 		"invalid game speed",
 		"invalid removed house",
 		"invalid latency fudge",
@@ -124,6 +130,40 @@ namespace {
 
 		DebugString("Rejected network event: %s, type %u, origin %d, detail %d (count %u)\n",
 			EventRejectReasonNames[reason_index], type, origin, detail, count);
+	}
+
+
+	// Abandon_Production takes this in place of a heap index to mean whatever its factory
+	// currently holds.
+	constexpr int PRODUCTION_ID_NONE = -1;
+
+
+	bool Production_Type_Is_Valid(RTTIType type)
+	{
+		switch (type) {
+			case RTTI_UNIT:
+			case RTTI_UNITTYPE:
+			case RTTI_INFANTRY:
+			case RTTI_INFANTRYTYPE:
+			case RTTI_BUILDING:
+			case RTTI_BUILDINGTYPE:
+			case RTTI_AIRCRAFT:
+			case RTTI_AIRCRAFTTYPE:
+				return(true);
+
+			default:
+				return(false);
+		}
+	}
+
+
+	/// <summary>Accepts a type and heap index that resolve to an object type, or the abandon sentinel with a buildable type.</summary>
+	bool Production_Selector_Is_Valid(RTTIType type, int id, bool allow_sentinel)
+	{
+		if (allow_sentinel && id == PRODUCTION_ID_NONE) {
+			return(Production_Type_Is_Valid(type));
+		}
+		return(Fetch_Techno_Type(type, id) != NULL);
 	}
 
 
@@ -832,6 +872,10 @@ void EventClass::Execute(void)
 		**	what factory to use.
 		*/
 		case PRODUCE:
+			if (!Production_Selector_Is_Valid(Data.Specific.Type, Data.Specific.ID, false)) {
+				Log_Event_Rejection(EventRejectReason::InvalidProductionSelector, Type, ID, Data.Specific.ID);
+				break;
+			}
 			house->Begin_Production(Data.Specific.Type, Data.Specific.ID);
 			break;
 
@@ -848,6 +892,10 @@ void EventClass::Execute(void)
 		**	object type. From the object type, the exact factory can be inferred.
 		*/
 		case ABANDON:
+			if (!Production_Selector_Is_Valid(Data.Specific.Type, Data.Specific.ID, true)) {
+				Log_Event_Rejection(EventRejectReason::InvalidProductionSelector, Type, ID, Data.Specific.ID);
+				break;
+			}
 			house->Abandon_Production(Data.Specific.Type, Data.Specific.ID);
 			break;
 
@@ -884,6 +932,10 @@ void EventClass::Execute(void)
 			// Fall thru to next case...
 
 		case MEGAMISSION:
+			if (!NetSemantic::Mission_Is_Valid(Data.MegaMission.Mission, MISSION_NONE, MISSION_COUNT)) {
+				Log_Event_Rejection(EventRejectReason::InvalidMission, Type, ID, Data.MegaMission.Mission);
+				break;
+			}
 			//if (Debug_Print_Events) {
 			//	printf("Whom:%x Tgt:%x Dest:%x ",
 			//		Data.MegaMission.Whom.As_TARGET(),
@@ -1091,6 +1143,10 @@ void EventClass::Execute(void)
 		**	care of it.
 		*/
 		case SPECIAL_PLACE:
+			if (!NetSemantic::Index_Is_Valid(Data.Special.ID, house->SuperWeapon.Count())) {
+				Log_Event_Rejection(EventRejectReason::InvalidSuperWeapon, Type, ID, Data.Special.ID);
+				break;
+			}
 			house->Place_Special_Blast((SuperWeaponType)Data.Special.ID, Cell(Data.Special.Where.X, Data.Special.Where.Y));
 			break;
 

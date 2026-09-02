@@ -1117,19 +1117,31 @@ TechnoTypeClass const * Fetch_Techno_Type(RTTIType type, int id)
 	switch (type) {
 		case RTTI_UNITTYPE:
 		case RTTI_UNIT:
-			return(TechnoTypeClass *)(UnitTypes[id]);
+			if (id >= 0 && id < UnitTypes.Count()) {
+				return(TechnoTypeClass *)(UnitTypes[id]);
+			}
+			break;
 
 		case RTTI_BUILDINGTYPE:
 		case RTTI_BUILDING:
-			return(TechnoTypeClass *)(BuildingTypes[id]);
+			if (id >= 0 && id < BuildingTypes.Count()) {
+				return(TechnoTypeClass *)(BuildingTypes[id]);
+			}
+			break;
 
 		case RTTI_INFANTRYTYPE:
 		case RTTI_INFANTRY:
-			return(TechnoTypeClass *)(InfantryTypes[id]);
+			if (id >= 0 && id < InfantryTypes.Count()) {
+				return(TechnoTypeClass *)(InfantryTypes[id]);
+			}
+			break;
 
 		case RTTI_AIRCRAFTTYPE:
 		case RTTI_AIRCRAFT:
-			return(TechnoTypeClass *)(AircraftTypes[id]);
+			if (id >= 0 && id < AircraftTypes.Count()) {
+				return(TechnoTypeClass *)(AircraftTypes[id]);
+			}
+			break;
 
 		default:
 			break;

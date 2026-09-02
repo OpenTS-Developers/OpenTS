@@ -2380,6 +2380,10 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 	int result = true;
 	FactoryClass * fptr;
 	TechnoTypeClass const * tech = Fetch_Techno_Type(type, id);
+	if (tech == NULL) {
+		DebugString("Request to Begin_Production of type %d, ID %d was rejected. No such object type.\n", type, id);
+		return(PROD_CANT);
+	}
 
 	BuildingClass *who = tech->Who_Can_Build_Me(false, true, true, this);
 	bool onhold = false;

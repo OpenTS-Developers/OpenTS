@@ -26,6 +26,8 @@ namespace NetSemantic
 
 	bool Animation_Owner_Is_Valid(int owner, int none, std::size_t count) noexcept;
 
+	bool Mission_Is_Valid(int mission, int none, std::size_t count) noexcept;
+
 	bool Timing_Authority_Is_Valid(int sender, int master) noexcept;
 
 	bool Response_Time_Is_Valid(unsigned int delay, unsigned int minimum_delay, unsigned int frame_send_rate, bool compressed) noexcept;

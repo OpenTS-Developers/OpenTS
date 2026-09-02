@@ -280,6 +280,10 @@ void Test_Event_Semantics(void)
 	Check(NetSemantic::Animation_Owner_Is_Valid(-1, -1, 5) && NetSemantic::Animation_Owner_Is_Valid(4, -1, 5),
 		"animation-owner validation accepts its sentinel and last entry");
 	Check(!NetSemantic::Animation_Owner_Is_Valid(5, -1, 5), "animation-owner validation rejects its one-past entry");
+	Check(NetSemantic::Mission_Is_Valid(-1, -1, 25) && NetSemantic::Mission_Is_Valid(24, -1, 25),
+		"mission validation accepts its sentinel and last entry");
+	Check(!NetSemantic::Mission_Is_Valid(25, -1, 25) && !NetSemantic::Mission_Is_Valid(-2, -1, 25),
+		"mission validation rejects its one-past entry and other negatives");
 	Check(NetSemantic::Timing_Authority_Is_Valid(2, 2), "the resolved master may send timing events");
 	Check(!NetSemantic::Timing_Authority_Is_Valid(3, 2), "a guest may not send timing events");
 	Check(NetSemantic::Response_Time_Is_Valid(2, 2, 0, false), "legacy response time accepts its minimum");

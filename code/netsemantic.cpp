@@ -54,6 +54,13 @@ namespace NetSemantic
 	}
 
 
+	/// <summary>Checks a mission number or its sentinel.</summary>
+	bool Mission_Is_Valid(int mission, int none, std::size_t count) noexcept
+	{
+		return(mission == none || Index_Is_Valid(mission, count));
+	}
+
+
 	/// <summary>Checks that a timing event came from the resolved master.</summary>
 	bool Timing_Authority_Is_Valid(int sender, int master) noexcept
 	{
