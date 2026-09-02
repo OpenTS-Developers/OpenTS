@@ -1497,6 +1497,13 @@ static void Generate_Real_Timing_Event(void)
 	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
 		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), static_cast<unsigned int>(Game_Speed_Frame_Rate()));
 	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
+	if (evaluation.Evaluated) {
+		DebugString("Network timing evaluation at frame %u: %u of %u reports fresh, worst process %u ms, RTT %u ms%s, wait %u ms, %u fps -> %s %u/%u\n",
+			frame, census.FreshProcessReports, census.ActivePlayers, (unsigned int)census.WorstProcessMilliseconds, (unsigned int)census.WorstRoundTrip,
+			census.RequiresConservativeTiming ? " (never measured)" : census.RoundTripComplete ? "" : " (incomplete)",
+			(unsigned int)census.WorstStallMilliseconds, desired_frame_rate, evaluation.Changed ? "change to" : "keep",
+			evaluation.Settings.FrameSendRate, evaluation.Settings.MaxAhead);
+	}
 	// Comparing against applied state resends timing the session never adopted.
 	if (!evaluation.Evaluated || (evaluation.Settings == Session.Network_Timing_Target()
 		&& desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate))) {
