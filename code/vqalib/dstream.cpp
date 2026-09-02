@@ -199,12 +199,12 @@ long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer
 		case VQACMD_SEEKPEEK:
 			switch ((int)(intptr_t)buffer) {
 
-				case 1:
+				case SEEK_CUR:
 					cache->Offset += nbytes;
 					error = 0;
 					break;
 
-				case 0:
+				case SEEK_SET:
 					p = (int)cache->Buffer;
 					if (nbytes >= p) {
 						cache->Offset = nbytes - p;
