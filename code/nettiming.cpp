@@ -107,6 +107,13 @@ namespace NetTiming
 	}
 
 
+	/// <summary>Bounds a packet's first retry so the connection timeout allows at least three transmissions.</summary>
+	Milliseconds Initial_Retry_Timeout(Milliseconds retransmit_timeout, Milliseconds connection_timeout)
+	{
+		return(std::max(MINIMUM_RTO, std::min(retransmit_timeout, connection_timeout / 4)));
+	}
+
+
 	/// <summary>Applies bounded exponential backoff to a packet's RTO.</summary>
 	Milliseconds Retransmit_Delay(Milliseconds base_rto, unsigned int prior_retransmissions, Milliseconds maximum_delay)
 	{

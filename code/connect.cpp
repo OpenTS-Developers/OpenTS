@@ -827,7 +827,9 @@ int ConnectionClass::Service_Send_Queue (void)
 		? NetTiming::MAXIMUM_CONNECTION_TIMEOUT
 		: (adaptive_timing ? NetTiming::Connection_Timeout(RoundTripEstimator.Smoothed_Rtt())
 			: (adaptive_channel ? Legacy_Connection_Timeout(Timeout) : Ticks_To_Milliseconds(Timeout)));
-	NetTiming::Milliseconds const base_retry_timeout = adaptive_timing ? RoundTripEstimator.Retransmit_Timeout() : Ticks_To_Milliseconds(RetryDelta);
+	NetTiming::Milliseconds const base_retry_timeout = adaptive_timing
+		? NetTiming::Initial_Retry_Timeout(RoundTripEstimator.Retransmit_Timeout(), connection_timeout)
+		: Ticks_To_Milliseconds(RetryDelta);
 
 	for (i = 0; i < num_entries; i++) {
 		send_entry = Queue->Get_Send(i);

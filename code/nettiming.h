@@ -60,6 +60,7 @@ namespace NetTiming
 	};
 
 	Milliseconds Connection_Timeout(Milliseconds smoothed_rtt);
+	Milliseconds Initial_Retry_Timeout(Milliseconds retransmit_timeout, Milliseconds connection_timeout);
 	Milliseconds Retransmit_Delay(Milliseconds base_rto, unsigned int prior_retransmissions, Milliseconds maximum_delay = MAXIMUM_RTO);
 	bool Retransmit_Is_Due(Milliseconds last_send, Milliseconds now, Milliseconds base_rto,
 		unsigned int prior_retransmissions, Milliseconds maximum_delay = MAXIMUM_RTO);
