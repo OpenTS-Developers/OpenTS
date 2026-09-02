@@ -167,6 +167,12 @@ namespace
 		Expect_Equal("connection timeout follows RTT", Connection_Timeout(500), 4250u);
 		Expect_Equal("connection timeout ceiling", Connection_Timeout(10000), 30000u);
 		Expect_Equal("backoff reaches connection timeout", Retransmit_Delay(500, 8, 4250), 4250u);
+
+		Expect_Equal("first retry keeps a small RTO", Initial_Retry_Timeout(300, 2000), 300u);
+		Expect_Equal("first retry is bounded by a quarter of the timeout", Initial_Retry_Timeout(1600, 2000), 500u);
+		Expect_Equal("first retry bound keeps the floor", Initial_Retry_Timeout(1600, 300), MINIMUM_RTO);
+		Expect_Equal("slow link keeps its RTO under a long timeout", Initial_Retry_Timeout(2055, Connection_Timeout(2015)), 2055u);
+		Expect_Equal("bounded first retry allows three sends before the timeout", Retransmit_Delay(500, 0) + Retransmit_Delay(500, 1), 1500u);
 	}
 
 
