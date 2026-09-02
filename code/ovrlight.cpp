@@ -43,10 +43,10 @@ void __cdecl Adjust_Color_555(void *pal1, void *pal2, int red, int green, int bl
 void __cdecl Adjust_Color_556(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);
 void __cdecl Adjust_Color_655(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);
 
-void __cdecl MMX_Brighten_Color_565(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *mmx_buffer);
-void __cdecl MMX_Brighten_Color_555(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *mmx_buffer);
-void __cdecl MMX_Brighten_Color_556(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *mmx_buffer);
-void __cdecl MMX_Brighten_Color_655(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *mmx_buffer);
+void __cdecl Brighten_Color_565(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *color_table);
+void __cdecl Brighten_Color_555(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *color_table);
+void __cdecl Brighten_Color_556(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *color_table);
+void __cdecl Brighten_Color_655(unsigned char *mul_buffer, unsigned short *color_buffer, int mulbuff_width, int color_buff_width, int dst_width, int dst_height, int *color_table);
 }
 
 
@@ -239,19 +239,19 @@ void SpotLightClass::Draw_It(void)
 					switch (SpotLightColorMode) {
 
 						case COLORMODE_555:
-							MMX_Brighten_Color_555(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_555(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						case COLORMODE_556:
-							MMX_Brighten_Color_556(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_556(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						case COLORMODE_565:
-							MMX_Brighten_Color_565(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_565(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						case COLORMODE_655:
-							MMX_Brighten_Color_655(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_655(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
 							break;
 
 						default:

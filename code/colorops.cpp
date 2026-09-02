@@ -21,6 +21,8 @@
 
 #include "always.h"
 
+#include <cstdint>
+
 namespace {
 
 /*
@@ -28,12 +30,12 @@ namespace {
  * carry, and the shift moves them into place; red and green shift up, blue shifts down.
  */
 struct PackFormat {
-	unsigned int RedMask;
-	unsigned int RedShift;
-	unsigned int GreenMask;
-	unsigned int GreenShift;
-	unsigned int BlueMask;
-	unsigned int BlueShift;
+	std::uint32_t RedMask;
+	std::uint32_t RedShift;
+	std::uint32_t GreenMask;
+	std::uint32_t GreenShift;
+	std::uint32_t BlueMask;
+	std::uint32_t BlueShift;
 };
 
 PackFormat const _Format565 = {0xF8, 8, 0xFC, 3, 0xF8, 3};
@@ -48,42 +50,42 @@ PackFormat const _Format655 = {0xFC, 8, 0xF8, 2, 0xF8, 3};
 /// </summary>
 /// <param name="channel">The channel value, 0 to 255.</param>
 /// <param name="scale">The 16.16 fixed point factor to scale it by.</param>
-/// <returns>unsigned int; The scaled channel, at most 255.</returns>
-inline unsigned int Scale_Channel(unsigned int channel, unsigned int scale)
+/// <returns>std::uint32_t; The scaled channel, at most 255.</returns>
+inline std::uint32_t Scale_Channel(std::uint32_t channel, std::uint32_t scale)
 {
-	unsigned int const scaled = (unsigned int)(channel * scale) >> 16;
+	std::uint32_t const scaled = (std::uint32_t)(channel * scale) >> 16;
 	return((scaled > 255) ? 255 : scaled);
 }
 
 
-void Adjust_Color(unsigned char const * palette, unsigned short * translator, int red, int green, int blue,
-	int intensity, unsigned char const * mask, PackFormat const & format)
+void Adjust_Color(std::uint8_t const * palette, std::uint16_t * translator, std::int32_t red, std::int32_t green,
+	std::int32_t blue, std::int32_t intensity, std::uint8_t const * mask, PackFormat const & format)
 {
 	/*
 	 * Index zero is the transparent one and is never scaled.
 	 */
 	translator[0] = 0;
 
-	for (int i = 1; i < 256; i++) {
-		unsigned int const r = palette[i * 3 + 0];
-		unsigned int const g = palette[i * 3 + 1];
-		unsigned int const b = palette[i * 3 + 2];
+	for (std::int32_t i = 1; i < 256; i++) {
+		std::uint32_t const r = palette[i * 3 + 0];
+		std::uint32_t const g = palette[i * 3 + 1];
+		std::uint32_t const b = palette[i * 3 + 2];
 
-		unsigned int redscale = (unsigned int)intensity;
-		unsigned int greenscale = (unsigned int)intensity;
-		unsigned int bluescale = (unsigned int)intensity;
+		std::uint32_t redscale = (std::uint32_t)intensity;
+		std::uint32_t greenscale = (std::uint32_t)intensity;
+		std::uint32_t bluescale = (std::uint32_t)intensity;
 
 		if (mask[i] != 0) {
-			redscale = (unsigned int)red;
-			greenscale = (unsigned int)green;
-			bluescale = (unsigned int)blue;
+			redscale = (std::uint32_t)red;
+			greenscale = (std::uint32_t)green;
+			bluescale = (std::uint32_t)blue;
 		}
 
-		unsigned int const outr = Scale_Channel(r, redscale);
-		unsigned int const outg = Scale_Channel(g, greenscale);
-		unsigned int const outb = Scale_Channel(b, bluescale);
+		std::uint32_t const outr = Scale_Channel(r, redscale);
+		std::uint32_t const outg = Scale_Channel(g, greenscale);
+		std::uint32_t const outb = Scale_Channel(b, bluescale);
 
-		translator[i] = (unsigned short)(((outr & format.RedMask) << format.RedShift)
+		translator[i] = (std::uint16_t)(((outr & format.RedMask) << format.RedShift)
 			| ((outg & format.GreenMask) << format.GreenShift)
 			| ((outb & format.BlueMask) >> format.BlueShift));
 	}
@@ -95,10 +97,10 @@ void Adjust_Color(unsigned char const * palette, unsigned short * translator, in
 /// </summary>
 /// <param name="left">One value.</param>
 /// <param name="right">The other.</param>
-/// <returns>unsigned int; The sum, at most 255.</returns>
-inline unsigned int Add_Saturated(unsigned int left, unsigned int right)
+/// <returns>std::uint32_t; The sum, at most 255.</returns>
+inline std::uint32_t Add_Saturated(std::uint32_t left, std::uint32_t right)
 {
-	unsigned int const sum = (left & 0xFF) + (right & 0xFF);
+	std::uint32_t const sum = (left & 0xFF) + (right & 0xFF);
 	return((sum > 255) ? 255 : sum);
 }
 
@@ -107,12 +109,12 @@ inline unsigned int Add_Saturated(unsigned int left, unsigned int right)
  * How the table-driven brightening puts a pixel back together. The channels arrive already
  * separated, so only the reassembly differs between layouts.
  */
-struct MmxBrightenFormat {
-	unsigned int Down;
-	unsigned int BlueDown;
-	unsigned int GreenUp;
-	unsigned int RedUp;
-	unsigned int Mask;
+struct BrightenFormat {
+	std::uint32_t Down;
+	std::uint32_t BlueDown;
+	std::uint32_t GreenUp;
+	std::uint32_t RedUp;
+	std::uint32_t Mask;
 };
 
 /*
@@ -121,59 +123,60 @@ struct MmxBrightenFormat {
  * well. It is preserved because the recorded output depends on it, not because it reads like a
  * mask anyone intended.
  */
-unsigned int const MMX_ALTERNATE_MARKER = 0x423A0A60;
+std::uint32_t const ALTERNATE_MARKER = 0x423A0A60;
 
-MmxBrightenFormat const _MmxBrighten565 = {2, 1, 5, 10, 0xF8};
-MmxBrightenFormat const _MmxBrighten555 = {3, 0, 5, 10, 0x7C};
-MmxBrightenFormat const _MmxBrighten556 = {2, 0, 6, 10, 0xF8};
-MmxBrightenFormat const _MmxBrighten655 = {2, 1, 4, 10, MMX_ALTERNATE_MARKER};
+BrightenFormat const _Brighten565 = {2, 1, 5, 10, 0xF8};
+BrightenFormat const _Brighten555 = {3, 0, 5, 10, 0x7C};
+BrightenFormat const _Brighten556 = {2, 0, 6, 10, 0xF8};
+BrightenFormat const _Brighten655 = {2, 1, 4, 10, ALTERNATE_MARKER};
 
 
-void MMX_Brighten_Color(unsigned char const * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth,
-	int colorbuffwidth, int width, int height, int const * mmxbuffer, MmxBrightenFormat const & format)
+void Brighten_Color(std::uint8_t const * mulbuffer, std::uint16_t * colorbuffer, std::int32_t mulbuffwidth,
+	std::int32_t colorbuffwidth, std::int32_t width, std::int32_t height, std::int32_t const * colortable,
+	BrightenFormat const & format)
 {
-	unsigned char const * mulrow = mulbuffer;
-	unsigned char * colorrow = (unsigned char *)colorbuffer;
+	std::uint8_t const * mulrow = mulbuffer;
+	std::uint8_t * colorrow = (std::uint8_t *)colorbuffer;
 
-	for (int y = 0; y < height; y++) {
-		unsigned char const * mul = mulrow;
-		unsigned short * color = (unsigned short *)colorrow;
+	for (std::int32_t y = 0; y < height; y++) {
+		std::uint8_t const * mul = mulrow;
+		std::uint16_t * color = (std::uint16_t *)colorrow;
 
-		for (int x = 0; x < width; x++) {
-			unsigned int const multiplier = *mul;
+		for (std::int32_t x = 0; x < width; x++) {
+			std::uint32_t const multiplier = *mul;
 
 			if (multiplier != 0) {
-				unsigned int const pixel = *color;
-				unsigned int const entry = (unsigned int)mmxbuffer[pixel];
+				std::uint32_t const pixel = *color;
+				std::uint32_t const entry = (std::uint32_t)colortable[pixel];
 
 				/*
 				 * The table holds the three channels one per byte, which the assembly
 				 * widened to a word each before scaling them together.
 				 */
-				unsigned int const blue = entry & 0xFF;
-				unsigned int const green = (entry >> 8) & 0xFF;
-				unsigned int const red = (entry >> 16) & 0xFF;
+				std::uint32_t const blue = entry & 0xFF;
+				std::uint32_t const green = (entry >> 8) & 0xFF;
+				std::uint32_t const red = (entry >> 16) & 0xFF;
 
-				unsigned int const outblue = Add_Saturated((blue * multiplier) >> 8, blue) >> format.Down;
-				unsigned int const outgreen = Add_Saturated((green * multiplier) >> 8, green) >> format.Down;
-				unsigned int const outred = Add_Saturated((red * multiplier) >> 8, red) >> format.Down;
+				std::uint32_t const outblue = Add_Saturated((blue * multiplier) >> 8, blue) >> format.Down;
+				std::uint32_t const outgreen = Add_Saturated((green * multiplier) >> 8, green) >> format.Down;
+				std::uint32_t const outred = Add_Saturated((red * multiplier) >> 8, red) >> format.Down;
 
-				unsigned int result = outblue >> format.BlueDown;
-				unsigned int const greenpart = outgreen << format.GreenUp;
-				unsigned int const redpart = outred << format.RedUp;
+				std::uint32_t result = outblue >> format.BlueDown;
+				std::uint32_t const greenpart = outgreen << format.GreenUp;
+				std::uint32_t const redpart = outred << format.RedUp;
 
-				if (format.Mask == MMX_ALTERNATE_MARKER) {
-					result |= (greenpart & MMX_ALTERNATE_MARKER);
+				if (format.Mask == ALTERNATE_MARKER) {
+					result |= (greenpart & ALTERNATE_MARKER);
 				} else {
 					result |= greenpart;
 					result |= (redpart & (format.Mask * 256));
 				}
 
-				if (format.Mask == MMX_ALTERNATE_MARKER) {
+				if (format.Mask == ALTERNATE_MARKER) {
 					result |= redpart;
 				}
 
-				*color = (unsigned short)result;
+				*color = (std::uint16_t)result;
 			}
 
 			mul++;
@@ -190,51 +193,51 @@ void MMX_Brighten_Color(unsigned char const * mulbuffer, unsigned short * colorb
 
 extern "C" {
 
-void __cdecl Adjust_Color_565(void * palette, void * translator, int red, int green, int blue, int intensity, void * mask)
+void __cdecl Adjust_Color_565(void * palette, void * translator, std::int32_t red, std::int32_t green, std::int32_t blue, std::int32_t intensity, void * mask)
 {
-	Adjust_Color((unsigned char const *)palette, (unsigned short *)translator, red, green, blue, intensity, (unsigned char const *)mask, _Format565);
+	Adjust_Color((std::uint8_t const *)palette, (std::uint16_t *)translator, red, green, blue, intensity, (std::uint8_t const *)mask, _Format565);
 }
 
 
-void __cdecl Adjust_Color_555(void * palette, void * translator, int red, int green, int blue, int intensity, void * mask)
+void __cdecl Adjust_Color_555(void * palette, void * translator, std::int32_t red, std::int32_t green, std::int32_t blue, std::int32_t intensity, void * mask)
 {
-	Adjust_Color((unsigned char const *)palette, (unsigned short *)translator, red, green, blue, intensity, (unsigned char const *)mask, _Format555);
+	Adjust_Color((std::uint8_t const *)palette, (std::uint16_t *)translator, red, green, blue, intensity, (std::uint8_t const *)mask, _Format555);
 }
 
 
-void __cdecl Adjust_Color_556(void * palette, void * translator, int red, int green, int blue, int intensity, void * mask)
+void __cdecl Adjust_Color_556(void * palette, void * translator, std::int32_t red, std::int32_t green, std::int32_t blue, std::int32_t intensity, void * mask)
 {
-	Adjust_Color((unsigned char const *)palette, (unsigned short *)translator, red, green, blue, intensity, (unsigned char const *)mask, _Format556);
+	Adjust_Color((std::uint8_t const *)palette, (std::uint16_t *)translator, red, green, blue, intensity, (std::uint8_t const *)mask, _Format556);
 }
 
 
-void __cdecl Adjust_Color_655(void * palette, void * translator, int red, int green, int blue, int intensity, void * mask)
+void __cdecl Adjust_Color_655(void * palette, void * translator, std::int32_t red, std::int32_t green, std::int32_t blue, std::int32_t intensity, void * mask)
 {
-	Adjust_Color((unsigned char const *)palette, (unsigned short *)translator, red, green, blue, intensity, (unsigned char const *)mask, _Format655);
+	Adjust_Color((std::uint8_t const *)palette, (std::uint16_t *)translator, red, green, blue, intensity, (std::uint8_t const *)mask, _Format655);
 }
 
 
-void __cdecl MMX_Brighten_Color_565(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height, int * mmxbuffer)
+void __cdecl Brighten_Color_565(std::uint8_t * mulbuffer, std::uint16_t * colorbuffer, std::int32_t mulbuffwidth, std::int32_t colorbuffwidth, std::int32_t width, std::int32_t height, std::int32_t * colortable)
 {
-	MMX_Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, mmxbuffer, _MmxBrighten565);
+	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, colortable, _Brighten565);
 }
 
 
-void __cdecl MMX_Brighten_Color_555(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height, int * mmxbuffer)
+void __cdecl Brighten_Color_555(std::uint8_t * mulbuffer, std::uint16_t * colorbuffer, std::int32_t mulbuffwidth, std::int32_t colorbuffwidth, std::int32_t width, std::int32_t height, std::int32_t * colortable)
 {
-	MMX_Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, mmxbuffer, _MmxBrighten555);
+	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, colortable, _Brighten555);
 }
 
 
-void __cdecl MMX_Brighten_Color_556(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height, int * mmxbuffer)
+void __cdecl Brighten_Color_556(std::uint8_t * mulbuffer, std::uint16_t * colorbuffer, std::int32_t mulbuffwidth, std::int32_t colorbuffwidth, std::int32_t width, std::int32_t height, std::int32_t * colortable)
 {
-	MMX_Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, mmxbuffer, _MmxBrighten556);
+	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, colortable, _Brighten556);
 }
 
 
-void __cdecl MMX_Brighten_Color_655(unsigned char * mulbuffer, unsigned short * colorbuffer, int mulbuffwidth, int colorbuffwidth, int width, int height, int * mmxbuffer)
+void __cdecl Brighten_Color_655(std::uint8_t * mulbuffer, std::uint16_t * colorbuffer, std::int32_t mulbuffwidth, std::int32_t colorbuffwidth, std::int32_t width, std::int32_t height, std::int32_t * colortable)
 {
-	MMX_Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, mmxbuffer, _MmxBrighten655);
+	Brighten_Color(mulbuffer, colorbuffer, mulbuffwidth, colorbuffwidth, width, height, colortable, _Brighten655);
 }
 
 }	// extern "C"

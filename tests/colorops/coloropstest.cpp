@@ -24,10 +24,10 @@ void __cdecl Adjust_Color_555(void *pal, void *xlat, int r, int g, int b, int i,
 void __cdecl Adjust_Color_556(void *pal, void *xlat, int r, int g, int b, int i, void *mask);
 void __cdecl Adjust_Color_655(void *pal, void *xlat, int r, int g, int b, int i, void *mask);
 
-void __cdecl MMX_Brighten_Color_565(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *mmx);
-void __cdecl MMX_Brighten_Color_555(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *mmx);
-void __cdecl MMX_Brighten_Color_556(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *mmx);
-void __cdecl MMX_Brighten_Color_655(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *mmx);
+void __cdecl Brighten_Color_565(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *table);
+void __cdecl Brighten_Color_555(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *table);
+void __cdecl Brighten_Color_556(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *table);
+void __cdecl Brighten_Color_655(unsigned char *mul, unsigned short *col, int mw, int cw, int w, int h, int *table);
 }
 
 namespace {
@@ -38,7 +38,7 @@ unsigned short Translator[256];
 
 unsigned char MulBuffer[256 * 256];
 unsigned short ColorBuffer[512 * 512];
-int MmxBuffer[65536];
+int ColorTable[65536];
 
 unsigned int Seed = 0;
 
@@ -66,10 +66,10 @@ unsigned long long Hash(void const * data, int size)
 
 
 typedef void (__cdecl * AdjustFunc)(void *, void *, int, int, int, int, void *);
-typedef void (__cdecl * MmxBrightenFunc)(unsigned char *, unsigned short *, int, int, int, int, int *);
+typedef void (__cdecl * BrightenFunc)(unsigned char *, unsigned short *, int, int, int, int, int *);
 
 AdjustFunc const Adjusts[4] = {Adjust_Color_565, Adjust_Color_555, Adjust_Color_556, Adjust_Color_655};
-MmxBrightenFunc const MmxBrightens[4] = {MMX_Brighten_Color_565, MMX_Brighten_Color_555, MMX_Brighten_Color_556, MMX_Brighten_Color_655};
+BrightenFunc const Brightens[4] = {Brighten_Color_565, Brighten_Color_555, Brighten_Color_556, Brighten_Color_655};
 
 char const * const ModeNames[4] = {"565", "555", "556", "655"};
 
@@ -144,15 +144,15 @@ int main(void)
 			ColorBuffer[j] = (unsigned short)(Next_Random() & 0xFFFF);
 		}
 		for (int j = 0; j < 65536; j++) {
-			MmxBuffer[j] = (int)(Next_Random() & 0x00FFFFFF);
+			ColorTable[j] = (int)(Next_Random() & 0x00FFFFFF);
 		}
 
-		MmxBrightens[test.Mode](MulBuffer, ColorBuffer, 256, 512 * 2, test.Width, test.Height, MmxBuffer);
+		Brightens[test.Mode](MulBuffer, ColorBuffer, 256, 512 * 2, test.Width, test.Height, ColorTable);
 
 		unsigned long long const hash = Hash(ColorBuffer, 512 * 512 * 2);
 
 		if (hash != test.Hash) {
-			std::printf("FAILED MMX_Brighten_Color_%s %dx%d: expected %llu, got %llu\n",
+			std::printf("FAILED Brighten_Color_%s %dx%d: expected %llu, got %llu\n",
 				ModeNames[test.Mode], test.Width, test.Height, test.Hash, hash);
 			Failures++;
 		}
