@@ -2,7 +2,7 @@
 set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE STRING "" FORCE)
 
 # OpenTS currently supports 32-bit (x86) builds only.
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+if(WIN32 AND NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
     message(FATAL_ERROR "OpenTS must be built as 32-bit x86. Reconfigure with -A Win32.")
 endif()
 
@@ -165,7 +165,7 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" PROPER
         "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include;${BGFX_ROOT}/examples/common/imgui"
     COMPILE_DEFINITIONS
         "BX_CONFIG_DEBUG=$<IF:$<CONFIG:Debug>,1,$<BOOL:${BX_CONFIG_DEBUG}>>"
-    COMPILE_OPTIONS "/Zc:preprocessor"
+    COMPILE_OPTIONS "$<$<BOOL:${MSVC}>:/Zc:preprocessor>"
 )
 
 # bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
@@ -358,12 +358,14 @@ add_custom_command(TARGET OpenTS POST_BUILD
         "${TS_RUN_DIR}"
 )
 
-# Copy the linker-generated .pdb alongside the exe
-add_custom_command(TARGET OpenTS POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_PDB_FILE:OpenTS>"
-        "${TS_RUN_DIR}"
-)
+# Copy the linker-generated .pdb alongside the exe. Only the MSVC linker writes one.
+if(MSVC)
+    add_custom_command(TARGET OpenTS POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_PDB_FILE:OpenTS>"
+            "${TS_RUN_DIR}"
+    )
+endif()
 
 # Copy the linker-generated .map (sits next to the exe, no GenEx for it)
 add_custom_command(TARGET OpenTS POST_BUILD
