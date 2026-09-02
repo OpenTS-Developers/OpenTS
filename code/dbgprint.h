@@ -17,6 +17,8 @@
 
 #ifdef _WIN32
 #include <sal.h>
+#else
+#define _Printf_format_string_
 #endif
 
 void Debug_Init(void);
