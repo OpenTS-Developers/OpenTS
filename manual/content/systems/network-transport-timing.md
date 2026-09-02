@@ -9,7 +9,10 @@ Each private connection maintains smoothed round trip, variation, and a retry
 timeout. Acknowledgements of first transmissions are the measurements. Until a
 link has one, its first acknowledgement seeds a provisional estimate even after
 a retry, so a link slower than the initial retry delay becomes measurable; the
-first clean acknowledgement replaces the seed.
+first clean acknowledgement replaces the seed. In a compressed game, a frame
+packet requests an acknowledgement at least every 32 frames while any link
+still lacks a clean measurement, so a quiet player's links are measured
+before the first timing evaluations.
 
 The retry timeout is limited to 100–4000 ms. Repeated private transmissions
 double their wait up to the connection timeout. For a measured link, the
