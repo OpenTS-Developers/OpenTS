@@ -82,6 +82,23 @@ unsigned int Get_CPU_Rate(unsigned int & high)
 }
 
 
+/// <summary>
+/// Fetches the processor's time stamp counter, which increments every clock tick. The value
+/// is 64 bits wide; the low half is returned and the high half stored through the reference.
+/// RDTSC is available on every processor the supported minimum hardware covers (SSE2, so a
+/// Pentium 4 or Athlon 64 onward).
+/// </summary>
+/// <param name="high">Receives the high half of the 64 bit clock value.</param>
+/// <returns>unsigned int; the low half of the clock value.</returns>
+unsigned int Get_CPU_Clock(unsigned int & high)
+{
+	unsigned long long const stamp = __rdtsc();
+
+	high = (unsigned int)(stamp >> 32);
+	return((unsigned int)stamp);
+}
+
+
 /*
  * Based on code released by Intel
  * http://db.zmitac.aei.polsl.pl/Electronics_Firm_Docs/PENTIUMIII/pentium/cpuinfo.zip
