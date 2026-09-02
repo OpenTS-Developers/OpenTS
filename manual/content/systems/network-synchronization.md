@@ -54,8 +54,10 @@ and held the game well under its frame rate on an idle link.
 
 ## Player feedback
 
-The disabled Connection slider shows the effective send-period rung. Rungs 1–2
-are Fast, 3–5 Normal, 6–8 Poor, and 9–10 Bad; extended look-ahead is also Bad.
+The disabled Connection slider shows the effective send-period rung, mirrored
+so that its right end is rung 1; the label beside it names the tier and the
+rung. Rungs 1–2 are Fast, 3–5 Normal, 6–8 Poor, and 9–10 Bad; extended
+look-ahead is also Bad.
 The message list announces target-tier changes, which may precede a safely
 staged improvement. The Speed slider continues to control game speed.
 
