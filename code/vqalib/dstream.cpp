@@ -48,6 +48,10 @@
 #ifdef _WIN32
 #include	<io.h>
 #endif
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 #include	<string.h>
 
 
