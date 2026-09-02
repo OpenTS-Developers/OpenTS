@@ -27,6 +27,10 @@ elseif(MSVC)
     endif()
 elseif(OPENTS_EXPERIMENTAL_NATIVE)
     message(STATUS "OpenTS: configuring an unsupported native build for the host platform.")
+
+    # The tree declares imports and exports with __declspec throughout, which clang only
+    # accepts with the Microsoft extensions enabled.
+    add_compile_options(-fms-extensions)
 else()
     message(FATAL_ERROR
         "OpenTS requires the Visual Studio 2022 MSVC toolchain. "
