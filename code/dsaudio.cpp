@@ -19,7 +19,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "globals.h" // for GameInFocus
-#include "language\language.h"
+#include "language/language.h"
 #include "soscomp.h"
 #include "winfix.h"
 

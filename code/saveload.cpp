@@ -82,7 +82,7 @@
 #include "infatype.h"
 #include "init.h"
 #include "ion.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "loaddlg.h"
 #include "light.h"
 #include "logic.h"

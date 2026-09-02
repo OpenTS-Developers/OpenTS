@@ -46,7 +46,7 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "house.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "rules.h"
 #include "scenario.h"
 #include "scheme.h"

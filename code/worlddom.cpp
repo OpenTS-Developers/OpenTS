@@ -15,7 +15,7 @@
 #include "_pk.h"
 #include "addon.h"
 #include "grphmenu.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mapgen.h"
 #include "mixfile.h"
 #include "ownrdraw.h"

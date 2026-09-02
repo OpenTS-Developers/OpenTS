@@ -25,7 +25,7 @@
 #include "houstype.h"
 #include "init.h"
 #include "ipxmgr.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "loaddlg.h"
 #include "mplayer.h"
 #include "netshare.h"

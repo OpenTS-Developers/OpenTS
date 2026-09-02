@@ -28,7 +28,7 @@
 #include "goptions.h"
 #include "hsv.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mainloop.h"
 #include "misc.h"
 #include "msgroute.h"

@@ -30,7 +30,7 @@
 #include "globals.h"
 #include "gscreen.h"
 #include "house.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "laser.h"
 #include "lightcon.h"
 #include "mixfile.h"

@@ -159,7 +159,7 @@
 #include "infatype.h"
 #include "inline.h"
 #include "ion.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "lightcon.h"
 #include "logic.h"
 #include "mono.h"

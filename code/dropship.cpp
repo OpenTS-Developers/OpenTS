@@ -33,7 +33,7 @@
 #include "house.h"
 #include "infatype.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "misc.h"
 #include "mixfile.h"
 #include "mouse.h"

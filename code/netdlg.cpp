@@ -112,7 +112,7 @@
 #include "globals.h"
 #include "houstype.h"
 #include "ipxmgr.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "list.h"
 #include "queue.h"
 #include "rules.h"

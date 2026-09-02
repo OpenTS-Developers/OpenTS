@@ -47,7 +47,7 @@
 #include "dialog.h"
 #include "draw.h"
 #include "goptions.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mixfile.h"
 #include "queue.h"
 #include "rules.h"

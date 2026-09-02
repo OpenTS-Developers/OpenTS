@@ -23,7 +23,7 @@
 #include "gamedlg.h"
 #include "globals.h"
 #include "init.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "misc.h"
 #include "video.h"
 #include "mixfile.h"

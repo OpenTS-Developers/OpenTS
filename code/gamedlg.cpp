@@ -43,7 +43,7 @@
 #include "dsaudio.h"
 #include "globals.h"
 #include "init.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "ownrdraw.h"
 #include "queue.h"
 #include "session.h"

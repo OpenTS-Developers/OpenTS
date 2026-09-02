@@ -72,7 +72,7 @@
 #include "init.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mouse.h"
 #include "msgbox.h"
 #include "ownrdraw.h"

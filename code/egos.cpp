@@ -54,7 +54,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "gscreen.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "misc.h"
 #include "ownrdraw.h"
 #include "scheme.h"

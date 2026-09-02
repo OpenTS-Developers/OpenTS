@@ -19,7 +19,7 @@
 #include "cell.h"
 #include "dbgprint.h"
 #include "dsurface.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "lzopipe.h"
 #include "lzostraw.h"
 #include "overtype.h"

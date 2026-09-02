@@ -107,7 +107,7 @@
 #include "ion.h"
 #include "ipxmgr.h"
 #include "isotype.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "light.h"
 #include "logic.h"
 #include "mainopt.h"

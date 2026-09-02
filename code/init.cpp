@@ -121,7 +121,7 @@
 #include "ionblast.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "laser.h"
 #include "light.h"
 #include "lightcon.h"

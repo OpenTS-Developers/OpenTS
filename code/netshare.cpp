@@ -18,7 +18,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "ipxmgr.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "lzopipe.h"
 #include "lzostraw.h"
 #include "mapgen.h"
