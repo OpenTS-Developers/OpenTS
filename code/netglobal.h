@@ -89,10 +89,7 @@ namespace NetGlobal
 
 
 	void Initialize_Packet(GlobalPacketType & packet, NetCommandType command) noexcept;
-
 	EndpointResolution Resolve_Sender(Endpoint const & sender, std::span<Endpoint const> roster) noexcept;
-
 	DecodeError Validate_In_Game_Packet(GlobalPacketType const & packet, std::size_t packet_length, ValidationContext const & context);
-
 	char const * Error_Name(DecodeError error) noexcept;
 }

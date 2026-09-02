@@ -68,12 +68,8 @@ namespace NetAdmission
 
 
 	std::uint32_t Calculate_Datagram_CRC(std::span<std::byte const> payload) noexcept;
-
 	DatagramResult Admit_Datagram(std::span<std::byte const> datagram, std::size_t payload_capacity = DATAGRAM_PAYLOAD_CAPACITY) noexcept;
-
 	ConnectionResult Admit_Connection_Packet(std::span<std::byte const> packet, std::size_t header_size, std::size_t packet_capacity) noexcept;
-
 	Error Validate_Destination(std::span<std::byte const> payload, std::size_t destination_capacity) noexcept;
-
 	char const * Error_Name(Error error) noexcept;
 }
