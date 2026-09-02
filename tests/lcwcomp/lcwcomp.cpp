@@ -7,8 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Holds LCW_Comp in lcw.cpp to the output the inline assembly it replaced produced. The
-// vectors in lcwgolden.h were recorded from that assembly before it was removed.
+// Holds LCW_Comp in lcw.cpp to the output recorded in lcwgolden.h, so a change to the
+// compressor cannot alter the emitted encoding unnoticed.
 //
 // Compressed blocks are written into save games, so the contract is the exact bytes emitted,
 // not merely that they expand again correctly. Both are checked here. Needs no game data.
@@ -105,38 +105,24 @@ int main(void)
 				test.Shape, test.Size, packed, test.Compressed);
 			Failures++;
 		} else if (Hash(Dest, packed) != test.Hash) {
-			std::printf("FAILED shape %d size %d: compressed bytes differ from the assembly\n",
+			std::printf("FAILED shape %d size %d: compressed bytes differ from the vectors\n",
 				test.Shape, test.Size);
 			Failures++;
 		}
 
-		/*
-		 * A block should expand to what went in. The one byte case is the exception: the
-		 * encoder reads a byte past the source and emits both, so it comes back as two.
-		 * That is the assembly's behaviour, recorded rather than corrected, and it is
-		 * asserted here so that changing it cannot pass unnoticed.
-		 */
 		std::memset(Roundtrip, 0, sizeof(Roundtrip));
 		int const unpacked = LCW_Uncomp(Dest, Roundtrip, (unsigned long)test.Size);
 
-		if (test.Size == 1) {
-			if (unpacked == 1) {
-				std::printf("NOTE shape %d size 1 now round trips to one byte; the known "
-					"one byte defect appears to be fixed, so update these vectors\n", test.Shape);
-				Failures++;
-			}
-		} else {
-			if (unpacked != test.Size || std::memcmp(Roundtrip, Source, test.Size) != 0) {
-				std::printf("FAILED shape %d size %d: round trip returned %d bytes\n",
-					test.Shape, test.Size, unpacked);
-				Failures++;
-			}
+		if (unpacked != test.Size || std::memcmp(Roundtrip, Source, test.Size) != 0) {
+			std::printf("FAILED shape %d size %d: round trip returned %d bytes\n",
+				test.Shape, test.Size, unpacked);
+			Failures++;
 		}
 
 		Checked++;
 	}
 
-	std::printf("%-52s %s\n", "LCW compression matches the recorded assembly", Failures == 0 ? "ok" : "FAILED");
+	std::printf("%-52s %s\n", "LCW compression matches the recorded vectors", Failures == 0 ? "ok" : "FAILED");
 	std::printf("checked %d cases, %d mismatches\n", Checked, Failures);
 
 	return(Failures == 0 ? 0 : 1);
