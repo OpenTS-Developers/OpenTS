@@ -16,7 +16,9 @@
 namespace NetTiming
 {
 	constexpr Milliseconds MINIMUM_RTO = 100;
-	constexpr Milliseconds MAXIMUM_RTO = 2000;
+	// Above any round trip a private link is expected to carry, so a slow link's first retry
+	// does not precede its acknowledgement.
+	constexpr Milliseconds MAXIMUM_RTO = 4000;
 	constexpr Milliseconds MINIMUM_CONNECTION_TIMEOUT = 2000;
 	constexpr Milliseconds MAXIMUM_CONNECTION_TIMEOUT = 30000;
 
@@ -43,6 +45,7 @@ namespace NetTiming
 			void Note_Retransmit(Milliseconds captured_rto);
 
 			bool Has_Sample(void) const {return(Initialized);}
+			bool Is_Provisional(void) const {return(Provisional);}
 			Milliseconds Smoothed_Rtt(void) const {return(SmoothedRtt);}
 			Milliseconds Rtt_Variation(void) const {return(RttVariation);}
 			Milliseconds Retransmit_Timeout(void) const {return(RetransmitTimeout);}
@@ -52,6 +55,8 @@ namespace NetTiming
 			Milliseconds SmoothedRtt = 0;
 			Milliseconds RttVariation = 0;
 			Milliseconds RetransmitTimeout = MINIMUM_RTO;
+			// Set while the estimate comes from an ambiguous first acknowledgement.
+			bool Provisional = false;
 	};
 
 	Milliseconds Connection_Timeout(Milliseconds smoothed_rtt);
