@@ -412,6 +412,7 @@ namespace NetTiming
 		HasEvaluated = false;
 		HasChanged = false;
 		Bootstrapping = true;
+		ImprovementStreak = false;
 	}
 
 
@@ -426,12 +427,14 @@ namespace NetTiming
 		HasEvaluated = true;
 		HasChanged = true;
 		Bootstrapping = false;
+		ImprovementStreak = false;
 	}
 
 
 	/// <summary>Commits a policy change and resets hysteresis.</summary>
 	void BalancedTimingPolicy::Change_To(TimingSettings settings, std::uint32_t frame)
 	{
+		ImprovementStreak = Timing_Is_Better(settings, CurrentSettings);
 		CurrentRung = std::clamp(settings.FrameSendRate, MINIMUM_TIMING_RUNG, MAXIMUM_TIMING_RUNG);
 		CurrentSettings = settings;
 		GoodEvaluations = 0;
@@ -445,6 +448,7 @@ namespace NetTiming
 	{
 		Bootstrapping = false;
 		GoodEvaluations = 0;
+		ImprovementStreak = false;
 		LastEvaluationFrame = BootstrapStartFrame;
 		HasEvaluated = true;
 	}
@@ -488,6 +492,7 @@ namespace NetTiming
 		if (!census.RequiresConservativeTiming && census.ActivePlayers > 0 && !census.RoundTripComplete) {
 			// A lapsed report holds the current timing, but the reports that did arrive can still worsen it.
 			GoodEvaluations = 0;
+			ImprovementStreak = false;
 			if (census.FreshRoundTripReports > 0) {
 				TimingSettings const desired_settings = Desired_Settings(census, target_fps, false);
 				if (Timing_Is_Worse(desired_settings, CurrentSettings)) {
@@ -500,16 +505,18 @@ namespace NetTiming
 			return(result);
 		}
 
-		// Worsening is immediate; improvement must clear the headroom, cadence, and cooldown gates.
+		// Worsening is immediate; the first improvement must clear the headroom, cadence, and cooldown
+		// gates, and a descent then continues one rung per evaluation while the headroom holds.
 		TimingSettings const desired_settings = Desired_Settings(census, target_fps, false);
 		if (Timing_Is_Worse(desired_settings, CurrentSettings)) {
 			Change_To(desired_settings, frame);
 			result.Changed = true;
-		} else if (Timing_Is_Better(desired_settings, CurrentSettings) && (!HasChanged || frame - LastChangeFrame >= CHANGE_COOLDOWN)) {
+		} else if (Timing_Is_Better(desired_settings, CurrentSettings)
+			&& (!HasChanged || ImprovementStreak || frame - LastChangeFrame >= CHANGE_COOLDOWN)) {
 			TimingSettings const headroom = Desired_Settings(census, target_fps, true);
 			if (Timing_Is_Better(headroom, CurrentSettings)) {
 				GoodEvaluations++;
-				if (GoodEvaluations >= GOOD_EVALUATIONS_REQUIRED) {
+				if (GoodEvaluations >= (ImprovementStreak ? DESCENT_EVALUATIONS_REQUIRED : GOOD_EVALUATIONS_REQUIRED)) {
 					TimingSettings const next = desired_settings.FrameSendRate < CurrentRung
 						? Settings_For_Rung(CurrentRung - 1) : desired_settings;
 					Change_To(next, frame);
@@ -517,9 +524,11 @@ namespace NetTiming
 				}
 			} else {
 				GoodEvaluations = 0;
+				ImprovementStreak = false;
 			}
 		} else {
 			GoodEvaluations = 0;
+			ImprovementStreak = false;
 		}
 
 		result.Settings = Current_Settings();

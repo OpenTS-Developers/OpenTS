@@ -31,8 +31,10 @@ clears that player's report.
 
 The first complete census may select its measured target with 20% headroom.
 Incomplete bootstrap falls back to `3/9` after 128 frames. Later worsening is
-immediate. Improvement needs three evaluations with 20% headroom and a cooldown,
-and moves one rung at a time.
+immediate. The first improvement needs three evaluations with 20% headroom;
+while the headroom persists, each following evaluation steps one more rung. A
+worsening or an evaluation without headroom restores the three-evaluation
+requirement.
 
 Timing decreases activate only after the old horizon drains on a frame aligned
 to both send periods. They switch rate with temporary look-ahead, then remove
