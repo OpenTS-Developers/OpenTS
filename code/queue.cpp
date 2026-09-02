@@ -276,6 +276,10 @@ unsigned short SentCommandCount;								// # cmds I've sent out
 // Frame of the previous Execute_DoList call; a send-period decrease can skip an event's frame.
 static int LastExecutedFrame = -1;
 
+// A frame packet requests an acknowledgement at least this often while a link has no clean round-trip measurement.
+constexpr int ROUND_TRIP_PROBE_FRAMES = 32;
+static int LastRoundTripProbeFrame = -ROUND_TRIP_PROBE_FRAMES;
+
 static std::array<unsigned int, static_cast<std::size_t>(NetPacket::DecodeError::COUNT)>
 	NetworkPacketDrops = {};
 static constexpr std::uint32_t MAXIMUM_REPORTED_FRAME_LEAD = 250;
@@ -749,6 +753,7 @@ static void Queue_AI_Multiplayer(void)
 		skip_crc = Frame + ARRAY_SIZE(CRC);
 		SentCommandCount = 0;
 		LastExecutedFrame = Frame - 1;
+		LastRoundTripProbeFrame = Frame - ROUND_TRIP_PROBE_FRAMES;
 		for (i = 0; i < ARRAY_SIZE(CRC); i++)
 			CRC[i] = 0;
 
@@ -1637,6 +1642,10 @@ static int Send_Packets(ConnManClass *net, char *multi_packet_buf,
 		else {
 			ack_req = 1;
 		}
+		if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP && Session.NumPlayers > 1
+			&& Frame - LastRoundTripProbeFrame >= ROUND_TRIP_PROBE_FRAMES && !net->Worst_Local_Round_Trip_MS()) {
+			ack_req = 1;
+		}
 
 		//.....................................................................
 		// Build & send out our message
@@ -1648,6 +1657,9 @@ static int Send_Packets(ConnManClass *net, char *multi_packet_buf,
 		num += processed;
 		if (processed) {
 			ack_req = 1;
+		}
+		if (ack_req) {
+			LastRoundTripProbeFrame = Frame;
 		}
 
 		net->Send_Private_Message (multi_packet_buf, packetlen, ack_req);

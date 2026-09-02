@@ -11,7 +11,10 @@ link has one, its first acknowledgement seeds a provisional estimate even after
 a retry: the time since the packet's last transmission, paced no faster than the
 retry delay that went unanswered. A link slower than the initial retry delay
 therefore becomes measurable, and a peer that was still loading does not
-inflate the seed. The first clean acknowledgement replaces it.
+inflate the seed. The first clean acknowledgement replaces it. In a compressed
+game, a frame packet requests an acknowledgement at least every 32 frames while
+any link still lacks a clean measurement, so a quiet player's links are measured
+before the first timing evaluations.
 
 The retry timeout is limited to 100–4000 ms. Repeated private transmissions
 double their wait up to the connection timeout; that timeout follows measured
