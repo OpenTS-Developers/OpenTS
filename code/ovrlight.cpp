@@ -18,7 +18,6 @@
 #include "_tactica.h"
 #include "bsurface.h"
 #include "dsurface.h"
-#include "getcpu.h"
 #include "globals.h"
 #include "rules.h"
 #include "scenario.h"
@@ -29,9 +28,8 @@
 
 DynamicVectorClass<SpotLightClass *> SpotLights;
 
-int SpotLightDontUseMMX = false;
 int SpotLightColorMode = -1;
-int *SpotLightMMXBuffer;
+int *SpotLightColorTable;
 BSurface *SpotLightSurfaces[SpotLightClass::SPOTLIGHT_SURFACE_COUNT + SpotLightClass::SPOTLIGHT_EXTRA_SURFACE_COUNT];
 
 extern "C" {
@@ -108,7 +106,7 @@ void SpotLightClass::Update_All(void)
 /// <summary>
 /// Performs the one time initialization of the spot light system.
 /// This routine builds the brightness ramp surfaces that every spot light is drawn from,
-/// and prepares the hicolor acceleration table when the processor can make use of it.
+/// and the table the brightening routines read a pixel's channels out of.
 /// </summary>
 /// <remarks>It is safe to call this routine again after the video mode changes -- the
 /// artwork is built only once, but the color mode is picked up afresh each time.</remarks>
@@ -155,15 +153,12 @@ void SpotLightClass::One_Time(void)
 	}
 
 	SpotLightColorMode = DSurface::Get_Primary_Color_Mode();
-	int cpu_type = PROC_PENTIUM_PRO;
-	bool mmx = false;
-	Get_CPU_Type(cpu_type, mmx);
 
-	if (mmx && SpotLightMMXBuffer == NULL) {
-		SpotLightMMXBuffer = new int[65536];
+	if (SpotLightColorTable == NULL) {
+		SpotLightColorTable = new int[65536];
 		for (int color = 0; color < 65536; color++) {
 			RGBClass rgb = DSurface::Deconstruct_Hicolor_Pixel(color);
-			SpotLightMMXBuffer[color] = (rgb.Get_Red() << 16) | (rgb.Get_Green() << 8) | (rgb.Get_Blue());
+			SpotLightColorTable[color] = (rgb.Get_Red() << 16) | (rgb.Get_Green() << 8) | (rgb.Get_Blue());
 		}
 	}
 }
@@ -172,13 +167,13 @@ void SpotLightClass::One_Time(void)
 /// <summary>
 /// Frees the artwork the spot lights draw with.
 /// This routine is called during shutdown to release the brightness ramp surfaces and the
-/// hicolor acceleration table that One_Time built.
+/// hicolor lookup table that One_Time built.
 /// </summary>
 void SpotLightClass::Clear_All(void)
 {
-	if (SpotLightMMXBuffer != NULL) {
-		delete [] SpotLightMMXBuffer;
-		SpotLightMMXBuffer = NULL;
+	if (SpotLightColorTable != NULL) {
+		delete [] SpotLightColorTable;
+		SpotLightColorTable = NULL;
 	}
 	for (int i = 0; i < SPOTLIGHT_SURFACE_COUNT + SPOTLIGHT_EXTRA_SURFACE_COUNT; i++) {
 		delete SpotLightSurfaces[i];
@@ -235,23 +230,23 @@ void SpotLightClass::Draw_It(void)
 				unsigned char *sptr_row = sptr;
 				unsigned short *dptr_row = dptr;
 
-				if (SpotLightDontUseMMX != 1 && SpotLightMMXBuffer != NULL) {
+				if (SpotLightColorTable != NULL) {
 					switch (SpotLightColorMode) {
 
 						case COLORMODE_555:
-							Brighten_Color_555(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_555(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightColorTable);
 							break;
 
 						case COLORMODE_556:
-							Brighten_Color_556(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_556(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightColorTable);
 							break;
 
 						case COLORMODE_565:
-							Brighten_Color_565(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_565(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightColorTable);
 							break;
 
 						case COLORMODE_655:
-							Brighten_Color_655(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightMMXBuffer);
+							Brighten_Color_655(sptr, dptr, 256, stride, srect.Width, srect.Height, SpotLightColorTable);
 							break;
 
 						default:
