@@ -173,6 +173,15 @@ void Build_Layer(unsigned int seed, int columns, int zsize, bool withnormals)
 			VoxelPaletteTranslateTable[i][j] = (unsigned char)(Next_Random() & 0xFF);
 		}
 	}
+
+	/*
+	 * The shaded drawers pick a palette lookup row through this table, and the engine only
+	 * ever puts a row number in it. Left zeroed it holds every voxel to row zero, which is
+	 * the one case that would not tell a wrong lookup apart from a right one.
+	 */
+	for (int i = 0; i < VOXEL_PALETTE_SIZE; i++) {
+		VoxelNormalTranslateTable[i] = (unsigned char)(Next_Random() % MAX_PALETTE_LOOKUP_ENTRIES);
+	}
 }
 
 
