@@ -19,6 +19,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "globals.h" // for GameInFocus
+#include "hosttimer.h"
 #include "language\language.h"
 #include "soscomp.h"
 #include "winfix.h"
@@ -177,7 +178,6 @@ DSAudio::DSAudio(void)
 	PrimaryBufferPtr = NULL;
 	SoundTimerHandle = NULL;
 
-	TimerResolution = 0;
 
 	PrimaryBufferDesc = new DSBUFFERDESC;
 	memset(PrimaryBufferDesc, 0, sizeof(*PrimaryBufferDesc));
@@ -444,23 +444,12 @@ bool DSAudio::Init( HWND window , int bits_per_sample, bool stereo , int rate )
 		*/
 		//InitializeCriticalSection(&GlobalAudioCriticalSection);
 
-		TIMECAPS tc;
-		if (timeGetDevCaps(&tc, sizeof(tc)) != TIMERR_NOERROR) {
-			DebugString("Error - Failed to obtain timer resolution caps\n");
-			TimerResolution = TIMER_WORST_RESOLUTION;
-		} else {
-			TimerResolution = std::min(std::max(tc.wPeriodMin, (unsigned int)TIMER_TARGET_RESOLUTION), tc.wPeriodMax);
-		}
-
-		DebugString("Audio timer resolution is %d milliseconds\n", TimerResolution);
-
-		timeBeginPeriod(TimerResolution);
-
 		/*
-		**	Initialise the Windows timer system to provide us with a callback
-		**
+		**	Arm the maintenance callback. The timer holds whatever resolution it needs for
+		**	as long as it is armed, and its disarm waits for a callback in flight, so
+		**	there is neither a resolution to negotiate nor a race to guard here.
 		*/
-		SoundTimerHandle = timeSetEvent ( 1000/MAINTENANCE_RATE , 1 , Sound_Timer_Callback , 0 , TIME_PERIODIC | TIME_KILL_SYNCHRONOUS);
+		SoundTimerHandle = Host_Timer_Arm(1000/MAINTENANCE_RATE, Sound_Timer_Callback, nullptr);
 		AudioDone = FALSE;
 		//_beginthread(&Sound_Thread, NULL, 16*1024, NULL);
 
@@ -529,9 +518,8 @@ void DSAudio::End(void)
 	**	Remove the Windows timer event we installed for the sound callback
 	*/
 	if (SoundTimerHandle){
-		timeKillEvent(SoundTimerHandle);
+		Host_Timer_Disarm(SoundTimerHandle);
 		SoundTimerHandle = 0;
-		timeEndPeriod(TimerResolution);
 	}
 
 	if (SoundObject && PrimaryBufferPtr){
@@ -1426,7 +1414,7 @@ void DSAudio::Unlock_Mutex(void)
  *    11/2/95 4:01PM ST : Created                                                              *
  *=============================================================================================*/
 
-void CALLBACK DSAudio::Sound_Timer_Callback ( UINT, UINT, DWORD, DWORD, DWORD )
+void DSAudio::Sound_Timer_Callback(uint32_t, void *)
 {
 	HANDLE mutex = Audio.TimerMutex;
 	if (WaitForSingleObject(mutex, 0) == 0) {

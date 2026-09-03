@@ -15,6 +15,8 @@
 
 #include "vqaplay.h"
 
+#include <cstdint>
+
 #include <dsound.h>
 #include <windows.h>
 
@@ -56,7 +58,7 @@ struct Ahandle {
 	BOOL AudioBufInUse[MAX_BUFFERS];
 	void * AudioBuf[MAX_BUFFERS];
 	unsigned long AudioBufSize[MAX_BUFFERS];
-	UINT TimerHandle;
+	uint32_t TimerHandle;
 	DSBUFFERDESC BufferDesc;
 	WAVEFORMATEX DsBuffFormat;
 	LPDIRECTSOUNDBUFFER SecondaryBufferPtr;

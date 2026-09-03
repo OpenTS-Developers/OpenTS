@@ -18,6 +18,7 @@
 #include "dsaudio.h"
 #include "dbgprint.h"
 #include "gametime.h"
+#include "hosttimer.h"
 #include "vqaplayp.h"
 
 #include <cassert>
@@ -46,7 +47,7 @@ long __cdecl Play_Audio_Handler(VQAHandleP *vqap);
 long __cdecl Pause_Audio_Handler(VQAHandleP *vqap);
 long __cdecl Resume_Audio_Handler(VQAHandleP *vqap);
 long __cdecl Load_Audio_Handler(VQAHandleP *vqap, void *buffer, long nbytes);
-void CALLBACK AudioCallback(UINT uTimerID, UINT, DWORD dwUser, DWORD, DWORD);
+void AudioCallback(uint32_t timer, void * user);
 _STATIC unsigned long Get_Playback_Position(VQAHandle *vqa, Ahandle *handle, VQAConfig *config);
 
 _STATIC BOOL Move_HMI_Audio_Block_To_Direct_Sound_Buffer(VQAHandleP *vqap);
@@ -281,16 +282,12 @@ long __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, lon
 		_AHandleCallbackFunc1 = (AHANDLE_CALLBACK_1)params->Callback1;
 		_AHandleCallbackFunc2 = (AHANDLE_CALLBACK_2)params->Callback2;
 
-		DebugString("Calling timeBeginPeriod\n");
-		if (timeBeginPeriod(1000/VQA_TIMETICKS) != TIMERR_NOCANDO) {
-			DebugString("Creating VQ audio timer thread\n");
-			// Set orf 60hz timer
-			handle->TimerHandle = timeSetEvent ( 1000/VQA_TIMETICKS , 1 , AudioCallback , (DWORD)vqap , TIME_PERIODIC);
-			DebugString("VQ audio handler opened OK\n");
-			if (handle->TimerHandle != 0) {
-				return(VQAERR_NONE);
-			}
-			return(VQAERR_AUDIO);
+		DebugString("Arming the VQ audio timer\n");
+		// Set orf 60hz timer
+		handle->TimerHandle = Host_Timer_Arm(1000/VQA_TIMETICKS, AudioCallback, vqap);
+		DebugString("VQ audio handler opened OK\n");
+		if (handle->TimerHandle != 0) {
+			return(VQAERR_NONE);
 		}
 	}
 	return(VQAERR_AUDIO);
@@ -310,12 +307,9 @@ long __cdecl Close_Audio_Handler(VQAHandleP *vqap)
 			Stop_Audio_Handler(vqap);
 		}
 
-		DebugString("Calling timeKillEvent\n");
-		timeKillEvent(handle->TimerHandle);
+		DebugString("Disarming the VQ audio timer\n");
+		Host_Timer_Disarm(handle->TimerHandle);
 		handle->TimerHandle = 0;
-
-		DebugString("Calling timeEndPeriod\n");
-		timeEndPeriod(1000/VQA_TIMETICKS);
 
 		handle->Used = false;
 
@@ -535,7 +529,7 @@ long __cdecl Stop_Audio_Handler(VQAHandleP *vqap)
 *     NONE
 *
 ****************************************************************************/
-void CALLBACK AudioCallback ( UINT uTimerID, UINT, DWORD dwUser, DWORD, DWORD )
+void AudioCallback(uint32_t timer, void * user)
 {
 	Ahandle  	*audio;
 	DWORD			play_cursor;		//Position that direct sound is reading from
@@ -544,8 +538,8 @@ void CALLBACK AudioCallback ( UINT uTimerID, UINT, DWORD dwUser, DWORD, DWORD )
 	bool			buffer_stopped = false;
 	DWORD			status;
 
-	VQAHandle *vqa = (VQAHandle *)dwUser;
-	VQAHandleP *vqap = (VQAHandleP *)dwUser;
+	VQAHandle *vqa = (VQAHandle *)user;
+	VQAHandleP *vqap = (VQAHandleP *)user;
 
 	audio = &_handles[vqap->AudioHandleIndex];
 
@@ -556,7 +550,7 @@ void CALLBACK AudioCallback ( UINT uTimerID, UINT, DWORD dwUser, DWORD, DWORD )
 
 	EnterCriticalSection(&audio->CriticalSection);
 
-	if (!audio->SecondaryBufferPtr || audio->TimerHandle != uTimerID)  {
+	if (!audio->SecondaryBufferPtr || audio->TimerHandle != timer)  {
 		LeaveCriticalSection(&audio->CriticalSection);
 		InterlockedDecrement(&audio->SuspendAudioCallback);
 		return;
