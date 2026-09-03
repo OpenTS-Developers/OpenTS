@@ -38,8 +38,8 @@ void __cdecl Draw_Voxel_Reverse_ZBuffer(VoxelFuncArgumentStruct * state);
 
 /*
  * Indexed by the orientation's direction together with the depth buffer, lighting and normal
- * type switches, which is why the last four entries repeat the four before them: the normal
- * type does not change which drawer is wanted once lighting is off.
+ * type switches, which is why the last four entries repeat the four before them: a layer
+ * without normals has nothing to light, so lighting does not change which drawer is wanted.
  */
 VoxelFuncPtr VoxelDrawFunctions[16] = {
 	&Draw_Voxel_Regular_Normals,
