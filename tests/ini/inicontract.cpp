@@ -514,6 +514,34 @@ int main(void)
 		Check(last.Get_String("S", "k", "", buffer, sizeof(buffer)) == 1000, "a thousand character last line with no newline is read whole");
 	}
 
+	{
+		std::string const value = Long_Value();
+		INIClass ini;
+		Read(ini, Long_Source().c_str());
+
+		int before = Log_Lines("[Long] List is 2000 characters");
+		char narrow[64];
+		int length = ini.Get_String("Long", "List", "", narrow, sizeof(narrow));
+		Check(length == 63 && narrow[63] == '\0' && std::memcmp(narrow, value.c_str(), 63) == 0,
+			"a fixed buffer still receives as much of a long value as it holds");
+		ini.Get_String("Long", "List", "", narrow, sizeof(narrow));
+		Check(Log_Lines("[Long] List is 2000 characters") == before + 1, "a value cut short by a fixed buffer is reported once");
+
+		Check(ini.Get_String("Long", "List") == value, "a string read returns a long value whole");
+		Check(ini.Get_String("Long", "Missing", "  def  ") == "def", "a string read returns the trimmed default when the key is absent");
+		Check(ini.Get_String("Long", "Missing", NULL).empty(), "a string read returns nothing for a NULL default");
+		Check(ini.Get_String("Long", "List", "other") == value, "a string read ignores the default when the key is present");
+
+		char field[16] = "keep";
+		int kept = ini.Get_String("Long", "Missing", field, field, sizeof(field));
+		Check(kept == 4 && std::strcmp(field, "keep") == 0, "reading into a field that is its own default leaves it alone");
+
+		std::string tokens = ini.Get_String("Long", "List");
+		int count = 0;
+		for (char * token = std::strtok(tokens.data(), ","); token != NULL; token = std::strtok(NULL, ",")) count++;
+		Check(count == 250, "a long list tokenizes to every name it holds");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

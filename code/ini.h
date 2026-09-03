@@ -105,6 +105,7 @@ class INIClass {
 		int Get_Hex(char const * section, char const * entry, int defvalue=0) const;
 		int Get_Int(char const * section, char const * entry, int defvalue=0) const;
 		int Get_String(char const * section, char const * entry, char const * defvalue, char * buffer, int size) const;
+		[[nodiscard]] std::string Get_String(char const * section, char const * entry, char const * defvalue = "") const;
 		int Get_TextBlock(char const * section, char * buffer, int len) const;
 		int Get_UUBlock(char const * section, void * buffer, int len) const;
 		Rect const Get_Rect(char const * section, char const * entry, Rect const & defvalue) const;
@@ -192,6 +193,12 @@ class INIClass {
 			**	value the engine stored itself.
 			*/
 			unsigned Generation = 0;
+
+			/*
+			**	Set once the five argument Get_String has reported cutting this value short, so
+			**	that a value read many times is reported once.
+			*/
+			mutable bool TruncationReported = false;
 		};
 
 		/*

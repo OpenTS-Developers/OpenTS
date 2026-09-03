@@ -1164,6 +1164,11 @@ int INIClass::Get_String(char const * section, char const * entry, char const * 
 	INIEntry * entryptr = Find_Entry(section, entry);
 	if (entryptr != NULL) {
 		defvalue = entryptr->Value.c_str();
+		if (entryptr->Value.size() > (std::size_t)(size - 1) && !entryptr->TruncationReported) {
+			entryptr->TruncationReported = true;
+			char const * source = Source_Of(*entryptr);
+			DebugString("INI: %s%s[%s] %s is %d characters but the reader holds %d; the value was cut short.\n", source, *source ? " " : "", section, entry, (int)entryptr->Value.size(), size - 1);
+		}
 	}
 
 	if (defvalue == NULL) {
@@ -1177,6 +1182,30 @@ int INIClass::Get_String(char const * section, char const * entry, char const * 
 		strtrim(buffer);
 		return(strlen(buffer));
 	}
+}
+
+
+/// <summary>
+/// Fetches the value of an entry as a string.
+/// </summary>
+/// <returns>The value, trimmed of surrounding whitespace, or the default trimmed the same way
+/// when the entry is absent. A NULL default, section or entry reads as an empty string.</returns>
+std::string INIClass::Get_String(char const * section, char const * entry, char const * defvalue) const
+{
+	if (section == NULL || entry == NULL) {
+		return(std::string());
+	}
+
+	INIEntry * entryptr = Find_Entry(section, entry);
+	char const * text = entryptr != NULL ? entryptr->Value.c_str() : defvalue;
+	if (text == NULL) {
+		return(std::string());
+	}
+
+	std::string result(text);
+	strtrim(result.data());
+	result.resize(strlen(result.data()));
+	return(result);
 }
 
 
