@@ -130,11 +130,6 @@ int main(void)
 	for (int i = 0; i < BrightenGoldenCaseCount; i++) {
 		BrightenGoldenCase const & test = BrightenGoldenCases[i];
 
-		// The non-MMX vectors record a path colorops.cpp no longer has.
-		if (test.Mmx == 0) {
-			continue;
-		}
-
 		Seed = test.Seed;
 
 		for (int j = 0; j < 256 * 256; j++) {
