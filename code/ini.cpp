@@ -87,13 +87,28 @@
 #include <cstdlib>
 #include <cstring>
 
-/// <summary>
-/// Erases one entry, one section, or the whole database.
-/// </summary>
-/// <param name="section">The section to clear, or NULL to clear the whole database.</param>
-/// <param name="entry">The entry within the section to clear, or NULL to clear the whole
-/// section.</param>
-/// <returns>bool; Always true, whether or not anything was found to clear.</returns>
+/***********************************************************************************************
+ * INIClass::Clear -- Clears out a section (or all sections) of the INI data.                  *
+ *                                                                                             *
+ *    This routine is used to clear out the section specified. If no section is specified,     *
+ *    then the entire INI data is cleared out. Optionally, this routine can be used to clear   *
+ *    out just an individual entry in the specified section.                                   *
+ *                                                                                             *
+ * INPUT:   section  -- Pointer to the section to clear out [pass NULL to clear all].          *
+ *                                                                                             *
+ *          entry    -- Pointer to optional entry specifier. If this parameter is specified,   *
+ *                      then only this specific entry (if found) will be cleared. Otherwise,   *
+ *                      the entire section specified will be cleared.                          *
+ *                                                                                             *
+ * OUTPUT:  none                                                                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/02/1996 JLB : Created.                                                                 *
+ *   08/21/1996 JLB : Optionally clears section too.                                           *
+ *   11/02/1996 JLB : Updates the index list.                                                  *
+ *=============================================================================================*/
 bool INIClass::Clear(char const * section, char const * entry)
 {
 	if (section == NULL) {
@@ -167,6 +182,21 @@ static bool Read_Line(Straw & file, std::string & line)
 }
 
 
+/***********************************************************************************************
+ * INIClass::Load -- Load the INI data from the data stream (straw).                           *
+ *                                                                                             *
+ *    This will fetch data from the straw and build an INI database from it.                   *
+ *                                                                                             *
+ * INPUT:   straw -- The straw that the data will be provided from.                            *
+ *                                                                                             *
+ * OUTPUT:  bool; Was the database loaded ok?                                                  *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/10/1996 JLB : Created.                                                                 *
+ *   09/29/1997 JLB : Handles the merging case.                                                *
+ *=============================================================================================*/
 int INIClass::Load(Straw & file, bool keepcomments)
 {
 	return(Load(file, keepcomments, NULL));
@@ -461,12 +491,24 @@ int INIClass::Save(Pipe & pipe) const
 }
 
 
-/// <summary>
-/// Finds a section by name. Names are compared byte for byte, so the search is case
-/// sensitive.
-/// </summary>
-/// <param name="section">The section name to look for.</param>
-/// <returns>The section, or NULL if the database holds no section of that name.</returns>
+/***********************************************************************************************
+ * INIClass::Find_Section -- Find the specified section within the INI data.                   *
+ *                                                                                             *
+ *    This routine will scan through the INI data looking for the section specified. If the    *
+ *    section could be found, then a pointer to the section control data is returned.          *
+ *                                                                                             *
+ * INPUT:   section  -- The name of the section to search for. Don't enclose the name in       *
+ *                      brackets. Case is sensitive in the search.                             *
+ *                                                                                             *
+ * OUTPUT:  Returns with a pointer to the INI section control structure if the section was     *
+ *          found. Otherwise, NULL is returned.                                                *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/02/1996 JLB : Created.                                                                 *
+ *   11/02/1996 JLB : Uses index manager.                                                      *
+ *=============================================================================================*/
 INIClass::INISection * INIClass::Find_Section(char const * section) const
 {
 	if (section == NULL) {
@@ -977,11 +1019,27 @@ bool INIClass::Put_Rect(char const * section, char const * entry, Rect const & v
 }
 
 
-/// <summary>
-/// Fetches a rectangle from the INI database.
-/// </summary>
-/// <returns>Returns with the rectangle specified. If the entry is absent, or does not hold
-/// four numbers, then the default value is returned.</returns>
+/***********************************************************************************************
+ * INIClass::Get_Rect -- Retrieve a rectangle data from the database.                          *
+ *                                                                                             *
+ *    This routine will retrieve the rectangle data from the database at the section and entry *
+ *    specified.                                                                               *
+ *                                                                                             *
+ * INPUT:   section  -- The name of the section that the entry will be scanned for.            *
+ *                                                                                             *
+ *          entry    -- The entry that the rectangle data will be lifted from.                 *
+ *                                                                                             *
+ *          defvalue -- The rectangle value to return if the specified section and entry could *
+ *                      not be found.                                                          *
+ *                                                                                             *
+ * OUTPUT:  Returns with the rectangle data from the database or the default value if not      *
+ *          found or not made of four numbers.                                                 *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   09/19/1997 JLB : Created.                                                                 *
+ *=============================================================================================*/
 Rect const INIClass::Get_Rect(char const * section, char const * entry, Rect const & defvalue) const
 {
 	int values[4];
@@ -1063,13 +1121,25 @@ int INIClass::Get_Hex(char const * section, char const * entry, int defvalue) co
 }
 
 
-/// <summary>
-/// Fetches a floating point number from the INI database.
-/// A percent sign anywhere in the value divides the number by one hundred, so 50% reads as
-/// one half.
-/// </summary>
-/// <returns>Returns with the number specified. If the entry is absent, or does not start
-/// with a number, then the default value is returned.</returns>
+/***********************************************************************************************
+ * INIClass::Get_Float -- Fetch a floating point number from the database.                     *
+ *                                                                                             *
+ *    This routine will retrieve a floating point number from the database.                    *
+ *                                                                                             *
+ * INPUT:   section  -- The section name to find the entry under.                              *
+ *                                                                                             *
+ *          entry    -- The entry name to fetch the float value from.                          *
+ *                                                                                             *
+ *          defvalue -- Return value to use if the section and entry could not be found.       *
+ *                                                                                             *
+ * OUTPUT:  Returns with the float value from the section and entry specified. If not found,   *
+ *          or not a number, then the default value is returned.                               *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   05/31/1997 JLB : Created.                                                                 *
+ *=============================================================================================*/
 double INIClass::Get_Float(char const * section, char const * entry, double defvalue) const
 {
 	INIEntry * entryptr = Find_Entry(section, entry);
@@ -1122,12 +1192,26 @@ bool INIClass::Put_Float(char const * section, char const * entry, double number
 }
 
 
-/// <summary>
-/// Stores a value under the section and entry named, creating the section if it is absent.
-/// An existing entry keeps its comments and layout but takes the new value and moves to the
-/// end of its section. An empty or NULL value removes the entry instead.
-/// </summary>
-/// <returns>bool; Were a section and an entry named? Storing never fails otherwise.</returns>
+/***********************************************************************************************
+ * INIClass::Put_String -- Output a string to the section and entry specified.                 *
+ *                                                                                             *
+ *    This routine will put an arbitrary string to the section and entry specified. Any        *
+ *    previous matching entry will be replaced and moved to the end of the section.            *
+ *                                                                                             *
+ * INPUT:   section  -- The section identifier to place the string under.                      *
+ *                                                                                             *
+ *          entry    -- The entry identifier to identify this string [placed under the section]*
+ *                                                                                             *
+ *          string   -- Pointer to the string to assign to this entry.                         *
+ *                                                                                             *
+ * OUTPUT:  bool; Was the entry assigned without error?                                        *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/02/1996 JLB : Created.                                                                 *
+ *   11/02/1996 JLB : Uses index handler.                                                      *
+ *=============================================================================================*/
 bool INIClass::Put_String(char const * section, char const * entry, char const * string)
 {
 	if (section == NULL || entry == NULL) return(false);
@@ -1338,11 +1422,26 @@ bool INIClass::Put_Point(char const * section, char const * entry, TPoint2D<int>
 }
 
 
-/// <summary>
-/// Fetches a two dimensional point from the INI database.
-/// </summary>
-/// <returns>Returns with the point specified. If the entry is absent, or does not hold two
-/// numbers, then the default value is returned.</returns>
+/***********************************************************************************************
+ * INIClass::Get_Point -- Fetch a point value from the INI database.                           *
+ *                                                                                             *
+ *    This routine will retrieve a point value from the database by looking in the section and *
+ *    entry specified.                                                                         *
+ *                                                                                             *
+ * INPUT:   section  -- The name of the section to search for the entry under.                 *
+ *                                                                                             *
+ *          entry    -- The entry to search for.                                               *
+ *                                                                                             *
+ *          defvalue -- The default value to return if the section and entry were not found.   *
+ *                                                                                             *
+ * OUTPUT:  Returns with the point value retrieved from the database or the default value if   *
+ *          the section and entry were not found or the value is not two numbers.              *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   09/19/1997 JLB : Created.                                                                 *
+ *=============================================================================================*/
 TPoint2D<int> const INIClass::Get_Point(char const * section, char const * entry, TPoint2D<int> const & defvalue) const
 {
 	int values[2];
@@ -1381,11 +1480,27 @@ bool INIClass::Put_Point(char const * section, char const * entry, TPoint3D<int>
 }
 
 
-/// <summary>
-/// Fetches a three dimensional point from the INI database.
-/// </summary>
-/// <returns>Returns with the point specified. If the entry is absent, or does not hold three
-/// numbers, then the default value is returned.</returns>
+/***********************************************************************************************
+ * INIClass::Get_Point -- Fetch a 3D point from the database.                                  *
+ *                                                                                             *
+ *    This routine will retrieve a 3D point from the database from the section and entry       *
+ *    specified.                                                                               *
+ *                                                                                             *
+ * INPUT:   section  -- The name of the section to search for th entry under.                  *
+ *                                                                                             *
+ *          entry    -- The name of the entry to search for.                                   *
+ *                                                                                             *
+ *          defvaule -- The default value to return if the section and entry could not be      *
+ *                      found.                                                                 *
+ *                                                                                             *
+ * OUTPUT:  Returns with the 3D point from the database or the default value if the section    *
+ *          and entry could not be found or the value is not three numbers.                    *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   09/19/1997 JLB : Created.                                                                 *
+ *=============================================================================================*/
 TPoint3D<int> const INIClass::Get_Point(char const * section, char const * entry, TPoint3D<int> const & defvalue) const
 {
 	int values[3];
@@ -1424,11 +1539,27 @@ bool INIClass::Put_Point(char const * section, char const * entry, TPoint3D<floa
 }
 
 
-/// <summary>
-/// Fetches a three dimensional floating point vector from the INI database.
-/// </summary>
-/// <returns>Returns with the vector specified. If the entry is absent, or does not hold
-/// three numbers, then the default value is returned.</returns>
+/***********************************************************************************************
+ * INIClass::Get_Point -- Fetch a 3D point from the database.                                  *
+ *                                                                                             *
+ *    This routine will retrieve a 3D point from the database from the section and entry       *
+ *    specified.                                                                               *
+ *                                                                                             *
+ * INPUT:   section  -- The name of the section to search for th entry under.                  *
+ *                                                                                             *
+ *          entry    -- The name of the entry to search for.                                   *
+ *                                                                                             *
+ *          defvaule -- The default value to return if the section and entry could not be      *
+ *                      found.                                                                 *
+ *                                                                                             *
+ * OUTPUT:  Returns with the 3D point from the database or the default value if the section    *
+ *          and entry could not be found or the value is not three numbers.                    *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   09/19/1997 JLB : Created.                                                                 *
+ *=============================================================================================*/
 TPoint3D<float> const INIClass::Get_Point(char const * section, char const * entry, TPoint3D<float> const & defvalue) const
 {
 	float values[3];
@@ -1440,12 +1571,23 @@ TPoint3D<float> const INIClass::Get_Point(char const * section, char const * ent
 }
 
 
-/// <summary>
-/// Finds an entry of this section by name. Names are compared byte for byte, so the search
-/// is case sensitive.
-/// </summary>
-/// <param name="entry">The entry name to look for.</param>
-/// <returns>The entry, or NULL if the section holds no entry of that name.</returns>
+/***********************************************************************************************
+ * INIClass::INISection::Find_Entry -- Finds a specified entry and returns pointer to it.      *
+ *                                                                                             *
+ *    This routine scans the supplied entry for the section specified. This is used for        *
+ *    internal database maintenance.                                                           *
+ *                                                                                             *
+ * INPUT:   entry -- The entry to scan for.                                                    *
+ *                                                                                             *
+ * OUTPUT:  Returns with a pointer to the entry control structure if the entry was found.      *
+ *          Otherwise it returns NULL.                                                         *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/03/1996 JLB : Created.                                                                 *
+ *   11/02/1996 JLB : Uses index handler.                                                      *
+ *=============================================================================================*/
 INIClass::INIEntry * INIClass::INISection::Find_Entry(char const * entry) const
 {
 	if (entry == NULL) {
