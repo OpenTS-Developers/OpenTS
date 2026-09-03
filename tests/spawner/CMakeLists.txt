@@ -6,7 +6,6 @@ add_executable(SpawnContract
     "${CMAKE_SOURCE_DIR}/code/spawnerconfig.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
-    "${CMAKE_SOURCE_DIR}/code/readline.cpp"
     "${CMAKE_SOURCE_DIR}/code/trim.cpp"
     "${CMAKE_SOURCE_DIR}/code/buff.cpp"
     "${CMAKE_SOURCE_DIR}/code/straw.cpp"

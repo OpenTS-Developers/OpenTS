@@ -19,7 +19,6 @@ add_executable(GameDirs
     "${CMAKE_SOURCE_DIR}/code/mpmath.cpp"
     "${CMAKE_SOURCE_DIR}/code/pipe.cpp"
     "${CMAKE_SOURCE_DIR}/code/pk.cpp"
-    "${CMAKE_SOURCE_DIR}/code/readline.cpp"
     "${CMAKE_SOURCE_DIR}/code/straw.cpp"
     "${CMAKE_SOURCE_DIR}/code/trim.cpp"
     "${CMAKE_SOURCE_DIR}/code/xpipe.cpp"
