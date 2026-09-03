@@ -131,8 +131,8 @@ class INIClass {
 		bool Put_CLSID(char const * section, char const * entry, CLSID const & value);
 
 		/*
-		**	Callers size the buffers they hand to Get_String from this, and the reader keeps
-		**	at most this many characters of a line.
+		**	Callers size the buffers they hand to Get_String from this. It does not bound a
+		**	line of the file; the reader keeps a line of any length.
 		*/
 		enum {MAX_LINE_LENGTH=512};
 

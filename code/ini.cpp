@@ -148,8 +148,7 @@ int INIClass::Load(FileClass & file, bool keepcomments)
 
 /*
 **	Reads one line of the file, dropping carriage returns and the newline that ends it. The
-**	last line of a file is read whether or not a newline ends it. Only the first
-**	MAX_LINE_LENGTH - 1 characters of a line are kept, as the fixed buffer kept them.
+**	last line of a file is read whether or not a newline ends it.
 */
 static bool Read_Line(Straw & file, std::string & line)
 {
@@ -163,7 +162,7 @@ static bool Read_Line(Straw & file, std::string & line)
 		if (c == '\n') {
 			return(true);
 		}
-		if (c != '\r' && line.size() < (std::size_t)(INIClass::MAX_LINE_LENGTH - 1)) {
+		if (c != '\r') {
 			line.push_back(c);
 		}
 	}

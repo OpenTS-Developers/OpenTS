@@ -219,6 +219,27 @@ double Seconds_Since(std::chrono::steady_clock::time_point start)
 	return(std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count());
 }
 
+
+// A 2000 character value: 250 comma separated names, longer than any fixed line buffer.
+std::string Long_Value(void)
+{
+	std::string value;
+	for (int index = 0; index < 250; index++) {
+		if (index > 0) value += ',';
+		char name[16];
+		std::snprintf(name, sizeof(name), "N%06d", index);
+		value += name;
+	}
+	value += 'X';
+	return(value);
+}
+
+
+std::string Long_Source(void)
+{
+	return("[Long]\r\nList=" + Long_Value() + "\r\n");
+}
+
 }
 
 
@@ -469,6 +490,28 @@ int main(void)
 		Check(loaded < 2.0, "a twenty thousand line section loads in under two seconds");
 		Check(swept < 1.0, "twenty thousand positional reads take under a second");
 		Check(wide.Section_Count() == 5000 && widened < 2.0, "five thousand sections load in under two seconds");
+	}
+
+	{
+		std::string const value = Long_Value();
+		std::string const source = Long_Source();
+		INIClass ini;
+		Read(ini, source.c_str());
+
+		char buffer[4096];
+		int length = ini.Get_String("Long", "List", "", buffer, sizeof(buffer));
+		Check(length == 2000 && value == buffer, "a two thousand character line is read whole");
+		Check(Save_Bytes(ini) == source, "a two thousand character line saves back exactly");
+
+		INIClass merged;
+		Read(merged, "[Other]\nk=v\n");
+		Read(merged, source.c_str());
+		Check(merged.Get_String("Long", "List", "", buffer, sizeof(buffer)) == 2000, "a merging load keeps a two thousand character line");
+
+		std::string const tail = "[S]\nk=" + std::string(1000, 'v');
+		INIClass last;
+		Read(last, tail.c_str());
+		Check(last.Get_String("S", "k", "", buffer, sizeof(buffer)) == 1000, "a thousand character last line with no newline is read whole");
 	}
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
