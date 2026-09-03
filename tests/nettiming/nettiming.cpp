@@ -56,7 +56,7 @@ namespace
 			bool Acknowledge(NetTiming::Milliseconds now)
 			{
 				Clock.Set(now);
-				return(Estimator.Acknowledge(FirstSend, LastSend, TransmissionCount, BaseRto, Clock));
+				return(Estimator.Acknowledge(FirstSend, TransmissionCount, Clock));
 			}
 
 			NetTiming::RttEstimator const & Rtt(void) const {return(Estimator);}
@@ -143,9 +143,9 @@ namespace
 		FakeClock clock;
 		clock.Set(0x00000020u);
 		RttEstimator estimator;
-		Expect("wrap sample accepted", estimator.Acknowledge(0xfffffff0u, 0xfffffff0u, 1, MINIMUM_RTO, clock));
+		Expect("wrap sample accepted", estimator.Acknowledge(0xfffffff0u, 1, clock));
 		Expect_Equal("wrap elapsed", estimator.Smoothed_Rtt(), 48u);
-		Expect("retransmitted acknowledgement ignored", !estimator.Acknowledge(0, 0, 2, MINIMUM_RTO, clock));
+		Expect("retransmitted acknowledgement ignored", !estimator.Acknowledge(0, 2, clock));
 
 		Expect("wrapped retry due", Retransmit_Is_Due(0xfffffff0u, 0x00000054u, 100, 0));
 		Expect("wrapped retry not early", !Retransmit_Is_Due(0xfffffff0u, 0x00000040u, 100, 0));
@@ -224,14 +224,14 @@ namespace
 		FakeClock clock;
 		RttEstimator reordered;
 		clock.Set(1200);
-		Expect("newer packet ACK samples first", reordered.Acknowledge(1100, 1100, 1, MINIMUM_RTO, clock));
+		Expect("newer packet ACK samples first", reordered.Acknowledge(1100, 1, clock));
 		clock.Set(1300);
-		Expect("older packet ACK can sample after reordering", reordered.Acknowledge(1000, 1000, 1, MINIMUM_RTO, clock));
+		Expect("older packet ACK can sample after reordering", reordered.Acknowledge(1000, 1, clock));
 		Expect_Equal("reordered samples keep alpha filter", reordered.Smoothed_Rtt(), 125u);
 		Expect_Equal("reordered samples keep beta filter", reordered.Rtt_Variation(), 88u);
 
 		clock.Set(2000);
-		Expect("duplicate ambiguous ACK is excluded by Karn", !reordered.Acknowledge(1500, 1500, 2, MINIMUM_RTO, clock));
+		Expect("duplicate ambiguous ACK is excluded by Karn", !reordered.Acknowledge(1500, 2, clock));
 		Expect_Equal("ambiguous ACK leaves SRTT unchanged", reordered.Smoothed_Rtt(), 125u);
 
 		RttEstimator jitter;
@@ -255,9 +255,9 @@ namespace
 		lossy_transport.Send(1000);
 		Expect("fake transport retries a lost packet", lossy_transport.Retry(1100));
 		Expect("ambiguous first ACK seeds a provisional sample", lossy_transport.Acknowledge(1180));
-		Expect("provisional seed is the time since the last transmission", lossy_transport.Rtt().Smoothed_Rtt() == 80u && lossy_transport.Rtt().Is_Provisional());
+		Expect("provisional seed is the elapsed upper bound", lossy_transport.Rtt().Smoothed_Rtt() == 180u && lossy_transport.Rtt().Is_Provisional());
 		lossy_transport.Send(2000);
-		Expect_Equal("provisional seed paces the next packet", lossy_transport.Base_Rto(), 240u);
+		Expect_Equal("provisional seed paces the next packet", lossy_transport.Base_Rto(), 540u);
 		Expect("clean sample replaces the provisional seed", lossy_transport.Acknowledge(2080));
 		Expect_Equal("replaced smoothed RTT", lossy_transport.Rtt().Smoothed_Rtt(), 80u);
 		Expect_Equal("replaced variation", lossy_transport.Rtt().Rtt_Variation(), 40u);
@@ -309,39 +309,33 @@ namespace
 
 		FakeClock clock;
 		RttEstimator estimator;
-		Expect("unsent packet never samples", !estimator.Acknowledge(0, 0, 0, MINIMUM_RTO, clock));
+		Expect("unsent packet never samples", !estimator.Acknowledge(0, 0, clock));
 		Expect("unsent acknowledgement leaves the estimator empty", !estimator.Has_Sample());
 
 		clock.Set(2000);
-		Expect("two-second link seeds through a retransmitted ACK", estimator.Acknowledge(0, 1000, 2, 1000, clock));
+		Expect("two-second link seeds through a retransmitted ACK", estimator.Acknowledge(0, 2, clock));
 		Expect("seed is provisional", estimator.Has_Sample() && estimator.Is_Provisional());
-		Expect_Equal("seed is the time since the last transmission", estimator.Smoothed_Rtt(), 1000u);
-		Expect_Equal("seed RTO covers the two-second link", estimator.Retransmit_Timeout(), 3000u);
+		Expect_Equal("seed smoothed RTT", estimator.Smoothed_Rtt(), 2000u);
+		Expect_Equal("seed RTO reaches the ceiling", estimator.Retransmit_Timeout(), MAXIMUM_RTO);
 
 		clock.Set(4500);
-		Expect("second ambiguous ACK does not move a provisional seed", !estimator.Acknowledge(1000, 3000, 3, 1000, clock));
-		Expect_Equal("seed unchanged by a second ambiguous ACK", estimator.Smoothed_Rtt(), 1000u);
+		Expect("second ambiguous ACK does not move a provisional seed", !estimator.Acknowledge(1000, 3, clock));
+		Expect_Equal("seed unchanged by a second ambiguous ACK", estimator.Smoothed_Rtt(), 2000u);
 
 		clock.Set(6900);
-		Expect("clean sample replaces the seed", estimator.Acknowledge(5000, 5000, 1, 3000, clock));
+		Expect("clean sample replaces the seed", estimator.Acknowledge(5000, 1, clock));
 		Expect_Equal("clean sample replaces rather than blends", estimator.Smoothed_Rtt(), 1900u);
 		Expect("replaced seed is measured", !estimator.Is_Provisional());
 
 		clock.Set(9000);
-		Expect("Karn applies once the estimate is measured", !estimator.Acknowledge(7000, 8000, 2, 1900, clock));
-
-		RttEstimator loading_peer;
-		clock.Set(3100);
-		Expect("a peer that was still loading seeds from the last transmission", loading_peer.Acknowledge(0, 3000, 4, 1000, clock));
-		Expect_Equal("loading time does not inflate the seed", loading_peer.Smoothed_Rtt(), 100u);
-		Expect_Equal("the seed keeps the retry delay it outlived", loading_peer.Retransmit_Timeout(), 1000u);
+		Expect("Karn applies once the estimate is measured", !estimator.Acknowledge(7000, 2, clock));
 
 		RttEstimator backed_off;
 		clock.Set(300);
-		backed_off.Acknowledge(0, 100, 2, 100, clock);
-		Expect_Equal("provisional RTO", backed_off.Retransmit_Timeout(), 600u);
-		backed_off.Note_Retransmit(600);
-		Expect_Equal("provisional estimate backs off like a measured one", backed_off.Retransmit_Timeout(), 1200u);
+		backed_off.Acknowledge(0, 2, clock);
+		Expect_Equal("provisional RTO", backed_off.Retransmit_Timeout(), 900u);
+		backed_off.Note_Retransmit(900);
+		Expect_Equal("provisional estimate backs off like a measured one", backed_off.Retransmit_Timeout(), 1800u);
 
 		backed_off.Reset();
 		Expect("reset clears the provisional flag", !backed_off.Is_Provisional() && !backed_off.Has_Sample());

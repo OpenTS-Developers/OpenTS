@@ -41,8 +41,7 @@ namespace NetTiming
 		public:
 			void Reset(void);
 			bool Add_Sample(Milliseconds round_trip, bool retransmitted = false);
-			bool Acknowledge(Milliseconds first_sent_at, Milliseconds last_sent_at, unsigned int transmission_count, Milliseconds retry_timeout,
-				MillisecondClock const & clock = Default_Clock());
+			bool Acknowledge(Milliseconds sent_at, unsigned int transmission_count, MillisecondClock const & clock = Default_Clock());
 			void Note_Retransmit(Milliseconds captured_rto);
 
 			bool Has_Sample(void) const {return(Initialized);}
