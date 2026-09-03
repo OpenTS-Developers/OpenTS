@@ -159,13 +159,10 @@ void Brighten_Color(std::uint8_t const * mulbuffer, std::uint16_t * colorbuffer,
 
 				if (format.Mask == ALTERNATE_MARKER) {
 					result |= (greenpart & ALTERNATE_MARKER);
+					result |= redpart;
 				} else {
 					result |= greenpart;
 					result |= (redpart & (format.Mask * 256));
-				}
-
-				if (format.Mask == ALTERNATE_MARKER) {
-					result |= redpart;
 				}
 
 				*color = (std::uint16_t)result;
