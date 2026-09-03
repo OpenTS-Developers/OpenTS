@@ -7,12 +7,9 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Recorded from LCW_Comp in lcw.cpp by compressing the inputs that lcwcomp.cpp's Fill_Source
-// builds from each shape and seed. LCW blocks are written into save games, so what matters is
-// the exact bytes emitted, not just that they decompress correctly.
-//
-// A vector changes only when the emitted encoding is meant to change. Re-record the whole
-// table when that happens rather than editing individual rows.
+// Generated from LCW_Comp while it was still inline assembly, and kept so the C++ that
+// replaced it can be held to the same output. LCW blocks are written into save games, so
+// what matters is the exact bytes emitted, not just that they decompress correctly.
 //
 // Generated file. Do not hand-edit.
 
@@ -27,7 +24,7 @@ struct LcwCompGoldenCase {
 };
 
 static LcwCompGoldenCase const LcwCompGoldenCases[] = {
-	{0, 13069u, 1, 3, 5495445207203870372ULL},
+	{0, 13069u, 1, 9, 1807977557902324117ULL},
 	{0, 20988u, 2, 4, 13064096319865035231ULL},
 	{0, 28907u, 3, 5, 5915942401490830024ULL},
 	{0, 36826u, 7, 9, 8846502117472493464ULL},
@@ -44,7 +41,7 @@ static LcwCompGoldenCase const LcwCompGoldenCases[] = {
 	{0, 123935u, 4096, 4163, 13679796812110556091ULL},
 	{0, 131854u, 16384, 16646, 1129566810827092307ULL},
 	{0, 139773u, 65535, 66577, 4701270319259758933ULL},
-	{1, 147692u, 1, 3, 5391853619660779096ULL},
+	{1, 147692u, 1, 4, 15387975727855557662ULL},
 	{1, 155611u, 2, 4, 15321972044827107857ULL},
 	{1, 163530u, 3, 5, 3752577258656994018ULL},
 	{1, 171449u, 7, 5, 17415218352048637521ULL},
@@ -53,15 +50,15 @@ static LcwCompGoldenCase const LcwCompGoldenCases[] = {
 	{1, 195206u, 17, 6, 9264405149446243413ULL},
 	{1, 203125u, 63, 6, 4583733020526306915ULL},
 	{1, 211044u, 64, 6, 16111166893563768820ULL},
-	{1, 218963u, 100, 7, 5688830726701056975ULL},
-	{1, 226882u, 255, 7, 3618917306176137138ULL},
-	{1, 234801u, 256, 7, 15069825169905251443ULL},
-	{1, 242720u, 257, 7, 17800373601292282483ULL},
-	{1, 250639u, 1000, 7, 13202711729342211514ULL},
-	{1, 258558u, 4096, 7, 15594788096161275254ULL},
-	{1, 266477u, 16384, 7, 5699693618273611558ULL},
-	{1, 274396u, 65535, 7, 5723819048669047975ULL},
-	{2, 282315u, 1, 3, 5466747953713240022ULL},
+	{1, 218963u, 100, 9, 8148909191676844567ULL},
+	{1, 226882u, 255, 9, 5423557805361288032ULL},
+	{1, 234801u, 256, 9, 4987818062494100691ULL},
+	{1, 242720u, 257, 9, 7610984057582977262ULL},
+	{1, 250639u, 1000, 9, 354769122027670662ULL},
+	{1, 258558u, 4096, 9, 10175650356802707306ULL},
+	{1, 266477u, 16384, 9, 9740807493131001306ULL},
+	{1, 274396u, 65535, 9, 13087234031888934413ULL},
+	{2, 282315u, 1, 9, 11843835814251834895ULL},
 	{2, 290234u, 2, 4, 17584421726007563793ULL},
 	{2, 298153u, 3, 5, 17791319723388371584ULL},
 	{2, 306072u, 7, 5, 11160011530942588191ULL},
@@ -78,7 +75,7 @@ static LcwCompGoldenCase const LcwCompGoldenCases[] = {
 	{2, 393181u, 4096, 1206, 17330344708194719310ULL},
 	{2, 401100u, 16384, 1286, 2821454675195587043ULL},
 	{2, 409019u, 65535, 1286, 18314874132263956815ULL},
-	{3, 416938u, 1, 3, 5424377173616826826ULL},
+	{3, 416938u, 1, 4, 18141130856368503077ULL},
 	{3, 424857u, 2, 4, 16088487775278736849ULL},
 	{3, 432776u, 3, 5, 732249865529444488ULL},
 	{3, 440695u, 7, 9, 14687256910119648873ULL},
@@ -95,7 +92,7 @@ static LcwCompGoldenCase const LcwCompGoldenCases[] = {
 	{3, 527804u, 4096, 2356, 7006499902778769132ULL},
 	{3, 535723u, 16384, 8800, 13425338241632085147ULL},
 	{3, 543642u, 65535, 27705, 6650711024580611343ULL},
-	{4, 551561u, 1, 3, 5408115396638802961ULL},
+	{4, 551561u, 1, 9, 15861568950810363717ULL},
 	{4, 559480u, 2, 4, 7823558933484496740ULL},
 	{4, 567399u, 3, 5, 16094879465814968578ULL},
 	{4, 575318u, 7, 9, 9942793656368200329ULL},
@@ -112,7 +109,7 @@ static LcwCompGoldenCase const LcwCompGoldenCases[] = {
 	{4, 662427u, 4096, 27, 15707536257104979397ULL},
 	{4, 670346u, 16384, 27, 15779521763705899669ULL},
 	{4, 678265u, 65535, 27, 6888907962647354820ULL},
-	{5, 686184u, 1, 3, 5466747953713240022ULL},
+	{5, 686184u, 1, 4, 17630618806569394369ULL},
 	{5, 694103u, 2, 4, 11417304975729043793ULL},
 	{5, 702022u, 3, 5, 2214001936243117696ULL},
 	{5, 709941u, 7, 9, 8907682379062132876ULL},

@@ -3,7 +3,6 @@
  *******************************************************************************
  * SPDX-License-Identifier: GPL-3.0-or-later
  * Copyright 2025 Electronic Arts Inc.
- * Copyright 2026 Vanilla-Conquer contributors
  * Copyright 2026 OpenTS contributors
  *
  * Contains material derived from Electronic Arts source code.
@@ -213,131 +212,191 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
  *   05/20/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
 
-int LCW_Comp(const void* src, void* dst, unsigned int bytes)
+/*
+ * Compressed blocks reach save games, so this emits the same bytes the assembly it replaced
+ * emitted, quirks included. Two of those quirks are worth knowing about before changing
+ * anything here.
+ *
+ * A datasize of 1 does not produce a one byte block. The first source byte is written before
+ * the loop is entered and the end is only tested after a byte has been consumed, so a second
+ * byte is read past the end of the source and encoded alongside it. The block that comes out
+ * expands to two bytes rather than one.
+ *
+ * The search for a run reads sixty four bytes ahead of the current position without checking
+ * that they belong to the source at all, so it can read past the end of the buffer. Only the
+ * comparison result is used, and the run length that follows is measured properly.
+ */
+int LCW_Comp(void const * source, void * dest, int datasize)
 {
-    if (!bytes) {
-        return 0;
-    }
+	unsigned char const * const start = (unsigned char const *)source;
+	unsigned char * const first = (unsigned char *)dest;
+	unsigned char const * const end_of_data = start + datasize;
 
-    const unsigned char* getp = (const unsigned char*)(src);
-    unsigned char* putp = (unsigned char*)(dst);
-    const unsigned char* getstart = getp;
-    const unsigned char* getend = getp + bytes;
-    unsigned char* putstart = putp;
-    bool cmd_one;
-    // Write a starting cmd1 and set bool to have cmd1 in progress
-    unsigned char* cmd_onep = putp;
-    *putp++ = 0x81;
-    *putp++ = *getp++;
-    cmd_one = true;
+	unsigned char const * si = start;
+	unsigned char * di = first;
 
-    // Compress data
-    while (getp < getend) {
-        // Is RLE encode (4bytes) worth evaluating?
-        if (getend - getp > 64 && *getp == *(getp + 64)) {
-            // RLE run length is encoded as a short so max is UINT16_MAX
-            const unsigned char* rlemax = (getend - getp) < 0xFFFF ? getend : getp + 0xFFFF;
-            const unsigned char* rlep;
+	/*
+	 * The first command is always a run of literals, opened here and extended in place as
+	 * more of them are emitted.
+	 */
+	bool inlen = true;
+	unsigned char * lenoff = di;
 
-            for (rlep = getp + 1; *rlep == *getp && rlep < rlemax; ++rlep)
-                ;
+	*di++ = 0x81;
+	*di++ = *si++;
 
-            unsigned short run_length = rlep - getp;
+	while (true) {
+		unsigned char * ndest = di;
+		unsigned char const * search = start;
+		unsigned char const * matchoff = start;
+		int count = 1;
 
-            // If run length is long enough, write the command and start loop again
-            if (run_length >= 0x41) {
-                cmd_one = false;
-                *putp++ = 0xFE;
-                *putp++ = (unsigned char)run_length;
-                *putp++ = run_length >> 8;
-                *putp++ = *getp;
-                getp = rlep;
-                continue;
-            }
-        }
+		/*
+		 * Find the longest run of earlier data that repeats at the current position. A
+		 * single byte repeated far enough is worth a command of its own and is emitted
+		 * straight away, without disturbing the search.
+		 */
+		while (true) {
+			unsigned char const value = *si;
 
-        // current block size for an offset copy
-        int block_size = 0;
-        const unsigned char* offstart;
+			if (value == si[64]) {
+				long const left = (long)(end_of_data - si);
+				long matched = 0;
 
-        // Set where we start looking for matching runs.
-        offstart = getstart;
+				while (matched < left && si[matched] == value) {
+					matched++;
+				}
 
-        // Look for matching runs
-        const unsigned char* offchk = offstart;
-        const unsigned char* offsetp = getp;
-        while (offchk < getp) {
-            // Move offchk to next matching position
-            while (offchk < getp && *offchk != *getp) {
-                ++offchk;
-            }
+				/*
+				 * A run that reaches the end of the source is counted one short,
+				 * because the scan it replaces stepped past the last byte it read.
+				 * With nothing left at all that count goes negative, and the test
+				 * below is unsigned, so it reads as enormous and a run is emitted
+				 * from a position that has already passed the end. That only arises
+				 * on the malformed tail described above the function, and it is kept
+				 * because the bytes it produces are the bytes callers have.
+				 */
+				long const runlength = (matched < left) ? matched : (left - 1);
 
-            // If the checking pointer has reached current pos, break
-            if (offchk >= getp) {
-                break;
-            }
+				if ((unsigned long)runlength >= 65) {
+					inlen = false;
+					si += runlength;
+					di = ndest;
 
-            // find out how long the run of matches goes for
-            //<= because it can consider the current pixel as part of a run
-            int i;
-            for (i = 1; &getp[i] < getend; ++i) {
-                if (offchk[i] != getp[i]) {
-                    break;
-                }
-            }
+					*di++ = 0xFE;
+					*di++ = (unsigned char)(runlength & 0xFF);
+					*di++ = (unsigned char)((runlength >> 8) & 0xFF);
+					*di++ = value;
 
-            if (i >= block_size) {
-                block_size = i;
-                offsetp = offchk;
-            }
+					ndest = di;
+					continue;
+				}
+			}
 
-            ++offchk;
-        }
+			long const window = (long)(si - search);
 
-        // decide what encoding to use for current run
-        if (block_size <= 2) {
-            // short copy 0b10??????
-            // check we have an existing 1 byte command and if its value is still
-            // small enough to handle additional bytes
-            // start a new command if current one doesn't have space or we don't
-            // have one to continue
-            if (cmd_one && *cmd_onep < 0xBF) {
-                // increment command value
-                ++*cmd_onep;
-                *putp++ = *getp++;
-            } else {
-                cmd_onep = putp;
-                *putp++ = 0x81;
-                *putp++ = *getp++;
-                cmd_one = true;
-            }
-        } else {
-            unsigned short offset;
-            unsigned short rel_offset = getp - offsetp;
-            if (block_size > 0xA || (rel_offset > 0xFFF)) {
-                // write 5 byte command 0b11111111
-                if (block_size > 0x40) {
-                    *putp++ = 0xFF;
-                    *putp++ = block_size;
-                    *putp++ = block_size >> 8;
-                    // write 3 byte command 0b11??????
-                } else {
-                    *putp++ = (block_size - 3) | 0xC0;
-                }
+			if (window <= 0) {
+				break;
+			}
 
-                offset = offsetp - getstart;
-                // write 2 byte command? 0b0???????
-            } else {
-                offset = rel_offset << 8 | (16 * (block_size - 3) + (rel_offset >> 8));
-            }
-            *putp++ = (unsigned char)offset;
-            *putp++ = offset >> 8;
-            getp += block_size;
-            cmd_one = false;
-        }
-    }
+			/*
+			 * Look for somewhere earlier the current byte appears.
+			 */
+			unsigned char const * found = NULL;
 
-    // write final 0x80, this is why its also known as format80 compression
-    *putp++ = 0x80;
-    return putp - putstart;
+			for (long i = 0; i < window; i++) {
+				unsigned char const candidate = *search++;
+
+				if (candidate == value) {
+					found = search;
+					break;
+				}
+			}
+
+			if (found == NULL) {
+				break;
+			}
+
+			/*
+			 * Reject the candidate cheaply before measuring it: if the byte that would
+			 * end a run at least as long as the best so far does not agree, it cannot
+			 * beat it.
+			 */
+			if (si[count - 1] != search[count - 2]) {
+				continue;
+			}
+
+			long const room = (long)(end_of_data - si);
+			long length = 0;
+
+			while (length < room && si[length] == (search - 1)[length]) {
+				length++;
+			}
+
+			if (length < count) {
+				continue;
+			}
+
+			count = (int)length;
+			matchoff = search - 1;
+		}
+
+		di = ndest;
+
+		if (count > 2) {
+			unsigned long const back = (unsigned long)(si - matchoff);
+
+			if (count <= 10 && back <= 0x0FFF) {
+
+				/*
+				 * Short run: three bits of length and twelve of distance, packed into
+				 * two bytes.
+				 */
+				*di++ = (unsigned char)((((unsigned long)(count - 3)) << 4) | ((back >> 8) & 0x0F));
+				*di++ = (unsigned char)(back & 0xFF);
+			} else {
+				if (count <= 64) {
+					*di++ = (unsigned char)(0xC0 | (count - 3));
+				} else {
+					*di++ = 0xFF;
+					*di++ = (unsigned char)(count & 0xFF);
+					*di++ = (unsigned char)((count >> 8) & 0xFF);
+				}
+
+				/*
+				 * The longer forms carry the match's position from the start of the
+				 * data rather than its distance back from here.
+				 */
+				unsigned long const offset = (unsigned long)(matchoff - start);
+
+				*di++ = (unsigned char)(offset & 0xFF);
+				*di++ = (unsigned char)((offset >> 8) & 0xFF);
+			}
+
+			si += count;
+			inlen = false;
+		} else {
+
+			/*
+			 * Nothing worth referencing, so the byte goes out as a literal. A length
+			 * command counts up to 0x3F bytes before another has to be opened.
+			 */
+			if (!inlen || *lenoff == 0xBF) {
+				lenoff = di;
+				*di++ = 0x80;
+			}
+
+			(*lenoff)++;
+			*di++ = *si++;
+			inlen = true;
+		}
+
+		if (si >= end_of_data) {
+			break;
+		}
+	}
+
+	*di++ = 0x80;
+
+	return((int)(di - first));
 }

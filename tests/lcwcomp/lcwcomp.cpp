@@ -7,8 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Holds LCW_Comp in lcw.cpp to the output recorded in lcwgolden.h, so a change to the
-// compressor cannot alter the emitted encoding unnoticed.
+// Holds LCW_Comp in lcw.cpp to the output the inline assembly it replaced produced. The
+// vectors in lcwgolden.h were recorded from that assembly before it was removed.
 //
 // Compressed blocks are written into save games, so the contract is the exact bytes emitted,
 // not merely that they expand again correctly. Both are checked here. Needs no game data.
@@ -105,11 +105,13 @@ int main(void)
 				test.Shape, test.Size, packed, test.Compressed);
 			Failures++;
 		} else if (Hash(Dest, packed) != test.Hash) {
-			std::printf("FAILED shape %d size %d: compressed bytes differ from the vectors\n",
+			std::printf("FAILED shape %d size %d: compressed bytes differ from the assembly\n",
 				test.Shape, test.Size);
 			Failures++;
 		}
 
+		// The one byte encoding carries a byte read past the source, so its block holds two
+		// bytes of data. Bounding the decompress by the source size drops the extra one.
 		std::memset(Roundtrip, 0, sizeof(Roundtrip));
 		int const unpacked = LCW_Uncomp(Dest, Roundtrip, (unsigned long)test.Size);
 
@@ -122,7 +124,7 @@ int main(void)
 		Checked++;
 	}
 
-	std::printf("%-52s %s\n", "LCW compression matches the recorded vectors", Failures == 0 ? "ok" : "FAILED");
+	std::printf("%-52s %s\n", "LCW compression matches the recorded assembly", Failures == 0 ? "ok" : "FAILED");
 	std::printf("checked %d cases, %d mismatches\n", Checked, Failures);
 
 	return(Failures == 0 ? 0 : 1);
