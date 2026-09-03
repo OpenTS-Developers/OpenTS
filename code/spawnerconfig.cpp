@@ -37,11 +37,8 @@ char const * const SETTINGS = "Settings";
 /// <returns>The value written, or the fallback.</returns>
 std::string Read_Text(INIClass const & ini, char const * section, char const * entry, std::string const & fallback)
 {
-	char buffer[512];
-	if (ini.Get_String(section, entry, "", buffer, sizeof(buffer)) == 0) {
-		return(fallback);
-	}
-	return(buffer);
+	std::string text = ini.Get_String(section, entry);
+	return(text.empty() ? fallback : text);
 }
 
 
