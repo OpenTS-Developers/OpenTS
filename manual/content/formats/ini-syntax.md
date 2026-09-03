@@ -23,6 +23,8 @@ Loading a second file into a database that already holds sections merges the two
 
 A file that repeats a section header continues the section it already opened. An assignment repeating a key overwrites the value read earlier and moves the key to the end of its section. A file is therefore read the same way whether it opens a database or merges into one that already holds sections. A repeat within one file is written to the debug log with the file, section and key; a later file overriding an earlier one is not, since that is how the rules files stack.
 
+A line may be any length. A reader that copies a value into fixed storage keeps as much of it as the storage holds, and writes the cut to the debug log once per key.
+
 ## Malformed values
 
 A written value is converted by the reader for the kind of value expected. A value the reader cannot convert leaves the setting at its default, and the debug log records the file, section, key and value.
