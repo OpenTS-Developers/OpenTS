@@ -237,10 +237,9 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	fprintf(fp, "FPU control word: %x\n", _controlfp(0, 0));
 
 	int cpu_type = PROC_PENTIUM_PRO;
-	bool mmx = false;
 	char vendor[32];
 	vendor[0] = '\0';
-	Get_CPU_Type(cpu_type, mmx, vendor, sizeof(vendor) - 1);
+	Get_CPU_Type(cpu_type, vendor, sizeof(vendor) - 1);
 	fprintf(fp, "CPU vendor: %s\r\n", vendor);
 
 	fprintf(fp, "Frames: %d\n", Frame);

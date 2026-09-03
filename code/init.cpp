@@ -3023,10 +3023,9 @@ BOOL CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPAR
 			// The braces keep the 'case' label from jumping over these initializations.
 			{
 				int cpu_type = 5;
-				bool mmx = false;
 				char vendor[32];
 				vendor[0] = '\0';
-				Get_CPU_Type(cpu_type, mmx, vendor, sizeof(vendor) - 1);
+				Get_CPU_Type(cpu_type, vendor, sizeof(vendor) - 1);
 
 				sprintf(buffer, "CPU vendor: %s", vendor);
 			ListBox_AddString(handle, buffer);

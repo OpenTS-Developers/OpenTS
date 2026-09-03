@@ -1,20 +1,21 @@
 ---
-title: Assume MMX and CMOV on the supported minimum hardware
+title: Remove MMX and CMOV detection
 category: internal
 release: 0.2.0
 breaking: true
 migration:
-- Remove any code that calls `Detect_CMOV_Availability` or `Processor`; both have been removed.
-- Treat `UseMMX`, `UseCMOV`, and `HasCMOV` as fixed-true constants rather than runtime-detected flags.
+- Remove any code that calls `Detect_MMX_Availability`, `Detect_CMOV_Availability`, or `Processor`; all have been removed.
+- Remove any use of `UseMMX`, `UseCMOV`, and `HasCMOV`; the flags have been removed along with the assembly that read them.
+- Drop the MMX flag argument from `Get_CPU_Type` calls; the parameter is gone.
 targets: []
 credit: [tinix0]
 ---
 
-OpenTS no longer asks the processor at startup whether it supports MMX and CMOV, and assumes
-both. This formalizes the minimum hardware OpenTS already requires — SSE2, so a Pentium 4 or
-Athlon 64 onward — which always carries MMX and CMOV.
+OpenTS no longer asks the processor whether it supports MMX or CMOV. This formalizes the
+minimum hardware OpenTS already requires — SSE2, so a Pentium 4 or Athlon 64 onward — which
+always carries both.
 
-A machine below that minimum was never covered by a build claim. It previously took a slower
-path through the palette-fade routines and now executes an MMX or CMOV instruction the
-processor does not have. The processor family CPUID reports is still read and returned through
-`Get_CPU_Type` and the `CPUType` global.
+A machine below that minimum was never covered by a build claim. The routines the flags
+selected between are C++ now and take one path on every processor, so neither the flags nor the
+detection that set them remain. The processor family and vendor CPUID reports are still read
+and returned through `Get_CPU_Type` and the `CPUType` and `VendorID` globals.

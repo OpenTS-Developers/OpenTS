@@ -51,7 +51,6 @@
  *                                                                                             *
  *                                                                                             *
  * INPUT:    int   - reference to cpu type                                                     *
- *           bool  - reference to mmx availability flag                                        *
  *           char* - ptr to buffer to receive chip vendor info                                 *
  *           int   - length of above buffer                                                    *
  *                                                                                             *
@@ -65,15 +64,12 @@
 
 extern "C" {
 
-char UseCMOV = 1;
-char HasCMOV = 1;
-char UseMMX = 1;
 char CPUType = 0;
 
 /*
- * Filled in by Detect_MMX_Availability from CPUID leaf 0. The buffer holds the twelve
- * vendor characters, the separating space the original wrote after them, and the
- * terminator Get_CPU_Type copies up to.
+ * Filled in by CPU_Id from CPUID leaf 0. The buffer holds the twelve vendor characters,
+ * the separating space the original wrote after them, and the terminator Get_CPU_Type
+ * copies up to.
  */
 char VendorID[20] = "Not available";
 
@@ -81,13 +77,9 @@ char VendorID[20] = "Not available";
 
 
 /// <summary>
-/// Records the processor family in CPUType and the vendor in VendorID, and reports MMX
-/// support. The supported minimum hardware (SSE2, so a Pentium 4 or Athlon 64 onward) always
-/// has MMX, so this always sets UseMMX and returns true rather than reading the CPUID
-/// feature bit.
+/// Records the processor family in CPUType and the vendor in VendorID.
 /// </summary>
-/// <returns>bool; always true on the supported minimum hardware.</returns>
-bool __cdecl Detect_MMX_Availability(void)
+void __cdecl CPU_Id(void)
 {
 	int regs[4];
 
@@ -108,18 +100,12 @@ bool __cdecl Detect_MMX_Availability(void)
 	}
 
 	CPUType = cputype;
-
-	UseMMX = 1;
-	return(true);
 }
 
 
-void Get_CPU_Type(int & cpu_type, bool & mmx, char * vendor_id, int vendor_id_length)
+void Get_CPU_Type(int & cpu_type, char * vendor_id, int vendor_id_length)
 {
-	/*
-	**	Call the asm CPU detection code
-	*/
-	mmx = Detect_MMX_Availability();
+	CPU_Id();
 
 	/*
 	**	Return the promised results

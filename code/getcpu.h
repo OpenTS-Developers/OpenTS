@@ -13,21 +13,13 @@
 
 #pragma once
 
-void Get_CPU_Type(int & cpu_type, bool & mmx, char * vendor_id = 0, int vendor_id_length = 0);
+void Get_CPU_Type(int & cpu_type, char * vendor_id = 0, int vendor_id_length = 0);
 
 extern "C" {
-	bool __cdecl Detect_MMX_Availability(void);
+	void __cdecl CPU_Id(void);
 
 	extern char CPUType;
 	extern char VendorID[];
-
-	/*
-	 * Fixed true rather than probed: the supported minimum hardware (SSE2, so a Pentium 4 or
-	 * Athlon 64 onward) always has CMOV and MMX.
-	 */
-	extern char UseCMOV;
-	extern char HasCMOV;
-	extern char UseMMX;
 }
 
 // Processor family constants. Get_CPU_Type reports the CPUID base family through its

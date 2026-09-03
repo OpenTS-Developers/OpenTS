@@ -77,10 +77,9 @@ MillisecondTimerClass::~MillisecondTimerClass(void)
 MillisecondTimerClass::operator double () const
 {
 	static int cpu_type = -1;
-	static bool has_mmx = false;
 
 	if (cpu_type == -1) {
-		Get_CPU_Type(cpu_type, has_mmx, NULL, 0);
+		Get_CPU_Type(cpu_type, NULL, 0);
 	}
 	/// On extremely old CPUs (80486 and older) the TSC and rdtsc instruction don't exist.
 	if (Frequency != 1.0 && cpu_type > 4) {

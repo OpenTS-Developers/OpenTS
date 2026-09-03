@@ -3738,11 +3738,10 @@ int Adjust_To_CPU_Timing(int time)
 	static const double TIME_SCALE = 200;
 
 	int cpu_type;
-	bool mmx;
 
 	int speed = 0;
 
-	Get_CPU_Type(cpu_type, mmx, NULL, 0);
+	Get_CPU_Type(cpu_type, NULL, 0);
 
 	if (cpu_type > PROC_PENTIUM_PRO) {
 		time = (int)(time * P_SIX_TWEAK);

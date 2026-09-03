@@ -9,8 +9,7 @@
 
 // Checks the processor detection in getcpu.cpp against CPUID read directly here. The
 // detection used to be hand-written assembly, so the point is to confirm the C++ reports the
-// same family and vendor the instruction does, and that MMX and CMOV are reported available
-// unconditionally, as required by the supported minimum hardware. Needs no game data.
+// same family and vendor the instruction does. Needs no game data.
 
 #include <windows.h>
 
@@ -48,13 +47,6 @@ int Reference_Family(void)
 }
 
 
-int Reference_Feature_Edx(void)
-{
-	int regs[4];
-	__cpuid(regs, 1);
-	return(regs[3]);
-}
-
 }	// namespace
 
 
@@ -73,39 +65,27 @@ int main(void)
 	Check(maxleaf >= 1, "CPUID reports leaf 1");
 
 	int const family = Reference_Family();
-	int const edx = Reference_Feature_Edx();
 
-	std::printf("Reported vendor '%s', family %d, feature EDX %08X\n\n", vendor, family, (unsigned int)edx);
+	std::printf("Reported vendor '%s', family %d\n\n", vendor, family);
 
 	int cpu_type = -1;
-	bool mmx = false;
 	char reported[64];
 	std::memset(reported, 0, sizeof(reported));
 
-	Get_CPU_Type(cpu_type, mmx, reported, sizeof(reported) - 1);
+	Get_CPU_Type(cpu_type, reported, sizeof(reported) - 1);
 
 	Check(cpu_type == family, "Get_CPU_Type family matches CPUID");
 	Check(CPUType == (char)family, "CPUType global matches CPUID");
 
 	/*
-	 * Detect_MMX_Availability writes the twelve vendor characters and then a space, so the
-	 * buffer Get_CPU_Type copies out is the vendor followed by that separator.
+	 * CPU_Id writes the twelve vendor characters and then a space, so the buffer
+	 * Get_CPU_Type copies out is the vendor followed by that separator.
 	 */
 	char expected[16];
 	std::memcpy(expected, vendor, 12);
 	expected[12] = ' ';
 	expected[13] = '\0';
 	Check(std::strcmp(reported, expected) == 0, "Vendor string matches CPUID");
-
-	/*
-	 * The supported minimum hardware (SSE2, so a Pentium 4 or Athlon 64 onward) always carries
-	 * MMX and CMOV, so detection reports both available unconditionally rather than reading
-	 * the CPUID feature bits.
-	 */
-	Check(mmx, "Get_CPU_Type reports MMX available");
-	Check(UseMMX != 0, "UseMMX global reports available");
-	Check(HasCMOV != 0, "HasCMOV global reports available");
-	Check(UseCMOV != 0, "UseCMOV global reports available");
 
 	/*
 	 * The clock accumulator only ever counts up, so a later read cannot be the smaller of
