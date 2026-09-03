@@ -60,28 +60,19 @@ namespace NetTiming
 	}
 
 
-	/// <summary>
-	/// Samples an acknowledgement. An unmeasured link takes an ambiguous one as a provisional seed:
-	/// the time since the packet's last transmission, with the retry delay it outlived as the floor
-	/// of the timeout.
-	/// </summary>
-	bool RttEstimator::Acknowledge(Milliseconds first_sent_at, Milliseconds last_sent_at, unsigned int transmission_count, Milliseconds retry_timeout,
-		MillisecondClock const & clock)
+	/// <summary>Samples an acknowledgement; an unmeasured link takes an ambiguous one as a provisional upper bound.</summary>
+	bool RttEstimator::Acknowledge(Milliseconds sent_at, unsigned int transmission_count, MillisecondClock const & clock)
 	{
 		if (transmission_count == 0) {
 			return(false);
 		}
 
-		Milliseconds const now = clock.Now();
+		Milliseconds const elapsed = Elapsed_Milliseconds(sent_at, clock.Now());
 		if (transmission_count != 1) {
 			if (Initialized) {
 				return(false);
 			}
-			// The first transmission may predate the peer entirely; the last one bounds the round trip from below.
-			Provisional = Add_Sample(Elapsed_Milliseconds(last_sent_at, now));
-			if (Provisional && RetransmitTimeout < retry_timeout) {
-				RetransmitTimeout = Clamp_Rto(retry_timeout);
-			}
+			Provisional = Add_Sample(elapsed);
 			return(Provisional);
 		}
 
@@ -90,7 +81,7 @@ namespace NetTiming
 			Initialized = false;
 			Provisional = false;
 		}
-		return(Add_Sample(Elapsed_Milliseconds(first_sent_at, now)));
+		return(Add_Sample(elapsed));
 	}
 
 

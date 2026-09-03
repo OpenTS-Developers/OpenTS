@@ -8,10 +8,8 @@ keys: []
 Each private connection maintains smoothed round trip, variation, and a retry
 timeout. Acknowledgements of first transmissions are the measurements. Until a
 link has one, its first acknowledgement seeds a provisional estimate even after
-a retry: the time since the packet's last transmission, paced no faster than the
-retry delay that went unanswered. A link slower than the initial retry delay
-therefore becomes measurable, and a peer that was still loading does not
-inflate the seed. The first clean acknowledgement replaces it.
+a retry, so a link slower than the initial retry delay becomes measurable; the
+first clean acknowledgement replaces the seed.
 
 The retry timeout is limited to 100–4000 ms. Repeated private transmissions
 double their wait up to the connection timeout; that timeout follows measured
