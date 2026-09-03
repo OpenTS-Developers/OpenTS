@@ -278,14 +278,7 @@ void Init_Search_Folders(void)
 		ini.Load(file);
 
 		if (ini.Is_Present("Paths", "SearchPaths")) {
-			char buffer[2048];
-
-			int length = ini.Get_String("Paths", "SearchPaths", "", buffer, sizeof(buffer));
-			if (length >= (int)sizeof(buffer) - 1) {
-				DebugString("[GameDirs] %s names more folders than %s can hold.\n", name.c_str(), "SearchPaths");
-			}
-
-			list = buffer;
+			list = ini.Get_String("Paths", "SearchPaths");
 		}
 
 		DebugString("[GameDirs] Read %s.\n", name.c_str());
