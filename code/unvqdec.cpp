@@ -10,13 +10,14 @@
  * EA's GPLv3 Section 7 additional terms and supplemental warranty
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
+
 #include "always.h"
 
-#include "vqalib/unvq.h"
-#include <cstring>
-#include <cstdint>
-
 #include "_vqa.h"
+#include "vqalib/unvq.h"
+
+#include <cstdint>
+#include <cstring>
 
 /// <summary>
 /// Assembles one block's codebook index from the two pointer planes.
