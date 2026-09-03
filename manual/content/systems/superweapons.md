@@ -195,8 +195,6 @@ Clicking a cameo that can be fired takes one of two paths, decided by [`Action=`
 
 While targeting mode is armed, the cursor over the map reports the weapon's `Action=` in place of the ordinary one, and releasing the left button fires the weapon at the cell under the pointer. A right click on the cameo or on the map cancels targeting, and band selection is suppressed while it is armed. The minimap does not accept superweapon actions, so a shot cannot be aimed there.
 
-Every left click that resolves to an action searches the declared list for the first section whose `Action=` matches, whether or not targeting mode was armed and without asking which weapon armed it. Two sections sharing one `Action=` therefore always fire the earlier of the two, and an `Action=` that ordinary orders also produce discharges a charged weapon on the next such order.
-
 :::caution[A misspelled `Action=` becomes `None`]
 An `Action=` value the engine does not recognize is not rejected; it reads as `None`. The weapon then takes the immediate-fire path: clicking the charged cameo discharges it on the spot at cell 0,0, with no targeting step and no opportunity to choose where the effect lands.
 :::
