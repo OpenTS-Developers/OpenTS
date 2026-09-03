@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "language\language.h"
+#include "language/language.h"
 #include "win.h"
 
 class WWMessageBox

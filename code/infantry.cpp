@@ -113,7 +113,7 @@
 #include "inline.h"
 #include "ion.h"
 #include "isotype.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "lightcon.h"
 #include "mixfile.h"
 #include "mono.h"

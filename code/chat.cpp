@@ -19,7 +19,7 @@
 #include "globals.h"
 #include "house.h"
 #include "ipxmgr.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "rules.h"
 #include "session.h"
 #include "stimer.h"

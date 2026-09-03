@@ -169,7 +169,7 @@
 #include "ion.h"
 #include "isotile.h"
 #include "isotype.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "laser.h"
 #include "lightcon.h"
 #include "mono.h"

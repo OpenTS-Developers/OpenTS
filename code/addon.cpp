@@ -14,7 +14,7 @@
 #include "ccfile.h"
 #include "data.h"
 #include "init.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "ownrdraw.h"
 
 BOOL CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);

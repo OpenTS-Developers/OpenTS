@@ -63,7 +63,7 @@
 #include "dialog.h"
 #include "dsurface.h"
 #include "font.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "scheme.h"
 #include "vector.h"
 #include "wwmouse.h"

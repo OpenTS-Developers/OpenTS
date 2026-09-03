@@ -28,7 +28,7 @@
 #include "houstype.h"
 #include "init.h"
 #include "ipxmgr.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mapgen.h"
 #include "mplayer.h"
 #include "msgbox.h"

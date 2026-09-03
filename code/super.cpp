@@ -62,7 +62,7 @@
 #include "infatype.h"
 #include "inline.h"
 #include "ionblast.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mouse.h"
 #include "rules.h"
 #include "savestream.h"

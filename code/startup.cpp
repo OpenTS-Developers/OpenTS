@@ -90,7 +90,7 @@
 #include "ipxmgr.h"
 #include "isotype.h"
 #include "jumpjet.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "levitate.h"
 #include "light.h"
 #include "lightcon.h"

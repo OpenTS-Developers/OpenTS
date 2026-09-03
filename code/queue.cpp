@@ -118,7 +118,7 @@
 #include "infatype.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "light.h"
 #include "mainloop.h"
 #include "mono.h"

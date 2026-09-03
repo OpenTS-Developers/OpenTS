@@ -40,7 +40,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "gamedlg.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "loaddlg.h"
 #include "ownrdraw.h"
 #include "queue.h"

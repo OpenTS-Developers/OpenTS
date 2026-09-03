@@ -124,7 +124,7 @@
 #include "inline.h"
 #include "isotype.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "logic.h"
 #include "mixfile.h"
 #include "overtype.h"

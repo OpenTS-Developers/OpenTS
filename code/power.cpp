@@ -56,7 +56,7 @@
 #include "draw.h"
 #include "globals.h"
 #include "house.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mixfile.h"
 #include "savestream.h"
 #include "surface.h"

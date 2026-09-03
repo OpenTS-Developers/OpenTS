@@ -99,7 +99,7 @@
 #include "goptions.h"
 #include "house.h"
 #include "incdec.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "map.h"
 #include "mixfile.h"
 #include "movie.h"

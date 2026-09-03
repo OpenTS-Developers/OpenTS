@@ -42,7 +42,7 @@
 #include "goptions.h"
 #include "incdec.h"
 #include "init.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "ownrdraw.h"
 #include "theme.h"
 #include "winfix.h"

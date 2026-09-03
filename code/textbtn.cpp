@@ -45,7 +45,7 @@
 #include "data.h"
 #include "dialog.h"
 #include "font.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "lightcon.h"
 #include "scheme.h"
 #include "surface.h"

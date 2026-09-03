@@ -24,7 +24,7 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "movie.h"
 #include "msanim.h"
 #include "msengine.h"

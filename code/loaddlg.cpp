@@ -48,7 +48,7 @@
 #include "globals.h"
 #include "houstype.h"
 #include "init.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "msgbox.h"
 #include "ownrdraw.h"
 #include "saveload.h"

@@ -17,7 +17,7 @@
 #include "goptions.h"
 #include "houstype.h"
 #include "init.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "mapgen.h"
 #include "mplayer.h"
 #include "msgbox.h"

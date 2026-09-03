@@ -38,7 +38,7 @@
 #include "init.h"
 #include "inline.h"
 #include "isotype.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "netshare.h"
 #include "nodes.h"
 #include "overtype.h"

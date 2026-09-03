@@ -89,7 +89,7 @@
 #include "init.h"
 #include "ipxmgr.h"
 #include "keyboard.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "logic.h"
 #include "mainloop.h"
 #include "movie.h"

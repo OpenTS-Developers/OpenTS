@@ -20,7 +20,7 @@
 #include "draw.h"
 #include "gscreen.h"
 #include "init.h"
-#include "language\language.h"
+#include "language/language.h"
 #include "lightcon.h"
 #include "mixfile.h"
 #include "ownrdraw.h"
