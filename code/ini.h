@@ -61,7 +61,7 @@ template<class T> class TPoint3D;
 class INIClass {
 	public:
 		INIClass(void) : SourceNames(1) {}
-		virtual ~INIClass(void);
+		virtual ~INIClass(void) = default;
 
 		INIClass(INIClass const &) = delete;
 		INIClass & operator = (INIClass const &) = delete;

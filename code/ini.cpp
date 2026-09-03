@@ -87,9 +87,6 @@
 #include <cstdlib>
 #include <cstring>
 
-INIClass::~INIClass(void) = default;
-
-
 /// <summary>
 /// Erases one entry, one section, or the whole database.
 /// </summary>
