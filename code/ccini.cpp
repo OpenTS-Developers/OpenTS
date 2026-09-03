@@ -192,12 +192,12 @@ char const * const ActionName[ACTION_COUNT] = {
 int CCINIClass::Load(FileClass & file, bool withdigest, bool loadcomments)
 {
 	FileStraw straw(file);
-	return(Load(straw, withdigest, loadcomments));
+	return(Load_Verified(straw, withdigest, loadcomments, file.File_Name()));
 }
 
 
 /***********************************************************************************************
- * CCINIClass::Load -- Load the INI database from the data stream specified.                   *
+ * CCINIClass::Load_Verified -- Load the INI database from the data stream specified.                   *
  *                                                                                             *
  *    This will load the INI database and in the process, it will fetch and verify any         *
  *    message digest present.                                                                  *
@@ -215,9 +215,9 @@ int CCINIClass::Load(FileClass & file, bool withdigest, bool loadcomments)
  *   07/10/1996 JLB : Created.                                                                 *
  *   08/21/1996 JLB : Handles message digest control.                                          *
  *=============================================================================================*/
-int CCINIClass::Load(Straw & file, bool withdigest, bool loadcomments)
+int CCINIClass::Load_Verified(Straw & file, bool withdigest, bool loadcomments, char const * source)
 {
-	int ok = BASECLASS::Load(file, loadcomments);
+	int ok = BASECLASS::Load(file, loadcomments, source);
 
 	Invalidate_Message_Digest();
 	if (ok && withdigest) {
@@ -247,6 +247,12 @@ int CCINIClass::Load(Straw & file, bool withdigest, bool loadcomments)
 		}
 	}
 	return(ok);
+}
+
+
+int CCINIClass::Load(Straw & file, bool withdigest, bool loadcomments)
+{
+	return(Load_Verified(file, withdigest, loadcomments, NULL));
 }
 
 
@@ -714,19 +720,14 @@ bool CCINIClass::Put_Scheme_Index(char const * section, char const * entry, int 
 /// Fetches an RGB color from the INI database.
 /// The color is expressed as a "red,green,blue" triplet.
 /// </summary>
-/// <returns>Returns with the color found. If the entry is absent, the default color is
-/// returned.</returns>
+/// <returns>Returns with the color found. If the entry is absent, or does not hold three
+/// numbers, the default color is returned.</returns>
 RGBClass CCINIClass::Get_RGBClass(char const * section, char const * entry, RGBClass const & defvalue) const
 {
-	char defstr[64];
-	char buffer[64];
+	int values[3];
 
-	sprintf(defstr, "%d,%d,%d", defvalue.Get_Red(), defvalue.Get_Green(), defvalue.Get_Blue());
-	if (Get_String(section, entry, defstr, buffer, sizeof(buffer))) {
-		int r, g, b;
-		sscanf(buffer, "%d,%d,%d", &r, &g, &b);
-		RGBClass rgb(r, g, b);
-		return(rgb);
+	if (Read_Numbers(section, entry, values, 3) == INIReadResult::Parsed) {
+		return(RGBClass(values[0], values[1], values[2]));
 	}
 	return(defvalue);
 }
@@ -750,19 +751,14 @@ bool CCINIClass::Put_RGBClass(char const * section, char const * entry, RGBClass
 /// Fetches an HSV color from the INI database.
 /// The color is expressed as a "hue,saturation,value" triplet.
 /// </summary>
-/// <returns>Returns with the color found. If the entry is absent, the default color is
-/// returned.</returns>
+/// <returns>Returns with the color found. If the entry is absent, or does not hold three
+/// numbers, the default color is returned.</returns>
 HSVClass CCINIClass::Get_HSVClass(char const * section, char const * entry, HSVClass const & defvalue) const
 {
-	char defstr[64];
-	char buffer[64];
+	int values[3];
 
-	sprintf(defstr, "%d,%d,%d", defvalue.Get_Hue(), defvalue.Get_Saturation(), defvalue.Get_Value());
-	if (Get_String(section, entry, defstr, buffer, sizeof(buffer))) {
-		int h = 0, s = 0, v = 0;
-		sscanf(buffer, "%d,%d,%d", &h, &s, &v);
-		HSVClass hsv(h, s, v);
-		return(hsv);
+	if (Read_Numbers(section, entry, values, 3) == INIReadResult::Parsed) {
+		return(HSVClass(values[0], values[1], values[2]));
 	}
 	return(defvalue);
 }
@@ -1782,23 +1778,11 @@ bool CCINIClass::Put_Target_List(const char * section, const char * entry, TypeL
 /// Fetches a three dimensional vector from the INI database.
 /// The vector is expressed in the database as comma separated X, Y, and Z values.
 /// </summary>
-/// <returns>Returns with the vector specified. If the entry could not be found, then the
-/// default value is returned.</returns>
+/// <returns>Returns with the vector specified. If the entry could not be found, or does not
+/// hold three numbers, then the default value is returned.</returns>
 TPoint3D<float> CCINIClass::Get_Vector(char const * section, char const * entry, TPoint3D<float> const & defvalue) const
 {
-	char buffer[MAX_LINE_LENGTH];
-	TPoint3D<float> point = defvalue;
-
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
-		char * token = strtok(buffer, ",");
-		point.X = atof(token);
-		token = strtok(NULL, ",");
-		point.Y = atof(token);
-		token = strtok(NULL, ",");
-		point.Z = atof(token);
-		return(point);
-	}
-	return(defvalue);
+	return(Get_Point(section, entry, defvalue));
 }
 
 
@@ -1806,23 +1790,11 @@ TPoint3D<float> CCINIClass::Get_Vector(char const * section, char const * entry,
 /// Fetches a three dimensional offset from the INI database.
 /// The offset is expressed in the database as comma separated X, Y, and Z values.
 /// </summary>
-/// <returns>Returns with the offset specified. If the entry could not be found, then the
-/// default value is returned.</returns>
+/// <returns>Returns with the offset specified. If the entry could not be found, or does not
+/// hold three numbers, then the default value is returned.</returns>
 TPoint3D<int> CCINIClass::Get_Offset(char const * section, char const * entry, TPoint3D<int> const & defvalue) const
 {
-	char buffer[MAX_LINE_LENGTH];
-	TPoint3D<int> point = defvalue;
-
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
-		char * token = strtok(buffer, ",");
-		point.X = atoi(token);
-		token = strtok(NULL, ",");
-		point.Y = atoi(token);
-		token = strtok(NULL, ",");
-		point.Z = atoi(token);
-		return(point);
-	}
-	return(defvalue);
+	return(Get_Point(section, entry, defvalue));
 }
 
 

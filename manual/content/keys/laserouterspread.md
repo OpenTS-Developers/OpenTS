@@ -20,6 +20,6 @@ Since the glow is drawn by blending its red alone at normal detail, only the red
 
 The figures are read from the weapon in the object's first slot whichever slot fired.
 
-:::caution[A partial triplet leaves the remaining channels unpredictable]
-`LaserOuterSpread=40` leaves the green and blue figures coming from whatever was last in that storage; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A partial triplet reads as the default]
+`LaserOuterSpread=40` names one channel where three are needed, so the spread keeps its default figures and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

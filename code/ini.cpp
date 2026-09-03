@@ -73,8 +73,8 @@
 #include "b64pipe.h"
 #include "b64straw.h"
 #include "cstraw.h"
+#include "dbgprint.h"
 #include "pk.h"
-#include "readline.h"
 #include "rect.h"
 #include "trim.h"
 #include "xpipe.h"
@@ -87,86 +87,40 @@
 #include <cstdlib>
 #include <cstring>
 
-/***********************************************************************************************
- * INIClass::~INIClass -- Destructor for INI handler.                                          *
- *                                                                                             *
- *    This is the destructor for the INI class. It handles deleting all of the allocations     *
- *    it might have done.                                                                      *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/02/1996 JLB : Created.                                                                 *
- *=============================================================================================*/
-INIClass::~INIClass(void)
-{
-	Clear();
-}
+INIClass::~INIClass(void) = default;
 
 
-/***********************************************************************************************
- * INIClass::Clear -- Clears out a section (or all sections) of the INI data.                  *
- *                                                                                             *
- *    This routine is used to clear out the section specified. If no section is specified,     *
- *    then the entire INI data is cleared out. Optionally, this routine can be used to clear   *
- *    out just an individual entry in the specified section.                                   *
- *                                                                                             *
- * INPUT:   section  -- Pointer to the section to clear out [pass NULL to clear all].          *
- *                                                                                             *
- *          entry    -- Pointer to optional entry specifier. If this parameter is specified,   *
- *                      then only this specific entry (if found) will be cleared. Otherwise,   *
- *                      the entire section specified will be cleared.                          *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/02/1996 JLB : Created.                                                                 *
- *   08/21/1996 JLB : Optionally clears section too.                                           *
- *   11/02/1996 JLB : Updates the index list.                                                  *
- *=============================================================================================*/
+/// <summary>
+/// Erases one entry, one section, or the whole database.
+/// </summary>
+/// <param name="section">The section to clear, or NULL to clear the whole database.</param>
+/// <param name="entry">The entry within the section to clear, or NULL to clear the whole
+/// section.</param>
+/// <returns>bool; Always true, whether or not anything was found to clear.</returns>
 bool INIClass::Clear(char const * section, char const * entry)
 {
 	if (section == NULL) {
-		SectionList.Delete();
-		SectionIndex.Clear();
-
-		while (TailComment != NULL) {
-			free(TailComment->Comment);
-			INIComment * next = TailComment->Next;
-			delete TailComment;
-			TailComment = next;
-		}
-
-	} else {
-		INISection * secptr = Find_Section(section);
-		if (secptr != NULL) {
-			if (entry != NULL) {
-				INIEntry * entptr = secptr->Find_Entry(entry);
-				if (entptr != NULL) {
-					/*
-					**	Remove the entry from the entry index list.
-					*/
-					secptr->EntryIndex.Remove_Index(entptr->Index_ID());
-
-					delete entptr;
-				}
-			} else {
-				/*
-				**	Remove this section index from the section index list.
-				*/
-				SectionIndex.Remove_Index(secptr->Index_ID());
-
-				delete secptr;
-			}
-		}
+		SectionIndex.clear();
+		SectionList.clear();
+		TailComment.clear();
+		return(true);
 	}
 
+	INISection * secptr = Find_Section(section);
+	if (secptr == NULL) {
+		return(true);
+	}
+
+	if (entry != NULL) {
+		INIEntry * entptr = secptr->Find_Entry(entry);
+		if (entptr != NULL) {
+			Remove_Entry(*secptr, *entptr);
+		}
+		return(true);
+	}
+
+	SectionIndex.erase(secptr->Section);
+	std::erase_if(SectionList, [secptr](std::unique_ptr<INISection> const & held) {return(held.get() == secptr);});
 	return(true);
 }
 
@@ -188,325 +142,186 @@ bool INIClass::Clear(char const * section, char const * entry)
 int INIClass::Load(FileClass & file, bool keepcomments)
 {
 	FileStraw fs(file);
-	return(Load(fs, keepcomments));
+	return(Load(fs, keepcomments, file.File_Name()));
 }
 
 
-/***********************************************************************************************
- * INIClass::Load -- Load the INI data from the data stream (straw).                           *
- *                                                                                             *
- *    This will fetch data from the straw and build an INI database from it.                   *
- *                                                                                             *
- * INPUT:   straw -- The straw that the data will be provided from.                            *
- *                                                                                             *
- * OUTPUT:  bool; Was the database loaded ok?                                                  *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/10/1996 JLB : Created.                                                                 *
- *   09/29/1997 JLB : Handles the merging case.                                                *
- *=============================================================================================*/
-int INIClass::Load(Straw & ffile, bool keepcomments)
+/*
+**	Reads one line of the file, dropping carriage returns and the newline that ends it. The
+**	last line of a file is read whether or not a newline ends it. Only the first
+**	MAX_LINE_LENGTH - 1 characters of a line are kept, as the fixed buffer kept them.
+*/
+static bool Read_Line(Straw & file, std::string & line)
 {
-	bool end_of_file = false;
-	char buffer[MAX_LINE_LENGTH];
+	line.clear();
 
-	INIComment * rootcomment = NULL;
-	INIComment * currentcomment = NULL;
-	INIComment * nextcomment = NULL;
-
-	/*
-	**	Determine if the INI database has preexisting entries. If it does,
-	**	then the slower merging method of loading is required.
-	*/
-	bool merge = false;
-	if (Section_Count() > 0) {
-		merge = true;
-		keepcomments = false;
+	for (;;) {
+		char c;
+		if (file.Get(&c, sizeof(c)) != sizeof(c)) {
+			return(!line.empty());
+		}
+		if (c == '\n') {
+			return(true);
+		}
+		if (c != '\r' && line.size() < (std::size_t)(INIClass::MAX_LINE_LENGTH - 1)) {
+			line.push_back(c);
+		}
 	}
+}
+
+
+int INIClass::Load(Straw & file, bool keepcomments)
+{
+	return(Load(file, keepcomments, NULL));
+}
+
+
+/// <summary>
+/// Builds the database from the INI text of a straw, or merges the text into what the
+/// database already holds.
+/// </summary>
+/// <remarks>
+/// Every assignment is stored as Put_String stores one: a repeated section header continues
+/// the section already read, and a repeated key takes the later value and moves to the end
+/// of its section. A repeat within the file being read is logged; a later file overriding an
+/// earlier one is not, since that is how the rules layers stack. Comments and layout are kept
+/// only when the database was empty and keepcomments asks for them.
+/// </remarks>
+/// <param name="ffile">The straw supplying the INI text.</param>
+/// <param name="keepcomments">Should comment lines and column layout be kept for Save?</param>
+/// <param name="source">The file name to give in diagnostics, or NULL when there is none.</param>
+/// <returns>bool; Was a section header found? A file of comments alone counts as loaded only
+/// when its comments were kept.</returns>
+int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
+{
+	bool const merge = !SectionList.empty();
+	if (merge) {
+		keepcomments = false;
+	} else {
+		TailComment.clear();
+	}
+
+	SourceNames.push_back(source != NULL ? source : "");
+	LoadGeneration = (unsigned)(SourceNames.size() - 1);
+	std::string const prefix = SourceNames.back().empty() ? std::string() : SourceNames.back() + " ";
 
 	CacheStraw file;
 	file.Get_From(ffile);
 
-	/*
-	**	Prescan until the first section is found.
-	*/
-	while (!end_of_file) {
-		Read_Line(file, buffer, sizeof(buffer), end_of_file);
-		if (end_of_file) {
+	std::string line;
+	line.reserve(MAX_LINE_LENGTH);
+
+	INICommentBlock pending;
+	INISection * current = NULL;
+	std::string currentname;
+	bool sawsection = false;
+
+	while (Read_Line(file, line)) {
+		char * buffer = line.data();
+
+		if (Is_A_Section(buffer)) {
+			strtrim(buffer);
+			char * close = strchr(buffer, ']');
+			if (close != NULL) *close = '\0';
+			char const * name = buffer + 1;
+
+			sawsection = true;
+			currentname = name;
+
+			/*
+			**	Without comments a section is only created once it has an entry, so that
+			**	an empty section never exists.
+			*/
+			current = Find_Section(name);
+			if (current != NULL) {
+				if (current->Generation == LoadGeneration) {
+					DebugString("INI: %s[%s] appears again; its keys merge into the earlier block.\n", prefix.c_str(), name);
+				}
+				if (keepcomments) {
+					current->PrefixComment.insert(current->PrefixComment.end(), pending.begin(), pending.end());
+				}
+			} else if (keepcomments) {
+				current = &Find_Or_Add_Section(name, std::move(pending));
+			}
+			if (current != NULL) {
+				current->Generation = LoadGeneration;
+			}
+			pending.clear();
+			continue;
+		}
+
+		if (!sawsection) {
 			if (keepcomments) {
-				TailComment = rootcomment;
-				return(true);
+				pending.push_back(line);
 			}
-
-			while (rootcomment != NULL) {
-				free(rootcomment->Comment);
-				INIComment * next = rootcomment->Next;
-				delete rootcomment;
-				rootcomment = next;
-			}
-			return(false);
+			continue;
 		}
-		if (Is_A_Section(buffer)) break;
+
+		int assign_col = 0;
+		int value_col = 0;
+		int comment_col = 0;
+		std::optional<std::string> linecomment;
 
 		if (keepcomments) {
-			nextcomment = new INIComment;
-			if (nextcomment == NULL) {
-				keepcomments = false;
+			pending.push_back(line);
+			char const * text = Scan_Line_For_Columns(buffer, assign_col, value_col, comment_col);
+			if (text != NULL) {
+				linecomment = text;
 			}
 		}
+
+		/*
+		**	A comment, a blank line, or a line that does not assign a value to a key stays
+		**	in the pending block, so that it is written back out when comments are kept.
+		*/
+		Strip_Comments(buffer);
+		if (buffer[0] == '\0' || buffer[0] == ';' || buffer[0] == '=') continue;
+
+		char * divider = strchr(buffer, '=');
+		if (divider == NULL) continue;
+
+		*divider++ = '\0';
+		strtrim(buffer);
+		if (buffer[0] == '\0') continue;
+
+		strtrim(divider);
+		if (divider[0] == '\0') continue;
+
+		if (current == NULL) {
+			current = &Find_Or_Add_Section(currentname);
+			current->Generation = LoadGeneration;
+		}
+
+		INIEntry * existing = current->Find_Entry(buffer);
+		if (existing != NULL && existing->Generation == LoadGeneration) {
+			DebugString("INI: %s[%s] repeats %s; the later value wins and the key moves to the end.\n", prefix.c_str(), current->Section.c_str(), buffer);
+		}
+
+		INIEntry & entry = Store_Entry(*current, buffer, divider);
+		entry.Generation = LoadGeneration;
 
 		if (keepcomments) {
-			if (currentcomment) {
-				currentcomment->Next = nextcomment;
-				currentcomment = nextcomment;
-			} else {
-				currentcomment = nextcomment;
-				rootcomment = nextcomment;
-			}
-			currentcomment->Comment = strdup(buffer);
+			pending.pop_back();
+			entry.PrefixComment.insert(entry.PrefixComment.end(), pending.begin(), pending.end());
+			entry.LineComment = std::move(linecomment);
+			entry.AssignColumn = assign_col;
+			entry.ValueColumn = value_col;
+			entry.CommentColumn = comment_col;
 		}
+		pending.clear();
 	}
 
-	if (merge) {
-
-		/*
-		**	Process a section. The buffer is prefilled with the section name line.
-		*/
-		while (!end_of_file) {
-
-			/*
-			**	Fetch the section name. Preserve it while the section's entries are
-			**	being parsed.
-			*/
-			char section[MAX_LINE_LENGTH];
-			section[0] = '\0';
-			strtrim(buffer);
-
-			if (buffer[0] == '[') {
-				char * ptr = strchr(buffer, ']');
-				if (ptr != NULL) *ptr = '\0';
-				strcpy(section, buffer + 1);
-			}
-
-			/*
-			**	Read in the entries of this section.
-			*/
-			while (!end_of_file) {
-
-				/*
-				**	If this line is the start of another section, then bail out
-				**	of the entry loop and let the outer section loop take
-				**	care of it.
-				*/
-				int len = Read_Line(file, buffer, sizeof(buffer), end_of_file);
-				if (Is_A_Section(buffer)) break;
-
-				/*
-				**	Determine if this line is a comment or blank line. Throw it out if it is.
-				*/
-				Strip_Comments(buffer);
-				if (len == 0 || buffer[0] == ';' || buffer[0] == '=') continue;
-
-				/*
-				**	The line isn't an obvious comment. Make sure that there is the "=" character
-				**	at an appropriate spot.
-				*/
-				char * divider = strchr(buffer, '=');
-				if (!divider) continue;
-
-				/*
-				**	Split the line into entry and value sections. Be sure to catch the
-				**	"=foobar" and "foobar=" cases. These lines are ignored.
-				*/
-				*divider++ = '\0';
-				strtrim(buffer);
-				if (!strlen(buffer)) continue;
-
-				strtrim(divider);
-				if (!strlen(divider)) continue;
-
-				if (Put_String(section, buffer, divider) == false) {
-					return(false);
-				}
-			}
+	if (!sawsection) {
+		if (keepcomments) {
+			TailComment = std::move(pending);
+			return(true);
 		}
-
-	} else {
-
-		while (TailComment != NULL) {
-			free(TailComment->Comment);
-			INIComment * next = TailComment->Next;
-			delete TailComment;
-			TailComment = next;
-		};
-
-		/*
-		**	Process a section. The buffer is prefilled with the section name line.
-		*/
-		while (!end_of_file) {
-
-			strtrim(buffer);
-			if (buffer[0] == '[') {
-				char * ptr = strchr(buffer, ']');
-				if (ptr != NULL) *ptr = '\0';
-			} else {
-				buffer[0] = '\0';
-				buffer[1] = '\0';
-			}
-
-			INISection * secptr = new INISection(strdup(buffer + 1), rootcomment);
-
-			if (secptr == NULL) {
-				while (rootcomment != NULL) {
-					free(rootcomment->Comment);
-					INIComment * next = rootcomment->Next;
-					delete rootcomment;
-					rootcomment = next;
-				};
-				currentcomment = NULL;
-
-				Clear();
-				return(false);
-			}
-
-			currentcomment = NULL;
-			rootcomment = NULL;
-
-			/*
-			**	Read in the entries of this section.
-			*/
-			while (!end_of_file) {
-
-				/*
-				**	If this line is the start of another section, then bail out
-				**	of the entry loop and let the outer section loop take
-				**	care of it.
-				*/
-				int len = Read_Line(file, buffer, sizeof(buffer), end_of_file);
-				if (end_of_file) break;
-				if (Is_A_Section(buffer)) break;
-
-				if (keepcomments) {
-					nextcomment = new INIComment;
-					if (nextcomment == NULL) {
-						keepcomments = false;
-					}
-				}
-
-				if (keepcomments) {
-					if (currentcomment) {
-						currentcomment->Next = nextcomment;
-						currentcomment = nextcomment;
-					} else {
-						currentcomment = nextcomment;
-						rootcomment = nextcomment;
-					}
-
-					currentcomment->Comment = strdup(buffer);
-				}
-
-				/*
-				**	Determine if this line is a comment or blank line. Throw it out if it is.
-				*/
-				int assign_col = 0;
-				int value_col = 0;
-				int comment_col = 0;
-				char *line_comment = NULL;
-
-				if (keepcomments) {
-					line_comment = Scan_Line_For_Columns(buffer, assign_col, value_col, comment_col);
-					if (line_comment != NULL) {
-						line_comment = strdup(line_comment);
-					}
-				}
-
-				Strip_Comments(buffer);
-				if (len == 0 || buffer[0] == ';' || buffer[0] == '=') {
-					free(line_comment);
-					continue;
-				}
-
-				/*
-				**	The line isn't an obvious comment. Make sure that there is the "=" character
-				**	at an appropriate spot.
-				*/
-				char * divider = strchr(buffer, '=');
-				if (!divider) {
-					free(line_comment);
-					continue;
-				}
-
-				/*
-				**	Split the line into entry and value sections. Be sure to catch the
-				**	"=foobar" and "foobar=" cases. These lines are ignored.
-				*/
-				*divider++ = '\0';
-				strtrim(buffer);
-				if (!strlen(buffer)) {
-					free(line_comment);
-					continue;
-				}
-
-				strtrim(divider);
-				if (!strlen(divider)) {
-					free(line_comment);
-					continue;
-				}
-
-				if (keepcomments && (currentcomment != NULL) && (currentcomment->Comment != NULL)) {
-					free(currentcomment->Comment);
-					currentcomment->Comment = NULL;
-				}
-
-				INIEntry * entryptr = new INIEntry(strdup(buffer), strdup(divider), rootcomment, line_comment, comment_col, assign_col, value_col);
-
-				if (entryptr == NULL) {
-					free(line_comment);
-					while (rootcomment != NULL) {
-						free(rootcomment->Comment);
-						INIComment * next = rootcomment->Next;
-						delete rootcomment;
-						rootcomment = next;
-					};
-					currentcomment = NULL;
-
-					delete secptr;
-					Clear();
-					return(false);
-				}
-
-				currentcomment = NULL;
-				rootcomment = NULL;
-
-				secptr->EntryIndex.Add_Index(entryptr->Index_ID(), entryptr);
-				secptr->EntryList.Add_Tail(entryptr);
-			}
-
-			/*
-			**	All the entries for this section have been parsed. If this section is blank, then
-			**	don't bother storing it.
-			*/
-			if (!keepcomments && secptr->EntryList.Is_Empty()) {
-				while (rootcomment != NULL) {
-					free(rootcomment->Comment);
-					INIComment * next = rootcomment->Next;
-					delete rootcomment;
-					rootcomment = next;
-				};
-				currentcomment = NULL;
-
-				delete secptr;
-			} else {
-				SectionIndex.Add_Index(secptr->Index_ID(), secptr);
-				SectionList.Add_Tail(secptr);
-			}
-		}
+		return(false);
 	}
 
-	TailComment = rootcomment;
-
+	if (keepcomments) {
+		TailComment = std::move(pending);
+	}
 	return(true);
 }
 
@@ -555,53 +370,43 @@ int INIClass::Save(Pipe & pipe) const
 	memset(spacebuffer, ' ', sizeof(spacebuffer));
 	spacebuffer[MAX_LINE_LENGTH - 1] = '\0';
 
-	INISection * secptr = SectionList.First();
-	while (secptr && secptr->Is_Valid()) {
+	for (std::unique_ptr<INISection> const & secptr : SectionList) {
 
-		if (total > 0 && secptr->PrefixComment == NULL) {
+		if (total > 0 && secptr->PrefixComment.empty()) {
 			total += pipe.Put("\r\n", strlen("\r\n"));
 		}
 
-		INIComment * cmtptr = secptr->PrefixComment;
-		while (cmtptr != NULL) {
-			if (cmtptr->Comment != NULL) {
-				total += pipe.Put(cmtptr->Comment, strlen(cmtptr->Comment));
-				total += pipe.Put("\r\n", strlen("\r\n"));
-			}
-			cmtptr = cmtptr->Next;
+		for (std::string const & comment : secptr->PrefixComment) {
+			total += pipe.Put(comment.c_str(), (int)comment.size());
+			total += pipe.Put("\r\n", strlen("\r\n"));
 		}
 
 		/*
 		**	Output the section identifier.
 		*/
 		total += pipe.Put("[", 1);
-		total += pipe.Put(secptr->Section, strlen(secptr->Section));
+		total += pipe.Put(secptr->Section.c_str(), (int)secptr->Section.size());
 		total += pipe.Put("]", 1);
 		total += pipe.Put("\r\n", strlen("\r\n"));
 
 		/*
 		**	Output all the entries and values in this section.
 		*/
-		INIEntry * entryptr = secptr->EntryList.First();
-		while (entryptr && entryptr->Is_Valid()) {
+		for (std::unique_ptr<INIEntry> const & entryptr : secptr->EntryList) {
 
-			INIComment * cmtptr = entryptr->PrefixComment;
-			while (cmtptr != NULL) {
-				if (cmtptr->Comment != NULL) {
-					total += pipe.Put(cmtptr->Comment, strlen(cmtptr->Comment));
-					total += pipe.Put("\r\n", strlen("\r\n"));
-				}
-				cmtptr = cmtptr->Next;
+			for (std::string const & comment : entryptr->PrefixComment) {
+				total += pipe.Put(comment.c_str(), (int)comment.size());
+				total += pipe.Put("\r\n", strlen("\r\n"));
 			}
 
-			int entrylen = strlen(entryptr->Entry);
-			int valuelen = strlen(entryptr->Value);
+			int entrylen = (int)entryptr->Entry.size();
+			int valuelen = (int)entryptr->Value.size();
 			int spacepad = entryptr->AssignColumn - (entrylen);
 			int totalspacepad = 0;
 			/// why half..
 			spacepad = std::min(MAX_LINE_LENGTH / 2, spacepad);
 
-			total += pipe.Put(entryptr->Entry, entrylen);
+			total += pipe.Put(entryptr->Entry.c_str(), entrylen);
 			if (spacepad > 0) {
 				total += pipe.Put(spacebuffer, spacepad);
 				totalspacepad += spacepad;
@@ -618,9 +423,9 @@ int INIClass::Save(Pipe & pipe) const
 				totalspacepad += spacepad;
 			}
 
-			total += pipe.Put(entryptr->Value, valuelen);
+			total += pipe.Put(entryptr->Value.c_str(), valuelen);
 
-			if (entryptr->LineComment != NULL) {
+			if (entryptr->LineComment.has_value()) {
 				spacepad = entryptr->CommentColumn - (entrylen + valuelen + totalspacepad + 1);
 				/// why half..
 				spacepad = std::min(MAX_LINE_LENGTH / 2, spacepad);
@@ -630,28 +435,16 @@ int INIClass::Save(Pipe & pipe) const
 				}
 
 				total += pipe.Put(";", 1);
-				total += pipe.Put(entryptr->LineComment, strlen(entryptr->LineComment));
+				total += pipe.Put(entryptr->LineComment->c_str(), (int)entryptr->LineComment->size());
 			}
 
-			/*
-			**	After the last entry in this section, output an extra
-			**	blank line for readability purposes.
-			*/
 			total += pipe.Put("\r\n", strlen("\r\n"));
-
-			entryptr = entryptr->Next();
 		}
-
-		secptr = secptr->Next();
 	}
 
-	INIComment * cmtptr = TailComment;
-	while (cmtptr != NULL) {
-		if (cmtptr->Comment != NULL) {
-			total += pipe.Put(cmtptr->Comment, strlen(cmtptr->Comment));
-			total += pipe.Put("\r\n", strlen("\r\n"));
-		}
-		cmtptr = cmtptr->Next;
+	for (std::string const & comment : TailComment) {
+		total += pipe.Put(comment.c_str(), (int)comment.size());
+		total += pipe.Put("\r\n", strlen("\r\n"));
 	}
 
 	total += pipe.End();
@@ -660,34 +453,19 @@ int INIClass::Save(Pipe & pipe) const
 }
 
 
-/***********************************************************************************************
- * INIClass::Find_Section -- Find the specified section within the INI data.                   *
- *                                                                                             *
- *    This routine will scan through the INI data looking for the section specified. If the    *
- *    section could be found, then a pointer to the section control data is returned.          *
- *                                                                                             *
- * INPUT:   section  -- The name of the section to search for. Don't enclose the name in       *
- *                      brackets. Case is NOT sensitive in the search.                         *
- *                                                                                             *
- * OUTPUT:  Returns with a pointer to the INI section control structure if the section was     *
- *          found. Otherwise, NULL is returned.                                                *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/02/1996 JLB : Created.                                                                 *
- *   11/02/1996 JLB : Uses index manager.                                                      *
- *=============================================================================================*/
+/// <summary>
+/// Finds a section by name. Names are compared byte for byte, so the search is case
+/// sensitive.
+/// </summary>
+/// <param name="section">The section name to look for.</param>
+/// <returns>The section, or NULL if the database holds no section of that name.</returns>
 INIClass::INISection * INIClass::Find_Section(char const * section) const
 {
-	if (section != NULL) {
-		int crc = CRCEngine()(section, strlen(section));
-
-		if (SectionIndex.Is_Present(crc)) {
-			return(SectionIndex[crc]);
-		}
+	if (section == NULL) {
+		return(NULL);
 	}
-	return(NULL);
+	auto found = SectionIndex.find(section);
+	return(found != SectionIndex.end() ? found->second : NULL);
 }
 
 
@@ -709,7 +487,7 @@ INIClass::INISection * INIClass::Find_Section(char const * section) const
  *=============================================================================================*/
 int INIClass::Section_Count(void) const
 {
-	return(SectionIndex.Count());
+	return((int)SectionList.size());
 }
 
 
@@ -733,7 +511,7 @@ int INIClass::Entry_Count(char const * section) const
 {
 	INISection * secptr = Find_Section(section);
 	if (secptr != NULL) {
-		return(secptr->EntryIndex.Count());
+		return((int)secptr->EntryList.size());
 	}
 	return(0);
 }
@@ -789,14 +567,8 @@ char const * INIClass::Get_Entry(char const * section, int index) const
 {
 	INISection * secptr = Find_Section(section);
 
-	if (secptr != NULL && index < secptr->EntryIndex.Count()) {
-		INIEntry * entryptr = secptr->EntryList.First();
-
-		while (entryptr != NULL && entryptr->Is_Valid()) {
-			if (index == 0) return(entryptr->Entry);
-			index--;
-			entryptr = entryptr->Next();
-		}
+	if (secptr != NULL && index >= 0 && index < (int)secptr->EntryList.size()) {
+		return(secptr->EntryList[index]->Entry.c_str());
 	}
 	return(NULL);
 }
@@ -1096,20 +868,18 @@ bool INIClass::Put_Int(char const * section, char const * entry, int number, int
  *=============================================================================================*/
 int INIClass::Get_Int(char const * section, char const * entry, int defvalue) const
 {
-	/*
-	**	Verify that the parameters are nominally correct.
-	*/
 	if (section == NULL || entry == NULL) return(defvalue);
 
 	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr != NULL && entryptr->Value != NULL) {
-		if (*entryptr->Value == '$') {
-			sscanf(entryptr->Value, "$%x", &defvalue);
+	if (entryptr != NULL) {
+		char const * value = entryptr->Value.c_str();
+		if (*value == '$') {
+			sscanf(value, "$%x", &defvalue);
 		} else {
-			if (tolower(entryptr->Value[strlen(entryptr->Value)-1]) == 'h') {
-				sscanf(entryptr->Value, "%xh", &defvalue);
+			if (tolower(value[strlen(value)-1]) == 'h') {
+				sscanf(value, "%xh", &defvalue);
 			} else {
-				defvalue = atoi(entryptr->Value);
+				defvalue = atoi(value);
 			}
 		}
 	}
@@ -1196,34 +966,21 @@ bool INIClass::Put_Rect(char const * section, char const * entry, Rect const & v
 }
 
 
-/***********************************************************************************************
- * INIClass::Get_Rect -- Retrieve a rectangle data from the database.                          *
- *                                                                                             *
- *    This routine will retrieve the rectangle data from the database at the section and entry *
- *    specified.                                                                               *
- *                                                                                             *
- * INPUT:   section  -- The name of the section that the entry will be scanned for.            *
- *                                                                                             *
- *          entry    -- The entry that the rectangle data will be lifted from.                 *
- *                                                                                             *
- *          defvalue -- The rectangle value to return if the specified section and entry could *
- *                      not be found.                                                          *
- *                                                                                             *
- * OUTPUT:  Returns with the rectangle data from the database or the default value if not      *
- *          found.                                                                             *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/19/1997 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Fetches a rectangle from the INI database.
+/// </summary>
+/// <returns>Returns with the rectangle specified. If the entry is absent, or does not hold
+/// four numbers, then the default value is returned.</returns>
 Rect const INIClass::Get_Rect(char const * section, char const * entry, Rect const & defvalue) const
 {
-	char buffer[64];
+	int values[4];
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (Read_Numbers(section, entry, values, 4) == INIReadResult::Parsed) {
 		Rect retval = defvalue;
-		sscanf(buffer, "%d,%d,%d,%d", &retval.X, &retval.Y, &retval.Width, &retval.Height);
+		retval.X = values[0];
+		retval.Y = values[1];
+		retval.Width = values[2];
+		retval.Height = values[3];
 		return(retval);
 	}
 	return(defvalue);
@@ -1282,55 +1039,44 @@ bool INIClass::Put_Hex(char const * section, char const * entry, int number)
  *=============================================================================================*/
 int INIClass::Get_Hex(char const * section, char const * entry, int defvalue) const
 {
-	/*
-	**	Verify that the parameters are nominally correct.
-	*/
 	if (section == NULL || entry == NULL) return(defvalue);
 
 	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr != NULL && entryptr->Value != NULL) {
-		sscanf(entryptr->Value, "%x", &defvalue);
+	if (entryptr != NULL) {
+		sscanf(entryptr->Value.c_str(), "%x", &defvalue);
 	}
 	return(defvalue);
 }
 
 
-/***********************************************************************************************
- * INIClass::Get_Float -- Fetch a floating point number from the database.                     *
- *                                                                                             *
- *    This routine will retrieve a floating point number from the database.                    *
- *                                                                                             *
- * INPUT:   section  -- The section name to find the entry under.                              *
- *                                                                                             *
- *          entry    -- The entry name to fetch the float value from.                          *
- *                                                                                             *
- *          defvalue -- Return value to use if the section and entry could not be found.       *
- *                                                                                             *
- * OUTPUT:  Returns with the float value from the section and entry specified. If not found,   *
- *          then the default value is returned.                                                *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   05/31/1997 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Fetches a floating point number from the INI database.
+/// A percent sign anywhere in the value divides the number by one hundred, so 50% reads as
+/// one half.
+/// </summary>
+/// <returns>Returns with the number specified. If the entry is absent, or does not start
+/// with a number, then the default value is returned.</returns>
 double INIClass::Get_Float(char const * section, char const * entry, double defvalue) const
 {
-	/*
-	**	Verify that the parameters are nominally correct.
-	*/
-	if (section == NULL || entry == NULL) return(defvalue);
-
 	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr != NULL && entryptr->Value != NULL) {
-		float val;
-		sscanf(entryptr->Value, "%f", &val);
-		defvalue = val;
-		if (strchr(entryptr->Value, '%%') != NULL) {
-			defvalue /= 100.0;
-		}
+	if (entryptr == NULL) {
+		return(defvalue);
 	}
-	return(defvalue);
+
+	char const * text = entryptr->Value.c_str();
+	char * end = NULL;
+	float const val = strtof(text, &end);
+	if (end == text) {
+		char const * source = Source_Of(*entryptr);
+		DebugString("INI: %s%s[%s] %s=%s is not a number; using the default.\n", source, *source ? " " : "", section, entry, text);
+		return(defvalue);
+	}
+
+	double result = val;
+	if (strchr(text, '%') != NULL) {
+		result /= 100.0;
+	}
+	return(result);
 }
 
 
@@ -1362,81 +1108,25 @@ bool INIClass::Put_Float(char const * section, char const * entry, double number
 }
 
 
-/***********************************************************************************************
- * INIClass::Put_String -- Output a string to the section and entry specified.                 *
- *                                                                                             *
- *    This routine will put an arbitrary string to the section and entry specified. Any        *
- *    previous matching entry will be replaced.                                                *
- *                                                                                             *
- * INPUT:   section  -- The section identifier to place the string under.                      *
- *                                                                                             *
- *          entry    -- The entry identifier to identify this string [placed under the section]*
- *                                                                                             *
- *          string   -- Pointer to the string to assign to this entry.                         *
- *                                                                                             *
- * OUTPUT:  bool; Was the entry assigned without error?                                        *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/02/1996 JLB : Created.                                                                 *
- *   11/02/1996 JLB : Uses index handler.                                                      *
- *=============================================================================================*/
+/// <summary>
+/// Stores a value under the section and entry named, creating the section if it is absent.
+/// An existing entry keeps its comments and layout but takes the new value and moves to the
+/// end of its section. An empty or NULL value removes the entry instead.
+/// </summary>
+/// <returns>bool; Were a section and an entry named? Storing never fails otherwise.</returns>
 bool INIClass::Put_String(char const * section, char const * entry, char const * string)
 {
 	if (section == NULL || entry == NULL) return(false);
 
-	INISection * secptr = Find_Section(section);
+	INISection & secref = Find_Or_Add_Section(section);
 
-	if (secptr == NULL) {
-		secptr = new INISection(strdup(section));
-		if (secptr == NULL) return(false);
-		SectionList.Add_Tail(secptr);
-		SectionIndex.Add_Index(secptr->Index_ID(), secptr);
-	}
-
-	/*
-	**	Remove the old entry if found.
-	*/
-	INIComment * cmtptr = NULL;
-	char * line_comment = NULL;
-	int comment_col = 0;
-	int assign_col = 0;
-	int value_col = 0;
-	INIEntry * entryptr = secptr->Find_Entry(entry);
-	if (entryptr != NULL) {
-		cmtptr = entryptr->PrefixComment;
-		line_comment = entryptr->LineComment;
-		comment_col = entryptr->CommentColumn;
-		assign_col = entryptr->AssignColumn;
-		value_col = entryptr->ValueColumn;
-		entryptr->PrefixComment = NULL;
-		entryptr->LineComment = NULL;
-
-		secptr->EntryIndex.Remove_Index(entryptr->Index_ID());
-		delete entryptr;
-	}
-
-	/*
-	**	Create and add the new entry.
-	*/
-	if (string != NULL && strlen(string) > 0) {
-		entryptr = new INIEntry(strdup(entry), strdup(string), cmtptr, line_comment, comment_col, assign_col, value_col);
-
-		if (entryptr == NULL) {
-			free(line_comment);
-
-			while (cmtptr != NULL) {
-				free(cmtptr->Comment);
-				INIComment * next = cmtptr->Next;
-				delete cmtptr;
-				cmtptr = next;
-			}
-
-			return(false);
+	if (string == NULL || *string == '\0') {
+		INIEntry * existing = secref.Find_Entry(entry);
+		if (existing != NULL) {
+			Remove_Entry(secref, *existing);
 		}
-		secptr->EntryList.Add_Tail(entryptr);
-		secptr->EntryIndex.Add_Index(entryptr->Index_ID(), entryptr);
+	} else {
+		Store_Entry(secref, entry, string);
 	}
 	return(true);
 }
@@ -1470,26 +1160,13 @@ bool INIClass::Put_String(char const * section, char const * entry, char const *
  *=============================================================================================*/
 int INIClass::Get_String(char const * section, char const * entry, char const * defvalue, char * buffer, int size) const
 {
-	/*
-	**	Verify that the parameters are nominally legal.
-	*/
-//	if (buffer != NULL && size > 0) {
-//		buffer[0] = '\0';
-//	}
 	if (buffer == NULL || size < 2 || section == NULL || entry == NULL) return(0);
 
-	/*
-	**	Fetch the entry string if it is present. If not, then the normal default
-	**	value will be used as the entry value.
-	*/
 	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr != NULL && entryptr->Value != NULL) {
-		defvalue = entryptr->Value;
+	if (entryptr != NULL) {
+		defvalue = entryptr->Value.c_str();
 	}
 
-	/*
-	**	Fill in the buffer with the entry value and return with the length of the string.
-	*/
 	if (defvalue == NULL) {
 		buffer[0] = '\0';
 		return(0);
@@ -1558,14 +1235,11 @@ bool INIClass::Put_Bool(char const * section, char const * entry, bool value)
  *=============================================================================================*/
 bool INIClass::Get_Bool(char const * section, char const * entry, bool defvalue) const
 {
-	/*
-	**	Verify that the parameters are nominally correct.
-	*/
 	if (section == NULL || entry == NULL) return(defvalue);
 
 	INIEntry * entryptr = Find_Entry(section, entry);
-	if (entryptr != NULL && entryptr->Value != NULL) {
-		switch (toupper(*entryptr->Value)) {
+	if (entryptr != NULL) {
+		switch (toupper((unsigned char)entryptr->Value[0])) {
 			case 'Y':
 			case 'T':
 			case '1':
@@ -1608,33 +1282,17 @@ bool INIClass::Put_Point(char const * section, char const * entry, TPoint2D<int>
 }
 
 
-/***********************************************************************************************
- * INIClass::Get_Point -- Fetch a point value from the INI database.                           *
- *                                                                                             *
- *    This routine will retrieve a point value from the database by looking in the section and *
- *    entry specified.                                                                         *
- *                                                                                             *
- * INPUT:   section  -- The name of the section to search for the entry under.                 *
- *                                                                                             *
- *          entry    -- The entry to search for.                                               *
- *                                                                                             *
- *          defvalue -- The default value to return if the section and entry were not found.   *
- *                                                                                             *
- * OUTPUT:  Returns with the point value retrieved from the database or the default value if   *
- *          the section and entry were not found.                                              *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/19/1997 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Fetches a two dimensional point from the INI database.
+/// </summary>
+/// <returns>Returns with the point specified. If the entry is absent, or does not hold two
+/// numbers, then the default value is returned.</returns>
 TPoint2D<int> const INIClass::Get_Point(char const * section, char const * entry, TPoint2D<int> const & defvalue) const
 {
-	char buffer[64];
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
-		int x,y;
-		sscanf(buffer, "%d,%d", &x, &y);
-		return(TPoint2D<int>(x, y));
+	int values[2];
+
+	if (Read_Numbers(section, entry, values, 2) == INIReadResult::Parsed) {
+		return(TPoint2D<int>(values[0], values[1]));
 	}
 	return(defvalue);
 }
@@ -1667,34 +1325,17 @@ bool INIClass::Put_Point(char const * section, char const * entry, TPoint3D<int>
 }
 
 
-/***********************************************************************************************
- * INIClass::Get_Point -- Fetch a 3D point from the database.                                  *
- *                                                                                             *
- *    This routine will retrieve a 3D point from the database from the section and entry       *
- *    specified.                                                                               *
- *                                                                                             *
- * INPUT:   section  -- The name of the section to search for th entry under.                  *
- *                                                                                             *
- *          entry    -- The name of the entry to search for.                                   *
- *                                                                                             *
- *          defvaule -- The default value to return if the section and entry could not be      *
- *                      found.                                                                 *
- *                                                                                             *
- * OUTPUT:  Returns with the 3D point from the database or the default value if the section    *
- *          and entry could not be found.                                                      *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/19/1997 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Fetches a three dimensional point from the INI database.
+/// </summary>
+/// <returns>Returns with the point specified. If the entry is absent, or does not hold three
+/// numbers, then the default value is returned.</returns>
 TPoint3D<int> const INIClass::Get_Point(char const * section, char const * entry, TPoint3D<int> const & defvalue) const
 {
-	char buffer[64];
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
-		int x,y,z;
-		sscanf(buffer, "%d,%d,%d", &x, &y, &z);
-		return(TPoint3D<int>(x, y, z));
+	int values[3];
+
+	if (Read_Numbers(section, entry, values, 3) == INIReadResult::Parsed) {
+		return(TPoint3D<int>(values[0], values[1], values[2]));
 	}
 	return(defvalue);
 }
@@ -1727,65 +1368,35 @@ bool INIClass::Put_Point(char const * section, char const * entry, TPoint3D<floa
 }
 
 
-/***********************************************************************************************
- * INIClass::Get_Point -- Fetch a 3D point from the database.                                  *
- *                                                                                             *
- *    This routine will retrieve a 3D point from the database from the section and entry       *
- *    specified.                                                                               *
- *                                                                                             *
- * INPUT:   section  -- The name of the section to search for th entry under.                  *
- *                                                                                             *
- *          entry    -- The name of the entry to search for.                                   *
- *                                                                                             *
- *          defvaule -- The default value to return if the section and entry could not be      *
- *                      found.                                                                 *
- *                                                                                             *
- * OUTPUT:  Returns with the 3D point from the database or the default value if the section    *
- *          and entry could not be found.                                                      *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/19/1997 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Fetches a three dimensional floating point vector from the INI database.
+/// </summary>
+/// <returns>Returns with the vector specified. If the entry is absent, or does not hold
+/// three numbers, then the default value is returned.</returns>
 TPoint3D<float> const INIClass::Get_Point(char const * section, char const * entry, TPoint3D<float> const & defvalue) const
 {
-	char buffer[64];
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
-		float x,y,z;
-		sscanf(buffer, "%f,%f,%f", &x, &y, &z);
-		return(TPoint3D<float>(x, y, z));
+	float values[3];
+
+	if (Read_Numbers(section, entry, values, 3) == INIReadResult::Parsed) {
+		return(TPoint3D<float>(values[0], values[1], values[2]));
 	}
 	return(defvalue);
 }
 
 
-/***********************************************************************************************
- * INIClass::INISection::Find_Entry -- Finds a specified entry and returns pointer to it.      *
- *                                                                                             *
- *    This routine scans the supplied entry for the section specified. This is used for        *
- *    internal database maintenance.                                                           *
- *                                                                                             *
- * INPUT:   entry -- The entry to scan for.                                                    *
- *                                                                                             *
- * OUTPUT:  Returns with a pointer to the entry control structure if the entry was found.      *
- *          Otherwise it returns NULL.                                                         *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/03/1996 JLB : Created.                                                                 *
- *   11/02/1996 JLB : Uses index handler.                                                      *
- *=============================================================================================*/
+/// <summary>
+/// Finds an entry of this section by name. Names are compared byte for byte, so the search
+/// is case sensitive.
+/// </summary>
+/// <param name="entry">The entry name to look for.</param>
+/// <returns>The entry, or NULL if the section holds no entry of that name.</returns>
 INIClass::INIEntry * INIClass::INISection::Find_Entry(char const * entry) const
 {
-	if (entry != NULL) {
-		int crc = CRCEngine()(entry, strlen(entry));
-		if (EntryIndex.Is_Present(crc)) {
-			return(EntryIndex[crc]);
-		}
+	if (entry == NULL) {
+		return(NULL);
 	}
-	return(NULL);
+	auto found = EntryIndex.find(entry);
+	return(found != EntryIndex.end() ? found->second : NULL);
 }
 
 
@@ -1980,46 +1591,141 @@ bool INIClass::Is_A_Section(char * buffer)
 }
 
 
-/// <summary>
-/// Destroys the entry object.
-/// This routine frees the entry name and its value text, along with any comments that were
-/// preserved for this line when the database was loaded.
-/// </summary>
-INIClass::INIEntry::~INIEntry(void)
+INIClass::INISection & INIClass::Find_Or_Add_Section(std::string_view name, INICommentBlock prefix)
 {
-	free(Entry);
-	Entry = NULL;
-	free(Value);
-	Value = NULL;
+	auto found = SectionIndex.find(name);
+	if (found != SectionIndex.end()) {
+		return(*found->second);
+	}
 
-	while (PrefixComment != NULL) {
-		free(PrefixComment->Comment);
-		INIComment * next = PrefixComment->Next;
-		delete PrefixComment;
-		PrefixComment = next;
-	};
+	std::unique_ptr<INISection> section = std::make_unique<INISection>();
+	section->Section = name;
+	section->PrefixComment = std::move(prefix);
 
-	free(LineComment);
-	LineComment = NULL;
+	INISection & added = *section;
+	SectionList.push_back(std::move(section));
+	SectionIndex.emplace(added.Section, &added);
+	return(added);
+}
+
+
+/*
+**	An entry that already exists keeps its object, and with it its comments and layout, but
+**	moves to the end of the section so that a later assignment always stands after an
+**	earlier one.
+*/
+INIClass::INIEntry & INIClass::Store_Entry(INISection & section, std::string_view entry, std::string_view value)
+{
+	auto found = section.EntryIndex.find(entry);
+	if (found != section.EntryIndex.end()) {
+		INIEntry & existing = *found->second;
+		existing.Value = value;
+
+		auto held = std::find_if(section.EntryList.begin(), section.EntryList.end(), [&existing](std::unique_ptr<INIEntry> const & candidate) {return(candidate.get() == &existing);});
+		std::rotate(held, held + 1, section.EntryList.end());
+		return(existing);
+	}
+
+	std::unique_ptr<INIEntry> created = std::make_unique<INIEntry>();
+	created->Entry = entry;
+	created->Value = value;
+
+	INIEntry & added = *created;
+	section.EntryList.push_back(std::move(created));
+	section.EntryIndex.emplace(added.Entry, &added);
+	return(added);
+}
+
+
+void INIClass::Remove_Entry(INISection & section, INIEntry & entry)
+{
+	section.EntryIndex.erase(entry.Entry);
+	std::erase_if(section.EntryList, [&entry](std::unique_ptr<INIEntry> const & held) {return(held.get() == &entry);});
+}
+
+
+char const * INIClass::Source_Of(INIEntry const & entry) const
+{
+	return(entry.Generation < SourceNames.size() ? SourceNames[entry.Generation].c_str() : "");
+}
+
+
+/*
+**	Reads count numbers separated by commas out of the text. Spaces around the commas are
+**	allowed, and whatever follows the last number is ignored. Returns how many numbers were
+**	read before the text stopped conforming.
+*/
+template<class T, class Convert>
+static int Parse_Numbers(char const * text, T * values, int count, Convert convert)
+{
+	char const * cursor = text;
+
+	for (int index = 0; index < count; index++) {
+		char * end = NULL;
+		T const number = convert(cursor, &end);
+		if (end == cursor) {
+			return(index);
+		}
+		values[index] = number;
+		cursor = end;
+
+		if (index + 1 < count) {
+			while (*cursor != '\0' && (unsigned char)*cursor <= 32) cursor++;
+			if (*cursor != ',') {
+				return(index + 1);
+			}
+			cursor++;
+		}
+	}
+	return(count);
 }
 
 
 /// <summary>
-/// Destroys the section object.
-/// This routine frees the section name, the entries it holds, and any comment lines that
-/// were preserved above the section heading when the database was loaded.
+/// Reads a comma separated list of whole numbers from the entry named.
 /// </summary>
-INIClass::INISection::~INISection(void)
+/// <param name="values">Receives the numbers. Only a Parsed result fills every slot.</param>
+/// <param name="count">How many numbers the value has to hold.</param>
+/// <returns>Absent if there is no such entry, Malformed if the value does not hold that many
+/// numbers (which is logged), and Parsed otherwise.</returns>
+INIClass::INIReadResult INIClass::Read_Numbers(char const * section, char const * entry, int * values, int count) const
 {
-	free(Section);
-	Section = 0;
-	EntryList.Delete();
-	EntryIndex.Clear();
-
-	while (PrefixComment != NULL) {
-		free(PrefixComment->Comment);
-		INIComment * next = PrefixComment->Next;
-		delete PrefixComment;
-		PrefixComment = next;
+	INIEntry * entryptr = Find_Entry(section, entry);
+	if (entryptr == NULL) {
+		return(INIReadResult::Absent);
 	}
+
+	char const * text = entryptr->Value.c_str();
+	if (Parse_Numbers(text, values, count, [](char const * cursor, char ** end) {return((int)strtol(cursor, end, 10));}) == count) {
+		return(INIReadResult::Parsed);
+	}
+
+	char const * source = Source_Of(*entryptr);
+	DebugString("INI: %s%s[%s] %s=%s is not %d numbers; using the default.\n", source, *source ? " " : "", section, entry, text, count);
+	return(INIReadResult::Malformed);
+}
+
+
+/// <summary>
+/// Reads a comma separated list of floating point numbers from the entry named.
+/// </summary>
+/// <param name="values">Receives the numbers. Only a Parsed result fills every slot.</param>
+/// <param name="count">How many numbers the value has to hold.</param>
+/// <returns>Absent if there is no such entry, Malformed if the value does not hold that many
+/// numbers (which is logged), and Parsed otherwise.</returns>
+INIClass::INIReadResult INIClass::Read_Numbers(char const * section, char const * entry, float * values, int count) const
+{
+	INIEntry * entryptr = Find_Entry(section, entry);
+	if (entryptr == NULL) {
+		return(INIReadResult::Absent);
+	}
+
+	char const * text = entryptr->Value.c_str();
+	if (Parse_Numbers(text, values, count, [](char const * cursor, char ** end) {return(strtof(cursor, end));}) == count) {
+		return(INIReadResult::Parsed);
+	}
+
+	char const * source = Source_Of(*entryptr);
+	DebugString("INI: %s%s[%s] %s=%s is not %d numbers; using the default.\n", source, *source ? " " : "", section, entry, text, count);
+	return(INIReadResult::Malformed);
 }

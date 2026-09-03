@@ -370,7 +370,7 @@ GET_CALL_RE = re.compile(
 )
 
 # An entry name is whatever stands to the left of '=', and INISection::Find_Entry
-# looks it up by the CRC of those raw bytes, so digits alone are a real name: a
+# looks it up by the raw bytes of the name, so digits alone are a real name: a
 # map file carries its checksum under [Digest] 1. Requiring a leading letter made
 # that read invisible to every scanner rather than merely unclassified, so no
 # exclusion could be written for it. extract_file, extract_globals.emit and
@@ -1401,7 +1401,7 @@ def build(records_by_cls, defaults_by_cls, tree, loader_contexts=None):
             scope.pop('_chain_signature', None)
         entry['scopes'] = _order_shared_route_scopes(entry['key'], coalesced)
 
-    # Entry lookup CRCs the raw bytes (INISection::Find_Entry, code/ini.cpp).
+    # Entry lookup compares the raw bytes of the name (INISection::Find_Entry, code/ini.cpp).
     # INI keys are case-sensitive, so near-miss spellings remain distinct and
     # cross-reference one another as a modding warning.
     by_lower = {}

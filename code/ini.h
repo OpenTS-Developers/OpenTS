@@ -33,10 +33,17 @@
 
 #include "crc.h"
 #include "index.h"
-#include "listnode.h"
 
 #include <comdef.h>
+#include <cstddef>
 #include <cstdlib>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <string_view>
+#include <unordered_map>
+#include <vector>
 
 class FileClass;
 class Pipe;
@@ -53,8 +60,11 @@ template<class T> class TPoint3D;
 */
 class INIClass {
 	public:
-		INIClass(void) : TailComment(NULL) {}
+		INIClass(void) : SourceNames(1) {}
 		virtual ~INIClass(void);
+
+		INIClass(INIClass const &) = delete;
+		INIClass & operator = (INIClass const &) = delete;
 
 		/*
 		**	Fetch and store INI data.
@@ -70,8 +80,7 @@ class INIClass {
 		bool Clear(char const * section = NULL, char const * entry = NULL);
 
 //		int Line_Count(char const * section) const;
-		bool Is_Loaded(void) const {return(!SectionList.Is_Empty());}
-		int Size(void) const;
+		bool Is_Loaded(void) const {return(!SectionList.empty());}
 		bool Is_Present(char const * section, char const * entry = NULL) const {if (entry == 0) return(Find_Section(section) != 0);return(Find_Entry(section, entry) != 0);}
 
 		/*
@@ -121,115 +130,96 @@ class INIClass {
 		bool Put_Point(char const * section, char const * entry, TPoint2D<int> const & value);
 		bool Put_CLSID(char const * section, char const * entry, CLSID const & value);
 
+		/*
+		**	Callers size the buffers they hand to Get_String from this, and the reader keeps
+		**	at most this many characters of a line.
+		*/
 		enum {MAX_LINE_LENGTH=512};
 
-		struct INIComment {
-			INIComment(void) :
-				Comment(NULL),
-				Next(NULL)
-			{
-			}
+		/*
+		**	A block of lines held exactly as they were read out of the file: comments complete
+		**	with the semicolon that introduced them, and the blank lines that spaced the file
+		**	out. Save writes a block back ahead of whatever it introduced.
+		*/
+		using INICommentBlock = std::vector<std::string>;
 
-			/*
-			 * This is one line held exactly as it was read out of the file -- a comment
-			 * complete with the semicolon that introduced it, or a blank line that spaced
-			 * the file out. It is NULL for a node whose line turned out to be an entry.
-			 */
-			char * Comment;
-
-			/*
-			 * Pointer to the next line of the comment block, or NULL at the end of it. Lines
-			 * that sat together in the file are chained up as one block, so that the whole
-			 * of it can be written back ahead of whatever it introduces.
-			 */
-			INIComment * Next;
+		/*
+		**	Names are looked up by their raw bytes, so lookups are case sensitive. The hash is
+		**	transparent so that a C string or a view can be looked up without copying it.
+		*/
+		struct INIStringHash {
+			using is_transparent = void;
+			std::size_t operator () (std::string_view text) const noexcept {return(std::hash<std::string_view>()(text));}
 		};
 
 		/*
 		**	The value entries for the INI file are stored as objects of this type.
 		**	The entry identifier and value string are combined into this object.
 		*/
-		struct INIEntry : public Node<INIEntry *> {
-			INIEntry(char * entry = NULL, char * value = NULL, INIComment * prefix_comment = NULL, char * line_comment = NULL, int comment_col = 0, int assign_col = 0, int value_col = 0) :
-				Entry(entry),
-				Value(value),
-				PrefixComment(prefix_comment),
-				LineComment(line_comment),
-				AssignColumn(assign_col),
-				ValueColumn(value_col),
-				CommentColumn(comment_col)
-			{
-			}
+		struct INIEntry {
+			INIEntry(void) = default;
+			INIEntry(INIEntry const &) = delete;
+			INIEntry & operator = (INIEntry const &) = delete;
 
-			~INIEntry(void);
-			int Index_ID(void) const {return(CRCEngine()(Entry, strlen(Entry)));};
-
-			char * Entry;
-			char * Value;
+			std::string Entry;
+			std::string Value;
 
 			/*
-			 * This is the chain of comment lines that sat immediately above this entry in
-			 * the file. Save writes them back out ahead of the entry, so that a comment
-			 * stays with the line it was written for.
-			 */
-			INIComment * PrefixComment;
+			**	The comment lines that sat immediately above this entry in the file.
+			*/
+			INICommentBlock PrefixComment;
 
 			/*
-			 * This is the comment text that trailed this entry on its own line, with the
-			 * semicolon that introduced it stripped off. If the entry carried no trailing
-			 * comment, then this is NULL.
-			 */
-			char * LineComment;
+			**	The comment text that trailed this entry on its own line, with the semicolon
+			**	that introduced it stripped off. It is empty when the entry carried no
+			**	trailing comment; a bare semicolon gives an empty but present comment.
+			*/
+			std::optional<std::string> LineComment;
 
 			/*
-			 * These are the columns that the assignment character, the value, and the
-			 * trailing comment stood at in the file this entry was read from. Save pads each
-			 * line out with spaces to put them back, so that rewriting a database preserves
-			 * the layout its author gave it.
-			 */
-			int AssignColumn;
-			int ValueColumn;
-			int CommentColumn;
+			**	The columns that the assignment character, the value, and the trailing comment
+			**	stood at in the file this entry was read from. Save pads each line out with
+			**	spaces to put them back, so that rewriting a database preserves the layout its
+			**	author gave it.
+			*/
+			int AssignColumn = 0;
+			int ValueColumn = 0;
+			int CommentColumn = 0;
 
-			private:
-				/*
-				**	Ensure that the copy constructor and assignment operator never exist.
-				*/
-				INIEntry(INIEntry const & rvalue);
-				INIEntry operator = (INIEntry const & rvalue);
+			/*
+			**	The load that created this entry or last wrote to it, so that a repeat within
+			**	one file can be told from a later file overriding an earlier one. Zero marks a
+			**	value the engine stored itself.
+			*/
+			unsigned Generation = 0;
 		};
 
 		/*
 		**	Each section (bracketed) is represented by an object of this type. All entries
 		**	subordinate to this section are attached.
 		*/
-		struct INISection : public Node<INISection *> {
-			INISection(char * section, INIComment * prefixcomment = NULL) :
-				Section(section),
-				PrefixComment(prefixcomment)
-			{
-			}
-			~INISection(void);
-			INIEntry * Find_Entry(char const * entry) const;
-			int Index_ID(void) const {return(CRCEngine()(Section, strlen(Section)));};
+		struct INISection {
+			INISection(void) = default;
+			INISection(INISection const &) = delete;
+			INISection & operator = (INISection const &) = delete;
 
-			char * Section;
-			List<INIEntry *> EntryList;
-			IndexClass<int, INIEntry *> EntryIndex;
+			INIEntry * Find_Entry(char const * entry) const;
+
+			std::string Section;
 
 			/*
-			 * This is the chain of comment lines that sat immediately above this section's
-			 * header in the file. Save writes them back out ahead of the header, so that a
-			 * comment stays with the section it was written for.
-			 */
-			INIComment * PrefixComment;
+			**	The entries in file order. This order is what Save writes and what the
+			**	positional readers see, so the index below is only ever used for lookup.
+			*/
+			std::vector<std::unique_ptr<INIEntry>> EntryList;
+			std::unordered_map<std::string, INIEntry *, INIStringHash, std::equal_to<>> EntryIndex;
 
-			private:
-				/*
-				**	Ensure that the copy constructor and assignment operator never exist.
-				*/
-				INISection(INISection const & rvalue);
-				INISection operator = (INISection const & rvalue);
+			/*
+			**	The comment lines that sat immediately above this section's header in the file.
+			*/
+			INICommentBlock PrefixComment;
+
+			unsigned Generation = 0;
 		};
 
 		/*
@@ -242,25 +232,44 @@ class INIClass {
 		static char * Scan_Line_For_Columns(char * buffer, int & assign_pos, int & value_pos, int & comment_pos);
 
 		/*
-		**	This is the list of all sections within this INI file.
+		**	The sections in file order, and the lookup index over them.
 		*/
-		List<INISection *> SectionList;
+		std::vector<std::unique_ptr<INISection>> SectionList;
+		std::unordered_map<std::string, INISection *, INIStringHash, std::equal_to<>> SectionIndex;
 
-		IndexClass<int, INISection *> SectionIndex;
+	protected:
+		int Load(Straw & file, bool keepcomments, char const * source);
+
+		/*
+		**	The outcome of reading a numeric value: the entry is absent, it is present but does
+		**	not hold the numbers asked for, or every number was read.
+		*/
+		enum class INIReadResult {
+			Absent,
+			Malformed,
+			Parsed,
+		};
+
+		INIReadResult Read_Numbers(char const * section, char const * entry, int * values, int count) const;
+		INIReadResult Read_Numbers(char const * section, char const * entry, float * values, int count) const;
+		char const * Source_Of(INIEntry const & entry) const;
 
 	private:
+		INISection & Find_Or_Add_Section(std::string_view name, INICommentBlock prefix = INICommentBlock());
+		INIEntry & Store_Entry(INISection & section, std::string_view entry, std::string_view value);
+		void Remove_Entry(INISection & section, INIEntry & entry);
 
 		/*
-		 * This is the chain of comment lines that trailed the last section of the file, or
-		 * the whole of a file that held no sections at all. Save writes them back out after
-		 * everything else, so that nothing is lost off the end of the file.
-		 */
-		INIComment * TailComment;
-
-		/*
-		**	Ensure that the copy constructor and assignment operator never exist.
+		**	The comment lines that trailed the last section of the file, or the whole of a
+		**	file that held no sections at all. Save writes them back out after everything
+		**	else, so that nothing is lost off the end of the file.
 		*/
-		INIClass(INIClass const & rvalue);
-		INIClass operator = (INIClass const & rvalue);
+		INICommentBlock TailComment;
 
+		/*
+		**	The file name of each load this database has seen, indexed by generation, so that
+		**	a diagnostic can name the file a value came from. Generation zero is the engine.
+		*/
+		std::vector<std::string> SourceNames;
+		unsigned LoadGeneration = 0;
 };

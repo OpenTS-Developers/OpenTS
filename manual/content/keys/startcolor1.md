@@ -24,6 +24,6 @@ Written as a plain `red,green,blue` triplet without brackets, unlike the entries
 
 The picked color is where the [`ColorList`](/keys/colorlist/) blend starts: it stands in for the list's first entry while the particle is still on its first pair, and once the blend steps past that pair it is never used again. Leaving both ends black hands the job to the list's first entry instead, which is what most of the stock spark and railgun types do. Only [`Spark` and `Railgun`](/keys/behaveslike/#scope-particletype) particles are drawn as the lit pixel that uses the picked color; on every other behavior the pair is read and then never consulted.
 
-:::caution[A partial triplet leaves the remaining channels unpredictable]
-`StartColor1=80` starts particles at a color whose green and blue come from whatever was last in that storage; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A partial triplet reads as the default]
+`StartColor1=80` names one channel where three are needed, so the particles start at their default color and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

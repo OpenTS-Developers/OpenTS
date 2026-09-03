@@ -5,6 +5,7 @@ add_executable(SpawnContract
     "${CMAKE_CURRENT_SOURCE_DIR}/spawncontract.cpp"
     "${CMAKE_SOURCE_DIR}/code/spawnerconfig.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
+    "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/readline.cpp"
     "${CMAKE_SOURCE_DIR}/code/trim.cpp"
     "${CMAKE_SOURCE_DIR}/code/buff.cpp"
@@ -24,7 +25,13 @@ add_executable(SpawnContract
 
 target_compile_features(SpawnContract PRIVATE cxx_std_20)
 
-target_include_directories(SpawnContract PRIVATE "${CMAKE_SOURCE_DIR}/code")
+# The generated build stamp comes with dbgprint.cpp, so this target needs it too.
+target_include_directories(SpawnContract PRIVATE
+    "${CMAKE_SOURCE_DIR}/code"
+    "${OPENTS_GENERATED_DIR}"
+)
+
+add_dependencies(SpawnContract OpenTSBuildStamp)
 
 target_compile_definitions(SpawnContract PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 

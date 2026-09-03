@@ -22,6 +22,6 @@ The two glow lines blend their red onto whatever lies beneath them and leave the
 
 The color is read from the weapon in the object's first slot whichever slot fired.
 
-:::caution[A partial triplet leaves the remaining channels unpredictable]
-`LaserOuterColor=128` gives a glow whose green and blue come from whatever was last in that storage; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A partial triplet reads as the default]
+`LaserOuterColor=128` names one channel where three are needed, so the glow keeps its default color and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

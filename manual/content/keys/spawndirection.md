@@ -20,6 +20,6 @@ SpawnDirection=0,0,60 ; sparks thrown upward
 
 Only the `Spark` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it, and one caller sets it aside: each of the seven to nine systems thrown up when a vehicle or aircraft is destroyed by the firestorm warhead — the type named by [`DefaultFirestormExplosionSystem`](/keys/defaultfirestormexplosionsystem/) — picks a bias of its own at random for the whole burst instead, which is what makes those explosions differ from one another.
 
-:::danger[A value with fewer than three components crashes the game]
-`SpawnDirection=0` or `SpawnDirection=0,60` stops the game while the rules are being read, before the scenario starts; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A value with fewer than three components reads as the default]
+`SpawnDirection=0` or `SpawnDirection=0,60` is short of the three components a vector needs, so the key reads as its default and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

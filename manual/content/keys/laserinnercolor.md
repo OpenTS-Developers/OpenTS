@@ -19,6 +19,6 @@ Only the channels above zero are blended onto the terrain, so a channel left at 
 
 The figure is read from the weapon in the object's first slot whichever slot fired, so a laser weapon in the second slot borrows the first weapon's core color.
 
-:::caution[A partial triplet leaves the remaining channels unpredictable]
-`LaserInnerColor=255` gives a core whose green and blue come from whatever was last in that storage; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A partial triplet reads as the default]
+`LaserInnerColor=255` names one channel where three are needed, so the core keeps its default color and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

@@ -20,6 +20,6 @@ Three lepton components — X, Y and Z — added to the position an expiring par
 
 The offset is applied once, at the moment of the replacement, and each link of a chain adds its own: three types that each raise their successor by 150 leptons leave the last of them 300 leptons above where the chain began.
 
-:::danger[A value with fewer than three components crashes the game]
-`NextParticleOffset=0,0` stops the game while the rules are being read, before the scenario starts; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A value with fewer than three components reads as the default]
+`NextParticleOffset=0,0` is short of the three components an offset needs, so the key reads as its default and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

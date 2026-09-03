@@ -6,6 +6,6 @@ see_also: [HasRadialIndicator, "system:cloaking"]
 
 Three comma-separated channel values from `0` to `255`.
 
-:::caution[A partial triplet leaves the remaining channels unpredictable]
-`RadialColor=255` draws a ring whose green and blue come from whatever was last in that storage; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A partial triplet reads as the default]
+`RadialColor=255` names one channel where three are needed, so the ring keeps its default color and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

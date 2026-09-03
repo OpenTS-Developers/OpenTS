@@ -17,6 +17,6 @@ Three lepton components — X, Y and Z — added to the object when one of its [
 
 The offset is applied once, when the system is created. The system is attached to the object and follows it from there, so the offset fixes where the plume sits on the object rather than where it sits on the map.
 
-:::danger[A value with fewer than three components crashes the game]
-`DamageSmokeOffset=0,90` stops the game while the rules are being read, before the scenario starts; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A value with fewer than three components reads as the default]
+`DamageSmokeOffset=0,90` is short of the three components an offset needs, so the key reads as its default and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

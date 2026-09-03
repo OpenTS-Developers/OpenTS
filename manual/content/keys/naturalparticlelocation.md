@@ -21,6 +21,6 @@ The offset is also a switch. The plume is deleted when a cloaking structure turn
 Because the rebuild checks only the offset, a cloaking structure that carries a non-zero offset and no [`NaturalParticleSystem`](/keys/naturalparticlesystem/) builds a particle system out of no type at all the moment it finishes uncloaking. Reading that type's timings is the first thing the new system does, so it crashes there.
 :::
 
-:::danger[A value with fewer than three components crashes the game]
-`NaturalParticleLocation=0,-40` stops the game while the rules are being read, before the scenario starts; [INI syntax](/formats/ini-syntax/#malformed-values) explains the incomplete-value defect behind it, and why leaving the key out is safe.
+:::note[A value with fewer than three components reads as the default]
+`NaturalParticleLocation=0,-40` is short of the three components a location needs, so the key reads as its default and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::
