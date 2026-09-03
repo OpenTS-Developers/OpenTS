@@ -55,9 +55,3 @@ change record credits the author where possible.
 
 - [C&C Mod Haven](https://discord.gg/k4SVuMm)
 - [CnCNet](https://cncnet.org)
-
-## Third-party libraries
-
-- [bgfx](https://github.com/bkaradzic/bgfx), with bx and bimg, vendored
-  through [bgfx.cmake](https://github.com/bkaradzic/bgfx.cmake)
-  (BSD-2-Clause).
