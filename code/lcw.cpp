@@ -34,6 +34,9 @@
 #include	"always.h"
 #include	"lcw.h"
 
+#include <cstddef>
+#include <cstdint>
+
 
 /// <summary>
 /// Decompresses an LCW encoded data block.
@@ -228,28 +231,28 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
  */
 int LCW_Comp(void const * source, void * dest, int datasize)
 {
-	unsigned char const * const start = (unsigned char const *)source;
-	unsigned char * const first = (unsigned char *)dest;
-	unsigned char const * const end_of_data = start + datasize;
+	uint8_t const * const start = static_cast<uint8_t const *>(source);
+	uint8_t * const first = static_cast<uint8_t *>(dest);
+	uint8_t const * const end_of_data = start + datasize;
 
-	unsigned char const * si = start;
-	unsigned char * di = first;
+	uint8_t const * si = start;
+	uint8_t * di = first;
 
 	/*
 	 * The first command is always a run of literals, opened here and extended in place as
 	 * more of them are emitted.
 	 */
 	bool inlen = true;
-	unsigned char * lenoff = di;
+	uint8_t * lenoff = di;
 
 	*di++ = 0x81;
 	*di++ = *si++;
 
 	while (true) {
-		unsigned char * ndest = di;
-		unsigned char const * search = start;
-		unsigned char const * matchoff = start;
-		int count = 1;
+		uint8_t * ndest = di;
+		uint8_t const * search = start;
+		uint8_t const * matchoff = start;
+		ptrdiff_t count = 1;
 
 		/*
 		 * Find the longest run of earlier data that repeats at the current position. A
@@ -257,11 +260,11 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 		 * straight away, without disturbing the search.
 		 */
 		while (true) {
-			unsigned char const value = *si;
+			uint8_t const value = *si;
 
 			if (value == si[64]) {
-				long const left = (long)(end_of_data - si);
-				long matched = 0;
+				ptrdiff_t const left = end_of_data - si;
+				ptrdiff_t matched = 0;
 
 				while (matched < left && si[matched] == value) {
 					matched++;
@@ -276,16 +279,16 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				 * on the malformed tail described above the function, and it is kept
 				 * because the bytes it produces are the bytes callers have.
 				 */
-				long const runlength = (matched < left) ? matched : (left - 1);
+				ptrdiff_t const runlength = (matched < left) ? matched : (left - 1);
 
-				if ((unsigned long)runlength >= 65) {
+				if (static_cast<size_t>(runlength) >= 65) {
 					inlen = false;
 					si += runlength;
 					di = ndest;
 
 					*di++ = 0xFE;
-					*di++ = (unsigned char)(runlength & 0xFF);
-					*di++ = (unsigned char)((runlength >> 8) & 0xFF);
+					*di++ = static_cast<uint8_t>(runlength & 0xFF);
+					*di++ = static_cast<uint8_t>((runlength >> 8) & 0xFF);
 					*di++ = value;
 
 					ndest = di;
@@ -293,7 +296,7 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				}
 			}
 
-			long const window = (long)(si - search);
+			ptrdiff_t const window = si - search;
 
 			if (window <= 0) {
 				break;
@@ -302,10 +305,10 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 			/*
 			 * Look for somewhere earlier the current byte appears.
 			 */
-			unsigned char const * found = NULL;
+			uint8_t const * found = nullptr;
 
-			for (long i = 0; i < window; i++) {
-				unsigned char const candidate = *search++;
+			for (ptrdiff_t i = 0; i < window; i++) {
+				uint8_t const candidate = *search++;
 
 				if (candidate == value) {
 					found = search;
@@ -313,7 +316,7 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				}
 			}
 
-			if (found == NULL) {
+			if (found == nullptr) {
 				break;
 			}
 
@@ -326,8 +329,8 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				continue;
 			}
 
-			long const room = (long)(end_of_data - si);
-			long length = 0;
+			ptrdiff_t const room = end_of_data - si;
+			ptrdiff_t length = 0;
 
 			while (length < room && si[length] == (search - 1)[length]) {
 				length++;
@@ -337,14 +340,14 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				continue;
 			}
 
-			count = (int)length;
+			count = length;
 			matchoff = search - 1;
 		}
 
 		di = ndest;
 
 		if (count > 2) {
-			unsigned long const back = (unsigned long)(si - matchoff);
+			size_t const back = static_cast<size_t>(si - matchoff);
 
 			if (count <= 10 && back <= 0x0FFF) {
 
@@ -352,25 +355,25 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				 * Short run: three bits of length and twelve of distance, packed into
 				 * two bytes.
 				 */
-				*di++ = (unsigned char)((((unsigned long)(count - 3)) << 4) | ((back >> 8) & 0x0F));
-				*di++ = (unsigned char)(back & 0xFF);
+				*di++ = static_cast<uint8_t>((static_cast<size_t>(count - 3) << 4) | ((back >> 8) & 0x0F));
+				*di++ = static_cast<uint8_t>(back & 0xFF);
 			} else {
 				if (count <= 64) {
-					*di++ = (unsigned char)(0xC0 | (count - 3));
+					*di++ = static_cast<uint8_t>(0xC0 | (count - 3));
 				} else {
 					*di++ = 0xFF;
-					*di++ = (unsigned char)(count & 0xFF);
-					*di++ = (unsigned char)((count >> 8) & 0xFF);
+					*di++ = static_cast<uint8_t>(count & 0xFF);
+					*di++ = static_cast<uint8_t>((count >> 8) & 0xFF);
 				}
 
 				/*
 				 * The longer forms carry the match's position from the start of the
 				 * data rather than its distance back from here.
 				 */
-				unsigned long const offset = (unsigned long)(matchoff - start);
+				size_t const offset = static_cast<size_t>(matchoff - start);
 
-				*di++ = (unsigned char)(offset & 0xFF);
-				*di++ = (unsigned char)((offset >> 8) & 0xFF);
+				*di++ = static_cast<uint8_t>(offset & 0xFF);
+				*di++ = static_cast<uint8_t>((offset >> 8) & 0xFF);
 			}
 
 			si += count;
@@ -398,5 +401,5 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 
 	*di++ = 0x80;
 
-	return((int)(di - first));
+	return(static_cast<int>(di - first));
 }
