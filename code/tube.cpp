@@ -151,11 +151,6 @@ void TubeClass::Write_INI(CCINIClass & ini)
 }
 
 
-/// <summary>
-/// Reads the tunnels in from the map file.
-/// A tunnel is created for every entry found, and the cell each one is entered from is
-/// stamped with the index of the tunnel that leads out of it.
-/// </summary>
 // A field missing from a tunnel line reads as the fallback instead of being handed to atoi.
 static int Tube_Field(char const * token, int fallback)
 {
@@ -163,6 +158,11 @@ static int Tube_Field(char const * token, int fallback)
 }
 
 
+/// <summary>
+/// Reads the tunnels in from the map file.
+/// A tunnel is created for every entry found, and the cell each one is entered from is
+/// stamped with the index of the tunnel that leads out of it.
+/// </summary>
 void TubeClass::Read_INI(CCINIClass const & ini)
 {
 	int count = ini.Entry_Count(INI_NAME);
