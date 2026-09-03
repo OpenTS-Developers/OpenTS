@@ -217,13 +217,10 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
 
 /*
  * Compressed blocks reach save games, so this emits the same bytes the assembly it replaced
- * emitted, quirks included. Two of those quirks are worth knowing about before changing
- * anything here.
- *
- * A datasize of 1 does not produce a one byte block. The first source byte is written before
- * the loop is entered and the end is only tested after a byte has been consumed, so a second
- * byte is read past the end of the source and encoded alongside it. The block that comes out
- * expands to two bytes rather than one.
+ * emitted, with one deliberate exception. The assembly wrote the first source byte before
+ * testing for the end of the data, so a datasize of 1 read a second byte past the source and
+ * encoded both. Those blocks expanded to two bytes. The end is tested before the loop here,
+ * so a one byte block now holds one byte. Every other input encodes as it did.
  *
  * The search for a run reads sixty four bytes ahead of the current position without checking
  * that they belong to the source at all, so it can read past the end of the buffer. Only the
@@ -248,7 +245,7 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 	*di++ = 0x81;
 	*di++ = *si++;
 
-	while (true) {
+	while (si < end_of_data) {
 		uint8_t * ndest = di;
 		uint8_t const * search = start;
 		uint8_t const * matchoff = start;
@@ -273,15 +270,11 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				/*
 				 * A run that reaches the end of the source is counted one short,
 				 * because the scan it replaces stepped past the last byte it read.
-				 * With nothing left at all that count goes negative, and the test
-				 * below is unsigned, so it reads as enormous and a run is emitted
-				 * from a position that has already passed the end. That only arises
-				 * on the malformed tail described above the function, and it is kept
-				 * because the bytes it produces are the bytes callers have.
+				 * Callers hold the bytes that count produces, so it stays.
 				 */
 				ptrdiff_t const runlength = (matched < left) ? matched : (left - 1);
 
-				if (static_cast<size_t>(runlength) >= 65) {
+				if (runlength >= 65) {
 					inlen = false;
 					si += runlength;
 					di = ndest;
@@ -392,10 +385,6 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 			(*lenoff)++;
 			*di++ = *si++;
 			inlen = true;
-		}
-
-		if (si >= end_of_data) {
-			break;
 		}
 	}
 
