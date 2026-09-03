@@ -146,10 +146,11 @@ int INIClass::Load(FileClass & file, bool keepcomments)
 }
 
 
-/*
-**	Reads one line of the file, dropping carriage returns and the newline that ends it. The
-**	last line of a file is read whether or not a newline ends it.
-*/
+/// <summary>
+/// Reads one line of the file, dropping carriage returns and the newline that ends it.
+/// </summary>
+/// <returns>bool; Was a line read? The last line of a file is read whether or not a newline
+/// ends it, so only the end of the file returns false.</returns>
 static bool Read_Line(Straw & file, std::string & line)
 {
 	line.clear();
@@ -227,10 +228,8 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 			sawsection = true;
 			currentname = name;
 
-			/*
-			**	Without comments a section is only created once it has an entry, so that
-			**	an empty section never exists.
-			*/
+			// Without comments a section is only created once it has an entry, so that an
+			// empty section never exists.
 			current = Find_Section(name);
 			if (current != NULL) {
 				if (current->Generation == LoadGeneration) {
@@ -270,15 +269,24 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 		}
 
 		/*
-		**	A comment, a blank line, or a line that does not assign a value to a key stays
-		**	in the pending block, so that it is written back out when comments are kept.
+		**	Determine if this line is a comment or blank line. Throw it out if it is.
 		*/
+		// A thrown out line stays in the pending block, so that it is written back out when
+		// comments are kept.
 		Strip_Comments(buffer);
 		if (buffer[0] == '\0' || buffer[0] == ';' || buffer[0] == '=') continue;
 
+		/*
+		**	The line isn't an obvious comment. Make sure that there is the "=" character
+		**	at an appropriate spot.
+		*/
 		char * divider = strchr(buffer, '=');
 		if (divider == NULL) continue;
 
+		/*
+		**	Split the line into entry and value sections. Be sure to catch the
+		**	"=foobar" and "foobar=" cases. These lines are ignored.
+		*/
 		*divider++ = '\0';
 		strtrim(buffer);
 		if (buffer[0] == '\0') continue;
@@ -437,6 +445,10 @@ int INIClass::Save(Pipe & pipe) const
 				total += pipe.Put(entryptr->LineComment->c_str(), (int)entryptr->LineComment->size());
 			}
 
+			/*
+			**	After the last entry in this section, output an extra
+			**	blank line for readability purposes.
+			*/
 			total += pipe.Put("\r\n", strlen("\r\n"));
 		}
 	}
@@ -867,6 +879,9 @@ bool INIClass::Put_Int(char const * section, char const * entry, int number, int
  *=============================================================================================*/
 int INIClass::Get_Int(char const * section, char const * entry, int defvalue) const
 {
+	/*
+	**	Verify that the parameters are nominally correct.
+	*/
 	if (section == NULL || entry == NULL) return(defvalue);
 
 	INIEntry * entryptr = Find_Entry(section, entry);
@@ -1038,6 +1053,9 @@ bool INIClass::Put_Hex(char const * section, char const * entry, int number)
  *=============================================================================================*/
 int INIClass::Get_Hex(char const * section, char const * entry, int defvalue) const
 {
+	/*
+	**	Verify that the parameters are nominally correct.
+	*/
 	if (section == NULL || entry == NULL) return(defvalue);
 
 	INIEntry * entryptr = Find_Entry(section, entry);
@@ -1159,8 +1177,15 @@ bool INIClass::Put_String(char const * section, char const * entry, char const *
  *=============================================================================================*/
 int INIClass::Get_String(char const * section, char const * entry, char const * defvalue, char * buffer, int size) const
 {
+	/*
+	**	Verify that the parameters are nominally legal.
+	*/
 	if (buffer == NULL || size < 2 || section == NULL || entry == NULL) return(0);
 
+	/*
+	**	Fetch the entry string if it is present. If not, then the normal default
+	**	value will be used as the entry value.
+	*/
 	INIEntry * entryptr = Find_Entry(section, entry);
 	if (entryptr != NULL) {
 		defvalue = entryptr->Value.c_str();
@@ -1171,6 +1196,9 @@ int INIClass::Get_String(char const * section, char const * entry, char const * 
 		}
 	}
 
+	/*
+	**	Fill in the buffer with the entry value and return with the length of the string.
+	*/
 	if (defvalue == NULL) {
 		buffer[0] = '\0';
 		return(0);
@@ -1263,6 +1291,9 @@ bool INIClass::Put_Bool(char const * section, char const * entry, bool value)
  *=============================================================================================*/
 bool INIClass::Get_Bool(char const * section, char const * entry, bool defvalue) const
 {
+	/*
+	**	Verify that the parameters are nominally correct.
+	*/
 	if (section == NULL || entry == NULL) return(defvalue);
 
 	INIEntry * entryptr = Find_Entry(section, entry);
@@ -1637,11 +1668,13 @@ INIClass::INISection & INIClass::Find_Or_Add_Section(std::string_view name, INIC
 }
 
 
-/*
-**	An entry that already exists keeps its object, and with it its comments and layout, but
-**	moves to the end of the section so that a later assignment always stands after an
-**	earlier one.
-*/
+/// <summary>
+/// Stores a value on the entry named, creating the entry if the section lacks it.
+/// An entry that already exists keeps its object, and with it its comments and layout, but
+/// moves to the end of the section so that a later assignment always stands after an
+/// earlier one.
+/// </summary>
+/// <returns>The entry the value was stored on.</returns>
 INIClass::INIEntry & INIClass::Store_Entry(INISection & section, std::string_view entry, std::string_view value)
 {
 	auto found = section.EntryIndex.find(entry);
@@ -1678,11 +1711,11 @@ char const * INIClass::Source_Of(INIEntry const & entry) const
 }
 
 
-/*
-**	Reads count numbers separated by commas out of the text. Spaces around the commas are
-**	allowed, and whatever follows the last number is ignored. Returns how many numbers were
-**	read before the text stopped conforming.
-*/
+/// <summary>
+/// Reads count numbers separated by commas out of the text. Spaces around the commas are
+/// allowed, and whatever follows the last number is ignored.
+/// </summary>
+/// <returns>How many numbers were read before the text stopped conforming.</returns>
 template<class T, class Convert>
 static int Parse_Numbers(char const * text, T * values, int count, Convert convert)
 {

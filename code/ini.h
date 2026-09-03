@@ -131,23 +131,17 @@ class INIClass {
 		bool Put_Point(char const * section, char const * entry, TPoint2D<int> const & value);
 		bool Put_CLSID(char const * section, char const * entry, CLSID const & value);
 
-		/*
-		**	Callers size the buffers they hand to Get_String from this. It does not bound a
-		**	line of the file; the reader keeps a line of any length.
-		*/
+		// Callers size the buffers they hand to Get_String from this. It does not bound a line
+		// of the file; the reader keeps a line of any length.
 		enum {MAX_LINE_LENGTH=512};
 
-		/*
-		**	A block of lines held exactly as they were read out of the file: comments complete
-		**	with the semicolon that introduced them, and the blank lines that spaced the file
-		**	out. Save writes a block back ahead of whatever it introduced.
-		*/
+		// A block of lines held exactly as they were read out of the file: comments complete
+		// with the semicolon that introduced them, and the blank lines that spaced the file out.
+		// Save writes a block back ahead of whatever it introduced.
 		using INICommentBlock = std::vector<std::string>;
 
-		/*
-		**	Names are looked up by their raw bytes, so lookups are case sensitive. The hash is
-		**	transparent so that a C string or a view can be looked up without copying it.
-		*/
+		// Names are looked up by their raw bytes, so lookups are case sensitive. The hash is
+		// transparent so that a C string or a view can be looked up without copying it.
 		struct INIStringHash {
 			using is_transparent = void;
 			std::size_t operator () (std::string_view text) const noexcept {return(std::hash<std::string_view>()(text));}
@@ -165,39 +159,28 @@ class INIClass {
 			std::string Entry;
 			std::string Value;
 
-			/*
-			**	The comment lines that sat immediately above this entry in the file.
-			*/
+			// The comment lines that sat immediately above this entry in the file.
 			INICommentBlock PrefixComment;
 
-			/*
-			**	The comment text that trailed this entry on its own line, with the semicolon
-			**	that introduced it stripped off. It is empty when the entry carried no
-			**	trailing comment; a bare semicolon gives an empty but present comment.
-			*/
+			// The comment text that trailed this entry on its own line, with the semicolon that
+			// introduced it stripped off. It is empty when the entry carried no trailing comment;
+			// a bare semicolon gives an empty but present comment.
 			std::optional<std::string> LineComment;
 
-			/*
-			**	The columns that the assignment character, the value, and the trailing comment
-			**	stood at in the file this entry was read from. Save pads each line out with
-			**	spaces to put them back, so that rewriting a database preserves the layout its
-			**	author gave it.
-			*/
+			// The columns that the assignment character, the value, and the trailing comment stood
+			// at in the file this entry was read from. Save pads each line out with spaces to put
+			// them back, so that rewriting a database preserves the layout its author gave it.
 			int AssignColumn = 0;
 			int ValueColumn = 0;
 			int CommentColumn = 0;
 
-			/*
-			**	The load that created this entry or last wrote to it, so that a repeat within
-			**	one file can be told from a later file overriding an earlier one. Zero marks a
-			**	value the engine stored itself.
-			*/
+			// The load that created this entry or last wrote to it, so that a repeat within one
+			// file can be told from a later file overriding an earlier one. Zero marks a value the
+			// engine stored itself.
 			unsigned Generation = 0;
 
-			/*
-			**	Set once the five argument Get_String has reported cutting this value short, so
-			**	that a value read many times is reported once.
-			*/
+			// Set once the five argument Get_String has reported cutting this value short, so that
+			// a value read many times is reported once.
 			mutable bool TruncationReported = false;
 		};
 
@@ -214,16 +197,12 @@ class INIClass {
 
 			std::string Section;
 
-			/*
-			**	The entries in file order. This order is what Save writes and what the
-			**	positional readers see, so the index below is only ever used for lookup.
-			*/
+			// The entries in file order. This order is what Save writes and what the positional
+			// readers see, so the index below is only ever used for lookup.
 			std::vector<std::unique_ptr<INIEntry>> EntryList;
 			std::unordered_map<std::string, INIEntry *, INIStringHash, std::equal_to<>> EntryIndex;
 
-			/*
-			**	The comment lines that sat immediately above this section's header in the file.
-			*/
+			// The comment lines that sat immediately above this section's header in the file.
 			INICommentBlock PrefixComment;
 
 			unsigned Generation = 0;
@@ -238,19 +217,15 @@ class INIClass {
 		static void Strip_Comments(char * buffer);
 		static char * Scan_Line_For_Columns(char * buffer, int & assign_pos, int & value_pos, int & comment_pos);
 
-		/*
-		**	The sections in file order, and the lookup index over them.
-		*/
+		// The sections in file order, and the lookup index over them.
 		std::vector<std::unique_ptr<INISection>> SectionList;
 		std::unordered_map<std::string, INISection *, INIStringHash, std::equal_to<>> SectionIndex;
 
 	protected:
 		int Load(Straw & file, bool keepcomments, char const * source);
 
-		/*
-		**	The outcome of reading a numeric value: the entry is absent, it is present but does
-		**	not hold the numbers asked for, or every number was read.
-		*/
+		// The outcome of reading a numeric value: the entry is absent, it is present but does
+		// not hold the numbers asked for, or every number was read.
 		enum class INIReadResult {
 			Absent,
 			Malformed,
@@ -266,17 +241,13 @@ class INIClass {
 		INIEntry & Store_Entry(INISection & section, std::string_view entry, std::string_view value);
 		void Remove_Entry(INISection & section, INIEntry & entry);
 
-		/*
-		**	The comment lines that trailed the last section of the file, or the whole of a
-		**	file that held no sections at all. Save writes them back out after everything
-		**	else, so that nothing is lost off the end of the file.
-		*/
+		// The comment lines that trailed the last section of the file, or the whole of a file
+		// that held no sections at all. Save writes them back out after everything else, so
+		// that nothing is lost off the end of the file.
 		INICommentBlock TailComment;
 
-		/*
-		**	The file name of each load this database has seen, indexed by generation, so that
-		**	a diagnostic can name the file a value came from. Generation zero is the engine.
-		*/
+		// The file name of each load this database has seen, indexed by generation, so that a
+		// diagnostic can name the file a value came from. Generation zero is the engine.
 		std::vector<std::string> SourceNames;
 		unsigned LoadGeneration = 0;
 };
