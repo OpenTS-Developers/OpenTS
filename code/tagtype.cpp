@@ -168,8 +168,7 @@ void TagTypeClass::Read_All(CCINIClass const & ini)
 	for (int index = 0; index < len; index++) {
 		char const * entry = ini.Get_Entry(INI_NAME, index);
 		assert(entry != NULL);
-		char name[24];
-		if (ini.Get_String(INI_NAME, entry, "", name, sizeof(name)) <= 0) {
+		if (ini.Get_String(INI_NAME, entry).empty()) {
 			continue;
 		}
 		TagTypeClass * tag = Find_Or_Make(entry);
