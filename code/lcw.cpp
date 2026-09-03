@@ -31,9 +31,10 @@
  *   LCW_Uncomp -- Decompress an LCW encoded data block.                                       *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#include <cstddef>
 #include	"always.h"
 #include	"lcw.h"
+
+#include <cstddef>
 
 
 /// <summary>

@@ -17,7 +17,6 @@
 #pragma once
 
 #include <cstddef>
-
 #include <cstdint>
 
 #if defined(__WATCOMC__) || defined(_MSC_VER)
