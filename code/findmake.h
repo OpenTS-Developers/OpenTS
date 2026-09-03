@@ -41,12 +41,12 @@ T * TFind_Or_Make(char const * name, DynamicVectorClass<T *> const & vector)
 template<class T>
 TypeList<T const *> TGet_TypeList(CCINIClass const & ini, char const * section, char const * entry, TypeList<T const *> const & defvalue)
 {
-	char buffer[128];
+	std::string value = ini.Get_String(section, entry);
 
-	if (ini.Get_String(section, entry, "", buffer, sizeof(buffer)) != 0) {
+	if (!value.empty()) {
 		TypeList<T const *> list;
 
-		const char * token = strtok(buffer, ",");
+		const char * token = strtok(value.data(), ",");
 
 		while (token != NULL && token[0] != '\0') {
 			T const *ptr = T::Find_Or_Make(token);

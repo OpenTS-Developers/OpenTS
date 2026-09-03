@@ -493,10 +493,10 @@ AttachType TriggerTypeClass::Attaches_To(void) const
  *=============================================================================================*/
 bool TriggerTypeClass::Read_INI(CCINIClass const & ini)
 {
-	char buffer[INIClass::MAX_LINE_LENGTH];
+	std::string line = ini.Get_String(INI_NAME, IniName);
 
-	if (ini.Get_String(INI_NAME, IniName, "", buffer, sizeof(buffer))) {
-		char * token = strtok(buffer, ",");
+	if (!line.empty()) {
+		char * token = strtok(line.data(), ",");
 		HousesType house = stricmp(token, "<none>") == 0 ? HOUSE_FIRST : HouseTypeClass::From_Name(token);
 		if (house == HOUSE_NONE || House_From_HousesType(house) == NULL) return(false);
 		House = HouseTypes[house];
@@ -534,8 +534,9 @@ bool TriggerTypeClass::Read_INI(CCINIClass const & ini)
 			Set_To_Inherit(true);
 		}
 
-		if (ini.Get_String(INI_EVENT_NAME, IniName, "", buffer, sizeof(buffer))) {
-			int count = atoi(strtok(buffer, ","));
+		line = ini.Get_String(INI_EVENT_NAME, IniName);
+		if (!line.empty()) {
+			int count = atoi(strtok(line.data(), ","));
 			while (count) {
 				TEventClass * tevent = new TEventClass;
 				tevent->Read_INI();
@@ -545,8 +546,9 @@ bool TriggerTypeClass::Read_INI(CCINIClass const & ini)
 			}
 		}
 
-		if (ini.Get_String(INI_ACTION_NAME, IniName, "", buffer, sizeof(buffer))) {
-			int count = atoi(strtok(buffer, ","));
+		line = ini.Get_String(INI_ACTION_NAME, IniName);
+		if (!line.empty()) {
+			int count = atoi(strtok(line.data(), ","));
 			FirstAction = NULL;
 			TActionClass * last = NULL;
 

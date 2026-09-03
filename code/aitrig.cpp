@@ -666,11 +666,11 @@ bool AITriggerTypeClass::Read_INI(CCINIClass const & ini)
 	char *tok;
 	char objname[24];
 	char teamname[24];
-	char buf[INIClass::MAX_LINE_LENGTH];
 
-	if (ini.Get_String(INI_NAME, (const char *)IniName, "", buf, sizeof(buf))) {
+	std::string line = ini.Get_String(INI_NAME, (const char *)IniName);
+	if (!line.empty()) {
 
-		tok = strtok(buf, ",");
+		tok = strtok(line.data(), ",");
 		if (tok == NULL) {
 			return(false);
 		}

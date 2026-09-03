@@ -156,28 +156,33 @@ void TubeClass::Write_INI(CCINIClass & ini)
 /// A tunnel is created for every entry found, and the cell each one is entered from is
 /// stamped with the index of the tunnel that leads out of it.
 /// </summary>
+// A field missing from a tunnel line reads as the fallback instead of being handed to atoi.
+static int Tube_Field(char const * token, int fallback)
+{
+	return(token != NULL ? atoi(token) : fallback);
+}
+
+
 void TubeClass::Read_INI(CCINIClass const & ini)
 {
-	char buffer[INIClass::MAX_LINE_LENGTH];
-
 	int count = ini.Entry_Count(INI_NAME);
 
 	for (int index = 0; index < count; index++) {
 
 		char const * entry = ini.Get_Entry(INI_NAME, index);
-		ini.Get_String(INI_NAME, entry, NULL, buffer, sizeof(buffer));
+		std::string line = ini.Get_String(INI_NAME, entry);
 
 		TubeClass * tube = new TubeClass(Cell(0,0));
 
-		tube->Enter.X = atoi(strtok(buffer, ","));
-		tube->Enter.Y = atoi(strtok(NULL, ","));
-		tube->EnterDir = (FacingType)atoi(strtok(NULL, ","));
-		tube->Exit.X = atoi(strtok(NULL, ","));
-		tube->Exit.Y = atoi(strtok(NULL, ","));
+		tube->Enter.X = Tube_Field(strtok(line.data(), ","), 0);
+		tube->Enter.Y = Tube_Field(strtok(NULL, ","), 0);
+		tube->EnterDir = (FacingType)Tube_Field(strtok(NULL, ","), 0);
+		tube->Exit.X = Tube_Field(strtok(NULL, ","), 0);
+		tube->Exit.Y = Tube_Field(strtok(NULL, ","), 0);
 
 		tube->Count = -1;
 		for (int dir = 0; dir < 100; dir++) {
-			tube->Dirs[dir] = (FacingType)atoi(strtok(NULL, ","));
+			tube->Dirs[dir] = (FacingType)Tube_Field(strtok(NULL, ","), (int)FACING_NONE);
 			tube->Count++;
 			if (tube->Dirs[dir] == FACING_NONE) break;
 		}

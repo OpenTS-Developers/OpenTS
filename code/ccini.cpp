@@ -1004,13 +1004,13 @@ bool CCINIClass::Put_RTTIType(char const * section, char const * entry, RTTIType
  *=============================================================================================*/
 int CCINIClass::Get_Owners(char const * section, char const * entry, int defvalue) const
 {
-	char buffer[128];
 	int ownable = defvalue;
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	std::string value = Get_String(section, entry);
+	if (!value.empty()) {
 
 		ownable = 0;
-		char * name = strtok(buffer, ",");
+		char * name = strtok(value.data(), ",");
 
 		while (name) {
 			ownable |= Owner_From_Name(name);
@@ -1579,13 +1579,13 @@ bool CCINIClass::Put_CrateType(char const * section, char const * entry, CrateTy
  *=============================================================================================*/
 int CCINIClass::Get_Buildings(char const * section, char const * entry, int defvalue) const
 {
-	char buffer[128];
 	int pre;
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	std::string value = Get_String(section, entry);
+	if (!value.empty()) {
 
 		pre = 0;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 
 			if (!strcmpi(token, "POWER")) {
@@ -1681,11 +1681,11 @@ bool CCINIClass::Put_VocType_List(char const * section, char const * entry, Type
 /// then the default value is returned.</returns>
 TypeList<int> CCINIClass::Get_IntList(const char * section, const char * entry, TypeList<int> defvalue) const
 {
-	char buffer[MAX_LINE_LENGTH];
+	std::string value = Get_String(section, entry);
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (!value.empty()) {
 		TypeList<int> list;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 			list.Add(atoi(token));
 			token = strtok(NULL, ",");
@@ -1726,10 +1726,11 @@ bool CCINIClass::Put_IntList(char const * section, char const * entry, TypeList<
 /// found, then the default value is returned.</returns>
 TypeList<int> CCINIClass::Get_Target_List(const char * section, const char * entry, TypeList<int> defvalue) const
 {
-	char buffer[MAX_LINE_LENGTH];
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	std::string value = Get_String(section, entry);
+
+	if (!value.empty()) {
 		TypeList<int> list;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 			TargetClass trgt;
 			InfantryType inf = InfantryTypeClass::From_Name(token);
@@ -1807,11 +1808,11 @@ TPoint3D<int> CCINIClass::Get_Offset(char const * section, char const * entry, T
 /// found, then the default value is returned.</returns>
 TypeList<TechnoTypeClass *> CCINIClass::Get_TechnoType_List(const char * section, const char * entry, TypeList<TechnoTypeClass *> defvalue) const
 {
-	char buffer[MAX_LINE_LENGTH];
+	std::string value = Get_String(section, entry);
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (!value.empty()) {
 		TypeList<TechnoTypeClass *> list;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 			for (int index = 0; index < TechnoTypes.Count(); index++) {
 				if (!strcmpi(token, TechnoTypes[index]->Name())) {
@@ -1855,11 +1856,11 @@ bool CCINIClass::Put_TechnoType_List(char const * section, char const * entry, T
 /// found, then the default value is returned.</returns>
 TypeList<int> CCINIClass::Get_House_List(const char * section, const char * entry, TypeList<int> defvalue) const
 {
-	char buffer[128];
+	std::string value = Get_String(section, entry);
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (!value.empty()) {
 		TypeList<int> list;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 			int house = (int)HouseTypeClass::From_Name(token);
 			if (house != HOUSE_NONE) {
@@ -1910,18 +1911,19 @@ bool CCINIClass::Put_House_List(char const * section, char const * entry, TypeLi
 /// then the default value is returned.</returns>
 TypeList<RGBClass> CCINIClass::Get_RGBClass_List(const char * section, const char * entry, TypeList<RGBClass> defvalue) const
 {
-	char buffer[MAX_LINE_LENGTH];
+	std::string value = Get_String(section, entry);
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (!value.empty()) {
 		TypeList<RGBClass> list;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 
 			RGBClass c(0,0,0);
 			bool valid = true;
 
 			if (token && *token) {
-				c.Set_Red(atoi(token + 1));
+				if (*token == '(') token++;
+				c.Set_Red(atoi(token));
 			} else {
 				valid = false;
 			}
@@ -1935,7 +1937,7 @@ TypeList<RGBClass> CCINIClass::Get_RGBClass_List(const char * section, const cha
 
 			token = strtok(NULL, ",");
 			if (token && *token) {
-				token[strlen(token) - 1] = '\0';
+				if (token[strlen(token) - 1] == ')') token[strlen(token) - 1] = '\0';
 				c.Set_Blue(atoi(token));
 			} else {
 				valid = false;
@@ -2133,11 +2135,11 @@ bool CCINIClass::Put_SpeedType(char const * section, char const * entry, SpeedTy
 /// found, then the default value is returned.</returns>
 TypeList<int> CCINIClass::Get_BuildingType_List(CCINIClass const & ini, char const * section, char const * entry, TypeList<int> defvalue)
 {
-	char buffer[128];
+	std::string value = ini.Get_String(section, entry);
 
-	if (ini.Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (!value.empty()) {
 		TypeList<int> list;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 
 			bool isgroup = false;
@@ -2194,11 +2196,11 @@ TypeList<int> CCINIClass::Get_BuildingType_List(CCINIClass const & ini, char con
 /// default value is returned.</returns>
 AbilityFlagsType CCINIClass::Get_Abilities(char const * section, char const * entry, AbilityFlagsType const & defvalue) const
 {
-	char buffer[128];
+	std::string value = Get_String(section, entry);
 
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (!value.empty()) {
 		AbilityFlagsType abilities;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 			AbilityType ability = Ability_From_Name(token);
 			if (ability != ABILITY_NONE) {

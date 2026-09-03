@@ -267,11 +267,11 @@ inline VocType CCINIClass::Get_VocType(char const * section, char const * entry,
 
 inline TypeList<int> CCINIClass::Get_VocType_List(CCINIClass const & ini, const char * section, const char * entry, TypeList<int> defvalue)
 {
-	char buffer[128];
+	std::string value = ini.Get_String(section, entry);
 
-	if (ini.Get_String(section, entry, "", buffer, sizeof(buffer))) {
+	if (!value.empty()) {
 		TypeList<int> list;
-		char * token = strtok(buffer, ",");
+		char * token = strtok(value.data(), ",");
 		while (token != NULL && *token != '\0') {
 			VocClass * voc = VocClass_From_Name(token);
 			if (voc != NULL) {
