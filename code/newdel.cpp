@@ -17,7 +17,7 @@
 #ifdef STEVES_NEW_CATCHER
 
 #include <crtdbg.h>
-#include <new.h>
+#include <new>
 
 
 /// <summary>

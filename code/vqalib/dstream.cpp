@@ -45,7 +45,15 @@
 #include	"vqaplayp.h"
 #include	<stdio.h>
 #include	<fcntl.h>
+#ifdef _WIN32
 #include	<io.h>
+#else
+#include	<unistd.h>
+#endif
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 #include	<string.h>
 
 

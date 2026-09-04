@@ -33,7 +33,11 @@
 
 #include "win.h"
 
+#ifdef _WIN32
 #include <sal.h>
+#else
+#define _Printf_format_string_
+#endif
 
 // Posted to the main window so that a requested test fault happens inside window procedure
 // dispatch, which the operating system unwinds differently from an ordinary call.

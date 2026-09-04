@@ -43,7 +43,7 @@
 #include "voc.hh"
 
 #include <algorithm>
-#include <new.h>
+#include <new>
 
 
 /***************************************************************************

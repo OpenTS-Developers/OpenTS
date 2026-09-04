@@ -35,7 +35,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <new.h>
+#include <new>
 
 
 /*

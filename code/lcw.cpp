@@ -34,6 +34,8 @@
 #include	"always.h"
 #include	"lcw.h"
 
+#include <cstddef>
+
 
 /// <summary>
 /// Decompresses an LCW encoded data block.
