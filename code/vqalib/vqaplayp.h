@@ -446,8 +446,8 @@ typedef struct _VQAAudio {
 #define VQAABUFF_ALTLOOP	(1<<2)	// use alternative loop buffer
 
 // Draw_Frame and Page_Flip functions must be this type
-typedef long (*VQAD_FUNC)(VQAHandle *vqa);
-typedef long (*VQAP_FUNC)(VQAHandle *vqa);
+typedef VQAErrorType (*VQAD_FUNC)(VQAHandle *vqa);
+typedef VQAErrorType (*VQAP_FUNC)(VQAHandle *vqa);
 
 struct VQA_Array_Data {
 	void			**Ptr;
@@ -759,8 +759,8 @@ typedef struct _VQAHandleP {
  *-------------------------------------------------------------------------*/
 
 /* Loader/Drawer system. */
-long VQA_LoadFrame(VQAHandle *vqa);
-long VQA_Configure_Drawer(VQAHandleP *vqap);
+VQAErrorType VQA_LoadFrame(VQAHandle *vqa);
+VQAErrorType VQA_Configure_Drawer(VQAHandleP *vqap);
 long User_Update(VQAHandle *vqa);
 
 /* Timer system. */
@@ -771,7 +771,7 @@ unsigned long VQA_GetMovieTime(VQAHandle *vqa);
 
 /* Audio system. */
 #if(VQAAUDIO_ON)
-long VQA_OpenAudio(VQAHandleP *vqap);
+VQAErrorType VQA_OpenAudio(VQAHandleP *vqap);
 void VQA_CloseAudio(VQAHandleP *vqap);
 void VQA_StartAudio(VQAHandleP *vqap);
 void VQA_PauseAudio(VQAHandleP *vqap);
@@ -785,7 +785,7 @@ long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, unsigned long);
 void VQA_InitMono(VQAHandleP *vqap);
 void VQA_UpdateMono(VQAHandleP *vqap);
 
-long AllocBuffers(VQAHandleP *vqap);
+VQAErrorType AllocBuffers(VQAHandleP *vqap);
 void FreeBuffers(VQAHandleP *vqap);
 
 #endif /* VQAPLAYP_H */

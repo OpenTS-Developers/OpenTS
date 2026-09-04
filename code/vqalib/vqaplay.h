@@ -13,6 +13,8 @@
 
 #ifndef VQAPLAY_H
 #define VQAPLAY_H
+
+#include <cstdint>
 /****************************************************************************
 *
 *         C O N F I D E N T I A L -- W E S T W O O D  S T U D I O S
@@ -113,32 +115,34 @@ class VQAClass;
 #define INFINITE_LOOP	-1
 
 /* Error/Status conditions */
-#define VQAERR_OK        0
-#define VQAERR_NONE     -1  /* No error */
-#define	VQAERR_EOF      -2  /* Valid end of file */
-#define VQAERR_OPEN     -3  /* Unable to open */
-#define	VQAERR_READ     -4  /* Read error */
-#define VQAERR_WRITE    -5  /* Write error */
-#define VQAERR_SEEK     -6  /* Seek error */
-#define VQAERR_NOTVQA   -7  /* Not a valid VQA file. */
-#define VQAERR_NOMEM    -8  /* Unable to allocate memory */
-#define	VQAERR_NOBUFFER -9  /* No buffer avail for load/draw */
-#define	VQAERR_NOT_TIME -10 /* Not time for frame yet */
-#define	VQAERR_SLEEPING -11 /* Function is in a sleep state */
-#define VQAERR_VIDEO    -12 /* Video related error. */
-#define VQAERR_AUDIO    -13 /* Audio related error. */
-#define VQAERR_PAUSED   -14 /* In paused state. */
-#define VQAERR_NOTIMER  -15
-#define VQAERR_NORATE   -16
-#define VQAERR_NOCONFIG -17
-#define VQAERR_NOAUDSIZ -18
-#define VQAERR_AUDSYNC  -19
-#define VQAERR_BADBLOCK -20
-#define VQAERR_NOAHANDL -21
-#define VQAERR_SKIPDRAW -22
-#define VQAERR_SETLOOP  -23
-#define VQAERR_SETBUFFR -24
-#define VQAERR_FORCEDRW -25
+enum VQAErrorType : int32_t {
+	VQAERR_OK       = 0,
+	VQAERR_NONE     = -1,	/* No error */
+	VQAERR_EOF      = -2,	/* Valid end of file */
+	VQAERR_OPEN     = -3,	/* Unable to open */
+	VQAERR_READ     = -4,	/* Read error */
+	VQAERR_WRITE    = -5,	/* Write error */
+	VQAERR_SEEK     = -6,	/* Seek error */
+	VQAERR_NOTVQA   = -7,	/* Not a valid VQA file. */
+	VQAERR_NOMEM    = -8,	/* Unable to allocate memory */
+	VQAERR_NOBUFFER = -9,	/* No buffer avail for load/draw */
+	VQAERR_NOT_TIME = -10,	/* Not time for frame yet */
+	VQAERR_SLEEPING = -11,	/* Function is in a sleep state */
+	VQAERR_VIDEO    = -12,	/* Video related error. */
+	VQAERR_AUDIO    = -13,	/* Audio related error. */
+	VQAERR_PAUSED   = -14,	/* In paused state. */
+	VQAERR_NOTIMER  = -15,
+	VQAERR_NORATE   = -16,
+	VQAERR_NOCONFIG = -17,
+	VQAERR_NOAUDSIZ = -18,
+	VQAERR_AUDSYNC  = -19,
+	VQAERR_BADBLOCK = -20,
+	VQAERR_NOAHANDL = -21,
+	VQAERR_SKIPDRAW = -22,
+	VQAERR_SETLOOP  = -23,
+	VQAERR_SETBUFFR = -24,
+	VQAERR_FORCEDRW = -25
+};
 
 /* Event flags. */
 #define VQAEVENT_0			0
@@ -395,22 +399,22 @@ void VQA_Reset(VQAHandle *vqa);
 //VQAHandle *VQA_Alloc(void);
 //void VQA_Init(VQAHandle *, long (*)());
 /* File routines. */
-long VQA_Open(char const *, _VQAConfig *, VQAHandle **vqa);
+VQAErrorType VQA_Open(char const *, _VQAConfig *, VQAHandle **vqa);
 void VQA_Free(VQAHandle *vqa);
 void VQA_Close(VQAHandle *vqa);
 long VQA_Play(VQAHandle *vqa, long, int flags);
 long VQA_SeekFrame(VQAHandle *vqa, long framenum, long fromwhere);
 long VQA_SetStop(VQAHandle *vqa, long stop);
-long VQA_SetLoop(VQAHandle *vqa, int id, int iterations, int mode);
-long VQA_SetLoop_Internal(VQAHandle *vqa, int start, int end, int iterations, int mode);
+VQAErrorType VQA_SetLoop(VQAHandle *vqa, int id, int iterations, int mode);
+VQAErrorType VQA_SetLoop_Internal(VQAHandle *vqa, int start, int end, int iterations, int mode);
 
-long VQA_SetUnVQ(VQAHandle *vqa, UNVQ_FUNC unvq1, UNVQ_FUNC unvq2);
+VQAErrorType VQA_SetUnVQ(VQAHandle *vqa, UNVQ_FUNC unvq1, UNVQ_FUNC unvq2);
 
-long VQA_Set_DrawBuffer(VQAHandle *vqa, unsigned char *buffer, unsigned long width, unsigned long height, long xpos, long ypos);
-long VQA_ResetLastFrameNum(VQAHandle *vqa);
+VQAErrorType VQA_Set_DrawBuffer(VQAHandle *vqa, unsigned char *buffer, unsigned long width, unsigned long height, long xpos, long ypos);
+VQAErrorType VQA_ResetLastFrameNum(VQAHandle *vqa);
 
 /* Information/statistics access routines. */
-long VQA_GetBlockInfo(VQAHandle *vqa, long & blockw, long & blockh, long & clrmode);
+VQAErrorType VQA_GetBlockInfo(VQAHandle *vqa, long & blockw, long & blockh, long & clrmode);
 
 #endif /* VQAPLAY_H */
 

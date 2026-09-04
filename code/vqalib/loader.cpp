@@ -72,69 +72,69 @@
  * PRIVATE DECLARATIONS
  *-------------------------------------------------------------------------*/
 
-long Load_FINF(VQAHandleP *vqap, unsigned long iffsize);
-long Load_CINF(VQAHandleP *vqap);
-long Load_PINF(VQAHandleP *vqap);
-long Load_LINF(VQAHandleP *vqap);
-long Load_CLIP(VQAHandleP *vqap, unsigned long iffsize);
-long Load_MFCI(VQAHandleP *vqap);
+VQAErrorType Load_FINF(VQAHandleP *vqap, unsigned long iffsize);
+VQAErrorType Load_CINF(VQAHandleP *vqap);
+VQAErrorType Load_PINF(VQAHandleP *vqap);
+VQAErrorType Load_LINF(VQAHandleP *vqap);
+VQAErrorType Load_CLIP(VQAHandleP *vqap, unsigned long iffsize);
+VQAErrorType Load_MFCI(VQAHandleP *vqap);
 
-long Load_MSCI(VQAHandleP *vqap);
+VQAErrorType Load_MSCI(VQAHandleP *vqap);
 
-_STATIC long Load_VQF(VQAHandleP *vqap, unsigned long frame_iffsize, char flags);
-_STATIC long Load_CBF0(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_CBFZ(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_CBP0(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_CBPZ(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_CPL0(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_CPLZ(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_VPT0(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_VPTZ(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_VQF(VQAHandleP *vqap, unsigned long frame_iffsize, char flags);
+_STATIC VQAErrorType Load_CBF0(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_CBFZ(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_CBP0(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_CBPZ(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_CPL0(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_CPLZ(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_VPT0(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_VPTZ(VQAHandleP *vqap, unsigned long iffsize);
 
 #if(VQAAUDIO_ON)
-_STATIC long Load_SND0(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_SND1(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_SND2(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_SN2J(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_SND0(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_SND1(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_SND2(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_SN2J(VQAHandleP *vqap, unsigned long iffsize);
 #endif
 
-_STATIC long Load_LINH(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_LIND(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_CINH(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_CIND(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_PINH(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_PIND(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_LINH(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_LIND(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_CINH(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_CIND(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_PINH(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_PIND(VQAHandleP *vqap, unsigned long iffsize);
 
-_STATIC long Load_MSCH(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_MSCT(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_MSCH(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_MSCT(VQAHandleP *vqap, unsigned long iffsize);
 
-_STATIC long Load_MFCH(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_MFCD(VQAHandleP *vqap, unsigned long iffsize);
-_STATIC long Load_MFCT(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_MFCH(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_MFCD(VQAHandleP *vqap, unsigned long iffsize);
+_STATIC VQAErrorType Load_MFCT(VQAHandleP *vqap, unsigned long iffsize);
 
 _STATIC long VQA_GetCodebookSize(VQAHandleP *vqap, long framenum);
-_STATIC long VQA_MFCIPrepare(VQAHandleP *vqap, unsigned long index);
+_STATIC VQAErrorType VQA_MFCIPrepare(VQAHandleP *vqap, unsigned long index);
 _STATIC long VQA_MFCICalcCount(VQAHandleP *vqap, unsigned long chunkid, long count, unsigned long value);
 _STATIC VQABool VQA_MFCISpansLoop(VQAHandleP *vqap, unsigned long chunkid, unsigned long value);
 
-_STATIC long VQA_MSCIPrepare(VQAHandleP *vqap, unsigned long index);
-_STATIC long VQA_MSCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index);
+_STATIC VQAErrorType VQA_MSCIPrepare(VQAHandleP *vqap, unsigned long index);
+_STATIC VQAErrorType VQA_MSCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index);
 
 _STATIC long VQA_MFCIIndexFromChunkID(VQAHandleP *vqap, unsigned long chunkid);
-_STATIC long VQA_MFCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index);
+_STATIC VQAErrorType VQA_MFCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index);
 _STATIC long VQA_MSCIIndexFromChunkID(VQAHandleP *vqap, unsigned long chunkid);
 
 _STATIC long VQA_GetPaletteFrameRange(VQAHandleP *vqap, long framenum, long * first_frame, long * last_frame);
-_STATIC long VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags);
+_STATIC VQAErrorType VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags);
 _STATIC long VQA_GetCodebookFrameRange(VQAHandleP *vqap, long framenum, long *first_frame, long *last_frame);
 VQABool VQA_IsFrameStartOfLoop(VQAHandleP *vqap, long framenum);
-long VQA_ReloadPalette(VQAHandleP *vqap, long framenum, int force);
-_STATIC long VQA_LoadLoop(VQAHandleP *vqap, long framenum);
+VQAErrorType VQA_ReloadPalette(VQAHandleP *vqap, long framenum, int force);
+_STATIC VQAErrorType VQA_LoadLoop(VQAHandleP *vqap, long framenum);
 
 long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes);
-_STATIC long VQA_LoadFrame_Internal(VQAHandleP *vqap, long flags);
+_STATIC VQAErrorType VQA_LoadFrame_Internal(VQAHandleP *vqap, long flags);
 
-long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool preloadaudio, VQABool reset_state, VQABool &skipcodebook);
+VQAErrorType VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool preloadaudio, VQABool reset_state, VQABool &skipcodebook);
 
 
 /****************************************************************************
@@ -174,7 +174,7 @@ long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool prel
 *     Error - 0 if successful or VQAERR_??? error code.
 *
 ****************************************************************************/
-long VQA_LoadFrame(VQAHandleP *vqap, long flags)
+VQAErrorType VQA_LoadFrame(VQAHandleP *vqap, long flags)
 {
 	VQAConfig *config;
 	VQALoader *loader;
@@ -185,7 +185,7 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 	int scan_frame;
 	int tocache;
 	VQA_H_FUNC handler;
-	unsigned int rc;
+	VQAErrorType rc;
 	int val4;
 	int fsize;
 	VQA_H_FUNC oldhandler;
@@ -262,7 +262,7 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 						config->StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, NULL, foffset);
 					}
 					if (config->StreamHandler((VQAHandle *)vqap, VQACMD_READ, &cache->Ptr[cache->Offset], tocache)) {
-						return -4;
+						return(VQAERR_READ);
 					}
 					cache->Bytes += tocache;
 				}
@@ -308,7 +308,7 @@ struct VQASN2J {
 #pragma pack(pop)
 
 
-long VQA_LoadFrame_Internal(VQAHandleP *vqap, long flags)
+VQAErrorType VQA_LoadFrame_Internal(VQAHandleP *vqap, long flags)
 {
 	VQAConfig     *config;
 	VQALoader     *loader;
@@ -321,7 +321,7 @@ long VQA_LoadFrame_Internal(VQAHandleP *vqap, long flags)
 	VQABool      loop_loaded = 0;
 
 
-	long          rc;
+	VQAErrorType          rc;
 
 	/* Dereference commonly used data members for quicker access. */
 	config = &vqap->Config;
@@ -870,11 +870,11 @@ long VQA_LoadFrame_Internal(VQAHandleP *vqap, long flags)
 }
 
 
-long PrimeBuffers(VQAHandle *vqa)
+VQAErrorType PrimeBuffers(VQAHandle *vqa)
 {
 	VQAHandleP *vqap;
 	VQAConfig *config;
-	long rc;
+	VQAErrorType rc;
 	long i;
 
 	vqap = ((VQAHandleP *)vqa);
@@ -919,7 +919,7 @@ long VQA_MFCIIndexFromChunkID(VQAHandleP *vqap, unsigned long chunkid)
 /// <param name="iffsize">Size of IFF chunk.</param>
 /// <param name="index">Index of the multi-frame chunk table entry to read into.</param>
 /// <returns>Returns with VQAERR_NONE if successful, or a VQAERR_??? error code.</returns>
-long VQA_MFCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index)
+VQAErrorType VQA_MFCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index)
 {
 	void *buf;
 	VQALoader *loader;
@@ -986,7 +986,7 @@ long VQA_MSCIIndexFromChunkID(VQAHandleP *vqap, unsigned long chunkid)
 /// <param name="iffsize">Size of IFF chunk.</param>
 /// <param name="index">Index of the multi-stream chunk table entry to read into.</param>
 /// <returns>Returns with VQAERR_NONE if successful, or a VQAERR_??? error code.</returns>
-long VQA_MSCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index)
+VQAErrorType VQA_MSCIReadData(VQAHandleP *vqap, unsigned long iffsize, long index)
 {
 	VQAConfig *config;
 	VQALoader *loader;
@@ -1057,9 +1057,9 @@ VQABool VQA_IsFrameStartOfLoop(VQAHandleP *vqap, long framenum)
 }
 
 
-long VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags)
+VQAErrorType VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags)
 {
-	long rc = VQAERR_NONE;
+	VQAErrorType rc = VQAERR_NONE;
 	VQAConfig *config;
 	VQALoopCache *cache;
 	bool needs_seek = false;
@@ -1153,13 +1153,13 @@ long VQA_GetPaletteFrameRange(VQAHandleP *vqap, long framenum, long * first_fram
 /// </summary>
 /// <param name="framenum">The frame whose palette is required.</param>
 /// <param name="force">Non-zero to force a full reload rather than reloading only when the palette has changed.</param>
-long VQA_ReloadPalette(VQAHandleP *vqap, long framenum, int force)
+VQAErrorType VQA_ReloadPalette(VQAHandleP *vqap, long framenum, int force)
 {
 	VQALoader *loader;
 	VQAFrameNode *curframe;
 	VQAConfig *config;
 
-	long rc = -1;
+	VQAErrorType rc = VQAERR_NONE;
 
 	loader = &vqap->Loader;
 	curframe = loader->CurFrame;
@@ -1246,7 +1246,7 @@ long VQA_ReloadPalette(VQAHandleP *vqap, long framenum, int force)
 /// <param name="reset_state">Should the loader and audio state be reset before seeking?</param>
 /// <param name="skipcodebook">Set true if the full codebook is already valid, so that the caller may skip codebook assembly.</param>
 /// <returns>Returns with VQAERR_NONE if successful, or a VQAERR_??? error code.</returns>
-long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool preloadaudio, VQABool reset_state, VQABool &skipcodebook)
+VQAErrorType VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool preloadaudio, VQABool reset_state, VQABool &skipcodebook)
 {
 	//VQAHandleP   *vqap;
 	VQALoader    *loader;
@@ -1266,7 +1266,7 @@ long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool prel
 	int bytes_per_frame;
 	int preload_frames;
 	int covered_bytes;
-	unsigned int rc;
+	VQAErrorType rc;
 	bool bool2;
 	int loadflags;
 	long group_end;
@@ -1451,7 +1451,7 @@ long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool prel
 			if ( reset_state )
 			{
 				if (rc == VQAERR_NOBUFFER || rc == VQAERR_SLEEPING) {
-					rc = -1;
+					rc = VQAERR_NONE;
 				}
 			}
 
@@ -1463,7 +1463,7 @@ long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool prel
 		 */
 		if (!config->StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, (void *)SEEK_SET, VQAFRAME_OFFSET(vqap->Foff[group]))) {
 			loader->CurFrameNum = group;
-			rc = -1;
+			rc = VQAERR_NONE;
 
 			loadflags = (VQALOADF_NOPAL|VQALOADF_NOPTR);
 			if (group_index) {
@@ -1535,14 +1535,14 @@ long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool prel
 /// </summary>
 /// <param name="framenum">The loop start frame to rewind to.</param>
 /// <returns>Returns with VQAERR_NONE if successful, or a VQAERR_??? error code.</returns>
-_STATIC long VQA_LoadLoop(VQAHandleP *vqap, long framenum)
+_STATIC VQAErrorType VQA_LoadLoop(VQAHandleP *vqap, long framenum)
 {
 	VQALoader *loader;
 	VQAHeader *header;
 	VQAConfig *config;
 
 
-	long rc = VQAERR_NONE;
+	VQAErrorType rc = VQAERR_NONE;
 	VQABool skipcodebook = false;
 
 	loader = &vqap->Loader;
@@ -1608,7 +1608,7 @@ _STATIC long VQA_LoadLoop(VQAHandleP *vqap, long framenum)
 *
 ****************************************************************************/
 
-long Load_VQF(VQAHandleP *vqap, unsigned long frame_iffsize, char flags)
+VQAErrorType Load_VQF(VQAHandleP *vqap, unsigned long frame_iffsize, char flags)
 {
 	VQAFrameNode  *curframe;
 	ChunkHeader   *chunk;
@@ -1835,7 +1835,7 @@ long Load_VQF(VQAHandleP *vqap, unsigned long frame_iffsize, char flags)
 }
 
 
-long Load_CLIP(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CLIP(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, &vqap->Clipper, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -1844,7 +1844,7 @@ long Load_CLIP(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_LINF(VQAHandleP *vqap)
+VQAErrorType Load_LINF(VQAHandleP *vqap)
 {
 	unsigned long iffsize;
 	ChunkHeader chunk;
@@ -1894,7 +1894,7 @@ long Load_LINF(VQAHandleP *vqap)
 }
 
 
-long Load_LINH(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_LINH(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, &vqap->LoopInfo.Header, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -1903,7 +1903,7 @@ long Load_LINH(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_LIND(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_LIND(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, vqap->LoopInfo.Data, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -1912,7 +1912,7 @@ long Load_LIND(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_MFCI(VQAHandleP *vqap)
+VQAErrorType Load_MFCI(VQAHandleP *vqap)
 {
 	ChunkHeader chunk;
 	VQAConfig *config;
@@ -1999,7 +1999,7 @@ long Load_MFCI(VQAHandleP *vqap)
 		vqap->MemUsed += size;
 
 		for (unsigned long i = 0; i < count; i++) {
-			long rc = VQA_MFCIPrepare(vqap, i);
+			VQAErrorType rc = VQA_MFCIPrepare(vqap, i);
 			if (rc != VQAERR_NONE) {
 				return(rc);
 			}
@@ -2010,7 +2010,7 @@ long Load_MFCI(VQAHandleP *vqap)
 }
 
 
-long Load_MFCH(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_MFCH(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, &vqap->MFCInfo.Header, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2019,7 +2019,7 @@ long Load_MFCH(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_MFCD(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_MFCD(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, vqap->MFCInfo.StaticData, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2028,7 +2028,7 @@ long Load_MFCD(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_MFCT(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_MFCT(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, vqap->MFCInfo.Table, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2037,7 +2037,7 @@ long Load_MFCT(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_MSCI(VQAHandleP *vqap)
+VQAErrorType Load_MSCI(VQAHandleP *vqap)
 {
 	ChunkHeader chunk;
 	VQAConfig *config;
@@ -2100,7 +2100,7 @@ long Load_MSCI(VQAHandleP *vqap)
 		vqap->MemUsed += size;
 
 		for (unsigned long i = 0; i < count; i++) {
-			long rc = VQA_MSCIPrepare(vqap, i);
+			VQAErrorType rc = VQA_MSCIPrepare(vqap, i);
 			if (rc != VQAERR_NONE) {
 				return(rc);
 			}
@@ -2111,7 +2111,7 @@ long Load_MSCI(VQAHandleP *vqap)
 }
 
 
-long Load_MSCH(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_MSCH(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, &vqap->MSCInfo.Header, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2120,7 +2120,7 @@ long Load_MSCH(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_MSCT(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_MSCT(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, vqap->MSCInfo.Table, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2217,7 +2217,7 @@ long VQA_MFCICalcCount(VQAHandleP *vqap, unsigned long chunkid, long count, unsi
 /// </summary>
 /// <param name="index">Index of the multi-frame chunk table entry to prepare.</param>
 /// <returns>Returns with VQAERR_NONE if successful, or VQAERR_NOMEM if a buffer could not be allocated.</returns>
-long VQA_MFCIPrepare(VQAHandleP *vqap, unsigned long index)
+VQAErrorType VQA_MFCIPrepare(VQAHandleP *vqap, unsigned long index)
 {
 	VQAConfig *config;
 	unsigned long size;
@@ -2277,7 +2277,7 @@ long VQA_MFCIPrepare(VQAHandleP *vqap, unsigned long index)
 /// </summary>
 /// <param name="index">Index of the multi-stream chunk table entry to prepare.</param>
 /// <returns>Returns with VQAERR_NONE if successful, or VQAERR_NOMEM if a buffer could not be allocated.</returns>
-long VQA_MSCIPrepare(VQAHandleP *vqap, unsigned long index)
+VQAErrorType VQA_MSCIPrepare(VQAHandleP *vqap, unsigned long index)
 {
 	VQAConfig *config;
 	unsigned long size;
@@ -2412,7 +2412,7 @@ long VQA_GetCodebookFrameRange(VQAHandleP *vqap, long framenum, long *first_fram
 }
 
 
-long Load_CINF(VQAHandleP *vqap)
+VQAErrorType Load_CINF(VQAHandleP *vqap)
 {
 	int groupsize;
 	long size;
@@ -2466,7 +2466,7 @@ long Load_CINF(VQAHandleP *vqap)
 }
 
 
-long Load_CINH(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CINH(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, &vqap->CodebookInfo.Header, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2475,7 +2475,7 @@ long Load_CINH(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_CIND(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CIND(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, vqap->CodebookInfo.Data, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2484,7 +2484,7 @@ long Load_CIND(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_PINF(VQAHandleP *vqap)
+VQAErrorType Load_PINF(VQAHandleP *vqap)
 {
 	unsigned long iffsize;
 	ChunkHeader chunk;
@@ -2534,7 +2534,7 @@ long Load_PINF(VQAHandleP *vqap)
 }
 
 
-long Load_PINH(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_PINH(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, &vqap->PaletteInfo.Header, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2543,7 +2543,7 @@ long Load_PINH(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_PIND(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_PIND(VQAHandleP *vqap, unsigned long iffsize)
 {
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, vqap->PaletteInfo.Data, PADSIZE(iffsize))) {
 		return(VQAERR_READ);
@@ -2574,7 +2574,7 @@ long Load_PIND(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_FINF(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_FINF(VQAHandleP *vqap, unsigned long iffsize)
 {
 	/* Dereference commonly used data members for quicker access. */
 	/* Load the frame information table if we need to, otherwise we will
@@ -2619,7 +2619,7 @@ long Load_FINF(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-static long Load_VQHD(VQAHandleP *vqap, unsigned long iffsize)
+static VQAErrorType Load_VQHD(VQAHandleP *vqap, unsigned long iffsize)
 {
 	/* Read the header */
 	if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_READ, &vqap->Header,
@@ -2657,7 +2657,7 @@ static long Load_VQHD(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_CBF0(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CBF0(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQALoader *loader;
 	VQACBNode *curcb;
@@ -2713,7 +2713,7 @@ long Load_CBF0(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_CBFZ(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CBFZ(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQALoader     *loader;
 	VQACBNode     *curcb;
@@ -2776,7 +2776,7 @@ long Load_CBFZ(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_CBP0(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CBP0(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQALoader *loader;
 	VQACBNode *curcb;
@@ -2870,7 +2870,7 @@ long Load_CBP0(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_CBPZ(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CBPZ(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQAConfig     *config;
 	VQALoader     *loader;
@@ -2984,7 +2984,7 @@ long Load_CBPZ(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_CPL0(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CPL0(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQADrawer *drawer;
 	VQAFrameNode *curframe;
@@ -3036,7 +3036,7 @@ long Load_CPL0(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_CPLZ(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_CPLZ(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQADrawer *drawer;
 	VQAFrameNode  *curframe;
@@ -3099,7 +3099,7 @@ long Load_CPLZ(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_VPT0(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_VPT0(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQAFrameNode *curframe;
 
@@ -3142,7 +3142,7 @@ long Load_VPT0(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_VPTZ(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_VPTZ(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQAFrameNode  *curframe;
 	void          *buffer;
@@ -3199,7 +3199,7 @@ long Load_VPTZ(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_SND0(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_SND0(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQAAudio      *audio;
 	VQAConfig     *config;
@@ -3288,7 +3288,7 @@ long Load_SND0(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_SND1(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_SND1(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQAAudio      *audio;
 	VQAConfig     *config;
@@ -3419,7 +3419,7 @@ long Load_SND1(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
-long Load_SND2(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_SND2(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQAAudio      *audio;
 	VQAConfig     *config;
@@ -3500,7 +3500,7 @@ long Load_SND2(VQAHandleP *vqap, unsigned long iffsize)
 }
 
 
-long Load_SN2J(VQAHandleP *vqap, unsigned long iffsize)
+VQAErrorType Load_SN2J(VQAHandleP *vqap, unsigned long iffsize)
 {
 	unsigned long padsize;
 	VQAConfig     *config;
