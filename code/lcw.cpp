@@ -228,21 +228,21 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 	uint8_t * const first = static_cast<uint8_t *>(dest);
 	uint8_t const * const end_of_data = start + datasize;
 
-	uint8_t const * si = start;
-	uint8_t * di = first;
+	uint8_t const * srcptr = start;
+	uint8_t * dstptr = first;
 
 	/*
 	 * The first command is always a run of literals, opened here and extended in place as
 	 * more of them are emitted.
 	 */
 	bool inlen = true;
-	uint8_t * lenoff = di;
+	uint8_t * lenoff = dstptr;
 
-	*di++ = 0x81;
-	*di++ = *si++;
+	*dstptr++ = 0x81;
+	*dstptr++ = *srcptr++;
 
-	while (si < end_of_data) {
-		uint8_t * ndest = di;
+	while (srcptr < end_of_data) {
+		uint8_t * ndest = dstptr;
 		uint8_t const * search = start;
 		uint8_t const * matchoff = start;
 		ptrdiff_t count = 1;
@@ -253,14 +253,14 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 		 * straight away, without disturbing the search.
 		 */
 		while (true) {
-			uint8_t const value = *si;
-			ptrdiff_t const left = end_of_data - si;
+			uint8_t const value = *srcptr;
+			ptrdiff_t const left = end_of_data - srcptr;
 			size_t const idx = left > 64 ? 64 : left-1;
-			if (value == si[idx]) {
+			if (value == srcptr[idx]) {
 
 				ptrdiff_t matched = 0;
 
-				while (matched < left && si[matched] == value) {
+				while (matched < left && srcptr[matched] == value) {
 					matched++;
 				}
 
@@ -273,20 +273,20 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 
 				if (runlength >= 65) {
 					inlen = false;
-					si += runlength;
-					di = ndest;
+					srcptr += runlength;
+					dstptr = ndest;
 
-					*di++ = 0xFE;
-					*di++ = static_cast<uint8_t>(runlength & 0xFF);
-					*di++ = static_cast<uint8_t>((runlength >> 8) & 0xFF);
-					*di++ = value;
+					*dstptr++ = 0xFE;
+					*dstptr++ = static_cast<uint8_t>(runlength & 0xFF);
+					*dstptr++ = static_cast<uint8_t>((runlength >> 8) & 0xFF);
+					*dstptr++ = value;
 
-					ndest = di;
+					ndest = dstptr;
 					continue;
 				}
 			}
 
-			ptrdiff_t const window = si - search;
+			ptrdiff_t const window = srcptr - search;
 
 			if (window <= 0) {
 				break;
@@ -315,14 +315,14 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 			 * end a run at least as long as the best so far does not agree, it cannot
 			 * beat it.
 			 */
-			if (si[count - 1] != search[count - 2]) {
+			if (srcptr[count - 1] != search[count - 2]) {
 				continue;
 			}
 
-			ptrdiff_t const room = end_of_data - si;
+			ptrdiff_t const room = end_of_data - srcptr;
 			ptrdiff_t length = 0;
 
-			while (length < room && si[length] == (search - 1)[length]) {
+			while (length < room && srcptr[length] == (search - 1)[length]) {
 				length++;
 			}
 
@@ -334,10 +334,10 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 			matchoff = search - 1;
 		}
 
-		di = ndest;
+		dstptr = ndest;
 
 		if (count > 2) {
-			size_t const back = static_cast<size_t>(si - matchoff);
+			size_t const back = static_cast<size_t>(srcptr - matchoff);
 
 			if (count <= 10 && back <= 0x0FFF) {
 
@@ -345,15 +345,15 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				 * Short run: three bits of length and twelve of distance, packed into
 				 * two bytes.
 				 */
-				*di++ = static_cast<uint8_t>((static_cast<size_t>(count - 3) << 4) | ((back >> 8) & 0x0F));
-				*di++ = static_cast<uint8_t>(back & 0xFF);
+				*dstptr++ = static_cast<uint8_t>((static_cast<size_t>(count - 3) << 4) | ((back >> 8) & 0x0F));
+				*dstptr++ = static_cast<uint8_t>(back & 0xFF);
 			} else {
 				if (count <= 64) {
-					*di++ = static_cast<uint8_t>(0xC0 | (count - 3));
+					*dstptr++ = static_cast<uint8_t>(0xC0 | (count - 3));
 				} else {
-					*di++ = 0xFF;
-					*di++ = static_cast<uint8_t>(count & 0xFF);
-					*di++ = static_cast<uint8_t>((count >> 8) & 0xFF);
+					*dstptr++ = 0xFF;
+					*dstptr++ = static_cast<uint8_t>(count & 0xFF);
+					*dstptr++ = static_cast<uint8_t>((count >> 8) & 0xFF);
 				}
 
 				/*
@@ -362,11 +362,11 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 				 */
 				size_t const offset = static_cast<size_t>(matchoff - start);
 
-				*di++ = static_cast<uint8_t>(offset & 0xFF);
-				*di++ = static_cast<uint8_t>((offset >> 8) & 0xFF);
+				*dstptr++ = static_cast<uint8_t>(offset & 0xFF);
+				*dstptr++ = static_cast<uint8_t>((offset >> 8) & 0xFF);
 			}
 
-			si += count;
+			srcptr += count;
 			inlen = false;
 		} else {
 
@@ -375,17 +375,17 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 			 * command counts up to 0x3F bytes before another has to be opened.
 			 */
 			if (!inlen || *lenoff == 0xBF) {
-				lenoff = di;
-				*di++ = 0x80;
+				lenoff = dstptr;
+				*dstptr++ = 0x80;
 			}
 
 			(*lenoff)++;
-			*di++ = *si++;
+			*dstptr++ = *srcptr++;
 			inlen = true;
 		}
 	}
 
-	*di++ = 0x80;
+	*dstptr++ = 0x80;
 
-	return(static_cast<int>(di - first));
+	return(static_cast<int>(dstptr - first));
 }
