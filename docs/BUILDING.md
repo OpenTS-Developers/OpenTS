@@ -69,7 +69,7 @@ intermediates stay in the selected build directory.
 ## Experimental clang-cl cross-build
 
 An unsupported Linux cross-build is available for compiler-portability work. It
-uses native `clang-cl`, LLD, LLVM library and resource tools, and UASM with the
+uses native `clang-cl`, LLD, and LLVM library and resource tools with the
 MSVC headers and libraries. It does not expand the supported build matrix or
 establish runtime behavior.
 
@@ -89,8 +89,8 @@ cmake -S . -B build/clang-cl -G Ninja \
 cmake --build build/clang-cl
 ```
 
-The toolchain requires `clang-cl`, `lld-link`, `llvm-lib`, `llvm-mt`, `llvm-rc`,
-and `uasm` on `PATH`. It exports `compile_commands.json`; one configuration in
+The toolchain requires `clang-cl`, `lld-link`, `llvm-lib`, `llvm-mt`, and
+`llvm-rc` on `PATH`. It exports `compile_commands.json`; one configuration in
 `.vscode/c_cpp_properties.clang.example.json` reads that file for IntelliSense.
 
 ## Build from Visual Studio Code

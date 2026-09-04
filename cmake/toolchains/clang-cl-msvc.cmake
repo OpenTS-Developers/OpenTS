@@ -69,7 +69,6 @@ find_program(_opents_lld_link lld-link REQUIRED)
 find_program(_opents_llvm_lib llvm-lib REQUIRED)
 find_program(_opents_llvm_mt llvm-mt REQUIRED)
 find_program(_opents_llvm_rc llvm-rc REQUIRED)
-find_program(_opents_uasm uasm REQUIRED)
 
 set(CMAKE_C_COMPILER "${_opents_clang_cl}")
 set(CMAKE_CXX_COMPILER "${_opents_clang_cl}")
@@ -83,7 +82,6 @@ set(CMAKE_LINKER "${_opents_lld_link}")
 set(CMAKE_AR "${_opents_llvm_lib}")
 set(CMAKE_RC_COMPILER "${_opents_llvm_rc}" CACHE FILEPATH "" FORCE)
 set(CMAKE_MT "${_opents_llvm_mt}")
-set(CMAKE_ASM_MASM_COMPILER "${_opents_uasm}" CACHE FILEPATH "" FORCE)
 
 set(CMAKE_USER_MAKE_RULES_OVERRIDE
     "${CMAKE_CURRENT_LIST_DIR}/clang-cl-rc-rules.cmake")
