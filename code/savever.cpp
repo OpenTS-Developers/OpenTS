@@ -659,18 +659,27 @@ HRESULT SaveVersionInfo::Load_String(IStorage *storage, int id, char *string)
 	}
 
 	WCHAR buf[128];
+	ULONG count;
+
 	int i = 0;
-	while (i < ARRAY_SIZE(buf) - 1) {
-		res = stm->Read(&buf[i], sizeof(buf[i]), NULL);
+	for (; i < ARRAY_SIZE(buf); i++) {
+		res = stm->Read(&buf[i], sizeof(buf[i]), &count);
 		if (FAILED(res)) {
 			return(res);
 		}
-		if (buf[i] == '\0') {
-			WideCharToMultiByte(CP_ACP, 0, buf, -1, string, ARRAY_SIZE(buf) - 1, 0, 0);
-			return(res);
+		if (res != S_OK || count != sizeof(buf[i])) {
+			return(E_FAIL);
 		}
-		i++;
+		if (buf[i] == '\0') {
+			break;
+		}
 	}
+
+	if (i == ARRAY_SIZE(buf)) {
+		return(E_FAIL);
+	}
+
+	WideCharToMultiByte(CP_ACP, 0, buf, -1, string, ARRAY_SIZE(buf) - 1, 0, 0);
 
 	return(S_OK);
 }
