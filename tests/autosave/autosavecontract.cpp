@@ -122,6 +122,12 @@ int main(void)
 
 		autosave.Set_Interval(-5);
 		Check(autosave.Interval() == 0, "an interval below zero is off");
+
+		autosave.Arm();
+		autosave.Arm();
+		Check(autosave.Take_Armed() && !autosave.Take_Armed(),
+			"explicit requests coalesce with the timed interval disabled");
+		Check(!autosave.Is_Due(100000), "an explicit request does not enable timed saves");
 	}
 
 	/*

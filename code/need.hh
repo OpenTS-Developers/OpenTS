@@ -63,4 +63,6 @@ enum NeedType {
 	NEED_TEAM_AND_TIME,			/// Team type and flash count pair.
 	NEED_ANIM,					/// Anim type.
 	NEED_TALK_BUBBLE,			/// Unit talk bubble type.
+	NEED_HOUSE_AND_CREDITS,		// House and signed credit amount pair.
+	NEED_STRUCTURE_PLACEMENT,	// House, building type, force flag and waypoint.
 };

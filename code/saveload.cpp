@@ -1157,8 +1157,7 @@ void Autosave_Service(void)
 
 	bool single = Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH;
 
-	// Every machine must save the same frame, which only a launch file's shared interval gives.
-	if (!single && (!Spawner_Is_Active() || !MultiplayerSavingAllowed)) return;
+	if (!single && !MultiplayerSavingAllowed) return;
 
 	if (Autosave.Take_Armed()) {
 		Autosave.Schedule(Frame);
@@ -1183,7 +1182,8 @@ void Autosave_Service(void)
 		return;
 	}
 
-	if (Autosave.Is_Due(Frame)) {
+	// Timed multiplayer saves require a shared launch-file interval.
+	if ((single || Spawner_Is_Active()) && Autosave.Is_Due(Frame)) {
 		Autosave.Arm();
 		Post_Save_Notice(TXT_AUTOSAVING);
 	}

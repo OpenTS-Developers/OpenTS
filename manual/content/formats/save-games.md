@@ -35,6 +35,8 @@ The dialog names a new save `SAVE` followed by four hexadecimal digits, drawing 
 
 A campaign or skirmish save requested through the save dialog is written immediately while that dialog has the scenario paused. A multiplayer click instead submits a synchronized `SAVEGAME` command. When that command executes, each peer copies one pending filename and description; duplicate commands before the frame ends share that one request. The file is written only after the command queue has finished and the end-of-frame deletion pass has retired every object already marked for removal.
 
+The [Create Autosave](/mapping/actions/taction-create-autosave/) trigger action requests an automatic save at that same frame boundary, using the slots and descriptions below. It works even when the timed interval is disabled, including multiplayer games started from the menu. Repeated trigger requests in one frame share one save; a pending multiplayer save keeps its filename, description, and saving-box setting. Playback writes nothing.
+
 Once a connection is destroyed or a synchronized `REMOVEPLAYER` command executes, multiplayer saving is disabled for the rest of that match and any pending request is cancelled. The options dialog disables its Save button in that state. Restarting the mission does not restore the button or accept another request; selecting and starting a new game does.
 
 A save that cannot be written, whether the player asked for it or the game did, says so in the message list.
@@ -45,7 +47,7 @@ The game also saves on its own at a fixed interval of frames: a game started fro
 
 A campaign writes `AUTOSAVE1.SAV` through `AUTOSAVE5.SAV` in turn and then starts over, and a skirmish writes `AUTOSAVE_SKIRMISH1.SAV` through `AUTOSAVE_SKIRMISH5.SAV` the same way; the two rings turn independently. Each is described as `Auto-Save`, its slot number and the scenario's description, so a listing tells it apart from a save the player named. Every save records the slot that follows the last one written, in both rings, and a loaded game continues from what its save records. The rings keep their positions for as long as the game runs, so a new game started from the menu carries on where the last automatic save left off rather than overwriting it, and a client-launched game starts where its launch file says.
 
-A game against other machines saves automatically only when a launch file set the interval, because every machine must write the same frame and a match arranged from the menu leaves each machine with settings of its own. Each machine then writes `SAVEGAME.NET`, described as `Multiplayer Game (Auto-Save)`, through the pending request and without the saving box a manual save shows, so a client watching the folder can number the file as it numbers a manual save. Once multiplayer saving is disabled for the match, automatic saves stop with it.
+Timed saves in a game against other machines run only when a launch file set the interval, because every machine must write the same frame and a match arranged from the menu leaves each machine with settings of its own. Each machine then writes `SAVEGAME.NET`, described as `Multiplayer Game (Auto-Save)`, through the pending request and without the saving box a manual save shows, so a client watching the folder can number the file as it numbers a manual save. Once multiplayer saving is disabled for the match, automatic saves stop with it.
 
 ## Quick saves
 

@@ -132,6 +132,16 @@ NEED_PARAMETERS = {
         {"name": "Loop count", "type": "integer"},
     ],
     "NEED_TALK_BUBBLE": [{"name": "Talk bubble", "type": "talk-bubble"}],
+    "NEED_HOUSE_AND_CREDITS": [
+        {"name": "House", "type": "house"},
+        {"name": "Credits", "type": "integer"},
+    ],
+    "NEED_STRUCTURE_PLACEMENT": [
+        {"name": "House", "type": "house"},
+        {"name": "Building type", "type": "building-type"},
+        {"name": "Force placement", "type": "boolean"},
+        {"name": "Waypoint", "type": "waypoint"},
+    ],
 }
 
 
@@ -149,9 +159,11 @@ ACTION_EXAMPLE_LAYOUTS = {
     "NEED_FLOAT": (0, "Number", None, None),
     "NEED_GLOBAL": (0, "Global variable", None, None),
     "NEED_HOUSE": (0, "House", None, None),
+    "NEED_HOUSE_AND_CREDITS": (0, "House", ("Credits", None, None, None), None),
     "NEED_LIGHT_BEHAVIOR": (0, "Spotlight behavior", None, None),
     "NEED_LOCAL": (0, "Local variable", None, None),
     "NEED_METEOR_AND_LOCATION": (0, "Meteor size", None, "Waypoint"),
+    "NEED_MISSION": (0, "Mission", None, None),
     "NEED_MOVIE": (0, "Movie", None, None),
     "NEED_NONE": (0, None, None, None),
     "NEED_NUMBER": (0, "Number", None, None),
@@ -164,6 +176,7 @@ ACTION_EXAMPLE_LAYOUTS = {
     "NEED_SPECIAL": (0, "Superweapon", None, None),
     "NEED_SPEECH": (0, "EVA speech", None, None),
     "NEED_SPEED_AND_LOCATION": (0, "Speed", None, "Waypoint"),
+    "NEED_STRUCTURE_PLACEMENT": (0, "House", ("Building type", "Force placement", None, None), "Waypoint"),
     "NEED_TAG": (3, "Tag", None, None),
     "NEED_TEAM": (1, "Team", None, None),
     "NEED_TEAM_AND_LOCATION": (1, "Team", None, "Waypoint"),
@@ -200,7 +213,7 @@ def ini_example(kind, index, need):
         if need not in ACTION_EXAMPLE_LAYOUTS:
             raise ValueError(f"action {index}: no INI example layout for {need}")
         code, primary, rectangle, final = ACTION_EXAMPLE_LAYOUTS[need]
-        rect = [placeholder(name) for name in rectangle] if rectangle else ["0"] * 4
+        rect = [placeholder(name) or "0" for name in rectangle] if rectangle else ["0"] * 4
         fields = ["1", str(index), str(code), placeholder(primary) or "0", *rect,
                   placeholder(final) or ""]
         return {"section": "[Actions]", "line": "<TriggerID>=" + ",".join(fields)}
