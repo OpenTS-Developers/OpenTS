@@ -17,6 +17,7 @@
 
 #include "_bench.h"
 #include "_command.h"
+#include "_keyboar.h"
 #include "_logic.h"
 #include "_map.h"
 #include "_palette.h"
@@ -476,6 +477,15 @@ void Ingame_Menu_Dialog(void);
  *=============================================================================================*/
 void Keyboard_Process(KeyNumType & input)
 {
+	// Windows key-repeat events never reach the keyboard buffer, so a repeatable command
+	// (e.g. map scrolling) has to be re-triggered here by polling its bound key every frame.
+	for (int index = 0; index < HotkeyCommands.Count(); index++) {
+		CommandClass const * repeatcmd = HotkeyCommands.Fetch_By_Position(index);
+		if (repeatcmd->Is_Repeatable() && Keyboard->Down(KeyNumType(HotkeyCommands.Fetch_ID_By_Position(index)))) {
+			repeatcmd->Execute();
+		}
+	}
+
 	/*
 	**	Don't do anything if there is not keyboard event.
 	*/
@@ -498,7 +508,10 @@ void Keyboard_Process(KeyNumType & input)
 
 	if (cmd != NULL) {
 
-		cmd->Execute();
+		// Repeatable commands are driven by the per-frame poll above instead.
+		if (!cmd->Is_Repeatable()) {
+			cmd->Execute();
+		}
 
 	} else {
 

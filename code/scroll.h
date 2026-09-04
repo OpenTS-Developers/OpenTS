@@ -99,6 +99,8 @@ class ScrollClass: public TabClass
 
 		void Set_Scroll_Coasting_Allowed(bool coasting) { IsCoastScrollAllowed = coasting; }
 
+		int Get_Keyboard_Scroll_Distance(void);
+
 		virtual void AI(KeyNumType &input, Point2D const & xy) override;
 		virtual void Init_IO(void) override {/*Counter = 0;*/BASECLASS::Init_IO();};
 		virtual bool Is_Scrolling(void) const override;

@@ -19,4 +19,8 @@ class CommandClass
 		virtual char const * Get_Category(void) const = 0;
 		virtual char const * Get_Description(void) const = 0;
 		virtual void Execute(void) const = 0;
+
+		// Repeatable commands re-execute every frame their bound key is held down, since
+		// Windows key-repeat events never reach the game's keyboard buffer.
+		virtual bool Is_Repeatable(void) const { return(false); }
 };
