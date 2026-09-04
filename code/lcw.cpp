@@ -107,11 +107,11 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
 
 			if (bounded && (count > (unsigned) maxlen)) {
 				count = (unsigned) maxlen;
-			} 
+			}
 
 			while (count--) {
 				*dest_ptr++ = *copy_ptr++;
-			} 
+			}
 
 		} else {
 
@@ -150,7 +150,7 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
 					}
 
 
-					while (count--) { 
+					while (count--) {
 						*dest_ptr++ = data;
 					}
 
@@ -166,7 +166,7 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
 
 						if (bounded && (count > (unsigned) maxlen)) count = (unsigned) maxlen;
 
-						while (count--) { 
+						while (count--) {
 							*dest_ptr++ = *copy_ptr++;
 						}
 
@@ -180,7 +180,7 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
 
 						if (bounded && (count > (unsigned) maxlen)) count = (unsigned) maxlen;
 
-						while (count--) { 
+						while (count--) {
 							*dest_ptr++ = *copy_ptr++;
 						}
 					}
@@ -221,10 +221,6 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
  * testing for the end of the data, so a datasize of 1 read a second byte past the source and
  * encoded both. Those blocks expanded to two bytes. The end is tested before the loop here,
  * so a one byte block now holds one byte. Every other input encodes as it did.
- *
- * The search for a run reads sixty four bytes ahead of the current position without checking
- * that they belong to the source at all, so it can read past the end of the buffer. Only the
- * comparison result is used, and the run length that follows is measured properly.
  */
 int LCW_Comp(void const * source, void * dest, int datasize)
 {
@@ -258,9 +254,10 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 		 */
 		while (true) {
 			uint8_t const value = *si;
+			ptrdiff_t const left = end_of_data - si;
+			size_t const idx = left > 64 ? 64 : left-1;
+			if (value == si[idx]) {
 
-			if (value == si[64]) {
-				ptrdiff_t const left = end_of_data - si;
 				ptrdiff_t matched = 0;
 
 				while (matched < left && si[matched] == value) {
