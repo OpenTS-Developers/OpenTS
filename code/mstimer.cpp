@@ -11,17 +11,22 @@
 
 #include "mstimer.h"
 
+#include "hostclock.h"
 #include "win.h"
 
 
 /// <summary>
-/// Asks Windows for one millisecond timer resolution.
-/// This routine is called when the timer is created so that the readings it hands out
-/// are fine grained enough for the game to pace itself by.
+/// Requests one millisecond timer resolution for as long as this object exists.
+/// The reading itself no longer needs it, since hostclock.h answers that from a clock of
+/// its own. The request is process wide, though, and every wait the game paces itself with
+/// is rounded up to whatever resolution is in force.
 /// </summary>
 MillisecondSystemTimerClass::MillisecondSystemTimerClass(void)
 {
+	// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 	timeBeginPeriod(1);
+#endif
 }
 
 
@@ -32,7 +37,10 @@ MillisecondSystemTimerClass::MillisecondSystemTimerClass(void)
 /// </summary>
 MillisecondSystemTimerClass::~MillisecondSystemTimerClass(void)
 {
+	// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 	timeEndPeriod(1);
+#endif
 }
 
 
@@ -41,10 +49,10 @@ MillisecondSystemTimerClass::~MillisecondSystemTimerClass(void)
 /// This is the sampling routine that the timer templates call whenever they need to
 /// know how much time has passed.
 /// </summary>
-/// <returns>Returns with the number of milliseconds elapsed since Windows started.</returns>
+/// <returns>Returns with the host clock's millisecond reading.</returns>
 int MillisecondSystemTimerClass::operator () (void) const
 {
-	return(timeGetTime());
+	return(Host_Milliseconds());
 }
 
 
@@ -52,8 +60,8 @@ int MillisecondSystemTimerClass::operator () (void) const
 /// Converts the timer into its current millisecond reading.
 /// This routine lets the timer object be used wherever a plain time value is expected.
 /// </summary>
-/// <returns>Returns with the number of milliseconds elapsed since Windows started.</returns>
+/// <returns>Returns with the host clock's millisecond reading.</returns>
 MillisecondSystemTimerClass::operator int (void) const
 {
-	return(timeGetTime());
+	return(Host_Milliseconds());
 }

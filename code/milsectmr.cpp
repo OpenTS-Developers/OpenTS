@@ -13,6 +13,7 @@
 
 #include "dbgprint.h"
 #include "getcpu.h"
+#include "hostclock.h"
 #include "mpu.h"
 #include "win.h"
 
@@ -29,8 +30,9 @@
 /// <summary>
 /// Creates the millisecond timer and works out how to drive it.
 /// This routine will ask the processor for its clock rate so that the cycle counter can be
-/// scaled into milliseconds. Machines that will not report a rate fall back to the Windows
-/// multimedia timer, whose resolution is raised to one millisecond for the life of the timer.
+/// scaled into milliseconds. Machines that will not report a rate fall back to the host
+/// clock instead. The resolution raised here no longer sharpens that reading, but the
+/// request is process wide and the game's waits are rounded up to whatever is in force.
 /// </summary>
 MillisecondTimerClass::MillisecondTimerClass(void)
 {
@@ -39,7 +41,10 @@ MillisecondTimerClass::MillisecondTimerClass(void)
 	unsigned int low = Get_CPU_Rate(high);
 
 	if (low == 0 && high == 0) {
+		// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 		timeBeginPeriod(PERIOD_RESOLUTION);
+#endif
 
 	} else {
 		double dl = low;
@@ -61,7 +66,10 @@ MillisecondTimerClass::MillisecondTimerClass(void)
 MillisecondTimerClass::~MillisecondTimerClass(void)
 {
 	if (Frequency != 1.0) {
+		// Windows only; no other host has a resolution to bid for.
+#ifdef _WIN32
 		timeEndPeriod(PERIOD_RESOLUTION);
+#endif
 	}
 }
 
@@ -70,8 +78,7 @@ MillisecondTimerClass::~MillisecondTimerClass(void)
 /// Fetches the current time, expressed in milliseconds.
 /// This routine is used every time the timer is read. The processor's own cycle counter
 /// supplies the value when the machine is new enough to have one, since it is both cheaper
-/// and finer grained than the system timer. Otherwise the Windows multimedia timer is
-/// consulted instead.
+/// and finer grained than the host clock. Otherwise the host clock is read instead.
 /// </summary>
 /// <returns>Returns with the current time in milliseconds.</returns>
 MillisecondTimerClass::operator double () const
@@ -93,5 +100,5 @@ MillisecondTimerClass::operator double () const
 		return(LI_TO_DBL(dh, dl) / Frequency);
 	}
 
-	return(timeGetTime());
+	return(Host_Milliseconds());
 }

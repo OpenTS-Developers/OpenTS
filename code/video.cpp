@@ -21,6 +21,7 @@
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
+#include "hostclock.h"
 #include "misc.h"
 #include "surface.h"
 #include "wincursor.h"
@@ -278,7 +279,7 @@ void Video_Present(void)
 	_Presenting = false;
 
 	_FrameIsDirty = false;
-	_LastPresentTime = timeGetTime();
+	_LastPresentTime = Host_Milliseconds();
 }
 
 
@@ -294,7 +295,7 @@ void Video_Present_If_Dirty(void)
 		return;
 	}
 
-	unsigned int now = timeGetTime();
+	unsigned int now = Host_Milliseconds();
 	if ((now - _LastPresentTime) < _PresentInterval) {
 		return;
 	}
