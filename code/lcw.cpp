@@ -215,13 +215,6 @@ uint32_t LCW_Uncomp(void const * source, void * dest, unsigned long length)
  *   05/20/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
 
-/*
- * Compressed blocks reach save games, so this emits the same bytes the assembly it replaced
- * emitted, with one deliberate exception. The assembly wrote the first source byte before
- * testing for the end of the data, so a datasize of 1 read a second byte past the source and
- * encoded both. Those blocks expanded to two bytes. The end is tested before the loop here,
- * so a one byte block now holds one byte. Every other input encodes as it did.
- */
 int LCW_Comp(void const * source, void * dest, int datasize)
 {
 	uint8_t const * const start = static_cast<uint8_t const *>(source);
@@ -255,8 +248,7 @@ int LCW_Comp(void const * source, void * dest, int datasize)
 		while (true) {
 			uint8_t const value = *srcptr;
 			ptrdiff_t const left = end_of_data - srcptr;
-			size_t const idx = left > 64 ? 64 : left-1;
-			if (value == srcptr[idx]) {
+			if (left > 64 && value == srcptr[64]) {
 
 				ptrdiff_t matched = 0;
 
