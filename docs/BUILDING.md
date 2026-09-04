@@ -93,6 +93,19 @@ The toolchain requires `clang-cl`, `lld-link`, `llvm-lib`, `llvm-mt`, `llvm-rc`,
 and `uasm` on `PATH`. It exports `compile_commands.json`; one configuration in
 `.vscode/c_cpp_properties.clang.example.json` reads that file for IntelliSense.
 
+## Experimental native build
+
+An unsupported native build for the host platform is available for portability
+work. It does not expand the supported build matrix or establish runtime
+behavior.
+
+```bash
+cmake -S . -B build/native -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DOPENTS_EXPERIMENTAL_NATIVE=ON
+cmake --build build/native
+```
+
 ## Build from Visual Studio Code
 
 With the recommended extensions installed, the repository provides:
