@@ -293,7 +293,22 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 		TEventClass * tevent = Class->FirstEvent;
 		int index = 0;
 		while (tevent != NULL) {
-			if (Is_Event_Tripped(index) || tevent->operator()(event, House_From_HousesType((HousesType)Class->House->HeapID), object, Timer, persistent, source)) {
+			bool event_tripped = Is_Event_Tripped(index);
+
+			/*
+			** A latched event only helps a persistent trigger when another event
+			** still needs to be satisfied. Keep this exception scoped to Event 35
+			** rather than changing latch behavior for other trigger events.
+			*/
+			if (event_tripped &&
+				tevent->Event == TEVENT_ENEMY_IN_SPOTLIGHT &&
+				index == 0 &&
+				tevent->Next == NULL &&
+				event != TEVENT_ENEMY_IN_SPOTLIGHT) {
+				event_tripped = false;
+			}
+
+			if (event_tripped || tevent->operator()(event, House_From_HousesType((HousesType)Class->House->HeapID), object, Timer, persistent, source)) {
 				if (persistent) {
 					if (tevent->Is_Time_Based() && tevent->Is_To_Flag_As_Tripped()) {
 						Flag_Event_Tripped(index);

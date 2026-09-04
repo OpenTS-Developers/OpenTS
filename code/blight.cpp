@@ -177,6 +177,8 @@ void BuildingLightClass::AI(void)
 		return;
 	}
 
+	bool resumed_sweep = false;
+
 	Coord coord = PositionCoord;
 	switch (Behavior) {
 		default:
@@ -188,6 +190,8 @@ void BuildingLightClass::AI(void)
 				coord = Lerp(PositionCoord, Target->PositionCoord, 0.25);
 			} else {
 				Set_Behavior_Type(LIGHT_BEHAVIOR_SWEEP);
+
+				resumed_sweep = true;
 			}
 			break;
 
@@ -248,7 +252,7 @@ void BuildingLightClass::AI(void)
 
 	BuildingClass * owner_building = (Owner->RTTI == RTTI_BUILDING) ? (BuildingClass *)Owner : NULL;
 
-	if (Behavior == LIGHT_BEHAVIOR_SWEEP) {
+	if (Behavior == LIGHT_BEHAVIOR_SWEEP && !resumed_sweep) {
 		if (owner_building != NULL && owner_building->IsActive && owner_building->Is_Powered_On() && owner_building->Tag != NULL) {
 			bool found = false;
 			Cell cell = PositionCell;
