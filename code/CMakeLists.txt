@@ -205,7 +205,6 @@ target_link_libraries(OpenTS PRIVATE
     miniaudio
     comctl32
     dbghelp
-    dsound
     iphlpapi
     psapi
     version

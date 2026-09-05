@@ -16,6 +16,7 @@
 #include "audio/audiodecode.h"
 #include "audio/audiodevice.h"
 #include "audio/audiomixer.h"
+#include "audio/audiomovieclock.h"
 #include "audio/audiostream.h"
 #include "audio/audiovoice.h"
 
@@ -366,6 +367,34 @@ void Test_Recovery(void)
 	feeder.Detach(0);
 }
 
+// The movie clock: ticks from frames heard, wall time while the sound stands
+// still, repeated blocks taken off, and a pause left out of the count.
+void Test_Movie_Clock(void)
+{
+	AudioMovieClockClass clock;
+	unsigned const rate = 22050;
+	unsigned const block = 4096;
+	unsigned const latency = 441;
+	clock.Reset(rate, block, latency, 60);
+
+	Check(clock.Ticks(0, 0, 100) == 0, "nothing heard yet");
+	Check(clock.Ticks(latency, 0, 101) == 0, "device latency is not heard");
+	Check(clock.Ticks(4410 + latency, 0, 105) == 12, "ticks follow the frames heard");
+	Check(clock.Ticks(4410 + latency, 0, 110) == 17, "wall time carries the clock while the sound stands still");
+	Check(clock.Ticks(4410 + latency, 0, 108) == 17, "the wall clock never runs the count backwards");
+	Check(clock.Ticks(8820 + latency, 0, 120) == 24, "a new position resets the count from the sound");
+	Check(clock.Ticks(8820 + latency, 1, 130) == 34, "a repeated block is taken off, so the sound seems to stand still");
+	Check(clock.Ticks(13230 + latency, 1, 140) == 24, "later frames minus the repeated block");
+
+	clock.Pause();
+	Check(clock.Is_Paused() && clock.Ticks(20000, 1, 200) == 24, "paused clock holds");
+	clock.Resume(260);
+	Check(clock.Ticks(13230 + latency, 1, 265) == 29, "the pause is left out of the count");
+	Check(clock.Pause_Adjust() == 120, "pause adjust is the wall time lost");
+	clock.Resume(300);
+	Check(clock.Ticks(13230 + latency, 1, 270) == 34, "resume while running changes nothing");
+}
+
 } // namespace
 
 
@@ -376,6 +405,7 @@ int main(void)
 	Test_Push();
 	Test_Feeder();
 	Test_Recovery();
+	Test_Movie_Clock();
 
 	std::printf("audiostream: %d checks, %d failures\n", Checked, Failures);
 	return(Failures == 0 ? 0 : 1);

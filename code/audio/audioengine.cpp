@@ -234,6 +234,7 @@ void AudioEngineClass::End(void)
 		Streams[i].Producer.reset();
 		Streams[i].Handle.Clear();
 		Streams[i].InUse = false;
+		Streams[i].External = false;
 	}
 	if (Device != nullptr) {
 		Device->Stop();
@@ -344,9 +345,64 @@ void AudioEngineClass::Close_Stream(int slot)
 void AudioEngineClass::Reap_Streams(void)
 {
 	for (int i = 0; i < AUDIO_MAX_STREAMS; i++) {
-		if (Streams[i].InUse && Pool.Is_Finished(Streams[i].Handle)) {
+		if (Streams[i].InUse && !Streams[i].External && Pool.Is_Finished(Streams[i].Handle)) {
 			Close_Stream(i);
 		}
+	}
+}
+
+
+int AudioEngineClass::Acquire_Stream_Slot(AudioStreamClass ** stream)
+{
+	if (!Available || stream == nullptr) {
+		return(-1);
+	}
+	int slot = Free_Stream_Slot();
+	if (slot < 0) {
+		return(-1);
+	}
+	Streams[slot].InUse = true;
+	Streams[slot].External = true;
+	*stream = &Streams[slot].Stream;
+	return(slot);
+}
+
+
+void AudioEngineClass::Release_Stream_Slot(int slot)
+{
+	if (slot < 0 || slot >= AUDIO_MAX_STREAMS || !Streams[slot].External) {
+		return;
+	}
+	Streams[slot].External = false;
+	Streams[slot].InUse = false;
+	Streams[slot].Handle.Clear();
+}
+
+
+unsigned AudioEngineClass::Device_Latency_Frames(void) const
+{
+	if (Device == nullptr || Device->Periods() == 0) {
+		return(0);
+	}
+	return(Device->Period_Frames() * (Device->Periods() - 1));
+}
+
+
+bool AudioEngineClass::Wait_Finished(AudioHandle handle, int ms)
+{
+	if (!Available) {
+		return(true);
+	}
+	unsigned start = Now_Ms();
+	for (;;) {
+		Pool.Service(Now_Ms());
+		if (Pool.Is_Finished(handle)) {
+			return(true);
+		}
+		if (Now_Ms() - start > (unsigned)ms) {
+			return(false);
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 }
 
@@ -466,37 +522,23 @@ void AudioEngineClass::Stop_All_Streams(void)
 	if (!Available) {
 		return;
 	}
-	bool any = false;
-	for (int i = 0; i < AUDIO_MAX_STREAMS; i++) {
-		if (Streams[i].InUse) {
-			Pool.Stop(Streams[i].Handle);
-			any = true;
-		}
-	}
-	if (!any) {
-		return;
-	}
-
 	unsigned start = Now_Ms();
-	for (;;) {
-		Pool.Service(Now_Ms());
-		Reap_Streams();
-		if (Free_Stream_Slot() == 0 && !Streams[1].InUse && !Streams[2].InUse && !Streams[3].InUse) {
-			return;
-		}
-		if (Now_Ms() - start > (unsigned)STREAM_STOP_WAIT_MS) {
-			break;
-		}
-		std::this_thread::sleep_for(std::chrono::milliseconds(1));
-	}
-
-	// A voice that has not let go by now is on a dead device; the ring stays
-	// allocated, so closing the file under it is safe.
 	for (int i = 0; i < AUDIO_MAX_STREAMS; i++) {
-		if (Streams[i].InUse) {
-			DebugString("Audio: stream %d did not stop in time\n", i);
-			Close_Stream(i);
+		if (Streams[i].InUse && !Streams[i].External) {
+			Pool.Stop(Streams[i].Handle);
 		}
+	}
+	for (int i = 0; i < AUDIO_MAX_STREAMS; i++) {
+		if (!Streams[i].InUse || Streams[i].External) {
+			continue;
+		}
+		int left = STREAM_STOP_WAIT_MS - (int)(Now_Ms() - start);
+		if (!Wait_Finished(Streams[i].Handle, left > 0 ? left : 0)) {
+			// A voice that has not let go by now is on a dead device; the ring stays
+			// allocated, so closing the file under it is safe.
+			DebugString("Audio: stream %d did not stop in time\n", i);
+		}
+		Close_Stream(i);
 	}
 }
 

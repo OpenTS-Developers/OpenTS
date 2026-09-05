@@ -178,7 +178,6 @@ VQAClass::VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surf
 	} else {
 		Config.TimerCallback = Timer_Callback_Audio_Handler;
 		Config.RefreshRate = 60;
-		Config.LatencyAdjustment = Options.SoundLatency;
 	}
 
 	Config.AudioHandler = Stream_Audio_Handler;

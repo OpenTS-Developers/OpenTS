@@ -81,7 +81,20 @@ class AudioEngineClass
 		AudioEventPoolClass const & Events(void) const { return(Pool); }
 		AudioSampleCacheClass & Samples(void) { return(Cache); }
 		AudioMixerClass & Mixer_Ref(void) { return(Mixer); }
+		AudioFeederClass & Feeder_Ref(void) { return(Feeder); }
 		unsigned Now_Ms(void) const;
+
+		// A stream slot for a producer the caller drives itself, such as the
+		// movie sink. The caller attaches to the feeder, starts the stream
+		// event, and gives the slot back once the event is finished.
+		int Acquire_Stream_Slot(AudioStreamClass ** stream);
+		void Release_Stream_Slot(int slot);
+
+		// Frames of output the device holds beyond what the mixer has rendered.
+		unsigned Device_Latency_Frames(void) const;
+
+		// Services the pool until the event has let go of its voice, or ms pass.
+		bool Wait_Finished(AudioHandle handle, int ms);
 
 	private:
 		struct StreamSlotClass {
@@ -89,8 +102,9 @@ class AudioEngineClass
 			std::unique_ptr<AudioFileStreamProducerClass> Producer;
 			AudioHandle Handle;
 			bool InUse;
+			bool External;
 
-			StreamSlotClass(void) : InUse(false) {}
+			StreamSlotClass(void) : InUse(false), External(false) {}
 		};
 
 		static int Random_Proc(int low, int high, void * context);
