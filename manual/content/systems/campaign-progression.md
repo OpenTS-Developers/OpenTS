@@ -119,7 +119,7 @@ Whichever route chose it, the settled stage's own scenario name is uppercased an
 
 ## Losing and restarting
 
-Losing plays the mission's [`Lose`](/keys/lose/) movie and offers a replay. Accepting it, and choosing to restart from the menu during a mission, both reload the current mission and then apply the carry-over block to it, exactly as a win does. Neither plays the briefing again: the `Intro`, `Brief` and `Action` movies are shown only on the load that follows a win, and so is the objectives page a mission without a briefing movie opens with.
+Losing plays the mission's [`Lose`](/keys/lose/) movie and offers a replay. Accepting it, and choosing to restart from the menu during a mission, both reload the current mission and then apply the carry-over block to it, exactly as a win does. Neither plays the briefing again: the `Intro`, `Brief` and `Action` movies are shown only on the load that follows a win, and so is the objectives page a mission without a briefing movie opens with. The difficulty message is printed on every one of these loads.
 
 Abandoning the mission instead sets the campaign level number back to `1` and returns to the menus.
 

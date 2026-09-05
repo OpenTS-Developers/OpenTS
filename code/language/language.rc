@@ -2555,6 +2555,7 @@ BEGIN
     TXT_LOADING_IN_SECOND   "Loading in 1 second..."
     TXT_LOADING_SAVED_GAME  "Loading the saved game..."
     TXT_CHAT_HINT           "Type here to chat..."
+    TXT_DIFFICULTY_LEVEL    "Difficulty: %s"
 END
 
 #endif    // English (U.S.) resources

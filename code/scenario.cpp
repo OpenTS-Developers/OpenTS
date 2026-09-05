@@ -434,6 +434,26 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	Scen->ElapsedTimer.Start();
 	SaveManager.Autosave.Schedule(Frame);
 
+	if (Session.Type == GAME_NORMAL) {
+		/*
+		 * A mission is named by how hard it is rather than by the slot the computer plays at,
+		 * and the two run opposite ways: the computer on its easiest table is the hardest game.
+		 */
+		static int const _difficulty_names[DIFF_COUNT] = { TXT_HARD, TXT_MEDIUM, TXT_EASY };
+
+		char message[64];
+		char const * named = Session.DifficultyName;
+
+		if (named[0] == '\0') {
+			named = Fetch_String(_difficulty_names[std::clamp((int)Scen->CDifficulty, 0, DIFF_COUNT - 1)]);
+		}
+
+		sprintf(message, Fetch_String(TXT_DIFFICULTY_LEVEL), named);
+		Session.Messages.Add_Message(NULL, 0, message, PlayerPtr->Scheme,
+			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW),
+			int(Rule->MessageDelay * TICKS_PER_MINUTE));
+	}
+
 	ScenarioActive = true;
 	TacticalActive = true;
 

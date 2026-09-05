@@ -56,6 +56,8 @@ The table gives the section each kind of house ends up reading, for each setting
 
 Outside a campaign game the right-hand column reaches computer houses only. Every human house is handed slot 1 whatever the session was set to, so the setting tunes the computer alone there.
 
+A campaign mission names its difficulty in a message as it starts. The name says how hard the mission is, which is the mirror of the section the computer reads: a mission whose computer houses read `[Easy]` is announced as Hard, `[Normal]` as Medium and `[Difficult]` as Easy. A [launch file](/formats/spawn-ini/#what-a-player-is-shown) may give the setting a name of its own instead, which is how a client offering more difficulties than the game's three names the one it chose.
+
 In a campaign the handicap is given to each house as the scenario's `[Houses]` list is read, one house at a time, and the only thing that puts a house in the left-hand column is [`PlayerControl=yes`](/keys/playercontrol/) in that house's own section. More than one house may carry it, and each one that does takes the player's column.
 
 :::caution[A campaign map that omits `PlayerControl` leaves the player wearing the computer handicap]

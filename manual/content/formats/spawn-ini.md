@@ -91,6 +91,11 @@ that names none, shows its written briefing instead, on the same page the object
 brings up during play. That page appears only when the mission starts fresh; a restart and
 the replay a loss offers go straight to the map.
 
+As the mission begins, the difficulty it is played at is named in a message. The name is the
+one `DifficultyName` carries, and otherwise the game's own name for how hard the mission is,
+which mirrors `DifficultyModeComputer`: `0` is named Hard, `1` Medium and `2` Easy.
+[Difficulty settings](/systems/difficulty/) owns what the pair does.
+
 ## The options every house plays under
 
 Read from `[Settings]`: `Bases`, `Credits`, `BridgeDestroy`, `Crates`, `ShortGame`,
@@ -199,6 +204,8 @@ must be above zero, and a value the reader cannot make sense of names no positio
 which leaves the bars where the game puts its own. A picture of the size the game's own
 would have been needs no position.
 
+`DifficultyName` names the difficulty in the message a campaign mission opens with.
+
 ## A game against other machines
 
 Each machine writes its own file, with itself in `[Settings]` and everybody else in the
@@ -268,7 +275,13 @@ after forty, the waits a LAN game has always used. `MapHash` is
 not read either: the machines compare the games they have loaded before play begins, which
 settles the same question for themselves.
 
+A client that launches a custom mission writes the mission's own section into the file,
+names it with `ReadMissionSection`, and identifies it with `CustomMissionID`. None of the
+three is read. The section carries the loading-screen names another game in the series
+reads and an identity that game stamps into its saves; the picture a mission wants reaches
+this game through `CustomLoadScreen` instead.
+
 These keys are read but change nothing yet: `Tournament`, `GameID`,
 `WriteStatistics`, `BuildOffAlly`,
-`AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`,
-`QuickMatch`, and `DifficultyName`.
+`AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`, and
+`QuickMatch`.

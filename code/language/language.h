@@ -872,6 +872,7 @@
 #define TXT_LOADING_IN_SECOND           1114
 #define TXT_LOADING_SAVED_GAME          1115
 #define TXT_CHAT_HINT                   1116
+#define TXT_DIFFICULTY_LEVEL            1117
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046
