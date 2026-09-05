@@ -60,7 +60,6 @@
 **	as the largest speech sample, plus a few bytes for overhead
 **	(16 bytes is sufficient).
 */
-#define SPEECH_BUFFER_SIZE		126000L
 
 
 /**********************************************************************

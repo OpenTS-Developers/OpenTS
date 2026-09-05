@@ -332,6 +332,23 @@ AudioHandle AudioEngineClass::Open_Stream(char const * filename, AudioGroupType 
 }
 
 
+void AudioEngineClass::Stop_Stream(AudioHandle handle)
+{
+	if (!Available || handle.Is_Null()) {
+		return;
+	}
+	Pool.Stop(handle);
+	if (!Wait_Finished(handle, STREAM_STOP_WAIT_MS)) {
+		DebugString("Audio: stream did not stop in time\n");
+	}
+	for (int i = 0; i < AUDIO_MAX_STREAMS; i++) {
+		if (Streams[i].InUse && !Streams[i].External && Streams[i].Handle == handle) {
+			Close_Stream(i);
+		}
+	}
+}
+
+
 void AudioEngineClass::Close_Stream(int slot)
 {
 	StreamSlotClass & s = Streams[slot];

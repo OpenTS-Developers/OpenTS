@@ -1026,9 +1026,6 @@ void __cdecl Prog_End(void)
 		TacticalMap = NULL;
 	}
 
-	delete SpeechBuffer[0];
-	SpeechBuffer[0] = NULL;
-
 	Free_Vocs();
 
 	CDFileClass::Clear_Search_Drives();
