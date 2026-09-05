@@ -42,6 +42,7 @@
 #include "srfcache.h"
 #include "stimer.h"
 #include "timer.h"
+#include "utf8.h"
 #include "windlg.h"
 #include "winstub.h"
 #include "wsproto.h"
@@ -1126,7 +1127,9 @@ BOOL CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wp
 			SendDlgItemMessage(window, IDC_YOURNAME, WM_GETTEXT, 63, (LPARAM)name_buf);
 
 			if (strcmp(name_buf, Session.Handle)) {
-				strcpy(Session.Handle, name_buf);
+				if (UTF8::Copy(Session.Handle, sizeof(Session.Handle), name_buf) < strlen(name_buf)) {
+					SetDlgItemText(window, IDC_YOURNAME, Session.Handle);
+				}
 				Send_Join_Queries(0, 0, 1, 0);
 				_Net2DisplayUsers();
 			}
@@ -2391,7 +2394,7 @@ static void Get_Join_Responses(void)
 				// Create a new node structure, fill it in, add it to 'Games'
 				//..................................................................
 				who = new NodeNameType;
-				strcpy(who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Game.IsOpen = Session.GPacket.GameInfo.IsOpen;
 				who->Game.Addon = Session.GPacket.GameInfo.IsFirestorm;
@@ -2473,7 +2476,7 @@ static void Get_Join_Responses(void)
 				// Create & add a node to the Vector
 				//..................................................................
 				who = new NodeNameType;
-				strcpy(who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				strcpy(who->Player.Serial, Session.GPacket.Serial);
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
@@ -2885,7 +2888,7 @@ static void Get_Join_Responses(void)
 			//.....................................................................
 			if (!found) {
 				who = new NodeNameType;
-				strcpy (who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Chat.LastTime = TickCount;
 				who->Chat.LastChance = 0;
@@ -3102,7 +3105,7 @@ static void Get_Join_Responses(void)
 				// Add node to the Vector list
 				//..................................................................
 				who = new NodeNameType;
-				strcpy(who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
 				strcpy(who->Player.Serial, Session.GPacket.Serial);

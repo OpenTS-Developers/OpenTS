@@ -48,6 +48,7 @@
 #include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
+#include "utf8.h"
 #include "wsproto.h"
 
 
@@ -97,7 +98,7 @@ IPXConnClass::IPXConnClass (int numsend, int numreceive, int maxlen,
 	if (address)
 		Address = (*address);
 	ID = id;
-	strcpy (Name, name);
+	UTF8::Copy(Name, sizeof(Name), name);
 }	/* end of IPXConnClass */
 
 

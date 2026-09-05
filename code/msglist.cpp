@@ -1082,7 +1082,7 @@ int MessageListClass::Input(KeyNumType &input)
 	if (IsEdit) {
 
 
-		ascii = (KeyASCIIType)(Keyboard->To_ASCII(input) & 0x00ff);
+		ascii = (KeyASCIIType)Keyboard->To_ASCII(input);
 
 		/*
 		**	Allow numeric keypad presses to map to ascii numbers
@@ -1096,7 +1096,7 @@ int MessageListClass::Input(KeyNumType &input)
 			**	Filter out all special keys except return, escape and backspace
 			*/
 			if ((!(input & WWKEY_VK_BIT) && !(input & KN_BUTTON)
-					&& ascii >= ' ' && ascii <= 127)
+					&& UTF8::Is_Printable((char32_t)ascii))
 				|| (input & 0xff)== (KN_RETURN & 0xff)
 				|| (input & 0xff)== (KN_BACKSPACE & 0xff)
 				|| (input & 0xff)== (KN_ESC & 0xff) ) {
@@ -1147,7 +1147,7 @@ int MessageListClass::Input(KeyNumType &input)
 			//..................................................................
 			case KA_BACKSPACE & 0xff:
 				if (EditCurPos > EditInitPos) {
-					EditCurPos--;
+					EditCurPos = (int)(UTF8::Previous(EditBuf + EditInitPos, EditBuf + EditCurPos) - EditBuf);
 					EditBuf[EditCurPos] = 0;
 					retcode = 2;
 				}
@@ -1163,11 +1163,13 @@ int MessageListClass::Input(KeyNumType &input)
 			default:
 				EditLabel->Set_Focus();
 				bool overflowed = false;
-				if (ascii >= ' ' && ascii <= 127) {
-					if ( (EditCurPos - EditInitPos) < (MaxChars - 1) ) {
+				if (UTF8::Is_Printable((char32_t)ascii)) {
+					char encoded[UTF8::MAX_SEQUENCE];
+					int length = UTF8::Encode((char32_t)ascii, encoded);
+					if ( (EditCurPos - EditInitPos) + length < MaxChars ) {
 
-						EditBuf[EditCurPos] = ascii;
-						EditCurPos++;
+						memcpy(EditBuf + EditCurPos, encoded, length);
+						EditCurPos += length;
 						EditBuf[EditCurPos] = 0;
 						retcode = 1;
 
@@ -1197,8 +1199,8 @@ int MessageListClass::Input(KeyNumType &input)
 						numchars = Trim_Message (OverflowBuf, EditBuf + EditInitPos,
 							OverflowStart,OverflowEnd, 1);
 						EditCurPos -= numchars;
-						EditBuf[EditCurPos] = ascii;
-						EditCurPos++;
+						memcpy(EditBuf + EditCurPos, encoded, length);
+						EditCurPos += length;
 						EditBuf[EditCurPos] = 0;
 						retcode = 4;
 					}
