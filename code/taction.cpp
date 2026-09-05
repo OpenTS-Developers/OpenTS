@@ -51,7 +51,7 @@
 #include "_tactica.h"
 #include "_weapon.h"
 #include "anim.h"
-#include "autosave.h"
+#include "savemgr.h"
 #include "blight.h"
 #include "building.h"
 #include "builtype.h"
@@ -2635,7 +2635,7 @@ bool TActionClass::TAction_DISABLE_ALLY_REVEAL(HouseClass * , ObjectClass * , Tr
 /// </summary>
 bool TActionClass::TAction_CREATE_AUTOSAVE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Autosave.Arm();
+	SaveManager.Autosave.Arm();
 	return(true);
 }
 

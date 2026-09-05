@@ -15,7 +15,7 @@
 #include "spawnerconfig.h"
 
 #include "addon.h"
-#include "autosave.h"
+#include "savemgr.h"
 #include "campaign.h"
 #include "ccfile.h"
 #include "ccini.h"
@@ -268,8 +268,8 @@ static void Spawner_Bind_Options(void)
 /// </summary>
 static void Spawner_Bind_Autosave(void)
 {
-	Autosave.Set_Interval(SpawnConfig.AutoSaveInterval);
-	Autosave.Seed_Slots(SpawnConfig.NextCampaignAutoSave, SpawnConfig.NextSkirmishAutoSave);
+	SaveManager.Autosave.Set_Interval(SpawnConfig.AutoSaveInterval);
+	SaveManager.Autosave.Seed_Slots(SpawnConfig.NextCampaignAutoSave, SpawnConfig.NextSkirmishAutoSave);
 }
 
 

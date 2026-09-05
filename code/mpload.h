@@ -45,7 +45,5 @@ class MultiplayerLoadClass
 		int SlotNumber = -1;
 };
 
-extern MultiplayerLoadClass MultiplayerLoad;
-
 // The clock the countdown and the heartbeats are measured on.
 std::int64_t Monotonic_Milliseconds(void);

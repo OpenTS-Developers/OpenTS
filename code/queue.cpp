@@ -139,7 +139,7 @@
 #include "psystype.h"
 #include "ptype.h"
 #include "rules.h"
-#include "saveload.h"
+#include "savemgr.h"
 #include "scenario.h"
 #include "scheme.h"
 #include "script.h"
@@ -669,7 +669,7 @@ static void Queue_AI_Multiplayer(void)
 	if (Session.Type == GAME_SKIRMISH) return;
 
 	// Nothing of the running match is sent or executed once every machine has agreed to load.
-	if (Multiplayer_Load_Is_Pending()) return;
+	if (SaveManager.Multiplayer_Load_Is_Pending()) return;
 
 	//........................................................................
 	// Enums:
@@ -1240,7 +1240,7 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 		Keyboard->Check();
 
 		// A load every machine agreed on ends the wait; the main loop performs it.
-		if (Multiplayer_Load_Is_Pending()) {
+		if (SaveManager.Multiplayer_Load_Is_Pending()) {
 			if (reconnect_dlg) {
 				Close_Reconnect_Dialog();
 			}
@@ -3705,7 +3705,7 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 				}
 				Map.Flag_To_Redraw(GS_REDRAW_ALL);
 
-			} else if (Multiplayer_Load_Is_Pending()) {
+			} else if (SaveManager.Multiplayer_Load_Is_Pending()) {
 
 				// The load every machine agreed on brings them back into step.
 				return(1);

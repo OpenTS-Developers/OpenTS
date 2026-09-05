@@ -117,7 +117,7 @@
 #include "netglobal.h"
 #include "queue.h"
 #include "rules.h"
-#include "saveload.h"
+#include "savemgr.h"
 #include "session.h"
 #include "stats.h"
 #include "stimer.h"
@@ -244,7 +244,7 @@ void Destroy_Connection(int id, int error)
 	if (!housep || !housep->IsHuman)
 		return;
 
-	Disable_Multiplayer_Saving();
+	SaveManager.Disable_Multiplayer_Saving();
 
 	if (Debug_Print_Events) {
 		DebugString("Destroying connection for house %d (%s)\n",

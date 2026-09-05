@@ -49,7 +49,7 @@
 #include "pcx.h"
 #include "queue.h"
 #include "rules.h"
-#include "saveload.h"
+#include "savemgr.h"
 #include "scenario.h"
 #include "scheme.h"
 #include "session.h"
@@ -444,10 +444,7 @@ bool Main_Loop(void)
 
 		Sync_Delay();
 		Process_Deferred_Deletion();
-		Autosave_Service();
-		Quick_Save_Service();
-		Process_Pending_Save_Game();
-		Process_Pending_Load_Game();
+		SaveManager.Service();
 	}
 
 	BEnd(BENCH_GAME_FRAME);

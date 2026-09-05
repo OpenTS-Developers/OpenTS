@@ -45,7 +45,7 @@
 #include "ownrdraw.h"
 #include "queue.h"
 #include "restate.h"
-#include "saveload.h"
+#include "savemgr.h"
 #include "scenario.h"
 #include "stats.h"
 
@@ -164,7 +164,7 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 							Game_Options_On_INITDIALOG(window);
 							ShowWindow(window, SW_SHOW);
 							UpdateWindow(window);
-						} else if (Is_Multiplayer_Saving_Allowed()) {
+						} else if (SaveManager.Is_Multiplayer_Saving_Allowed()) {
 							OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SAVEGAME));
 							*retval = IDC_SAVE_GAME;
 						}
@@ -182,7 +182,7 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 								ShowWindow(window, SW_SHOW);
 								UpdateWindow(window);
 							}
-						} else if (Multiplayer_Load_Is_Allowed()) {
+						} else if (SaveManager.Multiplayer_Load_Is_Allowed()) {
 							// A list opened from in here would sit inside the main loop and stall the
 							// match; the menu loop opens it between frames instead.
 							SpecialDialog = SDLG_LOAD;
@@ -315,12 +315,12 @@ void Game_Options_On_INITDIALOG(HWND window)
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		handle = GetDlgItem(window, IDC_SAVE_GAME);
 		if (handle) {
-			EnableWindow(handle, Is_Multiplayer_Saving_Allowed());
+			EnableWindow(handle, SaveManager.Is_Multiplayer_Saving_Allowed());
 		}
 
 		handle = GetDlgItem(window, IDC_LOAD_GAME);
 		if (handle) {
-			EnableWindow(handle, Multiplayer_Load_Is_Allowed() && MultiplayerLoadOptionsClass().Files_Present());
+			EnableWindow(handle, SaveManager.Multiplayer_Load_Is_Allowed() && MultiplayerLoadOptionsClass().Files_Present());
 		}
 	}
 

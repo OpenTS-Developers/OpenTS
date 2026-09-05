@@ -30,7 +30,7 @@
 #include "netdlg.h"
 #include "netglobal.h"
 #include "ownrdraw.h"
-#include "saveload.h"
+#include "savemgr.h"
 #include "session.h"
 #include "srfcache.h"
 #include "syncreport.h"
@@ -108,14 +108,14 @@ DesyncDialogClass::OutcomeType DesyncDialogClass::Run(void)
 				EnableWindow(GetDlgItem(Window, IDC_DESYNC_QUIT), TRUE);
 			}
 
-			if (!CountdownActive && MultiplayerLoad.Is_Pending()) {
+			if (!CountdownActive && SaveManager.MultiplayerLoad.Is_Pending()) {
 				Start_Countdown();
 			}
 
 			if (CountdownActive) {
 				Update_Countdown_Text();
 				InvalidateRect(Window, NULL, FALSE);
-				if (MultiplayerLoad.Is_Due(now)) {
+				if (SaveManager.MultiplayerLoad.Is_Due(now)) {
 					outcome = OutcomeType::Load;
 					break;
 				}
@@ -127,7 +127,7 @@ DesyncDialogClass::OutcomeType DesyncDialogClass::Run(void)
 				break;
 			} else if (Decision == IDC_DESYNC_LOAD) {
 				EnableWindow(Window, FALSE);
-				Multiplayer_Load_Prompt();
+				SaveManager.Multiplayer_Load_Prompt();
 				EnableWindow(Window, TRUE);
 				SetFocus(GetDlgItem(Window, IDC_DESYNC_PLAYER_LIST));
 			}
@@ -258,7 +258,7 @@ void DesyncDialogClass::Create_Dialog(void)
 	Update_Player_List();
 
 	if (IsHostDialog) {
-		bool const can_load = Multiplayer_Load_Is_Allowed() && MultiplayerLoadOptionsClass().Files_Present();
+		bool const can_load = SaveManager.Multiplayer_Load_Is_Allowed() && MultiplayerLoadOptionsClass().Files_Present();
 		EnableWindow(GetDlgItem(Window, IDC_DESYNC_LOAD), can_load && !CountdownActive);
 		EnableWindow(GetDlgItem(Window, IDC_DESYNC_CONTINUE), !CountdownActive);
 	} else {
@@ -592,11 +592,11 @@ void DesyncDialogClass::Start_Countdown(void)
 
 void DesyncDialogClass::Update_Countdown_Text(void)
 {
-	if (!Is_Active() || !CountdownActive || !MultiplayerLoad.Is_Pending()) {
+	if (!Is_Active() || !CountdownActive || !SaveManager.MultiplayerLoad.Is_Pending()) {
 		return;
 	}
 
-	int const seconds = MultiplayerLoad.Seconds_Left(Monotonic_Milliseconds());
+	int const seconds = SaveManager.MultiplayerLoad.Seconds_Left(Monotonic_Milliseconds());
 	if (seconds == LastCountdownSecond) {
 		return;
 	}
@@ -615,7 +615,7 @@ void DesyncDialogClass::Update_Countdown_Text(void)
 /// </summary>
 void DesyncDialogClass::Draw_Countdown_Bar(HWND window)
 {
-	if (!CountdownActive || !MultiplayerLoad.Is_Pending()) {
+	if (!CountdownActive || !SaveManager.MultiplayerLoad.Is_Pending()) {
 		return;
 	}
 
@@ -634,7 +634,7 @@ void DesyncDialogClass::Draw_Countdown_Bar(HWND window)
 	bar_rect.Height = winrect.bottom - winrect.top;
 
 	int const total = (int)MultiplayerLoadClass::COUNTDOWN_MS;
-	int const remaining = std::clamp((int)MultiplayerLoad.Milliseconds_Left(Monotonic_Milliseconds()), 0, total);
+	int const remaining = std::clamp((int)SaveManager.MultiplayerLoad.Milliseconds_Left(Monotonic_Milliseconds()), 0, total);
 	int const elapsed = total - remaining;
 
 	unsigned short color = DSurface::Build_Hicolor_Pixel(0, 200, 0);

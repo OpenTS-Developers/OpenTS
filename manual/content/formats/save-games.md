@@ -18,6 +18,7 @@ source_files:
   - code/mpload.cpp
   - code/netdlg.cpp
   - code/saveload.cpp
+  - code/savemgr.cpp
   - code/savestream.cpp
   - code/savever.cpp
   - code/abstract.cpp

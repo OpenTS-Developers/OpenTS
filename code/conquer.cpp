@@ -107,7 +107,7 @@
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
-#include "saveload.h"
+#include "savemgr.h"
 #include "scenario.h"
 #include "session.h"
 #include "sidebar.h"
@@ -262,7 +262,7 @@ void Ingame_Menu_Dialog(void)
 					break;
 
 				case SDLG_LOAD:
-					SpecialDialog = Multiplayer_Load_Prompt() ? SDLG_NONE : SDLG_OPTIONS;
+					SpecialDialog = SaveManager.Multiplayer_Load_Prompt() ? SDLG_NONE : SDLG_OPTIONS;
 					break;
 
 				case SDLG_KEYBOARD:
@@ -678,9 +678,9 @@ void IPX_Call_Back(void)
 								Forget_Kick_Player(house);
 								Destroy_Connection(house, 0);
 								DesyncDialog.Notify_Player_Left(house, name.c_str());
-							} else if (Multiplayer_Load_Is_In_Progress()) {
+							} else if (SaveManager.Multiplayer_Load_Is_In_Progress()) {
 								// The connections are rebuilt after the load, so the seat itself goes.
-								Multiplayer_Load_Unseat(sender_index);
+								SaveManager.Multiplayer_Load_Unseat(sender_index);
 							}
 							break;
 						}
@@ -709,7 +709,7 @@ void IPX_Call_Back(void)
 							break;
 
 						case NET_LOAD_GAME:
-							Multiplayer_Load_Receive(Session.GPacket.LoadGame.Slot);
+							SaveManager.Multiplayer_Load_Receive(Session.GPacket.LoadGame.Slot);
 							break;
 
 						case NET_PROGRESS_REPORT:

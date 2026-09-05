@@ -54,6 +54,7 @@
 #include "msgbox.h"
 #include "ownrdraw.h"
 #include "saveload.h"
+#include "savemgr.h"
 #include "savever.h"
 #include "scenario.h"
 #include "session.h"
@@ -875,7 +876,7 @@ bool LoadOptionsClass::Save_File(const char * file_name, const char * descr)
 	if (dialog != 0) {
 		OwnerDraw::Display_Dialog(dialog);
 	}
-	bool saved = Request_Save_Game(file_name, descr);
+	bool saved = SaveManager.Request_Save_Game(file_name, descr);
 	if (dialog != 0) {
 		OwnerDraw::End_Dialog(dialog);
 	}

@@ -7,6 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "autosave.h"
+#include "always.h"
 
-AutosaveClass Autosave;
+#include "savemgr.h"
+
+SaveManagerClass SaveManager;

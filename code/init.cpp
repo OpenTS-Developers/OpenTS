@@ -154,6 +154,7 @@
 #include "rndstraw.h"
 #include "rules.h"
 #include "saveload.h"
+#include "savemgr.h"
 #include "savever.h"
 #include "scenario.h"
 #include "scheme.h"
@@ -411,7 +412,7 @@ int Init_Game(int , char * [])
 	*/
 	DebugString("Reading Game Settings\n");
 	Options.Load_Settings();
-	Autosave.Set_Interval(Options.AutoSaveInterval);
+	SaveManager.Autosave.Set_Interval(Options.AutoSaveInterval);
 
 	/*
 	**	Initialize the animation system.
@@ -1374,7 +1375,7 @@ restart:
 	**	Don't carry stray keystrokes into game.
 	*/
 	Keyboard->Clear();
-	Reset_Multiplayer_Save_State();
+	SaveManager.Reset_Multiplayer_Save_State();
 
 	/*
 	**	Initialize the random number generator(s)
@@ -1459,7 +1460,7 @@ restart:
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.Play) {
 		Session.Create_Connections();
 		Spawner_Announce_Master();
-		Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);
+		SaveManager.Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);
 
 		if (Session.Type == GAME_IPX) {
 			Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND / 4, Ipx.Global_Response_Time() + 2), (unsigned int) -1, 10 * TIMER_SECOND);
@@ -5494,7 +5495,7 @@ class QuickSaveCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (Quick_Save_Allowed()) {
-				Request_Quick_Save();
+				SaveManager.Request_Quick_Save();
 			}
 		}
 };
@@ -5524,7 +5525,7 @@ class QuickLoadCommandClass : public CommandClass
 			AutosaveClass::KindType kind = Session.Type == GAME_NORMAL ? AutosaveClass::KindType::Campaign : AutosaveClass::KindType::Skirmish;
 			SaveVersionInfo info;
 			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion) {
-				Post_Save_Notice(TXT_NO_QUICKSAVE);
+				SaveManager.Post_Save_Notice(TXT_NO_QUICKSAVE);
 				return;
 			}
 

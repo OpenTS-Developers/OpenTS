@@ -449,7 +449,7 @@ test('Saved games are named in one folder rather than searched for', () => {
 	], 'a saved game is named inside the user directory, and the folder is made on the way');
 
 	for (const [file, signature] of [
-		['code/saveload.cpp', 'static bool Save_Game(const char *file_name, char const * descr)'],
+		['code/saveload.cpp', 'bool Save_Game(const char *file_name, char const * descr)'],
 		['code/saveload.cpp', 'bool Load_Game(const char *file_name)'],
 		['code/saveload.cpp', 'bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)'],
 		['code/loaddlg.cpp', 'void LoadOptionsClass::Fill_List(HWND window)'],
@@ -475,6 +475,9 @@ test('Automatic saves are serviced at the frame boundary ahead of the pending wr
 	assertOrdered(functionBody(source('code/mainloop.cpp'), 'bool Main_Loop(void)'), [
 		'Frame++;',
 		'Process_Deferred_Deletion();',
+		'SaveManager.Service();',
+	], 'the save manager runs after the frame has retired its dead objects');
+	assertOrdered(functionBody(source('code/savemgr.cpp'), 'void SaveManagerClass::Service(void)'), [
 		'Autosave_Service();',
 		'Quick_Save_Service();',
 		'Process_Pending_Save_Game();',
@@ -500,7 +503,7 @@ test('An out-of-sync frame is reported before the players are asked to decide', 
 });
 
 test('A multiplayer load replaces the match around the seats it keeps', () => {
-	assertOrdered(functionBody(source('code/saveload.cpp'), 'static bool Perform_Multiplayer_Load(char const * file_name)'), [
+	assertOrdered(functionBody(source('code/savemgr.cpp'), 'bool SaveManagerClass::Perform_Multiplayer_Load(char const * file_name)'), [
 		'PacketTransport->Discard_In_Buffers();',
 		'Ipx.Delete_Connection(Ipx.Connection_ID(0));',
 		'DoList.clear();',
