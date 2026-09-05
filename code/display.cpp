@@ -2429,9 +2429,11 @@ void DisplayClass::Mouse_Left_Release(Coord const & coord, Cell const & cell, Ob
 					}
 				}
 
-				SuperWeaponTypeClass *stype = SuperWeaponTypeClass::From_Action(action);
-				if (stype != NULL) {
-					OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, stype->HeapID, cell));
+				if (IsTargettingMode != SUPER_NONE) {
+					SuperWeaponTypeClass *stype = SuperWeaponTypes[IsTargettingMode];
+					if (stype != NULL && stype->Action == action) {
+						OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SPECIAL_PLACE, stype->HeapID, cell));
+					}
 				}
 			}
 
