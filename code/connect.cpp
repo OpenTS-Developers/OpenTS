@@ -65,7 +65,6 @@ char const * ConnectionClass::Commands[PACKET_COUNT] = {
 
 namespace {
 
-/// <summary>Converts engine ticks to milliseconds.</summary>
 NetTiming::Milliseconds Ticks_To_Milliseconds(unsigned int ticks)
 {
 	std::uint64_t const milliseconds = (static_cast<std::uint64_t>(ticks) * 1000 + TIMER_SECOND - 1) / TIMER_SECOND;
@@ -76,7 +75,6 @@ NetTiming::Milliseconds Ticks_To_Milliseconds(unsigned int ticks)
 }
 
 
-/// <summary>Converts and bounds a legacy connection timeout.</summary>
 NetTiming::Milliseconds Legacy_Connection_Timeout(unsigned int ticks)
 {
 	return(std::clamp(Ticks_To_Milliseconds(ticks), NetTiming::MINIMUM_CONNECTION_TIMEOUT, NetTiming::MAXIMUM_CONNECTION_TIMEOUT));
