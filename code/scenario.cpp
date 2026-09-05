@@ -1063,7 +1063,13 @@ void Do_Win(void)
 	if (Session.Type != GAME_NORMAL) {
 		if (!Session.Play) {
 			Session.GamesPlayed++;
-			Multi_Score_Presentation();
+
+			if (Session.SkipScoreScreen) {
+				DebugString("Passing over the score screen.\n");
+			} else {
+				Multi_Score_Presentation();
+			}
+
 			Session.CurGame++;
 			if (Session.CurGame >= MAX_MULTI_GAMES) {
 				Session.CurGame = MAX_MULTI_GAMES - 1;
@@ -1230,7 +1236,13 @@ void Do_Lose(void)
 	if (Session.Type != GAME_NORMAL) {
 		if (!Session.Play) {
 			Session.GamesPlayed++;
-			Multi_Score_Presentation();
+
+			if (Session.SkipScoreScreen) {
+				DebugString("Passing over the score screen.\n");
+			} else {
+				Multi_Score_Presentation();
+			}
+
 			Session.CurGame++;
 
 			if (Session.CurGame >= MAX_MULTI_GAMES) {

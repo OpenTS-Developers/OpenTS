@@ -172,6 +172,16 @@ A computer player may share the color a person plays; in a game against other ma
 people may not. The client keys each seat by an order no other machine can rebuild, so two
 people of one color would take each other's start position and alliances.
 
+## What a player is shown
+
+These keys change what appears around the match without changing the match itself, so two
+machines playing one game need not write them alike.
+
+`SkipScoreScreen=yes` ends a skirmish or network match without its
+[score screen](/systems/multiplayer-score-screen/): the round is still counted, and an
+ending movie `PlayMoviesInMultiplayer` asked for still plays. The map's own
+[`SkipScore`](/keys/skipscore/) is a campaign setting and is not touched by this one.
+
 ## A game against other machines
 
 Each machine writes its own file, with itself in `[Settings]` and everybody else in the
@@ -244,5 +254,4 @@ settles the same question for themselves.
 These keys are read but change nothing yet: `Tournament`, `GameID`,
 `WriteStatistics`, `BuildOffAlly`,
 `AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`,
-`QuickMatch`, `SkipScoreScreen`, `CustomLoadScreen`,
-`CustomLoadScreenPos`, and `DifficultyName`.
+`QuickMatch`, `CustomLoadScreen`, `CustomLoadScreenPos`, and `DifficultyName`.
