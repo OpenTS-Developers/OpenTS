@@ -8617,11 +8617,6 @@ void HouseClass::AI_Takeover(void)
 	IQ = Rule->MaxIQ;
 
 	/*
-	 * Rename the house to the generic computer name.
-	 */
-	IniName = Fetch_String(TXT_COMPUTER);
-
-	/*
 	 * Disown and disband any factories this house controls.
 	 */
 	int index;

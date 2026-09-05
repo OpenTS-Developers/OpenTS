@@ -172,6 +172,9 @@ int main(void)
 		Check(config.NextCampaignAutoSave == 0 && config.NextSkirmishAutoSave == 0,
 			"the first automatic save is numbered from zero");
 		Check(config.AutoSaveInterval == 0, "an unwritten interval saves nothing automatically");
+		Check(config.ConnTimeout == 3600 && config.ReconnectTimeout == 2400,
+			"the unwritten waits are the ones every spawner has kept");
+		Check(config.AutoSurrender, "a departing player surrenders unless the file says otherwise");
 
 		bool any = false;
 		for (bool flag : config.GlobalFlags) {
@@ -200,6 +203,60 @@ int main(void)
 		config = Read(on, sizeof(on) - 1);
 
 		Check(config.AutoSaveInterval == 10800, "the interval is read in frames as written");
+	}
+
+	/*
+	 * The waits are written in ticks, and a value the game cannot wait for is brought within
+	 * the bounds rather than refusing a match that is otherwise playable.
+	 */
+	{
+		char const written[] =
+			"[Settings]\n"
+			"ConnTimeout=1800\n"
+			"ReconnectTimeout=1400\n";
+		SpawnerConfigClass config = Read(written, sizeof(written) - 1);
+
+		Check(config.ConnTimeout == 1800 && config.ReconnectTimeout == 1400,
+			"a wait within the bounds is taken in ticks as written");
+
+		char const low[] =
+			"[Settings]\n"
+			"ConnTimeout=1\n"
+			"ReconnectTimeout=-5\n";
+		config = Read(low, sizeof(low) - 1);
+
+		Check(config.ConnTimeout == SpawnerConfigClass::TIMEOUT_MIN &&
+			config.ReconnectTimeout == SpawnerConfigClass::TIMEOUT_MIN,
+			"a wait shorter than the game can honor is raised to the floor");
+
+		char const high[] =
+			"[Settings]\n"
+			"ConnTimeout=999999\n"
+			"ReconnectTimeout=999999\n";
+		config = Read(high, sizeof(high) - 1);
+
+		Check(config.ConnTimeout == SpawnerConfigClass::TIMEOUT_MAX &&
+			config.ReconnectTimeout == SpawnerConfigClass::TIMEOUT_MAX,
+			"a wait longer than the game will hold is lowered to the ceiling");
+	}
+
+	/*
+	 * A departing player's base is destroyed unless the file asks for the computer to take it.
+	 */
+	{
+		char const off[] =
+			"[Settings]\n"
+			"AutoSurrender=No\n";
+		SpawnerConfigClass config = Read(off, sizeof(off) - 1);
+
+		Check(!config.AutoSurrender, "the computer takes the seat when the file says so");
+
+		char const spelled[] =
+			"[Settings]\n"
+			"AutoSurrender=False\n";
+		config = Read(spelled, sizeof(spelled) - 1);
+
+		Check(!config.AutoSurrender, "a forced option is read whichever way it spells no");
 	}
 
 	/*
@@ -379,6 +436,17 @@ int main(void)
 		four.GlobalFlags[49] = !four.GlobalFlags[49];
 		Check(one.Session_Identity_CRC() != four.Session_Identity_CRC(),
 			"a scenario flag moves the identity");
+
+		SpawnerConfigClass surrender = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		surrender.AutoSurrender = !surrender.AutoSurrender;
+		Check(one.Session_Identity_CRC() != surrender.Session_Identity_CRC(),
+			"what becomes of a departing player's base moves the identity");
+
+		SpawnerConfigClass waits = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		waits.ConnTimeout = one.ConnTimeout + 60;
+		waits.ReconnectTimeout = one.ReconnectTimeout + 60;
+		Check(one.Session_Identity_CRC() == waits.Session_Identity_CRC(),
+			"how long a machine waits is its own, so it is left out of the identity");
 
 		SpawnerConfigClass ten = Read(_Skirmish, sizeof(_Skirmish) - 1);
 		ten.CoachMode = !ten.CoachMode;

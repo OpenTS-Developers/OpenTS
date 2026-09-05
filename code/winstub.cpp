@@ -64,7 +64,9 @@
 #include "msgroute.h"
 #include "nativewindow.hh"
 #include "pcx.h"
+#include "queue.h"
 #include "resource.h"
+#include "session.h"
 #include "theme.h"
 #include "video.h"
 #include "win.h"
@@ -342,10 +344,11 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, UINT wPa
 			switch ( wParam ) {
 
 				case SC_CLOSE:
-					/*
-					**	Windows sent us a close message. Probably in response to Alt-F4. Ignore it by
-					**	pretending to handle the message and returning true;
-					*/
+					// A running game resigns rather than closing, and keeps its window: the exit
+					// is played through the queue, and the game ends itself once it arrives.
+					if (GameActive && PlayerPtr != NULL && !Session.Play) {
+						Queue_Exit();
+					}
 					return(0);
 
 				case SC_SCREENSAVE:

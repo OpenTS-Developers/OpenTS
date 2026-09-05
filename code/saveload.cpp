@@ -1324,7 +1324,6 @@ bool Reconcile_Players(void)
 			housep->IsHuman = false;
 			housep->IsStarted = true;
 			housep->IQ = Rule->MaxIQ;
-			housep->IniName = Fetch_String(TXT_COMPUTER);
 		}
 	}
 

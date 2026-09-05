@@ -377,11 +377,12 @@ void DesyncDialogClass::Update_Player_List(void)
 		HouseClass const * housep = Houses[house];
 		bool const left = State.Has_Left(house);
 
-		// A player who left stays listed under the name the computer has since overwritten.
+		// A player who left stays listed, though their seat is no longer human.
 		if (housep == NULL || (!housep->IsHuman && !left)) {
 			continue;
 		}
 
+		// The roster entry is gone by now, so the kept name is the only copy while the list rebuilds.
 		char const * name = left && State.Left_Name(house)[0] != '\0' ? State.Left_Name(house) : housep->IniName.c_str();
 		int const row = ListBox_AddString(list, name);
 		if (row < 0) {

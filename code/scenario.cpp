@@ -563,7 +563,7 @@ bool Wait_For_Players_To_Load(void)
 	CDTimerClass<SystemTimerClass> wait_timeout;
 	CDTimerClass<SystemTimerClass> timer = TIMER_SECOND * 5;
 
-	wait_timeout = 60 * TIMER_SECOND;
+	wait_timeout = Session.ConnTimeout;
 	double last_progress = Progress.Get_Current_Progress();
 
 	for (;;) {
@@ -588,7 +588,7 @@ bool Wait_For_Players_To_Load(void)
 		}
 
 		if (current_progress != last_progress) {
-			wait_timeout = 60 * TIMER_SECOND;
+			wait_timeout = Session.ConnTimeout;
 			last_progress = current_progress;
 		}
 

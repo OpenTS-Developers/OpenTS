@@ -228,6 +228,9 @@ static void Spawner_Bind_Options(void)
 	Session.Options.MCVRedeploy = SpawnConfig.MCVRedeploy;
 	Session.Options.CoachMode = SpawnConfig.CoachMode;
 
+	// The file names what a departing player does; the session names what becomes of the seat.
+	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;
+
 	/*
 	 * Only a match against other machines commits this to the simulation; a skirmish never does.
 	 */
@@ -237,6 +240,8 @@ static void Spawner_Bind_Options(void)
 	Options.GameSpeed = SpawnConfig.GameSpeed;
 	BuildLevel = SpawnConfig.TechLevel;
 	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
+	Session.ConnTimeout = SpawnConfig.ConnTimeout;
+	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
 
 	// Init_Random uses this for a game played alone, and draws its own seed when it is zero.
 	CustomSeed = SpawnConfig.Seed;
@@ -251,8 +256,7 @@ static void Spawner_Bind_Options(void)
 	 *   Tournament, GameID,
 	 *   WriteStatistics               - naming a match and reporting how it went.
 	 *   BuildOffAlly, AttackNeutralUnits,
-	 *   ScrapMetal, AutoSurrender,
-	 *   ContinueWithoutHumans         - options the game has no setting of its own for yet.
+	 *   ScrapMetal                    - options the game has no setting of its own for yet.
 	 *   QuickMatch                    - what a player is shown around the match.
 	 *
 	 * Spawner_Bind_Presentation binds SkipScoreScreen, CustomLoadScreen, CustomLoadScreenX,
@@ -418,11 +422,13 @@ static bool Spawner_Resume(bool & gameloaded)
 	}
 
 	/*
-	 * A save carries the options it was played under, but game speed and whether movies play
-	 * are the player's own.
+	 * A save carries the options it was played under, but game speed, whether movies play and
+	 * the waits this machine keeps are the player's own.
 	 */
 	Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
+	Session.ConnTimeout = SpawnConfig.ConnTimeout;
+	Session.ReconnectTimeout = SpawnConfig.ReconnectTimeout;
 
 	gameloaded = true;
 

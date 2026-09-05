@@ -678,16 +678,15 @@ static void Queue_AI_Multiplayer(void)
 		int MIXFILE_RESEND_DELTA;	// ticks b/w resends
 		int FRAMESYNC_DLG_TIME;		// timeout waiting for mixfiles.
 		int FRAMESYNC_TIMEOUT;		// time until displaying reconnect dialog
-		int MIXFILE_TIMEOUT;		// timeout waiting for frame sync packet
 	} _timings[8] = {
-		{ 0, 0, 0, 0 },
-		{ 120, 900, 420, 3600 },
-		{ 120, 900, 420, 3600 },
-		{ 60, 900, 420, 2400 },
-		{ 60, 900, 420, 2400 },
-		{ 0, 0, 0, 0 },
-		{ 0, 0, 0, 0 },
-		{ 0, 0, 0, 0 }
+		{ 0, 0, 0 },
+		{ 120, 900, 420 },
+		{ 120, 900, 420 },
+		{ 60, 900, 420 },
+		{ 60, 900, 420 },
+		{ 0, 0, 0 },
+		{ 0, 0, 0 },
+		{ 0, 0, 0 }
 	};
 
 	//........................................................................
@@ -787,7 +786,7 @@ static void Queue_AI_Multiplayer(void)
 		// Wait for the other guys
 		//.....................................................................
 		rc = Wait_For_Players (1, net, _timings[Session.Type].MIXFILE_RESEND_DELTA, _timings[Session.Type].FRAMESYNC_DLG_TIME,
-			_timings[Session.Type].MIXFILE_TIMEOUT, multi_packet_buf, multi_packet_max,
+			Session.ReconnectTimeout, multi_packet_buf, multi_packet_max,
 			SentCommandCount, TheirFrameSync);
 
 		if (rc == RC_LOAD_PENDING) {
@@ -914,7 +913,7 @@ static void Queue_AI_Multiplayer(void)
 	rc = Wait_For_Players (0, net,
 	TIMER_SECOND, /// (Session.MaxAhead << 3),
 	std::max((int) net->Response_Time() * 3, _timings[Session.Type].FRAMESYNC_TIMEOUT ),
-	_timings[Session.Type].MIXFILE_TIMEOUT,
+	Session.ReconnectTimeout,
 	multi_packet_buf, multi_packet_max, SentCommandCount, TheirFrameSync);
 
 	if (rc == RC_LOAD_PENDING) {
@@ -3869,7 +3868,6 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 							hptr->IsHuman = false;
 							hptr->IQ = Rule->MaxIQ;
 							hptr->Computer_Paranoid();
-							hptr->IniName = Fetch_String(TXT_COMPUTER);
 							DebugString("Removing a player %s:%d\n", __FILE__, __LINE__);
 							Session.NumPlayers--;
 						}

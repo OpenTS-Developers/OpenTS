@@ -1254,7 +1254,7 @@ void EventClass::Execute(void)
 			if (house->IsObserver) {
 				break;
 			}
-			if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
+			if ((Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) || !Session.Options.AITakeover) {
 				house->Flag_To_Die();
 			} else {
 				if (house->Is_Human_Player()) {

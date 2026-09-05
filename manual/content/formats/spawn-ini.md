@@ -100,11 +100,17 @@ which mirrors `DifficultyModeComputer`: `0` is named Hard, `1` Medium and `2` Ea
 
 Read from `[Settings]`: `Bases`, `Credits`, `BridgeDestroy`, `Crates`, `ShortGame`,
 `GameSpeed`, `MultiEngineer`, `UnitCount`, `AIPlayers`, `AIDifficulty`, `AlliesAllowed`,
-`FogOfWar`, `MCVRedeploy`, `TechLevel`, `Firestorm`, `Seed`, `CoachMode`, and
-`PlayMoviesInMultiplayer`.
+`FogOfWar`, `MCVRedeploy`, `TechLevel`, `Firestorm`, `Seed`, `CoachMode`, `AutoSurrender`,
+and `PlayMoviesInMultiplayer`.
 
 `CoachMode` decides what a defeated player keeps;
 [observers and coach mode](/systems/observers/#coach-mode) owns it.
+
+`AutoSurrender` destroys the base of a player who leaves, and `No` hands it to the computer
+instead; [leaving a match](/systems/leaving-a-match/) owns it. Every file must carry the same
+answer. Each machine acts on it alone, so machines that disagree fall out of step the moment
+somebody leaves, and the [out-of-sync report](/using/out-of-sync-reports/) names the
+difference.
 
 `PlayMoviesInMultiplayer=yes` plays the scenario's movies in the game the file starts, which a
 skirmish or a game against other machines otherwise leaves out. Every machine's file must
@@ -228,6 +234,18 @@ on the port its own `Port` key names. Loading progress reaches the other machine
 in-game retry cadence: a second between retries and ten seconds before a report is given
 up.
 
+`ConnTimeout` and `ReconnectTimeout` say how long this machine waits on another, in frames of
+which there are sixty to the second. `ConnTimeout`, 3600 by default, is how long a machine may
+make no progress on the loading screen before it is dropped, measured again from each report
+of progress. `ReconnectTimeout`, 2400 by default, is how long one may go quiet during play,
+and is what the [reconnect dialog](/systems/reconnect-dialog/) counts down. A wait outside one
+second to ten minutes is brought within those bounds rather than refusing the match.
+
+Both are this machine's alone: they say when it stops waiting, never what the match computes,
+so a file may set them for one machine without putting the match out of step. Writing the same
+value everywhere is still the sound choice, since whichever machine gives up first is the one
+that decides who is dropped.
+
 A tunnel server may run beside the game rather than across the internet, in which case
 `[Tunnel] Ip` is the loopback address. The tunnel's port must fall between `1` and
 `65535`. A version 2 tunnel hands out the numbers it knows the machines by from the
@@ -267,13 +285,13 @@ at the hardest of the game's three settings.
 
 ## What the game does not take from a launch file
 
-The timing keys are not read at all, `ReconnectTimeout` and `ConnTimeout` among them. How
-far ahead the machines run, how often they exchange their orders, and how long they wait for
-one that has gone quiet are set by the game, and no launch file changes them: a machine
-that stops answering brings up the reconnect dialog after seven seconds and is given up
-after forty, the waits a LAN game has always used. `MapHash` is
-not read either: the machines compare the games they have loaded before play begins, which
-settles the same question for themselves.
+How far ahead the machines run and how often they exchange their orders are set by the game,
+and no launch file changes them. `MapHash` is not read either: the machines compare the games
+they have loaded before play begins, which settles the same question for themselves.
+
+`ContinueWithoutHumans` is not read. A match ends once no person is left playing it, except
+one every seat of which is [watching](/systems/observers/) rather than playing, which runs on
+until one side remains.
 
 A client that launches a custom mission writes the mission's own section into the file,
 names it with `ReadMissionSection`, and identifies it with `CustomMissionID`. None of the
@@ -283,5 +301,4 @@ this game through `CustomLoadScreen` instead.
 
 These keys are read but change nothing yet: `Tournament`, `GameID`,
 `WriteStatistics`, `BuildOffAlly`,
-`AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`, and
-`QuickMatch`.
+`AttackNeutralUnits`, `ScrapMetal`, and `QuickMatch`.

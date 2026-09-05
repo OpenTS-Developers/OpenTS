@@ -100,6 +100,7 @@ GameOptionsType *WDTTerritory::Get_Game_Options(void)
 	opts->CTF = false;
 	opts->FogOfWar = FogOfWar;
 	opts->MCVRedeploy = MCVRedeploy;
+	opts->AITakeover = true;
 
 	return(opts);
 }

@@ -450,6 +450,7 @@ struct GameOptionsType {
 	bool		FogOfWar;			/// Ground the player can no longer see fogs back over.
 	bool		MCVRedeploy;		/// A construction yard can be sold back into an MCV.
 	bool		CoachMode;			// A defeated player keeps allied vision and private chat, and gets no map reveal.
+	bool		AITakeover;			/// A departed player's house is handed to the computer rather than destroyed.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
 	bool Save(IStream * stream);
@@ -585,6 +586,11 @@ class SessionClass
 		//.....................................................................
 		unsigned int MaxAhead;
 		unsigned int FrameSendRate;
+
+		// How long this machine waits on another, in game ticks. Each machine keeps its own: the
+		// waits decide when this machine gives up, never what the match computes.
+		int ConnTimeout;			/// no loading progress from a machine before it is dropped
+		int ReconnectTimeout;		/// silence from a machine, once playing, before it is dropped
 
 		int			DesiredFrameRate;
 

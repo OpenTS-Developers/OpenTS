@@ -429,8 +429,19 @@ test('A resume is judged before it is loaded, and the save answers for the rest'
 		'Session.Players[i]->Player.ID = found->HeapID;',
 		'Houses[Session.Players[0]->Player.ID] != PlayerPtr',
 		'housep->IsHuman = false;',
-		'housep->IniName = Fetch_String(TXT_COMPUTER);',
+		'housep->IQ = Rule->MaxIQ;',
 	], 'every seat is matched and this machine identified before any house changes hands');
+
+	for (const [file, signature] of [
+		['code/saveload.cpp', 'bool Reconcile_Players(void)'],
+		['code/house.cpp', 'void HouseClass::AI_Takeover(void)'],
+	]) {
+		assert.doesNotMatch(
+			functionBody(source(file), signature),
+			/Fetch_String\(TXT_COMPUTER\)/,
+			`${signature} leaves a departed player's name on the seat they held`,
+		);
+	}
 
 	assertOrdered(functionBody(source('code/saveload.cpp'), 'bool Load_Game(const char *file_name)'), [
 		'Session.Type = (GameType)info.Get_Game_Type();',

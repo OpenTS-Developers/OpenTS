@@ -168,6 +168,7 @@ SessionClass::SessionClass(void)
 	Options.FogOfWar=false;
 	Options.MCVRedeploy=false;
 	Options.CoachMode = false;
+	Options.AITakeover = true;
 	Options.AIDifficulty = DIFF_NORMAL;
 
 	UniqueID = 0;
@@ -197,6 +198,9 @@ SessionClass::SessionClass(void)
 
 	MaxAhead = FrameSendRate * 3;
 	MaxMaxAhead = MaxAhead;
+
+	ConnTimeout = 60 * TIMER_SECOND;
+	ReconnectTimeout = 40 * TIMER_SECOND;
 
 	memset(ConnectionStats, 0, sizeof(ConnectionStats));
 
@@ -578,6 +582,8 @@ bool SessionClass::Log_To_File(FILE *out)
 
 	fprintf(out, "Address = %s\n\n", Session.HostAddress.As_String());
 	fprintf(out,"MaxAhead = %d\n", MaxAhead);
+	fprintf(out,"ConnTimeout = %d\n", ConnTimeout);
+	fprintf(out,"ReconnectTimeout = %d\n", ReconnectTimeout);
 	fprintf(out,"LoadGame = %d\n", LoadGame);
 	fprintf(out,"PrefColor = %d\n", PrefColor);
 	fprintf(out,"ColorIdx = %d\n", ColorIdx);
@@ -592,6 +598,7 @@ bool SessionClass::Log_To_File(FILE *out)
 	fprintf(out,"Options.AIPlayers = %d\n", Options.AIPlayers);
 	fprintf(out,"Options.AIDifficulty = %d\n", Options.AIDifficulty);
 	fprintf(out,"Options.CoachMode = %d\n", Options.CoachMode);
+	fprintf(out,"Options.AITakeover = %d\n", Options.AITakeover);
 	fprintf(out,"ObiWan = %d\n", ObiWan);
 	fprintf(out,"AIOnly = %d\n", AIOnly);
 
@@ -1372,6 +1379,7 @@ void GameOptionsType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FogOfWar);
 	stream.Serialize(MCVRedeploy);
 	stream.Serialize(CoachMode);
+	stream.Serialize(AITakeover);
 	stream.Serialize(ScenarioDescription);
 }
 

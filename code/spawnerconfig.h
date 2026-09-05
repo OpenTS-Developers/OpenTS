@@ -27,7 +27,7 @@ class SpawnerConfigClass
 	public:
 
 		// Counts changes to what the game makes of a launch file, never the file's own vocabulary.
-		static constexpr int SCHEMA_VERSION = 1;
+		static constexpr int SCHEMA_VERSION = 2;
 
 		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
 		static constexpr int SLOT_COUNT = 8;
@@ -119,6 +119,13 @@ class SpawnerConfigClass
 		std::string TunnelAddress = "0.0.0.0";
 		int TunnelPort = 0;
 
+		// How long this machine waits on another, in game ticks. A value outside the bounds is
+		// brought within them.
+		static constexpr int TIMEOUT_MIN = 60;
+		static constexpr int TIMEOUT_MAX = 36000;
+		int ConnTimeout = 3600;
+		int ReconnectTimeout = 2400;
+
 		// What a player is shown.
 		bool QuickMatch = false;
 		bool SkipScoreScreen = false;
@@ -128,7 +135,6 @@ class SpawnerConfigClass
 		bool AutoSurrender = true;
 		bool AttackNeutralUnits = false;
 		bool ScrapMetal = false;
-		bool ContinueWithoutHumans = false;
 		bool PlayMoviesInMultiplayer = false;
 		std::string CustomLoadScreen;
 		int CustomLoadScreenX = 0;
