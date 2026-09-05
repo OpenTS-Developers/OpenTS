@@ -987,7 +987,7 @@ int IPXManagerClass::Service(void)
 	int packetlen;
 	IPXAddressClass address;
 
-	unsigned char temp_receive_buffer[1024];
+	unsigned char temp_receive_buffer[WS_INTERNET_BUFFER_LEN];
 	int	temp_receive_buffer_len;
 	int	temp_address_len;
 
