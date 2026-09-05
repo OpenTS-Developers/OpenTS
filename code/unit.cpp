@@ -4471,8 +4471,7 @@ FacingType UnitClass::Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) c
 	FacingType face = FACING_N;
 	FacingType faceto;
 	if (passenger != NULL) {
-		DirType direction = direction.Direction(Center_Coord(), passenger->Center_Coord());
-		faceto = (FacingType)direction.As_Dir256();
+		faceto = (FacingType)Direction(passenger).As_Dir256();
 	} else {
 		faceto = (FacingType)(PrimaryFacing.Current().Right_180()).As_Dir256();
 	}
