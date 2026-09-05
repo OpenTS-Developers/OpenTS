@@ -18,12 +18,14 @@
 #include "_map.h"
 #include "_rect.h"
 #include "_tactica.h"
+#include "ambient.h"
 #include "audio/audioengine.h"
 #include "ccini.h"
 #include "cell.h"
 #include "globals.h"
 #include "goptions.h"
 #include "map.h"
+#include "savestream.h"
 #include "sndtype.h"
 #include "tactical.h"
 #include "vector.h"
@@ -52,6 +54,43 @@ struct PositionalSound {
 };
 
 PositionalSound _positional[POSITIONAL_MAX];
+
+int const STATIC_SOUND_MAX = 200;
+
+struct StaticSoundItem {
+	AudioHandle Handle;
+	Coord Position;
+	VocType Voc = VOC_NONE;
+	int Type = 0;
+};
+
+StaticSoundItem _statics[STATIC_SOUND_MAX];
+
+
+void Free_Static(StaticSoundItem & item)
+{
+	if (item.Handle.Is_Valid()) {
+		item.Handle.Stop();
+	}
+	item.Handle.Clear();
+	item.Voc = VOC_NONE;
+	item.Type = 0;
+}
+
+
+void Static_Sounds_AI(void)
+{
+	for (int i = 0; i < STATIC_SOUND_MAX; i++) {
+		StaticSoundItem & item = _statics[i];
+		if (item.Voc == VOC_NONE) {
+			continue;
+		}
+		Play_If_In_Range(item.Voc, item.Position, &item.Handle);
+		if (!item.Handle.Is_Valid() && item.Voc < Vocs.Count() && !Vocs[item.Voc]->Type_Data().Never_Ends()) {
+			Free_Static(item);
+		}
+	}
+}
 
 
 float Effect_Level(float volume)
@@ -309,8 +348,87 @@ AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * han
 }
 
 
+void Static_Sound(VocType voc, Coord const & coord, int type)
+{
+	if (voc == VOC_NONE || voc >= Vocs.Count()) {
+		return;
+	}
+	for (int i = 0; i < STATIC_SOUND_MAX; i++) {
+		StaticSoundItem & item = _statics[i];
+		if (item.Voc == VOC_NONE) {
+			item.Voc = voc;
+			item.Position = coord;
+			item.Type = type;
+			item.Handle.Clear();
+			Play_If_In_Range(voc, coord, &item.Handle);
+			if (!item.Handle.Is_Valid() && !Vocs[voc]->Type_Data().Never_Ends()) {
+				Free_Static(item);
+			}
+			return;
+		}
+	}
+}
+
+
+void Static_Sounds_Stop(Coord const & coord, int mask)
+{
+	Cell cell = coord.As_Cell();
+	for (int i = 0; i < STATIC_SOUND_MAX; i++) {
+		StaticSoundItem & item = _statics[i];
+		if (item.Voc != VOC_NONE && (item.Type & mask) != 0 && item.Position.As_Cell() == cell) {
+			Free_Static(item);
+		}
+	}
+}
+
+
+// Only looping items travel: a one-shot is over by the time a save matters.
+void Static_Sounds_Serialize(SaveStreamClass & stream)
+{
+	int count = 0;
+	if (stream.Is_Saving()) {
+		for (int i = 0; i < STATIC_SOUND_MAX; i++) {
+			if (_statics[i].Voc != VOC_NONE && _statics[i].Voc < Vocs.Count() && Vocs[_statics[i].Voc]->Type_Data().Never_Ends()) {
+				count++;
+			}
+		}
+	} else {
+		for (int i = 0; i < STATIC_SOUND_MAX; i++) {
+			Free_Static(_statics[i]);
+		}
+	}
+	stream.Serialize(count);
+	if (count < 0 || count > STATIC_SOUND_MAX) {
+		stream.Fail();
+		return;
+	}
+
+	int written = 0;
+	for (int i = 0; i < STATIC_SOUND_MAX && written < count; i++) {
+		StaticSoundItem & item = _statics[i];
+		if (stream.Is_Saving() && (item.Voc == VOC_NONE || item.Voc >= Vocs.Count() || !Vocs[item.Voc]->Type_Data().Never_Ends())) {
+			continue;
+		}
+		int voc = item.Voc;
+		stream.Serialize(voc);
+		stream.Serialize(item.Position.X);
+		stream.Serialize(item.Position.Y);
+		stream.Serialize(item.Position.Z);
+		stream.Serialize(item.Type);
+		if (stream.Is_Loading()) {
+			item.Voc = (VocType)voc;
+			item.Handle.Clear();
+		}
+		written++;
+	}
+}
+
+
 void Sound_Effect_AI(void)
 {
+	Static_Sounds_AI();
+	AmbientSounds.AI();
+
 	for (int i = 0; i < POSITIONAL_MAX; i++) {
 		PositionalSound & entry = _positional[i];
 		if (entry.Handle.Is_Null()) {
@@ -342,6 +460,10 @@ void Stop_All_Sound_Effects(void)
 	for (int i = 0; i < POSITIONAL_MAX; i++) {
 		_positional[i].Handle.Clear();
 	}
+	for (int i = 0; i < STATIC_SOUND_MAX; i++) {
+		Free_Static(_statics[i]);
+	}
+	AmbientSounds.Clear();
 	if (AudioEngine.Is_Available()) {
 		AudioEngine.Events().Stop_Group(AUDIO_GROUP_SFX, 0);
 	}
