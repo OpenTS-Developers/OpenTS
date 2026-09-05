@@ -47,8 +47,11 @@
 #include "_timer.h"
 #include "dbgprint.h"
 
+#include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <limits>
 #include <sys\timeb.h>
 
 
@@ -60,6 +63,27 @@ char const * ConnectionClass::Commands[PACKET_COUNT] = {
 	"NDATA",
 	"ACK"
 };
+
+namespace {
+
+/// <summary>Converts engine ticks to milliseconds.</summary>
+NetTiming::Milliseconds Ticks_To_Milliseconds(unsigned int ticks)
+{
+	std::uint64_t const milliseconds = (static_cast<std::uint64_t>(ticks) * 1000 + TIMER_SECOND - 1) / TIMER_SECOND;
+	if (milliseconds > std::numeric_limits<NetTiming::Milliseconds>::max()) {
+		return(std::numeric_limits<NetTiming::Milliseconds>::max());
+	}
+	return(static_cast<NetTiming::Milliseconds>(milliseconds));
+}
+
+
+/// <summary>Converts and bounds a legacy connection timeout.</summary>
+NetTiming::Milliseconds Legacy_Connection_Timeout(unsigned int ticks)
+{
+	return(std::clamp(Ticks_To_Milliseconds(ticks), NetTiming::MINIMUM_CONNECTION_TIMEOUT, NetTiming::MAXIMUM_CONNECTION_TIMEOUT));
+}
+
+}
 
 
 /***************************************************************************
@@ -76,6 +100,7 @@ char const * ConnectionClass::Commands[PACKET_COUNT] = {
  *      timeout         the max amount of time before we give up on a packet*
  *                     (-1 means retry forever, based on this parameter)   *
  *      extralen         max size of app-specific extra bytes (optional)   *
+ *      clock            monotonic millisecond clock (default if NULL)     *
  *                                                                         *
  * OUTPUT:                                                                 *
  *      none.                                                              *
@@ -88,7 +113,7 @@ char const * ConnectionClass::Commands[PACKET_COUNT] = {
  *=========================================================================*/
 ConnectionClass::ConnectionClass (int numsend, int numreceive,
 	int maxlen, unsigned short magicnum, unsigned int retry_delta,
-	unsigned int max_retries, unsigned int timeout, int extralen)
+	unsigned int max_retries, unsigned int timeout, int extralen, NetTiming::MillisecondClock const * clock)
 {
 	/*------------------------------------------------------------------------
 	Compute our maximum packet length
@@ -115,6 +140,7 @@ ConnectionClass::ConnectionClass (int numsend, int numreceive,
 	Set the timeout for this connection.
 	------------------------------------------------------------------------*/
 	Timeout = timeout;
+	MillisecondTime = clock != nullptr ? clock : &NetTiming::Default_Clock();
 
 	/*------------------------------------------------------------------------
 	Allocate the packet staging buffer.  This will be used to
@@ -191,6 +217,8 @@ void ConnectionClass::Init (void)
 
 	LastSeqID = 0xffffffff;
 	LastReadID = 0xffffffff;
+	RoundTripEstimator.Reset();
+	IsBad = false;
 
 	Queue->Init();
 
@@ -719,11 +747,10 @@ int ConnectionClass::Service (void)
 	been ACK'd yet.  Entries that the app has read, and have been ACK'd,
 	should be removed.
 	------------------------------------------------------------------------*/
-	if ( Service_Send_Queue() && Service_Receive_Queue() ) {
-		return(1);
-	} else {
-		return(0);
-	}
+	int const send_status = Service_Send_Queue();
+	int const receive_status = Service_Receive_Queue();
+	IsBad = !(send_status && receive_status);
+	return(IsBad ? 0 : 1);
 
 }	/* end of Service */
 
@@ -748,7 +775,7 @@ int ConnectionClass::Service_Send_Queue (void)
 	int i;
 	int num_entries;
 	SendQueueType *send_entry;  // ptr to send queue entry
-	CommHeaderType *packet_hdr; // packet header
+	CommHeaderType packet_header; // packet header
 	unsigned int curtime;      // current time
 	int bad_conn = 0;
 
@@ -769,9 +796,15 @@ int ConnectionClass::Service_Send_Queue (void)
 			/*..................................................................
 			Update this queue's response time
 			..................................................................*/
-			packet_hdr = (CommHeaderType *)send_entry->Buffer;
-			if (packet_hdr->Code == PACKET_DATA_ACK) {
-				Queue->Add_Delay(Time() - send_entry->FirstTime);
+			if (send_entry->BufLen >= (int)sizeof(CommHeaderType)) {
+				CommHeaderType header;
+				memcpy(&header, send_entry->Buffer, sizeof(header));
+				if (header.Code == PACKET_DATA_ACK) {
+					Queue->Add_Delay(Time() - send_entry->FirstTime);
+					if (Adaptive_Timing_Enabled()) {
+						RoundTripEstimator.Acknowledge(send_entry->FirstTimeMilliseconds, send_entry->SendCount, *MillisecondTime);
+					}
+				}
 			}
 
 			/*..................................................................
@@ -787,6 +820,18 @@ int ConnectionClass::Service_Send_Queue (void)
 	need it.
 	------------------------------------------------------------------------*/
 	num_entries = Queue->Num_Send();
+	curtime = Time();
+	NetTiming::Milliseconds const current_milliseconds = MillisecondTime->Now();
+	bool const adaptive_channel = Adaptive_Timing_Enabled();
+	bool const adaptive_timing = adaptive_channel && RoundTripEstimator.Has_Sample();
+	bool const timeout_enabled = Timeout != (unsigned int)-1;
+	NetTiming::Milliseconds const connection_timeout = !timeout_enabled
+		? NetTiming::MAXIMUM_CONNECTION_TIMEOUT
+		: (adaptive_timing ? NetTiming::Connection_Timeout(RoundTripEstimator.Smoothed_Rtt(), RoundTripEstimator.Retransmit_Timeout())
+			: (adaptive_channel ? Legacy_Connection_Timeout(Timeout) : Ticks_To_Milliseconds(Timeout)));
+	NetTiming::Milliseconds const base_retry_timeout = adaptive_timing
+		? NetTiming::Initial_Retry_Timeout(RoundTripEstimator.Retransmit_Timeout(), connection_timeout)
+		: Ticks_To_Milliseconds(RetryDelta);
 
 	for (i = 0; i < num_entries; i++) {
 		send_entry = Queue->Get_Send(i);
@@ -795,13 +840,19 @@ int ConnectionClass::Service_Send_Queue (void)
 			continue;
 		}
 
-		/*.....................................................................
-		Only send the message if time has elapsed.  (The message's Time
-		fields are init'd to 0 when a message is queue'd or unqueue'd, so the
-		first time through, the delta time will appear large.)
-		.....................................................................*/
-		curtime = Time();
-		if (curtime - send_entry->LastTime > RetryDelta) {
+		NetTiming::RetransmitState const retransmit_state{
+			send_entry->FirstTimeMilliseconds,
+			send_entry->LastTimeMilliseconds,
+			send_entry->RetransmitTimeoutMilliseconds,
+			send_entry->SendCount
+		};
+		NetTiming::RetryDecision const retry_decision = NetTiming::Evaluate_Retry(
+			retransmit_state, current_milliseconds, base_retry_timeout, connection_timeout, timeout_enabled, adaptive_channel);
+		if (retry_decision.TimedOut) {
+			bad_conn = 1;
+			send_entry->IsUndeliverable = true;
+		}
+		if (retry_decision.Send) {
 
 			/*..................................................................
 			Send the message
@@ -813,20 +864,26 @@ int ConnectionClass::Service_Send_Queue (void)
 			Fill in Time fields
 			..................................................................*/
 			send_entry->LastTime = curtime;
+			send_entry->LastTimeMilliseconds = current_milliseconds;
 			if (send_entry->SendCount==0) {
 				send_entry->FirstTime = curtime;
+				send_entry->FirstTimeMilliseconds = current_milliseconds;
+				send_entry->RetransmitTimeoutMilliseconds = base_retry_timeout;
 
 				/*...............................................................
 				If this is the 1st time we're sending this packet, and it doesn't
 				require an ACK, mark it as ACK'd; then, the next time through,
 				it will just be removed from the queue.
 				...............................................................*/
-				packet_hdr = (CommHeaderType *)send_entry->Buffer;
-				if (packet_hdr->Code == PACKET_DATA_NOACK) {
+				memcpy(&packet_header, send_entry->Buffer, sizeof(packet_header));
+				if (packet_header.Code == PACKET_DATA_NOACK) {
 					send_entry->IsACK = 1;
 				}
 			} else {
 				NumResends++;
+				if (adaptive_channel) {
+					RoundTripEstimator.Note_Retransmit(send_entry->RetransmitTimeoutMilliseconds);
+				}
 			}
 
 			/*..................................................................
@@ -838,12 +895,6 @@ int ConnectionClass::Service_Send_Queue (void)
 			Perform error detection, based on either MaxRetries or Timeout
 			..................................................................*/
 			if (MaxRetries != -1 && send_entry->SendCount > MaxRetries) {
-				bad_conn = 1;
-				send_entry->IsUndeliverable = true;
-			}
-
-			if (Timeout != -1 &&
-				(send_entry->LastTime - send_entry->FirstTime) > Timeout) {
 				bad_conn = 1;
 				send_entry->IsUndeliverable = true;
 			}

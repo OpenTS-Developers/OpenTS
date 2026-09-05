@@ -98,6 +98,7 @@
 */
 #include "combuf.h"
 #include "netadmit.h"
+#include "nettiming.h"
 
 /*
 ********************************** Defines **********************************
@@ -143,9 +144,8 @@ class ConnectionClass
 		/*.....................................................................
 		Constructor/destructor.
 		.....................................................................*/
-		ConnectionClass (int numsend, int numrecieve, int maxlen,
-			unsigned short magicnum, unsigned int retry_delta,
-			unsigned int max_retries, unsigned int timeout, int extralen = 0);
+		ConnectionClass (int numsend, int numrecieve, int maxlen, unsigned short magicnum, unsigned int retry_delta,
+			unsigned int max_retries, unsigned int timeout, int extralen = 0, NetTiming::MillisecondClock const *clock = nullptr);
 		virtual ~ConnectionClass (void);
 
 		/*.....................................................................
@@ -185,6 +185,7 @@ class ConnectionClass
 		unsigned int Time_Out (void) { return(Timeout); }
 		void Set_TimeOut (unsigned int t) { Timeout = t;}
 		unsigned int Max_Packet_Len (void) { return(MaxPacketLen); }
+		void Reset_Round_Trip_Time(void) {RoundTripEstimator.Reset();}
 		static const char * Command_Name(int command);
 
 		int Num_Resends(void) const { return(NumResends); }
@@ -192,6 +193,7 @@ class ConnectionClass
 		int Percent_Lost(void) const { return(PercentLost); }
 		int Missed_Overall(void) const { return(MissedOverall); }
 		int Missed_Magic(void) const { return(MissedMagic); }
+		bool Is_Bad(void) const { return(IsBad); }
 
 		enum PacketDropReasonType {
 			CONNECTION_DROP_SHORT_HEADER,
@@ -227,8 +229,8 @@ class ConnectionClass
 		is protected; it's only called by the ACK/Retry logic, not the
 		application.
 		.....................................................................*/
-		virtual int Send(char *buf, int buflen, void *extrabuf,
-			int extralen) = 0;
+		virtual int Send(char *buf, int buflen, void *extrabuf, int extralen) = 0;
+		virtual bool Adaptive_Timing_Enabled(void) const {return(true);}
 		void Record_Packet_Drop(PacketDropReasonType reason);
 		void Record_Admission_Drop(NetAdmission::Error error, unsigned char code);
 
@@ -292,6 +294,11 @@ class ConnectionClass
 		on a packet, the connection is probably broken.
 		.....................................................................*/
 		unsigned int Timeout;
+
+		// An injected clock must outlive the connection.
+		NetTiming::MillisecondClock const *MillisecondTime;
+		NetTiming::RttEstimator RoundTripEstimator;
+		bool IsBad = false;
 
 		/*.....................................................................
 		Running totals of # of packets we send & receive which require an ACK,
