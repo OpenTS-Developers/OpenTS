@@ -78,6 +78,14 @@
 #define LOG_TAIL_BYTES						(256 * 1024)
 #define EXCEPTION_FOLDER_DAYS				30
 
+#ifdef _WIN64
+#define PTR_HEX								"%016IX"
+#define PTR_HEX_UNREADABLE					"????????????????"
+#else
+#define PTR_HEX								"%08IX"
+#define PTR_HEX_UNREADABLE					"????????"
+#endif
+
 // DbgHelp is not reentrant, and it is also the part of the report most likely to fault on a
 // corrupt stack. Everything that enters it, MiniDumpWriteDump included, holds this.
 //
@@ -382,6 +390,36 @@ static void Append_Address_Details(DWORD_PTR address)
 }
 
 
+inline DWORD_PTR Context_Program_Counter(CONTEXT const * context)
+{
+#ifdef _WIN64
+	return((DWORD_PTR)context->Rip);
+#else
+	return((DWORD_PTR)context->Eip);
+#endif
+}
+
+
+inline DWORD_PTR Context_Stack_Pointer(CONTEXT const * context)
+{
+#ifdef _WIN64
+	return((DWORD_PTR)context->Rsp);
+#else
+	return((DWORD_PTR)context->Esp);
+#endif
+}
+
+
+inline DWORD_PTR Context_Frame_Pointer(CONTEXT const * context)
+{
+#ifdef _WIN64
+	return((DWORD_PTR)context->Rbp);
+#else
+	return((DWORD_PTR)context->Ebp);
+#endif
+}
+
+
 /// <summary>
 /// Appends one code address with every identification the process can still supply for it.
 /// </summary>
@@ -389,7 +427,7 @@ static void Append_Address_Details(DWORD_PTR address)
 /// <param name="prefix">Text placed before the address, normally indentation.</param>
 static void Append_Address(DWORD_PTR address, char const * prefix)
 {
-	Exception_Printf("%s0x%08IX", prefix, address);
+	Exception_Printf("%s0x" PTR_HEX, prefix, address);
 	Append_Address_Details(address);
 	Exception_Printf("\r\n");
 }
@@ -422,8 +460,13 @@ static BOOL Guarded_Sym_Get_Line(DWORD_PTR address, DWORD * displacement, IMAGEH
 static BOOL Guarded_Stack_Walk(STACKFRAME64 * frame, CONTEXT * context)
 {
 	__try {
+#ifdef _WIN64
+		return(StackWalk64(IMAGE_FILE_MACHINE_AMD64, GetCurrentProcess(), GetCurrentThread(),
+					frame, context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL));
+#else
 		return(StackWalk64(IMAGE_FILE_MACHINE_I386, GetCurrentProcess(), GetCurrentThread(),
 					frame, context, NULL, SymFunctionTableAccess64, SymGetModuleBase64, NULL));
+#endif
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
 		return(FALSE);
 	}
@@ -613,7 +656,7 @@ static void Append_Exception_Description(EXCEPTION_RECORD const * record)
 				break;
 		}
 
-		Exception_Printf("Access      : 0x%08IX was %s.\r\n", (DWORD_PTR)record->ExceptionInformation[1], operation);
+		Exception_Printf("Access      : 0x" PTR_HEX " was %s.\r\n", (DWORD_PTR)record->ExceptionInformation[1], operation);
 	}
 
 	// The engine's own codes carry their message as the first parameter, pointing into static
@@ -638,7 +681,7 @@ static void Append_Exception_Description(EXCEPTION_RECORD const * record)
 			break;
 		}
 
-		Exception_Printf("Nested      : 0x%08X at 0x%08IX\r\n", nested->ExceptionCode, (DWORD_PTR)nested->ExceptionAddress);
+		Exception_Printf("Nested      : 0x%08X at 0x" PTR_HEX "\r\n", nested->ExceptionCode, (DWORD_PTR)nested->ExceptionAddress);
 		nested = nested->ExceptionRecord;
 	}
 }
@@ -650,17 +693,26 @@ static void Append_Exception_Description(EXCEPTION_RECORD const * record)
 static void Append_Registers(CONTEXT const * context)
 {
 	Exception_Printf("\r\nRegisters\r\n---------\r\n");
-	Exception_Printf("Eip:%08X  Esp:%08X  Ebp:%08X\r\n", context->Eip, context->Esp, context->Ebp);
-	Exception_Printf("Eax:%08X  Ebx:%08X  Ecx:%08X\r\n", context->Eax, context->Ebx, context->Ecx);
-	Exception_Printf("Edx:%08X  Esi:%08X  Edi:%08X\r\n", context->Edx, context->Esi, context->Edi);
+#ifdef _WIN64
+	Exception_Printf("Rip:" PTR_HEX "  Rsp:" PTR_HEX "  Rbp:" PTR_HEX "\r\n", context->Rip, context->Rsp, context->Rbp);
+	Exception_Printf("Rax:" PTR_HEX "  Rbx:" PTR_HEX "  Rcx:" PTR_HEX "\r\n", context->Rax, context->Rbx, context->Rcx);
+	Exception_Printf("Rdx:" PTR_HEX "  Rsi:" PTR_HEX "  Rdi:" PTR_HEX "\r\n", context->Rdx, context->Rsi, context->Rdi);
+	Exception_Printf("R8 :" PTR_HEX "  R9 :" PTR_HEX "  R10:" PTR_HEX "\r\n", context->R8, context->R9, context->R10);
+	Exception_Printf("R11:" PTR_HEX "  R12:" PTR_HEX "  R13:" PTR_HEX "\r\n", context->R11, context->R12, context->R13);
+	Exception_Printf("R14:" PTR_HEX "  R15:" PTR_HEX "\r\n", context->R14, context->R15);
+#else
+	Exception_Printf("Eip:" PTR_HEX "  Esp:" PTR_HEX "  Ebp:" PTR_HEX "\r\n", context->Eip, context->Esp, context->Ebp);
+	Exception_Printf("Eax:" PTR_HEX "  Ebx:" PTR_HEX "  Ecx:" PTR_HEX "\r\n", context->Eax, context->Ebx, context->Ecx);
+	Exception_Printf("Edx:" PTR_HEX "  Esi:" PTR_HEX "  Edi:" PTR_HEX "\r\n", context->Edx, context->Esi, context->Edi);
+#endif
 	Exception_Printf("EFlags:%08X\r\n", context->EFlags);
 	Exception_Printf("CS:%04X  SS:%04X  DS:%04X  ES:%04X  FS:%04X  GS:%04X\r\n",
 				context->SegCs, context->SegSs, context->SegDs, context->SegEs, context->SegFs, context->SegGs);
 
 	if ((context->ContextFlags & CONTEXT_DEBUG_REGISTERS) == CONTEXT_DEBUG_REGISTERS) {
-		Exception_Printf("Dr0:%08X  Dr1:%08X  Dr2:%08X  Dr3:%08X\r\n",
+		Exception_Printf("Dr0:" PTR_HEX "  Dr1:" PTR_HEX "  Dr2:" PTR_HEX "  Dr3:" PTR_HEX "\r\n",
 					context->Dr0, context->Dr1, context->Dr2, context->Dr3);
-		Exception_Printf("Dr6:%08X  Dr7:%08X\r\n", context->Dr6, context->Dr7);
+		Exception_Printf("Dr6:" PTR_HEX "  Dr7:" PTR_HEX "\r\n", context->Dr6, context->Dr7);
 	}
 }
 
@@ -674,6 +726,33 @@ static void Append_Floating_Point(CONTEXT const * context)
 		return;
 	}
 
+#ifdef _WIN64
+
+	XMM_SAVE_AREA32 const & save = context->FltSave;
+
+	Exception_Printf("\r\nFloating point\r\n--------------\r\n");
+	Exception_Printf("Control:%04X  Status:%04X  Tag:%02X\r\n", save.ControlWord, save.StatusWord, save.TagWord);
+	Exception_Printf("ErrorOffset:%08X  ErrorSelector:%04X\r\n", save.ErrorOffset, save.ErrorSelector);
+	Exception_Printf("DataOffset:%08X  DataSelector:%04X\r\n", save.DataOffset, save.DataSelector);
+
+	for (auto index = 0; index < 8; index++) {
+		BYTE const * const bytes = (BYTE const *)&save.FloatRegisters[index];
+
+		Exception_Printf("ST%u : ", index);
+		for (auto position = 9; position >= 0; position--) {
+			Exception_Printf("%02X", bytes[position]);
+		}
+		Exception_Printf("   %+.17e\r\n", Read_X87_Register(bytes));
+	}
+
+	Exception_Printf("MXCSR:%08X\r\n", save.MxCsr);
+
+	for (auto index = 0; index < 16; index++) {
+		Exception_Printf("XMM%-2u: %016llX %016llX\r\n", index,
+				(unsigned long long)save.XmmRegisters[index].High,
+				(unsigned long long)save.XmmRegisters[index].Low);
+	}
+#else
 	FLOATING_SAVE_AREA const & save = context->FloatSave;
 
 	Exception_Printf("\r\nFloating point\r\n--------------\r\n");
@@ -707,6 +786,7 @@ static void Append_Floating_Point(CONTEXT const * context)
 			Exception_Printf("XMM%u: %08X %08X %08X %08X\r\n", index, word[3], word[2], word[1], word[0]);
 		}
 	}
+#endif
 }
 
 
@@ -715,7 +795,7 @@ static void Append_Floating_Point(CONTEXT const * context)
 /// </summary>
 static void Append_Code_Bytes(CONTEXT const * context)
 {
-	BYTE const * const code = (BYTE const *)context->Eip;
+	BYTE const * const code = (BYTE const *)Context_Program_Counter(context);
 
 	Exception_Printf("Bytes       : ");
 	for (unsigned index = 0; index < NUM_CODE_BYTES; index++) {
@@ -728,6 +808,57 @@ static void Append_Code_Bytes(CONTEXT const * context)
 	Exception_Printf("\r\n");
 }
 
+
+#ifdef _WIN64
+
+/// <summary>
+/// Appends the return addresses recovered from the unwind tables.
+/// </summary>
+/// <remarks>
+/// x64 code keeps no frame pointer chain, so this walks the same unwind data the operating
+/// system uses. It needs no symbol handler, so it still produces a usable list of return
+/// addresses when the symbol driven walk below fails outright.
+/// </remarks>
+static void Append_Frame_Chain(CONTEXT const * context)
+{
+	Exception_Printf("\r\nCall stack (unwind data)\r\n------------------------\r\n");
+
+	// Each step moves to the caller before anything is printed, so the faulting instruction
+	// is listed here for the two walks to start from the same place.
+	CONTEXT working = *context;
+	Append_Address((DWORD_PTR)working.Rip, "  ");
+
+	for (unsigned depth = 0; depth < MAX_FRAME_DEPTH; depth++) {
+		DWORD64 image_base = 0;
+		PRUNTIME_FUNCTION const function = RtlLookupFunctionEntry(working.Rip, &image_base, NULL);
+
+		if (function == NULL) {
+			// A leaf function carries no unwind data, so its return address is the word the
+			// call pushed and the stack pointer still points at.
+			if (working.Rsp == 0 || IsBadReadPtr((void const *)working.Rsp, sizeof(DWORD64))) {
+				break;
+			}
+
+			working.Rip = *(DWORD64 const *)working.Rsp;
+			working.Rsp += sizeof(DWORD64);
+		} else {
+			PVOID handler_data = NULL;
+			DWORD64 establisher = 0;
+
+			RtlVirtualUnwind(UNW_FLAG_NHANDLER, image_base, working.Rip, function, &working,
+					&handler_data, &establisher, NULL);
+		}
+
+		// The outermost frame returns nowhere, which ends the walk rather than naming a caller.
+		if (working.Rip == 0) {
+			break;
+		}
+
+		Append_Address((DWORD_PTR)working.Rip, "  ");
+	}
+}
+
+#else
 
 /// <summary>
 /// Appends the return addresses reachable by following the saved frame pointer chain.
@@ -743,9 +874,9 @@ static void Append_Frame_Chain(CONTEXT const * context)
 
 	// The chain records return addresses, so the faulting instruction is not in it and is
 	// listed here for the two walks to start from the same place.
-	Append_Address((DWORD_PTR)context->Eip, "  ");
+	Append_Address(Context_Program_Counter(context), "  ");
 
-	DWORD_PTR const * frame = (DWORD_PTR const *)context->Ebp;
+	DWORD_PTR const * frame = (DWORD_PTR const *)Context_Frame_Pointer(context);
 	DWORD_PTR previous = 0;
 
 	for (unsigned depth = 0; depth < MAX_FRAME_DEPTH; depth++) {
@@ -767,6 +898,8 @@ static void Append_Frame_Chain(CONTEXT const * context)
 	}
 }
 
+#endif
+
 
 /// <summary>
 /// Appends the call stack as reconstructed by the symbol handler.
@@ -786,11 +919,11 @@ static void Append_Call_Stack(CONTEXT const * context)
 
 	STACKFRAME64 frame;
 	memset(&frame, 0, sizeof(frame));
-	frame.AddrPC.Offset = working.Eip;
+	frame.AddrPC.Offset = Context_Program_Counter(&working);
 	frame.AddrPC.Mode = AddrModeFlat;
-	frame.AddrFrame.Offset = working.Ebp;
+	frame.AddrFrame.Offset = Context_Frame_Pointer(&working);
 	frame.AddrFrame.Mode = AddrModeFlat;
-	frame.AddrStack.Offset = working.Esp;
+	frame.AddrStack.Offset = Context_Stack_Pointer(&working);
 	frame.AddrStack.Mode = AddrModeFlat;
 
 	for (unsigned depth = 0; depth < MAX_FRAME_DEPTH; depth++) {
@@ -816,7 +949,7 @@ static void Append_Module_List(void)
 
 	for (unsigned index = 0; index < ModuleCount; index++) {
 		ModuleEntryType const & module = ModuleTable[index];
-		Exception_Printf("0x%08IX - 0x%08IX  %s\r\n", module.Base, module.End, module.Path);
+		Exception_Printf("0x" PTR_HEX " - 0x" PTR_HEX "  %s\r\n", module.Base, module.End, module.Path);
 	}
 }
 
@@ -853,18 +986,18 @@ static void Append_Stack_Dump(CONTEXT const * context)
 	Exception_Printf("\r\nStack dump (* marks a possible code address)\r\n");
 	Exception_Printf("-------------------------------------------\r\n");
 
-	DWORD_PTR const * const stack = (DWORD_PTR const *)context->Esp;
+	DWORD_PTR const * const stack = (DWORD_PTR const *)Context_Stack_Pointer(context);
 
 	for (unsigned index = 0; index < MAX_STACK_DUMP; index++) {
 		DWORD_PTR const * const slot = stack + index;
 
 		if (IsBadReadPtr(slot, sizeof(DWORD_PTR))) {
-			Exception_Printf("0x%08IX: ????????\r\n", (DWORD_PTR)slot);
+			Exception_Printf("0x" PTR_HEX ": " PTR_HEX_UNREADABLE "\r\n", (DWORD_PTR)slot);
 			continue;
 		}
 
 		DWORD_PTR const value = *slot;
-		Exception_Printf("0x%08IX: 0x%08IX", (DWORD_PTR)slot, value);
+		Exception_Printf("0x" PTR_HEX ": 0x" PTR_HEX, (DWORD_PTR)slot, value);
 
 		if (Module_For_Address(value) != NULL) {
 			Exception_Printf(" *");
@@ -895,7 +1028,7 @@ static void Guarded_Crash_Site(CONTEXT const * context)
 {
 	__try {
 		Exception_Printf("\r\nCrash site\r\n----------\r\n");
-		Append_Address((DWORD_PTR)context->Eip, "Address     : ");
+		Append_Address(Context_Program_Counter(context), "Address     : ");
 		Append_Code_Bytes(context);
 	} __except (EXCEPTION_EXECUTE_HANDLER) {
 		Exception_Printf("  <crash site faulted>\r\n");
