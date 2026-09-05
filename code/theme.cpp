@@ -52,8 +52,8 @@
 #include "ccfile.h"
 #include "ccini.h"
 #include "ccrand.h"
+#include "audio/audioengine.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
 #include "globals.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -169,7 +169,7 @@ void ThemeClass::Scan(void)
 {
 	char name[_MAX_FNAME+_MAX_EXT];
 
-	if (ScoresPresent && Audio_Available() && !Debug_Quiet) {
+	if (ScoresPresent && AudioEngine.Is_Available() && !Debug_Quiet) {
 		for (ThemeType theme = THEME_FIRST; theme < Themes.Count(); theme++) {
 			_makepath(name, NULL, NULL, Themes[theme]->Name, ".AUD");
 			Themes[theme]->Available = CCFileClass(name).Is_Available();
@@ -218,7 +218,7 @@ char const * ThemeClass::Base_Name(ThemeType theme) const
  *   01/16/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
 ThemeClass::ThemeClass(void) :
-	Current(-1),
+	Current(),
 	Score(THEME_NONE),
 	Pending(THEME_NONE),
 	Volume(255),
@@ -271,7 +271,7 @@ char const * ThemeClass::Full_Name(ThemeType theme) const
  *=============================================================================================*/
 void ThemeClass::AI(void)
 {
-	if (Audio_Available() && !Debug_Quiet) {
+	if (AudioEngine.Is_Available() && !Debug_Quiet) {
 		if (ScoresPresent && Volume > 0 && !Still_Playing()) {
 			if (Pending != THEME_NONE && Pending != THEME_QUIET && !ScenarioInit) {
 				/*
@@ -290,7 +290,6 @@ void ThemeClass::AI(void)
 				Pending = THEME_PICK_ANOTHER;
 			}
 		}
-		Audio.Sound_Callback();
 	}
 }
 
@@ -385,7 +384,7 @@ void ThemeClass::Queue_Song(ThemeType theme)
 	**	If there is no sound driver or sounds have been specifically
 	**	turned off, then abort.
 	*/
-	if (!Audio_Available() || Debug_Quiet) return;
+	if (!AudioEngine.Is_Available() || Debug_Quiet) return;
 
 	/*
 	**	If the current score volumne is set to silent, then there is no need to play the
@@ -401,7 +400,7 @@ void ThemeClass::Queue_Song(ThemeType theme)
 		Pending = theme;
 		DebugString("Theme::QueueSong(%d)\n", theme);
 		if (Still_Playing() == true) {
-			Audio.Fade_Sample(Current, THEME_DELAY);
+			Current.Fade(THEME_FADE_MS);
 		}
 	}
 }
@@ -423,21 +422,19 @@ void ThemeClass::Queue_Song(ThemeType theme)
  * HISTORY:                                                                                    *
  *   01/16/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-int ThemeClass::Play_Song(ThemeType theme)
+AudioHandle ThemeClass::Play_Song(ThemeType theme)
 {
-	if (ScoresPresent && Audio_Available() && !Debug_Quiet) {
+	if (ScoresPresent && AudioEngine.Is_Available() && !Debug_Quiet) {
 		Stop(false);
 		if (theme != THEME_NONE && theme != THEME_QUIET) {
 			if (theme > THEME_NONE && Volume > 0) {
-				Audio.StreamLowImpact = true;
-				Current = Audio.File_Stream_Sample_Vol(Theme_File_Name(theme), Volume, true);
-				Audio.StreamLowImpact = false;
+				Current = AudioEngine.Open_Stream(Theme_File_Name(theme), AUDIO_GROUP_MUSIC, (float)Volume / 255.0f, false);
 
 				/*
 				 * Stopping a score that never started does nothing, so recording one that
 				 * failed to start as the current score would silence the game for good.
 				 */
-				if (Current == -1) {
+				if (Current.Is_Null()) {
 					DebugString("Theme::PlaySong(%d) - Unavailable\n", theme);
 					Score = THEME_NONE;
 					Pending = THEME_NONE;
@@ -530,35 +527,18 @@ int ThemeClass::Track_Length(ThemeType theme) const
  *=============================================================================================*/
 void ThemeClass::Stop(bool fade)
 {
-	if (ScoresPresent && Audio_Available() && !Debug_Quiet && Current != -1) {
+	if (ScoresPresent && AudioEngine.Is_Available() && !Debug_Quiet && Current.Is_Valid()) {
 
 		if (fade && Still_Playing() == true) {
 			DebugString("Theme::Stop(%d) - Fading\n", Score);
-			Audio.Fade_Sample(Current, THEME_DELAY);
+			Current.Fade(THEME_FADE_MS);
 		} else {
 			DebugString("Theme::Stop(%d)\n", Score);
-			Audio.Stop_Sample(Current);
+			AudioEngine.Stop_Stream(Current);
 		}
-		Current = -1;
+		Current.Clear();
 		Score = THEME_NONE;
 		Pending = THEME_NONE;
-	}
-}
-
-
-/// <summary>
-/// Suspends the score that is currently playing.
-/// Unlike Stop(), this routine remembers the score it silenced by leaving it pending, so
-/// the next AI() pass will start the same track over again.
-/// </summary>
-void ThemeClass::Suspend(void)
-{
-	if (ScoresPresent && Audio_Available() && !Debug_Quiet && Current != -1) {
-		DebugString("Theme::Suspend(%d)\n", Score);
-		Audio.Stop_Sample(Current);
-		Current = -1;
-		Pending = Score;
-		Score = THEME_NONE;
 	}
 }
 
@@ -579,8 +559,8 @@ void ThemeClass::Suspend(void)
  *=============================================================================================*/
 bool ThemeClass::Still_Playing(void) const
 {
-	if (ScoresPresent && Audio_Available() && Volume > 0 && Current != -1 && !Debug_Quiet) {
-		return(Audio.Sample_Status(Current));
+	if (ScoresPresent && AudioEngine.Is_Available() && Volume > 0 && !Debug_Quiet) {
+		return(Current.Is_Playing());
 	}
 	return(false);
 }
@@ -699,7 +679,7 @@ void ThemeClass::Set_Volume(int volume)
 {
 	Volume = std::min(volume, 255);
 
-	if (Current != -1) {
-		Audio.Set_Handle_Volume(Current, Volume);
+	if (Current.Is_Valid()) {
+		Current.Set_Volume((float)Volume / 255.0f);
 	}
 }
