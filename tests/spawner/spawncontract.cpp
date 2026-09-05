@@ -1057,12 +1057,12 @@ int main(void)
 
 		char const one_kept_name[] =
 			"[Settings]\n"
-			"Name=CommanderAlphaOmegaX\n"
+			"Name=CommanderAlphaOmegaCommanderAlphaOmegaCommanderAlphaOmegaCommanX\n"
 			"Side=0\n"
 			"Color=3\n"
 			"\n"
 			"[Other1]\n"
-			"Name=CommanderAlphaOmegaY\n"
+			"Name=CommanderAlphaOmegaCommanderAlphaOmegaCommanderAlphaOmegaCommanY\n"
 			"Side=1\n"
 			"Color=5\n"
 			"Ip=10.0.0.9\n"

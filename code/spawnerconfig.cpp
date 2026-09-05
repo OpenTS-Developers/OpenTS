@@ -13,6 +13,7 @@
 #include "crc.h"
 #include "diff.hh"
 #include "ini.h"
+#include "utf8.h"
 
 #include <algorithm>
 #include <cstdarg>
@@ -130,7 +131,8 @@ void SpawnerConfigClass::Read_Slots(INIClass const & ini)
 		if (ini.Section_Present(section.c_str())) {
 			slot.Occupancy = OccupancyType::Human;
 			// A seat is judged and ordered by the name the game keeps, the same on every machine.
-			slot.Name = Read_Text(ini, section.c_str(), "Name", "").substr(0, HOUSE_NAME_MAX - 1);
+			std::string name = Read_Text(ini, section.c_str(), "Name", "");
+			slot.Name = name.substr(0, UTF8::Boundary_Before(name.c_str(), HOUSE_NAME_MAX - 1));
 			slot.Color = ini.Get_Int(section.c_str(), "Color", -1);
 			slot.Country = ini.Get_Int(section.c_str(), "Side", -1);
 			slot.Address = Read_Text(ini, section.c_str(), "Ip", slot.Address);

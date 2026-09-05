@@ -91,7 +91,7 @@
 // messages, a "From" prefix length should be added to this value to generate
 // the entire max displayable message length.
 //---------------------------------------------------------------------------
-#define	MAX_MESSAGE_LENGTH		110 + 2
+#define	MAX_MESSAGE_LENGTH		222 + 2
 
 //---------------------------------------------------------------------------
 // Max # of allowed messages at one time
