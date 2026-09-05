@@ -39,10 +39,10 @@ static struct {
 } Sounds[3];
 
 
-// The menu fonts are code page 437 shape sets; a code point they lack draws as '?'.
-static int Menu_Font_Frame(char32_t code)
+// The glyph shapes are in code page 437 order; a code point they lack draws as '?'.
+int MSFont::Glyph_Frame(char32_t code) const
 {
-	int index = UTF8::OEM_437_Index(code);
+	int index = UTF8::OEM_437_Glyph(code);
 	if (index < 0) {
 		index = '?';
 	}
@@ -324,7 +324,7 @@ int MSFont::Get_Character_Width(char32_t code)
 	}
 
 	if (code > ' ') {
-		int shape_frame = Menu_Font_Frame(code);
+		int shape_frame = Glyph_Frame(code);
 		return(FontFile->Get_Rect(shape_frame + 2).Width + 1);
 	}
 	return(0);
@@ -348,7 +348,7 @@ void MSFont::Draw_Character(Surface * surface, char32_t code, int x, int y, int 
 
 	if (code > ' ') {
 
-		int shape_frame = Menu_Font_Frame(code);
+		int shape_frame = Glyph_Frame(code);
 
 		if (do_sound == true && frame == 0) {
 			void * sample = Sounds[rand() % 3].Sample;
@@ -380,7 +380,7 @@ void MSFont::Draw_String(Surface * surface, char const * string, int x, int y, i
 			y += FontHeight;
 		} else {
 			if (code > ' ') {
-				int shape_frame = Menu_Font_Frame(code);
+				int shape_frame = Glyph_Frame(code);
 
 				Draw_Shape(*surface, *Drawer, FontFile, shape_frame + frame, Point2D(current_x - FontFile->Get_Rect(shape_frame + 2).X, y), surface->Get_Rect(), SHAPE_WIN_REL);
 			}

@@ -885,31 +885,31 @@ void CommBufferClass::Mono_Debug_Print(int refresh)
 	//------------------------------------------------------------------------
 	if (refresh) {
 		Mono_Clear_Screen ();
-		Mono_Printf("\xDA\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xBF\n");
-		Mono_Printf("\xB3                                                                             \xB3\n");
-		Mono_Printf("\xB3                                                                             \xB3\n");
-		Mono_Printf("\xB3                                                                             \xB3\n");
-		Mono_Printf("\xC3\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC2\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xB4\n");
-		Mono_Printf("\xB3              Send Queue              \xB3             Receive Queue            \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3 ID  Ct ACK   ID  Ct ACK    ID  Ct ACK\xB3 ID  Rd ACK    ID  Rd ACK   ID  Rd ACK\xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xC0\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC1\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xD9");
+		Mono_Printf("+-----------------------------------------------------------------------------+\n");
+		Mono_Printf("|                                                                             |\n");
+		Mono_Printf("|                                                                             |\n");
+		Mono_Printf("|                                                                             |\n");
+		Mono_Printf("+--------------------------------------+--------------------------------------+\n");
+		Mono_Printf("|              Send Queue              |             Receive Queue            |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("| ID  Ct ACK   ID  Ct ACK    ID  Ct ACK| ID  Rd ACK    ID  Rd ACK   ID  Rd ACK|\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("+--------------------------------------+--------------------------------------+");
 	}
 
 	//------------------------------------------------------------------------
@@ -1015,31 +1015,31 @@ void CommBufferClass::Mono_Debug_Print2(int refresh)
 	//------------------------------------------------------------------------
 	if (refresh) {
 		Mono_Clear_Screen ();
-		Mono_Printf("\xDA\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xBF\n");
-		Mono_Printf("\xB3                                                                             \xB3\n");
-		Mono_Printf("\xB3                                                                             \xB3\n");
-		Mono_Printf("\xB3                                                                             \xB3\n");
-		Mono_Printf("\xC3\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC2\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xB4\n");
-		Mono_Printf("\xB3              Send Queue              \xB3             Receive Queue            \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3 ID  Ct Type   Data  Name         ACK \xB3 ID  Rd Type   Data  Name         ACK \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xB3                                      \xB3                                      \xB3\n");
-		Mono_Printf("\xC0\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC1\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xC4\xD9");
+		Mono_Printf("+-----------------------------------------------------------------------------+\n");
+		Mono_Printf("|                                                                             |\n");
+		Mono_Printf("|                                                                             |\n");
+		Mono_Printf("|                                                                             |\n");
+		Mono_Printf("+--------------------------------------+--------------------------------------+\n");
+		Mono_Printf("|              Send Queue              |             Receive Queue            |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("| ID  Ct Type   Data  Name         ACK | ID  Rd Type   Data  Name         ACK |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("|                                      |                                      |\n");
+		Mono_Printf("+--------------------------------------+--------------------------------------+");
 	}
 
 	//------------------------------------------------------------------------

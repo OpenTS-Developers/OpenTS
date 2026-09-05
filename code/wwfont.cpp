@@ -253,8 +253,8 @@ int WWFontClass::Glyph_Count(void) const
 
 
 /*
- * A code point without a glyph, or whose slot is the shared placeholder box at data offset
- * 0, draws as '?'.
+ * Westwood added the oe ligature to its code page 437 layout at 0xCE. A code point without a
+ * glyph, or whose slot is the shared placeholder box at data offset 0, draws as '?'.
  */
 unsigned char WWFontClass::Glyph_Index(char32_t code) const
 {
@@ -262,7 +262,14 @@ unsigned char WWFontClass::Glyph_Index(char32_t code) const
 		return((unsigned char)code);
 	}
 
-	int index = IsWindows1252 ? UTF8::Font_Index_1252(code) : UTF8::Font_Index_437(code);
+	int index;
+	if (IsWindows1252) {
+		index = UTF8::Windows_1252_Glyph(code);
+	} else if (code == 0x0153) {
+		index = 0xCE;
+	} else {
+		index = UTF8::OEM_437_Glyph(code);
+	}
 	if (index < 0 || index >= Glyph_Count()) {
 		return('?');
 	}

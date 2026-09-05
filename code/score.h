@@ -298,7 +298,6 @@ class ScoreFontClass
 		ScoreFontClass(void);
 		ScoreFontClass(int w, int h, void const * data, ConvertClass * drawer);
 		virtual ~ScoreFontClass(void);
-		// Text is UTF-8, so a lone byte is not a character and does not compile as one.
 		virtual int Char_Width(char32_t code);
 		int Char_Width(char) = delete;
 		virtual int String_Width(const char * string);
@@ -310,6 +309,8 @@ class ScoreFontClass
 		int Get_Width(void) { return(Width); }
 		int Get_Height(void) { return(Height); }
 
+	private:
+		int Glyph_Frame(char32_t code) const;
 };
 
 

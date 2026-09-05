@@ -59,6 +59,7 @@
 #include "ownrdraw.h"
 #include "scheme.h"
 #include "theme.h"
+#include "utf8.h"
 #include "vector.h"
 #include "windlg.h"
 
@@ -315,10 +316,9 @@ void Show_Who_Was_Responsible (void)
 	**	Search through the text file and extract the strings, using each string to create
 	**	a new EgoClass
 	*/
-	if (length >= 3 && memcmp(cptr, "\xEF\xBB\xBF", 3) == 0) {
-		cptr += 3;
-		length -= 3;
-	}
+	int bom = (int)UTF8::BOM_Length(std::string_view(cptr, length));
+	cptr += bom;
+	length -= bom;
 
 	do {
 		/*

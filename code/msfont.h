@@ -35,7 +35,6 @@ class MSFont
 
 		void Get_String_Rect(char const * string, Rect & rect);
 
-		// Text is UTF-8, so a lone byte is not a character and does not compile as one.
 		virtual int Get_Character_Width(char32_t code);
 		int Get_Character_Width(char) = delete;
 		int Get_Character_Width(unsigned char) = delete;
@@ -47,6 +46,8 @@ class MSFont
 		void Draw_Character(Surface *, unsigned char, int, int, int, bool) = delete;
 
 	private:
+		int Glyph_Frame(char32_t code) const;
+
 		/*
 		 * These are the width and height of the font's glyph cell, expressed in pixels and
 		 * taken from the shape file as it is loaded. The height is what a newline advances

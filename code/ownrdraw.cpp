@@ -140,7 +140,7 @@ static unsigned char OD_Glyph(char32_t code)
 	if (code < ' ') {
 		return((unsigned char)code);
 	}
-	int index = UTF8::Font_Index_1252(code);
+	int index = UTF8::Windows_1252_Glyph(code);
 	return((unsigned char)(index < 0 ? '?' : index));
 }
 

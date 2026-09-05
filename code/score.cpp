@@ -1280,10 +1280,10 @@ int ScoreFontClass::String_Width(const char * string)
 }
 
 
-// The score fonts are code page 437 shape sets; a code point they lack draws as '?'.
-static int Score_Font_Frame(char32_t code)
+// The glyph shapes are in code page 437 order; a code point they lack draws as '?'.
+int ScoreFontClass::Glyph_Frame(char32_t code) const
 {
-	int index = UTF8::OEM_437_Index(code);
+	int index = UTF8::OEM_437_Glyph(code);
 	if (index < 0) {
 		index = '?';
 	}
@@ -1302,7 +1302,7 @@ int ScoreFontClass::Char_Width(char32_t code)
 		return(8);
 	}
 
-	int frame = Score_Font_Frame(code);
+	int frame = Glyph_Frame(code);
 	return(ShapePtr->Get_Rect(frame + 2).Width);
 }
 
@@ -1317,7 +1317,7 @@ int ScoreFontClass::Char_Width(char32_t code)
 void ScoreFontClass::Print_Char(Surface *surf, char32_t code, int x, int y, int v, bool play_sound)
 {
 	if (code != 32) {
-		int frame = Score_Font_Frame(code);
+		int frame = Glyph_Frame(code);
 
 		if (play_sound == true && v == 0) {
 			void *snd = text_sounds[rand() % 3].mSound;
@@ -1341,7 +1341,7 @@ void ScoreFontClass::Print_String(Surface *surf, const char * string, int x, int
 	while (*string != '\0') {
 		char32_t code = UTF8::Decode(string);
 		if (code != 32) {
-			int frame = Score_Font_Frame(code);
+			int frame = Glyph_Frame(code);
 
 			Draw_Shape(*surf, *Drawer, ShapePtr, frame + brightness_frame, Point2D(x - ShapePtr->Get_Rect(frame + 2).X, y), surf->Get_Rect(), SHAPE_WIN_REL);
 		}

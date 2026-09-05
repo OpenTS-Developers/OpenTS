@@ -252,9 +252,7 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 	while (Read_Line(file, line)) {
 		if (first) {
 			first = false;
-			if (line.compare(0, 3, "\xEF\xBB\xBF") == 0) {
-				line.erase(0, 3);
-			}
+			line.erase(0, UTF8::BOM_Length(line));
 		}
 
 		// A file written in the Windows code page keeps its accented characters.

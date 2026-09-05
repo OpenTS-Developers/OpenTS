@@ -128,6 +128,9 @@ bool UTF8::Is_Continuation(unsigned char byte)
 }
 
 
+/// <summary>
+/// Returns the byte length a lead byte announces, or 0 for a byte that cannot lead.
+/// </summary>
 int UTF8::Sequence_Length(unsigned char lead)
 {
 	if (lead < 0x80) return(1);
@@ -138,6 +141,9 @@ int UTF8::Sequence_Length(unsigned char lead)
 }
 
 
+/// <summary>
+/// Decodes the code point at text and advances past it.
+/// </summary>
 char32_t UTF8::Decode(char const * & text)
 {
 	int length;
@@ -157,6 +163,9 @@ char32_t UTF8::Decode(char * & text)
 }
 
 
+/// <summary>
+/// Decodes the code point at text without advancing; length receives the bytes it spans.
+/// </summary>
 char32_t UTF8::Peek(char const * text, int & length)
 {
 	bool valid;
@@ -171,6 +180,10 @@ char32_t UTF8::Peek(char const * text)
 }
 
 
+/// <summary>
+/// Writes the encoding of code into out, which needs MAX_SEQUENCE bytes, and returns the
+/// count. A surrogate or out-of-range value encodes as REPLACEMENT.
+/// </summary>
 int UTF8::Encode(char32_t code, char * out)
 {
 	if (code > 0x10FFFF || (code >= 0xD800 && code <= 0xDFFF)) {
@@ -200,6 +213,9 @@ int UTF8::Encode(char32_t code, char * out)
 }
 
 
+/// <summary>
+/// Returns the start of the sequence before text, never earlier than begin.
+/// </summary>
 char const * UTF8::Previous(char const * begin, char const * text)
 {
 	if (text <= begin) {
@@ -236,9 +252,57 @@ bool UTF8::Is_Valid(std::string_view text)
 }
 
 
+/// <summary>
+/// Tells whether code draws as a character: not a control, the delete, or the C1 range.
+/// </summary>
 bool UTF8::Is_Printable(char32_t code)
 {
 	return(code >= ' ' && (code < 0x7F || code > 0xA0) && code != REPLACEMENT);
+}
+
+
+/// <summary>
+/// Returns the length of the byte order mark that opens text, or 0.
+/// </summary>
+std::size_t UTF8::BOM_Length(std::string_view text)
+{
+	return(text.starts_with(BOM) ? BOM.size() : 0);
+}
+
+
+/// <summary>
+/// Copies source into dest, at most size - 1 bytes and never ending inside a sequence, and
+/// returns the bytes copied. dest is always terminated when size is not zero.
+/// </summary>
+std::size_t UTF8::Copy(char * dest, std::size_t size, char const * source)
+{
+	if (size == 0) {
+		return(0);
+	}
+
+	std::size_t count = Boundary_Before(source, size - 1);
+	std::memcpy(dest, source, count);
+	dest[count] = '\0';
+	return(count);
+}
+
+
+/// <summary>
+/// Returns the largest byte count no greater than limit at which text can be cut without
+/// splitting a sequence.
+/// </summary>
+std::size_t UTF8::Boundary_Before(char const * text, std::size_t limit)
+{
+	std::size_t length = std::strlen(text);
+	if (length <= limit) {
+		return(length);
+	}
+
+	std::size_t cut = limit;
+	while (cut > 0 && Is_Continuation((unsigned char)text[cut])) {
+		cut--;
+	}
+	return(cut);
 }
 
 
@@ -265,6 +329,9 @@ std::string UTF8::From_Windows_1252(std::string_view text)
 }
 
 
+/// <summary>
+/// Transcodes to Windows-1252, writing '?' for every code point the code page lacks.
+/// </summary>
 std::string UTF8::To_Windows_1252(std::string_view text)
 {
 	std::string result;
@@ -284,6 +351,9 @@ std::string UTF8::To_Windows_1252(std::string_view text)
 }
 
 
+/// <summary>
+/// Returns the Windows-1252 byte for code, or -1.
+/// </summary>
 int UTF8::Windows_1252_Index(char32_t code)
 {
 	if (code < 0x80 || (code >= 0xA0 && code <= 0xFF)) {
@@ -299,55 +369,26 @@ int UTF8::Windows_1252_Index(char32_t code)
 }
 
 
-int UTF8::OEM_437_Index(char32_t code)
+/// <summary>
+/// Returns the code page 437 byte that shows code, or -1. Control positions never map, and
+/// a close visual match is accepted for what the code page lacks.
+/// </summary>
+int UTF8::OEM_437_Glyph(char32_t code)
 {
 	static short cache[0x10000];
 	return(Best_Fit_Index(437, cache, code));
 }
 
 
-int UTF8::Font_Index_437(char32_t code)
-{
-	if (code == 0x0153) {
-		return(0xCE);
-	}
-	return(OEM_437_Index(code));
-}
-
-
-int UTF8::Font_Index_1252(char32_t code)
+/// <summary>
+/// Returns the Windows-1252 byte that shows code, or -1. The C1 range never maps, and a close
+/// visual match is accepted for what the code page lacks.
+/// </summary>
+int UTF8::Windows_1252_Glyph(char32_t code)
 {
 	if (code >= 0x80 && code < 0xA0) {
 		return(-1);
 	}
 	static short cache[0x10000];
 	return(Best_Fit_Index(1252, cache, code));
-}
-
-
-std::size_t UTF8::Copy(char * dest, std::size_t size, char const * source)
-{
-	if (size == 0) {
-		return(0);
-	}
-
-	std::size_t count = Boundary_Before(source, size - 1);
-	std::memcpy(dest, source, count);
-	dest[count] = '\0';
-	return(count);
-}
-
-
-std::size_t UTF8::Boundary_Before(char const * text, std::size_t limit)
-{
-	std::size_t length = std::strlen(text);
-	if (length <= limit) {
-		return(length);
-	}
-
-	std::size_t cut = limit;
-	while (cut > 0 && Is_Continuation((unsigned char)text[cut])) {
-		cut--;
-	}
-	return(cut);
 }

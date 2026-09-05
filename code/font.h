@@ -46,7 +46,6 @@ class FontClass
 	public:
 		virtual ~FontClass(void) {}
 
-		// Text is UTF-8, so a lone byte is not a character and does not compile as one.
 		virtual int Char_Pixel_Width(char32_t code) const = 0;
 		int Char_Pixel_Width(char) const = delete;
 		virtual int String_Pixel_Width(char const * string) const = 0;
