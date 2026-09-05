@@ -31,7 +31,33 @@ class AudioStreamClass;
 class AudioEventTypeClass
 {
 	public:
-		AudioEventTypeClass(void);
+		AudioEventTypeClass(void) :
+			SoundCount(0),
+			Priority(10),
+			Volume(1.0f),
+			MinVolume(0.0f),
+			Range(28),
+			Limit(3),
+			Loop(0),
+			DelayMin(0),
+			DelayMax(0),
+			FShiftMin(0),
+			FShiftMax(0),
+			VShiftMin(0),
+			VShiftMax(0),
+			AttackCount(0),
+			DecayCount(0),
+			Type(SOUND_TYPE_SCREEN),
+			Control(SOUND_CONTROL_NONE),
+			Group(AUDIO_GROUP_SFX),
+			LiveCount(0),
+			SequentialIndex(0)
+		{
+			Name[0] = '\0';
+			for (int i = 0; i < AUDIO_MAX_SOUNDS; i++) {
+				Sounds[i][0] = '\0';
+			}
+		}
 
 		char Name[32];
 		char Sounds[AUDIO_MAX_SOUNDS][32];
@@ -60,8 +86,22 @@ class AudioEventTypeClass
 
 		bool Never_Ends(void) const { return((Control & SOUND_CONTROL_LOOP) != 0 && Loop == 0); }
 		bool Has_Delay(void) const { return(DelayMax > 0); }
-		unsigned Body_Start(void) const;
-		unsigned Body_Count(void) const;
+
+		// The attack and decay sounds are only spared when the list has more than
+		// them; otherwise the whole list is the body.
+		unsigned Body_Start(void) const
+		{
+			unsigned attack = (AttackCount > 0) ? (unsigned)AttackCount : 0;
+			unsigned decay = (DecayCount > 0) ? (unsigned)DecayCount : 0;
+			return(attack + decay < SoundCount ? attack : 0);
+		}
+
+		unsigned Body_Count(void) const
+		{
+			unsigned attack = (AttackCount > 0) ? (unsigned)AttackCount : 0;
+			unsigned decay = (DecayCount > 0) ? (unsigned)DecayCount : 0;
+			return(attack + decay < SoundCount ? SoundCount - attack - decay : SoundCount);
+		}
 };
 
 
