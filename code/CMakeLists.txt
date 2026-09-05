@@ -198,6 +198,7 @@ message(STATUS "${PROJECT_NAME}: Applying linker options...")
 
 target_link_libraries(OpenTS PRIVATE
     VQALib
+    base64
 
     bgfx
     bx

@@ -82,6 +82,7 @@ jobs:
           cp thirdparty/bgfx.cmake/bgfx/3rdparty/directx-headers/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/directx-headers.txt
           cp thirdparty/bgfx.cmake/bx/include/tinystl/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/tinystl.txt
           cp thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt artifact/OpenTS_THIRD_PARTY_LICENSES/astc-encoder.txt
+          cp thirdparty/libbase64/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/libbase64.txt
           cp thirdparty/licenses/khronos-opengl.txt artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-opengl.txt
           cat thirdparty/licenses/khronos-vulkan-notice.txt \
               thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt \

@@ -27,9 +27,15 @@ source tree.
 
 ## Dependencies
 
-The renderer uses [bgfx](https://github.com/bkaradzic/bgfx), vendored through
-`thirdparty/bgfx.cmake` at a tested tag. That submodule contains bgfx, bx, and
-bimg as nested submodules, so initialize it recursively:
+The source tree provides these dependencies as pinned submodules:
+
+- [bgfx](https://github.com/bkaradzic/bgfx), vendored through
+  `thirdparty/bgfx.cmake` at a tested tag. That submodule contains bgfx, bx,
+  and bimg as nested submodules.
+- [libbase64](https://github.com/aklomp/base64), used for Base64 encoding and
+  decoding.
+
+Initialize the dependencies recursively:
 
 ```powershell
 git submodule update --init --recursive

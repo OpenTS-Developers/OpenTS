@@ -13,9 +13,6 @@ add_executable(SpawnContract
     "${CMAKE_SOURCE_DIR}/code/cstraw.cpp"
     "${CMAKE_SOURCE_DIR}/code/pipe.cpp"
     "${CMAKE_SOURCE_DIR}/code/xpipe.cpp"
-    "${CMAKE_SOURCE_DIR}/code/b64straw.cpp"
-    "${CMAKE_SOURCE_DIR}/code/b64pipe.cpp"
-    "${CMAKE_SOURCE_DIR}/code/base64.cpp"
     "${CMAKE_SOURCE_DIR}/code/crc.cpp"
     "${CMAKE_SOURCE_DIR}/code/pk.cpp"
     "${CMAKE_SOURCE_DIR}/code/int.cpp"
@@ -39,7 +36,7 @@ target_compile_options(SpawnContract PRIVATE
     $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
 )
 
-target_link_libraries(SpawnContract PRIVATE kernel32 user32 shell32)
+target_link_libraries(SpawnContract PRIVATE base64 kernel32 user32 shell32)
 
 set_target_properties(SpawnContract PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

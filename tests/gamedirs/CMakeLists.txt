@@ -9,9 +9,6 @@ add_executable(GameDirs
     "${CMAKE_SOURCE_DIR}/code/rawfile.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
-    "${CMAKE_SOURCE_DIR}/code/b64pipe.cpp"
-    "${CMAKE_SOURCE_DIR}/code/b64straw.cpp"
-    "${CMAKE_SOURCE_DIR}/code/base64.cpp"
     "${CMAKE_SOURCE_DIR}/code/buff.cpp"
     "${CMAKE_SOURCE_DIR}/code/crc.cpp"
     "${CMAKE_SOURCE_DIR}/code/cstraw.cpp"
@@ -42,7 +39,7 @@ target_compile_options(GameDirs PRIVATE
     $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
 )
 
-target_link_libraries(GameDirs PRIVATE kernel32 user32 shell32)
+target_link_libraries(GameDirs PRIVATE base64 kernel32 user32 shell32)
 
 set_target_properties(GameDirs PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin"

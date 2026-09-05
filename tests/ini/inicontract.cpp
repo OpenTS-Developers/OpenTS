@@ -27,6 +27,8 @@
 #include "xpipe.h"
 #include "xstraw.h"
 
+int Test_UUBlock(void);
+
 namespace {
 
 int Failures = 0;
@@ -541,6 +543,8 @@ int main(void)
 		for (char * token = std::strtok(tokens.data(), ","); token != NULL; token = std::strtok(NULL, ",")) count++;
 		Check(count == 250, "a long list tokenizes to every name it holds");
 	}
+
+	Failures += Test_UUBlock();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

@@ -70,8 +70,6 @@
 
 #include "ini.h"
 
-#include "b64pipe.h"
-#include "b64straw.h"
 #include "cstraw.h"
 #include "dbgprint.h"
 #include "pk.h"
@@ -80,12 +78,15 @@
 #include "xpipe.h"
 #include "xstraw.h"
 
+#include <libbase64.h>
+
 #include <algorithm>
 #include <cctype>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <vector>
 
 /***********************************************************************************************
  * INIClass::Clear -- Clears out a section (or all sections) of the INI data.                  *
@@ -651,19 +652,20 @@ bool INIClass::Put_UUBlock(char const * section, void const * block, int len)
 
 	Clear(section);
 
-	BufferStraw straw(block, len);
-	Base64Straw bstraw(Base64Straw::ENCODE);
-	bstraw.Get_From(straw);
+	size_t encoded_size = ((static_cast<size_t>(len) + 2) / 3) * 4;
+	std::vector<char> encoded(encoded_size);
+	size_t output_size = 0;
+	base64_encode(static_cast<char const *>(block), static_cast<size_t>(len),
+		encoded.data(), &output_size, 0);
 
 	int counter = 1;
-
-	for (;;) {
+	for (size_t offset = 0; offset < output_size; offset += 70) {
 		char buffer[71];
 		char sbuffer[32];
 
-		int length = bstraw.Get(buffer, sizeof(buffer)-1);
+		size_t length = std::min<size_t>(70, output_size - offset);
+		std::memcpy(buffer, encoded.data() + offset, length);
 		buffer[length] = '\0';
-		if (length == 0) break;
 
 		sprintf(sbuffer, "%d", counter);
 		Put_String(section, sbuffer, buffer);
@@ -699,23 +701,47 @@ bool INIClass::Put_UUBlock(char const * section, void const * block, int len)
  *=============================================================================================*/
 int INIClass::Get_UUBlock(char const * section, void * block, int len) const
 {
-	if (section == NULL) return(0);
+	if (section == NULL || block == NULL || len < 1) return(0);
 
-	Base64Pipe b64pipe(Base64Pipe::DECODE);
-	BufferPipe bpipe(block, len);
-
-	b64pipe.Put_To(&bpipe);
+	base64_state state;
+	base64_stream_decode_init(&state, 0);
 
 	int total = 0;
 	int counter = Entry_Count(section);
+	bool finished = false;
 	for (int index = 0; index < counter; index++) {
 		char buffer[128];
+		char filtered[128];
+		char decoded[sizeof(filtered) * 3 / 4];
 
 		int length = Get_String(section, Get_Entry(section, index), "=", buffer, sizeof(buffer));
-		int outcount = b64pipe.Put(buffer, length);
-		total += outcount;
+		int filtered_count = 0;
+		for (int offset = 0; offset < length; offset++) {
+			char value = buffer[offset];
+			bool valid = (value >= 'A' && value <= 'Z') || (value >= 'a' && value <= 'z')
+				|| (value >= '0' && value <= '9') || value == '+' || value == '/';
+			if (valid) {
+				filtered[filtered_count++] = value;
+			} else if (value == '=') {
+				filtered[filtered_count++] = value;
+				finished = true;
+				break;
+			}
+		}
+
+		size_t decoded_count = 0;
+		if (filtered_count > 0
+			&& !base64_stream_decode(&state, filtered, filtered_count, decoded, &decoded_count)) {
+			break;
+		}
+
+		int copy_count = std::min(len - total, static_cast<int>(decoded_count));
+		std::memcpy(static_cast<char *>(block) + total, decoded, copy_count);
+		total += copy_count;
+		if (finished || total == len) {
+			break;
+		}
 	}
-	total += b64pipe.End();
 	return(total);
 }
 

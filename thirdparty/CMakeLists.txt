@@ -20,6 +20,17 @@ set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
 add_subdirectory(bgfx.cmake)
 
+# libbase64 is used as an embedded library, without its command-line tool.
+set(BASE64_BUILD_CLI OFF CACHE BOOL "" FORCE)
+set(BASE64_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(BASE64_WERROR OFF CACHE BOOL "" FORCE)
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libbase64/CMakeLists.txt")
+    message(FATAL_ERROR
+        "thirdparty/libbase64 is empty. Fetch the submodules with:\n"
+        "  git submodule update --init --recursive")
+endif()
+add_subdirectory(libbase64)
+
 # These libraries support the disabled texture tools and are not linked into OpenTS.
 set_target_properties(bimg_decode bimg_encode PROPERTIES EXCLUDE_FROM_ALL TRUE)
 

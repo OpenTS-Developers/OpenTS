@@ -1,3 +1,6 @@
 [submodule "thirdparty/bgfx.cmake"]
 	path = thirdparty/bgfx.cmake
 	url = https://github.com/bkaradzic/bgfx.cmake.git
+[submodule "thirdparty/libbase64"]
+	path = thirdparty/libbase64
+	url = https://github.com/aklomp/base64.git
