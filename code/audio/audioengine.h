@@ -51,6 +51,10 @@ class AudioEngineClass
 		// Plays a file through the game's file layer without loading it whole.
 		AudioHandle Open_Stream(char const * filename, AudioGroupType group, float volume, bool loop);
 
+		// Stops a stream and returns once its file is closed, so the archive it
+		// came from may be released afterwards.
+		void Stop_Stream(AudioHandle handle);
+
 		// Screens that own their sample data address it by pointer.
 		bool Is_Sample_Playing(void const * aud) const;
 		void Stop_Sample_Playing(void const * aud);
