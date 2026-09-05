@@ -24,7 +24,6 @@ void Net2EncodeGameopt(char *out);
 void Net2SetAccept(char *who, int status);
 int Net2GetAccept(char *who);
 int Net2SetHouseAndColor(char *who, int house, int color);
-bool Decrypt_Serial(char *buffer);
 bool Net2Remote_Connect(void);
 bool Process_Global_Packet(GlobalPacketType *packet, IPXAddressClass *address);
 void Net2DisplayGameList(void);

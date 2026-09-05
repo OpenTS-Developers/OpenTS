@@ -1495,7 +1495,7 @@ void Send_Preview_To_Guests(void)
 				Call_Back();
 
 				GlobalPacketType response = {};
-				int length = 455;
+				int length = sizeof(response);
 				unsigned short product_id;
 
 				if (Ipx.Get_Global_Message(&response, sizeof(response), &length, &sender_address, &product_id)) {

@@ -108,8 +108,8 @@ class SaveStreamClass;
 //...........................................................................
 #define DEFAULT_FRAME_SEND_RATE		3
 
-#define SERIAL_MAX					23
-#define ENCRYPTION_STRING_LENGTH	128
+// Retains the global packet layout used by existing clients.
+#define GLOBAL_PACKET_RESERVED_SIZE	23
 
 //---------------------------------------------------------------------------
 // Enums
@@ -218,7 +218,6 @@ struct NodeNameType {
 			unsigned int LastTime;		// last time we heard from this guy
 		} Game;
 		struct {
-			char Serial[SERIAL_MAX];	//
 			int House;					// "ActLike" House of this player
 			int Color;					// Color of this player
 			int ID;						// Actual House of this player
@@ -273,7 +272,7 @@ struct RemoteFileTransferType {
 struct GlobalPacketType {
 	NetCommandType Command;						// One of the enum's defined above
 	char Name[MPLAYER_NAME_MAX];				// Player or Game Name
-	char Serial[SERIAL_MAX];					//
+	char Reserved[GLOBAL_PACKET_RESERVED_SIZE];	// Reserved for global packet compatibility.
 	union {
 		struct {
 			unsigned int IsOpen		: 1;		// 1 = game is open for joining
@@ -291,22 +290,6 @@ struct GlobalPacketType {
 			unsigned int BuildNumber;			///
 		} PlayerInfo;
 		struct {
-			#if 0 /// Fields that fall 13 bytes short of where TS keeps FileLength (offset 0x83), so the region is padded instead of mapped.
-			char Scenario[DESCRIP_MAX];			// Scenario Name
-			unsigned int Credits;				// player's credits
-			unsigned int IsBases		: 1;	// 1 = bases are allowed
-			unsigned int IsTiberium	: 1;		// 1 = tiberium is allowed
-			unsigned int IsGoodies	: 1;		// 1 = goodies are allowed
-			unsigned int IsGhosties	: 1;		// 1 = ghosts are allowed
-			unsigned int OfficialScenario :1;	// Is this scenario an official Westwood one?
-			unsigned char BuildLevel;			// buildable level
-			unsigned char UnitCount;			// max # units
-			unsigned char AIPlayers;			// # of AI players allowed
-			int Seed;							// random number seed
-			SpecialClass Special;				// command-line options
-			unsigned int GameSpeed;				// Game Speed
-			unsigned int Version;				// version # common to all players
-			#endif
 			char pad[0x83 - 0x2F];
 			unsigned int FileLength;			// Length of scenario file to expect from host.
 			char ShortFileName[13];				// Name of scenario file to expect from host
@@ -379,6 +362,8 @@ struct GlobalPacketType {
 	};
 };
 #pragma pack()
+
+static_assert(sizeof(GlobalPacketType) == 455);
 
 //...........................................................................
 // For finding sync bugs; filled in by the engine when certain conditions

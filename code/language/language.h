@@ -570,8 +570,6 @@
 #define TXT_CONSENT_REQUIRED            849
 #define TXT_CLAN_NOSTART                850
 #define TXT_DISABLED                    851
-#define TXT_SERIALBANNED                852
-#define TXT_SERIALDUP                   853
 #define TXT_NOD04B                      854
 #define TXT_SEL_USER                    855
 #define TXT_GOLD                        856
@@ -581,7 +579,6 @@
 #define TXT_COLOR_IN_USE                860
 #define TXT_NO_CLAN                     861
 #define TXT_LANGCODE                    862
-#define TXT_SERIAL_DUP                  863
 #define TXT_SCENARIO_TOO_SMALL          864
 #define TXT_DOWNLOAD_FAILED             865
 #define TXT_GAME_RESTART                866
@@ -721,10 +718,8 @@
 #define IDC_REDEPLOY_MCV                1000
 #define TXT_FIRESTORM_NO_JOIN_TS        1001
 #define IDC_MAPGEN_HILLS                1001
-#define TXT_SERIALUNKNOWN               1002
 #define IDC_MAPGEN_TIME_OF_DAY          1002
 #define IDC_SERIAL_ERROR_CORRECTION     1002
-#define TXT_SKUSERIALMISMATCH           1003
 #define IDC_INTRO                       1003
 #define IDC_MAPGEN_PLAYERS              1003
 #define IDC_SERIAL_DATA_COMPRESSION     1003

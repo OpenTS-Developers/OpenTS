@@ -2090,8 +2090,6 @@ BEGIN
     TXT_CONSENT_REQUIRED    "Since you are under the age of 13 our privacy policy requires that you send us a parental consent form to continue.  Press 'yes' to open your web browser to this page."
     TXT_CLAN_NOSTART        "To start a BattleClan tournament game there needs to be an even number of people from two clans.  Everyone in the game must be in a clan."
     TXT_DISABLED            "Your account has been temporarily disabled.  Make sure the Email address you registered with is correct.  Would you like to open your web browser to get more information?"
-    TXT_SERIALBANNED        "(NOT USED ANYMORE)"
-    TXT_SERIALDUP           "Your Serial number is currently in use.  Would you like to open your web browser to get more information?"
     TXT_NOD04B              "Taking out this weak GDI position will allow us to reclaim our Sarajevo temple without interruption.  Move in under the cover of an ion storm when GDI's communications will be down.  Take out the comm center before the storm subsides."
     TXT_SEL_USER            "You must select a user to kick/ignore/ban them."
     TXT_GOLD                "Gold"
@@ -2101,7 +2099,6 @@ BEGIN
     TXT_COLOR_IN_USE        "The requested color is already taken."
     TXT_NO_CLAN             "You must be in a BattleClan to join this game."
     TXT_LANGCODE            "0"
-    TXT_SERIAL_DUP          "There are already 2 players with your serial# in that game."
 END
 
 STRINGTABLE DISCARDABLE 
@@ -2427,8 +2424,6 @@ BEGIN
     TXT_FIRESTORM_MUST_ENABLE "Firestorm must be enabled to join this game."
     TXT_FIRESTORM_NO_JOIN_TS 
                             "Unable to join original Tiberian Sun game with Firestorm enabled."
-    TXT_SERIALUNKNOWN       "Your serial number was not found.  This is most likely due to a mistyped serial number during installation.  You must reinstall the game, specifying a valid serial number, to play online."
-    TXT_SKUSERIALMISMATCH   "Your serial number is associated with a product other than Tiberian Sun.  You must reinstall the game, specifying a valid Tiberian Sun serial number, to play online."
     TXT_WDT_TIBERIUM_RANGE  "Very Scarce Tiberium"
     TXT_WDT_TIBERIUM_SCARCE "Scarce Tiberium"
     TXT_WDT_TIBERIUM_ABUNDANT "Abundant Tiberium"
