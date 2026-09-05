@@ -377,3 +377,118 @@ bool Audio_Decode_Other(void const * data, size_t size, std::vector<int16_t> & o
 	format.Channels = channels;
 	return(!output.empty());
 }
+
+
+struct AudioOtherStreamDecoderClass::DataClass {
+	ma_decoder Decoder;
+	AudioByteSourceClass * Source;
+	unsigned Rate;
+	unsigned Channels;
+
+	static ma_result Read_Proc(ma_decoder * decoder, void * buffer, size_t bytes, size_t * read)
+	{
+		DataClass * data = (DataClass *)decoder->pUserData;
+		*read = data->Source->Read(buffer, bytes);
+		return(*read == 0 && bytes > 0 ? MA_AT_END : MA_SUCCESS);
+	}
+
+	static ma_result Seek_Proc(ma_decoder * decoder, ma_int64 offset, ma_seek_origin origin)
+	{
+		DataClass * data = (DataClass *)decoder->pUserData;
+		ma_int64 target;
+		switch (origin) {
+			case ma_seek_origin_start:
+				target = offset;
+				break;
+			case ma_seek_origin_current:
+				target = (ma_int64)data->Source->Position() + offset;
+				break;
+			default:
+				target = (ma_int64)data->Source->Size() + offset;
+				break;
+		}
+		if (target < 0 || (size_t)target > data->Source->Size()) {
+			return(MA_BAD_SEEK);
+		}
+		return(data->Source->Seek((size_t)target) ? MA_SUCCESS : MA_BAD_SEEK);
+	}
+};
+
+
+AudioOtherStreamDecoderClass::AudioOtherStreamDecoderClass(void)
+{
+}
+
+
+AudioOtherStreamDecoderClass::~AudioOtherStreamDecoderClass(void)
+{
+	Close();
+}
+
+
+bool AudioOtherStreamDecoderClass::Open(AudioByteSourceClass & source)
+{
+	Close();
+	std::unique_ptr<DataClass> data(new (std::nothrow) DataClass());
+	if (data == nullptr) {
+		return(false);
+	}
+	data->Source = &source;
+	data->Rate = 0;
+	data->Channels = 0;
+
+	ma_decoder_config config = ma_decoder_config_init(ma_format_s16, 0, 0);
+	if (ma_decoder_init(DataClass::Read_Proc, DataClass::Seek_Proc, data.get(), &config, &data->Decoder) != MA_SUCCESS) {
+		return(false);
+	}
+
+	ma_format format;
+	ma_uint32 channels = 0;
+	ma_uint32 rate = 0;
+	if (ma_decoder_get_data_format(&data->Decoder, &format, &channels, &rate, nullptr, 0) != MA_SUCCESS || channels == 0 || channels > 2 || rate == 0) {
+		ma_decoder_uninit(&data->Decoder);
+		return(false);
+	}
+	data->Rate = rate;
+	data->Channels = channels;
+	Data = std::move(data);
+	return(true);
+}
+
+
+void AudioOtherStreamDecoderClass::Close(void)
+{
+	if (Data != nullptr) {
+		ma_decoder_uninit(&Data->Decoder);
+		Data.reset();
+	}
+}
+
+
+unsigned AudioOtherStreamDecoderClass::Rate(void) const
+{
+	return(Data != nullptr ? Data->Rate : 0);
+}
+
+
+unsigned AudioOtherStreamDecoderClass::Channels(void) const
+{
+	return(Data != nullptr ? Data->Channels : 0);
+}
+
+
+unsigned AudioOtherStreamDecoderClass::Read(int16_t * output, unsigned frames)
+{
+	if (Data == nullptr || frames == 0) {
+		return(0);
+	}
+	ma_uint64 read = 0;
+	ma_decoder_read_pcm_frames(&Data->Decoder, output, frames, &read);
+	return((unsigned)read);
+}
+
+
+bool AudioOtherStreamDecoderClass::Rewind(void)
+{
+	return(Data != nullptr && ma_decoder_seek_to_pcm_frame(&Data->Decoder, 0) == MA_SUCCESS);
+}

@@ -17,6 +17,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <vector>
 
 
@@ -121,3 +122,45 @@ bool Aud_Decode_Westwood(void const * source, unsigned compsize, unsigned char *
 // Decodes any format miniaudio supports from memory. Returns false for data it
 // does not recognise.
 bool Audio_Decode_Other(void const * data, size_t size, std::vector<int16_t> & output, AudioPcmFormat & format);
+
+
+// Sequential access to a file's bytes for the streaming decoders. The engine
+// wraps the game's file layer; tests wrap memory.
+class AudioByteSourceClass
+{
+	public:
+		virtual ~AudioByteSourceClass(void) = default;
+
+		virtual size_t Read(void * buffer, size_t bytes) = 0;
+		virtual bool Seek(size_t position) = 0;
+		virtual size_t Position(void) const = 0;
+		virtual size_t Size(void) const = 0;
+};
+
+
+// Streams any format miniaudio supports from a byte source, a few frames at a
+// time. The source must outlive the decoder.
+class AudioOtherStreamDecoderClass
+{
+	public:
+		AudioOtherStreamDecoderClass(void);
+		~AudioOtherStreamDecoderClass(void);
+
+		AudioOtherStreamDecoderClass(AudioOtherStreamDecoderClass const &) = delete;
+		AudioOtherStreamDecoderClass & operator=(AudioOtherStreamDecoderClass const &) = delete;
+
+		bool Open(AudioByteSourceClass & source);
+		void Close(void);
+		bool Is_Open(void) const { return(Data != nullptr); }
+
+		unsigned Rate(void) const;
+		unsigned Channels(void) const;
+
+		// Returns the frames read; zero at the end of the data.
+		unsigned Read(int16_t * output, unsigned frames);
+		bool Rewind(void);
+
+	private:
+		struct DataClass;
+		std::unique_ptr<DataClass> Data;
+};
