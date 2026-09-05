@@ -54,9 +54,7 @@ enum class AudioCommandType : uint8_t {
 	GROUP_SET_GAIN,
 	GROUP_SET_DUCK,
 	MASTER_SET_GAIN,
-	STOP_ALL,
-	PAUSE_ALL,
-	RESUME_ALL
+	STOP_ALL
 };
 
 
@@ -116,9 +114,13 @@ int const AUDIO_RENDER_BLOCK_FRAMES = 64;
 int const AUDIO_MAX_RENDER_FRAMES = 2048;
 int const AUDIO_PERIOD_MS = 10;
 int const AUDIO_PERIODS = 3;
+int const AUDIO_RESAMPLER_HEAP_BYTES = 1024;
+int const AUDIO_LPF_ORDER = 4;
+float const AUDIO_MAX_RATE_RATIO = 4.0f;
 
 // Timing.
 float const AUDIO_STOP_RAMP_SECONDS = 0.005f;
+float const AUDIO_PAUSE_RAMP_SECONDS = 0.005f;
 float const AUDIO_RETARGET_RAMP_SECONDS = 0.05f;
 float const AUDIO_END_RAMP_SECONDS = 0.25f;
 float const AUDIO_DUCK_RAMP_SECONDS = 0.25f;
