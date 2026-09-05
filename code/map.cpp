@@ -11640,29 +11640,32 @@ bool MapClass::Is_Something_Nearby(Cell const & cell, int radius)
 /// <summary>
 /// Determines if a coordinate is still under the shroud.
 /// Which cell a coordinate appears over depends on how high it is, so the height is folded
-/// into the lookup before the shroud is consulted.
+/// into the lookup before the shroud is consulted. The map debugger's unshroud toggle sees
+/// through it, and nothing is reported as hidden while that is active.
 /// </summary>
 /// <returns>bool; Is the coordinate still shrouded?</returns>
 bool MapClass::Is_Shrouded(Coord const & coord)
 {
-	int level_height = coord.Z / LEVEL_LEPTON_H;
-	if ((level_height & 1) != 0) {
-		int offset = level_height / 2 + 1;
-		Cell cell = coord.As_Cell();
-		CellClass * cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
-		if (cptr->IsMapped) {
-			return(false);
-		}
-		cptr = &cptr->Adjacent_Cell(FACING_SE);
-		if (!cptr->IsMapped) {
-			return(true);
-		}
-	} else {
-		int offset = level_height / 2;
-		Cell cell = coord.As_Cell();
-		CellClass * cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
-		if (!cptr->IsMapped) {
-			return(true);
+	if (!Debug_Unshroud) {
+		int level_height = coord.Z / LEVEL_LEPTON_H;
+		if ((level_height & 1) != 0) {
+			int offset = level_height / 2 + 1;
+			Cell cell = coord.As_Cell();
+			CellClass * cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
+			if (cptr->IsMapped) {
+				return(false);
+			}
+			cptr = &cptr->Adjacent_Cell(FACING_SE);
+			if (!cptr->IsMapped) {
+				return(true);
+			}
+		} else {
+			int offset = level_height / 2;
+			Cell cell = coord.As_Cell();
+			CellClass * cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
+			if (!cptr->IsMapped) {
+				return(true);
+			}
 		}
 	}
 	return(false);

@@ -40,6 +40,7 @@
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "logic.h"
+#include "map.h"
 #include "misc.h"
 #include "mpscore.h"
 #include "msgbox.h"
@@ -540,7 +541,14 @@ void Keyboard_Process(KeyNumType & input)
 		if ((Debug_Flag || Debug_Playtest) && plain == KN_F4) {
 			if (Session.Type == GAME_NORMAL) {
 				Debug_Unshroud = (Debug_Unshroud == false);
-				Map.Flag_To_Redraw(GS_REDRAW_ALL);
+
+				// The same pair the reveal and blackout crates use, so turning this off
+				// leaves normal vision to re-explore the map rather than leaving it dark.
+				if (Debug_Unshroud) {
+					Map.Reveal_The_Map(true);
+				} else {
+					Map.Shroud_The_Map();
+				}
 			}
 		}
 
