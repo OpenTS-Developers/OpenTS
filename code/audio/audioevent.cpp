@@ -32,53 +32,6 @@ int const DEFAULT_BUDGET = 16;
 } // namespace
 
 
-AudioEventTypeClass::AudioEventTypeClass(void) :
-	SoundCount(0),
-	Priority(10),
-	Volume(1.0f),
-	MinVolume(0.0f),
-	Range(28),
-	Limit(3),
-	Loop(0),
-	DelayMin(0),
-	DelayMax(0),
-	FShiftMin(0),
-	FShiftMax(0),
-	VShiftMin(0),
-	VShiftMax(0),
-	AttackCount(0),
-	DecayCount(0),
-	Type(SOUND_TYPE_SCREEN),
-	Control(SOUND_CONTROL_NONE),
-	Group(AUDIO_GROUP_SFX),
-	LiveCount(0),
-	SequentialIndex(0)
-{
-	Name[0] = '\0';
-	std::memset(Sounds, 0, sizeof(Sounds));
-}
-
-
-unsigned AudioEventTypeClass::Body_Start(void) const
-{
-	unsigned attack = (AttackCount > 0) ? (unsigned)AttackCount : 0;
-	unsigned decay = (DecayCount > 0) ? (unsigned)DecayCount : 0;
-	return(attack + decay < SoundCount ? attack : 0);
-}
-
-
-unsigned AudioEventTypeClass::Body_Count(void) const
-{
-	unsigned attack = (AttackCount > 0) ? (unsigned)AttackCount : 0;
-	unsigned decay = (DecayCount > 0) ? (unsigned)DecayCount : 0;
-	if (attack + decay >= SoundCount) {
-		// Not enough sounds to spare any: the whole list is the body.
-		return(SoundCount);
-	}
-	return(SoundCount - attack - decay);
-}
-
-
 struct AudioEventPoolClass::EventClass {
 	AudioEventState State;
 	unsigned Generation;
