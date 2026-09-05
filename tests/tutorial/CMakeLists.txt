@@ -5,6 +5,7 @@ add_executable(TutorialText
     "${CMAKE_CURRENT_SOURCE_DIR}/tutorialcontract.cpp"
     "${CMAKE_SOURCE_DIR}/code/tutorial.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
+    "${CMAKE_SOURCE_DIR}/code/utf8.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64pipe.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64straw.cpp"
@@ -35,8 +36,8 @@ add_dependencies(TutorialText OpenTSBuildStamp)
 target_compile_definitions(TutorialText PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(TutorialText PRIVATE
-    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>
-    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
+    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus /utf-8>
+    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus /utf-8>
 )
 
 target_link_libraries(TutorialText PRIVATE kernel32 user32 shell32)

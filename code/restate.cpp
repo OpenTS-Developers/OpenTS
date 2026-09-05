@@ -550,7 +550,7 @@ void RestateMission::Cleanup(void)
 void RestateMission::Do_Custom_Draw(Surface *surface)
 {
 	if (String != NULL) {
-		Font->Draw_String(surface, (unsigned char *)String, StringRect.X, StringRect.Y, 2);
+		Font->Draw_String(surface, String, StringRect.X, StringRect.Y, 2);
 	}
 	if (ButtonList != NULL) {
 		ButtonList->Draw_All();

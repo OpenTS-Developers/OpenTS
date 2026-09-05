@@ -77,6 +77,7 @@
 #include "pk.h"
 #include "rect.h"
 #include "trim.h"
+#include "utf8.h"
 #include "xpipe.h"
 #include "xstraw.h"
 
@@ -242,8 +243,26 @@ int INIClass::Load(Straw & ffile, bool keepcomments, char const * source)
 	INISection * current = NULL;
 	std::string currentname;
 	bool sawsection = false;
+	bool first = true;
+
+	if (!merge) {
+		Transcoded = 0;
+	}
 
 	while (Read_Line(file, line)) {
+		if (first) {
+			first = false;
+			if (line.compare(0, 3, "\xEF\xBB\xBF") == 0) {
+				line.erase(0, 3);
+			}
+		}
+
+		// A file written in the Windows code page keeps its accented characters.
+		if (!UTF8::Is_Valid(line)) {
+			line = UTF8::From_Windows_1252(line);
+			Transcoded++;
+		}
+
 		char * buffer = line.data();
 
 		if (Is_A_Section(buffer)) {

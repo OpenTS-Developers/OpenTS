@@ -73,6 +73,7 @@ class INIClass {
 		int Load(Straw & file, bool keepcomments = false);
 		int Save(FileClass & file) const;
 		int Save(Pipe & file) const;
+		unsigned Transcoded_Lines(void) const {return(Transcoded);}
 
 		/*
 		**	Erase all data within this INI file manager.
@@ -223,6 +224,9 @@ class INIClass {
 
 	protected:
 		int Load(Straw & file, bool keepcomments, char const * source);
+
+		// Lines that were not valid UTF-8 and were read as Windows-1252 instead.
+		unsigned Transcoded = 0;
 
 		// The outcome of reading a numeric value: the entry is absent, it is present but does
 		// not hold the numbers asked for, or every number was read.

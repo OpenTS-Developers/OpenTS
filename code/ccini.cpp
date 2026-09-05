@@ -100,6 +100,7 @@
 #include "target.h"
 #include "theme.h"
 #include "unittype.h"
+#include "utf8.h"
 #include "veteran.h"
 #include "voc.h"
 #include "vox.h"
@@ -197,6 +198,27 @@ int CCINIClass::Load(FileClass & file, bool withdigest, bool loadcomments)
 }
 
 
+namespace {
+
+// A file read as Windows-1252 was digested as written, so the database is hashed that way.
+bool Windows_1252_Digest_Matches(INIClass const & ini, unsigned char const * expected)
+{
+	std::string text;
+	StringPipe pipe(text);
+	ini.Save(pipe);
+
+	std::string legacy = UTF8::To_Windows_1252(text);
+	SHAPipe sha;
+	sha.Put(legacy.data(), (int)legacy.size());
+
+	unsigned char digest[20];
+	sha.Result(digest);
+	return(memcmp(digest, expected, sizeof(digest)) == 0);
+}
+
+}
+
+
 /***********************************************************************************************
  * CCINIClass::Load -- Load the INI database from the data stream specified.                   *
  *                                                                                             *
@@ -245,7 +267,9 @@ int CCINIClass::Load(Straw & file, bool withdigest, bool loadcomments, char cons
 			**	If the message digests don't match, then return with the special error code.
 			*/
 			if (memcmp(digest, Digest, sizeof(digest)) != 0) {
-				return(2);
+				if (Transcoded == 0 || !Windows_1252_Digest_Matches(*this, digest)) {
+					return(2);
+				}
 			}
 		}
 	}

@@ -9,6 +9,7 @@ add_executable(GameDirs
     "${CMAKE_SOURCE_DIR}/code/rawfile.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
+    "${CMAKE_SOURCE_DIR}/code/utf8.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64pipe.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64straw.cpp"
     "${CMAKE_SOURCE_DIR}/code/base64.cpp"
@@ -38,8 +39,8 @@ add_dependencies(GameDirs OpenTSBuildStamp)
 target_compile_definitions(GameDirs PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(GameDirs PRIVATE
-    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>
-    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
+    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus /utf-8>
+    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus /utf-8>
 )
 
 target_link_libraries(GameDirs PRIVATE kernel32 user32 shell32)

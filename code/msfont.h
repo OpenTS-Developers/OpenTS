@@ -35,11 +35,16 @@ class MSFont
 
 		void Get_String_Rect(char const * string, Rect & rect);
 
-		virtual int Get_Character_Width(unsigned char character);
+		// Text is UTF-8, so a lone byte is not a character and does not compile as one.
+		virtual int Get_Character_Width(char32_t code);
+		int Get_Character_Width(char) = delete;
+		int Get_Character_Width(unsigned char) = delete;
 		virtual int Get_String_Width(char const * string);
 
-		virtual void Draw_String(Surface * surface, unsigned char const * string, int x, int y, int frame);
-		virtual void Draw_Character(Surface * surface, unsigned char character, int x, int y, int frame, bool do_sound);
+		virtual void Draw_String(Surface * surface, char const * string, int x, int y, int frame);
+		virtual void Draw_Character(Surface * surface, char32_t code, int x, int y, int frame, bool do_sound);
+		void Draw_Character(Surface *, char, int, int, int, bool) = delete;
+		void Draw_Character(Surface *, unsigned char, int, int, int, bool) = delete;
 
 	private:
 		/*

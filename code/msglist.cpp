@@ -64,6 +64,7 @@
 #include "scheme.h"
 #include "surface.h"
 #include "txtlabel.h"
+#include "utf8.h"
 #include "vector.h"
 
 #include <cstdio>
@@ -316,7 +317,13 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 			if (txt[_len] == '\n' || txt[_len] == '\0') {
 				break;
 			}
-			_width += font->Char_Pixel_Width(txt[_len++]);
+			int length;
+			char32_t code = UTF8::Peek(txt + _len, length);
+			if (_len + length > int(sizeof(message)-2)) {
+				break;
+			}
+			_width += font->Char_Pixel_Width(code);
+			_len += length;
 		}
 
 		int _olen = _len;
@@ -334,7 +341,8 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 				if (_width <= Width) {
 					break;
 				}
-				_width -= font->Char_Pixel_Width(txt[_len--]);
+				_width -= font->Char_Pixel_Width(UTF8::Peek(txt + _len));
+				_len = (int)(UTF8::Previous(txt, txt + _len) - txt);
 
 			}
 		}
@@ -380,18 +388,21 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 			if (message[i] == '\0' || message[i] == '\n') {
 				break;
 			}
-			charw += font->Char_Pixel_Width(message[i++]);
+			int length;
+			charw += font->Char_Pixel_Width(UTF8::Peek(message + i, length));
+			i += length;
 		}
 
 		if (charw > Width) {
-			i--;
+			i = (int)(UTF8::Previous(message, message + i) - message);
 			print_this_pass = i;
 			if (i > 0) {
 				while (i > 0) {
 					if (message[i] == '\0' || message[i] == ' ' || message[i] == '\n') {
 						break;
 					}
-					charw -= font->Char_Pixel_Width(message[i--]);
+					charw -= font->Char_Pixel_Width(UTF8::Peek(message + i));
+					i = (int)(UTF8::Previous(message, message + i) - message);
 				}
 				if (i > 0) {
 					print_this_pass = i;
@@ -1168,7 +1179,7 @@ int MessageListClass::Input(KeyNumType &input)
 						int width = font->String_Pixel_Width(EditBuf);
 						if (width >= Width-10) {
 							overflowed = true;
-							EditCurPos--;
+							EditCurPos -= length;
 							EditBuf[EditCurPos] = 0;
 							retcode = 0;
 						}
@@ -1397,6 +1408,8 @@ int MessageListClass::Trim_Message(char * dest, char * src, int min_chars,
 	if (!found) {
 		i = min_chars;
 	}
+
+	i = (int)UTF8::Boundary_Before(src, i);
 
 	//------------------------------------------------------------------------
 	// Save trimmed characters in the dest buffer, if there is one

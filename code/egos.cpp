@@ -315,6 +315,11 @@ void Show_Who_Was_Responsible (void)
 	**	Search through the text file and extract the strings, using each string to create
 	**	a new EgoClass
 	*/
+	if (length >= 3 && memcmp(cptr, "\xEF\xBB\xBF", 3) == 0) {
+		cptr += 3;
+		length -= 3;
+	}
+
 	do {
 		/*
 		**	Search for text

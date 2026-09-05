@@ -542,6 +542,20 @@ int main(void)
 		Check(count == 250, "a long list tokenizes to every name it holds");
 	}
 
+	{
+		INIClass ini;
+		Read(ini, "\xEF\xBB\xBF[General]\nKey=Value\n");
+		Check(Value_Is(ini, "General", "Key", "Value"), "a leading byte order mark does not hide the first section");
+	}
+
+	{
+		INIClass ini;
+		Read(ini, "[General]\nLegacy=caf\xE9\nPlain=caf\xC3\xA9\n");
+		Check(Value_Is(ini, "General", "Legacy", "caf\xC3\xA9"), "a Windows-1252 value is read as its UTF-8 form");
+		Check(Value_Is(ini, "General", "Plain", "caf\xC3\xA9"), "a UTF-8 value is left as it is");
+		Check(ini.Transcoded_Lines() == 1, "only the line that was not UTF-8 counts as transcoded");
+	}
+
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
 }

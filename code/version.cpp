@@ -287,6 +287,9 @@ void VersionClass::Read_Text_String(void)
 	if (file.Is_Available()) {
 		file.Read(VersionText, sizeof(VersionText));
 		VersionText[sizeof(VersionText)-1] = '\0';
+		if (strncmp(VersionText, "\xEF\xBB\xBF", 3) == 0) {
+			memmove(VersionText, VersionText + 3, strlen(VersionText + 3) + 1);
+		}
 		while (VersionText[strlen(VersionText)-1] == '\r') {
 			VersionText[strlen(VersionText)-1] = '\0';
 		}

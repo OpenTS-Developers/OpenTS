@@ -3,6 +3,7 @@
 add_executable(IniContract
     "${CMAKE_CURRENT_SOURCE_DIR}/inicontract.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
+    "${CMAKE_SOURCE_DIR}/code/utf8.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64pipe.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64straw.cpp"
@@ -33,8 +34,8 @@ add_dependencies(IniContract OpenTSBuildStamp)
 target_compile_definitions(IniContract PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(IniContract PRIVATE
-    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>
-    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
+    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus /utf-8>
+    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus /utf-8>
 )
 
 target_link_libraries(IniContract PRIVATE kernel32 user32 shell32)

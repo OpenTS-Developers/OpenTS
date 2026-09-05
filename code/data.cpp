@@ -37,6 +37,8 @@
 
 #include "data.h"
 
+#include "utf8.h"
+
 #include <new.h>
 
 HINSTANCE LanguageResources;
@@ -254,6 +256,12 @@ char const * Fetch_String(int id)
 		return("");
 	}
 	stringptr[sizeof(_buffers[oldest].String)-1] = '\0';
+
+	// Windows before 10 version 1903 ignores the manifest and narrows to its own code page.
+	if (GetACP() != CP_UTF8) {
+		std::string text = UTF8::From_Windows_1252(stringptr);
+		UTF8::Copy(stringptr, sizeof(_buffers[oldest].String), text.c_str());
+	}
 	return(stringptr);
 }
 
