@@ -34,6 +34,8 @@ them.
 
 ## Formatting
 
+- Save source files as UTF-8 without a byte order mark, and write a byte
+  outside ASCII in a string or character literal as an escape.
 - Use tabs for indentation, displayed at four columns, and spaces for
   alignment.
 - Keep established brace placement and local spacing.
