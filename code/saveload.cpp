@@ -134,6 +134,8 @@
 #include "vein.h"
 #include "vox.h"
 #include "warhead.h"
+#include "ambient.h"
+#include "voc.h"
 #include "wave.h"
 #include "waypoint.h"
 #include "weapon.h"
@@ -1406,6 +1408,11 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	if (stream.Is_Loading()) {
 		Autosave.Seed_Slots(campaign_slot, skirmish_slot);
 	}
+
+	// Placed sounds and the sounds attached to objects come back on the next
+	// sound tick; the playing sounds themselves are not saved.
+	Static_Sounds_Serialize(stream);
+	AmbientSounds.Serialize(stream);
 }
 
 
