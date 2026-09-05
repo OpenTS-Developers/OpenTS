@@ -62,3 +62,10 @@ extern AutosaveClass Autosave;
 
 // The file a quick save of one kind of game is written under and read back from.
 std::string Quick_Save_File_Name(AutosaveClass::KindType kind);
+
+// Multiplayer saves are numbered from zero in the pattern the client lists, a thousand at most.
+constexpr int MULTIPLAYER_SAVE_SLOTS = 1000;
+std::string Multiplayer_Save_File_Name(int slot);
+
+// The slot a numbered multiplayer save's file name carries, or -1 for any other name.
+int Multiplayer_Save_Slot(char const * file_name);

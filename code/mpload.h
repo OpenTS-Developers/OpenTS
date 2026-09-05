@@ -9,11 +9,13 @@
 
 #pragma once
 
+#include "autosave.h"
+
 #include <cstdint>
 
 /*
- * The multiplayer save every machine has agreed to load, and when. Times are milliseconds
- * handed in, so it holds no engine state.
+ * The numbered multiplayer save every machine has agreed to load, and when. Times are
+ * milliseconds handed in, so it holds no engine state.
  */
 class MultiplayerLoadClass
 {
@@ -21,14 +23,10 @@ class MultiplayerLoadClass
 
 		static constexpr std::int64_t COUNTDOWN_MS = 5000;
 
-		// An 8.3 name and its terminator, which is all a request carries.
-		static constexpr int NAME_MAX = 13;
+		static bool Slot_Is_Valid(int slot) {return(slot >= 0 && slot < MULTIPLAYER_SAVE_SLOTS);}
 
-		// A bare 8.3 name ending in .NET that is not the fixed multiplayer save.
-		static bool Name_Is_Valid(char const * name);
-
-		// Refuses an invalid name and a second request while one is pending.
-		bool Schedule(char const * name, std::int64_t now);
+		// Refuses an invalid slot and a second request while one is pending.
+		bool Schedule(int slot, std::int64_t now);
 		bool Is_Pending(void) const {return(IsPending);}
 		bool Is_Due(std::int64_t now) const;
 
@@ -36,14 +34,15 @@ class MultiplayerLoadClass
 		int Seconds_Left(std::int64_t now) const;
 		std::int64_t Milliseconds_Left(std::int64_t now) const;
 
-		char const * File_Name(void) const {return(FileName);}
+		// The scheduled slot, or -1 while nothing is pending.
+		int Slot(void) const {return(SlotNumber);}
 		void Clear(void);
 
 	private:
 
 		bool IsPending = false;
 		std::int64_t DueAt = 0;
-		char FileName[NAME_MAX] = "";
+		int SlotNumber = -1;
 };
 
 extern MultiplayerLoadClass MultiplayerLoad;

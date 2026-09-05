@@ -180,9 +180,8 @@ namespace NetGlobal
 				if (!Sender_Is_Master(context)) {
 					return(DecodeError::SENDER_NOT_MASTER);
 				}
-				if (!Has_Terminator(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName))
-					|| !MultiplayerLoadClass::Name_Is_Valid(packet.LoadGame.FileName)) {
-					return(DecodeError::INVALID_SAVE_NAME);
+				if (!MultiplayerLoadClass::Slot_Is_Valid(packet.LoadGame.Slot)) {
+					return(DecodeError::INVALID_SAVE_SLOT);
 				}
 				break;
 
@@ -237,7 +236,7 @@ namespace NetGlobal
 			case DecodeError::KICK_PROPOSAL_QUEUE_FULL: return("kick proposal queue full");
 			case DecodeError::AMBIGUOUS_SENDER: return("ambiguous session-member endpoint");
 			case DecodeError::SENDER_NOT_MASTER: return("sender is not the master");
-			case DecodeError::INVALID_SAVE_NAME: return("invalid saved game name");
+			case DecodeError::INVALID_SAVE_SLOT: return("invalid saved game slot");
 			case DecodeError::COUNT: break;
 		}
 

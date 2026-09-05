@@ -39,6 +39,8 @@
 
 #include "always.h"
 
+#include "autosave.h"
+
 #include "loaddlg.h"
 
 #include "campaign.h"
@@ -797,10 +799,6 @@ bool LoadOptionsClass::Files_Present(void)
 				continue;
 			}
 
-			if (_stricmp(find_data.cFileName, NET_SAVE_FILE_NAME) == 0) {
-				continue;
-			}
-
 			FileEntryClass entry;
 			if (Read_File(&entry, &find_data) == true) {
 				files_found = true;
@@ -902,8 +900,7 @@ bool LoadOptionsClass::Delete_File(const char * file_name)
 /// Fills in a save game list entry from a file found on disk.
 /// This routine peeks at the save game's header to recover the description, scenario
 /// and player it belongs to. A save written by an older game version is still accepted,
-/// but its description is marked so the player can tell, and the network save file is
-/// never offered.
+/// but its description is marked so the player can tell.
 /// </summary>
 /// <param name="fdata">The list entry to fill in.</param>
 /// <param name="ff">The find record naming the file to examine.</param>
@@ -914,38 +911,34 @@ bool LoadOptionsClass::Read_File(FileEntryClass * fdata, WIN32_FIND_DATAA * ff)
 		return(false);
 	}
 
-	if (stricmp(ff->cFileName, NET_SAVE_FILE_NAME) != 0) {
+	SaveVersionInfo savever;
 
-		SaveVersionInfo savever;
-
-		/*
-		 * get the game's info;
-		 */
-		bool ok = Get_Savefile_Info(ff->cFileName, &savever);
-		if (!ok) {
-			return(false);
-		}
-
-		if (savever.Get_Internal_Version() != ExpectedGameVersion) {
-			return(false);
-		}
-
-		wsprintf(fdata->Descr, "%s", savever.Get_Scenario_Description());
-
-		fdata->Valid = ok;
-		fdata->Scenario = savever.Get_Scenario_Number();
-		fdata->Num = savever.Get_Campaign_Number();
-		fdata->Type = (GameType)savever.Get_Game_Type();
-		strcpy(fdata->Filename, ff->cFileName);
-		strcpy(fdata->PlayerName, savever.Get_Player_House());
-		if (strlen(fdata->Filename) == 0) {
-			strcpy(fdata->Filename, ff->cAlternateFileName);
-		}
-		fdata->DateTime.dwHighDateTime = ff->ftLastWriteTime.dwHighDateTime;
-		fdata->DateTime.dwLowDateTime = ff->ftLastWriteTime.dwLowDateTime;
-		return(true);
+	/*
+	 * get the game's info;
+	 */
+	bool ok = Get_Savefile_Info(ff->cFileName, &savever);
+	if (!ok) {
+		return(false);
 	}
-	return(false);
+
+	if (savever.Get_Internal_Version() != ExpectedGameVersion) {
+		return(false);
+	}
+
+	wsprintf(fdata->Descr, "%s", savever.Get_Scenario_Description());
+
+	fdata->Valid = ok;
+	fdata->Scenario = savever.Get_Scenario_Number();
+	fdata->Num = savever.Get_Campaign_Number();
+	fdata->Type = (GameType)savever.Get_Game_Type();
+	strcpy(fdata->Filename, ff->cFileName);
+	strcpy(fdata->PlayerName, savever.Get_Player_House());
+	if (strlen(fdata->Filename) == 0) {
+		strcpy(fdata->Filename, ff->cAlternateFileName);
+	}
+	fdata->DateTime.dwHighDateTime = ff->ftLastWriteTime.dwHighDateTime;
+	fdata->DateTime.dwLowDateTime = ff->ftLastWriteTime.dwLowDateTime;
+	return(true);
 }
 
 
@@ -967,12 +960,11 @@ bool MultiplayerLoadOptionsClass::Load_File(const char * file_name)
 
 
 /// <summary>
-/// Lists a numbered save of this kind of game. The fixed multiplayer save is never offered:
-/// it is the autosave target, and a client renames it as soon as it is written.
+/// Lists a numbered save of this kind of game and nothing else.
 /// </summary>
 bool MultiplayerLoadOptionsClass::Read_File(FileEntryClass * entry, WIN32_FIND_DATAA * ff)
 {
-	if (entry == NULL || ff == NULL || stricmp(ff->cFileName, NET_SAVE_FILE_NAME) == 0) {
+	if (entry == NULL || ff == NULL || Multiplayer_Save_Slot(ff->cFileName) < 0) {
 		return(false);
 	}
 	return(LoadOptionsClass::Read_File(entry, ff) && entry->Type == Session.Type);

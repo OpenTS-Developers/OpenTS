@@ -14,6 +14,7 @@
 #include "netreader.h"
 #include "netglobal.h"
 #include "netsemantic.h"
+#include "autosave.h"
 
 #include <array>
 #include <cstddef>
@@ -823,7 +824,7 @@ void Test_Global_Packets(void)
 
 	for (NetCommandType command : {NET_HOST_ANNOUNCE, NET_DESYNC_HEARTBEAT, NET_DESYNC_CONTINUE, NET_LOAD_GAME}) {
 		packet = Global_Packet(command);
-		std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "SVGM_000.NET");
+		packet.LoadGame.Slot = 0;
 		Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::SENDER_NOT_MEMBER,
 			"the out-of-sync and load commands reject a source outside Session.Players");
 	}
@@ -844,20 +845,14 @@ void Test_Global_Packets(void)
 		"a continue decision from the master passes");
 
 	packet = Global_Packet(NET_LOAD_GAME);
-	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "SVGM_007.NET");
+	packet.LoadGame.Slot = 7;
 	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::SENDER_NOT_MASTER,
 		"a load request from a member that is not master is refused");
 	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::NONE,
 		"a load request from the master naming a numbered save passes");
-	std::memset(packet.LoadGame.FileName, 'x', sizeof(packet.LoadGame.FileName));
-	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_NAME,
-		"a load request needs a terminated name");
-	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "..\\X.NET");
-	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_NAME,
-		"a load request may not carry a path");
-	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "SAVEGAME.NET");
-	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_NAME,
-		"the fixed multiplayer save cannot be requested");
+	packet.LoadGame.Slot = MULTIPLAYER_SAVE_SLOTS;
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_SLOT,
+		"a load request needs a slot the numbered saves can hold");
 
 	NetGlobal::RejectionCounters counters;
 	NetGlobal::RejectionRecord first = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);

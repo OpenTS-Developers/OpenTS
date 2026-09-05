@@ -9,48 +9,16 @@
 
 #include "mpload.h"
 
-#include <cctype>
 #include <chrono>
-#include <cstddef>
-#include <cstdio>
-#include <cstring>
 
 
-bool MultiplayerLoadClass::Name_Is_Valid(char const * name)
+bool MultiplayerLoadClass::Schedule(int slot, std::int64_t now)
 {
-	if (name == NULL) {
+	if (IsPending || !Slot_Is_Valid(slot)) {
 		return(false);
 	}
 
-	std::size_t length = std::strlen(name);
-	if (length > NAME_MAX - 1) {
-		return(false);
-	}
-
-	char const * dot = std::strchr(name, '.');
-	if (dot == NULL || dot == name || dot - name > 8) {
-		return(false);
-	}
-	for (char const * c = name; c < dot; c++) {
-		if (!std::isalnum(static_cast<unsigned char>(*c)) && *c != '_' && *c != '-') {
-			return(false);
-		}
-	}
-	if (_stricmp(dot + 1, "NET") != 0) {
-		return(false);
-	}
-
-	return(_stricmp(name, "SAVEGAME.NET") != 0);
-}
-
-
-bool MultiplayerLoadClass::Schedule(char const * name, std::int64_t now)
-{
-	if (IsPending || !Name_Is_Valid(name)) {
-		return(false);
-	}
-
-	std::snprintf(FileName, sizeof(FileName), "%s", name);
+	SlotNumber = slot;
 	DueAt = now + COUNTDOWN_MS;
 	IsPending = true;
 	return(true);
@@ -87,7 +55,7 @@ void MultiplayerLoadClass::Clear(void)
 {
 	IsPending = false;
 	DueAt = 0;
-	FileName[0] = '\0';
+	SlotNumber = -1;
 }
 
 

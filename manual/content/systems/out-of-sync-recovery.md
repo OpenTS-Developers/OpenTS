@@ -44,7 +44,7 @@ opens the dialog again.
 
 ## Loading a saved game
 
-In a client-launched match the master can instead pick one of the match's
+The master can instead pick one of the match's
 [saved games](/formats/save-games/#loading-during-a-match). Every machine then shows a
 five-second countdown and loads its own copy of the file the master named, keeps the seats it
 had, and synchronizes again at the save's frame. A player who has left since the save was

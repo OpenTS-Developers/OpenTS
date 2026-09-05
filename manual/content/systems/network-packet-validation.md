@@ -31,9 +31,10 @@ departure through the synchronized queue, where repeated removals are harmless.
 
 The host announcement, the out-of-sync heartbeat, the decision to continue and a
 request to load a saved game are session controls as well. The decision and the
-load request are accepted only from the master, and a load request names a bare
-8.3 `.NET` file other than the fixed multiplayer save, so it cannot reach outside
-the saved-games folder. An announcement is adopted only while no master is known
+load request are accepted only from the master, and a load request carries the
+number of a [numbered save](/formats/save-games/#numbered-multiplayer-saves), below
+one thousand, so it cannot name a file outside the saved-games folder. An
+announcement is adopted only while no master is known
 or it names the one already known.
 
 Checksums and endpoint matching detect damage and attribute traffic; they do not

@@ -9,6 +9,10 @@
 
 #include "autosave.h"
 
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+
 
 void AutosaveClass::Set_Interval(int frames)
 {
@@ -81,4 +85,30 @@ int AutosaveClass::Held_Slot(int slot)
 std::string Quick_Save_File_Name(AutosaveClass::KindType kind)
 {
 	return(kind == AutosaveClass::KindType::Campaign ? "QUICKSAVE.SAV" : "QUICKSAVE_SKIRMISH.SAV");
+}
+
+
+std::string Multiplayer_Save_File_Name(int slot)
+{
+	char name[24];
+	std::snprintf(name, sizeof(name), "SVGM_%03d.NET", slot);
+	return(name);
+}
+
+
+int Multiplayer_Save_Slot(char const * file_name)
+{
+	if (file_name == NULL || std::strlen(file_name) != 12 || _strnicmp(file_name, "SVGM_", 5) != 0
+		|| _stricmp(file_name + 8, ".NET") != 0) {
+		return(-1);
+	}
+
+	int slot = 0;
+	for (int index = 5; index < 8; index++) {
+		if (!std::isdigit(static_cast<unsigned char>(file_name[index]))) {
+			return(-1);
+		}
+		slot = slot * 10 + (file_name[index] - '0');
+	}
+	return(slot);
 }

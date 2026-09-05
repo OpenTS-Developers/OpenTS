@@ -2,6 +2,9 @@
 title: Recover from an out-of-sync game with a dialog and an in-game multiplayer load
 category: feature
 release: 0.2.0
+breaking: true
+migration:
+- Tools that waited for `SAVEGAME.NET` to appear must list `SVGM_nnn.NET` instead; the CnCNet client already does.
 targets:
 - type: system
   id: out-of-sync-recovery
@@ -25,9 +28,14 @@ box. The master chooses whether every machine loads one of the match's saved gam
 without the players out of sync, or quits; everyone else waits, with a player list and a chat
 box, and the lowest remaining seat takes over when the master leaves. Continue now drops only
 the players whose checksum disagreed with this machine's, where it dropped every connection
-before. The master of a client-launched match can also load a multiplayer save from the options
-menu during play. The launch file's `IsHost` now names the master, which decides these things
-and hands down the network timings; a file without it leaves the first seat in charge.
+before. The master can also load a multiplayer save from the options menu during play. The
+launch file's `IsHost` now names the master, which decides these things and hands down the
+network timings; a file without it leaves the first seat in charge.
+
+Multiplayer saves are now numbered by the game itself, `SVGM_000.NET` upward, in every network
+game. A new match drops a previous match's files, and a client-launched match writes
+`spawnSG.ini` for the client at its first save; the client did both when `SAVEGAME.NET`
+appeared, and that file is no longer written.
 
 Two dialog drawing faults are fixed with this. A dialog larger than the 640 by 400 backdrop
 art, which the new dialogs are, showed uninitialized memory past the art's edge; that area is

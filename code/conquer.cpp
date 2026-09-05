@@ -709,7 +709,7 @@ void IPX_Call_Back(void)
 							break;
 
 						case NET_LOAD_GAME:
-							Multiplayer_Load_Receive(Session.GPacket.LoadGame.FileName);
+							Multiplayer_Load_Receive(Session.GPacket.LoadGame.Slot);
 							break;
 
 						case NET_PROGRESS_REPORT:

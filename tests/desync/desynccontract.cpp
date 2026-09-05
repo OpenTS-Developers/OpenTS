@@ -79,24 +79,13 @@ int main(void)
 	}
 
 	/*
-	 * Only a bare 8.3 .NET name other than the fixed one may be requested.
+	 * Only a slot the numbered saves can hold may be requested.
 	 */
 	{
-		Check(MultiplayerLoadClass::Name_Is_Valid("SVGM_000.NET"), "a numbered client save is valid");
-		Check(MultiplayerLoadClass::Name_Is_Valid("a.net"), "a short lower-case name is valid");
-		Check(MultiplayerLoadClass::Name_Is_Valid("ABCDEFGH.NET"), "an eight-character base is valid");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("ABCDEFGHI.NET"), "a nine-character base is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("SAVEGAME.NET"), "the fixed multiplayer save is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("savegame.net"), "the fixed name is refused in any case");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("..\\X.NET"), "a parent path is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("A/B.NET"), "a separator is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("X.SAV"), "another extension is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("X.NETS"), "a longer extension is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("X"), "a name without an extension is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid(".NET"), "an empty base is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid(""), "an empty name is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid(NULL), "a null name is refused");
-		Check(!MultiplayerLoadClass::Name_Is_Valid("A B.NET"), "a space is refused");
+		Check(MultiplayerLoadClass::Slot_Is_Valid(0), "the first slot is valid");
+		Check(MultiplayerLoadClass::Slot_Is_Valid(MULTIPLAYER_SAVE_SLOTS - 1), "the last slot is valid");
+		Check(!MultiplayerLoadClass::Slot_Is_Valid(MULTIPLAYER_SAVE_SLOTS), "a slot past the last is refused");
+		Check(!MultiplayerLoadClass::Slot_Is_Valid(-1), "a negative slot is refused");
 	}
 
 	/*
@@ -106,11 +95,12 @@ int main(void)
 		MultiplayerLoadClass load;
 		Check(!load.Is_Pending(), "nothing is pending at first");
 		Check(load.Seconds_Left(0) == 0, "nothing pending has no seconds left");
-		Check(!load.Schedule("SAVEGAME.NET", 100), "the fixed name cannot be scheduled");
-		Check(load.Schedule("SVGM_003.NET", 100), "a valid name is scheduled");
-		Check(load.Is_Pending() && std::strcmp(load.File_Name(), "SVGM_003.NET") == 0, "the scheduled name is kept");
-		Check(!load.Schedule("SVGM_004.NET", 200), "a second request while pending is refused");
-		Check(std::strcmp(load.File_Name(), "SVGM_003.NET") == 0, "the refused request changes nothing");
+		Check(load.Slot() == -1, "nothing pending has no slot");
+		Check(!load.Schedule(-1, 100), "an invalid slot cannot be scheduled");
+		Check(load.Schedule(3, 100), "a valid slot is scheduled");
+		Check(load.Is_Pending() && load.Slot() == 3, "the scheduled slot is kept");
+		Check(!load.Schedule(4, 200), "a second request while pending is refused");
+		Check(load.Slot() == 3, "the refused request changes nothing");
 		Check(!load.Is_Due(100 + MultiplayerLoadClass::COUNTDOWN_MS - 1), "not due inside the countdown");
 		Check(load.Is_Due(100 + MultiplayerLoadClass::COUNTDOWN_MS), "due when the countdown ends");
 		Check(load.Seconds_Left(100) == 5, "five seconds at the start");
@@ -119,8 +109,8 @@ int main(void)
 		Check(load.Seconds_Left(100 + MultiplayerLoadClass::COUNTDOWN_MS) == 1, "never below one while pending");
 		Check(load.Seconds_Left(100 + MultiplayerLoadClass::COUNTDOWN_MS + 5000) == 1, "never below one when overdue");
 		load.Clear();
-		Check(!load.Is_Pending() && load.File_Name()[0] == '\0', "Clear ends the pending load");
-		Check(load.Schedule("SVGM_004.NET", 300), "a load can be scheduled again after Clear");
+		Check(!load.Is_Pending() && load.Slot() == -1, "Clear ends the pending load");
+		Check(load.Schedule(4, 300), "a load can be scheduled again after Clear");
 	}
 
 	std::printf("\n%s\n", Failures == 0 ? "All checks passed." : "Some checks FAILED.");

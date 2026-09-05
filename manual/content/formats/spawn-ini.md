@@ -60,8 +60,9 @@ its own is reduced to its last part. A save the folder does not hold, or one mad
 another version of the game, is refused, and the reason is shown.
 
 A save from a game against other machines resumes as well. Every machine loads its own
-copy of the save — the synchronized in-game save writes one on each of them, named
-`SAVEGAME.NET` — while the file seats the same people again, with the addresses their
+copy of the save — the synchronized in-game save writes one on each of them, [numbered
+alike](/formats/save-games/#numbered-multiplayer-saves) — while the file seats the same
+people again, with the addresses their
 machines answer on now. A player who does not return leaves their house fighting on under
 the computer, and before play resumes the machines compare the games they loaded, so
 mismatched saves are refused rather than drifting apart. The launch is refused when the

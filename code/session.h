@@ -370,11 +370,11 @@ struct GlobalPacketType {
 		} Options;
 
 		/*
-		 * This names the multiplayer save every machine is to load, as a bare 8.3 file name.
+		 * This names the numbered multiplayer save every machine is to load, by its slot.
 		 * It accompanies the NET_LOAD_GAME command.
 		 */
 		struct {
-			char FileName[13];
+			unsigned short Slot;
 		} LoadGame;
 	};
 };

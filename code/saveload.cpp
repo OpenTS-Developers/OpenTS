@@ -68,6 +68,7 @@
 #include "builtype.h"
 #include "bullet.h"
 #include "bullettype.h"
+#include "ccfile.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "empulse.h"
@@ -100,6 +101,7 @@
 #include "partsys.h"
 #include "psystype.h"
 #include "ptype.h"
+#include "rawfile.h"
 #include "revent.h"
 #include "rules.h"
 #include "savestream.h"
@@ -149,6 +151,7 @@
 
 #include <algorithm>
 #include <string>
+#include <vector>
 
 //#define	SAVE_BLOCK_SIZE	512
 #define	SAVE_BLOCK_SIZE	4096
@@ -166,6 +169,9 @@ static bool MultiplayerLoadInProgress = false;
 static std::string PendingSaveFileName;
 static std::string PendingSaveDescription;
 static bool QuickSaveRequested = false;
+static bool SpawnCopyPending = false;
+
+static void Write_Spawn_Copy(void);
 
 _COM_SMARTPTR_TYPEDEF(ILinkStream, __uuidof(ILinkStream));
 
@@ -1115,6 +1121,8 @@ void Process_Pending_Save_Game(void)
 		}
 		if (!saved) {
 			Post_Save_Notice(TXT_SAVE_FAILED);
+		} else if (SpawnCopyPending) {
+			Write_Spawn_Copy();
 		}
 	}
 }
@@ -1176,9 +1184,7 @@ void Autosave_Service(void)
 	if (Autosave.Take_Armed()) {
 		Autosave.Schedule(Frame);
 
-		std::string file_name = NET_SAVE_FILE_NAME;
-		std::string description = Fetch_String(TXT_AUTOSAVE_MULTIPLAYER);
-
+		bool saved;
 		if (single) {
 			AutosaveClass::KindType kind = Single_Player_Kind();
 			int slot = Autosave.Advance(kind);
@@ -1186,11 +1192,12 @@ void Autosave_Service(void)
 			char buffer[512];
 			std::snprintf(buffer, sizeof(buffer), Fetch_String(TXT_AUTOSAVE_DESCRIPTION), slot + 1, Scen->Description);
 
-			file_name = AutosaveClass::File_Name(kind, slot);
-			description = buffer;
+			saved = Request_Save_Game(AutosaveClass::File_Name(kind, slot).c_str(), buffer, true);
+		} else {
+			saved = Request_Multiplayer_Save(Fetch_String(TXT_AUTOSAVE_MULTIPLAYER), true);
 		}
 
-		if (!Request_Save_Game(file_name.c_str(), description.c_str(), true)) {
+		if (!saved) {
 			Post_Save_Notice(TXT_AUTOSAVE_FAILED);
 		}
 		return;
@@ -1240,13 +1247,98 @@ void Quick_Save_Service(void)
 }
 
 
+static int Next_Multiplayer_Save_Slot(void)
+{
+	for (int slot = 0; slot < MULTIPLAYER_SAVE_SLOTS; slot++) {
+		std::string path = Saved_Game_Name(Multiplayer_Save_File_Name(slot).c_str());
+		if (GetFileAttributesA(path.c_str()) == INVALID_FILE_ATTRIBUTES) {
+			return(slot);
+		}
+	}
+	return(MULTIPLAYER_SAVE_SLOTS - 1);
+}
+
+
+/// <summary>
+/// Requests a save under the next free numbered multiplayer name, so every machine writes
+/// the same number for the same frame.
+/// </summary>
+bool Request_Multiplayer_Save(char const * descr, bool quiet)
+{
+	return(Request_Save_Game(Multiplayer_Save_File_Name(Next_Multiplayer_Save_Slot()).c_str(), descr, quiet));
+}
+
+
+/// <summary>
+/// Begins the numbered saves of a network match. A new match drops the files a previous match
+/// left, its launch-file copy included, so numbering starts at zero on every machine, and a
+/// client-launched match owes a fresh copy of its launch file at its first save. A resumed
+/// match keeps its files and carries the numbering on.
+/// </summary>
+void Multiplayer_Saves_Begin_Match(bool resumed)
+{
+	if (resumed) {
+		return;
+	}
+
+	int removed = 0;
+	for (int slot = 0; slot < MULTIPLAYER_SAVE_SLOTS; slot++) {
+		std::string path = Saved_Game_Name(Multiplayer_Save_File_Name(slot).c_str());
+		if (DeleteFileA(path.c_str())) {
+			removed++;
+		}
+	}
+	if (removed > 0) {
+		DebugString("Removed %d multiplayer saves of a previous match\n", removed);
+	}
+	if (DeleteFileA(Saved_Game_Name("spawnSG.ini").c_str())) {
+		DebugString("Removed the launch-file copy of a previous match\n");
+	}
+
+	SpawnCopyPending = Spawner_Is_Active();
+}
+
+
+/// <summary>
+/// Copies the launch file beside the numbered saves as spawnSG.ini, which the client resumes
+/// the match from. The copy stays owed until it is written, so a failed attempt is retried at
+/// the next save.
+/// </summary>
+static void Write_Spawn_Copy(void)
+{
+	CCFileClass source("SPAWN.INI");
+	if (!source.Is_Available() || !source.Open(FileClass::READ)) {
+		DebugString("SPAWN.INI could not be read for spawnSG.ini\n");
+		return;
+	}
+	int size = source.Size();
+	std::vector<char> bytes(size > 0 ? size : 0);
+	bool read = size > 0 && source.Read(bytes.data(), size) == size;
+	source.Close();
+	if (!read) {
+		DebugString("SPAWN.INI could not be read for spawnSG.ini\n");
+		return;
+	}
+
+	// The file object keeps the name pointer, so the path must outlive it.
+	std::string copy_path = Saved_Game_Name("spawnSG.ini");
+	RawFileClass copy(copy_path.c_str());
+	bool written = copy.Open(FileClass::WRITE) && copy.Write(bytes.data(), size) == size;
+	copy.Close();
+	DebugString(written ? "Wrote spawnSG.ini beside the multiplayer saves\n" : "spawnSG.ini could not be written\n");
+	if (written) {
+		SpawnCopyPending = false;
+	}
+}
+
+
 /// <summary>
 /// May this machine ask every machine to load a multiplayer save now? Only the master of a
-/// client-launched match may, while no load is pending and no recording plays.
+/// network game may, while no load is pending and no recording plays.
 /// </summary>
 bool Multiplayer_Load_Is_Allowed(void)
 {
-	return(Spawner_Is_Active() && Session.Type == GAME_INTERNET && !Session.Play
+	return((Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) && !Session.Play
 		&& Session.Am_I_Master() && !MultiplayerLoad.Is_Pending());
 }
 
@@ -1264,37 +1356,38 @@ bool Multiplayer_Load_Prompt(void)
 	}
 
 	MultiplayerLoadOptionsClass list;
-	return(list.Load() && Multiplayer_Load_Request(list.Picked_File()));
+	return(list.Load() && Multiplayer_Load_Request(Multiplayer_Save_Slot(list.Picked_File())));
 }
 
 
 /// <summary>
-/// Schedules the named multiplayer save on this machine and asks every other seat to do the
+/// Schedules the numbered multiplayer save on this machine and asks every other seat to do the
 /// same. The file must be here with the running version's stamp and this kind of game.
 /// </summary>
 /// <returns>bool; Was the load scheduled?</returns>
-bool Multiplayer_Load_Request(char const * file_name)
+bool Multiplayer_Load_Request(int slot)
 {
-	if (file_name == NULL || !Multiplayer_Load_Is_Allowed()) {
+	if (!MultiplayerLoadClass::Slot_Is_Valid(slot) || !Multiplayer_Load_Is_Allowed()) {
 		return(false);
 	}
 
+	std::string file_name = Multiplayer_Save_File_Name(slot);
 	SaveVersionInfo info;
-	if (!Get_Savefile_Info(file_name, &info) || info.Get_Internal_Version() != ExpectedGameVersion
+	if (!Get_Savefile_Info(file_name.c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion
 		|| (GameType)info.Get_Game_Type() != Session.Type) {
-		DebugString("Refusing to request the multiplayer save %s\n", file_name);
+		DebugString("Refusing to request the multiplayer save %s\n", file_name.c_str());
 		return(false);
 	}
 
-	if (!MultiplayerLoad.Schedule(file_name, Monotonic_Milliseconds())) {
+	if (!MultiplayerLoad.Schedule(slot, Monotonic_Milliseconds())) {
 		return(false);
 	}
-	DebugString("Asking every machine to load %s\n", file_name);
+	DebugString("Asking every machine to load %s\n", file_name.c_str());
 
 	GlobalPacketType packet;
 	NetGlobal::Initialize_Packet(packet, NET_LOAD_GAME);
 	std::snprintf(packet.Name, sizeof(packet.Name), "%s", Session.Players[0]->Name);
-	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "%s", file_name);
+	packet.LoadGame.Slot = (unsigned short)slot;
 
 	for (int index = 1; index < Session.Players.Count(); index++) {
 		Ipx.Send_Global_Message(&packet, sizeof(packet), 1, &Session.Players[index]->Address);
@@ -1307,20 +1400,20 @@ bool Multiplayer_Load_Request(char const * file_name)
 /// <summary>
 /// Schedules the save the master named, once the packet has passed validation.
 /// </summary>
-void Multiplayer_Load_Receive(char const * file_name)
+void Multiplayer_Load_Receive(int slot)
 {
-	if (!Spawner_Is_Active() || Session.Type != GAME_INTERNET) {
-		DebugString("Ignoring a load request outside a client-launched match\n");
+	if (Session.Type != GAME_IPX && Session.Type != GAME_INTERNET) {
+		DebugString("Ignoring a load request outside a network game\n");
 		return;
 	}
 
 	if (MultiplayerLoad.Is_Pending()) {
-		DebugString("Ignoring a load request while %s is pending\n", MultiplayerLoad.File_Name());
+		DebugString("Ignoring a load request while slot %d is pending\n", MultiplayerLoad.Slot());
 		return;
 	}
 
-	if (MultiplayerLoad.Schedule(file_name, Monotonic_Milliseconds())) {
-		DebugString("The master asked every machine to load %s\n", file_name);
+	if (MultiplayerLoad.Schedule(slot, Monotonic_Milliseconds())) {
+		DebugString("The master asked every machine to load %s\n", Multiplayer_Save_File_Name(slot).c_str());
 	}
 }
 
@@ -1445,7 +1538,7 @@ void Process_Pending_Load_Game(void)
 	Session.Suspended--;
 	TacticalActive = true;
 
-	std::string file_name = MultiplayerLoad.File_Name();
+	std::string file_name = Multiplayer_Save_File_Name(MultiplayerLoad.Slot());
 	MultiplayerLoad.Clear();
 
 	if (!Perform_Multiplayer_Load(file_name.c_str())) {

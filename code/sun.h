@@ -67,7 +67,6 @@
 **	Filenames of the data files it can create at run time.
 */
 #define FAME_FILE_NAME			"HALLFAME.DAT"
-#define NET_SAVE_FILE_NAME		"SAVEGAME.NET"
 #define CONFIG_FILE_NAME		"SUN.INI"
 
 
