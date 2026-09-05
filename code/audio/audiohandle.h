@@ -70,6 +70,11 @@ class AudioHandle
 		bool Is_Playing(void) const;
 		AudioEventTypeClass const * Type(void) const;
 
+		// True once the sound has gone quiet and let go of its voice, which is later
+		// than Is_Valid turning false for one that is fading or was stolen. True for
+		// a null or stale handle.
+		bool Is_Finished(void) const;
+
 		void Retarget(float volume, float pan);
 		void Set_Volume(float volume);
 		void Set_Pan(float pan);

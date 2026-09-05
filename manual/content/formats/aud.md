@@ -9,8 +9,10 @@ role: audio
 related:
   - { type: format, id: mix }
 source_files:
-  - code/audio.h
-  - code/dsaudio.cpp
+  - code/audio/audiodecode.h
+  - code/audio/audiodecode.cpp
+  - code/audio/audiosample.cpp
+  - code/audio/audiostream.cpp
   - code/voc.cpp
   - code/theme.cpp
 ---
@@ -44,4 +46,4 @@ The one term the two lists do not share is the sample test, and a silent session
 
 The start of the file supplies the playback rate, the size of the data, the size it uncompresses to, a set of flags and a compression code. Two flags are read: one marks the sample as stereo, the other marks it as sixteen bit. Any rate, either bit depth, and mono or stereo all play; a rate above 20000 and below 24000 hertz is played as 22050 whatever the file asked for.
 
-Only one compression method is decoded, the one the shipped files carry. Any other code, including the earlier Westwood delta compression, is not rejected — the data is passed to the mixer as raw samples and plays as noise. Within a compressed sample each frame is preceded by its compressed size, its uncompressed size and a fixed marker, and a frame whose marker does not match, or whose sizes do not fit the decoder's staging area, ends the sample there instead of failing the play.
+Three compression codes are decoded: uncompressed data, the earlier Westwood delta compression, and the frame compression the shipped files carry. A sample with any other code is refused and does not play. Within a frame-compressed sample each frame is preceded by its compressed size, its uncompressed size and a fixed marker, and a frame whose marker does not match, or whose sizes exceed the decoder's limits, ends the sample there instead of failing the play. A sample is decoded once and kept in memory in its decoded form for as long as it is in use or the memory is not needed for another.
