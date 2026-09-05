@@ -42,8 +42,9 @@ Timing decreases activate only after the old horizon drains on a frame aligned
 to both send periods. They switch rate with temporary look-ahead, then remove
 one new send period at each boundary. An event already scheduled for a frame
 that the new send period skips executes on the next send frame, identically on
-every machine. Replacement targets rebase this process; local connection
-teardown does not transfer authority. Accepted removal selects the first
+every machine. Recordings keep that event in its execution batch with its
+scheduled frame unchanged. Replacement targets rebase this process; local
+connection teardown does not transfer authority. Accepted removal selects the first
 remaining human, which inherits the target and restarts the cooldown.
 
 Frame pacing follows the desired frame rate alone. The inherited slowdown that

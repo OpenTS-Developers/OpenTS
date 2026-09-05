@@ -644,4 +644,11 @@ namespace NetTiming
 	{
 		return(static_cast<std::int32_t>(frame - activation_frame) >= 0);
 	}
+
+
+	/// <summary>Includes unexecuted events whose scheduled frame was skipped by a send-period change.</summary>
+	bool Event_Is_Due(int event_frame, bool is_executed, int frame)
+	{
+		return(!is_executed && event_frame <= frame);
+	}
 }
