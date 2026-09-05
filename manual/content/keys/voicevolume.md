@@ -7,7 +7,7 @@ when_omitted:
   value: "1"
 ---
 
-The fraction is multiplied by 255 and handed to the speech channel as it is read, and again whenever the slider moves. Speech is refused outright while the resulting volume is zero or below, so nothing is queued and nothing is spoken. The fraction covers the EVA announcements and the multiplayer taunts; unit responses are sound effects and follow [`SoundVolume`](/keys/soundvolume/) instead.
+The fraction is the level of the speech group in the mixer, set as it is read and again whenever the slider moves, and it takes effect on the line that is speaking. Speech is refused outright while the fraction is zero or below, so nothing is queued and nothing is spoken. The fraction covers the EVA announcements and the multiplayer taunts; unit responses are sound effects and follow [`SoundVolume`](/keys/soundvolume/) instead.
 
 The read holds the fraction to `1` at the top but not at the bottom, so a negative figure is stored as written and simply silences the speech.
 

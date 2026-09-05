@@ -525,7 +525,6 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 	RegisterHotKey(MainWindow, 1, MOD_ALT|MOD_CONTROL|MOD_SHIFT, VK_M);
 
 	SetCursor(LoadCursor(ProgramInstance, MAKEINTRESOURCE(CC_CURSOR)));
-	Audio.Audio_Focus_Loss_Function = Focus_Loss;
 
 	//Misc_Focus_Loss_Function = &Focus_Loss;
 	//Misc_Focus_Restore_Function = &Focus_Restore;

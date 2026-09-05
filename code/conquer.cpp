@@ -523,8 +523,8 @@ void Call_Back(void)
 	/*
 	**	Music and speech maintenance
 	*/
-	if (Audio_Available() && GameInFocus == true) {
-		Audio.Sound_Callback();
+	if (AudioEngine.Is_Available() && GameInFocus == true) {
+		AudioEngine.Sound_Callback();
 		Sound_Effect_AI();
 		Theme.AI();
 		Speak_AI();

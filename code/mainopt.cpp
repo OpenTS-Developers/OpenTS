@@ -169,7 +169,7 @@ BOOL CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 			case WM_INITDIALOG:
 				handle = GetDlgItem(window, IDC_OPTMAIN_SOUND);
 				if (handle) {
-					EnableWindow(handle, Audio_Available());
+					EnableWindow(handle, AudioEngine.Is_Available());
 				}
 				break;
 

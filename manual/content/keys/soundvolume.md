@@ -7,7 +7,7 @@ when_omitted:
   value: ".7"
 ---
 
-The fraction scales every sound effect on its way to the mixer, on top of the sound's own volume rating and whatever volume the caller asked for; a sound effect is not started at all while the fraction is zero or below. The same fraction sets the volume a full screen movie's audio track is played at, and the volume of the menu, briefing and score screen sounds.
+The fraction is the level of the sound effect group in the mixer, applied on top of each sound's own volume rating and whatever volume the caller asked for, and it takes effect on sounds already playing; a sound effect is not started at all while the fraction is zero or below. The same fraction is the level of the movie group, so it sets the volume of a movie's audio track, and the menu, briefing and score screen sounds are sound effects and follow it too.
 
 The read holds the fraction to `1` at the top but not at the bottom, so a negative figure is stored as written. Nothing else clamps it, and the sounds it gates are simply never heard.
 

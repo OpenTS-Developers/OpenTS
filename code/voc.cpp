@@ -93,9 +93,10 @@ void Static_Sounds_AI(void)
 }
 
 
+// The sound effect option is the group's gain, not a factor on each play.
 float Effect_Level(float volume)
 {
-	return(std::min(Options.SoundVolume * volume, 1.0f));
+	return(std::min(volume, 1.0f));
 }
 
 

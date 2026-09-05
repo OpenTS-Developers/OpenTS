@@ -114,7 +114,7 @@ BOOL CALLBACK SoundControlsClass::Sound_Option_Dialog_Func(HWND window, UINT mes
 		switch (message) {
 			case WM_INITDIALOG: {
 					DialogInitialized = false;
-					bool enabled = Audio_Available();
+					bool enabled = AudioEngine.Is_Available();
 
 					/*
 					**	Music volume slider.
