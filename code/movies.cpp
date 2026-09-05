@@ -13,7 +13,7 @@
 
 #include "_map.h"
 #include "_surface.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "surface.h"
 #include "theme.h"
@@ -116,7 +116,7 @@ VQHandle * Movie_Create(char const * name, Surface * surface, Rect rect1, Rect r
 		}
 		int flags = 0;
 
-		if (!Audio_Available()) {
+		if (!AudioEngine.Is_Available()) {
 			Set_Option(OPTION_NO_AUDIO);
 		}
 

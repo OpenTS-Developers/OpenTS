@@ -36,3 +36,46 @@ if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
     # but that intrinsic is unavailable for the Win32 target. Its SSE2 path is portable.
     target_compile_definitions(bimg PRIVATE ASTCENC_POPCNT=0 ASTCENC_SSE=20)
 endif()
+
+#
+# ---------------------------------------------------------
+# miniaudio (audio device, resampling, decoders)
+# ---------------------------------------------------------
+#
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/miniaudio/miniaudio.h")
+    message(FATAL_ERROR
+        "thirdparty/miniaudio is empty. Fetch the submodules with:\n"
+        "  git submodule update --init --recursive")
+endif()
+
+# The library is built here rather than through its own CMakeLists.txt, which applies
+# the MA_NO_* options privately; consumers of miniaudio.h must see the same set or the
+# structures they share with the implementation change layout.
+add_library(miniaudio STATIC "${CMAKE_CURRENT_SOURCE_DIR}/miniaudio-impl.c")
+target_include_directories(miniaudio PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/miniaudio")
+
+# Only the device layer, the resampler, and the decoders are used. The engine, node
+# graph, and resource manager are left out along with generation and encoding.
+target_compile_definitions(miniaudio PUBLIC
+    MA_NO_ENGINE
+    MA_NO_NODE_GRAPH
+    MA_NO_RESOURCE_MANAGER
+    MA_NO_GENERATION
+    MA_NO_ENCODING
+)
+
+if(WIN32)
+    # Backends are loaded at run time, so no import library is needed for them.
+    target_compile_definitions(miniaudio PUBLIC
+        MA_ENABLE_ONLY_SPECIFIC_BACKENDS
+        MA_ENABLE_WASAPI
+        MA_ENABLE_DSOUND
+        MA_ENABLE_WINMM
+        MA_ENABLE_NULL
+    )
+endif()
+
+if(MSVC)
+    # Match the engine's floating-point model so the resampler behaves the same in both.
+    target_compile_options(miniaudio PRIVATE /arch:SSE2 /fp:precise)
+endif()

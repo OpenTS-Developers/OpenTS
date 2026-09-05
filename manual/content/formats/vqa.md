@@ -9,6 +9,7 @@ role: video
 related:
   - { type: format, id: mix }
 source_files:
+  - code/audio/audiomovie.cpp
   - code/movie.cpp
   - code/movies.cpp
   - code/rules.cpp
@@ -96,3 +97,9 @@ The offset the archive reader seeks to is measured from the start of the archive
 :::danger[A long movie name overruns the buffer the filename is built in]
 The filename is assembled in a fixed twenty-byte buffer. `.VQA` takes four of those bytes and the string terminator a fifth, so a registered name of fifteen characters fills the buffer exactly and a sixteenth character writes one byte past its end. The registry accepts names of up to thirty-one characters, and playing a movie registered at that length writes sixteen bytes over whatever follows the buffer. The names the game ships with are all eight characters or fewer.
 :::
+
+## Sound and picture
+
+The picture follows the sound. The player hands the sound track to the audio engine one block at a time, asks how much of it has been heard, and draws the frame due at that moment. The answer is the number of frames the mixer has taken from the track, less what the output device still holds, so the two stay in step through a device change or a stall on the game's own thread. While the sound stands still, as when the track ends before the picture does or the device is being recovered, the clock runs on wall time instead, and a pause is left out of the count altogether.
+
+When the player falls behind and feeds a block twice, that block is taken off the count as well, so the picture waits for the sound rather than running ahead of it. A movie with no audio device is timed from the wall clock throughout.

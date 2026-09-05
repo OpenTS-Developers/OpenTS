@@ -103,7 +103,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "dialog.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "egos.h"
 #include "empulse.h"
@@ -2009,17 +2009,6 @@ static void Init_Color_Remaps(void)
 static void Init_Heaps(void)
 {
 	/*
-	**	Speech holding tank buffer. Since speech does not mix, it can be placed
-	**	into a custom holding tank only as large as the largest speech file to
-	**	be played.
-	*/
-	for (int index = 0; index < ARRAY_SIZE(SpeechBuffer); index++) {
-		SpeechBuffer[index] = new char [SPEECH_BUFFER_SIZE];
-		SpeechRecord[index] = VOX_NONE;
-		assert(SpeechBuffer[index] != NULL);
-	}
-
-	/*
 	**	Allocate the theater buffer block.
 	*/
 //	TheaterBuffer = new Buffer(THEATER_BUFFER_SIZE);
@@ -2773,7 +2762,7 @@ static bool Init_Bulk_Data(void)
 		return(false);
 	}
 
-	if (Audio_Available() && !Debug_Quiet) {
+	if (AudioEngine.Is_Available() && !Debug_Quiet) {
 		if (SoundsMix != NULL && !SoundsMix->Cache()) {
 			return(false);
 		}
@@ -6402,6 +6391,9 @@ bool Prep_Speech_For_Side(SideType side)
 	if (side == SIDE_NONE) {
 		return(false);
 	}
+
+	// A line still streaming from the old archive must be closed before it goes.
+	Stop_Speaking();
 
 	if (SpeechMix != NULL) {
 		DebugString("     Releasing %s\n", SpeechMix->Filename);

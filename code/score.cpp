@@ -56,7 +56,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "goptions.h"
 #include "houstype.h"
@@ -1137,14 +1137,14 @@ void ScoreClass::Timing(void)
 /// applied.</param>
 void ScoreClass::DoSound(const char * name, int volume)
 {
-	if (name != NULL && Audio_Available()) {
+	if (name != NULL && AudioEngine.Is_Available()) {
 
 		for (int i = 0; i < ScoreSnds.Count(); i++) {
 			SfxEntry * snd = ScoreSnds[i];
 
 			if (stricmp(name, snd->Get_Name()) == 0) {
 				if (snd->Get_Sample() != NULL) {
-					Audio.Play_Sample(snd->Get_Sample(), 255, int(volume * Options.SoundVolume));
+					AudioEngine.Play_Sample(snd->Get_Sample(), AUDIO_GROUP_SFX, (float)volume / 255.0f, 255);
 				}
 				break;
 			}
@@ -1211,7 +1211,8 @@ ScoreFontClass::~ScoreFontClass(void)
 	if (score_font_count == 0) {
 		for (int i = 0; i < 3; i++) {
 			if (text_sounds[i].mSound != NULL) {
-				Audio.Stop_Sample_Playing(text_sounds[i].mSound);
+				AudioEngine.Stop_Sample_Playing(text_sounds[i].mSound);
+				AudioEngine.Release_Sample(text_sounds[i].mSound);
 				if (text_sounds[i].mAllocated == true) {
 					delete text_sounds[i].mSound;
 				}
@@ -1230,7 +1231,7 @@ ScoreFontClass::~ScoreFontClass(void)
 /// </summary>
 void ScoreFontClass::Load_Sounds(void)
 {
-	if (Audio_Available()) {
+	if (AudioEngine.Is_Available()) {
 		CCFileClass file;
 		text_sounds[0].mSound = (void *)MFCD::Retrieve("TEXT1.AUD");
 		if (text_sounds[0].mSound == NULL) {
@@ -1319,7 +1320,7 @@ void ScoreFontClass::Print_Char(Surface *surf, char ch, int x, int y, int v, boo
 		if (play_sound == true && v == 0) {
 			void *snd = text_sounds[rand() % 3].mSound;
 			if (snd != NULL) {
-				Audio.Play_Sample(snd, 255, Options.SoundVolume * 128);
+				AudioEngine.Play_Sample(snd, AUDIO_GROUP_SFX, 128.0f / 255.0f, 255);
 			}
 		}
 		Draw_Shape(*surf, *Drawer, ShapePtr, frame + v, Point2D(x - ShapePtr->Get_Rect(frame + 2).X, y), surf->Get_Rect(), SHAPE_WIN_REL);
@@ -1540,7 +1541,7 @@ SfxEntry::SfxEntry(char const * name, char const *filename) :
 	Sample(NULL),
 	IsAllocated(false)
 {
-	if (Audio_Available()) {
+	if (AudioEngine.Is_Available()) {
 		Name = strdup(name);
 		Sample = (void *)MFCD::Retrieve(filename);
 		if (Sample == NULL) {
@@ -1563,7 +1564,8 @@ SfxEntry::SfxEntry(char const * name, char const *filename) :
 SfxEntry::~SfxEntry(void)
 {
 	if (Sample != NULL) {
-		Audio.Stop_Sample_Playing(Sample);
+		AudioEngine.Stop_Sample_Playing(Sample);
+		AudioEngine.Release_Sample(Sample);
 		if (IsAllocated == true) {
 			delete Sample;
 		}

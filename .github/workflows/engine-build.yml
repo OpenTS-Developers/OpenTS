@@ -83,6 +83,8 @@ jobs:
           cp thirdparty/bgfx.cmake/bx/include/tinystl/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/tinystl.txt
           cp thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt artifact/OpenTS_THIRD_PARTY_LICENSES/astc-encoder.txt
           cp thirdparty/licenses/khronos-opengl.txt artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-opengl.txt
+          cp thirdparty/miniaudio/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/miniaudio.txt
+          cp thirdparty/licenses/stb-vorbis.txt artifact/OpenTS_THIRD_PARTY_LICENSES/stb-vorbis.txt
           cat thirdparty/licenses/khronos-vulkan-notice.txt \
               thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt \
               > artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-vulkan.txt

@@ -63,6 +63,7 @@
 #include "_command.h"
 #include "_map.h"
 #include "_rules.h"
+#include "audio/audioengine.h"
 #include "ccfile.h"
 #include "ccrand.h"
 #include "command.h"
@@ -265,6 +266,8 @@ void OptionsClass::Set_Score_Volume(float volume, bool feedback)
 void OptionsClass::Set_Sound_Volume(float volume, bool feedback)
 {
 	SoundVolume = std::min(volume, 1.0f);
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_SFX, SoundVolume);
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_MOVIE, SoundVolume);
 	if (feedback) {
 		Sound_Effect(Rule->GenericBeep);
 	}

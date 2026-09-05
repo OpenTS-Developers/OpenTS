@@ -1488,11 +1488,12 @@ bool TActionClass::TAction_PLAY_SOUND_RANDOM(HouseClass * , ObjectClass * , Trig
 /// <summary>
 /// Plays a sound effect at the trigger's waypoint.
 /// The sound is positioned on the map, so the player hears it only while the view is
-/// somewhere near the waypoint.
+/// somewhere near the waypoint. A looping sound stays at the waypoint, follows the
+/// view in and out of range, and travels with a save.
 /// </summary>
 bool TActionClass::TAction_PLAY_SOUND_AT(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Sound_Effect(Data.Sound, Scen->Get_Waypoint_Coord(EffectLocation));
+	Static_Sound(Data.Sound, Scen->Get_Waypoint_Coord(EffectLocation), STATIC_SOUND_TRIGGER);
 	return(true);
 }
 

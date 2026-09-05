@@ -15,13 +15,14 @@
 
 #include "vox.h"
 
-#include "ccfile.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "stimer.h"
 #include "timer.h"
+#include "voxqueue.h"
 
 #include <algorithm>
+#include <cstring>
 
 CDTimerClass<SystemTimerClass> SpeakTimer;
 
@@ -606,27 +607,35 @@ char const * Speech[VOX_COUNT] =  {
 	"62-N012",		/// VOX_62_N012
 };
 
-/***************************************************************************
-**	This is the pending speech sample to play. This sample will be played
-**	at the first opportunity.
-*/
-VoxType SpeakQueue = VOX_NONE;
+namespace {
 
-static VoxType CurrentVoice = VOX_NONE;
+int const PRIORITY_NORMAL = 50;
+int const PRIORITY_CRITICAL = 255;
+int const SETTLE_TICKS = TIMER_SECOND;
+int const GAP_TICKS = TIMER_SECOND / 2;
+
+// The lines waiting to be spoken, the one speaking, and the silence between.
+VoxQueueClass Queue;
+AudioHandle Current;
+VoxType CurrentVoice = VOX_NONE;
+CDTimerClass<SystemTimerClass> SpeakGapTimer;
+
+
+bool Is_Critical_Line(VoxType voice)
+{
+	return(voice == VOX_ACCOMPLISHED || voice == VOX_FAIL);
+}
+
+
+bool Is_Eva_Line(VoxType voice)
+{
+	return(strncmp(Speech[voice], "00-", 3) == 0 || strncmp(Speech[voice], "01-", 3) == 0);
+}
+
+} // namespace
 
 static int SpeechVolume = 255;
 static bool SpeechEnabled = true;
-
-/***************************************************************************
-**	This is the pointer for the speech staging buffer. This buffer is used
-**	to hold the currently speaking voice data. Since only one speech sample
-**	is played at a time, this buffer is only as big as the largest speech
-**	sample that can be played.
-*/
-void * SpeechBuffer[1];
-VoxType SpeechRecord[1];
-
-static int SpeechBufferIndex = 0;
 
 #ifdef _DEBUG
 /***********************************************************************************************
@@ -669,20 +678,31 @@ char const * Speech_Name(VoxType speech)
  *=============================================================================================*/
 void Speak(VoxType voice, bool now)
 {
-	if (!Debug_Quiet && SpeechVolume > 0 && Audio_Available() && voice != VOX_NONE && voice != SpeakQueue && voice != CurrentVoice && SpeakQueue == VOX_NONE) {
-		if (SpeechEnabled || strncmp(Speech[voice], "00-", 3) && strncmp(Speech[voice], "01-", 3)) {
-			SpeakQueue = voice;
-			if (now) {
-				SpeakTimer = 0;
-				Speak_AI();
-			} else {
-				if (SpeakTimer == 0) {
-					SpeakTimer = TIMER_SECOND;
-				}
-				Speak_AI();
-			}
-		}
+	if (Debug_Quiet || SpeechVolume <= 0 || !AudioEngine.Is_Available() || voice == VOX_NONE || voice >= VOX_COUNT) {
+		return;
 	}
+	if (!SpeechEnabled && Is_Eva_Line(voice)) {
+		return;
+	}
+
+	bool idle = !Current.Is_Valid() && Queue.Count() == 0;
+	VoxControlType control = now ? VOXC_QUEUED_INTERRUPT : (Is_Critical_Line(voice) ? VOXC_CRITICAL : VOXC_QUEUE);
+	int priority = Is_Critical_Line(voice) ? PRIORITY_CRITICAL : PRIORITY_NORMAL;
+	if (Queue.Submit(voice, priority, control, Current.Is_Valid() ? CurrentVoice : VOX_NONE)) {
+		AudioEngine.Stop_Stream(Current);
+		Current.Clear();
+		CurrentVoice = VOX_NONE;
+	}
+
+	// A burst settles for a second before its first line, unless one is wanted at once.
+	if (idle) {
+		SpeakTimer = SETTLE_TICKS;
+		SpeakGapTimer = 0;
+	}
+	if (now) {
+		SpeakTimer = 0;
+	}
+	Speak_AI();
 }
 
 
@@ -705,50 +725,29 @@ void Speak(VoxType voice, bool now)
  *=============================================================================================*/
 void Speak_AI(void)
 {
-	if (Debug_Quiet || !Audio_Available()) return;
+	if (Debug_Quiet || !AudioEngine.Is_Available()) return;
 
-	if ((CurrentVoice != VOX_NONE || SpeakQueue != VOX_NONE) && !Audio.Is_Sample_Playing(SpeechBuffer[SpeechBufferIndex]) && SpeakTimer == 0) {
+	if (Current.Is_Valid()) {
+		return;
+	}
+	if (CurrentVoice != VOX_NONE) {
+		// The line has ended; the next one waits its half second.
 		CurrentVoice = VOX_NONE;
-		if (SpeakQueue != VOX_NONE) {
+		SpeakGapTimer = GAP_TICKS;
+	}
+	if (Queue.Count() == 0 || SpeakTimer > 0 || SpeakGapTimer > 0) {
+		return;
+	}
 
-			/*
-			**	Try to find a previously loaded copy of the EVA speech in one of the
-			**	speech buffers.
-			*/
-			void const * speech = NULL;
-			for (int index = 0; index < ARRAY_SIZE(SpeechRecord); index++) {
-				if (SpeechRecord[index] == SpeakQueue) {
-					speech = SpeechBuffer[index];
-					break;
-				}
-			}
-
-			/*
-			**	If a previous copy could not be located, then load the requested
-			**	voice into the oldest buffer available.
-			*/
-			if (speech == NULL) {
-				SpeechBufferIndex = (SpeechBufferIndex + 1) % ARRAY_SIZE(SpeechRecord);
-
-				char name[MAX_PATH];
-
-				_makepath(name, NULL, NULL, Speech[SpeakQueue], ".AUD");
-				CCFileClass file(name);
-				if (file.Is_Available() && file.Read(SpeechBuffer[SpeechBufferIndex], SPEECH_BUFFER_SIZE)) {
-					speech = SpeechBuffer[SpeechBufferIndex];
-					SpeechRecord[SpeechBufferIndex] = SpeakQueue;
-				}
-			}
-
-			/*
-			**	Since the speech file was loaded, play it.
-			*/
-			if (speech != NULL) {
-				Audio.Play_Sample(speech, 255, SpeechVolume);
-				CurrentVoice = SpeakQueue;
-			}
-
-			SpeakQueue = VOX_NONE;
+	// A line whose file is missing is passed over for the next.
+	VoxType next;
+	while (Queue.Next(next)) {
+		char name[_MAX_FNAME + _MAX_EXT];
+		_makepath(name, NULL, NULL, Speech[next], ".AUD");
+		Current = AudioEngine.Open_Stream(name, AUDIO_GROUP_SPEECH, 1.0f, false);
+		if (Current.Is_Valid()) {
+			CurrentVoice = next;
+			return;
 		}
 	}
 }
@@ -771,8 +770,13 @@ void Speak_AI(void)
  *=============================================================================================*/
 void Stop_Speaking(void)
 {
-	SpeakQueue = VOX_NONE;
-	Audio.Stop_Sample_Playing(SpeechBuffer[SpeechBufferIndex]);
+	Queue.Clear();
+	if (Current.Is_Valid()) {
+		AudioEngine.Stop_Stream(Current);
+	}
+	Current.Clear();
+	CurrentVoice = VOX_NONE;
+	SpeakGapTimer = 0;
 }
 
 
@@ -795,10 +799,7 @@ void Stop_Speaking(void)
 bool Is_Speaking(void)
 {
 	Speak_AI();
-	if (!Debug_Quiet && Audio_Available() && (SpeakQueue != VOX_NONE || Audio.Is_Sample_Playing(SpeechBuffer[SpeechBufferIndex]))) {
-		return(true);
-	}
-	return(false);
+	return(!Debug_Quiet && AudioEngine.Is_Available() && (Current.Is_Valid() || Queue.Count() > 0));
 }
 
 
@@ -811,9 +812,7 @@ bool Is_Speaking(void)
 void Set_Speech_Volume(int volume)
 {
 	SpeechVolume = std::min(volume, 255);
-	if (!Debug_Quiet && Audio_Available()) {
-		Audio.Set_Sample_Volume(SpeechBuffer[SpeechBufferIndex], SpeechVolume);
-	}
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_SPEECH, (float)std::max(SpeechVolume, 0) / 255.0f);
 }
 
 

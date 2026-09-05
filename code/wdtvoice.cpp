@@ -13,7 +13,7 @@
 #include "ccfile.h"
 #include "ccrand.h"
 #include "data.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ini.h"
@@ -297,7 +297,7 @@ void Voices::VoiceCategory::Read_Voiceover(INIClass const & ini, const char * se
 void Voices::Queue(VoiceCategoryType category, Outcome outcome, bool emphasis, bool count_queued, int delay)
 {
 	Discard();
-	if (Audio_Available()) {
+	if (AudioEngine.Is_Available()) {
 		char buffer[64];
 		if (Pick_Standard_Voice(category, outcome, buffer, sizeof(buffer))) {
 			Sample * sample = new Sample(buffer);
@@ -333,7 +333,7 @@ void Voices::Queue(VoiceCategoryType category, Outcome outcome, bool emphasis, b
 void Voices::Queue(StandaloneVoiceType voice, bool count_queued, int delay)
 {
 	Discard();
-	if (Audio_Available()) {
+	if (AudioEngine.Is_Available()) {
 		char buffer[64];
 		if (Pick_Standalone_Voice(voice, buffer, sizeof(buffer))) {
 			Sample * sample = new Sample(buffer);
@@ -467,7 +467,7 @@ Voices::Anim * WorldDominationTour::WDT_New_Voiced_Animation(Voices & voices)
 /// <param name="volume">The volume this sample should be played at.</param>
 Voices::Sample::Sample(const char * name, int volume) :
 	Volume(volume),
-	SoundHandle(INVALID_SAMPLE_HANDLE),
+	SoundHandle(),
 	File(NULL),
 	Allocated(false)
 {
@@ -493,8 +493,9 @@ Voices::Sample::Sample(const char * name, int volume) :
 Voices::Sample::~Sample(void)
 {
 	if (Playing()) {
-		Audio.Stop_Sample(SoundHandle);
+		SoundHandle.Stop();
 	}
+	AudioEngine.Release_Sample(File);
 	if (Allocated) {
 		delete File;
 	}
@@ -509,7 +510,7 @@ Voices::Sample::~Sample(void)
 /// <returns>bool; Is the audio engine still playing this sample?</returns>
 bool Voices::Sample::Playing(void) const
 {
-	return(SoundHandle != INVALID_SAMPLE_HANDLE && Audio.Sample_Status(SoundHandle));
+	return(SoundHandle.Is_Playing());
 }
 
 
@@ -521,8 +522,8 @@ bool Voices::Sample::Playing(void) const
 /// </summary>
 void Voices::Sample::Start(void)
 {
-	if (SoundHandle == INVALID_SAMPLE_HANDLE && File != NULL) {
-		SoundHandle = Audio.Play_Sample(File, 255, Volume * Options.SoundVolume);
+	if (!SoundHandle.Is_Valid() && File != NULL) {
+		SoundHandle = AudioEngine.Play_Sample(File, AUDIO_GROUP_SFX, (float)Volume / 255.0f, 255);
 	}
 }
 
@@ -533,10 +534,10 @@ void Voices::Sample::Start(void)
 /// </summary>
 void Voices::Sample::Stop(void)
 {
-	if (SoundHandle != INVALID_SAMPLE_HANDLE) {
-		Audio.Stop_Sample(SoundHandle);
-		SoundHandle = INVALID_SAMPLE_HANDLE;
+	if (SoundHandle.Is_Valid()) {
+		SoundHandle.Stop();
 	}
+	SoundHandle.Clear();
 }
 
 

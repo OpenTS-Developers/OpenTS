@@ -17,7 +17,7 @@
 #include "ccini.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
 #include "mixfile.h"
@@ -146,7 +146,7 @@ bool MapChoice::Initialize(char const * house_name)
 		}
 	}
 
-	if (Audio_Available()) {
+	if (AudioEngine.Is_Available()) {
 		if (ini.Get_String(house_name, "Sounds", NULL, section, sizeof(section)) > 0) {
 			for (index = 0; index < ini.Entry_Count(section); index++) {
 				char const * entry = ini.Get_Entry(section, index);
@@ -264,7 +264,7 @@ short MapChoice::Get_Stage_ID(MapStage * stage)
 /// <returns>Returns with a pointer to the sound effect. Otherwise, NULL is returned.</returns>
 MSSfxEntry * MapChoice::Find_Sound(char const * name)
 {
-	if (!Audio_Available()) return(NULL);
+	if (!AudioEngine.Is_Available()) return(NULL);
 	if (name == NULL) return(NULL);
 	for (int i = 0; i < SoundEntries.Count(); i++) {
 		MSSfxEntry * sfx = SoundEntries[i];
@@ -572,7 +572,7 @@ MSSfxEntry::MSSfxEntry(char const * name, char * string) :
 	Sample(NULL),
 	Volume(255)
 {
-	if (name != NULL && Audio_Available()) {
+	if (name != NULL && AudioEngine.Is_Available()) {
 
 		char * file_name = strtok(string, ",");
 		char * volume_str = strtok(NULL, ",");
@@ -612,7 +612,8 @@ MSSfxEntry::MSSfxEntry(char const * name, char * string) :
 MSSfxEntry::~MSSfxEntry(void)
 {
 	if (Sample != NULL) {
-		Audio.Stop_Sample_Playing(Sample);
+		AudioEngine.Stop_Sample_Playing(Sample);
+		AudioEngine.Release_Sample(Sample);
 		if (AllocLoaded == true) {
 			delete Sample;
 		}
@@ -632,6 +633,6 @@ MSSfxEntry::~MSSfxEntry(void)
 void MSSfxEntry::Play(void)
 {
 	if (Sample != NULL) {
-		Audio.Play_Sample(Sample, 255, int(Volume * Options.SoundVolume));
+		AudioEngine.Play_Sample(Sample, AUDIO_GROUP_SFX, (float)Volume / 255.0f, 255);
 	}
 }

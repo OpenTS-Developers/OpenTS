@@ -43,7 +43,7 @@
 #include "ccfile.h"
 #include "convert.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "houstype.h"
 #include "keyboard.h"
@@ -96,7 +96,7 @@ class MapSelect : public MSEngine {
 
 		char const * VoiceName;
 		CDTimerClass<SystemTimerClass> VoiceTimer;
-		int VoiceHandle;
+		AudioHandle VoiceHandle;
 		Surface * ClickMap;
 };
 
@@ -420,7 +420,7 @@ bool MapSelect::Init(ScenarioClass * scenario)
 
 	VoiceName = NULL;
 	VoiceTimer = 0;
-	VoiceHandle = -1;
+	VoiceHandle.Clear();
 
 	return(true);
 }
@@ -650,13 +650,13 @@ void MapSelect::Queue_Voice(char const * name, int delay)
 /// <param name="name">Name of the voice over sample to stream.</param>
 void MapSelect::Start_Voice(char const * name)
 {
-	if (VoiceHandle != -1) {
-		Audio.Stop_Sample(VoiceHandle);
+	if (VoiceHandle.Is_Valid()) {
+		AudioEngine.Stop_Stream(VoiceHandle);
 	}
 
-	VoiceHandle = Audio.File_Stream_Sample(name);
+	VoiceHandle = AudioEngine.Open_Stream(name, AUDIO_GROUP_SPEECH, 1.0f, false);
 
-	if (VoiceHandle > -1)
+	if (VoiceHandle.Is_Valid())
 		VoiceName = NULL;
 
 	VoiceTimer = 0;
@@ -671,14 +671,14 @@ void MapSelect::Start_Voice(char const * name)
 /// <param name="fade">Should the sample be faded out rather than cut off?</param>
 void MapSelect::Stop_Voice(bool fade)
 {
-	if (VoiceHandle != -1) {
+	if (VoiceHandle.Is_Valid()) {
 		if (fade == true) {
-			Audio.Fade_Sample(VoiceHandle, (TIMER_SECOND / 3));
+			VoiceHandle.Fade(1000 / 3);
 		} else {
-			Audio.Stop_Sample(VoiceHandle);
+			AudioEngine.Stop_Stream(VoiceHandle);
 		}
 
-		VoiceHandle = -1;
+		VoiceHandle.Clear();
 	}
 
 	VoiceName = NULL;

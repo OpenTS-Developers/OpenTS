@@ -35,8 +35,12 @@ bimg as nested submodules, so initialize it recursively:
 git submodule update --init --recursive
 ```
 
+The audio layer uses [miniaudio](https://github.com/mackron/miniaudio),
+vendored through `thirdparty/miniaudio` at a tested tag and compiled as one
+translation unit from `thirdparty/miniaudio-impl.c`.
+
 For a fresh clone, use `git clone --recurse-submodules`. Configuration stops
-with instructions if the submodule is missing. Update the pinned tag in a
+with instructions if a submodule is missing. Update a pinned tag in a
 separate change.
 
 ## Configure and build

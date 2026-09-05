@@ -2263,6 +2263,24 @@ AttachedSystem:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+Attack:
+  key: Attack
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: attack
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 AttackDelay:
   key: AttackDelay
   scopes:
@@ -4192,6 +4210,24 @@ ChainReaction:
       source: code/overtype.cpp
       guard: null
     level: OverlayTypeClass
+Channels:
+  key: Channels
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: channels
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 ChargeAnim:
   key: ChargeAnim
   scopes:
@@ -5062,6 +5098,24 @@ ContentScan:
       source: code/rules.cpp
       guard: null
     level: DifficultyClass
+Control:
+  key: Control
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: control
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 Conventional:
   key: Conventional
   scopes:
@@ -6063,6 +6117,24 @@ DebrisTypes:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Decay:
+  key: Decay
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: decay
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 DefaultDebrisSmokeSystem:
   key: DefaultDebrisSmokeSystem
   scopes:
@@ -6330,6 +6402,24 @@ Degenerates:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+Delay:
+  key: Delay
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: delay
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 DeleteOnStateLimit:
   key: DeleteOnStateLimit
   scopes:
@@ -7980,6 +8070,24 @@ ExtraUnitLight:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+FShift:
+  key: FShift
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: fshift
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 Facings:
   key: Facings
   scopes:
@@ -12620,6 +12728,24 @@ LightningSound:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Limit:
+  key: Limit
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: limit
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 LimpetFactor:
   key: LimpetFactor
   scopes:
@@ -12706,6 +12832,24 @@ Locomotor:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+Loop:
+  key: Loop
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: loop
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 LoopCount:
   key: LoopCount
   scopes:
@@ -12740,6 +12884,24 @@ LoopEnd:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+LoopLimit:
+  key: LoopLimit
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: loop
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 LoopStart:
   key: LoopStart
   scopes:
@@ -13471,6 +13633,24 @@ MinProductionSpeed:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MinVolume:
+  key: MinVolume
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: minvolume
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 MinZVel:
   key: MinZVel
   scopes:
@@ -16304,15 +16484,15 @@ Priority:
     section:
       kind: identifier
       source: sound
-    value_type: integer
+    value_type: string
     status: reviewed
     _provenance:
-      default_candidate: '10'
-      declared_in: VocClass
-      member: Priority
-      source: code/voc.cpp
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: priority
+      source: code/sndtype.cpp
       guard: null
-    level: VocClass
+    level: AudioEventTypeClass
 Production:
   key: Production
   scopes:
@@ -17004,7 +17184,7 @@ Range:
       kind: identifier
       source: object-type
     value_type: distance (cells)
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: '0'
       declared_in: WeaponTypeClass
@@ -17012,6 +17192,21 @@ Range:
       source: code/weapon.cpp
       guard: null
     level: WeaponTypeClass
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: range
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 Ranged:
   key: Ranged
   scopes:
@@ -19313,6 +19508,24 @@ SoundVolume:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+Sounds:
+  key: Sounds
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: sounds
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 SparkSpawnFrames:
   key: SparkSpawnFrames
   scopes:
@@ -23198,6 +23411,21 @@ Type:
       source: code/session.cpp
       guard: null
     level: SessionClass
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: string
+    status: needs_review
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: typeflags
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 TypeImmune:
   key: TypeImmune
   scopes:
@@ -23618,6 +23846,24 @@ UseTurretShadow:
       source: code/unittype.cpp
       guard: null
     level: UnitTypeClass
+VShift:
+  key: VShift
+  scopes:
+  - applies_to:
+    - Sounds
+    file: sound01.ini
+    section:
+      kind: identifier
+      source: sound
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: vshift
+      source: code/sndtype.cpp
+      guard: null
+    level: AudioEventTypeClass
 VSync:
   key: VSync
   scopes:
@@ -24277,15 +24523,15 @@ Volume:
     section:
       kind: identifier
       source: sound
-    value_type: floating point
+    value_type: string
     status: generated
     _provenance:
-      default_candidate: '1.0'
-      declared_in: VocClass
-      member: Volume
-      source: code/voc.cpp
+      default_candidate: null
+      declared_in: AudioEventTypeClass
+      member: volume
+      source: code/sndtype.cpp
       guard: null
-    level: VocClass
+    level: AudioEventTypeClass
 Voxel:
   key: Voxel
   scopes:

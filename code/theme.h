@@ -32,6 +32,7 @@
 
 #pragma once
 
+#include "audio/audiohandle.h"
 #include "stimer.h"
 #include "vector.h"
 
@@ -59,7 +60,7 @@ class ThemeClass
 	private:
 		char const * Theme_File_Name(ThemeType theme);
 
-		int Current;				// Handle to current score.
+		AudioHandle Current;		// Handle to current score.
 		ThemeType Score;			// Score number currently being played.
 		ThemeType Pending;			// Score to play next.
 
@@ -89,7 +90,7 @@ class ThemeClass
 		DynamicVectorClass<ThemeControl *> Themes;
 
 		enum {
-			THEME_DELAY=TIMER_SECOND
+			THEME_FADE_MS = 1500		// The 60 maintenance ticks the old driver took to fade.
 		};
 
 	public:
@@ -103,16 +104,14 @@ class ThemeClass
 		char const * Base_Name(ThemeType index) const;
 		char const * Full_Name(ThemeType index) const;
 		int Max_Themes(void) const {return(Themes.Count());}
-		int Play_Song(ThemeType index);
+		AudioHandle Play_Song(ThemeType index);
 		bool Still_Playing(void) const;
 		int Track_Length(ThemeType index) const;
 		void Scan(void);
 		void AI(void);
 		void Fade_Out(void) {Queue_Song(THEME_QUIET);}
 		void Queue_Song(ThemeType index);
-		void Set_Theme_Data(ThemeType theme, int scenario, int owners);
 		void Stop(bool fade = false);
-		void Suspend(void);
 		void Set_Shuffle(bool on) {IsShuffle = on;}
 		void Set_Repeat(bool on) {IsRepeat = on;}
 		bool Is_Shuffle(void) const {return(IsShuffle);}

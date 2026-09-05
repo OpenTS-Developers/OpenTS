@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "audio/audiohandle.h"
 #include "data.h"
 #include "msanim.h"
 #include "msengine.h"
@@ -908,9 +909,9 @@ namespace WorldDominationTour
 
 					/*
 					 * This is the audio engine's handle for the sample while it is
-					 * playing, and INVALID_SAMPLE_HANDLE whenever it is not.
+					 * playing, and a null handle whenever it is not.
 					 */
-					int SoundHandle;
+					AudioHandle SoundHandle;
 
 					/*
 					 * This points to the sound data. If NULL, the sound was found

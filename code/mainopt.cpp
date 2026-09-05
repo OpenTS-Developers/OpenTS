@@ -18,7 +18,7 @@
 #include "convert.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "gamedlg.h"
 #include "globals.h"
@@ -169,7 +169,7 @@ BOOL CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 			case WM_INITDIALOG:
 				handle = GetDlgItem(window, IDC_OPTMAIN_SOUND);
 				if (handle) {
-					EnableWindow(handle, Audio_Available());
+					EnableWindow(handle, AudioEngine.Is_Available());
 				}
 				break;
 

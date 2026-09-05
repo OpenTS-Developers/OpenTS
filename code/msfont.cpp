@@ -19,7 +19,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
@@ -101,7 +101,8 @@ MSFont::~MSFont(void)
 	if (InstanceCount == 0) {
 		for (int i = 0; i < ARRAY_SIZE(Sounds); i++) {
 			if (Sounds[i].Sample != NULL) {
-				Audio.Stop_Sample_Playing(Sounds[i].Sample);
+				AudioEngine.Stop_Sample_Playing(Sounds[i].Sample);
+				AudioEngine.Release_Sample(Sounds[i].Sample);
 				if (Sounds[i].AllocLoaded == true) {
 					delete Sounds[i].Sample;
 				}
@@ -188,7 +189,7 @@ bool MSFont::Init(char const * file_name, char const * palette_name)
 	FontWidth = FontFile->Get_Width();
 	FontHeight = FontFile->Get_Height();
 
-	if (InstanceCount == 0 && Audio_Available()) {
+	if (InstanceCount == 0 && AudioEngine.Is_Available()) {
 		Sounds[0].AllocLoaded = false;
 		Sounds[0].Sample = (void *)MixFileClass::Retrieve("TEXT1.AUD");
 
@@ -348,7 +349,7 @@ void MSFont::Draw_Character(Surface * surface, unsigned char character, int x, i
 		if (do_sound == true && frame == 0) {
 			void * sample = Sounds[rand() % 3].Sample;
 			if (sample != NULL) {
-				Audio.Play_Sample(sample, 10, int(Options.SoundVolume * 64));
+				AudioEngine.Play_Sample(sample, AUDIO_GROUP_SFX, 64.0f / 255.0f, 10);
 			}
 		}
 

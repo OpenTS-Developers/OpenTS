@@ -19,7 +19,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
 #include "mixfile.h"
@@ -599,7 +599,7 @@ MSVQAnim::MSVQAnim(char const * name, Surface * surface, MS_ANIM_LIST * vector, 
 	Done(false)
 {
 	if (name != NULL && surface != NULL) {
-		Movie = Movie_Create(name, surface, Rect(0, 0, 0, 0), Rect(0, 0, 0, 0), int(Options.SoundVolume * 255.0), false);
+		Movie = Movie_Create(name, surface, Rect(0, 0, 0, 0), Rect(0, 0, 0, 0), 255, false);
 		if (Movie != NULL) {
 			Movie->InitialRect = Rect((surface->Get_Width() - 640) / 2, (surface->Get_Height() - 400) / 2, 640, 400);
 			Movie->StretchRect = Rect((HiddenSurface->Get_Width() - 640) / 2, (HiddenSurface->Get_Height() - 400) / 2, 640, 400);
@@ -1176,7 +1176,7 @@ bool MSWordAnim::Advance(Surface * surface, Rect & rect)
 	if (LineStart >= strlen(String)) {
 		void const * sample = MFCD::Retrieve("BLEEP1.AUD");
 		if (sample != NULL) {
-			Audio.Play_Sample(sample, 10, int(Options.SoundVolume * 64));
+			AudioEngine.Play_Sample(sample, AUDIO_GROUP_SFX, 64.0f / 255.0f, 10);
 		}
 		return(true);
 	}
@@ -1207,7 +1207,7 @@ bool MSWordAnim::Advance(Surface * surface, Rect & rect)
 		if (character == '\n') {
 			void const * sample = MFCD::Retrieve("BLEEP1.AUD");
 			if (sample != NULL) {
-				Audio.Play_Sample(sample, 10, int(Options.SoundVolume * 64));
+				AudioEngine.Play_Sample(sample, AUDIO_GROUP_SFX, 64.0f / 255.0f, 10);
 			}
 			LineYPos += Font->Get_Font_Height();
 		}

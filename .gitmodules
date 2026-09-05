@@ -1,3 +1,6 @@
 [submodule "thirdparty/bgfx.cmake"]
 	path = thirdparty/bgfx.cmake
 	url = https://github.com/bkaradzic/bgfx.cmake.git
+[submodule "thirdparty/miniaudio"]
+	path = thirdparty/miniaudio
+	url = https://github.com/mackron/miniaudio.git

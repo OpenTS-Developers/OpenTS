@@ -32,7 +32,7 @@
 #include "data.h"
 #include "debug.h"
 #include "dialog.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "fog.h"
 #include "globals.h"
@@ -248,7 +248,7 @@ bool Main_Loop(void)
 	**	If there is no theme playing, but it looks like one is required, then start one
 	**	playing. This is usually the symptom of there being no transition score.
 	*/
-	if (Audio_Available() && Theme.What_Is_Playing() == THEME_NONE) {
+	if (AudioEngine.Is_Available() && Theme.What_Is_Playing() == THEME_NONE) {
 		Theme.Queue_Song(THEME_PICK_ANOTHER);
 	}
 

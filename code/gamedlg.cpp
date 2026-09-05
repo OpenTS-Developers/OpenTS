@@ -40,7 +40,7 @@
 #include "cctooltip.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "init.h"
 #include "language/language.h"
@@ -278,7 +278,7 @@ BOOL CALLBACK Game_Controls_Dialog_Proc(HWND window, UINT message, WPARAM wparam
 				if (GameActive == true) {
 					handle = GetDlgItem(window, IDC_OPT_SOUND_BTN);
 					if (handle) {
-						EnableWindow(handle, Audio_Available());
+						EnableWindow(handle, AudioEngine.Is_Available());
 					}
 				} else {
 					handle = GetDlgItem(window, IDC_DIFFICULTY_SLIDER);

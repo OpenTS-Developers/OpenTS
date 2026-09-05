@@ -53,7 +53,7 @@
 #include "convert.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "except.h"
 #include "gamewindow.h"
@@ -108,9 +108,6 @@ bool _MouseCaptured;
 extern	void VQA_PauseAudio(void);
 extern	void VQA_ResumeAudio(void);
 
-ThemeType OldTheme = THEME_NONE;
-
-
 /***********************************************************************************************
  * Focus_Loss -- this function is called when a library function detects focus loss            *
  *                                                                                             *
@@ -130,9 +127,7 @@ void Focus_Loss(void)
 {
 	DebugString("Focus_Loss()\n");
 	Pause_Ingame_Movie(true);
-	OldTheme = Theme.What_Is_Playing();
-	Theme.Suspend();
-	if (Audio_Available()) Audio.Stop_Primary_Sound_Buffer();
+	AudioEngine.Focus_Loss();
 	if (MouseCursor) {
 		_MouseCaptured = MouseCursor->Is_Captured();
 		DebugString("Focus_Loss(): _MouseCaptured = %s\n", _MouseCaptured ? "true" : "false");
@@ -143,14 +138,14 @@ void Focus_Loss(void)
 
 /// <summary>
 /// Restores the game when it regains the input focus.
-/// This routine is the counterpart to Focus_Loss. It starts the sound and the music
-/// back up, recaptures the mouse if it was captured when focus was lost, and flags the
-/// whole screen for redraw.
+/// This routine is the counterpart to Focus_Loss. It resumes the sound where it paused,
+/// recaptures the mouse if it was captured when focus was lost, and flags the whole
+/// screen for redraw.
 /// </summary>
 void Focus_Restore(void)
 {
 	DebugString("Focus_Restore()\n");
-	if (Audio_Available()) Audio.Start_Primary_Sound_Buffer(TRUE);
+	AudioEngine.Focus_Restore();
 	DebugString("Focus_Restore(): _MouseCaptured = %s\n", _MouseCaptured ? "true" : "false");
 	if (MouseCursor && _MouseCaptured == true && !Debug_Map) {
 		MouseCursor->Capture_Mouse();
@@ -158,7 +153,6 @@ void Focus_Restore(void)
 	Heal_Dialog_Controls();
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 	InvalidateRect(MainWindow, 0, 0);
-	Theme.Play_Song(OldTheme);
 	Pause_Ingame_Movie(false);
 	if (WS_Top_Window()) {
 		SetActiveWindow(WS_Top_Window());
@@ -531,7 +525,6 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 	RegisterHotKey(MainWindow, 1, MOD_ALT|MOD_CONTROL|MOD_SHIFT, VK_M);
 
 	SetCursor(LoadCursor(ProgramInstance, MAKEINTRESOURCE(CC_CURSOR)));
-	Audio.Audio_Focus_Loss_Function = Focus_Loss;
 
 	//Misc_Focus_Loss_Function = &Focus_Loss;
 	//Misc_Focus_Restore_Function = &Focus_Restore;
