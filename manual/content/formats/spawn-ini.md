@@ -86,7 +86,10 @@ played where the menu offers only its three. A restart or the next mission keeps
 launched partway through a chain begins in the state the missions before it left.
 
 The mission's own briefing and opening movies play as they do from the menu; only the
-game's startup movies are skipped.
+game's startup movies are skipped. A mission whose briefing movie the game cannot find, or
+that names none, shows its written briefing instead, on the same page the objectives button
+brings up during play. That page appears only when the mission starts fresh; a restart and
+the replay a loss offers go straight to the map.
 
 ## The options every house plays under
 

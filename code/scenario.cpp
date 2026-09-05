@@ -125,12 +125,14 @@
 #include "newmenu.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "ownrdraw.h"
 #include "partsys.h"
 #include "pcx.h"
 #include "preview.h"
 #include "progress.h"
 #include "psystype.h"
 #include "queue.h"
+#include "restate.h"
 #include "revent.h"
 #include "rules.h"
 #include "savestream.h"
@@ -164,6 +166,7 @@
 #include "vox.h"
 #include "wave.h"
 #include "waypoint.h"
+#include "win.h"
 #include "wsproto.h"
 
 #include "bench.hh"
@@ -373,9 +376,35 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	**	If there's no briefing movie, restate the mission at the beginning.
 	*/
 	char buffer[25];
+	bool has_briefing_movie = Scen->BriefMovie != VQ_NONE;
 
-	if (Scen->BriefMovie != VQ_NONE) {
+	if (has_briefing_movie) {
 		wsprintf(buffer, "%s.VQA", Movies[Scen->BriefMovie]);
+		has_briefing_movie = CCFileClass(buffer).Is_Available();
+	}
+
+	bool transit_playing = false;
+
+	if (briefing && Session.Type == GAME_NORMAL && !has_briefing_movie) {
+
+		// No dialog has been put up in a game a client launched, so the artwork it draws with
+		// is not built yet.
+		OwnerDraw::Prepare_Resources(MainWindow);
+
+		if (Scen->TransitTheme != THEME_NONE) {
+			Theme.Play_Song(Scen->TransitTheme);
+			transit_playing = true;
+		}
+
+		Restate_Mission(Scen);
+	}
+
+	/*
+	 * An action movie carries its own sound, so the music the page opened with makes way for
+	 * it rather than playing underneath.
+	 */
+	if (transit_playing && briefing && Scen->ActionMovie != VQ_NONE) {
+		Theme.Stop(true);
 	}
 
 	if (Scen->StartingDropships > 0) {
@@ -387,7 +416,9 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	}
 
 	if (Scen->ActionMovie == VQ_NONE && Scen->TransitTheme != THEME_NONE) {
-		Theme.Queue_Song(Scen->TransitTheme);
+		// The song the mission opened with is already the transit theme, and queuing it again
+		// would start it over; the scheduler still needs something pending either way.
+		Theme.Queue_Song(transit_playing ? THEME_PICK_ANOTHER : Scen->TransitTheme);
 	} else {
 		Theme.Queue_Song(THEME_PICK_ANOTHER);
 	}

@@ -798,6 +798,28 @@ BOOL CALLBACK SetUserData2(HWND window, LPARAM lparam)
 
 
 /// <summary>
+/// Builds the artwork, masks and fonts every owner-draw control paints with. Later calls do
+/// nothing, so anything drawing with those resources may ask for them.
+/// </summary>
+/// <param name="window">Supplies the display context the fonts are made against.</param>
+void OwnerDraw::Prepare_Resources(HWND window)
+{
+	Initialize();
+
+	static int _inited = false;
+	if (!_inited) {
+		ODInitMasks();
+		ODCacheImages();
+		HDC hdc = GetDC(window);
+		ODFontPtr = WS_Get_Font(hdc, ODFontName, 0, ODFontSize, 0);
+		ODListFontPtr = WS_Get_Font(hdc, ODListFontName, 0, ODListFontSize, 0);
+		ReleaseDC(window, hdc);
+		_inited = 1;
+	}
+}
+
+
+/// <summary>
 /// Prepares one control for owner drawing.
 /// This is the enumeration callback Subclass_Dialog uses. The control's window class and style
 /// pick the custom procedure that will paint it, its original procedure is displaced by
@@ -817,18 +839,7 @@ BOOL CALLBACK InitializeCtrl(HWND window, LPARAM lparam)
 	RECT rect2;
 	GetClientRect(window, &rect2);
 
-	Initialize();
-
-	static int _inited = false;
-	if (!_inited) {
-		ODInitMasks();
-		ODCacheImages();
-		HDC hdc = GetDC(window);
-		ODFontPtr = WS_Get_Font(hdc, ODFontName, 0, ODFontSize, 0);
-		ODListFontPtr = WS_Get_Font(hdc, ODListFontName, 0, ODListFontSize, 0);
-		ReleaseDC(window, hdc);
-		_inited = 1;
-	}
+	OwnerDraw::Prepare_Resources(window);
 
 	WNDPROC customProc = NULL;
 
