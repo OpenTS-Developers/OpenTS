@@ -1,14 +1,13 @@
 ---
 key: SoundLatency
-summary: How far ahead of the picture a movie's sound is assumed to be running, in sixtieths of a second.
+summary: Former movie sound offset, in sixtieths of a second, that the engine reads and writes back but no longer uses.
+no_effect: true
 see_also: [SoundVolume, StretchMovies]
 when_omitted:
   kind: value
   value: "9"
 ---
 
-A movie keeps its video in step with its audio by asking where the sound has reached and drawing to match. This figure is subtracted from that answer, so a larger figure holds the picture further back; the answer is floored at zero, so a figure larger than the sound has actually played simply pins the picture at the start.
+A movie keeps its video in step with its audio by asking how much of the sound has been heard and drawing to match. The audio engine answers that from what the mixer has taken of the sound track and what the output device still holds, so there is nothing left for a hand-set offset to correct. The figure once stood in for that device latency on emulated DirectSound drivers.
 
-The adjustment is thrown away unless DirectSound reports the sound device as an emulated driver. On a device with real hardware mixing it is zeroed as the movie player starts, and the figure has no effect at all.
-
-The setting has no control on any options screen, but saving the options writes it back to `sun.ini` with the rest.
+The setting has no control on any options screen. Saving the options still writes it back to `sun.ini` with the rest, so the file round-trips unchanged.
