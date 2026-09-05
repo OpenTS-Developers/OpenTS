@@ -1315,15 +1315,7 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 
 	after_proc:
 		if (message == WM_NCDESTROY) {
-			HWND destroyed = window;
-			WinData * destroydata;
-			if (ODWinData.getPointer(destroyed, &destroydata)) {
-				if (destroydata != NULL && destroydata->cachedSurface != NULL) {
-					delete destroydata->cachedSurface;
-					destroydata->cachedSurface = NULL;
-					_surface_count--;
-				}
-			}
+			On_WM_NCDESTROY(window);
 			ODRemoveFromDict(window, 0);
 		}
 		goto cleanup;
