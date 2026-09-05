@@ -70,8 +70,11 @@ class NullAudioDeviceClass : public AudioDeviceClass
 		// frames rendered. Renders nothing unless the device is running.
 		unsigned Pump(float * output, unsigned frames);
 
-		// Lets a test stand in for the hardware going away and coming back.
+		// Lets a test stand in for the hardware going away and coming back. Lost
+		// alone lets the next Start succeed, as a reroute does; unplugged refuses
+		// Start and Open until it is cleared.
 		void Set_Lost(bool lost);
+		void Set_Unplugged(bool unplugged);
 
 	private:
 		RenderCallback Callback;
@@ -81,6 +84,7 @@ class NullAudioDeviceClass : public AudioDeviceClass
 		unsigned PeriodFrames;
 		unsigned PeriodCount;
 		bool Opened;
+		bool Unplugged;
 		std::atomic<bool> Running;
 		std::atomic<bool> Lost;
 };

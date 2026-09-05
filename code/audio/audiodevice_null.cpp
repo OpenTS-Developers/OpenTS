@@ -20,6 +20,7 @@ NullAudioDeviceClass::NullAudioDeviceClass(unsigned periodframes, unsigned perio
 	PeriodFrames(periodframes),
 	PeriodCount(periods),
 	Opened(false),
+	Unplugged(false),
 	Running(false),
 	Lost(false)
 {
@@ -28,7 +29,7 @@ NullAudioDeviceClass::NullAudioDeviceClass(unsigned periodframes, unsigned perio
 
 bool NullAudioDeviceClass::Open(unsigned rate, unsigned channels, RenderCallback callback, void * context)
 {
-	if (Opened || rate == 0 || channels == 0 || callback == nullptr) {
+	if (Opened || Unplugged || rate == 0 || channels == 0 || callback == nullptr) {
 		return(false);
 	}
 	RateValue = rate;
@@ -41,18 +42,21 @@ bool NullAudioDeviceClass::Open(unsigned rate, unsigned channels, RenderCallback
 }
 
 
+// Clears the lost flag as the real device does, so a failed reopen leaves the
+// device reporting neither lost nor running.
 void NullAudioDeviceClass::Close(void)
 {
 	Stop();
 	Opened = false;
 	Callback = nullptr;
 	Context = nullptr;
+	Lost.store(false, std::memory_order_release);
 }
 
 
 bool NullAudioDeviceClass::Start(void)
 {
-	if (!Opened) {
+	if (!Opened || Unplugged) {
 		return(false);
 	}
 	Lost.store(false, std::memory_order_release);
@@ -90,5 +94,14 @@ void NullAudioDeviceClass::Set_Lost(bool lost)
 	Lost.store(lost, std::memory_order_release);
 	if (lost) {
 		Running.store(false, std::memory_order_release);
+	}
+}
+
+
+void NullAudioDeviceClass::Set_Unplugged(bool unplugged)
+{
+	Unplugged = unplugged;
+	if (unplugged) {
+		Set_Lost(true);
 	}
 }
