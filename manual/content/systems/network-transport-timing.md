@@ -12,13 +12,17 @@ a retry, so a link slower than the initial retry delay becomes measurable; the
 first clean acknowledgement replaces the seed.
 
 The retry timeout is limited to 100–4000 ms. Repeated private transmissions
-double their wait up to the connection timeout; that timeout follows measured
-latency with a 2-second minimum and 30-second ceiling. A packet's first retry
-waits at most a quarter of that timeout, so every packet is sent at least three
-times before it. A packet older than the timeout marks the connection bad but is
-still retransmitted at the capped wait until it is acknowledged, so a link that
-recovers drains its backlog. With no measurement, the bounded legacy timing is
-used. Global lobby traffic retains its fixed cadence.
+double their wait up to the connection timeout. For a measured link, the
+connection timeout is the larger of eight times the smoothed round trip plus
+250 ms and four times the current retry timeout, bounded to 2–30 seconds.
+This lets the first retry wait for the backed-off timeout while allowing at
+least three transmissions before the connection timeout.
+
+A packet older than the connection timeout marks the connection bad but keeps
+retrying until acknowledged. Receive-queue cleanup continues during these
+retries, freeing space for the backlog when the link recovers. With no
+measurement, the bounded legacy timing is used. Global lobby traffic retains
+its fixed cadence.
 
 A link that is retransmitting also doubles the timeout it measures against, once
 per retransmission proven against the current value. This keeps a link whose

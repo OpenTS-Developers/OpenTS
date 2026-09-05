@@ -747,7 +747,9 @@ int ConnectionClass::Service (void)
 	been ACK'd yet.  Entries that the app has read, and have been ACK'd,
 	should be removed.
 	------------------------------------------------------------------------*/
-	IsBad = !(Service_Send_Queue() && Service_Receive_Queue());
+	int const send_status = Service_Send_Queue();
+	int const receive_status = Service_Receive_Queue();
+	IsBad = !(send_status && receive_status);
 	return(IsBad ? 0 : 1);
 
 }	/* end of Service */
@@ -825,7 +827,7 @@ int ConnectionClass::Service_Send_Queue (void)
 	bool const timeout_enabled = Timeout != (unsigned int)-1;
 	NetTiming::Milliseconds const connection_timeout = !timeout_enabled
 		? NetTiming::MAXIMUM_CONNECTION_TIMEOUT
-		: (adaptive_timing ? NetTiming::Connection_Timeout(RoundTripEstimator.Smoothed_Rtt())
+		: (adaptive_timing ? NetTiming::Connection_Timeout(RoundTripEstimator.Smoothed_Rtt(), RoundTripEstimator.Retransmit_Timeout())
 			: (adaptive_channel ? Legacy_Connection_Timeout(Timeout) : Ticks_To_Milliseconds(Timeout)));
 	NetTiming::Milliseconds const base_retry_timeout = adaptive_timing
 		? NetTiming::Initial_Retry_Timeout(RoundTripEstimator.Retransmit_Timeout(), connection_timeout)

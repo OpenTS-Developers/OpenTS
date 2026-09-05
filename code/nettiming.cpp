@@ -99,10 +99,10 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Derives the connection timeout from smoothed latency.</summary>
-	Milliseconds Connection_Timeout(Milliseconds smoothed_rtt)
+	/// <summary>Derives a timeout that covers measured latency and three transmissions at the current RTO.</summary>
+	Milliseconds Connection_Timeout(Milliseconds smoothed_rtt, Milliseconds retransmit_timeout)
 	{
-		std::uint64_t const timeout = 8ull * smoothed_rtt + 250;
+		std::uint64_t const timeout = std::max(8ull * smoothed_rtt + 250, 4ull * retransmit_timeout);
 		return(static_cast<Milliseconds>(std::clamp<std::uint64_t>(timeout, MINIMUM_CONNECTION_TIMEOUT, MAXIMUM_CONNECTION_TIMEOUT)));
 	}
 

@@ -38,13 +38,14 @@ namespace
 				FirstSend = now;
 				LastSend = now;
 				TransmissionCount = 1;
-				BaseRto = Estimator.Retransmit_Timeout();
+				BaseRto = NetTiming::Initial_Retry_Timeout(Estimator.Retransmit_Timeout(), Timeout());
 			}
 
 			bool Retry(NetTiming::Milliseconds now)
 			{
 				Clock.Set(now);
-				if (!NetTiming::Retransmit_Is_Due(LastSend, now, BaseRto, TransmissionCount - 1, NetTiming::MINIMUM_CONNECTION_TIMEOUT)) {
+				NetTiming::RetransmitState const state{FirstSend, LastSend, BaseRto, TransmissionCount};
+				if (!NetTiming::Evaluate_Retry(state, now, BaseRto, Timeout(), true, true).Send) {
 					return(false);
 				}
 				LastSend = now;
@@ -61,6 +62,10 @@ namespace
 
 			NetTiming::RttEstimator const & Rtt(void) const {return(Estimator);}
 			NetTiming::Milliseconds Base_Rto(void) const {return(BaseRto);}
+			NetTiming::Milliseconds Timeout(void) const
+			{
+				return(NetTiming::Connection_Timeout(Estimator.Smoothed_Rtt(), Estimator.Retransmit_Timeout()));
+			}
 
 		private:
 			FakeClock Clock;
@@ -163,16 +168,68 @@ namespace
 		Expect_Equal("fourth backoff", Retransmit_Delay(100, 4), 1600u);
 		Expect_Equal("backoff saturation", Retransmit_Delay(100, 20), MAXIMUM_RTO);
 		Expect_Equal("base clamp", Retransmit_Delay(1, 0), MINIMUM_RTO);
-		Expect_Equal("connection timeout minimum", Connection_Timeout(0), 2000u);
-		Expect_Equal("connection timeout follows RTT", Connection_Timeout(500), 4250u);
-		Expect_Equal("connection timeout ceiling", Connection_Timeout(10000), 30000u);
+		Expect_Equal("connection timeout minimum", Connection_Timeout(0, MINIMUM_RTO), 2000u);
+		Expect_Equal("connection timeout follows RTT", Connection_Timeout(500, MINIMUM_RTO), 4250u);
+		Expect_Equal("connection timeout ceiling", Connection_Timeout(10000, MAXIMUM_RTO), 30000u);
 		Expect_Equal("backoff reaches connection timeout", Retransmit_Delay(500, 8, 4250), 4250u);
 
 		Expect_Equal("first retry keeps a small RTO", Initial_Retry_Timeout(300, 2000), 300u);
 		Expect_Equal("first retry is bounded by a quarter of the timeout", Initial_Retry_Timeout(1600, 2000), 500u);
 		Expect_Equal("first retry bound keeps the floor", Initial_Retry_Timeout(1600, 300), MINIMUM_RTO);
-		Expect_Equal("slow link keeps its RTO under a long timeout", Initial_Retry_Timeout(2055, Connection_Timeout(2015)), 2055u);
+		Expect_Equal("slow link keeps its RTO under a long timeout", Initial_Retry_Timeout(2055, Connection_Timeout(2015, 2055)), 2055u);
 		Expect_Equal("bounded first retry allows three sends before the timeout", Retransmit_Delay(500, 0) + Retransmit_Delay(500, 1), 1500u);
+	}
+
+
+	void Test_Backoff_Timeout(void)
+	{
+		using namespace NetTiming;
+
+		Expect_Equal("backed off RTO extends the timeout", Connection_Timeout(10, 800), 3200u);
+		Expect_Equal("maximum RTO fits below the timeout ceiling", Connection_Timeout(10, MAXIMUM_RTO), 16000u);
+		Expect_Equal("large RTO calculation keeps the hard ceiling", Connection_Timeout(10, 0xffffffffu), MAXIMUM_CONNECTION_TIMEOUT);
+
+		for (Milliseconds rto : {100u, 500u, 800u, 1600u, MAXIMUM_RTO}) {
+			Milliseconds const timeout = Connection_Timeout(10, rto);
+			Milliseconds const initial_retry = Initial_Retry_Timeout(rto, timeout);
+			Expect_Equal("packet captures the full backed off RTO", initial_retry, rto);
+
+			RetransmitState state{1000, 1000, initial_retry, 1};
+			RetryDecision decision = Evaluate_Retry(state, 1000 + rto, rto, timeout, true, true);
+			Expect("second transmission precedes the extended timeout", decision.Send && !decision.TimedOut);
+			state.LastSend += rto;
+			state.TransmissionCount++;
+			decision = Evaluate_Retry(state, 1000 + 3 * rto, rto, timeout, true, true);
+			Expect("third transmission precedes the extended timeout", decision.Send && !decision.TimedOut);
+			Expect("extended timeout still expires", Evaluate_Retry(state, 1000 + timeout, rto, timeout, true, true).TimedOut);
+		}
+	}
+
+
+	void Test_Latency_Increase(void)
+	{
+		using namespace NetTiming;
+
+		for (Milliseconds round_trip : {600u, 1500u}) {
+			FakeTransport transport;
+			transport.Send(0);
+			Expect("latency increase starts from a measured fast link", transport.Acknowledge(10));
+
+			bool measured = false;
+			for (unsigned int packet = 0; packet < 10 && !measured; packet++) {
+				Milliseconds const sent_at = 1000 + packet * (round_trip + 1000);
+				transport.Send(sent_at);
+				for (Milliseconds elapsed = 1; elapsed < round_trip; elapsed++) {
+					transport.Retry(sent_at + elapsed);
+				}
+				measured = transport.Acknowledge(sent_at + round_trip);
+			}
+
+			Expect("slower link eventually produces a clean sample", measured);
+			Expect("clean sample updates the stale fast-link RTT", transport.Rtt().Smoothed_Rtt() > 10);
+			Expect("clean sample arrives before the captured retry", transport.Base_Rto() > round_trip);
+			Expect("recovery keeps the connection timeout bounded", transport.Timeout() <= MAXIMUM_CONNECTION_TIMEOUT);
+		}
 	}
 
 
@@ -380,6 +437,8 @@ int main(void)
 	Test_Rtt_Estimator();
 	Test_Clock_And_Wrap();
 	Test_Retransmit_Backoff();
+	Test_Backoff_Timeout();
+	Test_Latency_Increase();
 	Test_Retry_Decisions();
 	Test_Loss_Jitter_And_Reordering();
 	Test_Backoff_Persistence();
