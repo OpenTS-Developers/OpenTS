@@ -250,7 +250,7 @@ void _DrawMessage(int color, const char * message, HWND window)
 			int idx = length - 1;
 
 			while (idx > 0) {
-				if (!isgraph(message[idx])) {
+				if (!isgraph((unsigned char)message[idx])) {
 					found = idx;
 					break;
 				}

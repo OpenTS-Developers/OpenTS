@@ -1720,7 +1720,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
-		if (isdigit(string[1])) {
+		if (isdigit((unsigned char)string[1])) {
 			sscanf(string, "-%dX%d", &Options.ScreenWidth, &Options.ScreenHeight);
 			continue;
 		}
@@ -1771,7 +1771,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 			string += strlen("-X");
 			while (*string) {
 				char code = *string++;
-				switch (toupper(code)) {
+				switch (toupper((unsigned char)code)) {
 
 #ifdef _DEBUG
 
@@ -2941,7 +2941,7 @@ bool Cheat_Key_Process(char chr)
 {
 	static char _buffer[32] = "";
 
-	if (!isalnum(chr) || chr == '~') {
+	if (!isalnum((unsigned char)chr) || chr == '~') {
 		memset(_buffer, 0, sizeof(_buffer));
 		return(false);
 	}
@@ -2958,7 +2958,7 @@ bool Cheat_Key_Process(char chr)
 		_buffer[0] = 0;
 	}
 
-	_buffer[len] = toupper(chr);
+	_buffer[len] = toupper((unsigned char)chr);
 
 	for (int c = 0; c < ARRAY_SIZE(CheatEntries); c++) {
 		if (strstr(_buffer, CheatEntries[c].CheatString) != NULL) {

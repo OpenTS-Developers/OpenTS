@@ -774,7 +774,7 @@ bool AITriggerTypeClass::Read_INI(CCINIClass const & ini)
 			endptr = 0;
 			i = 0;
 			while (*paramstr != '\0') {
-				while (isspace(*paramstr)) {
+				while (isspace((unsigned char)*paramstr)) {
 					paramstr++;
 				}
 				nptr[0] = *paramstr;

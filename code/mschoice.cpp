@@ -304,7 +304,7 @@ MapStage::MapStage(INIClass const & ini, char const * label) :
 	Description = NULL;
 	if (ini.Get_String(label, "Description", NULL, buffer, sizeof(buffer)) > 0) {
 		int txt = atol(buffer);
-		if (txt == TXT_NONE && isalpha(buffer[0])) {
+		if (txt == TXT_NONE && isalpha((unsigned char)buffer[0])) {
 			if (strlen(buffer) != 0) {
 				Description = (char *)malloc(1024);
 				if (Description != NULL) {

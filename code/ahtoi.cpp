@@ -23,7 +23,7 @@ int ahtoi(const char * str)
 {
 	int integer = 0;
 	while (str) {
-		if (!isxdigit(*str)) {
+		if (!isxdigit((unsigned char)*str)) {
 			break;
 		}
 		char ch = *str;
@@ -35,7 +35,7 @@ int ahtoi(const char * str)
 		if (ch >= '0' && ch <= '9') {
 			integer += ch - '0';
 		} else {
-			integer += toupper(ch) - ('A' - 10);
+			integer += toupper((unsigned char)ch) - ('A' - 10);
 		}
 	}
 	return(integer);

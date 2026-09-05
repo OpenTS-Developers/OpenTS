@@ -98,14 +98,14 @@ int _ahtoi(const char *string)
 {
 	char *s = (char *)string;
 	int integer = 0;
-	while (isxdigit(s[0]))
+	while (isxdigit((unsigned char)s[0]))
 	{
 		integer *= 16; /// desired base is 16
 
-		if (isdigit(s[0])) {
+		if (isdigit((unsigned char)s[0])) {
 			integer += s[0] - '0';
 		} else {
-			integer += toupper(s[0]) - ('A' - 10);
+			integer += toupper((unsigned char)s[0]) - ('A' - 10);
 		}
 		s++;
 	}

@@ -929,7 +929,7 @@ int INIClass::Get_Int(char const * section, char const * entry, int defvalue) co
 		if (*value == '$') {
 			sscanf(value, "$%x", &defvalue);
 		} else {
-			if (tolower(value[strlen(value)-1]) == 'h') {
+			if (tolower((unsigned char)value[strlen(value)-1]) == 'h') {
 				sscanf(value, "%xh", &defvalue);
 			} else {
 				defvalue = atoi(value);

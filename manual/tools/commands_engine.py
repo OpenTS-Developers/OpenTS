@@ -392,7 +392,7 @@ def discover_launch_sites(init_text=None):
                 add("literal:" + value, match.start())
             elif value.lower() == ".map":
                 add("pattern:*.MAP", match.start())
-    for match in re.finditer(r"\bisdigit\s*\(\s*string\s*\[\s*1\s*\]\s*\)", body):
+    for match in re.finditer(r"\bisdigit\s*\(\s*(?:\(\s*unsigned\s+char\s*\)\s*)?string\s*\[\s*1\s*\]\s*\)", body):
         add("pattern:-<width>X<height>", match.start())
     for match in re.finditer(r"\bcase\s+'([A-Z])'\s*:", body):
         add("compact:-X" + match.group(1), match.start())
