@@ -43,6 +43,7 @@
 ****************************************************************************/
 
 #include	"vqaplayp.h"
+#include	<stdint.h>
 #include	<stdio.h>
 #include	<fcntl.h>
 #include	<io.h>
@@ -89,26 +90,26 @@ long __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, 
 			error = 1;
 			break;
 
-		/* VQACMD_SEEK asks that you perform a seek relative to the current
-		 * position. NBytes is a signed number, indicating seek direction
-		 * (positive for forward, negative for backward). Buffer has no meaning
-		 * here.
+		/* VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		 * names, which is SEEK_SET or SEEK_CUR cast to a pointer. NBytes is a
+		 * signed number, indicating seek direction (positive for forward,
+		 * negative for backward).
 		 *
 		 * Any error code returned will be remapped by VQA library into
 		 * VQAERR_SEEK.
 		 */
 		case VQACMD_SEEK:
-			error = (lseek(fh, nbytes, (long)buffer) == -1);
+			error = (lseek(fh, nbytes, (int)(intptr_t)buffer) == -1);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = lseek(fh, nbytes - 1, (int)buffer) == -1;
+				error = lseek(fh, nbytes - 1, (int)(intptr_t)buffer) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
 			} else {
-				error = lseek(fh, nbytes, (int)buffer) == -1;
+				error = lseek(fh, nbytes, (int)(intptr_t)buffer) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
@@ -186,24 +187,24 @@ long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer
 			error = 1;
 			break;
 
-		/* VQACMD_SEEK asks that you perform a seek relative to the current
-		 * position. NBytes is a signed number, indicating seek direction
-		 * (positive for forward, negative for backward). Buffer has no meaning
-		 * here.
+		/* VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		 * names, which is SEEK_SET or SEEK_CUR cast to a pointer. NBytes is a
+		 * signed number, indicating seek direction (positive for forward,
+		 * negative for backward).
 		 *
 		 * Any error code returned will be remapped by VQA library into
 		 * VQAERR_SEEK.
 		 */
 		case VQACMD_SEEK:
 		case VQACMD_SEEKPEEK:
-			switch ((long)buffer) {
+			switch ((int)(intptr_t)buffer) {
 
-				case 1:
+				case SEEK_CUR:
 					cache->Offset += nbytes;
 					error = 0;
 					break;
 
-				case 0:
+				case SEEK_SET:
 					p = (int)cache->Buffer;
 					if (nbytes >= p) {
 						cache->Offset = nbytes - p;
