@@ -17,6 +17,7 @@ bool Init_Network (void);
 void Shutdown_Network (void);
 bool Remote_Connect (void);
 void Destroy_Connection(int id, int error);
+void Sign_Off_Match(void);
 unsigned int Compute_Name_CRC(char *name);
 void Net_Reconnect_Dialog(int reconn, int fresh, int oldest_index, unsigned int timeval);
 

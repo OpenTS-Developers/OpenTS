@@ -83,10 +83,15 @@
 #include "infatype.h"
 #include "init.h"
 #include "ion.h"
+#include "ipxmgr.h"
 #include "language/language.h"
 #include "loaddlg.h"
 #include "light.h"
 #include "logic.h"
+#include "mpload.h"
+#include "msgbox.h"
+#include "netdlg.h"
+#include "netglobal.h"
 #include "overlay.h"
 #include "overtype.h"
 #include "ovrlight.h"
@@ -137,9 +142,12 @@
 #include "wave.h"
 #include "waypoint.h"
 #include "weapon.h"
+#include "wsproto.h"
 
+#include "_wsproto.h"
 #include "objheaps.hh"
 
+#include <algorithm>
 #include <string>
 
 //#define	SAVE_BLOCK_SIZE	512
@@ -154,6 +162,7 @@ unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
 static bool MultiplayerSavingAllowed = true;
 static bool MultiplayerSavePending = false;
 static bool MultiplayerSaveQuiet = false;
+static bool MultiplayerLoadInProgress = false;
 static std::string PendingSaveFileName;
 static std::string PendingSaveDescription;
 static bool QuickSaveRequested = false;
@@ -1058,6 +1067,11 @@ bool Request_Save_Game(char const * file_name, char const * descr, bool quiet)
 		return(false);
 	}
 
+	if (MultiplayerLoad.Is_Pending()) {
+		DebugString("Ignoring multiplayer save request because a load is pending\n");
+		return(false);
+	}
+
 	if (MultiplayerSavePending) {
 		DebugString("Coalescing duplicate multiplayer save request\n");
 		return(true);
@@ -1157,7 +1171,7 @@ void Autosave_Service(void)
 
 	bool single = Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH;
 
-	if (!single && !MultiplayerSavingAllowed) return;
+	if (!single && (!MultiplayerSavingAllowed || MultiplayerLoad.Is_Pending())) return;
 
 	if (Autosave.Take_Armed()) {
 		Autosave.Schedule(Frame);
@@ -1223,6 +1237,226 @@ void Quick_Save_Service(void)
 		OwnerDraw::End_Dialog(dialog);
 	}
 	Post_Save_Notice(saved ? TXT_GAME_WAS_SAVED : TXT_SAVE_FAILED);
+}
+
+
+/// <summary>
+/// May this machine ask every machine to load a multiplayer save now? Only the master of a
+/// client-launched match may, while no load is pending and no recording plays.
+/// </summary>
+bool Multiplayer_Load_Is_Allowed(void)
+{
+	return(Spawner_Is_Active() && Session.Type == GAME_INTERNET && !Session.Play
+		&& Session.Am_I_Master() && !MultiplayerLoad.Is_Pending());
+}
+
+
+/// <summary>
+/// Offers the master the match's saved games and asks every machine to load the pick. The list
+/// pumps the game underneath it unless the session is suspended, so between frames the match
+/// keeps running while the master browses.
+/// </summary>
+/// <returns>bool; Was a load requested?</returns>
+bool Multiplayer_Load_Prompt(void)
+{
+	if (!Multiplayer_Load_Is_Allowed()) {
+		return(false);
+	}
+
+	MultiplayerLoadOptionsClass list;
+	return(list.Load() && Multiplayer_Load_Request(list.Picked_File()));
+}
+
+
+/// <summary>
+/// Schedules the named multiplayer save on this machine and asks every other seat to do the
+/// same. The file must be here with the running version's stamp and this kind of game.
+/// </summary>
+/// <returns>bool; Was the load scheduled?</returns>
+bool Multiplayer_Load_Request(char const * file_name)
+{
+	if (file_name == NULL || !Multiplayer_Load_Is_Allowed()) {
+		return(false);
+	}
+
+	SaveVersionInfo info;
+	if (!Get_Savefile_Info(file_name, &info) || info.Get_Internal_Version() != ExpectedGameVersion
+		|| (GameType)info.Get_Game_Type() != Session.Type) {
+		DebugString("Refusing to request the multiplayer save %s\n", file_name);
+		return(false);
+	}
+
+	if (!MultiplayerLoad.Schedule(file_name, Monotonic_Milliseconds())) {
+		return(false);
+	}
+	DebugString("Asking every machine to load %s\n", file_name);
+
+	GlobalPacketType packet;
+	NetGlobal::Initialize_Packet(packet, NET_LOAD_GAME);
+	std::snprintf(packet.Name, sizeof(packet.Name), "%s", Session.Players[0]->Name);
+	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "%s", file_name);
+
+	for (int index = 1; index < Session.Players.Count(); index++) {
+		Ipx.Send_Global_Message(&packet, sizeof(packet), 1, &Session.Players[index]->Address);
+		Ipx.Service();
+	}
+	return(true);
+}
+
+
+/// <summary>
+/// Schedules the save the master named, once the packet has passed validation.
+/// </summary>
+void Multiplayer_Load_Receive(char const * file_name)
+{
+	if (!Spawner_Is_Active() || Session.Type != GAME_INTERNET) {
+		DebugString("Ignoring a load request outside a client-launched match\n");
+		return;
+	}
+
+	if (MultiplayerLoad.Is_Pending()) {
+		DebugString("Ignoring a load request while %s is pending\n", MultiplayerLoad.File_Name());
+		return;
+	}
+
+	if (MultiplayerLoad.Schedule(file_name, Monotonic_Milliseconds())) {
+		DebugString("The master asked every machine to load %s\n", file_name);
+	}
+}
+
+
+bool Multiplayer_Load_Is_Pending(void)
+{
+	return(MultiplayerLoad.Is_Pending());
+}
+
+
+bool Multiplayer_Load_Is_In_Progress(void)
+{
+	return(MultiplayerLoadInProgress);
+}
+
+
+/// <summary>
+/// Drops a seat whose player signed off while this machine was loading, when no connection
+/// exists to destroy. The seats are matched to the loaded houses afterwards, so the house
+/// passes to the computer as it does for any player who left.
+/// </summary>
+void Multiplayer_Load_Unseat(int index)
+{
+	if (index <= 0 || index >= Session.Players.Count()) {
+		return;
+	}
+
+	NodeNameType * seat = Session.Players[index];
+	DebugString("%s signed off during the load; dropping the seat\n", seat->Name);
+	Session.Players.Delete(seat);
+	delete seat;
+	Session.NumPlayers--;
+}
+
+
+/// <summary>
+/// Loads a multiplayer save in place of the running match, keeping the seats and rebuilding the
+/// connections around the loaded houses. The next frame runs the usual post-load barrier.
+/// </summary>
+/// <returns>bool; Is the loaded game ready to synchronize? On false the match is lost.</returns>
+static bool Perform_Multiplayer_Load(char const * file_name)
+{
+	DebugString("Loading %s in place of the running match\n", file_name);
+
+	// Nothing sent or received for the running match may reach the loaded one.
+	if (PacketTransport != NULL) {
+		PacketTransport->Discard_In_Buffers();
+		PacketTransport->Discard_Out_Buffers();
+	}
+	while (Ipx.Num_Connections() > 0) {
+		Ipx.Delete_Connection(Ipx.Connection_ID(0));
+	}
+	DoList.clear();
+	OutList.clear();
+
+	Session.LoadGame = true;
+	MultiplayerLoadInProgress = true;
+	bool const loaded = LoadOptionsClass().Load_File(file_name);
+	MultiplayerLoadInProgress = false;
+	if (!loaded) {
+		return(false);
+	}
+	if (!Reconcile_Players()) {
+		return(false);
+	}
+
+	if (PacketTransport != NULL) {
+		PacketTransport->Discard_In_Buffers();
+		PacketTransport->Discard_Out_Buffers();
+	}
+	if (!Session.Create_Connections()) {
+		return(false);
+	}
+	Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND, Ipx.Global_Response_Time() + 2), (unsigned int)-1, 10 * TIMER_SECOND);
+	Spawner_Announce_Master();
+
+	Reset_Multiplayer_Save_State();
+	Map.Flag_To_Redraw(GS_REDRAW_ALL);
+	return(true);
+}
+
+
+/// <summary>
+/// Waits out the countdown of a scheduled multiplayer load at the end of the frame, then loads
+/// the save in place of the running match. A machine whose load fails leaves the match.
+/// </summary>
+void Process_Pending_Load_Game(void)
+{
+	if (!MultiplayerLoad.Is_Pending()) {
+		return;
+	}
+
+	// Nothing of the running match is sent or executed once the load is agreed on.
+	DoList.clear();
+	OutList.clear();
+
+	Session.Suspended++;
+	TacticalActive = false;
+
+	HWND dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_LOADING_SAVED_GAME), NULL, NULL);
+	if (dialog != 0) {
+		OwnerDraw::Display_Dialog(dialog);
+	}
+
+	int shown = -1;
+	while (!MultiplayerLoad.Is_Due(Monotonic_Milliseconds())) {
+		int seconds = MultiplayerLoad.Seconds_Left(Monotonic_Milliseconds());
+		if (dialog != 0 && seconds != shown) {
+			shown = seconds;
+			char buffer[128];
+			std::snprintf(buffer, sizeof(buffer),
+				Fetch_String(seconds == 1 ? TXT_LOADING_IN_SECOND : TXT_LOADING_IN_SECONDS), seconds);
+			OwnerDraw::Set_Custom_Message_Box_Text(dialog, buffer);
+		}
+		OwnerDraw::Dialog_Message_Handler();
+		Sleep(10);
+	}
+
+	if (dialog != 0) {
+		OwnerDraw::End_Dialog(dialog);
+	}
+	Session.Suspended--;
+	TacticalActive = true;
+
+	std::string file_name = MultiplayerLoad.File_Name();
+	MultiplayerLoad.Clear();
+
+	if (!Perform_Multiplayer_Load(file_name.c_str())) {
+		DebugString("The multiplayer load of %s failed; leaving the match\n", file_name.c_str());
+		Session.LoadGame = false;
+		Sign_Off_Match();
+		Session.Suspended++;
+		WWMessageBox().Process(TXT_ERROR_LOADING_GAME, TXT_OK);
+		Session.Suspended--;
+		GameActive = false;
+	}
 }
 
 

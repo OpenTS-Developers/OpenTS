@@ -1458,6 +1458,7 @@ restart:
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.Play) {
 		Session.Create_Connections();
+		Spawner_Announce_Master();
 
 		if (Session.Type == GAME_IPX) {
 			Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND / 4, Ipx.Global_Response_Time() + 2), (unsigned int) -1, 10 * TIMER_SECOND);

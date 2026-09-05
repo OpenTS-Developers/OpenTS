@@ -9,11 +9,13 @@ role: persistence
 source_files:
   - code/autosave.cpp
   - code/conquer.cpp
+  - code/desyncdlg.cpp
   - code/event.cpp
   - code/goptions.cpp
   - code/init.cpp
   - code/loaddlg.cpp
   - code/mainloop.cpp
+  - code/mpload.cpp
   - code/netdlg.cpp
   - code/saveload.cpp
   - code/savestream.cpp
@@ -56,6 +58,10 @@ The [`QuickSave`](/commands/quicksave/) command writes a campaign to `QUICKSAVE.
 [`QuickLoad`](/commands/quickload/) restores the file for the kind of game being played. It first reads the file's property set and refuses, with a line in the message list, when the file is missing or carries another version's stamp; otherwise the load runs when the frame ends, in the place the options menu runs, and the mission clock resumes in the restored game. A load that fails partway through the restore shows the same error box as the load dialog and leaves the player in the options menu.
 
 Both commands are refused in a game against other machines, during playback, while a scripted sequence has locked input, and once the game is being won or lost. Both arrive unbound.
+
+## Loading during a match
+
+In a client-launched match the master can load one of the match's saved games while it is being played, from the options menu or from the [out-of-sync dialog](/systems/out-of-sync-recovery/). The list offers the `.NET` files in the saved-games folder other than `SAVEGAME.NET` itself, which is where a save is written and what a client renames as soon as it appears, so the numbered files the client leaves behind are what is offered; a file stamped by another version or made in another kind of game is skipped. Reading a file's header costs a disk open, so only the newest thirty-two files by write time are read, which keeps the other machines from waiting on a long scan. Picking one asks every machine to load the file of that name from its own folder five seconds later. Each machine discards what it received and sent for the running match, reads the save, matches the seats it holds to the saved houses by name, rebuilds its connections, and synchronizes at the save's frame as a resumed save does, where files that do not match are refused. A player who has left since the save was written fights on under the computer, and multiplayer saving is allowed again once the loaded game runs, since it seats exactly the machines present. No save is written while a load is pending, and a machine whose load fails signs off and leaves the match.
 
 ## What the file holds
 

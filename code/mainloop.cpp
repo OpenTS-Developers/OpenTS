@@ -447,6 +447,7 @@ bool Main_Loop(void)
 		Autosave_Service();
 		Quick_Save_Service();
 		Process_Pending_Save_Game();
+		Process_Pending_Load_Game();
 	}
 
 	BEnd(BENCH_GAME_FRAME);

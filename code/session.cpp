@@ -61,6 +61,7 @@
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "msgloop.h"
+#include "netglobal.h"
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
@@ -408,65 +409,62 @@ int SessionClass::Create_Connections(void)
  *=========================================================================*/
 bool SessionClass::Am_I_Master(void)
 {
-	int i;
-	HouseClass *hptr;
-
-	if (PlayerPtr == NULL) return(false);
-
-	if (Session.Type == GAME_INTERNET) {
-		if (MasterPlayerID != -1) {
-			return(PlayerPtr->HeapID == MasterPlayerID);
-		}
-
-		if (PlayerPtr && stricmp(PlayerPtr->IniName, MasterPlayerName) == 0) {
-			return(true);
-		}
-	}
-
-	//------------------------------------------------------------------------
-	// Check every house; if PlayerPtr points to the first human house, we're
-	// the master.
-	//------------------------------------------------------------------------
-	for (i = 0; i < Houses.Count(); i++) {
-		hptr = Houses[i];
-		if (hptr->IsHuman) {
-			if (PlayerPtr == hptr) {
-				return(true);
-			}
-			else {
-				return(false);
-			}
-		}
-	}
-
-	return(false);
+	return(PlayerPtr != NULL && PlayerPtr->HeapID == Master_Player_ID());
 
 }	// end of Am_I_Master
 
 
-/// <summary>Returns the first active network-human house in deterministic order.</summary>
+/// <summary>
+/// Returns the house that decides for the match: the announced host while it still holds a
+/// seat, else the lowest seated house. The timing events, the out-of-sync dialog and an
+/// in-game load all answer to this one master, and every machine names the same one.
+/// </summary>
 int SessionClass::Master_Player_ID(void) const
 {
-	if (Type == GAME_INTERNET) {
-		for (int i = 0; i < Houses.Count(); i++) {
-			HouseClass const * house = Houses[i];
-			if (house == NULL || !house->IsHuman) {
-				continue;
-			}
-			if ((MasterPlayerID >= 0 && house->HeapID == MasterPlayerID)
-				|| (MasterPlayerID < 0 && stricmp(house->IniName, MasterPlayerName) == 0)) {
-				return(house->HeapID);
-			}
+	int lowest = -1;
+	for (int index = 0; index < Players.Count(); index++) {
+		if (Players[index] == NULL) {
+			continue;
 		}
+		int house = Players[index]->Player.ID;
+		if (MasterPlayerID >= 0 && house == MasterPlayerID) {
+			return(MasterPlayerID);
+		}
+		if (house >= 0 && (lowest < 0 || house < lowest)) {
+			lowest = house;
+		}
+	}
+	return(lowest);
+}
+
+
+/// <summary>
+/// Tells every seat that this machine is the host. Sent once the connections exist and again
+/// after an in-place load, since a seat learns the host from nothing else.
+/// </summary>
+void SessionClass::Announce_Master(void)
+{
+	if (Players.Count() == 0) {
+		return;
 	}
 
-	for (int i = 0; i < Houses.Count(); i++) {
-		HouseClass const * house = Houses[i];
-		if (house != NULL && house->IsHuman) {
-			return(house->HeapID);
-		}
+	Adopt_Master(Players[0]->Player.ID, Players[0]->Name);
+
+	GlobalPacketType packet;
+	NetGlobal::Initialize_Packet(packet, NET_HOST_ANNOUNCE);
+	std::snprintf(packet.Name, sizeof(packet.Name), "%s", Players[0]->Name);
+
+	for (int index = 1; index < Players.Count(); index++) {
+		Ipx.Send_Global_Message(&packet, sizeof(packet), 1, &Players[index]->Address);
+		Ipx.Service();
 	}
-	return(-1);
+}
+
+
+void SessionClass::Adopt_Master(int house, char const * name)
+{
+	MasterPlayerID = house;
+	std::snprintf(MasterPlayerName, sizeof(MasterPlayerName), "%s", name != NULL ? name : "");
 }
 
 
@@ -1192,7 +1190,8 @@ void SessionClass::Update_Progress(int percent)
 				memset((void *)&prog_packet, 0, sizeof(prog_packet));
 
 				prog_packet.Command = NET_PROGRESS_REPORT;
-				prog_packet.Progress.Percent = int(100.0 * Progress.Get_Current_Progress(0));
+				// A receiver refuses a report outside the range, which a bar past full would send.
+				prog_packet.Progress.Percent = std::clamp(int(100.0 * Progress.Get_Current_Progress(0)), 0, 100);
 
 				if (prog_packet.Progress.Percent < 99.95) {
 					Ipx.Send_Global_Message(&prog_packet, sizeof(prog_packet), 0, NULL);

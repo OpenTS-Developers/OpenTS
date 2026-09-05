@@ -248,7 +248,6 @@ static void Spawner_Bind_Options(void)
 	 *   MapName                       - shown while loading; bound with the scenario below.
 	 *   IsCampaign, LoadSaveGame,
 	 *   SaveGameName                  - read to decide the kind of launch and name the save.
-	 *   IsHost                        - which machine hosts matters once one can leave.
 	 *   Tournament, GameID,
 	 *   WriteStatistics               - naming a match and reporting how it went.
 	 *   BuildOffAlly, AttackNeutralUnits,
@@ -271,6 +270,30 @@ static void Spawner_Bind_Autosave(void)
 {
 	Autosave.Set_Interval(SpawnConfig.AutoSaveInterval);
 	Autosave.Seed_Slots(SpawnConfig.NextCampaignAutoSave, SpawnConfig.NextSkirmishAutoSave);
+}
+
+
+/// <summary>
+/// Names this machine the host when its launch file says so. The other seats learn it from
+/// the announcement once the connections exist, and the lowest seat stands in until then.
+/// </summary>
+static void Spawner_Bind_Master(void)
+{
+	if (SpawnConfig.IsHost && Session.Players.Count() > 0) {
+		Session.Adopt_Master(Session.Players[0]->Player.ID, Session.Players[0]->Name);
+	}
+}
+
+
+/// <summary>
+/// Sends the host announcement when this machine's launch file made it the host: once the
+/// connections exist, and again after an in-place load.
+/// </summary>
+void Spawner_Announce_Master(void)
+{
+	if (Spawner_Is_Active() && SpawnConfig.IsHost && Session.Type == GAME_INTERNET) {
+		Session.Announce_Master();
+	}
 }
 
 
@@ -364,6 +387,7 @@ static bool Spawner_Resume(bool & gameloaded)
 
 		Spawner_Seat_Local();
 		Spawner_Seat_Humans();
+		Spawner_Bind_Master();
 
 		if (!Spawner_Wire_Network()) {
 			return(false);
@@ -454,6 +478,7 @@ static void Spawner_Setup_Session(void)
 	Spawner_Seat_Local();
 	Spawner_Seat_Humans();
 	Spawner_Seat_Computers();
+	Spawner_Bind_Master();
 	Spawner_Bind_Scenario();
 }
 

@@ -173,13 +173,20 @@ BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 
 				case IDC_LOAD_GAME:
 					if (!code) {
-						ShowWindow(window, SW_HIDE);
-						UpdateWindow(MainWindow);
-						if (LoadOptionsClass().Load()) {
+						if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
+							ShowWindow(window, SW_HIDE);
+							UpdateWindow(MainWindow);
+							if (LoadOptionsClass().Load()) {
+								*retval = IDC_LOAD_GAME;
+							} else {
+								ShowWindow(window, SW_SHOW);
+								UpdateWindow(window);
+							}
+						} else if (Multiplayer_Load_Is_Allowed()) {
+							// A list opened from in here would sit inside the main loop and stall the
+							// match; the menu loop opens it between frames instead.
+							SpecialDialog = SDLG_LOAD;
 							*retval = IDC_LOAD_GAME;
-						} else {
-							ShowWindow(window, SW_SHOW);
-							UpdateWindow(window);
 						}
 					}
 					break;
@@ -309,6 +316,11 @@ void Game_Options_On_INITDIALOG(HWND window)
 		handle = GetDlgItem(window, IDC_SAVE_GAME);
 		if (handle) {
 			EnableWindow(handle, Is_Multiplayer_Saving_Allowed());
+		}
+
+		handle = GetDlgItem(window, IDC_LOAD_GAME);
+		if (handle) {
+			EnableWindow(handle, Multiplayer_Load_Is_Allowed() && MultiplayerLoadOptionsClass().Files_Present());
 		}
 	}
 

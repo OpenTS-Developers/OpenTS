@@ -814,6 +814,51 @@ void Test_Global_Packets(void)
 	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_KICK_PLAYER,
 		"a kick target must be a current session member");
 
+	Check(sizeof(GlobalPacketType) == 455, "the global packet keeps its wire size");
+
+	NetGlobal::ValidationContext master = Member_Context();
+	master.MasterPlayerID = 2;
+	NetGlobal::ValidationContext guest = Member_Context();
+	guest.MasterPlayerID = 5;
+
+	for (NetCommandType command : {NET_HOST_ANNOUNCE, NET_DESYNC_HEARTBEAT, NET_DESYNC_CONTINUE, NET_LOAD_GAME}) {
+		packet = Global_Packet(command);
+		std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "SVGM_000.NET");
+		Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::SENDER_NOT_MEMBER,
+			"the out-of-sync and load commands reject a source outside Session.Players");
+	}
+
+	packet = Global_Packet(NET_HOST_ANNOUNCE);
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::NONE,
+		"any member may announce itself; adoption is judged at dispatch");
+	packet = Global_Packet(NET_DESYNC_HEARTBEAT);
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::NONE,
+		"any member may send a heartbeat");
+
+	packet = Global_Packet(NET_DESYNC_CONTINUE);
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::SENDER_NOT_MASTER,
+		"a continue decision from a member that is not master is refused");
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::SENDER_NOT_MASTER,
+		"a continue decision needs a known master");
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::NONE,
+		"a continue decision from the master passes");
+
+	packet = Global_Packet(NET_LOAD_GAME);
+	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "SVGM_007.NET");
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::SENDER_NOT_MASTER,
+		"a load request from a member that is not master is refused");
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::NONE,
+		"a load request from the master naming a numbered save passes");
+	std::memset(packet.LoadGame.FileName, 'x', sizeof(packet.LoadGame.FileName));
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_NAME,
+		"a load request needs a terminated name");
+	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "..\\X.NET");
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_NAME,
+		"a load request may not carry a path");
+	std::snprintf(packet.LoadGame.FileName, sizeof(packet.LoadGame.FileName), "SAVEGAME.NET");
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_NAME,
+		"the fixed multiplayer save cannot be requested");
+
 	NetGlobal::RejectionCounters counters;
 	NetGlobal::RejectionRecord first = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);
 	NetGlobal::RejectionRecord second = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);

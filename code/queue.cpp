@@ -105,6 +105,7 @@
 #include "crc.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "desyncdlg.h"
 #include "dsurface.h"
 #include "empulse.h"
 #include "factory.h"
@@ -138,6 +139,7 @@
 #include "psystype.h"
 #include "ptype.h"
 #include "rules.h"
+#include "saveload.h"
 #include "scenario.h"
 #include "scheme.h"
 #include "script.h"
@@ -240,6 +242,7 @@ enum RetcodeType {
 	RC_SCENARIO_MISMATCH,   // scenario mismatch
 	RC_NOT_RESPONDING,      // other player not responding (timeout/hung up)
 	RC_CANCEL,              // user cancelled
+	RC_LOAD_PENDING,        // every machine agreed to load a save; the main loop performs it
 };
 
 
@@ -665,6 +668,9 @@ static void Queue_AI_Multiplayer(void)
 {
 	if (Session.Type == GAME_SKIRMISH) return;
 
+	// Nothing of the running match is sent or executed once every machine has agreed to load.
+	if (Multiplayer_Load_Is_Pending()) return;
+
 	//........................................................................
 	// Enums:
 	//........................................................................
@@ -783,6 +789,10 @@ static void Queue_AI_Multiplayer(void)
 		rc = Wait_For_Players (1, net, _timings[Session.Type].MIXFILE_RESEND_DELTA, _timings[Session.Type].FRAMESYNC_DLG_TIME,
 			_timings[Session.Type].MIXFILE_TIMEOUT, multi_packet_buf, multi_packet_max,
 			SentCommandCount, TheirFrameSync);
+
+		if (rc == RC_LOAD_PENDING) {
+			return;
+		}
 
 		if (rc != RC_NORMAL) {
 			if (Session.Type == GAME_INTERNET){
@@ -906,6 +916,10 @@ static void Queue_AI_Multiplayer(void)
 	std::max((int) net->Response_Time() * 3, _timings[Session.Type].FRAMESYNC_TIMEOUT ),
 	_timings[Session.Type].MIXFILE_TIMEOUT,
 	multi_packet_buf, multi_packet_max, SentCommandCount, TheirFrameSync);
+
+	if (rc == RC_LOAD_PENDING) {
+		return;
+	}
 
 	if (rc != RC_NORMAL) {
 		DebugString("Wait_For_Players returned %d\n", rc);
@@ -1224,6 +1238,14 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 
 	while (1) {
 		Keyboard->Check();
+
+		// A load every machine agreed on ends the wait; the main loop performs it.
+		if (Multiplayer_Load_Is_Pending()) {
+			if (reconnect_dlg) {
+				Close_Reconnect_Dialog();
+			}
+			return(RC_LOAD_PENDING);
+		}
 
 		Update_Queue_Mono (net, 2);
 
@@ -3671,21 +3693,41 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 		if (mismatch_count > 0) {
 
 			Report_Out_Of_Sync(mismatches, mismatch_count, CRC, ARRAY_SIZE(CRC));
-			Session.Suspended++;
-			if (WWMessageBox().Process (TXT_OUT_OF_SYNC,
-				TXT_CONTINUE, TXT_STOP) == 0) {
+
+			if (net == NULL || (Session.Type != GAME_IPX && Session.Type != GAME_INTERNET)) {
+
+				// A recording has nobody to decide with, so it keeps the plain box.
+				Session.Suspended++;
+				int choice = WWMessageBox().Process(TXT_OUT_OF_SYNC, TXT_CONTINUE, TXT_STOP);
 				Session.Suspended--;
-				if ((Session.Type == GAME_IPX ||
-					Session.Type == GAME_INTERNET) && net) {
-					while (net->Num_Connections()) {
-						Destroy_Connection (net->Connection_ID(0), -1);
-					}
+				if (choice != 0) {
+					return(0);
 				}
 				Map.Flag_To_Redraw(GS_REDRAW_ALL);
-			}
-			else {
-				Session.Suspended--;
-				return(0);
+
+			} else if (Multiplayer_Load_Is_Pending()) {
+
+				// The load every machine agreed on brings them back into step.
+				return(1);
+
+			} else {
+				switch (DesyncDialog.Run()) {
+					case DesyncDialogClass::OutcomeType::Continue:
+						for (int id = 0; id < MAX_PLAYERS; id++) {
+							if (Sync_Is_Out_Of_Sync(id) && net->Connection_Index(id) >= 0) {
+								Destroy_Connection(id, -1);
+							}
+						}
+						Map.Flag_To_Redraw(GS_REDRAW_ALL);
+						break;
+
+					case DesyncDialogClass::OutcomeType::Load:
+						return(1);
+
+					case DesyncDialogClass::OutcomeType::Quit:
+						Sign_Off_Match();
+						return(0);
+				}
 			}
 		}
 	}

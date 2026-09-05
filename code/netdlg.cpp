@@ -114,13 +114,17 @@
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "list.h"
+#include "netglobal.h"
 #include "queue.h"
 #include "rules.h"
 #include "saveload.h"
 #include "session.h"
 #include "stats.h"
+#include "stimer.h"
+#include "timer.h"
 #include "wsproto.h"
 
+#include <cstdio>
 #include <ctime>
 
 class ListClass;
@@ -367,3 +371,30 @@ void Clear_Listbox(ListClass * list)
 	}
 	list->Flag_To_Redraw();
 }	// end of Clear_Listbox
+
+
+/// <summary>
+/// Tells every seat this machine is leaving the match and waits, briefly, for the word to go
+/// out. Used where the game ends on this machine alone: quitting the out-of-sync dialog, and
+/// a multiplayer load that failed here.
+/// </summary>
+void Sign_Off_Match(void)
+{
+	if (Session.Players.Count() == 0) {
+		return;
+	}
+
+	GlobalPacketType packet;
+	NetGlobal::Initialize_Packet(packet, NET_SIGN_OFF);
+	std::snprintf(packet.Name, sizeof(packet.Name), "%s", Session.Players[0]->Name);
+
+	for (int index = 1; index < Session.Players.Count(); index++) {
+		Ipx.Send_Global_Message(&packet, sizeof(packet), 1, &Session.Players[index]->Address);
+		Ipx.Service();
+	}
+
+	CDTimerClass<SystemTimerClass> timer = TIMER_SECOND * 2;
+	while (Ipx.Global_Num_Send() > 0 && timer > 0) {
+		Ipx.Service();
+	}
+}

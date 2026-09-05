@@ -160,6 +160,10 @@ enum NetCommandType {
 	NET_REQ_PREVIEW,			//
 	NET_PROPOSE_KICK,			//
 	NET_MOVIE_SKIP,				// Which fullscreen movie the sender is watching and whether he wants it skipped
+	NET_HOST_ANNOUNCE,			// The launch file's host names itself once the connections exist.
+	NET_DESYNC_HEARTBEAT,		// Sent every second while the out-of-sync dialog halts the game.
+	NET_DESYNC_CONTINUE,		// The master's decision to play on without the players out of sync.
+	NET_LOAD_GAME,				// The master names the multiplayer save every machine loads.
 };
 
 //---------------------------------------------------------------------------
@@ -364,6 +368,14 @@ struct GlobalPacketType {
 			int Color;
 			unsigned int NameCRC;
 		} Options;
+
+		/*
+		 * This names the multiplayer save every machine is to load, as a bare 8.3 file name.
+		 * It accompanies the NET_LOAD_GAME command.
+		 */
+		struct {
+			char FileName[13];
+		} LoadGame;
 	};
 };
 #pragma pack()
@@ -493,6 +505,8 @@ class SessionClass
 		int Create_Connections(void);
 		bool Am_I_Master(void);
 		int Master_Player_ID(void) const;
+		void Announce_Master(void);
+		void Adopt_Master(int house, char const * name);
 		unsigned int Compute_Unique_ID(void);
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);

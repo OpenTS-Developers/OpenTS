@@ -969,6 +969,63 @@ BEGIN
                     279,8,NOT WS_GROUP
 END
 
+IDD_DESYNC_HOST DIALOG DISCARDABLE  0, 0, 360, 264
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CTEXT           "Synchronization Error",IDC_DESYNC_HEADER,30,10,280,10,
+                    NOT WS_GROUP
+    LTEXT           "Players:",-1,30,23,100,10,NOT WS_GROUP
+    LISTBOX         IDC_DESYNC_PLAYER_LIST,30,35,120,105,NOT LBS_NOTIFY |
+                    LBS_OWNERDRAWFIXED | LBS_HASSTRINGS |
+                    LBS_NOINTEGRALHEIGHT | LBS_NOSEL | NOT WS_BORDER
+    LTEXT           "The game has gone out of sync.\r\n\r\nLoad Game loads a saved game of this match on every machine, which brings them back into step.\r\n\r\nContinue plays on without the players that are out of sync. They play on in a game of their own.",
+                    -1,160,25,180,82,NOT WS_GROUP
+    LTEXT           "Quit leaves the game.",-1,160,127,180,22,NOT WS_GROUP
+    LISTBOX         IDC_DESYNC_CHAT_LIST,30,145,300,60,NOT LBS_NOTIFY |
+                    LBS_OWNERDRAWFIXED | LBS_HASSTRINGS |
+                    LBS_NOINTEGRALHEIGHT | LBS_NOSEL | NOT WS_BORDER
+    EDITTEXT        IDC_DESYNC_CHAT_EDIT,30,207,299,12,ES_AUTOHSCROLL |
+                    NOT WS_BORDER
+    LTEXT           "Loading in 5 seconds...",
+                    IDC_DESYNC_COUNTDOWN_TEXT,30,223,140,10,NOT WS_GROUP |
+                    NOT WS_VISIBLE
+    GROUPBOX        "",IDC_DESYNC_COUNTDOWN_BAR,180,222,149,12,NOT WS_VISIBLE
+    CONTROL         "Load Game",IDC_DESYNC_LOAD,"Button",BS_OWNERDRAW |
+                    WS_TABSTOP,30,239,70,12
+    CONTROL         "Continue",IDC_DESYNC_CONTINUE,"Button",BS_OWNERDRAW |
+                    WS_TABSTOP,145,239,70,12
+    CONTROL         "Quit",IDC_DESYNC_QUIT,"Button",BS_OWNERDRAW |
+                    WS_TABSTOP,260,239,70,12
+END
+
+IDD_DESYNC_WAIT DIALOG DISCARDABLE  0, 0, 360, 264
+STYLE WS_CHILD
+FONT 8, "MS Sans Serif"
+BEGIN
+    CTEXT           "Synchronization Error",IDC_DESYNC_HEADER,30,10,280,10,
+                    NOT WS_GROUP
+    LTEXT           "Players:",-1,30,23,100,10,NOT WS_GROUP
+    LISTBOX         IDC_DESYNC_PLAYER_LIST,30,35,120,105,NOT LBS_NOTIFY |
+                    LBS_OWNERDRAWFIXED | LBS_HASSTRINGS |
+                    LBS_NOINTEGRALHEIGHT | LBS_NOSEL | NOT WS_BORDER
+    LTEXT           "The game has gone out of sync.\r\n\r\nThe host can load a saved game of this match on every machine, which brings them back into step, or continue without the players that are out of sync.",
+                    -1,160,25,180,82,NOT WS_GROUP
+    LTEXT           "Waiting for the host to decide.",-1,160,127,180,22,
+                    NOT WS_GROUP
+    LISTBOX         IDC_DESYNC_CHAT_LIST,30,145,300,60,NOT LBS_NOTIFY |
+                    LBS_OWNERDRAWFIXED | LBS_HASSTRINGS |
+                    LBS_NOINTEGRALHEIGHT | LBS_NOSEL | NOT WS_BORDER
+    EDITTEXT        IDC_DESYNC_CHAT_EDIT,30,207,299,12,ES_AUTOHSCROLL |
+                    NOT WS_BORDER
+    LTEXT           "Loading in 5 seconds...",
+                    IDC_DESYNC_COUNTDOWN_TEXT,30,223,140,10,NOT WS_GROUP |
+                    NOT WS_VISIBLE
+    GROUPBOX        "",IDC_DESYNC_COUNTDOWN_BAR,180,222,149,12,NOT WS_VISIBLE
+    CONTROL         "Quit",IDC_DESYNC_QUIT,"Button",BS_OWNERDRAW |
+                    WS_TABSTOP | WS_DISABLED,145,239,70,12
+END
+
 IDD_SELECT_SERIAL DIALOG DISCARDABLE  0, 0, 191, 147
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
@@ -1421,31 +1478,33 @@ BEGIN
                     BS_AUTOCHECKBOX,320,42,84,10
 END
 
-IDD_OPT_CTRL_WOL DIALOG DISCARDABLE  0, 0, 340, 168
+IDD_OPT_CTRL_WOL DIALOG DISCARDABLE  0, 0, 340, 185
 STYLE WS_CHILD
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Resume Mission",IDC_RESUME_MISSION,"Button",
-                    BS_OWNERDRAW,120,59,99,14
+                    BS_OWNERDRAW,120,76,99,14
     CONTROL         "Game Controls",IDC_GAME_CONTROLS,"Button",BS_OWNERDRAW,
                     120,8,99,14
-    CONTROL         "Save Game",IDC_SAVE_GAME,"Button",BS_OWNERDRAW,
+    CONTROL         "Load Game",IDC_LOAD_GAME,"Button",BS_OWNERDRAW,
                     120,25,99,14
-    CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
+    CONTROL         "Save Game",IDC_SAVE_GAME,"Button",BS_OWNERDRAW,
                     120,42,99,14
+    CONTROL         "Abort Mission",IDC_ABORT_MISSION,"Button",BS_OWNERDRAW,
+                    120,59,99,14
     CONTROL         "Slider1",IDC_GAME_SPEED_SLIDER,"msctls_trackbar32",
-                    TBS_BOTH | TBS_NOTICKS,95,115,148,13
-    LTEXT           "Game Speed",-1,39,115,58,13,SS_CENTERIMAGE | NOT 
+                    TBS_BOTH | TBS_NOTICKS,95,132,148,13
+    LTEXT           "Game Speed",-1,39,132,58,13,SS_CENTERIMAGE | NOT
                     WS_GROUP
-    RTEXT           "Faster",IDC_GAME_SPEED_LABEL,247,115,45,13,
+    RTEXT           "Faster",IDC_GAME_SPEED_LABEL,247,132,45,13,
                     SS_CENTERIMAGE | NOT WS_GROUP
     CONTROL         "Slider1",IDC_CTRLWOL_CONNECTION,"msctls_trackbar32",
-                    TBS_BOTH | TBS_NOTICKS,95,93,148,13
-    LTEXT           "Connection",-1,39,93,58,13,SS_CENTERIMAGE | NOT 
+                    TBS_BOTH | TBS_NOTICKS,95,110,148,13
+    LTEXT           "Connection",-1,39,110,58,13,SS_CENTERIMAGE | NOT
                     WS_GROUP
-    RTEXT           "Better",IDC_SCROLL_SPEED_LABEL,247,93,45,13,
+    RTEXT           "Better",IDC_SCROLL_SPEED_LABEL,247,110,45,13,
                     SS_CENTERIMAGE | NOT WS_GROUP
-    GROUPBOX        "Internet Game Controls",-1,28,75,283,68
+    GROUPBOX        "Internet Game Controls",-1,28,92,283,68
 END
 
 IDD_MPLAYER_SELECT_MAP DIALOGEX 0, 0, 360, 200
@@ -2490,6 +2549,12 @@ BEGIN
     TXT_MOVIE_SKIP_MANY     "%d players want to skip the video."
     TXT_MOVIE_SKIP_AGREE    "Press ESC to agree. (%d/%d)"
     TXT_MOVIE_SKIP_WAIT     "Waiting for other players... (%d/%d)"
+    TXT_SYNC_STATUS_OUT     "Out of sync"
+    TXT_SYNC_STATUS_LEFT    "Left"
+    TXT_LOADING_IN_SECONDS  "Loading in %d seconds..."
+    TXT_LOADING_IN_SECOND   "Loading in 1 second..."
+    TXT_LOADING_SAVED_GAME  "Loading the saved game..."
+    TXT_CHAT_HINT           "Type here to chat..."
 END
 
 #endif    // English (U.S.) resources

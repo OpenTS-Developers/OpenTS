@@ -35,8 +35,18 @@ The `[Settings]` section says what kind of game to start.
 | `Scenario` | The scenario file to play. Defaults to `spawnmap.ini`. |
 | `IsSinglePlayer` | Play a campaign mission rather than a match. |
 | `LoadSaveGame`, `SaveGameName` | Resume the named saved game. |
+| `IsHost` | This machine hosts the match against other machines. |
 
 A file that seats more than one person asks for a game against other machines.
+
+## The host
+
+`IsHost=yes` names the machine that hosts a match against other machines. Once the
+connections exist it announces itself to every seat, and from then on it is the master: it
+hands down the network timings, decides for everyone when the
+[game goes out of sync](/systems/out-of-sync-recovery/), and may load a saved game during
+play. When it leaves, the lowest seat still held takes over on every machine, and a file that
+names no host leaves the first seat in charge from the start.
 
 ## Resuming a saved game
 
@@ -230,7 +240,7 @@ after forty, the waits a LAN game has always used. `MapHash` is
 not read either: the machines compare the games they have loaded before play begins, which
 settles the same question for themselves.
 
-These keys are read but change nothing yet: `IsHost`, `Tournament`, `GameID`,
+These keys are read but change nothing yet: `Tournament`, `GameID`,
 `WriteStatistics`, `BuildOffAlly`,
 `AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`,
 `QuickMatch`, `SkipScoreScreen`, `CustomLoadScreen`,

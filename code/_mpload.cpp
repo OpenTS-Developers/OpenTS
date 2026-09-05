@@ -7,13 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "mpload.h"
 
-#pragma once
-
-
-void Spawner_Request(void);
-bool Spawner_Is_Requested(void);
-bool Spawner_Is_Active(void);
-bool Spawner_Prepare(bool & gameloaded);
-int Spawner_Session_Identity(void);
-void Spawner_Announce_Master(void);
+MultiplayerLoadClass MultiplayerLoad;

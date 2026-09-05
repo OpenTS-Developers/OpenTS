@@ -3,6 +3,7 @@
 add_executable(NetContract
     "${CMAKE_CURRENT_SOURCE_DIR}/netcontract.cpp"
     "${CMAKE_SOURCE_DIR}/code/_event.cpp"
+    "${CMAKE_SOURCE_DIR}/code/mpload.cpp"
     "${CMAKE_SOURCE_DIR}/code/netadmit.cpp"
     "${CMAKE_SOURCE_DIR}/code/netglobal.cpp"
     "${CMAKE_SOURCE_DIR}/code/netpacket.cpp"

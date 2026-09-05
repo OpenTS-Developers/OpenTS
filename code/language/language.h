@@ -866,6 +866,12 @@
 #define TXT_MOVIE_SKIP_MANY             1108
 #define TXT_MOVIE_SKIP_AGREE            1109
 #define TXT_MOVIE_SKIP_WAIT             1110
+#define TXT_SYNC_STATUS_OUT             1111
+#define TXT_SYNC_STATUS_LEFT            1112
+#define TXT_LOADING_IN_SECONDS          1113
+#define TXT_LOADING_IN_SECOND           1114
+#define TXT_LOADING_SAVED_GAME          1115
+#define TXT_CHAT_HINT                   1116
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046
@@ -1141,14 +1147,25 @@
 #define IDD_OPT_CTRL_MP                 3002
 #define IDD_OPT_CTRL_GAME_MP            3003
 #define IDD_SELECT_GAME_TYPE            3004
+#define IDD_DESYNC_HOST                 3005
+#define IDD_DESYNC_WAIT                 3006
+#define IDC_DESYNC_HEADER               1705
+#define IDC_DESYNC_PLAYER_LIST          1706
+#define IDC_DESYNC_CHAT_LIST            1707
+#define IDC_DESYNC_CHAT_EDIT            1708
+#define IDC_DESYNC_COUNTDOWN_TEXT       1709
+#define IDC_DESYNC_COUNTDOWN_BAR        1710
+#define IDC_DESYNC_LOAD                 1711
+#define IDC_DESYNC_CONTINUE             1712
+#define IDC_DESYNC_QUIT                 1713
 
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        3005
+#define _APS_NEXT_RESOURCE_VALUE        3007
 #define _APS_NEXT_COMMAND_VALUE         40001
-#define _APS_NEXT_CONTROL_VALUE         1705
+#define _APS_NEXT_CONTROL_VALUE         1714
 #define _APS_NEXT_SYMED_VALUE           3105
 #endif
 #endif

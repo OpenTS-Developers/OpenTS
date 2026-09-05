@@ -34,6 +34,8 @@ namespace NetGlobal
 		DUPLICATE_KICK_PROPOSAL,
 		KICK_PROPOSAL_QUEUE_FULL,
 		AMBIGUOUS_SENDER,
+		SENDER_NOT_MASTER,
+		INVALID_SAVE_NAME,
 		COUNT,
 	};
 
@@ -66,6 +68,7 @@ namespace NetGlobal
 		bool SenderIsMember = false;
 		int SenderPlayerID = -1;
 		int SenderPlayerColor = -1;
+		int MasterPlayerID = -1;
 		std::array<bool, MAX_PLAYERS> ActivePlayers = {};
 	};
 
