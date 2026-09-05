@@ -744,7 +744,7 @@ void Speak_AI(void)
 	while (Queue.Next(next)) {
 		char name[_MAX_FNAME + _MAX_EXT];
 		_makepath(name, NULL, NULL, Speech[next], ".AUD");
-		Current = AudioEngine.Open_Stream(name, AUDIO_GROUP_SPEECH, (float)SpeechVolume / 255.0f, false);
+		Current = AudioEngine.Open_Stream(name, AUDIO_GROUP_SPEECH, 1.0f, false);
 		if (Current.Is_Valid()) {
 			CurrentVoice = next;
 			return;
@@ -812,9 +812,7 @@ bool Is_Speaking(void)
 void Set_Speech_Volume(int volume)
 {
 	SpeechVolume = std::min(volume, 255);
-	if (Current.Is_Valid()) {
-		Current.Set_Volume((float)std::max(SpeechVolume, 0) / 255.0f);
-	}
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_SPEECH, (float)std::max(SpeechVolume, 0) / 255.0f);
 }
 
 

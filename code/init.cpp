@@ -2762,7 +2762,7 @@ static bool Init_Bulk_Data(void)
 		return(false);
 	}
 
-	if (Audio_Available() && !Debug_Quiet) {
+	if (AudioEngine.Is_Available() && !Debug_Quiet) {
 		if (SoundsMix != NULL && !SoundsMix->Cache()) {
 			return(false);
 		}

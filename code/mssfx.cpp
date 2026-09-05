@@ -32,7 +32,7 @@ MSSfx::MSSfx(char const * name, char const * file_name) :
 	Sample(NULL),
 	Loaded(false)
 {
-	if (Audio_Available()) {
+	if (AudioEngine.Is_Available()) {
 
 		Name = strdup(name);
 		Sample = (void *)MFCD::Retrieve(file_name);
@@ -56,7 +56,8 @@ MSSfx::MSSfx(char const * name, char const * file_name) :
 MSSfx::~MSSfx(void)
 {
 	if (Sample != NULL) {
-		Audio.Stop_Sample_Playing(Sample);
+		AudioEngine.Stop_Sample_Playing(Sample);
+		AudioEngine.Release_Sample(Sample);
 		if (Loaded == true) {
 			delete Sample;
 		}
@@ -76,6 +77,6 @@ MSSfx::~MSSfx(void)
 void MSSfx::Play(int volume)
 {
 	if (Sample != NULL) {
-		Audio.Play_Sample(Sample, 255, volume);
+		AudioEngine.Play_Sample(Sample, AUDIO_GROUP_SFX, (float)volume / 255.0f, 255);
 	}
 }

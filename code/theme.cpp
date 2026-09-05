@@ -428,7 +428,7 @@ AudioHandle ThemeClass::Play_Song(ThemeType theme)
 		Stop(false);
 		if (theme != THEME_NONE && theme != THEME_QUIET) {
 			if (theme > THEME_NONE && Volume > 0) {
-				Current = AudioEngine.Open_Stream(Theme_File_Name(theme), AUDIO_GROUP_MUSIC, (float)Volume / 255.0f, false);
+				Current = AudioEngine.Open_Stream(Theme_File_Name(theme), AUDIO_GROUP_MUSIC, 1.0f, false);
 
 				/*
 				 * Stopping a score that never started does nothing, so recording one that
@@ -679,7 +679,5 @@ void ThemeClass::Set_Volume(int volume)
 {
 	Volume = std::min(volume, 255);
 
-	if (Current.Is_Valid()) {
-		Current.Set_Volume((float)Volume / 255.0f);
-	}
+	AudioEngine.Set_Group_Gain(AUDIO_GROUP_MUSIC, (float)std::max(Volume, 0) / 255.0f);
 }

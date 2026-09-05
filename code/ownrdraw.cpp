@@ -1749,10 +1749,7 @@ cleanup:
 					 * center outward with sliding "leftbar"/"rightbar" edges.
 					 */
 					if (Options.SoundVolume > 0.0) {
-						if (MixFileClass::Retrieve("EMBLEM.AUD")) {
-							int volume = (int)(Options.SoundVolume * 64.0f);
-							Audio.Play_Sample(MixFileClass::Retrieve("EMBLEM.AUD"), 255, volume);
-						}
+						AudioEngine.Play_Sample(MixFileClass::Retrieve("EMBLEM.AUD"), AUDIO_GROUP_SFX, 64.0f / 255.0f, 255);
 					}
 
 					struct _timeb start_time;
@@ -1875,8 +1872,8 @@ cleanup:
 								Sleep(wait);
 							}
 
-							if (Audio_Available() && GameInFocus == true) {
-								Audio.Sound_Callback();
+							if (AudioEngine.Is_Available() && GameInFocus == true) {
+								AudioEngine.Sound_Callback();
 								Theme.AI();
 								Speak_AI();
 							}

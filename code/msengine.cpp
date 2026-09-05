@@ -449,14 +449,14 @@ bool MSEngine::Add_Sound_Effect(char const * name, char const * file_name)
 /// <param name="volume">Volume to play at, before the player's sound option is applied.</param>
 void MSEngine::Play_Sound_Effect(char const * name, int volume)
 {
-	if (name == NULL || !Audio_Available()) {
+	if (name == NULL || !AudioEngine.Is_Available()) {
 		return;
 	}
 
 	for (int i = 0; i < Sounds.Count(); i++) {
 		MSSfx * sfx = Sounds[i];
 		if (stricmp(name, sfx->Get_Name()) == 0) {
-			sfx->Play(volume * Options.SoundVolume);
+			sfx->Play(volume);
 			break;
 		}
 	}

@@ -2257,13 +2257,14 @@ void RadarClass::Render_Radar(void)
 /// mode.</remarks>
 void RadarClass::Play_Movie(void)
 {
-	static int prev_volume = 0;
 	static bool needs_volume_adjustment = true;
 
 	VQHandle * handle = NULL;
 
 	if (needs_volume_adjustment == true && !Is_Speaking()) {
-		prev_volume = Audio.Adjust_Volume_All(50);
+		AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 0.5f, 250);
+		AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 0.5f, 250);
+		AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 0.5f, 250);
 		needs_volume_adjustment = false;
 	}
 
@@ -2295,7 +2296,9 @@ void RadarClass::Play_Movie(void)
 
 		if (IngameVQ.Count() == 0) {
 			DebugString("Radar: Movie done.\n");
-			Audio.Set_Volume_All(prev_volume);
+			AudioEngine.Set_Duck(AUDIO_GROUP_SFX, 1.0f, 250);
+			AudioEngine.Set_Duck(AUDIO_GROUP_SPEECH, 1.0f, 250);
+			AudioEngine.Set_Duck(AUDIO_GROUP_MUSIC, 1.0f, 250);
 			RadarState = RSTATE_MOVIE_DONE;
 			Radar_Activate(SuspendedRadarMode);
 		} else {

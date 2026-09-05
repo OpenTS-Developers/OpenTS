@@ -621,7 +621,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 		Exception_Run_Post_Window_Test();
 
-		Audio.Init(MainWindow, 16, 0, 22050);
+		AudioEngine.Init();
 
 		int drawablewidth = 0;
 		int drawableheight = 0;
@@ -697,7 +697,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		*/
 		ReadyToQuit = 1;
 
-		Audio.End();
+		AudioEngine.End();
 
 		/*
 		**	Post a message to our message handler to tell it to clean up.
@@ -1091,7 +1091,7 @@ void __cdecl Prog_End(void)
  *=============================================================================================*/
 void Emergency_Exit(void)
 {
-	Audio.End();
+	AudioEngine.End();
 
 	ReadyToQuit = 1;
 

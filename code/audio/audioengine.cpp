@@ -209,13 +209,15 @@ bool AudioEngineClass::Init(void)
 	Feeder.Setup(&Mixer, Device.get());
 	Feeder.Start();
 
-	for (int i = 0; i < AUDIO_GROUP_COUNT; i++) {
-		GroupGains[i] = 1.0f;
-	}
-	MasterGain = 1.0f;
 	LastDropped = 0;
 	LastDropReport = 0;
 	Available = true;
+
+	// The option sliders may have been applied before the device existed.
+	for (int i = 0; i < AUDIO_GROUP_COUNT; i++) {
+		Push_Level(AudioCommandType::GROUP_SET_GAIN, (AudioGroupType)i, GroupGains[i], 0.0f);
+	}
+	Push_Level(AudioCommandType::MASTER_SET_GAIN, AUDIO_GROUP_SFX, MasterGain, 0.0f);
 
 	DebugString("Audio: %s, %u Hz, %u x %u frames\n", Device->Name(), Device->Rate(), Device->Periods(), Device->Period_Frames());
 	return(true);
