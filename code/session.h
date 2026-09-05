@@ -730,6 +730,11 @@ class SessionClass
 		bool NetStealth;                                // makes us invisible
 		bool NetOpen;                                   // 1 = game is open for joining
 		bool PlayMovies;                                // a launch file asked for movies outside a campaign
+		bool SkipScoreScreen;                           // a launch file asked that the score screen be passed over
+		char LoadScreen[_MAX_PATH];                     // the picture to show while the scenario loads, or empty
+		int LoadScreenX;                                // where in that picture the loading bars go, or zero for
+		int LoadScreenY;                                // the position the game picks for its own
+		char DifficultyName[32];                        // what a launch file calls the campaign difficulty
 		char GameName[MPLAYER_NAME_MAX];                // game's name
 		GlobalPacketType GPacket;                       // global packet
 		int GPacketlen;                                 // global packet length

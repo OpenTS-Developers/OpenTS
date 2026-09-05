@@ -253,12 +253,25 @@ static void Spawner_Bind_Options(void)
 	 *   BuildOffAlly, AttackNeutralUnits,
 	 *   ScrapMetal, AutoSurrender,
 	 *   ContinueWithoutHumans         - options the game has no setting of its own for yet.
-	 *   QuickMatch, SkipScoreScreen,
-	 *   CustomLoadScreen,
-	 *   CustomLoadScreenX,
-	 *   CustomLoadScreenY,
-	 *   DifficultyName                - what a player is shown around the match.
+	 *   QuickMatch                    - what a player is shown around the match.
+	 *
+	 * Spawner_Bind_Presentation binds SkipScoreScreen, CustomLoadScreen, CustomLoadScreenX,
+	 * CustomLoadScreenY and DifficultyName.
 	 */
+}
+
+
+/// <summary>
+/// Hands the session what a launch file asks a player be shown, so that the scenario and the
+/// score screen need know nothing of launch files.
+/// </summary>
+static void Spawner_Bind_Presentation(void)
+{
+	Session.SkipScoreScreen = SpawnConfig.SkipScoreScreen;
+	std::snprintf(Session.LoadScreen, sizeof(Session.LoadScreen), "%s", SpawnConfig.CustomLoadScreen.c_str());
+	Session.LoadScreenX = SpawnConfig.CustomLoadScreenX;
+	Session.LoadScreenY = SpawnConfig.CustomLoadScreenY;
+	std::snprintf(Session.DifficultyName, sizeof(Session.DifficultyName), "%s", SpawnConfig.DifficultyName.c_str());
 }
 
 
@@ -545,6 +558,7 @@ bool Spawner_Prepare(bool & gameloaded)
 	SpawnConsumed = true;
 
 	Spawner_Bind_Autosave();
+	Spawner_Bind_Presentation();
 
 	/*
 	 * Every kind of launch is played at this speed, so it is checked before the kinds part.

@@ -220,6 +220,11 @@ SessionClass::SessionClass(void)
 	NetStealth = 0;
 	NetOpen = 0;
 	PlayMovies = false;
+	SkipScoreScreen = false;
+	LoadScreen[0] = '\0';
+	LoadScreenX = 0;
+	LoadScreenY = 0;
+	DifficultyName[0] = '\0';
 	GameName[0] = 0;
 	GProductID = 0;
 	Suspended = 0;
