@@ -6,6 +6,9 @@ targets:
 - type: format
   id: sound-ini
   effect: changed
+- type: system
+  id: sound-effects
+  effect: added
 credit: [ZivDero]
 ---
 
