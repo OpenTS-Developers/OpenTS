@@ -766,7 +766,7 @@ void HouseClass::Debug_Dump(MonoClass * mono) const
 
 	mono->Set_Cursor(10, 5);mono->Printf("%8.8s", (BuildStructure == STRUCT_NONE) ? " " : BuildingTypes[BuildStructure]->Graphic_Name());
 	mono->Set_Cursor(21, 5);mono->Printf("%3d", CurBuildings);
-	mono->Set_Cursor(27, 5);mono->Printf("%8d", Tiberium);
+	mono->Set_Cursor(27, 5);mono->Printf("%8d", Tiberium.Get_Total_Amount());
 	mono->Set_Cursor(37, 5);mono->Printf("%5d", Drain);
 	mono->Set_Cursor(44, 5);mono->Printf("%16.16s", Name_From_Quarry(PreferredTarget));
 	mono->Set_Cursor(62, 5);mono->Printf("%5d", (int)TriggerTime);
