@@ -14,7 +14,7 @@
 #include "_surface.h"
 #include "conquer.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
 #include "video.h"

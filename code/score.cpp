@@ -56,7 +56,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "goptions.h"
 #include "houstype.h"

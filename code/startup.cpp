@@ -70,7 +70,7 @@
 #include "dllver.h"
 #include "drive.h"
 #include "droppod.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "empulse.h"
 #include "except.h"

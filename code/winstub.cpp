@@ -53,7 +53,7 @@
 #include "convert.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "except.h"
 #include "gamewindow.h"

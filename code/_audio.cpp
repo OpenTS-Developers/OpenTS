@@ -10,12 +10,9 @@
 #include "always.h"
 
 #include "ambient.h"
-#include "audio/audiocompat.h"
 #include "audio/audioengine.h"
 
 
 AudioEngineClass AudioEngine;
-
-DSAudio Audio;
 
 AmbientSoundTable AmbientSounds;

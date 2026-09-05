@@ -31,7 +31,7 @@
 #include "special.hh"
 
 // lib includes here.
-#include "ahandle.h"
+#include "audio/audiomovie.h"
 
 #include <unvq.h>
 #include <vqaplay.h>

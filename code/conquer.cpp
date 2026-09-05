@@ -81,7 +81,7 @@
 #include "chat.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "gamedirs.h"
 #include "gamedlg.h"
 #include "globals.h"
