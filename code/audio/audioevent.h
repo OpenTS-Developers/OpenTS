@@ -126,6 +126,10 @@ class AudioEventPoolClass
 
 		bool Is_Valid(AudioHandle handle) const;
 		bool Is_Playing(AudioHandle handle) const;
+
+		// True once the event's voice has let go of its clips or stream, which is
+		// later than Is_Valid turning false for a stopped event.
+		bool Is_Finished(AudioHandle handle) const;
 		AudioEventTypeClass const * Type(AudioHandle handle) const;
 		AudioEventState State(AudioHandle handle) const;
 
@@ -142,6 +146,7 @@ class AudioEventPoolClass
 		// Screens that own their sample data address it by pointer.
 		bool Is_Tag_Playing(void const * tag) const;
 		void Stop_Tag(void const * tag);
+		void Set_Tag_Volume(void const * tag, float volume);
 
 		void Stop_All(void);
 		void Stop_Group(AudioGroupType group, int fadems);
@@ -169,6 +174,7 @@ class AudioEventPoolClass
 		bool Try_Start(EventClass & event);
 		void Release_Voice(EventClass & event);
 		void Release_Pins(EventClass & event);
+		void Reap_Voices(unsigned now);
 		void Kill(EventClass & event, float fade);
 		void Finish(EventClass & event);
 		AudioSampleClass * Pin(EventClass & event, unsigned sound);

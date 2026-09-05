@@ -469,13 +469,11 @@ bool AudioEventPoolClass::Acquire_Voice(EventClass & event)
 		Kill(*victim, AUDIO_STOP_RAMP_SECONDS);
 	}
 
+	// A voice the mixer has finished with still belongs to its event until that
+	// event has seen it, so only slots nobody owns are taken.
+	Reap_Voices(LastNow);
 	for (int slot = 0; slot < AUDIO_MAX_VOICES; slot++) {
-		AudioVoiceState state = Mixer->Voice_State((unsigned)slot);
-		if (state == AudioVoiceState::DONE) {
-			Mixer->Free_Voice((unsigned)slot);
-			state = AudioVoiceState::FREE;
-		}
-		if (state == AudioVoiceState::FREE && Mixer->Allocate_Voice((unsigned)slot)) {
+		if (Mixer->Voice_State((unsigned)slot) == AudioVoiceState::FREE && Mixer->Allocate_Voice((unsigned)slot)) {
 			VoiceGenerations[slot] = AudioHandle::Next_Generation(VoiceGenerations[slot]);
 			event.Voice = slot;
 			event.VoiceGeneration = VoiceGenerations[slot];
@@ -754,6 +752,42 @@ AudioHandle AudioEventPoolClass::Start_Stream(AudioStreamClass * stream, AudioGr
 }
 
 
+// Returns every voice the mixer has finished with to the pool and moves its
+// event on: to the next cycle of a delayed loop, to the decay it still owes,
+// or to done.
+void AudioEventPoolClass::Reap_Voices(unsigned now)
+{
+	for (int i = 0; i < AUDIO_MAX_EVENTS; i++) {
+		EventClass & event = Events[i];
+		if (event.Voice < 0 || Mixer->Voice_State((unsigned)event.Voice) != AudioVoiceState::DONE) {
+			continue;
+		}
+		Release_Voice(event);
+		if (event.State != AUDIO_EVENT_PLAYING) {
+			continue;
+		}
+		Release_Pins(event);
+		bool more = event.DelayedLoop && !event.EndRequested && (event.CyclesLeft < 0 || event.CyclesLeft > 1);
+		bool decayowed = event.DelayedLoop && event.EndRequested && !event.DecayIssued && event.Type->DecayCount > 0;
+		if (event.Stolen) {
+			Finish(event);
+		} else if (more) {
+			if (event.CyclesLeft > 0) {
+				event.CyclesLeft--;
+			}
+			event.State = AUDIO_EVENT_GAP;
+			event.NextStart = now + (unsigned)Random(event.Type->DelayMin, event.Type->DelayMax);
+		} else if (decayowed) {
+			// Ended between cycles: the decay plays on its own, right away.
+			event.State = AUDIO_EVENT_GAP;
+			event.NextStart = now;
+		} else {
+			Finish(event);
+		}
+	}
+}
+
+
 void AudioEventPoolClass::Service(unsigned now)
 {
 	if (!Ready) {
@@ -769,35 +803,10 @@ void AudioEventPoolClass::Service(unsigned now)
 		}
 	}
 	LastNow = now;
+	Reap_Voices(now);
 
 	for (int i = 0; i < AUDIO_MAX_EVENTS; i++) {
 		EventClass & event = Events[i];
-
-		// A voice the mixer has finished with goes back to the pool, whether its
-		// event is still live or was killed earlier.
-		if (event.Voice >= 0 && Mixer->Voice_State((unsigned)event.Voice) == AudioVoiceState::DONE) {
-			Release_Voice(event);
-			if (event.State == AUDIO_EVENT_PLAYING) {
-				Release_Pins(event);
-				bool more = event.DelayedLoop && !event.EndRequested && (event.CyclesLeft < 0 || event.CyclesLeft > 1);
-				bool decayowed = event.DelayedLoop && event.EndRequested && !event.DecayIssued && event.Type->DecayCount > 0;
-				if (event.Stolen) {
-					Finish(event);
-				} else if (more) {
-					if (event.CyclesLeft > 0) {
-						event.CyclesLeft--;
-					}
-					event.State = AUDIO_EVENT_GAP;
-					event.NextStart = now + (unsigned)Random(event.Type->DelayMin, event.Type->DelayMax);
-				} else if (decayowed) {
-					// Ended between cycles: the decay plays on its own, right away.
-					event.State = AUDIO_EVENT_GAP;
-					event.NextStart = now;
-				} else {
-					Finish(event);
-				}
-			}
-		}
 
 		if ((event.State == AUDIO_EVENT_PENDING || event.State == AUDIO_EVENT_GAP) && (int)(now - event.NextStart) >= 0) {
 			if (event.State == AUDIO_EVENT_GAP && event.EndRequested) {
@@ -832,6 +841,16 @@ bool AudioEventPoolClass::Is_Valid(AudioHandle handle) const
 bool AudioEventPoolClass::Is_Playing(AudioHandle handle) const
 {
 	return(Lookup(handle) != nullptr);
+}
+
+
+bool AudioEventPoolClass::Is_Finished(AudioHandle handle) const
+{
+	if (!Ready || handle.Is_Null() || handle.Index() >= AUDIO_MAX_EVENTS) {
+		return(true);
+	}
+	EventClass const & event = Events[handle.Index()];
+	return(event.Generation != handle.Generation() || !event.Is_Live());
 }
 
 
@@ -1011,6 +1030,21 @@ void AudioEventPoolClass::Stop_Tag(void const * tag)
 		EventClass & event = Events[i];
 		if (event.Is_Live() && event.Tag == tag) {
 			Kill(event, AUDIO_STOP_RAMP_SECONDS);
+		}
+	}
+}
+
+
+void AudioEventPoolClass::Set_Tag_Volume(void const * tag, float volume)
+{
+	if (!Ready || tag == nullptr) {
+		return;
+	}
+	for (int i = 0; i < AUDIO_MAX_EVENTS; i++) {
+		EventClass & event = Events[i];
+		if (event.Is_Live() && !event.Stolen && event.Tag == tag) {
+			event.RequestVolume = volume;
+			Push_Level(event, AUDIO_RETARGET_RAMP_SECONDS);
 		}
 	}
 }

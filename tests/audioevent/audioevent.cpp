@@ -678,6 +678,38 @@ void Test_Samples_And_Handles(void)
 }
 
 
+// A start between two service calls must not take the voice of an event whose
+// clip has ended but which has not been serviced yet.
+void Test_Voice_Ownership(void)
+{
+	RigClass rig;
+	AudioEventTypeClass & type = rig.Type("OWN", 1);
+	AudioHandle first = rig.Pool.Start(type, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	rig.Run(120 * (RATE / 1000));
+	Check(rig.Mixer.Voice_State(0) == AudioVoiceState::DONE, "first voice done but not yet serviced");
+	Check(rig.Pool.Is_Playing(first), "first event not yet reaped");
+
+	AudioHandle second = rig.Pool.Start(type, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	Check(!second.Is_Null(), "second start admitted");
+	Check(!rig.Pool.Is_Valid(first), "starting another event reaps the finished one");
+	rig.Tick(50);
+	Check(rig.Pool.Is_Playing(second), "second event keeps its voice through the next service");
+	Check(rig.Pool.Effects_In_Use() == 1 && rig.Pool.Live_Count() == 1, "one live event");
+	rig.Tick(100);
+	Check(!rig.Pool.Is_Valid(second) && rig.Provider.Balanced(), "second event finishes on its own");
+
+	// The same with the finished voice belonging to an event of another type.
+	AudioEventTypeClass & other = rig.Type("OWN2", 1, SOUND_CONTROL_LOOP);
+	first = rig.Pool.Start(type, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	rig.Run(120 * (RATE / 1000));
+	second = rig.Pool.Start(other, AUDIO_GROUP_SFX, 1.0f, 0.0f);
+	for (int i = 0; i < 10; i++) {
+		rig.Tick(100);
+	}
+	Check(rig.Pool.Is_Playing(second) && rig.Pool.Effects_In_Use() == 1, "a loop started over a finished voice keeps playing");
+}
+
+
 void Test_Shutdown_Releases(void)
 {
 	ProviderClass provider;
@@ -715,6 +747,7 @@ int main(void)
 	Test_Budget();
 	Test_Levels();
 	Test_Samples_And_Handles();
+	Test_Voice_Ownership();
 	Test_Shutdown_Releases();
 
 	std::printf("%d checks, %d failures\n", Checked, Failures);

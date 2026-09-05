@@ -15,10 +15,11 @@
 
 #include "ahandle.h"
 
-#include "dsaudio.h"
+#include "audio/audiocompat.h"
 #include "dbgprint.h"
 #include "gametime.h"
 #include "vqaplayp.h"
+#include "win.h"
 
 #include <cassert>
 
@@ -29,8 +30,25 @@
 
 Ahandle _handles[Ahandle::MAX_HANDLES];
 
-bool _restore_primary = false;
-WAVEFORMATEX _restore_format;
+// The movie player's own DirectSound object, created for each movie. It shares
+// the output with the engine's device and touches no primary buffer.
+LPDIRECTSOUND _dsound = NULL;
+
+
+// The linear 0..255 volume as DirectSound's hundredths of a decibel.
+static int Convert_HMI_To_Direct_Sound_Volume(int volume)
+{
+	if (volume <= 0) return(DSBVOLUME_MIN);
+	if (volume >= 255) return(DSBVOLUME_MAX);
+
+	float vol = (float)volume;
+	float retval = float(log10f(vol / 255) * ((-DSBVOLUME_MIN) / 300.0)) * 100;
+
+	if (retval < DSBVOLUME_MIN) {
+		retval = DSBVOLUME_MIN;
+	}
+	return((int)retval);
+}
 
 AHANDLE_CALLBACK_1 _AHandleCallbackFunc1;
 AHANDLE_CALLBACK_2 _AHandleCallbackFunc2;
@@ -230,50 +248,28 @@ long __cdecl Open_Audio_Handler(VQAHandleP *vqap, AhandleInitParams *params, lon
 			}
 		}
 
+		if (_dsound == NULL) {
+			if (DirectSoundCreate(NULL, &_dsound, NULL) != DS_OK || _dsound->SetCooperativeLevel(MainWindow, DSSCL_NORMAL) != DS_OK) {
+				DebugString("Ahandle: DirectSound is not available\n");
+				if (_dsound != NULL) {
+					_dsound->Release();
+					_dsound = NULL;
+				}
+				DeleteCriticalSection(&handle->CriticalSection);
+				handle->Used = FALSE;
+				return(VQAERR_AUDIO);
+			}
+		}
+
 		memset(&dscaps, 0, sizeof(dscaps));
 		dscaps.dwSize = sizeof(DSCAPS);
-
-		DebugString("Audio.Lock_Mutex\n");
-		Audio.Lock_Mutex();
-
-		Direct_Sound_Object()->GetCaps(&dscaps);
+		_dsound->GetCaps(&dscaps);
 
 		if (dscaps.dwFlags & DSCAPS_EMULDRIVER) {
 			DebugString("Ahandle detected emulated sound driver. LatencyAdjustment = %ld ticks\n", config->LatencyAdjustment);
 		} else {
 			config->LatencyAdjustment = 0;
 		}
-
-		DebugString("Audio.Get_Primary_Buffer()\n");
-
-		memset(&_restore_format, 0, sizeof(_restore_format));
-		WAVEFORMATEX format;
-		memset(&format, 0, sizeof(format));
-
-		DebugString("Getting current primary buffer format\n");
-		Direct_Sound_Primary_Buffer()->GetFormat(&_restore_format, sizeof(_restore_format), NULL);
-
-		_restore_primary = false;
-		if (params->Channels != _restore_format.nChannels || params->SampleRate != _restore_format.nSamplesPerSec || params->BitsPerSample != _restore_format.wBitsPerSample) {
-			DebugString("Changing primary buffer format\n");
-			Audio.Stop_Primary_Sound_Buffer();
-			DebugString("Primary buffer stopped\n");
-			_restore_primary = true;
-
-			format.wFormatTag		= WAVE_FORMAT_PCM;
-			format.nSamplesPerSec	= params->SampleRate;
-			format.nChannels		= params->Channels;
-			format.wBitsPerSample	= (short) params->BitsPerSample;
-			format.nBlockAlign		= (unsigned short)( (params->BitsPerSample/8) * params->Channels);
-			format.nAvgBytesPerSec	= params->SampleRate * format.nBlockAlign;
-
-			Direct_Sound_Primary_Buffer()->SetFormat(&format);
-			DebugString("Primary buffer format changed\n");
-			Audio.Start_Primary_Sound_Buffer(false);
-		}
-
-		DebugString("Audio.Unlock_Mutex\n");
-		Audio.Unlock_Mutex();
 
 		handle->Channels = params->Channels;
 		handle->BitsPerSample = params->BitsPerSample;
@@ -319,23 +315,9 @@ long __cdecl Close_Audio_Handler(VQAHandleP *vqap)
 
 		handle->Used = false;
 
-		if (_restore_primary) {
-			DebugString("Changing primary buffer format back to original\n");
-			_restore_primary = false;
-
-			DebugString("Audio.Lock_Mutex()\n");
-			Audio.Lock_Mutex();
-
-			DebugString("Stopping primary buffer\n");
-			Audio.Stop_Primary_Sound_Buffer();
-
-			DebugString("Calling SetFormat\n");
-			Direct_Sound_Primary_Buffer()->SetFormat(&_restore_format);
-
-			Audio.Start_Primary_Sound_Buffer(false);
-
-			DebugString("Audio.Unlock_Mutex()\n");
-			Audio.Unlock_Mutex();
+		if (_dsound != NULL) {
+			_dsound->Release();
+			_dsound = NULL;
 		}
 		DebugString("Deleting the critical section object\n");
 		DeleteCriticalSection(&handle->CriticalSection);
@@ -393,9 +375,9 @@ long __cdecl Start_Audio_Handler(VQAHandleP *vqap)
 	/*
 	**	Create the secondary sound buffer object
 	*/
-	Audio.Lock_Mutex();
-	Direct_Sound_Object()->CreateSoundBuffer (&audio->BufferDesc , &audio->SecondaryBufferPtr , NULL);
-	Audio.Unlock_Mutex();
+	if (_dsound == NULL || _dsound->CreateSoundBuffer(&audio->BufferDesc, &audio->SecondaryBufferPtr, NULL) != DS_OK) {
+		audio->SecondaryBufferPtr = NULL;
+	}
 
 	if (audio->SecondaryBufferPtr == NULL) {
 		LeaveCriticalSection(&audio->CriticalSection);
