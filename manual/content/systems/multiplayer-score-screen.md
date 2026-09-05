@@ -26,10 +26,10 @@ Rows are ranked by rounds won and then by the round's score, so the winner heads
 | --- | --- |
 | Losses | The house's own units and structures that were destroyed. |
 | Kills | The units and structures the house destroyed, whoever owned them. |
-| Economy | What the house still had standing, as a percentage of everything it ever had. A house that was wiped out reads zero. |
+| Economy | What the house spent, as a percentage of what the house that spent most spent. The biggest spender reads 100. |
 | Score | The points the house earned, and for a house left undefeated a bonus of half its opponents' average points, or 100, whichever is larger. |
 
-The three bar columns grow together and the score counts up at the end. A score that would rank below the row beneath it is raised above it before the columns are drawn, so the score column always descends.
+The three bar columns grow together and the score counts up at the end; every figure finishes at its exact value. A score that would rank below the row beneath it is raised above it before the columns are drawn, so the score column always descends.
 
 The four tallies come from the counts each house keeps for the whole match, and a [saved game](/formats/save-games/) carries all four, so a resumed match is scored on the whole of it rather than on the part played since the load.
 

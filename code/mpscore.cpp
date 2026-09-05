@@ -40,6 +40,7 @@
 
 #include "color.hh"
 
+#include <algorithm>
 #include <cstdio>
 
 
@@ -357,6 +358,20 @@ void MultiScore::Tally_Score(void)
 	Session.NumScores = 0;
 
 	/*
+	 * The economy column measures each house against whoever spent most, so that figure is
+	 * wanted before any house is scored.
+	 */
+	unsigned most_spent = 0;
+
+	for (house = HOUSE_FIRST; house < Houses.Count(); house++) {
+		hptr = Houses[house];
+
+		if (hptr != NULL && !hptr->Class->IsMultiplayPassive && !hptr->IsObserver) {
+			most_spent = std::max(most_spent, hptr->CreditsSpent);
+		}
+	}
+
+	/*
 	**	Loop through all houses, tallying up each player's score
 	*/
 	for (house = HOUSE_FIRST; house < Houses.Count(); house++) {
@@ -430,8 +445,6 @@ void MultiScore::Tally_Score(void)
 		*/
 		int kills = 0;
 		int losses = 0;
-		int remain = 0;
-		int total = 0;
 
 		for (i = 0; i < ARRAY_SIZE(hptr->UnitsKilled); i++) {
 			kills += hptr->UnitsKilled[i];
@@ -451,20 +464,10 @@ void MultiScore::Tally_Score(void)
 			kill_ratio = (float)kills / (float)losses;
 		}
 
-		float build_economy = 0;
-		remain += hptr->ABQuantity.Total();
-		remain += hptr->AUQuantity.Total();
-		remain += hptr->AIQuantity.Total();
-		remain += hptr->AAQuantity.Total();
-		total += hptr->UnitsLost;
-		total += hptr->BuildingsLost;
+		// Measuring what was spent leaves a house that was beaten showing what it built.
+		float build_economy = most_spent > 0 ? (float)hptr->CreditsSpent / (float)most_spent : 0.0f;
 
-		total += remain;
-
-		build_economy = total > 0 ? (float)remain / (float)total : build_economy;
-		build_economy = build_economy < 0.0 ? (float)0.0 : build_economy;
-
-		Session.Score[score_index].Built[0] = (build_economy * 100.0);
+		Session.Score[score_index].Built[0] = (int)(build_economy * 100.0);
 
 		if (hptr->PointTotal > 0) {
 			Session.Score[score_index].Score[0] += hptr->PointTotal;
@@ -1017,6 +1020,15 @@ void MultiScore::Draw_Bars(int * scores, int numScores, int x, int y, int width)
 		Wait_Delay(1);
 	}
 
+	// The animation steps two pixels at a time, so its last frame stops short of the longest
+	// bar's own figure, and that figure has to come off the screen before the finished one.
+	for (i = 0; i < numScores; i++) {
+		if (updateRects[i].Is_Valid()) {
+			HiddenSurface->Blit_From(updateRects[i], *AlternateSurface, updateRects[i]);
+			Add_Update_Rect(updateRects[i]);
+		}
+	}
+
 	/// Draw the final bars and scores
 	int srcYPos = y - YPos;
 	for (i = 0; i < numScores; i++) {
@@ -1028,6 +1040,7 @@ void MultiScore::Draw_Bars(int * scores, int numScores, int x, int y, int width)
 		/// Draw the final score text
 		Print_Score(AlternateSurface, scores[i], scores[i], x + width / 2, y);
 		Print_Score(ScoreSurface, scores[i], scores[i], x + width / 2 - XPos, srcYPos);
+		Add_Update_Rect(Print_Score(HiddenSurface, scores[i], scores[i], x + width / 2, y));
 
 		/// Move to the next bar position
 		y += 35;
