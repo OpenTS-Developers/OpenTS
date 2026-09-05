@@ -9,7 +9,6 @@
 
 #include "audio/audiomovie.h"
 
-#include "audio/audiocompat.h"
 #include "audio/audioengine.h"
 #include "audio/audiomovieclock.h"
 #include "audio/audiostream.h"
@@ -142,7 +141,7 @@ MovieSinkClass _sink;
 
 long Open_Audio_Handler(VQAHandleP * vqap, AhandleInitParams * params, long nbytes)
 {
-	if (!Audio_Available() || params == nullptr || nbytes != (long)sizeof(AhandleInitParams) || _sink.Used) {
+	if (!AudioEngine.Is_Available() || params == nullptr || nbytes != (long)sizeof(AhandleInitParams) || _sink.Used) {
 		return(VQAERR_AUDIO);
 	}
 	VQAConfig * config = &vqap->Config;

@@ -15,7 +15,7 @@
 #include "ccfile.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "mixfile.h"
 
 

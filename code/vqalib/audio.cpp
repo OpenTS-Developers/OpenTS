@@ -61,7 +61,7 @@
 #include	"vqaplayp.h"
 #include	<stdio.h>
 #include	<memory.h>
-#include	"ahandle.h"
+#include	"audio/audiomovie.h"
 #include	"vqamem.h"
 
 

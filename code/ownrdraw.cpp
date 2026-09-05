@@ -22,7 +22,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "dict.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"

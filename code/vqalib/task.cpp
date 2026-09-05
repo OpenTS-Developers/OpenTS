@@ -58,7 +58,7 @@
 #include "vqaplay.h"
 #include "vqaplayp.h"
 #include "video.h"
-#include "ahandle.h"
+#include "audio/audiomovie.h"
 #include "lcw.h"
 #include "vqadebug.h"
 

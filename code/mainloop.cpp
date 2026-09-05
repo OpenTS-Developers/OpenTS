@@ -32,7 +32,7 @@
 #include "data.h"
 #include "debug.h"
 #include "dialog.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "fog.h"
 #include "globals.h"

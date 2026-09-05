@@ -13,7 +13,7 @@
 #include "ccfile.h"
 #include "ccrand.h"
 #include "data.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ini.h"

@@ -18,7 +18,7 @@
 #include "convert.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "dsaudio.h"
+#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "gamedlg.h"
 #include "globals.h"
