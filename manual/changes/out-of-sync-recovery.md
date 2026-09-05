@@ -29,4 +29,11 @@ before. The master of a client-launched match can also load a multiplayer save f
 menu during play. The launch file's `IsHost` now names the master, which decides these things
 and hands down the network timings; a file without it leaves the first seat in charge.
 
+Two dialog drawing faults are fixed with this. A dialog larger than the 640 by 400 backdrop
+art, which the new dialogs are, showed uninitialized memory past the art's edge; that area is
+now black. A windowed game also stopped painting its dialogs whenever another window had the
+focus, so a dialog that opened then, such as the frame-sync reconnect dialog, never appeared
+and stayed blank after the focus came back. Windowed games now paint dialogs without the
+focus, and every game repaints them when the focus returns.
+
 The dialog and the in-game load follow Vinifera's, by ZivDero and Rampastring.

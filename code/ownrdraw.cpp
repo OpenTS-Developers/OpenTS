@@ -1231,7 +1231,8 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 	bool is_paint = false;
 	if (message == WM_PAINT) {
 		is_paint = true;
-		if (!in_focus) {
+		// A windowed game keeps presenting without the focus, so its dialogs keep painting too.
+		if (!in_focus && !WindowedMode) {
 			ValidateRect(window, NULL);
 			ctrlmessages.remove(key);
 			return(0);
@@ -1239,7 +1240,8 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 	}
 
 	if (in_focus == true && !was_in_focus) {
-		InvalidateRect(MainWindow, NULL, FALSE);
+		// The dialogs skipped their paints while the focus was away, so they need one too.
+		RedrawWindow(MainWindow, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
 		in_focus = GameInFocus;
 	}
 	was_in_focus = in_focus;
@@ -6124,7 +6126,7 @@ bool ODGetFontMetrics(char const * font_name, FontMetrics * metrics)
 /// <returns>Returns with the pixel width of the text.</returns>
 int OD_Draw_Text(COLORREF color, HFONT font, Rect const & rect, const char * text, int len, int x_alignment, int y_alignment, Surface * surface)
 {
-	if (!GameInFocus) {
+	if (!GameInFocus && !WindowedMode) {
 		return(0);
 	}
 
@@ -6501,6 +6503,9 @@ void OwnerDraw::Draw_Dialog_Back(HWND window)
 		surf = new BSurface(rcClient.right, rcClient.bottom, 2);
 		entry->cachedSurface = surf;
 		++_surface_count;
+
+		// The art is 640x400 and centered on the screen; a dialog reaching past it keeps black there.
+		surf->Fill(0);
 
 		Surface * back = SurfaceCache.GetSurface("dbak6440.pcx");
 
