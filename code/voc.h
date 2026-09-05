@@ -13,6 +13,8 @@
 
 #pragma once
 
+#include "audio/audioevent.h"
+#include "audio/audiohandle.h"
 #include "coord.h"
 
 #include "voc.hh"
@@ -20,12 +22,35 @@
 class CCINIClass;
 class VocClass;
 
+// Pan runs from -100 at the left to 100 at the right.
+enum { SOUND_PAN_CENTER = 0 };
+
 void Init_Vocs(CCINIClass const &ini);
 void Free_Vocs(void);
 
-int Sound_Effect(VocType voc, float volume=1, int=0);
-int Voice_Sound_Effect(VocType voc, float volume=1);
-int Sound_Effect(VocType voc, Coord const & coord);
+// A sound with no place in the world. With a handle, a live event of the same
+// sound is re-aimed instead of a second one starting; one of another sound is
+// stopped first.
+AudioHandle Sound_Effect(VocType voc, float volume = 1.0f, int pan = SOUND_PAN_CENTER, AudioHandle * handle = nullptr);
+
+// A sound at a place in the world, attenuated and panned by where that place
+// is on screen, and kept so while it plays.
+AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle = nullptr);
+
+// Spoken responses; the sound effect option does not scale them.
+AudioHandle Voice_Sound_Effect(VocType voc, float volume = 1.0f);
+
+// Keeps a placed sound going while its place is in range: re-aims a live one,
+// restarts an endless loop that ended, and stops one that scrolled away.
+AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * handle);
+
+// The level, 0..1, a sound of this type has at the place, and its pan.
+float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & type, int & pan);
+
+// Once per game tick.
+void Sound_Effect_AI(void);
+void Stop_All_Sound_Effects(void);
+
 VocClass * VocClass_From_Name(char const * name);
 char const * Voc_Name(VocType voc);
 
@@ -45,19 +70,21 @@ class VocClass
 
 		bool Fill_In(CCINIClass const &ini);
 
-		bool Can_Play(void);
-		int Play(float vol, int var);
-		int Play(float vol);
+		bool Can_Play(void) const;
+		AudioHandle Play(float vol, int pan = SOUND_PAN_CENTER);
+		AudioHandle Play_Voice(float vol);
 
 		VocType Voc_Type(void);
+		AudioEventTypeClass const & Type_Data(void) const { return(Type); }
 
 		static VocType From_Name(char const * name);
 		friend VocClass *VocClass_From_Name(char const * name);
 		friend char const * Voc_Name(VocType voc);
 
+		// The [Defaults] section, as read by Init_Vocs.
+		static AudioEventTypeClass Defaults;
+
 	private:
 		char 				Name[256];			// Digitized voice file name.
-		int	 				Priority;			// Playback priority of this sample.
-		float 				Volume;
-		const void *		FilePtr;
+		AudioEventTypeClass Type;
 };

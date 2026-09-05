@@ -15,43 +15,101 @@
 
 #include "voc.h"
 
-#include "_mixfile.h"
+#include "_map.h"
 #include "_rect.h"
 #include "_tactica.h"
+#include "audio/audioengine.h"
 #include "ccini.h"
-#include "dsaudio.h"
+#include "cell.h"
 #include "globals.h"
 #include "goptions.h"
-#include "mixfile.h"
+#include "map.h"
+#include "sndtype.h"
 #include "tactical.h"
 #include "vector.h"
 
 #include <algorithm>
+#include <cstdlib>
 
 
 DynamicVectorClass<VocClass *> Vocs;
 
+AudioEventTypeClass VocClass::Defaults;
+
+namespace {
+
+int const DEFAULT_CHANNELS = 16;
+int const PIXELS_PER_CELL = 48;
+float const SILENT_LEVEL = 0.05f;
+int const POSITIONAL_MAX = 64;
+
+// Placed sounds still playing, re-aimed each tick as the view moves.
+struct PositionalSound {
+	AudioHandle Handle;
+	Coord Position;
+	float Level;
+	int Pan;
+};
+
+PositionalSound _positional[POSITIONAL_MAX];
+
+
+float Effect_Level(float volume)
+{
+	return(std::min(Options.SoundVolume * volume, 1.0f));
+}
+
+
+float Pan_Level(int pan)
+{
+	return((float)std::clamp(pan, -100, 100) / 100.0f);
+}
+
+
+void Track_Positional(AudioHandle handle, Coord const & coord, float level, int pan)
+{
+	if (handle.Is_Null()) {
+		return;
+	}
+	int slot = -1;
+	for (int i = 0; i < POSITIONAL_MAX; i++) {
+		if (_positional[i].Handle == handle) {
+			slot = i;
+			break;
+		}
+		if (slot < 0 && !_positional[i].Handle.Is_Valid()) {
+			slot = i;
+		}
+	}
+	if (slot >= 0) {
+		_positional[slot].Handle = handle;
+		_positional[slot].Position = coord;
+		_positional[slot].Level = level;
+		_positional[slot].Pan = pan;
+	}
+}
+
+} // namespace
+
 
 /// <summary>
 /// Creates a sound effect for the sample name specified.
-/// The new sound adds itself to the master sound list and fetches its sample from the
-/// mixfiles right away. The priority and volume ratings stay at their defaults until the
-/// rules are read.
+/// The new sound adds itself to the master sound list and starts out as a copy of the
+/// defaults, with the name as its one sample. Its own section is read when the rules are.
 /// </summary>
 /// <param name="filename">The root name of the sound sample, without any extension.</param>
-VocClass::VocClass(const char *filename) :
-	Priority(10),
-	Volume(1.0),
-	FilePtr(NULL)
+VocClass::VocClass(const char *filename)
 {
-	char name[_MAX_FNAME+_MAX_EXT];
-
 	strcpy(Name, filename);
 
 	Vocs.Add(this);
 
-	_makepath(name, NULL, NULL, Name, ".AUD");
-	FilePtr = MFCD::Retrieve(name);
+	Type = Defaults;
+	strncpy(Type.Name, Name, sizeof(Type.Name) - 1);
+	Type.Name[sizeof(Type.Name) - 1] = '\0';
+	strncpy(Type.Sounds[0], Name, sizeof(Type.Sounds[0]) - 1);
+	Type.Sounds[0][sizeof(Type.Sounds[0]) - 1] = '\0';
+	Type.SoundCount = 1;
 }
 
 
@@ -66,192 +124,243 @@ VocClass::~VocClass(void)
 
 /// <summary>
 /// Fetches this sound effect's settings from the rules.
-/// This routine will look for a section named after the sound and take its priority and
-/// volume from there. A sound with no section of its own falls back to the defaults. The
-/// sample itself is retrieved from the mixfiles either way.
+/// Every key the sound's own section omits comes from the defaults.
 /// </summary>
 /// <param name="ini">The rules database to fetch the settings from.</param>
 /// <returns>bool; Did the sound have a section of its own?</returns>
 bool VocClass::Fill_In(CCINIClass const &ini)
 {
-	char name[_MAX_FNAME+_MAX_EXT];
-
-	if (ini.Is_Present(Name)) {
-		Priority = ini.Get_Int(Name, "Priority", Priority);
-		Volume = ini.Get_Float(Name, "Volume", Volume);
-		_makepath(name, NULL, NULL, Name, ".AUD");
-		FilePtr = MFCD::Retrieve(name);
-		return(true);
-	}
-
-	Priority = 10;
-	Volume = 1.0;
-	_makepath(name, NULL, NULL, Name, ".AUD");
-	FilePtr = MFCD::Retrieve(name);
-
-	return(false);
+	return(Sound_Type_Fill_In(ini, Name, Defaults, Type));
 }
 
 
 /// <summary>
-/// Plays this sound effect at the volume specified.
-/// The volume requested is scaled by both this sound's own volume rating and the player's
-/// sound effect option setting, so the sound falls silent when the effects are turned off.
+/// Plays this sound effect at the volume and pan specified.
+/// The volume requested is scaled by the player's sound effect option setting, so the
+/// sound falls silent when the effects are turned off.
 /// </summary>
 /// <param name="vol">The volume to play at, where 1.0 is this sound's own full volume.</param>
-/// <param name="var">The variation number for sound effects that have variations.</param>
-/// <returns>Returns with the sound handle, or -1 if no sound was played.</returns>
-int VocClass::Play(float vol, int var)
+/// <param name="pan">The pan, from -100 at the left to 100 at the right.</param>
+/// <returns>The handle of the playing sound, or a null handle if none was played.</returns>
+AudioHandle VocClass::Play(float vol, int pan)
 {
-	if (Options.SoundVolume > 0.0) {
-		if (Can_Play() && Audio_Available()) {
-			vol = std::min(Options.SoundVolume * Volume * vol, 1.0f);
-			return(Audio.Play_Sample(FilePtr, Priority * vol, std::min(int(255.0 * vol), 255)));
-		}
+	if (Options.SoundVolume > 0.0 && vol > 0.0 && Can_Play() && AudioEngine.Is_Available()) {
+		return(AudioEngine.Play_Event(Type, AUDIO_GROUP_SFX, Effect_Level(vol), Pan_Level(pan)));
 	}
-	return(-1);
+	return(AudioHandle());
 }
 
 
 /// <summary>
-/// Plays this sound effect at the volume specified.
-/// This routine is used by the voice sound effects, where the caller has already worked
-/// out the final volume and the sound effect option setting does not apply.
+/// Plays this sound effect as a voice, at the volume specified.
+/// The caller has already worked out the final volume and the sound effect option
+/// setting does not apply.
 /// </summary>
 /// <param name="vol">The volume to play at, where 1.0 is this sound's own full volume.</param>
-/// <returns>Returns with the sound handle, or -1 if no sound was played.</returns>
-int VocClass::Play(float vol)
+/// <returns>The handle of the playing sound, or a null handle if none was played.</returns>
+AudioHandle VocClass::Play_Voice(float vol)
 {
-	if (vol > 0.0) {
-		if (Can_Play() && Audio_Available()) {
-			vol = std::min(Volume * vol, 1.0f);
-			return(Audio.Play_Sample(FilePtr, Priority * vol, std::min(int(255.0 * vol), 255)));
+	if (vol > 0.0 && Can_Play() && AudioEngine.Is_Available()) {
+		return(AudioEngine.Play_Event(Type, AUDIO_GROUP_SYSTEM, std::min(vol, 1.0f), 0.0f));
+	}
+	return(AudioHandle());
+}
+
+
+AudioHandle Sound_Effect(VocType voc, float volume, int pan, AudioHandle * handle)
+{
+	if (voc == VOC_NONE || voc >= Vocs.Count()) {
+		return(AudioHandle());
+	}
+	VocClass & sound = *Vocs[voc];
+
+	if (handle != nullptr && handle->Is_Valid()) {
+		if (handle->Type() == &sound.Type_Data()) {
+			handle->Retarget(Effect_Level(volume), Pan_Level(pan));
+			return(*handle);
+		}
+		handle->Stop();
+	}
+
+	AudioHandle played = sound.Play(volume, pan);
+	if (handle != nullptr) {
+		*handle = played;
+	}
+	return(played);
+}
+
+
+AudioHandle Voice_Sound_Effect(VocType voc, float volume)
+{
+	if (voc != VOC_NONE && voc < Vocs.Count()) {
+		return(Vocs[voc]->Play_Voice(volume));
+	}
+	return(AudioHandle());
+}
+
+
+float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & type, int & pan)
+{
+	pan = SOUND_PAN_CENTER;
+	if (TacticalMap == nullptr) {
+		return(1.0f);
+	}
+
+	if (type.Type & (SOUND_TYPE_SHROUD | SOUND_TYPE_HIDDEN)) {
+		Cell cell = coord.As_Cell();
+		bool seen = false;
+		if (Map.Is_Valid(cell)) {
+			CellClass const & place = Map[cell];
+			seen = place.IsMapped || place.IsVisible;
+		}
+		if ((type.Type & SOUND_TYPE_SHROUD) && !seen) {
+			return(0.0f);
+		}
+		if ((type.Type & SOUND_TYPE_HIDDEN) && seen) {
+			return(0.0f);
 		}
 	}
-	return(-1);
-}
 
-/***********************************************************************************************
- * Sound_Effect -- General purpose sound player.                                               *
- *                                                                                             *
- *    This is used for general purpose sound effects. These are sounds that occur outside      *
- *    of the game world. They do not have a corresponding game world location as their source. *
- *                                                                                             *
- * INPUT:   voc      -- The sound effect number to play.                                       *
- *                                                                                             *
- *          volume   -- The volume to assign to this sound effect.                             *
- *                                                                                             *
- *          variation   -- This is the optional variation number to use when playing special   *
- *                         sound effects that have variations. For normal sound effects, this  *
- *                         parameter is ignored.                                               *
- *                                                                                             *
- *          house -- This specifies the optional house override value to use when playing      *
- *                   sound effects that have a variation. If not specified, then the current   *
- *                   player is examined for the house variation to use.                        *
- *                                                                                             *
- * OUTPUT:  Returns with the sound handle (-1 if no sound was played).                         *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   11/12/1994 JLB : Created.                                                                 *
- *   11/12/1994 JLB : Handles cache logic.                                                     *
- *   05/04/1995 JLB : Variation adjustments.                                                   *
- *   11/01/1996 JLB : House override control.                                                  *
- *=============================================================================================*/
-int Sound_Effect(VocType voc, float volume, int var)
-{
-	if (voc != VOC_NONE) {
-		return(Vocs[voc]->Play(volume, var));
+	Point2D pixel;
+	TacticalMap->Coord_To_Pixel(coord, pixel);
+	int width = TacticalRect.Width;
+	int height = TacticalRect.Height;
+	if (width <= 0 || height <= 0) {
+		return(1.0f);
 	}
-	return(-1);
-}
 
-
-/// <summary>
-/// Plays a voice sound effect.
-/// This routine is used for the spoken responses and announcements. Unlike a general
-/// purpose sound effect, the volume is not scaled by the sound effect option setting.
-/// </summary>
-/// <param name="voc">The sound effect to play.</param>
-/// <param name="volume">The volume to assign to this sound effect.</param>
-/// <returns>Returns with the sound handle, or -1 if no sound was played.</returns>
-int Voice_Sound_Effect(VocType voc, float volume)
-{
-	if (voc != VOC_NONE) {
-		return(Vocs[voc]->Play(volume));
+	int dx;
+	int dy;
+	if (type.Type & SOUND_TYPE_LOCAL) {
+		dx = std::abs(pixel.X - width / 2);
+		dy = std::abs(pixel.Y - height / 2);
+	} else {
+		dx = pixel.X < 0 ? -pixel.X : (pixel.X > width ? pixel.X - width : 0);
+		dy = pixel.Y < 0 ? -pixel.Y : (pixel.Y > height ? pixel.Y - height : 0);
 	}
-	return(-1);
+	// The view is wider than it is tall, so vertical distance counts double.
+	dy *= 2;
+
+	int range = std::max(type.Range, 1) * PIXELS_PER_CELL;
+	float volume = 1.0f - (float)std::max(dx, dy) / (float)range;
+	if (type.Type & SOUND_TYPE_GLOBAL) {
+		volume = std::max(volume, type.MinVolume);
+	}
+	if (volume < SILENT_LEVEL) {
+		return(0.0f);
+	}
+
+	pan = std::clamp((pixel.X - width / 2) * 100 / (width / 2), -100, 100);
+	return(std::min(volume, 1.0f));
 }
 
-/***********************************************************************************************
- * Sound_Effect -- Plays a sound effect in the tactical map.                                   *
- *                                                                                             *
- *    This routine is used when a sound effect occurs in the game world. It handles fading     *
- *    the sound according to distance.                                                         *
- *                                                                                             *
- * INPUT:   voc   -- The sound effect number to play.                                          *
- *                                                                                             *
- *          coord -- The world location that the sound originates from.                        *
- *                                                                                             *
- *          variation   -- This is the optional variation number to use when playing special   *
- *                         sound effects that have variations. For normal sound effects, this  *
- *                         parameter is ignored.                                               *
- *                                                                                             *
- *          house -- This specifies the optional house override value to use when playing      *
- *                   sound effects that have a variation. If not specified, then the current   *
- *                   player is examined for the house variation to use.                        *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   11/12/1994 JLB : Created.                                                                 *
- *   01/05/1995 JLB : Reduces sound more dramatically when off screen.                         *
- *   09/15/1996 JLB : Revamped volume logic.                                                   *
- *   11/01/1996 JLB : House override control.                                                  *
- *=============================================================================================*/
-int Sound_Effect(VocType voc, Coord const & coord)
+
+AudioHandle Sound_Effect(VocType voc, Coord const & coord, AudioHandle * handle)
 {
-	if (voc != VOC_NONE) {
-		float vol = 1.0;
-		Point2D point;
-		if (!TacticalMap->Coord_To_Pixel(coord, point)) {
+	if (voc == VOC_NONE || voc >= Vocs.Count()) {
+		return(AudioHandle());
+	}
+	VocClass & sound = *Vocs[voc];
 
-			int px = point.X;
-			int x = px < 0 ? abs(px) : 0;
-			int w = px > TacticalRect.Width ? px - TacticalRect.Width : 0;
-
-			int py = point.Y;
-			int y = py < 0 ? abs(py) : 0;
-			int h = py > TacticalRect.Height ? py - TacticalRect.Height : 0;
-
-			x = std::max(abs(x), abs(w));
-			y = std::max(abs(y), abs(h));
-
-			const float v = (1/1360.0f);
-
-			vol = 1.0 - (std::max(x, y) * v);
-			vol = vol >= 0.0 ? vol : 0;
+	int pan;
+	float volume = Calculate_Volume_And_Pan(coord, sound.Type_Data(), pan);
+	if (volume <= 0.0f) {
+		if (handle != nullptr && handle->Is_Valid()) {
+			handle->Stop();
+			handle->Clear();
 		}
-		float volume = vol;
-		return(Sound_Effect(voc, volume, 0));
+		return(AudioHandle());
 	}
-	return(-1);
+
+	AudioHandle played = Sound_Effect(voc, volume, pan, handle);
+	Track_Positional(played, coord, volume, pan);
+	return(played);
+}
+
+
+AudioHandle Play_If_In_Range(VocType voc, Coord const & coord, AudioHandle * handle)
+{
+	if (handle == nullptr || voc == VOC_NONE || voc >= Vocs.Count()) {
+		return(AudioHandle());
+	}
+	VocClass & sound = *Vocs[voc];
+
+	int pan;
+	float volume = Calculate_Volume_And_Pan(coord, sound.Type_Data(), pan);
+
+	if (handle->Is_Valid()) {
+		if (volume <= 0.0f) {
+			handle->Stop();
+			handle->Clear();
+			return(AudioHandle());
+		}
+		handle->Retarget(Effect_Level(volume), Pan_Level(pan));
+		return(*handle);
+	}
+
+	// A one-shot that has ended stays ended; an endless loop comes back
+	// without its attack once its place is in range again.
+	handle->Clear();
+	if (volume <= 0.0f || !sound.Type_Data().Never_Ends() || Options.SoundVolume <= 0.0 || !sound.Can_Play() || !AudioEngine.Is_Available()) {
+		return(AudioHandle());
+	}
+	*handle = AudioEngine.Play_Event(sound.Type_Data(), AUDIO_GROUP_SFX, Effect_Level(volume), Pan_Level(pan), true);
+	return(*handle);
+}
+
+
+void Sound_Effect_AI(void)
+{
+	for (int i = 0; i < POSITIONAL_MAX; i++) {
+		PositionalSound & entry = _positional[i];
+		if (entry.Handle.Is_Null()) {
+			continue;
+		}
+		AudioEventTypeClass const * type = entry.Handle.Type();
+		if (type == nullptr) {
+			entry.Handle.Clear();
+			continue;
+		}
+		int pan;
+		float volume = Calculate_Volume_And_Pan(entry.Position, *type, pan);
+		if (volume <= 0.0f) {
+			entry.Handle.Stop();
+			entry.Handle.Clear();
+			continue;
+		}
+		if (std::fabs(volume - entry.Level) > 0.01f || pan != entry.Pan) {
+			entry.Handle.Retarget(Effect_Level(volume), Pan_Level(pan));
+			entry.Level = volume;
+			entry.Pan = pan;
+		}
+	}
+}
+
+
+void Stop_All_Sound_Effects(void)
+{
+	for (int i = 0; i < POSITIONAL_MAX; i++) {
+		_positional[i].Handle.Clear();
+	}
+	if (AudioEngine.Is_Available()) {
+		AudioEngine.Events().Stop_Group(AUDIO_GROUP_SFX, 0);
+	}
 }
 
 
 /// <summary>
 /// Creates the master sound effect list from the rules.
-/// This routine will fetch every sound named in the sound list section, creating a sound
-/// effect for any that does not exist yet, and then let each one fill itself in from its
-/// own section.
+/// This routine reads the channel budget and the defaults, then fetches every sound named
+/// in the sound list section, creating a sound effect for any that does not exist yet, and
+/// lets each one fill itself in from its own section.
 /// </summary>
 /// <param name="ini">The rules database to fetch the sound list from.</param>
 void Init_Vocs(CCINIClass const &ini)
 {
 	char const * const SECTION = "SoundList";
+
+	AudioEngine.Set_Channels(Sound_Type_Read_Channels(ini, DEFAULT_CHANNELS));
+	Sound_Type_Read_Defaults(ini, VocClass::Defaults);
 
 	if (ini.Is_Present(SECTION)) {
 		int count = ini.Entry_Count(SECTION);
@@ -280,6 +389,7 @@ void Init_Vocs(CCINIClass const &ini)
 /// </summary>
 void Free_Vocs(void)
 {
+	Stop_All_Sound_Effects();
 	while (Vocs.Count() > 0) {
 		VocClass *voc = Vocs[0];
 		delete voc;
@@ -385,15 +495,12 @@ VocType VocClass::Voc_Type(void)
 
 
 /// <summary>
-/// Can this sound effect be played?
-/// A sound whose sample could not be found in the mixfiles is silent, as is every sound
-/// while the game is running in quiet mode.
+/// Checks whether this sound effect may be played at all.
+/// A sound is playable while the game was not started quiet and it names at least one
+/// sample; whether that sample exists is found out when it is first played.
 /// </summary>
-/// <returns>bool; Is this sound effect available to be played?</returns>
-bool VocClass::Can_Play(void)
+/// <returns>bool; Can this sound be played?</returns>
+bool VocClass::Can_Play(void) const
 {
-	if (FilePtr != NULL && !Debug_Quiet) {
-		return(true);
-	}
-	return(false);
+	return(!Debug_Quiet && Type.SoundCount > 0);
 }

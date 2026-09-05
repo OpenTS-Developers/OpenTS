@@ -239,7 +239,7 @@ Power:
 
 Priority:
   "TeamTypeClass::RecruitPriority": {verdict: distinct}
-  "VocClass::Priority": {verdict: distinct}
+  "AudioEventTypeClass::priority": {verdict: distinct}
 
 ROF:
   "HouseTypeClass::ROFBias": {verdict: distinct}

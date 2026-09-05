@@ -14,6 +14,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <string>
 
 namespace {
 
@@ -182,12 +183,9 @@ bool Parse_Pair(char const * text, int & low, int & high, bool & single, bool & 
 
 void Read_Sounds(INIClass const & ini, char const * section, AudioEventTypeClass & type)
 {
-	char buffer[AUDIO_MAX_SOUNDS * TOKEN_LENGTH];
-	if (ini.Get_String(section, "Sounds", "", buffer, sizeof(buffer)) == 0) {
-		return;
-	}
+	std::string sounds = ini.Get_String(section, "Sounds", "");
 	char tokens[MAX_TOKENS][TOKEN_LENGTH];
-	int found = Tokenize(buffer, tokens);
+	int found = Tokenize(sounds.c_str(), tokens);
 	if (found == 0) {
 		return;
 	}
@@ -200,74 +198,73 @@ void Read_Sounds(INIClass const & ini, char const * section, AudioEventTypeClass
 }
 
 
+// Each key is staged into a local of its own name and applied only when the
+// section carries it, so a section keeps the defaults for what it omits.
 void Read_Keys(INIClass const & ini, char const * section, AudioEventTypeClass & type, bool defaults)
 {
-	char buffer[256];
-
 	if (!defaults) {
 		Read_Sounds(ini, section, type);
 	}
 
-	if (ini.Get_String(section, "Priority", "", buffer, sizeof(buffer)) != 0) {
-		type.Priority = Sound_Type_Parse_Priority(buffer, type.Priority);
+	std::string priority = ini.Get_String(section, "Priority", "");
+	if (!priority.empty()) {
+		type.Priority = Sound_Type_Parse_Priority(priority.c_str(), type.Priority);
 	}
-	if (ini.Get_String(section, "Volume", "", buffer, sizeof(buffer)) != 0) {
-		type.Volume = Sound_Type_Parse_Volume(buffer, type.Volume);
+	std::string volume = ini.Get_String(section, "Volume", "");
+	if (!volume.empty()) {
+		type.Volume = Sound_Type_Parse_Volume(volume.c_str(), type.Volume);
 	}
-	if (ini.Get_String(section, "MinVolume", "", buffer, sizeof(buffer)) != 0) {
-		type.MinVolume = Sound_Type_Parse_Volume(buffer, type.MinVolume);
+	std::string minvolume = ini.Get_String(section, "MinVolume", "");
+	if (!minvolume.empty()) {
+		type.MinVolume = Sound_Type_Parse_Volume(minvolume.c_str(), type.MinVolume);
 	}
-	if (ini.Is_Present(section, "Range")) {
-		type.Range = Clamp(ini.Get_Int(section, "Range", type.Range), 0, 1000);
+	int range = ini.Get_Int(section, "Range", type.Range);
+	type.Range = Clamp(range, 0, 1000);
+	int limit = ini.Get_Int(section, "Limit", type.Limit);
+	type.Limit = Clamp(limit, 0, AUDIO_MAX_EVENTS);
+	int loop = ini.Get_Int(section, "Loop", -1);
+	if (loop < 0) {
+		loop = ini.Get_Int(section, "LoopLimit", type.Loop);
 	}
-	if (ini.Is_Present(section, "Limit")) {
-		type.Limit = Clamp(ini.Get_Int(section, "Limit", type.Limit), 0, AUDIO_MAX_EVENTS);
+	type.Loop = Clamp(loop, 0, 100000);
+
+	int low;
+	int high;
+	std::string delay = ini.Get_String(section, "Delay", "");
+	if (Sound_Type_Parse_Delay(delay.c_str(), low, high)) {
+		type.DelayMin = low;
+		type.DelayMax = high;
 	}
-	if (ini.Is_Present(section, "Loop")) {
-		type.Loop = Clamp(ini.Get_Int(section, "Loop", type.Loop), 0, 100000);
-	} else if (ini.Is_Present(section, "LoopLimit")) {
-		type.Loop = Clamp(ini.Get_Int(section, "LoopLimit", type.Loop), 0, 100000);
+	std::string fshift = ini.Get_String(section, "FShift", "");
+	if (Sound_Type_Parse_Shift(fshift.c_str(), false, low, high)) {
+		type.FShiftMin = low;
+		type.FShiftMax = high;
 	}
-	if (ini.Get_String(section, "Delay", "", buffer, sizeof(buffer)) != 0) {
-		int low;
-		int high;
-		if (Sound_Type_Parse_Delay(buffer, low, high)) {
-			type.DelayMin = low;
-			type.DelayMax = high;
-		}
+	std::string vshift = ini.Get_String(section, "VShift", "");
+	if (Sound_Type_Parse_Shift(vshift.c_str(), true, low, high)) {
+		type.VShiftMin = low;
+		type.VShiftMax = high;
 	}
-	if (ini.Get_String(section, "FShift", "", buffer, sizeof(buffer)) != 0) {
-		int low;
-		int high;
-		if (Sound_Type_Parse_Shift(buffer, false, low, high)) {
-			type.FShiftMin = low;
-			type.FShiftMax = high;
-		}
+	std::string typeflags = ini.Get_String(section, "Type", "");
+	if (!typeflags.empty()) {
+		type.Type = Sound_Type_Parse_Type(typeflags.c_str(), type.Type);
 	}
-	if (ini.Get_String(section, "VShift", "", buffer, sizeof(buffer)) != 0) {
-		int low;
-		int high;
-		if (Sound_Type_Parse_Shift(buffer, true, low, high)) {
-			type.VShiftMin = low;
-			type.VShiftMax = high;
-		}
-	}
-	if (ini.Get_String(section, "Type", "", buffer, sizeof(buffer)) != 0) {
-		type.Type = Sound_Type_Parse_Type(buffer, type.Type);
-	}
-	if (ini.Get_String(section, "Control", "", buffer, sizeof(buffer)) != 0) {
-		type.Control = Sound_Type_Parse_Control(buffer, type.Control);
+	std::string control = ini.Get_String(section, "Control", "");
+	if (!control.empty()) {
+		type.Control = Sound_Type_Parse_Control(control.c_str(), type.Control);
 	}
 
 	// A count given outright wins; otherwise the flag alone means one sound.
-	if (ini.Is_Present(section, "Attack")) {
-		type.AttackCount = Clamp(ini.Get_Int(section, "Attack", 0), 0, AUDIO_MAX_SOUNDS);
-	} else if (ini.Is_Present(section, "Control") || defaults) {
+	int attack = ini.Get_Int(section, "Attack", -1);
+	if (attack >= 0) {
+		type.AttackCount = Clamp(attack, 0, AUDIO_MAX_SOUNDS);
+	} else if (!control.empty() || defaults) {
 		type.AttackCount = (type.Control & SOUND_CONTROL_ATTACK) ? 1 : 0;
 	}
-	if (ini.Is_Present(section, "Decay")) {
-		type.DecayCount = Clamp(ini.Get_Int(section, "Decay", 0), 0, AUDIO_MAX_SOUNDS);
-	} else if (ini.Is_Present(section, "Control") || defaults) {
+	int decay = ini.Get_Int(section, "Decay", -1);
+	if (decay >= 0) {
+		type.DecayCount = Clamp(decay, 0, AUDIO_MAX_SOUNDS);
+	} else if (!control.empty() || defaults) {
 		type.DecayCount = (type.Control & SOUND_CONTROL_DECAY) ? 1 : 0;
 	}
 }
