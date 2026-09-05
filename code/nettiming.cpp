@@ -19,7 +19,6 @@ namespace NetTiming
 {
 	namespace
 	{
-		/// <summary>Divides positive integers without losing a remainder.</summary>
 		constexpr std::uint64_t Divide_Round_Up(std::uint64_t numerator, std::uint64_t denominator)
 		{
 			return((numerator + denominator - 1) / denominator);
@@ -32,7 +31,6 @@ namespace NetTiming
 		}
 
 
-		/// <summary>Selects timing for the current report census.</summary>
 		TimingSettings Desired_Settings(TimingCensus const & census, unsigned int target_fps, bool require_headroom)
 		{
 			if (census.RequiresConservativeTiming) {
@@ -186,7 +184,6 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Maps a policy rung to its balanced timing settings.</summary>
 	TimingSettings Settings_For_Rung(unsigned int rung)
 	{
 		rung = std::clamp(rung, MINIMUM_TIMING_RUNG, MAXIMUM_TIMING_RUNG);
@@ -194,7 +191,6 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Maps balanced timing settings to player-facing connection quality.</summary>
 	ConnectionQuality Connection_Quality_For_Settings(TimingSettings settings)
 	{
 		if (!Timing_Settings_Are_Valid(settings) || settings.MaxAhead > Settings_For_Rung(settings.FrameSendRate).MaxAhead) {
@@ -299,14 +295,13 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Clears the active-player report census.</summary>
 	void TimingReportCensus::Reset(void)
 	{
 		Reports = {};
 	}
 
 
-	/// <summary>Adds or removes a player from the census.</summary>
+	/// <summary>Adds or removes a player, discarding any report the slot held.</summary>
 	bool TimingReportCensus::Set_Player_Active(unsigned int player, bool active, std::uint32_t frame)
 	{
 		if (player >= Reports.size()) {
@@ -323,7 +318,6 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Checks whether a player belongs to the timing census.</summary>
 	bool TimingReportCensus::Is_Player_Active(unsigned int player) const
 	{
 		return(player < Reports.size() && Reports[player].Active);
@@ -401,7 +395,7 @@ namespace NetTiming
 	}
 
 
-	/// <summary>Restores the balanced policy's initial state.</summary>
+	/// <summary>Restores the initial rung and anchors the evaluation cadence to a frame.</summary>
 	void BalancedTimingPolicy::Reset(std::uint32_t frame)
 	{
 		CurrentRung = INITIAL_TIMING_RUNG;

@@ -115,7 +115,6 @@ void Game_Options_Dialog(void)
 }
 
 
-/// <summary>Returns the localized label for a synchronized connection-quality tier.</summary>
 int Network_Quality_Text_ID(NetTiming::ConnectionQuality quality)
 {
 	switch (quality) {
@@ -321,6 +320,7 @@ void Game_Options_On_INITDIALOG(HWND window)
 		if (handle) {
 			unsigned int const displayed_rung = settings.FrameSendRate >= NetTiming::MINIMUM_TIMING_RUNG
 				&& settings.FrameSendRate <= NetTiming::MAXIMUM_TIMING_RUNG ? settings.FrameSendRate : NetTiming::MAXIMUM_TIMING_RUNG;
+			// The stock slider runs worst to best from left to right, so rung 1 sits at its right end.
 			int const mirrored_rung = NetTiming::MINIMUM_TIMING_RUNG + NetTiming::MAXIMUM_TIMING_RUNG - displayed_rung;
 			SetSliderRangeAndPos(handle, NetTiming::MINIMUM_TIMING_RUNG, NetTiming::MAXIMUM_TIMING_RUNG, mirrored_rung);
 			EnableWindow(handle, FALSE);

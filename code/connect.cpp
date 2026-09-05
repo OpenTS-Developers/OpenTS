@@ -996,8 +996,7 @@ unsigned int ConnectionClass::Time (void)
 }	/* end of Time */
 
 
-/// <summary>Reports this link's last measured round trip.</summary>
-/// <returns>Returns the smoothed round trip, or nothing until a clean acknowledgement has been measured.</returns>
+/// <summary>Returns this link's smoothed round trip, or nothing until a clean acknowledgement measures it.</summary>
 std::optional<NetTiming::Milliseconds> ConnectionClass::Smoothed_Round_Trip_MS(void) const
 {
 	if (!RoundTripEstimator.Has_Sample() || RoundTripEstimator.Is_Provisional()) {

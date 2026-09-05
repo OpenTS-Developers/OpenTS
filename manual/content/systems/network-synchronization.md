@@ -5,69 +5,74 @@ category: multiplayer-networking
 keys: []
 ---
 
-Network games exchange commands tagged with the simulation frame on which every
-machine executes them. Look-ahead gives those commands time to arrive, while the
-send period controls how often compressed packets are emitted. Packet validation
-is covered by [Network packet validation](/systems/network-packet-validation/);
-per-link RTT and retry behavior belongs to
-[Network transport timing](/systems/network-transport-timing/).
+A network game tags every command with the simulation frame on which each
+machine executes it. Look-ahead gives a command time to arrive, and the send
+period sets how many frames go into one packet.
+[Network packet validation](/systems/network-packet-validation/) owns what a
+packet must satisfy;
+[Network transport timing](/systems/network-transport-timing/) owns each link's
+round trip and retries.
 
 ## Adaptive policy
 
-Compressed matches begin at `2/6`: a two-frame send period and six-frame
-look-ahead. Each player reports process time, its longest wait for other
-players, and optional worst-local RTT after 32 and 64 frames, then every
-128 frames. A player omits the RTT while any of its
-links has no [clean measurement](/systems/network-transport-timing/); a link
-keeps reporting its last measurement while it retransmits. The deterministic
-master evaluates at 64 and 128 frames, then every 256 frames.
+A compressed game, which packs a run of frames into one packet, begins at
+`2/6`: a two-frame send period and six frames of look-ahead. Each player
+reports its process time and its longest wait for the other players after 32
+and 64 frames, then every 128 frames, and adds its worst local round trip once
+it has one. A player leaves the round trip out while any of its links lacks a
+[clean measurement](/systems/network-transport-timing/), and a link that is
+retransmitting keeps reporting its last measurement. The master, the seat every
+machine names the same way, evaluates at 64 and 128 frames, then every 256
+frames.
 
-A report is one atomic process/RTT record and expires after 512 frames. A
-player whose RTT never appears within that time selects the conservative
-`10/250` target. An established player whose report expires or omits the RTT
-holds the current timing, though fresh reports from other players can still
-worsen it. Stale process data retains the last synchronized frame rate.
-Membership comes from the initial synchronized roster, and accepted removal
-clears that player's report.
+A report carries process time and round trip together and expires after 512
+frames. A player whose round trip never arrives within that time forces the
+widest target, `10/250`. If a player that has been measured lets its report
+expire or leaves the round trip out, the timing holds, though fresh reports
+from other players can still worsen it. While any process report is stale, the
+frame rate keeps its last synchronized value. The census starts from the
+initial synchronized roster, and an executed removal clears that player's
+report.
 
-The first complete census may select its measured target with 20% headroom.
-Incomplete bootstrap falls back to `3/9` after 128 frames. Later worsening is
-immediate. The first improvement needs three evaluations with 20% headroom and
-no wait of 0.1 s or longer within any player's last two report intervals;
-while both hold, each following evaluation steps one more rung. A worsening or
-an evaluation without headroom or with such a wait restores the
-three-evaluation requirement.
+Headroom is the reported round trip raised by a quarter. The first complete
+census selects its measured target with headroom, and a bootstrap still
+incomplete at 128 frames falls back to `3/9`. A later worsening takes effect at
+the evaluation that sees it. The first improvement needs three evaluations that
+each have headroom and find no wait of 0.1 s or longer in any player's last two
+report intervals. It also waits 256 frames after the last change, unless a
+descent is already running. While headroom and the waiting limit both hold,
+each following evaluation steps down one more rung. A worsening, or an
+evaluation without headroom or with such a wait, restores the three-evaluation
+requirement.
 
-Timing decreases activate only after the old horizon drains on a frame aligned
-to both send periods. They switch rate with temporary look-ahead, then remove
-one new send period at each boundary. An event already scheduled for a frame
-that the new send period skips executes on the next send frame, identically on
-every machine. Recordings keep that event in its execution batch with its
-scheduled frame unchanged. Replacement targets rebase this process; local
-connection teardown does not transfer authority. Accepted removal selects the first
-remaining human, which inherits the target and restarts the cooldown.
+A decrease activates only once the old horizon has drained, on a frame aligned
+to both send periods. At that frame the send period changes, the look-ahead
+takes a temporary value, and each following boundary removes one new send
+period until it reaches the target. An event already scheduled for a frame that
+the new send period skips executes on the next send frame, identically on every
+machine. A recording keeps it in that batch with its scheduled frame unchanged.
+A target chosen later stages again from the timing then in force.
 
-Frame pacing follows the desired frame rate alone. The inherited slowdown that
-stretched every frame by up to 30 ms while a player's newest frame packet
-looked a quarter of the look-ahead old is gone: at the adaptive send periods
-that packet is always at least that old, so the slowdown ran on every frame
-and held the game well under its frame rate on an idle link.
+Losing a connection locally does not move the authority. The removal event
+does, picking the first remaining human house, which inherits the target and
+restarts the cooldown.
+
+Frame pacing follows the desired frame rate alone.
 
 ## Player feedback
 
-The disabled Connection slider shows the effective send-period rung, mirrored
-so that its right end is rung 1; the label beside it names the tier and the
-rung. Rungs 1–2 are Fast, 3–5 Normal, 6–8 Poor, and 9–10 Bad; extended
-look-ahead is also Bad.
-The message list announces target-tier changes, which may precede a safely
-staged improvement. The Speed slider continues to control game speed.
-
-Adaptive timing uses measured RTT directly. The legacy `LATENCYFUDGE` event and
-session field remain for replay compatibility, but the menu no longer emits it
-and the adaptive policy does not consume it.
+The disabled Connection slider shows the send-period rung in force, mirrored so
+that rung 1 sits at its right end, and the label beside it names the tier and
+the rung. Rungs 1 and 2 are Fast, 3 to 5 Normal, 6 to 8 Poor, and 9 and 10 Bad;
+a look-ahead longer than its rung allows also reads as Bad. The message list
+announces a change of target tier, which can arrive before a staged decrease
+takes effect. The Speed slider sets game speed.
 
 ## Compatibility
 
-`NETWORK_REPORT` extends network events and multiplayer recordings. All players
-must use the same OpenTS snapshot, and recordings should be played by the
-snapshot that wrote them. Existing event IDs retain their values.
+`NETWORK_REPORT` is a new network event and appears in multiplayer recordings,
+so every player needs the same OpenTS snapshot and a recording should be played
+by the snapshot that wrote it. Existing event IDs are unchanged. The policy
+reads the measured round trip directly; `LATENCYFUDGE` keeps its event ID and
+its session field for replay compatibility, but nothing emits it any more and
+the policy does not read it.

@@ -631,7 +631,7 @@ class SessionClass
 		int			ProcessTimer;
 		int			ProcessTicks;
 		int			ProcessFrames;
-		// Longest single wait for other players in ticks; reports cover two intervals.
+		// Longest single wait for other players, in ticks. A report covers this interval and the previous one.
 		int			WorstStallTicks;
 		int			PreviousWorstStallTicks;
 

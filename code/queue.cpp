@@ -281,7 +281,7 @@ unsigned short SentCommandCount;								// # cmds I've sent out
 // Frame of the previous Execute_DoList call; a send-period decrease can skip an event's frame.
 static int LastExecutedFrame = -1;
 
-// A frame packet requests an acknowledgement at least this often while a link has no clean round-trip measurement.
+// How often a frame packet asks for an acknowledgement while a link is still unmeasured.
 constexpr int ROUND_TRIP_PROBE_FRAMES = 32;
 static int LastRoundTripProbeFrame = -ROUND_TRIP_PROBE_FRAMES;
 
@@ -855,12 +855,10 @@ static void Queue_AI_Multiplayer(void)
 
 	} 	// end of Frame 0 wait
 
-	// Compressed games report sooner during bootstrap, then use the steady cadence.
 	else if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP && Frame > 0 && NetTiming::Report_Is_Due(network_timing_frame)) {
 		Generate_Network_Report_Event(net);
 	}
 
-	// The deterministic master evaluates bootstrap and steady-state reports.
 	int const timing_master = Session.Master_Player_ID();
 	if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP && PlayerPtr != NULL && PlayerPtr->HeapID == timing_master
 		&& Frame > 0 && NetTiming::Evaluation_Is_Due(network_timing_frame)) {
@@ -1482,7 +1480,6 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 }	// end of Wait_For_Players
 
 
-/// <summary>Maps the validated game-speed setting to its historical frame-rate target.</summary>
 static int Game_Speed_Frame_Rate(void)
 {
 	switch (Options.GameSpeed) {
@@ -1523,7 +1520,7 @@ static void Generate_Real_Timing_Event(void)
 			(unsigned int)census.WorstStallMilliseconds, desired_frame_rate, evaluation.Changed ? "change to" : "keep",
 			evaluation.Settings.FrameSendRate, evaluation.Settings.MaxAhead);
 	}
-	// Comparing against applied state resends timing the session never adopted.
+	// Comparing against the staged target avoids resending a change that has not activated yet.
 	if (!evaluation.Evaluated || (evaluation.Settings == Session.Network_Timing_Target()
 		&& desired_frame_rate == static_cast<unsigned int>(Session.DesiredFrameRate))) {
 		return;

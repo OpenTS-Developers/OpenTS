@@ -1312,7 +1312,7 @@ unsigned int IPXManagerClass::Response_Time(void)
 }	/* end of Response_Time */
 
 
-/// <summary>Returns the worst measured round trip among active private links.</summary>
+/// <summary>Returns the worst smoothed round trip among the private links, or nothing while any link is unmeasured.</summary>
 std::optional<NetTiming::Milliseconds> IPXManagerClass::Worst_Local_Round_Trip_MS(void) const
 {
 	NetTiming::Milliseconds worst = 0;

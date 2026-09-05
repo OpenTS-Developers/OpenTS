@@ -978,7 +978,7 @@ bool Net2Remote_Connect(void)
 
 			PregameSetup();
 
-			// Compressed games bootstrap adaptively; legacy games retain measured timing.
+			// A compressed game starts at the fixed bootstrap rung and measures from there.
 			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
 				NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
 				Session.FrameSendRate = initial.FrameSendRate;
@@ -1017,7 +1017,7 @@ bool Net2Remote_Connect(void)
 
 				PregameSetup();
 
-				// Compressed games bootstrap adaptively; legacy games retain measured timing.
+				// A compressed game starts at the fixed bootstrap rung and measures from there.
 				if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
 					NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
 					Session.FrameSendRate = initial.FrameSendRate;

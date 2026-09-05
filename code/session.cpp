@@ -505,7 +505,6 @@ void SessionClass::Adopt_Master(int house, char const * name)
 }
 
 
-/// <summary>Tests synchronized timing-roster membership.</summary>
 bool SessionClass::Is_Network_Timing_Player_Active(int id) const
 {
 	return(id >= 0 && id < static_cast<int>(NetTiming::MAX_TIMING_PLAYERS) && NetworkTimingReports.Is_Player_Active(id));
@@ -558,7 +557,7 @@ bool SessionClass::Record_Network_Report(int id, unsigned int process_millisecon
 }
 
 
-/// <summary>Removes a departed player from the timing census.</summary>
+/// <summary>Removes a departed player and re-picks the timing authority.</summary>
 void SessionClass::Remove_Network_Timing_Player(int id, unsigned int frame)
 {
 	if (Is_Network_Timing_Player_Active(id)) {
@@ -568,14 +567,12 @@ void SessionClass::Remove_Network_Timing_Player(int id, unsigned int frame)
 }
 
 
-/// <summary>Returns a freshness-aware census of seated players.</summary>
 NetTiming::TimingCensus SessionClass::Network_Timing_Census(unsigned int frame)
 {
 	return(NetworkTimingReports.Inspect(frame));
 }
 
 
-/// <summary>Evaluates the adaptive-timing policy against the current census.</summary>
 NetTiming::TimingEvaluation SessionClass::Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame)
 {
 	return(NetworkTimingPolicy.Evaluate(census, target_fps, frame));
@@ -614,7 +611,7 @@ void SessionClass::Apply_Network_Response_Time(unsigned int max_ahead, unsigned 
 }
 
 
-/// <summary>Applies a timing increase or safely stages a decrease.</summary>
+/// <summary>Applies a timing increase and stages a decrease until the old horizon drains.</summary>
 NetTiming::ScheduleResult SessionClass::Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame)
 {
 	if (desired_frame_rate == 0 || desired_frame_rate > 60 || !NetTiming::Timing_Settings_Are_Valid(settings)) {
