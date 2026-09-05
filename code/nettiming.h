@@ -224,4 +224,5 @@ namespace NetTiming
 	std::optional<unsigned int> Next_Transition_Max_Ahead(TimingSettings current, TimingSettings requested);
 	std::optional<TimingTransitionAdvance> Advance_Timing_Transition(TimingTransitionState & transition, TimingSettings current, std::uint32_t frame);
 	bool Timing_Update_Is_Due(std::uint32_t frame, std::uint32_t activation_frame);
+	bool Event_Is_Due(int event_frame, bool is_executed, int frame);
 }

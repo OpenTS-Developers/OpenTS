@@ -15,6 +15,7 @@
 #include <iostream>
 #include <limits>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -1078,6 +1079,170 @@ namespace
 		std::optional<StagedTimingUpdate> const conservative = Stage_Timing_Update(current, {10, 250}, 369);
 		Expect("a fully conservative replacement applies immediately", conservative && !conservative->Deferred);
 	}
+
+	struct RecordingEvent
+	{
+		enum Kind : unsigned int {COMMAND, TIMING, FRAME_INFO};
+
+		int Frame;
+		Kind Type;
+		unsigned int Value;
+		NetTiming::TimingSettings Settings = {};
+		bool IsExecuted = false;
+
+		bool operator==(RecordingEvent const &) const = default;
+	};
+
+
+	struct RecordedExecution
+	{
+		int Frame;
+		RecordingEvent Event;
+
+		bool operator==(RecordedExecution const &) const = default;
+	};
+
+
+	std::vector<RecordedExecution> Run_Recorded_Transitions(std::stringstream & recording, bool playback, std::vector<RecordingEvent> events)
+	{
+		using namespace NetTiming;
+
+		TimingSettings current{3, 9};
+		std::optional<TimingTransitionState> transition;
+		std::vector<RecordedExecution> trace;
+		int reschedule_after = 0;
+		int reschedule_to = 0;
+		int previous_execution_frame = 93;
+		for (int frame = 96; frame <= 159; frame++) {
+			if (transition) {
+				std::optional<TimingTransitionAdvance> const advance = Advance_Timing_Transition(*transition, current, frame);
+				Expect("recorded transition advances", advance.has_value());
+				if (!advance) {
+					return(trace);
+				}
+				current = advance->Settings;
+				if (advance->Complete) {
+					transition.reset();
+				}
+			}
+			if (frame % current.FrameSendRate != 0) {
+				continue;
+			}
+
+			if (playback) {
+				int count = 0;
+				recording.read(reinterpret_cast<char *>(&count), sizeof(count));
+				Expect("playback reads each execution batch", recording.good() && count >= 0 && count <= 10);
+				if (!recording.good() || count < 0 || count > 10) {
+					return(trace);
+				}
+				for (int index = 0; index < count; index++) {
+					RecordingEvent event{};
+					recording.read(reinterpret_cast<char *>(&event), sizeof(event));
+					Expect("playback reads a complete event", recording.good());
+					event.IsExecuted = false;
+					events.push_back(event);
+				}
+			}
+
+			for (RecordingEvent & event : events) {
+				if (event.Type != RecordingEvent::FRAME_INFO && event.Frame > reschedule_after && event.Frame < reschedule_to) {
+					event.Frame = reschedule_to;
+				}
+			}
+
+			if (!playback) {
+				int count = 0;
+				for (RecordingEvent const & event : events) {
+					count += Event_Is_Due(event.Frame, event.IsExecuted, frame);
+				}
+				recording.write(reinterpret_cast<char const *>(&count), sizeof(count));
+				for (RecordingEvent const & event : events) {
+					if (Event_Is_Due(event.Frame, event.IsExecuted, frame)) {
+						recording.write(reinterpret_cast<char const *>(&event), sizeof(event));
+					}
+				}
+			}
+
+			for (RecordingEvent & event : events) {
+				if (!Event_Is_Due(event.Frame, event.IsExecuted, frame)) {
+					continue;
+				}
+				Expect("recorded command remains eligible after the previous execution", event.Type == RecordingEvent::FRAME_INFO
+					|| event.Frame > previous_execution_frame);
+				trace.push_back({frame, event});
+				if (event.Type == RecordingEvent::TIMING) {
+					std::optional<StagedTimingUpdate> const plan = Stage_Timing_Update(current, event.Settings, event.Frame);
+					Expect("recorded timing event can be scheduled", plan.has_value());
+					if (!plan) {
+						return(trace);
+					}
+					if (plan->Deferred) {
+						transition = TimingTransitionState{*plan};
+						reschedule_after = 0;
+						reschedule_to = 0;
+					} else {
+						transition.reset();
+						current = plan->Settings;
+						reschedule_after = event.Frame;
+						reschedule_to = ((event.Frame + current.MaxAhead + current.FrameSendRate - 1)
+							/ current.FrameSendRate) * current.FrameSendRate;
+					}
+				}
+				event.IsExecuted = true;
+			}
+			previous_execution_frame = frame;
+		}
+		return(trace);
+	}
+
+
+	void Test_Recorded_Transitions(void)
+	{
+		std::stringstream recording(std::ios::in | std::ios::out | std::ios::binary);
+		std::vector<RecordingEvent> events{
+			{99, RecordingEvent::TIMING, 1, {2, 6}},
+			{111, RecordingEvent::COMMAND, 2},
+			{116, RecordingEvent::TIMING, 3, {5, 15}},
+			{118, RecordingEvent::COMMAND, 4},
+			{135, RecordingEvent::TIMING, 5, {3, 9}},
+			{155, RecordingEvent::COMMAND, 6},
+			{111, RecordingEvent::FRAME_INFO, 7},
+			{124, RecordingEvent::FRAME_INFO, 8},
+			{180, RecordingEvent::COMMAND, 9},
+			{90, RecordingEvent::COMMAND, 10, {}, true},
+		};
+		std::vector<RecordedExecution> const live = Run_Recorded_Transitions(recording, false, events);
+		recording.seekg(0);
+		int first_batch_count = -1;
+		recording.read(reinterpret_cast<char *>(&first_batch_count), sizeof(first_batch_count));
+		Expect_Equal("recording keeps empty execution batches", first_batch_count, 0);
+		recording.seekg(0);
+		std::vector<RecordedExecution> const replay = Run_Recorded_Transitions(recording, true, {});
+		Expect("playback preserves transition and command execution", live == replay);
+		Expect("playback consumes exactly the recorded batches", recording.peek() == std::char_traits<char>::eof());
+		Expect_Equal("future and already executed events are excluded", live.size(), std::size_t{8});
+		bool first_skipped_command = false;
+		bool second_skipped_command = false;
+		bool retagged_command = false;
+		bool unchanged_frame_info = false;
+		for (RecordedExecution const & execution : replay) {
+			if (execution.Event.Value == 2) {
+				first_skipped_command = execution.Frame == 112 && execution.Event.Frame == 111;
+			} else if (execution.Event.Value == 6) {
+				second_skipped_command = execution.Frame == 156 && execution.Event.Frame == 155;
+			} else if (execution.Event.Value == 4) {
+				retagged_command = execution.Frame == 135 && execution.Event.Frame == 135;
+			} else if (execution.Event.Value == 8) {
+				unchanged_frame_info = execution.Frame == 125 && execution.Event.Frame == 124;
+			}
+		}
+		Expect("3/9 to 2/6 recording preserves the skipped scheduled frame", first_skipped_command);
+		Expect("5/15 to 3/9 recording preserves the skipped scheduled frame", second_skipped_command);
+		Expect("worsening retags a command before recording its execution batch", retagged_command);
+		Expect("worsening does not retag frame information", unchanged_frame_info);
+	}
+
 }
 
 
@@ -1104,6 +1269,7 @@ int main(void)
 	Test_Master_Handoff_State();
 	Test_Staged_Decrease();
 	Test_Transition_Sequences();
+	Test_Recorded_Transitions();
 
 	if (Failures != 0) {
 		std::cerr << Failures << " network timing checks failed\n";

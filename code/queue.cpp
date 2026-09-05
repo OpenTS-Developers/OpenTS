@@ -560,13 +560,6 @@ static void Queue_AI_Normal(void)
 	}
 
 	//------------------------------------------------------------------------
-	// Save the DoList to disk, if we're in "Record" mode
-	//------------------------------------------------------------------------
-	if (Session.Record) {
-		Queue_Record();
-	}
-
-	//------------------------------------------------------------------------
 	// Execute the DoList; if an error occurs, bail out.
 	//------------------------------------------------------------------------
 	if (!Execute_DoList(1, PlayerPtr->Class->House, NULL, NULL, NULL)) {
@@ -934,13 +927,6 @@ static void Queue_AI_Multiplayer(void)
 		Session.Suspended--;
 		Stop_Game(!is_error);
 		return;
-	}
-
-	//------------------------------------------------------------------------
-	// Save the DoList to disk, if we're in "Record" mode
-	//------------------------------------------------------------------------
-	if (Session.Record) {
-		Queue_Record();
 	}
 
 	//------------------------------------------------------------------------
@@ -3409,6 +3395,10 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 	}
 #endif
 
+	if (Session.Record && !Session.Play) {
+		Queue_Record();
+	}
+
 	//------------------------------------------------------------------------
 	// Compare the checksums the other systems reported before executing any of
 	// this frame's events, so that a report describes the same frame boundary on
@@ -3545,8 +3535,7 @@ static int Execute_DoList(int max_houses, HousesType base_house,
 			// If this event was from the currently-executing player ID, and it's
 			// time to execute it, execute it.
 			//..................................................................
-			if (DoList[j].ID == hptr->HeapID && Frame >= DoList[j].Frame &&
-				!DoList[j].IsExecuted) {
+			if (DoList[j].ID == hptr->HeapID && NetTiming::Event_Is_Due(DoList[j].Frame, DoList[j].IsExecuted, Frame)) {
 
 				//...............................................................
 				// Error if it's too late to execute this packet!
@@ -3748,7 +3737,7 @@ static void Queue_Record(void)
 	//------------------------------------------------------------------------
 	j = 0;
 	for (i = 0; i < (int)DoList.size(); i++) {
-		if (Frame == DoList[i].Frame && !DoList[i].IsExecuted) {
+		if (NetTiming::Event_Is_Due(DoList[i].Frame, DoList[i].IsExecuted, Frame)) {
 			j++;
 		}
 	}
@@ -3758,7 +3747,7 @@ static void Queue_Record(void)
 	//------------------------------------------------------------------------
 	Session.RecordFile.Write (&j,sizeof(j));
 	for (i = 0; i < (int)DoList.size(); i++) {
-		if (Frame == DoList[i].Frame && !DoList[i].IsExecuted) {
+		if (NetTiming::Event_Is_Due(DoList[i].Frame, DoList[i].IsExecuted, Frame)) {
 			Session.RecordFile.Write (&DoList[i],sizeof (EventClass));
 			j--;
 		}
