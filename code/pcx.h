@@ -67,5 +67,6 @@ struct PCX_HEADER
 };
 #pragma pack(pop)
 
+bool Read_PCX_Size(FileClass & file, int & width, int & height);
 Surface * Read_PCX_File(FileClass & file_handle, PaletteClass * palette=NULL, void * buff=NULL, int size=0);
 bool Write_PCX_File(FileClass & file, Surface & pic, PaletteClass * palette);

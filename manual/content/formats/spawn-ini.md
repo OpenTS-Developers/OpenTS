@@ -182,6 +182,20 @@ machines playing one game need not write them alike.
 ending movie `PlayMoviesInMultiplayer` asked for still plays. The map's own
 [`SkipScore`](/keys/skipscore/) is a campaign setting and is not touched by this one.
 
+`CustomLoadScreen` names the picture shown while the scenario loads, in place of the one
+the game would have picked for the player's side and screen size. The name is written
+whole, extension and all, and is looked for as any other game file is: beside the game, in
+the folders a deployment sorts its files into, and inside the archives. A forward slash
+separates folders as a backslash does. The picture is a PCX, in 256 colours or in 24-bit
+colour, and is centred on the screen. A name no file answers to leaves the game's own
+picture in place and says so in the log.
+
+`CustomLoadScreenPos` places the loading bars, as `x,y` within the picture rather than on
+the screen, so one position suits every screen size the picture is shown at. Both numbers
+must be above zero, and a value the reader cannot make sense of names no position at all,
+which leaves the bars where the game puts its own. A picture of the size the game's own
+would have been needs no position.
+
 ## A game against other machines
 
 Each machine writes its own file, with itself in `[Settings]` and everybody else in the
@@ -254,4 +268,4 @@ settles the same question for themselves.
 These keys are read but change nothing yet: `Tournament`, `GameID`,
 `WriteStatistics`, `BuildOffAlly`,
 `AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`,
-`QuickMatch`, `CustomLoadScreen`, `CustomLoadScreenPos`, and `DifficultyName`.
+`QuickMatch`, and `DifficultyName`.

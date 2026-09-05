@@ -84,6 +84,7 @@
 #include "building.h"
 #include "builtype.h"
 #include "campaign.h"
+#include "ccfile.h"
 #include "ccrand.h"
 #include "cctooltip.h"
 #include "cell.h"
@@ -125,6 +126,7 @@
 #include "overlay.h"
 #include "overtype.h"
 #include "partsys.h"
+#include "pcx.h"
 #include "preview.h"
 #include "progress.h"
 #include "psystype.h"
@@ -548,6 +550,34 @@ bool Wait_For_Players_To_Load(void)
 }
 
 
+/// <summary>
+/// Puts the picture a launch file asked for in place of the game's own loading backdrop, and
+/// its bar position in place of the game's. A picture that is missing leaves both alone. The
+/// position is taken to be within the picture, so it is centered along with it.
+/// </summary>
+static void Apply_Custom_Load_Screen(char const * & background, Point2D & bar)
+{
+	if (Session.LoadScreen[0] == '\0') {
+		return;
+	}
+
+	CCFileClass file(Session.LoadScreen);
+	if (!file.Is_Available()) {
+		DebugString("The load screen %s is missing.\n", Session.LoadScreen);
+		return;
+	}
+
+	background = Session.LoadScreen;
+
+	int width = 0;
+	int height = 0;
+	if (Session.LoadScreenX > 0 && Session.LoadScreenY > 0 && Read_PCX_Size(file, width, height)) {
+		bar = Point2D(Session.LoadScreenX, Session.LoadScreenY)
+			+ Point2D((VisibleRect.Width - width) / 2, (VisibleRect.Height - height) / 2);
+	}
+}
+
+
 /***********************************************************************************************
  * Read_Scenario -- Reads a scenario from disk.                                                *
  *                                                                                             *
@@ -606,6 +636,7 @@ bool Read_Scenario(char const * fname)
 
 		Point2D prog_bar_pos;
 		char const * background = Pick_Load_Background_Name(prog_bar_pos);
+		Apply_Custom_Load_Screen(background, prog_bar_pos);
 		Progress.Initialize(100, players);
 
 		char * prog_msg = NULL;

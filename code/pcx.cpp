@@ -38,6 +38,36 @@
 #include <algorithm>
 #include <cstdlib>
 
+/// <summary>
+/// Reads how large a picture is without decoding it.
+/// </summary>
+/// <returns>bool; Was a picture found to measure?</returns>
+bool Read_PCX_Size(FileClass & file, int & width, int & height)
+{
+	PCX_HEADER header;
+
+	if (!file.Is_Available()) {
+		return(false);
+	}
+
+	if (!file.Open(FileClass::READ)) {
+		return(false);
+	}
+
+	int read = file.Read(&header, sizeof(header));
+	file.Close();
+
+	if (read != sizeof(header) || header.id != 10) {
+		return(false);
+	}
+
+	width = header.width - header.x + 1;
+	height = header.height - header.y + 1;
+
+	return(width > 0 && height > 0);
+}
+
+
 /***************************************************************************
  * READ_PCX_FILE -- read a pcx file into a Graphic Buffer                  *
  *                                                                         *
