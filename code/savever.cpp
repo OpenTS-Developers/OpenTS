@@ -11,6 +11,8 @@
 
 #include "savever.h"
 
+#include "utf8.h"
+
 #include "dbgprint.h"
 #include "session.h"
 
@@ -491,8 +493,6 @@ HRESULT SaveVersionInfo::Save(IStorage *storage)
 /// code from the storage layer.</returns>
 HRESULT SaveVersionInfo::Load(IStorage *storage)
 {
-	char buf[256];
-
 	if (storage == NULL) {
 		return(E_POINTER);
 	}
@@ -501,15 +501,13 @@ HRESULT SaveVersionInfo::Load(IStorage *storage)
 	HRESULT res;
 
 	if (SUCCEEDED(storage->QueryInterface(IID_IPropertySetStorage, (void **)&storageset))
-			&& SUCCEEDED(Load_String_Set(storageset, PIDSI_SCEN_DESCRIP, buf, sizeof(buf)))) {
+			&& SUCCEEDED(Load_String_Set(storageset, PIDSI_SCEN_DESCRIP, ScenarioDescription, sizeof(ScenarioDescription)))) {
 
-		strcpy(ScenarioDescription, buf);
 
-		res = Load_String_Set(storageset, PIDSI_PLAYER_HOUSE, buf, sizeof(buf));
+		res = Load_String_Set(storageset, PIDSI_PLAYER_HOUSE, PlayerHouse, sizeof(PlayerHouse));
 		if (FAILED(res)) {
 			return(res);
 		}
-		strcpy(PlayerHouse, buf);
 
 		res = Load_Int_Set(storageset, PIDSI_G_VERSION, &Version);
 		if (FAILED(res)) {
@@ -536,17 +534,15 @@ HRESULT SaveVersionInfo::Load(IStorage *storage)
 			return(res);
 		}
 
-		res = Load_String_Set(storageset, PIDSI_EXEC_NAME, buf, sizeof(buf));
+		res = Load_String_Set(storageset, PIDSI_EXEC_NAME, ExecutableName, sizeof(ExecutableName));
 		if (FAILED(res)) {
 			return(res);
 		}
-		strcpy(ExecutableName, buf);
 
-		res = Load_String_Set(storageset, PIDSI_PLAYER_NAME1, buf, sizeof(buf));
+		res = Load_String_Set(storageset, PIDSI_PLAYER_NAME1, PlayerName, sizeof(PlayerName));
 		if (FAILED(res)) {
 			return(res);
 		}
-		strcpy(PlayerName, buf);
 
 		res = Load_Int_Set(storageset, PIDSI_SCENARIO_NUM, &ScenarioNumber);
 		if (FAILED(res)) {
@@ -565,19 +561,17 @@ HRESULT SaveVersionInfo::Load(IStorage *storage)
 
 	} else {
 
-		res = Load_String(storage, PIDSI_SCEN_DESCRIP, buf, sizeof(buf));
+		res = Load_String(storage, PIDSI_SCEN_DESCRIP, ScenarioDescription, sizeof(ScenarioDescription));
 		if (FAILED(res)) {
 			return(res);
 		}
 
-		strcpy(ScenarioDescription, buf);
 
-		res = Load_String(storage, PIDSI_PLAYER_HOUSE, buf, sizeof(buf));
+		res = Load_String(storage, PIDSI_PLAYER_HOUSE, PlayerHouse, sizeof(PlayerHouse));
 		if (FAILED(res)) {
 			return(res);
 		}
 
-		strcpy(PlayerHouse, buf);
 
 		res = Load_Int(storage, PIDSI_G_VERSION, &Version);
 		if (FAILED(res)) {
@@ -604,17 +598,15 @@ HRESULT SaveVersionInfo::Load(IStorage *storage)
 			return(res);
 		}
 
-		res = Load_String(storage, PIDSI_EXEC_NAME, buf, sizeof(buf));
+		res = Load_String(storage, PIDSI_EXEC_NAME, ExecutableName, sizeof(ExecutableName));
 		if (FAILED(res)) {
 			return(res);
 		}
-		strcpy(ExecutableName, buf);
 
-		res = Load_String(storage, PIDSI_PLAYER_NAME1, buf, sizeof(buf));
+		res = Load_String(storage, PIDSI_PLAYER_NAME1, PlayerName, sizeof(PlayerName));
 		if (FAILED(res)) {
 			return(res);
 		}
-		strcpy(PlayerName, buf);
 
 		res = Load_Int(storage, PIDSI_SCENARIO_NUM, &ScenarioNumber);
 		if (FAILED(res)) {
@@ -645,7 +637,7 @@ HRESULT SaveVersionInfo::Load(IStorage *storage)
 /// <param name="id">The property identifier naming the stream to open.</param>
 /// <returns>Returns with the result of the read. A failure means the stream is absent or
 /// ended before the text was terminated.</returns>
-/// <param name="size">The capacity of string, which is left empty when the text does not fit.</param>
+/// <param name="size">The capacity of string; longer text is cut on a character boundary.</param>
 HRESULT SaveVersionInfo::Load_String(IStorage *storage, int id, char *string, int size)
 {
 	*string = '\0';
@@ -679,9 +671,11 @@ HRESULT SaveVersionInfo::Load_String(IStorage *storage, int id, char *string, in
 		return(E_FAIL);
 	}
 
-	if (WideCharToMultiByte(CP_ACP, 0, buf, -1, string, size, 0, 0) == 0) {
-		*string = '\0';
+	char text[512];
+	if (WideCharToMultiByte(CP_ACP, 0, buf, -1, text, sizeof(text), 0, 0) == 0) {
+		text[0] = '\0';
 	}
+	UTF8::Copy(string, size, text);
 
 	return(S_OK);
 }
@@ -695,7 +689,7 @@ HRESULT SaveVersionInfo::Load_String(IStorage *storage, int id, char *string, in
 /// <param name="id">The summary information property identifier to read.</param>
 /// <returns>Returns with the result of the read. A failure means the property set could not
 /// be opened.</returns>
-/// <param name="size">The capacity of string, which is left empty when the text does not fit.</param>
+/// <param name="size">The capacity of string; longer text is cut on a character boundary.</param>
 HRESULT SaveVersionInfo::Load_String_Set(IPropertySetStorage *storageset, int id, char *string, int size)
 {
 	*string = '\0';
@@ -719,9 +713,11 @@ HRESULT SaveVersionInfo::Load_String_Set(IPropertySetStorage *storageset, int id
 	}
 
 	if (propvar.vt == VT_LPWSTR) {
-		if (WideCharToMultiByte(CP_ACP, 0, propvar.pwszVal, -1, string, size, 0, 0) == 0) {
-			*string = '\0';
+		char text[1024];
+		if (WideCharToMultiByte(CP_ACP, 0, propvar.pwszVal, -1, text, sizeof(text), 0, 0) == 0) {
+			text[0] = '\0';
 		}
+		UTF8::Copy(string, size, text);
 	}
 
 	return(res);
@@ -804,9 +800,11 @@ HRESULT SaveVersionInfo::Load_Int_Set(IPropertySetStorage *storageset, int id, i
 /// committed.</returns>
 HRESULT SaveVersionInfo::Save_String(IStorage *storage, int id, char *string)
 {
-	WCHAR buf[128];
+	WCHAR buf[260];
 
-	MultiByteToWideChar(CP_ACP, 0, string, -1, buf, ARRAY_SIZE(buf));
+	if (MultiByteToWideChar(CP_ACP, 0, string, -1, buf, ARRAY_SIZE(buf)) == 0) {
+		buf[0] = L'\0';
+	}
 
 	IStreamPtr stm(NULL);
 
@@ -838,9 +836,11 @@ HRESULT SaveVersionInfo::Save_String(IStorage *storage, int id, char *string)
 /// neither be opened nor created.</returns>
 HRESULT SaveVersionInfo::Save_String_Set(IPropertySetStorage *storageset, int id, const char *string)
 {
-	WCHAR buf[128];
+	WCHAR buf[260];
 
-	MultiByteToWideChar(CP_ACP, 0, string, -1, buf, ARRAY_SIZE(buf));
+	if (MultiByteToWideChar(CP_ACP, 0, string, -1, buf, ARRAY_SIZE(buf)) == 0) {
+		buf[0] = L'\0';
+	}
 
 	HRESULT res;
 	IPropertyStoragePtr storage;

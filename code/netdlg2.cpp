@@ -371,11 +371,9 @@ void Net2DisplayGameList(void)
 /// <param name="out">Buffer to build the encoded option string within.</param>
 /// <remarks>Be sure the destination buffer is big enough for the options and an entry for
 /// every player in the game.</remarks>
-void Net2EncodeGameopt(char *out)
+void Net2EncodeGameopt(char *out, int size)
 {
-	static char useroptions[512];
-
-	sprintf(out,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+	int length = snprintf(out, size, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
 		"%s,%d,%d,%s,%s:",
 		Session.Options.UnitCount,
 		BuildLevel,
@@ -400,15 +398,21 @@ void Net2EncodeGameopt(char *out)
 		Session.ScenarioFileLength,
 		Session.ScenarioFileName,
 		Session.ScenarioDigest);
-
-	memset(useroptions, 0, sizeof(useroptions));
-
-	for (int i = 0; i < Session.Players.Count(); i++) {
-		sprintf(useroptions + strlen(useroptions), "%s,%d,%d,", Session.Players[i]->Name, Session.Players[i]->Player.House,
-				Session.Players[i]->Player.Color);
+	if (length < 0 || length >= size) {
+		DebugString("Game options do not fit the packet\n");
+		return;
 	}
 
-	strcat(out, useroptions);
+	for (int i = 0; i < Session.Players.Count(); i++) {
+		int written = snprintf(out + length, size - length, "%s,%d,%d,", Session.Players[i]->Name, Session.Players[i]->Player.House,
+				Session.Players[i]->Player.Color);
+		if (written < 0 || written >= size - length) {
+			DebugString("Game options do not fit the packet for player %d\n", i);
+			out[length] = '\0';
+			return;
+		}
+		length += written;
+	}
 }
 
 
@@ -2651,7 +2655,7 @@ static void Get_Join_Responses(void)
 				if (!strcmp(Session.Players[i]->Name,Session.GPacket.Name)) {
 					if (i != -1 && !Net2GameStarted) {
 						Session.HostAddress = Session.GAddress;
-						DecodePubGameopt(Session.GPacket.Message.Buf, Session.GPacket.Name);
+						DecodePubGameopt(Session.GPacket.Options.Buf, Session.GPacket.Name);
 					}
 					break;
 				}
@@ -2660,7 +2664,7 @@ static void Get_Join_Responses(void)
 		}
 
 		if (Session.GPacket.Command==NET_PRIV_GAMEOPT) {
-			char *opts = strdup(Session.GPacket.Message.Buf + 1);
+			char *opts = strdup(Session.GPacket.Options.Buf + 1);
 			for (i = 1; i < Session.Players.Count(); i++) {
 				if (!strcmp(Session.Players[i]->Name,Session.GPacket.Name)) {
 

@@ -54,10 +54,10 @@
 #define WINSOCK_MINOR_VER		1   // Version of Winsock
 #define WINSOCK_MAJOR_VER		1   //    that we require
 
-#define WS_RECEIVE_BUFFER_LEN	1024		// Length of our temporary receive buffer.
+#define WS_RECEIVE_BUFFER_LEN	2048		// Length of our temporary receive buffer.
 #define SOCKET_BUFFER_SIZE		1024*128	// Length of winsocks internal buffer.
 
-#define WS_INTERNET_BUFFER_LEN	768
+#define WS_INTERNET_BUFFER_LEN	1536
 
 #define WS_MAX_STATIC_BUFFERS	128
 

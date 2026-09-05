@@ -301,16 +301,22 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 	TextLabelClass * txtlabel = NULL;
 	int i;
 	int found;
-	char message[MAX_MESSAGE_LENGTH + 50];
+	char message[MAX_MESSAGE_LENGTH + MAX_MESSAGE_PREFIX];
 	//char temp[MAX_MESSAGE_LENGTH + 30];
 	int print_this_pass;
 
-	if (strlen(txt) + 1 > sizeof(message)) {
+	// The text has to fit beside the name it is shown with.
+	int room = (int)sizeof(message) - (name != NULL ? (int)strlen(name) + 2 : 0);
+	if (room < 2) {
+		return(NULL);
+	}
+
+	if ((int)strlen(txt) + 1 > room) {
 
 		int _len = 0;
 		int _width = 0;
 
-		while (_len < int(sizeof(message)-2)) {
+		while (_len < room - 2) {
 			if (_width > Width) {
 				break;
 			}
@@ -319,7 +325,7 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 			}
 			int length;
 			char32_t code = UTF8::Peek(txt + _len, length);
-			if (_len + length > int(sizeof(message)-2)) {
+			if (_len + length > room - 2) {
 				break;
 			}
 			_width += font->Char_Pixel_Width(code);
@@ -367,9 +373,9 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 	// Combine the name & message text, if there's a name given
 	//------------------------------------------------------------------------
 	if (name) {
-		sprintf(message, "%s: %s", name, txt);
+		snprintf(message, sizeof(message), "%s: %s", name, txt);
 	} else {
-		strcpy(message, txt);
+		snprintf(message, sizeof(message), "%s", txt);
 	}
 
 	char save = 0;
@@ -459,7 +465,7 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 	for (i = 0; i < MAX_NUM_MESSAGES; i++) {
 		if (BufferAvail[i]) {
 			BufferAvail[i] = 0;
-			memset (MessageBuffers[i],0,MAX_MESSAGE_LENGTH + 50);
+			memset (MessageBuffers[i],0,sizeof(MessageBuffers[i]));
 			strcpy (MessageBuffers[i],message);
 			txtlabel->Text = MessageBuffers[i];
 			found = 1;
@@ -852,9 +858,9 @@ TextLabelClass * MessageListClass::Add_Edit(int color,
 	//	Initialize the buffer positions; create a new text label object
 	//------------------------------------------------------------------------
 	memset (EditBuf, 0, sizeof(EditBuf));
-	strcpy (EditBuf, to);
+	UTF8::Copy(EditBuf, sizeof(EditBuf), to);
 	OverflowBuf[0] = 0;
-	EditCurPos = EditInitPos = strlen(to);
+	EditCurPos = EditInitPos = strlen(EditBuf);
 	EditLabel = new TextLabelClass (EditBuf, EditX, EditY,
 		color, style);
 

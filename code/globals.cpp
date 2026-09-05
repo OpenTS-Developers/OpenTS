@@ -436,9 +436,9 @@ IPXManagerClass Ipx(
 	32,                                         // # entries in Private Queues
 	IPXGlobalConnClass::COMMAND_AND_CONQUER2);  // Product ID #
 
-// A global packet travels whole in one datagram, which the socket layer reads into a buffer
-// of this length.
-static_assert(std::max(sizeof(GlobalPacketType), sizeof(RemoteFileTransferType) - 32) + sizeof(GlobalHeaderType) <= WS_RECEIVE_BUFFER_LEN, "the global channel packet outgrew the socket receive buffer");
+// A global packet travels whole in one datagram, and the socket layer refuses one longer
+// than its queue entry.
+static_assert(std::max(sizeof(GlobalPacketType), sizeof(RemoteFileTransferType) - 32) + sizeof(GlobalHeaderType) <= WS_INTERNET_BUFFER_LEN, "the global channel packet outgrew the socket queue entry");
 
 
 bool VisceroidsAsSnoBees = false;
