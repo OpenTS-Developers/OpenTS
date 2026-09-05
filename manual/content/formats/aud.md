@@ -21,26 +21,24 @@ Sound effects and music both play from `.AUD` files, but the two paths do not fi
 
 ## How a sample is found
 
-A sound effect takes hold of its sample when the sound is registered and keeps that one pointer for the rest of the session. The pointer comes from an archive that was cached into memory, so the sample has to be a member of one: [MIX archives](/formats/mix/) covers what caching does, and a loose `.AUD` in the game directory is not reached by that path at all. Startup caches `CONQUER.MIX` and the shipped sound archives, and among the numbered expansion archives it caches the `ECACHE` set but not the `EXPAND` set. A sound whose sample is not found is still registered under its ID and simply never plays.
+A sound effect names its samples in [SOUND.INI](/formats/sound-ini/) and looks each one up the first time it plays, through the ordinary file layer. A loose file in the game directory and a member of any mounted archive both serve, and the loose file wins; [MIX archives](/formats/mix/) covers which archives are mounted. Before `.AUD` the engine tries `.WAV`, `.OGG`, `.FLAC` and `.MP3` under the same name. A decoded sample is kept in memory while the sound plays and afterwards for as long as the memory is not needed for another, so a sound plays from memory from its second use on. A sound whose sample is not found is still registered under its ID and never plays.
 
-Music is streamed instead. A music track's `.AUD` is opened by name through the ordinary file layer each time it plays and read a block at a time, so a loose file works and nothing is held in memory between plays. A track whose file cannot be opened is left out of shuffled and sequential play, and produces nothing when it is asked for directly.
+Music is streamed. A music track's `.AUD` is opened by name through the same file layer each time it plays and read a block at a time, so nothing of it is held in memory between plays. A track whose file cannot be opened is left out of shuffled and sequential play, and produces nothing when it is asked for directly.
 
 ## When either one is silent
 
 A sound effect is played only while all of these hold, tested in this order:
 
 - the volume asked for is above zero, which for an ordinary sound effect means the player's sound effect setting as well;
-- the sound took hold of a sample when it was registered;
 - the game was not started quiet;
-- an audio device is available.
+- an audio device is available;
+- at least one of its samples is found.
 
 Music is played only while all of these hold, tested in this order:
 
 - an audio device is available;
 - the game was not started quiet;
 - the music volume is above zero.
-
-The one term the two lists do not share is the sample test, and a silent session reaches that as well as the quiet one. The shipped sound archives are cached only when a device is present and the game was not started quiet, so a sound whose sample lives in one of those holds nothing at all in a silent session. A sample in `CONQUER.MIX` or in an `ECACHE` archive is still taken hold of, since those are cached whatever the audio state, and that sound is silent on the quiet test rather than for want of a sample.
 
 ## What the reader takes from the file
 

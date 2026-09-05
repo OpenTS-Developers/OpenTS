@@ -525,6 +525,7 @@ void Call_Back(void)
 	*/
 	if (Audio_Available() && GameInFocus == true) {
 		Audio.Sound_Callback();
+		Sound_Effect_AI();
 		Theme.AI();
 		Speak_AI();
 	}

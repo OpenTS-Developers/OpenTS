@@ -2936,7 +2936,7 @@ static void Get_Join_Responses(void)
 				if (Session.GPacket.Message.NameCRC ==
 					Compute_Name_CRC(Session.GameName)) {
 					PMessagePrintf(ColorUser, "[%s] %s", Session.GPacket.Name, Session.GPacket.Message.Buf);
-					Sound_Effect(Rule->IncomingMessage, 1.0, 0);
+					Sound_Effect(Rule->IncomingMessage);
 				}
 			}
 			//.....................................................................
@@ -2944,7 +2944,7 @@ static void Get_Join_Responses(void)
 			//.....................................................................
 			else {
 				PMessagePrintf(ColorUser, "[%s] %s", Session.GPacket.Name, Session.GPacket.Message.Buf);
-				Sound_Effect(Rule->IncomingMessage, 1.0, 0);
+				Sound_Effect(Rule->IncomingMessage);
 			}
 			continue;
 		}
