@@ -861,6 +861,11 @@
 #define TXT_QUICK_LOAD_DESC             1103
 #define TXT_QUICKSAVE_DESCRIPTION       1104
 #define TXT_NO_QUICKSAVE                1105
+#define TXT_MOVIE_SKIP_ONE              1106
+#define TXT_MOVIE_SKIP_SELF             1107
+#define TXT_MOVIE_SKIP_MANY             1108
+#define TXT_MOVIE_SKIP_AGREE            1109
+#define TXT_MOVIE_SKIP_WAIT             1110
 #define IDC_LADDER_TYPE                 1043
 #define IDC_LADDER_LOCATION             1044
 #define IDC_FINDGAME_LOCATION           1046

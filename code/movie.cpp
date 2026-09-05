@@ -26,6 +26,7 @@
 #include "goptions.h"
 #include "gscreen.h"
 #include "movies.h"
+#include "movieskip.h"
 #include "session.h"
 #include "vector.h"
 #include "vqa.h"
@@ -76,14 +77,15 @@ unsigned			PaletteCounter;
  *=============================================================================================*/
 void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool stretch, bool clrscrn_before)
 {
-	if (!CCFileClass(name).Is_Available()) {
+	// Outside a campaign, movies play only when the launch file asked for them.
+	if (Session.Type != GAME_NORMAL && !Session.PlayMovies) {
 		return;
 	}
 
-	/*
-	**	Don't play movies in multiplayer mode
-	*/
-	if (Session.Type != GAME_NORMAL) {
+	// Opened ahead of the file test so the other machines count this movie even if it is missing here.
+	MovieSkip::Playback playback(name);
+
+	if (!CCFileClass(name).Is_Available()) {
 		return;
 	}
 
@@ -123,6 +125,11 @@ void Play_Movie(char const * name, ThemeType theme, bool clrscrn_after, bool str
 		if (clrscrn_before || vqa->StretchRect != VisibleRect) {
 			HiddenSurface->Fill(0);
 			Update_Visible_Surface(HiddenSurface);
+		}
+
+		// The other machines wait for this one, so the movie runs on without the window's focus.
+		if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
+			vqa->VQA->Set_Pause_On_Focus_Loss(false);
 		}
 
 		Movie_Play(vqa, true, theme, false);
@@ -189,13 +196,14 @@ void Play_Movie(VQType vq, ThemeType theme, bool clrscrn, bool stretch)
 /// <summary>
 /// Plays a movie on the sidebar.
 /// This routine queues the movie up to play within the sidebar surface while the game
-/// carries on around it. A missing movie, or a multiplayer game, is quietly ignored.
+/// carries on around it. A missing movie is quietly ignored, and so is a game outside a
+/// campaign unless the launch file asked for movies.
 /// </summary>
 /// <param name="name">The name of the movie file, including the ".VQA" extension.</param>
 void Play_Ingame_Movie(const char * name)
 {
 	bool notavailable = CCFileClass(name).Is_Available() == false;
-	if (!notavailable && Session.Type == GAME_NORMAL) {
+	if (!notavailable && (Session.Type == GAME_NORMAL || Session.PlayMovies)) {
 		VQHandle * vqa = Movie_Create(name, SidebarSurface, Rect(0,0,0,0), SidebarSurface->Get_Rect(), int(Options.SoundVolume * 255.0), false);
 		if (vqa != NULL) {
 			Movie_Queue_Ingame(vqa);

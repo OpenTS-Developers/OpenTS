@@ -96,6 +96,7 @@ namespace NetGlobal
 			case NET_PROGRESS_REPORT:
 			case NET_READY_TO_GO:
 			case NET_PROPOSE_KICK:
+			case NET_MOVIE_SKIP:
 				return(true);
 
 			default:

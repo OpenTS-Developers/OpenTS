@@ -35,6 +35,7 @@
 typedef void * (*VQA_SURF_LOCK_CALLBACK) (void);
 typedef bool (*VQA_SURF_UNLOCK_CALLBACK) (void);
 typedef void (*VQA_SURF_DRAW_CALLBACK) (void);
+typedef bool (*VQA_IDLE_CALLBACK) (void);
 
 #define SIZE_OF_PALETTE				256
 
@@ -112,12 +113,14 @@ class VQAClass
 		VQA_SURF_LOCK_CALLBACK SurfaceLockCallback;
 		VQA_SURF_UNLOCK_CALLBACK SurfaceUnlockCallback;
 		VQA_SURF_DRAW_CALLBACK SurfaceDrawCallback;
+		VQA_IDLE_CALLBACK IdleCallback;
+		bool PauseOnFocusLoss;
 		int Event3Frame;
 		bool IsPaused;
 		bool IsAdvanceReady;
 
 	public:
-		VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock, VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw, int frame_rate = -1, int draw_rate = -1);
+		VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock, VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw, VQA_IDLE_CALLBACK idle = NULL, int frame_rate = -1, int draw_rate = -1);
 		~VQAClass (void);
 
 		bool Open_And_Load_Buffers(void);
@@ -150,6 +153,7 @@ class VQAClass
 		bool Handle_Unlock_Event(void);
 
 		bool Is_Paused(void) const { return(IsPaused); }
+		void Set_Pause_On_Focus_Loss(bool pause) { PauseOnFocusLoss = pause; }
 
 		long CCFileHandler(long action, void * buffer, long nbytes);
 		long MixFileHandler(long action, void * buffer, long nbytes);

@@ -81,10 +81,17 @@ game's startup movies are skipped.
 
 Read from `[Settings]`: `Bases`, `Credits`, `BridgeDestroy`, `Crates`, `ShortGame`,
 `GameSpeed`, `MultiEngineer`, `UnitCount`, `AIPlayers`, `AIDifficulty`, `AlliesAllowed`,
-`FogOfWar`, `MCVRedeploy`, `TechLevel`, `Firestorm`, `Seed`, and `CoachMode`.
+`FogOfWar`, `MCVRedeploy`, `TechLevel`, `Firestorm`, `Seed`, `CoachMode`, and
+`PlayMoviesInMultiplayer`.
 
 `CoachMode` decides what a defeated player keeps;
 [observers and coach mode](/systems/observers/#coach-mode) owns it.
+
+`PlayMoviesInMultiplayer=yes` plays the scenario's movies in the game the file starts, which a
+skirmish or a game against other machines otherwise leaves out. Every machine's file must
+carry the same value, as every machine must hold the movies;
+[multiplayer movies](/systems/multiplayer-movies/) owns what plays and how the machines skip
+a movie together.
 
 A written `Seed` makes a launch repeatable: the same file played twice places every house
 the same way. A seed of `0` leaves the placement to chance, which is also what an absent
@@ -226,5 +233,5 @@ settles the same question for themselves.
 These keys are read but change nothing yet: `IsHost`, `Tournament`, `GameID`,
 `WriteStatistics`, `BuildOffAlly`,
 `AttackNeutralUnits`, `ScrapMetal`, `AutoSurrender`, `ContinueWithoutHumans`,
-`QuickMatch`, `SkipScoreScreen`, `PlayMoviesInMultiplayer`, `CustomLoadScreen`,
+`QuickMatch`, `SkipScoreScreen`, `CustomLoadScreen`,
 `CustomLoadScreenPos`, and `DifficultyName`.

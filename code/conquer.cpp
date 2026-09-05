@@ -96,6 +96,7 @@
 #include "mainloop.h"
 #include "msgbox.h"
 #include "movie.h"
+#include "movieskip.h"
 #include "mplayer.h"
 #include "msgloop.h"
 #include "netdlg.h"
@@ -618,8 +619,8 @@ static NetGlobal::ValidationContext Global_Validation_Context(NodeNameType const
 /// <summary>
 /// Handles the network maintenance for a network game.
 /// This routine services the network connection and deals with the global packets that
-/// have arrived -- players signing off, chat messages, kick proposals, and the loading
-/// progress the other machines report. It needs to be called as often as possible.
+/// have arrived -- players signing off, chat messages, kick proposals, movie skip votes, and
+/// the loading progress the other machines report. It needs to be called as often as possible.
 /// </summary>
 void IPX_Call_Back(void)
 {
@@ -679,6 +680,10 @@ void IPX_Call_Back(void)
 							break;
 
 						case NET_READY_TO_GO:
+							break;
+
+						case NET_MOVIE_SKIP:
+							MovieSkip::Receive(sender->Player.ID, Session.GPacket);
 							break;
 
 						default:

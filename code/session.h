@@ -159,6 +159,7 @@ enum NetCommandType {
 	NET_PREVIEW_ACK,			//
 	NET_REQ_PREVIEW,			//
 	NET_PROPOSE_KICK,			//
+	NET_MOVIE_SKIP,				// Which fullscreen movie the sender is watching and whether he wants it skipped
 };
 
 //---------------------------------------------------------------------------
@@ -341,6 +342,17 @@ struct GlobalPacketType {
 			unsigned int KickeeID;
 			unsigned int KickerID;
 		} Kick;
+
+		/*
+		 * This names the fullscreen movie the sender is watching, by a digest of its name and by
+		 * its count among the movies the session has started, and says whether the sender wants
+		 * it skipped. It accompanies the NET_MOVIE_SKIP command.
+		 */
+		struct {
+			unsigned int Movie;
+			unsigned int Instance;
+			unsigned int Vote;
+		} MovieSkip;
 
 		/*
 		 * This carries the game options as an encoded string, tagged with the sender's color
@@ -703,6 +715,7 @@ class SessionClass
 		//.....................................................................
 		bool NetStealth;                                // makes us invisible
 		bool NetOpen;                                   // 1 = game is open for joining
+		bool PlayMovies;                                // a launch file asked for movies outside a campaign
 		char GameName[MPLAYER_NAME_MAX];                // game's name
 		GlobalPacketType GPacket;                       // global packet
 		int GPacketlen;                                 // global packet length

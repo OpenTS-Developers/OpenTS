@@ -22,11 +22,11 @@ A missing or destroyed object remains a no-op, while a captured object rejects
 its former owner's command. Timing changes require the deterministic master and
 bounded, aligned values.
 
-Public discovery remains public. In-game chat, progress, sign-off, ready, and
-kick controls require one unique roster endpoint: an exact IP and port, or one
-same-IP entry whose stored port is zero. Unknown private endpoints are discarded
-rather than changing a roster address. Each survivor reports a departure through
-the synchronized queue, where repeated removals are harmless.
+Public discovery remains public. In-game chat, progress, sign-off, ready, kick,
+and movie-skip controls require one unique roster endpoint: an exact IP and
+port, or one same-IP entry whose stored port is zero. Unknown private endpoints
+are discarded rather than changing a roster address. Each survivor reports a
+departure through the synchronized queue, where repeated removals are harmless.
 
 Checksums and endpoint matching detect damage and attribute traffic; they do not
 authenticate participants. Player removal remains a trusted-peer control.

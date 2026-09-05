@@ -45,11 +45,11 @@ Playing a movie first tests that the file exists, through the general file layer
 Nothing is announced when a movie does not play, whatever the reason. A full-screen movie is shown only while all of these hold, tested in this order:
 
 - the file exists, as the general file layer sees it;
-- the session is a campaign game — a skirmish is not one, and neither is any multiplayer kind;
+- the session is a campaign game, or the launch file asked for movies — without that, a skirmish does not qualify, and neither does any multiplayer kind;
 - the movie opened;
 - its frame is not both narrower than 320 and shorter than 200; a movie that is gets opened and then discarded rather than shown.
 
-A movie played into the radar pane is held to the first three of those and not the fourth. Nothing is exempt from the second: the startup and menu movies make the same session test and pass it because the session type stands at its campaign value while the menus are up.
+A movie played into the radar pane is held to the first three of those and not the fourth. Nothing is exempt from the second: the startup and menu movies make the same session test and pass it because the session type stands at its campaign value while the menus are up. [Multiplayer movies](/systems/multiplayer-movies/) owns what the launch file's key changes, and how a movie ends once it has.
 
 A movie that does play is centered on the surface it is drawn to unless the caller names a destination, and both the part of the frame taken and the area it lands in are clipped — to the movie's own frame, and to that surface.
 

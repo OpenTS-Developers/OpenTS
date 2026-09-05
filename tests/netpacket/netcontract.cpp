@@ -758,16 +758,16 @@ void Test_Global_Packets(void)
 		"player discovery requires a terminated game name");
 
 	for (NetCommandType command : {
-		NET_SIGN_OFF, NET_MESSAGE, NET_PROGRESS_REPORT, NET_READY_TO_GO, NET_PROPOSE_KICK}) {
+		NET_SIGN_OFF, NET_MESSAGE, NET_PROGRESS_REPORT, NET_READY_TO_GO, NET_PROPOSE_KICK, NET_MOVIE_SKIP}) {
 		packet = Global_Packet(command);
 		packet.Kick.KickeeID = 5;
 		Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::SENDER_NOT_MEMBER,
 			"session-control commands reject a source outside Session.Players");
 	}
-	for (NetCommandType command : {NET_SIGN_OFF, NET_READY_TO_GO}) {
+	for (NetCommandType command : {NET_SIGN_OFF, NET_READY_TO_GO, NET_MOVIE_SKIP}) {
 		packet = Global_Packet(command);
 		Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::NONE,
-			"sign-off and ready commands accept a matched session member");
+			"sign-off, ready and movie commands accept a matched session member");
 	}
 
 	packet = Global_Packet(static_cast<NetCommandType>(999));

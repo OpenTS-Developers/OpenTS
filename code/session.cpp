@@ -124,6 +124,7 @@ char const * SessionClass::GlobalPacketNames[] = {
 	"NET_PREVIEW_ACK",
 	"NET_REQ_PREVIEW",
 	"NET_PROPOSE_KICK",
+	"NET_MOVIE_SKIP",
 };
 
 #endif
@@ -217,6 +218,7 @@ SessionClass::SessionClass(void)
 
 	NetStealth = 0;
 	NetOpen = 0;
+	PlayMovies = false;
 	GameName[0] = 0;
 	GProductID = 0;
 	Suspended = 0;

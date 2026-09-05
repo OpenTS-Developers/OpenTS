@@ -263,6 +263,7 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(AttackNeutralUnits);
 	crc(ScrapMetal);
 	crc(CoachMode);
+	crc(PlayMoviesInMultiplayer);
 
 	for (bool flag : GlobalFlags) {
 		crc(flag);

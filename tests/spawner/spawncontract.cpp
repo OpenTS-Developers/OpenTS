@@ -383,6 +383,11 @@ int main(void)
 		Check(one.Session_Identity_CRC() != ten.Session_Identity_CRC(),
 			"coach mode moves the identity");
 
+		SpawnerConfigClass eleven = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		eleven.PlayMoviesInMultiplayer = !eleven.PlayMoviesInMultiplayer;
+		Check(one.Session_Identity_CRC() != eleven.Session_Identity_CRC(),
+			"whether movies play moves the identity");
+
 		/*
 		 * A resume is a match of its own: the saved game decides everything the fields above
 		 * would otherwise have decided, so which save is being resumed is part of the identity.

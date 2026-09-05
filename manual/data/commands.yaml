@@ -2024,14 +2024,15 @@ fixed_controls:
   route_id: fixed-skip-vqa
   kind: fixed
   title: Skip video
-  description: Stops a VQA when the caller permits user breakout.
+  description: Stops a VQA when the caller permits user breakout; in a game against other machines it
+    casts this machine's vote to stop it.
   audience: player
   availability: *id001
   bindings:
   - Escape
   context: VQA playback
   _provenance:
-    source: code/vqa.cpp
+    source: code/movieskip.cpp
     guard: null
 - id: fixed:skip-campaign-presentation
   route_id: fixed-skip-campaign-presentation

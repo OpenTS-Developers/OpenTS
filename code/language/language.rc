@@ -2485,6 +2485,11 @@ BEGIN
     TXT_QUICK_LOAD_DESC     "Loads the quick save file."
     TXT_QUICKSAVE_DESCRIPTION "Quick Save: %s"
     TXT_NO_QUICKSAVE        "No quick save to load."
+    TXT_MOVIE_SKIP_ONE      "%s wants to skip the video."
+    TXT_MOVIE_SKIP_SELF     "You want to skip the video."
+    TXT_MOVIE_SKIP_MANY     "%d players want to skip the video."
+    TXT_MOVIE_SKIP_AGREE    "Press ESC to agree. (%d/%d)"
+    TXT_MOVIE_SKIP_WAIT     "Waiting for other players... (%d/%d)"
 END
 
 #endif    // English (U.S.) resources

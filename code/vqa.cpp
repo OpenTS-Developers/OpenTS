@@ -15,7 +15,6 @@
 
 #include "vqa.h"
 
-#include "_keyboar.h"
 #include "ccfile.h"
 #include "dbgprint.h"
 #include "globals.h"
@@ -76,7 +75,7 @@ bool VQA_Message_Handler(void)
  *                                                                         *
  * HISTORY: See PVCS log                                                   *
  *=========================================================================*/
-VQAClass::VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock, VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw, int frame_rate, int draw_rate)
+VQAClass::VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surface_lock, VQA_SURF_UNLOCK_CALLBACK surface_unlock, VQA_SURF_DRAW_CALLBACK surface_draw, VQA_IDLE_CALLBACK idle, int frame_rate, int draw_rate)
 {
 	unsigned char buffer;
 
@@ -207,6 +206,8 @@ VQAClass::VQAClass(char const * filename, int flags, VQA_SURF_LOCK_CALLBACK surf
 	SurfaceLockCallback = surface_lock;
 	SurfaceUnlockCallback = surface_unlock;
 	SurfaceDrawCallback = surface_draw;
+	IdleCallback = idle;
+	PauseOnFocusLoss = true;
 	IsFileOpen = false;
 
 	// Initially, vqa is not open.
@@ -522,6 +523,11 @@ int VQAClass::Play_VQA(int last_frame_to_play, bool nobreakout)
 		//
 		VQA_Message_Handler();
 
+		if (IdleCallback != NULL && IdleCallback() && !nobreakout) {
+			brokeout = true;
+			continue;
+		}
+
 		if (sleeping == true) {
 			if (!GameInFocus) {
 				Sleep((1000/30));
@@ -533,7 +539,7 @@ int VQAClass::Play_VQA(int last_frame_to_play, bool nobreakout)
 			}
 		}
 
-		if (GameInFocus == true && !IsPaused) {
+		if ((GameInFocus == true || !PauseOnFocusLoss) && !IsPaused) {
 
 			//
 			// Maybe draw another frame.
@@ -560,10 +566,6 @@ int VQAClass::Play_VQA(int last_frame_to_play, bool nobreakout)
 				IsPaused = true;
 				DebugString("Movie is sleeping\n");
 			}
-		}
-
-		if (!nobreakout && Keyboard->Check() && Keyboard->Get() == (KN_ESC|WWKEY_RLS_BIT)) {
-			brokeout = true;
 		}
 	}
 

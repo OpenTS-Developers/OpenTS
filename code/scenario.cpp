@@ -117,6 +117,7 @@
 #include "misc.h"
 #include "mouse.h"
 #include "movie.h"
+#include "movieskip.h"
 #include "mpu.h"
 #include "msgbox.h"
 #include "netdlg.h"
@@ -1067,6 +1068,10 @@ void Do_Win(void)
 			if (Session.CurGame >= MAX_MULTI_GAMES) {
 				Session.CurGame = MAX_MULTI_GAMES - 1;
 			}
+
+			// Nothing keeps the machines in step past the score screen, so ESC ends this movie alone.
+			MovieSkip::LocalScope local;
+			Play_Movie(Scen->WinMovie);
 		}
 
 		GameActive = false;
@@ -1231,6 +1236,9 @@ void Do_Lose(void)
 			if (Session.CurGame >= MAX_MULTI_GAMES) {
 				Session.CurGame = MAX_MULTI_GAMES - 1;
 			}
+
+			MovieSkip::LocalScope local;
+			Play_Movie(Scen->LoseMovie);
 		}
 		GameActive = false;
 		Show_Mouse();

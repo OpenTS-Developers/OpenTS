@@ -264,13 +264,13 @@ fixed_controls:
       - { file: code/restate.cpp, function: RestateMission::User_Input, expression: KN_ESC }
   - id: fixed:skip-vqa
     title: Skip video
-    description: Stops a VQA when the caller permits user breakout.
+    description: Stops a VQA when the caller permits user breakout; in a game against other machines it casts this machine's vote to stop it.
     audience: player
     bindings: [Escape]
     context: VQA playback
     availability: *all
     sites:
-      - { file: code/vqa.cpp, function: VQAClass::Play_VQA, expression: KN_ESC }
+      - { file: code/movieskip.cpp, function: Idle, expression: KN_ESC }
   - id: fixed:skip-campaign-presentation
     title: Skip campaign presentation
     description: Stops the current World Domination Tour map presentation.

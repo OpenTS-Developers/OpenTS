@@ -233,9 +233,10 @@ static void Spawner_Bind_Options(void)
 	 */
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
-	// These two live outside the session's option block.
+	// These live outside the session's option block.
 	Options.GameSpeed = SpawnConfig.GameSpeed;
 	BuildLevel = SpawnConfig.TechLevel;
+	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 
 	// Init_Random uses this for a game played alone, and draws its own seed when it is zero.
 	CustomSeed = SpawnConfig.Seed;
@@ -254,7 +255,6 @@ static void Spawner_Bind_Options(void)
 	 *   ScrapMetal, AutoSurrender,
 	 *   ContinueWithoutHumans         - options the game has no setting of its own for yet.
 	 *   QuickMatch, SkipScoreScreen,
-	 *   PlayMoviesInMultiplayer,
 	 *   CustomLoadScreen,
 	 *   CustomLoadScreenX,
 	 *   CustomLoadScreenY,
@@ -381,9 +381,11 @@ static bool Spawner_Resume(bool & gameloaded)
 	}
 
 	/*
-	 * A save carries the options it was played under, but game speed is the player's own.
+	 * A save carries the options it was played under, but game speed and whether movies play
+	 * are the player's own.
 	 */
 	Options.GameSpeed = SpawnConfig.GameSpeed;
+	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 
 	gameloaded = true;
 
