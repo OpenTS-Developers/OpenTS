@@ -202,6 +202,7 @@ target_link_libraries(OpenTS PRIVATE
     bgfx
     bx
     bimg
+    miniaudio
     comctl32
     dbghelp
     dsound
