@@ -127,6 +127,7 @@ class VQAClass
 		int Play_VQA(int last_frame_to_play, bool breakout);
 		void Play_VQA_Frame(int frame_number);
 		bool Advance_Frame(bool &);
+		bool Redraw_Paused_Frame(void);
 		void Pause_VQA(void);
 		void Resume_VQA(void);
 		void Close_And_Free_VQA(void);

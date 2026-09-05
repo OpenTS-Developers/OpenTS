@@ -672,6 +672,23 @@ bool VQAClass::Advance_Frame(bool & finished)
 }
 
 
+bool VQAClass::Redraw_Paused_Frame(void)
+{
+	if (!IsOpen || !IsPaused) {
+		return(false);
+	}
+
+	int res = VQA_Play(Handle, VQAMODE_PAUSE, VQAPLAYF_REPAINT);
+	if (res < VQAERR_OK) {
+		return(false);
+	}
+	if (SurfaceDrawCallback) {
+		SurfaceDrawCallback();
+	}
+	return(true);
+}
+
+
 /***************************************************************************
  * Pause_VQA - Pauses a VQA in order to freeze the VQA timers.             *
  *                                                                         *

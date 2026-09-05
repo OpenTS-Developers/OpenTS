@@ -2267,14 +2267,20 @@ void RadarClass::Play_Movie(void)
 		needs_volume_adjustment = false;
 	}
 
+	if (IngameVQ.Count() > 0) {
+		handle = IngameVQ[0];
+	}
+
 	if (FullRedraw == true) {
 		Draw_Shape(*SidebarSurface, *SidebarDrawer, (ShapeSet const *)RadarAnim, MAX_RADAR_FRAMES, Point2D(RadX, RadY), SidebarSurface->Get_Rect());
+		if (handle != NULL && handle->IsInitialized == true && handle->VQA->Is_Paused()) {
+			Movie_Redraw_Paused_Frame(handle);
+		}
 		LastDrawRect = Rect(RadX, RadY, RadWidth, RadHeight);
 		DebugString("Radar: Movie full redrawn\n");
 	}
 
 	if (!needs_volume_adjustment && IngameVQ.Count() > 0) {
-		handle = IngameVQ[0];
 		if (handle != NULL && handle->IsInitialized == true) {
 			if (!handle->VQA->Is_Paused()) {
 				if (Movie_Advance_Frame(handle, needs_volume_adjustment) == true) {

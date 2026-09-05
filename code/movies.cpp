@@ -290,6 +290,22 @@ bool Movie_Advance_Frame(VQHandle * handle, bool &finished)
 
 
 /// <summary>
+/// Redraws the current frame of a paused movie.
+/// </summary>
+/// <returns>bool; Was the paused frame redrawn?</returns>
+bool Movie_Redraw_Paused_Frame(VQHandle * handle)
+{
+	if (CurrentVQ != NULL) {
+		return(false);
+	}
+	CurrentVQ = handle;
+	bool res = handle->VQA->Redraw_Paused_Frame();
+	CurrentVQ = NULL;
+	return(res);
+}
+
+
+/// <summary>
 /// Determines if a movie currently owns the screen.
 /// </summary>
 /// <returns>bool; Is a movie playing at the moment?</returns>
