@@ -163,6 +163,7 @@
 #include "trigtype.h"
 #include "trim.h"
 #include "tube.h"
+#include "tutorial.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -1014,6 +1015,7 @@ void Clear_Scenario(void)
 	PlayerPtr = NULL;
 
 	Scen->Reset();
+	TutorialText.Clear_Overrides();
 
 	IonStormClass::Ion_Storm_End();
 
@@ -1870,6 +1872,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	DebugString("Calling Rule->Addition() with scenario overrides\n");
 	Rule->Addition(ini);
 	DebugString("Finished Rule->Addition() with scenario overrides\n");
+	TutorialText.Read_Overrides(ini);
 	Session.Update_Progress(45);
 
 	/*

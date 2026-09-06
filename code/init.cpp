@@ -175,6 +175,7 @@
 #include "tracker.h"
 #include "trigger.h"
 #include "tube.h"
+#include "tutorial.h"
 #include "uicontrol.h"
 #include "unit.h"
 #include "unittype.h"
@@ -2782,14 +2783,7 @@ static bool Init_Bulk_Data(void)
 	INIClass ini;
 	CCFileClass file("TUTORIAL.INI");
 	ini.Load(file);
-	int count = ini.Entry_Count("Tutorial");
-	for (int index = 0; index < count; index++) {
-		char buffer[300];
-		const char *entry = ini.Get_Entry("Tutorial", index);
-		if (ini.Get_String("Tutorial", entry, "", buffer, sizeof(buffer))) {
-			TutorialText.Add_Index(atoi(entry), (char *)strdup(buffer));
-		}
-	}
+	TutorialText.Read_Base(ini);
 
 	/*
 	**	Perform one-time game system initializations.

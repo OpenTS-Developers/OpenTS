@@ -131,7 +131,6 @@ extern int NewINIFormat;
 **	Dynamic global variables (these change or are initialized at run time).
 */
 extern MissionControlClass			MissionControl[MISSION_COUNT];
-extern IndexClass<int, char *> 		TutorialText;
 extern int							MapTriggerID;
 extern int							LogicTriggerID;
 extern RandomStraw					CryptRandom;

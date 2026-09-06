@@ -125,6 +125,7 @@
 #include "trigger.h"
 #include "trigtype.h"
 #include "tube.h"
+#include "tutorial.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vanim.h"
@@ -1200,6 +1201,9 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	if (stream.Is_Loading()) {
 		SaveManager.Autosave.Seed_Slots(campaign_slot, skirmish_slot);
 	}
+
+	// The scenario's own tutorial lines travel here, since a load never re-reads the map.
+	stream.Serialize(TutorialText);
 
 	// Placed sounds and the sounds attached to objects come back on the next
 	// sound tick; the playing sounds themselves are not saved.

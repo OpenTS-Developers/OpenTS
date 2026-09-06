@@ -142,6 +142,7 @@
 #include "trim.h"
 #include "tube.h"
 #include "tunnel.h"
+#include "tutorial.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vanim.h"
@@ -765,11 +766,6 @@ void __cdecl Prog_End(void)
 		delete ColorSchemes[0];
 	}
 	ColorSchemes.Clear();
-
-	for (i = 0; i < TutorialText.Count(); i++) {
-		free((void *)TutorialText.Fetch_By_Position(i));
-	}
-	TutorialText.Clear();
 
 	Delete_All_Objects();
 

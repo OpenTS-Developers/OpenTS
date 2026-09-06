@@ -54,6 +54,10 @@ use the following forms:
 - `///` is only for genuine XML documentation such as `<summary>`. Inherited
   trailing `///` prose does not set a convention; new trailing prose uses
   `//`.
+- XML documentation sits above the definition, not the declaration. A `///`
+  block goes in the `.cpp` beside the body it describes, and stays in the
+  header only for something the header itself defines. A declaration keeps a
+  short `//` note or nothing at all.
 - Keep accurate historical comments in their existing form and correct errors
   narrowly. Do not add a `/*** Name -- ***/` banner. If an existing function
   banner needs substantial rewriting, replace it with `///` XML documentation.

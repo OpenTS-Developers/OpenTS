@@ -90,6 +90,7 @@
 #include "tracker.h"
 #include "trigger.h"
 #include "trigtype.h"
+#include "tutorial.h"
 #include "vanim.h"
 #include "vector.h"
 #include "velocity.h"
@@ -1163,7 +1164,7 @@ bool TActionClass::TAction_TEXT_TRIGGER(HouseClass * , ObjectClass * , TriggerCl
 	/*
 	**	Display a text message overlayed onto the tactical map.
 	*/
-	Session.Messages.Add_Message(NULL, 0, TutorialText[Data.Value], 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	Session.Messages.Add_Message(NULL, 0, TutorialText.Fetch(Data.Value), 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 	return(true);
 }
 

@@ -204,13 +204,6 @@ MissionControlClass MissionControl[MISSION_COUNT];
 
 
 /***************************************************************************
-**	There are various tutorial messages that can appear in the game. These
-**	are called upon by number and pointed to by this array.
-*/
-IndexClass<int, char *> TutorialText;
-
-
-/***************************************************************************
 **	This is the source of the random numbers used in the game. This controls
 **	the game logic and thus must be in sync with any networked machines.
 */
