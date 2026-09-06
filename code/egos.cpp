@@ -312,14 +312,14 @@ void Show_Who_Was_Responsible (void)
 	TextPrintType 	flags;
 
 
-	/*
-	**	Search through the text file and extract the strings, using each string to create
-	**	a new EgoClass
-	*/
 	int bom = (int)UTF8::BOM_Length(std::string_view(cptr, length));
 	cptr += bom;
 	length -= bom;
 
+	/*
+	**	Search through the text file and extract the strings, using each string to create
+	**	a new EgoClass
+	*/
 	do {
 		/*
 		**	Search for text

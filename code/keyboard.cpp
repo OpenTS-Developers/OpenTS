@@ -348,13 +348,14 @@ int WWKeyboardClass::To_ASCII(unsigned short key)
 		KeyState[VK_MENU] = 0;
 	}
 
+	if (result == 2 && IS_SURROGATE_PAIR(buffer[0], buffer[1])) {
+		return(0x10000 + ((buffer[0] - 0xD800) << 10) + (buffer[1] - 0xDC00));
+	}
+
 	/*
 	**	If Windows could not perform the translation as expected, then
 	**	return with a null character.
 	*/
-	if (result == 2 && IS_SURROGATE_PAIR(buffer[0], buffer[1])) {
-		return(0x10000 + ((buffer[0] - 0xD800) << 10) + (buffer[1] - 0xDC00));
-	}
 	if (result != 1) {
 		return(0);
 	}

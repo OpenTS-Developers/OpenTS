@@ -174,8 +174,9 @@ int Format_Window_String(char * string, FontClass const * font, int maxlinelen, 
 			*string = '\r';
 		}
 
-		// While the current line is less then the max length...
 		char * start = string;
+
+		// While the current line is less then the max length...
 		while (linelen < maxlinelen && *string != '\r' && *string != '\0' && *string != '@') {
 			linelen += font->Char_Pixel_Width(UTF8::Decode(string));
 		}
