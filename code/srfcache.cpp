@@ -36,6 +36,7 @@ struct MSBitmap
 	BITMAPFILEHEADER filehead;
 	BITMAPINFO info;
 };
+static_assert(sizeof(MSBitmap) == 58, "the file header, info header and one colour occupy 58 bytes on disk");
 #pragma pack(pop)
 
 

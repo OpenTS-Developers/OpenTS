@@ -306,6 +306,7 @@ struct VQASN2J {
 	short index2;
 	long  predicted2;
 };
+static_assert(sizeof(VQASN2J) == 12, "the SN2J chunk is 12 bytes on disk");
 #pragma pack(pop)
 
 
@@ -3530,6 +3531,7 @@ long Load_SN2J(VQAHandleP *vqap, unsigned long iffsize)
 		unsigned short wIndex2;
 		unsigned int dwPredicted2;
 	} data;
+	static_assert(sizeof(SNJ2Struct) == 12, "the SN2J chunk is 12 bytes on disk");
 	#pragma pack(pop)
 
 	#if(VQAVOC_ON && VQAAUDIO_ON)
