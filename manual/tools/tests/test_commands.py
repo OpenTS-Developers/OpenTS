@@ -31,7 +31,7 @@ class RegisteredCommandTests(unittest.TestCase):
 
     def test_numbered_team_families_expand_through_ten(self):
         ids = {record["id"] for record in self.registered}
-        for prefix in ("TeamCreate", "TeamSelect", "TeamAddSelect", "TeamCenter"):
+        for prefix in ("TeamCreate", "TeamSelect", "TeamAddSelect", "TeamAddTo", "TeamCenter"):
             self.assertEqual(
                 {identifier for identifier in ids if identifier.startswith(prefix + "_")},
                 {f"{prefix}_{number}" for number in range(1, 11)},

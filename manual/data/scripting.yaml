@@ -1471,6 +1471,188 @@ trigger_actions:
     line: <TriggerID>=1,105,1,<Team>,0,0,0,0,
   attaches_to: null
   status: generated
+- id: TACTION_GIVE_CREDITS
+  kind: trigger-action
+  index: 106
+  editor_name: Give Credits...
+  editor_description: Gives or removes credits from the specified house. A positive amount gives money,
+    a negative amount subtracts it.
+  need: NEED_HOUSE_AND_CREDITS
+  parameters:
+  - name: House
+    type: house
+  - name: Credits
+    type: integer
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,106,0,<House>,<Credits>,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_ENABLE_SHORT_GAME
+  kind: trigger-action
+  index: 107
+  editor_name: Enable Short Game
+  editor_description: 'Turns the short game rule on: a house is defeated once it has no structures and
+    no base unit left.'
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,107,0,0,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_DISABLE_SHORT_GAME
+  kind: trigger-action
+  index: 108
+  editor_name: Disable Short Game
+  editor_description: 'Turns the short game rule off: a house is defeated only once it has nothing left.'
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,108,0,0,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_CREATE_BUILDING_AT
+  kind: trigger-action
+  index: 109
+  editor_name: Create Building At...
+  editor_description: Places a building of the specified type for the specified house at the waypoint.
+    Forced placement ignores the placement rules.
+  need: NEED_STRUCTURE_PLACEMENT
+  parameters:
+  - name: House
+    type: house
+  - name: Building type
+    type: building-type
+  - name: Force placement
+    type: boolean
+  - name: Waypoint
+    type: waypoint
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,109,0,<House>,<Building type>,<Force placement>,0,0,<Waypoint>
+  attaches_to: null
+  status: generated
+- id: TACTION_HOUSE_DESTROY_ALL
+  kind: trigger-action
+  index: 110
+  editor_name: Destroy all of...
+  editor_description: Kills everything of the specified house and marks it as defeated.
+  need: NEED_HOUSE
+  parameters:
+  - name: House
+    type: house
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,110,0,<House>,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_MAKE_ELITE
+  kind: trigger-action
+  index: 111
+  editor_name: Make Elite
+  editor_description: All objects attached to this trigger are promoted to elite status.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,111,0,0,0,0,0,0,
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TACTION_ENABLE_ALLY_REVEAL
+  kind: trigger-action
+  index: 112
+  editor_name: Enable Ally Reveal
+  editor_description: Turns ally reveal on, so allied players see the terrain each other reveals.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,112,0,0,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_DISABLE_ALLY_REVEAL
+  kind: trigger-action
+  index: 113
+  editor_name: Disable Ally Reveal
+  editor_description: Turns ally reveal off, so allied players no longer see the terrain each other reveals.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,113,0,0,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_CREATE_AUTOSAVE
+  kind: trigger-action
+  index: 114
+  editor_name: Create Autosave
+  editor_description: Saves the game once the current frame has finished.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,114,0,0,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_DELETE_OBJECT
+  kind: trigger-action
+  index: 115
+  editor_name: Delete Attached Objects
+  editor_description: Removes every object attached to this trigger from the map silently, without destroying
+    it.
+  need: NEED_NONE
+  parameters: []
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,115,0,0,0,0,0,0,
+  attaches_to: ATTACH_OBJECT
+  status: generated
+- id: TACTION_ALL_ASSIGN_MISSION
+  kind: trigger-action
+  index: 116
+  editor_name: All Assign Mission...
+  editor_description: Gives every infantry, vehicle and aircraft of the trigger's house the specified
+    mission.
+  need: NEED_MISSION
+  parameters:
+  - name: Mission
+    type: mission
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,116,0,<Mission>,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_MAKE_ALLY_ONE_WAY
+  kind: trigger-action
+  index: 117
+  editor_name: Make Ally (One-Way)...
+  editor_description: Cause this trigger's house to ally with the specified house, without the reverse
+    alliance.
+  need: NEED_HOUSE
+  parameters:
+  - name: House
+    type: house
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,117,0,<House>,0,0,0,0,
+  attaches_to: null
+  status: generated
+- id: TACTION_MAKE_ENEMY_ONE_WAY
+  kind: trigger-action
+  index: 118
+  editor_name: Make Enemy (One-Way)...
+  editor_description: Cause this trigger's house to declare war on the specified house.
+  need: NEED_HOUSE
+  parameters:
+  - name: House
+    type: house
+  ini_example:
+    section: '[Actions]'
+    line: <TriggerID>=1,118,0,<House>,0,0,0,0,
+  attaches_to: null
+  status: generated
 trigger_action_orphan_texts: []
 trigger_events:
 - id: TEVENT_NONE

@@ -22,7 +22,15 @@ void Set_Data_Directory(char const * path);
 void Set_User_Directory(char const * path);
 
 bool Apply_Game_Directories(void);
-void Init_Search_Folders(void);
+
+/*
+ * The data directory as applied, empty or ending in a separator, for whatever is named
+ * relative to it.
+ */
+std::string Data_Directory(void);
+
+// Installs the folders the deployment's files are searched in, relative to the data directory.
+void Init_Search_Folders(char const * list);
 
 /*
  * What stopped the directories being used, for whoever has a window to say it in.

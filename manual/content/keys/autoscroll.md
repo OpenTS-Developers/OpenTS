@@ -1,11 +1,14 @@
 ---
 key: AutoScroll
-summary: Parsed scrolling flag that the engine never uses.
-no_effect: true
-see_also: [ScrollRate, ScrollMethod]
+summary: Scrolls the tactical map while the pointer rests against the edge of the screen.
+see_also: [ScrollRate, ScrollMethod, ScrollMultiplier]
 when_omitted:
   kind: value
   value: "yes"
 ---
 
-The name promises control over the map scrolling by itself while the pointer rests against the edge of the screen. That scrolling happens either way: the tactical map keeps its own switch for it, that switch starts out on, and nothing ever turns it off or connects it to this flag. Saving the options writes the flag back out with whatever it was read as, and no gameplay path reads it in between.
+`AutoScroll=no` stops that scrolling and leaves the pointer as it is instead of turning it into the directional scroll arrow. The keyboard scroll keys, the coast scroll [`ScrollMethod`](/keys/scrollmethod/) describes, and clicking the radar all still move the view.
+
+[`ScrollMultiplier`](/keys/scrollmultiplier/) scales edge scroll steps alone, so it has nothing to act on once this is off. [`ScrollRate`](/keys/scrollrate/) also divides the coast scroll distance and keeps working either way.
+
+The in-game game controls dialog carries the same switch and writes the choice back to `sun.ini`. Changing it there takes effect at once rather than at the next scenario.

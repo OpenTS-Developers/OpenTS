@@ -119,7 +119,7 @@ Whichever route chose it, the settled stage's own scenario name is uppercased an
 
 ## Losing and restarting
 
-Losing plays the mission's [`Lose`](/keys/lose/) movie and offers a replay. Accepting it, and choosing to restart from the menu during a mission, both reload the current mission and then apply the carry-over block to it, exactly as a win does. Neither plays the briefing again: the `Intro`, `Brief` and `Action` movies are shown only on the load that follows a win.
+Losing plays the mission's [`Lose`](/keys/lose/) movie and offers a replay. Accepting it, and choosing to restart from the menu during a mission, both reload the current mission and then apply the carry-over block to it, exactly as a win does. Neither plays the briefing again: the `Intro`, `Brief` and `Action` movies are shown only on the load that follows a win, and so is the objectives page a mission without a briefing movie opens with. The difficulty message is printed on every one of these loads. Both reload the mission from disk, so a file edited or replaced since the mission started takes effect on the restart. Where the deployment's [`CarryScenarioFile`](/formats/opents-ini/#what-a-save-carries) is set, the mission is kept from its first read and reloaded from that copy instead, which is what lets a mission a client resumed be restarted: the client replaces `spawnmap.ini` with a stub when it resumes a [saved game](/formats/save-games/#what-the-file-holds).
 
 Abandoning the mission instead sets the campaign level number back to `1` and returns to the menus.
 

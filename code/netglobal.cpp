@@ -11,6 +11,8 @@
 
 #include "netglobal.h"
 
+#include "mpload.h"
+
 #include <cstring>
 #include <limits>
 #include <type_traits>
@@ -35,6 +37,13 @@ namespace NetGlobal
 		bool Is_Active_Player(ValidationContext const & context, int player)
 		{
 			return(player >= 0 && player < static_cast<int>(context.ActivePlayers.size()) && context.ActivePlayers[player]);
+		}
+
+
+		/// <summary>Checks that the sender is the master every machine has agreed on.</summary>
+		bool Sender_Is_Master(ValidationContext const & context)
+		{
+			return(context.SenderPlayerID >= 0 && context.SenderPlayerID == context.MasterPlayerID);
 		}
 
 	}	// namespace
@@ -96,6 +105,11 @@ namespace NetGlobal
 			case NET_PROGRESS_REPORT:
 			case NET_READY_TO_GO:
 			case NET_PROPOSE_KICK:
+			case NET_MOVIE_SKIP:
+			case NET_HOST_ANNOUNCE:
+			case NET_DESYNC_HEARTBEAT:
+			case NET_DESYNC_CONTINUE:
+			case NET_LOAD_GAME:
 				return(true);
 
 			default:
@@ -156,6 +170,21 @@ namespace NetGlobal
 				break;
 			}
 
+			case NET_DESYNC_CONTINUE:
+				if (!Sender_Is_Master(context)) {
+					return(DecodeError::SENDER_NOT_MASTER);
+				}
+				break;
+
+			case NET_LOAD_GAME:
+				if (!Sender_Is_Master(context)) {
+					return(DecodeError::SENDER_NOT_MASTER);
+				}
+				if (!MultiplayerLoadClass::Slot_Is_Valid(packet.LoadGame.Slot)) {
+					return(DecodeError::INVALID_SAVE_SLOT);
+				}
+				break;
+
 			default:
 				break;
 		}
@@ -206,6 +235,8 @@ namespace NetGlobal
 			case DecodeError::DUPLICATE_KICK_PROPOSAL: return("duplicate kick proposal");
 			case DecodeError::KICK_PROPOSAL_QUEUE_FULL: return("kick proposal queue full");
 			case DecodeError::AMBIGUOUS_SENDER: return("ambiguous session-member endpoint");
+			case DecodeError::SENDER_NOT_MASTER: return("sender is not the master");
+			case DecodeError::INVALID_SAVE_SLOT: return("invalid saved game slot");
 			case DecodeError::COUNT: break;
 		}
 

@@ -4,10 +4,13 @@ summary: "Draws a house's build options as two cameo strips, marks each order's 
 category: interface-controls
 keys:
   - Cameo
+  - CameoSortOrder
   - CreditTicks
   - MaximumQueuedObjects
   - ScoldSound
   - SidebarCameoText
+  - SidebarSorting
+  - SortCameoAsBaseDefense
 related:
   - type: system
     id: production
@@ -25,9 +28,24 @@ The panel fills a fixed-width column against the right edge of the screen and ca
 
 ## What the strips list
 
-Every structure the player owns that is on the map, discovered and switched on offers a whole category at once. The engine walks the rules list matching that structure's [`Factory=`](/keys/factory/) and adds each type on it [the house may build](/systems/production/#what-a-house-may-build). The order on screen is therefore the order types are declared in `[BuildingTypes]`, `[VehicleTypes]`, `[InfantryTypes]` and `[AircraftTypes]`, appended as the offers arrive; nothing sorts them, and a type already listed is not added twice.
+Every structure the player owns that is on the map, discovered and switched on offers a whole category at once. The engine walks the rules list matching that structure's [`Factory=`](/keys/factory/) and adds each type on it [the house may build](/systems/production/#what-a-house-may-build). A type already listed is not added twice.
 
-The left strip holds structures. The right strip holds everything else — vehicles, infantry, aircraft and [superweapon cameos](/systems/superweapons/#the-sidebar-cameo) — interleaved in the order each was added rather than grouped by kind.
+The left strip holds structures. The right strip holds everything else — vehicles, infantry, aircraft and [superweapon cameos](/systems/superweapons/#the-sidebar-cameo).
+
+### The order of the strips
+
+Each strip is put in order before it is next drawn, so the same rules set gives the same strip whichever order the offers arrived in. Entries are compared on each of the following in turn and the first difference settles it, and no two can reach the last of them together.
+
+1. **Kind.** Superweapons, then infantry, then aircraft, then vehicles, then structures. Only the right strip carries more than one kind.
+2. **[`CameoSortOrder=`](/keys/cameosortorder/)**, the type's own number, lowest first.
+3. **Group**, structures only: ordinary buildings, then walls, then gates, then base defenses. A wall is a type carrying [`Wall=`](/keys/wall/#scope-buildingtype), `FirestormWall=`, `LaserFence=` or `LaserFencePost=`, a gate one carrying [`Gate=`](/keys/gate/), and a defense one carrying [`SortCameoAsBaseDefense=`](/keys/sortcameoasbasedefense/), which follows [`IsBaseDefense=`](/keys/isbasedefense/#scope-buildingtype) unless it is given a value of its own. A type matching more than one is taken as the first of them.
+4. **Declaration order**, the type's place in `[BuildingTypes]`, `[VehicleTypes]`, `[InfantryTypes]`, `[AircraftTypes]` or `[SuperWeaponTypes]`.
+
+[`SidebarSorting=no`](/keys/sidebarsorting/) leaves each strip in the order the offers arrived instead, which is the order the types are declared in within one offer and the order the offering structures matured across them.
+
+The capacity below still admits types in the order they arrive, so no ordering decides which of them a full strip carries.
+
+A strip is put back in order whenever a cameo is added to it, and again when a saved game is loaded, since the rules and the setting may both have moved since the game was saved. A strip that has been scrolled keeps the cameo on its top row there. Reordering moves no production.
 
 A type reaching a strip for the first time speaks the new-construction-options line, except while a scenario is still being set up and except for a superweapon cameo, which is always added silently.
 

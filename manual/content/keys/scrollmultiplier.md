@@ -1,6 +1,7 @@
 ---
 key: ScrollMultiplier
 summary: Factor applied to the distance each edge scroll step moves the tactical view.
+see_also: [AutoScroll, ScrollRate, ScrollMethod]
 when_omitted:
   kind: value
   value: "1"
@@ -11,7 +12,7 @@ when_omitted:
 ScrollMultiplier=1.5
 ```
 
-Holding the cursor against an edge of the tactical view scrolls the map by a step whose length comes from a fixed nine-entry table running from 16 up to 448 pixels. A step is what the view covers in a sixtieth of a second. Which entry is used depends on how long the cursor has been held there, bounded by the player's own scroll speed option; the entry is then multiplied by this value and truncated to whole pixels. Doubling the value doubles every step in that ramp without changing how quickly the ramp is climbed.
+Holding the cursor against an edge of the tactical view scrolls the map, unless [`AutoScroll`](/keys/autoscroll/) is off, by a step whose length comes from a fixed nine-entry table running from 16 up to 448 pixels. A step is what the view covers in a sixtieth of a second. Which entry is used depends on how long the cursor has been held there, bounded by the player's own scroll speed option; the entry is then multiplied by this value and truncated to whole pixels. Doubling the value doubles every step in that ramp without changing how quickly the ramp is climbed.
 
 Only edge scrolling is scaled. Dragging the view with the right mouse button works from its own rate and never consults this value, so raising it makes the two travel at noticeably different speeds.
 

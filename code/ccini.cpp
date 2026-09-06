@@ -193,17 +193,32 @@ char const * const ActionName[ACTION_COUNT] = {
 int CCINIClass::Load(FileClass & file, bool withdigest, bool loadcomments)
 {
 	FileStraw straw(file);
-	return(Load_Verified(straw, withdigest, loadcomments, file.File_Name()));
+	return(Load(straw, withdigest, loadcomments, file.File_Name()));
 }
 
 
-/// <summary>
-/// Loads the database from a straw and, when asked, checks the message digest it carries.
-/// </summary>
-/// <param name="source">The file name to give in diagnostics, or NULL when there is none.</param>
-/// <returns>0 if nothing loaded, 1 if the database loaded, and 2 if a digest was asked for
-/// but was missing or did not match.</returns>
-int CCINIClass::Load_Verified(Straw & file, bool withdigest, bool loadcomments, char const * source)
+/***********************************************************************************************
+ * CCINIClass::Load -- Load the INI database from the data stream specified.                   *
+ *                                                                                             *
+ *    This will load the INI database and in the process, it will fetch and verify any         *
+ *    message digest present.                                                                  *
+ *                                                                                             *
+ * INPUT:   straw -- The data stream to fetch the INI data from.                               *
+ *                                                                                             *
+ *          withdigest  -- Should a message digest be examined when loaded. If there is a      *
+ *                         mismatch detected, then an error will be returned.                  *
+ *                                                                                             *
+ *          source  -- The file name to give in diagnostics, or NULL when there is none.       *
+ *                                                                                             *
+ * OUTPUT:  bool; Was the database loaded ok? (hack: returns "2" if digest doesn't match).     *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   07/10/1996 JLB : Created.                                                                 *
+ *   08/21/1996 JLB : Handles message digest control.                                          *
+ *=============================================================================================*/
+int CCINIClass::Load(Straw & file, bool withdigest, bool loadcomments, char const * source)
 {
 	int ok = BASECLASS::Load(file, loadcomments, source);
 
@@ -238,28 +253,12 @@ int CCINIClass::Load_Verified(Straw & file, bool withdigest, bool loadcomments, 
 }
 
 
-/***********************************************************************************************
- * CCINIClass::Load -- Load the INI database from the data stream specified.                   *
- *                                                                                             *
- *    This will load the INI database and in the process, it will fetch and verify any         *
- *    message digest present.                                                                  *
- *                                                                                             *
- * INPUT:   straw -- The data stream to fetch the INI data from.                               *
- *                                                                                             *
- *          withdigest  -- Should a message digest be examined when loaded. If there is a      *
- *                         mismatch detected, then an error will be returned.                  *
- *                                                                                             *
- * OUTPUT:  bool; Was the database loaded ok? (hack: returns "2" if digest doesn't match).     *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   07/10/1996 JLB : Created.                                                                 *
- *   08/21/1996 JLB : Handles message digest control.                                          *
- *=============================================================================================*/
+/// <summary>
+/// Loads the database from a straw that has no file name to give in diagnostics.
+/// </summary>
 int CCINIClass::Load(Straw & file, bool withdigest, bool loadcomments)
 {
-	return(Load_Verified(file, withdigest, loadcomments, NULL));
+	return(Load(file, withdigest, loadcomments, NULL));
 }
 
 

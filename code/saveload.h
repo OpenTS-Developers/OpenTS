@@ -24,17 +24,9 @@ class SaveVersionInfo;
 int Load_Misc_Values(IStream * stream);
 int Save_Misc_Values(IStream * stream);
 bool Get_Savefile_Info(char const * name, SaveVersionInfo * info);
+bool Save_Game(const char *file_name, char const * descr);
 bool Load_Game(const char *file_name);
 bool Reconcile_Players(void);
-bool Request_Save_Game(char const * file_name, char const * descr, bool quiet = false);
-void Process_Pending_Save_Game(void);
-void Autosave_Service(void);
-void Request_Quick_Save(void);
-void Quick_Save_Service(void);
-void Post_Save_Notice(int text);
-void Reset_Multiplayer_Save_State(void);
 void Print_Heap_CRCs(FILE * fp);
-void Disable_Multiplayer_Saving(void);
-bool Is_Multiplayer_Saving_Allowed(void);
 
 extern unsigned int ExpectedGameVersion;

@@ -44,6 +44,8 @@ Positions are settled as the scenario loads, before its spawn house sections, te
 
 With bases on, each house is given one [`BaseUnit`](/keys/baseunit/), on the start cell when the cell takes it and otherwise on the nearest cell the [placement search](#where-an-object-lands) finds between one and thirty-one cells out. A base unit no cell takes is discarded. In capture the flag the house's flag is attached to it. With bases off nothing is placed ahead of the random objects.
 
+A match may deploy the base unit the moment it is placed, for every house rather than only the people playing. It deploys where it stands, into the cell its building's foundation reaches from there, and the placement search keeps the two cells nearest the start clear for that. Ground that will not take the building leaves a unit: a person's stands where it was placed, and a computer's goes looking for ground it can use. A [launch file](/formats/spawn-ini/) carries the option.
+
 ## Spending the budget
 
 The house draws objects one at a time until the budget is spent or nothing is left to draw, charging each placed object its own `Cost`. While less than two thirds of the budget is spent and the vehicle list holds anything, the draw is a vehicle chosen at random from that list; otherwise it is an infantry type chosen at random. An object the search cannot place is discarded without being charged, and the draw is repeated. A placed object is put on guard, or on area guard for a computer house, and [`InitialVeteran`](/keys/initialveteran/) makes it [elite](/systems/veterancy/) as it is created; the base unit is not covered. Objects stay where they are put.

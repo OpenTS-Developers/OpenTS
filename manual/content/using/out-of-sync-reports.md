@@ -12,6 +12,8 @@ related:
     id: debug-logging
   - type: using
     id: crash-reports
+  - type: system
+    id: out-of-sync-recovery
   - type: key
     id: PrintCRC
 ---
@@ -22,7 +24,8 @@ Every machine in a network game checksums its own copy of the game each frame an
 value to the others. When a machine receives a checksum that disagrees with the one it computed
 for the same frame, the two games have diverged: they are out of sync, and from that point they
 are playing different games. The engine writes a report describing its own state at that frame so
-the divergence can be tracked down.
+the divergence can be tracked down, and only then asks the players what to do;
+[out-of-sync recovery](/systems/out-of-sync-recovery/) owns the dialog that follows.
 
 ## Where it is written
 

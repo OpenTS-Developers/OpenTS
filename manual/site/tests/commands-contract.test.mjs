@@ -25,7 +25,7 @@ test('command IDs and canonical routes are unique across every command kind', ()
 });
 
 test('team commands, forced bindings, fixed controls, and launch availability are preserved', () => {
-	for (const prefix of ['TeamCreate', 'TeamSelect', 'TeamAddSelect', 'TeamCenter']) {
+	for (const prefix of ['TeamCreate', 'TeamSelect', 'TeamAddSelect', 'TeamAddTo', 'TeamCenter']) {
 		assert.deepEqual(
 			commands.registered_commands
 				.filter((record) => record.id.startsWith(prefix + '_'))

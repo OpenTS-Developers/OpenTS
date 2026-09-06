@@ -94,6 +94,12 @@ class SuperWeaponTypeClass : public AbstractTypeClass
 		ShapeSet const * CameoData;
 
 		/*
+		 * Where this super weapon's cameo sorts among the others of its kind on the sidebar,
+		 * lowest first.
+		 */
+		int CameoSortOrder;
+
+		/*
 		 * This is the mouse action the player performs to aim this super weapon. It decides
 		 * the cursor shown over the map and is how the click finds its way back here.
 		 */

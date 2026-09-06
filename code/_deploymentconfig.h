@@ -7,6 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "autosave.h"
+#pragma once
 
-AutosaveClass Autosave;
+class DeploymentConfigClass;
+
+extern DeploymentConfigClass DeploymentConfig;

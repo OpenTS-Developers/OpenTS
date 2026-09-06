@@ -16,6 +16,7 @@
 #include "_rules.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "desyncdlg.h"
 #include "globals.h"
 #include "house.h"
 #include "ipxmgr.h"
@@ -225,5 +226,6 @@ void Chat_Show(HouseClass const * sender, ChatScopeType scope, char const * targ
 		Session.Messages.Add_Message(name, sender->HeapID, text, sender->Scheme,
 			TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), timeout);
 	}
+	DesyncDialog.Notify_Chat(name, text);
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 }

@@ -7,9 +7,9 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Exercises the game directories without the engine or any game data: the folder list a
-// deployment configures, the scan that covers every folder, and where a player's own files
-// are read from and written to. Every file this uses is one the harness makes itself.
+// Exercises the game directories without the engine or any game data: the folder list it
+// is handed, the scan that covers every folder, and where a player's own files are read
+// from and written to. Every file this uses is one the harness makes itself.
 
 #include <windows.h>
 
@@ -18,6 +18,7 @@
 #include <vector>
 
 #include "cdfile.h"
+#include "deploymentconfig.h"
 #include "gamedirs.h"
 #include "rawfile.h"
 
@@ -135,10 +136,17 @@ void Test_Parsing(void)
 }
 
 
+// The list the deployment's file supplies when it names no folders.
+std::string Default_List(void)
+{
+	return(DeploymentConfigClass().SearchPaths);
+}
+
+
 void Test_Defaults(void)
 {
 	Reset();
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	Check(CDFileClass::Search_Path(0) != NULL && std::string(CDFileClass::Search_Path(0)) == "INI\\",
 		"with no configuration the INI folder is searched");
@@ -153,8 +161,7 @@ void Test_Defaults(void)
 void Test_Configured_Folders(void)
 {
 	Reset();
-	Write_File(Root + "\\OPENTS.INI", "[Paths]\nSearchPaths=Data,More\n");
-	Init_Search_Folders();
+	Init_Search_Folders("Data,More");
 
 	Check(CDFileClass::Search_Path(0) != NULL && std::string(CDFileClass::Search_Path(0)) == "Data\\",
 		"a configured folder is searched");
@@ -162,31 +169,11 @@ void Test_Configured_Folders(void)
 		"configured folders keep the order they are written in");
 	Check(CDFileClass::Search_Path(2) == NULL, "a configured list replaces the default folders");
 
-	/*
-	 * A file cannot carry an entry with nothing after the equals sign -- the reader passes
-	 * such a line over -- so naming the game's own directory is how a deployment asks for
-	 * no other folder.
-	 */
+	// Naming only the game's own directory is how a deployment asks for no other folder.
 	Reset();
-	Write_File(Root + "\\OPENTS.INI", "[Paths]\nSearchPaths=.\n");
-	Init_Search_Folders();
+	Init_Search_Folders(".");
 
 	Check(CDFileClass::Search_Path(0) == NULL, "naming only the game's own directory turns the default folders off");
-
-	DeleteFile((Root + "\\OPENTS.INI").c_str());
-}
-
-
-void Test_Configuration_In_A_Folder(void)
-{
-	Reset();
-	Write_File(Root + "\\INI\\OPENTS.INI", "[Paths]\nSearchPaths=FromIni\n");
-	Init_Search_Folders();
-
-	Check(CDFileClass::Search_Path(0) != NULL && std::string(CDFileClass::Search_Path(0)) == "FromIni\\",
-		"the configuration is found in a sorted deployment's own INI folder");
-
-	DeleteFile((Root + "\\INI\\OPENTS.INI").c_str());
 }
 
 
@@ -194,11 +181,9 @@ void Test_Data_Directory(void)
 {
 	Reset();
 	Set_Data_Directory((Root + "\\Data").c_str());
-	Write_File(Root + "\\Data\\OPENTS.INI", "[Paths]\nSearchPaths=Sorted\n");
-
 
 	Check(Apply_Game_Directories(), "a data directory that exists is accepted");
-	Init_Search_Folders();
+	Init_Search_Folders("Sorted");
 
 	std::string const expected_data = Root + "\\Data\\";
 	std::string const expected_sorted = expected_data + "Sorted\\";
@@ -207,8 +192,6 @@ void Test_Data_Directory(void)
 		"the data directory itself is searched");
 	Check(CDFileClass::Search_Path(1) != NULL && std::string(CDFileClass::Search_Path(1)) == expected_sorted,
 		"a folder it configures is searched inside it");
-
-	DeleteFile((Root + "\\Data\\OPENTS.INI").c_str());
 
 	Reset();
 	Set_Data_Directory((Root + "\\Missing").c_str());
@@ -251,7 +234,7 @@ void Test_Search_Files(void)
 	Write_File(Root + "\\INI\\ALPHA.MPR", "");
 	Write_File(Root + "\\MIX\\CHARLIE.MPR", "");
 
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	Check_List(Search_Files("*.MPR"), {"ALPHA.MPR", "BRAVO.MPR", "CHARLIE.MPR"},
 		"a scan covers every folder, reports a name once, and sorts it");
@@ -274,7 +257,7 @@ void Test_Writes_Do_Not_Search(void)
 {
 	Reset();
 	Write_File(Root + "\\MIX\\WRITTEN.DAT", "shipped");
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	/*
 	 * A file opened for writing must never be looked for anywhere but the current directory:
@@ -337,7 +320,7 @@ void Test_The_File_Layer_Places_Written_Files(void)
 	Reset();
 	Set_User_Directory((Root + "\\User\\Own").c_str());
 	Apply_Game_Directories();
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	std::string const own = Root + "\\User\\Own\\";
 
@@ -378,7 +361,7 @@ void Test_The_File_Layer_Deletes_Only_The_Player_Copy(void)
 	Reset();
 	Set_User_Directory((Root + "\\User\\Own").c_str());
 	Apply_Game_Directories();
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	std::string const own = Root + "\\User\\Own\\";
 
@@ -406,7 +389,7 @@ void Test_Resetting_Keeps_The_Shipped_Default(void)
 	Reset();
 	Set_User_Directory((Root + "\\User\\Own").c_str());
 	Apply_Game_Directories();
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	Write_File(Root + "\\INI\\KEYBOARD.INI", "shipped");
 
@@ -482,7 +465,7 @@ void Test_Placing_A_File_Is_Repeatable(void)
 void Test_Without_A_User_Directory_Nothing_Moves(void)
 {
 	Reset();
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	Write_File(Root + "\\MIX\\STILL.DAT", "shipped");
 
@@ -513,7 +496,7 @@ void Test_Without_A_User_Directory_Nothing_Moves(void)
 void Test_Saved_Games_Folder(void)
 {
 	Reset();
-	Init_Search_Folders();
+	Init_Search_Folders(Default_List().c_str());
 
 	Check(Saved_Game_Name("SAVE0001.SAV") == "Saved Games\\SAVE0001.SAV",
 		"a saved game is named inside the folder saved games are kept in");
@@ -597,7 +580,6 @@ int main(void)
 	Test_Parsing();
 	Test_Defaults();
 	Test_Configured_Folders();
-	Test_Configuration_In_A_Folder();
 	Test_Data_Directory();
 	Test_User_Directory();
 	Test_Search_Files();

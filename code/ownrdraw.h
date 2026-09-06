@@ -284,6 +284,7 @@ namespace OwnerDraw {
 	};
 
 	void Initialize(void);
+	void Prepare_Resources(HWND window);
 	void Register_Control_Classes(void);
 	bool Subclass_Dialog(HWND window, LPARAM lParam);
 

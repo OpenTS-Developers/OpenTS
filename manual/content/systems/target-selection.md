@@ -196,14 +196,14 @@ Every candidate the scan offers runs this gauntlet in order, and the first row t
 | Campaign games only, and only when the scanning house is under player control: the candidate is not the player's, has never been discovered by the player, and is not an aircraft | A computer house's campaign scan never applies this filter |
 | It is a building whose type sets [`InvisibleInGame=yes`](/keys/invisibleingame/) | |
 | Its kind is not among the requested categories | A landed aircraft counts as a vehicle, and so does a building that can undeploy into one unless it is a construction yard |
-| Skirmish and multiplayer only: its house's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/) | |
+| Skirmish and multiplayer only: its house's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/) | Unless the match admits neutral houses to the scan |
 | Its type sets [`LegalTarget=no`](/keys/legaltarget/) | |
 | It is an `IsTrain=yes` type and this object is a vehicle thief | |
 | It is a [`Disguised=yes`](/keys/disguised/) infantry | Unless this object's type sets [`DetectDisguise=yes`](/keys/detectdisguise/), or [`AIDetectDisguise=yes`](/keys/aidetectdisguise/) is set and the scanning house is not under player control |
 | This object's primary projectile is `AG=no` and the candidate is at ground level | This rejects every ground object, not only landed aircraft, and it reads the primary slot even when the secondary would be fired |
 | The request asked for civilians | |
 | The request asked for capturable buildings and this is not a [`Capturable=yes`](/keys/capturable/) building | |
-| A human-owned object outside a team is looking at an unarmed building | Unless the object is an engineer, or the building can undeploy into a vehicle |
+| A human-owned object outside a team is looking at a building that cannot shoot back | A building with no weapon in its first slot, or one whose weapon has no range. Unless the object is an engineer, or the building can undeploy into a vehicle |
 | This object is an engineer and the candidate is not a building, or is an ally above [`ConditionRed`](/keys/conditionred/), or is an ally that costs nothing | |
 | The request asked for Tiberium processors and the candidate's [`Storage`](/keys/storage/) is zero | |
 | Both stand in bridge cells and only one of the two is up on the bridge | |
@@ -370,7 +370,7 @@ Two settings named for threat play no part in any of the above.
 ## Campaign and skirmish differences
 
 - The undiscovered-target rejection applies in campaigns only.
-- The `MultiplayPassive` rejection, and an aircraft's first pass for Tiberium processors on Hunt, apply outside campaigns only.
+- The `MultiplayPassive` rejection, and an aircraft's first pass for Tiberium processors on Hunt, apply outside campaigns only. A match that lifts the first scans a neutral house like any other; its buildings must still be able to shoot back to be picked, so a player's units acquire the armed part of a neutral base and leave the scenery. A [launch file](/formats/spawn-ini/) carries the option.
 - Harvester immunity comes from the multiplayer lobby's harvester truce outside campaigns and from a scenario's `HarvesterImmune` setting inside them.
 - Outside campaigns the warhead named `ARTYHE` has its entire `Verses` table replaced by fixed values, which changes every effectiveness term computed from it.
 

@@ -712,7 +712,7 @@ void TechnoClass::Debug_Dump(MonoClass * mono) const
 		mono->Set_Cursor(69, 5);mono->Printf("%08X", ArchiveTarget);
 	}
 	mono->Set_Cursor(47, 3);mono->Printf("%02X:%02X", PrimaryFacing.Current(), PrimaryFacing.Desired());
-	mono->Set_Cursor(64, 1);mono->Printf("%d(%d)", Cloak, CloakingDevice);
+	mono->Set_Cursor(64, 1);mono->Printf("%d(%d)", Cloak, CloakingDevice.Fetch_Stage());
 
 	mono->Fill_Attrib(14, 15, 12, 1, IsUseless ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(14, 16, 12, 1, IsTickedOff ? MonoClass::INVERSE : MonoClass::NORMAL);
@@ -2090,7 +2090,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		return(false);		// Mask failure.
 	}
 
-	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive) {
+	if (Session.Type != GAME_NORMAL && object->House->Class->IsMultiplayPassive && !Session.Options.AttackNeutralUnits) {
 		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
@@ -2151,9 +2151,11 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	if the building is not aggressive. That is, unless it is part of a team. A team
 	**	is allowed to pick any target it so chooses.
 	*/
+	// A weapon that reaches nowhere leaves the building as harmless as an unarmed one.
 	if ((!Is_Foot() || !((FootClass *)this)->Team != NULL) &&
 			House->Is_Human_Player() && !object->Considered_Vehicle() &&
-			otype == RTTI_BUILDING && object->PrimaryWeapon == NULL) {
+			otype == RTTI_BUILDING &&
+			(object->PrimaryWeapon == NULL || object->PrimaryWeapon->Range == 0)) {
 
 		if (!engineer) {
 			BEnd(BENCH_EVAL_OBJECT);

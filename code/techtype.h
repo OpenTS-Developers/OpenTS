@@ -333,6 +333,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		const void * CameoData;
 
 		/*
+		 * Where this type's cameo sorts among the others of its kind on the sidebar, lowest
+		 * first.
+		 */
+		int CameoSortOrder;
+
+		/*
 		**	The number of animation frames allotted to rotation is specified here.
 		**	For an object that has no rotation, this value will be 1. For normal
 		**	vehicles this value will be 32. There are some special case units that

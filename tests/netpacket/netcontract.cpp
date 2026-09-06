@@ -14,6 +14,7 @@
 #include "netreader.h"
 #include "netglobal.h"
 #include "netsemantic.h"
+#include "autosave.h"
 
 #include <array>
 #include <cstddef>
@@ -758,16 +759,16 @@ void Test_Global_Packets(void)
 		"player discovery requires a terminated game name");
 
 	for (NetCommandType command : {
-		NET_SIGN_OFF, NET_MESSAGE, NET_PROGRESS_REPORT, NET_READY_TO_GO, NET_PROPOSE_KICK}) {
+		NET_SIGN_OFF, NET_MESSAGE, NET_PROGRESS_REPORT, NET_READY_TO_GO, NET_PROPOSE_KICK, NET_MOVIE_SKIP}) {
 		packet = Global_Packet(command);
 		packet.Kick.KickeeID = 5;
 		Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::SENDER_NOT_MEMBER,
 			"session-control commands reject a source outside Session.Players");
 	}
-	for (NetCommandType command : {NET_SIGN_OFF, NET_READY_TO_GO}) {
+	for (NetCommandType command : {NET_SIGN_OFF, NET_READY_TO_GO, NET_MOVIE_SKIP}) {
 		packet = Global_Packet(command);
 		Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::NONE,
-			"sign-off and ready commands accept a matched session member");
+			"sign-off, ready and movie commands accept a matched session member");
 	}
 
 	packet = Global_Packet(static_cast<NetCommandType>(999));
@@ -813,6 +814,45 @@ void Test_Global_Packets(void)
 	packet.Kick.KickeeID = 7;
 	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_KICK_PLAYER,
 		"a kick target must be a current session member");
+
+	Check(sizeof(GlobalPacketType) == 455, "the global packet keeps its wire size");
+
+	NetGlobal::ValidationContext master = Member_Context();
+	master.MasterPlayerID = 2;
+	NetGlobal::ValidationContext guest = Member_Context();
+	guest.MasterPlayerID = 5;
+
+	for (NetCommandType command : {NET_HOST_ANNOUNCE, NET_DESYNC_HEARTBEAT, NET_DESYNC_CONTINUE, NET_LOAD_GAME}) {
+		packet = Global_Packet(command);
+		packet.LoadGame.Slot = 0;
+		Check_Global_Error(packet, packet_size, outsider, NetGlobal::DecodeError::SENDER_NOT_MEMBER,
+			"the out-of-sync and load commands reject a source outside Session.Players");
+	}
+
+	packet = Global_Packet(NET_HOST_ANNOUNCE);
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::NONE,
+		"any member may announce itself; adoption is judged at dispatch");
+	packet = Global_Packet(NET_DESYNC_HEARTBEAT);
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::NONE,
+		"any member may send a heartbeat");
+
+	packet = Global_Packet(NET_DESYNC_CONTINUE);
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::SENDER_NOT_MASTER,
+		"a continue decision from a member that is not master is refused");
+	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::SENDER_NOT_MASTER,
+		"a continue decision needs a known master");
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::NONE,
+		"a continue decision from the master passes");
+
+	packet = Global_Packet(NET_LOAD_GAME);
+	packet.LoadGame.Slot = 7;
+	Check_Global_Error(packet, packet_size, guest, NetGlobal::DecodeError::SENDER_NOT_MASTER,
+		"a load request from a member that is not master is refused");
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::NONE,
+		"a load request from the master naming a numbered save passes");
+	packet.LoadGame.Slot = MULTIPLAYER_SAVE_SLOTS;
+	Check_Global_Error(packet, packet_size, master, NetGlobal::DecodeError::INVALID_SAVE_SLOT,
+		"a load request needs a slot the numbered saves can hold");
 
 	NetGlobal::RejectionCounters counters;
 	NetGlobal::RejectionRecord first = counters.Record(NetGlobal::DecodeError::INVALID_LENGTH);

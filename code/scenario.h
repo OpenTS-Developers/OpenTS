@@ -36,6 +36,7 @@
 #include "coord.h"
 #include "ftimer.h"
 #include "random.h"
+#include "scenfile.h"
 #include "special.h"
 #include "stimer.h"
 #include "timer.h"
@@ -234,6 +235,9 @@ class ScenarioClass {
 		**	The full name of the scenario (as it exists on disk).
 		*/
 		char ScenarioName[_MAX_PATH];
+
+		// The scenario file as it was read, so that a restart replays what was started.
+		ScenarioFileClass SourceFile;
 
 		/*
 		**	Description of the scenario.

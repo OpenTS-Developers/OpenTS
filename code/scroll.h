@@ -80,12 +80,6 @@ class ScrollClass: public TabClass
 		bool IsDragOperation;
 
 		/*
-		 * If the map is allowed to scroll when the mouse rests against the edge of the
-		 * tactical view, then this flag will be true.
-		 */
-		bool IsEdgeScrollAllowed;
-
-		/*
 		 * If a mouse button is being held down over the tactical map, then this flag will
 		 * be true. While it is set the map hands movement to the held button's own handler
 		 * rather than tracking the cursor, and it reports itself as scrolling.

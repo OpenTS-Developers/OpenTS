@@ -3543,6 +3543,24 @@ BuildLimit:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+BuildOffAllyAnyStructure:
+  key: BuildOffAllyAnyStructure
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: MultiplayerDefaults
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: RulesClass
+      member: IsMPBuildOffAllyAnyStructure
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 BuildPDefense:
   key: BuildPDefense
   scopes:
@@ -3999,6 +4017,37 @@ Cameo:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+CameoSortOrder:
+  key: CameoSortOrder
+  scopes:
+  - applies_to: *id002
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: CameoSortOrder
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+  - applies_to: *id010
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '0'
+      declared_in: SuperWeaponTypeClass
+      member: CameoSortOrder
+      source: code/suprtype.cpp
+      guard: null
+    level: SuperWeaponTypeClass
 Camera:
   key: Camera
   scopes:
@@ -19175,6 +19224,24 @@ SidebarImage:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
+SidebarSorting:
+  key: SidebarSorting
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: SidebarSorting
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 Sight:
   key: Sight
   scopes:
@@ -19472,6 +19539,23 @@ SoloCrateMoney:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SortCameoAsBaseDefense:
+  key: SortCameoAsBaseDefense
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsSortCameoAsBaseDefense
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 SoundLatency:
   key: SoundLatency
   scopes:
@@ -21856,7 +21940,7 @@ TextBackgroundColor:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '0'
+      default_candidate: '12'
       declared_in: OptionsClass
       member: TextBackgroundColor
       source: code/options.cpp

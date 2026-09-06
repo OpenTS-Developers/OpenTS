@@ -172,6 +172,12 @@ int main(void)
 		Check(config.NextCampaignAutoSave == 0 && config.NextSkirmishAutoSave == 0,
 			"the first automatic save is numbered from zero");
 		Check(config.AutoSaveInterval == 0, "an unwritten interval saves nothing automatically");
+		Check(config.ConnTimeout == 3600 && config.ReconnectTimeout == 2400,
+			"the unwritten waits are the ones every spawner has kept");
+		Check(config.AutoSurrender, "a departing player surrenders unless the file says otherwise");
+		Check(!config.BuildOffAlly, "nobody builds off an ally unless the file asks for it");
+		Check(!config.AutoDeployMCV, "a starting base unit waits to be deployed by hand");
+		Check(!config.AttackNeutralUnits, "a target scan passes over a neutral house unasked");
 
 		bool any = false;
 		for (bool flag : config.GlobalFlags) {
@@ -200,6 +206,117 @@ int main(void)
 		config = Read(on, sizeof(on) - 1);
 
 		Check(config.AutoSaveInterval == 10800, "the interval is read in frames as written");
+	}
+
+	/*
+	 * The waits are written in ticks, and a value the game cannot wait for is brought within
+	 * the bounds rather than refusing a match that is otherwise playable.
+	 */
+	{
+		char const written[] =
+			"[Settings]\n"
+			"ConnTimeout=1800\n"
+			"ReconnectTimeout=1400\n";
+		SpawnerConfigClass config = Read(written, sizeof(written) - 1);
+
+		Check(config.ConnTimeout == 1800 && config.ReconnectTimeout == 1400,
+			"a wait within the bounds is taken in ticks as written");
+
+		char const low[] =
+			"[Settings]\n"
+			"ConnTimeout=1\n"
+			"ReconnectTimeout=-5\n";
+		config = Read(low, sizeof(low) - 1);
+
+		Check(config.ConnTimeout == SpawnerConfigClass::TIMEOUT_MIN &&
+			config.ReconnectTimeout == SpawnerConfigClass::TIMEOUT_MIN,
+			"a wait shorter than the game can honor is raised to the floor");
+
+		char const high[] =
+			"[Settings]\n"
+			"ConnTimeout=999999\n"
+			"ReconnectTimeout=999999\n";
+		config = Read(high, sizeof(high) - 1);
+
+		Check(config.ConnTimeout == SpawnerConfigClass::TIMEOUT_MAX &&
+			config.ReconnectTimeout == SpawnerConfigClass::TIMEOUT_MAX,
+			"a wait longer than the game will hold is lowered to the ceiling");
+	}
+
+	/*
+	 * A departing player's base is destroyed unless the file asks for the computer to take it.
+	 */
+	{
+		char const off[] =
+			"[Settings]\n"
+			"AutoSurrender=No\n";
+		SpawnerConfigClass config = Read(off, sizeof(off) - 1);
+
+		Check(!config.AutoSurrender, "the computer takes the seat when the file says so");
+
+		char const spelled[] =
+			"[Settings]\n"
+			"AutoSurrender=False\n";
+		config = Read(spelled, sizeof(spelled) - 1);
+
+		Check(!config.AutoSurrender, "a forced option is read whichever way it spells no");
+	}
+
+	/*
+	 * Building next to an ally's base is asked for by the file alone.
+	 */
+	{
+		char const on[] =
+			"[Settings]\n"
+			"BuildOffAlly=Yes\n";
+		SpawnerConfigClass config = Read(on, sizeof(on) - 1);
+
+		Check(config.BuildOffAlly, "an ally's base anchors a placement when the file says so");
+
+		char const spelled[] =
+			"[Settings]\n"
+			"BuildOffAlly=True\n";
+		config = Read(spelled, sizeof(spelled) - 1);
+
+		Check(config.BuildOffAlly, "the option is read whichever way it spells yes");
+	}
+
+	/*
+	 * Deploying the starting base unit is asked for by the file alone.
+	 */
+	{
+		char const on[] =
+			"[Settings]\n"
+			"AutoDeployMCV=Yes\n";
+		SpawnerConfigClass config = Read(on, sizeof(on) - 1);
+
+		Check(config.AutoDeployMCV, "the base unit deploys itself when the file says so");
+
+		char const spelled[] =
+			"[Settings]\n"
+			"AutoDeployMCV=True\n";
+		config = Read(spelled, sizeof(spelled) - 1);
+
+		Check(config.AutoDeployMCV, "the option is read whichever way it spells yes");
+	}
+
+	/*
+	 * Acquiring a neutral house's objects is asked for by the file alone.
+	 */
+	{
+		char const on[] =
+			"[Settings]\n"
+			"AttackNeutralUnits=Yes\n";
+		SpawnerConfigClass config = Read(on, sizeof(on) - 1);
+
+		Check(config.AttackNeutralUnits, "a neutral house is scanned when the file says so");
+
+		char const spelled[] =
+			"[Settings]\n"
+			"AttackNeutralUnits=True\n";
+		config = Read(spelled, sizeof(spelled) - 1);
+
+		Check(config.AttackNeutralUnits, "the option is read whichever way it spells yes");
 	}
 
 	/*
@@ -360,6 +477,8 @@ int main(void)
 
 		two.MapName = "A Map By Another Name";
 		two.DifficultyName = "Gentle";
+		two.SkipScoreScreen = !two.SkipScoreScreen;
+		two.CustomLoadScreen = "Resources/l600s02.pcx";
 		two.Slots[0].Name = "Somebody Else";
 		Check(one.Session_Identity_CRC() == two.Session_Identity_CRC(),
 			"what a player is shown is left out of the identity");
@@ -378,10 +497,41 @@ int main(void)
 		Check(one.Session_Identity_CRC() != four.Session_Identity_CRC(),
 			"a scenario flag moves the identity");
 
+		SpawnerConfigClass surrender = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		surrender.AutoSurrender = !surrender.AutoSurrender;
+		Check(one.Session_Identity_CRC() != surrender.Session_Identity_CRC(),
+			"what becomes of a departing player's base moves the identity");
+
+		SpawnerConfigClass ally = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		ally.BuildOffAlly = !ally.BuildOffAlly;
+		Check(one.Session_Identity_CRC() != ally.Session_Identity_CRC(),
+			"building next to an ally moves the identity");
+
+		SpawnerConfigClass deploy = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		deploy.AutoDeployMCV = !deploy.AutoDeployMCV;
+		Check(one.Session_Identity_CRC() != deploy.Session_Identity_CRC(),
+			"deploying the starting base unit moves the identity");
+
+		SpawnerConfigClass neutrals = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		neutrals.AttackNeutralUnits = !neutrals.AttackNeutralUnits;
+		Check(one.Session_Identity_CRC() != neutrals.Session_Identity_CRC(),
+			"scanning a neutral house moves the identity");
+
+		SpawnerConfigClass waits = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		waits.ConnTimeout = one.ConnTimeout + 60;
+		waits.ReconnectTimeout = one.ReconnectTimeout + 60;
+		Check(one.Session_Identity_CRC() == waits.Session_Identity_CRC(),
+			"how long a machine waits is its own, so it is left out of the identity");
+
 		SpawnerConfigClass ten = Read(_Skirmish, sizeof(_Skirmish) - 1);
 		ten.CoachMode = !ten.CoachMode;
 		Check(one.Session_Identity_CRC() != ten.Session_Identity_CRC(),
 			"coach mode moves the identity");
+
+		SpawnerConfigClass eleven = Read(_Skirmish, sizeof(_Skirmish) - 1);
+		eleven.PlayMoviesInMultiplayer = !eleven.PlayMoviesInMultiplayer;
+		Check(one.Session_Identity_CRC() != eleven.Session_Identity_CRC(),
+			"whether movies play moves the identity");
 
 		/*
 		 * A resume is a match of its own: the saved game decides everything the fields above
@@ -479,6 +629,32 @@ int main(void)
 
 		Check(config.CustomLoadScreenX == 0 && config.CustomLoadScreenY == 0,
 			"half a position is no position either");
+	}
+
+	/*
+	 * What a player is shown is taken as the client wrote it, and an unwritten key leaves the
+	 * game showing what it would have shown by itself.
+	 */
+	{
+		char const shown[] =
+			"[Settings]\n"
+			"SkipScoreScreen=Yes\n"
+			"CustomLoadScreen=Resources/l600s01.pcx\n"
+			"DifficultyName=Gentle\n";
+		SpawnerConfigClass config = Read(shown, sizeof(shown) - 1);
+
+		Check(config.SkipScoreScreen, "a match may ask that its score screen be passed over");
+		Check(config.CustomLoadScreen == "Resources/l600s01.pcx",
+			"the load screen is named exactly as the client wrote it");
+		Check(config.DifficultyName == "Gentle",
+			"a campaign may be played under a difficulty name of its own");
+
+		char const silent[] = "[Settings]\n";
+		config = Read(silent, sizeof(silent) - 1);
+
+		Check(!config.SkipScoreScreen, "an unwritten key still shows the score screen");
+		Check(config.CustomLoadScreen.empty() && config.DifficultyName.empty(),
+			"the game's own load screen and difficulty names stand unasked");
 	}
 
 	/*

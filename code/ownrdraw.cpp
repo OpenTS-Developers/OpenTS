@@ -798,6 +798,28 @@ BOOL CALLBACK SetUserData2(HWND window, LPARAM lparam)
 
 
 /// <summary>
+/// Builds the artwork, masks and fonts every owner-draw control paints with. Later calls do
+/// nothing, so anything drawing with those resources may ask for them.
+/// </summary>
+/// <param name="window">Supplies the display context the fonts are made against.</param>
+void OwnerDraw::Prepare_Resources(HWND window)
+{
+	Initialize();
+
+	static int _inited = false;
+	if (!_inited) {
+		ODInitMasks();
+		ODCacheImages();
+		HDC hdc = GetDC(window);
+		ODFontPtr = WS_Get_Font(hdc, ODFontName, 0, ODFontSize, 0);
+		ODListFontPtr = WS_Get_Font(hdc, ODListFontName, 0, ODListFontSize, 0);
+		ReleaseDC(window, hdc);
+		_inited = 1;
+	}
+}
+
+
+/// <summary>
 /// Prepares one control for owner drawing.
 /// This is the enumeration callback Subclass_Dialog uses. The control's window class and style
 /// pick the custom procedure that will paint it, its original procedure is displaced by
@@ -817,18 +839,7 @@ BOOL CALLBACK InitializeCtrl(HWND window, LPARAM lparam)
 	RECT rect2;
 	GetClientRect(window, &rect2);
 
-	Initialize();
-
-	static int _inited = false;
-	if (!_inited) {
-		ODInitMasks();
-		ODCacheImages();
-		HDC hdc = GetDC(window);
-		ODFontPtr = WS_Get_Font(hdc, ODFontName, 0, ODFontSize, 0);
-		ODListFontPtr = WS_Get_Font(hdc, ODListFontName, 0, ODListFontSize, 0);
-		ReleaseDC(window, hdc);
-		_inited = 1;
-	}
+	OwnerDraw::Prepare_Resources(window);
 
 	WNDPROC customProc = NULL;
 
@@ -1231,7 +1242,8 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 	bool is_paint = false;
 	if (message == WM_PAINT) {
 		is_paint = true;
-		if (!in_focus) {
+		// A windowed game keeps presenting without the focus, so its dialogs keep painting too.
+		if (!in_focus && !WindowedMode) {
 			ValidateRect(window, NULL);
 			ctrlmessages.remove(key);
 			return(0);
@@ -1239,7 +1251,8 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 	}
 
 	if (in_focus == true && !was_in_focus) {
-		InvalidateRect(MainWindow, NULL, FALSE);
+		// The dialogs skipped their paints while the focus was away, so they need one too.
+		RedrawWindow(MainWindow, NULL, NULL, RDW_INVALIDATE | RDW_ALLCHILDREN);
 		in_focus = GameInFocus;
 	}
 	was_in_focus = in_focus;
@@ -1315,15 +1328,7 @@ static LRESULT CALLBACK CtrlProc_Internal(HWND window, UINT message, WPARAM wpar
 
 	after_proc:
 		if (message == WM_NCDESTROY) {
-			HWND destroyed = window;
-			WinData * destroydata;
-			if (ODWinData.getPointer(destroyed, &destroydata)) {
-				if (destroydata != NULL && destroydata->cachedSurface != NULL) {
-					delete destroydata->cachedSurface;
-					destroydata->cachedSurface = NULL;
-					_surface_count--;
-				}
-			}
+			On_WM_NCDESTROY(window);
 			ODRemoveFromDict(window, 0);
 		}
 		goto cleanup;
@@ -6129,7 +6134,7 @@ bool ODGetFontMetrics(char const * font_name, FontMetrics * metrics)
 /// <returns>Returns with the pixel width of the text.</returns>
 int OD_Draw_Text(COLORREF color, HFONT font, Rect const & rect, const char * text, int len, int x_alignment, int y_alignment, Surface * surface)
 {
-	if (!GameInFocus) {
+	if (!GameInFocus && !WindowedMode) {
 		return(0);
 	}
 
@@ -6506,6 +6511,9 @@ void OwnerDraw::Draw_Dialog_Back(HWND window)
 		surf = new BSurface(rcClient.right, rcClient.bottom, 2);
 		entry->cachedSurface = surf;
 		++_surface_count;
+
+		// The art is 640x400 and centered on the screen; a dialog reaching past it keeps black there.
+		surf->Fill(0);
 
 		Surface * back = SurfaceCache.GetSurface("dbak6440.pcx");
 

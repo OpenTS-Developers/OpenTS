@@ -6,7 +6,7 @@ targets:
 - type: key
   id: AllowedToStartInMultiplayer
   effect: changed
-credit: [ZivDero, CCHyper, Shush]
+credit: [ZivDero, CCHyper, JoyfulShush]
 ---
 
 A house that runs out of types to draw for its starting units now keeps what it has been
@@ -17,5 +17,5 @@ once two thirds of its budget is spent, or with nothing to draw at all because e
 type is above its tech level or not ownable by its country, stops there; it called through a
 type it never picked, and the game crashed as the match set up.
 
-CCHyper is credited for the Vinifera guard on the average price this one follows, and Shush
+CCHyper is credited for the Vinifera guard on the average price this one follows, and JoyfulShush
 for the Vinifera guard on the draw.

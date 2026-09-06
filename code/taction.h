@@ -97,11 +97,7 @@ class TActionClass : public AbstractClass
 
 		TeamTypeClass * Team;	// Team type pointer for this action (if needed).
 
-		/*
-		 * This is the map rectangle the action works over, expressed in cells. Only the
-		 * action that resizes the playable area has any use for it, but every action carries
-		 * one, since the scenario format stores it for all of them.
-		 */
+		// The scenario format stores this rectangle for every action; extended actions reuse its fields.
 		Rect TriggerRect;
 
 		/*
@@ -269,6 +265,19 @@ class TActionClass : public AbstractClass
 		bool TAction_ENABLE_SPEECH(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_SET_GROUP_ID(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 		bool TAction_TALK_BUBBLE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_GIVE_CREDITS(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_ENABLE_SHORT_GAME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_DISABLE_SHORT_GAME(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CREATE_BUILDING_AT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_HOUSE_DESTROY_ALL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_MAKE_ELITE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_ENABLE_ALLY_REVEAL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_DISABLE_ALLY_REVEAL(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_CREATE_AUTOSAVE(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_DELETE_OBJECT(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_ALL_ASSIGN_MISSION(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_MAKE_ALLY_ONE_WAY(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
+		bool TAction_MAKE_ENEMY_ONE_WAY(HouseClass * house, ObjectClass * object, TriggerClass * trig, Cell const & cell);
 };
 
 AttachType Attaches_To(TActionType event);

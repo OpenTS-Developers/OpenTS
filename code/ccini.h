@@ -104,6 +104,7 @@ class CCINIClass : public INIClass
 
 		int Load(FileClass & file, bool withdigest, bool loadcomments = false);
 		int Load(Straw & file, bool withdigest, bool loadcomments = false);
+		int Load(Straw & file, bool withdigest, bool loadcomments, char const * source);
 		int Save(FileClass & file, bool withdigest) const;
 		int Save(Pipe & pipe, bool withdigest) const;
 
@@ -216,7 +217,6 @@ class CCINIClass : public INIClass
 		int Get_Unique_ID(void) const;
 
 	private:
-		int Load_Verified(Straw & file, bool withdigest, bool loadcomments, char const * source);
 		void Calculate_Message_Digest(void);
 		void Invalidate_Message_Digest(void);
 

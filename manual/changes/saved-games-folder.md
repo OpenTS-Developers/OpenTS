@@ -6,7 +6,7 @@ targets:
 - type: format
   id: save-games
   effect: changed
-credit: [ZivDero]
+credit: [ZivDero, Rampastring]
 ---
 
 Saved games now live in a `Saved Games` folder, beside the game or inside the user data
@@ -17,3 +17,5 @@ Saves made by earlier builds sit beside the game, or in the user data directory 
 named, and are no longer listed; moving the files into `Saved Games` restores them.
 
 After a load, the campaign difficulty now comes from the save rather than the menu setting.
+
+Rampastring is credited for the ts-patches patch of the same name.

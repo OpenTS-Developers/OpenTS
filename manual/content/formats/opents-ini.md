@@ -1,9 +1,10 @@
 ---
 format_id: opents-ini
 title: OPENTS.INI
-summary: Names the folders a deployment keeps its game files sorted into.
+summary: Names the folders a deployment keeps its game files sorted into, and what its saves carry.
 kind: file
 source_files:
+  - code/deploymentconfig.cpp
   - code/gamedirs.cpp
 filenames:
   - OPENTS.INI
@@ -28,6 +29,19 @@ SearchPaths=INI,MIX,Maps,Addons
 Without the file, and without the key, the game behaves as though `SearchPaths=INI,MIX,Maps` were written: a distribution can sort its files into `INI`, `MIX` and `Maps` folders and ship no configuration at all. A written list **replaces** that default rather than adding to it, so a deployment that wants the default folders as well as its own names them again.
 
 The game's own directory is examined before any listed folder, so naming it adds nothing. Naming only it, as `SearchPaths=.`, is how a deployment asks for no other folder to be searched. An empty `SearchPaths=` does not do this: the file reader passes over an entry with nothing after the equals sign, leaving the default in force.
+
+## What a save carries
+
+```ini title="OPENTS.INI"
+[Saves]
+CarryScenarioFile=yes
+```
+
+`CarryScenarioFile=yes` makes a [saved game](/formats/save-games/#what-the-file-holds) carry the scenario file it was played from, and a restart then reads the mission from that copy rather than from disk. The default is `no`: a save holds no copy and a restart reads the file again.
+
+The copy matters where the file on disk may no longer be the one the mission started from: a client resuming a save replaces `spawnmap.ini` with a stub, and a restart that reads the stub fails. It costs the size of the map, the least compressible part of a save; a large one adds half again to the file.
+
+A save keeps whatever it was written with, so turning the key off shrinks new saves and leaves the old ones as they are.
 
 ## Where the file is looked for
 

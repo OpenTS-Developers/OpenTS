@@ -18,6 +18,8 @@ related:
   - type: system
     id: cloaking
   - type: system
+    id: multiplayer-score-screen
+  - type: system
     id: sidebar
   - type: system
     id: veterancy
@@ -29,7 +31,7 @@ related:
 
 An observer is a seat that watches a skirmish or network game from its first frame. A client marks the seat in [the launch file](/formats/spawn-ini/#who-is-playing); the menu lobbies cannot seat one. The observer's house plays the country the client wrote for it, which the CnCNet client picks at random, so the sidebar art and the EVA voice follow that country. The house starts defeated, is given no start position, construction vehicle or units, and holds no alliances: its own alliance entries and any naming it are ignored, and nobody can ally with it during play. Its view opens on the start position of a random playing house, or on the middle of the map when no house plays.
 
-Starting defeated is what keeps the house out of the contest. It is never tested for defeat, never counted among the houses or people still alive, never asked whether everyone left is allied, and cannot surrender or change an alliance. It is also left out of three places a defeated player still appears in: the score screen, the radar pane's name and kill list, and the statistics report. The house survives a [saved game](/formats/save-games/) as an observer, and a launch file that resumes the save must still mark the seat as watching.
+Starting defeated is what keeps the house out of the contest. It is never tested for defeat, never counted among the houses or people still alive, never asked whether everyone left is allied, and cannot surrender or change an alliance. It is also left out of three places a defeated player still appears in: the [score screen](/systems/multiplayer-score-screen/), the radar pane's name and kill list, and the statistics report. The house survives a [saved game](/formats/save-games/) as an observer, and a launch file that resumes the save must still mark the seat as watching.
 
 ## The whole map
 

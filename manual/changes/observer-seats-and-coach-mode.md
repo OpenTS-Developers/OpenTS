@@ -32,6 +32,8 @@ targets:
   effect: changed
 credit:
 - ZivDero
+- Iran
+- dkeeton
 ---
 
 A launch file may now seat people who watch the match rather than play it. An observer's
@@ -42,3 +44,6 @@ name list and the statistics report. `CoachMode` is honored: a defeated player k
 allied vision and private chat instead of the whole map, and without it a defeated player
 now has the fog lifted, the regrowth stopped, and hidden objects and decorations shown, as
 an observer does.
+
+Iran wrote the spawner's observer seats, from the code he wrote for Red Alert, and dkeeton
+added coach mode to ts-patches.

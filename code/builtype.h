@@ -780,6 +780,13 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsBaseDefense;
 
 		/*
+		 * If this building's cameo sorts with the base defenses on the sidebar, then this
+		 * flag will be true. It follows IsBaseDefense unless the rules give it a value of
+		 * its own.
+		 */
+		bool IsSortCameoAsBaseDefense;
+
+		/*
 		 * This is the radius, expressed in cells, of the field a cloak generator projects
 		 * or a sensor array watches. The largest value among all building types decides how
 		 * big the shared cloaking surface must be.

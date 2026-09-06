@@ -470,6 +470,32 @@ void DisplayClass::Set_Cursor_Shape(Cell const * list)
 }
 
 
+/// <summary>
+/// Reports whether a building already on the map can anchor a placement for the given house.
+/// </summary>
+static bool Is_Adjacency_Anchor(BuildingClass const * base, HouseClass const * house)
+{
+	if (!base->Class->IsBase) {
+		return(false);
+	}
+
+	if (base->House == house) {
+		return(true);
+	}
+
+	if (!Session.Options.BuildOffAlly) {
+		return(false);
+	}
+
+	// The alliance must run both ways, so a one-sided declaration cannot open a base.
+	if (!house->Is_Ally(base->House) || !base->House->Is_Ally(house)) {
+		return(false);
+	}
+
+	return(Rule->IsMPBuildOffAllyAnyStructure || base->Class->IsConstructionYard);
+}
+
+
 /***********************************************************************************************
  * DisplayClass::Passes_Proximity_Check -- Determines if building placement is near friendly sq*
  *                                                                                             *
@@ -567,7 +593,7 @@ bool DisplayClass::Passes_Proximity_Check(ObjectTypeClass const * object, Houses
 				BuildingClass * newbase = cellptr->Cell_Building();
 
 				// we've found a building...
-				if (newbase != NULL && newbase->House->HeapID == house && ((BuildingClass *)newbase)->Class->IsBase) {
+				if (newbase != NULL && Is_Adjacency_Anchor(newbase, Houses[house])) {
 					retval = true;
 					//break;
 				}

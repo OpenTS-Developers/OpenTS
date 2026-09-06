@@ -101,6 +101,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	MaxAmmo(-1),
 	Ownable(0),
 	CameoData(NULL),
+	CameoSortOrder(0),
 	Rotation(0),
 	ROT(0),
 	Points(0),
@@ -525,6 +526,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsCloakStop = ini.Get_Bool(Name(), "CloakStop", IsCloakStop);
 		Capacity = ini.Get_Int(Name(), "Storage", Capacity);
 		BuildLimit = ini.Get_Int(Name(), "BuildLimit", BuildLimit);
+		CameoSortOrder = ini.Get_Int(Name(), "CameoSortOrder", CameoSortOrder);
 		Category = ini.Get_CategoryType(Name(), "Category", Category);
 		Dock = TGet_TypeList<BuildingTypeClass>(ini, Name(), "Dock", Dock);
 		DeploysInto = TGet_Class(ini, Name(), "DeploysInto", DeploysInto);
@@ -928,6 +930,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsAllowedToStartInMultiplayer);
 	stream.Serialize(CameoFilename);
 	// CameoData -- artwork, fetched from the mix files again as this loads.
+	stream.Serialize(CameoSortOrder);
 	stream.Serialize(Rotation);
 	stream.Serialize(ROT);
 	stream.Serialize(TurretOffset);

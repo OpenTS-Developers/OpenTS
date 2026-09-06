@@ -3862,13 +3862,12 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 		}
 	}
 
-	/*
-	**	Don't allow targeting of SAM sites, even if the CTRL key
-	**	is held down. Also don't allow targeting if the object is too
-	**	far away.
-	*/
+	// Offer the attack only where the weapon could take the shot, CTRL key or not.
 	if (action == ACTION_ATTACK && PrimaryWeapon != NULL) {
-		if (!In_Range((ObjectClass *)object, 0) || !PrimaryWeapon->Bullet->IsAntiGround) {
+		bool engageable = PrimaryWeapon->Bullet->IsAntiGround
+			|| (object->In_Air() && PrimaryWeapon->Bullet->IsAntiAircraft);
+
+		if (!In_Range((ObjectClass *)object, 0) || !engageable) {
 			action = ACTION_NONE;
 		} else if (Class->IsEMPulseCannon || Class->IsLimpetMine) {
 			action = ACTION_NONE;

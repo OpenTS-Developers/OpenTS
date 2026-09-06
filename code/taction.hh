@@ -127,6 +127,19 @@ enum TActionType {
 	TACTION_ENABLE_SPEECH,					/// Enable EVA speech.
 	TACTION_SET_GROUP_ID,					/// Set group ID of attached object.
 	TACTION_TALK_BUBBLE,					/// Display talk bubble over unit.
+	TACTION_GIVE_CREDITS,					// Give or take credits from a house.
+	TACTION_ENABLE_SHORT_GAME,				// Turn the short game rule on.
+	TACTION_DISABLE_SHORT_GAME,				// Turn the short game rule off.
+	TACTION_CREATE_BUILDING_AT,				// Place a building at a waypoint.
+	TACTION_HOUSE_DESTROY_ALL,				// Destroy everything a house owns and defeat it.
+	TACTION_MAKE_ELITE,						// Promote attached objects to elite.
+	TACTION_ENABLE_ALLY_REVEAL,				// Let allies see what each other reveals.
+	TACTION_DISABLE_ALLY_REVEAL,			// Stop allies seeing what each other reveals.
+	TACTION_CREATE_AUTOSAVE,				// Save the game once the frame has finished.
+	TACTION_DELETE_OBJECT,					// Remove attached objects without destroying them.
+	TACTION_ALL_ASSIGN_MISSION,				// Give every foot unit of the house a mission.
+	TACTION_MAKE_ALLY_ONE_WAY,				// Ally with a house without the reverse alliance.
+	TACTION_MAKE_ENEMY_ONE_WAY,				// Declare war on a house.
 
 	TACTION_COUNT,
 	TACTION_FIRST=0

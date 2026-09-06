@@ -82,6 +82,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "audio/audioengine.h"
+#include "desyncdlg.h"
 #include "gamedirs.h"
 #include "gamedlg.h"
 #include "globals.h"
@@ -96,6 +97,7 @@
 #include "mainloop.h"
 #include "msgbox.h"
 #include "movie.h"
+#include "movieskip.h"
 #include "mplayer.h"
 #include "msgloop.h"
 #include "netdlg.h"
@@ -105,6 +107,7 @@
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
+#include "savemgr.h"
 #include "scenario.h"
 #include "session.h"
 #include "sidebar.h"
@@ -256,6 +259,10 @@ void Ingame_Menu_Dialog(void)
 				case SDLG_SOUND:
 					SoundControlsClass().Dialog();
 					SpecialDialog = SDLG_SETTINGS;
+					break;
+
+				case SDLG_LOAD:
+					SpecialDialog = SaveManager.Multiplayer_Load_Prompt() ? SDLG_NONE : SDLG_OPTIONS;
 					break;
 
 				case SDLG_KEYBOARD:
@@ -612,6 +619,7 @@ static NetGlobal::ValidationContext Global_Validation_Context(NodeNameType const
 		context.SenderPlayerID = sender->Player.ID;
 		context.SenderPlayerColor = sender->Player.Color;
 	}
+	context.MasterPlayerID = Session.Master_Player_ID();
 	return(context);
 }
 
@@ -619,14 +627,17 @@ static NetGlobal::ValidationContext Global_Validation_Context(NodeNameType const
 /// <summary>
 /// Handles the network maintenance for a network game.
 /// This routine services the network connection and deals with the global packets that
-/// have arrived -- players signing off, chat messages, kick proposals, and the loading
-/// progress the other machines report. It needs to be called as often as possible.
+/// have arrived -- players signing off, chat messages, kick proposals, movie skip votes, and
+/// the loading progress the other machines report. It needs to be called as often as possible.
 /// </summary>
 void IPX_Call_Back(void)
 {
 	Windows_Message_Handler();
 
 	Ipx.Service();
+
+	// The dialog's heartbeats must keep going while a nested dialog owns the message loop.
+	DesyncDialog.Service();
 
 	/*
 	**	Read packets only if the game is "closed", so we don't steal global
@@ -662,10 +673,15 @@ void IPX_Call_Back(void)
 							break;
 
 						case NET_SIGN_OFF: {
-							int const connection = Ipx.Connection_Index(sender->Player.ID);
-							if (connection >= 0) {
-								Forget_Kick_Player(sender->Player.ID);
-								Destroy_Connection(sender->Player.ID, 0);
+							int const house = sender->Player.ID;
+							std::string const name = sender->Name;
+							if (Ipx.Connection_Index(house) >= 0) {
+								Forget_Kick_Player(house);
+								Destroy_Connection(house, 0);
+								DesyncDialog.Notify_Player_Left(house, name.c_str());
+							} else if (SaveManager.Multiplayer_Load_Is_In_Progress()) {
+								// The connections are rebuilt after the load, so the seat itself goes.
+								SaveManager.Multiplayer_Load_Unseat(sender_index);
 							}
 							break;
 						}
@@ -674,12 +690,39 @@ void IPX_Call_Back(void)
 							Chat_Receive(Session.GPacket, Session.GAddress);
 							break;
 
+						case NET_HOST_ANNOUNCE:
+							if (Session.MasterPlayerID == -1 || Session.MasterPlayerID == sender->Player.ID) {
+								DebugString("Adopting %s (house %d) as master\n", sender->Name, sender->Player.ID);
+								Session.Adopt_Master(sender->Player.ID, sender->Name);
+								DesyncDialog.Notify_Master_Changed();
+							} else {
+								DebugString("Ignoring a host announcement from %s while %s is master\n",
+									sender->Name, Session.MasterPlayerName);
+							}
+							break;
+
+						case NET_DESYNC_HEARTBEAT:
+							DesyncDialog.Notify_Heartbeat(sender->Player.ID);
+							break;
+
+						case NET_DESYNC_CONTINUE:
+							DesyncDialog.Notify_Continue();
+							break;
+
+						case NET_LOAD_GAME:
+							SaveManager.Multiplayer_Load_Receive(Session.GPacket.LoadGame.Slot);
+							break;
+
 						case NET_PROGRESS_REPORT:
 							DebugString("Received progress message - %d%% from %s\n", Session.GPacket.Progress.Percent, sender->Name);
 							Progress.Set_Progress_Percent(sender_index, Session.GPacket.Progress.Percent);
 							break;
 
 						case NET_READY_TO_GO:
+							break;
+
+						case NET_MOVIE_SKIP:
+							MovieSkip::Receive(sender->Player.ID, Session.GPacket);
 							break;
 
 						default:

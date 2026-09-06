@@ -122,6 +122,27 @@ int main(void)
 
 		autosave.Set_Interval(-5);
 		Check(autosave.Interval() == 0, "an interval below zero is off");
+
+		autosave.Arm();
+		autosave.Arm();
+		Check(autosave.Take_Armed() && !autosave.Take_Armed(),
+			"explicit requests coalesce with the timed interval disabled");
+		Check(!autosave.Is_Due(100000), "an explicit request does not enable timed saves");
+	}
+
+	/*
+	 * Multiplayer saves are numbered in the pattern the client lists.
+	 */
+	{
+		Check(Multiplayer_Save_File_Name(0) == "SVGM_000.NET", "the first multiplayer save is SVGM_000.NET");
+		Check(Multiplayer_Save_File_Name(MULTIPLAYER_SAVE_SLOTS - 1) == "SVGM_999.NET", "the last multiplayer save is SVGM_999.NET");
+		Check(Multiplayer_Save_Slot("SVGM_007.NET") == 7, "a numbered name yields its slot");
+		Check(Multiplayer_Save_Slot("svgm_007.net") == 7, "the pattern is matched in any case");
+		Check(Multiplayer_Save_Slot("SAVEGAME.NET") == -1, "the old fixed name is not a slot");
+		Check(Multiplayer_Save_Slot("SVGM_00A.NET") == -1, "a non-digit is refused");
+		Check(Multiplayer_Save_Slot("SVGM_0007.NET") == -1, "four digits are refused");
+		Check(Multiplayer_Save_Slot("SVGM_007.SAV") == -1, "another extension is refused");
+		Check(Multiplayer_Save_Slot("") == -1 && Multiplayer_Save_Slot(nullptr) == -1, "an empty or null name is refused");
 	}
 
 	/*

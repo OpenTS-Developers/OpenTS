@@ -9,7 +9,7 @@ when_omitted:
 
 Two paths read the flag, and between them they replace the ordinary firing behavior of a defense.
 
-Every pass of the structure's logic drops its current target when that target is not in the air. Nothing else is consulted — not range, not whether the weapon could have hit it — so a launcher handed a ground target by [target selection](/systems/target-selection/), by retaliation or by a player's force fire loses it again before it acts on it.
+Every pass of the structure's logic drops its current target when that target is not in the air. Nothing else is consulted — not range, not whether the weapon could have hit it — so a launcher handed a ground target by [target selection](/systems/target-selection/) or by retaliation loses it again before it acts on it. A player cannot hand it one: the attack cursor appears over an airborne aircraft in range and nowhere else, so a launcher takes an order against a chosen aircraft and none against the ground.
 
 On the attack mission the structure then runs a two-state routine in place of the general one:
 

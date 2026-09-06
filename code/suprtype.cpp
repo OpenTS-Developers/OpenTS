@@ -71,6 +71,7 @@ SuperWeaponTypeClass::SuperWeaponTypeClass(char const * ininame) :
 	Weapon(NULL),
 	RechargeTime(4500),
 	CameoData(NULL),
+	CameoSortOrder(0),
 	Action(ACTION_NONE),
 	AuxBuilding(NULL),
 	SidebarImage(),
@@ -145,6 +146,7 @@ void SuperWeaponTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RechargeTime);
 	stream.Serialize(Type);
 	// CameoData -- artwork, fetched from the mix files again as this loads.
+	stream.Serialize(CameoSortOrder);
 	stream.Serialize(Action);
 	stream.Serialize(AuxBuilding);
 	stream.Serialize(SidebarImage);
@@ -227,6 +229,7 @@ bool SuperWeaponTypeClass::Read_INI(CCINIClass const & ini)
 		AuxBuilding = TGet_Class(ini, IniName, "AuxBuilding", AuxBuilding);
 		UseChargeDrain = ini.Get_Bool(IniName, "UseChargeDrain", UseChargeDrain);
 		IsManualControl = ini.Get_Bool(IniName, "ManualControl", IsManualControl);
+		CameoSortOrder = ini.Get_Int(IniName, "CameoSortOrder", CameoSortOrder);
 
 		float recharge = ini.Get_Float(IniName, "RechargeTime");
 		if (recharge != 0.0) {

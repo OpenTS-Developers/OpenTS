@@ -131,11 +131,11 @@ site_exclusions:
     classification: excluded
     reason: This lookup reads an internal rules-choice dialog label rather than an engine setting.
 
-  - path: code/gamedirs.cpp
-    function: Init_Search_Folders
-    keys: [SearchPaths]
+  - path: code/deploymentconfig.cpp
+    function: DeploymentConfigClass::Read_INI
+    keys: [SearchPaths, CarryScenarioFile]
     classification: excluded
-    reason: The folder list belongs to the deployment file that describes where a distribution keeps its own files, and is documented as part of that format rather than as game data.
+    reason: Both are settings of the deployment's own file, documented as that format rather than as game data.
 
   - path: code/spawnerconfig.cpp
     function: SpawnerConfigClass::Read_Slots
@@ -144,6 +144,6 @@ site_exclusions:
     reason: Each names one seat of a match inside a section the CnCNet client numbers per seat, not an authored game-data setting.
   - path: code/spawnerconfig.cpp
     function: SpawnerConfigClass::Read_INI
-    keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ContinueWithoutHumans, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameID, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ScrapMetal, Seed, ShortGame, SkipScoreScreen, TechLevel, Tournament, UnitCount, WriteStatistics]
+    keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoDeployMCV, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ConnTimeout, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameID, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ReconnectTimeout, ScrapMetal, Seed, ShortGame, SkipScoreScreen, TechLevel, Tournament, UnitCount, WriteStatistics]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.

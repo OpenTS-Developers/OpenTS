@@ -159,6 +159,11 @@ enum NetCommandType {
 	NET_PREVIEW_ACK,			//
 	NET_REQ_PREVIEW,			//
 	NET_PROPOSE_KICK,			//
+	NET_MOVIE_SKIP,				// Which fullscreen movie the sender is watching and whether he wants it skipped
+	NET_HOST_ANNOUNCE,			// The launch file's host names itself once the connections exist.
+	NET_DESYNC_HEARTBEAT,		// Sent every second while the out-of-sync dialog halts the game.
+	NET_DESYNC_CONTINUE,		// The master's decision to play on without the players out of sync.
+	NET_LOAD_GAME,				// The master names the multiplayer save every machine loads.
 };
 
 //---------------------------------------------------------------------------
@@ -343,6 +348,17 @@ struct GlobalPacketType {
 		} Kick;
 
 		/*
+		 * This names the fullscreen movie the sender is watching, by a digest of its name and by
+		 * its count among the movies the session has started, and says whether the sender wants
+		 * it skipped. It accompanies the NET_MOVIE_SKIP command.
+		 */
+		struct {
+			unsigned int Movie;
+			unsigned int Instance;
+			unsigned int Vote;
+		} MovieSkip;
+
+		/*
 		 * This carries the game options as an encoded string, tagged with the sender's color
 		 * and a CRC of his game's name. It accompanies the NET_PUB_GAMEOPT and
 		 * NET_PRIV_GAMEOPT commands.
@@ -352,6 +368,14 @@ struct GlobalPacketType {
 			int Color;
 			unsigned int NameCRC;
 		} Options;
+
+		/*
+		 * This names the numbered multiplayer save every machine is to load, by its slot.
+		 * It accompanies the NET_LOAD_GAME command.
+		 */
+		struct {
+			unsigned short Slot;
+		} LoadGame;
 	};
 };
 #pragma pack()
@@ -426,6 +450,10 @@ struct GameOptionsType {
 	bool		FogOfWar;			/// Ground the player can no longer see fogs back over.
 	bool		MCVRedeploy;		/// A construction yard can be sold back into an MCV.
 	bool		CoachMode;			// A defeated player keeps allied vision and private chat, and gets no map reveal.
+	bool		AITakeover;			/// A departed player's house is handed to the computer rather than destroyed.
+	bool		BuildOffAlly;		// A mutually allied house's buildings anchor this player's placements.
+	bool		AutoDeployMCV;		// Every house's starting base unit deploys as the match begins.
+	bool		AttackNeutralUnits;	// A target scan considers a neutral house's objects.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
 	bool Save(IStream * stream);
@@ -481,6 +509,8 @@ class SessionClass
 		int Create_Connections(void);
 		bool Am_I_Master(void);
 		int Master_Player_ID(void) const;
+		void Announce_Master(void);
+		void Adopt_Master(int house, char const * name);
 		unsigned int Compute_Unique_ID(void);
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);
@@ -559,6 +589,11 @@ class SessionClass
 		//.....................................................................
 		unsigned int MaxAhead;
 		unsigned int FrameSendRate;
+
+		// How long this machine waits on another, in game ticks. Each machine keeps its own: the
+		// waits decide when this machine gives up, never what the match computes.
+		int ConnTimeout;			/// no loading progress from a machine before it is dropped
+		int ReconnectTimeout;		/// silence from a machine, once playing, before it is dropped
 
 		int			DesiredFrameRate;
 
@@ -703,6 +738,12 @@ class SessionClass
 		//.....................................................................
 		bool NetStealth;                                // makes us invisible
 		bool NetOpen;                                   // 1 = game is open for joining
+		bool PlayMovies;                                // a launch file asked for movies outside a campaign
+		bool SkipScoreScreen;                           // a launch file asked that the score screen be passed over
+		char LoadScreen[_MAX_PATH];                     // the picture to show while the scenario loads, or empty
+		int LoadScreenX;                                // where in that picture the loading bars go, or zero for
+		int LoadScreenY;                                // the position the game picks for its own
+		char DifficultyName[32];                        // what a launch file calls the campaign difficulty
 		char GameName[MPLAYER_NAME_MAX];                // game's name
 		GlobalPacketType GPacket;                       // global packet
 		int GPacketlen;                                 // global packet length

@@ -13,8 +13,6 @@
 
 #include "cdfile.h"
 #include "dbgprint.h"
-#include "ini.h"
-#include "rawfile.h"
 
 #include <algorithm>
 
@@ -26,22 +24,9 @@ static std::string DataDirectory;
 static std::string UserDirectory;
 
 /*
- * The folders a deployment's files are looked for in when no configuration names any. A
- * configuration's list replaces this rather than adding to it.
- */
-static char const * const DefaultSearchFolders = "INI,MIX,Maps";
-
-static char const * const ConfigName = "OPENTS.INI";
-
-/*
  * The folder saved games are kept in, under whichever directory the player's own files go.
  */
 static char const * const SavedGamesFolder = "Saved Games";
-
-/*
- * The folders the configuration itself is looked for in, relative to the data directory.
- */
-static char const * const ConfigProbes[] = {"", "INI\\", "MIX\\"};
 
 
 static std::string Trim_Path(std::string const & path)
@@ -101,7 +86,7 @@ static bool Is_Registered(std::string const & path)
 }
 
 
-static std::string Data_Home(void)
+std::string Data_Directory(void)
 {
 	return(DataDirectory);
 }
@@ -256,36 +241,11 @@ bool Apply_Game_Directories(void)
 }
 
 
-/// <summary>
-/// Reads the deployment's configuration and installs the folders it searches.
-/// The file is read from the disk rather than through the game's file system, so a
-/// deployment cannot hide the description of its own layout inside an archive.
-/// </summary>
-void Init_Search_Folders(void)
+void Init_Search_Folders(char const * list)
 {
-	std::string const home = Data_Home();
-	std::string list = DefaultSearchFolders;
+	std::string const home = Data_Directory();
 
-	for (char const * probe : ConfigProbes) {
-		std::string const name = home + probe + ConfigName;
-		RawFileClass file(name.c_str());
-
-		if (!file.Is_Available()) {
-			continue;
-		}
-
-		INIClass ini;
-		ini.Load(file);
-
-		if (ini.Is_Present("Paths", "SearchPaths")) {
-			list = ini.Get_String("Paths", "SearchPaths");
-		}
-
-		DebugString("[GameDirs] Read %s.\n", name.c_str());
-		break;
-	}
-
-	for (std::string const & folder : Parse_Search_Folders(list.c_str())) {
+	for (std::string const & folder : Parse_Search_Folders(list)) {
 		std::string const path = home + folder;
 
 		if (!Is_Registered(path)) {

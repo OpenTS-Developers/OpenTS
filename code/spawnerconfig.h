@@ -106,6 +106,7 @@ class SpawnerConfigClass
 		bool HarvesterTruce = false;
 		bool FogOfWar = false;
 		bool MCVRedeploy = true;
+		bool AutoDeployMCV = false;
 		int Seed = 0;
 		int TechLevel = 10;
 		bool Firestorm = true;
@@ -119,6 +120,13 @@ class SpawnerConfigClass
 		std::string TunnelAddress = "0.0.0.0";
 		int TunnelPort = 0;
 
+		// How long this machine waits on another, in game ticks. A value outside the bounds is
+		// brought within them.
+		static constexpr int TIMEOUT_MIN = 60;
+		static constexpr int TIMEOUT_MAX = 36000;
+		int ConnTimeout = 3600;
+		int ReconnectTimeout = 2400;
+
 		// What a player is shown.
 		bool QuickMatch = false;
 		bool SkipScoreScreen = false;
@@ -128,7 +136,6 @@ class SpawnerConfigClass
 		bool AutoSurrender = true;
 		bool AttackNeutralUnits = false;
 		bool ScrapMetal = false;
-		bool ContinueWithoutHumans = false;
 		bool PlayMoviesInMultiplayer = false;
 		std::string CustomLoadScreen;
 		int CustomLoadScreenX = 0;

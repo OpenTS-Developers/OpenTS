@@ -38,6 +38,7 @@
 #include "_alpha.h"
 #include "_command.h"
 #include "_convert.h"
+#include "_deploymentconfig.h"
 #include "_font.h"
 #include "_keyboar.h"
 #include "_mixfile.h"
@@ -67,6 +68,7 @@
 #include "cstream.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "dllver.h"
 #include "drive.h"
 #include "droppod.h"
@@ -558,9 +560,11 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 		/*
 		 * Before anything is read, so that every file the game goes on to open is looked
-		 * for where this deployment actually keeps it.
+		 * for where this deployment actually keeps it: the directories are applied, then
+		 * the deployment's own file is read, then the folders it names are installed.
 		 */
-		Init_Search_Folders();
+		DeploymentConfig.Read_File(Data_Directory().c_str());
+		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
 
 		// The recording's name was settled during static initialization, before there was
 		// anywhere for a player's files to go. Naming it again settles it where it belongs.

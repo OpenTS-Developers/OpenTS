@@ -61,6 +61,7 @@
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "msgloop.h"
+#include "netglobal.h"
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
@@ -124,6 +125,7 @@ char const * SessionClass::GlobalPacketNames[] = {
 	"NET_PREVIEW_ACK",
 	"NET_REQ_PREVIEW",
 	"NET_PROPOSE_KICK",
+	"NET_MOVIE_SKIP",
 };
 
 #endif
@@ -166,6 +168,10 @@ SessionClass::SessionClass(void)
 	Options.FogOfWar=false;
 	Options.MCVRedeploy=false;
 	Options.CoachMode = false;
+	Options.AITakeover = true;
+	Options.BuildOffAlly = false;
+	Options.AutoDeployMCV = false;
+	Options.AttackNeutralUnits = false;
 	Options.AIDifficulty = DIFF_NORMAL;
 
 	UniqueID = 0;
@@ -196,6 +202,9 @@ SessionClass::SessionClass(void)
 	MaxAhead = FrameSendRate * 3;
 	MaxMaxAhead = MaxAhead;
 
+	ConnTimeout = 60 * TIMER_SECOND;
+	ReconnectTimeout = 40 * TIMER_SECOND;
+
 	memset(ConnectionStats, 0, sizeof(ConnectionStats));
 
 	PrecalcMaxAhead = 0;
@@ -217,6 +226,12 @@ SessionClass::SessionClass(void)
 
 	NetStealth = 0;
 	NetOpen = 0;
+	PlayMovies = false;
+	SkipScoreScreen = false;
+	LoadScreen[0] = '\0';
+	LoadScreenX = 0;
+	LoadScreenY = 0;
+	DifficultyName[0] = '\0';
 	GameName[0] = 0;
 	GProductID = 0;
 	Suspended = 0;
@@ -406,65 +421,62 @@ int SessionClass::Create_Connections(void)
  *=========================================================================*/
 bool SessionClass::Am_I_Master(void)
 {
-	int i;
-	HouseClass *hptr;
-
-	if (PlayerPtr == NULL) return(false);
-
-	if (Session.Type == GAME_INTERNET) {
-		if (MasterPlayerID != -1) {
-			return(PlayerPtr->HeapID == MasterPlayerID);
-		}
-
-		if (PlayerPtr && stricmp(PlayerPtr->IniName, MasterPlayerName) == 0) {
-			return(true);
-		}
-	}
-
-	//------------------------------------------------------------------------
-	// Check every house; if PlayerPtr points to the first human house, we're
-	// the master.
-	//------------------------------------------------------------------------
-	for (i = 0; i < Houses.Count(); i++) {
-		hptr = Houses[i];
-		if (hptr->IsHuman) {
-			if (PlayerPtr == hptr) {
-				return(true);
-			}
-			else {
-				return(false);
-			}
-		}
-	}
-
-	return(false);
+	return(PlayerPtr != NULL && PlayerPtr->HeapID == Master_Player_ID());
 
 }	// end of Am_I_Master
 
 
-/// <summary>Returns the first active network-human house in deterministic order.</summary>
+/// <summary>
+/// Returns the house that decides for the match: the announced host while it still holds a
+/// seat, else the lowest seated house. The timing events, the out-of-sync dialog and an
+/// in-game load all answer to this one master, and every machine names the same one.
+/// </summary>
 int SessionClass::Master_Player_ID(void) const
 {
-	if (Type == GAME_INTERNET) {
-		for (int i = 0; i < Houses.Count(); i++) {
-			HouseClass const * house = Houses[i];
-			if (house == NULL || !house->IsHuman) {
-				continue;
-			}
-			if ((MasterPlayerID >= 0 && house->HeapID == MasterPlayerID)
-				|| (MasterPlayerID < 0 && stricmp(house->IniName, MasterPlayerName) == 0)) {
-				return(house->HeapID);
-			}
+	int lowest = -1;
+	for (int index = 0; index < Players.Count(); index++) {
+		if (Players[index] == NULL) {
+			continue;
 		}
+		int house = Players[index]->Player.ID;
+		if (MasterPlayerID >= 0 && house == MasterPlayerID) {
+			return(MasterPlayerID);
+		}
+		if (house >= 0 && (lowest < 0 || house < lowest)) {
+			lowest = house;
+		}
+	}
+	return(lowest);
+}
+
+
+/// <summary>
+/// Tells every seat that this machine is the host. Sent once the connections exist and again
+/// after an in-place load, since a seat learns the host from nothing else.
+/// </summary>
+void SessionClass::Announce_Master(void)
+{
+	if (Players.Count() == 0) {
+		return;
 	}
 
-	for (int i = 0; i < Houses.Count(); i++) {
-		HouseClass const * house = Houses[i];
-		if (house != NULL && house->IsHuman) {
-			return(house->HeapID);
-		}
+	Adopt_Master(Players[0]->Player.ID, Players[0]->Name);
+
+	GlobalPacketType packet;
+	NetGlobal::Initialize_Packet(packet, NET_HOST_ANNOUNCE);
+	std::snprintf(packet.Name, sizeof(packet.Name), "%s", Players[0]->Name);
+
+	for (int index = 1; index < Players.Count(); index++) {
+		Ipx.Send_Global_Message(&packet, sizeof(packet), 1, &Players[index]->Address);
+		Ipx.Service();
 	}
-	return(-1);
+}
+
+
+void SessionClass::Adopt_Master(int house, char const * name)
+{
+	MasterPlayerID = house;
+	std::snprintf(MasterPlayerName, sizeof(MasterPlayerName), "%s", name != NULL ? name : "");
 }
 
 
@@ -573,6 +585,8 @@ bool SessionClass::Log_To_File(FILE *out)
 
 	fprintf(out, "Address = %s\n\n", Session.HostAddress.As_String());
 	fprintf(out,"MaxAhead = %d\n", MaxAhead);
+	fprintf(out,"ConnTimeout = %d\n", ConnTimeout);
+	fprintf(out,"ReconnectTimeout = %d\n", ReconnectTimeout);
 	fprintf(out,"LoadGame = %d\n", LoadGame);
 	fprintf(out,"PrefColor = %d\n", PrefColor);
 	fprintf(out,"ColorIdx = %d\n", ColorIdx);
@@ -587,6 +601,10 @@ bool SessionClass::Log_To_File(FILE *out)
 	fprintf(out,"Options.AIPlayers = %d\n", Options.AIPlayers);
 	fprintf(out,"Options.AIDifficulty = %d\n", Options.AIDifficulty);
 	fprintf(out,"Options.CoachMode = %d\n", Options.CoachMode);
+	fprintf(out,"Options.AITakeover = %d\n", Options.AITakeover);
+	fprintf(out,"Options.BuildOffAlly = %d\n", Options.BuildOffAlly);
+	fprintf(out,"Options.AutoDeployMCV = %d\n", Options.AutoDeployMCV);
+	fprintf(out,"Options.AttackNeutralUnits = %d\n", Options.AttackNeutralUnits);
 	fprintf(out,"ObiWan = %d\n", ObiWan);
 	fprintf(out,"AIOnly = %d\n", AIOnly);
 
@@ -1190,7 +1208,8 @@ void SessionClass::Update_Progress(int percent)
 				memset((void *)&prog_packet, 0, sizeof(prog_packet));
 
 				prog_packet.Command = NET_PROGRESS_REPORT;
-				prog_packet.Progress.Percent = int(100.0 * Progress.Get_Current_Progress(0));
+				// A receiver refuses a report outside the range, which a bar past full would send.
+				prog_packet.Progress.Percent = std::clamp(int(100.0 * Progress.Get_Current_Progress(0)), 0, 100);
 
 				if (prog_packet.Progress.Percent < 99.95) {
 					Ipx.Send_Global_Message(&prog_packet, sizeof(prog_packet), 0, NULL);
@@ -1366,6 +1385,10 @@ void GameOptionsType::Serialize(SaveStreamClass & stream)
 	stream.Serialize(FogOfWar);
 	stream.Serialize(MCVRedeploy);
 	stream.Serialize(CoachMode);
+	stream.Serialize(AITakeover);
+	stream.Serialize(BuildOffAlly);
+	stream.Serialize(AutoDeployMCV);
+	stream.Serialize(AttackNeutralUnits);
 	stream.Serialize(ScenarioDescription);
 }
 

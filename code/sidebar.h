@@ -168,6 +168,7 @@ class SidebarClass : public PowerClass
 				void Init_Clear(void);
 				void Init_IO(int id);
 				bool Recalc(void);
+				void Sort(void);
 				void Activate(void);
 				void Deactivate(void);
 				void Flag_To_Redraw(void);
@@ -231,6 +232,12 @@ class SidebarClass : public PowerClass
 				**	will be true.
 				*/
 				bool IsToRedraw;
+
+				/*
+				 * If the entries this strip holds have changed since it was last put in order,
+				 * then this flag will be true.
+				 */
+				bool IsToSort;
 
 				/*
 				**	If construction is in progress (no other objects in this strip can

@@ -9,15 +9,20 @@ role: persistence
 source_files:
   - code/autosave.cpp
   - code/conquer.cpp
+  - code/deploymentconfig.cpp
+  - code/desyncdlg.cpp
   - code/event.cpp
   - code/goptions.cpp
   - code/init.cpp
   - code/loaddlg.cpp
   - code/mainloop.cpp
+  - code/mpload.cpp
   - code/netdlg.cpp
   - code/saveload.cpp
+  - code/savemgr.cpp
   - code/savestream.cpp
   - code/savever.cpp
+  - code/scenfile.cpp
   - code/abstract.cpp
   - code/objtype.cpp
   - code/unittype.cpp
@@ -37,6 +42,8 @@ The dialog names a new save `SAVE` followed by four hexadecimal digits, drawing 
 
 A campaign or skirmish save requested through the save dialog is written immediately while that dialog has the scenario paused. A multiplayer click instead submits a synchronized `SAVEGAME` command. When that command executes, each peer copies one pending filename and description; duplicate commands before the frame ends share that one request. The file is written only after the command queue has finished and the end-of-frame deletion pass has retired every object already marked for removal.
 
+The [Create Autosave](/mapping/actions/taction-create-autosave/) trigger action requests an automatic save at that same frame boundary, using the slots and descriptions below. It works even when the timed interval is disabled, including multiplayer games started from the menu. Repeated trigger requests in one frame share one save; a pending multiplayer save keeps its filename, description, and saving-box setting. Playback writes nothing.
+
 Once a connection is destroyed or a synchronized `REMOVEPLAYER` command executes, multiplayer saving is disabled for the rest of that match and any pending request is cancelled. The options dialog disables its Save button in that state. Restarting the mission does not restore the button or accept another request; selecting and starting a new game does.
 
 A save that cannot be written, whether the player asked for it or the game did, says so in the message list.
@@ -47,7 +54,7 @@ The game also saves on its own at a fixed interval of frames: a game started fro
 
 A campaign writes `AUTOSAVE1.SAV` through `AUTOSAVE5.SAV` in turn and then starts over, and a skirmish writes `AUTOSAVE_SKIRMISH1.SAV` through `AUTOSAVE_SKIRMISH5.SAV` the same way; the two rings turn independently. Each is described as `Auto-Save`, its slot number and the scenario's description, so a listing tells it apart from a save the player named. Every save records the slot that follows the last one written, in both rings, and a loaded game continues from what its save records. The rings keep their positions for as long as the game runs, so a new game started from the menu carries on where the last automatic save left off rather than overwriting it, and a client-launched game starts where its launch file says.
 
-A game against other machines saves automatically only when a launch file set the interval, because every machine must write the same frame and a match arranged from the menu leaves each machine with settings of its own. Each machine then writes `SAVEGAME.NET`, described as `Multiplayer Game (Auto-Save)`, through the pending request and without the saving box a manual save shows, so a client watching the folder can number the file as it numbers a manual save. Once multiplayer saving is disabled for the match, automatic saves stop with it.
+Timed saves in a game against other machines run only when a launch file set the interval, because every machine must write the same frame and a match arranged from the menu leaves each machine with settings of its own. Each machine then writes the next [numbered save](#numbered-multiplayer-saves), described as `Multiplayer Game (Auto-Save)`, through the pending request and without the saving box a manual save shows. Once multiplayer saving is disabled for the match, automatic saves stop with it.
 
 ## Quick saves
 
@@ -57,11 +64,21 @@ The [`QuickSave`](/commands/quicksave/) command writes a campaign to `QUICKSAVE.
 
 Both commands are refused in a game against other machines, during playback, while a scripted sequence has locked input, and once the game is being won or lost. Both arrive unbound.
 
+## Numbered multiplayer saves
+
+A game against other machines writes every save, timed or from the options menu, as `SVGM_nnn.NET`, numbered from `SVGM_000.NET` at the first number no file holds, so a match's saves count up in step on every machine. When a new match starts the game deletes the numbered files a previous match left, along with that match's launch-file copy, and a client-launched match writes a fresh copy of its launch file beside its first save as `spawnSG.ini`, which the CnCNet client reads to resume the match. A resumed match keeps its files and carries the numbering on. The client used to do both itself when a save named `SAVEGAME.NET` appeared and it renamed the file; that name is no longer written.
+
+## Loading during a match
+
+In a game against other machines the master can load one of the match's saved games while it is being played, from the options menu or from the [out-of-sync dialog](/systems/out-of-sync-recovery/). The list offers the match's numbered saves; a file stamped by another version or made in another kind of game is skipped. Reading a file's header costs a disk open, so only the newest thirty-two files by write time are read, which keeps the other machines from waiting on a long scan. Picking one asks every machine to load the save of that number from its own folder five seconds later. Each machine discards what it received and sent for the running match, reads the save, matches the seats it holds to the saved houses by name, rebuilds its connections, and synchronizes at the save's frame as a resumed save does, where files that do not match are refused. A player who has left since the save was written fights on under the computer, and multiplayer saving is allowed again once the loaded game runs, since it seats exactly the machines present. No save is written while a load is pending, and a machine whose load fails signs off and leaves the match.
+
 ## What the file holds
 
 The property set carries the description shown in the list, the player's name and house, the campaign and scenario numbers, the game type, three timestamps, the name of the program that wrote the save, and two version stamps — the save format's own version and the build version of the game that wrote it.
 
 The `CONTENTS` stream is a fixed sequence of records — the scenario, the environment, the rules, the map, the loose global values, and every list of type definitions and runtime objects — written and read back in the same order. Among the loose values are the looping sounds left at waypoints by [Play Sound Effect At](/mapping/actions/taction-play-sound-at/) and the sounds attached to objects, each as the sound and its place or object; the playing sound itself is not saved and starts again on the first sound tick after the load. Each list stores its own length ahead of its members, and each member writes out the members its class declares, in the order that class lists them. What a save holds is therefore a field-by-field record of each object rather than a copy of the bytes it occupied in memory. Type definitions travel with the save, so a save carries the rules types it was made with rather than looking them up again on load. Artwork does not travel with it: once a restored type's members have been read, its shape and voxel pointers are released and fetched from the archives again, so a save loaded against a changed set of files gets the current artwork. One piece does not come back. A UnitType drawn from shapes is given a [voxel turret](/formats/vxl-hva/) when the rules are read, by a routine no restore calls; the restore takes the ordinary voxel path instead, which releases that turret along with the body model it could not find. Its voxel barrel is fetched back, and the barrel is what the shape path draws.
+
+The scenario record also holds the scenario file itself, name and bytes, where the deployment's [`CarryScenarioFile`](/formats/opents-ini/#what-a-save-carries) asks for it; the record is written either way, empty when nothing is carried. A [restart or replay](/systems/campaign-progression/#losing-and-restarting) after a load reads that copy, not the file on disk, which a client resuming the save may have replaced. A random map holds no file.
 
 ## What is checked
 

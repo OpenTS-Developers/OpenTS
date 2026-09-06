@@ -333,6 +333,7 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsExtraDamageStage(true),
 	CanAIBuildThis(false),
 	IsBaseDefense(false),
+	IsSortCameoAsBaseDefense(false),
 	CloakRadiusInCells(20),
 	IsDemandLoad(false),
 	IsDemandLoadBuildup(false),
@@ -1242,6 +1243,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 
 		CanAIBuildThis = ini.Get_Bool(Name(), "AIBuildThis", CanAIBuildThis);
 		IsBaseDefense = ini.Get_Bool(Name(), "IsBaseDefense", IsBaseDefense);
+		IsSortCameoAsBaseDefense = ini.Get_Bool(Name(), "SortCameoAsBaseDefense", IsBaseDefense);
 		IsThreatRatingNode = ini.Get_Bool(Name(), "IsThreatRatingNode", IsThreatRatingNode);
 		Rotation = IsTurretEquipped ? 32 : 1;
 
@@ -1881,6 +1883,7 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsExtraDamageStage);
 	stream.Serialize(CanAIBuildThis);
 	stream.Serialize(IsBaseDefense);
+	stream.Serialize(IsSortCameoAsBaseDefense);
 	stream.Serialize(CloakRadiusInCells);
 	stream.Serialize(IsDemandLoad);
 	stream.Serialize(IsDemandLoadBuildup);

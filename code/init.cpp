@@ -154,6 +154,7 @@
 #include "rndstraw.h"
 #include "rules.h"
 #include "saveload.h"
+#include "savemgr.h"
 #include "savever.h"
 #include "scenario.h"
 #include "scheme.h"
@@ -411,7 +412,7 @@ int Init_Game(int , char * [])
 	*/
 	DebugString("Reading Game Settings\n");
 	Options.Load_Settings();
-	Autosave.Set_Interval(Options.AutoSaveInterval);
+	SaveManager.Autosave.Set_Interval(Options.AutoSaveInterval);
 
 	/*
 	**	Initialize the animation system.
@@ -1374,7 +1375,7 @@ restart:
 	**	Don't carry stray keystrokes into game.
 	*/
 	Keyboard->Clear();
-	Reset_Multiplayer_Save_State();
+	SaveManager.Reset_Multiplayer_Save_State();
 
 	/*
 	**	Initialize the random number generator(s)
@@ -1458,6 +1459,8 @@ restart:
 
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.Play) {
 		Session.Create_Connections();
+		Spawner_Announce_Master();
+		SaveManager.Multiplayer_Saves_Begin_Match(gameloaded || Session.LoadGame);
 
 		if (Session.Type == GAME_IPX) {
 			Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND / 4, Ipx.Global_Response_Time() + 2), (unsigned int) -1, 10 * TIMER_SECOND);
@@ -3294,6 +3297,37 @@ void Draw_Version_Text(Surface * surface)
 
 static char _cmd_buffer[128];
 
+
+static void Select_Team_Members(int team)
+{
+	for (int i = 0; i < Technos.Count(); i++) {
+		TechnoClass * obj = Technos[i];
+		if (obj && !obj->IsInLimbo && obj->Group == team - 1 && obj->House->Is_Player_Control()) {
+			if (!obj->IsSelected) {
+				obj->Select();
+				AllowVoice = false;
+			}
+		}
+	}
+}
+
+
+static void Assign_Selection_To_Team(int team)
+{
+	for (int i = 0; i < Technos.Count(); i++) {
+		TechnoClass * obj = Technos[i];
+		if (obj && !obj->IsInLimbo && obj->House->Is_Player_Control()) {
+			if (obj->Group == team - 1) {
+				obj->Group = -1;
+			}
+			if (obj->IsSelected) {
+				obj->Group = team - 1;
+			}
+		}
+	}
+}
+
+
 class CreateTeamCommandClass : public CommandClass
 {
 	public:
@@ -3316,17 +3350,7 @@ class CreateTeamCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			for (int i = 0; i < Technos.Count(); i++) {
-				TechnoClass * obj = Technos[i];
-				if (obj && !obj->IsInLimbo && obj->House->Is_Player_Control()) {
-					if (obj->Group == Team - 1) {
-						obj->Group = -1;
-					}
-					if (obj->IsSelected) {
-						obj->Group = Team - 1;
-					}
-				}
-			}
+			Assign_Selection_To_Team(Team);
 		}
 
 	private:
@@ -3365,15 +3389,7 @@ class SelectTeamCommandClass : public CommandClass
 			if (CurrentObject.Count() > 0 && !already) {
 				Unselect_All();
 			}
-			for (int i = 0; i < Technos.Count(); i++) {
-				TechnoClass * obj = Technos[i];
-				if (obj && !obj->IsInLimbo && obj->Group == (Team - 1) && obj->House->Is_Player_Control()) {
-					if (!obj->IsSelected) {
-						obj->Select();
-						AllowVoice = false;
-					}
-				}
-			}
+			Select_Team_Members(Team);
 			AllowVoice = false;
 			TechnoClass::Reset_Action_Line_Timer();
 
@@ -3426,17 +3442,44 @@ class AddTeamCommandClass : public CommandClass
 			Map.Repair_Mode_Control(0);
 			Map.Sell_Mode_Control(0);
 
-			for (int i = 0; i < Technos.Count(); i++) {
-				TechnoClass * obj = Technos[i];
+			Select_Team_Members(Team);
+		}
 
-				if (obj && !obj->IsInLimbo && obj->Group == Team-1 && obj->House->Is_Player_Control()) {
+	private:
+		int Team;
+};
 
-					if (!obj->IsSelected) {
-						obj->Select();
-						AllowVoice = false;
-					}
-				}
-			}
+
+class AddToTeamCommandClass : public CommandClass
+{
+	public:
+		AddToTeamCommandClass(int team) : Team(team) {}
+
+		virtual char const * Get_Unique_Name(void) const {
+			sprintf(_cmd_buffer, "TeamAddTo_%d", Team);
+			return(_cmd_buffer);
+		}
+		virtual char const * Get_Display_Name(void) const {
+			sprintf(_cmd_buffer, Fetch_String(TXT_ADD_TO_TEAM), Team);
+			return(_cmd_buffer);
+		}
+		virtual char const * Get_Category(void) const {
+			return(Fetch_String((TXT_TEAM)));
+		}
+		virtual char const * Get_Description(void) const {
+			sprintf(_cmd_buffer, Fetch_String(TXT_ADD_TO_TEAM_DESC), Team);
+			return(_cmd_buffer);
+		}
+
+		virtual void Execute(void) const {
+			Map.Power_Mode_Control(0);
+			Map.Waypoint_Mode_Control(0);
+			Map.Repair_Mode_Control(0);
+			Map.Sell_Mode_Control(0);
+
+			// The team joins the selection first, or the assignment would drop its existing members.
+			Select_Team_Members(Team);
+			Assign_Selection_To_Team(Team);
 		}
 
 	private:
@@ -3475,15 +3518,7 @@ class CenterTeamCommandClass : public CommandClass
 				Unselect_All();
 			}
 
-			for (int i = 0; i < Technos.Count(); i++) {
-				TechnoClass * obj = Technos[i];
-				if (obj && !obj->IsInLimbo && obj->Group == Team - 1 && obj->House->Is_Player_Control()) {
-					if (!obj->IsSelected) {
-						obj->Select();
-						AllowVoice = false;
-					}
-				}
-			}
+			Select_Team_Members(Team);
 
 			Map.Center_Map();
 			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
@@ -5481,7 +5516,7 @@ class QuickSaveCommandClass : public CommandClass
 
 		virtual void Execute(void) const {
 			if (Quick_Save_Allowed()) {
-				Request_Quick_Save();
+				SaveManager.Request_Quick_Save();
 			}
 		}
 };
@@ -5511,7 +5546,7 @@ class QuickLoadCommandClass : public CommandClass
 			AutosaveClass::KindType kind = Session.Type == GAME_NORMAL ? AutosaveClass::KindType::Campaign : AutosaveClass::KindType::Skirmish;
 			SaveVersionInfo info;
 			if (!Get_Savefile_Info(Quick_Save_File_Name(kind).c_str(), &info) || info.Get_Internal_Version() != ExpectedGameVersion) {
-				Post_Save_Notice(TXT_NO_QUICKSAVE);
+				SaveManager.Post_Save_Notice(TXT_NO_QUICKSAVE);
 				return;
 			}
 
@@ -5745,6 +5780,17 @@ static void Init_Commands(void)
 	AllCommands.Add(new AddTeamCommandClass(8));
 	AllCommands.Add(new AddTeamCommandClass(9));
 	AllCommands.Add(new AddTeamCommandClass(10));
+
+	AllCommands.Add(new AddToTeamCommandClass(1));
+	AllCommands.Add(new AddToTeamCommandClass(2));
+	AllCommands.Add(new AddToTeamCommandClass(3));
+	AllCommands.Add(new AddToTeamCommandClass(4));
+	AllCommands.Add(new AddToTeamCommandClass(5));
+	AllCommands.Add(new AddToTeamCommandClass(6));
+	AllCommands.Add(new AddToTeamCommandClass(7));
+	AllCommands.Add(new AddToTeamCommandClass(8));
+	AllCommands.Add(new AddToTeamCommandClass(9));
+	AllCommands.Add(new AddToTeamCommandClass(10));
 
 	AllCommands.Add(new CenterTeamCommandClass(1));
 	AllCommands.Add(new CenterTeamCommandClass(2));

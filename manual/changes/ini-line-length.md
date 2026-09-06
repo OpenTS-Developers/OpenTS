@@ -6,7 +6,7 @@ targets:
 - type: format
   id: ini-syntax
   effect: changed
-credit: [ZivDero]
+credit: [ZivDero, CCHyper, tomsons26]
 ---
 
 A line longer than 511 characters used to lose its tail without any record of it, and the
@@ -17,3 +17,5 @@ fits and writes the cut to the debug log once per key. A file carrying such a li
 and digests, with the whole line, and a scenario whose digest an earlier build wrote still
 loads. A color list written without parentheses now reads as written, and a `[Tubes]` entry
 short of its five fields no longer crashes.
+
+CCHyper and tomsons26 are credited for the Vinifera fix that widened the `Owner` buffer.

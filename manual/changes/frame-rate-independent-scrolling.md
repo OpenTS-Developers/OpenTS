@@ -12,7 +12,7 @@ targets:
 - type: key
   id: ScrollMultiplier
   effect: changed
-credit: [ZivDero]
+credit: [ZivDero, FunkyFr3sh]
 ---
 
 Edge scrolling and right-button coasting now move the view by elapsed time instead of once per
@@ -25,3 +25,6 @@ speed options keep their order and their relative spacing.
 
 Coast methods `1` and `2` move by the distance the hand covered since the last reading, and are
 unchanged. A `ScrollMethod` outside `0` through `2` now scrolls nothing.
+
+FunkyFr3sh is credited for the ts-patches scroll rate limiter, which holds the same two paths
+against the same fault by a different means.

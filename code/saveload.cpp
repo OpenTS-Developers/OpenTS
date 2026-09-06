@@ -62,7 +62,6 @@
 #include "alphashp.h"
 #include "anim.h"
 #include "animtype.h"
-#include "autosave.h"
 #include "blight.h"
 #include "building.h"
 #include "builtype.h"
@@ -90,13 +89,13 @@
 #include "overlay.h"
 #include "overtype.h"
 #include "ovrlight.h"
-#include "ownrdraw.h"
 #include "particle.h"
 #include "partsys.h"
 #include "psystype.h"
 #include "ptype.h"
 #include "revent.h"
 #include "rules.h"
+#include "savemgr.h"
 #include "savestream.h"
 #include "savever.h"
 #include "scenario.h"
@@ -105,7 +104,6 @@
 #include "side.h"
 #include "sidebar.h"
 #include "smudtype.h"
-#include "spawner.h"
 #include "stimer.h"
 #include "sun.h"
 #include "super.h"
@@ -152,13 +150,6 @@
 ********************************** Defines **********************************
 */
 unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
-
-static bool MultiplayerSavingAllowed = true;
-static bool MultiplayerSavePending = false;
-static bool MultiplayerSaveQuiet = false;
-static std::string PendingSaveFileName;
-static std::string PendingSaveDescription;
-static bool QuickSaveRequested = false;
 
 _COM_SMARTPTR_TYPEDEF(ILinkStream, __uuidof(ILinkStream));
 
@@ -928,7 +919,7 @@ static bool Get_All(IStream *stream, bool save_net)
  *   12/28/1994 BR : Created.                                              *
  *   02/27/1996 JLB : Uses simpler game control value save operation.      *
  *=========================================================================*/
-static bool Save_Game(const char *file_name, char const * descr)
+bool Save_Game(const char *file_name, char const * descr)
 {
 	WCHAR name[MAX_PATH];
 
@@ -1022,209 +1013,10 @@ static bool Save_Game(const char *file_name, char const * descr)
 	DebugString("SAVING GAME [%s - %s] - Complete\n\n", file_name, descr);
 
 	if (res) {
-		Autosave.Schedule(Frame);
+		SaveManager.Autosave.Schedule(Frame);
 	}
 
 	return(res);
-}
-
-
-/// <summary>
-/// Reports the outcome of a save, or why one was refused, in the message list.
-/// </summary>
-void Post_Save_Notice(int text)
-{
-	Session.Messages.Add_Message(NULL, 0, Fetch_String(text), PlayerPtr->Scheme,
-		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
-	Map.Flag_To_Redraw();
-}
-
-
-/// <summary>
-/// Accepts a save request at the boundary shared by every engine caller.
-/// Solo and skirmish games save immediately. A synchronized multiplayer request is copied
-/// into module-owned storage and held until the frame has finished retiring dead objects.
-/// A quiet request is written without the saving box; the first request of a frame decides.
-/// </summary>
-/// <returns>Returns true when the save completed or the multiplayer request was accepted.</returns>
-bool Request_Save_Game(char const * file_name, char const * descr, bool quiet)
-{
-	if (file_name == NULL || descr == NULL) return(false);
-
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		return(Save_Game(file_name, descr));
-	}
-
-	if (!MultiplayerSavingAllowed) {
-		DebugString("Ignoring multiplayer save request because a player has left this match\n");
-		return(false);
-	}
-
-	if (MultiplayerSavePending) {
-		DebugString("Coalescing duplicate multiplayer save request\n");
-		return(true);
-	}
-
-	PendingSaveFileName = file_name;
-	PendingSaveDescription = descr;
-	MultiplayerSaveQuiet = quiet;
-	MultiplayerSavePending = true;
-	return(true);
-}
-
-
-/// <summary>
-/// Writes the synchronized save request accepted during this frame, if any.
-/// The request is cleared before writing so a callback cannot cause it to be written twice.
-/// </summary>
-void Process_Pending_Save_Game(void)
-{
-	if (!MultiplayerSavePending) return;
-
-	std::string file_name;
-	std::string description;
-	file_name.swap(PendingSaveFileName);
-	description.swap(PendingSaveDescription);
-	bool quiet = MultiplayerSaveQuiet;
-	MultiplayerSavePending = false;
-	MultiplayerSaveQuiet = false;
-
-	if (MultiplayerSavingAllowed) {
-		HWND dialog = 0;
-		if (!quiet) {
-			dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_SAVING_GAME), NULL, NULL);
-		}
-		if (dialog != 0) {
-			OwnerDraw::Display_Dialog(dialog);
-		}
-		bool saved = Save_Game(file_name.c_str(), description.c_str());
-		if (dialog != 0) {
-			OwnerDraw::End_Dialog(dialog);
-		}
-		if (!saved) {
-			Post_Save_Notice(TXT_SAVE_FAILED);
-		}
-	}
-}
-
-
-/// <summary>
-/// Opens the save boundary for a newly selected game and discards stale work from the last one.
-/// Mission restart deliberately does not call this routine.
-/// </summary>
-void Reset_Multiplayer_Save_State(void)
-{
-	MultiplayerSavingAllowed = true;
-	MultiplayerSavePending = false;
-	PendingSaveFileName.clear();
-	PendingSaveDescription.clear();
-	QuickSaveRequested = false;
-}
-
-
-/// <summary>
-/// Closes multiplayer saving for the rest of the current match and cancels pending work.
-/// </summary>
-void Disable_Multiplayer_Saving(void)
-{
-	MultiplayerSavingAllowed = false;
-	MultiplayerSavePending = false;
-	PendingSaveFileName.clear();
-	PendingSaveDescription.clear();
-}
-
-
-/// <summary>
-/// Reports whether the current multiplayer match may still accept a save request.
-/// </summary>
-bool Is_Multiplayer_Saving_Allowed(void)
-{
-	return(MultiplayerSavingAllowed);
-}
-
-
-static AutosaveClass::KindType Single_Player_Kind(void)
-{
-	return(Session.Type == GAME_NORMAL ? AutosaveClass::KindType::Campaign : AutosaveClass::KindType::Skirmish);
-}
-
-
-/// <summary>
-/// Arms the next automatic save when it falls due and writes an armed one through the save
-/// boundary a frame later, once its notice has been drawn.
-/// </summary>
-void Autosave_Service(void)
-{
-	if (Session.Play) return;
-
-	bool single = Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH;
-
-	// Every machine must save the same frame, which only a launch file's shared interval gives.
-	if (!single && (!Spawner_Is_Active() || !MultiplayerSavingAllowed)) return;
-
-	if (Autosave.Take_Armed()) {
-		Autosave.Schedule(Frame);
-
-		std::string file_name = NET_SAVE_FILE_NAME;
-		std::string description = Fetch_String(TXT_AUTOSAVE_MULTIPLAYER);
-
-		if (single) {
-			AutosaveClass::KindType kind = Single_Player_Kind();
-			int slot = Autosave.Advance(kind);
-
-			char buffer[512];
-			std::snprintf(buffer, sizeof(buffer), Fetch_String(TXT_AUTOSAVE_DESCRIPTION), slot + 1, Scen->Description);
-
-			file_name = AutosaveClass::File_Name(kind, slot);
-			description = buffer;
-		}
-
-		if (!Request_Save_Game(file_name.c_str(), description.c_str(), true)) {
-			Post_Save_Notice(TXT_AUTOSAVE_FAILED);
-		}
-		return;
-	}
-
-	if (Autosave.Is_Due(Frame)) {
-		Autosave.Arm();
-		Post_Save_Notice(TXT_AUTOSAVING);
-	}
-}
-
-
-/// <summary>
-/// Asks for a quick save at the next frame boundary.
-/// </summary>
-void Request_Quick_Save(void)
-{
-	QuickSaveRequested = true;
-}
-
-
-/// <summary>
-/// Writes a requested quick save once the frame has retired its dead objects, behind the box
-/// a menu save shows, and reports the outcome in the message list.
-/// </summary>
-void Quick_Save_Service(void)
-{
-	if (!QuickSaveRequested) return;
-	QuickSaveRequested = false;
-
-	if (!ScenarioActive || Session.Play) return;
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) return;
-
-	char description[512];
-	std::snprintf(description, sizeof(description), Fetch_String(TXT_QUICKSAVE_DESCRIPTION), Scen->Description);
-
-	HWND dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_SAVING_GAME), NULL, NULL);
-	if (dialog != 0) {
-		OwnerDraw::Display_Dialog(dialog);
-	}
-	bool saved = Request_Save_Game(Quick_Save_File_Name(Single_Player_Kind()).c_str(), description);
-	if (dialog != 0) {
-		OwnerDraw::End_Dialog(dialog);
-	}
-	Post_Save_Notice(saved ? TXT_GAME_WAS_SAVED : TXT_SAVE_FAILED);
 }
 
 
@@ -1349,7 +1141,7 @@ bool Load_Game(const char *file_name)
 	TacticalActive = true;
 	Sync_Recorder_Arm();
 	Sync_Report_Reset();
-	Autosave.Schedule(Frame);
+	SaveManager.Autosave.Schedule(Frame);
 	DebugString("LOADING GAME [%s] - Complete\n\n", file_name);
 	return(true);
 }
@@ -1401,12 +1193,12 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 	}
 
 	// The ring positions travel with every save, so a load continues where the save left off.
-	int campaign_slot = Autosave.Campaign_Slot();
-	int skirmish_slot = Autosave.Skirmish_Slot();
+	int campaign_slot = SaveManager.Autosave.Campaign_Slot();
+	int skirmish_slot = SaveManager.Autosave.Skirmish_Slot();
 	stream.Serialize(campaign_slot);
 	stream.Serialize(skirmish_slot);
 	if (stream.Is_Loading()) {
-		Autosave.Seed_Slots(campaign_slot, skirmish_slot);
+		SaveManager.Autosave.Seed_Slots(campaign_slot, skirmish_slot);
 	}
 
 	// Placed sounds and the sounds attached to objects come back on the next
@@ -1539,7 +1331,6 @@ bool Reconcile_Players(void)
 			housep->IsHuman = false;
 			housep->IsStarted = true;
 			housep->IQ = Rule->MaxIQ;
-			housep->IniName = Fetch_String(TXT_COMPUTER);
 		}
 	}
 

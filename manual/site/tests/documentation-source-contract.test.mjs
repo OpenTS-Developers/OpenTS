@@ -429,8 +429,19 @@ test('A resume is judged before it is loaded, and the save answers for the rest'
 		'Session.Players[i]->Player.ID = found->HeapID;',
 		'Houses[Session.Players[0]->Player.ID] != PlayerPtr',
 		'housep->IsHuman = false;',
-		'housep->IniName = Fetch_String(TXT_COMPUTER);',
+		'housep->IQ = Rule->MaxIQ;',
 	], 'every seat is matched and this machine identified before any house changes hands');
+
+	for (const [file, signature] of [
+		['code/saveload.cpp', 'bool Reconcile_Players(void)'],
+		['code/house.cpp', 'void HouseClass::AI_Takeover(void)'],
+	]) {
+		assert.doesNotMatch(
+			functionBody(source(file), signature),
+			/Fetch_String\(TXT_COMPUTER\)/,
+			`${signature} leaves a departed player's name on the seat they held`,
+		);
+	}
 
 	assertOrdered(functionBody(source('code/saveload.cpp'), 'bool Load_Game(const char *file_name)'), [
 		'Session.Type = (GameType)info.Get_Game_Type();',
@@ -449,7 +460,7 @@ test('Saved games are named in one folder rather than searched for', () => {
 	], 'a saved game is named inside the user directory, and the folder is made on the way');
 
 	for (const [file, signature] of [
-		['code/saveload.cpp', 'static bool Save_Game(const char *file_name, char const * descr)'],
+		['code/saveload.cpp', 'bool Save_Game(const char *file_name, char const * descr)'],
 		['code/saveload.cpp', 'bool Load_Game(const char *file_name)'],
 		['code/saveload.cpp', 'bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)'],
 		['code/loaddlg.cpp', 'void LoadOptionsClass::Fill_List(HWND window)'],
@@ -475,10 +486,66 @@ test('Automatic saves are serviced at the frame boundary ahead of the pending wr
 	assertOrdered(functionBody(source('code/mainloop.cpp'), 'bool Main_Loop(void)'), [
 		'Frame++;',
 		'Process_Deferred_Deletion();',
+		'SaveManager.Service();',
+	], 'the save manager runs after the frame has retired its dead objects');
+	assertOrdered(functionBody(source('code/savemgr.cpp'), 'void SaveManagerClass::Service(void)'), [
 		'Autosave_Service();',
 		'Quick_Save_Service();',
 		'Process_Pending_Save_Game();',
-	], 'an automatic save is written after the frame has retired its dead objects');
+		'Process_Pending_Load_Game();',
+	], 'an automatic save is written after the frame has retired its dead objects, and an agreed load after that');
+});
+
+// A definition that shares its text with a forward declaration is found from the end.
+function definitionFrom(text, signature) {
+	const at = text.lastIndexOf(signature);
+	assert.notEqual(at, -1, `Missing source function ${signature}`);
+	return text.slice(at);
+}
+
+test('An out-of-sync frame is reported before the players are asked to decide', () => {
+	assertOrdered(definitionFrom(source('code/queue.cpp'), 'static int Execute_DoList(int max_houses, HousesType base_house,'), [
+		'Report_Out_Of_Sync(mismatches, mismatch_count, CRC, ARRAY_SIZE(CRC));',
+		'Multiplayer_Load_Is_Pending()',
+		'DesyncDialog.Run()',
+		'Destroy_Connection(id, -1);',
+		'Sign_Off_Match();',
+	], 'the report describes the frame before any decision changes the session');
+});
+
+test('A multiplayer load replaces the match around the seats it keeps', () => {
+	assertOrdered(functionBody(source('code/savemgr.cpp'), 'bool SaveManagerClass::Perform_Multiplayer_Load(char const * file_name)'), [
+		'PacketTransport->Discard_In_Buffers();',
+		'Ipx.Delete_Connection(Ipx.Connection_ID(0));',
+		'DoList.clear();',
+		'Session.LoadGame = true;',
+		'LoadOptionsClass().Load_File(file_name)',
+		'Reconcile_Players()',
+		'Session.Create_Connections()',
+		'Spawner_Announce_Master();',
+		'Reset_Multiplayer_Save_State();',
+	], 'the old traffic is discarded, the save read, the seats matched, and the connections rebuilt in that order');
+
+	const template = source('code/language/language.rc');
+	const body = template.slice(template.indexOf('IDD_OPT_CTRL_WOL DIALOG'));
+	assert.match(
+		body.slice(0, body.indexOf('END')),
+		/IDC_LOAD_GAME/,
+		'the internet options offer the load the master starts for every machine',
+	);
+
+	assertOrdered(definitionFrom(source('code/goptions.cpp'), 'BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)'), [
+		'case IDC_LOAD_GAME:',
+		'LoadOptionsClass().Load()',
+		'Multiplayer_Load_Is_Allowed()',
+		'SpecialDialog = SDLG_LOAD;',
+	], 'a network game defers the list to the menu loop rather than nesting it in the options dialog');
+
+	assertOrdered(definitionFrom(source('code/conquer.cpp'), 'void Ingame_Menu_Dialog(void)'), [
+		'case SDLG_OPTIONS:',
+		'case SDLG_LOAD:',
+		'Multiplayer_Load_Prompt()',
+	], 'the menu loop opens the multiplayer list between frames, where the match keeps running under it');
 });
 
 test('A match against other machines is assembled whole and wired to its network last', () => {
@@ -541,5 +608,40 @@ test('A match against other machines is assembled whole and wired to its network
 			'slot.Port < 1 || slot.Port > 65535',
 		],
 		'the seat order the machines share is what the name and color rules are held for',
+	);
+});
+
+test('The scenario file is kept from its first read and carried in the save', () => {
+	const scenario = source('code/scenario.cpp');
+
+	assertOrdered(functionBody(scenario, 'static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)'), [
+		'Scen->SourceFile.Matches(name)',
+		'Load_Held_Scenario_File(ini, name, withdigest)',
+		'CCFileClass file(name);',
+		'DeploymentConfig.CarryScenarioFile',
+		'Scen->SourceFile.Assign(name, std::move(bytes));',
+	], 'a name the scenario already holds is served from memory, and a fresh read is kept where the deployment asked for it');
+
+	assertOrdered(functionBody(scenario, 'bool Read_Scenario_INI(char const * fname, bool)'), [
+		'Load_Scenario_File(ini, fname, true)',
+		'strcpy(Scen->ScenarioName, fname);',
+	], 'the scenario is read through the holder');
+
+	assertOrdered(functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
+		'Scen->SourceFile.Clear();',
+		'Scen->SourceFile.Matches(buffer)',
+		'Load_Held_Scenario_File(mini, buffer, false);',
+	], 'a generated map holds no file, and the sidecar comes from the holder when it is the same file');
+
+	assert.match(
+		functionBody(scenario, 'void ScenarioClass::Serialize(SaveStreamClass & stream)'),
+		/stream\.Serialize\(SourceFile\);/,
+		'the held file travels with the scenario record',
+	);
+
+	assert.match(
+		functionBody(source('code/deploymentconfig.cpp'), 'void DeploymentConfigClass::Read_INI(INIClass const & ini)'),
+		/CarryScenarioFile = ini\.Get_Bool\("Saves", "CarryScenarioFile", CarryScenarioFile\);/,
+		'the deployment configuration decides whether the file is carried',
 	);
 });

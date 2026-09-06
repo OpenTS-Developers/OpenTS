@@ -207,6 +207,11 @@ void GameControlsClass::Set(void)
 		Options.ScrollMethod = Button_GetCheck(handle) == TRUE ? 0 : 1;
 	}
 
+	handle = GetDlgItem(_Dialog, IDC_EDGE_SCROLL);
+	if (handle) {
+		Options.AutoScroll = Button_GetCheck(handle) == TRUE;
+	}
+
 	if (GameActive == false) {
 		handle = GetDlgItem(_Dialog, IDC_DIFFICULTY_SLIDER);
 		if (handle) {
@@ -273,6 +278,11 @@ BOOL CALLBACK Game_Controls_Dialog_Proc(HWND window, UINT message, WPARAM wparam
 				handle = GetDlgItem(window, IDC_SCROLL_COASTING);
 				if (handle) {
 					Button_SetCheck(handle, Options.ScrollMethod == 0);
+				}
+
+				handle = GetDlgItem(window, IDC_EDGE_SCROLL);
+				if (handle) {
+					Button_SetCheck(handle, Options.AutoScroll != false);
 				}
 
 				if (GameActive == true) {

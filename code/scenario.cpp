@@ -62,6 +62,7 @@
 #include "scenario.h"
 
 #include "_bench.h"
+#include "_deploymentconfig.h"
 #include "_keyboar.h"
 #include "_logic.h"
 #include "_map.h"
@@ -79,11 +80,12 @@
 #include "aitrig.h"
 #include "anim.h"
 #include "astar.h"
-#include "autosave.h"
+#include "savemgr.h"
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
 #include "campaign.h"
+#include "ccfile.h"
 #include "ccrand.h"
 #include "cctooltip.h"
 #include "cell.h"
@@ -92,6 +94,7 @@
 #include "crc.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "egos.h"
 #include "empulse.h"
 #include "enviro.h"
@@ -117,17 +120,21 @@
 #include "misc.h"
 #include "mouse.h"
 #include "movie.h"
+#include "movieskip.h"
 #include "mpu.h"
 #include "msgbox.h"
 #include "netdlg.h"
 #include "newmenu.h"
 #include "overlay.h"
 #include "overtype.h"
+#include "ownrdraw.h"
 #include "partsys.h"
+#include "pcx.h"
 #include "preview.h"
 #include "progress.h"
 #include "psystype.h"
 #include "queue.h"
+#include "restate.h"
 #include "revent.h"
 #include "rules.h"
 #include "savestream.h"
@@ -162,11 +169,15 @@
 #include "vox.h"
 #include "wave.h"
 #include "waypoint.h"
+#include "win.h"
 #include "wsproto.h"
+#include "xstraw.h"
 
 #include "bench.hh"
 
 #include <algorithm>
+#include <utility>
+#include <vector>
 
 CDTimerClass<SystemTimerClass> ScenUnusedTimer;
 
@@ -371,9 +382,35 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	**	If there's no briefing movie, restate the mission at the beginning.
 	*/
 	char buffer[25];
+	bool has_briefing_movie = Scen->BriefMovie != VQ_NONE;
 
-	if (Scen->BriefMovie != VQ_NONE) {
+	if (has_briefing_movie) {
 		wsprintf(buffer, "%s.VQA", Movies[Scen->BriefMovie]);
+		has_briefing_movie = CCFileClass(buffer).Is_Available();
+	}
+
+	bool transit_playing = false;
+
+	if (briefing && Session.Type == GAME_NORMAL && !has_briefing_movie) {
+
+		// No dialog has been put up in a game a client launched, so the artwork it draws with
+		// is not built yet.
+		OwnerDraw::Prepare_Resources(MainWindow);
+
+		if (Scen->TransitTheme != THEME_NONE) {
+			Theme.Play_Song(Scen->TransitTheme);
+			transit_playing = true;
+		}
+
+		Restate_Mission(Scen);
+	}
+
+	/*
+	 * An action movie carries its own sound, so the music the page opened with makes way for
+	 * it rather than playing underneath.
+	 */
+	if (transit_playing && briefing && Scen->ActionMovie != VQ_NONE) {
+		Theme.Stop(true);
 	}
 
 	if (Scen->StartingDropships > 0) {
@@ -385,7 +422,9 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	}
 
 	if (Scen->ActionMovie == VQ_NONE && Scen->TransitTheme != THEME_NONE) {
-		Theme.Queue_Song(Scen->TransitTheme);
+		// The song the mission opened with is already the transit theme, and queuing it again
+		// would start it over; the scheduler still needs something pending either way.
+		Theme.Queue_Song(transit_playing ? THEME_PICK_ANOTHER : Scen->TransitTheme);
 	} else {
 		Theme.Queue_Song(THEME_PICK_ANOTHER);
 	}
@@ -399,7 +438,27 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	Update_Visible_Surface();
 
 	Scen->ElapsedTimer.Start();
-	Autosave.Schedule(Frame);
+	SaveManager.Autosave.Schedule(Frame);
+
+	if (Session.Type == GAME_NORMAL) {
+		/*
+		 * A mission is named by how hard it is rather than by the slot the computer plays at,
+		 * and the two run opposite ways: the computer on its easiest table is the hardest game.
+		 */
+		static int const _difficulty_names[DIFF_COUNT] = { TXT_HARD, TXT_MEDIUM, TXT_EASY };
+
+		char message[64];
+		char const * named = Session.DifficultyName;
+
+		if (named[0] == '\0') {
+			named = Fetch_String(_difficulty_names[std::clamp((int)Scen->CDifficulty, 0, DIFF_COUNT - 1)]);
+		}
+
+		sprintf(message, Fetch_String(TXT_DIFFICULTY_LEVEL), named);
+		Session.Messages.Add_Message(NULL, 0, message, PlayerPtr->Scheme,
+			TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW),
+			int(Rule->MessageDelay * TICKS_PER_MINUTE));
+	}
 
 	ScenarioActive = true;
 	TacticalActive = true;
@@ -510,7 +569,7 @@ bool Wait_For_Players_To_Load(void)
 	CDTimerClass<SystemTimerClass> wait_timeout;
 	CDTimerClass<SystemTimerClass> timer = TIMER_SECOND * 5;
 
-	wait_timeout = 60 * TIMER_SECOND;
+	wait_timeout = Session.ConnTimeout;
 	double last_progress = Progress.Get_Current_Progress();
 
 	for (;;) {
@@ -535,7 +594,7 @@ bool Wait_For_Players_To_Load(void)
 		}
 
 		if (current_progress != last_progress) {
-			wait_timeout = 60 * TIMER_SECOND;
+			wait_timeout = Session.ConnTimeout;
 			last_progress = current_progress;
 		}
 
@@ -545,6 +604,34 @@ bool Wait_For_Players_To_Load(void)
 		}
 	}
 	return(true);
+}
+
+
+/// <summary>
+/// Puts the picture a launch file asked for in place of the game's own loading backdrop, and
+/// its bar position in place of the game's. A picture that is missing leaves both alone. The
+/// position is taken to be within the picture, so it is centered along with it.
+/// </summary>
+static void Apply_Custom_Load_Screen(char const * & background, Point2D & bar)
+{
+	if (Session.LoadScreen[0] == '\0') {
+		return;
+	}
+
+	CCFileClass file(Session.LoadScreen);
+	if (!file.Is_Available()) {
+		DebugString("The load screen %s is missing.\n", Session.LoadScreen);
+		return;
+	}
+
+	background = Session.LoadScreen;
+
+	int width = 0;
+	int height = 0;
+	if (Session.LoadScreenX > 0 && Session.LoadScreenY > 0 && Read_PCX_Size(file, width, height)) {
+		bar = Point2D(Session.LoadScreenX, Session.LoadScreenY)
+			+ Point2D((VisibleRect.Width - width) / 2, (VisibleRect.Height - height) / 2);
+	}
 }
 
 
@@ -606,6 +693,7 @@ bool Read_Scenario(char const * fname)
 
 		Point2D prog_bar_pos;
 		char const * background = Pick_Load_Background_Name(prog_bar_pos);
+		Apply_Custom_Load_Screen(background, prog_bar_pos);
 		Progress.Initialize(100, players);
 
 		char * prog_msg = NULL;
@@ -1064,11 +1152,21 @@ void Do_Win(void)
 	if (Session.Type != GAME_NORMAL) {
 		if (!Session.Play) {
 			Session.GamesPlayed++;
-			Multi_Score_Presentation();
+
+			if (Session.SkipScoreScreen) {
+				DebugString("Passing over the score screen.\n");
+			} else {
+				Multi_Score_Presentation();
+			}
+
 			Session.CurGame++;
 			if (Session.CurGame >= MAX_MULTI_GAMES) {
 				Session.CurGame = MAX_MULTI_GAMES - 1;
 			}
+
+			// Nothing keeps the machines in step past the score screen, so ESC ends this movie alone.
+			MovieSkip::LocalScope local;
+			Play_Movie(Scen->WinMovie);
 		}
 
 		GameActive = false;
@@ -1227,12 +1325,21 @@ void Do_Lose(void)
 	if (Session.Type != GAME_NORMAL) {
 		if (!Session.Play) {
 			Session.GamesPlayed++;
-			Multi_Score_Presentation();
+
+			if (Session.SkipScoreScreen) {
+				DebugString("Passing over the score screen.\n");
+			} else {
+				Multi_Score_Presentation();
+			}
+
 			Session.CurGame++;
 
 			if (Session.CurGame >= MAX_MULTI_GAMES) {
 				Session.CurGame = MAX_MULTI_GAMES - 1;
 			}
+
+			MovieSkip::LocalScope local;
+			Play_Movie(Scen->LoseMovie);
 		}
 		GameActive = false;
 		Show_Mouse();
@@ -1356,6 +1463,60 @@ void ScenarioClass::Set_Scenario_Name(char const * name)
 }
 
 
+/// <summary>
+/// Fills the database from the copy of the scenario file the scenario holds.
+/// </summary>
+/// <returns>What the INI load returned: 0 when nothing loaded.</returns>
+static int Load_Held_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)
+{
+	DebugString("Load_Held_Scenario_File - %s read from the held copy (%d bytes)\n", name, Scen->SourceFile.Size());
+
+	BufferStraw straw(Scen->SourceFile.Data(), Scen->SourceFile.Size());
+	return(ini.Load(straw, withdigest, false, name));
+}
+
+
+/// <summary>
+/// Fills the database from the scenario file named: from the copy the scenario holds when
+/// that is the file, and otherwise from disk, which the scenario then holds in its place
+/// where the deployment asked for the file to travel in the save.
+/// </summary>
+/// <returns>What the INI load returned: 0 when nothing loaded.</returns>
+static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)
+{
+	if (Scen->SourceFile.Matches(name)) {
+		return(Load_Held_Scenario_File(ini, name, withdigest));
+	}
+
+	CCFileClass file(name);
+	if (!file.Is_Available() || !file.Open(FileClass::READ)) {
+		DebugString("Load_Scenario_File - %s is not available\n", name);
+		return(0);
+	}
+
+	std::vector<char> bytes;
+	int size = file.Size();
+	if (size > 0) {
+		bytes.resize(size);
+		int read = file.Read(bytes.data(), size);
+		bytes.resize(read > 0 ? read : 0);
+	}
+	file.Close();
+
+	if (bytes.empty()) {
+		return(0);
+	}
+	DebugString("Load_Scenario_File - %s read from the file (%d bytes)\n", name, (int)bytes.size());
+
+	BufferStraw straw(bytes.data(), (int)bytes.size());
+	int result = ini.Load(straw, withdigest, false, file.File_Name());
+	if (result != 0 && DeploymentConfig.CarryScenarioFile) {
+		Scen->SourceFile.Assign(name, std::move(bytes));
+	}
+	return(result);
+}
+
+
 /***********************************************************************************************
  * Read_Scenario_INI -- Read specified scenario INI file.                                      *
  *                                                                                             *
@@ -1387,11 +1548,10 @@ bool Read_Scenario_INI(char const * fname, bool)
 	**	Create scenario filename and read the file.
 	*/
 	CCINIClass ini;
-	CCFileClass file(fname);
 
 	DebugString("Read_Scenario_INI - Filename is %s\n", fname);
 
-	int result = ini.Load(file, true);
+	int result = Load_Scenario_File(ini, fname, true);
 
 	if (result == 0) {
 		DebugString("Scenario ini load failed!\n");
@@ -1597,6 +1757,11 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	DebugString("Clearing old scenario\n");
 	Clear_Scenario();
+
+	// A generated map has no file to hold.
+	if (is_mapgen) {
+		Scen->SourceFile.Clear();
+	}
 
 	if (Session.Type == GAME_NORMAL) {
 		Scen->Difficulty = Session.CampaignDifficulty;
@@ -1909,7 +2074,11 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		strcat(buffer, ".INI");
 		cfile.Set_Name(buffer);
 
-		if (cfile.Is_Available() == true) {
+		// When this is the scenario file itself, a restart must apply what the launch applied.
+		if (Scen->SourceFile.Matches(buffer)) {
+			Load_Held_Scenario_File(mini, buffer, false);
+			Rule->Addition(mini);
+		} else if (cfile.Is_Available() == true) {
 			mini.Load(cfile, false);
 			Rule->Addition(mini);
 		}
@@ -2711,6 +2880,9 @@ static void Create_Units(bool official)
 				if (Scen->Special.IsCaptureTheFlag) {
 					hptr->Flag_Attach((UnitClass *)obj, true);
 				}
+				if (Session.Options.AutoDeployMCV) {
+					obj->Set_Mission(MISSION_UNLOAD);
+				}
 			}
 		} else {
 
@@ -3217,6 +3389,7 @@ void ScenarioClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Stage);
 	stream.Serialize(IsInputLocked);
 	stream.Serialize(IsMPAIBaseNodes);
+	stream.Serialize(SourceFile);
 }
 
 

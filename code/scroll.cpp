@@ -109,7 +109,6 @@ ScrollClass::ScrollClass(void) :
 	IsCoastScrollAllowed(false),
 	RightPressPoint(0,0),
 	IsDragOperation(false),
-	IsEdgeScrollAllowed(true),
 	IsMouseDown(false)
 {
 	//Counter = SCROLL_DELAY;
@@ -131,7 +130,6 @@ void ScrollClass::Serialize(SaveStreamClass & stream)
 	// IsCoastScrollAllowed
 	// RightPressPoint
 	// IsDragOperation
-	stream.Serialize(IsEdgeScrollAllowed);
 	// IsMouseDown -- likewise the drag state, which no held button survives to continue.
 }
 
@@ -573,7 +571,7 @@ void ScrollClass::Scroll_AI(void)
 			} else {
 				HoverObject = NULL;
 			}
-			if (IsEdgeScrollAllowed && !Debug_Map) {
+			if (Options.AutoScroll && !Debug_Map) {
 				Scroll_Edge(point);
 			}
 		}

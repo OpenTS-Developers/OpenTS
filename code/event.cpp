@@ -62,7 +62,7 @@
 #include "mouse.h"
 #include "netsemantic.h"
 #include "rules.h"
-#include "saveload.h"
+#include "savemgr.h"
 #include "scenario.h"
 #include "session.h"
 #include "stats.h"
@@ -1217,7 +1217,7 @@ void EventClass::Execute(void)
 		**	Save a multiplayer game (this event is only generated in multiplayer mode)
 		*/
 		case SAVEGAME:
-			Request_Save_Game(NET_SAVE_FILE_NAME, Fetch_String(TXT_MULTIPLAYER_GAME));
+			SaveManager.Request_Multiplayer_Save(Fetch_String(TXT_MULTIPLAYER_GAME), false);
 			break;
 
 		/*
@@ -1249,12 +1249,12 @@ void EventClass::Execute(void)
 			}
 
 			DebugString("Executing REMOVEPLAYER event. Frame is %d\n", ::Frame);
-			Disable_Multiplayer_Saving();
+			SaveManager.Disable_Multiplayer_Saving();
 			house = Houses[index];
 			if (house->IsObserver) {
 				break;
 			}
-			if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
+			if ((Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) || !Session.Options.AITakeover) {
 				house->Flag_To_Die();
 			} else {
 				if (house->Is_Human_Player()) {

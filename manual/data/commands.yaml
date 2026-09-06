@@ -1185,6 +1185,156 @@ registered_commands:
     source: code/init.cpp
     class: AddTeamCommandClass
     guard: null
+- id: TeamAddTo_1
+  route_id: teamaddto-1
+  kind: registered
+  title: Add To Team  1
+  description: Adds the selected units to team 1 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_2
+  route_id: teamaddto-2
+  kind: registered
+  title: Add To Team  2
+  description: Adds the selected units to team 2 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_3
+  route_id: teamaddto-3
+  kind: registered
+  title: Add To Team  3
+  description: Adds the selected units to team 3 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_4
+  route_id: teamaddto-4
+  kind: registered
+  title: Add To Team  4
+  description: Adds the selected units to team 4 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_5
+  route_id: teamaddto-5
+  kind: registered
+  title: Add To Team  5
+  description: Adds the selected units to team 5 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_6
+  route_id: teamaddto-6
+  kind: registered
+  title: Add To Team  6
+  description: Adds the selected units to team 6 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_7
+  route_id: teamaddto-7
+  kind: registered
+  title: Add To Team  7
+  description: Adds the selected units to team 7 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_8
+  route_id: teamaddto-8
+  kind: registered
+  title: Add To Team  8
+  description: Adds the selected units to team 8 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_9
+  route_id: teamaddto-9
+  kind: registered
+  title: Add To Team  9
+  description: Adds the selected units to team 9 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
+- id: TeamAddTo_10
+  route_id: teamaddto-10
+  kind: registered
+  title: Add To Team 10
+  description: Adds the selected units to team 10 and selects the whole team.
+  category: Team
+  audience: player
+  availability:
+    builds:
+    - release
+    - debug
+  _provenance:
+    source: code/init.cpp
+    class: AddToTeamCommandClass
+    guard: null
 - id: TeamCenter_1
   route_id: teamcenter-1
   kind: registered
@@ -2024,14 +2174,15 @@ fixed_controls:
   route_id: fixed-skip-vqa
   kind: fixed
   title: Skip video
-  description: Stops a VQA when the caller permits user breakout.
+  description: Stops a VQA when the caller permits user breakout; in a game against other machines it
+    casts this machine's vote to stop it.
   audience: player
   availability: *id001
   bindings:
   - Escape
   context: VQA playback
   _provenance:
-    source: code/vqa.cpp
+    source: code/movieskip.cpp
     guard: null
 - id: fixed:skip-campaign-presentation
   route_id: fixed-skip-campaign-presentation
