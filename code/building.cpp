@@ -5533,7 +5533,7 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					**	distance check.  Fixed-wing aircraft are very inaccurate with
 					**	their landings.
 					*/
-					CLSID const clsid = Locomotion_Class_ID(tech->Locomotion);
+					CLSID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
 					bool hover = (clsid == CLSID_HoverLocomotion) != 0;
 					if (hover) {
 						distance = 0x96;
@@ -6251,19 +6251,19 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 					if (unit) {
 						unit->Assign_Mission(MISSION_MOVE);
 
-						CLSID const clsid = Locomotion_Class_ID(unit->Locomotion);
+						CLSID const clsid = Locomotion_Class_ID(unit->Locomotion.get());
 
 						if (clsid == CLSID_TunnelLocomotion) {
-							IPiggybackPtr piggy(unit->Locomotion);
+							IPiggyback * piggy = Piggyback_Of(unit->Locomotion.get());
 							if (piggy != NULL && piggy->Is_Piggybacking()) {
-								piggy->End_Piggyback(&unit->Locomotion);
+								unit->Locomotion = piggy->End_Piggyback();
 							}
-							ILocomotionPtr walk(Create_Locomotor(CLSID_DriveLocomotion));
+							std::unique_ptr<ILocomotion> walk = Create_Locomotor(CLSID_DriveLocomotion);
 							walk->Link_To_Object(unit);
-							piggy = IPiggybackPtr(walk);
+							piggy = Piggyback_Of(walk.get());
 							if (piggy != NULL) {
-								piggy->Begin_Piggyback(unit->Locomotion);
-								unit->Locomotion = walk;
+								piggy->Begin_Piggyback(std::move(unit->Locomotion));
+								unit->Locomotion = std::move(walk);
 								unit->Locomotion->Force_Track(DriveLocomotionClass::OUT_OF_WEAPON_FACTORY, coord);
 							} else {
 								int damage = unit->Strength;

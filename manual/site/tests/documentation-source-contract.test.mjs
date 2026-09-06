@@ -108,7 +108,7 @@ test('Blocked Drop pod touchdown retains its exact damage, animation, and deleti
 		'FootClass * linked = LinkedTo;',
 		'coord = linked->PositionCoord;',
 		'linked->Limbo();',
-		'End_Piggyback(&LinkedTo->Locomotion);',
+		'LinkedTo->Locomotion = std::move(carried);',
 		'if (!linked->Unlimbo(coord, DIR_N)) {',
 		'Explosion_Damage(coord, 100, LinkedTo, Rule->C4Warhead);',
 		'Combat_Anim(100, Rule->C4Warhead, LAND_CLEAR, coord)',

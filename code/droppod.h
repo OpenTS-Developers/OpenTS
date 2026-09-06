@@ -16,6 +16,8 @@
 #include "ipiggy.h"
 #include "loco.h"
 
+#include <memory>
+
 
 class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 {
@@ -33,7 +35,6 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObject) override;
 		virtual ULONG STDMETHODCALLTYPE AddRef(void) override {return(BASECLASS::AddRef());}
 		virtual ULONG STDMETHODCALLTYPE Release(void) override {return(BASECLASS::Release());}
 
@@ -45,11 +46,11 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
 		virtual int STDMETHODCALLTYPE Drawing_Code(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE Begin_Piggyback(ILocomotion * pointer) override;
-		virtual HRESULT STDMETHODCALLTYPE End_Piggyback(ILocomotion ** pointer) override;
-		virtual boolean STDMETHODCALLTYPE Is_Ok_To_End(void) override;
-		virtual HRESULT STDMETHODCALLTYPE Piggyback_CLSID(GUID * classid) override;
-		virtual boolean STDMETHODCALLTYPE Is_Piggybacking(void) override {return(Piggybacker != NULL);}
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
+		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
+		virtual bool Is_Ok_To_End(void) override;
+		virtual HRESULT Piggyback_CLSID(GUID * classid) override;
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
 
 	private:
 		enum DropPodDirType {
@@ -78,5 +79,5 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		 * handed back the moment the pod touches ground, so that the object resumes moving
 		 * the way its type normally does.
 		 */
-		ILocomotionPtr Piggybacker;
+		std::unique_ptr<ILocomotion> Piggybacker;
 };

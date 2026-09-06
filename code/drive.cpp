@@ -117,8 +117,7 @@ DriveLocomotionClass::DriveLocomotionClass(void) :
 	SpeedAccum(0),
 	TargetSpeed(0),
 	TrackNumber(-1),
-	TrackIndex(-1),
-	Piggybacker(NULL)
+	TrackIndex(-1)
 {
 }
 
@@ -147,38 +146,10 @@ HRESULT DriveLocomotionClass::Piggyback_CLSID(CLSID * classid)
 	}
 
 	if (Piggybacker != NULL) {
-		*classid = Locomotion_Class_ID(Piggybacker);
+		*classid = Locomotion_Class_ID(Piggybacker.get());
 		return(S_OK);
 	}
 	return(GetClassID(classid));
-}
-
-
-/// <summary>
-/// Fetches an interface supported by this locomotor.
-/// The driver answers for the piggyback interface on top of whatever the base locomotor
-/// already supports.
-/// </summary>
-/// <param name="riid">The identifier of the interface asked for.</param>
-/// <param name="ppvObject">Pointer to the interface pointer to fill in.</param>
-/// <returns>Returns with S_OK if the interface was supplied, otherwise
-/// E_NOINTERFACE.</returns>
-HRESULT STDMETHODCALLTYPE DriveLocomotionClass::QueryInterface(REFIID riid, LPVOID * ppvObject)
-{
-	HRESULT result = BASECLASS::QueryInterface(riid, ppvObject);
-
-	if (result == E_NOINTERFACE) {
-		if (riid == IID_IPiggyback) {
-			*ppvObject = (IPiggyback*)this;
-		}
-		if (*ppvObject == NULL) {
-			result = E_NOINTERFACE;
-		} else {
-			AddRef();
-			result = S_OK;
-		}
-	}
-	return(result);
 }
 
 
@@ -213,7 +184,7 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	if (haspiggy) {
 		if (stream.Is_Saving()) {
-			Save_Object(stream, (ILocomotion *)Piggybacker);
+			Save_Object(stream, Piggybacker.get());
 		} else {
 			Piggybacker = Load_Locomotor(stream);
 		}
@@ -229,19 +200,15 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 /// A unit that must travel in some special manner -- through a tunnel, or aboard a
 /// carrier -- keeps its driver but lets the special locomotor move it for the duration.
 /// </summary>
-/// <param name="pointer">The locomotor that is to take over the unit.</param>
-/// <returns>Returns with S_OK if the locomotor was taken on, E_FAIL if one is already
-/// riding, or E_POINTER if none was supplied.</returns>
-HRESULT STDMETHODCALLTYPE DriveLocomotionClass::Begin_Piggyback(ILocomotion *pointer)
+/// <param name="carried">The locomotor that is to take over the unit.</param>
+/// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
+bool DriveLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> carried)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
+	if (carried == nullptr || Piggybacker != nullptr) {
+		return(false);
 	}
-	if (Piggybacker == NULL) {
-		Piggybacker = pointer;
-		return(S_OK);
-	}
-	return(E_FAIL);
+	Piggybacker = std::move(carried);
+	return(true);
 }
 
 
@@ -250,20 +217,10 @@ HRESULT STDMETHODCALLTYPE DriveLocomotionClass::Begin_Piggyback(ILocomotion *poi
 /// The riding locomotor is detached and given up, leaving this driver in sole charge of
 /// the unit once more.
 /// </summary>
-/// <param name="pointer">Pointer to the locomotor pointer to fill in.</param>
-/// <returns>Returns with S_OK if a locomotor was handed back, S_FALSE if there was none
-/// riding, or E_POINTER if no destination was supplied.</returns>
-HRESULT DriveLocomotionClass::End_Piggyback(ILocomotion **pointer)
+/// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
+std::unique_ptr<ILocomotion> DriveLocomotionClass::End_Piggyback(void)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
-	}
-	if (Piggybacker != NULL) {
-		*pointer = Piggybacker;
-		Piggybacker.Detach();
-		return(S_OK);
-	}
-	return(S_FALSE);
+	return(std::move(Piggybacker));
 }
 
 
@@ -274,7 +231,7 @@ HRESULT DriveLocomotionClass::End_Piggyback(ILocomotion **pointer)
 /// back only once the unit has settled.
 /// </summary>
 /// <returns>bool; Is it safe to end the piggyback?</returns>
-boolean DriveLocomotionClass::Is_Ok_To_End(void)
+bool DriveLocomotionClass::Is_Ok_To_End(void)
 {
 	if (!Is_Moving() && (Piggybacker != NULL && IsLocomotorUnlocked)) {
 		return(true);

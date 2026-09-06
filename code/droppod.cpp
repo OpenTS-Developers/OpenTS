@@ -38,8 +38,7 @@
 DropPodLocomotionClass::DropPodLocomotionClass(void) :
 	BASECLASS(),
 	Direction(DPOD_DIR_NE),
-	DestinationCoord(COORD_NONE),
-	Piggybacker(NULL)
+	DestinationCoord(COORD_NONE)
 {
 }
 
@@ -118,8 +117,15 @@ boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)
 		coord = linked->PositionCoord;
 		linked->Limbo();
 
-		AddRef();
-		End_Piggyback(&LinkedTo->Locomotion);
+		// Handing the carried locomotor back makes this pod unowned, so it holds itself
+		// until the landing is finished and is deleted on return. A pod that carries
+		// nothing stays the object's locomotor.
+		std::unique_ptr<ILocomotion> self;
+		std::unique_ptr<ILocomotion> carried = End_Piggyback();
+		if (carried != nullptr) {
+			self = std::move(LinkedTo->Locomotion);
+			LinkedTo->Locomotion = std::move(carried);
+		}
 
 		if (!linked->Unlimbo(coord, DIR_N)) {
 			Explosion_Damage(coord, 100, LinkedTo, Rule->C4Warhead);
@@ -133,7 +139,6 @@ boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)
 			linked->Commence();
 			linked->Scatter(COORD_NONE);
 		}
-		Release();
 	} else {
 		LinkedTo->PositionCoord = coord;
 		WeaponTypeClass const * weapon = Rule->DropPodWeapon;
@@ -245,7 +250,7 @@ void DropPodLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	if (haspiggy) {
 		if (stream.Is_Saving()) {
-			Save_Object(stream, (ILocomotion *)Piggybacker);
+			Save_Object(stream, Piggybacker.get());
 		} else {
 			Piggybacker = Load_Locomotor(stream);
 		}
@@ -268,18 +273,15 @@ void STDMETHODCALLTYPE DropPodLocomotionClass::Stop_Moving(void)
 /// The drop pod holds on to the locomotor it displaces so that the object can be given
 /// it back when the pod touches down.
 /// </summary>
-/// <param name="pointer">The locomotor to carry.</param>
-/// <returns>Returns with S_OK, or E_FAIL if something is already being carried.</returns>
-HRESULT STDMETHODCALLTYPE DropPodLocomotionClass::Begin_Piggyback(ILocomotion * pointer)
+/// <param name="carried">The locomotor that is to take over the unit.</param>
+/// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
+bool DropPodLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> carried)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
+	if (carried == nullptr || Piggybacker != nullptr) {
+		return(false);
 	}
-	if (Piggybacker == NULL) {
-		Piggybacker = pointer;
-		return(S_OK);
-	}
-	return(E_FAIL);
+	Piggybacker = std::move(carried);
+	return(true);
 }
 
 
@@ -288,19 +290,10 @@ HRESULT STDMETHODCALLTYPE DropPodLocomotionClass::Begin_Piggyback(ILocomotion * 
 /// The pod gives up its hold without destroying the locomotor, so the object can resume
 /// using it once the pod has landed.
 /// </summary>
-/// <param name="pointer">Pointer to the location that receives the carried locomotor.</param>
-/// <returns>Returns with S_OK, or S_FALSE if nothing was being carried.</returns>
-HRESULT STDMETHODCALLTYPE DropPodLocomotionClass::End_Piggyback(ILocomotion ** pointer)
+/// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
+std::unique_ptr<ILocomotion> DropPodLocomotionClass::End_Piggyback(void)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
-	}
-	if (Piggybacker != NULL) {
-		*pointer = Piggybacker;
-		Piggybacker.Detach();
-		return(S_OK);
-	}
-	return(S_FALSE);
+	return(std::move(Piggybacker));
 }
 
 
@@ -309,38 +302,12 @@ HRESULT STDMETHODCALLTYPE DropPodLocomotionClass::End_Piggyback(ILocomotion ** p
 /// The carried locomotor may only be given control back once the pod has come to rest.
 /// </summary>
 /// <returns>bool; May the carried locomotor take over again?</returns>
-boolean STDMETHODCALLTYPE DropPodLocomotionClass::Is_Ok_To_End(void)
+bool DropPodLocomotionClass::Is_Ok_To_End(void)
 {
 	if (!Is_Moving() && Piggybacker != NULL) {
 		return(true);
 	}
 	return(false);
-}
-
-
-/// <summary>
-/// Fetches an interface pointer from the drop pod locomotor.
-/// This routine extends the base locomotor's interface set with IPiggyback, which is how
-/// the pod carries the object's real locomotor while it falls.
-/// </summary>
-/// <returns>Returns with S_OK, or E_NOINTERFACE if this object does not offer the
-/// interface asked for.</returns>
-HRESULT STDMETHODCALLTYPE DropPodLocomotionClass::QueryInterface(REFIID riid, LPVOID * ppvObject)
-{
-	HRESULT result = BASECLASS::QueryInterface(riid, ppvObject);
-
-	if (result == E_NOINTERFACE) {
-		if (riid == IID_IPiggyback) {
-			*ppvObject = (IPiggyback*)this;
-		}
-		if (*ppvObject == NULL) {
-			result = E_NOINTERFACE;
-		} else {
-			AddRef();
-			result = S_OK;
-		}
-	}
-	return(result);
 }
 
 
@@ -362,14 +329,14 @@ LayerType STDMETHODCALLTYPE DropPodLocomotionClass::In_Which_Layer(void)
 /// </summary>
 /// <returns>Returns with S_OK, or an error code if the class ID could not be
 /// determined.</returns>
-HRESULT STDMETHODCALLTYPE DropPodLocomotionClass::Piggyback_CLSID(GUID * classid)
+HRESULT DropPodLocomotionClass::Piggyback_CLSID(GUID * classid)
 {
 	if (classid == NULL) {
 		return(E_POINTER);
 	}
 
 	if (Piggybacker != NULL) {
-		*classid = Locomotion_Class_ID(Piggybacker);
+		*classid = Locomotion_Class_ID(Piggybacker.get());
 		return(S_OK);
 	}
 	return(GetClassID(classid));

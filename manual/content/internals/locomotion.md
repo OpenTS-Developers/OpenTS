@@ -28,11 +28,11 @@ Movement, destination, layer, occupation, and locomotor-specific drawing queries
 
 | Operation | State transition |
 | --- | --- |
-| `Begin_Piggyback(previous)` | Stores `previous` inside the new locomotor. A null pointer returns `E_POINTER`; an already occupied slot returns `E_FAIL`. |
+| `Begin_Piggyback(previous)` | Takes ownership of `previous` and stores it inside the new locomotor. Answers `false`, destroying what it was handed, when nothing was passed or the slot is already occupied. |
 | Replace `FootClass::Locomotion` | Makes the new locomotor the object's active movement interface. The new locomotor must already be linked to the same object. |
-| `End_Piggyback(&FootClass::Locomotion)` | Writes the stored locomotor back into the object member and releases the piggyback slot. No stored locomotor returns `S_FALSE`; a null output pointer returns `E_POINTER`. |
+| `End_Piggyback()` | Hands the stored locomotor back to the caller and empties the piggyback slot. Answers nothing when no locomotor was stored. |
 
-`FootClass::Link_DropPod` applies this sequence with the ballistic locomotor: it retains the passenger's current locomotor through `Begin_Piggyback`, then installs the ballistic interface. Drop-pod touchdown passes the address of `FootClass::Locomotion` to `End_Piggyback` before attempting ground placement.
+`FootClass::Link_DropPod` applies this sequence with the ballistic locomotor: it retains the passenger's current locomotor through `Begin_Piggyback`, then installs the ballistic interface. Drop-pod touchdown assigns the locomotor `End_Piggyback` returns back to `FootClass::Locomotion`, when the pod carried one, before attempting ground placement.
 
 Callers that perform opportunistic restoration first consult `Is_Ok_To_End`. The drop-pod touchdown path calls `End_Piggyback` directly at ground contact because its descent state already establishes the transition.
 

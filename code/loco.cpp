@@ -251,18 +251,18 @@ LONG STDMETHODCALLTYPE LocomotionClass::QueryInterface(REFIID riid, LPVOID *ppvO
 }
 
 
-ILocomotion * Create_Locomotor(CLSID const & classid)
+std::unique_ptr<ILocomotion> Create_Locomotor(CLSID const & classid)
 {
 	std::unique_ptr<IPersistent> object = Create_Object(classid);
 	ILocomotion * const locomotion = dynamic_cast<ILocomotion *>(object.get());
 	if (locomotion != nullptr) {
 		object.release();
 	}
-	return(locomotion);
+	return(std::unique_ptr<ILocomotion>(locomotion));
 }
 
 
-ILocomotion * Load_Locomotor(SaveStreamClass & stream)
+std::unique_ptr<ILocomotion> Load_Locomotor(SaveStreamClass & stream)
 {
 	SwizzleManagerClass::MarkType const mark = Swizzler.Mark();
 	IPersistent * const object = Load_Object(stream);
@@ -273,7 +273,7 @@ ILocomotion * Load_Locomotor(SaveStreamClass & stream)
 		delete object;
 		stream.Fail();
 	}
-	return(locomotion);
+	return(std::unique_ptr<ILocomotion>(locomotion));
 }
 
 

@@ -645,7 +645,7 @@ void WalkLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	if (haspiggy) {
 		if (stream.Is_Saving()) {
-			Save_Object(stream, (ILocomotion *)Piggybacker);
+			Save_Object(stream, Piggybacker.get());
 		} else {
 			Piggybacker = Load_Locomotor(stream);
 		}
@@ -664,49 +664,19 @@ LayerType STDMETHODCALLTYPE WalkLocomotionClass::In_Which_Layer(void)
 
 
 /// <summary>
-/// Fetches an interface pointer from this locomotor.
-/// This routine extends the base locomotor with the piggyback interface.
-/// </summary>
-/// <param name="riid">The interface identifier being asked for.</param>
-/// <param name="ppvObject">Pointer to the interface pointer to fill in.</param>
-/// <returns>Returns with S_OK if the interface was supplied, otherwise E_NOINTERFACE.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::QueryInterface(REFIID riid, LPVOID * ppvObject)
-{
-	HRESULT result = BASECLASS::QueryInterface(riid, ppvObject);
-
-	if (result == E_NOINTERFACE) {
-		if (riid == IID_IPiggyback) {
-			*ppvObject = (IPiggyback*)this;
-		}
-		if (*ppvObject == NULL) {
-			result = E_NOINTERFACE;
-		} else {
-			AddRef();
-			result = S_OK;
-		}
-	}
-	return(result);
-}
-
-
-/// <summary>
 /// Attaches a piggybacking locomotor to this one.
 /// This routine is used when some temporary means of travel, such as being carried
 /// along, must take over from ordinary walking.
 /// </summary>
-/// <param name="pointer">The locomotor that will ride along on this one.</param>
-/// <returns>Returns with S_OK if the locomotor was attached, or E_FAIL if one is already
-/// piggybacking.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::Begin_Piggyback(ILocomotion * pointer)
+/// <param name="carried">The locomotor that is to take over the unit.</param>
+/// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
+bool WalkLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> carried)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
+	if (carried == nullptr || Piggybacker != nullptr) {
+		return(false);
 	}
-	if (Piggybacker == NULL) {
-		Piggybacker = pointer;
-		return(S_OK);
-	}
-	return(E_FAIL);
+	Piggybacker = std::move(carried);
+	return(true);
 }
 
 
@@ -714,20 +684,10 @@ HRESULT STDMETHODCALLTYPE WalkLocomotionClass::Begin_Piggyback(ILocomotion * poi
 /// Ends the piggyback session and hands back the locomotor that was riding along.
 /// Ownership of the piggybacking locomotor passes to the caller.
 /// </summary>
-/// <param name="pointer">Pointer to the locomotor pointer to fill in.</param>
-/// <returns>Returns with S_OK if a piggybacking locomotor was handed back, or S_FALSE if
-/// there was none.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::End_Piggyback(ILocomotion ** pointer)
+/// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
+std::unique_ptr<ILocomotion> WalkLocomotionClass::End_Piggyback(void)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
-	}
-	if (Piggybacker != NULL) {
-		*pointer = Piggybacker;
-		Piggybacker.Detach();
-		return(S_OK);
-	}
-	return(S_FALSE);
+	return(std::move(Piggybacker));
 }
 
 
@@ -737,7 +697,7 @@ HRESULT STDMETHODCALLTYPE WalkLocomotionClass::End_Piggyback(ILocomotion ** poin
 /// not resumed part way through a step.
 /// </summary>
 /// <returns>bool; Is it safe to end the piggyback?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Ok_To_End(void)
+bool WalkLocomotionClass::Is_Ok_To_End(void)
 {
 	if (!Is_Moving() && Piggybacker != NULL && !IsProcessingMovement) {
 		return(true);
@@ -753,14 +713,14 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Ok_To_End(void)
 /// </summary>
 /// <param name="classid">Pointer to the class ID to fill in.</param>
 /// <returns>Returns with S_OK if the class ID was fetched, otherwise an error code.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::Piggyback_CLSID(GUID * classid)
+HRESULT WalkLocomotionClass::Piggyback_CLSID(GUID * classid)
 {
 	if (classid == NULL) {
 		return(E_POINTER);
 	}
 
 	if (Piggybacker != NULL) {
-		*classid = Locomotion_Class_ID(Piggybacker);
+		*classid = Locomotion_Class_ID(Piggybacker.get());
 		return(S_OK);
 	}
 	return(GetClassID(classid));

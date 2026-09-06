@@ -38,6 +38,7 @@
 #include "techno.h"
 
 #include <cstdint>
+#include <memory>
 
 class UnitClass;
 class BuildingClass;
@@ -210,7 +211,7 @@ class FootClass : public TechnoClass
 		 * handed to a ballistic locomotor and a unit crossing a tunnel walks -- so all
 		 * movement is asked of this interface rather than of the type's setting.
 		 */
-		ILocomotionPtr Locomotion;
+		std::unique_ptr<ILocomotion> Locomotion;
 
 		/*
 		**	This is the coordinate that the unit is heading to

@@ -632,7 +632,7 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 	Cell cell = Get_Target_Cell();
 
 	if (CurrentTube == -1) {
-		CLSID const clsid = Locomotion_Class_ID(Locomotion);
+		CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
 
 		if (HeightAGL > 0 && clsid == CLSID_BallisticLocomotion) {
 			ShapeSet const * shapefile = (ShapeSet const *)MFCD::Retrieve("POD.SHP");
@@ -1172,7 +1172,7 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 	}
 
 	if (target != NULL && Class->IsJumpJet && Locomotion->Is_Moving()) {
-		CLSID const clsid = Locomotion_Class_ID(Locomotion);
+		CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
 		if (clsid == CLSID_WalkLocomotion) {
 			NavQueue.Add_Head(target);
 			target = Get_Target_Cell_Ptr();
@@ -1186,26 +1186,26 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 		bool should_fly = Should_JumpJet_Fly(Destination_Coord().As_Cell(), target->Center_Coord().As_Cell());
 		if (Is_JumpJet()) {
 			if (!should_fly) {
-				IPiggybackPtr piggy(Locomotion);
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 				if (piggy != NULL) {
 					if (piggy->Is_Piggybacking() && piggy->Is_Ok_To_End()) {
-						piggy->End_Piggyback(&Locomotion);
+						Locomotion = piggy->End_Piggyback();
 					}
 				}
-				ILocomotionPtr walk(Create_Locomotor(CLSID_WalkLocomotion));
+				std::unique_ptr<ILocomotion> walk = Create_Locomotor(CLSID_WalkLocomotion);
 				walk->Link_To_Object(this);
-				piggy = IPiggybackPtr(walk);
+				piggy = Piggyback_Of(walk.get());
 				if (piggy != NULL) {
-					piggy->Begin_Piggyback(Locomotion);
-					Locomotion = walk;
+					piggy->Begin_Piggyback(std::move(Locomotion));
+					Locomotion = std::move(walk);
 				}
 			}
 		} else {
 			if (should_fly) {
-				IPiggybackPtr piggy(Locomotion);
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 				if (piggy != NULL) {
 					if (piggy->Is_Piggybacking() && piggy->Is_Ok_To_End()) {
-						piggy->End_Piggyback(&Locomotion);
+						Locomotion = piggy->End_Piggyback();
 					}
 				}
 			}
@@ -4150,15 +4150,15 @@ bool InfantryClass::JumpJet_To_Walk(void)
 	if (path_length >= 4) return(false);
 
 	if (Is_JumpJet()) {
-		IPiggybackPtr piggy(Locomotion);
+		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 		if (piggy != NULL && !piggy->Is_Piggybacking()) {
-			ILocomotionPtr walk(Create_Locomotor(CLSID_WalkLocomotion));
+			std::unique_ptr<ILocomotion> walk = Create_Locomotor(CLSID_WalkLocomotion);
 			walk->Link_To_Object(this);
-			piggy = IPiggybackPtr(walk);
+			piggy = Piggyback_Of(walk.get());
 			if (piggy != NULL) {
 				Path[0] = FACING_NONE;
-				piggy->Begin_Piggyback(Locomotion);
-				Locomotion = walk;
+				piggy->Begin_Piggyback(std::move(Locomotion));
+				Locomotion = std::move(walk);
 				Locomotion->Move_To(NavCom->Center_Coord());
 				return(true);
 			}
@@ -4193,7 +4193,7 @@ bool InfantryClass::Is_JumpJet(void) const
 		return(false);
 	}
 
-	CLSID const clsid = Locomotion_Class_ID(Locomotion);
+	CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
 	return((clsid == CLSID_JumpjetLocomotion) ? true : false);
 }
 

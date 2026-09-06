@@ -40,6 +40,8 @@
 #include "matrix3d.h"
 #include "timer.h"
 
+#include <memory>
+
 #include "mark.hh"
 
 /****************************************************************************
@@ -62,7 +64,6 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObject) override;
 		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
 		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
@@ -90,11 +91,11 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual int STDMETHODCALLTYPE Get_Track_Index(void) override;
 		virtual int STDMETHODCALLTYPE Get_Speed_Accum(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE Begin_Piggyback(ILocomotion * pointer) override;
-		virtual HRESULT STDMETHODCALLTYPE End_Piggyback(ILocomotion ** pointer) override;
-		virtual boolean STDMETHODCALLTYPE Is_Ok_To_End(void) override;
-		virtual HRESULT STDMETHODCALLTYPE Piggyback_CLSID(GUID * classid) override;
-		virtual boolean STDMETHODCALLTYPE Is_Piggybacking(void) override {return(Piggybacker != NULL);}
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
+		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
+		virtual bool Is_Ok_To_End(void) override;
+		virtual HRESULT Piggyback_CLSID(GUID * classid) override;
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
@@ -245,7 +246,7 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		 * driver answers for it rather than for itself. If NULL, this driver is in sole
 		 * charge of the unit.
 		 */
-		ILocomotionPtr Piggybacker;
+		std::unique_ptr<ILocomotion> Piggybacker;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.

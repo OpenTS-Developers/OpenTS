@@ -1132,7 +1132,7 @@ void FootClass::Approach_Target(void)
 		 */
 		bool flyer = (RTTI == RTTI_AIRCRAFT);
 
-		CLSID const clsid = Locomotion_Class_ID(Locomotion);
+		CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
 		if (clsid == CLSID_JumpjetLocomotion) {
 			flyer = true;
 		}
@@ -1873,9 +1873,9 @@ bool FootClass::Enter_Idle_Mode(bool, bool resume_waypoint)
 		}
 
 		bool was_piggybacking = false;
-		IPiggybackPtr piggy(Locomotion);
+		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 		if (piggy != NULL && piggy->Is_Ok_To_End()) {
-			piggy->End_Piggyback(&Locomotion);
+			Locomotion = piggy->End_Piggyback();
 			was_piggybacking = true;
 		}
 
@@ -2331,9 +2331,9 @@ int FootClass::Do_MISSION_ENTER(void)
 			Enter_Idle_Mode();
 		} else {
 			if (NavCom == NULL && RouteQueue.Count() > 0 ) {
-				IPiggybackPtr piggy(Locomotion);
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 				if (piggy != NULL && piggy->Is_Ok_To_End()) {
-					piggy->End_Piggyback(&Locomotion);
+					Locomotion = piggy->End_Piggyback();
 				}
 				if (RouteQueue.Count() > 0) {
 					Assign_Destination(RouteQueue[0], false);
@@ -2385,7 +2385,7 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 			ParticleSystems[ATTACHED_PARTICLE_FIRE] = NULL;
 		}
 
-		CLSID const locoid = Locomotion_Class_ID(Locomotion);
+		CLSID const locoid = Locomotion_Class_ID(Locomotion.get());
 
 		if (locoid == CLSID_HoverLocomotion && PathDelay == 0) {
 			PathDelay = 1;
@@ -3313,10 +3313,10 @@ void FootClass::AI(void)
 			Scatter(Coord(0,0,0), true);
 		}
 
-		IPiggybackPtr piggy(Locomotion);
+		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 		if (piggy != NULL) {
 			if (piggy->Is_Ok_To_End()) {
-				piggy->End_Piggyback(&Locomotion);
+				Locomotion = piggy->End_Piggyback();
 			}
 		}
 
@@ -3519,7 +3519,7 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	 * its own.
 	 */
 	if (stream.Is_Saving()) {
-		Save_Object(stream, (ILocomotion *)Locomotion);
+		Save_Object(stream, Locomotion.get());
 	} else {
 		Locomotion = Load_Locomotor(stream);
 	}
@@ -3585,12 +3585,12 @@ void FootClass::Set_Coord(Coord const & coord)
 /// </summary>
 void FootClass::Link_DropPod(void)
 {
-	ILocomotionPtr locomotion = Locomotion;
-	ILocomotionPtr ballistic(Create_Locomotor(CLSID_BallisticLocomotion));
+	std::unique_ptr<ILocomotion> locomotion = std::move(Locomotion);
+	std::unique_ptr<ILocomotion> ballistic = Create_Locomotor(CLSID_BallisticLocomotion);
 	ballistic->Link_To_Object(this);
-	IPiggybackPtr piggy(ballistic);
-	piggy->Begin_Piggyback(locomotion);
-	Locomotion = ballistic;
+	IPiggyback * piggy = Piggyback_Of(ballistic.get());
+	piggy->Begin_Piggyback(std::move(locomotion));
+	Locomotion = std::move(ballistic);
 
 }
 
@@ -4756,7 +4756,7 @@ void FootClass::Delete_Me(void)
 /// <returns>bool; Is the object in the air?</returns>
 bool FootClass::In_Air(void) const
 {
-	CLSID const clsid = Locomotion_Class_ID(Locomotion);
+	CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
 
 	if (clsid == CLSID_HoverLocomotion) {
 		return(false);
@@ -4777,7 +4777,7 @@ bool FootClass::On_Ground(void) const
 	if (BASECLASS::On_Ground()) {
 		return(true);
 	}
-	CLSID const clsid = Locomotion_Class_ID(Locomotion);
+	CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
 
 	return(IsDown && clsid == CLSID_HoverLocomotion);
 }

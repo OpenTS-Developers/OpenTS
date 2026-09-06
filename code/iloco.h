@@ -21,6 +21,7 @@
 #include "zgrad.hh"
 
 #include <comdef.h>
+#include <memory>
 
 /// Names and comments from TLBs
 

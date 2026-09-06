@@ -16,6 +16,8 @@
 #include "ipiggy.h"
 #include "loco.h"
 
+#include <memory>
+
 
 class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 {
@@ -33,15 +35,14 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObject) override;
 		virtual ULONG STDMETHODCALLTYPE AddRef(void) override {return(BASECLASS::AddRef());}
 		virtual ULONG STDMETHODCALLTYPE Release(void) override {return(BASECLASS::Release());}
 
-		virtual HRESULT STDMETHODCALLTYPE Begin_Piggyback(ILocomotion * pointer) override;
-		virtual HRESULT STDMETHODCALLTYPE End_Piggyback(ILocomotion ** pointer) override;
-		virtual boolean STDMETHODCALLTYPE Is_Ok_To_End(void) override;
-		virtual HRESULT STDMETHODCALLTYPE Piggyback_CLSID(GUID * classid) override;
-		virtual boolean STDMETHODCALLTYPE Is_Piggybacking(void) override {return(Piggybacker != NULL);}
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
+		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
+		virtual bool Is_Ok_To_End(void) override;
+		virtual HRESULT Piggyback_CLSID(GUID * classid) override;
+		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
 
 		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
 		virtual Coord STDMETHODCALLTYPE Destination(void) override;
@@ -100,5 +101,5 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 		 * temporarily -- a jump jet coming down to cover the last few cells on foot, say --
 		 * and the suspended locomotor is handed back when the walk is finished.
 		 */
-		ILocomotionPtr Piggybacker;
+		std::unique_ptr<ILocomotion> Piggybacker;
 };
