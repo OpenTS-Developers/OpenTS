@@ -214,8 +214,7 @@ void AudioEventPoolClass::Push_Level(EventClass & event, float ramp)
 	if (event.Voice < 0) {
 		return;
 	}
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::SET_GAIN;
 	command.Slot = (uint8_t)event.Voice;
 	command.Generation = event.VoiceGeneration;
@@ -230,8 +229,7 @@ void AudioEventPoolClass::Push_Pan(EventClass & event, float ramp)
 	if (event.Voice < 0) {
 		return;
 	}
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::SET_PAN;
 	command.Slot = (uint8_t)event.Voice;
 	command.Generation = event.VoiceGeneration;
@@ -278,8 +276,7 @@ void AudioEventPoolClass::Release_Voice(EventClass & event)
 void AudioEventPoolClass::Kill(EventClass & event, float fade)
 {
 	if (event.Voice >= 0) {
-		AudioCommand command;
-		std::memset(&command, 0, sizeof(command));
+		AudioCommand command = {};
 		command.Type = AudioCommandType::STOP;
 		command.Slot = (uint8_t)event.Voice;
 		command.Generation = event.VoiceGeneration;
@@ -494,8 +491,7 @@ bool AudioEventPoolClass::Issue(EventClass & event, bool attack, bool body, bool
 		sequence.Cycles = (type.Loop > 0) ? type.Loop : -1;
 	}
 
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::PLAY_SEQUENCE;
 	command.Group = (uint8_t)event.Group;
 	command.Slot = (uint8_t)event.Voice;
@@ -625,8 +621,7 @@ AudioHandle AudioEventPoolClass::Start_Sample(AudioSampleClass * clip, AudioGrou
 	sequence.LoopEnd = 1;
 	sequence.Cycles = 1;
 
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::PLAY_SEQUENCE;
 	command.Group = (uint8_t)group;
 	command.Slot = (uint8_t)event->Voice;
@@ -667,8 +662,7 @@ AudioHandle AudioEventPoolClass::Start_Stream(AudioStreamClass * stream, AudioGr
 		return(AudioHandle());
 	}
 
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::PLAY_STREAM;
 	command.Group = (uint8_t)group;
 	command.Slot = (uint8_t)event->Voice;
@@ -872,8 +866,7 @@ void AudioEventPoolClass::End(AudioHandle handle)
 		event->NextStart = LastNow;
 		return;
 	}
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::END_SEQUENCE;
 	command.Slot = (uint8_t)event->Voice;
 	command.Generation = event->VoiceGeneration;
@@ -901,8 +894,7 @@ void AudioEventPoolClass::End_Looping(AudioHandle handle)
 		event->NextStart = LastNow;
 		return;
 	}
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::END_SEQUENCE;
 	command.Slot = (uint8_t)event->Voice;
 	command.Generation = event->VoiceGeneration;
@@ -917,8 +909,7 @@ void AudioEventPoolClass::Pause(AudioHandle handle)
 	if (event == nullptr || event->Voice < 0) {
 		return;
 	}
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::PAUSE;
 	command.Slot = (uint8_t)event->Voice;
 	command.Generation = event->VoiceGeneration;
@@ -932,8 +923,7 @@ void AudioEventPoolClass::Resume(AudioHandle handle)
 	if (event == nullptr || event->Voice < 0) {
 		return;
 	}
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = AudioCommandType::RESUME;
 	command.Slot = (uint8_t)event->Voice;
 	command.Generation = event->VoiceGeneration;

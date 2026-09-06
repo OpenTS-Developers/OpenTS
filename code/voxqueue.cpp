@@ -9,6 +9,9 @@
 
 #include "voxqueue.h"
 
+#include <algorithm>
+#include <tuple>
+
 
 int VoxQueueClass::Rank(VoxControlType control)
 {
@@ -43,21 +46,14 @@ bool VoxQueueClass::Before(EntryClass const & a, EntryClass const & b) const
 
 void VoxQueueClass::Remove(int index)
 {
-	for (int i = index; i + 1 < Pending; i++) {
-		Entries[i] = Entries[i + 1];
-	}
+	std::move(Entries + index + 1, Entries + Pending, Entries + index);
 	Pending--;
 }
 
 
 bool VoxQueueClass::Contains(VoxType voice) const
 {
-	for (int i = 0; i < Pending; i++) {
-		if (Entries[i].Voice == voice) {
-			return(true);
-		}
-	}
-	return(false);
+	return(std::any_of(Entries, Entries + Pending, [voice](EntryClass const & entry) { return(entry.Voice == voice); }));
 }
 
 
@@ -83,28 +79,21 @@ bool VoxQueueClass::Submit(VoxType voice, int priority, VoxControlType control, 
 	}
 
 	if (control == VOXC_STANDARD) {
-		for (int i = 0; i < Pending; i++) {
-			if (Entries[i].Control == VOXC_STANDARD) {
-				if (Entries[i].Priority >= priority) {
-					return(false);
-				}
-				Remove(i);
-				break;
+		EntryClass const * standard = std::find_if(Entries, Entries + Pending, [](EntryClass const & entry) { return(entry.Control == VOXC_STANDARD); });
+		if (standard != Entries + Pending) {
+			if (standard->Priority >= priority) {
+				return(false);
 			}
+			Remove((int)(standard - Entries));
 		}
 	}
 
 	if (Pending >= MAX_PENDING) {
 		// The oldest of the lowest-priority lines makes room, critical ones last.
-		int victim = -1;
-		for (int i = 0; i < Pending; i++) {
-			if (victim < 0 || Rank(Entries[i].Control) > Rank(Entries[victim].Control)
-				|| (Rank(Entries[i].Control) == Rank(Entries[victim].Control) && (Entries[i].Priority < Entries[victim].Priority
-				|| (Entries[i].Priority == Entries[victim].Priority && Entries[i].Order < Entries[victim].Order)))) {
-				victim = i;
-			}
-		}
-		Remove(victim);
+		EntryClass const * victim = std::min_element(Entries, Entries + Pending, [](EntryClass const & a, EntryClass const & b) {
+			return(std::make_tuple(-Rank(a.Control), a.Priority, a.Order) < std::make_tuple(-Rank(b.Control), b.Priority, b.Order));
+		});
+		Remove((int)(victim - Entries));
 	}
 
 	EntryClass & entry = Entries[Pending++];
@@ -121,13 +110,8 @@ bool VoxQueueClass::Next(VoxType & voice)
 	if (Pending == 0) {
 		return(false);
 	}
-	int best = 0;
-	for (int i = 1; i < Pending; i++) {
-		if (Before(Entries[i], Entries[best])) {
-			best = i;
-		}
-	}
-	voice = Entries[best].Voice;
-	Remove(best);
+	EntryClass const * best = std::min_element(Entries, Entries + Pending, [this](EntryClass const & a, EntryClass const & b) { return(Before(a, b)); });
+	voice = best->Voice;
+	Remove((int)(best - Entries));
 	return(true);
 }

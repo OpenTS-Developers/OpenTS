@@ -16,14 +16,16 @@
 #include "dbgprint.h"
 #include "ini.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
+#include <span>
 #include <string>
+#include <string_view>
+#include <vector>
 
 namespace {
-
-int const MAX_TOKENS = AUDIO_MAX_SOUNDS;
-int const TOKEN_LENGTH = 32;
 
 // Pitch stays within 0.5..2.0.
 int const FSHIFT_MIN = -50;
@@ -87,77 +89,51 @@ PriorityName const PRIORITY_NAMES[] = {
 };
 
 
-// Splits on spaces, commas and tabs. Returns the token count.
-int Tokenize(char const * text, char tokens[MAX_TOKENS][TOKEN_LENGTH])
+// Splits on spaces, commas and tabs.
+std::vector<std::string> Tokenize(char const * text)
 {
-	int count = 0;
-	if (text == nullptr) {
-		return(0);
-	}
-	while (*text != '\0' && count < MAX_TOKENS) {
-		while (*text == ' ' || *text == ',' || *text == '\t') {
-			text++;
-		}
-		if (*text == '\0') {
+	char const * const SEPARATORS = " ,\t";
+	std::vector<std::string> tokens;
+	std::string_view rest = text != nullptr ? text : "";
+	for (;;) {
+		size_t start = rest.find_first_not_of(SEPARATORS);
+		if (start == std::string_view::npos) {
 			break;
 		}
-		int length = 0;
-		while (*text != '\0' && *text != ' ' && *text != ',' && *text != '\t') {
-			if (length < TOKEN_LENGTH - 1) {
-				tokens[count][length++] = *text;
-			}
-			text++;
+		size_t end = rest.find_first_of(SEPARATORS, start);
+		tokens.emplace_back(rest.substr(start, end - start));
+		if (end == std::string_view::npos) {
+			break;
 		}
-		tokens[count][length] = '\0';
-		count++;
+		rest.remove_prefix(end);
 	}
-	return(count);
+	return(tokens);
 }
 
 
+// Digits with an optional sign and point; no exponent, hex or infinity.
 bool Is_Number(char const * text)
 {
 	if (*text == '-' || *text == '+') {
 		text++;
 	}
-	bool digits = false;
-	while (*text != '\0') {
-		if (*text >= '0' && *text <= '9') {
-			digits = true;
-		} else if (*text != '.') {
-			return(false);
-		}
-		text++;
-	}
-	return(digits);
+	return(std::strpbrk(text, "0123456789") != nullptr && text[std::strspn(text, "0123456789.")] == '\0');
 }
 
 
-int Clamp(int value, int low, int high)
+unsigned Parse_Flags(char const * text, unsigned fallback, std::span<FlagName const> names, char const * what)
 {
-	return(value < low ? low : (value > high ? high : value));
-}
-
-
-unsigned Parse_Flags(char const * text, unsigned fallback, FlagName const * names, int count, char const * what)
-{
-	char tokens[MAX_TOKENS][TOKEN_LENGTH];
-	int found = Tokenize(text, tokens);
-	if (found == 0) {
+	std::vector<std::string> tokens = Tokenize(text);
+	if (tokens.empty()) {
 		return(fallback);
 	}
 	unsigned flags = 0;
-	for (int i = 0; i < found; i++) {
-		bool known = false;
-		for (int j = 0; j < count; j++) {
-			if (_stricmp(tokens[i], names[j].Name) == 0) {
-				flags |= names[j].Value;
-				known = true;
-				break;
-			}
-		}
-		if (!known) {
-			DebugString("SOUND.INI: unknown %s flag '%s'\n", what, tokens[i]);
+	for (std::string const & token : tokens) {
+		auto match = std::find_if(names.begin(), names.end(), [&token](FlagName const & name) { return(_stricmp(token.c_str(), name.Name) == 0); });
+		if (match != names.end()) {
+			flags |= match->Value;
+		} else {
+			DebugString("SOUND.INI: unknown %s flag '%s'\n", what, token.c_str());
 		}
 	}
 	return(flags);
@@ -166,21 +142,20 @@ unsigned Parse_Flags(char const * text, unsigned fallback, FlagName const * name
 
 bool Parse_Pair(char const * text, int & low, int & high, bool & single, bool & seconds)
 {
-	char tokens[MAX_TOKENS][TOKEN_LENGTH];
-	int found = Tokenize(text, tokens);
-	if (found == 0 || !Is_Number(tokens[0]) || (found > 1 && !Is_Number(tokens[1]))) {
+	std::vector<std::string> tokens = Tokenize(text);
+	if (tokens.empty() || !Is_Number(tokens[0].c_str()) || (tokens.size() > 1 && !Is_Number(tokens[1].c_str()))) {
 		return(false);
 	}
-	seconds = std::strchr(tokens[0], '.') != nullptr || (found > 1 && std::strchr(tokens[1], '.') != nullptr);
-	double first = std::atof(tokens[0]);
-	double second = found > 1 ? std::atof(tokens[1]) : first;
+	seconds = tokens[0].find('.') != std::string::npos || (tokens.size() > 1 && tokens[1].find('.') != std::string::npos);
+	double first = std::atof(tokens[0].c_str());
+	double second = tokens.size() > 1 ? std::atof(tokens[1].c_str()) : first;
 	if (seconds) {
 		first *= 1000.0;
 		second *= 1000.0;
 	}
-	low = (int)(first < 0 ? first - 0.5 : first + 0.5);
-	high = (int)(second < 0 ? second - 0.5 : second + 0.5);
-	single = (found == 1);
+	low = (int)std::lround(first);
+	high = (int)std::lround(second);
+	single = (tokens.size() == 1);
 	return(true);
 }
 
@@ -188,14 +163,16 @@ bool Parse_Pair(char const * text, int & low, int & high, bool & single, bool & 
 void Read_Sounds(INIClass const & ini, char const * section, AudioEventTypeClass & type)
 {
 	std::string sounds = ini.Get_String(section, "Sounds", "");
-	char tokens[MAX_TOKENS][TOKEN_LENGTH];
-	int found = Tokenize(sounds.c_str(), tokens);
-	if (found == 0) {
+	std::vector<std::string> tokens = Tokenize(sounds.c_str());
+	if (tokens.empty()) {
 		return;
 	}
 	type.SoundCount = 0;
-	for (int i = 0; i < found && type.SoundCount < (unsigned)AUDIO_MAX_SOUNDS; i++) {
-		std::strncpy(type.Sounds[type.SoundCount], tokens[i], sizeof(type.Sounds[0]) - 1);
+	for (std::string const & token : tokens) {
+		if (type.SoundCount >= (unsigned)AUDIO_MAX_SOUNDS) {
+			break;
+		}
+		std::strncpy(type.Sounds[type.SoundCount], token.c_str(), sizeof(type.Sounds[0]) - 1);
 		type.Sounds[type.SoundCount][sizeof(type.Sounds[0]) - 1] = '\0';
 		type.SoundCount++;
 	}
@@ -223,14 +200,14 @@ void Read_Keys(INIClass const & ini, char const * section, AudioEventTypeClass &
 		type.MinVolume = Sound_Parse_Volume(minvolume.c_str(), type.MinVolume);
 	}
 	int range = ini.Get_Int(section, "Range", type.Range);
-	type.Range = Clamp(range, 0, 1000);
+	type.Range = std::clamp(range, 0, 1000);
 	int limit = ini.Get_Int(section, "Limit", type.Limit);
-	type.Limit = Clamp(limit, 0, AUDIO_MAX_EVENTS);
+	type.Limit = std::clamp(limit, 0, AUDIO_MAX_EVENTS);
 	int loop = ini.Get_Int(section, "Loop", -1);
 	if (loop < 0) {
 		loop = ini.Get_Int(section, "LoopLimit", type.Loop);
 	}
-	type.Loop = Clamp(loop, 0, 100000);
+	type.Loop = std::clamp(loop, 0, 100000);
 
 	int low;
 	int high;
@@ -261,13 +238,13 @@ void Read_Keys(INIClass const & ini, char const * section, AudioEventTypeClass &
 	// A count given outright wins; otherwise the flag alone means one sound.
 	int attack = ini.Get_Int(section, "Attack", -1);
 	if (attack >= 0) {
-		type.AttackCount = Clamp(attack, 0, AUDIO_MAX_SOUNDS);
+		type.AttackCount = std::clamp(attack, 0, AUDIO_MAX_SOUNDS);
 	} else if (!control.empty() || defaults) {
 		type.AttackCount = (type.Control & SOUND_CONTROL_ATTACK) ? 1 : 0;
 	}
 	int decay = ini.Get_Int(section, "Decay", -1);
 	if (decay >= 0) {
-		type.DecayCount = Clamp(decay, 0, AUDIO_MAX_SOUNDS);
+		type.DecayCount = std::clamp(decay, 0, AUDIO_MAX_SOUNDS);
 	} else if (!control.empty() || defaults) {
 		type.DecayCount = (type.Control & SOUND_CONTROL_DECAY) ? 1 : 0;
 	}
@@ -278,49 +255,47 @@ void Read_Keys(INIClass const & ini, char const * section, AudioEventTypeClass &
 
 int Sound_Parse_Priority(char const * text, int fallback)
 {
-	char tokens[MAX_TOKENS][TOKEN_LENGTH];
-	if (Tokenize(text, tokens) == 0) {
+	std::vector<std::string> tokens = Tokenize(text);
+	if (tokens.empty()) {
 		return(fallback);
 	}
-	for (PriorityName const & name : PRIORITY_NAMES) {
-		if (_stricmp(tokens[0], name.Name) == 0) {
-			return(name.Value);
-		}
+	char const * first = tokens[0].c_str();
+	auto match = std::find_if(std::begin(PRIORITY_NAMES), std::end(PRIORITY_NAMES), [first](PriorityName const & name) { return(_stricmp(first, name.Name) == 0); });
+	if (match != std::end(PRIORITY_NAMES)) {
+		return(match->Value);
 	}
-	if (!Is_Number(tokens[0])) {
-		DebugString("SOUND.INI: unknown priority '%s'\n", tokens[0]);
+	if (!Is_Number(first)) {
+		DebugString("SOUND.INI: unknown priority '%s'\n", first);
 		return(fallback);
 	}
-	return(Clamp(std::atoi(tokens[0]), 0, 255));
+	return(std::clamp(std::atoi(first), 0, 255));
 }
 
 
 float Sound_Parse_Volume(char const * text, float fallback)
 {
-	char tokens[MAX_TOKENS][TOKEN_LENGTH];
-	if (Tokenize(text, tokens) == 0 || !Is_Number(tokens[0])) {
+	std::vector<std::string> tokens = Tokenize(text);
+	if (tokens.empty() || !Is_Number(tokens[0].c_str())) {
 		return(fallback);
 	}
-	double value = std::atof(tokens[0]);
+	double value = std::atof(tokens[0].c_str());
 	if (value > 1.0) {
 		// Percent, as Yuri's Revenge writes it.
 		value /= 100.0;
 	}
-	if (value < 0.0) value = 0.0;
-	if (value > 1.0) value = 1.0;
-	return((float)value);
+	return((float)std::clamp(value, 0.0, 1.0));
 }
 
 
 unsigned Sound_Parse_Type(char const * text, unsigned fallback)
 {
-	return(Parse_Flags(text, fallback, TYPE_NAMES, (int)(sizeof(TYPE_NAMES) / sizeof(TYPE_NAMES[0])), "Type"));
+	return(Parse_Flags(text, fallback, TYPE_NAMES, "Type"));
 }
 
 
 unsigned Sound_Parse_Control(char const * text, unsigned fallback)
 {
-	return(Parse_Flags(text, fallback, CONTROL_NAMES, (int)(sizeof(CONTROL_NAMES) / sizeof(CONTROL_NAMES[0])), "Control"));
+	return(Parse_Flags(text, fallback, CONTROL_NAMES, "Control"));
 }
 
 
@@ -331,12 +306,10 @@ bool Sound_Parse_Delay(char const * text, int & low, int & high)
 	if (!Parse_Pair(text, low, high, single, seconds)) {
 		return(false);
 	}
-	if (low < 0) low = 0;
-	if (high < 0) high = 0;
+	low = std::max(low, 0);
+	high = std::max(high, 0);
 	if (high < low) {
-		int swap = low;
-		low = high;
-		high = swap;
+		std::swap(low, high);
 	}
 	return(true);
 }
@@ -350,21 +323,19 @@ bool Sound_Parse_Shift(char const * text, bool attenuate, int & low, int & high)
 		return(false);
 	}
 	if (single) {
-		int span = low < 0 ? -low : low;
+		int span = std::abs(low);
 		low = -span;
 		high = attenuate ? 0 : span;
 	}
 	if (high < low) {
-		int swap = low;
-		low = high;
-		high = swap;
+		std::swap(low, high);
 	}
 	if (attenuate) {
-		low = Clamp(low, -100, 100);
-		high = Clamp(high, -100, 100);
+		low = std::clamp(low, -100, 100);
+		high = std::clamp(high, -100, 100);
 	} else {
-		low = Clamp(low, FSHIFT_MIN, FSHIFT_MAX);
-		high = Clamp(high, FSHIFT_MIN, FSHIFT_MAX);
+		low = std::clamp(low, FSHIFT_MIN, FSHIFT_MAX);
+		high = std::clamp(high, FSHIFT_MIN, FSHIFT_MAX);
 	}
 	return(true);
 }
@@ -383,7 +354,7 @@ void VocClass::Read_Defaults(INIClass const & ini, AudioEventTypeClass & default
 int VocClass::Read_Channels(INIClass const & ini, int fallback)
 {
 	int channels = ini.Get_Int("General", "Channels", fallback);
-	return(Clamp(channels, CHANNELS_MIN, CHANNELS_MAX));
+	return(std::clamp(channels, CHANNELS_MIN, CHANNELS_MAX));
 }
 
 

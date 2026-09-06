@@ -275,8 +275,8 @@ float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & 
 		dx = std::abs(pixel.X - width / 2);
 		dy = std::abs(pixel.Y - height / 2);
 	} else {
-		dx = pixel.X < 0 ? -pixel.X : (pixel.X > width ? pixel.X - width : 0);
-		dy = pixel.Y < 0 ? -pixel.Y : (pixel.Y > height ? pixel.Y - height : 0);
+		dx = std::max({-pixel.X, pixel.X - width, 0});
+		dy = std::max({-pixel.Y, pixel.Y - height, 0});
 	}
 	// The view is wider than it is tall, so vertical distance counts double.
 	dy *= 2;

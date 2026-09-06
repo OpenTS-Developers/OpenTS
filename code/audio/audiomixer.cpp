@@ -72,7 +72,7 @@ float Soft_Clip(float sample)
 	}
 	float room = 1.0f - AUDIO_CLIP_THRESHOLD;
 	float shaped = AUDIO_CLIP_THRESHOLD + room * std::tanh((magnitude - AUDIO_CLIP_THRESHOLD) / room);
-	return(sample < 0.0f ? -shaped : shaped);
+	return(std::copysign(shaped, sample));
 }
 
 } // namespace

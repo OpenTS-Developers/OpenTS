@@ -12,6 +12,7 @@
 #include "audio/audiodevice.h"
 #include "audio/audiomixer.h"
 
+#include <algorithm>
 #include <cstring>
 
 namespace {
@@ -452,14 +453,11 @@ void AudioFeederClass::Service_Device(void)
 	// Render into the void at the wall-clock rate so voices finish, streams
 	// drain and the movie clock advances.
 	double seconds = std::chrono::duration<double>(now - LastPump).count();
-	unsigned frames = (unsigned)(seconds * Mixer->Rate());
-	if (frames > MAX_PUMP_FRAMES) {
-		frames = MAX_PUMP_FRAMES;
-	}
+	unsigned frames = std::min((unsigned)(seconds * Mixer->Rate()), MAX_PUMP_FRAMES);
 	if (frames > 0) {
 		LastPump = now;
 		while (frames > 0) {
-			unsigned count = frames > AUDIO_MAX_RENDER_FRAMES ? AUDIO_MAX_RENDER_FRAMES : frames;
+			unsigned count = std::min(frames, (unsigned)AUDIO_MAX_RENDER_FRAMES);
 			Mixer->Render(Scratch.get(), count);
 			frames -= count;
 		}

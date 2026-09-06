@@ -16,6 +16,7 @@
 #include "dbgprint.h"
 #include "random.h"
 
+#include <algorithm>
 #include <cstring>
 #include <thread>
 
@@ -454,8 +455,7 @@ void AudioEngineClass::Release_Sample(void const * aud)
 
 void AudioEngineClass::Push_Level(AudioCommandType type, AudioGroupType group, float level, float ramp)
 {
-	AudioCommand command;
-	std::memset(&command, 0, sizeof(command));
+	AudioCommand command = {};
 	command.Type = type;
 	command.Group = (uint8_t)group;
 	command.A = level;
@@ -548,7 +548,7 @@ void AudioEngineClass::Stop_All_Streams(void)
 			continue;
 		}
 		int left = STREAM_STOP_WAIT_MS - (int)(Now_Ms() - start);
-		if (!Wait_Finished(Streams[i].Handle, left > 0 ? left : 0)) {
+		if (!Wait_Finished(Streams[i].Handle, std::max(left, 0))) {
 			// A voice that has not let go by now is on a dead device; the ring stays
 			// allocated, so closing the file under it is safe.
 			DebugString("Audio: stream %d did not stop in time\n", i);
