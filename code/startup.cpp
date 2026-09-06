@@ -46,7 +46,6 @@
 #include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
-#include "_winfix.h"
 #include "_zbuffer.h"
 #include "aircraft.h"
 #include "airctype.h"

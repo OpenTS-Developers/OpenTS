@@ -65,69 +65,6 @@ bool On_WM_MOVING(HWND window, WPARAM wparam, LPARAM lparam);
 
 int ComboBox_Find_Item_Data(HWND hwndCtl, WPARAM indexStart, LPARAM data);
 
-/*-----------------------------------------------------------------------------
-**	Windows Version Information class.  This is a global object that is used to
-**	store information about the specific OS that we are running under.  This can
-**	be used to make special allowances for differences between OS's, such as when
-**	using the registry, or trying to work around a limitaion of a particular OS
-** (their APIs are slightly different...)
-**-----------------------------------------------------------------------------*/
-class WindowsVersionInfo
-{
-	public:
-		WindowsVersionInfo(void);
-		~WindowsVersionInfo(void) {}
-		const char *As_String(void);
-
-		int 	Major								( void ) const { return( MajorVersionNumber ); }
-		int 	Minor								( void ) const { return( MinorVersionNumber ); }
-		int 	Build								( void ) const { return( BuildNumber ); }
-		bool 	Is_Win9x							( void ) const { return( IsWin9x ); }																						// Win 9x
-		bool 	Is_Win95							( void ) const { return( IsWin9x && MajorVersionNumber == 4 && MinorVersionNumber == 0 ); }									// Win 95
-		bool 	Is_Win98							( void ) const { return( IsWin9x && (MajorVersionNumber > 4 || MajorVersionNumber == 4 && MinorVersionNumber >= 10) ); }	// Win 98
-		bool 	Is_WinNT							( void ) const { return( IsWinNT ); }																						// Win NT
-		bool 	Is_WinNT4							( void ) const { return( IsWinNT && MajorVersionNumber >= 4 ); }															/// Win NT4
-		bool	Is_WinNT5							( void ) const { return( IsWinNT && MajorVersionNumber >= 5 ); }															/// Win NT5
-		bool 	Is_WinNTx							( void ) const { return( IsWinNT && MajorVersionNumber < 5 ); }																/// Win NT?
-		const char * Info							( void ) const { return( &AdditionalInfo[0] ); }
-		char *	Version_String						( void );
-
-	private:
-		/*-----------------------------------------------------------------------
-		**	Major version number; i.e. for 4.10.1721 this would be '4'
-		*/
-		int MajorVersionNumber;
-
-		/*-----------------------------------------------------------------------
-		**	Minor version number; i.e. for 4.10.1721 this would be '10'
-		*/
-		int MinorVersionNumber;
-
-		/*-----------------------------------------------------------------------
-		**	Build number; i.e. for 4.10.1721 this would be '1721'
-		*/
-		int BuildNumber;
-
-		/*-----------------------------------------------------------------------
-		**	Additional Info; i.e. for NT 4.0 with SP3, this would be
-		**	the string 'Service Pack 3'
-		*/
-		char AdditionalInfo[128];
-
-		/*-----------------------------------------------------------------------
-		**	Windows 9x flag; true if running on non-NT system
-		*/
-		bool IsWin9x;
-
-		/*-----------------------------------------------------------------------
-		**	Windows NT flag; true if running on Windows NT system
-		*/
-		bool IsWinNT;
-
-};
-
-extern WindowsVersionInfo WinVersion;
-
 void Prefetch_Audio_Buffer(char *src, int size);
 
 #define Slider_GetPos(hwndCtl) ((LRESULT)(DWORD)SNDMSG((hwndCtl), TBM_GETPOS, (WPARAM)(0L), (LPARAM)(0L)))
