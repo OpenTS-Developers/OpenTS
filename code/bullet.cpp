@@ -52,6 +52,8 @@
 
 #include "bullet.h"
 
+#include "classfactory.h"
+
 #include "_convert.h"
 #include "_map.h"
 #include "_rules.h"
@@ -137,6 +139,8 @@ BulletClass::BulletClass(void) :
 	AnimFrame(0),
 	AnimRate(0)
 {
+	// The game holds the one reference a bullet exists under until Release deletes it.
+	RefCount = 1;
 	Create_ID();
 	Bullets.Add(this);
 }
@@ -1518,12 +1522,11 @@ bool BulletClass::Is_Homing(void) const
 /// made.</returns>
 BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, int range, bool bright)
 {
-	LPVOID unk = NULL;
-	if (FAILED(CoCreateInstance(CLSID_BulletClass, NULL, CLSCTX_INPROC_SERVER|CLSCTX_INPROC_HANDLER|CLSCTX_LOCAL_SERVER, IID_IUnknown, &unk))) {
+	BulletClass * bullet = dynamic_cast<BulletClass *>(Create_Object(CLSID_BulletClass));
+	if (bullet == NULL) {
 		return(NULL);
 	}
 
-	BulletClass * bullet = (BulletClass *)unk;
 	bullet->Set_Bullet_Data(type, target, payback, strength, warhead, max_speed, range, bright);
 	return(bullet);
 }

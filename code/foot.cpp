@@ -3516,17 +3516,12 @@ void FootClass::Serialize(SaveStreamClass & stream)
 
 	/*
 	 * The locomotor is a sub-object rather than a member, so it travels as a record of
-	 * its own. The one being replaced is released first, since loading hands back a fresh
-	 * interface pointer rather than filling this one in.
+	 * its own.
 	 */
 	if (stream.Is_Saving()) {
 		Save_Object(stream, (ILocomotion *)Locomotion);
 	} else {
-		if (Locomotion != NULL) {
-			((ILocomotion *)Locomotion)->Release();
-		}
-		Locomotion.Detach();
-		Load_Object(stream, IID_ILocomotion, (LPVOID *)&Locomotion);
+		Locomotion = Load_Locomotor(stream);
 	}
 
 	stream.Serialize(HeadToCoord);
@@ -3591,7 +3586,7 @@ void FootClass::Set_Coord(Coord const & coord)
 void FootClass::Link_DropPod(void)
 {
 	ILocomotionPtr locomotion = Locomotion;
-	ILocomotionPtr ballistic(CLSID_BallisticLocomotion);
+	ILocomotionPtr ballistic(Create_Locomotor(CLSID_BallisticLocomotion));
 	ballistic->Link_To_Object(this);
 	IPiggybackPtr piggy(ballistic);
 	piggy->Begin_Piggyback(locomotion);

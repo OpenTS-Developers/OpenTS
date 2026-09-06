@@ -511,8 +511,9 @@ HRESULT MouseClass::Load(SaveStreamClass & stream)
 			return(result);
 		}
 		for (i = 0; i < count; i++) {
-			LPVOID ptr;
-			Load_Object(stream, IID_IUnknown, &ptr);
+			if (Load_Object(stream) == NULL) {
+				return(stream.Result());
+			}
 		}
 
 		TerrainTypeClass::Init(Scen->Theater);

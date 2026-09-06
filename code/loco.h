@@ -20,6 +20,14 @@ class SaveStreamClass;
 // CLSID_NULL when it is not one of ours.
 CLSID Locomotion_Class_ID(ILocomotion * locomotion);
 
+// A new, unlinked locomotor of the registered class, or NULL when the identifier names
+// no locomotor.
+ILocomotion * Create_Locomotor(CLSID const & classid);
+
+// The locomotor whose record is next in the stream, or NULL when the record names
+// something that is not one, which fails the stream.
+ILocomotion * Load_Locomotor(SaveStreamClass & stream);
+
 
 class LocomotionClass : public IPersistent, public ILocomotion
 {
@@ -89,9 +97,9 @@ class LocomotionClass : public IPersistent, public ILocomotion
 		virtual void Serialize(SaveStreamClass & stream);
 
 		/*
-		 * Restores whatever the record could not carry. Load_Members calls this once the
-		 * members are in place, so a base class fixup runs even when the load was entered
-		 * through a derived class.
+		 * Restores whatever the record could not carry. Load_Object calls this once the
+		 * record has been checked, so a locomotor never takes its place while its record
+		 * is still in doubt.
 		 */
 		virtual void Post_Load(void);
 

@@ -81,7 +81,6 @@
 #include "house.h"
 #include "houstype.h"
 #include "hover.h"
-#include "iblowfish.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
@@ -173,19 +172,8 @@ extern	HINSTANCE LanguageResources;
 #define AUTOPLAY_GUID "b350c6d2-2f36-11d3-a72c-0090272fa661"
 
 
-#ifndef NO_BLOWFISH_DLL
-const struct RegStruct {
-	const GUID *clsid;
-	const char *name;
-} RegisterTheseDLLs[] = {
-	{ &CLSID_BlowfishObject, "blowfish.dll" }
-};
-#endif
-
 HANDLE AppMutex;
 HANDLE AutoPlayMutex;
-
-DynamicVectorClass<DWORD> RegisteredClasses;
 
 //WinTimerClass * WinTimer;
 
@@ -233,55 +221,13 @@ void Reset_Surfaces(void)
 }
 
 /// <summary>
-/// Registers the game's COM classes with OLE.
-/// This routine is called during startup, before anything that lives in the object
-/// database can be created. It first ensures the support DLLs are present, asking any
-/// that OLE cannot yet instantiate to register themselves, and then publishes a class
-/// factory for every persistent game class so that objects can be created by CLSID. The
-/// player is told by way of a message box if a support DLL could not be prepared.
+/// Registers every class a saved game or a unit type can name by class identifier.
+/// This runs during startup, before anything that lives in the object database can be
+/// created.
 /// </summary>
-/// <returns>bool; Did the preparation fail? Note the sense -- true means trouble.</returns>
-static bool RegisterClasses(void)
+static void RegisterClasses(void)
 {
-
-	bool failed = false;
-#ifndef NO_BLOWFISH_DLL
-	for (int i = 0; i < ARRAY_SIZE(RegisterTheseDLLs); i++) {
-		IUnknownPtr ptr;
-		HRESULT result = ptr.CreateInstance(*RegisterTheseDLLs[i].clsid, NULL, CLSCTX_ALL);
-		failed = FAILED(result);
-		if (failed) {
-			failed = false;
-			HINSTANCE hModule = LoadLibrary(RegisterTheseDLLs[i].name);
-			if (hModule != NULL) {
-				FARPROC fprocDllReg = (FARPROC)GetProcAddress(hModule, "DllRegisterServer");
-				if (!fprocDllReg || (fprocDllReg(), FAILED(ptr.CreateInstance(*RegisterTheseDLLs[i].clsid, NULL, CLSCTX_ALL)))) {
-					failed = true;
-				}
-				FreeLibrary(hModule);
-			} else {
-				failed = true;
-			}
-		}
-		if (failed) {
-			break;
-		}
-		ptr.Release();
-	}
-#endif
-
-	DWORD dwRegister;
-	IClassFactory *t;
-
-	/// Handy macros to easily register the class factories.
-
-	/// Register a class-object with OLE.
-	#define REGISTER_CLASS(_class, _clsid) \
-		{ \
-			t = new TClassFactory<_class>; \
-			CoRegisterClassObject(_clsid, t, CLSCTX_INPROC_SERVER, REGCLS_MULTIPLEUSE, &dwRegister); \
-			RegisteredClasses.Add(dwRegister); \
-		} \
+	#define REGISTER_CLASS(_class, _clsid) Register_Class<_class>(_clsid);
 
 	REGISTER_CLASS(WaveClass, CLSID_WaveClass);
 	REGISTER_CLASS(TerrainTypeClass, CLSID_TerrainTypeClass);
@@ -349,13 +295,6 @@ static bool RegisterClasses(void)
 	REGISTER_CLASS(NeuronClass, CLSID_NeuronClass);
 	REGISTER_CLASS(FoggedObjectClass, CLSID_FoggedObjectClass);
 	REGISTER_CLASS(AlphaShapeClass, CLSID_AlphaShapeClass);
-
-	if (failed) {
-		MessageBox(NULL, Fetch_String(TXT_PREPARECOM_FAILED), Fetch_String(TXT_SHORT_TITLE), MB_ICONEXCLAMATION);
-	}
-
-	return(failed);
-
 }
 
 /// <summary>
@@ -523,11 +462,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		return(EXIT_SUCCESS);
 	}
 
-	OleInitialize(NULL);
-
-	if (RegisterClasses()) {
-		exit(EXIT_FAILURE);
-	}
+	RegisterClasses();
 
 	/*
 	**	Get the full path to the .EXE
@@ -601,7 +536,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 			wsprintf (buffer, Fetch_String(TXT_CRITICALLY_LOW), (INIT_FREE_DISK_SPACE) / (1024 * 1024));
 			int reply = MessageBox(NULL, buffer, Fetch_String(TXT_SHORT_TITLE), MB_ICONQUESTION|MB_YESNO);
 			if (reply == IDNO) {
-				OleUninitialize();
 				return(EXIT_FAILURE);
 			}
 		}
@@ -732,7 +666,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		Debug_Console_Hold();
 	}
 
-	OleUninitialize();
 
 	return(error_code);
 }
@@ -1053,10 +986,7 @@ void __cdecl Prog_End(void)
 		Scen = NULL;
 	}
 
-	for (i = 0; i < RegisteredClasses.Count(); i++) {
-		CoRevokeClassObject((DWORD)RegisteredClasses[i]);
-	}
-	RegisteredClasses.Clear();
+	Unregister_Classes();
 
 	if (LanguageResources) {
 		FreeLibrary(LanguageResources);
@@ -1104,7 +1034,6 @@ void Emergency_Exit(void)
 		}
 	}
 
-	OleUninitialize();
 
 	if (MouseCursor) {
 		MouseCursor->Release_Mouse();

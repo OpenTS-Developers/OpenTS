@@ -215,7 +215,7 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 		if (stream.Is_Saving()) {
 			Save_Object(stream, (ILocomotion *)Piggybacker);
 		} else {
-			Load_Object(stream, IID_ILocomotion, (LPVOID *)&Piggybacker);
+			Piggybacker = Load_Locomotor(stream);
 		}
 	}
 	// TrackControl -- constant tables shared by every driver.

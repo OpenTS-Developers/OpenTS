@@ -229,9 +229,6 @@ HRESULT AbstractClass::Load_Members(SaveStreamClass & stream)
 	Serialize(stream);
 	stream.Set_Context(outertype, outerid);
 
-	if (SUCCEEDED(stream.Result())) {
-		Post_Load();
-	}
 	return(stream.Result());
 }
 

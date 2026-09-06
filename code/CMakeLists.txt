@@ -177,11 +177,6 @@ target_compile_definitions(OpenTS PRIVATE
     WIN32
     _WINDOWS
     NOMINMAX
-
-    # Compiles Blowfish into the binary instead of reaching it through the COM object in
-    # blowfish.dll. It decides the layout of BlowfishEngine, so every translation unit has
-    # to agree on it and it belongs on the compile line rather than in a header.
-    NO_BLOWFISH_DLL
 )
 
 #

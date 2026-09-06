@@ -135,9 +135,9 @@ class AbstractClass : public IPersistent
 		/*
 		 * Restores whatever the record could not carry -- artwork fetched by name, tables
 		 * shared with other objects, registrations that depend on the loaded identity.
-		 * Load_Members calls this once the members are in place, so a base class fixup
-		 * runs even when the load was entered through a derived class. An implementation
-		 * chains to its base first and never touches the stream.
+		 * Load_Object calls this once the record has been checked, so an object never takes
+		 * its place in the map or a side table while its record is still in doubt. An
+		 * implementation chains to its base first and never touches the stream.
 		 */
 		virtual void Post_Load(void);
 

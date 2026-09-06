@@ -250,7 +250,7 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	Init();
 
 	if (Class != NULL) {
-		Locomotion.CreateInstance(Class->Locomotor, NULL, CLSCTX_ALL);
+		Locomotion = Create_Locomotor(Class->Locomotor);
 		Locomotion->Link_To_Object(this);
 	}
 
@@ -1192,7 +1192,7 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 						piggy->End_Piggyback(&Locomotion);
 					}
 				}
-				ILocomotionPtr walk(CLSID_WalkLocomotion);
+				ILocomotionPtr walk(Create_Locomotor(CLSID_WalkLocomotion));
 				walk->Link_To_Object(this);
 				piggy = IPiggybackPtr(walk);
 				if (piggy != NULL) {
@@ -4152,7 +4152,7 @@ bool InfantryClass::JumpJet_To_Walk(void)
 	if (Is_JumpJet()) {
 		IPiggybackPtr piggy(Locomotion);
 		if (piggy != NULL && !piggy->Is_Piggybacking()) {
-			ILocomotionPtr walk(CLSID_WalkLocomotion);
+			ILocomotionPtr walk(Create_Locomotor(CLSID_WalkLocomotion));
 			walk->Link_To_Object(this);
 			piggy = IPiggybackPtr(walk);
 			if (piggy != NULL) {

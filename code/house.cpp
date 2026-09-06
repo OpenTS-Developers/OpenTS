@@ -690,8 +690,15 @@ HouseClass::~HouseClass (void)
 	}
 	SuperWeapon.Clear();
 
+	// A tag removes itself from this list as it dies; a slot a failed load left empty is
+	// removed here, or the list would never drain.
 	while (HouseTags.Count() > 0) {
-		delete HouseTags[0];
+		TagClass * const tag = HouseTags[0];
+		if (tag == nullptr) {
+			HouseTags.Delete_Index(0);
+		} else {
+			delete tag;
+		}
 	}
 
 	AbstractTypePtrTracker.Delete(this);

@@ -67,6 +67,7 @@
 #include "builtype.h"
 #include "bullet.h"
 #include "bullettype.h"
+#include "classfactory.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "empulse.h"
@@ -142,6 +143,7 @@
 
 #include "objheaps.hh"
 
+#include <memory>
 #include <string>
 
 //#define	SAVE_BLOCK_SIZE	512
@@ -206,61 +208,52 @@ HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion)
 /// Recreates one object from the save stream. It reattaches itself to its own heap as it
 /// is constructed, so the caller is handed it only to keep or to refuse.
 /// </summary>
-/// <param name="riid">The interface to hand back, or IID_IUnknown when the caller
-/// only needs the object to exist.</param>
-/// <param name="object">Receives the interface, or NULL on failure.</param>
-/// <returns>Returns with S_OK, or the failure code of what went wrong: an identifier no
-/// class answers to, a record the object could not read, or one whose length does not
-/// match what the object consumed.</returns>
-HRESULT Load_Object(SaveStreamClass & stream, REFIID riid, void ** object)
+/// <returns>The object, or NULL with the stream failed when the identifier names no
+/// registered class, the object could not read its record, or the record's length does
+/// not match what the object consumed.</returns>
+IPersistent * Load_Object(SaveStreamClass & stream)
 {
-	if (object != NULL) {
-		*object = NULL;
-	}
-
 	CLSID classid;
 	unsigned int length = 0;
 	stream.Serialize_Bytes(&classid, sizeof(classid));
 	stream.Serialize(length);
 	if (stream.Was_Error()) {
-		return(stream.Result());
+		return(NULL);
 	}
 
 	unsigned int const start = stream.Offset();
 	if (length > stream.Size() - start) {
 		DebugString("Save record at %u claims %u bytes, past the end of the save\n", start, length);
-		return(E_FAIL);
+		stream.Fail();
+		return(NULL);
 	}
 
-	IUnknown * unknown = NULL;
-	HRESULT result = CoCreateInstance(classid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
-		IID_IUnknown, (LPVOID *)&unknown);
-	if (FAILED(result)) {
-		DebugString("Save record at %u names a class this build does not register\n", start);
-		return(result);
-	}
-
-	IPersistent * const persist = dynamic_cast<IPersistent *>(unknown);
+	SwizzleManagerClass::MarkType const mark = Swizzler.Mark();
+	std::unique_ptr<IPersistent> persist = Create_Object(classid);
 	if (persist == NULL) {
-		unknown->Release();
-		return(E_NOINTERFACE);
+		DebugString("Save record at %u names a class this build does not register\n", start);
+		stream.Fail();
+		return(NULL);
 	}
 
+	bool ok;
 	{
 		SaveStreamClass::BoundScope const bound(stream, start + length);
-		result = persist->Load(stream);
+		ok = SUCCEEDED(persist->Load(stream));
 	}
-	if (SUCCEEDED(result) && stream.Offset() != start + length) {
+	if (ok && stream.Offset() != start + length) {
 		DebugString("Save record of %s at %u is %u bytes but %u were read\n",
-			typeid(*unknown).name(), start, length, stream.Offset() - start);
-		result = E_FAIL;
+			typeid(*persist).name(), start, length, stream.Offset() - start);
+		ok = false;
 	}
-	if (SUCCEEDED(result) && object != NULL) {
-		result = unknown->QueryInterface(riid, object);
+	if (!ok) {
+		Swizzler.Abandon(mark);
+		stream.Fail();
+		return(NULL);
 	}
 
-	unknown->Release();
-	return(result);
+	persist->Post_Load();
+	return(persist.release());
 }
 
 
@@ -282,10 +275,8 @@ static HRESULT Load_Vector(SaveStreamClass & stream)
 	}
 
 	for (int index = 0; index < count; index++) {
-		LPVOID obj;
-		HRESULT const result = Load_Object(stream, IID_IUnknown, &obj);
-		if (FAILED(result)) {
-			return(result);
+		if (Load_Object(stream) == NULL) {
+			return(stream.Result());
 		}
 	}
 	return(S_OK);
@@ -803,8 +794,8 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		delete TacticalMap;
 		TacticalMap = NULL;
 	}
-	Tactical * old_tactical;
-	if (FAILED(Load_Object(stream, IID_IUnknown, (LPVOID *)&old_tactical))) {
+	Tactical * old_tactical = dynamic_cast<Tactical *>(Load_Object(stream));
+	if (old_tactical == NULL) {
 		return(false);
 	}
 
@@ -1134,6 +1125,9 @@ bool Load_Game(const char *file_name)
 	bool res = Get_All(stream, false);
 	if (!res) {
 		DebugString("\t***** FAILED! (0x%08lx at %u of %u bytes)\n", (unsigned long)stream.Result(), stream.Offset(), stream.Size());
+		// What was loaded stays in the heaps until the next teardown, which must not
+		// follow the identities still sitting in its pointer slots.
+		Swizzler.Abandon();
 		return(false);
 	}
 	if (stream.Offset() != stream.Size()) {

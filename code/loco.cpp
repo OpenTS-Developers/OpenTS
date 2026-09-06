@@ -14,10 +14,13 @@
 #include "_map.h"
 #include "_tactica.h"
 #include "cell.h"
+#include "classfactory.h"
 #include "coord.h"
+#include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
 #include "map.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "swizzle.h"
 #include "tactical.h"
@@ -28,6 +31,7 @@
 #include "zgrad.hh"
 
 #include <cassert>
+#include <typeinfo>
 
 extern ULONG COMRefCount;
 
@@ -247,6 +251,32 @@ LONG STDMETHODCALLTYPE LocomotionClass::QueryInterface(REFIID riid, LPVOID *ppvO
 }
 
 
+ILocomotion * Create_Locomotor(CLSID const & classid)
+{
+	std::unique_ptr<IPersistent> object = Create_Object(classid);
+	ILocomotion * const locomotion = dynamic_cast<ILocomotion *>(object.get());
+	if (locomotion != nullptr) {
+		object.release();
+	}
+	return(locomotion);
+}
+
+
+ILocomotion * Load_Locomotor(SaveStreamClass & stream)
+{
+	SwizzleManagerClass::MarkType const mark = Swizzler.Mark();
+	IPersistent * const object = Load_Object(stream);
+	ILocomotion * const locomotion = dynamic_cast<ILocomotion *>(object);
+	if (object != NULL && locomotion == NULL) {
+		DebugString("Save record of %s at %u is not a locomotor\n", typeid(*object).name(), stream.Offset());
+		Swizzler.Abandon(mark);
+		delete object;
+		stream.Fail();
+	}
+	return(locomotion);
+}
+
+
 CLSID Locomotion_Class_ID(ILocomotion * locomotion)
 {
 	CLSID classid = CLSID_NULL;
@@ -313,9 +343,6 @@ HRESULT LocomotionClass::Load_Members(SaveStreamClass & stream)
 	Serialize(stream);
 	stream.Set_Context(outertype, outerid);
 
-	if (SUCCEEDED(stream.Result())) {
-		Post_Load();
-	}
 	return(stream.Result());
 }
 

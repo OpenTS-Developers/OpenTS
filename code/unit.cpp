@@ -223,7 +223,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	SecondaryFacing.Set(PrimaryFacing.Current());
 
 	if (Class != NULL) {
-		Locomotion = ILocomotionPtr(Class->Locomotor, NULL, CLSCTX_ALL);
+		Locomotion = Create_Locomotor(Class->Locomotor);
 		Locomotion->Link_To_Object(this);
 	}
 
@@ -5368,7 +5368,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 					if (piggy != NULL && piggy->Is_Piggybacking()) {
 						piggy->End_Piggyback(&Locomotion);
 					}
-					ILocomotionPtr walk(CLSID_DriveLocomotion);
+					ILocomotionPtr walk(Create_Locomotor(CLSID_DriveLocomotion));
 					walk->Link_To_Object(this);
 					piggy = IPiggybackPtr(walk);
 					if (piggy != NULL) {
