@@ -69,7 +69,6 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
-#include "dllver.h"
 #include "drive.h"
 #include "droppod.h"
 #include "audio/audioengine.h"
@@ -517,12 +516,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 	if (!Init_Language_Resources(true)) {
 		return(EXIT_SUCCESS);
-	}
-
-	if (GetDllVersion("comctl32.dll") < PACKVERSION(4, 70)) {
-		sprintf(buffer, Fetch_String(TXT_DLL_INVALID), "comctl32.dll", 4, 70, "comctl32.dll");
-		MessageBox(NULL, buffer, Fetch_String(TXT_SHORT_TITLE), MB_ICONERROR);
-		exit(EXIT_FAILURE);
 	}
 
 	OleInitialize(NULL);
