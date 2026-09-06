@@ -115,6 +115,7 @@
 #include "partsys.h"
 #include "revent.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "session.h"
 #include "swizzle.h"
@@ -602,7 +603,6 @@ void FootClass::Advance_Path(int count)
 	std::memmove(Path, Path + advance, (ARRAY_SIZE(Path) - advance) * sizeof(Path[0]));
 	std::fill(std::end(Path) - advance, std::end(Path), FACING_NONE);
 }
-
 
 
 /***********************************************************************************************
@@ -1132,9 +1132,7 @@ void FootClass::Approach_Target(void)
 		 */
 		bool flyer = (RTTI == RTTI_AIRCRAFT);
 
-		CLSID clsid;
-		IPersistPtr persist(Locomotion);
-		persist->GetClassID(&clsid);
+		CLSID const clsid = Locomotion_Class_ID(Locomotion);
 		if (clsid == CLSID_JumpjetLocomotion) {
 			flyer = true;
 		}
@@ -2387,9 +2385,7 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 			ParticleSystems[ATTACHED_PARTICLE_FIRE] = NULL;
 		}
 
-		CLSID locoid;
-		IPersistPtr persist(Locomotion);
-		persist->GetClassID(&locoid);
+		CLSID const locoid = Locomotion_Class_ID(Locomotion);
 
 		if (locoid == CLSID_HoverLocomotion && PathDelay == 0) {
 			PathDelay = 1;
@@ -3519,19 +3515,18 @@ void FootClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(BlockagePathDelay);
 
 	/*
-	 * The locomotor is a COM sub-object rather than a member, so it persists itself onto
-	 * the raw stream through OLE. The one being replaced is released first, since loading
-	 * hands back a fresh interface pointer rather than filling this one in.
+	 * The locomotor is a sub-object rather than a member, so it travels as a record of
+	 * its own. The one being replaced is released first, since loading hands back a fresh
+	 * interface pointer rather than filling this one in.
 	 */
 	if (stream.Is_Saving()) {
-		IPersistStreamPtr persist(Locomotion);
-		OleSaveToStream(persist, stream.Get_Stream());
+		Save_Object(stream, (ILocomotion *)Locomotion);
 	} else {
 		if (Locomotion != NULL) {
 			((ILocomotion *)Locomotion)->Release();
 		}
 		Locomotion.Detach();
-		OleLoadFromStream(stream.Get_Stream(), IID_ILocomotion, (LPVOID *)&Locomotion);
+		Load_Object(stream, IID_ILocomotion, (LPVOID *)&Locomotion);
 	}
 
 	stream.Serialize(HeadToCoord);
@@ -4766,10 +4761,7 @@ void FootClass::Delete_Me(void)
 /// <returns>bool; Is the object in the air?</returns>
 bool FootClass::In_Air(void) const
 {
-	IPersistPtr loco(Locomotion);
-
-	CLSID clsid;
-	loco->GetClassID(&clsid);
+	CLSID const clsid = Locomotion_Class_ID(Locomotion);
 
 	if (clsid == CLSID_HoverLocomotion) {
 		return(false);
@@ -4790,10 +4782,7 @@ bool FootClass::On_Ground(void) const
 	if (BASECLASS::On_Ground()) {
 		return(true);
 	}
-	IPersistPtr loco(Locomotion);
-
-	CLSID clsid;
-	loco->GetClassID(&clsid);
+	CLSID const clsid = Locomotion_Class_ID(Locomotion);
 
 	return(IsDown && clsid == CLSID_HoverLocomotion);
 }

@@ -64,7 +64,6 @@
 #include "classfactory.h"
 #include "command.h"
 #include "conquer.h"
-#include "cstream.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -284,7 +283,6 @@ static bool RegisterClasses(void)
 			RegisteredClasses.Add(dwRegister); \
 		} \
 
-	REGISTER_CLASS(CStreamClass, CLSID_CompressStream);
 	REGISTER_CLASS(WaveClass, CLSID_WaveClass);
 	REGISTER_CLASS(TerrainTypeClass, CLSID_TerrainTypeClass);
 	REGISTER_CLASS(TerrainClass, CLSID_TerrainClass);

@@ -15,8 +15,6 @@
 
 #define GAME_VERNAME TEXT("Tiberian Sun")
 
-EXTERN_C const IID IID_ILinkStream;
-EXTERN_C const CLSID CLSID_CompressStream;
 EXTERN_C const CLSID CLSID_HouseClass;
 EXTERN_C const CLSID CLSID_SuperWeaponTypeClass;
 EXTERN_C const CLSID CLSID_SuperWeaponClass;

@@ -18,15 +18,15 @@
 
 #include "revent.hh"
 
-struct IStream;
+class SaveStreamClass;
 class SaveStreamClass;
 template<class T> class DynamicVectorClass;
 
 class RadarEventClass
 {
 	public:
-		static bool Save(IStream * stream);
-		static bool Load(IStream * stream);
+		static bool Save(SaveStreamClass & stream);
+		static bool Load(SaveStreamClass & stream);
 
 	public:
 		RadarEventClass(RadarEventType event, Cell cell);

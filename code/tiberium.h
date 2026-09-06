@@ -38,7 +38,7 @@ class TiberiumClass : public AbstractTypeClass
 		virtual ~TiberiumClass() override;
 
 		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual HRESULT Load(SaveStreamClass & stream) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

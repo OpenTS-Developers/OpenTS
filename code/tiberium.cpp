@@ -216,7 +216,7 @@ HRESULT STDMETHODCALLTYPE TiberiumClass::GetClassID(CLSID * retval)
 /// <returns>Returns with S_OK if the tiberium type was loaded.</returns>
 /// <remarks>The spread and growth systems are not saved, so they come back empty. They
 /// must be rebuilt once the game has finished loading.</remarks>
-HRESULT STDMETHODCALLTYPE TiberiumClass::Load(IStream * stream)
+HRESULT TiberiumClass::Load(SaveStreamClass & stream)
 {
 	Clear_Spread();
 	Clear_Growth();

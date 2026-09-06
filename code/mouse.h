@@ -42,8 +42,8 @@ class MouseClass: public ScrollClass
 		typedef ScrollClass BASECLASS;
 
 	public:
-		virtual HRESULT Load(IStream * stream) override;
-		virtual HRESULT Save(IStream * stream) override;
+		virtual HRESULT Load(SaveStreamClass & stream) override;
+		virtual HRESULT Save(SaveStreamClass & stream) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

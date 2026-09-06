@@ -3933,7 +3933,7 @@ void AircraftClass::Read_INI(CCINIClass const & ini)
 /// </summary>
 /// <param name="stream">The stream to read this object from.</param>
 /// <returns>Returns with S_OK if the aircraft was loaded successfully.</returns>
-HRESULT STDMETHODCALLTYPE AircraftClass::Load(IStream * stream)
+HRESULT AircraftClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 	return(BASECLASS::Load(stream));

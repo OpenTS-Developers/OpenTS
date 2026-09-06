@@ -915,7 +915,7 @@ bool TerrainClass::Render(Rect & cliprect, bool forced, bool extras_only) const
 /// </summary>
 /// <param name="stream">The stream to read the object from.</param>
 /// <returns>Returns with S_OK if the object was read successfully.</returns>
-HRESULT STDMETHODCALLTYPE TerrainClass::Load(IStream * stream)
+HRESULT TerrainClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 
@@ -1092,7 +1092,7 @@ RTTIType TerrainClass::Fetch_RTTI(void) const
 
 /// <summary>
 /// Fetches the class identifier for this object.
-/// This routine is part of the IPersistStream implementation. The save system records
+/// This routine is part of the IPersistent implementation. The save system records
 /// the identifier so that it knows what to recreate when the game is loaded back in.
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>

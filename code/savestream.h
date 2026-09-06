@@ -73,7 +73,7 @@ class SaveStreamClass
 			MODE_LOAD
 		};
 
-		SaveStreamClass(IStream * stream, ModeType mode);
+		SaveStreamClass(std::vector<unsigned char> & buffer, ModeType mode);
 
 		bool Is_Saving(void) const {return(Mode == MODE_SAVE);}
 		bool Is_Loading(void) const {return(Mode == MODE_LOAD);}
@@ -100,11 +100,6 @@ class SaveStreamClass
 		unsigned int Version(void) const {return(FormatVersion);}
 
 		/*
-		 * The stream underneath, for the sub-objects that are still framed by OLE.
-		 */
-		IStream * Get_Stream(void) const {return(Stream);}
-
-		/*
 		 * Names the record this stream is carrying, so that a pointer which nothing
 		 * answers for can be reported against the object that asked for it.
 		 */
@@ -113,8 +108,60 @@ class SaveStreamClass
 			OwnerType = ownertype;
 			OwnerID = ownerid;
 		}
+		char const * Context_Type(void) const {return(OwnerType);}
+		SwizzleIDType Context_ID(void) const {return(OwnerID);}
+
+		/*
+		 * Where the next byte goes or comes from, so a record can be framed by its length.
+		 */
+		unsigned int Offset(void) const {return(Cursor);}
+
+		/*
+		 * Holds a load to one record while it is read, so that a member reading more than
+		 * its record holds is refused rather than spending the bytes of the record after
+		 * it. A record nested in another leaves the outer one bounded as it was.
+		 */
+		class BoundScope
+		{
+			public:
+				BoundScope(SaveStreamClass & stream, unsigned int end)
+					: Stream(stream), Previous(stream.Limit)
+				{
+					if (end <= Stream.Limit) {
+						Stream.Limit = end;
+					}
+				}
+
+				~BoundScope(void) {Stream.Limit = Previous;}
+
+				BoundScope(BoundScope const &) = delete;
+				BoundScope & operator=(BoundScope const &) = delete;
+
+			private:
+				SaveStreamClass & Stream;
+				unsigned int Previous;
+		};
+		unsigned int Size(void) const {return((unsigned int)Buffer->size());}
+		void Overwrite_Bytes(unsigned int offset, void const * data, int length);
 
 		void Serialize_Bytes(void * data, int length);
+
+		/*
+		 * Refuses a count that the bytes left in the stream could not hold, so a damaged
+		 * count fails the load before anything is allocated for it. Nothing serializes
+		 * an element in less than a byte.
+		 */
+		bool Fits(int count, std::size_t each)
+		{
+			if (Is_Loading()) {
+				std::size_t const room = (std::size_t)(Limit - Cursor) / (each > 0 ? each : 1);
+				if (count < 0 || (std::size_t)count > room) {
+					Fail();
+					return(false);
+				}
+			}
+			return(true);
+		}
 
 		/*
 		 * Numbers and enumerations travel as their declared width.
@@ -203,8 +250,7 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, (std::is_arithmetic_v<T> || std::is_enum_v<T>) ? sizeof(T) : 1)) {
 					return;
 				}
 				value.clear();
@@ -254,8 +300,7 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, 1)) {
 					return;
 				}
 				value.clear();
@@ -278,8 +323,7 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, 1)) {
 					return;
 				}
 				value.assign((std::size_t)count, false);
@@ -301,8 +345,7 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, 1)) {
 					return;
 				}
 				value.resize(count);
@@ -338,7 +381,11 @@ class SaveStreamClass
 			}
 		}
 
-		IStream * Stream;
+		std::vector<unsigned char> * Buffer;
+		unsigned int Cursor;
+
+		// A read is judged against the record being loaded rather than the whole stream.
+		unsigned int Limit;
 		ModeType Mode;
 		HRESULT ErrorCode;
 		unsigned int FormatVersion;
@@ -365,8 +412,7 @@ class SaveStreamClass
 
 
 /*
- * The version stamp of the save game currently being read. Each object builds its own
- * stream inside IPersistStream::Load, which has no way to be told, so the value is left
- * here by the load as a whole.
+ * The version stamp of the save game currently being read, left here by the load as a
+ * whole so every stream built during it reports the same version.
  */
 extern unsigned int LoadedSaveVersion;

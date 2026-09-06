@@ -232,17 +232,6 @@ void HouseTypeClass::Compute_CRC(CRCEngine & crc) const
 
 
 /// <summary>
-/// Determines if this house type has been changed since it was last saved.
-/// House types are written out wholesale rather than on demand, so the answer never varies.
-/// </summary>
-/// <returns>Returns with S_OK.</returns>
-HRESULT STDMETHODCALLTYPE HouseTypeClass::IsDirty(void)
-{
-	return(false);
-}
-
-
-/// <summary>
 /// Lists the members this house type carries.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
@@ -285,13 +274,7 @@ HRESULT STDMETHODCALLTYPE HouseTypeClass::QueryInterface(REFIID riid, LPVOID * p
 	*ppvObject = NULL;
 
 	if (riid == IID_IUnknown) {
-		*ppvObject = (IUnknown *)(IPersistStream *)this;
-	}
-	if (riid == IID_IPersist) {
-		*ppvObject = (IPersistStream *)this;
-	}
-	if (riid == IID_IPersistStream) {
-		*ppvObject = (IPersist *)this;
+		*ppvObject = (IUnknown *)(IPersistent *)this;
 	}
 	if (*ppvObject == NULL) {
 		return(E_NOINTERFACE);

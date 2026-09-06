@@ -27,13 +27,13 @@
 #include "inline.h"
 #include "overtype.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "tactical.h"
 #include "tube.h"
 #include "unit.h"
 
 #include "layer.hh"
-
 
 
 /// <summary>
@@ -626,7 +626,7 @@ HRESULT STDMETHODCALLTYPE WalkLocomotionClass::GetClassID(CLSID * retval)
 /// <summary>
 /// Lists the members this walk locomotor carries.
 /// The locomotor this one was stacked on top of is a separate persistent object rather
-/// than a member, so it still travels framed by OLE and is recreated as the class it was
+/// than a member, so it travels as a record of its own and is recreated as the class it was
 /// saved as.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
@@ -645,10 +645,9 @@ void WalkLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	if (haspiggy) {
 		if (stream.Is_Saving()) {
-			IPersistStreamPtr persist(Piggybacker);
-			OleSaveToStream(persist, stream.Get_Stream());
+			Save_Object(stream, (ILocomotion *)Piggybacker);
 		} else {
-			OleLoadFromStream(stream.Get_Stream(), IID_ILocomotion, (LPVOID *)&Piggybacker);
+			Load_Object(stream, IID_ILocomotion, (LPVOID *)&Piggybacker);
 		}
 	}
 }
@@ -761,18 +760,10 @@ HRESULT STDMETHODCALLTYPE WalkLocomotionClass::Piggyback_CLSID(GUID * classid)
 	}
 
 	if (Piggybacker != NULL) {
-		IPersistPtr ptr(Piggybacker);
-		if (ptr == NULL) {
-			return(E_FAIL);
-		}
-		return(ptr->GetClassID(classid));
+		*classid = Locomotion_Class_ID(Piggybacker);
+		return(S_OK);
 	}
-
-	IPersistPtr ptr(this);
-	if (ptr == NULL) {
-		return(E_FAIL);
-	}
-	return(ptr->GetClassID(classid));
+	return(GetClassID(classid));
 }
 
 

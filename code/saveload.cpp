@@ -77,7 +77,6 @@
 #include "globals.h"
 #include "goptions.h"
 #include "houstype.h"
-#include "ilinkstm.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
@@ -91,10 +90,12 @@
 #include "ovrlight.h"
 #include "particle.h"
 #include "partsys.h"
+#include "persist.h"
 #include "psystype.h"
 #include "ptype.h"
 #include "revent.h"
 #include "rules.h"
+#include "savefile.h"
 #include "savemgr.h"
 #include "savestream.h"
 #include "savever.h"
@@ -152,28 +153,137 @@
 */
 unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
 
-_COM_SMARTPTR_TYPEDEF(ILinkStream, __uuidof(ILinkStream));
+
+/// <summary>
+/// Writes one object to the save stream as a record of its own. A reader that does not
+/// consume exactly the record's length has read a record of another shape than was
+/// written, and a missing object fails the stream rather than leaving a gap where the
+/// reader expects one.
+/// </summary>
+/// <returns>Returns with S_OK, or the failure code of the write that went wrong.</returns>
+HRESULT Save_Object(SaveStreamClass & stream, IPersistent * persist)
+{
+	if (persist == nullptr) {
+		stream.Fail();
+		return(E_POINTER);
+	}
+
+	CLSID classid;
+	HRESULT result = persist->GetClassID(&classid);
+	if (FAILED(result)) {
+		return(result);
+	}
+
+	stream.Serialize_Bytes(&classid, sizeof(classid));
+	unsigned int const lengthat = stream.Offset();
+	unsigned int length = 0;
+	stream.Serialize(length);
+	unsigned int const start = stream.Offset();
+
+	result = persist->Save(stream, TRUE);
+	if (FAILED(result)) {
+		return(result);
+	}
+
+	length = stream.Offset() - start;
+	stream.Overwrite_Bytes(lengthat, &length, sizeof(length));
+	return(stream.Result());
+}
+
+
+HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion)
+{
+	IPersistent * const persist = dynamic_cast<IPersistent *>(locomotion);
+	if (persist == nullptr) {
+		stream.Fail();
+		return(E_NOINTERFACE);
+	}
+	return(Save_Object(stream, persist));
+}
+
+
+/// <summary>
+/// Recreates one object from the save stream. It reattaches itself to its own heap as it
+/// is constructed, so the caller is handed it only to keep or to refuse.
+/// </summary>
+/// <param name="riid">The interface to hand back, or IID_IUnknown when the caller
+/// only needs the object to exist.</param>
+/// <param name="object">Receives the interface, or NULL on failure.</param>
+/// <returns>Returns with S_OK, or the failure code of what went wrong: an identifier no
+/// class answers to, a record the object could not read, or one whose length does not
+/// match what the object consumed.</returns>
+HRESULT Load_Object(SaveStreamClass & stream, REFIID riid, void ** object)
+{
+	if (object != NULL) {
+		*object = NULL;
+	}
+
+	CLSID classid;
+	unsigned int length = 0;
+	stream.Serialize_Bytes(&classid, sizeof(classid));
+	stream.Serialize(length);
+	if (stream.Was_Error()) {
+		return(stream.Result());
+	}
+
+	unsigned int const start = stream.Offset();
+	if (length > stream.Size() - start) {
+		DebugString("Save record at %u claims %u bytes, past the end of the save\n", start, length);
+		return(E_FAIL);
+	}
+
+	IUnknown * unknown = NULL;
+	HRESULT result = CoCreateInstance(classid, NULL, CLSCTX_INPROC_SERVER | CLSCTX_LOCAL_SERVER,
+		IID_IUnknown, (LPVOID *)&unknown);
+	if (FAILED(result)) {
+		DebugString("Save record at %u names a class this build does not register\n", start);
+		return(result);
+	}
+
+	IPersistent * const persist = dynamic_cast<IPersistent *>(unknown);
+	if (persist == NULL) {
+		unknown->Release();
+		return(E_NOINTERFACE);
+	}
+
+	{
+		SaveStreamClass::BoundScope const bound(stream, start + length);
+		result = persist->Load(stream);
+	}
+	if (SUCCEEDED(result) && stream.Offset() != start + length) {
+		DebugString("Save record of %s at %u is %u bytes but %u were read\n",
+			typeid(*unknown).name(), start, length, stream.Offset() - start);
+		result = E_FAIL;
+	}
+	if (SUCCEEDED(result) && object != NULL) {
+		result = unknown->QueryInterface(riid, object);
+	}
+
+	unknown->Release();
+	return(result);
+}
 
 
 /// <summary>
 /// Loads a vector of persistent objects from the save game stream.
-/// This routine reads the element count and then recreates each object through OLE. The
-/// objects are not handed back -- each one reattaches itself to its own heap as it is
+/// The objects are not handed back -- each one reattaches itself to its own heap as it is
 /// constructed, which is what refills the game's vectors.
 /// </summary>
 /// <returns>Returns with S_OK, or the failure code of the read that went wrong.</returns>
-__forceinline HRESULT Load_Vector(IStream * stream)
+static HRESULT Load_Vector(SaveStreamClass & stream)
 {
-	int count;
-	int index;
-	LPVOID obj;
-
-	HRESULT result = stream->Read(&count, sizeof(count), NULL);
-	if (FAILED(result)) {
-		return(result);
+	int count = 0;
+	stream.Serialize(count);
+	if (stream.Was_Error()) {
+		return(stream.Result());
 	}
-	for (index = 0; index < count; index++) {
-		result = OleLoadFromStream(stream, IID_IUnknown, &obj);
+	if (count < 0) {
+		return(E_FAIL);
+	}
+
+	for (int index = 0; index < count; index++) {
+		LPVOID obj;
+		HRESULT const result = Load_Object(stream, IID_IUnknown, &obj);
 		if (FAILED(result)) {
 			return(result);
 		}
@@ -184,36 +294,25 @@ __forceinline HRESULT Load_Vector(IStream * stream)
 
 /// <summary>
 /// Saves a vector of persistent objects to the save game stream.
-/// This routine writes the element count and then streams out each object in turn through
-/// its IPersistStream interface.
 /// </summary>
 /// <returns>Returns with S_OK, or the failure code of the first object that refused to
 /// save.</returns>
 template<class T>
-__forceinline HRESULT Save_Vector(IStream * stream, const DynamicVectorClass<T> &list)
+static HRESULT Save_Vector(SaveStreamClass & stream, const DynamicVectorClass<T> &list)
 {
 	int count = list.Count();
-	HRESULT result = stream->Write(&count, sizeof(count), NULL);
-	if (SUCCEEDED(result)) {
-		for (int index = 0; index < count; index++) {
-			LPPERSISTSTREAM lpPS = NULL;
-			result = list[index]->QueryInterface(IID_IPersistStream, (LPVOID *)&lpPS);
-			if (FAILED(result)) {
-				return(result);
-			}
-			result = OleSaveToStream(lpPS, stream);
-			if (FAILED(result)) {
-				return(result);
-			}
-			result = lpPS->Release();
-			if (FAILED(result)) {
-				return(result);
-			}
+	stream.Serialize(count);
+
+	for (int index = 0; index < count; index++) {
+		HRESULT const result = Save_Object(stream, list[index]);
+		if (FAILED(result)) {
+			return(result);
 		}
-		result = S_OK;
 	}
-	return(result);
+	return(stream.Result());
 }
+
+
 /// <summary>
 /// Builds a checksum over the whole of the game object state.
 /// This routine walks the scenario and every object and type heap, folding each one's own
@@ -299,7 +398,7 @@ void Print_Heap_CRCs(FILE * fp)
  * HISTORY:                                                                                    *
  *   07/08/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-static bool Put_All(IStream *stream, int save_net)
+static bool Put_All(SaveStreamClass & stream, int save_net)
 {
 	/*
 	**	Save the scenario global information.
@@ -348,7 +447,7 @@ static bool Put_All(IStream *stream, int save_net)
 	}
 
 	DebugString("Saving TacticalMap\n");
-	if (FAILED(OleSaveToStream(TacticalMap, stream))) {
+	if (FAILED(Save_Object(stream, TacticalMap))) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -626,7 +725,7 @@ static bool Put_All(IStream *stream, int save_net)
 		}
 	}
 
-	return(true);
+	return(!stream.Was_Error());
 }
 
 
@@ -638,7 +737,7 @@ static bool Put_All(IStream *stream, int save_net)
 /// order they were written out.
 /// </summary>
 /// <returns>bool; Was the game state restored?</returns>
-static bool Get_All(IStream *stream, bool save_net)
+static bool Get_All(SaveStreamClass & stream, bool save_net)
 {
 	Clear_Scenario();
 	Scen->Load(stream);
@@ -705,7 +804,7 @@ static bool Get_All(IStream *stream, bool save_net)
 		TacticalMap = NULL;
 	}
 	Tactical * old_tactical;
-	if (FAILED(OleLoadFromStream(stream, IID_IUnknown, (LPVOID *)&old_tactical))) {
+	if (FAILED(Load_Object(stream, IID_IUnknown, (LPVOID *)&old_tactical))) {
 		return(false);
 	}
 
@@ -873,7 +972,7 @@ static bool Get_All(IStream *stream, bool save_net)
 
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 
-	return(true);
+	return(!stream.Was_Error());
 }
 
 /***************************************************************************
@@ -917,34 +1016,10 @@ static bool Get_All(IStream *stream, bool save_net)
  *=========================================================================*/
 bool Save_Game(const char *file_name, char const * descr)
 {
-	WCHAR name[MAX_PATH];
-
 	DebugString("\nSAVING GAME [%s - %s]\n", file_name, descr);
 
 	Swizzler.Begin_Save();
 
-	MultiByteToWideChar(0,0, Saved_Game_Name(file_name).c_str(), -1, name, sizeof(name)/sizeof(WCHAR));
-
-	/*
-	**	Open the file
-	*/
-	DebugString("Creating DocFile\n");
-	IStoragePtr storage;
-	if (FAILED(StgCreateDocfile(name, STGM_CREATE|STGM_SHARE_EXCLUSIVE|STGM_READWRITE, 0, &storage))) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-
-
-	/*
-	**	Save the description, scenario #, and house
-	**	(scenario # & house are saved separately from the actual Scenario &
-	**	PlayerPtr globals for convenience; we can quickly find out which
-	**	house & scenario this save-game file is for by reading these values.
-	**	Also, PlayerPtr is stored in a coded form in Save_Misc_Values(),
-	**	which may or may not be a HousesType number; so, saving 'house'
-	**	here ensures we can always pull out the house for this file.)
-	*/
 	SaveVersionInfo info;
 	info.Set_Internal_Version(ExpectedGameVersion);
 	info.Set_Scenario_Description(descr);
@@ -954,66 +1029,37 @@ bool Save_Game(const char *file_name, char const * descr)
 	info.Set_Scenario_Number(Scen->Scenario);
 	info.Set_Executable_Name("SUN.EXE");
 	info.Set_Game_Type(Session.Type);
+
 	FILETIME FileTime;
 	CoFileTimeNow(&FileTime);
 	info.Set_Last_Time(FileTime);
 	info.Set_Start_Time(FileTime);
 	info.Set_Play_Time(FileTime);
 
-	/*
-	**	Save the save-game version, for loading verification
-	*/
-	DebugString("Saving version information\n");
-	if (FAILED(info.Save(storage))) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
+	SaveFileClass file;
+	info.Save(file);
 
-	DebugString("Creating content stream\n");
-	IStreamPtr content;
-	if (FAILED(storage->CreateStream(L"CONTENTS", STGM_CREATE|STGM_SHARE_EXCLUSIVE|STGM_READWRITE, 0, 0, &content))) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-
-	DebugString("Linking content stream to compressor\n");
-	ILinkStreamPtr link;
-	link.CreateInstance(CLSID_CompressStream, NULL, CLSCTX_INPROC|CLSCTX_LOCAL_SERVER);
-	if (FAILED(link->Link_Stream(content))) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
-	}
-	IStreamPtr stream(link);
-
-	/*
-	**	Dump the save game data to the file. The data is compressed
-	**	and then encrypted. The message digest is calculated in the
-	**	process by using the data just as it is written to disk.
-	*/
 	DebugString("Calling Put_All()\n");
-	bool res = Put_All(stream,0);
-
-	DebugString("Unlinking content stream from compressor\n");
-	if (FAILED(link->Unlink_Stream(NULL))) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
+	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_SAVE);
+	bool res = Put_All(stream, 0);
+	if (!res) {
+		DebugString("\t***** FAILED! (0x%08lx)\n", (unsigned long)stream.Result());
 	}
 
-	DebugString("Releasing content stream\n");
-	content.Release();
-
-	DebugString("Closing DocFile\n");
-	if (FAILED(storage->Commit(0))) {
-		DebugString("\t***** FAILED!\n");
-		return(false);
+	if (res) {
+		DebugString("Writing %s\n", file_name);
+		SaveFileClass::ResultType const result = file.Write(Saved_Game_Name(file_name).c_str());
+		if (result != SaveFileClass::RESULT_OK) {
+			DebugString("\t***** FAILED! (%s)\n", SaveFileClass::Result_Text(result));
+			res = false;
+		}
 	}
 
-	DebugString("SAVING GAME [%s - %s] - Complete\n\n", file_name, descr);
+	DebugString("SAVING GAME [%s - %s] - %s\n\n", file_name, descr, res ? "Complete" : "Failed");
 
 	if (res) {
 		SaveManager.Autosave.Schedule(Frame);
 	}
-
 	return(res);
 }
 
@@ -1060,61 +1106,38 @@ bool Save_Game(const char *file_name, char const * descr)
  *=========================================================================*/
 bool Load_Game(const char *file_name)
 {
-	WCHAR name[MAX_PATH];
-
 	DebugString("\nLOADING GAME [%s]\n", file_name);
 
-	/*
-	**	Read & discard the save-game's header info
-	*/
 	SaveVersionInfo info;
 	if (!Get_Savefile_Info(file_name, &info)) {
 		return(false);
 	}
-
-	/*
-	 * The load dialog screens the saves it lists, but a network save reaches this routine
-	 * without passing through it, so the stamp is checked here as well.
-	 */
 	if (info.Get_Internal_Version() != ExpectedGameVersion) {
 		return(false);
 	}
-	LoadedSaveVersion = info.Get_Internal_Version();
 
+	// The whole file is checked before the running game is torn down, so a damaged
+	// save costs nothing.
+	SaveFileClass file;
+	SaveFileClass::ResultType const result = file.Read(Saved_Game_Name(file_name).c_str());
+	if (result != SaveFileClass::RESULT_OK) {
+		DebugString("\t***** FAILED! (%s)\n", SaveFileClass::Result_Text(result));
+		return(false);
+	}
+
+	LoadedSaveVersion = info.Get_Internal_Version();
 	Session.Type = (GameType)info.Get_Game_Type();
+
 	Swizzler.Discard();
 
-	/*
-	**	Open the file
-	*/
-	IStoragePtr storage;
-
-	// Structured storage goes straight to Windows, so the saved game is named in full first.
-	MultiByteToWideChar(0,0,Saved_Game_Name(file_name).c_str(), -1, name, (sizeof(name)/sizeof(WCHAR)));
-
-	if (FAILED(StgOpenStorage(name, 0, STGM_SHARE_DENY_WRITE, 0, 0, &storage))) {
-		return(false);
-	}
-
-	IStreamPtr content;
-	if (FAILED(storage->OpenStream(L"CONTENTS", 0, STGM_SHARE_EXCLUSIVE, 0, &content))) {
-		return(false);
-	}
-
-	IUnknown *pUnknown = NULL;
-	ILinkStreamPtr link;
-	link.CreateInstance(CLSID_CompressStream, pUnknown,CLSCTX_INPROC|CLSCTX_LOCAL_SERVER);
-	if (FAILED(link->Link_Stream(content))) {
-		return(false);
-	}
-	IStreamPtr stream(link);
-
+	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_LOAD);
 	bool res = Get_All(stream, false);
-
-	link->Unlink_Stream(NULL);
-
 	if (!res) {
+		DebugString("\t***** FAILED! (0x%08lx at %u of %u bytes)\n", (unsigned long)stream.Result(), stream.Offset(), stream.Size());
 		return(false);
+	}
+	if (stream.Offset() != stream.Size()) {
+		DebugString("Save carries %u bytes past its last record\n", stream.Size() - stream.Offset());
 	}
 
 	Swizzler.Resolve();
@@ -1209,11 +1232,10 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 }
 
 
-int Save_Misc_Values(IStream * stream)
+int Save_Misc_Values(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize_Misc_Values(savestream);
-	return(savestream.Result());
+	Serialize_Misc_Values(stream);
+	return(stream.Result());
 }
 
 
@@ -1230,12 +1252,11 @@ int Save_Misc_Values(IStream * stream)
  *   06/24/1995 BRR : Created.                                                                 *
  *   03/12/1996 JLB : Simplified.                                                              *
  *=============================================================================================*/
-int Load_Misc_Values(IStream * stream)
+int Load_Misc_Values(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("Load_Misc_Values");
-	Serialize_Misc_Values(savestream);
-	return(savestream.Result());
+	stream.Set_Context("Load_Misc_Values");
+	Serialize_Misc_Values(stream);
+	return(stream.Result());
 }
 
 
@@ -1259,23 +1280,20 @@ int Load_Misc_Values(IStream * stream)
  *=========================================================================*/
 bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)
 {
-	IStoragePtr storage;
-	WCHAR wname[MAX_PATH];
-
-	// Structured storage goes straight to Windows, so the saved game is named in full first.
-	MultiByteToWideChar(0, 0, Saved_Game_Name(name).c_str(), -1, wname, sizeof(wname) / sizeof(WCHAR));
-
-	HRESULT result = StgOpenStorage(wname, NULL, STGM_SHARE_EXCLUSIVE|STGM_READWRITE, NULL, 0, &storage);
-	if (FAILED(result)) {
+	if (name == nullptr || info == nullptr) {
 		return(false);
 	}
 
-	result = info->Load(storage);
-	if (FAILED(result)) {
+	SaveFileClass file;
+	SaveFileClass::ResultType const result = file.Read_Fields(Saved_Game_Name(name).c_str());
+	if (result != SaveFileClass::RESULT_OK) {
+		if (result != SaveFileClass::RESULT_MISSING) {
+			DebugString("Saved game %s: %s\n", name, SaveFileClass::Result_Text(result));
+		}
 		return(false);
 	}
 
-	return(true);
+	return(info->Load(file));
 }
 
 

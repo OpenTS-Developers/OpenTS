@@ -930,7 +930,7 @@ void ParticleClass::Serialize(SaveStreamClass & stream)
 /// <param name="stream">The stream to write this particle to.</param>
 /// <param name="cleardirty">Should the modified flag be cleared once written?</param>
 /// <returns>Returns with S_OK if the particle was written successfully.</returns>
-HRESULT STDMETHODCALLTYPE ParticleClass::Save(IStream * stream, BOOL cleardirty)
+HRESULT ParticleClass::Save(SaveStreamClass & stream, BOOL cleardirty)
 {
 	HRESULT result = BASECLASS::Save(stream, cleardirty);
 	WasSaved = true;

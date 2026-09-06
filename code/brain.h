@@ -62,8 +62,8 @@ class BrainClass
 		void Init(int min, int max);
 		bool Add_Neuron(NeuronClass *neuron);
 
-		HRESULT Load(IStream * stream);
-		HRESULT Save(IStream * stream, BOOL cleardirty);
+		HRESULT Load(SaveStreamClass & stream);
+		HRESULT Save(SaveStreamClass & stream, BOOL cleardirty);
 
 		void Serialize(SaveStreamClass & stream, BOOL cleardirty = FALSE);
 

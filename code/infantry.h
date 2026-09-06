@@ -127,7 +127,7 @@ class InfantryClass : public FootClass
 		virtual ~InfantryClass(void) override;
 
 		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual HRESULT Load(SaveStreamClass & stream) override;
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
 

@@ -6433,7 +6433,7 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 /// </summary>
 /// <param name="stream">The stream to read the house from.</param>
 /// <returns>Returns with S_OK, or the failure code reported by the stream.</returns>
-HRESULT STDMETHODCALLTYPE HouseClass::Load(IStream *stream)
+HRESULT HouseClass::Load(SaveStreamClass & stream)
 {
 	while (SuperWeapon.Count()) {
 		delete SuperWeapon[0];

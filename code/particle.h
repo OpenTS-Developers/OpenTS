@@ -32,7 +32,7 @@ class ParticleClass : public ObjectClass
 		virtual ~ParticleClass(void) override;
 
 		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Save(IStream * stream, BOOL cleardirty) override;
+		virtual HRESULT Save(SaveStreamClass & stream, BOOL cleardirty) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

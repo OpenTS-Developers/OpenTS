@@ -39,7 +39,7 @@
 #include "house.hh"
 #include "rtti.hh"
 
-#include <comdef.h>
+#include "persist.h"
 
 class AbstractTypeClass;
 class CRCEngine;
@@ -62,7 +62,7 @@ class MonoClass;
 **	This class is the base class for all game objects that have an existence on the
 **	battlefield.
 */
-class AbstractClass : public IPersistStream
+class AbstractClass : public IPersistent
 {
 	public:
 
@@ -74,8 +74,8 @@ class AbstractClass : public IPersistStream
 		 * the members are read -- dropping a registration keyed by the identity the read
 		 * is about to replace, say.
 		 */
-		HRESULT Save_Members(IStream * stream, BOOL cleardirty);
-		HRESULT Load_Members(IStream * stream);
+		HRESULT Save_Members(SaveStreamClass & stream, BOOL cleardirty);
+		HRESULT Load_Members(SaveStreamClass & stream);
 
 	public:
 
@@ -96,7 +96,7 @@ class AbstractClass : public IPersistStream
 
 		/*
 		 * If this object has changed since it was last written out, then this flag will be
-		 * true. Save clears it on request and IsDirty reports it, as IPersistStream asks.
+		 * true. Save clears it on request.
 		 */
 		bool Dirty;
 
@@ -110,10 +110,8 @@ class AbstractClass : public IPersistStream
 		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
 		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE IsDirty(void) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
-		virtual HRESULT STDMETHODCALLTYPE Save(IStream * stream, BOOL cleardirty) override;
-		virtual HRESULT STDMETHODCALLTYPE GetSizeMax(ULARGE_INTEGER *pcbSize) override;
+		virtual HRESULT Load(SaveStreamClass & stream) override;
+		virtual HRESULT Save(SaveStreamClass & stream, BOOL cleardirty) override;
 
 		virtual int What_Am_I(void) const;
 		virtual int Fetch_ID(void) const;

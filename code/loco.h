@@ -11,11 +11,17 @@
 
 #include "coord.h"
 #include "ilocos.h"
+#include "persist.h"
 
 class FootClass;
 class SaveStreamClass;
 
-class LocomotionClass : public IPersistStream, public ILocomotion
+// The class identifier of a locomotor reached through its locomotion interface, or
+// CLSID_NULL when it is not one of ours.
+CLSID Locomotion_Class_ID(ILocomotion * locomotion);
+
+
+class LocomotionClass : public IPersistent, public ILocomotion
 {
 	public:
 		LocomotionClass(void);
@@ -25,10 +31,8 @@ class LocomotionClass : public IPersistStream, public ILocomotion
 		virtual ULONG STDMETHODCALLTYPE AddRef() override;
 		virtual ULONG STDMETHODCALLTYPE Release() override;
 
-		virtual LONG STDMETHODCALLTYPE IsDirty(void) override {return(Dirty ? S_OK : S_FALSE);}
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
-		virtual HRESULT STDMETHODCALLTYPE Save(IStream * stream, BOOL cleardirty) override;
-		virtual LONG STDMETHODCALLTYPE GetSizeMax(ULARGE_INTEGER *pcbSize) override;
+		virtual HRESULT Load(SaveStreamClass & stream) override;
+		virtual HRESULT Save(SaveStreamClass & stream, BOOL cleardirty) override;
 
 		virtual HRESULT STDMETHODCALLTYPE Link_To_Object(void *object) override;
 		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
@@ -98,8 +102,8 @@ class LocomotionClass : public IPersistStream, public ILocomotion
 		 * from its Load and Save; the record is the swizzle identity followed by whatever
 		 * members the class names.
 		 */
-		HRESULT Save_Members(IStream * stream, BOOL cleardirty);
-		HRESULT Load_Members(IStream * stream);
+		HRESULT Save_Members(SaveStreamClass & stream, BOOL cleardirty);
+		HRESULT Load_Members(SaveStreamClass & stream);
 
 	protected:
 		/*

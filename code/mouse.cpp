@@ -52,6 +52,7 @@
 #include "mixfile.h"
 #include "overtype.h"
 #include "rawfile.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "scenario.h"
 #include "shapeset.h"
@@ -393,14 +394,15 @@ void MouseClass::Init_Clear(void)
 /// manager, and the theater specific type data is reinitialized to match the scenario.
 /// </summary>
 /// <returns>Returns with S_OK if the map was loaded, otherwise the stream error.</returns>
-HRESULT MouseClass::Load(IStream * stream)
+HRESULT MouseClass::Load(SaveStreamClass & stream)
 {
 	int i;
 
 	HRESULT result = BASECLASS::Load(stream);
 	if (SUCCEEDED(result)) {
 		int theater;
-		result = stream->Read(&theater, sizeof(theater), NULL);
+		stream.Serialize(theater);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
@@ -435,10 +437,9 @@ HRESULT MouseClass::Load(IStream * stream)
 
 		Array.Clear();
 
-		SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-		savestream.Set_Context("MouseClass");
-		Serialize(savestream);
-		result = savestream.Result();
+		stream.Set_Context("MouseClass");
+		Serialize(stream);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
@@ -478,21 +479,23 @@ HRESULT MouseClass::Load(IStream * stream)
 			SubzoneConnectionHashTable[i] = new SUBZONE_CONNECTION_HASH_SET(20, 256, SubzoneHash);
 		}
 
-		result = stream->Read(CellZones, sizeof(*CellZones) * CellZoneCount, NULL);
+		stream.Serialize_Bytes(CellZones, (int)(sizeof(*CellZones) * CellZoneCount));
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
 			Zones[i] = new unsigned short[ZoneCount];
-			result = stream->Read(Zones[i], sizeof(unsigned short) * ZoneCount, NULL);
+			stream.Serialize_Bytes(Zones[i], (int)(sizeof(unsigned short) * ZoneCount));
+			result = stream.Result();
 			if (FAILED(result)) {
 				return(result);
 			}
 		}
 
-		savestream.Serialize(ZoneConnections);
-		result = savestream.Result();
+		stream.Serialize(ZoneConnections);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
@@ -502,13 +505,14 @@ HRESULT MouseClass::Load(IStream * stream)
 			Array[i] = NULL;
 		}
 		int count;
-		result = stream->Read(&count, sizeof(count), NULL);
+		stream.Serialize(count);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
 		for (i = 0; i < count; i++) {
 			LPVOID ptr;
-			OleLoadFromStream(stream, IID_IUnknown, &ptr);
+			Load_Object(stream, IID_IUnknown, &ptr);
 		}
 
 		TerrainTypeClass::Init(Scen->Theater);
@@ -535,10 +539,10 @@ HRESULT MouseClass::Load(IStream * stream)
 /// Saves the map layer to a save game stream.
 /// This routine writes the theater, the members of the whole display chain, the zone tables
 /// and zone connections, and then every valid cell, in the order that Load expects to find
-/// them. The cells persist themselves through OLE, so each one writes its own contents.
+/// them. Each cell writes its own contents as a record of its own.
 /// </summary>
 /// <returns>Returns with S_OK if the map was written, otherwise the stream error.</returns>
-HRESULT MouseClass::Save(IStream * stream)
+HRESULT MouseClass::Save(SaveStreamClass & stream)
 {
 	int i;
 	int count;
@@ -546,32 +550,34 @@ HRESULT MouseClass::Save(IStream * stream)
 	HRESULT result = BASECLASS::Save(stream);
 	if (SUCCEEDED(result)) {
 		int theater = Scen->Theater;
-		result = stream->Write(&theater, sizeof(theater), NULL);
+		stream.Serialize(theater);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
 
-		SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-		Serialize(savestream);
-		result = savestream.Result();
+		Serialize(stream);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
 
-		result = stream->Write(CellZones, sizeof(*CellZones) * CellZoneCount, NULL);
+		stream.Serialize_Bytes(CellZones, (int)(sizeof(*CellZones) * CellZoneCount));
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
-			result = stream->Write(Zones[i], sizeof(unsigned short) * ZoneCount, NULL);
+			stream.Serialize_Bytes(Zones[i], (int)(sizeof(unsigned short) * ZoneCount));
+			result = stream.Result();
 			if (FAILED(result)) {
 				return(result);
 			}
 		}
 
-		savestream.Serialize(ZoneConnections);
-		result = savestream.Result();
+		stream.Serialize(ZoneConnections);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
@@ -586,7 +592,8 @@ HRESULT MouseClass::Save(IStream * stream)
 			}
 			cptr = Iterate();
 		}
-		result = stream->Write(&count, sizeof(count), NULL);
+		stream.Serialize(count);
+		result = stream.Result();
 		if (FAILED(result)) {
 			return(result);
 		}
@@ -595,7 +602,7 @@ HRESULT MouseClass::Save(IStream * stream)
 		while (cptr != NULL) {
 			Cell cell = cptr->CellID;
 			if (Is_Valid(cell)) {
-				OleSaveToStream(cptr, stream);
+				Save_Object(stream, cptr);
 				count--;
 			}
 			cptr = Iterate();

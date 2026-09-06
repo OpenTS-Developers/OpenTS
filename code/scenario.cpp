@@ -3334,18 +3334,17 @@ static Cell const Clip_Move(Cell const & cell, FacingType facing, int dist)
 /// The elapsed mission clock is halted across the write so that the time recorded is the
 /// one the player will be given back when the game is resumed.
 /// </summary>
-void ScenarioClass::Save(IStream * stream) const
+void ScenarioClass::Save(SaveStreamClass & stream) const
 {
 	DebugString("Scenario Save: ElapsedTimer = %d\n", (int)ElapsedTimer);
 	ElapsedTimer.Stop();
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
 
 	/*
 	 * One member list serves both directions, so it cannot be declared const even though
 	 * writing changes nothing.
 	 */
-	const_cast<ScenarioClass *>(this)->Serialize(savestream);
+	const_cast<ScenarioClass *>(this)->Serialize(stream);
 
 	ElapsedTimer.Start();
 }
@@ -3356,13 +3355,12 @@ void ScenarioClass::Save(IStream * stream) const
 /// The elapsed mission clock is halted across the read for the same reason it is halted
 /// across the write, so that it does not advance over the value coming back in.
 /// </summary>
-void ScenarioClass::Load(IStream * stream)
+void ScenarioClass::Load(SaveStreamClass & stream)
 {
 	ElapsedTimer.Stop();
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("ScenarioClass");
-	Serialize(savestream);
+	stream.Set_Context("ScenarioClass");
+	Serialize(stream);
 
 	ElapsedTimer.Start();
 	DebugString("Scenario Load: ElapsedTimer = %d\n", (int)ElapsedTimer);

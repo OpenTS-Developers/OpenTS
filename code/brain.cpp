@@ -159,15 +159,11 @@ bool BrainClass::Add_Neuron(NeuronClass *neuron)
 /// Returns with S_OK when the brain was written, E_POINTER when no stream was supplied,
 /// or the stream's own failure code.
 /// </returns>
-HRESULT BrainClass::Save(IStream * stream, BOOL cleardirty)
+HRESULT BrainClass::Save(SaveStreamClass & stream, BOOL cleardirty)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream, cleardirty);
-	return(savestream.Result());
+	Serialize(stream, cleardirty);
+	return(stream.Result());
 }
 
 
@@ -180,16 +176,12 @@ HRESULT BrainClass::Save(IStream * stream, BOOL cleardirty)
 /// Returns with S_OK when the brain was read, E_POINTER when no stream was supplied, or
 /// the stream's own failure code.
 /// </returns>
-HRESULT BrainClass::Load(IStream * stream)
+HRESULT BrainClass::Load(SaveStreamClass & stream)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("BrainClass");
-	Serialize(savestream);
-	return(savestream.Result());
+	stream.Set_Context("BrainClass");
+	Serialize(stream);
+	return(stream.Result());
 }
 
 
@@ -212,10 +204,10 @@ void BrainClass::Serialize(SaveStreamClass & stream, BOOL cleardirty)
 	for (int i = 0; i < count && !stream.Was_Error(); i++) {
 		if (stream.Is_Loading()) {
 			NeuronClass * neuron = new NeuronClass;
-			neuron->Load(stream.Get_Stream());
+			neuron->Load(stream);
 			Add_Neuron(neuron);
 		} else {
-			Neurons[i]->Save(stream.Get_Stream(), cleardirty);
+			Neurons[i]->Save(stream, cleardirty);
 		}
 	}
 	// MinCount -- the limits a brain was prepared with rather than anything it accumulated.

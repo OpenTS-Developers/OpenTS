@@ -11,8 +11,7 @@
 
 #include "win.h"
 
-struct IStorage;
-struct IPropertySetStorage;
+class SaveFileClass;
 
 enum {
 	PIDSI_SCEN_DESCRIP = 2,
@@ -75,27 +74,8 @@ class SaveVersionInfo
 		void Set_Game_Type(int id);
 		int Get_Game_Type(void);
 
-		HRESULT Save(IStorage *storage);
-		HRESULT Load(IStorage *storage);
-
-	private:
-		HRESULT Load_String(IStorage *storage, int id, char *string, int size);
-		HRESULT Load_String_Set(IPropertySetStorage *storageset, int id, char *string, int size);
-
-		HRESULT Load_Int(IStorage *storage, int id, int *integer);
-		HRESULT Load_Int_Set(IPropertySetStorage *storageset, int id, int *integer);
-
-		HRESULT Save_String(IStorage *storage, int id, char *string);
-		HRESULT Save_String_Set(IPropertySetStorage *storageset, int id, const char *string);
-
-		HRESULT Save_Int(IStorage *storage, int id, int integer);
-		HRESULT Save_Int_Set(IPropertySetStorage *storageset, int id, int integer);
-
-		HRESULT Load_Time(IStorage *storage, int id, FILETIME *time);
-		HRESULT Load_Time_Set(IPropertySetStorage *storageset, int id, FILETIME *time);
-
-		HRESULT Save_Time(IStorage *storage, int id, FILETIME *time);
-		HRESULT Save_Time_Set(IPropertySetStorage *storageset, int id, FILETIME *time);
+		void Save(SaveFileClass & file) const;
+		bool Load(SaveFileClass const & file);
 
 	private:
 		/*
@@ -159,5 +139,3 @@ class SaveVersionInfo
 		 */
 		int GameType;
 };
-
-const WCHAR *Stream_Name_From_ID(int id);

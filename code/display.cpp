@@ -3861,7 +3861,7 @@ LRESULT DisplayClass::Windows_Message_Proc(HWND hWnd, UINT Msg, WPARAM wParam, L
 /// <param name="stream">The stream to read the layers from.</param>
 /// <returns>Returns with S_OK if every layer was read, otherwise the failure code of the
 /// layer that could not be read.</returns>
-HRESULT DisplayClass::Load(IStream * stream)
+HRESULT DisplayClass::Load(SaveStreamClass & stream)
 {
 	HRESULT result = S_OK;
 	for (LayerType layer = LAYER_FIRST; layer < LAYER_COUNT; layer++) {
@@ -3878,7 +3878,7 @@ HRESULT DisplayClass::Load(IStream * stream)
 /// <param name="stream">The stream to write the layers to.</param>
 /// <returns>Returns with S_OK if every layer was written, otherwise the failure code of the
 /// layer that could not be written.</returns>
-HRESULT DisplayClass::Save(IStream * stream)
+HRESULT DisplayClass::Save(SaveStreamClass & stream)
 {
 	HRESULT result = S_OK;
 	for (LayerType layer = LAYER_FIRST; layer < LAYER_COUNT; layer++) {

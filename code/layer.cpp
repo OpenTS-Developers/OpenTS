@@ -153,15 +153,11 @@ int LayerClass::Sorted_Add(ObjectClass const * const object)
 /// </summary>
 /// <returns>Returns with S_OK if the layer was written. Otherwise, the failure code from
 /// the stream is returned.</returns>
-HRESULT LayerClass::Save(IStream * stream)
+HRESULT LayerClass::Save(SaveStreamClass & stream)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	DynamicVectorClass<ObjectClass *>::Serialize(savestream);
-	return(savestream.Result());
+	DynamicVectorClass<ObjectClass *>::Serialize(stream);
+	return(stream.Result());
 }
 
 
@@ -173,14 +169,10 @@ HRESULT LayerClass::Save(IStream * stream)
 /// </summary>
 /// <returns>Returns with S_OK if the layer was read. Otherwise, the failure code from the
 /// stream is returned.</returns>
-HRESULT LayerClass::Load(IStream * stream)
+HRESULT LayerClass::Load(SaveStreamClass & stream)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("LayerClass");
-	DynamicVectorClass<ObjectClass *>::Serialize(savestream);
-	return(savestream.Result());
+	stream.Set_Context("LayerClass");
+	DynamicVectorClass<ObjectClass *>::Serialize(stream);
+	return(stream.Result());
 }

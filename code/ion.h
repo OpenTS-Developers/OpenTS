@@ -22,8 +22,8 @@ class IonStormClass
 {
 	public:
 		static void Init(void);
-		static HRESULT Save(IStream * stream);
-		static HRESULT Load(IStream * stream);
+		static HRESULT Save(SaveStreamClass & stream);
+		static HRESULT Load(SaveStreamClass & stream);
 
 		static void Serialize(SaveStreamClass & stream);
 

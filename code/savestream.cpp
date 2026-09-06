@@ -14,19 +14,24 @@
 
 #include "saveload.h"
 
+#include <cstring>
+
 
 unsigned int LoadedSaveVersion = 0;
 
 
 /// <summary>
-/// Builds a save stream over the stream given.
+/// Builds a save stream over the buffer given, appending to it when saving and reading
+/// it from the start when loading.
 /// </summary>
-/// <param name="stream">The stream the members are to be read from or written to.</param>
+/// <param name="buffer">The bytes of the saved game, which must outlive this stream.</param>
 /// <param name="mode">Is this stream saving or loading?</param>
-SaveStreamClass::SaveStreamClass(IStream * stream, ModeType mode) :
-	Stream(stream),
+SaveStreamClass::SaveStreamClass(std::vector<unsigned char> & buffer, ModeType mode) :
+	Buffer(&buffer),
+	Cursor(mode == MODE_SAVE ? (unsigned int)buffer.size() : 0),
+	Limit((unsigned int)buffer.size()),
 	Mode(mode),
-	ErrorCode(stream != NULL ? S_OK : E_POINTER),
+	ErrorCode(S_OK),
 	FormatVersion(mode == MODE_LOAD ? LoadedSaveVersion : ExpectedGameVersion),
 	OwnerType(NULL),
 	OwnerID(0)
@@ -34,12 +39,6 @@ SaveStreamClass::SaveStreamClass(IStream * stream, ModeType mode) :
 }
 
 
-/// <summary>
-/// Stops the pass, as though the stream itself had failed.
-/// This is for a record that reads back as something no save could hold -- a length that
-/// is negative, or one that does not fit the object waiting for it. An earlier failure is
-/// left in place, since it is the one that explains the rest.
-/// </summary>
 void SaveStreamClass::Fail(void)
 {
 	if (SUCCEEDED(ErrorCode)) {
@@ -49,36 +48,52 @@ void SaveStreamClass::Fail(void)
 
 
 /// <summary>
-/// Moves a block of bytes between the object and the stream.
-/// Every other Serialize reaches the stream through this one. Once something has gone
-/// wrong the block is left alone and the failure is kept, so the rest of the pass runs
-/// harmlessly and the caller finds out at the end.
+/// Moves the bytes of one value between the caller and the stream.
+/// A load that runs out of stream in the middle of a value fails the stream rather than
+/// hand back a partly read value, and every later call is ignored. A negative length is
+/// a count that wrapped, and fails the same way.
 /// </summary>
-/// <param name="data">The bytes to write, or the place to read them back into.</param>
-/// <param name="length">The number of bytes to move.</param>
 void SaveStreamClass::Serialize_Bytes(void * data, int length)
 {
 	if (FAILED(ErrorCode)) {
 		return;
 	}
+	if (length < 0) {
+		ErrorCode = E_FAIL;
+		return;
+	}
+	if (length == 0) {
+		return;
+	}
 
-	ULONG moved = 0;
-	HRESULT result;
+	unsigned char * const bytes = (unsigned char *)data;
 
 	if (Mode == MODE_SAVE) {
-		result = Stream->Write(data, length, &moved);
+		Buffer->insert(Buffer->end(), bytes, bytes + length);
+		Cursor = (unsigned int)Buffer->size();
 	} else {
-		result = Stream->Read(data, length, &moved);
+		// The bound is the record being read rather than the whole stream, so a member that
+		// reads more than its own is refused instead of quietly spending the bytes of the
+		// record after it.
+		if ((unsigned int)length > Limit - Cursor) {
+			ErrorCode = E_FAIL;
+			return;
+		}
+		memcpy(bytes, Buffer->data() + Cursor, (std::size_t)length);
+		Cursor += (unsigned int)length;
 	}
+}
 
-	/*
-	 * A stream that stops early has run out in the middle of an object, which leaves
-	 * the rest of the members holding whatever they held before. Treat it as a failure
-	 * rather than let a half-read object reach the game.
-	 */
-	if (SUCCEEDED(result) && moved != (ULONG)length) {
-		result = E_FAIL;
+
+// A saver patches a length it could not know until the record was written.
+void SaveStreamClass::Overwrite_Bytes(unsigned int offset, void const * data, int length)
+{
+	if (FAILED(ErrorCode) || Mode != MODE_SAVE || length <= 0) {
+		return;
 	}
-
-	ErrorCode = result;
+	if (offset > Buffer->size() || (unsigned int)length > Buffer->size() - offset) {
+		ErrorCode = E_FAIL;
+		return;
+	}
+	memcpy(Buffer->data() + offset, data, (std::size_t)length);
 }

@@ -2090,10 +2090,9 @@ bool RulesClass::Do_Movies(CCINIClass const & ini)
 /// <summary>
 /// Writes the rule data out to a save game stream.
 /// </summary>
-void RulesClass::Save(IStream * stream)
+void RulesClass::Save(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream);
+	Serialize(stream);
 }
 
 
@@ -2102,11 +2101,10 @@ void RulesClass::Save(IStream * stream)
 /// </summary>
 /// <remarks>Be sure the object heaps have been loaded before calling this routine, since
 /// the pointer swizzle needs them.</remarks>
-void RulesClass::Load(IStream * stream)
+void RulesClass::Load(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("RulesClass");
-	Serialize(savestream);
+	stream.Set_Context("RulesClass");
+	Serialize(stream);
 }
 
 

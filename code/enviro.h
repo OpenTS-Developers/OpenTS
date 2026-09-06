@@ -26,8 +26,8 @@ class EnvironmentClass
 		void Store(void);
 		void Restore(void);
 
-		HRESULT Load(IStream * stream);
-		HRESULT Save(IStream * stream);
+		HRESULT Load(SaveStreamClass & stream);
+		HRESULT Save(SaveStreamClass & stream);
 
 		void Serialize(SaveStreamClass & stream);
 

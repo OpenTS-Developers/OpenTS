@@ -110,8 +110,8 @@ void AbstractClass::Create_ID(void)
 /// <summary>
 /// Fetches a COM interface pointer from this object.
 /// This is the IUnknown implementation shared by every game object. Abstract
-/// objects expose IUnknown, IPersistStream and IPersist; the save game system
-/// reaches the whole object hierarchy through them.
+/// objects expose IUnknown alone; the save game system reaches them through
+/// IPersistent, which needs no identifier.
 /// </summary>
 /// <param name="riid">The identifier of the interface being asked for.</param>
 /// <param name="ppvObject">Receives the interface pointer, or NULL when the
@@ -129,13 +129,7 @@ HRESULT STDMETHODCALLTYPE AbstractClass::QueryInterface(REFIID riid, LPVOID * pp
 	*ppvObject = NULL;
 
 	if (riid == IID_IUnknown) {
-		*ppvObject = (IUnknown *)(IPersistStream *)this;
-	}
-	if (riid == IID_IPersistStream) {
-		*ppvObject = (IPersistStream *)this;
-	}
-	if (riid == IID_IPersist) {
-		*ppvObject = (IPersist *)this;
+		*ppvObject = (IUnknown *)(IPersistent *)this;
 	}
 	if (*ppvObject == NULL) {
 		return(E_NOINTERFACE);
@@ -175,7 +169,7 @@ ULONG STDMETHODCALLTYPE AbstractClass::Release(void)
 /// <param name="stream">The stream to write to.</param>
 /// <param name="cleardirty">Should the object be marked clean once it has been written?</param>
 /// <returns>Returns with S_OK when the object was written, otherwise a failure code.</returns>
-HRESULT STDMETHODCALLTYPE AbstractClass::Save(IStream * stream, BOOL cleardirty)
+HRESULT AbstractClass::Save(SaveStreamClass & stream, BOOL cleardirty)
 {
 	return(Save_Members(stream, cleardirty));
 }
@@ -186,7 +180,7 @@ HRESULT STDMETHODCALLTYPE AbstractClass::Save(IStream * stream, BOOL cleardirty)
 /// </summary>
 /// <param name="stream">The stream to read from.</param>
 /// <returns>Returns with S_OK when the object was read, otherwise a failure code.</returns>
-HRESULT STDMETHODCALLTYPE AbstractClass::Load(IStream * stream)
+HRESULT AbstractClass::Load(SaveStreamClass & stream)
 {
 	return(Load_Members(stream));
 }
@@ -200,27 +194,15 @@ HRESULT STDMETHODCALLTYPE AbstractClass::Load(IStream * stream)
 /// <param name="stream">The stream to write to.</param>
 /// <param name="cleardirty">Should the object be marked clean once it has been written?</param>
 /// <returns>Returns with S_OK when the record was written, otherwise a failure code.</returns>
-HRESULT AbstractClass::Save_Members(IStream * stream, BOOL cleardirty)
+HRESULT AbstractClass::Save_Members(SaveStreamClass & stream, BOOL cleardirty)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
-	}
-
 	SwizzleIDType id = Swizzler.ID_Of(this);
-
-	HRESULT result = stream->Write(&id, sizeof(id), NULL);
-	if (FAILED(result)) {
-		return(result);
+	stream.Serialize(id);
+	Serialize(stream);
+	if (SUCCEEDED(stream.Result()) && cleardirty) {
+		Dirty = false;
 	}
-
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream);
-
-	if (SUCCEEDED(savestream.Result()) && cleardirty) {
-				Dirty = false;
-			}
-
-	return(savestream.Result());
+	return(stream.Result());
 }
 
 
@@ -231,30 +213,26 @@ HRESULT AbstractClass::Save_Members(IStream * stream, BOOL cleardirty)
 /// </summary>
 /// <param name="stream">The stream to read from.</param>
 /// <returns>Returns with S_OK when the record was read, otherwise a failure code.</returns>
-HRESULT AbstractClass::Load_Members(IStream * stream)
+HRESULT AbstractClass::Load_Members(SaveStreamClass & stream)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
+	SwizzleIDType id = 0;
+	stream.Serialize(id);
+	if (stream.Was_Error()) {
+		return(stream.Result());
 	}
-
-	SwizzleIDType id;
-
-	HRESULT result = stream->Read(&id, sizeof(id), NULL);
-	if (FAILED(result)) {
-	return(result);
-	}
-
 	Swizzle_Here_I_Am(id, this);
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context(typeid(*this).name(), id);
-	Serialize(savestream);
+	// A nested record borrows the stream, so the owner's context is put back afterwards.
+	char const * const outertype = stream.Context_Type();
+	SwizzleIDType const outerid = stream.Context_ID();
+	stream.Set_Context(typeid(*this).name(), id);
+	Serialize(stream);
+	stream.Set_Context(outertype, outerid);
 
-	if (SUCCEEDED(savestream.Result())) {
+	if (SUCCEEDED(stream.Result())) {
 		Post_Load();
 	}
-
-	return(savestream.Result());
+	return(stream.Result());
 }
 
 
@@ -276,20 +254,6 @@ void AbstractClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ID);
 	// RefCount -- belongs to the running session rather than the record.
 	stream.Serialize(Dirty);
-}
-
-
-/// <summary>
-/// Fetches the number of bytes that Save will write.
-/// A record is as long as the members a class names, so the count is not known before
-/// the members have been written. Nothing in the game asks for it, so rather than
-/// walk the object twice this reports that the size cannot be supplied.
-/// </summary>
-/// <param name="pcbSize">Receives the maximum size, in bytes.</param>
-/// <returns>Returns with E_NOTIMPL.</returns>
-HRESULT STDMETHODCALLTYPE AbstractClass::GetSizeMax(ULARGE_INTEGER *pcbSize)
-{
-	return(E_NOTIMPL);
 }
 
 
@@ -332,23 +296,6 @@ bool AbstractClass::Is_Inactive(void) const
 bool AbstractClass::Is_Techno(void) const
 {
 	return(::Dynamic_Cast<TechnoClass const *>(this) != NULL);
-}
-
-
-/// <summary>
-/// Determines if this object has changed since it was last saved.
-/// </summary>
-/// <returns>Returns with S_OK when the object is dirty, or S_FALSE when it is not.</returns>
-HRESULT AbstractClass::IsDirty(void)
-{
-	/*
-	 * Per IPersistStream::IsDirty specifications this method returns S_OK to indicate that the object has changed.
-	 * Otherwise, it returns S_FALSE.
-	 */
-	if (Dirty) {
-		return(S_OK);
-	}
-	return(S_FALSE);
 }
 
 

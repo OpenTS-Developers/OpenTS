@@ -153,7 +153,7 @@ bool ScriptClass::Has_Missions_Remaining(void)
 
 /// <summary>
 /// Fetches the class identifier used to persist this script.
-/// This routine is part of the IPersistStream contract that the save game system relies
+/// This routine is part of the IPersistent contract that the save game system relies
 /// on to recreate objects when a game is loaded.
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
@@ -370,7 +370,7 @@ ScriptTypeClass * ScriptTypeClass::Find_Or_Make(char const * name)
 
 /// <summary>
 /// Fetches the class identifier used to persist this script type.
-/// This routine is part of the IPersistStream contract that the save game system relies
+/// This routine is part of the IPersistent contract that the save game system relies
 /// on to recreate objects when a game is loaded.
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
