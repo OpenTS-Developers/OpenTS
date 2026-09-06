@@ -77,16 +77,16 @@ class NullAudioDeviceClass : public AudioDeviceClass
 		void Set_Unplugged(bool unplugged);
 
 	private:
-		RenderCallback Callback;
-		void * Context;
-		unsigned RateValue;
-		unsigned ChannelCount;
+		RenderCallback Callback = nullptr;
+		void * Context = nullptr;
+		unsigned RateValue = 0;
+		unsigned ChannelCount = 0;
 		unsigned PeriodFrames;
 		unsigned PeriodCount;
-		bool Opened;
-		bool Unplugged;
-		std::atomic<bool> Running;
-		std::atomic<bool> Lost;
+		bool Opened = false;
+		bool Unplugged = false;
+		std::atomic<bool> Running{false};
+		std::atomic<bool> Lost{false};
 };
 
 

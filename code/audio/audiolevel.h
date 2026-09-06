@@ -26,7 +26,7 @@ float Audio_Perceptual_Level(float gain);
 class AudioLevelClass
 {
 	public:
-		AudioLevelClass(void);
+		AudioLevelClass(void) = default;
 
 		void Set_Level(float target, float seconds);
 		void Adjust_Level(float multiplier, float seconds);
@@ -43,10 +43,10 @@ class AudioLevelClass
 	private:
 		static void Step(float & value, float target, float & remaining, float seconds);
 
-		float Base;
-		float BaseTarget;
-		float BaseRemaining;
-		float Adjust;
-		float AdjustTarget;
-		float AdjustRemaining;
+		float Base = 1.0f;
+		float BaseTarget = 1.0f;
+		float BaseRemaining = 0.0f;
+		float Adjust = 1.0f;
+		float AdjustTarget = 1.0f;
+		float AdjustRemaining = 0.0f;
 };

@@ -16,12 +16,6 @@
 #include "voc.h"
 
 
-AmbientSoundTable::AmbientSoundTable(void)
-{
-	Clear();
-}
-
-
 int AmbientSoundTable::Find(ObjectClass const * object) const
 {
 	if (object == nullptr) {

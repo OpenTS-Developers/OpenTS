@@ -24,11 +24,11 @@
 class AudioSampleClass
 {
 	public:
-		AudioSampleClass(void);
+		AudioSampleClass(void) = default;
 
-		unsigned Rate;
-		unsigned Channels;
-		unsigned Frames;
+		unsigned Rate = 0;
+		unsigned Channels = 0;
+		unsigned Frames = 0;
 		std::unique_ptr<int16_t[]> Pcm;
 
 		size_t Bytes(void) const { return((size_t)Frames * Channels * sizeof(int16_t)); }
@@ -36,10 +36,10 @@ class AudioSampleClass
 
 		// Number of holders that may still hand the sample to the mixer. Only an
 		// unpinned sample can be evicted.
-		int PinCount;
+		int PinCount = 0;
 
-		uint64_t Key;
-		uint32_t LastUse;
+		uint64_t Key = 0;
+		uint32_t LastUse = 0;
 };
 
 
@@ -104,6 +104,6 @@ class AudioSampleCacheClass
 
 		size_t Budget;
 		size_t MaxSample;
-		size_t TotalBytes;
-		uint32_t Clock;
+		size_t TotalBytes = 0;
+		uint32_t Clock = 0;
 };

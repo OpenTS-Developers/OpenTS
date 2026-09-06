@@ -10,13 +10,6 @@
 #include "voxqueue.h"
 
 
-VoxQueueClass::VoxQueueClass(void) :
-	Pending(0),
-	Serial(0)
-{
-}
-
-
 int VoxQueueClass::Rank(VoxControlType control)
 {
 	switch (control) {

@@ -82,7 +82,7 @@ unsigned Aud_Frame_Capacity(AUDHeaderType const & header);
 class AudChunkDecoderClass
 {
 	public:
-		AudChunkDecoderClass(void);
+		AudChunkDecoderClass(void) = default;
 
 		bool Init(AUDHeaderType const & header);
 		void Rewind(void);
@@ -103,10 +103,10 @@ class AudChunkDecoderClass
 	private:
 		unsigned Convert(void const * native, unsigned bytes, int16_t * output, unsigned capacity) const;
 
-		AUDHeaderType Header;
-		SosCompressInfo Sos;
-		unsigned ChannelCount;
-		unsigned BitSize;
+		AUDHeaderType Header = {};
+		SosCompressInfo Sos = {};
+		unsigned ChannelCount = 0;
+		unsigned BitSize = 0;
 		unsigned char Native[AUD_MAX_CHUNK_UNCOMP_BYTES];
 };
 

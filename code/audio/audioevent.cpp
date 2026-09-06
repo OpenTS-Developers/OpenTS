@@ -27,8 +27,6 @@ unsigned const MAX_TICK_MS = 250;
 // Within this fraction of the quietest candidate, priority order decides alone.
 float const VOLUME_SLACK = 0.1f;
 
-int const DEFAULT_BUDGET = 16;
-
 } // namespace
 
 
@@ -67,22 +65,6 @@ struct AudioEventPoolClass::EventClass {
 	bool Is_Live(void) const { return(State == AUDIO_EVENT_PENDING || State == AUDIO_EVENT_PLAYING || State == AUDIO_EVENT_GAP); }
 	bool Counts_Toward_Budget(void) const { return(State == AUDIO_EVENT_PLAYING && Voice >= 0 && !Stolen && Stream == nullptr && (Group == AUDIO_GROUP_SFX || Group == AUDIO_GROUP_SYSTEM)); }
 };
-
-
-AudioEventPoolClass::AudioEventPoolClass(void) :
-	Events(nullptr),
-	Mixer(nullptr),
-	Clips(nullptr),
-	RandomProc(nullptr),
-	RandomContext(nullptr),
-	Seed(0x1234567u),
-	BudgetValue(DEFAULT_BUDGET),
-	LastNow(0),
-	StartOrder(0),
-	Ready(false)
-{
-	std::memset(VoiceGenerations, 0, sizeof(VoiceGenerations));
-}
 
 
 AudioEventPoolClass::~AudioEventPoolClass(void)

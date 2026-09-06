@@ -31,7 +31,7 @@ class VoxQueueClass
 	public:
 		enum { MAX_PENDING = 8 };
 
-		VoxQueueClass(void);
+		VoxQueueClass(void) = default;
 
 		// Returns true when the playing line must be cut for this one. A line
 		// already playing or waiting is not added again. When the queue is full
@@ -58,6 +58,6 @@ class VoxQueueClass
 		void Remove(int index);
 
 		EntryClass Entries[MAX_PENDING];
-		int Pending;
-		unsigned Serial;
+		int Pending = 0;
+		unsigned Serial = 0;
 };

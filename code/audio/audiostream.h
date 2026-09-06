@@ -33,7 +33,7 @@ class AudioMixerClass;
 class AudioStreamClass
 {
 	public:
-		AudioStreamClass(void);
+		AudioStreamClass(void) = default;
 
 		AudioStreamClass(AudioStreamClass const &) = delete;
 		AudioStreamClass & operator=(AudioStreamClass const &) = delete;
@@ -53,11 +53,11 @@ class AudioStreamClass
 		uint32_t Frames_Pushed(void) const { return(Ring.Frames_Pushed()); }
 
 		PcmRingClass Ring;
-		std::atomic<bool> EndOfInput;
-		std::atomic<uint32_t> Underruns;
+		std::atomic<bool> EndOfInput{false};
+		std::atomic<uint32_t> Underruns{0};
 
 	private:
-		unsigned RateValue;
+		unsigned RateValue = 0;
 };
 
 
@@ -82,7 +82,7 @@ class AudioStreamProducerClass
 class AudioFileStreamProducerClass : public AudioStreamProducerClass
 {
 	public:
-		AudioFileStreamProducerClass(void);
+		AudioFileStreamProducerClass(void) = default;
 		~AudioFileStreamProducerClass(void);
 
 		// Takes ownership of the source and reads its format. Returns false when the
@@ -102,18 +102,18 @@ class AudioFileStreamProducerClass : public AudioStreamProducerClass
 		bool Rewind(void);
 
 		std::unique_ptr<AudioByteSourceClass> Source;
-		bool Loop;
-		bool IsAud;
-		bool Ended;
-		AUDHeaderType Header;
+		bool Loop = false;
+		bool IsAud = false;
+		bool Ended = false;
+		AUDHeaderType Header = {};
 		AudChunkDecoderClass Aud;
-		size_t DataStart;
-		size_t DataRemaining;
+		size_t DataStart = 0;
+		size_t DataRemaining = 0;
 		AudioOtherStreamDecoderClass Other;
 		std::vector<uint8_t> Compressed;
 		std::vector<int16_t> Pcm;
-		unsigned RateValue;
-		unsigned ChannelCount;
+		unsigned RateValue = 0;
+		unsigned ChannelCount = 0;
 };
 
 
@@ -121,7 +121,7 @@ class AudioFileStreamProducerClass : public AudioStreamProducerClass
 class AudioPushStreamProducerClass : public AudioStreamProducerClass
 {
 	public:
-		AudioPushStreamProducerClass(void);
+		AudioPushStreamProducerClass(void) = default;
 
 		bool Open(AudioStreamClass & stream);
 
@@ -138,7 +138,7 @@ class AudioPushStreamProducerClass : public AudioStreamProducerClass
 		unsigned Min_Ring_Frames(void) const override { return(1); }
 
 	private:
-		AudioStreamClass * Stream;
+		AudioStreamClass * Stream = nullptr;
 		std::vector<int16_t> Staging;
 };
 
@@ -149,7 +149,7 @@ class AudioPushStreamProducerClass : public AudioStreamProducerClass
 class AudioFeederClass
 {
 	public:
-		AudioFeederClass(void);
+		AudioFeederClass(void) = default;
 		~AudioFeederClass(void);
 
 		AudioFeederClass(AudioFeederClass const &) = delete;
@@ -183,11 +183,9 @@ class AudioFeederClass
 		enum SlotState { SLOT_IDLE, SLOT_ACTIVE, SLOT_CLOSING };
 
 		struct SlotClass {
-			std::atomic<int> State;
-			AudioStreamClass * Stream;
-			AudioStreamProducerClass * Producer;
-
-			SlotClass(void) : State(SLOT_IDLE), Stream(nullptr), Producer(nullptr) {}
+			std::atomic<int> State{SLOT_IDLE};
+			AudioStreamClass * Stream = nullptr;
+			AudioStreamProducerClass * Producer = nullptr;
 		};
 
 		void Run(void);
@@ -196,15 +194,15 @@ class AudioFeederClass
 
 		SlotClass Slots[AUDIO_MAX_STREAMS];
 		std::thread Thread;
-		std::atomic<bool> Exit;
-		std::atomic<bool> Running;
-		std::atomic<bool> Recovering;
-		std::atomic<unsigned> PassCount;
-		AudioMixerClass * Mixer;
-		AudioDeviceClass * Device;
+		std::atomic<bool> Exit{false};
+		std::atomic<bool> Running{false};
+		std::atomic<bool> Recovering{false};
+		std::atomic<unsigned> PassCount{0};
+		AudioMixerClass * Mixer = nullptr;
+		AudioDeviceClass * Device = nullptr;
 		std::unique_ptr<float[]> Scratch;
-		unsigned RetryMs;
-		unsigned ReopenMs;
+		unsigned RetryMs = AUDIO_DEVICE_RETRY_MS;
+		unsigned ReopenMs = AUDIO_DEVICE_REOPEN_MS;
 		std::chrono::steady_clock::time_point LastPump;
 		std::chrono::steady_clock::time_point LostSince;
 		std::chrono::steady_clock::time_point LastRetry;

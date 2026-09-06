@@ -25,22 +25,9 @@ char const * const AudioSampleCacheClass::FORMAT_EXTENSIONS[AudioSampleCacheClas
 };
 
 
-AudioSampleClass::AudioSampleClass(void) :
-	Rate(0),
-	Channels(0),
-	Frames(0),
-	PinCount(0),
-	Key(0),
-	LastUse(0)
-{
-}
-
-
 AudioSampleCacheClass::AudioSampleCacheClass(size_t budget, size_t maxsample) :
 	Budget(budget),
-	MaxSample(maxsample),
-	TotalBytes(0),
-	Clock(0)
+	MaxSample(maxsample)
 {
 }
 

@@ -41,17 +41,6 @@ float Audio_Perceptual_Level(float gain)
 }
 
 
-AudioLevelClass::AudioLevelClass(void) :
-	Base(1.0f),
-	BaseTarget(1.0f),
-	BaseRemaining(0.0f),
-	Adjust(1.0f),
-	AdjustTarget(1.0f),
-	AdjustRemaining(0.0f)
-{
-}
-
-
 void AudioLevelClass::Set_Level(float target, float seconds)
 {
 	BaseTarget = target;

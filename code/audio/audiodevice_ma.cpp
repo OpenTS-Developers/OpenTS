@@ -24,7 +24,7 @@ namespace {
 class MiniaudioDeviceClass : public AudioDeviceClass
 {
 	public:
-		MiniaudioDeviceClass(void);
+		MiniaudioDeviceClass(void) = default;
 		~MiniaudioDeviceClass(void);
 
 		bool Open(unsigned rate, unsigned channels, RenderCallback callback, void * context) override;
@@ -45,31 +45,18 @@ class MiniaudioDeviceClass : public AudioDeviceClass
 		static void Data_Callback(ma_device * device, void * output, void const * input, ma_uint32 frames);
 		static void Notification_Callback(ma_device_notification const * notification);
 
-		ma_context Context;
-		ma_device Device;
-		bool ContextReady;
-		bool Opened;
-		RenderCallback Callback;
-		void * CallbackContext;
+		ma_context Context = {};
+		ma_device Device = {};
+		bool ContextReady = false;
+		bool Opened = false;
+		RenderCallback Callback = nullptr;
+		void * CallbackContext = nullptr;
 
 		// Set before Start and cleared before Stop, so a stop the device reports on
 		// its own is the only one that marks it lost.
-		std::atomic<bool> ExpectedRunning;
-		std::atomic<bool> Lost;
+		std::atomic<bool> ExpectedRunning{false};
+		std::atomic<bool> Lost{false};
 };
-
-
-MiniaudioDeviceClass::MiniaudioDeviceClass(void) :
-	ContextReady(false),
-	Opened(false),
-	Callback(nullptr),
-	CallbackContext(nullptr),
-	ExpectedRunning(false),
-	Lost(false)
-{
-	std::memset(&Context, 0, sizeof(Context));
-	std::memset(&Device, 0, sizeof(Device));
-}
 
 
 MiniaudioDeviceClass::~MiniaudioDeviceClass(void)

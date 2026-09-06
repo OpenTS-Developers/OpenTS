@@ -29,14 +29,6 @@ unsigned const MAX_PUMP_FRAMES = 4800;
 } // namespace
 
 
-AudioStreamClass::AudioStreamClass(void) :
-	EndOfInput(false),
-	Underruns(0),
-	RateValue(0)
-{
-}
-
-
 bool AudioStreamClass::Init(unsigned frames, unsigned channels, unsigned rate)
 {
 	if (rate == 0 || !Ring.Init(frames, channels)) {
@@ -53,19 +45,6 @@ void AudioStreamClass::Reset(void)
 	Ring.Reset();
 	EndOfInput.store(false, std::memory_order_release);
 	Underruns.store(0, std::memory_order_release);
-}
-
-
-AudioFileStreamProducerClass::AudioFileStreamProducerClass(void) :
-	Loop(false),
-	IsAud(false),
-	Ended(false),
-	DataStart(0),
-	DataRemaining(0),
-	RateValue(0),
-	ChannelCount(0)
-{
-	std::memset(&Header, 0, sizeof(Header));
 }
 
 
@@ -240,12 +219,6 @@ bool AudioFileStreamProducerClass::Fill_Other(AudioStreamClass & stream)
 }
 
 
-AudioPushStreamProducerClass::AudioPushStreamProducerClass(void) :
-	Stream(nullptr)
-{
-}
-
-
 bool AudioPushStreamProducerClass::Open(AudioStreamClass & stream)
 {
 	Stream = &stream;
@@ -311,19 +284,6 @@ bool AudioPushStreamProducerClass::Fill(AudioStreamClass & stream)
 void AudioPushStreamProducerClass::Close(void)
 {
 	Stream = nullptr;
-}
-
-
-AudioFeederClass::AudioFeederClass(void) :
-	Exit(false),
-	Running(false),
-	Recovering(false),
-	PassCount(0),
-	Mixer(nullptr),
-	Device(nullptr),
-	RetryMs(AUDIO_DEVICE_RETRY_MS),
-	ReopenMs(AUDIO_DEVICE_REOPEN_MS)
-{
 }
 
 

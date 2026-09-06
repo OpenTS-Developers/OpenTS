@@ -105,10 +105,8 @@ class AudioEngineClass
 			AudioStreamClass Stream;
 			std::unique_ptr<AudioFileStreamProducerClass> Producer;
 			AudioHandle Handle;
-			bool InUse;
-			bool External;
-
-			StreamSlotClass(void) : InUse(false), External(false) {}
+			bool InUse = false;
+			bool External = false;
 		};
 
 		static int Random_Proc(int low, int high, void * context);
@@ -126,11 +124,11 @@ class AudioEngineClass
 		std::unique_ptr<AudioClipProviderClass> Provider;
 		StreamSlotClass Streams[AUDIO_MAX_STREAMS];
 		float GroupGains[AUDIO_GROUP_COUNT];
-		float MasterGain;
+		float MasterGain = 1.0f;
 		std::chrono::steady_clock::time_point Epoch;
-		unsigned LastDropped;
-		unsigned LastDropReport;
-		bool Available;
+		unsigned LastDropped = 0;
+		unsigned LastDropReport = 0;
+		bool Available = false;
 };
 
 extern AudioEngineClass AudioEngine;

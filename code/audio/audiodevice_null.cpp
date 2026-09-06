@@ -13,16 +13,8 @@
 
 
 NullAudioDeviceClass::NullAudioDeviceClass(unsigned periodframes, unsigned periods) :
-	Callback(nullptr),
-	Context(nullptr),
-	RateValue(0),
-	ChannelCount(0),
 	PeriodFrames(periodframes),
-	PeriodCount(periods),
-	Opened(false),
-	Unplugged(false),
-	Running(false),
-	Lost(false)
+	PeriodCount(periods)
 {
 }
 

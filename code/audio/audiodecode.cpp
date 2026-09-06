@@ -98,15 +98,6 @@ unsigned Aud_Frame_Capacity(AUDHeaderType const & header)
 }
 
 
-AudChunkDecoderClass::AudChunkDecoderClass(void) :
-	ChannelCount(0),
-	BitSize(0)
-{
-	std::memset(&Header, 0, sizeof(Header));
-	std::memset(&Sos, 0, sizeof(Sos));
-}
-
-
 bool AudChunkDecoderClass::Init(AUDHeaderType const & header)
 {
 	Header = header;

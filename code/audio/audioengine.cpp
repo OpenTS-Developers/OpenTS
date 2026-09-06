@@ -138,11 +138,7 @@ class CacheProviderClass : public AudioClipProviderClass
 } // namespace
 
 
-AudioEngineClass::AudioEngineClass(void) :
-	MasterGain(1.0f),
-	LastDropped(0),
-	LastDropReport(0),
-	Available(false)
+AudioEngineClass::AudioEngineClass(void)
 {
 	for (int i = 0; i < AUDIO_GROUP_COUNT; i++) {
 		GroupGains[i] = 1.0f;

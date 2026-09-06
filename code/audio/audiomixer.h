@@ -66,10 +66,10 @@ class AudioMixerClass
 		friend struct StateClass;
 
 		std::unique_ptr<StateClass> State;
-		std::atomic<int> RenderOwner;
-		std::atomic<bool> PauseAll;
-		std::atomic<unsigned> Dropped;
-		unsigned MixRate;
-		unsigned MixChannels;
-		bool Ready;
+		std::atomic<int> RenderOwner{0};
+		std::atomic<bool> PauseAll{false};
+		std::atomic<unsigned> Dropped{0};
+		unsigned MixRate = 0;
+		unsigned MixChannels = 0;
+		bool Ready = false;
 };

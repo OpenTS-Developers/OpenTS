@@ -32,54 +32,29 @@ unsigned const DRAIN_BLOCKS = 2;
 
 
 struct VoiceClass {
-	std::atomic<AudioVoiceState> State;
-	uint32_t Generation;
-	AudioGroupType Group;
-	bool IsStream;
-	AudioStreamClass * Stream;
-	AudioSequenceClass const * Sequence;
-	unsigned Segment;
-	int CyclesLeft;
-	bool EndAfterCycle;
-	bool EndNow;
-	bool Draining;
-	unsigned DrainBlocks;
-	unsigned Cursor;
-	unsigned SourceRate;
-	unsigned SourceChannels;
-	float Pitch;
+	std::atomic<AudioVoiceState> State{AudioVoiceState::FREE};
+	uint32_t Generation = 0;
+	AudioGroupType Group = AUDIO_GROUP_SFX;
+	bool IsStream = false;
+	AudioStreamClass * Stream = nullptr;
+	AudioSequenceClass const * Sequence = nullptr;
+	unsigned Segment = 0;
+	int CyclesLeft = 0;
+	bool EndAfterCycle = false;
+	bool EndNow = false;
+	bool Draining = false;
+	unsigned DrainBlocks = 0;
+	unsigned Cursor = 0;
+	unsigned SourceRate = 0;
+	unsigned SourceChannels = 0;
+	float Pitch = 1.0f;
 	AudioLevelClass Level;
-	float Pan;
-	float PanTarget;
-	float PanRemaining;
-	bool ResamplerReady;
-	ma_linear_resampler Resampler;
+	float Pan = 0.0f;
+	float PanTarget = 0.0f;
+	float PanRemaining = 0.0f;
+	bool ResamplerReady = false;
+	ma_linear_resampler Resampler = {};
 	alignas(16) unsigned char Heap[AUDIO_RESAMPLER_HEAP_BYTES];
-
-	VoiceClass(void) :
-		State(AudioVoiceState::FREE),
-		Generation(0),
-		Group(AUDIO_GROUP_SFX),
-		IsStream(false),
-		Stream(nullptr),
-		Sequence(nullptr),
-		Segment(0),
-		CyclesLeft(0),
-		EndAfterCycle(false),
-		EndNow(false),
-		Draining(false),
-		DrainBlocks(0),
-		Cursor(0),
-		SourceRate(0),
-		SourceChannels(0),
-		Pitch(1.0f),
-		Pan(0.0f),
-		PanTarget(0.0f),
-		PanRemaining(0.0f),
-		ResamplerReady(false)
-	{
-		std::memset(&Resampler, 0, sizeof(Resampler));
-	}
 };
 
 
@@ -108,16 +83,14 @@ struct AudioMixerClass::StateClass {
 	GroupClass Groups[AUDIO_GROUP_COUNT];
 	AudioLevelClass Master;
 	AudioLevelClass Pause;
-	bool PauseObserved;
-	bool Frozen;
+	bool PauseObserved = false;
+	bool Frozen = false;
 	SpscRingClass<AudioCommand, AUDIO_COMMAND_QUEUE_SIZE> Commands;
 
 	std::unique_ptr<float[]> Scratch;      // source frames as f32, SCRATCH_FRAMES x channels
 	std::unique_ptr<int16_t[]> Staging;    // stream frames before conversion
 	std::unique_ptr<float[]> Resampled;    // one block at the output rate, source channels
-	unsigned Rate;
-
-	StateClass(void) : PauseObserved(false), Frozen(false), Rate(0) {}
+	unsigned Rate = 0;
 
 	void Apply(AudioCommand const & command, std::atomic<unsigned> & dropped);
 	bool Start_Segment(VoiceClass & voice);
@@ -130,13 +103,8 @@ struct AudioMixerClass::StateClass {
 };
 
 
-AudioMixerClass::AudioMixerClass(void) :
-	RenderOwner(0),
-	PauseAll(false),
-	Dropped(0),
-	MixRate(0),
-	MixChannels(0),
-	Ready(false)
+// Out of line so the state's type is complete where the mixer is built.
+AudioMixerClass::AudioMixerClass(void)
 {
 }
 

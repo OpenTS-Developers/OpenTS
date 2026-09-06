@@ -24,7 +24,7 @@ class SaveStreamClass;
 class AmbientSoundTable
 {
 	public:
-		AmbientSoundTable(void);
+		AmbientSoundTable(void) = default;
 
 		// Replaces any sound the object already has; VOC_NONE detaches.
 		void Attach(ObjectClass * object, VocType voc);
@@ -42,10 +42,10 @@ class AmbientSoundTable
 		enum { MAX_ENTRIES = 256 };
 
 		struct EntryClass {
-			ObjectClass * Object;
-			VocType Voc;
+			ObjectClass * Object = nullptr;
+			VocType Voc = VOC_NONE;
 			AudioHandle Handle;
-			bool Started;
+			bool Started = false;
 		};
 
 		int Find(ObjectClass const * object) const;

@@ -31,58 +31,30 @@ class AudioStreamClass;
 class AudioEventTypeClass
 {
 	public:
-		AudioEventTypeClass(void) :
-			SoundCount(0),
-			Priority(10),
-			Volume(1.0f),
-			MinVolume(0.0f),
-			Range(28),
-			Limit(3),
-			Loop(0),
-			DelayMin(0),
-			DelayMax(0),
-			FShiftMin(0),
-			FShiftMax(0),
-			VShiftMin(0),
-			VShiftMax(0),
-			AttackCount(0),
-			DecayCount(0),
-			Type(SOUND_TYPE_SCREEN),
-			Control(SOUND_CONTROL_NONE),
-			Group(AUDIO_GROUP_SFX),
-			LiveCount(0),
-			SequentialIndex(0)
-		{
-			Name[0] = '\0';
-			for (int i = 0; i < AUDIO_MAX_SOUNDS; i++) {
-				Sounds[i][0] = '\0';
-			}
-		}
+		char Name[32] = {};
+		char Sounds[AUDIO_MAX_SOUNDS][32] = {};
+		unsigned SoundCount = 0;
 
-		char Name[32];
-		char Sounds[AUDIO_MAX_SOUNDS][32];
-		unsigned SoundCount;
+		int Priority = 10;                        // 0..255
+		float Volume = 1.0f;                      // 0..1
+		float MinVolume = 0.0f;                   // 0..1
+		int Range = 28;                           // cells
+		int Limit = 3;                            // simultaneous events of this type; 0 = unlimited
+		int Loop = 0;                             // body cycles with LOOP; 0 = until ended
+		int DelayMin = 0;                         // milliseconds
+		int DelayMax = 0;
+		int FShiftMin = 0;                        // percent of pitch
+		int FShiftMax = 0;
+		int VShiftMin = 0;                        // percent of volume
+		int VShiftMax = 0;
+		int AttackCount = 0;
+		int DecayCount = 0;
+		unsigned Type = SOUND_TYPE_SCREEN;        // SoundTypeFlag bits
+		unsigned Control = SOUND_CONTROL_NONE;    // SoundControlFlag bits
+		AudioGroupType Group = AUDIO_GROUP_SFX;
 
-		int Priority;             // 0..255
-		float Volume;             // 0..1
-		float MinVolume;          // 0..1
-		int Range;                // cells
-		int Limit;                // simultaneous events of this type; 0 = unlimited
-		int Loop;                 // body cycles with LOOP; 0 = until ended
-		int DelayMin;             // milliseconds
-		int DelayMax;
-		int FShiftMin;            // percent of pitch
-		int FShiftMax;
-		int VShiftMin;            // percent of volume
-		int VShiftMax;
-		int AttackCount;
-		int DecayCount;
-		unsigned Type;            // SoundTypeFlag bits
-		unsigned Control;         // SoundControlFlag bits
-		AudioGroupType Group;
-
-		mutable int LiveCount;
-		mutable unsigned SequentialIndex;
+		mutable int LiveCount = 0;
+		mutable unsigned SequentialIndex = 0;
 
 		bool Never_Ends(void) const { return((Control & SOUND_CONTROL_LOOP) != 0 && Loop == 0); }
 		bool Has_Delay(void) const { return(DelayMax > 0); }
@@ -134,7 +106,7 @@ enum AudioEventState {
 class AudioEventPoolClass
 {
 	public:
-		AudioEventPoolClass(void);
+		AudioEventPoolClass(void) = default;
 		~AudioEventPoolClass(void);
 
 		AudioEventPoolClass(AudioEventPoolClass const &) = delete;
@@ -219,15 +191,17 @@ class AudioEventPoolClass
 		void Finish(EventClass & event);
 		AudioSampleClass * Pin(EventClass & event, unsigned sound);
 
-		EventClass * Events;
-		uint32_t VoiceGenerations[AUDIO_MAX_VOICES];
-		AudioMixerClass * Mixer;
-		AudioClipProviderClass * Clips;
-		AudioRandomProc RandomProc;
-		void * RandomContext;
-		unsigned Seed;
-		int BudgetValue;
-		unsigned LastNow;
-		unsigned StartOrder;
-		bool Ready;
+		enum { DEFAULT_BUDGET = 16 };
+
+		EventClass * Events = nullptr;
+		uint32_t VoiceGenerations[AUDIO_MAX_VOICES] = {};
+		AudioMixerClass * Mixer = nullptr;
+		AudioClipProviderClass * Clips = nullptr;
+		AudioRandomProc RandomProc = nullptr;
+		void * RandomContext = nullptr;
+		unsigned Seed = 0x1234567u;
+		int BudgetValue = DEFAULT_BUDGET;
+		unsigned LastNow = 0;
+		unsigned StartOrder = 0;
+		bool Ready = false;
 };

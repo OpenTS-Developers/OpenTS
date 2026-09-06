@@ -33,25 +33,6 @@ int const STOP_WAIT_MS = 250;
 class MovieSinkClass : public AudioStreamProducerClass
 {
 	public:
-		MovieSinkClass(void) :
-			Used(false),
-			Started(false),
-			Paused(false),
-			Slot(-1),
-			Stream(nullptr),
-			Rate(0),
-			Channels(0),
-			Bits(0),
-			BlockFrames(0),
-			Level(1.0f),
-			FillCallback(nullptr),
-			DoneCallback(nullptr),
-			Owner(nullptr),
-			PendingHead(0),
-			PendingCount(0)
-		{
-		}
-
 		bool Fill(AudioStreamClass & stream) override
 		{
 			(void)stream;
@@ -108,19 +89,19 @@ class MovieSinkClass : public AudioStreamProducerClass
 			PendingCount = 0;
 		}
 
-		bool Used;
-		bool Started;
-		bool Paused;
-		int Slot;
-		AudioStreamClass * Stream;
-		unsigned Rate;
-		unsigned Channels;
-		unsigned Bits;
-		unsigned BlockFrames;
-		float Level;
-		AHANDLE_CALLBACK_1 FillCallback;
-		AHANDLE_CALLBACK_2 DoneCallback;
-		VQAHandle * Owner;
+		bool Used = false;
+		bool Started = false;
+		bool Paused = false;
+		int Slot = -1;
+		AudioStreamClass * Stream = nullptr;
+		unsigned Rate = 0;
+		unsigned Channels = 0;
+		unsigned Bits = 0;
+		unsigned BlockFrames = 0;
+		float Level = 1.0f;
+		AHANDLE_CALLBACK_1 FillCallback = nullptr;
+		AHANDLE_CALLBACK_2 DoneCallback = nullptr;
+		VQAHandle * Owner = nullptr;
 		AudioHandle Handle;
 		AudioPushStreamProducerClass Pusher;
 		AudioMovieClockClass Clock;
@@ -132,8 +113,8 @@ class MovieSinkClass : public AudioStreamProducerClass
 		};
 
 		PendingBlock Pending[MAX_PENDING_BLOCKS];
-		unsigned PendingHead;
-		unsigned PendingCount;
+		unsigned PendingHead = 0;
+		unsigned PendingCount = 0;
 };
 
 MovieSinkClass _sink;
