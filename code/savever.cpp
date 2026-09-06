@@ -31,8 +31,6 @@ SaveVersionInfo::SaveVersionInfo(void) :
 {
 	ScenarioDescription[0] = '\0';
 	PlayerHouse[0] = '\0';
-	UnknownString[0] = '\0';
-	PlayerName[0] = '\0';
 	ExecutableName[0] = '\0';
 
 	StartTime.dwLowDateTime = 0;
@@ -176,50 +174,6 @@ int SaveVersionInfo::Get_Scenario_Number(void)
 
 
 /// <summary>
-/// Records the spare string kept with the save information.
-/// The string is truncated if it will not fit the buffer it is kept in.
-/// </summary>
-void SaveVersionInfo::Set_Unknown_String(const char * str)
-{
-	UnknownString[sizeof(UnknownString) - 1] = 0;
-	strncpy(UnknownString, str, sizeof(UnknownString) - 1);
-}
-
-
-/// <summary>
-/// Fetches the spare string kept with the save information.
-/// Neither the save nor the load routine records this string, so it only ever holds what
-/// the current session put there.
-/// </summary>
-/// <returns>Returns with the string most recently set.</returns>
-const char * SaveVersionInfo::Get_Unknown_String(void)
-{
-	return(UnknownString);
-}
-
-
-/// <summary>
-/// Records the name of the player making the save.
-/// The name is truncated if it will not fit the buffer it is kept in.
-/// </summary>
-void SaveVersionInfo::Set_Player_Name(const char * name)
-{
-	PlayerName[sizeof(PlayerName) - 1] = 0;
-	strncpy(PlayerName, name, sizeof(PlayerName) - 1);
-}
-
-
-/// <summary>
-/// Fetches the name of the player who made the save.
-/// </summary>
-/// <returns>Returns with the player name recorded in the save.</returns>
-const char * SaveVersionInfo::Get_Player_Name(void)
-{
-	return(PlayerName);
-}
-
-
-/// <summary>
 /// Records the name of the program writing the save.
 /// The name is truncated if it will not fit the buffer it is kept in.
 /// </summary>
@@ -330,8 +284,6 @@ void SaveVersionInfo::Save(SaveFileClass & file) const
 	file.Set_Time(PIDSI_LAST_SAVE_TIME, LastSaveTime);
 	file.Set_Time(PIDSI_G_PLAY_TIME, PlayTime);
 	file.Set_String(PIDSI_EXEC_NAME, ExecutableName);
-	file.Set_String(PIDSI_PLAYER_NAME1, PlayerName);
-	file.Set_String(PIDSI_PLAYER_NAME2, PlayerName);
 	file.Set_Int(PIDSI_SCENARIO_NUM, ScenarioNumber);
 	file.Set_Int(PIDSI_CAMPAIGN_NUM, CampaignNumber);
 	file.Set_Int(PIDSI_GAME_TYPE, GameType);
@@ -351,7 +303,6 @@ bool SaveVersionInfo::Load(SaveFileClass const & file)
 	file.Get_Time(PIDSI_LAST_SAVE_TIME, &LastSaveTime);
 	file.Get_Time(PIDSI_G_PLAY_TIME, &PlayTime);
 	file.Get_String(PIDSI_EXEC_NAME, ExecutableName, sizeof(ExecutableName));
-	file.Get_String(PIDSI_PLAYER_NAME1, PlayerName, sizeof(PlayerName));
 	file.Get_Int(PIDSI_SCENARIO_NUM, &ScenarioNumber);
 	file.Get_Int(PIDSI_CAMPAIGN_NUM, &CampaignNumber);
 	file.Get_Int(PIDSI_GAME_TYPE, &GameType);

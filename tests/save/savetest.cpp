@@ -394,11 +394,13 @@ static void Test_Refusals(void)
 	Check("refuse: the reference save is compressed", (image[6] & 0x01) != 0);
 	std::vector<unsigned char> const stored(image.begin() + content_offset, image.end());
 
-	// The decompressor does not bounds check, so a block that expands past the buffer sized
-	// from its declared length cannot be exercised here without corrupting memory. Only a
-	// block that stops short of that length is safe to read back.
 	Write_Whole_File(damaged.c_str(), Forge_Content(image, table, stored, content_length + 1));
 	Check_Result("refuse: a block that ends before its declared length", read.Read(damaged.c_str()), SaveFileClass::RESULT_CORRUPT);
+
+	// The reader sizes the output buffer from the declared length, so this block runs past
+	// the end of it. The bounds-checked decompressor stops there rather than writing on.
+	Write_Whole_File(damaged.c_str(), Forge_Content(image, table, stored, content_length - 1));
+	Check_Result("refuse: a block that expands past its declared length", read.Read(damaged.c_str()), SaveFileClass::RESULT_CORRUPT);
 
 	Write_Whole_File(damaged.c_str(), Forge_Content(image, table, stored, 0x10000001));
 	Check_Result("refuse: a block declared larger than any save", read.Read(damaged.c_str()), SaveFileClass::RESULT_CORRUPT);

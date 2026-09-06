@@ -38,6 +38,6 @@ Callers that perform opportunistic restoration first consult `Is_Ok_To_End`. The
 
 ## Persistence identity
 
-`FootClass::Serialize` writes the active locomotor through `IPersistStream` when saving and restores it through `OleLoadFromStream` when loading. A piggyback-capable locomotor writes whether it carries another locomotor and serializes that nested COM object when present. A save made during a temporary movement state therefore retains both the active locomotor and the one to restore.
+`FootClass::Serialize` writes the active locomotor as a record of its own, headed by its class identifier, and recreates it from that identifier when loading. A piggyback-capable locomotor writes whether it carries another locomotor and serializes that nested locomotor when present. A save made during a temporary movement state therefore retains both the active locomotor and the one to restore.
 
 `GetClassID` identifies the active locomotor implementation. `Piggyback_CLSID` returns the carried locomotor's `GetClassID` while piggybacking and the active locomotor's ID otherwise. These identities are distinct while a temporary locomotor is in control.

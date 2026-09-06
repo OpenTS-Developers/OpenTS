@@ -16,6 +16,8 @@ class SaveFileClass;
 enum {
 	PIDSI_SCEN_DESCRIP = 2,
 	PIDSI_PLAYER_HOUSE = 3,
+	// Nothing writes a player name; the identifiers stay reserved because the property set
+	// this table replaced numbered them.
 	PIDSI_PLAYER_NAME1 = 4,
 	PIDSI_PLAYER_NAME2 = 8,
 	PIDSI_G_VERSION = 9,
@@ -52,12 +54,6 @@ class SaveVersionInfo
 
 		void Set_Scenario_Number(int num);
 		int Get_Scenario_Number(void);
-
-		void Set_Unknown_String(const char * name);
-		const char * Get_Unknown_String(void);
-
-		void Set_Player_Name(const char * name);
-		const char * Get_Player_Name(void);
 
 		void Set_Executable_Name(const char * name);
 		const char * Get_Executable_Name(void);
@@ -107,18 +103,6 @@ class SaveVersionInfo
 		 */
 		int CampaignNumber;
 		int ScenarioNumber;
-
-		/*
-		 * This is a spare string carried with the save information, reachable only through
-		 * its own accessors. Neither the save nor the load routine records it.
-		 */
-		char UnknownString[260];
-
-		/*
-		 * This is the name of the player who made the save, which is recorded separately
-		 * from the house so that the person and the side are both known.
-		 */
-		char PlayerName[64];
 
 		/*
 		 * This is the name of the program that wrote the save, so a file can be traced back
