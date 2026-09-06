@@ -65,7 +65,6 @@ bool Net2ReadyToGo(int load_game);
 int CurGame;
 int _netresponse;
 JoinStateType JoinState;
-char SerialNumber[23];
 bool Net2IsGameListActive = true;
 bool Net2GameStarted = false;
 
@@ -518,92 +517,6 @@ int Net2SetHouseAndColor(char *who, int house, int color)
 }
 
 
-/// <summary>
-/// Fetches the serial number recorded in the registry.
-/// A key that is missing, or that cannot be opened, simply leaves the buffer as it was
-/// found -- the caller is expected to have primed it with something harmless.
-/// </summary>
-/// <param name="serial">Buffer to fill in with the serial number found.</param>
-/// <param name="reg_key">The registry key, beneath the local machine hive, to read from.</param>
-/// <remarks>Be sure the buffer is big enough to hold an entire encrypted serial number.</remarks>
-static void Get_Serial_From_Registry(char * serial, char const * reg_key)
-{
-	if (reg_key && strlen(reg_key) != 0) {
-		HKEY rKey;
-		char keyname[256];
-		strcpy(keyname, reg_key);
-		if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, keyname, 0, KEY_READ, &rKey) == ERROR_SUCCESS) {
-			DWORD type;
-			DWORD sizeOfBuffer = ENCRYPTION_STRING_LENGTH;
-			RegQueryValueEx(rKey, "Serial", NULL, &type, (BYTE *)serial, &sizeOfBuffer);
-			RegCloseKey(rKey);
-		}
-	}
-	serial[SERIAL_MAX-1] = 0;
-}
-
-
-/// <summary>
-/// Fetches the decrypted serial number of this installation.
-/// The scrambled serial is pulled out of the registry and then unpicked with the key file
-/// that shipped alongside the game. This routine is used to identify the player to the
-/// online service.
-/// </summary>
-/// <param name="buffer">Buffer to fill in with the decrypted serial number.</param>
-/// <returns>bool; Was the serial number recovered? Failure means the key file was not
-/// available.</returns>
-/// <remarks>Be sure the destination buffer is big enough to hold an entire serial number.</remarks>
-bool Decrypt_Serial(char * buffer)
-{
-	char serial[ENCRYPTION_STRING_LENGTH];
-
-	bool encrypt = false;
-
-	memset(serial, '0', SERIAL_MAX-1);
-	serial[SERIAL_MAX-1] = 0;
-	strcpy(buffer, serial);
-	memset(serial, 0, sizeof(serial));
-
-	Get_Serial_From_Registry(serial, "SOFTWARE\\Westwood\\Tiberian Sun");
-
-	strcpy(buffer, serial);
-
-	int sign = encrypt ? 1 : -1;
-
-	int number;
-	int temp;
-	int pos = 0;
-
-	FILE *in = fopen("woldata.key", "r");
-
-	if (in == NULL) {
-		return(false);
-	}
-
-	while ((number = fgetc(in)) != EOF) {
-		temp = serial[pos] - '0';
-		temp %= 10;
-		number *= sign;
-		temp += number;
-		temp += 1000;
-		temp %= 10;
-		temp += '0';
-		serial[pos] = temp;
-
-		pos++;
-		if (pos == (int)strlen(serial)) {
-			pos = 0;
-		}
-	}
-
-	fclose(in);
-
-	strcpy(buffer, serial);
-
-	return(true);
-}
-
-
 /***********************************************************************************************
  * Remote_Connect -- handles connecting this user to others                                    *
  *                                                                                             *
@@ -625,7 +538,6 @@ bool Net2Remote_Connect(void)
 	RulesClass::Load_Art_INI();
 	ArtID = RulesClass::Get_Art_Unique_ID();
 	AIID = RulesClass::Get_AI_Unique_ID();
-	Decrypt_Serial(SerialNumber);
 
 	//------------------------------------------------------------------------
 	//	Init network timing parameters; these values should work for both a
@@ -852,7 +764,6 @@ bool Net2Remote_Connect(void)
 				//------------------------------------------------------------------------
 				NodeNameType * who = new NodeNameType;
 				strcpy(who->Name, Session.Handle);
-				strcpy(who->Player.Serial, SerialNumber);
 				who->Player.House = Session.House;
 				who->Player.Color = Session.ColorIdx;
 				Session.Players.Add(who);
@@ -1729,7 +1640,7 @@ BOOL CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 						memset(&Session.GPacket, 0, sizeof(Session.GPacket));
 						Session.GPacket.Command = NET_REJECT_JOIN;
 						Session.GPacket.Reject.Why = (int)REJECT_BY_OWNER;
-						Ipx.Send_Global_Message(&Session.GPacket, 455, 1, &Session.Players[index]->Address);
+						Ipx.Send_Global_Message(&Session.GPacket, sizeof(Session.GPacket), 1, &Session.Players[index]->Address);
 					}
 				}
 			}
@@ -1935,7 +1846,6 @@ static int Request_To_Join(int join_index)
 
 	Session.GPacket.Command = NET_QUERY_JOIN;
 	strcpy (Session.GPacket.Name, Session.Handle);
-	strcpy (Session.GPacket.Serial, SerialNumber);
 	Session.GPacket.PlayerInfo.House = Session.House;
 	Session.GPacket.PlayerInfo.Color = Session.ColorIdx;
 	Session.GPacket.PlayerInfo.MinVersion = VerNum.Min_Version();
@@ -2232,7 +2142,6 @@ bool Process_Global_Packet(GlobalPacketType *packet, IPXAddressClass *address)
 
 		mypacket.Command = NET_ANSWER_PLAYER;
 		strcpy(mypacket.Name, Session.Handle);
-		strcpy(mypacket.Serial, SerialNumber);
 		mypacket.PlayerInfo.House = Session.House;
 		mypacket.PlayerInfo.Color = Session.ColorIdx;
 		mypacket.PlayerInfo.NameCRC = Compute_Name_CRC(Session.GameName);
@@ -2474,7 +2383,6 @@ static void Get_Join_Responses(void)
 				//..................................................................
 				who = new NodeNameType;
 				strcpy(who->Name, Session.GPacket.Name);
-				strcpy(who->Player.Serial, Session.GPacket.Serial);
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
 				who->Player.Color = Session.GPacket.PlayerInfo.Color;
@@ -2628,9 +2536,6 @@ static void Get_Join_Responses(void)
 				}
 				else if (why==REJECT_DISBANDED) {
 					item = (char *)Fetch_String(TXT_GAME_CANCELLED);
-				}
-				else if (why==REJECT_DUPLICATE_SERIAL) {
-					item = (char *)Fetch_String(TXT_SERIAL_DUP);
 				}
 				if (item) {
 					ODMessageBox(item, 0, Net2Callback, 0);
@@ -3029,21 +2934,6 @@ static void Get_Join_Responses(void)
 				if (Session.GPacket.PlayerInfo.ArtCheatCheck != ArtID) { match = false; }
 				if (Session.GPacket.PlayerInfo.BuildNumber != Build_Number()) { match = false; }
 			}
-			int dups = 0;
-			for (i = 0; i < Session.Players.Count(); i++) {
-				if (!strcmp(Session.Players[i]->Player.Serial, Session.GPacket.Serial)) {
-					dups++;
-				}
-			}
-
-			if (dups >= 2 && !resend) {
-				memset (&packet, 0, sizeof(GlobalPacketType));
-				packet.Command = NET_REJECT_JOIN;
-				packet.Reject.Why = (int)REJECT_DUPLICATE_SERIAL;
-				Ipx.Send_Global_Message (&packet, sizeof (GlobalPacketType), 1, &Session.GAddress);
-				continue;
-			}
-
 			/*
 			**	Don't allow joining if the rules.ini file doesn't appear to match.
 			*/
@@ -3105,7 +2995,6 @@ static void Get_Join_Responses(void)
 				strcpy(who->Name, Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
-				strcpy(who->Player.Serial, Session.GPacket.Serial);
 
 				//..................................................................
 				//	Set player's color; if requested color isn't used, give it to him;
