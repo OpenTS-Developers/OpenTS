@@ -225,7 +225,7 @@ class INIClass {
 	protected:
 		int Load(Straw & file, bool keepcomments, char const * source);
 
-		// Lines that were not valid UTF-8 and were read as Windows-1252 instead.
+		// Lines read as Windows-1252 because they were not valid UTF-8.
 		unsigned Transcoded = 0;
 
 		// The outcome of reading a numeric value: the entry is absent, it is present but does

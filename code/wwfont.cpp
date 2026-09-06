@@ -252,10 +252,11 @@ int WWFontClass::Glyph_Count(void) const
 }
 
 
-/*
- * Westwood added the oe ligature to its code page 437 layout at 0xCE. A code point without a
- * glyph, or whose slot is the shared placeholder box at data offset 0, draws as '?'.
- */
+/// <summary>
+/// Returns the glyph slot that draws code, or the slot for '?' when the font has none.
+/// Westwood added the oe ligature to its code page 437 layout at 0xCE, and a slot holding
+/// the shared placeholder box at data offset 0 counts as absent.
+/// </summary>
 unsigned char WWFontClass::Glyph_Index(char32_t code) const
 {
 	if (code < ' ') {

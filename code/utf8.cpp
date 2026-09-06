@@ -32,10 +32,11 @@ constexpr char32_t Windows_1252_High[32] = {
 };
 
 
-/*
- * Decodes the sequence at text, which holds at least `available` readable bytes. A
- * malformed or truncated sequence reports one byte, REPLACEMENT, and valid false.
- */
+/// <summary>
+/// Decodes the sequence at text and reports the bytes it spans. A malformed or truncated
+/// sequence reports one byte, REPLACEMENT, and valid false.
+/// </summary>
+/// <param name="available">Readable bytes at text; the decoder never looks past them.</param>
 char32_t Decode_Sequence(char const * text, std::size_t available, int & length, bool & valid)
 {
 	unsigned char const * bytes = (unsigned char const *)text;
@@ -94,10 +95,11 @@ char32_t Decode_Sequence(char const * text, std::size_t available, int & length,
 constexpr std::size_t UNBOUNDED = ~(std::size_t)0;
 
 
-/*
- * Returns the byte of `page` that shows code, or -1. Drawing text asks for every glyph on
- * every frame, so the answers are kept in the caller's cache, where 0 marks an unasked slot.
- */
+/// <summary>
+/// Returns the byte of the given code page that shows code, or -1. Drawing text asks for
+/// every glyph on every frame, so the answers are kept in the caller's cache, where 0 marks
+/// an unasked slot.
+/// </summary>
 int Best_Fit_Index(unsigned page, short * cache, char32_t code)
 {
 	if (code < 0x80) {

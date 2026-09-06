@@ -200,7 +200,8 @@ int CCINIClass::Load(FileClass & file, bool withdigest, bool loadcomments)
 
 namespace {
 
-// A file read as Windows-1252 was digested as written, so the database is hashed that way.
+// The stored digest covers the file's original bytes, so a database transcoded from
+// Windows-1252 is hashed back through that code page.
 bool Windows_1252_Digest_Matches(INIClass const & ini, unsigned char const * expected)
 {
 	std::string text;
