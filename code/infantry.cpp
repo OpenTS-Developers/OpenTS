@@ -4304,7 +4304,7 @@ int InfantryClass::Do_MISSION_GUARD(void)
 /// </summary>
 /// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE InfantryClass::GetClassID(CLSID * retval)
+HRESULT InfantryClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_InfantryClass;

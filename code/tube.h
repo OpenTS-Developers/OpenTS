@@ -22,7 +22,7 @@ class TubeClass : public AbstractClass
 {
 		typedef AbstractClass BASECLASS;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

@@ -437,7 +437,7 @@ void TerrainTypeClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TerrainTypeClass::GetClassID(CLSID * retval)
+HRESULT TerrainTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_TerrainTypeClass;

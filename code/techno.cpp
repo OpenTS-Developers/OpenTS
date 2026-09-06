@@ -4064,7 +4064,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 
 		if (valid_arc) {
 			if (!bullet->Unlimbo(turret_coord, velocity)) {
-				bullet->Release();
+				delete bullet;
 				bullet = NULL;
 			} else {
 
@@ -4187,7 +4187,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				}
 			}
 		} else {
-			bullet->Release();
+			delete bullet;
 			bullet = NULL;
 		}
 	}

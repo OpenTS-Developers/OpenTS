@@ -25,7 +25,7 @@ class ParticleSystemTypeClass : public ObjectTypeClass
 		ParticleSystemTypeClass(char const * ininame = NULL);
 		virtual ~ParticleSystemTypeClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

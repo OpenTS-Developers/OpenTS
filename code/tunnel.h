@@ -29,26 +29,26 @@ class TunnelLocomotionClass : public LocomotionClass
 		*/
 		TunnelLocomotionClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Now(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual void STDMETHODCALLTYPE Move_To(Coord to) override;
-		virtual void STDMETHODCALLTYPE Stop_Moving(void) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual VisualType STDMETHODCALLTYPE Visual_Character(boolean flag) override;
-		virtual Matrix3D STDMETHODCALLTYPE Draw_Matrix(int *key) override;
-		virtual int STDMETHODCALLTYPE Z_Adjust(void) override;
-		virtual ZGradientType STDMETHODCALLTYPE Z_Gradient(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_To_Have_Shadow(void) override;
-		virtual MoveType STDMETHODCALLTYPE Can_Enter_Cell(Cell cell) override;
-		virtual void STDMETHODCALLTYPE Do_Turn(DirType coord) override;
-		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
-		virtual FireErrorType STDMETHODCALLTYPE Can_Fire(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Surfacing(void) override;
+		virtual bool Is_Moving(void) override;
+		virtual bool Is_Moving_Now(void) override;
+		virtual Coord Destination(void) override;
+		virtual void Move_To(Coord to) override;
+		virtual void Stop_Moving(void) override;
+		virtual bool Process(void) override;
+		virtual VisualType Visual_Character(bool flag) override;
+		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual int Z_Adjust(void) override;
+		virtual ZGradientType Z_Gradient(void) override;
+		virtual bool Is_To_Have_Shadow(void) override;
+		virtual MoveType Can_Enter_Cell(Cell cell) override;
+		virtual void Do_Turn(DirType coord) override;
+		virtual LayerType In_Which_Layer(void) override;
+		virtual FireErrorType Can_Fire(void) override;
+		virtual bool Is_Surfacing(void) override;
 
 		void Process_Turning(void);
 		void Process_Digging_In(void);

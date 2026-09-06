@@ -13,7 +13,6 @@
 
 #include "diff.hh"
 
-#include <comdef.h>
 
 class SaveStreamClass;
 

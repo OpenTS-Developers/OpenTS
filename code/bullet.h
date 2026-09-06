@@ -52,8 +52,6 @@ class BulletClass : public ObjectClass
 		typedef ObjectClass BASECLASS;
 
 	public:
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
 	public:
 
@@ -78,7 +76,7 @@ class BulletClass : public ObjectClass
 		BulletClass(void);
 		virtual ~BulletClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

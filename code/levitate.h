@@ -28,18 +28,18 @@ class LevitateLocomotionClass : public LocomotionClass
 		LevitateLocomotionClass(void);
 		virtual ~LevitateLocomotionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual HRESULT STDMETHODCALLTYPE Link_To_Object(void *pointer) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual Coord STDMETHODCALLTYPE Head_To_Coord(void) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Now(void) override;
-		virtual void STDMETHODCALLTYPE Mark_All_Occupation_Bits(int mark) override;
+		virtual HRESULT Link_To_Object(void *pointer) override;
+		virtual bool Is_Moving(void) override;
+		virtual Coord Destination(void) override;
+		virtual Coord Head_To_Coord(void) override;
+		virtual bool Process(void) override;
+		virtual LayerType In_Which_Layer(void) override;
+		virtual bool Is_Moving_Now(void) override;
+		virtual void Mark_All_Occupation_Bits(int mark) override;
 
 
 		/*---------------------------------------------------------------------

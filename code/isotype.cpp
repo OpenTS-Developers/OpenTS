@@ -2797,7 +2797,7 @@ void IsometricTileTypeClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="retval">Receives the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE IsometricTileTypeClass::GetClassID(CLSID * retval)
+HRESULT IsometricTileTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_IsometricTileTypeClass;

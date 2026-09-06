@@ -54,7 +54,7 @@ class FactoryClass : public AbstractClass, private StageClass
 		FactoryClass(void);
 		~FactoryClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

@@ -370,7 +370,7 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE WeaponTypeClass::GetClassID(CLSID * retval)
+HRESULT WeaponTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_WeaponTypeClass;

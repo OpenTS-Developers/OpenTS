@@ -140,7 +140,7 @@ class TActionClass : public AbstractClass
 		TActionClass(void);
 		virtual ~TActionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

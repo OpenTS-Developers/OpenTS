@@ -117,7 +117,7 @@ FlyLocomotionClass::~FlyLocomotionClass(void)
 /// an aircraft that has been told to go somewhere but has yet to build up any speed.
 /// </summary>
 /// <returns>bool; Is the aircraft moving or trying to?</returns>
-boolean STDMETHODCALLTYPE FlyLocomotionClass::Is_Moving(void)
+bool FlyLocomotionClass::Is_Moving(void)
 {
 	return(IsMoving || LinkedTo->PitchAngle > 0);
 }
@@ -129,7 +129,7 @@ boolean STDMETHODCALLTYPE FlyLocomotionClass::Is_Moving(void)
 /// the aircraft has any speed at all.
 /// </summary>
 /// <returns>bool; Is the aircraft moving right now?</returns>
-boolean STDMETHODCALLTYPE FlyLocomotionClass::Is_Moving_Now(void)
+bool FlyLocomotionClass::Is_Moving_Now(void)
 {
 	if (CurrentSpeed == 0) {
 		return(false);
@@ -143,7 +143,7 @@ boolean STDMETHODCALLTYPE FlyLocomotionClass::Is_Moving_Now(void)
 /// </summary>
 /// <returns>Returns with the destination coordinate. If the aircraft is not going
 /// anywhere, COORD_NONE is returned.</returns>
-Coord STDMETHODCALLTYPE FlyLocomotionClass::Destination(void)
+Coord FlyLocomotionClass::Destination(void)
 {
 	if (Is_Moving()) {
 		return(DestinationCoord);
@@ -159,7 +159,7 @@ Coord STDMETHODCALLTYPE FlyLocomotionClass::Destination(void)
 /// disposed of if it has wandered off the edge of the world.
 /// </summary>
 /// <returns>bool; Is the aircraft still under way?</returns>
-boolean STDMETHODCALLTYPE FlyLocomotionClass::Process(void)
+bool FlyLocomotionClass::Process(void)
 {
 	if (!IsLanding && !IsTakingOff && TargetSpeed >= 1.0 && FlightLevel == 0) {
 		FlightLevel = LinkedTo->TClass->Flight_Level();
@@ -234,7 +234,7 @@ boolean STDMETHODCALLTYPE FlyLocomotionClass::Process(void)
 /// destination is a request to stop, which brings a flying aircraft down to land.
 /// </summary>
 /// <param name="to">The coordinate to head for, or COORD_NONE to stop and land.</param>
-void STDMETHODCALLTYPE FlyLocomotionClass::Move_To(Coord to)
+void FlyLocomotionClass::Move_To(Coord to)
 {
 	if (((Coord)to).As_Cell() != DestinationCoord.As_Cell() || !IsLanding) {
 
@@ -242,7 +242,7 @@ void STDMETHODCALLTYPE FlyLocomotionClass::Move_To(Coord to)
 
 			if ((Coord)to == COORD_NONE) {
 				int landing_altitude = 0;
-				IFlyControlPtr flyctrl(LinkedTo);
+				IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 				if (flyctrl != NULL) {
 					landing_altitude = flyctrl->Landing_Altitude();
 				}
@@ -261,7 +261,7 @@ void STDMETHODCALLTYPE FlyLocomotionClass::Move_To(Coord to)
 					DestinationCoord.Z = LinkedTo->TClass->Flight_Level() + Map.Get_Height_GL(to);
 				}
 
-				IFlyControlPtr flyctrl(LinkedTo);
+				IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 				int landing_altitude = 0;
 				if (flyctrl != NULL) {
 					landing_altitude = flyctrl->Landing_Altitude();
@@ -286,7 +286,7 @@ void STDMETHODCALLTYPE FlyLocomotionClass::Move_To(Coord to)
 /// assigns that as the new destination. An aircraft with nowhere at all to go is destroyed
 /// rather than left loitering in an illegal spot.
 /// </summary>
-void STDMETHODCALLTYPE FlyLocomotionClass::Stop_Moving(void)
+void FlyLocomotionClass::Stop_Moving(void)
 {
 	if (Is_Moving()) {
 
@@ -608,7 +608,7 @@ void FlyLocomotionClass::Movement_AI(void)
 
 	if (current_height < FlightLevel && LinkedTo->Strength > 0) {
 		bool is_loaded = false;
-		IFlyControlPtr flyctrl(LinkedTo);
+		IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 		if (flyctrl != NULL) {
 			is_loaded = flyctrl->Is_Loaded() != 0;
 		}
@@ -698,7 +698,7 @@ void FlyLocomotionClass::Movement_AI(void)
 	}
 
 	if (LinkedTo->Strength > 0 && Is_In_Flight() && DestinationCoord != COORD_NONE) {
-		IFlyControlPtr flyctrl(LinkedTo);
+		IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 
 		if (!Needs_To_Land()) {
 			TargetSpeed = 1.0;
@@ -881,7 +881,7 @@ bool FlyLocomotionClass::Process_Take_Off(void)
 		height -= BRIDGE_LEPTON_HEIGHT;
 	}
 
-	IFlyControlPtr flyctrl(LinkedTo);
+	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 	int landing_altitude = 0;
 	if (flyctrl) {
 		landing_altitude = flyctrl->Landing_Altitude();
@@ -962,7 +962,7 @@ bool FlyLocomotionClass::Process_Landing(void)
 	TargetSpeed = 0;
 
 	int landing_altitude = 0;
-	IFlyControlPtr flyctrl(LinkedTo);
+	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 	if (flyctrl) {
 		landing_altitude = flyctrl->Landing_Altitude();
 	}
@@ -1072,7 +1072,7 @@ bool FlyLocomotionClass::Process_Landing(void)
 /// <returns>Returns with the distance remaining to the destination.</returns>
 int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 {
-	IFlyControlPtr flyctrl(LinkedTo);
+	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 
 	/*
 	 * A strafing aircraft that is over an ammo-bearing attack run should ignore the
@@ -1303,7 +1303,7 @@ int FlyLocomotionClass::Nearing_Target(bool stage_approach, Coord coord)
 /// <param name="key">Optional cache key for the resulting orientation. It may be NULL, and
 /// is set to -1 for an attitude that is not worth caching.</param>
 /// <returns>Returns with the matrix to draw the aircraft with.</returns>
-Matrix3D STDMETHODCALLTYPE FlyLocomotionClass::Draw_Matrix(int * key)
+Matrix3D FlyLocomotionClass::Draw_Matrix(int * key)
 {
 	Matrix3D mtx;
 	mtx.Make_Identity();
@@ -1398,10 +1398,10 @@ Matrix3D STDMETHODCALLTYPE FlyLocomotionClass::Draw_Matrix(int * key)
 /// look pinned in place while it hovers. Dropships and grounded aircraft do not bob.
 /// </summary>
 /// <returns>Returns with the pixel offset to shift the aircraft by.</returns>
-Point2D STDMETHODCALLTYPE FlyLocomotionClass::Draw_Point(void)
+Point2D FlyLocomotionClass::Draw_Point(void)
 {
 	int y = 0;
-	IFlyControlPtr flyctrl(LinkedTo);
+	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 
 	int landing_altitude = 0;
 	if (flyctrl) {
@@ -1421,7 +1421,7 @@ Point2D STDMETHODCALLTYPE FlyLocomotionClass::Draw_Point(void)
 /// The shadow is drawn where the aircraft's position puts it, so no adjustment is needed.
 /// </summary>
 /// <returns>Returns with the pixel offset to shift the shadow by.</returns>
-Point2D STDMETHODCALLTYPE FlyLocomotionClass::Shadow_Point(void)
+Point2D FlyLocomotionClass::Shadow_Point(void)
 {
 	return(Point2D(0, 0));
 }
@@ -1470,7 +1470,7 @@ void FlyLocomotionClass::Land(void)
 /// <param name="key">Optional cache key for the shadow orientation. It may be NULL, and a
 /// value of -1 marks the shadow as not worth caching.</param>
 /// <returns>Returns with the matrix to draw the shadow with.</returns>
-Matrix3D STDMETHODCALLTYPE FlyLocomotionClass::Shadow_Matrix(int * key)
+Matrix3D FlyLocomotionClass::Shadow_Matrix(int * key)
 {
 	int ramp = Map[(Coord const &)LinkedTo->PositionCoord].Ramp;
 	if (LinkedTo->TClass->IsDropship) {
@@ -1493,7 +1493,7 @@ Matrix3D STDMETHODCALLTYPE FlyLocomotionClass::Shadow_Matrix(int * key)
 /// This routine snaps the body around immediately rather than rotating it over time.
 /// </summary>
 /// <param name="coord">The facing to set the aircraft body to.</param>
-void STDMETHODCALLTYPE FlyLocomotionClass::Do_Turn(DirType coord)
+void FlyLocomotionClass::Do_Turn(DirType coord)
 {
 	LinkedTo->SecondaryFacing.Set(coord);
 }
@@ -1522,7 +1522,7 @@ bool FlyLocomotionClass::Is_In_Flight(void)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE FlyLocomotionClass::GetClassID(CLSID * retval)
+HRESULT FlyLocomotionClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_FlyerLocomotion;
@@ -1559,7 +1559,7 @@ void FlyLocomotionClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <returns>Returns with LAYER_GROUND while the aircraft is on the deck, or LAYER_TOP once
 /// it is above it.</returns>
-LayerType STDMETHODCALLTYPE FlyLocomotionClass::In_Which_Layer(void)
+LayerType FlyLocomotionClass::In_Which_Layer(void)
 {
 	return(LinkedTo->HeightAGL <= 0 ? LAYER_GROUND : LAYER_TOP);
 }
@@ -1572,7 +1572,7 @@ LayerType STDMETHODCALLTYPE FlyLocomotionClass::In_Which_Layer(void)
 /// stop, so that it falls out of the sky rather than coasting on to its objective.
 /// </summary>
 /// <returns>bool; Was the power successfully cut?</returns>
-boolean STDMETHODCALLTYPE FlyLocomotionClass::Power_Off(void)
+bool FlyLocomotionClass::Power_Off(void)
 {
 	if (Is_Moving()) {
 		Tumble();
@@ -1587,7 +1587,7 @@ boolean STDMETHODCALLTYPE FlyLocomotionClass::Power_Off(void)
 /// Is the aircraft still under power?
 /// </summary>
 /// <returns>bool; Does the aircraft still have power?</returns>
-boolean STDMETHODCALLTYPE FlyLocomotionClass::Is_Powered(void)
+bool FlyLocomotionClass::Is_Powered(void)
 {
 	return(BASECLASS::Is_Powered());
 }
@@ -1599,7 +1599,7 @@ boolean STDMETHODCALLTYPE FlyLocomotionClass::Is_Powered(void)
 /// by one.
 /// </summary>
 /// <returns>bool; Does an ion storm affect this aircraft?</returns>
-boolean STDMETHODCALLTYPE FlyLocomotionClass::Is_Ion_Sensitive(void)
+bool FlyLocomotionClass::Is_Ion_Sensitive(void)
 {
 	return(!LinkedTo->TClass->IsHunterSeeker);
 }
@@ -1625,7 +1625,7 @@ void FlyLocomotionClass::Tumble(void)
 /// Fetches the speed the aircraft is currently traveling at.
 /// </summary>
 /// <returns>Returns with the distance the aircraft will cover in one game frame.</returns>
-int STDMETHODCALLTYPE FlyLocomotionClass::Apparent_Speed(void)
+int FlyLocomotionClass::Apparent_Speed(void)
 {
 	return(LinkedTo->TClass->MaxSpeed * CurrentSpeed);
 }
@@ -1638,7 +1638,7 @@ int STDMETHODCALLTYPE FlyLocomotionClass::Apparent_Speed(void)
 /// </summary>
 /// <returns>Returns with the status code for taking off, landing, moving, or sitting
 /// idle.</returns>
-int STDMETHODCALLTYPE FlyLocomotionClass::Get_Status(void)
+int FlyLocomotionClass::Get_Status(void)
 {
 	if (IsLanding) {
 		return(1);
@@ -1660,7 +1660,7 @@ int STDMETHODCALLTYPE FlyLocomotionClass::Get_Status(void)
 /// targets in a multiplay game so that the drone makes a nuisance of itself where it will
 /// be noticed.
 /// </summary>
-void STDMETHODCALLTYPE FlyLocomotionClass::Acquire_Hunter_Seeker_Target(void)
+void FlyLocomotionClass::Acquire_Hunter_Seeker_Target(void)
 {
 	if (LinkedTo->TarCom == NULL) {
 
@@ -1722,7 +1722,7 @@ bool FlyLocomotionClass::Needs_To_Land(void)
 		return(true);
 	}
 
-	IFlyControlPtr flyctrl(LinkedTo);
+	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 	if (flyctrl != NULL && !flyctrl->Is_Strafe()) {
 		return(true);
 	}
@@ -1751,7 +1751,7 @@ bool FlyLocomotionClass::Is_Locked_To_Straight_Flight(void)
 		return(true);
 	}
 
-	IFlyControlPtr flyctrl(LinkedTo);
+	IFlyControl * const flyctrl = dynamic_cast<IFlyControl *>(LinkedTo);
 	if (flyctrl) {
 		if (flyctrl->Is_Locked()) {
 			return(true);

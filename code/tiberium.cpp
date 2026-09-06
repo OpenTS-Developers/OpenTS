@@ -200,7 +200,7 @@ void TiberiumClass::Compute_CRC(CRCEngine & crc) const
 /// tiberium type is read back in.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TiberiumClass::GetClassID(CLSID * retval)
+HRESULT TiberiumClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_TiberiumClass;

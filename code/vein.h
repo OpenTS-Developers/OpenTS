@@ -34,7 +34,7 @@ class VeinholeMonsterClass : public ObjectClass
 		VeinholeMonsterClass(Cell const & cell);
 		~VeinholeMonsterClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.

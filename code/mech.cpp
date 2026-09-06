@@ -56,7 +56,7 @@ MechLocomotionClass::~MechLocomotionClass(void)
 /// Has the mech been given somewhere to walk to?
 /// </summary>
 /// <returns>bool; Is the mech under movement orders?</returns>
-boolean STDMETHODCALLTYPE MechLocomotionClass::Is_Moving(void)
+bool MechLocomotionClass::Is_Moving(void)
 {
 	return(IsMoving);
 }
@@ -67,7 +67,7 @@ boolean STDMETHODCALLTYPE MechLocomotionClass::Is_Moving(void)
 /// </summary>
 /// <returns>Returns with the destination assigned, or COORD_NONE if the unit has not been
 /// given one.</returns>
-Coord STDMETHODCALLTYPE MechLocomotionClass::Destination(void)
+Coord MechLocomotionClass::Destination(void)
 {
 	if (Is_Moving()) {
 		return(DestinationCoord);
@@ -81,7 +81,7 @@ Coord STDMETHODCALLTYPE MechLocomotionClass::Destination(void)
 /// </summary>
 /// <returns>Returns with the location being stepped into, or the unit's own location if it
 /// is not part way between cells.</returns>
-Coord STDMETHODCALLTYPE MechLocomotionClass::Head_To_Coord(void)
+Coord MechLocomotionClass::Head_To_Coord(void)
 {
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
@@ -95,7 +95,7 @@ Coord STDMETHODCALLTYPE MechLocomotionClass::Head_To_Coord(void)
 /// This is the locomotor's entry point from the owning unit's AI.
 /// </summary>
 /// <returns>bool; Does the mech still have somewhere to walk to?</returns>
-boolean STDMETHODCALLTYPE MechLocomotionClass::Process(void)
+bool MechLocomotionClass::Process(void)
 {
 	Movement_AI(true);
 	return(Is_Moving());
@@ -108,7 +108,7 @@ boolean STDMETHODCALLTYPE MechLocomotionClass::Process(void)
 /// raised to the deck above it, since that is where a walking unit can actually get to.
 /// </summary>
 /// <param name="to">The location to walk to.</param>
-void STDMETHODCALLTYPE MechLocomotionClass::Move_To(Coord to)
+void MechLocomotionClass::Move_To(Coord to)
 {
 	if (LinkedTo->StunDuration <= 0) {
 		Coord coord = to;
@@ -126,7 +126,7 @@ void STDMETHODCALLTYPE MechLocomotionClass::Move_To(Coord to)
 /// A unit caught part way between cells is left in motion so that it finishes the step it
 /// is taking before coming to rest.
 /// </summary>
-void STDMETHODCALLTYPE MechLocomotionClass::Stop_Moving(void)
+void MechLocomotionClass::Stop_Moving(void)
 {
 	DestinationCoord = COORD_NONE;
 	if (HeadToCoord == COORD_NONE) {
@@ -155,7 +155,7 @@ void MechLocomotionClass::Do_Turn(DirType coord)
 /// destination -- it will walk there and then pick its path up again.
 /// </summary>
 /// <param name="coord">The location to step into immediately.</param>
-void STDMETHODCALLTYPE MechLocomotionClass::Force_Immediate_Destination(Coord coord)
+void MechLocomotionClass::Force_Immediate_Destination(Coord coord)
 {
 	HeadToCoord = coord;
 }
@@ -658,7 +658,7 @@ bool MechLocomotionClass::Mark_Head_To(Coord const & coord)
 /// </summary>
 /// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE MechLocomotionClass::GetClassID(CLSID * retval)
+HRESULT MechLocomotionClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_MechLocomotion;
@@ -684,7 +684,7 @@ void MechLocomotionClass::Serialize(SaveStreamClass & stream)
 /// Fetches the display layer that the mech is rendered in.
 /// </summary>
 /// <returns>Returns with the layer appropriate to a unit that walks on the ground.</returns>
-LayerType STDMETHODCALLTYPE MechLocomotionClass::In_Which_Layer(void)
+LayerType MechLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_GROUND);
 }
@@ -696,7 +696,7 @@ LayerType STDMETHODCALLTYPE MechLocomotionClass::In_Which_Layer(void)
 /// standing still -- blocked, or waiting on a path -- is not moving now.
 /// </summary>
 /// <returns>bool; Is the mech turning or walking right now?</returns>
-boolean STDMETHODCALLTYPE MechLocomotionClass::Is_Moving_Now(void)
+bool MechLocomotionClass::Is_Moving_Now(void)
 {
 	if (LinkedTo->PrimaryFacing.Is_Rotating()) {
 		return(true);
@@ -714,7 +714,7 @@ boolean STDMETHODCALLTYPE MechLocomotionClass::Is_Moving_Now(void)
 /// it is walking toward stays reserved for it.
 /// </summary>
 /// <param name="mark">The marking operation to perform; MARK_UP releases the cell.</param>
-void STDMETHODCALLTYPE MechLocomotionClass::Mark_All_Occupation_Bits(int mark)
+void MechLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (mark == MARK_UP) {
 		LinkedTo->Clear_Occupy_Bit((Coord)Head_To_Coord());
@@ -731,7 +731,7 @@ void STDMETHODCALLTYPE MechLocomotionClass::Mark_All_Occupation_Bits(int mark)
 /// </summary>
 /// <param name="to">The location to test against.</param>
 /// <returns>bool; Is the mech heading into that location?</returns>
-boolean STDMETHODCALLTYPE MechLocomotionClass::Is_Moving_Here(Coord to)
+bool MechLocomotionClass::Is_Moving_Here(Coord to)
 {
 	Coord coord = Head_To_Coord();
 

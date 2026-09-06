@@ -68,7 +68,7 @@ class TeamTypeClass : public AbstractTypeClass
 		TeamTypeClass(char const * name = NULL);
 		virtual ~TeamTypeClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		static TeamTypeClass * Find_Or_Make(char const * ininame = NULL);
 

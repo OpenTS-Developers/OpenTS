@@ -14,11 +14,11 @@ source_files:
   - code/droppod.cpp
 ---
 
-`FootClass::Locomotion` is the current `ILocomotion` COM interface for one mobile runtime instance. The locomotor is a separate object linked to the `FootClass`; it is not a behavioral base class of `FootClass`.
+`FootClass::Locomotion` owns the current `ILocomotion` locomotor for one mobile runtime instance. The locomotor is a separate object linked to the `FootClass`; it is not a behavioral base class of `FootClass`.
 
 ## Object locomotion
 
-`TechnoTypeClass::Locomotor` stores the CLSID used to create a type's ordinary locomotor. Concrete `FootClass` constructors create that COM object, call `Link_To_Object`, and assign it to `FootClass::Locomotion`.
+`TechnoTypeClass::Locomotor` stores the CLSID used to create a type's ordinary locomotor. Concrete `FootClass` constructors create that locomotor, call `Link_To_Object`, and assign it to `FootClass::Locomotion`.
 
 Movement, destination, layer, occupation, and locomotor-specific drawing queries go through the current interface. Code must therefore inspect the runtime `Locomotion` pointer when temporary locomotion is possible; the type's `Locomotor` CLSID describes the ordinary implementation, not necessarily the one currently in control.
 

@@ -5175,7 +5175,7 @@ void CellClass::Detach(AbstractClass const * target)
 /// </summary>
 /// <param name="retval">Pointer to the location to store the class identifier in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE CellClass::GetClassID(CLSID * retval)
+HRESULT CellClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_CellClass;

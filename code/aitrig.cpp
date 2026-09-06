@@ -98,7 +98,7 @@ AITriggerTypeClass::~AITriggerTypeClass(void)
 /// object is read back in.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE AITriggerTypeClass::GetClassID(CLSID * retval)
+HRESULT AITriggerTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_AITriggerTypeClass;

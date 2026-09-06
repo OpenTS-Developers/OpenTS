@@ -9,15 +9,19 @@
 
 #pragma once
 
-#include <comdef.h>
+#include "win.h"
+
+#include <guiddef.h>
 
 class SaveStreamClass;
 
-// Not a COM interface: it has no identifier, and the loader reaches it by dynamic_cast
-// from the IUnknown a class factory hands out.
-struct IPersistent : public IUnknown
+// What a saved game asks of an object it carries: the class identifier the record is
+// tagged with, and the record itself.
+struct IPersistent
 {
-	virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * classid) = 0;
+	virtual ~IPersistent(void) {}
+
+	virtual HRESULT GetClassID(CLSID * classid) = 0;
 	virtual HRESULT Load(SaveStreamClass & stream) = 0;
 	// Restores what the record could not carry, once the record has been checked; an object
 	// takes its place in the map or a side table here, never while its record is still in doubt.

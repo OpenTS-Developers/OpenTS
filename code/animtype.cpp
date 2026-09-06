@@ -584,7 +584,7 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="retval">Pointer to the place to store the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if there was nowhere to store the answer.</returns>
-HRESULT STDMETHODCALLTYPE AnimTypeClass::GetClassID(CLSID * retval)
+HRESULT AnimTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_AnimTypeClass;

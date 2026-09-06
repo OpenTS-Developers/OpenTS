@@ -383,7 +383,7 @@ TagTypeClass * TagTypeClass::Find_Or_Make(char const * name)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TagTypeClass::GetClassID(CLSID * retval)
+HRESULT TagTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_TagTypeClass;

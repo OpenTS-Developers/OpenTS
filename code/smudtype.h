@@ -59,7 +59,7 @@ class SmudgeTypeClass : public ObjectTypeClass
 		SmudgeTypeClass(char const * ininame = NULL);
 		virtual ~SmudgeTypeClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

@@ -286,7 +286,7 @@ void BuildingLightClass::AI(void)
 /// be created when the game is loaded back in.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE BuildingLightClass::GetClassID(CLSID * retval)
+HRESULT BuildingLightClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_BuildingLightClass;

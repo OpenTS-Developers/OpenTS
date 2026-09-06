@@ -473,7 +473,7 @@ void WaveClass::Post_Load(void)
 /// </summary>
 /// <param name="retval">Pointer to the buffer to store the class identifier in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE WaveClass::GetClassID(CLSID * retval)
+HRESULT WaveClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_WaveClass;

@@ -100,7 +100,7 @@ AlphaShapeClass::~AlphaShapeClass(void)
 /// </summary>
 /// <param name="retval">Pointer to the buffer that will receive the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE AlphaShapeClass::GetClassID(CLSID * retval)
+HRESULT AlphaShapeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_AlphaShapeClass;

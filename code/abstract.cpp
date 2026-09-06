@@ -58,7 +58,6 @@
 /// </summary>
 AbstractClass::AbstractClass(void) :
 	ID(-1),
-	RefCount(0),
 	Dirty(false)
 {
 }
@@ -104,62 +103,6 @@ int AbstractClass::Fetch_ID(void) const
 void AbstractClass::Create_ID(void)
 {
 	ID = (Scen == NULL ? 0 : Scen->Get_Unique_ID());
-}
-
-
-/// <summary>
-/// Fetches a COM interface pointer from this object.
-/// This is the IUnknown implementation shared by every game object. Abstract
-/// objects expose IUnknown alone; the save game system reaches them through
-/// IPersistent, which needs no identifier.
-/// </summary>
-/// <param name="riid">The identifier of the interface being asked for.</param>
-/// <param name="ppvObject">Receives the interface pointer, or NULL when the
-/// interface is not supported.</param>
-/// <returns>
-/// Returns with S_OK when the interface was supplied. Otherwise E_NOINTERFACE is
-/// returned for an unsupported interface, or E_POINTER when no output pointer was given.
-/// </returns>
-HRESULT STDMETHODCALLTYPE AbstractClass::QueryInterface(REFIID riid, LPVOID * ppvObject)
-{
-	if (ppvObject == NULL) {
-		return(E_POINTER);
-	}
-
-	*ppvObject = NULL;
-
-	if (riid == IID_IUnknown) {
-		*ppvObject = (IUnknown *)(IPersistent *)this;
-	}
-	if (*ppvObject == NULL) {
-		return(E_NOINTERFACE);
-	}
-
-	AddRef();
-	return(S_OK);
-}
-
-
-/// <summary>
-/// Satisfies the IUnknown reference count contract.
-/// The game owns its objects outright and they outlive any interface pointer
-/// handed out, so nothing is actually counted.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE AbstractClass::AddRef(void)
-{
-	return(1);
-}
-
-
-/// <summary>
-/// Satisfies the IUnknown release contract.
-/// Releasing an interface never destroys a game object -- see AddRef.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE AbstractClass::Release(void)
-{
-	return(1);
 }
 
 
@@ -249,7 +192,6 @@ void AbstractClass::Post_Load(void)
 void AbstractClass::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(ID);
-	// RefCount -- belongs to the running session rather than the record.
 	stream.Serialize(Dirty);
 }
 

@@ -37,10 +37,6 @@
 #include "isun_i.c"
 #include "ilocos.h"
 #include "ilocos_i.c"
-#include "ipiggy.h"
-#include "ipiggy_i.c"
-#include "iflyctrl.h"
-#include "iflyctrl_i.c"
 #undef INCLUDE_COM
 
 #include "_voxel.h"

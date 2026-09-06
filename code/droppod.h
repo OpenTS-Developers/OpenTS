@@ -31,20 +31,18 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		DropPodLocomotionClass(void);
 		virtual ~DropPodLocomotionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override {return(BASECLASS::AddRef());}
-		virtual ULONG STDMETHODCALLTYPE Release(void) override {return(BASECLASS::Release());}
 
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual void STDMETHODCALLTYPE Move_To(Coord to) override;
-		virtual void STDMETHODCALLTYPE Stop_Moving(void) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
-		virtual int STDMETHODCALLTYPE Drawing_Code(void) override;
+		virtual bool Is_Moving(void) override;
+		virtual Coord Destination(void) override;
+		virtual void Move_To(Coord to) override;
+		virtual void Stop_Moving(void) override;
+		virtual bool Process(void) override;
+		virtual LayerType In_Which_Layer(void) override;
+		virtual int Drawing_Code(void) override;
 
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;

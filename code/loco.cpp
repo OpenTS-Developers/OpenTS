@@ -33,7 +33,6 @@
 #include <cassert>
 #include <typeinfo>
 
-extern ULONG COMRefCount;
 
 
 /// <summary>
@@ -45,8 +44,7 @@ extern ULONG COMRefCount;
 LocomotionClass::LocomotionClass(void) :
 	LinkedTo(NULL),
 	IsPowered(true),
-	Dirty(true),
-	RefCount(0)
+	Dirty(true)
 {
 }
 
@@ -67,7 +65,7 @@ LocomotionClass::~LocomotionClass(void)
 /// </summary>
 /// <param name="pointer">Pointer to the foot class object this locomotor will carry about.</param>
 /// <returns>Returns with S_OK, since the attachment cannot fail.</returns>
-HRESULT STDMETHODCALLTYPE LocomotionClass::Link_To_Object(void *pointer)
+HRESULT LocomotionClass::Link_To_Object(void *pointer)
 {
 	LinkedTo = (FootClass *)pointer;
 	return(S_OK);
@@ -83,7 +81,7 @@ HRESULT STDMETHODCALLTYPE LocomotionClass::Link_To_Object(void *pointer)
 /// <param name="key">Optional cache key for the voxel renderer, which the facing is folded
 /// into. May be NULL, and a key of -1 means the drawing is not to be cached.</param>
 /// <returns>Returns with the matrix to transform the object by.</returns>
-Matrix3D STDMETHODCALLTYPE LocomotionClass::Draw_Matrix(int *key)
+Matrix3D LocomotionClass::Draw_Matrix(int *key)
 {
 	Matrix3D draw_matrix(true);
 
@@ -105,7 +103,7 @@ Matrix3D STDMETHODCALLTYPE LocomotionClass::Draw_Matrix(int *key)
 /// <param name="key">Optional cache key for the voxel renderer, which the slope and facing are
 /// folded into. May be NULL, and a key of -1 means the shadow is not to be cached.</param>
 /// <returns>Returns with the matrix to transform the shadow by.</returns>
-Matrix3D STDMETHODCALLTYPE LocomotionClass::Shadow_Matrix(int *key)
+Matrix3D LocomotionClass::Shadow_Matrix(int *key)
 {
 	int ramp = Map[LinkedTo->Get_Coord()].Ramp;
 
@@ -126,7 +124,7 @@ Matrix3D STDMETHODCALLTYPE LocomotionClass::Shadow_Matrix(int *key)
 /// down by however far the object is flying above the terrain.
 /// </summary>
 /// <returns>Returns with the pixel offset to shift the shadow by when drawing.</returns>
-Point2D STDMETHODCALLTYPE LocomotionClass::Shadow_Point(void)
+Point2D LocomotionClass::Shadow_Point(void)
 {
 	Point2D pt;
 
@@ -143,7 +141,7 @@ Point2D STDMETHODCALLTYPE LocomotionClass::Shadow_Point(void)
 /// more.
 /// </summary>
 /// <returns>bool; Is the locomotor powered after the change?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Power_On(void)
+bool LocomotionClass::Power_On(void)
 {
 	IsPowered = true;
 	return(Is_Powered());
@@ -156,7 +154,7 @@ boolean STDMETHODCALLTYPE LocomotionClass::Power_On(void)
 /// by an EMP pulse or its owner loses base power.
 /// </summary>
 /// <returns>bool; Is the locomotor powered after the change?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Power_Off(void)
+bool LocomotionClass::Power_Off(void)
 {
 	IsPowered = false;
 	return(Is_Powered());
@@ -169,7 +167,7 @@ boolean STDMETHODCALLTYPE LocomotionClass::Power_Off(void)
 /// loss of base power leaves a unit stranded.
 /// </summary>
 /// <returns>bool; Is the locomotor powered?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Is_Powered(void)
+bool LocomotionClass::Is_Powered(void)
 {
 	return(IsPowered);
 }
@@ -181,73 +179,9 @@ boolean STDMETHODCALLTYPE LocomotionClass::Is_Powered(void)
 /// this routine so that a storm can bring their objects down.
 /// </summary>
 /// <returns>bool; Is the locomotor sensitive to ion storms?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Is_Ion_Sensitive(void)
+bool LocomotionClass::Is_Ion_Sensitive(void)
 {
 	return(false);
-}
-
-
-/// <summary>
-/// Adds a reference to this locomotor.
-/// Anything that holds on to a locomotor takes a reference first, which keeps the
-/// locomotor alive until that holder releases it again.
-/// </summary>
-/// <returns>Returns with the number of references now outstanding.</returns>
-ULONG STDMETHODCALLTYPE LocomotionClass::AddRef(void)
-{
-	++COMRefCount;
-	return(InterlockedIncrement(&RefCount));
-}
-
-
-/// <summary>
-/// Releases a reference to this locomotor.
-/// When the last reference goes away the locomotor destroys itself, so the caller must
-/// not touch its pointer afterward.
-/// </summary>
-/// <returns>Returns with the number of references still outstanding.</returns>
-ULONG STDMETHODCALLTYPE LocomotionClass::Release(void)
-{
-	--COMRefCount;
-
-	ULONG count = InterlockedDecrement(&RefCount);
-	if (count == 0) {
-		delete this;
-	}
-	return(count);
-}
-
-
-/// <summary>
-/// Fetches one of the interfaces this locomotor implements.
-/// A locomotor answers to IUnknown and ILocomotion. Any other interface asked for is
-/// refused.
-/// </summary>
-/// <param name="riid">The identifier of the interface being asked for.</param>
-/// <param name="ppvObject">Pointer to the location to store the interface pointer in.</param>
-/// <returns>Returns with S_OK, or E_NOINTERFACE if the interface is not supported.</returns>
-/// <remarks>An interface fetched successfully carries a reference. The caller must release
-/// it when finished with it.</remarks>
-LONG STDMETHODCALLTYPE LocomotionClass::QueryInterface(REFIID riid, LPVOID *ppvObject)
-{
-	if (ppvObject == NULL) {
-		return(E_POINTER);
-	}
-
-	*ppvObject = NULL;
-
-	if (riid == IID_IUnknown) {
-		*ppvObject = (IUnknown *)(ILocomotion *)this;
-	}
-	if (riid == IID_ILocomotion) {
-		*ppvObject = (ILocomotion *)this;
-	}
-	if (*ppvObject == NULL) {
-		return(E_NOINTERFACE);
-	}
-
-	AddRef();
-	return(S_OK);
 }
 
 
@@ -352,8 +286,6 @@ void LocomotionClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LinkedTo);
 	stream.Serialize(IsPowered);
 	stream.Serialize(Dirty);
-
-	// RefCount -- belongs to the running session rather than the record.
 }
 
 
@@ -372,7 +304,7 @@ void LocomotionClass::Post_Load(void)
 /// occupying. The base locomotor cannot be moved and declines.
 /// </summary>
 /// <returns>bool; Did the object step out of the way?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Push(DirType dir)
+bool LocomotionClass::Push(DirType dir)
 {
 	return(false);
 }
@@ -384,7 +316,7 @@ boolean STDMETHODCALLTYPE LocomotionClass::Push(DirType dir)
 /// displaced to clear the way. The base locomotor will not budge.
 /// </summary>
 /// <returns>bool; Was the object shoved out of the way?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Shove(DirType dir)
+bool LocomotionClass::Shove(DirType dir)
 {
 	return(false);
 }
@@ -395,7 +327,7 @@ boolean STDMETHODCALLTYPE LocomotionClass::Shove(DirType dir)
 /// Locomotors that rock their object about -- over bumps, on landing, or when it takes a
 /// hit -- use this routine to ease the body back toward level.
 /// </summary>
-void STDMETHODCALLTYPE LocomotionClass::Tilt_Pitch_AI(void)
+void LocomotionClass::Tilt_Pitch_AI(void)
 {
 }
 
@@ -406,7 +338,7 @@ void STDMETHODCALLTYPE LocomotionClass::Tilt_Pitch_AI(void)
 /// against the terrain it is traveling over. The base locomotor needs no such favor.
 /// </summary>
 /// <returns>Returns with the depth adjustment to apply when drawing the object.</returns>
-int STDMETHODCALLTYPE LocomotionClass::Z_Adjust(void)
+int LocomotionClass::Z_Adjust(void)
 {
 	return(0);
 }
@@ -418,7 +350,7 @@ int STDMETHODCALLTYPE LocomotionClass::Z_Adjust(void)
 /// shape. The base locomotor reports the upright case.
 /// </summary>
 /// <returns>Returns with the Z gradient to render the object with.</returns>
-ZGradientType STDMETHODCALLTYPE LocomotionClass::Z_Gradient(void)
+ZGradientType LocomotionClass::Z_Gradient(void)
 {
 	return(ZGRAD_90DEG);
 }
@@ -430,7 +362,7 @@ ZGradientType STDMETHODCALLTYPE LocomotionClass::Z_Gradient(void)
 /// otherwise leaves plain sight. The base locomotor never alters the appearance.
 /// </summary>
 /// <returns>Returns with the visual character to render the object with.</returns>
-VisualType STDMETHODCALLTYPE LocomotionClass::Visual_Character(boolean flag)
+VisualType LocomotionClass::Visual_Character(bool flag)
 {
 	return(VISUAL_NORMAL);
 }
@@ -442,7 +374,7 @@ VisualType STDMETHODCALLTYPE LocomotionClass::Visual_Character(boolean flag)
 /// locomotor makes its object bob, hop, or sink. The base locomotor draws in place.
 /// </summary>
 /// <returns>Returns with the pixel offset to shift the object by when drawing.</returns>
-Point2D STDMETHODCALLTYPE LocomotionClass::Draw_Point(void)
+Point2D LocomotionClass::Draw_Point(void)
 {
 	Point2D pt;
 	pt.X = 0;
@@ -457,7 +389,7 @@ Point2D STDMETHODCALLTYPE LocomotionClass::Draw_Point(void)
 /// otherwise hidden -- will override this routine to suppress the shadow.
 /// </summary>
 /// <returns>bool; Should a shadow be drawn for the object?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Is_To_Have_Shadow(void)
+bool LocomotionClass::Is_To_Have_Shadow(void)
 {
 	return(true);
 }
@@ -470,7 +402,7 @@ boolean STDMETHODCALLTYPE LocomotionClass::Is_To_Have_Shadow(void)
 /// unrestricted and welcomes every cell.
 /// </summary>
 /// <returns>Returns with the move legality of the cell.</returns>
-MoveType STDMETHODCALLTYPE LocomotionClass::Can_Enter_Cell(Cell cell)
+MoveType LocomotionClass::Can_Enter_Cell(Cell cell)
 {
 	return(MOVE_OK);
 }
@@ -482,7 +414,7 @@ MoveType STDMETHODCALLTYPE LocomotionClass::Can_Enter_Cell(Cell cell)
 /// outside code must dictate exactly where the object ends up next.
 /// </summary>
 /// <param name="coord">The coordinate the object should head to immediately.</param>
-void STDMETHODCALLTYPE LocomotionClass::Force_Immediate_Destination(Coord coord)
+void LocomotionClass::Force_Immediate_Destination(Coord coord)
 {
 }
 
@@ -494,7 +426,7 @@ void STDMETHODCALLTYPE LocomotionClass::Force_Immediate_Destination(Coord coord)
 /// </summary>
 /// <param name="track">The track number the object should be placed onto.</param>
 /// <param name="coord">The coordinate to treat as the start of the track.</param>
-void STDMETHODCALLTYPE LocomotionClass::Force_Track(int track, Coord coord)
+void LocomotionClass::Force_Track(int track, Coord coord)
 {
 }
 
@@ -504,7 +436,7 @@ void STDMETHODCALLTYPE LocomotionClass::Force_Track(int track, Coord coord)
 /// This gives derived locomotors their chance to pick up a starting facing, slope, or
 /// altitude from the ground the object has just arrived on.
 /// </summary>
-void STDMETHODCALLTYPE LocomotionClass::Unlimbo(void)
+void LocomotionClass::Unlimbo(void)
 {
 }
 
@@ -514,7 +446,7 @@ void STDMETHODCALLTYPE LocomotionClass::Unlimbo(void)
 /// The base locomotor has no body of its own to rotate, so the request goes unheeded.
 /// </summary>
 /// <param name="coord">The direction that the object should come to face.</param>
-void STDMETHODCALLTYPE LocomotionClass::Do_Turn(DirType coord)
+void LocomotionClass::Do_Turn(DirType coord)
 {
 }
 
@@ -524,7 +456,7 @@ void STDMETHODCALLTYPE LocomotionClass::Do_Turn(DirType coord)
 /// This routine is called when the object must give up on wherever it was going. Derived
 /// locomotors use it to abandon their journey and bring the object to a legal rest.
 /// </summary>
-void STDMETHODCALLTYPE LocomotionClass::Stop_Moving(void)
+void LocomotionClass::Stop_Moving(void)
 {
 }
 
@@ -534,7 +466,7 @@ void STDMETHODCALLTYPE LocomotionClass::Stop_Moving(void)
 /// This is how the object hands its locomotor a new place to go. The base locomotor
 /// cannot move anything, so the request is quietly ignored.
 /// </summary>
-void STDMETHODCALLTYPE LocomotionClass::Move_To(Coord to)
+void LocomotionClass::Move_To(Coord to)
 {
 }
 
@@ -546,7 +478,7 @@ void STDMETHODCALLTYPE LocomotionClass::Move_To(Coord to)
 /// is already at rest.
 /// </summary>
 /// <returns>bool; Is the locomotor at rest, with nothing further to do?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Process(void)
+bool LocomotionClass::Process(void)
 {
 	return(true);
 }
@@ -558,7 +490,7 @@ boolean STDMETHODCALLTYPE LocomotionClass::Process(void)
 /// destination at all.
 /// </summary>
 /// <returns>Returns with the destination coordinate, or COORD_NONE if there is none.</returns>
-Coord STDMETHODCALLTYPE LocomotionClass::Destination(void)
+Coord LocomotionClass::Destination(void)
 {
 	Coord coord;
 	coord.X = COORD_NONE.X;
@@ -574,7 +506,7 @@ Coord STDMETHODCALLTYPE LocomotionClass::Destination(void)
 /// has nowhere to go, it reports the object's own position.
 /// </summary>
 /// <returns>Returns with the coordinate currently being moved toward.</returns>
-Coord STDMETHODCALLTYPE LocomotionClass::Head_To_Coord(void)
+Coord LocomotionClass::Head_To_Coord(void)
 {
 	return(LinkedTo->PositionCoord);
 }
@@ -586,7 +518,7 @@ Coord STDMETHODCALLTYPE LocomotionClass::Head_To_Coord(void)
 /// The base locomotor never carries its object anywhere, so it always answers no.
 /// </summary>
 /// <returns>bool; Is the object moving?</returns>
-boolean STDMETHODCALLTYPE LocomotionClass::Is_Moving(void)
+bool LocomotionClass::Is_Moving(void)
 {
 	return(false);
 }
@@ -598,7 +530,7 @@ boolean STDMETHODCALLTYPE LocomotionClass::Is_Moving(void)
 /// Only locomotors that tilt their object with the ground need to act on it.
 /// </summary>
 /// <param name="ramp">The ramp type of the slope the object should now conform to.</param>
-void STDMETHODCALLTYPE LocomotionClass::Force_New_Slope(int ramp)
+void LocomotionClass::Force_New_Slope(int ramp)
 {
 }
 
@@ -609,7 +541,7 @@ void STDMETHODCALLTYPE LocomotionClass::Force_New_Slope(int ramp)
 /// currently traveling. The base locomotor has no preference.
 /// </summary>
 /// <returns>Returns with the drawing code, or zero for the ordinary presentation.</returns>
-int STDMETHODCALLTYPE LocomotionClass::Drawing_Code(void)
+int LocomotionClass::Drawing_Code(void)
 {
 	return(0);
 }
@@ -621,7 +553,7 @@ int STDMETHODCALLTYPE LocomotionClass::Drawing_Code(void)
 /// will override this routine. The base locomotor never stands in the way.
 /// </summary>
 /// <returns>Returns with the reason firing is disallowed, or FIRE_OK if it is permitted.</returns>
-FireErrorType STDMETHODCALLTYPE LocomotionClass::Can_Fire(void)
+FireErrorType LocomotionClass::Can_Fire(void)
 {
 	return(FIRE_OK);
 }
@@ -633,14 +565,7 @@ FireErrorType STDMETHODCALLTYPE LocomotionClass::Can_Fire(void)
 /// visible motion differs from the object's logical speed will override this routine.
 /// </summary>
 /// <returns>Returns with the apparent speed of the linked object.</returns>
-int STDMETHODCALLTYPE LocomotionClass::Apparent_Speed(void)
+int LocomotionClass::Apparent_Speed(void)
 {
 	return(LinkedTo->Current_Speed());
 }
-
-
-/// Unlike the other interface identifiers, this one is defined in the locomotion module.
-#define INITGUID
-#undef DEFINE_GUID
-#include <basetyps.h>
-#include "iloco_i.c"

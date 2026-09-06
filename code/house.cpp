@@ -6637,7 +6637,7 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE HouseClass::GetClassID(CLSID * retval)
+HRESULT HouseClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_HouseClass;
@@ -9210,30 +9210,6 @@ void HouseClass::AI_Drop_Pods(SuperClass * super)
 			Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 		}
 	}
-}
-
-
-/// <summary>
-/// Adds a reference to this house.
-/// Houses are permanent heap objects rather than reference counted ones, so this routine
-/// exists only to satisfy the IUnknown contract.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE HouseClass::AddRef(void)
-{
-	return(1);
-}
-
-
-/// <summary>
-/// Releases a reference to this house.
-/// Houses are permanent heap objects rather than reference counted ones, so this routine
-/// exists only to satisfy the IUnknown contract. It never destroys the house.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE HouseClass::Release(void)
-{
-	return(1);
 }
 
 

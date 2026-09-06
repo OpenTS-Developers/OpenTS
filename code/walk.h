@@ -31,12 +31,10 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 		WalkLocomotionClass(void);
 		virtual ~WalkLocomotionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override {return(BASECLASS::AddRef());}
-		virtual ULONG STDMETHODCALLTYPE Release(void) override {return(BASECLASS::Release());}
 
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
@@ -44,20 +42,20 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual HRESULT Piggyback_CLSID(GUID * classid) override;
 		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
 
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual Coord STDMETHODCALLTYPE Head_To_Coord(void) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual void STDMETHODCALLTYPE Move_To(Coord to) override;
-		virtual void STDMETHODCALLTYPE Stop_Moving(void) override;
-		virtual void STDMETHODCALLTYPE Do_Turn(DirType dir) override;
-		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
-		virtual void STDMETHODCALLTYPE Force_Immediate_Destination(Coord coord) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Now(void) override;
-		virtual void STDMETHODCALLTYPE Mark_All_Occupation_Bits(int mark) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Here(Coord to) override;
-		virtual boolean STDMETHODCALLTYPE Is_Really_Moving_Now(void) override;
-		virtual void STDMETHODCALLTYPE Stop_Movement_Animation(void) override {IsReallyMoving = false;};
+		virtual bool Is_Moving(void) override;
+		virtual Coord Destination(void) override;
+		virtual Coord Head_To_Coord(void) override;
+		virtual bool Process(void) override;
+		virtual void Move_To(Coord to) override;
+		virtual void Stop_Moving(void) override;
+		virtual void Do_Turn(DirType dir) override;
+		virtual LayerType In_Which_Layer(void) override;
+		virtual void Force_Immediate_Destination(Coord coord) override;
+		virtual bool Is_Moving_Now(void) override;
+		virtual void Mark_All_Occupation_Bits(int mark) override;
+		virtual bool Is_Moving_Here(Coord to) override;
+		virtual bool Is_Really_Moving_Now(void) override;
+		virtual void Stop_Movement_Animation(void) override {IsReallyMoving = false;};
 
 		void Movement_AI(bool first_pass);
 		bool Mark_Head_To(Coord const & coord);

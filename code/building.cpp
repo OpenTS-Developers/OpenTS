@@ -5991,7 +5991,7 @@ int BuildingClass::Do_MISSION_MISSILE(void)
 							Status = DONE;
 							return(1);
 						} else {
-							bullet->Release();
+							delete bullet;
 							Begin_Mode(BSTATE_IDLE);	// keep the door closed.
 							Assign_Mission(MISSION_GUARD);
 							return(4 * TICKS_PER_SECOND);
@@ -10351,7 +10351,7 @@ void BuildingClass::Discharge_Turret(void)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE BuildingClass::GetClassID(CLSID * retval)
+HRESULT BuildingClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_BuildingClass;

@@ -36,7 +36,7 @@ TeleportLocomotionClass::TeleportLocomotionClass(void) :
 /// The object counts as moving from the moment a destination is handed to this
 /// locomotor until the jump has actually been made.
 /// </summary>
-boolean STDMETHODCALLTYPE TeleportLocomotionClass::Is_Moving(void)
+bool TeleportLocomotionClass::Is_Moving(void)
 {
 	if (DestinationCoord != COORD_NONE) {
 		return(true);
@@ -50,7 +50,7 @@ boolean STDMETHODCALLTYPE TeleportLocomotionClass::Is_Moving(void)
 /// This is the plain opposite of Is_Moving. An object with a teleport ordered counts as
 /// being on the move even though it has not gone anywhere yet.
 /// </summary>
-boolean TeleportLocomotionClass::Is_Stationary(void)
+bool TeleportLocomotionClass::Is_Stationary(void)
 {
 	if (Is_Moving() == false) {
 		return(true);
@@ -64,7 +64,7 @@ boolean TeleportLocomotionClass::Is_Stationary(void)
 /// </summary>
 /// <returns>Returns with the pending teleport destination, or with the object's current
 /// position if no teleport has been ordered.</returns>
-Coord STDMETHODCALLTYPE TeleportLocomotionClass::Destination(void)
+Coord TeleportLocomotionClass::Destination(void)
 {
 	if (Is_Moving()) {
 		return(DestinationCoord);
@@ -78,7 +78,7 @@ Coord STDMETHODCALLTYPE TeleportLocomotionClass::Destination(void)
 /// The jump is not made here. It happens the next time this locomotor is processed.
 /// </summary>
 /// <param name="to">The coordinate to teleport the object to.</param>
-void STDMETHODCALLTYPE TeleportLocomotionClass::Move_To(Coord to)
+void TeleportLocomotionClass::Move_To(Coord to)
 {
 	DestinationCoord = to;
 }
@@ -89,7 +89,7 @@ void STDMETHODCALLTYPE TeleportLocomotionClass::Move_To(Coord to)
 /// The pending destination is forgotten, so the object stays where it is rather than
 /// making the jump.
 /// </summary>
-void STDMETHODCALLTYPE TeleportLocomotionClass::Stop_Moving(void)
+void TeleportLocomotionClass::Stop_Moving(void)
 {
 	DestinationCoord = COORD_NONE;
 }
@@ -102,7 +102,7 @@ void STDMETHODCALLTYPE TeleportLocomotionClass::Stop_Moving(void)
 /// it now stands. The whole journey is over by the time this routine returns.
 /// </summary>
 /// <returns>bool; Is there more movement still to process? A teleport never leaves any.</returns>
-boolean STDMETHODCALLTYPE TeleportLocomotionClass::Process(void)
+bool TeleportLocomotionClass::Process(void)
 {
 	if (Is_Moving()) {
 		LinkedTo->Mark(MARK_UP);
@@ -112,7 +112,7 @@ boolean STDMETHODCALLTYPE TeleportLocomotionClass::Process(void)
 		LinkedTo->Per_Cell_Process(PCP_END);
 		LinkedTo->Look();
 	}
-	return(VARIANT_FALSE);
+	return(false);
 }
 
 
@@ -123,7 +123,7 @@ boolean STDMETHODCALLTYPE TeleportLocomotionClass::Process(void)
 /// </summary>
 /// <param name="retval">Pointer to the class identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TeleportLocomotionClass::GetClassID(CLSID * retval)
+HRESULT TeleportLocomotionClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_TeleportLocomotion;
@@ -149,7 +149,7 @@ void TeleportLocomotionClass::Serialize(SaveStreamClass & stream)
 /// the way to its destination, so it never rises out of the ground layer.
 /// </summary>
 /// <returns>Returns with the layer the object should be rendered in.</returns>
-LayerType STDMETHODCALLTYPE TeleportLocomotionClass::In_Which_Layer(void)
+LayerType TeleportLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_GROUND);
 }

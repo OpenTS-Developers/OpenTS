@@ -60,36 +60,34 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		DriveLocomotionClass(void);
 		virtual ~DriveLocomotionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual Coord STDMETHODCALLTYPE Head_To_Coord(void) override;
-		virtual Matrix3D STDMETHODCALLTYPE Draw_Matrix(int *key) override;
-		virtual int STDMETHODCALLTYPE Z_Adjust(void) override;
-		virtual ZGradientType STDMETHODCALLTYPE Z_Gradient(void) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual void STDMETHODCALLTYPE Move_To(Coord to) override;
-		virtual void STDMETHODCALLTYPE Stop_Moving(void) override;
-		virtual void STDMETHODCALLTYPE Do_Turn(DirType coord) override;
-		virtual void STDMETHODCALLTYPE Unlimbo(void) override;
-		virtual void STDMETHODCALLTYPE Force_Track(int track, Coord coord) override;
-		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
-		virtual void STDMETHODCALLTYPE Force_New_Slope(int ramp) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Now(void) override;
-		virtual void STDMETHODCALLTYPE Mark_All_Occupation_Bits(int mark) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Here(Coord to) override;
-		virtual boolean STDMETHODCALLTYPE Will_Jump_Tracks(void) override;
-		virtual void STDMETHODCALLTYPE Lock(void) override;
-		virtual void STDMETHODCALLTYPE Unlock(void) override;
-		virtual int STDMETHODCALLTYPE Get_Track_Number(void) override;
-		virtual int STDMETHODCALLTYPE Get_Track_Index(void) override;
-		virtual int STDMETHODCALLTYPE Get_Speed_Accum(void) override;
+		virtual bool Is_Moving(void) override;
+		virtual Coord Destination(void) override;
+		virtual Coord Head_To_Coord(void) override;
+		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual int Z_Adjust(void) override;
+		virtual ZGradientType Z_Gradient(void) override;
+		virtual bool Process(void) override;
+		virtual void Move_To(Coord to) override;
+		virtual void Stop_Moving(void) override;
+		virtual void Do_Turn(DirType coord) override;
+		virtual void Unlimbo(void) override;
+		virtual void Force_Track(int track, Coord coord) override;
+		virtual LayerType In_Which_Layer(void) override;
+		virtual void Force_New_Slope(int ramp) override;
+		virtual bool Is_Moving_Now(void) override;
+		virtual void Mark_All_Occupation_Bits(int mark) override;
+		virtual bool Is_Moving_Here(Coord to) override;
+		virtual bool Will_Jump_Tracks(void) override;
+		virtual void Lock(void) override;
+		virtual void Unlock(void) override;
+		virtual int Get_Track_Number(void) override;
+		virtual int Get_Track_Index(void) override;
+		virtual int Get_Speed_Accum(void) override;
 
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;

@@ -53,7 +53,7 @@ TunnelLocomotionClass::TunnelLocomotionClass(void) :
 /// Reports whether the unit is anywhere in the dig cycle (State != STATE_IDLE).
 /// </summary>
 /// <returns>True while dig-moving.</returns>
-boolean STDMETHODCALLTYPE TunnelLocomotionClass::Is_Moving(void)
+bool TunnelLocomotionClass::Is_Moving(void)
 {
 	if (State != STATE_IDLE) {
 		return(true);
@@ -67,7 +67,7 @@ boolean STDMETHODCALLTYPE TunnelLocomotionClass::Is_Moving(void)
 /// (not STATE_IDLE and not STATE_TURNING).
 /// </summary>
 /// <returns>True while actively moving.</returns>
-boolean STDMETHODCALLTYPE TunnelLocomotionClass::Is_Moving_Now(void)
+bool TunnelLocomotionClass::Is_Moving_Now(void)
 {
 	if (Is_Moving() && State != STATE_TURNING) {
 		return(true);
@@ -80,7 +80,7 @@ boolean STDMETHODCALLTYPE TunnelLocomotionClass::Is_Moving_Now(void)
 /// Returns the burrow destination while moving, or the current position when idle.
 /// </summary>
 /// <returns>The destination coordinate.</returns>
-Coord STDMETHODCALLTYPE TunnelLocomotionClass::Destination(void)
+Coord TunnelLocomotionClass::Destination(void)
 {
 	if (Is_Moving()) {
 		return(DestinationCoord);
@@ -96,7 +96,7 @@ Coord STDMETHODCALLTYPE TunnelLocomotionClass::Destination(void)
 /// ignores the order altogether.
 /// </summary>
 /// <param name="to">The location to travel to.</param>
-void STDMETHODCALLTYPE TunnelLocomotionClass::Move_To(Coord to)
+void TunnelLocomotionClass::Move_To(Coord to)
 {
 	if (LinkedTo->StunDuration <= 0) {
 		Coord coord = to;
@@ -121,7 +121,7 @@ void STDMETHODCALLTYPE TunnelLocomotionClass::Move_To(Coord to)
 /// already traveling underground must make for the nearest ground it can surface on. If
 /// there is no such ground to be had, it stays buried for good.
 /// </summary>
-void STDMETHODCALLTYPE TunnelLocomotionClass::Stop_Moving(void)
+void TunnelLocomotionClass::Stop_Moving(void)
 {
 	switch (State) {
 		case STATE_ABORTING:
@@ -180,7 +180,7 @@ void STDMETHODCALLTYPE TunnelLocomotionClass::Stop_Moving(void)
 /// the ground and underground layers.
 /// </summary>
 /// <returns>bool; Is the unit still working through its dig cycle?</returns>
-boolean STDMETHODCALLTYPE TunnelLocomotionClass::Process(void)
+bool TunnelLocomotionClass::Process(void)
 {
 	if (Is_Moving()) {
 		int agl = LinkedTo->HeightAGL;
@@ -256,7 +256,7 @@ boolean STDMETHODCALLTYPE TunnelLocomotionClass::Process(void)
 /// </summary>
 /// <param name="flag">Should the buried unit be hidden outright rather than rippled?</param>
 /// <returns>Returns with the visual treatment to draw the unit with.</returns>
-VisualType STDMETHODCALLTYPE TunnelLocomotionClass::Visual_Character(boolean flag)
+VisualType TunnelLocomotionClass::Visual_Character(bool flag)
 {
 	if (State == STATE_TUNNELING) {
 		if (flag) {
@@ -457,7 +457,7 @@ void TunnelLocomotionClass::Process_Emerging(void)
 /// </summary>
 /// <param name="key">The shape cache key to fold this pose into. May be NULL.</param>
 /// <returns>Returns with the matrix to draw the unit with.</returns>
-Matrix3D STDMETHODCALLTYPE TunnelLocomotionClass::Draw_Matrix(int * key)
+Matrix3D TunnelLocomotionClass::Draw_Matrix(int * key)
 {
 	if (State == STATE_IDLE) {
 		int ramp = Map[(Coord const &)(LinkedTo->PositionCoord)].Ramp;
@@ -528,7 +528,7 @@ Matrix3D STDMETHODCALLTYPE TunnelLocomotionClass::Draw_Matrix(int * key)
 /// derived from the terrain-height delta and the rotation progress.
 /// </summary>
 /// <returns>The Z pixel adjustment.</returns>
-int STDMETHODCALLTYPE TunnelLocomotionClass::Z_Adjust(void)
+int TunnelLocomotionClass::Z_Adjust(void)
 {
 	static int tunnel_Z_Adjust[] = {45, 45};
 
@@ -583,7 +583,7 @@ int STDMETHODCALLTYPE TunnelLocomotionClass::Z_Adjust(void)
 /// be shaded down its length rather than across the flat, as the base locomotor would.
 /// </summary>
 /// <returns>Returns with the Z gradient to draw the unit with.</returns>
-ZGradientType STDMETHODCALLTYPE TunnelLocomotionClass::Z_Gradient(void)
+ZGradientType TunnelLocomotionClass::Z_Gradient(void)
 {
 	if (State == STATE_DESCENDING || State == STATE_DIGGING_IN || State == STATE_ABORTING || State == STATE_EMERGING || State == STATE_ASCENDING) {
 		return(ZGRAD_90DEG);
@@ -597,7 +597,7 @@ ZGradientType STDMETHODCALLTYPE TunnelLocomotionClass::Z_Gradient(void)
 /// dig-in, emerging, aborting), false once it is pitched down or underground.
 /// </summary>
 /// <returns>True if it casts a shadow.</returns>
-boolean STDMETHODCALLTYPE TunnelLocomotionClass::Is_To_Have_Shadow(void)
+bool TunnelLocomotionClass::Is_To_Have_Shadow(void)
 {
 	if (State == STATE_IDLE || State == STATE_TURNING || State == STATE_ABORTING || State == STATE_DIGGING_IN || State == STATE_EMERGING) {
 		return(true);
@@ -612,7 +612,7 @@ boolean STDMETHODCALLTYPE TunnelLocomotionClass::Is_To_Have_Shadow(void)
 /// </summary>
 /// <param name="cell">Cell to test.</param>
 /// <returns>MOVE_OK or MOVE_NO.</returns>
-MoveType STDMETHODCALLTYPE TunnelLocomotionClass::Can_Enter_Cell(Cell cell)
+MoveType TunnelLocomotionClass::Can_Enter_Cell(Cell cell)
 {
 	if (!Debug_Map && !Map[cell].Can_Burrow_Here()) {
 		return(MOVE_NO);
@@ -625,7 +625,7 @@ MoveType STDMETHODCALLTYPE TunnelLocomotionClass::Can_Enter_Cell(Cell cell)
 /// Sets the unit's desired facing (used while turning to face the dig destination).
 /// </summary>
 /// <param name="coord">Desired facing.</param>
-void STDMETHODCALLTYPE TunnelLocomotionClass::Do_Turn(DirType coord)
+void TunnelLocomotionClass::Do_Turn(DirType coord)
 {
 	DirType dir = coord;
 	LinkedTo->PrimaryFacing.Set_Desired(dir);
@@ -634,12 +634,12 @@ void STDMETHODCALLTYPE TunnelLocomotionClass::Do_Turn(DirType coord)
 
 /// <summary>
 /// Fetches the class identifier for this locomotor.
-/// This routine is part of the COM persistence support. The save system records the
-/// identifier so that the right locomotor can be created again when the game is loaded.
+/// The save system records the identifier so that the right locomotor can be created
+/// again when the game is loaded.
 /// </summary>
 /// <param name="retval">The location to store the class identifier in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TunnelLocomotionClass::GetClassID(CLSID * retval)
+HRESULT TunnelLocomotionClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_TunnelLocomotion;
@@ -666,7 +666,7 @@ void TunnelLocomotionClass::Serialize(SaveStreamClass & stream)
 /// Returns the render layer: underground while travelling (STATE_TUNNELING), ground otherwise.
 /// </summary>
 /// <returns>The render layer.</returns>
-LayerType STDMETHODCALLTYPE TunnelLocomotionClass::In_Which_Layer(void)
+LayerType TunnelLocomotionClass::In_Which_Layer(void)
 {
 	if (State != STATE_TUNNELING) {
 		return(LAYER_GROUND);
@@ -681,7 +681,7 @@ LayerType STDMETHODCALLTYPE TunnelLocomotionClass::In_Which_Layer(void)
 /// subterranean unit has no shot while it is lining up, digging, or under the ground.
 /// </summary>
 /// <returns>Returns with the fire error, or FIRE_OK if the unit is free to shoot.</returns>
-FireErrorType STDMETHODCALLTYPE TunnelLocomotionClass::Can_Fire(void)
+FireErrorType TunnelLocomotionClass::Can_Fire(void)
 {
 	FireErrorType fire = BASECLASS::Can_Fire();
 
@@ -697,7 +697,7 @@ FireErrorType STDMETHODCALLTYPE TunnelLocomotionClass::Can_Fire(void)
 /// Reports whether the unit is in the act of surfacing (ascending or emerging).
 /// </summary>
 /// <returns>True while surfacing.</returns>
-boolean STDMETHODCALLTYPE TunnelLocomotionClass::Is_Surfacing(void)
+bool TunnelLocomotionClass::Is_Surfacing(void)
 {
 	return(State == STATE_ASCENDING || State == STATE_EMERGING);
 }

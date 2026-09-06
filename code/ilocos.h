@@ -13,7 +13,6 @@
 
 /// Names and comments from TLBs
 
-EXTERN_C const IID LIBID_LocomotionLibrary;
 
 EXTERN_C const CLSID CLSID_DriveLocomotion;
 EXTERN_C const CLSID CLSID_HoverLocomotion;

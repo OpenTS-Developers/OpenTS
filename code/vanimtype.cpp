@@ -254,7 +254,7 @@ void VoxelAnimTypeClass::Compute_CRC(CRCEngine & crc) const
 /// </summary>
 /// <param name="retval">Pointer to the class identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE VoxelAnimTypeClass::GetClassID(CLSID * retval)
+HRESULT VoxelAnimTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_VoxelAnimTypeClass;

@@ -66,7 +66,7 @@ HoverLocomotionClass::HoverLocomotionClass(void) :
 /// </summary>
 /// <param name="pointer">Pointer to the object this locomotor will drive.</param>
 /// <returns>Returns with the result of the attach operation.</returns>
-HRESULT STDMETHODCALLTYPE HoverLocomotionClass::Link_To_Object(void *pointer)
+HRESULT HoverLocomotionClass::Link_To_Object(void *pointer)
 {
 	HRESULT res = BASECLASS::Link_To_Object(pointer);
 	FacingClass face(2 * LinkedTo->TClass->ROT);
@@ -141,7 +141,7 @@ void HoverLocomotionClass::Gravity_AI(void)
 /// </summary>
 /// <param name="key">Pointer to the render cache key to update; may be NULL.</param>
 /// <returns>Returns with the matrix to render the object with.</returns>
-Matrix3D STDMETHODCALLTYPE HoverLocomotionClass::Draw_Matrix(int *key)
+Matrix3D HoverLocomotionClass::Draw_Matrix(int *key)
 {
 	if (!Is_Powered()) {
 		int ramp = Map[(Coord const &)(LinkedTo->PositionCoord)].Ramp;
@@ -164,7 +164,7 @@ Matrix3D STDMETHODCALLTYPE HoverLocomotionClass::Draw_Matrix(int *key)
 /// water, and applies the bob and sag of the hover cushion.
 /// </summary>
 /// <returns>bool; Is the object still moving?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Process(void)
+bool HoverLocomotionClass::Process(void)
 {
 	if (Is_Moving() && Is_Moving1()) {
 		Motion_AI();
@@ -288,7 +288,7 @@ boolean STDMETHODCALLTYPE HoverLocomotionClass::Process(void)
 /// Does the object have a move order outstanding?
 /// </summary>
 /// <returns>bool; Is the object either headed somewhere or bound for a destination?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Moving(void)
+bool HoverLocomotionClass::Is_Moving(void)
 {
 	return(DestinationCoord != COORD_NONE || HeadToCoord != COORD_NONE);
 }
@@ -300,7 +300,7 @@ boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Moving(void)
 /// moving, but it is not moving now.
 /// </summary>
 /// <returns>bool; Is the object traveling at this moment?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Moving_Now(void)
+bool HoverLocomotionClass::Is_Moving_Now(void)
 {
 	return(Is_Moving() && Height != 0.0);
 }
@@ -311,7 +311,7 @@ boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Moving_Now(void)
 /// </summary>
 /// <returns>Returns with the destination coordinate, or COORD_NONE if the object has no
 /// move order outstanding.</returns>
-Coord STDMETHODCALLTYPE HoverLocomotionClass::Destination(void)
+Coord HoverLocomotionClass::Destination(void)
 {
 	if (DestinationCoord != COORD_NONE) {
 		return(DestinationCoord);
@@ -325,7 +325,7 @@ Coord STDMETHODCALLTYPE HoverLocomotionClass::Destination(void)
 /// </summary>
 /// <returns>Returns with the intermediate destination, or with the object's current
 /// position if it is not headed anywhere.</returns>
-Coord STDMETHODCALLTYPE HoverLocomotionClass::Head_To_Coord(void)
+Coord HoverLocomotionClass::Head_To_Coord(void)
 {
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
@@ -341,7 +341,7 @@ Coord STDMETHODCALLTYPE HoverLocomotionClass::Head_To_Coord(void)
 /// the drive is started if the object is not already under way.
 /// </summary>
 /// <param name="to">The coordinate to move to.</param>
-void STDMETHODCALLTYPE HoverLocomotionClass::Move_To(Coord to)
+void HoverLocomotionClass::Move_To(Coord to)
 {
 	DestinationCoord = to;
 	if (Is_Powered() && Is_Ion_Sensitive() && IonStormClass::Is_Ion_Storm_Active()) {
@@ -678,7 +678,7 @@ void HoverLocomotionClass::Motion_AI(void)
 /// The object will still coast into the spot it has already reserved, but it will not
 /// carry on toward its former destination once it arrives.
 /// </summary>
-void STDMETHODCALLTYPE HoverLocomotionClass::Stop_Moving(void)
+void HoverLocomotionClass::Stop_Moving(void)
 {
 	if (DestinationCoord != HeadToCoord) {
 		DestinationCoord = COORD_NONE;
@@ -918,7 +918,7 @@ void HoverLocomotionClass::Start_Of_Move(int num)
 /// and slews as it sinks rather than dropping neatly in place.
 /// </summary>
 /// <returns>bool; Was the power turned off?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Power_Off(void)
+bool HoverLocomotionClass::Power_Off(void)
 {
 	if (Is_Powered() && LinkedTo->CurrentMission != MISSION_SLEEP) {
 		Do_Shove();
@@ -937,7 +937,7 @@ boolean STDMETHODCALLTYPE HoverLocomotionClass::Power_Off(void)
 /// way onto the ground, so it is treated as powered for as long as it has height to lose.
 /// </summary>
 /// <returns>bool; Is the object still under power?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Powered(void)
+bool HoverLocomotionClass::Is_Powered(void)
 {
 	if (!BASECLASS::Is_Powered() && LinkedTo->HeightAGL <= 0) {
 		return(false);
@@ -953,7 +953,7 @@ boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Powered(void)
 /// units across the factory doorway.
 /// </summary>
 /// <returns>bool; Should an ion storm cut this object's power?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Ion_Sensitive(void)
+bool HoverLocomotionClass::Is_Ion_Sensitive(void)
 {
 	BuildingClass *bptr;
 	if (LinkedTo->In_Radio_Contact()) {
@@ -997,7 +997,7 @@ boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Ion_Sensitive(void)
 /// </summary>
 /// <param name="dir">The direction to push the object toward.</param>
 /// <returns>bool; Was the object pushed?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Push(DirType dir)
+bool HoverLocomotionClass::Push(DirType dir)
 {
 	if (Is_Powered() && !WasPushed) {
 
@@ -1042,7 +1042,7 @@ boolean STDMETHODCALLTYPE HoverLocomotionClass::Push(DirType dir)
 /// </summary>
 /// <param name="dir">The direction to shove the object toward.</param>
 /// <returns>bool; Was the object shoved?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Shove(DirType dir)
+bool HoverLocomotionClass::Shove(DirType dir)
 {
 	if (Push(dir)) {
 		Do_Shove();
@@ -1074,7 +1074,7 @@ void HoverLocomotionClass::Do_Shove(void)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE HoverLocomotionClass::GetClassID(CLSID * retval)
+HRESULT HoverLocomotionClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_HoverLocomotion;
@@ -1109,7 +1109,7 @@ void HoverLocomotionClass::Serialize(SaveStreamClass & stream)
 /// layer with ordinary vehicles.
 /// </summary>
 /// <returns>Returns with the layer this object belongs in.</returns>
-LayerType STDMETHODCALLTYPE HoverLocomotionClass::In_Which_Layer(void)
+LayerType HoverLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_GROUND);
 }
@@ -1140,7 +1140,7 @@ void HoverLocomotionClass::Start(void)
 /// </summary>
 /// <param name="mark">The marking operation to perform; MARK_UP releases the cell,
 /// anything else reserves it.</param>
-void STDMETHODCALLTYPE HoverLocomotionClass::Mark_All_Occupation_Bits(int mark)
+void HoverLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (mark == MARK_UP) {
 		Coord coord = Head_To_Coord();
@@ -1159,7 +1159,7 @@ void STDMETHODCALLTYPE HoverLocomotionClass::Mark_All_Occupation_Bits(int mark)
 /// </summary>
 /// <param name="to">The coordinate to compare the current destination against.</param>
 /// <returns>bool; Is the object moving to this location?</returns>
-boolean STDMETHODCALLTYPE HoverLocomotionClass::Is_Moving_Here(Coord to)
+bool HoverLocomotionClass::Is_Moving_Here(Coord to)
 {
 	Coord coord = Head_To_Coord();
 

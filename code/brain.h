@@ -24,7 +24,7 @@ class NeuronClass : public AbstractClass
 		NeuronClass(void);
 		virtual ~NeuronClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual RTTIType Fetch_RTTI(void) const override { return(RTTI_NEURON); }
 

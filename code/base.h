@@ -37,7 +37,6 @@
 #include "house.hh"
 #include "struct.hh"
 
-#include <unknwn.h>
 
 
 class CCINIClass;

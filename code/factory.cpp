@@ -638,7 +638,7 @@ bool FactoryClass::Completed(void)
 /// identifier to know what kind of object to create before handing it the stream.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no return location was supplied.</returns>
-HRESULT STDMETHODCALLTYPE FactoryClass::GetClassID(CLSID * retval)
+HRESULT FactoryClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_FactoryClass;

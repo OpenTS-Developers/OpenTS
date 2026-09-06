@@ -103,7 +103,7 @@ SuperWeaponTypeClass::~SuperWeaponTypeClass(void)
 /// read back in.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE SuperWeaponTypeClass::GetClassID(CLSID * retval)
+HRESULT SuperWeaponTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_SuperWeaponTypeClass;

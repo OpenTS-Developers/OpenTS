@@ -49,7 +49,7 @@ class WaypointPathClass : public AbstractClass
 		WaypointPathClass(int index);
 		virtual ~WaypointPathClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

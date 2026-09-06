@@ -15,7 +15,6 @@
 
 #include "isotype.hh"
 
-#include <comdef.h>
 
 class IsometricTileTypeClass;
 
@@ -26,7 +25,7 @@ class IsometricTileClass : public ObjectClass
 		IsometricTileClass(IsometricTileType type, Cell const &cell);
 		virtual ~IsometricTileClass() override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

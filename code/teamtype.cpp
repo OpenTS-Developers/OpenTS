@@ -897,7 +897,7 @@ void TeamTypeClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <returns>Returns with S_OK and the class identifier filled in, or E_POINTER if no
 /// destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TeamTypeClass::GetClassID(CLSID * retval)
+HRESULT TeamTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_TeamTypeClass;

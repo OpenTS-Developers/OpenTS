@@ -360,7 +360,7 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 /// Fetches the class identifier that the save game code stores for this object.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE BulletTypeClass::GetClassID(CLSID * retval)
+HRESULT BulletTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_BulletTypeClass;

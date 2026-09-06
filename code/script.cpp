@@ -158,7 +158,7 @@ bool ScriptClass::Has_Missions_Remaining(void)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE ScriptClass::GetClassID(CLSID * retval)
+HRESULT ScriptClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_ScriptClass;
@@ -375,7 +375,7 @@ ScriptTypeClass * ScriptTypeClass::Find_Or_Make(char const * name)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE ScriptTypeClass::GetClassID(CLSID * retval)
+HRESULT ScriptTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_ScriptTypeClass;

@@ -159,7 +159,7 @@ class OverlayTypeClass: public ObjectTypeClass
 		OverlayTypeClass(char const * ininame = NULL);
 		~OverlayTypeClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

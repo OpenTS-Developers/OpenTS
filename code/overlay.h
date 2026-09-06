@@ -63,7 +63,7 @@ class OverlayClass : public ObjectClass
 		OverlayClass(OverlayTypeClass const * ttype, Cell const & pos = CELL_NONE, HousesType = HOUSE_NONE);
 		virtual ~OverlayClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override {if (retval == NULL) return(E_POINTER);*retval = CLSID_OverlayClass;return(S_OK);}
+		virtual HRESULT GetClassID(CLSID * retval) override {if (retval == NULL) return(E_POINTER);*retval = CLSID_OverlayClass;return(S_OK);}
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

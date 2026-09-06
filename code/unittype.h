@@ -313,7 +313,7 @@ class UnitTypeClass : public TechnoTypeClass
 		UnitTypeClass(char const * ininame = NULL);
 		virtual ~UnitTypeClass() override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

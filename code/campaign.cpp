@@ -133,7 +133,7 @@ void Read_Battle_INI(CCINIClass const & ini)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE CampaignClass::GetClassID(CLSID * retval)
+HRESULT CampaignClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_CampaignClass;

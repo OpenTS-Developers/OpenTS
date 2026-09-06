@@ -55,7 +55,7 @@ DropPodLocomotionClass::~DropPodLocomotionClass(void)
 /// Is the drop pod in motion?
 /// A pod exists only for the duration of its fall, so it always reports movement.
 /// </summary>
-boolean STDMETHODCALLTYPE DropPodLocomotionClass::Is_Moving(void)
+bool DropPodLocomotionClass::Is_Moving(void)
 {
 	return(true);
 }
@@ -66,7 +66,7 @@ boolean STDMETHODCALLTYPE DropPodLocomotionClass::Is_Moving(void)
 /// </summary>
 /// <returns>Returns with the landing coordinate, or COORD_NONE if no destination has
 /// been assigned yet.</returns>
-Coord STDMETHODCALLTYPE DropPodLocomotionClass::Destination(void)
+Coord DropPodLocomotionClass::Destination(void)
 {
 	return(DestinationCoord);
 }
@@ -79,7 +79,7 @@ Coord STDMETHODCALLTYPE DropPodLocomotionClass::Destination(void)
 /// passenger is unlimboed, or destroyed along with its surroundings if there is nowhere
 /// for it to stand.
 /// </summary>
-boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)
+bool DropPodLocomotionClass::Process(void)
 {
 	Coord coord = LinkedTo->PositionCoord;
 	Coord smoke_coord = coord;
@@ -169,7 +169,7 @@ boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)
 /// has a destination ignores any later request.
 /// </summary>
 /// <param name="to">The coordinate the pod should land on.</param>
-void STDMETHODCALLTYPE DropPodLocomotionClass::Move_To(Coord to)
+void DropPodLocomotionClass::Move_To(Coord to)
 {
 	if (DestinationCoord == COORD_NONE) {
 
@@ -223,7 +223,7 @@ void STDMETHODCALLTYPE DropPodLocomotionClass::Move_To(Coord to)
 /// Fetches the class ID that this locomotor is persisted under.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no return pointer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE DropPodLocomotionClass::GetClassID(CLSID * retval)
+HRESULT DropPodLocomotionClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_BallisticLocomotion;
@@ -262,7 +262,7 @@ void DropPodLocomotionClass::Serialize(SaveStreamClass & stream)
 /// Stops the pod's descent.
 /// A pod cannot be halted in mid air, so this request is quietly ignored.
 /// </summary>
-void STDMETHODCALLTYPE DropPodLocomotionClass::Stop_Moving(void)
+void DropPodLocomotionClass::Stop_Moving(void)
 {
 	// empty
 }
@@ -316,7 +316,7 @@ bool DropPodLocomotionClass::Is_Ok_To_End(void)
 /// A pod is always falling, so it draws along with the other airborne objects right up
 /// until it lands and gives its object back.
 /// </summary>
-LayerType STDMETHODCALLTYPE DropPodLocomotionClass::In_Which_Layer(void)
+LayerType DropPodLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_AIR);
 }
@@ -347,7 +347,7 @@ HRESULT DropPodLocomotionClass::Piggyback_CLSID(GUID * classid)
 /// Fetches the drawing code for the drop pod.
 /// The renderer uses this to choose the artwork that suits the pod's approach.
 /// </summary>
-int STDMETHODCALLTYPE DropPodLocomotionClass::Drawing_Code(void)
+int DropPodLocomotionClass::Drawing_Code(void)
 {
 	return((unsigned)Direction % 2);
 }

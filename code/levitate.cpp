@@ -825,7 +825,7 @@ bool LevitateLocomotionClass::Needs_New_Target(void)
 /// the vertical hover (Hover_AI).
 /// </summary>
 /// <returns>True while the unit is still moving.</returns>
-boolean LevitateLocomotionClass::Process(void)
+bool LevitateLocomotionClass::Process(void)
 {
 	State_AI();
 
@@ -846,7 +846,7 @@ boolean LevitateLocomotionClass::Process(void)
 /// Reports whether the locomotor is in any state other than STATE_IDLE.
 /// </summary>
 /// <returns>True while moving.</returns>
-boolean LevitateLocomotionClass::Is_Moving(void)
+bool LevitateLocomotionClass::Is_Moving(void)
 {
 	return(State != STATE_IDLE);
 }
@@ -856,7 +856,7 @@ boolean LevitateLocomotionClass::Is_Moving(void)
 /// Reports whether the locomotor is in any state other than STATE_IDLE (identical to Is_Moving).
 /// </summary>
 /// <returns>True while moving.</returns>
-boolean LevitateLocomotionClass::Is_Moving_Now(void)
+bool LevitateLocomotionClass::Is_Moving_Now(void)
 {
 	return(State != STATE_IDLE);
 }

@@ -48,7 +48,7 @@ class SuperClass : public AbstractClass
 		SuperClass(SuperWeaponTypeClass * type, HouseClass * owner);
 		virtual ~SuperClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

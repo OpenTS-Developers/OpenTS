@@ -102,11 +102,8 @@ class HouseTypeClass : public AbstractTypeClass
 		HouseTypeClass(char const * ininame = NULL);
 		virtual ~HouseTypeClass() override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObject) override;
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

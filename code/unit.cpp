@@ -6658,7 +6658,7 @@ bool UnitClass::Is_Immobilized(void) const
 /// </summary>
 /// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE UnitClass::GetClassID(CLSID * retval)
+HRESULT UnitClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_UnitClass;

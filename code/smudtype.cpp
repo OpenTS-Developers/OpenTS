@@ -343,7 +343,7 @@ void SmudgeTypeClass::Serialize(SaveStreamClass & stream)
 /// is read back out of a save file.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE SmudgeTypeClass::GetClassID(CLSID * retval)
+HRESULT SmudgeTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_SmudgeTypeClass;

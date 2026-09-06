@@ -13,9 +13,10 @@
 
 #include "theme.hh"
 
-#include <unknwn.h>
 
 class SaveStreamClass;
+#include "win.h"
+
 class ShapeSet;
 
 class IonStormClass

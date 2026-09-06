@@ -735,13 +735,11 @@ class HouseClass : public AbstractClass
 		HouseClass(HouseTypeClass const * type = NULL);
 		virtual ~HouseClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 		virtual HRESULT Load(SaveStreamClass & stream) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
 		int Available_Money(void);
 		int Available_Storage(void);

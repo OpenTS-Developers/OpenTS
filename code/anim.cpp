@@ -245,7 +245,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 /// <summary>
 /// Constructs a blank animation object.
 /// This constructor serves the load system, which creates an empty animation through the
-/// class factory and then fills it in from the save game. The animation joins the master
+/// class table and then fills it in from the save game. The animation joins the master
 /// animation list but has no type and is nowhere on the map.
 /// </summary>
 AnimClass::AnimClass(void) :
@@ -1736,7 +1736,7 @@ void AnimClass::Post_Load_Game(void)
 /// </summary>
 /// <param name="retval">Pointer to the location to store the class identifier at.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE AnimClass::GetClassID(CLSID * retval)
+HRESULT AnimClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_AnimClass;

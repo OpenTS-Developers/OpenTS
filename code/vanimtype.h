@@ -32,7 +32,7 @@ class VoxelAnimTypeClass : public ObjectTypeClass
 		VoxelAnimTypeClass(char const * ininame = NULL);
 		~VoxelAnimTypeClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

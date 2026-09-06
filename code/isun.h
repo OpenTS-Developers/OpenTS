@@ -9,9 +9,8 @@
 
 #pragma once
 
-#include <comdef.h>
+#include <guiddef.h>
 
-/// Names and comments from TLBs
 
 #define GAME_VERNAME TEXT("Tiberian Sun")
 

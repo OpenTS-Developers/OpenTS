@@ -34,7 +34,7 @@
 #include "crc.h"
 #include "index.h"
 
-#include <comdef.h>
+#include <guiddef.h>
 #include <cstddef>
 #include <cstdlib>
 #include <functional>

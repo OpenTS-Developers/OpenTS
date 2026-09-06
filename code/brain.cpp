@@ -55,7 +55,7 @@ NeuronClass::~NeuronClass(void)
 /// </summary>
 /// <param name="retval">Pointer to the place to store the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE NeuronClass::GetClassID(CLSID * retval)
+HRESULT NeuronClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_NeuronClass;

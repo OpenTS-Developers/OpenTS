@@ -55,7 +55,7 @@ class TriggerTypeClass : public AbstractTypeClass
 
 		static TriggerTypeClass * Find_Or_Make(char const * ininame = NULL);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		/*
 		**	File I/O routines

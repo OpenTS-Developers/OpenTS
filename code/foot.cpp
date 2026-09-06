@@ -3408,7 +3408,7 @@ ZGradientType FootClass::Get_Z_Gradient(void) const
 /// </summary>
 void FootClass::Draw_Voxel_Shadow(VoxelDataStruct const & voxeldata, int layer_index, int key, VoxelIndexClass * cache, Rect const & cliprect, Point2D const & point, Matrix3D const & matrix, bool force_cache) const
 {
-	if (Locomotion != NULL && Locomotion->Is_To_Have_Shadow() == (boolean)true) {
+	if (Locomotion != nullptr && Locomotion->Is_To_Have_Shadow() == (bool)true) {
 		Point2D drawpoint = point;
 		if (Locomotion != NULL) {
 			drawpoint = Point2D(Locomotion->Shadow_Point()) + point;

@@ -325,7 +325,7 @@ void TaskForceClass::Serialize(SaveStreamClass & stream)
 /// be created when the game is loaded back in.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TaskForceClass::GetClassID(CLSID * retval)
+HRESULT TaskForceClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_TaskForceClass;

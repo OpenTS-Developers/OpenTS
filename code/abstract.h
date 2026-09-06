@@ -88,13 +88,6 @@ class AbstractClass : public IPersistent
 		int ID;
 
 		/*
-		 * This is the count of outstanding COM references to this object. Only projectiles
-		 * are genuinely reference counted -- everything else answers 1 to AddRef and to
-		 * Release -- so elsewhere it merely rides along, preserved by hand across a load.
-		 */
-		LONG RefCount;
-
-		/*
 		 * If this object has changed since it was last written out, then this flag will be
 		 * true. Save clears it on request.
 		 */
@@ -106,9 +99,6 @@ class AbstractClass : public IPersistent
 		AbstractClass(void);
 		virtual ~AbstractClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObject) override;
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
 		virtual HRESULT Load(SaveStreamClass & stream) override;
 		virtual HRESULT Save(SaveStreamClass & stream, BOOL cleardirty) override;
@@ -120,7 +110,6 @@ class AbstractClass : public IPersistent
 		AbstractClass & operator = (const AbstractClass & that)
 		{
 			ID = that.ID;
-			RefCount = that.RefCount;
 			Dirty = that.Dirty;
 			return(*this);
 		}

@@ -58,28 +58,28 @@ class FlyLocomotionClass : public LocomotionClass
 		FlyLocomotionClass(void);
 		virtual ~FlyLocomotionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Now(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual void STDMETHODCALLTYPE Move_To(Coord to) override;
-		virtual void STDMETHODCALLTYPE Stop_Moving(void) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual Matrix3D STDMETHODCALLTYPE Draw_Matrix(int *key) override;
-		virtual Point2D STDMETHODCALLTYPE Draw_Point(void) override;
-		virtual Point2D STDMETHODCALLTYPE Shadow_Point(void) override;
-		virtual Matrix3D STDMETHODCALLTYPE Shadow_Matrix(int *key) override;
-		virtual void STDMETHODCALLTYPE Do_Turn(DirType coord) override;
-		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
-		virtual boolean STDMETHODCALLTYPE Power_Off(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Powered(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Ion_Sensitive(void) override;
-		virtual int STDMETHODCALLTYPE Apparent_Speed(void) override;
-		virtual int STDMETHODCALLTYPE Get_Status(void) override;
-		virtual void STDMETHODCALLTYPE Acquire_Hunter_Seeker_Target(void) override;
+		virtual bool Is_Moving(void) override;
+		virtual bool Is_Moving_Now(void) override;
+		virtual Coord Destination(void) override;
+		virtual void Move_To(Coord to) override;
+		virtual void Stop_Moving(void) override;
+		virtual bool Process(void) override;
+		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual Point2D Draw_Point(void) override;
+		virtual Point2D Shadow_Point(void) override;
+		virtual Matrix3D Shadow_Matrix(int *key) override;
+		virtual void Do_Turn(DirType coord) override;
+		virtual LayerType In_Which_Layer(void) override;
+		virtual bool Power_Off(void) override;
+		virtual bool Is_Powered(void) override;
+		virtual bool Is_Ion_Sensitive(void) override;
+		virtual int Apparent_Speed(void) override;
+		virtual int Get_Status(void) override;
+		virtual void Acquire_Hunter_Seeker_Target(void) override;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.

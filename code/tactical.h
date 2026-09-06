@@ -103,7 +103,7 @@ class Tactical : public AbstractClass
 		Tactical(void);
 		virtual ~Tactical(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual RTTIType Fetch_RTTI(void) const override {return(RTTI_TACTICALMAP);}
 

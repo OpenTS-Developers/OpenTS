@@ -29,7 +29,7 @@ class TagClass : public AbstractClass
 		TagClass(TagTypeClass * type=NULL);
 		virtual ~TagClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

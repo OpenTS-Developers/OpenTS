@@ -59,7 +59,7 @@ class SmudgeClass : public ObjectClass
 		SmudgeClass(SmudgeTypeClass const * type, Coord const & pos = COORD_NONE, HousesType = HOUSE_NONE);
 		virtual ~SmudgeClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

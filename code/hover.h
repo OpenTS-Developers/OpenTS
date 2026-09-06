@@ -36,28 +36,28 @@ class HoverLocomotionClass : public LocomotionClass
 		HoverLocomotionClass(void);
 		virtual ~HoverLocomotionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual HRESULT STDMETHODCALLTYPE Link_To_Object(void *pointer) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual Coord STDMETHODCALLTYPE Head_To_Coord(void) override;
-		virtual Matrix3D STDMETHODCALLTYPE Draw_Matrix(int *key) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual void STDMETHODCALLTYPE Move_To(Coord to) override;
-		virtual void STDMETHODCALLTYPE Stop_Moving(void) override;
-		virtual void STDMETHODCALLTYPE Do_Turn(DirType coord) override;
-		virtual boolean STDMETHODCALLTYPE Power_Off(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Powered(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Ion_Sensitive(void) override;
-		virtual boolean STDMETHODCALLTYPE Push(DirType dir) override;
-		virtual boolean STDMETHODCALLTYPE Shove(DirType dir) override;
-		virtual LayerType STDMETHODCALLTYPE In_Which_Layer(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Now(void) override;
-		virtual void STDMETHODCALLTYPE Mark_All_Occupation_Bits(int mark) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Here(Coord to) override;
+		virtual HRESULT Link_To_Object(void *pointer) override;
+		virtual bool Is_Moving(void) override;
+		virtual Coord Destination(void) override;
+		virtual Coord Head_To_Coord(void) override;
+		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual bool Process(void) override;
+		virtual void Move_To(Coord to) override;
+		virtual void Stop_Moving(void) override;
+		virtual void Do_Turn(DirType coord) override;
+		virtual bool Power_Off(void) override;
+		virtual bool Is_Powered(void) override;
+		virtual bool Is_Ion_Sensitive(void) override;
+		virtual bool Push(DirType dir) override;
+		virtual bool Shove(DirType dir) override;
+		virtual LayerType In_Which_Layer(void) override;
+		virtual bool Is_Moving_Now(void) override;
+		virtual void Mark_All_Occupation_Bits(int mark) override;
+		virtual bool Is_Moving_Here(Coord to) override;
 
 	private:
 

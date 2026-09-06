@@ -260,38 +260,12 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 
 
 /// <summary>
-/// Fetches the requested interface from this house type.
-/// House types serve up the persistence and RTTI interfaces that the save game system asks
-/// them for.
-/// </summary>
-/// <returns>Returns with S_OK, or E_NOINTERFACE if the interface is not supported.</returns>
-HRESULT STDMETHODCALLTYPE HouseTypeClass::QueryInterface(REFIID riid, LPVOID * ppvObject)
-{
-	if (ppvObject == NULL) {
-		return(E_POINTER);
-	}
-
-	*ppvObject = NULL;
-
-	if (riid == IID_IUnknown) {
-		*ppvObject = (IUnknown *)(IPersistent *)this;
-	}
-	if (*ppvObject == NULL) {
-		return(E_NOINTERFACE);
-	}
-
-	AddRef();
-	return(S_OK);
-}
-
-
-/// <summary>
 /// Fetches the class identifier of this object.
 /// The save game system stores this identifier so that the object can be recreated as the
 /// correct class when the game is loaded.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no return pointer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE HouseTypeClass::GetClassID(CLSID * retval)
+HRESULT HouseTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_HouseTypeClass;
@@ -329,28 +303,4 @@ RTTIType HouseTypeClass::Fetch_RTTI(void) const
 int HouseTypeClass::Fetch_Heap_ID(void) const
 {
 	return(HeapID);
-}
-
-
-/// <summary>
-/// Adds a reference to this house type.
-/// House types are not reference counted -- they live for the duration of the game, so this
-/// routine exists only to satisfy the IUnknown contract.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE HouseTypeClass::AddRef(void)
-{
-	return(1);
-}
-
-
-/// <summary>
-/// Releases a reference to this house type.
-/// House types are not reference counted -- they live for the duration of the game, so this
-/// routine exists only to satisfy the IUnknown contract.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE HouseTypeClass::Release(void)
-{
-	return(1);
 }

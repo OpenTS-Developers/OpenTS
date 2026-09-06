@@ -499,7 +499,7 @@ int UnitTypeClass::Repair_Step(void) const
 /// Fetches the persistent class identifier for the unit type.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE UnitTypeClass::GetClassID(CLSID * retval)
+HRESULT UnitTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_UnitTypeClass;

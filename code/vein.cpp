@@ -1096,7 +1096,7 @@ void VeinholeMonsterClass::Reduce_Veins_At(CellClass * cellptr)
 /// recreate when the saved game is read back in.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE VeinholeMonsterClass::GetClassID(CLSID * retval)
+HRESULT VeinholeMonsterClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_VeinholeMonsterClass;

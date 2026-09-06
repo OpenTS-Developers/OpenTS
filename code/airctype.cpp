@@ -334,7 +334,7 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if there was nowhere to put the answer.</returns>
-HRESULT STDMETHODCALLTYPE AircraftTypeClass::GetClassID(CLSID * retval)
+HRESULT AircraftTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_AircraftTypeClass;

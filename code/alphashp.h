@@ -34,7 +34,7 @@ class AlphaShapeClass : public AbstractClass
 		AlphaShapeClass(void);
 		~AlphaShapeClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual HRESULT GetClassID(CLSID * retval) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

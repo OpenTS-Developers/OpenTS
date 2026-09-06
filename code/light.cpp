@@ -283,7 +283,7 @@ void LightSourceClass::Compute_CRC(CRCEngine & crc) const
 /// </summary>
 /// <param name="retval">Destination for the class identifier.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE LightSourceClass::GetClassID(CLSID * retval)
+HRESULT LightSourceClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_LightSource;

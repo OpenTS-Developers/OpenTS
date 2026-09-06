@@ -519,7 +519,7 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 /// correct class when the game is loaded.
 /// </summary>
 /// <returns>Returns with S_OK, or E_POINTER if no return pointer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE InfantryTypeClass::GetClassID(CLSID * retval)
+HRESULT InfantryTypeClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_InfantryTypeClass;

@@ -1022,7 +1022,7 @@ bool Save_Game(const char *file_name, char const * descr)
 	info.Set_Game_Type(Session.Type);
 
 	FILETIME FileTime;
-	CoFileTimeNow(&FileTime);
+	GetSystemTimeAsFileTime(&FileTime);
 	info.Set_Last_Time(FileTime);
 	info.Set_Start_Time(FileTime);
 	info.Set_Play_Time(FileTime);

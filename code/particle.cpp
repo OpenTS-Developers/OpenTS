@@ -1000,7 +1000,7 @@ int ParticleClass::Shape_Number(void) const
 /// </summary>
 /// <param name="retval">Pointer to the identifier to fill in.</param>
 /// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE ParticleClass::GetClassID(CLSID * retval)
+HRESULT ParticleClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_ParticleClass;

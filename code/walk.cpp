@@ -64,7 +64,7 @@ WalkLocomotionClass::~WalkLocomotionClass(void)
 /// Is the infantry traveling somewhere?
 /// </summary>
 /// <returns>bool; Does the infantry have somewhere it is trying to get to?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving(void)
+bool WalkLocomotionClass::Is_Moving(void)
 {
 	return(IsMoving);
 }
@@ -76,7 +76,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving(void)
 /// merely under orders to travel but is standing still.
 /// </summary>
 /// <returns>bool; Is the infantry moving right now?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Now(void)
+bool WalkLocomotionClass::Is_Moving_Now(void)
 {
 	if (Is_Moving() && LinkedTo->Speed > 0 && HeadToCoord != COORD_NONE) {
 		return(true);
@@ -90,7 +90,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Now(void)
 /// </summary>
 /// <returns>Returns with the coordinate being traveled to, or COORD_NONE if the infantry has
 /// nowhere it needs to be.</returns>
-Coord STDMETHODCALLTYPE WalkLocomotionClass::Destination(void)
+Coord WalkLocomotionClass::Destination(void)
 {
 	if (Is_Moving()) {
 		return(DestinationCoord);
@@ -104,7 +104,7 @@ Coord STDMETHODCALLTYPE WalkLocomotionClass::Destination(void)
 /// </summary>
 /// <returns>Returns with the immediate destination, or the current position if the infantry
 /// is not part way between spots.</returns>
-Coord STDMETHODCALLTYPE WalkLocomotionClass::Head_To_Coord(void)
+Coord WalkLocomotionClass::Head_To_Coord(void)
 {
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
@@ -119,7 +119,7 @@ Coord STDMETHODCALLTYPE WalkLocomotionClass::Head_To_Coord(void)
 /// infantry along its path.
 /// </summary>
 /// <returns>bool; Is the infantry still traveling somewhere?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Process(void)
+bool WalkLocomotionClass::Process(void)
 {
 	IsProcessingMovement = true;
 	Movement_AI(true);
@@ -135,7 +135,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Process(void)
 /// than beneath it.
 /// </summary>
 /// <param name="to">The coordinate to travel to, or COORD_NONE to clear the destination.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Move_To(Coord to)
+void WalkLocomotionClass::Move_To(Coord to)
 {
 	if (LinkedTo->StunDuration <= 0) {
 		DestinationCoord = to;
@@ -158,7 +158,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Move_To(Coord to)
 /// The step already under way is allowed to finish; it is the ultimate destination
 /// that is forgotten.
 /// </summary>
-void STDMETHODCALLTYPE WalkLocomotionClass::Stop_Moving(void)
+void WalkLocomotionClass::Stop_Moving(void)
 {
 	DestinationCoord = COORD_NONE;
 	if (HeadToCoord == COORD_NONE) {
@@ -172,7 +172,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Stop_Moving(void)
 /// Infantry snap around instantly, so there is no rotation to play out over time.
 /// </summary>
 /// <param name="dir">The direction the infantry should face.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Do_Turn(DirType dir)
+void WalkLocomotionClass::Do_Turn(DirType dir)
 {
 	LinkedTo->PrimaryFacing.Set(dir);
 }
@@ -184,7 +184,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Do_Turn(DirType dir)
 /// redirected without waiting for the current step to finish.
 /// </summary>
 /// <param name="coord">The coordinate to step to, or COORD_NONE to abandon the step.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Force_Immediate_Destination(Coord coord)
+void WalkLocomotionClass::Force_Immediate_Destination(Coord coord)
 {
 	HeadToCoord = coord;
 	if (HeadToCoord == COORD_NONE && DestinationCoord == COORD_NONE) {
@@ -615,7 +615,7 @@ bool WalkLocomotionClass::Mark_Head_To(Coord const & coord)
 /// </summary>
 /// <param name="retval">Pointer to the class ID to fill in.</param>
 /// <returns>Returns with S_OK if the class ID was fetched, otherwise E_POINTER.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::GetClassID(CLSID * retval)
+HRESULT WalkLocomotionClass::GetClassID(CLSID * retval)
 {
 	if (retval == NULL) return(E_POINTER);
 	*retval = CLSID_WalkLocomotion;
@@ -657,7 +657,7 @@ void WalkLocomotionClass::Serialize(SaveStreamClass & stream)
 /// Fetches the display layer that walking objects belong in.
 /// </summary>
 /// <returns>Returns with the layer that objects using this locomotor render into.</returns>
-LayerType STDMETHODCALLTYPE WalkLocomotionClass::In_Which_Layer(void)
+LayerType WalkLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_GROUND);
 }
@@ -733,7 +733,7 @@ HRESULT WalkLocomotionClass::Piggyback_CLSID(GUID * classid)
 /// spot it had claimed becomes available to others again.
 /// </summary>
 /// <param name="mark">The occupancy marking operation being performed.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Mark_All_Occupation_Bits(int mark)
+void WalkLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (mark == MARK_UP) {
 		LinkedTo->Clear_Occupy_Bit(Head_To_Coord());
@@ -748,7 +748,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Mark_All_Occupation_Bits(int mark)
 /// </summary>
 /// <param name="to">The coordinate to test the immediate destination against.</param>
 /// <returns>bool; Is the infantry walking to that spot?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Here(Coord to)
+bool WalkLocomotionClass::Is_Moving_Here(Coord to)
 {
 	Coord headto = Head_To_Coord();
 	if (headto.As_Cell() == Coord(to).As_Cell() && abs(headto.Z - to.Z) <= LEVEL_LEPTON_H) {
@@ -764,7 +764,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Here(Coord to)
 /// merely holds orders to travel but has yet to take a step.
 /// </summary>
 /// <returns>bool; Is the infantry really moving at this moment?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Really_Moving_Now(void)
+bool WalkLocomotionClass::Is_Really_Moving_Now(void)
 {
 	return(IsReallyMoving);
 }
