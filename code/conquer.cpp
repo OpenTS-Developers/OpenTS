@@ -122,6 +122,7 @@
 
 #include "special.hh"
 
+#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <cstdlib>
@@ -1231,12 +1232,6 @@ TechnoTypeClass const * Fetch_Techno_Type(RTTIType type, int id)
 unsigned int Disk_Space_Available(void)
 {
 	ULARGE_INTEGER freebytecount;		// Free bytes on disk available to caller (caller may not have access to entire disk).
-	ULARGE_INTEGER totalbytecount;		// Total bytes on disk.
-	ULARGE_INTEGER totalfreebytecount;
-	unsigned int diskspace;
-
-	/// This pointer is declared as returning bool, where the API it is bound to returns BOOL.
-	bool (__stdcall *getfreediskspaceex) (LPCTSTR, PULARGE_INTEGER, PULARGE_INTEGER, PULARGE_INTEGER);
 
 	DebugString("Checking available disk space\n");
 
@@ -1247,46 +1242,16 @@ unsigned int Disk_Space_Available(void)
 	std::string const user_directory = User_File_Write_Name("");
 	LPCTSTR const disk = user_directory.empty() ? NULL : user_directory.c_str();
 
-	// Get the free disk space on the drive.
-	// NOTE IML: For Win'95, must query for support for GetDiskFreeSpaceEx before using it - otherwise use GetDiskFreeSpace().
-	HINSTANCE kernel = GetModuleHandle("KERNEL32.DLL");
-	if (kernel != NULL) {
-		getfreediskspaceex = (bool (_stdcall*) (LPCTSTR, PULARGE_INTEGER, PULARGE_INTEGER, PULARGE_INTEGER)) GetProcAddress (kernel, "GetDiskFreeSpaceExA");
-		if (getfreediskspaceex != NULL) {
-
-			DebugString("Using GetDiskFreeSpaceEx\n");
-
-			// NOTE: This function uses GetDiskFreeSpaceEx() and therefore assumes Win '95 OSR2 or greater.
-			if (!getfreediskspaceex(disk, &freebytecount, &totalbytecount, &totalfreebytecount)) {
-				DWORD const error = GetLastError();
-				DebugString("GetDiskFreeSpaceEx failed with error code %d - %s\n", error, Last_Error_Text(error));
-			} else {
-				/// Convert to a 32-bit integer.
-				diskspace = int(((int)freebytecount.LowPart + ((int)freebytecount.HighPart * (double)((__int64)UINT_MAX + 1))) / (double)1024);
-				DebugString("Free disk space is %d Mb\n", diskspace / 1024);
-				return(diskspace);
-			}
-		} else {
-			DWORD const error = GetLastError();
-			DebugString("GetProcAddress failed with error code %d - %s\n", error, Last_Error_Text(error));
-		}
-	} else {
-		DebugString("Failed to get module handle for KERNEL32.DLL\n");
+	if (!GetDiskFreeSpaceEx(disk, &freebytecount, NULL, NULL)) {
+		DWORD const error = GetLastError();
+		DebugString("GetDiskFreeSpaceEx failed with error code %d - %s\n", error, Last_Error_Text(error));
+		return(0);
 	}
 
-	DWORD sectorspercluster, bytespersector, freeclustercount, totalclustercount;
-
-	// The Ex version is not available. Use the Win'95 version.
-	// QUESTION: SDK docs say that values returned by this function are erroneous if partition > 2Gb.
-	//				 Does that mean that the partition is guaranteed to be <= 2Gb if Ex is not available?
-
-	if (GetDiskFreeSpace(disk, &sectorspercluster, &bytespersector, &freeclustercount, &totalclustercount)) {
-		diskspace = ((sectorspercluster * bytespersector) / 1024) * freeclustercount;
-		DebugString("Free disk space is %d Mb\n", diskspace / 1024);
-		return(diskspace);
-	}
-
-	return(0);
+	// The kilobyte count saturates rather than wrapping.
+	unsigned int const diskspace = (unsigned int)std::min<ULONGLONG>(freebytecount.QuadPart / 1024, UINT_MAX);
+	DebugString("Free disk space is %u Mb\n", diskspace / 1024);
+	return(diskspace);
 }
 
 
