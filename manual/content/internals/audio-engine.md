@@ -16,7 +16,7 @@ source_files:
   - code/audio/audioevent.cpp
   - code/audio/audioengine.cpp
   - code/audio/audiomovie.cpp
-  - code/sndtype.cpp
+  - code/vocini.cpp
   - code/voc.cpp
   - code/vox.cpp
   - code/theme.cpp

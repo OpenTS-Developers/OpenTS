@@ -3,7 +3,7 @@
 # entry point up.
 add_executable(SoundIni
     "${CMAKE_CURRENT_SOURCE_DIR}/soundini.cpp"
-    "${CMAKE_SOURCE_DIR}/code/sndtype.cpp"
+    "${CMAKE_SOURCE_DIR}/code/vocini.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64pipe.cpp"

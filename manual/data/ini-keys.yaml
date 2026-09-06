@@ -2276,11 +2276,11 @@ Attack:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: attack
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 AttackDelay:
   key: AttackDelay
   scopes:
@@ -4223,11 +4223,11 @@ Channels:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: channels
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 ChargeAnim:
   key: ChargeAnim
   scopes:
@@ -5111,11 +5111,11 @@ Control:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: control
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 Conventional:
   key: Conventional
   scopes:
@@ -6130,11 +6130,11 @@ Decay:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: decay
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 DefaultDebrisSmokeSystem:
   key: DefaultDebrisSmokeSystem
   scopes:
@@ -6415,11 +6415,11 @@ Delay:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: delay
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 DeleteOnStateLimit:
   key: DeleteOnStateLimit
   scopes:
@@ -8083,11 +8083,11 @@ FShift:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: fshift
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 Facings:
   key: Facings
   scopes:
@@ -12741,11 +12741,11 @@ Limit:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: limit
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 LimpetFactor:
   key: LimpetFactor
   scopes:
@@ -12845,11 +12845,11 @@ Loop:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: loop
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 LoopCount:
   key: LoopCount
   scopes:
@@ -12897,11 +12897,11 @@ LoopLimit:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: loop
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 LoopStart:
   key: LoopStart
   scopes:
@@ -13646,11 +13646,11 @@ MinVolume:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: minvolume
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 MinZVel:
   key: MinZVel
   scopes:
@@ -16488,11 +16488,11 @@ Priority:
     status: reviewed
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: priority
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 Production:
   key: Production
   scopes:
@@ -17202,11 +17202,11 @@ Range:
     status: needs_review
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: range
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 Ranged:
   key: Ranged
   scopes:
@@ -19521,11 +19521,11 @@ Sounds:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: sounds
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 SparkSpawnFrames:
   key: SparkSpawnFrames
   scopes:
@@ -23421,11 +23421,11 @@ Type:
     status: needs_review
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: typeflags
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 TypeImmune:
   key: TypeImmune
   scopes:
@@ -23859,11 +23859,11 @@ VShift:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: vshift
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 VSync:
   key: VSync
   scopes:
@@ -24527,11 +24527,11 @@ Volume:
     status: generated
     _provenance:
       default_candidate: null
-      declared_in: AudioEventTypeClass
+      declared_in: VocClass
       member: volume
-      source: code/sndtype.cpp
+      source: code/vocini.cpp
       guard: null
-    level: AudioEventTypeClass
+    level: VocClass
 Voxel:
   key: Voxel
   scopes:

@@ -875,8 +875,8 @@ GLOBAL_UNITS = [
      {"group": "client settings"}),
     # Every sound section and [Defaults] go through the same free functions,
     # with the section as a parameter; [General] is read with a literal.
-    ("sndtype.cpp", "AudioEventTypeClass",
-     [":Read_Sounds", ":Read_Keys", ":Sound_Type_Read_Channels"],
+    ("vocini.cpp", "VocClass",
+     [":Read_Sounds", ":Read_Keys", "Read_Channels"],
      {"file": "sound01.ini", "group": "Sounds",
       "section_vars": {"section": section_selectors.identifier("sound")}}),
     ("theme.cpp", "ThemeControl", ["Fill_In"],

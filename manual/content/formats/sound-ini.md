@@ -15,7 +15,7 @@ related:
   - { type: format, id: aud }
 source_files:
   - code/init.cpp
-  - code/sndtype.cpp
+  - code/vocini.cpp
   - code/voc.cpp
 ---
 

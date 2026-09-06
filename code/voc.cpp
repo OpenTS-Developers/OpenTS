@@ -26,7 +26,6 @@
 #include "goptions.h"
 #include "map.h"
 #include "savestream.h"
-#include "sndtype.h"
 #include "tactical.h"
 #include "vector.h"
 
@@ -170,7 +169,7 @@ VocClass::~VocClass(void)
 /// <returns>bool; Did the sound have a section of its own?</returns>
 bool VocClass::Fill_In(CCINIClass const &ini)
 {
-	return(Sound_Type_Fill_In(ini, Name, Defaults, Type));
+	return(Read_Type(ini, Name, Defaults, Type));
 }
 
 
@@ -483,8 +482,8 @@ void Init_Vocs(CCINIClass const &ini)
 {
 	char const * const SECTION = "SoundList";
 
-	AudioEngine.Set_Channels(Sound_Type_Read_Channels(ini, DEFAULT_CHANNELS));
-	Sound_Type_Read_Defaults(ini, VocClass::Defaults);
+	AudioEngine.Set_Channels(VocClass::Read_Channels(ini, DEFAULT_CHANNELS));
+	VocClass::Read_Defaults(ini, VocClass::Defaults);
 
 	if (ini.Is_Present(SECTION)) {
 		int count = ini.Entry_Count(SECTION);

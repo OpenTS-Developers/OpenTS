@@ -14,7 +14,7 @@
 #include "audio/audiodefs.hh"
 #include "audio/audioevent.h"
 #include "ini.h"
-#include "sndtype.h"
+#include "voc.h"
 #include "xstraw.h"
 
 #include <cmath>
@@ -84,25 +84,25 @@ void Test_Tiberian_Sun_Shape(void)
 		"[CLICK]\r\n");
 
 	AudioEventTypeClass defaults;
-	Sound_Type_Read_Defaults(ini, defaults);
+	VocClass::Read_Defaults(ini, defaults);
 	Check(defaults.Priority == 10 && Is_Defaults(defaults), "no [Defaults] leaves the engine defaults");
-	Check(Sound_Type_Read_Channels(ini, 16) == 16, "no [General] leaves the channel count");
+	Check(VocClass::Read_Channels(ini, 16) == 16, "no [General] leaves the channel count");
 
 	AudioEventTypeClass type;
-	Check(Sound_Type_Fill_In(ini, "GUN5", defaults, type), "section found");
+	Check(VocClass::Read_Type(ini, "GUN5", defaults, type), "section found");
 	Check(type.Priority == 100 && Is_Defaults(type), "priority 100 with everything else default");
 	Check(std::strcmp(type.Name, "GUN5") == 0 && type.SoundCount == 1 && std::strcmp(type.Sounds[0], "GUN5") == 0, "the section name is the sound");
 
-	Sound_Type_Fill_In(ini, "EXPLOLG1", defaults, type);
+	VocClass::Read_Type(ini, "EXPLOLG1", defaults, type);
 	Check(type.Priority == 50, "priority 50");
-	Sound_Type_Fill_In(ini, "SUPERWPN", defaults, type);
+	VocClass::Read_Type(ini, "SUPERWPN", defaults, type);
 	Check(type.Priority == 75, "priority 75");
-	Sound_Type_Fill_In(ini, "WHISPER", defaults, type);
+	VocClass::Read_Type(ini, "WHISPER", defaults, type);
 	Check(type.Priority == 15, "priority 15");
 	// The reader keeps no section without keys, so a keyless one reads as absent.
-	Sound_Type_Fill_In(ini, "CLICK", defaults, type);
+	VocClass::Read_Type(ini, "CLICK", defaults, type);
 	Check(type.Priority == 10 && Is_Defaults(type) && std::strcmp(type.Sounds[0], "CLICK") == 0, "a keyless section takes the defaults");
-	Check(!Sound_Type_Fill_In(ini, "MISSING", defaults, type) && type.Priority == 10 && Is_Defaults(type)
+	Check(!VocClass::Read_Type(ini, "MISSING", defaults, type) && type.Priority == 10 && Is_Defaults(type)
 		&& std::strcmp(type.Sounds[0], "MISSING") == 0 && type.SoundCount == 1, "a missing section is the defaults named after it");
 }
 
@@ -147,15 +147,15 @@ void Test_Yuris_Revenge_Shape(void)
 		"Control=PREDELAY INTERRUPT\r\n"
 		"Delay=1.5\r\n");
 
-	Check(Sound_Type_Read_Channels(ini, 16) == 24, "[General] Channels");
+	Check(VocClass::Read_Channels(ini, 16) == 24, "[General] Channels");
 
 	AudioEventTypeClass defaults;
-	Sound_Type_Read_Defaults(ini, defaults);
+	VocClass::Read_Defaults(ini, defaults);
 	Check(Near(defaults.Volume, 1.0f) && defaults.Priority == 50 && defaults.Range == 10 && defaults.Limit == 5
 		&& defaults.Type == SOUND_TYPE_SCREEN && defaults.Control == SOUND_CONTROL_NONE, "[Defaults] applied");
 
 	AudioEventTypeClass type;
-	Check(Sound_Type_Fill_In(ini, "MYLOOP", defaults, type), "loop section found");
+	Check(VocClass::Read_Type(ini, "MYLOOP", defaults, type), "loop section found");
 	Check(type.SoundCount == 4 && std::strcmp(type.Sounds[0], "LOOPIN") == 0 && std::strcmp(type.Sounds[3], "LOOPOUT") == 0, "sound list");
 	Check(type.Priority == 100, "named priority HIGH");
 	Check(Near(type.Volume, 0.8f) && Near(type.MinVolume, 0.2f), "percent volumes");
@@ -168,10 +168,10 @@ void Test_Yuris_Revenge_Shape(void)
 	Check(type.Control == (SOUND_CONTROL_LOOP | SOUND_CONTROL_RANDOM | SOUND_CONTROL_ATTACK | SOUND_CONTROL_DECAY), "control flags");
 	Check(type.Body_Start() == 1 && type.Body_Count() == 2 && type.Never_Ends(), "body range and endless loop");
 
-	Sound_Type_Fill_In(ini, "INHERITS", defaults, type);
+	VocClass::Read_Type(ini, "INHERITS", defaults, type);
 	Check(type.Priority == 255 && type.Range == 10 && type.Limit == 5 && Near(type.Volume, 1.0f), "omitted keys come from [Defaults]");
 
-	Sound_Type_Fill_In(ini, "GLOBALONE", defaults, type);
+	VocClass::Read_Type(ini, "GLOBALONE", defaults, type);
 	Check(type.Type == (SOUND_TYPE_GLOBAL | SOUND_TYPE_LOCAL), "two type flags");
 	Check(type.Control == (SOUND_CONTROL_PREDELAY | SOUND_CONTROL_INTERRUPT), "two control flags");
 	Check(type.DelayMin == 1500 && type.DelayMax == 1500, "a single delay with a point is seconds");
@@ -198,9 +198,9 @@ void Test_Vinifera_Shape(void)
 		"Volume=0.5\r\n");
 
 	AudioEventTypeClass defaults;
-	Sound_Type_Read_Defaults(ini, defaults);
+	VocClass::Read_Defaults(ini, defaults);
 	AudioEventTypeClass type;
-	Sound_Type_Fill_In(ini, "VINI", defaults, type);
+	VocClass::Read_Type(ini, "VINI", defaults, type);
 	Check(type.SoundCount == 3 && std::strcmp(type.Sounds[1], "B") == 0, "comma separated sounds");
 	Check(type.Loop == 3, "LoopLimit is an alias of Loop");
 	Check(type.DelayMin == 250 && type.DelayMax == 750, "delay pair in seconds");
@@ -210,7 +210,7 @@ void Test_Vinifera_Shape(void)
 	Check(type.Control == (SOUND_CONTROL_SEQUENTIAL | SOUND_CONTROL_QUEUE | SOUND_CONTROL_LOOP), "Vinifera control flags");
 	Check(!type.Never_Ends(), "a counted loop ends");
 
-	Sound_Type_Fill_In(ini, "HIDE", defaults, type);
+	VocClass::Read_Type(ini, "HIDE", defaults, type);
 	Check(type.Type == SOUND_TYPE_HIDDEN, "SHROUDED is the hidden type");
 	Check(type.Priority == 2 && Near(type.Volume, 0.5f), "integer priority and fraction volume");
 }
@@ -218,34 +218,34 @@ void Test_Vinifera_Shape(void)
 
 void Test_Values(void)
 {
-	Check(Sound_Type_Parse_Priority("LOWEST", 7) == 0 && Sound_Type_Parse_Priority("low", 7) == 10 && Sound_Type_Parse_Priority("Normal", 7) == 50
-		&& Sound_Type_Parse_Priority("HIGH", 7) == 100 && Sound_Type_Parse_Priority("critical", 7) == 255, "priority names");
-    Check(Sound_Type_Parse_Priority("300", 7) == 255 && Sound_Type_Parse_Priority("-5", 7) == 0 && Sound_Type_Parse_Priority("42", 7) == 42, "priority points clamp");
-	Check(Sound_Type_Parse_Priority("bogus", 7) == 7 && Sound_Type_Parse_Priority("", 7) == 7, "unknown priority keeps the fallback");
+	Check(Sound_Parse_Priority("LOWEST", 7) == 0 && Sound_Parse_Priority("low", 7) == 10 && Sound_Parse_Priority("Normal", 7) == 50
+		&& Sound_Parse_Priority("HIGH", 7) == 100 && Sound_Parse_Priority("critical", 7) == 255, "priority names");
+    Check(Sound_Parse_Priority("300", 7) == 255 && Sound_Parse_Priority("-5", 7) == 0 && Sound_Parse_Priority("42", 7) == 42, "priority points clamp");
+	Check(Sound_Parse_Priority("bogus", 7) == 7 && Sound_Parse_Priority("", 7) == 7, "unknown priority keeps the fallback");
 
-	Check(Near(Sound_Type_Parse_Volume("1", 0.3f), 1.0f) && Near(Sound_Type_Parse_Volume("100", 0.3f), 1.0f), "1 and 100 are both full volume");
-	Check(Near(Sound_Type_Parse_Volume("0.5", 0.3f), 0.5f) && Near(Sound_Type_Parse_Volume("50", 0.3f), 0.5f), "0.5 and 50 are both half");
-	Check(Near(Sound_Type_Parse_Volume("150", 0.3f), 1.0f) && Near(Sound_Type_Parse_Volume("-1", 0.3f), 0.0f), "volume clamps");
-	Check(Near(Sound_Type_Parse_Volume("loud", 0.3f), 0.3f), "unknown volume keeps the fallback");
+	Check(Near(Sound_Parse_Volume("1", 0.3f), 1.0f) && Near(Sound_Parse_Volume("100", 0.3f), 1.0f), "1 and 100 are both full volume");
+	Check(Near(Sound_Parse_Volume("0.5", 0.3f), 0.5f) && Near(Sound_Parse_Volume("50", 0.3f), 0.5f), "0.5 and 50 are both half");
+	Check(Near(Sound_Parse_Volume("150", 0.3f), 1.0f) && Near(Sound_Parse_Volume("-1", 0.3f), 0.0f), "volume clamps");
+	Check(Near(Sound_Parse_Volume("loud", 0.3f), 0.3f), "unknown volume keeps the fallback");
 
-	Check(Sound_Type_Parse_Type("NORMAL", 99) == 0, "NORMAL type is no flags");
-	Check(Sound_Type_Parse_Type("SCREEN SHROUD", 99) == (SOUND_TYPE_SCREEN | SOUND_TYPE_SHROUD), "type flags combine");
-	Check(Sound_Type_Parse_Type("SCREEN WIBBLE", 99) == SOUND_TYPE_SCREEN, "unknown type flags are ignored");
-	Check(Sound_Type_Parse_Type("", 99) == 99, "empty type keeps the fallback");
-	Check(Sound_Type_Parse_Type("VIOLENT MOVEMENT QUIET LOUD PLAYER NOISE_SHY GUN_SHY UNSHROUD AMBIENT", 0)
+	Check(Sound_Parse_Type("NORMAL", 99) == 0, "NORMAL type is no flags");
+	Check(Sound_Parse_Type("SCREEN SHROUD", 99) == (SOUND_TYPE_SCREEN | SOUND_TYPE_SHROUD), "type flags combine");
+	Check(Sound_Parse_Type("SCREEN WIBBLE", 99) == SOUND_TYPE_SCREEN, "unknown type flags are ignored");
+	Check(Sound_Parse_Type("", 99) == 99, "empty type keeps the fallback");
+	Check(Sound_Parse_Type("VIOLENT MOVEMENT QUIET LOUD PLAYER NOISE_SHY GUN_SHY UNSHROUD AMBIENT", 0)
 		== (SOUND_TYPE_VIOLENT | SOUND_TYPE_MOVEMENT | SOUND_TYPE_QUIET | SOUND_TYPE_LOUD | SOUND_TYPE_PLAYER | SOUND_TYPE_NOISE_SHY | SOUND_TYPE_GUN_SHY | SOUND_TYPE_UNSHROUD | SOUND_TYPE_AMBIENT), "reserved type flags are kept");
-	Check(Sound_Type_Parse_Control("loop,all", 99) == (SOUND_CONTROL_LOOP | SOUND_CONTROL_ALL), "control flags with commas and lower case");
-	Check(Sound_Type_Parse_Control("NORMAL", 99) == 0, "NORMAL control is no flags");
+	Check(Sound_Parse_Control("loop,all", 99) == (SOUND_CONTROL_LOOP | SOUND_CONTROL_ALL), "control flags with commas and lower case");
+	Check(Sound_Parse_Control("NORMAL", 99) == 0, "NORMAL control is no flags");
 
 	int low;
 	int high;
-	Check(Sound_Type_Parse_Delay("500", low, high) && low == 500 && high == 500, "single delay");
-	Check(Sound_Type_Parse_Delay("750 250", low, high) && low == 250 && high == 750, "reversed delay pair is sorted");
-	Check(Sound_Type_Parse_Delay("1.5 2", low, high) && low == 1500 && high == 2000, "a point anywhere makes both seconds");
-	Check(!Sound_Type_Parse_Delay("soon", low, high), "a word is not a delay");
-	Check(Sound_Type_Parse_Shift("200", false, low, high) && low == -50 && high == 100, "pitch shift clamps to the pitch range");
-	Check(Sound_Type_Parse_Shift("-20 -5", true, low, high) && low == -20 && high == -5, "volume shift pair");
-	Check(Sound_Type_Parse_Shift("150", true, low, high) && low == -100 && high == 0, "volume shift clamps");
+	Check(Sound_Parse_Delay("500", low, high) && low == 500 && high == 500, "single delay");
+	Check(Sound_Parse_Delay("750 250", low, high) && low == 250 && high == 750, "reversed delay pair is sorted");
+	Check(Sound_Parse_Delay("1.5 2", low, high) && low == 1500 && high == 2000, "a point anywhere makes both seconds");
+	Check(!Sound_Parse_Delay("soon", low, high), "a word is not a delay");
+	Check(Sound_Parse_Shift("200", false, low, high) && low == -50 && high == 100, "pitch shift clamps to the pitch range");
+	Check(Sound_Parse_Shift("-20 -5", true, low, high) && low == -20 && high == -5, "volume shift pair");
+	Check(Sound_Parse_Shift("150", true, low, high) && low == -100 && high == 0, "volume shift clamps");
 }
 
 
@@ -262,20 +262,20 @@ void Test_Limits(void)
 
 	INIClass ini;
 	Read(ini, text);
-	Check(Sound_Type_Read_Channels(ini, 16) == 32, "channels clamp high");
+	Check(VocClass::Read_Channels(ini, 16) == 32, "channels clamp high");
 
 	AudioEventTypeClass defaults;
-	Sound_Type_Read_Defaults(ini, defaults);
+	VocClass::Read_Defaults(ini, defaults);
 	AudioEventTypeClass type;
-	Sound_Type_Fill_In(ini, "MANY", defaults, type);
+	VocClass::Read_Type(ini, "MANY", defaults, type);
 	Check(type.SoundCount == 32 && std::strcmp(type.Sounds[31], "S31") == 0, "more than 32 sounds are truncated");
 	Check(type.AttackCount == 2 && type.DecayCount == 0, "explicit attack count wins over the flag");
 
 	INIClass few;
 	Read(few, "[General]\r\nChannels=2\r\n");
-	Check(Sound_Type_Read_Channels(few, 16) == 4, "channels clamp low");
+	Check(VocClass::Read_Channels(few, 16) == 4, "channels clamp low");
 
-	Sound_Type_Fill_In(ini, "AVERYLONGSECTIONNAMETHATGOESONANDONANDON", defaults, type);
+	VocClass::Read_Type(ini, "AVERYLONGSECTIONNAMETHATGOESONANDONANDON", defaults, type);
 	Check(std::strlen(type.Name) == 31 && std::strlen(type.Sounds[0]) == 31 && type.Priority == 1, "long names are cut to fit");
 }
 

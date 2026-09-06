@@ -20,6 +20,7 @@
 #include "voc.hh"
 
 class CCINIClass;
+class INIClass;
 class SaveStreamClass;
 class VocClass;
 
@@ -28,6 +29,19 @@ enum { SOUND_PAN_CENTER = 0 };
 
 void Init_Vocs(CCINIClass const &ini);
 void Free_Vocs(void);
+
+// The value vocabulary of SOUND.INI, shared with the speech table.
+int Sound_Parse_Priority(char const * text, int fallback);
+float Sound_Parse_Volume(char const * text, float fallback);
+unsigned Sound_Parse_Type(char const * text, unsigned fallback);
+unsigned Sound_Parse_Control(char const * text, unsigned fallback);
+
+// One or two numbers, in milliseconds, or seconds when written with a point.
+bool Sound_Parse_Delay(char const * text, int & low, int & high);
+
+// One or two percentages. A single value spans -v..v for a pitch shift and
+// -v..0 for a volume shift.
+bool Sound_Parse_Shift(char const * text, bool attenuate, int & low, int & high);
 
 // A sound with no place in the world. With a handle, a live event of the same
 // sound is re-aimed instead of a second one starting; one of another sound is
@@ -80,6 +94,17 @@ class VocClass
 		~VocClass(void);
 
 		bool Fill_In(CCINIClass const &ini);
+
+		// The engine's defaults with the file's [Defaults] section applied over them.
+		static void Read_Defaults(INIClass const & ini, AudioEventTypeClass & defaults);
+
+		// [General] Channels=, or the fallback, clamped to what the engine can hold.
+		static int Read_Channels(INIClass const & ini, int fallback);
+
+		// Fills the type from [section], taking every key the section omits from the
+		// defaults. Returns false when the section is absent; the type is then the
+		// defaults named after the section, with the section name as its one sound.
+		static bool Read_Type(INIClass const & ini, char const * section, AudioEventTypeClass const & defaults, AudioEventTypeClass & type);
 
 		bool Can_Play(void) const;
 		AudioHandle Play(float vol, int pan = SOUND_PAN_CENTER, bool no_attack = false);

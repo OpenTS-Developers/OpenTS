@@ -7,7 +7,11 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "sndtype.h"
+// The INI half of VocClass: reads SOUND.INI sections into the engine's sound
+// type. The grammar follows Yuri's Revenge, with defaults that keep the
+// shipped Tiberian Sun files playing as they did.
+
+#include "voc.h"
 
 #include "dbgprint.h"
 #include "ini.h"
@@ -208,15 +212,15 @@ void Read_Keys(INIClass const & ini, char const * section, AudioEventTypeClass &
 
 	std::string priority = ini.Get_String(section, "Priority", "");
 	if (!priority.empty()) {
-		type.Priority = Sound_Type_Parse_Priority(priority.c_str(), type.Priority);
+		type.Priority = Sound_Parse_Priority(priority.c_str(), type.Priority);
 	}
 	std::string volume = ini.Get_String(section, "Volume", "");
 	if (!volume.empty()) {
-		type.Volume = Sound_Type_Parse_Volume(volume.c_str(), type.Volume);
+		type.Volume = Sound_Parse_Volume(volume.c_str(), type.Volume);
 	}
 	std::string minvolume = ini.Get_String(section, "MinVolume", "");
 	if (!minvolume.empty()) {
-		type.MinVolume = Sound_Type_Parse_Volume(minvolume.c_str(), type.MinVolume);
+		type.MinVolume = Sound_Parse_Volume(minvolume.c_str(), type.MinVolume);
 	}
 	int range = ini.Get_Int(section, "Range", type.Range);
 	type.Range = Clamp(range, 0, 1000);
@@ -231,27 +235,27 @@ void Read_Keys(INIClass const & ini, char const * section, AudioEventTypeClass &
 	int low;
 	int high;
 	std::string delay = ini.Get_String(section, "Delay", "");
-	if (Sound_Type_Parse_Delay(delay.c_str(), low, high)) {
+	if (Sound_Parse_Delay(delay.c_str(), low, high)) {
 		type.DelayMin = low;
 		type.DelayMax = high;
 	}
 	std::string fshift = ini.Get_String(section, "FShift", "");
-	if (Sound_Type_Parse_Shift(fshift.c_str(), false, low, high)) {
+	if (Sound_Parse_Shift(fshift.c_str(), false, low, high)) {
 		type.FShiftMin = low;
 		type.FShiftMax = high;
 	}
 	std::string vshift = ini.Get_String(section, "VShift", "");
-	if (Sound_Type_Parse_Shift(vshift.c_str(), true, low, high)) {
+	if (Sound_Parse_Shift(vshift.c_str(), true, low, high)) {
 		type.VShiftMin = low;
 		type.VShiftMax = high;
 	}
 	std::string typeflags = ini.Get_String(section, "Type", "");
 	if (!typeflags.empty()) {
-		type.Type = Sound_Type_Parse_Type(typeflags.c_str(), type.Type);
+		type.Type = Sound_Parse_Type(typeflags.c_str(), type.Type);
 	}
 	std::string control = ini.Get_String(section, "Control", "");
 	if (!control.empty()) {
-		type.Control = Sound_Type_Parse_Control(control.c_str(), type.Control);
+		type.Control = Sound_Parse_Control(control.c_str(), type.Control);
 	}
 
 	// A count given outright wins; otherwise the flag alone means one sound.
@@ -272,7 +276,7 @@ void Read_Keys(INIClass const & ini, char const * section, AudioEventTypeClass &
 } // namespace
 
 
-int Sound_Type_Parse_Priority(char const * text, int fallback)
+int Sound_Parse_Priority(char const * text, int fallback)
 {
 	char tokens[MAX_TOKENS][TOKEN_LENGTH];
 	if (Tokenize(text, tokens) == 0) {
@@ -291,7 +295,7 @@ int Sound_Type_Parse_Priority(char const * text, int fallback)
 }
 
 
-float Sound_Type_Parse_Volume(char const * text, float fallback)
+float Sound_Parse_Volume(char const * text, float fallback)
 {
 	char tokens[MAX_TOKENS][TOKEN_LENGTH];
 	if (Tokenize(text, tokens) == 0 || !Is_Number(tokens[0])) {
@@ -308,19 +312,19 @@ float Sound_Type_Parse_Volume(char const * text, float fallback)
 }
 
 
-unsigned Sound_Type_Parse_Type(char const * text, unsigned fallback)
+unsigned Sound_Parse_Type(char const * text, unsigned fallback)
 {
 	return(Parse_Flags(text, fallback, TYPE_NAMES, (int)(sizeof(TYPE_NAMES) / sizeof(TYPE_NAMES[0])), "Type"));
 }
 
 
-unsigned Sound_Type_Parse_Control(char const * text, unsigned fallback)
+unsigned Sound_Parse_Control(char const * text, unsigned fallback)
 {
 	return(Parse_Flags(text, fallback, CONTROL_NAMES, (int)(sizeof(CONTROL_NAMES) / sizeof(CONTROL_NAMES[0])), "Control"));
 }
 
 
-bool Sound_Type_Parse_Delay(char const * text, int & low, int & high)
+bool Sound_Parse_Delay(char const * text, int & low, int & high)
 {
 	bool single;
 	bool seconds;
@@ -338,7 +342,7 @@ bool Sound_Type_Parse_Delay(char const * text, int & low, int & high)
 }
 
 
-bool Sound_Type_Parse_Shift(char const * text, bool attenuate, int & low, int & high)
+bool Sound_Parse_Shift(char const * text, bool attenuate, int & low, int & high)
 {
 	bool single;
 	bool seconds;
@@ -366,7 +370,7 @@ bool Sound_Type_Parse_Shift(char const * text, bool attenuate, int & low, int & 
 }
 
 
-void Sound_Type_Read_Defaults(INIClass const & ini, AudioEventTypeClass & defaults)
+void VocClass::Read_Defaults(INIClass const & ini, AudioEventTypeClass & defaults)
 {
 	defaults = AudioEventTypeClass();
 	std::strncpy(defaults.Name, "Defaults", sizeof(defaults.Name) - 1);
@@ -376,14 +380,14 @@ void Sound_Type_Read_Defaults(INIClass const & ini, AudioEventTypeClass & defaul
 }
 
 
-int Sound_Type_Read_Channels(INIClass const & ini, int fallback)
+int VocClass::Read_Channels(INIClass const & ini, int fallback)
 {
 	int channels = ini.Get_Int("General", "Channels", fallback);
 	return(Clamp(channels, CHANNELS_MIN, CHANNELS_MAX));
 }
 
 
-bool Sound_Type_Fill_In(INIClass const & ini, char const * section, AudioEventTypeClass const & defaults, AudioEventTypeClass & type)
+bool VocClass::Read_Type(INIClass const & ini, char const * section, AudioEventTypeClass const & defaults, AudioEventTypeClass & type)
 {
 	type = defaults;
 	std::strncpy(type.Name, section, sizeof(type.Name) - 1);
