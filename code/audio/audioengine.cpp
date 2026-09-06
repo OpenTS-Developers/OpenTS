@@ -30,10 +30,10 @@ unsigned const DROP_REPORT_MS = 1000;
 
 // A byte source over the game's file layer, so a stream reads loose files and
 // archive members alike, a block at a time.
-class CcFileByteSourceClass : public AudioByteSourceClass
+class CCFileByteSourceClass : public AudioByteSourceClass
 {
 	public:
-		explicit CcFileByteSourceClass(char const * filename) :
+		explicit CCFileByteSourceClass(char const * filename) :
 			File(filename),
 			Cursor(0),
 			Length(0),
@@ -46,7 +46,7 @@ class CcFileByteSourceClass : public AudioByteSourceClass
 			}
 		}
 
-		~CcFileByteSourceClass(void)
+		~CCFileByteSourceClass(void)
 		{
 			if (Opened) {
 				File.Close();
@@ -91,7 +91,7 @@ class CcFileByteSourceClass : public AudioByteSourceClass
 };
 
 
-class CcFileReaderClass : public AudioAssetReaderClass
+class CCFileReaderClass : public AudioAssetReaderClass
 {
 	public:
 		bool Read(char const * filename, std::vector<uint8_t> & bytes) override
@@ -192,7 +192,7 @@ bool AudioEngineClass::Init(void)
 		return(false);
 	}
 
-	Reader.reset(new CcFileReaderClass());
+	Reader.reset(new CCFileReaderClass());
 	Provider.reset(new CacheProviderClass(Cache, *Reader));
 	if (!Pool.Init(&Mixer, Provider.get())) {
 		DebugString("Audio: event pool init failed\n");
@@ -294,7 +294,7 @@ AudioHandle AudioEngineClass::Open_Stream(char const * filename, AudioGroupType 
 		return(AudioHandle());
 	}
 
-	std::unique_ptr<CcFileByteSourceClass> source(new CcFileByteSourceClass(filename));
+	std::unique_ptr<CCFileByteSourceClass> source(new CCFileByteSourceClass(filename));
 	if (!source->Is_Open()) {
 		return(AudioHandle());
 	}
