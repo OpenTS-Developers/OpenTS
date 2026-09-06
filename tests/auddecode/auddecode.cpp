@@ -268,6 +268,12 @@ void Test_Westwood(void)
 	uint8_t overrun[] = {0xBF};
 	Check(!Aud_Decode_Westwood(overrun, sizeof(overrun), out, 4), "a run past the output fails");
 
+	// In place from the end of the buffer, as the VQA loader decodes a frame.
+	unsigned char inplace[64];
+	std::memcpy(inplace + sizeof(inplace) - sizeof(stream), stream, sizeof(stream));
+	Check(Aud_Decode_Westwood(inplace + sizeof(inplace) - sizeof(stream), sizeof(stream), inplace, sizeof(expect)), "decodes in place");
+	Check(std::memcmp(inplace, expect, sizeof(expect)) == 0, "in-place decode produces the expected samples");
+
 	// Through the reader, as a chunked codec 1 file.
 	std::vector<uint8_t> blob = Make_Header(22050, 0, AUD_CODEC_WESTWOOD, 0, 0);
 	Append_Chunk(blob, std::vector<uint8_t>(stream, stream + sizeof(stream)), sizeof(expect));

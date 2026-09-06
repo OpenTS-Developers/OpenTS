@@ -40,10 +40,6 @@ void __cdecl VQA_sosCODECDecompressData(void *src, void *dst, unsigned short wBi
 
 //#define VQA_sosCODECDecompressData sosCODECDecompressData
 
-extern "C" {
-	size_t AudioUnzap(void * source, void * dest, size_t size);
-}
-
 #if defined(__WATCOMC__) || defined(_MSC_VER)
 #pragma pack(pop)
 #endif

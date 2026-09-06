@@ -103,3 +103,5 @@ The filename is assembled in a fixed twenty-byte buffer. `.VQA` takes four of th
 The picture follows the sound. The player hands the sound track to the audio engine one block at a time, asks how much of it has been heard, and draws the frame due at that moment. The answer is the number of frames the mixer has taken from the track, less what the output device still holds, so the two stay in step through a device change or a stall on the game's own thread. While the sound stands still, as when the track ends before the picture does or the device is being recovered, the clock runs on wall time instead, and a pause is left out of the count altogether.
 
 When the player falls behind and feeds a block twice, that block is taken off the count as well, so the picture waits for the sound rather than running ahead of it. A movie with no audio device is timed from the wall clock throughout.
+
+A `SND1` chunk carries the Westwood delta compression and goes through the same checked decoder as an [AUD](/formats/aud/) file, so a chunk that does not decode to its stated size plays as silence instead of being read past its end.

@@ -2,9 +2,13 @@
  *                                O P E N  T S
  *******************************************************************************
  * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2025 Electronic Arts Inc.
  * Copyright 2026 OpenTS contributors
  *
- * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ * Contains material derived from Electronic Arts source code.
+ * Modified by OpenTS contributors, 2026.
+ * EA's GPLv3 Section 7 additional terms and supplemental warranty
+ * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
 
 #include "audio/audiodecode.h"
@@ -256,85 +260,150 @@ unsigned Aud_Decode(void const * data, size_t size, int16_t * output, unsigned c
 }
 
 
-// The delta codes and their tables are the ones the VQA player's AudioUnzap
-// uses; this copy checks every read and write against the chunk bounds.
+enum SCodeType {
+	CODE_2BIT,				// Bit packed 2 bit delta.
+	CODE_4BIT,				// Nibble packed 4 bit delta.
+	CODE_RAW,				// Raw sample.
+	CODE_SILENCE			// Run of silence.
+};
+static signed int const _2bitdecode[4] = {-2, -1, 0, 1};
+static signed int const _4bitdecode[16] = {-9, -8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8};
+
+
+// Derived from the VQA library's AudioUnzap. Every read and write is checked
+// against the chunk bounds, which the original left to its caller.
 bool Aud_Decode_Westwood(void const * source, unsigned compsize, unsigned char * dest, unsigned uncompsize)
 {
-	static signed char const DELTA_2BIT[4] = {-2, -1, 0, 1};
-	static signed char const DELTA_4BIT[16] = {-9, -8, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 8};
-	enum { CODE_2BIT, CODE_4BIT, CODE_RAW, CODE_SILENCE };
+	unsigned int	previous = 0x0080;
+	signed char const	*s = (signed char const *)source;
+	unsigned char	*d = dest;
+	unsigned int	size = uncompsize;
+	unsigned int	incount = 0;
 
-	unsigned char const * s = (unsigned char const *)source;
-	unsigned in = 0;
-	unsigned out = 0;
-	int previous = 0x80;
+	/*
+	**	Uncompress the source data until the buffer is filled.
+	*/
+	while (size > 0) {
+		signed char code;		// Compression code.
+		int counter;
 
-	auto emit = [&](int value) {
-		if (value < 0) value = 0;
-		if (value > 255) value = 255;
-		previous = value;
-		dest[out++] = (unsigned char)value;
-	};
-
-	while (out < uncompsize) {
-		if (in >= compsize) {
+		if (incount >= compsize) {
 			return(false);
 		}
-		unsigned char code = s[in++];
-		unsigned counter = (code & 0x3F) + 1;
+		code = *s++;
+		counter = (code & 0x3F) + 1;
+		incount++;
 
 		switch ((code >> 6) & 0x03) {
 			case CODE_RAW:
-				if ((counter - 1) & 0x20) {
-					int delta = (int)((counter - 1) & 0x1F);
-					if (delta & 0x10) delta -= 0x20;
-					emit(previous + delta);
+
+				/*
+				**	The "raw" code could actually contain an embedded 5 bit delta.
+				**	If this is the case then this is a self contained code.  Extract
+				**	and process the delta.
+				*/
+				if ((counter-1) & 0x20) {
+					counter = (counter-1) & 0x1F;
+					if (counter & 0x10) counter |= 0xFFE0;
+					previous = *d++ = previous + counter;
+					size--;
+
 				} else {
-					if (in + counter > compsize || out + counter > uncompsize) {
+
+					/*
+					**	Normal run of raw samples.
+					*/
+					if (incount + counter > compsize || (unsigned)counter > size) {
 						return(false);
 					}
-					std::memcpy(dest + out, s + in, counter);
-					in += counter;
-					out += counter;
-					previous = dest[out - 1];
+					// The VQA loader decodes a frame in place from the end of its buffer.
+					std::memmove(d, s, counter);
+					incount += counter;
+					size -= counter;
+					d += counter-1;
+					s += counter;
+					previous = *d++;
 				}
 				break;
 
 			case CODE_4BIT:
-				if (in + counter > compsize || out + counter * 2 > uncompsize) {
+				if (incount + counter > compsize || (unsigned)counter * 2 > size) {
 					return(false);
 				}
-				while (counter--) {
-					unsigned char delta = s[in++];
-					emit(previous + DELTA_4BIT[delta & 0x0F]);
-					emit(previous + DELTA_4BIT[(delta >> 4) & 0x0F]);
+				while (counter) {
+					int delta;
+
+					delta = *s++;
+					incount++;
+
+					previous += (signed)_4bitdecode[delta & 0x0F];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_4bitdecode[(delta >> 4) & 0x0F];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					counter--;
 				}
 				break;
 
 			case CODE_2BIT:
-				if (in + counter > compsize || out + counter * 4 > uncompsize) {
+				if (incount + counter > compsize || (unsigned)counter * 4 > size) {
 					return(false);
 				}
-				while (counter--) {
-					unsigned char delta = s[in++];
-					emit(previous + DELTA_2BIT[delta & 0x03]);
-					emit(previous + DELTA_2BIT[(delta >> 2) & 0x03]);
-					emit(previous + DELTA_2BIT[(delta >> 4) & 0x03]);
-					emit(previous + DELTA_2BIT[(delta >> 6) & 0x03]);
+				while (counter) {
+					int delta;
+
+					delta = *s++;
+					incount++;
+
+					previous += (signed)_2bitdecode[delta & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_2bitdecode[(delta >> 2) & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_2bitdecode[(delta >> 4) & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					previous += (signed)_2bitdecode[(delta >> 6) & 0x03];
+					if (((signed)previous) < 0) previous = 0;
+					if (((signed)previous) > 255) previous = 255;
+					*d++ = previous;
+					size--;
+
+					counter--;
 				}
 				break;
 
 			default:
-				if (out + counter > uncompsize) {
+			case CODE_SILENCE:
+				if ((unsigned)counter > size) {
 					return(false);
 				}
-				std::memset(dest + out, previous, counter);
-				out += counter;
+				std::memset(d, previous, counter);
+				d += counter;
+				size -= counter;
 				break;
 		}
 	}
-	return(out == uncompsize);
+	return(true);
 }
+
 
 
 bool Audio_Decode_Other(void const * data, size_t size, std::vector<int16_t> & output, AudioPcmFormat & format)

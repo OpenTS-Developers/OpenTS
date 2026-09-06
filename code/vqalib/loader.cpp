@@ -67,6 +67,7 @@
 #include <memory.h>
 #include "vqaplayp.h"
 #include "../lcw.h"
+#include "audio/audiodecode.h"
 
 /*---------------------------------------------------------------------------
  * PRIVATE DECLARATIONS
@@ -3288,6 +3289,16 @@ long Load_SND0(VQAHandleP *vqap, unsigned long iffsize)
 *
 ****************************************************************************/
 
+/* Decodes a ZAP audio frame in place; a frame that does not decode to its
+ * stated size plays as silence. */
+static void Unzap_Frame(unsigned char const *loadbuf, unsigned long padsize, unsigned char *dest, unsigned long uncompsize)
+{
+	if (!Aud_Decode_Westwood(loadbuf, (unsigned)padsize, dest, (unsigned)uncompsize)) {
+		memset(dest, 0x80, uncompsize);
+	}
+}
+
+
 long Load_SND1(VQAHandleP *vqap, unsigned long iffsize)
 {
 	VQAAudio      *audio;
@@ -3352,7 +3363,7 @@ long Load_SND1(VQAHandleP *vqap, unsigned long iffsize)
 			}
 
 			/* Uncompress the audio frame. */
-			AudioUnzap(loadbuf, audio->Buffer, zap.UnCompSize);
+			Unzap_Frame(loadbuf, padsize, audio->Buffer, zap.UnCompSize);
 		}
 
 		/* Set buffer positions & flags */
@@ -3384,7 +3395,7 @@ long Load_SND1(VQAHandleP *vqap, unsigned long iffsize)
 		}
 
 		/* Uncompress the audio frame. */
-		AudioUnzap(loadbuf, audio->TempBuf, zap.UnCompSize);
+		Unzap_Frame(loadbuf, padsize, audio->TempBuf, zap.UnCompSize);
 	}
 
 	/* Set the TempBufLen */
