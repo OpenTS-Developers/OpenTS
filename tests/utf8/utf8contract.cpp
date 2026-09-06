@@ -104,12 +104,23 @@ int main(void)
 
 	Check(UTF8::From_Windows_1252("caf\xE9") == "caf\xC3\xA9", "a Windows-1252 e acute becomes two bytes");
 	Check(UTF8::From_Windows_1252("\x80\x99") == "\xE2\x82\xAC\xE2\x84\xA2", "the Windows-1252 euro and trade mark bytes map through the high table");
-	Check(UTF8::From_Windows_1252("\x81") == "\xEF\xBF\xBD", "an undefined Windows-1252 byte becomes the replacement character");
+	Check(UTF8::From_Windows_1252("\x81") == "\xC2\x81", "a byte the code page leaves undefined keeps its own value");
 	Check(UTF8::From_Windows_1252("ascii") == "ascii", "ASCII passes through the Windows-1252 transcode unchanged");
 
 	Check(UTF8::To_Windows_1252("caf\xC3\xA9 \xE2\x82\xAC") == "caf\xE9 \x80", "e acute and the euro sign go back to their Windows-1252 bytes");
 	Check(UTF8::To_Windows_1252("\xE2\x84\x83") == "?", "a code point outside Windows-1252 becomes a question mark");
 	Check(UTF8::To_Windows_1252(UTF8::From_Windows_1252("na\xEFve \x93quoted\x94")) == "na\xEFve \x93quoted\x94", "Windows-1252 text survives a round trip");
+
+	{
+		// The digest of a legacy file is checked by converting the database back, so the
+		// conversion has to be an exact inverse for every byte the file could hold.
+		std::string every;
+		for (int byte = 0; byte < 256; byte++) {
+			every.push_back((char)byte);
+		}
+		Check(UTF8::To_Windows_1252(UTF8::From_Windows_1252(every)) == every,
+			"every Windows-1252 byte survives a round trip");
+	}
 
 	Check(UTF8::Windows_1252_Index('A') == 'A', "ASCII keeps its byte in Windows-1252");
 	Check(UTF8::Windows_1252_Index(0xE9) == 0xE9, "Latin-1 keeps its byte in Windows-1252");
