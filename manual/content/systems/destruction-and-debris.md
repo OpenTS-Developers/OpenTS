@@ -21,6 +21,8 @@ keys:
   - MaxDebris
   - MaxDeathCounter
   - MetallicDebris
+  - ScrapExplosion
+  - ScrapMetal
   - Scorch
   - SmallFire
   - SplashList
@@ -71,7 +73,7 @@ A vehicle finished outright takes one of three exits, and the first that applies
 
 - killed by [`[CombatDamage] FirestormWarhead`](/keys/firestormwarhead/), it is replaced by seven to nine firestorm particle systems;
 - falling to its destruction over water, it leaves a [`Wake`](/keys/wake/) and the last entry of [`SplashList`](/keys/splashlist/);
-- otherwise one entry of its [`Explosion`](/keys/explosion/) list is created where it stood.
+- otherwise one entry of its [`Explosion`](/keys/explosion/) list is created where it stood, or of its [`ScrapExplosion`](/keys/scrapexplosion/) list where the game is played with [`ScrapMetal`](/keys/scrapmetal/) on and the type names one.
 
 The rest follows in order: a train car releases whatever was following it, the vehicle is lifted off its cells, passengers are put out or killed with it, the crew rolls to escape, and a crate-carrying truck may drop a wooden crate on a nearby cell.
 

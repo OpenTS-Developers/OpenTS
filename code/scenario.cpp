@@ -1801,6 +1801,11 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Special.IsFogOfWar = Session.Options.FogOfWar;
 	}
 
+	// Outside the branch above because a campaign obeys the launch file too. A scenario
+	// can still overrule it through [SpecialFlags].
+	Scen->Special.IsScrapMetal = Session.Options.ScrapMetal;
+	Special.IsScrapMetal = Session.Options.ScrapMetal;
+
 	char const * const BASIC = "Basic";
 	Scen->InitTime = ini.Get_Int(BASIC, "InitTime", 10000);
 	bool official = ini.Get_Bool(BASIC, "Official", false);

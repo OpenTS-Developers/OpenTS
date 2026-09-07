@@ -33,6 +33,7 @@
 #include "psystype.h"
 #include "rules.h"
 #include "savestream.h"
+#include "scenario.h"
 #include "session.h"
 #include "tracker.h"
 #include "unittype.h"
@@ -160,6 +161,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	CameoFilename(""),
 	TurretOffset(0),
 	Explosion(),
+	ScrapExplosion(),
 	NaturalParticleSystem(NULL),
 	NaturalParticleLocation(0,0,0),
 	DamageParticleSystems(),
@@ -389,6 +391,22 @@ int TechnoTypeClass::Repair_Step(void) const
 
 
 /// <summary>
+/// Returns the animations a destroyed object of this type leaves behind: its ScrapExplosion
+/// list where scrap wreckage is on and the type names one, its Explosion list otherwise.
+/// The result is a reference, so a caller that picks one entry and then reaches for another
+/// indexes the same list both times.
+/// </summary>
+TypeList<AnimTypeClass const *> const & TechnoTypeClass::Explosion_Set(void) const
+{
+	if (Scen->Special.IsScrapMetal && ScrapExplosion.Count() > 0) {
+		return(ScrapExplosion);
+	}
+
+	return(Explosion);
+}
+
+
+/// <summary>
 /// Fetches the strength one self-healing tick restores to an object of this type.
 /// </summary>
 /// <returns>Returns with the type's step, else the game-wide one, never below one.</returns>
@@ -582,6 +600,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
 		IsTurretEquipped = ini.Get_Bool(Name(), "Turret", IsTurretEquipped);
 		Explosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "Explosion", Explosion);
+		ScrapExplosion = TGet_TypeList<AnimTypeClass>(ini, Name(), "ScrapExplosion", ScrapExplosion);
 		NaturalParticleSystem = TGet_Class(ini, Name(), "NaturalParticleSystem", NaturalParticleSystem);
 		NaturalParticleLocation = ini.Get_Offset(Name(), "NaturalParticleLocation", NaturalParticleLocation);
 		DamageParticleSystems = TGet_TypeList<ParticleSystemTypeClass>(ini, Name(), "DamageParticleSystems", DamageParticleSystems);
@@ -994,6 +1013,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TurretOffset);
 	stream.Serialize(Points);
 	stream.Serialize(Explosion);
+	stream.Serialize(ScrapExplosion);
 	stream.Serialize(NaturalParticleSystem);
 	stream.Serialize(NaturalParticleLocation);
 	stream.Serialize(DamageParticleSystems);
@@ -1115,6 +1135,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(TurretOffset);
 	crc(Points);
 	crc(Explosion.Count());
+	crc(ScrapExplosion.Count());
 	crc(ShadowIndex);
 	crc(Capacity);
 	crc(IsTrain);

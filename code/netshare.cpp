@@ -1270,6 +1270,7 @@ void Commit_Session_Specials(void)
 {
 	Special.IsHarvesterImmune = Session.Options.HarvTruce;
 	Special.IsDestroyBridges = Session.Options.BridgeDestruction;
+	Special.IsScrapMetal = Session.Options.ScrapMetal;
 	Special.IsTGrowth = true;
 	Special.IsTSpread = true;
 	Special.Apply_To_Game();

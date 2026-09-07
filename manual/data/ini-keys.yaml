@@ -18956,6 +18956,41 @@ ScoreVolume:
       source: code/options.cpp
       guard: null
     level: OptionsClass
+ScrapExplosion:
+  key: ScrapExplosion
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: list of AnimTypes
+    status: generated
+    _provenance:
+      default_candidate: ''
+      declared_in: TechnoTypeClass
+      member: ScrapExplosion
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+ScrapMetal:
+  key: ScrapMetal
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: SpecialFlags
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: SpecialClass
+      member: IsScrapMetal
+      source: code/special.cpp
+      guard: null
+    level: SpecialClass
 ScrapVoxelDebris:
   key: ScrapVoxelDebris
   scopes:

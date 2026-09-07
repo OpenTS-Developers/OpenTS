@@ -2150,11 +2150,11 @@ void BuildingClass::Do_Destruction(TechnoClass *last_contact, TechnoClass *sourc
 				new AnimClass(Rule->LargeFire, pos, Random_Pick(0, 7), Random_Pick(1, 3));
 			}
 		}
-		if (Class->Explosion.Count() > 0) {
+		if (Class->Explosion_Set().Count() > 0) {
 			coord.Z = PositionCoord.Z;
 			Coord ccoord = cell;
 			pos = coord + Coord_Scatter(ccoord, CELL_LEPTON / 4);
-			new AnimClass((Class->Explosion.Pick(Scen->RandomNumber())), pos, Random_Pick(0, 3), 1);
+			new AnimClass((Class->Explosion_Set().Pick(Scen->RandomNumber())), pos, Random_Pick(0, 3), 1);
 		}
 	}
 

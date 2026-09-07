@@ -1212,8 +1212,8 @@ ResultType AircraftClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					ParticleSystemClass * psys = new ParticleSystemClass(Rule->DefaultFirestormExplosionSystem, Center_Coord(), NULL, this);
 					psys->Sparks_To_Use_Random_Direction();
 				}
-			} else if (Class->Explosion.Count() > 0) {
-				new AnimClass(Class->Explosion.Pick(Scen->RandomNumber), Target_Coord());
+			} else if (Class->Explosion_Set().Count() > 0) {
+				new AnimClass(Class->Explosion_Set().Pick(Scen->RandomNumber), Target_Coord());
 			}
 
 #if OBSOLETE

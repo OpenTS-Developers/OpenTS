@@ -103,7 +103,8 @@ which mirrors `DifficultyModeComputer`: `0` is named Hard, `1` Medium and `2` Ea
 Read from `[Settings]`: `Bases`, `Credits`, `BridgeDestroy`, `Crates`, `ShortGame`,
 `GameSpeed`, `MultiEngineer`, `UnitCount`, `AIPlayers`, `AIDifficulty`, `AlliesAllowed`,
 `FogOfWar`, `MCVRedeploy`, `AutoDeployMCV`, `TechLevel`, `Firestorm`, `Seed`, `CoachMode`,
-`AutoSurrender`, `BuildOffAlly`, `AttackNeutralUnits`, and `PlayMoviesInMultiplayer`.
+`AutoSurrender`, `BuildOffAlly`, `AttackNeutralUnits`, `ScrapMetal`, and
+`PlayMoviesInMultiplayer`.
 
 `CoachMode` decides what a defeated player keeps;
 [observers and coach mode](/systems/observers/#coach-mode) owns it.
@@ -117,6 +118,11 @@ difference.
 `AttackNeutralUnits=yes` lets a target scan consider a neutral house, which a match otherwise
 passes over; [target selection](/systems/target-selection/#why-a-candidate-is-rejected) owns
 what is then picked. Every machine must carry the same answer, since each scans for itself.
+
+`ScrapMetal=yes` makes a wreck leave the animations its type gives
+[`ScrapExplosion`](/keys/scrapexplosion/) rather than [`Explosion`](/keys/explosion/), and
+it reaches a campaign as readily as a match. Every machine must carry the same answer,
+since the animation is drawn with the shared random number generator.
 
 `AutoDeployMCV=yes` deploys every house's starting base unit as the match opens;
 [starting forces](/systems/starting-forces/#the-base-unit) owns what that leaves on the map.
@@ -321,4 +327,4 @@ reads and an identity that game stamps into its saves; the picture a mission wan
 this game through `CustomLoadScreen` instead.
 
 These keys are read but change nothing yet: `Tournament`, `GameID`,
-`WriteStatistics`, `ScrapMetal`, and `QuickMatch`.
+`WriteStatistics`, and `QuickMatch`.

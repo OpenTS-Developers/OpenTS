@@ -87,6 +87,7 @@ void SpecialClass::Init(void)
 	IsTiberiumMeteorites = false;
 	IsIonStorms = false;
 	IsVisceroid = false;
+	IsScrapMetal = false;
 }
 
 
@@ -117,7 +118,8 @@ bool SpecialClass::operator==(const SpecialClass &that) const
 		IsDestroyBridges == that.IsDestroyBridges &&
 		IsTiberiumMeteorites == that.IsTiberiumMeteorites &&
 		IsIonStorms == that.IsIonStorms &&
-		IsVisceroid == that.IsVisceroid
+		IsVisceroid == that.IsVisceroid &&
+		IsScrapMetal == that.IsScrapMetal
 		) ? true : false);
 }
 
@@ -167,6 +169,7 @@ void SpecialClass::Write_INI(CCINIClass &ini) const
 	ini.Put_Bool(SPECIAL, "IonStorms", IsIonStorms);
 	ini.Put_Bool(SPECIAL, "Meteorites", IsTiberiumMeteorites);
 	ini.Put_Bool(SPECIAL, "Visceroids", IsVisceroid);
+	ini.Put_Bool(SPECIAL, "ScrapMetal", IsScrapMetal);
 }
 
 
@@ -196,5 +199,6 @@ void SpecialClass::Read_INI(CCINIClass const & ini)
 		IsFogOfWar = ini.Get_Bool(SPECIAL, "FogOfWar", IsFogOfWar);
 		IsInert = ini.Get_Bool(SPECIAL, "Inert", IsInert);
 		IsHarvesterImmune = ini.Get_Bool(SPECIAL, "HarvesterImmune", IsHarvesterImmune);
+		IsScrapMetal = ini.Get_Bool(SPECIAL, "ScrapMetal", IsScrapMetal);
 	}
 }

@@ -6606,8 +6606,9 @@ void UnitClass::EMPulse_Blast(void)
 /// </summary>
 void UnitClass::Explode(void)
 {
-	if (Class->Explosion.Count() > 0) {
-		AnimTypeClass const * anim = Class->Explosion.Pick(Scen->RandomNumber);
+	TypeList<AnimTypeClass const *> const & explosion = Class->Explosion_Set();
+	if (explosion.Count() > 0) {
+		AnimTypeClass const * anim = explosion.Pick(Scen->RandomNumber);
 
 		/*
 		**	SSM launchers will really explode big if they are carrying
@@ -6615,7 +6616,7 @@ void UnitClass::Explode(void)
 		*/
 		if (Class->IsExploding || Has_Ability(ABILITY_EXPLODES)) {
 			if (Class->MaxAmmo == -1 || Ammo > 0) {
-				anim = Class->Explosion[Class->Explosion.Count() - 1];
+				anim = explosion[explosion.Count() - 1];
 			}
 		}
 

@@ -459,6 +459,7 @@ struct GameOptionsType {
 	bool		BuildOffAlly;		// A mutually allied house's buildings anchor this player's placements.
 	bool		AutoDeployMCV;		// Every house's starting base unit deploys as the match begins.
 	bool		AttackNeutralUnits;	// A target scan considers a neutral house's objects.
+	bool		ScrapMetal;			// A wreck leaves the animations its type names in ScrapExplosion.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
 	bool Save(IStream * stream);

@@ -395,6 +395,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		TypeList<AnimTypeClass const *> Explosion;
 
 		/*
+		 * These are the animations spent in place of Explosion while scrap wreckage is
+		 * switched on. An empty list leaves Explosion in use.
+		 */
+		TypeList<AnimTypeClass const *> ScrapExplosion;
+
+		/*
 		 * This is the particle system that a building of this type runs continuously --
 		 * smokestack exhaust, refinery steam -- anchored at the given offset from its center.
 		 */
@@ -734,6 +740,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		virtual bool Legal_Placement(Cell const & pos, HouseClass * house) const;
 		virtual int Raw_Cost(void) const;
 		int Max_Passengers(void) const {return(MaxPassengers);}
+		TypeList<AnimTypeClass const *> const & Explosion_Set(void) const;
 		virtual int Repair_Cost(void) const;
 		virtual int Repair_Step(void) const;
 		int Self_Heal_Step(void) const;

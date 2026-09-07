@@ -158,6 +158,12 @@ class SpecialClass
 		unsigned IsVisceroid:1;
 
 		/*
+		 * If a destroyed object is to leave the animations its type names in ScrapExplosion
+		 * rather than its ordinary Explosion ones, then this flag will be true.
+		 */
+		unsigned IsScrapMetal:1;
+
+		/*
 		 * A bit field has no address to hand to the stream, so each option makes the trip
 		 * in an ordinary variable and is assigned back afterwards. The assignment is
 		 * harmless while saving.
@@ -192,5 +198,6 @@ class SpecialClass
 			IsTiberiumMeteorites = Serialize_Flag(stream, IsTiberiumMeteorites);
 			IsIonStorms = Serialize_Flag(stream, IsIonStorms);
 			IsVisceroid = Serialize_Flag(stream, IsVisceroid);
+			IsScrapMetal = Serialize_Flag(stream, IsScrapMetal);
 		}
 };
