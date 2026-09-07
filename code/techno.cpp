@@ -3024,11 +3024,11 @@ void TechnoClass::AI(void)
 	if (!IsActive) return;
 
 	/*
-	**	If this is a vehicle that heals itself (e.g., Mammoth Tank), then it will perform
+	**	If this is an object that heals itself (e.g., Mammoth Tank), then it will perform
 	**	the heal logic here.
 	*/
 	if (Should_Self_Heal_Now()) {
-		Strength++;
+		Strength = std::min(Strength + TClass->Self_Heal_Step(), TClass->MaxStrength);
 		if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
 			if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE] != NULL) {
 				ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
@@ -8177,8 +8177,9 @@ int TechnoClass::Get_Predator_Offset(void) const
 /// <summary>
 /// Should this object mend a little of its damage now?
 /// Only objects that can heal themselves qualify, whether by their nature or by the grace
-/// of veterancy, and only while they are hurt badly enough to be in the yellow. The healing
-/// is doled out on a slow tick, so this routine says no far more often than it says yes.
+/// of veterancy, and only while they are hurt and still under their healing ceiling. The
+/// healing is doled out on a slow tick, so this routine says no far more often than it
+/// says yes.
 /// </summary>
 /// <returns>bool; Should the object self heal this frame?</returns>
 bool TechnoClass::Should_Self_Heal_Now(void) const
@@ -8188,10 +8189,13 @@ bool TechnoClass::Should_Self_Heal_Now(void) const
 			return(false);
 		}
 	}
-	if ((Frame % (int)(Rule->RepairRate * TICKS_PER_MINUTE)) != 0) {
+	if (Strength >= TClass->MaxStrength) {
 		return(false);
 	}
-	return(HealthRatio > Rule->ConditionYellow ? false : true);
+	if ((Frame % std::max((int)(TClass->Self_Heal_Rate() * TICKS_PER_MINUTE), 1)) != 0) {
+		return(false);
+	}
+	return(HealthRatio > TClass->Self_Heal_Cap() ? false : true);
 }
 
 

@@ -1900,6 +1900,15 @@ class RulesClass
 		double IRepairRate;
 
 		/*
+		 * Self healing reads these rather than RepairRate and ConditionYellow; a rate or
+		 * cap below zero falls back to the setting it replaces, and a step below one is
+		 * raised to one, so nothing here switches healing off.
+		 */
+		int SelfHealStep;
+		double SelfHealRate;
+		double SelfHealCap;
+
+		/*
 		 * These floating point values are used to determine the status (health bar
 		 * color) of the game objects. Objects in the 'yellow' are in a cautionary
 		 * state. Object in the 'red' are in a danger state.

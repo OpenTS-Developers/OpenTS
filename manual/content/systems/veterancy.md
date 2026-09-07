@@ -128,7 +128,7 @@ The eighteen accepted tokens are matched without regard to letter case, and the 
 | `CLOAK` | The object cloaks and recloaks without [`Cloakable=yes`](/keys/cloakable/), and stays cloaked while immobilized. |
 | `TIBERIUM_PROOF` | Infantry take no damage from standing in Tiberium, as with [`TiberiumProof=yes`](/keys/tiberiumproof/). |
 | `VEIN_PROOF` | Veins do not damage the object, as with [`ImmuneToVeins=yes`](/keys/immunetoveins/). |
-| `SELF_HEAL` | The object repairs itself while at or below the yellow health threshold, as with [`SelfHealing=yes`](/keys/selfhealing/). |
+| `SELF_HEAL` | The object repairs itself while below its [self-healing ceiling](/systems/repair/#self-healing), as with [`SelfHealing=yes`](/keys/selfhealing/). |
 | `EXPLODES` | Death produces the violent explosion of [`Explodes=yes`](/keys/explodes/). |
 | `RADAR_INVISIBLE` | The object is kept off the local player's radar unless a sensor contact picks it up. |
 | `SENSORS` | An adjacent enemy cloaked object shimmers, as with [`Sensors=yes`](/keys/sensors/). |

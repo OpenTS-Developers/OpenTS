@@ -587,10 +587,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsCloakable;
 
 		/*
-		**	Can this object self heal up to half strength? Mammoth tanks from C&C had this
-		**	feature.
+		**	Can this object self heal? Mammoth tanks from C&C had this feature.
 		*/
 		bool IsSelfHealing;
+
+		/*
+		 * A value below zero takes the game-wide self healing setting instead.
+		 */
+		int SelfHealingStep;
+		double SelfHealingRate;
+		double SelfHealingCap;
 
 		/*
 		 * These redirect a healing weapon away from the kind of object its owner would
@@ -713,6 +719,9 @@ class TechnoTypeClass : public ObjectTypeClass
 		int Max_Passengers(void) const {return(MaxPassengers);}
 		virtual int Repair_Cost(void) const;
 		virtual int Repair_Step(void) const;
+		int Self_Heal_Step(void) const;
+		double Self_Heal_Rate(void) const;
+		double Self_Heal_Cap(void) const;
 		virtual int Flight_Level(void) const;
 		virtual void const * Get_Cameo_Data(void) const override;
 		virtual int Cost_Of(HouseClass * house = NULL) const override;

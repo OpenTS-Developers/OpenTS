@@ -19194,6 +19194,60 @@ Selectable:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+SelfHealCap:
+  key: SelfHealCap
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: RulesClass
+      member: SelfHealCap
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SelfHealRate:
+  key: SelfHealRate
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: RulesClass
+      member: SelfHealRate
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+SelfHealStep:
+  key: SelfHealStep
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: RulesClass
+      member: SelfHealStep
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 SelfHealing:
   key: SelfHealing
   scopes:
@@ -19208,6 +19262,57 @@ SelfHealing:
       default_candidate: 'no'
       declared_in: TechnoTypeClass
       member: IsSelfHealing
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealingCap:
+  key: SelfHealingCap
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: SelfHealingCap
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealingRate:
+  key: SelfHealingRate
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: floating point
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: SelfHealingRate
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
+SelfHealingStep:
+  key: SelfHealingStep
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: SelfHealingStep
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass

@@ -25,7 +25,13 @@ keys:
   - RepairSell
   - RepairStep
   - Repairable
+  - SelfHealCap
+  - SelfHealRate
+  - SelfHealStep
   - SelfHealing
+  - SelfHealingCap
+  - SelfHealingRate
+  - SelfHealingStep
   - SellBack
   - Strength
   - TiberiumHeal
@@ -44,19 +50,22 @@ related:
     id: ToggleRepair
 ---
 
-Five paths restore strength, and they share nothing but the settings they read: the wrench a player puts on a structure, the depot a vehicle drives onto, the hospital or armory an infantry walks into, the mending an object performs on itself, and the Tiberium a foot object stands in. The rate and step settings do not divide along those lines, and their names do not say which path each one reaches. The table gives each setting the paths it actually reaches; what to take from it is that most of them reach more than one, so retuning a setting for the wrench moves self-healing with it and retuning one for the hospital moves the armory.
+Five paths restore strength, and they share nothing but the settings they read: the wrench a player puts on a structure, the depot a vehicle drives onto, the hospital or armory an infantry walks into, the mending an object performs on itself, and the Tiberium a foot object stands in. The rate and step settings do not divide along those lines, and their names do not say which path each one reaches. The table gives each setting the paths it actually reaches; what to take from it is that most of them reach more than one, so retuning a setting for the wrench moves self-healing with it and retuning one for the hospital moves the armory. Only self-healing can be taken off the shared settings, by the three keys listed last.
 
 | Setting | What it reaches |
 | --- | --- |
-| [`RepairRate`](/keys/repairrate/) | The interval between structure repair steps, and the interval between self-healing steps |
+| [`RepairRate`](/keys/repairrate/) | The interval between structure repair steps, and the interval between self-healing steps that no `SelfHealRate` has claimed |
 | [`URepairRate`](/keys/urepairrate/) | The interval between service-depot steps. It sets no step size |
 | [`IRepairRate`](/keys/irepairrate/) | The count a hospital reaches before it heals a step, and the count an armory reaches before it promotes |
 | [`RepairStep`](/keys/repairstep/) | The strength one step restores to a structure, vehicle or aircraft, and the divisor inside the credit cost |
 | [`IRepairStep`](/keys/irepairstep/) | The strength one step restores to infantry |
 | [`RepairPercent`](/keys/repairpercent/) | The multiplier at the end of the credit cost |
 | [`TiberiumHeal`](/keys/tiberiumheal/#scope-global-rules) | The interval between Tiberium healing steps |
+| [`SelfHealRate`](/keys/selfhealrate/) | The interval between self-healing steps, replacing `RepairRate` on that path alone |
+| [`SelfHealStep`](/keys/selfhealstep/) | The strength one self-healing step restores |
+| [`SelfHealCap`](/keys/selfhealcap/) | The share of maximum strength at which self-healing stops, replacing `ConditionYellow` on that path alone |
 
-Each of the four intervals is a fraction of a minute, multiplied by 900 frames where it is used. At the engine defaults a structure repair step and a self-healing step fall every 14 frames, a Tiberium healing step every 15, and the counted paths — the depot, the hospital and the armory — act on the count of 15. What that count is worth in wall time differs by a factor of fourteen between the hospital and the armory, for the reason given under [Hospitals and armories](#hospitals-and-armories).
+Each of the five intervals is a fraction of a minute, multiplied by 900 frames where it is used. At the engine defaults, where `SelfHealRate` is unset, a structure repair step and a self-healing step fall every 14 frames, a Tiberium healing step every 15, and the counted paths — the depot, the hospital and the armory — act on the count of 15. What that count is worth in wall time differs by a factor of fourteen between the hospital and the armory, for the reason given under [Hospitals and armories](#hospitals-and-armories).
 
 ## Repairing a structure
 
@@ -97,7 +106,7 @@ The one-credit floor pushes the other way on anything cheap with a large strengt
 The raw cost is the building's own [`Cost`](/keys/cost/#scope-aircrafttype) less whatever the structure hands out — the cost of its [`FreeUnit`](/keys/freeunit/), and, on the structure that the first entry of [`PadAircraft`](/keys/padaircraft/) docks at, the average cost of the first two pad aircraft unless [`SeparateAircraft=yes`](/keys/separateaircraft/). A construction yard that comes with a free vehicle is therefore cheaper to repair than its listed price implies.
 
 :::danger[Two settings can divide by zero]
-`Strength / RepairStep` is evaluated first and in integers: a `RepairStep` of `0` divides by zero outright, and one larger than the type's `Strength` makes that term zero so the next division crashes the game. `RepairRate * 900` is truncated to an integer and used as a modulus, so any value between zero and `1/900` crashes it as well — and because self-healing uses the same modulus, that second crash reaches every object with `SelfHealing=yes`, not only structures.
+`Strength / RepairStep` is evaluated first and in integers: a `RepairStep` of `0` divides by zero outright, and one larger than the type's `Strength` makes that term zero so the next division crashes the game. `RepairRate * 900` is truncated to an integer and used as a modulus, so any value between zero and `1/900` crashes it as well. Self-healing reads the same figure but raises a truncated interval back to one frame, so that second crash reaches structures under the wrench alone.
 :::
 
 ### What stops a repair
@@ -201,15 +210,25 @@ A hospital's loop asks to be called again on the next frame, so its count advanc
 
 ## Self-healing
 
-[`SelfHealing=yes`](/keys/selfhealing/), or the `SELF_HEAL` ability from [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/), makes an object mend itself with no building, no order and no credits. The tick is the same `RepairRate` modulus the wrench uses, on the same global frames, and it applies to structures, vehicles, aircraft and infantry alike.
+[`SelfHealing=yes`](/keys/selfhealing/), or the `SELF_HEAL` ability from [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/), makes an object mend itself with no building, no order and no credits. It applies to structures, vehicles, aircraft and infantry alike.
 
-The amount is one strength point per tick. Nothing scales it: `RepairStep` and `IRepairStep` are not consulted on this path.
+Three settings decide what a tick does:
 
-:::caution[Self-healing stops at the yellow line]
-The tick is refused as soon as the object's strength ratio rises above [`ConditionYellow`](/keys/conditionyellow/), so healing ends one point past that threshold. At the engine default a self-healing object recovers to just over half strength and stays there; only raising `ConditionYellow` raises where it stops.
+| Read from | Step | Interval | Ceiling |
+| --- | --- | --- | --- |
+| The object's type | [`SelfHealingStep`](/keys/selfhealingstep/) | [`SelfHealingRate`](/keys/selfhealingrate/) | [`SelfHealingCap`](/keys/selfhealingcap/) |
+| The rules | [`SelfHealStep`](/keys/selfhealstep/) | [`SelfHealRate`](/keys/selfhealrate/) | [`SelfHealCap`](/keys/selfhealcap/) |
+| Neither | `1` | [`RepairRate`](/keys/repairrate/) | [`ConditionYellow`](/keys/conditionyellow/) |
+
+Each column is read down: a value below zero falls to the row beneath. Rules that state none of them therefore heal a point every 14 frames up to half strength, as they always did, and `RepairStep` and `IRepairStep` reach no part of this path at any setting.
+
+The interval is tested against the global frame counter, so everything healing on one interval steps on the same frames. An interval that truncates below a frame is raised to a frame here, where the wrench's divides by zero. A step below one is raised to one, and the sum is clamped to the object's maximum strength, so no setting overheals and none of them switches healing off — `SelfHealing=no` does that.
+
+:::caution[The ceiling is not the damage threshold]
+A tick is refused as soon as the strength ratio rises above the ceiling, so healing ends one step past it. [`ConditionYellow`](/keys/conditionyellow/) still decides on its own when an object counts as damaged, so a ceiling on either side of it leaves the healing and the damage state out of step. The damage smoke goes out on the healing tick that crosses `ConditionYellow`, but a structure's damaged artwork does not: only a hit or a paid repair step re-evaluates that.
 :::
 
-Tiberium healing is the contrasting case. [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype), or the `TIBERIUM_HEAL` ability, restores a foot object standing on Tiberium every `TiberiumHeal * 900` frames — 15 at the engine default — and the amount is the type's repair step, `IRepairStep` for infantry and `RepairStep` for everything else. It runs while the object is below maximum strength and clamps to that maximum, so unlike self-healing it finishes the job. Buildings never heal this way.
+Tiberium healing is the contrasting case. [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype), or the `TIBERIUM_HEAL` ability, restores a foot object standing on Tiberium every `TiberiumHeal * 900` frames — 15 at the engine default — and the amount is the type's repair step, `IRepairStep` for infantry and `RepairStep` for everything else. It runs while the object is below maximum strength and clamps to that maximum, so it finishes the job without needing a ceiling raised. Buildings never heal this way.
 
 A weapon that deals negative damage, as a medic or a mechanic does, restores strength through ordinary combat processing rather than through any path on this page. It also clears the target's limpet mark and resets its rates of turn to the type's `ROT`.
 

@@ -264,6 +264,9 @@ RulesClass::RulesClass(void) :
 	RepairRate(.016),
 	URepairRate(.016),
 	IRepairRate(.016),
+	SelfHealStep(1),
+	SelfHealRate(-1),
+	SelfHealCap(-1),
 	ConditionGreen(1),
 	ConditionYellow(.5),
 	ConditionRed(.5),
@@ -1208,6 +1211,9 @@ bool RulesClass::General(CCINIClass const & ini)
 		RepairRate = ini.Get_Float(GENERAL, "RepairRate", RepairRate);
 		URepairRate = ini.Get_Float(GENERAL, "URepairRate", URepairRate);
 		IRepairRate = ini.Get_Float(GENERAL, "IRepairRate", IRepairRate);
+		SelfHealStep = ini.Get_Int(GENERAL, "SelfHealStep", SelfHealStep);
+		SelfHealRate = ini.Get_Float(GENERAL, "SelfHealRate", SelfHealRate);
+		SelfHealCap = ini.Get_Float(GENERAL, "SelfHealCap", SelfHealCap);
 		StrayDistance = ini.Get_Lepton(GENERAL, "Stray", StrayDistance);
 		CloseEnoughDistance = ini.Get_Lepton(GENERAL, "CloseEnough", CloseEnoughDistance);
 		IsBlendedFog = ini.Get_Bool(GENERAL, "BlendedFog", IsBlendedFog);
@@ -2468,6 +2474,9 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(RepairRate);
 	stream.Serialize(URepairRate);
 	stream.Serialize(IRepairRate);
+	stream.Serialize(SelfHealStep);
+	stream.Serialize(SelfHealRate);
+	stream.Serialize(SelfHealCap);
 	stream.Serialize(ConditionGreen);
 	stream.Serialize(ConditionYellow);
 	stream.Serialize(ConditionRed);
