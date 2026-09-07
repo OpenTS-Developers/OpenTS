@@ -19,5 +19,5 @@ All four test membership of the [`HarvesterUnit`](/keys/harvesterunit/) list. On
 :::
 
 :::caution[The entry is read in campaigns only]
-The `[SpecialFlags]` block is read from the map only in a single-player mission or with the map debugger active, and every other game type replaces the scenario's whole set of flags with the one the lobby settled on once the map has been read. Outside a campaign the harvester truce comes from the lobby option, which also destroys every vehicle a defeated player owned and discounts the first type named in [`HarvesterUnit`](/keys/harvesterunit/) when deciding that a player has been defeated.
+The `[SpecialFlags]` block is read from the map only in a single-player mission or with the map debugger active, and every other game type replaces the scenario's whole set of flags with the one the lobby settled on once the map has been read. Outside a campaign the harvester truce comes from the lobby option, which also destroys every vehicle a defeated player owned and discounts every type named in [`HarvesterUnit`](/keys/harvesterunit/) when deciding that a player has been defeated.
 :::

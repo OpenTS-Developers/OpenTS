@@ -91,7 +91,7 @@ int Obfuscate(char const * string)
 	**	discourages the direct forced illegal character input method of attack.
 	*/
 	for (int index = 0; index < length; index++) {
-		if (!isgraph(buffer[index])) {
+		if (!isgraph((unsigned char)buffer[index])) {
 			buffer[index] = (char)('A' + (index%26));
 		}
 	}

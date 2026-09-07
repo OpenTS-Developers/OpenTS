@@ -65,16 +65,16 @@ A house whose list is empty generates one when either of two things happens: an 
 ## Building the plan
 
 1. **Candidates.** A BuildingType is a candidate while all of this holds:
-   - its [`Owner`](/keys/owner/) includes this house;
+   - its [`Owner`](/keys/owner/) includes the country this house [acts as](/keys/actslike/);
    - it is [`AIBuildThis=yes`](/keys/aibuildthis/);
    - its [`TechLevel`](/keys/techlevel/) is within the house's scenario tech level;
    - it is not [`Weeder=yes`](/keys/weeder/), or the map carries a veinhole monster;
    - it is not the excluded plug — under the Firestorm addon one of the hard-coded IDs `GAPLUG2`, `GAPLUG3` and `GAPLUG4` is drawn at random and left out.
-2. **Seed.** Entry 0 of [`BuildConst`](/keys/buildconst/), which must also pass that filter, then unconditionally the first [`BuildPower`](/keys/buildpower/) entry the house may own. The first ownable [`BuildBarracks`](/keys/buildbarracks/) entry moves to the head of the candidate list and the first ownable [`BuildWeapons`](/keys/buildweapons/) entry to second place.
-3. **Expansion.** Repeated passes append every candidate whose [`Prerequisite`](/keys/prerequisite/) list the queue already satisfies, resolving a generic prerequisite through `BuildWeapons`, `BuildBarracks`, [`BuildRadar`](/keys/buildradar/) or [`BuildTech`](/keys/buildtech/) and treating the `BuildConst` construction yard as always satisfied. A [`Helipad=yes`](/keys/helipad/) type is appended one to three extra times; the hard-coded `GAPLUG` waits for a pass that adds nothing else.
-4. **Refineries.** `2 - Difficulty` extra copies of the first ownable [`BuildRefinery`](/keys/buildrefinery/) entry, at random positions after the first refinery.
-5. **Defenses.** A build cost running from the cost of queue entries 1 and 2 accumulates entry by entry, and before each entry the plan calls for `(cost - 2000) / 1500` defenses scaled by [`NodBaseDefenseCoefficient`](/keys/nodbasedefensecoefficient/) for a house named "Nod" and by [`GDIBaseDefenseCoefficient`](/keys/gdibasedefensecoefficient/) for every other house. Each unit of shortfall becomes a `-1` placeholder, preceded by a [`WallTower`](/keys/walltower/) node for GDI. When the house is Nod, or when [`AIBuildsWalls=no`](/keys/aibuildswalls/), further placeholders follow: `(3 - Difficulty) * 3` of them for a house named GDI, and `(3 - Difficulty) * 2` for every other house.
-6. **Wall.** A `-3` node closes the list when `AIBuildsWalls=yes` and the house is either not Nod or has [`NodAIBuildsWalls=yes`](/keys/nodaibuildswalls/).
+2. **Seed.** The first [`BuildConst`](/keys/buildconst/) entry that passes that filter, then the first [`BuildPower`](/keys/buildpower/) entry that country may own, when there is one. The first such [`BuildBarracks`](/keys/buildbarracks/) entry moves to the head of the candidate list and the first such [`BuildWeapons`](/keys/buildweapons/) entry to second place.
+3. **Expansion.** Repeated passes append every candidate whose [`Prerequisite`](/keys/prerequisite/) list the queue already satisfies, resolving a generic prerequisite through `BuildWeapons`, `BuildBarracks`, [`BuildRadar`](/keys/buildradar/) or [`BuildTech`](/keys/buildtech/), a `GDIFACTORY` or `NODFACTORY` group through any of its [`PrerequisiteGDIFactory`](/keys/prerequisitegdifactory/) or [`PrerequisiteNodFactory`](/keys/prerequisitenodfactory/) types already queued, and treating any `BuildConst` construction yard as always satisfied. A [`Helipad=yes`](/keys/helipad/) type is appended one to three extra times; the hard-coded `GAPLUG` waits for a pass that adds nothing else.
+4. **Refineries.** `2 - Difficulty` extra copies of the first [`BuildRefinery`](/keys/buildrefinery/) entry that country may own, at random positions after the first refinery.
+5. **Defenses.** A queue shorter than three entries — a house that may own no listed yard or power plant — is written to the plan as it stands, with nothing woven in. Otherwise a build cost running from the cost of queue entries 1 and 2 accumulates entry by entry, and before each entry the plan calls for `(cost - 2000) / 1500` defenses scaled by the acted side's [`AIBaseDefenseCoefficient`](/keys/aibasedefensecoefficient/#scope-side). Each unit of shortfall becomes a `-1` placeholder, preceded by the first [`AIWallTowers`](/keys/aiwalltowers/#scope-side) entry the acted country may own when there is one. When the side will not build a wall — its own [`AIBuildsWalls`](/keys/aibuildswalls/#scope-side) or the global [`AIBuildsWalls`](/keys/aibuildswalls/#scope-global-rules) is `no` — or when its [`AIBaseDefensesWithWalls`](/keys/aibasedefenseswithwalls/#scope-side) is `yes`, `(3 - Difficulty) * `[`AIBaseDefensePlaceholders`](/keys/aibasedefenseplaceholders/#scope-side) further placeholders follow, each preceded by that tower.
+6. **Wall.** A `-3` node closes the list when both the global `AIBuildsWalls` and the side's own are `yes`.
 
 `Difficulty` in steps 4 and 5 is the house's own [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot) — `[Easy]` is 0, `[Normal]` 1 and `[Difficult]` 2 — and a computer house is handed the inverse of the setting the player chose. The table works both terms out for each setting. Read the two right-hand columns downward: the harder the player set the game, the more extra refineries the plan carries and the larger the placeholder counts in step 5 come out.
 
@@ -102,7 +102,7 @@ A node counts as built under any of these:
 - the node names a wall type and its cell carries that wall's overlay;
 - the node names a wall type and its cell carries any building.
 
-A node whose cell is `0,0` never counts as built. A `-3` node deletes itself before running the wall planner, and a `-1` node or a cell-less `WallTower` node is deleted when the defense planner fails on it, taking the following node with it when it is a wall tower. Any other node becomes the house's pending structure. Because the first unbuilt node is always the one taken, a node no owned factory can produce holds up every node behind it.
+A node whose cell is `0,0` never counts as built. A `-3` node deletes itself before running the wall planner, and a `-1` node or a cell-less node of the acted side's [`AIWallTowers`](/keys/aiwalltowers/#scope-side) is deleted when the defense planner fails on it, taking the following node with it when it is a tower. Any other node becomes the house's pending structure. Because the first unbuilt node is always the one taken, a node no owned factory can produce holds up every node behind it.
 
 ## Choosing a spot
 
@@ -134,14 +134,14 @@ A defense node is filled in against the quadrant of the base that needs it most.
 
 A BuildingType is a candidate for that category while all of this holds:
 
-- the house may own it;
+- the country the house acts as may own it;
 - its value in that category is above zero;
 - its `TechLevel` is within the house's reach;
-- its prerequisites are met by the non-defense buildings the house owns, plus `WallTower` for GDI.
+- its prerequisites are met by the non-defense buildings the house owns, plus the acted side's `AIWallTowers`.
 
 An empty list falls back to anti-armor, then anti-infantry, then anti-air, and all three empty deletes the node. One candidate is drawn at random, weighted by `10000 / cost + its value in that category`, so cheap defenses dominate. It consumes the best-scoring cell of the threat ring where one was supplied, and takes the placement search's result otherwise.
 
-What the node then receives depends on which kind of node it is. A `-1` placeholder takes both the chosen type and the chosen cell. A `WallTower` node keeps its own type and takes only the cell, and the chosen defense is written into the node after it at that same cell — but only while that following node is still a `-1` placeholder. In that case a wall node already claiming the cell is deleted as well, and only when a threat ring was supplied.
+What the node then receives depends on which kind of node it is. A `-1` placeholder takes both the chosen type and the chosen cell. A tower node chooses among the defenses that [plug into](/keys/powersupbuilding/) that tower: it keeps its own type and takes only the cell, and the chosen upgrade is written into the node after it at that same cell — but only while that following node is still a `-1` placeholder. In that case a wall node already claiming the cell is deleted as well, and only when a threat ring was supplied. A tower none of the country's defenses plug into is dropped: the node takes a standalone defense as a placeholder would, and the placeholder after it waits for the next pass.
 
 A BuildingType's three category values are computed from rules once the weapons are loaded, and only for a type with [`IsBaseDefense=yes`](/keys/isbasedefense/). From its primary weapon, `damage` is `Damage / (ROF * 0.025)` truncated to a whole number. An anti-aircraft projectile sets `AntiAirValue` to `damage` multiplied by the warhead's [`Verses`](/keys/verses/) percentage against `heavy` armor; an anti-ground projectile sets `AntiArmorValue` from that same `heavy` figure and `AntiInfantryValue` from the `Verses` percentage against `none`. All three are capped at [`MaximumBaseDefenseValue`](/keys/maximumbasedefensevalue/). A type without `IsBaseDefense=yes`, or with no primary weapon, keeps all three at zero and never enters a candidate list; at runtime a building whose own value is zero reports the first non-zero value among its plugged-in upgrades instead.
 
@@ -159,10 +159,10 @@ The wall ring is the base rectangle grown by one cell on each side, walked along
 
 A run becomes wall nodes once it reaches five cells, or sooner when an overlay or a ramp cuts it short.
 
-Wall nodes come from the first ownable [`ConcreteWalls`](/keys/concretewalls/) entry and are all appended before any gate node. Gate nodes — [`EWGates`](/keys/ewgates/) on the north and south edges, [`NSGates`](/keys/nsgates/) on the east and west — take the midpoint of a run and consume three wall slots each; a run cut short by an overlay or a ramp is laid as plain wall. For GDI the wall cells also become the [threat ring](#base-defenses) the defense planner draws from, and pairs of a `WallTower` node and a `-1` node are appended, `0.2` per wall node and capped at `(3 - Difficulty) * `[`GDIWallDefenseCoefficient`](/keys/gdiwalldefensecoefficient/)` + `[`GDIWallDefense`](/keys/gdiwalldefense/). The base rectangle then becomes the wall ring, so the next wall is planned one ring further out.
+Wall nodes come from the first [`ConcreteWalls`](/keys/concretewalls/) entry the acted country may own and are all appended before any gate node. Gate nodes — [`EWGates`](/keys/ewgates/) on the north and south edges, [`NSGates`](/keys/nsgates/) on the east and west — take the midpoint of a run and consume three wall slots each; a run cut short by an overlay or a ramp is laid as plain wall. For a side with an [`AIWallTowers`](/keys/aiwalltowers/#scope-side) entry the acted country may own, the wall cells also become the [threat ring](#base-defenses) the defense planner draws from, and pairs of that tower's node and a `-1` node are appended, `0.2` per wall node and capped at `(3 - Difficulty) * `[`AIWallDefenseCoefficient`](/keys/aiwalldefensecoefficient/#scope-side)` + `[`AIWallDefense`](/keys/aiwalldefense/#scope-side). The base rectangle then becomes the wall ring, so the next wall is planned one ring further out.
 
-:::caution[Side behavior keys off the house's country name]
-The planner compares the house's country name against the literal strings "GDI" and "NOD", case-insensitively. A house named neither takes the GDI defense coefficient, receives no wall towers and no threat ring — leaving that branch of the defense planner unreachable for it — and answers power shortages with Nod's power plants.
+:::note[Side behavior comes from the side a house acts as]
+Every side-specific choice above is read from the side of the country the house [acts as](/keys/actslike/), through the section carrying that side's own name; the first two sides start from the rules' `GDI` and `Nod` keys, so the shipped rules build the bases they always did. A house acting for no country, or for a country belonging to no side, plans with the defaults a third side starts with: a coefficient of 1, two placeholders per difficulty step, no towers, and a wall.
 :::
 
 ## Power and money interventions
@@ -171,10 +171,10 @@ A power plant node is inserted immediately before the node the house is about to
 
 - the house is not following a map plan;
 - the node's own drain added to the house's current drain exceeds its current power output;
-- the node is not the [`BuildConst`](/keys/buildconst/) construction yard;
+- the node is not a [`BuildConst`](/keys/buildconst/) construction yard;
 - the node's type draws power at all.
 
-Which plant goes in depends on the house. GDI inserts [`GDIPowerTurbine`](/keys/gdipowerturbine/) when it owns a [`GDIPowerPlant`](/keys/gdipowerplant/) with a free upgrade slot and a random draw falls under [`AIUseTurbineUpgradeProbability`](/keys/aiuseturbineupgradeprobability/) — a fraction of 1 that defaults to 1, so the turbine is taken whenever a slot is free unless the value is lowered — and `GDIPowerPlant` otherwise; every other house inserts [`NodAdvancedPower`](/keys/nodadvancedpower/) when the buildings it owns meet that type's prerequisites, and [`NodRegularPower`](/keys/nodregularpower/) otherwise.
+Which plant goes in depends on the acted side. Its [`PowerTurbine`](/keys/powerturbine/#scope-side) is taken when the house owns one of the side's [`RegularPowerPlant`](/keys/regularpowerplant/#scope-side) with a free upgrade slot and a random draw falls under [`AIUseTurbineUpgradeProbability`](/keys/aiuseturbineupgradeprobability/) — a fraction of 1 that defaults to 1, so the turbine is taken whenever a slot is free unless the value is lowered; otherwise its [`AdvancedPowerPlant`](/keys/advancedpowerplant/#scope-side) when the buildings the house owns meet that type's prerequisites; otherwise its `RegularPowerPlant`; and when the side names no plant, the first [`BuildPower`](/keys/buildpower/) entry the acted country may own. With nothing to insert the node is built as it stands.
 
 A house that cannot make money, again only when it is not following a map plan, sells its base from the back of the node list forward until the proceeds cover a harvester — where it owns both a refinery and a war factory — or a refinery otherwise, abandons its factories, and either orders that harvester or inserts a refinery node at the current build position. Selling out the whole list without raising enough sends every unit it owns to hunt.
 

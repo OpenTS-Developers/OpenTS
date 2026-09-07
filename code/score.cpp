@@ -71,6 +71,7 @@
 #include "shapeset.h"
 #include "surface.h"
 #include "theme.h"
+#include "utf8.h"
 #include "windlg.h"
 #include "winstub.h"
 
@@ -905,7 +906,7 @@ void ScoreClass::Input_Name(char str[], int xpos, int ypos)
 		Timing();
 
 		if (Keyboard->Check()) {
-			key = Keyboard->To_ASCII(Keyboard->Get()) & 0xFF;
+			key = Keyboard->To_ASCII(Keyboard->Get());
 			Call_Back();
 
 			/*
@@ -923,7 +924,7 @@ void ScoreClass::Input_Name(char str[], int xpos, int ypos)
 			** turn it into a space instead.
 			*/
 			if (key == KN_BACKSPACE && x >= xpos + 84 && str[index] != 0 && str[index] != 32) {
-				Rect rect(x, ypos + 1, FullFont->Char_Width(str[index]) + 1, 16);
+				Rect rect(x, ypos + 1, FullFont->Char_Width(UTF8::Peek(str + index)) + 1, 16);
 				HiddenSurface->Blit_From(rect, *SurfacePtr, rect);
 				AlternateSurface->Blit_From(rect, *SurfacePtr, rect);
 				key = 32;
@@ -935,8 +936,8 @@ void ScoreClass::Input_Name(char str[], int xpos, int ypos)
 				 * Any other backspace erases the previous character.
 				 */
 				if (index) {
-					char letter = str[--index];
-					int cw = FullFont->Char_Width(letter) + 1;
+					index = (int)(UTF8::Previous(str, str + index) - str);
+					int cw = FullFont->Char_Width(UTF8::Peek(str + index)) + 1;
 					x -= cw;
 					Rect rect(x, ypos + 1, cw, 16);
 					HiddenSurface->Blit_From(rect, *SurfacePtr, rect);
@@ -950,20 +951,21 @@ void ScoreClass::Input_Name(char str[], int xpos, int ypos)
 				/*
 				 * Draw the new (or overwritten) character and advance the cursor.
 				 */
-				int cw = FullFont->Char_Width(key) + 1;
+				char32_t code = (char32_t)key;
+				int cw = FullFont->Char_Width(code) + 1;
 				if (x + FullFont->Get_Width() <= xpos + 90) {
 					if (x + cw >= xpos + 84) {
-						Rect rect(x, ypos + 1, FullFont->Char_Width(str[index]) + 1, 16);
+						Rect rect(x, ypos + 1, FullFont->Char_Width(UTF8::Peek(str + index)) + 1, 16);
 						HiddenSurface->Blit_From(rect, *SurfacePtr, rect);
 						AlternateSurface->Blit_From(rect, *SurfacePtr, rect);
 					}
-					str[index] = key;
-					str[index + 1] = 0;
+					int length = UTF8::Encode(code, str + index);
+					str[index + length] = 0;
 					Alloc_Object(new ScorePrintClass(str + index, x, ypos, FullFont, false));
 					DoSound("Type", 128);
 					if (x < xpos + 87) {
-						index++;
-						x += FullFont->Char_Width(key) + 1;
+						index += length;
+						x += FullFont->Char_Width(code) + 1;
 					}
 				}
 			}
@@ -1272,9 +1274,20 @@ int ScoreFontClass::String_Width(const char * string)
 	const char * str = string;
 	int w = 0;
 	while (*str) {
-		w += Char_Width((char)*str++) + 1;
+		w += Char_Width(UTF8::Decode(str)) + 1;
 	}
 	return(w);
+}
+
+
+// The glyph shapes are in code page 437 order; a code point they lack draws as '?'.
+int ScoreFontClass::Glyph_Frame(char32_t code) const
+{
+	int index = UTF8::OEM_437_Glyph(code);
+	if (index < 0) {
+		index = '?';
+	}
+	return(3 * std::min(std::max(index - 33, 0), 216));
 }
 
 
@@ -1283,20 +1296,13 @@ int ScoreFontClass::String_Width(const char * string)
 /// The font is proportional, so every glyph must be measured rather than assumed.
 /// </summary>
 /// <returns>Returns with the width in pixels that the character occupies.</returns>
-int ScoreFontClass::Char_Width(char ch)
+int ScoreFontClass::Char_Width(char32_t code)
 {
-	char out[1];
-
-	if (ch == 32) {
+	if (code == 32) {
 		return(8);
 	}
 
-	CharToOemBuff(&ch, out, sizeof(out));
-
-	int frame;
-	frame = std::max((out[0] & 0xFF) - 33, 0);
-	frame = 3 * std::min(frame, 216);
-
+	int frame = Glyph_Frame(code);
 	return(ShapePtr->Get_Rect(frame + 2).Width);
 }
 
@@ -1308,14 +1314,10 @@ int ScoreFontClass::Char_Width(char ch)
 /// </summary>
 /// <param name="v">The brightness frame to draw the glyph with.</param>
 /// <param name="play_sound">Should a typing sound be played along with the character?</param>
-void ScoreFontClass::Print_Char(Surface *surf, char ch, int x, int y, int v, bool play_sound)
+void ScoreFontClass::Print_Char(Surface *surf, char32_t code, int x, int y, int v, bool play_sound)
 {
-	CharToOemBuff(&ch, &ch, sizeof(ch));
-
-	if (ch != 32) {
-		int frame;
-		frame = std::max((ch & 0xFF) - 33, 0);
-		frame = 3 * std::min(frame, 216);
+	if (code != 32) {
+		int frame = Glyph_Frame(code);
 
 		if (play_sound == true && v == 0) {
 			void *snd = text_sounds[rand() % 3].mSound;
@@ -1336,16 +1338,14 @@ void ScoreFontClass::Print_Char(Surface *surf, char ch, int x, int y, int v, boo
 /// <param name="brightness_frame">The brightness frame to draw the glyphs with.</param>
 void ScoreFontClass::Print_String(Surface *surf, const char * string, int x, int y, int brightness_frame)
 {
-	unsigned char buf[2];
 	while (*string != '\0') {
-		if (*string != 32) {
-			CharToOemBuff(string, (LPSTR)buf, sizeof(char));
-			int frame = 3 * std::min(std::max(buf[0] - 33, 0), 216);
+		char32_t code = UTF8::Decode(string);
+		if (code != 32) {
+			int frame = Glyph_Frame(code);
 
 			Draw_Shape(*surf, *Drawer, ShapePtr, frame + brightness_frame, Point2D(x - ShapePtr->Get_Rect(frame + 2).X, y), surf->Get_Rect(), SHAPE_WIN_REL);
 		}
-		x += Char_Width(*string) + 1;
-		string++;
+		x += Char_Width(code) + 1;
 	}
 }
 
@@ -1498,10 +1498,11 @@ bool ScorePrintClass::Update(Surface * surf)
 		}
 
 		int x = XPos;
-		for (int i = 0; i <= Pos; i++) {
+		char const * text = (char const *)DataPtr;
+		for (int i = 0; i <= Pos; ) {
 
-			char localstr;
-			localstr = ((char *)DataPtr)[i];
+			char const * cursor = text + i;
+			char32_t localstr = UTF8::Decode(cursor);
 			if (localstr == '\0') {
 				Stage++;
 				break;
@@ -1519,6 +1520,7 @@ bool ScorePrintClass::Update(Surface * surf)
 				Font->Print_Char(AlternateSurface, localstr, x, YPos, v, false);
 			}
 			x += Font->Char_Width(localstr) + 1;
+			i = (int)(cursor - text);
 		}
 
 		Pos++;

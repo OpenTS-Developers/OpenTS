@@ -19,7 +19,7 @@ A house is one owner in a running scenario: one holder of objects, credits, powe
 
 A house is built from a country, which supplies the name, the color scheme, the side, and the combat, speed and cost biases the house starts with. The rules files and a scenario both carry a section called `[Houses]`, and the two do not hold the same thing: the rules list declares the countries, and the scenario list creates the houses that play the mission.
 
-Reading "house" as "side" is the common error. A country names a side and several countries can share one; GDI and Nod are sides. A house is not its country either — the scenario decides how many houses exist, two of them can be made from the same country, and [`ActsLike=`](/keys/actslike/) points a house at a different country again for its build list and its radar imagery.
+Reading "house" as "side" is the common error. A country names a side and several countries can share one; GDI and Nod are sides. A house is not its country either — the scenario decides how many houses exist, two of them can be made from the same country, and [`ActsLike=`](/keys/actslike/) points a house at a different country again: the country whose things it builds, plans and is handed, and whose side it fights under.
 
 ## Limbo
 

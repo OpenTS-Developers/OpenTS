@@ -16,4 +16,4 @@ The flag is what keeps a story-only country out of the country box. The skirmish
 
 It is also what puts a house on the in-game player standings panel: the radar's name-and-kills list skips any house whose country lacks the flag, so a house of a country without it plays without ever appearing there.
 
-No other gameplay path consults it. Whether a house takes part in the contest at all is [`MultiplayPassive`](/keys/multiplaypassive/), which is a separate question.
+A computer player the menu seats is given one of the countries carrying the flag, drawn at random. No other gameplay path consults it. Whether a house takes part in the contest at all is [`MultiplayPassive`](/keys/multiplaypassive/), which is a separate question.

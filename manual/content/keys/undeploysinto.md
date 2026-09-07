@@ -1,7 +1,7 @@
 ---
 key: UndeploysInto
 summary: The UnitType a structure turns back into when it is taken down.
-see_also: ["DeploysInto"]
+see_also: ["DeploysInto", "UnloadingClass"]
 when_omitted:
   kind: value
   value: none

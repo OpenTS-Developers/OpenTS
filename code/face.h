@@ -167,7 +167,9 @@ class DirType
 		 */
 		unsigned int	Round_To_4(void) const		{ return	((((unsigned int)Raw >> 13) + 1) >> 1); }
 		unsigned int	Round_To_8(void) const		{ return	((((unsigned int)Raw >> 12) + 1) >> 1); }
+		unsigned int	Round_To_16(void) const		{ return	((((unsigned int)Raw >> 11) + 1) >> 1); }
 		unsigned int	Round_To_32(void) const		{ return	((((unsigned int)Raw >> 10) + 1) >> 1); }
+		unsigned int	Round_To_64(void) const		{ return	((((unsigned int)Raw >> 9) + 1) >> 1); }
 		unsigned int	Round_To_256(void) const	{ return	((((unsigned int)Raw >> 7) + 1) >> 1); }
 
 		/*
@@ -283,4 +285,16 @@ inline bool operator < (DirType const & lvalue, DirType const & rvalue) {return 
 inline bool operator > (DirType const & lvalue, DirType const & rvalue) {return abs(lvalue.Facing) > abs(rvalue.Facing); }
 inline bool operator <= (DirType const & lvalue, DirType const & rvalue) {return abs(lvalue.Facing) <= abs(rvalue.Facing); }
 inline bool operator >= (DirType const & lvalue, DirType const & rvalue) {return abs(lvalue.Facing) >= abs(rvalue.Facing); }
+
+// The eighth of a turn puts index zero on northwest, where the eight facing layout has it.
+inline int Shape_Facing_Index(DirType dir, int count)
+{
+	switch (count) {
+		case 8:		return((int)((dir.Round_To_8()  + 1) % 8));
+		case 16:	return((int)((dir.Round_To_16() + 2) % 16));
+		case 32:	return((int)((dir.Round_To_32() + 4) % 32));
+		case 64:	return((int)((dir.Round_To_64() + 8) % 64));
+		default:	return(0);
+	}
+}
 

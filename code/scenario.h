@@ -295,9 +295,20 @@ class ScenarioClass {
 		ThemeType TransitTheme;
 
 		/*
-		**	The house that the player is to be (obsolete).
-		*/
+		 * The country the player is playing, and its side, which decides which art, speech and
+		 * interface archives the scenario is presented with. The side is kept as well because a
+		 * load mounts the archives before the countries are back to look it up in.
+		 */
 		HousesType PlayerHouse;
+		SideType PlayerSide;
+
+		/*
+		 * The picture a launch file asked to show while the scenario loads, and where its bars
+		 * go, kept so that a mission restarted or resumed from a save shows the same picture.
+		 */
+		char LoadScreen[_MAX_PATH];
+		int LoadScreenX;
+		int LoadScreenY;
 
 		/*
 		**	The percentage of money that is allowed to be carried over into the
@@ -452,12 +463,6 @@ class ScenarioClass {
 		 */
 		bool IsIgnoreGlobalAITriggers;
 
-		/*
-		 * If the player is fighting for GDI in this scenario, then this flag will be true.
-		 * It picks the side's art, speech and interface before the mission is read in.
-		 */
-		bool IsGDI;
-
 		/// Unused. Round-trips through the scenario INI and feeds the CRC, but nothing acts on it.
 		bool IsMultiplayerOnly;
 
@@ -593,6 +598,7 @@ class ScenarioClass {
 void Write_Scenario_INI(char const * root, bool mplayer=false);
 bool Read_Scenario_INI(char const * root, bool fresh=true);
 bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen=false);
+SideType Side_For_Player(void);
 int Scan_Place_Object(ObjectClass * obj, Cell const & cell, int min_dist = 1, int max_dist = 31);
 void Assign_Houses(void);
 

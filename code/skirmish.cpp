@@ -16,6 +16,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "houstype.h"
+#include "netdlg2.h"
 #include "init.h"
 #include "language/language.h"
 #include "mapgen.h"
@@ -89,7 +90,7 @@ void Skirmish_On_WM_COMMAND(HWND window, int message, WPARAM wparam, LPARAM lpar
 				}
 
 				handle = GetDlgItem(window, IDC_SKIRMISH_SIDE);
-				if (handle) Session.House = ComboBox_GetCurSel(handle);
+				if (handle) Session.House = Country_From_Box(handle);
 
 				handle = GetDlgItem(window, IDC_SKIRMISH_COLOR);
 				if (handle) {
@@ -135,7 +136,7 @@ void Skirmish_On_WM_COMMAND(HWND window, int message, WPARAM wparam, LPARAM lpar
 			if (!lparam) {
 				GetWindowText(GetDlgItem(window, IDC_SKIRMISH_NAME), Session.Handle, sizeof(Session.Handle));
 				handle = GetDlgItem(window, IDC_SKIRMISH_SIDE);
-				if (handle) Session.House = ComboBox_GetCurSel(handle);
+				if (handle) Session.House = Country_From_Box(handle);
 				handle = GetDlgItem(window, IDC_SKIRMISH_COLOR);
 				if (handle) {
 					Session.ColorIdx = ComboBox_GetCurSel(handle);
@@ -386,12 +387,8 @@ BOOL Skirmish_On_WM_INITDIALOG(HWND window, WPARAM wparam, LPARAM lparam)
 
 	handle = GetDlgItem(window, IDC_SKIRMISH_SIDE);
 	if (handle) {
-		for (int i = 0; i < HouseTypes.Count(); i++) {
-			if (HouseTypes[i]->IsMultiplay) {
-				ComboBox_AddString(handle, HouseTypes[i]->GivenName);
-			}
-		}
-		ComboBox_SetCurSel(handle, Session.House <= HOUSE_BAD ? Session.House : HOUSE_BAD);
+		Fill_Country_Box(handle);
+		Select_Country_In_Box(handle, Session.House);
 	}
 
 	SendDlgItemMessage(window, IDC_SKIRMISH_COLOR, CB_RESETCONTENT, 0, 0);

@@ -42,6 +42,7 @@
 #include "srfcache.h"
 #include "stimer.h"
 #include "timer.h"
+#include "utf8.h"
 #include "windlg.h"
 #include "winstub.h"
 #include "wsproto.h"
@@ -76,6 +77,53 @@ int AIID;
 int Net2_g_Col_Accept;
 int Net2_g_Col_Name;
 int Net2_g_Col_House;
+
+
+/// <summary>
+/// Fills a side box with the multiplayable countries, each entry carrying its country index.
+/// </summary>
+void Fill_Country_Box(HWND combo)
+{
+	SendMessage(combo, CB_RESETCONTENT, 0, 0);
+	for (int index = 0; index < HouseTypes.Count(); index++) {
+		HouseTypeClass * house = HouseTypes[index];
+		if (house->IsMultiplay) {
+			LRESULT item = SendMessage(combo, CB_INSERTSTRING, (WPARAM)-1, (LPARAM)(char const *)house->GivenName);
+			SendMessage(combo, CB_SETITEMDATA, item, index);
+		}
+	}
+}
+
+
+/// <summary>
+/// Fetches the country behind a side box's selection.
+/// </summary>
+/// <returns>Returns with the country index, or the first country with nothing selected.</returns>
+int Country_From_Box(HWND combo)
+{
+	LRESULT item = SendMessage(combo, CB_GETCURSEL, 0, 0);
+	if (item == CB_ERR) {
+		return(HOUSE_FIRST);
+	}
+	LRESULT country = SendMessage(combo, CB_GETITEMDATA, item, 0);
+	return(country == CB_ERR ? HOUSE_FIRST : (int)country);
+}
+
+
+/// <summary>
+/// Selects the entry of a side box carrying the given country, or the first entry when none does.
+/// </summary>
+void Select_Country_In_Box(HWND combo, int country)
+{
+	LRESULT count = SendMessage(combo, CB_GETCOUNT, 0, 0);
+	for (LRESULT item = 0; item < count; item++) {
+		if (SendMessage(combo, CB_GETITEMDATA, item, 0) == country) {
+			SendMessage(combo, CB_SETCURSEL, item, 0);
+			return;
+		}
+	}
+	SendMessage(combo, CB_SETCURSEL, count > 0 ? 0 : (WPARAM)-1, 0);
+}
 
 
 /// <summary>
@@ -193,11 +241,17 @@ void _Net2DisplayUsers(void)
 
 			sprintf(info, "%s", Session.Players[i]->Name);
 
-			if (Session.Players[i]->Player.House == HOUSE_GOOD) {
+			// Only two icons ship, so every side past the first borrows the second's.
+			int country = Session.Players[i]->Player.House;
+			SideType side = country >= HOUSE_FIRST && country < HouseTypes.Count() ? HouseTypes[country]->Side : SIDE_NONE;
+			if (side == SIDE_GDI) {
 				sprintf(hname, "%s", Fetch_String(TXT_GDI));
 				surf = SurfaceCache.GetSurface("gdii.pcx");
-			} else {
+			} else if (side == SIDE_NOD || side == SIDE_NONE) {
 				sprintf(hname, "%s", Fetch_String(TXT_NOD));
+				surf = SurfaceCache.GetSurface("nodi.pcx");
+			} else {
+				sprintf(hname, "%s", (char const *)HouseTypes[country]->GivenName);
 				surf = SurfaceCache.GetSurface("nodi.pcx");
 			}
 
@@ -370,11 +424,9 @@ void Net2DisplayGameList(void)
 /// <param name="out">Buffer to build the encoded option string within.</param>
 /// <remarks>Be sure the destination buffer is big enough for the options and an entry for
 /// every player in the game.</remarks>
-void Net2EncodeGameopt(char *out)
+void Net2EncodeGameopt(char *out, int size)
 {
-	static char useroptions[512];
-
-	sprintf(out,"%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
+	int length = snprintf(out, size, "%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,"
 		"%s,%d,%d,%s,%s:",
 		Session.Options.UnitCount,
 		BuildLevel,
@@ -399,15 +451,21 @@ void Net2EncodeGameopt(char *out)
 		Session.ScenarioFileLength,
 		Session.ScenarioFileName,
 		Session.ScenarioDigest);
-
-	memset(useroptions, 0, sizeof(useroptions));
-
-	for (int i = 0; i < Session.Players.Count(); i++) {
-		sprintf(useroptions + strlen(useroptions), "%s,%d,%d,", Session.Players[i]->Name, Session.Players[i]->Player.House,
-				Session.Players[i]->Player.Color);
+	if (length < 0 || length >= size) {
+		DebugString("Game options do not fit the packet\n");
+		return;
 	}
 
-	strcat(out, useroptions);
+	for (int i = 0; i < Session.Players.Count(); i++) {
+		int written = snprintf(out + length, size - length, "%s,%d,%d,", Session.Players[i]->Name, Session.Players[i]->Player.House,
+				Session.Players[i]->Player.Color);
+		if (written < 0 || written >= size - length) {
+			DebugString("Game options do not fit the packet for player %d\n", i);
+			out[length] = '\0';
+			return;
+		}
+		length += written;
+	}
 }
 
 
@@ -1126,7 +1184,9 @@ INT_PTR CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM
 			SendDlgItemMessage(window, IDC_YOURNAME, WM_GETTEXT, 63, (LPARAM)name_buf);
 
 			if (strcmp(name_buf, Session.Handle)) {
-				strcpy(Session.Handle, name_buf);
+				if (UTF8::Copy(Session.Handle, sizeof(Session.Handle), name_buf) < strlen(name_buf)) {
+					SetDlgItemText(window, IDC_YOURNAME, Session.Handle);
+				}
 				Send_Join_Queries(0, 0, 1, 0);
 				_Net2DisplayUsers();
 			}
@@ -1469,16 +1529,8 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 
 		Center_Window_Within_Window(window);
 
-		SendDlgItemMessage(window, IDC_YOURSIDE, CB_RESETCONTENT, 0, 0);
-
-		for (int i = 0; i < HouseTypes.Count(); ++i) {
-			HouseTypeClass * house = HouseTypes[i];
-			if (house->IsMultiplay) {
-				SendDlgItemMessage(window, IDC_YOURSIDE, CB_INSERTSTRING, -1, (LPARAM)(char const *)house->GivenName);
-			}
-		}
-
-		SendDlgItemMessage(window, IDC_YOURSIDE, CB_SETCURSEL, Session.House, 0);
+		Fill_Country_Box(GetDlgItem(window, IDC_YOURSIDE));
+		Select_Country_In_Box(GetDlgItem(window, IDC_YOURSIDE), Session.House);
 
 		SendDlgItemMessage(window, IDC_YOURCOLOR, CB_RESETCONTENT, 0, 0);
 
@@ -1528,7 +1580,7 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 
 		case IDC_YOURSIDE:
 			if (HIWORD(wparam) == CBN_SELCHANGE && !Net2GameStarted) {
-				Session.House = SendDlgItemMessage(window, IDC_YOURSIDE, CB_GETCURSEL, 0, 0);
+				Session.House = Country_From_Box(GetDlgItem(window, IDC_YOURSIDE));
 				Session.Players[0]->Player.House = Session.House;
 
 				PumpGameopts(1, 0);
@@ -2391,7 +2443,7 @@ static void Get_Join_Responses(void)
 				// Create a new node structure, fill it in, add it to 'Games'
 				//..................................................................
 				who = new NodeNameType;
-				strcpy(who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Game.IsOpen = Session.GPacket.GameInfo.IsOpen;
 				who->Game.Addon = Session.GPacket.GameInfo.IsFirestorm;
@@ -2473,7 +2525,7 @@ static void Get_Join_Responses(void)
 				// Create & add a node to the Vector
 				//..................................................................
 				who = new NodeNameType;
-				strcpy(who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				strcpy(who->Player.Serial, Session.GPacket.Serial);
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
@@ -2648,7 +2700,7 @@ static void Get_Join_Responses(void)
 				if (!strcmp(Session.Players[i]->Name,Session.GPacket.Name)) {
 					if (i != -1 && !Net2GameStarted) {
 						Session.HostAddress = Session.GAddress;
-						DecodePubGameopt(Session.GPacket.Message.Buf, Session.GPacket.Name);
+						DecodePubGameopt(Session.GPacket.Options.Buf, Session.GPacket.Name);
 					}
 					break;
 				}
@@ -2657,7 +2709,7 @@ static void Get_Join_Responses(void)
 		}
 
 		if (Session.GPacket.Command==NET_PRIV_GAMEOPT) {
-			char *opts = strdup(Session.GPacket.Message.Buf + 1);
+			char *opts = strdup(Session.GPacket.Options.Buf + 1);
 			for (i = 1; i < Session.Players.Count(); i++) {
 				if (!strcmp(Session.Players[i]->Name,Session.GPacket.Name)) {
 
@@ -2885,7 +2937,7 @@ static void Get_Join_Responses(void)
 			//.....................................................................
 			if (!found) {
 				who = new NodeNameType;
-				strcpy (who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Chat.LastTime = TickCount;
 				who->Chat.LastChance = 0;
@@ -3102,7 +3154,7 @@ static void Get_Join_Responses(void)
 				// Add node to the Vector list
 				//..................................................................
 				who = new NodeNameType;
-				strcpy(who->Name, Session.GPacket.Name);
+				UTF8::Copy(who->Name, sizeof(who->Name), Session.GPacket.Name);
 				who->Address = Session.GAddress;
 				who->Player.House = Session.GPacket.PlayerInfo.House;
 				strcpy(who->Player.Serial, Session.GPacket.Serial);
@@ -3275,17 +3327,8 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 	switch (message) {
 
 	case WM_INITDIALOG: {
-		SendDlgItemMessage(window, IDC_YOURSIDE, CB_RESETCONTENT, 0, 0);
-
-		int i;
-		for (i = 0; i < HouseTypes.Count(); i++) {
-			HouseTypeClass * house = HouseTypes[i];
-			if (house->IsMultiplay) {
-				SendDlgItemMessage(window, IDC_YOURSIDE, CB_INSERTSTRING, (WPARAM)-1, (LPARAM)(char const *)house->GivenName);
-			}
-		}
-
-		SendDlgItemMessage(window, IDC_YOURSIDE, CB_SETCURSEL, Session.House, 0);
+		Fill_Country_Box(GetDlgItem(window, IDC_YOURSIDE));
+		Select_Country_In_Box(GetDlgItem(window, IDC_YOURSIDE), Session.House);
 
 		SendDlgItemMessage(window, IDC_YOURCOLOR, CB_RESETCONTENT, 0, 0);
 
@@ -3303,7 +3346,7 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 		EnableWindow(GetDlgItem(window, IDC_ACCEPT), FALSE);
 
 		int self_index = -1;
-		for (i = 0; i < Session.Players.Count(); ++i) {
+		for (int i = 0; i < Session.Players.Count(); ++i) {
 			if (!strcmp(Session.Players[i]->Name, Session.Handle)) {
 				self_index = i;
 			}
@@ -3341,7 +3384,7 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 			if (HIWORD(wparam) == CBN_SELCHANGE) {
 				LRESULT color = SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0);
 
-				LRESULT house = SendDlgItemMessage(window, IDC_YOURSIDE, CB_GETCURSEL, 0, 0);
+				LRESULT house = Country_From_Box(GetDlgItem(window, IDC_YOURSIDE));
 
 				Session.PrefColor = color;
 

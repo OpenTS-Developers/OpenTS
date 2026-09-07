@@ -46,7 +46,8 @@ class FontClass
 	public:
 		virtual ~FontClass(void) {}
 
-		virtual int Char_Pixel_Width(char chr) const = 0;
+		virtual int Char_Pixel_Width(char32_t code) const = 0;
+		int Char_Pixel_Width(char) const = delete;
 		virtual int String_Pixel_Width(char const * string) const = 0;
 		virtual void String_Pixel_Bounds(const char * string, Rect & bounds) const = 0;
 		virtual int Get_Width(void) const = 0;

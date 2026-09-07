@@ -23,7 +23,4 @@ file every player shares. Those lines travel with the mission's saved game, sinc
 re-reads the map. A line is no longer cut at 299 characters, and a key that is not a whole number is
 skipped and logged rather than read as line 0.
 
-Saves from earlier development snapshots of this cycle no longer load, because the loose values grew
-by the scenario's lines.
-
 CCHyper is credited for the Vinifera feature this ports.

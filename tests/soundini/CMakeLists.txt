@@ -5,6 +5,7 @@ add_executable(SoundIni
     "${CMAKE_CURRENT_SOURCE_DIR}/soundini.cpp"
     "${CMAKE_SOURCE_DIR}/code/vocini.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
+    "${CMAKE_SOURCE_DIR}/code/utf8.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64pipe.cpp"
     "${CMAKE_SOURCE_DIR}/code/b64straw.cpp"
@@ -35,8 +36,8 @@ add_dependencies(SoundIni OpenTSBuildStamp)
 target_compile_definitions(SoundIni PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(SoundIni PRIVATE
-    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>
-    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
+    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus /utf-8>
+    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus /utf-8>
 )
 
 target_link_libraries(SoundIni PRIVATE kernel32 user32 shell32)

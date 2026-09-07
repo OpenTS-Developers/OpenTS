@@ -29,7 +29,6 @@ target_compile_options(VQALib PRIVATE ${OPENTS_COMPILE_OPTIONS})
 target_compile_definitions(VQALib PRIVATE
     WIN32
     _WINDOWS
-    _MBCS
     NOMINMAX
 )
 

@@ -4060,10 +4060,8 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				**	Perform any animation effect for this weapon.
 				*/
 				AnimTypeClass const * a = NULL;
-				if (weapon->Anim.Count() == 8) {
-					a = weapon->Anim[(Fire_Direction().As_Dir8() + FACING_45) % FACING_COUNT];
-				} else if (weapon->Anim.Count() > 0) {
-					a = weapon->Anim[0];
+				if (weapon->Anim.Count() > 0) {
+					a = weapon->Anim[Shape_Facing_Index(Fire_Direction(), weapon->Anim.Count())];
 				}
 
 				/*

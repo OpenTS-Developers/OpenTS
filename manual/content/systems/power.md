@@ -203,7 +203,7 @@ The low power announcement is made while all of these hold:
 - the house is the local player's;
 - its own announcement timer has expired;
 - its power fraction is below 1;
-- it has at least one structure of the first [`BuildConst`](/keys/buildconst/) type on the map, switched on or not.
+- it has at least one structure of a [`BuildConst`](/keys/buildconst/) type on the map, switched on or not.
 
 The announcement speaks the warning, posts the on-screen text for [`MessageDelay`](/keys/messagedelay/) minutes, and re-arms the timer with [`SpeakDelay`](/keys/speakdelay/) minutes.
 

@@ -649,7 +649,7 @@ static bool Get_All(IStream *stream, bool save_net)
 	}
 	Enable_Addon(Scen->RequiredAddOn);
 
-	if (!Prep_For_Side(Scen->IsGDI ? SIDE_GDI : SIDE_NOD)) {
+	if (Prep_For_Side_Or_First(Scen->PlayerSide) == SIDE_NONE) {
 		return(false);
 	}
 
@@ -678,14 +678,9 @@ static bool Get_All(IStream *stream, bool save_net)
 
 	Rule->Load(stream);
 
-	if (Scen->SpeechSide != SIDE_NONE) {
-		if (!Prep_Speech_For_Side(Scen->SpeechSide)) {
-			return(false);
-		}
-	} else {
-		if (!Prep_Speech_For_Side(Scen->IsGDI ? SIDE_GDI : SIDE_NOD)) {
-			return(false);
-		}
+	SideType speech = Scen->SpeechSide != SIDE_NONE ? Scen->SpeechSide : Scen->PlayerSide;
+	if (Prep_Speech_For_Side_Or_First(speech) == SIDE_NONE) {
+		return(false);
 	}
 
 	if (FAILED(Load_Vector(stream))) {	/// AnimTypes

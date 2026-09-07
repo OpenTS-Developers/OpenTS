@@ -225,6 +225,9 @@ must be above zero, and a value the reader cannot make sense of names no positio
 which leaves the bars where the game puts its own. A picture of the size the game's own
 would have been needs no position.
 
+A saved game keeps the picture and the bar position, so a mission restarted from within the
+game, or resumed from that save in a session that has no launch file, shows the same picture.
+
 `DifficultyName` names the difficulty in the message a campaign mission opens with.
 
 ## A game against other machines

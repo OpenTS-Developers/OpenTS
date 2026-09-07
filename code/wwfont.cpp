@@ -47,6 +47,9 @@
 #include "_convert.h"
 #include "convert.h"
 
+#include "dbgprint.h"
+#include "utf8.h"
+
 #include <algorithm>
 
 
@@ -80,10 +83,16 @@ WWFontClass::WWFontClass(void const * fontdata, bool isoutlined, int shadow) :
 	Shadow(shadow),
 	FontXSpacing(0),
 	FontYSpacing(0),
-	FontData((FontType *)fontdata)
+	FontData((FontType *)fontdata),
+	IsWindows1252(false)
 {
 	Set_XSpacing(0);
 	Set_YSpacing(0);
+
+	// A font with the full table is laid out as Windows-1252; the 12-point metal font stops
+	// at 219 glyphs and follows code page 437.
+	IsWindows1252 = Glyph_Count() >= 0xFF;
+	DebugString("WWFontClass: %d glyphs, %dx%d cell, %s order\n", Glyph_Count(), Raw_Width(), Raw_Height(), IsWindows1252 ? "Windows-1252" : "code page 437");
 }
 
 
@@ -103,10 +112,10 @@ WWFontClass::WWFontClass(void const * fontdata, bool isoutlined, int shadow) :
  * HISTORY:                                                                                    *
  *   05/26/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
-int WWFontClass::Char_Pixel_Width(char c) const
+int WWFontClass::Char_Pixel_Width(char32_t code) const
 {
-	if ((unsigned char)c < ' ') return(0); /// ' ' is the first printable character
-	int raw = (*(((unsigned char *)FontData) + FontData->WidthBlockOffset + (unsigned char)c));
+	if (code < ' ') return(0); /// ' ' is the first printable character
+	int raw = (*(((unsigned char *)FontData) + FontData->WidthBlockOffset + Glyph_Index(code)));
 	raw += FontXSpacing;
 	return(raw);
 }
@@ -134,12 +143,12 @@ int WWFontClass::String_Pixel_Width(char const * string) const
 	int largest = 0;		// Largest recorded width of the string.
 	int width = 0;
 	while (*string) {
-		if (*string == '\r' || *string == '\n') {
-			string++;
+		char32_t code = UTF8::Decode(string);
+		if (code == '\r' || code == '\n') {
 			largest = std::max(largest, width);
 			width = 0;
 		} else {
-			width += Char_Pixel_Width(*string++);	// add each char's width
+			width += Char_Pixel_Width(code);	// add each char's width
 		}
 	}
 	largest = std::max(largest, width);
@@ -179,14 +188,14 @@ void WWFontClass::String_Pixel_Bounds(const char * string, Rect& bounds) const
 
 	while ( *string != 0 ) {
 
-		if (( *string == '\r' ) || ( *string == '\n' )) {
+		char32_t code = UTF8::Decode(string);
+		if (( code == '\r' ) || ( code == '\n' )) {
 
-			string++;
 			height += Get_Height();
 			bounds.Width = std::max( bounds.Width, width );
 			width = 0;
 		} else {
-			width += Char_Pixel_Width(*string++);	// add each char's width
+			width += Char_Pixel_Width(code);	// add each char's width
 		}
 	}
 
@@ -234,6 +243,43 @@ int WWFontClass::Raw_Width(void) const
 int WWFontClass::Raw_Height(void) const
 {
 	return(*(((unsigned char *)FontData) + FontData->InfoBlockOffset + FONTINFOMAXHEIGHT));
+}
+
+
+int WWFontClass::Glyph_Count(void) const
+{
+	return((FontData->WidthBlockOffset - FontData->OffsetBlockOffset) / (int)sizeof(unsigned short));
+}
+
+
+/// <summary>
+/// Returns the glyph slot that draws code, or the slot for '?' when the font has none.
+/// Westwood added the oe ligature to its code page 437 layout at 0xCE, and a slot holding
+/// the shared placeholder box at data offset 0 counts as absent.
+/// </summary>
+unsigned char WWFontClass::Glyph_Index(char32_t code) const
+{
+	if (code < ' ') {
+		return((unsigned char)code);
+	}
+
+	int index;
+	if (IsWindows1252) {
+		index = UTF8::Windows_1252_Glyph(code);
+	} else if (code == 0x0153) {
+		index = 0xCE;
+	} else {
+		index = UTF8::OEM_437_Glyph(code);
+	}
+	if (index < 0 || index >= Glyph_Count()) {
+		return('?');
+	}
+
+	unsigned short const * fontoffset = (unsigned short const *)(((unsigned char const *)FontData) + FontData->OffsetBlockOffset);
+	if (index > ' ' && fontoffset[index] == 0) {
+		return('?');
+	}
+	return((unsigned char)index);
 }
 
 
@@ -443,22 +489,23 @@ Point2D WWFontClass::Print(char const * string, Surface & surface, Rect const & 
 		**	Process the whole string. Stop when the string reaches the right margin.
 		*/
 		while (*string != '\0') {
-			unsigned char c = *string++;
+			char32_t code = UTF8::Decode(string);
 
 			/*
 			**	Certain control characters serve a formatting purpose. They merely
 			**	adjust the next draw position.
 			*/
-			if (c == '\r') {
+			if (code == '\r') {
 				xpos = startx;
 				ypos += Raw_Height() + ((yspacing > 0) ? yspacing : 0);
 				continue;
 			}
-			if (c == '\n') {
+			if (code == '\n') {
 				xpos = cliprect.X;
 				ypos += Raw_Height() + ((yspacing > 0) ? yspacing : 0);
 				continue;
 			}
+			unsigned char c = Glyph_Index(code);
 
 			/*
 			**	Fetch working values for the character to display. These are used to
@@ -636,7 +683,7 @@ Point2D WWFontClass::Print(char const * string, Surface & surface, Rect const & 
 					}
 				}
 			}
-			xpos += Char_Pixel_Width(c);
+			xpos += Char_Pixel_Width(code);
 //			xpos += width + xspacing;
 		}
 

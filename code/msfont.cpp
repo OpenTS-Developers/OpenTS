@@ -26,6 +26,7 @@
 #include "mixfile.h"
 #include "palette.h"
 #include "shapeset.h"
+#include "utf8.h"
 
 #include <cstring>
 
@@ -36,6 +37,19 @@ static struct {
 	void * Sample;
 	bool AllocLoaded;
 } Sounds[3];
+
+
+// The glyph shapes are in code page 437 order; a code point they lack draws as '?'.
+int MSFont::Glyph_Frame(char32_t code) const
+{
+	int index = UTF8::OEM_437_Glyph(code);
+	if (index < 0) {
+		index = '?';
+	}
+	index = (0 >= index - 33) ? 0 : index - 33;
+	index = (216 <= index) ? 216 : index;
+	return(index * 3);
+}
 
 
 /// <summary>
@@ -243,7 +257,7 @@ void MSFont::Get_String_Rect(char const * string, Rect & rect)
 		do {
 			int width = 0;
 			while (*string && *string != '\n') {
-				width += Get_Character_Width(*string++);
+				width += Get_Character_Width(UTF8::Decode(string));
 			}
 
 			if (width > max_width) {
@@ -278,7 +292,7 @@ int MSFont::Get_String_Width(char const * string)
 		do {
 			int width = 0;
 			while (*string && *string != '\n') {
-				width += Get_Character_Width(*string++);
+				width += Get_Character_Width(UTF8::Decode(string));
 			}
 
 			if (*string == '\n') {
@@ -303,19 +317,14 @@ int MSFont::Get_String_Width(char const * string)
 /// </summary>
 /// <returns>Returns with the width in pixels. Characters below the space are worth
 /// nothing.</returns>
-int MSFont::Get_Character_Width(unsigned char character)
+int MSFont::Get_Character_Width(char32_t code)
 {
-	CharToOemBuff((LPCSTR)&character, (LPSTR)&character, 1);
-
-	if (character == ' ') {
+	if (code == ' ') {
 		return(8);
 	}
 
-	if (character > ' ') {
-		int index = (0 >= character - 33) ? 0 : character - 33;
-		index = (216 <= index) ? 216 : index;
-
-		int shape_frame = index * 3;
+	if (code > ' ') {
+		int shape_frame = Glyph_Frame(code);
 		return(FontFile->Get_Rect(shape_frame + 2).Width + 1);
 	}
 	return(0);
@@ -331,20 +340,15 @@ int MSFont::Get_Character_Width(unsigned char character)
 /// <param name="frame">The glyph frame to draw with. The print animations step through the
 /// frames to fade a character in.</param>
 /// <param name="do_sound">Should a typing sound accompany the character?</param>
-void MSFont::Draw_Character(Surface * surface, unsigned char character, int x, int y, int frame, bool do_sound)
+void MSFont::Draw_Character(Surface * surface, char32_t code, int x, int y, int frame, bool do_sound)
 {
-	if (character == 176) {
+	if (code == 176) {
 		DebugString("Denzil!\n");
 	}
 
-	CharToOemBuff((LPCSTR)&character, (LPSTR)&character, 1);
+	if (code > ' ') {
 
-	if (character > ' ') {
-
-		int index = (0 >= character - 33) ? 0 : character - 33;
-		index = (216 <= index) ? 216 : index;
-
-		int shape_frame = index * 3;
+		int shape_frame = Glyph_Frame(code);
 
 		if (do_sound == true && frame == 0) {
 			void * sample = Sounds[rand() % 3].Sample;
@@ -365,30 +369,23 @@ void MSFont::Draw_Character(Surface * surface, unsigned char character, int x, i
 /// </summary>
 /// <param name="x">The left edge to begin each line of the string at.</param>
 /// <param name="frame">The glyph frame to draw the text with.</param>
-void MSFont::Draw_String(Surface * surface, unsigned char const * string, int x, int y, int frame)
+void MSFont::Draw_String(Surface * surface, char const * string, int x, int y, int frame)
 {
 	int current_x = x;
 
 	while (*string) {
-		if (*string == '\n') {
+		char32_t code = UTF8::Decode(string);
+		if (code == '\n') {
 			current_x = x;
 			y += FontHeight;
 		} else {
-			if (*string > ' ') {
-				unsigned char character;
-				CharToOemBuff((LPCSTR)string, (LPSTR)&character, 1);
-
-				int index = (0 >= character - 33) ? 0 : character - 33;
-				index = (216 <= index) ? 216 : index;
-
-				int shape_frame = index * 3;
+			if (code > ' ') {
+				int shape_frame = Glyph_Frame(code);
 
 				Draw_Shape(*surface, *Drawer, FontFile, shape_frame + frame, Point2D(current_x - FontFile->Get_Rect(shape_frame + 2).X, y), surface->Get_Rect(), SHAPE_WIN_REL);
 			}
 
-			current_x += Get_Character_Width(*string);
+			current_x += Get_Character_Width(code);
 		}
-
-		string++;
 	}
 }

@@ -14,4 +14,6 @@ The value is a comma-separated list of country IDs, matched without regard to ca
 Owner=GDI,Nod
 ```
 
-Production reads the list twice. A BuildingType with no countries at all is never buildable, and one naming exactly one country additionally needs an owned construction yard acting as that country. For every kind of object, the factory that builds it must share at least one country with it, so a factory and a product that name disjoint lists never pair up. [`DoubleOwned=yes`](/keys/doubleowned/) answers both questions with every country instead, outside campaign games.
+Production reads the list twice. A BuildingType with no countries at all is never buildable, and one that names any additionally needs an owned construction yard [acting as](/keys/actslike/) one of them. For every kind of object, the factory that builds it must share at least one country with it, so a factory and a product that name disjoint lists never pair up. The computer's [base planning](/systems/ai-base-building/) and the role lists it is handed test the country the house acts as against the same list.
+
+A country's place in the rules list is a bit in a 32-bit mask, so at most thirty-two countries can own anything; a country beyond the thirty-second owns nothing. [`DoubleOwned=yes`](/keys/doubleowned/) answers both questions with every country instead, outside campaign games.

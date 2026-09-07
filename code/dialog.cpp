@@ -55,6 +55,7 @@
 #include "lightcon.h"
 #include "scheme.h"
 #include "surface.h"
+#include "utf8.h"
 #include "vector.h"
 
 #include "color.hh"
@@ -173,9 +174,11 @@ int Format_Window_String(char * string, FontClass const * font, int maxlinelen, 
 			*string = '\r';
 		}
 
+		char * start = string;
+
 		// While the current line is less then the max length...
 		while (linelen < maxlinelen && *string != '\r' && *string != '\0' && *string != '@') {
-			linelen += font->Char_Pixel_Width(*string++);
+			linelen += font->Char_Pixel_Width(UTF8::Decode(string));
 		}
 
 		// if the line is to long...
@@ -184,8 +187,9 @@ int Format_Window_String(char * string, FontClass const * font, int maxlinelen, 
 			/*
 			**	Back up to an appropriate location to break.
 			*/
-			while (*string != ' ' && *string != '\r' && *string != '\0' && *string != '@') {
-				linelen -= font->Char_Pixel_Width(*string--);
+			while (*string != ' ' && *string != '\r' && *string != '\0' && *string != '@' && string > start) {
+				linelen -= font->Char_Pixel_Width(UTF8::Peek(string));
+				string = UTF8::Previous(start, string);
 			}
 
 		}
@@ -475,7 +479,7 @@ Point2D __cdecl Fancy_Text_Print(int text, Surface & surface, Rect const & rect,
 		**	how to handle EMS pointers.
 		*/
 		char const * tptr = Fetch_String(text);
-		vsprintf(buffer, tptr, arg);
+		vsnprintf(buffer, sizeof(buffer), tptr, arg);
 		va_end(arg);
 
 		return(Simple_Text_Print(buffer, surface, rect, pt, fore, back, flag, PURPLE));
@@ -532,7 +536,7 @@ Point2D __cdecl Fancy_Text_Print(char const * text, Surface & surface, Rect cons
 		**	call with locking code.
 		*/
 		va_start(arg, flag);
-		vsprintf(buffer, text, arg);
+		vsnprintf(buffer, sizeof(buffer), text, arg);
 		va_end(arg);
 
 		return(Simple_Text_Print(buffer, surface, rect, pt, fore, back, flag, PURPLE));
@@ -613,7 +617,7 @@ Point2D Conquer_Clip_Text_Print(char const * text, Surface & surface, Rect const
 				int w = 0;
 				char * bptr = source;
 				do {
-					w += font->Char_Pixel_Width(*bptr++);
+					w += font->Char_Pixel_Width(UTF8::Decode(bptr));
 				} while (*bptr && offset+w < (unsigned)width);
 
 				/*
@@ -621,8 +625,8 @@ Point2D Conquer_Clip_Text_Print(char const * text, Surface & surface, Rect const
 				**	character and signal that further processing is not necessary.
 				*/
 				if (offset+w >= (unsigned)width) {
-					bptr--;
-					w -= font->Char_Pixel_Width(*bptr);
+					bptr = UTF8::Previous(source, bptr);
+					w -= font->Char_Pixel_Width(UTF8::Peek(bptr));
 					*bptr = '\0';
 					processing = 0;
 				}

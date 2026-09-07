@@ -2051,7 +2051,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			IsLeader = true;
 		}
 
-		if (Class == Rule->BuildConst[0]) {
+		if (Rule->BuildConst.Is_In_List(Class)) {
 			House->ConYards.Add(this);
 		}
 
@@ -3656,7 +3656,7 @@ void BuildingClass::Grand_Opening(bool captured)
 		/*
 		**	Helicopter pads get a free attack helicopter.
 		*/
-		if (!Rule->IsSeparate && Class->IsHoverPad && !captured) {
+		if (!Rule->IsSeparate && Class->IsHoverPad && !captured && Rule->PadAircraft.Count() > 0) {
 			ScenarioInit++;
 			AircraftClass * air = new AircraftClass(Rule->PadAircraft[0], House);
 			if (air) {
@@ -4305,7 +4305,7 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		TargetClass tocap = this;
 
 		IsCaptured = true;
-		if (Class == Rule->BuildConst[0]) {
+		if (Rule->BuildConst.Is_In_List(Class)) {
 			oldowner->ConYards.Delete(this);
 		}
 
@@ -4329,7 +4329,7 @@ bool BuildingClass::Captured(HouseClass * newowner)
 			House->ToCapture = NULL;
 		}
 
-		if (oldowner->Is_Player_Control() && Class->IsConstructionYard && oldowner->BQuantity.Value(Rule->BuildConst[0]->HeapID) == 0) {
+		if (oldowner->Is_Player_Control() && Class->IsConstructionYard && !oldowner->Owns_Any(oldowner->BQuantity, Rule->BuildConst)) {
 			Map.PendingObjectPtr = NULL;
 			Map.PendingObject = NULL;
 			Map.PendingHouse = HOUSE_NONE;
@@ -4367,7 +4367,7 @@ bool BuildingClass::Captured(HouseClass * newowner)
 
 		Update_Anim_Appearance();
 
-		if (Class == Rule->BuildConst[0]) {
+		if (Rule->BuildConst.Is_In_List(Class)) {
 			newowner->ConYards.Add(this);
 		}
 

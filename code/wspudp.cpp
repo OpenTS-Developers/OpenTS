@@ -45,7 +45,6 @@
 
 #include "dbgprint.h"
 #include "misc.h"
-#include "msgloop.h"
 #include "netadmit.h"
 #include "vector.h"
 
@@ -139,7 +138,8 @@ void UDPInterfaceClass::Configure_Tunnel(unsigned short local_id, unsigned long 
 /// </summary>
 /// <param name="destination">Where the packet is bound. In tunnel mode the port carries
 /// the recipient's tunnel ID rather than a real port.</param>
-/// <returns>Whatever sendto returned, counting only the payload.</returns>
+/// <returns>Whatever sendto returned, counting only the payload. A SOCKET_ERROR always
+/// sets LAST_ERROR, including for a packet this routine rejects itself.</returns>
 int UDPInterfaceClass::Send_To(const char *buffer, int buffer_len, sockaddr_in *destination)
 {
 	if (TunnelPort == 0) {
@@ -150,6 +150,7 @@ int UDPInterfaceClass::Send_To(const char *buffer, int buffer_len, sockaddr_in *
 	// outside the packet's own framing.
 	char tunnelled[TUNNEL_HEADER_SIZE + WS_RECEIVE_BUFFER_LEN];
 	if (buffer_len > (int)sizeof(tunnelled) - TUNNEL_HEADER_SIZE) {
+		WSASetLastError(WSAEMSGSIZE);
 		return(SOCKET_ERROR);
 	}
 
@@ -173,7 +174,8 @@ int UDPInterfaceClass::Send_To(const char *buffer, int buffer_len, sockaddr_in *
 /// packet reports its sender by tunnel ID, since the server is the only endpoint the
 /// socket ever sees.
 /// </summary>
-/// <returns>The number of payload bytes received, or SOCKET_ERROR.</returns>
+/// <returns>The number of payload bytes received, RECEIVE_IGNORED for a datagram that
+/// was not for this client, or SOCKET_ERROR when the socket delivered nothing.</returns>
 int UDPInterfaceClass::Receive_From(char *buffer, int buffer_len, sockaddr_in *source)
 {
 	int address_len = sizeof(*source);
@@ -188,16 +190,16 @@ int UDPInterfaceClass::Receive_From(char *buffer, int buffer_len, sockaddr_in *s
 	if (rc == SOCKET_ERROR) return(SOCKET_ERROR);
 
 	unsigned short header[2];
-	if (rc < (int)sizeof(header)) return(SOCKET_ERROR);
+	if (rc < (int)sizeof(header)) return(RECEIVE_IGNORED);
 	std::memcpy(header, tunnelled, sizeof(header));
 
 	// Anything too short to carry a header, or addressed to somebody else, is not ours.
 	if (rc <= TUNNEL_HEADER_SIZE || header[1] != TunnelID) {
-		return(SOCKET_ERROR);
+		return(RECEIVE_IGNORED);
 	}
 
 	rc -= TUNNEL_HEADER_SIZE;
-	if (rc > buffer_len) return(SOCKET_ERROR);
+	if (rc > buffer_len) return(RECEIVE_IGNORED);
 
 	std::memcpy(buffer, tunnelled + TUNNEL_HEADER_SIZE, rc);
 
@@ -500,190 +502,125 @@ void UDPInterfaceClass::Broadcast (void *buffer, int buffer_len)
 		*/
 		OutBuffers.Add ( packet );
 
-		/*
-		**	Send a message to ourselves so that we can initiate a write if Winsock is idle.
-		*/
-		SendMessage ( MainWindow, Protocol_Event_Message(), 0, (LONG)FD_WRITE );
-
-		/*
-		**	Make sure the message loop gets called.
-		*/
-		Windows_Message_Handler();
+		Send_Pending();
 	}
 }
 
 
-/***********************************************************************************************
- * TMC::Message_Handler -- Message handler function for Winsock related messages               *
- *                                                                                             *
- *                                                                                             *
- *                                                                                             *
- * INPUT:    Windows message handler stuff                                                     *
- *                                                                                             *
- * OUTPUT:   Nothing                                                                           *
- *                                                                                             *
- * WARNINGS: None                                                                              *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *    3/20/96 3:05PM ST : Created                                                              *
- *=============================================================================================*/
-int UDPInterfaceClass::Message_Handler(HWND, UINT message, WPARAM, LPARAM lParam)
+/// <summary>
+/// Takes every datagram the socket holds into the in buffers. A pass is
+/// bounded so that a flood cannot hold the frame; what is left waits for the
+/// next one.
+/// </summary>
+void UDPInterfaceClass::Receive_Pending(void)
 {
-	struct 	sockaddr_in addr;
-	int	 	rc;
-	int		addr_len;
-	WinsockBufferType *packet;
+	for (int taken = 0; taken < WS_MAX_STATIC_BUFFERS; taken++) {
+		sockaddr_in addr;
 
-	/*
-	**	We only handle UDP events.
-	*/
-	if ( message != WM_UDPASYNCEVENT ) return(1);
+		int rc = Receive_From ( (char*)ReceiveBuffer, sizeof (ReceiveBuffer), &addr );
+		if (rc == RECEIVE_IGNORED) continue;
 
-	/*
-	**	Handle UDP packet events
-	*/
-	switch ( WSAGETSELECTEVENT(lParam) ) {
-
-		/*
-		**	Read event. Winsock has data it would like to give us.
-		*/
-		case FD_READ: {
-			/*
-			**	Clear any outstanding errors on the socket.
-			*/
-			rc = WSAGETSELECTERROR(lParam);
-			if (rc != 0) {
-				Clear_Socket_Error (Socket);
-				return(0);;
-			}
-
-			/*
-			**	Call the Winsock recvfrom function to get the outstanding packet.
-			*/
-			rc = Receive_From ( (char*)ReceiveBuffer, sizeof (ReceiveBuffer), &addr );
-			if (rc == SOCKET_ERROR) {
-				Clear_Socket_Error (Socket);
-				return(0);;
-			}
-
-			std::span<std::byte const> const datagram(reinterpret_cast<std::byte const *>(ReceiveBuffer), rc > 0 ? static_cast<std::size_t>(rc) : 0);
-			NetAdmission::DatagramResult const admission = NetAdmission::Admit_Datagram(datagram, WS_INTERNET_BUFFER_LEN);
-			if (!admission.Succeeded()) {
-				switch (admission.ErrorCode) {
-					case NetAdmission::Error::DATAGRAM_TOO_LARGE:
-						Record_Packet_Drop(WS_DROP_RECEIVE_TOO_LARGE);
-						break;
-					case NetAdmission::Error::BAD_CRC:
-						Record_Packet_Drop(WS_DROP_BAD_CRC);
-						break;
-					default:
-						Record_Packet_Drop(WS_DROP_RECEIVE_TOO_SHORT);
-						break;
-				}
-				return(0);
-			}
-
-			{
-
-				/*
-				**	Make sure this packet didn't come from us. If it did then throw it away.
-				*/
-				for ( int i=0 ; i<LocalAddresses.Count() ; i++ ) {
-					if ( ! memcmp (LocalAddresses[i], &addr.sin_addr.s_addr, 4) ) return(0);
-				}
-
-				/*
-				**	Create a new buffer and store this packet in it.
-				*/
-				packet = (WinsockBufferType *)Get_New_In_Buffer();
-				if (packet == NULL) {
-					return(0);
-				}
-				packet->BufferLen = static_cast<int>(admission.Payload.size());
-				packet->CRC = admission.WireCRC;
-				memcpy(packet->Buffer, admission.Payload.data(), admission.Payload.size());
-
-					/*
-					**	Copy the address data into the holding buffer address area.
-					*/
-					IPXAddressClass source(addr.sin_addr.s_addr, addr.sin_port);
-					memset ( packet->Address, 0, sizeof (packet->Address) );
-					memcpy ( packet->Address, &source, sizeof (source) );
-
-					/*
-					**	Add the holding buffer to the packet list.
-					*/
-					InBuffers.Add (packet);
-			}
-			return(0);
+		if (rc == SOCKET_ERROR) {
+			// Would-block means the socket is empty; anything else is cleared
+			// and the drain carries on.
+			if (LAST_ERROR == WSAEWOULDBLOCK) return;
+			Clear_Socket_Error (Socket);
+			continue;
 		}
 
+		std::span<std::byte const> const datagram(reinterpret_cast<std::byte const *>(ReceiveBuffer), rc > 0 ? static_cast<std::size_t>(rc) : 0);
+		NetAdmission::DatagramResult const admission = NetAdmission::Admit_Datagram(datagram, WS_INTERNET_BUFFER_LEN);
+		if (!admission.Succeeded()) {
+			switch (admission.ErrorCode) {
+				case NetAdmission::Error::DATAGRAM_TOO_LARGE:
+					Record_Packet_Drop(WS_DROP_RECEIVE_TOO_LARGE);
+					break;
+				case NetAdmission::Error::BAD_CRC:
+					Record_Packet_Drop(WS_DROP_BAD_CRC);
+					break;
+				default:
+					Record_Packet_Drop(WS_DROP_RECEIVE_TOO_SHORT);
+					break;
+			}
+			continue;
+		}
 
 		/*
-		**	Write event. We send ourselves this event when we have more data to send. This
-		**	event will also occur automatically when a packet has finished being sent.
+		**	Make sure this packet didn't come from us. If it did then throw it away.
 		*/
-		case FD_WRITE:
-			/*
-			**	Clear any outstanding erros on the socket.
-			*/
-			rc = WSAGETSELECTERROR(lParam);
-			if (rc != 0) {
-				Clear_Socket_Error (Socket);
-				return(0);;
+		bool ours = false;
+		for ( int i=0 ; i<LocalAddresses.Count() ; i++ ) {
+			if ( ! memcmp (LocalAddresses[i], &addr.sin_addr.s_addr, 4) ) {
+				ours = true;
+				break;
 			}
+		}
+		if (ours) continue;
 
-			/*
-			**	If there are no packets waiting to be sent then bail.
-			*/
-			if ( OutBuffers.Count() == 0 ) return(0);
-			int packetnum = 0;
+		/*
+		**	Create a new buffer and store this packet in it.
+		*/
+		WinsockBufferType * packet = (WinsockBufferType *)Get_New_In_Buffer();
+		if (packet == NULL) {
+			return;
+		}
+		packet->BufferLen = static_cast<int>(admission.Payload.size());
+		packet->CRC = admission.WireCRC;
+		memcpy(packet->Buffer, admission.Payload.data(), admission.Payload.size());
 
-			/*
-			**	Get a pointer to the packet.
-			*/
-			packet = OutBuffers [ packetnum ];
+		/*
+		**	Copy the address data into the holding buffer address area.
+		*/
+		IPXAddressClass source(addr.sin_addr.s_addr, addr.sin_port);
+		memset ( packet->Address, 0, sizeof (packet->Address) );
+		memcpy ( packet->Address, &source, sizeof (source) );
 
-			/*
-			**	Set up the address structure of the outgoing packet
-			*/
-			IPXAddressClass destination;
-			memcpy (&destination, packet->Address, sizeof (destination));
-
-			addr.sin_family = AF_INET;
-			addr.sin_addr.s_addr = destination.Get_IP();
-
-			// An address without a port of its own goes to the port this socket was given.
-			addr.sin_port = destination.Get_Port() != 0 ? destination.Get_Port()
-				: (unsigned short) htons ( DestinationPortSet ? DestinationPort : (unsigned short)WestwoodOnline_PortNumber );
-
-			/*
-			**	Send it.
-			**	If we get a WSAWOULDBLOCK error it means that Winsock is unable to accept the packet
-			**	at this time. In this case, we clear the socket error and just exit. Winsock will
-			**	send us another WRITE message when it is ready to receive more data.
-			*/
-			rc = Send_To ( ((char const *)packet->Buffer) - sizeof(packet->CRC), packet->BufferLen + sizeof(packet->CRC), &addr );
-
-			if (rc == SOCKET_ERROR){
-				if (LAST_ERROR != WSAEWOULDBLOCK) {
-					Clear_Socket_Error (Socket);
-					return(0);
-				}
-			}
-
-			/*
-			**	Delete the sent packet.
-			*/
-			OutBuffers.Delete_Index(0);
-			if (packet->IsAllocated) {
-				delete packet;
-			} else {
-				packet->InUse = false;
-				OutBuffersUsed--;
-			}
-			return(0);
+		/*
+		**	Add the holding buffer to the packet list.
+		*/
+		InBuffers.Add (packet);
 	}
+}
 
-	return(0);
+
+/// <summary>
+/// Sends the out buffers in order until they are empty or the socket will take
+/// no more. A send that fails leaves its packet at the head for the next pass.
+/// </summary>
+void UDPInterfaceClass::Send_Pending(void)
+{
+	while (OutBuffers.Count() > 0) {
+		sockaddr_in addr;
+		WinsockBufferType * packet = OutBuffers[0];
+
+		/*
+		**	Set up the address structure of the outgoing packet
+		*/
+		IPXAddressClass destination;
+		memcpy (&destination, packet->Address, sizeof (destination));
+
+		addr.sin_family = AF_INET;
+		addr.sin_addr.s_addr = destination.Get_IP();
+
+		// An address without a port of its own goes to the port this socket was given.
+		addr.sin_port = destination.Get_Port() != 0 ? destination.Get_Port()
+			: (unsigned short) htons ( DestinationPortSet ? DestinationPort : (unsigned short)WestwoodOnline_PortNumber );
+
+		int rc = Send_To ( ((char const *)packet->Buffer) - sizeof(packet->CRC), packet->BufferLen + sizeof(packet->CRC), &addr );
+
+		if (rc == SOCKET_ERROR) {
+			if (LAST_ERROR != WSAEWOULDBLOCK) {
+				Clear_Socket_Error (Socket);
+			}
+			break;
+		}
+
+		OutBuffers.Delete_Index(0);
+		if (packet->IsAllocated) {
+			delete packet;
+		} else {
+			packet->InUse = false;
+			OutBuffersUsed--;
+		}
+	}
 }

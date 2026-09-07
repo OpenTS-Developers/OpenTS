@@ -64,6 +64,7 @@
 #include "scheme.h"
 #include "surface.h"
 #include "txtlabel.h"
+#include "utf8.h"
 #include "vector.h"
 
 #include <cstdio>
@@ -300,23 +301,35 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 	TextLabelClass * txtlabel = NULL;
 	int i;
 	int found;
-	char message[MAX_MESSAGE_LENGTH + 50];
+	char message[MAX_MESSAGE_LENGTH + MAX_MESSAGE_PREFIX];
 	//char temp[MAX_MESSAGE_LENGTH + 30];
 	int print_this_pass;
 
-	if (strlen(txt) + 1 > sizeof(message)) {
+	// The text has to fit beside the name it is shown with.
+	int room = (int)sizeof(message) - (name != NULL ? (int)strlen(name) + 2 : 0);
+	if (room < 2) {
+		return(NULL);
+	}
+
+	if ((int)strlen(txt) + 1 > room) {
 
 		int _len = 0;
 		int _width = 0;
 
-		while (_len < int(sizeof(message)-2)) {
+		while (_len < room - 2) {
 			if (_width > Width) {
 				break;
 			}
 			if (txt[_len] == '\n' || txt[_len] == '\0') {
 				break;
 			}
-			_width += font->Char_Pixel_Width(txt[_len++]);
+			int length;
+			char32_t code = UTF8::Peek(txt + _len, length);
+			if (_len + length > room - 2) {
+				break;
+			}
+			_width += font->Char_Pixel_Width(code);
+			_len += length;
 		}
 
 		int _olen = _len;
@@ -334,7 +347,8 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 				if (_width <= Width) {
 					break;
 				}
-				_width -= font->Char_Pixel_Width(txt[_len--]);
+				_width -= font->Char_Pixel_Width(UTF8::Peek(txt + _len));
+				_len = (int)(UTF8::Previous(txt, txt + _len) - txt);
 
 			}
 		}
@@ -359,9 +373,9 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 	// Combine the name & message text, if there's a name given
 	//------------------------------------------------------------------------
 	if (name) {
-		sprintf(message, "%s: %s", name, txt);
+		snprintf(message, sizeof(message), "%s: %s", name, txt);
 	} else {
-		strcpy(message, txt);
+		snprintf(message, sizeof(message), "%s", txt);
 	}
 
 	char save = 0;
@@ -380,18 +394,21 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 			if (message[i] == '\0' || message[i] == '\n') {
 				break;
 			}
-			charw += font->Char_Pixel_Width(message[i++]);
+			int length;
+			charw += font->Char_Pixel_Width(UTF8::Peek(message + i, length));
+			i += length;
 		}
 
 		if (charw > Width) {
-			i--;
+			i = (int)(UTF8::Previous(message, message + i) - message);
 			print_this_pass = i;
 			if (i > 0) {
 				while (i > 0) {
 					if (message[i] == '\0' || message[i] == ' ' || message[i] == '\n') {
 						break;
 					}
-					charw -= font->Char_Pixel_Width(message[i--]);
+					charw -= font->Char_Pixel_Width(UTF8::Peek(message + i));
+					i = (int)(UTF8::Previous(message, message + i) - message);
 				}
 				if (i > 0) {
 					print_this_pass = i;
@@ -448,7 +465,7 @@ TextLabelClass * MessageListClass::Add_Message(char const * name, int id, char c
 	for (i = 0; i < MAX_NUM_MESSAGES; i++) {
 		if (BufferAvail[i]) {
 			BufferAvail[i] = 0;
-			memset (MessageBuffers[i],0,MAX_MESSAGE_LENGTH + 50);
+			memset (MessageBuffers[i],0,sizeof(MessageBuffers[i]));
 			strcpy (MessageBuffers[i],message);
 			txtlabel->Text = MessageBuffers[i];
 			found = 1;
@@ -841,9 +858,9 @@ TextLabelClass * MessageListClass::Add_Edit(int color,
 	//	Initialize the buffer positions; create a new text label object
 	//------------------------------------------------------------------------
 	memset (EditBuf, 0, sizeof(EditBuf));
-	strcpy (EditBuf, to);
+	UTF8::Copy(EditBuf, sizeof(EditBuf), to);
 	OverflowBuf[0] = 0;
-	EditCurPos = EditInitPos = strlen(to);
+	EditCurPos = EditInitPos = strlen(EditBuf);
 	EditLabel = new TextLabelClass (EditBuf, EditX, EditY,
 		color, style);
 
@@ -1071,7 +1088,7 @@ int MessageListClass::Input(KeyNumType &input)
 	if (IsEdit) {
 
 
-		ascii = (KeyASCIIType)(Keyboard->To_ASCII(input) & 0x00ff);
+		ascii = (KeyASCIIType)Keyboard->To_ASCII(input);
 
 		/*
 		**	Allow numeric keypad presses to map to ascii numbers
@@ -1085,7 +1102,7 @@ int MessageListClass::Input(KeyNumType &input)
 			**	Filter out all special keys except return, escape and backspace
 			*/
 			if ((!(input & WWKEY_VK_BIT) && !(input & KN_BUTTON)
-					&& ascii >= ' ' && ascii <= 127)
+					&& UTF8::Is_Printable((char32_t)ascii))
 				|| (input & 0xff)== (KN_RETURN & 0xff)
 				|| (input & 0xff)== (KN_BACKSPACE & 0xff)
 				|| (input & 0xff)== (KN_ESC & 0xff) ) {
@@ -1136,7 +1153,7 @@ int MessageListClass::Input(KeyNumType &input)
 			//..................................................................
 			case KA_BACKSPACE & 0xff:
 				if (EditCurPos > EditInitPos) {
-					EditCurPos--;
+					EditCurPos = (int)(UTF8::Previous(EditBuf + EditInitPos, EditBuf + EditCurPos) - EditBuf);
 					EditBuf[EditCurPos] = 0;
 					retcode = 2;
 				}
@@ -1152,11 +1169,13 @@ int MessageListClass::Input(KeyNumType &input)
 			default:
 				EditLabel->Set_Focus();
 				bool overflowed = false;
-				if (ascii >= ' ' && ascii <= 127) {
-					if ( (EditCurPos - EditInitPos) < (MaxChars - 1) ) {
+				if (UTF8::Is_Printable((char32_t)ascii)) {
+					char encoded[UTF8::MAX_SEQUENCE];
+					int length = UTF8::Encode((char32_t)ascii, encoded);
+					if ( (EditCurPos - EditInitPos) + length < MaxChars ) {
 
-						EditBuf[EditCurPos] = ascii;
-						EditCurPos++;
+						memcpy(EditBuf + EditCurPos, encoded, length);
+						EditCurPos += length;
 						EditBuf[EditCurPos] = 0;
 						retcode = 1;
 
@@ -1168,7 +1187,7 @@ int MessageListClass::Input(KeyNumType &input)
 						int width = font->String_Pixel_Width(EditBuf);
 						if (width >= Width-10) {
 							overflowed = true;
-							EditCurPos--;
+							EditCurPos -= length;
 							EditBuf[EditCurPos] = 0;
 							retcode = 0;
 						}
@@ -1186,8 +1205,8 @@ int MessageListClass::Input(KeyNumType &input)
 						numchars = Trim_Message (OverflowBuf, EditBuf + EditInitPos,
 							OverflowStart,OverflowEnd, 1);
 						EditCurPos -= numchars;
-						EditBuf[EditCurPos] = ascii;
-						EditCurPos++;
+						memcpy(EditBuf + EditCurPos, encoded, length);
+						EditCurPos += length;
 						EditBuf[EditCurPos] = 0;
 						retcode = 4;
 					}
@@ -1397,6 +1416,8 @@ int MessageListClass::Trim_Message(char * dest, char * src, int min_chars,
 	if (!found) {
 		i = min_chars;
 	}
+
+	i = (int)UTF8::Boundary_Before(src, i);
 
 	//------------------------------------------------------------------------
 	// Save trimmed characters in the dest buffer, if there is one

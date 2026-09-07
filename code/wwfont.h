@@ -59,7 +59,8 @@ class WWFontClass : public FontClass
 			return((void *)FontData);
 		}
 
-		virtual int Char_Pixel_Width(char c) const override;
+		using FontClass::Char_Pixel_Width;
+		virtual int Char_Pixel_Width(char32_t code) const override;
 		virtual int String_Pixel_Width(char const * string) const override;
 		virtual void String_Pixel_Bounds(const char * string, Rect & bounds) const override;
 		virtual int Get_Width(void) const override;
@@ -108,6 +109,11 @@ class WWFontClass : public FontClass
 		};
 		FontType const * FontData;
 
+		// Whether the glyphs follow Windows-1252 rather than code page 437.
+		bool IsWindows1252;
+
 		int Raw_Width(void) const;
 		int Raw_Height(void) const;
+		int Glyph_Count(void) const;
+		unsigned char Glyph_Index(char32_t code) const;
 };

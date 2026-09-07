@@ -68,12 +68,12 @@ WAYPOINT Waypoint_From_Name(const char *string)
 
 	const int num_chars = ('Z' - 'A') + 1;
 
-	if (isalpha(string[0])) {
+	if (isalpha((unsigned char)string[0])) {
 
-		wp = toupper(string[0]) - 'A';
+		wp = toupper((unsigned char)string[0]) - 'A';
 
-		if (isalpha(string[1])) {
-			wp = toupper(string[1]) + (wp * num_chars) - ('A' - num_chars);
+		if (isalpha((unsigned char)string[1])) {
+			wp = toupper((unsigned char)string[1]) + (wp * num_chars) - ('A' - num_chars);
 		}
 	}
 

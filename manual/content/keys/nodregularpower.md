@@ -1,10 +1,10 @@
 ---
 key: NodRegularPower
-summary: The BuildingType every computer house except one named "GDI" inserts to cover a power shortfall.
-see_also: ["system:ai-base-building"]
+summary: Seeds the second side's RegularPowerPlant.
+see_also: [RegularPowerPlant, "system:ai-base-building"]
 when_omitted:
   kind: value
   value: none
 ---
 
-It is taken whenever the buildings the house owns do not yet meet the prerequisites of [`NodAdvancedPower`](/keys/nodadvancedpower/), and a house named neither "GDI" nor "Nod" answers its shortfalls from this pair as well. Reaching that fallback with no type named here crashes the game.
+The value becomes the second side's [`RegularPowerPlant`](/keys/regularpowerplant/#scope-side) as each rules file sets it; a `RegularPowerPlant=` in that side's own section of the same file overrides it. Nothing else reads the key.

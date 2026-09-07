@@ -30,7 +30,7 @@ The pass runs once, as a skirmish or multiplayer scenario finishes loading, and 
 
 ## The budget
 
-Every house draws against one budget worked out once for the match. Every InfantryType, and every UnitType other than the [`BaseUnit`](/keys/baseunit/), that is [`AllowedToStartInMultiplayer=yes`](/keys/allowedtostartinmultiplayer/) contributes its [`Cost`](/keys/cost/) to an average price, whoever may own it. The budget is that average multiplied by the lobby's [unit count](/keys/unitcount/), or by one less than it when [bases](/keys/bases/) are on, since the base unit is paid for out of the same figure. When no type is allowed at all the average is zero, and so is the budget: every house is placed with its base unit alone.
+Every house draws against one budget worked out once for the match. Every InfantryType, and every UnitType not listed in [`BaseUnit`](/keys/baseunit/), that is [`AllowedToStartInMultiplayer=yes`](/keys/allowedtostartinmultiplayer/) contributes its [`Cost`](/keys/cost/) to an average price, whoever may own it. The budget is that average multiplied by the lobby's [unit count](/keys/unitcount/), or by one less than it when [bases](/keys/bases/) are on and `BaseUnit` names anything, since the base unit is paid for out of the same figure. When no type is allowed at all the average is zero, and so is the budget: every house is placed with its base unit alone.
 
 ## Each house's shortlist
 
@@ -42,7 +42,7 @@ Positions are settled as the scenario loads, before its spawn house sections, te
 
 ## The base unit
 
-With bases on, each house is given one [`BaseUnit`](/keys/baseunit/), on the start cell when the cell takes it and otherwise on the nearest cell the [placement search](#where-an-object-lands) finds between one and thirty-one cells out. A base unit no cell takes is discarded. In capture the flag the house's flag is attached to it. With bases off nothing is placed ahead of the random objects.
+With bases on, each house is given the first [`BaseUnit`](/keys/baseunit/) entry the country it acts as may own, or entry 0 when it may own none, on the start cell when the cell takes it and otherwise on the nearest cell the [placement search](#where-an-object-lands) finds between one and thirty-one cells out. A base unit no cell takes is discarded. In capture the flag the house's flag is attached to it. With bases off nothing is placed ahead of the random objects.
 
 A match may deploy the base unit the moment it is placed, for every house rather than only the people playing. It deploys where it stands, into the cell its building's foundation reaches from there, and the placement search keeps the two cells nearest the start clear for that. Ground that will not take the building leaves a unit: a person's stands where it was placed, and a computer's goes looking for ground it can use. A [launch file](/formats/spawn-ini/) carries the option.
 

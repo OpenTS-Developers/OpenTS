@@ -169,7 +169,7 @@ void DesyncDialogClass::Notify_Chat(char const * name, char const * text)
 		return;
 	}
 
-	char buffer[256];
+	char buffer[MAX_MESSAGE_LENGTH + MAX_MESSAGE_PREFIX];
 	std::snprintf(buffer, sizeof(buffer), "%s: %s", name, text);
 	Append_Chat_Line(buffer);
 }

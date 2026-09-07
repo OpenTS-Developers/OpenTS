@@ -34,6 +34,8 @@ them.
 
 ## Formatting
 
+- Keep source files UTF-8 with no byte order mark. Escape a non-ASCII byte in
+  a C++ string or character literal; a resource script holds its text directly.
 - Use tabs for indentation, displayed at four columns, and spaces for
   alignment.
 - Keep established brace placement and local spacing.

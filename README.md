@@ -65,7 +65,10 @@ endorsed by Electronic Arts.
 OpenTS supplies the engine, not the game data: the installation above
 provides the original assets. There is no installer, and no extra runtime
 library or launch argument is required. Windows is supported; Wine may work,
-but there is no supported native Linux build.
+but there is no supported native Linux build. The engine asks Windows for the
+UTF-8 code page, which needs Windows 10 version 1903 or newer. Older Windows
+keeps its own code page, so game text still shows, but a path or file name
+holding a character that code page lacks may fail.
 
 ## Documentation
 

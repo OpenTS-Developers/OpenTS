@@ -1094,10 +1094,11 @@ class RulesClass
 		int MaximumBaseDefenseValue;
 
 		/*
-		 * This is the unit that deploys into a construction yard -- the MCV. A house
-		 * with neither a base nor one of these has lost.
+		 * These are the units that deploy into a construction yard -- the MCVs, one per
+		 * country where a rules set gives each its own. A house with neither a base nor one
+		 * of these has lost.
 		 */
-		UnitTypeClass const * BaseUnit;
+		TypeList<UnitTypeClass const *> BaseUnit;
 
 		/*
 		 * These are the unit types that count as harvesters, listed so that the game can
@@ -2062,6 +2063,13 @@ class RulesClass
 		**	target?
 		*/
 		bool IsCurleyShuffle;
+
+		/*
+		 * If true, then a construction yard produces for every country of a type's Owner list
+		 * rather than for the country it was built by, which is what a rules set with one MCV
+		 * per faction needs once an MCV comes out of a captured factory.
+		 */
+		bool IsMultiMCV;
 
 		/*
 		 * If the fog is to be blended evenly into the terrain beneath it, then this flag

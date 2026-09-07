@@ -50,6 +50,7 @@
 #include "globals.h"
 #include "keyboard.h"
 #include "scheme.h"
+#include "utf8.h"
 #include "vector.h"
 
 #include "color.hh"
@@ -259,7 +260,7 @@ int EditClass::Action(unsigned flags, KeyNumType & key)
 
 		} else {
 
-			KeyASCIIType ascii = (KeyASCIIType)(Keyboard->To_ASCII(key) & 0xff);
+			KeyASCIIType ascii = (KeyASCIIType)Keyboard->To_ASCII(key);
 
 			/*
 			**	Allow numeric keypad presses to map to ascii numbers
@@ -276,13 +277,13 @@ int EditClass::Action(unsigned flags, KeyNumType & key)
 			} else {
 				/*
 				**	Filter out all special keys except return and backspace
-				*/  	if ((!(key & WWKEY_VK_BIT) && ascii >= ' ' && ascii <= 255)
+				*/  	if ((!(key & WWKEY_VK_BIT) && UTF8::Is_Printable((char32_t)ascii))
 					|| key == KN_RETURN || key == KN_BACKSPACE) {
 
 
 
 					if ((!(flags & LEFTRELEASE)) && (!(flags & RIGHTRELEASE))) {
-						if (Handle_Key((KeyASCIIType)Keyboard->To_ASCII(key))) {
+						if (Handle_Key(ascii)) {
 							flags &= ~KEYBOARD;
 							key = KN_NONE;
 						}
@@ -402,7 +403,7 @@ bool EditClass::Handle_Key(KeyASCIIType ascii)
 		*/
 		case KA_BACKSPACE:
 			if (Length) {
-				Length--;
+				Length = (int)(UTF8::Previous(String, String + Length) - String);
 				String[Length] = '\0';
 				Flag_To_Redraw();
 			}
@@ -412,41 +413,48 @@ bool EditClass::Handle_Key(KeyASCIIType ascii)
 		**	If the keyboard event was not a recognized special key, then examine to see
 		**	if it can legally be added to the edit string and do so if possible.
 		*/
-		default:
+		default: {
+			char32_t code = (char32_t)ascii;
 
 			/*
 			**	Don't add a character if the length is greater than edit width.
 			*/
-			if ((font->String_Pixel_Width(String) + font->Char_Pixel_Width(ascii) ) >= (Width-2)) {
+			if ((font->String_Pixel_Width(String) + font->Char_Pixel_Width(code) ) >= (Width-2)) {
 				break;
 			}
-
-			/*
-			**	Don't add a character if the length is already at maximum.
-			*/
-			if ((unsigned)Length >= (unsigned)MaxLength) break;
 
 			/*
 			**	Invisible characters are never added to the string. This is
 			**	especially true for spaces at the beginning of the string.
 			*/
-			if (!isgraph(ascii) && ascii != ' ') break;
-			if (ascii == ' ' && Length == 0) break;
+			bool graphic = (code < 0x80) ? (isgraph((int)code) != 0) : UTF8::Is_Printable(code);
+			if (!graphic && code != ' ') break;
+			if (code == ' ' && Length == 0) break;
 
 			/*
 			**	If this is an upper case only edit gadget, then force the alphabetic
 			**	character to upper case.
 			*/
-			if ((EditFlags & UPPERCASE) && isalpha(ascii)) {
-				ascii = (KeyASCIIType)toupper(ascii);
+			if ((EditFlags & UPPERCASE) && code < 0x80 && isalpha((int)code)) {
+				code = (char32_t)toupper((int)code);
 			}
 
-			if ((!(EditFlags & NUMERIC) || !isdigit(ascii)) &&
-				(!(EditFlags & ALPHA) || !isalpha(ascii)) &&
-				(!(EditFlags & MISC) || isalnum(ascii)) &&
-				ascii != ' ') {
+			bool digit = code < 0x80 && isdigit((int)code);
+			bool alpha = code >= 0x80 || isalpha((int)code);
+			bool alnum = code >= 0x80 || isalnum((int)code);
+			if ((!(EditFlags & NUMERIC) || !digit) &&
+				(!(EditFlags & ALPHA) || !alpha) &&
+				(!(EditFlags & MISC) || alnum) &&
+				code != ' ') {
 					break;
 			}
+
+			/*
+			**	Don't add a character if the length is already at maximum.
+			*/
+			char encoded[UTF8::MAX_SEQUENCE];
+			int length = UTF8::Encode(code, encoded);
+			if ((unsigned)(Length + length) > (unsigned)MaxLength) break;
 
 			/*
 			**	The character passed all legality checks, so add it to the edit string
@@ -454,10 +462,12 @@ bool EditClass::Handle_Key(KeyASCIIType ascii)
 			**	because the event flag has been cleared. This prevents the gadget's ID
 			**	number from being returned just because the gadget has been edited.
 			*/
-			String[Length++] = ascii;
+			memcpy(String + Length, encoded, length);
+			Length += length;
 			String[Length] = '\0';
 			Flag_To_Redraw();
 			break;
+		}
 	}
 	return(true);
 }

@@ -224,6 +224,7 @@ RulesClass::RulesClass(void) :
 	Diff(),
 	IsComputerParanoid(true),
 	IsCurleyShuffle(false),
+	IsMultiMCV(false),
 	IsBlendedFog(true),
 	IsCompEasyBonus(true),
 	IsFineDifficulty(false),
@@ -528,7 +529,7 @@ RulesClass::RulesClass(void) :
 	ComputerBaseDefenseResponse(3),
 	AIDetectDisguise(false),
 	MaximumBaseDefenseValue(60),
-	BaseUnit(NULL),
+	BaseUnit(),
 	HarvesterUnit(),
 	PadAircraft(),
 	OnFire(),
@@ -1127,7 +1128,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		GDIFirestormGenerator = TGet_Class(ini, GENERAL, "GDIFirestormGenerator", GDIFirestormGenerator);
 		GDIHunterSeeker = TGet_Class(ini, GENERAL, "GDIHunterSeeker", GDIHunterSeeker);
 		NodHunterSeeker = TGet_Class(ini, GENERAL, "NodHunterSeeker", NodHunterSeeker);
-		BaseUnit = TGet_Class(ini, GENERAL, "BaseUnit", BaseUnit);
+		BaseUnit = TGet_TypeList<UnitTypeClass>(ini, GENERAL, "BaseUnit", BaseUnit);
 		HarvesterUnit = TGet_TypeList<UnitTypeClass>(ini, GENERAL, "HarvesterUnit", HarvesterUnit);
 		PadAircraft = TGet_TypeList<AircraftTypeClass>(ini, GENERAL, "PadAircraft", PadAircraft);
 		Paratrooper = TGet_Class(ini, GENERAL, "Paratrooper", Paratrooper);
@@ -1137,6 +1138,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		Pilot = TGet_Class(ini, GENERAL, "Pilot", Pilot);
 		Crew = TGet_Class(ini, GENERAL, "Crew", Crew);
 		IsCurleyShuffle = ini.Get_Bool(GENERAL, "CurleyShuffle", IsCurleyShuffle);
+		IsMultiMCV = ini.Get_Bool(GENERAL, "MultiMCV", IsMultiMCV);
 		IsFineDifficulty = ini.Get_Bool(GENERAL, "FineDiffControl", IsFineDifficulty);
 		TeamDelays = ini.Get_IntList(GENERAL, "TeamDelays", TeamDelays);
 		AIHateDelays = ini.Get_IntList(GENERAL, "AIHateDelays", AIHateDelays);
@@ -1144,6 +1146,26 @@ bool RulesClass::General(CCINIClass const & ini)
 		AIUseTurbineUpgradeChance = ini.Get_Float(GENERAL, "AIUseTurbineUpgradeProbability", AIUseTurbineUpgradeChance);
 		NodAIBuildsWalls = ini.Get_Bool(GENERAL, "NodAIBuildsWalls", NodAIBuildsWalls);
 		AIBuildsWalls = ini.Get_Bool(GENERAL, "AIBuildsWalls", AIBuildsWalls);
+
+		// The first two sides take the GDI and Nod keys as each file sets them, before the side's
+		// own section in that file overrides.
+		if (Sides.Count() > 0) {
+			SideClass * first = Sides[0];
+			if (ini.Is_Present(GENERAL, "GDIPowerPlant")) first->RegularPowerPlant = GDIPowerPlant;
+			if (ini.Is_Present(GENERAL, "GDIPowerTurbine")) first->PowerTurbine = GDIPowerTurbine;
+			if (ini.Is_Present(GENERAL, "GDIHunterSeeker")) first->HunterSeeker = GDIHunterSeeker;
+			if (ini.Is_Present(GENERAL, "WallTower")) {
+				first->AIWallTowers.Clear();
+				if (WallTower != NULL) first->AIWallTowers.Add(WallTower);
+			}
+		}
+		if (Sides.Count() > 1) {
+			SideClass * second = Sides[1];
+			if (ini.Is_Present(GENERAL, "NodRegularPower")) second->RegularPowerPlant = NodRegularPower;
+			if (ini.Is_Present(GENERAL, "NodAdvancedPower")) second->AdvancedPowerPlant = NodAdvancedPower;
+			if (ini.Is_Present(GENERAL, "NodHunterSeeker")) second->HunterSeeker = NodHunterSeeker;
+			if (ini.Is_Present(GENERAL, "NodAIBuildsWalls")) second->IsAIBuildsWalls = NodAIBuildsWalls;
+		}
 		FillEarliestTeamProbability = ini.Get_IntList(GENERAL, "FillEarliestTeamProbability", FillEarliestTeamProbability);
 		MinimumAIDefensiveTeams = ini.Get_IntList(GENERAL, "MinimumAIDefensiveTeams", MinimumAIDefensiveTeams);
 		MaximumAIDefensiveTeams = ini.Get_IntList(GENERAL, "MaximumAIDefensiveTeams", MaximumAIDefensiveTeams);
@@ -1726,6 +1748,17 @@ bool RulesClass::AI(CCINIClass const & ini)
 		GDIWallDefenseCoefficient = ini.Get_Float(AI, "GDIWallDefenseCoefficient", GDIWallDefenseCoefficient);
 		NodBaseDefenseCoefficient = ini.Get_Float(AI, "NodBaseDefenseCoefficient", NodBaseDefenseCoefficient);
 		GDIBaseDefenseCoefficient = ini.Get_Float(AI, "GDIBaseDefenseCoefficient", GDIBaseDefenseCoefficient);
+
+		// The first two sides inherit the GDI and Nod keys as each file sets them.
+		if (Sides.Count() > 0) {
+			SideClass * first = Sides[0];
+			if (ini.Is_Present(AI, "GDIWallDefense")) first->AIWallDefense = GDIWallDefense;
+			if (ini.Is_Present(AI, "GDIWallDefenseCoefficient")) first->AIWallDefenseCoefficient = GDIWallDefenseCoefficient;
+			if (ini.Is_Present(AI, "GDIBaseDefenseCoefficient")) first->AIBaseDefenseCoefficient = GDIBaseDefenseCoefficient;
+		}
+		if (Sides.Count() > 1 && ini.Is_Present(AI, "NodBaseDefenseCoefficient")) {
+			Sides[1]->AIBaseDefenseCoefficient = NodBaseDefenseCoefficient;
+		}
 		MaximumBaseDefenseValue = ini.Get_Int(AI, "MaximumBaseDefenseValue", MaximumBaseDefenseValue);
 		ComputerBaseDefenseResponse = ini.Get_Int(AI, "ComputerBaseDefenseResponse", ComputerBaseDefenseResponse);
 		AIDetectDisguise = ini.Get_Bool(AI, "AIDetectDisguise", AIDetectDisguise);
@@ -2444,6 +2477,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ExtraAircraftLight);
 	stream.Serialize(IsComputerParanoid);
 	stream.Serialize(IsCurleyShuffle);
+	stream.Serialize(IsMultiMCV);
 	stream.Serialize(IsBlendedFog);
 	stream.Serialize(IsCompEasyBonus);
 	stream.Serialize(IsFineDifficulty);
@@ -2596,9 +2630,6 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	if (target == FlareAnim) {
 		FlareAnim = NULL;
 	}
-	if (target == BaseUnit) {
-		BaseUnit = NULL;
-	}
 	if (target == UnitCrateType) {
 		UnitCrateType = NULL;
 	}
@@ -2734,6 +2765,7 @@ void RulesClass::Detach(AbstractClass const * target, bool all)
 	Craters.Delete((SmudgeTypeClass const *)target);
 
 	HarvesterUnit.Delete((UnitTypeClass const *)target);
+	BaseUnit.Delete((UnitTypeClass const *)target);
 
 	BuildConst.Delete((BuildingTypeClass const *)target);
 	BuildPower.Delete((BuildingTypeClass const *)target);
@@ -2788,6 +2820,11 @@ bool RulesClass::Objects(CCINIClass const & ini)
 	*/
 	for (int house = HOUSE_FIRST; house < HouseTypes.Count(); house++) {
 		HouseTypes[house]->Read_INI(ini);
+	}
+
+	// Every country has named its side by now, so the sides read their own sections last.
+	for (int side = 0; side < Sides.Count(); side++) {
+		Sides[side]->Read_INI(ini);
 	}
 
 	/*

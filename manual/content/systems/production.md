@@ -68,7 +68,7 @@ When a player's house orders an object, it searches its structures for one that 
 - it is neither being sold nor queued to be sold;
 - the product is not blocked by its own [build limit](#build-limits);
 - the factory type's [`Owner=`](/keys/owner/) shares at least one country with the product's `Owner=`;
-- **Any of:** the factory's own type is not the first [`BuildConst`](/keys/buildconst/) entry, or the country that construction yard is acting as is one of the product's owners.
+- **Any of:** the factory's own type is not listed in [`BuildConst`](/keys/buildconst/), or that construction yard acts for a country and it is one of the product's owners.
 
 That last term is why a captured construction yard keeps building its original owner's structures.
 
@@ -118,7 +118,7 @@ Four gates stand between an object type and a house's build list, and they are t
 When a prerequisite names a type that plugs into another structure — one carrying [`PowersUpBuilding=`](/keys/powersupbuilding/) — the test does not scan the base for that plug. It takes a single structure, the last one in the game's list of structures that this house owns, has on the map, has switched on and is not selling, and asks whether that structure carries the upgrade. The same plug installed anywhere else does not answer the prerequisite.
 :::
 
-**Ownership.** For a BuildingType, its `Owner=` list must not be empty, and when it names exactly one country the house must own a construction yard that is on the map, switched on, not being sold, and acting as one of the countries in that list. [`DoubleOwned=yes`](/keys/doubleowned/) opens the type to every country, but only outside campaign games. Units, infantry and aircraft are not put through this gate at all; their ownership is enforced by the factory-and-product `Owner=` overlap above.
+**Ownership.** For a BuildingType, its `Owner=` list must not be empty, and the house must own a construction yard that is on the map, switched on, not being sold, and acting as one of the countries in that list — the test the factory search applies, so a structure no yard can produce is not offered and then greyed. [`MultiMCV=yes`](/keys/multimcv/) drops the yard test from both. [`DoubleOwned=yes`](/keys/doubleowned/) opens the type to every country, but only outside campaign games. Units, infantry and aircraft are not put through this gate at all; their ownership is enforced by the factory-and-product `Owner=` overlap above.
 
 **Build limits.** The last gate, and the only one the factory search puts again on its own; [build limits](#build-limits) covers it.
 

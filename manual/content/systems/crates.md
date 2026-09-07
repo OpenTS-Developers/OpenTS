@@ -155,7 +155,7 @@ An override then replaces the draw outright. The collector's house takes the uni
 
 - it owns no buildings;
 - it has more than 1500 credits available;
-- it owns no vehicle of the [`BaseUnit`](/keys/baseunit/) type;
+- it owns no vehicle of any [`BaseUnit`](/keys/baseunit/) type;
 - bases are enabled for the match.
 
 The override raises the flag that later turns that vehicle into an MCV, but it runs before the conversions below rather than after them, so a house holding more than 50 vehicles has the unit result turned straight back into money and never reaches the MCV the flag was raised for.
@@ -198,14 +198,16 @@ Outside a campaign the money result pays a random figure between the third field
 
 The unit result picks a vehicle type in this order:
 
-1. the `BaseUnit` type, when the MCV override above fired;
-2. otherwise the first [`HarvesterUnit`](/keys/harvesterunit/) type, when the house owns a structure of the first [`BuildRefinery`](/keys/buildrefinery/) type and no vehicle of that first `HarvesterUnit` type;
+1. the first `BaseUnit` entry the country the house acts as may own, or entry 0 when it may own none, when the MCV override above fired;
+2. otherwise the first [`HarvesterUnit`](/keys/harvesterunit/) entry the country the house acts as may own, or entry 0 when it may own none, when the house owns a structure of any [`BuildRefinery`](/keys/buildrefinery/) type and no vehicle of any `HarvesterUnit` type;
 3. [`UnitCrateType`](/keys/unitcratetype/), whenever it names a type;
 4. otherwise a random UnitType, redrawn until one satisfies **all of**, in this order:
 
    - it is [`CrateGoodie=yes`](/keys/crategoodie/);
-   - it is ownable by the collector's house;
-   - **Any of:** bases are enabled for the match, or it is not the `BaseUnit` type.
+   - it is ownable by the country the collector's house acts as;
+   - **Any of:** bases are enabled for the match, or it is not a `BaseUnit` type.
+
+   When no UnitType satisfies all three, nothing is handed out and the crate pays money instead.
 
 :::caution[UnitCrateType cancels both rescues]
 Step 3 overwrites whatever steps 1 and 2 chose, so naming a type there suppresses the free MCV given to a house that has lost its base and the free harvester given to a house that has lost its last one. Leaving `UnitCrateType=none` is what keeps both rescues reachable.

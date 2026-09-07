@@ -208,6 +208,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		UnitTypeClass *UndeploysInto;
 
 		/*
+		 * The vehicle type this one is drawn as while it stands at a dock handing its load
+		 * over. It overrides the single UnloadingHarvester the rules name for every harvester.
+		 */
+		UnitTypeClass const * UnloadingClass;
+
+		/*
 		 * These are the voice responses this object gives, one list per occasion. The
 		 * response is picked at random from the applicable list, so a type given several
 		 * alternatives will not repeat itself.

@@ -1,6 +1,6 @@
 ---
 title: Project status
-summary: OpenTS provides playable releases; campaigns, skirmish, saving, and LAN play are functional.
+summary: OpenTS provides playable releases and nightly developer builds; campaigns, skirmish, saving, and LAN play are functional.
 category: getting-started
 source_files:
   - README.md

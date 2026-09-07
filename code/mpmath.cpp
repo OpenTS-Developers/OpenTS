@@ -1718,7 +1718,7 @@ void XMP_Decode_ASCII(char const * str, digit * mpn, int precision)
 	if (i == 0) return;
 
 	unsigned short radix;		/* base 2-16 */
-	switch (toupper(str[i-1])) {		/* classify radix select suffix character */
+	switch (toupper((unsigned char)str[i-1])) {		/* classify radix select suffix character */
 		case '.':
 			radix = 10;
 			break;
@@ -1752,15 +1752,15 @@ void XMP_Decode_ASCII(char const * str, digit * mpn, int precision)
 		**	clearly the end of the processable string. Bail out
 		**	of the scan loop.
 		*/
-		if (!isxdigit((char)c)) break;
+		if (!isxdigit((unsigned char)c)) break;
 
 		/*
 		**	Convert the character into an integer number 0 through 15.
 		*/
-		if (isdigit((char)c)) {
+		if (isdigit((unsigned char)c)) {
 			c -= '0';
 		} else {
-			c = (unsigned char)(toupper((char)c) - 'A') + 10;
+			c = (unsigned char)(toupper((unsigned char)c) - 'A') + 10;
 		}
 
 		/*

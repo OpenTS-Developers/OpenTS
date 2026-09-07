@@ -646,3 +646,225 @@ test('The scenario file is kept from its first read and carried in the save', ()
 		'the deployment configuration decides whether the file is carried',
 	);
 });
+
+test('Owning a factory is asked of the whole list rather than of its first entries', () => {
+	const house = source('code/house.cpp');
+
+	assert.match(
+		functionBody(house, 'bool HouseClass::Can_Make_Money(void)'),
+		/Owns_Any\(ABQuantity, Rule->BuildWeapons\)/,
+		'the money check asks the whole war factory list',
+	);
+	assert.match(
+		functionBody(house, 'bool HouseClass::AI_Raise_Money(UrgencyType urgency)'),
+		/Owns_Any\(ABQuantity, Rule->BuildWeapons\)/,
+		'a house selling its base back asks the whole war factory list',
+	);
+	assert.doesNotMatch(house, /BuildWeapons\[[01]\]/, 'no entry of the war factory list is read by position');
+});
+
+test('The bundled pad aircraft share averages the whole list behind one guarded test', () => {
+	const builtype = source('code/builtype.cpp');
+
+	assert.match(
+		functionBody(builtype, 'bool BuildingTypeClass::Is_Pad_Aircraft_Dock(void) const'),
+		/Rule->PadAircraft\.Count\(\) == 0/,
+		'an empty list bundles no price',
+	);
+	assert.match(
+		functionBody(builtype, 'int BuildingTypeClass::Raw_Cost(void) const'),
+		/total \/ Rule->PadAircraft\.Count\(\)/,
+		'the share is the average over every entry',
+	);
+	assert.doesNotMatch(builtype, /PadAircraft\[1\]/, 'the second entry is no longer read by position');
+});
+
+test('A house counts every listed construction yard type towards its own', () => {
+	for (const path of ['code/house.cpp', 'code/building.cpp', 'code/unit.cpp', 'code/objtype.cpp', 'code/cell.cpp', 'code/init.cpp']) {
+		assert.doesNotMatch(source(path), /BuildConst\[0\]/, `${path} reads no construction yard by position`);
+	}
+	assert.match(
+		functionBody(source('code/objtype.cpp'), 'BuildingClass * ObjectTypeClass::Who_Can_Build_Me(bool intheory, bool needsnopower, bool legal, HouseClass * house) const'),
+		/Rule->BuildConst\.Is_In_List\(building->Class\)/,
+		'every listed yard produces only for the country its record names',
+	);
+});
+
+test('The economy counts every listed refinery and harvester and prices a preferred one', () => {
+	const house = source('code/house.cpp');
+
+	assert.doesNotMatch(house, /HarvesterUnit\[0\]|BuildRefinery\[0\]/, 'no refinery or harvester is read by position');
+	assertOrdered(functionBody(house, 'bool HouseClass::Can_Make_Money(void)'), [
+		'Get_Preferred(Rule->BuildRefinery)',
+		'Get_Preferred(Rule->HarvesterUnit)',
+		'Owns_Any(ABQuantity, Rule->BuildRefinery)',
+		'Owns_Any(AUQuantity, Rule->HarvesterUnit)',
+	], 'the money check prices a preferred entry and counts the whole list');
+	assert.match(
+		source('code/foot.cpp'),
+		/Count_Owned\(House->AUQuantity, Rule->HarvesterUnit\)/,
+		'the harvester census counts every listed type',
+	);
+});
+
+test('The harvester truce shields, discounts and refuses theft over the same list', () => {
+	assert.match(source('code/house.cpp'), /units -= Count_Owned\(UQuantity, Rule->HarvesterUnit\);/, 'the defeat test discounts every listed type');
+	assert.match(source('code/infantry.cpp'), /Rule->HarvesterUnit\.Is_In_List\(\(\(UnitClass \*\)object\)->Class\)/, 'the thief test compares the vehicle type');
+	assert.match(source('code/combat.cpp'), /HarvesterUnit\.Is_In_List/, 'blast damage exempts every listed type');
+});
+
+test('The base plan seeds a listed construction yard and survives an unownable list', () => {
+	assertOrdered(functionBody(source('code/house.cpp'), 'void HouseClass::Make_Base_Nodes(void)'), [
+		'Rule->BuildConst.Is_In_List(buildables[index])',
+		'Get_First_Acted(Rule->BuildPower)',
+		'if (power != NULL)',
+		'if (startingqueue.Count() < 3)',
+	], 'the plan starts from the first listed yard, guards the power entry, and stops short of weaving into an empty queue');
+});
+
+test('One resolver answers which type of a role a house builds, against the country it acts as', () => {
+	const header = source('code/house.h');
+	const house = source('code/house.cpp');
+
+	assertOrdered(header, ['int Acted_Mask(void) const;', 'Get_First_Acted(', 'Get_Preferred('], 'the seam is declared once');
+	assert.doesNotMatch(header, /Get_First_Ownable/, 'the country-index resolver is gone');
+	assert.doesNotMatch(house, /HouseTypes\.ID\(Class\)/, 'no site shifts by the house\'s own country');
+	assert.equal((house.match(/Acted_Mask\(\)/g) ?? []).length, 4, 'the buildable scan and the three defense scans ask the seam');
+	assert.match(functionBody(house, 'int HouseClass::Acted_Mask(void) const'), /1 << ActLike/, 'the seam answers for the acted country');
+});
+
+test('A house acts for its own country and reads ActsLike as a name or a position', () => {
+	const house = source('code/house.cpp');
+
+	assertOrdered(functionBody(house, 'HouseClass::HouseClass(HouseTypeClass const * type)'), [
+		'!Class->IsMultiplayPassive',
+		'ActLike = Class->House;',
+	], 'the default is the house\'s own country, except for a passive one');
+	assertOrdered(functionBody(house, 'static HousesType Acts_Like_From(char const * section, char const * value, HousesType defvalue)'), [
+		'stricmp(value, "<none>")',
+		'HouseTypeClass::From_Name(value)',
+		'atoi(value)',
+		'house >= HouseTypes.Count()',
+	], 'a name is tried before a position, and an unknown value is refused');
+	assert.doesNotMatch(house, /strnicmp\(Class->Name\(\), "GDI"/, 'the name-prefix rule is gone');
+});
+
+test('Base building reads its side rather than comparing country names', () => {
+	const house = source('code/house.cpp');
+	const rules = source('code/rules.cpp');
+
+	assert.doesNotMatch(house, /stricmp\(Class->IniName/, 'no fork compares the country name');
+	assertOrdered(functionBody(house, 'void HouseClass::Make_Base_Nodes(void)'), [
+		'Acted_Side()',
+		'side->AIBaseDefenseCoefficient',
+		'Get_First_Acted(side->AIWallTowers)',
+		'side->IsAIBuildsWalls',
+	], 'the plan reads its side');
+	assertOrdered(functionBody(rules, 'bool RulesClass::Objects(CCINIClass const & ini)'), [
+		'HouseTypes[house]->Read_INI(ini);',
+		'Sides[side]->Read_INI(ini);',
+	], 'the side sections are read after every country has named its side');
+	assertOrdered(functionBody(rules, 'bool RulesClass::General(CCINIClass const & ini)'), [
+		'first->RegularPowerPlant = GDIPowerPlant;',
+		'second->RegularPowerPlant = NodRegularPower;',
+	], 'the first two sides are seeded from the legacy keys as each file sets them');
+	assert.match(
+		functionBody(source('code/side.cpp'), 'bool SideClass::Read_INI(CCINIClass const & ini)'),
+		/TGet_Class\(ini, Name\(\), "RegularPowerPlant", RegularPowerPlant\)/,
+		'a side reads its own section',
+	);
+});
+
+test('The art side comes from the player country rather than a name comparison', () => {
+	const scenario = source('code/scenario.cpp');
+	const readScenario = functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)');
+
+	assert.doesNotMatch(readScenario, /IsGDI/, 'the flag is gone');
+	assertOrdered(readScenario, [
+		'HouseTypeClass::From_Name(buffer)',
+		'Prep_For_Side_Or_First(playerside)',
+		'Scen->SpeechSide = playerside;',
+	], 'the country is resolved, its side prepared with a fallback, and the speech seeded from it');
+	assert.match(functionBody(scenario, 'SideType Side_For_Player(void)'), /HouseTypes\[house\]->Side/, 'the presented side is the player country\'s');
+});
+
+test('An AI trigger names its side by its position', () => {
+	const process = functionBody(source('code/aitrig.cpp'), 'bool AITriggerTypeClass::Process(HouseClass *house, HouseClass *enemy, bool skip_base_defense)');
+
+	assertOrdered(process, ['MultiSide > 0', 'HouseTypes[house->ActLike]->Side', '(SideType)(MultiSide - 1)'], 'the field is a side position compared with the acted side');
+	assert.doesNotMatch(process, /HOUSE_GOOD|HOUSE_BAD/, 'no country constant is compared');
+});
+
+test('The hunter-seeker comes from the acted side', () => {
+	const superweapon = source('code/super.cpp');
+
+	assert.match(superweapon, /side->HunterSeeker/, 'the acted side names the drone');
+	assert.doesNotMatch(superweapon, /GDIHunterSeeker|NodHunterSeeker/, 'the legacy pair is not consulted');
+});
+
+test('A base unit is handed out through the resolver', () => {
+	assert.match(source('code/rules.h'), /TypeList<UnitTypeClass const \*> BaseUnit;/, 'the key is a list');
+	assert.match(source('code/scenario.cpp'), /hptr->Get_Preferred\(Rule->BaseUnit\)/, 'the starting base unit is the preferred entry');
+	assert.match(source('code/cell.cpp'), /object->House->Get_Preferred\(Rule->BaseUnit\)/, 'the crate rescue hands out the preferred entry');
+});
+
+test('A computer player draws a country from the lobby roster', () => {
+	assertOrdered(functionBody(source('code/scenario.cpp'), 'void Assign_Houses(void)'), [
+		'HouseTypes[country]->IsMultiplay',
+		'playable[Random_Pick(0, playable.Count() - 1)]',
+		'seat->Player.House != -1',
+	], 'the roster is drawn from before a launch file seat overrides it');
+});
+
+test('A lobby side entry carries its country', () => {
+	const netdlg = source('code/netdlg2.cpp');
+
+	assertOrdered(functionBody(netdlg, 'void Fill_Country_Box(HWND combo)'), ['CB_INSERTSTRING', 'CB_SETITEMDATA'], 'each entry carries its country');
+	assert.match(functionBody(netdlg, 'int Country_From_Box(HWND combo)'), /CB_GETITEMDATA/, 'the selection is read back through its country');
+	assert.doesNotMatch(netdlg, /CB_SETCURSEL, Session\.House/, 'no box is positioned by a country index');
+	assert.doesNotMatch(source('code/skirmish.cpp'), /Session\.House = ComboBox_GetCurSel/, 'the skirmish box stores a country, not a position');
+});
+
+test('A side is declared in the side list alone', () => {
+	const ccini = source('code/ccini.cpp');
+
+	assert.doesNotMatch(
+		functionBody(ccini, 'SideType CCINIClass::Get_Side(char const * section, char const * entry, SideType defvalue) const'),
+		/new SideClass/,
+		'an unknown side name creates nothing',
+	);
+	assert.doesNotMatch(
+		functionBody(ccini, 'TypeList<int> CCINIClass::Get_House_List(const char * section, const char * entry, TypeList<int> defvalue) const'),
+		/SideClass::From_Name/,
+		'a side name is not expanded into its countries',
+	);
+	assert.match(
+		functionBody(source('code/houstype.cpp'), 'bool HouseTypeClass::Read_INI(CCINIClass const & ini)'),
+		/Sides\[oldside\]->Houses\.Is_In_List\(\(int\)House\)/,
+		'a country the side list placed keeps that side',
+	);
+});
+
+test('Shape facing selection admits four counts and keeps northwest on index zero', () => {
+	const face = source('code/face.h');
+	const select = functionBody(face, 'inline int Shape_Facing_Index(DirType dir, int count)');
+
+	assertOrdered(select, ['case 8:', 'case 16:', 'case 32:', 'case 64:', 'default:'], 'the supported counts');
+	assert.match(select, /Round_To_8\(\)\s*\+\s*1\)\s*%\s*8/, 'eight facings keep the bias they always had');
+	assert.match(select, /Round_To_16\(\)\s*\+\s*2\)\s*%\s*16/, 'sixteen facings bias by an eighth of a turn');
+	assert.match(select, /Round_To_32\(\)\s*\+\s*4\)\s*%\s*32/, 'thirty-two facings bias by an eighth of a turn');
+	assert.match(select, /Round_To_64\(\)\s*\+\s*8\)\s*%\s*64/, 'sixty-four facings bias by an eighth of a turn');
+	assert.match(select, /default:\s*return\(0\)/, 'any other count draws index zero');
+});
+
+test('The turret strip is derived from eight walk blocks whatever the hull is cut into', () => {
+	const unit = functionBody(
+		source('code/unit.cpp'),
+		'void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightness) const',
+	);
+
+	assert.match(unit, /turretframe\s*=\s*FACING_COUNT\s*\*\s*Class->WalkFrames/, 'the derived strip follows eight walk blocks');
+	assert.match(unit, /Class->StartTurretFrame/, 'authored artwork may move the strip');
+	assert.match(unit, /Shape_Facing_Index\(SecondaryFacing\.Current\(\), Class->TurretFacings\)/, 'the turret uses its own count');
+	assert.match(unit, /Shape_Facing_Index\(PrimaryFacing\.Current\(\), Class->Facings\)/, 'the hull uses its own count');
+});

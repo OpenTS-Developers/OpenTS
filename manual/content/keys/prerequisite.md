@@ -18,4 +18,4 @@ Prerequisite=FACTORY,MYRADAR
 ; MYRADAR: example radar BuildingType, required by its own ID
 ```
 
-Names are matched without regard to case; an entry matching neither a group name nor a BuildingType ID is dropped, and only the first 127 characters of the value are read. A computer house is not put through this test when it produces — its [base planning](/systems/ai-base-building/) runs its own check over the same key when deciding what to place.
+Names are matched without regard to case; an entry matching neither a group name nor a BuildingType ID is dropped. A computer house is not put through this test when it produces — its [base planning](/systems/ai-base-building/) runs its own check over the same key when deciding what to place.

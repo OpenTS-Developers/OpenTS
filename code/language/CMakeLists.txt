@@ -12,6 +12,10 @@ target_compile_definitions(Language PRIVATE NOMINMAX)
 target_include_directories(Language PRIVATE "${OPENTS_GENERATED_DIR}")
 add_dependencies(Language OpenTSBuildStamp)
 
+# The game loads its strings from this library at runtime, so building the executable alone
+# would leave a stale Language.dll beside it.
+add_dependencies(OpenTS Language)
+
 if(MSVC)
     target_link_options(Language PRIVATE "/NOENTRY" "/NODEFAULTLIB")
 endif()

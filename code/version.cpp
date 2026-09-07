@@ -46,6 +46,7 @@
 
 #include "globals.h"
 #include "rawfile.h"
+#include "utf8.h"
 #include "winstub.h"
 
 
@@ -287,6 +288,8 @@ void VersionClass::Read_Text_String(void)
 	if (file.Is_Available()) {
 		file.Read(VersionText, sizeof(VersionText));
 		VersionText[sizeof(VersionText)-1] = '\0';
+		std::size_t bom = UTF8::BOM_Length(VersionText);
+		memmove(VersionText, VersionText + bom, strlen(VersionText + bom) + 1);
 		while (VersionText[strlen(VersionText)-1] == '\r') {
 			VersionText[strlen(VersionText)-1] = '\0';
 		}

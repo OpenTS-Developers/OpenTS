@@ -73,7 +73,6 @@
 #include "wincursor.h"
 #include "windlg.h"
 #include "winfix.h"
-#include "wsproto.h"
 #include "wwmouse.h"
 #include "mainopt.h"
 #include "conquer.h"
@@ -189,19 +188,6 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 	}
 
 	int	low_param = LOWORD(wParam);
-
-	/*
-	**	Pass on any messages intended for the winsock message handler.
-	*/
-	if ( PacketTransport ) {
-		if ( message == (UINT) PacketTransport->Protocol_Event_Message() ) {
-			if ( PacketTransport->Message_Handler (hwnd, message, wParam, lParam) ){
-				return( DefWindowProc (hwnd, message, wParam, lParam) );
-			}else{
-				return(0);
-			}
-		}
-	}
 
 	Map.Message_Handler(hwnd, message, wParam, lParam);
 

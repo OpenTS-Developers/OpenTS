@@ -12,7 +12,11 @@
 
 #include "side.h"
 
+#include "builtype.h"
+#include "ccini.h"
+#include "unittype.h"
 #include "crc.h"
+#include "findmake.h"
 #include "globals.h"
 #include "savestream.h"
 #include "sun.h"
@@ -26,10 +30,30 @@
 /// </summary>
 SideClass::SideClass(char const * ininame) :
 	BASECLASS(ininame),
-	Houses()
+	Houses(),
+	RegularPowerPlant(NULL),
+	AdvancedPowerPlant(NULL),
+	PowerTurbine(NULL),
+	HunterSeeker(NULL),
+	AIWallTowers(),
+	AIBaseDefenseCoefficient(1.0),
+	AIWallDefense(0.0),
+	AIWallDefenseCoefficient(0.0),
+	IsAIBuildsWalls(true),
+	AIBaseDefensePlaceholders(2),
+	IsAIBaseDefensesWithWalls(false)
 {
 	Create_ID();
 	Sides.Add(this);
+
+	// No rules key seeds these, so the first two positions take what Tiberian Sun hard-coded
+	// for GDI and Nod.
+	int position = Sides.ID(this);
+	if (position == 0) {
+		AIBaseDefensePlaceholders = 3;
+	} else if (position == 1) {
+		IsAIBaseDefensesWithWalls = true;
+	}
 }
 
 
@@ -73,6 +97,38 @@ void SideClass::Compute_CRC(CRCEngine & crc) const
 {
 	BASECLASS::Compute_CRC(crc);
 	crc(Houses.Count());
+	crc(AIWallTowers.Count());
+	crc(AIBaseDefenseCoefficient);
+	crc(AIWallDefense);
+	crc(AIWallDefenseCoefficient);
+	crc(IsAIBuildsWalls);
+	crc(AIBaseDefensePlaceholders);
+	crc(IsAIBaseDefensesWithWalls);
+}
+
+
+/// <summary>
+/// Reads this side's base building settings from the section carrying its own name.
+/// </summary>
+/// <returns>bool; Was a section for this side present?</returns>
+bool SideClass::Read_INI(CCINIClass const & ini)
+{
+	if (!ini.Is_Present(Name())) {
+		return(false);
+	}
+
+	RegularPowerPlant = TGet_Class(ini, Name(), "RegularPowerPlant", RegularPowerPlant);
+	AdvancedPowerPlant = TGet_Class(ini, Name(), "AdvancedPowerPlant", AdvancedPowerPlant);
+	PowerTurbine = TGet_Class(ini, Name(), "PowerTurbine", PowerTurbine);
+	HunterSeeker = TGet_Class(ini, Name(), "HunterSeeker", HunterSeeker);
+	AIWallTowers = TGet_TypeList<BuildingTypeClass>(ini, Name(), "AIWallTowers", AIWallTowers);
+	AIBaseDefenseCoefficient = ini.Get_Float(Name(), "AIBaseDefenseCoefficient", AIBaseDefenseCoefficient);
+	AIWallDefense = ini.Get_Float(Name(), "AIWallDefense", AIWallDefense);
+	AIWallDefenseCoefficient = ini.Get_Float(Name(), "AIWallDefenseCoefficient", AIWallDefenseCoefficient);
+	IsAIBuildsWalls = ini.Get_Bool(Name(), "AIBuildsWalls", IsAIBuildsWalls);
+	AIBaseDefensePlaceholders = ini.Get_Int(Name(), "AIBaseDefensePlaceholders", AIBaseDefensePlaceholders);
+	IsAIBaseDefensesWithWalls = ini.Get_Bool(Name(), "AIBaseDefensesWithWalls", IsAIBaseDefensesWithWalls);
+	return(true);
 }
 
 
@@ -100,4 +156,15 @@ void SideClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(Houses);
+	stream.Serialize(RegularPowerPlant);
+	stream.Serialize(AdvancedPowerPlant);
+	stream.Serialize(PowerTurbine);
+	stream.Serialize(HunterSeeker);
+	stream.Serialize(AIWallTowers);
+	stream.Serialize(AIBaseDefenseCoefficient);
+	stream.Serialize(AIWallDefense);
+	stream.Serialize(AIWallDefenseCoefficient);
+	stream.Serialize(IsAIBuildsWalls);
+	stream.Serialize(AIBaseDefensePlaceholders);
+	stream.Serialize(IsAIBaseDefensesWithWalls);
 }

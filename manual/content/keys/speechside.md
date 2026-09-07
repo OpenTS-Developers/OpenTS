@@ -4,7 +4,7 @@ summary: The side whose voice set narrates a campaign mission.
 see_also: [Player, RequiredAddOn]
 when_omitted:
   kind: context-dependent
-  note: The side implied by the scenario's Player entry, which is GDI when that entry reads exactly GDI and Nod for anything else.
+  note: The side of the country the scenario's Player entry names.
 ---
 
 ```ini title="map file"
@@ -17,6 +17,4 @@ The voice archive is chosen by the side's position in the rules `[Sides]` list p
 
 It is read only in a campaign mission, and only after the side has already been settled from [`Player`](/keys/player/#scope-scenarios-2), so it overrides that choice for speech alone. Art, interface and the buildable list continue to follow `Player`. Writing `<none>` is the same as leaving the key out.
 
-:::caution[A side with no voice archive stops the mission from loading]
-The archive is opened as the mission loads, and the load is abandoned when it cannot be found. The game ships voices for the first two sides only, so naming the `Civilian` or `Mutant` side that the stock rules also declare prevents the mission from starting. A name matching no side at all is worse: it registers a new side, which is then given a position beyond any archive that exists, and the mission fails the same way.
-:::
+The game ships voices for the first two sides only. A side with no voice archive of its own, the `Civilian` or `Mutant` side the stock rules also declare included, is narrated by the first side, and the load is abandoned only when the first side's archive cannot be found either. A name matching no side at all is logged and ignored, so the side settled from `Player` narrates.

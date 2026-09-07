@@ -13,10 +13,6 @@ when_omitted:
 Player=Nod
 ```
 
-Long before the house is resolved, the same assignment is read as plain text and compared against `GDI`, ignoring case. An exact match prepares the mission for the first side; every other value, a valid house name included, prepares it for the second. That choice selects the side's artwork, interface and sidebar, and seeds the voice set before [`SpeechSide`](/keys/speechside/) gets its chance to change it.
+Long before the house is resolved, the same assignment is read as a country name, matched against the country IDs the rules declare without regard to case, and the side of that country selects the mission's artwork, interface and sidebar and seeds the voice set before [`SpeechSide`](/keys/speechside/) gets its chance to change it. A value naming no country is presented as the first country. Outside a campaign the country comes from the lobby instead.
 
-Because this is a text comparison rather than a house lookup, a mission played as a house whose ID is neither `GDI` nor a Nod house is still presented as Nod. The comparison is skipped entirely outside a campaign, where the side comes from the lobby.
-
-:::caution[A side whose files cannot be prepared abandons the load]
-Preparing the side mounts its artwork and interface archives, and the scenario load is given up when that fails. The same applies to the voice set prepared immediately afterwards.
-:::
+A side with no artwork archives of its own is presented with the first side's; the load is given up only when the first side's archives cannot be mounted either. The same applies to the voice set prepared immediately afterwards.

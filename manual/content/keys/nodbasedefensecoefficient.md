@@ -1,10 +1,10 @@
 ---
 key: NodBaseDefenseCoefficient
-summary: Scales how many base defenses a computer house named "Nod" plans against its accumulated build cost.
-see_also: ["system:ai-base-building"]
+summary: Seeds the second side's AIBaseDefenseCoefficient.
+see_also: [AIBaseDefenseCoefficient, "system:ai-base-building"]
 when_omitted:
   kind: value
   value: "1"
 ---
 
-Only a house whose country name is "Nod" uses this coefficient; every other house takes [`GDIBaseDefenseCoefficient`](/keys/gdibasedefensecoefficient/). It is read only while [the base plan is assembled](/systems/ai-base-building/#building-the-plan), and the extra placeholders a Nod house receives afterwards are not scaled by it.
+The value becomes the second side's [`AIBaseDefenseCoefficient`](/keys/aibasedefensecoefficient/#scope-side) as each rules file sets it; an `AIBaseDefenseCoefficient=` in that side's own section of the same file overrides it. Nothing else reads the key.

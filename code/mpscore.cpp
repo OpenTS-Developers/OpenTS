@@ -307,8 +307,8 @@ bool MultiScore::User_Input(void)
 	Add_Animation(anim);
 	Wait_For_Anim(anim);
 
-	Font->Draw_String(ScoreSurface, (unsigned char const *)text, x, 370, 2);
-	Font->Draw_String(AlternateSurface, (unsigned char const *)text, XPos + x, YPos + 370, 2);
+	Font->Draw_String(ScoreSurface,text, x, 370, 2);
+	Font->Draw_String(AlternateSurface,text, XPos + x, YPos + 370, 2);
 
 	Keyboard->Clear();
 
@@ -607,11 +607,11 @@ void MultiScore::Print_Headings(void)
 	MSPrintAnim *gameAnim = new MSPrintAnim(buffer, XPos + 15, YPos + 15, Font, RECT_NONE, 0, 4, true, false);
 	Add_Animation(gameAnim);
 	Wait_For_Anim(gameAnim);
-	Font->Draw_String(AlternateSurface, (unsigned char const *)buffer, XPos + 15, YPos + 15, 2);
+	Font->Draw_String(AlternateSurface,buffer, XPos + 15, YPos + 15, 2);
 
 	Rect rect(XPos + 15, YPos + 15, Font->Get_Font_Width() * strlen(buffer), Font->Get_Font_Height());
 	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Font->Draw_String(ScoreSurface, (unsigned char const *)buffer, 15, 15, 2);
+	Font->Draw_String(ScoreSurface,buffer, 15, 15, 2);
 
 	/// Display elapsed time
 	Format_Time(buffer, Scen->ElapsedTimer / 60);
@@ -620,12 +620,12 @@ void MultiScore::Print_Headings(void)
 	MSPrintAnim *timeAnim = new MSPrintAnim(buffer, timeXPos + XPos, YPos + 15, Font, RECT_NONE, 0, 4, true, false);
 	Add_Animation(timeAnim);
 	Wait_For_Anim(timeAnim);
-	Font->Draw_String(AlternateSurface, (unsigned char const *)buffer, timeXPos + XPos, YPos + 15, 2);
+	Font->Draw_String(AlternateSurface,buffer, timeXPos + XPos, YPos + 15, 2);
 
 	int w = Font->Get_Font_Width() * strlen(buffer);
 	rect.Set(XPos - w + 625, YPos + 15, w, Font->Get_Font_Height());
 	HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
-	Font->Draw_String(ScoreSurface, (unsigned char const *)buffer, 625, 15, 2);
+	Font->Draw_String(ScoreSurface,buffer, 625, 15, 2);
 
 	/// Draw section for names
 	rect.Set(XPos + 15, YPos + 40, 100, 315);
@@ -634,7 +634,7 @@ void MultiScore::Print_Headings(void)
 
 	const char *namesLabel = Fetch_String(TXT_NAMES);
 	int namesLabelXPos = (100 - Font->Get_String_Width(namesLabel)) / 2;
-	Font->Draw_String(ScoreSurface, (unsigned char const *)namesLabel, namesLabelXPos + 15, 45, 2);
+	Font->Draw_String(ScoreSurface,namesLabel, namesLabelXPos + 15, 45, 2);
 
 	ScoreSurface->Draw_Line(Point2D(20, 45 + Font->Get_Font_Height()), Point2D(110, 45 + Font->Get_Font_Height()), Font->Get_Color());
 	HiddenSurface->Draw_Line(Point2D(XPos + 20, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 110, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
@@ -655,7 +655,7 @@ void MultiScore::Print_Headings(void)
 
 	const char *lossesLabel = Fetch_String(TXT_LOSSES);
 	int lossesLabelXPos = (110 - Font->Get_String_Width(lossesLabel)) / 2;
-	Font->Draw_String(ScoreSurface, (unsigned char const *)lossesLabel, lossesLabelXPos + 147, 45, 2);
+	Font->Draw_String(ScoreSurface,lossesLabel, lossesLabelXPos + 147, 45, 2);
 
 	ScoreSurface->Draw_Line(Point2D(152, 45 + Font->Get_Font_Height()), Point2D(252, 45 + Font->Get_Font_Height()), Font->Get_Color());
 	HiddenSurface->Draw_Line(Point2D(XPos + 152, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 252, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
@@ -676,7 +676,7 @@ void MultiScore::Print_Headings(void)
 
 	const char *killsLabel = Fetch_String(TXT_KILLS);
 	int killsLabelXPos = (110 - Font->Get_String_Width(killsLabel)) / 2;
-	Font->Draw_String(ScoreSurface, (unsigned char const *)killsLabel, killsLabelXPos + 269, 45, 2);
+	Font->Draw_String(ScoreSurface,killsLabel, killsLabelXPos + 269, 45, 2);
 
 	ScoreSurface->Draw_Line(Point2D(274, 45 + Font->Get_Font_Height()), Point2D(374, 45 + Font->Get_Font_Height()), Font->Get_Color());
 	HiddenSurface->Draw_Line(Point2D(XPos + 274, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 374, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
@@ -697,7 +697,7 @@ void MultiScore::Print_Headings(void)
 
 	const char *economyLabel = Fetch_String(TXT_ECONOMY);
 	int economyLabelXPos = (110 - Font->Get_String_Width(economyLabel)) / 2;
-	Font->Draw_String(ScoreSurface, (unsigned char const *)economyLabel, economyLabelXPos + 391, 45, 2);
+	Font->Draw_String(ScoreSurface,economyLabel, economyLabelXPos + 391, 45, 2);
 
 	ScoreSurface->Draw_Line(Point2D(396, 45 + Font->Get_Font_Height()), Point2D(496, 45 + Font->Get_Font_Height()), Font->Get_Color());
 	HiddenSurface->Draw_Line(Point2D(XPos + 396, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 496, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
@@ -718,7 +718,7 @@ void MultiScore::Print_Headings(void)
 
 	const char *scoresLabel = Fetch_String(TXT_SCORE);
 	int scoresLabelXPos = (90 - Font->Get_String_Width(scoresLabel)) / 2;
-	Font->Draw_String(ScoreSurface, (unsigned char const *)scoresLabel, scoresLabelXPos + 530, 45, 2);
+	Font->Draw_String(ScoreSurface,scoresLabel, scoresLabelXPos + 530, 45, 2);
 
 	ScoreSurface->Draw_Line(Point2D(535, 45 + Font->Get_Font_Height()), Point2D(615, 45 + Font->Get_Font_Height()), Font->Get_Color());
 	HiddenSurface->Draw_Line(Point2D(XPos + 535, YPos + 45 + Font->Get_Font_Height()), Point2D(XPos + 615, YPos + 45 + Font->Get_Font_Height()), Font->Get_Color());
@@ -752,7 +752,7 @@ void MultiScore::Print_Player_Names(void)
 		HiddenSurface->Blit_From(rect, *AlternateSurface, rect);
 		Blit_Rect(HiddenSurface, rect);
 
-		Font->Draw_String(ScoreSurface, (unsigned char const *)Scores[i]->Name, 20, yPos, 2);
+		Font->Draw_String(ScoreSurface,Scores[i]->Name, 20, yPos, 2);
 		MSWordAnim * anim = new MSWordAnim(Scores[i]->Name, XPos + 20, YPos + yPos, Font);
 		Add_Animation(anim);
 		Wait_For_Anim(anim);
@@ -1065,7 +1065,7 @@ Rect MultiScore::Print_Score(Surface * surface, int score, int maximum, int x, i
 	sprintf(buffer, "%d", score > maximum ? maximum : score);
 
 	int stringWidth = Font->Get_String_Width(buffer);
-	Font->Draw_String(surface, (unsigned char const *)buffer, x - stringWidth / 2, y, 2);
+	Font->Draw_String(surface,buffer, x - stringWidth / 2, y, 2);
 
 	int totalStringWidth = Font->Get_Font_Width() * strlen(buffer);
 	return(Rect(x - totalStringWidth / 2, y, totalStringWidth, Font->Get_Font_Height()));

@@ -818,8 +818,12 @@ int BuildingTypeClass::Raw_Cost(void) const
 {
 	int cost = BASECLASS::Raw_Cost();
 
-	if (this == Rule->PadAircraft[0]->Dock[0] && !Rule->IsSeparate) {
-		cost -= (Rule->PadAircraft[0]->Raw_Cost() + Rule->PadAircraft[1]->Raw_Cost())/2;
+	if (Is_Pad_Aircraft_Dock()) {
+		int total = 0;
+		for (int index = 0; index < Rule->PadAircraft.Count(); index++) {
+			total += Rule->PadAircraft[index]->Raw_Cost();
+		}
+		cost -= total / Rule->PadAircraft.Count();
 	}
 	if (FreeUnit != NULL) {
 		cost -= FreeUnit->Raw_Cost();
@@ -847,14 +851,33 @@ int BuildingTypeClass::Cost_Of(HouseClass * house) const
 {
 	int cost = BASECLASS::Cost_Of(house);
 
-	if (this == Rule->PadAircraft[0]->Dock[0] && !Rule->IsSeparate) {
-		cost += (Rule->PadAircraft[0]->Cost_Of(house) + Rule->PadAircraft[1]->Cost_Of(house))/2;
+	if (Is_Pad_Aircraft_Dock()) {
+		int total = 0;
+		for (int index = 0; index < Rule->PadAircraft.Count(); index++) {
+			total += Rule->PadAircraft[index]->Cost_Of(house);
+		}
+		cost += total / Rule->PadAircraft.Count();
 	}
 	if (FreeUnit != NULL) {
 		cost += FreeUnit->Cost_Of(house);
 		cost = std::max(cost, 0);
 	}
 	return(cost);
+}
+
+
+/// <summary>
+/// Is this the structure the pad aircraft are bundled into the price of?
+/// </summary>
+/// <returns>bool; Is this the first dock of the first PadAircraft entry, with the aircraft not
+/// sold separately?</returns>
+bool BuildingTypeClass::Is_Pad_Aircraft_Dock(void) const
+{
+	if (Rule->IsSeparate || Rule->PadAircraft.Count() == 0) {
+		return(false);
+	}
+	AircraftTypeClass const * aircraft = Rule->PadAircraft[0];
+	return(aircraft->Dock.Count() > 0 && this == aircraft->Dock[0]);
 }
 
 

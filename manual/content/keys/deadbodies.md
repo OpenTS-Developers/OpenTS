@@ -20,6 +20,3 @@ Most deaths never get this far. A soldier who was already falling and comes down
 The entry is chosen by dividing a random figure by the number of entries and taking the remainder, which with an empty list is a division by zero. Set at least one entry before any warhead in the mod carries `InfDeath=1` or `InfDeath=2`.
 :::
 
-:::caution[The value is cut off after 127 characters]
-A corpse list is easy to lengthen, and the line is copied into a 128-character buffer before it is split on commas. Everything past that point is discarded silently, and the half-name the cut leaves behind becomes an animation in its own right — one with no artwork — occupying a slot in the list.
-:::

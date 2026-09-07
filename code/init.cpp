@@ -498,8 +498,18 @@ int Init_Game(int , char * [])
 	Init_Vocs(voc_ini);
 
 	/*
-	**
+	**	Find and process any rules for this game.
 	*/
+	DebugString("Init Rules\n");
+
+	if (!Init_Rules()) {
+		DebugString("Failed to initialize Rules!\n");
+		return(-1);
+	}
+
+	// A score's Side= names a side the rules declare, so the roster is built before the scores are read.
+	Prepare_Side_Roster();
+
 	DebugString("Reading THEME.INI\n");
 
 	CCINIClass theme_ini;
@@ -511,16 +521,6 @@ int Init_Game(int , char * [])
 	Theme.Free_Themes();
 	Theme.Init_Themes(theme_ini);
 	Theme.Scan();
-
-	/*
-	**	Find and process any rules for this game.
-	*/
-	DebugString("Init Rules\n");
-
-	if (!Init_Rules()) {
-		DebugString("Failed to initialize Rules!\n");
-		return(-1);
-	}
 
 	Session.MaxPlayers = Rule->MaxPlayers;
 
@@ -1197,10 +1197,7 @@ restart:
 				*/
 				case SEL_MULTIPLAYER_GAME: {
 						Session.Read_MultiPlayer_Settings();
-
-						for (int house = 0; house < HouseTypes.Count(); house++) {
-							HouseTypes[house]->Read_INI(*RuleINI);
-						}
+						Prepare_Side_Roster();
 
 						Session.Suspended = 0;
 
@@ -1251,13 +1248,7 @@ restart:
 						case GAME_IPX: {
 							Cheat_Disable();
 							Session.Read_MultiPlayer_Settings();
-
-							/*
-							**	Fetch the house attribute override values.
-							*/
-							for (int house = 0; house < HouseTypes.Count(); house++) {
-								HouseTypes[house]->Read_INI(*RuleINI);
-							}
+							Prepare_Side_Roster();
 
 							Session.Type = GAME_IPX;
 							Session.CommProtocol = COMM_PROTOCOL_MULTI_E_COMP;
@@ -1403,7 +1394,7 @@ restart:
 		Show_Mouse();
 
 		if (Session.Type != GAME_NORMAL) {
-			Session.PlayerIsGDI = stricmp(HouseTypes[Session.Players[0]->Player.House]->Name(), "GDI") == 0;
+			Session.PlayerHouse = (HousesType)Session.Players[0]->Player.House;
 		}
 
 		// The menu sets the difficulty pair on every path but a client launch, which chose it.
@@ -1720,7 +1711,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
-		if (isdigit(string[1])) {
+		if (isdigit((unsigned char)string[1])) {
 			sscanf(string, "-%dX%d", &Options.ScreenWidth, &Options.ScreenHeight);
 			continue;
 		}
@@ -1771,7 +1762,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 			string += strlen("-X");
 			while (*string) {
 				char code = *string++;
-				switch (toupper(code)) {
+				switch (toupper((unsigned char)code)) {
 
 #ifdef _DEBUG
 
@@ -2941,7 +2932,7 @@ bool Cheat_Key_Process(char chr)
 {
 	static char _buffer[32] = "";
 
-	if (!isalnum(chr) || chr == '~') {
+	if (!isalnum((unsigned char)chr) || chr == '~') {
 		memset(_buffer, 0, sizeof(_buffer));
 		return(false);
 	}
@@ -2958,7 +2949,7 @@ bool Cheat_Key_Process(char chr)
 		_buffer[0] = 0;
 	}
 
-	_buffer[len] = toupper(chr);
+	_buffer[len] = toupper((unsigned char)chr);
 
 	for (int c = 0; c < ARRAY_SIZE(CheatEntries); c++) {
 		if (strstr(_buffer, CheatEntries[c].CheatString) != NULL) {
@@ -3784,7 +3775,7 @@ class CenterBaseCommandClass : public CommandClass
 				if (PlayerPtr->CurUnits) {
 					for (index = 0; index < Units.Count(); index++) {
 						UnitClass * unit = Units[index];
-						if (unit != NULL && !unit->IsInLimbo && unit->House->Is_Player_Control() && unit->Class == Rule->BaseUnit) {
+						if (unit != NULL && !unit->IsInLimbo && unit->House->Is_Player_Control() && Rule->BaseUnit.Is_In_List(unit->Class)) {
 							conyard_coord = unit->Center_Coord();
 							break;
 						}
@@ -6476,6 +6467,38 @@ bool Prep_Speech_For_Side(SideType side)
 
 
 /// <summary>
+/// Prepares a side's art and interface archives, or the first side's when that side has none.
+/// </summary>
+/// <returns>Returns with the side prepared, or SIDE_NONE when neither could be.</returns>
+SideType Prep_For_Side_Or_First(SideType side)
+{
+	if (Prep_For_Side(side)) {
+		return(side);
+	}
+	if (side != SIDE_FIRST && Prep_For_Side(SIDE_FIRST)) {
+		return(SIDE_FIRST);
+	}
+	return(SIDE_NONE);
+}
+
+
+/// <summary>
+/// Prepares a side's speech archives, or the first side's when that side has none.
+/// </summary>
+/// <returns>Returns with the side prepared, or SIDE_NONE when neither could be.</returns>
+SideType Prep_Speech_For_Side_Or_First(SideType side)
+{
+	if (Prep_Speech_For_Side(side)) {
+		return(side);
+	}
+	if (side != SIDE_FIRST && Prep_Speech_For_Side(SIDE_FIRST)) {
+		return(SIDE_FIRST);
+	}
+	return(SIDE_NONE);
+}
+
+
+/// <summary>
 /// Fetches the theme to play behind the main menu.
 /// </summary>
 /// <returns>Returns with the theme to play, favoring the expansion's own music whenever the
@@ -6610,9 +6633,7 @@ int New_Main_Menu(void)
 
 	if (Session.Type != GAME_NORMAL) {
 		Session.Read_MultiPlayer_Settings();
-		for (int i = 0; i < HouseTypes.Count(); i++) {
-			HouseTypes[i]->Read_INI(*RuleINI);
-		}
+		Prepare_Side_Roster();
 		Session.Suspended = false;
 		Session.Read_Scenario_Descriptions();
 		return(SEL_MULTIPLAYER_GAME);

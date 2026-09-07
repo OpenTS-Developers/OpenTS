@@ -298,15 +298,19 @@ class ScoreFontClass
 		ScoreFontClass(void);
 		ScoreFontClass(int w, int h, void const * data, ConvertClass * drawer);
 		virtual ~ScoreFontClass(void);
-		virtual int Char_Width(char ch);
+		virtual int Char_Width(char32_t code);
+		int Char_Width(char) = delete;
 		virtual int String_Width(const char * string);
 		virtual void Print_String(Surface *surf, const char * string, int x, int y, int brightness_frame);
-		virtual void Print_Char(Surface *surf, char ch, int x, int y, int v, bool play_sound);
+		virtual void Print_Char(Surface *surf, char32_t code, int x, int y, int v, bool play_sound);
+		void Print_Char(Surface *, char, int, int, int, bool) = delete;
 
 		void Load_Sounds(void);
 		int Get_Width(void) { return(Width); }
 		int Get_Height(void) { return(Height); }
 
+	private:
+		int Glyph_Frame(char32_t code) const;
 };
 
 

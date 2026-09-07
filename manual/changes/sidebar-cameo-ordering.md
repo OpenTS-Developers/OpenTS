@@ -29,6 +29,3 @@ with walls, gates and base defenses last among the structures. `SidebarSorting=n
 restores the old arrangement. `CameoSortOrder=` places a type's cameo within its category
 without moving any rules list, and `SortCameoAsBaseDefense=` decides whether a building sorts
 with the defenses.
-
-Saves made by earlier development snapshots of this cycle no longer load, because the stored
-type definitions grew by the new type keys.

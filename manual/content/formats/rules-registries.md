@@ -33,7 +33,7 @@ source_files:
 
 All but two of these registration sections are read the same way. Each entry is taken by its position in the section and only its value is looked at, so the key text decides nothing and the order the lines are written in is the order the types are registered. The value is both the type ID and the name of the section the definition is written in, and is kept to its first thirty-one characters. An empty value registers nothing, and a value naming an ID the game already carries reuses that type instead of adding a second one.
 
-The two exceptions read their keys. In `[Sides]` the key is the Side ID and the value is a comma-separated HouseType list. In `[Tiberiums]` the key is a slot number: a number below the count already registered selects that existing Tiberium and the value is discarded, and only a number at or above it creates a new one under the name the value gives.
+The two exceptions read their keys. In `[Sides]` the key is the Side ID and the value is a comma-separated HouseType list; a name in that list that is not a HouseType ID is logged and skipped, so a side does not stand for its countries there. In `[Tiberiums]` the key is a slot number: a number below the count already registered selects that existing Tiberium and the value is discarded, and only a number at or above it creates a new one under the name the value gives.
 
 Registering an ID and defining it are separate passes. Registration creates the type carrying the built-in defaults for its kind, and the section named by the ID is read afterwards, so an ID registered with no section of its own is kept with those defaults rather than dropped.
 

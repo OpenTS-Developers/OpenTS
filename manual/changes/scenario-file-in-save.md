@@ -24,6 +24,3 @@ A save carries the scenario file it was played from when the deployment's `OPENT
 from that copy rather than from disk. That lets a mission resumed through the CnCNet client
 be restarted: the client replaces `spawnmap.ini` with a stub on resume, and the restart read
 the stub and crashed. The key is off by default, since a large map adds half again to a save.
-
-Saves from earlier development snapshots of this cycle no longer load, because the scenario
-record grew by the file.

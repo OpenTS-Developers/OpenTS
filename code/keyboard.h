@@ -57,7 +57,7 @@ class WWKeyboardClass
 		unsigned short Get(void);
 		bool Put(unsigned short key);
 		void Clear(void);
-		char To_ASCII(unsigned short num);
+		int To_ASCII(unsigned short num);
 		bool Down(unsigned short key);
 
 		/* Define the main hook for the message processing loop.					*/

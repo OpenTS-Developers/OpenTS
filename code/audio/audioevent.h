@@ -113,6 +113,8 @@ class AudioEventPoolClass
 		AudioEventPoolClass & operator=(AudioEventPoolClass const &) = delete;
 
 		bool Init(AudioMixerClass * mixer, AudioClipProviderClass * clips);
+
+		// Frees the sequences the voices read, so call it only once nothing renders.
 		void Shutdown(void);
 
 		void Set_Random(AudioRandomProc proc, void * context);

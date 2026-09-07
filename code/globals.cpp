@@ -61,6 +61,7 @@
 #include "theme.h"
 #include "vector.h"
 #include "version.h"
+#include "wsproto.h"
 
 #include "house.hh"
 #include "special.hh"
@@ -434,6 +435,10 @@ IPXManagerClass Ipx(
 	160,                                        // # entries in Global Queue
 	32,                                         // # entries in Private Queues
 	IPXGlobalConnClass::COMMAND_AND_CONQUER2);  // Product ID #
+
+// A global packet travels whole in one datagram, and the socket layer refuses one longer
+// than its queue entry.
+static_assert(std::max(sizeof(GlobalPacketType), sizeof(RemoteFileTransferType) - 32) + sizeof(GlobalHeaderType) <= WS_INTERNET_BUFFER_LEN, "the global channel packet outgrew the socket queue entry");
 
 
 bool VisceroidsAsSnoBees = false;

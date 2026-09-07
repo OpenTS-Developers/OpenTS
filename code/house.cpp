@@ -172,6 +172,7 @@
 #include "scenario.h"
 #include "scheme.h"
 #include "session.h"
+#include "side.h"
 #include "spawnhouse.h"
 #include "sun.h"
 #include "super.h"
@@ -438,13 +439,10 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 		IsThreatRatingNodeActive = true;
 	}
 
+	// A country that sits out the contest acts for none, so nothing is planned or built on its behalf.
 	ActLike = HOUSE_NONE;
-	if (Class != NULL) {
-		if (strnicmp(Class->Name(), "GDI", 3) == 0) {
-			ActLike = HOUSE_GOOD;
-		} else if (strnicmp(Class->Name(), "Nod", 3) == 0) {
-			ActLike = HOUSE_BAD;
-		}
+	if (Class != NULL && !Class->IsMultiplayPassive) {
+		ActLike = Class->House;
 	}
 }
 
@@ -458,12 +456,18 @@ HouseClass::HouseClass(HouseTypeClass const * type) :
 /// <returns>bool; Is the house able to keep earning credits?</returns>
 bool HouseClass::Can_Make_Money(void)
 {
-	int credits = Available_Money();
-	int refcost = Rule->BuildRefinery[0]->Cost_Of(this);
-	int harvcost = Rule->HarvesterUnit[0]->Cost_Of(this);
+	BuildingTypeClass const * refinery = Get_Preferred(Rule->BuildRefinery);
+	UnitTypeClass const * harvester = Get_Preferred(Rule->HarvesterUnit);
+	if (refinery == NULL || harvester == NULL) {
+		return(true);
+	}
 
-	bool hasref = ABQuantity.Value(Rule->BuildRefinery[0]->HeapID) > 0;
-	bool hasharv = AUQuantity.Value(Rule->HarvesterUnit[0]->HeapID) > 0;
+	int credits = Available_Money();
+	int refcost = refinery->Cost_Of(this);
+	int harvcost = harvester->Cost_Of(this);
+
+	bool hasref = Owns_Any(ABQuantity, Rule->BuildRefinery);
+	bool hasharv = Owns_Any(AUQuantity, Rule->HarvesterUnit);
 
 	/*
 	 * If we don't have any refineries, building one is a priority.
@@ -477,16 +481,10 @@ bool HouseClass::Can_Make_Money(void)
 			return(true);
 		}
 
-		bool hasfactory = false;
-		for (int index = 0; index < Rule->BuildWeapons.Count(); index++) {
-			if (hasfactory || ABQuantity.Value(Rule->BuildWeapons[index]->HeapID) > 0) {
-				hasfactory = true;
-			} else {
-				hasfactory = false;
-			}
-		}
+		bool hasfactory = Owns_Any(ABQuantity, Rule->BuildWeapons);
 
-		int factorycost = Rule->BuildWeapons[0]->Cost_Of(this);
+		BuildingTypeClass const * factory = Get_Preferred(Rule->BuildWeapons);
+		int factorycost = factory != NULL ? factory->Cost_Of(this) : 0;
 		if ((hasfactory && credits >= harvcost) || (credits >= harvcost + factorycost) || (credits >= refcost)) {
 			return(true);
 		}
@@ -747,7 +745,7 @@ void HouseClass::Debug_Dump(MonoClass * mono) const
 	mono->Set_Cursor(0, 0);
 
 	mono->Set_Cursor(1, 1);mono->Printf("[%d]%14.14s", Class->House, Class->Name());
-	mono->Set_Cursor(20, 1);mono->Printf("[%d]%13.13s", ActLike, HouseTypes[ActLike]->Name());
+	mono->Set_Cursor(20, 1);mono->Printf("[%d]%13.13s", ActLike, ActLike != HOUSE_NONE ? HouseTypes[ActLike]->Name() : "<none>");
 	mono->Set_Cursor(39, 1);mono->Printf("%2d", Control.TechLevel);
 	mono->Set_Cursor(45, 1);mono->Printf("%2d", Difficulty);
 	mono->Set_Cursor(52, 1);mono->Printf("%2d", State);
@@ -1051,22 +1049,20 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 				return(0);
 			}
 
-			/// Checks if there's exactly one owner
-			if (((own - 1) & own) == 0) {
-				bool found = false;
-				for (int i = 0; i < ConYards.Count(); i++) {
-					BuildingClass * conyard = ConYards[i];
-					if (!conyard->IsInLimbo && conyard->IsOn) {
-						if (conyard->Mission != MISSION_DECONSTRUCTION && conyard->MissionQueue != MISSION_DECONSTRUCTION) {
-							if (conyard->ActLike != HOUSE_NONE && ((1 << conyard->ActLike) & own) != 0) {
-								found = true;
-								break;
-							}
+			// The gate Who_Can_Build_Me applies, so the sidebar never offers a cameo the factory
+			// search then refuses.
+			bool found = Rule->IsMultiMCV;
+			for (int i = 0; i < ConYards.Count() && !found; i++) {
+				BuildingClass * conyard = ConYards[i];
+				if (!conyard->IsInLimbo && conyard->IsOn) {
+					if (conyard->Mission != MISSION_DECONSTRUCTION && conyard->MissionQueue != MISSION_DECONSTRUCTION) {
+						if (conyard->ActLike != HOUSE_NONE && ((1 << conyard->ActLike) & own) != 0) {
+							found = true;
 						}
 					}
 				}
-				if (!found) return(0);
 			}
+			if (!found) return(0);
 		}
 	}
 
@@ -1446,7 +1442,7 @@ void HouseClass::AI(void)
 			}
 		}
 		if (SpeakPowerDelay == 0 && Power_Fraction() < 1) {
-			if (ABQuantity.Value(Rule->BuildConst[0]->HeapID) > 0) {
+			if (Owns_Any(ABQuantity, Rule->BuildConst)) {
 				Speak(VOX_LOW_POWER);
 				SpeakPowerDelay = Options.Normalize_Delay(int(TICKS_PER_MINUTE * Rule->SpeakDelay));
 //				Map.Flash_Power();
@@ -1495,7 +1491,7 @@ void HouseClass::AI(void)
 	if (Session.Type != GAME_NORMAL && !IsDefeated && Frame > 0 && !Class->IsMultiplayPassive) {
 		bool defeated = false;
 		if (Session.Options.ShortGame) {
-			if (!CurBuildings && !UQuantity.Value(Rule->BaseUnit->HeapID)) {
+			if (!CurBuildings && Count_Owned(UQuantity, Rule->BaseUnit) == 0) {
 				defeated = true;
 			}
 		} else {
@@ -1505,7 +1501,7 @@ void HouseClass::AI(void)
 					defeated = true;
 				}
 				if (units && Scen->Special.IsHarvesterImmune) {
-					units -= UQuantity.Value(Rule->HarvesterUnit[0]->HeapID);
+					units -= Count_Owned(UQuantity, Rule->HarvesterUnit);
 				}
 				if (units <= 0) {
 					defeated = true;
@@ -1615,7 +1611,7 @@ void HouseClass::AI(void)
 			}
 		} else if (ProductionMode == UNITS) {
 			AI_Unit();
-			if (BuildUnit != Rule->HarvesterUnit[0]->HeapID) {
+			if (BuildUnit == UNIT_NONE || !Rule->HarvesterUnit.Is_In_List(UnitTypes[BuildUnit])) {
 				AI_Infantry();
 				AI_Aircraft();
 			}
@@ -4219,14 +4215,14 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 	}
 
 	if (!Can_Make_Money()) {
-		if (ABQuantity.Value(Rule->BuildRefinery[0]->HeapID) > 0) {
+		if (Owns_Any(ABQuantity, Rule->BuildRefinery)) {
 
 			/*
 			 * A refinery already going up means the situation is being taken care of.
 			 */
 			for (i = 0; i < Buildings.Count(); i++) {
 				if (Buildings[i]->House == this) {
-					if (Buildings[i]->Class == Rule->BuildRefinery[0] && Buildings[i]->CurrentMission == MISSION_CONSTRUCTION) {
+					if (Rule->BuildRefinery.Is_In_List(Buildings[i]->Class) && Buildings[i]->CurrentMission == MISSION_CONSTRUCTION) {
 						return(URGENCY_NONE);
 					}
 					urgency = URGENCY_NONE;
@@ -4237,8 +4233,8 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 			 * There is a refinery, so a harvester is what this house is short of. If one is
 			 * not on order, or is on order but cannot be paid for, then cash must be raised.
 			 */
-			if (BuildUnit != Rule->HarvesterUnit[0]->HeapID) {
-				if (Available_Money() < Rule->HarvesterUnit[0]->Cost_Of(this)) {
+			if (BuildUnit == UNIT_NONE || !Rule->HarvesterUnit.Is_In_List(UnitTypes[BuildUnit])) {
+				if (Available_Money() < Get_Preferred(Rule->HarvesterUnit)->Cost_Of(this)) {
 					urgency++;
 				}
 			} else {
@@ -4246,7 +4242,7 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 					FactoryClass * fptr = Factories[j];
 					if (fptr->House == this && Factories[j]->Get_Object() != NULL) {
 						UnitClass * unit = (UnitClass *)Factories[j]->Get_Object();
-						if (unit->RTTI == RTTI_UNIT && unit->Class == Rule->HarvesterUnit[0]) {
+						if (unit->RTTI == RTTI_UNIT && Rule->HarvesterUnit.Is_In_List(unit->Class)) {
 							fptr = Factories[j];
 							if (fptr != NULL) {
 								int owed = fptr->Balance;
@@ -4265,8 +4261,8 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 			/*
 			 * No refinery at all. The same reasoning applies to getting one built.
 			 */
-			if (BuildStructure != Rule->BuildRefinery[0]->HeapID) {
-				if (Available_Money() < Rule->BuildRefinery[0]->Cost_Of(this)) {
+			if (BuildStructure == STRUCT_NONE || !Rule->BuildRefinery.Is_In_List(BuildingTypes[BuildStructure])) {
+				if (Available_Money() < Get_Preferred(Rule->BuildRefinery)->Cost_Of(this)) {
 					urgency++;
 				}
 			} else {
@@ -4274,7 +4270,7 @@ UrgencyType HouseClass::Check_Raise_Money(void)
 					FactoryClass * fptr = Factories[j];
 					if (fptr->House == this && Factories[j]->Get_Object() != NULL) {
 						BuildingClass * building = (BuildingClass *)Factories[j]->Get_Object();
-						if (building->RTTI == RTTI_BUILDING && building->Class == Rule->BuildRefinery[0]) {
+						if (building->RTTI == RTTI_BUILDING && Rule->BuildRefinery.Is_In_List(building->Class)) {
 							fptr = Factories[j];
 							if (fptr != NULL) {
 								int owed = fptr->Balance;
@@ -4336,15 +4332,21 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 	int refund = 0;
 	int needed = 0;
 
+	BuildingTypeClass const * refinery = Get_Preferred(Rule->BuildRefinery);
+	UnitTypeClass const * harvester = Get_Preferred(Rule->HarvesterUnit);
+	if (refinery == NULL || harvester == NULL) {
+		return(false);
+	}
+
 	/*
 	 * A refinery plus a war factory means a harvester is the cheaper way back into business.
 	 */
-	bool can_build_harvester = ABQuantity.Value(Rule->BuildRefinery[0]->HeapID) > 0 &&
-		(ABQuantity.Value(Rule->BuildWeapons[0]->HeapID) > 0 || ABQuantity.Value(Rule->BuildWeapons[1]->HeapID) > 0);
+	bool can_build_harvester = Owns_Any(ABQuantity, Rule->BuildRefinery) &&
+		Owns_Any(ABQuantity, Rule->BuildWeapons);
 	if (can_build_harvester) {
-		needed = Rule->HarvesterUnit[0]->Cost_Of(this);
+		needed = harvester->Cost_Of(this);
 	} else {
-		needed = Rule->BuildRefinery[0]->Cost_Of(this);
+		needed = refinery->Cost_Of(this);
 	}
 
 	/*
@@ -4395,14 +4397,14 @@ bool HouseClass::AI_Raise_Money(UrgencyType urgency)
 			BuildAircraft = AIRCRAFT_NONE;
 			BuildStructure = STRUCT_NONE;
 			if (can_build_harvester) {
-				BuildUnit = Rule->HarvesterUnit[0]->HeapID;
+				BuildUnit = harvester->HeapID;
 				ProductionMode = UNITS;
 			} else {
 				int next = Base.Next_Buildable_Index();
 				if (next != 0) {
-					Base.Nodes.Insert_After(next - 1, BaseNodeClass(Rule->BuildRefinery[0]->HeapID, Cell(0, 0)));
+					Base.Nodes.Insert_After(next - 1, BaseNodeClass(refinery->HeapID, Cell(0, 0)));
 					for (j = Base.Nodes.Count() - 1; j > next; j--) {
-						if (Base.Nodes[j].Type == Rule->BuildRefinery[0]->HeapID) {
+						if (Base.Nodes[j].Type >= STRUCT_FIRST && Rule->BuildRefinery.Is_In_List(BuildingTypes[Base.Nodes[j].Type])) {
 							Base.Nodes.Delete_Index(j);
 						}
 					}
@@ -4467,7 +4469,8 @@ int HouseClass::AI_Building(void)
 	/*
 	**	Always build up some base defense.
 	*/
-	if (node->Type == DEFENSE || BuildingTypes[node->Type] == Rule->WallTower && node->CellID == Cell(0, 0)) {
+	bool tower_node = node->Type >= STRUCT_FIRST && Is_Acted_Tower(BuildingTypes[node->Type]) && node->CellID == Cell(0, 0);
+	if (node->Type == DEFENSE || tower_node) {
 
 		int nodeid = Base.Nodes.ID(node);
 		DynamicVectorClass<Cell> * cells = NULL;
@@ -4481,7 +4484,7 @@ int HouseClass::AI_Building(void)
 			 * A wall tower node is deleted twice, so the node that follows it goes
 			 * with it.
 			 */
-			if (node->Type == Rule->WallTower->HeapID) {
+			if (tower_node) {
 				Base.Nodes.Delete_Index(nodeid);
 			}
 
@@ -4502,34 +4505,31 @@ int HouseClass::AI_Building(void)
 	/*
 	**	Try to build a power plant if there is insufficient power.
 	*/
-	if (!Scen->Is_Campaign_Base_AI() && b->Drain + Drain > Power - PowerSurplus && b != Rule->BuildConst[0] && b->Drain > 0) {
+	if (!Scen->Is_Campaign_Base_AI() && b->Drain + Drain > Power - PowerSurplus && !Rule->BuildConst.Is_In_List(b) && b->Drain > 0) {
 
-		BuildingTypeClass const * choice;
+		SideClass const * side = Acted_Side();
+		BuildingTypeClass const * regular = side != NULL ? side->RegularPowerPlant : NULL;
+		BuildingTypeClass const * advanced = side != NULL ? side->AdvancedPowerPlant : NULL;
+		BuildingTypeClass const * turbine = side != NULL ? side->PowerTurbine : NULL;
+		BuildingTypeClass const * choice = NULL;
 
-		if (stricmp(Class->IniName, "GDI") == 0) {
-
+		if (turbine != NULL && regular != NULL) {
 			bool can_build_turbine = false;
 			for (int i = 0; i < Buildings.Count(); i++) {
-
 				BuildingClass * owned_b = Buildings[i];
-				if (owned_b->House == this) {
-					if (owned_b->Class == Rule->GDIPowerPlant && owned_b->UpgradeLevel < owned_b->Class->Upgrades) {
-						can_build_turbine = true;
-						break;
-					}
+				if (owned_b->House == this && owned_b->Class == regular && owned_b->UpgradeLevel < owned_b->Class->Upgrades) {
+					can_build_turbine = true;
+					break;
 				}
 			}
 
 			if (can_build_turbine && (Random_Pick(0, INT_MAX-1) / (double)(INT_MAX-1)) < Rule->AIUseTurbineUpgradeChance) {
-				choice = Rule->GDIPowerTurbine;
-			} else {
-				choice = Rule->GDIPowerPlant;
+				choice = turbine;
 			}
+		}
 
-		} else {
-
+		if (choice == NULL && advanced != NULL) {
 			DynamicVectorClass<BuildingTypeClass const *> owned_buildings;
-
 			for (int i = 0; i < Buildings.Count(); i++) {
 				BuildingClass * b2 = Buildings[i];
 				if (b2->House == this) {
@@ -4537,20 +4537,23 @@ int HouseClass::AI_Building(void)
 				}
 			}
 
-			if (AI_Has_Prerequisites(Rule->NodAdvancedPower, owned_buildings, owned_buildings.Count())) {
-				choice = Rule->NodAdvancedPower;
-			} else {
-				choice = Rule->NodRegularPower;
+			if (AI_Has_Prerequisites(advanced, owned_buildings, owned_buildings.Count())) {
+				choice = advanced;
 			}
+		}
+
+		if (choice == NULL) {
+			choice = regular != NULL ? regular : Get_First_Acted(Rule->BuildPower);
 		}
 
 		/*
 		 * Build our chosen power structure before building whatever else we're trying to build.
 		 */
-		int id = Base.Nodes.ID(node);
-		Base.Nodes.Insert_After(id - 1, BaseNodeClass(choice->HeapID, Cell(0, 0)));
-
-		return(1);
+		if (choice != NULL) {
+			int id = Base.Nodes.ID(node);
+			Base.Nodes.Insert_After(id - 1, BaseNodeClass(choice->HeapID, Cell(0, 0)));
+			return(1);
+		}
 	}
 
 	/*
@@ -4595,8 +4598,8 @@ int HouseClass::AI_Unit(void)
 {
 	if (BuildUnit != UNIT_NONE) return(TICKS_PER_SECOND);
 
-	int harv = AUQuantity.Value(Rule->HarvesterUnit[0]->HeapID);
-	int ref = ABQuantity.Value(Rule->BuildRefinery[0]->HeapID);
+	int harv = Count_Owned(AUQuantity, Rule->HarvesterUnit);
+	int ref = Count_Owned(ABQuantity, Rule->BuildRefinery);
 	int mult;
 	if (Session.Type == GAME_NORMAL || Difficulty == DIFF_HARD) {
 		mult = 1;
@@ -4609,8 +4612,9 @@ int HouseClass::AI_Unit(void)
 	**	harvester if possible.
 	*/
 	if (IQ >= Rule->IQHarvester && !IsTiberiumShort && !Is_Human_Player() && ref * mult > harv) {
-		if ((unsigned int)Rule->HarvesterUnit[0]->Level <= (unsigned int)Control.TechLevel) {
-			BuildUnit = Rule->HarvesterUnit[0]->HeapID;
+		UnitTypeClass const * harvester = Get_Preferred(Rule->HarvesterUnit);
+		if (harvester != NULL && (unsigned int)harvester->Level <= (unsigned int)Control.TechLevel) {
+			BuildUnit = harvester->HeapID;
 			return(TICKS_PER_SECOND);
 		}
 	}
@@ -5500,6 +5504,24 @@ void HouseClass::Read_All(CCINIClass const & ini)
 }
 
 
+static HousesType Acts_Like_From(char const * section, char const * value, HousesType defvalue)
+{
+	if (stricmp(value, "<none>") == 0) {
+		return(HOUSE_NONE);
+	}
+
+	HousesType house = HouseTypeClass::From_Name(value);
+	if (house == HOUSE_NONE && (isdigit((unsigned char)value[0]) || value[0] == '-')) {
+		house = (HousesType)atoi(value);
+	}
+	if (house < HOUSE_FIRST || house >= HouseTypes.Count()) {
+		DebugString("[%s] ActsLike=%s names no country; ignored.\n", section, value);
+		return(defvalue);
+	}
+	return(house);
+}
+
+
 /***********************************************************************************************
  * HouseClass::Read_INI -- Reads house specific data from INI.                                 *
  *                                                                                             *
@@ -5532,9 +5554,9 @@ void HouseClass::Read_INI(CCINIClass const & ini)
 	RatioTeamInfantry = ini.Get_Int(hname, "RatioTeamInfantry", 75);
 	RatioTeamUnits = ini.Get_Int(hname, "RatioTeamUnits", 75);
 
-	ActLike = (HousesType)ini.Get_Int(hname, "ActsLike", ActLike);
-	if (ActLike == HOUSE_NONE) {
-		ActLike = HOUSE_FIRST;
+	std::string actslike = ini.Get_String(hname, "ActsLike");
+	if (!actslike.empty()) {
+		ActLike = Acts_Like_From(hname, actslike.c_str(), ActLike);
 	}
 
 	int iq = ini.Get_Int(hname, "IQ", 0);
@@ -6810,23 +6832,67 @@ void HouseClass::Begin_Construction(Cell const & center)
 
 
 /// <summary>
-/// Fetches the first structure in a list that this house may own.
-/// This routine is used to resolve the generic structure lists in the rules -- the barracks
-/// or the power plant, say -- down to the particular one that this house builds.
+/// Fetches the Ownable bit of the country this house acts as, which every role list in the
+/// rules is resolved through.
 /// </summary>
-/// <param name="vector">The candidate structures, in order of preference.</param>
-/// <returns>Returns with the first structure this house may own, or NULL if it may own
-/// none.</returns>
-BuildingTypeClass const * HouseClass::Get_First_Ownable(DynamicVectorClass<BuildingTypeClass const *> const & vector) const
+/// <returns>Returns with the bit an Ownable field carries for that country, or 0 for a house
+/// acting for no country.</returns>
+int HouseClass::Acted_Mask(void) const
 {
-	int owners = 1 << HouseTypes.ID(Class);
-	for (int i = 0; i < vector.Count(); i++) {
-		if (owners & vector[i]->Ownable) {
-			return(vector[i]);
+	if (ActLike < HOUSE_FIRST || ActLike >= HouseTypes.Count() || ActLike >= 32) {
+		return(0);
+	}
+	return(1 << ActLike);
+}
+
+
+/// <summary>
+/// Fetches the side of the country this house acts as, whose base building it follows.
+/// </summary>
+/// <returns>Returns with that side, or NULL for a house acting for no country or for a
+/// country that belongs to no side.</returns>
+SideClass const * HouseClass::Acted_Side(void) const
+{
+	if (ActLike < HOUSE_FIRST || ActLike >= HouseTypes.Count()) {
+		return(NULL);
+	}
+	SideType side = HouseTypes[ActLike]->Side;
+	if (side < SIDE_FIRST || side >= Sides.Count()) {
+		return(NULL);
+	}
+	return(Sides[side]);
+}
+
+
+/// <summary>
+/// Is this one of the wall towers the side this house acts as lays its defenses on?
+/// </summary>
+bool HouseClass::Is_Acted_Tower(BuildingTypeClass const * type) const
+{
+	SideClass const * side = Acted_Side();
+	return(side != NULL && side->AIWallTowers.Is_In_List(type));
+}
+
+
+static void Keep_Upgrades_Of(DynamicVectorClass<BuildingTypeClass *> & defenses, BuildingTypeClass const * tower)
+{
+	for (int index = defenses.Count() - 1; index >= 0; index--) {
+		if (stricmp(defenses[index]->PowersUpBuilding, tower->Name()) != 0) {
+			defenses.Delete_Index(index);
 		}
 	}
+}
 
-	return(NULL);
+
+// Any side's plant counts, so a taken-over base keeps its power nodes whoever built them.
+static bool Is_Side_Power_Plant(BuildingTypeClass const * type)
+{
+	for (int index = 0; index < Sides.Count(); index++) {
+		if (type == Sides[index]->RegularPowerPlant || type == Sides[index]->AdvancedPowerPlant) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
@@ -6849,7 +6915,7 @@ bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVecto
 		if (type->Prerequisite[i] >= 0) {
 
 			BuildingTypeClass const * b = BuildingTypes[type->Prerequisite[i]];
-			if (b != Rule->BuildConst[0]) {
+			if (!Rule->BuildConst.Is_In_List(b)) {
 
 				bool found = false;
 				for (int j = 0; j < ownedcount; j++) {
@@ -6875,20 +6941,35 @@ bool HouseClass::AI_Has_Prerequisites(TechnoTypeClass const * type, DynamicVecto
 			switch (type->Prerequisite[i]) {
 
 				case STRUCT_G_FACTORY:
-					own_building = Get_First_Ownable(Rule->BuildWeapons);
+					own_building = Get_First_Acted(Rule->BuildWeapons);
 					break;
 
 				case STRUCT_G_BARRACKS:
-					own_building = Get_First_Ownable(Rule->BuildBarracks);
+					own_building = Get_First_Acted(Rule->BuildBarracks);
 					break;
 
 				case STRUCT_G_RADAR:
-					own_building = Get_First_Ownable(Rule->BuildRadar);
+					own_building = Get_First_Acted(Rule->BuildRadar);
 					break;
 
 				case STRUCT_G_TECH:
-					own_building = Get_First_Ownable(Rule->BuildTech);
+					own_building = Get_First_Acted(Rule->BuildTech);
 					break;
+
+				// Any type of the group already queued satisfies it, as one owned does for a house playing.
+				case STRUCT_G_GDIFACTORY:
+				case STRUCT_G_NODFACTORY: {
+					TypeList<int> const & group = type->Prerequisite[i] == STRUCT_G_GDIFACTORY ? Rule->PrerequisiteGDIFactory : Rule->PrerequisiteNodFactory;
+					for (int j = 0; j < group.Count() && own_building == NULL; j++) {
+						for (int k = 0; k < ownedcount; k++) {
+							if (owned[k] == BuildingTypes[group[j]]) {
+								own_building = owned[k];
+								break;
+							}
+						}
+					}
+					break;
+				}
 
 				default:
 					break;
@@ -6923,8 +7004,12 @@ void HouseClass::Make_Base_Nodes(void)
 {
 	int index;
 
-	bool is_gdi = stricmp(Class->IniName, "GDI") == 0;
-	bool is_nod = stricmp(Class->IniName, "NOD") == 0;
+	SideClass const * side = Acted_Side();
+	double defense_coefficient = side != NULL ? side->AIBaseDefenseCoefficient : 1.0;
+	BuildingTypeClass const * tower = side != NULL ? Get_First_Acted(side->AIWallTowers) : NULL;
+	bool builds_walls = (side == NULL || side->IsAIBuildsWalls) && Rule->AIBuildsWalls;
+	bool defenses_with_walls = side != NULL && side->IsAIBaseDefensesWithWalls;
+	int placeholders = side != NULL ? side->AIBaseDefensePlaceholders : 2;
 
 	Base.Init();
 
@@ -6940,7 +7025,7 @@ void HouseClass::Make_Base_Nodes(void)
 		}
 	}
 
-	int ownable = 1 << HouseTypes.ID(Class);
+	int ownable = Acted_Mask();
 
 	DynamicVectorClass<BuildingTypeClass const *> buildables;
 	DynamicVectorClass<bool> isadded;
@@ -6961,18 +7046,20 @@ void HouseClass::Make_Base_Nodes(void)
 	int buildable_count = buildables.Count();
 	DynamicVectorClass<BuildingTypeClass const *> startingqueue;
 
-	BuildingTypeClass const * conyard = Rule->BuildConst[0];
 	for (index = 0; index < buildable_count; index++) {
-		if (conyard == buildables[index]) {
+		if (Rule->BuildConst.Is_In_List(buildables[index])) {
 			isadded[index] = true;
-			startingqueue.Add(conyard);
+			startingqueue.Add(buildables[index]);
 			break;
 		}
 	}
 
-	startingqueue.Add(Get_First_Ownable(Rule->BuildPower));
+	BuildingTypeClass const * power = Get_First_Acted(Rule->BuildPower);
+	if (power != NULL) {
+		startingqueue.Add(power);
+	}
 
-	BuildingTypeClass const * barracks = Get_First_Ownable(Rule->BuildBarracks);
+	BuildingTypeClass const * barracks = Get_First_Acted(Rule->BuildBarracks);
 	for (index = 0; index < buildables.Count(); index++) {
 		if (buildables[index] == barracks) {
 			BuildingTypeClass const * temp = buildables[0];
@@ -6984,7 +7071,7 @@ void HouseClass::Make_Base_Nodes(void)
 		}
 	}
 
-	BuildingTypeClass const * weapons = Get_First_Ownable(Rule->BuildWeapons);
+	BuildingTypeClass const * weapons = Get_First_Acted(Rule->BuildWeapons);
 	for (index = 0; index < buildables.Count(); index++) {
 		if (buildables[index] == weapons) {
 			BuildingTypeClass const * temp = buildables[1];
@@ -7039,7 +7126,7 @@ void HouseClass::Make_Base_Nodes(void)
 
 	int refcount = 2 - Difficulty;
 
-	BuildingTypeClass const * ref = Get_First_Ownable(Rule->BuildRefinery);
+	BuildingTypeClass const * ref = Get_First_Acted(Rule->BuildRefinery);
 	int refpos = 0;
 	for (index = 0; index < startingqueue.Count() - 1; index++) {
 		if (startingqueue[index] == ref) {
@@ -7053,6 +7140,14 @@ void HouseClass::Make_Base_Nodes(void)
 		refpos++;
 	}
 
+	// A queue too short to weave defenses into is the whole plan.
+	if (startingqueue.Count() < 3) {
+		for (index = 0; index < startingqueue.Count(); index++) {
+			Base.Nodes.Add(BaseNodeClass(startingqueue[index]->HeapID, Cell(0, 0)));
+		}
+		return;
+	}
+
 	DynamicVectorClass<BuildingTypeClass const *> finalqueue = {startingqueue[0], startingqueue[1], startingqueue[2]};
 
 	int defensecount = 0;
@@ -7063,14 +7158,14 @@ void HouseClass::Make_Base_Nodes(void)
 
 	for (index = 3; index < startingqueue.Count(); index++) {
 		int cost = (int)((buildcost - _cost_sub) * DefenseCostMultiplier / _cost_div);
-		double wanted_defenses = is_nod ? cost * Rule->NodBaseDefenseCoefficient : cost * Rule->GDIBaseDefenseCoefficient;
+		double wanted_defenses = cost * defense_coefficient;
 
 		if (defensecount < (int)wanted_defenses) {
 			int deficiency = (int)wanted_defenses - defensecount;
 			defensecount += (int)deficiency;
 			do {
-				if (is_gdi) {
-					finalqueue.Add(Rule->WallTower);
+				if (tower != NULL) {
+					finalqueue.Add(tower);
 				}
 				finalqueue.Add((BuildingTypeClass const *)-1);
 				deficiency--;
@@ -7081,10 +7176,10 @@ void HouseClass::Make_Base_Nodes(void)
 		buildcost += startingqueue[index]->Cost_Of(this);
 	}
 
-	if (is_nod || !Rule->AIBuildsWalls) {
-		for (int count = (3 - Difficulty) * (is_gdi ? 3 : 2); count > 0; count--) {
-			if (is_gdi) {
-				finalqueue.Add(Rule->WallTower);
+	if (!builds_walls || defenses_with_walls) {
+		for (int count = (3 - Difficulty) * placeholders; count > 0; count--) {
+			if (tower != NULL) {
+				finalqueue.Add(tower);
 			}
 			finalqueue.Add((BuildingTypeClass const *)-1);
 		}
@@ -7099,7 +7194,7 @@ void HouseClass::Make_Base_Nodes(void)
 		}
 	}
 
-	if ((!is_nod || Rule->NodAIBuildsWalls) && Rule->AIBuildsWalls) {
+	if (builds_walls) {
 		Base.Nodes.Add(BaseNodeClass((StructType)-3, Cell(0, 0)));
 	}
 }
@@ -7458,7 +7553,7 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 	memset(aarmor, 0, size * sizeof(int));
 	memset(aground, 0, size * sizeof(int));
 
-	bool is_gdi = stricmp(Class->IniName, "GDI") == 0;
+	SideClass const * side = Acted_Side();
 
 	/*
 	 * Bucket the incoming threat cells into the four quadrants around the
@@ -7524,13 +7619,15 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 		BuildingClass * building = Buildings[i];
 		if (building->House == this) {
 			BuildingTypeClass * type = building->Class;
-			if (!type->IsBaseDefense && type != Rule->WallTower) {
+			if (!type->IsBaseDefense && !Is_Acted_Tower(type)) {
 				owned.Add(building->Class);
 			}
 		}
 	}
-	if (is_gdi) {
-		owned.Add(Rule->WallTower);
+	if (side != NULL) {
+		for (i = 0; i < side->AIWallTowers.Count(); i++) {
+			owned.Add(side->AIWallTowers[i]);
+		}
 	}
 
 	StructType type_id = Base.Nodes[nodeindex].Type;
@@ -7550,6 +7647,24 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 	DynamicVectorClass<BuildingTypeClass *> air_defenses = Get_Anti_Air_Defense_Buildings(owned);
 	DynamicVectorClass<BuildingTypeClass *> armor_defenses = Get_Anti_Armor_Defense_Buildings(owned);
 	DynamicVectorClass<BuildingTypeClass *> ground_defenses = Get_Anti_Ground_Defense_Buildings(owned);
+
+	/*
+	 * A tower node takes only the tower's own upgrades, and a tower none of the country's
+	 * defenses plug into is dropped for a standalone defense.
+	 */
+	bool arming_tower = type_id >= 0;
+	if (arming_tower) {
+		BuildingTypeClass const * tower = BuildingTypes[type_id];
+		Keep_Upgrades_Of(air_defenses, tower);
+		Keep_Upgrades_Of(armor_defenses, tower);
+		Keep_Upgrades_Of(ground_defenses, tower);
+		if (air_defenses.Count() + armor_defenses.Count() + ground_defenses.Count() == 0) {
+			arming_tower = false;
+			air_defenses = Get_Anti_Air_Defense_Buildings(owned);
+			armor_defenses = Get_Anti_Armor_Defense_Buildings(owned);
+			ground_defenses = Get_Anti_Ground_Defense_Buildings(owned);
+		}
+	}
 
 	/*
 	 * Address the category with the largest deficit first.
@@ -7622,12 +7737,12 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 		}
 
 		/*
-		 * If the node already has a type assigned, build that type and queue the
-		 * picked defense at the following node instead.
+		 * A tower being armed is built itself, and the picked upgrade is queued at the
+		 * following node instead.
 		 */
 		BuildingTypeClass * build_type;
 		build_type = choice;
-		if (type_id >= 0) {
+		if (arming_tower) {
 			pending = choice;
 			build_type = BuildingTypes[type_id];
 		}
@@ -7662,7 +7777,7 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 				 * A wall node at this cell is now redundant -- remove it.
 				 */
 				if (cells != NULL) {
-					BuildingTypeClass const * wall = Get_First_Ownable(Rule->ConcreteWalls);
+					BuildingTypeClass const * wall = Get_First_Acted(Rule->ConcreteWalls);
 					for (i = Base.Nodes.Count() - 1; i >= 0; i--) {
 						if (Base.Nodes[i].CellID == cell && Base.Nodes[i].Type == wall->HeapID) {
 							Base.Nodes.Delete_Index(i);
@@ -7696,7 +7811,7 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
 DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Air_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const
 {
-	unsigned ownable = 1 << HouseTypes.ID(Class);
+	unsigned ownable = Acted_Mask();
 	DynamicVectorClass<BuildingTypeClass *> defenses;
 
 	for (int i = 0; i < BuildingTypes.Count(); i++) {
@@ -7720,7 +7835,7 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Air_Defense_Buildin
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
 DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Armor_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const
 {
-	unsigned ownable = 1 << HouseTypes.ID(Class);
+	unsigned ownable = Acted_Mask();
 	DynamicVectorClass<BuildingTypeClass *> defenses;
 
 	for (int i = 0; i < BuildingTypes.Count(); i++) {
@@ -7744,7 +7859,7 @@ DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Armor_Defense_Build
 /// <returns>Returns with the list of candidates, which may well be empty.</returns>
 DynamicVectorClass<BuildingTypeClass *> HouseClass::Get_Anti_Ground_Defense_Buildings(DynamicVectorClass<BuildingTypeClass const *> & owned) const
 {
-	unsigned ownable = 1 << HouseTypes.ID(Class);
+	unsigned ownable = Acted_Mask();
 	DynamicVectorClass<BuildingTypeClass *> defenses;
 
 	for (int i = 0; i < BuildingTypes.Count(); i++) {
@@ -7799,9 +7914,9 @@ void HouseClass::AI_Build_Wall(void)
 		Cell(Base.LastBaseAreaRect.X + Base.LastBaseAreaRect.Width - 1, Base.LastBaseAreaRect.Y + Base.LastBaseAreaRect.Height - 1)
 	};
 
-	BuildingTypeClass const * wall = Get_First_Ownable(Rule->ConcreteWalls);
-	BuildingTypeClass const * ewgate = Get_First_Ownable(Rule->EWGates);
-	BuildingTypeClass const * nsgate = Get_First_Ownable(Rule->NSGates);
+	BuildingTypeClass const * wall = Get_First_Acted(Rule->ConcreteWalls);
+	BuildingTypeClass const * ewgate = Get_First_Acted(Rule->EWGates);
+	BuildingTypeClass const * nsgate = Get_First_Acted(Rule->NSGates);
 
 	BuildingTypeClass const * gates[] = { ewgate, ewgate, nsgate, nsgate };
 	static const FacingType _step_facings[] = { FACING_E, FACING_E, FACING_S, FACING_S };
@@ -7906,20 +8021,22 @@ void HouseClass::AI_Build_Wall(void)
 		Base.Nodes.Add(gate_nodes[index]);
 	}
 
-	if (stricmp(Class->IniName, "GDI") == 0) {
+	SideClass const * side = Acted_Side();
+	BuildingTypeClass const * tower = side != NULL ? Get_First_Acted(side->AIWallTowers) : NULL;
+	if (tower != NULL) {
 		for (index = 0; index < wall_nodes.Count(); index++) {
 			Base.OuterCells.Add(wall_nodes[index].CellID);
 		}
 
 		double count = wall_nodes.Count() * 0.2;
-		double max_count = (3 - Difficulty) * Rule->GDIWallDefenseCoefficient + Rule->GDIWallDefense;
+		double max_count = (3 - Difficulty) * side->AIWallDefenseCoefficient + side->AIWallDefense;
 		if (count >= max_count) {
 			count = max_count;
 		}
 
 		int wall_defenses = (int)count;
 		for (index = 0; index < wall_defenses; index++) {
-			Base.Nodes.Add(BaseNodeClass(Rule->WallTower->HeapID, Cell(0, 0)));
+			Base.Nodes.Add(BaseNodeClass(tower->HeapID, Cell(0, 0)));
 			Base.Nodes.Add(BaseNodeClass((StructType)-1, Cell(0, 0)));
 		}
 	}
@@ -8263,23 +8380,8 @@ void HouseClass::Update_Production_Mode(RTTIType type)
 
 		case UNITS:
 			if (Available_Money() < Rule->AIAlternateProductionCreditCutoff) {
-				bool hasbarracks = false;
-				for (int i = 0; i < Rule->BuildBarracks.Count(); i++) {
-					if (!hasbarracks && ABQuantity.Value(Rule->BuildBarracks[i]->HeapID) <= 0) {
-						hasbarracks = false;
-					} else {
-						hasbarracks = true;
-					}
-				}
-
-				bool hasweapons = false;
-				for (int j = 0; j < Rule->BuildWeapons.Count(); j++) {
-					if (!hasweapons && ABQuantity.Value(Rule->BuildWeapons[j]->HeapID) <= 0) {
-						hasweapons = false;
-					} else {
-						hasweapons = true;
-					}
-				}
+				bool hasbarracks = Owns_Any(ABQuantity, Rule->BuildBarracks);
+				bool hasweapons = Owns_Any(ABQuantity, Rule->BuildWeapons);
 
 				if (!hasweapons || !hasbarracks || Drain > Power || Random_Pick(0, 1) == 0) {
 					if (type != RTTI_BUILDING) {
@@ -8427,7 +8529,7 @@ void HouseClass::AI_Ion_Cannon(SuperClass * super)
 						UnitTypeClass const * unittype = ((UnitClass *)techno)->Class;
 						if (unittype->IsToHarvest) {
 							value = Rule->AIIonCannonHarvesterValue[Difficulty];
-						} else if (unittype->DeploysInto == Rule->BuildConst[0]) {
+						} else if (Rule->BuildConst.Is_In_List(unittype->DeploysInto)) {
 							value = Rule->AIIonCannonMCVValue[Difficulty];
 						} else if (unittype->MaxPassengers > 0) {
 							value = Rule->AIIonCannonAPCValue[Difficulty];
@@ -8637,7 +8739,7 @@ void HouseClass::AI_Takeover(void)
 	BuildingClass * conyard = NULL;
 	for (index = Buildings.Count() - 1; index >= 0; index--) {
 		BuildingClass * bptr = Buildings[index];
-		if (bptr->Class == Rule->BuildConst[0] && bptr->House == this && !bptr->IsInLimbo) {
+		if (Rule->BuildConst.Is_In_List(bptr->Class) && bptr->House == this && !bptr->IsInLimbo) {
 			conyard = bptr;
 			break;
 		}
@@ -8738,7 +8840,7 @@ void HouseClass::AI_Takeover(void)
 			continue;
 		}
 		BuildingTypeClass * btype = building->Class;
-		if (btype != Rule->GDIPowerPlant && btype != Rule->NodRegularPower && btype != Rule->NodAdvancedPower) {
+		if (!Is_Side_Power_Plant(btype)) {
 			continue;
 		}
 		if (building->PositionCoord.As_Cell() == Base.Nodes[1].CellID) {
@@ -8766,15 +8868,16 @@ void HouseClass::AI_Takeover(void)
 	}
 
 	/*
-	 * GDI bases gain power-turbine upgrade nodes for each upgradeable power plant.
+	 * A side with a turbine upgrade gains a node for each one its power plants carry.
 	 */
-	if (stricmp(Class->IniName, "GDI") == 0) {
+	SideClass const * side = Acted_Side();
+	if (side != NULL && side->PowerTurbine != NULL && side->RegularPowerPlant != NULL) {
 		int bindex = 0;
 		int power = 0;
 		int drain = 0;
 		for (index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * building = Buildings[index];
-			if (building->House == this && !building->IsInLimbo && building->Class == Rule->GDIPowerPlant && building->UpgradeLevel > 0) {
+			if (building->House == this && !building->IsInLimbo && building->Class == side->RegularPowerPlant && building->UpgradeLevel > 0) {
 				for (int upgrade = 0; upgrade < building->UpgradeLevel; upgrade++) {
 					while (bindex < Base.Nodes.Count()) {
 						if (Base.Nodes[bindex].Type >= STRUCT_FIRST) {
@@ -8782,8 +8885,8 @@ void HouseClass::AI_Takeover(void)
 							power += ntype->Power;
 							drain += ntype->Drain;
 							if (bindex > 0 && power < drain + PowerSurplus) {
-								Base.Nodes.Insert_After(bindex - 1, BaseNodeClass(Rule->GDIPowerTurbine->HeapID, building->PositionCoord.As_Cell()));
-								power += Rule->GDIPowerTurbine->Power;
+								Base.Nodes.Insert_After(bindex - 1, BaseNodeClass(side->PowerTurbine->HeapID, building->PositionCoord.As_Cell()));
+								power += side->PowerTurbine->Power;
 								drain -= ntype->Drain;
 								bindex++;
 								break;

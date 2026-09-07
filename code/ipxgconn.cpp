@@ -566,13 +566,7 @@ int IPXGlobalConnClass::Discard_Undeliverable_Packets(void)
 		SendQueueType *send_entry = Queue->Get_Send(i);
 
 		if (send_entry->IsUndeliverable && !send_entry->IsACK) {
-
-			IPXAddressClass address;
-			char buf[1024];
-			int buflen;
-
-			int address_size = sizeof(address);
-			Queue->UnQueue_Send(buf, &buflen, i, &address, &address_size);
+			Queue->UnQueue_Send(NULL, NULL, i, NULL, NULL);
 			i--;
 			num++;
 		}

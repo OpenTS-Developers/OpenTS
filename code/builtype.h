@@ -857,6 +857,7 @@ class BuildingTypeClass : public TechnoTypeClass
 		virtual bool Read_INI(CCINIClass const & ini) override;
 		int Flush_For_Placement(Cell const & cell, HouseClass * house) const;
 		virtual int Cost_Of(HouseClass * house = NULL) const override;
+		bool Is_Pad_Aircraft_Dock(void) const;
 		virtual Coord const Coord_Fixup(Coord const & coord) const override;
 		virtual int Max_Pips(void) const override;
 		virtual Point3D Pixel_Dimensions(void) const override;

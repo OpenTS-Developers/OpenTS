@@ -18,10 +18,6 @@ Every other path takes one fixed entry and ignores the damage. The first entry g
 SplashList=MYSPLASH1,MYSPLASH2,MYSPLASH3 ; AnimTypes registered in [Animations]
 ```
 
-:::caution[The value is cut off after 127 characters]
-The whole line is read into a 128-character buffer before it is split on commas, so a longer list is truncated there without warning. The name the cut falls inside is registered as an animation of its own, holding no artwork, and takes its place in the list; every name past the cut is lost.
-:::
-
 :::danger[An empty list crashes the game at the first splash]
 Only the explosion path checks that the list holds anything. Every other path reads an entry from it outright, so a rules file that never sets the key at all leaves the list empty and the game crashes the first time anything falls in the water. Leaving the key out of a later rules layer is harmless; the list keeps whatever an earlier one set.
 :::

@@ -41,6 +41,7 @@
 #include "session.h"
 #include "srfcache.h"
 #include "theme.h"
+#include "utf8.h"
 #include "voc.h"
 #include "vox.h"
 #include "windlg.h"
@@ -130,6 +131,18 @@ BOOL CALLBACK ODAddWindowToList(HWND window, ArrayList<HWND> * list);
 BOOL CALLBACK SetUserData2(HWND window, LPARAM lparam);
 BOOL CALLBACK InitializeCtrl(HWND window, LPARAM lparam);
 void ODDrawCharRemap(Surface & dst_surf, const char *text, int max_chars, Rect const & rect, char const *font_name, COLORREF color, char flags, int char_spacing);
+
+
+// The dialog fonts are 256-cell sheets in Windows-1252 order; a code point without a cell
+// draws as '?'.
+static unsigned char OD_Glyph(char32_t code)
+{
+	if (code < ' ') {
+		return((unsigned char)code);
+	}
+	int index = UTF8::Windows_1252_Glyph(code);
+	return((unsigned char)(index < 0 ? '?' : index));
+}
 
 
 ///////////////////////////////////
@@ -438,8 +451,8 @@ static LRESULT CALLBACK ComboDropWinCtrlProc_Internal(HWND hWnd, UINT Msg, WPARA
 
 					if (have_font) {
 						int text_width = 0;
-						for (int i = 0; i < (int)strlen(text); ++i) {
-							text_width += font_data.charWidths[(unsigned char)text[i]];
+						for (char const * cursor = text; *cursor; ) {
+							text_width += font_data.charWidths[OD_Glyph(UTF8::Decode(cursor))];
 						}
 
 						int max_width = width - 10;
@@ -448,9 +461,9 @@ static LRESULT CALLBACK ComboDropWinCtrlProc_Internal(HWND hWnd, UINT Msg, WPARA
 
 						if (text_width > max_width) {
 							while (strlen(text) > 0) {
-								int last = (int)strlen(text) - 1;
-								text_width -= font_data.charWidths[(unsigned char)text[last]];
-								text[last] = '\0';
+								char * last = UTF8::Previous(text, text + strlen(text));
+								text_width -= font_data.charWidths[OD_Glyph(UTF8::Peek(last))];
+								*last = '\0';
 								if (!clipped) {
 									text_width += ellipsis_width;
 								}
@@ -3132,15 +3145,15 @@ LRESULT CALLBACK ComboBoxCtrlProc(HWND window, UINT message, WPARAM wparam, LPAR
 					int max_width = client_rect.right - 28;
 					int ellipsis_width = 3 * font_data.charWidths['.'];
 					bool clipped = false;
-					for (int i = 0; i < (int)strlen(_buffer); ++i) {
-						text_width += font_data.charWidths[(unsigned char)_buffer[i]];
+					for (char const * cursor = _buffer; *cursor; ) {
+						text_width += font_data.charWidths[OD_Glyph(UTF8::Decode(cursor))];
 					}
 
 					if (text_width >= max_width) {
 						while (strlen(_buffer) > 0) {
-							int last = (int)strlen(_buffer) - 1;
-							text_width -= font_data.charWidths[(unsigned char)_buffer[last]];
-							_buffer[last] = '\0';
+							char * last = UTF8::Previous(_buffer, _buffer + strlen(_buffer));
+							text_width -= font_data.charWidths[OD_Glyph(UTF8::Peek(last))];
+							*last = '\0';
 							if (!clipped) {
 								text_width += ellipsis_width;
 							}
@@ -5745,12 +5758,12 @@ int OD_Draw_Text_Remap(Surface & surface, const char * text, Rect const & rect, 
 		}
 
 		int text_width = 0;
-		for (int i = 0; i < line_len; ++i) {
-			text_width += char_spacing + data.charWidths[(unsigned char)text[i]];
+		for (char const * cursor = text; cursor - text < line_len; ) {
+			text_width += char_spacing + data.charWidths[OD_Glyph(UTF8::Decode(cursor))];
 		}
 
 		if (text_width > draw_rect.Width - draw_rect.X) {
-			int fallback = line_len - 1;
+			int fallback = (int)UTF8::Boundary_Before(line_ptr, line_len - 1);
 			int cut = line_len - 1;
 
 			flags &= ~4;
@@ -5907,8 +5920,8 @@ void ODDrawCharRemap(Surface & dst_surf, const char *text, int max_chars, Rect c
 	}
 
 	int total_width = 0;
-	for (i = 0; i < max_chars; ++i) {
-		total_width += font_data.charWidths[(unsigned char)text[i]] + char_spacing;
+	for (char const * cursor = text; cursor - text < max_chars; ) {
+		total_width += font_data.charWidths[OD_Glyph(UTF8::Decode(cursor))] + char_spacing;
 	}
 
 	if ((flags & OD_DRAW_CHAR_FLAG_HORIZONTAL_CENTER) != 0) {
@@ -5936,12 +5949,13 @@ void ODDrawCharRemap(Surface & dst_surf, const char *text, int max_chars, Rect c
 		int src_stride = sheet_i->Stride();
 
 		int x = draw_rect.X;
-		for (int i = 0; i < max_chars; ++i) {
+		for (char const * cursor = text; cursor - text < max_chars; ) {
 
-			if ((unsigned char)text[i] <= ' ') {
-				x += font_data.charWidths[(unsigned char)text[i]] + char_spacing;
+			unsigned char index = OD_Glyph(UTF8::Decode(cursor));
+			if (index <= ' ') {
+				x += font_data.charWidths[index] + char_spacing;
 			} else {
-				int glyph = (unsigned char)text[i] + 1;
+				int glyph = index + 1;
 				int src_x = (glyph % chars_per_row) * cell_w;
 				int src_y = (glyph / chars_per_row) * cell_h;
 
@@ -5973,7 +5987,7 @@ void ODDrawCharRemap(Surface & dst_surf, const char *text, int max_chars, Rect c
 					dst_col += 2;
 				}
 
-				x += font_data.charWidths[(unsigned char)text[i]] + char_spacing;
+				x += font_data.charWidths[index] + char_spacing;
 			}
 		}
 	}

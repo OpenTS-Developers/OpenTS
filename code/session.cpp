@@ -240,7 +240,7 @@ SessionClass::SessionClass(void)
 
 	MetaSize = MAX_IPX_PACKET_SIZE;
 
-	PlayerIsGDI = true;
+	PlayerHouse = HOUSE_FIRST;
 
 	memset(KickVoteCount, 0, sizeof(KickVoteCount));
 	memset(KickVoteWho, -1, sizeof(KickVoteWho));

@@ -1,5 +1,2 @@
-# Resource scripts are CP1252 and must retain their legacy CRLF line endings.
-*.[Rr][Cc] text working-tree-encoding=CP1252 eol=crlf
-
-# This file contains authentic CP437 box-drawing bytes. Do not transform it.
-combuf.cpp -text
+# Resource scripts are UTF-8 and must retain their legacy CRLF line endings.
+*.[Rr][Cc] text eol=crlf

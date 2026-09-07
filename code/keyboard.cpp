@@ -301,13 +301,13 @@ bool WWKeyboardClass::Put_Mouse_Message(unsigned short vk_key, int x, int y, boo
  * HISTORY:                                                                                    *
  *   09/30/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-char WWKeyboardClass::To_ASCII(unsigned short key)
+int WWKeyboardClass::To_ASCII(unsigned short key)
 {
 	/*
-	**	Released keys never translate into an ASCII value.
+	**	Released keys never translate into a character.
 	*/
 	if (key & WWKEY_RLS_BIT) {
-		return('\0');
+		return(0);
 	}
 
 	/*
@@ -324,16 +324,16 @@ char WWKeyboardClass::To_ASCII(unsigned short key)
 	}
 
 	/*
-	**	Ask windows to translate the key into an ASCII equivalent.
+	**	Ask windows to translate the key into a character.
 	*/
-	char buffer[10];
+	wchar_t buffer[4];
 	int result;
 //	int result = 1;
 	int scancode;
 //	int scancode = 0;
 
 	scancode = MapVirtualKey(key & 0xFF, 0);
-	result = ToAscii((UINT)(key & 0xFF), (UINT)scancode, (PBYTE)KeyState, (LPWORD)buffer, (UINT)0);
+	result = ToUnicode((UINT)(key & 0xFF), (UINT)scancode, (PBYTE)KeyState, buffer, ARRAY_SIZE(buffer), 0);
 
 	/*
 	**	Restore the KeyState buffer back to pristine condition.
@@ -348,12 +348,16 @@ char WWKeyboardClass::To_ASCII(unsigned short key)
 		KeyState[VK_MENU] = 0;
 	}
 
+	if (result == 2 && IS_SURROGATE_PAIR(buffer[0], buffer[1])) {
+		return(0x10000 + ((buffer[0] - 0xD800) << 10) + (buffer[1] - 0xDC00));
+	}
+
 	/*
 	**	If Windows could not perform the translation as expected, then
-	**	return with a null ASCII value.
+	**	return with a null character.
 	*/
 	if (result != 1) {
-		return('\0');
+		return(0);
 	}
 
 	return(buffer[0]);

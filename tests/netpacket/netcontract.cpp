@@ -815,7 +815,7 @@ void Test_Global_Packets(void)
 	Check_Global_Error(packet, packet_size, member, NetGlobal::DecodeError::INVALID_KICK_PLAYER,
 		"a kick target must be a current session member");
 
-	Check(sizeof(GlobalPacketType) == 455, "the global packet keeps its wire size");
+	Check(sizeof(GlobalPacketType) == 1059, "the global packet keeps its wire size");
 
 	NetGlobal::ValidationContext master = Member_Context();
 	master.MasterPlayerID = 2;

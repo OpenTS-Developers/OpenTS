@@ -29,6 +29,7 @@
 #include "pcx.h"
 #include "shapeset.h"
 #include "srfcache.h"
+#include "utf8.h"
 
 #include <algorithm>
 
@@ -821,8 +822,7 @@ MSPrintAnim::MSPrintAnim(char const * string, int x, int y, MSFont * font, Rect 
 		char const * str = String;
 		int font_width = Font->Get_Font_Width();
 		while (*str && *str != '\n') {
-			width += Font->Get_Character_Width(*str);
-			str++;
+			width += Font->Get_Character_Width(UTF8::Decode(str));
 		}
 		Offset = (Area.Width - font_width - width) / 2;
 	}
@@ -883,15 +883,15 @@ int MSPrintAnim::Word_Wrap(char * string, MSFont * font, int line_width)
 
 		/// Calculate the width of the current line
 		while (current_width < line_width && *char_ptr != '\0' && *char_ptr != '\n' && *char_ptr != '@') {
-			int char_width = font->Get_Character_Width(*char_ptr++);
+			int char_width = font->Get_Character_Width(UTF8::Decode(char_ptr));
 			current_width += char_width;
 		}
 
 		/// If the line exceeds the available width, backtrack to the last space
 		if (current_width >= line_width) {
 			while (*char_ptr != '\0' && *char_ptr != ' ' && *char_ptr != '\n' && char_ptr != string) {
-				char_ptr--;
-				current_width -= font->Get_Character_Width(*char_ptr);
+				char_ptr = UTF8::Previous(string, char_ptr);
+				current_width -= font->Get_Character_Width(UTF8::Peek(char_ptr));
 			}
 		}
 
@@ -943,21 +943,21 @@ int MSPrintAnim::Word_Wrap(char * string, int length, MSFont * font, int line_wi
 
 		/// Calculate the width of the current line
 		while (current_width < line_width && *char_ptr != '\0' && *char_ptr != '\n' && *char_ptr != '@') {
-			int char_width = font->Get_Character_Width(*char_ptr++);
+			int char_width = font->Get_Character_Width(UTF8::Decode(char_ptr));
 			current_width += char_width;
 		}
 
 		/// If the line exceeds the available width, backtrack to the last space
 		if (current_width >= line_width) {
 			while (*char_ptr != '\0' && *char_ptr != ' ' && *char_ptr != '\n' && char_ptr != start_ptr) {
-				char_ptr--;
-				current_width -= font->Get_Character_Width(*char_ptr);
+				char_ptr = UTF8::Previous(start_ptr, char_ptr);
+				current_width -= font->Get_Character_Width(UTF8::Peek(char_ptr));
 			}
 		}
 
 		if (char_ptr == start_ptr) {
 			while (current_width < line_width && *char_ptr != '\0' && *char_ptr != ' ' && *char_ptr != '\n' && *char_ptr != '@' && *char_ptr != '-') {
-				int char_width = font->Get_Character_Width(*char_ptr++);
+				int char_width = font->Get_Character_Width(UTF8::Decode(char_ptr));
 				current_width += char_width;
 			}
 
@@ -968,8 +968,8 @@ int MSPrintAnim::Word_Wrap(char * string, int length, MSFont * font, int line_wi
 					memmove(char_ptr + 1, char_ptr, strlen(char_ptr) + 1);
 				}
 			} else {
-				char_ptr--;
-				current_width -= font->Get_Character_Width(*char_ptr);
+				char_ptr = UTF8::Previous(start_ptr, char_ptr);
+				current_width -= font->Get_Character_Width(UTF8::Peek(char_ptr));
 				if (blen > 0) {
 					blen--;
 					memmove(char_ptr + 1, char_ptr, strlen(char_ptr) + 1);
@@ -1072,8 +1072,10 @@ bool MSPrintAnim::Advance(Surface * surface, Rect & rect)
 	int x = XPos;
 	int y = YPos;
 
-	for (unsigned char_index = LineStart; char_index <= PrintedCharCount; char_index++) {
-		char ch = String[char_index];
+	for (unsigned char_index = LineStart; char_index <= PrintedCharCount; ) {
+		char const * cursor = String + char_index;
+		char32_t ch = UTF8::Decode(cursor);
+		unsigned next_index = (unsigned)(cursor - String);
 		if (ch == '\0') {
 			CompletionCount++;
 			break;
@@ -1107,6 +1109,7 @@ bool MSPrintAnim::Advance(Surface * surface, Rect & rect)
 			Font->Draw_Character(surface, ch, x, y, (FadeEffect == false || PrintedCharCount - char_index >= 2) ? 2 : (PrintedCharCount - char_index), true);
 			x += Font->Get_Character_Width(ch);
 		}
+		char_index = next_index;
 	}
 
 	rect = Area;
@@ -1132,8 +1135,10 @@ void MSPrintAnim::Redraw(Surface * surface, Rect const * rect)
 		unsigned printed = Get_Printed_Char_Count();
 		unsigned end = std::min(printed, strlen(String));
 
-		for (unsigned char_index = LineStart; char_index < end; char_index++) {
-			if (String[char_index] == '\n') {
+		for (unsigned char_index = LineStart; char_index < end; ) {
+			char const * cursor = String + char_index;
+			char32_t ch = UTF8::Decode(cursor);
+			if (ch == '\n') {
 				should_center = Centered;
 				x = XPos;
 				y += Font->Get_Font_Height();
@@ -1148,9 +1153,10 @@ void MSPrintAnim::Redraw(Surface * surface, Rect const * rect)
 					x += Offset;
 					should_center = false;
 				}
-				Font->Draw_Character(surface, String[char_index], x, y, 2, true);
-				x += Font->Get_Character_Width(String[char_index]);
+				Font->Draw_Character(surface, ch, x, y, 2, true);
+				x += Font->Get_Character_Width(ch);
 			}
+			char_index = (unsigned)(cursor - String);
 		}
 	}
 }
@@ -1191,19 +1197,19 @@ bool MSWordAnim::Advance(Surface * surface, Rect & rect)
 		x += Offset;
 	}
 
-	char character = String[LineStart];
-	int line_end_index = LineStart + 1;
+	char const * cursor = String + LineStart;
+	char32_t character = UTF8::Decode(cursor);
 	while (character != '\n' && character != '\0') {
 		Font->Draw_Character(surface, character, x, LineYPos, PrintedCharCount, false);
 		x += Font->Get_Character_Width(character);
-		character = String[line_end_index++];
+		character = UTF8::Decode(cursor);
 	}
 
 	rect.Set(Area.X, LineYPos, Area.Width, Font->Get_Font_Height());
 
 	if (PrintedCharCount == 2) {
 		LineRect.Set(0, 0, 0, 0);
-		LineStart = line_end_index;
+		LineStart = (unsigned)(cursor - String);
 		if (character == '\n') {
 			void const * sample = MFCD::Retrieve("BLEEP1.AUD");
 			if (sample != NULL) {
@@ -1273,8 +1279,7 @@ int MSPrintAnim::Get_Line_Width(char const * str) const
 {
 	int width = 0;
 	while (*str && *str != '\n') {
-		width += Font->Get_Character_Width(*str);
-		str++;
+		width += Font->Get_Character_Width(UTF8::Decode(str));
 	}
 	return(width);
 }
@@ -1295,17 +1300,20 @@ void MSWordAnim::Redraw(Surface * surface, Rect const * rect)
 
 		unsigned end = LineStart;
 
-		for (unsigned char_index = 0; char_index < end; char_index++) {
-			if (String[char_index] == '\n') {
+		for (unsigned char_index = 0; char_index < end; ) {
+			char const * cursor = String + char_index;
+			char32_t ch = UTF8::Decode(cursor);
+			if (ch == '\n') {
 				x = XPos;
 				y += Font->Get_Font_Height();
 				if (y + Font->Get_Font_Height() >= surface->Get_Height()) {
 					return;
 				}
 			} else {
-				Font->Draw_Character(surface, String[char_index], x, y, 2, true);
-				x += Font->Get_Character_Width(String[char_index]);
+				Font->Draw_Character(surface, ch, x, y, 2, true);
+				x += Font->Get_Character_Width(ch);
 			}
+			char_index = (unsigned)(cursor - String);
 		}
 	}
 }

@@ -484,7 +484,7 @@ void UnitClass::AI(void)
 
 	FiringSyncDelay = std::max(-1, FiringSyncDelay - 1);
 
-	if (Class->DeploysInto == Rule->BuildConst[0]) {
+	if (Rule->BuildConst.Is_In_List(Class->DeploysInto)) {
 		if (House->IsBaseBuilding && !House->Is_Human_Player()) {
 			if (Session.Type != GAME_NORMAL && House->ConYards.Count() == 0) {
 				if (CurrentMission != MISSION_HUNT && CurrentMission != MISSION_UNLOAD) {
@@ -2735,11 +2735,7 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 		return;
 	}
 
-	if (Class->Facings == FACING_COUNT) {
-		shapenum = Facing_Add(PrimaryFacing.Current().Round_To_8(), FACING_45);
-	} else {
-		shapenum = 0;
-	}
+	shapenum = Shape_Facing_Index(PrimaryFacing.Current(), Class->Facings);
 
 	if (Locomotion->Is_Moving()) {
 		shapenum = Class->StartWalkFrame + shapenum * Class->WalkFrames + TotalFramesWalked % Class->WalkFrames;
@@ -2851,8 +2847,14 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 			Draw_Voxel(Class->AuxVoxel2, 0, -1, 0, srect, pt, Get_Isometric_View_Matrix() * nmtx, brightness, ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_ALPHA));
 		}
 
-		Dir32 d = SecondaryFacing.Current().As_Dir32();
-		Draw_Object(shapefile, ((d + 4) % 32U) + 8 * Class->WalkFrames, pt, srect, DIR_N, 256, 0, ZGRAD_GROUND, false, brightness, NULL, 0, Point2D(0, 0), ShapeFlags_Type(SHAPE_NOTRANS|SHAPE_ALPHA|SHAPE_ZGRAD));
+		// Eight rather than Facings, because artwork lays the strip after eight walk blocks.
+		int turretframe = Class->StartTurretFrame;
+		if (turretframe == -1) {
+			turretframe = FACING_COUNT * Class->WalkFrames;
+		}
+
+		turretframe += Shape_Facing_Index(SecondaryFacing.Current(), Class->TurretFacings);
+		Draw_Object(shapefile, turretframe, pt, srect, DIR_N, 256, 0, ZGRAD_GROUND, false, brightness, NULL, 0, Point2D(0, 0), ShapeFlags_Type(SHAPE_NOTRANS|SHAPE_ALPHA|SHAPE_ZGRAD));
 
 		/*
 		 * The the voxel barrel above the turret at other angles
@@ -2938,9 +2940,16 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		}
 
 		UnitTypeClass * oldclass = Class;
-		if (Class->IsToHarvest && IsDumping) {
-			if (Rule->UnloadingHarvester != NULL) {
-				((UnitClass *)this)->Class = (UnitTypeClass *)Rule->UnloadingHarvester;
+		if (IsDumping && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
+
+			// The rules default has only ever covered Tiberium harvesters, so a weeder
+			// swaps only where its own type names a class.
+			UnitTypeClass const * unloading = Class->IsToHarvest ? Rule->UnloadingHarvester : NULL;
+			if (Class->UnloadingClass != NULL) {
+				unloading = Class->UnloadingClass;
+			}
+			if (unloading != NULL) {
+				((UnitClass *)this)->Class = (UnitTypeClass *)unloading;
 			}
 		}
 
@@ -3626,7 +3635,7 @@ int UnitClass::Do_MISSION_HARVEST(void)
  *=============================================================================================*/
 int UnitClass::Do_MISSION_HUNT(void)
 {
-	if (Class->DeploysInto != NULL && (Class->DeploysInto == Rule->BuildConst[0] || TarCom != NULL || House->Is_Human_Player())) {
+	if (Class->DeploysInto != NULL && (Rule->BuildConst.Is_In_List(Class->DeploysInto) || TarCom != NULL || House->Is_Human_Player())) {
 		enum {
 			FIND_SPOT,
 			WAITING
@@ -4142,17 +4151,8 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 		if (Class->DeploysInto != NULL) {
 
 			Cell cell = Center_Coord().As_Cell();
-			if (Class->DeploysInto == Rule->BuildConst[0]) {
+			if (Rule->BuildConst.Is_In_List(Class->DeploysInto) || Rule->BuildWeapons.Is_In_List(Class->DeploysInto)) {
 				cell = Adjacent_Cell(cell, FACING_NW);
-			} else {
-				bool hasfactory = false;
-				for (int index = 0; index < Rule->BuildWeapons.Count(); index++) {
-					if (Class->DeploysInto == Rule->BuildWeapons[index]) {
-						cell = Adjacent_Cell(cell, FACING_NW);
-						break;
-					}
-				}
-
 			}
 
 			/*
@@ -4373,7 +4373,7 @@ int UnitClass::Do_MISSION_GUARD(void)
 	}
 
 	if (needs_dock || (Class->IsToHarvest && House->IsTiberiumShort)) {
-		if (Class->DeploysInto == Rule->BuildConst[0] && House->IsBaseBuilding && !House->Is_Human_Player()) {
+		if (Rule->BuildConst.Is_In_List(Class->DeploysInto) && House->IsBaseBuilding && !House->Is_Human_Player()) {
 			Assign_Mission(MISSION_UNLOAD);
 			return(Current_Mission_Control().Normal_Delay() + Random_Pick(0, 2));
 		}

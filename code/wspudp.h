@@ -48,7 +48,6 @@ class UDPInterfaceClass : public WinsockInterfaceClass {
 		UDPInterfaceClass (void);
 		virtual ~UDPInterfaceClass(void) override;
 
-		virtual int Message_Handler(HWND window, UINT message, WPARAM wParam, LPARAM lParam) override;
 		virtual bool Open_Socket ( SOCKET socketnum ) override;
 		virtual void Set_Broadcast_Address ( const IPXAddressClass &address ) override;
 		virtual void Clear_Broadcast_Addresses(void) override;
@@ -75,10 +74,6 @@ class UDPInterfaceClass : public WinsockInterfaceClass {
 			return(PROTOCOL_UDP);
 		};
 
-		virtual int Protocol_Event_Message (void) override {
-			return(WM_UDPASYNCEVENT);
-		};
-
 		virtual int Get_Num_Local_Addresses(void) override {
 			return(LocalAddresses.Count());
 		};
@@ -87,14 +82,20 @@ class UDPInterfaceClass : public WinsockInterfaceClass {
 			return(LocalAddresses[index]);
 		};
 
+	protected:
+
+		virtual void Receive_Pending(void) override;
+		virtual void Send_Pending(void) override;
+
 	private:
 
 		void Register_Local_Addresses();
 
-		/*
-		 * Wrappers around sendto/recvfrom that add and strip the tunnel routing header.
-		 * They fall through to plain Winsock when no tunnel is configured.
-		 */
+		// Receive_From answers this for a datagram that was not for this client, which
+		// a caller draining the socket passes over where SOCKET_ERROR stops it.
+		static constexpr int RECEIVE_IGNORED = -2;
+
+		// Wrappers around sendto/recvfrom that add and strip the tunnel routing header.
 		int Send_To(const char *buffer, int buffer_len, sockaddr_in *destination);
 		int Receive_From(char *buffer, int buffer_len, sockaddr_in *source);
 

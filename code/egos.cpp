@@ -59,6 +59,7 @@
 #include "ownrdraw.h"
 #include "scheme.h"
 #include "theme.h"
+#include "utf8.h"
 #include "vector.h"
 #include "windlg.h"
 
@@ -310,6 +311,10 @@ void Show_Who_Was_Responsible (void)
 	EgoClass 		*ego;
 	TextPrintType 	flags;
 
+
+	int bom = (int)UTF8::BOM_Length(std::string_view(cptr, length));
+	cptr += bom;
+	length -= bom;
 
 	/*
 	**	Search through the text file and extract the strings, using each string to create

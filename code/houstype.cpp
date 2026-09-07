@@ -46,6 +46,7 @@
 
 #include "ccini.h"
 #include "crc.h"
+#include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
 #include "savestream.h"
@@ -189,13 +190,15 @@ bool HouseTypeClass::Read_INI(CCINIClass const & ini)
 		SideType oldside = Side;
 		Side = ini.Get_Side(Name(), "Side", Side);
 
+		// The side list is the roster of record, so a country it places is not moved by its own key.
 		if (Side != oldside) {
-			int & house = (int &)House;
-			if (oldside != SIDE_NONE) {
-				Sides[oldside]->Houses.Delete(house);
-			}
-			if (Side != SIDE_NONE) {
-				Sides[Side]->Houses.Add(house);
+			if (oldside != SIDE_NONE && Sides[oldside]->Houses.Is_In_List((int)House)) {
+				DebugString("%s: Side=%s ignored; [Sides] places it under %s.\n", Name(), Side != SIDE_NONE ? (char const *)Sides[Side]->IniName : "<none>", (char const *)Sides[oldside]->IniName);
+				Side = oldside;
+			} else {
+				if (Side != SIDE_NONE) {
+					Sides[Side]->Houses.Add((int)House);
+				}
 			}
 		}
 		return(true);

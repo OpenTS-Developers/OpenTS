@@ -3509,7 +3509,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 			*/
 			if (object->House->CurBuildings == 0 &&
 					object->House->Available_Money() > 1500 &&
-					object->House->UQuantity.Value(Rule->BaseUnit->HeapID) == 0 &&
+					object->House->Count_Owned(object->House->UQuantity, Rule->BaseUnit) == 0 &&
 					Session.Options.Bases) {
 				powerup = CRATE_UNIT;
 				force_mcv = true;
@@ -3694,15 +3694,15 @@ bool CellClass::Goodie_Check(FootClass * object)
 				**	give him another one.
 				*/
 				if (force_mcv) {
-					utp = Rule->BaseUnit;
+					utp = object->House->Get_Preferred(Rule->BaseUnit);
 				}
 
 				/*
 				**	If the player has a base and a refinery, but no harvester, then give him
 				**	a free one.
 				*/
-				if (utp == NULL && (object->House->BQuantity.Value(Rule->BuildRefinery[0]->HeapID) > 0) && (object->House->UQuantity.Value(Rule->HarvesterUnit[0]->HeapID) == 0)) {
-					utp = Rule->HarvesterUnit[0];
+				if (utp == NULL && object->House->Owns_Any(object->House->BQuantity, Rule->BuildRefinery) && object->House->Count_Owned(object->House->UQuantity, Rule->HarvesterUnit) == 0) {
+					utp = object->House->Get_Preferred(Rule->HarvesterUnit);
 				}
 
 				/*
@@ -3715,12 +3715,20 @@ bool CellClass::Goodie_Check(FootClass * object)
 				/*
 				**	If no unit type has been determined, then pick one at random.
 				*/
-				while (utp == NULL) {
+				auto qualifies = [&](UnitTypeClass const * candidate) {
+					return candidate->IsCrateGoodie && (candidate->Ownable & object->Owner_HouseClass()->Acted_Mask()) != 0 && (Session.Options.Bases || !Rule->BaseUnit.Is_In_List(candidate));
+				};
+				bool any_goodie = false;
+				for (int index = UNIT_FIRST; index < UnitTypes.Count() && !any_goodie; index++) {
+					any_goodie = qualifies(UnitTypes[index]);
+				}
+
+				// Redrawing with nothing to draw would never end.
+				while (utp == NULL && any_goodie) {
 					utp = UnitTypes[Random_Pick(UNIT_FIRST, (UnitType)(UnitTypes.Count()-1))];
-					if (utp->IsCrateGoodie && (utp->Ownable & (1 << object->Owner_HouseClass()->Class->HeapID)) && (Session.Options.Bases || Rule->BaseUnit != utp)) {
-						break;
+					if (!qualifies(utp)) {
+						utp = NULL;
 					}
-					utp = NULL;
 				}
 
 				if (utp != NULL) {

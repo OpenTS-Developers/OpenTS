@@ -45,7 +45,7 @@ fields:
   - { position: 10, label: Maximum weight, value: Number truncated to an integer, required: false }
   - { position: 11, label: Skirmish, value: 0 or 1, required: false }
   - { position: 12, label: Ignored, value: Present but discarded, required: false }
-  - { position: 13, label: Side, value: "1 for GDI, 2 for Nod, otherwise unrestricted", required: false }
+  - { position: 13, label: Side, value: "The side's position in the rules' [Sides] list, counted from one; 0 leaves the trigger unrestricted", required: false }
   - { position: 14, label: Base defense, value: 0 or 1, required: false, note: "Stored and written back, never consulted; whether a trigger counts as defensive comes from its teams' IsBaseDefense." }
   - { position: 15, label: Secondary team, value: TeamType ID or <none>, required: false }
   - { position: 16, label: Easy, value: 0 or 1, required: false }

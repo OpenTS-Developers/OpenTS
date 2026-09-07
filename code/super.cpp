@@ -66,6 +66,7 @@
 #include "mouse.h"
 #include "rules.h"
 #include "savestream.h"
+#include "side.h"
 #include "sun.h"
 #include "suprtype.h"
 #include "swizzle.h"
@@ -747,13 +748,9 @@ void SuperClass::Place(Cell const & cell, bool player)
 
 			if (hsbuilding) {
 				Cell nearby = Map.Nearby_Location(hsbuilding->PositionCoord.As_Cell(), SPEED_FOOT);
-				if (Map.In_Local_Radar(nearby)) {
-					UnitClass * hs;
-					if (House->ActLike == HOUSE_GOOD) {
-						hs = new UnitClass(Rule->GDIHunterSeeker, House);
-					} else {
-						hs = new UnitClass(Rule->NodHunterSeeker, House);
-					}
+				SideClass const * side = House->Acted_Side();
+				if (Map.In_Local_Radar(nearby) && side != NULL && side->HunterSeeker != NULL) {
+					UnitClass * hs = new UnitClass(side->HunterSeeker, House);
 					if (!hs->Unlimbo(nearby, DIR_E)) {
 						delete hs;
 					} else {

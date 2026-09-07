@@ -133,6 +133,7 @@
 #include "team.h"
 #include "tracker.h"
 #include "unit.h"
+#include "unittype.h"
 #include "waypoint.h"
 #include "weapon.h"
 
@@ -1456,7 +1457,8 @@ int AircraftClass::Do_MISSION_MOVE_Carryall(void)
 				!Cargo.Is_Something_Attached() &&
 				House->Is_Ally(target) &&
 				(!target->Is_Techno() || target->Owner_HouseClass()->Is_Ally(this))
-				&& target->RTTI == RTTI_UNIT) {
+				&& target->RTTI == RTTI_UNIT
+				&& ((UnitClass *)target)->Class->IsTotable) {
 				DebugString("Do_MISSION_MOVE_Carryall - VALIDATE_LZ - target != NULL\n");
 				if (Contact_With_Whom() != target) {
 					Transmit_Message(RADIO_OVER_OUT);
@@ -2023,7 +2025,7 @@ ActionType AircraftClass::What_Action(ObjectClass const * target, bool disallow_
 		if (action == ACTION_SELECT || action == ACTION_NONE) {
 			if (House->Is_Ally(target)) {
 				if (!target->Is_Techno() || target->Owner_HouseClass()->Is_Ally(this)) {
-					if (!Cargo.Is_Something_Attached() && target->RTTI == RTTI_UNIT) {
+					if (!Cargo.Is_Something_Attached() && target->RTTI == RTTI_UNIT && ((UnitClass const *)target)->Class->IsTotable) {
 						action = ACTION_TOTE;
 					}
 				}
@@ -2969,7 +2971,7 @@ bool AircraftClass::Cell_Seems_Ok(Cell const & cell, bool strict) const
 		return(true);
 	}
 
-	bool is_toting = (Class->IsCarryall && NavCom != NULL && NavCom->RTTI == RTTI_UNIT);
+	bool is_toting = (Class->IsCarryall && NavCom != NULL && NavCom->RTTI == RTTI_UNIT && ((UnitClass const *)NavCom)->Class->IsTotable);
 
 	/*
 	**	Make sure that no other aircraft are heading to the selected location. If they

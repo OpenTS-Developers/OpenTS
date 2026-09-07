@@ -176,7 +176,7 @@ Each trigger is put through these gates in order, and the first one that fails r
 6. Outside a campaign game, it is marked as available in skirmish.
 7. Its flag for the current difficulty is set.
 8. In a campaign game, its owner is not `<none>` and is either `<all>` or this house's country.
-9. Its side field is unrestricted, or it demands GDI and the house acts like GDI, or it demands Nod and the house acts like Nod.
+9. Its side field is unrestricted, or it names, counted from one, the position in `[Sides]` of the side of the country the house [acts as](/keys/actslike/); a value naming no side never fires.
 10. Its tech level requirement is within the house's tech level.
 11. Its condition holds.
 12. Every member of both TeamTypes' TaskForces is something this house can build.

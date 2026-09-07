@@ -40,7 +40,7 @@
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
 #ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
-#pragma code_page(1252)
+#pragma code_page(65001)
 #endif //_WIN32
 
 #ifndef _MAC
@@ -1616,7 +1616,7 @@ END
 STRINGTABLE DISCARDABLE 
 BEGIN
     TXT_NONE                " "
-    TXT_COPYRIGHT           "Â© 2000 Electronic Arts, All Rights Reserved"
+    TXT_COPYRIGHT           "© 2000 Electronic Arts, All Rights Reserved"
     TXT_TIME_FORMAT_HOURS   "Time:%02d:%02d:%02d"
     TXT_TIME_FORMAT_NO_HOURS "Time:%02d:%02d"
     TXT_MONEY_FORMAT_1      "$%d"
@@ -2119,7 +2119,7 @@ BEGIN
                             "Error - other player does not have this expansion scenario."
     TXT_SCENARIO_ERROR      "Incompatable scenario file detected. The scenario may be corrupt."
     TXT_INVALID             "Invalid option switch."
-    TXT_OPTION_HELP_01      "Tiberian Sun Â© 1999, Westwood Studios\n"
+    TXT_OPTION_HELP_01      "Tiberian Sun © 1999, Westwood Studios\n"
     TXT_OPTION_HELP_02      "Parameters:\n"
     TXT_OPTION_HELP_03      "  -DESTNET = Specify Network Number of destination system\n"
     TXT_OPTION_HELP_04      "  -SOCKET = Network Socket ID (0 - 16383)\n"

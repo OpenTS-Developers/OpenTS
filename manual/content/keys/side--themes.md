@@ -20,6 +20,4 @@ Side=GDI
 
 The restriction applies to the automatic playlist and to the sound options track list alike; a score can still be started outright by name whatever this is set to. Before a player's house has been settled the test is skipped, so an early score is not withheld for want of a side to compare against.
 
-:::caution[An unrecognized name creates a side rather than being rejected]
-A value naming no declared side adds a side under that name and restricts the score to it. Since no country belongs to it, the score is then never offered to anybody.
-:::
+A value naming no declared side is logged and ignored, which leaves the score unrestricted.

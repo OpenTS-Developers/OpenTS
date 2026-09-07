@@ -2725,7 +2725,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 			return(ACTION_SELECT);
 		}
 		if (((UnitClass *)object)->House != House) {
-			if (Scen->Special.IsHarvesterImmune && Rule->HarvesterUnit.Is_In_List((UnitTypeClass const *)object)) {
+			if (Scen->Special.IsHarvesterImmune && Rule->HarvesterUnit.Is_In_List(((UnitClass *)object)->Class)) {
 				return(ACTION_SELECT);
 			}
 			return(ACTION_CAPTURE);

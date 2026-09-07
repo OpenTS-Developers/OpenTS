@@ -35,6 +35,8 @@
 #include "pipe.h"
 #include "wwfile.h"
 
+#include <string>
+
 /*
 **	This is a simple store-into-buffer pipe terminator. Use it as the final link in a pipe process
 **	that needs to store the data into a memory buffer. This can only serve as the final
@@ -56,6 +58,23 @@ class BufferPipe : public Pipe
 		bool Is_Valid(void) {return(BufferPtr.Is_Valid());}
 		BufferPipe(BufferPipe & rvalue);
 		BufferPipe & operator = (BufferPipe const & pipe);
+};
+
+
+// A pipe terminator that appends to the string it was given.
+class StringPipe : public Pipe
+{
+		typedef Pipe BASECLASS;
+
+	public:
+		explicit StringPipe(std::string & text) : Text(text) {}
+		virtual int Put(void const * source, int slen) override;
+
+	private:
+		std::string & Text;
+
+		StringPipe(StringPipe & rvalue);
+		StringPipe & operator = (StringPipe const & pipe);
 };
 
 

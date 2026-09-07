@@ -5,6 +5,7 @@ add_executable(SpawnContract
     "${CMAKE_CURRENT_SOURCE_DIR}/spawncontract.cpp"
     "${CMAKE_SOURCE_DIR}/code/spawnerconfig.cpp"
     "${CMAKE_SOURCE_DIR}/code/ini.cpp"
+    "${CMAKE_SOURCE_DIR}/code/utf8.cpp"
     "${CMAKE_SOURCE_DIR}/code/dbgprint.cpp"
     "${CMAKE_SOURCE_DIR}/code/trim.cpp"
     "${CMAKE_SOURCE_DIR}/code/buff.cpp"
@@ -35,8 +36,8 @@ add_dependencies(SpawnContract OpenTSBuildStamp)
 target_compile_definitions(SpawnContract PRIVATE WIN32 _WINDOWS _MBCS NOMINMAX)
 
 target_compile_options(SpawnContract PRIVATE
-    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>
-    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus>
+    $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus /utf-8>
+    $<$<CONFIG:Release>:/MT /EHsc /Zc:__cplusplus /utf-8>
 )
 
 target_link_libraries(SpawnContract PRIVATE kernel32 user32 shell32)

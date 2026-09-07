@@ -336,7 +336,7 @@ BuildingClass * ObjectTypeClass::Who_Can_Build_Me(bool intheory, bool needsnopow
 			building->Mission != MISSION_DECONSTRUCTION && building->MissionQueue != MISSION_DECONSTRUCTION &&
 			(!legal || building->House->Can_Build(this, true, true) > 0) &&
 			(building->Class->Get_Ownable() & ownable) &&
-			(building->Class != Rule->BuildConst[0] || (1L << building->ActLike) & ownable)) {
+			(!Rule->BuildConst.Is_In_List(building->Class) || Rule->IsMultiMCV || (building->ActLike != HOUSE_NONE && ((1L << building->ActLike) & ownable) != 0))) {
 
 			/*
 			**	HACK ALERT: Helipads can build aircraft and airstrips can build

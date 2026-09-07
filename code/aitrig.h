@@ -130,8 +130,9 @@ class AITriggerTypeClass : public AbstractTypeClass
 		int House;
 
 		/*
-		 * This restricts the trigger to one side in multiplay -- 1 for GDI, 2 for Nod. If
-		 * zero, then the trigger is available to either.
+		 * This restricts the trigger to one side in multiplay: the side's position in the
+		 * rules' side list, counted from one. If zero, then the trigger is available to every
+		 * side.
 		 */
 		int MultiSide;
 

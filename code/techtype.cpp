@@ -138,6 +138,7 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	Dock(),
 	DeploysInto(NULL),
 	UndeploysInto(NULL),
+	UnloadingClass(NULL),
 	VoiceSelect(),
 	VoiceMove(),
 	VoiceAttack(),
@@ -531,6 +532,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		Dock = TGet_TypeList<BuildingTypeClass>(ini, Name(), "Dock", Dock);
 		DeploysInto = TGet_Class(ini, Name(), "DeploysInto", DeploysInto);
 		UndeploysInto = TGet_Class(ini, Name(), "UndeploysInto", UndeploysInto);
+		UnloadingClass = TGet_Class(ini, Name(), "UnloadingClass", UnloadingClass);
 		IsLightningRod = ini.Get_Bool(Name(), "LightningRod", IsLightningRod);
 		IsManualReload = ini.Get_Bool(Name(), "ManualReload", IsManualReload);
 		IsRadarEquipped = ini.Get_Bool(Name(), "TurretSpins", IsRadarEquipped);
@@ -905,6 +907,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Dock);
 	stream.Serialize(DeploysInto);
 	stream.Serialize(UndeploysInto);
+	stream.Serialize(UnloadingClass);
 	stream.Serialize(VoiceSelect);
 	stream.Serialize(VoiceMove);
 	stream.Serialize(VoiceAttack);

@@ -79,6 +79,8 @@
 
 #include "keyboard.h"
 
+#include "house.hh"
+
 #include "dialog.hh"
 
 //***************************************************************************
@@ -91,7 +93,10 @@
 // messages, a "From" prefix length should be added to this value to generate
 // the entire max displayable message length.
 //---------------------------------------------------------------------------
-#define	MAX_MESSAGE_LENGTH		110 + 2
+#define	MAX_MESSAGE_LENGTH		222 + 2
+
+// Room beside the text for a "To <name>:" prefix or a sender tagged with a recipient.
+#define	MAX_MESSAGE_PREFIX		(2 * HOUSE_NAME_MAX + 32)
 
 //---------------------------------------------------------------------------
 // Max # of allowed messages at one time
@@ -190,8 +195,8 @@ class MessageListClass {
 		int EditX;                                      // x-coord of edit field
 		int EditY;                                      // y-coord of edit field
 		TextLabelClass *EditLabel;                      // ptr to current edit label
-		char EditBuf[MAX_MESSAGE_LENGTH + 50];          // buffer for editable message
-		char OverflowBuf[MAX_MESSAGE_LENGTH + 50];      // overflow area
+		char EditBuf[MAX_MESSAGE_LENGTH + MAX_MESSAGE_PREFIX];      // buffer for editable message
+		char OverflowBuf[MAX_MESSAGE_LENGTH + MAX_MESSAGE_PREFIX];  // overflow area
 		int EditCurPos;                                 // current edit position
 		int EditInitPos;                                // initial edit position
 		char CursorChar;                                // character to use a cursor
@@ -204,7 +209,7 @@ class MessageListClass {
 		// both the message, and for the "To" prefix on edited messages, or
 		// the "Name:" prefix on received messages.
 		//.....................................................................
-		char MessageBuffers[MAX_NUM_MESSAGES][MAX_MESSAGE_LENGTH + 50];
+		char MessageBuffers[MAX_NUM_MESSAGES][MAX_MESSAGE_LENGTH + MAX_MESSAGE_PREFIX];
 		char BufferAvail[MAX_NUM_MESSAGES];
 };
 

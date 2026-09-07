@@ -4217,7 +4217,7 @@ Cell FootClass::Search_For_Tiberium_Weighted(int rad)
 		return(center);
 	}
 
-	int numharv = House->AUQuantity.Value(Rule->HarvesterUnit[0]->HeapID);
+	int numharv = House->Count_Owned(House->AUQuantity, Rule->HarvesterUnit);
 	if (numharv < 1) {
 		numharv = 1;
 	}

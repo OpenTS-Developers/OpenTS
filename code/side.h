@@ -18,6 +18,9 @@
 
 #include "side.hh"
 
+class BuildingTypeClass;
+class UnitTypeClass;
+
 
 class SideClass : public AbstractTypeClass
 {
@@ -39,11 +42,29 @@ class SideClass : public AbstractTypeClass
 
 		static SideType From_Name(char const * name);
 
+		virtual bool Read_INI(CCINIClass const & ini) override;
+
 	public:
 		/*
 		 * These are the house types that belong to this side, listed by heap index. The
-		 * list is kept in step with each house type's own Side field, and it is what lets
-		 * a control file name a whole side wherever a list of houses is expected.
+		 * list is kept in step with each house type's own Side field.
 		 */
 		TypeList<int> Houses;
+
+		/*
+		 * The base building the computer does when it plays for this side, read from the
+		 * section carrying the side's own name. The first two sides inherit the rules' GDI and
+		 * Nod keys as each file sets them; a side naming no plant falls back to the role lists.
+		 */
+		BuildingTypeClass const * RegularPowerPlant;
+		BuildingTypeClass const * AdvancedPowerPlant;
+		BuildingTypeClass const * PowerTurbine;
+		UnitTypeClass const * HunterSeeker;
+		TypeList<BuildingTypeClass const *> AIWallTowers;
+		double AIBaseDefenseCoefficient;
+		double AIWallDefense;
+		double AIWallDefenseCoefficient;
+		bool IsAIBuildsWalls;
+		int AIBaseDefensePlaceholders;
+		bool IsAIBaseDefensesWithWalls;
 };

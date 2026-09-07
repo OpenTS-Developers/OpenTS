@@ -169,6 +169,7 @@ DEFAULT_TYPE_FILE = "rules.ini"
 # applicability.
 RULES_OBJECTS_LOADERS = {
     'HouseTypes': 'HouseTypeClass',
+    'Sides': 'SideClass',
     'SuperWeaponTypes': 'SuperWeaponTypeClass',
     'AnimTypes': 'AnimTypeClass',
     'BuildingTypes': 'BuildingTypeClass',

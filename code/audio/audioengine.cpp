@@ -227,8 +227,14 @@ void AudioEngineClass::End(void)
 		return;
 	}
 	Available = false;
-	Pool.Shutdown();
+
+	// The device thread reads the pool's sequences and the streams' rings, so
+	// rendering stops before either is torn down.
 	Feeder.Stop();
+	if (Device != nullptr) {
+		Device->Stop();
+	}
+	Pool.Shutdown();
 	for (int i = 0; i < AUDIO_MAX_STREAMS; i++) {
 		Streams[i].Producer.reset();
 		Streams[i].Handle.Clear();
@@ -236,7 +242,6 @@ void AudioEngineClass::End(void)
 		Streams[i].External = false;
 	}
 	if (Device != nullptr) {
-		Device->Stop();
 		Device->Close();
 		Device.reset();
 	}
