@@ -37,6 +37,7 @@
 #include "ftimer.h"
 #include "random.h"
 #include "scenfile.h"
+#include "scenariostate.hh"
 #include "special.h"
 #include "stimer.h"
 #include "timer.h"
@@ -596,8 +597,8 @@ class ScenarioClass {
 
 
 void Write_Scenario_INI(char const * root, bool mplayer=false);
-bool Read_Scenario_INI(char const * root, bool fresh=true);
-bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen=false);
+ScenarioState Read_Scenario_INI(char const * root, bool fresh=true);
+ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen=false);
 SideType Side_For_Player(void);
 int Scan_Place_Object(ObjectClass * obj, Cell const & cell, int min_dist = 1, int max_dist = 31);
 void Assign_Houses(void);

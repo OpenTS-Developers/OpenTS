@@ -63,6 +63,7 @@
  *=============================================================================================*/
 LZOStraw::LZOStraw(CompControl control, int blocksize) :
 		Control(control),
+		IsDamaged(false),
 		Counter(0),
 		Buffer(NULL),
 		Buffer2(NULL),
@@ -156,12 +157,17 @@ int LZOStraw::Get(void * destbuf, int slen)
 
 		if (Control == DECOMPRESS) {
 			int incount = BASECLASS::Get(&BlockHeader, sizeof(BlockHeader));
-			if (incount != sizeof(BlockHeader)) break;
+			if (incount != sizeof(BlockHeader)) {
+				// No header at all is the end of the stream; a partial one is a cut stream.
+				if (incount != 0) IsDamaged = true;
+				break;
+			}
 
 			char *staging_buffer = new char [BlockHeader.CompCount];
 			incount = BASECLASS::Get(staging_buffer, BlockHeader.CompCount);
 			if (incount != BlockHeader.CompCount) {
 				delete [] staging_buffer;
+				IsDamaged = true;
  				break;
 			}
 			// The block header was read from the stream, so its counts are only a claim; a
@@ -169,7 +175,10 @@ int LZOStraw::Get(void * destbuf, int slen)
 			lzo_uint length = BlockSize + SafetyMargin;
 			int const status = lzo1x_decompress_safe((unsigned char*)staging_buffer, BlockHeader.CompCount, (unsigned char*)Buffer, &length, NULL);
 			delete [] staging_buffer;
-			if (status != LZO_E_OK || length != BlockHeader.UncompCount) break;
+			if (status != LZO_E_OK || length != BlockHeader.UncompCount) {
+				IsDamaged = true;
+				break;
+			}
 			Counter = BlockHeader.UncompCount;
 		} else {
 			BlockHeader.UncompCount = (unsigned short)BASECLASS::Get(Buffer, BlockSize);

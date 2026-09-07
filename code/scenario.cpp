@@ -729,21 +729,33 @@ bool Read_Scenario(char const * fname)
 		}
 	}
 
+	ScenarioState state = SCENARIO_OK;
+
 	if (Scen->IsRandom) {
 		read_ok = RandomMapGen.SeedData.Load(name);
 
 		if (read_ok) {
 			RandomMapGen.Generate_Random_Map(false, NULL);
 			Multiplayer_Last_Minute_Fixups();
+		} else {
+			state = SCENARIO_NOT_READ;
 		}
 		strcpy(Scen->ScenarioName, name);
 	} else {
-		read_ok = Read_Scenario_INI(name);
+		state = Read_Scenario_INI(name);
+		read_ok = (state == SCENARIO_OK);
 	}
 
 	if (!read_ok) {
-		DebugString("Error - Unable to read scenario: %s\n", name);
-		WWMessageBox().Process(TXT_UNABLE_READ_SCENARIO, TXT_OK);
+		char message[256];
+		if (state == SCENARIO_TERRAIN_DAMAGED) {
+			snprintf(message, sizeof(message), Fetch_String(TXT_SCENARIO_DATA_DAMAGED), name);
+		} else {
+			snprintf(message, sizeof(message), "%s", Fetch_String(TXT_UNABLE_READ_SCENARIO));
+		}
+
+		DebugString("Error - %s\n", message);
+		WWMessageBox().Process(message, TXT_OK);
 
 		BEnd(BENCH_SCENARIO);
 		ScenarioInit--;
@@ -1548,7 +1560,7 @@ static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdige
  * HISTORY:                                                                                    *
  *   10/07/1992 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool Read_Scenario_INI(char const * fname, bool)
+ScenarioState Read_Scenario_INI(char const * fname, bool)
 {
 	Frame = 0;
 
@@ -1567,13 +1579,12 @@ bool Read_Scenario_INI(char const * fname, bool)
 
 	if (result == 0) {
 		DebugString("Scenario ini load failed!\n");
-		return(false);
+		return(SCENARIO_NOT_READ);
 	}
 
 	strcpy(Scen->ScenarioName, fname);
 
-	bool ok = Read_Scenario_INI(ini);
-	return(ok);
+	return(Read_Scenario_INI(ini));
 }
 
 
@@ -1775,7 +1786,7 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 /// </summary>
 /// <param name="is_mapgen">Is the scenario built by the random map generator?</param>
 /// <returns>bool; Was the scenario read successfully?</returns>
-bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
+ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 {
 	char buffer[32];
 
@@ -1810,7 +1821,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Scen->RequiredAddOn = (AddonType)ini.Get_Int(BASIC, "RequiredAddOn", ADDON_BASE_GAME);
 		Set_Required_Addon(Scen->RequiredAddOn);
 		if (!Addon_Installed(Scen->RequiredAddOn)) {
-			return(false);
+			return(SCENARIO_NOT_READ);
 		}
 		Enable_Addon(Scen->RequiredAddOn);
 	} else {
@@ -1858,7 +1869,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	SideType playerside = Side_For_Player();
 	DebugString("Calling Prep_For_Side()\n");
 	if (Prep_For_Side_Or_First(playerside) == SIDE_NONE) {
-		return(false);
+		return(SCENARIO_NOT_READ);
 	}
 	Scen->PlayerSide = playerside;
 
@@ -1892,7 +1903,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	DebugString("Calling Prep_Speech_For_Side()\n");
 	Scen->SpeechSide = Prep_Speech_For_Side_Or_First(Scen->SpeechSide);
 	if (Scen->SpeechSide == SIDE_NONE) {
-		return(false);
+		return(SCENARIO_NOT_READ);
 	}
 
 	/*
@@ -1937,7 +1948,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	**
 	*/
 	if (Scen->Read_INI(ini) == false) {
-		return(false);
+		return(SCENARIO_NOT_READ);
 	}
 
 	Session.Update_Progress(58);
@@ -2010,7 +2021,10 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	**	Read in the map control values. This includes dimensions
 	**	as well as theater information.
 	*/
-	Map.Read_INI(ini);
+	ScenarioState const mapstate = Map.Read_INI(ini);
+	if (mapstate != SCENARIO_OK) {
+		return(mapstate);
+	}
 	Call_Back();
 
 	/*
@@ -2225,7 +2239,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	Map.Complete_Radar_Refresh();
 
-	return(true);
+	return(SCENARIO_OK);
 }
 
 

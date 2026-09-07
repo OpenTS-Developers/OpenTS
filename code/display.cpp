@@ -3118,7 +3118,7 @@ void DisplayClass::Shroud_Cell(Cell const & cell)
  * HISTORY:                                                                                    *
  *   05/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-void DisplayClass::Read_INI(CCINIClass const & ini)
+ScenarioState DisplayClass::Read_INI(CCINIClass const & ini)
 {
 	/*
 	**	Read the map dimensions.
@@ -3252,11 +3252,14 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 
 	int size = (staging_buffer.Width * staging_buffer.BBP) * staging_buffer.Height;
 
+	bool terrain_ok = true;
+	char const * damaged_section = NULL;
+
 	static char const * const ISOMAPPACK1 = "IsoMapPack";
 	len = ini.Get_UUBlock(ISOMAPPACK1, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_1(bstraw);
+		if (!Map.Read_Binary_1(bstraw)) { terrain_ok = false; damaged_section = ISOMAPPACK1; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3265,7 +3268,7 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	len = ini.Get_UUBlock(ISOMAPPACK2, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_2(bstraw);
+		if (!Map.Read_Binary_2(bstraw)) { terrain_ok = false; damaged_section = ISOMAPPACK2; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3274,7 +3277,7 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	len = ini.Get_UUBlock(ISOMAPPACK3, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_3(bstraw);
+		if (!Map.Read_Binary_3(bstraw)) { terrain_ok = false; damaged_section = ISOMAPPACK3; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3283,7 +3286,7 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	len = ini.Get_UUBlock(ISOMAPPACK4, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_4(bstraw);
+		if (!Map.Read_Binary_4(bstraw)) { terrain_ok = false; damaged_section = ISOMAPPACK4; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3302,10 +3305,19 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 		len = ini.Get_UUBlock(ISOMAPPACK5, decoded.data(), static_cast<int>(decoded.size()));
 		if (len > 0 && static_cast<std::size_t>(len) < decoded.size()) {
 			BufferStraw bstraw(decoded.data(), len);
-			Map.Read_Binary_5(bstraw);
+			if (!Map.Read_Binary_5(bstraw)) { terrain_ok = false; damaged_section = ISOMAPPACK5; }
 		} else if (len > 0) {
 			DebugString("IsoMapPack5 exceeds the maximum terrain payload; ignoring the section.\n");
+			terrain_ok = false;
+			damaged_section = ISOMAPPACK5;
 		}
+	}
+
+	if (!terrain_ok) {
+		DebugString("Scenario %s: the terrain data in [%s] is damaged.\n",
+			Scen->ScenarioName,
+			(damaged_section != NULL) ? damaged_section : "IsoMapPack");
+		return(SCENARIO_TERRAIN_DAMAGED);
 	}
 
 	Session.Update_Progress(68);
@@ -3321,6 +3333,8 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	Map.Set_Local_Dimensions(LocalRect);
 
 	LastTheater = Scen->Theater;
+
+	return(SCENARIO_OK);
 }
 
 

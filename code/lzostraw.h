@@ -55,12 +55,17 @@ class LZOStraw : public Straw
 
 		virtual int Get(void * source, int slen) override;
 
+		// Get's byte count is the same whether the stream ended or a block was rejected.
+		bool Is_Damaged(void) const { return(IsDamaged); }
+
 	private:
 
 		/*
 		**	This tells the pipe if it should be decompressing or compressing the data stream.
 		*/
 		CompControl Control;
+
+		bool IsDamaged;
 
 		/*
 		**	The number of bytes accumulated into the staging buffer.
