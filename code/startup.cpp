@@ -158,6 +158,8 @@
 #include "wwmouse.h"
 #include "zbuffer.h"
 
+#include <lzo/lzoconf.h>
+
 #include <shellapi.h>
 
 #include <conio.h>
@@ -430,6 +432,9 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 	Install_Exception_Handler();
 
 	ProgramInstance = instance;
+
+	// Refuses a build whose type sizes do not match the ones LZO was compiled against.
+	if (lzo_init() != LZO_E_OK) return(1);
 
 	Debug_Init();
 

@@ -11,7 +11,7 @@
 
 #include "cstream.h"
 
-#include "lzo.h"
+#include <lzo/lzo1x.h>
 
 extern ULONG COMRefCount;
 
@@ -266,8 +266,10 @@ HRESULT CStreamClass::Read(void *pv, ULONG cb, ULONG *pcbRead)
 		}
 		lzo_byte *out = (lzo_byte *)DataBuffer;
 		lzo_byte *in = (lzo_byte *)StreamBuffer;
-		unsigned int out_len = BUFFER_SIZE;
-		lzo1x_decompress(in, inlen, out, &out_len, 0);
+		lzo_uint out_len = BUFFER_SIZE;
+		if (lzo1x_decompress_safe(in, inlen, out, &out_len, NULL) != LZO_E_OK) {
+			return(E_FAIL);
+		}
 		CurOffset = BlockHead.UncompSize;
 	}
 
@@ -488,7 +490,7 @@ HRESULT CStreamClass::Clone(IStream **ppstm)
 HRESULT CStreamClass::Compress(void *in_buffer, ULONG length)
 {
 	HRESULT hr;
-	unsigned int out_len = length;
+	lzo_uint out_len = length;
 	lzo1x_1_compress((lzo_byte *)in_buffer, length, (lzo_byte *)StreamBuffer, &out_len, (lzo_byte *)LZODictionary);
 	BlockHead.UncompSize = BUFFER_SIZE;
 	length = 0;

@@ -36,7 +36,7 @@
 
 #include "lzostraw.h"
 
-#include "lzo.h"
+#include <lzo/lzo1x.h>
 
 #include <cassert>
 #include <cstring>
@@ -164,15 +164,18 @@ int LZOStraw::Get(void * destbuf, int slen)
 				delete [] staging_buffer;
  				break;
 			}
-			unsigned int length = sizeof(Buffer);
-			lzo1x_decompress ((unsigned char*)staging_buffer, BlockHeader.CompCount, (unsigned char*)Buffer, &length, NULL);
+			// The block header was read from the stream, so its counts are only a claim; a
+			// block that does not expand to exactly what it promises ends the straw.
+			lzo_uint length = BlockSize + SafetyMargin;
+			int const status = lzo1x_decompress_safe((unsigned char*)staging_buffer, BlockHeader.CompCount, (unsigned char*)Buffer, &length, NULL);
 			delete [] staging_buffer;
+			if (status != LZO_E_OK || length != BlockHeader.UncompCount) break;
 			Counter = BlockHeader.UncompCount;
 		} else {
 			BlockHeader.UncompCount = (unsigned short)BASECLASS::Get(Buffer, BlockSize);
 			if (BlockHeader.UncompCount == 0) break;
-			char *dictionary = new char [64*1024];
-			unsigned int length = sizeof (Buffer2) - sizeof (BlockHeader);
+			char *dictionary = new char [LZO1X_1_MEM_COMPRESS];
+			lzo_uint length = (BlockSize + SafetyMargin) - sizeof(BlockHeader);
 			lzo1x_1_compress ((unsigned char*)Buffer, BlockHeader.UncompCount, (unsigned char*)(&Buffer2[sizeof(BlockHeader)]), &length, dictionary);
 			BlockHeader.CompCount = (unsigned short)length;
 			delete [] dictionary;
