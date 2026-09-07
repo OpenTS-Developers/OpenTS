@@ -15,6 +15,8 @@ keys:
   - IRepairRate
   - IRepairStep
   - ManualReload
+  - Mechanic
+  - OmniHealer
   - ReloadRate
   - RepairBay
   - RepairDelay
@@ -210,6 +212,8 @@ The tick is refused as soon as the object's strength ratio rises above [`Conditi
 Tiberium healing is the contrasting case. [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype), or the `TIBERIUM_HEAL` ability, restores a foot object standing on Tiberium every `TiberiumHeal * 900` frames — 15 at the engine default — and the amount is the type's repair step, `IRepairStep` for infantry and `RepairStep` for everything else. It runs while the object is below maximum strength and clamps to that maximum, so unlike self-healing it finishes the job. Buildings never heal this way.
 
 A weapon that deals negative damage, as a medic or a mechanic does, restores strength through ordinary combat processing rather than through any path on this page. It also clears the target's limpet mark and resets its rates of turn to the type's `ROT`.
+
+Which objects such a weapon may be turned on follows its owner's kind — a soldier mends infantry, a vehicle mends vehicles — until [`Mechanic=yes`](/keys/mechanic/) trades one for the other or [`OmniHealer=yes`](/keys/omnihealer/) grants both.
 
 ## When the computer repairs
 

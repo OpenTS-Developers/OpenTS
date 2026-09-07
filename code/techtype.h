@@ -593,6 +593,14 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsSelfHealing;
 
 		/*
+		 * These redirect a healing weapon away from the kind of object its owner would
+		 * otherwise mend. OmniHealer overrides Mechanic where both are set, and neither
+		 * means anything without a weapon that deals negative damage.
+		 */
+		bool IsMechanic;
+		bool IsOmniHealer;
+
+		/*
 		**	If this object explodes violently when destroyed, then this flag will be true.
 		**	The type of explosion is based on the warhead type and the damage generated
 		**	corresponds to the full strength of the object.

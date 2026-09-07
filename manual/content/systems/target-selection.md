@@ -16,10 +16,12 @@ keys:
   - IsThreatRatingNode
   - IsWebImmune
   - LegalTarget
+  - Mechanic
   - MyEffectivenessCoefficient
   - MyEffectivenessCoefficientDefault
   - NoAutoFire
   - NoThreat
+  - OmniHealer
   - PlayerReturnFire
   - Primary
   - Retaliate
@@ -172,11 +174,11 @@ Infantry make the most changes, in this order:
 - A computer-owned unarmed [`Infiltrate=yes`](/keys/infiltrate/) infantry — a flag that [`C4=yes`](/keys/c4/) and [`Engineer=yes`](/keys/engineer/) also set — heads straight for the house's recapture target when it is within 15 cells, with no scan at all; otherwise capturable buildings are added to the request.
 - A [`VehicleThief=yes`](/keys/vehiclethief/) infantry already driving toward a non-[`IsTrain`](/keys/istrain/) vehicle within 15 cells keeps it, again without scanning. These two are the only paths that reach a target without scoring it.
 - An unarmed infantry that is neither of those finds nothing. An unarmed vehicle thief has buildings and aircraft struck out of its request and vehicles put in.
-- When the primary weapon's warhead is organic, buildings, vehicles and aircraft are struck out, leaving infantry. Organic is derived, not configured: a warhead counts as organic when its [`Verses`](/keys/verses/) percentage against `heavy` armor is exactly `0%`. This is what confines a dog or a medic to infantry.
+- When the primary weapon's warhead is organic, buildings, vehicles and aircraft are struck out, leaving infantry. Organic is derived, not configured: a warhead counts as organic when its [`Verses`](/keys/verses/) percentage against `heavy` armor is exactly `0%`. This is what confines a dog to infantry. A healer's request is replaced outright by the rewrite below, so the strike-out never decides what it treats.
 - A human-owned armed infantry drops buildings; a computer-owned `C4=yes` infantry, or one carrying the `C4` ability, puts them back.
 - A [`Thief=yes`](/keys/thief/) infantry adds capturable buildings and Tiberium processors.
 
-Two more rewrites apply to any object. A healer has its whole request replaced by infantry plus allies if it is an infantry, or vehicles plus allies if it is a vehicle. An engineer, whoever owns it, has infantry and vehicles struck out.
+Two more rewrites apply to any object. A healer has its whole request replaced by allies plus the kinds it mends: infantry if it is an infantry, vehicles if it is a vehicle, and whatever [`Mechanic=yes`](/keys/mechanic/) or [`OmniHealer=yes`](/keys/omnihealer/) names instead. An engineer, whoever owns it, has infantry and vehicles struck out.
 
 ## Why a candidate is rejected
 
@@ -190,7 +192,7 @@ Every candidate the scan offers runs this gauntlet in order, and the first row t
 | Its current mission sets [`NoThreat=yes`](/keys/nothreat/) | |
 | It sits more than 20 leptons below ground level | A lepton is the engine's internal distance unit; 256 of them make one cell |
 | It is in a different [movement zone](/glossary/#movement-zone) | The cell is tested on a ring scan and the candidate on a full-map scan; neither test runs for a range-limited request, nor for a building or an aircraft |
-| It is an ally | Unless this object heals or is an engineer and the ally is below full strength; a berzerk infantry — a [`Cyborg=yes`](/keys/cyborg/) type sent out of its mind by damage under [`BerzerkAllowed=yes`](/keys/berzerkallowed/), after which it attacks whatever is near it — ignores allegiance entirely. A healing vehicle additionally rejects an airborne ally, an ally standing in a building's cell, and any ally that is not a vehicle |
+| It is an ally | Unless this object heals or is an engineer and the ally is below full strength; a berzerk infantry — a [`Cyborg=yes`](/keys/cyborg/) type sent out of its mind by damage under [`BerzerkAllowed=yes`](/keys/berzerkallowed/), after which it attacks whatever is near it — ignores allegiance entirely. A healer additionally rejects an airborne aircraft, an aircraft standing in a building's cell, and any ally of a kind it does not mend |
 | Harvester immunity is on and its type is listed in [`HarvesterUnit`](/keys/harvesterunit/) | From the multiplayer harvester truce, or from a scenario's [`HarvesterImmune`](/keys/harvesterimmune/) setting |
 | It is beyond the scan radius | Or, when the scan uses weapon range, out of range of the weapon chosen against it |
 | Campaign games only, and only when the scanning house is under player control: the candidate is not the player's, has never been discovered by the player, and is not an aircraft | A computer house's campaign scan never applies this filter |

@@ -13775,6 +13775,23 @@ MaximumQueuedObjects:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+Mechanic:
+  key: Mechanic
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsMechanic
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 Medians:
   key: Medians
   scopes:
@@ -15418,6 +15435,23 @@ Official:
       source: code/session.cpp
       guard: null
     level: SessionClass
+OmniHealer:
+  key: OmniHealer
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsOmniHealer
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 OnFire:
   key: OnFire
   scopes:

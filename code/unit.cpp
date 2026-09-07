@@ -839,7 +839,7 @@ void UnitClass::Firing_AI(void)
 			case FIRE_ILLEGAL:
 				if (Combat_Damage(primary) < 0) {
 					ObjectClass * obj = dynamic_cast<ObjectClass*>(TarCom);
-					if (obj == NULL || obj->RTTI != RTTI_UNIT) {
+					if (!Can_Heal(obj)) {
 						Assign_Target(NULL);
 					} else if (obj->HealthRatio >= Rule->ConditionGreen) {
 						Assign_Target(NULL);
@@ -4232,10 +4232,10 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 
 	if (Combat_Damage() < 0 && House->Is_Player_Control()) {
 		if (House->Is_Ally(object)) {
-			if (object->Considered_Vehicle() && object != this && object->Not_Underground()) {
+			if (Can_Heal(object) && object != this && object->Not_Underground()) {
 				if ( object->RTTI != RTTI_AIRCRAFT || Map[object->Center_Coord()].Cell_Building() == NULL) {
 					if (object->HealthRatio < Rule->ConditionGreen) {
-						action = ACTION_GREPAIR;
+						action = object->RTTI == RTTI_INFANTRY ? ACTION_HEAL : ACTION_GREPAIR;
 					}
 				}
 			} else if ( object->RTTI != RTTI_BUILDING ) {
@@ -4810,7 +4810,7 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 
 		if (Combat_Damage() < 0) {
 			TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
-			if (techno == NULL || !techno->Considered_Vehicle() || techno->HealthRatio >= Rule->ConditionGreen) {
+			if (!Can_Heal(techno) || techno->HealthRatio >= Rule->ConditionGreen) {
 				return(FIRE_ILLEGAL);
 			}
 		}

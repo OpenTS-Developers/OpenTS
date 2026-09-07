@@ -19,7 +19,7 @@ Projectile=Cannon ; a BulletType, registered by a weapon naming it as its Projec
 
 The same warhead is what the beam of an [`IsRailgun=yes`](/keys/israilgun/) weapon and the wave of an [`IsSonic=yes`](/keys/issonic/) weapon carry, and what the [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger action detonates — that action takes a weapon's damage and warhead and nothing else, so the projectile, the sounds and the firing animation play no part in it.
 
-Its [`Verses`](/keys/verses/) table reaches well past the moment of impact. It is both effectiveness terms of the [threat score](/systems/target-selection/#the-threat-score), the test that decides whether an object bothers answering fire, and — through the `heavy` entry standing at exactly nothing — what confines a dog or a medic to infantry targets.
+Its [`Verses`](/keys/verses/) table reaches well past the moment of impact. It is both effectiveness terms of the [threat score](/systems/target-selection/#the-threat-score), the test that decides whether an object bothers answering fire, and — through the `heavy` entry standing at exactly nothing — what confines a dog to infantry targets.
 
 A name the game does not already know is registered as a new warhead of that name rather than rejected. Such a warhead does full damage against every armor class, spreads over a single cell and draws no explosion at all, so a misspelling produces a shot that lands invisibly rather than an error.
 

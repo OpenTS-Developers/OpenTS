@@ -86,6 +86,8 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	IsRemappable(false),
 	IsCloakable(false),
 	IsSelfHealing(false),
+	IsMechanic(false),
+	IsOmniHealer(false),
 	IsExploding(false),
 	MZone(MZONE_NORMAL),
 	ThreatRange(0),
@@ -567,6 +569,8 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsInvisible = ini.Get_Bool(Name(), "Invisible", IsInvisible);
 		IsRadarVisible = ini.Get_Bool(Name(), "RadarVisible", IsRadarVisible);
 		IsSelfHealing = ini.Get_Bool(Name(), "SelfHealing", IsSelfHealing);
+		IsMechanic = ini.Get_Bool(Name(), "Mechanic", IsMechanic);
+		IsOmniHealer = ini.Get_Bool(Name(), "OmniHealer", IsOmniHealer);
 		IsNoAutoFire = ini.Get_Bool(Name(), "NoAutoFire", IsNoAutoFire);
 		ROT = ini.Get_Int(Name(), "ROT", ROT);
 		MaxPassengers = ini.Get_Int(Name(), "Passengers", MaxPassengers);
@@ -973,6 +977,8 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsRemappable);
 	stream.Serialize(IsCloakable);
 	stream.Serialize(IsSelfHealing);
+	stream.Serialize(IsMechanic);
+	stream.Serialize(IsOmniHealer);
 	stream.Serialize(IsExploding);
 	stream.Serialize(IsNoAutoFire);
 	stream.Serialize(IsRadarEquipped);
@@ -1072,6 +1078,8 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(IsRemappable);
 	crc(IsCloakable);
 	crc(IsSelfHealing);
+	crc(IsMechanic);
+	crc(IsOmniHealer);
 	crc(IsExploding);
 	crc(IsNoAutoFire);
 	crc(IsRadarEquipped);

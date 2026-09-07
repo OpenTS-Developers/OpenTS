@@ -86,6 +86,7 @@
 
 #include "_bench.h"
 #include "_convert.h"
+#include "_keyboar.h"
 #include "_mixfile.h"
 #include "_rtti.h"
 #include "_rules.h"
@@ -1942,13 +1943,11 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
  *=============================================================================================*/
 FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 {
-	/*
-	**	If a medic is shooting at a healed target, let's declare the target
-	**	illegal so he won't be constantly healing healed infantrymen.
-	*/
+	// A healer refuses a patient it cannot mend and one that is already whole, so that it
+	// does not stand over a finished target healing it forever.
 	if (Combat_Damage() < 0) {
-		InfantryClass * targ = target->As_InfantryClass();
-		if (targ == NULL || targ->HealthRatio >= Rule->ConditionGreen) {
+		TechnoClass const * targ = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
+		if (!Can_Heal(targ) || targ->HealthRatio >= Rule->ConditionGreen) {
 			return(FIRE_ILLEGAL);
 		}
 	}
@@ -2688,23 +2687,18 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 
 	}
 
-	/*
-	**	If this is a medic, and the cursor's over a friendly infantryman,
-	**	execute an action-attack.  In CSII, if this is a mechanic and the
-	**	cursor's over a friendly vehicle, execute an action-attack.
-	*/
+	// Force-move outranks a healer's offer over a transport, and is the only way to board one.
 	if (Combat_Damage() < 0 && House->Is_Player_Control()) {
 		if (House->Is_Ally(object)) {
-			if (object->RTTI == RTTI_INFANTRY) {
-				if (object != this) {
-					if (object->HealthRatio < Rule->ConditionGreen) {
-						return(ACTION_HEAL);
-					}
-				} else {
-					return(ACTION_GUARD_AREA);
-				}
+			if (object == this) {
+				return(ACTION_GUARD_AREA);
 			}
 			const TechnoClass *tech = ::Dynamic_Cast<TechnoClass const *>(object);
+			bool boarding = !disallow_force && tech != NULL && tech->TClass->Max_Passengers() > 0
+				&& (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
+			if (!boarding && Can_Heal(object) && object->HealthRatio < Rule->ConditionGreen) {
+				return(object->RTTI == RTTI_INFANTRY ? ACTION_HEAL : ACTION_GREPAIR);
+			}
 			if (tech == NULL || !tech->TClass->Max_Passengers()) {
 				if (action == ACTION_GUARD_AREA || action == ACTION_MOVE) {
 					return(action);
@@ -2913,6 +2907,9 @@ bool InfantryClass::Active_Click_With(ActionType action, ObjectClass * object, b
 
 	switch (action) {
 		case ACTION_GREPAIR:
+			action = Combat_Damage() < 0 ? ACTION_ATTACK : ACTION_CAPTURE;
+			break;
+
 		case ACTION_DAMAGE:
 		case ACTION_CAPTURE:
 			action = ACTION_CAPTURE;
@@ -3537,7 +3534,7 @@ void InfantryClass::Firing_AI(void)
 				case FIRE_ILLEGAL:
 					if (Combat_Damage(primary) < 0) {
 						ObjectClass * targ = dynamic_cast<ObjectClass *>(TarCom);
-						if (Is_Target_Infantry(targ)) {
+						if (Can_Heal(targ)) {
 							if (targ->HealthRatio >= Rule->ConditionGreen) {
 								Assign_Target(NULL);
 							}

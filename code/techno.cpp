@@ -596,6 +596,49 @@ int TechnoClass::Combat_Damage(int which) const
 }
 
 
+/// <summary>
+/// Fetches the threat bits a healing weapon on this object scans with.
+/// Callers are expected to have established that the object heals at all; the answer says
+/// nothing about the weapon. THREAT_ALLIES is always present because it is the only thing
+/// that makes Greatest_Threat test ownership.
+/// </summary>
+/// <returns>ThreatType; What kinds of object should a healer of this type look for?</returns>
+ThreatType TechnoClass::Heal_Threats(void) const
+{
+	if (TClass->IsOmniHealer) {
+		return(ThreatType(THREAT_INFANTRY|THREAT_VEHICLES|THREAT_ALLIES));
+	}
+	if (TClass->IsMechanic || RTTI != RTTI_INFANTRY) {
+		return(ThreatType(THREAT_VEHICLES|THREAT_ALLIES));
+	}
+	return(ThreatType(THREAT_INFANTRY|THREAT_ALLIES));
+}
+
+
+/// <summary>
+/// Determines whether a healing weapon on this object may be turned on the given object.
+/// Only the kind of the target is judged. Ownership, health, range and the state of the
+/// weapon itself remain the caller's business.
+/// </summary>
+/// <param name="object">The object being considered as a patient.</param>
+/// <returns>bool; Is this object of a kind that a healer of this type mends?</returns>
+bool TechnoClass::Can_Heal(ObjectClass const * object) const
+{
+	if (object == NULL) {
+		return(false);
+	}
+
+	ThreatType threats = Heal_Threats();
+	if ((threats & THREAT_INFANTRY) && object->RTTI == RTTI_INFANTRY) {
+		return(true);
+	}
+	if ((threats & THREAT_VEHICLES) && object->Considered_Vehicle()) {
+		return(true);
+	}
+	return(false);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Fire_Coord -- Determine the coordinate where bullets appear.                   *
  *                                                                                             *
@@ -2016,18 +2059,20 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
-			if (object->RTTI == RTTI_AIRCRAFT && RTTI == RTTI_UNIT) {
-				if (object->HeightAGL > 0) {
+			if (Combat_Damage() < 0) {
+				if (object->RTTI == RTTI_AIRCRAFT) {
+					if (object->HeightAGL > 0) {
+						BEnd(BENCH_EVAL_OBJECT);
+						return(false);
+					}
+					if (Map[object->Center_Coord()].Cell_Building()) {
+						BEnd(BENCH_EVAL_OBJECT);
+						return(false);
+					}
+				} else if (!Can_Heal(object)) {
 					BEnd(BENCH_EVAL_OBJECT);
 					return(false);
 				}
-				if (Map[object->Center_Coord()].Cell_Building()) {
-					BEnd(BENCH_EVAL_OBJECT);
-					return(false);
-				}
-			} else if (RTTI == RTTI_UNIT && !object->Considered_Vehicle()) {
-				BEnd(BENCH_EVAL_OBJECT);
-				return(false);
 			}
 		} else {
 			BEnd(BENCH_EVAL_OBJECT);
@@ -2353,7 +2398,7 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 			tech = Dynamic_Cast<TechnoClass *>((ObjectClass *)tentative);
 			if (tech) {
 				if (Combat_Damage() < 0) {
-					if (tech->HealthRatio < Rule->ConditionGreen && House->Is_Ally(tech)) break;
+					if (tech->HealthRatio < Rule->ConditionGreen && House->Is_Ally(tech) && Can_Heal(tech)) break;
 				} else {
 					if (!House->Is_Ally(tech)
 						|| (RTTI == RTTI_INFANTRY
@@ -2540,13 +2585,13 @@ AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & co
 	*/
 	if (RTTI == RTTI_INFANTRY) {
 		if (Combat_Damage() < 0) {
-			method = ThreatType(THREAT_INFANTRY|THREAT_ALLIES|(method & (THREAT_RANGE|THREAT_AREA)));
+			method = ThreatType(Heal_Threats()|(method & (THREAT_RANGE|THREAT_AREA)));
 		} else if (((InfantryClass *)this)->Class->IsEngineer) {
 			method = ThreatType(method & ~(THREAT_INFANTRY|THREAT_VEHICLES));
 		}
 	} else if (RTTI == RTTI_UNIT) {
 		if (Combat_Damage() < 0) {
-			method = ThreatType(THREAT_VEHICLES|THREAT_ALLIES|(method & (THREAT_RANGE|THREAT_AREA)));
+			method = ThreatType(Heal_Threats()|(method & (THREAT_RANGE|THREAT_AREA)));
 		}
 	}
 
@@ -3030,7 +3075,7 @@ void TechnoClass::AI(void)
 
 	if (TarCom != NULL && TarCom->RTTI == RTTI_AIRCRAFT) {
 		AircraftClass * tarcom = (AircraftClass *)TarCom;
-		if (RTTI == RTTI_UNIT && Combat_Damage() < 0 && (tarcom->HeightAGL > 0 || Map[tarcom->Get_Coord()].Cell_Building() != NULL)) {
+		if (Combat_Damage() < 0 && (tarcom->HeightAGL > 0 || Map[tarcom->Get_Coord()].Cell_Building() != NULL)) {
 			Assign_Target(NULL);
 		}
 	}

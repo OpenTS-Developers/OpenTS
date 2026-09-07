@@ -550,6 +550,8 @@ class TechnoClass :	public RadioClass,
 		bool Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTypeClass const * warhead) const;
 		virtual bool Is_Players_Army(void) const override;
 		int Combat_Damage(int which=-1) const;
+		ThreatType Heal_Threats(void) const;
+		bool Can_Heal(ObjectClass const * object) const;
 
 		Cell Nearby_Location(TechnoClass const * from=NULL) const;
 		//bool Is_Visible_On_Radar(void) const;
