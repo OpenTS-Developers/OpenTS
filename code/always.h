@@ -91,3 +91,82 @@
 #ifndef _stricmp
 #define _stricmp stricmp
 #endif
+
+
+/*
+** Define some Windows specific values that are used throghout the games
+*/
+#ifndef _WIN32
+
+#define _MAX_FNAME 255
+#define _MAX_EXT   8
+#define _MAX_PATH  512
+#define MAX_PATH   _MAX_PATH
+#define _CONTROL   0x20  // space, first non-control character in ASCII
+
+#undef _stricmp
+#define stricmp  strcasecmp
+#define _stricmp strcasecmp
+#define strnicmp strncasecmp
+#define memicmp  strncasecmp
+#define __cdecl
+
+#include <cstdio>
+#include <cstring>
+#include <cctype>
+
+inline static void _makepath(char* path, const char* drive, const char* dir, const char* fname, const char* ext)
+{
+	if (!path || !fname || !ext) {
+		return;
+	}
+
+	sprintf(path, "%s%s%s", fname, (ext[0] == '.' ? "" : "."), ext);
+}
+
+inline static void _splitpath(const char* path, char* drive, char* dir, char* fname, char* ext)
+{
+	if (!path || !ext) {
+		return;
+	}
+
+	while (*path != '\0') {
+		if (*path == '.') {
+			strcpy(ext, path + 1);
+			break;
+		}
+
+		++path;
+	}
+}
+
+inline static char* strupr(char* str)
+{
+	char* ret = str;
+	while (*str != '\0') {
+		*str = toupper(*str);
+		++str;
+	}
+	return(ret);
+}
+
+inline static void strrev(char* str)
+{
+	int len = strlen(str);
+
+	for (int i = 0; i < len / 2; i++) {
+		char c = str[i];
+		str[i] = str[len - i - 1];
+		str[len - i - 1] = c;
+	}
+}
+
+inline static void _strlwr(char* str)
+{
+	while (*str != '\0') {
+		*str = tolower(*str);
+		++str;
+	}
+}
+
+#endif // not _WIN32

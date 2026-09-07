@@ -42,6 +42,7 @@
 #include "cdfile.h"
 
 #include <string>
+#include <filesystem>
 
 /*
 **	Pointer to the first search path record.
@@ -180,7 +181,7 @@ void CDFileClass::Set_User_Path(char const * path)
 			break;
 
 		default:
-			UserPath += '\\';
+			UserPath += std::filesystem::path::preferred_separator;
 			break;
 	}
 }
@@ -458,106 +459,4 @@ int CDFileClass::Delete(void)
 	Point_At_Own_Copy();
 
 	return(BASECLASS::Delete());
-}
-
-
-HANDLE FindFileHandle = INVALID_HANDLE_VALUE;
-
-/// <summary>
-/// Begins a search for the files matching the wildcard specified.
-/// This routine will look in the current directory first and then work along the search
-/// drive list, settling on the first drive that has a match. Only ordinary files qualify;
-/// directories and system, hidden, or temporary files are passed over. Any search still
-/// in progress is closed off first.
-/// </summary>
-/// <param name="fname">The wildcard to search for; filled in with the file found.</param>
-/// <returns>bool; Was a matching file found?</returns>
-/// <remarks>Be sure that the buffer is big enough to hold the filename returned.</remarks>
-bool CDFileClass::Find_First_File(char *fname)
-{
-	WIN32_FIND_DATAA fb;
-	char scan_path[MAX_PATH];
-	SearchDriveType *entry;
-
-	if (fname) {
-
-		Find_Close();
-
-		strcpy(scan_path, fname);
-
-		HANDLE file_handle = ::FindFirstFile(scan_path, &fb);
-		if (file_handle != INVALID_HANDLE_VALUE && !(fb.dwFileAttributes & (FILE_ATTRIBUTE_TEMPORARY|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN))) {
-
-			strcpy(fname, fb.cFileName);
-			FindFileHandle = file_handle;
-
-			return(true);
-		}
-
-		entry = First;
-
-		if (entry != NULL) {
-
-			while (true) {
-
-				strcpy(scan_path, entry->Path);
-				strcat(scan_path, fname);
-
-				file_handle = ::FindFirstFile(scan_path, &fb);
-				if (file_handle != INVALID_HANDLE_VALUE && !(fb.dwFileAttributes & (FILE_ATTRIBUTE_TEMPORARY|FILE_ATTRIBUTE_DIRECTORY|FILE_ATTRIBUTE_SYSTEM|FILE_ATTRIBUTE_HIDDEN))) {
-					break;
-				}
-
-				entry = (SearchDriveType *)entry->Next;
-				if (entry == NULL) {
-					return(false);
-				}
-			}
-
-			strcpy(fname, fb.cFileName);
-			FindFileHandle = file_handle;
-
-			return(true);
-		}
-	}
-	return(false);
-}
-
-
-/// <summary>
-/// Fetches the next file that matches the search in progress.
-/// This routine continues the scan begun by Find_First_File, working through the rest of
-/// the matches on whichever drive that routine settled upon.
-/// </summary>
-/// <param name="buffer">Buffer to fill in with the name of the file found.</param>
-/// <returns>bool; Was another matching file found?</returns>
-/// <remarks>Be sure that the buffer is big enough to hold the filename returned.</remarks>
-bool CDFileClass::Find_Next_File(char *buffer)
-{
-	WIN32_FIND_DATAA fb;
-
-	if (buffer) {
-
-		if (FindFileHandle != INVALID_HANDLE_VALUE && ::FindNextFile(FindFileHandle, &fb) == TRUE) {
-			strcpy(buffer, fb.cFileName);
-			return(true);
-		}
-
-		buffer[0] = '\0';
-	}
-	return(false);
-}
-
-
-/// <summary>
-/// Closes off the file search that is in progress.
-/// Call this routine when the results of a Find_First_File scan are no longer wanted, so
-/// that the search handle held on the game's behalf is given back to the system.
-/// </summary>
-void CDFileClass::Find_Close(void)
-{
-	if (FindFileHandle != INVALID_HANDLE_VALUE) {
-		FindClose(FindFileHandle);
-		FindFileHandle = INVALID_HANDLE_VALUE;
-	}
 }

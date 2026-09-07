@@ -69,7 +69,7 @@
 **	with the mixfile system.
 */
 //template<class T>
-List<MixFileClass *> MixFileClass::List;
+List<MixFileClass *> MixFileClass::MixList;
 
 /// template class MixFileClass<CCFileClass>;
 
@@ -185,7 +185,7 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	/*
 	**	Attach to list of mixfiles.
 	*/
-	List.Add_Tail(this);
+	MixList.Add_Tail(this);
 }
 
 
@@ -303,7 +303,7 @@ void const * MixFileClass::Retrieve(char const * filename)
  *=============================================================================================*/
 MixFileClass * MixFileClass::Finder(char const * filename)
 {
-	MixFileClass * ptr = List.First();
+	MixFileClass * ptr = MixList.First();
 	while (ptr->Is_Valid()) {
 		char path[_MAX_PATH];
 		char name[_MAX_FNAME];
@@ -534,7 +534,10 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	*/
 
 	/// Can't call strupr on a const string.
-	int crc = (CRCEngine()(strupr((char *)filename), strlen(filename))); //Calculate_CRC(strupr((char *)filename), strlen(filename));
+	char filename_upper[_MAX_PATH];
+	strcpy(filename_upper, filename);
+	strupr(filename_upper);
+	int crc = (CRCEngine()(filename_upper, strlen(filename_upper))); //Calculate_CRC(strupr((char *)filename), strlen(filename));
 
 	SubBlock key;
 	key.CRC = crc;
@@ -542,7 +545,7 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	/*
 	**	Sweep through all registered mixfiles, trying to find the file in question.
 	*/
-	ptr = List.First();
+	ptr = MixList.First();
 	while (ptr->Is_Valid()) {
 		SubBlock * block;
 

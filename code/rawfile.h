@@ -41,10 +41,8 @@
 #include <climits>
 #include <cstddef>
 #include <cstdlib>
-#include <windows.h>
+#include <cstdio>
 
-#define NULL_HANDLE INVALID_HANDLE_VALUE
-#define HANDLE_TYPE HANDLE
 #ifndef WWERROR
 #define WWERROR	-1
 #endif
@@ -95,7 +93,7 @@ class RawFileClass : public FileClass
 		virtual bool Set_Date_Time(unsigned int datetime);
 		virtual void Error(int error, int canretry = false, char const * filename=NULL) override;
 		void Bias(int start, int length=-1);
-		HANDLE_TYPE Get_File_Handle(void) { return(Handle); };
+		FILE *Get_File_Handle(void) { return(Handle); };
 
 		/*
 		**	These bias values enable a sub-portion of a file to appear as if it
@@ -118,15 +116,19 @@ class RawFileClass : public FileClass
 	private:
 
 		/*
-		**	This is the low level DOS handle. A -1 indicates an empty condition.
+		**	This is the file handle.  A nullptr indicates an empty condition.
 		*/
-		HANDLE_TYPE Handle;
+		FILE *Handle;
 
 		/*
-		**	This points to the filename as a NULL terminated string. It may point to either a
-		**	constant or an allocated string as indicated by the "Allocated" flag.
+		**	This points to a copy of the filename as a NULL terminated string.
 		*/
-		char const * Filename;
+		char *Filename;
+
+		/*
+		**	The type of the last file access operation.  Reset by fseek().
+		*/
+		int LastAccessType;
 
 		//
 		// file date and time are in the following formats:
@@ -141,15 +143,6 @@ class RawFileClass : public FileClass
 		//
 		unsigned short Date;
 		unsigned short Time;
-
-		/*
-		**	Filenames that were assigned as part of the construction process
-		**	are not allocated. It is assumed that the filename string is a
-		**	constant in that case and thus making duplication unnecessary.
-		**	This value will be non-zero if the filename has be allocated
-		**	(using strdup()).
-		*/
-		bool Allocated;
 };
 
 
@@ -195,11 +188,11 @@ inline RawFileClass::RawFileClass(void) :
 	Rights(READ),
 	BiasStart(0),
 	BiasLength(-1),
-	Handle(INVALID_HANDLE_VALUE),
-	Filename(0),
+	Handle(nullptr),
+	Filename(nullptr),
 	Date(0),
 	Time(0),
-	Allocated(false)
+	LastAccessType(0)
 {
 }
 
@@ -221,5 +214,5 @@ inline RawFileClass::RawFileClass(void) :
  *=============================================================================================*/
 inline bool RawFileClass::Is_Open(void) const
 {
-	return(Handle != INVALID_HANDLE_VALUE);
+	return(Handle != nullptr);
 }
