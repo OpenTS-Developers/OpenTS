@@ -224,6 +224,8 @@ Each column is read down: a value below zero falls to the row beneath. Rules tha
 
 The interval is tested against the global frame counter, so everything healing on one interval steps on the same frames. An interval that truncates below a frame is raised to a frame here, where the wrench's divides by zero. A step below one is raised to one, and the sum is clamped to the object's maximum strength, so no setting overheals and none of them switches healing off — `SelfHealing=no` does that.
 
+An object at zero strength is never healed. Only an aircraft reaches that state and lives: one killed in the air keeps flying until it touches down, and the descent that kills it tests for exactly zero, so a healing aircraft would otherwise recover in mid-air and fly on.
+
 :::caution[The ceiling is not the damage threshold]
 A tick is refused as soon as the strength ratio rises above the ceiling, so healing ends one step past it. [`ConditionYellow`](/keys/conditionyellow/) still decides on its own when an object counts as damaged, so a ceiling on either side of it leaves the healing and the damage state out of step. The damage smoke goes out on the healing tick that crosses `ConditionYellow`, but a structure's damaged artwork does not: only a hit or a paid repair step re-evaluates that.
 :::

@@ -8189,6 +8189,11 @@ bool TechnoClass::Should_Self_Heal_Now(void) const
 			return(false);
 		}
 	}
+	// An aircraft killed in the air flies on until it lands, and both the descent and the
+	// kill on contact test for zero strength.
+	if (Strength <= 0) {
+		return(false);
+	}
 	if (Strength >= TClass->MaxStrength) {
 		return(false);
 	}
