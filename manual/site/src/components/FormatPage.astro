@@ -52,7 +52,7 @@ const pageHeadings = [
 	<FormatKeyTable format={format} />
 	<RelatedResources resources={related} />
 	<h2 id="source-files">Source files</h2>
-	<p class="ots-source-revision">Linked at revision <code>{siteConfig.revision.slice(0, 12)}</code>.</p>
+	<p class="ots-source-revision">Linked at revision <code data-pagefind-ignore>{siteConfig.revision.slice(0, 12)}</code>.</p>
 	<ul class="ots-source-files">
 		{format.source_files.map((path) => <li><a href={sourceFileUrl(path)}><code>{path}</code></a></li>)}
 	</ul>

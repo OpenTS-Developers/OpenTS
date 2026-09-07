@@ -30,5 +30,6 @@ issue.searchParams.set(
 		<p>{UI.feedback.body}</p>
 	</div>
 	<a class="ots-feedback-link" href={issue.toString()}>{UI.feedback.link}</a>
-	<small>{UI.feedback.revision} <code>{revision.slice(0, 12)}</code></small>
+	{/* Pagefind splits a hash into letter and digit runs, so indexing it would put tokens such as "6" on every page and flatten the ranking for numeric identifiers. */}
+	<small>{UI.feedback.revision} <code data-pagefind-ignore>{revision.slice(0, 12)}</code></small>
 </aside>

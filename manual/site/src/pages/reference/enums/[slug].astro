@@ -70,7 +70,7 @@ const pageHeadings = [
 	) : <p>No current public key or scripting parameter binds to this enum.</p>}
 	<RelatedResources resources={related} />
 	<h2 id="source-files">Source files</h2>
-	<p class="ots-source-revision">Linked at revision <code>{revision.slice(0, 12)}</code>.</p>
+	<p class="ots-source-revision">Linked at revision <code data-pagefind-ignore>{revision.slice(0, 12)}</code>.</p>
 	<ul class="ots-source-files">{entry.data.source_files.map((path) => <li><a href={sourceFileUrl(path)}><code>{path}</code></a></li>)}</ul>
 	<LifecycleHistory reference={{ type: 'enum', id: entry.data.enum_id }} showBadges={false} />
 	<Feedback title={entry.data.title} path={`/reference/enums/${entry.data.slug}/`} />

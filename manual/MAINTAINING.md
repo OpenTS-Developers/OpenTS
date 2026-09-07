@@ -179,6 +179,12 @@ The site reads these build-time settings:
 | `DOCS_REVISION` | Revision used in source links and feedback metadata |
 | `DOCS_DEMO` | Explicitly marks an alternate build as a demo |
 
+`DOCS_REVISION` renders on every page and is excluded from the search index.
+Pagefind splits a hash into letter and digit runs, so indexing it would put
+tokens such as `6` on every page and flatten the ranking that the artifact
+search check asserts. Keep any other per-build value out of the index for the
+same reason.
+
 The Pages workflow derives the repository URL and project path from GitHub's
 repository context, so it works in staging and the final OpenTS repository.
 Builds under `/Docs-Demo` or with `DOCS_DEMO=1` omit the community link reserved
