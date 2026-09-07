@@ -36,6 +36,8 @@ keys:
   - TiberiumToSpawn
   - Value
 related:
+  - type: system
+    id: produce-cash
   - type: action
     id: TACTION_TIB_GROWTH
   - type: enum

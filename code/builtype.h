@@ -822,6 +822,27 @@ class BuildingTypeClass : public TechnoTypeClass
 		bool IsThreatRatingNode;
 
 		/*
+		 * This is the sum handed to whoever captures the building off a house that takes no
+		 * part in the contest, paid only on the first such capture if it is a one-time bonus.
+		 */
+		int ProduceCashStartup;
+		bool IsProduceCashStartupOneTime;
+
+		/*
+		 * This is the sum paid to the owner every delay, taken from them when it is negative.
+		 * A delay of zero produces nothing rather than paying on every frame.
+		 */
+		int ProduceCashAmount;
+		int ProduceCashDelay;
+
+		/*
+		 * This is the total the building will ever move, counted without regard to sign and
+		 * unlimited when zero.
+		 */
+		int ProduceCashBudget;
+		bool IsProduceCashResetOnCapture;
+
+		/*
 		 * This is the theater qualified name of the building's shape file, recorded as the
 		 * art is resolved. A type that defers loading its image uses this to find the file
 		 * the first time the shape is really needed.

@@ -16879,6 +16879,108 @@ Priority:
       source: code/vocini.cpp
       guard: null
     level: VocClass
+ProduceCashAmount:
+  key: ProduceCashAmount
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: ProduceCashAmount
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProduceCashBudget:
+  key: ProduceCashBudget
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: ProduceCashBudget
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProduceCashDelay:
+  key: ProduceCashDelay
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: ProduceCashDelay
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProduceCashResetOnCapture:
+  key: ProduceCashResetOnCapture
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsProduceCashResetOnCapture
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProduceCashStartup:
+  key: ProduceCashStartup
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: BuildingTypeClass
+      member: ProduceCashStartup
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
+ProduceCashStartupOneTime:
+  key: ProduceCashStartupOneTime
+  scopes:
+  - applies_to: *id004
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: BuildingTypeClass
+      member: IsProduceCashStartupOneTime
+      source: code/builtype.cpp
+      guard: null
+    level: BuildingTypeClass
 Production:
   key: Production
   scopes:

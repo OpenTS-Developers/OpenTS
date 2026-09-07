@@ -338,7 +338,13 @@ BuildingTypeClass::BuildingTypeClass(char const * ininame) :
 	IsDemandLoad(false),
 	IsDemandLoadBuildup(false),
 	IsFreeBuildup(false),
-	IsThreatRatingNode(false)
+	IsThreatRatingNode(false),
+	ProduceCashStartup(0),
+	IsProduceCashStartupOneTime(false),
+	ProduceCashAmount(0),
+	ProduceCashDelay(0),
+	ProduceCashBudget(0),
+	IsProduceCashResetOnCapture(false)
 {
 	Create_ID();
 	BuildingTypes.Add(this);
@@ -1268,6 +1274,14 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsBaseDefense = ini.Get_Bool(Name(), "IsBaseDefense", IsBaseDefense);
 		IsSortCameoAsBaseDefense = ini.Get_Bool(Name(), "SortCameoAsBaseDefense", IsBaseDefense);
 		IsThreatRatingNode = ini.Get_Bool(Name(), "IsThreatRatingNode", IsThreatRatingNode);
+
+		ProduceCashStartup = ini.Get_Int(Name(), "ProduceCashStartup", ProduceCashStartup);
+		IsProduceCashStartupOneTime = ini.Get_Bool(Name(), "ProduceCashStartupOneTime", IsProduceCashStartupOneTime);
+		ProduceCashAmount = ini.Get_Int(Name(), "ProduceCashAmount", ProduceCashAmount);
+		ProduceCashDelay = ini.Get_Int(Name(), "ProduceCashDelay", ProduceCashDelay);
+		ProduceCashBudget = ini.Get_Int(Name(), "ProduceCashBudget", ProduceCashBudget);
+		IsProduceCashResetOnCapture = ini.Get_Bool(Name(), "ProduceCashResetOnCapture", IsProduceCashResetOnCapture);
+
 		Rotation = IsTurretEquipped ? 32 : 1;
 
 		Power = ini.Get_Int(Name(), "Power", (Power > 0) ? Power : -Drain);
@@ -1754,6 +1768,12 @@ void BuildingTypeClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsInvisibleInGame);
 	crc(IsTerrainPalette);
 	crc(IsTurretAnimAVoxel);
+	crc(ProduceCashStartup);
+	crc(IsProduceCashStartupOneTime);
+	crc(ProduceCashAmount);
+	crc(ProduceCashDelay);
+	crc(ProduceCashBudget);
+	crc(IsProduceCashResetOnCapture);
 }
 
 
@@ -1912,6 +1932,12 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDemandLoadBuildup);
 	stream.Serialize(IsFreeBuildup);
 	stream.Serialize(IsThreatRatingNode);
+	stream.Serialize(ProduceCashStartup);
+	stream.Serialize(IsProduceCashStartupOneTime);
+	stream.Serialize(ProduceCashAmount);
+	stream.Serialize(ProduceCashDelay);
+	stream.Serialize(ProduceCashBudget);
+	stream.Serialize(IsProduceCashResetOnCapture);
 	stream.Serialize(TheaterImageFile);
 }
 

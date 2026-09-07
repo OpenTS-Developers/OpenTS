@@ -29,6 +29,8 @@ related:
     id: veterancy
   - type: system
     id: target-selection
+  - type: system
+    id: produce-cash
 ---
 
 Almost everything below turns on which [mission](/systems/target-selection/#missions-in-brief) a soldier is in — the state that says what it is doing at this moment, and the rules section named after it. Target selection introduces both.
