@@ -535,7 +535,7 @@ test('A multiplayer load replaces the match around the seats it keeps', () => {
 		'the internet options offer the load the master starts for every machine',
 	);
 
-	assertOrdered(definitionFrom(source('code/goptions.cpp'), 'BOOL CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)'), [
+	assertOrdered(definitionFrom(source('code/goptions.cpp'), 'INT_PTR CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)'), [
 		'case IDC_LOAD_GAME:',
 		'LoadOptionsClass().Load()',
 		'Multiplayer_Load_Is_Allowed()',
