@@ -107,13 +107,10 @@ class WinsockInterfaceClass {
 		virtual void Discard_In_Buffers (void);
 		virtual void Discard_Out_Buffers (void);
 
-		// Only a listening transport moves packets in Service. The socket is
-		// made non-blocking, so a poll never waits on it.
 		virtual bool Start_Listening (void);
 		virtual void Stop_Listening (void);
 
-		// Takes every datagram the socket holds into the in buffers and sends
-		// what the out buffers hold. Call wherever the manager is serviced.
+		// Call wherever the manager is serviced.
 		virtual void Service (void);
 
 		virtual void Clear_Socket_Error(SOCKET socket);
@@ -181,9 +178,7 @@ class WinsockInterfaceClass {
 		unsigned int Calculate_Packet_CRC(void const *buffer, int buffer_len) const;
 		void Record_Packet_Drop(PacketDropReasonType reason);
 
-		// Receive_Pending takes every datagram the socket holds into the in
-		// buffers. Send_Pending sends the out buffers until they are empty or
-		// the socket will take no more. A protocol supplies both.
+		// A protocol supplies both; a transport without one moves no packets.
 		virtual void Receive_Pending(void) {}
 		virtual void Send_Pending(void) {}
 

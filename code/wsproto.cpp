@@ -202,20 +202,11 @@ void WinsockInterfaceClass::Close_Socket (void)
 }
 
 
-/***********************************************************************************************
- * WIC::Start_Listening -- Enable callbacks for read/write events on our socket                *
- *                                                                                             *
- *                                                                                             *
- *                                                                                             *
- * INPUT:    Nothing                                                                           *
- *                                                                                             *
- * OUTPUT:   Nothing                                                                           *
- *                                                                                             *
- * WARNINGS: None                                                                              *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *    8/5/97 11:54AM ST : Created                                                              *
- *=============================================================================================*/
+/// <summary>
+/// Puts the socket into non-blocking mode and lets Service poll it.
+/// Nothing is received until this succeeds.
+/// </summary>
+/// <returns>bool; Is the socket ready to be polled?</returns>
 bool WinsockInterfaceClass::Start_Listening (void)
 {
 	unsigned long nonblocking = 1;
@@ -229,20 +220,10 @@ bool WinsockInterfaceClass::Start_Listening (void)
 }
 
 
-/***********************************************************************************************
- * WIC::Stop_Listening -- Disable the winsock event callback                                   *
- *                                                                                             *
- *                                                                                             *
- *                                                                                             *
- * INPUT:    Nothing                                                                           *
- *                                                                                             *
- * OUTPUT:   Nothing                                                                           *
- *                                                                                             *
- * WARNINGS: None                                                                              *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *    8/5/97 12:06PM ST : Created                                                              *
- *=============================================================================================*/
+/// <summary>
+/// Stops Service polling the socket, leaving the socket itself open. WriteTo and
+/// Broadcast still send what they are given.
+/// </summary>
 void WinsockInterfaceClass::Stop_Listening (void)
 {
 	Listening = false;

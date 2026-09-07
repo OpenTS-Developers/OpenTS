@@ -91,15 +91,11 @@ class UDPInterfaceClass : public WinsockInterfaceClass {
 
 		void Register_Local_Addresses();
 
-		/*
-		 * Wrappers around sendto/recvfrom that add and strip the tunnel routing header.
-		 * They fall through to plain Winsock when no tunnel is configured. Receive_From
-		 * answers RECEIVE_IGNORED for a datagram the socket delivered that was not for
-		 * this client, which a caller draining the socket passes over where SOCKET_ERROR
-		 * stops it.
-		 */
+		// Receive_From answers this for a datagram that was not for this client, which
+		// a caller draining the socket passes over where SOCKET_ERROR stops it.
 		static constexpr int RECEIVE_IGNORED = -2;
 
+		// Wrappers around sendto/recvfrom that add and strip the tunnel routing header.
 		int Send_To(const char *buffer, int buffer_len, sockaddr_in *destination);
 		int Receive_From(char *buffer, int buffer_len, sockaddr_in *source);
 
