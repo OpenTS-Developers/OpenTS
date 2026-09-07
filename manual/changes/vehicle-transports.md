@@ -25,7 +25,7 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-Red Alert let a transport carry vehicles. Tiberian Sun dropped the feature by never offering the order, though the machinery behind it stayed in place. `IsVehicleTransport=yes` offers it again, and a transport marked with it takes units as well as infantry.
+`IsVehicleTransport=yes` lets a transport carry vehicles as well as infantry, as Red Alert's could.
 
 `Passengers=` is now a budget of space rather than a head count, spent by each passenger's `Size=`. A transport also refuses any single passenger larger than its `SizeLimit=`. Both new keys default to one, so a ruleset that sets neither keeps the head count it had.
 
