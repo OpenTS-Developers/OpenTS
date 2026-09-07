@@ -42,6 +42,7 @@
 
 #include <algorithm>
 #include <ctime>
+#include <vector>
 
 
 const COLORREF ColorSystem     = RGB(255, 255, 255)|(255<<24);  /// 0xFFFFFFFF
@@ -1347,6 +1348,62 @@ void Update_Network_Dialog_Preview(HWND win)
 
 
 /// <summary>
+/// Expands a downloaded preview file and makes it the multiplayer preview.
+/// </summary>
+/// <param name="filename">Name of the compressed preview file the host sent.</param>
+/// <returns>bool; Was the preview replaced? A block that does not describe an image fitting
+/// the bytes it arrived in is refused and the current preview is left alone.</returns>
+static bool Load_Random_Map_Preview(char const * filename)
+{
+	DebugString("Loading the compressed preview image\n");
+	CDFileClass file(filename);
+
+	int size = file.Size();
+	if (size <= (int)sizeof(int)) {
+		DebugString("Preview file size %d is too small\n", size);
+		return(false);
+	}
+
+	std::vector<char> buffer(size);
+	file.Read(buffer.data(), size);
+
+	int preview_size = ((int *)buffer.data())[0];
+	if (preview_size <= 0 || preview_size > MapPreviewClass::MAX_BLOCK_SIZE) {
+		DebugString("Preview decompressed size %d is out of range\n", preview_size);
+		return(false);
+	}
+
+	DebugString("Decompressing the preview image\n");
+
+	BufferStraw bstraw(buffer.data() + sizeof(int), size - (int)sizeof(int));
+	LZOStraw lzostraw(LZOStraw::DECOMPRESS);
+	lzostraw.Get_From(&bstraw);
+
+	std::vector<char> preview(preview_size);
+	int expanded = lzostraw.Get(preview.data(), preview_size);
+	if (expanded != preview_size) {
+		DebugString("Preview decompressed size %d doesn't match expected %d bytes\n", expanded, preview_size);
+		return(false);
+	}
+
+	DebugString("Creating the new preview surface\n");
+
+	MapPreviewClass * created = new MapPreviewClass;
+	if (!created->Create_Preview_Surface(preview.data(), preview_size)) {
+		DebugString("Preview surface could not be created\n");
+		delete created;
+		return(false);
+	}
+
+	if (MultiplayerMapPreview) {
+		delete MultiplayerMapPreview;
+	}
+	MultiplayerMapPreview = created;
+	return(true);
+}
+
+
+/// <summary>
 /// Receives the random map preview image from the host.
 /// This is the guest side of the preview handshake. The host is told that this machine is
 /// ready, the compressed preview file is downloaded, and the decompressed image becomes the
@@ -1375,39 +1432,11 @@ void Receive_Random_Map_Preview(void)
 	Session.GAddress = Session.HostAddress;
 	DebugString("Calling Get_File_From_Host to receive the file download\n");
 	char preview_name[256];
-	bool got_file = Get_File_From_Host(preview_name, false);
-	if (!got_file) {
-		DebugString("got_file is false. Download failed\n");
-		Ipx.Set_Timing(TIMER_SECOND / 2, -1, 10 * TIMER_SECOND);
-		return;
+	if (!Get_File_From_Host(preview_name, false)) {
+		DebugString("Preview file download failed\n");
+	} else if (Load_Random_Map_Preview(preview_name)) {
+		InvalidateRect(WS_Top_Window(), NULL, FALSE);
 	}
-
-	DebugString("Loading the compressed preview image\n");
-	CDFileClass file(preview_name);
-	int size = file.Size();
-	char * buffer = new char[size];
-	file.Read(buffer, size);
-	int preview_size = ((int *)buffer)[0];
-
-	DebugString("Decompressing the preview image\n");
-
-	BufferStraw bstraw(&((int *)buffer)[1], size);
-	LZOStraw lzostraw(LZOStraw::DECOMPRESS);
-	lzostraw.Get_From(&bstraw);
-	char * preview = new char[2 * preview_size];
-	lzostraw.Get(preview, preview_size);
-
-	DebugString("Creating the new preview surface\n");
-	if (MultiplayerMapPreview) {
-		delete MultiplayerMapPreview;
-	}
-	MultiplayerMapPreview = new MapPreviewClass;
-	MultiplayerMapPreview->Create_Preview_Surface(preview);
-	InvalidateRect(WS_Top_Window(), NULL, FALSE);
-
-	DebugString("Cleaning up the temporary decompression buffers\n");
-	delete [] preview;
-	delete [] buffer;
 
 	Ipx.Set_Timing(TIMER_SECOND / 2, -1, 10 * TIMER_SECOND);
 }
