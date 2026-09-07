@@ -151,13 +151,12 @@ int LayerClass::Sorted_Add(ObjectClass const * const object)
 /// are written by their own owners -- only the layer's object pointers are recorded here,
 /// to be swizzled back into real addresses when the game is loaded.
 /// </summary>
-/// <returns>Returns with S_OK if the layer was written. Otherwise, the failure code from
-/// the stream is returned.</returns>
-HRESULT LayerClass::Save(SaveStreamClass & stream)
+/// <returns>bool; Was the record written whole?</returns>
+bool LayerClass::Save(SaveStreamClass & stream)
 {
 
 	DynamicVectorClass<ObjectClass *>::Serialize(stream);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
@@ -167,12 +166,11 @@ HRESULT LayerClass::Save(SaveStreamClass & stream)
 /// reconstructed. Whatever the layer was holding is discarded and the object pointers are
 /// read back, so they do not become usable until the swizzle pass has run.
 /// </summary>
-/// <returns>Returns with S_OK if the layer was read. Otherwise, the failure code from the
-/// stream is returned.</returns>
-HRESULT LayerClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool LayerClass::Load(SaveStreamClass & stream)
 {
 
 	stream.Set_Context("LayerClass");
 	DynamicVectorClass<ObjectClass *>::Serialize(stream);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }

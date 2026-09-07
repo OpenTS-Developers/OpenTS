@@ -20,9 +20,6 @@
 #include "visual.hh"
 #include "zgrad.hh"
 
-#include <wtypes.h>
-#include <memory>
-
 
 
 /*
@@ -35,7 +32,7 @@ struct ILocomotion
 	/*
 	 * Links object to locomotor.
 	 */
-	virtual HRESULT Link_To_Object(void *pointer) = 0;
+	virtual void Link_To_Object(void *pointer) = 0;
 
 	/*
 	 * Sees if object is moving.
@@ -238,12 +235,13 @@ struct ILocomotion
 	virtual void Stop_Movement_Animation(void) = 0;
 
 	/*
-	 * Locks the locomotor from being deleted
+	 * Locks the locomotor against being handed back, so that one piggybacking on it keeps
+	 * control of the object.
 	 */
 	virtual void Lock(void) = 0;
 
 	/*
-	 * Unlocks the locomotor from being deleted
+	 * Unlocks the locomotor, so that a piggyback riding on it may end.
 	 */
 	virtual void Unlock(void) = 0;
 

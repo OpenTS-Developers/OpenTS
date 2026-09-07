@@ -77,9 +77,9 @@ LevitateLocomotionClass::LevitateLocomotionClass(void) :
 /// </summary>
 /// <param name="pointer">Pointer to the object this locomotor will drive.</param>
 /// <returns>Returns with the result of the attach operation.</returns>
-HRESULT LevitateLocomotionClass::Link_To_Object(void *pointer)
+void LevitateLocomotionClass::Link_To_Object(void *pointer)
 {
-	return(BASECLASS::Link_To_Object(pointer));
+	BASECLASS::Link_To_Object(pointer);
 }
 
 

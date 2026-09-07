@@ -111,8 +111,8 @@ void AbstractClass::Create_ID(void)
 /// </summary>
 /// <param name="stream">The stream to write to.</param>
 /// <param name="cleardirty">Should the object be marked clean once it has been written?</param>
-/// <returns>Returns with S_OK when the object was written, otherwise a failure code.</returns>
-HRESULT AbstractClass::Save(SaveStreamClass & stream, BOOL cleardirty)
+/// <returns>bool; Was the record written whole?</returns>
+bool AbstractClass::Save(SaveStreamClass & stream, bool cleardirty)
 {
 	return(Save_Members(stream, cleardirty));
 }
@@ -122,8 +122,8 @@ HRESULT AbstractClass::Save(SaveStreamClass & stream, BOOL cleardirty)
 /// Reads this object back from the save stream.
 /// </summary>
 /// <param name="stream">The stream to read from.</param>
-/// <returns>Returns with S_OK when the object was read, otherwise a failure code.</returns>
-HRESULT AbstractClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool AbstractClass::Load(SaveStreamClass & stream)
 {
 	return(Load_Members(stream));
 }
@@ -136,16 +136,16 @@ HRESULT AbstractClass::Load(SaveStreamClass & stream)
 /// </summary>
 /// <param name="stream">The stream to write to.</param>
 /// <param name="cleardirty">Should the object be marked clean once it has been written?</param>
-/// <returns>Returns with S_OK when the record was written, otherwise a failure code.</returns>
-HRESULT AbstractClass::Save_Members(SaveStreamClass & stream, BOOL cleardirty)
+/// <returns>bool; Was the record written whole?</returns>
+bool AbstractClass::Save_Members(SaveStreamClass & stream, bool cleardirty)
 {
 	SwizzleIDType id = Swizzler.ID_Of(this);
 	stream.Serialize(id);
 	Serialize(stream);
-	if (SUCCEEDED(stream.Result()) && cleardirty) {
+	if (!stream.Was_Error() && cleardirty) {
 		Dirty = false;
 	}
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
@@ -155,13 +155,13 @@ HRESULT AbstractClass::Save_Members(SaveStreamClass & stream, BOOL cleardirty)
 /// save game can be remapped onto this object, and the members follow.
 /// </summary>
 /// <param name="stream">The stream to read from.</param>
-/// <returns>Returns with S_OK when the record was read, otherwise a failure code.</returns>
-HRESULT AbstractClass::Load_Members(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool AbstractClass::Load_Members(SaveStreamClass & stream)
 {
 	SwizzleIDType id = 0;
 	stream.Serialize(id);
 	if (stream.Was_Error()) {
-		return(stream.Result());
+		return(false);
 	}
 	Swizzle_Here_I_Am(id, this);
 
@@ -172,7 +172,7 @@ HRESULT AbstractClass::Load_Members(SaveStreamClass & stream)
 	Serialize(stream);
 	stream.Set_Context(outertype, outerid);
 
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 

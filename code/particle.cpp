@@ -928,10 +928,10 @@ void ParticleClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="stream">The stream to write this particle to.</param>
 /// <param name="cleardirty">Should the modified flag be cleared once written?</param>
-/// <returns>Returns with S_OK if the particle was written successfully.</returns>
-HRESULT ParticleClass::Save(SaveStreamClass & stream, BOOL cleardirty)
+/// <returns>bool; Was the record written whole?</returns>
+bool ParticleClass::Save(SaveStreamClass & stream, bool cleardirty)
 {
-	HRESULT result = BASECLASS::Save(stream, cleardirty);
+	bool result = BASECLASS::Save(stream, cleardirty);
 	WasSaved = true;
 	return(result);
 }

@@ -66,12 +66,11 @@ HoverLocomotionClass::HoverLocomotionClass(void) :
 /// </summary>
 /// <param name="pointer">Pointer to the object this locomotor will drive.</param>
 /// <returns>Returns with the result of the attach operation.</returns>
-HRESULT HoverLocomotionClass::Link_To_Object(void *pointer)
+void HoverLocomotionClass::Link_To_Object(void *pointer)
 {
-	HRESULT res = BASECLASS::Link_To_Object(pointer);
+	BASECLASS::Link_To_Object(pointer);
 	FacingClass face(2 * LinkedTo->TClass->ROT);
 	Facing = face;
-	return(res);
 }
 
 

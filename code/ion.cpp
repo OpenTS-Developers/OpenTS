@@ -78,10 +78,10 @@ void IonStormClass::Init(void)
 /// Saves the ion storm state to the save game stream.
 /// </summary>
 /// <returns>Returns with the result reported by the stream write.</returns>
-HRESULT IonStormClass::Save(SaveStreamClass & stream)
+bool IonStormClass::Save(SaveStreamClass & stream)
 {
 	Serialize(stream);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
@@ -91,11 +91,11 @@ HRESULT IonStormClass::Save(SaveStreamClass & stream)
 /// <returns>Returns with the result reported by the stream read.</returns>
 /// <remarks>Only the bookkeeping is restored here. Post_Load_Game must still call
 /// Apply_Secondary_Effect to put the world back into its storm bound state.</remarks>
-HRESULT IonStormClass::Load(SaveStreamClass & stream)
+bool IonStormClass::Load(SaveStreamClass & stream)
 {
 	stream.Set_Context("IonStormClass");
 	Serialize(stream);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 

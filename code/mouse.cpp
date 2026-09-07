@@ -60,6 +60,8 @@
 #include "terrtype.h"
 #include "xmouse.h"
 
+#include <memory>
+
 
 #define MOUSE_HOTSPOT_MIN 0
 #define MOUSE_HOTSPOT_CENTER 12345
@@ -393,18 +395,17 @@ void MouseClass::Init_Clear(void)
 /// back into it. Object pointers within the restored state are remapped by the swizzle
 /// manager, and the theater specific type data is reinitialized to match the scenario.
 /// </summary>
-/// <returns>Returns with S_OK if the map was loaded, otherwise the stream error.</returns>
-HRESULT MouseClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool MouseClass::Load(SaveStreamClass & stream)
 {
 	int i;
 
-	HRESULT result = BASECLASS::Load(stream);
-	if (SUCCEEDED(result)) {
+	bool result = BASECLASS::Load(stream);
+	if (result) {
 		int theater;
 		stream.Serialize(theater);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		LastTheater = THEATER_NONE;
@@ -439,9 +440,8 @@ HRESULT MouseClass::Load(SaveStreamClass & stream)
 
 		stream.Set_Context("MouseClass");
 		Serialize(stream);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		/*
@@ -480,24 +480,21 @@ HRESULT MouseClass::Load(SaveStreamClass & stream)
 		}
 
 		stream.Serialize_Bytes(CellZones, (int)(sizeof(*CellZones) * CellZoneCount));
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
 			Zones[i] = new unsigned short[ZoneCount];
 			stream.Serialize_Bytes(Zones[i], (int)(sizeof(unsigned short) * ZoneCount));
-			result = stream.Result();
-			if (FAILED(result)) {
-				return(result);
+			if (stream.Was_Error()) {
+				return(false);
 			}
 		}
 
 		stream.Serialize(ZoneConnections);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		for (i = 0; i < Array.Length(); i++) {
@@ -506,14 +503,17 @@ HRESULT MouseClass::Load(SaveStreamClass & stream)
 		}
 		int count;
 		stream.Serialize(count);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 		for (i = 0; i < count; i++) {
-			if (Load_Object_As<CellClass>(stream) == nullptr) {
-				return(stream.Result());
+			std::unique_ptr<CellClass> cell = Load_Object_As<CellClass>(stream);
+			if (cell == nullptr) {
+				return(false);
 			}
+			// The cell put itself into the map's array as it finished loading, and the map
+			// is what deletes it from here on.
+			cell.release();
 		}
 
 		TerrainTypeClass::Init(Scen->Theater);
@@ -530,7 +530,7 @@ HRESULT MouseClass::Load(SaveStreamClass & stream)
 		DraggedWaypoint = NULL;
 		LastTheater = Scen->Theater;
 
-		result = S_OK;
+		result = true;
 	}
 	return(result);
 }
@@ -542,45 +542,40 @@ HRESULT MouseClass::Load(SaveStreamClass & stream)
 /// and zone connections, and then every valid cell, in the order that Load expects to find
 /// them. Each cell writes its own contents as a record of its own.
 /// </summary>
-/// <returns>Returns with S_OK if the map was written, otherwise the stream error.</returns>
-HRESULT MouseClass::Save(SaveStreamClass & stream)
+/// <returns>bool; Was the record written whole?</returns>
+bool MouseClass::Save(SaveStreamClass & stream)
 {
 	int i;
 	int count;
 
-	HRESULT result = BASECLASS::Save(stream);
-	if (SUCCEEDED(result)) {
+	bool result = BASECLASS::Save(stream);
+	if (result) {
 		int theater = Scen->Theater;
 		stream.Serialize(theater);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		Serialize(stream);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		stream.Serialize_Bytes(CellZones, (int)(sizeof(*CellZones) * CellZoneCount));
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
 			stream.Serialize_Bytes(Zones[i], (int)(sizeof(unsigned short) * ZoneCount));
-			result = stream.Result();
-			if (FAILED(result)) {
-				return(result);
+			if (stream.Was_Error()) {
+				return(false);
 			}
 		}
 
 		stream.Serialize(ZoneConnections);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 
 		count = 0;
@@ -594,9 +589,8 @@ HRESULT MouseClass::Save(SaveStreamClass & stream)
 			cptr = Iterate();
 		}
 		stream.Serialize(count);
-		result = stream.Result();
-		if (FAILED(result)) {
-			return(result);
+		if (stream.Was_Error()) {
+			return(false);
 		}
 		Reset_Iterator();
 		cptr = Iterate();
@@ -612,7 +606,7 @@ HRESULT MouseClass::Save(SaveStreamClass & stream)
 			return(result);
 		}
 
-		result = S_OK;
+		result = true;
 	}
 	return(result);
 }

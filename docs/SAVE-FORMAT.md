@@ -95,9 +95,11 @@ fails the load before anything is allocated for it.
 
 An object whose record fails is destroyed before the load fails. The pointer
 slots it had registered are cleared first, since they still hold identities
-rather than addresses. The objects loaded before it keep their places in the
-heaps and have their slots cleared the same way, so a failed load leaves
-nothing that a later teardown cannot delete.
+rather than addresses, and the slots the records before it registered are
+cleared the same way. Those earlier objects stay in their heaps, and the ones
+that had finished loading have already taken their place in the map or a side
+table. A failed load therefore leaves a partly built game that the caller has
+to clear, not one it can carry on from.
 
 The body is what each class's `Serialize` produces, member by member, in host
 byte order. It is not described here; the classes are the description.

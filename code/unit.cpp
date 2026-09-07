@@ -6038,8 +6038,8 @@ bool UnitClass::Ready_To_Commence(void)
 /// again once that identity has arrived.
 /// </summary>
 /// <param name="stream">The stream to read this unit from.</param>
-/// <returns>Returns with S_OK if the unit was read successfully.</returns>
-HRESULT UnitClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool UnitClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 	return(BASECLASS::Load(stream));

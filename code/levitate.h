@@ -32,7 +32,7 @@ class LevitateLocomotionClass : public LocomotionClass
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual HRESULT Link_To_Object(void *pointer) override;
+		virtual void Link_To_Object(void *pointer) override;
 		virtual bool Is_Moving(void) override;
 		virtual Coord Destination(void) override;
 		virtual Coord Head_To_Coord(void) override;

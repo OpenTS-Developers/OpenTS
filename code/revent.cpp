@@ -378,7 +378,7 @@ bool RadarEventClass::Save(SaveStreamClass & stream)
 
 	stream.Serialize(LastRadarEventCell);
 
-	return(SUCCEEDED(stream.Result()));
+	return(!stream.Was_Error());
 }
 
 
@@ -408,7 +408,7 @@ bool RadarEventClass::Load(SaveStreamClass & stream)
 
 	stream.Serialize(LastRadarEventCell);
 
-	return(SUCCEEDED(stream.Result()));
+	return(!stream.Was_Error());
 }
 
 

@@ -145,15 +145,12 @@ bool BrainClass::Add_Neuron(NeuronClass *neuron)
 /// Saves this brain to the save game stream.
 /// </summary>
 /// <param name="cleardirty">Should the neurons be marked clean once they are written?</param>
-/// <returns>
-/// Returns with S_OK when the brain was written, E_POINTER when no stream was supplied,
-/// or the stream's own failure code.
-/// </returns>
-HRESULT BrainClass::Save(SaveStreamClass & stream, BOOL cleardirty)
+/// <returns>bool; Was the record written whole?</returns>
+bool BrainClass::Save(SaveStreamClass & stream, bool cleardirty)
 {
 
 	Serialize(stream, cleardirty);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
@@ -162,16 +159,13 @@ HRESULT BrainClass::Save(SaveStreamClass & stream, BOOL cleardirty)
 /// Whatever neurons the brain was holding are destroyed first, so the stream's neurons
 /// entirely replace them.
 /// </summary>
-/// <returns>
-/// Returns with S_OK when the brain was read, E_POINTER when no stream was supplied, or
-/// the stream's own failure code.
-/// </returns>
-HRESULT BrainClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool BrainClass::Load(SaveStreamClass & stream)
 {
 
 	stream.Set_Context("BrainClass");
 	Serialize(stream);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
@@ -182,7 +176,7 @@ HRESULT BrainClass::Load(SaveStreamClass & stream)
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
 /// <param name="cleardirty">Should the neurons be marked clean once they are written?</param>
-void BrainClass::Serialize(SaveStreamClass & stream, BOOL cleardirty)
+void BrainClass::Serialize(SaveStreamClass & stream, bool cleardirty)
 {
 	int count = Neurons.Count();
 	stream.Serialize(count);

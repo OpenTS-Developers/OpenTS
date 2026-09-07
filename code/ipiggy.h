@@ -11,6 +11,8 @@
 
 #include "iloco.h"
 
+#include <memory>
+
 
 struct IPiggyback
 {

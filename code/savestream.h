@@ -16,6 +16,7 @@
 
 #include <array>
 #include <deque>
+#include <new>
 #include <optional>
 #include <source_location>
 #include <string>
@@ -83,8 +84,7 @@ class SaveStreamClass
 		 * does nothing, so a class lists its members without checking each one and the
 		 * caller asks once whether the whole pass worked.
 		 */
-		HRESULT Result(void) const {return(ErrorCode);}
-		bool Was_Error(void) const {return(FAILED(ErrorCode));}
+		bool Was_Error(void) const {return(Failed);}
 
 		/*
 		 * Stops the pass here. A container that reads back a length no honest save could
@@ -159,6 +159,25 @@ class SaveStreamClass
 					Fail();
 					return(false);
 				}
+			}
+			return(true);
+		}
+
+		/*
+		 * Sizes a container the count asked for, failing the pass rather than throwing when
+		 * the process cannot hold it. A count within the bytes remaining still asks for that
+		 * many elements, which is more memory than the stream itself occupies.
+		 */
+		template<typename C>
+		bool Reserve(C & container, int count)
+		{
+			try {
+				container.clear();
+				container.resize((std::size_t)count);
+			} catch (std::bad_alloc const &) {
+				container.clear();
+				Fail();
+				return(false);
 			}
 			return(true);
 		}
@@ -253,8 +272,9 @@ class SaveStreamClass
 				if (!Fits(count, (std::is_arithmetic_v<T> || std::is_enum_v<T>) ? sizeof(T) : 1)) {
 					return;
 				}
-				value.clear();
-				value.resize(count);
+				if (!Reserve(value, count)) {
+					return;
+				}
 			}
 
 			if constexpr (std::is_arithmetic_v<T> || std::is_enum_v<T>) {
@@ -303,8 +323,9 @@ class SaveStreamClass
 				if (!Fits(count, 1)) {
 					return;
 				}
-				value.clear();
-				value.resize(count);
+				if (!Reserve(value, count)) {
+					return;
+				}
 			}
 
 			for (int index = 0; index < count; index++) {
@@ -323,10 +344,9 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (!Fits(count, 1)) {
+				if (!Fits(count, 1) || !Reserve(value, count)) {
 					return;
 				}
-				value.assign((std::size_t)count, false);
 			}
 
 			for (int index = 0; index < count; index++) {
@@ -345,10 +365,9 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (!Fits(count, 1)) {
+				if (!Fits(count, 1) || !Reserve(value, count)) {
 					return;
 				}
-				value.resize(count);
 			}
 
 			if (count > 0) {
@@ -387,7 +406,7 @@ class SaveStreamClass
 		// A read is judged against the record being loaded rather than the whole stream.
 		unsigned int Limit;
 		ModeType Mode;
-		HRESULT ErrorCode;
+		bool Failed;
 		unsigned int FormatVersion;
 
 		/*

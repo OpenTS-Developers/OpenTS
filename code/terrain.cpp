@@ -913,8 +913,8 @@ bool TerrainClass::Render(Rect & cliprect, bool forced, bool extras_only) const
 /// under the identity it was constructed with is dropped before the members arrive.
 /// </summary>
 /// <param name="stream">The stream to read the object from.</param>
-/// <returns>Returns with S_OK if the object was read successfully.</returns>
-HRESULT TerrainClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool TerrainClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 

@@ -6438,8 +6438,8 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 /// record, so they are disposed of before the saved members are read over the top of them.
 /// </summary>
 /// <param name="stream">The stream to read the house from.</param>
-/// <returns>Returns with S_OK, or the failure code reported by the stream.</returns>
-HRESULT HouseClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool HouseClass::Load(SaveStreamClass & stream)
 {
 	while (SuperWeapon.Count()) {
 		delete SuperWeapon[0];

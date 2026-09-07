@@ -8840,9 +8840,8 @@ void BuildingClass::Clear_Occupy_Bit(Coord const & coord)
 /// since the one it is about to be given is the one it was saved with. Post_Load enters it
 /// again once that identity has arrived.
 /// </summary>
-/// <returns>Returns with S_OK if the building was read, or the failure code from the
-/// underlying stream.</returns>
-HRESULT BuildingClass::Load(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool BuildingClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 	return(BASECLASS::Load(stream));

@@ -16,6 +16,7 @@
 #include "persist.h"
 
 #include <cstdio>
+#include <memory>
 
 class SaveStreamClass;
 class SaveVersionInfo;
@@ -27,25 +28,32 @@ struct ILocomotion;
 int Load_Misc_Values(SaveStreamClass & stream);
 int Save_Misc_Values(SaveStreamClass & stream);
 
-// A locomotor loaded this way is handed back unowned; the caller takes it.
-// docs/SAVE-FORMAT.md records what a record holds.
-HRESULT Save_Object(SaveStreamClass & stream, IPersistent * object);
-HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion);
-IPersistent * Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent const * object) = nullptr);
+// A loaded object is handed back owned; one that belongs to a heap is released there by
+// the caller that puts it in one. docs/SAVE-FORMAT.md records what a record holds.
+bool Save_Object(SaveStreamClass & stream, IPersistent * object);
+bool Save_Object(SaveStreamClass & stream, ILocomotion * locomotion);
+std::unique_ptr<IPersistent> Load_Object(SaveStreamClass & stream,
+	bool (*accepts)(IPersistent const * object) = nullptr);
 
 /// <summary>
 /// Loads the record next in the stream and requires it to be of the class asked for.
 /// </summary>
-/// <returns>The object, or NULL with the stream failed when the record holds another
-/// class. A record of the wrong class is destroyed before it can take its place, so the
-/// test happens while the object is still only the reader's.</returns>
+/// <returns>The object, owned by the caller, or nothing with the stream failed when the
+/// record holds another class. A record of the wrong class is destroyed before it can take
+/// its place, so the test happens while the object is still only the reader's.</returns>
 template<class T>
-T * Load_Object_As(SaveStreamClass & stream)
+std::unique_ptr<T> Load_Object_As(SaveStreamClass & stream)
 {
-	IPersistent * const object = Load_Object(stream, [](IPersistent const * candidate) {
+	std::unique_ptr<IPersistent> object = Load_Object(stream, [](IPersistent const * candidate) {
 		return(dynamic_cast<T const *>(candidate) != nullptr);
 	});
-	return(dynamic_cast<T *>(object));
+
+	// The record was accepted only if it holds a T, so this cast answers for what was loaded.
+	T * const wanted = dynamic_cast<T *>(object.get());
+	if (wanted != nullptr) {
+		object.release();
+	}
+	return(std::unique_ptr<T>(wanted));
 }
 
 bool Get_Savefile_Info(char const * name, SaveVersionInfo * info);

@@ -127,7 +127,7 @@ class InfantryClass : public FootClass
 		virtual ~InfantryClass(void) override;
 
 		virtual ClassID Class_ID(void) const override;
-		virtual HRESULT Load(SaveStreamClass & stream) override;
+		virtual bool Load(SaveStreamClass & stream) override;
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
 

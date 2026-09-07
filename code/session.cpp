@@ -1335,7 +1335,7 @@ bool GameOptionsType::Save(SaveStreamClass & stream)
 {
 
 	Serialize(stream);
-	return(SUCCEEDED(stream.Result()));
+	return(!stream.Was_Error());
 }
 
 
@@ -1351,7 +1351,7 @@ bool GameOptionsType::Load(SaveStreamClass & stream)
 	stream.Set_Context("GameOptionsType");
 	Serialize(stream);
 	ScenarioIndex = -1;
-	return(SUCCEEDED(stream.Result()));
+	return(!stream.Was_Error());
 }
 
 

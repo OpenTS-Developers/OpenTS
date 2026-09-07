@@ -14,6 +14,8 @@
 #include "iloco.h"
 #include "persist.h"
 
+#include <memory>
+
 class FootClass;
 class SaveStreamClass;
 
@@ -36,10 +38,10 @@ class LocomotionClass : public IPersistent, public ILocomotion
 		LocomotionClass(void);
 		virtual ~LocomotionClass(void);
 
-		virtual HRESULT Load(SaveStreamClass & stream) override;
-		virtual HRESULT Save(SaveStreamClass & stream, BOOL cleardirty) override;
+		virtual bool Load(SaveStreamClass & stream) override;
+		virtual bool Save(SaveStreamClass & stream, bool cleardirty) override;
 
-		virtual HRESULT Link_To_Object(void *object) override;
+		virtual void Link_To_Object(void *object) override;
 		virtual bool Is_Moving(void) override;
 		virtual Coord Destination(void) override;
 		virtual Coord Head_To_Coord(void) override;
@@ -107,8 +109,8 @@ class LocomotionClass : public IPersistent, public ILocomotion
 		 * from its Load and Save; the record is the swizzle identity followed by whatever
 		 * members the class names.
 		 */
-		HRESULT Save_Members(SaveStreamClass & stream, BOOL cleardirty);
-		HRESULT Load_Members(SaveStreamClass & stream);
+		bool Save_Members(SaveStreamClass & stream, bool cleardirty);
+		bool Load_Members(SaveStreamClass & stream);
 
 	protected:
 		/*

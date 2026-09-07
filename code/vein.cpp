@@ -916,7 +916,7 @@ bool VeinholeMonsterClass::Load_All(SaveStreamClass & stream)
 
 		stream.Set_Context(typeid(*monster).name(), id);
 		monster->Serialize(stream);
-		if (FAILED(stream.Result())) {
+		if (stream.Was_Error()) {
 			return(false);
 		}
 
@@ -931,7 +931,7 @@ bool VeinholeMonsterClass::Load_All(SaveStreamClass & stream)
 		}
 
 		monster->GrowthQueue->Serialize(stream, monster->GrowthNodes);
-		if (FAILED(stream.Result())) {
+		if (stream.Was_Error()) {
 			return(false);
 		}
 
@@ -997,7 +997,7 @@ bool VeinholeMonsterClass::Save_All(SaveStreamClass & stream)
 		}
 
 		VeinholeMonsters[i]->Serialize(stream);
-		if (FAILED(stream.Result())) {
+		if (stream.Was_Error()) {
 			return(false);
 		}
 
@@ -1012,7 +1012,7 @@ bool VeinholeMonsterClass::Save_All(SaveStreamClass & stream)
 		}
 
 		VeinholeMonsters[i]->GrowthQueue->Serialize(stream, VeinholeMonsters[i]->GrowthNodes);
-		if (FAILED(stream.Result())) {
+		if (stream.Was_Error()) {
 			return(false);
 		}
 	}

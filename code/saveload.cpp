@@ -143,6 +143,7 @@
 #include "objheaps.hh"
 
 #include <memory>
+#include <new>
 #include <string>
 
 //#define	SAVE_BLOCK_SIZE	512
@@ -161,12 +162,12 @@ unsigned int ExpectedGameVersion = LoadOptionsClass::GAMEVER_OPENTS;
 /// written, and a missing object fails the stream rather than leaving a gap where the
 /// reader expects one.
 /// </summary>
-/// <returns>Returns with S_OK, or the failure code of the write that went wrong.</returns>
-HRESULT Save_Object(SaveStreamClass & stream, IPersistent * persist)
+/// <returns>bool; Was the record written whole?</returns>
+bool Save_Object(SaveStreamClass & stream, IPersistent * persist)
 {
 	if (persist == nullptr) {
 		stream.Fail();
-		return(E_POINTER);
+		return(false);
 	}
 
 	ClassID classid = persist->Class_ID();
@@ -176,23 +177,23 @@ HRESULT Save_Object(SaveStreamClass & stream, IPersistent * persist)
 	stream.Serialize(length);
 	unsigned int const start = stream.Offset();
 
-	HRESULT result = persist->Save(stream, TRUE);
-	if (FAILED(result)) {
-		return(result);
+	bool result = persist->Save(stream, true);
+	if (!result) {
+		return(false);
 	}
 
 	length = stream.Offset() - start;
 	stream.Overwrite_Bytes(lengthat, &length, sizeof(length));
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
-HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion)
+bool Save_Object(SaveStreamClass & stream, ILocomotion * locomotion)
 {
 	IPersistent * const persist = dynamic_cast<IPersistent *>(locomotion);
 	if (persist == nullptr) {
 		stream.Fail();
-		return(E_NOINTERFACE);
+		return(false);
 	}
 	return(Save_Object(stream, persist));
 }
@@ -205,38 +206,39 @@ HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion)
 /// <param name="accepts">Asked whether the object is of the class the caller expects, once
 /// the record has been read and before the object takes its place. May be null when any
 /// class will do.</param>
-/// <returns>The object, or NULL with the stream failed when the identifier names no
-/// registered class, the object could not read its record, the record's length does not
-/// match what the object consumed, or the class is not the one asked for.</returns>
-IPersistent * Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent const * object))
+/// <returns>The object, owned by the caller, or nothing with the stream failed when the
+/// identifier names no registered class, the object could not read its record, the record's
+/// length does not match what the object consumed, or the class is not the one asked
+/// for.</returns>
+std::unique_ptr<IPersistent> Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent const * object))
 {
 	ClassID classid;
 	unsigned int length = 0;
 	stream.Serialize_Bytes(&classid, sizeof(classid));
 	stream.Serialize(length);
 	if (stream.Was_Error()) {
-		return(NULL);
+		return(nullptr);
 	}
 
 	unsigned int const start = stream.Offset();
 	if (length > stream.Size() - start) {
 		DebugString("Save record at %u claims %u bytes, past the end of the save\n", start, length);
 		stream.Fail();
-		return(NULL);
+		return(nullptr);
 	}
 
 	SwizzleManagerClass::MarkType const mark = Swizzler.Mark();
 	std::unique_ptr<IPersistent> persist = Create_Object(classid);
-	if (persist == NULL) {
+	if (persist == nullptr) {
 		DebugString("Save record at %u names a class this build does not register\n", start);
 		stream.Fail();
-		return(NULL);
+		return(nullptr);
 	}
 
 	bool ok;
 	{
 		SaveStreamClass::BoundScope const bound(stream, start + length);
-		ok = SUCCEEDED(persist->Load(stream));
+		ok = persist->Load(stream);
 	}
 	if (ok && stream.Offset() != start + length) {
 		DebugString("Save record of %s at %u is %u bytes but %u were read\n",
@@ -251,11 +253,11 @@ IPersistent * Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent 
 	if (!ok) {
 		Swizzler.Abandon(mark);
 		stream.Fail();
-		return(NULL);
+		return(nullptr);
 	}
 
 	persist->Post_Load();
-	return(persist.release());
+	return(persist);
 }
 
 
@@ -264,45 +266,48 @@ IPersistent * Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent 
 /// The objects are not handed back -- each one reattaches itself to its own heap as it is
 /// constructed, which is what refills the game's vectors.
 /// </summary>
-/// <returns>Returns with S_OK, or the failure code of the read that went wrong.</returns>
-static HRESULT Load_Vector(SaveStreamClass & stream)
+/// <returns>bool; Was the record read whole?</returns>
+static bool Load_Vector(SaveStreamClass & stream)
 {
 	int count = 0;
 	stream.Serialize(count);
 	if (stream.Was_Error()) {
-		return(stream.Result());
+		return(false);
 	}
 	if (count < 0) {
-		return(E_FAIL);
+		return(false);
 	}
 
 	for (int index = 0; index < count; index++) {
-		if (Load_Object(stream) == NULL) {
-			return(stream.Result());
+		std::unique_ptr<IPersistent> object = Load_Object(stream);
+		if (object == nullptr) {
+			return(false);
 		}
+		// The object attached itself to its own heap as it was constructed, and the heap
+		// is what deletes it from here on.
+		object.release();
 	}
-	return(S_OK);
+	return(true);
 }
 
 
 /// <summary>
 /// Saves a vector of persistent objects to the save game stream.
 /// </summary>
-/// <returns>Returns with S_OK, or the failure code of the first object that refused to
-/// save.</returns>
+/// <returns>bool; Was the record read whole?</returns>
 template<class T>
-static HRESULT Save_Vector(SaveStreamClass & stream, const DynamicVectorClass<T> &list)
+static bool Save_Vector(SaveStreamClass & stream, const DynamicVectorClass<T> &list)
 {
 	int count = list.Count();
 	stream.Serialize(count);
 
 	for (int index = 0; index < count; index++) {
-		HRESULT const result = Save_Object(stream, list[index]);
-		if (FAILED(result)) {
-			return(result);
+		bool const result = Save_Object(stream, list[index]);
+		if (!result) {
+			return(false);
 		}
 	}
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
@@ -401,7 +406,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	Rule->Save(stream);
 
 	DebugString("Saving AnimTypes\n");
-	if (FAILED(Save_Vector(stream, AnimTypes))) {
+	if (!Save_Vector(stream, AnimTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -410,13 +415,13 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	**	Save the map.  The map must be saved first, since it saves the Theater.
 	*/
 	DebugString("Saving Map\n");
-	if (FAILED(Map.Save(stream))) {
+	if (!Map.Save(stream)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
 	DebugString("Saving Tunnels\n");
-	if (FAILED(Save_Vector(stream, Tubes))) {
+	if (!Save_Vector(stream, Tubes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -425,7 +430,7 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	**	Save miscellaneous variables.
 	*/
 	DebugString("Saving Misc. Values\n");
-	if (FAILED(Save_Misc_Values(stream))) {
+	if (!Save_Misc_Values(stream)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -434,13 +439,13 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	**	Save the Logic & Map layers
 	*/
 	DebugString("Saving Logic\n");
-	if (FAILED(Logic.Save(stream))) {
+	if (!Logic.Save(stream)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
 	DebugString("Saving TacticalMap\n");
-	if (FAILED(Save_Object(stream, TacticalMap))) {
+	if (!Save_Object(stream, TacticalMap)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -450,248 +455,248 @@ static bool Put_All(SaveStreamClass & stream, int save_net)
 	**	TFixedIHeap class.
 	*/
 	DebugString("Saving HouseTypes\n");
-	if (FAILED(Save_Vector(stream, HouseTypes))) {
+	if (!Save_Vector(stream, HouseTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Houses\n");
-	if (FAILED(Save_Vector(stream, Houses))) {
+	if (!Save_Vector(stream, Houses)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Units\n");
-	if (FAILED(Save_Vector(stream, Units))) {
+	if (!Save_Vector(stream, Units)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving UnitTypes\n");
-	if (FAILED(Save_Vector(stream, UnitTypes))) {
+	if (!Save_Vector(stream, UnitTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving InfantryTypes\n");
-	if (FAILED(Save_Vector(stream, InfantryTypes))) {
+	if (!Save_Vector(stream, InfantryTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Infantry\n");
-	if (FAILED(Save_Vector(stream, Infantry))) {
+	if (!Save_Vector(stream, Infantry)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving BuildingTypes\n");
-	if (FAILED(Save_Vector(stream, BuildingTypes))) {
+	if (!Save_Vector(stream, BuildingTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Buildings\n");
-	if (FAILED(Save_Vector(stream, Buildings))) {
+	if (!Save_Vector(stream, Buildings)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving AircraftTypes\n");
-	if (FAILED(Save_Vector(stream, AircraftTypes))) {
+	if (!Save_Vector(stream, AircraftTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Aircraft\n");
-	if (FAILED(Save_Vector(stream, Aircraft))) {
+	if (!Save_Vector(stream, Aircraft)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Anims\n");
-	if (FAILED(Save_Vector(stream, Anims))) {
+	if (!Save_Vector(stream, Anims)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving TaskForces\n");
-	if (FAILED(Save_Vector(stream, TaskForces))) {
+	if (!Save_Vector(stream, TaskForces)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving TeamTypes\n");
-	if (FAILED(Save_Vector(stream, TeamTypes))) {
+	if (!Save_Vector(stream, TeamTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Teams\n");
-	if (FAILED(Save_Vector(stream, Teams))) {
+	if (!Save_Vector(stream, Teams)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving ScriptTypes\n");
-	if (FAILED(Save_Vector(stream, ScriptTypes))) {
+	if (!Save_Vector(stream, ScriptTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Scripts\n");
-	if (FAILED(Save_Vector(stream, Scripts))) {
+	if (!Save_Vector(stream, Scripts)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving TagTypes\n");
-	if (FAILED(Save_Vector(stream, TagTypes))) {
+	if (!Save_Vector(stream, TagTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Tags\n");
-	if (FAILED(Save_Vector(stream, Tags))) {
+	if (!Save_Vector(stream, Tags)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving TriggerTypes\n");
-	if (FAILED(Save_Vector(stream, TriggerTypes))) {
+	if (!Save_Vector(stream, TriggerTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Triggers\n");
-	if (FAILED(Save_Vector(stream, Triggers))) {
+	if (!Save_Vector(stream, Triggers)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving AITriggerTypes\n");
-	if (FAILED(Save_Vector(stream, AITriggerTypes))) {
+	if (!Save_Vector(stream, AITriggerTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 
 	DebugString("Saving Actions\n");
-	if (FAILED(Save_Vector(stream, Actions))) {
+	if (!Save_Vector(stream, Actions)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Events\n");
-	if (FAILED(Save_Vector(stream, Events))) {
+	if (!Save_Vector(stream, Events)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Factories\n");
-	if (FAILED(Save_Vector(stream, Factories))) {
+	if (!Save_Vector(stream, Factories)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving VoxelAnimTypes\n");
-	if (FAILED(Save_Vector(stream, VoxelAnimTypes))) {
+	if (!Save_Vector(stream, VoxelAnimTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving VoxelAnims\n");
-	if (FAILED(Save_Vector(stream, VoxelAnims))) {
+	if (!Save_Vector(stream, VoxelAnims)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Warheads\n");
-	if (FAILED(Save_Vector(stream, Warheads))) {
+	if (!Save_Vector(stream, Warheads)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Weapons\n");
-	if (FAILED(Save_Vector(stream, Weapons))) {
+	if (!Save_Vector(stream, Weapons)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving ParticleTypes\n");
-	if (FAILED(Save_Vector(stream, ParticleTypes))) {
+	if (!Save_Vector(stream, ParticleTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Particles\n");
-	if (FAILED(Save_Vector(stream, Particles))) {
+	if (!Save_Vector(stream, Particles)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving ParticleSystemTypes\n");
-	if (FAILED(Save_Vector(stream, ParticleSystemTypes))) {
+	if (!Save_Vector(stream, ParticleSystemTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving ParticleSystems\n");
-	if (FAILED(Save_Vector(stream, ParticleSystems))) {
+	if (!Save_Vector(stream, ParticleSystems)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving BulletTypes\n");
-	if (FAILED(Save_Vector(stream, BulletTypes))) {
+	if (!Save_Vector(stream, BulletTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Bullets\n");
-	if (FAILED(Save_Vector(stream, Bullets))) {
+	if (!Save_Vector(stream, Bullets)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving WaypointPaths\n");
-	if (FAILED(Save_Vector(stream, WaypointPaths))) {
+	if (!Save_Vector(stream, WaypointPaths)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving SmudgeTypes\n");
-	if (FAILED(Save_Vector(stream, SmudgeTypes))) {
+	if (!Save_Vector(stream, SmudgeTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving OverlayTypes\n");
-	if (FAILED(Save_Vector(stream, OverlayTypes))) {
+	if (!Save_Vector(stream, OverlayTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving LightSources\n");
-	if (FAILED(Save_Vector(stream, LightSources))) {
+	if (!Save_Vector(stream, LightSources)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving BuildingLights\n");
-	if (FAILED(Save_Vector(stream, BuildingLights))) {
+	if (!Save_Vector(stream, BuildingLights)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Sides\n");
-	if (FAILED(Save_Vector(stream, Sides))) {
+	if (!Save_Vector(stream, Sides)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Tiberiums\n");
-	if (FAILED(Save_Vector(stream, Tiberiums))) {
+	if (!Save_Vector(stream, Tiberiums)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Empulses\n");
-	if (FAILED(Save_Vector(stream, EMPulseClass::EMPulses))) {
+	if (!Save_Vector(stream, EMPulseClass::EMPulses)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving SuperWeaponTypes\n");
-	if (FAILED(Save_Vector(stream, SuperWeaponTypes))) {
+	if (!Save_Vector(stream, SuperWeaponTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving SuperWeapons\n");
-	if (FAILED(Save_Vector(stream, SuperWeapons))) {
+	if (!Save_Vector(stream, SuperWeapons)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving TerrianTypes\n");
-	if (FAILED(Save_Vector(stream, TerrainTypes))) {
+	if (!Save_Vector(stream, TerrainTypes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Terrains\n");
-	if (FAILED(Save_Vector(stream, Terrains))) {
+	if (!Save_Vector(stream, Terrains)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving FoggedObjects\n");
-	if (FAILED(Save_Vector(stream, FoggedObjectClass::FoggyObjects))) {
+	if (!Save_Vector(stream, FoggedObjectClass::FoggyObjects)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving AlphaShapes\n");
-	if (FAILED(Save_Vector(stream, AlphaShapes))) {
+	if (!Save_Vector(stream, AlphaShapes)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
 	DebugString("Saving Waves\n");
-	if (FAILED(Save_Vector(stream, Waves))) {
+	if (!Save_Vector(stream, Waves)) {
 		DebugString("\t***** FAILED!\n");
 		return(false);
 	}
@@ -775,17 +780,17 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
-	if (FAILED(Load_Vector(stream))) {	/// AnimTypes
+	if (!Load_Vector(stream)) {	/// AnimTypes
 		return(false);
 	}
 
 	Map.Load(stream);
 
-	if (FAILED(Load_Vector(stream))) {	/// Tubes
+	if (!Load_Vector(stream)) {	/// Tubes
 		return(false);
 	}
 
-	if (FAILED(Load_Misc_Values(stream))) {
+	if (!Load_Misc_Values(stream)) {
 		return(false);
 	}
 
@@ -796,156 +801,159 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		delete TacticalMap;
 		TacticalMap = NULL;
 	}
-	Tactical * const old_tactical = Load_Object_As<Tactical>(stream);
-	if (old_tactical == NULL) {
+	std::unique_ptr<Tactical> tactical = Load_Object_As<Tactical>(stream);
+	if (tactical == nullptr) {
 		return(false);
 	}
+	// The map installed itself in TacticalMap as it was constructed, and that global is
+	// what deletes it from here on.
+	tactical.release();
 
-	if (FAILED(Load_Vector(stream))) {	/// HouseTypes
+	if (!Load_Vector(stream)) {	/// HouseTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Houses
+	if (!Load_Vector(stream)) {	/// Houses
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Units
+	if (!Load_Vector(stream)) {	/// Units
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// UnitTypes
+	if (!Load_Vector(stream)) {	/// UnitTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// InfantryTypes
+	if (!Load_Vector(stream)) {	/// InfantryTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Infantry
+	if (!Load_Vector(stream)) {	/// Infantry
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// BuildingTypes
+	if (!Load_Vector(stream)) {	/// BuildingTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Buildings
+	if (!Load_Vector(stream)) {	/// Buildings
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// AircraftTypes
+	if (!Load_Vector(stream)) {	/// AircraftTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Aircraft
+	if (!Load_Vector(stream)) {	/// Aircraft
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Anims
+	if (!Load_Vector(stream)) {	/// Anims
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// TaskForces
+	if (!Load_Vector(stream)) {	/// TaskForces
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// TeamTypes
+	if (!Load_Vector(stream)) {	/// TeamTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Teams
+	if (!Load_Vector(stream)) {	/// Teams
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// ScriptTypes
+	if (!Load_Vector(stream)) {	/// ScriptTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Scripts
+	if (!Load_Vector(stream)) {	/// Scripts
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// TagTypes
+	if (!Load_Vector(stream)) {	/// TagTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Tags
+	if (!Load_Vector(stream)) {	/// Tags
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// TriggerTypes
+	if (!Load_Vector(stream)) {	/// TriggerTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Triggers
+	if (!Load_Vector(stream)) {	/// Triggers
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// AITriggerTypes
+	if (!Load_Vector(stream)) {	/// AITriggerTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Actions
+	if (!Load_Vector(stream)) {	/// Actions
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Events
+	if (!Load_Vector(stream)) {	/// Events
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Factories
+	if (!Load_Vector(stream)) {	/// Factories
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// VoxelAnimTypes
+	if (!Load_Vector(stream)) {	/// VoxelAnimTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// VoxelAnims
+	if (!Load_Vector(stream)) {	/// VoxelAnims
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Warheads
+	if (!Load_Vector(stream)) {	/// Warheads
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Weapons
+	if (!Load_Vector(stream)) {	/// Weapons
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// ParticleTypes
+	if (!Load_Vector(stream)) {	/// ParticleTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Particles
+	if (!Load_Vector(stream)) {	/// Particles
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// ParticleSystemTypes
+	if (!Load_Vector(stream)) {	/// ParticleSystemTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// ParticleSystems
+	if (!Load_Vector(stream)) {	/// ParticleSystems
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// BulletTypes
+	if (!Load_Vector(stream)) {	/// BulletTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Bullets
+	if (!Load_Vector(stream)) {	/// Bullets
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// WaypointPaths
+	if (!Load_Vector(stream)) {	/// WaypointPaths
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// SmudgeTypes
+	if (!Load_Vector(stream)) {	/// SmudgeTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// OverlayTypes
+	if (!Load_Vector(stream)) {	/// OverlayTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// LightSources
+	if (!Load_Vector(stream)) {	/// LightSources
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// BuildingLights
+	if (!Load_Vector(stream)) {	/// BuildingLights
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Sides
+	if (!Load_Vector(stream)) {	/// Sides
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Tiberiums
+	if (!Load_Vector(stream)) {	/// Tiberiums
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// EMPulseClass::EMPulses
+	if (!Load_Vector(stream)) {	/// EMPulseClass::EMPulses
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// SuperWeaponTypes
+	if (!Load_Vector(stream)) {	/// SuperWeaponTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// SuperWeapons
+	if (!Load_Vector(stream)) {	/// SuperWeapons
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// TerrainTypes
+	if (!Load_Vector(stream)) {	/// TerrainTypes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Terrains
+	if (!Load_Vector(stream)) {	/// Terrains
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// FoggedObjectClass::FoggyObjects
+	if (!Load_Vector(stream)) {	/// FoggedObjectClass::FoggyObjects
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// AlphaShapes
+	if (!Load_Vector(stream)) {	/// AlphaShapes
 		return(false);
 	}
-	if (FAILED(Load_Vector(stream))) {	/// Waves
+	if (!Load_Vector(stream)) {	/// Waves
 		return(false);
 	}
 	if (!VeinholeMonsterClass::Load_All(stream)) {
@@ -1036,7 +1044,7 @@ bool Save_Game(const char *file_name, char const * descr)
 	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_SAVE);
 	bool res = Put_All(stream, 0);
 	if (!res) {
-		DebugString("\t***** FAILED! (0x%08lx)\n", (unsigned long)stream.Result());
+		DebugString("\t***** FAILED!\n");
 	}
 
 	if (res) {
@@ -1124,9 +1132,16 @@ bool Load_Game(const char *file_name)
 	Swizzler.Discard();
 
 	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_LOAD);
-	bool res = Get_All(stream, false);
+	bool res = false;
+	// The catch sits here rather than around the whole routine because what was already
+	// loaded still has to be abandoned below.
+	try {
+		res = Get_All(stream, false);
+	} catch (std::bad_alloc const &) {
+		DebugString("\t***** FAILED! (out of memory at %u of %u bytes)\n", stream.Offset(), stream.Size());
+	}
 	if (!res) {
-		DebugString("\t***** FAILED! (0x%08lx at %u of %u bytes)\n", (unsigned long)stream.Result(), stream.Offset(), stream.Size());
+		DebugString("\t***** FAILED! (at %u of %u bytes)\n", stream.Offset(), stream.Size());
 		// What was loaded stays in the heaps until the next teardown, which must not
 		// follow the identities still sitting in its pointer slots.
 		Swizzler.Abandon();
@@ -1231,7 +1246,7 @@ static void Serialize_Misc_Values(SaveStreamClass & stream)
 int Save_Misc_Values(SaveStreamClass & stream)
 {
 	Serialize_Misc_Values(stream);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 
@@ -1252,7 +1267,7 @@ int Load_Misc_Values(SaveStreamClass & stream)
 {
 	stream.Set_Context("Load_Misc_Values");
 	Serialize_Misc_Values(stream);
-	return(stream.Result());
+	return(!stream.Was_Error());
 }
 
 

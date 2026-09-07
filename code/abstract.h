@@ -74,8 +74,8 @@ class AbstractClass : public IPersistent
 		 * the members are read -- dropping a registration keyed by the identity the read
 		 * is about to replace, say.
 		 */
-		HRESULT Save_Members(SaveStreamClass & stream, BOOL cleardirty);
-		HRESULT Load_Members(SaveStreamClass & stream);
+		bool Save_Members(SaveStreamClass & stream, bool cleardirty);
+		bool Load_Members(SaveStreamClass & stream);
 
 	public:
 
@@ -100,8 +100,8 @@ class AbstractClass : public IPersistent
 		virtual ~AbstractClass(void);
 
 
-		virtual HRESULT Load(SaveStreamClass & stream) override;
-		virtual HRESULT Save(SaveStreamClass & stream, BOOL cleardirty) override;
+		virtual bool Load(SaveStreamClass & stream) override;
+		virtual bool Save(SaveStreamClass & stream, bool cleardirty) override;
 
 		virtual int What_Am_I(void) const;
 		virtual int Fetch_ID(void) const;

@@ -204,10 +204,10 @@ ClassID TiberiumClass::Class_ID(void) const
 /// The spread and growth pools are dropped before the members arrive, since the counts
 /// they track are about to be replaced with the saved ones.
 /// </summary>
-/// <returns>Returns with S_OK if the tiberium type was loaded.</returns>
+/// <returns>bool; Was the record read whole?</returns>
 /// <remarks>The spread and growth systems are not saved, so they come back empty. They
 /// must be rebuilt once the game has finished loading.</remarks>
-HRESULT TiberiumClass::Load(SaveStreamClass & stream)
+bool TiberiumClass::Load(SaveStreamClass & stream)
 {
 	Clear_Spread();
 	Clear_Growth();

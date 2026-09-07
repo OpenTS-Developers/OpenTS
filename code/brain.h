@@ -62,10 +62,10 @@ class BrainClass
 		void Init(int min, int max);
 		bool Add_Neuron(NeuronClass *neuron);
 
-		HRESULT Load(SaveStreamClass & stream);
-		HRESULT Save(SaveStreamClass & stream, BOOL cleardirty);
+		bool Load(SaveStreamClass & stream);
+		bool Save(SaveStreamClass & stream, bool cleardirty);
 
-		void Serialize(SaveStreamClass & stream, BOOL cleardirty = FALSE);
+		void Serialize(SaveStreamClass & stream, bool cleardirty = false);
 
 	private:
 		/*

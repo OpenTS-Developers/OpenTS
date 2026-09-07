@@ -212,7 +212,7 @@ target_link_libraries(OpenTS PRIVATE
     winmm
     ws2_32
     kernel32 user32 gdi32 winspool comdlg32 advapi32 shell32
-    ole32 oleaut32 uuid odbc32 odbccp32
+    odbc32 odbccp32
 )
 
 if(MSVC)

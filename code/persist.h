@@ -22,9 +22,9 @@ struct IPersistent
 	virtual ~IPersistent(void) {}
 
 	virtual ClassID Class_ID(void) const = 0;
-	virtual HRESULT Load(SaveStreamClass & stream) = 0;
+	virtual bool Load(SaveStreamClass & stream) = 0;
 	// Restores what the record could not carry, once the record has been checked; an object
 	// takes its place in the map or a side table here, never while its record is still in doubt.
 	virtual void Post_Load(void) {}
-	virtual HRESULT Save(SaveStreamClass & stream, BOOL cleardirty) = 0;
+	virtual bool Save(SaveStreamClass & stream, bool cleardirty) = 0;
 };
