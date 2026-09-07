@@ -202,19 +202,20 @@ with `--base-ref` against that branch's own base. See
 
 ### What a record says
 
-Write for someone comparing released builds. A record is a pair: what the
-behavior was, and what it is now. State that pair in two or three sentences,
-then stop. A genuine addition has no "was" and states only the new behavior.
+Write for someone comparing released builds. An addition states only the new
+behavior: what the reader can now do. Everything else is a pair: what the
+behavior was, and what it is now. Either way, two or three sentences, then stop.
 
-Order the pair however the record reads best. Lead with the old behavior when
-the fault is what the reader recognizes, and with the new one when the record
+Order a pair however the record reads best. Lead with the old behavior when the
+fault is what the reader recognizes, and with the new one when the record
 answers "what can I do now."
 
 - Give the reader the difference, not the mechanism that produced it. Name the
   faulty result rather than the routine, buffer, or call that caused it.
 - Remove background, restatement, why the change matters, and details that do
-  not change a reader's decision. Do not list what stayed the same unless a
-  reader would otherwise assume it changed.
+  not change a reader's decision. In an addition, the gap the feature fills is
+  background: do not open by saying what was impossible before. Do not list what
+  stayed the same unless a reader would otherwise assume it changed.
 - Describe the outcome: what the reader can do, will see, or must migrate. Omit
   internal fields, refactors, and structures with no visible consequence.
 - Do not narrate the development cycle, work that landed in stages,
@@ -228,9 +229,9 @@ answers "what can I do now."
   is for, such as a prior implementation the change follows. One sentence is
   the limit.
 
-A change wide enough to need more than three sentences states each pair the
-same way and stops at one paragraph per pair. Length comes from the number of
-visible changes, never from explaining one of them.
+A change wide enough to need more than three sentences states each visible
+change the same way and stops at one paragraph each. Length comes from the
+number of visible changes, never from explaining one of them.
 
 ## Handoff
 
