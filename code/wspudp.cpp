@@ -139,8 +139,7 @@ void UDPInterfaceClass::Configure_Tunnel(unsigned short local_id, unsigned long 
 /// <param name="destination">Where the packet is bound. In tunnel mode the port carries
 /// the recipient's tunnel ID rather than a real port.</param>
 /// <returns>Whatever sendto returned, counting only the payload. A SOCKET_ERROR always
-/// leaves a matching code in LAST_ERROR, including the rejection this routine makes
-/// itself, so that a caller can tell a full socket from a packet it can never send.</returns>
+/// sets LAST_ERROR, including for a packet this routine rejects itself.</returns>
 int UDPInterfaceClass::Send_To(const char *buffer, int buffer_len, sockaddr_in *destination)
 {
 	if (TunnelPort == 0) {
@@ -516,14 +515,14 @@ void UDPInterfaceClass::Broadcast (void *buffer, int buffer_len)
 void UDPInterfaceClass::Receive_Pending(void)
 {
 	for (int taken = 0; taken < WS_MAX_STATIC_BUFFERS; taken++) {
-		struct sockaddr_in addr;
+		sockaddr_in addr;
 
 		int rc = Receive_From ( (char*)ReceiveBuffer, sizeof (ReceiveBuffer), &addr );
 		if (rc == RECEIVE_IGNORED) continue;
 
 		if (rc == SOCKET_ERROR) {
-			// The socket is empty, or it failed and the failure is cleared
-			// before the next datagram is tried.
+			// Would-block means the socket is empty; anything else is cleared
+			// and the drain carries on.
 			if (LAST_ERROR == WSAEWOULDBLOCK) return;
 			Clear_Socket_Error (Socket);
 			continue;
@@ -561,7 +560,7 @@ void UDPInterfaceClass::Receive_Pending(void)
 		/*
 		**	Create a new buffer and store this packet in it.
 		*/
-		WinsockBufferType *packet = (WinsockBufferType *)Get_New_In_Buffer();
+		WinsockBufferType * packet = (WinsockBufferType *)Get_New_In_Buffer();
 		if (packet == NULL) {
 			return;
 		}
@@ -585,15 +584,14 @@ void UDPInterfaceClass::Receive_Pending(void)
 
 
 /// <summary>
-/// Sends the out buffers in order until they are empty or the socket will
-/// take no more. A send that fails leaves its packet at the head for the next
-/// pass and ends this one, so a full socket costs a pass rather than the queue.
+/// Sends the out buffers in order until they are empty or the socket will take
+/// no more. A send that fails leaves its packet at the head for the next pass.
 /// </summary>
 void UDPInterfaceClass::Send_Pending(void)
 {
-	while ( OutBuffers.Count() > 0 ) {
-		struct sockaddr_in addr;
-		WinsockBufferType *packet = OutBuffers [ 0 ];
+	while (OutBuffers.Count() > 0) {
+		sockaddr_in addr;
+		WinsockBufferType * packet = OutBuffers[0];
 
 		/*
 		**	Set up the address structure of the outgoing packet
@@ -611,8 +609,6 @@ void UDPInterfaceClass::Send_Pending(void)
 		int rc = Send_To ( ((char const *)packet->Buffer) - sizeof(packet->CRC), packet->BufferLen + sizeof(packet->CRC), &addr );
 
 		if (rc == SOCKET_ERROR) {
-			// A full socket is not the packet's fault, so the packet stays queued
-			// either way. Anything else is cleared before the next pass retries it.
 			if (LAST_ERROR != WSAEWOULDBLOCK) {
 				Clear_Socket_Error (Socket);
 			}

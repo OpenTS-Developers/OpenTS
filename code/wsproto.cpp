@@ -203,8 +203,8 @@ void WinsockInterfaceClass::Close_Socket (void)
 
 
 /// <summary>
-/// Puts the socket into non-blocking mode and lets Service poll it.
-/// Nothing is received until this succeeds.
+/// Puts the socket into non-blocking mode so Service can poll it. Nothing is
+/// received until this succeeds.
 /// </summary>
 /// <returns>bool; Is the socket ready to be polled?</returns>
 bool WinsockInterfaceClass::Start_Listening (void)
