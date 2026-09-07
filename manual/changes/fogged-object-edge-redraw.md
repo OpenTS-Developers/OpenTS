@@ -9,13 +9,6 @@ targets:
   effect: changed
 ---
 
-Fogged structures, terrain, overlays and smudges are now clipped to the tactical view
-when a cell at its edge asks to be redrawn. A cell's redraw area extends beyond its own
-diamond, and one along the top, bottom or sides could therefore pass an out-of-frame
-clipping window into the shape renderer. The renderer then addressed pixels outside the
-frame and could stop the game while loading or playing a fog-of-war scenario.
+A fog-of-war scenario could stop the game while loading or playing. A cell's redraw area extends beyond its own diamond, so a fogged structure, terrain object, overlay or smudge at the edge of the tactical view passed an out-of-frame clipping window to the shape renderer, which then addressed pixels outside the frame. These are now clipped to the view.
 
-Fogged buildings that use their owner's palette now also reuse that owner's color
-converter, matching visible buildings. They previously treated the map cell as a color
-converter, which could overwrite the cell with rendering state and stop the game during
-a later terrain-overlay redraw.
+Fogged buildings that use their owner's palette also reuse that owner's color converter, matching visible buildings. They treated the map cell as a color converter, which could overwrite the cell with rendering state and stop the game during a later terrain-overlay redraw.

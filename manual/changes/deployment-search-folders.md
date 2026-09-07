@@ -13,27 +13,8 @@ targets:
 credit: [ZivDero]
 ---
 
-A distribution can sort its files into folders and name them in an `OPENTS.INI`
-beside its game data. With no such file the game searches `INI`, `MIX` and
-`Maps`, so a deployment sorted that way needs no configuration at all.
+A distribution can now sort its files into folders and name them in an `OPENTS.INI` beside its game data. With no such file the game searches `INI`, `MIX` and `Maps`, so a deployment sorted that way needs no configuration.
 
-Wildcard searches now cover every folder the game searches rather than stopping
-at the first one holding a match. Rules files, battle files, map packets, loose
-maps, and the map and movie archives are all found across the folders. Names are
-gathered in a fixed order, so which copy of a repeated name is used no longer
-depends on the order a file system reported it in.
+A wildcard search stopped at the first folder holding a match. Rules files, battle files, map packets, loose maps, and the map and movie archives are now gathered across every searched folder in a fixed order, so which copy of a repeated name is used no longer depends on the file system. The loose `PATCH.MIX` and `EXPAND??.MIX` archives are looked for in every searched folder rather than the game's own directory alone, and are still required to be loose.
 
-The loose `PATCH.MIX` and `EXPAND??.MIX` archives are now looked for in every
-searched folder instead of the game's own directory alone. They are still
-required to be loose files, so an expansion archive cannot be hidden inside
-another archive.
-
-Files the game writes are never written into a searched folder, and a file it
-deletes is never one of theirs. The settings file, the hotkey file, the hall of
-fame and a saved random map were opened through the search before being written,
-so a copy a deployment had shipped in one of these folders could be overwritten,
-and the hotkey reset could delete it.
-
-The settings written when the intro is first shown are saved again. Reopening the
-file for reading beforehand had left the save with a file it could not write
-through.
+The settings file, the hotkey file, the hall of fame and a saved random map were opened through the search before being written, so a copy shipped in a searched folder could be overwritten and the hotkey reset could delete it. The game now never writes into or deletes from a searched folder. The settings written when the intro is first shown are saved again; reopening the file for reading beforehand had left the save with a file it could not write through.

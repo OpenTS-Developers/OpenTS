@@ -11,11 +11,6 @@ targets: []
 credit: [tinix0]
 ---
 
-OpenTS no longer asks the processor whether it supports MMX or CMOV. This formalizes the
-minimum hardware OpenTS already requires — SSE2, so a Pentium 4 or Athlon 64 onward — which
-always carries both.
+OpenTS no longer asks the processor whether it supports MMX or CMOV. The routines those flags selected between are C++ now and take one path on every processor, so neither the flags nor the detection that set them remain. OpenTS already required SSE2 — a Pentium 4 or Athlon 64 onward — which always carries both.
 
-A machine below that minimum was never covered by a build claim. The routines the flags
-selected between are C++ now and take one path on every processor, so neither the flags nor the
-detection that set them remain. The processor family and vendor CPUID reports are still read
-and returned through `Get_CPU_Type` and the `CPUType` and `VendorID` globals.
+The processor family and vendor CPUID reports are still read and returned through `Get_CPU_Type` and the `CPUType` and `VendorID` globals.

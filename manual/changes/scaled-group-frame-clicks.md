@@ -7,15 +7,4 @@ credit:
 - ZivDero
 ---
 
-A control standing inside a dialog's group frame — the thin box drawn around a set of
-related options — now takes clicks while the picture is scaled into the window. With
-scaling active the game delivers every mouse message itself, to the control standing where
-the player sees it, and that delivery handed each click to the topmost window over the
-position. The system asks a window whether it lets clicks through, and a group frame does;
-the game's own delivery never asked, so a frame drawn over a control kept the clicks meant
-for it.
-
-In the skirmish lobby this left the Game Speed slider and the Re-Deployable MCV, Short
-Game and Multi Engineer checkboxes ignoring the mouse whenever the window was scaled,
-while the controls around them kept working. At the window's native size the game leaves
-delivery to the system, and every control responded.
+With the picture scaled into the window, a control standing inside a dialog's group frame — the thin box drawn around a set of related options — ignored clicks: the game delivers every mouse message itself while scaling and handed each one to the topmost window over the position, which is the frame. In the skirmish lobby this left the Game Speed slider and the Re-Deployable MCV, Short Game and Multi Engineer checkboxes dead to the mouse whenever the window was scaled, while the controls around them kept working. Clicks now reach the control the player sees, at any window size.

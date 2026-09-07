@@ -10,6 +10,4 @@ credit:
 - ZivDero
 ---
 
-The reconnect dialog's table of bar controls named the first player's box twice, so the
-second player's bar was drawn over the first player's and the second box stayed empty. The
-original game has the same fault. Each bar now draws in its own box.
+The reconnect dialog's table of bar controls named the first player's box twice, so the second player's bar was drawn over the first player's and the second box stayed empty. Each bar now draws in its own box.

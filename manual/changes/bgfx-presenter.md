@@ -46,10 +46,8 @@ targets:
 credit: [ZivDero]
 ---
 
-The finished picture reaches the screen through bgfx, which draws it with Direct3D, Vulkan, or OpenGL depending on the machine. The game still renders every frame in software exactly as it did, so nothing about how the game looks or plays depends on the graphics card; only the last step, getting that picture in front of the player, has changed. DirectDraw is gone from the engine entirely.
+The finished picture now reaches the screen through bgfx, which draws it with Direct3D, Vulkan or OpenGL depending on the machine, in place of DirectDraw. The game still renders every frame in software, so nothing about how it looks or plays depends on the graphics card.
 
-The game no longer changes the desktop's resolution. A full-screen game covers the screen with a borderless window, and the picture it renders is scaled into that window, keeping its shape and adding black bars where the shapes differ. Switching away from the game and back no longer disturbs the rest of the desktop, and a game that stops responding no longer leaves the display in its resolution.
+A full-screen game no longer changes the desktop's resolution: it covers the screen with a borderless window and scales the picture into it, keeping its shape and adding black bars where the shapes differ. Switching away and back no longer disturbs the desktop, and a game that stops responding no longer leaves the display in its resolution. The mouse pointer is a real system cursor built from the game's own artwork rather than drawn into the frame.
 
-The mouse pointer is now a real system cursor built from the game's own artwork, drawn over the picture by the system rather than into the frame.
-
-The display options screen offers every resolution the display reports between 640 by 400 and 4096 by 4096. `AllowHiResModes` no longer filters that list and has been removed, along with the `HIRES` cheat that used to bypass it. `AllowModeToggle` and its `TOGGLE` cheat are also gone: the game no longer switches resolution between the menus and play, because the picture is scaled to the window instead. `VideoBackBuffer` was already unused.
+The display options screen offers every resolution the display reports between 640 by 400 and 4096 by 4096, where `AllowHiResModes` and its `HIRES` cheat used to filter that list. The game no longer switches resolution between the menus and play, so `AllowModeToggle` and its `TOGGLE` cheat are gone as well. `VideoBackBuffer` was already unused.

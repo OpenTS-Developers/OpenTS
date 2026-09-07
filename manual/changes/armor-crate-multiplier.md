@@ -13,6 +13,4 @@ targets:
 credit: [ZivDero, Iran]
 ---
 
-An armor crate now multiplies each eligible object's armor multiplier by the `Armor` row's third field. A value of `2` halves ordinary incoming damage, while `0.5` doubles it.
-
-The collector and each object in the crate radius keep their existing one-use checks, so this change does not make armor crates stack.
+An armor crate now multiplies each eligible object's armor multiplier by the `Armor` row's third field. A value of `2` halves ordinary incoming damage, while `0.5` doubles it. The collector and each object in the crate radius keep their existing one-use checks, so armor crates still do not stack.

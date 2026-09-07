@@ -18,8 +18,6 @@ targets:
 credit: [ZivDero, CCHyper]
 ---
 
-A shape-drawn vehicle is drawn per facing at `Facings` of `16`, `32` and `64` as well as `8`, and a weapon's `Anim` list selects by facing at those lengths too. Any other count still draws one facing, and artwork written for `8` is drawn exactly as before.
+Artwork that declared `Facings` above eight was drawn at a single facing. A shape-drawn vehicle is now drawn per facing at `16`, `32` and `64` as well as `8`, and a weapon's `Anim` list selects by facing at those lengths too. Any other count still draws one facing, and artwork written for `8` is drawn exactly as before.
 
 A turret takes its own count from the new `TurretFacings` and its strip from the new `StartTurretFrame`. Both default to what the engine already drew, so no existing artwork moves.
-
-Artwork that declared a count above eight was drawn at a single facing until now. Drawing it per facing is a deliberate change to what that data means.

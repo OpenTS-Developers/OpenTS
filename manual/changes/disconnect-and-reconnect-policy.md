@@ -20,19 +20,8 @@ credit:
 - Rampastring
 ---
 
-A player who leaves a client-launched match now has their base destroyed, which is what
-`AutoSurrender` asks for and what a launch file says unless it writes `No`. Where the computer
-does take the seat over, it keeps the player's name rather than renaming the house to itself,
-so the radar list, chat and the match statistics still say who held it. A match arranged from
-the game's own menu still hands the base over.
+A player who leaves a client-launched match now has their base destroyed, which is what `AutoSurrender` asks for and what a launch file says unless it writes `No`; a match arranged from the game's own menu still hands the base over. Where the computer takes a seat over it keeps the player's name rather than renaming the house to itself, so the radar list, chat and the match statistics still say who held it.
 
-`ConnTimeout` and `ReconnectTimeout` are read at last, in frames of which there are sixty to
-the second: how long this machine waits on another that has stopped making progress on the
-loading screen, and on one that has gone quiet during play. They default to the waits the game
-already kept, and each machine keeps its own.
+`ConnTimeout` and `ReconnectTimeout` are read at last: how long this machine waits on another stalled on the loading screen, and on one gone quiet during play, in frames of which there are sixty to the second. They default to the waits the game already kept, and each machine keeps its own.
 
-Closing the window during a match, or pressing Alt and F4, resigns the way the options menu's
-abort does rather than being ignored.
-
-`ContinueWithoutHumans` is no longer read. A match ends when the last person playing leaves,
-except one seated entirely by observers, which is the rule it already followed.
+Closing the window during a match, or pressing Alt and F4, resigns the way the options menu's abort does rather than being ignored. `ContinueWithoutHumans` is no longer read: a match ends when the last person playing leaves, unless it is seated entirely by observers.

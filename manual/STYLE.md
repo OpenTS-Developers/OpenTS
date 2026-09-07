@@ -164,6 +164,10 @@ Avoid raw HTML, MDX-only widgets, one-off components, empty paragraphs, and
 callouts used only for visual hierarchy. Put recurring presentation in shared
 Astro components and CSS.
 
+Write each paragraph of a page or a change record as one line and let the
+editor wrap it. Hard-wrapping prose to a column makes a later edit reflow
+lines it did not touch.
+
 ## Keep one source of truth
 
 Do not repeat facts rendered from structured metadata: omission and no-effect

@@ -84,6 +84,6 @@ targets:
 credit: [ZivDero, CCHyper, tomsons26]
 ---
 
-A selected object now draws its target line and its movement line together rather than one or the other, the movement line reaches the far end of the planned route, and the destinations queued with the queue-move key continue from it as further lines, closing into a ring for a looping queue. The lines also show while that key is held. `UI.INI`, a new optional file, sets each line's colour, dashes, thickness and shadow, keeps the lines on with `AlwaysShowActionLines=yes`, and styles and times the `TargetLaser=` sighting line the same way. Without the file the lines look as before, apart from both drawing together and the queue being shown.
+A selected object drew its target line or its movement line, not both, and the movement line stopped short of the planned route's end. Both now draw together, the movement line reaches the far end of the route, and destinations queued with the queue-move key continue from it as further lines, closing into a ring for a looping queue; the lines also show while that key is held. `UI.INI`, a new optional file, sets each line's colour, dashes, thickness and shadow, keeps the lines on with `AlwaysShowActionLines=yes`, and styles and times the `TargetLaser=` sighting line the same way. Without the file the lines look as before.
 
-The keys and their names follow Vinifera's `UI.INI`, so a file written for it carries over. CCHyper and tomsons26 are credited for that implementation.
+The keys and their names follow Vinifera's `UI.INI`, so a file written for it carries over; CCHyper and tomsons26 are credited for that implementation.

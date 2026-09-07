@@ -26,15 +26,6 @@ targets:
 credit: [ZivDero, tomsons26]
 ---
 
-Network games are played over UDP. Tiberian Sun reached the other machines on a
-local network through IPX, which Windows no longer carries, so network play had
-stopped working entirely; it now uses the same UDP that internet play always
-used. Games are found by broadcasting on every network the machine is attached
-to, and each player answering is recorded at the address the answer came from.
-Internet, skirmish, and campaign play are unaffected.
+Network games are played over UDP. Tiberian Sun reached the other machines on a local network through IPX, which Windows no longer carries, so network play had stopped working entirely; it now uses the same UDP that internet play always used. Games are found by broadcasting on every network the machine is attached to, and each player answering is recorded at the address the answer came from. Internet, skirmish and campaign play are unaffected.
 
-One machine can host only one game at a time. The network options screen is
-gone, along with the adapter, socket, and destination network it set.
-
-Network messages, save games, and recordings changed shape, so different OpenTS
-release-cycle versions refuse one another.
+One machine can host only one game at a time, and the network options screen is gone along with the adapter, socket and destination network it set. Network messages, save games and recordings changed shape, so different OpenTS release-cycle versions refuse one another.

@@ -12,12 +12,4 @@ targets:
 credit: [ZivDero]
 ---
 
-A Move to Cell script line now reads its cell on the width the scenario declares, so a line
-written for a Tiberian Sun map reaches the cell it names. The split was always made on the
-old width of 128 columns, which no map wider than that can express, so every such line on a
-modern map landed somewhere else entirely or off the map.
-
-The conversion happens as the line is read rather than as the team acts on it, because the
-scenario's declared width is not carried into a save game and so is no longer available once
-one is loaded. A number that decodes to a cell outside the map now leaves the line without a
-target instead of aiming the team at a placeholder cell.
+A Move to Cell script line split its cell on the old width of 128 columns, which no map wider than that can express, so every such line on a modern map landed somewhere else entirely or off the map. The line now reads its cell on the width the scenario declares, and a number that decodes to a cell outside the map leaves the line without a target instead of aiming the team at a placeholder cell.

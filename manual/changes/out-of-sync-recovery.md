@@ -23,25 +23,10 @@ credit:
 - Rampastring
 ---
 
-When a network game goes out of sync the game now opens a dialog in place of the two-button
-box. The master chooses whether every machine loads one of the match's saved games, plays on
-without the players out of sync, or quits; everyone else waits, with a player list and a chat
-box, and the lowest remaining seat takes over when the master leaves. Continue now drops only
-the players whose checksum disagreed with this machine's, where it dropped every connection
-before. The master can also load a multiplayer save from the options menu during play. The
-launch file's `IsHost` now names the master, which decides these things and hands down the
-network timings; a file without it leaves the first seat in charge.
+An out-of-sync game used to show a two-button box whose Continue dropped every connection. It now opens a dialog: the master loads one of the match's saved games, plays on, or quits, while everyone else waits with a player list and a chat box, and the lowest remaining seat takes over if the master leaves. Continue drops only the players whose checksum disagreed with this machine's. The master can also load a multiplayer save from the options menu during play, and the launch file's new `IsHost` names which seat is master; without it the first seat is.
 
-Multiplayer saves are now numbered by the game itself, `SVGM_000.NET` upward, in every network
-game. A new match drops a previous match's files, and a client-launched match writes
-`spawnSG.ini` for the client at its first save; the client did both when `SAVEGAME.NET`
-appeared, and that file is no longer written.
+Multiplayer saves are numbered by the game, `SVGM_000.NET` upward, in every network game, and a new match drops the previous match's files. A client-launched match writes `spawnSG.ini` at its first save. `SAVEGAME.NET`, which the client watched for to do both, is no longer written.
 
-Two dialog drawing faults are fixed with this. A dialog larger than the 640 by 400 backdrop
-art, which the new dialogs are, showed uninitialized memory past the art's edge; that area is
-now black. A windowed game also stopped painting its dialogs whenever another window had the
-focus, so a dialog that opened then, such as the frame-sync reconnect dialog, never appeared
-and stayed blank after the focus came back. Windowed games now paint dialogs without the
-focus, and every game repaints them when the focus returns.
+Two dialog faults are fixed with this. A dialog larger than the 640 by 400 backdrop art showed uninitialized memory past the art's edge and now shows black. A windowed game that lost the focus stopped painting its dialogs, so one opening then, such as the frame-sync reconnect dialog, stayed blank.
 
 The dialog and the in-game load follow Vinifera's, by ZivDero and Rampastring.

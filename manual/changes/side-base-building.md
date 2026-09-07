@@ -83,13 +83,6 @@ targets:
 credit: [ZivDero, CCHyper, tomsons26]
 ---
 
-The computer's base building now comes from the side a house acts as. Each side names its power
-plants and turbine, its hunter-seeker drone, the towers it lays along its walls, its defense
-budget and placeholder counts, and whether it builds a wall, in the section carrying the side's
-own name; the first two sides inherit the rules' `GDI` and `Nod` keys as each file sets them, so
-the shipped rules build exactly the bases they always did. A house named neither took GDI's defense budget, received no wall
-towers and no threat ring, and answered a power shortage with Nod's plants. A side that names no
-plant takes the first `BuildPower` entry its country may own.
+The computer's base building now comes from the side a house acts as. Each side names its power plants and turbine, its hunter-seeker drone, the towers it lays along its walls, its defense budget and placeholder counts, and whether it builds a wall, in the section carrying the side's own name. A house that was neither GDI nor Nod took GDI's defense budget, received no wall towers and no threat ring, and answered a power shortage with Nod's plants. The first two sides inherit the rules' `GDI` and `Nod` keys as each file sets them, so the shipped rules build exactly the bases they always did; a side that names no plant takes the first `BuildPower` entry its country may own.
 
-CCHyper and tomsons26 are credited for Vinifera's side sections, whose power plant, turbine and
-hunter-seeker keys these share.
+CCHyper and tomsons26 are credited for Vinifera's side sections, whose power plant, turbine and hunter-seeker keys these share.
