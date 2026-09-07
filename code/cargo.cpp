@@ -204,6 +204,7 @@ void CargoClass::Detach(FootClass * object)
 		if (CargoHold == object) {
 			CargoHold = (FootClass *)CargoHold->Next;
 			object->Next = NULL;
+			Quantity--;
 		} else {
 			FootClass * o = CargoHold;
 			if (o->Next != NULL) {
@@ -213,6 +214,7 @@ void CargoClass::Detach(FootClass * object)
 				}
 				o->Next = o->Next->Next;
 				object->Next = NULL;
+				Quantity--;
 			}
 		}
 	}
