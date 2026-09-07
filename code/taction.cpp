@@ -1898,15 +1898,20 @@ bool TActionClass::TAction_PLAY_ANIM(HouseClass * , ObjectClass * , TriggerClass
 /// the damage, the combat animation and the lighting flash, and an EM pulse weapon
 /// throws its pulse as well.
 /// </summary>
+/// <returns>bool; Did the position name a weapon to detonate?</returns>
 bool TActionClass::TAction_DO_EXPLOSION(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	WeaponType weapon = Data.Weapon;
+	if ((unsigned)weapon >= (unsigned)Weapons.Count()) {
+		return(false);
+	}
+
 	Cell waypoint = Scen->Get_Waypoint_Cell(EffectLocation);
 	Coord coord = Coord (waypoint);
 	coord.Z = Map.Get_Height_GL(coord);
 	if ( Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge ) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
 	}
-	WeaponType weapon = Data.Weapon;
 	int damage = Weapons[weapon]->Attack;
 
 	WeaponTypeClass * ww = Weapons[weapon];
