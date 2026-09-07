@@ -138,7 +138,9 @@ void UDPInterfaceClass::Configure_Tunnel(unsigned short local_id, unsigned long 
 /// </summary>
 /// <param name="destination">Where the packet is bound. In tunnel mode the port carries
 /// the recipient's tunnel ID rather than a real port.</param>
-/// <returns>Whatever sendto returned, counting only the payload.</returns>
+/// <returns>Whatever sendto returned, counting only the payload. A SOCKET_ERROR always
+/// leaves a matching code in LAST_ERROR, including the rejection this routine makes
+/// itself, so that a caller can tell a full socket from a packet it can never send.</returns>
 int UDPInterfaceClass::Send_To(const char *buffer, int buffer_len, sockaddr_in *destination)
 {
 	if (TunnelPort == 0) {
@@ -149,6 +151,7 @@ int UDPInterfaceClass::Send_To(const char *buffer, int buffer_len, sockaddr_in *
 	// outside the packet's own framing.
 	char tunnelled[TUNNEL_HEADER_SIZE + WS_RECEIVE_BUFFER_LEN];
 	if (buffer_len > (int)sizeof(tunnelled) - TUNNEL_HEADER_SIZE) {
+		WSASetLastError(WSAEMSGSIZE);
 		return(SOCKET_ERROR);
 	}
 
@@ -583,9 +586,8 @@ void UDPInterfaceClass::Receive_Pending(void)
 
 /// <summary>
 /// Sends the out buffers in order until they are empty or the socket will
-/// take no more. A packet the socket has no room for is given up, since the
-/// connection above resends what goes unacknowledged; any other failure is
-/// cleared and leaves the packet at the head for the next pass.
+/// take no more. A send that fails leaves its packet at the head for the next
+/// pass and ends this one, so a full socket costs a pass rather than the queue.
 /// </summary>
 void UDPInterfaceClass::Send_Pending(void)
 {
@@ -608,9 +610,13 @@ void UDPInterfaceClass::Send_Pending(void)
 
 		int rc = Send_To ( ((char const *)packet->Buffer) - sizeof(packet->CRC), packet->BufferLen + sizeof(packet->CRC), &addr );
 
-		if (rc == SOCKET_ERROR && LAST_ERROR != WSAEWOULDBLOCK) {
-			Clear_Socket_Error (Socket);
-			return;
+		if (rc == SOCKET_ERROR) {
+			// A full socket is not the packet's fault, so the packet stays queued
+			// either way. Anything else is cleared before the next pass retries it.
+			if (LAST_ERROR != WSAEWOULDBLOCK) {
+				Clear_Socket_Error (Socket);
+			}
+			break;
 		}
 
 		OutBuffers.Delete_Index(0);
