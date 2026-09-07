@@ -208,10 +208,13 @@ HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion)
 /// Recreates one object from the save stream. It reattaches itself to its own heap as it
 /// is constructed, so the caller is handed it only to keep or to refuse.
 /// </summary>
+/// <param name="accepts">Asked whether the object is of the class the caller expects, once
+/// the record has been read and before the object takes its place. May be null when any
+/// class will do.</param>
 /// <returns>The object, or NULL with the stream failed when the identifier names no
-/// registered class, the object could not read its record, or the record's length does
-/// not match what the object consumed.</returns>
-IPersistent * Load_Object(SaveStreamClass & stream)
+/// registered class, the object could not read its record, the record's length does not
+/// match what the object consumed, or the class is not the one asked for.</returns>
+IPersistent * Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent const * object))
 {
 	CLSID classid;
 	unsigned int length = 0;
@@ -244,6 +247,11 @@ IPersistent * Load_Object(SaveStreamClass & stream)
 	if (ok && stream.Offset() != start + length) {
 		DebugString("Save record of %s at %u is %u bytes but %u were read\n",
 			typeid(*persist).name(), start, length, stream.Offset() - start);
+		ok = false;
+	}
+	if (ok && accepts != nullptr && !accepts(persist.get())) {
+		DebugString("Save record of %s at %u is not the class expected there\n",
+			typeid(*persist).name(), start);
 		ok = false;
 	}
 	if (!ok) {
@@ -794,7 +802,7 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		delete TacticalMap;
 		TacticalMap = NULL;
 	}
-	Tactical * old_tactical = dynamic_cast<Tactical *>(Load_Object(stream));
+	Tactical * const old_tactical = Load_Object_As<Tactical>(stream);
 	if (old_tactical == NULL) {
 		return(false);
 	}

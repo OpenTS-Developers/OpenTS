@@ -31,7 +31,23 @@ int Save_Misc_Values(SaveStreamClass & stream);
 // docs/SAVE-FORMAT.md records what a record holds.
 HRESULT Save_Object(SaveStreamClass & stream, IPersistent * object);
 HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion);
-IPersistent * Load_Object(SaveStreamClass & stream);
+IPersistent * Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent const * object) = nullptr);
+
+/// <summary>
+/// Loads the record next in the stream and requires it to be of the class asked for.
+/// </summary>
+/// <returns>The object, or NULL with the stream failed when the record holds another
+/// class. A record of the wrong class is destroyed before it can take its place, so the
+/// test happens while the object is still only the reader's.</returns>
+template<class T>
+T * Load_Object_As(SaveStreamClass & stream)
+{
+	IPersistent * const object = Load_Object(stream, [](IPersistent const * candidate) {
+		return(dynamic_cast<T const *>(candidate) != nullptr);
+	});
+	return(dynamic_cast<T *>(object));
+}
+
 bool Get_Savefile_Info(char const * name, SaveVersionInfo * info);
 bool Save_Game(const char *file_name, char const * descr);
 bool Load_Game(const char *file_name);

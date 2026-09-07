@@ -16,7 +16,6 @@
 #include "cell.h"
 #include "classfactory.h"
 #include "coord.h"
-#include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
 #include "map.h"
@@ -198,16 +197,7 @@ std::unique_ptr<ILocomotion> Create_Locomotor(CLSID const & classid)
 
 std::unique_ptr<ILocomotion> Load_Locomotor(SaveStreamClass & stream)
 {
-	SwizzleManagerClass::MarkType const mark = Swizzler.Mark();
-	IPersistent * const object = Load_Object(stream);
-	ILocomotion * const locomotion = dynamic_cast<ILocomotion *>(object);
-	if (object != NULL && locomotion == NULL) {
-		DebugString("Save record of %s at %u is not a locomotor\n", typeid(*object).name(), stream.Offset());
-		Swizzler.Abandon(mark);
-		delete object;
-		stream.Fail();
-	}
-	return(std::unique_ptr<ILocomotion>(locomotion));
+	return(std::unique_ptr<ILocomotion>(Load_Object_As<ILocomotion>(stream)));
 }
 
 

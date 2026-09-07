@@ -511,7 +511,7 @@ HRESULT MouseClass::Load(SaveStreamClass & stream)
 			return(result);
 		}
 		for (i = 0; i < count; i++) {
-			if (Load_Object(stream) == NULL) {
+			if (Load_Object_As<CellClass>(stream) == nullptr) {
 				return(stream.Result());
 			}
 		}
