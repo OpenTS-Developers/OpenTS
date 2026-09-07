@@ -1,7 +1,7 @@
 ---
 key: PipScale
 summary: The quantity the pip row under a selected object counts, and how many pips that row has.
-see_also: [Passengers, Ammo, Storage, MaxCharge, Pip]
+see_also: [Passengers, Size, Ammo, Storage, MaxCharge, Pip, "system:transports"]
 when_omitted:
   kind: value
   value: none

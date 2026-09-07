@@ -1147,7 +1147,8 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 		*/
 		case RADIO_CAN_LOAD:
 			if (Class->Max_Passengers() == 0 || from == NULL || !House->Is_Ally(from)) return(RADIO_STATIC);
-			if (Cargo.How_Many() < Class->Max_Passengers()) {
+			if (from->RTTI == RTTI_UNIT && !Class->IsVehicleTransport) return(RADIO_STATIC);
+			if (Can_Fit_Passenger(from)) {
 				Cell cell = PositionCell;
 				CellClass * cellptr = &Map[cell];
 				if (!cellptr->Is_Tile_With_Water() && !cellptr->Is_Tile_Shore()) {
@@ -1183,7 +1184,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 		**	entered the transport.
 		*/
 		case RADIO_IM_IN:
-			if (Cargo.How_Many() == Class->Max_Passengers()) {
+			if (Cargo.Total_Size() >= Class->Max_Passengers()) {
 				APC_Close_Door();
 			}
 			return(RADIO_ATTACH);
@@ -1213,7 +1214,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 				/*
 				**	Can't ever load up so tell the passenger to bug off.
 				*/
-				if (Cargo.How_Many() >= Class->Max_Passengers()) {
+				if (!Can_Fit_Passenger(from)) {
 					return(RADIO_NEGATIVE);
 				}
 
@@ -1232,7 +1233,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 				}
 			}
 
-			if (Class->Max_Passengers() > 0 && Cargo.How_Many() < Class->Max_Passengers()) {
+			if (Class->Max_Passengers() > 0 && Can_Fit_Passenger(from)) {
 				BASECLASS::Receive_Message(from, message, param);
 
 				if (!Locomotion->Is_Moving() && !IsRotating && !IsTethered) {
@@ -1461,10 +1462,10 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 				object->IsOnBridge = IsOnBridge;
 
 				/*
-				**	Only infantry can run from a destroyed vehicle. Even then, it is not a sure
-				**	thing.
+				**	A passenger can run from a destroyed vehicle, if the ground it stood on
+				**	will take it. Even then, it is not a sure thing.
 				*/
-				if (object->Is_Infantry() && !forced && !IsToExplode && object->Can_Enter_Cell(&Map[Get_Coord()]) == MOVE_OK && object->Unlimbo(PositionCoord, DIR_N)) {
+				if (!forced && !IsToExplode && object->Can_Enter_Cell(&Map[Get_Coord()]) == MOVE_OK && object->Unlimbo(PositionCoord, DIR_N)) {
 					object->Scatter(COORD_NONE, true);
 					if (select) object->Select();
 				} else {
@@ -2150,9 +2151,18 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	Unit entering a transport vehicle will break radio contact
 		**	and attach itself to the transporter.
 		*/
-		if (Mission == MISSION_ENTER && techno && PositionCell == techno->PositionCell && techno == NavCom) {
+		TechnoTypeClass const * ttype = (techno != NULL) ? techno->TClass : NULL;
+
+		// NavCom is not tested here: a walking passenger clears it before it arrives, so
+		// the radio contact is what identifies the transport.
+		if (Mission == MISSION_ENTER && ttype != NULL && ttype->Max_Passengers() > 0 &&
+			PositionCell == techno->PositionCell) {
+
 			BASECLASS::Per_Cell_Process(PCP_END);
-			if (Transmit_Message(RADIO_IM_IN) == RADIO_ATTACH) {
+
+			// RADIO_IM_IN is answered with RADIO_ATTACH even by a full transport, so the
+			// room has to be checked here as well.
+			if (techno->Can_Fit_Passenger(this) && Transmit_Message(RADIO_IM_IN, techno) == RADIO_ATTACH) {
 				Limbo();
 				techno->Cargo.Attach(this);
 				Hidden();
@@ -3133,13 +3143,18 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 							newcell = Adjacent_Cell(PositionCell, newface);
 
 							if (passenger->Can_Enter_Cell(&Map[newcell], newface, Get_Cell_Height()) == MOVE_OK) {
-								ScenarioInit++;
-								Coord coord = newcell.As_Coord();
-								coord = Map.Closest_Free_Spot(coord);
 								if (Map[newcell].IsUnderBridge == false) {
+									Coord coord = newcell.As_Coord();
+
+									// Sub-cell spots are for infantry. A vehicle left on one
+									// draws wrong and cannot dock a repair bay.
+									if (passenger->RTTI == RTTI_INFANTRY) {
+										coord = Map.Closest_Free_Spot(coord);
+									}
+
+									ScenarioInit++;
 									placed = passenger->Unlimbo(coord, DirType(newface).As_Dir256());
 									ScenarioInit--;
-									//placed = true;
 									break;
 								}
 							}
@@ -3925,7 +3940,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			**	Special check to allow entry into the sea transport this vehicle
 			**	is trying to enter.
 			*/
-			if (Mission == MISSION_ENTER && obj == NavCom && IsTethered) {
+			if (Mission == MISSION_ENTER && obj == NavCom && obj->RTTI == RTTI_UNIT) {
 				return(MOVE_OK);
 			}
 
@@ -4244,6 +4259,15 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 		} else {
 			action = ACTION_ATTACK_SUPPORT;
 		}
+	}
+
+	/*
+	**	Check to see if it can enter a transporter.
+	*/
+	if (action != ACTION_NO_ENTER && action != ACTION_ATTACK &&
+		action != ACTION_GREPAIR && action != ACTION_GUARD_AREA) {
+
+		action = Transport_Enter_Action(object, action);
 	}
 
 	if (action == ACTION_ATTACK) {
@@ -5129,7 +5153,13 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	**	Transport vehicles must tell all passengers that are about to load, that they
 	**	cannot proceed. This is accomplished with a radio message to this effect.
 	*/
-	if (In_Radio_Contact() && Class->Max_Passengers() > 0 && Contact_With_Whom()->Fetch_RTTI() == RTTI_INFANTRY) {
+	TechnoClass * loader = In_Radio_Contact() ? Contact_With_Whom() : NULL;
+
+	// Never hang up on the object being headed for: a transport can be a passenger too,
+	// and cutting contact mid-dock restarts the docking handshake without end.
+	if (Class->Max_Passengers() > 0 && loader != NULL && loader != target &&
+		(loader->RTTI == RTTI_INFANTRY || loader->RTTI == RTTI_UNIT)) {
+
 		Transmit_Message(RADIO_OVER_OUT);
 	}
 

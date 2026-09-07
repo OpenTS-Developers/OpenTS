@@ -2790,37 +2790,8 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	/*
 	**	Check to see if it can enter a transporter.
 	*/
-	if (action != ACTION_NO_ENTER &&
-		House->Is_Ally(object) &&
-		House->Is_Player_Control() && ::Dynamic_Cast<TechnoClass const *>(object) != NULL &&
-		action != ACTION_ATTACK) {
-
-		TechnoTypeClass const * tclass = object->TClass;
-		if (tclass != NULL && tclass->Max_Passengers() > 0) {
-			bool try_enter = true;
-			if (object->Is_Foot()) {
-				FootClass * foot = (FootClass *)object;
-				if ((foot->Team != NULL && !foot->Team->Class->IsLoadable) || foot->Locomotion->Is_Moving()) {
-					action = ACTION_NO_ENTER;
-					try_enter = false;
-				}
-			}
-
-			if (try_enter) {
-				switch (((InfantryClass *)this)->Transmit_Message(RADIO_CAN_LOAD, (TechnoClass*)object)) {
-					case RADIO_ROGER:
-						action = ACTION_ENTER;
-						break;
-
-					case RADIO_NEGATIVE:
-						action = ACTION_NO_ENTER;
-						break;
-
-					default:
-						break;
-				}
-			}
-		}
+	if (action != ACTION_NO_ENTER && action != ACTION_ATTACK) {
+		action = Transport_Enter_Action(object, action);
 	}
 
 	if (House->Is_Player_Control() && Class->IsCapture) {

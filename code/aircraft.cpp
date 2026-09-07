@@ -2707,7 +2707,7 @@ RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageT
 		**	entered the transport.
 		*/
 		case RADIO_IM_IN:
-			if (Cargo.How_Many() == Class->Max_Passengers()) {
+			if (Cargo.Total_Size() >= Class->Max_Passengers()) {
 				Door.Close_Door(Class->DeployTime);
 			}
 
@@ -2725,7 +2725,7 @@ RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageT
 		**	to the impatient unit.
 		*/
 		case RADIO_DOCKING:
-			if (Class->Max_Passengers() > 0 && Cargo.How_Many() < Class->Max_Passengers()) {
+			if (Class->Max_Passengers() > 0 && Can_Fit_Passenger(from)) {
 				BASECLASS::Receive_Message(from, message, param);
 
 				if (!Locomotion->Is_Moving()) {
@@ -2760,7 +2760,8 @@ RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageT
 		*/
 		case RADIO_CAN_LOAD:
 			if (Class->Max_Passengers() == 0 || from == NULL || !House->Is_Ally(from)) return(RADIO_STATIC);
-			if (Cargo.How_Many() < Class->Max_Passengers()) {
+			if (from->RTTI == RTTI_UNIT && !Class->IsVehicleTransport) return(RADIO_STATIC);
+			if (Can_Fit_Passenger(from)) {
 				return(RADIO_ROGER);
 			}
 			return(RADIO_NEGATIVE);

@@ -254,9 +254,26 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		/*
 		**	If this is a transporter object (e.g., hovercraft, chinook, APC), then this
-		**	value specifies the maximum number of passengers it may carry.
+		**	value specifies the total passenger size it may carry at once.
 		*/
 		int MaxPassengers;
+
+		/*
+		 * This is how much room an object of this type takes up as a passenger. The default
+		 * of one spends a transport's capacity as a plain head count.
+		 */
+		int Size;
+
+		/*
+		 * This is the largest single passenger this object will carry, whatever room is
+		 * left in its hold.
+		 */
+		int SizeLimit;
+
+		/*
+		 * Whether this object carries units as well as infantry.
+		 */
+		bool IsVehicleTransport;
 
 		/*
 		**	Most objects have the ability to reveal the terrain around themselves.

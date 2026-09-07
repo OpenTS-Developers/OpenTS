@@ -12386,6 +12386,23 @@ IsTrain:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+IsVehicleTransport:
+  key: IsVehicleTransport
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsVehicleTransport
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 IsVeinhole:
   key: IsVeinhole
   scopes:
@@ -19875,6 +19892,20 @@ SilverCrate:
 Size:
   key: Size
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: needs_review
+    _provenance:
+      default_candidate: '1'
+      declared_in: TechnoTypeClass
+      member: Size
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
   - applies_to:
     - scenarios
     file: map file
@@ -19882,7 +19913,7 @@ Size:
       kind: literal
       name: Map
     value_type: rectangle (x,y,w,h)
-    status: generated
+    status: needs_review
     _provenance:
       default_candidate: null
       declared_in: DisplayClass
@@ -19890,6 +19921,23 @@ Size:
       source: code/display.cpp
       guard: null
     level: DisplayClass
+SizeLimit:
+  key: SizeLimit
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: TechnoTypeClass
+      member: SizeLimit
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 SkipMapSelect:
   key: SkipMapSelect
   scopes:

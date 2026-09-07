@@ -1,7 +1,7 @@
 ---
 key: Crewed
 summary: Allows the type to put a surviving infantry on the map when it is destroyed.
-see_also: ["system:capture"]
+see_also: ["system:capture", CrewEscape, Passengers, "system:transports"]
 when_omitted:
   kind: value
   value: "no"

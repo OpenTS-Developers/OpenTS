@@ -1,7 +1,7 @@
 ---
 key: CrewEscape
 summary: The chance that a destroyed vehicle's crew steps out as an infantry survivor.
-see_also: ["system:capture", Crew, Crewed]
+see_also: ["system:capture", Crew, Crewed, Passengers, "system:transports"]
 when_omitted:
   kind: value
   value: ".5"

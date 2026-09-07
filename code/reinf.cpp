@@ -284,7 +284,7 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 	**	objects to be passengers on the transport.
 	*/
 	if (transport != NULL && object != NULL) {
-		transport->Cargo.Attach(object);
+		transport->Cargo.Attach_Group(object);
 
 		/*
 		**	HACK ALERT! If the this team has an unload mission, then flag the transport

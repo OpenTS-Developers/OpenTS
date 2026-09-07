@@ -1,7 +1,7 @@
 ---
 key: Pip
 summary: The color of the pip a transport draws for this soldier while it is carried.
-see_also: [Passengers, PipScale]
+see_also: [Passengers, PipScale, Size, "system:transports"]
 when_omitted:
   kind: value
   value: green

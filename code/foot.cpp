@@ -4564,6 +4564,43 @@ ActionType FootClass::What_Action(ObjectClass const * target, bool disallow_forc
 
 
 /// <summary>
+/// Resolves the action for pointing this object at a possible transport: ACTION_ENTER if it
+/// would be taken aboard, ACTION_NO_ENTER if it would be refused, and the incoming action
+/// unchanged if the object is not a transport this one could board.
+/// </summary>
+/// <param name="object">The object under the cursor.</param>
+/// <param name="action">The action decided so far.</param>
+ActionType FootClass::Transport_Enter_Action(ObjectClass const * object, ActionType action) const
+{
+	if (object == NULL || object == this) return(action);
+	if (!House->Is_Ally(object) || !House->Is_Player_Control()) return(action);
+	if (::Dynamic_Cast<TechnoClass const *>(object) == NULL) return(action);
+
+	TechnoTypeClass const * tclass = object->TClass;
+	if (tclass == NULL || tclass->Max_Passengers() <= 0) return(action);
+
+	// A moving transport, or one on a team whose script forbids loading, takes nobody.
+	if (object->Is_Foot()) {
+		FootClass const * foot = (FootClass const *)object;
+		if ((foot->Team != NULL && !foot->Team->Class->IsLoadable) || foot->Locomotion->Is_Moving()) {
+			return(ACTION_NO_ENTER);
+		}
+	}
+
+	switch (const_cast<FootClass *>(this)->Transmit_Message(RADIO_CAN_LOAD, (TechnoClass *)object)) {
+		case RADIO_ROGER:
+			return(ACTION_ENTER);
+
+		case RADIO_NEGATIVE:
+			return(ACTION_NO_ENTER);
+
+		default:
+			return(action);
+	}
+}
+
+
+/// <summary>
 /// Handles the rescue mission state machine.
 /// This routine will have the object engage any threat close to the spot the mission began
 /// at, then head for whatever destination its house nominates. Once it arrives, it settles

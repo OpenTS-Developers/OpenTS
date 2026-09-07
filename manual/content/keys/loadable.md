@@ -1,7 +1,7 @@
 ---
 key: Loadable
 summary: Lets the player order infantry into a transport that belongs to a team of this type.
-see_also: [Passengers, "system:ai-team-execution"]
+see_also: [Passengers, IsVehicleTransport, "system:ai-team-execution", "system:transports"]
 when_omitted:
   kind: value
   value: "no"

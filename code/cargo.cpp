@@ -68,7 +68,7 @@ void CargoClass::Debug_Dump(MonoClass * mono) const
 
 
 /***********************************************************************************************
- * CargoClass::Attach -- Add unit to cargo hold.                                               *
+ * CargoClass::Attach_Group -- Add a chained group of units to a cargo hold.                   *
  *                                                                                             *
  *    This routine will add the specified unit to the cargo hold. The                          *
  *    unit will chain to any existing units in the hold. The chaining is                       *
@@ -84,7 +84,7 @@ void CargoClass::Debug_Dump(MonoClass * mono) const
  *   04/23/1994 JLB : Created.                                                                 *
  *   10/31/94   JLB : Handles chained objects.                                                 *
  *=============================================================================================*/
-void CargoClass::Attach(FootClass * object)
+void CargoClass::Attach_Group(FootClass * object)
 {
 	/*
 	**	If there is no object, then no action is necessary.
@@ -188,6 +188,42 @@ FootClass * CargoClass::Attached_Object(void) const
 		return(CargoHold);
 	}
 	return(NULL);
+}
+
+
+/// <summary>
+/// Takes one object aboard, ignoring whatever its Next points at. Next doubles as the cell
+/// occupier chain, so following it would drag whatever shares the passenger's cell into the
+/// hold, the transport included. Attach_Group takes a deliberately chained group.
+/// </summary>
+/// <param name="object">The passenger to take aboard.</param>
+void CargoClass::Attach(FootClass * object)
+{
+	if (object == NULL) return;
+
+	object->Limbo();
+	object->Next = CargoHold;
+	CargoHold = object;
+	Quantity++;
+}
+
+
+/// <summary>
+/// Returns the combined Size of every passenger aboard. A hold whose passengers all carry
+/// the default Size of one reports the same figure as How_Many.
+/// </summary>
+int CargoClass::Total_Size(void) const
+{
+	int size = 0;
+
+	ObjectClass * object = CargoHold;
+	while (object != NULL) {
+		size += object->TClass->Size;
+		if (object->Next == NULL || !object->Next->Is_Foot()) break;
+		object = object->Next;
+	}
+
+	return(size);
 }
 
 

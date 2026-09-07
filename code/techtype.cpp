@@ -95,6 +95,9 @@ TechnoTypeClass::TechnoTypeClass(char const * ininame, SpeedType speed) :
 	MZone(MZONE_NORMAL),
 	ThreatRange(0),
 	MaxPassengers(0),
+	Size(1),
+	SizeLimit(1),
+	IsVehicleTransport(false),
 	SightRange(0),
 	Cost(0),
 	Level(255),
@@ -616,6 +619,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsNoAutoFire = ini.Get_Bool(Name(), "NoAutoFire", IsNoAutoFire);
 		ROT = ini.Get_Int(Name(), "ROT", ROT);
 		MaxPassengers = ini.Get_Int(Name(), "Passengers", MaxPassengers);
+		Size = ini.Get_Int(Name(), "Size", Size);
+		SizeLimit = ini.Get_Int(Name(), "SizeLimit", SizeLimit);
+		IsVehicleTransport = ini.Get_Bool(Name(), "IsVehicleTransport", IsVehicleTransport);
 		FireAngle = ini.Get_Int(Name(), "FireAngle", FireAngle);
 		DeployTime = ini.Get_Float(Name(), "DeployTime", DeployTime);
 		IsDisableable = ini.Get_Bool(Name(), "Disableable", IsDisableable);
@@ -965,6 +971,9 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(ThreatRange);
 	stream.Serialize(MaxDebris);
 	stream.Serialize(MaxPassengers);
+	stream.Serialize(Size);
+	stream.Serialize(SizeLimit);
+	stream.Serialize(IsVehicleTransport);
 	stream.Serialize(SightRange);
 	stream.Serialize(Cost);
 	stream.Serialize(FlightLevel);
@@ -1088,6 +1097,9 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(ThreatRange);
 	crc(MaxDebris);
 	crc(MaxPassengers);
+	crc(Size);
+	crc(SizeLimit);
+	crc(IsVehicleTransport);
 	crc(SightRange);
 	crc(Cost);
 	crc(Level);

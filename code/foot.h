@@ -449,6 +449,7 @@ class FootClass : public TechnoClass
 		*/
 		virtual ActionType What_Action(ObjectClass const *, bool disallow_force = false) const override;
 		virtual ActionType What_Action(Cell const &, bool check_fog = false, bool disallow_force = false) const override;
+		ActionType Transport_Enter_Action(ObjectClass const * object, ActionType action) const;
 		virtual bool Active_Click_With(ActionType action, ObjectClass * object, bool) override;
 		virtual bool Active_Click_With(ActionType action, Cell const & cell, bool) override;
 

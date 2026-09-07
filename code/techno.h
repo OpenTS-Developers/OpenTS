@@ -589,6 +589,7 @@ class TechnoClass :	public RadioClass,
 		double Area_Modify(Cell const & cell) const;
 		void Base_Is_Attacked(TechnoClass const * enemy);
 		void Kill_Cargo(TechnoClass * source);
+		bool Can_Fit_Passenger(ObjectClass const * passenger) const;
 		virtual void Record_The_Kill(TechnoClass * source) override;
 		virtual void Reduce_Ammunition(void);
 		virtual bool Target_Something_Nearby(Coord const & coord, ThreatType threat=THREAT_NORMAL);

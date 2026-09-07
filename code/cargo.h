@@ -60,11 +60,13 @@ class CargoClass {
 		void AI(void) {};
 
 		int How_Many(void) const {return(Quantity);};
+		int Total_Size(void) const;
 		bool Is_Something_Attached(void) const {return(CargoHold != 0);};
 		FootClass * Attached_Object(void) const;
 		FootClass * Detach_Object(void);
 		void Detach(FootClass * object);
 		void Attach(FootClass * object);
+		void Attach_Group(FootClass * object);
 
 		// Carries the cargo hold to or from a save game.
 		template<typename S>

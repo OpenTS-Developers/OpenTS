@@ -6509,6 +6509,25 @@ void TechnoClass::Kill_Cargo(TechnoClass * source)
 }
 
 
+/// <summary>
+/// Whether this transport accepts the passenger: its kind against IsVehicleTransport, and
+/// its Size against both the room left in the hold and this transport's SizeLimit.
+/// Every route into a hold consults this, from a player's order to the check on arrival.
+/// </summary>
+bool TechnoClass::Can_Fit_Passenger(ObjectClass const * passenger) const
+{
+	if (passenger == NULL) return(false);
+
+	TechnoTypeClass const * ptype = passenger->TClass;
+	if (ptype == NULL) return(false);
+
+	if (passenger->RTTI == RTTI_UNIT && !TClass->IsVehicleTransport) return(false);
+
+	return(ptype->Size <= TClass->SizeLimit &&
+		Cargo.Total_Size() + ptype->Size <= TClass->Max_Passengers());
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Crew_Type -- Fetches the kind of crew this object contains.                    *
  *                                                                                             *
@@ -7222,7 +7241,7 @@ int TechnoClass::Pip_Count(void) const
 	switch (TClass->PipScale) {
 
 		case PIPSCALE_PASSENGERS:
-			current = Cargo.How_Many();
+			current = Cargo.Total_Size();
 			maximum = TClass->Max_Passengers();
 			valid = true;
 			break;
@@ -7552,6 +7571,8 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	*/
 	if (TClass->Max_Passengers() > 0) {
 		ObjectClass const * object = Cargo.Attached_Object();
+		int remaining = (object != NULL) ? object->TClass->Size : 0;
+
 		for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
 			PipEnum pip = PIP_EMPTY;
 
@@ -7560,7 +7581,13 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 				if (object->RTTI == RTTI_INFANTRY) {
 					pip = ((InfantryClass *)object)->Class->Pip;
 				}
-				object = object->Next;
+
+				// A passenger claims as many pips as it claims hold space.
+				remaining--;
+				if (remaining <= 0) {
+					object = object->Next;
+					remaining = (object != NULL) ? object->TClass->Size : 0;
+				}
 			}
 			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 		}
