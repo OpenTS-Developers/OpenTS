@@ -210,8 +210,8 @@ void WinsockInterfaceClass::Close_Socket (void)
 bool WinsockInterfaceClass::Start_Listening (void)
 {
 	unsigned long nonblocking = 1;
-	if ( ioctlsocket ( Socket, FIONBIO, &nonblocking ) == SOCKET_ERROR ) {
-		DebugString ( "Failed to make the socket non-blocking - error code %d.\n", LAST_ERROR );
+	if (ioctlsocket(Socket, FIONBIO, &nonblocking) == SOCKET_ERROR) {
+		DebugString("Failed to make the socket non-blocking - error code %d.\n", LAST_ERROR);
 		assert (false);
 		return(false);
 	}

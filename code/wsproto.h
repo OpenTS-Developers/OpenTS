@@ -111,7 +111,7 @@ class WinsockInterfaceClass {
 		virtual void Stop_Listening (void);
 
 		// Call wherever the manager is serviced.
-		virtual void Service (void);
+		virtual void Service(void);
 
 		virtual void Clear_Socket_Error(SOCKET socket);
 
