@@ -6581,6 +6581,9 @@ bool UnitClass::Considered_Vehicle(void) const
 void UnitClass::EMPulse_Blast(void)
 {
 	if (!Is_Immobilized() && Charge >= Class->MaxCharge) {
+		// TODO: look the weapon up once the rules must declare it, so no match grows the list.
+		// WeaponType index = WeaponTypeClass::From_Name("MobileEMPulseWeapon");
+		// WeaponTypeClass const * weapon = index != WEAPON_NONE ? Weapons[index] : NULL;
 		WeaponTypeClass const * weapon = WeaponTypeClass::Find_Or_Make("MobileEMPulseWeapon");
 		if (weapon != NULL && weapon->Bullet != NULL && weapon->WarheadPtr != NULL) {
 			CellClass * cptr = &Map[Center_Coord().As_Cell()];

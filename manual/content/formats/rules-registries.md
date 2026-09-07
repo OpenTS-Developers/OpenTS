@@ -22,6 +22,7 @@ registrations:
   - { section: OverlayTypes, id_from: value, entry_section: "<OverlayType ID>" }
   - { section: Animations, id_from: value, entry_section: "<AnimType ID>" }
   - { section: VoxelAnims, id_from: value, entry_section: "<VoxelAnimType ID>" }
+  - { section: Weapons, id_from: value, entry_section: "<WeaponType ID>" }
   - { section: Warheads, id_from: value, entry_section: "<WarheadType ID>" }
   - { section: Particles, id_from: value, entry_section: "<ParticleType ID>" }
   - { section: ParticleSystems, id_from: value, entry_section: "<ParticleSystemType ID>" }
@@ -53,4 +54,6 @@ Name=Example infantry
 Strength=100
 ```
 
-Weapons and projectiles have no registration section of their own. A weapon is created the first time a type's [`Primary=`](/keys/primary/), [`Secondary=`](/keys/secondary/) or [`Elite=`](/keys/elite/) names it, and a projectile the first time a weapon's [`Projectile=`](/keys/projectile/) names it. Each is then filled in from the section carrying its name on the same terms as above, and keeps the built-in defaults where no section carries it.
+Projectiles have no registration section of their own. A projectile is created the first time a weapon's [`Projectile=`](/keys/projectile/) names it, then filled in from the section carrying its name on the same terms as above.
+
+A weapon `[Weapons]` leaves out is created the same way, the first time a [`Primary=`](/keys/primary/), [`Secondary=`](/keys/secondary/), [`Elite=`](/keys/elite/), [`WeaponType=`](/keys/weapontype/), [`DropPodWeapon=`](/keys/droppodweapon/) or [`AirburstWeapon=`](/keys/airburstweapon/) names it. Weapon sections are read in one pass over the weapons registered by then, and a projectile's `AirburstWeapon=` is read after that pass, so a weapon only that key names is created too late to read its own section and keeps the built-in defaults.

@@ -124,6 +124,7 @@ class RulesClass
 		bool Do_OverlayTypes(CCINIClass const & ini);
 		bool Do_AnimTypes(CCINIClass const & ini);
 		bool Do_VoxelAnimTypes(CCINIClass const & ini);
+		bool Do_WeaponTypes(CCINIClass const & ini);
 		bool Do_WarheadTypes(CCINIClass const & ini);
 		bool Do_ParticleTypes(CCINIClass const & ini);
 		bool Do_ParticleSystemTypes(CCINIClass const & ini);

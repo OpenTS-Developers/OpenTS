@@ -745,6 +745,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Do_HouseTypes(ini);
 	Do_Sides(ini);
 	Do_OverlayTypes(ini);
+	Do_WeaponTypes(ini);
 	Do_SuperWeaponTypes(ini);
 	Do_WarheadTypes(ini);
 	Do_SmudgeTypes(ini);
@@ -1643,6 +1644,28 @@ bool RulesClass::Do_VoxelAnimTypes(CCINIClass const & ini)
 	for (int i = 0; i < count; i++) {
 		if (ini.Get_String(VOXELANIMS, ini.Get_Entry(VOXELANIMS, i), "", buffer, sizeof(buffer))) {
 			VoxelAnimTypeClass::Find_Or_Make(buffer);
+		}
+	}
+	return(count > 0);
+}
+
+
+/// <summary>
+/// Creates the weapon types declared in the control file.
+/// Each entry of the weapon list names a weapon, which is created if the game has not heard
+/// of it before. The weapon then reads its own section for its firing behavior.
+/// </summary>
+/// <remarks>Weapon sections are read in one pass, so a weapon nothing else names reaches
+/// that pass only by being declared here.</remarks>
+/// <returns>bool; Were any weapons declared?</returns>
+bool RulesClass::Do_WeaponTypes(CCINIClass const & ini)
+{
+	static char const * const WEAPONS = "Weapons";
+	char buffer[32];
+	int count = ini.Entry_Count(WEAPONS);
+	for (int i = 0; i < count; i++) {
+		if (ini.Get_String(WEAPONS, ini.Get_Entry(WEAPONS, i), "", buffer, sizeof(buffer))) {
+			WeaponTypeClass::Find_Or_Make(buffer);
 		}
 	}
 	return(count > 0);

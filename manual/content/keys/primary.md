@@ -21,5 +21,5 @@ An ID with no section of its own is not an error — it registers a WeaponType u
 The slot's contents are substituted at runtime. An elite object fires its [`Elite`](/keys/elite/) weapon here, and a building resolves the slot through its plugged-in upgrades before either; [the elite weapon](/systems/veterancy/#the-elite-weapon) covers both.
 
 :::danger[This assignment can change weapon numbering]
-Weapons are numbered in the order they are first named. Adding, removing, or renaming the weapon a type names here therefore shifts the weapon numbers stored in [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger actions.
+A weapon the rules [`[Weapons]` list](/formats/rules-registries/) leaves out is numbered where this key first names it, so adding, removing or renaming an unlisted weapon here shifts the weapon numbers stored in [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger actions. Listing the weapon settles its number instead.
 :::
