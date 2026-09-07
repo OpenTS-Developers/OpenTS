@@ -43,7 +43,7 @@ BOOL Skirmish_On_WM_INITDIALOG(HWND window, WPARAM wparam, LPARAM lparam);
 /// <param name="lparam">The notification code that came with the command.</param>
 void Skirmish_On_WM_COMMAND(HWND window, int message, WPARAM wparam, LPARAM lparam)
 {
-	int * rc = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+	int * rc = (int *)GetWindowLongPtr(window, DWLP_USER);
 	char buffer[256];
 	HWND handle;
 
@@ -228,7 +228,7 @@ bool Skirmish_Mode_Dialog(void)
 
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_SKIRMISH, Skirmish_Dialog_Proc);
 	if (dialog) {
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
 		OwnerDraw::Display_Dialog(dialog);
 		while (rc != IDOK && rc != IDCANCEL) {
 			if (OwnerDraw::Dialog_Message_Handler() == IDOK) {

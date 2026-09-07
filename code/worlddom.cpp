@@ -57,7 +57,7 @@ INT_PTR CALLBACK WDT_Faction_Choice_Menu_Proc(HWND window, UINT message, WPARAM 
 
 		switch (message) {
 			case WM_COMMAND: {
-				retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+				retval = (int *)GetWindowLongPtr(window, DWLP_USER);
 				switch (LOWORD(wparam)) {
 					case IDC_PICKCLAN_JOIN:
 						*retval = 1;

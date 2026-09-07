@@ -154,7 +154,7 @@ OwnerDraw::CellData::CellData(void)
 /// <returns>Returns with the handle itself, taken as an unsigned value.</returns>
 unsigned int Hash_HWND(HWND &key)
 {
-	return(*(unsigned int*)&key);
+	return((unsigned int)(uintptr_t)key);
 }
 
 
@@ -4021,7 +4021,6 @@ LRESULT CALLBACK ListBoxCtrlProc(HWND window, UINT message, WPARAM wparam, LPARA
 	if (needs_scrollbar == 1) {
 		if (data->attachedWindow == NULL) {
 			data->attachedWindow = (HWND)1;
-			GetWindowLongPtr(window, GWLP_WNDPROC);
 			parent = GetParent(window);
 			RECT parent_display;
 			Get_Display_Rect(parent, &parent_display);
@@ -6955,7 +6954,7 @@ HWND OwnerDraw::Custom_Message_Box(const char *btn1txt, const char *btn2txt, boo
 {
 	HWND dlg = OwnerDraw::Begin_Dialog(IDD_MSGBOX_1, Custom_Message_Box_Proc);
 
-	SetWindowLongPtr(dlg, GWLP_USERDATA, (LONG_PTR)cancelled);
+	SetWindowLongPtr(dlg, DWLP_USER, (LONG_PTR)cancelled);
 	SetDlgItemText(dlg, IDC_MSGBOX_TEXT, btn1txt);
 
 	if (btn2txt) {
@@ -6982,7 +6981,7 @@ INT_PTR CALLBACK Custom_Message_Box_Proc(HWND window, UINT message, WPARAM wpara
 
 	if (res == 0) {
 		if (message == WM_COMMAND && wparam == IDCANCEL) {
-			bool * cancelled = (bool *)GetWindowLongPtr(window, GWLP_USERDATA);
+			bool * cancelled = (bool *)GetWindowLongPtr(window, DWLP_USER);
 			if (cancelled) {
 				Keyboard->Put(KN_ESC);
 				*cancelled = true;

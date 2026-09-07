@@ -616,7 +616,7 @@ INT_PTR CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LP
 		return(result);
 	}
 
-	retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+	retval = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 	switch (message) {
 		case WM_COMMAND:
@@ -822,7 +822,7 @@ bool OptionsClass::Hotkey_Dialog(void)
 	handle = OwnerDraw::Begin_Dialog(IDD_OPT_KEYBOARD, Hotkey_Dialog_Proc);
 
 	if (handle != NULL) {
-		SetWindowLongPtr(handle, GWLP_USERDATA, (LONG_PTR)&res);
+		SetWindowLongPtr(handle, DWLP_USER, (LONG_PTR)&res);
 		OwnerDraw::Display_Dialog(handle);
 
 		while (res < 0) {

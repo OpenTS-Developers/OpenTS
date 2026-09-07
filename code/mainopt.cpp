@@ -71,7 +71,7 @@ void Main_Options_Dialog(void)
 			main_rc = -1;
 			main_handle = OwnerDraw::Begin_Dialog(IDD_OPT_MAIN, Main_Options_Dialog_Proc);
 		} while (main_handle == 0);
-		SetWindowLongPtr(main_handle, GWLP_USERDATA, (LONG_PTR)&main_rc);
+		SetWindowLongPtr(main_handle, DWLP_USER, (LONG_PTR)&main_rc);
 
 		OwnerDraw::Move_Dialog(main_handle, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
 		OwnerDraw::Display_Dialog(main_handle);
@@ -97,7 +97,7 @@ void Main_Options_Dialog(void)
 						in_rc = -1;
 						in_handle = OwnerDraw::Begin_Dialog(IDD_OPT_DISPLAY, Display_Options_Dialog_Proc);
 					} while (in_handle == 0);
-					SetWindowLongPtr(in_handle, GWLP_USERDATA, (LONG_PTR)&in_rc);
+					SetWindowLongPtr(in_handle, DWLP_USER, (LONG_PTR)&in_rc);
 					OwnerDraw::Display_Dialog(in_handle);
 
 					while (in_rc < 0) {
@@ -159,7 +159,7 @@ INT_PTR CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 
 	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (rc == 0) {
-		result = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+		result = (int *)GetWindowLongPtr(window, DWLP_USER);
 		switch (message) {
 
 			case WM_COMMAND:
@@ -339,7 +339,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CONFIRM_MODE, Test_Display_Mode_Dialog_Proc);
 	if (dialog) {
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
 		OwnerDraw::Display_Dialog(dialog);
 
 		CDTimerClass<SystemTimerClass> timer = 10 * TIMER_SECOND;
@@ -381,7 +381,7 @@ INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM
 
 	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (rc == 0) {
-		result = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+		result = (int *)GetWindowLongPtr(window, DWLP_USER);
 		switch (message) {
 			case WM_COMMAND:
 				id = LOWORD(wparam);
@@ -417,7 +417,7 @@ static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message,
 	static int _previous_mode = -1;
 	static bool _initialized = true;
 
-	int * result = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+	int * result = (int *)GetWindowLongPtr(window, DWLP_USER);
 	switch (message) {
 		case WM_COMMAND:
 			switch (LOWORD(wparam)) {

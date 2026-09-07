@@ -679,7 +679,7 @@ INT_PTR CALLBACK DesyncDialogClass::Dialog_Proc(HWND window, UINT message, WPARA
 		case WM_CTLCOLORDLG:
 		case WM_CTLCOLORSCROLLBAR:
 		case WM_CTLCOLORSTATIC:
-			return((BOOL)GetStockObject(BLACK_BRUSH));
+			return((INT_PTR)GetStockObject(BLACK_BRUSH));
 
 		case WM_ERASEBKGND:
 			return(TRUE);

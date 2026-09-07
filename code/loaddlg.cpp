@@ -173,7 +173,7 @@ bool LoadOptionsClass::Delete(void)
 /// <param name="id">The notification code that accompanied the control.</param>
 void LoadOptionsClass::Load_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id)
 {
-	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLongPtr(window, GWLP_USERDATA);
+	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLongPtr(window, DWLP_USER);
 	switch ((int)wparam) {
 		case IDC_MISSION_LOAD_LIST:
 			if (id == 2 && ListBox_GetCount((HWND)lparam) > 0) {
@@ -202,7 +202,7 @@ void LoadOptionsClass::Load_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPA
 /// <param name="id">The notification code that accompanied the control.</param>
 void LoadOptionsClass::Save_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id)
 {
-	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLongPtr(window, GWLP_USERDATA);
+	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLongPtr(window, DWLP_USER);
 	switch ((int)wparam) {
 		case IDC_MISSION_SAVE_LIST:
 
@@ -250,7 +250,7 @@ void LoadOptionsClass::Save_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPA
 /// <param name="id">The notification code that accompanied the control.</param>
 void LoadOptionsClass::Delete_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id)
 {
-	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLongPtr(window, GWLP_USERDATA);
+	LoadOptionsClass * _this = (LoadOptionsClass *)GetWindowLongPtr(window, DWLP_USER);
 	switch ((int)wparam) {
 		case IDOK:
 		case IDCANCEL:
@@ -428,7 +428,7 @@ bool LoadOptionsClass::Dialog(void)
 		/*
 		**	Initialize.
 		*/
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)this);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)this);
 
 		if (list != 0) {
 			Fill_List(list);

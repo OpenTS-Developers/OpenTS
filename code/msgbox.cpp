@@ -85,7 +85,7 @@ int WWMessageBox::_Process(const char * msg, int defresponse, const char * b1txt
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_MSGBOX_3, Message_Box_Proc);
 
 	if (dialog != NULL) {
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&retval);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&retval);
 
 		if (msg != NULL && msg[0] != '\0') {
 			SetDlgItemText(dialog, IDC_MSGBOX_TEXT, msg);
@@ -188,7 +188,7 @@ INT_PTR CALLBACK Message_Box_Proc(HWND window, UINT message, WPARAM wparam, LPAR
 /// <param name="id">The identifier of the control that sent the notification.</param>
 void Message_Box_On_WM_COMMAND(HWND window, int id, int control, int notify_code)
 {
-	int *retval = (int*)GetWindowLongPtr(window, GWLP_USERDATA);
+	int *retval = (int*)GetWindowLongPtr(window, DWLP_USER);
 	switch (id) {
 
 		case IDOK:

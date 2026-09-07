@@ -63,7 +63,7 @@ pumps messages and then runs `Main_Loop` in a network session or `Call_Back`
 otherwise, so multiplayer keeps stepping under a dialog. The lobbies use
 `WS_Wait_Dialog` with a callback. MSEngine screens spin on `Engine.Wait_Delay`.
 `RestateMission` mixes gadgets with MSEngine. A dialog's result is written
-through a pointer stored in `DWL_USER` by its `WM_COMMAND` handler and read by
+through a pointer stored in `DWLP_USER` by its `WM_COMMAND` handler and read by
 the driver after the pump returns. `Keyboard->Clear()`, which every driver
 calls around a dialog, pumps Windows messages through
 `Fill_Buffer_From_System`, so cleanup can re-enter UI code.

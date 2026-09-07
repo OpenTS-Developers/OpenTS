@@ -2322,7 +2322,7 @@ static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_time
 		disconnect_dialog = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_DISCONNECT, MainWindow, Reconnect_Dialog_Proc, true);
 		Center_Window_Within_Window(disconnect_dialog);
 		if (disconnect_dialog) {
-			SetWindowLongPtr(disconnect_dialog, GWLP_USERDATA, (LONG_PTR)&disconnect_return);
+			SetWindowLongPtr(disconnect_dialog, DWLP_USER, (LONG_PTR)&disconnect_return);
 			MouseCursor->Hide_Mouse();
 			ShowWindow(disconnect_dialog, SW_SHOWNORMAL);
 			UpdateWindow(disconnect_dialog);
@@ -2762,7 +2762,7 @@ bool Cast_Kick_Vote(int kicker, int kickee)
 /// </summary>
 INT_PTR CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	int * rc = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+	int * rc = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 	switch (message) {
 		case IDCANCEL:

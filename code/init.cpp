@@ -761,7 +761,7 @@ static INT_PTR CALLBACK Campaign_Choice_Dialog_Proc(HWND window, UINT message, W
 			switch (LOWORD(wparam)) {
 				case IDOK:
 					if (HIWORD(wparam) == BN_CLICKED) {
-						state = (ChooseCampaignStruct *)GetWindowLongPtr(window, GWLP_USERDATA);
+						state = (ChooseCampaignStruct *)GetWindowLongPtr(window, DWLP_USER);
 
 						if (state != NULL) {
 							item = GetDlgItem(window, IDC_LIST);
@@ -783,7 +783,7 @@ static INT_PTR CALLBACK Campaign_Choice_Dialog_Proc(HWND window, UINT message, W
 
 				case IDCANCEL:
 					if (HIWORD(wparam) == BN_CLICKED) {
-						state = (ChooseCampaignStruct *)GetWindowLongPtr(window, GWLP_USERDATA);
+						state = (ChooseCampaignStruct *)GetWindowLongPtr(window, DWLP_USER);
 
 						if (state != NULL) {
 							state->ChosenCampaign = CAMPAIGN_NONE;
@@ -840,7 +840,7 @@ static CampaignType Choose_Campaign(void)
 	dialog = OwnerDraw::Begin_Dialog(IDD_CAMPAIGN, Campaign_Choice_Dialog_Proc);
 
 	if (dialog != NULL) {
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR) &state);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR) &state);
 
 		OwnerDraw::Move_Dialog(dialog, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
 		OwnerDraw::Display_Dialog(dialog);
@@ -2990,7 +2990,7 @@ INT_PTR CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, L
 		return(rc);
 	}
 
-	res = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+	res = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 	switch (message) {
 		case WM_INITDIALOG:
@@ -3060,7 +3060,7 @@ void Version_Dialog(void)
 	dialog = OwnerDraw::Begin_Dialog(IDD_VERSION, Version_Dialog_Proc);
 
 	if (dialog != NULL) {
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&res);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&res);
 		OwnerDraw::Display_Dialog(dialog);
 
 		while (res == 0) {
@@ -3100,7 +3100,7 @@ int Main_Menu(unsigned int timeout)
 	assert(dialog != NULL);
 
 	if (dialog != NULL) {
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&retval);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&retval);
 		char *menu = Get_New_Menu()->Background;
 		Load_Title_Screen(menu, HiddenSurface, &CCPalette);
 		Draw_Version_Text(HiddenSurface);
@@ -3177,7 +3177,7 @@ INT_PTR CALLBACK Main_Menu_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 		return(rc);
 	}
 
-	res = (int *) GetWindowLongPtr(window, GWLP_USERDATA);
+	res = (int *) GetWindowLongPtr(window, DWLP_USER);
 
 	switch (message) {
 		case WM_INITDIALOG: {

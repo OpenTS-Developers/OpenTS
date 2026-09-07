@@ -76,7 +76,7 @@ GameType Select_MPlayer_Game (void)
 	if (dialog) {
 
 		int rc;
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
 
 		bool process = true;
 		while (process) {
@@ -146,7 +146,7 @@ INT_PTR CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPAR
 	}
 
 	if (message == WM_COMMAND) {
-		retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+		retval = (int *)GetWindowLongPtr(window, DWLP_USER);
 		*retval = LOWORD(wparam);
 	}
 	return(false);

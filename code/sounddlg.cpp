@@ -72,7 +72,7 @@ void SoundControlsClass::Dialog(void)
 
 	if (dialog) {
 
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
 
 		OwnerDraw::Display_Dialog(dialog);
 
@@ -255,7 +255,7 @@ INT_PTR CALLBACK SoundControlsClass::Sound_Option_Dialog_Func(HWND window, UINT 
 							if (button) {
 								Options.Set_Voice_Volume(Slider_GetPos(button) / (double)VOLUME_LEVELS, false);
 							}
-							int * res = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+							int * res = (int *)GetWindowLongPtr(window, DWLP_USER);
 							*res = IDOK;
 						}
 						break;

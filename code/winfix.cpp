@@ -184,9 +184,10 @@ item_data TreeView_get_item_data(DWORD xy)
 	point.x = LOWORD(xy);
 	point.y = HIWORD(xy);
 
-	HWND hwnd1 = ChildWindowFromPoint((HWND)GetWindowLongPtr(TreeView_LastHandle, GWLP_HWNDPARENT), point);
+	HWND parent = (HWND)GetWindowLongPtr(TreeView_LastHandle, GWLP_HWNDPARENT);
+	HWND hwnd1 = ChildWindowFromPoint(parent, point);
 	HWND hwnd2 = (HWND)GetWindowLongPtr(hwnd1, GWLP_HWNDPARENT);
-	if (hwnd1 == (HWND)GetWindowLongPtr(TreeView_LastHandle, GWLP_HWNDPARENT)) {
+	if (hwnd1 == parent) {
 		hwnd2 = hwnd1;
 	}
 

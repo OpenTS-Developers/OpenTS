@@ -117,7 +117,7 @@ void GameControlsClass::Dialog(void)
 
 	if (_Dialog) {
 
-		SetWindowLongPtr(_Dialog, GWLP_USERDATA, (LONG_PTR)&res);
+		SetWindowLongPtr(_Dialog, DWLP_USER, (LONG_PTR)&res);
 
 		OwnerDraw::Display_Dialog(_Dialog);
 
@@ -324,7 +324,7 @@ INT_PTR CALLBACK Game_Controls_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 						handle = GetDlgItem(window, IDC_DIFFICULTY_LABEL);
 					}
 					if (handle) {
-						SetWindowTextA(handle, Fetch_String(name));
+						SetWindowText(handle, Fetch_String(name));
 					}
 				}
 				break;
@@ -346,7 +346,7 @@ INT_PTR CALLBACK Game_Controls_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 /// <param name="lparam">The notification code the control sent.</param>
 void Game_Controls_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	int* retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+	int* retval = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 	switch ((INT)message) {
 		case IDC_OPT_KEYBOARD_BTN:

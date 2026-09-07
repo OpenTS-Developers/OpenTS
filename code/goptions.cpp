@@ -81,7 +81,7 @@ void Game_Options_Dialog(void)
 
 	if (dialog) {
 
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
 
 		OwnerDraw::Display_Dialog(dialog);
 
@@ -149,7 +149,7 @@ INT_PTR CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 
 		case WM_COMMAND: {
 			int code = HIWORD(wparam);
-			int* retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+			int* retval = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 			switch (LOWORD(wparam)) {
 
@@ -274,7 +274,7 @@ INT_PTR CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 				}
 
 				if (handle) {
-					SetWindowTextA(handle, Fetch_String(textid));
+					Static_SetText(handle, Fetch_String(textid));
 				}
 			}
 			break;
@@ -364,7 +364,7 @@ int Abort_Dialog(void)
 
 	if (dialog) {
 
-		SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&rc);
+		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
 
 		OwnerDraw::Display_Dialog(dialog);
 
@@ -396,7 +396,7 @@ INT_PTR CALLBACK Abort_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPA
 			case WM_INITDIALOG:
 				handle = GetDlgItem(window, IDC_RESTART_MISSION);
 				if (Session.Type != GAME_NORMAL) {
-					SetWindowTextA(handle, Fetch_String(TXT_SURRENDER));
+					SetWindowText(handle, Fetch_String(TXT_SURRENDER));
 					if (PlayerPtr->IsDefeated || PlayerPtr->IsToWin || PlayerPtr->IsToLose || PlayerPtr->IsToDie) {
 						EnableWindow(handle, FALSE);
 					}
@@ -422,7 +422,7 @@ INT_PTR CALLBACK Abort_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPA
 /// <param name="lparam">The notification code that came with the button press.</param>
 void Abort_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
-	int* retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+	int* retval = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 	switch ((int)message) {
 		case IDC_ABORT_MISSION:

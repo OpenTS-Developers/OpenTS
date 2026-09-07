@@ -531,7 +531,7 @@ BOOL Get_Dialog_Resolution(unsigned short template_id, DLGPROC dialog_proc, int,
 	HWND window;
 	tagRECT rcl;
 
-	window = CreateDialogParam(ProgramInstance, (LPCSTR)template_id, 0, dialog_proc, 0);
+	window = CreateDialogParam(ProgramInstance, MAKEINTRESOURCE(template_id), 0, dialog_proc, 0);
 	GetClientRect(window, &rcl);
 	DestroyWindow(window);
 	pt.x = rcl.right;
@@ -591,7 +591,7 @@ BOOL CALLBACK Resize_Dialog(HWND window, LPARAM lParam)
 	}
 
 	if (resize_dialog_width == 0) {
-		HWND win = CreateDialogParam(ProgramInstance, (LPCSTR)198, NULL, Resize_Dialog_Proc, NULL);
+		HWND win = CreateDialogParam(ProgramInstance, MAKEINTRESOURCE(198), NULL, Resize_Dialog_Proc, NULL);
 		GetClientRect(win, &wrcl);
 		DestroyWindow(win);
 		w = wrcl.right;

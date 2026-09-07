@@ -63,7 +63,7 @@ bool Select_Game_Type_Dialog(AddonType &type)
 		HWND dialog = OwnerDraw::Begin_Dialog(IDD_SELECT_GAME_TYPE, Select_Game_Type_Dialog_Proc);
 		if (dialog != 0) {
 
-			SetWindowLongPtr(dialog, GWLP_USERDATA, (LONG_PTR)&retval);
+			SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&retval);
 			OwnerDraw::Display_Dialog(dialog);
 
 			retval = -1;
@@ -117,7 +117,7 @@ INT_PTR CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM 
 	if (rc == 0) {
 		switch (message) {
 			case WM_COMMAND:
-				retval = (int *)GetWindowLongPtr(window, GWLP_USERDATA);
+				retval = (int *)GetWindowLongPtr(window, DWLP_USER);
 				*retval = LOWORD(wparam);
 				break;
 		}

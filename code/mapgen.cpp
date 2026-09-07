@@ -3276,7 +3276,7 @@ int Do_Random_Map_Dialog(bool (*callback)())
 	if (dialog) {
 		RMGCallback = callback;
 		RandomMapGen.SeedData.Callback = callback;
-		SetWindowLongPtrA(dialog, GWLP_USERDATA, (LONG_PTR)&res);
+		SetWindowLongPtrA(dialog, DWLP_USER, (LONG_PTR)&res);
 		OwnerDraw::Display_Dialog(dialog);
 		while (res == 0) {
 			if (OwnerDraw::Dialog_Message_Handler() == 1) {
@@ -3478,7 +3478,7 @@ void Do_Random_Map(HWND dialog, bool (*callback)())
 /// <summary>
 /// Dialog procedure for the random map generator ("Map Seed") dialog.
 /// Handles previewing, generating, saving, loading and deleting random maps, and randomizing
-/// the generator settings. The dialog's result code is written through the GWLP_USERDATA
+/// the generator settings. The dialog's result code is written through the DWLP_USER
 /// pointer set up by Do_Random_Map_Dialog so that writing it ends that dialog's modal
 /// message loop.
 /// </summary>
@@ -3496,7 +3496,7 @@ INT_PTR CALLBACK Map_Seed_Dialog_Proc(HWND window, UINT message, WPARAM wparam, 
 		return(result);
 	}
 
-	LONG * state = (LONG *)GetWindowLongPtrA(window, GWLP_USERDATA);
+	LONG * state = (LONG *)GetWindowLongPtrA(window, DWLP_USER);
 
 	switch (message) {
 
