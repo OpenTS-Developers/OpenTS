@@ -430,7 +430,7 @@ class AnimTypeClass : public ObjectTypeClass
 		AnimTypeClass(char const * ininame = NULL);
 		virtual ~AnimTypeClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

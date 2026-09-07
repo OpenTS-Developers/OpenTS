@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "partsys.h"
@@ -872,18 +871,9 @@ void ParticleSystemClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier for this object.
-/// This routine is part of the persistence support. The save process records the
-/// identifier so that the load process knows what kind of object to build.
-/// </summary>
-/// <param name="retval">Pointer to the class identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT ParticleSystemClass::GetClassID(CLSID * retval)
+ClassID ParticleSystemClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_ParticleSystemClass;
-	return(S_OK);
+	return(ClassID_ParticleSystemClass);
 }
 
 

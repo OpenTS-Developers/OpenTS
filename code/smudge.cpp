@@ -38,7 +38,6 @@
  *   SmudgeClass::operator new -- Creator of smudge objects.                                   *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "smudge.h"
@@ -301,16 +300,7 @@ RTTIType SmudgeClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the IPersist interface. It is used by the save and load
-/// system to recognize what kind of object it is about to create.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT SmudgeClass::GetClassID(CLSID * retval)
+ClassID SmudgeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_SmudgeClass;
-	return(S_OK);
+	return(ClassID_SmudgeClass);
 }

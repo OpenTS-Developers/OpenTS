@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "suprtype.h"
@@ -97,17 +96,9 @@ SuperWeaponTypeClass::~SuperWeaponTypeClass(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save game system uses this to know which class to construct when the object is
-/// read back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT SuperWeaponTypeClass::GetClassID(CLSID * retval)
+ClassID SuperWeaponTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_SuperWeaponTypeClass;
-	return(S_OK);
+	return(ClassID_SuperWeaponTypeClass);
 }
 
 

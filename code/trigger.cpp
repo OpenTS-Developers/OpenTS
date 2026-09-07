@@ -42,7 +42,6 @@
  *   TriggerClass::~TriggerClass -- Destructor for trigger objects.                            *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "trigger.h"
@@ -500,18 +499,9 @@ void TriggerClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence support. The save game system uses the
-/// identifier to work out what kind of object to build when the stream is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TriggerClass::GetClassID(CLSID * retval)
+ClassID TriggerClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TriggerClass;
-	return(S_OK);
+	return(ClassID_TriggerClass);
 }
 
 

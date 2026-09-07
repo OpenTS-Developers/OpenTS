@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "psystype.h"
@@ -181,18 +180,9 @@ void ParticleSystemTypeClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence interface. The save system records the class
-/// ID so that the right kind of object can be manufactured when the game is reloaded.
-/// </summary>
-/// <param name="retval">Pointer to the class ID to be filled in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT ParticleSystemTypeClass::GetClassID(CLSID * retval)
+ClassID ParticleSystemTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_ParticleSystemTypeClass;
-	return(S_OK);
+	return(ClassID_ParticleSystemTypeClass);
 }
 
 

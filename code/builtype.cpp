@@ -55,7 +55,6 @@
  *   BuildingTypeClass::operator new -- Allocates a building type object from the special heap.*
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "builtype.h"
@@ -1942,18 +1941,9 @@ void BuildingTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the save game system so that it knows what kind of object to
-/// construct when the stream is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the class ID to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT BuildingTypeClass::GetClassID(CLSID * retval)
+ClassID BuildingTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_BuildingTypeClass;
-	return(S_OK);
+	return(ClassID_BuildingTypeClass);
 }
 
 

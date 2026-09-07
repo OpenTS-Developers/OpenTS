@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "vein.h"
@@ -1090,15 +1089,7 @@ void VeinholeMonsterClass::Reduce_Veins_At(CellClass * cellptr)
 }
 
 
-/// <summary>
-/// Fetches the class identifier used by the save game system.
-/// This routine is called by the persistence layer so that it knows which class to
-/// recreate when the saved game is read back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT VeinholeMonsterClass::GetClassID(CLSID * retval)
+ClassID VeinholeMonsterClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_VeinholeMonsterClass;
-	return(S_OK);
+	return(ClassID_VeinholeMonsterClass);
 }

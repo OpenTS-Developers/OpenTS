@@ -13,9 +13,7 @@
 
 #pragma once
 
-#ifdef INCLUDE_COM
-#include "isun.h"
-#endif
+#include "classids.h"
 #include <cstring>
 
 /// Everything from here on is the content of defines.h.

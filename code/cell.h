@@ -517,7 +517,7 @@ class CellClass : public AbstractClass
 		CellClass(void);
 		virtual ~CellClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

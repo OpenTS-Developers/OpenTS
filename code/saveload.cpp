@@ -42,7 +42,6 @@
  *   Save_Misc_Values -- saves miscellaneous variables                                         *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "saveload.h"
@@ -170,19 +169,14 @@ HRESULT Save_Object(SaveStreamClass & stream, IPersistent * persist)
 		return(E_POINTER);
 	}
 
-	CLSID classid;
-	HRESULT result = persist->GetClassID(&classid);
-	if (FAILED(result)) {
-		return(result);
-	}
-
+	ClassID classid = persist->Class_ID();
 	stream.Serialize_Bytes(&classid, sizeof(classid));
 	unsigned int const lengthat = stream.Offset();
 	unsigned int length = 0;
 	stream.Serialize(length);
 	unsigned int const start = stream.Offset();
 
-	result = persist->Save(stream, TRUE);
+	HRESULT result = persist->Save(stream, TRUE);
 	if (FAILED(result)) {
 		return(result);
 	}
@@ -216,7 +210,7 @@ HRESULT Save_Object(SaveStreamClass & stream, ILocomotion * locomotion)
 /// match what the object consumed, or the class is not the one asked for.</returns>
 IPersistent * Load_Object(SaveStreamClass & stream, bool (*accepts)(IPersistent const * object))
 {
-	CLSID classid;
+	ClassID classid;
 	unsigned int length = 0;
 	stream.Serialize_Bytes(&classid, sizeof(classid));
 	stream.Serialize(length);

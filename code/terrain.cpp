@@ -52,7 +52,6 @@
  *   TerrainClass::~TerrainClass -- Default destructor for terrain class objects.              *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "terrain.h"
@@ -1090,16 +1089,7 @@ RTTIType TerrainClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier for this object.
-/// This routine is part of the IPersistent implementation. The save system records
-/// the identifier so that it knows what to recreate when the game is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TerrainClass::GetClassID(CLSID * retval)
+ClassID TerrainClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TerrainClass;
-	return(S_OK);
+	return(ClassID_TerrainClass);
 }

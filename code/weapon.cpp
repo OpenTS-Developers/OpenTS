@@ -39,7 +39,6 @@
  *   WeaponTypeClass::Allowed_Threats -- Determine what threats this weapon can address.       *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "weapon.h"
@@ -363,18 +362,9 @@ void WeaponTypeClass::Compute_CRC(CRCEngine &crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the persistence machinery to recognize what kind of object it
-/// is about to load back.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT WeaponTypeClass::GetClassID(CLSID * retval)
+ClassID WeaponTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_WeaponTypeClass;
-	return(S_OK);
+	return(ClassID_WeaponTypeClass);
 }
 
 

@@ -17,7 +17,7 @@
 namespace {
 
 struct ClassEntryType {
-	CLSID Class;
+	ClassID Class;
 	ClassCreatorType Creator;
 };
 
@@ -28,7 +28,7 @@ std::vector<ClassEntryType> Classes;
 
 // A later registration of the same identifier wins, as the last class object
 // published did before.
-void Register_Class(CLSID const & classid, ClassCreatorType creator)
+void Register_Class(ClassID const & classid, ClassCreatorType creator)
 {
 	for (ClassEntryType & entry : Classes) {
 		if (entry.Class == classid) {
@@ -51,7 +51,7 @@ void Unregister_Classes(void)
 /// </summary>
 /// <returns>The object, owned by the caller, or nothing with a debug line naming the
 /// identifier when no class was registered for it.</returns>
-std::unique_ptr<IPersistent> Create_Object(CLSID const & classid)
+std::unique_ptr<IPersistent> Create_Object(ClassID const & classid)
 {
 	for (ClassEntryType const & entry : Classes) {
 		if (entry.Class == classid) {

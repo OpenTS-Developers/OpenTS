@@ -74,7 +74,6 @@
  *   CellClass::Wall_Update -- Updates the imagery for wall objects in cell.                   *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "cell.h"
@@ -5168,18 +5167,9 @@ void CellClass::Detach(AbstractClass const * target)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This is the persistence requirement that lets the save system recognize a cell when a
-/// saved game is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the location to store the class identifier in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT CellClass::GetClassID(CLSID * retval)
+ClassID CellClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_CellClass;
-	return(S_OK);
+	return(ClassID_CellClass);
 }
 
 

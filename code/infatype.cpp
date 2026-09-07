@@ -45,7 +45,6 @@
  *   InfantryTypeClass::operator new -- Allocate an infanty type class object.                 *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "infatype.h"
@@ -513,17 +512,9 @@ void InfantryTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save game system stores this identifier so that the object can be recreated as the
-/// correct class when the game is loaded.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no return pointer was supplied.</returns>
-HRESULT InfantryTypeClass::GetClassID(CLSID * retval)
+ClassID InfantryTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_InfantryTypeClass;
-	return(S_OK);
+	return(ClassID_InfantryTypeClass);
 }
 
 

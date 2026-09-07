@@ -29,15 +29,10 @@
  *---------------------------------------------------------------------------------------------*
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
-/// create all com interfaces here
 #include "sun.h"
-#include "isun_i.c"
-#include "ilocos.h"
-#include "ilocos_i.c"
-#undef INCLUDE_COM
+#include "classids.h"
 
 #include "_voxel.h"
 #include "globals.h"

@@ -45,7 +45,6 @@
  *   AircraftTypeClass::operator new -- Allocates an aircraft type object from special pool.   *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "airctype.h"
@@ -327,18 +326,9 @@ void AircraftTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of the aircraft type.
-/// The save game machinery asks each object for this identifier so that it can create an
-/// object of the right class again when the game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if there was nowhere to put the answer.</returns>
-HRESULT AircraftTypeClass::GetClassID(CLSID * retval)
+ClassID AircraftTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_AircraftTypeClass;
-	return(S_OK);
+	return(ClassID_AircraftTypeClass);
 }
 
 

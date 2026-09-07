@@ -46,7 +46,6 @@
  *   OverlayTypeClass::operator new -- Allocate an overlay type class object from pool.        *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "overtype.h"
@@ -482,17 +481,9 @@ void OverlayTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save system asks for this so that it knows which class to construct when the object
-/// is read back out of a save file.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT OverlayTypeClass::GetClassID(CLSID * retval)
+ClassID OverlayTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_OverlayTypeClass;
-	return(S_OK);
+	return(ClassID_OverlayTypeClass);
 }
 
 

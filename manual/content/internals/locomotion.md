@@ -18,9 +18,9 @@ source_files:
 
 ## Object locomotion
 
-`TechnoTypeClass::Locomotor` stores the CLSID used to create a type's ordinary locomotor. Concrete `FootClass` constructors create that locomotor, call `Link_To_Object`, and assign it to `FootClass::Locomotion`.
+`TechnoTypeClass::Locomotor` stores the class identifier used to create a type's ordinary locomotor. Concrete `FootClass` constructors create that locomotor, call `Link_To_Object`, and assign it to `FootClass::Locomotion`.
 
-Movement, destination, layer, occupation, and locomotor-specific drawing queries go through the current interface. Code must therefore inspect the runtime `Locomotion` pointer when temporary locomotion is possible; the type's `Locomotor` CLSID describes the ordinary implementation, not necessarily the one currently in control.
+Movement, destination, layer, occupation, and locomotor-specific drawing queries go through the current interface. Code must therefore inspect the runtime `Locomotion` pointer when temporary locomotion is possible; the type's `Locomotor` identifier describes the ordinary implementation, not necessarily the one currently in control.
 
 ## Piggybacking
 
@@ -40,4 +40,4 @@ Callers that perform opportunistic restoration first consult `Is_Ok_To_End`. The
 
 `FootClass::Serialize` writes the active locomotor as a record of its own, headed by its class identifier, and recreates it from that identifier when loading. A piggyback-capable locomotor writes whether it carries another locomotor and serializes that nested locomotor when present. A save made during a temporary movement state therefore retains both the active locomotor and the one to restore.
 
-`GetClassID` identifies the active locomotor implementation. `Piggyback_CLSID` returns the carried locomotor's `GetClassID` while piggybacking and the active locomotor's ID otherwise. These identities are distinct while a temporary locomotor is in control.
+`Class_ID` identifies the active locomotor implementation, and the carried locomotor keeps its own. These identities are distinct while a temporary locomotor is in control.

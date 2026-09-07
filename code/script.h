@@ -29,7 +29,7 @@ class ScriptClass : public AbstractClass
 		ScriptClass(ScriptTypeClass *type = NULL);
 		virtual ~ScriptClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
@@ -76,7 +76,7 @@ class ScriptTypeClass : public AbstractTypeClass
 
 		static ScriptTypeClass * Find_Or_Make(char const * ininame = NULL);
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		static void Read_All(CCINIClass const & ini, INIScopeType scope);
 		static void Write_All(CCINIClass & ini, INIScopeType scope);

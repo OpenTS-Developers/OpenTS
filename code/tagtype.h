@@ -33,7 +33,7 @@ class TagTypeClass : public AbstractTypeClass
 		TagTypeClass(char const * name = NULL);
 		virtual ~TagTypeClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		static TagTypeClass * From_Name(char const * name);
 

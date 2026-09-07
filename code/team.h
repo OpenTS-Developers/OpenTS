@@ -265,7 +265,7 @@ class TeamClass : public AbstractClass
 		TeamClass(TeamTypeClass const * team=0, HouseClass * owner=0, void * = NULL);
 		virtual ~TeamClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

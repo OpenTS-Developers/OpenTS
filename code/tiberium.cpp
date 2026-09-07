@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tiberium.h"
@@ -194,17 +193,9 @@ void TiberiumClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of the tiberium class.
-/// This routine tells the save game loader which kind of object to create when this
-/// tiberium type is read back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TiberiumClass::GetClassID(CLSID * retval)
+ClassID TiberiumClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TiberiumClass;
-	return(S_OK);
+	return(ClassID_TiberiumClass);
 }
 
 

@@ -11,7 +11,6 @@
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tactical.h"
@@ -3724,17 +3723,9 @@ bool Tactical::Draw_3D_Line(Coord const & coord1, Coord const & coord2, int colo
 }
 
 
-/// <summary>
-/// Fetches the class identifier of the tactical map.
-/// This routine is used by the persistence system to recognize the object when it is read
-/// back out of a save game.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT Tactical::GetClassID(CLSID * retval)
+ClassID Tactical::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TacticalMapClass;
-	return(S_OK);
+	return(ClassID_TacticalMapClass);
 }
 
 

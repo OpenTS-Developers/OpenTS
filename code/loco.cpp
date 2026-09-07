@@ -184,7 +184,7 @@ bool LocomotionClass::Is_Ion_Sensitive(void)
 }
 
 
-std::unique_ptr<ILocomotion> Create_Locomotor(CLSID const & classid)
+std::unique_ptr<ILocomotion> Create_Locomotor(ClassID const & classid)
 {
 	std::unique_ptr<IPersistent> object = Create_Object(classid);
 	ILocomotion * const locomotion = dynamic_cast<ILocomotion *>(object.get());
@@ -201,14 +201,10 @@ std::unique_ptr<ILocomotion> Load_Locomotor(SaveStreamClass & stream)
 }
 
 
-CLSID Locomotion_Class_ID(ILocomotion * locomotion)
+ClassID Locomotion_Class_ID(ILocomotion * locomotion)
 {
-	CLSID classid = CLSID_NULL;
-	IPersistent * const persist = dynamic_cast<IPersistent *>(locomotion);
-	if (persist != NULL) {
-		persist->GetClassID(&classid);
-	}
-	return(classid);
+	IPersistent const * const persist = dynamic_cast<IPersistent const *>(locomotion);
+	return(persist != nullptr ? persist->Class_ID() : ClassID());
 }
 
 

@@ -33,7 +33,7 @@ class VoxelAnimClass : public ObjectClass, public BounceClass
 		VoxelAnimClass(VoxelAnimTypeClass const * type, Coord const & coord, HouseClass * house = NULL);
 		virtual ~VoxelAnimClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

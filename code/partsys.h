@@ -31,7 +31,7 @@ class ParticleSystemClass : public ObjectClass
 		ParticleSystemClass(void);
 		virtual ~ParticleSystemClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

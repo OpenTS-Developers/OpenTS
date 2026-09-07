@@ -31,7 +31,7 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		DropPodLocomotionClass(void);
 		virtual ~DropPodLocomotionClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
@@ -47,7 +47,6 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
-		virtual HRESULT Piggyback_CLSID(GUID * classid) override;
 		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
 
 	private:

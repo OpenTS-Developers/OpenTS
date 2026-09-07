@@ -11,7 +11,6 @@
  * disclaimers apply; see LICENSE.md.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "taskforc.h"
@@ -319,17 +318,9 @@ void TaskForceClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the save game code so that an object of the right kind can
-/// be created when the game is loaded back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TaskForceClass::GetClassID(CLSID * retval)
+ClassID TaskForceClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TaskForceClass;
-	return(S_OK);
+	return(ClassID_TaskForceClass);
 }
 
 

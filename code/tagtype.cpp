@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tagtype.h"
@@ -376,18 +375,9 @@ TagTypeClass * TagTypeClass::Find_Or_Make(char const * name)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the save and load system so that a tag type can be
-/// recognized when it is read back out of a stream.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TagTypeClass::GetClassID(CLSID * retval)
+ClassID TagTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TagTypeClass;
-	return(S_OK);
+	return(ClassID_TagTypeClass);
 }
 
 

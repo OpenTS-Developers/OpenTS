@@ -25,7 +25,7 @@ class TaskForceClass : public AbstractTypeClass
 		TaskForceClass(char const *name=NULL);
 		virtual ~TaskForceClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		static TaskForceClass * Find_Or_Make(char const * name);
 

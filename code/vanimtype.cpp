@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "vanimtype.h"
@@ -247,18 +246,9 @@ void VoxelAnimTypeClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the persistence system to record what kind of object was
-/// written, so that the right class can be created when the save game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the class identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT VoxelAnimTypeClass::GetClassID(CLSID * retval)
+ClassID VoxelAnimTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_VoxelAnimTypeClass;
-	return(S_OK);
+	return(ClassID_VoxelAnimTypeClass);
 }
 
 

@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "empulse.h"
@@ -283,18 +282,9 @@ void EMPulseClass::Compute_CRC(CRCEngine &crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier used to persist this object.
-/// The save system writes this identifier ahead of the object data so that the loader
-/// knows what kind of object to reconstruct.
-/// </summary>
-/// <param name="retval">Pointer to the buffer that will receive the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT EMPulseClass::GetClassID(CLSID * retval)
+ClassID EMPulseClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_EMPulseClass;
-	return(S_OK);
+	return(ClassID_EMPulseClass);
 }
 
 

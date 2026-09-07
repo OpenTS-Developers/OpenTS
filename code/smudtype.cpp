@@ -44,7 +44,6 @@
  *   SmudgetypeClass::Occupy_List -- Determines occupation list for smudge object.             *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "smudtype.h"
@@ -337,17 +336,9 @@ void SmudgeTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save system asks for this so that it knows which class to construct when the object
-/// is read back out of a save file.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT SmudgeTypeClass::GetClassID(CLSID * retval)
+ClassID SmudgeTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_SmudgeTypeClass;
-	return(S_OK);
+	return(ClassID_SmudgeTypeClass);
 }
 
 

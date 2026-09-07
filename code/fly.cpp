@@ -1515,18 +1515,9 @@ bool FlyLocomotionClass::Is_In_Flight(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// This routine is used by the save and load machinery so that it knows which locomotor to
-/// create when the owning object is restored.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT FlyLocomotionClass::GetClassID(CLSID * retval)
+ClassID FlyLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_FlyerLocomotion;
-	return(S_OK);
+	return(ClassID_FlyerLocomotion);
 }
 
 

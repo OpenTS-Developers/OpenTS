@@ -1067,18 +1067,9 @@ void HoverLocomotionClass::Do_Shove(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// The persistence system uses this identifier to create a locomotor of the right kind
-/// when the object it drives is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT HoverLocomotionClass::GetClassID(CLSID * retval)
+ClassID HoverLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_HoverLocomotion;
-	return(S_OK);
+	return(ClassID_HoverLocomotion);
 }
 
 

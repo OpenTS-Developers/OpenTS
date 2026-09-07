@@ -46,7 +46,6 @@
  *   TriggerTypeClass::~TriggerTypeClass -- Deleting a trigger type deletes associated triggers*
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "trigtype.h"
@@ -811,18 +810,9 @@ void TriggerTypeClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save game system uses this identifier to know which kind of object to build
-/// when the stream is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the location to store the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no storage location was supplied.</returns>
-HRESULT TriggerTypeClass::GetClassID(CLSID * retval)
+ClassID TriggerTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TriggerTypeClass;
-	return(S_OK);
+	return(ClassID_TriggerTypeClass);
 }
 
 

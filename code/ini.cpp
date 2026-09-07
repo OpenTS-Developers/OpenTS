@@ -957,53 +957,108 @@ int INIClass::Get_Int(char const * section, char const * entry, int defvalue) co
 }
 
 
-// A class identifier as the registry writes it, braces optional: eight, four, four, four
-// and twelve hexadecimal digits separated by hyphens.
-static bool Parse_CLSID(char const * text, CLSID & clsid)
+// One field of a class identifier, exactly the many hexadecimal digits it is written with.
+static bool Parse_Hex_Field(char const * & ptr, int digits, unsigned int & value)
 {
-	char digits[40];
-	unsigned int length = 0;
+	value = 0;
 
-	for (char const * ptr = text; *ptr != '\0'; ptr++) {
-		if (*ptr == '{' || *ptr == '}') {
-			continue;
-		}
-		if (length >= sizeof(digits) - 1) {
+	for (int index = 0; index < digits; index++) {
+		char const letter = *ptr++;
+		unsigned int digit;
+
+		if (letter >= '0' && letter <= '9') {
+			digit = (unsigned int)(letter - '0');
+		} else if (letter >= 'A' && letter <= 'F') {
+			digit = (unsigned int)(letter - 'A') + 10;
+		} else if (letter >= 'a' && letter <= 'f') {
+			digit = (unsigned int)(letter - 'a') + 10;
+		} else {
 			return(false);
 		}
-		digits[length++] = *ptr;
-	}
-	digits[length] = '\0';
 
-	unsigned int data1 = 0;
-	unsigned int data2 = 0;
-	unsigned int data3 = 0;
-	unsigned int data4[8] = { 0 };
-	int const scanned = sscanf(digits, "%8x-%4x-%4x-%2x%2x-%2x%2x%2x%2x%2x%2x",
-		&data1, &data2, &data3,
-		&data4[0], &data4[1], &data4[2], &data4[3],
-		&data4[4], &data4[5], &data4[6], &data4[7]);
-	if (scanned != 11 || length != 36) {
+		value = (value << 4) | digit;
+	}
+
+	return(true);
+}
+
+
+// A class identifier as the registry writes it, the surrounding braces optional: eight,
+// four, four, four and twelve hexadecimal digits separated by hyphens, and nothing else.
+static bool Parse_ClassID(char const * text, ClassID & clsid)
+{
+	char const * ptr = text;
+	std::size_t length = strlen(text);
+
+	if (length == 38 && ptr[0] == '{' && ptr[37] == '}') {
+		ptr++;
+		length -= 2;
+	}
+	if (length != 36) {
 		return(false);
+	}
+
+	unsigned int data1;
+	unsigned int data2;
+	unsigned int data3;
+	if (!Parse_Hex_Field(ptr, 8, data1) || *ptr++ != '-') return(false);
+	if (!Parse_Hex_Field(ptr, 4, data2) || *ptr++ != '-') return(false);
+	if (!Parse_Hex_Field(ptr, 4, data3) || *ptr++ != '-') return(false);
+
+	unsigned char data4[8];
+	for (int index = 0; index < ARRAY_SIZE(data4); index++) {
+		unsigned int byte;
+		if (!Parse_Hex_Field(ptr, 2, byte)) {
+			return(false);
+		}
+		data4[index] = (unsigned char)byte;
+		if (index == 1 && *ptr++ != '-') {
+			return(false);
+		}
 	}
 
 	clsid.Data1 = data1;
 	clsid.Data2 = (unsigned short)data2;
 	clsid.Data3 = (unsigned short)data3;
-	for (int index = 0; index < 8; index++) {
-		clsid.Data4[index] = (unsigned char)data4[index];
+	for (int index = 0; index < ARRAY_SIZE(data4); index++) {
+		clsid.Data4[index] = data4[index];
 	}
 	return(true);
 }
 
 
 // The buffer holds the 38 characters of the braced form and its terminator.
-static void Format_CLSID(CLSID const & clsid, char * text)
+static void Format_ClassID(ClassID const & clsid, char * text)
 {
 	sprintf(text, "{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}",
 		(unsigned long)clsid.Data1, (unsigned int)clsid.Data2, (unsigned int)clsid.Data3,
 		clsid.Data4[0], clsid.Data4[1], clsid.Data4[2], clsid.Data4[3],
 		clsid.Data4[4], clsid.Data4[5], clsid.Data4[6], clsid.Data4[7]);
+}
+
+
+/// <summary>
+/// Fetches a class identifier from the specified section.
+/// This routine will fetch the printable form of a class identifier from the entry and
+/// section specified and convert it back into binary form. If the entry is missing or the
+/// text is not a legal identifier, then the default value is returned instead.
+/// </summary>
+/// <param name="section">The section name to search under.</param>
+/// <param name="entry">The entry name to search for.</param>
+/// <param name="defvalue">The default identifier to use if the entry could not be found.</param>
+/// <returns>Returns with the class identifier specified in the INI database or else returns
+/// the default value.</returns>
+ClassID const INIClass::Get_ClassID(char const * section, char const * entry, ClassID defvalue) const
+{
+	char buffer[128];
+
+	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
+		ClassID clsid;
+		if (Parse_ClassID(buffer, clsid)) {
+			return(clsid);
+		}
+	}
+	return(defvalue);
 }
 
 
@@ -1016,35 +1071,10 @@ static void Format_CLSID(CLSID const & clsid, char * text)
 /// <param name="entry">The entry identifier to tag to the class identifier specified.</param>
 /// <param name="value">The class identifier to store.</param>
 /// <returns>bool; Was the class identifier placed into the INI database?</returns>
-/// <summary>
-/// Fetches a class identifier from the specified section.
-/// This routine will fetch the printable form of a class identifier from the entry and
-/// section specified and convert it back into binary form. If the entry is missing or the
-/// text is not a legal identifier, then the default value is returned instead.
-/// </summary>
-/// <param name="section">The section name to search under.</param>
-/// <param name="entry">The entry name to search for.</param>
-/// <param name="defvalue">The default identifier to use if the entry could not be found.</param>
-/// <returns>Returns with the class identifier specified in the INI database or else returns
-/// the default value.</returns>
-CLSID const INIClass::Get_CLSID(char const * section, char const * entry, CLSID defvalue) const
-{
-	char buffer[128];
-
-	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
-		CLSID clsid;
-		if (Parse_CLSID(buffer, clsid)) {
-			return(clsid);
-		}
-	}
-	return(defvalue);
-}
-
-
-bool INIClass::Put_CLSID(char const * section, char const * entry, CLSID const & value)
+bool INIClass::Put_ClassID(char const * section, char const * entry, ClassID const & value)
 {
 	char buffer[40];
-	Format_CLSID(value, buffer);
+	Format_ClassID(value, buffer);
 	return(Put_String(section, entry, buffer));
 }
 

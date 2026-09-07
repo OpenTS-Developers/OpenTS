@@ -132,28 +132,6 @@ DriveLocomotionClass::~DriveLocomotionClass(void)
 
 
 /// <summary>
-/// Fetches the class identifier of whichever locomotor is driving the unit.
-/// That is the identifier of the locomotor riding along on this driver when there is one,
-/// and the driver's own otherwise.
-/// </summary>
-/// <param name="classid">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK if the identifier was supplied, E_FAIL if the locomotor
-/// could not be asked, or E_POINTER if no destination was supplied.</returns>
-HRESULT DriveLocomotionClass::Piggyback_CLSID(CLSID * classid)
-{
-	if (classid == NULL) {
-		return(E_POINTER);
-	}
-
-	if (Piggybacker != NULL) {
-		*classid = Locomotion_Class_ID(Piggybacker.get());
-		return(S_OK);
-	}
-	return(GetClassID(classid));
-}
-
-
-/// <summary>
 /// Lists the members this driver carries.
 /// A locomotor riding along on this one is a separate persistent object rather than a
 /// member, so it travels as a record of its own and is recreated as the class it was saved as.
@@ -2077,18 +2055,9 @@ LayerType DriveLocomotionClass::In_Which_Layer(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// The persistence system uses this to know which locomotor to create when the unit is
-/// loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT DriveLocomotionClass::GetClassID(CLSID * retval)
+ClassID DriveLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_DriveLocomotion;
-	return(S_OK);
+	return(ClassID_DriveLocomotion);
 }
 
 

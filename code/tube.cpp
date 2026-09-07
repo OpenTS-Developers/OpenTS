@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tube.h"
@@ -267,16 +266,7 @@ RTTIType TubeClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the save game system so that it knows what kind of object to
-/// construct when the stream is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the place to store the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TubeClass::GetClassID(CLSID * retval)
+ClassID TubeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TubeClass;
-	return(S_OK);
+	return(ClassID_TubeClass);
 }

@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "aitrig.h"
@@ -92,17 +91,9 @@ AITriggerTypeClass::~AITriggerTypeClass(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save game system uses this identifier to work out which class to build when the
-/// object is read back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT AITriggerTypeClass::GetClassID(CLSID * retval)
+ClassID AITriggerTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_AITriggerTypeClass;
-	return(S_OK);
+	return(ClassID_AITriggerTypeClass);
 }
 
 

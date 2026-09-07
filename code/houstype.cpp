@@ -39,7 +39,6 @@
  *   HouseTypeClass::operator new -- Allocates a house type class object from special heap.    *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "houstype.h"
@@ -259,17 +258,9 @@ void HouseTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save game system stores this identifier so that the object can be recreated as the
-/// correct class when the game is loaded.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no return pointer was supplied.</returns>
-HRESULT HouseTypeClass::GetClassID(CLSID * retval)
+ClassID HouseTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_HouseTypeClass;
-	return(S_OK);
+	return(ClassID_HouseTypeClass);
 }
 
 

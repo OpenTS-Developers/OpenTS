@@ -70,7 +70,6 @@
  *   _Is_It_Playing -- Determines if unit is active and an initiated team member.              *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "team.h"
@@ -2296,18 +2295,9 @@ void TeamClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence contract and is what allows the save game loader
-/// to recognize a team when it reads one back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TeamClass::GetClassID(CLSID * retval)
+ClassID TeamClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TeamClass;
-	return(S_OK);
+	return(ClassID_TeamClass);
 }
 
 

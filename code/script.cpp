@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "script.h"
@@ -151,18 +150,9 @@ bool ScriptClass::Has_Missions_Remaining(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier used to persist this script.
-/// This routine is part of the IPersistent contract that the save game system relies
-/// on to recreate objects when a game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT ScriptClass::GetClassID(CLSID * retval)
+ClassID ScriptClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_ScriptClass;
-	return(S_OK);
+	return(ClassID_ScriptClass);
 }
 
 
@@ -368,18 +358,9 @@ ScriptTypeClass * ScriptTypeClass::Find_Or_Make(char const * name)
 }
 
 
-/// <summary>
-/// Fetches the class identifier used to persist this script type.
-/// This routine is part of the IPersistent contract that the save game system relies
-/// on to recreate objects when a game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT ScriptTypeClass::GetClassID(CLSID * retval)
+ClassID ScriptTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_ScriptTypeClass;
-	return(S_OK);
+	return(ClassID_ScriptTypeClass);
 }
 
 

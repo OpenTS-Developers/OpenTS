@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "light.h"
@@ -278,16 +277,9 @@ void LightSourceClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier this object is persisted under.
-/// </summary>
-/// <param name="retval">Destination for the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT LightSourceClass::GetClassID(CLSID * retval)
+ClassID LightSourceClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_LightSource;
-	return(S_OK);
+	return(ClassID_LightSource);
 }
 
 

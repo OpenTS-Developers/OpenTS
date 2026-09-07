@@ -10,19 +10,20 @@
 #pragma once
 
 #include "coord.h"
-#include "ilocos.h"
+#include "classids.h"
+#include "iloco.h"
 #include "persist.h"
 
 class FootClass;
 class SaveStreamClass;
 
 // The class identifier of a locomotor reached through its locomotion interface, or
-// CLSID_NULL when it is not one of ours.
-CLSID Locomotion_Class_ID(ILocomotion * locomotion);
+// all zero when it is not one of ours.
+ClassID Locomotion_Class_ID(ILocomotion * locomotion);
 
 // A new, unlinked locomotor of the registered class, or nothing when the identifier
 // names no locomotor.
-std::unique_ptr<ILocomotion> Create_Locomotor(CLSID const & classid);
+std::unique_ptr<ILocomotion> Create_Locomotor(ClassID const & classid);
 
 // The locomotor whose record is next in the stream, or nothing when the record names
 // something that is not one, which fails the stream.

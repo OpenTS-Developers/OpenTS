@@ -267,36 +267,12 @@ foreach(f ${OPENTS_SRC})
     endif()
 endforeach()
 
-# List of all interface filenames (headers + C stubs)
-set(INTERFACE_FILES
-    iblockci.h       iblockci_i.c
-    iblowfish.h      iblowfish_i.c
-    iflyctrl.h       iflyctrl_i.c
-    ilinkstm.h
-    iloco.h          iloco_i.c
-    ilocos.h         ilocos_i.c
-    ipiggy.h         ipiggy_i.c
-    isun.h           isun_i.c
+# The interface headers the locomotors are written against.
+source_group("Interface Files" FILES
+    "${CMAKE_CURRENT_SOURCE_DIR}/iflyctrl.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/iloco.h"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ipiggy.h"
 )
-
-# Convert to full paths relative to source dir
-set(FULL_INTERFACE_FILES "")
-foreach(f IN LISTS INTERFACE_FILES)
-    list(APPEND FULL_INTERFACE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/${f}")
-endforeach()
-
-# Add them to the "Interface Files" group and exclude *_i.c from build
-foreach(f IN LISTS FULL_INTERFACE_FILES)
-
-    # Put into VS filter
-    source_group("Interface Files" FILES "${f}")
-
-    # Exclude *_i.c from build, but DO NOT mark headers as header-only
-    if(f MATCHES "_i\\.c$")
-        set_source_files_properties("${f}" PROPERTIES HEADER_FILE_ONLY TRUE)
-    endif()
-
-endforeach()
 
 # General source files
 source_group("Source Files" REGULAR_EXPRESSION ".*\\.(c|cpp)$")

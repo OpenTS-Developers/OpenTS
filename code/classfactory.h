@@ -17,12 +17,12 @@
 // registers each one; nothing is created for an identifier nobody registered.
 using ClassCreatorType = std::unique_ptr<IPersistent> (*)(void);
 
-void Register_Class(CLSID const & classid, ClassCreatorType creator);
+void Register_Class(ClassID const & classid, ClassCreatorType creator);
 void Unregister_Classes(void);
-std::unique_ptr<IPersistent> Create_Object(CLSID const & classid);
+std::unique_ptr<IPersistent> Create_Object(ClassID const & classid);
 
 template<class T>
-void Register_Class(CLSID const & classid)
+void Register_Class(ClassID const & classid)
 {
 	Register_Class(classid, []() -> std::unique_ptr<IPersistent> { return(std::make_unique<T>()); });
 }

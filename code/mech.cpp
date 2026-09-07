@@ -651,18 +651,9 @@ bool MechLocomotionClass::Mark_Head_To(Coord const & coord)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// The persistence layer uses this identifier to create a locomotor of the right kind
-/// when a saved game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT MechLocomotionClass::GetClassID(CLSID * retval)
+ClassID MechLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_MechLocomotion;
-	return(S_OK);
+	return(ClassID_MechLocomotion);
 }
 
 

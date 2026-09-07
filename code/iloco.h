@@ -20,7 +20,6 @@
 #include "visual.hh"
 #include "zgrad.hh"
 
-#include <guiddef.h>
 #include <wtypes.h>
 #include <memory>
 

@@ -47,7 +47,6 @@
  *   BulletClass::~BulletClass -- Destructor for bullet objects.                               *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "bullet.h"
@@ -1533,17 +1532,9 @@ RTTIType BulletClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier for this projectile.
-/// This is the IPersist implementation the save and load machinery uses to recognize which
-/// kind of object it is about to read back from the stream.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT BulletClass::GetClassID(CLSID * retval)
+ClassID BulletClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_BulletClass;
-	return(S_OK);
+	return(ClassID_BulletClass);
 }
 
 

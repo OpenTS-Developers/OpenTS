@@ -219,15 +219,9 @@ void DropPodLocomotionClass::Move_To(Coord to)
 }
 
 
-/// <summary>
-/// Fetches the class ID that this locomotor is persisted under.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no return pointer was supplied.</returns>
-HRESULT DropPodLocomotionClass::GetClassID(CLSID * retval)
+ClassID DropPodLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_BallisticLocomotion;
-	return(S_OK);
+	return(ClassID_BallisticLocomotion);
 }
 
 
@@ -319,27 +313,6 @@ bool DropPodLocomotionClass::Is_Ok_To_End(void)
 LayerType DropPodLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_AIR);
-}
-
-
-/// <summary>
-/// Fetches the class ID of the locomotor being carried.
-/// The save system uses this to record which locomotor is to be restored underneath the
-/// drop pod. When nothing is being carried, the pod supplies its own class ID instead.
-/// </summary>
-/// <returns>Returns with S_OK, or an error code if the class ID could not be
-/// determined.</returns>
-HRESULT DropPodLocomotionClass::Piggyback_CLSID(GUID * classid)
-{
-	if (classid == NULL) {
-		return(E_POINTER);
-	}
-
-	if (Piggybacker != NULL) {
-		*classid = Locomotion_Class_ID(Piggybacker.get());
-		return(S_OK);
-	}
-	return(GetClassID(classid));
 }
 
 

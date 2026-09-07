@@ -1132,8 +1132,8 @@ void FootClass::Approach_Target(void)
 		 */
 		bool flyer = (RTTI == RTTI_AIRCRAFT);
 
-		CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
-		if (clsid == CLSID_JumpjetLocomotion) {
+		ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+		if (clsid == ClassID_JumpjetLocomotion) {
 			flyer = true;
 		}
 
@@ -2385,9 +2385,9 @@ void FootClass::Assign_Destination(AbstractClass * target, bool)
 			ParticleSystems[ATTACHED_PARTICLE_FIRE] = NULL;
 		}
 
-		CLSID const locoid = Locomotion_Class_ID(Locomotion.get());
+		ClassID const locoid = Locomotion_Class_ID(Locomotion.get());
 
-		if (locoid == CLSID_HoverLocomotion && PathDelay == 0) {
+		if (locoid == ClassID_HoverLocomotion && PathDelay == 0) {
 			PathDelay = 1;
 		}
 
@@ -3586,7 +3586,7 @@ void FootClass::Set_Coord(Coord const & coord)
 void FootClass::Link_DropPod(void)
 {
 	std::unique_ptr<ILocomotion> locomotion = std::move(Locomotion);
-	std::unique_ptr<ILocomotion> ballistic = Create_Locomotor(CLSID_BallisticLocomotion);
+	std::unique_ptr<ILocomotion> ballistic = Create_Locomotor(ClassID_BallisticLocomotion);
 	ballistic->Link_To_Object(this);
 	IPiggyback * piggy = Piggyback_Of(ballistic.get());
 	piggy->Begin_Piggyback(std::move(locomotion));
@@ -4756,9 +4756,9 @@ void FootClass::Delete_Me(void)
 /// <returns>bool; Is the object in the air?</returns>
 bool FootClass::In_Air(void) const
 {
-	CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
+	ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
 
-	if (clsid == CLSID_HoverLocomotion) {
+	if (clsid == ClassID_HoverLocomotion) {
 		return(false);
 	}
 
@@ -4777,7 +4777,7 @@ bool FootClass::On_Ground(void) const
 	if (BASECLASS::On_Ground()) {
 		return(true);
 	}
-	CLSID const clsid = Locomotion_Class_ID(Locomotion.get());
+	ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
 
-	return(IsDown && clsid == CLSID_HoverLocomotion);
+	return(IsDown && clsid == ClassID_HoverLocomotion);
 }

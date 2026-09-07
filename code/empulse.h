@@ -30,7 +30,7 @@ class EMPulseClass : public AbstractClass
 
 		virtual RTTIType Fetch_RTTI(void) const override {return(RTTI_EMPULSE);}
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

@@ -608,18 +608,9 @@ bool WalkLocomotionClass::Mark_Head_To(Coord const & coord)
 }
 
 
-/// <summary>
-/// Fetches the class ID of this locomotor.
-/// The persistence system uses this to recreate the correct locomotor when a saved
-/// game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the class ID to fill in.</param>
-/// <returns>Returns with S_OK if the class ID was fetched, otherwise E_POINTER.</returns>
-HRESULT WalkLocomotionClass::GetClassID(CLSID * retval)
+ClassID WalkLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_WalkLocomotion;
-	return(S_OK);
+	return(ClassID_WalkLocomotion);
 }
 
 
@@ -703,27 +694,6 @@ bool WalkLocomotionClass::Is_Ok_To_End(void)
 		return(true);
 	}
 	return(false);
-}
-
-
-/// <summary>
-/// Fetches the class ID of whichever locomotor is in charge.
-/// This routine reports the piggybacking locomotor's identity when one has taken
-/// over, otherwise it identifies this walking locomotor.
-/// </summary>
-/// <param name="classid">Pointer to the class ID to fill in.</param>
-/// <returns>Returns with S_OK if the class ID was fetched, otherwise an error code.</returns>
-HRESULT WalkLocomotionClass::Piggyback_CLSID(GUID * classid)
-{
-	if (classid == NULL) {
-		return(E_POINTER);
-	}
-
-	if (Piggybacker != NULL) {
-		*classid = Locomotion_Class_ID(Piggybacker.get());
-		return(S_OK);
-	}
-	return(GetClassID(classid));
 }
 
 

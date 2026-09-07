@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "blight.h"
@@ -280,17 +279,9 @@ void BuildingLightClass::AI(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the save game code so that an object of the right kind can
-/// be created when the game is loaded back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT BuildingLightClass::GetClassID(CLSID * retval)
+ClassID BuildingLightClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_BuildingLightClass;
-	return(S_OK);
+	return(ClassID_BuildingLightClass);
 }
 
 

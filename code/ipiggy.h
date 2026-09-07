@@ -30,11 +30,6 @@ struct IPiggyback
 	virtual bool Is_Ok_To_End(void) = 0;
 
 	/*
-	 * Fetches piggybacked locomotor class ID.
-	 */
-	virtual HRESULT Piggyback_CLSID(GUID * classid) = 0;
-
-	/*
 	 * Is it currently piggy backing another locomotor?
 	 */
 	virtual bool Is_Piggybacking(void) = 0;

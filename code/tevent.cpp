@@ -39,7 +39,6 @@
  *   TEventClass::operator () -- Action operator to see if event is satisfied.                 *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tevent.h"
@@ -839,18 +838,9 @@ void TEventClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the persistence machinery to recognize what kind of object it
-/// is about to load back.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TEventClass::GetClassID(CLSID * retval)
+ClassID TEventClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_EventClass;
-	return(S_OK);
+	return(ClassID_EventClass);
 }
 
 

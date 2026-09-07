@@ -38,7 +38,6 @@
  *   BulletTypeClass::operator new -- Allocates a bullet type object from the special heap.    *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "bullettype.h"
@@ -356,15 +355,9 @@ void BulletTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier that the save game code stores for this object.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT BulletTypeClass::GetClassID(CLSID * retval)
+ClassID BulletTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_BulletTypeClass;
-	return(S_OK);
+	return(ClassID_BulletTypeClass);
 }
 
 

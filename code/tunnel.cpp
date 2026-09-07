@@ -632,18 +632,9 @@ void TunnelLocomotionClass::Do_Turn(DirType coord)
 }
 
 
-/// <summary>
-/// Fetches the class identifier for this locomotor.
-/// The save system records the identifier so that the right locomotor can be created
-/// again when the game is loaded.
-/// </summary>
-/// <param name="retval">The location to store the class identifier in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TunnelLocomotionClass::GetClassID(CLSID * retval)
+ClassID TunnelLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TunnelLocomotion;
-	return(S_OK);
+	return(ClassID_TunnelLocomotion);
 }
 
 

@@ -30,7 +30,7 @@ class SideClass : public AbstractTypeClass
 		SideClass(char const * ininame = NULL);
 		virtual ~SideClass() override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		/*
 		**	Query functions.

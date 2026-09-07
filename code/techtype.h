@@ -14,6 +14,7 @@
 #pragma once
 
 #include "_weapon.h"
+#include "classids.h"
 #include "objtype.h"
 #include "typelist.h"
 
@@ -122,7 +123,7 @@ class TechnoTypeClass : public ObjectTypeClass
 		 * about. It is what decides whether the object drives, walks, hovers, flies or
 		 * tunnels, and an instance of it is created for every object as it is unlimboed.
 		 */
-		CLSID Locomotor;
+		ClassID Locomotor;
 
 		/*
 		 * These are the half extents of this object's voxel model, measured off the artwork

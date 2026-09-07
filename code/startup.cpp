@@ -32,7 +32,6 @@
  *   main -- Initial startup routine (preps library systems).                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "_alpha.h"
@@ -229,72 +228,72 @@ static void RegisterClasses(void)
 {
 	#define REGISTER_CLASS(_class, _clsid) Register_Class<_class>(_clsid);
 
-	REGISTER_CLASS(WaveClass, CLSID_WaveClass);
-	REGISTER_CLASS(TerrainTypeClass, CLSID_TerrainTypeClass);
-	REGISTER_CLASS(TerrainClass, CLSID_TerrainClass);
-	REGISTER_CLASS(SuperWeaponTypeClass, CLSID_SuperWeaponTypeClass);
-	REGISTER_CLASS(SuperClass, CLSID_SuperWeaponClass);
-	REGISTER_CLASS(Tactical, CLSID_TacticalMapClass);
-	REGISTER_CLASS(CellClass, CLSID_CellClass);
-	REGISTER_CLASS(EMPulseClass, CLSID_EMPulseClass);
-	REGISTER_CLASS(LightSourceClass, CLSID_LightSource);
-	REGISTER_CLASS(SideClass, CLSID_SideClass);
-	REGISTER_CLASS(TiberiumClass, CLSID_TiberiumClass);
-	REGISTER_CLASS(TubeClass, CLSID_TubeClass);
-	REGISTER_CLASS(CampaignClass, CLSID_CampaignClass);
-	REGISTER_CLASS(BuildingLightClass, CLSID_BuildingLightClass);
-	REGISTER_CLASS(WaypointPathClass, CLSID_WaypointPath);
-	REGISTER_CLASS(TEventClass, CLSID_EventClass);
-	REGISTER_CLASS(VoxelAnimTypeClass, CLSID_VoxelAnimTypeClass);
-	REGISTER_CLASS(VoxelAnimClass, CLSID_VoxelAnimClass);
-	REGISTER_CLASS(TActionClass, CLSID_ActionClass);
-	REGISTER_CLASS(TriggerClass, CLSID_TriggerClass);
-	REGISTER_CLASS(TriggerTypeClass, CLSID_TriggerTypeClass);
-	REGISTER_CLASS(ScriptClass, CLSID_ScriptClass);
-	REGISTER_CLASS(ScriptTypeClass, CLSID_ScriptTypeClass);
-	REGISTER_CLASS(TagClass, CLSID_TagClass);
-	REGISTER_CLASS(TagTypeClass, CLSID_TagTypeClass);
-	REGISTER_CLASS(TeamClass, CLSID_TeamClass);
-	REGISTER_CLASS(TeamTypeClass, CLSID_TeamTypeClass);
-	REGISTER_CLASS(TaskForceClass, CLSID_TaskForceClass);
-	REGISTER_CLASS(UnitTypeClass, CLSID_UnitTypeClass);
-	REGISTER_CLASS(BuildingTypeClass, CLSID_BuildingTypeClass);
-	REGISTER_CLASS(AircraftTypeClass, CLSID_AircraftTypeClass);
-	REGISTER_CLASS(InfantryTypeClass, CLSID_InfantryTypeClass);
-	REGISTER_CLASS(BulletTypeClass, CLSID_BulletTypeClass);
-	REGISTER_CLASS(IsometricTileTypeClass, CLSID_IsometricTileTypeClass);
-	REGISTER_CLASS(OverlayTypeClass, CLSID_OverlayTypeClass);
-	REGISTER_CLASS(SmudgeTypeClass, CLSID_SmudgeTypeClass);
-	REGISTER_CLASS(UnitClass, CLSID_UnitClass);
-	REGISTER_CLASS(BuildingClass, CLSID_BuildingClass);
-	REGISTER_CLASS(AircraftClass, CLSID_AircraftClass);
-	REGISTER_CLASS(InfantryClass, CLSID_InfantryClass);
-	REGISTER_CLASS(AnimClass, CLSID_AnimClass);
-	REGISTER_CLASS(AnimTypeClass, CLSID_AnimTypeClass);
-	REGISTER_CLASS(HouseTypeClass, CLSID_HouseTypeClass);
-	REGISTER_CLASS(HouseClass, CLSID_HouseClass);
-	REGISTER_CLASS(DriveLocomotionClass, CLSID_DriveLocomotion);
-	REGISTER_CLASS(JumpjetLocomotionClass, CLSID_JumpjetLocomotion);
-	REGISTER_CLASS(HoverLocomotionClass, CLSID_HoverLocomotion);
-	REGISTER_CLASS(TunnelLocomotionClass, CLSID_TunnelLocomotion);
-	REGISTER_CLASS(WalkLocomotionClass, CLSID_WalkLocomotion);
-	REGISTER_CLASS(DropPodLocomotionClass, CLSID_BallisticLocomotion);
-	REGISTER_CLASS(FlyLocomotionClass, CLSID_FlyerLocomotion);
-	REGISTER_CLASS(TeleportLocomotionClass, CLSID_TeleportLocomotion);
-	REGISTER_CLASS(MechLocomotionClass, CLSID_MechLocomotion);
-	REGISTER_CLASS(LevitateLocomotionClass, CLSID_LevitateLocomotion);
-	REGISTER_CLASS(BulletClass, CLSID_BulletClass);
-	REGISTER_CLASS(FactoryClass, CLSID_FactoryClass);
-	REGISTER_CLASS(WarheadTypeClass, CLSID_WarheadTypeClass);
-	REGISTER_CLASS(WeaponTypeClass, CLSID_WeaponTypeClass);
-	REGISTER_CLASS(ParticleClass, CLSID_ParticleClass);
-	REGISTER_CLASS(ParticleTypeClass, CLSID_ParticleTypeClass);
-	REGISTER_CLASS(ParticleSystemClass, CLSID_ParticleSystemClass);
-	REGISTER_CLASS(ParticleSystemTypeClass, CLSID_ParticleSystemTypeClass);
-	REGISTER_CLASS(AITriggerTypeClass, CLSID_AITriggerTypeClass);
-	REGISTER_CLASS(NeuronClass, CLSID_NeuronClass);
-	REGISTER_CLASS(FoggedObjectClass, CLSID_FoggedObjectClass);
-	REGISTER_CLASS(AlphaShapeClass, CLSID_AlphaShapeClass);
+	REGISTER_CLASS(WaveClass, ClassID_WaveClass);
+	REGISTER_CLASS(TerrainTypeClass, ClassID_TerrainTypeClass);
+	REGISTER_CLASS(TerrainClass, ClassID_TerrainClass);
+	REGISTER_CLASS(SuperWeaponTypeClass, ClassID_SuperWeaponTypeClass);
+	REGISTER_CLASS(SuperClass, ClassID_SuperWeaponClass);
+	REGISTER_CLASS(Tactical, ClassID_TacticalMapClass);
+	REGISTER_CLASS(CellClass, ClassID_CellClass);
+	REGISTER_CLASS(EMPulseClass, ClassID_EMPulseClass);
+	REGISTER_CLASS(LightSourceClass, ClassID_LightSource);
+	REGISTER_CLASS(SideClass, ClassID_SideClass);
+	REGISTER_CLASS(TiberiumClass, ClassID_TiberiumClass);
+	REGISTER_CLASS(TubeClass, ClassID_TubeClass);
+	REGISTER_CLASS(CampaignClass, ClassID_CampaignClass);
+	REGISTER_CLASS(BuildingLightClass, ClassID_BuildingLightClass);
+	REGISTER_CLASS(WaypointPathClass, ClassID_WaypointPath);
+	REGISTER_CLASS(TEventClass, ClassID_EventClass);
+	REGISTER_CLASS(VoxelAnimTypeClass, ClassID_VoxelAnimTypeClass);
+	REGISTER_CLASS(VoxelAnimClass, ClassID_VoxelAnimClass);
+	REGISTER_CLASS(TActionClass, ClassID_ActionClass);
+	REGISTER_CLASS(TriggerClass, ClassID_TriggerClass);
+	REGISTER_CLASS(TriggerTypeClass, ClassID_TriggerTypeClass);
+	REGISTER_CLASS(ScriptClass, ClassID_ScriptClass);
+	REGISTER_CLASS(ScriptTypeClass, ClassID_ScriptTypeClass);
+	REGISTER_CLASS(TagClass, ClassID_TagClass);
+	REGISTER_CLASS(TagTypeClass, ClassID_TagTypeClass);
+	REGISTER_CLASS(TeamClass, ClassID_TeamClass);
+	REGISTER_CLASS(TeamTypeClass, ClassID_TeamTypeClass);
+	REGISTER_CLASS(TaskForceClass, ClassID_TaskForceClass);
+	REGISTER_CLASS(UnitTypeClass, ClassID_UnitTypeClass);
+	REGISTER_CLASS(BuildingTypeClass, ClassID_BuildingTypeClass);
+	REGISTER_CLASS(AircraftTypeClass, ClassID_AircraftTypeClass);
+	REGISTER_CLASS(InfantryTypeClass, ClassID_InfantryTypeClass);
+	REGISTER_CLASS(BulletTypeClass, ClassID_BulletTypeClass);
+	REGISTER_CLASS(IsometricTileTypeClass, ClassID_IsometricTileTypeClass);
+	REGISTER_CLASS(OverlayTypeClass, ClassID_OverlayTypeClass);
+	REGISTER_CLASS(SmudgeTypeClass, ClassID_SmudgeTypeClass);
+	REGISTER_CLASS(UnitClass, ClassID_UnitClass);
+	REGISTER_CLASS(BuildingClass, ClassID_BuildingClass);
+	REGISTER_CLASS(AircraftClass, ClassID_AircraftClass);
+	REGISTER_CLASS(InfantryClass, ClassID_InfantryClass);
+	REGISTER_CLASS(AnimClass, ClassID_AnimClass);
+	REGISTER_CLASS(AnimTypeClass, ClassID_AnimTypeClass);
+	REGISTER_CLASS(HouseTypeClass, ClassID_HouseTypeClass);
+	REGISTER_CLASS(HouseClass, ClassID_HouseClass);
+	REGISTER_CLASS(DriveLocomotionClass, ClassID_DriveLocomotion);
+	REGISTER_CLASS(JumpjetLocomotionClass, ClassID_JumpjetLocomotion);
+	REGISTER_CLASS(HoverLocomotionClass, ClassID_HoverLocomotion);
+	REGISTER_CLASS(TunnelLocomotionClass, ClassID_TunnelLocomotion);
+	REGISTER_CLASS(WalkLocomotionClass, ClassID_WalkLocomotion);
+	REGISTER_CLASS(DropPodLocomotionClass, ClassID_BallisticLocomotion);
+	REGISTER_CLASS(FlyLocomotionClass, ClassID_FlyerLocomotion);
+	REGISTER_CLASS(TeleportLocomotionClass, ClassID_TeleportLocomotion);
+	REGISTER_CLASS(MechLocomotionClass, ClassID_MechLocomotion);
+	REGISTER_CLASS(LevitateLocomotionClass, ClassID_LevitateLocomotion);
+	REGISTER_CLASS(BulletClass, ClassID_BulletClass);
+	REGISTER_CLASS(FactoryClass, ClassID_FactoryClass);
+	REGISTER_CLASS(WarheadTypeClass, ClassID_WarheadTypeClass);
+	REGISTER_CLASS(WeaponTypeClass, ClassID_WeaponTypeClass);
+	REGISTER_CLASS(ParticleClass, ClassID_ParticleClass);
+	REGISTER_CLASS(ParticleTypeClass, ClassID_ParticleTypeClass);
+	REGISTER_CLASS(ParticleSystemClass, ClassID_ParticleSystemClass);
+	REGISTER_CLASS(ParticleSystemTypeClass, ClassID_ParticleSystemTypeClass);
+	REGISTER_CLASS(AITriggerTypeClass, ClassID_AITriggerTypeClass);
+	REGISTER_CLASS(NeuronClass, ClassID_NeuronClass);
+	REGISTER_CLASS(FoggedObjectClass, ClassID_FoggedObjectClass);
+	REGISTER_CLASS(AlphaShapeClass, ClassID_AlphaShapeClass);
 }
 
 /// <summary>

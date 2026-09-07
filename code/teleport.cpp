@@ -116,18 +116,9 @@ bool TeleportLocomotionClass::Process(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// This routine is used by the persistence system to record which locomotor was
-/// written, so that the right one can be created when the save game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the class identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT TeleportLocomotionClass::GetClassID(CLSID * retval)
+ClassID TeleportLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TeleportLocomotion;
-	return(S_OK);
+	return(ClassID_TeleportLocomotion);
 }
 
 

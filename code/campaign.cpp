@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "campaign.h"
@@ -126,18 +125,9 @@ void Read_Battle_INI(CCINIClass const & ini)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is required of every persistent object so that the save game loader
-/// can recognize what to construct when the object is read back.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT CampaignClass::GetClassID(CLSID * retval)
+ClassID CampaignClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_CampaignClass;
-	return(S_OK);
+	return(ClassID_CampaignClass);
 }
 
 

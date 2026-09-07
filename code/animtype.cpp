@@ -38,7 +38,6 @@
  *   AnimTypeClass::operator delete -- Returns an anim type class object back to the pool.     *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "animtype.h"
@@ -577,18 +576,9 @@ void AnimTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the persistent class identifier of this object.
-/// This routine is used by the save game machinery to recognize an animation type when it
-/// comes back off the stream.
-/// </summary>
-/// <param name="retval">Pointer to the place to store the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if there was nowhere to store the answer.</returns>
-HRESULT AnimTypeClass::GetClassID(CLSID * retval)
+ClassID AnimTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_AnimTypeClass;
-	return(S_OK);
+	return(ClassID_AnimTypeClass);
 }
 
 

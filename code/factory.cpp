@@ -47,7 +47,6 @@
  *   FactoryClass::~FactoryClass -- Default destructor for factory objects.                    *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "factory.h"
@@ -632,17 +631,9 @@ bool FactoryClass::Completed(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier for a factory.
-/// This routine is part of the persistence interface. The save game loader uses the
-/// identifier to know what kind of object to create before handing it the stream.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no return location was supplied.</returns>
-HRESULT FactoryClass::GetClassID(CLSID * retval)
+ClassID FactoryClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_FactoryClass;
-	return(S_OK);
+	return(ClassID_FactoryClass);
 }
 
 

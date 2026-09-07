@@ -28,7 +28,7 @@ class LevitateLocomotionClass : public LocomotionClass
 		LevitateLocomotionClass(void);
 		virtual ~LevitateLocomotionClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

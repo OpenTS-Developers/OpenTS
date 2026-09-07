@@ -11,7 +11,7 @@
 
 #include "win.h"
 
-#include <guiddef.h>
+#include "classid.h"
 
 class SaveStreamClass;
 
@@ -21,7 +21,7 @@ struct IPersistent
 {
 	virtual ~IPersistent(void) {}
 
-	virtual HRESULT GetClassID(CLSID * classid) = 0;
+	virtual ClassID Class_ID(void) const = 0;
 	virtual HRESULT Load(SaveStreamClass & stream) = 0;
 	// Restores what the record could not carry, once the record has been checked; an object
 	// takes its place in the map or a side table here, never while its record is still in doubt.

@@ -104,7 +104,7 @@ class TEventClass : public AbstractClass
 		TEventClass(void);
 		virtual ~TEventClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

@@ -35,7 +35,6 @@
  *   WarheadTypeClass::operator new -- Allocate a warhead object from the special heap.        *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "warhead.h"
@@ -248,18 +247,9 @@ void WarheadTypeClass::Compute_CRC(CRCEngine &crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence interface. The save code stores the identifier
-/// so that the object can be recognized when the game is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT WarheadTypeClass::GetClassID(CLSID * retval)
+ClassID WarheadTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_WarheadTypeClass;
-	return(S_OK);
+	return(ClassID_WarheadTypeClass);
 }
 
 

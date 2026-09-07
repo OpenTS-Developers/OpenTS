@@ -44,7 +44,6 @@
  *   TerrainTypeClass::operator new -- Allocates a terrain type object from special pool.      *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "terrtype.h"
@@ -430,18 +429,9 @@ void TerrainTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The save system uses this identifier to know what kind of object to create when the
-/// save file is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT TerrainTypeClass::GetClassID(CLSID * retval)
+ClassID TerrainTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TerrainTypeClass;
-	return(S_OK);
+	return(ClassID_TerrainTypeClass);
 }
 
 

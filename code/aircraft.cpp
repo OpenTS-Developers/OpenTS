@@ -89,7 +89,6 @@
  *   _Counts_As_Civ_Evac -- Is the specified object a candidate for civilian evac logic?       *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "aircraft.h"
@@ -4190,18 +4189,9 @@ RTTIType AircraftClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence support. The save/load machinery uses the
-/// class identifier to recreate an object of the correct type when a game is restored.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT AircraftClass::GetClassID(CLSID * retval)
+ClassID AircraftClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_AircraftClass;
-	return(S_OK);
+	return(ClassID_AircraftClass);
 }
 
 

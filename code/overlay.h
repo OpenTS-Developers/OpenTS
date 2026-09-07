@@ -32,7 +32,7 @@
 
 #pragma once
 
-#include "isun.h"
+#include "classids.h"
 #include "object.h"
 
 #include "overlay.hh"
@@ -63,7 +63,7 @@ class OverlayClass : public ObjectClass
 		OverlayClass(OverlayTypeClass const * ttype, Cell const & pos = CELL_NONE, HousesType = HOUSE_NONE);
 		virtual ~OverlayClass(void) override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override {if (retval == NULL) return(E_POINTER);*retval = CLSID_OverlayClass;return(S_OK);}
+		virtual ClassID Class_ID(void) const override {return(ClassID_OverlayClass);}
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

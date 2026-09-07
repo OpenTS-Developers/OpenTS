@@ -77,18 +77,21 @@ names them. An object record is:
 | 4 | Length of the record body |
 | | The body: the swizzle identity, then the members the class's `Serialize` names |
 
-The class identifier is the `CLSID` the object's `GetClassID` reports, the
+The class identifier is the `ClassID` the object's `Class_ID` reports, the
 same one registered in `code/startup.cpp` and, for a locomotor, named by the
-`Locomotor=` key. The reader creates the object through that registration,
-hands it the stream, checks that it consumed exactly the recorded length, and
-only then lets it finish restoring itself, so a refused record never reaches
-the map or a side table. A record that comes up short or long fails the load
-with the object's type and offset in the debug log, which is what a member
-added to one build and not the other looks like. A record read where a
-locomotor belongs fails the load the same way when its class is not one. A
-vector of objects is a 4-byte count followed by that many records, and a
-locomotor nested inside a unit's record is a record of its own. A count that the bytes remaining in the
-content could not hold fails the load before anything is allocated for it.
+`Locomotor=` key. Its sixteen bytes are those of the COM class identifier
+the class once registered, kept because the `Locomotor=` values in rules
+files carry them. The reader creates the object through that
+registration, hands it the stream, checks that it consumed exactly the
+recorded length, and only then lets it finish restoring itself, so a refused
+record never reaches the map or a side table. A record that comes up short
+or long fails the load with the object's type and offset in the debug log,
+which is what a member added to one build and not the other looks like. A
+record read where a locomotor belongs fails the load the same way when its
+class is not one. A vector of objects is a 4-byte count followed by that
+many records, and a locomotor nested inside a unit's record is a record of
+its own. A count that the bytes remaining in the content could not hold
+fails the load before anything is allocated for it.
 
 An object whose record fails is destroyed before the load fails. The pointer
 slots it had registered are cleared first, since they still hold identities

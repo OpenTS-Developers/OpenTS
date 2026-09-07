@@ -102,7 +102,7 @@ class HouseTypeClass : public AbstractTypeClass
 		HouseTypeClass(char const * ininame = NULL);
 		virtual ~HouseTypeClass() override;
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 
 		virtual void Serialize(SaveStreamClass & stream) override;

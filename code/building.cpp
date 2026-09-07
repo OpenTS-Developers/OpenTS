@@ -102,7 +102,6 @@
  *   BuildingClass::~BuildingClass -- Destructor for building type objects.                    *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "building.h"
@@ -138,7 +137,7 @@
 #include "house.h"
 #include "houstype.h"
 #include "iloco.h"
-#include "ilocos.h"
+#include "classids.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -5533,8 +5532,8 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 					**	distance check.  Fixed-wing aircraft are very inaccurate with
 					**	their landings.
 					*/
-					CLSID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
-					bool hover = (clsid == CLSID_HoverLocomotion) != 0;
+					ClassID const clsid = Locomotion_Class_ID(tech->Locomotion.get());
+					bool hover = (clsid == ClassID_HoverLocomotion) != 0;
 					if (hover) {
 						distance = 0x96;
 					}
@@ -6251,14 +6250,14 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 					if (unit) {
 						unit->Assign_Mission(MISSION_MOVE);
 
-						CLSID const clsid = Locomotion_Class_ID(unit->Locomotion.get());
+						ClassID const clsid = Locomotion_Class_ID(unit->Locomotion.get());
 
-						if (clsid == CLSID_TunnelLocomotion) {
+						if (clsid == ClassID_TunnelLocomotion) {
 							IPiggyback * piggy = Piggyback_Of(unit->Locomotion.get());
 							if (piggy != NULL && piggy->Is_Piggybacking()) {
 								unit->Locomotion = piggy->End_Piggyback();
 							}
-							std::unique_ptr<ILocomotion> walk = Create_Locomotor(CLSID_DriveLocomotion);
+							std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_DriveLocomotion);
 							walk->Link_To_Object(unit);
 							piggy = Piggyback_Of(walk.get());
 							if (piggy != NULL) {
@@ -6269,7 +6268,7 @@ int BuildingClass::Do_MISSION_UNLOAD(void)
 								int damage = unit->Strength;
 								unit->Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
 							}
-						} else if (clsid != CLSID_DriveLocomotion) {
+						} else if (clsid != ClassID_DriveLocomotion) {
 							unit->Assign_Destination(&Map[Get_Cell() + Cell(3, 1)]);
 						} else {
 							Coord cs;
@@ -10344,18 +10343,9 @@ void BuildingClass::Discharge_Turret(void)
 }
 
 
-/// <summary>
-/// Fetches the persistent class identifier for this building.
-/// This routine is part of the persistence support. The save code writes this identifier
-/// ahead of the object so that the loader knows what kind of object to create.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT BuildingClass::GetClassID(CLSID * retval)
+ClassID BuildingClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_BuildingClass;
-	return(S_OK);
+	return(ClassID_BuildingClass);
 }
 
 

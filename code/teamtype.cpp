@@ -54,7 +54,6 @@
  *   TeamTypeClass::~TeamTypeClass -- class destructor                                         *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "teamtype.h"
@@ -890,18 +889,9 @@ void TeamTypeClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This is part of the persistence contract that the save and load code leans on to
-/// recognize what it is reading back.
-/// </summary>
-/// <returns>Returns with S_OK and the class identifier filled in, or E_POINTER if no
-/// destination was supplied.</returns>
-HRESULT TeamTypeClass::GetClassID(CLSID * retval)
+ClassID TeamTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TeamTypeClass;
-	return(S_OK);
+	return(ClassID_TeamTypeClass);
 }
 
 

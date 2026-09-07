@@ -60,7 +60,7 @@ class AITriggerTypeClass : public AbstractTypeClass
 		AITriggerTypeClass(const char *name = NULL);
 		~AITriggerTypeClass(void);
 
-		virtual HRESULT GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		static AITriggerTypeClass * Find_Or_Make(char const * ininame);
 

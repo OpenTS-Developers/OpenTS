@@ -236,17 +236,9 @@ void JumpjetLocomotionClass::Do_Turn(DirType coord)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// The persistence machinery uses the identifier to build the right kind of locomotor back
-/// when a save game is loaded.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if there is nowhere to put the answer.</returns>
-HRESULT JumpjetLocomotionClass::GetClassID(CLSID * retval)
+ClassID JumpjetLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_JumpjetLocomotion;
-	return(S_OK);
+	return(ClassID_JumpjetLocomotion);
 }
 
 
