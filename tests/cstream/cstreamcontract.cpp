@@ -85,7 +85,20 @@ void Test_Roundtrip(bool fragmented, ULONG tail)
 		ULONG read = 0;
 		ok = Rewind(storage) && SUCCEEDED(storage->Read(header.data(), sizeof(header), &read)) && read == sizeof(header);
 		ok = ok && header[0] > CStreamClass::BUFFER_SIZE && header[0] <= CStreamClass::STREAM_BUFFER_SIZE;
+		ok = ok && header[1] == CStreamClass::BUFFER_SIZE;
 		std::printf("First compressed block: %lu bytes\n", header[0]);
+	}
+
+	// The reader takes its length from the decompressor, so only the header itself says
+	// whether a partial block states its own length.
+	if (ok && tail > 0) {
+		LARGE_INTEGER skip;
+		skip.QuadPart = header[0];
+		std::array<ULONG, 2> last = {};
+		ULONG read = 0;
+		ok = SUCCEEDED(storage->Seek(skip, STREAM_SEEK_CUR, nullptr))
+			&& SUCCEEDED(storage->Read(last.data(), sizeof(last), &read)) && read == sizeof(last);
+		ok = ok && last[1] == tail;
 	}
 
 	if (ok) {
