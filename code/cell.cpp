@@ -2046,10 +2046,10 @@ void CellClass::Draw_Shroud_Or_Fog_Shape(Point2D const & drawpoint, Rect const &
 	int alpha_skip = inter_left - inter_right + AlphaBuffer->Get_Buffer_Width();
 
 	unsigned char * shapedata = (unsigned char *)shapes->Get_Data(shapenum);
-	unsigned short * alphaptr = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
+	unsigned short * alphaptr = AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
 
 	unsigned char * shapeptr = (unsigned char *)&shapedata[src_x + src_y * shaperect.Width];
-	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= (unsigned short *)AlphaBuffer->Get_Buffer_End()) {
+	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= AlphaBuffer->Get_Buffer_End()) {
 		for (int i = inter_top; i < inter_bottom; i++) {
 			for (int j = inter_left; j < inter_right; j++) {
 				unsigned char pixel = *shapeptr++;
@@ -2057,11 +2057,11 @@ void CellClass::Draw_Shroud_Or_Fog_Shape(Point2D const & drawpoint, Rect const &
 					*alphaptr = pixel;
 				}
 				alphaptr++;
-				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+				alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 			}
 			shapeptr += shape_skip;
 			alphaptr += alpha_skip;
-			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+			alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 		}
 	} else {
 		for (int i = inter_top; i < inter_bottom; i++) {
@@ -2117,10 +2117,10 @@ void CellClass::Draw_Fog_Shape(Point2D const & drawpoint, Rect const & cliprect,
 	int alpha_skip = inter_left - inter_right + AlphaBuffer->Get_Buffer_Width();
 
 	unsigned char * shapedata = (unsigned char *)shapes->Get_Data(shapenum);
-	unsigned short * alphaptr = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
+	unsigned short * alphaptr = AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
 
 	unsigned char * shapeptr = (unsigned char *)&shapedata[src_x + src_y * shaperect.Width];
-	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= (unsigned short *)AlphaBuffer->Get_Buffer_End()) {
+	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= AlphaBuffer->Get_Buffer_End()) {
 		for (int i = inter_top; i < inter_bottom; i++) {
 			for (int j = inter_left; j < inter_right; j++) {
 				unsigned char pixel = *shapeptr++;
@@ -2133,11 +2133,11 @@ void CellClass::Draw_Fog_Shape(Point2D const & drawpoint, Rect const & cliprect,
 					}
 				}
 				alphaptr++;
-				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+				alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 			}
 			shapeptr += shape_skip;
 			alphaptr += alpha_skip;
-			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+			alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 		}
 	} else {
 		for (int i = inter_top; i < inter_bottom; i++) {

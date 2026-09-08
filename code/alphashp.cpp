@@ -259,9 +259,9 @@ void AlphaShapeClass::Draw_In_Area(Point2D const & point, Rect const & cliprect)
 				const unsigned char * maskptr = &_tilemask[ISO_TILE_PIXEL_W * dy + dx];
 				unsigned char * shapedata = (unsigned char *)shape->Get_Data(0);
 
-				unsigned short * alphaptr = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(Point2D(left, top - TacticalRect.Y));
+				unsigned short * alphaptr = AlphaBuffer->Get_Buffer_Offset(Point2D(left, top - TacticalRect.Y));
 				unsigned char * shapeptr = (unsigned char *)&shapedata[src_x + src_y * shape_rect.Width];
-				if (&alphaptr[right - left + (bottom - top) * AlphaBuffer->Get_Buffer_Width() + 2] >= (unsigned short *)AlphaBuffer->Get_Buffer_End()) {
+				if (&alphaptr[right - left + (bottom - top) * AlphaBuffer->Get_Buffer_Width() + 2] >= AlphaBuffer->Get_Buffer_End()) {
 					for (int i = top; i < bottom; i++) {
 						for (int j = left; j < right; j++) {
 							unsigned char pixel = *shapeptr++;
@@ -269,12 +269,12 @@ void AlphaShapeClass::Draw_In_Area(Point2D const & point, Rect const & cliprect)
 								*alphaptr = BrightnessTable[pixel][*alphaptr];
 							}
 							alphaptr++;
-							alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+							alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 						}
 						shapeptr += shape_skip;
 						maskptr += mask_skip;
 						alphaptr += alpha_skip;
-						alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+						alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 					}
 				} else {
 					for (int i = top; i < bottom; i++) {
@@ -337,20 +337,20 @@ void AlphaShapeClass::Draw_All(Rect const & cliprect)
 
 				unsigned char * shapedata = (unsigned char *)shape->Get_Data(0);
 
-				unsigned short * alphaptr = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(Point2D(left - TacticalRect.X, top - TacticalRect.Y));
+				unsigned short * alphaptr = AlphaBuffer->Get_Buffer_Offset(Point2D(left - TacticalRect.X, top - TacticalRect.Y));
 
 				unsigned char * shapeptr = (unsigned char *)&shapedata[src_x + src_y * shape_rect.Width];
-				if (&alphaptr[right - left + (bottom - top) * AlphaBuffer->Get_Buffer_Width() + 2] >= (unsigned short *)AlphaBuffer->Get_Buffer_End()) {
+				if (&alphaptr[right - left + (bottom - top) * AlphaBuffer->Get_Buffer_Width() + 2] >= AlphaBuffer->Get_Buffer_End()) {
 					for (int i = top; i < bottom; i++) {
 						for (int j = left; j < right; j++) {
 							unsigned char pixel = *shapeptr++;
 							*alphaptr = BrightnessTable[pixel][*alphaptr];
 							alphaptr++;
-							alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+							alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 						}
 						shapeptr += shape_skip;
 						alphaptr += alpha_skip;
-						alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)alphaptr);
+						alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 					}
 				} else {
 					for (int i = top; i < bottom; i++) {

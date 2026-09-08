@@ -900,7 +900,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 
 	Point2D point = start;
 	point.Y -= DepthBuffer->Get_Bounds().Y;
-	unsigned short * zbuffer = (unsigned short *)DepthBuffer->Get_Buffer_Offset(point);
+	unsigned short * zbuffer = DepthBuffer->Get_Buffer_Offset(point);
 
 	int start_y = start.Y;
 	int zwrap = -1;
@@ -972,9 +972,9 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 					xdelta -= dz2;
 					zbuffer += zwidth;
 					if (zwidth > 0) {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					} else {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 					}
 					z += zwrap;
 				}
@@ -982,7 +982,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 				if (ydelta > 0) {
 					zbuffer++;
 					offset += 2;
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					ydelta -= dz2;
 				}
 
@@ -1028,9 +1028,9 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 					ydelta -= dx2;
 					zbuffer += zwidth;
 					if (zwidth > 0) {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					} else {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 					}
 					z += zwrap;
 				}
@@ -1043,7 +1043,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 				zbuffer++;
 				ydelta += dy2;
 				zdelta += dz2;
-				zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+				zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 
 			} while (++offset < xcount);
 		}
@@ -1081,7 +1081,7 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 				if (xdelta > 0) {
 					zbuffer++;
 					offset += 2;
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					xdelta -= dy2;
 				}
 
@@ -1095,9 +1095,9 @@ bool DSurface::Draw_Depth_Glow_Line(Rect const & cliprect, Point2D const & start
 				buffer = (unsigned char *)buffer + pitch;
 				zbuffer += zwidth;
 				if (zwidth > 0) {
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 				} else {
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 				}
 				z += zwrap;
 			}
@@ -1228,8 +1228,8 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 		return(false);
 	}
 
-	unsigned short * zbuffer = (unsigned short *)DepthBuffer->Get_Buffer_Offset(Point2D(start.X, start.Y - DepthBuffer->Get_Bounds().Y));
-	unsigned short * abuffer = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(Point2D(start.X - AlphaBuffer->Get_Bounds().X, start.Y - AlphaBuffer->Get_Bounds().Y));
+	unsigned short * zbuffer = DepthBuffer->Get_Buffer_Offset(Point2D(start.X, start.Y - DepthBuffer->Get_Bounds().Y));
+	unsigned short * abuffer = AlphaBuffer->Get_Buffer_Offset(Point2D(start.X - AlphaBuffer->Get_Bounds().X, start.Y - AlphaBuffer->Get_Bounds().Y));
 
 	int zwidth = DepthBuffer->Get_Buffer_Width();
 	int zwrap = -1;
@@ -1355,15 +1355,15 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 							buffer = (unsigned char *)buffer + pitch;
 							zbuffer += zwidth;
 							if (zwidth > 0) {
-								zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+								zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 							} else {
-								zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+								zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 							}
 							abuffer += zwidth;
 							if (zwidth > 0) {
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							} else {
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 							}
 							z += zwrap;
 						}
@@ -1375,9 +1375,9 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 
 						adda += adelta2;
 						zbuffer++;
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 						abuffer++;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						xoff++;
 						neighoff += 2;
 					} while (xoff < xcount);
@@ -1458,9 +1458,9 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 							weight += 256;
 							byteoff += 2;
 							zbuffer++;
-							zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+							zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						}
 
 						if (adda > 0) {
@@ -1473,15 +1473,15 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 						z += zwrap;
 						zbuffer += zwidth;
 						if (zwidth > 0) {
-							zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+							zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 						} else {
-							zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+							zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 						}
 						abuffer += zwidth;
 						if (zwidth > 0) {
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 						i--;
 					} while (i != 0);
@@ -1571,24 +1571,24 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 							weight += 256;
 							zbuffer += zwidth;
 							if (zwidth > 0) {
-								zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+								zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 							} else {
-								zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+								zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 							}
 							abuffer += zwidth;
 							if (zwidth > 0) {
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							} else {
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 							}
 							z += zwrap;
 						}
 
 						z += astep;
 						zbuffer++;
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 						abuffer++;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						xoff += 2;
 						neighoff += 4;
 					} while (xoff < xcount);
@@ -1672,23 +1672,23 @@ bool DSurface::Draw_Depth_Antialiased_Line(Rect const & cliprect, Point2D const 
 							weight += 256;
 							byteoff += 2;
 							zbuffer++;
-							zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+							zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						}
 
 						buffer = (unsigned char *)buffer + pitch;
 						zbuffer += zwidth;
 						if (zwidth > 0) {
-							zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+							zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 						} else {
-							zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+							zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 						}
 						abuffer += zwidth;
 						if (zwidth > 0) {
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 						z += yadjust;
 						i--;
@@ -2031,10 +2031,10 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 
 	Point2D point = start;
 	point.Y -= DepthBuffer->Get_Bounds().Y;
-	unsigned short * zbuffer = (unsigned short *)DepthBuffer->Get_Buffer_Offset(point);
+	unsigned short * zbuffer = DepthBuffer->Get_Buffer_Offset(point);
 	point = start;
 	point.Y -= AlphaBuffer->Get_Bounds().Y;
-	unsigned short * abuffer = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(point);
+	unsigned short * abuffer = AlphaBuffer->Get_Buffer_Offset(point);
 
 	int start_y = start.Y;
 	int zwrap = -1;
@@ -2112,15 +2112,15 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 					xdelta -= dz2;
 					zbuffer += zwidth;
 					if (zwidth > 0) {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					} else {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 					}
 					abuffer += zwidth;
 					if (zwidth > 0) {
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					} else {
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 					}
 					z += zwrap;
 				}
@@ -2128,9 +2128,9 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 				if (ydelta > 0) {
 					zbuffer++;
 					offset += 2;
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					abuffer++;
-					abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					ydelta -= dz2;
 				}
 
@@ -2167,16 +2167,16 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 					ydelta -= 2 * dx;
 					zbuffer += zwidth;
 					if (zwidth > 0) {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					} else {
-						zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+						zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 					}
 					z += zwrap;
 					abuffer += zwidth;
 					if (zwidth > 0) {
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					} else {
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 					}
 				}
 
@@ -2188,9 +2188,9 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 				zbuffer++;
 				ydelta += dy2;
 				zdelta += dz2;
-				zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+				zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 				abuffer++;
-				abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+				abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 			}
 		}
 	} else {
@@ -2220,9 +2220,9 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 				if (xdelta > 0) {
 					zbuffer++;
 					offset += 2;
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 					abuffer++;
-					abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					xdelta -= dy2;
 				}
 
@@ -2237,16 +2237,16 @@ bool DSurface::Draw_Depth_Shaded_Line(Rect const & cliprect, Point2D const & sta
 
 				zbuffer += zwidth;
 				if (zwidth > 0) {
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Overflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Overflow(zbuffer);
 				} else {
-					zbuffer = (unsigned short *)DepthBuffer->Wrap_Underflow((uintptr_t)zbuffer);
+					zbuffer = DepthBuffer->Wrap_Underflow(zbuffer);
 				}
 				z += zwrap;
 				abuffer += zwidth;
 				if (zwidth > 0) {
-					abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+					abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 				} else {
-					abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+					abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 				}
 
 				i--;
@@ -2296,7 +2296,7 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 	Point2D point = start;
 	point.Y -= AlphaBuffer->Get_Bounds().Y;
-	unsigned short * abuffer = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(point);
+	unsigned short * abuffer = AlphaBuffer->Get_Buffer_Offset(point);
 	int astride = AlphaBuffer->Get_Buffer_Width();
 	if (start.Y > end.Y) astride = -astride;
 
@@ -2323,10 +2323,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 					if (astride > 0) {
 						abuffer++;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					} else {
 						abuffer++;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 					}
 				}
 			} else if (start.X == end.X) {
@@ -2352,10 +2352,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 					if (astride > 0) {
 						abuffer += astride;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					} else {
 						abuffer += astride;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 					}
 				}
 			} else {
@@ -2401,7 +2401,7 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 						if (delta > 0) {
 							buffer = (unsigned char *)buffer + pitch;
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							delta -= dx2;
 						}
 
@@ -2409,10 +2409,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 						if (astride > 0) {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 					}
 				} else {
@@ -2440,7 +2440,7 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 						if (delta > 0) {
 							k++;
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							delta -= dy2;
 						}
 
@@ -2449,10 +2449,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 						if (astride > 0) {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 					}
 				}
@@ -2478,10 +2478,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 					if (astride > 0) {
 						abuffer++;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					} else {
 						abuffer++;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 					}
 				}
 			} else if (start.X == end.X) {
@@ -2507,10 +2507,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 					if (astride > 0) {
 						abuffer += astride;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 					} else {
 						abuffer += astride;
-						abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+						abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 					}
 				}
 			} else {
@@ -2556,7 +2556,7 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 						if (delta > 0) {
 							buffer = (unsigned char *)buffer + pitch;
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							delta -= dx2;
 						}
 
@@ -2564,10 +2564,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 						if (astride > 0) {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 					}
 				} else {
@@ -2595,7 +2595,7 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 						if (delta > 0) {
 							k++;
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							delta -= dy2;
 						}
 
@@ -2604,10 +2604,10 @@ int DSurface::Draw_Masked_Dashed_Line(Point2D const & startpoint, Point2D const 
 
 						if (astride > 0) {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 					}
 				}
@@ -2653,7 +2653,7 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 
 		Point2D point = start;
 		point.Y -= AlphaBuffer->Get_Bounds().Y;
-		unsigned short * abuffer = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(point);
+		unsigned short * abuffer = AlphaBuffer->Get_Buffer_Offset(point);
 		int astride = AlphaBuffer->Get_Buffer_Width();
 		if (start.Y > end.Y) astride = -astride;
 
@@ -2673,10 +2673,10 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 
 						if (astride > 0) {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 					}
 				} else if (start.X == end.X) {
@@ -2693,10 +2693,10 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 
 						if (astride > 0) {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 
 						buffer = (unsigned char *)buffer + pitch;
@@ -2737,16 +2737,16 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 							if (delta > 0) {
 								buffer = (unsigned char *)buffer + pitch;
 								abuffer += astride;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 								delta -= dx2;
 							}
 
 							if (astride > 0) {
 								abuffer++;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							} else {
 								abuffer++;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 							}
 
 							delta += dy2;
@@ -2770,7 +2770,7 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 								k++;
 								delta -= dy2;
 								abuffer++;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							}
 
 							delta += dx2;
@@ -2778,10 +2778,10 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 
 							if (astride > 0) {
 								abuffer += astride;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							} else {
 								abuffer += astride;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 							}
 						}
 					}
@@ -2800,10 +2800,10 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 
 						if (astride > 0) {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer++;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 					}
 				} else if (start.X == end.X) {
@@ -2820,10 +2820,10 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 
 						if (astride > 0) {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 						} else {
 							abuffer += astride;
-							abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+							abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 						}
 
 						buffer = (unsigned char *)buffer + pitch;
@@ -2864,16 +2864,16 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 							if (delta > 0) {
 								buffer = (unsigned char *)buffer + pitch;
 								abuffer += astride;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 								delta -= dx2;
 							}
 
 							if (astride > 0) {
 								abuffer++;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							} else {
 								abuffer++;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 							}
 
 							delta += dy2;
@@ -2897,7 +2897,7 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 								k++;
 								delta -= dy2;
 								abuffer++;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							}
 
 							delta += dx2;
@@ -2905,10 +2905,10 @@ bool DSurface::Draw_Masked_Line(Point2D const & startpoint, Point2D const & endp
 
 							if (astride > 0) {
 								abuffer += astride;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Overflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Overflow(abuffer);
 							} else {
 								abuffer += astride;
-								abuffer = (unsigned short *)AlphaBuffer->Wrap_Underflow((uintptr_t)abuffer);
+								abuffer = AlphaBuffer->Wrap_Underflow(abuffer);
 							}
 						}
 					}

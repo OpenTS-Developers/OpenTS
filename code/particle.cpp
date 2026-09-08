@@ -687,11 +687,11 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				pixel.Y += TacticalRect.Y;
 				if (cliprect.Is_Point_Within(pixel)) {
 					Point2D alpha_point = pixel - Point2D(0, AlphaBuffer->Get_Bounds().Y);
-					int alpha = *(unsigned short*)AlphaBuffer->Get_Buffer_Offset(alpha_point);
+					int alpha = *AlphaBuffer->Get_Buffer_Offset(alpha_point);
 					if (alpha != 0) {
 						Point2D depth_point = pixel - Point2D(0, DepthBuffer->Get_Bounds().Y);
 						int zdepth = (unsigned short)(DepthBuffer->Get_Bounds().Y + DepthBuffer->Get_Scroll_Delta(pixel.Y)) - TacticalMap->Z_Lepton_To_Pixel(PositionCoord.Z) - 50;
-						int depth = *(unsigned short*)DepthBuffer->Get_Buffer_Offset(depth_point);
+						int depth = *DepthBuffer->Get_Buffer_Offset(depth_point);
 						if (zdepth < depth) {
 							RGBClass color1 = ColorIndex == 0 ? Color : Class->ColorList[ColorIndex];
 							RGBClass color2 = Class->ColorList[ColorIndex + 1];
