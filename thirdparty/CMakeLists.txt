@@ -85,10 +85,8 @@ endif()
 # LZO (LZO1X compression for saves, maps, and network blocks)
 # ---------------------------------------------------------
 #
-# A vendored copy rather than a submodule. LZO is published only as a source tarball from
-# oberhumer.com; the git copies that exist are unofficial mirrors, so there is no upstream
-# repository a submodule could pin. Only the LZO1X-1 sources the engine calls are kept,
-# which is every file the three it links can reach.
+# A vendored copy rather than a submodule; docs/BUILDING.md records why. It holds the three
+# LZO1X-1 sources the engine calls and every header they reach.
 #
 # The library is built here rather than through its own CMakeLists.txt, which asks for
 # compatibility with CMake 3.0 and is refused outright by CMake 4, and which also builds
