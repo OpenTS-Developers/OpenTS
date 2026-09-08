@@ -265,8 +265,8 @@ test('A chosen start position keeps its number and is claimed before the game pi
 	], 'every named position is held before the game picks for anybody who named none');
 
 	const read = functionBody(
-		scenario.slice(scenario.search(/bool Read_Scenario_INI\(CCINIClass const & ini, bool is_mapgen\)\s*\{/)),
-		'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)',
+		scenario.slice(scenario.search(/ScenarioState Read_Scenario_INI\(CCINIClass const & ini, bool is_mapgen\)\s*\{/)),
+		'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)',
 	);
 	assertOrdered(read, [
 		'Scen->Read_Waypoints(ini);',
@@ -358,7 +358,7 @@ test('The campaign handicap pair lives on the session, and the mission reader ne
 	const scenario = source('code/scenario.cpp');
 
 	assertOrdered(
-		functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'),
+		functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'),
 		[
 			'Scen->Difficulty = Session.CampaignDifficulty;',
 			'Scen->CDifficulty = Session.CampaignCDifficulty;',
@@ -623,12 +623,12 @@ test('The scenario file is kept from its first read and carried in the save', ()
 		'Scen->SourceFile.Assign(name, std::move(bytes));',
 	], 'a name the scenario already holds is served from memory, and a fresh read is kept where the deployment asked for it');
 
-	assertOrdered(functionBody(scenario, 'bool Read_Scenario_INI(char const * fname, bool)'), [
+	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(char const * fname, bool)'), [
 		'Load_Scenario_File(ini, fname, true)',
 		'strcpy(Scen->ScenarioName, fname);',
 	], 'the scenario is read through the holder');
 
-	assertOrdered(functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
+	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
 		'Scen->SourceFile.Clear();',
 		'Scen->SourceFile.Matches(buffer)',
 		'Load_Held_Scenario_File(mini, buffer, false);',
@@ -777,7 +777,7 @@ test('Base building reads its side rather than comparing country names', () => {
 
 test('The art side comes from the player country rather than a name comparison', () => {
 	const scenario = source('code/scenario.cpp');
-	const readScenario = functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)');
+	const readScenario = functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)');
 
 	assert.doesNotMatch(readScenario, /IsGDI/, 'the flag is gone');
 	assertOrdered(readScenario, [

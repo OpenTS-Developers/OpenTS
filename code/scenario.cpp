@@ -667,7 +667,6 @@ static char const * Apply_Custom_Load_Screen(char const * & background, Point2D 
  *=============================================================================================*/
 bool Read_Scenario(char const * fname)
 {
-	bool read_ok = true;
 	char name[_MAX_PATH];
 
 	strcpy(name, fname);
@@ -729,33 +728,40 @@ bool Read_Scenario(char const * fname)
 		}
 	}
 
-	ScenarioState state = SCENARIO_OK;
+	ScenarioState state = ScenarioState::Ok;
 
 	if (Scen->IsRandom) {
-		read_ok = RandomMapGen.SeedData.Load(name);
-
-		if (read_ok) {
+		if (RandomMapGen.SeedData.Load(name)) {
 			RandomMapGen.Generate_Random_Map(false, NULL);
 			Multiplayer_Last_Minute_Fixups();
 		} else {
-			state = SCENARIO_NOT_READ;
+			state = ScenarioState::NotRead;
 		}
 		strcpy(Scen->ScenarioName, name);
 	} else {
 		state = Read_Scenario_INI(name);
-		read_ok = (state == SCENARIO_OK);
 	}
 
-	if (!read_ok) {
-		char message[256];
-		if (state == SCENARIO_TERRAIN_DAMAGED) {
-			snprintf(message, sizeof(message), Fetch_String(TXT_SCENARIO_DATA_DAMAGED), name);
-		} else {
-			snprintf(message, sizeof(message), "%s", Fetch_String(TXT_UNABLE_READ_SCENARIO));
+	if (state != ScenarioState::Ok) {
+		char message[_MAX_PATH + 256];
+		char const * text = NULL;
+
+		if (state == ScenarioState::TerrainDamaged) {
+			// An older language library answers with an empty string, which would show a
+			// message box with nothing in it.
+			char const * damaged = Fetch_String(TXT_SCENARIO_DATA_DAMAGED);
+			if (damaged[0] != '\0') {
+				snprintf(message, sizeof(message), damaged, name);
+				text = message;
+			}
 		}
 
-		DebugString("Error - %s\n", message);
-		WWMessageBox().Process(message, TXT_OK);
+		if (text == NULL) {
+			text = Fetch_String(TXT_UNABLE_READ_SCENARIO);
+		}
+
+		DebugString("Error - %s\n", text);
+		WWMessageBox().Process(text, TXT_OK);
 
 		BEnd(BENCH_SCENARIO);
 		ScenarioInit--;
@@ -1579,7 +1585,7 @@ ScenarioState Read_Scenario_INI(char const * fname, bool)
 
 	if (result == 0) {
 		DebugString("Scenario ini load failed!\n");
-		return(SCENARIO_NOT_READ);
+		return(ScenarioState::NotRead);
 	}
 
 	strcpy(Scen->ScenarioName, fname);
@@ -1821,7 +1827,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Scen->RequiredAddOn = (AddonType)ini.Get_Int(BASIC, "RequiredAddOn", ADDON_BASE_GAME);
 		Set_Required_Addon(Scen->RequiredAddOn);
 		if (!Addon_Installed(Scen->RequiredAddOn)) {
-			return(SCENARIO_NOT_READ);
+			return(ScenarioState::NotRead);
 		}
 		Enable_Addon(Scen->RequiredAddOn);
 	} else {
@@ -1869,7 +1875,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	SideType playerside = Side_For_Player();
 	DebugString("Calling Prep_For_Side()\n");
 	if (Prep_For_Side_Or_First(playerside) == SIDE_NONE) {
-		return(SCENARIO_NOT_READ);
+		return(ScenarioState::NotRead);
 	}
 	Scen->PlayerSide = playerside;
 
@@ -1903,7 +1909,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	DebugString("Calling Prep_Speech_For_Side()\n");
 	Scen->SpeechSide = Prep_Speech_For_Side_Or_First(Scen->SpeechSide);
 	if (Scen->SpeechSide == SIDE_NONE) {
-		return(SCENARIO_NOT_READ);
+		return(ScenarioState::NotRead);
 	}
 
 	/*
@@ -1948,7 +1954,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	**
 	*/
 	if (Scen->Read_INI(ini) == false) {
-		return(SCENARIO_NOT_READ);
+		return(ScenarioState::NotRead);
 	}
 
 	Session.Update_Progress(58);
@@ -2021,9 +2027,8 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	**	Read in the map control values. This includes dimensions
 	**	as well as theater information.
 	*/
-	ScenarioState const mapstate = Map.Read_INI(ini);
-	if (mapstate != SCENARIO_OK) {
-		return(mapstate);
+	if (!Map.Read_INI(ini)) {
+		return(ScenarioState::TerrainDamaged);
 	}
 	Call_Back();
 
@@ -2239,7 +2244,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	Map.Complete_Radar_Refresh();
 
-	return(SCENARIO_OK);
+	return(ScenarioState::Ok);
 }
 
 

@@ -2320,17 +2320,23 @@ bool MapClass::Read_Binary_3(Straw & straw)
 /// Cells the map no longer has room for are read past and thrown away.
 /// </summary>
 /// <param name="straw">The straw supplying the compressed map data.</param>
-/// <returns>bool; Was the map read? False if the compressed data was damaged, in which case
-/// the cells read before the damage are still in place.</returns>
+/// <returns>bool; Was the map read? False if the data was damaged or ended before its
+/// terminator, in which case the cells read before that point are still in place.</returns>
 bool MapClass::Read_Binary_4(Straw & straw)
 {
 	LZOStraw decomp(LZOStraw::DECOMPRESS);
 	decomp.Get_From(&straw);
 
+	// A pack that runs out before its CELL_NONE terminator was cut short, even when every
+	// block it did carry decompressed.
+	bool terminated = false;
 	Cell cell;
-	decomp.Get(&cell, sizeof(cell));
 
-	while (cell != CELL_NONE) {
+	while (decomp.Get(&cell, sizeof(cell)) == sizeof(cell)) {
+		if (cell == CELL_NONE) {
+			terminated = true;
+			break;
+		}
 		CellClass * cellptr = &(*this)[cell];
 		if (cellptr != NULL && cellptr != &BlubCell) {
 			cellptr->ITType = ISOTILE_NONE;
@@ -2342,11 +2348,9 @@ bool MapClass::Read_Binary_4(Straw & straw)
 			char tmp[sizeof(cellptr->ITType) + sizeof(cellptr->SubTile) + sizeof(cellptr->Height)];
 			decomp.Get(&tmp, sizeof(tmp));
 		}
-		cell = CELL_NONE;
-		decomp.Get(&cell, sizeof(cell));
 	}
 	new (&BlubCell) CellClass;
-	return(!decomp.Is_Damaged());
+	return(terminated && !decomp.Is_Damaged());
 }
 
 
@@ -2357,17 +2361,23 @@ bool MapClass::Read_Binary_4(Straw & straw)
 /// thrown away.
 /// </summary>
 /// <param name="straw">The straw supplying the compressed map data.</param>
-/// <returns>bool; Was the map read? False if the compressed data was damaged, in which case
-/// the cells read before the damage are still in place.</returns>
+/// <returns>bool; Was the map read? False if the data was damaged or ended before its
+/// terminator, in which case the cells read before that point are still in place.</returns>
 bool MapClass::Read_Binary_5(Straw & straw)
 {
 	LZOStraw decomp(LZOStraw::DECOMPRESS);
 	decomp.Get_From(&straw);
 
+	// A pack that runs out before its CELL_NONE terminator was cut short, even when every
+	// block it did carry decompressed.
+	bool terminated = false;
 	Cell cell;
-	decomp.Get(&cell, sizeof(cell));
 
-	while (cell != CELL_NONE) {
+	while (decomp.Get(&cell, sizeof(cell)) == sizeof(cell)) {
+		if (cell == CELL_NONE) {
+			terminated = true;
+			break;
+		}
 		CellClass * cellptr = &(*this)[cell];
 		if (cellptr != NULL && cellptr != &BlubCell) {
 			cellptr->ITType = ISOTILE_NONE;
@@ -2380,11 +2390,9 @@ bool MapClass::Read_Binary_5(Straw & straw)
 			char tmp[sizeof(cellptr->ITType) + sizeof(cellptr->SubTile) + sizeof(cellptr->Height) + sizeof(cellptr->IsIceGrowthAllowed)];
 			decomp.Get(&tmp, sizeof(tmp));
 		}
-		cell = CELL_NONE;
-		decomp.Get(&cell, sizeof(cell));
 	}
 	new (&BlubCell) CellClass;
-	return(!decomp.Is_Damaged());
+	return(terminated && !decomp.Is_Damaged());
 }
 
 

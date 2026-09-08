@@ -41,7 +41,6 @@
 #include "types.h"
 
 #include "action.hh"
-#include "scenariostate.hh"
 #include "layer.hh"
 #include "source.hh"
 #include "super.hh"
@@ -117,8 +116,8 @@ class DisplayClass: public MapClass
 		//-------------------------------------------------------------------------
 		DisplayClass(void);
 
-		// Returns SCENARIO_OK when the whole map was read.
-		virtual ScenarioState Read_INI(CCINIClass const & ini);
+		// False when the terrain packs were damaged and only part of the map was read.
+		virtual bool Read_INI(CCINIClass const & ini);
 		void Write_INI(CCINIClass & ini);
 
 		/*
