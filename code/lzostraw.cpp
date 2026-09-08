@@ -67,12 +67,14 @@ LZOStraw::LZOStraw(CompControl control, int blocksize) :
 		Counter(0),
 		Buffer(NULL),
 		Buffer2(NULL),
+		Dictionary(NULL),
 		BlockSize(blocksize)
 {
 	SafetyMargin = BlockSize;
 	Buffer = new char[BlockSize+SafetyMargin];
 	if (control == COMPRESS) {
 		Buffer2 = new char[BlockSize+SafetyMargin];
+		Dictionary = new char[LZO1X_1_MEM_COMPRESS];
 	}
 }
 
@@ -98,6 +100,9 @@ LZOStraw::~LZOStraw(void)
 
 	delete [] Buffer2;
 	Buffer2 = NULL;
+
+	delete [] Dictionary;
+	Dictionary = NULL;
 }
 
 
@@ -183,11 +188,9 @@ int LZOStraw::Get(void * destbuf, int slen)
 		} else {
 			BlockHeader.UncompCount = (unsigned short)BASECLASS::Get(Buffer, BlockSize);
 			if (BlockHeader.UncompCount == 0) break;
-			char *dictionary = new char [LZO1X_1_MEM_COMPRESS];
 			lzo_uint length = (BlockSize + SafetyMargin) - sizeof(BlockHeader);
-			lzo1x_1_compress ((unsigned char*)Buffer, BlockHeader.UncompCount, (unsigned char*)(&Buffer2[sizeof(BlockHeader)]), &length, dictionary);
+			lzo1x_1_compress ((unsigned char*)Buffer, BlockHeader.UncompCount, (unsigned char*)(&Buffer2[sizeof(BlockHeader)]), &length, Dictionary);
 			BlockHeader.CompCount = (unsigned short)length;
-			delete [] dictionary;
 			memmove(Buffer2, &BlockHeader, sizeof(BlockHeader));
 			Counter = BlockHeader.CompCount+sizeof(BlockHeader);
 		}
