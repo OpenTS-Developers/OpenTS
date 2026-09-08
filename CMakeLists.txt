@@ -31,6 +31,13 @@ elseif(OPENTS_EXPERIMENTAL_NATIVE)
     # The tree declares imports and exports with __declspec throughout, which clang only
     # accepts with the Microsoft extensions enabled.
     add_compile_options(-fms-extensions)
+
+    # Saved games serialize pointer fields at their native width.
+    if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+        message(WARNING
+            "OpenTS: this native build has ${CMAKE_SIZEOF_VOID_P}-byte pointers. Saved games "
+            "it writes are not interchangeable with a supported 32-bit build's.")
+    endif()
 else()
     message(FATAL_ERROR
         "OpenTS requires the Visual Studio 2022 MSVC toolchain. "
