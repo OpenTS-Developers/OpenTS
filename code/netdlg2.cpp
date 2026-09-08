@@ -3382,9 +3382,9 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 		case IDC_YOURSIDE:
 		case IDC_YOURCOLOR: {
 			if (HIWORD(wparam) == CBN_SELCHANGE) {
-				LRESULT color = SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0);
+				int color = (int)SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0);
 
-				LRESULT house = Country_From_Box(GetDlgItem(window, IDC_YOURSIDE));
+				int house = Country_From_Box(GetDlgItem(window, IDC_YOURSIDE));
 
 				Session.PrefColor = color;
 
