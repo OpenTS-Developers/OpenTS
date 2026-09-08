@@ -433,14 +433,21 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 	ProgramInstance = instance;
 
-	// Refuses a build whose type sizes do not match the ones LZO was compiled against.
-	if (lzo_init() != LZO_E_OK) return(1);
-
 	Debug_Init();
 
 	// Handed over now because the exception path may not ask the logger for anything: the
 	// thread that crashed may be the one holding the logger's lock.
 	Exception_Register_Log_File(Debug_Log_File_Name());
+
+	// LZO asks for this before any codec call. It validates rather than initializes, and a
+	// vendored static build cannot fail it, but thirdparty/lzo is upgraded in place and a
+	// later release may expect the call.
+	int const lzo_status = lzo_init();
+	if (lzo_status != LZO_E_OK) {
+		DebugString("lzo_init failed with %d.\n", lzo_status);
+		MessageBox(NULL, "The compression library failed its startup check. This build is faulty.", "OpenTS", MB_OK | MB_ICONERROR);
+		return(EXIT_FAILURE);
+	}
 
 	/*
 	 * Create a mutex with a unique name to TibSun in order to determine if
