@@ -846,10 +846,9 @@ long VQAClass::CCFileHandler(long action, void * buffer, long nbytes)
 			break;
 
 		/*
-		**	VQACMD_SEEK asks that you perform a seek relative to the current
-		**	position. NBytes is a signed number, indicating seek direction
-		** (positive for forward, negative for backward). Buffer has no meaning
-		**	here.
+		**	VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		**	names, which is a SEEK_SET, SEEK_CUR or SEEK_END value cast to a
+		**	pointer. NBytes is the signed offset from that origin.
 		**
 		**	Any error code returned will be remapped by VQA library into
 		**	VQAERR_SEEK.
@@ -973,10 +972,9 @@ long VQAClass::MixFileHandler(long action, void * buffer, long nbytes)
 			break;
 
 		/*
-		**	VQACMD_SEEK asks that you perform a seek relative to the current
-		**	position. NBytes is a signed number, indicating seek direction
-		** (positive for forward, negative for backward). Buffer has no meaning
-		**	here.
+		**	VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		**	names, which is a SEEK_SET, SEEK_CUR or SEEK_END value cast to a
+		**	pointer. NBytes is the signed offset from that origin.
 		**
 		**	Any error code returned will be remapped by VQA library into
 		**	VQAERR_SEEK.
