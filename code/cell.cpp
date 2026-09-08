@@ -3392,7 +3392,8 @@ int CellClass::Tiberium_Adjust(bool pregame)
 			*/
 			int value = tiberium->CreditValue;
 			if (pregame) {
-				Overlay = (OverlayType)Random_Pick((int)tiberium->Overlay, (int)&tiberium->Overlay[tiberium->Variety - 1]);
+				int first = tiberium->Overlay->HeapID;
+				Overlay = (OverlayType)Random_Pick(first, first + tiberium->Variety - 1);
 			}
 
 			/*
