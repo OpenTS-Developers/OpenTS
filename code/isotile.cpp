@@ -47,12 +47,13 @@ bool IsometricTileClass::Mark(MarkType mark)
 				if (Map.In_Radar(cell)) {
 					CellClass *cptr = &Map[cell];
 					int subtile = Class->SubTile_Index(x, y);
-					if (set->Tiles[subtile] != NULL) {
+					IsoTileRecord const * record = set->Fetch_Record_Pointer_Unsafe(subtile);
+					if (record != NULL) {
 						if (mark == MARK_UP) {
 							if (cptr->ITType == Class->HeapID && cptr->SubTile == subtile) {
 								cptr->ITType = TILE_NONE;
 								cptr->SubTile = 0;
-								cptr->Height -= set->Tiles[subtile]->Height;
+								cptr->Height -= record->Height;
 							}
 						} else if (mark == MARK_DOWN || mark == MARK_DOWN_FORCED) {
 							if (Class->HeapID == TILE_CLEAR) {
@@ -114,7 +115,7 @@ bool IsometricTileClass::Mark(MarkType mark)
 							}
 							cptr->Overlay = OVERLAY_NONE;
 							cptr->OverlayData = 0;
-							cptr->Height += set->Tiles[subtile]->Height;
+							cptr->Height += record->Height;
 							cptr->Fixup_LAT();
 							cptr->Adjacent_Cell(FACING_N).Fixup_LAT();
 							cptr->Adjacent_Cell(FACING_E).Fixup_LAT();

@@ -113,15 +113,17 @@ class IsoTileSet
 	friend class IsometricTileTypeClass;
 
 	public:
-		operator void *() const { return(*this); } /// This allows the struct to be passed implicitly as a raw pointer.
-
 		IsoTileRecord const * Fetch_Record_Pointer(int index) const
 		{
-			return(Tiles[index % Tile_Count()]);
+			return(Record_At(index % Tile_Count()));
 		}
 		IsoTileRecord const * Fetch_Record_Pointer_Unsafe(int index) const
 		{
-			return(Tiles[index]);
+			return(Record_At(index));
+		}
+		IsoTileRecord * Fetch_Record_Pointer_Unsafe(int index)
+		{
+			return((IsoTileRecord *)Record_At(index));
 		}
 
 		/*
@@ -162,12 +164,22 @@ class IsoTileSet
 		int Height;
 
 		/*
-		 * This is the first of the tile set's image record pointers, one per sub-tile, held in
-		 * the file as offsets from the start of the set and converted in place by the loader.
-		 * Reach a record through Fetch_Record_Pointer rather than through the array.
+		 * This is the first of the tile set's image record offsets, one per sub-tile, each a
+		 * byte offset from the start of the set. A zero offset means the sub-tile is absent
+		 * from the diamond. Reach a record through Fetch_Record_Pointer rather than through
+		 * the array.
 		 */
-		IsoTileRecord *Tiles[1];
+		int TileOffsets[1];
 
+
+	private:
+		IsoTileRecord const * Record_At(int index) const
+		{
+			if (TileOffsets[index] == 0) {
+				return(NULL);
+			}
+			return((IsoTileRecord const *)((unsigned char const *)this + TileOffsets[index]));
+		}
 
 	/*
 	**	Disallow these operations with an IsoTileSet object.
