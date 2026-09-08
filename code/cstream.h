@@ -46,6 +46,12 @@ class CStreamClass : public IStream, public ILinkStream
 
 		enum {
 			BUFFER_SIZE = 64*1024,
+
+			/*
+			 * LZO1X-1 can expand a block rather than shrink it, so the compressed side is
+			 * sized for its worst case.
+			 */
+			STREAM_BUFFER_SIZE = BUFFER_SIZE + BUFFER_SIZE/16 + 64 + 3,
 		};
 
 	private:

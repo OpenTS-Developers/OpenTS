@@ -2568,6 +2568,7 @@ BEGIN
     TXT_ADD_TO_TEAM_DESC    "Adds the selected units to team %d and selects the whole team."
     TXT_GAME_SAVED          "Game saved."
     TXT_GAME_AUTO_SAVED     "Game auto-saved."
+    TXT_SCENARIO_DATA_DAMAGED "Unable to read scenario %s: its map data is damaged."
 END
 
 #endif    // English (U.S.) resources

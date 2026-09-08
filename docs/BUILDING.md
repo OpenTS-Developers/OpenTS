@@ -43,6 +43,13 @@ For a fresh clone, use `git clone --recurse-submodules`. Configuration stops
 with instructions if a submodule is missing. Update a pinned tag in a
 separate change.
 
+Compression uses [LZO](https://www.oberhumer.com/opensource/lzo/) 2.10,
+vendored under `thirdparty/lzo` and built by `thirdparty/CMakeLists.txt`.
+Upstream publishes releases as a tarball rather than through a repository, so
+this copy is checked in instead of pinned as a submodule. It holds only the
+LZO1X-1 sources the engine calls; take a later release by extracting it over
+the files already there, in a separate change.
+
 ## Configure and build
 
 Run these commands from the repository root in PowerShell:

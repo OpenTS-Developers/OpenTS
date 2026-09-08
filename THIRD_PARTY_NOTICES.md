@@ -15,6 +15,7 @@ remains under its own license and copyright notices.
 | [Vulkan Headers](https://github.com/KhronosGroup/Vulkan-Headers)   | Vulkan API headers used by bgfx           | Apache-2.0   |
 | [miniaudio](https://github.com/mackron/miniaudio)                  | Audio device output, resampling, and WAV, FLAC, and MP3 decoding | MIT-0 or Unlicense |
 | [stb_vorbis](https://github.com/nothings/stb)                      | Ogg Vorbis decoding, bundled with miniaudio | MIT or Unlicense |
+| [LZO](https://www.oberhumer.com/opensource/lzo/)                   | LZO1X compression for maps, saves, and network blocks | GPL-2.0-or-later |
 
 The source checkout keeps the license texts under `thirdparty/`. Binary
 packages reproduce the license texts for the components used by OpenTS under

@@ -204,6 +204,7 @@ target_link_libraries(OpenTS PRIVATE
     bx
     bimg
     miniaudio
+    lzo
     comctl32
     dbghelp
     iphlpapi

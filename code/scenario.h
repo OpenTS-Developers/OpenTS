@@ -596,8 +596,17 @@ class ScenarioClass {
 
 
 void Write_Scenario_INI(char const * root, bool mplayer=false);
-bool Read_Scenario_INI(char const * root, bool fresh=true);
-bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen=false);
+
+// Why a scenario read stopped. Scoped because success is zero, which an unscoped result would
+// let a caller test as a bool and read backwards.
+enum class ScenarioState {
+	Ok,
+	NotRead,
+	TerrainDamaged,
+};
+
+ScenarioState Read_Scenario_INI(char const * root, bool fresh=true);
+ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen=false);
 SideType Side_For_Player(void);
 int Scan_Place_Object(ObjectClass * obj, Cell const & cell, int min_dist = 1, int max_dist = 31);
 void Assign_Houses(void);

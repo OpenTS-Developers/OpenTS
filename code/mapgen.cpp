@@ -5104,7 +5104,11 @@ void MapGeneratorClass::Init_Map(bool full_init)
 		if (Debug_Map) {
 			Clear_Scenario();
 		}
-		Read_Scenario_INI(ini, true);
+		// The generator wrote this database itself, so anything it cannot read back is a fault
+		// here rather than damaged data.
+		if (Read_Scenario_INI(ini, true) != ScenarioState::Ok) {
+			DebugString("The generated scenario did not read back cleanly.\n");
+		}
 		Fill_In_Data();
 		Cell c;
 		c.Y = Map.PlayRect.Width / 2 + Map.PlayRect.Height / 2;

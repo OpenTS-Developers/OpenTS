@@ -3111,14 +3111,14 @@ void DisplayClass::Shroud_Cell(Cell const & cell)
  *                                                                                             *
  * INPUT:   buffer   -- Pointer to the loaded INI file data.                                   *
  *                                                                                             *
- * OUTPUT:  none                                                                               *
+ * OUTPUT:  bool; Was the whole map read? False if a terrain pack was damaged.                 *
  *                                                                                             *
  * WARNINGS:   The TriggerClass INI data must have been read before calling this function.     *
  *                                                                                             *
  * HISTORY:                                                                                    *
  *   05/27/1994 JLB : Created.                                                                 *
  *=============================================================================================*/
-void DisplayClass::Read_INI(CCINIClass const & ini)
+bool DisplayClass::Read_INI(CCINIClass const & ini)
 {
 	/*
 	**	Read the map dimensions.
@@ -3184,6 +3184,10 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	AircraftTypeClass::Init(Scen->Theater);
 	SmudgeTypeClass::Init(Scen->Theater);
 	VeinholeMonsterClass::Init(Scen->Theater);
+
+	// The type data above stays loaded even when the scenario is abandoned below, and the next
+	// scenario decides what to reload by comparing against this.
+	LastTheater = Scen->Theater;
 
 	Session.Update_Progress(65);
 	Call_Back();
@@ -3252,11 +3256,13 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 
 	int size = (staging_buffer.Width * staging_buffer.BBP) * staging_buffer.Height;
 
+	char const * damaged_section = NULL;
+
 	static char const * const ISOMAPPACK1 = "IsoMapPack";
 	len = ini.Get_UUBlock(ISOMAPPACK1, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_1(bstraw);
+		if (!Map.Read_Binary_1(bstraw)) { damaged_section = ISOMAPPACK1; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3265,7 +3271,7 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	len = ini.Get_UUBlock(ISOMAPPACK2, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_2(bstraw);
+		if (!Map.Read_Binary_2(bstraw)) { damaged_section = ISOMAPPACK2; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3274,7 +3280,7 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	len = ini.Get_UUBlock(ISOMAPPACK3, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_3(bstraw);
+		if (!Map.Read_Binary_3(bstraw)) { damaged_section = ISOMAPPACK3; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3283,7 +3289,7 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 	len = ini.Get_UUBlock(ISOMAPPACK4, staging_buffer.Lock(), size);
 	if (len > 0) {
 		BufferStraw bstraw(staging_buffer.Lock(), len);
-		Map.Read_Binary_4(bstraw);
+		if (!Map.Read_Binary_4(bstraw)) { damaged_section = ISOMAPPACK4; }
 		staging_buffer.Unlock();
 	}
 	staging_buffer.Unlock();
@@ -3302,10 +3308,17 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 		len = ini.Get_UUBlock(ISOMAPPACK5, decoded.data(), static_cast<int>(decoded.size()));
 		if (len > 0 && static_cast<std::size_t>(len) < decoded.size()) {
 			BufferStraw bstraw(decoded.data(), len);
-			Map.Read_Binary_5(bstraw);
+			if (!Map.Read_Binary_5(bstraw)) { damaged_section = ISOMAPPACK5; }
 		} else if (len > 0) {
-			DebugString("IsoMapPack5 exceeds the maximum terrain payload; ignoring the section.\n");
+			DebugString("IsoMapPack5 exceeds the maximum terrain payload.\n");
+			damaged_section = ISOMAPPACK5;
 		}
+	}
+
+	if (damaged_section != NULL) {
+		DebugString("Scenario %s: the terrain data in [%s] is damaged.\n",
+			Scen->ScenarioName, damaged_section);
+		return(false);
 	}
 
 	Session.Update_Progress(68);
@@ -3320,7 +3333,7 @@ void DisplayClass::Read_INI(CCINIClass const & ini)
 
 	Map.Set_Local_Dimensions(LocalRect);
 
-	LastTheater = Scen->Theater;
+	return(true);
 }
 
 

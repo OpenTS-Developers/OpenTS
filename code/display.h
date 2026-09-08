@@ -116,7 +116,8 @@ class DisplayClass: public MapClass
 		//-------------------------------------------------------------------------
 		DisplayClass(void);
 
-		virtual void Read_INI(CCINIClass const & ini);
+		// False when the terrain packs were damaged and only part of the map was read.
+		virtual bool Read_INI(CCINIClass const & ini);
 		void Write_INI(CCINIClass & ini);
 
 		/*

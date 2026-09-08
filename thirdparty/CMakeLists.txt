@@ -79,3 +79,25 @@ if(MSVC)
     # Match the engine's floating-point model so the resampler behaves the same in both.
     target_compile_options(miniaudio PRIVATE /arch:SSE2 /fp:precise)
 endif()
+
+#
+# ---------------------------------------------------------
+# LZO (LZO1X compression for saves, maps, and network blocks)
+# ---------------------------------------------------------
+#
+# A vendored copy rather than a submodule; docs/BUILDING.md records why. It holds the three
+# LZO1X-1 sources the engine calls and every header they reach.
+#
+# The library is built here rather than through its own CMakeLists.txt, which asks for
+# compatibility with CMake 3.0 and is refused outright by CMake 4, and which also builds
+# the test drivers and install rules that the engine does not ship.
+file(GLOB LZO_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/lzo/src/*.c")
+add_library(lzo STATIC ${LZO_SOURCES})
+
+# LZO reads a generated config.h only when LZO_HAVE_CONFIG_H is defined, and probes the
+# target with its own preprocessor tests otherwise. Leaving it undefined keeps the
+# vendored tree free of a configure step.
+target_include_directories(lzo
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/lzo/include"
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/lzo/src"
+)

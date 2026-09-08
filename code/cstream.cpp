@@ -11,7 +11,7 @@
 
 #include "cstream.h"
 
-#include "lzo.h"
+#include <lzo/lzo1x.h>
 
 extern ULONG COMRefCount;
 
@@ -28,8 +28,8 @@ CStreamClass::CStreamClass(void) :
 	IsWriting(false),
 	CurOffset(0),
 	DataBuffer(new unsigned char[BUFFER_SIZE]),
-	StreamBuffer(new unsigned char[BUFFER_SIZE]),
-	LZODictionary(new unsigned char[BUFFER_SIZE])
+	StreamBuffer(new unsigned char[STREAM_BUFFER_SIZE]),
+	LZODictionary(new unsigned char[LZO1X_1_MEM_COMPRESS])
 {
 	BlockHead.CompSize = BUFFER_SIZE - 1;
 }
@@ -255,6 +255,10 @@ HRESULT CStreamClass::Read(void *pv, ULONG cb, ULONG *pcbRead)
 			return(E_FAIL);
 		}
 
+		if (BlockHead.CompSize > STREAM_BUFFER_SIZE) {
+			return(E_FAIL);
+		}
+
 		hr = StreamPtr->Read(StreamBuffer, BlockHead.CompSize, &read);
 		if (FAILED(hr)) {
 			return(hr);
@@ -266,9 +270,14 @@ HRESULT CStreamClass::Read(void *pv, ULONG cb, ULONG *pcbRead)
 		}
 		lzo_byte *out = (lzo_byte *)DataBuffer;
 		lzo_byte *in = (lzo_byte *)StreamBuffer;
-		unsigned int out_len = BUFFER_SIZE;
-		lzo1x_decompress(in, inlen, out, &out_len, 0);
-		CurOffset = BlockHead.UncompSize;
+		lzo_uint out_len = BUFFER_SIZE;
+		if (lzo1x_decompress_safe(in, inlen, out, &out_len, NULL) != LZO_E_OK) {
+			return(E_FAIL);
+		}
+		// Compress records the whole buffer size rather than the block's own length, so only
+		// the decompressor's count says how much of the buffer is real.
+		BlockHead.UncompSize = out_len;
+		CurOffset = out_len;
 	}
 
 	if (pcbRead != NULL) {
@@ -488,7 +497,7 @@ HRESULT CStreamClass::Clone(IStream **ppstm)
 HRESULT CStreamClass::Compress(void *in_buffer, ULONG length)
 {
 	HRESULT hr;
-	unsigned int out_len = length;
+	lzo_uint out_len = length;
 	lzo1x_1_compress((lzo_byte *)in_buffer, length, (lzo_byte *)StreamBuffer, &out_len, (lzo_byte *)LZODictionary);
 	BlockHead.UncompSize = BUFFER_SIZE;
 	length = 0;
