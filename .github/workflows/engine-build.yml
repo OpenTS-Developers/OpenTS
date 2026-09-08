@@ -88,6 +88,13 @@ jobs:
           cat thirdparty/licenses/khronos-vulkan-notice.txt \
               thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt \
               > artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-vulkan.txt
+          cp thirdparty/RmlUi/LICENSE.txt artifact/OpenTS_THIRD_PARTY_LICENSES/rmlui.txt
+          cp thirdparty/RmlUi/Include/RmlUi/Core/Containers/LICENSE.txt artifact/OpenTS_THIRD_PARTY_LICENSES/rmlui-containers.txt
+          cat thirdparty/freetype/LICENSE.TXT thirdparty/freetype/docs/FTL.TXT \
+              > artifact/OpenTS_THIRD_PARTY_LICENSES/freetype.txt
+          cp thirdparty/licenses/freetype-zlib.txt artifact/OpenTS_THIRD_PARTY_LICENSES/zlib.txt
+          cp thirdparty/imgui/LICENSE.txt artifact/OpenTS_THIRD_PARTY_LICENSES/dear-imgui.txt
+          cp thirdparty/licenses/stb-imgui.txt artifact/OpenTS_THIRD_PARTY_LICENSES/stb-imgui.txt
 
       - name: Upload runtime files
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

@@ -1,9 +1,11 @@
 # UI system design
 
-Status: proposal. Nothing here is implemented, built, or measured. Source
-inspection and upstream documentation inform it. This page owns the proposed
-UI architecture and migration; [Building OpenTS](BUILDING.md) owns build
-support and [Project direction](DIRECTION.md) the wider architecture.
+Status: proposal under implementation. Step 1 of the
+[migration plan](#migration-plan), the dependencies, has landed; nothing else
+is implemented, built, or measured. Source inspection and upstream
+documentation inform the rest. This page owns the proposed UI architecture and
+migration; [Building OpenTS](BUILDING.md) owns build support and
+[Project direction](DIRECTION.md) the wider architecture.
 
 ## Where the UI stands today
 
@@ -531,13 +533,12 @@ commit every document to bitmap faces. That choice waits for that view.
 
 ### Strings
 
-Engine strings become UTF-8 through the process active code page declared
-in `sun.manifest`, a separate change that is a prerequisite for every RmlUi
-screen that shows text. With it, every narrow Win32 API, including the
-`LoadString` behind `Fetch_String`, yields UTF-8 bytes, and the shell copies
-a string out of the `Fetch_String` cache and hands it to RmlUi unchanged.
-Text typed into a field goes into engine buffers unchanged. What the
-transition does not remove: fixed-size engine buffers, packet fields, and
+Engine strings are UTF-8 through the process active code page declared in
+`sun.manifest`; that transition has landed. Every narrow Win32 API, including
+the `LoadString` behind `Fetch_String`, yields UTF-8 bytes, and the shell
+copies a string out of the `Fetch_String` cache and hands it to RmlUi
+unchanged. Text typed into a field goes into engine buffers unchanged. What
+the transition does not remove: fixed-size engine buffers, packet fields, and
 file names are sized in bytes, so a field's character limit is a byte limit
 and truncation never splits a sequence; and `WWFontClass` indexes glyphs by
 byte, which bounds in-game text to the range the transition supports.
@@ -661,14 +662,15 @@ built static with the static CRT that `thirdparty/CMakeLists.txt` forces:
 | Project | License | Notes |
 | --- | --- | --- |
 | RmlUi 6.x | MIT | `RMLUI_FONT_ENGINE=freetype`, no samples, no backends, static |
-| FreeType 2.13 | FTL | bzip2, PNG, HarfBuzz, and Brotli disabled; aliased as `Freetype::Freetype` for RmlUi's find |
+| FreeType 2.14 | FTL | zlib, bzip2, PNG, HarfBuzz, and Brotli disabled, so the gzip module uses the bundled zlib copy; aliased as `Freetype::Freetype` for RmlUi's dependency check |
 | Dear ImGui | MIT | core sources compiled into a small target; no bundled backends |
 
 `THIRD_PARTY_NOTICES.md`, `thirdparty/licenses/`, and the packaging license
-copy grow by the same three entries. CI already checks out submodules
-recursively. The build stamp step gains the string-name generator, and
-`bimg_decode` loses `EXCLUDE_FROM_ALL` and is linked. Dependency upgrades are
-separate changes.
+copy grow by the three projects and the components they bundle: robin_hood
+and itlib in RmlUi, zlib in FreeType, and the stb headers in Dear ImGui. CI
+already checks out submodules recursively. The build stamp step gains the
+string-name generator, and `bimg_decode` loses `EXCLUDE_FROM_ALL` and is
+linked. Dependency upgrades are separate changes.
 
 ## Migration plan
 
@@ -680,10 +682,11 @@ takes one. Sizes are rough: S under a day of focused work, M a few days, L a
 week or more. The order is bottom-up because of the coexistence rule: a
 screen migrates only after every screen it can open has migrated.
 
-Prerequisite: the UTF-8 transition lands before step 3. Steps 1 and 2 need no
-text beyond an ASCII test document.
+The UTF-8 transition that step 3 needs has landed. Steps 1 and 2 need no text
+beyond an ASCII test document.
 
-1. **Dependencies** (S). Submodules, CMake, notices, `BUILDING.md`. No engine
+1. **Dependencies** (S, landed). Submodules, CMake, notices, `BUILDING.md`,
+   and a `tests/uishell` smoke test that links the three libraries. No engine
    code uses them. Evidence: Debug and Release build.
 2. **Shell** (M). Everything in the code-layout table except screens, the
    backend split, the input hook, resize handling, the `ui/` copy step, the
@@ -731,9 +734,11 @@ credits are unscheduled.
 
 ## Validation and evidence
 
-A `tests/uishell` CTest target links RmlUi core, FreeType, `uiscreen.h`, the
-string table, and the screen presenters with a recording render interface
-and a null system interface. It runs without game assets:
+The `tests/uishell` CTest target begins as a smoke test that brings RmlUi
+core, FreeType, and Dear ImGui up and down under the engine's link settings.
+As screens land it links `uiscreen.h`, the string table, and the screen
+presenters with a recording render interface and a null system interface. It
+runs without game assets:
 
 - Load every shipped document and fail on a parse error or a property
   outside the declared profile.

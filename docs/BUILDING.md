@@ -39,6 +39,14 @@ The audio layer uses [miniaudio](https://github.com/mackron/miniaudio),
 vendored through `thirdparty/miniaudio` at a tested tag and compiled as one
 translation unit from `thirdparty/miniaudio-impl.c`.
 
+The user interface toolkits are [RmlUi](https://github.com/mikke89/RmlUi),
+with [FreeType](https://freetype.org) rasterizing its fonts, and
+[Dear ImGui](https://github.com/ocornut/imgui) for developer overlays. They are
+vendored through `thirdparty/RmlUi`, `thirdparty/freetype`, and
+`thirdparty/imgui` at tested tags. FreeType builds with its bundled zlib copy
+and without bzip2, PNG, HarfBuzz, or Brotli; Dear ImGui is compiled from its
+core sources without any of its bundled backends.
+
 For a fresh clone, use `git clone --recurse-submodules`. Configuration stops
 with instructions if a submodule is missing. Update a pinned tag in a
 separate change.
