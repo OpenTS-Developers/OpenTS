@@ -21,6 +21,7 @@
 #include "pcx.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <new>
 
 
@@ -687,7 +688,7 @@ bool SurfaceCacheClass::DrawMasked(Rect const & rect, Surface & tosurface, Surfa
 				}
 			} else if (src_x < image_width - right_clip) {
 				unsigned char * mptr = mask_row;
-				int source_delta = (int)palsource - (int)mask;
+				intptr_t source_delta = (intptr_t)((uintptr_t)palsource - (uintptr_t)mask);
 				unsigned short * dptr = dest + dst_index;
 				int count = image_width - right_clip - src_x;
 				do {

@@ -620,7 +620,7 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 			if (Direction > FACING_NE && Direction < FACING_W) {
 				unsigned short base_z = DepthBuffer->Get_Scroll_Delta(zpix);
 				unsigned short zval = base_z - starty - 2;
-				unsigned int zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
+				uintptr_t zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
 				int width = LogicalSurface->Get_Width();
 				int zwidth = DepthBuffer->Get_Buffer_Width();
 
@@ -696,7 +696,7 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 
 			} else {
 
-				unsigned int zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
+				uintptr_t zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
 				int width = LogicalSurface->Get_Width();
 				int rows = endy - starty;
 				int zwidth = DepthBuffer->Get_Buffer_Width();
@@ -822,7 +822,7 @@ void WaveClass::Draw_Laser(Point2D const & point, Rect const & cliprect)
 
 				unsigned short base_z = DepthBuffer->Get_Scroll_Delta(zpix);
 				unsigned short depth = base_z - ystart - 2;
-				unsigned int zoff = DepthBuffer->Get_Buffer_Offset(Point2D(0, ystart - TacticalRect.Y));
+				uintptr_t zoff = DepthBuffer->Get_Buffer_Offset(Point2D(0, ystart - TacticalRect.Y));
 				int surfwidth = LogicalSurface->Get_Width();
 				int zwidth = DepthBuffer->Get_Buffer_Width();
 

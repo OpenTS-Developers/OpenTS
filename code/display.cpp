@@ -3479,14 +3479,14 @@ int DisplayClass::Stash_Map_State(void * stash, int)
 		(*(unsigned char *)data) = cptr->IsIceGrowthAllowed;
 		data += sizeof(cptr->IsIceGrowthAllowed);
 
-		unsigned int tag = 0;
+		uintptr_t tag = 0;
 		if (cptr->Tag != NULL) {
 			if (cptr->Tag->Class != NULL) {
-				tag = (unsigned int)cptr->Tag->Class;
+				tag = (uintptr_t)cptr->Tag->Class;
 			}
 		}
 
-		(*(unsigned int *)data) = tag;
+		(*(uintptr_t *)data) = tag;
 		data += sizeof(tag);
 
 		cnum++;
@@ -3565,7 +3565,7 @@ void DisplayClass::Restore_Map_State(void * stash)
 		cptr->IsIceGrowthAllowed = (*(unsigned char *)data);
 		data += sizeof(cptr->IsIceGrowthAllowed);
 
-		int tag = (*(unsigned int *)data);
+		uintptr_t tag = (*(uintptr_t *)data);
 		data += sizeof(tag);
 
 		cptr = Iterate();

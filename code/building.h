@@ -40,6 +40,8 @@
 #include "bstate.hh"
 #include "check.hh"
 
+#include <cstdint>
+
 #define	MAX_DOOR_STAGE			18	// # of frames of door opening on weapons factory
 #define	DOOR_OPEN_STAGE			9	// frame on which the door is entirely open
 #define	MAX_REPAIR_ANIM_STAGE	5	// # of stages of anim for repair center cycling
@@ -501,7 +503,7 @@ class BuildingClass : public TechnoClass
 		virtual bool Revealed(HouseClass * house) override;
 		virtual void Repair(int control) override;
 		virtual void Sell_Back(int control) override;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param) override;
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual void AI(void) override;
 		virtual void Cloaking_AI(bool fast) override;
 		virtual void Assign_Target(AbstractClass * target) override;

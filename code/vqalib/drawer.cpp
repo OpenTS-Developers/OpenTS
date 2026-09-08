@@ -421,12 +421,12 @@ STATIC long Select_Frame(VQAHandleP *vqap)
 		/* Dispatch any pending frame events. */
 		if (config->EventHandler != NULL) {
 			if (curframe->Flags & VQAFRMF_LOOPED) {
-				config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPED, (void *)curframe->FrameNum, vqap->LoopID);
+				config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPED, (void *)(intptr_t)curframe->FrameNum, vqap->LoopID);
 				curframe->Flags &= ~VQAFRMF_LOOPED;
 			}
 
 			if (curframe->Flags & VQAFRMF_LOOPJMP) {
-				config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPJUMP, (void *)curframe->FrameNum, vqap->LoopID);
+				config->EventHandler((VQAHandle *)vqap, VQAEVENT_LOOPJUMP, (void *)(intptr_t)curframe->FrameNum, vqap->LoopID);
 				curframe->Flags &= ~VQAFRMF_LOOPJMP;
 			}
 

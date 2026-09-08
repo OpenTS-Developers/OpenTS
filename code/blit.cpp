@@ -205,8 +205,8 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	bool overlapped = false;
 	void * dbuffer = NULL;
 	void * sbuffer = NULL;
-	int zbuffer_offset = 0;
-	int abuffer_offset = 0;
+	uintptr_t zbuffer_offset = 0;
+	uintptr_t abuffer_offset = 0;
 	int current_z = 0;
 	int zbuffer_pitch = 0;
 	int abuffer_pitch = 0;
@@ -463,8 +463,8 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 {
 	static char _temp_buf[256];
 
-	int zbuffer_offset = 0;
-	int abuffer_offset = 0;
+	uintptr_t zbuffer_offset = 0;
+	uintptr_t abuffer_offset = 0;
 	char * zshapelock = NULL;
 	int zbuffer_pitch = 0;
 	int abuffer_pitch = 0;

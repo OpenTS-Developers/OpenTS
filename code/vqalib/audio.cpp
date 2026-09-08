@@ -134,7 +134,7 @@ long VQA_OpenAudio(VQAHandleP *vqap)
 	params.Callback1 = VQA_AudioFillCallback;
 	params.Callback2 = VQA_AudioDoneCallback;
 
-	rc = vqap->Config.AudioHandler((VQAHandle *)vqap, VQAAUDIO_OPEN, &params, sizeof(params));
+	rc = (long)vqap->Config.AudioHandler((VQAHandle *)vqap, VQAAUDIO_OPEN, &params, sizeof(params));
 	if (rc >= VQAERR_OK || rc == VQAERR_NONE) {
 
 		/* Lock the memory occupied by this module. */
@@ -484,7 +484,7 @@ long __cdecl VQA_AudioFillCallback(VQAHandleP *vqap)
 }
 
 
-long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, unsigned long buffer)
+long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, void *buffer)
 {
 	VQAConfig *config;
 	VQAAudio *audio;
@@ -493,7 +493,7 @@ long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, unsigned long buffer)
 	audio = &vqap->Audio;
 	config = &vqap->Config;
 
-	if ((void *)buffer == audio->Buffer + audio->PlayPosition || (void *)buffer == audio->HMIBuffer) {
+	if (buffer == audio->Buffer + audio->PlayPosition || buffer == audio->HMIBuffer) {
 
 		block = audio->Block2;
 

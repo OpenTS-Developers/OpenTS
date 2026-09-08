@@ -613,7 +613,7 @@ struct VQAMSCInfo {
 struct VQALoopCache {
 	char			*Ptr;
 	int				Size;
-	char			*Buffer;
+	int32_t			FileOffset;
 	int				Bytes;
 	int				Offset;
 	int				Min;
@@ -778,7 +778,7 @@ void VQA_PauseAudio(VQAHandleP *vqap);
 void VQA_StopAudio(VQAHandleP *vqap);
 long CopyAudio(VQAHandleP *vqap);
 long __cdecl VQA_AudioFillCallback(VQAHandleP *vqap);
-long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, unsigned long);
+long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, void *);
 #endif
 
 /* Debugging system. */

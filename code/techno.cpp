@@ -1000,7 +1000,7 @@ bool TechnoClass::Mark(MarkType mark)
  *   10/17/1994 JLB : Created.                                                                 *
  *   06/17/1995 JLB : Handles tether contact messages.                                         *
  *=============================================================================================*/
-RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageType message, int & param)
+RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param)
 {
 	switch (message) {
 
