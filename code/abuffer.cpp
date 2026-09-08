@@ -170,7 +170,7 @@ void ABuffer::Pan(int x, int y, unsigned short value)
 
 			uintptr_t new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the columns that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
@@ -211,7 +211,7 @@ void ABuffer::Pan(int x, int y, unsigned short value)
 
 			uintptr_t new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the rows that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
@@ -272,9 +272,8 @@ void ABuffer::Update(Rect rect)
 
 	for (int i = 0; i < rect.Height; ++i) {
 
-		unsigned int size;
 		if ((buffptr + rect.Width * ABUFFER_BPP) >= BufferEnd) {
-			size = (BufferEnd - buffptr) / ABUFFER_BPP;
+			int size = (int)((BufferEnd - buffptr) / ABUFFER_BPP);
 			Set(buffptr, size, ABUFFER_COLOR);
 			Set(BufferStart, rect.Width - size, ABUFFER_COLOR);
 		} else {

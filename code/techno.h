@@ -60,6 +60,8 @@
 #include "threat.hh"
 #include "zgrad.hh"
 
+#include <cstdint>
+
 
 class ParticleSystemClass;
 class WaveClass;

@@ -169,7 +169,7 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 
 			uintptr_t new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the columns that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
@@ -210,7 +210,7 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 
 			uintptr_t new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the rows that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
@@ -271,9 +271,8 @@ void ZBuffer::Update(Rect rect)
 
 	for (int i = 0; i < rect.Height; ++i) {
 
-		unsigned int size;
 		if ((buffptr + rect.Width * ZBUFFER_BPP) >= BufferEnd) {
-			size = (BufferEnd - buffptr) / ZBUFFER_BPP;
+			int size = (int)((BufferEnd - buffptr) / ZBUFFER_BPP);
 			Set(buffptr, size, ZBUFFER_COLOR);
 			Set(BufferStart, rect.Width - size, ZBUFFER_COLOR);
 		} else {

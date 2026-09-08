@@ -37,6 +37,8 @@
 #include "team.h"
 #include "techno.h"
 
+#include <cstdint>
+
 class UnitClass;
 class BuildingClass;
 class WaypointClass;

@@ -134,7 +134,7 @@ long VQA_OpenAudio(VQAHandleP *vqap)
 	params.Callback1 = VQA_AudioFillCallback;
 	params.Callback2 = VQA_AudioDoneCallback;
 
-	rc = vqap->Config.AudioHandler((VQAHandle *)vqap, VQAAUDIO_OPEN, &params, sizeof(params));
+	rc = (long)vqap->Config.AudioHandler((VQAHandle *)vqap, VQAAUDIO_OPEN, &params, sizeof(params));
 	if (rc >= VQAERR_OK || rc == VQAERR_NONE) {
 
 		/* Lock the memory occupied by this module. */

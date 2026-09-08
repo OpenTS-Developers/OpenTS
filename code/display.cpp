@@ -3565,7 +3565,7 @@ void DisplayClass::Restore_Map_State(void * stash)
 		cptr->IsIceGrowthAllowed = (*(unsigned char *)data);
 		data += sizeof(cptr->IsIceGrowthAllowed);
 
-		int tag = (*(unsigned int *)data);
+		uintptr_t tag = (*(uintptr_t *)data);
 		data += sizeof(tag);
 
 		cptr = Iterate();

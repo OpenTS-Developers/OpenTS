@@ -35,6 +35,8 @@
 #include "globals.h"
 #include "mission.h"
 
+#include <cstdint>
+
 class ObjectClass;
 class TechnoClass;
 

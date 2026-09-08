@@ -53,6 +53,7 @@
 #include "visual.hh"
 
 #include <cassert>
+#include <cstdint>
 
 class ObjectClass;
 class TechnoClass;

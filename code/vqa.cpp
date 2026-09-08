@@ -1049,7 +1049,7 @@ intptr_t __cdecl VQAMixFileHandler(VQAHandle * vqa, long action, void * buffer, 
 }
 
 
-long /*__cdecl*/ VQACacheHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
+intptr_t /*__cdecl*/ VQACacheHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
 {
 	VQAHandleP *vqap = (VQAHandleP *)vqa;
 	VQAConfig *config = &vqap->Config;

@@ -35,6 +35,8 @@
 #include "foot.h"
 #include "iflyctrl.h"
 
+#include <cstdint>
+
 class AircraftTypeClass;
 
 

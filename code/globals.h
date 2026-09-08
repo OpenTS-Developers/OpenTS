@@ -30,6 +30,7 @@
 #include "theater.hh"
 #include "vox.hh"
 
+#include <cstdint>
 #include <deque>
 
 /*
