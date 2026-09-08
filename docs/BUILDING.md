@@ -100,15 +100,25 @@ The toolchain requires `clang-cl`, `lld-link`, `llvm-lib`, `llvm-mt`, and
 ## Experimental native build
 
 An unsupported native build for the host platform is available for portability
-work. It does not expand the supported build matrix or establish runtime
-behavior.
+work. It configures; the engine target does not compile yet. It does not expand
+the supported build matrix or establish runtime behavior.
 
 ```bash
 cmake -S . -B build/native -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DOPENTS_EXPERIMENTAL_NATIVE=ON
-cmake --build build/native
 ```
+
+Building the generated tree compiles the vendored dependencies and stops on
+every engine source, because `code/CMakeLists.txt` passes the MSVC flag set
+unconditionally. `/arch:SSE2` and `/fp:precise` carry the float semantics the
+simulation depends on, so a native equivalent is a decision to make rather than
+a translation. Windows headers and import libraries are named unconditionally
+as well.
+
+A native build takes the host's pointer width, and saved games serialize pointer
+fields at that width, so a 64-bit build's saves are not interchangeable with a
+supported build's.
 
 ## Build from Visual Studio Code
 
