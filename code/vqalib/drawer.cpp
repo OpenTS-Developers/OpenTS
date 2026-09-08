@@ -252,7 +252,7 @@ VQAErrorType VQA_Configure_Drawer(VQAHandleP *vqap)
 * SYNOPSIS
 *     Error = Select_Frame(VQA)
 *
-*     long Select_Frame(VQAHandleP *);
+*     VQAErrorType Select_Frame(VQAHandleP *);
 *
 * FUNCTION
 *     Select a frame to draw. This is were the frame skipping/delay is
@@ -864,7 +864,7 @@ void VQA_UnVQFrame(VQAHandleP *vqap, VQAFrameNode *frame)
 * SYNOPSIS
 *     Error = DrawFrame_MCGA(VQA)
 *
-*     long DrawFrame_MCGA(VQAHandle *);
+*     VQAErrorType DrawFrame_MCGA(VQAHandle *);
 *
 * FUNCTION
 *     Algorithm:
@@ -939,7 +939,7 @@ VQAErrorType DrawFrame_MCGA(VQAHandle *vqa)
 * SYNOPSIS
 *     PageFlip_MCGA(VQA)
 *
-*     long PageFlip_MCGA(VQAHandle *);
+*     VQAErrorType PageFlip_MCGA(VQAHandle *);
 *
 * FUNCTION
 *     Since the MCGA mode only has one buffer, the drawing is actually done
@@ -1022,7 +1022,7 @@ STATIC VQAErrorType PageFlip_MCGA(VQAHandle *vqa)
 * SYNOPSIS
 *     Error = DrawFrame_MCGABuf(VQA)
 *
-*     long DrawFrame_MCGABuf(VQAHandle *);
+*     VQAErrorType DrawFrame_MCGABuf(VQAHandle *);
 *
 * FUNCTION
 *     Algorithm:

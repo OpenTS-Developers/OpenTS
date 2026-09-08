@@ -96,7 +96,7 @@ static void StartAddr(void)
 * SYNOPSIS
 *     Error = VQA_OpenAudio(VQAHandleP)
 *
-*     long VQA_OpenAudio(VQAHandleP *);
+*     VQAErrorType VQA_OpenAudio(VQAHandleP *);
 *
 * FUNCTION
 *     Initialise the sound system. Create a direct sound object and the

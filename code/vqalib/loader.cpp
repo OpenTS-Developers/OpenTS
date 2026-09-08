@@ -146,7 +146,7 @@ VQAErrorType VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQAB
 * SYNOPSIS
 *     Error = VQA_LoadFrame(VQA)
 *
-*     long VQA_LoadFrame(VQAHandle *);
+*     VQAErrorType VQA_LoadFrame(VQAHandle *);
 *
 * FUNCTION
 *     The codebook is split up such that the last frame of every group gets
@@ -1593,7 +1593,7 @@ _STATIC VQAErrorType VQA_LoadLoop(VQAHandleP *vqap, long framenum)
 * SYNOPSIS
 *     Error = Load_VQF(VQA, Iffsize)
 *
-*     long Load_VQF(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_VQF(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *     The VQ Frame Chunk contains a set of other chunks (codebooks,
@@ -2561,7 +2561,7 @@ VQAErrorType Load_PIND(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_FINF(VQA, Iffsize)
 *
-*     long Load_FINF(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_FINF(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *     Load FINF chunk if buffer available, otherwise skip it.
@@ -2607,7 +2607,7 @@ VQAErrorType Load_FINF(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_VQHD(VQA, Iffsize)
 *
-*     long Load_VQHD(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_VQHD(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -2645,7 +2645,7 @@ static VQAErrorType Load_VQHD(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_CBF0(VQA, Iffsize)
 *
-*     long Load_CBF0(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_CBF0(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -2701,7 +2701,7 @@ VQAErrorType Load_CBF0(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_CBFZ(VQA, Iffsize)
 *
-*     long Load_CBFZ(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_CBFZ(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -2764,7 +2764,7 @@ VQAErrorType Load_CBFZ(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_CBP0(VQA, Iffsize)
 *
-*     long Load_CBP0(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_CBP0(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -2858,7 +2858,7 @@ VQAErrorType Load_CBP0(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_CBPZ(VQA, Iffsize)
 *
-*     long Load_CBPZ(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_CBPZ(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -2972,7 +2972,7 @@ VQAErrorType Load_CBPZ(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_CPL0(VQA, Iffsize)
 *
-*     long Load_CPL0(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_CPL0(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -3024,7 +3024,7 @@ VQAErrorType Load_CPL0(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_CPLZ(VQA, Iffsize)
 *
-*     long Load_CPLZ(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_CPLZ(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -3087,7 +3087,7 @@ VQAErrorType Load_CPLZ(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_VPT0(VQA, Iffsize)
 *
-*     long Load_VPT0(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_VPT0(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -3130,7 +3130,7 @@ VQAErrorType Load_VPT0(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_VPTZ(VQA, Iffsize)
 *
-*     long Load_VPTZ(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_VPTZ(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *
@@ -3183,7 +3183,7 @@ VQAErrorType Load_VPTZ(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_SND0(VQA, Iffsize)
 *
-*     long Load_SND0(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_SND0(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *     This routine normally loads the chunk into the TempBuf, unless the
@@ -3272,7 +3272,7 @@ VQAErrorType Load_SND0(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_SND1(VQA, Iffsize)
 *
-*     long Load_SND1(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_SND1(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *     This routine normally loads the chunk into the TempBuf, unless the
@@ -3413,7 +3413,7 @@ VQAErrorType Load_SND1(VQAHandleP *vqap, unsigned long iffsize)
 * SYNOPSIS
 *     Error = Load_SND2(VQA, Iffsize)
 *
-*     long Load_SND2(VQAHandleP *, unsigned long);
+*     VQAErrorType Load_SND2(VQAHandleP *, unsigned long);
 *
 * FUNCTION
 *     This routine normally loads the chunk into the TempBuf, unless the

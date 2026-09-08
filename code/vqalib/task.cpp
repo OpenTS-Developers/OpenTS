@@ -116,7 +116,7 @@ extern void __cdecl UnVQ_Nop(uint8_t *codebook, uint8_t *pointers,
 * SYNOPSIS
 *     Error = VQA_Open(VQA, Name, Config)
 *
-*     long VQA_Open(VQAHandle *, char *, VQAConfig *);
+*     VQAErrorType VQA_Open(VQAHandle *, char *, VQAConfig *);
 *
 * FUNCTION
 *     - Open a VQA file for reading.
