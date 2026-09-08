@@ -1,13 +1,18 @@
-# The harness links the vendored UI toolkits the way the engine will, so a runtime library
-# or structure layout mismatch fails here before any screen exists. It lives outside code/
-# so that the recursive glob building OpenTS cannot pick this target's entry point up.
+# The harness links the vendored UI toolkits the way the engine does and loads the shipped
+# documents through a recording render interface, so a runtime library mismatch, a document
+# that fails to parse or a style outside the implemented render methods fails here. It lives
+# outside code/ so that the recursive glob building OpenTS cannot pick this target's entry
+# point up.
 add_executable(UIShell
     "${CMAKE_CURRENT_SOURCE_DIR}/uishell.cpp"
 )
 
 target_compile_features(UIShell PRIVATE cxx_std_20)
 
-target_compile_definitions(UIShell PRIVATE WIN32 _WINDOWS NOMINMAX)
+target_include_directories(UIShell PRIVATE "${CMAKE_SOURCE_DIR}/code")
+
+# The documents are read from the source tree, so the test needs no run directory.
+target_compile_definitions(UIShell PRIVATE WIN32 _WINDOWS NOMINMAX "OPENTS_UI_DIR=\"${CMAKE_SOURCE_DIR}/ui\"")
 
 target_compile_options(UIShell PRIVATE
     $<$<CONFIG:Debug>:/MTd /EHsc /Zc:__cplusplus>

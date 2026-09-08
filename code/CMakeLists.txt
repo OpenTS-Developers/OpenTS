@@ -148,25 +148,34 @@ target_include_directories(OpenTS PRIVATE
 # The generated build stamp has to exist before anything compiles.
 add_dependencies(OpenTS OpenTSBuildStamp)
 
-# Only the renderer's own translation unit sees bgfx, so its headers and the shaders it
-# embeds are put on that file rather than on the whole target.
+# Only the renderer's own translation unit and the UI overlay renderer see bgfx, so its
+# headers and the shaders they embed are put on those files rather than on the whole target.
 set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
-set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" PROPERTIES
+set(OPENTS_BGFX_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ui/uirender.cpp"
+)
+set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
     INCLUDE_DIRECTORIES
-        "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include;${BGFX_ROOT}/examples/common/imgui"
+        "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include;${BGFX_ROOT}/examples/common/imgui;${BGFX_ROOT}/examples/common/debugdraw"
     COMPILE_DEFINITIONS
         "BX_CONFIG_DEBUG=$<IF:$<CONFIG:Debug>,1,$<BOOL:${BX_CONFIG_DEBUG}>>"
     COMPILE_OPTIONS "/Zc:preprocessor"
 )
 
 # bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
-# compatibility header into the renderer translation unit as well as bx/bgfx so the
+# compatibility header into the renderer translation units as well as bx/bgfx so the
 # MSVC standard-library headers that follow still see the Win32 calling convention.
 if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
+    set_property(SOURCE ${OPENTS_BGFX_SOURCES} APPEND PROPERTY
         COMPILE_OPTIONS "/FI${CMAKE_SOURCE_DIR}/thirdparty/bx-clang-compat.h"
     )
 endif()
+
+# The image decoder is a header bimg carries; only the texture loader compiles it.
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/uitexture.cpp" APPEND PROPERTY
+    INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/stb"
+)
 
 message(STATUS "${PROJECT_NAME}: Adding compilier definitions...")
 target_compile_definitions(OpenTS PRIVATE
@@ -204,6 +213,7 @@ target_link_libraries(OpenTS PRIVATE
     bx
     bimg
     miniaudio
+    RmlUi::Core
     comctl32
     dbghelp
     iphlpapi
@@ -331,6 +341,16 @@ add_custom_command(TARGET OpenTS POST_BUILD
         "$<TARGET_FILE_DIR:OpenTS>/$<TARGET_FILE_BASE_NAME:OpenTS>.map"
         "${TS_RUN_DIR}"
 )
+
+# The UI documents, styles and font ship beside the executable like Language.dll. Their own
+# target copies them, so an edited document reaches the run directory without a relink.
+add_custom_target(OpenTSUIFiles ALL
+    COMMAND ${CMAKE_COMMAND} -E make_directory "${TS_RUN_DIR}/ui"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/ui" "${TS_RUN_DIR}/ui"
+    COMMENT "Copying the UI files to the run directory"
+    VERBATIM
+)
+add_dependencies(OpenTS OpenTSUIFiles)
 
 #
 # ---------------------------------------------------------

@@ -23,7 +23,7 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
 cmake --build build --config Debug
 ```
 
-The Debug build copies `GameD.exe`, its symbols, map file, and the matching `Language.dll` into `Run/`. Use `--config Release` to produce `Game.exe` instead.
+The Debug build copies `GameD.exe`, its symbols, map file, and the matching `Language.dll` into `Run/`, and the repository's `ui/` directory of UI documents, styles, and font into `Run/ui/`. Use `--config Release` to produce `Game.exe` instead.
 
 After supplying the required game data in `Run/`, launch the selected executable from that directory:
 

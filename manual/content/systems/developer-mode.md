@@ -45,6 +45,10 @@ Assertions are live wherever `NDEBUG` is undefined, which is the Debug configura
 `ASSERT.TXT` is opened for writing at its start rather than appended, and the new record is written from the beginning of the file. A shorter report therefore leaves the tail of the previous one in place behind it, and the file never accumulates a history.
 :::
 
+## The UI test document
+
+A Debug build with the debug keys armed shows an RmlUi test document over the game and its menus on [F9](/commands/fixed-debug-ui-test-document/) and hides it again on the next press. The document is a panel in the top left corner of the frame with a button that closes it. It is drawn by the renderer over the presented frame, so it appears over the main menu as well as in play, and it follows the frame's position and scale in the window. A click on the panel never reaches the game; a click beside it does. The document, its style sheet, and the font come from the `ui` directory beside the executable, and each load, show, and hide writes a line to the debug log with the renderer's texture and buffer counts, so a leak across repeated toggles shows there.
+
 ## The monochrome pages
 
 The monochrome display is a four-page text surface driven through a monochrome display device rather than drawn on screen. Enabling it only raises a flag; nothing verifies that the device is there. The first screen clear the device refuses lowers the flag again, so on a machine without that device the pages switch themselves off on the first diagnostic pass and stay off until something enables them again.

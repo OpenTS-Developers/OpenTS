@@ -68,6 +68,7 @@
 #include "resource.h"
 #include "session.h"
 #include "theme.h"
+#include "ui/uishell.h"
 #include "video.h"
 #include "win.h"
 #include "wincursor.h"
@@ -175,6 +176,10 @@ extern bool InMovie;
 LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
+	// The router below rewrites a position into the frame's own pixels; the UI overlay lays
+	// itself out in the window's and wants the position as Windows delivered it.
+	LPARAM client_lparam = lParam;
+
 	/*
 	 * The frame may be drawn scaled, so a click has to be matched against where the
 	 * player sees the controls rather than where Windows finds them.
@@ -185,6 +190,10 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 			return(0);
 		}
 		lParam = translated_lparam;
+	}
+
+	if (UI_Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
+		return(0);
 	}
 
 	int	low_param = LOWORD(wParam);

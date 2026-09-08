@@ -22,6 +22,8 @@ remains under its own license and copyright notices.
 | [zlib](https://zlib.net)                                           | Compressed font support, bundled with FreeType | zlib |
 | [Dear ImGui](https://github.com/ocornut/imgui)                     | Developer overlays                        | MIT          |
 | [stb](https://github.com/nothings/stb)                             | Rectangle packing, text editing, and TrueType headers bundled with Dear ImGui | MIT or Unlicense |
+| [stb_image](https://github.com/nothings/stb)                       | PNG and TGA decoding for the UI, bundled with bimg | MIT or Unlicense |
+| [Open Sans](https://github.com/googlefonts/opensans)               | The UI font                               | OFL-1.1      |
 
 The source checkout keeps the license texts under `thirdparty/`. Binary
 packages reproduce the license texts for the components used by OpenTS under

@@ -23,6 +23,7 @@
 #include "goptions.h"
 #include "misc.h"
 #include "surface.h"
+#include "ui/uishell.h"
 #include "wincursor.h"
 
 #include <cstdlib>
@@ -48,6 +49,11 @@ static VideoScaleInfo _ScaleInfo;
 // presented. A frame that is skipped for pacing stays marked, so the next present shows
 // the newest content rather than a stale one.
 static bool _FrameIsDirty = false;
+
+// Set when the UI overlay changed, so a present is due even while the frame is not. The
+// frame is then presented again without being uploaded again.
+static bool _OverlayIsDirty = false;
+
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
 
@@ -185,6 +191,7 @@ void Video_Shutdown(void)
 	Backend_Shutdown();
 	_Initialized = false;
 	_FrameIsDirty = false;
+	_OverlayIsDirty = false;
 }
 
 
@@ -211,6 +218,7 @@ bool Video_Set_Mode(int width, int height)
 
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
+	UI_On_Video_Change();
 	_FrameIsDirty = true;
 	return(true);
 }
@@ -230,6 +238,7 @@ void Video_On_Resize(int drawablewidth, int drawableheight)
 	Backend_On_Resize(drawablewidth, drawableheight);
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
+	UI_On_Video_Change();
 	Video_Mark_Dirty();
 }
 
@@ -258,9 +267,21 @@ void Video_Mark_Dirty(void)
 
 
 /// <summary>
-/// Puts the visible surface on the screen whatever its state.
+/// Records that the UI overlay has changed since the last present.
 /// </summary>
-void Video_Present(void)
+void Video_Mark_Overlay_Dirty(void)
+{
+	_OverlayIsDirty = true;
+}
+
+
+/// <summary>
+/// Puts the frame on the screen with the UI overlay over it.
+/// Both marks are cleared before presenting, so anything invalidated while the present is
+/// under way is kept for the next one rather than lost with this one.
+/// </summary>
+/// <param name="uploadframe">Does the visible surface hold newer pixels than the renderer?</param>
+static void Present(bool uploadframe)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
@@ -273,24 +294,37 @@ void Video_Present(void)
 		return;
 	}
 
-	_Presenting = true;
-	Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode());
-	_Presenting = false;
-
 	_FrameIsDirty = false;
+	_OverlayIsDirty = false;
 	_LastPresentTime = timeGetTime();
+
+	_Presenting = true;
+	if (Backend_Present(uploadframe ? pixels : NULL, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode())) {
+		UI_Render_Overlay();
+		Backend_End_Frame();
+	}
+	_Presenting = false;
 }
 
 
 /// <summary>
-/// Puts the visible surface on the screen if it has changed and the display is ready for
-/// another frame.
-/// A skipped present leaves the frame marked, so the next one shows the newest content.
+/// Puts the visible surface on the screen whatever its state.
+/// </summary>
+void Video_Present(void)
+{
+	Present(true);
+}
+
+
+/// <summary>
+/// Puts the visible surface on the screen if it or the UI overlay has changed and the
+/// display is ready for another frame.
+/// A skipped present leaves the marks in place, so the next one shows the newest content.
 /// This never waits: the game loop is not paced by presentation.
 /// </summary>
 void Video_Present_If_Dirty(void)
 {
-	if (!_FrameIsDirty) {
+	if (!_FrameIsDirty && !_OverlayIsDirty) {
 		return;
 	}
 
@@ -299,7 +333,7 @@ void Video_Present_If_Dirty(void)
 		return;
 	}
 
-	Video_Present();
+	Present(_FrameIsDirty);
 }
 
 

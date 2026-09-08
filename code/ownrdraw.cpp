@@ -41,6 +41,7 @@
 #include "session.h"
 #include "srfcache.h"
 #include "theme.h"
+#include "ui/uishell.h"
 #include "utf8.h"
 #include "voc.h"
 #include "vox.h"
@@ -6903,6 +6904,8 @@ bool OwnerDraw::Dialog_Message_Handler(void)
 	} else {
 		Call_Back();
 	}
+
+	UI_Tick();
 
 	return(false);
 }

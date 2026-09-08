@@ -46,6 +46,7 @@ void Video_On_Resize(int drawablewidth, int drawableheight);
 void Video_Set_Refresh_Rate(int refreshrate);
 
 void Video_Mark_Dirty(void);
+void Video_Mark_Overlay_Dirty(void);
 void Video_Present(void);
 void Video_Present_If_Dirty(void);
 

@@ -75,7 +75,9 @@ files to `TS_RUN_DIR`, which defaults to `Run/`:
 | Release | `Game.exe`, `Game.pdb`, `Game.map`, `Language.dll` |
 
 `Language.dll` has the same name in both configurations, so the most recently
-built configuration replaces the previous copy in `Run/`. Compiler and linker
+built configuration replaces the previous copy in `Run/`. Both configurations
+also copy the repository's `ui/` directory, which holds the UI documents,
+styles, and font, to `ui/` beside the executable. Compiler and linker
 intermediates stay in the selected build directory.
 
 ## Experimental clang-cl cross-build

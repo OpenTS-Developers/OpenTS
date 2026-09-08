@@ -1,10 +1,11 @@
 # UI system design
 
-Status: proposal under implementation. Step 1 of the
-[migration plan](#migration-plan), the dependencies, has landed; nothing else
-is implemented, built, or measured. Source inspection and upstream
-documentation inform the rest. This page owns the proposed UI architecture and
-migration; [Building OpenTS](BUILDING.md) owns build support and
+Status: proposal under implementation. Steps 1 and 2 of the
+[migration plan](#migration-plan), the dependencies and the RmlUi shell, have
+landed; the Dear ImGui half of step 2 and everything after it are not yet
+implemented, built, or measured. Source inspection and upstream documentation
+inform the rest. This page owns the proposed UI architecture and migration;
+[Building OpenTS](BUILDING.md) owns build support and
 [Project direction](DIRECTION.md) the wider architecture.
 
 ## Where the UI stands today
@@ -174,20 +175,24 @@ actions is added only where a screen has real state transitions.
 ### Code layout
 
 New files live in `code/ui/`. The recursive glob in `code/CMakeLists.txt`
-picks them up, and the directory lets the RmlUi, ImGui, and bgfx include
-paths be scoped to the files that need them, as `bgfxbackend.cpp` is scoped
-today.
+picks them up. The library headers reach the whole target through the linked
+targets, as bgfx's already do; the per-file properties carry only the shader
+headers, the image decoder header, and the bgfx debug define, as
+`bgfxbackend.cpp`'s do today. Files without a status column entry are not yet
+written.
 
-| File | Holds |
-| --- | --- |
-| `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, tick, overlay render entry, modal runner, selector |
-| `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; the only UI file that includes bgfx |
-| `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation |
-| `uifile.cpp` | RmlUi file interface over `CCFileClass` |
-| `uitexture.cpp` | image decoding, SHP and PCX conversion, surface-backed textures |
-| `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base |
-| `uidev.cpp` | ImGui context and developer overlays |
-| one file per screen | presenter, view-model binding, and the RmlUi view glue |
+| File | Holds | Status |
+| --- | --- | --- |
+| `bgfxviews.hh` (in `code/`) | the view ids the presenter and the overlays share | landed |
+| `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector | landed without the modal runner and selector |
+| `uirender.h`, `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx | landed without ImGui |
+| `uisystem.h`, `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation | landed with time, logging, and resource naming |
+| `uifile.h`, `uifile.cpp` | RmlUi file interface over `CCFileClass` | landed |
+| `uitexture.h`, `uitexture.cpp` | image decoding, SHP and PCX conversion, surface-backed textures | landed for PNG and TGA |
+| `uicoord.h` | the pointer mapping from client pixels into the overlay | landed |
+| `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base | |
+| `uidev.cpp` | ImGui context and developer overlays | |
+| one file per screen | presenter, view-model binding, and the RmlUi view glue | |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
 repository root. The build copies the tree beside the executable as it copies
@@ -235,12 +240,16 @@ methods:
 | Projection | The overlay view's orthographic transform; no game-image filter state inherited. |
 | Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a full redraw requested; existing documents redraw without reload. |
 
-The program is the embedded imgui vertex and fragment shader that
-`bgfxbackend.cpp` already carries. Its attributes (position, texture
-coordinate, color) match RmlUi's vertex and ImGui's vertex, each with its own
-layout. Clip masks, transforms, layers, filters, and shaders are deferred;
-shipped documents stay within a declared profile (text, images, ordinary
-layout, borders, basic decorators), and a document check enforces it.
+The program is bgfx's embedded debug-draw texture shader pair
+(`vs_debugdraw_fill_texture`, `fs_debugdraw_fill_texture`). The imgui pair the
+frame quad uses multiplies by the view projection alone and drops the model
+matrix, which is where each compiled fragment's per-draw translation travels;
+the debug-draw pair multiplies by the model, view, and projection product. Its
+attributes (position, texture coordinate, color) match RmlUi's vertex and
+ImGui's vertex, each with its own layout. Clip masks, transforms, layers,
+filters, and shaders are deferred; shipped documents stay within a declared
+profile (text, images, ordinary layout, borders, basic decorators), and a
+document check enforces it.
 
 ### Invalidation
 
@@ -307,19 +316,24 @@ migrates as one family.
 ### Hook and priority
 
 The shell gets a hook in `Windows_Procedure` after `Route_Mouse_Message` and
-before `Map.Message_Handler`:
+before `Map.Message_Handler`. The router rewrites a position into the frame's
+own pixels, so the hook receives the position as Windows delivered it:
 
 ```cpp
-if (UI_Handle_Window_Message(hwnd, message, wParam, lParam)) {
+if (UI_Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
     return(0);
 }
 ```
 
 Placing it after the routing keeps legacy child windows working under video
 scaling; placing it before the keyboard handler keeps consumed input out of
-the `KN_` queue. The hook covers mouse, wheel, key, and text messages only.
-Activation, size, paint, transport, and system messages continue on their
-paths. Forwarded or re-targeted messages are delivered to a toolkit once.
+the `KN_` queue. The hook covers mouse, wheel, key, and text messages, and
+watches capture and activation changes to end the presses it owns without
+consuming them. Size, paint, transport, and system messages continue on their
+paths. Forwarded or re-targeted messages are delivered to a toolkit once. A
+developer key is intercepted earlier still, in `Windows_Message_Handler`
+ahead of the dialog loop, so it works whichever window has focus; it only
+records a request that the next tick executes.
 
 Priority follows scope and capture, not toolkit:
 
@@ -479,7 +493,9 @@ update the context; a nested update or present request is recorded and
 served at the next safe point.
 
 Non-modal documents are updated by a `UI_Tick` call in `Main_Loop` next to
-`Map.Input` and rendered by every present.
+`Map.Input`, and by one at the end of each pass of the legacy dialog driver
+so that a document stays alive under a menu, and are rendered by every
+present.
 
 Teardown order: mark the screen closing and invalidate its token, then drop
 focus and capture and discard its intents, then detach listeners and data
@@ -497,19 +513,23 @@ pointer.
 The RmlUi file interface is a thin wrapper over `CCFileClass`. Documents,
 styles, images, and fonts use flat basenames, and the interface resolves
 every relative reference by basename, so the same files load from a loose
-`ui/` directory or from a mix. The run directory's `ui/` is added to the
-`CDFileClass` search paths; the existing order then applies: user path,
+`ui/` directory or from a mix. The `ui/` directory beside the executable is
+added to the `CDFileClass` search paths as an absolute path, whichever data
+directory the deployment names; the existing order then applies: user path,
 current directory, search paths, mix files. A mod overrides a document by
-placing a file earlier in that order or by shipping it in a mix. The `ui/`
-directory on disk is a packaging convenience, not part of the lookup key.
+placing a file earlier in that order; a copy in a mix is used only when no
+loose file exists. The `ui/` directory on disk is a packaging convenience,
+not part of the lookup key.
 The adapter validates sizes, reads, and seeks; RmlUi uses `size_t` where the
 engine uses `int`, and a clamped seek must not look like success. A missing
 required document, style, or font fails preparation with the name reported.
 
 ### Images
 
-Images resolve by extension. PNG and TGA decode through `bimg_decode`, which
-is already vendored and needs only linking. PCX goes through `Read_PCX_File`
+Images resolve by extension. PNG and TGA decode through `stb_image.h`, which
+bimg vendors and the texture loader compiles with only those two formats
+enabled; `bimg_decode` itself stays out because it would bring the AVIF codecs
+and three more decoders along. PCX goes through `Read_PCX_File`
 with the palette named in the source string. SHP frames use a
 `name.shp#frame` form with an optional palette, decoded to RGBA with index
 zero transparent. Surfaces the engine draws at runtime (the map preview, the
@@ -521,9 +541,11 @@ pointers.
 
 ### Fonts
 
-Fonts use RmlUi's FreeType engine with an OFL sans-serif shipped in `ui/`.
-The legacy dialogs already draw with a system TrueType face, so this changes
-nothing about their look. RmlUi uses one font engine per process, installed
+Fonts use RmlUi's FreeType engine with the variable Open Sans (OFL 1.1) from
+Google Fonts shipped in `ui/` as `OpenSans.ttf` beside its license text; the
+engine registers each of its named weights from the one file. The legacy
+dialogs already draw with a system TrueType face, so this changes nothing
+about their look. RmlUi uses one font engine per process, installed
 with `SetFontEngineInterface` before `Rml::Initialise`, and the built-in
 engine is not reachable from a custom one. In-game text that must match the
 bitmap fonts, needed only by the post-migration sidebar view, has two routes:
@@ -669,8 +691,7 @@ built static with the static CRT that `thirdparty/CMakeLists.txt` forces:
 copy grow by the three projects and the components they bundle: robin_hood
 and itlib in RmlUi, zlib in FreeType, and the stb headers in Dear ImGui. CI
 already checks out submodules recursively. The build stamp step gains the
-string-name generator, and `bimg_decode` loses `EXCLUDE_FROM_ALL` and is
-linked. Dependency upgrades are separate changes.
+string-name generator. Dependency upgrades are separate changes.
 
 ## Migration plan
 
@@ -688,13 +709,15 @@ beyond an ASCII test document.
 1. **Dependencies** (S, landed). Submodules, CMake, notices, `BUILDING.md`,
    and a `tests/uishell` smoke test that links the three libraries. No engine
    code uses them. Evidence: Debug and Release build.
-2. **Shell** (M). Everything in the code-layout table except screens, the
-   backend split, the input hook, resize handling, the `ui/` copy step, the
-   file interface with mix resolution, and a Debug-only test document toggled
-   by a developer key. Evidence: the test document renders over the main menu
-   and in game at several resolutions and scale modes; clicks on it are
-   consumed; clicks beside it reach the game; legacy dialogs still open and
-   close; repeated open and close leaks nothing.
+2. **Shell** (M, RmlUi half landed). Everything in the code-layout table
+   except screens, the backend split, the input hook, resize handling, the
+   `ui/` copy step, the file interface with mix resolution, and a Debug-only
+   test document toggled by F9. The Dear ImGui context, its renderer, and the
+   first overlay follow as their own change. Evidence: the test document
+   renders over the main menu and in game at several resolutions and scale
+   modes; clicks on it, beside any legacy dialog, are consumed; clicks beside
+   it reach the game; legacy dialogs still open and close; repeated open and
+   close leaks nothing.
 3. **Version dialog** (S, leaf). The integration pilot: fonts, clipping,
    mapping, dismissal by mouse and keyboard, focus return, UI-only redraw,
    resize, preparation failure. The main menu keeps hiding around it.
@@ -734,14 +757,18 @@ credits are unscheduled.
 
 ## Validation and evidence
 
-The `tests/uishell` CTest target begins as a smoke test that brings RmlUi
-core, FreeType, and Dear ImGui up and down under the engine's link settings.
-As screens land it links `uiscreen.h`, the string table, and the screen
-presenters with a recording render interface and a null system interface. It
-runs without game assets:
+The `tests/uishell` CTest target brings FreeType and Dear ImGui up and down
+under the engine's link settings and drives RmlUi core through a recording
+render interface and a counting system interface. As screens land it links
+`uiscreen.h`, the string table, and the screen presenters. It runs without
+game assets:
 
-- Load every shipped document and fail on a parse error or a property
-  outside the declared profile.
+- Load every shipped document from the source tree with the shipped font,
+  show, update, and render it, and fail on a parse error, an RmlUi warning
+  or error, a call to a render method the shell leaves at its default, a
+  scissor outside the context, or a resource named by anything but a bare
+  file name; after shutdown, every compiled geometry and texture has been
+  released.
 - Bind a presenter, drive it with `Context::ProcessMouseButtonDown` on a
   known element, and assert the queued intent and result; drive the same
   actions through the legacy adapter and assert the same ordered service
@@ -750,8 +777,9 @@ runs without game assets:
   and catalog removal.
 - Scan shipped documents for `[[TXT_*]]` names and check each exists in the
   generated table.
-- Round-trip the coordinate mapping at integer and fractional scales, with
-  letterboxing, resize, outside input, and captured release.
+- Map client positions into the overlay at integer and fractional scales,
+  with letterboxing, exclusive edges, outside input, and the offset a captured
+  pointer keeps outside.
 
 Runtime evidence stays per pull request, as `CONTRIBUTING.md` requires: the
 screen exercised in single player, skirmish, and a two-instance LAN game
@@ -777,7 +805,6 @@ geometry memory are recorded on an agreed baseline before defaults change.
 
 ## Open decisions
 
-- The shipped font.
 - The kill-switch key name, fixed by the change that introduces it.
 - The in-game text route for the sidebar view: TrueType conversions of the
   game fonts or a bitmap font engine for every document.

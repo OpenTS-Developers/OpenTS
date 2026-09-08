@@ -147,6 +147,7 @@
 #include "vanimtype.h"
 #include "vector.h"
 #include "video.h"
+#include "ui/uishell.h"
 #include "walk.h"
 #include "warhead.h"
 #include "wave.h"
@@ -225,6 +226,7 @@ void Reset_Surfaces(void)
 			VisibleSurface = NULL;
 		}
 
+		UI_Shutdown();
 		Video_Shutdown();
 
 		surfaces_reset = true;
@@ -555,6 +557,15 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		DeploymentConfig.Read_File(Data_Directory().c_str());
 		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
 
+		// The UI files ship beside the executable, whichever data directory the deployment
+		// names, so they are found through the executable's own directory.
+		std::string uidirectory = path;
+		if (!uidirectory.empty() && uidirectory.back() != '\\' && uidirectory.back() != '/') {
+			uidirectory += '\\';
+		}
+		uidirectory += "ui\\";
+		CDFileClass::Add_Search_Drive(uidirectory.c_str());
+
 		// The recording's name was settled during static initialization, before there was
 		// anywhere for a player's files to go. Naming it again settles it where it belongs.
 		Session.RecordFile.Set_Name("RECORD.BIN");
@@ -631,6 +642,9 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 			MessageBox(MainWindow, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
 			exit(EXIT_FAILURE);
 		}
+
+		// The game runs without the UI shell; its own log says why it stayed off.
+		UI_Init();
 
 		do {
 			Windows_Message_Handler();

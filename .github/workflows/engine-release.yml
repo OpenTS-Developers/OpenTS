@@ -39,7 +39,7 @@ jobs:
         working-directory: artifact
         run: >
           zip -r "../OpenTS-${TAG}.zip"
-          Game.exe Game.pdb Language.dll
+          Game.exe Game.pdb Language.dll ui
           LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES
 
       - name: Attach the zip to the release

@@ -12,6 +12,7 @@
 
 #include "bgfxbackend.h"
 
+#include "bgfxviews.hh"
 #include "dbgprint.h"
 #include "except.h"
 
@@ -36,14 +37,6 @@ static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
 };
 
 
-// The view that magnifies the frame when the pixel art filter needs an intermediate
-// target, and the one that draws onto the window. Views render in ascending order, so
-// the magnify pass must carry the lower id for the present pass to sample its output
-// from this frame rather than the last one.
-static const bgfx::ViewId VIEW_PRESCALE = 0;
-static const bgfx::ViewId VIEW_PRESENT = 1;
-
-
 static bool _Initialized = false;
 
 static bgfx::TextureHandle _FrameTexture = BGFX_INVALID_HANDLE;
@@ -54,6 +47,10 @@ static bgfx::VertexLayout _VertexLayout;
 
 static int _FrameWidth = 0;
 static int _FrameHeight = 0;
+
+// A recreated frame texture holds nothing until the first upload reaches it.
+static bool _FrameUploaded = false;
+
 static int _PrescaleWidth = 0;
 static int _PrescaleHeight = 0;
 static int _DrawableWidth = 0;
@@ -198,7 +195,7 @@ static void Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 /// Builds an orthographic projection over a target measured in pixels, with the origin in
 /// its top left corner.
 /// </summary>
-static void Build_Ortho_Projection(float * result, int width, int height)
+void Backend_Build_Ortho_Projection(float * result, int width, int height)
 {
 	const float depthnear = 0.0f;
 	const float depthfar = 1000.0f;
@@ -223,7 +220,7 @@ static void Set_View_Transform(bgfx::ViewId view, int width, int height)
 {
 	float projection[16];
 	bgfx::setViewRect(view, 0, 0, (uint16_t)width, (uint16_t)height);
-	Build_Ortho_Projection(projection, width, height);
+	Backend_Build_Ortho_Projection(projection, width, height);
 	bgfx::setViewTransform(view, NULL, projection);
 }
 
@@ -391,6 +388,7 @@ void Backend_Shutdown(void)
 
 	_FrameWidth = 0;
 	_FrameHeight = 0;
+	_FrameUploaded = false;
 	_Initialized = false;
 }
 
@@ -421,6 +419,7 @@ bool Backend_Set_Frame_Size(int width, int height)
 	_FrameIs565 = (caps->formats[bgfx::TextureFormat::B5G6R5] & BGFX_CAPS_FORMAT_TEXTURE_2D) != 0;
 
 	_FrameTexture = bgfx::createTexture2D((uint16_t)width, (uint16_t)height, false, 1, _FrameIs565 ? bgfx::TextureFormat::B5G6R5 : bgfx::TextureFormat::BGRA8);
+	_FrameUploaded = false;
 	if (!bgfx::isValid(_FrameTexture)) {
 		return(false);
 	}
@@ -461,37 +460,49 @@ void Backend_On_Resize(int drawablewidth, int drawableheight)
 
 
 /// <summary>
-/// Uploads the frame and puts it on the screen.
+/// Submits the frame to the window, uploading new pixels first when given any.
+/// The frame reaches the screen when Backend_End_Frame runs; whatever is submitted in
+/// between draws over it.
 /// </summary>
-/// <param name="pixels">The frame's top left pixel, in 16 bit 565.</param>
+/// <param name="pixels">The frame's top left pixel, in 16 bit 565, or NULL to present the
+/// frame uploaded last.</param>
 /// <param name="pitch">The bytes between one row of that frame and the next.</param>
 /// <param name="destx">Where the left edge of the frame lands in the window.</param>
 /// <param name="desty">Where the top edge of the frame lands in the window.</param>
 /// <param name="destwidth">How wide the frame is drawn.</param>
 /// <param name="destheight">How tall the frame is drawn.</param>
 /// <param name="mode">How the frame is filtered when it is drawn larger than it is.</param>
-void Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode)
+/// <returns>bool; Was a frame submitted? When not, the frame must not be ended.</returns>
+bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode)
 {
-	if (!_Initialized || pixels == NULL || !bgfx::isValid(_FrameTexture)) {
-		return;
+	if (!_Initialized || !bgfx::isValid(_FrameTexture)) {
+		return(false);
+	}
+
+	if (pixels == NULL && !_FrameUploaded) {
+		return(false);
 	}
 
 	// A minimized window has no client area to present into.
 	if (_DrawableWidth <= 0 || _DrawableHeight <= 0) {
-		return;
+		return(false);
 	}
 
-	if (_FrameIs565) {
-		bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(pixels, (uint32_t)(_FrameHeight * pitch)), (uint16_t)pitch);
-	} else if (_ConvertBuffer != NULL) {
-		for (int y = 0; y < _FrameHeight; y++) {
-			unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
-			unsigned int * dest = _ConvertBuffer + y * _FrameWidth;
-			for (int x = 0; x < _FrameWidth; x++) {
-				dest[x] = _ConvertTable[source[x]];
+	if (pixels != NULL) {
+		if (_FrameIs565) {
+			bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(pixels, (uint32_t)(_FrameHeight * pitch)), (uint16_t)pitch);
+			_FrameUploaded = true;
+		} else if (_ConvertBuffer != NULL) {
+			for (int y = 0; y < _FrameHeight; y++) {
+				unsigned short const * source = (unsigned short const *)((char const *)pixels + y * pitch);
+				unsigned int * dest = _ConvertBuffer + y * _FrameWidth;
+				for (int x = 0; x < _FrameWidth; x++) {
+					dest[x] = _ConvertTable[source[x]];
+				}
 			}
+			bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_ConvertBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
+			_FrameUploaded = true;
 		}
-		bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(_ConvertBuffer, (uint32_t)(_FrameWidth * _FrameHeight * 4)), (uint16_t)(_FrameWidth * 4));
 	}
 
 	bgfx::TextureHandle source = _FrameTexture;
@@ -535,6 +546,19 @@ void Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 
 	bool flipv = from_prescale && bgfx::getCaps()->originBottomLeft;
 	Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv);
+
+	return(true);
+}
+
+
+/// <summary>
+/// Ends the frame Backend_Present began, putting everything submitted since on the screen.
+/// </summary>
+void Backend_End_Frame(void)
+{
+	if (!_Initialized) {
+		return;
+	}
 
 	bgfx::frame();
 }
