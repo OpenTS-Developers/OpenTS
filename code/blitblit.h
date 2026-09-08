@@ -76,11 +76,11 @@
 template<class T>
 class BlitPlain : public Blitter {
 	public:
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			memcpy(dest, source, length*sizeof(T));
 		}
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override
 		{
 			memmove(dest, source, length*sizeof(T));
 		}
@@ -94,7 +94,7 @@ class BlitPlain : public Blitter {
 template<class T>
 class BlitTrans : public Blitter {
 	public:
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				T color = *(T const *)source;
@@ -109,7 +109,7 @@ class BlitTrans : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 };
 
 
@@ -122,7 +122,7 @@ template<class T>
 class BlitPlainXlat : public Blitter {
 	public:
 		BlitPlainXlat(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -137,7 +137,7 @@ class BlitPlainXlat : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -155,9 +155,9 @@ class BlitPlainXlatAlpha : public Blitter {
 		BlitPlainXlatAlpha(T const * translator, int intensity_levels) : TranslateTable(translator), AlphaLightingRemap(NULL) {assert(TranslateTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitPlainXlatAlpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 			unsigned short *alphatable = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -176,7 +176,7 @@ class BlitPlainXlatAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -193,9 +193,9 @@ template<class T>
 class BlitPlainXlatZRead : public Blitter {
 	public:
 		BlitPlainXlatZRead(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -216,7 +216,7 @@ class BlitPlainXlatZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -231,9 +231,9 @@ template<class T>
 class BlitPlainXlatZReadWrite : public Blitter {
 	public:
 		BlitPlainXlatZReadWrite(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -257,7 +257,7 @@ class BlitPlainXlatZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -273,7 +273,7 @@ template<class T>
 class BlitTransXlat : public Blitter {
 	public:
 		BlitTransXlat(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -290,7 +290,7 @@ class BlitTransXlat : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -308,9 +308,9 @@ class BlitTransXlatAlpha : public Blitter {
 		BlitTransXlatAlpha(T const * translator, int intensity_levels) : TranslateTable(translator), AlphaLightingRemap(NULL) {assert(TranslateTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransXlatAlpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -331,7 +331,7 @@ class BlitTransXlatAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -350,10 +350,10 @@ class BlitTransXlatAlphaZRead : public Blitter {
 		BlitTransXlatAlphaZRead(T const * translator, int intensity_levels) : TranslateTable(translator), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransXlatAlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -377,7 +377,7 @@ class BlitTransXlatAlphaZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -396,10 +396,10 @@ class BlitTransXlatAlphaZReadWrite : public Blitter {
 		BlitTransXlatAlphaZReadWrite(T const * translator, int intensity_levels) : TranslateTable(translator), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransXlatAlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -425,7 +425,7 @@ class BlitTransXlatAlphaZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -443,9 +443,9 @@ template<class T>
 class BlitTransXlatMultWriteAlpha : public Blitter {
 	public:
 		BlitTransXlatMultWriteAlpha(void) {}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -466,7 +466,7 @@ class BlitTransXlatMultWriteAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 };
 
 
@@ -479,9 +479,9 @@ template<class T>
 class BlitTransXlatWriteAlpha : public Blitter {
 	public:
 		BlitTransXlatWriteAlpha(void) {}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -502,7 +502,7 @@ class BlitTransXlatWriteAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 };
 
 
@@ -514,9 +514,9 @@ template<class T>
 class BlitTransXlatZRead : public Blitter {
 	public:
 		BlitTransXlatZRead(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 
 			for (int i = 0; i < length; ++i) {
 
@@ -538,7 +538,7 @@ class BlitTransXlatZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -553,9 +553,9 @@ template<class T>
 class BlitTransXlatZReadWrite : public Blitter {
 	public:
 		BlitTransXlatZReadWrite(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 
 			for (int i = 0; i < length; ++i) {
 
@@ -579,7 +579,7 @@ class BlitTransXlatZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -596,7 +596,7 @@ template<class T>
 class BlitTransRemapXlat : public Blitter {
 	public:
 		BlitTransRemapXlat(unsigned char const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(RemapTable != NULL);assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -613,7 +613,7 @@ class BlitTransRemapXlat : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		unsigned char const * RemapTable;
@@ -632,7 +632,7 @@ template<class T>
 class BlitTransZRemapXlat : public Blitter {
 	public:
 		BlitTransZRemapXlat(unsigned char const * const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(RemapTable != NULL);assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			unsigned char const * rtable = *RemapTable;
 			for (int index = 0; index < length; index++) {
@@ -650,7 +650,7 @@ class BlitTransZRemapXlat : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		unsigned char const * const * RemapTable;
@@ -669,10 +669,10 @@ class BlitTransZRemapXlatAlpha : public Blitter {
 		BlitTransZRemapXlatAlpha(unsigned char const * const * remapper, T const * translator, int intensity_levels) : RemapTable(remapper), TranslateTable(translator), AlphaLightingRemap(NULL) {assert(RemapTable != NULL);assert(TranslateTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransZRemapXlatAlpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			unsigned char const * rtable = *RemapTable;
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -693,7 +693,7 @@ class BlitTransZRemapXlatAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		unsigned char const * const * RemapTable;
@@ -713,10 +713,10 @@ class BlitTransZRemapXlatAlphaZRead : public Blitter {
 		BlitTransZRemapXlatAlphaZRead(unsigned char const * const * remapper, T const * translator, int intensity_levels) : RemapTable(remapper), TranslateTable(translator), AlphaLightingRemap(NULL) {assert(RemapTable != NULL);assert(TranslateTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransZRemapXlatAlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			unsigned char const * rtable = *RemapTable;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
@@ -741,7 +741,7 @@ class BlitTransZRemapXlatAlphaZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		unsigned char const * const * RemapTable;
@@ -761,10 +761,10 @@ class BlitTransZRemapXlatAlphaZReadWrite : public Blitter {
 		BlitTransZRemapXlatAlphaZReadWrite(unsigned char const * const * remapper, T const * translator, int intensity_levels) : RemapTable(remapper), AlphaLightingRemap(NULL), TranslateTable(translator) {assert(RemapTable != NULL);assert(TranslateTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransZRemapXlatAlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 			unsigned char const * rtable = *RemapTable;
 
@@ -792,7 +792,7 @@ class BlitTransZRemapXlatAlphaZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		unsigned char const * const * RemapTable;
@@ -810,9 +810,9 @@ template<class T>
 class BlitTransZRemapXlatZRead : public Blitter {
 	public:
 		BlitTransZRemapXlatZRead(unsigned char const * const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(RemapTable != NULL);assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			unsigned char const * rtable = *RemapTable;
 
 			for (int i = 0; i < length; ++i) {
@@ -835,7 +835,7 @@ class BlitTransZRemapXlatZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		unsigned char const * const * RemapTable;
@@ -851,9 +851,9 @@ template<class T>
 class BlitTransZRemapXlatZReadWrite : public Blitter {
 	public:
 		BlitTransZRemapXlatZReadWrite(unsigned char const * const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(RemapTable != NULL);assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			unsigned char const * rtable = *RemapTable;
 
 			for (int i = 0; i < length; ++i) {
@@ -878,7 +878,7 @@ class BlitTransZRemapXlatZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		unsigned char const * const * RemapTable;
@@ -896,7 +896,7 @@ template<class T>
 class BlitTransDarken : public Blitter {
 	public:
 		BlitTransDarken(T mask) : Mask(mask) {}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -913,7 +913,7 @@ class BlitTransDarken : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T Mask;
@@ -929,9 +929,9 @@ template<class T>
 class BlitTransDarkenZRead : public Blitter {
 	public:
 		BlitTransDarkenZRead(T mask) : Mask(mask) {}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 
 			for (int i = 0; i < length; ++i) {
 
@@ -953,7 +953,7 @@ class BlitTransDarkenZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T Mask;
@@ -968,9 +968,9 @@ template<class T>
 class BlitTransDarkenZReadWrite : public Blitter {
 	public:
 		BlitTransDarkenZReadWrite(T mask) : Mask(mask) {}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 
 			for (int i = 0; i < length; ++i) {
 
@@ -994,7 +994,7 @@ class BlitTransDarkenZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T Mask;
@@ -1010,7 +1010,7 @@ template<class T>
 class BlitTransRemapDest : public Blitter {
 	public:
 		BlitTransRemapDest(T const * remap) : RemapTable(remap) {}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -1027,7 +1027,7 @@ class BlitTransRemapDest : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * RemapTable;
@@ -1043,7 +1043,7 @@ template<class T>
 class BlitDarken : public Blitter {
 	public:
 		BlitDarken(T mask) : Mask(mask) {}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				*((T *)dest) = (T)(((*(T *)dest) >> 1) & Mask);
@@ -1056,7 +1056,7 @@ class BlitDarken : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T Mask;
@@ -1072,7 +1072,7 @@ template<class T>
 class BlitTransLucent50 : public Blitter {
 	public:
 		BlitTransLucent50(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -1089,7 +1089,7 @@ class BlitTransLucent50 : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1107,9 +1107,9 @@ class BlitTransLucent50Alpha : public Blitter {
 		BlitTransLucent50Alpha(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent50Alpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1130,7 +1130,7 @@ class BlitTransLucent50Alpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1149,10 +1149,10 @@ class BlitTransLucent50AlphaZRead : public Blitter {
 		BlitTransLucent50AlphaZRead(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent50AlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1178,7 +1178,7 @@ class BlitTransLucent50AlphaZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1198,10 +1198,10 @@ class BlitTransLucent50AlphaZReadWarp : public Blitter {
 		BlitTransLucent50AlphaZReadWarp(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent50AlphaZReadWarp(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1225,7 +1225,7 @@ class BlitTransLucent50AlphaZReadWarp : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1245,10 +1245,10 @@ class BlitTransLucent50AlphaZReadWrite : public Blitter {
 		BlitTransLucent50AlphaZReadWrite(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent50AlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1274,7 +1274,7 @@ class BlitTransLucent50AlphaZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1291,9 +1291,9 @@ template<class T>
 class BlitTransLucent50ZRead : public Blitter {
 	public:
 		BlitTransLucent50ZRead(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb++) {
 					unsigned char color = *(unsigned char const *)source;
@@ -1313,7 +1313,7 @@ class BlitTransLucent50ZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1329,9 +1329,9 @@ template<class T>
 class BlitTransLucent50ZReadWarp : public Blitter {
 	public:
 		BlitTransLucent50ZReadWarp(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb++) {
 					unsigned char color = *(unsigned char const *)source;
@@ -1351,7 +1351,7 @@ class BlitTransLucent50ZReadWarp : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1367,9 +1367,9 @@ template<class T>
 class BlitTransLucent50ZReadWrite : public Blitter {
 	public:
 		BlitTransLucent50ZReadWrite(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb) {
 					unsigned char color = *(unsigned char const *)source;
@@ -1391,7 +1391,7 @@ class BlitTransLucent50ZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1407,9 +1407,9 @@ template<class T>
 class BlitTranslucent50NonzeroAlpha : public Blitter {
 	public:
 		BlitTranslucent50NonzeroAlpha(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -1431,7 +1431,7 @@ class BlitTranslucent50NonzeroAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1448,9 +1448,9 @@ template<class T>
 class BlitTranslucent50ZeroAlpha : public Blitter {
 	public:
 		BlitTranslucent50ZeroAlpha(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -1472,7 +1472,7 @@ class BlitTranslucent50ZeroAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1488,7 +1488,7 @@ template<class T>
 class BlitTransLucent25 : public Blitter {
 	public:
 		BlitTransLucent25(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -1507,7 +1507,7 @@ class BlitTransLucent25 : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1525,9 +1525,9 @@ class BlitTransLucent25Alpha : public Blitter {
 		BlitTransLucent25Alpha(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent25Alpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1550,7 +1550,7 @@ class BlitTransLucent25Alpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1569,10 +1569,10 @@ class BlitTransLucent25AlphaZRead : public Blitter {
 		BlitTransLucent25AlphaZRead(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent25AlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1598,7 +1598,7 @@ class BlitTransLucent25AlphaZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1617,10 +1617,10 @@ class BlitTransLucent25AlphaZReadWarp : public Blitter {
 		BlitTransLucent25AlphaZReadWarp(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent25AlphaZReadWarp(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1646,7 +1646,7 @@ class BlitTransLucent25AlphaZReadWarp : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1666,10 +1666,10 @@ class BlitTransLucent25AlphaZReadWrite : public Blitter {
 		BlitTransLucent25AlphaZReadWrite(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent25AlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1697,7 +1697,7 @@ class BlitTransLucent25AlphaZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1714,9 +1714,9 @@ template<class T>
 class BlitTransLucent25ZRead : public Blitter {
 	public:
 		BlitTransLucent25ZRead(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb++) {
 					unsigned char color = *(unsigned char const *)source;
@@ -1738,7 +1738,7 @@ class BlitTransLucent25ZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1754,9 +1754,9 @@ template<class T>
 class BlitTransLucent25ZReadWarp : public Blitter {
 	public:
 		BlitTransLucent25ZReadWarp(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb++) {
 					unsigned char color = *(unsigned char const *)source;
@@ -1778,7 +1778,7 @@ class BlitTransLucent25ZReadWarp : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1794,9 +1794,9 @@ template<class T>
 class BlitTransLucent25ZReadWrite : public Blitter {
 	public:
 		BlitTransLucent25ZReadWrite(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb) {
 					unsigned char color = *(unsigned char const *)source;
@@ -1820,7 +1820,7 @@ class BlitTransLucent25ZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1837,7 +1837,7 @@ template<class T>
 class BlitTransLucent75 : public Blitter {
 	public:
 		BlitTransLucent75(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
 			for (int index = 0; index < length; index++) {
 				unsigned char color = *(unsigned char const *)source;
@@ -1856,7 +1856,7 @@ class BlitTransLucent75 : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1874,9 +1874,9 @@ class BlitTransLucent75Alpha : public Blitter {
 		BlitTransLucent75Alpha(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent75Alpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1899,7 +1899,7 @@ class BlitTransLucent75Alpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1918,10 +1918,10 @@ class BlitTransLucent75AlphaZRead : public Blitter {
 		BlitTransLucent75AlphaZRead(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent75AlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1945,7 +1945,7 @@ class BlitTransLucent75AlphaZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -1964,10 +1964,10 @@ class BlitTransLucent75AlphaZReadWarp : public Blitter {
 		BlitTransLucent75AlphaZReadWarp(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent75AlphaZReadWarp(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -1993,7 +1993,7 @@ class BlitTransLucent75AlphaZReadWarp : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -2013,10 +2013,10 @@ class BlitTransLucent75AlphaZReadWrite : public Blitter {
 		BlitTransLucent75AlphaZReadWrite(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), AlphaLightingRemap(NULL), Mask(mask) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~BlitTransLucent75AlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *zb = z_buff;
+			unsigned short *ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			for (int index = 0; index < length; index++) {
@@ -2042,7 +2042,7 @@ class BlitTransLucent75AlphaZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -2059,9 +2059,9 @@ template<class T>
 class BlitTransLucent75ZRead : public Blitter {
 	public:
 		BlitTransLucent75ZRead(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb++) {
 					unsigned char color = *(unsigned char const *)source;
@@ -2083,7 +2083,7 @@ class BlitTransLucent75ZRead : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -2099,9 +2099,9 @@ template<class T>
 class BlitTransLucent75ZReadWarp : public Blitter {
 	public:
 		BlitTransLucent75ZReadWarp(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb++) {
 					unsigned char color = *(unsigned char const *)source;
@@ -2123,7 +2123,7 @@ class BlitTransLucent75ZReadWarp : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -2139,9 +2139,9 @@ template<class T>
 class BlitTransLucent75ZReadWrite : public Blitter {
 	public:
 		BlitTransLucent75ZReadWrite(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *zb = (unsigned short *)z_buff;
+			unsigned short *zb = z_buff;
 			for (int index = 0; index < length; index++) {
 				if (z_min < *zb) {
 					unsigned char color = *(unsigned char const *)source;
@@ -2165,7 +2165,7 @@ class BlitTransLucent75ZReadWrite : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -2181,9 +2181,9 @@ template<class T>
 class BlitTranslucent75NonzeroAlpha : public Blitter {
 	public:
 		BlitTranslucent75NonzeroAlpha(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -2205,7 +2205,7 @@ class BlitTranslucent75NonzeroAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -2222,9 +2222,9 @@ template<class T>
 class BlitTranslucent75ZeroAlpha : public Blitter {
 	public:
 		BlitTranslucent75ZeroAlpha(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -2246,7 +2246,7 @@ class BlitTranslucent75ZeroAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
@@ -2265,9 +2265,9 @@ template<class T>
 class BlitTranslucentWriteAlpha : public Blitter {
 	public:
 		BlitTranslucentWriteAlpha(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const override
 		{
-			unsigned short *ap = (unsigned short *)a_buff;
+			unsigned short *ap = a_buff;
 
 			for (int i = 0; i < length; ++i) {
 				unsigned char value = *(unsigned char *)source;
@@ -2302,7 +2302,7 @@ class BlitTranslucentWriteAlpha : public Blitter {
 		**	Implement in terms of the forward copying method until the need for this
 		**	version arrises.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const override {BlitForward(dest, source, length, z_min, z_buff, a_buff, alpha_level);}
 
 	private:
 		T const * TranslateTable;
