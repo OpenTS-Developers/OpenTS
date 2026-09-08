@@ -113,7 +113,7 @@ intptr_t __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buff
 					error = read(fh, &temp, 1) != 1;
 				}
 				if (error == 0) {
-					error = lseek(fh, -1, 1) == -1;
+					error = lseek(fh, -1, SEEK_CUR) == -1;
 				}
 			}
 			break;
@@ -198,12 +198,12 @@ intptr_t __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *bu
 		case VQACMD_SEEKPEEK:
 			switch (VQA_DecodeSeekOrigin(buffer)) {
 
-				case 1:
+				case SEEK_CUR:
 					cache->Offset += nbytes;
 					error = 0;
 					break;
 
-				case 0:
+				case SEEK_SET:
 					p = cache->FileOffset;
 					if (nbytes >= p) {
 						cache->Offset = nbytes - p;

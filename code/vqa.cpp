@@ -300,15 +300,15 @@ long VQAClass::CacheHandler(long action, void * buffer, long nbytes)
 
 		case VQACMD_SEEK:
 			switch (VQA_DecodeSeekOrigin(buffer)) {
-				case 1:
+				case SEEK_CUR:
 					Cache.file_buffer_pos += nbytes;
 					rc = 0;
 					break;
-				case 0:
+				case SEEK_SET:
 					Cache.file_buffer_pos = nbytes;
 					rc = 0;
 					break;
-				case 2:
+				case SEEK_END:
 					Cache.file_buffer_pos = Cache.file_size - nbytes - 1;
 					rc = 0;
 					break;

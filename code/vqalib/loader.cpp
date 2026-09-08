@@ -260,7 +260,7 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 
 				if (tocache > 0) {
 					if (config->StreamHandler != Memory_VQA_Stream_Handler) {
-						config->StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, NULL, foffset);
+						config->StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, (void *)SEEK_SET, foffset);
 					}
 					if (config->StreamHandler((VQAHandle *)vqap, VQACMD_READ, &cache->Ptr[cache->Offset], tocache)) {
 						return -4;
@@ -1074,7 +1074,7 @@ long VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags)
 			needs_seek = true;
 		}
 		cache->Offset = 0;
-	} else if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, 0, VQAFRAME_OFFSET(foff[framenum])) != 0) {
+	} else if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, (void *)SEEK_SET, VQAFRAME_OFFSET(foff[framenum])) != 0) {
 		return(VQAERR_SEEK);
 	}
 
@@ -1083,7 +1083,7 @@ long VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags)
 	}
 
 	if (rc == VQAERR_NONE) {
-		if (needs_seek && vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEKPEEK, 0, cache->FileOffset + cache->Bytes) != 0) {
+		if (needs_seek && vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEKPEEK, (void *)SEEK_SET, cache->FileOffset + cache->Bytes) != 0) {
 			return(VQAERR_SEEK);
 		}
 	}
@@ -1826,7 +1826,7 @@ long Load_VQF(VQAHandleP *vqap, unsigned long frame_iffsize, char flags)
 
 		/* Skip any unknown chunks. */
 		if (skip == true) {
-			if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, (void *)1, PADSIZE(iffsize))) {
+			if (vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEK, (void *)SEEK_CUR, PADSIZE(iffsize))) {
 				return(VQAERR_SEEK);
 			}
 		}
