@@ -299,7 +299,7 @@ long VQAClass::CacheHandler(long action, void * buffer, long nbytes)
 			break;
 
 		case VQACMD_SEEK:
-			switch ((int)(intptr_t)buffer) {
+			switch (VQA_DecodeSeekOrigin(buffer)) {
 				case 1:
 					Cache.file_buffer_pos += nbytes;
 					rc = 0;
@@ -855,17 +855,17 @@ long VQAClass::CCFileHandler(long action, void * buffer, long nbytes)
 		**	VQAERR_SEEK.
 		*/
 		case VQACMD_SEEK:
-			error = (FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0);
+			error = (FileHandle.Seek(nbytes, VQA_DecodeSeekOrigin(buffer)) == 0);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = FileHandle.Seek(nbytes - sizeof(tmp), (int)(intptr_t)buffer) == 0;
+				error = FileHandle.Seek(nbytes - sizeof(tmp), VQA_DecodeSeekOrigin(buffer)) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 				}
 			} else {
-				error = FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0;
+				error = FileHandle.Seek(nbytes, VQA_DecodeSeekOrigin(buffer)) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 					if (error == 0) {
@@ -982,17 +982,17 @@ long VQAClass::MixFileHandler(long action, void * buffer, long nbytes)
 		**	VQAERR_SEEK.
 		*/
 		case VQACMD_SEEK:
-			error = (FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0);
+			error = (FileHandle.Seek(nbytes, VQA_DecodeSeekOrigin(buffer)) == 0);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = FileHandle.Seek(nbytes - sizeof(tmp), (int)(intptr_t)buffer) == 0;
+				error = FileHandle.Seek(nbytes - sizeof(tmp), VQA_DecodeSeekOrigin(buffer)) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 				}
 			} else {
-				error = FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0;
+				error = FileHandle.Seek(nbytes, VQA_DecodeSeekOrigin(buffer)) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 					if (error == 0) {

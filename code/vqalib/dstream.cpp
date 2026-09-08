@@ -98,17 +98,17 @@ intptr_t __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buff
 		 * VQAERR_SEEK.
 		 */
 		case VQACMD_SEEK:
-			error = (lseek(fh, nbytes, (int)(intptr_t)buffer) == -1);
+			error = (lseek(fh, nbytes, VQA_DecodeSeekOrigin(buffer)) == -1);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = lseek(fh, nbytes - 1, (int)(intptr_t)buffer) == -1;
+				error = lseek(fh, nbytes - 1, VQA_DecodeSeekOrigin(buffer)) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
 			} else {
-				error = lseek(fh, nbytes, (int)(intptr_t)buffer) == -1;
+				error = lseek(fh, nbytes, VQA_DecodeSeekOrigin(buffer)) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
@@ -196,7 +196,7 @@ intptr_t __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *bu
 		 */
 		case VQACMD_SEEK:
 		case VQACMD_SEEKPEEK:
-			switch ((intptr_t)buffer) {
+			switch (VQA_DecodeSeekOrigin(buffer)) {
 
 				case 1:
 					cache->Offset += nbytes;
