@@ -445,6 +445,16 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 					continue;
 				}
 
+				/*
+				 * The pool is handed out and never released within a pass, and nothing else
+				 * bounds how many cells a pass may reach. Passing the cell over costs the
+				 * search a route. Writing past the pool would land on the count of what it
+				 * holds.
+				 */
+				if (RegularNodes->ActiveCount >= ARRAY_SIZE(RegularNodes->Nodes)) {
+					continue;
+				}
+
 				RegularOpenNode new_node = Create_Node(working_node, working_to, to, movement_cost);
 				if (!temp_node) {
 					temp_node = new_node;
@@ -1679,6 +1689,16 @@ bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZon
 			}
 
 			if (!best_node) {
+				return(false);
+			}
+
+			/*
+			 * The chain is written into a list of a fixed length at whatever length the
+			 * block search settled on. Giving up on a corridor too long to record leaves
+			 * the caller to search the map unrestricted. Writing it out would run over the
+			 * lists for the coarser block sizes behind this one.
+			 */
+			if (best_node->Depth + 1 > ARRAY_SIZE(HierSubzonePath[subzone_level])) {
 				return(false);
 			}
 

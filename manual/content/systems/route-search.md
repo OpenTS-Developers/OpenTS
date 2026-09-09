@@ -56,14 +56,12 @@ The corridor stage is skipped outright under **any of:**
 
 With the stage skipped the cell search is free to spread anywhere on the playfield.
 
-:::danger[A corridor of more than 500 blocks is written past the end of the list holding it]
-Each of the three block sizes has a list of 500 entries to record its chain in. The chain is written into that list at the length the block search settled on, and nothing compares that length against the 500 the list holds, so a longer chain simply runs off the end.
+:::caution[A corridor of more than 500 blocks is abandoned]
+Each of the three block sizes has a list of 500 entries to record its chain in. A chain longer than the list is refused, and the cell search runs unrestricted instead.
 
-The 2-by-2 chain is the long one. A route crosses about one 2-by-2 block every two cells, and four cells of route is the most that can ever fall inside a single block, so 500 of them is a walk of roughly a thousand cells — half of what it takes to fill the move list at the foot of this page.
+The 2-by-2 chain is the long one. A route crosses about one 2-by-2 block every two cells, and four cells of route is the most that can ever fall inside a single block, so 500 of them is a walk of roughly a thousand cells -- half of what it takes to fill the move list at the foot of this page. A journey that long gives up the corridor and prices every cell it passes, which costs more effort than a corridor would have.
 
-The three lists sit one after another, smallest blocks first, with the record of how long each chain is behind them. Entries past the end of the 2-by-2 list land on the 4-by-4 chain; a chain past a thousand blocks reaches the 8-by-8 chain as well; and one past fifteen hundred runs over the three recorded lengths and then past the end of the pathfinder itself. The chain is written from its far end backwards, so the furthest write is the first one made. A retry reads the chains it has overwritten, and strikes out block links accordingly.
-
-The block stage runs before the cell search, so this happens before a single cell has been priced. It also runs on its own whenever the game measures how far an object would have to walk between two cells, and that measurement takes none of the skips above.
+The block stage runs before the cell search, so this is settled before a single cell has been priced. It also runs on its own whenever the game measures how far an object would have to walk between two cells, and that measurement takes none of the skips above.
 :::
 
 ### The cell-by-cell search
@@ -86,10 +84,10 @@ A request that ends with no route at all arms the object's [`PathDelay`](/keys/p
 Alongside the effort limit, a finished pass is checked against a second figure. A pass that reaches the destination having taken up exactly 10,000 cells is treated as a failure and hands back no route, although the route was found and is complete. No other count is treated that way, and nothing about such a route distinguishes it from one found a cell earlier or later.
 :::
 
-:::danger[A pass that reaches more than 65,536 cells writes past the end of its record of them]
-The effort limit counts the cells a pass takes up, but a cell is recorded the moment it is first priced — well before it is taken up, and for many cells that never are. The cells on the search's outer edge count against the record too, and the record holds 65,536 of them against an effort limit of 65,527. Nothing checks it as cells are added, so a pass that reaches a 65,537th cell writes that cell over the tally of how many the record holds and over whatever follows it. The tally is then a nonsense figure, and every cell reached afterwards is written wherever it points.
+:::caution[A pass that reaches more than 131,072 cells stops taking new ones]
+The effort limit counts the cells a pass takes up, but a cell is recorded the moment it is first priced -- well before it is taken up, and for many cells that never are. The cells on the search's outer edge count against the record too. The record holds 131,072 of them. A pass that has filled it passes over every further cell it reaches, so it runs out of candidates and hands back no route.
 
-A cell is recorded once and no more, so reaching that many needs ground to match: more than 65,536 cells the object may enter in a single pass, which a square playable area of open ground passes at around 181 cells on a side. A cell spanned by a bridge is recorded twice over, once for the ground and once for the deck. The destination has also to be far enough off, or awkward enough to arrive at, that the search spreads over all of that ground before it settles on a route.
+A cell is recorded once and no more, so reaching that many needs ground to match: more than 131,072 cells the object may enter in a single pass, which a square playable area of open ground passes at around 256 cells on a side. A cell spanned by a bridge is recorded twice over, once for the ground and once for the deck. The destination has also to be far enough off, or awkward enough to arrive at, that the search spreads over all of that ground before it settles on a route.
 :::
 
 ## Why a route is not the shortest one
