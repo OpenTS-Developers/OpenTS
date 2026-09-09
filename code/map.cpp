@@ -313,6 +313,16 @@ void MapClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(XSize);
 	stream.Serialize(YSize);
 	stream.Serialize(Size);
+
+	// The cell array is reallocated to Size and every cell then installs itself in it by
+	// coordinate, so a saved extent other than the one this build lays out is refused
+	// before anything is sized from it.
+	if (stream.Is_Loading()
+	 && (XSize != MAP_CELL_W || YSize != MAP_CELL_H || Size != MAP_CELL_TOTAL)) {
+		stream.Fail();
+		return;
+	}
+
 	stream.Serialize(Crates);
 	stream.Serialize(Redraws);
 	stream.Serialize(TaggedCells);
@@ -493,6 +503,26 @@ bool MapClass::Is_Valid(Cell const & cell)
 		return(true);
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Fetches the slot a cell coordinate names in the cell array.
+/// A cell coordinate arrives from a saved game as two signed shorts, so this is what tells
+/// a coordinate that names a slot from one that does not.
+/// </summary>
+/// <returns>Returns with the index into Array, or -1 when the coordinate names no slot.</returns>
+int MapClass::Cell_Slot(Cell const & cell) const
+{
+	if (cell.X < 0 || cell.X >= MAP_CELL_W || cell.Y < 0 || cell.Y >= MAP_CELL_H) {
+		return(-1);
+	}
+
+	int const cellnum = cell.X + cell.Y * MAP_CELL_W;
+	if (cellnum >= Array.Length()) {
+		return(-1);
+	}
+	return(cellnum);
 }
 
 

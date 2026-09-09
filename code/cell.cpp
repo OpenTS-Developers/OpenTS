@@ -4365,6 +4365,13 @@ void CellClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(CellID);
 
+	// Post_Load installs the cell in the array slot this coordinate names, so a coordinate
+	// that names none is refused here, while the record can still be thrown away whole.
+	if (stream.Is_Loading() && Map.Cell_Slot(CellID) < 0) {
+		stream.Fail();
+		return;
+	}
+
 	/*
 	 * The snapshot list is built only once something standing here has been fogged over,
 	 * so whether the cell has one at all travels ahead of its contents.
@@ -4468,7 +4475,11 @@ void CellClass::Post_Load(void)
 {
 	BASECLASS::Post_Load();
 
-	int id = CellID.X + (CellID.Y << 9);
+	int id = Map.Cell_Slot(CellID);
+	if (id < 0) {
+		return;
+	}
+
 	if (Map.Array[id] != NULL) {
 		delete Map.Array[id];
 		Map.Array[id] = NULL;
