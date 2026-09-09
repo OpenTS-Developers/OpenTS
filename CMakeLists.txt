@@ -14,6 +14,7 @@ option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared versi
 option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF)
 option(OPENTS_EXPERIMENTAL_X64 "Configure an unsupported 64-bit Windows build" OFF)
 
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
    AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
     if(NOT OPENTS_EXPERIMENTAL_CLANG_CL)
@@ -39,6 +40,11 @@ else()
         "OpenTS requires the Visual Studio 2022 MSVC toolchain. "
         "For the unsupported clang-cl experiment, configure with "
         "-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/clang-cl-msvc.cmake.")
+endif()
+
+string(TOLOWER "${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}" OPENTS_ARCH)
+if(NOT OPENTS_ARCH)
+    set(OPENTS_ARCH "unknown")
 endif()
 
 enable_language(RC)
@@ -71,6 +77,7 @@ set(OPENTS_STAMP_ARGS
     "-DOPENTS_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
     "-DOPENTS_VERSION_HEADER=${OPENTS_VERSION_HEADER}"
     "-DOPENTS_STAMP_HEADER=${OPENTS_STAMP_HEADER}"
+    "-DOPENTS_ARCH=${OPENTS_ARCH}"
     -P "${CMAKE_SOURCE_DIR}/cmake/GitStamp.cmake"
 )
 
