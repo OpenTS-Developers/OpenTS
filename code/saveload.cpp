@@ -1117,20 +1117,21 @@ bool Load_Game(const char *file_name)
 {
 	DebugString("\nLOADING GAME [%s]\n", file_name);
 
-	SaveVersionInfo info;
-	if (!Get_Savefile_Info(file_name, &info)) {
-		return(false);
-	}
-	if (info.Get_Internal_Version() != ExpectedGameVersion) {
-		return(false);
-	}
-
 	// The whole file is checked before the running game is torn down, so a damaged
-	// save costs nothing.
+	// save costs nothing. The listing fields come back with it, so the version this
+	// build will not read is judged on the same read rather than on a second one.
 	SaveFileClass file;
 	SaveFileClass::ResultType const result = file.Read(Saved_Game_Name(file_name).c_str());
 	if (result != SaveFileClass::RESULT_OK) {
 		DebugString("\t***** FAILED! (%s)\n", SaveFileClass::Result_Text(result));
+		return(false);
+	}
+
+	SaveVersionInfo info;
+	if (!info.Load(file)) {
+		return(false);
+	}
+	if (info.Get_Internal_Version() != ExpectedGameVersion) {
 		return(false);
 	}
 
