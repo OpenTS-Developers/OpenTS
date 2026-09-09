@@ -665,11 +665,14 @@ Invariants the split preserves:
 Progress tracking, clamping, milestone text and sound, and the readiness
 queries that `scenario.cpp` consumes move out of the draw path into shared
 behavior, so a repaint cannot repeat a milestone sound and a hidden
-presentation cannot lose one. The screen exposes phase, progress, status, and
-the operations the loader supports; no cancellation is added to a loader that
-cannot cancel. Loading stays on its thread with explicit cooperative service
-points that drain nothing unrelated while scenario objects are being
-replaced, and the first paint happens before long work begins.
+presentation cannot lose one. The milestone half landed with step 6:
+`ProgressScreenClass::Advance_Milestone` notes a threshold crossing and plays
+its sound when the progress moves, and the paint draws the text still owed.
+The screen exposes phase, progress, status, and the operations the loader
+supports; no cancellation is added to a loader that cannot cancel. Loading
+stays on its thread with explicit cooperative service points that drain
+nothing unrelated while scenario objects are being replaced, and the first
+paint happens before long work begins.
 
 MSEngine screens (campaign selection, briefings, score screens) are features
 with animation, audio, and navigation. RmlUi can replace their layout and
@@ -754,10 +757,11 @@ beyond an ASCII test document.
    eligible themes, selection, availability, shuffle and repeat, immediate
    previews, play and stop, both templates, frontend and in-game service
    paths. Runtime evidence still owed.
-6. **Progress and wait** (S, leaf). `IDD_PROGRESS_WAIT`, the saving and
-   loading boxes in `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the
-   modeless box they show, the `<surface>` element, milestone effects moved
-   out of drawing.
+6. **Progress and wait** (S, leaf, two changes; the first landed: milestone
+   effects moved out of drawing). `IDD_PROGRESS_WAIT`, the saving and loading
+   boxes in `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the modeless
+   box they show. A progress bar needs no engine surface, so the `<surface>`
+   element waits for the map preview in step 10.
 7. **Options family** (L, two changes each). Main options, display with its
    timed rollback, game controls (three variants), keyboard with the hotkey
    capture control, the display-mode confirmation, abort and surrender.

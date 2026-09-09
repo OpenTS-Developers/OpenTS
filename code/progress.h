@@ -47,6 +47,7 @@ class ProgressScreenClass
 		void End_Dialog(void);
 	private:
 		static INT_PTR CALLBACK Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+		void Advance_Milestone(int index, Point2D pt);
 
 	public:
 		/*
@@ -115,6 +116,15 @@ class ProgressScreenClass
 		 * only when the progress first passes its threshold, so that none of them repeat.
 		 */
 		int Percentage;
+
+		/*
+		 * The index of the loading message whose threshold was last crossed, and of the one
+		 * last drawn. Crossing a threshold is noted, and its sound played, when the progress
+		 * moves; the message is drawn by the next paint, so a repaint cannot repeat the sound
+		 * and a paint that never comes cannot lose it. Both are -1 before the first message.
+		 */
+		int Reached;
+		int Printed;
 };
 
 extern ProgressScreenClass Progress;

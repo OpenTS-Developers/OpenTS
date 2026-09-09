@@ -36,6 +36,22 @@
 
 ProgressScreenClass Progress;
 
+// The loading messages of a single player scenario load and the progress at which each is
+// announced.
+static struct {
+	int Progress;
+	int Text;
+} _progress_messages[MAX_PLAYERS] = {
+	{ 0,	TXT_LOADING_GAME1A },
+	{ 12,	TXT_LOADING_GAME1B },
+	{ 20,	TXT_LOADING_GAME1C },
+	{ 30,	TXT_LOADING_GAME1D },
+	{ 50,	TXT_LOADING_GAME1E },
+	{ 70,	TXT_LOADING_GAME1F },
+	{ 80,	TXT_LOADING_GAME1G },
+	{ 100,	TXT_LOADING_GAME1H }
+};
+
 
 /// <summary>
 /// Constructs the progress screen object.
@@ -49,6 +65,10 @@ ProgressScreenClass::ProgressScreenClass(void)
 	Shape = NULL;
 	Background = NULL;
 	IsActive = false;
+	Dialog = NULL;
+	Percentage = -1;
+	Reached = -1;
+	Printed = -1;
 	for (int i = 0; i < MAX_PLAYERS; i++) {
 		PlayerProgress[i] = 0;
 	}
@@ -90,6 +110,8 @@ void ProgressScreenClass::Initialize(double progress, int count, bool usedialog)
 		HiddenSurface->Fill(0);
 	}
 	Percentage = -1;
+	Reached = -1;
+	Printed = -1;
 }
 
 
@@ -196,6 +218,35 @@ double ProgressScreenClass::Get_Current_Progress(void) const
 }
 
 
+// A single player load on the full screen announces one loading message per move of the
+// progress. The sound plays here, where the progress moves, so a repaint cannot repeat it;
+// the message itself waits for the next paint.
+void ProgressScreenClass::Advance_Milestone(int index, Point2D pt)
+{
+	if (Dialog != NULL || PlayerCount != 1 || Shape == NULL || pt != Point2D(-1,-1)) {
+		return;
+	}
+
+	if (PlayerProgress[index] > MainProgress) {
+		PlayerProgress[index] = MainProgress;
+	}
+
+	int progress = (int)PlayerProgress[index];
+	if (progress <= Percentage) {
+		return;
+	}
+
+	for (int j = 0; j < ARRAY_SIZE(_progress_messages); j++) {
+		if (_progress_messages[j].Progress <= progress && _progress_messages[j].Progress > Percentage) {
+			Sound_Effect(VocClass::From_Name("Notify"), 0.4f);
+			Percentage = _progress_messages[j].Progress;
+			Reached = j;
+			break;
+		}
+	}
+}
+
+
 /// <summary>
 /// Draws the progress screen.
 /// This routine paints a progress bar for every player being tracked, and in the single
@@ -207,20 +258,6 @@ double ProgressScreenClass::Get_Current_Progress(void) const
 /// <remarks>Nothing is drawn until Initialize has been called.</remarks>
 void ProgressScreenClass::Display_Progress(Point2D xpt)
 {
-	static struct {
-		int Progress;
-		int Text;
-	}  _progress_messages[MAX_PLAYERS] = {
-		{ 0,	TXT_LOADING_GAME1A },
-		{ 12,	TXT_LOADING_GAME1B },
-		{ 20,	TXT_LOADING_GAME1C },
-		{ 30,	TXT_LOADING_GAME1D },
-		{ 50,	TXT_LOADING_GAME1E },
-		{ 70,	TXT_LOADING_GAME1F },
-		{ 80,	TXT_LOADING_GAME1G },
-		{ 100,	TXT_LOADING_GAME1H }
-	};
-
 	if (IsActive) {
 		Point2D pt = xpt;
 
@@ -244,19 +281,12 @@ void ProgressScreenClass::Display_Progress(Point2D xpt)
 							Get_Display_Rect(GetDlgItem(Dialog, IDC_PROGRESS_BAR_FRAME), &crect);
 							pt = Point2D(crect.left + (crect.right - crect.left) / 2, crect.top + (crect.bottom - crect.top) / 2);
 						} else {
-							int progress = PlayerProgress[i];
-							int percent = Percentage;
-							if (progress > percent) {
-								for (int j = 0; j < ARRAY_SIZE(_progress_messages); j++) {
-									if (_progress_messages[j].Progress <= progress && _progress_messages[j].Progress > percent) {
-										Fancy_Text_Print(Fetch_String(_progress_messages[j].Text), *HiddenSurface, HiddenSurface->Get_Rect(), Pos + Point2D(0, 10 * j), Fetch_Scheme_By_Name("Green"), 0, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
-										Sound_Effect(VocClass::From_Name("Notify"), 0.4f);
-										Percentage = _progress_messages[j].Progress;
-										if (surface == HiddenSurface) {
-											Update_Visible_Surface();
-										}
-										break;
-									}
+							// The threshold was noted as the progress moved; only its text is drawn here.
+							while (Printed < Reached) {
+								Printed++;
+								Fancy_Text_Print(Fetch_String(_progress_messages[Printed].Text), *HiddenSurface, HiddenSurface->Get_Rect(), Pos + Point2D(0, 10 * Printed), Fetch_Scheme_By_Name("Green"), 0, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
+								if (surface == HiddenSurface) {
+									Update_Visible_Surface();
 								}
 							}
 							return;
@@ -318,6 +348,7 @@ void ProgressScreenClass::Set_Progress_Percent(int index, double value, Point2D 
 	PlayerProgress[index] = (MainProgress / 100.0) * value;
 
 	if (PlayerProgress[index] != prog1) {
+		Advance_Milestone(index, pt);
 		if (Dialog != NULL) {
 			SendMessage(Dialog, WM_PAINT, 0, 0);
 		} else {
@@ -341,6 +372,7 @@ void ProgressScreenClass::Add_Progress_Percent(int index, double value, Point2D 
 	PlayerProgress[index] += (MainProgress / 100.0) * value;
 
 	if (PlayerProgress[index] != prog1) {
+		Advance_Milestone(index, pt);
 		if (Dialog != NULL) {
 			SendMessage(Dialog, WM_PAINT, 0, 0);
 		} else {
