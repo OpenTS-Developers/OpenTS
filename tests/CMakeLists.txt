@@ -1,3 +1,66 @@
+# The harnesses build beside each other rather than into bin/, which holds what the game
+# runs. Set before the subdirectories so every target below inherits it.
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test-bin")
+
+# Builds one test harness and registers it with CTest.
+#
+# A harness compiles the engine sources it exercises instead of linking the game, so ENGINE
+# names them per test, relative to code/. SOURCES are relative to the test's own directory.
+# FLOAT adds the float semantics the engine builds with, so a harness measuring numeric
+# results matches it. UTF8 is for a harness whose own source holds non-ASCII text. STAMP is
+# for a harness that reaches the generated version headers.
+function(opents_add_test target)
+    cmake_parse_arguments(TEST "FLOAT;UTF8;STAMP" "NAME"
+        "SOURCES;ENGINE;INCLUDES;DEFINITIONS;LIBRARIES" ${ARGN})
+
+    set(sources "")
+    foreach(source IN LISTS TEST_SOURCES)
+        list(APPEND sources "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+    endforeach()
+    foreach(source IN LISTS TEST_ENGINE)
+        list(APPEND sources "${CMAKE_SOURCE_DIR}/code/${source}")
+    endforeach()
+
+    add_executable(${target} ${sources})
+    target_compile_features(${target} PRIVATE cxx_std_20)
+
+    target_include_directories(${target} PRIVATE
+        "${CMAKE_SOURCE_DIR}/code"
+        ${TEST_INCLUDES}
+    )
+
+    if(TEST_DEFINITIONS)
+        target_compile_definitions(${target} PRIVATE ${TEST_DEFINITIONS})
+    endif()
+
+    target_compile_options(${target} PRIVATE
+        $<$<CONFIG:Debug>:/MTd>
+        $<$<CONFIG:Release>:/MT>
+        /EHsc
+        /Zc:__cplusplus
+    )
+    if(TEST_UTF8)
+        target_compile_options(${target} PRIVATE /utf-8)
+    endif()
+
+    # /arch:SSE2 is the default beyond 32-bit x86 and is rejected as an unknown option
+    # there, so it is only passed where it applies.
+    if(TEST_FLOAT)
+        target_compile_options(${target} PRIVATE /fp:precise)
+        if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+            target_compile_options(${target} PRIVATE /arch:SSE2)
+        endif()
+    endif()
+
+    target_link_libraries(${target} PRIVATE kernel32 user32 shell32 ${TEST_LIBRARIES})
+
+    if(TEST_STAMP)
+        add_dependencies(${target} OpenTSBuildStamp)
+    endif()
+
+    add_test(NAME ${TEST_NAME} COMMAND ${target})
+endfunction()
+
 add_subdirectory(actionids)
 add_subdirectory(cpudetect)
 add_subdirectory(gamedirs)

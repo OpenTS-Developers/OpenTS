@@ -65,8 +65,9 @@ unregistered installation, set `CMAKE_GENERATOR_INSTANCE` to its directory and
 product version.
 
 The solution contains only Debug and Release. Each writes its runtime files to
-`build/bin/<configuration>/` and copies nothing anywhere else. Compiler and
-linker intermediates stay in the selected build directory.
+`build/bin/<configuration>/` and copies nothing anywhere else. The test harnesses
+build into `build/test-bin/<configuration>/`, so `bin/` holds only what the game
+runs. Compiler and linker intermediates stay in the selected build directory.
 
 | Configuration | Runtime files |
 | --- | --- |

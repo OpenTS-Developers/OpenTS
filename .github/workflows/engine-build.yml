@@ -72,9 +72,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p artifact
-          # The output directory holds the test executables as well, so the runtime files are
-          # named rather than matched. The symbol file answers everything the linker map would,
-          # and is what the crash handler itself reads, so the map is left behind.
+          # The artifact carries what a downloaded build needs to run and debug itself, so it
+          # names those files rather than taking the output directory wholesale. The symbol
+          # file answers everything the linker map would, and is what the crash handler reads.
           engine=Game
           if [ "${{ matrix.configuration }}" = "Debug" ]; then engine=GameD; fi
           built=build/bin/${{ matrix.configuration }}
