@@ -95,6 +95,8 @@ set_target_properties(OpenTS PROPERTIES
 #
 message(STATUS "${PROJECT_NAME}: Applying compiler flags...")
 
+if(MSVC)
+
 set(OPENTS_COMPILE_OPTIONS
 
     # ================= DEBUG =================
@@ -132,6 +134,29 @@ set(OPENTS_COMPILE_OPTIONS
     >
 )
 
+else()
+
+# The native equivalents of the options above. /RTC1 and the static runtime library have
+# none, and a native compiler needs no help with UTF-8 sources or with __cplusplus.
+set(OPENTS_COMPILE_OPTIONS
+    -g
+    $<$<CONFIG:Debug>:-O0>
+    $<$<CONFIG:Debug>:-fno-omit-frame-pointer>
+    $<$<CONFIG:Release>:-O2>
+
+    # /fp:precise forbids contracting the engine's accumulations into fused operations,
+    # which a native compiler does within a statement by default.
+    -ffp-contract=off
+)
+
+# 32-bit x86 keeps x87 excess precision unless the SSE unit is selected, which is what
+# /arch:SSE2 is doing above.
+if(CMAKE_SIZEOF_VOID_P EQUAL 4 AND CMAKE_SYSTEM_PROCESSOR MATCHES "[xi][3-8]86")
+    list(APPEND OPENTS_COMPILE_OPTIONS -msse2 -mfpmath=sse)
+endif()
+
+endif()
+
 target_compile_options(OpenTS PRIVATE ${OPENTS_COMPILE_OPTIONS})
 
 #
@@ -160,7 +185,7 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" PROPER
         "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include;${BGFX_ROOT}/examples/common/imgui"
     COMPILE_DEFINITIONS
         "BX_CONFIG_DEBUG=$<IF:$<CONFIG:Debug>,1,$<BOOL:${BX_CONFIG_DEBUG}>>"
-    COMPILE_OPTIONS "/Zc:preprocessor"
+    COMPILE_OPTIONS "$<$<BOOL:${MSVC}>:/Zc:preprocessor>"
 )
 
 # bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
@@ -174,8 +199,8 @@ endif()
 
 message(STATUS "${PROJECT_NAME}: Adding compilier definitions...")
 target_compile_definitions(OpenTS PRIVATE
-    WIN32
-    _WINDOWS
+    $<$<BOOL:${WIN32}>:WIN32>
+    $<$<BOOL:${WIN32}>:_WINDOWS>
     NOMINMAX
 
     # Compiles Blowfish into the binary instead of reaching it through the COM object in
