@@ -12,6 +12,7 @@ set(OPENTS_VERSION_PRERELEASE "")
 option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared version" OFF)
 
 option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF)
+option(OPENTS_EXPERIMENTAL_X64 "Configure an unsupported 64-bit Windows build" OFF)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
    AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
@@ -23,6 +24,14 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
 elseif(MSVC)
     if(MSVC_VERSION LESS 1930)
         message(FATAL_ERROR "OpenTS requires MSVC 19.30 or newer.")
+    endif()
+    if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
+        # Saved games serialize pointer fields at their native width, and the packed version
+        # stamp that saves and network packets carry is the same either way.
+        message(WARNING
+            "OpenTS: this build has ${CMAKE_SIZEOF_VOID_P}-byte pointers. Saved games it "
+            "writes are not interchangeable with a supported 32-bit build's, and nothing in "
+            "the version stamp distinguishes them.")
     endif()
 else()
     message(FATAL_ERROR

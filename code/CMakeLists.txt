@@ -1,9 +1,12 @@
 # Limit the generated solution to supported configurations.
 set(CMAKE_CONFIGURATION_TYPES Debug Release CACHE STRING "" FORCE)
 
-# OpenTS currently supports 32-bit (x86) builds only.
-if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
-    message(FATAL_ERROR "OpenTS must be built as 32-bit x86. Reconfigure with -A Win32.")
+# OpenTS supports 32-bit (x86) builds. A 64-bit build is an unsupported experiment.
+if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4 AND NOT OPENTS_EXPERIMENTAL_X64)
+    message(FATAL_ERROR
+        "OpenTS must be built as 32-bit x86. Reconfigure with -A Win32. "
+        "For the unsupported 64-bit experiment, configure with "
+        "-A x64 -DOPENTS_EXPERIMENTAL_X64=ON.")
 endif()
 
 #
@@ -222,9 +225,10 @@ if(MSVC)
         /SUBSYSTEM:WINDOWS
         /DEBUG
         /MAP
-        # Raises the user address space from 2GB to 4GB under 64-bit Windows. Pointers may
-        # then have the high bit set, so anything holding one in a signed integer must only
-        # round-trip the bits and never compare or scale them.
+        # Raises the user address space of a 32-bit process from 2GB to 4GB under 64-bit
+        # Windows. Pointers may then have the high bit set, so anything holding one in a
+        # signed integer must only round-trip the bits and never compare or scale them. A
+        # 64-bit image carries the flag already.
         /LARGEADDRESSAWARE
         # Declares the process per-monitor DPI aware, so a scaled desktop does not blur
         # the frame by stretching the whole window.
