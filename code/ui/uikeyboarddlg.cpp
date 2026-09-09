@@ -25,6 +25,8 @@
 #include "language/language.h"
 #include "msgbox.h"
 #include "ownrdraw.h"
+#include "ui/uirmlview.h"
+#include "ui/uishell.h"
 #include "vector.h"
 
 
@@ -123,4 +125,20 @@ void UI_Keyboard_State(UIKeyboardState & state)
 	}
 
 	Fetch_Bindings(state.Bindings);
+}
+
+
+bool UI_Keyboard_Dialog(void)
+{
+	if (UI_Legacy_Dialog_Visible()) {
+		return(false);
+	}
+
+	UIKeyboardState state;
+	UI_Keyboard_State(state);
+
+	UIKeyboardPresenterClass presenter(UI_Keyboard_Service(), state);
+	std::unique_ptr<UIRmlViewClass> view = UI_Keyboard_View(presenter);
+
+	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
 }

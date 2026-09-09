@@ -774,13 +774,14 @@ beyond an ASCII test document.
    mode to try, `UIConfirmModePresenterClass` reads a `UIClockClass` and
    cancels itself at the timeout, which replaced the posted `WM_DESTROY`, and
    `display.rml` and `confirm.rml` are their documents, the latter counting
-   the seconds down; the keyboard dialog landed its first change:
-   `UIKeyboardPresenterClass` edits a copy of the hotkey table that OK saves
-   and Cancel drops, where the Win32 procedure edited the game's table and
-   reloaded the file on Cancel). Main options, the keyboard document with its
-   hotkey capture control, abort and surrender remain. The in-game options
-   menu opens load, save and delete, so it follows step 9. Evidence: settings
-   round-trip through `SUN.INI` unchanged.
+   the seconds down; the keyboard dialog landed too: `UIKeyboardPresenterClass`
+   edits a copy of the hotkey table that OK saves and Cancel drops, where the
+   Win32 procedure edited the game's table and reloaded the file on Cancel,
+   and `keyboard.rml` captures a key through a focusable element that
+   `uikeys.cpp` turns back into the `KEYBOARD.INI` number). Main options,
+   abort and surrender remain. The in-game options menu opens load, save and
+   delete, so it follows step 9. Evidence: settings round-trip through
+   `SUN.INI` unchanged.
 8. **Main menu family** (M). `IDD_MAIN_MENU`, campaign choice, game type,
    multiplayer game selection. The `NewMenuClass` drivers keep their loops.
 9. **Load, save, delete** (M, two changes).

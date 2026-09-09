@@ -82,6 +82,7 @@
 #include "techno.h"
 #include "theme.h"
 #include "ui/uikeyboard.h"
+#include "ui/uishell.h"
 #include "vector.h"
 #include "video.h"
 #include "vox.h"
@@ -628,11 +629,11 @@ static void Hotkey_Dialog_Fill_Commands(HWND window, UIKeyboardState const & sta
 {
 	HWND list = GetDlgItem(window, IDC_KEY_COMMANDS);
 	ListBox_ResetContent(list);
-	for (int command : state.Visible) {
-		int index = ListBox_AddString(list, state.Commands[command].Name.c_str());
+	for (UIHotkeyRow const & row : state.Visible) {
+		int index = ListBox_AddString(list, row.Name.c_str());
 		if (index != LB_ERR) {
-			ListBox_SetItemData(list, index, command);
-			if (command == state.Selected) {
+			ListBox_SetItemData(list, index, row.Command);
+			if (row.Command == state.Selected) {
 				ListBox_SetCurSel(list, index);
 			}
 		}
@@ -758,13 +759,8 @@ INT_PTR CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LP
 }
 
 
-/// <summary>
-/// Displays the keyboard configuration dialog.
-/// This routine brings up the hotkey assignment dialog and does not return until the player
-/// dismisses it. The title screen is kept refreshed while the dialog is up outside of a
-/// game.
-/// </summary>
-bool OptionsClass::Hotkey_Dialog(void)
+// The title screen is kept refreshed while the dialog is up outside of a game.
+static void Hotkey_Win32_Dialog(void)
 {
 	HWND handle;
 	int res = -1;
@@ -792,6 +788,19 @@ bool OptionsClass::Hotkey_Dialog(void)
 	}
 
 	_KeyboardPresenter = NULL;
+}
+
+
+/// <summary>
+/// Displays the keyboard configuration dialog.
+/// This routine brings up the hotkey assignment screen and does not return until the player
+/// dismisses it.
+/// </summary>
+bool OptionsClass::Hotkey_Dialog(void)
+{
+	if (!UI_Use_Rml() || !UI_Keyboard_Dialog()) {
+		Hotkey_Win32_Dialog();
+	}
 	return(true);
 }
 

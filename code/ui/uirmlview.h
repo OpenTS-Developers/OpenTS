@@ -59,6 +59,8 @@ class UIRmlViewClass : public Rml::EventListener
 	protected:
 		// Binds the view-model fields; the base binds the queue event.
 		virtual bool Bind(Rml::DataModelConstructor & model) = 0;
+		// Runs once the document has loaded, for the listeners a view puts on its elements.
+		virtual void Loaded(void) {}
 		virtual void ProcessEvent(Rml::Event & event) override;
 		void Queue(char const * name, int value = 0);
 

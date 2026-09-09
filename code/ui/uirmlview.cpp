@@ -69,6 +69,7 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	}
 
 	Doc->AddEventListener(Rml::EventId::Keydown, this);
+	Loaded();
 	return(true);
 }
 

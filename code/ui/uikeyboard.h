@@ -36,6 +36,14 @@ struct UIHotkeyBinding
 };
 
 
+// One row of the command list: the command and its name.
+struct UIHotkeyRow
+{
+	int Command = -1;
+	std::string Name;
+};
+
+
 // The engine calls the keyboard dialog makes. The game supplies one over the hotkey table,
 // the keyboard file and the message box; the test harness supplies one that records the calls.
 class UIKeyboardServiceClass
@@ -61,7 +69,7 @@ struct UIKeyboardState
 	std::vector<UIHotkeyBinding> Bindings;
 	std::vector<std::string> Categories;
 	int Category = -1;
-	std::vector<int> Visible;
+	std::vector<UIHotkeyRow> Visible;
 	int Selected = -1;
 	std::string Description;
 	std::string Shortcut;
@@ -107,3 +115,7 @@ std::unique_ptr<UIRmlViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & pres
 // RmlUi view.
 UIKeyboardServiceClass & UI_Keyboard_Service(void);
 void UI_Keyboard_State(UIKeyboardState & state);
+
+// Runs the keyboard dialog as an RmlUi screen. False means it could not run as one and the
+// caller should open its Win32 dialog.
+bool UI_Keyboard_Dialog(void);

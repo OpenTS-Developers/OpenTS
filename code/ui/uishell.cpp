@@ -22,6 +22,7 @@
 #include "ui/uicoord.h"
 #include "ui/uidev.h"
 #include "ui/uifile.h"
+#include "ui/uikeys.h"
 #include "ui/uirender.h"
 #include "ui/uirmlview.h"
 #include "ui/uisystem.h"
@@ -73,71 +74,6 @@ static bool _ModalClosing = false;
 
 static wchar_t _HighSurrogate = 0;
 
-static Rml::Input::KeyIdentifier _KeyMap[256];
-
-
-struct UIKeyMapping
-{
-	int VirtualKey;
-	Rml::Input::KeyIdentifier Key;
-};
-
-static const UIKeyMapping _KeyMappings[] = {
-	{ VK_BACK, Rml::Input::KI_BACK },
-	{ VK_TAB, Rml::Input::KI_TAB },
-	{ VK_CLEAR, Rml::Input::KI_CLEAR },
-	{ VK_RETURN, Rml::Input::KI_RETURN },
-	{ VK_PAUSE, Rml::Input::KI_PAUSE },
-	{ VK_CAPITAL, Rml::Input::KI_CAPITAL },
-	{ VK_ESCAPE, Rml::Input::KI_ESCAPE },
-	{ VK_SPACE, Rml::Input::KI_SPACE },
-	{ VK_PRIOR, Rml::Input::KI_PRIOR },
-	{ VK_NEXT, Rml::Input::KI_NEXT },
-	{ VK_END, Rml::Input::KI_END },
-	{ VK_HOME, Rml::Input::KI_HOME },
-	{ VK_LEFT, Rml::Input::KI_LEFT },
-	{ VK_UP, Rml::Input::KI_UP },
-	{ VK_RIGHT, Rml::Input::KI_RIGHT },
-	{ VK_DOWN, Rml::Input::KI_DOWN },
-	{ VK_SNAPSHOT, Rml::Input::KI_SNAPSHOT },
-	{ VK_INSERT, Rml::Input::KI_INSERT },
-	{ VK_DELETE, Rml::Input::KI_DELETE },
-	{ VK_LWIN, Rml::Input::KI_LWIN },
-	{ VK_RWIN, Rml::Input::KI_RWIN },
-	{ VK_APPS, Rml::Input::KI_APPS },
-	{ VK_MULTIPLY, Rml::Input::KI_MULTIPLY },
-	{ VK_ADD, Rml::Input::KI_ADD },
-	{ VK_SEPARATOR, Rml::Input::KI_SEPARATOR },
-	{ VK_SUBTRACT, Rml::Input::KI_SUBTRACT },
-	{ VK_DECIMAL, Rml::Input::KI_DECIMAL },
-	{ VK_DIVIDE, Rml::Input::KI_DIVIDE },
-	{ VK_NUMLOCK, Rml::Input::KI_NUMLOCK },
-	{ VK_SCROLL, Rml::Input::KI_SCROLL },
-	{ VK_SHIFT, Rml::Input::KI_LSHIFT },
-	{ VK_CONTROL, Rml::Input::KI_LCONTROL },
-	{ VK_MENU, Rml::Input::KI_LMENU },
-	{ VK_LSHIFT, Rml::Input::KI_LSHIFT },
-	{ VK_RSHIFT, Rml::Input::KI_RSHIFT },
-	{ VK_LCONTROL, Rml::Input::KI_LCONTROL },
-	{ VK_RCONTROL, Rml::Input::KI_RCONTROL },
-	{ VK_LMENU, Rml::Input::KI_LMENU },
-	{ VK_RMENU, Rml::Input::KI_RMENU },
-	{ VK_OEM_1, Rml::Input::KI_OEM_1 },
-	{ VK_OEM_PLUS, Rml::Input::KI_OEM_PLUS },
-	{ VK_OEM_COMMA, Rml::Input::KI_OEM_COMMA },
-	{ VK_OEM_MINUS, Rml::Input::KI_OEM_MINUS },
-	{ VK_OEM_PERIOD, Rml::Input::KI_OEM_PERIOD },
-	{ VK_OEM_2, Rml::Input::KI_OEM_2 },
-	{ VK_OEM_3, Rml::Input::KI_OEM_3 },
-	{ VK_OEM_4, Rml::Input::KI_OEM_4 },
-	{ VK_OEM_5, Rml::Input::KI_OEM_5 },
-	{ VK_OEM_6, Rml::Input::KI_OEM_6 },
-	{ VK_OEM_7, Rml::Input::KI_OEM_7 },
-	{ VK_OEM_8, Rml::Input::KI_OEM_8 },
-	{ VK_OEM_102, Rml::Input::KI_OEM_102 },
-};
-
-
 #ifdef _DEBUG
 
 // The test document is a developer's check of the shell; F9 shows and hides it, and F6 the
@@ -159,30 +95,6 @@ class UITestListenerClass : public Rml::EventListener
 static UITestListenerClass _TestListener;
 
 #endif
-
-
-// Letters, digits, the keypad digits and the function keys are contiguous in both codings.
-static void Build_Key_Map(void)
-{
-	for (int code = 0; code < 256; code++) {
-		_KeyMap[code] = Rml::Input::KI_UNKNOWN;
-	}
-
-	for (UIKeyMapping const & mapping : _KeyMappings) {
-		_KeyMap[mapping.VirtualKey] = mapping.Key;
-	}
-
-	for (int letter = 0; letter < 26; letter++) {
-		_KeyMap['A' + letter] = (Rml::Input::KeyIdentifier)(Rml::Input::KI_A + letter);
-	}
-	for (int digit = 0; digit < 10; digit++) {
-		_KeyMap['0' + digit] = (Rml::Input::KeyIdentifier)(Rml::Input::KI_0 + digit);
-		_KeyMap[VK_NUMPAD0 + digit] = (Rml::Input::KeyIdentifier)(Rml::Input::KI_NUMPAD0 + digit);
-	}
-	for (int function = 0; function < 12; function++) {
-		_KeyMap[VK_F1 + function] = (Rml::Input::KeyIdentifier)(Rml::Input::KI_F1 + function);
-	}
-}
 
 
 static int Key_Modifiers(void)
@@ -327,8 +239,6 @@ bool UI_Init(void)
 	if (_Ready) {
 		return(true);
 	}
-
-	Build_Key_Map();
 
 	if (!_Render.Init()) {
 		return(false);
@@ -677,7 +587,7 @@ static bool Handle_Key(UINT message, WPARAM wparam)
 		return(true);
 	}
 
-	Rml::Input::KeyIdentifier key = _KeyMap[wparam & 0xFF];
+	Rml::Input::KeyIdentifier key = UI_Key_Identifier((int)(wparam & 0xFF));
 	if (key == Rml::Input::KI_UNKNOWN) {
 		return(false);
 	}

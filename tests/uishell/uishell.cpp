@@ -34,6 +34,7 @@
 #include "ui/uidisplay.h"
 #include "ui/uigamectrl.h"
 #include "ui/uikeyboard.h"
+#include "ui/uikeys.h"
 #include "ui/uimsgbox.h"
 #include "ui/uirmlview.h"
 #include "ui/uiscreen.h"
@@ -611,6 +612,41 @@ UIKeyboardState Keyboard_Fixture(void)
 }
 
 
+std::vector<int> Visible_Commands(UIKeyboardState const & state)
+{
+	std::vector<int> commands;
+	for (UIHotkeyRow const & row : state.Visible) {
+		commands.push_back(row.Command);
+	}
+	return(commands);
+}
+
+
+// The key map turns Windows virtual keys into RmlUi identifiers and back, and a press in a
+// document into the KEYBOARD.INI number the game binds.
+void Test_Keys(void)
+{
+	Check(UI_Key_Identifier(0x41) == Rml::Input::KI_A && UI_Key_Identifier(0x39) == Rml::Input::KI_9 && UI_Key_Identifier(0x70) == Rml::Input::KI_F1, "letters, digits and function keys map to their identifiers");
+	Check(UI_Key_Identifier(0x1B) == Rml::Input::KI_ESCAPE && UI_Key_Identifier(0x07) == Rml::Input::KI_UNKNOWN, "named keys map and an unassigned code stays unknown");
+
+	bool roundtrip = true;
+	for (int code = 0; code < 256; code++) {
+		Rml::Input::KeyIdentifier key = UI_Key_Identifier(code);
+		if (key != Rml::Input::KI_UNKNOWN && UI_Key_Identifier(UI_Virtual_Key(key)) != key) {
+			roundtrip = false;
+		}
+	}
+	Check(roundtrip, "every identifier maps back to a virtual key that maps to it");
+	Check(UI_Virtual_Key(Rml::Input::KI_UNKNOWN) == 0, "the unknown identifier has no virtual key");
+
+	Check(UI_Key_Number(Rml::Input::KI_A, false, true, false) == 577, "Control and A make the KEYBOARD.INI number 577");
+	Check(UI_Key_Number(Rml::Input::KI_R, true, false, false) == 338 && UI_Key_Number(Rml::Input::KI_X, false, false, false) == 88, "Shift adds 256 and a bare key is its virtual key");
+	Check(UI_Key_Number(Rml::Input::KI_F5, false, false, true) == (0x74 | 0x400), "Alt adds 1024");
+	Check(UI_Key_Number(Rml::Input::KI_LSHIFT, true, false, false) == 0 && UI_Key_Number(Rml::Input::KI_RCONTROL, false, true, false) == 0 && UI_Key_Number(Rml::Input::KI_LMENU, false, false, true) == 0, "a modifier on its own is no key");
+	Check(UI_Key_Number(Rml::Input::KI_UNKNOWN, false, false, false) == 0, "an unknown key is no key");
+}
+
+
 // The keyboard presenter edits a copy of the hotkey table the way the Win32 dialog edited the
 // game's: a key moves to the selected command, an empty capture unbinds it, OK saves and Cancel
 // drops the edits.
@@ -620,10 +656,11 @@ void Test_Keyboard_Presenter(void)
 	UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
 
 	Check(presenter.State.Categories == std::vector<std::string>{ "Interface", "Selection" }, "the categories are listed once each, sorted without regard to case");
-	Check(presenter.State.Category == 0 && presenter.State.Visible == std::vector<int>{ 3, 1 } && presenter.State.Selected == -1, "the first category opens with its commands sorted by name and none selected");
+	Check(presenter.State.Category == 0 && Visible_Commands(presenter.State) == std::vector<int>{ 3, 1 } && presenter.State.Selected == -1, "the first category opens with its commands sorted by name and none selected");
+	Check(presenter.State.Visible.size() == 2 && presenter.State.Visible[0].Name == "Alliance", "a row carries its command's name");
 
 	Drive(presenter, "category", 1);
-	Check(presenter.State.Visible == std::vector<int>{ 2, 0 } && presenter.State.Description.empty(), "another category lists its own commands with the description cleared");
+	Check(Visible_Commands(presenter.State) == std::vector<int>{ 2, 0 } && presenter.State.Description.empty(), "another category lists its own commands with the description cleared");
 
 	Drive(presenter, "select", 0);
 	Check(presenter.State.Description == "Selects the view" && presenter.State.Shortcut == "K577", "selecting a command shows its description and shortcut");
@@ -1650,6 +1687,127 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 }
 
 
+// Drives the keyboard screen: the category and command rows select, a key pressed in the
+// focused capture element becomes the captured number, Assign moves it, and the dialog keys
+// keep their meaning inside the capture.
+void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingKeyboardServiceClass service;
+		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+		std::unique_ptr<UIRmlViewClass> view = UI_Keyboard_View(presenter);
+
+		Check(view->Prepare(context), "the keyboard view prepares against the test context");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the keyboard screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = view->Document();
+		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "row");
+		Check(rows.size() == 4, "the keyboard screen lists the categories and the open category's commands");
+		Check(rows.size() == 4 && rows[0]->GetInnerRML() == "Interface" && rows[0]->IsClassSet("selected") && rows[2]->GetInnerRML() == "Alliance" && rows[3]->GetInnerRML() == "Toggle Repair", "the first category is open with its commands sorted by name");
+
+		if (rows.size() == 4) {
+			Click(context, rows[1]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			rows = Visible_Of_Class(document, "row");
+			Check(rows.size() == 4 && rows[1]->IsClassSet("selected") && rows[2]->GetInnerRML() == "Scatter" && rows[3]->GetInnerRML() == "Select View", "a click on a category lists its commands");
+		}
+
+		Rml::Element * capture = document->GetElementById("capture");
+		Rml::Element * description = document->GetElementById("description");
+		Rml::Element * shortcut = document->GetElementById("shortcut");
+		Check(capture != nullptr && description != nullptr && shortcut != nullptr, "the keyboard screen has its capture element, description and shortcut");
+
+		if (rows.size() == 4) {
+			Click(context, rows[3]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Selected == 0 && description->GetInnerRML() == "Selects the view" && shortcut->GetInnerRML() == "K577", "a click on a command shows its description and shortcut");
+			Check(context.GetFocusElement() == capture, "selecting a command focuses the capture element");
+		}
+
+		if (capture != nullptr) {
+			capture->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_R, Rml::Input::KM_SHIFT);
+			context.ProcessKeyUp(Rml::Input::KI_R, Rml::Input::KM_SHIFT);
+			context.Update();
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair", "Shift and R in the capture element become the number 338 and name its holder");
+			Check(capture->GetInnerRML().find("K338") != std::string::npos, "the capture element shows the captured key");
+
+			context.ProcessKeyDown(Rml::Input::KI_LSHIFT, Rml::Input::KM_SHIFT);
+			context.ProcessKeyUp(Rml::Input::KI_LSHIFT, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.State.Captured == 338, "a modifier on its own leaves the capture as it was");
+		}
+
+		Rml::Element * assign = document->GetElementById("assign");
+		if (assign != nullptr) {
+			Click(context, assign);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.Key_Of(0) == 338 && presenter.Key_Of(1) == 0 && shortcut->GetInnerRML() == "K338" && presenter.State.Captured == 0, "Assign moves the key to the selected command and shows the new shortcut");
+		}
+
+		if (capture != nullptr) {
+			capture->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+			context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "save 0=338 2=88" }, "Enter in the capture element accepts the screen and saves");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingKeyboardServiceClass service;
+		service.ConfirmAnswer = false;
+		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+		std::unique_ptr<UIRmlViewClass> view = UI_Keyboard_View(presenter);
+
+		Check(view->Prepare(context), "a second keyboard view prepares");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * reset = view->Document()->GetElementById("reset");
+		if (reset != nullptr) {
+			Click(context, reset);
+			presenter.Drain();
+			Check(service.Calls == std::vector<std::string>{ "confirm" } && presenter.Key_Of(0) == 577, "Reset All asks first and a refusal changes nothing");
+		}
+
+		Rml::Element * capture = view->Document()->GetElementById("capture");
+		if (capture != nullptr) {
+			capture->Focus();
+		}
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.size() == 1, "Escape in the capture element cancels the screen without saving");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
 // Drives the wait box: the text follows the presenter, the frame appears only with a bar, and
 // the fill follows the percentage.
 void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
@@ -1798,6 +1956,7 @@ void Test_Documents(void)
 		Test_Sound_Screen(*context, system);
 		Test_Game_Controls_Screen(*context, system);
 		Test_Display_Screen(*context, system);
+		Test_Keyboard_Screen(*context, system);
 		Test_Wait_Box_Screen(*context, system);
 	}
 
@@ -1821,6 +1980,7 @@ int main(void)
 	Test_Coordinates();
 	Test_Display_Presenter();
 	Test_Game_Controls_Presenter();
+	Test_Keys();
 	Test_Keyboard_Presenter();
 	Test_Sound_Presenter();
 	Test_Strings();
