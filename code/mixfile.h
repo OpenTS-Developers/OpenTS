@@ -48,6 +48,7 @@ class MixFileClass : public Node<MixFileClass *>
 			int operator > (const SubBlock & two) const {return(CRC > two.CRC);};
 			int operator == (const SubBlock & two) const {return(CRC == two.CRC);};
 		};
+		static_assert(sizeof(SubBlock) == 12, "a MIX directory entry is 12 bytes on disk");
 
 	private:
 		static MixFileClass * Finder(char const * filename);
@@ -82,6 +83,7 @@ class MixFileClass : public Node<MixFileClass *>
 			short	count;
 			int	size;
 		};
+		static_assert(sizeof(FileHeader) == 6, "the MIX header is 6 bytes on disk");
 		#pragma pack()
 
 		/*

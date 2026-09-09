@@ -109,6 +109,7 @@ typedef struct _VQAHeader {
 	 */
 	unsigned long AudioPreload;
 } VQAHeader;
+static_assert(sizeof(VQAHeader) == 42, "the VQHD chunk is 42 bytes on disk");
 
 /* Version type. */
 #define VQAHD_VER1 1

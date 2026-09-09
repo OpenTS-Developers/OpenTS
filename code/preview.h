@@ -50,6 +50,7 @@ public:
 		int Width;
 		int Height;
 	};
+	static_assert(sizeof(Header) == 8, "the preview header is 8 bytes on disk");
 
 
 private:
