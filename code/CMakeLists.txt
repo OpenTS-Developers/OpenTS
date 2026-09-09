@@ -157,10 +157,20 @@ set(OPENTS_BGFX_SOURCES
 )
 set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
     INCLUDE_DIRECTORIES
-        "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include;${BGFX_ROOT}/examples/common/imgui;${BGFX_ROOT}/examples/common/debugdraw"
+        "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include"
     COMPILE_DEFINITIONS
         "BX_CONFIG_DEBUG=$<IF:$<CONFIG:Debug>,1,$<BOOL:${BX_CONFIG_DEBUG}>>"
     COMPILE_OPTIONS "/Zc:preprocessor"
+)
+
+# The frame quad's shaders come from the imgui example and the overlay's from the debug
+# draw example. The imgui example directory also carries an imgui.h that would shadow Dear
+# ImGui's, so only the file that needs those shaders sees it.
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
+    INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/imgui"
+)
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/uirender.cpp" APPEND PROPERTY
+    INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/debugdraw"
 )
 
 # bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
@@ -214,6 +224,7 @@ target_link_libraries(OpenTS PRIVATE
     bimg
     miniaudio
     RmlUi::Core
+    imgui
     comctl32
     dbghelp
     iphlpapi

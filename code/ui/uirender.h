@@ -11,11 +11,14 @@
 
 #include <RmlUi/Core/RenderInterface.h>
 
+struct ImDrawData;
+struct ImTextureData;
 
-// Draws RmlUi geometry through bgfx into the overlay view. Init needs the renderer running;
-// Shutdown comes after Rml::Shutdown, which releases every texture and geometry through
-// this object, and before the renderer stops. bgfx handles are kept as their indices so
-// that no bgfx type appears here.
+
+// Draws RmlUi geometry and Dear ImGui frames through bgfx into the overlay views. Init
+// needs the renderer running; Shutdown comes after Rml::Shutdown, which releases every
+// texture and geometry through this object, and before the renderer stops. bgfx handles
+// are kept as their indices so that no bgfx type appears here.
 class UIRenderInterfaceClass : public Rml::RenderInterface
 {
 	public:
@@ -24,8 +27,21 @@ class UIRenderInterfaceClass : public Rml::RenderInterface
 		bool Init(void);
 		void Shutdown(void);
 
-		// Points the overlay view at the frame's destination rectangle, in window pixels.
+		// Points the document view at the frame's destination rectangle, in window pixels.
 		void Begin_Frame(int x, int y, int width, int height);
+
+		// Points the developer view at the same rectangle.
+		void Begin_Dev_Frame(int x, int y, int width, int height);
+
+		// Draws one Dear ImGui frame into the developer view, creating, updating and
+		// destroying its textures as it asks.
+		void Render_ImGui(ImDrawData * data);
+
+		// Destroys every texture Dear ImGui still holds. Called before its context goes.
+		void Destroy_ImGui_Textures(void);
+
+		// The largest texture edge the renderer accepts.
+		int Texture_Limit(void) const;
 
 		// Writes the renderer's live texture and buffer counts to the debug log.
 		void Log_Resource_Counts(char const * when) const;
@@ -42,7 +58,9 @@ class UIRenderInterfaceClass : public Rml::RenderInterface
 		virtual void SetScissorRegion(Rml::Rectanglei region) override;
 
 	private:
+		void Set_View(unsigned short view, int x, int y, int width, int height);
 		bool Apply_Scissor(void) const;
+		void Update_ImGui_Texture(ImTextureData * texture);
 
 		bool IsReady;
 		unsigned short Program;
@@ -56,4 +74,6 @@ class UIRenderInterfaceClass : public Rml::RenderInterface
 
 		bool ScissorEnabled;
 		Rml::Rectanglei Scissor;
+
+		bool DevShortageLogged;
 };

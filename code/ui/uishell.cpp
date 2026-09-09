@@ -13,6 +13,7 @@
 #include "globals.h"
 #include "movies.h"
 #include "ui/uicoord.h"
+#include "ui/uidev.h"
 #include "ui/uifile.h"
 #include "ui/uirender.h"
 #include "ui/uisystem.h"
@@ -43,10 +44,13 @@ static bool _InTick = false;
 static bool _PendingResize = false;
 static bool _PendingLeave = false;
 static bool _PendingRelease = false;
+static int _PendingDevFocus = -1;
 
 // The presses the shell consumed, as a mask over the mouse button indices, and whether it
 // took the window's capture for them. Their releases belong to the shell wherever they land.
+// The developer overlays' own presses are a subset that their release goes back to.
 static unsigned int _OwnedButtons = 0;
+static unsigned int _DevOwnedButtons = 0;
 static bool _TookCapture = false;
 static bool _MouseInside = false;
 
@@ -119,9 +123,11 @@ static const UIKeyMapping _KeyMappings[] = {
 
 #ifdef _DEBUG
 
-// The test document is a developer's check of the shell; F9 shows and hides it.
+// The test document is a developer's check of the shell; F9 shows and hides it, and F6 the
+// developer overlays.
 static Rml::ElementDocument * _TestDocument = NULL;
 static bool _PendingToggle = false;
+static bool _PendingDevToggle = false;
 static bool _CloseRequested = false;
 
 class UITestListenerClass : public Rml::EventListener
@@ -241,10 +247,14 @@ static UIPointerPosition Pointer_Position(LPARAM clientlparam)
 static void Drop_Presses(void)
 {
 	unsigned int owned = _OwnedButtons;
+	unsigned int devowned = _DevOwnedButtons;
 	_OwnedButtons = 0;
+	_DevOwnedButtons = 0;
 
 	for (int button = 0; button < 3; button++) {
-		if (owned & (1u << button)) {
+		if (devowned & (1u << button)) {
+			UIDev_Mouse_Button(button, false);
+		} else if (owned & (1u << button)) {
 			_Context->ProcessMouseButtonUp(button, Key_Modifiers());
 		}
 	}
@@ -352,9 +362,12 @@ void UI_Shutdown(void)
 		Drop_Presses();
 	}
 
+	UIDev_Shutdown(_Render);
+
 #ifdef _DEBUG
 	_TestDocument = NULL;
 	_PendingToggle = false;
+	_PendingDevToggle = false;
 	_CloseRequested = false;
 #endif
 
@@ -396,6 +409,11 @@ void UI_Tick(void)
 		_PendingToggle = false;
 		Toggle_Test_Document();
 	}
+	if (_PendingDevToggle) {
+		_PendingDevToggle = false;
+		UIDev_Toggle(_Render);
+		Video_Mark_Overlay_Dirty();
+	}
 	if (_CloseRequested) {
 		_CloseRequested = false;
 		if (_TestDocument != NULL && _TestDocument->IsVisible()) {
@@ -419,14 +437,23 @@ void UI_Tick(void)
 		_Context->ProcessMouseLeave();
 		_MouseInside = false;
 	}
+	if (_PendingDevFocus >= 0) {
+		UIDev_Focus(_PendingDevFocus != 0);
+		_PendingDevFocus = -1;
+	}
 
 	_InContext = true;
 	_Context->Update();
+	UIDev_Tick();
 	_InContext = false;
 
-	if (Documents_Visible()) {
+	// An overlay closed from inside its own frame still needs one present to clear.
+	static bool devwasactive = false;
+	bool devactive = UIDev_Active();
+	if (Documents_Visible() || devactive || devwasactive) {
 		Video_Mark_Overlay_Dirty();
 	}
+	devwasactive = devactive;
 
 	_InTick = false;
 }
@@ -434,7 +461,13 @@ void UI_Tick(void)
 
 void UI_Render_Overlay(void)
 {
-	if (!_Ready || _InContext || Movie_Is_Playing() || !Documents_Visible()) {
+	if (!_Ready || _InContext || Movie_Is_Playing()) {
+		return;
+	}
+
+	bool documents = Documents_Visible();
+	bool overlays = UIDev_Active();
+	if (!documents && !overlays) {
 		return;
 	}
 
@@ -443,17 +476,30 @@ void UI_Render_Overlay(void)
 		return;
 	}
 
-	_Render.Begin_Frame(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight);
+	if (documents) {
+		_Render.Begin_Frame(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight);
 
-	_InContext = true;
-	_Context->Render();
-	_InContext = false;
+		_InContext = true;
+		_Context->Render();
+		_InContext = false;
+	}
+
+	if (overlays) {
+		_Render.Begin_Dev_Frame(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight);
+		UIDev_Render(_Render);
+	}
 }
 
 
 static bool Handle_Mouse_Move(LPARAM clientlparam)
 {
 	UIPointerPosition position = Pointer_Position(clientlparam);
+
+	UIDev_Mouse_Position(position.X, position.Y);
+	if (UIDev_Wants_Mouse()) {
+		Video_Mark_Overlay_Dirty();
+		return(false);
+	}
 
 	if (_OwnedButtons != 0 || position.Inside) {
 		_Context->ProcessMouseMove(position.X, position.Y, Key_Modifiers());
@@ -469,9 +515,44 @@ static bool Handle_Mouse_Move(LPARAM clientlparam)
 }
 
 
+static void Own_Press(int button)
+{
+	if (_OwnedButtons == 0) {
+		_TookCapture = (GetCapture() != MainWindow);
+		if (_TookCapture) {
+			SetCapture(MainWindow);
+		}
+	}
+	_OwnedButtons |= (1u << button);
+}
+
+
+static void Release_Press(int button)
+{
+	_OwnedButtons &= ~(1u << button);
+	_DevOwnedButtons &= ~(1u << button);
+	if (_OwnedButtons == 0 && _TookCapture) {
+		_TookCapture = false;
+		if (GetCapture() == MainWindow) {
+			ReleaseCapture();
+		}
+	}
+}
+
+
 static bool Handle_Button_Down(int button, LPARAM clientlparam)
 {
 	UIPointerPosition position = Pointer_Position(clientlparam);
+
+	if (UIDev_Active()) {
+		UIDev_Mouse_Position(position.X, position.Y);
+		if (UIDev_Mouse_Button(button, true)) {
+			Own_Press(button);
+			_DevOwnedButtons |= (1u << button);
+			Video_Mark_Overlay_Dirty();
+			return(true);
+		}
+	}
 
 	if (!position.Inside && _OwnedButtons == 0) {
 		return(false);
@@ -488,24 +569,32 @@ static bool Handle_Button_Down(int button, LPARAM clientlparam)
 		return(false);
 	}
 
-	if (_OwnedButtons == 0) {
-		_TookCapture = (GetCapture() != MainWindow);
-		if (_TookCapture) {
-			SetCapture(MainWindow);
-		}
-	}
-	_OwnedButtons |= (1u << button);
+	Own_Press(button);
 	return(true);
 }
 
 
 static bool Handle_Button_Up(int button, LPARAM clientlparam)
 {
+	UIPointerPosition position = Pointer_Position(clientlparam);
+
+	if (_DevOwnedButtons & (1u << button)) {
+		UIDev_Mouse_Position(position.X, position.Y);
+		UIDev_Mouse_Button(button, false);
+		Release_Press(button);
+		Video_Mark_Overlay_Dirty();
+		return(true);
+	}
+
+	// A release the overlays did not own still ends the press they saw begin.
+	if (UIDev_Active()) {
+		UIDev_Mouse_Button(button, false);
+	}
+
 	if ((_OwnedButtons & (1u << button)) == 0) {
 		return(false);
 	}
 
-	UIPointerPosition position = Pointer_Position(clientlparam);
 	int modifiers = Key_Modifiers();
 
 	_Context->ProcessMouseMove(position.X, position.Y, modifiers);
@@ -513,14 +602,7 @@ static bool Handle_Button_Up(int button, LPARAM clientlparam)
 	_MouseInside = position.Inside;
 	Video_Mark_Overlay_Dirty();
 
-	_OwnedButtons &= ~(1u << button);
-	if (_OwnedButtons == 0 && _TookCapture) {
-		_TookCapture = false;
-		if (GetCapture() == MainWindow) {
-			ReleaseCapture();
-		}
-	}
-
+	Release_Press(button);
 	return(true);
 }
 
@@ -534,12 +616,23 @@ static bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
 	UIPointerPosition position = UI_Client_To_Overlay(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight, point.x, point.y);
+
+	// Windows counts wheel movement away from the user as positive; ImGui scrolls up for it
+	// and RmlUi scrolls down.
+	float delta = (float)(short)HIWORD(wparam) / (float)WHEEL_DELTA;
+
+	if (UIDev_Active()) {
+		UIDev_Mouse_Position(position.X, position.Y);
+		if (UIDev_Mouse_Wheel(delta)) {
+			Video_Mark_Overlay_Dirty();
+			return(true);
+		}
+	}
+
 	if (!position.Inside) {
 		return(false);
 	}
 
-	// Windows counts wheel movement away from the user as positive; RmlUi scrolls down for it.
-	float delta = (float)(short)HIWORD(wparam) / (float)WHEEL_DELTA;
 	bool consumed = !_Context->ProcessMouseWheel(Rml::Vector2f(0.0f, -delta), Key_Modifiers());
 	Video_Mark_Overlay_Dirty();
 	return(consumed);
@@ -548,6 +641,11 @@ static bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 
 static bool Handle_Key(UINT message, WPARAM wparam)
 {
+	if (UIDev_Key(wparam, message == WM_KEYDOWN)) {
+		Video_Mark_Overlay_Dirty();
+		return(true);
+	}
+
 	Rml::Input::KeyIdentifier key = _KeyMap[wparam & 0xFF];
 	if (key == Rml::Input::KI_UNKNOWN) {
 		return(false);
@@ -570,6 +668,11 @@ static bool Handle_Key(UINT message, WPARAM wparam)
 static bool Handle_Char(WPARAM wparam)
 {
 	wchar_t unit = (wchar_t)wparam;
+
+	if (UIDev_Character(unit)) {
+		Video_Mark_Overlay_Dirty();
+		return(true);
+	}
 
 	if (unit >= 0xD800 && unit < 0xDC00) {
 		_HighSurrogate = unit;
@@ -617,6 +720,11 @@ bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM cli
 	}
 
 	if (message == WM_ACTIVATEAPP) {
+		if (_InContext) {
+			_PendingDevFocus = (wparam != 0) ? 1 : 0;
+		} else {
+			UIDev_Focus(wparam != 0);
+		}
 		if (wparam == 0 && _MouseInside) {
 			if (_InContext) {
 				_PendingLeave = true;
@@ -630,7 +738,7 @@ bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM cli
 		return(false);
 	}
 
-	if (_InContext || (_OwnedButtons == 0 && !Documents_Visible())) {
+	if (_InContext || (_OwnedButtons == 0 && !Documents_Visible() && !UIDev_Active())) {
 		return(false);
 	}
 
@@ -697,6 +805,12 @@ bool UI_Intercept_Pumped_Message(MSG const & msg)
 	if (_Ready && Debug_Flag && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F9) {
 		if (msg.message == WM_KEYDOWN && (msg.lParam & (1 << 30)) == 0) {
 			_PendingToggle = true;
+		}
+		return(true);
+	}
+	if (_Ready && Debug_Flag && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F6) {
+		if (msg.message == WM_KEYDOWN && (msg.lParam & (1 << 30)) == 0) {
+			_PendingDevToggle = true;
 		}
 		return(true);
 	}

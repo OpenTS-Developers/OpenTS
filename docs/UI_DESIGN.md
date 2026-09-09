@@ -1,10 +1,10 @@
 # UI system design
 
 Status: proposal under implementation. Steps 1 and 2 of the
-[migration plan](#migration-plan), the dependencies and the RmlUi shell, have
-landed; the Dear ImGui half of step 2 and everything after it are not yet
-implemented, built, or measured. Source inspection and upstream documentation
-inform the rest. This page owns the proposed UI architecture and migration;
+[migration plan](#migration-plan), the dependencies, the RmlUi shell, and the
+Dear ImGui overlays, have landed; everything after them is not yet implemented,
+built, or measured. Source inspection and upstream documentation inform the
+rest. This page owns the proposed UI architecture and migration;
 [Building OpenTS](BUILDING.md) owns build support and
 [Project direction](DIRECTION.md) the wider architecture.
 
@@ -185,13 +185,13 @@ written.
 | --- | --- | --- |
 | `bgfxviews.hh` (in `code/`) | the view ids the presenter and the overlays share | landed |
 | `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector | landed without the modal runner and selector |
-| `uirender.h`, `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx | landed without ImGui |
+| `uirender.h`, `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx | landed |
 | `uisystem.h`, `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation | landed with time, logging, and resource naming |
 | `uifile.h`, `uifile.cpp` | RmlUi file interface over `CCFileClass` | landed |
 | `uitexture.h`, `uitexture.cpp` | image decoding, SHP and PCX conversion, surface-backed textures | landed for PNG and TGA |
 | `uicoord.h` | the pointer mapping from client pixels into the overlay | landed |
 | `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base | |
-| `uidev.cpp` | ImGui context and developer overlays | |
+| `uidev.h`, `uidev.cpp` | ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
 | one file per screen | presenter, view-model binding, and the RmlUi view glue | |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
@@ -586,17 +586,24 @@ key gets a manual page. A sidebar view key follows the sidebar view.
 ## Dear ImGui
 
 ImGui is vendored as a submodule, compiled into Debug and Release, and
-rendered by a small bgfx adapter in `uirender.cpp` that reuses the same
-program and view setup as the RmlUi renderer, on `VIEW_DEV`. Its platform
-adapter feeds it input through the shell hook and follows the pinned
-version's backend contract for texture creation and destruction. Overlays are
-armed by the developer-mode flags the manual documents; tool visibility and
-frame rate never touch deterministic state. The first uses are single-window
-diagnostics such as frame benchmarks, network statistics, and object and
-house inspectors. A player-facing feature may choose an ImGui view through
-the same screen contract; it then meets the same coexistence, input, and
-evidence rules as an RmlUi view. Docking, extra native viewports, and editor
-architecture are separate work.
+rendered by a small bgfx adapter in `uirender.cpp` that reuses the RmlUi
+renderer's program and view setup, on `VIEW_DEV`, with its own vertex layout
+and straight-alpha blending, since ImGui's colours are not premultiplied. Its
+geometry travels in transient buffers every frame, and its textures follow the
+pinned version's contract: the renderer answers each create, update, and
+destroy request and acknowledges it. The glyph atlas is created empty and
+filled by updates, because bgfx makes a texture created with pixels immutable
+and the atlas grows as glyphs are first drawn. Its platform adapter in
+`uidev.cpp` feeds it input through the shell hook ahead of the documents; the
+default font is scaled by the frame's dp ratio. The context is created on the
+first toggle, so a build whose developer keys never arm allocates nothing.
+Overlays are armed by the developer-mode flags the manual documents; tool
+visibility and frame rate never touch deterministic state. The first overlay
+is the frame benchmark window on F6; network statistics and object and house
+inspectors follow the same shape. A player-facing feature may choose an ImGui
+view through the same screen contract; it then meets the same coexistence,
+input, and evidence rules as an RmlUi view. Docking, extra native viewports,
+and editor architecture are separate work.
 
 ## Sidebar
 
@@ -709,11 +716,11 @@ beyond an ASCII test document.
 1. **Dependencies** (S, landed). Submodules, CMake, notices, `BUILDING.md`,
    and a `tests/uishell` smoke test that links the three libraries. No engine
    code uses them. Evidence: Debug and Release build.
-2. **Shell** (M, RmlUi half landed). Everything in the code-layout table
+2. **Shell** (M, landed in two changes). Everything in the code-layout table
    except screens, the backend split, the input hook, resize handling, the
    `ui/` copy step, the file interface with mix resolution, and a Debug-only
-   test document toggled by F9. The Dear ImGui context, its renderer, and the
-   first overlay follow as their own change. Evidence: the test document
+   test document toggled by F9; then the Dear ImGui context, its renderer, and
+   the frame benchmark window toggled by F6. Evidence: the test document
    renders over the main menu and in game at several resolutions and scale
    modes; clicks on it, beside any legacy dialog, are consumed; clicks beside
    it reach the game; legacy dialogs still open and close; repeated open and
@@ -751,9 +758,9 @@ beyond an ASCII test document.
 14. **Sidebar** (M, then L). The model and view split with the gadget view;
     later the RmlUi view over the whole column and its selection key.
 
-ImGui overlays (S each) can follow step 2: frame benchmarks first, then what
-a developer needs next. GadgetClass screens, MSEngine screens, and the
-credits are unscheduled.
+ImGui overlays (S each) follow step 2: the frame benchmarks landed with it,
+then what a developer needs next. GadgetClass screens, MSEngine screens, and
+the credits are unscheduled.
 
 ## Validation and evidence
 

@@ -242,6 +242,33 @@ void Test_FreeType(void)
 }
 
 
+void Draw_ImGui_Test_Window(void)
+{
+	ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Always);
+	ImGui::Begin("Test window");
+	ImGui::TextUnformatted("A frame drawn without a renderer.");
+	if (ImGui::BeginTable("rows", 3, ImGuiTableFlags_Borders)) {
+		ImGui::TableSetupColumn("Process");
+		ImGui::TableSetupColumn("Frame %");
+		ImGui::TableSetupColumn("Average");
+		ImGui::TableHeadersRow();
+		for (int row = 0; row < 3; row++) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::Text("Row %d", row);
+			ImGui::TableNextColumn();
+			ImGui::Text("%.1f", row * 10.0f);
+			ImGui::TableNextColumn();
+			ImGui::Text("%d", row * 100);
+		}
+		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+
+// The shell drives Dear ImGui through the 1.92 texture contract; this walks that contract
+// with the harness standing in for the renderer.
 void Test_ImGui(void)
 {
 	Check(IMGUI_CHECKVERSION(), "ImGui header and library agree on structure layouts");
@@ -249,10 +276,66 @@ void Test_ImGui(void)
 	ImGuiContext * context = ImGui::CreateContext();
 	Check(context != nullptr, "ImGui creates a context");
 	std::printf("  Dear ImGui %s\n", ImGui::GetVersion());
-
-	if (context != nullptr) {
-		ImGui::DestroyContext(context);
+	if (context == nullptr) {
+		return;
 	}
+
+	ImGuiIO & io = ImGui::GetIO();
+	io.IniFilename = nullptr;
+	io.LogFilename = nullptr;
+	io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures | ImGuiBackendFlags_RendererHasVtxOffset;
+	io.DisplaySize = ImVec2(1280.0f, 800.0f);
+	io.DeltaTime = 1.0f / 60.0f;
+
+	ImGui::NewFrame();
+	Draw_ImGui_Test_Window();
+	ImGui::Render();
+
+	ImDrawData * data = ImGui::GetDrawData();
+	Check(data != nullptr && data->Valid, "the first ImGui frame produces draw data");
+	Check(data != nullptr && data->CmdLists.Size > 0 && data->TotalVtxCount > 0, "the first ImGui frame draws geometry");
+
+	ImTextureData * atlas = nullptr;
+	if (data != nullptr && data->Textures != nullptr && data->Textures->Size == 1) {
+		atlas = (*data->Textures)[0];
+	}
+	Check(atlas != nullptr, "the first ImGui frame lists one texture, the font atlas");
+	Check(atlas != nullptr && atlas->Status == ImTextureStatus_WantCreate, "the font atlas asks to be created");
+	Check(atlas != nullptr && atlas->Format == ImTextureFormat_RGBA32 && atlas->Width > 0 && atlas->Height > 0, "the font atlas is RGBA32 with a size");
+
+	if (atlas != nullptr) {
+		atlas->SetTexID((ImTextureID)1);
+		atlas->SetStatus(ImTextureStatus_OK);
+	}
+
+	ImGui::NewFrame();
+	Draw_ImGui_Test_Window();
+	ImGui::Render();
+	data = ImGui::GetDrawData();
+
+	bool acknowledged = data != nullptr && data->Textures != nullptr;
+	if (acknowledged) {
+		for (ImTextureData * texture : *data->Textures) {
+			if (texture->Status != ImTextureStatus_OK) {
+				acknowledged = false;
+			}
+		}
+	}
+	Check(acknowledged, "the second ImGui frame leaves every texture acknowledged");
+
+	bool textured = data != nullptr;
+	if (textured) {
+		for (ImDrawList const * list : data->CmdLists) {
+			for (ImDrawCmd const & command : list->CmdBuffer) {
+				if (command.UserCallback == nullptr && command.ElemCount > 0 && command.GetTexID() == ImTextureID_Invalid) {
+					textured = false;
+				}
+			}
+		}
+	}
+	Check(textured, "every ImGui draw command carries a texture id");
+
+	ImGui::DestroyContext(context);
 }
 
 

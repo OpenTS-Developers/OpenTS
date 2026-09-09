@@ -52,4 +52,7 @@ void Video_Present_If_Dirty(void);
 
 VideoScaleInfo const & Video_Get_Scale_Info(void);
 
+unsigned int Video_Presents_Per_Second(void);
+unsigned int Video_Present_Interval(void);
+
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight);

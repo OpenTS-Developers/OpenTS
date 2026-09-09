@@ -57,6 +57,12 @@ static bool _OverlayIsDirty = false;
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
 
+// Presents in the second under way and in the whole second before it, for the developer
+// overlays.
+static unsigned int _PresentsThisSecond = 0;
+static unsigned int _PresentsLastSecond = 0;
+static unsigned int _PresentSecondStart = 0;
+
 // Presents can nest, because a dialog repainting itself presents from inside the paint
 // that the engine's own present provoked.
 static bool _Presenting = false;
@@ -192,6 +198,9 @@ void Video_Shutdown(void)
 	_Initialized = false;
 	_FrameIsDirty = false;
 	_OverlayIsDirty = false;
+	_PresentsThisSecond = 0;
+	_PresentsLastSecond = 0;
+	_PresentSecondStart = 0;
 }
 
 
@@ -298,6 +307,13 @@ static void Present(bool uploadframe)
 	_OverlayIsDirty = false;
 	_LastPresentTime = timeGetTime();
 
+	if (_LastPresentTime - _PresentSecondStart >= 1000) {
+		_PresentsLastSecond = _PresentsThisSecond;
+		_PresentsThisSecond = 0;
+		_PresentSecondStart = _LastPresentTime;
+	}
+	_PresentsThisSecond++;
+
 	_Presenting = true;
 	if (Backend_Present(uploadframe ? pixels : NULL, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode())) {
 		UI_Render_Overlay();
@@ -343,6 +359,24 @@ void Video_Present_If_Dirty(void)
 VideoScaleInfo const & Video_Get_Scale_Info(void)
 {
 	return(_ScaleInfo);
+}
+
+
+/// <summary>
+/// Reports how many frames reached the screen in the last whole second.
+/// </summary>
+unsigned int Video_Presents_Per_Second(void)
+{
+	return(_PresentsLastSecond);
+}
+
+
+/// <summary>
+/// Reports the shortest gap the presenter allows between two frames, in milliseconds.
+/// </summary>
+unsigned int Video_Present_Interval(void)
+{
+	return(_PresentInterval);
 }
 
 

@@ -7,7 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The bgfx side of the UI overlay. With bgfxbackend.cpp it is one of the two translation
+// The bgfx side of the UI overlays. With bgfxbackend.cpp it is one of the two translation
 // units that include bgfx.
 
 #include "ui/uirender.h"
@@ -23,6 +23,8 @@
 #include <vs_debugdraw_fill_texture.bin.h>
 #include <fs_debugdraw_fill_texture.bin.h>
 
+#include <imgui.h>
+
 #include <cassert>
 #include <cstring>
 #include <vector>
@@ -36,7 +38,9 @@ static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
 	BGFX_EMBEDDED_SHADER_END()
 };
 
+// RmlUi and Dear ImGui order their vertex members differently.
 static bgfx::VertexLayout _VertexLayout;
+static bgfx::VertexLayout _DevVertexLayout;
 
 
 // A compiled document fragment, submitted many times with different translations.
@@ -47,8 +51,8 @@ struct UIGeometry
 };
 
 
-// RmlUi reads a zero handle as no texture, and bgfx hands out index zero, so texture
-// handles cross the boundary biased by one.
+// RmlUi and Dear ImGui both read a zero handle as no texture, and bgfx hands out index
+// zero, so texture handles cross either boundary biased by one.
 static bgfx::TextureHandle Texture_Handle(Rml::TextureHandle handle)
 {
 	bgfx::TextureHandle texture = { (uint16_t)(handle - 1) };
@@ -66,7 +70,8 @@ UIRenderInterfaceClass::UIRenderInterfaceClass(void) :
 	ViewWidth(0),
 	ViewHeight(0),
 	ScissorEnabled(false),
-	Scissor(Rml::Rectanglei::MakeInvalid())
+	Scissor(Rml::Rectanglei::MakeInvalid()),
+	DevShortageLogged(false)
 {
 }
 
@@ -81,6 +86,12 @@ bool UIRenderInterfaceClass::Init(void)
 		.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
 		.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
 		.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+		.end();
+
+	_DevVertexLayout.begin()
+		.add(bgfx::Attrib::Position, 2, bgfx::AttribType::Float)
+		.add(bgfx::Attrib::TexCoord0, 2, bgfx::AttribType::Float)
+		.add(bgfx::Attrib::Color0, 4, bgfx::AttribType::Uint8, true)
 		.end();
 
 	bgfx::RendererType::Enum type = bgfx::getRendererType();
@@ -148,8 +159,8 @@ void UIRenderInterfaceClass::Shutdown(void)
 
 
 // View state persists across frames and resets, and the prescale pass binds a framebuffer
-// to a lower view, so everything the overlay relies on is set again each frame.
-void UIRenderInterfaceClass::Begin_Frame(int x, int y, int width, int height)
+// to a lower view, so everything the overlays rely on is set again each frame.
+void UIRenderInterfaceClass::Set_View(unsigned short view, int x, int y, int width, int height)
 {
 	ViewX = x;
 	ViewY = y;
@@ -159,10 +170,32 @@ void UIRenderInterfaceClass::Begin_Frame(int x, int y, int width, int height)
 	float projection[16];
 	Backend_Build_Ortho_Projection(projection, width, height);
 
-	bgfx::setViewFrameBuffer(VIEW_UI, BGFX_INVALID_HANDLE);
-	bgfx::setViewMode(VIEW_UI, bgfx::ViewMode::Sequential);
-	bgfx::setViewRect(VIEW_UI, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height);
-	bgfx::setViewTransform(VIEW_UI, NULL, projection);
+	bgfx::setViewFrameBuffer(view, BGFX_INVALID_HANDLE);
+	bgfx::setViewMode(view, bgfx::ViewMode::Sequential);
+	bgfx::setViewRect(view, (uint16_t)x, (uint16_t)y, (uint16_t)width, (uint16_t)height);
+	bgfx::setViewTransform(view, NULL, projection);
+}
+
+
+void UIRenderInterfaceClass::Begin_Frame(int x, int y, int width, int height)
+{
+	Set_View(VIEW_UI, x, y, width, height);
+}
+
+
+void UIRenderInterfaceClass::Begin_Dev_Frame(int x, int y, int width, int height)
+{
+	Set_View(VIEW_DEV, x, y, width, height);
+}
+
+
+int UIRenderInterfaceClass::Texture_Limit(void) const
+{
+	if (!IsReady) {
+		return(0);
+	}
+
+	return((int)bgfx::getCaps()->limits.maxTextureSize);
 }
 
 
@@ -348,4 +381,148 @@ bool UIRenderInterfaceClass::Apply_Scissor(void) const
 
 	bgfx::setScissor((uint16_t)left, (uint16_t)top, (uint16_t)(right - left), (uint16_t)(bottom - top));
 	return(true);
+}
+
+
+// Dear ImGui asks for its textures through status requests; each is answered here and
+// acknowledged, and a destroyed texture keeps its pixels so that ImGui can ask again.
+void UIRenderInterfaceClass::Update_ImGui_Texture(ImTextureData * texture)
+{
+	if (texture->Status == ImTextureStatus_WantCreate) {
+		assert(texture->Format == ImTextureFormat_RGBA32);
+
+		// A texture created with its pixels is immutable in bgfx, and the atlas keeps growing.
+		bgfx::TextureHandle handle = bgfx::createTexture2D((uint16_t)texture->Width, (uint16_t)texture->Height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+		if (!bgfx::isValid(handle)) {
+			DebugString("UI: a %dx%d overlay texture could not be created\n", texture->Width, texture->Height);
+			return;
+		}
+
+		bgfx::updateTexture2D(handle, 0, 0, 0, 0, (uint16_t)texture->Width, (uint16_t)texture->Height, bgfx::copy(texture->GetPixels(), (uint32_t)texture->GetSizeInBytes()));
+		texture->SetTexID((ImTextureID)handle.idx + 1);
+		texture->SetStatus(ImTextureStatus_OK);
+	} else if (texture->Status == ImTextureStatus_WantUpdates) {
+		bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
+		int pitch = texture->GetPitch();
+
+		for (ImTextureRect const & rect : texture->Updates) {
+			uint32_t size = (uint32_t)((rect.h - 1) * pitch + rect.w * texture->BytesPerPixel);
+			bgfx::updateTexture2D(handle, 0, 0, rect.x, rect.y, rect.w, rect.h, bgfx::copy(texture->GetPixelsAt(rect.x, rect.y), size), (uint16_t)pitch);
+		}
+
+		texture->SetStatus(ImTextureStatus_OK);
+	}
+
+	if (texture->Status == ImTextureStatus_WantDestroy && texture->UnusedFrames > 0) {
+		if (texture->TexID != ImTextureID_Invalid) {
+			bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
+			bgfx::destroy(handle);
+			texture->SetTexID(ImTextureID_Invalid);
+		}
+		texture->SetStatus(ImTextureStatus_Destroyed);
+	}
+}
+
+
+void UIRenderInterfaceClass::Destroy_ImGui_Textures(void)
+{
+	for (ImTextureData * texture : ImGui::GetPlatformIO().Textures) {
+		if (texture->TexID != ImTextureID_Invalid) {
+			bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
+			bgfx::destroy(handle);
+			texture->SetTexID(ImTextureID_Invalid);
+		}
+		texture->SetStatus(ImTextureStatus_Destroyed);
+	}
+}
+
+
+// ImGui rebuilds its geometry every frame, so it travels in transient buffers; its colours
+// carry straight alpha, unlike the premultiplied documents.
+void UIRenderInterfaceClass::Render_ImGui(ImDrawData * data)
+{
+	if (!IsReady || data == NULL || !data->Valid || data->DisplaySize.x <= 0.0f || data->DisplaySize.y <= 0.0f) {
+		return;
+	}
+
+	if (data->Textures != NULL) {
+		for (ImTextureData * texture : *data->Textures) {
+			if (texture->Status != ImTextureStatus_OK) {
+				Update_ImGui_Texture(texture);
+			}
+		}
+	}
+
+	float identity[16];
+	memset(identity, 0, sizeof(identity));
+	identity[0] = 1.0f;
+	identity[5] = 1.0f;
+	identity[10] = 1.0f;
+	identity[15] = 1.0f;
+
+	bgfx::UniformHandle sampler = { Sampler };
+	bgfx::ProgramHandle program = { Program };
+	ImDrawCallback resetstate = ImGui::GetPlatformIO().DrawCallback_ResetRenderState;
+
+	for (ImDrawList const * list : data->CmdLists) {
+		uint32_t vertexcount = (uint32_t)list->VtxBuffer.Size;
+		uint32_t indexcount = (uint32_t)list->IdxBuffer.Size;
+		if (vertexcount == 0 || indexcount == 0) {
+			continue;
+		}
+
+		if (bgfx::getAvailTransientVertexBuffer(vertexcount, _DevVertexLayout) < vertexcount || bgfx::getAvailTransientIndexBuffer(indexcount) < indexcount) {
+			if (!DevShortageLogged) {
+				DebugString("UI: an overlay draw list did not fit the transient buffers and was skipped\n");
+				DevShortageLogged = true;
+			}
+			continue;
+		}
+
+		bgfx::TransientVertexBuffer vertices;
+		bgfx::TransientIndexBuffer indices;
+		bgfx::allocTransientVertexBuffer(&vertices, vertexcount, _DevVertexLayout);
+		bgfx::allocTransientIndexBuffer(&indices, indexcount);
+		memcpy(vertices.data, list->VtxBuffer.Data, vertexcount * sizeof(ImDrawVert));
+		memcpy(indices.data, list->IdxBuffer.Data, indexcount * sizeof(ImDrawIdx));
+
+		for (ImDrawCmd const & command : list->CmdBuffer) {
+			if (command.UserCallback != NULL) {
+				if (command.UserCallback != resetstate) {
+					command.UserCallback(list, &command);
+				}
+				continue;
+			}
+			if (command.ElemCount == 0) {
+				continue;
+			}
+
+			int left = ViewX + (int)(command.ClipRect.x - data->DisplayPos.x);
+			int top = ViewY + (int)(command.ClipRect.y - data->DisplayPos.y);
+			int right = ViewX + (int)(command.ClipRect.z - data->DisplayPos.x);
+			int bottom = ViewY + (int)(command.ClipRect.w - data->DisplayPos.y);
+
+			if (left < ViewX) left = ViewX;
+			if (top < ViewY) top = ViewY;
+			if (right > ViewX + ViewWidth) right = ViewX + ViewWidth;
+			if (bottom > ViewY + ViewHeight) bottom = ViewY + ViewHeight;
+			if (right <= left || bottom <= top) {
+				continue;
+			}
+
+			bgfx::TextureHandle sampled = { WhiteTexture };
+			ImTextureID id = command.GetTexID();
+			if (id != ImTextureID_Invalid) {
+				sampled.idx = (uint16_t)(id - 1);
+			}
+
+			bgfx::setScissor((uint16_t)left, (uint16_t)top, (uint16_t)(right - left), (uint16_t)(bottom - top));
+			bgfx::setTransform(identity);
+			bgfx::setVertexBuffer(0, &vertices, command.VtxOffset, vertexcount - command.VtxOffset);
+			bgfx::setIndexBuffer(&indices, command.IdxOffset, command.ElemCount);
+			bgfx::setTexture(0, sampler, sampled, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
+			bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA));
+			bgfx::submit(VIEW_DEV, program);
+		}
+	}
 }
