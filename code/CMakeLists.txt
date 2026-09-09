@@ -80,8 +80,9 @@ set_target_properties(OpenTS PROPERTIES
 )
 
 set_target_properties(OpenTS PROPERTIES
-    VS_DEBUGGER_COMMAND "${TS_RUN_DIR}/$<TARGET_FILE_NAME:OpenTS>"
-    VS_DEBUGGER_WORKING_DIRECTORY "${TS_RUN_DIR}"
+    VS_DEBUGGER_COMMAND "$<TARGET_FILE:OpenTS>"
+    VS_DEBUGGER_WORKING_DIRECTORY "$<TARGET_FILE_DIR:OpenTS>"
+    VS_DEBUGGER_COMMAND_ARGUMENTS "-DATADIR=${OPENTS_GAME_DIR}"
 )
 
 #
@@ -301,37 +302,6 @@ endforeach()
 # General source files
 source_group("Source Files" REGULAR_EXPRESSION ".*\\.(c|cpp)$")
 source_group("Header Files" REGULAR_EXPRESSION ".*\\.(h|hpp)$")
-
-#
-# ---------------------------------------------------------
-# Populate the local run directory
-# ---------------------------------------------------------
-#
-message(STATUS "${PROJECT_NAME}: Creating post-build commands...")
-add_custom_command(TARGET OpenTS POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory
-        "${TS_RUN_DIR}"
-)
-
-add_custom_command(TARGET OpenTS POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_FILE:OpenTS>"
-        "${TS_RUN_DIR}"
-)
-
-# Copy the linker-generated .pdb alongside the exe
-add_custom_command(TARGET OpenTS POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_PDB_FILE:OpenTS>"
-        "${TS_RUN_DIR}"
-)
-
-# Copy the linker-generated .map (sits next to the exe, no GenEx for it)
-add_custom_command(TARGET OpenTS POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "$<TARGET_FILE_DIR:OpenTS>/$<TARGET_FILE_BASE_NAME:OpenTS>.map"
-        "${TS_RUN_DIR}"
-)
 
 #
 # ---------------------------------------------------------

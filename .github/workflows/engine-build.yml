@@ -57,12 +57,9 @@ jobs:
         shell: bash
         run: echo "::add-matcher::.github/msvc-problem-matcher.json"
 
-      # TS_RUN_DIR receives the build's runtime files, and defaults to a game installation.
-      # An empty directory holds this build's output and none of the game's own files.
       - name: Configure
         run: >
           cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
-          -DTS_RUN_DIR=${{ github.workspace }}/artifact
           -DOPENTS_OFFICIAL_BUILD=${{ inputs.official && 'ON' || 'OFF' }}
 
       - name: Build
@@ -71,9 +68,17 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --output-on-failure
 
-      - name: Stage license notices
+      - name: Stage runtime files and license notices
         shell: bash
         run: |
+          mkdir -p artifact
+          # The output directory holds the test executables as well, so the runtime files are
+          # named rather than matched. The symbol file answers everything the linker map would,
+          # and is what the crash handler itself reads, so the map is left behind.
+          engine=Game
+          if [ "${{ matrix.configuration }}" = "Debug" ]; then engine=GameD; fi
+          built=build/bin/${{ matrix.configuration }}
+          cp "${built}/${engine}.exe" "${built}/${engine}.pdb" "${built}/Language.dll" artifact/
           cp LICENSE.md THIRD_PARTY_NOTICES.md artifact/
           mkdir -p artifact/OpenTS_THIRD_PARTY_LICENSES
           cp thirdparty/bgfx.cmake/bgfx/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/bgfx.txt
@@ -94,10 +99,6 @@ jobs:
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ inputs.artifact-prefix }}-${{ matrix.configuration }}-${{ steps.commit.outputs.short }}
-          # The symbol file answers everything the linker map would, and is what the crash
-          # handler itself reads, so a downloaded build has no use for the map.
-          path: |
-            artifact
-            !artifact/*.map
+          path: artifact
           if-no-files-found: error
           retention-days: ${{ inputs.artifact-retention-days }}
