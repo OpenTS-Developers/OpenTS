@@ -31,6 +31,7 @@
 #include <imgui.h>
 
 #include "ui/uicoord.h"
+#include "ui/uidisplay.h"
 #include "ui/uigamectrl.h"
 #include "ui/uimsgbox.h"
 #include "ui/uirmlview.h"
@@ -420,6 +421,137 @@ void Drive(UISoundPresenterClass & presenter, char const * name, int value = 0)
 	intent.Value = value;
 	presenter.Queue(intent);
 	presenter.Drain();
+}
+
+
+void Drive(UIPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+// Records the engine call the display options presenter makes.
+class RecordingDisplayServiceClass : public UIDisplayServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+
+		virtual void Set_Stretch_Movies(bool on) override { Calls.push_back(on ? "stretch on" : "stretch off"); }
+};
+
+
+// A clock the test moves by hand.
+class FakeClockClass : public UIClockClass
+{
+	public:
+		int Now = 0;
+
+		virtual int Milliseconds(void) override { return(Now); }
+};
+
+
+UIDisplayState Display_Fixture(void)
+{
+	UIDisplayState state;
+	state.Modes = { { 640, 400, "640 x 400" }, { 1280, 800, "1280 x 800" }, { 1920, 1080, "1920 x 1080" } };
+	state.Selected = 1;
+	return(state);
+}
+
+
+// The display presenter applies the movie switch as the player accepts and hands the caller a
+// mode to try only when the row changed; the confirmation presenter cancels itself when its
+// clock runs out.
+void Test_Display_Presenter(void)
+{
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 2);
+		Drive(presenter, "stretch", 1);
+		Check(presenter.State.Selected == 2 && presenter.State.StretchMovies && service.Calls.empty() && !presenter.Picked.has_value(), "display edits are held until the player accepts");
+
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls.size() == 1 && service.Calls[0] == "stretch on", "accepting the display options applies the movie switch");
+		Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "accepting with a new row hands the caller that mode to try");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 2);
+		Drive(presenter, "select", 1);
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls.size() == 1 && service.Calls[0] == "stretch off", "accepting on the starting row applies the switch and tries no mode");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 0);
+		Drive(presenter, "stretch", 1);
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty() && !presenter.Picked.has_value(), "cancelling the display options applies nothing");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 7);
+		Check(presenter.State.Selected == -1, "a row outside the list selects nothing");
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && !presenter.Picked.has_value(), "accepting with no row selected tries no mode");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.Selected = -1;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "select", 0);
+		Drive(presenter, "ok");
+		Check(presenter.Picked.has_value() && presenter.Picked->Width == 640 && presenter.Picked->Height == 400, "a pick with no starting row is a mode to try");
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		Check(presenter.Seconds == 10, "the confirmation starts with the full ten seconds");
+
+		clock.Now = 5000;
+		presenter.Refresh();
+		Check(presenter.Seconds == 10 && !presenter.Result.has_value(), "the clock starts at the first refresh");
+
+		clock.Now = 5000 + 8100;
+		presenter.Refresh();
+		Check(presenter.Seconds == 2 && !presenter.Result.has_value(), "the seconds left count down");
+
+		clock.Now = 5000 + 10000;
+		presenter.Refresh();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.TimedOut && presenter.Seconds == 0, "silence cancels the confirmation when the timeout passes");
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		presenter.Refresh();
+		Drive(presenter, "ok");
+		clock.Now = 20000;
+		presenter.Refresh();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.TimedOut, "OK keeps the mode and a later refresh does not overturn it");
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		presenter.Refresh();
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && !presenter.TimedOut, "Cancel refuses the mode before the timeout");
+	}
 }
 
 
@@ -1413,6 +1545,7 @@ int main(void)
 	Test_FreeType();
 	Test_ImGui();
 	Test_Coordinates();
+	Test_Display_Presenter();
 	Test_Game_Controls_Presenter();
 	Test_Sound_Presenter();
 	Test_Strings();

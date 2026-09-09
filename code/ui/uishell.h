@@ -47,6 +47,9 @@ void UI_Hide_Modeless(UIRmlViewClass & view);
 // Advances the documents and presents the overlay now.
 void UI_Refresh(void);
 
+// The system clock a timed screen's presenter reads.
+UIClockClass & UI_Clock(void);
+
 // The frame moved or changed size inside the window.
 void UI_On_Video_Change(void);
 

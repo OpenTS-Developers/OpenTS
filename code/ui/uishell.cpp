@@ -836,6 +836,7 @@ UIResult UI_Run_Modal(UIRmlViewClass & view)
 		}
 
 		UI_Tick();
+		view.Presenter().Refresh();
 		view.Presenter().Drain();
 		view.Sync();
 
@@ -911,6 +912,29 @@ void UI_Hide_Modeless(UIRmlViewClass & view)
 		Video_Mark_Overlay_Dirty();
 		Video_Present_If_Dirty();
 	}
+}
+
+
+namespace
+{
+
+class UISystemClockClass : public UIClockClass
+{
+	public:
+		virtual int Milliseconds(void) override
+		{
+			return((int)GetTickCount64());
+		}
+};
+
+UISystemClockClass _Clock;
+
+}
+
+
+UIClockClass & UI_Clock(void)
+{
+	return(_Clock);
 }
 
 

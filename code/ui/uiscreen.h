@@ -37,6 +37,17 @@ struct UIIntent
 };
 
 
+// The clock a timed screen reads. The game supplies the system clock; a test supplies one it
+// advances by hand.
+class UIClockClass
+{
+	public:
+		virtual ~UIClockClass(void) = default;
+
+		virtual int Milliseconds(void) = 0;
+};
+
+
 class UIPresenterClass
 {
 	public:
@@ -50,7 +61,8 @@ class UIPresenterClass
 		bool Has_Pending(void) const;
 
 		virtual void Execute(UIIntent const & intent) = 0;
-		// Copies engine state into the view-model.
+		// Copies engine state into the view-model. The owner calls it before every drain, so a
+		// timed screen advances here.
 		virtual void Refresh(void) = 0;
 
 		std::optional<UIResult> Result;
