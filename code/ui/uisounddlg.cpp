@@ -18,6 +18,8 @@
 #include "goptions.h"
 #include "incdec.h"
 #include "theme.h"
+#include "ui/uirmlview.h"
+#include "ui/uishell.h"
 
 #include <cstdio>
 
@@ -117,4 +119,20 @@ void UI_Sound_State(UISoundState & state)
 	if (state.Selected < 0 && !state.Tracks.empty()) {
 		state.Selected = 0;
 	}
+}
+
+
+bool UI_Sound_Dialog(void)
+{
+	if (UI_Legacy_Dialog_Visible()) {
+		return(false);
+	}
+
+	UISoundState state;
+	UI_Sound_State(state);
+
+	UISoundPresenterClass presenter(UI_Sound_Service(), state);
+	std::unique_ptr<UIRmlViewClass> view = UI_Sound_View(presenter);
+
+	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
 }

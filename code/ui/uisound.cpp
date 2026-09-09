@@ -9,6 +9,8 @@
 
 #include "ui/uisound.h"
 
+#include "ui/uirmlview.h"
+
 #include <utility>
 
 
@@ -98,4 +100,58 @@ int UISoundPresenterClass::Level_Of(float volume)
 float UISoundPresenterClass::Volume_Of(int level)
 {
 	return((float)Clamp_Level(level) / (float)LEVELS);
+}
+
+
+namespace
+{
+
+class UISoundViewClass : public UIRmlViewClass
+{
+	public:
+		explicit UISoundViewClass(UISoundPresenterClass & presenter) :
+			UIRmlViewClass(presenter, "sound.rml", "sound"),
+			Data(presenter)
+		{
+		}
+
+		// The model is small, so every field is re-read after each drain.
+		virtual void Sync(void) override
+		{
+			Model.DirtyAllVariables();
+		}
+
+	protected:
+		virtual bool Bind(Rml::DataModelConstructor & model) override
+		{
+			Rml::StructHandle<UISoundTrack> track = model.RegisterStruct<UISoundTrack>();
+			if (!track) {
+				return(false);
+			}
+			track.RegisterMember("label", &UISoundTrack::Label);
+			track.RegisterMember("theme", &UISoundTrack::Theme);
+
+			UISoundState & state = Data.State;
+			return(model.RegisterArray<std::vector<UISoundTrack>>()
+				&& model.Bind("score", &state.Score)
+				&& model.Bind("sound", &state.Sound)
+				&& model.Bind("voice", &state.Voice)
+				&& model.Bind("shuffle", &state.Shuffle)
+				&& model.Bind("repeat", &state.Repeat)
+				&& model.Bind("enabled", &state.Enabled)
+				&& model.Bind("ingame", &state.InGame)
+				&& model.Bind("tracks", &state.Tracks)
+				&& model.Bind("selected", &state.Selected));
+		}
+
+	private:
+		UISoundPresenterClass & Data;
+};
+
+}
+
+
+std::unique_ptr<UIRmlViewClass> UI_Sound_View(UISoundPresenterClass & presenter)
+{
+	return(std::make_unique<UISoundViewClass>(presenter));
 }

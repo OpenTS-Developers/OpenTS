@@ -44,6 +44,7 @@
 #include "language/language.h"
 #include "ownrdraw.h"
 #include "ui/uiscreen.h"
+#include "ui/uishell.h"
 #include "ui/uisound.h"
 #include "winfix.h"
 
@@ -77,11 +78,9 @@ static void Sync_Switches(HWND window, UISoundState const & state)
 /// when there is no game in progress, since the in game options do not apply there.
 /// </summary>
 /// <remarks>This routine will not return until the player closes the dialog.</remarks>
-void SoundControlsClass::Dialog(void)
+static void Run_Win32_Dialog(void)
 {
 	int rc = -1;
-
-	DebugString("SoundControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 
 	DialogInitialized = false;
 
@@ -92,9 +91,9 @@ void SoundControlsClass::Dialog(void)
 
 	HWND dialog;
 	if (!GameActive) {
-		dialog = OwnerDraw::Begin_Dialog(IDD_SOUND_OPTIONS_DIALOG_LITE, Sound_Option_Dialog_Func);
+		dialog = OwnerDraw::Begin_Dialog(IDD_SOUND_OPTIONS_DIALOG_LITE, SoundControlsClass::Sound_Option_Dialog_Func);
 	} else {
-		dialog = OwnerDraw::Begin_Dialog(IDD_SOUND_OPTIONS_DIALOG, Sound_Option_Dialog_Func);
+		dialog = OwnerDraw::Begin_Dialog(IDD_SOUND_OPTIONS_DIALOG, SoundControlsClass::Sound_Option_Dialog_Func);
 	}
 
 	if (dialog) {
@@ -115,6 +114,16 @@ void SoundControlsClass::Dialog(void)
 	}
 
 	_Presenter = NULL;
+}
+
+
+void SoundControlsClass::Dialog(void)
+{
+	DebugString("SoundControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
+
+	if (!UI_Use_Rml() || !UI_Sound_Dialog()) {
+		Run_Win32_Dialog();
+	}
 
 	DebugString("SoundControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 }

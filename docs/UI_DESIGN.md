@@ -193,7 +193,7 @@ written.
 | `uicoord.h` | the pointer mapping from client pixels into the overlay | landed |
 | `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base | landed, with `uiscreen.cpp` and `uirmlview.cpp` carrying the bodies |
 | `uidev.h`, `uidev.cpp` | ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
-| one file per screen | presenter, view-model binding, and the RmlUi view glue | landed for the version dialog as `uiversion.h`, `uiversion.cpp` (presenter and view, also built into the test) and `uiversiondlg.cpp` (engine entry and data builder, which the test cannot link); the message boxes follow as `uimsgbox.*` and `uimsgboxdlg.cpp`; the sound options as `uisound.*` (presenter and service interface) and `uisounddlg.cpp` (engine service and state), with the Win32 dialog as their view until the document lands |
+| one file per screen | presenter, view-model binding, and the RmlUi view glue | landed for the version dialog as `uiversion.h`, `uiversion.cpp` (presenter and view, also built into the test) and `uiversiondlg.cpp` (engine entry and data builder, which the test cannot link); the message boxes follow as `uimsgbox.*` and `uimsgboxdlg.cpp`; the sound options as `uisound.*` (presenter, service interface and view) and `uisounddlg.cpp` (engine service, state and entry), with the Win32 dialog as a second view over the same presenter |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
 repository root. The build copies the tree beside the executable as it copies
@@ -747,12 +747,13 @@ beyond an ASCII test document.
    the modeless progress box of the save and load flows and moves to step 6.
    Runtime evidence still owed: the multiplayer cases where `Main_Loop` runs
    under the box.
-5. **Sound** (M, two changes; the first landed: the behaviour sits behind
-   `UISoundPresenterClass` and an engine service, and the Win32 dialog drives
-   it with the same calls in the same order). The behavior pilot: volumes,
+5. **Sound** (M, two changes, landed: the behaviour sits behind
+   `UISoundPresenterClass` and an engine service, the Win32 dialog drives it
+   with the same calls in the same order, and `sound.rml` is the RmlUi view
+   with a `data-if` for the in-game half). The behavior pilot: volumes,
    eligible themes, selection, availability, shuffle and repeat, immediate
    previews, play and stop, both templates, frontend and in-game service
-   paths.
+   paths. Runtime evidence still owed.
 6. **Progress and wait** (S, leaf). `IDD_PROGRESS_WAIT`, the saving and
    loading boxes in `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the
    modeless box they show, the `<surface>` element, milestone effects moved

@@ -803,6 +803,141 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 }
 
 
+// The visible elements of one class in a document, in document order.
+std::vector<Rml::Element *> Visible_Of_Class(Rml::ElementDocument * document, char const * name)
+{
+	std::vector<Rml::Element *> found;
+	if (document == nullptr) {
+		return(found);
+	}
+
+	Rml::ElementList all;
+	document->GetElementsByClassName(all, name);
+	for (Rml::Element * element : all) {
+		if (element->IsVisible()) {
+			found.push_back(element);
+		}
+	}
+	return(found);
+}
+
+
+// Drives the sound screen: the sliders, the track rows, the switches and the buttons each
+// queue the intent the presenter expects, and the frontend state hides the music half.
+void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Score = 7;
+		state.Sound = 5;
+		state.Voice = 10;
+		state.Enabled = true;
+		state.InGame = true;
+		state.Tracks.push_back({ "01 - First [3:00]", 5 });
+		state.Tracks.push_back({ "02 - Second [2:30]", 6 });
+		state.Tracks.push_back({ "03 - Third [4:05]", 9 });
+		state.Selected = 1;
+
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIRmlViewClass> view = UI_Sound_View(presenter);
+
+		Check(view->Prepare(context), "the sound view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the sound screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = view->Document();
+		Rml::ElementList inputs;
+		document->GetElementsByTagName(inputs, "input");
+		int sliders = 0;
+		for (Rml::Element * input : inputs) {
+			if (input->GetAttribute<Rml::String>("type", "") == "range") {
+				sliders++;
+			}
+		}
+		Check(sliders == 3, "the sound screen has three sliders");
+
+		Rml::Element * score = document->GetElementById("score");
+		Check(score != nullptr && score->GetAttribute<int>("value", -1) == 7, "the music slider starts at the music level");
+
+		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "track");
+		Check(rows.size() == 3, "the track list shows one row per allowed track");
+		Check(rows.size() == 3 && rows[1]->IsClassSet("selected") && !rows[0]->IsClassSet("selected"), "the playing track's row is marked selected");
+
+		if (rows.size() == 3) {
+			Click(context, rows[2]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Selected == 2 && rows[2]->IsClassSet("selected") && !rows[1]->IsClassSet("selected"), "a click on a row selects it");
+		}
+
+		Rml::Element * play = document->GetElementById("play");
+		if (play != nullptr) {
+			service.Calls.clear();
+			Click(context, play);
+			presenter.Drain();
+			Check(service.Joined() == "play 9", "the Play button plays the selected track");
+		}
+
+		Rml::Element * shuffle = document->GetElementById("shuffle");
+		if (shuffle != nullptr) {
+			service.Calls.clear();
+			Click(context, shuffle);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Shuffle && service.Joined() == "shuffle on; repeat off" && shuffle->HasAttribute("checked"), "the shuffle switch turns shuffle on and shows it");
+		}
+
+		if (score != nullptr) {
+			service.Calls.clear();
+			Rml::Dictionary parameters;
+			parameters["value"] = Rml::Variant(3.0f);
+			score->DispatchEvent(Rml::EventId::Change, parameters);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Score == 3 && service.Joined() == "score 0.3 feedback" && score->GetAttribute<int>("value", -1) == 3, "a slider change previews the level and the slider follows the model");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "Escape closes the sound screen without reverting anything");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Enabled = true;
+		state.InGame = false;
+
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIRmlViewClass> view = UI_Sound_View(presenter);
+
+		Check(view->Prepare(context), "the frontend sound view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::Element * music = view->Document()->GetElementById("music");
+		Check(music != nullptr && !music->IsVisible(), "the frontend sound screen hides the music half");
+		Check(Visible_Of_Class(view->Document(), "track").empty(), "the frontend sound screen lists no tracks");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
 void Test_Documents(void)
 {
 	std::filesystem::path directory(OPENTS_UI_DIR);
@@ -886,6 +1021,7 @@ void Test_Documents(void)
 	if (context != nullptr) {
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
+		Test_Sound_Screen(*context, system);
 	}
 
 	if (context != nullptr) {

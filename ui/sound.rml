@@ -1,0 +1,32 @@
+<rml>
+<head>
+	<title>Sound options</title>
+	<link type="text/rcss" href="sound.rcss"/>
+</head>
+<body data-model="sound">
+	<div id="panel" data-class-lite="!ingame">
+		<div class="row" id="row-score">
+			<span class="label">Music Volume:</span>
+			<input type="range" id="score" min="0" max="10" step="1" data-attr-value="score" data-attrif-disabled="!enabled" data-event-change="queue('score', ev.value)"/>
+		</div>
+		<div class="row" id="row-sound">
+			<span class="label">Sound Volume:</span>
+			<input type="range" id="sound" min="0" max="10" step="1" data-attr-value="sound" data-attrif-disabled="!enabled" data-event-change="queue('sound', ev.value)"/>
+		</div>
+		<div class="row" id="row-voice">
+			<span class="label">Voice Volume:</span>
+			<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!enabled" data-event-change="queue('voice', ev.value)"/>
+		</div>
+		<div id="music" data-if="ingame">
+			<button id="play" data-event-click="queue('play')">Play</button>
+			<button id="stop" data-event-click="queue('stop')">Stop</button>
+			<div id="tracks" data-attrif-disabled="!enabled">
+				<div class="track" data-for="track : tracks" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{track.label}}</div>
+			</div>
+			<label class="switch" id="switch-shuffle"><input type="checkbox" id="shuffle" data-attrif-checked="shuffle" data-attrif-disabled="!enabled" data-event-click="queue('shuffle', shuffle ? 0 : 1)"/>Shuffle</label>
+			<label class="switch" id="switch-repeat"><input type="checkbox" id="repeat" data-attrif-checked="repeat" data-attrif-disabled="!enabled" data-event-click="queue('repeat', repeat ? 0 : 1)"/>Repeat</label>
+		</div>
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	</div>
+</body>
+</rml>
