@@ -167,11 +167,17 @@ class SaveStreamClass
 		/*
 		 * Sizes a container the count asked for, failing the pass rather than throwing when
 		 * the process cannot hold it. A count within the bytes remaining still asks for that
-		 * many elements, which is more memory than the stream itself occupies.
+		 * many elements, which is more memory than the stream itself occupies, and for a
+		 * wide element more than the container itself will hold.
 		 */
 		template<typename C>
 		bool Reserve(C & container, int count)
 		{
+			if (count < 0 || (std::size_t)count > container.max_size()) {
+				Fail();
+				return(false);
+			}
+
 			try {
 				container.clear();
 				container.resize((std::size_t)count);

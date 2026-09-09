@@ -144,6 +144,7 @@
 
 #include <memory>
 #include <new>
+#include <stdexcept>
 #include <string>
 
 //#define	SAVE_BLOCK_SIZE	512
@@ -1137,11 +1138,15 @@ bool Load_Game(const char *file_name)
 	SaveStreamClass stream(file.Content, SaveStreamClass::MODE_LOAD);
 	bool res = false;
 	// The catch sits here rather than around the whole routine because what was already
-	// loaded still has to be abandoned below.
+	// loaded still has to be abandoned below. Both of the ways a count read from the file
+	// can end an allocation are refused here; anything else still raises.
 	try {
 		res = Get_All(stream, false);
 	} catch (std::bad_alloc const &) {
 		DebugString("\t***** FAILED! (out of memory at %u of %u bytes)\n", stream.Offset(), stream.Size());
+	} catch (std::length_error const &) {
+		DebugString("\t***** FAILED! (a count no container can hold at %u of %u bytes)\n",
+			stream.Offset(), stream.Size());
 	}
 	if (!res) {
 		DebugString("\t***** FAILED! (at %u of %u bytes)\n", stream.Offset(), stream.Size());
