@@ -602,8 +602,11 @@ bool MouseClass::Save(SaveStreamClass & stream)
 			}
 			cptr = Iterate();
 		}
+		// The count was written before the cells, so a second pass that disagrees with it
+		// has already written a map no load can read back.
 		if (count != 0) {
-			return(result);
+			stream.Fail();
+			return(false);
 		}
 
 		result = true;
