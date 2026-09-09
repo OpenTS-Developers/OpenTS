@@ -1,0 +1,14 @@
+<rml>
+<head>
+	<title>Version</title>
+	<link type="text/rcss" href="version.rcss"/>
+</head>
+<body data-model="version">
+	<div id="panel">
+		<div id="lines">
+			<p data-for="line : lines">{{line}}</p>
+		</div>
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	</div>
+</body>
+</rml>

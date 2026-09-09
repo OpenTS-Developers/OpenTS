@@ -18,6 +18,7 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -27,6 +28,9 @@
 #include <imgui.h>
 
 #include "ui/uicoord.h"
+#include "ui/uirmlview.h"
+#include "ui/uiscreen.h"
+#include "ui/uiversion.h"
 
 #include "opents_strings.h"
 
@@ -425,9 +429,144 @@ void Test_Strings(void)
 }
 
 
+// The name a document binds with data-model, or nothing.
+std::string Data_Model_Name(std::string const & text)
+{
+	size_t start = text.find("data-model=\"");
+	if (start == std::string::npos) {
+		return("");
+	}
+	start += std::strlen("data-model=\"");
+	size_t end = text.find('"', start);
+	return(end == std::string::npos ? "" : text.substr(start, end - start));
+}
+
+
+class MissingViewClass : public UIRmlViewClass
+{
+	public:
+		explicit MissingViewClass(UIPresenterClass & presenter) :
+			UIRmlViewClass(presenter, "missing.rml", "missing")
+		{
+		}
+
+		virtual void Sync(void) override
+		{
+		}
+
+	protected:
+		virtual bool Bind(Rml::DataModelConstructor &) override
+		{
+			return(true);
+		}
+};
+
+
+// Drives the version screen the way the runner and the player do: a click on OK queues an
+// intent that the drain turns into a result, Enter and Escape do the same through the
+// document, and a screen that cannot be prepared leaves nothing behind.
+void Test_Version_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		UIVersionPresenterClass presenter({ "Line 1", "Line 2" });
+		std::unique_ptr<UIRmlViewClass> view = UI_Version_View(presenter);
+
+		Check(view->Prepare(context), "the version view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the version screen raises no RmlUi warning or error");
+		Check(view->Is_Shown(), "the version screen is shown");
+
+		Rml::ElementDocument * document = view->Document();
+		Rml::Element * lines = (document != nullptr) ? document->GetElementById("lines") : nullptr;
+
+		// The data-for template stays in the tree hidden beside the paragraphs it produced.
+		int visible = 0;
+		for (int index = 0; lines != nullptr && index < lines->GetNumChildren(); index++) {
+			if (lines->GetChild(index)->IsVisible()) {
+				visible++;
+			}
+		}
+		Check(lines != nullptr && visible == 2, "the version screen lists one paragraph per line");
+
+		Rml::Element * ok = (document != nullptr) ? document->GetElementById("ok") : nullptr;
+		Check(ok != nullptr, "the version screen has its OK button");
+
+		if (ok != nullptr) {
+			Rml::Vector2f at = ok->GetAbsoluteOffset(Rml::BoxArea::Border) + ok->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
+			context.ProcessMouseMove((int)at.x, (int)at.y, 0);
+			context.Update();
+			Check(!context.ProcessMouseButtonDown(0, 0), "a press on OK interacts with the document");
+			context.ProcessMouseButtonUp(0, 0);
+			Check(!presenter.Result.has_value() && presenter.Has_Pending(), "the click queues an intent and does not act");
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "draining the click accepts the screen");
+		}
+
+		UIIntent late;
+		late.Name = "cancel";
+		presenter.Queue(late);
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.Has_Pending(), "an intent after the result is dropped");
+
+		view->Release();
+		context.Update();
+	}
+
+	for (int pass = 0; pass < 2; pass++) {
+		bool escape = (pass == 0);
+		UIVersionPresenterClass presenter({ "Line" });
+		std::unique_ptr<UIRmlViewClass> view = UI_Version_View(presenter);
+
+		Check(view->Prepare(context), escape ? "the version view prepares for the Escape pass" : "the version view prepares for the Enter pass");
+		view->Show(true);
+		context.Update();
+		context.ProcessKeyDown(escape ? Rml::Input::KI_ESCAPE : Rml::Input::KI_RETURN, 0);
+		context.ProcessKeyUp(escape ? Rml::Input::KI_ESCAPE : Rml::Input::KI_RETURN, 0);
+		context.Update();
+		presenter.Drain();
+
+		UIResult expected = escape ? UI_RESULT_CANCELLED : UI_RESULT_ACCEPTED;
+		Check(presenter.Result.has_value() && *presenter.Result == expected, escape ? "Escape cancels the version screen" : "Enter accepts the version screen");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIVersionPresenterClass presenter({});
+		UIIntent intent;
+		intent.Name = "ok";
+		presenter.Queue(intent);
+		Check(presenter.Has_Pending(), "a queued intent is pending until drained");
+		presenter.Discard();
+		Check(!presenter.Has_Pending() && !presenter.Result.has_value(), "discarding drops queued intents without a result");
+	}
+
+	{
+		UIVersionPresenterClass presenter({});
+		MissingViewClass view(presenter);
+		int before = system.Problems;
+
+		Check(!view.Prepare(context), "a missing document fails preparation");
+		Check(system.Problems > before, "a failed preparation is reported");
+		Check(!context.GetDataModel("missing"), "a failed preparation leaves no data model behind");
+		context.Update();
+	}
+}
+
+
 void Test_Documents(void)
 {
 	std::filesystem::path directory(OPENTS_UI_DIR);
+
+	// The shell resolves bare file names through the game's file system; the harness has none,
+	// so it runs from the ui directory and RmlUi's own file interface finds the same names.
+	std::filesystem::current_path(directory);
 
 	RecordingRenderInterfaceClass render;
 	CountingSystemInterfaceClass system;
@@ -462,6 +601,12 @@ void Test_Documents(void)
 		int problems = system.Problems;
 		render.Scissors.clear();
 
+		// A document over a data model lays out against a permissive stand-in for its screen.
+		std::string model = Data_Model_Name(Read_Text(path));
+		if (!model.empty()) {
+			context->CreateDataModel(model, nullptr, true);
+		}
+
 		Rml::ElementDocument * document = context->LoadDocument(path.string());
 		std::string name = path.filename().string();
 		Check(document != nullptr, (name + " loads").c_str());
@@ -487,9 +632,17 @@ void Test_Documents(void)
 
 		document->Close();
 		context->Update();
+
+		if (!model.empty()) {
+			context->RemoveDataModel(model);
+		}
 	}
 
 	Check(documents > 0, "the ui directory holds at least one document");
+
+	if (context != nullptr) {
+		Test_Version_Screen(*context, system);
+	}
 
 	if (context != nullptr) {
 		Rml::RemoveContext("test");

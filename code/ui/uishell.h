@@ -12,7 +12,10 @@
 
 #pragma once
 
+#include "ui/uiscreen.h"
 #include "win.h"
+
+class UIRmlViewClass;
 
 
 // Needs the window, the renderer and the file search chain. A false return leaves every
@@ -27,11 +30,16 @@ bool UI_Use_Rml(void);
 // True while a modal screen is shown or closing. The developer overlays are not screens.
 bool UI_Screen_Shown(void);
 
+// Prepares, shows and drives a modal screen until its presenter reports a result or the game
+// ends, then releases it. The view's presenter must outlive the call.
+UIResult UI_Run_Modal(UIRmlViewClass & view);
+
 // The frame moved or changed size inside the window.
 void UI_On_Video_Change(void);
 
-// Advances the documents and executes the intents their events queued. Called at the
-// game's service points, never from a paint handler or the message pump.
+// Advances the documents and the developer overlays. Called at the game's service points,
+// never from a paint handler or the message pump; a modal screen's runner drains its intents
+// after each call.
 void UI_Tick(void);
 
 // Draws the visible documents over the frame the renderer has just submitted.

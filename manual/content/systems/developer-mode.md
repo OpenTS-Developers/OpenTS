@@ -109,7 +109,7 @@ Neither is marked as surviving into multiplayer, so starting a network game clea
 
 ### The version dialog
 
-The version dialog reports the title, the game and internal version names, a build line labeled by configuration and naming the commit the build was made from, the branch it sat on and that commit's date, a processor line, and the version of the language resource library.
+The version dialog reports the title, the game and internal version names, a build line labeled by configuration and naming the commit the build was made from, the branch it sat on and that commit's date, a processor line, and the version of the language resource library. It opens from the classic main menu's [Ctrl+V](/commands/fixed-main-menu-version/) and from the menu entry, and is drawn as an RmlUi document from the `ui` directory unless [`LegacyDialogs`](/keys/legacydialogs/) is `yes`, which keeps the Win32 dialog; both show the same lines. OK, Enter and Escape close the document. When its document, style sheet or font fails to load, the game logs the file name and opens the Win32 dialog instead. [UI files](/systems/ui-files/) covers the directory.
 
 ## Toggles that reach nothing
 

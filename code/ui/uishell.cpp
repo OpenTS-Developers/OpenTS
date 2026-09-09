@@ -9,16 +9,24 @@
 
 #include "ui/uishell.h"
 
+#include "_keyboar.h"
+#include "conquer.h"
 #include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
+#include "keyboard.h"
+#include "mainloop.h"
 #include "movies.h"
+#include "msgloop.h"
+#include "session.h"
 #include "ui/uicoord.h"
 #include "ui/uidev.h"
 #include "ui/uifile.h"
 #include "ui/uirender.h"
+#include "ui/uirmlview.h"
 #include "ui/uisystem.h"
 #include "video.h"
+#include "windlg.h"
 
 // windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
 // element walkers.
@@ -26,6 +34,9 @@
 #undef GetNextSibling
 
 #include <RmlUi/Core.h>
+
+#include <cassert>
+#include <cstdio>
 
 
 // The interfaces outlive Rml::Shutdown, which releases every resource through them.
@@ -54,6 +65,11 @@ static unsigned int _OwnedButtons = 0;
 static unsigned int _DevOwnedButtons = 0;
 static bool _TookCapture = false;
 static bool _MouseInside = false;
+
+// The modal screen the runner is driving, and whether it is between releasing its document
+// and handing the input back.
+static UIRmlViewClass * _Modal = NULL;
+static bool _ModalClosing = false;
 
 static wchar_t _HighSurrogate = 0;
 
@@ -358,6 +374,8 @@ void UI_Shutdown(void)
 	}
 
 	_Ready = false;
+	_Modal = NULL;
+	_ModalClosing = false;
 
 	if (_OwnedButtons != 0) {
 		Drop_Presses();
@@ -389,8 +407,7 @@ bool UI_Use_Rml(void)
 
 bool UI_Screen_Shown(void)
 {
-	// No screen exists yet; the modal runner that shows one reports it here.
-	return(false);
+	return(_Modal != NULL || _ModalClosing);
 }
 
 
@@ -712,6 +729,156 @@ static bool Handle_Char(WPARAM wparam)
 }
 
 
+static bool Legacy_Dialog_Visible(void)
+{
+	for (int index = 0; index < g_DialogCount; index++) {
+		if (g_Dialogs[index].handle != NULL && IsWindowVisible(g_Dialogs[index].handle)) {
+			return(true);
+		}
+	}
+	return(Any_Modeless_Dialog_Visible());
+}
+
+
+// The mouse, wheel, key and text messages a shown screen takes whole.
+static bool Input_Message(UINT message)
+{
+	switch (message) {
+		case WM_MOUSEMOVE:
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONDBLCLK:
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONDBLCLK:
+		case WM_LBUTTONUP:
+		case WM_RBUTTONUP:
+		case WM_MBUTTONUP:
+		case WM_MOUSEWHEEL:
+		case WM_KEYDOWN:
+		case WM_KEYUP:
+		case WM_CHAR:
+			return(true);
+
+		default:
+			return(false);
+	}
+}
+
+
+// The service pass of OwnerDraw::Dialog_Message_Handler without its tick: the runner ticks
+// itself so that it can drain the screen's intents between the update and the present.
+static bool Service_Game(void)
+{
+	static bool inmainloop = false;
+
+	Windows_Message_Handler();
+
+	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.NetOpen && !Session.Suspended) {
+		if (!inmainloop) {
+			inmainloop = true;
+			bool ended = Main_Loop();
+			inmainloop = false;
+			return(ended);
+		}
+	} else {
+		Call_Back();
+	}
+
+	return(false);
+}
+
+
+UIResult UI_Run_Modal(UIRmlViewClass & view)
+{
+	if (!_Ready) {
+		return(UI_RESULT_FAILED_TO_OPEN);
+	}
+	if (!_FontLoaded) {
+		DebugString("UI: %s needs OpenSans.ttf, which did not load\n", view.Document_Name());
+		return(UI_RESULT_FAILED_TO_OPEN);
+	}
+
+	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
+	assert(!Legacy_Dialog_Visible());
+
+	// A style sheet that fails to load leaves the document usable and is reported as an error.
+	int errors = _System.Error_Count();
+	if (!view.Prepare(*_Context) || _System.Error_Count() != errors) {
+		DebugString("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
+		view.Release();
+		return(UI_RESULT_FAILED_TO_OPEN);
+	}
+
+	view.Presenter().Refresh();
+	view.Sync();
+
+	if (_OwnedButtons != 0) {
+		Drop_Presses();
+	}
+
+	char label[160];
+	UIRmlViewClass * previous = _Modal;
+
+	_Modal = &view;
+	view.Show(true);
+	Video_Mark_Overlay_Dirty();
+	std::snprintf(label, sizeof(label), "%s shown", view.Document_Name());
+	_Render.Log_Resource_Counts(label);
+	Keyboard->Clear();
+
+	UIResult result = UI_RESULT_SESSION_ENDED;
+
+	while (true) {
+		bool ended = Service_Game();
+		if (!_Ready) {
+			break;
+		}
+
+		UI_Tick();
+		view.Presenter().Drain();
+		view.Sync();
+
+		if (ended) {
+			break;
+		}
+		if (view.Presenter().Result.has_value()) {
+			result = *view.Presenter().Result;
+			break;
+		}
+
+		Video_Mark_Overlay_Dirty();
+		Video_Present_If_Dirty();
+	}
+
+	_ModalClosing = true;
+	if (_OwnedButtons != 0) {
+		Drop_Presses();
+	}
+	view.Presenter().Discard();
+	view.Release();
+
+	if (_Ready) {
+		_InContext = true;
+		_Context->Update();
+		_InContext = false;
+	}
+
+	_Modal = previous;
+	_ModalClosing = false;
+
+	if (_Ready) {
+		Video_Mark_Overlay_Dirty();
+		std::snprintf(label, sizeof(label), "%s closed", view.Document_Name());
+		_Render.Log_Resource_Counts(label);
+		Keyboard->Clear();
+		SetFocus(MainWindow);
+	}
+
+	return(result);
+}
+
+
 bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM clientlparam)
 {
 	if (!_Ready || _InHook || hwnd != MainWindow) {
@@ -752,8 +919,13 @@ bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM cli
 		return(false);
 	}
 
-	if (_InContext || (_OwnedButtons == 0 && !Documents_Visible() && !UIDev_Active())) {
+	if (_InContext || (_OwnedButtons == 0 && _Modal == NULL && !Documents_Visible() && !UIDev_Active())) {
 		return(false);
+	}
+
+	// A closing screen has released its document; the messages it would have taken still end here.
+	if (_ModalClosing) {
+		return(Input_Message(message));
 	}
 
 	_InHook = true;
@@ -806,6 +978,11 @@ bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM cli
 
 		default:
 			break;
+	}
+
+	// A shown screen takes every mouse and key message, as a visible legacy dialog does.
+	if (_Modal != NULL && Input_Message(message)) {
+		consumed = true;
 	}
 
 	_InHook = false;

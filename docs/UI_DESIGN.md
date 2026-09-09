@@ -1,10 +1,11 @@
 # UI system design
 
 Status: proposal under implementation. Steps 1 and 2 of the
-[migration plan](#migration-plan), the dependencies, the RmlUi shell, and the
-Dear ImGui overlays, have landed; everything after them is not yet implemented,
-built, or measured. Source inspection and upstream documentation inform the
-rest. This page owns the proposed UI architecture and migration;
+[migration plan](#migration-plan), the dependencies, the RmlUi shell, the
+Dear ImGui overlays, and the version dialog, have landed; everything after
+them is not yet implemented, built, or measured. Source inspection and
+upstream documentation inform the rest. This page owns the proposed UI
+architecture and migration;
 [Building OpenTS](BUILDING.md) owns build support and
 [Project direction](DIRECTION.md) the wider architecture.
 
@@ -184,15 +185,15 @@ written.
 | File | Holds | Status |
 | --- | --- | --- |
 | `bgfxviews.hh` (in `code/`) | the view ids the presenter and the overlays share | landed |
-| `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector | landed without the modal runner and selector |
+| `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector | landed |
 | `uirender.h`, `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx | landed |
 | `uisystem.h`, `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation | landed with time, logging, resource naming, and string translation; cursor and clipboard wait for the first editable screen |
 | `uifile.h`, `uifile.cpp` | RmlUi file interface over `CCFileClass` | landed |
 | `uitexture.h`, `uitexture.cpp` | image decoding, SHP and PCX conversion, surface-backed textures | landed for PNG and TGA |
 | `uicoord.h` | the pointer mapping from client pixels into the overlay | landed |
-| `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base | |
+| `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base | landed, with `uiscreen.cpp` and `uirmlview.cpp` carrying the bodies |
 | `uidev.h`, `uidev.cpp` | ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
-| one file per screen | presenter, view-model binding, and the RmlUi view glue | |
+| one file per screen | presenter, view-model binding, and the RmlUi view glue | landed for the version dialog as `uiversion.h`, `uiversion.cpp` (presenter and view, also built into the test) and `uiversiondlg.cpp` (engine entry and data builder, which the test cannot link) |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
 repository root. The build copies the tree beside the executable as it copies
@@ -731,10 +732,13 @@ beyond an ASCII test document.
    modes; clicks on it, beside any legacy dialog, are consumed; clicks beside
    it reach the game; legacy dialogs still open and close; repeated open and
    close leaks nothing.
-3. **Version dialog** (S, leaf). The integration pilot: fonts, clipping,
+3. **Version dialog** (S, leaf, landed in two changes: the string table, the
+   `LegacyDialogs` key and the coexistence checks, then the screen contract,
+   the modal runner and the dialog). The integration pilot: fonts, clipping,
    mapping, dismissal by mouse and keyboard, focus return, UI-only redraw,
    resize, preparation failure. The main menu keeps hiding around it.
-4. **Modal runner and message boxes** (M, leaf). `WWMessageBox::Process` and
+4. **Message boxes** (M, leaf). The modal runner landed with step 3.
+   `WWMessageBox::Process` and
    `OwnerDraw::Custom_Message_Box` behind the kill switch, preserving button
    order, default button, Escape, the no-button case, return mappings, and
    session-end interruption. Evidence includes the multiplayer cases where

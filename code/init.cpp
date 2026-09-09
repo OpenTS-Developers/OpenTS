@@ -176,6 +176,8 @@
 #include "trigger.h"
 #include "tube.h"
 #include "tutorial.h"
+#include "ui/uishell.h"
+#include "ui/uiversion.h"
 #include "uicontrol.h"
 #include "unit.h"
 #include "unittype.h"
@@ -3002,7 +3004,6 @@ INT_PTR CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, L
 {
 	HWND handle;
 	int *res;
-	char buffer[256];
 
 	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
@@ -3013,45 +3014,16 @@ INT_PTR CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, L
 	res = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 	switch (message) {
-		case WM_INITDIALOG:
+		case WM_INITDIALOG: {
 			handle = GetDlgItem(window, IDC_VERSION_INFO);
 
-			if (Addon_Installed(ADDON_FIRESTORM) == true) {
-				strcpy(buffer, Fetch_String(TXT_SHORT_TITLE));
-				strcat(buffer, ": ");
-				strcat(buffer, Get_Addon_Title(ADDON_FIRESTORM));
-				ListBox_AddString(handle, buffer);
-			} else {
-				ListBox_AddString(handle, Fetch_String(TXT_SHORT_TITLE));
+			std::vector<std::string> lines;
+			UI_Version_Lines(lines);
+			for (std::string const & line : lines) {
+				ListBox_AddString(handle, line.c_str());
 			}
-
-			sprintf(buffer, "Version %s", Version_Name());
-			ListBox_AddString(handle, buffer);
-
-			sprintf(buffer, "Internal Version %s", VerNum.Version_Name());
-			ListBox_AddString(handle, buffer);
-
-#ifdef _DEBUG
-			sprintf(buffer, "Debug Build: %s - %s", OPENTS_BUILD_DESCRIPTION, OPENTS_COMMIT_DATE);
-#else
-			sprintf(buffer, "Release Build: %s - %s", OPENTS_BUILD_DESCRIPTION, OPENTS_COMMIT_DATE);
-#endif
-			ListBox_AddString(handle, buffer);
-
-			// The braces keep the 'case' label from jumping over these initializations.
-			{
-				int cpu_type = 5;
-				char vendor[32];
-				vendor[0] = '\0';
-				Get_CPU_Type(cpu_type, vendor, sizeof(vendor) - 1);
-
-				sprintf(buffer, "CPU vendor: %s", vendor);
-			ListBox_AddString(handle, buffer);
-			}
-
-			Get_Language_Version(buffer);
-			ListBox_AddString(handle, buffer);
 			break;
+		}
 
 		case WM_COMMAND:
 			switch (LOWORD(wparam)) {
@@ -3076,6 +3048,10 @@ void Version_Dialog(void)
 {
 	HWND dialog;
 	int res = 0;
+
+	if (UI_Use_Rml() && UI_Version_Dialog()) {
+		return;
+	}
 
 	dialog = OwnerDraw::Begin_Dialog(IDD_VERSION, Version_Dialog_Proc);
 
