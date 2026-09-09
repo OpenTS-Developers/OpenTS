@@ -81,6 +81,11 @@ Coord DropPodLocomotionClass::Destination(void)
 /// </summary>
 bool DropPodLocomotionClass::Process(void)
 {
+	// Handing the carried locomotor back leaves this pod unowned, so it holds itself for
+	// the rest of the routine. The slot is declared here rather than beside the hand-back
+	// so that the pod outlives every member this routine still reads.
+	std::unique_ptr<ILocomotion> self;
+
 	Coord coord = LinkedTo->PositionCoord;
 	Coord smoke_coord = coord;
 
@@ -117,10 +122,7 @@ bool DropPodLocomotionClass::Process(void)
 		coord = linked->PositionCoord;
 		linked->Limbo();
 
-		// Handing the carried locomotor back makes this pod unowned, so it holds itself
-		// until the landing is finished and is deleted on return. A pod that carries
-		// nothing stays the object's locomotor.
-		std::unique_ptr<ILocomotion> self;
+		// A pod that carries nothing stays the object's locomotor.
 		std::unique_ptr<ILocomotion> carried = End_Piggyback();
 		if (carried != nullptr) {
 			self = std::move(LinkedTo->Locomotion);
