@@ -26,8 +26,9 @@ elseif(MSVC)
         message(FATAL_ERROR "OpenTS requires MSVC 19.30 or newer.")
     endif()
     if(NOT CMAKE_SIZEOF_VOID_P EQUAL 4)
-        # Saved games serialize pointer fields at their native width, and the packed version
-        # stamp that saves and network packets carry is the same either way.
+        # A save records pointer identities at a fixed width, but the members and raw
+        # structures around them still travel at the build's own widths, and the packed
+        # version stamp that saves and network packets carry is the same either way.
         message(WARNING
             "OpenTS: this build has ${CMAKE_SIZEOF_VOID_P}-byte pointers. Saved games it "
             "writes are not interchangeable with a supported 32-bit build's, and nothing in "

@@ -921,6 +921,8 @@ bool Save_Game(const char *file_name, char const * descr)
 
 	DebugString("\nSAVING GAME [%s - %s]\n", file_name, descr);
 
+	Swizzler.Begin_Save();
+
 	MultiByteToWideChar(0,0, Saved_Game_Name(file_name).c_str(), -1, name, sizeof(name)/sizeof(WCHAR));
 
 	/*

@@ -129,10 +129,12 @@ cmake -S . -B build/x64 -G "Visual Studio 17 2022" -A x64 -DOPENTS_EXPERIMENTAL_
 cmake --build build/x64 --config Debug
 ```
 
-Saved games serialize pointer fields at their native width, so a 64-bit build's
-saves are not interchangeable with a supported build's. The packed version stamp
-that saves and network packets carry is the same for both, so nothing rejects a
-save or a peer on that basis. Configuring the build warns about it.
+A save records pointer identities at a fixed width, but the members and raw
+structures around them still travel at the build's own widths, so a 64-bit
+build's saves are not interchangeable with a supported build's. The packed
+version stamp that saves and network packets carry is the same for both, so
+nothing rejects a save or a peer on that basis. Configuring the build warns
+about it.
 
 ## Build from Visual Studio Code
 

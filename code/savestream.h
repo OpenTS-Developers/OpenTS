@@ -108,7 +108,7 @@ class SaveStreamClass
 		 * Names the record this stream is carrying, so that a pointer which nothing
 		 * answers for can be reported against the object that asked for it.
 		 */
-		void Set_Context(char const * ownertype, uintptr_t ownerid = 0)
+		void Set_Context(char const * ownertype, SwizzleIDType ownerid = 0)
 		{
 			OwnerType = ownertype;
 			OwnerID = ownerid;
@@ -126,17 +126,18 @@ class SaveStreamClass
 		}
 
 		/*
-		 * A pointer travels as the address the object occupied when the game was saved,
-		 * the identity it announces on the way back in. Loading leaves the slot with the
-		 * swizzle manager until the object says where it landed.
+		 * A pointer travels as the identity the object it names announces on the way back
+		 * in. Loading leaves the slot with the swizzle manager until the object says where
+		 * it landed.
 		 */
 		template<SwizzleTarget T>
 		void Serialize(T * & pointer, std::source_location const & where = std::source_location::current())
 		{
-			Serialize_Bytes((void *)&pointer, sizeof(pointer));
+			SwizzleIDType id = Is_Loading() ? 0 : Swizzler.ID_Of(pointer);
+			Serialize_Bytes(&id, sizeof(id));
 
 			if (Is_Loading() && !Was_Error()) {
-				Swizzler.Swizzle((void **)&pointer, OwnerType, OwnerID, typeid(T).name(), where.file_name(), where.line());
+				Swizzler.Swizzle((void **)&pointer, id, OwnerType, OwnerID, typeid(T).name(), where.file_name(), where.line());
 			}
 		}
 
@@ -347,7 +348,7 @@ class SaveStreamClass
 		 * Nothing on the save side needs it.
 		 */
 		char const * OwnerType;
-		uintptr_t OwnerID;
+		SwizzleIDType OwnerID;
 };
 
 
