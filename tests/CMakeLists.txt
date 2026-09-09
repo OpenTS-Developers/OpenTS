@@ -2,6 +2,10 @@
 # runs. Set before the subdirectories so every target below inherits it.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test-bin")
 
+# Everything opents_add_test registers, so a build that cannot finish the engine can still
+# ask for the harnesses by name.
+add_custom_target(harnesses)
+
 # Builds one test harness and registers it with CTest.
 #
 # A harness compiles the engine sources it exercises instead of linking the game, so ENGINE
@@ -87,6 +91,7 @@ function(opents_add_test target)
         add_dependencies(${target} OpenTSBuildStamp)
     endif()
 
+    add_dependencies(harnesses ${target})
     add_test(NAME ${TEST_NAME} COMMAND ${target})
 endfunction()
 
