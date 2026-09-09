@@ -475,7 +475,7 @@ int main(int argc, char ** argv)
 	Test_Refusals();
 
 	char const * const names[] = { "ROUNDTRIP.SAV", "NOISE.SAV", "EMPTY.SAV", "REPLACE.SAV",
-		"PLAIN.SAV", "GOOD.SAV", "DAMAGED.SAV" };
+		"LIMITS.SAV", "PLAIN.SAV", "GOOD.SAV", "DAMAGED.SAV" };
 	for (char const * name : names) {
 		DeleteFileA(Scratch_Path(name).c_str());
 	}
