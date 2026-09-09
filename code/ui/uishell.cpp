@@ -11,6 +11,7 @@
 
 #include "dbgprint.h"
 #include "globals.h"
+#include "goptions.h"
 #include "movies.h"
 #include "ui/uicoord.h"
 #include "ui/uidev.h"
@@ -377,6 +378,19 @@ void UI_Shutdown(void)
 	Rml::Shutdown();
 	_Render.Shutdown();
 	_FontLoaded = false;
+}
+
+
+bool UI_Use_Rml(void)
+{
+	return(_Ready && !Options.LegacyDialogs);
+}
+
+
+bool UI_Screen_Shown(void)
+{
+	// No screen exists yet; the modal runner that shows one reports it here.
+	return(false);
 }
 
 

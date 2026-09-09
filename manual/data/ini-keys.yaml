@@ -12774,6 +12774,24 @@ LastTilesInSet:
       source: code/isotype.cpp
       guard: null
     level: IsometricTileTypeClass
+LegacyDialogs:
+  key: LegacyDialogs
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: LegacyDialogs
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 LegalTarget:
   key: LegalTarget
   scopes:

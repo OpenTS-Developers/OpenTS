@@ -47,6 +47,7 @@
 #include "vox.h"
 #include "windlg.h"
 
+#include <cassert>
 #include <commctrl.h>
 #include <ctime>
 #include <sys\timeb.h>
@@ -6739,6 +6740,9 @@ int OwnerDraw::Release_Mouse(void)
 /// <remarks>Every dialog begun with this routine must be finished with End_Dialog.</remarks>
 HWND OwnerDraw::Begin_Dialog(int id, DLGPROC proc)
 {
+	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
+	assert(!UI_Screen_Shown());
+
 	LPCDLGTEMPLATE templ = (LPCDLGTEMPLATE)Fetch_Resource(MAKEINTRESOURCE(id), (LPCSTR)RT_DIALOG);
 	if (templ == NULL) {
 		return(NULL);
@@ -6818,6 +6822,8 @@ void OwnerDraw::End_Dialog(HWND window)
 /// </summary>
 void OwnerDraw::Display_Dialog(HWND window)
 {
+	assert(!UI_Screen_Shown());
+
 	ShowWindow(window, SW_SHOWNORMAL);
 	SetForegroundWindow(window);
 	Keyboard->Clear();

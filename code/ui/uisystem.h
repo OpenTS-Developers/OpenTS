@@ -12,7 +12,7 @@
 #include <RmlUi/Core/SystemInterface.h>
 
 
-// RmlUi's view of the engine's clock, debug log and resource naming.
+// RmlUi's view of the engine's clock, debug log, resource naming and string table.
 class UISystemInterfaceClass : public Rml::SystemInterface
 {
 	public:
@@ -20,8 +20,13 @@ class UISystemInterfaceClass : public Rml::SystemInterface
 
 		virtual double GetElapsedTime(void) override;
 		virtual bool LogMessage(Rml::Log::Type type, Rml::String const & message) override;
+		virtual int TranslateString(Rml::String & translated, Rml::String const & input) override;
 		virtual void JoinPath(Rml::String & translated, Rml::String const & documentpath, Rml::String const & path) override;
+
+		// How many errors and assertions RmlUi has logged so far.
+		int Error_Count(void) const { return(Errors); }
 
 	private:
 		unsigned int StartTime;
+		int Errors = 0;
 };

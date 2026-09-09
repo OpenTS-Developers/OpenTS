@@ -20,6 +20,13 @@
 bool UI_Init(void);
 void UI_Shutdown(void);
 
+// True when a migrated screen should open its RmlUi view rather than its Win32 dialog. A
+// caller reads it once at screen entry; the answer follows the LegacyDialogs setting.
+bool UI_Use_Rml(void);
+
+// True while a modal screen is shown or closing. The developer overlays are not screens.
+bool UI_Screen_Shown(void);
+
 // The frame moved or changed size inside the window.
 void UI_On_Video_Change(void);
 

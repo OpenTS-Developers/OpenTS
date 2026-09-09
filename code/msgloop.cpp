@@ -125,7 +125,9 @@ void Windows_Message_Handler(void)
 		*/
 		bool processed = false;
 		for (int index = 0; index < _ModelessDialogs.Count(); index++) {
-			if (IsDialogMessage(_ModelessDialogs[index], &msg)) {
+			// A driver parks a hidden parent around a child screen; it must not take the keys.
+			HWND dialog = _ModelessDialogs[index];
+			if (IsWindowVisible(dialog) && IsDialogMessage(dialog, &msg)) {
 				processed = true;
 				break;
 			}
@@ -217,6 +219,17 @@ void Add_Modeless_Dialog(HWND dialog)
 void Remove_Modeless_Dialog(HWND dialog)
 {
 	_ModelessDialogs.Delete(dialog);
+}
+
+
+bool Any_Modeless_Dialog_Visible(void)
+{
+	for (int index = 0; index < _ModelessDialogs.Count(); index++) {
+		if (IsWindowVisible(_ModelessDialogs[index])) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 

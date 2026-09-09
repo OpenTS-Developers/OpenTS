@@ -186,7 +186,7 @@ written.
 | `bgfxviews.hh` (in `code/`) | the view ids the presenter and the overlays share | landed |
 | `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector | landed without the modal runner and selector |
 | `uirender.h`, `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx | landed |
-| `uisystem.h`, `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation | landed with time, logging, and resource naming |
+| `uisystem.h`, `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation | landed with time, logging, resource naming, and string translation; cursor and clipboard wait for the first editable screen |
 | `uifile.h`, `uifile.cpp` | RmlUi file interface over `CCFileClass` | landed |
 | `uitexture.h`, `uitexture.cpp` | image decoding, SHP and PCX conversion, surface-backed textures | landed for PNG and TGA |
 | `uicoord.h` | the pointer mapping from client pixels into the overlay | landed |
@@ -567,21 +567,27 @@ byte, which bounds in-game text to the range the transition supports.
 
 Documents reference strings by name: `[[TXT_OK]]`. RmlUi passes every text
 node through `SystemInterface::TranslateString`, where the shell maps the
-name to its identifier. The names are `#define`s in `language.h`, so a CMake
-script generates the name table into the build's generated directory; no
-hand-maintained list. Dynamic text, including player and map names and error
-strings, is inserted as text, never as markup.
+name to its identifier and copies the string out of the `Fetch_String` cache;
+an unknown name stays as typed and is logged. The names are `#define`s in
+`language.h`, so `cmake/StringTable.cmake` generates the name table into the
+build's generated directory at configure time and per build, beside the build
+stamp; no hand-maintained list. RmlUi re-parses a translated text node as
+markup only when it contains `<`; no engine string does, and one that did
+would need its `<` encoded. Dynamic text, including player and map names and
+error strings, is inserted as text, never as markup.
 
 ## Configuration
 
-One transitional key in `SUN.INI`, named by the change that introduces it,
-returns every migrated screen to its legacy view while that view exists.
-Defaults are decided per screen family in code, so a family switches to RmlUi
-by default when its evidence is in without a key per family. The key is
-deleted with OwnerDraw. There is no build option: RmlUi and ImGui are always
+One transitional key in `SUN.INI`, `LegacyDialogs` under `[Options]`, returns
+every migrated screen to its legacy view while that view exists; it defaults
+to `no`. Defaults are decided per screen family in code, so a family switches
+to RmlUi by default when its evidence is in without a key per family. The key
+is deleted with OwnerDraw. There is no build option: RmlUi and ImGui are always
 compiled and linked, so one configuration matrix carries the evidence.
-`Options` reads and writes the key where it handles `[Video]` today, and the
-key gets a manual page. A sidebar view key follows the sidebar view.
+`Options` reads and writes the key with its other `[Options]` settings, a
+caller latches `UI_Use_Rml()` at screen entry because `Options` loads after the
+shell, and the key has a manual page. A sidebar view key follows the sidebar
+view.
 
 ## Dear ImGui
 
@@ -812,7 +818,6 @@ geometry memory are recorded on an agreed baseline before defaults change.
 
 ## Open decisions
 
-- The kill-switch key name, fixed by the change that introduces it.
 - The in-game text route for the sidebar view: TrueType conversions of the
   game fonts or a bitmap font engine for every document.
 - The document and binding versioning rules for mods, fixed with the first

@@ -9,8 +9,13 @@
 
 #include "ui/uisystem.h"
 
+#include "data.h"
 #include "dbgprint.h"
 #include "win.h"
+
+#include "opents_strings.h"
+
+#include <cstring>
 
 
 UISystemInterfaceClass::UISystemInterfaceClass(void) :
@@ -33,10 +38,12 @@ bool UISystemInterfaceClass::LogMessage(Rml::Log::Type type, Rml::String const &
 	switch (type) {
 		case Rml::Log::LT_ERROR:
 			level = "error";
+			Errors++;
 			break;
 
 		case Rml::Log::LT_ASSERT:
 			level = "assert";
+			Errors++;
 			break;
 
 		case Rml::Log::LT_WARNING:
@@ -62,4 +69,54 @@ void UISystemInterfaceClass::JoinPath(Rml::String & translated, Rml::String cons
 {
 	size_t start = path.find_last_of("/\\");
 	translated = (start == Rml::String::npos) ? path : path.substr(start + 1);
+}
+
+
+static int String_Id(Rml::String const & name)
+{
+	for (OpenTSStringName const & entry : OpenTSStringNames) {
+		if (std::strcmp(entry.Name, name.c_str()) == 0) {
+			return(entry.Id);
+		}
+	}
+	return(-1);
+}
+
+
+// A document names an engine string as [[TXT_NAME]]. An unknown name stays as typed so that
+// it shows where it was written. Fetch_String returns a pointer into a cache that later
+// calls reuse, so the text is copied out at once.
+int UISystemInterfaceClass::TranslateString(Rml::String & translated, Rml::String const & input)
+{
+	int count = 0;
+	size_t from = 0;
+
+	translated.clear();
+
+	while (from < input.size()) {
+		size_t open = input.find("[[", from);
+		size_t close = (open == Rml::String::npos) ? Rml::String::npos : input.find("]]", open + 2);
+
+		if (close == Rml::String::npos) {
+			translated.append(input, from, Rml::String::npos);
+			break;
+		}
+
+		translated.append(input, from, open - from);
+
+		Rml::String name = input.substr(open + 2, close - open - 2);
+		int id = String_Id(name);
+
+		if (id >= 0) {
+			translated.append(Fetch_String(id));
+			count++;
+		} else {
+			DebugString("UI: no string named %s\n", name.c_str());
+			translated.append(input, open, close + 2 - open);
+		}
+
+		from = close + 2;
+	}
+
+	return(count);
 }

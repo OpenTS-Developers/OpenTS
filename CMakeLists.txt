@@ -46,10 +46,12 @@ set(TS_RUN_DIR "${CMAKE_SOURCE_DIR}/Run" CACHE PATH "Tiberian Sun run directory"
 # The version resources, the version displays, and the debug log's opening banner all report
 # the version and commit that produced the binary. Stamping runs once here so the headers exist
 # before the first compile, and again per build through OpenTSBuildStamp so that committing does
-# not require a reconfigure to be reflected.
+# not require a reconfigure to be reflected. The UI shell's string-name table is generated from
+# language.h on the same schedule.
 set(OPENTS_GENERATED_DIR "${CMAKE_BINARY_DIR}/generated")
 set(OPENTS_VERSION_HEADER "${OPENTS_GENERATED_DIR}/opents_version.h")
 set(OPENTS_STAMP_HEADER "${OPENTS_GENERATED_DIR}/opents_build.h")
+set(OPENTS_STRINGS_HEADER "${OPENTS_GENERATED_DIR}/opents_strings.h")
 file(MAKE_DIRECTORY "${OPENTS_GENERATED_DIR}")
 
 set(OPENTS_STAMP_ARGS
@@ -64,11 +66,19 @@ set(OPENTS_STAMP_ARGS
     -P "${CMAKE_SOURCE_DIR}/cmake/GitStamp.cmake"
 )
 
+set(OPENTS_STRINGS_ARGS
+    "-DOPENTS_LANGUAGE_HEADER=${CMAKE_SOURCE_DIR}/code/language/language.h"
+    "-DOPENTS_STRINGS_HEADER=${OPENTS_STRINGS_HEADER}"
+    -P "${CMAKE_SOURCE_DIR}/cmake/StringTable.cmake"
+)
+
 execute_process(COMMAND ${CMAKE_COMMAND} ${OPENTS_STAMP_ARGS})
+execute_process(COMMAND ${CMAKE_COMMAND} ${OPENTS_STRINGS_ARGS})
 
 add_custom_target(OpenTSBuildStamp ALL
     COMMAND ${CMAKE_COMMAND} ${OPENTS_STAMP_ARGS}
-    COMMENT "Stamping the build identity"
+    COMMAND ${CMAKE_COMMAND} ${OPENTS_STRINGS_ARGS}
+    COMMENT "Stamping the build identity and the string-name table"
     VERBATIM
 )
 

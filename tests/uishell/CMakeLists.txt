@@ -9,7 +9,10 @@ add_executable(UIShell
 
 target_compile_features(UIShell PRIVATE cxx_std_20)
 
-target_include_directories(UIShell PRIVATE "${CMAKE_SOURCE_DIR}/code")
+target_include_directories(UIShell PRIVATE "${CMAKE_SOURCE_DIR}/code" "${OPENTS_GENERATED_DIR}")
+
+# The string-name table the shell resolves document references with is generated per build.
+add_dependencies(UIShell OpenTSBuildStamp)
 
 # The documents are read from the source tree, so the test needs no run directory.
 target_compile_definitions(UIShell PRIVATE WIN32 _WINDOWS NOMINMAX "OPENTS_UI_DIR=\"${CMAKE_SOURCE_DIR}/ui\"")

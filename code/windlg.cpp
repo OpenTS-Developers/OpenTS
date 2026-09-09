@@ -17,9 +17,11 @@
 #include "init.h"
 #include "msgloop.h"
 #include "ownrdraw.h"
+#include "ui/uishell.h"
 #include "video.h"
 #include "win.h"
 
+#include <cassert>
 #include <commctrl.h>
 #include <windows.h>
 
@@ -96,6 +98,9 @@ inline int WS_Dialog_Index(HWND window)
 /// missing or the dialog could not be created, NULL is returned.</returns>
 HWND WS_Create_Dialog(HINSTANCE instance, int id, HWND parent, DLGPROC proc, BOOL force_show)
 {
+	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
+	assert(!UI_Screen_Shown());
+
 	WSDialogStruct *slot = &g_Dialogs[g_DialogCount];
 	g_Dialogs[g_DialogCount].handle = 0;
 	g_Dialogs[g_DialogCount].id = 0;

@@ -10,8 +10,9 @@
 // Pins what the UI shell relies on without a window, a renderer or game data: the vendored
 // toolkits start and stop under the engine's link settings, every shipped document loads
 // and draws through the render interface methods the shell implements and none it does
-// not, the documents name their resources the way the shell resolves them, and the
-// pointer mapping into the overlay behaves at the frame's edges.
+// not, the documents name their resources the way the shell resolves them and their
+// strings by names the generated table knows, and the pointer mapping into the overlay
+// behaves at the frame's edges.
 
 #include <cstdio>
 #include <cstring>
@@ -26,6 +27,8 @@
 #include <imgui.h>
 
 #include "ui/uicoord.h"
+
+#include "opents_strings.h"
 
 namespace {
 
@@ -365,6 +368,63 @@ void Test_Coordinates(void)
 }
 
 
+// The shell resolves [[TXT_NAME]] through the generated table, so a name a document uses
+// must exist there.
+void Test_Strings(void)
+{
+	int entries = (int)(sizeof(OpenTSStringNames) / sizeof(OpenTSStringNames[0]));
+	Check(OpenTSStringNameCount == entries, "the string table's count matches its entries");
+	Check(OpenTSStringNameCount > 700, "the string table carries the language header's identifiers");
+
+	int ok = -1;
+	for (OpenTSStringName const & entry : OpenTSStringNames) {
+		if (std::strcmp(entry.Name, "TXT_OK") == 0) {
+			ok = entry.Id;
+		}
+	}
+	Check(ok == 10, "TXT_OK maps to its identifier");
+
+	std::filesystem::path directory(OPENTS_UI_DIR);
+	int references = 0;
+	bool resolved = true;
+
+	for (std::filesystem::directory_entry const & entry : std::filesystem::directory_iterator(directory)) {
+		std::filesystem::path path = entry.path();
+		if (path.extension().string() != ".rml") {
+			continue;
+		}
+
+		std::string text = Read_Text(path);
+		size_t from = 0;
+		while (true) {
+			size_t open = text.find("[[", from);
+			size_t close = (open == std::string::npos) ? std::string::npos : text.find("]]", open + 2);
+			if (close == std::string::npos) {
+				break;
+			}
+
+			std::string name = text.substr(open + 2, close - open - 2);
+			bool known = false;
+			for (OpenTSStringName const & known_entry : OpenTSStringNames) {
+				if (name == known_entry.Name) {
+					known = true;
+				}
+			}
+			if (!known) {
+				std::printf("  %s names %s, which the table does not know\n", path.filename().string().c_str(), name.c_str());
+				resolved = false;
+			}
+
+			references++;
+			from = close + 2;
+		}
+	}
+
+	Check(resolved, "every string a document names exists in the table");
+	std::printf("  %d string references in the shipped documents\n", references);
+}
+
+
 void Test_Documents(void)
 {
 	std::filesystem::path directory(OPENTS_UI_DIR);
@@ -449,6 +509,7 @@ int main(void)
 	Test_FreeType();
 	Test_ImGui();
 	Test_Coordinates();
+	Test_Strings();
 	Test_Documents();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
