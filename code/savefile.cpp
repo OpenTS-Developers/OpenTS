@@ -361,39 +361,42 @@ SaveFileClass::ResultType SaveFileClass::Write(char const * path) const
 	Serialize_Fields(table);
 	if (table.size() > MAX_TABLE_LENGTH) return(RESULT_TOO_LARGE);
 
-	std::vector<unsigned char> stored;
+	// The compressed block is kept only when it is smaller than the content; otherwise
+	// the content is written where it already sits, rather than copied to be written.
+	std::vector<unsigned char> compressed;
+	unsigned char const * payload = Content.data();
+	std::uint32_t payload_length = (std::uint32_t)Content.size();
 	std::uint32_t flags = 0;
 
 	if (!Content.empty()) {
-		std::vector<unsigned char> work(LZO1X_MEM_COMPRESS);
-		stored.resize(Content.size() + Content.size() / 16 + 64 + 3);
+		std::vector<unsigned char> work;
+		if (!Reserve(work, LZO1X_MEM_COMPRESS)
+		 || !Reserve(compressed, Content.size() + Content.size() / 16 + 64 + 3)) {
+			return(RESULT_NO_MEMORY);
+		}
 
 		lzo_uint packed = 0;
 		int const status = lzo1x_1_compress(Content.data(), (lzo_uint)Content.size(),
-			stored.data(), &packed, work.data());
+			compressed.data(), &packed, work.data());
 
 		if (status == LZO_E_OK && packed < Content.size()) {
-			stored.resize((std::size_t)packed);
+			payload = compressed.data();
+			payload_length = (std::uint32_t)packed;
 			flags |= FLAG_LZO;
-		} else {
-			stored = Content;
 		}
 	}
 
-	std::vector<unsigned char> image(HEADER_SIZE);
-	unsigned char * const header = image.data();
+	unsigned char header[HEADER_SIZE];
 	memcpy(header, Signature, sizeof(Signature));
 	Put_U16(header + 4, FORMAT_VERSION);
 	Put_U16(header + 6, flags);
 	Put_U32(header + 8, (std::uint32_t)table.size());
 	Put_U32(header + 12, HEADER_SIZE + (std::uint32_t)table.size());
-	Put_U32(header + 16, (std::uint32_t)stored.size());
+	Put_U32(header + 16, payload_length);
 	Put_U32(header + 20, (std::uint32_t)Content.size());
-	Put_U32(header + 24, Checksum(stored.data(), (std::uint32_t)stored.size()));
+	Put_U32(header + 24, Checksum(payload, payload_length));
+	// The header checksum covers everything before itself, so it is filled in last.
 	Put_U32(header + 28, Header_CRC(header, table.data(), (std::uint32_t)table.size()));
-
-	image.insert(image.end(), table.begin(), table.end());
-	image.insert(image.end(), stored.begin(), stored.end());
 
 	std::string const temporary = std::string(path) + ".tmp";
 
@@ -401,7 +404,9 @@ SaveFileClass::ResultType SaveFileClass::Write(char const * path) const
 		FILE_ATTRIBUTE_NORMAL, nullptr);
 	if (file == INVALID_HANDLE_VALUE) return(RESULT_WRITE_FAILED);
 
-	bool ok = Write_Range(file, image.data(), (std::uint32_t)image.size());
+	bool ok = Write_Range(file, header, HEADER_SIZE);
+	if (ok && !table.empty()) ok = Write_Range(file, table.data(), (std::uint32_t)table.size());
+	if (ok && payload_length > 0) ok = Write_Range(file, payload, payload_length);
 	if (ok) ok = (FlushFileBuffers(file) != FALSE);
 	if (!CloseHandle(file)) ok = false;
 
