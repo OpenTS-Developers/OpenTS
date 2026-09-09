@@ -33,19 +33,30 @@ static int Clamp_Level(int level)
 }
 
 
+// A slider reports its starting level as it is seeded, so a level that is already held plays
+// no feedback.
 void UISoundPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "score") {
-		State.Score = Clamp_Level(intent.Value);
-		Service.Set_Score_Volume(Volume_Of(State.Score), true);
+		int level = Clamp_Level(intent.Value);
+		if (level != State.Score) {
+			State.Score = level;
+			Service.Set_Score_Volume(Volume_Of(State.Score), true);
+		}
 
 	} else if (intent.Name == "sound") {
-		State.Sound = Clamp_Level(intent.Value);
-		Service.Set_Sound_Volume(Volume_Of(State.Sound), true);
+		int level = Clamp_Level(intent.Value);
+		if (level != State.Sound) {
+			State.Sound = level;
+			Service.Set_Sound_Volume(Volume_Of(State.Sound), true);
+		}
 
 	} else if (intent.Name == "voice") {
-		State.Voice = Clamp_Level(intent.Value);
-		Service.Set_Voice_Volume(Volume_Of(State.Voice), true);
+		int level = Clamp_Level(intent.Value);
+		if (level != State.Voice) {
+			State.Voice = level;
+			Service.Set_Voice_Volume(Volume_Of(State.Voice), true);
+		}
 
 	} else if (intent.Name == "shuffle") {
 		State.Shuffle = (intent.Value != 0);

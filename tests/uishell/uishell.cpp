@@ -442,10 +442,17 @@ void Test_Sound_Presenter(void)
 
 	UISoundPresenterClass presenter(service, state);
 
+	Drive(presenter, "score", 7);
+	Drive(presenter, "sound", 5);
+	Drive(presenter, "voice", 10);
+	Check(service.Calls.empty(), "a slider reporting the level it already holds previews nothing");
+
 	Drive(presenter, "score", 4);
 	Check(presenter.State.Score == 4 && service.Joined() == "score 0.4 feedback", "a music slider move previews the new volume at once");
 	service.Calls.clear();
 
+	Drive(presenter, "voice", 2);
+	service.Calls.clear();
 	Drive(presenter, "voice", 14);
 	Check(presenter.State.Voice == 10 && service.Joined() == "voice 1.0 feedback", "a slider level is clamped to the top step");
 	service.Calls.clear();
@@ -953,6 +960,10 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		context.Update();
 		context.Render();
 		Check(system.Problems == problems, "the sound screen raises no RmlUi warning or error");
+
+		// Seeding a range input dispatches its change event, so opening queues the starting levels.
+		presenter.Drain();
+		Check(presenter.State.Score == 7 && presenter.State.Sound == 5 && presenter.State.Voice == 10 && service.Calls.empty(), "opening the sound screen plays no feedback");
 
 		Rml::ElementDocument * document = view->Document();
 		Rml::ElementList inputs;
