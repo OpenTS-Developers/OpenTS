@@ -8,4 +8,5 @@ opents_add_test(UTF8Contract
         utf8.cpp
     DEFINITIONS WIN32 _WINDOWS NOMINMAX
     UTF8
+    UNPORTED
 )

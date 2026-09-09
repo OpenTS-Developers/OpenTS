@@ -9,4 +9,5 @@ opents_add_test(CpuDetect
         mpu.cpp
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     FLOAT
+    UNPORTED
 )

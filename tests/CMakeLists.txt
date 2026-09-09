@@ -8,13 +8,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/test-bin")
 # names them per test, relative to code/. SOURCES are relative to the test's own directory.
 # FLOAT adds the float semantics the engine builds with, so a harness measuring numeric
 # results matches it. UTF8 is for a harness whose own source holds non-ASCII text. STAMP is
-# for a harness that reaches the generated version headers. WINDOWS is for a harness that
-# reaches a Windows API, which is built nowhere else.
+# for a harness that reaches the generated version headers. UNPORTED is for a harness that
+# does not build off Windows yet, whether because it reaches a Windows API or because
+# something it compiles still names a Windows header; it is configured on Windows alone.
 function(opents_add_test target)
-    cmake_parse_arguments(TEST "FLOAT;UTF8;STAMP;WINDOWS" "NAME"
+    cmake_parse_arguments(TEST "FLOAT;UTF8;STAMP;UNPORTED" "NAME"
         "SOURCES;ENGINE;INCLUDES;DEFINITIONS;LIBRARIES" ${ARGN})
 
-    if(TEST_WINDOWS AND NOT WIN32)
+    if(TEST_UNPORTED AND NOT WIN32)
         return()
     endif()
 

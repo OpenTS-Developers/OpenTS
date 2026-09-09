@@ -15,4 +15,5 @@ opents_add_test(SocketUdp
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     LIBRARIES ws2_32
     STAMP
+    UNPORTED
 )

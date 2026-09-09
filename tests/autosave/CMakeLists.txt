@@ -8,4 +8,5 @@ opents_add_test(Autosave
     ENGINE
         autosave.cpp
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
+    UNPORTED
 )

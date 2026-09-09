@@ -26,4 +26,5 @@ opents_add_test(IniContract
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     UTF8
     STAMP
+    UNPORTED
 )

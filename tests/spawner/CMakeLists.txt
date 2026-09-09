@@ -28,4 +28,5 @@ opents_add_test(SpawnContract
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     UTF8
     STAMP
+    UNPORTED
 )

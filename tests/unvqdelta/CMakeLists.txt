@@ -10,4 +10,5 @@ opents_add_test(UnvqDelta
     INCLUDES ${CMAKE_CURRENT_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/code/vqalib
     DEFINITIONS WIN32 _WINDOWS _MBCS
     FLOAT
+    UNPORTED
 )

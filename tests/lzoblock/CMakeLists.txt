@@ -16,4 +16,5 @@ opents_add_test(LzoBlock
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     LIBRARIES lzo
     FLOAT
+    UNPORTED
 )
