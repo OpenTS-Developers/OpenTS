@@ -37,17 +37,37 @@
 #include "sounddlg.h"
 
 #include "dbgprint.h"
-#include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
 #include "incdec.h"
 #include "init.h"
 #include "language/language.h"
 #include "ownrdraw.h"
-#include "theme.h"
+#include "ui/uiscreen.h"
+#include "ui/uisound.h"
 #include "winfix.h"
 
 bool DialogInitialized = false;
+
+// The presenter the dialog procedure is a view of, for the life of one Dialog call.
+static UISoundPresenterClass * _Presenter = NULL;
+
+
+static void Queue_And_Drain(UISoundPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+static void Sync_Switches(HWND window, UISoundState const & state)
+{
+	SendDlgItemMessage(window, IDC_SOUND_SHUFFLE, BM_SETCHECK, state.Shuffle ? BST_CHECKED : BST_UNCHECKED, 0);
+	SendDlgItemMessage(window, IDC_SOUND_REPEAT, BM_SETCHECK, state.Repeat ? BST_CHECKED : BST_UNCHECKED, 0);
+}
 
 
 /// <summary>
@@ -60,8 +80,15 @@ bool DialogInitialized = false;
 void SoundControlsClass::Dialog(void)
 {
 	int rc = -1;
+
 	DebugString("SoundControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
+
 	DialogInitialized = false;
+
+	UISoundState state;
+	UI_Sound_State(state);
+	UISoundPresenterClass presenter(UI_Sound_Service(), state);
+	_Presenter = &presenter;
 
 	HWND dialog;
 	if (!GameActive) {
@@ -71,15 +98,14 @@ void SoundControlsClass::Dialog(void)
 	}
 
 	if (dialog) {
-
 		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
-
 		OwnerDraw::Display_Dialog(dialog);
 
 		while (rc == -1) {
 			if (OwnerDraw::Dialog_Message_Handler() == true) {
 				rc = 2;
 			}
+
 			if (!GameActive) {
 				Title_Screen_Restore();
 			}
@@ -87,6 +113,8 @@ void SoundControlsClass::Dialog(void)
 
 		OwnerDraw::End_Dialog(dialog);
 	}
+
+	_Presenter = NULL;
 
 	DebugString("SoundControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 }
@@ -111,167 +139,110 @@ INT_PTR CALLBACK SoundControlsClass::Sound_Option_Dialog_Func(HWND window, UINT 
 	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
 	if (rc == 0) {
+		UISoundPresenterClass * presenter = _Presenter;
+		if (presenter == NULL) {
+			return(FALSE);
+		}
+		UISoundState const & state = presenter->State;
+
 		switch (message) {
 			case WM_INITDIALOG: {
 					DialogInitialized = false;
-					bool enabled = AudioEngine.Is_Available();
 
-					/*
-					**	Music volume slider.
-					*/
+					// Seeding the sliders must neither write the options nor make a sound.
 					HWND track = GetDlgItem(window, IDC_MUSIC_VOLUME);
 					if (track) {
 						SendMessage(track, OD_TRACKSILENT, 0, 0);
 						Slider_SetRange(track, 0, VOLUME_LEVELS);
-						Slider_SetPos(track, (int)(Options.ScoreVolume * (double)VOLUME_LEVELS + 0.5));
-						EnableWindow(track, enabled);
+						Slider_SetPos(track, state.Score);
+						EnableWindow(track, state.Enabled);
 					}
 
-					/*
-					**	Sound volume slider.
-					*/
 					track = GetDlgItem(window, IDC_SOUND_VOLUME);
 					if (track) {
 						SendMessage(track, OD_TRACKSILENT, 0, 0);
 						Slider_SetRange(track, 0, VOLUME_LEVELS);
-						Slider_SetPos(track, (int)(Options.SoundVolume * (double)VOLUME_LEVELS + 0.5));
-						EnableWindow(track, enabled);
+						Slider_SetPos(track, state.Sound);
+						EnableWindow(track, state.Enabled);
 					}
 
 					track = GetDlgItem(window, IDC_VOICE_VOLUME);
 					if (track) {
 						SendMessage(track, OD_TRACKSILENT, 0, 0);
 						Slider_SetRange(track, 0, VOLUME_LEVELS);
-						Slider_SetPos(track, (int)(Options.VoiceVolume * (double)VOLUME_LEVELS + 0.5));
-						EnableWindow(track, enabled);
+						Slider_SetPos(track, state.Voice);
+						EnableWindow(track, state.Enabled);
 					}
 
 					if (GameActive) {
-
-						/*
-						**	Shuffle control.
-						*/
 						HWND button = GetDlgItem(window, IDC_SOUND_SHUFFLE);
 						if (button) {
-							Button_SetCheck(button, Options.IsScoreShuffle ? BST_CHECKED : BST_UNCHECKED);
-							EnableWindow(button, enabled);
+							Button_SetCheck(button, state.Shuffle ? BST_CHECKED : BST_UNCHECKED);
+							EnableWindow(button, state.Enabled);
 						}
 
-						/*
-						**	Repeat control.
-						*/
 						button = GetDlgItem(window, IDC_SOUND_REPEAT);
 						if (button) {
-							Button_SetCheck(button, Options.IsScoreRepeat ? BST_CHECKED : BST_UNCHECKED);
-							EnableWindow(button, enabled);
+							Button_SetCheck(button, state.Repeat ? BST_CHECKED : BST_UNCHECKED);
+							EnableWindow(button, state.Enabled);
 						}
 
-						/*
-						**	Add all the themes to the list box. The list box entries are constructed
-						**	and then stored into allocated EMS memory blocks.
-						*/
 						HWND list = GetDlgItem(window, IDC_SOUND_TRACKLIST);
 						if (list) {
-							int active_theme = 0;
-							int visible_num = 1;
-
 							ListBox_ResetContent(list);
-
-							for (ThemeType index = THEME_FIRST; index < Theme.Max_Themes(); index++) {
-								if (Theme.Is_Allowed(index)) {
-									char buffer[100];
-									int length = Theme.Track_Length(index);
-									char const * fullname = Theme.Full_Name(index);
-
-									sprintf(buffer, "%02d - %s [%d:%02d]", visible_num, fullname, length / 60, length % 60);
-									visible_num++;
-
-									int row = ListBox_AddString(list, buffer);
-									if (row != LB_ERR) {
-										ListBox_SetItemData(list, row, index);
-										if (Theme.What_Is_Playing() == index) {
-											active_theme = row;
-										}
-									}
+							for (UISoundTrack const & entry : state.Tracks) {
+								int row = ListBox_AddString(list, entry.Label.c_str());
+								if (row != LB_ERR) {
+									ListBox_SetItemData(list, row, entry.Theme);
 								}
 							}
-
-							ListBox_SetCurSel(list, active_theme);
-							ListBox_SetTopIndex(list, active_theme);
-							EnableWindow(list, enabled);
+							int selected = (state.Selected >= 0) ? state.Selected : 0;
+							ListBox_SetCurSel(list, selected);
+							ListBox_SetTopIndex(list, selected);
+							EnableWindow(list, state.Enabled);
 						}
 					}
 
 					DialogInitialized = true;
 				}
-
 				break;
 
 			case WM_COMMAND:
 				switch (LOWORD(wparam)) {
-
-					/*
-					**	Toggle the shuffle button.
-					*/
 					case IDC_SOUND_SHUFFLE:
-						Options.Set_Shuffle(Button_GetCheck((HWND)lparam) == BST_CHECKED);
-						if (Button_GetCheck((HWND)lparam) == BST_CHECKED) {
-							SendDlgItemMessage(window, IDC_SOUND_REPEAT, BM_SETCHECK, BST_UNCHECKED, 0);
-							Options.Set_Repeat(false);
-						}
+						Queue_And_Drain(*presenter, "shuffle", Button_GetCheck((HWND)lparam) == BST_CHECKED);
+						Sync_Switches(window, state);
 						break;
 
-					/*
-					**	Toggle the repeat button.
-					*/
 					case IDC_SOUND_REPEAT:
-						Options.Set_Repeat(Button_GetCheck((HWND)lparam) == BST_CHECKED);
-						if (Button_GetCheck((HWND)lparam) == BST_CHECKED) {
-							SendDlgItemMessage(window, IDC_SOUND_SHUFFLE, BM_SETCHECK, BST_UNCHECKED, 0);
-							Options.Set_Shuffle(false);
-						}
+						Queue_And_Drain(*presenter, "repeat", Button_GetCheck((HWND)lparam) == BST_CHECKED);
+						Sync_Switches(window, state);
 						break;
 
-					/*
-					**	Stop all themes from playing.
-					*/
 					case IDC_SOUND_STOP:
 						if (HIWORD(wparam) == 0) {
-							Theme.Queue_Song(THEME_QUIET);
+							Queue_And_Drain(*presenter, "stop");
 						}
 						break;
 
 					case IDOK:
 						if (HIWORD(wparam) == 0) {
-							HWND button = GetDlgItem(window, IDC_MUSIC_VOLUME);
-							if (button) {
-								Options.Set_Score_Volume(Slider_GetPos(button) / (double)VOLUME_LEVELS, false);
+							Queue_And_Drain(*presenter, "ok");
+							if (presenter->Result.has_value()) {
+								int * res = (int *)GetWindowLongPtr(window, DWLP_USER);
+								*res = IDOK;
 							}
-							button = GetDlgItem(window, IDC_SOUND_VOLUME);
-							if (button) {
-								Options.Set_Sound_Volume(Slider_GetPos(button) / (double)VOLUME_LEVELS, false);
-							}
-							button = GetDlgItem(window, IDC_VOICE_VOLUME);
-							if (button) {
-								Options.Set_Voice_Volume(Slider_GetPos(button) / (double)VOLUME_LEVELS, false);
-							}
-							int * res = (int *)GetWindowLongPtr(window, DWLP_USER);
-							*res = IDOK;
 						}
 						break;
 
-					/*
-					**	Start the currently selected theme to play.
-					*/
 					case IDC_SOUND_PLAY:
 						if (HIWORD(wparam) == 0) {
 							HWND list = GetDlgItem(window, IDC_SOUND_TRACKLIST);
 							if (list) {
 								int row = ListBox_GetCurSel(list);
 								if (row != LB_ERR) {
-									ThemeType theme = (ThemeType)ListBox_GetItemData(list, row);
-									Theme.Stop();
-									Theme.Queue_Song(theme);
+									Queue_And_Drain(*presenter, "select", row);
+									Queue_And_Drain(*presenter, "play");
 								}
 							}
 						}
@@ -279,22 +250,21 @@ INT_PTR CALLBACK SoundControlsClass::Sound_Option_Dialog_Func(HWND window, UINT 
 				}
 				break;
 
-			/*
-			 * Control volume.
-			 */
 			case WM_HSCROLL:
 				if (DialogInitialized) {
 					HWND track = (HWND)lparam;
+
 					if (track == GetDlgItem(window, IDC_MUSIC_VOLUME)) {
-						Options.Set_Score_Volume(Slider_GetPos(track) / (double)VOLUME_LEVELS, true);
+						Queue_And_Drain(*presenter, "score", Slider_GetPos(track));
 					} else if (track == GetDlgItem(window, IDC_SOUND_VOLUME)) {
-						Options.Set_Sound_Volume(Slider_GetPos(track) / (double)VOLUME_LEVELS, true);
+						Queue_And_Drain(*presenter, "sound", Slider_GetPos(track));
 					} else if (track == GetDlgItem(window, IDC_VOICE_VOLUME)) {
-						Options.Set_Voice_Volume(Slider_GetPos(track) / (double)VOLUME_LEVELS, true);
+						Queue_And_Drain(*presenter, "voice", Slider_GetPos(track));
 					}
 				}
 				break;
 		}
+
 		return(FALSE);
 	}
 

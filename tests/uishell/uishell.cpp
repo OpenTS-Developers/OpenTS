@@ -32,6 +32,7 @@
 #include "ui/uimsgbox.h"
 #include "ui/uirmlview.h"
 #include "ui/uiscreen.h"
+#include "ui/uisound.h"
 #include "ui/uiversion.h"
 
 #include "opents_strings.h"
@@ -371,6 +372,111 @@ void Test_Coordinates(void)
 
 	position = UI_Client_To_Overlay(0, 0, 960, 720, -5, 3);
 	Check(!position.Inside && position.X == -5, "a negative client position is outside with its offset kept");
+}
+
+
+// Records the engine calls the sound presenter makes, in order, so the test can compare
+// them with the ones the Win32 dialog made.
+class RecordingSoundServiceClass : public UISoundServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+
+		virtual void Set_Score_Volume(float volume, bool feedback) override { Record("score", volume, feedback); }
+		virtual void Set_Sound_Volume(float volume, bool feedback) override { Record("sound", volume, feedback); }
+		virtual void Set_Voice_Volume(float volume, bool feedback) override { Record("voice", volume, feedback); }
+		virtual void Set_Shuffle(bool on) override { Calls.push_back(on ? "shuffle on" : "shuffle off"); }
+		virtual void Set_Repeat(bool on) override { Calls.push_back(on ? "repeat on" : "repeat off"); }
+		virtual void Play(int theme) override { Calls.push_back("play " + std::to_string(theme)); }
+		virtual void Stop(void) override { Calls.push_back("stop"); }
+
+		std::string Joined(void) const
+		{
+			std::string all;
+			for (std::string const & call : Calls) {
+				all += (all.empty() ? "" : "; ") + call;
+			}
+			return(all);
+		}
+
+	private:
+		void Record(char const * what, float volume, bool feedback)
+		{
+			char text[64];
+			std::snprintf(text, sizeof(text), "%s %.1f%s", what, volume, feedback ? " feedback" : "");
+			Calls.push_back(text);
+		}
+};
+
+
+void Drive(UISoundPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+// The sound presenter makes the calls the Win32 dialog procedure made, in the same order.
+void Test_Sound_Presenter(void)
+{
+	Check(UISoundPresenterClass::Level_Of(0.7f) == 7 && UISoundPresenterClass::Level_Of(0.04f) == 0 && UISoundPresenterClass::Level_Of(1.0f) == 10, "volumes round to slider levels the way the dialog did");
+
+	RecordingSoundServiceClass service;
+	UISoundState state;
+	state.Score = 7;
+	state.Sound = 5;
+	state.Voice = 10;
+	state.Enabled = true;
+	state.InGame = true;
+	state.Tracks.push_back({ "01 - First [3:00]", 5 });
+	state.Tracks.push_back({ "02 - Second [2:30]", 6 });
+	state.Tracks.push_back({ "03 - Third [4:05]", 9 });
+	state.Selected = 1;
+
+	UISoundPresenterClass presenter(service, state);
+
+	Drive(presenter, "score", 4);
+	Check(presenter.State.Score == 4 && service.Joined() == "score 0.4 feedback", "a music slider move previews the new volume at once");
+	service.Calls.clear();
+
+	Drive(presenter, "voice", 14);
+	Check(presenter.State.Voice == 10 && service.Joined() == "voice 1.0 feedback", "a slider level is clamped to the top step");
+	service.Calls.clear();
+
+	Drive(presenter, "shuffle", 1);
+	Check(presenter.State.Shuffle && !presenter.State.Repeat && service.Joined() == "shuffle on; repeat off", "turning shuffle on turns repeat off");
+	service.Calls.clear();
+
+	Drive(presenter, "repeat", 1);
+	Check(presenter.State.Repeat && !presenter.State.Shuffle && service.Joined() == "repeat on; shuffle off", "turning repeat on turns shuffle off");
+	service.Calls.clear();
+
+	Drive(presenter, "repeat", 0);
+	Check(!presenter.State.Repeat && service.Joined() == "repeat off", "turning repeat off leaves shuffle alone");
+	service.Calls.clear();
+
+	Drive(presenter, "play");
+	Check(service.Joined() == "play 6", "play starts the selected track");
+	service.Calls.clear();
+
+	Drive(presenter, "select", 2);
+	Drive(presenter, "play");
+	Check(presenter.State.Selected == 2 && service.Joined() == "play 9", "play starts a newly selected track");
+	service.Calls.clear();
+
+	Drive(presenter, "select", 7);
+	Drive(presenter, "play");
+	Check(presenter.State.Selected == -1 && service.Calls.empty(), "a row outside the list selects nothing and plays nothing");
+
+	Drive(presenter, "stop");
+	Check(service.Joined() == "stop", "stop fades the music out");
+	service.Calls.clear();
+
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0", "OK re-applies the levels without feedback and closes");
 }
 
 
@@ -800,6 +906,7 @@ int main(void)
 	Test_FreeType();
 	Test_ImGui();
 	Test_Coordinates();
+	Test_Sound_Presenter();
 	Test_Strings();
 	Test_Documents();
 
