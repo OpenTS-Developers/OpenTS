@@ -1,0 +1,71 @@
+name: Native harnesses
+
+# The test harnesses build with a native compiler, which is how a portability change is
+# checked on a second platform. The engine target is not built: most of its sources still
+# name Windows headers, and docs/BUILDING.md is the authority on what is supported.
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - "code/**"
+      - "cmake/**"
+      - "tests/**"
+      - "thirdparty/**"
+      - "CMakeLists.txt"
+      - ".gitmodules"
+      - ".github/workflows/harness-native.yml"
+  push:
+    branches: [main]
+    paths:
+      - "code/**"
+      - "cmake/**"
+      - "tests/**"
+      - "thirdparty/**"
+      - "CMakeLists.txt"
+      - ".gitmodules"
+      - ".github/workflows/harness-native.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: harness-native-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  harnesses:
+    name: Linux
+    # A draft pull request builds nothing; the ready_for_review trigger above starts this
+    # when the pull request is marked ready.
+    if: github.event_name != 'pull_request' || github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    # Clang is what the native options were written against. GCC accepts them too but
+    # reads __declspec differently, so it is a separate step to take, not an assumption.
+    env:
+      CC: clang
+      CXX: clang++
+    steps:
+      - name: Check out OpenTS
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+
+      - name: Install Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes ninja-build
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DOPENTS_EXPERIMENTAL_NATIVE=ON
+
+      # The harnesses target carries whatever opents_add_test registered, which off Windows
+      # is the harnesses that do not name a Windows API.
+      - name: Build the harnesses
+        run: cmake --build build --target harnesses
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure

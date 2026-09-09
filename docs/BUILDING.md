@@ -146,9 +146,12 @@ translation units compile, and the rest stop on the Windows headers they name.
 cmake -S . -B build/native -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DOPENTS_EXPERIMENTAL_NATIVE=ON
-cmake --build build/native --target LzoComp AudioRing
+cmake --build build/native --target harnesses
 ctest --test-dir build/native
 ```
+
+Continuous integration runs exactly that on Linux, so a change that breaks the
+native harnesses is caught rather than discovered later.
 
 A harness that does not build off Windows yet declares `UNPORTED` in its
 `opents_add_test` call and is configured on Windows alone, so a native build
