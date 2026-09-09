@@ -1154,9 +1154,9 @@ bool Load_Game(const char *file_name)
 	}
 	if (!res) {
 		DebugString("\t***** FAILED! (at %u of %u bytes)\n", stream.Offset(), stream.Size());
-		// What was loaded stays in the heaps until the next teardown, which must not
-		// follow the identities still sitting in its pointer slots.
-		Swizzler.Abandon();
+		// What was loaded stays in the heaps until the next teardown, so the requests it
+		// registered must not be answered into it once the game that follows has moved on.
+		Swizzler.Discard();
 		return(false);
 	}
 	if (stream.Offset() != stream.Size()) {

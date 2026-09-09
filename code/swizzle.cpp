@@ -230,15 +230,13 @@ void SwizzleManagerClass::Resolve(void)
 
 
 /// <summary>
-/// Takes back everything registered since the mark, clearing each pointer slot it covers.
-/// A slot that was registered still holds the identity read from the file, which is not
-/// an address; clearing it lets the object it belongs to be destroyed safely.
+/// Takes back everything registered since the mark.
+/// The slots those requests name were left null by Swizzle and nothing has filled them,
+/// since Resolve does not run until the load has succeeded, so dropping the requests is
+/// all it takes to let the objects holding them be destroyed.
 /// </summary>
 void SwizzleManagerClass::Abandon(MarkType const & mark)
 {
-	for (std::size_t index = mark.Requests; index < RequestTable.size(); index++) {
-		*(void **)RequestTable[index].Pointer = nullptr;
-	}
 	RequestTable.resize(mark.Requests);
 	PointerTable.resize(mark.Pointers);
 }

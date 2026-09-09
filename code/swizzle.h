@@ -88,7 +88,6 @@ class SwizzleManagerClass
 		};
 		MarkType Mark(void) const {return(MarkType{RequestTable.size(), PointerTable.size()});}
 		void Abandon(MarkType const & mark);
-		void Abandon(void) {Abandon(MarkType{0, 0});}
 
 	private:
 		/*
