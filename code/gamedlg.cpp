@@ -50,6 +50,7 @@
 #include "techno.h"
 #include "ui/uigamectrl.h"
 #include "ui/uiscreen.h"
+#include "ui/uishell.h"
 
 #include "special.hh"
 
@@ -167,11 +168,9 @@ static void Read_Controls(HWND window, UIGameControlsPresenterClass & presenter)
  * HISTORY:                                                                                    *
  *   12/31/1994 MML : Created.                                                                 *
  *=============================================================================================*/
-void GameControlsClass::Dialog(void)
+void GameControlsClass::Run_Win32_Dialog(void)
 {
 	int res = -1;
-
-	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 
 	UIGameControlsState state;
 	UI_Game_Controls_State(state);
@@ -213,6 +212,16 @@ void GameControlsClass::Dialog(void)
 		SpecialDialog = SDLG_SOUND;
 	} else if (presenter.Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
 		SpecialDialog = SDLG_KEYBOARD;
+	}
+}
+
+
+void GameControlsClass::Dialog(void)
+{
+	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
+
+	if (!UI_Use_Rml() || !UI_Game_Controls_Dialog()) {
+		Run_Win32_Dialog();
 	}
 
 	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);

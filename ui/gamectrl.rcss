@@ -1,0 +1,177 @@
+body
+{
+	width: 100%;
+	height: 100%;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-family: "Open Sans";
+	font-size: 13dp;
+	color: #e6e6e6;
+}
+
+div, label
+{
+	display: block;
+}
+
+#panel
+{
+	box-sizing: border-box;
+	width: 438dp;
+	padding: 18dp 33dp 21dp 33dp;
+	background-color: #12181fdc;
+	border: 1dp #5a8f6a;
+}
+
+.row
+{
+	height: 24dp;
+	margin-bottom: 9dp;
+	white-space: nowrap;
+}
+
+.label
+{
+	display: inline-block;
+	width: 87dp;
+	line-height: 24dp;
+	vertical-align: top;
+}
+
+input.range
+{
+	display: inline-block;
+	width: 222dp;
+	height: 24dp;
+	vertical-align: top;
+}
+
+.value
+{
+	display: inline-block;
+	width: 63dp;
+	line-height: 24dp;
+	text-align: right;
+	vertical-align: top;
+}
+
+input.range slidertrack
+{
+	margin-top: 8dp;
+	height: 8dp;
+	background-color: #2a3a48;
+	border: 1dp #6f95a8;
+}
+
+input.range sliderbar
+{
+	width: 14dp;
+	height: 24dp;
+	background-color: #6f95a8;
+}
+
+input.range sliderbar:hover, input.range sliderbar:active
+{
+	background-color: #8fb5c8;
+}
+
+input.range sliderarrowdec, input.range sliderarrowinc
+{
+	width: 0;
+	height: 0;
+}
+
+#switches
+{
+	margin-top: 12dp;
+	height: 72dp;
+	white-space: nowrap;
+}
+
+.column
+{
+	display: inline-block;
+	width: 186dp;
+	vertical-align: top;
+}
+
+.switch
+{
+	line-height: 24dp;
+}
+
+input.checkbox
+{
+	width: 14dp;
+	height: 14dp;
+	margin-right: 8dp;
+	vertical-align: -2dp;
+	background-color: #2a3a48;
+	border: 1dp #6f95a8;
+}
+
+input.checkbox:checked
+{
+	background-color: #8fb5c8;
+}
+
+#buttons
+{
+	position: relative;
+	margin-top: 15dp;
+	height: 23dp;
+}
+
+button
+{
+	position: absolute;
+	display: block;
+	top: 0;
+	width: 115dp;
+	height: 23dp;
+	text-align: center;
+	line-height: 23dp;
+	tab-index: auto;
+	background-color: #2f4a5a;
+	border: 1dp #6f95a8;
+}
+
+button:hover
+{
+	background-color: #3f6478;
+}
+
+button:active
+{
+	background-color: #24394a;
+}
+
+button.disabled
+{
+	color: #7a8790;
+	background-color: #24303a;
+	border-color: #4a5a68;
+}
+
+#sound
+{
+	left: 0;
+}
+
+#keyboard
+{
+	left: 129dp;
+}
+
+#ok
+{
+	right: 0;
+}
+
+#panel.frontend #ok
+{
+	left: 88dp;
+	right: auto;
+	width: 195dp;
+}

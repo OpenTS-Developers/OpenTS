@@ -26,10 +26,20 @@ static int Clamp_Level(int level, int count)
 }
 
 
+static std::string Name_Of(std::vector<std::string> const & names, int level)
+{
+	if (level < 0 || level >= (int)names.size()) {
+		return(std::string());
+	}
+	return(names[level]);
+}
+
+
 UIGameControlsPresenterClass::UIGameControlsPresenterClass(UIGameControlsServiceClass & service, UIGameControlsState state) :
 	State(std::move(state)),
 	Service(service)
 {
+	Update_Names();
 }
 
 
@@ -57,9 +67,11 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 		Apply();
 		Result = UI_RESULT_ACCEPTED;
 	} else if (intent.Name == "sound") {
-		Apply();
-		Next = NEXT_SOUND;
-		Result = UI_RESULT_ACCEPTED;
+		if (State.SoundEnabled) {
+			Apply();
+			Next = NEXT_SOUND;
+			Result = UI_RESULT_ACCEPTED;
+		}
 	} else if (intent.Name == "keyboard") {
 		Apply();
 		Next = NEXT_KEYBOARD;
@@ -67,6 +79,8 @@ void UIGameControlsPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "cancel") {
 		Result = UI_RESULT_CANCELLED;
 	}
+
+	Update_Names();
 }
 
 
@@ -92,4 +106,67 @@ void UIGameControlsPresenterClass::Apply(void)
 		Service.Set_Difficulty(State.Difficulty);
 	}
 	Service.Save();
+}
+
+
+void UIGameControlsPresenterClass::Update_Names(void)
+{
+	State.SpeedName = Name_Of(State.SpeedNames, State.Speed);
+	State.ScrollName = Name_Of(State.ScrollNames, State.Scroll);
+	State.DetailName = Name_Of(State.DetailNames, State.Detail);
+	State.DifficultyName = Name_Of(State.DifficultyNames, State.Difficulty);
+}
+
+
+namespace
+{
+
+class UIGameControlsViewClass : public UIRmlViewClass
+{
+	public:
+		explicit UIGameControlsViewClass(UIGameControlsPresenterClass & presenter) :
+			UIRmlViewClass(presenter, "gamectrl.rml", "gamectrl"),
+			Data(presenter)
+		{
+		}
+
+		// The model is small, so every field is re-read after each drain.
+		virtual void Sync(void) override
+		{
+			Model.DirtyAllVariables();
+		}
+
+	protected:
+		virtual bool Bind(Rml::DataModelConstructor & model) override
+		{
+			UIGameControlsState & state = Data.State;
+			return(model.Bind("speed", &state.Speed)
+				&& model.Bind("scroll", &state.Scroll)
+				&& model.Bind("detail", &state.Detail)
+				&& model.Bind("difficulty", &state.Difficulty)
+				&& model.Bind("cameo", &state.CameoText)
+				&& model.Bind("lines", &state.ActionLines)
+				&& model.Bind("tooltips", &state.ToolTips)
+				&& model.Bind("coasting", &state.Coasting)
+				&& model.Bind("edge", &state.EdgeScroll)
+				&& model.Bind("ingame", &state.InGame)
+				&& model.Bind("hasspeed", &state.HasSpeed)
+				&& model.Bind("hasdifficulty", &state.HasDifficulty)
+				&& model.Bind("soundenabled", &state.SoundEnabled)
+				&& model.Bind("speedname", &state.SpeedName)
+				&& model.Bind("scrollname", &state.ScrollName)
+				&& model.Bind("detailname", &state.DetailName)
+				&& model.Bind("difficultyname", &state.DifficultyName));
+		}
+
+	private:
+		UIGameControlsPresenterClass & Data;
+};
+
+}
+
+
+std::unique_ptr<UIRmlViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter)
+{
+	return(std::make_unique<UIGameControlsViewClass>(presenter));
 }

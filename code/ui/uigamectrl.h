@@ -39,8 +39,8 @@ class UIGameControlsServiceClass
 
 
 // What the dialog shows: the settings as values (a slider shows speed and scroll rate
-// reversed), the five switches, which controls this context has, and the names of the
-// slider positions.
+// reversed), the five switches, which controls this context has, the names of the slider
+// positions and the name of each current one.
 struct UIGameControlsState
 {
 	int Speed = 0;
@@ -60,6 +60,10 @@ struct UIGameControlsState
 	std::vector<std::string> ScrollNames;
 	std::vector<std::string> DetailNames;
 	std::vector<std::string> DifficultyNames;
+	std::string SpeedName;
+	std::string ScrollName;
+	std::string DetailName;
+	std::string DifficultyName;
 };
 
 
@@ -92,6 +96,7 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 
 	private:
 		void Apply(void);
+		void Update_Names(void);
 
 		UIGameControlsServiceClass & Service;
 };
@@ -105,3 +110,8 @@ std::unique_ptr<UIRmlViewClass> UI_Game_Controls_View(UIGameControlsPresenterCla
 // RmlUi view.
 UIGameControlsServiceClass & UI_Game_Controls_Service(void);
 void UI_Game_Controls_State(UIGameControlsState & state);
+
+// Runs the game controls as an RmlUi screen. False means it could not run as one and the
+// caller should open its Win32 dialog. Sound and Keyboard leave SpecialDialog naming the
+// screen to open next.
+bool UI_Game_Controls_Dialog(void);

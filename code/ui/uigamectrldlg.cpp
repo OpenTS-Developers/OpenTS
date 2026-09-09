@@ -24,6 +24,8 @@
 #include "queue.h"
 #include "session.h"
 #include "techno.h"
+#include "ui/uirmlview.h"
+#include "ui/uishell.h"
 
 
 namespace
@@ -143,4 +145,29 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 	Fetch_Names(state.ScrollNames, GameScrollSpeedNames, OptionsClass::MAX_SCROLL_SETTING);
 	Fetch_Names(state.DetailNames, GameDetailLevelNames, OptionsClass::MAX_DETAIL_SETTING);
 	Fetch_Names(state.DifficultyNames, GameDifficultyNames, OptionsClass::MAX_DIFFICULTY_SETTING);
+}
+
+
+bool UI_Game_Controls_Dialog(void)
+{
+	if (UI_Legacy_Dialog_Visible()) {
+		return(false);
+	}
+
+	UIGameControlsState state;
+	UI_Game_Controls_State(state);
+
+	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
+	std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+
+	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
+		return(false);
+	}
+
+	if (presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND) {
+		SpecialDialog = SDLG_SOUND;
+	} else if (presenter.Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
+		SpecialDialog = SDLG_KEYBOARD;
+	}
+	return(true);
 }

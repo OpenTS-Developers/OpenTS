@@ -1,0 +1,27 @@
+<rml>
+<head>
+	<title>Game controls</title>
+	<link type="text/rcss" href="gamectrl.rcss"/>
+</head>
+<body data-model="gamectrl">
+	<div id="panel" data-class-frontend="!ingame">
+		<div class="row" id="row-speed" data-if="hasspeed"><span class="label">Game Speed:</span><input type="range" id="speed" min="0" max="6" step="1" data-attr-value="6 - speed" data-event-change="queue('speed', 6 - ev.value)"/><span class="value" id="speed-name">{{speedname}}</span></div>
+		<div class="row" id="row-scroll"><span class="label">Scroll Rate:</span><input type="range" id="scroll" min="0" max="6" step="1" data-attr-value="6 - scroll" data-event-change="queue('scroll', 6 - ev.value)"/><span class="value" id="scroll-name">{{scrollname}}</span></div>
+		<div class="row" id="row-detail"><span class="label">Visual Details:</span><input type="range" id="detail" min="0" max="2" step="1" data-attr-value="detail" data-event-change="queue('detail', ev.value)"/><span class="value" id="detail-name">{{detailname}}</span></div>
+		<div class="row" id="row-difficulty" data-if="hasdifficulty"><span class="label">Difficulty:</span><input type="range" id="difficulty" min="0" max="2" step="1" data-attr-value="difficulty" data-event-change="queue('difficulty', ev.value)"/><span class="value" id="difficulty-name">{{difficultyname}}</span></div>
+		<div id="switches"><div class="column">
+			<label class="switch" id="switch-cameo"><input type="checkbox" id="cameo" data-attrif-checked="cameo" data-event-click="queue('cameo', cameo ? 0 : 1)"/><span data-if="ingame">Sidebar Text</span><span data-if="!ingame">Cameo Text</span></label>
+			<label class="switch" id="switch-lines"><input type="checkbox" id="lines" data-attrif-checked="lines" data-event-click="queue('lines', lines ? 0 : 1)"/>Target Lines</label>
+			<label class="switch" id="switch-edge"><input type="checkbox" id="edge" data-attrif-checked="edge" data-event-click="queue('edge', edge ? 0 : 1)"/>Edge Scrolling</label>
+		</div><div class="column">
+			<label class="switch" id="switch-tooltips"><input type="checkbox" id="tooltips" data-attrif-checked="tooltips" data-event-click="queue('tooltips', tooltips ? 0 : 1)"/>Tooltips</label>
+			<label class="switch" id="switch-coasting"><input type="checkbox" id="coasting" data-attrif-checked="coasting" data-event-click="queue('coasting', coasting ? 0 : 1)"/>Scroll Coasting</label>
+		</div></div>
+		<div id="buttons">
+			<button id="sound" data-if="ingame" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
+			<button id="keyboard" data-if="ingame" data-event-click="queue('keyboard')">Keyboard</button>
+			<button id="ok" data-event-click="queue('ok')"><span id="ok-options" data-if="ingame">[[TXT_OPTIONS_MENU]]</span><span id="ok-main" data-if="!ingame">Main Menu</span></button>
+		</div>
+	</div>
+</body>
+</rml>

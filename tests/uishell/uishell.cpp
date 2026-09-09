@@ -536,14 +536,19 @@ void Test_Game_Controls_Presenter(void)
 		state.InGame = false;
 		state.HasSpeed = true;
 		state.HasDifficulty = true;
+		state.SpeedNames = { "Slowest", "Slower", "Slow", "Medium", "Fast", "Faster", "Fastest" };
+		state.DetailNames = { "Low", "Medium", "High" };
 
 		UIGameControlsPresenterClass presenter(service, state);
+		Check(presenter.State.SpeedName == "Medium" && presenter.State.DetailName == "High" && presenter.State.ScrollName.empty(), "the presenter names the starting slider positions it has names for");
+
 		Drive(presenter, "speed", 5);
 		Drive(presenter, "detail", 9);
 		Drive(presenter, "cameo", 1);
 		Drive(presenter, "edge", 1);
 		Drive(presenter, "difficulty", 2);
 		Check(presenter.State.Speed == 5 && presenter.State.Detail == 2 && presenter.State.CameoText && presenter.State.EdgeScroll, "edits are held in the state and clamped");
+		Check(presenter.State.SpeedName == "Faster" && presenter.State.DetailName == "High", "an edit renames the slider position");
 		Check(service.Calls.empty(), "nothing is applied before the player accepts");
 
 		Drive(presenter, "ok");
@@ -559,6 +564,10 @@ void Test_Game_Controls_Presenter(void)
 		state.HasDifficulty = false;
 
 		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "sound");
+		Check(!presenter.Result.has_value() && service.Calls.empty(), "the Sound button does nothing without an audio device");
+
+		presenter.State.SoundEnabled = true;
 		Drive(presenter, "sound");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts and names the sound options next");
 		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; save", "an Internet game applies no game speed and no difficulty");
@@ -1033,6 +1042,198 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 }
 
 
+// The range inputs a document shows, counting only those inside a visible row.
+int Visible_Sliders(Rml::ElementDocument * document)
+{
+	int sliders = 0;
+	Rml::ElementList inputs;
+	document->GetElementsByTagName(inputs, "input");
+	for (Rml::Element * input : inputs) {
+		if (input->GetAttribute<Rml::String>("type", "") == "range" && input->IsVisible(true)) {
+			sliders++;
+		}
+	}
+	return(sliders);
+}
+
+
+UIGameControlsState Game_Controls_Fixture(void)
+{
+	UIGameControlsState state;
+	state.Speed = 4;
+	state.Scroll = 2;
+	state.Detail = 1;
+	state.Difficulty = 2;
+	state.CameoText = true;
+	state.ToolTips = true;
+	state.SpeedNames = { "Slowest", "Slower", "Slow", "Medium", "Fast", "Faster", "Fastest" };
+	state.ScrollNames = state.SpeedNames;
+	state.DetailNames = { "Low", "Medium", "High" };
+	state.DifficultyNames = { "Easy", "Normal", "Hard" };
+	return(state);
+}
+
+
+// Drives the game controls screen in its three variants: the sliders hold edits and name
+// their positions, the switches toggle, Sound applies and names the next screen, and the
+// frontend and Internet variants hide the controls their Win32 templates lack.
+void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = true;
+		state.HasSpeed = true;
+		state.HasDifficulty = false;
+		state.SoundEnabled = true;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+
+		Check(view->Prepare(context), "the game controls view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the game controls screen raises no RmlUi warning or error");
+
+		// Seeding a range input dispatches its change event, so opening queues the starting values.
+		presenter.Drain();
+		Check(presenter.State.Speed == 4 && presenter.State.Scroll == 2 && presenter.State.Detail == 1 && service.Calls.empty(), "opening the game controls holds the starting settings and applies nothing");
+
+		Rml::ElementDocument * document = view->Document();
+		Check(Visible_Sliders(document) == 3, "the in-game screen has three sliders");
+
+		Rml::Element * speed = document->GetElementById("speed");
+		Check(speed != nullptr && speed->GetAttribute<int>("value", -1) == 2, "the speed slider runs from slowest to fastest, so it starts at six minus the speed");
+
+		Rml::Element * speed_name = document->GetElementById("speed-name");
+		Check(speed_name != nullptr && speed_name->GetInnerRML() == "Fast", "the speed's name shows beside its slider");
+
+		Rml::Element * detail_name = document->GetElementById("detail-name");
+		Check(detail_name != nullptr && detail_name->GetInnerRML() == "Medium", "the detail level's name shows beside its slider");
+
+		Rml::Element * sound = document->GetElementById("sound");
+		Rml::Element * keyboard = document->GetElementById("keyboard");
+		Rml::Element * options = document->GetElementById("ok-options");
+		Check(sound != nullptr && sound->IsVisible() && keyboard != nullptr && keyboard->IsVisible(), "the in-game screen has its Sound and Keyboard buttons");
+		Check(options != nullptr && options->IsVisible(true), "the in-game accept button reads Options Menu");
+
+		if (speed != nullptr && speed_name != nullptr) {
+			Rml::Dictionary parameters;
+			parameters["value"] = Rml::Variant(5.0f);
+			speed->DispatchEvent(Rml::EventId::Change, parameters);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Speed == 1 && speed_name->GetInnerRML() == "Slower" && service.Calls.empty(), "dragging the speed slider changes the held speed and its name and applies nothing");
+		}
+
+		Rml::Element * cameo = document->GetElementById("cameo");
+		if (cameo != nullptr) {
+			Click(context, cameo);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(!presenter.State.CameoText && !cameo->HasAttribute("checked"), "a click on the cameo text switch turns it off and shows it");
+		}
+
+		if (sound != nullptr) {
+			Click(context, sound);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts the screen and names the sound options next");
+			Check(service.Joined() == "speed 1; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; save", "the Sound button applies the edited settings in order and saves");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = false;
+		state.HasSpeed = true;
+		state.HasDifficulty = true;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+
+		Check(view->Prepare(context), "the frontend game controls view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::ElementDocument * document = view->Document();
+		Check(Visible_Sliders(document) == 4, "the frontend screen adds the difficulty slider");
+
+		Rml::Element * difficulty_name = document->GetElementById("difficulty-name");
+		Check(difficulty_name != nullptr && difficulty_name->GetInnerRML() == "Hard", "the difficulty's name shows beside its slider");
+
+		Rml::Element * sound = document->GetElementById("sound");
+		Rml::Element * keyboard = document->GetElementById("keyboard");
+		Rml::Element * main = document->GetElementById("ok-main");
+		Check(sound != nullptr && !sound->IsVisible() && keyboard != nullptr && !keyboard->IsVisible(), "the frontend screen has no Sound or Keyboard button");
+		Check(main != nullptr && main->IsVisible(true), "the frontend accept button reads Main Menu");
+
+		Rml::Element * edge = document->GetElementById("edge");
+		if (edge != nullptr) {
+			Click(context, edge);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.EdgeScroll && edge->HasAttribute("checked"), "a click on the edge scrolling switch turns it on and shows it");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Escape leaves the game controls with nothing applied");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = true;
+		state.HasSpeed = false;
+		state.HasDifficulty = false;
+		state.SoundEnabled = false;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+
+		Check(view->Prepare(context), "the Internet game controls view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::ElementDocument * document = view->Document();
+		Check(Visible_Sliders(document) == 2, "the Internet screen has no game speed slider");
+
+		Rml::Element * sound = document->GetElementById("sound");
+		Check(sound != nullptr && sound->IsClassSet("disabled"), "the Sound button shows disabled without an audio device");
+
+		if (sound != nullptr) {
+			Click(context, sound);
+			presenter.Drain();
+			Check(!presenter.Result.has_value() && service.Calls.empty(), "a disabled Sound button does nothing");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+		context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; cameo on; lines off; tooltips on; coasting off; edge off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
 // Drives the wait box: the text follows the presenter, the frame appears only with a bar, and
 // the fill follows the percentage.
 void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
@@ -1134,10 +1335,12 @@ void Test_Documents(void)
 		int problems = system.Problems;
 		render.Scissors.clear();
 
-		// A document over a data model lays out against a permissive stand-in for its screen.
+		// A document over a data model lays out against a permissive stand-in for its screen,
+		// which takes the intents a control queues as it is seeded.
 		std::string model = Data_Model_Name(Read_Text(path));
 		if (!model.empty()) {
-			context->CreateDataModel(model, nullptr, true);
+			Rml::DataModelConstructor constructor = context->CreateDataModel(model, nullptr, true);
+			constructor.BindEventCallback("queue", [](Rml::DataModelHandle, Rml::Event &, Rml::VariantList const &) {});
 		}
 
 		Rml::ElementDocument * document = context->LoadDocument(path.string());
@@ -1177,6 +1380,7 @@ void Test_Documents(void)
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);
+		Test_Game_Controls_Screen(*context, system);
 		Test_Wait_Box_Screen(*context, system);
 	}
 
