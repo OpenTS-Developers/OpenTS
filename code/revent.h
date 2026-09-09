@@ -19,7 +19,6 @@
 #include "revent.hh"
 
 class SaveStreamClass;
-class SaveStreamClass;
 template<class T> class DynamicVectorClass;
 
 class RadarEventClass

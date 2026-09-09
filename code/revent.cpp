@@ -391,17 +391,20 @@ bool RadarEventClass::Save(SaveStreamClass & stream)
 /// <returns>bool; Were the events read successfully?</returns>
 bool RadarEventClass::Load(SaveStreamClass & stream)
 {
+	// The destructor takes the event off the list, so the list drains as they are deleted.
 	for (int i = RadarEvents.Count() - 1; i >= 0; i--) {
 		delete RadarEvents[i];
-		RadarEvents.Delete_Index(i);
 	}
 
 	stream.Set_Context("RadarEventClass");
 
 	int count = 0;
 	stream.Serialize(count);
+	if (!stream.Fits(count, 1)) {
+		return(false);
+	}
 
-	for (int index = 0; index < count; index++) {
+	for (int index = 0; index < count && !stream.Was_Error(); index++) {
 		RadarEventClass * event = new RadarEventClass(RADAREVENT_NONE, Cell(0, 0));
 		event->Serialize(stream);
 	}
