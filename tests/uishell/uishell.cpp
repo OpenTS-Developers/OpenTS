@@ -15,6 +15,7 @@
 // behaves at the frame's edges.
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -24,6 +25,7 @@
 #include <vector>
 
 #include <RmlUi/Core.h>
+#include <RmlUi/Core/Elements/ElementProgress.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <imgui.h>
@@ -34,6 +36,7 @@
 #include "ui/uiscreen.h"
 #include "ui/uisound.h"
 #include "ui/uiversion.h"
+#include "ui/uiwaitbox.h"
 
 #include "opents_strings.h"
 
@@ -938,6 +941,66 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 }
 
 
+// Drives the wait box: the text follows the presenter, the frame appears only with a bar, and
+// the fill follows the percentage.
+void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		UIWaitBoxPresenterClass presenter("Mission saving - Please Wait...", false);
+		std::unique_ptr<UIRmlViewClass> view = UI_Wait_Box_View(presenter);
+
+		Check(view->Prepare(context), "the wait box view prepares against the test context");
+		view->Show(false);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the wait box raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = view->Document();
+		Rml::Element * text = document->GetElementById("text");
+		Check(text != nullptr && text->GetInnerRML() == "Mission saving - Please Wait...", "the wait box shows its text");
+
+		Rml::Element * frame = document->GetElementById("frame");
+		Check(frame != nullptr && !frame->IsVisible(), "a wait box without a bar hides the frame");
+
+		presenter.Text = "Loading in 3 seconds...";
+		view->Sync();
+		context.Update();
+		Check(text != nullptr && text->GetInnerRML() == "Loading in 3 seconds...", "the wait box text follows the presenter");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIWaitBoxPresenterClass presenter("Working - Please Wait", true);
+		presenter.Set_Fraction(0.5);
+		std::unique_ptr<UIRmlViewClass> view = UI_Wait_Box_View(presenter);
+
+		Check(view->Prepare(context), "a wait box with a bar prepares");
+		view->Show(false);
+		context.Update();
+
+		Rml::ElementDocument * document = view->Document();
+		Rml::Element * frame = document->GetElementById("frame");
+		Rml::Element * fill = document->GetElementById("fill");
+		Check(frame != nullptr && frame->IsVisible(), "a wait box with a bar shows the frame");
+
+		Rml::ElementProgress * progress = rmlui_dynamic_cast<Rml::ElementProgress *>(fill);
+		Check(progress != nullptr && std::fabs(progress->GetValue() - 50.0f) < 0.01f, "the fill stands at fifty at fifty percent");
+
+		presenter.Set_Fraction(1.5);
+		view->Sync();
+		context.Update();
+		Check(presenter.Percent == 100 && progress != nullptr && std::fabs(progress->GetValue() - 100.0f) < 0.01f, "the fraction clamps to a full bar");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
 void Test_Documents(void)
 {
 	std::filesystem::path directory(OPENTS_UI_DIR);
@@ -1022,6 +1085,7 @@ void Test_Documents(void)
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);
+		Test_Wait_Box_Screen(*context, system);
 	}
 
 	if (context != nullptr) {

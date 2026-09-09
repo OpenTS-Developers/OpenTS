@@ -103,7 +103,7 @@ void ProgressScreenClass::Initialize(double progress, int count, bool usedialog)
 	IsActive = true;
 
 	if (usedialog) {
-		if (Dialog == NULL) {
+		if (Dialog == NULL && !Box.Is_Shown()) {
 			Begin_Dialog();
 		}
 	} else {
@@ -223,7 +223,7 @@ double ProgressScreenClass::Get_Current_Progress(void) const
 // the message itself waits for the next paint.
 void ProgressScreenClass::Advance_Milestone(int index, Point2D pt)
 {
-	if (Dialog != NULL || PlayerCount != 1 || Shape == NULL || pt != Point2D(-1,-1)) {
+	if (Dialog != NULL || Box.Is_Shown() || PlayerCount != 1 || Shape == NULL || pt != Point2D(-1,-1)) {
 		return;
 	}
 
@@ -258,6 +258,11 @@ void ProgressScreenClass::Advance_Milestone(int index, Point2D pt)
 /// <remarks>Nothing is drawn until Initialize has been called.</remarks>
 void ProgressScreenClass::Display_Progress(Point2D xpt)
 {
+	// The document draws the bar itself.
+	if (Box.Is_Shown()) {
+		return;
+	}
+
 	if (IsActive) {
 		Point2D pt = xpt;
 
@@ -351,6 +356,8 @@ void ProgressScreenClass::Set_Progress_Percent(int index, double value, Point2D 
 		Advance_Milestone(index, pt);
 		if (Dialog != NULL) {
 			SendMessage(Dialog, WM_PAINT, 0, 0);
+		} else if (Box.Is_Shown()) {
+			Box.Set_Fraction(Get_Current_Progress(index));
 		} else {
 			Display_Progress(pt);
 		}
@@ -375,6 +382,8 @@ void ProgressScreenClass::Add_Progress_Percent(int index, double value, Point2D 
 		Advance_Milestone(index, pt);
 		if (Dialog != NULL) {
 			SendMessage(Dialog, WM_PAINT, 0, 0);
+		} else if (Box.Is_Shown()) {
+			Box.Set_Fraction(Get_Current_Progress(index));
 		} else {
 			Display_Progress(pt);
 		}
@@ -390,6 +399,12 @@ void ProgressScreenClass::Add_Progress_Percent(int index, double value, Point2D 
 /// </summary>
 void ProgressScreenClass::Begin_Dialog(void)
 {
+	// The document draws its own bar; the Win32 dialog has it painted by Display_Progress.
+	if (Box.Show_Document("Working - Please Wait", true)) {
+		Box.Set_Fraction(0.0);
+		return;
+	}
+
 	Dialog = OwnerDraw::Begin_Dialog(IDD_PROGRESS_WAIT, ProgressScreenClass::Dialog_Proc);
 	if (Dialog != NULL) {
 		SetWindowLongPtr(Dialog, DWLP_USER, (LONG_PTR)this);
@@ -406,6 +421,8 @@ void ProgressScreenClass::Begin_Dialog(void)
 /// </summary>
 void ProgressScreenClass::End_Dialog(void)
 {
+	Box.Hide();
+
 	if (Dialog != NULL) {
 		OwnerDraw::End_Dialog(Dialog);
 		Dialog = NULL;

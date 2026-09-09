@@ -13,6 +13,7 @@
 
 #include "point.h"
 #include "sun.h"
+#include "ui/uiwaitbox.h"
 #include "win.h"
 
 class ShapeSet;
@@ -103,6 +104,12 @@ class ProgressScreenClass
 		 * works rather than take the screen over.
 		 */
 		HWND Dialog;
+
+		/*
+		 * The document that carries the dialog presentation when the shell draws it; the
+		 * Win32 dialog above is used when it cannot.
+		 */
+		UIWaitBoxClass Box;
 
 		/*
 		 * This is the center of the progress bar display, expressed in screen pixels. A job

@@ -879,6 +879,53 @@ UIResult UI_Run_Modal(UIRmlViewClass & view)
 }
 
 
+bool UI_Show_Modeless(UIRmlViewClass & view)
+{
+	if (!_Ready || !_FontLoaded || _InContext) {
+		return(false);
+	}
+
+	int errors = _System.Error_Count();
+	if (!view.Prepare(*_Context) || _System.Error_Count() != errors) {
+		DebugString("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
+		view.Release();
+		return(false);
+	}
+
+	view.Presenter().Refresh();
+	view.Sync();
+	view.Show(false);
+	UI_Refresh();
+	return(true);
+}
+
+
+void UI_Hide_Modeless(UIRmlViewClass & view)
+{
+	view.Release();
+
+	if (_Ready && !_InContext) {
+		_InContext = true;
+		_Context->Update();
+		_InContext = false;
+		Video_Mark_Overlay_Dirty();
+		Video_Present_If_Dirty();
+	}
+}
+
+
+void UI_Refresh(void)
+{
+	if (!_Ready || _InContext) {
+		return;
+	}
+
+	UI_Tick();
+	Video_Mark_Overlay_Dirty();
+	Video_Present_If_Dirty();
+}
+
+
 bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM clientlparam)
 {
 	if (!_Ready || _InHook || hwnd != MainWindow) {

@@ -53,6 +53,7 @@
 #include "language/language.h"
 #include "msgbox.h"
 #include "ownrdraw.h"
+#include "ui/uiwaitbox.h"
 #include "saveload.h"
 #include "savemgr.h"
 #include "savever.h"
@@ -852,16 +853,12 @@ int __cdecl LoadOptionsClass::Compare(const void * p1, const void * p2)
 /// <returns>bool; Was the game loaded?</returns>
 bool LoadOptionsClass::Load_File(const char * file_name)
 {
-	HWND dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_LOADING), NULL, NULL);
-	if (dialog != 0) {
-		OwnerDraw::Display_Dialog(dialog);
-	}
+	UIWaitBoxClass box;
+	box.Show(Fetch_String(TXT_LOADING));
 	ScenarioActive = false;
 	TacticalActive = false;
 	bool loaded = Load_Game(file_name);
-	if (dialog != 0) {
-		OwnerDraw::End_Dialog(dialog);
-	}
+	box.Hide();
 	return(loaded);
 }
 
@@ -875,15 +872,11 @@ bool LoadOptionsClass::Load_File(const char * file_name)
 /// <returns>bool; Was the game saved?</returns>
 bool LoadOptionsClass::Save_File(const char * file_name, const char * descr)
 {
-	HWND dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_SAVING_GAME), NULL, NULL);
-	if (dialog != 0) {
-		OwnerDraw::Display_Dialog(dialog);
-	}
+	UIWaitBoxClass box;
+	box.Show(Fetch_String(TXT_SAVING_GAME));
 	bool saved = SaveManager.Request_Save_Game(file_name, descr, false,
 		SaveManagerClass::NoticeType::Requested);
-	if (dialog != 0) {
-		OwnerDraw::End_Dialog(dialog);
-	}
+	box.Hide();
 	return(saved);
 }
 

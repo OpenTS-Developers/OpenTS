@@ -193,7 +193,7 @@ written.
 | `uicoord.h` | the pointer mapping from client pixels into the overlay | landed |
 | `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base | landed, with `uiscreen.cpp` and `uirmlview.cpp` carrying the bodies |
 | `uidev.h`, `uidev.cpp` | ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
-| one file per screen | presenter, view-model binding, and the RmlUi view glue | landed for the version dialog as `uiversion.h`, `uiversion.cpp` (presenter and view, also built into the test) and `uiversiondlg.cpp` (engine entry and data builder, which the test cannot link); the message boxes follow as `uimsgbox.*` and `uimsgboxdlg.cpp`; the sound options as `uisound.*` (presenter, service interface and view) and `uisounddlg.cpp` (engine service, state and entry), with the Win32 dialog as a second view over the same presenter |
+| one file per screen | presenter, view-model binding, and the RmlUi view glue | landed for the version dialog as `uiversion.h`, `uiversion.cpp` (presenter and view, also built into the test) and `uiversiondlg.cpp` (engine entry and data builder, which the test cannot link); the message boxes follow as `uimsgbox.*` and `uimsgboxdlg.cpp`; the sound options as `uisound.*` (presenter, service interface and view) and `uisounddlg.cpp` (engine service, state and entry), with the Win32 dialog as a second view over the same presenter; the wait boxes as `uiwaitbox.*` (presenter, view and the `UIWaitBoxClass` the save, load and progress code shows) and `uiwaitboxdlg.cpp` |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
 repository root. The build copies the tree beside the executable as it copies
@@ -498,7 +498,9 @@ served at the next safe point.
 Non-modal documents are updated by a `UI_Tick` call in `Main_Loop` next to
 `Map.Input`, and by one at the end of each pass of the legacy dialog driver
 so that a document stays alive under a menu, and are rendered by every
-present.
+present. A notice a caller shows while it works goes through
+`UI_Show_Modeless`, `UI_Refresh` and `UI_Hide_Modeless`, which tick and
+present at once because such a caller pumps nothing.
 
 Teardown order: mark the screen closing and invalidate its token, then drop
 focus and capture and discard its intents, then detach listeners and data
@@ -757,11 +759,13 @@ beyond an ASCII test document.
    eligible themes, selection, availability, shuffle and repeat, immediate
    previews, play and stop, both templates, frontend and in-game service
    paths. Runtime evidence still owed.
-6. **Progress and wait** (S, leaf, two changes; the first landed: milestone
-   effects moved out of drawing). `IDD_PROGRESS_WAIT`, the saving and loading
-   boxes in `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the modeless
-   box they show. A progress bar needs no engine surface, so the `<surface>`
-   element waits for the map preview in step 10.
+6. **Progress and wait** (S, leaf, two changes, landed: milestone effects
+   moved out of drawing, then `UIWaitBoxClass` over `wait.rml` for the saving
+   and loading boxes and the progress dialog, with the Win32 boxes kept
+   behind it). `IDD_PROGRESS_WAIT`, the saving and loading boxes in
+   `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the modeless box they
+   show. A progress bar needs no engine surface, so the `<surface>` element
+   waits for the map preview in step 10. Runtime evidence still owed.
 7. **Options family** (L, two changes each). Main options, display with its
    timed rollback, game controls (three variants), keyboard with the hotkey
    capture control, the display-mode confirmation, abort and surrender.

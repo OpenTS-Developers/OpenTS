@@ -38,6 +38,15 @@ bool UI_Legacy_Dialog_Visible(void);
 // ends, then releases it. The view's presenter must outlive the call.
 UIResult UI_Run_Modal(UIRmlViewClass & view);
 
+// Shows a document beside the game without taking its input: a notice the caller updates
+// while it works. It is drawn at once, because such a caller pumps nothing. False when the
+// shell or the document is not ready, so the caller opens its Win32 presentation.
+bool UI_Show_Modeless(UIRmlViewClass & view);
+void UI_Hide_Modeless(UIRmlViewClass & view);
+
+// Advances the documents and presents the overlay now.
+void UI_Refresh(void);
+
 // The frame moved or changed size inside the window.
 void UI_On_Video_Change(void);
 

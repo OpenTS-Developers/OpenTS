@@ -10,6 +10,7 @@ add_executable(UIShell
     "${CMAKE_SOURCE_DIR}/code/ui/uiscreen.cpp"
     "${CMAKE_SOURCE_DIR}/code/ui/uisound.cpp"
     "${CMAKE_SOURCE_DIR}/code/ui/uiversion.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/uiwaitbox.cpp"
 )
 
 target_compile_features(UIShell PRIVATE cxx_std_20)
