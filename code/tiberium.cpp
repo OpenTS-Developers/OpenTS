@@ -595,6 +595,8 @@ void TiberiumClass::Growth_AI(void)
 				} else {
 					GrowthState[Map_Cell_Index(node->Element)] = false;
 				}
+			} else {
+				GrowthState[Map_Cell_Index(node->Element)] = false;
 			}
 
 			index++;
@@ -675,7 +677,7 @@ void TiberiumClass::Clear_Growth(void)
 void TiberiumClass::Queue_Growth(Cell const & cell)
 {
 	int cellindex = Map_Cell_Index(cell);
-	if (Map[cell].OverlayData < MAX_GROWTH_STAGE) {
+	if (Map[cell].OverlayData < MAX_GROWTH_STAGE && !GrowthState[cellindex]) {
 
 		/*
 		 * GrowthQueue does not recycle its entries.

@@ -180,7 +180,7 @@ class TiberiumClass : public AbstractTypeClass
 		CDTimerClass<FrameTimerClass> SpreadTimer;
 
 		/*
-		 * This is the number of cells enqueued to ripen since the queue was last rebuilt.
+		 * This is the number of cells enqueued to grow since the queue was last rebuilt.
 		 * Nothing takes a stale or duplicate entry back out, so the queue is rebuilt from the
 		 * map once this approaches the map's cell count.
 		 */
