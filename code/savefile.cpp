@@ -9,9 +9,10 @@
 
 #include "savefile.h"
 
+#include "crc.h"
+
 #include <lzo/lzo1x.h>
 
-#include <array>
 #include <cstdint>
 #include <cstring>
 #include <new>
@@ -78,25 +79,6 @@ bool Reserve(std::vector<unsigned char> & buffer, std::size_t length)
 	}
 	return(true);
 }
-
-
-// The CRC-32 table of IEEE 802.3, folded at build time rather than on the first save.
-constexpr std::array<std::uint32_t, 256> Make_CRC_Table(void)
-{
-	std::array<std::uint32_t, 256> table{};
-
-	for (std::uint32_t index = 0; index < 256; index++) {
-		std::uint32_t value = index;
-		for (int bit = 0; bit < 8; bit++) {
-			value = (value & 1) ? (0xEDB88320u ^ (value >> 1)) : (value >> 1);
-		}
-		table[index] = value;
-	}
-
-	return(table);
-}
-
-constexpr std::array<std::uint32_t, 256> CRCTable = Make_CRC_Table();
 
 
 bool Read_Range(HANDLE file, void * into, std::uint32_t length)
@@ -199,13 +181,7 @@ SaveFileClass::SaveFileClass(void)
 
 std::uint32_t SaveFileClass::Checksum(unsigned char const * data, std::uint32_t length, std::uint32_t seed)
 {
-	std::uint32_t crc = ~seed;
-
-	for (std::uint32_t index = 0; index < length; index++) {
-		crc = CRCTable[(crc ^ data[index]) & 0xFF] ^ (crc >> 8);
-	}
-
-	return(~crc);
+	return(CRC::Memory(data, length, seed));
 }
 
 
