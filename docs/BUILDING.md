@@ -112,6 +112,27 @@ The toolchain requires `clang-cl`, `lld-link`, `llvm-lib`, `llvm-mt`, and
 `llvm-rc` on `PATH`. It exports `compile_commands.json`; one configuration in
 `.vscode/c_cpp_properties.clang.example.json` reads that file for IntelliSense.
 
+## Experimental x64 build
+
+An unsupported 64-bit build is available for porting work. It does not expand the
+supported build matrix or establish runtime behavior.
+
+The configuration has no continuous integration and no entry in the verification
+boundary below, so treat a result from it as evidence about the port rather than
+about the game.
+
+Configure it with the x64 platform and the opt-in:
+
+```powershell
+cmake -S . -B build/x64 -G "Visual Studio 17 2022" -A x64 -DOPENTS_EXPERIMENTAL_X64=ON
+cmake --build build/x64 --config Debug
+```
+
+Saved games serialize pointer fields at their native width, so a 64-bit build's
+saves are not interchangeable with a supported build's. The packed version stamp
+that saves and network packets carry is the same for both, so nothing rejects a
+save or a peer on that basis. Configuring the build warns about it.
+
 ## Build from Visual Studio Code
 
 With the recommended extensions installed, the repository provides:
