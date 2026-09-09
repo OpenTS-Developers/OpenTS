@@ -194,7 +194,7 @@ HRESULT STDMETHODCALLTYPE AbstractClass::Load(IStream * stream)
 
 /// <summary>
 /// Writes the members this object describes out to the save stream.
-/// The object's address goes out first as its swizzle identity, and the members follow
+/// The object's swizzle identity goes out first, and the members follow
 /// in the order Serialize names them.
 /// </summary>
 /// <param name="stream">The stream to write to.</param>
@@ -206,7 +206,7 @@ HRESULT AbstractClass::Save_Members(IStream * stream, BOOL cleardirty)
 		return(E_POINTER);
 	}
 
-	uintptr_t id = (uintptr_t)this;
+	SwizzleIDType id = Swizzler.ID_Of(this);
 
 	HRESULT result = stream->Write(&id, sizeof(id), NULL);
 	if (FAILED(result)) {
@@ -226,7 +226,7 @@ HRESULT AbstractClass::Save_Members(IStream * stream, BOOL cleardirty)
 
 /// <summary>
 /// Reads the members this object describes back from the save stream.
-/// The saved address is handed to the swizzle system so that pointers elsewhere in the
+/// The saved identity is handed to the swizzle system so that pointers elsewhere in the
 /// save game can be remapped onto this object, and the members follow.
 /// </summary>
 /// <param name="stream">The stream to read from.</param>
@@ -237,7 +237,7 @@ HRESULT AbstractClass::Load_Members(IStream * stream)
 		return(E_POINTER);
 	}
 
-	uintptr_t id;
+	SwizzleIDType id;
 
 	HRESULT result = stream->Read(&id, sizeof(id), NULL);
 	if (FAILED(result)) {

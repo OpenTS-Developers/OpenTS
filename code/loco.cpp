@@ -255,8 +255,8 @@ LONG STDMETHODCALLTYPE LocomotionClass::QueryInterface(REFIID riid, LPVOID *ppvO
 
 /// <summary>
 /// Saves the locomotor out to a save game stream.
-/// The locomotor's address is written ahead of its data, which is what lets the swizzle
-/// manager remap every pointer to it when the game is loaded again.
+/// The locomotor's swizzle identity is written ahead of its data, which is what lets the
+/// swizzle manager remap every pointer to it when the game is loaded again.
 /// </summary>
 /// <param name="cleardirty">Should the locomotor be marked as no longer needing a save?</param>
 /// <returns>Returns with the result of the write, or E_POINTER if no stream was supplied.</returns>
@@ -291,7 +291,7 @@ HRESULT STDMETHODCALLTYPE LocomotionClass::Load(IStream * stream)
 
 /// <summary>
 /// Writes the members this locomotor describes out to the save stream.
-/// The locomotor's address goes out first as its swizzle identity, and the members follow
+/// The locomotor's swizzle identity goes out first, and the members follow
 /// in the order Serialize names them.
 /// </summary>
 /// <param name="stream">The stream to write to.</param>
@@ -303,7 +303,7 @@ HRESULT LocomotionClass::Save_Members(IStream * stream, BOOL cleardirty)
 		return(E_POINTER);
 	}
 
-	uintptr_t id = (uintptr_t)(this);
+	SwizzleIDType id = Swizzler.ID_Of(this);
 
 	HRESULT result = stream->Write(&id, sizeof(id), NULL);
 	if (FAILED(result)) {
@@ -323,7 +323,7 @@ HRESULT LocomotionClass::Save_Members(IStream * stream, BOOL cleardirty)
 
 /// <summary>
 /// Reads the members this locomotor describes back from the save stream.
-/// The saved address is handed to the swizzle system so that pointers elsewhere in the
+/// The saved identity is handed to the swizzle system so that pointers elsewhere in the
 /// save game can be remapped onto this locomotor, and the members follow.
 /// </summary>
 /// <param name="stream">The stream to read from.</param>
@@ -334,7 +334,7 @@ HRESULT LocomotionClass::Load_Members(IStream * stream)
 		return(E_POINTER);
 	}
 
-	uintptr_t id;
+	SwizzleIDType id;
 
 	HRESULT result = stream->Read(&id, sizeof(id), NULL);
 	if (FAILED(result)) {
