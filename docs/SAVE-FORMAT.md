@@ -101,6 +101,11 @@ that had finished loading have already taken their place in the map or a side
 table. A failed load therefore leaves a partly built game that the caller has
 to clear, not one it can carry on from.
 
+A character buffer travels as its text: a length and that many characters, and
+a load clears the rest of the buffer. How much room a build keeps for a string
+is its own business, so the file carries neither the capacity nor whatever the
+memory held past the terminator.
+
 The body is what each class's `Serialize` produces, member by member, in host
 byte order. It is not described here; the classes are the description.
 

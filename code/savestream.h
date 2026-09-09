@@ -15,6 +15,7 @@
 #include "win.h"
 
 #include <array>
+#include <cstddef>
 #include <deque>
 #include <new>
 #include <optional>
@@ -237,6 +238,38 @@ class SaveStreamClass
 			} else {
 				for (int index = 0; index < N; index++) {
 					Serialize_Element(array[index], where);
+				}
+			}
+		}
+
+		// How much room a buffer keeps for its text is this build's business rather than
+		// the file's, so only the text travels. One with no room for a terminator comes
+		// back full.
+		template<int N>
+		void Serialize(char (&value)[N], std::source_location const & = std::source_location::current())
+		{
+			int count = 0;
+
+			if (Is_Saving()) {
+				while (count < N && value[count] != '\0') {
+					count++;
+				}
+			}
+
+			Serialize(count);
+
+			if (Is_Loading() && (count < 0 || count > N)) {
+				Fail();
+				return;
+			}
+
+			if (count > 0) {
+				Serialize_Bytes(value, count);
+			}
+
+			if (Is_Loading()) {
+				for (int index = count; index < N; index++) {
+					value[index] = '\0';
 				}
 			}
 		}
