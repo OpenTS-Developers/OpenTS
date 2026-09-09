@@ -19,6 +19,9 @@
 #include "priority.h"
 #include "vector.h"
 
+#include <optional>
+#include <vector>
+
 #include "facing.hh"
 #include "move.hh"
 #include "mzone.hh"
@@ -135,32 +138,17 @@ class AStarClass
 			RegularNodePool(void) : ActiveCount(0) {}
 		};
 
-		struct RegularOpenNodePool {
-			/*
-			 * These are all the open set entries one path attempt may use, handed out in
-			 * order as the search reaches new cells.
-			 */
-			RegularOpenNode Nodes[65536];
-
-			/*
-			 * This is the number of entries handed out so far, and so the index the next
-			 * one comes from.
-			 */
-			int ActiveCount;
-			RegularOpenNodePool(void) : ActiveCount(0) {}
-		};
-
 	private:
 		/* ----------------------------------------------------------------------------------
 		 * Regular pathfinder (cell-level A*)
 		 */
 		PathStruct * Find_Path_Regular(Cell const & from, Cell const & to, FootClass * foot, FacingType * moves, int max_loops, bool with_hs);
-		RegularOpenNode * Create_Node(RegularOpenNode * parent, CellClass ** cell, Cell const & to, float movement_cost);
+		RegularOpenNode Create_Node(std::optional<RegularOpenNode> const & parent, CellClass ** cell, Cell const & to, float movement_cost);
 		bool Is_Visited(int, bool base_level, int index);
 		double Get_Movement_Cost(CellClass ** from, CellClass ** to, bool bridge, MoveType move, FootClass * foot);
 		void Apply_Path_Collision_Avoidance(FootClass * foot);
 		FootClass * Find_Moving_Blocker(Cell const & cell, int cell_height);
-		PathStruct * Build_Final_Path(RegularOpenNode * nodes, FacingType * moves);
+		PathStruct * Build_Final_Path(RegularOpenNode const & final_node, FacingType * moves);
 		void Cut_Corners(PathStruct * path, FootClass * foot);
 		int Try_Diagonal_Shortcut(FootClass * foot, FacingType * moves, unsigned int * heights, int initial_first_leg_length, int initial_second_leg_length, Cell & cell);
 		void Optimize_Moves(PathStruct * path, FootClass * foot);
@@ -214,12 +202,11 @@ class AStarClass
 		bool UseLocomotorEnterCheck;
 
 		/*
-		 * These are the two node pools the cell level search draws on -- one for the cell and
-		 * parent records that the finished route is recovered from, and one for the open set
-		 * entries handed to the RegularQueue.
+		 * This is the pool of cell and parent records the finished route is recovered from.
+		 * The open set entries handed to the RegularQueue name these rather than holding a
+		 * cell of their own.
 		 */
 		RegularNodePool * RegularNodes;
-		RegularOpenNodePool * RegularOpenNodes;
 
 		/*
 		 * This is the open set for the cell level search, ordered by score so that the most
@@ -314,10 +301,11 @@ class AStarClass
 		float * HierCosts[SUBZONE_COUNT];
 
 		/*
-		 * Linear pool of hierarchical A* nodes, allocated by index during expansion.
-		 * The priority queue itself is HierQueue; this is only the node storage.
+		 * The nodes one level of the hierarchical search reaches, in the order it reached
+		 * them. A node names its parent by its position here, so this outlives the queue
+		 * entries taken from it and is emptied for every level.
 		 */
-		AStarHierarchicalNode * HierNodePool;
+		std::vector<AStarHierarchicalNode> HierNodePool;
 
 		/*
 		 * This is the open set for the hierarchical search, ordered by score so that the
