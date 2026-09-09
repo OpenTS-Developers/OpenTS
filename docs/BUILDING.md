@@ -64,18 +64,26 @@ CMake normally finds Visual Studio through the Visual Studio Installer. For an
 unregistered installation, set `CMAKE_GENERATOR_INSTANCE` to its directory and
 product version.
 
-The solution contains only Debug and Release. Builds write the engine executable
-under `build/bin/<configuration>/` with its runtime name and copy these runtime
-files to `TS_RUN_DIR`, which defaults to `Run/`:
+The solution contains only Debug and Release. Each writes its runtime files to
+`build/bin/<configuration>/` and copies nothing anywhere else. Compiler and
+linker intermediates stay in the selected build directory.
 
 | Configuration | Runtime files |
 | --- | --- |
 | Debug | `GameD.exe`, `GameD.pdb`, `GameD.map`, `Language.dll` |
 | Release | `Game.exe`, `Game.pdb`, `Game.map`, `Language.dll` |
 
-`Language.dll` has the same name in both configurations, so the most recently
-built configuration replaces the previous copy in `Run/`. Compiler and linker
-intermediates stay in the selected build directory.
+Run a build from its output directory, naming the game data with `-DATADIR=`:
+
+```powershell
+build\bin\Debug\GameD.exe -DATADIR=Run
+```
+
+`OPENTS_GAME_DIR` names that data directory for the generated Visual Studio
+debugger settings and defaults to `Run/`. The data directory is only read from.
+Saved games, logs, and crash reports go to the user directory, which defaults to
+the executable's own directory, so a build writes beside itself unless
+`-USERDIR=` says otherwise.
 
 ## Experimental clang-cl cross-build
 
@@ -186,8 +194,7 @@ generated from the manual's change records by
 `python manual/tools/manage.py release-notes`. See
 [Maintaining](../manual/MAINTAINING.md) for the full release procedure.
 
-CI redirects `TS_RUN_DIR` to an empty directory, keeping uploaded artifacts
-free of unrelated runtime files.
+CI collects the uploaded artifacts from `build/bin/<configuration>/`.
 
 ## Verification boundary
 

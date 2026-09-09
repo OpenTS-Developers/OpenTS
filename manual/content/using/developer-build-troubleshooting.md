@@ -21,14 +21,13 @@ Use the Visual Studio 2022 generator and `-A Win32`. The build supports no other
 
 For a Visual Studio installation that CMake cannot discover through the Visual Studio Installer, pass its installation path and product version as described in the repository's `docs/BUILDING.md`.
 
-## The executable is not in the build directory
+## The executable is not in the run directory
 
-The post-build step copies the runnable files into `Run/`:
+Builds write their runnable files to `build/bin/<configuration>/` and copy nothing into `Run/`:
 
-- Debug: `GameD.exe`, `GameD.pdb`, and `GameD.map`
-- Release: `Game.exe`, `Game.pdb`, and `Game.map`
-- The matching `Language.dll`
+- Debug: `GameD.exe`, `GameD.pdb`, `GameD.map`, and `Language.dll`
+- Release: `Game.exe`, `Game.pdb`, `Game.map`, and `Language.dll`
 
 ## The executable cannot initialize game data
 
-Confirm that `Run/` contains data from a legitimate Tiberian Sun installation. The repository and CMake build directory do not supply proprietary game assets.
+Name the game data directory with `-DATADIR=`, and confirm it holds data from a legitimate Tiberian Sun installation. The repository and CMake build directory do not supply proprietary game assets.
