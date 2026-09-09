@@ -9,8 +9,8 @@
 
 #pragma once
 
-#include "coord.h"
 #include "classids.h"
+#include "coord.h"
 #include "iloco.h"
 #include "persist.h"
 
