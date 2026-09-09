@@ -5,6 +5,7 @@
 # point up.
 add_executable(UIShell
     "${CMAKE_CURRENT_SOURCE_DIR}/uishell.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/uimsgbox.cpp"
     "${CMAKE_SOURCE_DIR}/code/ui/uirmlview.cpp"
     "${CMAKE_SOURCE_DIR}/code/ui/uiscreen.cpp"
     "${CMAKE_SOURCE_DIR}/code/ui/uiversion.cpp"

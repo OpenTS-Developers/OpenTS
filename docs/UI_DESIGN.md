@@ -450,9 +450,11 @@ int WWMessageBox::Process(...) {
 Selection is latched at screen entry or at scenario load, never mid-gesture.
 Preparation (documents, bindings, resources, host scope) completes before a
 view becomes interactive; a preparation failure reports the resource and
-opens the legacy view where one exists. After activation, a view failure
-recreates presentation against the surviving presenter state and never
-replays accepted intents.
+opens the legacy view where one exists. A screen asked to open while a Win32
+dialog is visible opens its legacy view too, so the coexistence rule holds
+until that dialog migrates. After activation, a view failure recreates
+presentation against the surviving presenter state and never replays
+accepted intents.
 
 ## Scheduling
 
@@ -737,18 +739,21 @@ beyond an ASCII test document.
    the modal runner and the dialog). The integration pilot: fonts, clipping,
    mapping, dismissal by mouse and keyboard, focus return, UI-only redraw,
    resize, preparation failure. The main menu keeps hiding around it.
-4. **Message boxes** (M, leaf). The modal runner landed with step 3.
-   `WWMessageBox::Process` and
-   `OwnerDraw::Custom_Message_Box` behind the kill switch, preserving button
-   order, default button, Escape, the no-button case, return mappings, and
-   session-end interruption. Evidence includes the multiplayer cases where
-   `Main_Loop` runs under the box.
+4. **Message boxes** (M, leaf, landed). The modal runner landed with step 3.
+   `WWMessageBox::Process` behind the kill switch, preserving button order,
+   default button, Escape, the no-button case, return mappings, and
+   session-end interruption; a box raised over a visible Win32 dialog stays a
+   Win32 box until that dialog migrates. `OwnerDraw::Custom_Message_Box` is
+   the modeless progress box of the save and load flows and moves to step 6.
+   Runtime evidence still owed: the multiplayer cases where `Main_Loop` runs
+   under the box.
 5. **Sound** (M, two changes). The behavior pilot: volumes, eligible themes,
    selection, availability, shuffle and repeat, immediate previews, play and
    stop, both templates, frontend and in-game service paths.
 6. **Progress and wait** (S, leaf). `IDD_PROGRESS_WAIT`, the saving and
-   loading boxes in `savemgr.cpp`, the `<surface>` element, milestone effects
-   moved out of drawing.
+   loading boxes in `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the
+   modeless box they show, the `<surface>` element, milestone effects moved
+   out of drawing.
 7. **Options family** (L, two changes each). Main options, display with its
    timed rollback, game controls (three variants), keyboard with the hotkey
    capture control, the display-mode confirmation, abort and surrender.

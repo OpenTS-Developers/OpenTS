@@ -14,6 +14,7 @@
 // strings by names the generated table knows, and the pointer mapping into the overlay
 // behaves at the frame's edges.
 
+#include <algorithm>
 #include <cstdio>
 #include <cstring>
 #include <filesystem>
@@ -28,6 +29,7 @@
 #include <imgui.h>
 
 #include "ui/uicoord.h"
+#include "ui/uimsgbox.h"
 #include "ui/uirmlview.h"
 #include "ui/uiscreen.h"
 #include "ui/uiversion.h"
@@ -560,6 +562,141 @@ void Test_Version_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 }
 
 
+// The visible buttons of a shown message box, left to right.
+std::vector<Rml::Element *> Visible_Buttons(Rml::ElementDocument * document)
+{
+	std::vector<Rml::Element *> buttons;
+	if (document == nullptr) {
+		return(buttons);
+	}
+
+	Rml::ElementList all;
+	document->GetElementsByTagName(all, "button");
+	for (Rml::Element * element : all) {
+		if (element->IsVisible()) {
+			buttons.push_back(element);
+		}
+	}
+
+	std::sort(buttons.begin(), buttons.end(), [](Rml::Element * a, Rml::Element * b) {
+		return(a->GetAbsoluteOffset(Rml::BoxArea::Border).x < b->GetAbsoluteOffset(Rml::BoxArea::Border).x);
+	});
+	return(buttons);
+}
+
+
+void Click(Rml::Context & context, Rml::Element * element)
+{
+	Rml::Vector2f at = element->GetAbsoluteOffset(Rml::BoxArea::Border) + element->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
+	context.ProcessMouseMove((int)at.x, (int)at.y, 0);
+	context.Update();
+	context.ProcessMouseButtonDown(0, 0);
+	context.ProcessMouseButtonUp(0, 0);
+	context.Update();
+}
+
+
+// Drives the message box the way its callers do: the buttons keep the Win32 template's order
+// and slots, a click answers with the button's number, Enter with the default and Escape
+// with the second button.
+void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		UIMessageBoxPresenterClass presenter("Do you want to abort the mission?", { "First", "Second", "Third" }, 0);
+		Check(presenter.Button_Count() == 3, "three captions make three buttons");
+
+		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
+		Check(view->Prepare(context), "the message box view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the message box raises no RmlUi warning or error");
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(view->Document());
+		Check(buttons.size() == 3, "three buttons are visible");
+		bool ordered = buttons.size() == 3 && buttons[0]->GetInnerRML() == "First" && buttons[1]->GetInnerRML() == "Third" && buttons[2]->GetInnerRML() == "Second";
+		Check(ordered, "the buttons read first, third, second from left to right");
+
+		if (buttons.size() == 3) {
+			Click(context, buttons[1]);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == 2, "a click on the middle button answers with the third button");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Two buttons", { "OK", "Cancel", "" }, 0);
+		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
+		Check(view->Prepare(context), "a two-button box prepares");
+		view->Show(true);
+		context.Update();
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(view->Document());
+		Check(buttons.size() == 2, "two buttons are visible");
+		if (buttons.size() == 2) {
+			float panel = view->Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			float right = buttons[1]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			Check(left < 60.0f && right > 250.0f, "two buttons take the outer slots");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.Choice == 1, "Escape answers with the second button");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("One button", { "OK", "", "" }, 0);
+		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
+		Check(view->Prepare(context), "a one-button box prepares");
+		view->Show(true);
+		context.Update();
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(view->Document());
+		Check(buttons.size() == 1, "one button is visible");
+		if (buttons.size() == 1) {
+			float panel = view->Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			Check(left > 100.0f && left < 200.0f, "a lone button takes the middle slot");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Default", { "Yes", "No", "Maybe" }, 2);
+		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
+		Check(view->Prepare(context), "a box with a default prepares");
+		view->Show(true);
+		context.Update();
+		context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+		context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == 2, "Enter answers with the default button");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Nothing", { "", "", "" }, 0);
+		Check(presenter.Button_Count() == 0, "empty captions make no buttons");
+	}
+}
+
+
 void Test_Documents(void)
 {
 	std::filesystem::path directory(OPENTS_UI_DIR);
@@ -642,6 +779,7 @@ void Test_Documents(void)
 
 	if (context != nullptr) {
 		Test_Version_Screen(*context, system);
+		Test_Message_Box_Screen(*context, system);
 	}
 
 	if (context != nullptr) {

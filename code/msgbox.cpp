@@ -39,6 +39,8 @@
 #include "globals.h"
 #include "init.h"
 #include "ownrdraw.h"
+#include "ui/uimsgbox.h"
+#include "ui/uishell.h"
 #include "winfix.h"
 
 INT_PTR CALLBACK Message_Box_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
@@ -77,6 +79,13 @@ int _default_response = 0;
 #define	BUTTON_FLAG	0x8000
 int WWMessageBox::_Process(const char * msg, int defresponse, const char * b1txt, const char * b2txt, const char * b3txt, bool preserve)
 {
+	if (UI_Use_Rml()) {
+		int choice;
+		if (UI_Message_Box(msg, defresponse, b1txt, b2txt, b3txt, choice)) {
+			return(choice);
+		}
+	}
+
 	int retval = -1;
 	int numbuttons = 0;
 

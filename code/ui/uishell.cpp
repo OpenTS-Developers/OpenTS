@@ -729,7 +729,7 @@ static bool Handle_Char(WPARAM wparam)
 }
 
 
-static bool Legacy_Dialog_Visible(void)
+bool UI_Legacy_Dialog_Visible(void)
 {
 	for (int index = 0; index < g_DialogCount; index++) {
 		if (g_Dialogs[index].handle != NULL && IsWindowVisible(g_Dialogs[index].handle)) {
@@ -800,7 +800,7 @@ UIResult UI_Run_Modal(UIRmlViewClass & view)
 	}
 
 	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
-	assert(!Legacy_Dialog_Visible());
+	assert(!UI_Legacy_Dialog_Visible());
 
 	// A style sheet that fails to load leaves the document usable and is reported as an error.
 	int errors = _System.Error_Count();

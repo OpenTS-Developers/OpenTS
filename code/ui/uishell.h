@@ -30,6 +30,10 @@ bool UI_Use_Rml(void);
 // True while a modal screen is shown or closing. The developer overlays are not screens.
 bool UI_Screen_Shown(void);
 
+// True while a Win32 dialog is on screen. A screen asked to open over one keeps its legacy
+// view, because the visible dialog takes the mouse before a document can.
+bool UI_Legacy_Dialog_Visible(void);
+
 // Prepares, shows and drives a modal screen until its presenter reports a result or the game
 // ends, then releases it. The view's presenter must outlive the call.
 UIResult UI_Run_Modal(UIRmlViewClass & view);
