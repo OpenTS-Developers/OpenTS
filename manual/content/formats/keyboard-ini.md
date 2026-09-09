@@ -22,7 +22,7 @@ ScatterObject=88    ; X
 
 After the file loads, OpenTS clears the current hotkey table and adds entries whose command name is registered and whose keyboard identifier is not zero. Unknown command names and zero values are ignored, and a name has to match the registered spelling exactly, including its case.
 
-The table is cleared only once the file has been read, so a file that is missing or that cannot be parsed leaves the bindings already in force rather than emptying them. OpenTS looks the file up through the ordinary file layer, so a loose `KEYBOARD.INI` in the game directory stands in for an archived one. The keyboard dialog writes it back as a loose file from the bindings in force at the time, and its reset control deletes the file and rebuilds the table without it.
+The table is cleared only once the file has been read, so a file that is missing or that cannot be parsed leaves the bindings already in force rather than emptying them. OpenTS looks the file up through the ordinary file layer, so a loose `KEYBOARD.INI` in the game directory stands in for an archived one. The keyboard dialog writes it back as a loose file from the bindings the player accepted; cancelling the dialog drops its edits, and its reset control deletes the file and rebuilds the table without it.
 
 A command that carries a forced binding is bound again once the file has been processed, taking that key back from whatever the file gave it. The file's own binding for that command is left alone, so it can end up answering to two keys.
 

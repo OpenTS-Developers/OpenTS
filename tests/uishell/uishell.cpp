@@ -33,6 +33,7 @@
 #include "ui/uicoord.h"
 #include "ui/uidisplay.h"
 #include "ui/uigamectrl.h"
+#include "ui/uikeyboard.h"
 #include "ui/uimsgbox.h"
 #include "ui/uirmlview.h"
 #include "ui/uiscreen.h"
@@ -551,6 +552,135 @@ void Test_Display_Presenter(void)
 		presenter.Refresh();
 		Drive(presenter, "cancel");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && !presenter.TimedOut, "Cancel refuses the mode before the timeout");
+	}
+}
+
+
+// Records the engine calls the keyboard presenter makes; keys are named by number.
+class RecordingKeyboardServiceClass : public UIKeyboardServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+		bool ConfirmAnswer = true;
+		std::vector<UIHotkeyBinding> ResetTable;
+
+		virtual std::string Key_Name(int key) override
+		{
+			return("K" + std::to_string(key));
+		}
+
+		virtual bool Confirm_Reset(void) override
+		{
+			Calls.push_back("confirm");
+			return(ConfirmAnswer);
+		}
+
+		virtual void Reset(std::vector<UIHotkeyBinding> & bindings) override
+		{
+			Calls.push_back("reset");
+			bindings = ResetTable;
+		}
+
+		// The table is listed by command so the order the presenter keeps it in does not matter.
+		virtual void Save(std::vector<UIHotkeyBinding> const & bindings) override
+		{
+			std::vector<UIHotkeyBinding> sorted = bindings;
+			std::sort(sorted.begin(), sorted.end(), [](UIHotkeyBinding const & a, UIHotkeyBinding const & b) {
+				return(a.Command < b.Command);
+			});
+			std::string call = "save";
+			for (UIHotkeyBinding const & binding : sorted) {
+				call += " " + std::to_string(binding.Command) + "=" + std::to_string(binding.Key);
+			}
+			Calls.push_back(call);
+		}
+};
+
+
+UIKeyboardState Keyboard_Fixture(void)
+{
+	UIKeyboardState state;
+	state.Commands = {
+		{ "Selection", "Select View", "Selects the view" },
+		{ "Interface", "Toggle Repair", "Toggles repair mode" },
+		{ "selection", "Scatter", "Scatters the selection" },
+		{ "Interface", "Alliance", "Toggles an alliance" },
+	};
+	state.Bindings = { { 577, 0 }, { 338, 1 }, { 88, 2 } };
+	return(state);
+}
+
+
+// The keyboard presenter edits a copy of the hotkey table the way the Win32 dialog edited the
+// game's: a key moves to the selected command, an empty capture unbinds it, OK saves and Cancel
+// drops the edits.
+void Test_Keyboard_Presenter(void)
+{
+	RecordingKeyboardServiceClass service;
+	UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+
+	Check(presenter.State.Categories == std::vector<std::string>{ "Interface", "Selection" }, "the categories are listed once each, sorted without regard to case");
+	Check(presenter.State.Category == 0 && presenter.State.Visible == std::vector<int>{ 3, 1 } && presenter.State.Selected == -1, "the first category opens with its commands sorted by name and none selected");
+
+	Drive(presenter, "category", 1);
+	Check(presenter.State.Visible == std::vector<int>{ 2, 0 } && presenter.State.Description.empty(), "another category lists its own commands with the description cleared");
+
+	Drive(presenter, "select", 0);
+	Check(presenter.State.Description == "Selects the view" && presenter.State.Shortcut == "K577", "selecting a command shows its description and shortcut");
+
+	Drive(presenter, "capture", 338);
+	Check(presenter.State.CapturedName == "K338" && presenter.State.AssignedTo == "Toggle Repair", "a captured key names the command that holds it");
+
+	Drive(presenter, "capture", 999);
+	Check(presenter.State.AssignedTo.empty(), "a free key names no command");
+
+	Drive(presenter, "capture", 338);
+	Drive(presenter, "assign");
+	Check(presenter.Key_Of(0) == 338 && presenter.Key_Of(1) == 0 && presenter.Owner_Of(577) == -1, "assigning moves the key to the selected command and unbinds its previous holder");
+	Check(presenter.State.Shortcut == "K338" && presenter.State.Captured == 0 && presenter.State.AssignedTo.empty(), "assigning shows the new shortcut and clears the capture");
+
+	Drive(presenter, "select", 2);
+	Drive(presenter, "assign");
+	Check(presenter.Key_Of(2) == 0 && presenter.State.Shortcut.empty(), "assigning an empty capture unbinds the command");
+
+	Drive(presenter, "select", -1);
+	Drive(presenter, "capture", 65);
+	Drive(presenter, "assign");
+	Check(presenter.Owner_Of(65) == -1 && presenter.State.Captured == 65, "assigning with no command selected changes nothing");
+
+	Check(service.Calls.empty(), "nothing reaches the game before the player accepts");
+
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "save 0=338" }, "OK saves the edited table");
+
+	{
+		RecordingKeyboardServiceClass quiet;
+		UIKeyboardPresenterClass cancelled(quiet, Keyboard_Fixture());
+		Drive(cancelled, "select", 3);
+		Drive(cancelled, "capture", 70);
+		Drive(cancelled, "assign");
+		Drive(cancelled, "cancel");
+		Check(cancelled.Result.has_value() && *cancelled.Result == UI_RESULT_CANCELLED && quiet.Calls.empty(), "Cancel drops the edits without a call");
+	}
+
+	{
+		RecordingKeyboardServiceClass declined;
+		declined.ConfirmAnswer = false;
+		UIKeyboardPresenterClass kept(declined, Keyboard_Fixture());
+		Drive(kept, "category", 1);
+		Drive(kept, "reset");
+		Check(declined.Calls == std::vector<std::string>{ "confirm" } && kept.Key_Of(0) == 577 && kept.State.Category == 1, "a declined reset asks and changes nothing");
+	}
+
+	{
+		RecordingKeyboardServiceClass confirmed;
+		confirmed.ResetTable = { { 65, 3 } };
+		UIKeyboardPresenterClass reset(confirmed, Keyboard_Fixture());
+		Drive(reset, "category", 1);
+		Drive(reset, "select", 0);
+		Drive(reset, "reset");
+		Check(confirmed.Calls == std::vector<std::string>{ "confirm", "reset" } && reset.Key_Of(3) == 65 && reset.Key_Of(0) == 0, "a confirmed reset reloads the table from the game");
+		Check(reset.State.Category == 0 && reset.State.Selected == -1 && reset.State.Description.empty(), "a reset reopens the first category with nothing selected");
 	}
 }
 
@@ -1691,6 +1821,7 @@ int main(void)
 	Test_Coordinates();
 	Test_Display_Presenter();
 	Test_Game_Controls_Presenter();
+	Test_Keyboard_Presenter();
 	Test_Sound_Presenter();
 	Test_Strings();
 	Test_Documents();
