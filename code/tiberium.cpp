@@ -354,6 +354,20 @@ void TiberiumClass::Spread_AI(void)
 			int possible_spreads = 0;
 
 			/*
+			 * A cell that has since lost its tiberium seeds nothing, and re-enqueuing it at
+			 * score zero would bring it back ahead of every other entry on every later pass.
+			 * Drop it instead, without charging it against this pass.
+			 */
+			if (!cellptr->Can_Tiberium_Spread()) {
+				SpreadState[Map_Cell_Index(cellptr->CellID)] = false;
+
+				if (index < count) {
+					node = SpreadQueue.Extract_Min();
+				}
+				continue;
+			}
+
+			/*
 			 * Count how many neighbors we can spread Tiberium to.
 			 */
 			for (FacingType facing = FACING_N; facing < FACING_COUNT; facing++) {
