@@ -264,9 +264,11 @@ std::unique_ptr<IPersistent> Load_Object(SaveStreamClass & stream, bool (*accept
 /// <summary>
 /// Loads a vector of persistent objects from the save game stream.
 /// The objects are not handed back -- each one reattaches itself to its own heap as it is
-/// constructed, which is what refills the game's vectors.
+/// constructed, which is what refills the game's vectors. A record naming any class other
+/// than the heap's fails the load, since nothing else belongs in that heap.
 /// </summary>
 /// <returns>bool; Was the record read whole?</returns>
+template<class T>
 static bool Load_Vector(SaveStreamClass & stream)
 {
 	int count = 0;
@@ -275,11 +277,12 @@ static bool Load_Vector(SaveStreamClass & stream)
 		return(false);
 	}
 	if (count < 0) {
+		stream.Fail();
 		return(false);
 	}
 
 	for (int index = 0; index < count; index++) {
-		std::unique_ptr<IPersistent> object = Load_Object(stream);
+		std::unique_ptr<T> object = Load_Object_As<T>(stream);
 		if (object == nullptr) {
 			return(false);
 		}
@@ -780,13 +783,13 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
-	if (!Load_Vector(stream)) {	/// AnimTypes
+	if (!Load_Vector<AnimTypeClass>(stream)) {	/// AnimTypes
 		return(false);
 	}
 
 	Map.Load(stream);
 
-	if (!Load_Vector(stream)) {	/// Tubes
+	if (!Load_Vector<TubeClass>(stream)) {	/// Tubes
 		return(false);
 	}
 
@@ -809,151 +812,151 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	// what deletes it from here on.
 	tactical.release();
 
-	if (!Load_Vector(stream)) {	/// HouseTypes
+	if (!Load_Vector<HouseTypeClass>(stream)) {	/// HouseTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Houses
+	if (!Load_Vector<HouseClass>(stream)) {	/// Houses
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Units
+	if (!Load_Vector<UnitClass>(stream)) {	/// Units
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// UnitTypes
+	if (!Load_Vector<UnitTypeClass>(stream)) {	/// UnitTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// InfantryTypes
+	if (!Load_Vector<InfantryTypeClass>(stream)) {	/// InfantryTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Infantry
+	if (!Load_Vector<InfantryClass>(stream)) {	/// Infantry
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// BuildingTypes
+	if (!Load_Vector<BuildingTypeClass>(stream)) {	/// BuildingTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Buildings
+	if (!Load_Vector<BuildingClass>(stream)) {	/// Buildings
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// AircraftTypes
+	if (!Load_Vector<AircraftTypeClass>(stream)) {	/// AircraftTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Aircraft
+	if (!Load_Vector<AircraftClass>(stream)) {	/// Aircraft
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Anims
+	if (!Load_Vector<AnimClass>(stream)) {	/// Anims
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// TaskForces
+	if (!Load_Vector<TaskForceClass>(stream)) {	/// TaskForces
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// TeamTypes
+	if (!Load_Vector<TeamTypeClass>(stream)) {	/// TeamTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Teams
+	if (!Load_Vector<TeamClass>(stream)) {	/// Teams
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// ScriptTypes
+	if (!Load_Vector<ScriptTypeClass>(stream)) {	/// ScriptTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Scripts
+	if (!Load_Vector<ScriptClass>(stream)) {	/// Scripts
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// TagTypes
+	if (!Load_Vector<TagTypeClass>(stream)) {	/// TagTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Tags
+	if (!Load_Vector<TagClass>(stream)) {	/// Tags
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// TriggerTypes
+	if (!Load_Vector<TriggerTypeClass>(stream)) {	/// TriggerTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Triggers
+	if (!Load_Vector<TriggerClass>(stream)) {	/// Triggers
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// AITriggerTypes
+	if (!Load_Vector<AITriggerTypeClass>(stream)) {	/// AITriggerTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Actions
+	if (!Load_Vector<TActionClass>(stream)) {	/// Actions
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Events
+	if (!Load_Vector<TEventClass>(stream)) {	/// Events
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Factories
+	if (!Load_Vector<FactoryClass>(stream)) {	/// Factories
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// VoxelAnimTypes
+	if (!Load_Vector<VoxelAnimTypeClass>(stream)) {	/// VoxelAnimTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// VoxelAnims
+	if (!Load_Vector<VoxelAnimClass>(stream)) {	/// VoxelAnims
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Warheads
+	if (!Load_Vector<WarheadTypeClass>(stream)) {	/// Warheads
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Weapons
+	if (!Load_Vector<WeaponTypeClass>(stream)) {	/// Weapons
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// ParticleTypes
+	if (!Load_Vector<ParticleTypeClass>(stream)) {	/// ParticleTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Particles
+	if (!Load_Vector<ParticleClass>(stream)) {	/// Particles
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// ParticleSystemTypes
+	if (!Load_Vector<ParticleSystemTypeClass>(stream)) {	/// ParticleSystemTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// ParticleSystems
+	if (!Load_Vector<ParticleSystemClass>(stream)) {	/// ParticleSystems
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// BulletTypes
+	if (!Load_Vector<BulletTypeClass>(stream)) {	/// BulletTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Bullets
+	if (!Load_Vector<BulletClass>(stream)) {	/// Bullets
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// WaypointPaths
+	if (!Load_Vector<WaypointPathClass>(stream)) {	/// WaypointPaths
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// SmudgeTypes
+	if (!Load_Vector<SmudgeTypeClass>(stream)) {	/// SmudgeTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// OverlayTypes
+	if (!Load_Vector<OverlayTypeClass>(stream)) {	/// OverlayTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// LightSources
+	if (!Load_Vector<LightSourceClass>(stream)) {	/// LightSources
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// BuildingLights
+	if (!Load_Vector<BuildingLightClass>(stream)) {	/// BuildingLights
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Sides
+	if (!Load_Vector<SideClass>(stream)) {	/// Sides
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Tiberiums
+	if (!Load_Vector<TiberiumClass>(stream)) {	/// Tiberiums
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// EMPulseClass::EMPulses
+	if (!Load_Vector<EMPulseClass>(stream)) {	/// EMPulseClass::EMPulses
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// SuperWeaponTypes
+	if (!Load_Vector<SuperWeaponTypeClass>(stream)) {	/// SuperWeaponTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// SuperWeapons
+	if (!Load_Vector<SuperClass>(stream)) {	/// SuperWeapons
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// TerrainTypes
+	if (!Load_Vector<TerrainTypeClass>(stream)) {	/// TerrainTypes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Terrains
+	if (!Load_Vector<TerrainClass>(stream)) {	/// Terrains
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// FoggedObjectClass::FoggyObjects
+	if (!Load_Vector<FoggedObjectClass>(stream)) {	/// FoggedObjectClass::FoggyObjects
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// AlphaShapes
+	if (!Load_Vector<AlphaShapeClass>(stream)) {	/// AlphaShapes
 		return(false);
 	}
-	if (!Load_Vector(stream)) {	/// Waves
+	if (!Load_Vector<WaveClass>(stream)) {	/// Waves
 		return(false);
 	}
 	if (!VeinholeMonsterClass::Load_All(stream)) {

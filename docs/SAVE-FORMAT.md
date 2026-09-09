@@ -89,9 +89,11 @@ or long fails the load with the object's type and offset in the debug log,
 which is what a member added to one build and not the other looks like. A
 record read where a locomotor belongs fails the load the same way when its
 class is not one. A vector of objects is a 4-byte count followed by that
-many records, and a locomotor nested inside a unit's record is a record of
-its own. A count that the bytes remaining in the content could not hold
-fails the load before anything is allocated for it.
+many records, all of the heap's own class; a record naming any other class
+fails the load, since nothing else belongs in that heap. A locomotor nested
+inside a unit's record is a record of its own. A count that the bytes
+remaining in the content could not hold fails the load before anything is
+allocated for it.
 
 An object whose record fails is destroyed before the load fails. The pointer
 slots it had registered are cleared first, since they still hold identities
