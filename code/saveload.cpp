@@ -788,7 +788,9 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
-	Map.Load(stream);
+	if (!Map.Load(stream)) {
+		return(false);
+	}
 
 	if (!Load_Vector<TubeClass>(stream)) {	/// Tubes
 		return(false);
@@ -799,7 +801,9 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	}
 
 	Map.Reset_All_Subzones();
-	Logic.Load(stream);
+	if (!Logic.Load(stream)) {
+		return(false);
+	}
 
 	if (TacticalMap != NULL) {
 		delete TacticalMap;
