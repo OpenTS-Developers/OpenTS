@@ -249,22 +249,23 @@ class SaveStreamClass
 		}
 
 		// How much room a buffer keeps for its text is this build's business rather than
-		// the file's, so only the text travels. One with no room for a terminator comes
-		// back full.
+		// the file's, so only the text travels. The last byte stays the terminator, since
+		// every reader of these buffers treats them as C strings. This claims every
+		// char[N], so one holding bytes rather than text would be cut at its first zero.
 		template<int N>
 		void Serialize(char (&value)[N], std::source_location const & = std::source_location::current())
 		{
 			int count = 0;
 
 			if (Is_Saving()) {
-				while (count < N && value[count] != '\0') {
+				while (count < N - 1 && value[count] != '\0') {
 					count++;
 				}
 			}
 
 			Serialize(count);
 
-			if (Is_Loading() && (count < 0 || count > N)) {
+			if (Is_Loading() && (count < 0 || count >= N)) {
 				Fail();
 				return;
 			}

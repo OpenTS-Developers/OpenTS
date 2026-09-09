@@ -106,7 +106,9 @@ to clear, not one it can carry on from.
 A character buffer travels as its text: a length and that many characters, and
 a load clears the rest of the buffer. How much room a build keeps for a string
 is its own business, so the file carries neither the capacity nor whatever the
-memory held past the terminator.
+memory held past the terminator. The text is at most one character shorter than
+the buffer, so a loaded buffer is always terminated; a length that would fill it
+outright fails the load, since the engine reads these buffers as C strings.
 
 The body is what each class's `Serialize` produces, member by member, in host
 byte order. It is not described here; the classes are the description.
