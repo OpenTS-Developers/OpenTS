@@ -1377,6 +1377,149 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 }
 
 
+// Drives the display options and the mode confirmation: the resolution rows select, the
+// switch toggles, OK hands the caller a mode, and the confirmation counts down and cancels
+// itself when its clock runs out.
+void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIRmlViewClass> view = UI_Display_View(presenter);
+
+		Check(view->Prepare(context), "the display view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the display screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = view->Document();
+		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "mode");
+		Check(rows.size() == 3, "the display screen lists one row per mode");
+		Check(rows.size() == 3 && rows[1]->IsClassSet("selected") && rows[1]->GetInnerRML() == "1280 x 800", "the row of the stored mode starts selected");
+
+		if (rows.size() == 3) {
+			Click(context, rows[2]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Selected == 2 && rows[2]->IsClassSet("selected") && !rows[1]->IsClassSet("selected"), "a click on a row selects it");
+		}
+
+		Rml::Element * stretch = document->GetElementById("stretch");
+		if (stretch != nullptr) {
+			Click(context, stretch);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.StretchMovies && stretch->HasAttribute("checked") && service.Calls.empty(), "the movie switch turns on and shows it without applying");
+		}
+
+		Rml::Element * ok = document->GetElementById("ok");
+		Rml::Element * cancel = document->GetElementById("cancel");
+		Check(ok != nullptr && cancel != nullptr && ok->GetAbsoluteOffset(Rml::BoxArea::Border).x < cancel->GetAbsoluteOffset(Rml::BoxArea::Border).x, "OK sits left of Cancel");
+
+		if (ok != nullptr) {
+			Click(context, ok);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls.size() == 1 && service.Calls[0] == "stretch on", "OK applies the movie switch");
+			Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "OK hands the caller the picked mode");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIRmlViewClass> view = UI_Display_View(presenter);
+
+		Check(view->Prepare(context), "a second display view prepares");
+		view->Show(true);
+		context.Update();
+
+		std::vector<Rml::Element *> rows = Visible_Of_Class(view->Document(), "mode");
+		if (rows.size() == 3) {
+			Click(context, rows[0]);
+			presenter.Drain();
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty() && !presenter.Picked.has_value(), "Escape leaves the display options with nothing applied");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		std::unique_ptr<UIRmlViewClass> view = UI_Confirm_Mode_View(presenter);
+
+		Check(view->Prepare(context), "the confirmation view prepares against the test context");
+		presenter.Refresh();
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the confirmation screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = view->Document();
+		Rml::Element * seconds = document->GetElementById("seconds");
+		Check(seconds != nullptr && seconds->GetInnerRML() == "10", "the confirmation shows the ten seconds left");
+
+		clock.Now = 7500;
+		presenter.Refresh();
+		view->Sync();
+		context.Update();
+		Check(seconds != nullptr && seconds->GetInnerRML() == "3", "the seconds shown follow the clock");
+
+		Check(Visible_Buttons(document).size() == 2, "the confirmation has OK and Cancel");
+
+		Rml::Element * ok = document->GetElementById("ok");
+		if (ok != nullptr) {
+			Click(context, ok);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.TimedOut, "OK keeps the mode");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		std::unique_ptr<UIRmlViewClass> view = UI_Confirm_Mode_View(presenter);
+
+		Check(view->Prepare(context), "a second confirmation view prepares");
+		presenter.Refresh();
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		clock.Now = 10000;
+		presenter.Refresh();
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+
+		Rml::Element * seconds = view->Document()->GetElementById("seconds");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.TimedOut, "the confirmation cancels itself when the clock runs out");
+		Check(seconds != nullptr && seconds->GetInnerRML() == "0", "the countdown ends at zero");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
 // Drives the wait box: the text follows the presenter, the frame appears only with a bar, and
 // the fill follows the percentage.
 void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
@@ -1524,6 +1667,7 @@ void Test_Documents(void)
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);
 		Test_Game_Controls_Screen(*context, system);
+		Test_Display_Screen(*context, system);
 		Test_Wait_Box_Screen(*context, system);
 	}
 

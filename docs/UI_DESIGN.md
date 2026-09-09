@@ -770,13 +770,14 @@ beyond an ASCII test document.
    behaviour sits behind `UIGameControlsPresenterClass` and an engine service,
    `gamectrl.rml` covers the three Win32 templates with `data-if`, and the
    templates remain the fallback view; the display options and the mode
-   confirmation landed their first change: `UIDisplayPresenterClass` hands the
-   caller the mode to try, `UIConfirmModePresenterClass` reads a `UIClockClass`
-   and cancels itself at the timeout, which replaced the posted `WM_DESTROY`).
-   Main options, the display documents, keyboard with the hotkey capture
-   control, abort and surrender remain. The in-game options menu opens load,
-   save and delete, so it follows step 9. Evidence: settings round-trip
-   through `SUN.INI` unchanged.
+   confirmation landed too: `UIDisplayPresenterClass` hands the caller the
+   mode to try, `UIConfirmModePresenterClass` reads a `UIClockClass` and
+   cancels itself at the timeout, which replaced the posted `WM_DESTROY`, and
+   `display.rml` and `confirm.rml` are their documents, the latter counting
+   the seconds down). Main options, keyboard with the hotkey capture control,
+   abort and surrender remain. The in-game options menu opens load, save and
+   delete, so it follows step 9. Evidence: settings round-trip through
+   `SUN.INI` unchanged.
 8. **Main menu family** (M). `IDD_MAIN_MENU`, campaign choice, game type,
    multiplayer game selection. The `NewMenuClass` drivers keep their loops.
 9. **Load, save, delete** (M, two changes).

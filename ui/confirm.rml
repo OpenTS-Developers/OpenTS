@@ -1,0 +1,15 @@
+<rml>
+<head>
+	<title>Confirm display mode</title>
+	<link type="text/rcss" href="confirm.rcss"/>
+</head>
+<body data-model="confirm">
+	<div id="panel">
+		<div id="text">
+			<p>Click OK to keep this display mode. Your old display settings will be restored in <span id="seconds">{{seconds}}</span> <span data-if="seconds == 1">second</span><span data-if="seconds != 1">seconds</span>.</p>
+		</div>
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	</div>
+</body>
+</rml>

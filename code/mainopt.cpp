@@ -40,6 +40,8 @@
 
 #include "color.hh"
 
+#include <optional>
+
 
 INT_PTR CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 INT_PTR CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
@@ -47,6 +49,8 @@ bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
 INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 static void Display_Options_Dialog(void);
+static std::optional<UIDisplayMode> Display_Options_Win32_Dialog(void);
+static bool Confirm_Mode_Win32_Dialog(void);
 
 // The presenters the display and confirmation dialog procedures are views of, each for the
 // life of one dialog.
@@ -313,6 +317,27 @@ bool Test_Display_Mode_Dialog(int width, int height)
 	Show_Mouse();
 	Draw_Menu_Background();
 
+	bool kept = false;
+	if (!UI_Use_Rml() || !UI_Confirm_Mode_Dialog(kept)) {
+		kept = Confirm_Mode_Win32_Dialog();
+	}
+
+	if (!kept) {
+		DebugString("Resetting display mode @ %dx%d\n", Options.ScreenWidth, Options.ScreenHeight);
+		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
+		LogicalSurface = HiddenSurface;
+		return(false);
+	}
+
+	DebugString("Keeping display mode @ %dx%d\n", width, height);
+	LogicalSurface = HiddenSurface;
+	return(true);
+}
+
+
+// A dialog that could not be created keeps the mode, as it always has.
+static bool Confirm_Mode_Win32_Dialog(void)
+{
 	UIConfirmModePresenterClass presenter(UI_Clock());
 	_ConfirmPresenter = &presenter;
 
@@ -333,16 +358,10 @@ bool Test_Display_Mode_Dialog(int width, int height)
 	}
 	_ConfirmPresenter = NULL;
 
-	if (dialog && (!presenter.Result.has_value() || *presenter.Result != UI_RESULT_ACCEPTED)) {
-		DebugString("Resetting display mode @ %dx%d\n", Options.ScreenWidth, Options.ScreenHeight);
-		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
-		LogicalSurface = HiddenSurface;
-		return(false);
+	if (dialog == NULL) {
+		return(true);
 	}
-
-	DebugString("Keeping display mode @ %dx%d\n", width, height);
-	LogicalSurface = HiddenSurface;
-	return(true);
+	return(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED);
 }
 
 
@@ -381,43 +400,55 @@ INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM
 static void Display_Options_Dialog(void)
 {
 	while (true) {
-		UIDisplayState state;
-		UI_Display_State(state);
-		UIDisplayPresenterClass presenter(UI_Display_Service(), state);
-		_DisplayPresenter = &presenter;
-
-		HWND handle;
-		LONG rc;
-		do {
-			rc = -1;
-			handle = OwnerDraw::Begin_Dialog(IDD_OPT_DISPLAY, Display_Options_Dialog_Proc);
-		} while (handle == 0);
-		SetWindowLongPtr(handle, DWLP_USER, (LONG_PTR)&rc);
-		OwnerDraw::Display_Dialog(handle);
-
-		while (rc < 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				break;
-			}
-			Title_Screen_Restore();
+		std::optional<UIDisplayMode> picked;
+		if (!UI_Use_Rml() || !UI_Display_Dialog(picked)) {
+			picked = Display_Options_Win32_Dialog();
 		}
 
-		OwnerDraw::End_Dialog(handle);
-		_DisplayPresenter = NULL;
-
-		if (!presenter.Picked.has_value()) {
+		if (!picked.has_value()) {
 			break;
 		}
 
 		if (WWMessageBox().Process(TXT_ABOUT_TO_TRY_MODE, TXT_OK, TXT_CANCEL) != 0) {
 			break;
 		}
-		if (Test_Display_Mode_Dialog(presenter.Picked->Width, presenter.Picked->Height)) {
-			Options.ScreenWidth = presenter.Picked->Width;
-			Options.ScreenHeight = presenter.Picked->Height;
+		if (Test_Display_Mode_Dialog(picked->Width, picked->Height)) {
+			Options.ScreenWidth = picked->Width;
+			Options.ScreenHeight = picked->Height;
 			break;
 		}
 	}
+}
+
+
+// The mode the player asked to try, or nothing when the dialog closed without one.
+static std::optional<UIDisplayMode> Display_Options_Win32_Dialog(void)
+{
+	UIDisplayState state;
+	UI_Display_State(state);
+	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
+	_DisplayPresenter = &presenter;
+
+	HWND handle;
+	LONG rc;
+	do {
+		rc = -1;
+		handle = OwnerDraw::Begin_Dialog(IDD_OPT_DISPLAY, Display_Options_Dialog_Proc);
+	} while (handle == 0);
+	SetWindowLongPtr(handle, DWLP_USER, (LONG_PTR)&rc);
+	OwnerDraw::Display_Dialog(handle);
+
+	while (rc < 0) {
+		if (OwnerDraw::Dialog_Message_Handler() == true) {
+			break;
+		}
+		Title_Screen_Restore();
+	}
+
+	OwnerDraw::End_Dialog(handle);
+	_DisplayPresenter = NULL;
+
+	return(presenter.Picked);
 }
 
 

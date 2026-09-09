@@ -81,3 +81,83 @@ void UIConfirmModePresenterClass::Refresh(void)
 		Result = UI_RESULT_CANCELLED;
 	}
 }
+
+
+namespace
+{
+
+class UIDisplayViewClass : public UIRmlViewClass
+{
+	public:
+		explicit UIDisplayViewClass(UIDisplayPresenterClass & presenter) :
+			UIRmlViewClass(presenter, "display.rml", "display"),
+			Data(presenter)
+		{
+		}
+
+		// The model is small, so every field is re-read after each drain.
+		virtual void Sync(void) override
+		{
+			Model.DirtyAllVariables();
+		}
+
+	protected:
+		virtual bool Bind(Rml::DataModelConstructor & model) override
+		{
+			Rml::StructHandle<UIDisplayMode> mode = model.RegisterStruct<UIDisplayMode>();
+			if (!mode) {
+				return(false);
+			}
+			mode.RegisterMember("label", &UIDisplayMode::Label);
+			mode.RegisterMember("width", &UIDisplayMode::Width);
+			mode.RegisterMember("height", &UIDisplayMode::Height);
+
+			UIDisplayState & state = Data.State;
+			return(model.RegisterArray<std::vector<UIDisplayMode>>()
+				&& model.Bind("modes", &state.Modes)
+				&& model.Bind("selected", &state.Selected)
+				&& model.Bind("stretch", &state.StretchMovies));
+		}
+
+	private:
+		UIDisplayPresenterClass & Data;
+};
+
+
+class UIConfirmModeViewClass : public UIRmlViewClass
+{
+	public:
+		explicit UIConfirmModeViewClass(UIConfirmModePresenterClass & presenter) :
+			UIRmlViewClass(presenter, "confirm.rml", "confirm"),
+			Data(presenter)
+		{
+		}
+
+		virtual void Sync(void) override
+		{
+			Model.DirtyAllVariables();
+		}
+
+	protected:
+		virtual bool Bind(Rml::DataModelConstructor & model) override
+		{
+			return(model.Bind("seconds", &Data.Seconds));
+		}
+
+	private:
+		UIConfirmModePresenterClass & Data;
+};
+
+}
+
+
+std::unique_ptr<UIRmlViewClass> UI_Display_View(UIDisplayPresenterClass & presenter)
+{
+	return(std::make_unique<UIDisplayViewClass>(presenter));
+}
+
+
+std::unique_ptr<UIRmlViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter)
+{
+	return(std::make_unique<UIConfirmModeViewClass>(presenter));
+}

@@ -15,6 +15,8 @@
 
 #include "globals.h"
 #include "goptions.h"
+#include "ui/uirmlview.h"
+#include "ui/uishell.h"
 #include "video.h"
 
 #include <cstdio>
@@ -77,4 +79,48 @@ void UI_Display_State(UIDisplayState & state)
 	}
 
 	delete [] modes;
+}
+
+
+bool UI_Display_Dialog(std::optional<UIDisplayMode> & picked)
+{
+	picked.reset();
+
+	if (UI_Legacy_Dialog_Visible()) {
+		return(false);
+	}
+
+	UIDisplayState state;
+	UI_Display_State(state);
+
+	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
+	std::unique_ptr<UIRmlViewClass> view = UI_Display_View(presenter);
+
+	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
+		return(false);
+	}
+
+	picked = presenter.Picked;
+	return(true);
+}
+
+
+bool UI_Confirm_Mode_Dialog(bool & kept)
+{
+	kept = false;
+
+	if (UI_Legacy_Dialog_Visible()) {
+		return(false);
+	}
+
+	UIConfirmModePresenterClass presenter(UI_Clock());
+	std::unique_ptr<UIRmlViewClass> view = UI_Confirm_Mode_View(presenter);
+
+	UIResult result = UI_Run_Modal(*view);
+	if (result == UI_RESULT_FAILED_TO_OPEN) {
+		return(false);
+	}
+
+	kept = (result == UI_RESULT_ACCEPTED);
+	return(true);
 }
