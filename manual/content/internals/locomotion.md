@@ -28,7 +28,7 @@ Movement, destination, layer, occupation, and locomotor-specific drawing queries
 
 | Operation | State transition |
 | --- | --- |
-| `Begin_Piggyback(previous)` | Takes ownership of `previous` and stores it inside the new locomotor. Answers `false`, destroying what it was handed, when nothing was passed or the slot is already occupied. |
+| `Begin_Piggyback(previous)` | Stores `previous` inside the new locomotor and takes ownership of it. Answers `false` and leaves `previous` with the caller when there is nothing to store or the slot is already occupied. |
 | Replace `FootClass::Locomotion` | Makes the new locomotor the object's active movement interface. The new locomotor must already be linked to the same object. |
 | `End_Piggyback()` | Hands the stored locomotor back to the caller and empties the piggyback slot. Answers nothing when no locomotor was stored. |
 

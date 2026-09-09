@@ -271,7 +271,7 @@ void DropPodLocomotionClass::Stop_Moving(void)
 /// </summary>
 /// <param name="carried">The locomotor that is to take over the unit.</param>
 /// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
-bool DropPodLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> carried)
+bool DropPodLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
 	if (carried == nullptr || Piggybacker != nullptr) {
 		return(false);

@@ -5371,7 +5371,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 					walk->Link_To_Object(this);
 					piggy = Piggyback_Of(walk.get());
 					if (piggy != NULL) {
-						piggy->Begin_Piggyback(std::move(Locomotion));
+						piggy->Begin_Piggyback(Locomotion);
 						Locomotion = std::move(walk);
 						Locomotion->Force_New_Slope(Map[Get_Coord()].Ramp);
 					}

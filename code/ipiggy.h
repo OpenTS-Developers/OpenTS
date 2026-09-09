@@ -17,9 +17,10 @@
 struct IPiggyback
 {
 	/*
-	 * Piggybacks a locomotor onto this one.
+	 * Piggybacks a locomotor onto this one. The locomotor is taken only when the answer
+	 * is true; a refusal leaves it with the caller rather than destroying it.
 	 */
-	virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) = 0;
+	virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) = 0;
 
 	/*
 	 * Hands the carried locomotor back, or nothing when none is carried.

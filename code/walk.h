@@ -36,7 +36,7 @@ class WalkLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual void Serialize(SaveStreamClass & stream) override;
 
 
-		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
 		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}

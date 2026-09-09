@@ -44,7 +44,7 @@ class DropPodLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual LayerType In_Which_Layer(void) override;
 		virtual int Drawing_Code(void) override;
 
-		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
 		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}

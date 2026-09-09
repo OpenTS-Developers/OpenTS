@@ -3589,7 +3589,7 @@ void FootClass::Link_DropPod(void)
 	std::unique_ptr<ILocomotion> ballistic = Create_Locomotor(ClassID_BallisticLocomotion);
 	ballistic->Link_To_Object(this);
 	IPiggyback * piggy = Piggyback_Of(ballistic.get());
-	piggy->Begin_Piggyback(std::move(locomotion));
+	piggy->Begin_Piggyback(locomotion);
 	Locomotion = std::move(ballistic);
 
 }

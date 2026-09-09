@@ -89,7 +89,7 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 		virtual int Get_Track_Index(void) override;
 		virtual int Get_Speed_Accum(void) override;
 
-		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> carried) override;
+		virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) override;
 		virtual std::unique_ptr<ILocomotion> End_Piggyback(void) override;
 		virtual bool Is_Ok_To_End(void) override;
 		virtual bool Is_Piggybacking(void) override {return(Piggybacker != nullptr);}
