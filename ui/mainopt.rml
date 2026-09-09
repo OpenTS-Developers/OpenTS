@@ -1,0 +1,15 @@
+<rml>
+<head>
+	<title>Options menu</title>
+	<link type="text/rcss" href="mainopt.rcss"/>
+</head>
+<body data-model="mainopt">
+	<div id="panel">
+		<button id="settings" data-event-click="queue('settings')">Game Settings</button>
+		<button id="display" data-event-click="queue('display')">Display</button>
+		<button id="sound" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
+		<button id="keyboard" data-event-click="queue('keyboard')">Keyboard</button>
+		<button id="mainmenu" data-event-click="queue('ok')">Main Menu</button>
+	</div>
+</body>
+</rml>

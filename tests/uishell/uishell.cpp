@@ -35,6 +35,7 @@
 #include "ui/uigamectrl.h"
 #include "ui/uikeyboard.h"
 #include "ui/uikeys.h"
+#include "ui/uimainopt.h"
 #include "ui/uimsgbox.h"
 #include "ui/uirmlview.h"
 #include "ui/uiscreen.h"
@@ -1808,6 +1809,104 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 }
 
 
+// The buttons of a document from top to bottom.
+std::vector<Rml::Element *> Buttons_Top_Down(Rml::ElementDocument * document)
+{
+	std::vector<Rml::Element *> buttons = Visible_Buttons(document);
+	std::sort(buttons.begin(), buttons.end(), [](Rml::Element * a, Rml::Element * b) {
+		return(a->GetAbsoluteOffset(Rml::BoxArea::Border).y < b->GetAbsoluteOffset(Rml::BoxArea::Border).y);
+	});
+	return(buttons);
+}
+
+
+// Drives the options menu: each button closes it with its choice, a dead Sound button does
+// nothing, Escape leaves, and the panel takes the top edge the game hands it.
+void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = true;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIRmlViewClass> view = UI_Main_Options_View(presenter);
+
+		Check(view->Prepare(context), "the options menu view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the options menu raises no RmlUi warning or error");
+
+		std::vector<Rml::Element *> buttons = Buttons_Top_Down(view->Document());
+		Check(buttons.size() == 5, "the options menu has five buttons");
+		bool ordered = buttons.size() == 5 && buttons[0]->GetId() == "settings" && buttons[1]->GetId() == "display" && buttons[2]->GetId() == "sound" && buttons[3]->GetId() == "keyboard" && buttons[4]->GetId() == "mainmenu";
+		Check(ordered, "the buttons run Game Settings, Display, Sound, Keyboard, Main Menu from the top");
+
+		Rml::Element * panel = view->Document()->GetElementById("panel");
+		float centre = (float)context.GetDimensions().y * 0.5f;
+		Check(panel != nullptr && panel->GetAbsoluteOffset(Rml::BoxArea::Border).y < centre && panel->GetAbsoluteOffset(Rml::BoxArea::Border).y + panel->GetBox().GetSize(Rml::BoxArea::Border).y > centre, "without a top edge the menu sits in the middle");
+
+		if (buttons.size() == 5) {
+			Click(context, buttons[1]);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == UI_MAIN_OPTIONS_DISPLAY, "the Display button closes the menu with the display choice");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = false;
+		state.Top = 200;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIRmlViewClass> view = UI_Main_Options_View(presenter);
+
+		Check(view->Prepare(context), "a second options menu view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::Element * panel = view->Document()->GetElementById("panel");
+		Check(panel != nullptr && std::fabs(panel->GetAbsoluteOffset(Rml::BoxArea::Border).y - 200.0f) < 1.0f, "the menu sits at the top edge the game hands it");
+
+		Rml::Element * sound = view->Document()->GetElementById("sound");
+		Check(sound != nullptr && sound->IsClassSet("disabled"), "the Sound button shows disabled without an audio device");
+		if (sound != nullptr) {
+			Click(context, sound);
+			presenter.Drain();
+			Check(!presenter.Result.has_value(), "a disabled Sound button does nothing");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.Choice == UI_MAIN_OPTIONS_LEAVE, "Escape leaves the options menu");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = true;
+		UIMainOptionsPresenterClass presenter(state);
+		Drive(presenter, "sound");
+		Check(presenter.Result.has_value() && presenter.Choice == UI_MAIN_OPTIONS_SOUND, "a live Sound button picks the sound options");
+
+		UIMainOptionsPresenterClass keyboard(state);
+		Drive(keyboard, "keyboard");
+		UIMainOptionsPresenterClass settings(state);
+		Drive(settings, "settings");
+		UIMainOptionsPresenterClass leave(state);
+		Drive(leave, "ok");
+		Check(keyboard.Choice == UI_MAIN_OPTIONS_KEYBOARD && settings.Choice == UI_MAIN_OPTIONS_SETTINGS && leave.Choice == UI_MAIN_OPTIONS_LEAVE && leave.Result.has_value() && *leave.Result == UI_RESULT_ACCEPTED, "Keyboard, Game Settings and Main Menu each answer with their choice");
+	}
+}
+
+
 // Drives the wait box: the text follows the presenter, the frame appears only with a bar, and
 // the fill follows the percentage.
 void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
@@ -1957,6 +2056,7 @@ void Test_Documents(void)
 		Test_Game_Controls_Screen(*context, system);
 		Test_Display_Screen(*context, system);
 		Test_Keyboard_Screen(*context, system);
+		Test_Main_Options_Screen(*context, system);
 		Test_Wait_Box_Screen(*context, system);
 	}
 

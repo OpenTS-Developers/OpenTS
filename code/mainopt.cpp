@@ -35,6 +35,7 @@
 #include "stimer.h"
 #include "surface.h"
 #include "ui/uidisplay.h"
+#include "ui/uimainopt.h"
 #include "ui/uishell.h"
 #include "wwmouse.h"
 
@@ -48,6 +49,7 @@ INT_PTR CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM w
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
 INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+static UIMainOptionsChoice Main_Options_Win32_Dialog(void);
 static void Display_Options_Dialog(void);
 static std::optional<UIDisplayMode> Display_Options_Win32_Dialog(void);
 static bool Confirm_Mode_Win32_Dialog(void);
@@ -80,42 +82,26 @@ void Main_Options_Dialog(void)
 	bool old_game_active = GameActive;
 	GameActive = false;
 
-	HWND main_handle;
-	LONG main_rc;
-
 	while (true) {
-		do {
-			main_rc = -1;
-			main_handle = OwnerDraw::Begin_Dialog(IDD_OPT_MAIN, Main_Options_Dialog_Proc);
-		} while (main_handle == 0);
-		SetWindowLongPtr(main_handle, DWLP_USER, (LONG_PTR)&main_rc);
-
-		OwnerDraw::Move_Dialog(main_handle, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
-		OwnerDraw::Display_Dialog(main_handle);
-
-		while (main_rc < 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				break;
-			}
-			Title_Screen_Restore();
+		UIMainOptionsChoice choice = UI_MAIN_OPTIONS_LEAVE;
+		if (!UI_Use_Rml() || !UI_Main_Options_Dialog(choice)) {
+			choice = Main_Options_Win32_Dialog();
 		}
 
-		OwnerDraw::End_Dialog(main_handle);
-
-		switch (main_rc) {
-			case IDC_OPTMAIN_SOUND:
+		switch (choice) {
+			case UI_MAIN_OPTIONS_SOUND:
 				SoundControlsClass().Dialog();
 				break;
 
-			case IDC_OPTMAIN_DISPLAY:
+			case UI_MAIN_OPTIONS_DISPLAY:
 				Display_Options_Dialog();
 				break;
 
-			case IDC_OPTMAIN_KEYBOARD:
+			case UI_MAIN_OPTIONS_KEYBOARD:
 				Options.Hotkey_Dialog();
 				break;
 
-			case IDC_OPTMAIN_GAME_SETTINGS:
+			case UI_MAIN_OPTIONS_SETTINGS:
 				GameControlsClass().Dialog();
 				break;
 
@@ -124,6 +110,50 @@ void Main_Options_Dialog(void)
 				GameActive = old_game_active;
 				return;
 		}
+	}
+}
+
+
+// The button the player pressed; Escape, Enter and the end of the session all lead back to
+// the main menu.
+static UIMainOptionsChoice Main_Options_Win32_Dialog(void)
+{
+	HWND main_handle;
+	LONG main_rc;
+
+	do {
+		main_rc = -1;
+		main_handle = OwnerDraw::Begin_Dialog(IDD_OPT_MAIN, Main_Options_Dialog_Proc);
+	} while (main_handle == 0);
+	SetWindowLongPtr(main_handle, DWLP_USER, (LONG_PTR)&main_rc);
+
+	OwnerDraw::Move_Dialog(main_handle, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
+	OwnerDraw::Display_Dialog(main_handle);
+
+	while (main_rc < 0) {
+		if (OwnerDraw::Dialog_Message_Handler() == true) {
+			break;
+		}
+		Title_Screen_Restore();
+	}
+
+	OwnerDraw::End_Dialog(main_handle);
+
+	switch (main_rc) {
+		case IDC_OPTMAIN_SOUND:
+			return(UI_MAIN_OPTIONS_SOUND);
+
+		case IDC_OPTMAIN_DISPLAY:
+			return(UI_MAIN_OPTIONS_DISPLAY);
+
+		case IDC_OPTMAIN_KEYBOARD:
+			return(UI_MAIN_OPTIONS_KEYBOARD);
+
+		case IDC_OPTMAIN_GAME_SETTINGS:
+			return(UI_MAIN_OPTIONS_SETTINGS);
+
+		default:
+			return(UI_MAIN_OPTIONS_LEAVE);
 	}
 }
 

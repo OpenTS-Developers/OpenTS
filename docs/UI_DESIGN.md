@@ -766,22 +766,22 @@ beyond an ASCII test document.
    `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the modeless box they
    show. A progress bar needs no engine surface, so the `<surface>` element
    waits for the map preview in step 10. Runtime evidence still owed.
-7. **Options family** (L, two changes each; the game controls landed: the
-   behaviour sits behind `UIGameControlsPresenterClass` and an engine service,
-   `gamectrl.rml` covers the three Win32 templates with `data-if`, and the
-   templates remain the fallback view; the display options and the mode
-   confirmation landed too: `UIDisplayPresenterClass` hands the caller the
-   mode to try, `UIConfirmModePresenterClass` reads a `UIClockClass` and
-   cancels itself at the timeout, which replaced the posted `WM_DESTROY`, and
-   `display.rml` and `confirm.rml` are their documents, the latter counting
-   the seconds down; the keyboard dialog landed too: `UIKeyboardPresenterClass`
-   edits a copy of the hotkey table that OK saves and Cancel drops, where the
-   Win32 procedure edited the game's table and reloaded the file on Cancel,
-   and `keyboard.rml` captures a key through a focusable element that
-   `uikeys.cpp` turns back into the `KEYBOARD.INI` number). Main options,
-   abort and surrender remain. The in-game options menu opens load, save and
-   delete, so it follows step 9. Evidence: settings round-trip through
-   `SUN.INI` unchanged.
+7. **Options family** (L, landed for the frontend and the in-game settings:
+   the game controls sit behind `UIGameControlsPresenterClass` and an engine
+   service with `gamectrl.rml` covering the three Win32 templates through
+   `data-if`; `UIDisplayPresenterClass` hands the caller the mode to try and
+   `UIConfirmModePresenterClass` reads a `UIClockClass` and cancels itself at
+   the timeout, which replaced the posted `WM_DESTROY`, over `display.rml`
+   and `confirm.rml`, the latter counting the seconds down;
+   `UIKeyboardPresenterClass` edits a copy of the hotkey table that OK saves
+   and Cancel drops, where the Win32 procedure edited the game's table and
+   reloaded the file on Cancel, and `keyboard.rml` captures a key through a
+   focusable element that `uikeys.cpp` turns back into the `KEYBOARD.INI`
+   number; the options menu is `mainopt.rml`, placed where the main menu's
+   buttons were; abort and surrender already run through the message box
+   screen). The Win32 templates remain the fallback view of every one. The
+   in-game options menu opens load, save and delete, so it follows step 9.
+   Evidence: settings round-trip through `SUN.INI` unchanged.
 8. **Main menu family** (M). `IDD_MAIN_MENU`, campaign choice, game type,
    multiplayer game selection. The `NewMenuClass` drivers keep their loops.
 9. **Load, save, delete** (M, two changes).
