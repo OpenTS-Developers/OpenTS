@@ -766,10 +766,13 @@ beyond an ASCII test document.
    `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the modeless box they
    show. A progress bar needs no engine surface, so the `<surface>` element
    waits for the map preview in step 10. Runtime evidence still owed.
-7. **Options family** (L, two changes each). Main options, display with its
-   timed rollback, game controls (three variants), keyboard with the hotkey
-   capture control, the display-mode confirmation, abort and surrender.
-   Evidence: settings round-trip through `SUN.INI` unchanged.
+7. **Options family** (L, two changes each; the game controls landed their
+   first: the behaviour sits behind `UIGameControlsPresenterClass` and an
+   engine service, with the three Win32 templates as the view). Main options,
+   display with its timed rollback, game controls (three variants), keyboard
+   with the hotkey capture control, the display-mode confirmation, abort and
+   surrender. The in-game options menu opens load, save and delete, so it
+   follows step 9. Evidence: settings round-trip through `SUN.INI` unchanged.
 8. **Main menu family** (M). `IDD_MAIN_MENU`, campaign choice, game type,
    multiplayer game selection. The `NewMenuClass` drivers keep their loops.
 9. **Load, save, delete** (M, two changes).

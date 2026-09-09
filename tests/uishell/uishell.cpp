@@ -31,6 +31,7 @@
 #include <imgui.h>
 
 #include "ui/uicoord.h"
+#include "ui/uigamectrl.h"
 #include "ui/uimsgbox.h"
 #include "ui/uirmlview.h"
 #include "ui/uiscreen.h"
@@ -480,6 +481,97 @@ void Test_Sound_Presenter(void)
 
 	Drive(presenter, "ok");
 	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0", "OK re-applies the levels without feedback and closes");
+}
+
+
+// Records the engine calls the game controls presenter makes, in order.
+class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+
+		virtual void Set_Game_Speed(int speed) override { Calls.push_back("speed " + std::to_string(speed)); }
+		virtual void Set_Scroll_Rate(int rate) override { Calls.push_back("scroll " + std::to_string(rate)); }
+		virtual void Set_Detail_Level(int level) override { Calls.push_back("detail " + std::to_string(level)); }
+		virtual void Set_Cameo_Text(bool on) override { Calls.push_back(on ? "cameo on" : "cameo off"); }
+		virtual void Set_Action_Lines(bool on) override { Calls.push_back(on ? "lines on" : "lines off"); }
+		virtual void Set_Tool_Tips(bool on) override { Calls.push_back(on ? "tooltips on" : "tooltips off"); }
+		virtual void Set_Scroll_Coasting(bool on) override { Calls.push_back(on ? "coasting on" : "coasting off"); }
+		virtual void Set_Edge_Scroll(bool on) override { Calls.push_back(on ? "edge on" : "edge off"); }
+		virtual void Set_Difficulty(int difficulty) override { Calls.push_back("difficulty " + std::to_string(difficulty)); }
+		virtual void Save(void) override { Calls.push_back("save"); }
+
+		std::string Joined(void) const
+		{
+			std::string all;
+			for (std::string const & call : Calls) {
+				all += (all.empty() ? "" : "; ") + call;
+			}
+			return(all);
+		}
+};
+
+
+void Drive(UIGameControlsPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+// The game controls presenter applies the accepted settings in the order the dialog's accept
+// path always used, and only when accepted.
+void Test_Game_Controls_Presenter(void)
+{
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.Speed = 3;
+		state.Scroll = 3;
+		state.Detail = 2;
+		state.Difficulty = 1;
+		state.InGame = false;
+		state.HasSpeed = true;
+		state.HasDifficulty = true;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "speed", 5);
+		Drive(presenter, "detail", 9);
+		Drive(presenter, "cameo", 1);
+		Drive(presenter, "edge", 1);
+		Drive(presenter, "difficulty", 2);
+		Check(presenter.State.Speed == 5 && presenter.State.Detail == 2 && presenter.State.CameoText && presenter.State.EdgeScroll, "edits are held in the state and clamped");
+		Check(service.Calls.empty(), "nothing is applied before the player accepts");
+
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "OK accepts the game controls");
+		Check(service.Joined() == "speed 5; scroll 3; detail 2; cameo on; lines off; tooltips off; coasting off; edge on; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.InGame = true;
+		state.HasSpeed = false;
+		state.HasDifficulty = false;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "sound");
+		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts and names the sound options next");
+		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; save", "an Internet game applies no game speed and no difficulty");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "scroll", 1);
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Cancel applies nothing");
+	}
 }
 
 
@@ -1106,6 +1198,7 @@ int main(void)
 	Test_FreeType();
 	Test_ImGui();
 	Test_Coordinates();
+	Test_Game_Controls_Presenter();
 	Test_Sound_Presenter();
 	Test_Strings();
 	Test_Documents();
