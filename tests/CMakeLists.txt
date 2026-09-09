@@ -36,6 +36,11 @@ function(opents_add_test target)
     )
 
     if(TEST_DEFINITIONS)
+        if(NOT WIN32)
+            # These three name the platform a harness is built for, which a native build
+            # is not. NOMINMAX only reaches a Windows header and costs nothing here.
+            list(REMOVE_ITEM TEST_DEFINITIONS WIN32 _WINDOWS _MBCS)
+        endif()
         target_compile_definitions(${target} PRIVATE ${TEST_DEFINITIONS})
     endif()
 
