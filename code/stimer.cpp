@@ -33,6 +33,7 @@
 
 #include "stimer.h"
 
+#include "hostclock.h"
 #include "win.h"
 
 #ifdef _MSC_VER
@@ -48,13 +49,13 @@
 /// <summary>
 /// Fetches the current system timer value.
 /// This routine is the clock source that the timer templates are built upon. It scales
-/// the Windows multimedia clock down so that timers tick in game sized units rather
-/// than in milliseconds.
+/// the host clock down so that timers tick in game sized units rather than in
+/// milliseconds.
 /// </summary>
 /// <returns>Returns with the current system time, expressed in timer ticks.</returns>
 int SystemTimerClass::operator () (void) const
 {
-	return(timeGetTime()/16);
+	return(Host_Milliseconds()/16);
 }
 
 
@@ -66,5 +67,5 @@ int SystemTimerClass::operator () (void) const
 /// <returns>Returns with the current system time, expressed in timer ticks.</returns>
 SystemTimerClass::operator int (void) const
 {
-	return(timeGetTime()/16);
+	return(Host_Milliseconds()/16);
 }

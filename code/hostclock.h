@@ -9,20 +9,15 @@
 
 #pragma once
 
-/// High-resolution millisecond timer system.
-class MillisecondTimerClass
+#include <chrono>
+#include <cstdint>
+
+// The engine's coarse clock, in milliseconds from a clock that only ever moves forward.
+// No caller depends on where the count starts. The reading wraps roughly every forty
+// nine days, so compare differences and not the readings themselves.
+inline uint32_t Host_Milliseconds(void)
 {
-	public:
-		MillisecondTimerClass(void);
-		~MillisecondTimerClass(void);
+	return((uint32_t)std::chrono::duration_cast<std::chrono::milliseconds>(
+				std::chrono::steady_clock::now().time_since_epoch()).count());
+}
 
-		operator double () const;
-
-	private:
-		/*
-		 * This is the number of processor clock cycles that pass in one millisecond, and
-		 * the raw cycle count is divided by it to yield a time. If it is 1.0, then the
-		 * processor would not report its rate and the host clock is read instead.
-		 */
-		double Frequency;
-};

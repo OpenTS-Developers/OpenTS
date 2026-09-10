@@ -60,6 +60,7 @@
 #include "deploymentconfig.h"
 #include "gamedirs.h"		// for Search_Files.
 #include "globals.h"
+#include "hostclock.h"
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "msgloop.h"
@@ -1003,7 +1004,7 @@ unsigned int SessionClass::Compute_Unique_ID(void)
 	//------------------------------------------------------------------------
 //	time(&tm);
 //	id = (unsigned long)tm;
-	id = timeGetTime();
+	id = Host_Milliseconds();
 
 	//------------------------------------------------------------------------
 	// Now add in the free space on the hard drive
