@@ -139,6 +139,7 @@
 #include "movie.h"
 #include "mplayer.h"
 #include "msgbox.h"
+#include "mstimer.h"
 #include "netdlg.h"
 #include "netdlg2.h"
 #include "newmenu.h"
@@ -1964,7 +1965,7 @@ void Init_Random(void)
 			Seed = CustomSeed;
 		} else {
 			CryptRandom.Get(&Seed, sizeof(Seed));
-			Seed = GetTickCount();
+			Seed = System_Milliseconds();
 			//srand(time(NULL));
 			//Seed = rand();
 		}

@@ -296,6 +296,10 @@ static void RegisterClasses(void)
 	REGISTER_CLASS(AlphaShapeClass, ClassID_AlphaShapeClass);
 }
 
+
+static bool TimerResolutionRaised = false;
+
+
 /// <summary>
 /// Builds the argument list the game parses from the command line the shell handed over.
 /// The shell's own quoting decides where one argument ends and the next begins, so a
@@ -373,6 +377,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 	argc = Build_Arguments(path_to_exe, argv);
 
 	Debug_Init(argc, argv);
+
+	// The scheduler tick rather than the clock: without this every Sleep below waits a whole
+	// tick, about 15ms, however little it asked for. Prog_End drops it again.
+	TimerResolutionRaised = timeBeginPeriod(1) == TIMERR_NOERROR;
 
 	// Handed over now because the exception path may not ask the logger for anything: the
 	// thread that crashed may be the one holding the logger's lock.
@@ -674,6 +682,11 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 void __cdecl Prog_End(void)
 {
 	int i;
+
+	if (TimerResolutionRaised) {
+		timeEndPeriod(1);
+		TimerResolutionRaised = false;
+	}
 
 	GameActive = false;
 
