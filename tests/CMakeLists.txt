@@ -23,6 +23,7 @@ function(opents_add_test target)
 
     add_executable(${target} ${sources})
     target_compile_features(${target} PRIVATE cxx_std_20)
+    set_target_properties(${target} PROPERTIES FOLDER "Tests")
 
     target_include_directories(${target} PRIVATE
         "${CMAKE_SOURCE_DIR}/code"

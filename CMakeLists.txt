@@ -14,6 +14,10 @@ option(OPENTS_OFFICIAL_BUILD "Build as an official release of the declared versi
 option(OPENTS_EXPERIMENTAL_CLANG_CL "Build with clang-cl using the MSVC ABI" OFF)
 option(OPENTS_EXPERIMENTAL_X64 "Configure an unsupported 64-bit Windows build" OFF)
 
+# Lets a target's FOLDER place it in a Visual Studio solution folder. The bgfx submodule sets
+# this as well, so declare it here rather than inherit it from a vendored build.
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang"
    AND CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
