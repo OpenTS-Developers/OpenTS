@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "brain.h"
@@ -48,18 +47,9 @@ NeuronClass::~NeuronClass(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the save game system so that it knows what kind of object to
-/// construct when the stream is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the place to store the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE NeuronClass::GetClassID(CLSID * retval)
+ClassID NeuronClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_NeuronClass;
-	return(S_OK);
+	return(ClassID_NeuronClass);
 }
 
 
@@ -155,19 +145,12 @@ bool BrainClass::Add_Neuron(NeuronClass *neuron)
 /// Saves this brain to the save game stream.
 /// </summary>
 /// <param name="cleardirty">Should the neurons be marked clean once they are written?</param>
-/// <returns>
-/// Returns with S_OK when the brain was written, E_POINTER when no stream was supplied,
-/// or the stream's own failure code.
-/// </returns>
-HRESULT BrainClass::Save(IStream * stream, BOOL cleardirty)
+/// <returns>bool; Was the record written whole?</returns>
+bool BrainClass::Save(SaveStreamClass & stream, bool cleardirty)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream, cleardirty);
-	return(savestream.Result());
+	Serialize(stream, cleardirty);
+	return(!stream.Was_Error());
 }
 
 
@@ -176,20 +159,13 @@ HRESULT BrainClass::Save(IStream * stream, BOOL cleardirty)
 /// Whatever neurons the brain was holding are destroyed first, so the stream's neurons
 /// entirely replace them.
 /// </summary>
-/// <returns>
-/// Returns with S_OK when the brain was read, E_POINTER when no stream was supplied, or
-/// the stream's own failure code.
-/// </returns>
-HRESULT BrainClass::Load(IStream * stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool BrainClass::Load(SaveStreamClass & stream)
 {
-	if (stream == NULL) {
-		return(E_POINTER);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("BrainClass");
-	Serialize(savestream);
-	return(savestream.Result());
+	stream.Set_Context("BrainClass");
+	Serialize(stream);
+	return(!stream.Was_Error());
 }
 
 
@@ -200,7 +176,7 @@ HRESULT BrainClass::Load(IStream * stream)
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
 /// <param name="cleardirty">Should the neurons be marked clean once they are written?</param>
-void BrainClass::Serialize(SaveStreamClass & stream, BOOL cleardirty)
+void BrainClass::Serialize(SaveStreamClass & stream, bool cleardirty)
 {
 	int count = Neurons.Count();
 	stream.Serialize(count);
@@ -212,10 +188,10 @@ void BrainClass::Serialize(SaveStreamClass & stream, BOOL cleardirty)
 	for (int i = 0; i < count && !stream.Was_Error(); i++) {
 		if (stream.Is_Loading()) {
 			NeuronClass * neuron = new NeuronClass;
-			neuron->Load(stream.Get_Stream());
+			neuron->Load(stream);
 			Add_Neuron(neuron);
 		} else {
-			Neurons[i]->Save(stream.Get_Stream(), cleardirty);
+			Neurons[i]->Save(stream, cleardirty);
 		}
 	}
 	// MinCount -- the limits a brain was prepared with rather than anything it accumulated.

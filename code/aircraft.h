@@ -59,23 +59,20 @@ class AircraftClass : public FootClass, public IFlyControl
 		AircraftClass(AircraftTypeClass const * type = NULL, HouseClass * house = NULL);
 		virtual ~AircraftClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual ClassID Class_ID(void) const override;
+		virtual bool Load(SaveStreamClass & stream) override;
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObject) override;
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
 		/*
 		 * IFlyControl methods.
 		 */
-		virtual LONG STDMETHODCALLTYPE Landing_Altitude(void) override;
-		virtual LONG STDMETHODCALLTYPE Landing_Direction(void) override;
-		virtual BOOL STDMETHODCALLTYPE Is_Loaded(void) override;
-		virtual LONG STDMETHODCALLTYPE Is_Strafe(void) override;
-		virtual LONG STDMETHODCALLTYPE Is_Locked(void) override;
+		virtual LONG Landing_Altitude(void) override;
+		virtual LONG Landing_Direction(void) override;
+		virtual BOOL Is_Loaded(void) override;
+		virtual LONG Is_Strafe(void) override;
+		virtual LONG Is_Locked(void) override;
 
 		virtual void Init(void) override;
 		virtual void Detach(AbstractClass const * target, bool all = true) override;

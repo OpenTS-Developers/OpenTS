@@ -74,7 +74,6 @@
  *   CellClass::Wall_Update -- Updates the imagery for wall objects in cell.                   *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "cell.h"
@@ -4366,6 +4365,13 @@ void CellClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(CellID);
 
+	// Post_Load installs the cell in the array slot this coordinate names, so a coordinate
+	// that names none is refused here, while the record can still be thrown away whole.
+	if (stream.Is_Loading() && Map.Cell_Slot(CellID) < 0) {
+		stream.Fail();
+		return;
+	}
+
 	/*
 	 * The snapshot list is built only once something standing here has been fogged over,
 	 * so whether the cell has one at all travels ahead of its contents.
@@ -4469,7 +4475,11 @@ void CellClass::Post_Load(void)
 {
 	BASECLASS::Post_Load();
 
-	int id = CellID.X + (CellID.Y << 9);
+	int id = Map.Cell_Slot(CellID);
+	if (id < 0) {
+		return;
+	}
+
 	if (Map.Array[id] != NULL) {
 		delete Map.Array[id];
 		Map.Array[id] = NULL;
@@ -5168,18 +5178,9 @@ void CellClass::Detach(AbstractClass const * target)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This is the persistence requirement that lets the save system recognize a cell when a
-/// saved game is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the location to store the class identifier in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE CellClass::GetClassID(CLSID * retval)
+ClassID CellClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_CellClass;
-	return(S_OK);
+	return(ClassID_CellClass);
 }
 
 

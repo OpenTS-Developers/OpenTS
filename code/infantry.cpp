@@ -79,7 +79,6 @@
  *   InfantryClass::~InfantryClass -- Default destructor for infantry units.                   *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "infantry.h"
@@ -100,6 +99,7 @@
 #include "builtype.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "classids.h"
 #include "combat.h"
 #include "data.h"
 #include "draw.h"
@@ -108,7 +108,6 @@
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
-#include "ilocos.h"
 #include "incdec.h"
 #include "infatype.h"
 #include "inline.h"
@@ -250,7 +249,7 @@ InfantryClass::InfantryClass(InfantryTypeClass const * type, HouseClass * house)
 	Init();
 
 	if (Class != NULL) {
-		Locomotion.CreateInstance(Class->Locomotor, NULL, CLSCTX_ALL);
+		Locomotion = Create_Locomotor(Class->Locomotor);
 		Locomotion->Link_To_Object(this);
 	}
 
@@ -632,11 +631,9 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 	Cell cell = Get_Target_Cell();
 
 	if (CurrentTube == -1) {
-		IPersistPtr persist = Locomotion;
-		CLSID clsid;
-		persist->GetClassID(&clsid);
+		ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
 
-		if (HeightAGL > 0 && clsid == CLSID_BallisticLocomotion) {
+		if (HeightAGL > 0 && clsid == ClassID_BallisticLocomotion) {
 			ShapeSet const * shapefile = (ShapeSet const *)MFCD::Retrieve("POD.SHP");
 			Point2D spoint = xpoint + Point2D(Locomotion->Shadow_Point());
 			Draw_Shape(
@@ -1174,10 +1171,8 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 	}
 
 	if (target != NULL && Class->IsJumpJet && Locomotion->Is_Moving()) {
-		IPersistPtr persist(Locomotion);
-		CLSID clsid;
-		persist->GetClassID(&clsid);
-		if (clsid == CLSID_WalkLocomotion) {
+		ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+		if (clsid == ClassID_WalkLocomotion) {
 			NavQueue.Add_Head(target);
 			target = Get_Target_Cell_Ptr();
 			if (target != NULL && ((CellClass *)target)->IsUnderBridge) {
@@ -1190,26 +1185,26 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 		bool should_fly = Should_JumpJet_Fly(Destination_Coord().As_Cell(), target->Center_Coord().As_Cell());
 		if (Is_JumpJet()) {
 			if (!should_fly) {
-				IPiggybackPtr piggy(Locomotion);
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 				if (piggy != NULL) {
 					if (piggy->Is_Piggybacking() && piggy->Is_Ok_To_End()) {
-						piggy->End_Piggyback(&Locomotion);
+						Locomotion = piggy->End_Piggyback();
 					}
 				}
-				ILocomotionPtr walk(CLSID_WalkLocomotion);
+				std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_WalkLocomotion);
 				walk->Link_To_Object(this);
-				piggy = IPiggybackPtr(walk);
+				piggy = Piggyback_Of(walk.get());
 				if (piggy != NULL) {
 					piggy->Begin_Piggyback(Locomotion);
-					Locomotion = walk;
+					Locomotion = std::move(walk);
 				}
 			}
 		} else {
 			if (should_fly) {
-				IPiggybackPtr piggy(Locomotion);
+				IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 				if (piggy != NULL) {
 					if (piggy->Is_Piggybacking() && piggy->Is_Ok_To_End()) {
-						piggy->End_Piggyback(&Locomotion);
+						Locomotion = piggy->End_Piggyback();
 					}
 				}
 			}
@@ -3943,8 +3938,8 @@ void InfantryClass::Clear_Occupy_Bit(Coord const & coord)
 /// since the one it is about to be given is the one it was saved with. Post_Load enters it
 /// again once that identity has arrived.
 /// </summary>
-/// <returns>Returns with S_OK if the object was read successfully.</returns>
-HRESULT STDMETHODCALLTYPE InfantryClass::Load(IStream * stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool InfantryClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 	return(BASECLASS::Load(stream));
@@ -4154,15 +4149,15 @@ bool InfantryClass::JumpJet_To_Walk(void)
 	if (path_length >= 4) return(false);
 
 	if (Is_JumpJet()) {
-		IPiggybackPtr piggy(Locomotion);
+		IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 		if (piggy != NULL && !piggy->Is_Piggybacking()) {
-			ILocomotionPtr walk(CLSID_WalkLocomotion);
+			std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_WalkLocomotion);
 			walk->Link_To_Object(this);
-			piggy = IPiggybackPtr(walk);
+			piggy = Piggyback_Of(walk.get());
 			if (piggy != NULL) {
 				Path[0] = FACING_NONE;
 				piggy->Begin_Piggyback(Locomotion);
-				Locomotion = walk;
+				Locomotion = std::move(walk);
 				Locomotion->Move_To(NavCom->Center_Coord());
 				return(true);
 			}
@@ -4197,10 +4192,8 @@ bool InfantryClass::Is_JumpJet(void) const
 		return(false);
 	}
 
-	IPersistPtr persist(Locomotion);
-	CLSID clsid;
-	persist->GetClassID(&clsid);
-	return((clsid == CLSID_JumpjetLocomotion) ? true : false);
+	ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+	return((clsid == ClassID_JumpjetLocomotion) ? true : false);
 }
 
 
@@ -4303,18 +4296,9 @@ int InfantryClass::Do_MISSION_GUARD(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier used to persist this object.
-/// The save system records this identifier alongside the object data so that the
-/// correct kind of object can be created again when the stream is read back.
-/// </summary>
-/// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE InfantryClass::GetClassID(CLSID * retval)
+ClassID InfantryClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_InfantryClass;
-	return(S_OK);
+	return(ClassID_InfantryClass);
 }
 
 

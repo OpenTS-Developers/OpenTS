@@ -230,6 +230,19 @@ void SwizzleManagerClass::Resolve(void)
 
 
 /// <summary>
+/// Takes back everything registered since the mark.
+/// The slots those requests name were left null by Swizzle and nothing has filled them,
+/// since Resolve does not run until the load has succeeded, so dropping the requests is
+/// all it takes to let the objects holding them be destroyed.
+/// </summary>
+void SwizzleManagerClass::Abandon(MarkType const & mark)
+{
+	RequestTable.resize(mark.Requests);
+	PointerTable.resize(mark.Pointers);
+}
+
+
+/// <summary>
 /// Throws away every pending request and announcement.
 /// The load code calls this routine before it starts reading, so that whatever a load that
 /// gave up partway through left behind cannot be resolved into the game that follows it.

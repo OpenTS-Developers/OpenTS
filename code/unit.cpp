@@ -95,7 +95,6 @@
  *   UnitClass::~UnitClass -- Destructor for unit objects.                                     *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "unit.h"
@@ -121,13 +120,13 @@
 #include "bullettype.h"
 #include "ccrand.h"
 #include "cell.h"
+#include "classids.h"
 #include "combat.h"
 #include "conquer.h"
 #include "draw.h"
 #include "fog.h"
 #include "house.h"
 #include "houstype.h"
-#include "ilocos.h"
 #include "incdec.h"
 #include "infantry.h"
 #include "infatype.h"
@@ -223,7 +222,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	SecondaryFacing.Set(PrimaryFacing.Current());
 
 	if (Class != NULL) {
-		Locomotion = ILocomotionPtr(Class->Locomotor, NULL, CLSCTX_ALL);
+		Locomotion = Create_Locomotor(Class->Locomotor);
 		Locomotion->Link_To_Object(this);
 	}
 
@@ -2107,10 +2106,8 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			Cell center = Center_Coord();
 			Cell whom_center = whom->Center_Coord();
 			if (Center_Coord().As_Cell() == whom->Center_Coord().As_Cell() && whom->RTTI == RTTI_BUILDING) {
-				IPersistPtr persist(Locomotion);
-				CLSID clsid;
-				persist->GetClassID(&clsid);
-				if (clsid == CLSID_HoverLocomotion && static_cast<BuildingClass *>(whom)->Class->IsCanUnitRepair && NavCom == NULL) {
+				ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+				if (clsid == ClassID_HoverLocomotion && static_cast<BuildingClass *>(whom)->Class->IsCanUnitRepair && NavCom == nullptr) {
 					NavCom = whom;
 				}
 				if (whom == NavCom) {
@@ -5251,10 +5248,8 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	 * re-target the nearest reachable cell when driving rather than burrowing.
 	 */
 	if (target != NULL && Class->IsSubterranean && Locomotion->Is_Moving()) {
-		IPersistPtr persist(Locomotion);
-		CLSID clsid;
-		persist->GetClassID(&clsid);
-		if (clsid == CLSID_DriveLocomotion) {
+		ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+		if (clsid == ClassID_DriveLocomotion) {
 			NavQueue.Add_Head(target);
 			RouteQueue.Clear();
 			CellClass * tcell = Get_Target_Cell_Ptr();
@@ -5345,10 +5340,8 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 		 * (Mirrors BuildingClass weapons-factory exit, building.cpp:6236-6251.)
 		 */
 		if (target != NULL && !Locomotion->Is_Moving()) {
-			IPersistPtr persist(Locomotion);
-			CLSID clsid;
-			persist->GetClassID(&clsid);
-			if (clsid == CLSID_TunnelLocomotion && Get_Height_AGL() == 0) {
+			ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
+			if (clsid == ClassID_TunnelLocomotion && Get_Height_AGL() == 0) {
 				Coord tc = target->Center_Coord();
 				int gl = Map.Get_Height_GL(tc);
 				if (tc.Z < gl) tc.Z = gl;
@@ -5369,16 +5362,16 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 				}
 
 				if (doswap) {
-					IPiggybackPtr piggy(Locomotion);
+					IPiggyback * piggy = Piggyback_Of(Locomotion.get());
 					if (piggy != NULL && piggy->Is_Piggybacking()) {
-						piggy->End_Piggyback(&Locomotion);
+						Locomotion = piggy->End_Piggyback();
 					}
-					ILocomotionPtr walk(CLSID_DriveLocomotion);
+					std::unique_ptr<ILocomotion> walk = Create_Locomotor(ClassID_DriveLocomotion);
 					walk->Link_To_Object(this);
-					piggy = IPiggybackPtr(walk);
+					piggy = Piggyback_Of(walk.get());
 					if (piggy != NULL) {
 						piggy->Begin_Piggyback(Locomotion);
-						Locomotion = walk;
+						Locomotion = std::move(walk);
 						Locomotion->Force_New_Slope(Map[Get_Coord()].Ramp);
 					}
 				}
@@ -6044,8 +6037,8 @@ bool UnitClass::Ready_To_Commence(void)
 /// again once that identity has arrived.
 /// </summary>
 /// <param name="stream">The stream to read this unit from.</param>
-/// <returns>Returns with S_OK if the unit was read successfully.</returns>
-HRESULT STDMETHODCALLTYPE UnitClass::Load(IStream *stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool UnitClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 	return(BASECLASS::Load(stream));
@@ -6658,16 +6651,9 @@ bool UnitClass::Is_Immobilized(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier used by the save game persistence system.
-/// </summary>
-/// <param name="retval">Pointer to the buffer to fill in with the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE UnitClass::GetClassID(CLSID * retval)
+ClassID UnitClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_UnitClass;
-	return(S_OK);
+	return(ClassID_UnitClass);
 }
 
 

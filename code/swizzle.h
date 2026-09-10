@@ -78,6 +78,17 @@ class SwizzleManagerClass
 		void Resolve(void);
 		void Discard(void);
 
+		/*
+		 * The tables' extent at some point of a load, so that a record which fails after
+		 * it can take back what it registered before its object is destroyed.
+		 */
+		struct MarkType {
+			std::size_t Requests;
+			std::size_t Pointers;
+		};
+		MarkType Mark(void) const {return(MarkType{RequestTable.size(), PointerTable.size()});}
+		void Abandon(MarkType const & mark);
+
 	private:
 		/*
 		 * These are the pointers read back from the save file that still hold a swizzle ID

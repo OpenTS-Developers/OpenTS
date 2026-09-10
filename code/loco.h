@@ -9,72 +9,83 @@
 
 #pragma once
 
+#include "classids.h"
 #include "coord.h"
-#include "ilocos.h"
+#include "iloco.h"
+#include "persist.h"
+
+#include <memory>
 
 class FootClass;
 class SaveStreamClass;
 
-class LocomotionClass : public IPersistStream, public ILocomotion
+// The class identifier of a locomotor reached through its locomotion interface, or
+// all zero when it is not one of ours.
+ClassID Locomotion_Class_ID(ILocomotion * locomotion);
+
+// A new, unlinked locomotor of the registered class, or nothing when the identifier
+// names no locomotor.
+std::unique_ptr<ILocomotion> Create_Locomotor(ClassID const & classid);
+
+// The locomotor whose record is next in the stream, or nothing when the record names
+// something that is not one, which fails the stream.
+std::unique_ptr<ILocomotion> Load_Locomotor(SaveStreamClass & stream);
+
+
+class LocomotionClass : public IPersistent, public ILocomotion
 {
 	public:
 		LocomotionClass(void);
 		virtual ~LocomotionClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID *ppvObj) override;
-		virtual ULONG STDMETHODCALLTYPE AddRef() override;
-		virtual ULONG STDMETHODCALLTYPE Release() override;
+		virtual bool Load(SaveStreamClass & stream) override;
+		virtual bool Save(SaveStreamClass & stream, bool cleardirty) override;
 
-		virtual LONG STDMETHODCALLTYPE IsDirty(void) override {return(Dirty ? S_OK : S_FALSE);}
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
-		virtual HRESULT STDMETHODCALLTYPE Save(IStream * stream, BOOL cleardirty) override;
-		virtual LONG STDMETHODCALLTYPE GetSizeMax(ULARGE_INTEGER *pcbSize) override;
-
-		virtual HRESULT STDMETHODCALLTYPE Link_To_Object(void *object) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving(void) override;
-		virtual Coord STDMETHODCALLTYPE Destination(void) override;
-		virtual Coord STDMETHODCALLTYPE Head_To_Coord(void) override;
-		virtual MoveType STDMETHODCALLTYPE Can_Enter_Cell(Cell cell) override;
-		virtual boolean STDMETHODCALLTYPE Is_To_Have_Shadow(void) override;
-		virtual Matrix3D STDMETHODCALLTYPE Draw_Matrix(int *key) override;
-		virtual Matrix3D STDMETHODCALLTYPE Shadow_Matrix(int *key) override;
-		virtual Point2D STDMETHODCALLTYPE Draw_Point(void) override;
-		virtual Point2D STDMETHODCALLTYPE Shadow_Point(void) override;
-		virtual VisualType STDMETHODCALLTYPE Visual_Character(boolean flag) override;
-		virtual int STDMETHODCALLTYPE Z_Adjust(void) override;
-		virtual ZGradientType STDMETHODCALLTYPE Z_Gradient(void) override;
-		virtual boolean STDMETHODCALLTYPE Process(void) override;
-		virtual void STDMETHODCALLTYPE Move_To(Coord to) override;
-		virtual void STDMETHODCALLTYPE Stop_Moving(void) override;
-		virtual void STDMETHODCALLTYPE Do_Turn(DirType coord) override;
-		virtual void STDMETHODCALLTYPE Unlimbo(void) override;
-		virtual void STDMETHODCALLTYPE Tilt_Pitch_AI(void) override;
-		virtual boolean STDMETHODCALLTYPE Power_On(void) override;
-		virtual boolean STDMETHODCALLTYPE Power_Off(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Powered(void) override;
-		virtual boolean STDMETHODCALLTYPE Is_Ion_Sensitive(void) override;
-		virtual boolean STDMETHODCALLTYPE Push(DirType dir) override;
-		virtual boolean STDMETHODCALLTYPE Shove(DirType dir) override;
-		virtual void STDMETHODCALLTYPE Force_Track(int track, Coord coord) override;
-		virtual void STDMETHODCALLTYPE Force_Immediate_Destination(Coord coord) override;
-		virtual void STDMETHODCALLTYPE Force_New_Slope(int ramp) override;
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Now(void) override {return(Is_Moving());}
-		virtual int STDMETHODCALLTYPE Apparent_Speed(void) override;
-		virtual int STDMETHODCALLTYPE Drawing_Code(void) override;
-		virtual FireErrorType STDMETHODCALLTYPE Can_Fire(void) override;
-		virtual int STDMETHODCALLTYPE Get_Status() override {return(0);}
-		virtual void STDMETHODCALLTYPE Acquire_Hunter_Seeker_Target(void) override {}
-		virtual boolean STDMETHODCALLTYPE Is_Surfacing() override {return(false);}
-		virtual void STDMETHODCALLTYPE Mark_All_Occupation_Bits(int mark) override {}
-		virtual boolean STDMETHODCALLTYPE Is_Moving_Here(Coord to) override {return(false);}
-		virtual boolean STDMETHODCALLTYPE Will_Jump_Tracks(void) override {return(false);}
-		virtual boolean STDMETHODCALLTYPE Is_Really_Moving_Now(void) override {return(Is_Moving_Now());}
-		virtual void STDMETHODCALLTYPE Stop_Movement_Animation(void) override {}
-		virtual void STDMETHODCALLTYPE Lock(void) override {}
-		virtual void STDMETHODCALLTYPE Unlock(void) override {}
-		virtual int STDMETHODCALLTYPE Get_Track_Number(void) override {return(-1);}
-		virtual int STDMETHODCALLTYPE Get_Track_Index(void) override {return(-1);}
-		virtual int STDMETHODCALLTYPE Get_Speed_Accum(void) override {return(-1);}
+		virtual void Link_To_Object(void *object) override;
+		virtual bool Is_Moving(void) override;
+		virtual Coord Destination(void) override;
+		virtual Coord Head_To_Coord(void) override;
+		virtual MoveType Can_Enter_Cell(Cell cell) override;
+		virtual bool Is_To_Have_Shadow(void) override;
+		virtual Matrix3D Draw_Matrix(int *key) override;
+		virtual Matrix3D Shadow_Matrix(int *key) override;
+		virtual Point2D Draw_Point(void) override;
+		virtual Point2D Shadow_Point(void) override;
+		virtual VisualType Visual_Character(bool flag) override;
+		virtual int Z_Adjust(void) override;
+		virtual ZGradientType Z_Gradient(void) override;
+		virtual bool Process(void) override;
+		virtual void Move_To(Coord to) override;
+		virtual void Stop_Moving(void) override;
+		virtual void Do_Turn(DirType coord) override;
+		virtual void Unlimbo(void) override;
+		virtual void Tilt_Pitch_AI(void) override;
+		virtual bool Power_On(void) override;
+		virtual bool Power_Off(void) override;
+		virtual bool Is_Powered(void) override;
+		virtual bool Is_Ion_Sensitive(void) override;
+		virtual bool Push(DirType dir) override;
+		virtual bool Shove(DirType dir) override;
+		virtual void Force_Track(int track, Coord coord) override;
+		virtual void Force_Immediate_Destination(Coord coord) override;
+		virtual void Force_New_Slope(int ramp) override;
+		virtual bool Is_Moving_Now(void) override {return(Is_Moving());}
+		virtual int Apparent_Speed(void) override;
+		virtual int Drawing_Code(void) override;
+		virtual FireErrorType Can_Fire(void) override;
+		virtual int Get_Status() override {return(0);}
+		virtual void Acquire_Hunter_Seeker_Target(void) override {}
+		virtual bool Is_Surfacing() override {return(false);}
+		virtual void Mark_All_Occupation_Bits(int mark) override {}
+		virtual bool Is_Moving_Here(Coord to) override {return(false);}
+		virtual bool Will_Jump_Tracks(void) override {return(false);}
+		virtual bool Is_Really_Moving_Now(void) override {return(Is_Moving_Now());}
+		virtual void Stop_Movement_Animation(void) override {}
+		virtual void Lock(void) override {}
+		virtual void Unlock(void) override {}
+		virtual int Get_Track_Number(void) override {return(-1);}
+		virtual int Get_Track_Index(void) override {return(-1);}
+		virtual int Get_Speed_Accum(void) override {return(-1);}
 
 
 		/*
@@ -85,9 +96,9 @@ class LocomotionClass : public IPersistStream, public ILocomotion
 		virtual void Serialize(SaveStreamClass & stream);
 
 		/*
-		 * Restores whatever the record could not carry. Load_Members calls this once the
-		 * members are in place, so a base class fixup runs even when the load was entered
-		 * through a derived class.
+		 * Restores whatever the record could not carry. Load_Object calls this once the
+		 * record has been checked, so a locomotor never takes its place while its record
+		 * is still in doubt.
 		 */
 		virtual void Post_Load(void);
 
@@ -98,8 +109,8 @@ class LocomotionClass : public IPersistStream, public ILocomotion
 		 * from its Load and Save; the record is the swizzle identity followed by whatever
 		 * members the class names.
 		 */
-		HRESULT Save_Members(IStream * stream, BOOL cleardirty);
-		HRESULT Load_Members(IStream * stream);
+		bool Save_Members(SaveStreamClass & stream, bool cleardirty);
+		bool Load_Members(SaveStreamClass & stream);
 
 	protected:
 		/*
@@ -121,11 +132,4 @@ class LocomotionClass : public IPersistStream, public ILocomotion
 		 * persistence machinery never assumes a locomotor is already safely on disk.
 		 */
 		bool Dirty;
-
-		/*
-		 * This is the number of outstanding references to this locomotor. Releasing the
-		 * last one destroys the locomotor, which is how its lifetime is managed through
-		 * the COM interfaces it presents.
-		 */
-		LONG RefCount;
 };

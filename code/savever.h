@@ -11,12 +11,13 @@
 
 #include "win.h"
 
-struct IStorage;
-struct IPropertySetStorage;
+class SaveFileClass;
 
 enum {
 	PIDSI_SCEN_DESCRIP = 2,
 	PIDSI_PLAYER_HOUSE = 3,
+	// Nothing writes a player name; the identifiers stay reserved because the property set
+	// this table replaced numbered them.
 	PIDSI_PLAYER_NAME1 = 4,
 	PIDSI_PLAYER_NAME2 = 8,
 	PIDSI_G_VERSION = 9,
@@ -54,12 +55,6 @@ class SaveVersionInfo
 		void Set_Scenario_Number(int num);
 		int Get_Scenario_Number(void);
 
-		void Set_Unknown_String(const char * name);
-		const char * Get_Unknown_String(void);
-
-		void Set_Player_Name(const char * name);
-		const char * Get_Player_Name(void);
-
 		void Set_Executable_Name(const char * name);
 		const char * Get_Executable_Name(void);
 
@@ -75,27 +70,8 @@ class SaveVersionInfo
 		void Set_Game_Type(int id);
 		int Get_Game_Type(void);
 
-		HRESULT Save(IStorage *storage);
-		HRESULT Load(IStorage *storage);
-
-	private:
-		HRESULT Load_String(IStorage *storage, int id, char *string, int size);
-		HRESULT Load_String_Set(IPropertySetStorage *storageset, int id, char *string, int size);
-
-		HRESULT Load_Int(IStorage *storage, int id, int *integer);
-		HRESULT Load_Int_Set(IPropertySetStorage *storageset, int id, int *integer);
-
-		HRESULT Save_String(IStorage *storage, int id, char *string);
-		HRESULT Save_String_Set(IPropertySetStorage *storageset, int id, const char *string);
-
-		HRESULT Save_Int(IStorage *storage, int id, int integer);
-		HRESULT Save_Int_Set(IPropertySetStorage *storageset, int id, int integer);
-
-		HRESULT Load_Time(IStorage *storage, int id, FILETIME *time);
-		HRESULT Load_Time_Set(IPropertySetStorage *storageset, int id, FILETIME *time);
-
-		HRESULT Save_Time(IStorage *storage, int id, FILETIME *time);
-		HRESULT Save_Time_Set(IPropertySetStorage *storageset, int id, FILETIME *time);
+		void Save(SaveFileClass & file) const;
+		bool Load(SaveFileClass const & file);
 
 	private:
 		/*
@@ -129,18 +105,6 @@ class SaveVersionInfo
 		int ScenarioNumber;
 
 		/*
-		 * This is a spare string carried with the save information, reachable only through
-		 * its own accessors. Neither the save nor the load routine records it.
-		 */
-		char UnknownString[260];
-
-		/*
-		 * This is the name of the player who made the save, which is recorded separately
-		 * from the house so that the person and the side are both known.
-		 */
-		char PlayerName[64];
-
-		/*
 		 * This is the name of the program that wrote the save, so a file can be traced back
 		 * to what produced it rather than merely to a version number.
 		 */
@@ -159,5 +123,3 @@ class SaveVersionInfo
 		 */
 		int GameType;
 };
-
-const WCHAR *Stream_Name_From_ID(int id);

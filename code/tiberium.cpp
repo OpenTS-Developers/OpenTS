@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tiberium.h"
@@ -193,17 +192,9 @@ void TiberiumClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of the tiberium class.
-/// This routine tells the save game loader which kind of object to create when this
-/// tiberium type is read back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TiberiumClass::GetClassID(CLSID * retval)
+ClassID TiberiumClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TiberiumClass;
-	return(S_OK);
+	return(ClassID_TiberiumClass);
 }
 
 
@@ -212,10 +203,10 @@ HRESULT STDMETHODCALLTYPE TiberiumClass::GetClassID(CLSID * retval)
 /// The spread and growth pools are dropped before the members arrive, since the counts
 /// they track are about to be replaced with the saved ones.
 /// </summary>
-/// <returns>Returns with S_OK if the tiberium type was loaded.</returns>
+/// <returns>bool; Was the record read whole?</returns>
 /// <remarks>The spread and growth systems are not saved, so they come back empty. They
 /// must be rebuilt once the game has finished loading.</remarks>
-HRESULT STDMETHODCALLTYPE TiberiumClass::Load(IStream * stream)
+bool TiberiumClass::Load(SaveStreamClass & stream)
 {
 	Clear_Spread();
 	Clear_Growth();

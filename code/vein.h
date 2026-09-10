@@ -34,7 +34,7 @@ class VeinholeMonsterClass : public ObjectClass
 		VeinholeMonsterClass(Cell const & cell);
 		~VeinholeMonsterClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
@@ -61,8 +61,8 @@ class VeinholeMonsterClass : public ObjectClass
 		void Clear_Growth(void);
 		void Destroy_Monster(void);
 		static void Remove_Dead(void);
-		static bool Load_All(IStream * stream);
-		static bool Save_All(IStream * stream);
+		static bool Load_All(SaveStreamClass & stream);
+		static bool Save_All(SaveStreamClass & stream);
 		void Reduce_Veins_At(CellClass * cellptr);
 
 		virtual void Serialize(SaveStreamClass & stream) override;

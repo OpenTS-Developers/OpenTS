@@ -65,8 +65,8 @@ class DisplayClass: public MapClass
 		friend class Tactical;
 
 	public:
-		virtual HRESULT Load(IStream * stream);
-		virtual HRESULT Save(IStream * stream);
+		virtual bool Load(SaveStreamClass & stream);
+		virtual bool Save(SaveStreamClass & stream);
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

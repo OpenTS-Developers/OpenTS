@@ -57,7 +57,7 @@ const cases = [
 	['mapping/missions/tmission-loop/index.html', ['Jump to line', 'one-based']],
 	['internals/class-hierarchy/index.html', ['Object and type system', 'Primary runtime hierarchy', 'Type-definition hierarchy', 'AbstractTypeClass', 'code/abstype.h']],
 	['internals/radio/index.html', ['Radio contact protocol', 'Contact state', 'Messages and responses', 'Compute_CRC', 'code/radio.cpp']],
-	['internals/locomotion/index.html', ['Locomotion and piggybacking', 'FootClass::Locomotion', 'IPiggyback', 'Piggyback_CLSID']],
+	['internals/locomotion/index.html', ['Locomotion and piggybacking', 'FootClass::Locomotion', 'IPiggyback', 'Class_ID']],
 	['reference/enums/mission/index.html', ['data-enum-table', 'MISSION_HUNT', 'Stored value', 'Used by', 'TMISSION_DO']],
 	['systems/drop-pods/index.html', ['ots-page-subtitle', 'Entry paths', 'Approach and descent', 'Touchdown']],
 	['systems/base-adjacency/index.html', ['ots-page-subtitle', 'Base placement and adjacency', 'Placement decision order', 'Adjacent']],

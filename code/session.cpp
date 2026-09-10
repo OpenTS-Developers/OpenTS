@@ -1333,15 +1333,11 @@ void SessionClass::Init_Fixed_Alliances(void)
 /// Saves the game options to a save game.
 /// </summary>
 /// <returns>bool; Were the options written successfully?</returns>
-bool GameOptionsType::Save(IStream * stream)
+bool GameOptionsType::Save(SaveStreamClass & stream)
 {
-	if (stream == NULL) {
-		return(false);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream);
-	return(SUCCEEDED(savestream.Result()));
+	Serialize(stream);
+	return(!stream.Was_Error());
 }
 
 
@@ -1351,17 +1347,13 @@ bool GameOptionsType::Save(IStream * stream)
 /// scenario with it.
 /// </summary>
 /// <returns>bool; Were the options read back successfully?</returns>
-bool GameOptionsType::Load(IStream * stream)
+bool GameOptionsType::Load(SaveStreamClass & stream)
 {
-	if (stream == NULL) {
-		return(false);
-	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("GameOptionsType");
-	Serialize(savestream);
+	stream.Set_Context("GameOptionsType");
+	Serialize(stream);
 	ScenarioIndex = -1;
-	return(SUCCEEDED(savestream.Result()));
+	return(!stream.Was_Error());
 }
 
 

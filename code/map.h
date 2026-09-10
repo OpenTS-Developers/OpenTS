@@ -87,6 +87,7 @@ class MapClass: public GScreenClass
 		int ID(CellClass * ptr) {return(Array.ID(ptr));};
 		int ID(CellClass & ptr) {return(Array.ID(&ptr));};
 		bool Is_Valid(Cell const & cell);
+		int Cell_Slot(Cell const & cell) const;
 
 		/*
 		**	Initialization

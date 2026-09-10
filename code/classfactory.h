@@ -9,113 +9,20 @@
 
 #pragma once
 
-template<class T>
-class TClassFactory : public IClassFactory
-{
-	public:
-		TClassFactory(void);
+#include "persist.h"
 
-		STDMETHOD(QueryInterface)(REFIID riid, void **ppvObj);
-		STDMETHOD_(ULONG, AddRef)(void);
-		STDMETHOD_(ULONG, Release)(void);
+#include <memory>
 
-		STDMETHOD(CreateInstance)(IUnknown *pUnkOuter, REFIID riid, void **ppbObj);
-		STDMETHOD(LockServer)(BOOL fLock);
+// The classes a saved game or a unit type can name by class identifier. Startup
+// registers each one; nothing is created for an identifier nobody registered.
+using ClassCreatorType = std::unique_ptr<IPersistent> (*)(void);
 
-	private:
-		/*
-		 * This is the number of outstanding references to this factory, counting both the
-		 * interface pointers handed out and any server locks taken. The factory deletes
-		 * itself once the count falls back to zero.
-		 */
-		LONG RefCount;
-};
-
+void Register_Class(ClassID const & classid, ClassCreatorType creator);
+void Unregister_Classes(void);
+std::unique_ptr<IPersistent> Create_Object(ClassID const & classid);
 
 template<class T>
-TClassFactory<T>::TClassFactory(void) :
-	RefCount(0)
+void Register_Class(ClassID const & classid)
 {
-}
-
-
-template<class T>
-STDMETHODIMP TClassFactory<T>::QueryInterface(REFIID riid, void **ppvObj)
-{
-	if (ppvObj == NULL) {
-		return(E_POINTER);
-	}
-
-	*ppvObj = NULL;
-
-	if (riid == IID_IUnknown) {
-		*ppvObj = (void *)((IClassFactory *)this);
-	} else if (riid == IID_IClassFactory) {
-		*ppvObj = (void *)((IClassFactory *)this);
-	}
-
-	if (*ppvObj == NULL) {
-		return(E_NOINTERFACE);
-	}
-
-	((IClassFactory *)this)->AddRef();
-
-	return(S_OK);
-}
-
-
-template<class T>
-ULONG TClassFactory<T>::AddRef(void)
-{
-	return(InterlockedIncrement(&RefCount));
-}
-
-
-template<class T>
-ULONG TClassFactory<T>::Release(void)
-{
-	int count = InterlockedDecrement(&RefCount);
-	if (count == 0) {
-		delete this;
-	}
-
-	return(count);
-}
-
-
-template<class T>
-STDMETHODIMP TClassFactory<T>::CreateInstance(IUnknown *pUnkOuter, REFIID riid, void **ppvObj)
-{
-	if (ppvObj == NULL) {
-		return(E_INVALIDARG);
-	}
-
-	*ppvObj = NULL;
-	if (pUnkOuter != NULL) {
-		return(CLASS_E_NOAGGREGATION);
-	}
-
-	T *obj = new T();
-	if (obj == NULL) {
-		return(E_OUTOFMEMORY);
-	}
-
-	HRESULT hr = obj->QueryInterface(riid, ppvObj);
-	if (FAILED(hr)) {
-		delete obj;
-	}
-
-	return(hr);
-}
-
-
-template<class T>
-HRESULT STDMETHODCALLTYPE TClassFactory<T>::LockServer(BOOL fLock)
-{
-	if (fLock) {
-		RefCount++;
-	} else {
-		RefCount--;
-	}
-	return(S_OK);
+	Register_Class(classid, []() -> std::unique_ptr<IPersistent> { return(std::make_unique<T>()); });
 }

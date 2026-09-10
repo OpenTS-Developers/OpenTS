@@ -13,7 +13,6 @@
 
 #include "diff.hh"
 
-#include <comdef.h>
 
 class SaveStreamClass;
 
@@ -26,8 +25,8 @@ class EnvironmentClass
 		void Store(void);
 		void Restore(void);
 
-		HRESULT Load(IStream * stream);
-		HRESULT Save(IStream * stream);
+		bool Load(SaveStreamClass & stream);
+		bool Save(SaveStreamClass & stream);
 
 		void Serialize(SaveStreamClass & stream);
 

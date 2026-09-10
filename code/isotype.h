@@ -208,7 +208,7 @@ class IsometricTileTypeClass : public ObjectTypeClass
 		IsometricTileTypeClass(IsometricTileType type = ISOTILE_CLEAR, int unknown1 = 0, unsigned char unknown2 = 0, char const *ininame = NULL, bool skip_registration = false);
 		virtual ~IsometricTileTypeClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

@@ -15,7 +15,9 @@
 #include "win.h"
 
 #include <array>
+#include <cstddef>
 #include <deque>
+#include <new>
 #include <optional>
 #include <source_location>
 #include <string>
@@ -73,7 +75,7 @@ class SaveStreamClass
 			MODE_LOAD
 		};
 
-		SaveStreamClass(IStream * stream, ModeType mode);
+		SaveStreamClass(std::vector<unsigned char> & buffer, ModeType mode);
 
 		bool Is_Saving(void) const {return(Mode == MODE_SAVE);}
 		bool Is_Loading(void) const {return(Mode == MODE_LOAD);}
@@ -83,8 +85,7 @@ class SaveStreamClass
 		 * does nothing, so a class lists its members without checking each one and the
 		 * caller asks once whether the whole pass worked.
 		 */
-		HRESULT Result(void) const {return(ErrorCode);}
-		bool Was_Error(void) const {return(FAILED(ErrorCode));}
+		bool Was_Error(void) const {return(Failed);}
 
 		/*
 		 * Stops the pass here. A container that reads back a length no honest save could
@@ -100,11 +101,6 @@ class SaveStreamClass
 		unsigned int Version(void) const {return(FormatVersion);}
 
 		/*
-		 * The stream underneath, for the sub-objects that are still framed by OLE.
-		 */
-		IStream * Get_Stream(void) const {return(Stream);}
-
-		/*
 		 * Names the record this stream is carrying, so that a pointer which nothing
 		 * answers for can be reported against the object that asked for it.
 		 */
@@ -113,8 +109,85 @@ class SaveStreamClass
 			OwnerType = ownertype;
 			OwnerID = ownerid;
 		}
+		char const * Context_Type(void) const {return(OwnerType);}
+		SwizzleIDType Context_ID(void) const {return(OwnerID);}
+
+		/*
+		 * Where the next byte goes or comes from, so a record can be framed by its length.
+		 */
+		unsigned int Offset(void) const {return(Cursor);}
+
+		/*
+		 * Holds a load to one record while it is read, so that a member reading more than
+		 * its record holds is refused rather than spending the bytes of the record after
+		 * it. A record nested in another leaves the outer one bounded as it was.
+		 */
+		class BoundScope
+		{
+			public:
+				BoundScope(SaveStreamClass & stream, unsigned int end)
+					: Stream(stream), Previous(stream.Limit)
+				{
+					if (end <= Stream.Limit) {
+						Stream.Limit = end;
+					}
+				}
+
+				~BoundScope(void) {Stream.Limit = Previous;}
+
+				BoundScope(BoundScope const &) = delete;
+				BoundScope & operator=(BoundScope const &) = delete;
+
+			private:
+				SaveStreamClass & Stream;
+				unsigned int Previous;
+		};
+		unsigned int Size(void) const {return((unsigned int)Buffer->size());}
+		void Overwrite_Bytes(unsigned int offset, void const * data, int length);
 
 		void Serialize_Bytes(void * data, int length);
+
+		/*
+		 * Refuses a count that the bytes left in the stream could not hold, so a damaged
+		 * count fails the load before anything is allocated for it. Nothing serializes
+		 * an element in less than a byte.
+		 */
+		bool Fits(int count, std::size_t each)
+		{
+			if (Is_Loading()) {
+				std::size_t const room = (std::size_t)(Limit - Cursor) / (each > 0 ? each : 1);
+				if (count < 0 || (std::size_t)count > room) {
+					Fail();
+					return(false);
+				}
+			}
+			return(true);
+		}
+
+		/*
+		 * Sizes a container the count asked for, failing the pass rather than throwing when
+		 * the process cannot hold it. A count within the bytes remaining still asks for that
+		 * many elements, which is more memory than the stream itself occupies, and for a
+		 * wide element more than the container itself will hold.
+		 */
+		template<typename C>
+		bool Reserve(C & container, int count)
+		{
+			if (count < 0 || (std::size_t)count > container.max_size()) {
+				Fail();
+				return(false);
+			}
+
+			try {
+				container.clear();
+				container.resize((std::size_t)count);
+			} catch (std::bad_alloc const &) {
+				container.clear();
+				Fail();
+				return(false);
+			}
+			return(true);
+		}
 
 		/*
 		 * Numbers and enumerations travel as their declared width.
@@ -175,6 +248,39 @@ class SaveStreamClass
 			}
 		}
 
+		// How much room a buffer keeps for its text is this build's business rather than
+		// the file's, so only the text travels. The last byte stays the terminator, since
+		// every reader of these buffers treats them as C strings. This claims every
+		// char[N], so one holding bytes rather than text would be cut at its first zero.
+		template<int N>
+		void Serialize(char (&value)[N], std::source_location const & = std::source_location::current())
+		{
+			int count = 0;
+
+			if (Is_Saving()) {
+				while (count < N - 1 && value[count] != '\0') {
+					count++;
+				}
+			}
+
+			Serialize(count);
+
+			if (Is_Loading() && (count < 0 || count >= N)) {
+				Fail();
+				return;
+			}
+
+			if (count > 0) {
+				Serialize_Bytes(value, count);
+			}
+
+			if (Is_Loading()) {
+				for (int index = count; index < N; index++) {
+					value[index] = '\0';
+				}
+			}
+		}
+
 		/*
 		 * The standard library's fixed size array travels as the built in one does.
 		 */
@@ -203,12 +309,12 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, (std::is_arithmetic_v<T> || std::is_enum_v<T>) ? sizeof(T) : 1)) {
 					return;
 				}
-				value.clear();
-				value.resize(count);
+				if (!Reserve(value, count)) {
+					return;
+				}
 			}
 
 			if constexpr (std::is_arithmetic_v<T> || std::is_enum_v<T>) {
@@ -254,12 +360,12 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, 1)) {
 					return;
 				}
-				value.clear();
-				value.resize(count);
+				if (!Reserve(value, count)) {
+					return;
+				}
 			}
 
 			for (int index = 0; index < count; index++) {
@@ -278,11 +384,9 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, 1) || !Reserve(value, count)) {
 					return;
 				}
-				value.assign((std::size_t)count, false);
 			}
 
 			for (int index = 0; index < count; index++) {
@@ -301,11 +405,9 @@ class SaveStreamClass
 			Serialize(count);
 
 			if (Is_Loading()) {
-				if (count < 0) {
-					Fail();
+				if (!Fits(count, 1) || !Reserve(value, count)) {
 					return;
 				}
-				value.resize(count);
 			}
 
 			if (count > 0) {
@@ -338,9 +440,13 @@ class SaveStreamClass
 			}
 		}
 
-		IStream * Stream;
+		std::vector<unsigned char> * Buffer;
+		unsigned int Cursor;
+
+		// A read is judged against the record being loaded rather than the whole stream.
+		unsigned int Limit;
 		ModeType Mode;
-		HRESULT ErrorCode;
+		bool Failed;
 		unsigned int FormatVersion;
 
 		/*
@@ -365,8 +471,7 @@ class SaveStreamClass
 
 
 /*
- * The version stamp of the save game currently being read. Each object builds its own
- * stream inside IPersistStream::Load, which has no way to be told, so the value is left
- * here by the load as a whole.
+ * The version stamp of the save game currently being read, left here by the load as a
+ * whole so every stream built during it reports the same version.
  */
 extern unsigned int LoadedSaveVersion;

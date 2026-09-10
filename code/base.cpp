@@ -547,31 +547,6 @@ void BaseClass::Write_INI(CCINIClass & ini, char const * hname)
 /// Reads the base back in from a save game.
 /// </summary>
 /// <returns>Returns with the result reported by the stream read.</returns>
-HRESULT STDMETHODCALLTYPE BaseClass::Load(IStream *stream)
-{
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("BaseClass");
-	Serialize(savestream);
-	return(savestream.Result());
-}
-
-
-/// <summary>
-/// Writes the base out to a save game.
-/// </summary>
-/// <returns>Returns with the result reported by the stream write.</returns>
-HRESULT STDMETHODCALLTYPE BaseClass::Save(IStream * stream)
-{
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream);
-	return(savestream.Result());
-}
-
-
-/// <summary>
-/// Lists the members the base plan holds.
-/// </summary>
-/// <param name="stream">The stream carrying the members.</param>
 void BaseClass::Serialize(SaveStreamClass & stream)
 {
 	stream.Serialize(Nodes);

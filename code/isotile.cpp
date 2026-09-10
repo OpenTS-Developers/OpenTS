@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "isotile.h"
@@ -227,18 +226,9 @@ RTTIType IsometricTileClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence contract and is called by the save system
-/// when it must record what kind of object it is about to write out.
-/// </summary>
-/// <param name="retval">Pointer to the buffer that will receive the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE IsometricTileClass::GetClassID(CLSID * retval)
+ClassID IsometricTileClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_IsometricTileClass;
-	return(S_OK);
+	return(ClassID_IsometricTileClass);
 }
 
 

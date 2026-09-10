@@ -77,9 +77,9 @@ LevitateLocomotionClass::LevitateLocomotionClass(void) :
 /// </summary>
 /// <param name="pointer">Pointer to the object this locomotor will drive.</param>
 /// <returns>Returns with the result of the attach operation.</returns>
-HRESULT LevitateLocomotionClass::Link_To_Object(void *pointer)
+void LevitateLocomotionClass::Link_To_Object(void *pointer)
 {
-	return(BASECLASS::Link_To_Object(pointer));
+	BASECLASS::Link_To_Object(pointer);
 }
 
 
@@ -825,7 +825,7 @@ bool LevitateLocomotionClass::Needs_New_Target(void)
 /// the vertical hover (Hover_AI).
 /// </summary>
 /// <returns>True while the unit is still moving.</returns>
-boolean LevitateLocomotionClass::Process(void)
+bool LevitateLocomotionClass::Process(void)
 {
 	State_AI();
 
@@ -846,7 +846,7 @@ boolean LevitateLocomotionClass::Process(void)
 /// Reports whether the locomotor is in any state other than STATE_IDLE.
 /// </summary>
 /// <returns>True while moving.</returns>
-boolean LevitateLocomotionClass::Is_Moving(void)
+bool LevitateLocomotionClass::Is_Moving(void)
 {
 	return(State != STATE_IDLE);
 }
@@ -856,7 +856,7 @@ boolean LevitateLocomotionClass::Is_Moving(void)
 /// Reports whether the locomotor is in any state other than STATE_IDLE (identical to Is_Moving).
 /// </summary>
 /// <returns>True while moving.</returns>
-boolean LevitateLocomotionClass::Is_Moving_Now(void)
+bool LevitateLocomotionClass::Is_Moving_Now(void)
 {
 	return(State != STATE_IDLE);
 }
@@ -892,18 +892,9 @@ void LevitateLocomotionClass::Stop(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// The persistence system uses this identifier to create a locomotor of the right kind
-/// when the object it drives is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT LevitateLocomotionClass::GetClassID(CLSID * retval)
+ClassID LevitateLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_LevitateLocomotion;
-	return(S_OK);
+	return(ClassID_LevitateLocomotion);
 }
 
 

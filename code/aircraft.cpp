@@ -89,7 +89,6 @@
  *   _Counts_As_Civ_Evac -- Is the specified object a candidate for civilian evac logic?       *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "aircraft.h"
@@ -221,7 +220,7 @@ AircraftClass::AircraftClass(AircraftTypeClass const * type, HouseClass * house)
 	Create_ID();
 
 	if (Class != NULL) {
-		Locomotion.CreateInstance(Class->Locomotor);
+		Locomotion = Create_Locomotor(Class->Locomotor);
 		Locomotion->Link_To_Object(this);
 	}
 
@@ -263,48 +262,6 @@ void AircraftClass::Init(void)
 	if (House != NULL) {
 		House->Tracking_Add(this);
 	}
-}
-
-
-/// <summary>
-/// Fetches the requested interface from this aircraft.
-/// Aircraft add the fly control interface to the set that every game object supports, so
-/// that the flying locomotor can interrogate them about how they wish to be flown.
-/// </summary>
-/// <param name="guid">The identifier of the interface being asked for.</param>
-/// <param name="ppv">Pointer to the pointer to fill in with the interface.</param>
-/// <returns>Returns with S_OK if the interface was supplied.</returns>
-HRESULT STDMETHODCALLTYPE AircraftClass::QueryInterface(struct _GUID const &guid, void **ppv)
-{
-	HRESULT res = BASECLASS::QueryInterface(guid, ppv);
-	if (FAILED(res)) {
-		if (guid == IID_IFlyControl) {
-			*ppv = (IFlyControl *)(this);
-		}
-		res = S_OK;
-		AddRef();
-	}
-	return(res);
-}
-
-
-/// <summary>
-/// Adds a reference to this aircraft.
-/// </summary>
-/// <returns>Returns with the new number of references outstanding.</returns>
-ULONG STDMETHODCALLTYPE AircraftClass::AddRef(void)
-{
-	return(BASECLASS::AddRef());
-}
-
-
-/// <summary>
-/// Releases a reference to this aircraft.
-/// </summary>
-/// <returns>Returns with the number of references still outstanding.</returns>
-ULONG STDMETHODCALLTYPE AircraftClass::Release(void)
-{
-	return(BASECLASS::Release());
 }
 
 
@@ -1397,8 +1354,7 @@ void AircraftClass::Drop_Off_Cargo(void)
 		unit->IsOnBridge = false;
 	}
 
-	unit->Locomotion.Release();
-	unit->Locomotion = ILocomotionPtr(unit->TClass->Locomotor);
+	unit->Locomotion = Create_Locomotor(unit->TClass->Locomotor);
 	unit->Locomotion->Link_To_Object(unit);
 
 	if (!unit->Unlimbo(coord)) {
@@ -3932,8 +3888,8 @@ void AircraftClass::Read_INI(CCINIClass const & ini)
 /// again once that identity has arrived.
 /// </summary>
 /// <param name="stream">The stream to read this object from.</param>
-/// <returns>Returns with S_OK if the aircraft was loaded successfully.</returns>
-HRESULT STDMETHODCALLTYPE AircraftClass::Load(IStream * stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool AircraftClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 	return(BASECLASS::Load(stream));
@@ -4029,7 +3985,7 @@ void AircraftClass::Detach(AbstractClass const * target, bool all)
 /// can pick up or set down its cargo.
 /// </summary>
 /// <returns>Returns with the height above ground level to settle at.</returns>
-LONG STDMETHODCALLTYPE AircraftClass::Landing_Altitude(void)
+LONG AircraftClass::Landing_Altitude(void)
 {
 	if (Class->IsCarryall && !Cargo.Is_Something_Attached() && In_Radio_Contact()) {
 		BuildingClass * bptr = (BuildingClass *)Contact_With_Whom();
@@ -4057,7 +4013,7 @@ LONG STDMETHODCALLTYPE AircraftClass::Landing_Altitude(void)
 /// while loaded, or settles into the default parked pose.
 /// </summary>
 /// <returns>Returns with the facing to land at.</returns>
-LONG STDMETHODCALLTYPE AircraftClass::Landing_Direction(void)
+LONG AircraftClass::Landing_Direction(void)
 {
 	TechnoClass * tptr = Contact_With_Whom();
 	if (tptr != NULL) {
@@ -4076,7 +4032,7 @@ LONG STDMETHODCALLTYPE AircraftClass::Landing_Direction(void)
 /// empty one.
 /// </summary>
 /// <returns>Returns with true if there is cargo aboard this aircraft.</returns>
-BOOL STDMETHODCALLTYPE AircraftClass::Is_Loaded(void)
+BOOL AircraftClass::Is_Loaded(void)
 {
 	return(Cargo.Is_Something_Attached());
 }
@@ -4088,7 +4044,7 @@ BOOL STDMETHODCALLTYPE AircraftClass::Is_Loaded(void)
 /// from a hover. Only a visible and unguided projectile is suited to strafing.
 /// </summary>
 /// <returns>Returns with true if the aircraft should make strafing attack runs.</returns>
-LONG STDMETHODCALLTYPE AircraftClass::Is_Strafe(void)
+LONG AircraftClass::Is_Strafe(void)
 {
 	const WeaponDataStruct * data = Get_Class_Weapon_Data(0);
 	if (data == NULL) {
@@ -4114,7 +4070,7 @@ LONG STDMETHODCALLTYPE AircraftClass::Is_Strafe(void)
 /// to an attack run.
 /// </summary>
 /// <returns>Returns with true if the aircraft must hold its present heading.</returns>
-LONG STDMETHODCALLTYPE AircraftClass::Is_Locked(void)
+LONG AircraftClass::Is_Locked(void)
 {
 	return(IsLockedStraight);
 }
@@ -4233,18 +4189,9 @@ RTTIType AircraftClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence support. The save/load machinery uses the
-/// class identifier to recreate an object of the correct type when a game is restored.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE AircraftClass::GetClassID(CLSID * retval)
+ClassID AircraftClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_AircraftClass;
-	return(S_OK);
+	return(ClassID_AircraftClass);
 }
 
 

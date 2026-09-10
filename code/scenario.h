@@ -101,8 +101,8 @@ class ScenarioClass {
 		bool Read_INI(CCINIClass const & ini);
 		bool Write_INI(CCINIClass & ini, bool mplayer=false) const;
 
-		void Save(IStream * stream) const;
-		void Load(IStream * stream);
+		void Save(SaveStreamClass & stream) const;
+		void Load(SaveStreamClass & stream);
 
 		void Serialize(SaveStreamClass & stream);
 

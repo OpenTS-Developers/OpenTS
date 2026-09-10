@@ -36,7 +36,7 @@ test('Drop pod approach selection keeps its ordered candidates and unconditional
 	const droppod = source('code/droppod.cpp');
 	const moveTo = functionBody(
 		droppod,
-		'void STDMETHODCALLTYPE DropPodLocomotionClass::Move_To(Coord to)',
+		'void DropPodLocomotionClass::Move_To(Coord to)',
 	);
 
 	assert.match(
@@ -74,7 +74,7 @@ test('Drop pod directions retain their hard-coded airborne and landing-art mappi
 
 	const drawingCode = functionBody(
 		droppod,
-		'int STDMETHODCALLTYPE DropPodLocomotionClass::Drawing_Code(void)',
+		'int DropPodLocomotionClass::Drawing_Code(void)',
 	);
 	assert.match(drawingCode, /Direction\s*%\s*2/);
 	assertOrdered(infantry, [
@@ -84,13 +84,13 @@ test('Drop pod directions retain their hard-coded airborne and landing-art mappi
 
 	const process = functionBody(
 		droppod,
-		'boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)',
+		'bool DropPodLocomotionClass::Process(void)',
 	);
 	assert.match(process, /Rule->DropPod\[Direction\s*%\s*Rule->DropPod\.Count\(\)\]/);
 
 	const moveTo = functionBody(
 		droppod,
-		'void STDMETHODCALLTYPE DropPodLocomotionClass::Move_To(Coord to)',
+		'void DropPodLocomotionClass::Move_To(Coord to)',
 	);
 	assertOrdered(moveTo, [
 		'dropcoord.Z += Rule->DropPodHeight;',
@@ -102,13 +102,13 @@ test('Drop pod directions retain their hard-coded airborne and landing-art mappi
 test('Blocked Drop pod touchdown retains its exact damage, animation, and deletion payload', () => {
 	const process = functionBody(
 		source('code/droppod.cpp'),
-		'boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)',
+		'bool DropPodLocomotionClass::Process(void)',
 	);
 	assertOrdered(process, [
 		'FootClass * linked = LinkedTo;',
 		'coord = linked->PositionCoord;',
 		'linked->Limbo();',
-		'End_Piggyback(&LinkedTo->Locomotion);',
+		'LinkedTo->Locomotion = std::move(carried);',
 		'if (!linked->Unlimbo(coord, DIR_N)) {',
 		'Explosion_Damage(coord, 100, LinkedTo, Rule->C4Warhead);',
 		'Combat_Anim(100, Rule->C4Warhead, LAND_CLEAR, coord)',

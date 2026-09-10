@@ -6025,7 +6025,7 @@ void Delete_All_Objects(void)
 	}
 	Process_Deferred_Deletion();
 	while (Bullets.Count()) {
-		Bullets[0]->Release();
+		delete Bullets[0];
 	}
 	Process_Deferred_Deletion();
 	while (Objects.Count()) {

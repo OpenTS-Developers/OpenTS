@@ -32,7 +32,6 @@
  *   main -- Initial startup routine (preps library systems).                                  *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "_alpha.h"
@@ -64,7 +63,6 @@
 #include "classfactory.h"
 #include "command.h"
 #include "conquer.h"
-#include "cstream.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
@@ -82,7 +80,6 @@
 #include "house.h"
 #include "houstype.h"
 #include "hover.h"
-#include "iblowfish.h"
 #include "infantry.h"
 #include "infatype.h"
 #include "init.h"
@@ -174,19 +171,8 @@ extern	HINSTANCE LanguageResources;
 #define AUTOPLAY_GUID "b350c6d2-2f36-11d3-a72c-0090272fa661"
 
 
-#ifndef NO_BLOWFISH_DLL
-const struct RegStruct {
-	const GUID *clsid;
-	const char *name;
-} RegisterTheseDLLs[] = {
-	{ &CLSID_BlowfishObject, "blowfish.dll" }
-};
-#endif
-
 HANDLE AppMutex;
 HANDLE AutoPlayMutex;
-
-DynamicVectorClass<DWORD> RegisteredClasses;
 
 //WinTimerClass * WinTimer;
 
@@ -234,130 +220,80 @@ void Reset_Surfaces(void)
 }
 
 /// <summary>
-/// Registers the game's COM classes with OLE.
-/// This routine is called during startup, before anything that lives in the object
-/// database can be created. It first ensures the support DLLs are present, asking any
-/// that OLE cannot yet instantiate to register themselves, and then publishes a class
-/// factory for every persistent game class so that objects can be created by CLSID. The
-/// player is told by way of a message box if a support DLL could not be prepared.
+/// Registers every class a saved game or a unit type can name by class identifier.
+/// This runs during startup, before anything that lives in the object database can be
+/// created.
 /// </summary>
-/// <returns>bool; Did the preparation fail? Note the sense -- true means trouble.</returns>
-static bool RegisterClasses(void)
+static void RegisterClasses(void)
 {
+	#define REGISTER_CLASS(_class, _clsid) Register_Class<_class>(_clsid);
 
-	bool failed = false;
-#ifndef NO_BLOWFISH_DLL
-	for (int i = 0; i < ARRAY_SIZE(RegisterTheseDLLs); i++) {
-		IUnknownPtr ptr;
-		HRESULT result = ptr.CreateInstance(*RegisterTheseDLLs[i].clsid, NULL, CLSCTX_ALL);
-		failed = FAILED(result);
-		if (failed) {
-			failed = false;
-			HINSTANCE hModule = LoadLibrary(RegisterTheseDLLs[i].name);
-			if (hModule != NULL) {
-				FARPROC fprocDllReg = (FARPROC)GetProcAddress(hModule, "DllRegisterServer");
-				if (!fprocDllReg || (fprocDllReg(), FAILED(ptr.CreateInstance(*RegisterTheseDLLs[i].clsid, NULL, CLSCTX_ALL)))) {
-					failed = true;
-				}
-				FreeLibrary(hModule);
-			} else {
-				failed = true;
-			}
-		}
-		if (failed) {
-			break;
-		}
-		ptr.Release();
-	}
-#endif
-
-	DWORD dwRegister;
-	IClassFactory *t;
-
-	/// Handy macros to easily register the class factories.
-
-	/// Register a class-object with OLE.
-	#define REGISTER_CLASS(_class, _clsid) \
-		{ \
-			t = new TClassFactory<_class>; \
-			CoRegisterClassObject(_clsid, t, CLSCTX_INPROC_SERVER, REGCLS_MULTIPLEUSE, &dwRegister); \
-			RegisteredClasses.Add(dwRegister); \
-		} \
-
-	REGISTER_CLASS(CStreamClass, CLSID_CompressStream);
-	REGISTER_CLASS(WaveClass, CLSID_WaveClass);
-	REGISTER_CLASS(TerrainTypeClass, CLSID_TerrainTypeClass);
-	REGISTER_CLASS(TerrainClass, CLSID_TerrainClass);
-	REGISTER_CLASS(SuperWeaponTypeClass, CLSID_SuperWeaponTypeClass);
-	REGISTER_CLASS(SuperClass, CLSID_SuperWeaponClass);
-	REGISTER_CLASS(Tactical, CLSID_TacticalMapClass);
-	REGISTER_CLASS(CellClass, CLSID_CellClass);
-	REGISTER_CLASS(EMPulseClass, CLSID_EMPulseClass);
-	REGISTER_CLASS(LightSourceClass, CLSID_LightSource);
-	REGISTER_CLASS(SideClass, CLSID_SideClass);
-	REGISTER_CLASS(TiberiumClass, CLSID_TiberiumClass);
-	REGISTER_CLASS(TubeClass, CLSID_TubeClass);
-	REGISTER_CLASS(CampaignClass, CLSID_CampaignClass);
-	REGISTER_CLASS(BuildingLightClass, CLSID_BuildingLightClass);
-	REGISTER_CLASS(WaypointPathClass, CLSID_WaypointPath);
-	REGISTER_CLASS(TEventClass, CLSID_EventClass);
-	REGISTER_CLASS(VoxelAnimTypeClass, CLSID_VoxelAnimTypeClass);
-	REGISTER_CLASS(VoxelAnimClass, CLSID_VoxelAnimClass);
-	REGISTER_CLASS(TActionClass, CLSID_ActionClass);
-	REGISTER_CLASS(TriggerClass, CLSID_TriggerClass);
-	REGISTER_CLASS(TriggerTypeClass, CLSID_TriggerTypeClass);
-	REGISTER_CLASS(ScriptClass, CLSID_ScriptClass);
-	REGISTER_CLASS(ScriptTypeClass, CLSID_ScriptTypeClass);
-	REGISTER_CLASS(TagClass, CLSID_TagClass);
-	REGISTER_CLASS(TagTypeClass, CLSID_TagTypeClass);
-	REGISTER_CLASS(TeamClass, CLSID_TeamClass);
-	REGISTER_CLASS(TeamTypeClass, CLSID_TeamTypeClass);
-	REGISTER_CLASS(TaskForceClass, CLSID_TaskForceClass);
-	REGISTER_CLASS(UnitTypeClass, CLSID_UnitTypeClass);
-	REGISTER_CLASS(BuildingTypeClass, CLSID_BuildingTypeClass);
-	REGISTER_CLASS(AircraftTypeClass, CLSID_AircraftTypeClass);
-	REGISTER_CLASS(InfantryTypeClass, CLSID_InfantryTypeClass);
-	REGISTER_CLASS(BulletTypeClass, CLSID_BulletTypeClass);
-	REGISTER_CLASS(IsometricTileTypeClass, CLSID_IsometricTileTypeClass);
-	REGISTER_CLASS(OverlayTypeClass, CLSID_OverlayTypeClass);
-	REGISTER_CLASS(SmudgeTypeClass, CLSID_SmudgeTypeClass);
-	REGISTER_CLASS(UnitClass, CLSID_UnitClass);
-	REGISTER_CLASS(BuildingClass, CLSID_BuildingClass);
-	REGISTER_CLASS(AircraftClass, CLSID_AircraftClass);
-	REGISTER_CLASS(InfantryClass, CLSID_InfantryClass);
-	REGISTER_CLASS(AnimClass, CLSID_AnimClass);
-	REGISTER_CLASS(AnimTypeClass, CLSID_AnimTypeClass);
-	REGISTER_CLASS(HouseTypeClass, CLSID_HouseTypeClass);
-	REGISTER_CLASS(HouseClass, CLSID_HouseClass);
-	REGISTER_CLASS(DriveLocomotionClass, CLSID_DriveLocomotion);
-	REGISTER_CLASS(JumpjetLocomotionClass, CLSID_JumpjetLocomotion);
-	REGISTER_CLASS(HoverLocomotionClass, CLSID_HoverLocomotion);
-	REGISTER_CLASS(TunnelLocomotionClass, CLSID_TunnelLocomotion);
-	REGISTER_CLASS(WalkLocomotionClass, CLSID_WalkLocomotion);
-	REGISTER_CLASS(DropPodLocomotionClass, CLSID_BallisticLocomotion);
-	REGISTER_CLASS(FlyLocomotionClass, CLSID_FlyerLocomotion);
-	REGISTER_CLASS(TeleportLocomotionClass, CLSID_TeleportLocomotion);
-	REGISTER_CLASS(MechLocomotionClass, CLSID_MechLocomotion);
-	REGISTER_CLASS(LevitateLocomotionClass, CLSID_LevitateLocomotion);
-	REGISTER_CLASS(BulletClass, CLSID_BulletClass);
-	REGISTER_CLASS(FactoryClass, CLSID_FactoryClass);
-	REGISTER_CLASS(WarheadTypeClass, CLSID_WarheadTypeClass);
-	REGISTER_CLASS(WeaponTypeClass, CLSID_WeaponTypeClass);
-	REGISTER_CLASS(ParticleClass, CLSID_ParticleClass);
-	REGISTER_CLASS(ParticleTypeClass, CLSID_ParticleTypeClass);
-	REGISTER_CLASS(ParticleSystemClass, CLSID_ParticleSystemClass);
-	REGISTER_CLASS(ParticleSystemTypeClass, CLSID_ParticleSystemTypeClass);
-	REGISTER_CLASS(AITriggerTypeClass, CLSID_AITriggerTypeClass);
-	REGISTER_CLASS(NeuronClass, CLSID_NeuronClass);
-	REGISTER_CLASS(FoggedObjectClass, CLSID_FoggedObjectClass);
-	REGISTER_CLASS(AlphaShapeClass, CLSID_AlphaShapeClass);
-
-	if (failed) {
-		MessageBox(NULL, Fetch_String(TXT_PREPARECOM_FAILED), Fetch_String(TXT_SHORT_TITLE), MB_ICONEXCLAMATION);
-	}
-
-	return(failed);
-
+	REGISTER_CLASS(WaveClass, ClassID_WaveClass);
+	REGISTER_CLASS(TerrainTypeClass, ClassID_TerrainTypeClass);
+	REGISTER_CLASS(TerrainClass, ClassID_TerrainClass);
+	REGISTER_CLASS(SuperWeaponTypeClass, ClassID_SuperWeaponTypeClass);
+	REGISTER_CLASS(SuperClass, ClassID_SuperWeaponClass);
+	REGISTER_CLASS(Tactical, ClassID_TacticalMapClass);
+	REGISTER_CLASS(CellClass, ClassID_CellClass);
+	REGISTER_CLASS(EMPulseClass, ClassID_EMPulseClass);
+	REGISTER_CLASS(LightSourceClass, ClassID_LightSource);
+	REGISTER_CLASS(SideClass, ClassID_SideClass);
+	REGISTER_CLASS(TiberiumClass, ClassID_TiberiumClass);
+	REGISTER_CLASS(TubeClass, ClassID_TubeClass);
+	REGISTER_CLASS(CampaignClass, ClassID_CampaignClass);
+	REGISTER_CLASS(BuildingLightClass, ClassID_BuildingLightClass);
+	REGISTER_CLASS(WaypointPathClass, ClassID_WaypointPath);
+	REGISTER_CLASS(TEventClass, ClassID_EventClass);
+	REGISTER_CLASS(VoxelAnimTypeClass, ClassID_VoxelAnimTypeClass);
+	REGISTER_CLASS(VoxelAnimClass, ClassID_VoxelAnimClass);
+	REGISTER_CLASS(TActionClass, ClassID_ActionClass);
+	REGISTER_CLASS(TriggerClass, ClassID_TriggerClass);
+	REGISTER_CLASS(TriggerTypeClass, ClassID_TriggerTypeClass);
+	REGISTER_CLASS(ScriptClass, ClassID_ScriptClass);
+	REGISTER_CLASS(ScriptTypeClass, ClassID_ScriptTypeClass);
+	REGISTER_CLASS(TagClass, ClassID_TagClass);
+	REGISTER_CLASS(TagTypeClass, ClassID_TagTypeClass);
+	REGISTER_CLASS(TeamClass, ClassID_TeamClass);
+	REGISTER_CLASS(TeamTypeClass, ClassID_TeamTypeClass);
+	REGISTER_CLASS(TaskForceClass, ClassID_TaskForceClass);
+	REGISTER_CLASS(UnitTypeClass, ClassID_UnitTypeClass);
+	REGISTER_CLASS(BuildingTypeClass, ClassID_BuildingTypeClass);
+	REGISTER_CLASS(AircraftTypeClass, ClassID_AircraftTypeClass);
+	REGISTER_CLASS(InfantryTypeClass, ClassID_InfantryTypeClass);
+	REGISTER_CLASS(BulletTypeClass, ClassID_BulletTypeClass);
+	REGISTER_CLASS(IsometricTileTypeClass, ClassID_IsometricTileTypeClass);
+	REGISTER_CLASS(OverlayTypeClass, ClassID_OverlayTypeClass);
+	REGISTER_CLASS(SmudgeTypeClass, ClassID_SmudgeTypeClass);
+	REGISTER_CLASS(UnitClass, ClassID_UnitClass);
+	REGISTER_CLASS(BuildingClass, ClassID_BuildingClass);
+	REGISTER_CLASS(AircraftClass, ClassID_AircraftClass);
+	REGISTER_CLASS(InfantryClass, ClassID_InfantryClass);
+	REGISTER_CLASS(AnimClass, ClassID_AnimClass);
+	REGISTER_CLASS(AnimTypeClass, ClassID_AnimTypeClass);
+	REGISTER_CLASS(HouseTypeClass, ClassID_HouseTypeClass);
+	REGISTER_CLASS(HouseClass, ClassID_HouseClass);
+	REGISTER_CLASS(DriveLocomotionClass, ClassID_DriveLocomotion);
+	REGISTER_CLASS(JumpjetLocomotionClass, ClassID_JumpjetLocomotion);
+	REGISTER_CLASS(HoverLocomotionClass, ClassID_HoverLocomotion);
+	REGISTER_CLASS(TunnelLocomotionClass, ClassID_TunnelLocomotion);
+	REGISTER_CLASS(WalkLocomotionClass, ClassID_WalkLocomotion);
+	REGISTER_CLASS(DropPodLocomotionClass, ClassID_BallisticLocomotion);
+	REGISTER_CLASS(FlyLocomotionClass, ClassID_FlyerLocomotion);
+	REGISTER_CLASS(TeleportLocomotionClass, ClassID_TeleportLocomotion);
+	REGISTER_CLASS(MechLocomotionClass, ClassID_MechLocomotion);
+	REGISTER_CLASS(LevitateLocomotionClass, ClassID_LevitateLocomotion);
+	REGISTER_CLASS(BulletClass, ClassID_BulletClass);
+	REGISTER_CLASS(FactoryClass, ClassID_FactoryClass);
+	REGISTER_CLASS(WarheadTypeClass, ClassID_WarheadTypeClass);
+	REGISTER_CLASS(WeaponTypeClass, ClassID_WeaponTypeClass);
+	REGISTER_CLASS(ParticleClass, ClassID_ParticleClass);
+	REGISTER_CLASS(ParticleTypeClass, ClassID_ParticleTypeClass);
+	REGISTER_CLASS(ParticleSystemClass, ClassID_ParticleSystemClass);
+	REGISTER_CLASS(ParticleSystemTypeClass, ClassID_ParticleSystemTypeClass);
+	REGISTER_CLASS(AITriggerTypeClass, ClassID_AITriggerTypeClass);
+	REGISTER_CLASS(NeuronClass, ClassID_NeuronClass);
+	REGISTER_CLASS(FoggedObjectClass, ClassID_FoggedObjectClass);
+	REGISTER_CLASS(AlphaShapeClass, ClassID_AlphaShapeClass);
 }
 
 /// <summary>
@@ -525,11 +461,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		return(EXIT_SUCCESS);
 	}
 
-	OleInitialize(NULL);
-
-	if (RegisterClasses()) {
-		exit(EXIT_FAILURE);
-	}
+	RegisterClasses();
 
 	/*
 	**	Get the full path to the .EXE
@@ -603,7 +535,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 			wsprintf (buffer, Fetch_String(TXT_CRITICALLY_LOW), (INIT_FREE_DISK_SPACE) / (1024 * 1024));
 			int reply = MessageBox(NULL, buffer, Fetch_String(TXT_SHORT_TITLE), MB_ICONQUESTION|MB_YESNO);
 			if (reply == IDNO) {
-				OleUninitialize();
 				return(EXIT_FAILURE);
 			}
 		}
@@ -734,7 +665,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		Debug_Console_Hold();
 	}
 
-	OleUninitialize();
 
 	return(error_code);
 }
@@ -1055,10 +985,7 @@ void __cdecl Prog_End(void)
 		Scen = NULL;
 	}
 
-	for (i = 0; i < RegisteredClasses.Count(); i++) {
-		CoRevokeClassObject((DWORD)RegisteredClasses[i]);
-	}
-	RegisteredClasses.Clear();
+	Unregister_Classes();
 
 	if (LanguageResources) {
 		FreeLibrary(LanguageResources);
@@ -1106,7 +1033,6 @@ void Emergency_Exit(void)
 		}
 	}
 
-	OleUninitialize();
 
 	if (MouseCursor) {
 		MouseCursor->Release_Mouse();

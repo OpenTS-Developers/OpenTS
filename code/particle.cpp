@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "particle.h"
@@ -929,10 +928,10 @@ void ParticleClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="stream">The stream to write this particle to.</param>
 /// <param name="cleardirty">Should the modified flag be cleared once written?</param>
-/// <returns>Returns with S_OK if the particle was written successfully.</returns>
-HRESULT STDMETHODCALLTYPE ParticleClass::Save(IStream * stream, BOOL cleardirty)
+/// <returns>bool; Was the record written whole?</returns>
+bool ParticleClass::Save(SaveStreamClass & stream, bool cleardirty)
 {
-	HRESULT result = BASECLASS::Save(stream, cleardirty);
+	bool result = BASECLASS::Save(stream, cleardirty);
 	WasSaved = true;
 	return(result);
 }
@@ -993,18 +992,9 @@ int ParticleClass::Shape_Number(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The persistence code uses this identifier to recreate the correct object when the
-/// save file is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE ParticleClass::GetClassID(CLSID * retval)
+ClassID ParticleClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_ParticleClass;
-	return(S_OK);
+	return(ClassID_ParticleClass);
 }
 
 

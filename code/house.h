@@ -735,13 +735,11 @@ class HouseClass : public AbstractClass
 		HouseClass(HouseTypeClass const * type = NULL);
 		virtual ~HouseClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual ClassID Class_ID(void) const override;
+		virtual bool Load(SaveStreamClass & stream) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
 		int Available_Money(void);
 		int Available_Storage(void);
@@ -1060,8 +1058,6 @@ class HouseClass : public AbstractClass
 			BuildChoiceClass(UrgencyType urgency=URGENCY_NONE, StructType structure=STRUCT_NONE) : Urgency(urgency), Structure(structure) {};
 			bool operator==(BuildChoiceClass const & ) const {return(false);}
 			bool operator!=(BuildChoiceClass const & ) const {return(true);}
-			HRESULT Save(IStream *) const {return(S_OK);};
-			HRESULT Load(IStream *) {return(S_OK);};
 		};
 
 		static DynamicVectorClass<BuildChoiceClass *> BuildChoice;

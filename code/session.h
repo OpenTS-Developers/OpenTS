@@ -462,8 +462,8 @@ struct GameOptionsType {
 	bool		ScrapMetal;			// A wreck leaves the animations its type names in ScrapExplosion.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
-	bool Save(IStream * stream);
-	bool Load(IStream * stream);
+	bool Save(SaveStreamClass & stream);
+	bool Load(SaveStreamClass & stream);
 
 	void Serialize(SaveStreamClass & stream);
 };
