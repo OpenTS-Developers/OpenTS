@@ -16,10 +16,11 @@
 #include "coord.h"
 #include "vector.h"
 
-#include "passblty.hh"
+#include <map>
+#include <set>
+#include <utility>
 
-template<typename K, typename V>
-class HashTableClass;
+#include "passblty.hh"
 
 /**********************************************************************
 **	A base is broken up into several zones. This type enumerates the
@@ -203,17 +204,13 @@ struct CellSubzoneStruct
 struct SubzoneConnectionStruct
 {
 	SubzoneConnectionStruct(void) : SubzoneID(0), IsCrossBlock(false) {}
-	SubzoneConnectionStruct(int subzone_id) : SubzoneID(subzone_id), IsCrossBlock(false) {}
 	SubzoneConnectionStruct(SubzoneConnectionStruct const &that) : SubzoneID(that.SubzoneID), IsCrossBlock(that.IsCrossBlock) {}
 
 	bool operator==(const SubzoneConnectionStruct & that) const { return(SubzoneID == that.SubzoneID); }
 	bool operator!=(const SubzoneConnectionStruct & that) const { return(SubzoneID != that.SubzoneID); }
 
 	/*
-	 * This is the subzone that the owning subzone connects to. While a connection is still
-	 * staged in the SubzoneConnectionHashTable this holds both IDs packed together instead, as
-	 * (neighbor << 16) | subzone, so that duplicate pairs fall out of the staging set before
-	 * they are unpacked into the two subzones' adjacency lists.
+	 * This is the subzone that the owning subzone connects to.
 	 */
 	int SubzoneID;
 
@@ -272,5 +269,15 @@ struct SubzoneTrackingStruct
 	int ThreatRegion;
 };
 
-typedef HashTableClass<unsigned int, unsigned int> ZONE_PAIR_HASH_SET;
-typedef HashTableClass<unsigned int, SubzoneConnectionStruct> SUBZONE_CONNECTION_HASH_SET;
+/*
+ * A pair of ids, ordered as the site that staged it wrote them rather than smallest first,
+ * because the two staging containers below hold (a,b) and (b,a) as separate entries.
+ */
+using ZonePair = std::pair<unsigned short, unsigned short>;
+
+using ZonePairSet = std::set<ZonePair>;
+
+/*
+ * The subzone links a rebuild has staged, each mapped to whether it crosses a fill block.
+ */
+using SubzoneLinkStaging = std::map<ZonePair, bool>;

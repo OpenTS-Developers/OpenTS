@@ -78,7 +78,6 @@
 #include "dbgprint.h"
 #include "foot.h"
 #include "globals.h"
-#include "hashtable.h"
 #include "house.h"
 #include "houstype.h"
 #include "incdec.h"
@@ -209,7 +208,6 @@ FacingType BridgeSideFacings[BRIDGE_COUNT] = {
 };
 
 
-int SubzoneHash(unsigned int const & key);
 unsigned int Pick_Random_UInt(unsigned int start, unsigned int end);
 double Random_Fraction(void);
 
@@ -246,21 +244,9 @@ MapClass::~MapClass(void)
 		CellZones = NULL;
 	}
 
-	if (ZoneAdjacency != NULL) {
-		delete ZoneAdjacency;
-		ZoneAdjacency = NULL;
-	}
-
 	if (CellSubzones != NULL) {
 		delete [] CellSubzones;
 		CellSubzones = NULL;
-	}
-
-	for (int i = 0; i < SUBZONE_COUNT; i++) {
-		if (SubzoneConnectionHashTable[i] != NULL)  {
-			delete SubzoneConnectionHashTable[i];
-			SubzoneConnectionHashTable[i] = NULL;
-		}
 	}
 }
 
@@ -275,8 +261,7 @@ void MapClass::Serialize(SaveStreamClass & stream)
 {
 	BASECLASS::Serialize(stream);
 
-	// ZoneAdjacency -- the zone graph. These tables are raw heap blocks that MouseClass::Load
-	// allocates and reads outside the archive.
+	// ZoneAdjacency -- scratch for the zone rebuild, which fills it again from the loaded terrain.
 	// Zones
 	stream.Serialize(ZoneCount);
 	// ZoneConnections -- likewise part of the zone graph, read outside the archive.
@@ -284,7 +269,7 @@ void MapClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(CellZoneCount);
 	// CellSubzones -- the subzone graph, grown again from the loaded terrain.
 	// SubzoneTrackingEntryCount
-	// SubzoneConnectionHashTable
+	// SubzoneConnectionStaging
 	// SubzoneTracking
 	stream.Serialize(PendingBridgeCells);
 	stream.Serialize(DirtyIceCells);
@@ -526,14 +511,9 @@ void MapClass::One_Time(void)
 	*/
 	Alloc_Cells();
 
-	if (ZoneAdjacency == NULL) {
-		ZoneAdjacency = new ZONE_PAIR_HASH_SET(20, 256, SubzoneHash);
-	}
-
 	int i;
 	for (i = 0; i < ARRAY_SIZE(SubzoneTracking); i++) {
 		SubzoneTracking[i].Clear();
-		SubzoneConnectionHashTable[i] = new SUBZONE_CONNECTION_HASH_SET(20, 256, SubzoneHash);
 	}
 
 	for (i = 0; i < MZONE_COUNT; i++) {
@@ -2781,26 +2761,13 @@ ObjectClass * MapClass::Close_Object(Coord const & coord) const
 
 
 /// <summary>
-/// Packs a pair of zone numbers into a single key.
-/// The zone adjacency table records which zones touch by storing pairs in this packed
-/// form, so that a pair can be added and found as one value.
+/// Stages a link between two subzones for the rebuild in progress to write out.
+/// A rebuild stages the same pair many times and the first staging wins, so the cross block
+/// flag is the one from the fill that reached the boundary first.
 /// </summary>
-/// <returns>Returns with the two zone numbers packed into one key.</returns>
-static unsigned Zone_Pack32(int zone1, int zone2)
+static void Stage_Subzone_Link(SubzoneLinkStaging & staging, int subzone1, int subzone2, bool crossblock)
 {
-	return(zone2 | (zone1 << 16));
-}
-
-
-/// <summary>
-/// Packs a pair of zone numbers into a bucket index.
-/// Use this routine to find which bucket of the zone adjacency table a pair of
-/// neighboring zones is filed under.
-/// </summary>
-/// <returns>Returns with the bucket index for the pair of zones.</returns>
-static unsigned Zone_Pack8(int zone1, int zone2)
-{
-	return(zone2 & 0xF | ((zone1 & 0xF) << 4));
+	staging.try_emplace(ZonePair((unsigned short)subzone1, (unsigned short)subzone2), crossblock);
 }
 
 
@@ -2836,7 +2803,7 @@ int MapClass::Zone_Reset(void)
 	DynamicVectorClass<PassabilityType> vec;
 	vec.Set_Growth_Step(300);
 
-	ZoneAdjacency->Clear();
+	ZoneAdjacency.clear();
 
 	for (i = 0; i < MZONE_COUNT; i++) {
 		if (Zones[i] != NULL) {
@@ -2884,7 +2851,7 @@ int MapClass::Zone_Reset(void)
 				if (to_zone < from_zone) {
 					std::swap(to_zone, from_zone);
 				}
-				ZoneAdjacency->Add_Object(ZONE_PAIR_HASH_SET::ObjectType(from_zone, to_zone));
+				ZoneAdjacency.emplace((unsigned short)from_zone, (unsigned short)to_zone);
 			}
 		}
 	}
@@ -2894,20 +2861,9 @@ int MapClass::Zone_Reset(void)
 		zone_degree[i] = 0;
 	}
 
-	for (i = 0; i < 256; i++) {
-		ZONE_PAIR_HASH_SET::BucketType & bucket = ZoneAdjacency->Buckets[i];
-		j = bucket.Count();
-		if (j > 0) {
-			ZONE_PAIR_HASH_SET::ObjectType * obj = &bucket[0];
-			do {
-				unsigned int value = obj->Value;
-				unsigned short zone1 = LOWORD(value);
-				unsigned short zone2 = HIWORD(value);
-				zone_degree[zone1]++;
-				zone_degree[zone2]++;
-				obj++;
-			} while (--j);
-		}
+	for (ZonePair const & pair : ZoneAdjacency) {
+		zone_degree[pair.second]++;
+		zone_degree[pair.first]++;
 	}
 
 	unsigned short ** zone_neighbors = new unsigned short *[ZoneCount];
@@ -2919,22 +2875,11 @@ int MapClass::Zone_Reset(void)
 		zone_degree[i] = 0;
 	}
 
-	for (i = 0; i < 256; i++) {
-		ZONE_PAIR_HASH_SET::BucketType & bucket = ZoneAdjacency->Buckets[i];
-		j = bucket.Count();
-		if (j > 0) {
-			ZONE_PAIR_HASH_SET::ObjectType * obj = &bucket[0];
-			do {
-				unsigned int value = obj->Value;
-				unsigned short zone1 = LOWORD(value);
-				unsigned short zone2 = HIWORD(value);
-				zone_neighbors[zone1][zone_degree[zone1]] = zone2;
-				zone_neighbors[zone2][zone_degree[zone2]] = zone1;
-				zone_degree[zone1]++;
-				zone_degree[zone2]++;
-				obj++;
-			} while (--j);
-		}
+	for (ZonePair const & pair : ZoneAdjacency) {
+		zone_neighbors[pair.second][zone_degree[pair.second]] = pair.first;
+		zone_neighbors[pair.first][zone_degree[pair.first]] = pair.second;
+		zone_degree[pair.second]++;
+		zone_degree[pair.first]++;
 	}
 
 	unsigned char * zone_passability = new unsigned char[ZoneCount];
@@ -2993,19 +2938,6 @@ int MapClass::Zone_Reset(void)
 }
 
 
-/// <summary>
-/// Computes the hash of a packed pair of zone numbers.
-/// The zone adjacency table and the subzone connection tables are all constructed with
-/// this routine as their hash function.
-/// </summary>
-/// <param name="key">The packed pair of zone numbers to hash.</param>
-/// <returns>Returns with the bucket that the pair belongs in.</returns>
-int SubzoneHash(unsigned int const & key)
-{
-	return(key & 0xF | ((key >> 12) & 0xF));
-}
-
-
 /***********************************************************************************************
  * MapClass::Zone_Span -- Flood fills the specified zone from the cell origin.                 *
  *                                                                                             *
@@ -3053,7 +2985,7 @@ int MapClass::Zone_Span(CellZoneStruct * data, int zone, int & skip)
 
 	int begin_zone = begin->ZoneID;
 	if (begin_zone != 0 && (abs(begin->Height - cell_height) < 2 || nopass) && begin_zone != LastAdjacentZone && begin_zone != (unsigned short)zone) {
-		ZoneAdjacency->Add_Object(ZONE_PAIR_HASH_SET::ObjectType(begin_zone, (unsigned short)zone));
+		ZoneAdjacency.emplace((unsigned short)begin_zone, (unsigned short)zone);
 		LastAdjacentZone = begin_zone;
 	}
 
@@ -3073,7 +3005,7 @@ int MapClass::Zone_Span(CellZoneStruct * data, int zone, int & skip)
 
 	int end_zone = end->ZoneID;
 	if (end_zone != 0 && (abs(end->Height - cell_height) < 2 || nopass) && end_zone != LastAdjacentZone && end_zone != (unsigned short)zone) {
-		ZoneAdjacency->Add_Object(ZONE_PAIR_HASH_SET::ObjectType(end_zone, (unsigned short)zone));
+		ZoneAdjacency.emplace((unsigned short)end_zone, (unsigned short)zone);
 		LastAdjacentZone = end_zone;
 	}
 
@@ -3113,7 +3045,7 @@ int MapClass::Zone_Span(CellZoneStruct * data, int zone, int & skip)
 			}
 		} else {
 			if (zzone != (unsigned short)zone && zzone != LastAdjacentZone && (abs(fbegin->Height - adjacent->Height) < 2 || nopass)) {
-				ZoneAdjacency->Add_Object(ZONE_PAIR_HASH_SET::ObjectType(zzone, (unsigned short)zone));
+				ZoneAdjacency.emplace((unsigned short)zzone, (unsigned short)zone);
 				LastAdjacentZone = zzone;
 			}
 			fbegin++;
@@ -3144,7 +3076,7 @@ int MapClass::Zone_Span(CellZoneStruct * data, int zone, int & skip)
 			}
 		} else {
 			if (id != (unsigned short)zone && id != LastAdjacentZone && (abs(fbegin2->Height - adjacent->Height) < 2 || nopass)) {
-				ZoneAdjacency->Add_Object(ZONE_PAIR_HASH_SET::ObjectType(id, (unsigned short)zone));
+				ZoneAdjacency.emplace((unsigned short)id, (unsigned short)zone);
 				LastAdjacentZone = id;
 			}
 			fbegin2++;
@@ -9739,17 +9671,11 @@ void MapClass::Shutdown(void)
 		}
 	}
 
-	if (ZoneAdjacency != NULL) {
-		delete ZoneAdjacency;
-		ZoneAdjacency = NULL;
-	}
+	ZoneAdjacency.clear();
 
 	for (index = 0; index < SUBZONE_COUNT; index++) {
 		SubzoneTracking[index].Clear();
-		if (SubzoneConnectionHashTable[index] != NULL) {
-			delete SubzoneConnectionHashTable[index];
-			SubzoneConnectionHashTable[index] = NULL;
-		}
+		SubzoneConnectionStaging[index].clear();
 	}
 
 	VeinholeMonsterClass::Reset();
@@ -10034,15 +9960,10 @@ void MapClass::Reset_All_Subzones(void)
 /// <param name="subzone">The subzone level to rebuild.</param>
 void MapClass::Reset_Subzone(int subzone)
 {
-	/*
-	 * Clear out every bucket of the connection hash set for this subzone level.
-	 */
-	SUBZONE_CONNECTION_HASH_SET * set = SubzoneConnectionHashTable[subzone];
+	SubzoneConnectionStaging[subzone].clear();
+
 	DynamicVectorClass<SubzoneTrackingStruct> * track = &SubzoneTracking[subzone];
 	CellSubzoneStruct * subend = &CellSubzones[CellZoneCount];
-	for (int bucket = 0; bucket < set->NumBuckets; bucket++) {
-		set->Buckets[bucket].Clear();
-	}
 
 	/*
 	 * Reset the per-cell subzone identifiers for this level and refresh the
@@ -10140,33 +10061,7 @@ void MapClass::Reset_Subzone(int subzone)
 	 */
 	Register_Subzone_Zone_Connections(subzone);
 
-	/*
-	 * Walk every bucket of the connection hash set and register both endpoints
-	 * of each recorded connection into the subzone tracking list.
-	 */
-	for (int bucket_index = 0; bucket_index < 256; bucket_index++) {
-		if (set->Buckets[bucket_index].Count() > 0) {
-			SUBZONE_CONNECTION_HASH_SET::ObjectType * object = &set->Buckets[bucket_index][0];
-			for (int index = set->Buckets[bucket_index].Count(); index > 0; index--) {
-				unsigned packed = object->Value.SubzoneID;
-				WORD low = LOWORD(packed);
-				WORD high = HIWORD(packed);
-				bool costly = object->Value.IsCrossBlock;
-
-				SubzoneConnectionStruct conn;
-				conn.SubzoneID = high;
-				conn.IsCrossBlock = costly;
-				(*track)[low].Connections.Add(conn);
-
-				SubzoneConnectionStruct conn2;
-				conn2.SubzoneID = low;
-				conn2.IsCrossBlock = costly;
-				(*track)[high].Connections.Add(conn2);
-
-				object++;
-			}
-		}
-	}
+	Register_Staged_Subzone_Connections(subzone);
 }
 
 
@@ -10189,7 +10084,6 @@ int MapClass::Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subz
 
 	CellSubzoneStruct * begin = seed;
 	CellSubzoneStruct * end = seed;
-	SUBZONE_CONNECTION_HASH_SET::ObjectType entry;
 
 	int x = cell.X;
 	int y = cell.Y;
@@ -10202,7 +10096,7 @@ int MapClass::Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subz
 	int end_x = x;
 	int ymax = bounds.Height + bounds.Y - 1;
 
-	SUBZONE_CONNECTION_HASH_SET * table = SubzoneConnectionHashTable[subzone_level];
+	SubzoneLinkStaging & staging = SubzoneConnectionStaging[subzone_level];
 	int prev_height = seed->Height;
 
 	/*
@@ -10234,10 +10128,7 @@ int MapClass::Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subz
 		if (In_Local_Radar(probe, true)) {
 			probe = Cell(x + 1, y);
 			if (In_Local_Radar(probe, true)) {
-				int packed_pair = Zone_Pack32(begin_subzone, (unsigned short)subzone_id);
-				entry.Value.IsCrossBlock = false;
-				entry.Key = entry.Value.SubzoneID = packed_pair;
-				table->Add_Object(Zone_Pack8(begin_subzone, (unsigned short)subzone_id), entry);
+				Stage_Subzone_Link(staging, begin_subzone, (unsigned short)subzone_id, false);
 				last_adjacent = begin_subzone;
 			}
 		}
@@ -10269,10 +10160,7 @@ int MapClass::Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subz
 		if (In_Local_Radar(probe, true)) {
 			probe = Cell(end_x - 1, y);
 			if (In_Local_Radar(probe, true)) {
-				int packed_pair = Zone_Pack32(end_subzone, (unsigned short)subzone_id);
-				entry.Value.IsCrossBlock = false;
-				entry.Key = entry.Value.SubzoneID = packed_pair;
-				table->Add_Object(Zone_Pack8(end_subzone, (unsigned short)subzone_id), entry);
+				Stage_Subzone_Link(staging, end_subzone, (unsigned short)subzone_id, false);
 				last_adjacent = end_subzone;
 			}
 		}
@@ -10324,17 +10212,7 @@ int MapClass::Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subz
 						shadow_cell.Y = y - 1;
 						shadow_cell.X = x;
 						if (In_Local_Radar(shadow_cell, true)) {
-							int packed_pair = Zone_Pack32(shadow_subzone, (unsigned short)subzone_id);
-							if (x < xmin) {
-								entry.Value.IsCrossBlock = true;
-							} else {
-								entry.Value.IsCrossBlock = false;
-								if (x > xmax) {
-									entry.Value.IsCrossBlock = true;
-								}
-							}
-							entry.Key = entry.Value.SubzoneID = packed_pair;
-							table->Add_Object(Zone_Pack8(shadow_subzone, (unsigned short)subzone_id), entry);
+							Stage_Subzone_Link(staging, shadow_subzone, (unsigned short)subzone_id, x < xmin || x > xmax);
 							last_adjacent = shadow_subzone;
 						}
 					}
@@ -10393,17 +10271,7 @@ int MapClass::Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subz
 						shadow_cell.X = x;
 						shadow_cell.Y = y + 1;
 						if (In_Local_Radar(shadow_cell, true)) {
-							int packed_pair = Zone_Pack32(shadow_subzone, (unsigned short)subzone_id);
-							if (x < xmin) {
-								entry.Value.IsCrossBlock = true;
-							} else {
-								entry.Value.IsCrossBlock = false;
-								if (x > xmax) {
-									entry.Value.IsCrossBlock = true;
-								}
-							}
-							entry.Key = entry.Value.SubzoneID = packed_pair;
-							table->Add_Object(Zone_Pack8(shadow_subzone, (unsigned short)subzone_id), entry);
+							Stage_Subzone_Link(staging, shadow_subzone, (unsigned short)subzone_id, x < xmin || x > xmax);
 							last_adjacent = shadow_subzone;
 						}
 					}
@@ -10449,8 +10317,7 @@ void MapClass::Register_Subzone_Zone_Connections(int subzone)
 /// <param name="index">The subzone level whose staging set receives the links.</param>
 void MapClass::Register_Zone_Connection_Entries(ZoneConnectionClass & connection, int index)
 {
-	SUBZONE_CONNECTION_HASH_SET::ObjectType connstr;
-	SUBZONE_CONNECTION_HASH_SET * set = SubzoneConnectionHashTable[index];
+	SubzoneLinkStaging & staging = SubzoneConnectionStaging[index];
 
 	Cell from = connection.From;
 	Cell to = connection.To;
@@ -10493,36 +10360,47 @@ void MapClass::Register_Zone_Connection_Entries(ZoneConnectionClass & connection
 		int from_zone = CellSubzones[Get_Cell_Subzone_Index(from)].SubzoneID[index];
 		int to_zone = CellSubzones[Get_Cell_Subzone_Index(to)].SubzoneID[index];
 
-		int value = Zone_Pack32(from_zone, to_zone);
-		int bucket_index = Zone_Pack8(from_zone, to_zone);
-		connstr.Key = value;
-		connstr.Value = SubzoneConnectionStruct(value);
-		connstr.Value.IsCrossBlock = 0;
-		set->Add_Object(bucket_index, connstr);
+		Stage_Subzone_Link(staging, from_zone, to_zone, false);
 	}
 
 	{
 		int from_zone = CellSubzones[Get_Cell_Subzone_Index(enter1)].SubzoneID[index];
 		int to_zone = CellSubzones[Get_Cell_Subzone_Index(newcell1)].SubzoneID[index];
 
-		int value = Zone_Pack32(from_zone, to_zone);
-		int bucket_index = Zone_Pack8(from_zone, to_zone);
-		connstr.Key = value;
-		connstr.Value = SubzoneConnectionStruct(value);
-		connstr.Value.IsCrossBlock = 0;
-		set->Add_Object(bucket_index, connstr);
+		Stage_Subzone_Link(staging, from_zone, to_zone, false);
 	}
 
 	{
 		int from_zone = CellSubzones[Get_Cell_Subzone_Index(enter2)].SubzoneID[index];
 		int to_zone = CellSubzones[Get_Cell_Subzone_Index(newcell2)].SubzoneID[index];
 
-		int value = Zone_Pack32(from_zone, to_zone);
-		int bucket_index = Zone_Pack8(from_zone, to_zone);
-		connstr.Key = value;
-		connstr.Value = SubzoneConnectionStruct(value);
-		connstr.Value.IsCrossBlock = 0;
-		set->Add_Object(bucket_index, connstr);
+		Stage_Subzone_Link(staging, from_zone, to_zone, false);
+	}
+}
+
+
+/// <summary>
+/// Writes the links staged for one subzone level into the two subzones each one joins.
+/// Every link is recorded in both subzones, so the graph the route search walks is undirected.
+/// The route search reads a subzone's neighbors in list order and settles a tie among equally
+/// cheap blocks by which of them it reached first, so the order the links are written in is
+/// the order it breaks those ties in.
+/// </summary>
+/// <param name="subzone">The subzone level whose staged links are to be written out.</param>
+void MapClass::Register_Staged_Subzone_Connections(int subzone)
+{
+	DynamicVectorClass<SubzoneTrackingStruct> & track = SubzoneTracking[subzone];
+
+	for (auto const & [link, crossblock] : SubzoneConnectionStaging[subzone]) {
+		SubzoneConnectionStruct conn;
+		conn.SubzoneID = link.first;
+		conn.IsCrossBlock = crossblock;
+		track[link.second].Connections.Add(conn);
+
+		SubzoneConnectionStruct conn2;
+		conn2.SubzoneID = link.second;
+		conn2.IsCrossBlock = crossblock;
+		track[link.first].Connections.Add(conn2);
 	}
 }
 
@@ -10940,14 +10818,9 @@ void MapClass::Update_Cell_Subzones(Cell const & cell)
 			bounds.X = cell.X - cell.X % bounds.Width;
 			bounds.Y = cell.Y - cell.Y % bounds.Height;
 
-			/*
-			 * Clear out every bucket of the connection hash set for this level.
-			 */
+			SubzoneConnectionStaging[subzone].clear();
+
 			DynamicVectorClass<unsigned short> collected;
-			SUBZONE_CONNECTION_HASH_SET * set = SubzoneConnectionHashTable[subzone];
-			for (int bucket = 0; bucket < set->NumBuckets; bucket++) {
-				set->Buckets[bucket].Clear();
-			}
 
 			DynamicVectorClass<SubzoneTrackingStruct> * track = &SubzoneTracking[subzone];
 
@@ -11055,33 +10928,7 @@ void MapClass::Update_Cell_Subzones(Cell const & cell)
 				}
 			}
 
-			/*
-			 * Walk every bucket of the connection hash set and register both endpoints
-			 * of each recorded connection into the subzone tracking list.
-			 */
-			for (int bucket_index = 0; bucket_index < 256; bucket_index++) {
-				if (set->Buckets[bucket_index].Count() > 0) {
-					SUBZONE_CONNECTION_HASH_SET::ObjectType * object = &set->Buckets[bucket_index][0];
-					for (int index = set->Buckets[bucket_index].Count(); index > 0; index--) {
-						unsigned packed = object->Value.SubzoneID;
-						WORD low = LOWORD(packed);
-						WORD high = HIWORD(packed);
-						bool costly = object->Value.IsCrossBlock;
-
-						SubzoneConnectionStruct conn;
-						conn.SubzoneID = high;
-						conn.IsCrossBlock = costly;
-						(*track)[low].Connections.Add(conn);
-
-						SubzoneConnectionStruct conn2;
-						conn2.SubzoneID = low;
-						conn2.IsCrossBlock = costly;
-						(*track)[high].Connections.Add(conn2);
-
-						object++;
-					}
-				}
-			}
+			Register_Staged_Subzone_Connections(subzone);
 		}
 
 		/*

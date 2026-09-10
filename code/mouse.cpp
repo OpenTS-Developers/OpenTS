@@ -47,7 +47,6 @@
 #include "builtype.h"
 #include "cell.h"
 #include "data.h"
-#include "hashtable.h"
 #include "isotype.h"
 #include "mixfile.h"
 #include "overtype.h"
@@ -416,8 +415,7 @@ HRESULT MouseClass::Load(IStream * stream)
 		CellSubzones = NULL;
 		delete CellZones;
 		CellZones = NULL;
-		delete ZoneAdjacency;
-		ZoneAdjacency = NULL;
+		ZoneAdjacency.clear();
 
 		for (i = 0; i < SUBZONE_COUNT; i++) {
 			SubzoneTracking[i].Clear();
@@ -429,8 +427,7 @@ HRESULT MouseClass::Load(IStream * stream)
 		}
 
 		for (i = 0; i < SUBZONE_COUNT; i++) {
-			delete SubzoneConnectionHashTable[i];
-			SubzoneConnectionHashTable[i] = NULL;
+			SubzoneConnectionStaging[i].clear();
 		}
 
 		Array.Clear();
@@ -469,13 +466,11 @@ HRESULT MouseClass::Load(IStream * stream)
 
 		CellSubzones = new CellSubzoneStruct[CellZoneCount];
 		CellZones = new CellZoneStruct[CellZoneCount];
-		ZoneAdjacency = new ZONE_PAIR_HASH_SET(20, 256, SubzoneHash);
 
 		for (i = 0; i < SUBZONE_COUNT; i++) {
 			int v = (1 << (i + 1));
 			SubzoneTracking[i].Clear();
 			SubzoneTracking[i].Set_Growth_Step((4 * PlayRect.Width * PlayRect.Height) / (v * v));
-			SubzoneConnectionHashTable[i] = new SUBZONE_CONNECTION_HASH_SET(20, 256, SubzoneHash);
 		}
 
 		result = stream->Read(CellZones, sizeof(*CellZones) * CellZoneCount, NULL);
