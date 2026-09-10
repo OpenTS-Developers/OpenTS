@@ -2340,6 +2340,31 @@ static void Init_Patch_Mixfiles(void)
 }
 
 
+/// <summary>
+/// Reads a palette out of the mounted archives and expands it to the game's colour range.
+/// </summary>
+/// <param name="palette">The palette to fill, left unchanged if the file is not there.</param>
+/// <param name="name">The palette file to read.</param>
+static void Read_Palette(PaletteClass & palette, char const * name)
+{
+	void const * data = MFCD::Retrieve(name);
+
+	if (data == NULL) {
+		DebugString("%s not found; leaving that palette unchanged.\n", name);
+		return;
+	}
+
+	memmove(&palette[0], data, sizeof(palette));
+
+	for (int index = 0; index < PaletteClass::COLOR_COUNT; index++) {
+		palette[index] = RGBClass(
+				(unsigned char)(palette[index].Get_Red()<<2),
+				(unsigned char)(palette[index].Get_Green()<<2),
+				(unsigned char)(palette[index].Get_Blue()<<2));
+	}
+}
+
+
 /***********************************************************************************************
  * Init_Bootstrap_Mixfiles -- Registers and caches any mixfiles needed for bootstrapping.      *
  *                                                                                             *
@@ -2546,8 +2571,6 @@ static bool Init_Secondary_Mixfiles(void)
  *=============================================================================================*/
 static bool Bootstrap(void)
 {
-	int index;
-
 	/*
 	**	Process the message loop until we are in focus. We need to be in focus to read pixels from
 	**	the screen.
@@ -2596,39 +2619,18 @@ static bool Bootstrap(void)
 	/*
 	 * House specific scheme palette initialization.
 	 */
-	memmove((unsigned char *)&SchemePalette[0], (void *)MFCD::Retrieve("UNITSNO.PAL"), sizeof(SchemePalette));
-
-	for (index = 0; index < 256; index++) {
-		SchemePalette[index] = RGBClass(
-				(unsigned char)(SchemePalette[index].Get_Red()<<2),
-				(unsigned char)(SchemePalette[index].Get_Green()<<2),
-				(unsigned char)(SchemePalette[index].Get_Blue()<<2));
-	}
+	Read_Palette(SchemePalette, "UNITSNO.PAL");
 
 	/*
 	**	Default palette initialization.
 	*/
-	memmove((unsigned char *)&GamePalette[0], (void *)MFCD::Retrieve("TEMPERAT.PAL"), sizeof(GamePalette));
-
-	for (index = 0; index < 256; index++) {
-		GamePalette[index] = RGBClass(
-				(unsigned char)(GamePalette[index].Get_Red()<<2),
-				(unsigned char)(GamePalette[index].Get_Green()<<2),
-				(unsigned char)(GamePalette[index].Get_Blue()<<2));
-	}
+	Read_Palette(GamePalette, "TEMPERAT.PAL");
 
 	OriginalPalette = GamePalette;
 	CCPalette = GamePalette;
 	WhitePalette[0] = BlackPalette[0];
 
-	memmove((unsigned char *)&WaypointPalette[0], (void *)MFCD::Retrieve("WAYPOINT.PAL"), sizeof(WaypointPalette));
-
-	for (index = 0; index < 256; index++) {
-		WaypointPalette[index] = RGBClass(
-				(unsigned char)(WaypointPalette[index].Get_Red()<<2),
-				(unsigned char)(WaypointPalette[index].Get_Green()<<2),
-				(unsigned char)(WaypointPalette[index].Get_Blue()<<2));
-	}
+	Read_Palette(WaypointPalette, "WAYPOINT.PAL");
 
 	/*
 	 * Voxel system initialization.
@@ -2654,54 +2656,21 @@ static bool Bootstrap(void)
 	 */
 	TerrainDrawer = new ConvertClass(GamePalette, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
 
-	PaletteClass pal;
+	PaletteClass pal = BlackPalette;
 
-	memmove((unsigned char *)&pal[0], (void *)MFCD::Retrieve("ANIM.PAL"), sizeof(pal));
-	for (index = 0; index < 256; index++) {
-		pal[index] = RGBClass(
-				(unsigned char)(pal[index].Get_Red()<<2),
-				(unsigned char)(pal[index].Get_Green()<<2),
-				(unsigned char)(pal[index].Get_Blue()<<2));
-	}
-
+	Read_Palette(pal, "ANIM.PAL");
 	AnimDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
 
-	memmove((unsigned char *)&pal[0], (void *)MFCD::Retrieve("PALETTE.PAL"), sizeof(pal));
-	for (index = 0; index < 256; index++) {
-		pal[index] = RGBClass(
-				(unsigned char)(pal[index].Get_Red()<<2),
-				(unsigned char)(pal[index].Get_Green()<<2),
-				(unsigned char)(pal[index].Get_Blue()<<2));
-	}
-
+	Read_Palette(pal, "PALETTE.PAL");
 	NormalDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
 
-	memmove((unsigned char *)&pal[0], (void *)MFCD::Retrieve("UNITSNO.PAL"), sizeof(pal));
-	for (index = 0; index < 256; index++) {
-		pal[index] = RGBClass(
-				(unsigned char)(pal[index].Get_Red()<<2),
-				(unsigned char)(pal[index].Get_Green()<<2),
-				(unsigned char)(pal[index].Get_Blue()<<2));
-	}
-
+	Read_Palette(pal, "UNITSNO.PAL");
 	VoxelDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
 
-	memmove((unsigned char *)&pal[0], (void *)MFCD::Retrieve("CAMEO.PAL"), sizeof(pal));
-	for (index = 0; index < 256; index++) {
-		pal[index] = RGBClass(
-				(unsigned char)(pal[index].Get_Red()<<2),
-				(unsigned char)(pal[index].Get_Green()<<2),
-				(unsigned char)(pal[index].Get_Blue()<<2));
-	}
+	Read_Palette(pal, "CAMEO.PAL");
 	CameoDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface, NUM_INTENSITY_LEVELS);
 
-	memmove((unsigned char *)&pal[0], (void *)MFCD::Retrieve("MOUSEPAL.PAL"), sizeof(pal));
-	for (index = 0; index < 256; index++) {
-		pal[index] = RGBClass(
-				(unsigned char)(pal[index].Get_Red()<<2),
-				(unsigned char)(pal[index].Get_Green()<<2),
-				(unsigned char)(pal[index].Get_Blue()<<2));
-	}
+	Read_Palette(pal, "MOUSEPAL.PAL");
 	MouseDrawer = new ConvertClass(pal, GamePalette, *VisibleSurface);
 
 	TiberiumDrawer = VoxelDrawer;
