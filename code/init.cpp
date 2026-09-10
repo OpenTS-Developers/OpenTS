@@ -6365,7 +6365,7 @@ bool Prep_For_Side(SideType side)
 	}
 
 	sprintf(name, "SIDENC%02d.MIX", id);
-	DebugString("     Initilizing %s\n", name);
+	DebugString("     Initializing %s\n", name);
 
 	if (CCFileClass(name).Is_Available()) {
 		SideNCMix = new MFCD(name, &FastKey);
@@ -6379,7 +6379,7 @@ bool Prep_For_Side(SideType side)
 			sprintf(name, "E%02dSCD%02d.MIX", Get_Required_Addon(), id);
 		}
 
-		DebugString("     Initilizing %s\n", name);
+		DebugString("     Initializing %s\n", name);
 		if (CCFileClass(name).Is_Available()) {
 			SideCDMix = new MFCD(name, &FastKey);
 		}
@@ -6443,7 +6443,7 @@ bool Prep_Speech_For_Side(SideType side)
 	}
 
 	sprintf(name, "SPEECH%02d.MIX", id);
-	DebugString("     Initilizing %s\n", name);
+	DebugString("     Initializing %s\n", name);
 	if (CCFileClass(name).Is_Available()) {
 		SpeechMix = new MFCD(name, &FastKey);
 	}
