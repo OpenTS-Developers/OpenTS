@@ -18,8 +18,6 @@
 #include "opents_build.h"
 #include "win.h"
 
-#include <shellapi.h>
-
 #include <algorithm>
 #include <cerrno>
 #include <conio.h>
@@ -55,41 +53,7 @@ static char DebugDirectory[MAX_PATH];
 static char DebugFileName[MAX_PATH];
 static unsigned __int64 DebugBytesWritten = 0;
 
-/// <summary>
-/// Reports whether the command line asks for the debug console. The game's own parser runs
-/// too late to catch the messages written during early startup, so the raw command line is
-/// read here instead.
-/// </summary>
-static bool Command_Line_Requests_Console(void)
-{
-	int argc = 0;
-	LPWSTR * argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-
-	if (argv == NULL) {
-		return(false);
-	}
-
-	bool requested = false;
-
-	// Index zero is the executable path, which may itself look like an option.
-	for (int index = 1; index < argc && !requested; index++) {
-		wchar_t const * token = argv[index];
-
-		if (token[0] != L'-' || (token[1] != L'X' && token[1] != L'x')) {
-			continue;
-		}
-
-		for (wchar_t const * code = token + 2; *code != L'\0'; code++) {
-			if (*code == L'C' || *code == L'c') {
-				requested = true;
-				break;
-			}
-		}
-	}
-
-	LocalFree(argv);
-	return(requested);
-}
+static bool ConsoleRequested = false;
 
 
 /// <summary>
@@ -225,7 +189,20 @@ static void Init_Console_Locked(void)
 }
 
 
-static void Write_Banner_Locked(SYSTEMTIME const & started);
+static void Write_Banner_Locked(SYSTEMTIME const & started, int argc, char const * const * argv);
+static void Write_Text_Locked(char const * text, size_t length);
+static void Write_Message_Locked(char const * buffer, bool with_prefix);
+
+
+static bool Requests_Debug_Console(int argc, char const * const * argv)
+{
+	for (int index = 1; index < argc; index++) {
+		char const * const token = argv[index];
+		if (token[0] != '-' || (token[1] != 'X' && token[1] != 'x')) continue;
+		if (strchr(token + 2, 'C') != nullptr || strchr(token + 2, 'c') != nullptr) return(true);
+	}
+	return(false);
+}
 
 
 /// <summary>
@@ -233,7 +210,7 @@ static void Write_Banner_Locked(SYSTEMTIME const & started);
 /// or the command line asks for it. The caller holds the logging lock. A log that cannot be
 /// opened leaves the debugger and console sinks working.
 /// </summary>
-static void Init_Locked(void)
+static void Init_Locked(int argc, char const * const * argv)
 {
 	if (DebugInitDone) {
 		return;
@@ -279,16 +256,19 @@ static void Init_Locked(void)
 		}
 	}
 
+	ConsoleRequested = ConsoleRequested || Requests_Debug_Console(argc, argv);
+
 #ifdef _DEBUG
 	Init_Console_Locked();
 #else
-	if (Command_Line_Requests_Console()) {
+	if (ConsoleRequested) {
 		Init_Console_Locked();
 	}
 #endif
 
 	// Last, so that the banner heads the log and also reaches a console that has just opened.
-	Write_Banner_Locked(now);
+	AtLineStart = true;
+	Write_Banner_Locked(now, argc, argv);
 }
 
 
@@ -297,6 +277,8 @@ static void Init_Locked(void)
 /// </summary>
 static void Write_Text_Locked(char const * text, size_t length)
 {
+	if (length == 0) return;
+
 	DWORD actual;
 
 	if (DebugFile != INVALID_HANDLE_VALUE) {
@@ -365,7 +347,7 @@ static void Write_Message_Locked(char const * buffer, bool with_prefix)
 /// DebugStringNoPrefix would meet the re-entrancy guard and reach the debugger only.
 /// </summary>
 /// <param name="started">The time this run's log was opened.</param>
-static void Write_Banner_Locked(SYSTEMTIME const & started)
+static void Write_Banner_Locked(SYSTEMTIME const & started, int argc, char const * const * argv)
 {
 	// A raw literal keeps the lettering readable, and keeps its backslashes out of the reach of
 	// escape processing. It opens on its own line so the rows line up here, which costs a
@@ -428,25 +410,16 @@ R"ART(
 
 	// The arguments only. The executable path usually carries the account name, and re-joining
 	// the arguments loses the shell's original quoting, which a diagnostic can live without.
-	char options[256] = "(none)";
-	int argc = 0;
-	LPWSTR * argv = CommandLineToArgvW(GetCommandLineW(), &argc);
-
-	if (argv != NULL) {
-		size_t used = 0;
+	Write_Message_Locked("Options  : ", false);
+	if (argv != nullptr && argc > 1) {
 		for (int index = 1; index < argc; index++) {
-			int const written = snprintf(options + used, sizeof(options) - used, "%s%ls",
-													used == 0 ? "" : " ", argv[index]);
-			if (written <= 0 || size_t(written) >= sizeof(options) - used) {
-				break;
-			}
-			used += size_t(written);
+			if (index > 1) Write_Message_Locked(" ", false);
+			Write_Message_Locked(argv[index], false);
 		}
-		LocalFree(argv);
+	} else {
+		Write_Message_Locked("(none)", false);
 	}
-
-	snprintf(line, sizeof(line), "Options  : %s\n", options);
-	Write_Message_Locked(line, false);
+	Write_Message_Locked("\n", false);
 
 	Write_Message_Locked("--------------------------------------------------------------------------------\n", false);
 }
@@ -471,7 +444,6 @@ static void Emit(char const * buffer, bool with_prefix)
 	AcquireSRWLockExclusive(&DebugLock);
 	DebugLockOwner = self;
 
-	Init_Locked();
 	Write_Message_Locked(buffer, with_prefix);
 
 	DebugLockOwner = 0;
@@ -480,40 +452,31 @@ static void Emit(char const * buffer, bool with_prefix)
 
 
 /// <summary>
-/// Runs first time initialisation under the logging lock.
+/// Opens this run's log beside the executable and writes the banner. Messages reported
+/// before this call reach the debugger and the console but no file. Repeated initialization
+/// keeps the first setup, including a failed file open.
 /// </summary>
-static void Init_Once(bool with_console)
+void Debug_Init(int argc, char const * const * argv)
 {
 	AcquireSRWLockExclusive(&DebugLock);
 	DebugLockOwner = GetCurrentThreadId();
-
-	Init_Locked();
-	if (with_console) {
-		Init_Console_Locked();
-	}
-
+	Init_Locked(argc, argv);
 	DebugLockOwner = 0;
 	ReleaseSRWLockExclusive(&DebugLock);
 }
 
 
 /// <summary>
-/// Prepares the debug log and, when the build or the command line asks for it, the debug
-/// console. Logging works without this call, but calling it early fixes the log's timestamp
-/// at process start and puts the console up before the first message.
-/// </summary>
-void Debug_Init(void)
-{
-	Init_Once(false);
-}
-
-
-/// <summary>
-/// Opens the debug console if it is not open already.
+/// Opens the console after logging is initialized, or requests it for Debug_Init.
 /// </summary>
 void Debug_Init_Console(void)
 {
-	Init_Once(true);
+	AcquireSRWLockExclusive(&DebugLock);
+	DebugLockOwner = GetCurrentThreadId();
+	ConsoleRequested = true;
+	if (DebugInitDone) Init_Console_Locked();
+	DebugLockOwner = 0;
+	ReleaseSRWLockExclusive(&DebugLock);
 }
 
 
@@ -534,23 +497,20 @@ void Debug_Console_Hold(void)
 
 /// <summary>
 /// Returns the full path of this run's debug log, or an empty string when no log could be
-/// opened. Intended for startup code and user interface text; never call it from a crash
-/// handler, because it takes the logging lock.
+/// opened or initialization has not run. Call after Debug_Init on the startup thread.
 /// </summary>
 char const * Debug_Log_File_Name(void)
 {
-	Init_Once(false);
 	return(DebugFileName);
 }
 
 
 /// <summary>
 /// Returns the folder where per-run diagnostic files belong, or an empty string when it could
-/// not be created. Shared by callers that write their own files beside the debug log.
+/// not be selected. Call after Debug_Init on the startup thread.
 /// </summary>
 char const * Debug_Directory(void)
 {
-	Init_Once(false);
 	return(DebugDirectory);
 }
 

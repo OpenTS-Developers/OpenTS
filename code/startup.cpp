@@ -361,7 +361,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 {
 	int		argc;       //Command line argument count
 	char **	argv;       //Pointers to command line arguments
-	char	path_to_exe[MAX_PATH];
+	char	path_to_exe[MAX_PATH] = "";
 	char	buffer[512];
 
 	// First, so that everything after it is covered, including the rest of this function.
@@ -369,7 +369,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 	ProgramInstance = instance;
 
-	Debug_Init();
+	GetModuleFileName(instance, path_to_exe, sizeof(path_to_exe));
+	argc = Build_Arguments(path_to_exe, argv);
+
+	Debug_Init(argc, argv);
 
 	// Handed over now because the exception path may not ask the logger for anything: the
 	// thread that crashed may be the one holding the logger's lock.
@@ -462,17 +465,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 	}
 
 	RegisterClasses();
-
-	/*
-	**	Get the full path to the .EXE
-	*/
-	GetModuleFileName (instance, &path_to_exe[0], sizeof(path_to_exe));
-
-	/*
-	**	Get pointers to command line arguments just like if we were in DOS
-	**
-	*/
-	argc = Build_Arguments(path_to_exe, argv);
 
 	/*
 	**	Change directory to the where the executable is located. Handle the
