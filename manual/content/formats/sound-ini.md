@@ -13,6 +13,7 @@ key_scopes:
       source: sound
 related:
   - { type: format, id: aud }
+  - { type: format, id: opents-ini }
 source_files:
   - code/init.cpp
   - code/vocini.cpp

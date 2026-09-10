@@ -571,7 +571,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		// anywhere for a player's files to go. Naming it again settles it where it belongs.
 		Session.RecordFile.Set_Name("RECORD.BIN");
 
-		CDFileClass *cfile = new CDFileClass(CONFIG_FILE_NAME);
+		CDFileClass *cfile = new CDFileClass(DeploymentConfig.SettingsFile.c_str());
 
 		ConfigINI.Load(*cfile, false);
 		Options.ScreenWidth = ConfigINI.Get_Int("Video", "ScreenWidth", Options.ScreenWidth);

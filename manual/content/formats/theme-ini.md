@@ -13,6 +13,7 @@ key_scopes:
       source: theme
 related:
   - { type: format, id: aud }
+  - { type: format, id: opents-ini }
 source_files:
   - code/init.cpp
   - code/theme.cpp

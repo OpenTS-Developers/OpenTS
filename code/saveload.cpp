@@ -47,6 +47,7 @@
 
 #include "saveload.h"
 
+#include "_deploymentconfig.h"
 #include "_logic.h"
 #include "_map.h"
 #include "_rect.h"
@@ -69,6 +70,7 @@
 #include "bullettype.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "empulse.h"
 #include "enviro.h"
 #include "factory.h"
@@ -670,7 +672,7 @@ static bool Get_All(IStream *stream, bool save_net)
 	RulesClass::Load_Art_INI();
 
 	if (Addon_Enabled(ADDON_FIRESTORM) == true) {
-		CCFileClass artfs("ARTFS.INI");
+		CCFileClass artfs(DeploymentConfig.ArtExpansionFile.c_str());
 		if (artfs.Is_Available() == true) {
 			ArtINI.Load(artfs, false);
 		}

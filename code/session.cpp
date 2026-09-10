@@ -48,6 +48,7 @@
 
 #include "session.h"
 
+#include "_deploymentconfig.h"
 #include "_keyboar.h"
 #include "_map.h"
 #include "_rules.h"
@@ -56,6 +57,7 @@
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "gamedirs.h"		// for Search_Files.
 #include "globals.h"
 #include "ipxmgr.h"
@@ -639,7 +641,7 @@ bool SessionClass::Log_To_File(FILE *out)
  *=========================================================================*/
 void SessionClass::Write_MultiPlayer_Settings(void)
 {
-	CDFileClass file(CONFIG_FILE_NAME);
+	CDFileClass file(DeploymentConfig.SettingsFile.c_str());
 	{
 		// Save the player's last-used Handle & Color
 		ConfigINI.Put_Int("MultiPlayer", "Color", (int)PrefColor);

@@ -955,3 +955,55 @@ test('New theater artwork is renamed by image letter, not by a prefix list', () 
 		'the shape fetch calls the convention rather than repeating it',
 	);
 });
+
+test('The deployment names the files the game reads', () => {
+	const config = functionBody(
+		source('code/deploymentconfig.cpp'),
+		'void DeploymentConfigClass::Read_INI(INIClass const & ini)',
+	);
+
+	for (const [key, member] of [
+		['Rules', 'RulesFile'],
+		['RulesExpansion', 'RulesExpansionFile'],
+		['Art', 'ArtFile'],
+		['Settings', 'SettingsFile'],
+	]) {
+		assert.match(
+			config,
+			new RegExp(`${member} = ini\\.Get_String\\("Files", "${key}", ${member}\\.c_str\\(\\)\\);`),
+			`the deployment names its ${key} file`,
+		);
+	}
+
+	assert.match(
+		config,
+		/SchemePaletteFile = ini\.Get_String\("Palettes", "Scheme", SchemePaletteFile\.c_str\(\)\);/,
+		'and the palette it starts from',
+	);
+
+	const init = source('code/init.cpp');
+
+	assert.match(
+		init,
+		/stricmp\(name\.c_str\(\), DeploymentConfig\.RulesFile\.c_str\(\)\) == 0/,
+		'the wildcard search knows the rules file by the name the deployment gives it',
+	);
+
+	assert.match(
+		init,
+		/CCFileClass file\(DeploymentConfig\.RulesFile\.c_str\(\)\);/,
+		'and the file it falls back on is that same one',
+	);
+
+	assert.match(
+		init,
+		/Read_Palette\(SchemePalette, DeploymentConfig\.SchemePaletteFile\.c_str\(\)\);/,
+		'the palettes are read through the names it gives',
+	);
+
+	assert.match(
+		functionBody(source('code/addon.cpp'), 'void Detect_Addons(void)'),
+		/CCFileClass\(DeploymentConfig\.RulesExpansionFile\.c_str\(\)\)\.Is_Available\(\)/,
+		'the expansion is looked for under the name the deployment gives it',
+	);
+});
