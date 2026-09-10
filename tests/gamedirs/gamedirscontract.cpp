@@ -45,7 +45,7 @@ void Check_List(std::vector<std::string> const & actual, std::vector<std::string
 	bool same = actual.size() == expected.size();
 
 	for (unsigned int index = 0; same && index < actual.size(); index++) {
-		same = actual[index] == expected[index];
+		same = _stricmp(actual[index].c_str(), expected[index].c_str()) == 0;
 	}
 
 	Check(same, what);
@@ -244,11 +244,11 @@ void Test_Search_Files(void)
 	 * another. Both walk the folders in the same order, so the game's own copy wins.
 	 */
 	CDFileClass found("ALPHA.MPR");
-	Check(std::string(found.File_Name()) == "ALPHA.MPR",
+	Check(_stricmp(found.File_Name(), "ALPHA.MPR") == 0,
 		"opening a name the scan reported lands on the copy the scan saw");
 
 	CDFileClass sorted("CHARLIE.MPR");
-	Check(std::string(sorted.File_Name()) == "MIX\\CHARLIE.MPR",
+	Check(_stricmp(sorted.File_Name(), "MIX\\CHARLIE.MPR") == 0,
 		"a name held only by a searched folder opens from that folder");
 }
 
@@ -268,7 +268,7 @@ void Test_Writes_Do_Not_Search(void)
 	std::string const written = file.File_Name();
 	file.Close();
 
-	Check(written == "WRITTEN.DAT", "a read-write open does not settle on a searched folder");
+	Check(_stricmp(written.c_str(), "WRITTEN.DAT") == 0, "a read-write open does not settle on a searched folder");
 
 	Check(GetFileAttributes((Root + "\\WRITTEN.DAT").c_str()) != INVALID_FILE_ATTRIBUTES,
 		"the written file is in the current directory");
@@ -300,11 +300,11 @@ void Test_Long_Names(void)
 	Write_File(absolute, "");
 
 	CDFileClass file(absolute.c_str());
-	Check(std::string(file.File_Name()) == absolute,
+	Check(_stricmp(file.File_Name(), absolute.c_str()) == 0,
 		"a file named with its own directory is found while long folders are searched");
 
 	CDFileClass missing((Root + "\\NOTHERE.MPR").c_str());
-	Check(std::string(missing.File_Name()) == Root + "\\NOTHERE.MPR",
+	Check(_stricmp(missing.File_Name(), (Root + "\\NOTHERE.MPR").c_str()) == 0,
 		"a name that no folder holds comes back as it was given");
 
 	Check_List(Search_Files("*.MPR"), {"ALPHA.MPR"}, "a scan passes over a folder it cannot build a name in");
@@ -329,7 +329,7 @@ void Test_The_File_Layer_Places_Written_Files(void)
 	written.Write("mine", 4);
 	written.Close();
 
-	Check(std::string(written.File_Name()) == own + "OWN.DAT", "a written file is named in the user directory");
+	Check(_stricmp(written.File_Name(), (own + "OWN.DAT").c_str()) == 0, "a written file is named in the user directory");
 	Check(File_Exists(own + "OWN.DAT"), "a written file is in the user directory");
 	Check(!File_Exists(Root + "\\OWN.DAT"), "a written file is not beside the game");
 
@@ -352,7 +352,7 @@ void Test_The_File_Layer_Places_Written_Files(void)
 
 	CDFileClass reopened("PROGRESS.INI");
 	Check(reopened.Is_Available(), "a created file is found again");
-	Check(std::string(reopened.File_Name()) == own + "PROGRESS.INI", "a created file is found in the user directory");
+	Check(_stricmp(reopened.File_Name(), (own + "PROGRESS.INI").c_str()) == 0, "a created file is found in the user directory");
 }
 
 
@@ -395,7 +395,7 @@ void Test_Resetting_Keeps_The_Shipped_Default(void)
 
 	// A player who has never saved their own asks for the defaults back.
 	CDFileClass untouched("KEYBOARD.INI");
-	Check(std::string(untouched.File_Name()) == "INI\\KEYBOARD.INI",
+	Check(_stricmp(untouched.File_Name(), "INI\\KEYBOARD.INI") == 0,
 		"a player with none of their own reads the shipped default");
 	untouched.Delete();
 	Check(File_Exists(Root + "\\INI\\KEYBOARD.INI"),
@@ -429,7 +429,7 @@ void Test_A_Name_With_A_Directory_Is_Left_Alone(void)
 	rooted.Write("here", 4);
 	rooted.Close();
 
-	Check(std::string(rooted.File_Name()) == "MIX\\ROOTED.DAT", "a name with a directory keeps it");
+	Check(_stricmp(rooted.File_Name(), "MIX\\ROOTED.DAT") == 0, "a name with a directory keeps it");
 	Check(File_Exists(Root + "\\MIX\\ROOTED.DAT"), "a name with a directory is written where it says");
 	Check(!File_Exists(Root + "\\User\\Own\\ROOTED.DAT"), "a name with a directory is not moved");
 }
@@ -474,7 +474,7 @@ void Test_Without_A_User_Directory_Nothing_Moves(void)
 	written.Write("here", 4);
 	written.Close();
 
-	Check(std::string(written.File_Name()) == "STILL.DAT", "a written file keeps its plain name");
+	Check(_stricmp(written.File_Name(), "STILL.DAT") == 0, "a written file keeps its plain name");
 	Check(File_Exists(Root + "\\STILL.DAT"), "a written file lands beside the game");
 	Check(Read_File(Root + "\\MIX\\STILL.DAT") == "shipped", "a searched folder's copy is untouched");
 
@@ -485,7 +485,7 @@ void Test_Without_A_User_Directory_Nothing_Moves(void)
 	Check(File_Exists(Root + "\\MIX\\STILL.DAT"), "a delete leaves the searched folder's copy");
 
 	CDFileClass shipped("STILL.DAT");
-	Check(std::string(shipped.File_Name()) == "MIX\\STILL.DAT", "a read still falls through to the searched folders");
+	Check(_stricmp(shipped.File_Name(), "MIX\\STILL.DAT") == 0, "a read still falls through to the searched folders");
 }
 
 
