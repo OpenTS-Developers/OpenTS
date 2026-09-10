@@ -411,18 +411,19 @@ HRESULT MouseClass::Load(IStream * stream)
 		*/
 		Free_Cells();
 
-		delete CellSubzones;
+		delete [] CellSubzones;
 		CellSubzones = NULL;
-		delete CellZones;
+		delete [] CellZones;
 		CellZones = NULL;
 		ZoneAdjacency.clear();
 
 		for (i = 0; i < SUBZONE_COUNT; i++) {
 			SubzoneTracking[i].Clear();
+			SubzoneTrackingEntryCount[i] = 0;
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
-			delete Zones[i];
+			delete [] Zones[i];
 			Zones[i] = NULL;
 		}
 
@@ -450,19 +451,7 @@ HRESULT MouseClass::Load(IStream * stream)
 		*/
 		Init_Cells();
 
-		CellSubzones = NULL;
-		CellZones = NULL;
-
 		Set_Map_Dimensions(PlayRect, 1, 0, false);
-
-		if (CellSubzones) {
-			delete CellSubzones;
-			CellSubzones = NULL;
-		}
-		if (CellZones) {
-			delete CellZones;
-			CellZones = NULL;
-		}
 
 		CellSubzones = new CellSubzoneStruct[CellZoneCount];
 		CellZones = new CellZoneStruct[CellZoneCount];
@@ -470,19 +459,31 @@ HRESULT MouseClass::Load(IStream * stream)
 		for (i = 0; i < SUBZONE_COUNT; i++) {
 			int v = (1 << (i + 1));
 			SubzoneTracking[i].Clear();
+			SubzoneTrackingEntryCount[i] = 0;
 			SubzoneTracking[i].Set_Growth_Step((4 * PlayRect.Width * PlayRect.Height) / (v * v));
 		}
 
-		result = stream->Read(CellZones, sizeof(*CellZones) * CellZoneCount, NULL);
+		/*
+		 * These blocks are read raw, so a file whose records are a different size would drag
+		 * the rest of the stream out of step. A short read reports S_FALSE, not a failure.
+		 */
+		ULONG readcount = 0;
+		result = stream->Read(CellZones, sizeof(*CellZones) * CellZoneCount, &readcount);
 		if (FAILED(result)) {
 			return(result);
 		}
+		if (readcount != sizeof(*CellZones) * CellZoneCount) {
+			return(E_FAIL);
+		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
-			Zones[i] = new unsigned short[ZoneCount];
-			result = stream->Read(Zones[i], sizeof(unsigned short) * ZoneCount, NULL);
+			Zones[i] = new int[ZoneCount];
+			result = stream->Read(Zones[i], sizeof(*Zones[i]) * ZoneCount, &readcount);
 			if (FAILED(result)) {
 				return(result);
+			}
+			if (readcount != sizeof(*Zones[i]) * ZoneCount) {
+				return(E_FAIL);
 			}
 		}
 
@@ -559,7 +560,7 @@ HRESULT MouseClass::Save(IStream * stream)
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
-			result = stream->Write(Zones[i], sizeof(unsigned short) * ZoneCount, NULL);
+			result = stream->Write(Zones[i], sizeof(*Zones[i]) * ZoneCount, NULL);
 			if (FAILED(result)) {
 				return(result);
 			}

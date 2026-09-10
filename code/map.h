@@ -150,7 +150,7 @@ class MapClass: public GScreenClass
 		Cell Get_Zone_Connection_Destination(Cell const & cell, Cell const & reference);
 		Cell Find_Bridge_Span_End_Cell(Cell const & cell, Cell const & reference);
 		Cell Find_Bridge_End_Cell_For_Subzone(Cell const & cell, int subzone_level, int subzone_id);
-		bool Build_Reachable_Subzones(CellClass * cptr, int subzone_level, DynamicVectorClass<unsigned short> const & connections, FootClass const * foot);
+		bool Build_Reachable_Subzones(CellClass * cptr, int subzone_level, DynamicVectorClass<int> & connections, FootClass const * foot);
 		void Update_Cell_Subzones(Cell const & cell);
 		void Register_Subzone_Connection(ZoneConnectionClass * connection);
 		void Unregister_Subzone_Connection(ZoneConnectionClass * connection);
@@ -362,7 +362,7 @@ class MapClass: public GScreenClass
 		 * number, so two cells are mutually reachable by a given movement type only
 		 * when their zones map to the same number.
 		 */
-		unsigned short * Zones[MZONE_COUNT];
+		int * Zones[MZONE_COUNT];
 
 		/*
 		 * This is the number of base terrain zones the last rebuild produced, and thus the

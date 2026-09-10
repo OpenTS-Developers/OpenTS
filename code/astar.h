@@ -20,6 +20,8 @@
 #include "vector.h"
 
 #include <optional>
+#include <set>
+#include <utility>
 #include <vector>
 
 #include "facing.hh"
@@ -160,9 +162,9 @@ class AStarClass
 		 */
 		bool Find_Path_Hierarchical(Cell const & from, Cell const & to, MZoneType mzone, FootClass const * foot);
 		void Ban_Blocked_Subzone_Edges(FootClass const * foot);
-		bool Subzone_Edge_Banned(unsigned short subzone1, unsigned short subzone2, int subzone_level);
-		void Ban_Subzone_Edge(unsigned int subzone1, unsigned int subzone2, int subzone_level);
-		void Ban_Neighborhood_Subzone_Edges(unsigned int subzone, int subzone_level);
+		bool Subzone_Edge_Banned(int subzone1, int subzone2, int subzone_level);
+		void Ban_Subzone_Edge(int subzone1, int subzone2, int subzone_level);
+		void Ban_Neighborhood_Subzone_Edges(int subzone, int subzone_level);
 
 	private:
 		/* -----------------------------------------------------------------------------------
@@ -332,12 +334,12 @@ class AStarClass
 		 * per hierarchy level; the hierarchical search refuses to expand across
 		 * these when it retries after a regular pathfinding failure
 		 */
-		DynamicVectorClass<unsigned int> HierBannedEdges[SUBZONE_COUNT];
+		std::set<std::pair<int, int>> HierBannedEdges[SUBZONE_COUNT];
 
 		/*
 		 * Ordered list of subzone IDs forming the hierarchical path per level
 		 */
-		unsigned short HierSubzonePath[SUBZONE_COUNT][500];
+		int HierSubzonePath[SUBZONE_COUNT][500];
 
 		/*
 		 * Number of valid entries in each hierarchical subzone path
