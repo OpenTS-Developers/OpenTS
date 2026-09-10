@@ -502,7 +502,7 @@ bool FootClass::Basic_Path(Cell cell, int path_offset, int avoidance)
 		*/
 		bool found = false;		// Found a best path yet?
 		PathStruct path1;
-		FacingType workpath[200*10];	// Staging area for path list.
+		FacingType workpath[PATH_LENGTH_MAX + 1];	// Staging area for path list.
 		MoveType maxtype = MOVE_OK;
 
 		path = Find_Path(cell, &workpath[0], ARRAY_SIZE(workpath), maxtype, path_offset, avoidance);

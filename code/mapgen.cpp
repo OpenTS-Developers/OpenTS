@@ -41,6 +41,7 @@
 #include "language/language.h"
 #include "netshare.h"
 #include "nodes.h"
+#include "priority.h"
 #include "overtype.h"
 #include "ownrdraw.h"
 #include "pcx.h"
@@ -66,6 +67,8 @@
 
 #include <algorithm>
 #include <deque>
+#include <optional>
+#include <vector>
 
 
 bool (*RMGCallback)() = MapGen_Call_Back;
@@ -949,9 +952,8 @@ bool MapRegionClass::Split_Region(void)
 	}
 
 	int heap_size = (2 * CellCount) + 10;
-	CellNode * nodes = new CellNode[heap_size];
-	PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>((2 * CellCount) + 10);
-	queue->Clear();
+	PriorityQueueClass<CellNode> queue((2 * CellCount) + 10);
+	queue.Clear();
 
 	CellData::Reset_Spreads(false);
 
@@ -963,17 +965,17 @@ bool MapRegionClass::Split_Region(void)
 	unsigned int target_count = Pick_Random_UInt(CellCount / 8, CellCount / 3);
 	unsigned int seed_index = Pick_Random_UInt(0, Cells.Count() - 1);
 
-	int node_count = 1;
 	Cell seed = Cells[seed_index];
-	nodes[0].Element = seed;
-	nodes[0].Score = 0.0f;
+	CellNode seed_node;
+	seed_node.Element = seed;
+	seed_node.Score = 0.0f;
 	MapRegionClass::Get_Cell_Data(seed).SpreadID = -3;
-	queue->Insert(nodes[0]);
+	queue.Insert(seed_node);
 
-	CellNode * node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 	double dist = (unsigned int)RMGRandom() * (DEG_TO_RAD(360) / UINT_MAX);
 
-	while (node != NULL) {
+	while (node) {
 		if (spread_count >= (int)target_count) {
 			break;
 		}
@@ -981,39 +983,36 @@ bool MapRegionClass::Split_Region(void)
 		CellData::Set_Region(node->Element, -3);
 
 		int cell_index = node->Element.X + MapCellStride * node->Element.Y;
-		CellNode * newnode = &nodes[node_count];
 
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = (FacingType)(dir + FACING_90)) {
 			Cell ncell = Adjacent_Cell(node->Element, dir);
 			if (My_In_Radar(ncell)) {
 				if (CellData::Get_Region(ncell) == -2 && CellData::Get_Spread(ncell) != -3 && Map[ncell].Is_Tile_Clear()) {
-					newnode->Element = ncell;
-					newnode->Score = Get_Angle_Score(seed, ncell, dist);
+					CellNode newnode;
+					newnode.Element = ncell;
+					newnode.Score = Get_Angle_Score(seed, ncell, dist);
 					MapRegionClass::Get_Cell_Data(cell_index + AStarFacingToOffset[dir]).SpreadID = -3;
-					node_count++;
-					queue->Insert(*newnode++);
+					queue.Insert(newnode);
 				}
 			}
 		}
 
 		spread_count++;
 		dist += Sample_Normal(0, DEG_TO_RAD(22.5));
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
 	CellData::Reset_Spreads(false);
 
-	CellNode * remaining = queue->Extract_Min();
+	std::optional<CellNode> remaining = queue.Extract_Min();
 	DynamicVectorClass<Cell> ncells;
 
-	while (remaining != NULL) {
+	while (remaining) {
 		Cell c = remaining->Element;
 		MapRegionClass::Get_Cell_Data(c).RegionID = -3;
-		remaining = queue->Extract_Min();
+		remaining = queue.Extract_Min();
 	}
 
-	delete[] nodes;
-	delete queue;
 
 	DynamicVectorClass<MapRegionClass *> new_regions;
 	for (i = Cells.Count() - 1; i >= 0; i--) {
@@ -5506,8 +5505,7 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 		return(false);
 	}
 
-	CellNode *nodes = new CellNode[std::max((2 * spread_limit) + 2, 100)];
-	PriorityQueueClass<CellNode> *queue = new PriorityQueueClass<CellNode>(std::max((2 * spread_limit) + 2, 100));
+	PriorityQueueClass<CellNode> queue(std::max((2 * spread_limit) + 2, 100));
 
 	Map.Reset_Iterator();
 	CellClass *iter = Map.Iterate();
@@ -5574,21 +5572,21 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 	double mean = (double)(spread_limit / 3);
 	int spread_count = (int)Sample_Truncated_Normal(mean, scale, 75.0, (double)max_spread);
 
-	queue->Clear();
+	queue.Clear();
 
-	int marker_index = 1;
-	nodes[0].Element = seed_cell;
-	nodes[0].Score = 0.0f;
+	CellNode seed_node;
+	seed_node.Element = seed_cell;
+	seed_node.Score = 0.0f;
 	Set_Cell_Data_Spread(seed_cell, WorkingRegionID);
-	queue->Insert(nodes[0]);
+	queue.Insert(seed_node);
 
 	DynamicVectorClass<Cell> cells;
 	cells.Set_Growth_Step(2000);
 
-	CellNode *node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 	if (spread_count > 0) {
 		do {
-			if (node == NULL) {
+			if (!node) {
 				break;
 			}
 			if (!success) {
@@ -5606,7 +5604,6 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 
 			cells.Add(cellptr->CellID);
 
-			CellNode *newnode = &nodes[marker_index];
 			for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = FacingType(dir + FACING_90)) {
 				Cell newcell = Adjacent_Cell(node->Element, dir);
 				if (My_In_Radar(newcell)) {
@@ -5616,22 +5613,22 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 							success = false;
 						}
 					} else {
-						newnode->Element = newcell;
-						newnode->Score = Get_Spread_Score(seed_cell, newcell, seeded_count);
+						CellNode newnode;
+						newnode.Element = newcell;
+						newnode.Score = Get_Spread_Score(seed_cell, newcell, seeded_count);
 						Set_Cell_Data_Spread(newcell, WorkingRegionID);
-						marker_index++;
-						queue->Insert(*newnode++);
+						queue.Insert(newnode);
 					}
 				}
 			}
 
 			seeded_count++;
-			node = queue->Extract_Min();
+			node = queue.Extract_Min();
 		} while (seeded_count < spread_count);
 	}
 
-	CellNode *remaining = queue->Extract_Min();
-	while (remaining != NULL) {
+	std::optional<CellNode> remaining = queue.Extract_Min();
+	while (remaining) {
 		if (!success) {
 			break;
 		}
@@ -5650,7 +5647,7 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 			success = false;
 		}
 
-		remaining = queue->Extract_Min();
+		remaining = queue.Extract_Min();
 		seeded_count++;
 	}
 
@@ -5669,7 +5666,7 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 						int swamp_count = Pick_Random_UInt(0, 2);
 
 						for (int i = 0; i < swamp_count; i++) {
-							Generate_Swamp(cells, seeded_count, nodes, queue);
+							Generate_Swamp(cells, seeded_count);
 						}
 					}
 				}
@@ -5677,8 +5674,6 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 		}
 	}
 
-	delete queue;
-	delete[] nodes;
 
 	if (success) {
 		SeededWaterAmount += seeded_count;
@@ -5700,9 +5695,7 @@ bool MapGeneratorClass::Seed_Lake(const Cell & cell)
 /// <param name="cells">The water cells the swamp may claim.</param>
 /// <param name="last">The size of the water body, which decides how far the swamp may
 /// spread.</param>
-/// <param name="nodes">Scratch storage for the spread.</param>
-/// <param name="queue">The queue that orders the spread.</param>
-void MapGeneratorClass::Generate_Swamp(DynamicVectorClass<Cell> &cells, int last, CellNode *nodes, PriorityQueueClass<CellNode> *queue)
+void MapGeneratorClass::Generate_Swamp(DynamicVectorClass<Cell> &cells, int last)
 {
 	Cell swamp_origin = CELL_NONE;
 	int tries = 0;
@@ -5732,39 +5725,40 @@ void MapGeneratorClass::Generate_Swamp(DynamicVectorClass<Cell> &cells, int last
 	int min_spread = std::min(last / 8, 50);
 
 	int spread_count = Pick_Random_UInt(min_spread, max_spread);
-	queue->Clear();
+	PriorityQueueClass<CellNode> queue(std::max((2 * spread_count) + 2, 100));
 
 	int marker_index = 1;
-	nodes[0].Element = swamp_origin;
-	nodes[0].Score = 0;
-	queue->Insert(nodes[0]);
+	CellNode seed_node;
+	seed_node.Element = swamp_origin;
+	seed_node.Score = 0;
+	queue.Insert(seed_node);
 
-	CellNode * node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 	int spread_step = 0;
-	while (spread_step < spread_count && node != NULL) {
+	while (spread_step < spread_count && node) {
 		CellClass * cptr = &Map[node->Element];
 		cptr->ITType = IsometricTileTypeClass::SwampTile;
 		cptr->SubTile = 0;
 		swamp_cells.Add(cptr->CellID);
 
-		CellNode * newnode = &nodes[marker_index];
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = FacingType(dir + FACING_90)) {
 			Cell newcell = Adjacent_Cell(node->Element, dir);
 			if (My_In_Radar(newcell)) {
 				MapRegionClass::CellData & data = MapRegionClass::Get_Cell_Data(newcell);
 				CellClass * newcellptr = &Map[newcell];
 				if (newcellptr->ITType >= IsometricTileTypeClass::WaterSet && newcellptr->ITType < IsometricTileTypeClass::WaterSet + WATER_COUNT) {
-					newnode->Element = newcell;
-					newnode->Score = Get_Spread_Score(swamp_origin, newcell, spread_step);
+					CellNode newnode;
+					newnode.Element = newcell;
+					newnode.Score = Get_Spread_Score(swamp_origin, newcell, spread_step);
 					data.SpreadID = WorkingRegionID;
 					marker_index++;
-					queue->Insert(*newnode++);
+					queue.Insert(newnode);
 				}
 			}
 		}
 
 		spread_step++;
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
 	int i;
@@ -5867,8 +5861,7 @@ bool MapGeneratorClass::Seed_Arctic_Lake(const Cell & cell)
 		return(false);
 	}
 
-	CellNode *nodes = new CellNode[std::max((2 * spread_limit) + 2, 100)];
-	PriorityQueueClass<CellNode> *queue = new PriorityQueueClass<CellNode>(std::max((2 * spread_limit) + 2, 100));
+	PriorityQueueClass<CellNode> queue(std::max((2 * spread_limit) + 2, 100));
 
 	Map.Reset_Iterator();
 	CellClass *cptr = Map.Iterate();
@@ -5911,20 +5904,20 @@ bool MapGeneratorClass::Seed_Arctic_Lake(const Cell & cell)
 
 	int spread_count = (int)Sample_Truncated_Normal(mean, scale, 75.0, (double)max_spread);
 
-	queue->Clear();
+	queue.Clear();
 
-	int marker_index = 1;
-	nodes[0].Element = seed_cell;
-	nodes[0].Score = 0.0f;
+	CellNode seed_node;
+	seed_node.Element = seed_cell;
+	seed_node.Score = 0.0f;
 	Set_Cell_Data_Spread(seed_cell, WorkingRegionID);
-	queue->Insert(nodes[0]);
+	queue.Insert(seed_node);
 
-	CellNode *node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 
 	DynamicVectorClass<Cell> *ice_cells = new DynamicVectorClass<Cell>();
 	ice_cells->Set_Growth_Step(spread_count + 1);
 
-	while (seeded_count < spread_count && node != NULL) {
+	while (seeded_count < spread_count && node) {
 		Set_Cell_Data_Region(node->Element, WorkingRegionID);
 
 		CellClass *node_cellptr = &Map[node->Element];
@@ -5933,7 +5926,6 @@ bool MapGeneratorClass::Seed_Arctic_Lake(const Cell & cell)
 		node_cellptr->IsIceGrowthAllowed = true;
 		ice_cells->Add(node_cellptr->Fetch_CellID());
 
-		CellNode *newnode = &nodes[marker_index];
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = FacingType(dir + FACING_90)) {
 			Cell newcell = Adjacent_Cell(node->Element, dir);
 
@@ -5944,11 +5936,11 @@ bool MapGeneratorClass::Seed_Arctic_Lake(const Cell & cell)
 					if (!data.RegionID && data.SpreadID != WorkingRegionID) {
 						CellClass *newcellptr = &Map[newcell];
 						if (newcellptr->Is_Tile_Clear()) {
-							newnode->Element = newcell;
-							newnode->Score = Get_Spread_Score(seed_cell, newcell, seeded_count);
+							CellNode newnode;
+							newnode.Element = newcell;
+							newnode.Score = Get_Spread_Score(seed_cell, newcell, seeded_count);
 							Set_Cell_Data_Spread(newcell, WorkingRegionID);
-							marker_index++;
-							queue->Insert(*newnode++);
+							queue.Insert(newnode);
 						}
 					}
 				}
@@ -5956,11 +5948,11 @@ bool MapGeneratorClass::Seed_Arctic_Lake(const Cell & cell)
 		}
 
 		seeded_count++;
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
-	CellNode *remaining = queue->Extract_Min();
-	while (remaining != NULL) {
+	std::optional<CellNode> remaining = queue.Extract_Min();
+	while (remaining) {
 		if (!success) {
 			break;
 		}
@@ -5978,15 +5970,13 @@ bool MapGeneratorClass::Seed_Arctic_Lake(const Cell & cell)
 			ice_cells->Add(cellptr->CellID);
 		}
 
-		remaining = queue->Extract_Min();
+		remaining = queue.Extract_Min();
 		seeded_count++;
 	}
 
 	Seed_Ice(*ice_cells, (IsometricTileType)(IsometricTileTypeClass::Ice1Set + ICE_CRACKED));
 	Seed_Ice(*ice_cells, (IsometricTileType)(IsometricTileTypeClass::Ice1Set + ICE_EDGE));
 
-	delete queue;
-	delete[] nodes;
 	delete ice_cells;
 
 	if (success) {
@@ -6013,8 +6003,7 @@ void MapGeneratorClass::Seed_Ice(DynamicVectorClass<Cell> & cells, IsometricTile
 
 	int seed_count = Pick_Random_UInt(0, 15);
 
-	CellNode * nodes = new CellNode[std::max(cells.Count() * 2, 64)];
-	PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>(std::max(cells.Count() * 2, 64));
+	PriorityQueueClass<CellNode> queue(std::max(cells.Count() * 2, 64));
 
 	for (int i = cells.Count() - 1; i >= 0; i--) {
 		MapRegionClass::Get_Cell_Data(cells[i]).Iced = false;
@@ -6024,47 +6013,44 @@ void MapGeneratorClass::Seed_Ice(DynamicVectorClass<Cell> & cells, IsometricTile
 		int spread_step = 0;
 		int spread_limit = std::max(4, cells.Count() / 20);
 		int spread_count = Pick_Random_UInt(3, spread_limit);
-		queue->Clear();
+		queue.Clear();
 
 		int seed_index = Pick_Random_UInt(0, cells.Count() - 1);
-		int node_count = 1;
 		Cell seed_cell = cells[seed_index];
-		nodes[0].Element = seed_cell;
-		nodes[0].Score = 0.0f;
+		CellNode seed_node;
+		seed_node.Element = seed_cell;
+		seed_node.Score = 0.0f;
 
 		MapRegionClass::Get_Cell_Data(seed_cell).Iced = true;
-		queue->Insert(nodes[0]);
+		queue.Insert(seed_node);
 
-		CellNode * node = queue->Extract_Min();
-		while (spread_step < spread_count && node != NULL) {
+		std::optional<CellNode> node = queue.Extract_Min();
+		while (spread_step < spread_count && node) {
 			Map[node->Element].ITType = (IsometricTileType)last;
 
-			CellNode * newnode = &nodes[node_count];
 			for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = FacingType(dir + FACING_90)) {
 				Cell newcell = Adjacent_Cell(node->Element, dir);
 				if (My_In_Radar(newcell)) {
 					CellClass * newcellptr = &Map[newcell];
 					MapRegionClass::CellData & data = MapRegionClass::Get_Cell_Data(newcell);
 					if (newcellptr->Is_Tile_Ice() && !data.Iced) {
-						newnode->Element = newcell;
-						newnode->Score = Get_Ice_Score(seed_cell, newcell, rand_scale);
+						CellNode newnode;
+						newnode.Element = newcell;
+						newnode.Score = Get_Ice_Score(seed_cell, newcell, rand_scale);
 						data.Iced = true;
-						node_count++;
-						queue->Insert(*newnode++);
+						queue.Insert(newnode);
 					}
 				}
 			}
 
 			spread_step++;
-			node = queue->Extract_Min();
+			node = queue.Extract_Min();
 		}
 
 		seed_count--;
 	}
 
-	delete[] nodes;
 
-	delete queue;
 }
 
 
@@ -7243,10 +7229,8 @@ DynamicVectorClass<Cell> *MapGeneratorClass::Build_Region_Border_Cell_List(int i
 /// <returns>True if the region grew without colliding with another region.</returns>
 bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rect const & bounds, Cell const & origin, bool claim_frontier)
 {
-	CellNode * nodes = new CellNode[std::max(2 * LocalHeight * LocalWidth, 100)];
-	PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>(std::max(2 * LocalHeight * LocalWidth, 100));
+	PriorityQueueClass<CellNode> queue(std::max(2 * LocalHeight * LocalWidth, 100));
 
-	int marker_index = 0;
 	bool result_flag = true;
 
 	/*
@@ -7274,16 +7258,15 @@ bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rec
 
 	int spread_count = 0;
 	if (seed_count > 0) {
-		CellNode * newnode = nodes;
 		do {
 			Cell seed = (*seed_cells)[spread_count];
 			if (seed.X >= bounds.X && seed.X < bounds.X + bounds.Width &&
 				seed.Y >= bounds.Y && seed.Y < bounds.Y + bounds.Height) {
 
-				newnode->Element = seed;
-				newnode->Score = Get_Angle_Score(origin, seed, angle);
-				marker_index++;
-				queue->Insert(*newnode++);
+				CellNode newnode;
+				newnode.Element = seed;
+				newnode.Score = Get_Angle_Score(origin, seed, angle);
+				queue.Insert(newnode);
 			}
 		} while (++spread_count < seed_count);
 	}
@@ -7301,12 +7284,12 @@ bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rec
 	spread_count = (int)(1.0f / ((float)(1.0 / scale) * spread_scale) * 0.5f);
 	spread_count += Pick_Random_UInt(0, spread_count / 2);
 
-	CellNode * node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 
 	int spread_step = 0;
 	if (spread_count > 0) {
 		while (true) {
-			if (!result_flag || node == NULL) {
+			if (!result_flag || !node) {
 				break;
 			}
 
@@ -7318,7 +7301,6 @@ bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rec
 				}
 			}
 
-			CellNode * newnode = &nodes[marker_index];
 			for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = FacingType(dir + FACING_90)) {
 				Cell newcell = Adjacent_Cell(node->Element, dir);
 				if (My_In_Radar(newcell)) {
@@ -7330,11 +7312,11 @@ bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rec
 							newcell.Y >= bounds.Y && newcell.Y < bounds.Y + bounds.Height &&
 							Map[newcell].Is_Tile_Clear()) {
 
-							newnode->Element = newcell;
-							newnode->Score = Get_Angle_Score(origin, newcell, angle);
+							CellNode newnode;
+							newnode.Element = newcell;
+							newnode.Score = Get_Angle_Score(origin, newcell, angle);
 							Set_Cell_Data_Spread(newcell, region_id);
-							marker_index++;
-							queue->Insert(*newnode++);
+							queue.Insert(newnode);
 							continue;
 						}
 						other_region = MapRegionClass::Get_Cell_Data(newcell).RegionID;
@@ -7353,7 +7335,7 @@ bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rec
 
 			spread_step++;
 			angle += Sample_Normal(0, M_PI_4);
-			node = queue->Extract_Min();
+			node = queue.Extract_Min();
 			if (spread_step >= spread_count) {
 				break;
 			}
@@ -7364,8 +7346,8 @@ bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rec
 	 * Optionally drain the remaining frontier and assign it to the region.
 	 */
 	if (claim_frontier) {
-		CellNode * remaining = queue->Extract_Min();
-		while (remaining != NULL) {
+		std::optional<CellNode> remaining = queue.Extract_Min();
+		while (remaining) {
 			if (!result_flag) {
 				break;
 			}
@@ -7385,12 +7367,10 @@ bool MapGeneratorClass::Grow_Water_Region(int region_id, float spread_scale, Rec
 				}
 			}
 
-			remaining = queue->Extract_Min();
+			remaining = queue.Extract_Min();
 		}
 	}
 
-	delete[] nodes;
-	delete queue;
 
 	return(result_flag);
 }
@@ -7581,22 +7561,21 @@ bool MapGeneratorClass::Init_Start_Points(void)
 		while (true) {
 			Cell seed = Scen->Get_Waypoint_Cell((WAYPOINT)player_index);
 
-			CellNode * nodes = new CellNode[800];
-			PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>(800);
+			PriorityQueueClass<CellNode> queue(800);
 
 			Clear_Cell_Data_Spreads();
-			queue->Clear();
+			queue.Clear();
 
 			int patch_id = player_index + 1;
-			int node_count = 1;
 			int spread_count = 0;
-			nodes[0].Element = seed;
-			nodes[0].Score = 0.0f;
+			CellNode seed_node;
+			seed_node.Element = seed;
+			seed_node.Score = 0.0f;
 			MapRegionClass::Get_Cell_Data(seed).SpreadID = patch_id;
-			queue->Insert(nodes[0]);
+			queue.Insert(seed_node);
 
-			CellNode * node = queue->Extract_Min();
-			if (node == NULL) {
+			std::optional<CellNode> node = queue.Extract_Min();
+			if (!node) {
 				break;
 			}
 
@@ -7607,25 +7586,24 @@ bool MapGeneratorClass::Init_Start_Points(void)
 
 				MapRegionClass::Get_Cell_Data(node->Element).Inviolate = true;
 
-				CellNode * newnode = &nodes[node_count];
 				for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
 					Cell ncell = Adjacent_Cell(node->Element, dir);
 					if (My_In_Radar(ncell) && MapRegionClass::Get_Cell_Data(ncell).SpreadID == 0) {
 						if (Map[ncell].Is_Tile_Clear()) {
-							newnode->Element = ncell;
+							CellNode newnode;
+							newnode.Element = ncell;
 							int dx = ncell.X - seed.X;
 							int dy = ncell.Y - seed.Y;
-							newnode->Score = std::sqrt((double)(dx * dx + dy * dy));
+							newnode.Score = std::sqrt((double)(dx * dx + dy * dy));
 							MapRegionClass::Get_Cell_Data(ncell).SpreadID = patch_id;
-							node_count++;
-							queue->Insert(*newnode++);
+							queue.Insert(newnode);
 						}
 					}
 				}
 
 				spread_count++;
-				node = queue->Extract_Min();
-				if (node == NULL) {
+				node = queue.Extract_Min();
+				if (!node) {
 					break;
 				}
 			}
@@ -7634,8 +7612,6 @@ bool MapGeneratorClass::Init_Start_Points(void)
 				break;
 			}
 
-			delete[] nodes;
-			delete queue;
 
 			player_index = patch_id;
 			if (patch_id >= SeedData.NumPlayers) {
@@ -7768,9 +7744,21 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 		"TIBTRE03"
 	};
 
+	/*
+	 * A slot in the node pool below, ordered by the score that slot carries. The queue holds
+	 * these rather than the nodes themselves so that the spread keeps reading its cell out
+	 * of the pool, which is what the restart further down depends on.
+	 */
+	struct PoolSlot {
+		int Index;
+		float Score;
+
+		bool operator<(PoolSlot const & other) const { return((double)Score < (double)other.Score); }
+	};
+
 	int placed_count = 0;
-	CellNode *nodes = new CellNode[10 * count];
-	PriorityQueueClass<CellNode> *queue = new PriorityQueueClass<CellNode>(10 * count);
+	std::vector<CellNode> nodes(10 * count);
+	PriorityQueueClass<PoolSlot> queue(10 * count);
 
 	bool queue_was_reset_for_spread = false;
 	Cell spread_origin = cell;
@@ -7786,8 +7774,8 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 	int wildlife_trigger = Pick_Random_UInt(0, count);
 	HouseClass *neutral = House_From_HousesType(HouseTypeClass::From_Name("Neutral"));
 
-	queue->Clear();
-	CellNode *node = NULL;
+	queue.Clear();
+	int node_index = -1;
 	int marker_index = 0;
 	int visited = 1;
 
@@ -7796,8 +7784,8 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 			break;
 		}
 
-		if (node == NULL) {
-			queue->Clear();
+		if (node_index < 0) {
+			queue.Clear();
 
 			Map.Reset_Iterator();
 			CellClass *iter = Map.Iterate();
@@ -7811,27 +7799,28 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 			nodes[0].Element = cell;
 			nodes[0].Score = 0;
 			Set_Cell_Data_Spread(cell, patch_id);
-			queue->Insert(nodes[0]);
-			node = queue->Extract_Min();
+			queue.Insert(PoolSlot{0, nodes[0].Score});
+
+			std::optional<PoolSlot> taken = queue.Extract_Min();
+			node_index = taken ? taken->Index : -1;
 			queue_was_reset_for_spread = false;
 			restart_count++;
 			spread_origin = cell;
 		}
 
 		/*
-		 * Every use below reads node->Element THROUGH the node pointer, and the loop
-		 * re-reads it on every pass. This is load-bearing: the neighbor writes go
-		 * to nodes[marker_index], and marker_index is reset to 0 in the block below
-		 * while node still points at nodes[0], so the first neighbor stored OVERWRITES
-		 * node->Element and the remaining directions are taken from the new cell.
-		 * Caching the cell in a local would silently scan the true 8-neighborhood and
-		 * generate different tiberium fields.
+		 * Every use below reads the cell back out of its pool slot, and the loop re-reads
+		 * it on every pass. This is load-bearing: the neighbor writes go to
+		 * nodes[marker_index], and marker_index is reset to 0 in the block below while the
+		 * slot in hand is still nodes[0], so the first neighbor stored OVERWRITES that cell
+		 * and the remaining directions are taken from the new one. Holding the cell in a
+		 * local would silently scan the true 8-neighborhood and generate different fields.
 		 */
-		CellClass *cellptr = &Map[node->Element];
-		if (MapRegionClass::CellData::Is_Not_Inviolate(node->Element)) {
+		CellClass *cellptr = &Map[nodes[node_index].Element];
+		if (MapRegionClass::CellData::Is_Not_Inviolate(nodes[node_index].Element)) {
 			if (!queue_was_reset_for_spread) {
-				spread_origin = node->Element;
-				queue->Clear();
+				spread_origin = nodes[node_index].Element;
+				queue.Clear();
 				marker_index = 0;
 				queue_was_reset_for_spread = true;
 			}
@@ -7853,7 +7842,7 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 			}
 
 			if (first_placed_cell == CELL_NONE) {
-				first_placed_cell = node->Element;
+				first_placed_cell = nodes[node_index].Element;
 			}
 
 			if (placed_count == wildlife_trigger && wildlife_count > 0 && spawn_wildlife) {
@@ -7866,7 +7855,7 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 				}
 
 				if (foot != NULL) {
-					if (!foot->Unlimbo(node->Element.As_Coord(), DIR_N)) {
+					if (!foot->Unlimbo(nodes[node_index].Element.As_Coord(), DIR_N)) {
 						delete foot;
 					}
 				}
@@ -7880,7 +7869,7 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 
 		CellNode *newnode = &nodes[marker_index];
 		for (int dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
-			Cell newcell = Adjacent_Cell(node->Element, (FacingType)dir);
+			Cell newcell = Adjacent_Cell(nodes[node_index].Element, (FacingType)dir);
 			if (Map.In_Local_Radar(newcell, true)) {
 				CellClass *newcellptr = &Map[newcell];
 				if (newcellptr->Is_Tile_Clear()) {
@@ -7890,13 +7879,15 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 						newnode->Score = Get_Tiberium_Score(spread_origin, newcell);
 						Set_Cell_Data_Spread(newcell, patch_id);
 						marker_index++;
-						queue->Insert(*newnode++);
+						queue.Insert(PoolSlot{(int)(newnode - nodes.data()), newnode->Score});
+						newnode++;
 					}
 				}
 			}
 		}
 
-		node = queue->Extract_Min();
+		std::optional<PoolSlot> taken = queue.Extract_Min();
+		node_index = taken ? taken->Index : -1;
 	}
 
 	if (place_tree) {
@@ -7906,8 +7897,6 @@ void MapGeneratorClass::Create_Tiberium_Patch(Cell const &cell, int count, int p
 		}
 	}
 
-	delete[] nodes;
-	delete queue;
 }
 
 
@@ -8397,21 +8386,20 @@ void MapGeneratorClass::Generate_Arctic_Vegetation(void)
 /// <param name="density">The chance, from 0 to 1, that a cell reached is given a tree.</param>
 void MapGeneratorClass::Place_Forest(CellClass const * cellptr, int count, double density)
 {
-	CellNode * nodes = new CellNode[10 * count];
-	PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>(10 * count);
+	PriorityQueueClass<CellNode> queue(10 * count);
 	int i = 0;
-	queue->Clear();
+	queue.Clear();
 
-	int node_count = 1;
 	Cell cell = cellptr->Fetch_CellID();
-	nodes->Element = cell;
-	nodes->Score = 0;
+	CellNode seed_node;
+	seed_node.Element = cell;
+	seed_node.Score = 0;
 
 	MapRegionClass::Get_Cell_Data(cellptr->Fetch_CellID()).Forested = true;
 
-	queue->Insert(*nodes);
+	queue.Insert(seed_node);
 
-	CellNode * node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 
 	int min_tree = 1;
 	int max_tree = 25;
@@ -8423,7 +8411,7 @@ void MapGeneratorClass::Place_Forest(CellClass const * cellptr, int count, doubl
 		min_tree = 21;
 	}
 
-	while (i < count && node != NULL) {
+	while (i < count && node) {
 		CellClass * cptr = &Map[node->Element];
 		if (cptr->Is_Tile_Clear() && cptr->Cell_Occupier() == NULL && cptr->Overlay == OVERLAY_NONE && cptr->Land_Type() != LAND_ROCK) {
 			if (Random_Fraction() < density) {
@@ -8434,27 +8422,24 @@ void MapGeneratorClass::Place_Forest(CellClass const * cellptr, int count, doubl
 			}
 		}
 
-		CellNode * newnode = &nodes[node_count];
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
 			Cell newcell = Adjacent_Cell(node->Element, dir);
 			if (My_In_Radar(newcell)) {
 				MapRegionClass::CellData & data = MapRegionClass::Get_Cell_Data(newcell);
 				if (!data.Forested && !data.Inviolate) {
-					newnode->Element = newcell;
-					newnode->Score = Get_Forest_Score(cellptr->Fetch_CellID(), newcell);
+					CellNode newnode;
+					newnode.Element = newcell;
+					newnode.Score = Get_Forest_Score(cellptr->Fetch_CellID(), newcell);
 					data.Forested = true;
-					node_count++;
-					queue->Insert(*newnode++);
+					queue.Insert(newnode);
 				}
 			}
 		}
 
 		i++;
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
-	delete[] nodes;
-	delete queue;
 }
 
 
@@ -8491,48 +8476,44 @@ double MapGeneratorClass::Get_Forest_Score(const Cell & cell1, const Cell & cell
 /// <param name="on_pavement">May the patch spread over pavement as well as open ground?</param>
 void MapGeneratorClass::Place_Tile_Patch(CellClass * cellptr, IsometricTileType ittype, int count, int origin_id, bool on_pavement)
 {
-	CellNode * nodes = new CellNode[10 * count];
-	PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>(10 * count);
+	PriorityQueueClass<CellNode> queue(10 * count);
 	int i = 0;
-	queue->Clear();
+	queue.Clear();
 
-	int node_count = 1;
 	Cell cell = cellptr->Fetch_CellID();
-	nodes->Element = cell;
-	nodes->Score = 0;
+	CellNode seed_node;
+	seed_node.Element = cell;
+	seed_node.Score = 0;
 
 	MapRegionClass::Get_Cell_Data(cellptr->Fetch_CellID()).SpreadID = origin_id;
 
-	queue->Insert(*nodes);
+	queue.Insert(seed_node);
 
-	CellNode * node = queue->Extract_Min();
-	while (i < count && node != NULL) {
+	std::optional<CellNode> node = queue.Extract_Min();
+	while (i < count && node) {
 		CellClass * cptr = &Map[node->Element];
 		cptr->ITType = ittype;
 
-		CellNode * newnode = &nodes[node_count];
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
 			Cell newcell = Adjacent_Cell(node->Element, dir);
 			if (My_In_Radar(newcell)) {
 				CellClass * newcellptr = &Map[newcell];
 				if (newcellptr->Is_Tile_Clear() || on_pavement && (newcellptr->Is_Tile_Pavement() || newcellptr->Is_Tile_Misc_Pavement())) {
 					if (MapRegionClass::Get_Cell_Data(newcell).SpreadID != origin_id && newcellptr->Ramp == RAMP_NONE && newcellptr->Overlay == OVERLAY_NONE && newcellptr->Cell_Occupier() == NULL) {
-						newnode->Element = newcell;
-						newnode->Score = Get_Tile_Patch_Score(cellptr->Fetch_CellID(), newcell);
+						CellNode newnode;
+						newnode.Element = newcell;
+						newnode.Score = Get_Tile_Patch_Score(cellptr->Fetch_CellID(), newcell);
 						MapRegionClass::Get_Cell_Data(newcell).SpreadID = origin_id;
-						node_count++;
-						queue->Insert(*newnode++);
+						queue.Insert(newnode);
 					}
 				}
 			}
 		}
 
 		i++;
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
-	delete[] nodes;
-	delete queue;
 }
 
 
@@ -8588,24 +8569,23 @@ void MapGeneratorClass::Generate_Mold(void)
 	int spread_count = Pick_Random_UInt(30, 150);
 	int heap_size = std::max(100, 6 * spread_count);
 
-	CellNode * nodes = new CellNode[heap_size];
-	PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>(heap_size);
-	queue->Clear();
+	PriorityQueueClass<CellNode> queue(heap_size);
+	queue.Clear();
 
 	int marker_index = 1;
-	nodes[0].Element = mold_origin;
-	nodes[0].Score = 0;
-	queue->Insert(nodes[0]);
+	CellNode seed_node;
+	seed_node.Element = mold_origin;
+	seed_node.Score = 0;
+	queue.Insert(seed_node);
 
-	CellNode * node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 	int spread_step = 0;
-	while (spread_step < spread_count && node != NULL) {
+	while (spread_step < spread_count && node) {
 		CellClass * cptr = &Map[node->Element];
 		cptr->ITType = IsometricTileTypeClass::BlueMoldTile;
 		cptr->SubTile = 0;
 		cells.Add(cptr->CellID);
 
-		CellNode * newnode = &nodes[marker_index];
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = FacingType(dir + FACING_90)) {
 			Cell newcell = Adjacent_Cell(node->Element, dir);
 			if (My_In_Radar(newcell)) {
@@ -8622,17 +8602,18 @@ void MapGeneratorClass::Generate_Mold(void)
 				}
 
 				if (can_spread && !data.Inviolate && marker_index < heap_size) {
-					newnode->Element = newcell;
-					newnode->Score = Get_Spread_Score(mold_origin, newcell, spread_step);
+					CellNode newnode;
+					newnode.Element = newcell;
+					newnode.Score = Get_Spread_Score(mold_origin, newcell, spread_step);
 					data.SpreadID = WorkingRegionID;
 					marker_index++;
-					queue->Insert(*newnode++);
+					queue.Insert(newnode);
 				}
 			}
 		}
 
 		spread_step++;
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
 	int i;
@@ -8673,8 +8654,6 @@ void MapGeneratorClass::Generate_Mold(void)
 
 	DebugString("Mold heap size: %d -- Marker Index: %d\n", heap_size, marker_index);
 
-	delete queue;
-	delete[] nodes;
 }
 
 
@@ -8743,27 +8722,28 @@ void MapGeneratorClass::Generate_Crystals(const Cell & cell)
 		heap_size = 100;
 	}
 
-	CellNode *nodes = new CellNode[heap_size];
-	PriorityQueueClass<CellNode> *queue = new PriorityQueueClass<CellNode>(heap_size);
-	queue->Clear();
+	PriorityQueueClass<CellNode> queue(heap_size);
+	queue.Clear();
 
 	int marker_index = 0;
 	if (on_cliff) {
-		nodes[0].Element = cliff_seed;
-		nodes[0].Score = 0;
+		CellNode seed_node;
+		seed_node.Element = cliff_seed;
+		seed_node.Score = 0;
 		marker_index = 1;
-		queue->Insert(nodes[0]);
+		queue.Insert(seed_node);
 	}
 
-	CellNode *seed = &nodes[marker_index++];
-	seed->Element = crystal_origin;
-	seed->Score = 0;
-	queue->Insert(*seed);
+	CellNode seed;
+	seed.Element = crystal_origin;
+	seed.Score = 0;
+	marker_index++;
+	queue.Insert(seed);
 
-	CellNode *node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 	int spread_step = 0;
 	while (spread_step < spread_count) {
-		if (node == NULL) {
+		if (!node) {
 			break;
 		}
 		CellClass *cptr = &Map[node->Element];
@@ -8771,23 +8751,23 @@ void MapGeneratorClass::Generate_Crystals(const Cell & cell)
 		cptr->SubTile = 0;
 		cells.Add(cptr->CellID);
 
-		CellNode *newnode = &nodes[marker_index];
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir = FacingType(dir + FACING_90)) {
 			Cell newcell = Adjacent_Cell(node->Element, dir);
 			if (My_In_Radar(newcell)) {
 				MapRegionClass::CellData & data = MapRegionClass::Get_Cell_Data(newcell);
 				if (Map[newcell].Is_Tile_Clear() && Map[newcell].Overlay == OVERLAY_NONE && marker_index < heap_size) {
-					newnode->Element = newcell;
-					newnode->Score = Get_Spread_Score(crystal_origin, newcell, spread_step);
+					CellNode newnode;
+					newnode.Element = newcell;
+					newnode.Score = Get_Spread_Score(crystal_origin, newcell, spread_step);
 					data.SpreadID = WorkingRegionID;
 					marker_index++;
-					queue->Insert(*newnode++);
+					queue.Insert(newnode);
 				}
 			}
 		}
 
 		spread_step++;
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
 	int i;
@@ -8823,8 +8803,6 @@ void MapGeneratorClass::Generate_Crystals(const Cell & cell)
 
 	DebugString("Mold heap size: %d -- Marker Index: %d\n", heap_size, marker_index);
 
-	delete queue;
-	delete[] nodes;
 }
 
 double ConditionRedChances[BIOME_COUNT] = {0.5, 0.2, 0.2, 0.6, 0.8};
@@ -8899,9 +8877,8 @@ void MapGeneratorClass::Generate_Urban_Areas(void)
 /// <returns>The collected urban area cells, or NULL if the area is too small or sparse.</returns>
 DynamicVectorClass<Cell> * MapGeneratorClass::Create_Urban_Area(Cell const & cell, int size)
 {
-	CellNode * nodes = new CellNode[10 * size];
-	PriorityQueueClass<CellNode> * queue = new PriorityQueueClass<CellNode>(10 * size);
-	queue->Clear();
+	PriorityQueueClass<CellNode> queue(10 * size);
+	queue.Clear();
 
 	int processed = 0;
 
@@ -8913,22 +8890,21 @@ DynamicVectorClass<Cell> * MapGeneratorClass::Create_Urban_Area(Cell const & cel
 		cptr = Map.Iterate();
 	}
 
-	nodes[0].Element = (Cell &)cell;
-	nodes[0].Score = 0;
+	CellNode seed_node;
+	seed_node.Element = (Cell &)cell;
+	seed_node.Score = 0;
 	Set_Cell_Data_Spread(cell, 1);
-	int node_count = 1;
-	queue->Insert(nodes[0]);
+	queue.Insert(seed_node);
 
-	CellNode * node = queue->Extract_Min();
+	std::optional<CellNode> node = queue.Extract_Min();
 
 	DynamicVectorClass<Cell> * cells = new DynamicVectorClass<Cell>;
 	cells->Set_Growth_Step(size + 2);
 
-	while (size > processed && node != NULL) {
+	while (size > processed && node) {
 		Map[node->Element].ITType = IsometricTileTypeClass::PaveTile;
 		cells->Add(node->Element);
 
-		CellNode * newnode = &nodes[node_count];
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
 			Cell newcell = Adjacent_Cell(node->Element, dir);
 			if (My_In_Radar(newcell)) {
@@ -8936,22 +8912,20 @@ DynamicVectorClass<Cell> * MapGeneratorClass::Create_Urban_Area(Cell const & cel
 				if (newcellptr->Is_Tile_Clear() && newcellptr->Overlay == OVERLAY_NONE) {
 					MapRegionClass::CellData & data = MapRegionClass::Get_Cell_Data(newcell);
 					if (data.SpreadID != 1 && !data.Inviolate) {
-						newnode->Element = newcell;
-						newnode->Score = Get_Urban_Score(cell, newcell);
+						CellNode newnode;
+						newnode.Element = newcell;
+						newnode.Score = Get_Urban_Score(cell, newcell);
 						Set_Cell_Data_Spread(newcell, 1);
-						node_count++;
-						queue->Insert(*newnode++);
+						queue.Insert(newnode);
 					}
 				}
 			}
 		}
 
 		processed++;
-		node = queue->Extract_Min();
+		node = queue.Extract_Min();
 	}
 
-	delete[] nodes;
-	delete queue;
 
 	Rect bounds = Get_Cell_Bounding_Rect(*cells);
 

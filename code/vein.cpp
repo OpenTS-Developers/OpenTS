@@ -49,6 +49,7 @@
 #include "ramp.hh"
 
 #include <cstdio>
+#include <optional>
 
 DynamicVectorClass<VeinholeMonsterClass *> VeinholeMonsterClass::VeinholeMonsters;
 
@@ -64,8 +65,6 @@ static bool * GlobalGrowthState = NULL;
 VeinholeMonsterClass::VeinholeMonsterClass(void) :
 	BASECLASS(),
 	GrowthCount(0),
-	GrowthQueue(NULL),
-	GrowthNodes(NULL),
 	GrowthTimer(0),
 	GrowthState(NULL),
 	CurrentState(IDLE),
@@ -79,9 +78,8 @@ VeinholeMonsterClass::VeinholeMonsterClass(void) :
 	VeinCount(0)
 {
 	VeinholeMonsters.Add(this);
-	GrowthNodes = new CellNode[Rule->MaxVeinholeGrowth];
-	GrowthQueue = new PriorityQueueClass<CellNode>(Rule->MaxVeinholeGrowth);
-	GrowthQueue->Clear();
+	GrowthQueue.Clear();
+	GrowthQueue.Reserve(Rule->MaxVeinholeGrowth);
 	if (GlobalGrowthState == NULL) {
 		GlobalGrowthState = new bool [Map_Cell_Count()];
 	}
@@ -99,8 +97,6 @@ VeinholeMonsterClass::VeinholeMonsterClass(void) :
 VeinholeMonsterClass::VeinholeMonsterClass(Cell const & cell) :
 	BASECLASS(),
 	GrowthCount(0),
-	GrowthQueue(NULL),
-	GrowthNodes(NULL),
 	GrowthTimer(Rule->VeinholeGrowthRate),
 	GrowthState(NULL),
 	CurrentState(IDLE),
@@ -144,9 +140,8 @@ VeinholeMonsterClass::VeinholeMonsterClass(Cell const & cell) :
 		Control.Set_Step(0);
 		Control.Set_Stage(-1);
 
-		GrowthNodes = new CellNode[Rule->MaxVeinholeGrowth];
-		GrowthQueue = new PriorityQueueClass<CellNode>(Rule->MaxVeinholeGrowth);
-		GrowthQueue->Clear();
+		GrowthQueue.Clear();
+		GrowthQueue.Reserve(Rule->MaxVeinholeGrowth);
 
 		if (GlobalGrowthState == NULL) {
 			GlobalGrowthState = new bool[Map_Cell_Count()];
@@ -525,16 +520,14 @@ void VeinholeMonsterClass::Grow(void)
 {
 	static const int _mod = 5;
 
-	if (GrowthQueue && GrowthCount <= Rule->MaxVeinholeGrowth - 40 && VeinCount <= Rule->MaxVeinholeGrowth - 100 && Scen->IsVeinGrowth) {
-
-		double amount = GrowthQueue->Count();
+	if (GrowthCount <= Rule->MaxVeinholeGrowth - 40 && VeinCount <= Rule->MaxVeinholeGrowth - 100 && Scen->IsVeinGrowth) {
 
 		int index = 0;
 		int count = (abs(Scen->RandomNumber) % _mod) + 1;
 
-		CellNode * node = GrowthQueue->Extract_Min();
+		std::optional<CellNode> node = GrowthQueue.Extract_Min();
 
-		while (index < count && node != NULL) {
+		while (index < count && node) {
 			CellClass & cell = Map[node->Element];
 
 			if (cell.OverlayData < OVERLAYDATA_FIRST_SOLID_VEIN) {
@@ -559,10 +552,10 @@ void VeinholeMonsterClass::Grow(void)
 							int cindex = Map_Cell_Index(adjacent);
 							if (cindex >= 0 && cindex < Map_Cell_Count()) {
 								if (adj_cell.Can_Place_Veins() && !GlobalGrowthState[cindex] && GrowthCount < Rule->MaxVeinholeGrowth) {
-									GrowthNodes[GrowthCount].Element = adjacent;
-									GrowthNodes[GrowthCount].Score = float(Frame / 50 + abs(Scen->RandomNumber() % 50) + 1);
+									float score = float(Frame / 50 + abs(Scen->RandomNumber() % 50) + 1);
 									GlobalGrowthState[cindex] = true;
-									GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+									GrowthQueue.Insert(CellNode(adjacent, score));
+									GrowthCount++;
 								}
 								GrowthState[cindex] = true;
 							}
@@ -573,7 +566,7 @@ void VeinholeMonsterClass::Grow(void)
 
 			index++;
 			if (index < count) {
-				node = GrowthQueue->Extract_Min();
+				node = GrowthQueue.Extract_Min();
 			}
 		}
 	}
@@ -588,17 +581,15 @@ void VeinholeMonsterClass::Shrink(void)
 {
 	static const int _mod = 4;
 
-	if (GrowthQueue != NULL) {
-		int index = 0;
-		int count = abs(Scen->RandomNumber) % _mod + 1;
-		CellNode * node = GrowthQueue->Extract_Min();
+	int index = 0;
+	int count = abs(Scen->RandomNumber) % _mod + 1;
+	std::optional<CellNode> node = GrowthQueue.Extract_Min();
 
-		while (index < count && node != NULL) {
-			Reduce_Veins_At(&Map[Map[node->Element].CellID]);
-			index++;
-			if (index < count) {
-				node = GrowthQueue->Extract_Min();
-			}
+	while (index < count && node) {
+		Reduce_Veins_At(&Map[Map[node->Element].CellID]);
+		index++;
+		if (index < count) {
+			node = GrowthQueue.Extract_Min();
 		}
 	}
 }
@@ -620,11 +611,10 @@ void VeinholeMonsterClass::Init_Vein_Growth_System(bool clear)
 		Deinit_Vein_Growth_System();
 
 		for (i = VeinholeMonsters.Count() - 1; i >= 0; i--) {
-			VeinholeMonsters[i]->GrowthNodes = new CellNode[Rule->MaxVeinholeGrowth];
-			VeinholeMonsters[i]->GrowthQueue = new PriorityQueueClass<CellNode>(Rule->MaxVeinholeGrowth);
+			VeinholeMonsters[i]->GrowthQueue.Reserve(Rule->MaxVeinholeGrowth);
 			VeinholeMonsters[i]->GrowthState = new bool[cell_count];
 			memset(VeinholeMonsters[i]->GrowthState, 0, cell_count);
-			VeinholeMonsters[i]->GrowthQueue->Clear();
+			VeinholeMonsters[i]->GrowthQueue.Clear();
 		}
 	}
 
@@ -686,7 +676,7 @@ void VeinholeMonsterClass::Build_Growth_Queue(void)
 
 	GrowthCount = 0;
 	VeinCount = 0;
-	GrowthQueue->Clear();
+	GrowthQueue.Clear();
 
 	for (int i = Map_Cell_Count() - 1; i >= 0; i--) {
 		GrowthState[i] = false;
@@ -706,9 +696,8 @@ void VeinholeMonsterClass::Build_Growth_Queue(void)
 						VeinCount++;
 					} else {
 						if (GrowthCount < Rule->MaxVeinholeGrowth) {
-							GrowthNodes[GrowthCount].Element = cellptr->CellID;
-							GrowthNodes[GrowthCount].Score = 0;
-							GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+							GrowthQueue.Insert(CellNode(cellptr->CellID, 0.0f));
+							GrowthCount++;
 						}
 					}
 				}
@@ -730,9 +719,8 @@ void VeinholeMonsterClass::Build_Growth_Queue(void)
 					VeinCount++;
 				} else {
 					if (GrowthCount < Rule->MaxVeinholeGrowth) {
-						GrowthNodes[GrowthCount].Element = adjacent->CellID;
-						GrowthNodes[GrowthCount].Score = 0;
-						GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+						GrowthQueue.Insert(CellNode(adjacent->CellID, 0.0f));
+						GrowthCount++;
 						if (adjacent->OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN) {
 							cells.Add(adjacent->CellID);
 						}
@@ -760,7 +748,7 @@ void VeinholeMonsterClass::Build_Growth_Queue(void)
 void VeinholeMonsterClass::Build_Shrinking_Queue(void)
 {
 	GrowthCount = 0;
-	GrowthQueue->Clear();
+	GrowthQueue.Clear();
 	VeinCount = 0;
 
 	Map.Reset_Iterator();
@@ -770,9 +758,9 @@ void VeinholeMonsterClass::Build_Shrinking_Queue(void)
 			int index = Map_Cell_Index(iter->CellID);
 			if (index >= 0 && index < Map_Cell_Count() && GrowthState[index]) {
 				if (GrowthCount < Rule->MaxVeinholeGrowth) {
-					GrowthNodes[GrowthCount].Element = iter->CellID;
-					GrowthNodes[GrowthCount].Score = 1000 - Point2D(iter->CellID.X, iter->CellID.Y).Distance_To(Point2D(CellID.X, CellID.Y));
-					GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+					float score = 1000 - Point2D(iter->CellID.X, iter->CellID.Y).Distance_To(Point2D(CellID.X, CellID.Y));
+					GrowthQueue.Insert(CellNode(iter->CellID, score));
+					GrowthCount++;
 					VeinCount++;
 				}
 			}
@@ -799,19 +787,10 @@ void VeinholeMonsterClass::Clear_Global_Data(void)
 /// </summary>
 void VeinholeMonsterClass::Clear_Growth(void)
 {
-	if (GrowthQueue) {
-		GrowthQueue->Clear();
-		delete GrowthQueue;
-		GrowthQueue = NULL;
-	}
-
-	if (GrowthNodes) {
-		delete GrowthNodes;
-		GrowthNodes = NULL;
-	}
+	GrowthQueue.Clear();
 
 	if (GrowthState) {
-		delete GrowthState;
+		delete [] GrowthState;
 		GrowthState = NULL;
 	}
 
@@ -866,7 +845,7 @@ void VeinholeMonsterClass::Destroy_Monster(void)
 void VeinholeMonsterClass::Remove_Dead(void)
 {
 	for (int i = VeinholeMonsters.Count() - 1; i >= 0; i--) {
-		if (VeinholeMonsters[i]->IsDead && VeinholeMonsters[i]->GrowthQueue->Count() == 0) {
+		if (VeinholeMonsters[i]->IsDead && VeinholeMonsters[i]->GrowthQueue.Count() == 0) {
 			delete VeinholeMonsters[i];
 		}
 	}
@@ -925,16 +904,6 @@ bool VeinholeMonsterClass::Load_All(SaveStreamClass & stream)
 			return(false);
 		}
 
-		stream.Serialize_Bytes(monster->GrowthNodes, (int)(sizeof(CellNode) * Rule->MaxVeinholeGrowth));
-		if (stream.Was_Error()) {
-			return(false);
-		}
-
-		monster->GrowthQueue->Serialize(stream, monster->GrowthNodes);
-		if (stream.Was_Error()) {
-			return(false);
-		}
-
 		TargetTracker.Add_Index(monster->Fetch_ID(), monster);
 	}
 
@@ -951,12 +920,9 @@ void VeinholeMonsterClass::Serialize(SaveStreamClass & stream)
 	BASECLASS::Serialize(stream);
 
 	stream.Serialize(GrowthCount);
-	// GrowthQueue -- pools sized to the map and the growth limit in the rules. The monster
-	// allocates them for itself, and Load_All and Save_All carry their contents alongside this
-	// record.
-	// GrowthNodes
+	GrowthQueue.Serialize(stream);
 	stream.Serialize(GrowthTimer);
-	// GrowthState -- part of the same set of pools.
+	// GrowthState -- one flag per map cell, carried beside this record by Load_All and Save_All.
 	stream.Serialize(CurrentState);
 	stream.Serialize(DesiredState);
 	stream.Serialize(Control);
@@ -1006,15 +972,6 @@ bool VeinholeMonsterClass::Save_All(SaveStreamClass & stream)
 			return(false);
 		}
 
-		stream.Serialize_Bytes(VeinholeMonsters[i]->GrowthNodes, (int)(sizeof(CellNode) * Rule->MaxVeinholeGrowth));
-		if (stream.Was_Error()) {
-			return(false);
-		}
-
-		VeinholeMonsters[i]->GrowthQueue->Serialize(stream, VeinholeMonsters[i]->GrowthNodes);
-		if (stream.Was_Error()) {
-			return(false);
-		}
 	}
 
 	return(true);
@@ -1062,7 +1019,7 @@ void VeinholeMonsterClass::Reduce_Veins_At(CellClass * cellptr)
 				}
 
 				if (facingbools[facing / 2] == true && !IsDead) {
-					GrowthQueue->Remove_Matching(CellNode(adjacent->CellID));
+					GrowthQueue.Remove_Matching(CellNode(adjacent->CellID));
 				}
 			}
 		}
@@ -1076,9 +1033,9 @@ void VeinholeMonsterClass::Reduce_Veins_At(CellClass * cellptr)
 				GlobalGrowthState[cindex] = false;
 			} else if (!IsDead) {
 				if (GrowthCount < Rule->MaxVeinholeGrowth) {
-					GrowthNodes[GrowthCount].Element = cell;
-					GrowthNodes[GrowthCount].Score = float(Frame / 50 + abs(Scen->RandomNumber() % 50) + 1);
-					GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+					float score = float(Frame / 50 + abs(Scen->RandomNumber() % 50) + 1);
+					GrowthQueue.Insert(CellNode(cell, score));
+					GrowthCount++;
 					GrowthState[cindex] = true;
 					GlobalGrowthState[cindex] = true;
 				}

@@ -62,13 +62,13 @@ endorsed by Electronic Arts.
 2. Extract the release zip into the Tiberian Sun game directory.
 3. Run `Game.exe`.
 
+OpenTS supports Windows 10 version 1903 (build 18362) and newer. Earlier
+Windows versions are untested and unsupported. Wine may work, but there is no
+supported native Linux build.
+
 OpenTS supplies the engine, not the game data: the installation above
 provides the original assets. There is no installer, and no extra runtime
-library or launch argument is required. Windows is supported; Wine may work,
-but there is no supported native Linux build. The engine asks Windows for the
-UTF-8 code page, which needs Windows 10 version 1903 or newer. Older Windows
-keeps its own code page, so game text still shows, but a path or file name
-holding a character that code page lacks may fail.
+library or launch argument is required.
 
 ## Documentation
 

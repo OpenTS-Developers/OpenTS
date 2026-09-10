@@ -167,6 +167,7 @@ class ShapeSet
 				void Flag_RLE_Compressed(void) {Flags |= SFLAG_RLE;}
 				void Set_Size(short size) {Size = size;}
 		};
+		static_assert(sizeof(ShapeRecord) == 24, "a SHP frame record is 24 bytes on disk");
 
 		bool Is_Shape_Index_Valid(int index) const {return(unsigned(index) < unsigned(Count));}
 
@@ -185,6 +186,7 @@ class ShapeSet
 		ShapeSet(ShapeSet const & rvalue);
 		ShapeSet const & operator = (ShapeSet const & rvalue);
 };
+static_assert(sizeof(ShapeSet) == 8, "the SHP header is 8 bytes on disk");
 #pragma pack(pop)
 
 

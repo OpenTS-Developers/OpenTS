@@ -47,7 +47,6 @@
 #include "builtype.h"
 #include "cell.h"
 #include "data.h"
-#include "hashtable.h"
 #include "isotype.h"
 #include "mixfile.h"
 #include "overtype.h"
@@ -415,25 +414,24 @@ bool MouseClass::Load(SaveStreamClass & stream)
 		*/
 		Free_Cells();
 
-		delete CellSubzones;
+		delete [] CellSubzones;
 		CellSubzones = NULL;
-		delete CellZones;
+		delete [] CellZones;
 		CellZones = NULL;
-		delete ZoneAdjacency;
-		ZoneAdjacency = NULL;
+		ZoneAdjacency.clear();
 
 		for (i = 0; i < SUBZONE_COUNT; i++) {
 			SubzoneTracking[i].Clear();
+			SubzoneTrackingEntryCount[i] = 0;
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
-			delete Zones[i];
+			delete [] Zones[i];
 			Zones[i] = NULL;
 		}
 
 		for (i = 0; i < SUBZONE_COUNT; i++) {
-			delete SubzoneConnectionHashTable[i];
-			SubzoneConnectionHashTable[i] = NULL;
+			SubzoneConnectionStaging[i].clear();
 		}
 
 		Array.Clear();
@@ -454,39 +452,30 @@ bool MouseClass::Load(SaveStreamClass & stream)
 		*/
 		Init_Cells();
 
-		CellSubzones = NULL;
-		CellZones = NULL;
-
 		Set_Map_Dimensions(PlayRect, 1, 0, false);
-
-		if (CellSubzones) {
-			delete CellSubzones;
-			CellSubzones = NULL;
-		}
-		if (CellZones) {
-			delete CellZones;
-			CellZones = NULL;
-		}
 
 		CellSubzones = new CellSubzoneStruct[CellZoneCount];
 		CellZones = new CellZoneStruct[CellZoneCount];
-		ZoneAdjacency = new ZONE_PAIR_HASH_SET(20, 256, SubzoneHash);
 
 		for (i = 0; i < SUBZONE_COUNT; i++) {
 			int v = (1 << (i + 1));
 			SubzoneTracking[i].Clear();
+			SubzoneTrackingEntryCount[i] = 0;
 			SubzoneTracking[i].Set_Growth_Step((4 * PlayRect.Width * PlayRect.Height) / (v * v));
-			SubzoneConnectionHashTable[i] = new SUBZONE_CONNECTION_HASH_SET(20, 256, SubzoneHash);
 		}
 
+		/*
+		 * These blocks are read raw, so a file whose records are a different size would drag
+		 * the rest of the stream out of step.
+		 */
 		stream.Serialize_Bytes(CellZones, (int)(sizeof(*CellZones) * CellZoneCount));
 		if (stream.Was_Error()) {
 			return(false);
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
-			Zones[i] = new unsigned short[ZoneCount];
-			stream.Serialize_Bytes(Zones[i], (int)(sizeof(unsigned short) * ZoneCount));
+			Zones[i] = new int[ZoneCount];
+			stream.Serialize_Bytes(Zones[i], (int)(sizeof(*Zones[i]) * ZoneCount));
 			if (stream.Was_Error()) {
 				return(false);
 			}
@@ -567,7 +556,7 @@ bool MouseClass::Save(SaveStreamClass & stream)
 		}
 
 		for (i = 0; i < MZONE_COUNT; i++) {
-			stream.Serialize_Bytes(Zones[i], (int)(sizeof(unsigned short) * ZoneCount));
+			stream.Serialize_Bytes(Zones[i], (int)(sizeof(*Zones[i]) * ZoneCount));
 			if (stream.Was_Error()) {
 				return(false);
 			}

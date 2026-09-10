@@ -60,7 +60,7 @@
 /* Define a couple of variables which are private to the module they are   */
 /*      declared in.                                                       */
 /*=========================================================================*/
-static unsigned int CellHeights[2000];
+static unsigned int CellHeights[PATH_LENGTH_MAX + 1];
 
 unsigned int MapCellStride;
 
@@ -312,7 +312,7 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 	HierNodeIndex = 0;
 	HierLastNodeCell = from;
 	int * fine_final_ids = HierOnPath[0];
-	RegularOpenNode * working_node = Create_Node(0, from_pptr, to, 0.0);
+	std::optional<RegularOpenNode> working_node = Create_Node(std::nullopt, from_pptr, to, 0.0);
 
 	if (from == to && CurrentCellHeight == DestCellHeight) {
 		return(NULL);
@@ -373,7 +373,7 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 			break;
 		}
 		Cell & from_id = working_from[0]->CellID;
-		RegularOpenNode * temp_node = NULL;
+		std::optional<RegularOpenNode> temp_node;
 		int from_index = from_id.X + MapCellStride * from_id.Y;
 
 		for (face = FACING_FIRST; face <= FACING_COUNT; face++) {
@@ -412,7 +412,7 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 			int zone_index = Map.Get_Cell_Zone_Index(neighbor_id);
 			CellSubzoneStruct * subzones = Map.CellSubzones;
 
-			short subzone_id = subzones[zone_index].SubzoneID[SUBZONE_FINE];
+			int subzone_id = subzones[zone_index].SubzoneID[SUBZONE_FINE];
 			if (fine_final_ids[subzone_id] != UniqueID && base_level && !neighbor_cell->AdjacentObjectCount && with_hs) {
 				continue;
 			}
@@ -445,24 +445,42 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 					continue;
 				}
 
-				RegularOpenNode * new_node = Create_Node(working_node, working_to, to, movement_cost);
-				if (temp_node == NULL) {
+				/*
+				 * The pool is handed out and never released within a pass, and nothing else
+				 * bounds how many cells a pass may reach. Passing the cell over costs the
+				 * search a route. Writing past the pool would land on the count of what it
+				 * holds.
+				 */
+				if (RegularNodes->ActiveCount >= ARRAY_SIZE(RegularNodes->Nodes)) {
+					continue;
+				}
+
+				/*
+				 * The destination is tested before a node is expanded, so a node at the
+				 * limit can still finish a path; it just cannot extend one.
+				 */
+				if (working_node->PathLength >= PATH_LENGTH_MAX) {
+					continue;
+				}
+
+				RegularOpenNode new_node = Create_Node(working_node, working_to, to, movement_cost);
+				if (!temp_node) {
 					temp_node = new_node;
 				} else {
-					if (new_node->Score < temp_node->Score) {
+					if (new_node.Score < temp_node->Score) {
 						RegularQueue->Insert(*temp_node);
 						temp_node = new_node;
 					} else {
-						RegularQueue->Insert(*new_node);
+						RegularQueue->Insert(new_node);
 					}
 				}
 
 				if (base_level) {
 					RegularVisited[node_index] = UniqueID;
-					RegularMovementCosts[node_index] = new_node->MovementCost;
+					RegularMovementCosts[node_index] = new_node.MovementCost;
 				} else {
 					RegularBridgeVisited[node_index] = UniqueID;
-					RegularBridgeMovementCosts[node_index] = new_node->MovementCost;
+					RegularBridgeMovementCosts[node_index] = new_node.MovementCost;
 				}
 				if (subzone_id == HierSubzonePath[SUBZONE_FINE][HierNodeIndex + 1]) {
 					HierNodeIndex++;
@@ -489,14 +507,14 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 
 breakout:
 
-	if (tries == 10000 || working_node == NULL || tries == max_loops || working_node->PathLength < 2) {
+	if (tries == 10000 || !working_node || tries == max_loops || working_node->PathLength < 2) {
 		if (Avoidance != AVOIDANCE_NONE) {
 			Apply_Path_Collision_Avoidance(foot);
 		}
 		return(NULL);
 	}
 
-	PathStruct * final_path = Build_Final_Path(working_node, moves);
+	PathStruct * final_path = Build_Final_Path(*working_node, moves);
 	Cut_Corners(final_path, foot);
 
 	/*
@@ -522,14 +540,14 @@ breakout:
 /// <param name="cell">The map array slot of the cell the node stands for.</param>
 /// <param name="to">The destination cell, used to estimate the remaining cost.</param>
 /// <param name="movement_cost">The cost of the step from the parent into this cell.</param>
-/// <returns>Returns with a pointer to the new node, taken from the search's node pool.</returns>
-AStarClass::RegularOpenNode * AStarClass::Create_Node(RegularOpenNode * parent, CellClass ** cell, Cell const & to, float movement_cost)
+/// <returns>Returns with the new open set entry, naming a cell record taken from the pool.</returns>
+AStarClass::RegularOpenNode AStarClass::Create_Node(std::optional<RegularOpenNode> const & parent, CellClass ** cell, Cell const & to, float movement_cost)
 {
-	RegularOpenNode * open_node = &RegularOpenNodes->Nodes[RegularOpenNodes->ActiveCount++];
+	RegularOpenNode open_node;
 	RegularNode * node_data = &RegularNodes->Nodes[RegularNodes->ActiveCount++];
 	node_data->CellSlot = cell;
 
-	if (parent != NULL) {
+	if (parent) {
 		node_data->Parent = parent->Node;
 		CellClass * current_cell = *node_data->CellSlot;
 		CellClass * parent_cell = *parent->Node->CellSlot;
@@ -547,20 +565,20 @@ AStarClass::RegularOpenNode * AStarClass::Create_Node(RegularOpenNode * parent, 
 		node_data->CellHeight = CurrentCellHeight;
 	}
 
-	open_node->Node = node_data;
-	if (parent != NULL) {
-		open_node->MovementCost = movement_cost + parent->MovementCost;
-		open_node->PathLength = parent->PathLength + 1;
+	open_node.Node = node_data;
+	if (parent) {
+		open_node.MovementCost = movement_cost + parent->MovementCost;
+		open_node.PathLength = parent->PathLength + 1;
 	} else {
-		open_node->MovementCost = 0.0;
-		open_node->PathLength = 1;
+		open_node.MovementCost = 0.0;
+		open_node.PathLength = 1;
 	}
 
 	Cell & cell_id = (*cell)->CellID;
 	int dx = abs(cell_id.X - to.X);
 	int dy = abs(cell_id.Y - to.Y);
 
-	open_node->Score = open_node->MovementCost + std::sqrt(dx * dx + dy * dy);
+	open_node.Score = open_node.MovementCost + std::sqrt(dx * dx + dy * dy);
 	return(open_node);
 }
 
@@ -575,7 +593,6 @@ void AStarClass::Clear(void)
 {
 	int i;
 	RegularNodes->ActiveCount = 0;
-	RegularOpenNodes->ActiveCount = 0;
 	RegularQueue->Clear();
 
 	HierQueue->Clear();
@@ -654,11 +671,9 @@ AStarClass::AStarClass(void) :
 {
 	RegularQueue = new PriorityQueueClass<RegularOpenNode>(65536);
 	HierQueue = new PriorityQueueClass<AStarHierarchicalNode>(10000);
-	RegularOpenNodes = new RegularOpenNodePool;
 	RegularNodes = new RegularNodePool;
 
 	RegularNodes->ActiveCount = 0;
-	RegularOpenNodes->ActiveCount = 0;
 	RegularQueue->Clear();
 	HierQueue->Clear();
 
@@ -666,11 +681,11 @@ AStarClass::AStarClass(void) :
 		HierOnPath[i] = NULL;
 		HierOpened[i] = NULL;
 		HierCosts[i] = NULL;
-		HierBannedEdges[i].Clear();
+		HierBannedEdges[i].clear();
 		memset(HierSubzonePath[i], 0, sizeof(HierSubzonePath[i]));
 		HierSubzonePathCount[i] = 0;
 	}
-	HierNodePool = new AStarHierarchicalNode[10000];
+	HierNodePool.reserve(10000);
 }
 
 
@@ -685,54 +700,48 @@ AStarClass::~AStarClass(void)
 	delete HierQueue;
 	HierQueue = NULL;
 
-	if (RegularOpenNodes != NULL) {
-		delete RegularOpenNodes;
-	}
-	RegularOpenNodes = NULL;
-
 	if (RegularNodes != NULL) {
 		delete RegularNodes;
 	}
 	RegularNodes = NULL;
 
 	if (RegularVisited != NULL) {
-		delete RegularVisited;
+		delete [] RegularVisited;
 		RegularVisited = NULL;
 	}
 
 	if (RegularBridgeVisited != NULL) {
-		delete RegularBridgeVisited;
+		delete [] RegularBridgeVisited;
 		RegularBridgeVisited = NULL;
 	}
 
 	if (RegularMovementCosts != NULL) {
-		delete RegularMovementCosts;
+		delete [] RegularMovementCosts;
 		RegularMovementCosts = NULL;
 	}
 
 	if (RegularBridgeMovementCosts != NULL) {
-		delete RegularBridgeMovementCosts;
+		delete [] RegularBridgeMovementCosts;
 		RegularBridgeMovementCosts = NULL;
 	}
 
 	for (int i = 0; i < 3; i++) {
 		if (HierOnPath[i]) {
-			delete HierOnPath[i];
+			delete [] HierOnPath[i];
 			HierOnPath[i] = NULL;
 		}
 
 		if (HierOpened[i]) {
-			delete HierOpened[i];
+			delete [] HierOpened[i];
 			HierOpened[i] = NULL;
 		}
 
 		if (HierCosts[i]) {
-			delete HierCosts[i];
+			delete [] HierCosts[i];
 			HierCosts[i] = NULL;
 		}
 	}
 
-	delete [] HierNodePool;
 }
 
 
@@ -766,22 +775,22 @@ FacingType Facing_Between(Cell const & cell1, Cell const & cell2)
 /// <returns>Returns with a pointer to the completed path control structure.</returns>
 /// <remarks>There is only one path control structure, so building a new path invalidates
 /// the last one this routine handed out.</remarks>
-PathStruct * AStarClass::Build_Final_Path(RegularOpenNode *final_node, FacingType *moves)
+PathStruct * AStarClass::Build_Final_Path(RegularOpenNode const & final_node, FacingType * moves)
 {
 	static PathStruct path; // Main path control.
 
-	path.Cost			= int(final_node->Score);
-	path.Length 		= final_node->PathLength;
+	path.Cost			= int(final_node.Score);
+	path.Length 		= final_node.PathLength;
 	path.Overlap		= 0;
 	path.LastOverlap.X	= 0;
 	path.LastOverlap.Y	= 0;
 	path.Command 		= moves;
 	path.Height			= CellHeights;
 
-	RegularNode * current = final_node->Node;
+	RegularNode * current = final_node.Node;
 	RegularNode * parent = current->Parent;
 
-	for (int i = (final_node->PathLength - 2); i >= 0; i--) {
+	for (int i = (final_node.PathLength - 2); i >= 0; i--) {
 		if (parent != NULL) {
 			CellHeights[i] = parent->CellHeight;
 			moves[i] = Facing_Between((*current->CellSlot)->CellID, (*parent->CellSlot)->CellID);
@@ -790,7 +799,7 @@ PathStruct * AStarClass::Build_Final_Path(RegularOpenNode *final_node, FacingTyp
 		parent = parent->Parent;
 	}
 
-	moves[final_node->PathLength - 1] = FACING_NONE;
+	moves[final_node.PathLength - 1] = FACING_NONE;
 
 	path.Start = (*current->CellSlot)->CellID;
 
@@ -812,28 +821,33 @@ PathStruct * AStarClass::Build_Final_Path(RegularOpenNode *final_node, FacingTyp
 void AStarClass::Update_Map_Dimensions(Rect const & dimensions)
 {
 	if (RegularVisited != NULL) {
-		delete RegularVisited;
+		delete [] RegularVisited;
 		RegularVisited = NULL;
 	}
 	if (RegularBridgeVisited != NULL) {
-		delete RegularBridgeVisited;
+		delete [] RegularBridgeVisited;
 		RegularBridgeVisited = NULL;
 	}
 	if (RegularMovementCosts != NULL) {
-		delete RegularMovementCosts;
+		delete [] RegularMovementCosts;
 		RegularMovementCosts = NULL;
 	}
 	if (RegularBridgeMovementCosts != NULL) {
-		delete RegularBridgeMovementCosts;
+		delete [] RegularBridgeMovementCosts;
 		RegularBridgeMovementCosts = NULL;
 	}
 
 	MapCellStride = dimensions.Height + dimensions.Width + 1;
 	int count = MapCellStride * MapCellStride;
-	RegularBridgeVisited = new int[count];
-	RegularVisited = new int[count];
-	RegularMovementCosts = new float[count];
-	RegularBridgeMovementCosts = new float[count];
+
+	/*
+	 * A search reads a cell's stamp before writing one, and only a wrap of UniqueID clears
+	 * these tables, so they have to start at a value no search can own.
+	 */
+	RegularBridgeVisited = new int[count]();
+	RegularVisited = new int[count]();
+	RegularMovementCosts = new float[count]();
+	RegularBridgeMovementCosts = new float[count]();
 
 	AStarFacingToOffset[FACING_N]	= -MapCellStride;
 	AStarFacingToOffset[FACING_NE]	= 1 - MapCellStride;
@@ -1604,6 +1618,7 @@ bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZon
 
 	for (int subzone_level = SUBZONE_COARSE; subzone_level >= SUBZONE_FINE; subzone_level--) {
 		HierQueue->Clear();
+		HierNodePool.clear();
 
 		CellSubzoneStruct & start_cell_subzones = Map.CellSubzones[Map.Get_Cell_Zone_Index(from)];
 		int start_subzone = start_cell_subzones.SubzoneID[subzone_level];
@@ -1625,30 +1640,25 @@ bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZon
 		final_ids[end_subzone] = UniqueID;
 
 		if (start_subzone == end_subzone) {
-			if (subzone_level == SUBZONE_FINE) {
-				AStarHierarchicalNode * node = &HierNodePool[0];
-				node->Depth = 0;
-				node->SubzoneID = start_subzone;
-			}
 			HierSubzonePath[subzone_level][0] = start_subzone;
 			HierSubzonePathCount[subzone_level] = 1;
 		} else {
-			int node_count = 0;
-			AStarHierarchicalNode * start_node = &HierNodePool[0];
-			start_node->ParentIndex = -1;
-			start_node->SubzoneID = start_subzone;
-			start_node->Score = 0.0;
-			start_node->Depth = 0;
+			AStarHierarchicalNode start_node;
+			start_node.PoolIndex = 0;
+			start_node.ParentIndex = -1;
+			start_node.SubzoneID = start_subzone;
+			start_node.Score = 0.0;
+			start_node.Depth = 0;
 
-			HierQueue->Insert(*start_node);
-			node_count++;
+			HierNodePool.push_back(start_node);
+			HierQueue->Insert(start_node);
 			working_ids[start_subzone] = UniqueID;
 			costs[start_subzone] = 0.0;
 
-			AStarHierarchicalNode * best_node = HierQueue->Extract_Min();
-			bool no_banned_edges = HierBannedEdges[subzone_level].Count() == 0;
+			std::optional<AStarHierarchicalNode> best_node = HierQueue->Extract_Min();
+			bool no_banned_edges = HierBannedEdges[subzone_level].empty();
 
-			while (best_node != NULL) {
+			while (best_node) {
 				int from_subzone = best_node->SubzoneID;
 				if (from_subzone == end_subzone) {
 					break;
@@ -1675,41 +1685,53 @@ bool AStarClass::Find_Path_Hierarchical(Cell const & from, Cell const & to, MZon
 
 					if ((working_ids[to_subzone] != UniqueID || costs[to_subzone] > score) && (is_coarse || coarser_final_ids[to_coarser_subzone] == UniqueID || passability == PASSABLE_CRUSH) && pass_table[passability] == TRAVERSAL_PASSABLE) {
 						if (no_banned_edges || !Subzone_Edge_Banned(from_subzone, to_subzone, subzone_level)) {
-							AStarHierarchicalNode * new_node = &HierNodePool[node_count];
-							new_node->ParentIndex = best_node - HierNodePool;
-							new_node->SubzoneID = to_subzone;
-							new_node->Score = score;
-							new_node->Depth = best_node->Depth + 1;
-							HierQueue->Insert(*new_node);
+							AStarHierarchicalNode new_node;
+							new_node.PoolIndex = (int)HierNodePool.size();
+							new_node.ParentIndex = best_node->PoolIndex;
+							new_node.SubzoneID = to_subzone;
+							new_node.Score = score;
+							new_node.Depth = best_node->Depth + 1;
+							HierNodePool.push_back(new_node);
+							HierQueue->Insert(new_node);
 							working_ids[to_subzone] = UniqueID;
 							costs[to_subzone] = score;
-							node_count++;
 						}
 					}
 				}
 				best_node = HierQueue->Extract_Min();
 			}
 
-			if (best_node == NULL) {
+			if (!best_node) {
 				return(false);
 			}
 
-			AStarHierarchicalNode * tail_node = best_node;
-			while (best_node->ParentIndex != -1) {
-				final_ids[best_node->SubzoneID] = UniqueID;
-				best_node = &HierNodePool[best_node->ParentIndex];
+			/*
+			 * The chain is written into a list of a fixed length at whatever length the
+			 * block search settled on. Giving up on a corridor too long to record leaves
+			 * the caller to search the map unrestricted. Writing it out would run over the
+			 * lists for the coarser block sizes behind this one.
+			 */
+			if (best_node->Depth + 1 > ARRAY_SIZE(HierSubzonePath[subzone_level])) {
+				return(false);
 			}
 
-			int path_count = tail_node->Depth + 1;
+			int trace = best_node->PoolIndex;
+			while (HierNodePool[trace].ParentIndex != -1) {
+				final_ids[HierNodePool[trace].SubzoneID] = UniqueID;
+				trace = HierNodePool[trace].ParentIndex;
+			}
+
+			int tail_node = best_node->PoolIndex;
+			int path_count = HierNodePool[tail_node].Depth + 1;
 			HierSubzonePathCount[subzone_level] = path_count;
 			path_count--;
 			while (path_count > 0) {
-				HierSubzonePath[subzone_level][path_count] = tail_node->SubzoneID;
-				tail_node = &HierNodePool[tail_node->ParentIndex];
+				HierSubzonePath[subzone_level][path_count] = HierNodePool[tail_node].SubzoneID;
+				tail_node = HierNodePool[tail_node].ParentIndex;
 				path_count--;
 			}
 
-			HierSubzonePath[subzone_level][0] = tail_node->SubzoneID;
+			HierSubzonePath[subzone_level][0] = HierNodePool[tail_node].SubzoneID;
 		}
 	}
 	return(true);
@@ -1739,7 +1761,7 @@ PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass
 	Clear();
 
 	for (i = 0; i < ARRAY_SIZE(HierBannedEdges); i++) {
-		HierBannedEdges[i].Clear();
+		HierBannedEdges[i].clear();
 	}
 
 	Avoidance = avoidance;
@@ -1857,13 +1879,13 @@ void AStarClass::Ban_Blocked_Subzone_Edges(FootClass const * foot)
 	CellSubzoneStruct & subzone = Map.CellSubzones[Map.Get_Cell_Zone_Index(HierLastNodeCell)];
 
 	for (int subzone_level = 0; subzone_level < SUBZONE_COUNT; subzone_level++) {
-		unsigned short from_subzone = subzone.SubzoneID[subzone_level];
-		DynamicVectorClass<unsigned short> to_subzones;
+		int from_subzone = subzone.SubzoneID[subzone_level];
+		DynamicVectorClass<int> to_subzones;
 		to_subzones.Clear();
 
 		if (Map.Build_Reachable_Subzones(&Map[HierLastNodeCell], subzone_level, to_subzones, foot)) {
 			CellSubzoneStruct & last_subzone = Map.CellSubzones[Map.Get_Cell_Zone_Index(HierLastNodeCell)];
-			unsigned int subzone_id = (unsigned short)last_subzone.SubzoneID[subzone_level];
+			int subzone_id = last_subzone.SubzoneID[subzone_level];
 			Ban_Neighborhood_Subzone_Edges(subzone_id, subzone_level);
 			continue;
 		}
@@ -1882,20 +1904,12 @@ void AStarClass::Ban_Blocked_Subzone_Edges(FootClass const * foot)
 /// </summary>
 /// <param name="subzone_level">The coarseness level the link belongs to.</param>
 /// <returns>bool; Is the link banned?</returns>
-bool AStarClass::Subzone_Edge_Banned(unsigned short subzone1, unsigned short subzone2, int subzone_level)
+bool AStarClass::Subzone_Edge_Banned(int subzone1, int subzone2, int subzone_level)
 {
 	if (subzone2 < subzone1) {
 		std::swap(subzone1, subzone2);
 	}
-	unsigned int edge = subzone2 | (subzone1 << 16);
-
-	DynamicVectorClass<unsigned int> & edges = HierBannedEdges[subzone_level];
-	for (int i = edges.Count() - 1; i >= 0; i--) {
-		if (edges[i] == edge) {
-			return(true);
-		}
-	}
-	return(false);
+	return(HierBannedEdges[subzone_level].contains(std::pair<int, int>(subzone1, subzone2)));
 }
 
 
@@ -1905,14 +1919,13 @@ bool AStarClass::Subzone_Edge_Banned(unsigned short subzone1, unsigned short sub
 /// corridor that the regular search has already proven it cannot walk.
 /// </summary>
 /// <param name="subzone_level">The coarseness level the link belongs to.</param>
-void AStarClass::Ban_Subzone_Edge(unsigned int subzone1, unsigned int subzone2, int subzone_level)
+void AStarClass::Ban_Subzone_Edge(int subzone1, int subzone2, int subzone_level)
 {
 	if (subzone1 != subzone2) {
 		if (subzone2 < subzone1) {
 			std::swap(subzone2, subzone1);
 		}
-		unsigned int edge = subzone2 | (subzone1 << 16);
-		HierBannedEdges[subzone_level].Add(edge);
+		HierBannedEdges[subzone_level].insert(std::pair<int, int>(subzone1, subzone2));
 	}
 }
 
@@ -1926,7 +1939,7 @@ void AStarClass::Ban_Subzone_Edge(unsigned int subzone1, unsigned int subzone2, 
 /// </summary>
 /// <param name="subzone">The subzone the search became stuck in.</param>
 /// <param name="subzone_level">The coarseness level to work at.</param>
-void AStarClass::Ban_Neighborhood_Subzone_Edges(unsigned int subzone, int subzone_level)
+void AStarClass::Ban_Neighborhood_Subzone_Edges(int subzone, int subzone_level)
 {
 	int i;
 	int j;
@@ -1948,8 +1961,8 @@ void AStarClass::Ban_Neighborhood_Subzone_Edges(unsigned int subzone, int subzon
 	if (path_index == -1) {
 		IsHSEnabled = false;
 	} else {
-		unsigned short path_node;
-		unsigned short path_neighbor;
+		int path_node;
+		int path_neighbor;
 		if (path_index == path_count - 1) {
 			path_node = HierSubzonePath[subzone_level][path_index];
 			path_neighbor = HierSubzonePath[subzone_level][path_index - 1];
@@ -1964,7 +1977,7 @@ void AStarClass::Ban_Neighborhood_Subzone_Edges(unsigned int subzone, int subzon
 		DynamicVectorClass<SubzoneConnectionStruct> & neighbor_conn = Map.SubzoneTracking[subzone_level][path_neighbor].Connections;
 
 		for (j = node_conn.Count() - 1; j >= 0; j--) {
-			unsigned short common_subzone = node_conn[j].SubzoneID;
+			int common_subzone = node_conn[j].SubzoneID;
 			if (common_subzone != path_neighbor) {
 				for (i = neighbor_conn.Count() - 1; i >= 0; i--) {
 					if (neighbor_conn[i].SubzoneID == common_subzone) {
@@ -1997,7 +2010,7 @@ int AStarClass::Test_Cell_Walk(Cell const & from, Cell const & to, FootClass con
 	Clear();
 
 	for (int i = 0; i < ARRAY_SIZE(HierBannedEdges); i++) {
-		HierBannedEdges[i].Clear();
+		HierBannedEdges[i].clear();
 	}
 
 	CellClass * from_ptr = &Map[from];
