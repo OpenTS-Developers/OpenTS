@@ -34,6 +34,7 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netshare.h"
+#include "nettiming.h"
 #include "newmenu.h"
 #include "ownrdraw.h"
 #include "rules.h"
@@ -977,18 +978,13 @@ bool Net2Remote_Connect(void)
 
 			PregameSetup();
 
-			//.....................................................................
-			// Compute frame delay value for packet transmissions:
-			// - Divide global channel's response time by 8 (2 to convert to 1-way
-			//	  value, 4 more to convert from ticks to frames)
-			//.....................................................................
-			Session.LatencyFudge = 0;
-			Session.PrecalcMaxAhead = 0;
-			Session.PrecalcDesiredFrameRate = 0;
-			Session.FrameSendRate = 3;
+			// A compressed game starts at the fixed bootstrap rung and measures from there.
 			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				Session.MaxAhead = std::max<unsigned int>(((((Ipx.Global_Response_Time() / 8) + (Session.FrameSendRate - 1)) / Session.FrameSendRate) * Session.FrameSendRate), NETWORK_MIN_MAX_AHEAD * 3);
+				NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+				Session.FrameSendRate = initial.FrameSendRate;
+				Session.MaxAhead = initial.MaxAhead;
 			} else {
+				Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
 				Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
 			}
 
@@ -1021,18 +1017,13 @@ bool Net2Remote_Connect(void)
 
 				PregameSetup();
 
-				//.....................................................................
-				// Compute frame delay value for packet transmissions:
-				// - Divide global channel's response time by 8 (2 to convert to 1-way
-				//	  value, 4 more to convert from ticks to frames)
-				//.....................................................................
-				Session.FrameSendRate = 3;
-				Session.LatencyFudge = 0;
-				Session.PrecalcMaxAhead = 0;
-				Session.PrecalcDesiredFrameRate = 0;
+				// A compressed game starts at the fixed bootstrap rung and measures from there.
 				if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-					Session.MaxAhead = std::max<unsigned int>(((((Ipx.Global_Response_Time() / 8) + (Session.FrameSendRate - 1)) / Session.FrameSendRate) * Session.FrameSendRate), NETWORK_MIN_MAX_AHEAD * 3);
+					NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+					Session.FrameSendRate = initial.FrameSendRate;
+					Session.MaxAhead = initial.MaxAhead;
 				} else {
+					Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
 					Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
 				}
 
@@ -2882,7 +2873,23 @@ static void Get_Join_Responses(void)
 		//------------------------------------------------------------------------
 		else if (Session.GPacket.Command==NET_GO || Session.GPacket.Command==NET_LOADGAME) {
 			if ( JoinState==JOIN_CONFIRMED) {
-				Session.MaxAhead = Session.GPacket.ResponseTime.OneWay;
+				if (Session.GPacket.Command == NET_GO && Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
+					int const max_ahead = Session.GPacket.ResponseTime.OneWay;
+					if (max_ahead < 0) {
+						continue;
+					}
+
+					NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+					NetTiming::TimingSettings const received{initial.FrameSendRate, static_cast<unsigned int>(max_ahead)};
+					if (!NetTiming::Timing_Settings_Are_Valid(received) || received != initial) {
+						continue;
+					}
+
+					Session.FrameSendRate = received.FrameSendRate;
+					Session.MaxAhead = received.MaxAhead;
+				} else {
+					Session.MaxAhead = Session.GPacket.ResponseTime.OneWay;
+				}
 				Session.HostAddress = Session.GAddress;
 				Session.NumPlayers = Session.Players.Count();
 				_netresponse = IDOK;

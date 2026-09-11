@@ -539,11 +539,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 			}
 		}
 
-		if (Session.ShowInternetDebug) {
-			Options.ScreenWidth = 640;
-			Options.ScreenHeight = 400;
-		}
-
 		if (Options.ScreenWidth == -1 || Options.ScreenHeight == -1) {
 			Options.ScreenWidth = 640;
 			Options.ScreenHeight = 480;

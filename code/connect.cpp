@@ -996,6 +996,16 @@ unsigned int ConnectionClass::Time (void)
 }	/* end of Time */
 
 
+/// <summary>Returns this link's smoothed round trip, or nothing until a clean acknowledgement measures it.</summary>
+std::optional<NetTiming::Milliseconds> ConnectionClass::Smoothed_Round_Trip_MS(void) const
+{
+	if (!RoundTripEstimator.Has_Sample() || RoundTripEstimator.Is_Provisional()) {
+		return(std::nullopt);
+	}
+	return(RoundTripEstimator.Smoothed_Rtt());
+}
+
+
 /***************************************************************************
  * ConnectionClass::Command_Name -- returns name for given packet command  *
  *                                                                         *
