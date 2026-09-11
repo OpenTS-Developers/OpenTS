@@ -44,11 +44,11 @@ const char *Waypoint_To_Name(WAYPOINT wp)
 
 	if (wp < num_chars) {
 
-		wsprintf(_string, "%c", wp + 'A');
+		snprintf(_string, sizeof(_string), "%c", wp + 'A');
 		return(_string);
 	}
 
-	wsprintf(_string, "%c%c", (wp / num_chars) + ('A' - 1), (wp % num_chars) + 'A');
+	snprintf(_string, sizeof(_string), "%c%c", (wp / num_chars) + ('A' - 1), (wp % num_chars) + 'A');
 	return(_string);
 }
 

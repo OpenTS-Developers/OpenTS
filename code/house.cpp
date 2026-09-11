@@ -2188,7 +2188,7 @@ void HouseClass::Make_Ally(HouseClass * house)
 			}
 
 			if (Is_Human_Player() && Session.Type != GAME_NORMAL && !house->Class->IsMultiplayPassive) {
-				wsprintf(buffer, Fetch_String(TXT_HAS_ALLIED), (char const *)IniName, (char const *)house->IniName);
+				snprintf(buffer, sizeof(buffer), Fetch_String(TXT_HAS_ALLIED), (char const *)IniName, (char const *)house->IniName);
 				Session.Messages.Add_Message(NULL, 0, buffer, Class->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
 
 				if (Is_Player_Control()) {
@@ -2261,7 +2261,7 @@ void HouseClass::Make_Enemy(HouseClass * house)
 			if (Session.Type != GAME_NORMAL && !ScenarioInit && IsHuman) {
 				char buffer[80];
 
-				wsprintf(buffer, Fetch_String(TXT_AT_WAR), (char const *)IniName, (char const *)house->IniName);
+				snprintf(buffer, sizeof(buffer), Fetch_String(TXT_AT_WAR), (char const *)IniName, (char const *)house->IniName);
 				Session.Messages.Add_Message(NULL, 0, buffer, Class->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
 				Map.Flag_To_Redraw();
 				if (Is_Player_Control()) {
@@ -3315,7 +3315,7 @@ void HouseClass::MPlayer_Defeated(void)
 		/*
 		**	Pop up a message showing that I was defeated
 		*/
-		wsprintf(txt, Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
+		snprintf(txt, sizeof(txt), Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
 		Session.Messages.Add_Message(NULL, 0, txt, Session.ColorIdx,
 		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
 
@@ -3329,7 +3329,7 @@ void HouseClass::MPlayer_Defeated(void)
 		**	If it wasn't me, find out who was defeated
 		*/
 		if (!Class->IsMultiplayPassive) {
-			wsprintf(txt, Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
+			snprintf(txt, sizeof(txt), Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
 
 			Session.Messages.Add_Message(NULL, 0, txt, Scheme,
 				TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));

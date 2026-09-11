@@ -240,10 +240,10 @@ bool TagTypeClass::Write_INI(CCINIClass & ini) const
 	char buffer[128];
 
 	if (FirstTrigger == NULL) {
-		wsprintf(buffer, "%s,<none>", (char const *)GivenName);
+		snprintf(buffer, sizeof(buffer), "%s,<none>", (char const *)GivenName);
 		ini.Put_String(INI_NAME, IniName, buffer);
 	} else {
-		wsprintf(buffer, "%d,%s,%s", Persistence, (char const *)GivenName, (char const *)FirstTrigger->IniName);
+		snprintf(buffer, sizeof(buffer), "%d,%s,%s", Persistence, (char const *)GivenName, (char const *)FirstTrigger->IniName);
 		ini.Put_String(INI_NAME, IniName, buffer);
 	}
 

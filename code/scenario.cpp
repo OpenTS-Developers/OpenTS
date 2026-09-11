@@ -389,7 +389,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	bool has_briefing_movie = Scen->BriefMovie != VQ_NONE;
 
 	if (has_briefing_movie) {
-		wsprintf(buffer, "%s.VQA", Movies[Scen->BriefMovie]);
+		snprintf(buffer, sizeof(buffer), "%s.VQA", Movies[Scen->BriefMovie]);
 		has_briefing_movie = CCFileClass(buffer).Is_Available();
 	}
 
@@ -3733,8 +3733,8 @@ bool ScenarioClass::Write_Local_INI(CCINIClass & ini) const
 	int length = ARRAY_SIZE(LocalFlags);
 	for (int index = 0; index < length; index++) {
 		if (LocalFlags[index].VariableName[0] != '\0') {
-			wsprintf(index_buffer, "%d", index);
-			wsprintf(buffer, "%s,%d", LocalFlags[index].VariableName, LocalFlags[index].Value ? 1 : 0);
+			snprintf(index_buffer, sizeof(index_buffer), "%d", index);
+			snprintf(buffer, sizeof(buffer), "%s,%d", LocalFlags[index].VariableName, LocalFlags[index].Value ? 1 : 0);
 			ini.Put_String(SECTION, index_buffer, buffer);
 		}
 	}
@@ -4182,7 +4182,7 @@ void ScenarioClass::Read_Waypoints(CCINIClass const & ini)
 	char buf[20];
 
 	for (int i = 0; i < WAYPT_COUNT; i++) {
-		wsprintf(buf, "%d", i);
+		snprintf(buf, sizeof(buf), "%d", i);
 		int val = ini.Get_Int("Waypoints", buf, 0);
 		if (val == 0) {
 			Waypoint[i] = CELL_NONE;
@@ -4219,7 +4219,7 @@ void ScenarioClass::Write_Waypoints(CCINIClass & ini) const
 	ini.Clear(WAYNAME);
 	for (int i = 0; i < WAYPT_COUNT; i++) {
 		if (Waypoint[i] != CELL_NONE) {
-			wsprintf(entry, "%d", i);
+			snprintf(entry, sizeof(entry), "%d", i);
 			ini.Put_Int(WAYNAME, entry, Waypoint[i].Y * 1000 + Waypoint[i].X);
 		}
 	}

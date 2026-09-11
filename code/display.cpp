@@ -3383,7 +3383,7 @@ void DisplayClass::Write_INI(CCINIClass & ini)
 					/*
 					**	Generate entry name.
 					*/
-					wsprintf(entry, "%d", x + (y * 1000));
+					snprintf(entry, sizeof(entry), "%d", x + (y * 1000));
 
 					/*
 					**	Save entry.
