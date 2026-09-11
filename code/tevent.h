@@ -46,6 +46,8 @@
 #include "tevent.hh"
 #include "unit.hh"
 
+#include <cstddef>
+
 template<class T> class DynamicVectorClass;
 class TeamTypeClass;
 class TechnoClass;
@@ -109,7 +111,7 @@ class TEventClass : public AbstractClass
 		virtual void Serialize(SaveStreamClass & stream) override;
 
 		void Read_INI(void);
-		void Build_INI_Entry(char * buffer) const;
+		void Build_INI_Entry(char * buffer, std::size_t size) const;
 		virtual void Compute_CRC(CRCEngine & crc) const override;
 
 		virtual void Detach(AbstractClass const * target, bool all=true) override;

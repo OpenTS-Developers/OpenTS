@@ -2418,12 +2418,12 @@ static void Get_Join_Responses(void)
 						//............................................................
 						if (JoinState < JOIN_CONFIRMED) {
 							if (Session.Games[i]->Game.IsOpen) {
-								wsprintf(txt,Fetch_String(TXT_S_FORMED_NEW_GAME),
+								snprintf(txt, sizeof(txt), Fetch_String(TXT_S_FORMED_NEW_GAME),
 									Session.GPacket.Name);
 								Sound_Effect(Rule->GameForming);
 							}
 							else {
-								wsprintf(txt,Fetch_String(TXT_GAME_NOW_IN_PROGRESS),
+								snprintf(txt, sizeof(txt), Fetch_String(TXT_GAME_NOW_IN_PROGRESS),
 									Session.GPacket.Name);
 								Sound_Effect(Rule->GameClosed);
 							}
@@ -2466,7 +2466,7 @@ static void Get_Join_Responses(void)
 				// now available.
 				//..................................................................
 				if (Session.GPacket.GameInfo.IsOpen && JoinState < JOIN_CONFIRMED) {
-					wsprintf(txt,Fetch_String(TXT_S_FORMED_NEW_GAME),
+					snprintf(txt, sizeof(txt), Fetch_String(TXT_S_FORMED_NEW_GAME),
 						Session.GPacket.Name);
 					PMessagePrintf(ColorSystem, txt);
 					Sound_Effect(Rule->GameForming);

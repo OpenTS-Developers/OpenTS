@@ -6182,9 +6182,9 @@ void Init_Theater(TheaterType theater)
 	/*
 	**	Unload old mixfiles, and cache the new ones
 	*/
-	wsprintf(fullname, "%s.MIX", data.Root.c_str());
-	wsprintf(isofullname, "%s.MIX", data.IsoRoot.c_str());
-	wsprintf(shortname, "%s.MIX", data.Suffix.c_str());
+	snprintf(fullname, sizeof(fullname), "%s.MIX", data.Root.c_str());
+	snprintf(isofullname, sizeof(isofullname), "%s.MIX", data.IsoRoot.c_str());
+	snprintf(shortname, sizeof(shortname), "%s.MIX", data.Suffix.c_str());
 
 	DebugString("Init theater %s\n", data.Name());
 
@@ -6220,7 +6220,7 @@ void Init_Theater(TheaterType theater)
 		**	Load the custom palette associated with this theater.
 		**	The fading palettes will have to be generated as well.
 		*/
-		wsprintf(fullname, "%s.PAL", data.Root.c_str());
+		snprintf(fullname, sizeof(fullname), "%s.PAL", data.Root.c_str());
 
 		unsigned char * ptr = (unsigned char *)MFCD::Retrieve(fullname);
 
@@ -6244,7 +6244,7 @@ void Init_Theater(TheaterType theater)
 
 		if (!data.Suffix.empty()) {
 			char palname[_MAX_PATH];
-			wsprintf(palname, "UNIT%s.PAL", data.Suffix.c_str());
+			snprintf(palname, sizeof(palname), "UNIT%s.PAL", data.Suffix.c_str());
 			unitpal = (PaletteClass *)MFCD::Retrieve(palname);
 		}
 

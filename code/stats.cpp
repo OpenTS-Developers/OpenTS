@@ -416,7 +416,7 @@ void Send_Statistics_Packet(void)
 	 * Game version/build date
 	 */
 	char	version[128];
-	wsprintf (version, "V%s", VerNum.Version_Name() );
+	snprintf(version, sizeof(version), "V%s", VerNum.Version_Name() );
 	stats.Add_Field (FIELD_GAME_VERSION, (char*)version);
 
 	char path_to_exe[280];

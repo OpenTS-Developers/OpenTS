@@ -649,7 +649,7 @@ bool TriggerTypeClass::Write_INI(CCINIClass & ini) const
 	tevent = FirstEvent;
 	while (tevent != NULL) {
 		strcat(buffer, ",");
-		tevent->Build_INI_Entry(buffer);
+		tevent->Build_INI_Entry(buffer, sizeof(buffer));
 		tevent = tevent->Next;
 	}
 	ini.Put_String(INI_EVENT_NAME, IniName, buffer);

@@ -532,7 +532,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		**	If there is not enough disk space free, don't allow the product to run.
 		*/
 		if (Disk_Space_Available() < INIT_FREE_DISK_SPACE) {
-			wsprintf (buffer, Fetch_String(TXT_CRITICALLY_LOW), (INIT_FREE_DISK_SPACE) / (1024 * 1024));
+			snprintf(buffer, sizeof(buffer), Fetch_String(TXT_CRITICALLY_LOW), (INIT_FREE_DISK_SPACE) / (1024 * 1024));
 			int reply = MessageBox(NULL, buffer, Fetch_String(TXT_SHORT_TITLE), MB_ICONQUESTION|MB_YESNO);
 			if (reply == IDNO) {
 				return(EXIT_FAILURE);
