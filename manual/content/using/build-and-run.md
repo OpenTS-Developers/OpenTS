@@ -1,6 +1,6 @@
 ---
 title: Build and run
-summary: Builds the 32-bit Debug or Release executable and runs it against a directory of game data.
+summary: Builds the Debug or Release executable for either platform and runs it against a directory of game data.
 category: getting-started
 source_files:
   - docs/BUILDING.md
@@ -25,6 +25,8 @@ cmake --build build --config Debug
 ```
 
 The Debug build writes `GameD.exe`, its symbols, map file, and the matching `Language.dll` to `build/bin/Debug/`. Use `--config Release` to write `Game.exe` to `build/bin/Release/` instead. Nothing is copied out of the build directory, so the two configurations never overwrite each other.
+
+`-A x64` builds the 64-bit executable. A build directory holds one platform, so give the 64-bit build its own, such as `-B build/x64`. A saved game belongs to the platform that wrote it, and a network game needs every player on the same platform.
 
 Supply the required game data in `Run/`, then launch the built executable and name that data directory:
 

@@ -45,9 +45,12 @@ endorsed by Electronic Arts.
 
 ## Downloads
 
-- **Releases** are the recommended builds. Each zip on the
-  [releases page](https://github.com/OpenTS-Developers/OpenTS/releases)
-  contains `Game.exe`, `Language.dll`, and `Game.pdb`.
+- **Releases** are the recommended builds. Every release on the
+  [releases page](https://github.com/OpenTS-Developers/OpenTS/releases) carries
+  a zip per platform, `OpenTS-<version>-Win32.zip` and
+  `OpenTS-<version>-x64.zip`, each containing `Game.exe`, `Language.dll`, and
+  `Game.pdb`. The 32-bit build runs on both 32-bit and 64-bit Windows and has
+  the longer runtime history; the 64-bit build runs on 64-bit Windows only.
 - **Nightly builds** are development snapshots from the
   [Engine nightly](https://github.com/OpenTS-Developers/OpenTS/actions/workflows/engine-nightly.yml)
   workflow. Download the latest one without a GitHub account through
@@ -65,6 +68,12 @@ endorsed by Electronic Arts.
 OpenTS supports Windows 10 version 1903 (build 18362) and newer. Earlier
 Windows versions are untested and unsupported. Wine may work, but there is no
 supported native Linux build.
+
+Keep a saved game with the platform that wrote it, and play a network game with
+peers on the same platform. The 32-bit and 64-bit builds write saves and
+network packets at their own pointer widths, and neither checks which platform
+produced what it is reading, so a mismatch surfaces as a failed load or a
+desync.
 
 OpenTS supplies the engine, not the game data: the installation above
 provides the original assets. There is no installer, and no extra runtime
@@ -104,7 +113,7 @@ reasoning.
 
 ## Building
 
-OpenTS builds as a 32-bit Windows target with Visual Studio 2022 and CMake.
+OpenTS builds for 32-bit and 64-bit Windows with Visual Studio 2022 and CMake.
 [Building OpenTS](docs/BUILDING.md) documents the exact requirements,
 commands, and outputs.
 

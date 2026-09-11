@@ -28,24 +28,29 @@ jobs:
     env:
       TAG: ${{ github.event.release.tag_name }}
     steps:
-      - name: Download the build artifact
+      - name: Download the build artifacts
+        # Each platform keeps its own directory here. Merging them would put two
+        # different Game.exe files in one place.
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          pattern: opents-release-Release-*
-          merge-multiple: true
+          pattern: opents-release-*-Release-*
           path: artifact
 
-      - name: Package the release zip
-        working-directory: artifact
-        run: >
-          zip -r "../OpenTS-${TAG}.zip"
-          Game.exe Game.pdb Language.dll
-          LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES
+      - name: Package a release zip for each platform
+        run: |
+          for dir in artifact/opents-release-*-Release-*; do
+            # Artifacts are named <prefix>-<platform>-<configuration>-<commit>, and the
+            # prefix itself contains a hyphen, so count the fields from the end.
+            platform="$(basename "${dir}" | awk -F- '{print $(NF-2)}')"
+            ( cd "${dir}" && zip -r "${GITHUB_WORKSPACE}/OpenTS-${TAG}-${platform}.zip" \
+                Game.exe Game.pdb Language.dll \
+                LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES )
+          done
 
-      - name: Attach the zip to the release
+      - name: Attach the zips to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" "OpenTS-${TAG}.zip" --clobber --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG" OpenTS-"$TAG"-*.zip --clobber --repo "$GITHUB_REPOSITORY"
 
   notes:
     name: Append generated release notes
