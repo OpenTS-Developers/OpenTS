@@ -867,7 +867,7 @@ void Dropship_Screen(void)
 						--j;
 					}
 
-					int alpha = std::min(255ul, (_dissolve_rate * timeGetTime() - _dissolve_rate * effect->StartTime) / _dissolve_scale);
+					int alpha = std::min<DWORD>(255, (_dissolve_rate * timeGetTime() - _dissolve_rate * effect->StartTime) / _dissolve_scale);
 
 					if (alpha != effect->Alpha || overlap_drawn) {
 						effect->Alpha = alpha;

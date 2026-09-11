@@ -133,7 +133,7 @@ class TActionClass : public AbstractClass
 			VoxelAnimType				VAnim;
 			CrateType					Crate;
 			bool						Bool;		// Boolean value.
-			long						Value;
+			int							Value;
 			float						Float;
 		} Data;
 
