@@ -108,7 +108,7 @@ class UIMessageBoxViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Message_Box_View(UIMessageBoxPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Message_Box_View(UIMessageBoxPresenterClass & presenter)
 {
 	return(std::make_unique<UIMessageBoxViewClass>(presenter));
 }

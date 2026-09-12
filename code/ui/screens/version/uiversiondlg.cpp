@@ -19,9 +19,9 @@
 #include "getcpu.h"
 #include "globals.h"
 #include "language/language.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 #include "version.h"
 
 #include "opents_build.h"
@@ -74,7 +74,7 @@ bool UI_Version_Dialog(void)
 	UI_Version_Lines(lines);
 
 	UIVersionPresenterClass presenter(std::move(lines));
-	std::unique_ptr<UIRmlViewClass> view = UI_Version_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
 
 	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
 }

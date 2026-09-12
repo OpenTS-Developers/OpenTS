@@ -15,7 +15,7 @@
 #include "ui/uihost.h"
 #include "ui/uiscreen.h"
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 UIShellHostClass & UI_Engine_Host(void);
@@ -25,4 +25,4 @@ UIShellHostClass & UI_Engine_Host(void);
 bool UI_Service_Game(void);
 
 // Runs a modal screen on UIShell with the game serviced each pass.
-UIResult UI_Run_Modal(UIRmlViewClass & view);
+UIResult UI_Run_Modal(UIViewClass & view);

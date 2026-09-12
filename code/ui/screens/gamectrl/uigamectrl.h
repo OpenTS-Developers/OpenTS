@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // The engine calls the game controls dialog makes when the player accepts. The game supplies one
@@ -104,7 +104,7 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 
 // The RmlUi view over a game controls presenter, bound to gamectrl.rml. The presenter must
 // outlive it.
-std::unique_ptr<UIRmlViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter);
 
 // The game's service and the state of the running game, shared by the Win32 dialog and the
 // RmlUi view.

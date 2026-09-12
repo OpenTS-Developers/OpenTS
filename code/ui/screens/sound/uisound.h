@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // The engine calls the sound options make. The game supplies one that reaches the options
@@ -86,7 +86,7 @@ class UISoundPresenterClass : public UIPresenterClass
 
 
 // The RmlUi view over a sound presenter, bound to sound.rml. The presenter must outlive it.
-std::unique_ptr<UIRmlViewClass> UI_Sound_View(UISoundPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Sound_View(UISoundPresenterClass & presenter);
 
 // The game's service and the state of the running game, shared by the Win32 dialog and the
 // RmlUi view.

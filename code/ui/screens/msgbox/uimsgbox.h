@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // One button of a message box in its display position: slot 0 is the left, 1 the middle and
@@ -50,7 +50,7 @@ class UIMessageBoxPresenterClass : public UIPresenterClass
 
 // The RmlUi view over a message box presenter, bound to message.rml. The presenter must
 // outlive it.
-std::unique_ptr<UIRmlViewClass> UI_Message_Box_View(UIMessageBoxPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Message_Box_View(UIMessageBoxPresenterClass & presenter);
 
 // Runs a message box as an RmlUi screen. False means it could not run as one, because a Win32
 // dialog is on screen or the document failed to prepare, and the caller should open its Win32

@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // One game command as the keyboard dialog lists it. Its index in the state is the command's
@@ -109,7 +109,7 @@ class UIKeyboardPresenterClass : public UIPresenterClass
 
 // The RmlUi view over a keyboard presenter, bound to keyboard.rml. The presenter must outlive
 // it.
-std::unique_ptr<UIRmlViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & presenter);
 
 // The game's service and the state of the hotkey table, shared by the Win32 dialog and the
 // RmlUi view.

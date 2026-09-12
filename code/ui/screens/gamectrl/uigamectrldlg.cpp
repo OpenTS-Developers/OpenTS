@@ -25,9 +25,9 @@
 #include "queue.h"
 #include "session.h"
 #include "techno.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 
 
 namespace
@@ -160,7 +160,7 @@ bool UI_Game_Controls_Dialog(void)
 	UI_Game_Controls_State(state);
 
 	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
-	std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
 		return(false);

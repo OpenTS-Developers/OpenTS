@@ -16,7 +16,7 @@
 #include <string>
 #include <vector>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // One row of the resolution list: the mode and its label as the dialog prints it.
@@ -96,8 +96,8 @@ class UIConfirmModePresenterClass : public UIPresenterClass
 
 
 // The RmlUi views, bound to display.rml and confirm.rml. The presenter must outlive its view.
-std::unique_ptr<UIRmlViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
-std::unique_ptr<UIRmlViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
 
 // The game's service and the state of the display, shared by the Win32 dialog and the RmlUi
 // view.

@@ -26,9 +26,9 @@
 #include "language/language.h"
 #include "msgbox.h"
 #include "ownrdraw.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 #include "vector.h"
 
 
@@ -140,7 +140,7 @@ bool UI_Keyboard_Dialog(void)
 	UI_Keyboard_State(state);
 
 	UIKeyboardPresenterClass presenter(UI_Keyboard_Service(), state);
-	std::unique_ptr<UIRmlViewClass> view = UI_Keyboard_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
 
 	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
 }

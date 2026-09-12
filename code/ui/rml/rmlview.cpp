@@ -9,6 +9,13 @@
 
 #include "ui/rml/rmlview.h"
 
+#include "ui/uishell.h"
+
+// windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
+// element walkers.
+#undef GetFirstChild
+#undef GetNextSibling
+
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/ElementDocument.h>
 #include <RmlUi/Core/Event.h>
@@ -71,6 +78,12 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	Doc->AddEventListener(Rml::EventId::Keydown, this);
 	Loaded();
 	return(true);
+}
+
+
+bool UIRmlViewClass::Prepare(UIShellClass & shell)
+{
+	return(shell.Rml_Context() != nullptr && Prepare(*shell.Rml_Context()));
 }
 
 

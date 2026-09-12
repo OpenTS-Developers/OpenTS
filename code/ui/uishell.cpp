@@ -13,8 +13,8 @@
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlrender.h"
 #include "ui/rml/rmlsystem.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uihost.h"
+#include "ui/uiview.h"
 
 // windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
 // element walkers.
@@ -377,7 +377,7 @@ void UIShellClass::Shutdown(void)
 
 	// The documents go while the context still exists; a caller hiding its notice
 	// afterwards finds nothing to do.
-	for (UIRmlViewClass * view : Modeless) {
+	for (UIViewClass * view : Modeless) {
 		view->Release();
 	}
 	Modeless.clear();
@@ -414,7 +414,7 @@ bool UIShellClass::Legacy_Dialog_Visible(void) const
 }
 
 
-UIRmlViewClass * UIShellClass::Modal(void) const
+UIViewClass * UIShellClass::Modal(void) const
 {
 	return(Modals.empty() ? nullptr : Modals.back());
 }
@@ -426,7 +426,7 @@ int UIShellClass::Modal_Depth(void) const
 }
 
 
-bool UIShellClass::Is_Modeless_Shown(UIRmlViewClass const & view) const
+bool UIShellClass::Is_Modeless_Shown(UIViewClass const & view) const
 {
 	return(std::find(Modeless.begin(), Modeless.end(), &view) != Modeless.end());
 }
@@ -707,13 +707,13 @@ bool UIShellClass::Handle_Char(WPARAM wparam)
 }
 
 
-UIResult UIShellClass::Run_Modal(UIRmlViewClass & view, UIServiceCallback const & service)
+UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service)
 {
 	if (!Ready) {
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 	if (!FontLoaded) {
-		Log("UI: %s needs OpenSans.ttf, which did not load\n", view.Document_Name());
+		Log("UI: %s needs OpenSans.ttf, which did not load\n", view.Name());
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 
@@ -722,8 +722,8 @@ UIResult UIShellClass::Run_Modal(UIRmlViewClass & view, UIServiceCallback const 
 
 	// A style sheet that fails to load leaves the document usable and is reported as an error.
 	int errors = System->Error_Count();
-	if (!view.Prepare(*Context) || System->Error_Count() != errors) {
-		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
+	if (!view.Prepare(*this) || System->Error_Count() != errors) {
+		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Name());
 		view.Release();
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
@@ -740,7 +740,7 @@ UIResult UIShellClass::Run_Modal(UIRmlViewClass & view, UIServiceCallback const 
 	Modals.push_back(&view);
 	view.Show(true);
 	Host.Mark_Overlay_Dirty();
-	std::snprintf(label, sizeof(label), "%s shown", view.Document_Name());
+	std::snprintf(label, sizeof(label), "%s shown", view.Name());
 	Render->Log_Resource_Counts(label);
 	Host.Clear_Keyboard_Queue();
 
@@ -789,7 +789,7 @@ UIResult UIShellClass::Run_Modal(UIRmlViewClass & view, UIServiceCallback const 
 
 	if (Ready) {
 		Host.Mark_Overlay_Dirty();
-		std::snprintf(label, sizeof(label), "%s closed", view.Document_Name());
+		std::snprintf(label, sizeof(label), "%s closed", view.Name());
 		Render->Log_Resource_Counts(label);
 		Host.Clear_Keyboard_Queue();
 		Host.Focus_Main_Window();
@@ -799,15 +799,15 @@ UIResult UIShellClass::Run_Modal(UIRmlViewClass & view, UIServiceCallback const 
 }
 
 
-bool UIShellClass::Show_Modeless(UIRmlViewClass & view)
+bool UIShellClass::Show_Modeless(UIViewClass & view)
 {
 	if (!Ready || !FontLoaded || InContext) {
 		return(false);
 	}
 
 	int errors = System->Error_Count();
-	if (!view.Prepare(*Context) || System->Error_Count() != errors) {
-		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
+	if (!view.Prepare(*this) || System->Error_Count() != errors) {
+		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Name());
 		view.Release();
 		return(false);
 	}
@@ -821,7 +821,7 @@ bool UIShellClass::Show_Modeless(UIRmlViewClass & view)
 }
 
 
-void UIShellClass::Hide_Modeless(UIRmlViewClass & view)
+void UIShellClass::Hide_Modeless(UIViewClass & view)
 {
 	Modeless.erase(std::remove(Modeless.begin(), Modeless.end(), &view), Modeless.end());
 	view.Release();

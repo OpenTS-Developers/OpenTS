@@ -73,7 +73,7 @@ class UIWaitBoxViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Wait_Box_View(UIWaitBoxPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Wait_Box_View(UIWaitBoxPresenterClass & presenter)
 {
 	return(std::make_unique<UIWaitBoxViewClass>(presenter));
 }

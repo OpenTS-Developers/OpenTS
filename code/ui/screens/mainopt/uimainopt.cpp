@@ -101,7 +101,7 @@ class UIMainOptionsViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Main_Options_View(UIMainOptionsPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Main_Options_View(UIMainOptionsPresenterClass & presenter)
 {
 	return(std::make_unique<UIMainOptionsViewClass>(presenter));
 }

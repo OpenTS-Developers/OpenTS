@@ -410,13 +410,29 @@ class UIPresenterClass {                          // uiscreen.h: no toolkit type
         std::optional<UIResult> Result;
 };
 
-class UIRmlViewClass {                            // rml/rmlview.h: owns the document
+class UIViewClass {                               // uiview.h: no toolkit types
+    public:
+        virtual bool Prepare(UIShellClass & shell) = 0;   // load; false falls back
+        virtual void Show(bool modal) = 0;
+        virtual void Hide(void) = 0;
+        virtual void Release(void) = 0;
+        virtual void Sync(void) = 0;                      // presenter changes into the view
+        virtual UIPresenterClass & Presenter(void) const = 0;
+};
+
+class UIRmlViewClass : public UIViewClass {       // rml/rmlview.h: owns the document
     public:
         UIRmlViewClass(UIPresenterClass & presenter, char const * document);
         virtual void Bind(Rml::DataModelConstructor & model) = 0;   // view-model fields and events
-        virtual void Sync(void) = 0;                                // dirty what Execute changed
+        virtual void Sync(void) override = 0;                       // dirty what Execute changed
 };
 ```
+
+A screen's factory, `UI_<Name>_View(presenter)`, returns a
+`std::unique_ptr<UIViewClass>`, so the engine entry that builds the presenter
+and runs the view includes no RmlUi header. The shell runs any `UIViewClass`;
+the RmlUi view is the only implementation today, and the Win32 dialogs that
+drive a presenter do so from their dialog procedures rather than as views.
 
 The view-model is a struct of plain values and vectors that RmlUi's data
 binding renders; the document uses `data-model`, `data-value`, `data-for`,

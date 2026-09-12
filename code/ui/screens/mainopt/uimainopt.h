@@ -13,7 +13,7 @@
 
 #include <memory>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // What the options menu answers with: the dialog to open next, or the way back to the menu.
@@ -53,7 +53,7 @@ class UIMainOptionsPresenterClass : public UIPresenterClass
 
 // The RmlUi view over an options menu presenter, bound to mainopt.rml. The presenter must
 // outlive it.
-std::unique_ptr<UIRmlViewClass> UI_Main_Options_View(UIMainOptionsPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Main_Options_View(UIMainOptionsPresenterClass & presenter);
 
 // The state of the running game.
 void UI_Main_Options_State(UIMainOptionsState & state);
