@@ -37,7 +37,7 @@
 
 #include "lzopipe.h"
 
-#include "lzo.h"
+#include <lzo/lzo1x.h>
 
 #include <cassert>
 #include <cstring>
@@ -62,14 +62,19 @@
  *=============================================================================================*/
 LZOPipe::LZOPipe(CompControl control, int blocksize) :
 		Control(control),
+		IsBroken(false),
 		Counter(0),
 		Buffer(NULL),
 		Buffer2(NULL),
+		Dictionary(NULL),
 		BlockSize(blocksize)
 {
 	SafetyMargin = BlockSize;
 	Buffer = new char[BlockSize+SafetyMargin];
 	Buffer2 = new char[BlockSize+SafetyMargin];
+	if (control == COMPRESS) {
+		Dictionary = new char[LZO1X_1_MEM_COMPRESS];
+	}
 	BlockHeader.CompCount = 0xFFFF;
 }
 
@@ -95,6 +100,9 @@ LZOPipe::~LZOPipe(void)
 
 	delete [] Buffer2;
 	Buffer2 = NULL;
+
+	delete [] Dictionary;
+	Dictionary = NULL;
 }
 
 
@@ -132,6 +140,10 @@ int LZOPipe::Put(void const * source, int slen)
 	*/
 	if (Control ==  DECOMPRESS) {
 
+		if (IsBroken) {
+			return(0);
+		}
+
 		while (slen > 0) {
 
 			/*
@@ -152,6 +164,13 @@ int LZOPipe::Put(void const * source, int slen)
 				if (Counter == sizeof(BlockHeader)) {
 					memmove(&BlockHeader, Buffer, sizeof(BlockHeader));
 					Counter = 0;
+
+					// A count off the stream that no compressor could have written would run
+					// past the buffer as the block accumulated.
+					if (BlockHeader.CompCount > (unsigned)(BlockSize + SafetyMargin)) {
+						IsBroken = true;
+						break;
+					}
 				}
 			}
 
@@ -172,9 +191,14 @@ int LZOPipe::Put(void const * source, int slen)
 				**	through the pipe.
 				*/
 				if (Counter == BlockHeader.CompCount) {
-					unsigned int length = sizeof (Buffer2);
-					lzo1x_decompress ((unsigned char*)Buffer, BlockHeader.CompCount, (unsigned char*)Buffer2, &length, NULL);
-					total += BASECLASS::Put(Buffer2, BlockHeader.UncompCount);
+					// The block header was read from the stream, so its counts are only a
+					// claim; a block that does not expand to exactly what it promises is
+					// dropped rather than passed on.
+					lzo_uint length = BlockSize + SafetyMargin;
+					int const status = lzo1x_decompress_safe((unsigned char*)Buffer, BlockHeader.CompCount, (unsigned char*)Buffer2, &length, NULL);
+					if (status == LZO_E_OK && length == BlockHeader.UncompCount) {
+						total += BASECLASS::Put(Buffer2, BlockHeader.UncompCount);
+					}
 					Counter = 0;
 					BlockHeader.CompCount = 0xFFFF;
 				}
@@ -195,10 +219,8 @@ int LZOPipe::Put(void const * source, int slen)
 			Counter += tocopy;
 
 			if (Counter == BlockSize) {
-				unsigned int len = sizeof (Buffer2);
-				char *dictionary = new char [64*1024];
-				lzo1x_1_compress ((unsigned char*)Buffer, BlockSize, (unsigned char*)Buffer2, &len, dictionary);
-				delete [] dictionary;
+				lzo_uint len = BlockSize + SafetyMargin;
+				lzo1x_1_compress ((unsigned char*)Buffer, BlockSize, (unsigned char*)Buffer2, &len, Dictionary);
 				BlockHeader.CompCount = (unsigned short)len;
 				BlockHeader.UncompCount = (unsigned short)BlockSize;
 				total += BASECLASS::Put(&BlockHeader, sizeof(BlockHeader));
@@ -212,10 +234,8 @@ int LZOPipe::Put(void const * source, int slen)
 		**	source data left for a whole data block.
 		*/
 		while (slen >= BlockSize) {
-			unsigned int len = 0;//sizeof (Buffer2);
-			char *dictionary = new char [64*1024];
-			lzo1x_1_compress ((unsigned char*)source, BlockSize, (unsigned char*)Buffer2, &len, dictionary);
-			delete [] dictionary;
+			lzo_uint len = BlockSize + SafetyMargin;
+			lzo1x_1_compress ((unsigned char*)source, BlockSize, (unsigned char*)Buffer2, &len, Dictionary);
 			source = ((char *)source) + BlockSize;
 			slen -= BlockSize;
 
@@ -299,10 +319,8 @@ int LZOPipe::Flush(void)
 			**	A partial block in the compression process is a normal occurrence. Just
 			**	compress the partial block and output normally.
 			*/
-			unsigned int len = 0;//sizeof (Buffer2);
-			char *dictionary = new char [64*1024];
-			lzo1x_1_compress ((unsigned char*)Buffer, Counter, (unsigned char *)Buffer2, &len, dictionary);
-			delete [] dictionary;
+			lzo_uint len = BlockSize + SafetyMargin;
+			lzo1x_1_compress ((unsigned char*)Buffer, Counter, (unsigned char *)Buffer2, &len, Dictionary);
 			BlockHeader.CompCount = (unsigned short)len;
 			BlockHeader.UncompCount = (unsigned short)Counter;
 			total += BASECLASS::Put(&BlockHeader, sizeof(BlockHeader));

@@ -21,6 +21,6 @@ Configuration is documented in five areas rather than one. The table names what 
 | [Command line options](/using/command-line/) | Options accepted on the OpenTS command line |
 | [Mapping](/mapping/) | Scenario sections, triggers, TeamTypes, TaskForces, Scripts, and AI triggers |
 
-`SUN.INI` stores local player options. `KEYBOARD.INI` maps command names to keys. [`UI.INI`](/formats/ui-ini/), which a mod or deployment may ship, styles the order lines. Rules, art, sound, theme, and scenario files supply game and mod data.
+`SUN.INI` stores local player options. `KEYBOARD.INI` maps command names to keys. [`UI.INI`](/formats/ui-ini/), which a mod or deployment may ship, styles the order lines. Rules, art, sound, theme, and scenario files supply game and mod data. A deployment that keeps these under other names writes them in its [`OPENTS.INI`](/formats/opents-ini/#the-files-it-reads).
 
 The engine loads its configuration files in a defined order. Use the relevant Format page when file selection, layering, registration, or section identity affects the result.

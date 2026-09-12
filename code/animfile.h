@@ -108,6 +108,7 @@ class AnimFile : public Animate
 			unsigned short framesPerSecond;	/// Number of frames to play per second.
 			unsigned short pad2[29];		/// 58 bytes of filler to round up to 128 bytes total.
 		};
+		static_assert(sizeof(LPFHeader) == 128, "the LPF header is 128 bytes on disk");
 
 		struct LPDescriptor {
 			unsigned short baseRecord;		/// Number of first record in this large page.
@@ -116,6 +117,7 @@ class AnimFile : public Animate
 											/// bit 14 of "nRecords" == "final record continues on next lp".
 			unsigned short nBytes;          /// Total number of bytes of contents, excluding header.
 		};
+		static_assert(sizeof(LPDescriptor) == 6, "a large page descriptor is 6 bytes on disk");
 
 		/*
 		 * Structure of a single Large Page in an anim file.
@@ -134,6 +136,7 @@ class AnimFile : public Animate
 			unsigned short RecordSizes[1];	/// [nRecords] Array of lengths of each record in the large page.
 
 		};
+		static_assert(sizeof(LPStruct) == 10, "a large page header is 8 bytes on disk, and the struct carries the first of the record sizes that follow it");
 
 		/*
 		 * These are the color cycling ranges Deluxe Paint stores after the header, each

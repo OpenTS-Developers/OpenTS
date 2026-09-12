@@ -131,10 +131,11 @@ long VQA_OpenAudio(VQAHandleP *vqap)
 	params.SampleRate = vqap->SampleRate;
 	params.Channels = vqap->Channels;
 	params.BitsPerSample = vqap->BitsPerSample;
-	params.Callback1 = VQA_AudioFillCallback;
-	params.Callback2 = VQA_AudioDoneCallback;
+	// AhandleInitParams carries these as void pointers and the handler casts them back.
+	params.Callback1 = (void *)VQA_AudioFillCallback;
+	params.Callback2 = (void *)VQA_AudioDoneCallback;
 
-	rc = vqap->Config.AudioHandler((VQAHandle *)vqap, VQAAUDIO_OPEN, &params, sizeof(params));
+	rc = (long)vqap->Config.AudioHandler((VQAHandle *)vqap, VQAAUDIO_OPEN, &params, sizeof(params));
 	if (rc >= VQAERR_OK || rc == VQAERR_NONE) {
 
 		/* Lock the memory occupied by this module. */
@@ -484,7 +485,7 @@ long __cdecl VQA_AudioFillCallback(VQAHandleP *vqap)
 }
 
 
-long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, unsigned long buffer)
+long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, void *buffer)
 {
 	VQAConfig *config;
 	VQAAudio *audio;
@@ -493,7 +494,7 @@ long __cdecl VQA_AudioDoneCallback(VQAHandleP *vqap, unsigned long buffer)
 	audio = &vqap->Audio;
 	config = &vqap->Config;
 
-	if ((void *)buffer == audio->Buffer + audio->PlayPosition || (void *)buffer == audio->HMIBuffer) {
+	if (buffer == audio->Buffer + audio->PlayPosition || buffer == audio->HMIBuffer) {
 
 		block = audio->Block2;
 

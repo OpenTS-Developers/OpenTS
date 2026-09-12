@@ -35,6 +35,7 @@ struct VPLHeaderStruct
 	/// Unused
 	int Unused;
 };
+static_assert(sizeof(VPLHeaderStruct) == 16, "the VPL header is 16 bytes on disk");
 
 Matrix3D Get_Isometric_View_Matrix(void);
 void Init_Voxel_Matrices(void);

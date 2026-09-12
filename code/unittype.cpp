@@ -45,7 +45,6 @@
  *   UnitTypeClass::operator new -- Allocates an object from the unit type class heap.         *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "unittype.h"
@@ -495,15 +494,9 @@ int UnitTypeClass::Repair_Step(void) const
 }
 
 
-/// <summary>
-/// Fetches the persistent class identifier for the unit type.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE UnitTypeClass::GetClassID(CLSID * retval)
+ClassID UnitTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_UnitTypeClass;
-	return(S_OK);
+	return(ClassID_UnitTypeClass);
 }
 
 

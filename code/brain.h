@@ -24,7 +24,7 @@ class NeuronClass : public AbstractClass
 		NeuronClass(void);
 		virtual ~NeuronClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual RTTIType Fetch_RTTI(void) const override { return(RTTI_NEURON); }
 
@@ -62,10 +62,10 @@ class BrainClass
 		void Init(int min, int max);
 		bool Add_Neuron(NeuronClass *neuron);
 
-		HRESULT Load(IStream * stream);
-		HRESULT Save(IStream * stream, BOOL cleardirty);
+		bool Load(SaveStreamClass & stream);
+		bool Save(SaveStreamClass & stream, bool cleardirty);
 
-		void Serialize(SaveStreamClass & stream, BOOL cleardirty = FALSE);
+		void Serialize(SaveStreamClass & stream, bool cleardirty = false);
 
 	private:
 		/*

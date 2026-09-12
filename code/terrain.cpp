@@ -52,7 +52,6 @@
  *   TerrainClass::~TerrainClass -- Default destructor for terrain class objects.              *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "terrain.h"
@@ -914,8 +913,8 @@ bool TerrainClass::Render(Rect & cliprect, bool forced, bool extras_only) const
 /// under the identity it was constructed with is dropped before the members arrive.
 /// </summary>
 /// <param name="stream">The stream to read the object from.</param>
-/// <returns>Returns with S_OK if the object was read successfully.</returns>
-HRESULT STDMETHODCALLTYPE TerrainClass::Load(IStream * stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool TerrainClass::Load(SaveStreamClass & stream)
 {
 	TargetTracker.Remove_Index(Fetch_ID());
 
@@ -1090,16 +1089,7 @@ RTTIType TerrainClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier for this object.
-/// This routine is part of the IPersistStream implementation. The save system records
-/// the identifier so that it knows what to recreate when the game is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TerrainClass::GetClassID(CLSID * retval)
+ClassID TerrainClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TerrainClass;
-	return(S_OK);
+	return(ClassID_TerrainClass);
 }

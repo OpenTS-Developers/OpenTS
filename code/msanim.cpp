@@ -1132,7 +1132,7 @@ void MSPrintAnim::Redraw(Surface * surface, Rect const * rect)
 		int x = XPos;
 		int y = YPos;
 
-		unsigned printed = Get_Printed_Char_Count();
+		size_t printed = Get_Printed_Char_Count();
 		unsigned end = std::min(printed, strlen(String));
 
 		for (unsigned char_index = LineStart; char_index < end; ) {

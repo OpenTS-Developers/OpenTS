@@ -78,7 +78,7 @@ class RLEBlitTransXlat : public RLEBlitter {
 	public:
 		RLEBlitTransXlat(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -121,11 +121,11 @@ class RLEBlitTransXlatAlpha : public RLEBlitter
 		RLEBlitTransXlatAlpha(T const * translator, int intensity_levels) : TranslateTable(translator), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransXlatAlpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* ap = a_buff;
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
@@ -176,12 +176,12 @@ class RLEBlitTransXlatAlphaZRead : public RLEBlitter
 		RLEBlitTransXlatAlphaZRead(T const * translator, int intensity_levels) : TranslateTable(translator), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransXlatAlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -243,12 +243,12 @@ class RLEBlitTransXlatAlphaZReadWrite : public RLEBlitter
 		RLEBlitTransXlatAlphaZReadWrite(T const * translator, int intensity_levels) : TranslateTable(translator), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransXlatAlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -312,12 +312,12 @@ class RLEBlitTransXlatZRead : public RLEBlitter
 	public:
 		RLEBlitTransXlatZRead(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			const signed char* zs = (const signed char*)(zshape);
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 
 			/*
 			**	Skip any leading pixels as requested.
@@ -369,12 +369,12 @@ class RLEBlitTransXlatZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransXlatZReadWrite(T const * translator) : TranslateTable(translator) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			/*
@@ -433,7 +433,7 @@ class RLEBlitTransRemapXlat : public RLEBlitter {
 	public:
 		RLEBlitTransRemapXlat(unsigned char const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(TranslateTable != NULL);assert(RemapTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -476,12 +476,12 @@ class RLEBlitTransRemapXlatZRead : public RLEBlitter
 	public:
 		RLEBlitTransRemapXlatZRead(unsigned char const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(TranslateTable != NULL);assert(RemapTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			/*
@@ -533,12 +533,12 @@ class RLEBlitTransRemapXlatZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransRemapXlatZReadWrite(unsigned char const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(TranslateTable != NULL);assert(RemapTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			/*
@@ -599,7 +599,7 @@ class RLEBlitTransZRemapXlat : public RLEBlitter {
 	public:
 		RLEBlitTransZRemapXlat(unsigned char const * const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(TranslateTable != NULL);assert(RemapTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -645,13 +645,13 @@ class RLEBlitTransZRemapXlatAlpha : public RLEBlitter
 		RLEBlitTransZRemapXlatAlpha(unsigned char const * const * remapper, T const * translator, int intensity_levels) : RemapTable(remapper), TranslateTable(translator), AlphaLightingRemap(NULL) {assert(TranslateTable != NULL);assert(RemapTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransZRemapXlatAlpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
 			unsigned char const * rtable = *RemapTable;
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			/*
@@ -699,14 +699,14 @@ class RLEBlitTransZRemapXlatAlphaZRead : public RLEBlitter
 		RLEBlitTransZRemapXlatAlphaZRead(unsigned char const * const * remapper, T const * translator, int intensity_levels) : RemapTable(remapper), TranslateTable(translator), AlphaLightingRemap(NULL) {assert(TranslateTable != NULL);assert(RemapTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransZRemapXlatAlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			const signed char* zs = (const signed char*)(zshape);
 			T * dptr = (T *)dest;
 			unsigned char const * rtable = *RemapTable;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
 			/*
@@ -766,15 +766,15 @@ class RLEBlitTransZRemapXlatAlphaZReadWrite : public RLEBlitter
 		RLEBlitTransZRemapXlatAlphaZReadWrite(unsigned char const * const * remapper, T const * translator, int intensity_levels) : RemapTable(remapper), TranslateTable(translator), AlphaLightingRemap(NULL) {assert(TranslateTable != NULL);assert(RemapTable != NULL); AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransZRemapXlatAlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
 			unsigned char const * rtable = *RemapTable;
 
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -839,14 +839,14 @@ class RLEBlitTransZRemapXlatZRead : public RLEBlitter
 	public:
 		RLEBlitTransZRemapXlatZRead(unsigned char const * const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(TranslateTable != NULL);assert(RemapTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			const signed char* zs = (const signed char*)(zshape);
 			T * dptr = (T *)dest;
 
 			unsigned char const * rtable = *RemapTable;
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 
 			/*
 			**	Skip any leading pixels as requested.
@@ -897,13 +897,13 @@ class RLEBlitTransZRemapXlatZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransZRemapXlatZReadWrite(unsigned char const * const * remapper, T const * translator) : RemapTable(remapper), TranslateTable(translator) {assert(TranslateTable != NULL);assert(RemapTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			unsigned char const * remapper = *RemapTable;
 			const signed char* zs = (const signed char*)(zshape);
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 
 			/*
 			**	Skip any leading pixels as requested.
@@ -966,7 +966,7 @@ class RLEBlitTransRemapDest : public RLEBlitter {
 	public:
 		RLEBlitTransRemapDest(T const * remap) : RemapTable(remap) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -1009,11 +1009,11 @@ class RLEBlitTransRemapDestZRead : public RLEBlitter
 	public:
 		RLEBlitTransRemapDestZRead(T const * remap) : RemapTable(remap) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			/*
@@ -1066,12 +1066,12 @@ class RLEBlitTransRemapDestZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransRemapDestZReadWrite(T const * remap) : RemapTable(remap) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			/*
@@ -1133,7 +1133,7 @@ class RLEBlitTransDarken : public RLEBlitter {
 	public:
 		RLEBlitTransDarken(T mask) : Mask(mask) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -1176,12 +1176,12 @@ class RLEBlitTransDarkenZRead : public RLEBlitter
 	public:
 		RLEBlitTransDarkenZRead(T mask) : Mask(mask) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			/*
@@ -1233,12 +1233,12 @@ class RLEBlitTransDarkenZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransDarkenZReadWrite(T mask) : Mask(mask) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			/*
@@ -1297,7 +1297,7 @@ class RLEBlitTransLucent50 : public RLEBlitter {
 	public:
 		RLEBlitTransLucent50(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -1342,11 +1342,11 @@ class RLEBlitTransLucent50Alpha : public RLEBlitter
 		RLEBlitTransLucent50Alpha(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent50Alpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* ap = a_buff;
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
@@ -1397,12 +1397,12 @@ class RLEBlitTransLucent50AlphaZRead : public RLEBlitter
 		RLEBlitTransLucent50AlphaZRead(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent50AlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -1466,12 +1466,12 @@ class RLEBlitTransLucent50AlphaZReadWarp : public RLEBlitter
 		RLEBlitTransLucent50AlphaZReadWarp(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent50AlphaZReadWarp(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -1534,12 +1534,12 @@ class RLEBlitTransLucent50AlphaZReadWrite : public RLEBlitter
 		RLEBlitTransLucent50AlphaZReadWrite(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent50AlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -1607,9 +1607,9 @@ class RLEBlitTransLucent50ZRead : public RLEBlitter
 	public:
 		RLEBlitTransLucent50ZRead(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
 			unsigned char const * sptr = (unsigned char const *)source;
@@ -1664,9 +1664,9 @@ class RLEBlitTransLucent50ZReadWarp : public RLEBlitter
 	public:
 		RLEBlitTransLucent50ZReadWarp(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
 			unsigned char const * sptr = (unsigned char const *)source;
@@ -1721,9 +1721,9 @@ class RLEBlitTransLucent50ZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransLucent50ZReadWrite(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
 			unsigned char const * sptr = (unsigned char const *)source;
@@ -1784,7 +1784,7 @@ class RLEBlitTransLucent25 : public RLEBlitter {
 	public:
 		RLEBlitTransLucent25(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -1830,11 +1830,11 @@ class RLEBlitTransLucent25Alpha : public RLEBlitter
 		RLEBlitTransLucent25Alpha(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent25Alpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* ap = a_buff;
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
@@ -1886,12 +1886,12 @@ class RLEBlitTransLucent25AlphaZRead : public RLEBlitter
 		RLEBlitTransLucent25AlphaZRead(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent25AlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -1955,12 +1955,12 @@ class RLEBlitTransLucent25AlphaZReadWarp : public RLEBlitter
 		RLEBlitTransLucent25AlphaZReadWarp(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent25AlphaZReadWarp(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -2024,12 +2024,12 @@ class RLEBlitTransLucent25AlphaZReadWrite : public RLEBlitter
 		RLEBlitTransLucent25AlphaZReadWrite(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent25AlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -2097,9 +2097,9 @@ class RLEBlitTransLucent25ZRead : public RLEBlitter
 	public:
 		RLEBlitTransLucent25ZRead(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
 			unsigned char const * sptr = (unsigned char const *)source;
@@ -2155,9 +2155,9 @@ class RLEBlitTransLucent25ZReadWarp : public RLEBlitter
 	public:
 		RLEBlitTransLucent25ZReadWarp(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
@@ -2213,9 +2213,9 @@ class RLEBlitTransLucent25ZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransLucent25ZReadWrite(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
@@ -2278,7 +2278,7 @@ class RLEBlitTransLucent75 : public RLEBlitter {
 	public:
 		RLEBlitTransLucent75(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
@@ -2324,11 +2324,11 @@ class RLEBlitTransLucent75Alpha : public RLEBlitter
 		RLEBlitTransLucent75Alpha(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent75Alpha(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* ap = a_buff;
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
@@ -2380,12 +2380,12 @@ class RLEBlitTransLucent75AlphaZRead : public RLEBlitter
 		RLEBlitTransLucent75AlphaZRead(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent75AlphaZRead(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -2449,12 +2449,12 @@ class RLEBlitTransLucent75AlphaZReadWarp : public RLEBlitter
 		RLEBlitTransLucent75AlphaZReadWarp(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent75AlphaZReadWarp(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
-			unsigned short* zp = (unsigned short*)(z_buff);
-			unsigned short* ap = (unsigned short*)(a_buff);
+			unsigned short* zp = z_buff;
+			unsigned short* ap = a_buff;
 			const signed char* zs = (const signed char*)(zshape);
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
@@ -2518,13 +2518,13 @@ class RLEBlitTransLucent75AlphaZReadWrite : public RLEBlitter
 		RLEBlitTransLucent75AlphaZReadWrite(T const * translator, int intensity_levels, T mask) : TranslateTable(translator), Mask(mask), AlphaLightingRemap(NULL) {AlphaLightingRemap = AlphaLightingRemapInit.Init(intensity_levels);}
 		virtual ~RLEBlitTransLucent75AlphaZReadWrite(void) override { AlphaLightingRemapInit.Deinit(AlphaLightingRemap); AlphaLightingRemap = NULL; }
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
 			T * dptr = (T *)dest;
 			unsigned char const * sptr = (unsigned char const *)source;
 			const signed char* zs = (const signed char*)(zshape);
-			unsigned short* ap = (unsigned short*)(a_buff);
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* ap = a_buff;
+			unsigned short* zp = z_buff;
 
 			const unsigned short* aLUT = AlphaLightingRemap->Get_Table(alpha_level);
 
@@ -2593,9 +2593,9 @@ class RLEBlitTransLucent75ZRead : public RLEBlitter
 	public:
 		RLEBlitTransLucent75ZRead(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
 			unsigned char const * sptr = (unsigned char const *)source;
@@ -2651,9 +2651,9 @@ class RLEBlitTransLucent75ZReadWarp : public RLEBlitter
 	public:
 		RLEBlitTransLucent75ZReadWarp(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);
@@ -2709,9 +2709,9 @@ class RLEBlitTransLucent75ZReadWrite : public RLEBlitter
 	public:
 		RLEBlitTransLucent75ZReadWrite(T const * translator, T mask) : TranslateTable(translator), Mask(mask) {assert(TranslateTable != NULL);}
 
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const override
 		{
-			unsigned short* zp = (unsigned short*)(z_buff);
+			unsigned short* zp = z_buff;
 			unsigned char const * sptr = (unsigned char const *)source;
 			T * dptr = (T *)dest;
 			const signed char* zs = (const signed char*)(zshape);

@@ -49,7 +49,7 @@
 #include	<string.h>
 
 
-long __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes)
+intptr_t __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes)
 {
 	long fh;
 	long error = 0;
@@ -98,17 +98,17 @@ long __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, 
 		 * VQAERR_SEEK.
 		 */
 		case VQACMD_SEEK:
-			error = (lseek(fh, nbytes, (long)buffer) == -1);
+			error = (lseek(fh, nbytes, (int)(intptr_t)buffer) == -1);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = lseek(fh, nbytes - 1, (int)buffer) == -1;
+				error = lseek(fh, nbytes - 1, (int)(intptr_t)buffer) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
 			} else {
-				error = lseek(fh, nbytes, (int)buffer) == -1;
+				error = lseek(fh, nbytes, (int)(intptr_t)buffer) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
@@ -152,7 +152,7 @@ long __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, 
 
 
 
-long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes)
+intptr_t __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes)
 {
 	long error = 0;
 	int p;
@@ -196,7 +196,7 @@ long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer
 		 */
 		case VQACMD_SEEK:
 		case VQACMD_SEEKPEEK:
-			switch ((long)buffer) {
+			switch ((intptr_t)buffer) {
 
 				case 1:
 					cache->Offset += nbytes;
@@ -204,7 +204,7 @@ long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer
 					break;
 
 				case 0:
-					p = (int)cache->Buffer;
+					p = cache->FileOffset;
 					if (nbytes >= p) {
 						cache->Offset = nbytes - p;
 						break;

@@ -165,7 +165,6 @@ void RadarEventClass::Process(void)
 				if (normalized_angle < RotationSpeed) {
 					RotationAngle = normalized_angle + RotationAngle;
 					IsRotating = false;
-					RotationAngle = RotationAngle;
 					VisibilityTimer = Get_Visibility_Duration();
 					DurationTimer = Get_Duration();
 				} else {
@@ -366,20 +365,19 @@ void RadarEventClass::Get_Event_Rect(Point2D (& event_rect)[4]) const
 /// </summary>
 /// <param name="stream">The stream to write the radar events to.</param>
 /// <returns>bool; Were the events written successfully?</returns>
-bool RadarEventClass::Save(IStream * stream)
+bool RadarEventClass::Save(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
 
 	int count = RadarEvents.Count();
-	savestream.Serialize(count);
+	stream.Serialize(count);
 
 	for (int index = 0; index < count; index++) {
-		RadarEvents[index]->Serialize(savestream);
+		RadarEvents[index]->Serialize(stream);
 	}
 
-	savestream.Serialize(LastRadarEventCell);
+	stream.Serialize(LastRadarEventCell);
 
-	return(SUCCEEDED(savestream.Result()));
+	return(!stream.Was_Error());
 }
 
 
@@ -390,27 +388,29 @@ bool RadarEventClass::Save(IStream * stream)
 /// </summary>
 /// <param name="stream">The stream to read the radar events from.</param>
 /// <returns>bool; Were the events read successfully?</returns>
-bool RadarEventClass::Load(IStream * stream)
+bool RadarEventClass::Load(SaveStreamClass & stream)
 {
+	// The destructor takes the event off the list, so the list drains as they are deleted.
 	for (int i = RadarEvents.Count() - 1; i >= 0; i--) {
 		delete RadarEvents[i];
-		RadarEvents.Delete_Index(i);
 	}
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("RadarEventClass");
+	stream.Set_Context("RadarEventClass");
 
 	int count = 0;
-	savestream.Serialize(count);
-
-	for (int index = 0; index < count; index++) {
-		RadarEventClass * event = new RadarEventClass(RADAREVENT_NONE, Cell(0, 0));
-		event->Serialize(savestream);
+	stream.Serialize(count);
+	if (!stream.Fits(count, 1)) {
+		return(false);
 	}
 
-	savestream.Serialize(LastRadarEventCell);
+	for (int index = 0; index < count && !stream.Was_Error(); index++) {
+		RadarEventClass * event = new RadarEventClass(RADAREVENT_NONE, Cell(0, 0));
+		event->Serialize(stream);
+	}
 
-	return(SUCCEEDED(savestream.Result()));
+	stream.Serialize(LastRadarEventCell);
+
+	return(!stream.Was_Error());
 }
 
 

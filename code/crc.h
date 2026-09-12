@@ -50,7 +50,7 @@ class CRC {
 public:
 
 	// get the CRC of a block of memory
-	static unsigned int	Memory( unsigned char *data, unsigned int length, unsigned int crc = 0 );
+	static unsigned int	Memory( unsigned char const *data, unsigned int length, unsigned int crc = 0 );
 
 	// get the CRC of a null-terminated string
 	static unsigned int	String( const char *string, unsigned int crc = 0 );

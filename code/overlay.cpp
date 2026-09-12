@@ -36,7 +36,6 @@
  *   OverlayClass::new -- Allocates a overlay object from pool                                 *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "overlay.h"

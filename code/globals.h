@@ -30,6 +30,7 @@
 #include "theater.hh"
 #include "vox.hh"
 
+#include <cstdint>
 #include <deque>
 
 /*
@@ -250,7 +251,7 @@ extern bool							drag_select_aborted;
 
 extern GroundType  				Ground[LAND_COUNT];
 
-extern int LParam;
+extern intptr_t LParam;
 
 /*
 **	Constant externs (data is not modified during game play).

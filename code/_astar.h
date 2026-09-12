@@ -17,6 +17,13 @@
 
 class AStarClass;
 
+/*
+ * The most cells a path may run to. A buffer handed to Find_Path holds one more, because a
+ * finished path of length L is padded out to entry L.
+ */
+inline constexpr int PATH_LENGTH_MAX = 2000;
+
+
 /**************************************************************************
 **	Find_Path returns with a pointer to this structure.
 */

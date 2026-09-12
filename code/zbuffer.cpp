@@ -13,6 +13,7 @@
 
 #include "bsurface.h"
 
+#include <cstdint>
 #include <cstdlib>
 
 #define ZBUFFER_COLOR  0xFFFF
@@ -32,14 +33,14 @@ ZBuffer::ZBuffer(Rect rect) :
 	BufferHeight(rect.Height)
 {
 	Bounds = rect;
-	BufferSize = BufferWidth * BufferHeight * ZBUFFER_BPP;
+	BufferSize = BufferWidth * BufferHeight;
 	SurfacePtr = new BSurface(BufferWidth, BufferHeight, ZBUFFER_BPP);
 
 	Fill(ZBUFFER_COLOR);
 
-	BufferStart = (unsigned int)(SurfacePtr->Lock());
+	BufferStart = (unsigned short *)(SurfacePtr->Lock());
 	SurfaceOffset = 0;
-	BufferEnd = BufferStart + BufferWidth * BufferHeight * ZBUFFER_BPP;
+	BufferEnd = BufferStart + BufferWidth * BufferHeight;
 	ScrollOffset = ZBUFFER_MAX;
 
 	SurfacePtr->Unlock();
@@ -59,7 +60,7 @@ void ZBuffer::Copy_To(Surface *surface, Rect rect)
 
 	unsigned short *surfbuffptr = (unsigned short *)(surface->Lock(Point2D(rect.X, rect.Y)));
 
-	unsigned short *pixptr = (unsigned short *)(BufferStart + SurfaceOffset);
+	unsigned short *pixptr = BufferStart + SurfaceOffset;
 
 	int steps = (surface->Stride() / ZBUFFER_BPP) - rect.Width;
 
@@ -68,8 +69,8 @@ void ZBuffer::Copy_To(Surface *surface, Rect rect)
 			for (int j = 0; j < rect.Width; ++j) {
 				*surfbuffptr = *pixptr;
 				++surfbuffptr;
-				pixptr = (unsigned short *)((unsigned char *)pixptr + ZBUFFER_BPP);
-				pixptr = (unsigned short *)Wrap_Overflow((unsigned int)pixptr);
+				++pixptr;
+				pixptr = Wrap_Overflow(pixptr);
 			}
 			surfbuffptr += steps;
 		}
@@ -99,13 +100,13 @@ void ZBuffer::Release_Surface(void)
 /// <param name="value">The depth value to fill with.</param>
 /// <remarks>The run is not wrapped. The caller must split any fill that would otherwise
 /// run off the end of the buffer.</remarks>
-void ZBuffer::Set(unsigned int dst, int size, unsigned short value)
+void ZBuffer::Set(unsigned short * dst, int size, unsigned short value)
 {
 	/// Write a single entry to bring the address up to an int boundary.
-	if ((unsigned int)dst & 2) {
+	if ((uintptr_t)dst & 2) {
 		if (size != 0) {
-			*(unsigned short *)dst = value;
-			dst = (unsigned int)((unsigned short *)dst + 1);
+			*dst = value;
+			++dst;
 			size--;
 		}
 	}
@@ -153,7 +154,7 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 	int y_delta = y;
 
 	/// The column the buffer origin currently sits on.
-	int current_col = (SurfaceOffset / ZBUFFER_BPP) % BufferWidth;
+	int current_col = SurfaceOffset % BufferWidth;
 
 	if (abs(x_delta) > BufferWidth || abs(y_delta) > BufferHeight) {
 		Fill(value);
@@ -165,11 +166,11 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 		if (x_delta != 0) {
 
 			/// Slide the origin along the row and fold it back into the buffer.
-			SurfaceOffset += x_delta * ZBUFFER_BPP;
+			SurfaceOffset += x_delta;
 
-			unsigned int new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
+			unsigned short * new_offset = Wrap_Underflow(BufferStart + SurfaceOffset);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the columns that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
@@ -194,7 +195,7 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 		}
 
 		/// The row the buffer origin currently sits on.
-		int current_row = (SurfaceOffset / ZBUFFER_BPP) / BufferWidth;
+		int current_row = SurfaceOffset / BufferWidth;
 
 		if (y_delta != 0) {
 			target_row = current_row + y_delta;
@@ -206,29 +207,29 @@ void ZBuffer::Pan(int x, int y, unsigned short value)
 			int prev_offset = SurfaceOffset;
 
 			/// Slide the origin by whole rows and fold it back into the buffer.
-			SurfaceOffset += y_delta * BufferWidth * ZBUFFER_BPP;
+			SurfaceOffset += y_delta * BufferWidth;
 
-			unsigned int new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
+			unsigned short * new_offset = Wrap_Underflow(BufferStart + SurfaceOffset);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the rows that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
 			if (y_delta < 0) {
 				if (target_row < 0) {
-					Set(BufferStart, prev_offset / ZBUFFER_BPP, value);
-					Set(BufferStart + SurfaceOffset, ((BufferWidth * BufferHeight * ZBUFFER_BPP) - SurfaceOffset) / ZBUFFER_BPP, value);
+					Set(BufferStart, prev_offset, value);
+					Set(BufferStart + SurfaceOffset, (BufferWidth * BufferHeight) - SurfaceOffset, value);
 
 				} else {
-					Set(BufferStart + SurfaceOffset, (prev_offset - SurfaceOffset) / ZBUFFER_BPP, value);
+					Set(BufferStart + SurfaceOffset, prev_offset - SurfaceOffset, value);
 				}
 
 			} else if (target_row >= BufferHeight) {
-				Set(BufferStart + prev_offset, ((BufferWidth * BufferHeight * ZBUFFER_BPP) - prev_offset) / ZBUFFER_BPP, value);
-				Set(BufferStart, SurfaceOffset / ZBUFFER_BPP, value);
+				Set(BufferStart + prev_offset, (BufferWidth * BufferHeight) - prev_offset, value);
+				Set(BufferStart, SurfaceOffset, value);
 
 			} else {
-				Set(BufferStart + prev_offset, (SurfaceOffset - prev_offset) / ZBUFFER_BPP, value);
+				Set(BufferStart + prev_offset, SurfaceOffset - prev_offset, value);
 			}
 		}
 	}
@@ -267,20 +268,19 @@ bool ZBuffer::Fill(unsigned short value, Rect rect)
 /// <param name="rect">The region of the buffer to reset.</param>
 void ZBuffer::Update(Rect rect)
 {
-	unsigned int buffptr = Get_Buffer_Offset(Point2D(rect.X, rect.Y));
+	unsigned short * buffptr = Get_Buffer_Offset(Point2D(rect.X, rect.Y));
 
 	for (int i = 0; i < rect.Height; ++i) {
 
-		unsigned int size;
-		if ((buffptr + rect.Width * ZBUFFER_BPP) >= BufferEnd) {
-			size = (BufferEnd - buffptr) / ZBUFFER_BPP;
+		if ((buffptr + rect.Width) >= BufferEnd) {
+			int size = (int)(BufferEnd - buffptr);
 			Set(buffptr, size, ZBUFFER_COLOR);
 			Set(BufferStart, rect.Width - size, ZBUFFER_COLOR);
 		} else {
 			Set(buffptr, rect.Width, ZBUFFER_COLOR);
 		}
 
-		buffptr += BufferWidth * ZBUFFER_BPP;
+		buffptr += BufferWidth;
 		buffptr = Wrap_Overflow(buffptr);
 	}
 }
@@ -293,9 +293,9 @@ void ZBuffer::Update(Rect rect)
 /// </summary>
 /// <param name="pos">The point within the buffer to locate.</param>
 /// <returns>Returns with the address of the entry within the depth buffer.</returns>
-unsigned int ZBuffer::Get_Buffer_Offset(Point2D pos)
+unsigned short * ZBuffer::Get_Buffer_Offset(Point2D pos)
 {
-	unsigned int buffptr = (unsigned int)SurfacePtr->Lock(pos);
+	unsigned short * buffptr = (unsigned short *)SurfacePtr->Lock(pos);
 
 	SurfacePtr->Unlock();
 

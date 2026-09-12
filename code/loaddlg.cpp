@@ -933,7 +933,7 @@ bool LoadOptionsClass::Read_File(FileEntryClass * fdata, WIN32_FIND_DATAA * ff)
 		return(false);
 	}
 
-	wsprintf(fdata->Descr, "%s", savever.Get_Scenario_Description());
+	snprintf(fdata->Descr, sizeof(fdata->Descr), "%s", savever.Get_Scenario_Description());
 
 	fdata->Valid = ok;
 	fdata->Scenario = savever.Get_Scenario_Number();

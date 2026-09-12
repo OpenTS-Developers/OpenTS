@@ -34,6 +34,7 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netshare.h"
+#include "nettiming.h"
 #include "newmenu.h"
 #include "ownrdraw.h"
 #include "rules.h"
@@ -977,18 +978,13 @@ bool Net2Remote_Connect(void)
 
 			PregameSetup();
 
-			//.....................................................................
-			// Compute frame delay value for packet transmissions:
-			// - Divide global channel's response time by 8 (2 to convert to 1-way
-			//	  value, 4 more to convert from ticks to frames)
-			//.....................................................................
-			Session.LatencyFudge = 0;
-			Session.PrecalcMaxAhead = 0;
-			Session.PrecalcDesiredFrameRate = 0;
-			Session.FrameSendRate = 3;
+			// A compressed game starts at the fixed bootstrap rung and measures from there.
 			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-				Session.MaxAhead = std::max<unsigned int>(((((Ipx.Global_Response_Time() / 8) + (Session.FrameSendRate - 1)) / Session.FrameSendRate) * Session.FrameSendRate), NETWORK_MIN_MAX_AHEAD * 3);
+				NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+				Session.FrameSendRate = initial.FrameSendRate;
+				Session.MaxAhead = initial.MaxAhead;
 			} else {
+				Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
 				Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
 			}
 
@@ -1021,18 +1017,13 @@ bool Net2Remote_Connect(void)
 
 				PregameSetup();
 
-				//.....................................................................
-				// Compute frame delay value for packet transmissions:
-				// - Divide global channel's response time by 8 (2 to convert to 1-way
-				//	  value, 4 more to convert from ticks to frames)
-				//.....................................................................
-				Session.FrameSendRate = 3;
-				Session.LatencyFudge = 0;
-				Session.PrecalcMaxAhead = 0;
-				Session.PrecalcDesiredFrameRate = 0;
+				// A compressed game starts at the fixed bootstrap rung and measures from there.
 				if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-					Session.MaxAhead = std::max<unsigned int>(((((Ipx.Global_Response_Time() / 8) + (Session.FrameSendRate - 1)) / Session.FrameSendRate) * Session.FrameSendRate), NETWORK_MIN_MAX_AHEAD * 3);
+					NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+					Session.FrameSendRate = initial.FrameSendRate;
+					Session.MaxAhead = initial.MaxAhead;
 				} else {
+					Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
 					Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
 				}
 
@@ -2418,12 +2409,12 @@ static void Get_Join_Responses(void)
 						//............................................................
 						if (JoinState < JOIN_CONFIRMED) {
 							if (Session.Games[i]->Game.IsOpen) {
-								wsprintf(txt,Fetch_String(TXT_S_FORMED_NEW_GAME),
+								snprintf(txt, sizeof(txt), Fetch_String(TXT_S_FORMED_NEW_GAME),
 									Session.GPacket.Name);
 								Sound_Effect(Rule->GameForming);
 							}
 							else {
-								wsprintf(txt,Fetch_String(TXT_GAME_NOW_IN_PROGRESS),
+								snprintf(txt, sizeof(txt), Fetch_String(TXT_GAME_NOW_IN_PROGRESS),
 									Session.GPacket.Name);
 								Sound_Effect(Rule->GameClosed);
 							}
@@ -2466,7 +2457,7 @@ static void Get_Join_Responses(void)
 				// now available.
 				//..................................................................
 				if (Session.GPacket.GameInfo.IsOpen && JoinState < JOIN_CONFIRMED) {
-					wsprintf(txt,Fetch_String(TXT_S_FORMED_NEW_GAME),
+					snprintf(txt, sizeof(txt), Fetch_String(TXT_S_FORMED_NEW_GAME),
 						Session.GPacket.Name);
 					PMessagePrintf(ColorSystem, txt);
 					Sound_Effect(Rule->GameForming);
@@ -2882,7 +2873,23 @@ static void Get_Join_Responses(void)
 		//------------------------------------------------------------------------
 		else if (Session.GPacket.Command==NET_GO || Session.GPacket.Command==NET_LOADGAME) {
 			if ( JoinState==JOIN_CONFIRMED) {
-				Session.MaxAhead = Session.GPacket.ResponseTime.OneWay;
+				if (Session.GPacket.Command == NET_GO && Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
+					int const max_ahead = Session.GPacket.ResponseTime.OneWay;
+					if (max_ahead < 0) {
+						continue;
+					}
+
+					NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+					NetTiming::TimingSettings const received{initial.FrameSendRate, static_cast<unsigned int>(max_ahead)};
+					if (!NetTiming::Timing_Settings_Are_Valid(received) || received != initial) {
+						continue;
+					}
+
+					Session.FrameSendRate = received.FrameSendRate;
+					Session.MaxAhead = received.MaxAhead;
+				} else {
+					Session.MaxAhead = Session.GPacket.ResponseTime.OneWay;
+				}
 				Session.HostAddress = Session.GAddress;
 				Session.NumPlayers = Session.Players.Count();
 				_netresponse = IDOK;
@@ -3382,9 +3389,9 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 		case IDC_YOURSIDE:
 		case IDC_YOURCOLOR: {
 			if (HIWORD(wparam) == CBN_SELCHANGE) {
-				LRESULT color = SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0);
+				int color = (int)SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0);
 
-				LRESULT house = Country_From_Box(GetDlgItem(window, IDC_YOURSIDE));
+				int house = Country_From_Box(GetDlgItem(window, IDC_YOURSIDE));
 
 				Session.PrefColor = color;
 

@@ -1,11 +1,12 @@
 ---
 format_id: opents-ini
 title: OPENTS.INI
-summary: Names the folders a deployment keeps its game files sorted into, and what its saves carry.
+summary: Names the folders a deployment keeps its game files sorted into, the files it reads them from, and what its saves carry.
 kind: file
 source_files:
   - code/deploymentconfig.cpp
   - code/gamedirs.cpp
+  - code/init.cpp
 filenames:
   - OPENTS.INI
 related:
@@ -29,6 +30,49 @@ SearchPaths=INI,MIX,Maps,Addons
 Without the file, and without the key, the game behaves as though `SearchPaths=INI,MIX,Maps` were written: a distribution can sort its files into `INI`, `MIX` and `Maps` folders and ship no configuration at all. A written list **replaces** that default rather than adding to it, so a deployment that wants the default folders as well as its own names them again.
 
 The game's own directory is examined before any listed folder, so naming it adds nothing. Naming only it, as `SearchPaths=.`, is how a deployment asks for no other folder to be searched. An empty `SearchPaths=` does not do this: the file reader passes over an entry with nothing after the equals sign, leaving the default in force.
+
+## The files it reads
+
+```ini title="OPENTS.INI"
+[Files]
+Rules=RULES.INI
+RulesExpansion=FIRESTRM.INI
+Art=ART.INI
+ArtExpansion=ARTFS.INI
+AI=AI.INI
+AIExpansion=AIFS.INI
+Sound=SOUND.INI
+SoundExpansion=SOUND01.INI
+Theme=THEME.INI
+ThemeExpansion=THEME01.INI
+Battle=BATTLE.INI
+BattleExpansion=BATTLEFS.INI
+LanguageRules=LANGRULE.INI
+LanguageRulesExpansion=LANGFS.INI
+Tutorial=TUTORIAL.INI
+UI=UI.INI
+Settings=SUN.INI
+```
+
+Each key names one file, and an unwritten key keeps the name above. `Rules` names the rules, `Art` the artwork, `AI` the computer player's data, `Sound` the [sound registry](/formats/sound-ini/), `Theme` the [music registry](/formats/theme-ini/), `Battle` the campaign list, `LanguageRules` the translated rules read over the rest, `Tutorial` the [numbered text lines](/formats/tutorial-ini/), `UI` the [interface settings](/formats/ui-ini/), and `Settings` the file a player's own options are written back to.
+
+The seven `Expansion` keys name the expansion's copy of a file, which is read over the base one. `RulesExpansion` also decides whether the expansion is installed: the game looks for that file and nothing else, so renaming it moves the test.
+
+Renaming a file does not move it. Every name here is searched for in the order the section below gives, the same as any other file the game opens.
+
+Rules and campaign files are also gathered by wildcard, as `RULE*.INI` and `BATTLE*.INI`, and those two patterns are fixed. A rules file named outside the pattern is read anyway and is the one the game starts from; where the search turns up others as well, the game asks which set to play with, as it does for a stock installation. Campaign files add to one another, so one named outside the pattern is read alongside those inside it.
+
+## The palettes it starts with
+
+```ini title="OPENTS.INI"
+[Palettes]
+Scheme=UNITSNO.PAL
+Game=TEMPERAT.PAL
+```
+
+`Scheme` names the palette the player colors are built against, and `Game` the one the game is drawn through. Both stand only until a scenario loads its [theater](/formats/theater-control/), which replaces them with the palettes the theater's `Root=` and `Suffix=` name. They are settings of this file because nothing has declared a theater yet when they are read.
+
+A palette file the deployment does not ship leaves that palette unchanged, and the name goes to the debug log. The game starts either way.
 
 ## What a save carries
 

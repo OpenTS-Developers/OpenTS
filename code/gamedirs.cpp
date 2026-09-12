@@ -16,6 +16,8 @@
 
 #include <algorithm>
 #include <cstring>
+#include <filesystem>
+#include <windows.h>
 
 /*
  * The directories the command line named. Empty means the game's own directory, so an
@@ -61,7 +63,7 @@ static std::string Terminate_Path(std::string const & path)
 			return(path);
 
 		default:
-			return(path + '\\');
+			return(path + (char)std::filesystem::path::preferred_separator);
 	}
 }
 
@@ -279,7 +281,7 @@ std::string Saved_Game_Name(char const * filename)
 
 	CreateDirectory(folder.c_str(), NULL);
 
-	return(folder + '\\' + filename);
+	return(folder + (char)std::filesystem::path::preferred_separator + filename);
 }
 
 

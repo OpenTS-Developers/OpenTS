@@ -51,6 +51,7 @@ struct RGBStruct
 	unsigned char Green;
 	unsigned char Blue;
 };
+static_assert(sizeof(RGBStruct) == 3, "a palette entry is 3 bytes on disk");
 #pragma pack()
 
 

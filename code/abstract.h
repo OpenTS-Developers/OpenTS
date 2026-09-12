@@ -39,7 +39,7 @@
 #include "house.hh"
 #include "rtti.hh"
 
-#include <comdef.h>
+#include "persist.h"
 
 class AbstractTypeClass;
 class CRCEngine;
@@ -62,7 +62,7 @@ class MonoClass;
 **	This class is the base class for all game objects that have an existence on the
 **	battlefield.
 */
-class AbstractClass : public IPersistStream
+class AbstractClass : public IPersistent
 {
 	public:
 
@@ -74,8 +74,8 @@ class AbstractClass : public IPersistStream
 		 * the members are read -- dropping a registration keyed by the identity the read
 		 * is about to replace, say.
 		 */
-		HRESULT Save_Members(IStream * stream, BOOL cleardirty);
-		HRESULT Load_Members(IStream * stream);
+		bool Save_Members(SaveStreamClass & stream, bool cleardirty);
+		bool Load_Members(SaveStreamClass & stream);
 
 	public:
 
@@ -88,15 +88,8 @@ class AbstractClass : public IPersistStream
 		int ID;
 
 		/*
-		 * This is the count of outstanding COM references to this object. Only projectiles
-		 * are genuinely reference counted -- everything else answers 1 to AddRef and to
-		 * Release -- so elsewhere it merely rides along, preserved by hand across a load.
-		 */
-		LONG RefCount;
-
-		/*
 		 * If this object has changed since it was last written out, then this flag will be
-		 * true. Save clears it on request and IsDirty reports it, as IPersistStream asks.
+		 * true. Save clears it on request.
 		 */
 		bool Dirty;
 
@@ -106,14 +99,9 @@ class AbstractClass : public IPersistStream
 		AbstractClass(void);
 		virtual ~AbstractClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE QueryInterface(REFIID riid, LPVOID * ppvObject) override;
-		virtual ULONG STDMETHODCALLTYPE AddRef(void) override;
-		virtual ULONG STDMETHODCALLTYPE Release(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE IsDirty(void) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
-		virtual HRESULT STDMETHODCALLTYPE Save(IStream * stream, BOOL cleardirty) override;
-		virtual HRESULT STDMETHODCALLTYPE GetSizeMax(ULARGE_INTEGER *pcbSize) override;
+		virtual bool Load(SaveStreamClass & stream) override;
+		virtual bool Save(SaveStreamClass & stream, bool cleardirty) override;
 
 		virtual int What_Am_I(void) const;
 		virtual int Fetch_ID(void) const;
@@ -122,7 +110,6 @@ class AbstractClass : public IPersistStream
 		AbstractClass & operator = (const AbstractClass & that)
 		{
 			ID = that.ID;
-			RefCount = that.RefCount;
 			Dirty = that.Dirty;
 			return(*this);
 		}
@@ -137,9 +124,9 @@ class AbstractClass : public IPersistStream
 		/*
 		 * Restores whatever the record could not carry -- artwork fetched by name, tables
 		 * shared with other objects, registrations that depend on the loaded identity.
-		 * Load_Members calls this once the members are in place, so a base class fixup
-		 * runs even when the load was entered through a derived class. An implementation
-		 * chains to its base first and never touches the stream.
+		 * Load_Object calls this once the record has been checked, so an object never takes
+		 * its place in the map or a side table while its record is still in doubt. An
+		 * implementation chains to its base first and never touches the stream.
 		 */
 		virtual void Post_Load(void);
 

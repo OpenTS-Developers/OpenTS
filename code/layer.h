@@ -40,8 +40,8 @@ class ObjectClass;
 class LayerClass : public DynamicVectorClass<ObjectClass *>
 {
 	public:
-		HRESULT Load(IStream * stream);
-		HRESULT Save(IStream * stream);
+		bool Load(SaveStreamClass & stream);
+		bool Save(SaveStreamClass & stream);
 
 	public:
 

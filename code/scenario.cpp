@@ -389,7 +389,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	bool has_briefing_movie = Scen->BriefMovie != VQ_NONE;
 
 	if (has_briefing_movie) {
-		wsprintf(buffer, "%s.VQA", Movies[Scen->BriefMovie]);
+		snprintf(buffer, sizeof(buffer), "%s.VQA", Movies[Scen->BriefMovie]);
 		has_briefing_movie = CCFileClass(buffer).Is_Available();
 	}
 
@@ -667,7 +667,6 @@ static char const * Apply_Custom_Load_Screen(char const * & background, Point2D 
  *=============================================================================================*/
 bool Read_Scenario(char const * fname)
 {
-	bool read_ok = true;
 	char name[_MAX_PATH];
 
 	strcpy(name, fname);
@@ -729,21 +728,40 @@ bool Read_Scenario(char const * fname)
 		}
 	}
 
-	if (Scen->IsRandom) {
-		read_ok = RandomMapGen.SeedData.Load(name);
+	ScenarioState state = ScenarioState::Ok;
 
-		if (read_ok) {
+	if (Scen->IsRandom) {
+		if (RandomMapGen.SeedData.Load(name)) {
 			RandomMapGen.Generate_Random_Map(false, NULL);
 			Multiplayer_Last_Minute_Fixups();
+		} else {
+			state = ScenarioState::NotRead;
 		}
 		strcpy(Scen->ScenarioName, name);
 	} else {
-		read_ok = Read_Scenario_INI(name);
+		state = Read_Scenario_INI(name);
 	}
 
-	if (!read_ok) {
-		DebugString("Error - Unable to read scenario: %s\n", name);
-		WWMessageBox().Process(TXT_UNABLE_READ_SCENARIO, TXT_OK);
+	if (state != ScenarioState::Ok) {
+		char message[_MAX_PATH + 256];
+		char const * text = NULL;
+
+		if (state == ScenarioState::TerrainDamaged) {
+			// An older language library answers with an empty string, which would show a
+			// message box with nothing in it.
+			char const * damaged = Fetch_String(TXT_SCENARIO_DATA_DAMAGED);
+			if (damaged[0] != '\0') {
+				snprintf(message, sizeof(message), damaged, name);
+				text = message;
+			}
+		}
+
+		if (text == NULL) {
+			text = Fetch_String(TXT_UNABLE_READ_SCENARIO);
+		}
+
+		DebugString("Error - %s\n", text);
+		WWMessageBox().Process(text, TXT_OK);
 
 		BEnd(BENCH_SCENARIO);
 		ScenarioInit--;
@@ -1057,11 +1075,7 @@ void Clear_Scenario(void)
 
 	LightSourceClass::Recalc = false;
 	while (Objects.Count()) {
-		if (Objects[0]->RTTI == RTTI_BULLET) {
-			Objects[0]->Release();
-		} else {
-			delete Objects[0];
-		}
+		delete Objects[0];
 	}
 
 	LightSourceClass::Recalc = true;
@@ -1548,7 +1562,7 @@ static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdige
  * HISTORY:                                                                                    *
  *   10/07/1992 JLB : Created.                                                                 *
  *=============================================================================================*/
-bool Read_Scenario_INI(char const * fname, bool)
+ScenarioState Read_Scenario_INI(char const * fname, bool)
 {
 	Frame = 0;
 
@@ -1567,13 +1581,12 @@ bool Read_Scenario_INI(char const * fname, bool)
 
 	if (result == 0) {
 		DebugString("Scenario ini load failed!\n");
-		return(false);
+		return(ScenarioState::NotRead);
 	}
 
 	strcpy(Scen->ScenarioName, fname);
 
-	bool ok = Read_Scenario_INI(ini);
-	return(ok);
+	return(Read_Scenario_INI(ini));
 }
 
 
@@ -1775,7 +1788,7 @@ void Multiplayer_Last_Minute_Fixups(bool official)
 /// </summary>
 /// <param name="is_mapgen">Is the scenario built by the random map generator?</param>
 /// <returns>bool; Was the scenario read successfully?</returns>
-bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
+ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 {
 	char buffer[32];
 
@@ -1815,7 +1828,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Scen->RequiredAddOn = (AddonType)ini.Get_Int(BASIC, "RequiredAddOn", ADDON_BASE_GAME);
 		Set_Required_Addon(Scen->RequiredAddOn);
 		if (!Addon_Installed(Scen->RequiredAddOn)) {
-			return(false);
+			return(ScenarioState::NotRead);
 		}
 		Enable_Addon(Scen->RequiredAddOn);
 	} else {
@@ -1863,7 +1876,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	SideType playerside = Side_For_Player();
 	DebugString("Calling Prep_For_Side()\n");
 	if (Prep_For_Side_Or_First(playerside) == SIDE_NONE) {
-		return(false);
+		return(ScenarioState::NotRead);
 	}
 	Scen->PlayerSide = playerside;
 
@@ -1897,7 +1910,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	DebugString("Calling Prep_Speech_For_Side()\n");
 	Scen->SpeechSide = Prep_Speech_For_Side_Or_First(Scen->SpeechSide);
 	if (Scen->SpeechSide == SIDE_NONE) {
-		return(false);
+		return(ScenarioState::NotRead);
 	}
 
 	/*
@@ -1942,7 +1955,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	**
 	*/
 	if (Scen->Read_INI(ini) == false) {
-		return(false);
+		return(ScenarioState::NotRead);
 	}
 
 	Session.Update_Progress(58);
@@ -2015,7 +2028,9 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	**	Read in the map control values. This includes dimensions
 	**	as well as theater information.
 	*/
-	Map.Read_INI(ini);
+	if (!Map.Read_INI(ini)) {
+		return(ScenarioState::TerrainDamaged);
+	}
 	Call_Back();
 
 	/*
@@ -2230,7 +2245,7 @@ bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	Map.Complete_Radar_Refresh();
 
-	return(true);
+	return(ScenarioState::Ok);
 }
 
 
@@ -3315,18 +3330,17 @@ static Cell const Clip_Move(Cell const & cell, FacingType facing, int dist)
 /// The elapsed mission clock is halted across the write so that the time recorded is the
 /// one the player will be given back when the game is resumed.
 /// </summary>
-void ScenarioClass::Save(IStream * stream) const
+void ScenarioClass::Save(SaveStreamClass & stream) const
 {
 	DebugString("Scenario Save: ElapsedTimer = %d\n", (int)ElapsedTimer);
 	ElapsedTimer.Stop();
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
 
 	/*
 	 * One member list serves both directions, so it cannot be declared const even though
 	 * writing changes nothing.
 	 */
-	const_cast<ScenarioClass *>(this)->Serialize(savestream);
+	const_cast<ScenarioClass *>(this)->Serialize(stream);
 
 	ElapsedTimer.Start();
 }
@@ -3337,13 +3351,12 @@ void ScenarioClass::Save(IStream * stream) const
 /// The elapsed mission clock is halted across the read for the same reason it is halted
 /// across the write, so that it does not advance over the value coming back in.
 /// </summary>
-void ScenarioClass::Load(IStream * stream)
+void ScenarioClass::Load(SaveStreamClass & stream)
 {
 	ElapsedTimer.Stop();
 
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("ScenarioClass");
-	Serialize(savestream);
+	stream.Set_Context("ScenarioClass");
+	Serialize(stream);
 
 	ElapsedTimer.Start();
 	DebugString("Scenario Load: ElapsedTimer = %d\n", (int)ElapsedTimer);
@@ -3720,8 +3733,8 @@ bool ScenarioClass::Write_Local_INI(CCINIClass & ini) const
 	int length = ARRAY_SIZE(LocalFlags);
 	for (int index = 0; index < length; index++) {
 		if (LocalFlags[index].VariableName[0] != '\0') {
-			wsprintf(index_buffer, "%d", index);
-			wsprintf(buffer, "%s,%d", LocalFlags[index].VariableName, LocalFlags[index].Value ? 1 : 0);
+			snprintf(index_buffer, sizeof(index_buffer), "%d", index);
+			snprintf(buffer, sizeof(buffer), "%s,%d", LocalFlags[index].VariableName, LocalFlags[index].Value ? 1 : 0);
 			ini.Put_String(SECTION, index_buffer, buffer);
 		}
 	}
@@ -4169,7 +4182,7 @@ void ScenarioClass::Read_Waypoints(CCINIClass const & ini)
 	char buf[20];
 
 	for (int i = 0; i < WAYPT_COUNT; i++) {
-		wsprintf(buf, "%d", i);
+		snprintf(buf, sizeof(buf), "%d", i);
 		int val = ini.Get_Int("Waypoints", buf, 0);
 		if (val == 0) {
 			Waypoint[i] = CELL_NONE;
@@ -4206,7 +4219,7 @@ void ScenarioClass::Write_Waypoints(CCINIClass & ini) const
 	ini.Clear(WAYNAME);
 	for (int i = 0; i < WAYPT_COUNT; i++) {
 		if (Waypoint[i] != CELL_NONE) {
-			wsprintf(entry, "%d", i);
+			snprintf(entry, sizeof(entry), "%d", i);
 			ini.Put_Int(WAYNAME, entry, Waypoint[i].Y * 1000 + Waypoint[i].X);
 		}
 	}

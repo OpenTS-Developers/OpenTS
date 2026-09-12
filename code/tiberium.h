@@ -37,8 +37,8 @@ class TiberiumClass : public AbstractTypeClass
 		TiberiumClass(char const * ininame = NULL);
 		virtual ~TiberiumClass() override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual ClassID Class_ID(void) const override;
+		virtual bool Load(SaveStreamClass & stream) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 
@@ -156,8 +156,9 @@ class TiberiumClass : public AbstractTypeClass
 		int RampVariety;
 
 		/*
-		 * This is the number of records handed out of the SpreadNodes pool so far. The pool is
-		 * never recycled, so the queue is rebuilt from the map once the pool runs low.
+		 * This is the number of cells enqueued to seed since the queue was last rebuilt.
+		 * Nothing takes a stale or duplicate entry back out, so the queue is rebuilt from the
+		 * map once this approaches the map's cell count.
 		 */
 		int SpreadCount;
 
@@ -165,7 +166,7 @@ class TiberiumClass : public AbstractTypeClass
 		 * This is the queue of cells waiting to seed their neighbors, ordered by the game
 		 * frame at which each becomes due.
 		 */
-		PriorityQueueClass<CellNode> * SpreadQueue;
+		PriorityQueueClass<CellNode> SpreadQueue;
 
 		/*
 		 * This is one flag per map cell, true while the cell is sitting in the SpreadQueue. It
@@ -174,19 +175,14 @@ class TiberiumClass : public AbstractTypeClass
 		bool * SpreadState;
 
 		/*
-		 * This is the pool of queue records the SpreadQueue is built out of -- one per map
-		 * cell, handed out in order by the SpreadCount cursor.
-		 */
-		CellNode * SpreadNodes;
-
-		/*
 		 * This counts down the frames remaining until this tiberium's next spread pass.
 		 */
 		CDTimerClass<FrameTimerClass> SpreadTimer;
 
 		/*
-		 * This is the number of records handed out of the GrowthNodes pool so far. The pool is
-		 * never recycled, so the queue is rebuilt from the map once the pool runs low.
+		 * This is the number of cells enqueued to grow since the queue was last rebuilt.
+		 * Nothing takes a stale or duplicate entry back out, so the queue is rebuilt from the
+		 * map once this approaches the map's cell count.
 		 */
 		int GrowthCount;
 
@@ -194,19 +190,13 @@ class TiberiumClass : public AbstractTypeClass
 		 * This is the queue of cells waiting to ripen, ordered by the game frame at which each
 		 * becomes due.
 		 */
-		PriorityQueueClass<CellNode> * GrowthQueue;
+		PriorityQueueClass<CellNode> GrowthQueue;
 
 		/*
 		 * This is one flag per map cell, true while the cell is sitting in the GrowthQueue. It
 		 * keeps a cell from being enqueued twice over.
 		 */
 		bool * GrowthState;
-
-		/*
-		 * This is the pool of queue records the GrowthQueue is built out of -- one per map
-		 * cell, handed out in order by the GrowthCount cursor.
-		 */
-		CellNode * GrowthNodes;
 
 		/*
 		 * This counts down the frames remaining until this tiberium's next growth pass.

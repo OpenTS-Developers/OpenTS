@@ -60,6 +60,10 @@
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 #pragma once
 
+#include "nettime.h"
+
+#include <optional>
+
 
 /*
 ***************************** Class Declaration *****************************
@@ -120,6 +124,7 @@ class ConnManClass
 		.....................................................................*/
 		virtual void Reset_Response_Time(bool zero) = 0;
 		virtual unsigned int Response_Time(void) = 0;
+		virtual std::optional<NetTiming::Milliseconds> Worst_Local_Round_Trip_MS(void) const = 0;
 		virtual void Set_Timing (unsigned int retrydelta,
 			unsigned int maxretries, unsigned int timeout, bool set_external = true) = 0;
 		virtual void Set_External_Timing (unsigned int retrydelta,

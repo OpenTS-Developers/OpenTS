@@ -31,17 +31,33 @@ struct CellNode {
 		Element = cell;
 	}
 
+	CellNode(Cell const & cell, float score) : Element(cell), Score(score) {}
+
 	bool operator==(const CellNode & other) const { return((double)Score == (double)other.Score); }
 	bool operator!=(const CellNode & other) const { return((double)Score != (double)other.Score); }
 	bool operator<(const CellNode & other) const { return((double)Score < (double)other.Score); }
 	bool operator>(const CellNode & other) const { return((double)Score > (double)other.Score); }
 	bool operator<=(const CellNode & other) const { return((double)Score <= (double)other.Score); }
 	bool operator>=(const CellNode & other) const { return((double)Score >= (double)other.Score); }
+
+	// Carries the node to or from a save game.
+	template<typename S>
+	void Serialize(S & stream)
+	{
+		stream.Serialize(Element);
+		stream.Serialize(Score);
+	}
 };
 
 
 
 struct AStarHierarchicalNode {
+	/*
+	 * This is the node's own slot in the pool the search hands nodes out from, and it is
+	 * what the nodes reached through this one record as their ParentIndex.
+	 */
+	int PoolIndex;
+
 	/*
 	 * This is the index within the node pool of the node that this one was reached from,
 	 * or -1 for the node the search started at. When the destination is reached, the

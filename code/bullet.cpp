@@ -47,7 +47,6 @@
  *   BulletClass::~BulletClass -- Destructor for bullet objects.                               *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "bullet.h"
@@ -95,7 +94,6 @@
 #include <intrin.h>
 
 
-extern ULONG COMRefCount;
 
 
 /***********************************************************************************************
@@ -1462,35 +1460,6 @@ void BulletClass::Serialize(SaveStreamClass & stream)
 
 
 /// <summary>
-/// Takes out a reference on this projectile.
-/// This is the IUnknown implementation used by the COM machinery that owns projectiles.
-/// </summary>
-/// <returns>Returns with the number of references now outstanding.</returns>
-ULONG STDMETHODCALLTYPE BulletClass::AddRef(void)
-{
-	COMRefCount++;
-	return(InterlockedIncrement(&RefCount));
-}
-
-
-/// <summary>
-/// Drops a reference to this projectile.
-/// This is the IUnknown implementation. The projectile deletes itself when the last
-/// reference to it is released.
-/// </summary>
-/// <returns>Returns with the number of references still outstanding.</returns>
-ULONG STDMETHODCALLTYPE BulletClass::Release(void)
-{
-	COMRefCount--;
-	ULONG count = InterlockedDecrement(&RefCount);
-	if (count == 0) {
-		delete this;
-	}
-	return(count);
-}
-
-
-/// <summary>
 /// Can this projectile steer toward its target?
 /// The flight logic calls this routine to decide whether the projectile should be turned
 /// toward its target each game frame or simply left to follow its launch trajectory.
@@ -1507,9 +1476,7 @@ bool BulletClass::Is_Homing(void) const
 
 /// <summary>
 /// Creates a projectile and fills in the data for the shot.
-/// This routine is used by the weapon firing code in place of a bare new -- projectiles are
-/// COM objects, so the instance must come from the class factory. The projectile is inert
-/// until it is unlimboed with a starting position and velocity.
+/// The projectile is inert until it is unlimboed with a starting position and velocity.
 /// </summary>
 /// <param name="payback">The object that fired the shot. It receives credit for any kill.</param>
 /// <param name="strength">The damage the projectile will inflict when it detonates.</param>
@@ -1518,12 +1485,7 @@ bool BulletClass::Is_Homing(void) const
 /// made.</returns>
 BulletClass * Create_Bullet(BulletTypeClass const *type, AbstractClass *target, TechnoClass *payback, int strength, WarheadTypeClass const *warhead, int max_speed, int range, bool bright)
 {
-	LPVOID unk = NULL;
-	if (FAILED(CoCreateInstance(CLSID_BulletClass, NULL, CLSCTX_INPROC_SERVER|CLSCTX_INPROC_HANDLER|CLSCTX_LOCAL_SERVER, IID_IUnknown, &unk))) {
-		return(NULL);
-	}
-
-	BulletClass * bullet = (BulletClass *)unk;
+	BulletClass * bullet = new BulletClass;
 	bullet->Set_Bullet_Data(type, target, payback, strength, warhead, max_speed, range, bright);
 	return(bullet);
 }
@@ -1570,17 +1532,9 @@ RTTIType BulletClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier for this projectile.
-/// This is the IPersist implementation the save and load machinery uses to recognize which
-/// kind of object it is about to read back from the stream.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE BulletClass::GetClassID(CLSID * retval)
+ClassID BulletClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_BulletClass;
-	return(S_OK);
+	return(ClassID_BulletClass);
 }
 
 

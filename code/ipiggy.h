@@ -11,43 +11,36 @@
 
 #include "iloco.h"
 
-#include <comdef.h>
+#include <memory>
 
-/// Names and comments from TLBs
 
-EXTERN_C const IID IID_IPiggyback;
-
-MIDL_INTERFACE("92FEA800-A184-11D1-B70A-00A024DDAFD1")
-IPiggyback : public IUnknown
+struct IPiggyback
 {
-public:
 	/*
-	 * Piggybacks a locomotor onto this one.
+	 * Piggybacks a locomotor onto this one. The locomotor is taken only when the answer
+	 * is true; a refusal leaves it with the caller rather than destroying it.
 	 */
-	virtual HRESULT STDMETHODCALLTYPE Begin_Piggyback(ILocomotion * pointer) = 0;
+	virtual bool Begin_Piggyback(std::unique_ptr<ILocomotion> & carried) = 0;
 
 	/*
-	 * End piggyback process and restore locomotor interface pointer.
+	 * Hands the carried locomotor back, or nothing when none is carried.
 	 */
-	virtual HRESULT STDMETHODCALLTYPE End_Piggyback(ILocomotion ** pointer) = 0;
+	virtual std::unique_ptr<ILocomotion> End_Piggyback(void) = 0;
 
 	/*
 	 * Is it ok to end the piggyback process?
 	 */
-	virtual boolean STDMETHODCALLTYPE Is_Ok_To_End(void) = 0;
-
-	/*
-	 * Fetches piggybacked locomotor class ID.
-	 */
-	virtual HRESULT STDMETHODCALLTYPE Piggyback_CLSID(GUID * classid) = 0;
+	virtual bool Is_Ok_To_End(void) = 0;
 
 	/*
 	 * Is it currently piggy backing another locomotor?
 	 */
-	virtual boolean STDMETHODCALLTYPE Is_Piggybacking(void) = 0;
+	virtual bool Is_Piggybacking(void) = 0;
 };
 
-/*
- * IPiggyback com smart pointer declaration.
- */
-_COM_SMARTPTR_TYPEDEF(IPiggyback, __uuidof(IPiggyback));
+
+// The piggyback side of a locomotor, or null when it cannot carry one.
+inline IPiggyback * Piggyback_Of(ILocomotion * locomotion)
+{
+	return(dynamic_cast<IPiggyback *>(locomotion));
+}

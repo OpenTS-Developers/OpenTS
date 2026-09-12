@@ -11,6 +11,8 @@ The developer guides are split by subject:
 - [Project direction](DIRECTION.md) — long-term architecture.
 - [UI system design](UI_DESIGN.md) — proposed RmlUi and ImGui integration,
   screen-level interchangeable views, and the migration from OwnerDraw.
+- [The saved game format](SAVE-FORMAT.md) — the layout of a `.SAV` file: its
+  header, listing fields, compressed content, and object records.
 
 See [CONTRIBUTING.md](../CONTRIBUTING.md) for contribution and review rules.
 Player and modder documentation is under [manual/](../manual/README.md). When a

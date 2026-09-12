@@ -34,9 +34,12 @@
 
 #include "coord.h"
 #include "display.h"
-#include "hashtable.h"
 #include "stimer.h"
 #include "timer.h"
+
+#include <map>
+#include <utility>
+#include <vector>
 
 #include "bsize.hh"
 
@@ -46,43 +49,38 @@ template<class T> class DynamicVectorClass;
 
 typedef DynamicVectorClass<Point2D> FOUNDATION_LIST;
 
-struct RadarTrackingStruct {
+/*
+ * The objects that show up as blips on the radar, listed by the radar pixel each one occupies.
+ * A building covers several pixels and is tracked once for each of them, and several objects
+ * can stand on one pixel, so a pixel holds a list rather than a single object. The radar draws
+ * only the object at the head of that list, and a click on the radar takes the one at its tail.
+ */
+class RadarTrackingClass
+{
+	public:
+		// Places the object at the head of the pixel's list when head is set. One already
+		// tracked at that pixel keeps its place.
+		bool Track(Point2D const & pixel, TechnoClass * object, bool head);
+		bool Untrack(Point2D const & pixel, TechnoClass * object);
 
-	RadarTrackingStruct(TechnoClass * object = NULL, int x = 0, int y = 0) : Object(object), Position(x, y) {}
-	RadarTrackingStruct(RadarTrackingStruct const & that) : Object(that.Object), Position(that.Position) {}
+		// The object the radar draws at a pixel, and the one a click there resolves to.
+		TechnoClass * First(Point2D const & pixel) const;
+		TechnoClass * Last(Point2D const & pixel) const;
 
-	/*
-	 * This is the object that appears as a blip at the tracked position. A building covers
-	 * several radar pixels, so it is tracked once for every pixel of its radar foundation.
-	 */
-	TechnoClass * Object;
+		void Clear(void) { Blips.clear(); }
 
-	/*
-	 * This is the radar pixel that the object occupies. The tracking table is hashed on this
-	 * alone, so the radar can find whichever object sits on a given pixel.
-	 */
-	Point2D Position;
+		// Visits each occupied pixel once, with the object the radar draws on it.
+		template<typename T>
+		void For_Each_Pixel(T visit) const
+		{
+			for (auto const & [pixel, objects] : Blips) {
+				visit(Point2D(pixel.first, pixel.second), objects.front());
+			}
+		}
 
-	bool operator==(const RadarTrackingStruct & that) const { return(Object == that.Object && Position == that.Position); }
-	bool operator!=(const RadarTrackingStruct & that) const { return(Object != that.Object || Position != that.Position); }
-
-	/*
-	 * The non-const overloads compare Position only. A lookup key is built with
-	 * Object == NULL and relies on these to match on position alone (see Get),
-	 * while Add and Remove use the const (Object + Position) overloads above.
-	 */
-	bool operator==(RadarTrackingStruct & that) { return(Position == that.Position); }
-	bool operator!=(RadarTrackingStruct & that) { return(Position != that.Position); }
-
-	int Hash(void) const { return((Position.X - 5 * Position.Y) & 0xFF); }
-
-	bool Use_Head(void) const;
-
-	static int Hash_Old(RadarTrackingStruct const & s);
-	static int Hash2(RadarTrackingStruct const & s);
+	private:
+		std::map<std::pair<int, int>, std::vector<TechnoClass *>> Blips;
 };
-
-typedef HashTableClass<RadarTrackingStruct, TechnoClass *> RADAR_HASH_TABLE;
 
 class RadarClass: public DisplayClass
 {
@@ -255,12 +253,9 @@ class RadarClass: public DisplayClass
 		int RadarCellHeight;
 		Rect CellRedrawRect;
 
-		/*
-		 * This is the table of objects that show up as blips on the radar, keyed by the radar
-		 * pixel each one occupies. It lets the radar draw its blips without walking every
-		 * object in the game, and lets a click on the radar find the object underneath.
-		 */
-		RADAR_HASH_TABLE * RadarTrackingTable;
+		// Kept so that drawing the blips and resolving a radar click never walk every object
+		// in the game.
+		RadarTrackingClass RadarTracking;
 
 		/*
 		**	This is the list of radar pixels that need to be updated. Only a partial

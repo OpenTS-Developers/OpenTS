@@ -29,23 +29,10 @@
  *---------------------------------------------------------------------------------------------*
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
-/// create all com interfaces here
-#include "iblowfish.h"
-#include "iblowfish_i.c"
 #include "sun.h"
-#include "isun_i.c"
-#include "ilocos.h"
-#include "ilocos_i.c"
-#include "ipiggy.h"
-#include "ipiggy_i.c"
-#include "iblockci.h"
-#include "iblockci_i.c"
-#include "iflyctrl.h"
-#include "iflyctrl_i.c"
-#undef INCLUDE_COM
+#include "classids.h"
 
 #include "_voxel.h"
 #include "globals.h"
@@ -351,7 +338,7 @@ bool GameActive;
 **	a long, but the value wasn't supplied to a function. This is used
 **	specifically for the default reference value. As such, it is not stable.
 */
-int LParam;
+intptr_t LParam;
 
 
 #ifdef _DEBUG

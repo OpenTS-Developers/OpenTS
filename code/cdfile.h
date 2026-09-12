@@ -72,10 +72,6 @@ class CDFileClass : public BufferIOFileClass
 		static void Set_User_Path(char const * path);
 		static char const * User_Path(void);
 
-		static bool Find_First_File(char *buffer);
-		static bool Find_Next_File(char *buffer);
-		static void Find_Close(void);
-
 	private:
 
 		char const * Capture_Name(char const * filename);

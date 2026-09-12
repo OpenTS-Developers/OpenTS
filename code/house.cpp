@@ -128,7 +128,6 @@
  *   HouseClass::Random_Cell_In_Zone -- Find a (technically) legal cell in the zone specified. *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "house.h"
@@ -690,8 +689,15 @@ HouseClass::~HouseClass (void)
 	}
 	SuperWeapon.Clear();
 
+	// A tag removes itself from this list as it dies; a slot a failed load left empty is
+	// removed here, or the list would never drain.
 	while (HouseTags.Count() > 0) {
-		delete HouseTags[0];
+		TagClass * const tag = HouseTags[0];
+		if (tag == nullptr) {
+			HouseTags.Delete_Index(0);
+		} else {
+			delete tag;
+		}
 	}
 
 	AbstractTypePtrTracker.Delete(this);
@@ -2182,7 +2188,7 @@ void HouseClass::Make_Ally(HouseClass * house)
 			}
 
 			if (Is_Human_Player() && Session.Type != GAME_NORMAL && !house->Class->IsMultiplayPassive) {
-				wsprintf(buffer, Fetch_String(TXT_HAS_ALLIED), (char const *)IniName, (char const *)house->IniName);
+				snprintf(buffer, sizeof(buffer), Fetch_String(TXT_HAS_ALLIED), (char const *)IniName, (char const *)house->IniName);
 				Session.Messages.Add_Message(NULL, 0, buffer, Class->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
 
 				if (Is_Player_Control()) {
@@ -2255,7 +2261,7 @@ void HouseClass::Make_Enemy(HouseClass * house)
 			if (Session.Type != GAME_NORMAL && !ScenarioInit && IsHuman) {
 				char buffer[80];
 
-				wsprintf(buffer, Fetch_String(TXT_AT_WAR), (char const *)IniName, (char const *)house->IniName);
+				snprintf(buffer, sizeof(buffer), Fetch_String(TXT_AT_WAR), (char const *)IniName, (char const *)house->IniName);
 				Session.Messages.Add_Message(NULL, 0, buffer, Class->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(TICKS_PER_MINUTE * Rule->MessageDelay));
 				Map.Flag_To_Redraw();
 				if (Is_Player_Control()) {
@@ -3309,7 +3315,7 @@ void HouseClass::MPlayer_Defeated(void)
 		/*
 		**	Pop up a message showing that I was defeated
 		*/
-		wsprintf(txt, Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
+		snprintf(txt, sizeof(txt), Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
 		Session.Messages.Add_Message(NULL, 0, txt, Session.ColorIdx,
 		TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
 
@@ -3323,7 +3329,7 @@ void HouseClass::MPlayer_Defeated(void)
 		**	If it wasn't me, find out who was defeated
 		*/
 		if (!Class->IsMultiplayPassive) {
-			wsprintf(txt, Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
+			snprintf(txt, sizeof(txt), Fetch_String(TXT_PLAYER_DEFEATED), (char const *)IniName);
 
 			Session.Messages.Add_Message(NULL, 0, txt, Scheme,
 				TextPrintType(TPF_6PT_GRAD | TPF_USE_GRAD_PAL | TPF_FULLSHADOW), int(Rule->MessageDelay * TICKS_PER_MINUTE));
@@ -6432,8 +6438,8 @@ void HouseClass::Compute_CRC(CRCEngine & crc) const
 /// record, so they are disposed of before the saved members are read over the top of them.
 /// </summary>
 /// <param name="stream">The stream to read the house from.</param>
-/// <returns>Returns with S_OK, or the failure code reported by the stream.</returns>
-HRESULT STDMETHODCALLTYPE HouseClass::Load(IStream *stream)
+/// <returns>bool; Was the record read whole?</returns>
+bool HouseClass::Load(SaveStreamClass & stream)
 {
 	while (SuperWeapon.Count()) {
 		delete SuperWeapon[0];
@@ -6623,18 +6629,9 @@ void HouseClass::Serialize(SaveStreamClass & stream)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence contract. The load system uses the identifier to
-/// discover which class to build when the object is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE HouseClass::GetClassID(CLSID * retval)
+ClassID HouseClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_HouseClass;
-	return(S_OK);
+	return(ClassID_HouseClass);
 }
 
 
@@ -7187,8 +7184,8 @@ void HouseClass::Make_Base_Nodes(void)
 
 	for (index = 0; index < finalqueue.Count(); index++) {
 		BuildingTypeClass const * b = finalqueue[index];
-		if ((int)b < 0 && (int)b >= -3) {
-			Base.Nodes.Add(BaseNodeClass((StructType)(int)b, Cell(0, 0)));
+		if ((intptr_t)b < 0 && (intptr_t)b >= -3) {
+			Base.Nodes.Add(BaseNodeClass((StructType)(intptr_t)b, Cell(0, 0)));
 		} else {
 			Base.Nodes.Add(BaseNodeClass(b->HeapID, Cell(0, 0)));
 		}
@@ -9203,30 +9200,6 @@ void HouseClass::AI_Drop_Pods(SuperClass * super)
 			Place_Special_Blast((SuperWeaponType)SuperWeapon.ID(super), cell);
 		}
 	}
-}
-
-
-/// <summary>
-/// Adds a reference to this house.
-/// Houses are permanent heap objects rather than reference counted ones, so this routine
-/// exists only to satisfy the IUnknown contract.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE HouseClass::AddRef(void)
-{
-	return(1);
-}
-
-
-/// <summary>
-/// Releases a reference to this house.
-/// Houses are permanent heap objects rather than reference counted ones, so this routine
-/// exists only to satisfy the IUnknown contract. It never destroys the house.
-/// </summary>
-/// <returns>Returns with the reference count, which is always one.</returns>
-ULONG STDMETHODCALLTYPE HouseClass::Release(void)
-{
-	return(1);
 }
 
 

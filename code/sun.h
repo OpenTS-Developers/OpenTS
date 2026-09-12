@@ -13,9 +13,7 @@
 
 #pragma once
 
-#ifdef INCLUDE_COM
-#include "isun.h"
-#endif
+#include "classids.h"
 #include <cstring>
 
 /// Everything from here on is the content of defines.h.
@@ -66,7 +64,6 @@
 **	Filenames of the data files it can create at run time.
 */
 #define FAME_FILE_NAME			"HALLFAME.DAT"
-#define CONFIG_FILE_NAME		"SUN.INI"
 
 
 /**********************************************************************

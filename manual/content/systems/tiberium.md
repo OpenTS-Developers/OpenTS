@@ -115,7 +115,7 @@ Removing stages from a cell standing at stage 11 tries to put it back into the g
 
 ## Spread
 
-Spread passes are scheduled the same way, from the [`Spread`](/keys/spread/#scope-tiberium) delay, and no flag shortens them. The budget is the queued count multiplied by [`SpreadPercentage`](/keys/spreadpercentage/), clamped to between 5 and 25, with a random figure drawn from 1 up to it. Only a cell that finds somewhere to seed counts against that budget; a cell hemmed in on all eight sides is dropped from the queue without spending any of it, and a cell with more than one free neighbor is re-queued to run again on the next pass.
+Spread passes are scheduled the same way, from the [`Spread`](/keys/spread/#scope-tiberium) delay, and no flag shortens them. The budget is the queued count multiplied by [`SpreadPercentage`](/keys/spreadpercentage/), clamped to between 5 and 25, with a random figure drawn from 1 up to it. Only a cell that finds somewhere to seed counts against that budget. A cell hemmed in on all eight sides is dropped from the queue without spending any of it, as is one that no longer carries Tiberium of its own; a cell with more than one free neighbor is re-queued to run again on the next pass.
 
 A cell may spread when all of the following hold, tested in this order:
 

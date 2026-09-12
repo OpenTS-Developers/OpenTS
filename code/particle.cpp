@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "particle.h"
@@ -687,11 +686,11 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				pixel.Y += TacticalRect.Y;
 				if (cliprect.Is_Point_Within(pixel)) {
 					Point2D alpha_point = pixel - Point2D(0, AlphaBuffer->Get_Bounds().Y);
-					int alpha = *(unsigned short*)AlphaBuffer->Get_Buffer_Offset(alpha_point);
+					int alpha = *AlphaBuffer->Get_Buffer_Offset(alpha_point);
 					if (alpha != 0) {
 						Point2D depth_point = pixel - Point2D(0, DepthBuffer->Get_Bounds().Y);
 						int zdepth = (unsigned short)(DepthBuffer->Get_Bounds().Y + DepthBuffer->Get_Scroll_Delta(pixel.Y)) - TacticalMap->Z_Lepton_To_Pixel(PositionCoord.Z) - 50;
-						int depth = *(unsigned short*)DepthBuffer->Get_Buffer_Offset(depth_point);
+						int depth = *DepthBuffer->Get_Buffer_Offset(depth_point);
 						if (zdepth < depth) {
 							RGBClass color1 = ColorIndex == 0 ? Color : Class->ColorList[ColorIndex];
 							RGBClass color2 = Class->ColorList[ColorIndex + 1];
@@ -929,10 +928,10 @@ void ParticleClass::Serialize(SaveStreamClass & stream)
 /// </summary>
 /// <param name="stream">The stream to write this particle to.</param>
 /// <param name="cleardirty">Should the modified flag be cleared once written?</param>
-/// <returns>Returns with S_OK if the particle was written successfully.</returns>
-HRESULT STDMETHODCALLTYPE ParticleClass::Save(IStream * stream, BOOL cleardirty)
+/// <returns>bool; Was the record written whole?</returns>
+bool ParticleClass::Save(SaveStreamClass & stream, bool cleardirty)
 {
-	HRESULT result = BASECLASS::Save(stream, cleardirty);
+	bool result = BASECLASS::Save(stream, cleardirty);
 	WasSaved = true;
 	return(result);
 }
@@ -993,18 +992,9 @@ int ParticleClass::Shape_Number(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// The persistence code uses this identifier to recreate the correct object when the
-/// save file is loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE ParticleClass::GetClassID(CLSID * retval)
+ClassID ParticleClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_ParticleClass;
-	return(S_OK);
+	return(ClassID_ParticleClass);
 }
 
 

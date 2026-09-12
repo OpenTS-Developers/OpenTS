@@ -49,13 +49,13 @@ class Blitter {
 		**	method of pixel blitting and this routine will be called 99% of the time under
 		**	normal circumstances.
 		*/
-		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const = 0;
+		virtual void BlitForward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000, int warp_offset = 0) const = 0;
 
 		/*
 		**	Copies the pixel in reverse order. This only required if the source and dest
 		**	pixel regions overlap in a certain way. This routine will rarely be called.
 		*/
-		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 1000) const = 0;
+		virtual void BlitBackward(void * dest, void const * source, int length, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 1000) const = 0;
 
 		/*
 		**	This routine calls the appropriate blit routine. A proper overlap check cannot
@@ -82,5 +82,5 @@ class RLEBlitter {
 		**	compressed pixel sequence is desired. This is necessary because RLE decompression
 		**	must begin at the start of the compressed data sequence.
 		*/
-		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, void * z_buff = NULL, void * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const = 0;
+		virtual void Blit(void * dest, void const * source, int length, int leadskip = 0, int z_min = 0, unsigned short * z_buff = NULL, unsigned short * a_buff = NULL, int alpha_level = 0, int warp_offset = 0, void * zshape = NULL) const = 0;
 };

@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "wave.h"
@@ -466,18 +465,9 @@ void WaveClass::Post_Load(void)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence interface. The save game loader uses the
-/// identifier to recreate the object as the right kind of class.
-/// </summary>
-/// <param name="retval">Pointer to the buffer to store the class identifier in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE WaveClass::GetClassID(CLSID * retval)
+ClassID WaveClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_WaveClass;
-	return(S_OK);
+	return(ClassID_WaveClass);
 }
 
 
@@ -620,11 +610,11 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 			if (Direction > FACING_NE && Direction < FACING_W) {
 				unsigned short base_z = DepthBuffer->Get_Scroll_Delta(zpix);
 				unsigned short zval = base_z - starty - 2;
-				unsigned int zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
+				unsigned short * zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
 				int width = LogicalSurface->Get_Width();
 				int zwidth = DepthBuffer->Get_Buffer_Width();
 
-				if (zoffset + 2 * (width + zwidth * (endy - starty + 1)) < DepthBuffer->Get_Buffer_End()) {
+				if (zoffset + (width + zwidth * (endy - starty + 1)) < DepthBuffer->Get_Buffer_End()) {
 
 					int stride = LogicalSurface->Stride() >> 1;
 					unsigned short * dest = surfptr + starty * stride;
@@ -641,23 +631,23 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 								xstart = points->X + xoff;
 							}
 
-							zoffset += 2 * xstart;
+							zoffset += xstart;
 							dest += xstart;
 
 							int x;
 							int ypos = abs(y - yoff - WaveStartMiddle.Y);
 							for (x = xstart; x <= xstop; x++) {
-								if (*(unsigned short *)zoffset > zval) {
+								if (*zoffset > zval) {
 									Set_Sonic_Pixel(x, xoff, ypos, y, dest, cliprect);
 								}
-								zoffset += 2;
+								++zoffset;
 								dest++;
 							}
-							zoffset -= 2 * x;
+							zoffset -= x;
 							dest -= x;
 						}
 						dest += stride;
-						zoffset += 2 * zwidth;
+						zoffset += zwidth;
 						zval--;
 						points++;
 					}
@@ -696,12 +686,12 @@ void WaveClass::Draw_Sonic(Point2D const & point, Rect const & cliprect)
 
 			} else {
 
-				unsigned int zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
+				unsigned short * zoffset = DepthBuffer->Get_Buffer_Offset(Point2D(0, starty - TacticalRect.Y));
 				int width = LogicalSurface->Get_Width();
 				int rows = endy - starty;
 				int zwidth = DepthBuffer->Get_Buffer_Width();
 
-				if (zoffset + 2 * (width + zwidth * (rows + 1)) < DepthBuffer->Get_Buffer_End()) {
+				if (zoffset + (width + zwidth * (rows + 1)) < DepthBuffer->Get_Buffer_End()) {
 
 					int stride = LogicalSurface->Stride() >> 1;
 					unsigned short * dest = surfptr + endy * stride;
@@ -822,11 +812,11 @@ void WaveClass::Draw_Laser(Point2D const & point, Rect const & cliprect)
 
 				unsigned short base_z = DepthBuffer->Get_Scroll_Delta(zpix);
 				unsigned short depth = base_z - ystart - 2;
-				unsigned int zoff = DepthBuffer->Get_Buffer_Offset(Point2D(0, ystart - TacticalRect.Y));
+				unsigned short * zoff = DepthBuffer->Get_Buffer_Offset(Point2D(0, ystart - TacticalRect.Y));
 				int surfwidth = LogicalSurface->Get_Width();
 				int zwidth = DepthBuffer->Get_Buffer_Width();
 
-				if (zoff + 2 * (surfwidth + (yend - ystart + 1) * zwidth) < DepthBuffer->Get_Buffer_End()) {
+				if (zoff + (surfwidth + (yend - ystart + 1) * zwidth) < DepthBuffer->Get_Buffer_End()) {
 
 					/*
 					 * The wave lies entirely within the depth buffer, so the depth buffer
@@ -848,23 +838,23 @@ void WaveClass::Draw_Laser(Point2D const & point, Rect const & cliprect)
 								xstart = left;
 							}
 
-							zoff += 2 * xstart;
+							zoff += xstart;
 							scrptr += xstart;
 
 							int x = xstart;
 							for (; x <= xstop; x++) {
-								if (*(unsigned short *)zoff > depth) {
+								if (*zoff > depth) {
 									Set_Laser_Pixel(scrptr, LaserEC);
 								}
-								zoff += 2;
+								++zoff;
 								scrptr++;
 							}
 
-							zoff -= 2 * x;
+							zoff -= x;
 							scrptr -= x;
 						}
 						scrptr += stride;
-						zoff += 2 * zwidth;
+						zoff += zwidth;
 						depth--;
 						points++;
 					}

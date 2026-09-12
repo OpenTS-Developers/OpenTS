@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tagtype.h"
@@ -241,10 +240,10 @@ bool TagTypeClass::Write_INI(CCINIClass & ini) const
 	char buffer[128];
 
 	if (FirstTrigger == NULL) {
-		wsprintf(buffer, "%s,<none>", (char const *)GivenName);
+		snprintf(buffer, sizeof(buffer), "%s,<none>", (char const *)GivenName);
 		ini.Put_String(INI_NAME, IniName, buffer);
 	} else {
-		wsprintf(buffer, "%d,%s,%s", Persistence, (char const *)GivenName, (char const *)FirstTrigger->IniName);
+		snprintf(buffer, sizeof(buffer), "%d,%s,%s", Persistence, (char const *)GivenName, (char const *)FirstTrigger->IniName);
 		ini.Put_String(INI_NAME, IniName, buffer);
 	}
 
@@ -376,18 +375,9 @@ TagTypeClass * TagTypeClass::Find_Or_Make(char const * name)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the save and load system so that a tag type can be
-/// recognized when it is read back out of a stream.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TagTypeClass::GetClassID(CLSID * retval)
+ClassID TagTypeClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TagTypeClass;
-	return(S_OK);
+	return(ClassID_TagTypeClass);
 }
 
 

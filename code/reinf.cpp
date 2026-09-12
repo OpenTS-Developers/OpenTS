@@ -47,10 +47,10 @@
 #include "airctype.h"
 #include "building.h"
 #include "cell.h"
+#include "classids.h"
 #include "foot.h"
 #include "globals.h"
 #include "house.h"
-#include "ilocos.h"
 #include "incdec.h"
 #include "inline.h"
 #include "mouse.h"
@@ -533,7 +533,7 @@ inline bool _Can_Burrow(FootClass * object)
 {
 	while (object != NULL) {
 		TechnoTypeClass const * tclass = object->TClass;
-		if (tclass->Locomotor != CLSID_TunnelLocomotion) {
+		if (tclass->Locomotor != ClassID_TunnelLocomotion) {
 			return(false);
 		}
 		object = (FootClass *)object->Next;

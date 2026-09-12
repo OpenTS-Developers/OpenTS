@@ -110,12 +110,11 @@ void EnvironmentClass::Restore(void)
 /// restored, before the scenario itself is brought back.
 /// </summary>
 /// <returns>Returns with the result reported by the stream read.</returns>
-HRESULT EnvironmentClass::Load(IStream * stream)
+bool EnvironmentClass::Load(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("EnvironmentClass");
-	Serialize(savestream);
-	return(savestream.Result());
+	stream.Set_Context("EnvironmentClass");
+	Serialize(stream);
+	return(!stream.Was_Error());
 }
 
 
@@ -123,11 +122,10 @@ HRESULT EnvironmentClass::Load(IStream * stream)
 /// Writes the carry over environment out to a save game.
 /// </summary>
 /// <returns>Returns with the result reported by the stream write.</returns>
-HRESULT EnvironmentClass::Save(IStream * stream)
+bool EnvironmentClass::Save(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream);
-	return(savestream.Result());
+	Serialize(stream);
+	return(!stream.Was_Error());
 }
 
 

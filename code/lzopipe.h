@@ -61,6 +61,10 @@ class LZOPipe : public Pipe
 		*/
 		CompControl Control;
 
+		// Set once a block header claims more compressed data than the buffer accumulating it
+		// can hold. Everything after such a header is dropped.
+		bool IsBroken;
+
 		/*
 		**	The number of bytes accumulated into the staging buffer.
 		*/
@@ -72,14 +76,16 @@ class LZOPipe : public Pipe
 		char * Buffer;
 		char * Buffer2;
 
+		// The compressor's scratch dictionary, allocated only when this pipe compresses.
+		char * Dictionary;
+
 		/*
 		**	The working block size. Data will be compressed in chunks of this size.
 		*/
 		int BlockSize;
 
-		/*
-		**	Probably dont need this anymore as LZO decompresses into a staging buffer.
-		*/
+		// The headroom the working buffers carry beyond a block. It bounds both what the
+		// decompressor may write and what a block header may claim.
 		int SafetyMargin;
 
 		/*

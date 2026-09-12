@@ -40,7 +40,6 @@
  *   SuperClass::Suspend -- Suspend the charging of the super weapon.                          *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "super.h"
@@ -801,15 +800,9 @@ bool SuperClass::Is_Charging(void) const
 }
 
 
-/// <summary>
-/// Fetches the persistent class identifier for the super weapon.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE SuperClass::GetClassID(CLSID * retval)
+ClassID SuperClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_SuperWeaponClass;
-	return(S_OK);
+	return(ClassID_SuperWeaponClass);
 }
 
 

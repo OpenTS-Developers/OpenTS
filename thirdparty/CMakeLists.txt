@@ -82,6 +82,28 @@ endif()
 
 #
 # ---------------------------------------------------------
+# LZO (LZO1X compression for saves, maps, and network blocks)
+# ---------------------------------------------------------
+#
+# A vendored copy rather than a submodule; docs/BUILDING.md records why. It holds the three
+# LZO1X-1 sources the engine calls and every header they reach.
+#
+# The library is built here rather than through its own CMakeLists.txt, which asks for
+# compatibility with CMake 3.0 and is refused outright by CMake 4, and which also builds
+# the test drivers and install rules that the engine does not ship.
+file(GLOB LZO_SOURCES CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/lzo/src/*.c")
+add_library(lzo STATIC ${LZO_SOURCES})
+
+# LZO reads a generated config.h only when LZO_HAVE_CONFIG_H is defined, and probes the
+# target with its own preprocessor tests otherwise. Leaving it undefined keeps the
+# vendored tree free of a configure step.
+target_include_directories(lzo
+    PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/lzo/include"
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/lzo/src"
+)
+
+#
+# ---------------------------------------------------------
 # FreeType (font rasterization for RmlUi)
 # ---------------------------------------------------------
 #
@@ -158,3 +180,32 @@ target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
 # Configuration macros change the layout of ImGui structures, so consumers must see the
 # same set as the implementation.
 target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
+
+
+#
+# ---------------------------------------------------------
+# Solution layout
+# ---------------------------------------------------------
+#
+
+# Files a directory's targets, and those of every directory below it, under one solution
+# folder. A target that already names a folder keeps it as a subfolder of that one, so the
+# grouping bgfx gives its own targets survives.
+function(opents_set_solution_folder directory folder)
+    get_property(targets DIRECTORY "${directory}" PROPERTY BUILDSYSTEM_TARGETS)
+    foreach(target IN LISTS targets)
+        get_target_property(current ${target} FOLDER)
+        if(current)
+            set_target_properties(${target} PROPERTIES FOLDER "${folder}/${current}")
+        else()
+            set_target_properties(${target} PROPERTIES FOLDER "${folder}")
+        endif()
+    endforeach()
+
+    get_property(subdirectories DIRECTORY "${directory}" PROPERTY SUBDIRECTORIES)
+    foreach(subdirectory IN LISTS subdirectories)
+        opents_set_solution_folder("${subdirectory}" "${folder}")
+    endforeach()
+endfunction()
+
+opents_set_solution_folder("${CMAKE_CURRENT_SOURCE_DIR}" "Thirdparty")

@@ -558,7 +558,7 @@ char Wstring::replace(char const* replaceThis, char const* withThis)
 		foundStr = strstr(src, replaceThis);
 		if (foundStr)
 		{
-			len = (unsigned int)foundStr - (unsigned int)src;
+			len = (unsigned int)(foundStr - src);
 			if (len)
 			{
 				if (!dest.cat(len, src))

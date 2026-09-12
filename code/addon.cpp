@@ -11,8 +11,10 @@
 
 #include "addon.h"
 
+#include "_deploymentconfig.h"
 #include "ccfile.h"
 #include "data.h"
+#include "deploymentconfig.h"
 #include "init.h"
 #include "language/language.h"
 #include "ownrdraw.h"
@@ -136,7 +138,7 @@ void Detect_Addons(void)
 	AvailableAddOns = (1 << ADDON_BASE_GAME);
 	ActiveAddOns = (1 << ADDON_BASE_GAME);
 
-	if (CCFileClass("FIRESTRM.INI").Is_Available() == true) {
+	if (CCFileClass(DeploymentConfig.RulesExpansionFile.c_str()).Is_Available() == true) {
 		AvailableAddOns |= (1 << ADDON_FIRESTORM);
 	}
 }

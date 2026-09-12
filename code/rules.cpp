@@ -51,6 +51,7 @@
 #include "rules.h"
 
 #include "_bench.h"
+#include "_deploymentconfig.h"
 #include "_palette.h"
 #include "_rules.h"
 #include "_warhead.h"
@@ -66,6 +67,7 @@
 #include "conquer.h"
 #include "convert.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "findmake.h"
 #include "globals.h"
 #include "house.h"
@@ -691,7 +693,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 	Load_Art_INI();
 
 	if (Addon_Enabled(ADDON_FIRESTORM) == true) {
-		CCFileClass artfsfile("ARTFS.INI");
+		CCFileClass artfsfile(DeploymentConfig.ArtExpansionFile.c_str());
 		if (artfsfile.Is_Available() == true) {
 			ArtINI.Load(artfsfile, false);
 		}
@@ -700,7 +702,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 	Heap_Maximums(ini);
 	Addition(ini);
 
-	CCFileClass langfile("LANGRULE.INI");
+	CCFileClass langfile(DeploymentConfig.LanguageRulesFile.c_str());
 	if (langfile.Is_Available() == true) {
 		CCINIClass langini;
 		if (langini.Load(langfile, true) > 1) {
@@ -714,7 +716,7 @@ void RulesClass::Initialize(CCINIClass const & ini)
 		Addition(FSRuleINI);
 	}
 
-	CCFileClass langfsfile("LANGFS.INI");
+	CCFileClass langfsfile(DeploymentConfig.LanguageRulesExpansionFile.c_str());
 	if (langfsfile.Is_Available() == true) {
 		CCINIClass langfsini;
 		langfsini.Load(langfsfile, false);
@@ -2090,10 +2092,9 @@ bool RulesClass::Do_Movies(CCINIClass const & ini)
 /// <summary>
 /// Writes the rule data out to a save game stream.
 /// </summary>
-void RulesClass::Save(IStream * stream)
+void RulesClass::Save(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_SAVE);
-	Serialize(savestream);
+	Serialize(stream);
 }
 
 
@@ -2102,11 +2103,10 @@ void RulesClass::Save(IStream * stream)
 /// </summary>
 /// <remarks>Be sure the object heaps have been loaded before calling this routine, since
 /// the pointer swizzle needs them.</remarks>
-void RulesClass::Load(IStream * stream)
+void RulesClass::Load(SaveStreamClass & stream)
 {
-	SaveStreamClass savestream(stream, SaveStreamClass::MODE_LOAD);
-	savestream.Set_Context("RulesClass");
-	Serialize(savestream);
+	stream.Set_Context("RulesClass");
+	Serialize(stream);
 }
 
 
@@ -2996,7 +2996,7 @@ int RulesClass::Get_Art_Unique_ID(void)
 {
 	int id = ArtINI.Get_Unique_ID();
 	if (Addon_Enabled(ADDON_FIRESTORM) == true) {
-		CCFileClass artfs("ARTFS.INI");
+		CCFileClass artfs(DeploymentConfig.ArtExpansionFile.c_str());
 		if (artfs.Is_Available() == true) {
 			CCINIClass artfsini;
 			artfsini.Load(artfs, false);
@@ -3033,6 +3033,6 @@ int RulesClass::Get_AI_Unique_ID(void)
 void RulesClass::Load_Art_INI(void)
 {
 	ArtINI.Clear();
-	CCFileClass art("ART.INI");
+	CCFileClass art(DeploymentConfig.ArtFile.c_str());
 	ArtINI.Load(art, false);
 }

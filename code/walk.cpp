@@ -27,13 +27,13 @@
 #include "inline.h"
 #include "overtype.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "tactical.h"
 #include "tube.h"
 #include "unit.h"
 
 #include "layer.hh"
-
 
 
 /// <summary>
@@ -64,7 +64,7 @@ WalkLocomotionClass::~WalkLocomotionClass(void)
 /// Is the infantry traveling somewhere?
 /// </summary>
 /// <returns>bool; Does the infantry have somewhere it is trying to get to?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving(void)
+bool WalkLocomotionClass::Is_Moving(void)
 {
 	return(IsMoving);
 }
@@ -76,7 +76,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving(void)
 /// merely under orders to travel but is standing still.
 /// </summary>
 /// <returns>bool; Is the infantry moving right now?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Now(void)
+bool WalkLocomotionClass::Is_Moving_Now(void)
 {
 	if (Is_Moving() && LinkedTo->Speed > 0 && HeadToCoord != COORD_NONE) {
 		return(true);
@@ -90,7 +90,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Now(void)
 /// </summary>
 /// <returns>Returns with the coordinate being traveled to, or COORD_NONE if the infantry has
 /// nowhere it needs to be.</returns>
-Coord STDMETHODCALLTYPE WalkLocomotionClass::Destination(void)
+Coord WalkLocomotionClass::Destination(void)
 {
 	if (Is_Moving()) {
 		return(DestinationCoord);
@@ -104,7 +104,7 @@ Coord STDMETHODCALLTYPE WalkLocomotionClass::Destination(void)
 /// </summary>
 /// <returns>Returns with the immediate destination, or the current position if the infantry
 /// is not part way between spots.</returns>
-Coord STDMETHODCALLTYPE WalkLocomotionClass::Head_To_Coord(void)
+Coord WalkLocomotionClass::Head_To_Coord(void)
 {
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
@@ -119,7 +119,7 @@ Coord STDMETHODCALLTYPE WalkLocomotionClass::Head_To_Coord(void)
 /// infantry along its path.
 /// </summary>
 /// <returns>bool; Is the infantry still traveling somewhere?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Process(void)
+bool WalkLocomotionClass::Process(void)
 {
 	IsProcessingMovement = true;
 	Movement_AI(true);
@@ -135,7 +135,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Process(void)
 /// than beneath it.
 /// </summary>
 /// <param name="to">The coordinate to travel to, or COORD_NONE to clear the destination.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Move_To(Coord to)
+void WalkLocomotionClass::Move_To(Coord to)
 {
 	if (LinkedTo->StunDuration <= 0) {
 		DestinationCoord = to;
@@ -158,7 +158,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Move_To(Coord to)
 /// The step already under way is allowed to finish; it is the ultimate destination
 /// that is forgotten.
 /// </summary>
-void STDMETHODCALLTYPE WalkLocomotionClass::Stop_Moving(void)
+void WalkLocomotionClass::Stop_Moving(void)
 {
 	DestinationCoord = COORD_NONE;
 	if (HeadToCoord == COORD_NONE) {
@@ -172,7 +172,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Stop_Moving(void)
 /// Infantry snap around instantly, so there is no rotation to play out over time.
 /// </summary>
 /// <param name="dir">The direction the infantry should face.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Do_Turn(DirType dir)
+void WalkLocomotionClass::Do_Turn(DirType dir)
 {
 	LinkedTo->PrimaryFacing.Set(dir);
 }
@@ -184,7 +184,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Do_Turn(DirType dir)
 /// redirected without waiting for the current step to finish.
 /// </summary>
 /// <param name="coord">The coordinate to step to, or COORD_NONE to abandon the step.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Force_Immediate_Destination(Coord coord)
+void WalkLocomotionClass::Force_Immediate_Destination(Coord coord)
 {
 	HeadToCoord = coord;
 	if (HeadToCoord == COORD_NONE && DestinationCoord == COORD_NONE) {
@@ -608,25 +608,16 @@ bool WalkLocomotionClass::Mark_Head_To(Coord const & coord)
 }
 
 
-/// <summary>
-/// Fetches the class ID of this locomotor.
-/// The persistence system uses this to recreate the correct locomotor when a saved
-/// game is loaded.
-/// </summary>
-/// <param name="retval">Pointer to the class ID to fill in.</param>
-/// <returns>Returns with S_OK if the class ID was fetched, otherwise E_POINTER.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::GetClassID(CLSID * retval)
+ClassID WalkLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_WalkLocomotion;
-	return(S_OK);
+	return(ClassID_WalkLocomotion);
 }
 
 
 /// <summary>
 /// Lists the members this walk locomotor carries.
 /// The locomotor this one was stacked on top of is a separate persistent object rather
-/// than a member, so it still travels framed by OLE and is recreated as the class it was
+/// than a member, so it travels as a record of its own and is recreated as the class it was
 /// saved as.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
@@ -645,10 +636,9 @@ void WalkLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	if (haspiggy) {
 		if (stream.Is_Saving()) {
-			IPersistStreamPtr persist(Piggybacker);
-			OleSaveToStream(persist, stream.Get_Stream());
+			Save_Object(stream, Piggybacker.get());
 		} else {
-			OleLoadFromStream(stream.Get_Stream(), IID_ILocomotion, (LPVOID *)&Piggybacker);
+			Piggybacker = Load_Locomotor(stream);
 		}
 	}
 }
@@ -658,35 +648,9 @@ void WalkLocomotionClass::Serialize(SaveStreamClass & stream)
 /// Fetches the display layer that walking objects belong in.
 /// </summary>
 /// <returns>Returns with the layer that objects using this locomotor render into.</returns>
-LayerType STDMETHODCALLTYPE WalkLocomotionClass::In_Which_Layer(void)
+LayerType WalkLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_GROUND);
-}
-
-
-/// <summary>
-/// Fetches an interface pointer from this locomotor.
-/// This routine extends the base locomotor with the piggyback interface.
-/// </summary>
-/// <param name="riid">The interface identifier being asked for.</param>
-/// <param name="ppvObject">Pointer to the interface pointer to fill in.</param>
-/// <returns>Returns with S_OK if the interface was supplied, otherwise E_NOINTERFACE.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::QueryInterface(REFIID riid, LPVOID * ppvObject)
-{
-	HRESULT result = BASECLASS::QueryInterface(riid, ppvObject);
-
-	if (result == E_NOINTERFACE) {
-		if (riid == IID_IPiggyback) {
-			*ppvObject = (IPiggyback*)this;
-		}
-		if (*ppvObject == NULL) {
-			result = E_NOINTERFACE;
-		} else {
-			AddRef();
-			result = S_OK;
-		}
-	}
-	return(result);
 }
 
 
@@ -695,19 +659,15 @@ HRESULT STDMETHODCALLTYPE WalkLocomotionClass::QueryInterface(REFIID riid, LPVOI
 /// This routine is used when some temporary means of travel, such as being carried
 /// along, must take over from ordinary walking.
 /// </summary>
-/// <param name="pointer">The locomotor that will ride along on this one.</param>
-/// <returns>Returns with S_OK if the locomotor was attached, or E_FAIL if one is already
-/// piggybacking.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::Begin_Piggyback(ILocomotion * pointer)
+/// <param name="carried">The locomotor that is to take over the unit.</param>
+/// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
+bool WalkLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
+	if (carried == nullptr || Piggybacker != nullptr) {
+		return(false);
 	}
-	if (Piggybacker == NULL) {
-		Piggybacker = pointer;
-		return(S_OK);
-	}
-	return(E_FAIL);
+	Piggybacker = std::move(carried);
+	return(true);
 }
 
 
@@ -715,20 +675,10 @@ HRESULT STDMETHODCALLTYPE WalkLocomotionClass::Begin_Piggyback(ILocomotion * poi
 /// Ends the piggyback session and hands back the locomotor that was riding along.
 /// Ownership of the piggybacking locomotor passes to the caller.
 /// </summary>
-/// <param name="pointer">Pointer to the locomotor pointer to fill in.</param>
-/// <returns>Returns with S_OK if a piggybacking locomotor was handed back, or S_FALSE if
-/// there was none.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::End_Piggyback(ILocomotion ** pointer)
+/// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
+std::unique_ptr<ILocomotion> WalkLocomotionClass::End_Piggyback(void)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
-	}
-	if (Piggybacker != NULL) {
-		*pointer = Piggybacker;
-		Piggybacker.Detach();
-		return(S_OK);
-	}
-	return(S_FALSE);
+	return(std::move(Piggybacker));
 }
 
 
@@ -738,7 +688,7 @@ HRESULT STDMETHODCALLTYPE WalkLocomotionClass::End_Piggyback(ILocomotion ** poin
 /// not resumed part way through a step.
 /// </summary>
 /// <returns>bool; Is it safe to end the piggyback?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Ok_To_End(void)
+bool WalkLocomotionClass::Is_Ok_To_End(void)
 {
 	if (!Is_Moving() && Piggybacker != NULL && !IsProcessingMovement) {
 		return(true);
@@ -748,41 +698,12 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Ok_To_End(void)
 
 
 /// <summary>
-/// Fetches the class ID of whichever locomotor is in charge.
-/// This routine reports the piggybacking locomotor's identity when one has taken
-/// over, otherwise it identifies this walking locomotor.
-/// </summary>
-/// <param name="classid">Pointer to the class ID to fill in.</param>
-/// <returns>Returns with S_OK if the class ID was fetched, otherwise an error code.</returns>
-HRESULT STDMETHODCALLTYPE WalkLocomotionClass::Piggyback_CLSID(GUID * classid)
-{
-	if (classid == NULL) {
-		return(E_POINTER);
-	}
-
-	if (Piggybacker != NULL) {
-		IPersistPtr ptr(Piggybacker);
-		if (ptr == NULL) {
-			return(E_FAIL);
-		}
-		return(ptr->GetClassID(classid));
-	}
-
-	IPersistPtr ptr(this);
-	if (ptr == NULL) {
-		return(E_FAIL);
-	}
-	return(ptr->GetClassID(classid));
-}
-
-
-/// <summary>
 /// Releases the sub-cell spot that this infantry has reserved.
 /// This routine is called when the infantry is being lifted off the map so that the
 /// spot it had claimed becomes available to others again.
 /// </summary>
 /// <param name="mark">The occupancy marking operation being performed.</param>
-void STDMETHODCALLTYPE WalkLocomotionClass::Mark_All_Occupation_Bits(int mark)
+void WalkLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (mark == MARK_UP) {
 		LinkedTo->Clear_Occupy_Bit(Head_To_Coord());
@@ -797,7 +718,7 @@ void STDMETHODCALLTYPE WalkLocomotionClass::Mark_All_Occupation_Bits(int mark)
 /// </summary>
 /// <param name="to">The coordinate to test the immediate destination against.</param>
 /// <returns>bool; Is the infantry walking to that spot?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Here(Coord to)
+bool WalkLocomotionClass::Is_Moving_Here(Coord to)
 {
 	Coord headto = Head_To_Coord();
 	if (headto.As_Cell() == Coord(to).As_Cell() && abs(headto.Z - to.Z) <= LEVEL_LEPTON_H) {
@@ -813,7 +734,7 @@ boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Moving_Here(Coord to)
 /// merely holds orders to travel but has yet to take a step.
 /// </summary>
 /// <returns>bool; Is the infantry really moving at this moment?</returns>
-boolean STDMETHODCALLTYPE WalkLocomotionClass::Is_Really_Moving_Now(void)
+bool WalkLocomotionClass::Is_Really_Moving_Now(void)
 {
 	return(IsReallyMoving);
 }

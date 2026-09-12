@@ -54,8 +54,6 @@ class CellClass;
 class BuildingTypeClass;
 class FootClass;
 class SaveStreamClass;
-template<typename K, typename V>
-class HashTableClass;
 
 
 class MapClass: public GScreenClass
@@ -89,6 +87,7 @@ class MapClass: public GScreenClass
 		int ID(CellClass * ptr) {return(Array.ID(ptr));};
 		int ID(CellClass & ptr) {return(Array.ID(&ptr));};
 		bool Is_Valid(Cell const & cell);
+		int Cell_Slot(Cell const & cell) const;
 
 		/*
 		**	Initialization
@@ -147,11 +146,12 @@ class MapClass: public GScreenClass
 		int Subzone_Span(CellSubzoneStruct * seed, int subzone_level, int subzone_id, Rect const & bounds, Cell const & cell);
 		void Register_Subzone_Zone_Connections(int subzone);
 		void Register_Zone_Connection_Entries(ZoneConnectionClass & connection, int index);
+		void Register_Staged_Subzone_Connections(int subzone);
 		Cell Get_Bridge_Zone_Connection_Cell(CellClass * cptr, bool isbridge);
 		Cell Get_Zone_Connection_Destination(Cell const & cell, Cell const & reference);
 		Cell Find_Bridge_Span_End_Cell(Cell const & cell, Cell const & reference);
 		Cell Find_Bridge_End_Cell_For_Subzone(Cell const & cell, int subzone_level, int subzone_id);
-		bool Build_Reachable_Subzones(CellClass * cptr, int subzone_level, DynamicVectorClass<unsigned short> const & connections, FootClass const * foot);
+		bool Build_Reachable_Subzones(CellClass * cptr, int subzone_level, DynamicVectorClass<int> & connections, FootClass const * foot);
 		void Update_Cell_Subzones(Cell const & cell);
 		void Register_Subzone_Connection(ZoneConnectionClass * connection);
 		void Unregister_Subzone_Connection(ZoneConnectionClass * connection);
@@ -347,12 +347,13 @@ class MapClass: public GScreenClass
 		virtual void Set_Local_Dimensions(Rect const & size);
 
 		/*
-		 * This is the set of base terrain zones that touch one another, keyed by a packed
-		 * pair of zone IDs. It is filled while the zones are being flood filled, and gains a
-		 * pair for every bridge and tunnel that is currently intact, so that the zones can
-		 * then be unioned into the movement zones of each MZoneType.
+		 * These are the pairs of base terrain zones that touch one another, filled while the
+		 * zones are flood filled and gaining a pair for every intact bridge and tunnel, so
+		 * that the zones can be unioned into the movement zones of each MZoneType. A pair is
+		 * held as the site that found it wrote it, so one touching may appear as both (a,b)
+		 * and (b,a).
 		 */
-		ZONE_PAIR_HASH_SET * ZoneAdjacency;
+		ZonePairSet ZoneAdjacency;
 
 		/*
 		 * This records the movement zones for this map. Cells share the same zone
@@ -362,7 +363,7 @@ class MapClass: public GScreenClass
 		 * number, so two cells are mutually reachable by a given movement type only
 		 * when their zones map to the same number.
 		 */
-		unsigned short * Zones[MZONE_COUNT];
+		int * Zones[MZONE_COUNT];
 
 		/*
 		 * This is the number of base terrain zones the last rebuild produced, and thus the
@@ -392,12 +393,12 @@ class MapClass: public GScreenClass
 		/*
 		 * This is the subzone graph itself, one slot per level of coarseness. SubzoneTracking
 		 * holds a level's subzone records and SubzoneTrackingEntryCount how many of them are
-		 * valid, while SubzoneConnectionHashTable is only scratch: a rebuild gathers adjacency
-		 * pairs there so that duplicates fall out, then unpacks them into the records and
-		 * clears it again.
+		 * valid, while SubzoneConnectionStaging is only scratch: a rebuild clears it, gathers
+		 * the level's adjacency pairs there so that duplicates fall out, then unpacks them
+		 * into the records. What it holds after that is left until the next rebuild clears it.
 		 */
 		int SubzoneTrackingEntryCount[SUBZONE_COUNT];
-		SUBZONE_CONNECTION_HASH_SET * SubzoneConnectionHashTable[SUBZONE_COUNT];
+		SubzoneLinkStaging SubzoneConnectionStaging[SUBZONE_COUNT];
 		DynamicVectorClass<SubzoneTrackingStruct> SubzoneTracking[SUBZONE_COUNT];
 
 		/*
@@ -555,5 +556,4 @@ class MapClass: public GScreenClass
 
 extern CellClass BlubCell;
 
-int SubzoneHash(unsigned int const & key);
 extern int MZonePassability[MZONE_COUNT][PASSABLE_COUNT];

@@ -65,7 +65,7 @@ class TriggerClass : public AbstractClass
 		TriggerClass(TriggerTypeClass * trigtype=NULL);
 		virtual ~TriggerClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

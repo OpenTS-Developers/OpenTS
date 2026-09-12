@@ -416,24 +416,22 @@ void Send_Statistics_Packet(void)
 	 * Game version/build date
 	 */
 	char	version[128];
-	wsprintf (version, "V%s", VerNum.Version_Name() );
+	snprintf(version, sizeof(version), "V%s", VerNum.Version_Name() );
 	stats.Add_Field (FIELD_GAME_VERSION, (char*)version);
 
 	char path_to_exe[280];
 	FILETIME write_time;		//File time is 64 bits
 
 	GetModuleFileName (ProgramInstance, path_to_exe, sizeof(path_to_exe));
-	RawFileClass file;
-	file.Set_Name(path_to_exe);
-	file.Open();
-	HANDLE handle = file.Get_File_Handle();
 
-	if (handle != INVALID_HANDLE_VALUE) {
-		if (GetFileTime (handle, NULL, NULL, &write_time)){
-			write_time.dwLowDateTime = htonl (write_time.dwLowDateTime);
-			write_time.dwHighDateTime = htonl (write_time.dwHighDateTime);
-			stats.Add_Field (FIELD_GAME_BUILD_DATE, (void*)&write_time, sizeof (write_time));
-		}
+	// The packet carries each half byte-swapped with the low half still leading.
+	WIN32_FILE_ATTRIBUTE_DATA attributes;
+
+	if (GetFileAttributesEx (path_to_exe, GetFileExInfoStandard, &attributes)) {
+		write_time = attributes.ftLastWriteTime;
+		write_time.dwLowDateTime = htonl (write_time.dwLowDateTime);
+		write_time.dwHighDateTime = htonl (write_time.dwHighDateTime);
+		stats.Add_Field (FIELD_GAME_BUILD_DATE, (void*)&write_time, sizeof (write_time));
 	}
 
 	/*

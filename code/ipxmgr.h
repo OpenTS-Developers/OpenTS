@@ -230,6 +230,7 @@ class IPXManagerClass : public ConnManClass
 		reset the response time for all queues.
 		.....................................................................*/
 		virtual unsigned int Response_Time(void) override;
+		virtual std::optional<NetTiming::Milliseconds> Worst_Local_Round_Trip_MS(void) const override;
 		unsigned int Global_Response_Time(void);
 		virtual void Reset_Response_Time(bool zero) override;
 
@@ -249,7 +250,7 @@ class IPXManagerClass : public ConnManClass
 
 		virtual void Mono_Debug_Print(int index, int refresh = 0);
 
-		void Multiplayer_Debug_Print(void);
+		void Multiplayer_Debug_Print(int top);
 
 	/*
 	--------------------------- Private Interface ----------------------------

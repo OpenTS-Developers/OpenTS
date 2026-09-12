@@ -80,6 +80,12 @@ struct IsoTileRecord
 	unsigned int IsRandomized:1;
 
 	/*
+	 * The tile file gives these flags a four byte field of their own, so the padding holds
+	 * the members below at the offsets the file puts them at.
+	 */
+	unsigned int :29;
+
+	/*
 	 * This is the number of height levels this sub-tile lifts the cell it covers, so that a
 	 * tile laid across rising ground raises each of its cells by the right amount.
 	 */
@@ -104,6 +110,7 @@ struct IsoTileRecord
 	RGBStruct LowColor;
 	RGBStruct HighColor;
 };
+static_assert(sizeof(IsoTileRecord) == 52, "a TMP tile record is 52 bytes on disk");
 #pragma pack()
 
 #pragma pack(4)
@@ -113,15 +120,17 @@ class IsoTileSet
 	friend class IsometricTileTypeClass;
 
 	public:
-		operator void *() const { return(*this); } /// This allows the struct to be passed implicitly as a raw pointer.
-
 		IsoTileRecord const * Fetch_Record_Pointer(int index) const
 		{
-			return(Tiles[index % Tile_Count()]);
+			return(Record_At(index % Tile_Count()));
 		}
 		IsoTileRecord const * Fetch_Record_Pointer_Unsafe(int index) const
 		{
-			return(Tiles[index]);
+			return(Record_At(index));
+		}
+		IsoTileRecord * Fetch_Record_Pointer_Unsafe(int index)
+		{
+			return((IsoTileRecord *)Record_At(index));
 		}
 
 		/*
@@ -162,12 +171,22 @@ class IsoTileSet
 		int Height;
 
 		/*
-		 * This is the first of the tile set's image record pointers, one per sub-tile, held in
-		 * the file as offsets from the start of the set and converted in place by the loader.
-		 * Reach a record through Fetch_Record_Pointer rather than through the array.
+		 * This is the first of the tile set's image record offsets, one per sub-tile, each a
+		 * byte offset from the start of the set. A zero offset means the sub-tile is absent
+		 * from the diamond. Reach a record through Fetch_Record_Pointer rather than through
+		 * the array.
 		 */
-		IsoTileRecord *Tiles[1];
+		int TileOffsets[1];
 
+
+	private:
+		IsoTileRecord const * Record_At(int index) const
+		{
+			if (TileOffsets[index] == 0) {
+				return(NULL);
+			}
+			return((IsoTileRecord const *)((unsigned char const *)this + TileOffsets[index]));
+		}
 
 	/*
 	**	Disallow these operations with an IsoTileSet object.
@@ -177,6 +196,7 @@ class IsoTileSet
 		IsoTileSet(IsoTileSet const & rvalue);
 		IsoTileSet const & operator = (IsoTileSet const & rvalue);
 };
+static_assert(sizeof(IsoTileSet) == 20, "the TMP header is 16 bytes on disk, followed by the four-byte tile offsets");
 #pragma pack()
 
 
@@ -194,7 +214,7 @@ class IsometricTileTypeClass : public ObjectTypeClass
 		IsometricTileTypeClass(IsometricTileType type = ISOTILE_CLEAR, int unknown1 = 0, unsigned char unknown2 = 0, char const *ininame = NULL, bool skip_registration = false);
 		virtual ~IsometricTileTypeClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

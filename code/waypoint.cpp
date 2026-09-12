@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "waypoint.h"
@@ -45,11 +44,11 @@ const char *Waypoint_To_Name(WAYPOINT wp)
 
 	if (wp < num_chars) {
 
-		wsprintf(_string, "%c", wp + 'A');
+		snprintf(_string, sizeof(_string), "%c", wp + 'A');
 		return(_string);
 	}
 
-	wsprintf(_string, "%c%c", (wp / num_chars) + ('A' - 1), (wp % num_chars) + 'A');
+	snprintf(_string, sizeof(_string), "%c%c", (wp / num_chars) + ('A' - 1), (wp % num_chars) + 'A');
 	return(_string);
 }
 
@@ -281,18 +280,9 @@ void WaypointPathClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the persistence machinery, which records the identifier so that
-/// it knows what kind of object to create when the game is loaded back.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE WaypointPathClass::GetClassID(CLSID * retval)
+ClassID WaypointPathClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_WaypointPath;
-	return(S_OK);
+	return(ClassID_WaypointPath);
 }
 
 

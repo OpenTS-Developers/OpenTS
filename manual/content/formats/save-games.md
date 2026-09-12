@@ -1,7 +1,7 @@
 ---
 format_id: save-games
 title: Save games
-summary: Stores versioned OpenTS game state in `.SAV` compound-document files.
+summary: Stores versioned OpenTS game state in `.SAV` files of the engine's own format.
 kind: binary
 extensions:
   - .SAV
@@ -18,6 +18,7 @@ source_files:
   - code/mainloop.cpp
   - code/mpload.cpp
   - code/netdlg.cpp
+  - code/savefile.cpp
   - code/saveload.cpp
   - code/savemgr.cpp
   - code/savestream.cpp
@@ -30,7 +31,7 @@ source_files:
   - code/voc.cpp
 ---
 
-The save dialog creates `.SAV` files. Each file is an OLE compound document: the listing details live in the document's own property set, and the game state goes into a single `CONTENTS` stream that is compressed as it is written.
+The save dialog creates `.SAV` files. Each file begins with a fixed header and a table of the details the load dialog lists a save by, followed by the game state as one compressed block. The listing is read from the header and table alone, and a file that is truncated, damaged, or written by a later format version is refused before anything is loaded. A save is written under a temporary name and moved into place once complete, so an interrupted save leaves the previous file intact.
 
 ## Where the files are
 
@@ -60,7 +61,7 @@ Timed saves in a game against other machines run only when a launch file set the
 
 The [`QuickSave`](/commands/quicksave/) command writes a campaign to `QUICKSAVE.SAV` and a skirmish to `QUICKSAVE_SKIRMISH.SAV`, replacing the previous file of that kind, so a skirmish never writes over a campaign. The save is written at the frame boundary after the key was pressed, once the frame has retired its dead objects, behind the saving box a menu save shows; the message list then reports `Game saved.` or that the game could not be saved. Each file is described as `Quick Save` and the scenario's description, and the load dialog lists it like any other save. A quick save starts the automatic-save interval over like any completed save.
 
-[`QuickLoad`](/commands/quickload/) restores the file for the kind of game being played. It first reads the file's property set and refuses, with a line in the message list, when the file is missing or carries another version's stamp; otherwise the load runs when the frame ends, in the place the options menu runs, and the mission clock resumes in the restored game. A load that fails partway through the restore shows the same error box as the load dialog and leaves the player in the options menu.
+[`QuickLoad`](/commands/quickload/) restores the file for the kind of game being played. It first reads the file's listing fields and refuses, with a line in the message list, when the file is missing or carries another version's stamp; otherwise the load runs when the frame ends, in the place the options menu runs, and the mission clock resumes in the restored game. A load that fails partway through the restore shows the same error box as the load dialog and leaves the player in the options menu.
 
 Both commands are refused in a game against other machines, during playback, while a scripted sequence has locked input, and once the game is being won or lost. Both arrive unbound.
 
@@ -74,19 +75,21 @@ In a game against other machines the master can load one of the match's saved ga
 
 ## What the file holds
 
-The property set carries the description shown in the list, the player's name and house, the campaign and scenario numbers, the game type, three timestamps, the name of the program that wrote the save, and two version stamps — the save format's own version and the build version of the game that wrote it.
+The field table carries the description shown in the list, the player's house, the campaign and scenario numbers, the game type, three timestamps, the name of the program that wrote the save, and the build version of the game that wrote it. The header carries the format's own version.
 
-The `CONTENTS` stream is a fixed sequence of records — the scenario, the environment, the rules, the map, the loose global values, and every list of type definitions and runtime objects — written and read back in the same order. Among the loose values are the looping sounds left at waypoints by [Play Sound Effect At](/mapping/actions/taction-play-sound-at/) and the sounds attached to objects, each as the sound and its place or object; the playing sound itself is not saved and starts again on the first sound tick after the load. Each list stores its own length ahead of its members, and each member writes out the members its class declares, in the order that class lists them. What a save holds is therefore a field-by-field record of each object rather than a copy of the bytes it occupied in memory. Type definitions travel with the save, so a save carries the rules types it was made with rather than looking them up again on load. Artwork does not travel with it: once a restored type's members have been read, its shape and voxel pointers are released and fetched from the archives again, so a save loaded against a changed set of files gets the current artwork. One piece does not come back. A UnitType drawn from shapes is given a [voxel turret](/formats/vxl-hva/) when the rules are read, by a routine no restore calls; the restore takes the ordinary voxel path instead, which releases that turret along with the body model it could not find. Its voxel barrel is fetched back, and the barrel is what the shape path draws.
+The game state is a fixed sequence of records — the scenario, the environment, the rules, the map, the loose global values, and every list of type definitions and runtime objects — written and read back in the same order. Among the loose values are the looping sounds left at waypoints by [Play Sound Effect At](/mapping/actions/taction-play-sound-at/) and the sounds attached to objects, each as the sound and its place or object; the playing sound itself is not saved and starts again on the first sound tick after the load. Each list stores its own length ahead of its members, and each member writes out the members its class declares, in the order that class lists them. What a save holds is therefore a field-by-field record of each object rather than a copy of the bytes it occupied in memory. Type definitions travel with the save, so a save carries the rules types it was made with rather than looking them up again on load. Artwork does not travel with it: once a restored type's members have been read, its shape and voxel pointers are released and fetched from the archives again, so a save loaded against a changed set of files gets the current artwork. One piece does not come back. A UnitType drawn from shapes is given a [voxel turret](/formats/vxl-hva/) when the rules are read, by a routine no restore calls; the restore takes the ordinary voxel path instead, which releases that turret along with the body model it could not find. Its voxel barrel is fetched back, and the barrel is what the shape path draws.
 
 The scenario record also holds the scenario file itself, name and bytes, where the deployment's [`CarryScenarioFile`](/formats/opents-ini/#what-a-save-carries) asks for it; the record is written either way, empty when nothing is carried. A [restart or replay](/systems/campaign-progression/#losing-and-restarting) after a load reads that copy, not the file on disk, which a client resuming the save may have replaced. A random map holds no file.
 
 ## What is checked
 
 The project-version stamp decides whether a file is offered at all, and only
-the running version's stamp is accepted. The load dialog reads the property set
-of every `.SAV` in the saved-games folder and skips every file stamped by
-anything else, including the Tiberian Sun release and another OpenTS
-release-cycle version. A save that reaches the engine without passing through
+the running version's stamp is accepted. The load dialog reads the header and
+field table of every `.SAV` in the saved-games folder and skips every file
+stamped by anything else, including another OpenTS release-cycle version. A
+file in the compound-document layout that earlier OpenTS releases and Tiberian
+Sun wrote is not a saved game to this reader and is skipped as well; there is
+no conversion. A save that reaches the engine without passing through
 the dialog, as a network save or one resumed from a
 [launch file](/formats/spawn-ini/) does, is checked the same way and refused.
 Development snapshots within one cycle share the stamp, and their save layouts
@@ -95,4 +98,4 @@ leading `*`.
 
 Beyond that stamp and the add-on the scenario declares, nothing about a save is measured against the game it is being loaded into. A save made under one set of rules and loaded under another is not detected, and the type definitions stored in the file are simply restored over the ones the rules built.
 
-Reading `CONTENTS` clears the scenario before it starts and gives up at the first record it cannot restore. A load that stops there fails, rather than carrying on into a scenario that was cleared and never refilled.
+The file is read and checked in full, checksums included, before the running game is touched, so a truncated or damaged file is refused at no cost. Restoring the game state then clears the scenario before it starts and gives up at the first record it cannot restore. A load that stops there fails, rather than carrying on into a scenario that was cleared and never refilled.

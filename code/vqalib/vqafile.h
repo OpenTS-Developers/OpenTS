@@ -38,9 +38,7 @@
 
 #include "iff.h"
 
-#if defined(__WATCOMC__) || defined(_MSC_VER)
 #pragma pack(push,1)
-#endif
 
 /*---------------------------------------------------------------------------
  * STRUCTURE DEFINITIONS AND RELATED DEFINES.
@@ -99,7 +97,7 @@ typedef struct _VQAHeader {
 	 * expanded size when it is zero, so an old movie that leaves it blank
 	 * still allocates correctly.
 	 */
-	unsigned long MaxCBSize;
+	unsigned int MaxCBSize;
 
 	/*
 	 * Bytes of audio that must be loaded ahead of a seek target to prime the
@@ -107,8 +105,9 @@ typedef struct _VQAHeader {
 	 * how many frames early to start reading. When the movie carries no
 	 * VQAHDF_SNDJUMP flag and this is zero, half a second is assumed.
 	 */
-	unsigned long AudioPreload;
+	unsigned int AudioPreload;
 } VQAHeader;
+static_assert(sizeof(VQAHeader) == 42, "the VQHD chunk is 42 bytes on disk");
 
 /* Version type. */
 #define VQAHD_VER1 1
@@ -236,9 +235,7 @@ typedef struct _VQAHeader {
 #define ID_VPKZ MAKE_ID('V','P','K','Z')
 #define ID_VPDZ MAKE_ID('V','P','D','Z')
 
-#if defined(__WATCOMC__) || defined(_MSC_VER)
 #pragma pack(pop)
-#endif
 
 #endif /* VQAFILE_H */
 

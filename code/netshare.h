@@ -50,7 +50,10 @@ void DisplayGameopts(HWND window, BOOL initialize);
 void LBSaveSelections(HWND win, Dictionary<Wstring,bool> & lbdict);
 void LBRestoreSelections(HWND win, Dictionary<Wstring,bool> & lbdict);
 
-char * CalcRandomMapDigest(void);
+// Eight hexadecimal digits, a terminator, and slack.
+constexpr int RANDOM_MAP_DIGEST_SIZE = 12;
+
+void CalcRandomMapDigest(char * digest, int bufsize);
 int CreateRandomMap(void);
 
 extern COLORREF PlayerColorTable[MAX_PLAYERS];

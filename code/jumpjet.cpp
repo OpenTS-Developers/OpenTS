@@ -64,7 +64,7 @@ JumpjetLocomotionClass::~JumpjetLocomotionClass(void)
 /// This asks whether the unit has a destination, not whether it happens to be in the air.
 /// </summary>
 /// <returns>bool; Does the jumpjet have somewhere to be?</returns>
-boolean STDMETHODCALLTYPE JumpjetLocomotionClass::Is_Moving(void)
+bool JumpjetLocomotionClass::Is_Moving(void)
 {
 	return(IsMoving);
 }
@@ -75,7 +75,7 @@ boolean STDMETHODCALLTYPE JumpjetLocomotionClass::Is_Moving(void)
 /// </summary>
 /// <returns>Returns with the destination coordinate. Otherwise, COORD_NONE is
 /// returned.</returns>
-Coord STDMETHODCALLTYPE JumpjetLocomotionClass::Destination(void)
+Coord JumpjetLocomotionClass::Destination(void)
 {
 	if (Is_Moving()) {
 		return(HeadToCoord);
@@ -92,7 +92,7 @@ Coord STDMETHODCALLTYPE JumpjetLocomotionClass::Destination(void)
 /// and resubmits the object to the map when its display layer changes. An ion storm will
 /// bring down anything caught off the ground.
 /// </summary>
-boolean STDMETHODCALLTYPE JumpjetLocomotionClass::Process(void)
+bool JumpjetLocomotionClass::Process(void)
 {
 	LayerType layer = In_Which_Layer();
 
@@ -167,7 +167,7 @@ boolean STDMETHODCALLTYPE JumpjetLocomotionClass::Process(void)
 /// </summary>
 /// <param name="to">The coordinate to fly to, or COORD_NONE to give the unit no
 /// destination at all.</param>
-void STDMETHODCALLTYPE JumpjetLocomotionClass::Move_To(Coord to)
+void JumpjetLocomotionClass::Move_To(Coord to)
 {
 	if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
 		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
@@ -200,7 +200,7 @@ void STDMETHODCALLTYPE JumpjetLocomotionClass::Move_To(Coord to)
 /// it could put down in. A unit with nowhere at all to land is destroyed rather than left
 /// hanging in the air.
 /// </summary>
-void STDMETHODCALLTYPE JumpjetLocomotionClass::Stop_Moving(void)
+void JumpjetLocomotionClass::Stop_Moving(void)
 {
 	if (IsMoving) {
 		if (HeadToCoord != COORD_NONE && CurrentState != GROUNDED && IsLanding) {
@@ -230,23 +230,15 @@ void STDMETHODCALLTYPE JumpjetLocomotionClass::Stop_Moving(void)
 /// through the locomotor's own facing tracker.
 /// </summary>
 /// <param name="coord">The direction the unit should be facing.</param>
-void STDMETHODCALLTYPE JumpjetLocomotionClass::Do_Turn(DirType coord)
+void JumpjetLocomotionClass::Do_Turn(DirType coord)
 {
 	LinkedTo->PrimaryFacing.Set(coord);
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// The persistence machinery uses the identifier to build the right kind of locomotor back
-/// when a save game is loaded.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if there is nowhere to put the answer.</returns>
-HRESULT STDMETHODCALLTYPE JumpjetLocomotionClass::GetClassID(CLSID * retval)
+ClassID JumpjetLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_JumpjetLocomotion;
-	return(S_OK);
+	return(ClassID_JumpjetLocomotion);
 }
 
 
@@ -277,7 +269,7 @@ void JumpjetLocomotionClass::Serialize(SaveStreamClass & stream)
 /// measured from the bridge deck rather than from the ground.
 /// </summary>
 /// <returns>Returns with the layer this object should be drawn in.</returns>
-LayerType STDMETHODCALLTYPE JumpjetLocomotionClass::In_Which_Layer(void)
+LayerType JumpjetLocomotionClass::In_Which_Layer(void)
 {
 	int height = LinkedTo->HeightAGL;
 	if (!LinkedTo->IsOnBridge) {
@@ -479,7 +471,7 @@ void JumpjetLocomotionClass::Process_Unknown(void)
 /// not it has been given a destination.
 /// </summary>
 /// <returns>bool; Is the jumpjet in flight toward somewhere?</returns>
-boolean STDMETHODCALLTYPE JumpjetLocomotionClass::Is_Moving_Now(void)
+bool JumpjetLocomotionClass::Is_Moving_Now(void)
 {
 	if (CurrentState != GROUNDED && CurrentState != HOVERING) {
 		return(true);
@@ -684,7 +676,7 @@ int JumpjetLocomotionClass::Desired_Flight_Level(void) const
 /// that reservation is given up when the object is lifted off the map.
 /// </summary>
 /// <param name="mark">The marking operation being performed, such as MARK_UP.</param>
-void STDMETHODCALLTYPE JumpjetLocomotionClass::Mark_All_Occupation_Bits(int mark)
+void JumpjetLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (mark == MARK_UP) {
 		Coord headto = Head_To_Coord();
@@ -702,7 +694,7 @@ void STDMETHODCALLTYPE JumpjetLocomotionClass::Mark_All_Occupation_Bits(int mark
 /// destination.
 /// </summary>
 /// <returns>Returns with the coordinate being flown to.</returns>
-Coord STDMETHODCALLTYPE JumpjetLocomotionClass::Head_To_Coord(void)
+Coord JumpjetLocomotionClass::Head_To_Coord(void)
 {
 	if (CurrentState == GROUNDED) {
 		return(LinkedTo->PositionCoord);

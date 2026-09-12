@@ -13,6 +13,8 @@ related:
   id: TACTION_TEXT_TRIGGER
 - type: key
   id: MessageDelay
+- type: format
+  id: opents-ini
 filenames:
 - TUTORIAL.INI
 ---

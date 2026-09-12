@@ -114,8 +114,8 @@ To publish a release:
 1. Confirm that the development entry names the release and that the commit to
    be tagged contains everything it ships.
 2. Create and publish the GitHub release from a `v<version>` tag on that
-   commit. The `Engine release` workflow builds the tag, attaches the packaged
-   zip, and appends
+   commit. The `Engine release` workflow builds the tag, attaches a packaged
+   zip per platform, and appends
    `python manual/tools/manage.py release-notes <version>` output to the release
    body.
 3. Tag before opening the next development cycle. The tagged commit's CMake

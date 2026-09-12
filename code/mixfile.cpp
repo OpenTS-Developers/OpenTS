@@ -534,7 +534,10 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	*/
 
 	/// Can't call strupr on a const string.
-	int crc = (CRCEngine()(strupr((char *)filename), strlen(filename))); //Calculate_CRC(strupr((char *)filename), strlen(filename));
+	char filename_upper[_MAX_PATH];
+	strcpy(filename_upper, filename);
+	strupr(filename_upper);
+	int crc = (CRCEngine()(filename_upper, strlen(filename_upper))); //Calculate_CRC(strupr((char *)filename), strlen(filename));
 
 	SubBlock key;
 	key.CRC = crc;

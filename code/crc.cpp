@@ -295,7 +295,7 @@ unsigned int  CRC::_Table[ 256 ] =
 /// <param name="crc">The CRC value to accumulate onto. Pass the result of a previous
 /// call in order to chain several blocks into one value.</param>
 /// <returns>Returns with the CRC of the block.</returns>
-unsigned int	CRC::Memory( unsigned char *data, unsigned int length, unsigned int crc )
+unsigned int	CRC::Memory( unsigned char const *data, unsigned int length, unsigned int crc )
 {
 	crc ^= 0xFFFFFFFF;									// invert previous CRC
 	while ( length-- ) {

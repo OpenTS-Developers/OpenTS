@@ -108,15 +108,6 @@
 #include <algorithm>
 
 
-/// <summary>
-/// Should this tracked object go at the head of its hash bucket?
-/// The radar draws only the first object it finds on any given pixel, so the local player's
-/// own units are placed at the front of the bucket and win the blip.
-/// </summary>
-/// <returns>bool; Does the tracked object belong to the local player?</returns>
-inline bool RadarTrackingStruct::Use_Head(void) const { return(Object->House == PlayerPtr); }
-
-
 RadarClass::RTacticalClass RadarClass::RadarButton;
 
 void const * RadarClass::RadarAnim  = NULL;
@@ -155,7 +146,6 @@ RadarClass::RadarClass(void) :
 	RadarCellWidth(0),
 	RadarCellHeight(0),
 	CellRedrawRect(0,0,0,0),
-	RadarTrackingTable(0),
 	PixelFlags(0),
 	ZoomFactor(0),
 	RadarScale(1),
@@ -178,7 +168,7 @@ RadarClass::RadarClass(void) :
 
 
 /// <summary>
-/// Destroys the radar map, releasing its surfaces and object tracking table.
+/// Destroys the radar map, releasing its surfaces and dropping its object tracking.
 /// </summary>
 RadarClass::~RadarClass(void)
 {
@@ -1341,7 +1331,7 @@ void RadarClass::Plot_Radar_Background(void)
 
 
 /// <summary>
-/// Adds an object to the radar tracking table.
+/// Adds an object to the radar tracking.
 /// This routine registers the object at a radar pixel so that it will be drawn as a blip on
 /// the next radar render. A unit that lands outside the radar surface is pulled back to the
 /// nearest edge pixel; a building in that position is simply not tracked.
@@ -1369,12 +1359,9 @@ void RadarClass::Radar_Track(TechnoClass * techno, Point2D point)
 		techno->RadarPos = point;
 	}
 
-	RADAR_HASH_TABLE::ObjectType track;
-	track.Key.Position = point;
-	track.Key.Object = techno;
-	track.Value = techno;
-
-	if (RadarTrackingTable->Add_Object(track, true)) {
+	// The radar draws only the head of a pixel's list, so the local player's own objects go
+	// there and win the blip.
+	if (RadarTracking.Track(point, techno, techno->House == PlayerPtr)) {
 		Radar_Pixel(point);
 		IsToRedraw = true;
 	}
@@ -1382,7 +1369,7 @@ void RadarClass::Radar_Track(TechnoClass * techno, Point2D point)
 
 
 /// <summary>
-/// Removes an object from the radar tracking table.
+/// Removes an object from the radar tracking.
 /// This routine is called when a tracked object moves off a radar pixel or leaves the game.
 /// The vacated pixel is flagged for redraw so that whatever lies beneath it shows through
 /// again.
@@ -1390,10 +1377,7 @@ void RadarClass::Radar_Track(TechnoClass * techno, Point2D point)
 /// <param name="point">The radar pixel the object was being tracked at.</param>
 void RadarClass::Radar_Untrack(TechnoClass * techno, Point2D point)
 {
-	RadarTrackingStruct track;
-	track.Object = techno;
-	track.Position = point;
-	if (RadarTrackingTable->Remove_Object(track, techno)) {
+	if (RadarTracking.Untrack(point, techno)) {
 		Radar_Pixel(point);
 		IsToRedraw = true;
 	}
@@ -1428,38 +1412,75 @@ Point2D RadarClass::Coord_To_Radar_Pixel(Coord const & coord, bool clip)
 }
 
 
-int RadarTrackingStruct::Hash_Old(RadarTrackingStruct const & s)
+bool RadarTrackingClass::Track(Point2D const & pixel, TechnoClass * object, bool head)
 {
-	return(((unsigned int)s.Object) + 251 * s.Position.X);
+	std::vector<TechnoClass *> & objects = Blips[std::pair<int, int>(pixel.X, pixel.Y)];
+
+	if (std::find(objects.begin(), objects.end(), object) != objects.end()) {
+		return(false);
+	}
+
+	if (head) {
+		objects.insert(objects.begin(), object);
+	} else {
+		objects.push_back(object);
+	}
+	return(true);
 }
 
-int RadarTrackingStruct::Hash2(RadarTrackingStruct const & s)
+
+bool RadarTrackingClass::Untrack(Point2D const & pixel, TechnoClass * object)
 {
-	return(s.Position.X + 251 * s.Position.Y);
+	auto found = Blips.find(std::pair<int, int>(pixel.X, pixel.Y));
+	if (found == Blips.end()) {
+		return(false);
+	}
+
+	std::vector<TechnoClass *> & objects = found->second;
+	auto entry = std::find(objects.begin(), objects.end(), object);
+	if (entry == objects.end()) {
+		return(false);
+	}
+
+	objects.erase(entry);
+	if (objects.empty()) {
+		Blips.erase(found);
+	}
+	return(true);
+}
+
+
+TechnoClass * RadarTrackingClass::First(Point2D const & pixel) const
+{
+	auto found = Blips.find(std::pair<int, int>(pixel.X, pixel.Y));
+	return(found == Blips.end() ? NULL : found->second.front());
+}
+
+
+TechnoClass * RadarTrackingClass::Last(Point2D const & pixel) const
+{
+	auto found = Blips.find(std::pair<int, int>(pixel.X, pixel.Y));
+	return(found == Blips.end() ? NULL : found->second.back());
 }
 
 
 /// <summary>
-/// Creates the radar's object tracking table.
+/// Empties the radar's object tracking.
 /// </summary>
 void RadarClass::Init_Radar(void)
 {
-	RadarTrackingTable = new RADAR_HASH_TABLE(10, 256, RadarTrackingStruct::Hash2);
+	RadarTracking.Clear();
 }
 
 
 /// <summary>
 /// Resets the radar map back to a blank slate.
-/// This routine throws the object tracking table away and rebuilds the radar image from the
+/// This routine throws the object tracking away and rebuilds the radar image from the
 /// current local map bounds. Every object is marked as untracked so that it registers itself
 /// again on its next logic pass.
 /// </summary>
 void RadarClass::Reset_Radar(void)
 {
-	if (RadarTrackingTable != NULL) {
-		delete RadarTrackingTable;
-	}
-
 	Init_Radar();
 	Map.Set_Local_Dimensions(Map.LocalRect);
 	Compute_Radar_Image();
@@ -1487,10 +1508,7 @@ void RadarClass::Clear_Radar(void)
 		delete BackgroundColors;
 		BackgroundColors = NULL;
 	}
-	if (RadarTrackingTable != NULL) {
-		delete RadarTrackingTable;
-		RadarTrackingTable = NULL;
-	}
+	RadarTracking.Clear();
 	if (PixelFlags != NULL) {
 		delete [] PixelFlags;
 		PixelFlags = NULL;
@@ -1500,7 +1518,7 @@ void RadarClass::Clear_Radar(void)
 
 /// <summary>
 /// Handles the radar repairs needed after a save game is loaded.
-/// The radar's surfaces and object tracking table are never saved, so this routine releases
+/// The radar's surfaces and object tracking are never saved, so this routine releases
 /// the ones the previous scenario left behind and builds fresh ones from the loaded map.
 /// Every object is marked as untracked so that it registers itself again as the game resumes.
 /// </summary>
@@ -1555,22 +1573,7 @@ void RadarClass::Plot_Radar_Pixel(Point2D const & point)
 		coord.Z = Map.Get_Height_GL(coord);
 		bool shadow	= (MainWindow && Map.Is_Shrouded(coord));
 
-		RadarTrackingStruct track;
-		track.Position = point;
-		track.Object = 0;
-
-		TechnoClass *tech = NULL;
-
-		RADAR_HASH_TABLE::BucketType &bucket = RadarTrackingTable->Buckets[track.Hash()];
-		int count = bucket.Count();
-
-		for (int index = 0; index < count; index++) {
-			TechnoClass *candidate = bucket[index].Key.Object;
-			if (bucket[index].Key == track) {
-				tech = candidate;
-				break;
-			}
-		}
+		TechnoClass *tech = RadarTracking.First(point);
 
 		if (tech != NULL) {
 			HouseClass *house = tech->House;
@@ -1616,48 +1619,36 @@ void RadarClass::Render_Tracked_Objects(void)
 {
 	memset(PixelFlags, 0, RadarSurface->Get_Width() * RadarSurface->Get_Height() / 8 + 1);
 
-	for (int b = 0; b < 256; b++) {
+	RadarTracking.For_Each_Pixel([this](Point2D const & pixel, TechnoClass * tech) {
+		int id = pixel.X + pixel.Y * RadarSurface->Get_Width();
+		int i = id >> 3;
+		int bit = 1 << (id & 7);
 
-		RADAR_HASH_TABLE::BucketType &bucket = RadarTrackingTable->Buckets[b];
+		if ((PixelFlags[i] & bit) == 0) {
+			PixelFlags[i] |= bit;
 
-		int count = bucket.Count();
+			ColorScheme *scheme = ColorSchemes[tech->House->Scheme];
 
-		RADAR_HASH_TABLE::ObjectType *ptr = &bucket[0];
-
-		for (int t = 0; t < count; t++) {
-			RadarTrackingStruct *track = &ptr[t].Key;
-			TechnoClass *tech = track->Object;
-
-			int id = track->Position.X + track->Position.Y * RadarSurface->Get_Width();
-			int i = id >> 3;
-			int bit = 1 << (id & 7);
-
-			if ((PixelFlags[i] & bit) == 0) {
-				PixelFlags[i] |= bit;
-
-				ColorScheme *scheme = ColorSchemes[tech->House->Scheme];
-
-				if (tech->RTTI == RTTI_INFANTRY) {
-					InfantryClass *inf = (InfantryClass *)tech;
-					if (inf->Class->IsDisguised) {
-						scheme = ColorSchemes[PlayerPtr->Scheme];
-					}
+			if (tech->RTTI == RTTI_INFANTRY) {
+				InfantryClass *inf = (InfantryClass *)tech;
+				if (inf->Class->IsDisguised) {
+					scheme = ColorSchemes[PlayerPtr->Scheme];
 				}
-
-				int color = scheme->Bright;
-				ConvertClass *drawer = scheme->Converter;
-				if (drawer->Bytes_Per_Pixel() == 1) {
-					unsigned char *translator = (unsigned char *)drawer->Get_Translate_Table();
-					color = translator[color];
-				} else {
-					unsigned short *translator = (unsigned short *)drawer->Get_Translate_Table();
-					color = translator[color];
-				}
-
-				RadarSurface->Put_Pixel(track->Position, color);
 			}
+
+			int color = scheme->Bright;
+			ConvertClass *drawer = scheme->Converter;
+			if (drawer->Bytes_Per_Pixel() == 1) {
+				unsigned char *translator = (unsigned char *)drawer->Get_Translate_Table();
+				color = translator[color];
+			} else {
+				unsigned short *translator = (unsigned short *)drawer->Get_Translate_Table();
+				color = translator[color];
+			}
+
+			RadarSurface->Put_Pixel(pixel, color);
 		}
-	}
+	});
 }
 
 
@@ -1830,15 +1821,9 @@ void RadarClass::Resolve_Radar_Point(Point2D const & point, Cell & cell, ObjectC
 {
 	Point2D pt = point - RadarRect.TopLeft;
 
-	RadarTrackingStruct track;
-	track.Object = NULL;
-	track.Position = pt;
-
-	/*
-	 * The lookup key carries no object, so Get matches on position alone (via the
-	 * non-const, position-only RadarTrackingStruct::operator==).
-	 */
-	RadarTrackingTable->Get(track, (TechnoClass *&)object);
+	// A click takes the object at the tail of the pixel's list, which is the last one to have
+	// been tracked there that did not go to the head.
+	object = RadarTracking.Last(pt);
 
 	if (object != NULL) {
 		cell = object->Destination_Coord();
@@ -1851,7 +1836,7 @@ void RadarClass::Resolve_Radar_Point(Point2D const & point, Cell & cell, ObjectC
 /// <summary>
 /// Lists the members the radar map holds.
 /// Only the pending update lists and the state of the radar display itself travel. The radar
-/// surfaces, the object tracking table and the picture geometry are all rebuilt from the
+/// surfaces, the object tracking and the picture geometry are all rebuilt from the
 /// loaded map by Post_Load_Radar_Fixup.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
@@ -1880,7 +1865,7 @@ void RadarClass::Serialize(SaveStreamClass & stream)
 	// RadarCellWidth -- measured again while the radar background is resampled.
 	// RadarCellHeight
 	// CellRedrawRect
-	// RadarTrackingTable -- rebuilt by Post_Load_Radar_Fixup, which also marks every object
+	// RadarTracking -- rebuilt by Post_Load_Radar_Fixup, which also marks every object
 	// untracked so that it registers itself again.
 	stream.Serialize(PixelStack);
 

@@ -86,8 +86,7 @@ void Voices::Init_Standalone(INIClass const & ini, const char * section, Standal
 	char buffer[32];
 	char entry[64];
 
-	strcpy(entry, Side == 3 ? "NOD" : "GDI");
-	strncat(entry, voice_name, sizeof(entry));
+	snprintf(entry, sizeof(entry), "%s%s", Side == 3 ? "NOD" : "GDI", voice_name);
 	ini.Get_String(section, entry, "", buffer, sizeof(buffer));
 	Parse_Index_List(buffer, StandaloneVoices[voice]);
 }
@@ -270,15 +269,14 @@ void Voices::VoiceCategory::Read_Voiceover(INIClass const & ini, const char * se
 {
 	char entry[64];
 	char buffer[32];
+	const char * side_name = side == 3 ? "NOD" : "GDI";
 
-	strcpy(entry, side == 3 ? "NOD" : "GDI");
-	strncat(entry, Name, sizeof(entry));
-	strncat(entry, outcome_string, sizeof(entry));
+	snprintf(entry, sizeof(entry), "%s%s%s", side_name, Name, outcome_string);
 
 	ini.Get_String(section, entry, "", buffer, sizeof(buffer));
 	Parse_Index_List(buffer, VoiceIndexes[outcome][0]);
 
-	strncat(entry, "Emphasis", sizeof(entry));
+	snprintf(entry, sizeof(entry), "%s%s%sEmphasis", side_name, Name, outcome_string);
 	ini.Get_String(section, entry, "", buffer, sizeof(buffer));
 	Parse_Index_List(buffer, VoiceIndexes[outcome][1]);
 }

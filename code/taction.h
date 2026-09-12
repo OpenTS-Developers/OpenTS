@@ -133,14 +133,14 @@ class TActionClass : public AbstractClass
 			VoxelAnimType				VAnim;
 			CrateType					Crate;
 			bool						Bool;		// Boolean value.
-			long						Value;
+			int							Value;
 			float						Float;
 		} Data;
 
 		TActionClass(void);
 		virtual ~TActionClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 

@@ -38,10 +38,10 @@
 
 DynamicVectorClass<VQHandle *> IngameVQ;
 
-long __cdecl VQAMixFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
-long __cdecl VQACCFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
-long __cdecl VQAEventHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
-long __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
+intptr_t __cdecl VQAMixFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
+intptr_t __cdecl VQACCFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
+intptr_t __cdecl VQAEventHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
+intptr_t __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
 
 bool VQA_Message_Handler(void)
 {
@@ -299,7 +299,7 @@ long VQAClass::CacheHandler(long action, void * buffer, long nbytes)
 			break;
 
 		case VQACMD_SEEK:
-			switch ((int)buffer) {
+			switch ((int)(intptr_t)buffer) {
 				case 1:
 					Cache.file_buffer_pos += nbytes;
 					rc = 0;
@@ -855,17 +855,17 @@ long VQAClass::CCFileHandler(long action, void * buffer, long nbytes)
 		**	VQAERR_SEEK.
 		*/
 		case VQACMD_SEEK:
-			error = (FileHandle.Seek(nbytes, (int)buffer) == 0);
+			error = (FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = FileHandle.Seek(nbytes - sizeof(tmp), (int)buffer) == 0;
+				error = FileHandle.Seek(nbytes - sizeof(tmp), (int)(intptr_t)buffer) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 				}
 			} else {
-				error = FileHandle.Seek(nbytes, (int)buffer) == 0;
+				error = FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 					if (error == 0) {
@@ -912,7 +912,7 @@ long VQAClass::CCFileHandler(long action, void * buffer, long nbytes)
 }
 
 
-long __cdecl VQACCFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
+intptr_t __cdecl VQACCFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
 {
 	VQAHandleP *vqap = (VQAHandleP *)vqa;
 	VQAConfig *config = &vqap->Config;
@@ -982,17 +982,17 @@ long VQAClass::MixFileHandler(long action, void * buffer, long nbytes)
 		**	VQAERR_SEEK.
 		*/
 		case VQACMD_SEEK:
-			error = (FileHandle.Seek(nbytes, (int)buffer) == 0);
+			error = (FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = FileHandle.Seek(nbytes - sizeof(tmp), (int)buffer) == 0;
+				error = FileHandle.Seek(nbytes - sizeof(tmp), (int)(intptr_t)buffer) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 				}
 			} else {
-				error = FileHandle.Seek(nbytes, (int)buffer) == 0;
+				error = FileHandle.Seek(nbytes, (int)(intptr_t)buffer) == 0;
 				if (error == 0) {
 					error = FileHandle.Read(&tmp, sizeof(tmp)) != sizeof(tmp);
 					if (error == 0) {
@@ -1039,7 +1039,7 @@ long VQAClass::MixFileHandler(long action, void * buffer, long nbytes)
 }
 
 
-long __cdecl VQAMixFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
+intptr_t __cdecl VQAMixFileHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
 {
 	VQAHandleP *vqap = (VQAHandleP *)vqa;
 	VQAConfig *config = &vqap->Config;
@@ -1049,7 +1049,7 @@ long __cdecl VQAMixFileHandler(VQAHandle * vqa, long action, void * buffer, long
 }
 
 
-long /*__cdecl*/ VQACacheHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
+intptr_t /*__cdecl*/ VQACacheHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
 {
 	VQAHandleP *vqap = (VQAHandleP *)vqa;
 	VQAConfig *config = &vqap->Config;
@@ -1059,14 +1059,14 @@ long /*__cdecl*/ VQACacheHandler(VQAHandle * vqa, long action, void * buffer, lo
 }
 
 
-long __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
+intptr_t __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
 {
-	long error = 0;
+	intptr_t error = 0;
 
 	switch (action) {
 
 		case VQAMEM_ALLOC:
-			error = (int)malloc(nbytes);
+			error = (intptr_t)malloc(nbytes);
 			break;
 
 		case VQAMEM_FREE:
@@ -1076,7 +1076,7 @@ long __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, long 
 
 		case VQAMEM_LOCK:
 		case VQAMEM_UNLOCK:
-			error = (int)buffer;
+			error = (intptr_t)buffer;
 			break;
 
 		default:
@@ -1106,13 +1106,13 @@ static void VQAScalePalette(unsigned char *palette)
 }
 
 
-long __cdecl VQAEventHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
+intptr_t __cdecl VQAEventHandler(VQAHandle * vqa, long action, void * buffer, long nbytes)
 {
 	VQAHandleP *vqap = (VQAHandleP *)vqa;
 	VQAConfig *config = &vqap->Config;
 	VQAClass *_this = config->Owner;
 
-	long error = 0;
+	intptr_t error = 0;
 
 	switch (action) {
 		case VQAEVENT_PALETTE:
@@ -1126,7 +1126,7 @@ long __cdecl VQAEventHandler(VQAHandle * vqa, long action, void * buffer, long n
 			break;
 
 		case VQAEVENT_LOCK:
-			error = (int)_this->Handle_Lock_Event();
+			error = (intptr_t)_this->Handle_Lock_Event();
 			break;
 
 		case VQAEVENT_UNLOCK:

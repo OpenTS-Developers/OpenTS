@@ -34,6 +34,8 @@
 
 #include "foot.h"
 
+#include <cstdint>
+
 class Surface;
 
 /****************************************************************************
@@ -134,8 +136,8 @@ class UnitClass : public FootClass
 		UnitClass(UnitTypeClass const * type = NULL, HouseClass * house = NULL);
 		virtual ~UnitClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual ClassID Class_ID(void) const override;
+		virtual bool Load(SaveStreamClass & stream) override;
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
 
@@ -219,7 +221,7 @@ class UnitClass : public FootClass
 		*/
 		virtual AbstractClass * Greatest_Threat(ThreatType threat, Coord const & coord, bool) const override;
 		virtual FacingType Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) const override;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param) override;
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual void AI(void) override;
 		virtual bool Ready_To_Commence(void) override;
 		virtual int Do_MISSION_ATTACK(void) override;

@@ -27,6 +27,25 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 {
 	SearchPaths = ini.Get_String("Paths", "SearchPaths", SearchPaths.c_str());
 	CarryScenarioFile = ini.Get_Bool("Saves", "CarryScenarioFile", CarryScenarioFile);
+	RulesFile = ini.Get_String("Files", "Rules", RulesFile.c_str());
+	RulesExpansionFile = ini.Get_String("Files", "RulesExpansion", RulesExpansionFile.c_str());
+	ArtFile = ini.Get_String("Files", "Art", ArtFile.c_str());
+	ArtExpansionFile = ini.Get_String("Files", "ArtExpansion", ArtExpansionFile.c_str());
+	AIFile = ini.Get_String("Files", "AI", AIFile.c_str());
+	AIExpansionFile = ini.Get_String("Files", "AIExpansion", AIExpansionFile.c_str());
+	SoundFile = ini.Get_String("Files", "Sound", SoundFile.c_str());
+	SoundExpansionFile = ini.Get_String("Files", "SoundExpansion", SoundExpansionFile.c_str());
+	ThemeFile = ini.Get_String("Files", "Theme", ThemeFile.c_str());
+	ThemeExpansionFile = ini.Get_String("Files", "ThemeExpansion", ThemeExpansionFile.c_str());
+	BattleFile = ini.Get_String("Files", "Battle", BattleFile.c_str());
+	BattleExpansionFile = ini.Get_String("Files", "BattleExpansion", BattleExpansionFile.c_str());
+	LanguageRulesFile = ini.Get_String("Files", "LanguageRules", LanguageRulesFile.c_str());
+	LanguageRulesExpansionFile = ini.Get_String("Files", "LanguageRulesExpansion", LanguageRulesExpansionFile.c_str());
+	TutorialFile = ini.Get_String("Files", "Tutorial", TutorialFile.c_str());
+	UIFile = ini.Get_String("Files", "UI", UIFile.c_str());
+	SettingsFile = ini.Get_String("Files", "Settings", SettingsFile.c_str());
+	SchemePaletteFile = ini.Get_String("Palettes", "Scheme", SchemePaletteFile.c_str());
+	GamePaletteFile = ini.Get_String("Palettes", "Game", GamePaletteFile.c_str());
 }
 
 

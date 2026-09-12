@@ -74,7 +74,6 @@
  *   CellClass::Wall_Update -- Updates the imagery for wall objects in cell.                   *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "cell.h"
@@ -2046,10 +2045,10 @@ void CellClass::Draw_Shroud_Or_Fog_Shape(Point2D const & drawpoint, Rect const &
 	int alpha_skip = inter_left - inter_right + AlphaBuffer->Get_Buffer_Width();
 
 	unsigned char * shapedata = (unsigned char *)shapes->Get_Data(shapenum);
-	unsigned short * alphaptr = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
+	unsigned short * alphaptr = AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
 
 	unsigned char * shapeptr = (unsigned char *)&shapedata[src_x + src_y * shaperect.Width];
-	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= (unsigned short *)AlphaBuffer->Get_Buffer_End()) {
+	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= AlphaBuffer->Get_Buffer_End()) {
 		for (int i = inter_top; i < inter_bottom; i++) {
 			for (int j = inter_left; j < inter_right; j++) {
 				unsigned char pixel = *shapeptr++;
@@ -2057,11 +2056,11 @@ void CellClass::Draw_Shroud_Or_Fog_Shape(Point2D const & drawpoint, Rect const &
 					*alphaptr = pixel;
 				}
 				alphaptr++;
-				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+				alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 			}
 			shapeptr += shape_skip;
 			alphaptr += alpha_skip;
-			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+			alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 		}
 	} else {
 		for (int i = inter_top; i < inter_bottom; i++) {
@@ -2117,10 +2116,10 @@ void CellClass::Draw_Fog_Shape(Point2D const & drawpoint, Rect const & cliprect,
 	int alpha_skip = inter_left - inter_right + AlphaBuffer->Get_Buffer_Width();
 
 	unsigned char * shapedata = (unsigned char *)shapes->Get_Data(shapenum);
-	unsigned short * alphaptr = (unsigned short *)AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
+	unsigned short * alphaptr = AlphaBuffer->Get_Buffer_Offset(Point2D(inter_left, inter_top - TacticalRect.Y));
 
 	unsigned char * shapeptr = (unsigned char *)&shapedata[src_x + src_y * shaperect.Width];
-	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= (unsigned short *)AlphaBuffer->Get_Buffer_End()) {
+	if (&alphaptr[inter_right - inter_left + (inter_bottom - inter_top) * AlphaBuffer->Get_Buffer_Width() + 2] >= AlphaBuffer->Get_Buffer_End()) {
 		for (int i = inter_top; i < inter_bottom; i++) {
 			for (int j = inter_left; j < inter_right; j++) {
 				unsigned char pixel = *shapeptr++;
@@ -2133,11 +2132,11 @@ void CellClass::Draw_Fog_Shape(Point2D const & drawpoint, Rect const & cliprect,
 					}
 				}
 				alphaptr++;
-				alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+				alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 			}
 			shapeptr += shape_skip;
 			alphaptr += alpha_skip;
-			alphaptr = (unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned)alphaptr);
+			alphaptr = AlphaBuffer->Wrap_Overflow(alphaptr);
 		}
 	} else {
 		for (int i = inter_top; i < inter_bottom; i++) {
@@ -3392,7 +3391,8 @@ int CellClass::Tiberium_Adjust(bool pregame)
 			*/
 			int value = tiberium->CreditValue;
 			if (pregame) {
-				Overlay = (OverlayType)Random_Pick((int)tiberium->Overlay, (int)&tiberium->Overlay[tiberium->Variety - 1]);
+				int first = tiberium->Overlay->HeapID;
+				Overlay = (OverlayType)Random_Pick(first, first + tiberium->Variety - 1);
 			}
 
 			/*
@@ -4365,6 +4365,13 @@ void CellClass::Serialize(SaveStreamClass & stream)
 
 	stream.Serialize(CellID);
 
+	// Post_Load installs the cell in the array slot this coordinate names, so a coordinate
+	// that names none is refused here, while the record can still be thrown away whole.
+	if (stream.Is_Loading() && Map.Cell_Slot(CellID) < 0) {
+		stream.Fail();
+		return;
+	}
+
 	/*
 	 * The snapshot list is built only once something standing here has been fogged over,
 	 * so whether the cell has one at all travels ahead of its contents.
@@ -4468,7 +4475,11 @@ void CellClass::Post_Load(void)
 {
 	BASECLASS::Post_Load();
 
-	int id = CellID.X + (CellID.Y << 9);
+	int id = Map.Cell_Slot(CellID);
+	if (id < 0) {
+		return;
+	}
+
 	if (Map.Array[id] != NULL) {
 		delete Map.Array[id];
 		Map.Array[id] = NULL;
@@ -5167,18 +5178,9 @@ void CellClass::Detach(AbstractClass const * target)
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This is the persistence requirement that lets the save system recognize a cell when a
-/// saved game is read back in.
-/// </summary>
-/// <param name="retval">Pointer to the location to store the class identifier in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE CellClass::GetClassID(CLSID * retval)
+ClassID CellClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_CellClass;
-	return(S_OK);
+	return(ClassID_CellClass);
 }
 
 

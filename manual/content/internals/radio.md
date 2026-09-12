@@ -88,8 +88,8 @@ The message parameter is an `int&`. It is used for both input and output:
 - `RADIO_ATTACK_THIS` interprets it as an `AbstractClass*`.
 - Building and aircraft handlers place cell or object pointers in it before sending a movement request.
 
-:::danger[The parameter carries pointers]
-The implementation casts pointers through `int`. This is valid only under the supported 32-bit build. A pointer-width change requires a complete audit of radio senders and receivers; changing the signature alone is not sufficient.
+:::danger[The parameter is untyped]
+The parameter is an `intptr_t`, wide enough to carry a pointer, and it is never saved or transmitted. What it holds is decided per message and checked by nothing, so a sender and a receiver that disagree go wrong silently.
 :::
 
 The overload without an explicit parameter passes the global `LParam` by reference. It is appropriate only for messages that do not consume or modify the parameter. Parameterized or nested protocols should use an explicit local value; otherwise a nested call can overwrite state shared with its caller.

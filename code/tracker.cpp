@@ -224,15 +224,13 @@ void Process_Deferred_Deletion(void)
 					break;
 				}
 			}
-			if (obj->Release()) {
-				if (typeid(BuildingClass) == typeid(*obj)
-				 || typeid(UnitClass) == typeid(*obj)
-				 || typeid(InfantryClass) == typeid(*obj)
-				 || typeid(AircraftClass) == typeid(*obj)) {
-					((ObjectClass *)obj)->IsActive = true;
-				}
-				delete obj;
+			if (typeid(BuildingClass) == typeid(*obj)
+			 || typeid(UnitClass) == typeid(*obj)
+			 || typeid(InfantryClass) == typeid(*obj)
+			 || typeid(AircraftClass) == typeid(*obj)) {
+				((ObjectClass *)obj)->IsActive = true;
 			}
+			delete obj;
 		} else {
 			++index;
 		}

@@ -308,7 +308,7 @@ long __cdecl Unlock_Audio_Handler(void)
 }
 
 
-long __cdecl Stream_Audio_Handler(VQAHandle * vqa, long action, void * buffer, long nbytes)
+intptr_t __cdecl Stream_Audio_Handler(VQAHandle * vqa, long action, void * buffer, long nbytes)
 {
 	VQAHandleP * vqap = (VQAHandleP *)vqa;
 

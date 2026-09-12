@@ -45,6 +45,7 @@
 #include "version.h"
 
 #include "globals.h"
+#include "opents_build.h"
 #include "rawfile.h"
 #include "utf8.h"
 #include "winstub.h"
@@ -487,55 +488,12 @@ unsigned int VersionClass::Max_Version(void)
 
 /// <summary>
 /// Fetches the product version string of the running program.
-/// This routine pulls the ProductVersion field out of the version resource of the executable
-/// itself, so the number shown to the player always matches the build that shipped. Use this
-/// routine for anything the player sees -- the menu version line, the crash report, and the
-/// sync error log all print it. The string is looked up once and remembered thereafter.
+/// The text is the build stamp, so the number shown to the player always matches the build
+/// that shipped. Use this routine for anything the player sees -- the menu version line, the
+/// crash report, and the sync error log all print it.
 /// </summary>
-/// <returns>Returns with the product version text. A placeholder is returned if the program
-/// carries no readable version resource.</returns>
+/// <returns>Returns with the product version text.</returns>
 char const * Version_Name(void)
 {
-	static char buffer[512] = {"zzz"};
-	static bool empty = true;
-
-	int size;
-	void *block;
-	unsigned int translate_len;
-	DWORD handle;
-
-	struct LANGANDCODEPAGE {
-		WORD wLanguage;
-		WORD wCodePage;
-	} *translate;
-
-	char query[128];
-	char filename[MAX_PATH];
-
-	if (empty) {
-
-		empty = false;
-
-		if (GetModuleFileName(ProgramInstance, filename, sizeof(filename)) > 0) {
-			handle = 1;
-			size = GetFileVersionInfoSize(filename, &handle);
-			if (size > 0) {
-				block = new BYTE[size];
-				if (GetFileVersionInfo(filename, handle, size, block)) {
-					VerQueryValue(block, "\\VarFileInfo\\Translation", (LPVOID *)&translate, &translate_len);
-					if (translate_len > 0) {
-						sprintf(query, "\\StringFileInfo\\%04X%04X\\ProductVersion", translate->wLanguage, translate->wCodePage);
-						VerQueryValue(block, query, (LPVOID *)&translate, &translate_len);
-						if (translate_len > 0) {
-							strcpy(buffer, (const char *)translate);
-						}
-					}
-				}
-
-				delete [] block;
-			}
-		}
-	}
-	return(buffer);
-
+	return(OPENTS_VERSION_DISPLAY);
 }

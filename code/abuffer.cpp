@@ -13,6 +13,7 @@
 
 #include "bsurface.h"
 
+#include <cstdint>
 #include <cstdlib>
 
 #define ABUFFER_COLOR  0x007F
@@ -33,14 +34,14 @@ ABuffer::ABuffer(Rect rect) :
 	BufferHeight(rect.Height)
 {
 	Bounds = rect;
-	BufferSize = BufferWidth * BufferHeight * ABUFFER_BPP;
+	BufferSize = BufferWidth * BufferHeight;
 	SurfacePtr = new BSurface(BufferWidth, BufferHeight, ABUFFER_BPP);
 
 	Fill(ABUFFER_COLOR);
 
-	BufferStart = (unsigned int)(SurfacePtr->Lock());
+	BufferStart = (unsigned short *)(SurfacePtr->Lock());
 	SurfaceOffset = 0;
-	BufferEnd = BufferStart + BufferWidth * BufferHeight * ABUFFER_BPP;
+	BufferEnd = BufferStart + BufferWidth * BufferHeight;
 	ScrollOffset = ABUFFER_MAX;
 
 	SurfacePtr->Unlock();
@@ -60,7 +61,7 @@ void ABuffer::Copy_To(Surface *surface, Rect rect)
 
 	unsigned short *surfbuffptr = (unsigned short *)(surface->Lock(Point2D(rect.X, rect.Y)));
 
-	unsigned short *pixptr = (unsigned short *)(BufferStart + SurfaceOffset);
+	unsigned short *pixptr = BufferStart + SurfaceOffset;
 
 	int steps = (surface->Stride() / ABUFFER_BPP) - rect.Width;
 
@@ -69,8 +70,8 @@ void ABuffer::Copy_To(Surface *surface, Rect rect)
 			for (int j = 0; j < rect.Width; ++j) {
 				*surfbuffptr = *pixptr;
 				++surfbuffptr;
-				pixptr = (unsigned short *)((unsigned char *)pixptr + ABUFFER_BPP);
-				pixptr = (unsigned short *)Wrap_Overflow((unsigned int)pixptr);
+				++pixptr;
+				pixptr = Wrap_Overflow(pixptr);
 			}
 			surfbuffptr += steps;
 		}
@@ -100,13 +101,13 @@ void ABuffer::Release_Surface(void)
 /// <param name="value">The alpha value to fill with.</param>
 /// <remarks>The run is not wrapped. The caller must split any fill that would otherwise
 /// run off the end of the buffer.</remarks>
-void ABuffer::Set(unsigned int dst, int size, unsigned short value)
+void ABuffer::Set(unsigned short * dst, int size, unsigned short value)
 {
 	/// Write a single pixel to bring the address up to an int boundary.
-	if ((unsigned int)dst & 2) {
+	if ((uintptr_t)dst & 2) {
 		if (size != 0) {
-			*(unsigned short *)dst = value;
-			dst = (unsigned int)((unsigned short *)dst + 1);
+			*dst = value;
+			++dst;
 			size--;
 		}
 	}
@@ -154,7 +155,7 @@ void ABuffer::Pan(int x, int y, unsigned short value)
 	int y_delta = y;
 
 	/// The column the buffer origin currently sits on.
-	int current_col = (SurfaceOffset / ABUFFER_BPP) % BufferWidth;
+	int current_col = SurfaceOffset % BufferWidth;
 
 	if (abs(x_delta) > BufferWidth || abs(y_delta) > BufferHeight) {
 		Fill(value);
@@ -166,11 +167,11 @@ void ABuffer::Pan(int x, int y, unsigned short value)
 		if (x_delta != 0) {
 
 			/// Slide the origin along the row and fold it back into the buffer.
-			SurfaceOffset += x_delta * ABUFFER_BPP;
+			SurfaceOffset += x_delta;
 
-			unsigned int new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
+			unsigned short * new_offset = Wrap_Underflow(BufferStart + SurfaceOffset);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the columns that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
@@ -195,7 +196,7 @@ void ABuffer::Pan(int x, int y, unsigned short value)
 		}
 
 		/// The row the buffer origin currently sits on.
-		int current_row = (SurfaceOffset / ABUFFER_BPP) / BufferWidth;
+		int current_row = SurfaceOffset / BufferWidth;
 
 		if (y_delta != 0) {
 			target_row = current_row + y_delta;
@@ -207,29 +208,29 @@ void ABuffer::Pan(int x, int y, unsigned short value)
 			int prev_offset = SurfaceOffset;
 
 			/// Slide the origin by whole rows and fold it back into the buffer.
-			SurfaceOffset += y_delta * BufferWidth * ABUFFER_BPP;
+			SurfaceOffset += y_delta * BufferWidth;
 
-			unsigned int new_offset = Wrap_Underflow(SurfaceOffset + BufferStart);
+			unsigned short * new_offset = Wrap_Underflow(BufferStart + SurfaceOffset);
 			new_offset = Wrap_Overflow(new_offset);
-			SurfaceOffset = new_offset - BufferStart;
+			SurfaceOffset = (int)(new_offset - BufferStart);
 
 			/// Reset the rows that have just come into view, in two pieces when the
 			/// exposed strip straddles the wrap point.
 			if (y_delta < 0) {
 				if (target_row < 0) {
-					Set(BufferStart, prev_offset / ABUFFER_BPP, value);
-					Set(BufferStart + SurfaceOffset, ((BufferWidth * BufferHeight * ABUFFER_BPP) - SurfaceOffset) / ABUFFER_BPP, value);
+					Set(BufferStart, prev_offset, value);
+					Set(BufferStart + SurfaceOffset, (BufferWidth * BufferHeight) - SurfaceOffset, value);
 
 				} else {
-					Set(BufferStart + SurfaceOffset, (prev_offset - SurfaceOffset) / ABUFFER_BPP, value);
+					Set(BufferStart + SurfaceOffset, prev_offset - SurfaceOffset, value);
 				}
 
 			} else if (target_row >= BufferHeight) {
-				Set(BufferStart + prev_offset, ((BufferWidth * BufferHeight * ABUFFER_BPP) - prev_offset) / ABUFFER_BPP, value);
-				Set(BufferStart, SurfaceOffset / ABUFFER_BPP, value);
+				Set(BufferStart + prev_offset, (BufferWidth * BufferHeight) - prev_offset, value);
+				Set(BufferStart, SurfaceOffset, value);
 
 			} else {
-				Set(BufferStart + prev_offset, (SurfaceOffset - prev_offset) / ABUFFER_BPP, value);
+				Set(BufferStart + prev_offset, SurfaceOffset - prev_offset, value);
 			}
 		}
 	}
@@ -268,20 +269,19 @@ bool ABuffer::Fill(unsigned short value, Rect rect)
 /// <param name="rect">The region of the buffer to reset.</param>
 void ABuffer::Update(Rect rect)
 {
-	unsigned int buffptr = Get_Buffer_Offset(Point2D(rect.X, rect.Y));
+	unsigned short * buffptr = Get_Buffer_Offset(Point2D(rect.X, rect.Y));
 
 	for (int i = 0; i < rect.Height; ++i) {
 
-		unsigned int size;
-		if ((buffptr + rect.Width * ABUFFER_BPP) >= BufferEnd) {
-			size = (BufferEnd - buffptr) / ABUFFER_BPP;
+		if ((buffptr + rect.Width) >= BufferEnd) {
+			int size = (int)(BufferEnd - buffptr);
 			Set(buffptr, size, ABUFFER_COLOR);
 			Set(BufferStart, rect.Width - size, ABUFFER_COLOR);
 		} else {
 			Set(buffptr, rect.Width, ABUFFER_COLOR);
 		}
 
-		buffptr += BufferWidth * ABUFFER_BPP;
+		buffptr += BufferWidth;
 		buffptr = Wrap_Overflow(buffptr);
 	}
 }
@@ -294,9 +294,9 @@ void ABuffer::Update(Rect rect)
 /// </summary>
 /// <param name="pos">The point within the buffer to locate.</param>
 /// <returns>Returns with the address of the pixel within the alpha buffer.</returns>
-unsigned int ABuffer::Get_Buffer_Offset(Point2D pos)
+unsigned short * ABuffer::Get_Buffer_Offset(Point2D pos)
 {
-	unsigned int buffptr = (unsigned int)SurfacePtr->Lock(pos);
+	unsigned short * buffptr = (unsigned short *)SurfacePtr->Lock(pos);
 
 	SurfacePtr->Unlock();
 

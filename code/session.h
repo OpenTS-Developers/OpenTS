@@ -38,6 +38,7 @@
 #include "house.h" /// needed for HOUSE_NAME_MAX
 #include "ipxaddr.h"
 #include "msglist.h"
+#include "nettiming.h"
 #include "special.h"
 #include "sun.h" /// needed for MAX_PLAYERS
 #include "typelist.h"
@@ -49,6 +50,8 @@
 #include "chat.hh"
 #include "dialog.hh"
 #include "diff.hh"
+
+#include <optional>
 
 //---------------------------------------------------------------------------
 // Forward declarations
@@ -462,8 +465,8 @@ struct GameOptionsType {
 	bool		ScrapMetal;			// A wreck leaves the animations its type names in ScrapExplosion.
 	char		ScenarioDescription [DESCRIP_MAX];	//Used on client machines only
 
-	bool Save(IStream * stream);
-	bool Load(IStream * stream);
+	bool Save(SaveStreamClass & stream);
+	bool Load(SaveStreamClass & stream);
 
 	void Serialize(SaveStreamClass & stream);
 };
@@ -489,6 +492,12 @@ class SessionClass
 	// Public interface
 	//------------------------------------------------------------------------
 	public:
+		struct NetworkTimingTransition
+		{
+			NetTiming::TimingTransitionState Timing;
+			unsigned int DesiredFrameRate = 30;
+		};
+
 		//.....................................................................
 		// Constructor/Destructor
 		//.....................................................................
@@ -517,6 +526,18 @@ class SessionClass
 		int Master_Player_ID(void) const;
 		void Announce_Master(void);
 		void Adopt_Master(int house, char const * name);
+		bool Is_Network_Timing_Player_Active(int id) const;
+		void Reset_Network_Timing(unsigned int frame);
+		bool Record_Network_Report(int id, unsigned int process_milliseconds, unsigned int round_trip_milliseconds, unsigned int stall_milliseconds,
+			unsigned int frame);
+		void Remove_Network_Timing_Player(int id, unsigned int frame);
+		NetTiming::TimingCensus Network_Timing_Census(unsigned int frame);
+		NetTiming::TimingEvaluation Evaluate_Network_Timing(NetTiming::TimingCensus const & census, unsigned int target_fps, unsigned int frame);
+		NetTiming::TimingSettings Network_Timing_Target(void) const;
+		void Prepare_Network_Timing_Master(int master_id, unsigned int frame);
+		void Apply_Network_Response_Time(unsigned int max_ahead, unsigned int event_frame);
+		NetTiming::ScheduleResult Schedule_Network_Timing(NetTiming::TimingSettings settings, unsigned int desired_frame_rate, unsigned int event_frame);
+		bool Advance_Network_Timing(unsigned int frame);
 		unsigned int Compute_Unique_ID(void);
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);
@@ -595,6 +616,10 @@ class SessionClass
 		//.....................................................................
 		unsigned int MaxAhead;
 		unsigned int FrameSendRate;
+		NetTiming::TimingReportCensus NetworkTimingReports;
+		NetTiming::BalancedTimingPolicy NetworkTimingPolicy;
+		std::optional<NetworkTimingTransition> PendingNetworkTiming;
+		int NetworkTimingPolicyOwner;
 
 		// How long this machine waits on another, in game ticks. Each machine keeps its own: the
 		// waits decide when this machine gives up, never what the match computes.
@@ -606,20 +631,15 @@ class SessionClass
 		int			ProcessTimer;
 		int			ProcessTicks;
 		int			ProcessFrames;
+		// Longest single wait for other players, in ticks. A report covers this interval and the previous one.
+		int			WorstStallTicks;
+		int			PreviousWorstStallTicks;
 
 		/*
 		 * This is the largest MaxAhead the game has run at, since the value only ever grows.
 		 * The sync bug report carries it as a measure of how bad the connection ever got.
 		 */
 		int			MaxMaxAhead;
-
-		/*
-		 * These are the frame timings Westwood Online worked out from the players' connection
-		 * speeds. While either is non-zero the host sends them out instead of measuring the
-		 * connections itself, and clears both once it has.
-		 */
-		int			PrecalcMaxAhead;
-		int			PrecalcDesiredFrameRate;
 
 		/*
 		 * These are the network statistics gathered for each player over the course of the
@@ -771,11 +791,7 @@ class SessionClass
 		 */
 		int PlayerLatency[MAX_PLAYERS];
 
-		/*
-		 * This scales up the measured connection response time when the frame timing is
-		 * computed (0 - 3), buying tolerance of a laggy link at the cost of responsiveness.
-		 */
-		int LatencyFudge;
+		int LatencyFudge; // Legacy synchronized option retained for event and replay compatibility.
 
 		//.....................................................................
 		// For finding Sync Bugs

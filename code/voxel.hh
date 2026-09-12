@@ -82,6 +82,7 @@ struct VoxelHeaderStruct
 	 */
 	int DataSize;
 };
+static_assert(sizeof(VoxelHeaderStruct) == 32, "the VXL header before the remap bytes and palette is 32 bytes on disk");
 
 
 /*
@@ -105,6 +106,7 @@ struct VoxelLayerHeaderStruct
 	int Unused1;
 	unsigned char Unused2;
 };
+static_assert(sizeof(VoxelLayerHeaderStruct) == 28, "the VXL section header is 28 bytes on disk; the last byte is padded out to a word");
 
 
 /*
@@ -164,6 +166,7 @@ struct VoxelLayerInfoStruct
 	 */
 	unsigned char NormalType;
 };
+static_assert(sizeof(VoxelLayerInfoStruct) == 92, "the VXL section tailer is 92 bytes on disk");
 
 
 /*
@@ -189,3 +192,4 @@ struct VoxelAnimFileHeaderStruct
 	 */
 	int LayerCount;
 };
+static_assert(sizeof(VoxelAnimFileHeaderStruct) == 24, "the HVA header is 24 bytes on disk");

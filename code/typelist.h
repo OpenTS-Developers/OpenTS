@@ -19,7 +19,6 @@
 #include "win.h"
 
 #include <new>
-#include <objidl.h>
 
 template<typename T>
 class TypeList : public DynamicVectorClass<T>

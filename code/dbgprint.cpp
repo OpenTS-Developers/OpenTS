@@ -385,7 +385,7 @@ R"ART(
 
 	char line[512];
 
-	snprintf(line, sizeof(line), "Version  : OpenTS %s (%s build)\n", OPENTS_VERSION, BuildType);
+	snprintf(line, sizeof(line), "Version  : OpenTS %s (%s %s build)\n", OPENTS_VERSION, OPENTS_ARCH, BuildType);
 	Write_Message_Locked(line, false);
 
 	snprintf(line, sizeof(line), "Commit   : %s on %s%s\n", OPENTS_COMMIT, OPENTS_BRANCH,

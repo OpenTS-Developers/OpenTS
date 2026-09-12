@@ -1,8 +1,9 @@
 # Contributing to OpenTS
 
 OpenTS welcomes focused bug reports, proposals, documentation changes, and
-pull requests. Visual Studio 2022 Win32 Debug and Release are the supported
-development targets. A successful build is not runtime evidence.
+pull requests. Visual Studio 2022 Win32 and x64, each in Debug and Release,
+are the supported development targets. A successful build is not runtime
+evidence.
 
 ## Before starting
 
@@ -134,10 +135,10 @@ or behavior that optimization may affect. Existing MSVC warnings remain;
 identify new warnings instead of describing the build as warning-free.
 
 Behavior changes need focused, reproducible evidence. Automated tests must not
-require proprietary game assets or original executables. CI builds Win32 Debug
-and Release and runs CTest for ready engine pull requests; draft pull requests
-do not run these checks until marked ready. This is build evidence and does not
-replace any runtime testing the change needs.
+require proprietary game assets or original executables. CI builds Debug and
+Release on both platforms and runs CTest for ready engine pull requests; draft
+pull requests do not run these checks until marked ready. This is build
+evidence and does not replace any runtime testing the change needs.
 [Building OpenTS](docs/BUILDING.md#continuous-integration) documents the
 workflow.
 

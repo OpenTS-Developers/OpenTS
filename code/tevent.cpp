@@ -39,7 +39,6 @@
  *   TEventClass::operator () -- Action operator to see if event is satisfied.                 *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tevent.h"
@@ -491,18 +490,23 @@ bool TEventClass::operator () (TEventType event, HouseClass const * house, Objec
  * HISTORY:                                                                                    *
  *   11/28/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void TEventClass::Build_INI_Entry(char * ptr) const
+void TEventClass::Build_INI_Entry(char * ptr, std::size_t size) const
 {
 	int code = 0;
 	int val = Data.Value;
 	NeedType need = Event_Needs(Event);
+
+	// The caller has already put the event count and a comma in the buffer, so this appends.
+	std::size_t const used = strlen(ptr);
+	if (used >= size) {
+		return;
+	}
+
 	if (Team != NULL) {
 		code = 1;
-		ptr += strlen(ptr);
-		wsprintf(ptr, "%d,%d,%s", Event, code, (char const *)Team->IniName);
+		snprintf(ptr + used, size - used, "%d,%d,%s", Event, code, (char const *)Team->IniName);
 	} else {
-		ptr += strlen(ptr);
-		wsprintf(ptr, "%d,%d,%d", Event, code, val);
+		snprintf(ptr + used, size - used, "%d,%d,%d", Event, code, val);
 	}
 }
 
@@ -839,18 +843,9 @@ void TEventClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is used by the persistence machinery to recognize what kind of object it
-/// is about to load back.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TEventClass::GetClassID(CLSID * retval)
+ClassID TEventClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_EventClass;
-	return(S_OK);
+	return(ClassID_EventClass);
 }
 
 

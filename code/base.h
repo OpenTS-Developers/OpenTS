@@ -37,7 +37,6 @@
 #include "house.hh"
 #include "struct.hh"
 
-#include <unknwn.h>
 
 
 class CCINIClass;
@@ -103,8 +102,6 @@ class BaseClass
 		*/
 		void Read_INI(CCINIClass const & ini, char const * hname);
 		void Write_INI(CCINIClass & ini, char const * hname);
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream);
-		virtual HRESULT STDMETHODCALLTYPE Save(IStream * stream);
 		void Serialize(SaveStreamClass & stream);
 		virtual void Compute_CRC(CRCEngine &) const;
 

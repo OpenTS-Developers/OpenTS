@@ -18,6 +18,11 @@ on:
         required: false
         default: '["Debug", "Release"]'
         type: string
+      platforms:
+        description: "JSON array of target platforms, named as the generator's -A argument."
+        required: false
+        default: '["Win32", "x64"]'
+        type: string
       official:
         description: "Configure an official build, which reports the version it declares without a commit."
         required: false
@@ -29,7 +34,7 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.configuration }}
+    name: ${{ matrix.platform }} ${{ matrix.configuration }}
     # The runner image has to carry the Visual Studio 2022 toolchain that docs/BUILDING.md
     # names as the supported one. windows-2025 and windows-latest resolve to an image built
     # around Visual Studio 2026 and have no 2022 instance for the generator to find, so they
@@ -39,6 +44,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        platform: ${{ fromJSON(inputs.platforms) }}
         configuration: ${{ fromJSON(inputs.configurations) }}
     steps:
       - name: Check out OpenTS
@@ -57,12 +63,9 @@ jobs:
         shell: bash
         run: echo "::add-matcher::.github/msvc-problem-matcher.json"
 
-      # TS_RUN_DIR receives the build's runtime files, and defaults to a game installation.
-      # An empty directory holds this build's output and none of the game's own files.
       - name: Configure
         run: >
-          cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
-          -DTS_RUN_DIR=${{ github.workspace }}/artifact
+          cmake -S . -B build -G "Visual Studio 17 2022" -A ${{ matrix.platform }}
           -DOPENTS_OFFICIAL_BUILD=${{ inputs.official && 'ON' || 'OFF' }}
 
       - name: Build
@@ -71,9 +74,19 @@ jobs:
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --output-on-failure
 
-      - name: Stage license notices
+      - name: Stage runtime files and license notices
         shell: bash
         run: |
+          mkdir -p artifact
+          # The artifact carries what a downloaded build needs to run and debug itself, so it
+          # names those files rather than taking the output directory wholesale. The symbol
+          # file answers everything the linker map would, and is what the crash handler reads.
+          # The ui directory travels whole: the game resolves its files by name at runtime.
+          engine=Game
+          if [ "${{ matrix.configuration }}" = "Debug" ]; then engine=GameD; fi
+          built=build/bin/${{ matrix.configuration }}
+          cp "${built}/${engine}.exe" "${built}/${engine}.pdb" "${built}/Language.dll" artifact/
+          cp -r "${built}/ui" artifact/ui
           cp LICENSE.md THIRD_PARTY_NOTICES.md artifact/
           mkdir -p artifact/OpenTS_THIRD_PARTY_LICENSES
           cp thirdparty/bgfx.cmake/bgfx/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/bgfx.txt
@@ -85,6 +98,7 @@ jobs:
           cp thirdparty/licenses/khronos-opengl.txt artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-opengl.txt
           cp thirdparty/miniaudio/LICENSE artifact/OpenTS_THIRD_PARTY_LICENSES/miniaudio.txt
           cp thirdparty/licenses/stb-vorbis.txt artifact/OpenTS_THIRD_PARTY_LICENSES/stb-vorbis.txt
+          cp thirdparty/licenses/lzo.txt artifact/OpenTS_THIRD_PARTY_LICENSES/lzo.txt
           cat thirdparty/licenses/khronos-vulkan-notice.txt \
               thirdparty/bgfx.cmake/bimg/3rdparty/astc-encoder/LICENSE.txt \
               > artifact/OpenTS_THIRD_PARTY_LICENSES/khronos-vulkan.txt
@@ -101,11 +115,7 @@ jobs:
       - name: Upload runtime files
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: ${{ inputs.artifact-prefix }}-${{ matrix.configuration }}-${{ steps.commit.outputs.short }}
-          # The symbol file answers everything the linker map would, and is what the crash
-          # handler itself reads, so a downloaded build has no use for the map.
-          path: |
-            artifact
-            !artifact/*.map
+          name: ${{ inputs.artifact-prefix }}-${{ matrix.platform }}-${{ matrix.configuration }}-${{ steps.commit.outputs.short }}
+          path: artifact
           if-no-files-found: error
           retention-days: ${{ inputs.artifact-retention-days }}

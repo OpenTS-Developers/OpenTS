@@ -59,6 +59,10 @@ struct SendQueueType {
 	unsigned int IsUndeliverable : 1;  /// 1 = gave up on it (retries or timeout)
 	unsigned int FirstTime;        // time this packet was first sent
 	unsigned int LastTime;         // time this packet was last sent
+	// The adaptive retry works in milliseconds; FirstTime and LastTime above stay in ticks.
+	unsigned int FirstTimeMilliseconds = 0;
+	unsigned int LastTimeMilliseconds = 0;
+	unsigned int RetransmitTimeoutMilliseconds = 0; // the RTO in force at the first transmission
 	unsigned int SendCount;        // # of times this packet has been sent
 	int BufLen;                     // size of the packet stored in this entry
 	char *Buffer;                   // the data packet

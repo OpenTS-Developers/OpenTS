@@ -50,7 +50,6 @@
  *   Shorten_Attached_Anims -- Reduces attached animation durations.                           *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "anim.h"
@@ -245,7 +244,7 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 /// <summary>
 /// Constructs a blank animation object.
 /// This constructor serves the load system, which creates an empty animation through the
-/// class factory and then fills it in from the save game. The animation joins the master
+/// class table and then fills it in from the save game. The animation joins the master
 /// animation list but has no type and is nowhere on the map.
 /// </summary>
 AnimClass::AnimClass(void) :
@@ -1729,18 +1728,9 @@ void AnimClass::Post_Load_Game(void)
 }
 
 
-/// <summary>
-/// Fetches the persistent class identifier for animation objects.
-/// The save and load machinery uses this identifier to recreate the right kind of object
-/// when a game is restored.
-/// </summary>
-/// <param name="retval">Pointer to the location to store the class identifier at.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE AnimClass::GetClassID(CLSID * retval)
+ClassID AnimClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_AnimClass;
-	return(S_OK);
+	return(ClassID_AnimClass);
 }
 
 
