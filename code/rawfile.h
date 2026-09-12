@@ -42,8 +42,8 @@
 #include <cerrno>
 #include <climits>
 #include <cstddef>
-#include <cstdlib>
 #include <cstdio>
+#include <cstdlib>
 
 #ifndef WWERROR
 #define WWERROR	-1

@@ -52,6 +52,7 @@
 #include "always.h"
 
 #include "rawfile.h"
+
 #include "file.h"
 
 #include <cstddef>
@@ -60,14 +61,14 @@
 #include <cstring>
 
 #ifndef _WIN32
+#include <ctime>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <utime.h>
-#include <ctime>
 #define _unlink         unlink
 #else
-#include <windows.h>
 #include <io.h>
+#include <windows.h>
 #endif
 
 

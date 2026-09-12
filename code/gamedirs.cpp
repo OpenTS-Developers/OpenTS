@@ -14,10 +14,10 @@
 #include "cdfile.h"
 #include "dbgprint.h"
 
-#include <windows.h>
 #include <algorithm>
-#include <filesystem>
 #include <cstring>
+#include <filesystem>
+#include <windows.h>
 
 /*
  * The directories the command line named. Empty means the game's own directory, so an

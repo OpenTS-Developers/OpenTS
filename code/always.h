@@ -111,9 +111,9 @@
 #define memicmp  strncasecmp
 #define __cdecl
 
+#include <cctype>
 #include <cstdio>
 #include <cstring>
-#include <cctype>
 
 inline static void _makepath(char* path, const char* drive, const char* dir, const char* fname, const char* ext)
 {
