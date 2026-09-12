@@ -194,6 +194,7 @@ char const * RawFileClass::Set_Name(char const * filename)
 		return(NULL);
 	}
 
+#ifndef _WIN32
 	/*
 	** If we ever save this file, make sure we save it in lowercase but
 	** if Resolve_File finds an actual file on-disk we use the real name
@@ -205,6 +206,7 @@ char const * RawFileClass::Set_Name(char const * filename)
 	** Try to locate an existing file ignoring case, updates Filename
 	*/
 	Resolve_File(Filename);
+#endif
 
 	return(Filename);
 }
