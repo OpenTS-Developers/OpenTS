@@ -503,6 +503,7 @@ int RawFileClass::Read(void * buffer, int size)
 	while (size > 0) {
 		clearerr(Handle);
 		bytesread = fread(buffer, 1, size, Handle);
+		buffer = (char *)buffer + bytesread;
 		if (ferror(Handle)) {
 			size -= bytesread;
 			total += bytesread;
