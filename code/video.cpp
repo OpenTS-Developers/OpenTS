@@ -25,6 +25,7 @@
 #include "misc.h"
 #include "surface.h"
 #include "ui/uishell.h"
+#include "videodirty.h"
 #include "wincursor.h"
 
 #include <cstdlib>
@@ -46,14 +47,10 @@ bool WindowedMode = false;
 static bool _Initialized = false;
 static VideoScaleInfo _ScaleInfo;
 
-// Set whenever the visible surface is written to, and cleared once that frame has been
-// presented. A frame that is skipped for pacing stays marked, so the next present shows
-// the newest content rather than a stale one.
-static bool _FrameIsDirty = false;
-
-// Set when the UI overlay changed, so a present is due even while the frame is not. The
-// frame is then presented again without being uploaded again.
-static bool _OverlayIsDirty = false;
+// What the screen is owed: a frame, an overlay, or both. A frame skipped for pacing stays
+// marked, so the next present shows the newest content rather than a stale one, and an
+// overlay change alone presents the frame again without uploading it again.
+static VideoDirtyStateClass _Dirty;
 
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
@@ -197,8 +194,7 @@ void Video_Shutdown(void)
 	Win_Cursor_Shutdown();
 	Backend_Shutdown();
 	_Initialized = false;
-	_FrameIsDirty = false;
-	_OverlayIsDirty = false;
+	_Dirty.Reset();
 	_PresentsThisSecond = 0;
 	_PresentsLastSecond = 0;
 	_PresentSecondStart = 0;
@@ -229,7 +225,7 @@ bool Video_Set_Mode(int width, int height)
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
 	UIShell.On_Video_Change();
-	_FrameIsDirty = true;
+	_Dirty.Invalidate_Frame();
 	return(true);
 }
 
@@ -272,7 +268,7 @@ void Video_Set_Refresh_Rate(int refreshrate)
 /// </summary>
 void Video_Mark_Dirty(void)
 {
-	_FrameIsDirty = true;
+	_Dirty.Mark_Game();
 }
 
 
@@ -281,17 +277,16 @@ void Video_Mark_Dirty(void)
 /// </summary>
 void Video_Mark_Overlay_Dirty(void)
 {
-	_OverlayIsDirty = true;
+	_Dirty.Mark_Overlay();
 }
 
 
 /// <summary>
 /// Puts the frame on the screen with the UI overlay over it.
-/// Both marks are cleared before presenting, so anything invalidated while the present is
+/// The marks are taken before presenting, so anything invalidated while the present is
 /// under way is kept for the next one rather than lost with this one.
 /// </summary>
-/// <param name="uploadframe">Does the visible surface hold newer pixels than the renderer?</param>
-static void Present(bool uploadframe)
+static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
@@ -304,8 +299,7 @@ static void Present(bool uploadframe)
 		return;
 	}
 
-	_FrameIsDirty = false;
-	_OverlayIsDirty = false;
+	VideoDirtySnapshotType snapshot = _Dirty.Consume();
 	_LastPresentTime = timeGetTime();
 
 	if (_LastPresentTime - _PresentSecondStart >= 1000) {
@@ -316,7 +310,10 @@ static void Present(bool uploadframe)
 	_PresentsThisSecond++;
 
 	_Presenting = true;
-	if (Backend_Present(uploadframe ? pixels : NULL, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode())) {
+	if (Backend_Present(snapshot.Game ? pixels : NULL, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode())) {
+		if (snapshot.Game) {
+			_Dirty.Upload_Completed();
+		}
 		UIShell.Render_Overlay();
 		Backend_End_Frame();
 	}
@@ -329,7 +326,8 @@ static void Present(bool uploadframe)
 /// </summary>
 void Video_Present(void)
 {
-	Present(true);
+	_Dirty.Mark_Game();
+	Present();
 }
 
 
@@ -341,7 +339,7 @@ void Video_Present(void)
 /// </summary>
 void Video_Present_If_Dirty(void)
 {
-	if (!_FrameIsDirty && !_OverlayIsDirty) {
+	if (!_Dirty.Is_Dirty()) {
 		return;
 	}
 
@@ -350,7 +348,7 @@ void Video_Present_If_Dirty(void)
 		return;
 	}
 
-	Present(_FrameIsDirty);
+	Present();
 }
 
 
