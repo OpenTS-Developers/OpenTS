@@ -225,6 +225,8 @@ UI_Render_Overlay();            // VIEW_UI, then VIEW_DEV
 Backend_End_Frame();            // bgfx::frame()
 ```
 
+`Backend_End_Frame` runs whether or not `Backend_Present` succeeded; it ends
+a frame only when one was begun, so a refused present leaves nothing pending.
 No other code begins or ends a bgfx frame. The view identifiers move from
 `bgfxbackend.cpp` into a small shared header so both translation units agree
 on the order. The overlay views use the frame destination rectangle from
@@ -251,7 +253,7 @@ methods:
 | Blending | `ONE, INV_SRC_ALPHA`; vertex colors follow the same premultiplied contract with no double premultiplication. |
 | Scissor | `bgfx::setScissor` in physical target coordinates, intersected with the viewport, empty regions handled. |
 | Projection | The overlay view's orthographic transform; no game-image filter state inherited. |
-| Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a full redraw requested; existing documents redraw without reload. |
+| Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a present without an upload requested; existing documents redraw without reload. |
 
 The program is bgfx's embedded debug-draw texture shader pair
 (`vs_debugdraw_fill_texture`, `fs_debugdraw_fill_texture`). The imgui pair the
@@ -266,15 +268,25 @@ document check enforces it.
 
 ### Invalidation
 
-`Video_Present_If_Dirty` grows a second dirty flag for the overlay: a present
-happens when either flag is set, but the texture upload happens only when the
-frame is dirty. RmlUi has no "needs redraw" query, so the shell marks the
-overlay dirty on every tick that a document is visible or an ImGui window is
-open, and the present pacing caps the rate. Closing or hiding a document also
-marks the overlay dirty so its pixels disappear. A visible menu at 4K then
-costs a few draw calls per refresh, not a 16 MB upload. Invalidation raised
-during a present is kept for the next one rather than cleared with the
-current frame.
+The presenter keeps a game mark, an overlay mark and whether the renderer
+holds an uploaded frame (`VideoDirtyStateClass`, `code/videodirty.h`). A
+present happens when either mark is set; the frame is uploaded only when the
+game mark is set or the renderer has never received it. RmlUi has no "needs
+redraw" query, so the shell marks the overlay dirty on every tick that a
+document is visible or an ImGui window is open, and the present pacing caps
+the rate. Closing or hiding a document also marks the overlay dirty so its
+pixels disappear. A visible menu at 4K then costs a few draw calls per
+refresh, not a 16 MB upload.
+
+A present consumes both marks first, so invalidation raised while it runs is
+kept for the next one rather than cleared with the current frame. A present
+the renderer refuses restores what it consumed and is retried as at least an
+overlay present. A minimized window presents nothing and keeps its marks for
+the restore. A resize arriving inside a present is applied after it. A window
+resize or refresh-rate change marks only the overlay, since the renderer
+keeps the uploaded frame across a reset; `Video_Present_Count` and
+`Video_Frame_Upload_Count` on the developer overlay show a drag-resize
+presenting without uploading.
 
 Movies keep their own presenter path; the shell renders nothing while a movie
 plays.

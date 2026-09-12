@@ -353,6 +353,7 @@ static void Draw_Benchmark_Window(void)
 
 	ImGui::Text("Logic frames per second %u, frame %d", LastFramesPerSecond, Frame);
 	ImGui::Text("Presents per second %u, present interval %u ms", Video_Presents_Per_Second(), Video_Present_Interval());
+	ImGui::Text("%llu presents and %llu frame uploads since start", (unsigned long long)Video_Present_Count(), (unsigned long long)Video_Frame_Upload_Count());
 	ImGui::Text("Overlay ticks per second %.0f", ImGui::GetIO().Framerate);
 	ImGui::Checkbox("Show the Dear ImGui demo window", &_ShowDemo);
 	ImGui::Separator();

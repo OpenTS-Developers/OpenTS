@@ -28,6 +28,7 @@
 #include "videodirty.h"
 #include "wincursor.h"
 
+#include <cstdint>
 #include <cstdlib>
 
 
@@ -62,8 +63,15 @@ static unsigned int _PresentsLastSecond = 0;
 static unsigned int _PresentSecondStart = 0;
 
 // Presents can nest, because a dialog repainting itself presents from inside the paint
-// that the engine's own present provoked.
+// that the engine's own present provoked. A resize that arrives inside one waits for it.
 static bool _Presenting = false;
+static bool _ResizePending = false;
+static int _PendingWidth = 0;
+static int _PendingHeight = 0;
+
+// Presents and frame uploads since the presenter started, for the developer overlays.
+static std::uint64_t _PresentCount = 0;
+static std::uint64_t _FrameUploadCount = 0;
 
 
 /// <summary>
@@ -195,9 +203,12 @@ void Video_Shutdown(void)
 	Backend_Shutdown();
 	_Initialized = false;
 	_Dirty.Reset();
+	_ResizePending = false;
 	_PresentsThisSecond = 0;
 	_PresentsLastSecond = 0;
 	_PresentSecondStart = 0;
+	_PresentCount = 0;
+	_FrameUploadCount = 0;
 }
 
 
@@ -239,13 +250,23 @@ void Video_On_Resize(int drawablewidth, int drawableheight)
 		return;
 	}
 
+	// The renderer cannot be reset inside a frame it is drawing.
+	if (_Presenting) {
+		_ResizePending = true;
+		_PendingWidth = drawablewidth;
+		_PendingHeight = drawableheight;
+		DebugString("Video: resize to %dx%d deferred past the present under way\n", drawablewidth, drawableheight);
+		return;
+	}
+
 	_ScaleInfo.DrawableWidth = drawablewidth;
 	_ScaleInfo.DrawableHeight = drawableheight;
 	Backend_On_Resize(drawablewidth, drawableheight);
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
 	UIShell.On_Video_Change();
-	Video_Mark_Dirty();
+	// The renderer keeps the uploaded frame across a reset, so only the overlay is owed.
+	Video_Mark_Overlay_Dirty();
 }
 
 
@@ -259,7 +280,7 @@ void Video_Set_Refresh_Rate(int refreshrate)
 	}
 
 	Update_Present_Interval(refreshrate);
-	Video_Mark_Dirty();
+	Video_Mark_Overlay_Dirty();
 }
 
 
@@ -284,40 +305,59 @@ void Video_Mark_Overlay_Dirty(void)
 /// <summary>
 /// Puts the frame on the screen with the UI overlay over it.
 /// The marks are taken before presenting, so anything invalidated while the present is
-/// under way is kept for the next one rather than lost with this one.
+/// under way is kept for the next one rather than lost with this one; a present the
+/// renderer refuses gives them back and is retried. A minimized window presents nothing
+/// and keeps its marks for the restore.
 /// </summary>
 static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
 	}
-
-	DSurface * surface = (DSurface *)VisibleSurface;
-	void * pixels = surface->Get_Buffer();
-
-	if (pixels == NULL) {
+	if (MainWindow != NULL && IsIconic(MainWindow)) {
 		return;
 	}
 
 	VideoDirtySnapshotType snapshot = _Dirty.Consume();
+
+	DSurface * surface = (DSurface *)VisibleSurface;
+	void * pixels = snapshot.Upload ? surface->Get_Buffer() : NULL;
+	if (snapshot.Upload && pixels == NULL) {
+		_Dirty.Restore(snapshot);
+		return;
+	}
+
 	_LastPresentTime = timeGetTime();
 
-	if (_LastPresentTime - _PresentSecondStart >= 1000) {
-		_PresentsLastSecond = _PresentsThisSecond;
-		_PresentsThisSecond = 0;
-		_PresentSecondStart = _LastPresentTime;
-	}
-	_PresentsThisSecond++;
-
 	_Presenting = true;
-	if (Backend_Present(snapshot.Game ? pixels : NULL, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode())) {
-		if (snapshot.Game) {
+	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode());
+	if (presented) {
+		if (snapshot.Upload) {
 			_Dirty.Upload_Completed();
+			_FrameUploadCount++;
 		}
 		UIShell.Render_Overlay();
-		Backend_End_Frame();
 	}
+	Backend_End_Frame();
 	_Presenting = false;
+
+	if (presented) {
+		if (_LastPresentTime - _PresentSecondStart >= 1000) {
+			_PresentsLastSecond = _PresentsThisSecond;
+			_PresentsThisSecond = 0;
+			_PresentSecondStart = _LastPresentTime;
+		}
+		_PresentsThisSecond++;
+		_PresentCount++;
+	} else {
+		_Dirty.Restore(snapshot);
+		DebugString("Video: present refused, marks kept\n");
+	}
+
+	if (_ResizePending) {
+		_ResizePending = false;
+		Video_On_Resize(_PendingWidth, _PendingHeight);
+	}
 }
 
 
@@ -376,6 +416,18 @@ unsigned int Video_Presents_Per_Second(void)
 unsigned int Video_Present_Interval(void)
 {
 	return(_PresentInterval);
+}
+
+
+std::uint64_t Video_Present_Count(void)
+{
+	return(_PresentCount);
+}
+
+
+std::uint64_t Video_Frame_Upload_Count(void)
+{
+	return(_FrameUploadCount);
 }
 
 
