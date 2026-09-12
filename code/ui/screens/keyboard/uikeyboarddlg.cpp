@@ -14,6 +14,7 @@
 #include "ui/screens/keyboard/uikeyboard.h"
 
 #include "_command.h"
+#include "_ui.h"
 #include "ccfile.h"
 #include "ccini.h"
 #include "cdfile.h"
@@ -26,6 +27,7 @@
 #include "msgbox.h"
 #include "ownrdraw.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "vector.h"
 
@@ -130,7 +132,7 @@ void UI_Keyboard_State(UIKeyboardState & state)
 
 bool UI_Keyboard_Dialog(void)
 {
-	if (UI_Legacy_Dialog_Visible()) {
+	if (UIShell.Legacy_Dialog_Visible()) {
 		return(false);
 	}
 

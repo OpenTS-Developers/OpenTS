@@ -176,6 +176,20 @@ Dependency rules:
 A read-only screen needs a data builder and a close result. A presenter with
 actions is added only where a screen has real state transitions.
 
+### Shell object
+
+`UIShellClass` (`uishell.h`) holds the shell's state: the RmlUi context, the
+injected system, file and render interfaces, the re-entry guards, the work
+deferred while the context runs, the modal stack and the modeless list. The
+engine's one instance is `UIShell`, declared `extern` in `code/_ui.h` and
+defined in `code/_ui.cpp` over `UI_Engine_Host()`; callers write
+`UIShell.Tick()` or `UIShell.Use_Rml()`. What the shell needs from the program
+around it comes through `UIShellHostClass` (`uihost.h`), so a harness builds
+its own `UIShellClass` over a host and interfaces it controls and never links
+the engine. A modal screen's engine entry calls `UI_Run_Modal(view)` from
+`uienginehost.h`, which runs the screen on `UIShell` with `UI_Service_Game`
+as the service pass.
+
 ### Code layout
 
 Sources live under `code/ui/`, grouped by what they may include. The

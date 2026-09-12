@@ -36,6 +36,7 @@
 
 #include "sounddlg.h"
 
+#include "_ui.h"
 #include "dbgprint.h"
 #include "globals.h"
 #include "goptions.h"
@@ -121,7 +122,7 @@ void SoundControlsClass::Dialog(void)
 {
 	DebugString("SoundControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 
-	if (!UI_Use_Rml() || !UI_Sound_Dialog()) {
+	if (!UIShell.Use_Rml() || !UI_Sound_Dialog()) {
 		Run_Win32_Dialog();
 	}
 

@@ -13,12 +13,14 @@
 
 #include "ui/screens/version/uiversion.h"
 
+#include "_ui.h"
 #include "addon.h"
 #include "data.h"
 #include "getcpu.h"
 #include "globals.h"
 #include "language/language.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "version.h"
 

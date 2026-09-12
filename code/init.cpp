@@ -79,6 +79,7 @@
 #include "_theater.h"
 #include "_timer.h"
 #include "_tooltip.h"
+#include "_ui.h"
 #include "_uicontrol.h"
 #include "_voxel.h"
 #include "abstract.h"
@@ -87,6 +88,7 @@
 #include "airctype.h"
 #include "alphashp.h"
 #include "anim.h"
+#include "audio/audioengine.h"
 #include "autosave.h"
 #include "bench.h"
 #include "blight.h"
@@ -105,7 +107,6 @@
 #include "dbgprint.h"
 #include "deploymentconfig.h"
 #include "dialog.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "egos.h"
 #include "empulse.h"
@@ -133,8 +134,8 @@
 #include "loaddlg.h"
 #include "logic.h"
 #include "mainopt.h"
-#include "mixfile.h"
 #include "misc.h"
+#include "mixfile.h"
 #include "mono.h"
 #include "movie.h"
 #include "mplayer.h"
@@ -162,10 +163,10 @@
 #include "scheme.h"
 #include "script.h"
 #include "session.h"
-#include "spawner.h"
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
+#include "spawner.h"
 #include "stimer.h"
 #include "tactical.h"
 #include "tag.h"
@@ -3024,7 +3025,7 @@ void Version_Dialog(void)
 	HWND dialog;
 	int res = 0;
 
-	if (UI_Use_Rml() && UI_Version_Dialog()) {
+	if (UIShell.Use_Rml() && UI_Version_Dialog()) {
 		return;
 	}
 

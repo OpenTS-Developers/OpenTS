@@ -15,17 +15,17 @@
 #include "_mixfile.h"
 #include "_rect.h"
 #include "_surface.h"
+#include "_ui.h"
+#include "audio/audioengine.h"
 #include "convert.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "gamedlg.h"
 #include "globals.h"
 #include "init.h"
 #include "language/language.h"
 #include "misc.h"
-#include "video.h"
 #include "mixfile.h"
 #include "msgbox.h"
 #include "newmenu.h"
@@ -37,6 +37,7 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/uishell.h"
+#include "video.h"
 #include "wwmouse.h"
 
 #include "color.hh"
@@ -84,7 +85,7 @@ void Main_Options_Dialog(void)
 
 	while (true) {
 		UIMainOptionsChoice choice = UI_MAIN_OPTIONS_LEAVE;
-		if (!UI_Use_Rml() || !UI_Main_Options_Dialog(choice)) {
+		if (!UIShell.Use_Rml() || !UI_Main_Options_Dialog(choice)) {
 			choice = Main_Options_Win32_Dialog();
 		}
 
@@ -348,7 +349,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 	Draw_Menu_Background();
 
 	bool kept = false;
-	if (!UI_Use_Rml() || !UI_Confirm_Mode_Dialog(kept)) {
+	if (!UIShell.Use_Rml() || !UI_Confirm_Mode_Dialog(kept)) {
 		kept = Confirm_Mode_Win32_Dialog();
 	}
 
@@ -368,7 +369,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 // A dialog that could not be created keeps the mode, as it always has.
 static bool Confirm_Mode_Win32_Dialog(void)
 {
-	UIConfirmModePresenterClass presenter(UI_Clock());
+	UIConfirmModePresenterClass presenter(UIShell.Clock());
 	_ConfirmPresenter = &presenter;
 
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CONFIRM_MODE, Test_Display_Mode_Dialog_Proc);
@@ -431,7 +432,7 @@ static void Display_Options_Dialog(void)
 {
 	while (true) {
 		std::optional<UIDisplayMode> picked;
-		if (!UI_Use_Rml() || !UI_Display_Dialog(picked)) {
+		if (!UIShell.Use_Rml() || !UI_Display_Dialog(picked)) {
 			picked = Display_Options_Win32_Dialog();
 		}
 

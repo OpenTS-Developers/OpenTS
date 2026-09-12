@@ -180,22 +180,3 @@ class UIShellClass
 		Rml::ElementDocument * TestDocument = nullptr;
 		std::unique_ptr<Rml::EventListener> TestListener;
 };
-
-
-// The free functions the engine calls today; each forwards to UIShell.
-bool UI_Init(void);
-void UI_Shutdown(void);
-bool UI_Use_Rml(void);
-bool UI_Screen_Shown(void);
-bool UI_Legacy_Dialog_Visible(void);
-UIResult UI_Run_Modal(UIRmlViewClass & view);
-UIResult UI_Run_Modal(UIRmlViewClass & view, UIServiceCallback const & service);
-bool UI_Show_Modeless(UIRmlViewClass & view);
-void UI_Hide_Modeless(UIRmlViewClass & view);
-void UI_Refresh(void);
-UIClockClass & UI_Clock(void);
-void UI_On_Video_Change(void);
-void UI_Tick(void);
-void UI_Render_Overlay(void);
-bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM clientlparam);
-bool UI_Intercept_Pumped_Message(MSG const & msg);

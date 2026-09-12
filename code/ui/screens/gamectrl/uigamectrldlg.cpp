@@ -15,6 +15,7 @@
 
 #include "_map.h"
 #include "_tooltip.h"
+#include "_ui.h"
 #include "audio/audioengine.h"
 #include "cctooltip.h"
 #include "data.h"
@@ -25,6 +26,7 @@
 #include "session.h"
 #include "techno.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uienginehost.h"
 #include "ui/uishell.h"
 
 
@@ -150,7 +152,7 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 
 bool UI_Game_Controls_Dialog(void)
 {
-	if (UI_Legacy_Dialog_Visible()) {
+	if (UIShell.Legacy_Dialog_Visible()) {
 		return(false);
 	}
 

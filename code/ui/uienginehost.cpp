@@ -10,6 +10,7 @@
 #include "ui/uienginehost.h"
 
 #include "_keyboar.h"
+#include "_ui.h"
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -166,5 +167,5 @@ bool UI_Service_Game(void)
 
 UIResult UI_Run_Modal(UIRmlViewClass & view)
 {
-	return(UI_Run_Modal(view, UI_Service_Game));
+	return(UIShell.Run_Modal(view, UI_Service_Game));
 }

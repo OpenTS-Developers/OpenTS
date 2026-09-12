@@ -13,7 +13,9 @@
 
 #include "ui/screens/msgbox/uimsgbox.h"
 
+#include "_ui.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uienginehost.h"
 #include "ui/uishell.h"
 
 #include <utility>
@@ -35,7 +37,7 @@ bool UI_Message_Box(char const * text, int defaultresponse, char const * b1, cha
 	}
 
 	// A visible Win32 dialog takes the mouse before a document can, so a box over one stays Win32.
-	if (UI_Legacy_Dialog_Visible()) {
+	if (UIShell.Legacy_Dialog_Visible()) {
 		return(false);
 	}
 

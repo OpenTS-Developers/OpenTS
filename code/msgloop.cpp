@@ -39,6 +39,7 @@
 #include "msgloop.h"
 
 #include "_tooltip.h"
+#include "_ui.h"
 #include "cctooltip.h"
 #include "ui/uishell.h"
 #include "vector.h"
@@ -114,7 +115,7 @@ void Windows_Message_Handler(void)
 		}
 
 		// Ahead of the dialogs, so that a developer key works whichever window has focus.
-		if (UI_Intercept_Pumped_Message(msg)) {
+		if (UIShell.Intercept_Pumped_Message(msg)) {
 			continue;
 		}
 

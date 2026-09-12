@@ -15,14 +15,15 @@
 #include "_mixfile.h"
 #include "_rules.h"
 #include "_surface.h"
+#include "_ui.h"
 #include "_xmouse.h"
 #include "arraylist.h"
+#include "audio/audioengine.h"
 #include "bsurface.h"
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "dict.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
@@ -31,11 +32,9 @@
 #include "language/language.h"
 #include "mainloop.h"
 #include "misc.h"
-#include "msgroute.h"
-#include "vidscale.h"
-#include "video.h"
 #include "mixfile.h"
 #include "msgloop.h"
+#include "msgroute.h"
 #include "rgb.h"
 #include "rules.h"
 #include "session.h"
@@ -43,6 +42,8 @@
 #include "theme.h"
 #include "ui/uishell.h"
 #include "utf8.h"
+#include "video.h"
+#include "vidscale.h"
 #include "voc.h"
 #include "vox.h"
 #include "windlg.h"
@@ -6741,7 +6742,7 @@ int OwnerDraw::Release_Mouse(void)
 HWND OwnerDraw::Begin_Dialog(int id, DLGPROC proc)
 {
 	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
-	assert(!UI_Screen_Shown());
+	assert(!UIShell.Screen_Shown());
 
 	LPCDLGTEMPLATE templ = (LPCDLGTEMPLATE)Fetch_Resource(MAKEINTRESOURCE(id), (LPCSTR)RT_DIALOG);
 	if (templ == NULL) {
@@ -6822,7 +6823,7 @@ void OwnerDraw::End_Dialog(HWND window)
 /// </summary>
 void OwnerDraw::Display_Dialog(HWND window)
 {
-	assert(!UI_Screen_Shown());
+	assert(!UIShell.Screen_Shown());
 
 	ShowWindow(window, SW_SHOWNORMAL);
 	SetForegroundWindow(window);
@@ -6911,7 +6912,7 @@ bool OwnerDraw::Dialog_Message_Handler(void)
 		Call_Back();
 	}
 
-	UI_Tick();
+	UIShell.Tick();
 
 	return(false);
 }

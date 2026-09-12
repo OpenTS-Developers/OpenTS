@@ -13,9 +13,11 @@
 
 #include "ui/screens/display/uidisplay.h"
 
+#include "_ui.h"
 #include "globals.h"
 #include "goptions.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "video.h"
 
@@ -86,7 +88,7 @@ bool UI_Display_Dialog(std::optional<UIDisplayMode> & picked)
 {
 	picked.reset();
 
-	if (UI_Legacy_Dialog_Visible()) {
+	if (UIShell.Legacy_Dialog_Visible()) {
 		return(false);
 	}
 
@@ -109,11 +111,11 @@ bool UI_Confirm_Mode_Dialog(bool & kept)
 {
 	kept = false;
 
-	if (UI_Legacy_Dialog_Visible()) {
+	if (UIShell.Legacy_Dialog_Visible()) {
 		return(false);
 	}
 
-	UIConfirmModePresenterClass presenter(UI_Clock());
+	UIConfirmModePresenterClass presenter(UIShell.Clock());
 	std::unique_ptr<UIRmlViewClass> view = UI_Confirm_Mode_View(presenter);
 
 	UIResult result = UI_Run_Modal(*view);

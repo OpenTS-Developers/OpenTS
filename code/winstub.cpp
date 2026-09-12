@@ -48,21 +48,25 @@
 #include "_map.h"
 #include "_rect.h"
 #include "_tooltip.h"
+#include "_ui.h"
+#include "audio/audioengine.h"
 #include "ccfile.h"
 #include "cctooltip.h"
+#include "conquer.h"
 #include "convert.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "except.h"
 #include "gamewindow.h"
 #include "globals.h"
 #include "goptions.h"
+#include "mainopt.h"
 #include "misc.h"
 #include "movie.h"
 #include "msgroute.h"
 #include "nativewindow.hh"
+#include "opents_version.h"
 #include "pcx.h"
 #include "queue.h"
 #include "resource.h"
@@ -75,9 +79,6 @@
 #include "windlg.h"
 #include "winfix.h"
 #include "wwmouse.h"
-#include "mainopt.h"
-#include "conquer.h"
-#include "opents_version.h"
 
 #include <algorithm>
 #include <commctrl.h>
@@ -192,7 +193,7 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 		lParam = translated_lparam;
 	}
 
-	if (UI_Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
+	if (UIShell.Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
 		return(0);
 	}
 

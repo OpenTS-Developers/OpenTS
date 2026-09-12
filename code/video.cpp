@@ -16,6 +16,7 @@
 #include "video.h"
 
 #include "_surface.h"
+#include "_ui.h"
 #include "bgfxbackend.h"
 #include "dbgprint.h"
 #include "dsurface.h"
@@ -227,7 +228,7 @@ bool Video_Set_Mode(int width, int height)
 
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
-	UI_On_Video_Change();
+	UIShell.On_Video_Change();
 	_FrameIsDirty = true;
 	return(true);
 }
@@ -247,7 +248,7 @@ void Video_On_Resize(int drawablewidth, int drawableheight)
 	Backend_On_Resize(drawablewidth, drawableheight);
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
-	UI_On_Video_Change();
+	UIShell.On_Video_Change();
 	Video_Mark_Dirty();
 }
 
@@ -316,7 +317,7 @@ static void Present(bool uploadframe)
 
 	_Presenting = true;
 	if (Backend_Present(uploadframe ? pixels : NULL, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode())) {
-		UI_Render_Overlay();
+		UIShell.Render_Overlay();
 		Backend_End_Frame();
 	}
 	_Presenting = false;

@@ -13,6 +13,9 @@
 #pragma once
 
 #include "ui/uihost.h"
+#include "ui/uiscreen.h"
+
+class UIRmlViewClass;
 
 
 UIShellHostClass & UI_Engine_Host(void);
@@ -20,3 +23,6 @@ UIShellHostClass & UI_Engine_Host(void);
 // One pass of the game under a modal screen: the message pump, then Main_Loop in a network
 // session or Call_Back otherwise. True when the game ended.
 bool UI_Service_Game(void);
+
+// Runs a modal screen on UIShell with the game serviced each pass.
+UIResult UI_Run_Modal(UIRmlViewClass & view);
