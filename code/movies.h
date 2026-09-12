@@ -25,6 +25,7 @@ VQHandle * Movie_Create(char const * name, Surface * surface, Rect rect1, Rect r
 void Movie_Destroy(VQHandle * handle);
 void Movie_Play(VQHandle *movie, bool hide_mouse, ThemeType theme, bool user_break_not_allowed);
 bool Movie_Advance_Frame(VQHandle * handle, bool &finished);
+bool Movie_Redraw_Paused_Frame(VQHandle * handle);
 bool Movie_Is_Playing(void);
 void Movie_Pause(VQHandle * handle);
 void Movie_Resume(VQHandle * handle);
