@@ -10,6 +10,9 @@ opents_add_test(DeploymentConfig
         _deploymentconfig.cpp
         bfiofile.cpp
         rawfile.cpp
+        file.cpp
+        file_posix.cpp
+        file_win.cpp
         dbgprint.cpp
         ini.cpp
         utf8.cpp
