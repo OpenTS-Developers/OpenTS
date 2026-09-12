@@ -43,9 +43,9 @@
 #include "init.h"
 #include "language/language.h"
 #include "ownrdraw.h"
+#include "ui/screens/sound/uisound.h"
 #include "ui/uiscreen.h"
 #include "ui/uishell.h"
-#include "ui/uisound.h"
 #include "winfix.h"
 
 bool DialogInitialized = false;

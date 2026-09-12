@@ -48,7 +48,7 @@
 #include "queue.h"
 #include "session.h"
 #include "techno.h"
-#include "ui/uigamectrl.h"
+#include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/uiscreen.h"
 #include "ui/uishell.h"
 

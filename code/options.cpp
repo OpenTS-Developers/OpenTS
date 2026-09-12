@@ -83,7 +83,7 @@
 #include "session.h"
 #include "techno.h"
 #include "theme.h"
-#include "ui/uikeyboard.h"
+#include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/uishell.h"
 #include "vector.h"
 #include "video.h"

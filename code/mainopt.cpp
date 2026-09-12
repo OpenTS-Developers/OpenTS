@@ -34,8 +34,8 @@
 #include "sounddlg.h"
 #include "stimer.h"
 #include "surface.h"
-#include "ui/uidisplay.h"
-#include "ui/uimainopt.h"
+#include "ui/screens/display/uidisplay.h"
+#include "ui/screens/mainopt/uimainopt.h"
 #include "ui/uishell.h"
 #include "wwmouse.h"
 

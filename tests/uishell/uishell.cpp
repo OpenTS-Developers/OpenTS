@@ -30,18 +30,18 @@
 #include FT_FREETYPE_H
 #include <imgui.h>
 
+#include "ui/rml/rmlkeys.h"
+#include "ui/rml/rmlview.h"
+#include "ui/screens/display/uidisplay.h"
+#include "ui/screens/gamectrl/uigamectrl.h"
+#include "ui/screens/keyboard/uikeyboard.h"
+#include "ui/screens/mainopt/uimainopt.h"
+#include "ui/screens/msgbox/uimsgbox.h"
+#include "ui/screens/sound/uisound.h"
+#include "ui/screens/version/uiversion.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uicoord.h"
-#include "ui/uidisplay.h"
-#include "ui/uigamectrl.h"
-#include "ui/uikeyboard.h"
-#include "ui/uikeys.h"
-#include "ui/uimainopt.h"
-#include "ui/uimsgbox.h"
-#include "ui/uirmlview.h"
 #include "ui/uiscreen.h"
-#include "ui/uisound.h"
-#include "ui/uiversion.h"
-#include "ui/uiwaitbox.h"
 
 #include "opents_strings.h"
 
