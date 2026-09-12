@@ -39,7 +39,7 @@
 #include "globals.h"
 #include "init.h"
 #include "ownrdraw.h"
-#include "ui/uimsgbox.h"
+#include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/uishell.h"
 #include "winfix.h"
 

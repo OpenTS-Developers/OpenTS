@@ -19,13 +19,13 @@
 #include "movies.h"
 #include "msgloop.h"
 #include "session.h"
+#include "ui/dev/uidev.h"
+#include "ui/rml/rmlfile.h"
+#include "ui/rml/rmlkeys.h"
+#include "ui/rml/rmlrender.h"
+#include "ui/rml/rmlsystem.h"
+#include "ui/rml/rmlview.h"
 #include "ui/uicoord.h"
-#include "ui/uidev.h"
-#include "ui/uifile.h"
-#include "ui/uikeys.h"
-#include "ui/uirender.h"
-#include "ui/uirmlview.h"
-#include "ui/uisystem.h"
 #include "video.h"
 #include "windlg.h"
 
@@ -41,9 +41,9 @@
 
 
 // The interfaces outlive Rml::Shutdown, which releases every resource through them.
-static UISystemInterfaceClass _System;
-static UIFileInterfaceClass _File;
-static UIRenderInterfaceClass _Render;
+static UIRmlSystemClass _System;
+static UIRmlFileClass _File;
+static UIRmlBgfxRenderClass _Render;
 
 static Rml::Context * _Context = NULL;
 static bool _Ready = false;

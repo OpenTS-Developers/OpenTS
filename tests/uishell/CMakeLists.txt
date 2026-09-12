@@ -5,17 +5,17 @@
 # point up.
 add_executable(UIShell
     "${CMAKE_CURRENT_SOURCE_DIR}/uishell.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uidisplay.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uigamectrl.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uikeyboard.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uikeys.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uimainopt.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uimsgbox.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uirmlview.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/display/uidisplay.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/gamectrl/uigamectrl.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/keyboard/uikeyboard.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/rml/rmlkeys.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/mainopt/uimainopt.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/msgbox/uimsgbox.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/rml/rmlview.cpp"
     "${CMAKE_SOURCE_DIR}/code/ui/uiscreen.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uisound.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uiversion.cpp"
-    "${CMAKE_SOURCE_DIR}/code/ui/uiwaitbox.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/sound/uisound.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/version/uiversion.cpp"
+    "${CMAKE_SOURCE_DIR}/code/ui/screens/waitbox/uiwaitbox.cpp"
 )
 
 target_compile_features(UIShell PRIVATE cxx_std_20)

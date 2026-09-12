@@ -53,7 +53,7 @@
 #include "language/language.h"
 #include "msgbox.h"
 #include "ownrdraw.h"
-#include "ui/uiwaitbox.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
 #include "saveload.h"
 #include "savemgr.h"
 #include "savever.h"

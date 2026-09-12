@@ -149,7 +149,7 @@ add_dependencies(OpenTS OpenTSBuildStamp)
 set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
 set(OPENTS_BGFX_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/ui/uirender.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp"
 )
 set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
     INCLUDE_DIRECTORIES
@@ -165,7 +165,7 @@ set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
 set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
     INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/imgui"
 )
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/uirender.cpp" APPEND PROPERTY
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp" APPEND PROPERTY
     INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/debugdraw"
 )
 
@@ -179,7 +179,7 @@ if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
 endif()
 
 # The image decoder is a header bimg carries; only the texture loader compiles it.
-set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/uitexture.cpp" APPEND PROPERTY
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmltexture.cpp" APPEND PROPERTY
     INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/stb"
 )
 

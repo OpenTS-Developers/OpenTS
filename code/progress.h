@@ -13,7 +13,7 @@
 
 #include "point.h"
 #include "sun.h"
-#include "ui/uiwaitbox.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
 #include "win.h"
 
 class ShapeSet;

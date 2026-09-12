@@ -164,7 +164,7 @@ Dependency rules:
   ImGui, or bgfx types.
 - Views use their toolkit directly. There is no shared widget API.
 - RmlUi data bindings and document nodes stay inside the RmlUi view.
-- Renderer handles stay inside `code/ui/uirender.cpp`.
+- Renderer handles stay inside `code/ui/rml/rmlrender.cpp`.
 - The shell knows which presentation owns a region and an input scope. It
   does not know production rules, save semantics, or option behavior.
 - Existing callers keep their screen functions; composition sits behind
@@ -175,29 +175,24 @@ actions is added only where a screen has real state transitions.
 
 ### Code layout
 
-New files live in `code/ui/`. The recursive glob in `code/CMakeLists.txt`
-picks them up. The library headers reach the whole target through the linked
-targets, as bgfx's already do; the per-file properties carry only the shader
-headers, the image decoder header, and the bgfx debug define, as
-`bgfxbackend.cpp`'s do today. Files without a status column entry are not yet
-written.
+Sources live under `code/ui/`, grouped by what they may include. The
+recursive glob in `code/CMakeLists.txt` picks them up; the per-file
+properties carry only the shader headers, the image decoder header, and the
+bgfx debug define, as `bgfxbackend.cpp`'s do today. The library headers reach
+the whole target through the linked targets, so the containment below is a
+rule the tree follows, not a build boundary.
 
-| File | Holds | Status |
+| Directory | Holds | Status |
 | --- | --- | --- |
-| `bgfxviews.hh` (in `code/`) | the view ids the presenter and the overlays share | landed |
-| `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector | landed |
-| `uirender.h`, `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx | landed |
-| `uisystem.h`, `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation | landed with time, logging, resource naming, and string translation; cursor and clipboard wait for the first editable screen |
-| `uifile.h`, `uifile.cpp` | RmlUi file interface over `CCFileClass` | landed |
-| `uitexture.h`, `uitexture.cpp` | image decoding, SHP and PCX conversion, surface-backed textures | landed for PNG and TGA |
-| `uicoord.h` | the pointer mapping from client pixels into the overlay | landed |
-| `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base | landed, with `uiscreen.cpp` and `uirmlview.cpp` carrying the bodies |
-| `uidev.h`, `uidev.cpp` | ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
-| one file per screen | presenter, view-model binding, and the RmlUi view glue | landed for the version dialog as `uiversion.h`, `uiversion.cpp` (presenter and view, also built into the test) and `uiversiondlg.cpp` (engine entry and data builder, which the test cannot link); the message boxes follow as `uimsgbox.*` and `uimsgboxdlg.cpp`; the sound options as `uisound.*` (presenter, service interface and view) and `uisounddlg.cpp` (engine service, state and entry), with the Win32 dialog as a second view over the same presenter; the wait boxes as `uiwaitbox.*` (presenter, view and the `UIWaitBoxClass` the save, load and progress code shows) and `uiwaitboxdlg.cpp` |
+| `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share | landed |
+| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uicoord.h` (the pointer mapping from client pixels into the overlay) | landed |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging to `DebugString`, string translation; cursor and clipboard wait for the first editable screen), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image decoding: PNG and TGA today, with SHP, PCX and engine surfaces described under [Assets](#assets-and-strings)), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base) | landed |
+| `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
+| `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
-repository root. The build copies the tree beside the executable as it copies
-`Language.dll`, and the client package ships it.
+repository root. The build places the tree beside the executable, at
+`<build directory>/bin/<configuration>/ui/`, and the client package ships it.
 
 ## Rendering
 
@@ -398,7 +393,7 @@ class UIPresenterClass {                          // uiscreen.h: no toolkit type
         std::optional<UIResult> Result;
 };
 
-class UIRmlViewClass {                            // uirmlview.h: owns the document
+class UIRmlViewClass {                            // rml/rmlview.h: owns the document
     public:
         UIRmlViewClass(UIPresenterClass & presenter, char const * document);
         virtual void Bind(Rml::DataModelConstructor & model) = 0;   // view-model fields and events
@@ -597,7 +592,7 @@ view.
 ## Dear ImGui
 
 ImGui is vendored as a submodule, compiled into Debug and Release, and
-rendered by a small bgfx adapter in `uirender.cpp` that reuses the RmlUi
+rendered by a small bgfx adapter in `rml/rmlrender.cpp` that reuses the RmlUi
 renderer's program and view setup, on `VIEW_DEV`, with its own vertex layout
 and straight-alpha blending, since ImGui's colours are not premultiplied. Its
 geometry travels in transient buffers every frame, and its textures follow the
@@ -605,7 +600,7 @@ pinned version's contract: the renderer answers each create, update, and
 destroy request and acknowledges it. The glyph atlas is created empty and
 filled by updates, because bgfx makes a texture created with pixels immutable
 and the atlas grows as glyphs are first drawn. Its platform adapter in
-`uidev.cpp` feeds it input through the shell hook ahead of the documents; the
+`dev/uidev.cpp` feeds it input through the shell hook ahead of the documents; the
 default font is scaled by the frame's dp ratio. The context is created on the
 first toggle, so a build whose developer keys never arm allocates nothing.
 Overlays are armed by the developer-mode flags the manual documents; tool
@@ -776,7 +771,7 @@ beyond an ASCII test document.
    `UIKeyboardPresenterClass` edits a copy of the hotkey table that OK saves
    and Cancel drops, where the Win32 procedure edited the game's table and
    reloaded the file on Cancel, and `keyboard.rml` captures a key through a
-   focusable element that `uikeys.cpp` turns back into the `KEYBOARD.INI`
+   focusable element that `rml/rmlkeys.cpp` turns back into the `KEYBOARD.INI`
    number; the options menu is `mainopt.rml`, placed where the main menu's
    buttons were; abort and surrender already run through the message box
    screen). The Win32 templates remain the fallback view of every one. The

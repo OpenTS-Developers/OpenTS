@@ -26,7 +26,7 @@
 #include "netdlg.h"
 #include "netglobal.h"
 #include "ownrdraw.h"
-#include "ui/uiwaitbox.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
 #include "rawfile.h"
 #include "rules.h"
 #include "saveload.h"
