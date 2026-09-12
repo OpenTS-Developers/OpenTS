@@ -80,6 +80,12 @@ struct IsoTileRecord
 	unsigned int IsRandomized:1;
 
 	/*
+	 * The tile file gives these flags a four byte field of their own, so the padding holds
+	 * the members below at the offsets the file puts them at.
+	 */
+	unsigned int :29;
+
+	/*
 	 * This is the number of height levels this sub-tile lifts the cell it covers, so that a
 	 * tile laid across rising ground raises each of its cells by the right amount.
 	 */

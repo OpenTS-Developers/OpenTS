@@ -34,26 +34,31 @@ function(opents_add_test target)
         target_compile_definitions(${target} PRIVATE ${TEST_DEFINITIONS})
     endif()
 
+    # The option spellings and the Win32 import libraries below are MSVC's, so a harness built
+    # by another compiler takes its defaults instead.
     target_compile_options(${target} PRIVATE
-        $<$<CONFIG:Debug>:/MTd>
-        $<$<CONFIG:Release>:/MT>
-        /EHsc
-        /Zc:__cplusplus
+        $<$<CXX_COMPILER_ID:MSVC>:$<$<CONFIG:Debug>:/MTd>>
+        $<$<CXX_COMPILER_ID:MSVC>:$<$<CONFIG:Release>:/MT>>
+        $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
+        $<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>
     )
     if(TEST_UTF8)
-        target_compile_options(${target} PRIVATE /utf-8)
+        target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/utf-8>)
     endif()
 
     # /arch:SSE2 is the default beyond 32-bit x86 and is rejected as an unknown option
     # there, so it is only passed where it applies.
     if(TEST_FLOAT)
-        target_compile_options(${target} PRIVATE /fp:precise)
+        target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/fp:precise>)
         if(CMAKE_SIZEOF_VOID_P EQUAL 4)
-            target_compile_options(${target} PRIVATE /arch:SSE2)
+            target_compile_options(${target} PRIVATE $<$<CXX_COMPILER_ID:MSVC>:/arch:SSE2>)
         endif()
     endif()
 
-    target_link_libraries(${target} PRIVATE kernel32 user32 shell32 ${TEST_LIBRARIES})
+    if(MSVC)
+        target_link_libraries(${target} PRIVATE kernel32 user32 shell32)
+    endif()
+    target_link_libraries(${target} PRIVATE ${TEST_LIBRARIES})
 
     if(TEST_STAMP)
         add_dependencies(${target} OpenTSBuildStamp)
