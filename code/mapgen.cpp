@@ -3408,10 +3408,10 @@ void Do_Random_Map(HWND dialog, bool (*callback)())
 	if (Session.Type == GAME_INTERNET && Session.IsWDT && WDT_Get_Territory(Session.WDTTerritory) != NULL) {
 		RandomMapGen.SeedData.NumPlayers = 4;
 	}
-	char *digest = CalcRandomMapDigest();
+	char digest[RANDOM_MAP_DIGEST_SIZE];
+	CalcRandomMapDigest(digest, sizeof(digest));
 	char name[128];
 	snprintf(name, sizeof(name), "rmcache\\%s.mmp", digest);
-	delete digest;
 	DebugString("Cache filename is %s\n", name);
 	CCFileClass cfile(name);
 
