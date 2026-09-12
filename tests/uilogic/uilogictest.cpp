@@ -8,10 +8,12 @@
  ******************************************************************************/
 
 // Pins the UI state that needs no toolkit: who a held key or button belongs to as screens
-// open, close and lose the capture or the focus, and how the bytes of a narrow window's
-// text messages become code points.
+// open, close and lose the capture or the focus, how the bytes of a narrow window's text
+// messages become code points, and what the presenter owes the screen after a present is
+// taken, refused or skipped.
 
 #include "ui/uiinput.h"
+#include "videodirty.h"
 
 #include <array>
 #include <cstdio>
@@ -158,6 +160,50 @@ void Test_Text(void)
 	Check(Decode(decoder, { 0x82, 0xAC }) == std::vector<char32_t> { 0xFFFD, 0xFFFD }, "a reset cannot splice fragments across owners");
 }
 
+
+void Test_Dirty_State(void)
+{
+	VideoDirtyStateClass dirty;
+
+	Check(!dirty.Is_Dirty(), "nothing is owed at the start");
+
+	dirty.Mark_Overlay();
+	Check(dirty.Is_Dirty(), "an overlay mark makes a present due");
+	VideoDirtySnapshotType first = dirty.Consume();
+	Check(!first.Game && first.Overlay && first.Upload, "the first present uploads the frame the renderer has never seen");
+	Check(!dirty.Is_Dirty(), "consuming takes the marks");
+
+	dirty.Upload_Completed();
+	dirty.Mark_Overlay();
+	VideoDirtySnapshotType overlay = dirty.Consume();
+	Check(overlay.Overlay && !overlay.Upload, "an overlay-only present leaves the uploaded frame alone");
+
+	dirty.Mark_Game();
+	VideoDirtySnapshotType game = dirty.Consume();
+	Check(game.Game && game.Upload, "a game mark uploads the frame");
+
+	dirty.Mark_Game();
+	VideoDirtySnapshotType consumed = dirty.Consume();
+	dirty.Mark_Overlay();
+	Check(dirty.Is_Dirty(), "a mark raised while a present runs survives it");
+	dirty.Restore(consumed);
+	VideoDirtySnapshotType restored = dirty.Consume();
+	Check(restored.Game && restored.Overlay, "restoring a refused present keeps the marks raised since");
+
+	dirty.Restore(VideoDirtySnapshotType { false, false, false });
+	Check(dirty.Is_Dirty() && dirty.Consume().Overlay, "a refused present with nothing marked is retried as an overlay present");
+
+	dirty.Upload_Completed();
+	dirty.Invalidate_Frame();
+	VideoDirtySnapshotType invalidated = dirty.Consume();
+	Check(invalidated.Game && invalidated.Upload, "a renderer that lost the frame gets it uploaded again");
+
+	dirty.Mark_Game();
+	dirty.Reset();
+	VideoDirtySnapshotType reset = dirty.Consume();
+	Check(!dirty.Is_Dirty() && !reset.Game && !reset.Overlay && reset.Upload, "a reset forgets the marks and the upload");
+}
+
 }
 
 
@@ -166,6 +212,7 @@ int main(void)
 	Test_Ownership();
 	Test_Reconciliation();
 	Test_Text();
+	Test_Dirty_State();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
