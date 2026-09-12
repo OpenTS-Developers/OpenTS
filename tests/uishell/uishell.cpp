@@ -27,6 +27,7 @@
 
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlrender.h"
+#include "ui/rml/rmlrendermath.h"
 #include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/display/uidisplay.h"
@@ -86,6 +87,7 @@ class RecordingRenderInterfaceClass : public UIRmlRenderClass
 		int Generated = 0;
 		int ReleasedTextures = 0;
 		int Unsupported = 0;
+		int Invalid = 0;
 		int Frames = 0;
 		std::vector<Rml::Rectanglei> Scissors;
 		std::function<void(void)> OnRender;
@@ -125,9 +127,21 @@ class RecordingRenderInterfaceClass : public UIRmlRenderClass
 		{
 		}
 
-		virtual Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex>, Rml::Span<const int>) override
+		// Every fragment is held to what the engine's renderer refuses: whole triangles over
+		// the vertices, a size that fits, 16-bit indices, and finite positions.
+		virtual Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) override
 		{
 			Compiled++;
+
+			std::uint32_t bytes = 0;
+			bool finite = std::all_of(vertices.begin(), vertices.end(), [](Rml::Vertex const & vertex) {
+				return(std::isfinite(vertex.position.x) && std::isfinite(vertex.position.y) && std::isfinite(vertex.tex_coord.x) && std::isfinite(vertex.tex_coord.y));
+			});
+			if (!UI_Render_Index_Range(std::span<int const>(indices.data(), indices.size()), vertices.size())
+				|| vertices.size() > 65536 || !UI_Render_Byte_Count(vertices.size(), sizeof(Rml::Vertex), bytes) || !finite) {
+				Invalid++;
+			}
+
 			return((Rml::CompiledGeometryHandle)Compiled);
 		}
 
@@ -2243,6 +2257,7 @@ void Test_Documents(void)
 		documents++;
 		int rendered = render.Rendered;
 		int unsupported = render.Unsupported;
+		int invalid = render.Invalid;
 		int problems = system.Problems;
 		render.Scissors.clear();
 
@@ -2267,6 +2282,7 @@ void Test_Documents(void)
 
 		Check(render.Rendered > rendered, (name + " draws geometry").c_str());
 		Check(render.Unsupported == unsupported, (name + " stays within the implemented render methods").c_str());
+		Check(render.Invalid == invalid, (name + " compiles whole, in-range, finite geometry").c_str());
 		Check(system.Problems == problems, (name + " raises no RmlUi warning or error").c_str());
 
 		bool clipped = true;
@@ -2645,6 +2661,7 @@ void Test_Shell(void)
 
 	Check(fixture.Render->ReleasedGeometry == fixture.Render->Compiled, "the shell releases every geometry it compiled");
 	Check(fixture.Render->ReleasedTextures == fixture.Render->Loaded + fixture.Render->Generated, "the shell releases every texture it made");
+	Check(fixture.Render->Invalid == 0, "the shell's screens compile only geometry the renderer accepts");
 	Check(fixture.System->Problems == 0, "the shell's screens raise no RmlUi warning or error");
 }
 

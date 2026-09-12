@@ -9,15 +9,18 @@
 
 // Pins the UI state that needs no toolkit: who a held key or button belongs to as screens
 // open, close and lose the capture or the focus, how the bytes of a narrow window's text
-// messages become code points, and what the presenter owes the screen after a present is
-// taken, refused or skipped.
+// messages become code points, what the overlay renderer refuses before it draws, and what
+// the presenter owes the screen after a present is taken, refused or skipped.
 
+#include "ui/rml/rmlrendermath.h"
 #include "ui/uiinput.h"
 #include "videodirty.h"
 
 #include <array>
+#include <cstdint>
 #include <cstdio>
 #include <initializer_list>
+#include <limits>
 #include <vector>
 
 namespace {
@@ -161,6 +164,43 @@ void Test_Text(void)
 }
 
 
+void Test_Render_Math(void)
+{
+	std::uint32_t bytes = 0;
+	Check(UI_Render_Byte_Count(10, 24, bytes) && bytes == 240, "a byte count is the whole product");
+	Check(!UI_Render_Byte_Count(std::numeric_limits<std::size_t>::max(), 2, bytes) && bytes == 0, "a byte count that overflows fails");
+	Check(!UI_Render_Byte_Count(0, 4, bytes), "an empty allocation fails");
+
+	int const valid[] = { 2, 0, 1 };
+	int const negative[] = { -1, 0, 1 };
+	int const outside[] = { 0, 1, 3 };
+	int const incomplete[] = { 0, 1 };
+	Check(UI_Render_Index_Range(valid, 3), "whole triangles over the vertices pass");
+	Check(!UI_Render_Index_Range(negative, 3), "a negative index fails");
+	Check(!UI_Render_Index_Range(outside, 3), "an index past the last vertex fails");
+	Check(!UI_Render_Index_Range(incomplete, 3), "an incomplete triangle fails");
+
+	UIRenderClip clip;
+	Check(UI_Render_Clip_Rect(-2.4f, 1.2f, 12.1f, 25.7f, 100, 50, 10, 20, clip) && clip.X == 100 && clip.Y == 51 && clip.Width == 10 && clip.Height == 19, "a fractional scissor rounds outward, clips, and lands in the target");
+	Check(!UI_Render_Clip_Rect(-10.0f, 0.0f, -1.0f, 10.0f, 100, 50, 10, 20, clip), "a scissor outside the viewport draws nothing");
+	Check(!UI_Render_Clip_Rect(3.0f, 0.0f, 3.0f, 10.0f, 0, 0, 10, 20, clip), "an empty scissor draws nothing");
+	Check(!UI_Render_Clip_Rect(0.0f, 0.0f, std::numeric_limits<float>::infinity(), 10.0f, 0, 0, 10, 20, clip), "a non-finite scissor fails");
+	Check(!UI_Render_Clip_Rect(0.0f, 0.0f, 10.0f, 10.0f, 65530, 0, 10, 20, clip), "a scissor cannot wrap the 16-bit target coordinates");
+
+	std::array<std::uint8_t, 48> pixels;
+	pixels.fill(0xEE);
+	for (int row = 0; row < 3; row++) {
+		for (int column = 0; column < 12; column++) {
+			pixels[(std::size_t)row * 16 + column] = (std::uint8_t)(row * 12 + column);
+		}
+	}
+	std::vector<std::uint8_t> packed;
+	Check(UI_Render_Copy_RGBA_Rect(pixels, 3, 3, 16, 1, 1, 2, 2, packed) && packed.size() == 16 && packed[0] == 16 && packed[8] == 28, "a rectangle out of a pitched image packs tightly");
+	Check(!UI_Render_Copy_RGBA_Rect(pixels, 3, 3, 16, 2, 2, 2, 2, packed), "a rectangle past the image fails");
+	Check(!UI_Render_Copy_RGBA_Rect(pixels, 3, 4, 16, 0, 0, 1, 1, packed), "an image larger than its bytes fails");
+}
+
+
 void Test_Dirty_State(void)
 {
 	VideoDirtyStateClass dirty;
@@ -212,6 +252,7 @@ int main(void)
 	Test_Ownership();
 	Test_Reconciliation();
 	Test_Text();
+	Test_Render_Math();
 	Test_Dirty_State();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
