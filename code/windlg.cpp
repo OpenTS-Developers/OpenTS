@@ -11,6 +11,7 @@
 
 #include "windlg.h"
 
+#include "_ui.h"
 #include "arraylist.h"
 #include "data.h"
 #include "globals.h"
@@ -99,7 +100,7 @@ inline int WS_Dialog_Index(HWND window)
 HWND WS_Create_Dialog(HINSTANCE instance, int id, HWND parent, DLGPROC proc, BOOL force_show)
 {
 	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
-	assert(!UI_Screen_Shown());
+	assert(!UIShell.Screen_Shown());
 
 	WSDialogStruct *slot = &g_Dialogs[g_DialogCount];
 	g_Dialogs[g_DialogCount].handle = 0;

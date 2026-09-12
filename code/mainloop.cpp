@@ -24,7 +24,9 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "_timer.h"
+#include "_ui.h"
 #include "_xmouse.h"
+#include "audio/audioengine.h"
 #include "bench.h"
 #include "chat.h"
 #include "command.h"
@@ -32,7 +34,6 @@
 #include "data.h"
 #include "debug.h"
 #include "dialog.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "fog.h"
 #include "globals.h"
@@ -279,7 +280,7 @@ bool Main_Loop(void)
 	*/
 	if (!Session.Play) {
 		if (SpecialDialog == SDLG_NONE && GameInFocus) {
-			UI_Tick();
+			UIShell.Tick();
 			Map.Input(input, x, y);
 			if (input) {
 				Keyboard_Process(input);

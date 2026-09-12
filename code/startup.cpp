@@ -45,6 +45,7 @@
 #include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
+#include "_ui.h"
 #include "_zbuffer.h"
 #include "aircraft.h"
 #include "airctype.h"
@@ -52,6 +53,7 @@
 #include "alphashp.h"
 #include "anim.h"
 #include "animtype.h"
+#include "audio/audioengine.h"
 #include "blight.h"
 #include "brain.h"
 #include "building.h"
@@ -68,7 +70,6 @@
 #include "deploymentconfig.h"
 #include "drive.h"
 #include "droppod.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "empulse.h"
 #include "except.h"
@@ -92,8 +93,8 @@
 #include "light.h"
 #include "lightcon.h"
 #include "mech.h"
-#include "mixfile.h"
 #include "misc.h"
+#include "mixfile.h"
 #include "movie.h"
 #include "msgloop.h"
 #include "netdlg.h" // for Shutdown_Network.
@@ -112,9 +113,9 @@
 #include "shapeset.h"
 #include "side.h"
 #include "sidebar.h"
-#include "spawner.h"
 #include "smudge.h"
 #include "smudtype.h"
+#include "spawner.h"
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
@@ -138,13 +139,13 @@
 #include "tube.h"
 #include "tunnel.h"
 #include "tutorial.h"
+#include "ui/uishell.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vanim.h"
 #include "vanimtype.h"
 #include "vector.h"
 #include "video.h"
-#include "ui/uishell.h"
 #include "walk.h"
 #include "warhead.h"
 #include "wave.h"
@@ -214,7 +215,7 @@ void Reset_Surfaces(void)
 			VisibleSurface = NULL;
 		}
 
-		UI_Shutdown();
+		UIShell.Shutdown();
 		Video_Shutdown();
 
 		surfaces_reset = true;
@@ -582,7 +583,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		}
 
 		// The game runs without the UI shell; its own log says why it stayed off.
-		UI_Init();
+		UIShell.Init();
 
 		do {
 			Windows_Message_Handler();

@@ -64,6 +64,7 @@
 #include "_deploymentconfig.h"
 #include "_map.h"
 #include "_rules.h"
+#include "_ui.h"
 #include "audio/audioengine.h"
 #include "ccfile.h"
 #include "ccrand.h"
@@ -800,7 +801,7 @@ static void Hotkey_Win32_Dialog(void)
 /// </summary>
 bool OptionsClass::Hotkey_Dialog(void)
 {
-	if (!UI_Use_Rml() || !UI_Keyboard_Dialog()) {
+	if (!UIShell.Use_Rml() || !UI_Keyboard_Dialog()) {
 		Hotkey_Win32_Dialog();
 	}
 	return(true);

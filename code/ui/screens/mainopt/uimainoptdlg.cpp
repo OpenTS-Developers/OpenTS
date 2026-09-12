@@ -14,9 +14,11 @@
 #include "ui/screens/mainopt/uimainopt.h"
 
 #include "_surface.h"
+#include "_ui.h"
 #include "audio/audioengine.h"
 #include "surface.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uienginehost.h"
 #include "ui/uishell.h"
 
 
@@ -36,7 +38,7 @@ bool UI_Main_Options_Dialog(UIMainOptionsChoice & choice)
 {
 	choice = UI_MAIN_OPTIONS_LEAVE;
 
-	if (UI_Legacy_Dialog_Visible()) {
+	if (UIShell.Legacy_Dialog_Visible()) {
 		return(false);
 	}
 

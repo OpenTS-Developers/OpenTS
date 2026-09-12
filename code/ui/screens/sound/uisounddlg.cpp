@@ -13,12 +13,14 @@
 
 #include "ui/screens/sound/uisound.h"
 
+#include "_ui.h"
 #include "audio/audioengine.h"
 #include "globals.h"
 #include "goptions.h"
 #include "incdec.h"
 #include "theme.h"
 #include "ui/rml/rmlview.h"
+#include "ui/uienginehost.h"
 #include "ui/uishell.h"
 
 #include <cstdio>
@@ -124,7 +126,7 @@ void UI_Sound_State(UISoundState & state)
 
 bool UI_Sound_Dialog(void)
 {
-	if (UI_Legacy_Dialog_Visible()) {
+	if (UIShell.Legacy_Dialog_Visible()) {
 		return(false);
 	}
 

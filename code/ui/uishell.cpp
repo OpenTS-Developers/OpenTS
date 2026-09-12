@@ -9,7 +9,6 @@
 
 #include "ui/uishell.h"
 
-#include "_ui.h"
 #include "ui/dev/uidev.h"
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlrender.h"
@@ -984,94 +983,4 @@ bool UIShellClass::Intercept_Pumped_Message(MSG const & msg)
 	(void)msg;
 #endif
 	return(false);
-}
-
-
-bool UI_Init(void)
-{
-	return(UIShell.Init());
-}
-
-
-void UI_Shutdown(void)
-{
-	UIShell.Shutdown();
-}
-
-
-bool UI_Use_Rml(void)
-{
-	return(UIShell.Use_Rml());
-}
-
-
-bool UI_Screen_Shown(void)
-{
-	return(UIShell.Screen_Shown());
-}
-
-
-bool UI_Legacy_Dialog_Visible(void)
-{
-	return(UIShell.Legacy_Dialog_Visible());
-}
-
-
-UIResult UI_Run_Modal(UIRmlViewClass & view, UIServiceCallback const & service)
-{
-	return(UIShell.Run_Modal(view, service));
-}
-
-
-bool UI_Show_Modeless(UIRmlViewClass & view)
-{
-	return(UIShell.Show_Modeless(view));
-}
-
-
-void UI_Hide_Modeless(UIRmlViewClass & view)
-{
-	UIShell.Hide_Modeless(view);
-}
-
-
-void UI_Refresh(void)
-{
-	UIShell.Refresh();
-}
-
-
-UIClockClass & UI_Clock(void)
-{
-	return(UIShell.Clock());
-}
-
-
-void UI_On_Video_Change(void)
-{
-	UIShell.On_Video_Change();
-}
-
-
-void UI_Tick(void)
-{
-	UIShell.Tick();
-}
-
-
-void UI_Render_Overlay(void)
-{
-	UIShell.Render_Overlay();
-}
-
-
-bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM clientlparam)
-{
-	return(UIShell.Handle_Window_Message(hwnd, message, wparam, clientlparam));
-}
-
-
-bool UI_Intercept_Pumped_Message(MSG const & msg)
-{
-	return(UIShell.Intercept_Pumped_Message(msg));
 }

@@ -37,10 +37,11 @@
 
 #include "_map.h"
 #include "_tooltip.h"
+#include "_ui.h"
+#include "audio/audioengine.h"
 #include "cctooltip.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "audio/audioengine.h"
 #include "globals.h"
 #include "init.h"
 #include "language/language.h"
@@ -220,7 +221,7 @@ void GameControlsClass::Dialog(void)
 {
 	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 
-	if (!UI_Use_Rml() || !UI_Game_Controls_Dialog()) {
+	if (!UIShell.Use_Rml() || !UI_Game_Controls_Dialog()) {
 		Run_Win32_Dialog();
 	}
 
