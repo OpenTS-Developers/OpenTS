@@ -25,8 +25,8 @@ For a Visual Studio installation that CMake cannot discover through the Visual S
 
 Builds write their runnable files to `build/bin/<configuration>/` and copy nothing into `Run/`:
 
-- Debug: `GameD.exe`, `GameD.pdb`, `GameD.map`, and `Language.dll`
-- Release: `Game.exe`, `Game.pdb`, `Game.map`, and `Language.dll`
+- Debug: `GameD.exe`, `GameD.pdb`, `GameD.map`, `Language.dll`, and the `ui/` directory
+- Release: `Game.exe`, `Game.pdb`, `Game.map`, `Language.dll`, and the `ui/` directory
 
 ## The executable cannot initialize game data
 
