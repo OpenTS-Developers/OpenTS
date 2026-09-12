@@ -13,28 +13,23 @@
 
 #pragma once
 
-void Resolve_File(char* fname);
+void Resolve_File(char * fname);
 
 class Find_File_Data
 {
-public:
-    static Find_File_Data* CreateFindData();
+	public:
+		static Find_File_Data * CreateFindData();
 
-    virtual ~Find_File_Data()
-    {
-    }
-    virtual const char* GetName() const = 0;
-    virtual const char* GetFullName() const
-    {
-        return nullptr;
-    };
-    virtual unsigned int GetTime() const = 0;
+		virtual ~Find_File_Data() {}
+		virtual const char * GetName() const = 0;
+		virtual const char * GetFullName() const { return nullptr; };
+		virtual unsigned int GetTime() const = 0;
 
-    virtual bool FindFirst(const char* fname) = 0;
-    virtual bool FindNext() = 0;
-    virtual void Close() = 0;
+		virtual bool FindFirst(const char * fname) = 0;
+		virtual bool FindNext() = 0;
+		virtual void Close() = 0;
 };
 
-extern bool Find_First(const char* fname, unsigned int mode, Find_File_Data** ffblk);
-extern bool Find_Next(Find_File_Data* ffblk);
-extern void Find_Close(Find_File_Data* ffblk);
+extern bool Find_First(const char * fname, unsigned int mode, Find_File_Data ** ffblk);
+extern bool Find_Next(Find_File_Data * ffblk);
+extern void Find_Close(Find_File_Data * ffblk);

@@ -12,78 +12,76 @@
  ******************************************************************************/
 
 #ifdef _WIN32
+#include "always.h"
+
 #include "file.h"
 
-#include <windows.h>
 #include <io.h>
+#include <windows.h>
 
 class Find_File_Data_Win : public Find_File_Data
 {
-public:
-    Find_File_Data_Win();
-    virtual ~Find_File_Data_Win();
+	public:
+		Find_File_Data_Win();
+		virtual ~Find_File_Data_Win();
 
-    virtual const char* GetName() const;
-    virtual unsigned int GetTime() const;
+		virtual const char * GetName() const;
+		virtual unsigned int GetTime() const;
 
-    virtual bool FindFirst(const char* fname);
-    virtual bool FindNext();
-    virtual void Close();
+		virtual bool FindFirst(const char * fname);
+		virtual bool FindNext();
+		virtual void Close();
 
-private:
-    HANDLE FindHandle;
-    WIN32_FIND_DATAA FindData;
+	private:
+		HANDLE FindHandle;
+		WIN32_FIND_DATAA FindData;
 };
 
-Find_File_Data_Win::Find_File_Data_Win()
-    : FindHandle(INVALID_HANDLE_VALUE)
-    , FindData({0})
-{
-}
+Find_File_Data_Win::Find_File_Data_Win() : FindHandle(INVALID_HANDLE_VALUE), FindData({0}) {}
 
 Find_File_Data_Win::~Find_File_Data_Win()
 {
-    Close();
+	Close();
 }
 
-const char* Find_File_Data_Win::GetName() const
+const char * Find_File_Data_Win::GetName() const
 {
-    return FindData.cFileName;
+	return FindData.cFileName;
 }
 
 unsigned int Find_File_Data_Win::GetTime() const
 {
-    ULARGE_INTEGER ull;
-    ull.LowPart = FindData.ftLastWriteTime.dwLowDateTime;
-    ull.HighPart = FindData.ftLastWriteTime.dwHighDateTime;
-    return (unsigned int)(ull.QuadPart / 10000000ULL - 11644473600ULL);
+	ULARGE_INTEGER ull;
+	ull.LowPart = FindData.ftLastWriteTime.dwLowDateTime;
+	ull.HighPart = FindData.ftLastWriteTime.dwHighDateTime;
+	return (unsigned int)(ull.QuadPart / 10000000ULL - 11644473600ULL);
 }
 
-bool Find_File_Data_Win::FindFirst(const char* fname)
+bool Find_File_Data_Win::FindFirst(const char * fname)
 {
-    FindHandle = FindFirstFileA(fname, &FindData);
-    return (FindHandle != INVALID_HANDLE_VALUE);
+	FindHandle = FindFirstFileA(fname, &FindData);
+	return (FindHandle != INVALID_HANDLE_VALUE);
 }
 
 bool Find_File_Data_Win::FindNext()
 {
-    if (FindHandle == INVALID_HANDLE_VALUE) {
-        return false;
-    }
+	if (FindHandle == INVALID_HANDLE_VALUE) {
+		return false;
+	}
 
-    return (FindNextFileA(FindHandle, &FindData) != FALSE);
+	return (FindNextFileA(FindHandle, &FindData) != FALSE);
 }
 
 void Find_File_Data_Win::Close()
 {
-    if (FindHandle != INVALID_HANDLE_VALUE) {
-        FindClose(FindHandle);
-        FindHandle = INVALID_HANDLE_VALUE;
-    }
+	if (FindHandle != INVALID_HANDLE_VALUE) {
+		FindClose(FindHandle);
+		FindHandle = INVALID_HANDLE_VALUE;
+	}
 }
 
-Find_File_Data* Find_File_Data::CreateFindData()
+Find_File_Data * Find_File_Data::CreateFindData()
 {
-    return new Find_File_Data_Win();
+	return new Find_File_Data_Win();
 }
 #endif

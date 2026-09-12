@@ -15,132 +15,127 @@
 #ifndef _GNU_SOURCE
 #define _GNU_SOURCE
 #endif
+#include "always.h"
+
 #include "file.h"
 
-#include <string.h>
-#include <sys/types.h>
-#include <sys/stat.h>
+#include <cstring>
 #include <dirent.h>
-#include <unistd.h>
-#include <limits.h>
 #include <fnmatch.h>
+#include <limits.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 class Find_File_Data_Posix : public Find_File_Data
 {
-public:
-    Find_File_Data_Posix();
-    virtual ~Find_File_Data_Posix();
+	public:
+		Find_File_Data_Posix();
+		virtual ~Find_File_Data_Posix();
 
-    virtual const char* GetName() const;
-    virtual const char* GetFullName() const
-    {
-        return DirEntry != nullptr ? FullName : nullptr;
-    }
-    virtual unsigned int GetTime() const;
+		virtual const char * GetName() const;
+		virtual const char * GetFullName() const { return DirEntry != nullptr ? FullName : nullptr; }
+		virtual unsigned int GetTime() const;
 
-    virtual bool FindFirst(const char* fname);
-    virtual bool FindNext();
-    virtual void Close();
+		virtual bool FindFirst(const char * fname);
+		virtual bool FindNext();
+		virtual void Close();
 
-private:
-    DIR* Directory;
-    struct dirent* DirEntry;
-    const char* FileFilter;
-    char FullName[PATH_MAX];
-    char DirName[PATH_MAX];
+	private:
+		DIR * Directory;
+		struct dirent * DirEntry;
+		const char * FileFilter;
+		char FullName[PATH_MAX];
+		char DirName[PATH_MAX];
 
-    bool FindNextWithFilter();
+		bool FindNextWithFilter();
 };
 
-Find_File_Data_Posix::Find_File_Data_Posix()
-    : Directory(nullptr)
-    , DirEntry(nullptr)
-{
-}
+Find_File_Data_Posix::Find_File_Data_Posix() : Directory(nullptr), DirEntry(nullptr) {}
 
 Find_File_Data_Posix::~Find_File_Data_Posix()
 {
-    Close();
+	Close();
 }
 
-const char* Find_File_Data_Posix::GetName() const
+const char * Find_File_Data_Posix::GetName() const
 {
-    if (DirEntry == nullptr) {
-        return nullptr;
-    }
-    return DirEntry->d_name;
+	if (DirEntry == nullptr) {
+		return nullptr;
+	}
+	return DirEntry->d_name;
 }
 
 unsigned int Find_File_Data_Posix::GetTime() const
 {
-    if (DirEntry == nullptr) {
-        return 0;
-    }
-    struct stat buf = {0};
-    if (stat(FullName, &buf) != 0) {
-        return false;
-    }
-    return buf.st_mtime;
+	if (DirEntry == nullptr) {
+		return 0;
+	}
+	struct stat buf = {0};
+	if (stat(FullName, &buf) != 0) {
+		return false;
+	}
+	return buf.st_mtime;
 }
 
 bool Find_File_Data_Posix::FindNextWithFilter()
 {
-    while (true) {
-        DirEntry = readdir(Directory);
-        if (DirEntry == nullptr) {
-            return false;
-        }
-        if (fnmatch(FileFilter, DirEntry->d_name, FNM_PATHNAME | FNM_CASEFOLD) == 0) {
-            strcpy(FullName, DirName);
-            strcat(FullName, DirEntry->d_name);
-            break;
-        }
-    }
-    return true;
+	while (true) {
+		DirEntry = readdir(Directory);
+		if (DirEntry == nullptr) {
+			return false;
+		}
+		if (fnmatch(FileFilter, DirEntry->d_name, FNM_PATHNAME | FNM_CASEFOLD) == 0) {
+			strcpy(FullName, DirName);
+			strcat(FullName, DirEntry->d_name);
+			break;
+		}
+	}
+	return true;
 }
 
-bool Find_File_Data_Posix::FindFirst(const char* fname)
+bool Find_File_Data_Posix::FindFirst(const char * fname)
 {
-    Close();
-    FullName[0] = '\0';
-    DirName[0] = '\0';
+	Close();
+	FullName[0] = '\0';
+	DirName[0] = '\0';
 
-    // split directory and file from the path
-    char* fdir = strrchr((char*)fname, '/');
-    if (fdir != nullptr) {
-        strncat(DirName, fname, (fdir - fname + 1));
-        FileFilter = fdir + 1;
-        Directory = opendir(DirName);
-    } else {
-        FileFilter = fname;
-        Directory = opendir(".");
-    }
+	// split directory and file from the path
+	char * fdir = strrchr((char *)fname, '/');
+	if (fdir != nullptr) {
+		strncat(DirName, fname, (fdir - fname + 1));
+		FileFilter = fdir + 1;
+		Directory = opendir(DirName);
+	} else {
+		FileFilter = fname;
+		Directory = opendir(".");
+	}
 
-    if (Directory == nullptr) {
-        return false;
-    }
+	if (Directory == nullptr) {
+		return false;
+	}
 
-    return FindNextWithFilter();
+	return FindNextWithFilter();
 }
 
 bool Find_File_Data_Posix::FindNext()
 {
-    if (Directory == nullptr) {
-        return false;
-    }
-    return FindNextWithFilter();
+	if (Directory == nullptr) {
+		return false;
+	}
+	return FindNextWithFilter();
 }
 
 void Find_File_Data_Posix::Close()
 {
-    if (Directory != nullptr) {
-        closedir(Directory);
-        Directory = nullptr;
-    }
+	if (Directory != nullptr) {
+		closedir(Directory);
+		Directory = nullptr;
+	}
 }
 
-Find_File_Data* Find_File_Data::CreateFindData()
+Find_File_Data * Find_File_Data::CreateFindData()
 {
-    return new Find_File_Data_Posix();
+	return new Find_File_Data_Posix();
 }
 #endif
