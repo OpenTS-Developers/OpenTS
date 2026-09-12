@@ -371,6 +371,56 @@ void UIShellClass::Reset_Text(void)
 }
 
 
+// The pointer is the documents' while a screen is shown, a document holds a press, or it
+// is over an element that takes it.
+bool UIShellClass::Pointer_Owned(void) const
+{
+	return(!Modals.empty() || Input.Has_UI_Mouse() || (MouseInside && Context->IsMouseInteracting()));
+}
+
+
+bool UIShellClass::Handle_Set_Cursor(void)
+{
+	if (!Ready || !Pointer_Owned()) {
+		return(false);
+	}
+
+	UICursor request = System->Cursor_Request();
+	if (request == UI_CURSOR_ARROW) {
+		return(false);
+	}
+
+	Host.Apply_Cursor(request);
+	AppliedCursor = request;
+	return(true);
+}
+
+
+// A hover that changed the request shows the new shape at once rather than at the next
+// WM_SETCURSOR, which only a pointer move brings.
+void UIShellClass::Apply_Cursor_Request(void)
+{
+	UICursor request = Pointer_Owned() ? System->Cursor_Request() : UI_CURSOR_ARROW;
+	if (request == AppliedCursor) {
+		return;
+	}
+
+	if (request == UI_CURSOR_ARROW) {
+		Restore_Cursor();
+	} else {
+		Host.Apply_Cursor(request);
+		AppliedCursor = request;
+	}
+}
+
+
+void UIShellClass::Restore_Cursor(void)
+{
+	AppliedCursor = UI_CURSOR_ARROW;
+	Host.Restore_Game_Cursor();
+}
+
+
 void UIShellClass::Toggle_Test_Document(void)
 {
 #ifdef _DEBUG
@@ -597,6 +647,8 @@ void UIShellClass::Tick(void)
 		Context->Update();
 		UIDev_Tick();
 	}
+
+	Apply_Cursor_Request();
 
 	// An overlay closed from inside its own frame still needs one present to clear.
 	bool devactive = UIDev_Active();
@@ -1023,6 +1075,8 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		Host.Mark_Overlay_Dirty();
 		std::snprintf(label, sizeof(label), "%s closed", view.Name());
 		Render->Log_Resource_Counts(label);
+		System->Reset_Cursor_Request();
+		Restore_Cursor();
 		Host.Clear_Keyboard_Queue();
 		Host.Focus_Main_Window();
 	}

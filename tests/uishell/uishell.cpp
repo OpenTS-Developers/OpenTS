@@ -41,6 +41,7 @@
 #include "ui/uihost.h"
 #include "ui/uiscreen.h"
 #include "ui/uishell.h"
+#include "ui/uiunicode.h"
 #include "ui/uiview.h"
 
 // windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
@@ -291,6 +292,22 @@ class TestHostClass : public UIShellHostClass
 		virtual unsigned int Text_Code_Page(void) const override
 		{
 			return(CodePage);
+		}
+
+		int Applied = 0;
+		int Restored = 0;
+		UICursor LastCursor = UI_CURSOR_ARROW;
+
+		virtual void Apply_Cursor(UICursor cursor) override
+		{
+			Applied++;
+			LastCursor = cursor;
+		}
+
+		virtual void Restore_Game_Cursor(void) override
+		{
+			Restored++;
+			LastCursor = UI_CURSOR_ARROW;
 		}
 
 		virtual HWND Main_Window(void) const override
@@ -2563,6 +2580,47 @@ void Test_Shell(void)
 			return(false);
 		});
 		Check(recorder.Texts.size() == 1 && recorder.Texts[0] == "\xC3\xA9", "two UTF-8 bytes on a narrow window reach the document as one character");
+	}
+
+	{
+		char const * sample = "\xC3\xA9\xE2\x82\xAC\xF0\x9F\x98\x80";
+		std::wstring wide;
+		std::string text;
+
+		std::wstring expected = { (wchar_t)0x00E9, (wchar_t)0x20AC, (wchar_t)0xD83D, (wchar_t)0xDE00 };
+		Check(UI_UTF8_To_UTF16(sample, wide) && wide == expected, "UTF-8 converts to UTF-16");
+		Check(UI_UTF16_To_UTF8(wide, text) && text == sample, "UTF-16 converts back to the same UTF-8");
+		Check(!UI_UTF8_To_UTF16("\xC0\xAF", wide), "an overlong sequence is refused, not repaired");
+		Check(!UI_UTF16_To_UTF8(std::wstring(1, (wchar_t)0xD800), text), "an unpaired surrogate is refused, not repaired");
+
+		// The developer's clipboard is put back once the round trip is checked.
+		Rml::String before;
+		fixture.System->GetClipboardText(before);
+		fixture.System->SetClipboardText(sample);
+		Rml::String after;
+		fixture.System->GetClipboardText(after);
+		Check(after == sample, "clipboard text survives a round trip");
+		fixture.System->SetClipboardText(before);
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "cursor" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int restored = host.Restored;
+		bool requested = false;
+		bool shown = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			fixture.System->SetMouseCursor("text");
+			requested = fixture.System->Cursor_Request() == UI_CURSOR_TEXT;
+			shown = shell.Handle_Set_Cursor() && host.LastCursor == UI_CURSOR_TEXT;
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(requested, "a document's pointer request is kept");
+		Check(shown, "WM_SETCURSOR shows the requested shape while a screen is shown");
+		Check(host.Restored - restored == 1 && fixture.System->Cursor_Request() == UI_CURSOR_ARROW && host.LastCursor == UI_CURSOR_ARROW, "closing a screen puts the game's pointer back once and forgets the request");
+		Check(!shell.Handle_Set_Cursor(), "WM_SETCURSOR is the game's again once nothing is shown");
 	}
 
 	{

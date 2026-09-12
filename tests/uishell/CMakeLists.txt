@@ -11,6 +11,7 @@ opents_add_test(UIShell
         ui/uiscreen.cpp
         ui/uiinput.cpp
         ui/uishell.cpp
+        ui/uiunicode.cpp
         ui/rml/rmlkeys.cpp
         ui/rml/rmlsystem.cpp
         ui/rml/rmlview.cpp

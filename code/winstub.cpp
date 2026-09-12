@@ -244,7 +244,7 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 			return(1);
 
 		case WM_SETCURSOR:
-			if (LOWORD(lParam) == HTCLIENT && Win_Cursor_Handle_Set_Cursor()) {
+			if (LOWORD(lParam) == HTCLIENT && (UIShell.Handle_Set_Cursor() || Win_Cursor_Handle_Set_Cursor())) {
 				return(TRUE);
 			}
 			break;
