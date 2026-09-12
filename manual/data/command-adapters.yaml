@@ -288,7 +288,7 @@ fixed_controls:
     context: Any game window focused, with Debug_Flag enabled
     availability: *debug
     sites:
-      - { file: code/ui/uishell.cpp, function: UI_Intercept_Pumped_Message, expression: VK_F9, guard: _DEBUG }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Intercept_Pumped_Message, expression: VK_F9, guard: _DEBUG }
   - id: fixed:debug-benchmark-overlay
     title: Toggle the benchmark overlay
     description: Shows or hides the Dear ImGui frame benchmark window drawn over the game and its menus.
@@ -297,7 +297,7 @@ fixed_controls:
     context: Any game window focused, with Debug_Flag enabled
     availability: *debug
     sites:
-      - { file: code/ui/uishell.cpp, function: UI_Intercept_Pumped_Message, expression: VK_F6, guard: _DEBUG }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Intercept_Pumped_Message, expression: VK_F6, guard: _DEBUG }
 
 fixed_exclusions:
   - site: { file: code/debug.cpp, function: Debug_Key, expression: KN_BUTTON, guard: _DEBUG }

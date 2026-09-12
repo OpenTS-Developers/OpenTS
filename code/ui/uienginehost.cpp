@@ -132,12 +132,12 @@ class UIEngineHostClass : public UIShellHostClass
 };
 
 
-static UIEngineHostClass _Host;
-
-
+// Built on first use, so the shell's global can take it whatever the order of static
+// construction.
 UIShellHostClass & UI_Engine_Host(void)
 {
-	return(_Host);
+	static UIEngineHostClass host;
+	return(host);
 }
 
 
@@ -161,12 +161,6 @@ bool UI_Service_Game(void)
 	}
 
 	return(false);
-}
-
-
-bool UI_Init(void)
-{
-	return(UI_Init(_Host));
 }
 
 
