@@ -5,7 +5,8 @@
  * Copyright 2020-2024 Vanilla Conquer contributors
  * Copyright 2026 OpenTS contributors
  *
- * Contains material derived from Vanilla Conquer (https://github.com/TheAssemblyArmada/Vanilla-Conquer).
+ * Contains material derived from Vanilla Conquer
+ * (https://github.com/TheAssemblyArmada/Vanilla-Conquer).
  * Modified by OpenTS contributors, 2026.
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/

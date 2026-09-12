@@ -2,7 +2,7 @@
  *                                O P E N  T S
  *******************************************************************************
  * SPDX-License-Identifier: GPL-3.0-or-later
- * Copyright 2020-2025 Electronic Arts Inc.
+ * Copyright 2020, 2025 Electronic Arts Inc.
  * Copyright 2020-2022 Vanilla Conquer contributors
  * Copyright 2026 OpenTS contributors
  *
