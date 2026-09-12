@@ -11,7 +11,7 @@ related:
     id: mix
 ---
 
-The `ui` directory beside the executable holds the RmlUi documents (`.rml`), their style sheets (`.rcss`), and the Open Sans font `OpenSans.ttf` with its license `OFL.txt`. The build copies the directory beside the executable the way it copies `Language.dll`, and the release package carries it.
+The `ui` directory beside the executable holds the RmlUi documents (`.rml`), their style sheets (`.rcss`), and the Open Sans font `OpenSans.ttf` with its license `OFL.txt`. The build places the directory beside the executable, where `Language.dll` is built, and the release package carries it.
 
 ## How a file is found
 

@@ -1,12 +1,13 @@
 # UI system design
 
-Status: proposal under implementation. Steps 1 and 2 of the
-[migration plan](#migration-plan), the dependencies, the RmlUi shell, the
-Dear ImGui overlays, and the version dialog, have landed; everything after
-them is not yet implemented, built, or measured. Source inspection and
-upstream documentation inform the rest. This page owns the proposed UI
-architecture and migration;
-[Building OpenTS](BUILDING.md) owns build support and
+Status: under implementation. Steps 1 through 7 of the
+[migration plan](#migration-plan) have landed: the dependencies, the RmlUi
+shell, the Dear ImGui overlays, the version dialog, the message boxes, the
+sound options, the progress and wait boxes, and the options family (game
+controls, display, mode confirmation, keyboard, options menu). Steps 8
+onward are not yet implemented, built, or measured; source inspection and
+upstream documentation inform them. This page owns the UI architecture and
+migration; [Building OpenTS](BUILDING.md) owns build support and
 [Project direction](DIRECTION.md) the wider architecture.
 
 ## Where the UI stands today
@@ -141,10 +142,12 @@ Limits, chosen to keep the work bounded:
 
 Three parts, from the bottom up.
 
-The **UI shell** is one module that owns the RmlUi context, the ImGui
-context, the bgfx overlay pass, the input hook, and the modal runner. It is
-the only code that includes RmlUi or ImGui headers, the way `bgfxbackend.cpp`
-is the only code that includes bgfx.
+The **UI shell** is the `code/ui/` module: a `UIShellClass` object that owns
+the RmlUi context, the injected toolkit interfaces, the bgfx overlay pass,
+the input hook, and the modal runner, beside the ImGui context its developer
+module holds. Only its `code/ui/rml/` headers include RmlUi, ImGui, or bgfx,
+the way `bgfxbackend.cpp` is the only other code that includes bgfx; the
+`toolkitheaders` CTest check enforces that.
 
 A **screen** is a presenter plus a view. The presenter is a plain C++ object:
 it holds a view-model struct, answers queries, and executes actions. It never
@@ -206,6 +209,7 @@ rule the tree follows, not a build boundary.
 | `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image decoding: PNG and TGA today, with SHP, PCX and engine surfaces described under [Assets](#assets-and-strings)), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
 | `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
 | `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
+| `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside | landed |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
 repository root. The build places the tree beside the executable, at
@@ -529,15 +533,21 @@ A migrated dialog driver keeps its shape. `Run_Modal` is the RmlUi twin of
 the `Dialog_Message_Handler` loop:
 
 ```cpp
-UIResult UI_Run_Modal(UIScreen & screen);
+UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service);
 // each pass:
-//   Windows_Message_Handler();
-//   Main_Loop() in a network session, else Call_Back();   -- same test as today
+//   service();   -- the engine passes UI_Service_Game: Windows_Message_Handler(),
+//                   then Main_Loop() in a network session, else Call_Back();
+//                   a test passes whatever it wants pumped
 //   context->Update();
 //   execute the screen's queued intents;
 //   mark the overlay dirty, Video_Present_If_Dirty();
-// until the screen has a result or Main_Loop reports the game ended.
+// until the screen has a result or the service reports the game ended.
 ```
+
+The service pass is injected rather than written into the runner, so the
+shell includes no game-loop header and the harness drives a modal without
+the engine; `UI_Run_Modal(view)` in `uienginehost.h` is the engine's entry
+and binds `UI_Service_Game`.
 
 The result carries the game-ended flag the way `Dialog_Message_Handler`
 returns `true`, so callers keep their logic. Wrappers keep their service
@@ -756,7 +766,7 @@ can follow the screen contract when someone wants them.
 | Configuration | Existing keys and defaults unchanged; new keys get owning documentation. |
 | Localization | The UTF-8 transition owns the encoding change; the UI adds no conversion of its own. |
 | Mods and resources | Legacy asset semantics unchanged; document paths, binding names, event names, and the styling profile are experimental until versioned with the first supported override package. |
-| Build | 32-bit MSVC with the static CRT for every new dependency. |
+| Build | Win32 and x64 MSVC with the static CRT for every new dependency; CI builds and tests both platforms. |
 
 ## Dependencies
 
@@ -864,18 +874,20 @@ the credits are unscheduled.
 
 ## Validation and evidence
 
-The `tests/uishell` CTest target brings FreeType and Dear ImGui up and down
-under the engine's link settings and drives RmlUi core through a recording
-render interface and a counting system interface. As screens land it links
-`uiscreen.h`, the string table, and the screen presenters. It runs without
-game assets:
+Three CTest targets run without game assets and build into
+`<build directory>/test-bin/`.
+
+`tests/uishell` brings FreeType and Dear ImGui up and down under the engine's
+link settings, drives RmlUi core through a recording render interface and a
+counting system interface, links the string table and the screen presenters,
+and builds `UIShellClass` itself over a host the test controls:
 
 - Load every shipped document from the source tree with the shipped font,
   show, update, and render it, and fail on a parse error, an RmlUi warning
   or error, a call to a render method the shell leaves at its default, a
-  scissor outside the context, or a resource named by anything but a bare
-  file name; after shutdown, every compiled geometry and texture has been
-  released.
+  fragment the renderer would refuse, a scissor outside the context, or a
+  resource named by anything but a bare file name; after shutdown, every
+  compiled geometry and texture has been released.
 - Bind a presenter, drive it with `Context::ProcessMouseButtonDown` on a
   known element, and assert the queued intent and result; drive the same
   actions through the legacy adapter and assert the same ordered service
@@ -887,6 +899,24 @@ game assets:
 - Map client positions into the overlay at integer and fractional scales,
   with letterboxing, exclusive edges, outside input, and the offset a captured
   pointer keeps outside.
+- Run the shell: initialise over injected interfaces and again after a
+  shutdown; drive a modal with a stub service to each result; consume a press
+  pumped while a screen opens; defer a resize arriving inside a render;
+  suppress what is held as a screen opens, what a lost capture cancels, and
+  what focus return finds held; restore the outer modal's ownership after a
+  nested one; take the side buttons and the horizontal wheel under a modal;
+  decode two UTF-8 bytes into one character; round the clipboard through
+  UTF-16; show and put back the pointer shape; list, unlist and release a
+  modeless notice.
+
+`tests/uilogic` compiles the toolkit-free state with no UI library: the input
+ownership table and its cancellations, the UTF-8 decoder, the renderer's
+geometry, size and scissor checks, and the presenter's marks through consume,
+restore and reset.
+
+`toolkitheaders` runs `cmake/CheckToolkitHeaders.cmake` over `code/` and
+fails on a toolkit or renderer header included outside `code/ui/rml/`, or an
+RmlUi or ImGui header included by a source outside `code/ui/`.
 
 Runtime evidence stays per pull request, as `CONTRIBUTING.md` requires: the
 screen exercised in single player, skirmish, and a two-instance LAN game
@@ -902,7 +932,8 @@ geometry memory are recorded on an agreed baseline before defaults change.
 ## Documentation
 
 - This page owns the architecture and is updated as steps land.
-- `docs/BUILDING.md` lists the new submodules.
+- `docs/BUILDING.md` lists the new submodules, the harnesses, and where the
+  `ui/` directory lands beside the executable.
 - `THIRD_PARTY_NOTICES.md` and the packaging license copy gain the three
   projects.
 - The manual gains a systems page for the UI files (where they live, the

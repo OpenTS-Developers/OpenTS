@@ -241,11 +241,12 @@ CI collects the uploaded artifacts from `build/bin/<configuration>/`.
 
 ## Verification boundary
 
-The supported matrix was verified on September 11, 2026 with CMake 4.3.3,
+The supported matrix was verified on September 13, 2026 with CMake 4.3.3,
 Visual Studio 2022 Community 17.14.37614.0, MSVC 19.44.35228, and Windows SDK
 10.0.26100. Fresh Win32 and x64 builds completed successfully in both
-configurations, and CTest passed all 40 tests in each of the four. The builds
-retain inherited MSVC warnings; warnings are not treated as errors, but
+configurations, and CTest passed all 43 tests in each of the four, including
+the `uishell`, `uilogic`, and `toolkitheaders` targets. The builds retain
+inherited MSVC warnings; warnings are not treated as errors, but
 contributions should not add new warnings.
 
 This verifies only that the supported toolchain compiles, links, passes the
