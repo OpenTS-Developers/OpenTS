@@ -9,17 +9,17 @@
 
 #include "ui/rml/rmlsystem.h"
 
-#include "data.h"
-#include "dbgprint.h"
-#include "win.h"
+#include "ui/uihost.h"
 
 #include "opents_strings.h"
 
+#include <cstdio>
 #include <cstring>
 
 
-UIRmlSystemClass::UIRmlSystemClass(void) :
-	StartTime(timeGetTime())
+UIRmlSystemClass::UIRmlSystemClass(UIShellHostClass & host) :
+	Host(host),
+	Start(std::chrono::steady_clock::now())
 {
 }
 
@@ -27,7 +27,7 @@ UIRmlSystemClass::UIRmlSystemClass(void) :
 // UI animation follows the wall clock, never the game's deterministic timers.
 double UIRmlSystemClass::GetElapsedTime(void)
 {
-	return((double)(timeGetTime() - StartTime) / 1000.0);
+	return(std::chrono::duration<double>(std::chrono::steady_clock::now() - Start).count());
 }
 
 
@@ -58,7 +58,9 @@ bool UIRmlSystemClass::LogMessage(Rml::Log::Type type, Rml::String const & messa
 			break;
 	}
 
-	DebugString("UI %s: %s\n", level, message.c_str());
+	char line[1024];
+	std::snprintf(line, sizeof(line), "UI %s: %s\n", level, message.c_str());
+	Host.Log(line);
 	return(true);
 }
 
@@ -84,8 +86,8 @@ static int String_Id(Rml::String const & name)
 
 
 // A document names an engine string as [[TXT_NAME]]. An unknown name stays as typed so that
-// it shows where it was written. Fetch_String returns a pointer into a cache that later
-// calls reuse, so the text is copied out at once.
+// it shows where it was written. The host's string is valid only until its next call, so
+// the text is copied out at once.
 int UIRmlSystemClass::TranslateString(Rml::String & translated, Rml::String const & input)
 {
 	int count = 0;
@@ -108,10 +110,12 @@ int UIRmlSystemClass::TranslateString(Rml::String & translated, Rml::String cons
 		int id = String_Id(name);
 
 		if (id >= 0) {
-			translated.append(Fetch_String(id));
+			translated.append(Host.String(id));
 			count++;
 		} else {
-			DebugString("UI: no string named %s\n", name.c_str());
+			char line[256];
+			std::snprintf(line, sizeof(line), "UI: no string named %s\n", name.c_str());
+			Host.Log(line);
 			translated.append(input, open, close + 2 - open);
 		}
 

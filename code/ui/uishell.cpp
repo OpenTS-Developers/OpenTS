@@ -9,16 +9,6 @@
 
 #include "ui/uishell.h"
 
-#include "_keyboar.h"
-#include "conquer.h"
-#include "dbgprint.h"
-#include "globals.h"
-#include "goptions.h"
-#include "keyboard.h"
-#include "mainloop.h"
-#include "movies.h"
-#include "msgloop.h"
-#include "session.h"
 #include "ui/dev/uidev.h"
 #include "ui/rml/rmlfile.h"
 #include "ui/rml/rmlkeys.h"
@@ -26,8 +16,7 @@
 #include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmlview.h"
 #include "ui/uicoord.h"
-#include "video.h"
-#include "windlg.h"
+#include "ui/uihost.h"
 
 // windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
 // element walkers.
@@ -37,11 +26,15 @@
 #include <RmlUi/Core.h>
 
 #include <cassert>
+#include <cstdarg>
 #include <cstdio>
+#include <memory>
 
+
+static UIShellHostClass * _Host = nullptr;
 
 // The interfaces outlive Rml::Shutdown, which releases every resource through them.
-static UIRmlSystemClass _System;
+static std::unique_ptr<UIRmlSystemClass> _System;
 static UIRmlFileClass _File;
 static UIRmlBgfxRenderClass _Render;
 
@@ -95,6 +88,19 @@ class UITestListenerClass : public Rml::EventListener
 static UITestListenerClass _TestListener;
 
 #endif
+
+
+static void Log(char const * format, ...)
+{
+	char buffer[512];
+	va_list args;
+
+	va_start(args, format);
+	std::vsnprintf(buffer, sizeof(buffer), format, args);
+	va_end(args);
+
+	_Host->Log(buffer);
+}
 
 
 static int Key_Modifiers(void)
@@ -152,22 +158,22 @@ static bool Text_Input_Focused(void)
 
 static void Apply_Dimensions(void)
 {
-	VideoScaleInfo const & scale = Video_Get_Scale_Info();
+	UIFrameRect frame = _Host->Frame();
 
-	float ratio = scale.ScaleX < scale.ScaleY ? scale.ScaleX : scale.ScaleY;
+	float ratio = frame.ScaleX < frame.ScaleY ? frame.ScaleX : frame.ScaleY;
 	if (ratio <= 0.0f) {
 		ratio = 1.0f;
 	}
 
-	_Context->SetDimensions(Rml::Vector2i(scale.DestWidth, scale.DestHeight));
+	_Context->SetDimensions(Rml::Vector2i(frame.Width, frame.Height));
 	_Context->SetDensityIndependentPixelRatio(ratio);
 }
 
 
 static UIPointerPosition Pointer_Position(LPARAM clientlparam)
 {
-	VideoScaleInfo const & scale = Video_Get_Scale_Info();
-	return(UI_Client_To_Overlay(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight, GET_X_LPARAM(clientlparam), GET_Y_LPARAM(clientlparam)));
+	UIFrameRect frame = _Host->Frame();
+	return(UI_Client_To_Overlay(frame.X, frame.Y, frame.Width, frame.Height, GET_X_LPARAM(clientlparam), GET_Y_LPARAM(clientlparam)));
 }
 
 
@@ -190,9 +196,7 @@ static void Drop_Presses(void)
 
 	if (_TookCapture) {
 		_TookCapture = false;
-		if (GetCapture() == MainWindow) {
-			ReleaseCapture();
-		}
+		_Host->Release_Capture();
 	}
 }
 
@@ -202,14 +206,14 @@ static void Drop_Presses(void)
 static void Toggle_Test_Document(void)
 {
 	if (!_FontLoaded) {
-		DebugString("UI: the test document needs the font, which did not load\n");
+		Log("UI: the test document needs the font, which did not load\n");
 		return;
 	}
 
 	if (_TestDocument == NULL) {
 		_TestDocument = _Context->LoadDocument("test.rml");
 		if (_TestDocument == NULL) {
-			DebugString("UI: test.rml did not load\n");
+			Log("UI: test.rml did not load\n");
 			return;
 		}
 
@@ -228,38 +232,44 @@ static void Toggle_Test_Document(void)
 		_Render.Log_Resource_Counts("test document shown");
 	}
 
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 }
 
 #endif
 
 
-bool UI_Init(void)
+bool UI_Init(UIShellHostClass & host)
 {
 	if (_Ready) {
 		return(true);
 	}
 
+	_Host = &host;
+
 	if (!_Render.Init()) {
 		return(false);
 	}
 
-	Rml::SetSystemInterface(&_System);
+	_System = std::make_unique<UIRmlSystemClass>(host);
+
+	Rml::SetSystemInterface(_System.get());
 	Rml::SetFileInterface(&_File);
 	Rml::SetRenderInterface(&_Render);
 
 	if (!Rml::Initialise()) {
-		DebugString("UI: RmlUi did not initialise\n");
+		Log("UI: RmlUi did not initialise\n");
 		_Render.Shutdown();
+		_System.reset();
 		return(false);
 	}
 
-	VideoScaleInfo const & scale = Video_Get_Scale_Info();
-	_Context = Rml::CreateContext("main", Rml::Vector2i(scale.DestWidth, scale.DestHeight));
+	UIFrameRect frame = host.Frame();
+	_Context = Rml::CreateContext("main", Rml::Vector2i(frame.Width, frame.Height));
 	if (_Context == NULL) {
-		DebugString("UI: the context could not be created\n");
+		Log("UI: the context could not be created\n");
 		Rml::Shutdown();
 		_Render.Shutdown();
+		_System.reset();
 		return(false);
 	}
 
@@ -267,12 +277,12 @@ bool UI_Init(void)
 
 	_FontLoaded = Rml::LoadFontFace("OpenSans.ttf");
 	if (!_FontLoaded) {
-		DebugString("UI: OpenSans.ttf did not load, so no document can be shown\n");
+		Log("UI: OpenSans.ttf did not load, so no document can be shown\n");
 	}
 
 	_Ready = true;
-	DebugString("UI: RmlUi %s ready over a %dx%d frame at %.2f pixels per dp\n",
-				Rml::GetVersion().c_str(), scale.DestWidth, scale.DestHeight, _Context->GetDensityIndependentPixelRatio());
+	Log("UI: RmlUi %s ready over a %dx%d frame at %.2f pixels per dp\n",
+		Rml::GetVersion().c_str(), frame.Width, frame.Height, _Context->GetDensityIndependentPixelRatio());
 	return(true);
 }
 
@@ -305,13 +315,14 @@ void UI_Shutdown(void)
 
 	Rml::Shutdown();
 	_Render.Shutdown();
+	_System.reset();
 	_FontLoaded = false;
 }
 
 
 bool UI_Use_Rml(void)
 {
-	return(_Ready && !Options.LegacyDialogs);
+	return(_Ready && !_Host->Legacy_Dialogs_Requested());
 }
 
 
@@ -333,7 +344,7 @@ void UI_On_Video_Change(void)
 		Apply_Dimensions();
 	}
 
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 }
 
 
@@ -353,14 +364,14 @@ void UI_Tick(void)
 	if (_PendingDevToggle) {
 		_PendingDevToggle = false;
 		UIDev_Toggle(_Render);
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 	}
 	if (_CloseRequested) {
 		_CloseRequested = false;
 		if (_TestDocument != NULL && _TestDocument->IsVisible()) {
 			_TestDocument->Hide();
 			_Render.Log_Resource_Counts("test document closed");
-			Video_Mark_Overlay_Dirty();
+			_Host->Mark_Overlay_Dirty();
 		}
 	}
 #endif
@@ -392,7 +403,7 @@ void UI_Tick(void)
 	static bool devwasactive = false;
 	bool devactive = UIDev_Active();
 	if (Documents_Visible() || devactive || devwasactive) {
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 	}
 	devwasactive = devactive;
 
@@ -402,7 +413,7 @@ void UI_Tick(void)
 
 void UI_Render_Overlay(void)
 {
-	if (!_Ready || _InContext || Movie_Is_Playing()) {
+	if (!_Ready || _InContext || _Host->Movie_Playing()) {
 		return;
 	}
 
@@ -412,13 +423,13 @@ void UI_Render_Overlay(void)
 		return;
 	}
 
-	VideoScaleInfo const & scale = Video_Get_Scale_Info();
-	if (scale.DestWidth <= 0 || scale.DestHeight <= 0) {
+	UIFrameRect frame = _Host->Frame();
+	if (frame.Width <= 0 || frame.Height <= 0) {
 		return;
 	}
 
 	if (documents) {
-		_Render.Begin_Frame(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight);
+		_Render.Begin_Frame(frame.X, frame.Y, frame.Width, frame.Height);
 
 		_InContext = true;
 		_Context->Render();
@@ -426,7 +437,7 @@ void UI_Render_Overlay(void)
 	}
 
 	if (overlays) {
-		_Render.Begin_Dev_Frame(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight);
+		_Render.Begin_Dev_Frame(frame.X, frame.Y, frame.Width, frame.Height);
 		UIDev_Render(_Render);
 	}
 }
@@ -438,18 +449,18 @@ static bool Handle_Mouse_Move(LPARAM clientlparam)
 
 	UIDev_Mouse_Position(position.X, position.Y);
 	if (UIDev_Wants_Mouse()) {
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 		return(false);
 	}
 
 	if (_OwnedButtons != 0 || position.Inside) {
 		_Context->ProcessMouseMove(position.X, position.Y, Key_Modifiers());
 		_MouseInside = position.Inside;
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 	} else if (_MouseInside) {
 		_Context->ProcessMouseLeave();
 		_MouseInside = false;
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 	}
 
 	return(false);
@@ -459,10 +470,7 @@ static bool Handle_Mouse_Move(LPARAM clientlparam)
 static void Own_Press(int button)
 {
 	if (_OwnedButtons == 0) {
-		_TookCapture = (GetCapture() != MainWindow);
-		if (_TookCapture) {
-			SetCapture(MainWindow);
-		}
+		_TookCapture = _Host->Take_Capture();
 	}
 	_OwnedButtons |= (1u << button);
 }
@@ -474,9 +482,7 @@ static void Release_Press(int button)
 	_DevOwnedButtons &= ~(1u << button);
 	if (_OwnedButtons == 0 && _TookCapture) {
 		_TookCapture = false;
-		if (GetCapture() == MainWindow) {
-			ReleaseCapture();
-		}
+		_Host->Release_Capture();
 	}
 }
 
@@ -490,7 +496,7 @@ static bool Handle_Button_Down(int button, LPARAM clientlparam)
 		if (UIDev_Mouse_Button(button, true)) {
 			Own_Press(button);
 			_DevOwnedButtons |= (1u << button);
-			Video_Mark_Overlay_Dirty();
+			_Host->Mark_Overlay_Dirty();
 			return(true);
 		}
 	}
@@ -504,7 +510,7 @@ static bool Handle_Button_Down(int button, LPARAM clientlparam)
 	_MouseInside = position.Inside;
 
 	bool interacting = !_Context->ProcessMouseButtonDown(button, modifiers);
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 
 	if (!interacting) {
 		return(false);
@@ -523,7 +529,7 @@ static bool Handle_Button_Up(int button, LPARAM clientlparam)
 		UIDev_Mouse_Position(position.X, position.Y);
 		UIDev_Mouse_Button(button, false);
 		Release_Press(button);
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 		return(true);
 	}
 
@@ -541,7 +547,7 @@ static bool Handle_Button_Up(int button, LPARAM clientlparam)
 	_Context->ProcessMouseMove(position.X, position.Y, modifiers);
 	_Context->ProcessMouseButtonUp(button, modifiers);
 	_MouseInside = position.Inside;
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 
 	Release_Press(button);
 	return(true);
@@ -550,13 +556,12 @@ static bool Handle_Button_Up(int button, LPARAM clientlparam)
 
 static bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 {
-	POINT point;
-	point.x = GET_X_LPARAM(screenlparam);
-	point.y = GET_Y_LPARAM(screenlparam);
-	ScreenToClient(MainWindow, &point);
+	int x = GET_X_LPARAM(screenlparam);
+	int y = GET_Y_LPARAM(screenlparam);
+	_Host->Screen_To_Client(x, y);
 
-	VideoScaleInfo const & scale = Video_Get_Scale_Info();
-	UIPointerPosition position = UI_Client_To_Overlay(scale.DestX, scale.DestY, scale.DestWidth, scale.DestHeight, point.x, point.y);
+	UIFrameRect frame = _Host->Frame();
+	UIPointerPosition position = UI_Client_To_Overlay(frame.X, frame.Y, frame.Width, frame.Height, x, y);
 
 	// Windows counts wheel movement away from the user as positive; ImGui scrolls up for it
 	// and RmlUi scrolls down.
@@ -565,7 +570,7 @@ static bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 	if (UIDev_Active()) {
 		UIDev_Mouse_Position(position.X, position.Y);
 		if (UIDev_Mouse_Wheel(delta)) {
-			Video_Mark_Overlay_Dirty();
+			_Host->Mark_Overlay_Dirty();
 			return(true);
 		}
 	}
@@ -575,7 +580,7 @@ static bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 	}
 
 	bool consumed = !_Context->ProcessMouseWheel(Rml::Vector2f(0.0f, -delta), Key_Modifiers());
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 	return(consumed);
 }
 
@@ -583,7 +588,7 @@ static bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 static bool Handle_Key(UINT message, WPARAM wparam)
 {
 	if (UIDev_Key(wparam, message == WM_KEYDOWN)) {
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 		return(true);
 	}
 
@@ -599,7 +604,7 @@ static bool Handle_Key(UINT message, WPARAM wparam)
 		propagated = _Context->ProcessKeyUp(key, Key_Modifiers());
 	}
 
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 	return(!propagated || Text_Input_Focused());
 }
 
@@ -611,7 +616,7 @@ static bool Handle_Char(WPARAM wparam)
 	wchar_t unit = (wchar_t)wparam;
 
 	if (UIDev_Character(unit)) {
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 		return(true);
 	}
 
@@ -634,19 +639,14 @@ static bool Handle_Char(WPARAM wparam)
 	}
 
 	bool consumed = !_Context->ProcessTextInput((Rml::Character)code);
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 	return(consumed);
 }
 
 
 bool UI_Legacy_Dialog_Visible(void)
 {
-	for (int index = 0; index < g_DialogCount; index++) {
-		if (g_Dialogs[index].handle != NULL && IsWindowVisible(g_Dialogs[index].handle)) {
-			return(true);
-		}
-	}
-	return(Any_Modeless_Dialog_Visible());
+	return(_Host != nullptr && _Host->Legacy_Dialog_Visible());
 }
 
 
@@ -676,36 +676,13 @@ static bool Input_Message(UINT message)
 }
 
 
-// The service pass of OwnerDraw::Dialog_Message_Handler without its tick: the runner ticks
-// itself so that it can drain the screen's intents between the update and the present.
-static bool Service_Game(void)
-{
-	static bool inmainloop = false;
-
-	Windows_Message_Handler();
-
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH && !Session.NetOpen && !Session.Suspended) {
-		if (!inmainloop) {
-			inmainloop = true;
-			bool ended = Main_Loop();
-			inmainloop = false;
-			return(ended);
-		}
-	} else {
-		Call_Back();
-	}
-
-	return(false);
-}
-
-
-UIResult UI_Run_Modal(UIRmlViewClass & view)
+UIResult UI_Run_Modal(UIRmlViewClass & view, UIServiceCallback const & service)
 {
 	if (!_Ready) {
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 	if (!_FontLoaded) {
-		DebugString("UI: %s needs OpenSans.ttf, which did not load\n", view.Document_Name());
+		Log("UI: %s needs OpenSans.ttf, which did not load\n", view.Document_Name());
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 
@@ -713,9 +690,9 @@ UIResult UI_Run_Modal(UIRmlViewClass & view)
 	assert(!UI_Legacy_Dialog_Visible());
 
 	// A style sheet that fails to load leaves the document usable and is reported as an error.
-	int errors = _System.Error_Count();
-	if (!view.Prepare(*_Context) || _System.Error_Count() != errors) {
-		DebugString("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
+	int errors = _System->Error_Count();
+	if (!view.Prepare(*_Context) || _System->Error_Count() != errors) {
+		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
 		view.Release();
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
@@ -732,15 +709,15 @@ UIResult UI_Run_Modal(UIRmlViewClass & view)
 
 	_Modal = &view;
 	view.Show(true);
-	Video_Mark_Overlay_Dirty();
+	_Host->Mark_Overlay_Dirty();
 	std::snprintf(label, sizeof(label), "%s shown", view.Document_Name());
 	_Render.Log_Resource_Counts(label);
-	Keyboard->Clear();
+	_Host->Clear_Keyboard_Queue();
 
 	UIResult result = UI_RESULT_SESSION_ENDED;
 
 	while (true) {
-		bool ended = Service_Game();
+		bool ended = service();
 		if (!_Ready) {
 			break;
 		}
@@ -758,8 +735,8 @@ UIResult UI_Run_Modal(UIRmlViewClass & view)
 			break;
 		}
 
-		Video_Mark_Overlay_Dirty();
-		Video_Present_If_Dirty();
+		_Host->Mark_Overlay_Dirty();
+		_Host->Present_If_Dirty();
 	}
 
 	_ModalClosing = true;
@@ -779,11 +756,11 @@ UIResult UI_Run_Modal(UIRmlViewClass & view)
 	_ModalClosing = false;
 
 	if (_Ready) {
-		Video_Mark_Overlay_Dirty();
+		_Host->Mark_Overlay_Dirty();
 		std::snprintf(label, sizeof(label), "%s closed", view.Document_Name());
 		_Render.Log_Resource_Counts(label);
-		Keyboard->Clear();
-		SetFocus(MainWindow);
+		_Host->Clear_Keyboard_Queue();
+		_Host->Focus_Main_Window();
 	}
 
 	return(result);
@@ -796,9 +773,9 @@ bool UI_Show_Modeless(UIRmlViewClass & view)
 		return(false);
 	}
 
-	int errors = _System.Error_Count();
-	if (!view.Prepare(*_Context) || _System.Error_Count() != errors) {
-		DebugString("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
+	int errors = _System->Error_Count();
+	if (!view.Prepare(*_Context) || _System->Error_Count() != errors) {
+		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Document_Name());
 		view.Release();
 		return(false);
 	}
@@ -819,8 +796,8 @@ void UI_Hide_Modeless(UIRmlViewClass & view)
 		_InContext = true;
 		_Context->Update();
 		_InContext = false;
-		Video_Mark_Overlay_Dirty();
-		Video_Present_If_Dirty();
+		_Host->Mark_Overlay_Dirty();
+		_Host->Present_If_Dirty();
 	}
 }
 
@@ -855,20 +832,20 @@ void UI_Refresh(void)
 	}
 
 	UI_Tick();
-	Video_Mark_Overlay_Dirty();
-	Video_Present_If_Dirty();
+	_Host->Mark_Overlay_Dirty();
+	_Host->Present_If_Dirty();
 }
 
 
 bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM clientlparam)
 {
-	if (!_Ready || _InHook || hwnd != MainWindow) {
+	if (!_Ready || _InHook || hwnd != _Host->Main_Window()) {
 		return(false);
 	}
 
 	// Another window taking the capture ends the presses the shell owns.
 	if (message == WM_CAPTURECHANGED) {
-		if (_OwnedButtons != 0 && (HWND)clientlparam != MainWindow) {
+		if (_OwnedButtons != 0 && (HWND)clientlparam != _Host->Main_Window()) {
 			_TookCapture = false;
 			if (_InContext) {
 				_PendingRelease = true;
@@ -974,13 +951,13 @@ bool UI_Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM cli
 bool UI_Intercept_Pumped_Message(MSG const & msg)
 {
 #ifdef _DEBUG
-	if (_Ready && Debug_Flag && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F9) {
+	if (_Ready && _Host->Developer_Keys_Armed() && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F9) {
 		if (msg.message == WM_KEYDOWN && (msg.lParam & (1 << 30)) == 0) {
 			_PendingToggle = true;
 		}
 		return(true);
 	}
-	if (_Ready && Debug_Flag && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F6) {
+	if (_Ready && _Host->Developer_Keys_Armed() && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F6) {
 		if (msg.message == WM_KEYDOWN && (msg.lParam & (1 << 30)) == 0) {
 			_PendingDevToggle = true;
 		}

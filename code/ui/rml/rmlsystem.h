@@ -11,12 +11,16 @@
 
 #include <RmlUi/Core/SystemInterface.h>
 
+#include <chrono>
 
-// RmlUi's view of the engine's clock, debug log, resource naming and string table.
+class UIShellHostClass;
+
+
+// RmlUi's view of the wall clock, the host's log, resource naming and string table.
 class UIRmlSystemClass : public Rml::SystemInterface
 {
 	public:
-		UIRmlSystemClass(void);
+		UIRmlSystemClass(UIShellHostClass & host);
 
 		virtual double GetElapsedTime(void) override;
 		virtual bool LogMessage(Rml::Log::Type type, Rml::String const & message) override;
@@ -27,6 +31,7 @@ class UIRmlSystemClass : public Rml::SystemInterface
 		int Error_Count(void) const { return(Errors); }
 
 	private:
-		unsigned int StartTime;
+		UIShellHostClass & Host;
+		std::chrono::steady_clock::time_point Start;
 		int Errors = 0;
 };

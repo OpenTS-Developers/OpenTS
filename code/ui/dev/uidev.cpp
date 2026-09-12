@@ -395,7 +395,7 @@ bool UIDev_Active(void)
 }
 
 
-void UIDev_Toggle(UIRmlBgfxRenderClass const & render)
+void UIDev_Toggle(UIRmlRenderClass const & render)
 {
 	if (_Context == NULL) {
 		IMGUI_CHECKVERSION();
@@ -468,7 +468,7 @@ void UIDev_Tick(void)
 }
 
 
-void UIDev_Render(UIRmlBgfxRenderClass & render)
+void UIDev_Render(UIRmlRenderClass & render)
 {
 	if (!UIDev_Active()) {
 		return;
@@ -478,7 +478,7 @@ void UIDev_Render(UIRmlBgfxRenderClass & render)
 }
 
 
-void UIDev_Shutdown(UIRmlBgfxRenderClass & render)
+void UIDev_Shutdown(UIRmlRenderClass & render)
 {
 	if (_Context == NULL) {
 		return;
