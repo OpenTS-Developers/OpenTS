@@ -3410,11 +3410,8 @@ void Do_Random_Map(HWND dialog, bool (*callback)())
 	}
 	char *digest = CalcRandomMapDigest();
 	char name[128];
-	memset(name, 0, sizeof(name));
-	strncpy(name, "rmcache\\", sizeof(name));
-	strncat(name, digest, sizeof(name));
+	snprintf(name, sizeof(name), "rmcache\\%s.mmp", digest);
 	delete digest;
-	strncat(name, ".mmp", sizeof(name));
 	DebugString("Cache filename is %s\n", name);
 	CCFileClass cfile(name);
 
