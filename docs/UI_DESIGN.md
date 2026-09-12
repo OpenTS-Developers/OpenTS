@@ -165,6 +165,9 @@ Dependency rules:
 - Views use their toolkit directly. There is no shared widget API.
 - RmlUi data bindings and document nodes stay inside the RmlUi view.
 - Renderer handles stay inside `code/ui/rml/rmlrender.cpp`.
+- Headers outside `code/ui/rml/` include no toolkit header, and sources
+  outside `code/ui/` include no RmlUi or ImGui header; the `toolkitheaders`
+  CTest check enforces both.
 - The shell knows which presentation owns a region and an input scope. It
   does not know production rules, save semantics, or option behavior.
 - Existing callers keep their screen functions; composition sits behind
