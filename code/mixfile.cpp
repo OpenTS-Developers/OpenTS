@@ -69,7 +69,7 @@
 **	with the mixfile system.
 */
 //template<class T>
-List<MixFileClass *> MixFileClass::MixList;
+List<MixFileClass *> MixFileClass::List;
 
 /// template class MixFileClass<CCFileClass>;
 
@@ -185,7 +185,7 @@ MixFileClass::MixFileClass(char const * filename, PKey const * key) :
 	/*
 	**	Attach to list of mixfiles.
 	*/
-	MixList.Add_Tail(this);
+	List.Add_Tail(this);
 }
 
 
@@ -303,7 +303,7 @@ void const * MixFileClass::Retrieve(char const * filename)
  *=============================================================================================*/
 MixFileClass * MixFileClass::Finder(char const * filename)
 {
-	MixFileClass * ptr = MixList.First();
+	MixFileClass * ptr = List.First();
 	while (ptr->Is_Valid()) {
 		char path[_MAX_PATH];
 		char name[_MAX_FNAME];
@@ -545,7 +545,7 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	/*
 	**	Sweep through all registered mixfiles, trying to find the file in question.
 	*/
-	ptr = MixList.First();
+	ptr = List.First();
 	while (ptr->Is_Valid()) {
 		SubBlock * block;
 

@@ -113,5 +113,5 @@ class MixFileClass : public Node<MixFileClass *>
 		*/
 		void * Data;						// Pointer to raw data.
 
-		static List<MixFileClass *> MixList;
+		static ::List<MixFileClass *> List;
 };
