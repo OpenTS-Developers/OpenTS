@@ -453,6 +453,23 @@ fixed_exclusions:
       - { file: code/ui/uishell.cpp, function: Key_Modifiers, expression: VK_CAPITAL }
       - { file: code/ui/uishell.cpp, function: Key_Modifiers, expression: VK_NUMLOCK }
     reason: UI shell modifier-state encoding for RmlUi, not separate controls.
+  - sites:
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_SHIFT }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_CONTROL }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_MENU }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_LSHIFT }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_RSHIFT }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_LCONTROL }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_RCONTROL }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_LMENU }
+      - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_RMENU }
+    reason: UI shell modifier keys kept out of press ownership, not separate controls.
+  - site: { file: code/ui/uishell.cpp, function: UIShellClass::Quarantine_Held_Input, expression: VK_XBUTTON2 }
+    reason: UI shell loop bound over the virtual keys past the mouse buttons, not a control.
+  - sites:
+      - { file: code/ui/uienginehost.cpp, function: <file-scope>, expression: VK_LBUTTON }
+      - { file: code/ui/uienginehost.cpp, function: <file-scope>, expression: VK_RBUTTON }
+    reason: UI shell host naming the primary and secondary buttons as the messages do when the user swapped them, not controls.
 
 launch_options:
   - id: launch:help

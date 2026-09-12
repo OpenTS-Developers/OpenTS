@@ -23,6 +23,7 @@
 #include "session.h"
 #include "ui/uishell.h"
 #include "video.h"
+#include "wincursor.h"
 #include "windlg.h"
 
 
@@ -141,6 +142,48 @@ class UIEngineHostClass : public UIShellHostClass
 		virtual unsigned int Text_Code_Page(void) const override
 		{
 			return(GetACP());
+		}
+
+		virtual void Apply_Cursor(UICursor cursor) override
+		{
+			LPCTSTR shape = IDC_ARROW;
+			switch (cursor) {
+				case UI_CURSOR_TEXT:
+					shape = IDC_IBEAM;
+					break;
+				case UI_CURSOR_HAND:
+					shape = IDC_HAND;
+					break;
+				case UI_CURSOR_RESIZE_NS:
+					shape = IDC_SIZENS;
+					break;
+				case UI_CURSOR_RESIZE_EW:
+					shape = IDC_SIZEWE;
+					break;
+				case UI_CURSOR_RESIZE_NESW:
+					shape = IDC_SIZENESW;
+					break;
+				case UI_CURSOR_RESIZE_NWSE:
+					shape = IDC_SIZENWSE;
+					break;
+				case UI_CURSOR_MOVE:
+					shape = IDC_SIZEALL;
+					break;
+				case UI_CURSOR_UNAVAILABLE:
+					shape = IDC_NO;
+					break;
+				default:
+					break;
+			}
+			SetCursor(LoadCursor(NULL, shape));
+		}
+
+		virtual void Restore_Game_Cursor(void) override
+		{
+			Win_Cursor_Refresh();
+			if (!Win_Cursor_Handle_Set_Cursor()) {
+				SetCursor(LoadCursor(NULL, IDC_ARROW));
+			}
 		}
 
 		virtual char const * String(int id) const override

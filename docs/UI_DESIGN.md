@@ -202,8 +202,8 @@ rule the tree follows, not a build boundary.
 | Directory | Holds | Status |
 | --- | --- | --- |
 | `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals | landed |
-| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uicoord.h` (the pointer mapping from client pixels into the overlay) | landed |
-| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging to `DebugString`, string translation; cursor and clipboard wait for the first editable screen), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image decoding: PNG and TGA today, with SHP, PCX and engine surfaces described under [Assets](#assets-and-strings)), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base) | landed |
+| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay) | landed |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image decoding: PNG and TGA today, with SHP, PCX and engine surfaces described under [Assets](#assets-and-strings)), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base) | landed |
 | `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
 | `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
 
@@ -396,9 +396,12 @@ The shell clears the keyboard queue when a modal document opens and again
 after it is released, so the pump inside `Keyboard->Clear()` meets either
 the shown screen or the ownership table, never a screen mid-teardown. Focus
 loss cancels capture, drags, and composition; focus return does not replay
-held keys as presses. Cursor requests from RmlUi (`pointer`, `text`) map to
-`Win_Cursor_Set` and the previous request is restored on close. The
-clipboard interface uses the Win32 clipboard.
+held keys as presses. A document's pointer request (`text`, `pointer`,
+`move`, `not-allowed`) shows the matching system pointer while the pointer
+is the documents': a screen is shown, a document holds a press, or the
+pointer is over an element that takes it. The game's own pointer returns
+when a screen closes. The clipboard interface exchanges Unicode text with
+the Win32 clipboard and refuses malformed text rather than repairing it.
 
 Text arrives as `WM_CHAR`. The main window is a narrow window, so under the
 UTF-8 code page each message carries one byte and the shell decodes the

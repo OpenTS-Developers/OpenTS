@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "ui/uiinput.hh"
 #include "win.h"
 
 
@@ -65,6 +66,10 @@ class UIShellHostClass
 		// the code page below.
 		virtual bool Window_Is_Unicode(void) const = 0;
 		virtual unsigned int Text_Code_Page(void) const = 0;
+
+		// Shows the pointer shape a document asked for, and puts the game's own back.
+		virtual void Apply_Cursor(UICursor cursor) = 0;
+		virtual void Restore_Game_Cursor(void) = 0;
 
 		// An engine string by identifier. The result is valid until the next call.
 		virtual char const * String(int id) const = 0;

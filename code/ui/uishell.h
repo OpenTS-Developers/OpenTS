@@ -106,6 +106,10 @@ class UIShellClass
 		// True means the message is consumed.
 		bool Intercept_Pumped_Message(MSG const & msg);
 
+		// Answers WM_SETCURSOR over the client area: true when a document's pointer shape is
+		// on the pointer, so the game's own stays off it.
+		bool Handle_Set_Cursor(void);
+
 		Rml::Context * Rml_Context(void) const { return(Context); }
 		UIViewClass * Modal(void) const;
 		int Modal_Depth(void) const;
@@ -140,6 +144,9 @@ class UIShellClass
 		void Drop_Presses(void);
 		void Release_UI_Capture(void);
 		void Reset_Text(void);
+		bool Pointer_Owned(void) const;
+		void Apply_Cursor_Request(void);
+		void Restore_Cursor(void);
 		void Drain_Deferred(void);
 		void Toggle_Test_Document(void);
 		bool Handle_Mouse_Move(LPARAM clientlparam);
@@ -178,6 +185,9 @@ class UIShellClass
 		wchar_t HighSurrogate = 0;
 		UIUTF8DecoderClass Utf8;
 		unsigned char LegacyLead = 0;
+
+		// The shape last put on the pointer for the documents, if any.
+		UICursor AppliedCursor = UI_CURSOR_ARROW;
 
 		// The modal screens the runner is driving, innermost last, and whether the
 		// innermost is between releasing its document and handing the input back.
