@@ -20,17 +20,14 @@
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include <RmlUi/Core.h>
-#include <RmlUi/Core/Elements/ElementProgress.h>
-#include <ft2build.h>
-#include FT_FREETYPE_H
-#include <imgui.h>
-
 #include "ui/rml/rmlkeys.h"
+#include "ui/rml/rmlrender.h"
+#include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/gamectrl/uigamectrl.h"
@@ -41,7 +38,21 @@
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uicoord.h"
+#include "ui/uihost.h"
 #include "ui/uiscreen.h"
+#include "ui/uishell.h"
+#include "ui/uiview.h"
+
+// windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
+// element walkers.
+#undef GetFirstChild
+#undef GetNextSibling
+
+#include <RmlUi/Core.h>
+#include <RmlUi/Core/Elements/ElementProgress.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include <imgui.h>
 
 #include "opents_strings.h"
 
@@ -62,8 +73,9 @@ void Check(bool condition, char const * what)
 
 // Counts every call RmlUi makes while a document is laid out and drawn. The methods the
 // shell leaves at their defaults count as violations of the styling profile the shipped
-// documents must stay within.
-class RecordingRenderInterfaceClass : public Rml::RenderInterface
+// documents must stay within. It is also the renderer the harness's shell draws with,
+// so a test can act from inside a render pass through OnRender.
+class RecordingRenderInterfaceClass : public UIRmlRenderClass
 {
 	public:
 		int Compiled = 0;
@@ -73,7 +85,44 @@ class RecordingRenderInterfaceClass : public Rml::RenderInterface
 		int Generated = 0;
 		int ReleasedTextures = 0;
 		int Unsupported = 0;
+		int Frames = 0;
 		std::vector<Rml::Rectanglei> Scissors;
+		std::function<void(void)> OnRender;
+
+		virtual bool Init(void) override
+		{
+			return(true);
+		}
+
+		virtual void Shutdown(void) override
+		{
+		}
+
+		virtual void Begin_Frame(int, int, int, int) override
+		{
+			Frames++;
+		}
+
+		virtual void Begin_Dev_Frame(int, int, int, int) override
+		{
+		}
+
+		virtual void Render_ImGui(ImDrawData *) override
+		{
+		}
+
+		virtual void Destroy_ImGui_Textures(void) override
+		{
+		}
+
+		virtual int Texture_Limit(void) const override
+		{
+			return(4096);
+		}
+
+		virtual void Log_Resource_Counts(char const *) const override
+		{
+		}
 
 		virtual Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex>, Rml::Span<const int>) override
 		{
@@ -84,6 +133,9 @@ class RecordingRenderInterfaceClass : public Rml::RenderInterface
 		virtual void RenderGeometry(Rml::CompiledGeometryHandle, Rml::Vector2f, Rml::TextureHandle) override
 		{
 			Rendered++;
+			if (OnRender) {
+				OnRender();
+			}
 		}
 
 		virtual void ReleaseGeometry(Rml::CompiledGeometryHandle) override
@@ -206,6 +258,150 @@ class CountingSystemInterfaceClass : public Rml::SystemInterface
 			return(true);
 		}
 };
+
+
+// The program around the shell, as the harness plays it: a frame it can resize, a capture
+// it can watch, and a keyboard clear that runs whatever the test wants pumped.
+class TestHostClass : public UIShellHostClass
+{
+	public:
+		UIFrameRect Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
+		bool LegacyRequested = false;
+		bool LegacyVisible = false;
+		bool Captured = false;
+		int Presents = 0;
+		int Clears = 0;
+		int Focuses = 0;
+		UIShellClass * Shell = nullptr;
+		std::function<void(void)> OnClear;
+
+		virtual HWND Main_Window(void) const override
+		{
+			return(nullptr);
+		}
+
+		virtual UIFrameRect Frame(void) const override
+		{
+			return(Rect);
+		}
+
+		virtual void Mark_Overlay_Dirty(void) override
+		{
+		}
+
+		virtual void Present_If_Dirty(void) override
+		{
+			Presents++;
+			if (Shell != nullptr) {
+				Shell->Render_Overlay();
+			}
+		}
+
+		virtual bool Movie_Playing(void) const override
+		{
+			return(false);
+		}
+
+		virtual bool Legacy_Dialog_Visible(void) const override
+		{
+			return(LegacyVisible);
+		}
+
+		virtual bool Legacy_Dialogs_Requested(void) const override
+		{
+			return(LegacyRequested);
+		}
+
+		virtual bool Developer_Keys_Armed(void) const override
+		{
+			return(false);
+		}
+
+		virtual void Clear_Keyboard_Queue(void) override
+		{
+			Clears++;
+			if (OnClear) {
+				OnClear();
+			}
+		}
+
+		virtual void Focus_Main_Window(void) override
+		{
+			Focuses++;
+		}
+
+		virtual bool Take_Capture(void) override
+		{
+			bool took = !Captured;
+			Captured = true;
+			return(took);
+		}
+
+		virtual void Release_Capture(void) override
+		{
+			Captured = false;
+		}
+
+		virtual bool Screen_To_Client(int &, int &) const override
+		{
+			return(true);
+		}
+
+		virtual char const * String(int) const override
+		{
+			return("string");
+		}
+
+		virtual void Log(char const * text) override
+		{
+			std::printf("  shell: %s", text);
+		}
+};
+
+
+// The shell's own system interface with a count of what RmlUi complained about.
+class CountingSystemClass : public UIRmlSystemClass
+{
+	public:
+		int Problems = 0;
+
+		explicit CountingSystemClass(UIShellHostClass & host) :
+			UIRmlSystemClass(host)
+		{
+		}
+
+		virtual bool LogMessage(Rml::Log::Type type, Rml::String const & message) override
+		{
+			if (type == Rml::Log::LT_ERROR || type == Rml::Log::LT_ASSERT || type == Rml::Log::LT_WARNING) {
+				Problems++;
+			}
+			return(UIRmlSystemClass::LogMessage(type, message));
+		}
+};
+
+
+// A shell over the harness's host and recording interfaces, which it owns from construction.
+struct ShellFixtureType
+{
+	TestHostClass Host;
+	RecordingRenderInterfaceClass * Render;
+	CountingSystemClass * System;
+	UIShellClass Shell;
+
+	ShellFixtureType(void) :
+		Render(new RecordingRenderInterfaceClass()),
+		System(new CountingSystemClass(Host)),
+		Shell(Host, std::unique_ptr<UIRmlSystemClass>(System), nullptr, std::unique_ptr<UIRmlRenderClass>(Render))
+	{
+		Host.Shell = &Shell;
+	}
+};
+
+
+bool Send(UIShellClass & shell, UINT message, WPARAM wparam = 0, LPARAM lparam = 0)
+{
+	return(shell.Handle_Window_Message(nullptr, message, wparam, lparam));
+}
 
 
 std::string Read_Text(std::filesystem::path const & path)
@@ -2077,6 +2273,145 @@ void Test_Documents(void)
 	std::printf("  %d geometries, %d generated textures, %d loaded textures\n", render.Compiled, render.Generated, render.Loaded);
 }
 
+
+// The shell over the harness's host: it runs after Test_Documents has shut RmlUi down, as
+// one RmlUi lives per process, and the working directory is still the ui directory.
+void Test_Shell(void)
+{
+	ShellFixtureType fixture;
+	UIShellClass & shell = fixture.Shell;
+	TestHostClass & host = fixture.Host;
+
+	Check(!shell.Use_Rml(), "a shell not yet initialised opens no document");
+	Check(shell.Init(), "the shell initialises over the injected interfaces");
+	Check(shell.Rml_Context() != nullptr, "the shell holds a context");
+	Check(shell.Use_Rml(), "documents are used while the host asks for no legacy dialogs");
+	host.LegacyRequested = true;
+	Check(!shell.Use_Rml(), "the LegacyDialogs setting turns the documents off");
+	host.LegacyRequested = false;
+	Check(!shell.Screen_Shown() && shell.Modal() == nullptr && shell.Modal_Depth() == 0, "no screen is shown at start");
+
+	{
+		UIVersionPresenterClass presenter({ "one", "two" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool shownInside = false;
+		bool consumedWhileOpening = false;
+		int presents = host.Presents;
+
+		host.OnClear = [&](void) {
+			// The engine's clear pumps the window messages; a press arriving then meets the
+			// screen that has just been shown.
+			if (host.Clears == 1) {
+				consumedWhileOpening = Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
+			}
+		};
+
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				shownInside = shell.Screen_Shown() && shell.Modal() == view.get() && shell.Modal_Depth() == 1;
+			}
+			if (passes == 3) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		host.OnClear = nullptr;
+
+		Check(result == UI_RESULT_ACCEPTED, "Enter accepts the modal");
+		Check(passes == 3, "the runner stops on the pass that produced the result");
+		Check(host.Presents - presents == 2, "the runner presents after each pass that continues");
+		Check(shownInside, "the modal is the shown screen while the service runs");
+		Check(consumedWhileOpening, "a press pumped while the screen opens is consumed");
+		Check(host.Clears == 2, "the keyboard queue is cleared at open and at close");
+		Check(host.Focuses == 1, "focus returns to the main window once");
+		Check(!shell.Screen_Shown() && shell.Modal() == nullptr, "the modal stack is empty after the close");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "escape" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(result == UI_RESULT_CANCELLED, "Escape cancels the modal");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "ended" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			passes++;
+			return(true);
+		});
+		Check(result == UI_RESULT_SESSION_ENDED && passes == 1, "a service reporting the game ended closes the modal at once");
+		Check(!shell.Screen_Shown(), "a modal ended by the game leaves nothing shown");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "resize" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool resized = false;
+		bool unchangedInside = false;
+		bool appliedBefore = false;
+
+		fixture.Render->OnRender = [&](void) {
+			if (!resized) {
+				resized = true;
+				host.Rect.Width = 640;
+				host.Rect.Height = 400;
+				shell.On_Video_Change();
+				unchangedInside = shell.Rml_Context()->GetDimensions() == Rml::Vector2i(1280, 800);
+			}
+		};
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 2) {
+				appliedBefore = shell.Rml_Context()->GetDimensions() == Rml::Vector2i(640, 400);
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		fixture.Render->OnRender = nullptr;
+
+		Check(resized && unchangedInside, "a resize arriving inside a render is deferred");
+		Check(appliedBefore, "the deferred resize is applied before the next tick");
+
+		host.Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
+		shell.On_Video_Change();
+		Check(shell.Rml_Context()->GetDimensions() == Rml::Vector2i(1280, 800), "a resize outside a render is applied at once");
+	}
+
+	{
+		UIWaitBoxPresenterClass presenter("Working", false);
+		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
+
+		Check(shell.Show_Modeless(*view), "a notice shows beside the game");
+		Check(shell.Is_Modeless_Shown(*view) && view->Is_Shown(), "the shell lists the notice while it shows");
+		Check(!shell.Screen_Shown(), "a notice is not a screen");
+		shell.Hide_Modeless(*view);
+		Check(!shell.Is_Modeless_Shown(*view) && !view->Is_Shown(), "hiding the notice unlists it");
+		Check(shell.Show_Modeless(*view), "the notice shows again");
+
+		shell.Shutdown();
+		Check(!shell.Is_Modeless_Shown(*view) && !view->Is_Shown(), "shutdown releases a notice still shown");
+		shell.Hide_Modeless(*view);
+		Check(!shell.Use_Rml(), "a shut-down shell opens no document");
+	}
+
+	Check(shell.Init(), "the shell initialises again after a shutdown");
+	shell.Shutdown();
+
+	Check(fixture.Render->ReleasedGeometry == fixture.Render->Compiled, "the shell releases every geometry it compiled");
+	Check(fixture.Render->ReleasedTextures == fixture.Render->Loaded + fixture.Render->Generated, "the shell releases every texture it made");
+	Check(fixture.System->Problems == 0, "the shell's screens raise no RmlUi warning or error");
+}
+
 }
 
 
@@ -2092,6 +2427,7 @@ int main(void)
 	Test_Sound_Presenter();
 	Test_Strings();
 	Test_Documents();
+	Test_Shell();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);
