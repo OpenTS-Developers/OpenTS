@@ -51,6 +51,9 @@ static int _FrameHeight = 0;
 // A recreated frame texture holds nothing until the first upload reaches it.
 static bool _FrameUploaded = false;
 
+// A frame Backend_Present began that Backend_End_Frame has yet to end.
+static bool _FramePending = false;
+
 static int _PrescaleWidth = 0;
 static int _PrescaleHeight = 0;
 static int _DrawableWidth = 0;
@@ -159,14 +162,15 @@ static void Build_Convert_Table(void)
 
 
 /// <summary>
-/// Submits one textured rectangle covering the given destination.
+/// Submits one textured rectangle covering the given destination. False means the
+/// transient vertex memory ran out and nothing was submitted.
 /// </summary>
-static void Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false)
+static bool Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x, float y, float width, float height, unsigned int samplerflags, bool flipv = false)
 {
 	bgfx::TransientVertexBuffer buffer;
 
 	if (bgfx::getAvailTransientVertexBuffer(6, _VertexLayout) < 6) {
-		return;
+		return(false);
 	}
 
 	bgfx::allocTransientVertexBuffer(&buffer, 6, _VertexLayout);
@@ -188,6 +192,7 @@ static void Submit_Quad(bgfx::ViewId view, bgfx::TextureHandle texture, float x,
 	bgfx::setTexture(0, _TextureSampler, texture, samplerflags);
 	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A);
 	bgfx::submit(view, _Program);
+	return(true);
 }
 
 
@@ -389,6 +394,7 @@ void Backend_Shutdown(void)
 	_FrameWidth = 0;
 	_FrameHeight = 0;
 	_FrameUploaded = false;
+	_FramePending = false;
 	_Initialized = false;
 }
 
@@ -488,6 +494,8 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 		return(false);
 	}
 
+	_FramePending = true;
+
 	if (pixels != NULL) {
 		if (_FrameIs565) {
 			bgfx::updateTexture2D(_FrameTexture, 0, 0, 0, 0, (uint16_t)_FrameWidth, (uint16_t)_FrameHeight, bgfx::copy(pixels, (uint32_t)(_FrameHeight * pitch)), (uint16_t)pitch);
@@ -531,9 +539,10 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 				bgfx::setViewFrameBuffer(VIEW_PRESCALE, _PrescaleTarget);
 				bgfx::setViewClear(VIEW_PRESCALE, BGFX_CLEAR_COLOR, 0x000000FF);
 				Set_View_Transform(VIEW_PRESCALE, _PrescaleWidth, _PrescaleHeight);
-				Submit_Quad(VIEW_PRESCALE, _FrameTexture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT);
-				source = bgfx::getTexture(_PrescaleTarget);
-				from_prescale = true;
+				if (Submit_Quad(VIEW_PRESCALE, _FrameTexture, 0.0f, 0.0f, (float)_PrescaleWidth, (float)_PrescaleHeight, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP | BGFX_SAMPLER_POINT)) {
+					source = bgfx::getTexture(_PrescaleTarget);
+					from_prescale = true;
+				}
 			}
 		}
 	}
@@ -545,21 +554,21 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	Set_View_Transform(VIEW_PRESENT, _DrawableWidth, _DrawableHeight);
 
 	bool flipv = from_prescale && bgfx::getCaps()->originBottomLeft;
-	Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv);
-
-	return(true);
+	return(Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv));
 }
 
 
 /// <summary>
 /// Ends the frame Backend_Present began, putting everything submitted since on the screen.
+/// Does nothing when no frame is pending, so it is safe after a refused present.
 /// </summary>
 void Backend_End_Frame(void)
 {
-	if (!_Initialized) {
+	if (!_Initialized || !_FramePending) {
 		return;
 	}
 
+	_FramePending = false;
 	bgfx::frame();
 }
 

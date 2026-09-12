@@ -42,8 +42,9 @@ void Backend_On_Resize(int drawablewidth, int drawableheight);
 // Submits the frame, uploading new pixels first when given any. The pixels are 16 bit 565
 // and stay owned by the caller; they are consumed before this returns. NULL presents the
 // frame uploaded last. Nothing reaches the screen until Backend_End_Frame, and what is
-// submitted between the two calls draws over the frame. A false return means no frame was
-// submitted and the frame must not be ended.
+// submitted between the two calls draws over the frame. A false return means the frame did
+// not reach the window; Backend_End_Frame is always safe and ends a frame only when one
+// was begun.
 bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int destwidth, int destheight, BackendScaleMode mode);
 void Backend_End_Frame(void);
 
