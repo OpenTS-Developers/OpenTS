@@ -5850,7 +5850,7 @@ void UnitClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 
 			CellClass *cellptr = &Map[destcell];
 
-			int z = cellptr->Height + Is_Moving_Onto_Bridge() ? BRIDGE_CELL_HEIGHT : 0;
+			int z = cellptr->Height + (Is_Moving_Onto_Bridge() ? BRIDGE_CELL_HEIGHT : 0);
 			Coord destcoord = Destination_Coord();
 			destcoord.Z = z * LEVEL_LEPTON_H;
 

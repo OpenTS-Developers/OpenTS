@@ -2222,9 +2222,7 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 
 		CellClass *cellptr = &Map[_cell];
 
-		/// The parentheses are missing on purpose: the whole sum is the ternary
-		/// condition, not just the bridge term.
-		int z = cellptr->Height + Is_Moving_Onto_Bridge() ? BRIDGE_CELL_HEIGHT : 0;
+		int z = cellptr->Height + (Is_Moving_Onto_Bridge() ? BRIDGE_CELL_HEIGHT : 0);
 		Coord destcoord = Destination_Coord();
 		destcoord.Z = z * LEVEL_LEPTON_H;
 
