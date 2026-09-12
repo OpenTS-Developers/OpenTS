@@ -100,13 +100,77 @@ bool Input_Message(UINT message)
 		case WM_RBUTTONDBLCLK:
 		case WM_MBUTTONDOWN:
 		case WM_MBUTTONDBLCLK:
+		case WM_XBUTTONDOWN:
+		case WM_XBUTTONDBLCLK:
 		case WM_LBUTTONUP:
 		case WM_RBUTTONUP:
 		case WM_MBUTTONUP:
+		case WM_XBUTTONUP:
 		case WM_MOUSEWHEEL:
+		case WM_MOUSEHWHEEL:
 		case WM_KEYDOWN:
 		case WM_KEYUP:
 		case WM_CHAR:
+			return(true);
+
+		default:
+			return(false);
+	}
+}
+
+
+// The button a mouse message names, as RmlUi counts them: primary, secondary, middle, then
+// the two side buttons.
+int Message_Button(UINT message, WPARAM wparam)
+{
+	switch (message) {
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONDBLCLK:
+		case WM_LBUTTONUP:
+			return(0);
+
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONDBLCLK:
+		case WM_RBUTTONUP:
+			return(1);
+
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONDBLCLK:
+		case WM_MBUTTONUP:
+			return(2);
+
+		case WM_XBUTTONDOWN:
+		case WM_XBUTTONDBLCLK:
+		case WM_XBUTTONUP:
+			return(GET_XBUTTON_WPARAM(wparam) == XBUTTON1 ? 3 : 4);
+
+		default:
+			return(-1);
+	}
+}
+
+
+int Button_Virtual_Key(unsigned button)
+{
+	static int const keys[UIInputStateClass::BUTTON_COUNT] = { VK_LBUTTON, VK_RBUTTON, VK_MBUTTON, VK_XBUTTON1, VK_XBUTTON2 };
+	return(keys[button]);
+}
+
+
+// The modifiers are read from the keyboard state as each message arrives, so their presses
+// are never owned by anyone.
+bool Modifier_Key(int virtualkey)
+{
+	switch (virtualkey) {
+		case VK_SHIFT:
+		case VK_CONTROL:
+		case VK_MENU:
+		case VK_LSHIFT:
+		case VK_RSHIFT:
+		case VK_LCONTROL:
+		case VK_RCONTROL:
+		case VK_LMENU:
+		case VK_RMENU:
 			return(true);
 
 		default:
@@ -166,6 +230,13 @@ void UIShellClass::Log(char const * format, ...)
 }
 
 
+// While anything is shown or held, every input message is the shell's to look at.
+bool UIShellClass::Active(void) const
+{
+	return(Input.Any_Owned() || !Modals.empty() || Documents_Visible() || UIDev_Active());
+}
+
+
 bool UIShellClass::Documents_Visible(void) const
 {
 	if (Context == nullptr) {
@@ -216,27 +287,87 @@ UIPointerPosition UIShellClass::Pointer_Position(LPARAM clientlparam) const
 }
 
 
-// Forgets the presses the shell owns, telling the documents they ended, and gives the
-// capture back when the shell took it.
-void UIShellClass::Drop_Presses(void)
+std::array<bool, UIInputStateClass::BUTTON_COUNT> UIShellClass::Physical_Buttons(void) const
 {
-	unsigned int owned = OwnedButtons;
-	unsigned int devowned = DevOwnedButtons;
-	OwnedButtons = 0;
-	DevOwnedButtons = 0;
+	std::array<bool, UIInputStateClass::BUTTON_COUNT> held {};
+	for (unsigned button = 0; button < held.size(); button++) {
+		held[button] = Host.Key_Down(Button_Virtual_Key(button));
+	}
+	return(held);
+}
 
-	for (int button = 0; button < 3; button++) {
-		if (devowned & (1u << button)) {
-			UIDev_Mouse_Button(button, false);
-		} else if (owned & (1u << button)) {
-			Context->ProcessMouseButtonUp(button, Key_Modifiers());
+
+// What is held as a screen opens or focus returns belongs to nobody now: its release is
+// swallowed rather than handed to the game as the end of a press it never saw.
+void UIShellClass::Quarantine_Held_Input(void)
+{
+	Input.Reset();
+
+	for (unsigned key = VK_XBUTTON2 + 1; key < UIInputStateClass::KEY_COUNT; key++) {
+		if (!Modifier_Key((int)key) && Host.Key_Down((int)key)) {
+			Input.Press_Key(key, UI_INPUT_SUPPRESSED);
 		}
 	}
 
+	std::array<bool, UIInputStateClass::BUTTON_COUNT> held = Physical_Buttons();
+	for (unsigned button = 0; button < held.size(); button++) {
+		if (held[button]) {
+			Input.Press_Mouse(button, UI_INPUT_SUPPRESSED);
+		}
+	}
+}
+
+
+// A suppressed entry ends when the system says its key or button is up, so a release that
+// went to another window cannot keep the shell active.
+void UIShellClass::Reconcile_Held_Input(void)
+{
+	if (!Input.Any_Suppressed()) {
+		return;
+	}
+
+	std::array<bool, UIInputStateClass::KEY_COUNT> keys {};
+	for (unsigned key = 1; key < keys.size(); key++) {
+		keys[key] = Host.Key_Down((int)key);
+	}
+	Input.Reconcile_Cancelled_Keys(keys);
+	Input.Reconcile_Cancelled_Mouse(Physical_Buttons());
+}
+
+
+// Ends the presses the toolkits hold, telling them so, and suppresses every held button:
+// their releases stay with the shell wherever they land.
+void UIShellClass::Drop_Presses(void)
+{
+	for (unsigned button = 0; button < UIInputStateClass::BUTTON_COUNT; button++) {
+		UIInputOwner owner = Input.Mouse_Owner(button);
+		if (owner == UI_INPUT_IMGUI) {
+			UIDev_Mouse_Button((int)button, false);
+		} else if (owner == UI_INPUT_RML) {
+			Context->ProcessMouseButtonUp((int)button, Key_Modifiers());
+		}
+	}
+
+	Input.Cancel_Mouse();
+	Release_UI_Capture();
+	Reset_Text();
+}
+
+
+void UIShellClass::Release_UI_Capture(void)
+{
 	if (TookCapture) {
 		TookCapture = false;
 		Host.Release_Capture();
 	}
+}
+
+
+void UIShellClass::Reset_Text(void)
+{
+	HighSurrogate = 0;
+	Utf8.Reset();
+	LegacyLead = 0;
 }
 
 
@@ -371,9 +502,11 @@ void UIShellClass::Shutdown(void)
 	Modals.clear();
 	ModalClosing = false;
 
-	if (OwnedButtons != 0) {
+	if (Input.Gesture_Owner() != UI_INPUT_NONE) {
 		Drop_Presses();
 	}
+	Input.Reset();
+	Reset_Text();
 
 	// The documents go while the context still exists; a caller hiding its notice
 	// afterwards finds nothing to do.
@@ -457,6 +590,7 @@ void UIShellClass::Tick(void)
 	UIReentryGuardClass ticking(InTick);
 
 	Drain_Deferred();
+	Reconcile_Held_Input();
 
 	{
 		UIReentryGuardClass updating(InContext);
@@ -516,7 +650,7 @@ bool UIShellClass::Handle_Mouse_Move(LPARAM clientlparam)
 		return(false);
 	}
 
-	if (OwnedButtons != 0 || position.Inside) {
+	if (Input.Has_UI_Mouse() || position.Inside) {
 		Context->ProcessMouseMove(position.X, position.Y, Key_Modifiers());
 		MouseInside = position.Inside;
 		Host.Mark_Overlay_Dirty();
@@ -530,94 +664,81 @@ bool UIShellClass::Handle_Mouse_Move(LPARAM clientlparam)
 }
 
 
-void UIShellClass::Own_Press(int button)
-{
-	if (OwnedButtons == 0) {
-		TookCapture = Host.Take_Capture();
-	}
-	OwnedButtons |= (1u << button);
-}
-
-
-void UIShellClass::Release_Press(int button)
-{
-	OwnedButtons &= ~(1u << button);
-	DevOwnedButtons &= ~(1u << button);
-	if (OwnedButtons == 0 && TookCapture) {
-		TookCapture = false;
-		Host.Release_Capture();
-	}
-}
-
-
+// The press's owner is decided here and kept until its release: the overlays first, then
+// a shown screen, which takes every press, then whichever document the pointer is over.
 bool UIShellClass::Handle_Button_Down(int button, LPARAM clientlparam)
 {
+	Input.Reconcile_Cancelled_Mouse(Physical_Buttons());
+
 	UIPointerPosition position = Pointer_Position(clientlparam);
+	int modifiers = Key_Modifiers();
+	bool haduimouse = Input.Has_UI_Mouse();
+	UIInputOwner owner = UI_INPUT_GAME;
 
 	if (UIDev_Active()) {
 		UIDev_Mouse_Position(position.X, position.Y);
 		if (UIDev_Mouse_Button(button, true)) {
-			Own_Press(button);
-			DevOwnedButtons |= (1u << button);
-			Host.Mark_Overlay_Dirty();
-			return(true);
+			owner = UI_INPUT_IMGUI;
 		}
 	}
 
-	if (!position.Inside && OwnedButtons == 0) {
-		return(false);
+	if (owner == UI_INPUT_GAME) {
+		bool feed = position.Inside || Input.Gesture_Owner() != UI_INPUT_NONE;
+		if (feed) {
+			Context->ProcessMouseMove(position.X, position.Y, modifiers);
+			MouseInside = position.Inside;
+		}
+		if (!Modals.empty()) {
+			if (feed) {
+				Context->ProcessMouseButtonDown(button, modifiers);
+			}
+			owner = UI_INPUT_RML;
+		} else if (feed && !Context->ProcessMouseButtonDown(button, modifiers)) {
+			owner = UI_INPUT_RML;
+		}
 	}
 
-	int modifiers = Key_Modifiers();
-	Context->ProcessMouseMove(position.X, position.Y, modifiers);
-	MouseInside = position.Inside;
+	UIInputOwner latched = Input.Press_Mouse((unsigned)button, owner);
+	if (!haduimouse && Input.Has_UI_Mouse() && !TookCapture) {
+		TookCapture = Host.Take_Capture();
+	}
 
-	bool interacting = !Context->ProcessMouseButtonDown(button, modifiers);
 	Host.Mark_Overlay_Dirty();
-
-	if (!interacting) {
-		return(false);
-	}
-
-	Own_Press(button);
-	return(true);
+	return(UI_Consumes_Input(latched));
 }
 
 
 bool UIShellClass::Handle_Button_Up(int button, LPARAM clientlparam)
 {
 	UIPointerPosition position = Pointer_Position(clientlparam);
+	UIInputOwner owner = Input.Release_Mouse((unsigned)button);
 
-	if (DevOwnedButtons & (1u << button)) {
+	if (owner == UI_INPUT_IMGUI) {
 		UIDev_Mouse_Position(position.X, position.Y);
 		UIDev_Mouse_Button(button, false);
-		Release_Press(button);
-		Host.Mark_Overlay_Dirty();
-		return(true);
+	} else {
+		// A release the overlays did not own still ends the press they saw begin.
+		if (UIDev_Active()) {
+			UIDev_Mouse_Button(button, false);
+		}
+		if (owner == UI_INPUT_RML) {
+			int modifiers = Key_Modifiers();
+			Context->ProcessMouseMove(position.X, position.Y, modifiers);
+			Context->ProcessMouseButtonUp(button, modifiers);
+			MouseInside = position.Inside;
+		}
 	}
 
-	// A release the overlays did not own still ends the press they saw begin.
-	if (UIDev_Active()) {
-		UIDev_Mouse_Button(button, false);
+	if (!Input.Has_UI_Mouse()) {
+		Release_UI_Capture();
 	}
 
-	if ((OwnedButtons & (1u << button)) == 0) {
-		return(false);
-	}
-
-	int modifiers = Key_Modifiers();
-
-	Context->ProcessMouseMove(position.X, position.Y, modifiers);
-	Context->ProcessMouseButtonUp(button, modifiers);
-	MouseInside = position.Inside;
 	Host.Mark_Overlay_Dirty();
-
-	Release_Press(button);
-	return(true);
+	return(UI_Consumes_Input(owner));
 }
 
 
-bool UIShellClass::Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
+bool UIShellClass::Handle_Wheel(WPARAM wparam, LPARAM screenlparam, bool horizontal)
 {
 	int x = GET_X_LPARAM(screenlparam);
 	int y = GET_Y_LPARAM(screenlparam);
@@ -627,10 +748,10 @@ bool UIShellClass::Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 	UIPointerPosition position = UI_Client_To_Overlay(frame.X, frame.Y, frame.Width, frame.Height, x, y);
 
 	// Windows counts wheel movement away from the user as positive; ImGui scrolls up for it
-	// and RmlUi scrolls down.
+	// and RmlUi scrolls down. Sideways, both count rightward as positive.
 	float delta = (float)(short)HIWORD(wparam) / (float)WHEEL_DELTA;
 
-	if (UIDev_Active()) {
+	if (!horizontal && UIDev_Active()) {
 		UIDev_Mouse_Position(position.X, position.Y);
 		if (UIDev_Mouse_Wheel(delta)) {
 			Host.Mark_Overlay_Dirty();
@@ -642,63 +763,170 @@ bool UIShellClass::Handle_Wheel(WPARAM wparam, LPARAM screenlparam)
 		return(false);
 	}
 
-	bool consumed = !Context->ProcessMouseWheel(Rml::Vector2f(0.0f, -delta), Key_Modifiers());
+	Rml::Vector2f movement = horizontal ? Rml::Vector2f(delta, 0.0f) : Rml::Vector2f(0.0f, -delta);
+	bool consumed = !Context->ProcessMouseWheel(movement, Key_Modifiers());
 	Host.Mark_Overlay_Dirty();
 	return(consumed);
 }
 
 
-bool UIShellClass::Handle_Key(UINT message, WPARAM wparam)
+// A fresh press decides its owner; a repeat and the release follow it. Keys the toolkits do
+// not own are still shown to RmlUi so its modifier state keeps up, as before.
+bool UIShellClass::Handle_Key(UINT message, WPARAM wparam, LPARAM lparam)
 {
-	if (UIDev_Key(wparam, message == WM_KEYDOWN)) {
+	unsigned virtualkey = (unsigned)(wparam & 0xFF);
+	int modifiers = Key_Modifiers();
+	Rml::Input::KeyIdentifier key = UI_Key_Identifier((int)virtualkey);
+
+	if (message == WM_KEYUP) {
+		UIInputOwner owner = Input.Release_Key(virtualkey);
+		if (owner == UI_INPUT_IMGUI) {
+			UIDev_Key(wparam, false);
+		} else if (owner != UI_INPUT_SUPPRESSED) {
+			if (UIDev_Active()) {
+				UIDev_Key(wparam, false);
+			}
+			if (key != Rml::Input::KI_UNKNOWN) {
+				Context->ProcessKeyUp(key, modifiers);
+			}
+		}
 		Host.Mark_Overlay_Dirty();
-		return(true);
+		return(UI_Consumes_Input(owner));
 	}
 
-	Rml::Input::KeyIdentifier key = UI_Key_Identifier((int)(wparam & 0xFF));
-	if (key == Rml::Input::KI_UNKNOWN) {
-		return(false);
+	bool repeat = (lparam & (1 << 30)) != 0;
+	if (!repeat) {
+		Input.Release_Key(virtualkey);
 	}
 
-	bool propagated;
-	if (message == WM_KEYDOWN) {
-		propagated = Context->ProcessKeyDown(key, Key_Modifiers());
+	UIInputOwner owner = Input.Key_Owner(virtualkey);
+	if (owner != UI_INPUT_NONE) {
+		if (owner == UI_INPUT_IMGUI) {
+			UIDev_Key(wparam, true);
+		} else if (owner == UI_INPUT_RML && key != Rml::Input::KI_UNKNOWN) {
+			Context->ProcessKeyDown(key, modifiers);
+		}
 	} else {
-		propagated = Context->ProcessKeyUp(key, Key_Modifiers());
+		if (UIDev_Key(wparam, true)) {
+			owner = UI_INPUT_IMGUI;
+		} else if (!Modals.empty()) {
+			if (key != Rml::Input::KI_UNKNOWN) {
+				Context->ProcessKeyDown(key, modifiers);
+			}
+			owner = UI_INPUT_RML;
+		} else if (key == Rml::Input::KI_UNKNOWN) {
+			owner = UI_INPUT_GAME;
+		} else {
+			bool propagated = Context->ProcessKeyDown(key, modifiers);
+			owner = (!propagated || Text_Input_Focused()) ? UI_INPUT_RML : UI_INPUT_GAME;
+		}
+		Input.Press_Key(virtualkey, owner);
 	}
 
 	Host.Mark_Overlay_Dirty();
-	return(!propagated || Text_Input_Focused());
+	return(UI_Consumes_Input(owner));
 }
 
 
-// Windows delivers a character beyond the basic plane as two messages; the first half
-// waits for the second. Carriage returns become newlines and control characters stay out.
 bool UIShellClass::Handle_Char(WPARAM wparam)
 {
-	wchar_t unit = (wchar_t)wparam;
-
-	if (UIDev_Character(unit)) {
-		Host.Mark_Overlay_Dirty();
-		return(true);
+	if (Host.Window_Is_Unicode()) {
+		return(Feed_Text_Unit((wchar_t)wparam));
 	}
+	return(Feed_Text_Byte((unsigned char)wparam));
+}
 
+
+// A character beyond the basic plane arrives as two units; the first waits for the second,
+// and either half on its own becomes U+FFFD.
+bool UIShellClass::Feed_Text_Unit(wchar_t unit)
+{
 	if (unit >= 0xD800 && unit < 0xDC00) {
+		bool consumed = false;
+		if (HighSurrogate != 0) {
+			consumed = Handle_Text(0xFFFD);
+		}
 		HighSurrogate = unit;
-		return(false);
+		return(consumed);
 	}
 
 	char32_t code = unit;
-	if (unit >= 0xDC00 && unit < 0xE000 && HighSurrogate != 0) {
-		code = 0x10000 + (((char32_t)HighSurrogate - 0xD800) << 10) + ((char32_t)unit - 0xDC00);
+	if (unit >= 0xDC00 && unit < 0xE000) {
+		code = (HighSurrogate != 0) ? 0x10000 + (((char32_t)HighSurrogate - 0xD800) << 10) + ((char32_t)unit - 0xDC00) : 0xFFFD;
+	} else if (HighSurrogate != 0) {
+		Handle_Text(0xFFFD);
 	}
 	HighSurrogate = 0;
 
+	return(Handle_Text(code));
+}
+
+
+// A narrow window delivers text one byte per message: UTF-8 under the UTF-8 code page, else
+// the code page's own single and double bytes.
+bool UIShellClass::Feed_Text_Byte(unsigned char byte)
+{
+	unsigned int codepage = Host.Text_Code_Page();
+
+	if (codepage == CP_UTF8) {
+		UIInputText text = Utf8.Feed(byte);
+		bool consumed = false;
+		for (unsigned index = 0; index < text.Count; index++) {
+			consumed = Handle_Text(text.Codepoints[index]) || consumed;
+		}
+		return(consumed);
+	}
+
+	char bytes[2];
+	int count;
+	if (LegacyLead != 0) {
+		bytes[0] = (char)LegacyLead;
+		bytes[1] = (char)byte;
+		count = 2;
+		LegacyLead = 0;
+	} else if (IsDBCSLeadByteEx(codepage, byte)) {
+		LegacyLead = byte;
+		return(false);
+	} else {
+		bytes[0] = (char)byte;
+		count = 1;
+	}
+
+	wchar_t wide[2];
+	int converted = MultiByteToWideChar(codepage, MB_ERR_INVALID_CHARS, bytes, count, wide, 2);
+	char32_t code = 0xFFFD;
+	if (converted == 1) {
+		code = wide[0];
+	} else if (converted == 2 && wide[0] >= 0xD800 && wide[0] < 0xDC00 && wide[1] >= 0xDC00 && wide[1] < 0xE000) {
+		code = 0x10000 + (((char32_t)wide[0] - 0xD800) << 10) + ((char32_t)wide[1] - 0xDC00);
+	}
+	return(Handle_Text(code));
+}
+
+
+// Carriage returns become newlines and control characters stay out, as before.
+bool UIShellClass::Handle_Text(char32_t code)
+{
 	if (code == '\r') {
 		code = '\n';
 	}
 	if ((code < 32 && code != '\n') || code == 127) {
 		return(false);
+	}
+
+	if (UIDev_Active()) {
+		bool wanted;
+		if (code > 0xFFFF) {
+			char32_t offset = code - 0x10000;
+			wanted = UIDev_Character((wchar_t)(0xD800 + (offset >> 10)));
+			wanted = UIDev_Character((wchar_t)(0xDC00 + (offset & 0x3FF))) || wanted;
+		} else {
+			wanted = UIDev_Character((wchar_t)code);
+		}
+		if (wanted) {
+			Host.Mark_Overlay_Dirty();
+			return(true);
+		}
 	}
 
 	bool consumed = !Context->ProcessTextInput((Rml::Character)code);
@@ -731,9 +959,11 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	view.Presenter().Refresh();
 	view.Sync();
 
-	if (OwnedButtons != 0) {
+	if (Input.Gesture_Owner() != UI_INPUT_NONE) {
 		Drop_Presses();
 	}
+	Quarantine_Held_Input();
+	Reset_Text();
 
 	char label[160];
 
@@ -770,9 +1000,11 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	}
 
 	ModalClosing = true;
-	if (OwnedButtons != 0) {
+	if (Ready && Input.Gesture_Owner() != UI_INPUT_NONE) {
 		Drop_Presses();
 	}
+	Input.Cancel_UI();
+	Reset_Text();
 	view.Presenter().Discard();
 	view.Release();
 
@@ -856,15 +1088,17 @@ void UIShellClass::Refresh(void)
 }
 
 
-bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM clientlparam)
+bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	if (!Ready || InHook || hwnd != Host.Main_Window()) {
 		return(false);
 	}
 
-	// Another window taking the capture ends the presses the shell owns.
-	if (message == WM_CAPTURECHANGED) {
-		if (OwnedButtons != 0 && (HWND)clientlparam != Host.Main_Window()) {
+	// Another window taking the capture, or the system cancelling it, ends the presses the
+	// shell holds; the window no longer has the capture to give back.
+	if (message == WM_CAPTURECHANGED || message == WM_CANCELMODE) {
+		bool lost = (message == WM_CANCELMODE) || (HWND)lparam != Host.Main_Window();
+		if (lost && Input.Gesture_Owner() != UI_INPUT_NONE) {
 			TookCapture = false;
 			if (InContext) {
 				Deferred.DropPresses = true;
@@ -877,24 +1111,38 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 	}
 
 	if (message == WM_ACTIVATEAPP) {
+		bool activated = (wparam != 0);
 		if (InContext) {
-			Deferred.DevFocus = (wparam != 0) ? 1 : 0;
+			Deferred.DevFocus = activated ? 1 : 0;
 		} else {
-			UIDev_Focus(wparam != 0);
+			UIDev_Focus(activated);
 		}
-		if (wparam == 0 && MouseInside) {
-			if (InContext) {
-				Deferred.Leave = true;
-			} else {
-				UIReentryGuardClass hooking(InHook);
-				Context->ProcessMouseLeave();
-				MouseInside = false;
+		if (!activated) {
+			if (MouseInside) {
+				if (InContext) {
+					Deferred.Leave = true;
+				} else {
+					UIReentryGuardClass hooking(InHook);
+					Context->ProcessMouseLeave();
+					MouseInside = false;
+				}
 			}
+			Input.Cancel_All();
+			Release_UI_Capture();
+			Reset_Text();
+		} else if (Active()) {
+			Quarantine_Held_Input();
+			Reset_Text();
 		}
 		return(false);
 	}
 
-	if (InContext || (OwnedButtons == 0 && Modals.empty() && !Documents_Visible() && !UIDev_Active())) {
+	if (message == WM_INPUTLANGCHANGE) {
+		Reset_Text();
+		return(false);
+	}
+
+	if (InContext || !Active()) {
 		return(false);
 	}
 
@@ -908,43 +1156,38 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 
 	switch (message) {
 		case WM_MOUSEMOVE:
-			consumed = Handle_Mouse_Move(clientlparam);
+			consumed = Handle_Mouse_Move(lparam);
 			break;
 
 		case WM_LBUTTONDOWN:
 		case WM_LBUTTONDBLCLK:
-			consumed = Handle_Button_Down(0, clientlparam);
-			break;
-
 		case WM_RBUTTONDOWN:
 		case WM_RBUTTONDBLCLK:
-			consumed = Handle_Button_Down(1, clientlparam);
-			break;
-
 		case WM_MBUTTONDOWN:
 		case WM_MBUTTONDBLCLK:
-			consumed = Handle_Button_Down(2, clientlparam);
+		case WM_XBUTTONDOWN:
+		case WM_XBUTTONDBLCLK:
+			consumed = Handle_Button_Down(Message_Button(message, wparam), lparam);
 			break;
 
 		case WM_LBUTTONUP:
-			consumed = Handle_Button_Up(0, clientlparam);
-			break;
-
 		case WM_RBUTTONUP:
-			consumed = Handle_Button_Up(1, clientlparam);
-			break;
-
 		case WM_MBUTTONUP:
-			consumed = Handle_Button_Up(2, clientlparam);
+		case WM_XBUTTONUP:
+			consumed = Handle_Button_Up(Message_Button(message, wparam), lparam);
 			break;
 
 		case WM_MOUSEWHEEL:
-			consumed = Handle_Wheel(wparam, clientlparam);
+			consumed = Handle_Wheel(wparam, lparam, false);
+			break;
+
+		case WM_MOUSEHWHEEL:
+			consumed = Handle_Wheel(wparam, lparam, true);
 			break;
 
 		case WM_KEYDOWN:
 		case WM_KEYUP:
-			consumed = Handle_Key(message, wparam);
+			consumed = Handle_Key(message, wparam, lparam);
 			break;
 
 		case WM_CHAR:

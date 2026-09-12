@@ -19,9 +19,10 @@
 #include <cstddef>
 
 
-// True when the owner's message must be kept from the game: a toolkit owns it, it was
-// cancelled, or it is a release nobody pressed.
-bool UI_Consumes_Input(UIInputOwner owner, bool release);
+// True when the owner's message must be kept from the game: a toolkit owns it or it was
+// cancelled. Input nobody owns is the game's, including a release whose press the shell
+// never saw.
+bool UI_Consumes_Input(UIInputOwner owner);
 
 
 class UIInputStateClass

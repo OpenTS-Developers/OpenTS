@@ -365,16 +365,26 @@ The rules the hook applies, in order:
    This mirrors `IgnoreInput` around a legacy dialog and composes with the
    scenario's own input locks rather than replacing them.
 3. Otherwise mouse moves are always delivered and never consumed, so the
-   game keeps tracking the cursor. A button or wheel message is consumed when
-   RmlUi reports that the mouse is interacting with an element (its mouse
-   functions return `false` for that). Keys and text are consumed when an
-   element stopped their propagation, or whenever the focused element is a
-   text field. Documents that float over the game mark their body
-   `pointer-events: none` so empty space passes through.
-4. A button press that a toolkit consumed sets mouse capture on `MainWindow`
-   until the release, and the owner of a press owns its release: crossing a
-   region or opening a modal in between completes or cancels that gesture
-   without activating the newly focused screen.
+   game keeps tracking the cursor. A button press is owned by whoever takes
+   it: ImGui, RmlUi when it reports the mouse interacting with an element
+   (its mouse functions return `false` for that), or the game. A key press
+   is owned the same way, by RmlUi when an element stopped its propagation
+   or the focused element is a text field; a wheel message is consumed when
+   RmlUi consumed it, and text when RmlUi consumed it. Documents that float
+   over the game mark their body `pointer-events: none` so empty space
+   passes through.
+4. The owner of a press owns its release, wherever the release lands. A
+   press a toolkit owns sets mouse capture on `MainWindow` until the last
+   such button is up. A screen closing, another window taking the capture,
+   or the window losing focus suppresses what is held: the toolkits are told
+   their presses ended and the releases are swallowed rather than handed to
+   the game as the end of a press it never saw. What is physically held as a
+   modal screen opens, or as focus returns while something is shown, is
+   suppressed the same way. A suppressed key or button is forgotten once the
+   system reports it up, so a release that went to another window cannot
+   keep the shell active. The five mouse buttons and both wheel axes are
+   routed; the modifier keys are read from the keyboard state and never
+   owned.
 
 Gameplay code that polls `Down` still sees held keys; eligibility is applied
 at the consumers, `GScreenClass::Input` and the gadget and scroll paths, not
@@ -382,15 +392,20 @@ by falsifying physical state.
 
 ### Focus, cursor, clipboard, text
 
-The shell clears the keyboard queue when a modal document opens or closes,
-after marking the screen closing so the pump inside `Keyboard->Clear()`
-cannot re-enter it. Focus loss cancels capture, drags, and composition;
-focus return does not replay held keys as presses. Cursor requests from RmlUi
-(`pointer`, `text`) map to `Win_Cursor_Set` and the previous request is
-restored on close. The clipboard interface uses the Win32 clipboard.
+The shell clears the keyboard queue when a modal document opens and again
+after it is released, so the pump inside `Keyboard->Clear()` meets either
+the shown screen or the ownership table, never a screen mid-teardown. Focus
+loss cancels capture, drags, and composition; focus return does not replay
+held keys as presses. Cursor requests from RmlUi (`pointer`, `text`) map to
+`Win_Cursor_Set` and the previous request is restored on close. The
+clipboard interface uses the Win32 clipboard.
 
-Text input arrives as `WM_CHAR` with surrogate pairs joined. Consuming a
-physical key never suppresses the text message it generates. Editable
+Text arrives as `WM_CHAR`. The main window is a narrow window, so under the
+UTF-8 code page each message carries one byte and the shell decodes the
+sequence, replacing a malformed one with U+FFFD; under another code page it
+joins a lead byte with its trail byte. A Unicode window would deliver UTF-16
+units, which the shell pairs, and a lone surrogate becomes U+FFFD. Consuming
+a physical key never suppresses the text message it generates. Editable
 screens ship only after Tab and Shift+Tab, Enter and Escape, repeat,
 modifiers, paste, dead keys, and IME composition have been exercised for the
 supported languages; the read-only pilot proves none of that.

@@ -9,6 +9,7 @@ opents_add_test(UIShell
     SOURCES uishell.cpp uidevstub.cpp
     ENGINE
         ui/uiscreen.cpp
+        ui/uiinput.cpp
         ui/uishell.cpp
         ui/rml/rmlkeys.cpp
         ui/rml/rmlsystem.cpp
