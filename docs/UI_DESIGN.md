@@ -248,10 +248,11 @@ methods:
 
 | Capability | Behavior |
 | --- | --- |
-| Compiled geometry | Static vertex and index buffers, since RmlUi 6 compiles geometry once and re-submits it; order preserved; released on request; never dependent on transient memory from a previous frame. |
-| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string, sized for the 32-bit process. |
+| Compiled geometry | Static vertex and index buffers, since RmlUi 6 compiles geometry once and re-submits it; order preserved; released on request; never dependent on transient memory from a previous frame. Indices are checked against the vertex count and sizes are checked before the copy; without 32-bit indices, a fragment over 65536 vertices is refused rather than truncated. |
+| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string. Each edge is at most the smaller of the device limit and 4096, and a source must hold exactly width times height times four bytes. |
 | Blending | `ONE, INV_SRC_ALPHA`; vertex colors follow the same premultiplied contract with no double premultiplication. |
-| Scissor | `bgfx::setScissor` in physical target coordinates, intersected with the viewport, empty regions handled. |
+| Scissor | `bgfx::setScissor` in physical target coordinates, rounded outward to whole pixels, intersected with the viewport, empty regions handled. |
+| Limits | 64 MiB per geometry or texture, 128 MiB of live geometry and 128 MiB of live textures, two draw calls short of the device's frame limit. The first refusal is latched with its reason; the shell clears the latch before preparing a document and reads it after, so a document the renderer could not draw whole opens its Win32 view instead. |
 | Projection | The overlay view's orthographic transform; no game-image filter state inherited. |
 | Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a present without an upload requested; existing documents redraw without reload. |
 
@@ -264,7 +265,9 @@ attributes (position, texture coordinate, color) match RmlUi's vertex and
 ImGui's vertex, each with its own layout. Clip masks, transforms, layers,
 filters, and shaders are deferred; shipped documents stay within a declared
 profile (text, images, ordinary layout, borders, basic decorators), and a
-document check enforces it.
+document check enforces it. A document that reaches one of them anyway, as
+a mod's may, draws without it: the renderer latches the refusal with one
+logged reason and otherwise behaves as RmlUi's defaults do.
 
 ### Invalidation
 

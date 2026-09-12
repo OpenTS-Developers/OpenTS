@@ -13,6 +13,7 @@ opents_add_test(UIShell
         ui/uishell.cpp
         ui/uiunicode.cpp
         ui/rml/rmlkeys.cpp
+        ui/rml/rmlrenderbase.cpp
         ui/rml/rmlrendermath.cpp
         ui/rml/rmlsystem.cpp
         ui/rml/rmlview.cpp

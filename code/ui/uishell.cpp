@@ -665,20 +665,22 @@ void UIShellClass::Render_Overlay(void)
 		return;
 	}
 
+	UIFrameRect frame = Host.Frame();
+	if (frame.Width <= 0 || frame.Height <= 0) {
+		return;
+	}
+
+	// The frame begins whether or not anything draws, so the renderer's draw count starts
+	// afresh at every present.
+	Render->Begin_Frame(frame.X, frame.Y, frame.Width, frame.Height);
+
 	bool documents = Documents_Visible();
 	bool overlays = UIDev_Active();
 	if (!documents && !overlays) {
 		return;
 	}
 
-	UIFrameRect frame = Host.Frame();
-	if (frame.Width <= 0 || frame.Height <= 0) {
-		return;
-	}
-
 	if (documents) {
-		Render->Begin_Frame(frame.X, frame.Y, frame.Width, frame.Height);
-
 		UIReentryGuardClass rendering(InContext);
 		Context->Render();
 	}
@@ -1000,11 +1002,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
 	assert(!Legacy_Dialog_Visible());
 
-	// A style sheet that fails to load leaves the document usable and is reported as an error.
-	int errors = System->Error_Count();
-	if (!view.Prepare(*this) || System->Error_Count() != errors) {
-		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Name());
-		view.Release();
+	if (!Prepare_View(view)) {
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 
@@ -1021,6 +1019,17 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 
 	Modals.push_back(&view);
 	view.Show(true);
+
+	// Images load at the first layout, not when the document does, so the renderer's answer
+	// is read again after one update.
+	Tick();
+	if (Render->Error()[0] != '\0') {
+		Log("UI: %s could not be shown (%s); its legacy view stays in charge\n", view.Name(), Render->Error());
+		view.Release();
+		Modals.pop_back();
+		return(UI_RESULT_FAILED_TO_OPEN);
+	}
+
 	Host.Mark_Overlay_Dirty();
 	std::snprintf(label, sizeof(label), "%s shown", view.Name());
 	Render->Log_Resource_Counts(label);
@@ -1085,16 +1094,31 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 }
 
 
+// A document the toolkit could not load whole, or that asked the renderer for what it
+// refuses, stays unshown; the caller opens its Win32 presentation with the reason logged.
+bool UIShellClass::Prepare_View(UIViewClass & view)
+{
+	Render->Clear_Error();
+	int errors = System->Error_Count();
+
+	// A style sheet that fails to load leaves the document usable and is reported as an error.
+	bool ready = view.Prepare(*this) && System->Error_Count() == errors && Render->Error()[0] == '\0';
+	if (!ready) {
+		Log("UI: %s could not be prepared (%s); its legacy view stays in charge\n", view.Name(),
+			Render->Error()[0] != '\0' ? Render->Error() : "see the toolkit's log above");
+		view.Release();
+	}
+	return(ready);
+}
+
+
 bool UIShellClass::Show_Modeless(UIViewClass & view)
 {
 	if (!Ready || !FontLoaded || InContext) {
 		return(false);
 	}
 
-	int errors = System->Error_Count();
-	if (!view.Prepare(*this) || System->Error_Count() != errors) {
-		Log("UI: %s could not be prepared; its legacy view stays in charge\n", view.Name());
-		view.Release();
+	if (!Prepare_View(view)) {
 		return(false);
 	}
 

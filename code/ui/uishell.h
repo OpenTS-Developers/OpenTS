@@ -147,6 +147,7 @@ class UIShellClass
 		bool Pointer_Owned(void) const;
 		void Apply_Cursor_Request(void);
 		void Restore_Cursor(void);
+		bool Prepare_View(UIViewClass & view);
 		void Drain_Deferred(void);
 		void Toggle_Test_Document(void);
 		bool Handle_Mouse_Move(LPARAM clientlparam);

@@ -15,6 +15,7 @@
 #include "bgfxbackend.h"
 #include "bgfxviews.hh"
 #include "dbgprint.h"
+#include "ui/rml/rmlrendermath.h"
 #include "ui/rml/rmltexture.h"
 
 #include <bgfx/bgfx.h>
@@ -25,7 +26,8 @@
 
 #include <imgui.h>
 
-#include <cassert>
+#include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <vector>
 
@@ -42,12 +44,20 @@ static const bgfx::EmbeddedShader _EmbeddedShaders[] = {
 static bgfx::VertexLayout _VertexLayout;
 static bgfx::VertexLayout _DevVertexLayout;
 
+// What one geometry or texture may hold, what all of them may hold together, and the
+// largest texture edge, whatever the device allows.
+static const uint32_t UI_MAX_RESOURCE_BYTES = 64u * 1024u * 1024u;
+static const uint64_t UI_MAX_GEOMETRY_BYTES = 128ull * 1024ull * 1024ull;
+static const uint64_t UI_MAX_TEXTURE_BYTES = 128ull * 1024ull * 1024ull;
+static const int UI_MAX_TEXTURE_DIMENSION = 4096;
+
 
 // A compiled document fragment, submitted many times with different translations.
 struct UIGeometry
 {
 	bgfx::VertexBufferHandle Vertices;
 	bgfx::IndexBufferHandle Indices;
+	unsigned int Bytes;
 };
 
 
@@ -73,6 +83,12 @@ UIRmlBgfxRenderClass::UIRmlBgfxRenderClass(void) :
 	Scissor(Rml::Rectanglei::MakeInvalid()),
 	DevShortageLogged(false)
 {
+}
+
+
+void UIRmlBgfxRenderClass::Report(char const * message)
+{
+	DebugString("UI renderer: %s\n", message);
 }
 
 
@@ -132,15 +148,24 @@ bool UIRmlBgfxRenderClass::Init(void)
 	Program = program.idx;
 	Sampler = sampler.idx;
 	WhiteTexture = whitetexture.idx;
+	Statistics = UIRenderStats();
+	TextureBytes.clear();
+	Clear_Error();
 	IsReady = true;
 	return(true);
 }
 
 
+// RmlUi has released everything through this object by now, so anything still counted is
+// a leak worth a log line.
 void UIRmlBgfxRenderClass::Shutdown(void)
 {
 	if (!IsReady) {
 		return;
+	}
+
+	if (Statistics.GeometryCount != 0 || Statistics.TextureCount != 0) {
+		DebugString("UI renderer: %u geometries and %u textures were never released\n", Statistics.GeometryCount, Statistics.TextureCount);
 	}
 
 	bgfx::TextureHandle whitetexture = { WhiteTexture };
@@ -154,6 +179,8 @@ void UIRmlBgfxRenderClass::Shutdown(void)
 	WhiteTexture = bgfx::kInvalidHandle;
 	Sampler = bgfx::kInvalidHandle;
 	Program = bgfx::kInvalidHandle;
+	Statistics = UIRenderStats();
+	TextureBytes.clear();
 	IsReady = false;
 }
 
@@ -179,6 +206,7 @@ void UIRmlBgfxRenderClass::Set_View(unsigned short view, int x, int y, int width
 
 void UIRmlBgfxRenderClass::Begin_Frame(int x, int y, int width, int height)
 {
+	Statistics.DrawCalls = 0;
 	Set_View(VIEW_UI, x, y, width, height);
 }
 
@@ -189,46 +217,106 @@ void UIRmlBgfxRenderClass::Begin_Dev_Frame(int x, int y, int width, int height)
 }
 
 
+// The policy cap keeps a document from asking for a texture the device would allow but the
+// process should not spend; Dear ImGui sizes its atlas by this too.
 int UIRmlBgfxRenderClass::Texture_Limit(void) const
 {
 	if (!IsReady) {
 		return(0);
 	}
 
-	return((int)bgfx::getCaps()->limits.maxTextureSize);
+	int limit = (int)bgfx::getCaps()->limits.maxTextureSize;
+	return(limit < UI_MAX_TEXTURE_DIMENSION ? limit : UI_MAX_TEXTURE_DIMENSION);
 }
 
 
 void UIRmlBgfxRenderClass::Log_Resource_Counts(char const * when) const
 {
-	bgfx::Stats const * stats = bgfx::getStats();
-	if (stats == NULL) {
-		return;
-	}
+	DebugString("UI: %s; %u geometries (%llu bytes), %u textures (%llu bytes)%s%s\n",
+				when, Statistics.GeometryCount, (unsigned long long)Statistics.GeometryBytes,
+				Statistics.TextureCount, (unsigned long long)Statistics.TextureBytes,
+				Error()[0] != '\0' ? "; error: " : "", Error());
+}
 
-	DebugString("UI: %s; renderer holds %u textures, %u vertex buffers, %u index buffers\n",
-				when, (unsigned)stats->numTextures, (unsigned)stats->numVertexBuffers, (unsigned)stats->numIndexBuffers);
+
+// Two calls stay in reserve for the presenter's own quads.
+bool UIRmlBgfxRenderClass::Draw_Available(void)
+{
+	if ((uint64_t)Statistics.DrawCalls + 2 >= bgfx::getCaps()->limits.maxDrawCalls) {
+		return(Fail("the frame's draw-call limit was reached"));
+	}
+	return(true);
+}
+
+
+bool UIRmlBgfxRenderClass::Record_Texture(unsigned short index, unsigned int bytes)
+{
+	TextureBytes[index] = bytes;
+	Statistics.TextureCount++;
+	Statistics.TextureBytes += bytes;
+	return(true);
+}
+
+
+void UIRmlBgfxRenderClass::Forget_Texture(unsigned short index)
+{
+	std::unordered_map<unsigned short, unsigned int>::iterator entry = TextureBytes.find(index);
+	if (entry != TextureBytes.end()) {
+		Statistics.TextureCount--;
+		Statistics.TextureBytes -= entry->second;
+		TextureBytes.erase(entry);
+	}
 }
 
 
 Rml::CompiledGeometryHandle UIRmlBgfxRenderClass::CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices)
 {
-	if (!IsReady || vertices.empty() || indices.empty()) {
+	if (!IsReady) {
+		return(0);
+	}
+	if (!UI_Render_Index_Range(std::span<int const>(indices.data(), indices.size()), vertices.size())) {
+		Fail("a fragment's indices do not name whole triangles over its vertices");
+		return(0);
+	}
+	for (Rml::Vertex const & vertex : vertices) {
+		if (!std::isfinite(vertex.position.x) || !std::isfinite(vertex.position.y) || !std::isfinite(vertex.tex_coord.x) || !std::isfinite(vertex.tex_coord.y)) {
+			Fail("a fragment holds a vertex that is not finite");
+			return(0);
+		}
+	}
+
+	uint32_t vertexbytes = 0;
+	uint32_t indexbytes = 0;
+	bool wideindices = (bgfx::getCaps()->supported & BGFX_CAPS_INDEX32) != 0;
+	if (!UI_Render_Byte_Count(vertices.size(), sizeof(Rml::Vertex), vertexbytes)
+		|| !UI_Render_Byte_Count(indices.size(), wideindices ? sizeof(int) : sizeof(uint16_t), indexbytes)) {
+		Fail("a fragment is too large to measure");
+		return(0);
+	}
+	if (!wideindices && vertices.size() > 65536) {
+		Fail("a fragment over 65536 vertices needs 32-bit indices, which this renderer lacks");
+		return(0);
+	}
+	if ((uint64_t)vertexbytes + indexbytes > UI_MAX_RESOURCE_BYTES) {
+		Fail("a fragment is larger than the renderer accepts");
+		return(0);
+	}
+	if (Statistics.GeometryBytes + vertexbytes + indexbytes > UI_MAX_GEOMETRY_BYTES) {
+		Fail("the documents hold more geometry than the renderer accepts");
 		return(0);
 	}
 
-	bgfx::VertexBufferHandle vertexbuffer = bgfx::createVertexBuffer(bgfx::copy(vertices.data(), (uint32_t)(vertices.size() * sizeof(Rml::Vertex))), _VertexLayout);
+	bgfx::VertexBufferHandle vertexbuffer = bgfx::createVertexBuffer(bgfx::copy(vertices.data(), vertexbytes), _VertexLayout);
 
 	bgfx::IndexBufferHandle indexbuffer;
-	if ((bgfx::getCaps()->supported & BGFX_CAPS_INDEX32) != 0) {
-		indexbuffer = bgfx::createIndexBuffer(bgfx::copy(indices.data(), (uint32_t)(indices.size() * sizeof(int))), BGFX_BUFFER_INDEX32);
+	if (wideindices) {
+		indexbuffer = bgfx::createIndexBuffer(bgfx::copy(indices.data(), indexbytes), BGFX_BUFFER_INDEX32);
 	} else {
-		assert(vertices.size() <= 65536);
 		std::vector<uint16_t> narrow(indices.size());
 		for (size_t index = 0; index < indices.size(); index++) {
 			narrow[index] = (uint16_t)indices[index];
 		}
-		indexbuffer = bgfx::createIndexBuffer(bgfx::copy(narrow.data(), (uint32_t)(narrow.size() * sizeof(uint16_t))));
+		indexbuffer = bgfx::createIndexBuffer(bgfx::copy(narrow.data(), indexbytes));
 	}
 
 	if (!bgfx::isValid(vertexbuffer) || !bgfx::isValid(indexbuffer)) {
@@ -238,12 +326,16 @@ Rml::CompiledGeometryHandle UIRmlBgfxRenderClass::CompileGeometry(Rml::Span<cons
 		if (bgfx::isValid(indexbuffer)) {
 			bgfx::destroy(indexbuffer);
 		}
+		Fail("a fragment's buffers could not be created");
 		return(0);
 	}
 
 	UIGeometry * geometry = new UIGeometry;
 	geometry->Vertices = vertexbuffer;
 	geometry->Indices = indexbuffer;
+	geometry->Bytes = vertexbytes + indexbytes;
+	Statistics.GeometryCount++;
+	Statistics.GeometryBytes += geometry->Bytes;
 	return((Rml::CompiledGeometryHandle)geometry);
 }
 
@@ -251,6 +343,13 @@ Rml::CompiledGeometryHandle UIRmlBgfxRenderClass::CompileGeometry(Rml::Span<cons
 void UIRmlBgfxRenderClass::RenderGeometry(Rml::CompiledGeometryHandle handle, Rml::Vector2f translation, Rml::TextureHandle texture)
 {
 	if (!IsReady || handle == 0) {
+		return;
+	}
+	if (!std::isfinite(translation.x) || !std::isfinite(translation.y)) {
+		Fail("a fragment's translation is not finite");
+		return;
+	}
+	if (!Draw_Available()) {
 		return;
 	}
 
@@ -283,6 +382,7 @@ void UIRmlBgfxRenderClass::RenderGeometry(Rml::CompiledGeometryHandle handle, Rm
 	bgfx::setTexture(0, sampler, sampled, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
 	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA));
 	bgfx::submit(VIEW_UI, program);
+	Statistics.DrawCalls++;
 }
 
 
@@ -295,6 +395,8 @@ void UIRmlBgfxRenderClass::ReleaseGeometry(Rml::CompiledGeometryHandle handle)
 	UIGeometry * geometry = (UIGeometry *)handle;
 	bgfx::destroy(geometry->Vertices);
 	bgfx::destroy(geometry->Indices);
+	Statistics.GeometryCount--;
+	Statistics.GeometryBytes -= geometry->Bytes;
 	delete geometry;
 }
 
@@ -306,6 +408,9 @@ Rml::TextureHandle UIRmlBgfxRenderClass::LoadTexture(Rml::Vector2i & dimensions,
 	int height = 0;
 
 	if (!UI_Load_Image(source.c_str(), rgba, width, height)) {
+		char message[320];
+		std::snprintf(message, sizeof(message), "%s did not decode", source.c_str());
+		Fail(message);
 		return(0);
 	}
 
@@ -317,20 +422,37 @@ Rml::TextureHandle UIRmlBgfxRenderClass::LoadTexture(Rml::Vector2i & dimensions,
 
 Rml::TextureHandle UIRmlBgfxRenderClass::GenerateTexture(Rml::Span<const Rml::byte> source, Rml::Vector2i dimensions)
 {
-	if (!IsReady || dimensions.x <= 0 || dimensions.y <= 0) {
+	if (!IsReady) {
 		return(0);
 	}
 
-	uint32_t size = (uint32_t)dimensions.x * (uint32_t)dimensions.y * 4;
-	if (source.size() < size) {
+	int limit = Texture_Limit();
+	if (dimensions.x <= 0 || dimensions.y <= 0 || dimensions.x > limit || dimensions.y > limit) {
+		Fail("a texture is empty or larger on a side than the renderer accepts");
+		return(0);
+	}
+
+	uint32_t size = 0;
+	if (!UI_Render_Byte_Count((size_t)dimensions.x * (size_t)dimensions.y, 4, size) || size > UI_MAX_RESOURCE_BYTES) {
+		Fail("a texture is larger than the renderer accepts");
+		return(0);
+	}
+	if (source.size() != size) {
+		Fail("a texture's pixels do not match its dimensions");
+		return(0);
+	}
+	if (Statistics.TextureBytes + size > UI_MAX_TEXTURE_BYTES) {
+		Fail("the documents hold more texture than the renderer accepts");
 		return(0);
 	}
 
 	bgfx::TextureHandle texture = bgfx::createTexture2D((uint16_t)dimensions.x, (uint16_t)dimensions.y, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP, bgfx::copy(source.data(), size));
 	if (!bgfx::isValid(texture)) {
+		Fail("a texture could not be created");
 		return(0);
 	}
 
+	Record_Texture(texture.idx, size);
 	return((Rml::TextureHandle)texture.idx + 1);
 }
 
@@ -341,7 +463,14 @@ void UIRmlBgfxRenderClass::ReleaseTexture(Rml::TextureHandle texture)
 		return;
 	}
 
-	bgfx::destroy(Texture_Handle(texture));
+	bgfx::TextureHandle handle = Texture_Handle(texture);
+	if (TextureBytes.find(handle.idx) == TextureBytes.end()) {
+		Fail("a texture the renderer does not hold was released");
+		return;
+	}
+
+	Forget_Texture(handle.idx);
+	bgfx::destroy(handle);
 }
 
 
@@ -365,31 +494,37 @@ bool UIRmlBgfxRenderClass::Apply_Scissor(void) const
 		return(false);
 	}
 
-	int left = ViewX + Scissor.Left();
-	int top = ViewY + Scissor.Top();
-	int right = left + Scissor.Width();
-	int bottom = top + Scissor.Height();
-
-	if (left < ViewX) left = ViewX;
-	if (top < ViewY) top = ViewY;
-	if (right > ViewX + ViewWidth) right = ViewX + ViewWidth;
-	if (bottom > ViewY + ViewHeight) bottom = ViewY + ViewHeight;
-
-	if (right <= left || bottom <= top) {
+	UIRenderClip clip;
+	if (!UI_Render_Clip_Rect((float)Scissor.Left(), (float)Scissor.Top(), (float)Scissor.Right(), (float)Scissor.Bottom(), ViewX, ViewY, ViewWidth, ViewHeight, clip)) {
 		return(false);
 	}
 
-	bgfx::setScissor((uint16_t)left, (uint16_t)top, (uint16_t)(right - left), (uint16_t)(bottom - top));
+	bgfx::setScissor(clip.X, clip.Y, clip.Width, clip.Height);
 	return(true);
 }
 
 
 // Dear ImGui asks for its textures through status requests; each is answered here and
-// acknowledged, and a destroyed texture keeps its pixels so that ImGui can ask again.
+// acknowledged, and a destroyed texture keeps its pixels so that ImGui can ask again. A
+// request the renderer refuses is left unanswered, so ImGui asks again next frame.
 void UIRmlBgfxRenderClass::Update_ImGui_Texture(ImTextureData * texture)
 {
 	if (texture->Status == ImTextureStatus_WantCreate) {
-		assert(texture->Format == ImTextureFormat_RGBA32);
+		int limit = Texture_Limit();
+		uint32_t size = 0;
+		if (texture->Format != ImTextureFormat_RGBA32) {
+			Fail("an overlay texture is not RGBA");
+			return;
+		}
+		if (texture->Width <= 0 || texture->Height <= 0 || texture->Width > limit || texture->Height > limit) {
+			Fail("an overlay texture is empty or larger on a side than the renderer accepts");
+			return;
+		}
+		if (!UI_Render_Byte_Count((size_t)texture->Width * (size_t)texture->Height, 4, size) || size > UI_MAX_RESOURCE_BYTES
+			|| Statistics.TextureBytes + size > UI_MAX_TEXTURE_BYTES || (size_t)texture->GetSizeInBytes() != size) {
+			Fail("an overlay texture is larger than the renderer accepts");
+			return;
+		}
 
 		// A texture created with its pixels is immutable in bgfx, and the atlas keeps growing.
 		bgfx::TextureHandle handle = bgfx::createTexture2D((uint16_t)texture->Width, (uint16_t)texture->Height, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
@@ -398,7 +533,8 @@ void UIRmlBgfxRenderClass::Update_ImGui_Texture(ImTextureData * texture)
 			return;
 		}
 
-		bgfx::updateTexture2D(handle, 0, 0, 0, 0, (uint16_t)texture->Width, (uint16_t)texture->Height, bgfx::copy(texture->GetPixels(), (uint32_t)texture->GetSizeInBytes()));
+		bgfx::updateTexture2D(handle, 0, 0, 0, 0, (uint16_t)texture->Width, (uint16_t)texture->Height, bgfx::copy(texture->GetPixels(), size));
+		Record_Texture(handle.idx, size);
 		texture->SetTexID((ImTextureID)handle.idx + 1);
 		texture->SetStatus(ImTextureStatus_OK);
 	} else if (texture->Status == ImTextureStatus_WantUpdates) {
@@ -416,6 +552,7 @@ void UIRmlBgfxRenderClass::Update_ImGui_Texture(ImTextureData * texture)
 	if (texture->Status == ImTextureStatus_WantDestroy && texture->UnusedFrames > 0) {
 		if (texture->TexID != ImTextureID_Invalid) {
 			bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
+			Forget_Texture(handle.idx);
 			bgfx::destroy(handle);
 			texture->SetTexID(ImTextureID_Invalid);
 		}
@@ -429,6 +566,7 @@ void UIRmlBgfxRenderClass::Destroy_ImGui_Textures(void)
 	for (ImTextureData * texture : ImGui::GetPlatformIO().Textures) {
 		if (texture->TexID != ImTextureID_Invalid) {
 			bgfx::TextureHandle handle = { (uint16_t)(texture->TexID - 1) };
+			Forget_Texture(handle.idx);
 			bgfx::destroy(handle);
 			texture->SetTexID(ImTextureID_Invalid);
 		}
@@ -497,17 +635,14 @@ void UIRmlBgfxRenderClass::Render_ImGui(ImDrawData * data)
 				continue;
 			}
 
-			int left = ViewX + (int)(command.ClipRect.x - data->DisplayPos.x);
-			int top = ViewY + (int)(command.ClipRect.y - data->DisplayPos.y);
-			int right = ViewX + (int)(command.ClipRect.z - data->DisplayPos.x);
-			int bottom = ViewY + (int)(command.ClipRect.w - data->DisplayPos.y);
-
-			if (left < ViewX) left = ViewX;
-			if (top < ViewY) top = ViewY;
-			if (right > ViewX + ViewWidth) right = ViewX + ViewWidth;
-			if (bottom > ViewY + ViewHeight) bottom = ViewY + ViewHeight;
-			if (right <= left || bottom <= top) {
+			UIRenderClip clip;
+			if (!UI_Render_Clip_Rect(command.ClipRect.x - data->DisplayPos.x, command.ClipRect.y - data->DisplayPos.y,
+									 command.ClipRect.z - data->DisplayPos.x, command.ClipRect.w - data->DisplayPos.y,
+									 ViewX, ViewY, ViewWidth, ViewHeight, clip)) {
 				continue;
+			}
+			if (!Draw_Available()) {
+				return;
 			}
 
 			bgfx::TextureHandle sampled = { WhiteTexture };
@@ -516,13 +651,14 @@ void UIRmlBgfxRenderClass::Render_ImGui(ImDrawData * data)
 				sampled.idx = (uint16_t)(id - 1);
 			}
 
-			bgfx::setScissor((uint16_t)left, (uint16_t)top, (uint16_t)(right - left), (uint16_t)(bottom - top));
+			bgfx::setScissor(clip.X, clip.Y, clip.Width, clip.Height);
 			bgfx::setTransform(identity);
 			bgfx::setVertexBuffer(0, &vertices, command.VtxOffset, vertexcount - command.VtxOffset);
 			bgfx::setIndexBuffer(&indices, command.IdxOffset, command.ElemCount);
 			bgfx::setTexture(0, sampler, sampled, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
 			bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC_SEPARATE(BGFX_STATE_BLEND_SRC_ALPHA, BGFX_STATE_BLEND_INV_SRC_ALPHA, BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA));
 			bgfx::submit(VIEW_DEV, program);
+			Statistics.DrawCalls++;
 		}
 	}
 }
