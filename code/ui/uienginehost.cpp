@@ -121,6 +121,28 @@ class UIEngineHostClass : public UIShellHostClass
 			return(true);
 		}
 
+		virtual bool Key_Down(int virtualkey) const override
+		{
+			if (GetSystemMetrics(SM_SWAPBUTTON) != 0) {
+				if (virtualkey == VK_LBUTTON) {
+					virtualkey = VK_RBUTTON;
+				} else if (virtualkey == VK_RBUTTON) {
+					virtualkey = VK_LBUTTON;
+				}
+			}
+			return((GetAsyncKeyState(virtualkey) & 0x8000) != 0);
+		}
+
+		virtual bool Window_Is_Unicode(void) const override
+		{
+			return(IsWindowUnicode(MainWindow) != FALSE);
+		}
+
+		virtual unsigned int Text_Code_Page(void) const override
+		{
+			return(GetACP());
+		}
+
 		virtual char const * String(int id) const override
 		{
 			return(Fetch_String(id));

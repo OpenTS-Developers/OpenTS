@@ -102,11 +102,11 @@ void Test_Reconciliation(void)
 	state.Press_Mouse(0, UI_INPUT_GAME);
 	state.Reconcile_Cancelled_Mouse(released);
 	Check(state.Gesture_Owner() == UI_INPUT_GAME, "a physical release cannot forget a game gesture before its up message");
-	Check(!UI_Consumes_Input(state.Gesture_Owner(), false), "a game drag's motion stays the game's over a document");
-	Check(!UI_Consumes_Input(state.Release_Mouse(0), true), "a game release reaches the game after the physical release");
+	Check(!UI_Consumes_Input(state.Gesture_Owner()), "a game drag's motion stays the game's over a document");
+	Check(!UI_Consumes_Input(state.Release_Mouse(0)), "a game release reaches the game after the physical release");
 	state.Press_Mouse(0, UI_INPUT_IMGUI);
 	state.Reconcile_Cancelled_Mouse(released);
-	Check(state.Gesture_Owner() == UI_INPUT_IMGUI && UI_Consumes_Input(state.Release_Mouse(0), true), "a physical release cannot hand a UI gesture to the game");
+	Check(state.Gesture_Owner() == UI_INPUT_IMGUI && UI_Consumes_Input(state.Release_Mouse(0)), "a physical release cannot hand a UI gesture to the game");
 
 	state.Press_Key(70, UI_INPUT_RML);
 	state.Press_Mouse(0, UI_INPUT_GAME);
@@ -117,8 +117,8 @@ void Test_Reconciliation(void)
 	oneheld[1] = true;
 	state.Reconcile_Cancelled_Mouse(oneheld);
 	Check(state.Mouse_Owner(0) == UI_INPUT_NONE && state.Mouse_Owner(1) == UI_INPUT_SUPPRESSED, "only a cancelled button that is up is forgotten");
-	Check(UI_Consumes_Input(state.Release_Mouse(0), true), "an orphan release is swallowed after reconciliation");
-	Check(UI_Consumes_Input(state.Release_Mouse(1), true), "a cancelled button still held keeps its release");
+	Check(!UI_Consumes_Input(state.Release_Mouse(0)), "a release the shell forgot after reconciliation is the game's");
+	Check(UI_Consumes_Input(state.Release_Mouse(1)), "a cancelled button still held keeps its release");
 
 	std::array<bool, UIInputStateClass::KEY_COUNT> keysup {};
 	state.Press_Key(71, UI_INPUT_IMGUI);
@@ -126,8 +126,8 @@ void Test_Reconciliation(void)
 	keysup[70] = true;
 	state.Reconcile_Cancelled_Keys(keysup);
 	Check(state.Key_Owner(70) == UI_INPUT_SUPPRESSED && state.Key_Owner(71) == UI_INPUT_NONE, "only a cancelled key that is up is forgotten");
-	Check(!UI_Consumes_Input(UI_INPUT_GAME, false) && UI_Consumes_Input(UI_INPUT_RML, false), "delivery follows the owner of the press, not the pointer's position");
-	Check(UI_Consumes_Input(UI_INPUT_NONE, true) && !UI_Consumes_Input(UI_INPUT_NONE, false), "a release nobody pressed is swallowed; a press nobody owns is not");
+	Check(!UI_Consumes_Input(UI_INPUT_GAME) && UI_Consumes_Input(UI_INPUT_RML) && UI_Consumes_Input(UI_INPUT_SUPPRESSED), "delivery follows the owner of the press, not the pointer's position");
+	Check(!UI_Consumes_Input(UI_INPUT_NONE), "input nobody owns is the game's");
 }
 
 

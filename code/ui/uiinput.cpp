@@ -21,9 +21,9 @@ bool Is_UI(UIInputOwner owner)
 }
 
 
-bool UI_Consumes_Input(UIInputOwner owner, bool release)
+bool UI_Consumes_Input(UIInputOwner owner)
 {
-	return(Is_UI(owner) || owner == UI_INPUT_SUPPRESSED || (release && owner == UI_INPUT_NONE));
+	return(Is_UI(owner) || owner == UI_INPUT_SUPPRESSED);
 }
 
 

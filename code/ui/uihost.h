@@ -58,6 +58,14 @@ class UIShellHostClass
 		virtual void Release_Capture(void) = 0;
 		virtual bool Screen_To_Client(int & x, int & y) const = 0;
 
+		// Whether a key or mouse button is physically down. VK_LBUTTON and VK_RBUTTON name the
+		// primary and secondary buttons as the messages do, whatever the user swapped.
+		virtual bool Key_Down(int virtualkey) const = 0;
+		// True when text messages carry UTF-16 units; otherwise they carry one byte each of
+		// the code page below.
+		virtual bool Window_Is_Unicode(void) const = 0;
+		virtual unsigned int Text_Code_Page(void) const = 0;
+
 		// An engine string by identifier. The result is valid until the next call.
 		virtual char const * String(int id) const = 0;
 		virtual void Log(char const * text) = 0;

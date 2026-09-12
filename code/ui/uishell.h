@@ -13,9 +13,11 @@
 #pragma once
 
 #include "ui/uicoord.h"
+#include "ui/uiinput.h"
 #include "ui/uiscreen.h"
 #include "win.h"
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <vector>
@@ -98,7 +100,7 @@ class UIShellClass
 		// Offers a main window message to the shell before the game sees it. The position
 		// is the raw client one, taken before the router translated it. True means the
 		// message is consumed.
-		bool Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM clientlparam);
+		bool Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
 		// Offers a pumped message to the shell before dispatch, whichever window it is for.
 		// True means the message is consumed.
@@ -108,6 +110,7 @@ class UIShellClass
 		UIViewClass * Modal(void) const;
 		int Modal_Depth(void) const;
 		bool Is_Modeless_Shown(UIViewClass const & view) const;
+		UIInputStateClass const & Input_State(void) const { return(Input); }
 
 	private:
 		friend class UITestListenerClass;
@@ -126,21 +129,28 @@ class UIShellClass
 		};
 
 		void Log(char const * format, ...);
+		bool Active(void) const;
 		bool Documents_Visible(void) const;
 		bool Text_Input_Focused(void) const;
 		void Apply_Dimensions(void);
 		UIPointerPosition Pointer_Position(LPARAM clientlparam) const;
+		std::array<bool, UIInputStateClass::BUTTON_COUNT> Physical_Buttons(void) const;
+		void Quarantine_Held_Input(void);
+		void Reconcile_Held_Input(void);
 		void Drop_Presses(void);
+		void Release_UI_Capture(void);
+		void Reset_Text(void);
 		void Drain_Deferred(void);
 		void Toggle_Test_Document(void);
-		void Own_Press(int button);
-		void Release_Press(int button);
 		bool Handle_Mouse_Move(LPARAM clientlparam);
 		bool Handle_Button_Down(int button, LPARAM clientlparam);
 		bool Handle_Button_Up(int button, LPARAM clientlparam);
-		bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam);
-		bool Handle_Key(UINT message, WPARAM wparam);
+		bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam, bool horizontal);
+		bool Handle_Key(UINT message, WPARAM wparam, LPARAM lparam);
 		bool Handle_Char(WPARAM wparam);
+		bool Feed_Text_Unit(wchar_t unit);
+		bool Feed_Text_Byte(unsigned char byte);
+		bool Handle_Text(char32_t code);
 
 		UIShellHostClass & Host;
 		std::unique_ptr<UIRmlSystemClass> System;
@@ -158,15 +168,16 @@ class UIShellClass
 		bool InTick = false;
 		DeferredWorkType Deferred;
 
-		// The presses the shell consumed, as a mask over the mouse button indices, and
-		// whether it took the window's capture for them. Their releases belong to the shell
-		// wherever they land. The developer overlays' own presses are a subset that their
-		// release goes back to.
-		unsigned int OwnedButtons = 0;
-		unsigned int DevOwnedButtons = 0;
+		// Who holds each key and button. A press the toolkits own takes the window's
+		// capture; TookCapture says the shell took it and must give it back.
+		UIInputStateClass Input;
 		bool TookCapture = false;
 		bool MouseInside = false;
+
+		// Text arrives one unit or byte per message; these carry a sequence between them.
 		wchar_t HighSurrogate = 0;
+		UIUTF8DecoderClass Utf8;
+		unsigned char LegacyLead = 0;
 
 		// The modal screens the runner is driving, innermost last, and whether the
 		// innermost is between releasing its document and handing the input back.

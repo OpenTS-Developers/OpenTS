@@ -269,11 +269,29 @@ class TestHostClass : public UIShellHostClass
 		bool LegacyRequested = false;
 		bool LegacyVisible = false;
 		bool Captured = false;
+		bool Unicode = false;
+		unsigned int CodePage = 65001;
+		bool Down[256] = {};
 		int Presents = 0;
 		int Clears = 0;
 		int Focuses = 0;
 		UIShellClass * Shell = nullptr;
 		std::function<void(void)> OnClear;
+
+		virtual bool Key_Down(int virtualkey) const override
+		{
+			return(Down[virtualkey & 0xFF]);
+		}
+
+		virtual bool Window_Is_Unicode(void) const override
+		{
+			return(Unicode);
+		}
+
+		virtual unsigned int Text_Code_Page(void) const override
+		{
+			return(CodePage);
+		}
 
 		virtual HWND Main_Window(void) const override
 		{
@@ -2385,6 +2403,166 @@ void Test_Shell(void)
 		host.Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
 		shell.On_Video_Change();
 		Check(shell.Rml_Context()->GetDimensions() == Rml::Vector2i(1280, 800), "a resize outside a render is applied at once");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "held" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool suppressed = false;
+		bool swallowed = false;
+		bool quiet = false;
+
+		host.Down[VK_LBUTTON] = true;
+		host.Down['A'] = true;
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				suppressed = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && shell.Input_State().Key_Owner('A') == UI_INPUT_SUPPRESSED;
+				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10)) && Send(shell, WM_KEYUP, 'A');
+				host.Down[VK_LBUTTON] = false;
+				host.Down['A'] = false;
+				quiet = !presenter.Has_Pending() && shell.Input_State().Mouse_Owner(0) == UI_INPUT_NONE && shell.Input_State().Key_Owner('A') == UI_INPUT_NONE;
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		Check(suppressed, "input held as a screen opens is suppressed");
+		Check(swallowed, "the releases of suppressed input are swallowed");
+		Check(quiet && result == UI_RESULT_ACCEPTED, "suppressed releases queue nothing and a fresh press still accepts");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "capture" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool owned = false;
+		bool cancelled = false;
+		bool swallowed = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
+				Send(shell, WM_KEYDOWN, 'A');
+				owned = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML && shell.Input_State().Key_Owner('A') == UI_INPUT_RML && host.Captured;
+				host.Captured = false;
+				Send(shell, WM_CAPTURECHANGED, 0, (LPARAM)1);
+				cancelled = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && shell.Input_State().Key_Owner('A') == UI_INPUT_RML && !host.Captured && shell.Modal() == view.get();
+				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10)) && !presenter.Has_Pending();
+				Send(shell, WM_KEYUP, 'A');
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		Check(owned, "a modal owns the presses it is given and takes the capture");
+		Check(cancelled, "losing the capture cancels the modal's held buttons and nothing else");
+		Check(swallowed, "the release of a cancelled press is swallowed");
+	}
+
+	{
+		// Two live screens need distinct data models, so the inner one is a message box.
+		UIVersionPresenterClass outer({ "outer" });
+		UIMessageBoxPresenterClass inner("Nested", { "OK", "Cancel" }, 0);
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+		int passes = 0;
+		bool nested = false;
+		bool restored = false;
+		bool swallowed = false;
+
+		UIResult result = shell.Run_Modal(*outerview, [&](void) {
+			passes++;
+			if (passes == 1) {
+				int innerpasses = 0;
+				UIResult innerresult = shell.Run_Modal(*innerview, [&](void) {
+					innerpasses++;
+					if (innerpasses == 1) {
+						nested = shell.Modal() == innerview.get() && shell.Modal_Depth() == 2;
+						host.Down[VK_LBUTTON] = true;
+						Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
+						Send(shell, WM_KEYDOWN, VK_ESCAPE);
+					}
+					return(innerpasses >= 5);
+				});
+				restored = innerresult == UI_RESULT_CANCELLED && shell.Modal() == outerview.get() && shell.Modal_Depth() == 1 && shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED;
+				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10));
+				host.Down[VK_LBUTTON] = false;
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		Check(nested, "a nested modal is the shown screen at depth two");
+		Check(restored && result == UI_RESULT_ACCEPTED, "closing the inner modal restores the outer one, which still accepts");
+		Check(swallowed, "a press held across the inner close is swallowed by the outer");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "messages" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		bool taken = false;
+		bool focused = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			taken = Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM(2000, 2000))
+				&& Send(shell, WM_XBUTTONDOWN, MAKEWPARAM(0, XBUTTON1), MAKELPARAM(10, 10))
+				&& Send(shell, WM_XBUTTONUP, MAKEWPARAM(0, XBUTTON1), MAKELPARAM(10, 10))
+				&& Send(shell, WM_MOUSEHWHEEL, MAKEWPARAM(0, WHEEL_DELTA), MAKELPARAM(10, 10));
+			host.Down['C'] = true;
+			Send(shell, WM_ACTIVATEAPP, 1);
+			focused = shell.Input_State().Key_Owner('C') == UI_INPUT_SUPPRESSED;
+			host.Down['C'] = false;
+			Send(shell, WM_KEYUP, 'C');
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(taken, "a modal takes moves, side buttons and the horizontal wheel");
+		Check(focused, "focus returning to a shown screen quarantines what is held");
+
+		// The key that closed the screen is released after it; the shell swallows that release
+		// and, once it ticks, holds nothing.
+		Check(Send(shell, WM_KEYUP, VK_ESCAPE), "the release of the key that closed a screen is swallowed");
+		shell.Tick();
+		Check(!shell.Input_State().Any_Owned(), "nothing stays owned once the closing key is up and the shell has ticked");
+
+		host.Down['C'] = true;
+		Send(shell, WM_ACTIVATEAPP, 1);
+		Check(shell.Input_State().Key_Owner('C') == UI_INPUT_NONE, "focus returning to an idle shell quarantines nothing");
+		host.Down['C'] = false;
+		Check(!Send(shell, WM_KEYUP, 'Z'), "a stray release meets an idle shell and reaches the game");
+	}
+
+	{
+		class TextRecorderClass : public Rml::EventListener
+		{
+			public:
+				std::vector<Rml::String> Texts;
+
+				virtual void ProcessEvent(Rml::Event & event) override
+				{
+					Texts.push_back(event.GetParameter<Rml::String>("text", ""));
+				}
+		};
+
+		TextRecorderClass recorder;
+		UIVersionPresenterClass presenter({ "text" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+
+		shell.Run_Modal(*view, [&](void) {
+			Rml(*view).Document()->AddEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_CHAR, 0xC3);
+			Send(shell, WM_CHAR, 0xA9);
+			Rml(*view).Document()->RemoveEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(recorder.Texts.size() == 1 && recorder.Texts[0] == "\xC3\xA9", "two UTF-8 bytes on a narrow window reach the document as one character");
 	}
 
 	{
