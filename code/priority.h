@@ -9,282 +9,182 @@
 
 #pragma once
 
-#include "dbgprint.h"
-
-#include <cassert>
-#include <climits>
-
-
-#define PARENT(index) (index >> 1)
-#define LEFT_CHILD(index) ((index << 1))
-#define RIGHT_CHILD(index) ((index << 1) + 1)
-#define SWAP(left, right) \
-{ \
-	T * temp = Heap[left]; \
-	Heap[left] = Heap[right]; \
-	Heap[right] = temp; \
-}
+#include <cstddef>
+#include <optional>
+#include <utility>
+#include <vector>
 
 
+/*
+ * A binary min heap ordered by the Score each element carries.
+ *
+ * The sift is spelled out here because the order equal scores come out in is part of the
+ * simulation, and the standard heap algorithms may settle such a tie either way.
+ * tests/priorityqueue holds that order.
+ */
 template<typename T>
 class PriorityQueueClass
 {
-		friend class AStarClass;
 	public:
-		PriorityQueueClass(int size);
-		~PriorityQueueClass(void);
+		// The size is how much room to take up front, not a limit on what the queue holds.
+		explicit PriorityQueueClass(int size = 0);
 
-		void Clear(void);
+		void Clear(void) { Heap.clear(); }
+		void Reserve(int size) { if (size > 0) { Heap.reserve((std::size_t)size); } }
+		int Count(void) const { return((int)Heap.size()); }
 
-		bool Insert(T & node);
-		T * Extract_Min(void);
-		T * Replace_Root(T & node);
+		void Insert(T node);
+		std::optional<T> Extract_Min(void);
+		T Replace_Root(T node);
 		bool Remove_Matching(T const & item);
-		void Heapify(int index);
-
-		int Count(void) const { return(ActiveCount); }
 
 		/*
-		 * Carries the queue to or from a save game. The heap holds pointers into the
-		 * caller's node array, so each slot travels as its index into that array and the
-		 * array has to be handed back in on the way in.
+		 * Carries the queue to or from a save game as its length followed by its elements,
+		 * so the element type has to describe its own members to the stream. The elements
+		 * travel in heap order rather than score order, because draining the queue to sort
+		 * them would build a different heap and reorder the ties within it.
 		 */
 		template<typename S>
-		void Serialize(S & stream, T * nodes);
+		void Serialize(S & stream) { stream.Serialize(Heap); }
 
 	private:
-		/*
-		 * This is the number of nodes currently in the queue, which is also the index of the
-		 * last of them.
-		 */
-		int ActiveCount;
+		void Heapify(std::size_t index);
+
+		static std::size_t Parent(std::size_t index) { return((index - 1) / 2); }
+		static std::size_t Left_Child(std::size_t index) { return((2 * index) + 1); }
+		static std::size_t Right_Child(std::size_t index) { return((2 * index) + 2); }
 
 		/*
-		 * This is the number of slots the queue was created with. An insert that would run
-		 * past the last slot is refused, since the queue never grows.
+		 * The lowest scoring element sits at slot zero, and the children of the element at
+		 * any slot lie at twice its index plus one and plus two.
 		 */
-		int Size;
-
-		/*
-		 * This points to the array of node pointers that makes up the heap. Slot zero is not
-		 * used -- the lowest scoring node sits at slot one, and the children of any node lie
-		 * at twice its index.
-		 */
-		T ** Heap;
-
-		/// Unused
-		unsigned MaxNodePointer;
-		unsigned MinNodePointer;
+		std::vector<T> Heap;
 };
 
 
 template<typename T>
 PriorityQueueClass<T>::PriorityQueueClass(int size)
 {
-	MaxNodePointer = 0;
-	MinNodePointer = UINT_MAX;
-	ActiveCount = 0;
-	Size = size;
-	Heap = new T * [size + 1]();
-	for (int index = 0; index <= Size; index++) {
-		Heap[index] = NULL;
-	}
+	Reserve(size);
 }
 
 
 template<typename T>
-PriorityQueueClass<T>::~PriorityQueueClass(void)
+inline void PriorityQueueClass<T>::Insert(T node)
 {
-	delete[] Heap;
-}
-
-
-template<typename T>
-void PriorityQueueClass<T>::Clear(void)
-{
-	for (int index = 0; index <= ActiveCount; index++) {
-		Heap[index] = NULL;
-	}
-	ActiveCount = 0;
-}
-
-
-template<typename T>
-inline bool PriorityQueueClass<T>::Insert(T & node)
-{
-	unsigned index = ActiveCount + 1;
-	unsigned parent_index = PARENT(index);
 	float score = node.Score;
+	std::size_t index = Heap.size();
 
-	if (index >= (unsigned)Size) {
-		return(false);
-	}
+	Heap.emplace_back();
 
-	while (index > 1) {
-		if (Heap[parent_index]->Score <= score) {
+	while (index > 0) {
+		std::size_t parent_index = Parent(index);
+		if (Heap[parent_index].Score <= score) {
 			break;
 		}
 		Heap[index] = Heap[parent_index];
 		index = parent_index;
-		parent_index = PARENT(index);
 	}
 
-	Heap[index] = &node;
-	ActiveCount++;
-
-	if ((unsigned)&node > MaxNodePointer) {
-		MaxNodePointer = (unsigned)&node;
-	}
-
-	if ((unsigned)&node < MinNodePointer) {
-		MinNodePointer = (unsigned)&node;
-	}
-
-	return(true);
+	Heap[index] = node;
 }
 
 
-template <typename T>
-inline T * PriorityQueueClass <T>::Extract_Min(void)
+template<typename T>
+inline std::optional<T> PriorityQueueClass<T>::Extract_Min(void)
 {
-	if (ActiveCount == 0) {
-		return(NULL);
+	if (Heap.empty()) {
+		return(std::nullopt);
 	}
 
-	T * min = Heap[1];
-	Heap[1] = Heap[ActiveCount];
-	Heap[ActiveCount] = NULL;
-	ActiveCount--;
+	T min = Heap.front();
 
-	Heapify(1);
+	Heap.front() = Heap.back();
+	Heap.pop_back();
+
+	Heapify(0);
 
 	return(min);
 }
 
 
-template <typename T>
-inline T * PriorityQueueClass<T>::Replace_Root(T & node)
+template<typename T>
+inline T PriorityQueueClass<T>::Replace_Root(T node)
 {
-	if (ActiveCount == 0) {
-		return(&node);
+	if (Heap.empty()) {
+		return(node);
 	}
 
-	T * old_root = Heap[1];
-
-	if (node < *old_root) {
-		return(&node);
+	if (node < Heap.front()) {
+		return(node);
 	}
 
-	Heap[1] = &node;
+	T old_root = Heap.front();
+	Heap.front() = node;
 
-	Heapify(1);
+	Heapify(0);
 
 	return(old_root);
 }
 
 
-template <typename T>
-inline bool PriorityQueueClass <T>::Remove_Matching(T const & item)
+template<typename T>
+inline bool PriorityQueueClass<T>::Remove_Matching(T const & item)
 {
-	for (int index = 1; index <= ActiveCount; index++) {
-		if (Heap[index]->Element == item.Element) {
-			if (index == ActiveCount) {
-				ActiveCount--;
-			} else {
-				T * last = Heap[ActiveCount];
-				float last_score = last->Score;
-				int parent = PARENT(index);
-				ActiveCount--;
-				if (index != 1 && Heap[parent]->Score >= last_score) {
-					while ((unsigned)index > 1) {
-						if (Heap[parent]->Score <= last_score) break;
-						Heap[index] = Heap[parent];
-						index = parent;
-						parent = PARENT(index);
-					}
-					Heap[index] = last;
-				} else {
-					Heap[index] = last;
-					Heapify(index);
-				}
-			}
+	for (std::size_t index = 0; index < Heap.size(); index++) {
+		if (!(Heap[index].Element == item.Element)) {
+			continue;
+		}
 
-			DebugString("Exiting Remove_Matching\n");
+		if (index + 1 == Heap.size()) {
+			Heap.pop_back();
 			return(true);
 		}
+
+		T last = Heap.back();
+		float last_score = last.Score;
+		Heap.pop_back();
+
+		// A parent scoring exactly what the replacement scores leaves it where it stands,
+		// never sifted back down. That is what the extraction order was built on.
+		if (index != 0 && Heap[Parent(index)].Score >= last_score) {
+			std::size_t hole = index;
+			while (hole > 0) {
+				std::size_t parent = Parent(hole);
+				if (Heap[parent].Score <= last_score) {
+					break;
+				}
+				Heap[hole] = Heap[parent];
+				hole = parent;
+			}
+			Heap[hole] = last;
+		} else {
+			Heap[index] = last;
+			Heapify(index);
+		}
+
+		return(true);
 	}
 
-	DebugString("Exiting Remove_Matching\n");
 	return(false);
 }
 
 
-template <typename T>
-inline void PriorityQueueClass<T>::Heapify(int index)
-{
-	int smallest = index;
-
-	int left = LEFT_CHILD(index);
-	int right = RIGHT_CHILD(index);
-
-	smallest = left <= Count() && *Heap[left] < *Heap[index] ? left : index;
-	smallest = right <= Count() && *Heap[right] < *Heap[smallest] ? right : smallest;
-
-	while (smallest != index) {
-
-		SWAP(index, smallest)
-
-		index = smallest;
-
-		left = LEFT_CHILD(index);
-		right = RIGHT_CHILD(index);
-
-		smallest = left <= Count() && *Heap[left] < *Heap[index] ? left : index;
-		smallest = right <= Count() && *Heap[right] < *Heap[smallest] ? right : smallest;
-	}
-}
-
-
 template<typename T>
-template<typename S>
-void PriorityQueueClass<T>::Serialize(S & stream, T * nodes)
+inline void PriorityQueueClass<T>::Heapify(std::size_t index)
 {
-	int count = ActiveCount;
-	int size = Size;
+	for (;;) {
+		std::size_t left = Left_Child(index);
+		std::size_t right = Right_Child(index);
 
-	stream.Serialize(count);
-	stream.Serialize(size);
+		std::size_t smallest = left < Heap.size() && Heap[left] < Heap[index] ? left : index;
+		smallest = right < Heap.size() && Heap[right] < Heap[smallest] ? right : smallest;
 
-	/*
-	 * The heap was sized when the queue was built and never grows, so a save describing
-	 * a different one, or more nodes than fit, cannot be read into this queue.
-	 */
-	if (stream.Is_Loading()) {
-		if (size != Size || count < 0 || count > Size) {
-			stream.Fail();
-			return;
+		if (smallest == index) {
+			break;
 		}
-		ActiveCount = count;
-	}
 
-	for (int slot = 0; slot < Size; slot++) {
-		int index = stream.Is_Saving() ? (int)(Heap[slot] - nodes) : 0;
-		stream.Serialize(index);
-
-		if (stream.Is_Loading()) {
-			Heap[slot] = &nodes[index];
-
-			if ((unsigned)Heap[slot] > MaxNodePointer) {
-				MaxNodePointer = (unsigned)Heap[slot];
-			}
-			if ((unsigned)Heap[slot] < MinNodePointer) {
-				MinNodePointer = (unsigned)Heap[slot];
-			}
-		}
+		std::swap(Heap[index], Heap[smallest]);
+		index = smallest;
 	}
 }
-
-#undef PARENT
-#undef LEFT_CHILD
-#undef RIGHT_CHILD
-#undef SWAP

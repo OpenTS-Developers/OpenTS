@@ -14,17 +14,19 @@
 #include <stdint.h>
 #include <vector>
 
+
+// A saved identity is four bytes, and is numbered rather than taken from the address the
+// object sat at, so a save does not depend on the pointer width of the build that wrote it.
+using SwizzleIDType = uint32_t;
+
+
 class SwizzlePointerClass
 {
 	public:
-		SwizzlePointerClass(uintptr_t id = 0, void * pointer = NULL) : ID(id), Pointer(pointer) {}
+		SwizzlePointerClass(SwizzleIDType id = 0, void * pointer = nullptr) : ID(id), Pointer(pointer) {}
 
 	public:
-		/*
-		 * This is the swizzle ID the object announced itself under -- the address it
-		 * occupied when the game was saved.
-		 */
-		uintptr_t ID;
+		SwizzleIDType ID;
 
 		/*
 		 * This is where the object was loaded to.
@@ -36,7 +38,7 @@ class SwizzlePointerClass
 class SwizzleRequestClass
 {
 	public:
-		SwizzleRequestClass(uintptr_t id = 0, void * pointer = NULL, char const * ownertype = NULL, uintptr_t ownerid = 0, char const * slottype = NULL, char const * file = NULL, unsigned int line = 0) :
+		SwizzleRequestClass(SwizzleIDType id = 0, void * pointer = nullptr, char const * ownertype = nullptr, SwizzleIDType ownerid = 0, char const * slottype = nullptr, char const * file = nullptr, unsigned int line = 0) :
 			ID(id), Pointer(pointer), OwnerType(ownertype), OwnerID(ownerid), SlotType(slottype), File(file), Line(line) {}
 
 	public:
@@ -44,7 +46,7 @@ class SwizzleRequestClass
 		 * This is the swizzle ID this request asks after, and the pointer that needs
 		 * filling in once the object that ID names has announced where it landed.
 		 */
-		uintptr_t ID;
+		SwizzleIDType ID;
 		void * Pointer;
 
 		/*
@@ -55,7 +57,7 @@ class SwizzleRequestClass
 		 * carrying them costs nothing.
 		 */
 		char const * OwnerType;
-		uintptr_t OwnerID;
+		SwizzleIDType OwnerID;
 		char const * SlotType;
 		char const * File;
 		unsigned int Line;
@@ -67,11 +69,25 @@ class SwizzleManagerClass
 	public:
 		SwizzleManagerClass(void);
 
-		void Swizzle(void ** pointer, char const * ownertype = NULL, uintptr_t ownerid = 0, char const * slottype = NULL, char const * file = NULL, unsigned int line = 0);
-		void Here_I_Am(uintptr_t id, void * pointer);
+		void Begin_Save(void);
+		SwizzleIDType ID_Of(void const * pointer);
+
+		void Swizzle(void ** pointer, SwizzleIDType id, char const * ownertype = nullptr, SwizzleIDType ownerid = 0, char const * slottype = nullptr, char const * file = nullptr, unsigned int line = 0);
+		void Here_I_Am(SwizzleIDType id, void * pointer);
 
 		void Resolve(void);
 		void Discard(void);
+
+		/*
+		 * The tables' extent at some point of a load, so that a record which fails after
+		 * it can take back what it registered before its object is destroyed.
+		 */
+		struct MarkType {
+			std::size_t Requests;
+			std::size_t Pointers;
+		};
+		MarkType Mark(void) const {return(MarkType{RequestTable.size(), PointerTable.size()});}
+		void Abandon(MarkType const & mark);
 
 	private:
 		/*
@@ -92,7 +108,7 @@ class SwizzleManagerClass
 extern SwizzleManagerClass Swizzler;
 
 template<class T>
-inline void Swizzle_Here_I_Am(uintptr_t id, T * ptr)
+inline void Swizzle_Here_I_Am(SwizzleIDType id, T * ptr)
 {
 	Swizzler.Here_I_Am(id, (void *)ptr);
 }

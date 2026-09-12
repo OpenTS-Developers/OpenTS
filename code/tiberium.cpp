@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "tiberium.h"
@@ -29,6 +28,7 @@
 #include "tracker.h"
 
 #include <algorithm>
+#include <optional>
 
 #define MAX_SPREAD_DELAY	50
 #define MAX_GROWTH_DELAY	50
@@ -61,12 +61,10 @@ TiberiumClass::TiberiumClass(char const * ininame) :
 	SpreadCount(0),
 	SpreadQueue(NULL),
 	SpreadState(NULL),
-	SpreadNodes(NULL),
 	SpreadTimer(),
 	GrowthCount(0),
 	GrowthQueue(NULL),
 	GrowthState(NULL),
-	GrowthNodes(NULL),
 	GrowthTimer()
 {
 	HeapID = (TiberiumType)Tiberiums.Count();
@@ -194,17 +192,9 @@ void TiberiumClass::Compute_CRC(CRCEngine & crc) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of the tiberium class.
-/// This routine tells the save game loader which kind of object to create when this
-/// tiberium type is read back in.
-/// </summary>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE TiberiumClass::GetClassID(CLSID * retval)
+ClassID TiberiumClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_TiberiumClass;
-	return(S_OK);
+	return(ClassID_TiberiumClass);
 }
 
 
@@ -213,10 +203,10 @@ HRESULT STDMETHODCALLTYPE TiberiumClass::GetClassID(CLSID * retval)
 /// The spread and growth pools are dropped before the members arrive, since the counts
 /// they track are about to be replaced with the saved ones.
 /// </summary>
-/// <returns>Returns with S_OK if the tiberium type was loaded.</returns>
+/// <returns>bool; Was the record read whole?</returns>
 /// <remarks>The spread and growth systems are not saved, so they come back empty. They
 /// must be rebuilt once the game has finished loading.</remarks>
-HRESULT STDMETHODCALLTYPE TiberiumClass::Load(IStream * stream)
+bool TiberiumClass::Load(SaveStreamClass & stream)
 {
 	Clear_Spread();
 	Clear_Growth();
@@ -247,15 +237,13 @@ void TiberiumClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Variety);
 	stream.Serialize(RampVariety);
 	stream.Serialize(SpreadCount);
-	// SpreadQueue -- pools sized to the map rather than saved state; Load drops them and the
+	// SpreadQueue -- sized to the map rather than to saved state; Load drops these and the
 	// tiberium systems build them again from the map itself.
 	// SpreadState
-	// SpreadNodes
 	stream.Serialize(SpreadTimer);
 	stream.Serialize(GrowthCount);
-	// GrowthQueue -- the growth pools, dropped and rebuilt the same way.
+	// GrowthQueue -- the growth records, dropped and rebuilt the same way.
 	// GrowthState
-	// GrowthNodes
 	stream.Serialize(GrowthTimer);
 }
 
@@ -332,29 +320,43 @@ void TiberiumClass::Deinit_Tiberium_Spread_System(void)
 /// </summary>
 void TiberiumClass::Spread_AI(void)
 {
-	if (SpreadQueue && SpreadQueue->Count() && SpreadPercentage > 0.00001) {
+	if (SpreadQueue.Count() && SpreadPercentage > 0.00001) {
 
 		/*
 		 * The amount we spread depends on how many spreads are enqueued.
 		 * Randomize it so that it feels more natural.
 		 */
-		int count = std::min(25, std::max(5, (int)(SpreadQueue->Count() * SpreadPercentage)));
+		int count = std::min(25, std::max(5, (int)(SpreadQueue.Count() * SpreadPercentage)));
 		count = (abs(Scen->RandomNumber()) % count) + 1;
 
 		/*
 		 * SpreadQueue does not recycle its entries.
 		 * When space runs low, we need to clear and recalculate it.
 		 */
-		if (SpreadQueue->Count() > Map_Cell_Count() - 20) {
+		if (SpreadQueue.Count() > Map_Cell_Count() - 20) {
 			Recalc_Spread();
 		}
 
 		int index = 0;
-		CellNode * node = SpreadQueue->Extract_Min();
+		std::optional<CellNode> node = SpreadQueue.Extract_Min();
 
-		while (index < count && node != NULL) {
+		while (index < count && node) {
 			CellClass * cellptr = &Map[node->Element];
 			int possible_spreads = 0;
+
+			/*
+			 * A cell that has since lost its tiberium seeds nothing, and re-enqueuing it at
+			 * score zero would bring it back ahead of every other entry on every later pass.
+			 * Drop it instead, without charging it against this pass.
+			 */
+			if (!cellptr->Can_Tiberium_Spread()) {
+				SpreadState[Map_Cell_Index(cellptr->CellID)] = false;
+
+				if (index < count) {
+					node = SpreadQueue.Extract_Min();
+				}
+				continue;
+			}
 
 			/*
 			 * Count how many neighbors we can spread Tiberium to.
@@ -374,9 +376,8 @@ void TiberiumClass::Spread_AI(void)
 				 * If there's more than one possibility, then re-enqueue this cell to spread again later.
 				 */
 				if (possible_spreads > 1) {
-					SpreadNodes[SpreadCount].Element = cellptr->CellID;
-					SpreadNodes[SpreadCount].Score = 0;
-					SpreadQueue->Insert(SpreadNodes[SpreadCount++]);
+					SpreadQueue.Insert(CellNode(cellptr->CellID, 0.0f));
+					SpreadCount++;
 					SpreadState[Map_Cell_Index(cellptr->CellID)] = true;
 				}
 			} else {
@@ -384,7 +385,7 @@ void TiberiumClass::Spread_AI(void)
 			}
 
 			if (index < count) {
-				node = SpreadQueue->Extract_Min();
+				node = SpreadQueue.Extract_Min();
 			}
 		}
 	}
@@ -400,9 +401,8 @@ void TiberiumClass::Init_Spread(void)
 {
 	Clear_Spread();
 
-	SpreadNodes = new CellNode[Map_Cell_Count()];
 	SpreadState = new bool [Map_Cell_Count()];
-	SpreadQueue = new PriorityQueueClass<CellNode>(Map_Cell_Count());
+	SpreadQueue.Reserve(Map_Cell_Count());
 
 	Recalc_Spread();
 }
@@ -416,7 +416,7 @@ void TiberiumClass::Init_Spread(void)
 void TiberiumClass::Recalc_Spread(void)
 {
 	SpreadCount = 0;
-	SpreadQueue->Clear();
+	SpreadQueue.Clear();
 
 	for (int i = Map_Cell_Count() - 1; i >= 0; i--) {
 		SpreadState[i] = false;
@@ -427,9 +427,8 @@ void TiberiumClass::Recalc_Spread(void)
 	while (iter) {
 
 		if (iter->Tiberium_Type_Here() == HeapID && iter->Can_Tiberium_Spread()) {
-			SpreadNodes[SpreadCount].Element = iter->CellID;
-			SpreadNodes[SpreadCount].Score = 0.0;
-			SpreadQueue->Insert(SpreadNodes[SpreadCount++]);
+			SpreadQueue.Insert(CellNode(iter->CellID, 0.0f));
+			SpreadCount++;
 			SpreadState[Map_Cell_Index(iter->CellID)] = true;
 		}
 
@@ -445,16 +444,7 @@ void TiberiumClass::Recalc_Spread(void)
 /// </summary>
 void TiberiumClass::Clear_Spread(void)
 {
-	if (SpreadQueue) {
-		SpreadQueue->Clear();
-		delete SpreadQueue;
-		SpreadQueue = NULL;
-	}
-
-	if (SpreadNodes) {
-		delete [] SpreadNodes;
-		SpreadNodes = NULL;
-	}
+	SpreadQueue.Clear();
 
 	if (SpreadState) {
 		delete [] SpreadState;
@@ -497,9 +487,8 @@ void TiberiumClass::Queue_Spread(Cell const & cell)
 			Recalc_Spread();
 		}
 
-		SpreadNodes[SpreadCount].Element = cell;
-		SpreadNodes[SpreadCount].Score = float(Frame + abs(Scen->RandomNumber()) % MAX_SPREAD_DELAY);
-		SpreadQueue->Insert(SpreadNodes[SpreadCount++]);
+		SpreadQueue.Insert(CellNode(cell, float(Frame + abs(Scen->RandomNumber()) % MAX_SPREAD_DELAY)));
+		SpreadCount++;
 		SpreadState[Map_Cell_Index(cell)] = true;
 	}
 }
@@ -558,27 +547,27 @@ void TiberiumClass::Deinit_Tiberium_Growth_System(void)
 /// </summary>
 void TiberiumClass::Growth_AI(void)
 {
-	if (GrowthQueue && GrowthQueue->Count() && GrowthPercentage > 0.00001) {
+	if (GrowthQueue.Count() && GrowthPercentage > 0.00001) {
 
 		/*
 		 * The amount we grow depends on how many growths are enqueued.
 		 * Randomize it so that it feels more natural.
 		 */
-		int count = std::min(50, std::max(5, (int)(GrowthQueue->Count() * GrowthPercentage)));
+		int count = std::min(50, std::max(5, (int)(GrowthQueue.Count() * GrowthPercentage)));
 		count = (abs(Scen->RandomNumber()) % count) + 1;
 
 		/*
 		 * GrowthQueue does not recycle its entries.
 		 * When space runs low, we need to clear and recalculate it.
 		 */
-		if (GrowthQueue->Count() > Map_Cell_Count() - 2 * count) {
+		if (GrowthQueue.Count() > Map_Cell_Count() - 2 * count) {
 			Recalc_Growth();
 		}
 
 		int index = 0;
-		CellNode * node = GrowthQueue->Extract_Min();
+		std::optional<CellNode> node = GrowthQueue.Extract_Min();
 
-		while (index < count && node != NULL) {
+		while (index < count && node) {
 			CellClass * cellptr = &Map[node->Element];
 
 			if (cellptr->Tiberium_Type_Here() == HeapID) {
@@ -589,19 +578,21 @@ void TiberiumClass::Growth_AI(void)
 				 * Also, take this opportunity to queue this cell to spread, if possible.
 				 */
 				if (cellptr->OverlayData < MAX_GROWTH_STAGE) {
-					GrowthNodes[GrowthCount].Element = node->Element;
-					GrowthNodes[GrowthCount].Score = float(Frame + abs(Scen->RandomNumber() % MAX_GROWTH_DELAY));
+					float score = float(Frame + abs(Scen->RandomNumber() % MAX_GROWTH_DELAY));
 					GrowthState[Map_Cell_Index(node->Element)] = true;
-					GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+					GrowthQueue.Insert(CellNode(node->Element, score));
+					GrowthCount++;
 					Queue_Spread(node->Element);
 				} else {
 					GrowthState[Map_Cell_Index(node->Element)] = false;
 				}
+			} else {
+				GrowthState[Map_Cell_Index(node->Element)] = false;
 			}
 
 			index++;
 			if (index < count) {
-				node = GrowthQueue->Extract_Min();
+				node = GrowthQueue.Extract_Min();
 			}
 		}
 	}
@@ -617,9 +608,8 @@ void TiberiumClass::Init_Growth(void)
 {
 	Clear_Growth();
 
-	GrowthNodes = new CellNode[Map_Cell_Count()];
 	GrowthState = new bool [Map_Cell_Count()];
-	GrowthQueue = new PriorityQueueClass<CellNode>(Map_Cell_Count());
+	GrowthQueue.Reserve(Map_Cell_Count());
 
 	Recalc_Growth();
 }
@@ -633,7 +623,7 @@ void TiberiumClass::Init_Growth(void)
 void TiberiumClass::Recalc_Growth(void)
 {
 	GrowthCount = 0;
-	GrowthQueue->Clear();
+	GrowthQueue.Clear();
 
 	for (int i = Map_Cell_Count() - 1; i >= 0; i--) {
 		GrowthState[i] = false;
@@ -643,9 +633,8 @@ void TiberiumClass::Recalc_Growth(void)
 	CellClass * iter = Map.Iterate();
 	while (iter) {
 		if (iter->Tiberium_Type_Here() == HeapID && iter->Can_Tiberium_Grow()) {
-			GrowthNodes[GrowthCount].Element = iter->CellID;
-			GrowthNodes[GrowthCount].Score = 0.0;
-			GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+			GrowthQueue.Insert(CellNode(iter->CellID, 0.0f));
+			GrowthCount++;
 			GrowthState[Map_Cell_Index(iter->CellID)] = true;
 		}
 		iter = Map.Iterate();
@@ -660,16 +649,7 @@ void TiberiumClass::Recalc_Growth(void)
 /// </summary>
 void TiberiumClass::Clear_Growth(void)
 {
-	if (GrowthQueue) {
-		GrowthQueue->Clear();
-		delete GrowthQueue;
-		GrowthQueue = NULL;
-	}
-
-	if (GrowthNodes) {
-		delete [] GrowthNodes;
-		GrowthNodes = NULL;
-	}
+	GrowthQueue.Clear();
 
 	if (GrowthState) {
 		delete [] GrowthState;
@@ -688,7 +668,7 @@ void TiberiumClass::Clear_Growth(void)
 void TiberiumClass::Queue_Growth(Cell const & cell)
 {
 	int cellindex = Map_Cell_Index(cell);
-	if (Map[cell].OverlayData < MAX_GROWTH_STAGE) {
+	if (Map[cell].OverlayData < MAX_GROWTH_STAGE && !GrowthState[cellindex]) {
 
 		/*
 		 * GrowthQueue does not recycle its entries.
@@ -698,9 +678,8 @@ void TiberiumClass::Queue_Growth(Cell const & cell)
 			Recalc_Growth();
 		}
 
-		GrowthNodes[GrowthCount].Element = cell;
-		GrowthNodes[GrowthCount].Score = float(Frame + abs(Scen->RandomNumber()) % MAX_GROWTH_DELAY);
-		GrowthQueue->Insert(GrowthNodes[GrowthCount++]);
+		GrowthQueue.Insert(CellNode(cell, float(Frame + abs(Scen->RandomNumber()) % MAX_GROWTH_DELAY)));
+		GrowthCount++;
 		GrowthState[cellindex] = true;
 	}
 }

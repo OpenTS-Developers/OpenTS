@@ -39,15 +39,11 @@
 
 #include "blowfish.h"
 
-#ifndef NO_BLOWFISH_DLL
-#include "iblowfish.h"
-#endif
 
 #include <cassert>
 
 
 
-#ifdef NO_BLOWFISH_DLL
 /*
 **	Byte order controlled long integer. This integer is constructed
 **	so that character 0 (C0) is the most significant byte of the
@@ -63,7 +59,6 @@ typedef union {
 		unsigned char C0;
 	} Char;
 } Int;
-#endif
 
 
 /// <summary>
@@ -73,11 +68,7 @@ typedef union {
 /// </summary>
 /// <remarks>You must submit the key before calling the encrypt or decrypt routines.</remarks>
 BlowfishEngine::BlowfishEngine(void) :
-#ifndef NO_BLOWFISH_DLL
-	BlockCypher(CLSID_BlowfishObject)
-#else
 	IsKeyed(false)
-#endif
 {
 }
 
@@ -99,11 +90,9 @@ BlowfishEngine::BlowfishEngine(void) :
  *=============================================================================================*/
 BlowfishEngine::~BlowfishEngine(void)
 {
-#ifdef NO_BLOWFISH_DLL
 	if (IsKeyed) {
 		Submit_Key(NULL, 0);
 	}
-#endif
 }
 
 
@@ -133,10 +122,6 @@ BlowfishEngine::~BlowfishEngine(void)
  *=============================================================================================*/
 void BlowfishEngine::Submit_Key(void const * key, int length)
 {
-#ifndef NO_BLOWFISH_DLL
-	BlockCypher->Set_Key(length, key);
-	return;
-#else
 	assert(length <= MAX_KEY_LENGTH);
 
 	/*
@@ -210,7 +195,6 @@ void BlowfishEngine::Submit_Key(void const * key, int length)
 	}
 
 	IsKeyed = true;
-#endif
 }
 
 
@@ -238,10 +222,6 @@ void BlowfishEngine::Submit_Key(void const * key, int length)
  *=============================================================================================*/
 int BlowfishEngine::Encrypt(void const * plaintext, int length, void * cyphertext)
 {
-#ifndef NO_BLOWFISH_DLL
-	BlockCypher->Encrypt(length, plaintext, cyphertext);
-	return(length);
-#else
 	if (plaintext == 0 || length == 0) {
 		return(0);
 	}
@@ -281,7 +261,6 @@ int BlowfishEngine::Encrypt(void const * plaintext, int length, void * cyphertex
 		memmove(cyphertext, plaintext, length);
 	}
 	return(length);
-#endif
 }
 
 
@@ -309,10 +288,6 @@ int BlowfishEngine::Encrypt(void const * plaintext, int length, void * cyphertex
  *=============================================================================================*/
 int BlowfishEngine::Decrypt(void const * cyphertext, int length, void * plaintext)
 {
-#ifndef NO_BLOWFISH_DLL
-	BlockCypher->Decrypt(length, cyphertext, plaintext);
-	return(length);
-#else
 	if (cyphertext == 0 || length == 0) {
 		return(0);
 	}
@@ -352,11 +327,9 @@ int BlowfishEngine::Decrypt(void const * cyphertext, int length, void * plaintex
 		memmove(plaintext, cyphertext, length);
 	}
 	return(length);
-#endif
 }
 
 
-#ifdef NO_BLOWFISH_DLL
 /***********************************************************************************************
  * BlowfishEngine::Process_Block -- Process a block of data using Blowfish algorithm.          *
  *                                                                                             *
@@ -631,4 +604,3 @@ unsigned int const BlowfishEngine::S_Init[4][UCHAR_MAX+1] = {
 		0x90D4F869U,0xA65CDEA0U,0x3F09252DU,0xC208E69FU,0xB74E6132U,0xCE77E25BU,0x578FDFE3U,0x3AC372E6U
 	}
 };
-#endif

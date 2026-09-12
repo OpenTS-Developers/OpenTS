@@ -55,12 +55,17 @@ class LZOStraw : public Straw
 
 		virtual int Get(void * source, int slen) override;
 
+		// Get's byte count is the same whether the stream ended or a block was rejected.
+		bool Is_Damaged(void) const { return(IsDamaged); }
+
 	private:
 
 		/*
 		**	This tells the pipe if it should be decompressing or compressing the data stream.
 		*/
 		CompControl Control;
+
+		bool IsDamaged;
 
 		/*
 		**	The number of bytes accumulated into the staging buffer.
@@ -73,14 +78,16 @@ class LZOStraw : public Straw
 		char * Buffer;
 		char * Buffer2;
 
+		// The compressor's scratch dictionary, allocated only when this straw compresses.
+		char * Dictionary;
+
 		/*
 		**	The working block size. Data will be compressed in chunks of this size.
 		*/
 		int BlockSize;
 
-		/*
-		**	Probably dont need this anymore as LZO decompresses into a staging buffer.
-		*/
+		// The headroom the working buffers carry beyond a block. It bounds what the
+		// decompressor may write, so a block claiming to expand past it is rejected.
 		int SafetyMargin;
 
 		/*

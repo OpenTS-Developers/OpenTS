@@ -32,12 +32,14 @@ struct AUDHeaderType {
 	uint8_t Flags;
 	uint8_t Compression;
 };
+static_assert(sizeof(AUDHeaderType) == 12, "the AUD header is 12 bytes on disk");
 
 struct AUDChunkHeaderType {
 	uint16_t CompSize;
 	uint16_t UncompSize;
 	uint32_t Magic;
 };
+static_assert(sizeof(AUDChunkHeaderType) == 8, "an AUD chunk header is 8 bytes on disk");
 #pragma pack(pop)
 
 

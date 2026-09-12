@@ -22,7 +22,7 @@ source_files:
 
 `AbstractClass` is the common base for persistent engine entities. Map objects and INI-backed type definitions are separate branches of that hierarchy. A runtime instance stores state for one object in the current match; a type definition stores data shared by every instance with the same INI identifier.
 
-This page covers simulation objects and their definitions. UI controls, file classes, and locomotion COM objects use other hierarchies.
+This page covers simulation objects and their definitions. UI controls, file classes, and locomotors use other hierarchies.
 
 ## Terms
 

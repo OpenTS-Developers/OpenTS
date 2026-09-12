@@ -59,8 +59,8 @@ class TerrainClass : public ObjectClass, public StageClass
 		TerrainClass(TerrainTypeClass const * type, Cell const & cell);
 		virtual ~TerrainClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual ClassID Class_ID(void) const override;
+		virtual bool Load(SaveStreamClass & stream) override;
 
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;

@@ -79,12 +79,6 @@
 #include <algorithm>
 
 
-/*
- * Global COM reference count.
- */
-ULONG COMRefCount = 0;
-
-
 unsigned FramesThisSecond=0;
 unsigned LastFramesPerSecond=0;
 unsigned TotalFrames=0;

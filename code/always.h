@@ -91,3 +91,135 @@
 #ifndef _stricmp
 #define _stricmp stricmp
 #endif
+
+
+/*
+** Define some Windows specific values that are used throghout the games
+*/
+#ifndef _WIN32
+
+#define _MAX_DRIVE 3
+#define _MAX_DIR   256
+#define _MAX_FNAME 256
+#define _MAX_EXT   256
+#define _MAX_PATH  512
+#define MAX_PATH   _MAX_PATH
+#define _CONTROL   0x20  // space, first non-control character in ASCII
+
+#undef _stricmp
+#define stricmp  strcasecmp
+#define _stricmp strcasecmp
+#define strnicmp strncasecmp
+#define memicmp  strncasecmp
+#define __cdecl
+
+#include <cctype>
+#include <cstdio>
+#include <cstring>
+
+inline void _makepath(char * path, char const * drive, char const * dir, char const * fname, char const * ext)
+{
+	if (path == nullptr) return;
+
+	size_t length = 0;
+
+	auto append = [&](char const * text, size_t count) {
+		size_t room = _MAX_PATH - 1 - length;
+		if (count > room) count = room;
+		memcpy(path + length, text, count);
+		length += count;
+	};
+
+	if (drive != nullptr && drive[0] != '\0') {
+		append(drive, 1);
+		append(":", 1);
+	}
+
+	if (dir != nullptr && dir[0] != '\0') {
+		size_t count = strlen(dir);
+		append(dir, count);
+		if (dir[count - 1] != '\\' && dir[count - 1] != '/') {
+			append("/", 1);
+		}
+	}
+
+	if (fname != nullptr) {
+		append(fname, strlen(fname));
+	}
+
+	if (ext != nullptr && ext[0] != '\0') {
+		if (ext[0] != '.') {
+			append(".", 1);
+		}
+		append(ext, strlen(ext));
+	}
+
+	path[length] = '\0';
+}
+
+inline void _splitpath(char const * path, char * drive, char * dir, char * fname, char * ext)
+{
+	if (drive != nullptr) drive[0] = '\0';
+	if (dir != nullptr) dir[0] = '\0';
+	if (fname != nullptr) fname[0] = '\0';
+	if (ext != nullptr) ext[0] = '\0';
+
+	if (path == nullptr) return;
+
+	char const * rest = path;
+
+	if (path[0] != '\0' && path[1] == ':') {
+		if (drive != nullptr) snprintf(drive, _MAX_DRIVE, "%.2s", path);
+		rest = path + 2;
+	}
+
+	char const * name = rest;
+	for (char const * scan = rest; *scan != '\0'; ++scan) {
+		if (*scan == '\\' || *scan == '/') {
+			name = scan + 1;
+		}
+	}
+
+	if (dir != nullptr) snprintf(dir, _MAX_DIR, "%.*s", (int)(name - rest), rest);
+
+	char const * dot = name + strlen(name);
+	for (char const * scan = name; *scan != '\0'; ++scan) {
+		if (*scan == '.') {
+			dot = scan;
+		}
+	}
+
+	if (fname != nullptr) snprintf(fname, _MAX_FNAME, "%.*s", (int)(dot - name), name);
+	if (ext != nullptr) snprintf(ext, _MAX_EXT, "%s", dot);
+}
+
+inline static char* strupr(char* str)
+{
+	char* ret = str;
+	while (*str != '\0') {
+		*str = toupper(*str);
+		++str;
+	}
+	return(ret);
+}
+
+inline static void strrev(char* str)
+{
+	int len = strlen(str);
+
+	for (int i = 0; i < len / 2; i++) {
+		char c = str[i];
+		str[i] = str[len - i - 1];
+		str[len - i - 1] = c;
+	}
+}
+
+inline static void _strlwr(char* str)
+{
+	while (*str != '\0') {
+		*str = tolower(*str);
+		++str;
+	}
+}
+
+#endif // not _WIN32

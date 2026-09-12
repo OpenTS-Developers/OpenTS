@@ -13141,7 +13141,7 @@ Locomotor:
     section:
       kind: identifier
       source: object-type
-    value_type: Locomotor CLSID
+    value_type: Locomotor class identifier
     status: generated
     _provenance:
       default_candidate: the Teleport locomotor

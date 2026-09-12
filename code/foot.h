@@ -37,6 +37,9 @@
 #include "team.h"
 #include "techno.h"
 
+#include <cstdint>
+#include <memory>
+
 class UnitClass;
 class BuildingClass;
 class WaypointClass;
@@ -208,7 +211,7 @@ class FootClass : public TechnoClass
 		 * handed to a ballistic locomotor and a unit crossing a tunnel walks -- so all
 		 * movement is asked of this interface rather than of the type's setting.
 		 */
-		ILocomotionPtr Locomotion;
+		std::unique_ptr<ILocomotion> Locomotion;
 
 		/*
 		**	This is the coordinate that the unit is heading to
@@ -389,7 +392,7 @@ class FootClass : public TechnoClass
 
 		virtual void Compute_CRC(CRCEngine &) const override;
 		virtual Coord Destination_Coord(void) const override;
-		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, int & param) override;
+		virtual RadioMessageType Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param) override;
 		virtual bool Can_Demolish(void) const override;
 		bool Is_Recruitable(HouseClass const * house=NULL) const;
 		bool Is_On_Priority_Mission(void) const;

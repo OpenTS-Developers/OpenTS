@@ -157,7 +157,7 @@ void RadioClass::Debug_Dump(MonoClass * mono) const
  *   05/22/1995 JLB : Recognized who is sending the message                                    *
  *   06/05/1996 JLB : Radio message history tracking.                                          *
  *=============================================================================================*/
-RadioMessageType RadioClass::Receive_Message(RadioClass * from, RadioMessageType message, int & param)
+RadioMessageType RadioClass::Receive_Message(RadioClass * from, RadioMessageType message, intptr_t & param)
 {
 	/*
 	**	Keep a record of the last message received by this radio.
@@ -219,7 +219,7 @@ RadioMessageType RadioClass::Receive_Message(RadioClass * from, RadioMessageType
  * HISTORY:                                                                                    *
  *   05/22/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, int & param, RadioClass * to)
+RadioMessageType RadioClass::Transmit_Message(RadioMessageType message, intptr_t & param, RadioClass * to)
 {
 	if (to == NULL) {
 		to = (RadioClass *)Contact_With_Whom();

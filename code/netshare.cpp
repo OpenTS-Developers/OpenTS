@@ -1561,13 +1561,12 @@ void Send_Preview_To_Guests(void)
 /// from another. The map description is deliberately left out -- renaming a map does not
 /// make it a different map.
 /// </summary>
-/// <returns>Returns with the digest string for the map.</returns>
-/// <remarks>The digest is allocated by this routine. The caller must delete it.</remarks>
-char * CalcRandomMapDigest(void)
+/// <param name="digest">Buffer to fill in with the digest string.</param>
+/// <param name="bufsize">Size of the destination buffer.</param>
+void CalcRandomMapDigest(char * digest, int bufsize)
 {
 	unsigned char * data;
 	char description[sizeof(RandomMapGen.SeedData.MapDescription)];
-	char * digest;
 	int size;
 	unsigned char *bytes;
 	unsigned int val;
@@ -1604,10 +1603,8 @@ char * CalcRandomMapDigest(void)
 		}
 	}
 
-	digest = new char[12];
-	sprintf(digest, "%08X", checksum);
+	snprintf(digest, bufsize, "%08X", checksum);
 	memcpy(RandomMapGen.SeedData.MapDescription, description, sizeof(description));
-	return(digest);
 }
 
 
@@ -1649,10 +1646,10 @@ int CreateRandomMap(void)
 	}
 
 	if (!found) {
-		char * digest = CalcRandomMapDigest();
+		char digest[RANDOM_MAP_DIGEST_SIZE];
+		CalcRandomMapDigest(digest, sizeof(digest));
 		MultiMission * scenario = new MultiMission(RANDOM_MAP_FILE_NAME, RandomMapGen.SeedData.MapDescription, digest);
 		Session.Scenarios.Add(scenario);
-		delete digest;
 	} else {
 		Session.Scenarios[index]->Set_Description(RandomMapGen.SeedData.MapDescription);
 	}

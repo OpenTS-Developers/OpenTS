@@ -79,6 +79,7 @@ struct CompHeaderType {
 	int	Size;   // Size of the uncompressed data.
 	short	Skip;   // Number of bytes to skip before data.
 };
+static_assert(sizeof(CompHeaderType) == 8, "the compressed file header is 8 bytes on disk");
 #pragma pack(pop)
 
 

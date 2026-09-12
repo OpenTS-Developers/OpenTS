@@ -16,10 +16,11 @@
 #include "coord.h"
 #include "vector.h"
 
-#include "passblty.hh"
+#include <map>
+#include <set>
+#include <utility>
 
-template<typename K, typename V>
-class HashTableClass;
+#include "passblty.hh"
 
 /**********************************************************************
 **	A base is broken up into several zones. This type enumerates the
@@ -159,13 +160,17 @@ struct CellZoneStruct
 	 */
 	unsigned char Height;
 
+	// The alignment gap ahead of ZoneID, named and cleared because a save carries this
+	// struct as raw bytes.
+	unsigned short Padding;
+
 	/*
 	 * This is the base terrain zone the cell was flood filled into, or 0 for a cell that
 	 * lies outside the playfield. It indexes the Zones layers to give the movement zone.
 	 */
-	unsigned short ZoneID;
+	int ZoneID;
 
-	CellZoneStruct(void) : Passability(PASSABLE_OUTSIDE), Height(0) {}
+	CellZoneStruct(void) : Passability(PASSABLE_OUTSIDE), Height(0), Padding(0), ZoneID(0) {}
 };
 
 
@@ -178,13 +183,13 @@ struct CellSubzoneStruct
 	 * This is the subzone the cell belongs to at each level of pathfinding coarseness
 	 * (SubzoneLevelType), or 0 where the cell has none at that level.
 	 */
-	signed short SubzoneID[SUBZONE_COUNT];
+	int SubzoneID[SUBZONE_COUNT];
 
 	/*
 	 * This is the base terrain zone of the cell, cached from CellZones on each rebuild. A
 	 * subzone never spans two zones, so the fill spreads only while this value matches.
 	 */
-	signed short ZoneID;
+	int ZoneID;
 
 	/*
 	 * This is the ground level height of the cell, cached alongside its zone. A subzone
@@ -203,17 +208,13 @@ struct CellSubzoneStruct
 struct SubzoneConnectionStruct
 {
 	SubzoneConnectionStruct(void) : SubzoneID(0), IsCrossBlock(false) {}
-	SubzoneConnectionStruct(int subzone_id) : SubzoneID(subzone_id), IsCrossBlock(false) {}
 	SubzoneConnectionStruct(SubzoneConnectionStruct const &that) : SubzoneID(that.SubzoneID), IsCrossBlock(that.IsCrossBlock) {}
 
 	bool operator==(const SubzoneConnectionStruct & that) const { return(SubzoneID == that.SubzoneID); }
 	bool operator!=(const SubzoneConnectionStruct & that) const { return(SubzoneID != that.SubzoneID); }
 
 	/*
-	 * This is the subzone that the owning subzone connects to. While a connection is still
-	 * staged in the SubzoneConnectionHashTable this holds both IDs packed together instead, as
-	 * (neighbor << 16) | subzone, so that duplicate pairs fall out of the staging set before
-	 * they are unpacked into the two subzones' adjacency lists.
+	 * This is the subzone that the owning subzone connects to.
 	 */
 	int SubzoneID;
 
@@ -254,7 +255,7 @@ struct SubzoneTrackingStruct
 	 * expand a subzone whose parent lay on the route the coarser level settled on, which is
 	 * what keeps a long path cheap to find.
 	 */
-	unsigned short ParentSubzoneID;
+	int ParentSubzoneID;
 
 	/*
 	 * This is the passability shared by all of this subzone's cells -- a subzone never spans
@@ -272,5 +273,15 @@ struct SubzoneTrackingStruct
 	int ThreatRegion;
 };
 
-typedef HashTableClass<unsigned int, unsigned int> ZONE_PAIR_HASH_SET;
-typedef HashTableClass<unsigned int, SubzoneConnectionStruct> SUBZONE_CONNECTION_HASH_SET;
+/*
+ * A pair of ids, ordered as the site that staged it wrote them rather than smallest first,
+ * because the two staging containers below hold (a,b) and (b,a) as separate entries.
+ */
+using ZonePair = std::pair<int, int>;
+
+using ZonePairSet = std::set<ZonePair>;
+
+/*
+ * The subzone links a rebuild has staged, each mapped to whether it crosses a fill block.
+ */
+using SubzoneLinkStaging = std::map<ZonePair, bool>;

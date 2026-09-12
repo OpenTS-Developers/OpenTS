@@ -21,6 +21,7 @@
 #include "savestream.h"
 #include "vector.h"
 
+#include <cinttypes>
 #include <cstdio>
 
 
@@ -47,8 +48,8 @@ AbstractTypeClass::AbstractTypeClass(char const * ininame) :
 	GivenName()
 {
 	if (ininame == NULL) {
-		char pstr[16];
-		sprintf(pstr, "%08X", (unsigned int)this);
+		char pstr[2 * sizeof(void *) + 1];
+		sprintf(pstr, "%0*" PRIXPTR, (int)(2 * sizeof(void *)), (uintptr_t)this);
 		IniName = TStringID<24>(pstr);
 	} else {
 		IniName = TStringID<24>(ininame);

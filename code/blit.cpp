@@ -205,8 +205,8 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 	bool overlapped = false;
 	void * dbuffer = NULL;
 	void * sbuffer = NULL;
-	int zbuffer_offset = 0;
-	int abuffer_offset = 0;
+	unsigned short * zbuffer_offset = NULL;
+	unsigned short * abuffer_offset = NULL;
 	int current_z = 0;
 	int zbuffer_pitch = 0;
 	int abuffer_pitch = 0;
@@ -326,12 +326,12 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 			sbuffer = ((char*)sbuffer) + (srect.Height-1) * source.Stride();
 			dbuffer = ((char*)dbuffer) + (drect.Height-1) * dest.Stride();
 			if (DepthBuffer != NULL) {
-				zbuffer_offset = (zbuffer_offset + 2 * srect.Height) - 2 * DepthBuffer->Get_Buffer_Width();
+				zbuffer_offset = (zbuffer_offset + srect.Height) - DepthBuffer->Get_Buffer_Width();
 				zbuffer_offset = DepthBuffer->Wrap_Overflow(zbuffer_offset);
 				current_z -= srect.Height - 1;
 			}
 			if (AlphaBuffer != NULL) {
-				abuffer_offset = (abuffer_offset + 2 * srect.Height) - 2 * AlphaBuffer->Get_Buffer_Width();
+				abuffer_offset = (abuffer_offset + srect.Height) - AlphaBuffer->Get_Buffer_Width();
 				abuffer_offset = AlphaBuffer->Wrap_Overflow(abuffer_offset);
 			}
 		}
@@ -342,11 +342,11 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		int height = std::min(srect.Height, drect.Height);
 		if (overlapped) {
 			for (int y = 0; y < height; y++) {
-				blitter.BlitBackward(dbuffer, sbuffer, srect.Width, current_z, (void *)zbuffer_offset, (void *)abuffer_offset, alpha);
+				blitter.BlitBackward(dbuffer, sbuffer, srect.Width, current_z, zbuffer_offset, abuffer_offset, alpha);
 				dbuffer = (void*)(((char*)dbuffer) + dstride);
 				sbuffer = (void*)(((char*)sbuffer) + sstride);
 				if (DepthBuffer != NULL) {
-					zbuffer_offset += 2 * zbuffer_pitch;
+					zbuffer_offset += zbuffer_pitch;
 					zbuffer_offset = DepthBuffer->Wrap_Underflow(zbuffer_offset);
 					z_fraction += z_step_denominator;
 					if (z_fraction >= z_step_numerator) {
@@ -355,17 +355,17 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 					}
 				}
 				if (AlphaBuffer != NULL) {
-					abuffer_offset += 2 * abuffer_pitch;
+					abuffer_offset += abuffer_pitch;
 					abuffer_offset = AlphaBuffer->Wrap_Underflow(abuffer_offset);
 				}
 			}
 		} else {
 			for (int y = 0; y < height; y++) {
-				blitter.BlitForward(dbuffer, sbuffer, srect.Width, current_z, (void *)zbuffer_offset, (void *)abuffer_offset, alpha);
+				blitter.BlitForward(dbuffer, sbuffer, srect.Width, current_z, zbuffer_offset, abuffer_offset, alpha);
 				dbuffer = (void*)(((char*)dbuffer) + dstride);
 				sbuffer = (void*)(((char*)sbuffer) + sstride);
 				if (DepthBuffer != NULL) {
-					zbuffer_offset += 2 * zbuffer_pitch;
+					zbuffer_offset += zbuffer_pitch;
 					zbuffer_offset = DepthBuffer->Wrap_Overflow(zbuffer_offset);
 					z_fraction += z_step_denominator;
 					if (z_fraction >= z_step_numerator) {
@@ -374,7 +374,7 @@ bool Bit_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 					}
 				}
 				if (AlphaBuffer != NULL) {
-					abuffer_offset += 2 * abuffer_pitch;
+					abuffer_offset += abuffer_pitch;
 					abuffer_offset = AlphaBuffer->Wrap_Overflow(abuffer_offset);
 				}
 			}
@@ -463,8 +463,8 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 {
 	static char _temp_buf[256];
 
-	int zbuffer_offset = 0;
-	int abuffer_offset = 0;
+	unsigned short * zbuffer_offset = NULL;
+	unsigned short * abuffer_offset = NULL;
 	char * zshapelock = NULL;
 	int zbuffer_pitch = 0;
 	int abuffer_pitch = 0;
@@ -587,7 +587,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		/*
 		**	Blit the correct sub-portion to the destination surface.
 		*/
-		blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, (void *)zbuffer_offset, (void *)abuffer_offset, alpha, 0, (void *)zshapelock);
+		blitter.Blit(dbuffer, ((unsigned short *)sbuffer) + 1, srect.Width, leftmargin, current_z, zbuffer_offset, abuffer_offset, alpha, 0, (void *)zshapelock);
 
 		/*
 		**	Advance the source and dest pointers for the next line processing.
@@ -595,7 +595,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 		sbuffer = ((unsigned char *)sbuffer) + (*(unsigned short *)sbuffer);
 		dbuffer = (void *)(((char *)dbuffer) + dstride);
 		if (DepthBuffer != NULL) {
-			zbuffer_offset += 2 * zbuffer_pitch;
+			zbuffer_offset += zbuffer_pitch;
 			zbuffer_offset = DepthBuffer->Wrap_Overflow(zbuffer_offset);
 			if (zshape != NULL) {
 				zshapelock += zshapew;
@@ -606,7 +606,7 @@ bool RLE_Blit(Surface & dest, Rect const & dcliprect, Rect const & ddrect, Surfa
 					z_fraction -= z_step_numerator;
 				}
 			}
-			abuffer_offset += 2 * abuffer_pitch;
+			abuffer_offset += abuffer_pitch;
 			abuffer_offset = AlphaBuffer->Wrap_Overflow(abuffer_offset);
 		}
 	}

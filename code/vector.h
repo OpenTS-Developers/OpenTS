@@ -123,8 +123,7 @@ class VectorClass
 			stream.Serialize(count);
 
 			if (stream.Is_Loading()) {
-				if (count < 0) {
-					stream.Fail();
+				if (!stream.Fits(count, (std::is_arithmetic_v<T> || std::is_enum_v<T>) ? sizeof(T) : 1)) {
 					return;
 				}
 				Clear();
@@ -518,8 +517,7 @@ class DynamicVectorClass : public VectorClass<T>
 			stream.Serialize(count);
 
 			if (stream.Is_Loading()) {
-				if (count < 0) {
-					stream.Fail();
+				if (!stream.Fits(count, (std::is_arithmetic_v<T> || std::is_enum_v<T>) ? sizeof(T) : 1)) {
 					return;
 				}
 				Clear();

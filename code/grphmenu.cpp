@@ -73,7 +73,7 @@ GraphicMenu * _Graphic_Menu(INIClass const & ini, const char * name)
 	Point2D pt(0,0);
 
 	if (has_background) {
-		strncat(buffer, ".VQA", sizeof(buffer));
+		strncat(buffer, ".VQA", sizeof(buffer) - strlen(buffer) - 1);
 		MSAnim * anim = NULL;
 		if (CCFileClass(buffer).Is_Available()) {
 			anim = new MSVQAnim(buffer, AlternateSurface, menu->Engine.Get_Anims(), true);

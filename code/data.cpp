@@ -277,8 +277,7 @@ char const * Fetch_String(int id)
 /// <returns>Returns with a pointer to the resource data. Otherwise, NULL is returned.</returns>
 void const * Fetch_Resource(LPCSTR resname, LPCSTR restype)
 {
-	/// The superfluous MAKEINTRESOURCE cast is the game's, and the C4302 warning with it.
-	HRSRC handle = FindResource(LanguageResources, MAKEINTRESOURCE(resname), restype);
+	HRSRC handle = FindResource(LanguageResources, resname, restype);
 	if (handle == NULL) {
 		return(NULL);
 	}

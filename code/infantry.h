@@ -126,8 +126,8 @@ class InfantryClass : public FootClass
 		InfantryClass(InfantryTypeClass const * type = NULL, HouseClass * house = NULL);
 		virtual ~InfantryClass(void) override;
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
-		virtual HRESULT STDMETHODCALLTYPE Load(IStream * stream) override;
+		virtual ClassID Class_ID(void) const override;
+		virtual bool Load(SaveStreamClass & stream) override;
 		virtual void Serialize(SaveStreamClass & stream) override;
 		virtual void Post_Load(void) override;
 

@@ -34,7 +34,7 @@ class VeinholeMonsterClass : public ObjectClass
 		VeinholeMonsterClass(Cell const & cell);
 		~VeinholeMonsterClass(void);
 
-		virtual HRESULT STDMETHODCALLTYPE GetClassID(CLSID * retval) override;
+		virtual ClassID Class_ID(void) const override;
 
 		/*---------------------------------------------------------------------
 		**	Member function prototypes.
@@ -61,8 +61,8 @@ class VeinholeMonsterClass : public ObjectClass
 		void Clear_Growth(void);
 		void Destroy_Monster(void);
 		static void Remove_Dead(void);
-		static bool Load_All(IStream * stream);
-		static bool Save_All(IStream * stream);
+		static bool Load_All(SaveStreamClass & stream);
+		static bool Save_All(SaveStreamClass & stream);
 		void Reduce_Veins_At(CellClass * cellptr);
 
 		virtual void Serialize(SaveStreamClass & stream) override;
@@ -74,9 +74,9 @@ class VeinholeMonsterClass : public ObjectClass
 
 	public:
 		/*
-		 * This is the number of nodes handed out of the GrowthNodes pool. It never falls
-		 * until the queue is rebuilt, so it also serves as the check that stops a monster
-		 * spreading past the vein limit in the rules.
+		 * This is the number of cells enqueued since the queue was last rebuilt. It never
+		 * falls until then, so it is also the check that stops a monster spreading past the
+		 * vein limit in the rules.
 		 */
 		int GrowthCount;
 
@@ -86,14 +86,7 @@ class VeinholeMonsterClass : public ObjectClass
 		 * with the veins it already owns, farthest out first, so the patch withers back from
 		 * its edges.
 		 */
-		PriorityQueueClass<CellNode> * GrowthQueue;
-
-		/*
-		 * This is the block of nodes the GrowthQueue's entries live in, sized to the vein
-		 * limit in the rules. Holding them in one array is what lets the queue be saved as
-		 * indices into it.
-		 */
-		CellNode * GrowthNodes;
+		PriorityQueueClass<CellNode> GrowthQueue;
 
 		/*
 		 * This is the countdown to the next growth step, restarted with a jittered copy of

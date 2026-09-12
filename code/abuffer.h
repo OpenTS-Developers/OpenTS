@@ -27,7 +27,7 @@ class ABuffer
 
 		void Copy_To(Surface * surface, Rect rect);
 
-		void Set(unsigned int dst, int size, unsigned short value);
+		void Set(unsigned short * dst, int size, unsigned short value);
 
 		void Pan(int x_delta, int y_delta, unsigned short value);
 
@@ -36,16 +36,16 @@ class ABuffer
 
 		void Update(Rect rect);
 
-		unsigned int Get_Buffer_Offset(Point2D position);
+		unsigned short * Get_Buffer_Offset(Point2D position);
 
-		unsigned int Wrap_Overflow(unsigned int position) const;
-		unsigned int Wrap_Underflow(unsigned int position) const;
+		unsigned short * Wrap_Overflow(unsigned short * position) const;
+		unsigned short * Wrap_Underflow(unsigned short * position) const;
 
 		Surface * Get_Surface(void) const { return(SurfacePtr); }
 
 		Rect const & Get_Bounds(void) const { return(Bounds); }
 		unsigned int Get_Buffer_Width(void) const { return(BufferWidth); }
-		unsigned int Get_Buffer_End(void) const { return(BufferEnd); }
+		unsigned short * Get_Buffer_End(void) const { return(BufferEnd); }
 
 	private:
 		void Release_Surface(void);
@@ -59,8 +59,8 @@ class ABuffer
 
 	private:
 		/*
-		 * This is how far, expressed in bytes, the upper left of the covered area now sits
-		 * from the start of the surface. Panning advances this rather than moving the alpha
+		 * This is how far, expressed in alpha entries, the upper left of the covered area now
+		 * sits from the start of the surface. Panning advances this rather than moving the alpha
 		 * values themselves, which is what makes the buffer a ring.
 		 */
 		int SurfaceOffset;
@@ -74,12 +74,12 @@ class ABuffer
 
 		/*
 		 * These are the address the surface's pixels begin at, the address one past their
-		 * end, and the number of bytes between the two. The buffer is treated as a ring, so
+		 * end, and the number of entries between the two. The buffer is treated as a ring, so
 		 * an address that walks off either end is folded back around by that size.
 		 */
-		unsigned int BufferStart;
-		unsigned int BufferEnd;
-		unsigned int BufferSize;
+		unsigned short * BufferStart;
+		unsigned short * BufferEnd;
+		int BufferSize;
 
 		/*
 		 * This is the bias carried along by every vertical pan, starting at the middle of
@@ -97,7 +97,7 @@ class ABuffer
 		int BufferHeight;
 };
 
-inline unsigned int ABuffer::Wrap_Overflow(unsigned int position) const
+inline unsigned short * ABuffer::Wrap_Overflow(unsigned short * position) const
 {
 	if (position >= BufferEnd) {
 		position -= BufferSize;
@@ -106,7 +106,7 @@ inline unsigned int ABuffer::Wrap_Overflow(unsigned int position) const
 }
 
 
-inline unsigned int ABuffer::Wrap_Underflow(unsigned int position) const
+inline unsigned short * ABuffer::Wrap_Underflow(unsigned short * position) const
 {
 	if (position < BufferStart) {
 		position += BufferSize;
@@ -120,5 +120,5 @@ extern ABuffer * AlphaBuffer;
 
 inline unsigned short *Blit_Wrap_A_Buffer(unsigned short *buf)
 {
-	return((unsigned short *)AlphaBuffer->Wrap_Overflow((unsigned int)buf));
+	return(AlphaBuffer->Wrap_Overflow(buf));
 }

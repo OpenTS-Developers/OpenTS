@@ -36,7 +36,7 @@ test('Drop pod approach selection keeps its ordered candidates and unconditional
 	const droppod = source('code/droppod.cpp');
 	const moveTo = functionBody(
 		droppod,
-		'void STDMETHODCALLTYPE DropPodLocomotionClass::Move_To(Coord to)',
+		'void DropPodLocomotionClass::Move_To(Coord to)',
 	);
 
 	assert.match(
@@ -74,7 +74,7 @@ test('Drop pod directions retain their hard-coded airborne and landing-art mappi
 
 	const drawingCode = functionBody(
 		droppod,
-		'int STDMETHODCALLTYPE DropPodLocomotionClass::Drawing_Code(void)',
+		'int DropPodLocomotionClass::Drawing_Code(void)',
 	);
 	assert.match(drawingCode, /Direction\s*%\s*2/);
 	assertOrdered(infantry, [
@@ -84,13 +84,13 @@ test('Drop pod directions retain their hard-coded airborne and landing-art mappi
 
 	const process = functionBody(
 		droppod,
-		'boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)',
+		'bool DropPodLocomotionClass::Process(void)',
 	);
 	assert.match(process, /Rule->DropPod\[Direction\s*%\s*Rule->DropPod\.Count\(\)\]/);
 
 	const moveTo = functionBody(
 		droppod,
-		'void STDMETHODCALLTYPE DropPodLocomotionClass::Move_To(Coord to)',
+		'void DropPodLocomotionClass::Move_To(Coord to)',
 	);
 	assertOrdered(moveTo, [
 		'dropcoord.Z += Rule->DropPodHeight;',
@@ -102,13 +102,13 @@ test('Drop pod directions retain their hard-coded airborne and landing-art mappi
 test('Blocked Drop pod touchdown retains its exact damage, animation, and deletion payload', () => {
 	const process = functionBody(
 		source('code/droppod.cpp'),
-		'boolean STDMETHODCALLTYPE DropPodLocomotionClass::Process(void)',
+		'bool DropPodLocomotionClass::Process(void)',
 	);
 	assertOrdered(process, [
 		'FootClass * linked = LinkedTo;',
 		'coord = linked->PositionCoord;',
 		'linked->Limbo();',
-		'End_Piggyback(&LinkedTo->Locomotion);',
+		'LinkedTo->Locomotion = std::move(carried);',
 		'if (!linked->Unlimbo(coord, DIR_N)) {',
 		'Explosion_Damage(coord, 100, LinkedTo, Rule->C4Warhead);',
 		'Combat_Anim(100, Rule->C4Warhead, LAND_CLEAR, coord)',
@@ -265,8 +265,8 @@ test('A chosen start position keeps its number and is claimed before the game pi
 	], 'every named position is held before the game picks for anybody who named none');
 
 	const read = functionBody(
-		scenario.slice(scenario.search(/bool Read_Scenario_INI\(CCINIClass const & ini, bool is_mapgen\)\s*\{/)),
-		'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)',
+		scenario.slice(scenario.search(/ScenarioState Read_Scenario_INI\(CCINIClass const & ini, bool is_mapgen\)\s*\{/)),
+		'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)',
 	);
 	assertOrdered(read, [
 		'Scen->Read_Waypoints(ini);',
@@ -358,7 +358,7 @@ test('The campaign handicap pair lives on the session, and the mission reader ne
 	const scenario = source('code/scenario.cpp');
 
 	assertOrdered(
-		functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'),
+		functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'),
 		[
 			'Scen->Difficulty = Session.CampaignDifficulty;',
 			'Scen->CDifficulty = Session.CampaignCDifficulty;',
@@ -623,12 +623,12 @@ test('The scenario file is kept from its first read and carried in the save', ()
 		'Scen->SourceFile.Assign(name, std::move(bytes));',
 	], 'a name the scenario already holds is served from memory, and a fresh read is kept where the deployment asked for it');
 
-	assertOrdered(functionBody(scenario, 'bool Read_Scenario_INI(char const * fname, bool)'), [
+	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(char const * fname, bool)'), [
 		'Load_Scenario_File(ini, fname, true)',
 		'strcpy(Scen->ScenarioName, fname);',
 	], 'the scenario is read through the holder');
 
-	assertOrdered(functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
+	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
 		'Scen->SourceFile.Clear();',
 		'Scen->SourceFile.Matches(buffer)',
 		'Load_Held_Scenario_File(mini, buffer, false);',
@@ -777,7 +777,7 @@ test('Base building reads its side rather than comparing country names', () => {
 
 test('The art side comes from the player country rather than a name comparison', () => {
 	const scenario = source('code/scenario.cpp');
-	const readScenario = functionBody(scenario, 'bool Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)');
+	const readScenario = functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)');
 
 	assert.doesNotMatch(readScenario, /IsGDI/, 'the flag is gone');
 	assertOrdered(readScenario, [
@@ -953,5 +953,57 @@ test('New theater artwork is renamed by image letter, not by a prefix list', () 
 		functionBody(objtype, 'void ObjectTypeClass::Fetch_Normal_Image(void)'),
 		/Theater_Naming_Convention\(fullname, Scen->Theater\)/,
 		'the shape fetch calls the convention rather than repeating it',
+	);
+});
+
+test('The deployment names the files the game reads', () => {
+	const config = functionBody(
+		source('code/deploymentconfig.cpp'),
+		'void DeploymentConfigClass::Read_INI(INIClass const & ini)',
+	);
+
+	for (const [key, member] of [
+		['Rules', 'RulesFile'],
+		['RulesExpansion', 'RulesExpansionFile'],
+		['Art', 'ArtFile'],
+		['Settings', 'SettingsFile'],
+	]) {
+		assert.match(
+			config,
+			new RegExp(`${member} = ini\\.Get_String\\("Files", "${key}", ${member}\\.c_str\\(\\)\\);`),
+			`the deployment names its ${key} file`,
+		);
+	}
+
+	assert.match(
+		config,
+		/SchemePaletteFile = ini\.Get_String\("Palettes", "Scheme", SchemePaletteFile\.c_str\(\)\);/,
+		'and the palette it starts from',
+	);
+
+	const init = source('code/init.cpp');
+
+	assert.match(
+		init,
+		/stricmp\(name\.c_str\(\), DeploymentConfig\.RulesFile\.c_str\(\)\) == 0/,
+		'the wildcard search knows the rules file by the name the deployment gives it',
+	);
+
+	assert.match(
+		init,
+		/CCFileClass file\(DeploymentConfig\.RulesFile\.c_str\(\)\);/,
+		'and the file it falls back on is that same one',
+	);
+
+	assert.match(
+		init,
+		/Read_Palette\(SchemePalette, DeploymentConfig\.SchemePaletteFile\.c_str\(\)\);/,
+		'the palettes are read through the names it gives',
+	);
+
+	assert.match(
+		functionBody(source('code/addon.cpp'), 'void Detect_Addons(void)'),
+		/CCFileClass\(DeploymentConfig\.RulesExpansionFile\.c_str\(\)\)\.Is_Available\(\)/,
+		'the expansion is looked for under the name the deployment gives it',
 	);
 });

@@ -68,6 +68,7 @@
 #include "inline.h"
 #include "overtype.h"
 #include "rules.h"
+#include "saveload.h"
 #include "savestream.h"
 #include "tube.h"
 #include "unit.h"
@@ -116,8 +117,7 @@ DriveLocomotionClass::DriveLocomotionClass(void) :
 	SpeedAccum(0),
 	TargetSpeed(0),
 	TrackNumber(-1),
-	TrackIndex(-1),
-	Piggybacker(NULL)
+	TrackIndex(-1)
 {
 }
 
@@ -132,67 +132,9 @@ DriveLocomotionClass::~DriveLocomotionClass(void)
 
 
 /// <summary>
-/// Fetches the class identifier of whichever locomotor is driving the unit.
-/// That is the identifier of the locomotor riding along on this driver when there is one,
-/// and the driver's own otherwise.
-/// </summary>
-/// <param name="classid">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK if the identifier was supplied, E_FAIL if the locomotor
-/// could not be asked, or E_POINTER if no destination was supplied.</returns>
-HRESULT DriveLocomotionClass::Piggyback_CLSID(CLSID * classid)
-{
-	if (classid == NULL) {
-		return(E_POINTER);
-	}
-
-	if (Piggybacker != NULL) {
-		IPersistPtr ptr(Piggybacker);
-		if (ptr == NULL) {
-			return(E_FAIL);
-		}
-		return(ptr->GetClassID(classid));
-	}
-
-	IPersistPtr ptr(this);
-	if (ptr == NULL) {
-		return(E_FAIL);
-	}
-	return(ptr->GetClassID(classid));
-}
-
-
-/// <summary>
-/// Fetches an interface supported by this locomotor.
-/// The driver answers for the piggyback interface on top of whatever the base locomotor
-/// already supports.
-/// </summary>
-/// <param name="riid">The identifier of the interface asked for.</param>
-/// <param name="ppvObject">Pointer to the interface pointer to fill in.</param>
-/// <returns>Returns with S_OK if the interface was supplied, otherwise
-/// E_NOINTERFACE.</returns>
-HRESULT STDMETHODCALLTYPE DriveLocomotionClass::QueryInterface(REFIID riid, LPVOID * ppvObject)
-{
-	HRESULT result = BASECLASS::QueryInterface(riid, ppvObject);
-
-	if (result == E_NOINTERFACE) {
-		if (riid == IID_IPiggyback) {
-			*ppvObject = (IPiggyback*)this;
-		}
-		if (*ppvObject == NULL) {
-			result = E_NOINTERFACE;
-		} else {
-			AddRef();
-			result = S_OK;
-		}
-	}
-	return(result);
-}
-
-
-/// <summary>
 /// Lists the members this driver carries.
 /// A locomotor riding along on this one is a separate persistent object rather than a
-/// member, so it still travels framed by OLE and is recreated as the class it was saved as.
+/// member, so it travels as a record of its own and is recreated as the class it was saved as.
 /// </summary>
 /// <param name="stream">The stream carrying the members.</param>
 void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
@@ -220,10 +162,9 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 
 	if (haspiggy) {
 		if (stream.Is_Saving()) {
-			IPersistStreamPtr persist(Piggybacker);
-			OleSaveToStream(persist, stream.Get_Stream());
+			Save_Object(stream, Piggybacker.get());
 		} else {
-			OleLoadFromStream(stream.Get_Stream(), IID_ILocomotion, (LPVOID *)&Piggybacker);
+			Piggybacker = Load_Locomotor(stream);
 		}
 	}
 	// TrackControl -- constant tables shared by every driver.
@@ -237,19 +178,15 @@ void DriveLocomotionClass::Serialize(SaveStreamClass & stream)
 /// A unit that must travel in some special manner -- through a tunnel, or aboard a
 /// carrier -- keeps its driver but lets the special locomotor move it for the duration.
 /// </summary>
-/// <param name="pointer">The locomotor that is to take over the unit.</param>
-/// <returns>Returns with S_OK if the locomotor was taken on, E_FAIL if one is already
-/// riding, or E_POINTER if none was supplied.</returns>
-HRESULT STDMETHODCALLTYPE DriveLocomotionClass::Begin_Piggyback(ILocomotion *pointer)
+/// <param name="carried">The locomotor that is to take over the unit.</param>
+/// <returns>bool; Was the locomotor taken on? One already carrying a locomotor refuses.</returns>
+bool DriveLocomotionClass::Begin_Piggyback(std::unique_ptr<ILocomotion> & carried)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
+	if (carried == nullptr || Piggybacker != nullptr) {
+		return(false);
 	}
-	if (Piggybacker == NULL) {
-		Piggybacker = pointer;
-		return(S_OK);
-	}
-	return(E_FAIL);
+	Piggybacker = std::move(carried);
+	return(true);
 }
 
 
@@ -258,20 +195,10 @@ HRESULT STDMETHODCALLTYPE DriveLocomotionClass::Begin_Piggyback(ILocomotion *poi
 /// The riding locomotor is detached and given up, leaving this driver in sole charge of
 /// the unit once more.
 /// </summary>
-/// <param name="pointer">Pointer to the locomotor pointer to fill in.</param>
-/// <returns>Returns with S_OK if a locomotor was handed back, S_FALSE if there was none
-/// riding, or E_POINTER if no destination was supplied.</returns>
-HRESULT DriveLocomotionClass::End_Piggyback(ILocomotion **pointer)
+/// <returns>Returns with the locomotor that was riding, or nothing when none was.</returns>
+std::unique_ptr<ILocomotion> DriveLocomotionClass::End_Piggyback(void)
 {
-	if (pointer == NULL) {
-		return(E_POINTER);
-	}
-	if (Piggybacker != NULL) {
-		*pointer = Piggybacker;
-		Piggybacker.Detach();
-		return(S_OK);
-	}
-	return(S_FALSE);
+	return(std::move(Piggybacker));
 }
 
 
@@ -282,7 +209,7 @@ HRESULT DriveLocomotionClass::End_Piggyback(ILocomotion **pointer)
 /// back only once the unit has settled.
 /// </summary>
 /// <returns>bool; Is it safe to end the piggyback?</returns>
-boolean DriveLocomotionClass::Is_Ok_To_End(void)
+bool DriveLocomotionClass::Is_Ok_To_End(void)
 {
 	if (!Is_Moving() && (Piggybacker != NULL && IsLocomotorUnlocked)) {
 		return(true);
@@ -345,7 +272,7 @@ void DriveLocomotionClass::Set_Slope(int ramp)
 /// when it is first placed on the map.
 /// </summary>
 /// <param name="ramp">The ramp the unit is to be sitting on.</param>
-void STDMETHODCALLTYPE DriveLocomotionClass::Force_New_Slope(int ramp)
+void DriveLocomotionClass::Force_New_Slope(int ramp)
 {
 	PreviousRamp = ramp;
 	CurrentRamp = ramp;
@@ -359,7 +286,7 @@ void STDMETHODCALLTYPE DriveLocomotionClass::Force_New_Slope(int ramp)
 /// between cells, even if it is not making any headway at this moment.
 /// </summary>
 /// <returns>bool; Is the unit under way or owing a move?</returns>
-boolean STDMETHODCALLTYPE DriveLocomotionClass::Is_Moving(void)
+bool DriveLocomotionClass::Is_Moving(void)
 {
 	if (DestinationCoord != COORD_NONE) {
 		return(true);
@@ -377,7 +304,7 @@ boolean STDMETHODCALLTYPE DriveLocomotionClass::Is_Moving(void)
 /// has been given a destination but has not gotten rolling yet does not.
 /// </summary>
 /// <returns>bool; Is the unit moving right now?</returns>
-boolean STDMETHODCALLTYPE DriveLocomotionClass::Is_Moving_Now(void)
+bool DriveLocomotionClass::Is_Moving_Now(void)
 {
 	if (LinkedTo->PrimaryFacing.Is_Rotating()) {
 		return(true);
@@ -394,7 +321,7 @@ boolean STDMETHODCALLTYPE DriveLocomotionClass::Is_Moving_Now(void)
 /// </summary>
 /// <returns>Returns with the destination coordinate, or COORD_NONE if the unit has
 /// nowhere it must be.</returns>
-Coord STDMETHODCALLTYPE DriveLocomotionClass::Destination(void)
+Coord DriveLocomotionClass::Destination(void)
 {
 	return(DestinationCoord);
 }
@@ -405,7 +332,7 @@ Coord STDMETHODCALLTYPE DriveLocomotionClass::Destination(void)
 /// </summary>
 /// <returns>Returns with the coordinate being driven toward. A unit that is not under
 /// way returns its current position instead.</returns>
-Coord STDMETHODCALLTYPE DriveLocomotionClass::Head_To_Coord(void)
+Coord DriveLocomotionClass::Head_To_Coord(void)
 {
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
@@ -420,7 +347,7 @@ Coord STDMETHODCALLTYPE DriveLocomotionClass::Head_To_Coord(void)
 /// raised to the deck, since that is where the vehicle will actually end up driving.
 /// </summary>
 /// <param name="to">The location to drive to.</param>
-void STDMETHODCALLTYPE DriveLocomotionClass::Move_To(Coord to)
+void DriveLocomotionClass::Move_To(Coord to)
 {
 	if (LinkedTo->StunDuration <= 0) {
 		DestinationCoord = to;
@@ -438,7 +365,7 @@ void STDMETHODCALLTYPE DriveLocomotionClass::Move_To(Coord to)
 /// The destination is given up and the driver begins slowing down. A train engine passes
 /// the order back along the line so that every car it is pulling stops with it.
 /// </summary>
-void STDMETHODCALLTYPE DriveLocomotionClass::Stop_Moving(void)
+void DriveLocomotionClass::Stop_Moving(void)
 {
 	if (HeadToCoord != COORD_NONE) {
 		if (LinkedTo->TClass->IsTrain) {
@@ -489,7 +416,7 @@ BOOL DriveLocomotionClass::Is_Angled(void) const
 /// </summary>
 /// <param name="key">Pointer to the voxel cache key to be updated. May be NULL.</param>
 /// <returns>Returns with the matrix the unit is to be rendered through.</returns>
-Matrix3D STDMETHODCALLTYPE DriveLocomotionClass::Draw_Matrix(int *key)
+Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
 {
 	Matrix3D m;
 
@@ -554,7 +481,7 @@ Matrix3D STDMETHODCALLTYPE DriveLocomotionClass::Draw_Matrix(int *key)
 /// The driver adopts the slope of the cell the vehicle appears on straight away, so that
 /// a unit unlimboed onto a ramp is never seen tilting itself into place.
 /// </summary>
-void STDMETHODCALLTYPE DriveLocomotionClass::Unlimbo(void)
+void DriveLocomotionClass::Unlimbo(void)
 {
 	Force_New_Slope(LinkedTo->Get_Cell_Ptr()->Ramp);
 }
@@ -584,7 +511,7 @@ void STDMETHODCALLTYPE DriveLocomotionClass::Unlimbo(void)
  *   09/26/1993 JLB : Created.                                                                 *
  *   04/15/1994 JLB : Converted to member function.                                            *
  *=============================================================================================*/
-boolean STDMETHODCALLTYPE DriveLocomotionClass::Process(void)
+bool DriveLocomotionClass::Process(void)
 {
 	Set_Slope(LinkedTo->Get_Cell_Ptr()->Ramp);
 
@@ -771,7 +698,7 @@ void DriveLocomotionClass::Mark_Track(Coord const & headto, MarkType type)
  * HISTORY:                                                                                    *
  *   03/17/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-void STDMETHODCALLTYPE DriveLocomotionClass::Force_Track(int track, Coord coord)
+void DriveLocomotionClass::Force_Track(int track, Coord coord)
 {
 	assert(LinkedTo->IsActive);
 
@@ -2122,24 +2049,15 @@ bool DriveLocomotionClass::Incoming(Cell cell)
 /// Fetches the display layer the driving unit belongs to.
 /// </summary>
 /// <returns>Returns with LAYER_GROUND, since a driving unit travels on the ground.</returns>
-LayerType STDMETHODCALLTYPE DriveLocomotionClass::In_Which_Layer(void)
+LayerType DriveLocomotionClass::In_Which_Layer(void)
 {
 	return(LAYER_GROUND);
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this locomotor.
-/// The persistence system uses this to know which locomotor to create when the unit is
-/// loaded back in.
-/// </summary>
-/// <param name="retval">Pointer to the identifier to fill in.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no destination was supplied.</returns>
-HRESULT STDMETHODCALLTYPE DriveLocomotionClass::GetClassID(CLSID * retval)
+ClassID DriveLocomotionClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_DriveLocomotion;
-	return(S_OK);
+	return(ClassID_DriveLocomotion);
 }
 
 
@@ -2148,7 +2066,7 @@ HRESULT STDMETHODCALLTYPE DriveLocomotionClass::GetClassID(CLSID * retval)
 /// A driving vehicle sits at the depth of the ground it is standing on.
 /// </summary>
 /// <returns>Returns with the adjustment to apply to the unit's draw depth.</returns>
-int STDMETHODCALLTYPE DriveLocomotionClass::Z_Adjust(void)
+int DriveLocomotionClass::Z_Adjust(void)
 {
 	return(0);
 }
@@ -2158,7 +2076,7 @@ int STDMETHODCALLTYPE DriveLocomotionClass::Z_Adjust(void)
 /// Fetches the depth gradient the unit is to be drawn with.
 /// </summary>
 /// <returns>Returns with the gradient the base locomotor asks for.</returns>
-ZGradientType STDMETHODCALLTYPE DriveLocomotionClass::Z_Gradient(void)
+ZGradientType DriveLocomotionClass::Z_Gradient(void)
 {
 	return(BASECLASS::Z_Gradient());
 }
@@ -2188,7 +2106,7 @@ bool DriveLocomotionClass::Abandon_Navigation(void)
 /// be told about every cell of the track it is committed to.
 /// </summary>
 /// <param name="mark">The MarkType to apply to the cells occupied.</param>
-void STDMETHODCALLTYPE DriveLocomotionClass::Mark_All_Occupation_Bits(int mark)
+void DriveLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (HeadToCoord != COORD_NONE) {
 		Mark_Track(HeadToCoord, (MarkType)mark);
@@ -2204,7 +2122,7 @@ void STDMETHODCALLTYPE DriveLocomotionClass::Mark_All_Occupation_Bits(int mark)
 /// </summary>
 /// <param name="to">The location to test against.</param>
 /// <returns>bool; Is the unit moving there?</returns>
-boolean STDMETHODCALLTYPE DriveLocomotionClass::Is_Moving_Here(Coord to)
+bool DriveLocomotionClass::Is_Moving_Here(Coord to)
 {
 	Coord coord = Head_To_Coord();
 
@@ -2250,7 +2168,7 @@ boolean STDMETHODCALLTYPE DriveLocomotionClass::Is_Moving_Here(Coord to)
 /// such a hop is due, but performs none of it.
 /// </summary>
 /// <returns>bool; Will the driver jump tracks?</returns>
-boolean STDMETHODCALLTYPE DriveLocomotionClass::Will_Jump_Tracks(void)
+bool DriveLocomotionClass::Will_Jump_Tracks(void)
 {
 	/// This repeats the track jump test that While_Moving performs.
 	assert(LinkedTo->IsActive);
@@ -2304,7 +2222,7 @@ boolean STDMETHODCALLTYPE DriveLocomotionClass::Will_Jump_Tracks(void)
 /// While locked, this driver will not report itself ready to end a piggyback, so a
 /// temporary locomotor riding on top of it keeps control of the unit.
 /// </summary>
-void STDMETHODCALLTYPE DriveLocomotionClass::Lock(void)
+void DriveLocomotionClass::Lock(void)
 {
 	IsLocomotorUnlocked = false;
 }
@@ -2315,7 +2233,7 @@ void STDMETHODCALLTYPE DriveLocomotionClass::Lock(void)
 /// This is the counterpart to Lock. The driver may once again report itself ready to
 /// end a piggyback.
 /// </summary>
-void STDMETHODCALLTYPE DriveLocomotionClass::Unlock(void)
+void DriveLocomotionClass::Unlock(void)
 {
 	IsLocomotorUnlocked = true;
 }
@@ -2326,7 +2244,7 @@ void STDMETHODCALLTYPE DriveLocomotionClass::Unlock(void)
 /// </summary>
 /// <returns>Returns with the track control number, or -1 if the unit is not on a
 /// track.</returns>
-int STDMETHODCALLTYPE DriveLocomotionClass::Get_Track_Number(void)
+int DriveLocomotionClass::Get_Track_Number(void)
 {
 	return(TrackNumber);
 }
@@ -2337,7 +2255,7 @@ int STDMETHODCALLTYPE DriveLocomotionClass::Get_Track_Number(void)
 /// </summary>
 /// <returns>Returns with the index into the track the unit has reached, or -1 if the
 /// unit is not following one.</returns>
-int STDMETHODCALLTYPE DriveLocomotionClass::Get_Track_Index(void)
+int DriveLocomotionClass::Get_Track_Index(void)
 {
 	return(TrackIndex);
 }
@@ -2347,29 +2265,9 @@ int STDMETHODCALLTYPE DriveLocomotionClass::Get_Track_Index(void)
 /// Fetches the movement the driver has banked up along its track.
 /// </summary>
 /// <returns>Returns with the accumulated movement not yet spent advancing the unit.</returns>
-int STDMETHODCALLTYPE DriveLocomotionClass::Get_Speed_Accum(void)
+int DriveLocomotionClass::Get_Speed_Accum(void)
 {
 	return(SpeedAccum);
-}
-
-
-/// <summary>
-/// Adds a reference to this locomotor.
-/// </summary>
-/// <returns>Returns with the reference count once the new reference is counted.</returns>
-ULONG STDMETHODCALLTYPE DriveLocomotionClass::AddRef(void)
-{
-	return(BASECLASS::AddRef());
-}
-
-
-/// <summary>
-/// Releases a reference to this locomotor.
-/// </summary>
-/// <returns>Returns with the reference count remaining after the release.</returns>
-ULONG STDMETHODCALLTYPE DriveLocomotionClass::Release(void)
-{
-	return(BASECLASS::Release());
 }
 
 

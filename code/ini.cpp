@@ -957,6 +957,86 @@ int INIClass::Get_Int(char const * section, char const * entry, int defvalue) co
 }
 
 
+// One field of a class identifier, exactly the many hexadecimal digits it is written with.
+static bool Parse_Hex_Field(char const * & ptr, int digits, unsigned int & value)
+{
+	value = 0;
+
+	for (int index = 0; index < digits; index++) {
+		char const letter = *ptr++;
+		unsigned int digit;
+
+		if (letter >= '0' && letter <= '9') {
+			digit = (unsigned int)(letter - '0');
+		} else if (letter >= 'A' && letter <= 'F') {
+			digit = (unsigned int)(letter - 'A') + 10;
+		} else if (letter >= 'a' && letter <= 'f') {
+			digit = (unsigned int)(letter - 'a') + 10;
+		} else {
+			return(false);
+		}
+
+		value = (value << 4) | digit;
+	}
+
+	return(true);
+}
+
+
+// A class identifier as the registry writes it, the surrounding braces optional: eight,
+// four, four, four and twelve hexadecimal digits separated by hyphens, and nothing else.
+static bool Parse_ClassID(char const * text, ClassID & clsid)
+{
+	char const * ptr = text;
+	std::size_t length = strlen(text);
+
+	if (length == 38 && ptr[0] == '{' && ptr[37] == '}') {
+		ptr++;
+		length -= 2;
+	}
+	if (length != 36) {
+		return(false);
+	}
+
+	unsigned int data1;
+	unsigned int data2;
+	unsigned int data3;
+	if (!Parse_Hex_Field(ptr, 8, data1) || *ptr++ != '-') return(false);
+	if (!Parse_Hex_Field(ptr, 4, data2) || *ptr++ != '-') return(false);
+	if (!Parse_Hex_Field(ptr, 4, data3) || *ptr++ != '-') return(false);
+
+	unsigned char data4[8];
+	for (int index = 0; index < ARRAY_SIZE(data4); index++) {
+		unsigned int byte;
+		if (!Parse_Hex_Field(ptr, 2, byte)) {
+			return(false);
+		}
+		data4[index] = (unsigned char)byte;
+		if (index == 1 && *ptr++ != '-') {
+			return(false);
+		}
+	}
+
+	clsid.Data1 = data1;
+	clsid.Data2 = (unsigned short)data2;
+	clsid.Data3 = (unsigned short)data3;
+	for (int index = 0; index < ARRAY_SIZE(data4); index++) {
+		clsid.Data4[index] = data4[index];
+	}
+	return(true);
+}
+
+
+// The buffer holds the 38 characters of the braced form and its terminator.
+static void Format_ClassID(ClassID const & clsid, char * text)
+{
+	sprintf(text, "{%08lX-%04X-%04X-%02X%02X-%02X%02X%02X%02X%02X%02X}",
+		(unsigned long)clsid.Data1, (unsigned int)clsid.Data2, (unsigned int)clsid.Data3,
+		clsid.Data4[0], clsid.Data4[1], clsid.Data4[2], clsid.Data4[3],
+		clsid.Data4[4], clsid.Data4[5], clsid.Data4[6], clsid.Data4[7]);
+}
+
+
 /// <summary>
 /// Fetches a class identifier from the specified section.
 /// This routine will fetch the printable form of a class identifier from the entry and
@@ -968,15 +1048,13 @@ int INIClass::Get_Int(char const * section, char const * entry, int defvalue) co
 /// <param name="defvalue">The default identifier to use if the entry could not be found.</param>
 /// <returns>Returns with the class identifier specified in the INI database or else returns
 /// the default value.</returns>
-CLSID const INIClass::Get_CLSID(char const * section, char const * entry, CLSID defvalue) const
+ClassID const INIClass::Get_ClassID(char const * section, char const * entry, ClassID defvalue) const
 {
 	char buffer[128];
 
 	if (Get_String(section, entry, "", buffer, sizeof(buffer))) {
-		wchar_t olestr[128];
-		MultiByteToWideChar(CP_ACP, MB_PRECOMPOSED, buffer, -1, olestr, ARRAY_SIZE(olestr));
-		CLSID clsid;
-		if (SUCCEEDED(CLSIDFromString(olestr, &clsid))) {
+		ClassID clsid;
+		if (Parse_ClassID(buffer, clsid)) {
 			return(clsid);
 		}
 	}
@@ -993,17 +1071,10 @@ CLSID const INIClass::Get_CLSID(char const * section, char const * entry, CLSID 
 /// <param name="entry">The entry identifier to tag to the class identifier specified.</param>
 /// <param name="value">The class identifier to store.</param>
 /// <returns>bool; Was the class identifier placed into the INI database?</returns>
-bool INIClass::Put_CLSID(char const * section, char const * entry, CLSID const & value)
+bool INIClass::Put_ClassID(char const * section, char const * entry, ClassID const & value)
 {
-	char buffer[128];
-	LPOLESTR olestr = NULL;
-
-	StringFromCLSID(value, &olestr);
-	if (WideCharToMultiByte(CP_ACP, 0, olestr, -1, buffer, sizeof(buffer), NULL, NULL) == 0) {
-		/// BUG, return not used
-		GetLastError();
-	}
-	SysFreeString(olestr);
+	char buffer[40];
+	Format_ClassID(value, buffer);
 	return(Put_String(section, entry, buffer));
 }
 

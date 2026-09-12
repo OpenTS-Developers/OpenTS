@@ -859,7 +859,7 @@ bool XSurface::Fill_Rect(Rect const & cliprect, Rect const & fillrect, int color
 				buffer = ((unsigned char *)buffer) + pitch;
 			}
 		} else {
-			switch ((unsigned int)buffer & 3) {
+			switch ((uintptr_t)buffer & 3) {
 				case 0: {
 					int odd_pixel = width & 1;
 					width >>= 1;

@@ -132,7 +132,7 @@ VQABool VQA_IsFrameStartOfLoop(VQAHandleP *vqap, long framenum);
 long VQA_ReloadPalette(VQAHandleP *vqap, long framenum, int force);
 _STATIC long VQA_LoadLoop(VQAHandleP *vqap, long framenum);
 
-long __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes);
+intptr_t __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes);
 _STATIC long VQA_LoadFrame_Internal(VQAHandleP *vqap, long flags);
 
 long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool preloadaudio, VQABool reset_state, VQABool &skipcodebook);
@@ -212,7 +212,7 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 		cache = &vqap->LoopCache;
 		if (frame == vqap->LoopStartFrame0 && vqap->LoopID != cache->ID) {
 			if (frame != cache->Min) {
-				cache->Buffer = (char *)foffset;
+				cache->FileOffset = foffset;
 				cache->Bytes = 0;
 				cache->Offset = 0;
 			}
@@ -247,7 +247,7 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 		}
 		if ( frame >= cache->Min && frame <= cache->Max )
 		{
-			if (foffset == (long)cache->Buffer + cache->Bytes) {
+			if (foffset == cache->FileOffset + cache->Bytes) {
 				if (frame < vqap->NumFrames - 1) {
 					tocache = VQAFRAME_OFFSET(foff[frame + 1]) - foffset;
 				} else {
@@ -269,10 +269,10 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 				}
 			}
 
-			if ( foffset < (long)cache->Buffer + cache->Bytes )
+			if ( foffset < cache->FileOffset + cache->Bytes )
 			{
 				restore_handler = true;
-				cache->Offset = foffset - (long)cache->Buffer;
+				cache->Offset = foffset - cache->FileOffset;
 				oldhandler = config->StreamHandler;
 				config->StreamHandler = Memory_VQA_Stream_Handler;
 			}
@@ -306,6 +306,7 @@ struct VQASN2J {
 	short index2;
 	long  predicted2;
 };
+static_assert(sizeof(VQASN2J) == 12, "the SN2J chunk is 12 bytes on disk");
 #pragma pack(pop)
 
 
@@ -1070,7 +1071,7 @@ long VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags)
 	foff = vqap->Foff;
 
 	if ((vqap->AltBufferFlags & VQAABUFF_ALTLOOP) && framenum == cache->Min && cache->Bytes != 0) {
-		if ((long)(unsigned char *)cache->Buffer + cache->Bytes <= (long)(unsigned char *)VQAFRAME_OFFSET(foff[vqap->LoopEndFrameMode2])) {
+		if (cache->FileOffset + cache->Bytes <= (long)VQAFRAME_OFFSET(foff[vqap->LoopEndFrameMode2])) {
 			needs_seek = true;
 		}
 		cache->Offset = 0;
@@ -1083,7 +1084,7 @@ long VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags)
 	}
 
 	if (rc == VQAERR_NONE) {
-		if (needs_seek && vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEKPEEK, 0, long((int)cache->Buffer + cache->Bytes)) != 0) {
+		if (needs_seek && vqap->Config.StreamHandler((VQAHandle *)vqap, VQACMD_SEEKPEEK, 0, cache->FileOffset + cache->Bytes) != 0) {
 			return(VQAERR_SEEK);
 		}
 	}
@@ -3530,6 +3531,7 @@ long Load_SN2J(VQAHandleP *vqap, unsigned long iffsize)
 		unsigned short wIndex2;
 		unsigned int dwPredicted2;
 	} data;
+	static_assert(sizeof(SNJ2Struct) == 12, "the SN2J chunk is 12 bytes on disk");
 	#pragma pack(pop)
 
 	#if(VQAVOC_ON && VQAAUDIO_ON)

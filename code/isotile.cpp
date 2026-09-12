@@ -7,7 +7,6 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#define INCLUDE_COM
 #include "always.h"
 
 #include "isotile.h"
@@ -47,12 +46,13 @@ bool IsometricTileClass::Mark(MarkType mark)
 				if (Map.In_Radar(cell)) {
 					CellClass *cptr = &Map[cell];
 					int subtile = Class->SubTile_Index(x, y);
-					if (set->Tiles[subtile] != NULL) {
+					IsoTileRecord const * record = set->Fetch_Record_Pointer_Unsafe(subtile);
+					if (record != NULL) {
 						if (mark == MARK_UP) {
 							if (cptr->ITType == Class->HeapID && cptr->SubTile == subtile) {
 								cptr->ITType = TILE_NONE;
 								cptr->SubTile = 0;
-								cptr->Height -= set->Tiles[subtile]->Height;
+								cptr->Height -= record->Height;
 							}
 						} else if (mark == MARK_DOWN || mark == MARK_DOWN_FORCED) {
 							if (Class->HeapID == TILE_CLEAR) {
@@ -114,7 +114,7 @@ bool IsometricTileClass::Mark(MarkType mark)
 							}
 							cptr->Overlay = OVERLAY_NONE;
 							cptr->OverlayData = 0;
-							cptr->Height += set->Tiles[subtile]->Height;
+							cptr->Height += record->Height;
 							cptr->Fixup_LAT();
 							cptr->Adjacent_Cell(FACING_N).Fixup_LAT();
 							cptr->Adjacent_Cell(FACING_E).Fixup_LAT();
@@ -226,18 +226,9 @@ RTTIType IsometricTileClass::Fetch_RTTI(void) const
 }
 
 
-/// <summary>
-/// Fetches the class identifier of this object.
-/// This routine is part of the persistence contract and is called by the save system
-/// when it must record what kind of object it is about to write out.
-/// </summary>
-/// <param name="retval">Pointer to the buffer that will receive the class identifier.</param>
-/// <returns>Returns with S_OK, or E_POINTER if no buffer was supplied.</returns>
-HRESULT STDMETHODCALLTYPE IsometricTileClass::GetClassID(CLSID * retval)
+ClassID IsometricTileClass::Class_ID(void) const
 {
-	if (retval == NULL) return(E_POINTER);
-	*retval = CLSID_IsometricTileClass;
-	return(S_OK);
+	return(ClassID_IsometricTileClass);
 }
 
 

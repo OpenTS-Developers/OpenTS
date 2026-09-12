@@ -13,17 +13,18 @@
 
 #include "theme.hh"
 
-#include <unknwn.h>
 
 class SaveStreamClass;
+#include "win.h"
+
 class ShapeSet;
 
 class IonStormClass
 {
 	public:
 		static void Init(void);
-		static HRESULT Save(IStream * stream);
-		static HRESULT Load(IStream * stream);
+		static bool Save(SaveStreamClass & stream);
+		static bool Load(SaveStreamClass & stream);
 
 		static void Serialize(SaveStreamClass & stream);
 

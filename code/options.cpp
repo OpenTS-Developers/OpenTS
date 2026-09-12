@@ -61,6 +61,7 @@
 #include "options.h"
 
 #include "_command.h"
+#include "_deploymentconfig.h"
 #include "_map.h"
 #include "_rules.h"
 #include "audio/audioengine.h"
@@ -68,6 +69,7 @@
 #include "ccrand.h"
 #include "command.h"
 #include "dbgprint.h"
+#include "deploymentconfig.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "init.h"
@@ -359,7 +361,7 @@ static char const * Scale_Mode_Name(int mode)
  *=============================================================================================*/
 void OptionsClass::Load_Settings(void)
 {
-	DebugString("--------- Loading SUN.INI settings ---------------\n");
+	DebugString("--------- Loading %s settings ---------------\n", DeploymentConfig.SettingsFile.c_str());
 
 	/*
 	**	Read in the Options values
@@ -462,7 +464,7 @@ void OptionsClass::Load_Settings(void)
  *=============================================================================================*/
 void OptionsClass::Save_Settings (void)
 {
-	CCFileClass file(CONFIG_FILE_NAME);
+	CCFileClass file(DeploymentConfig.SettingsFile.c_str());
 
 	DebugString("Saving game settings\n");
 

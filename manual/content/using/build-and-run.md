@@ -1,11 +1,12 @@
 ---
 title: Build and run
-summary: Builds the 32-bit Debug or Release executable and copies it into the local Run directory.
+summary: Builds the Debug or Release executable for either platform and runs it against a directory of game data.
 category: getting-started
 source_files:
   - docs/BUILDING.md
   - CMakeLists.txt
   - code/CMakeLists.txt
+  - code/language/CMakeLists.txt
 related:
   - type: using
     id: game-data
@@ -23,12 +24,14 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
 cmake --build build --config Debug
 ```
 
-The Debug build copies `GameD.exe`, its symbols, map file, and the matching `Language.dll` into `Run/`, and the repository's `ui/` directory of UI documents, styles, and font into `Run/ui/`. Use `--config Release` to produce `Game.exe` instead.
+The Debug build writes `GameD.exe`, its symbols, map file, and the matching `Language.dll` to `build/bin/Debug/`, and places the repository's `ui/` directory of UI documents, styles, and font beside them. Use `--config Release` to write `Game.exe` to `build/bin/Release/` instead. Nothing is copied out of the build directory, so the two configurations never overwrite each other.
 
-After supplying the required game data in `Run/`, launch the selected executable from that directory:
+`-A x64` builds the 64-bit executable. A build directory holds one platform, so give the 64-bit build its own, such as `-B build/x64`. A saved game belongs to the platform that wrote it, and a network game needs every player on the same platform.
+
+Supply the required game data in `Run/`, then launch the built executable and name that data directory:
 
 ```powershell title="PowerShell"
-.\Run\GameD.exe
+.\build\bin\Debug\GameD.exe -DATADIR=Run
 ```
 
-Building one configuration after the other replaces `Run/Language.dll` with the matching configuration's copy. Every string and dialog the engine displays is read from that library, so a `Language.dll` supplied by a localized or edited installation is overwritten by the build and none of its text reaches the screen.
+The engine reads every string and dialog it displays from `Language.dll`, and loads it from the directory holding the executable. The freshly built copy is therefore the one that runs, and a localized or edited library sitting in the game data directory is not read.
