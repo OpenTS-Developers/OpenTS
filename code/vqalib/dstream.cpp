@@ -45,8 +45,16 @@
 #include	"vqaplayp.h"
 #include	<stdio.h>
 #include	<fcntl.h>
+#ifdef _WIN32
 #include	<io.h>
+#else
+#include	<unistd.h>
+#endif
 #include	<string.h>
+
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
 
 
 intptr_t __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buffer, long nbytes)

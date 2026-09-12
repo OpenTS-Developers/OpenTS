@@ -160,7 +160,9 @@
 #include <shellapi.h>
 
 #include <conio.h>
+#ifdef _WIN32
 #include <io.h>
+#endif
 #include <cfloat>
 #include <string>
 #include <vector>
