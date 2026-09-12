@@ -15,8 +15,8 @@
 
 #include "_ui.h"
 #include "ownrdraw.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 
 
 UIWaitBoxClass::UIWaitBoxClass(void) :

@@ -19,9 +19,9 @@
 #include "goptions.h"
 #include "incdec.h"
 #include "theme.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 
 #include <cstdio>
 
@@ -134,7 +134,7 @@ bool UI_Sound_Dialog(void)
 	UI_Sound_State(state);
 
 	UISoundPresenterClass presenter(UI_Sound_Service(), state);
-	std::unique_ptr<UIRmlViewClass> view = UI_Sound_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
 
 	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
 }

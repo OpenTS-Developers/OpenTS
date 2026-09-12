@@ -288,7 +288,7 @@ class UIKeyboardViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & presenter)
 {
 	return(std::make_unique<UIKeyboardViewClass>(presenter));
 }

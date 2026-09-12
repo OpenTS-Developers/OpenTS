@@ -17,9 +17,9 @@
 #include "_ui.h"
 #include "audio/audioengine.h"
 #include "surface.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 
 
 // The menu sits where the main menu's buttons were: a 400 pixel layout centred in the
@@ -46,7 +46,7 @@ bool UI_Main_Options_Dialog(UIMainOptionsChoice & choice)
 	UI_Main_Options_State(state);
 
 	UIMainOptionsPresenterClass presenter(state);
-	std::unique_ptr<UIRmlViewClass> view = UI_Main_Options_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
 
 	UIResult result = UI_Run_Modal(*view);
 	if (result == UI_RESULT_FAILED_TO_OPEN) {

@@ -64,7 +64,7 @@ class UIVersionViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Version_View(UIVersionPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Version_View(UIVersionPresenterClass & presenter)
 {
 	return(std::make_unique<UIVersionViewClass>(presenter));
 }

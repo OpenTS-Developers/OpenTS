@@ -10,6 +10,7 @@
 #pragma once
 
 #include "ui/uiscreen.h"
+#include "ui/uiview.h"
 
 // windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
 // element walkers.
@@ -33,28 +34,30 @@ namespace Rml
 
 // One document and its data model over a presenter. Prepare loads it against a context, the
 // runner shows, drives and releases it, and the presenter outlives it.
-class UIRmlViewClass : public Rml::EventListener
+class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 {
 	public:
 		UIRmlViewClass(UIPresenterClass & presenter, char const * document, char const * model);
 		virtual ~UIRmlViewClass(void);
 
 		// Creates and binds the model, then loads the document. False leaves nothing behind and
-		// names the failing resource in the RmlUi log.
+		// names the failing resource in the RmlUi log. The shell form loads against its context.
 		bool Prepare(Rml::Context & context);
-		void Show(bool modal);
-		void Hide(void);
+		virtual bool Prepare(UIShellClass & shell) override;
+		virtual void Show(bool modal) override;
+		virtual void Hide(void) override;
 		// Detaches the listener, removes the model and unloads the document while the
 		// presenter's storage still lives; the context frees the document on its next update.
-		void Release(void);
+		virtual void Release(void) override;
 
-		UIPresenterClass & Presenter(void) const { return(Owner); }
+		virtual UIPresenterClass & Presenter(void) const override { return(Owner); }
 		Rml::ElementDocument * Document(void) const { return(Doc); }
 		char const * Document_Name(void) const { return(DocumentName.c_str()); }
-		bool Is_Shown(void) const;
+		virtual char const * Name(void) const override { return(DocumentName.c_str()); }
+		virtual bool Is_Shown(void) const override;
 
 		// Marks the view-model fields that Execute changed.
-		virtual void Sync(void) = 0;
+		virtual void Sync(void) override = 0;
 
 	protected:
 		// Binds the view-model fields; the base binds the queue event.

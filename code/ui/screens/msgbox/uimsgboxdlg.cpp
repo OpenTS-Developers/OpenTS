@@ -14,9 +14,9 @@
 #include "ui/screens/msgbox/uimsgbox.h"
 
 #include "_ui.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 
 #include <utility>
 
@@ -41,7 +41,7 @@ bool UI_Message_Box(char const * text, int defaultresponse, char const * b1, cha
 		return(false);
 	}
 
-	std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
 	UIResult result = UI_Run_Modal(*view);
 
 	if (result == UI_RESULT_FAILED_TO_OPEN) {

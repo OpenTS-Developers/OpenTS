@@ -15,7 +15,7 @@
 #include <string>
 #include <vector>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // Shows fixed lines and closes. The lines are handed in, so the presenter needs no engine state.
@@ -32,7 +32,7 @@ class UIVersionPresenterClass : public UIPresenterClass
 
 
 // The RmlUi view over a version presenter, bound to version.rml. The presenter must outlive it.
-std::unique_ptr<UIRmlViewClass> UI_Version_View(UIVersionPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Version_View(UIVersionPresenterClass & presenter);
 
 // The lines the version dialog shows, gathered from the running game.
 void UI_Version_Lines(std::vector<std::string> & lines);

@@ -16,9 +16,9 @@
 #include "_ui.h"
 #include "globals.h"
 #include "goptions.h"
-#include "ui/rml/rmlview.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
+#include "ui/uiview.h"
 #include "video.h"
 
 #include <cstdio>
@@ -96,7 +96,7 @@ bool UI_Display_Dialog(std::optional<UIDisplayMode> & picked)
 	UI_Display_State(state);
 
 	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
-	std::unique_ptr<UIRmlViewClass> view = UI_Display_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
 		return(false);
@@ -116,7 +116,7 @@ bool UI_Confirm_Mode_Dialog(bool & kept)
 	}
 
 	UIConfirmModePresenterClass presenter(UIShell.Clock());
-	std::unique_ptr<UIRmlViewClass> view = UI_Confirm_Mode_View(presenter);
+	std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
 
 	UIResult result = UI_Run_Modal(*view);
 	if (result == UI_RESULT_FAILED_TO_OPEN) {

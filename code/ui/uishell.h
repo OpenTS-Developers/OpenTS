@@ -30,7 +30,7 @@ namespace Rml
 
 class UIRmlRenderClass;
 class UIRmlSystemClass;
-class UIRmlViewClass;
+class UIViewClass;
 class UIShellHostClass;
 
 // Runs the game for one pass under a modal screen and reports whether it ended.
@@ -69,14 +69,14 @@ class UIShellClass
 		// Prepares, shows and drives a modal screen until its presenter reports a result or
 		// the service reports the game ended, then releases it. The view's presenter must
 		// outlive the call.
-		UIResult Run_Modal(UIRmlViewClass & view, UIServiceCallback const & service);
+		UIResult Run_Modal(UIViewClass & view, UIServiceCallback const & service);
 
 		// Shows a document beside the game without taking its input: a notice the caller
 		// updates while it works. It is drawn at once, because such a caller pumps nothing.
 		// False when the shell or the document is not ready, so the caller opens its Win32
 		// presentation.
-		bool Show_Modeless(UIRmlViewClass & view);
-		void Hide_Modeless(UIRmlViewClass & view);
+		bool Show_Modeless(UIViewClass & view);
+		void Hide_Modeless(UIViewClass & view);
 
 		// Advances the documents and presents the overlay now.
 		void Refresh(void);
@@ -105,9 +105,9 @@ class UIShellClass
 		bool Intercept_Pumped_Message(MSG const & msg);
 
 		Rml::Context * Rml_Context(void) const { return(Context); }
-		UIRmlViewClass * Modal(void) const;
+		UIViewClass * Modal(void) const;
 		int Modal_Depth(void) const;
-		bool Is_Modeless_Shown(UIRmlViewClass const & view) const;
+		bool Is_Modeless_Shown(UIViewClass const & view) const;
 
 	private:
 		friend class UITestListenerClass;
@@ -170,9 +170,9 @@ class UIShellClass
 
 		// The modal screens the runner is driving, innermost last, and whether the
 		// innermost is between releasing its document and handing the input back.
-		std::vector<UIRmlViewClass *> Modals;
+		std::vector<UIViewClass *> Modals;
 		bool ModalClosing = false;
-		std::vector<UIRmlViewClass *> Modeless;
+		std::vector<UIViewClass *> Modeless;
 
 		bool DevWasActive = false;
 

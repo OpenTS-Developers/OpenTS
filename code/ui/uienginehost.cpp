@@ -165,7 +165,7 @@ bool UI_Service_Game(void)
 }
 
 
-UIResult UI_Run_Modal(UIRmlViewClass & view)
+UIResult UI_Run_Modal(UIViewClass & view)
 {
 	return(UIShell.Run_Modal(view, UI_Service_Game));
 }

@@ -15,7 +15,7 @@
 #include <memory>
 #include <string>
 
-class UIRmlViewClass;
+class UIViewClass;
 
 
 // A notice shown while the game works: a line of text and, when asked for, a bar. It takes
@@ -38,7 +38,7 @@ class UIWaitBoxPresenterClass : public UIPresenterClass
 
 
 // The RmlUi view over a wait box presenter, bound to wait.rml. The presenter must outlive it.
-std::unique_ptr<UIRmlViewClass> UI_Wait_Box_View(UIWaitBoxPresenterClass & presenter);
+std::unique_ptr<UIViewClass> UI_Wait_Box_View(UIWaitBoxPresenterClass & presenter);
 
 
 // The notice a caller shows while it works: a document when the shell can draw one and no
@@ -61,5 +61,5 @@ class UIWaitBoxClass
 	private:
 		HWND Dialog;
 		std::unique_ptr<UIWaitBoxPresenterClass> Presenter;
-		std::unique_ptr<UIRmlViewClass> View;
+		std::unique_ptr<UIViewClass> View;
 };

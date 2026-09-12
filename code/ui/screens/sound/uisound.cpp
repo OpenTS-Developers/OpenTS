@@ -162,7 +162,7 @@ class UISoundViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Sound_View(UISoundPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Sound_View(UISoundPresenterClass & presenter)
 {
 	return(std::make_unique<UISoundViewClass>(presenter));
 }

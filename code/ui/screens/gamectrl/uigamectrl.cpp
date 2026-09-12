@@ -166,7 +166,7 @@ class UIGameControlsViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter)
 {
 	return(std::make_unique<UIGameControlsViewClass>(presenter));
 }

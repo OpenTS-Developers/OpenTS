@@ -151,13 +151,13 @@ class UIConfirmModeViewClass : public UIRmlViewClass
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Display_View(UIDisplayPresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter)
 {
 	return(std::make_unique<UIDisplayViewClass>(presenter));
 }
 
 
-std::unique_ptr<UIRmlViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter)
+std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter)
 {
 	return(std::make_unique<UIConfirmModeViewClass>(presenter));
 }

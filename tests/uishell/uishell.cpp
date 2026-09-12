@@ -961,6 +961,13 @@ std::string Data_Model_Name(std::string const & text)
 }
 
 
+// Every factory builds an RmlUi view, so a test reaches the document through it.
+static UIRmlViewClass & Rml(UIViewClass & view)
+{
+	return(static_cast<UIRmlViewClass &>(view));
+}
+
+
 class MissingViewClass : public UIRmlViewClass
 {
 	public:
@@ -990,16 +997,16 @@ void Test_Version_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 
 	{
 		UIVersionPresenterClass presenter({ "Line 1", "Line 2" });
-		std::unique_ptr<UIRmlViewClass> view = UI_Version_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
 
-		Check(view->Prepare(context), "the version view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the version view prepares against the test context");
 		view->Show(true);
 		context.Update();
 		context.Render();
 		Check(system.Problems == problems, "the version screen raises no RmlUi warning or error");
 		Check(view->Is_Shown(), "the version screen is shown");
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * lines = (document != nullptr) ? document->GetElementById("lines") : nullptr;
 
 		// The data-for template stays in the tree hidden beside the paragraphs it produced.
@@ -1039,9 +1046,9 @@ void Test_Version_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 	for (int pass = 0; pass < 2; pass++) {
 		bool escape = (pass == 0);
 		UIVersionPresenterClass presenter({ "Line" });
-		std::unique_ptr<UIRmlViewClass> view = UI_Version_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
 
-		Check(view->Prepare(context), escape ? "the version view prepares for the Escape pass" : "the version view prepares for the Enter pass");
+		Check(Rml(*view).Prepare(context), escape ? "the version view prepares for the Escape pass" : "the version view prepares for the Enter pass");
 		view->Show(true);
 		context.Update();
 		context.ProcessKeyDown(escape ? Rml::Input::KI_ESCAPE : Rml::Input::KI_RETURN, 0);
@@ -1124,14 +1131,14 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 		UIMessageBoxPresenterClass presenter("Do you want to abort the mission?", { "First", "Second", "Third" }, 0);
 		Check(presenter.Button_Count() == 3, "three captions make three buttons");
 
-		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
-		Check(view->Prepare(context), "the message box view prepares against the test context");
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "the message box view prepares against the test context");
 		view->Show(true);
 		context.Update();
 		context.Render();
 		Check(system.Problems == problems, "the message box raises no RmlUi warning or error");
 
-		std::vector<Rml::Element *> buttons = Visible_Buttons(view->Document());
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
 		Check(buttons.size() == 3, "three buttons are visible");
 		bool ordered = buttons.size() == 3 && buttons[0]->GetInnerRML() == "First" && buttons[1]->GetInnerRML() == "Third" && buttons[2]->GetInnerRML() == "Second";
 		Check(ordered, "the buttons read first, third, second from left to right");
@@ -1148,15 +1155,15 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 
 	{
 		UIMessageBoxPresenterClass presenter("Two buttons", { "OK", "Cancel", "" }, 0);
-		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
-		Check(view->Prepare(context), "a two-button box prepares");
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "a two-button box prepares");
 		view->Show(true);
 		context.Update();
 
-		std::vector<Rml::Element *> buttons = Visible_Buttons(view->Document());
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
 		Check(buttons.size() == 2, "two buttons are visible");
 		if (buttons.size() == 2) {
-			float panel = view->Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float panel = Rml(*view).Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
 			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
 			float right = buttons[1]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
 			Check(left < 60.0f && right > 250.0f, "two buttons take the outer slots");
@@ -1174,15 +1181,15 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 
 	{
 		UIMessageBoxPresenterClass presenter("One button", { "OK", "", "" }, 0);
-		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
-		Check(view->Prepare(context), "a one-button box prepares");
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "a one-button box prepares");
 		view->Show(true);
 		context.Update();
 
-		std::vector<Rml::Element *> buttons = Visible_Buttons(view->Document());
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
 		Check(buttons.size() == 1, "one button is visible");
 		if (buttons.size() == 1) {
-			float panel = view->Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float panel = Rml(*view).Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
 			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
 			Check(left > 100.0f && left < 200.0f, "a lone button takes the middle slot");
 		}
@@ -1193,8 +1200,8 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 
 	{
 		UIMessageBoxPresenterClass presenter("Default", { "Yes", "No", "Maybe" }, 2);
-		std::unique_ptr<UIRmlViewClass> view = UI_Message_Box_View(presenter);
-		Check(view->Prepare(context), "a box with a default prepares");
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "a box with a default prepares");
 		view->Show(true);
 		context.Update();
 		context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
@@ -1253,9 +1260,9 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		state.Selected = 1;
 
 		UISoundPresenterClass presenter(service, state);
-		std::unique_ptr<UIRmlViewClass> view = UI_Sound_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
 
-		Check(view->Prepare(context), "the sound view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the sound view prepares against the test context");
 		view->Show(true);
 		context.Update();
 		context.Render();
@@ -1265,7 +1272,7 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		presenter.Drain();
 		Check(presenter.State.Score == 7 && presenter.State.Sound == 5 && presenter.State.Voice == 10 && service.Calls.empty(), "opening the sound screen plays no feedback");
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::ElementList inputs;
 		document->GetElementsByTagName(inputs, "input");
 		int sliders = 0;
@@ -1337,15 +1344,15 @@ void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & sy
 		state.InGame = false;
 
 		UISoundPresenterClass presenter(service, state);
-		std::unique_ptr<UIRmlViewClass> view = UI_Sound_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
 
-		Check(view->Prepare(context), "the frontend sound view prepares");
+		Check(Rml(*view).Prepare(context), "the frontend sound view prepares");
 		view->Show(true);
 		context.Update();
 
-		Rml::Element * music = view->Document()->GetElementById("music");
+		Rml::Element * music = Rml(*view).Document()->GetElementById("music");
 		Check(music != nullptr && !music->IsVisible(), "the frontend sound screen hides the music half");
-		Check(Visible_Of_Class(view->Document(), "track").empty(), "the frontend sound screen lists no tracks");
+		Check(Visible_Of_Class(Rml(*view).Document(), "track").empty(), "the frontend sound screen lists no tracks");
 
 		view->Release();
 		context.Update();
@@ -1401,9 +1408,9 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		state.SoundEnabled = true;
 
 		UIGameControlsPresenterClass presenter(service, state);
-		std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
 
-		Check(view->Prepare(context), "the game controls view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the game controls view prepares against the test context");
 		view->Show(true);
 		context.Update();
 		context.Render();
@@ -1413,7 +1420,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		presenter.Drain();
 		Check(presenter.State.Speed == 4 && presenter.State.Scroll == 2 && presenter.State.Detail == 1 && service.Calls.empty(), "opening the game controls holds the starting settings and applies nothing");
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Check(Visible_Sliders(document) == 3, "the in-game screen has three sliders");
 
 		Rml::Element * speed = document->GetElementById("speed");
@@ -1469,13 +1476,13 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		state.HasDifficulty = true;
 
 		UIGameControlsPresenterClass presenter(service, state);
-		std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
 
-		Check(view->Prepare(context), "the frontend game controls view prepares");
+		Check(Rml(*view).Prepare(context), "the frontend game controls view prepares");
 		view->Show(true);
 		context.Update();
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Check(Visible_Sliders(document) == 4, "the frontend screen adds the difficulty slider");
 
 		Rml::Element * difficulty_name = document->GetElementById("difficulty-name");
@@ -1515,13 +1522,13 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		state.SoundEnabled = false;
 
 		UIGameControlsPresenterClass presenter(service, state);
-		std::unique_ptr<UIRmlViewClass> view = UI_Game_Controls_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
 
-		Check(view->Prepare(context), "the Internet game controls view prepares");
+		Check(Rml(*view).Prepare(context), "the Internet game controls view prepares");
 		view->Show(true);
 		context.Update();
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Check(Visible_Sliders(document) == 2, "the Internet screen has no game speed slider");
 
 		Rml::Element * sound = document->GetElementById("sound");
@@ -1555,15 +1562,15 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 	{
 		RecordingDisplayServiceClass service;
 		UIDisplayPresenterClass presenter(service, Display_Fixture());
-		std::unique_ptr<UIRmlViewClass> view = UI_Display_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
-		Check(view->Prepare(context), "the display view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the display view prepares against the test context");
 		view->Show(true);
 		context.Update();
 		context.Render();
 		Check(system.Problems == problems, "the display screen raises no RmlUi warning or error");
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "mode");
 		Check(rows.size() == 3, "the display screen lists one row per mode");
 		Check(rows.size() == 3 && rows[1]->IsClassSet("selected") && rows[1]->GetInnerRML() == "1280 x 800", "the row of the stored mode starts selected");
@@ -1603,13 +1610,13 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 	{
 		RecordingDisplayServiceClass service;
 		UIDisplayPresenterClass presenter(service, Display_Fixture());
-		std::unique_ptr<UIRmlViewClass> view = UI_Display_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
-		Check(view->Prepare(context), "a second display view prepares");
+		Check(Rml(*view).Prepare(context), "a second display view prepares");
 		view->Show(true);
 		context.Update();
 
-		std::vector<Rml::Element *> rows = Visible_Of_Class(view->Document(), "mode");
+		std::vector<Rml::Element *> rows = Visible_Of_Class(Rml(*view).Document(), "mode");
 		if (rows.size() == 3) {
 			Click(context, rows[0]);
 			presenter.Drain();
@@ -1628,9 +1635,9 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 	{
 		FakeClockClass clock;
 		UIConfirmModePresenterClass presenter(clock);
-		std::unique_ptr<UIRmlViewClass> view = UI_Confirm_Mode_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
 
-		Check(view->Prepare(context), "the confirmation view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the confirmation view prepares against the test context");
 		presenter.Refresh();
 		view->Show(true);
 		view->Sync();
@@ -1638,7 +1645,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		context.Render();
 		Check(system.Problems == problems, "the confirmation screen raises no RmlUi warning or error");
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * seconds = document->GetElementById("seconds");
 		Check(seconds != nullptr && seconds->GetInnerRML() == "10", "the confirmation shows the ten seconds left");
 
@@ -1664,9 +1671,9 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 	{
 		FakeClockClass clock;
 		UIConfirmModePresenterClass presenter(clock);
-		std::unique_ptr<UIRmlViewClass> view = UI_Confirm_Mode_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
 
-		Check(view->Prepare(context), "a second confirmation view prepares");
+		Check(Rml(*view).Prepare(context), "a second confirmation view prepares");
 		presenter.Refresh();
 		view->Show(true);
 		view->Sync();
@@ -1678,7 +1685,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		view->Sync();
 		context.Update();
 
-		Rml::Element * seconds = view->Document()->GetElementById("seconds");
+		Rml::Element * seconds = Rml(*view).Document()->GetElementById("seconds");
 		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.TimedOut, "the confirmation cancels itself when the clock runs out");
 		Check(seconds != nullptr && seconds->GetInnerRML() == "0", "the countdown ends at zero");
 
@@ -1698,16 +1705,16 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	{
 		RecordingKeyboardServiceClass service;
 		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
-		std::unique_ptr<UIRmlViewClass> view = UI_Keyboard_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
 
-		Check(view->Prepare(context), "the keyboard view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the keyboard view prepares against the test context");
 		view->Show(true);
 		view->Sync();
 		context.Update();
 		context.Render();
 		Check(system.Problems == problems, "the keyboard screen raises no RmlUi warning or error");
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "row");
 		Check(rows.size() == 4, "the keyboard screen lists the categories and the open category's commands");
 		Check(rows.size() == 4 && rows[0]->GetInnerRML() == "Interface" && rows[0]->IsClassSet("selected") && rows[2]->GetInnerRML() == "Alliance" && rows[3]->GetInnerRML() == "Toggle Repair", "the first category is open with its commands sorted by name");
@@ -1779,21 +1786,21 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		RecordingKeyboardServiceClass service;
 		service.ConfirmAnswer = false;
 		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
-		std::unique_ptr<UIRmlViewClass> view = UI_Keyboard_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
 
-		Check(view->Prepare(context), "a second keyboard view prepares");
+		Check(Rml(*view).Prepare(context), "a second keyboard view prepares");
 		view->Show(true);
 		view->Sync();
 		context.Update();
 
-		Rml::Element * reset = view->Document()->GetElementById("reset");
+		Rml::Element * reset = Rml(*view).Document()->GetElementById("reset");
 		if (reset != nullptr) {
 			Click(context, reset);
 			presenter.Drain();
 			Check(service.Calls == std::vector<std::string>{ "confirm" } && presenter.Key_Of(0) == 577, "Reset All asks first and a refusal changes nothing");
 		}
 
-		Rml::Element * capture = view->Document()->GetElementById("capture");
+		Rml::Element * capture = Rml(*view).Document()->GetElementById("capture");
 		if (capture != nullptr) {
 			capture->Focus();
 		}
@@ -1830,20 +1837,20 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		UIMainOptionsState state;
 		state.SoundEnabled = true;
 		UIMainOptionsPresenterClass presenter(state);
-		std::unique_ptr<UIRmlViewClass> view = UI_Main_Options_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
 
-		Check(view->Prepare(context), "the options menu view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the options menu view prepares against the test context");
 		view->Show(true);
 		context.Update();
 		context.Render();
 		Check(system.Problems == problems, "the options menu raises no RmlUi warning or error");
 
-		std::vector<Rml::Element *> buttons = Buttons_Top_Down(view->Document());
+		std::vector<Rml::Element *> buttons = Buttons_Top_Down(Rml(*view).Document());
 		Check(buttons.size() == 5, "the options menu has five buttons");
 		bool ordered = buttons.size() == 5 && buttons[0]->GetId() == "settings" && buttons[1]->GetId() == "display" && buttons[2]->GetId() == "sound" && buttons[3]->GetId() == "keyboard" && buttons[4]->GetId() == "mainmenu";
 		Check(ordered, "the buttons run Game Settings, Display, Sound, Keyboard, Main Menu from the top");
 
-		Rml::Element * panel = view->Document()->GetElementById("panel");
+		Rml::Element * panel = Rml(*view).Document()->GetElementById("panel");
 		float centre = (float)context.GetDimensions().y * 0.5f;
 		Check(panel != nullptr && panel->GetAbsoluteOffset(Rml::BoxArea::Border).y < centre && panel->GetAbsoluteOffset(Rml::BoxArea::Border).y + panel->GetBox().GetSize(Rml::BoxArea::Border).y > centre, "without a top edge the menu sits in the middle");
 
@@ -1862,16 +1869,16 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		state.SoundEnabled = false;
 		state.Top = 200;
 		UIMainOptionsPresenterClass presenter(state);
-		std::unique_ptr<UIRmlViewClass> view = UI_Main_Options_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
 
-		Check(view->Prepare(context), "a second options menu view prepares");
+		Check(Rml(*view).Prepare(context), "a second options menu view prepares");
 		view->Show(true);
 		context.Update();
 
-		Rml::Element * panel = view->Document()->GetElementById("panel");
+		Rml::Element * panel = Rml(*view).Document()->GetElementById("panel");
 		Check(panel != nullptr && std::fabs(panel->GetAbsoluteOffset(Rml::BoxArea::Border).y - 200.0f) < 1.0f, "the menu sits at the top edge the game hands it");
 
-		Rml::Element * sound = view->Document()->GetElementById("sound");
+		Rml::Element * sound = Rml(*view).Document()->GetElementById("sound");
 		Check(sound != nullptr && sound->IsClassSet("disabled"), "the Sound button shows disabled without an audio device");
 		if (sound != nullptr) {
 			Click(context, sound);
@@ -1915,15 +1922,15 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	{
 		UIWaitBoxPresenterClass presenter("Mission saving - Please Wait...", false);
-		std::unique_ptr<UIRmlViewClass> view = UI_Wait_Box_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
 
-		Check(view->Prepare(context), "the wait box view prepares against the test context");
+		Check(Rml(*view).Prepare(context), "the wait box view prepares against the test context");
 		view->Show(false);
 		context.Update();
 		context.Render();
 		Check(system.Problems == problems, "the wait box raises no RmlUi warning or error");
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * text = document->GetElementById("text");
 		Check(text != nullptr && text->GetInnerRML() == "Mission saving - Please Wait...", "the wait box shows its text");
 
@@ -1942,13 +1949,13 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	{
 		UIWaitBoxPresenterClass presenter("Working - Please Wait", true);
 		presenter.Set_Fraction(0.5);
-		std::unique_ptr<UIRmlViewClass> view = UI_Wait_Box_View(presenter);
+		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
 
-		Check(view->Prepare(context), "a wait box with a bar prepares");
+		Check(Rml(*view).Prepare(context), "a wait box with a bar prepares");
 		view->Show(false);
 		context.Update();
 
-		Rml::ElementDocument * document = view->Document();
+		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * frame = document->GetElementById("frame");
 		Rml::Element * fill = document->GetElementById("fill");
 		Check(frame != nullptr && frame->IsVisible(), "a wait box with a bar shows the frame");
