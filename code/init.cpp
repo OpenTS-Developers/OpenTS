@@ -4278,8 +4278,11 @@ class ScrollNCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_N, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 
@@ -4301,8 +4304,11 @@ class ScrollSCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_S, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 
@@ -4324,8 +4330,11 @@ class ScrollECommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_E, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 
@@ -4347,8 +4356,11 @@ class ScrollWCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_W, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 
@@ -4370,8 +4382,11 @@ class ScrollNECommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_NE, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 
@@ -4393,8 +4408,11 @@ class ScrollSECommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_SE, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 
@@ -4416,8 +4434,11 @@ class ScrollSWCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_SW, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 
@@ -4439,8 +4460,11 @@ class ScrollNWCommandClass : public CommandClass
 		}
 
 		virtual void Execute(void) const {
-			int distance = 34;
+			int distance = Map.Get_Keyboard_Scroll_Distance();
 			Map.Scroll_Map(FACING_NW, distance, true);
+		}
+		virtual bool Is_Repeatable(void) const {
+			return(true);
 		}
 };
 

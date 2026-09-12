@@ -88,6 +88,21 @@ static double _ScrollFraction = 0.0;
 static double _EdgeScrollRemainder = 0.0;
 static double _CoastRemainderX = 0.0;
 static double _CoastRemainderY = 0.0;
+static double _KeyScrollRemainder = 0.0;
+
+// Indexed by an inertia-derived rate; a lower index is a faster step. Shared by edge scroll and
+// keyboard scroll so both settle at the same top speed for a given Options.ScrollRate.
+static int const _ScrollRateTable[9] = {
+	0x00E0*2,
+	0x00C0*2,
+	0x00A0*2,
+	0x0080*2,
+	0x0060*2,
+	0x0040*2,
+	0x0020*2,
+	0x0010*2,
+	0x0008*2
+};
 
 
 /***********************************************************************************************
@@ -470,18 +485,6 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 				**	The mouse is over a scroll region so set the mouse shape accordingly if the map
 				**	can be scrolled in the direction indicated.
 				*/
-				static int _rate[9] = {
-					0x00E0*2,
-					0x00C0*2,
-					0x00A0*2,
-					0x0080*2,
-					0x0060*2,
-					0x0040*2,
-					0x0020*2,
-					0x0010*2,
-					0x0008*2
-				};
-
 				int rate = 8-Inertia;
 
 				if (rate < Options.ScrollRate+1) {
@@ -493,7 +496,7 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 				**	Increase the scroll rate if the mouse button is held down.
 				*/
 				if (Keyboard->Down(KN_RMOUSE)) {
-					rate = std::clamp(rate+1, 4, (int)(sizeof(_rate)/sizeof(_rate[0]))-1);
+					rate = std::clamp(rate+1, 4, (int)(sizeof(_ScrollRateTable)/sizeof(_ScrollRateTable[0]))-1);
 				}
 
 				/*
@@ -510,7 +513,7 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 				} else {
 					Override_Mouse_Shape((MouseType)(MOUSE_N+control), false);
 
-					int step = int(_rate[rate] * Rule->ScrollMultiplier);
+					int step = int(_ScrollRateTable[rate] * Rule->ScrollMultiplier);
 					double scaled = step * _ScrollFraction + _EdgeScrollRemainder;
 					distance = int(scaled);
 					_EdgeScrollRemainder = scaled - distance;
@@ -576,6 +579,23 @@ void ScrollClass::Scroll_AI(void)
 			}
 		}
 	}
+}
+
+
+/// <summary>
+/// Gives the distance a keyboard scroll command should move the map this poll, at the sustained
+/// top speed edge scrolling reaches once its inertia ramp is fully wound up for the current
+/// Options.ScrollRate. Call once per poll; it paces itself off Scroll_AI's timing.
+/// </summary>
+/// <returns>int; The distance to scroll this poll, in leptons.</returns>
+int ScrollClass::Get_Keyboard_Scroll_Distance(void)
+{
+	int rate = Options.ScrollRate+1;
+	int step = int(_ScrollRateTable[rate] * Rule->ScrollMultiplier);
+	double scaled = step * _ScrollFraction + _KeyScrollRemainder;
+	int distance = int(scaled);
+	_KeyScrollRemainder = scaled - distance;
+	return(distance);
 }
 
 

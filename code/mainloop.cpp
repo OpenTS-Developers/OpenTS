@@ -17,6 +17,7 @@
 
 #include "_bench.h"
 #include "_command.h"
+#include "_keyboar.h"
 #include "_logic.h"
 #include "_map.h"
 #include "_palette.h"
@@ -432,6 +433,24 @@ bool Main_Loop(void)
 
 void Ingame_Menu_Dialog(void);
 
+// Keyboard->Down() only checks a key's virtual-key code, so a repeatable command bound with
+// Shift/Ctrl/Alt needs those modifiers checked separately against live key state.
+static bool Is_Repeat_Key_Held(int key)
+{
+	if (!Keyboard->Down(KeyNumType(key))) {
+		return(false);
+	}
+
+	bool shift = (GetKeyState(VK_SHIFT) & 0x8000) != 0;
+	bool ctrl = (GetKeyState(VK_CONTROL) & 0x8000) != 0;
+	bool alt = (GetKeyState(VK_MENU) & 0x8000) != 0;
+
+	return shift == ((key & WWKEY_SHIFT_BIT) != 0)
+		&& ctrl == ((key & WWKEY_CTRL_BIT) != 0)
+		&& alt == ((key & WWKEY_ALT_BIT) != 0);
+}
+
+
 /***********************************************************************************************
  * Keyboard_Process -- Processes the tactical map input codes.                                 *
  *                                                                                             *
@@ -451,6 +470,15 @@ void Ingame_Menu_Dialog(void);
  *=============================================================================================*/
 void Keyboard_Process(KeyNumType & input)
 {
+	// Windows key-repeat events never reach the keyboard buffer, so a repeatable command
+	// (e.g. map scrolling) has to be re-triggered here by polling its bound key every frame.
+	for (int index = 0; index < HotkeyCommands.Count(); index++) {
+		CommandClass const * repeatcmd = HotkeyCommands.Fetch_By_Position(index);
+		if (repeatcmd->Is_Repeatable() && Is_Repeat_Key_Held(HotkeyCommands.Fetch_ID_By_Position(index))) {
+			repeatcmd->Execute();
+		}
+	}
+
 	/*
 	**	Don't do anything if there is not keyboard event.
 	*/
@@ -473,7 +501,10 @@ void Keyboard_Process(KeyNumType & input)
 
 	if (cmd != NULL) {
 
-		cmd->Execute();
+		// Repeatable commands are driven by the per-frame poll above instead.
+		if (!cmd->Is_Repeatable()) {
+			cmd->Execute();
+		}
 
 	} else {
 
