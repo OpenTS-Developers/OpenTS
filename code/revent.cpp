@@ -165,7 +165,6 @@ void RadarEventClass::Process(void)
 				if (normalized_angle < RotationSpeed) {
 					RotationAngle = normalized_angle + RotationAngle;
 					IsRotating = false;
-					RotationAngle = RotationAngle;
 					VisibilityTimer = Get_Visibility_Duration();
 					DurationTimer = Get_Duration();
 				} else {
