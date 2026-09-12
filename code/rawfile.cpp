@@ -510,6 +510,7 @@ int RawFileClass::Read(void * buffer, int size)
 			size -= bytesread;
 			total += bytesread;
 			Error(errno, true, Filename);
+			if (bytesread == 0) break;
 			continue;
 		}
 		size -= bytesread;
