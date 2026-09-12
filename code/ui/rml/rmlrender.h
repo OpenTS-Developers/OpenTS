@@ -15,36 +15,54 @@ struct ImDrawData;
 struct ImTextureData;
 
 
+// The renderer the shell draws the documents and the developer overlays with. The engine's
+// draws through bgfx; a test supplies one that records what it is asked.
+class UIRmlRenderClass : public Rml::RenderInterface
+{
+	public:
+		virtual ~UIRmlRenderClass(void) = default;
+
+		virtual bool Init(void) = 0;
+		virtual void Shutdown(void) = 0;
+
+		// Points the document view at the frame's destination rectangle, in window pixels.
+		virtual void Begin_Frame(int x, int y, int width, int height) = 0;
+
+		// Points the developer view at the same rectangle.
+		virtual void Begin_Dev_Frame(int x, int y, int width, int height) = 0;
+
+		// Draws one Dear ImGui frame into the developer view, creating, updating and
+		// destroying its textures as it asks.
+		virtual void Render_ImGui(ImDrawData * data) = 0;
+
+		// Destroys every texture Dear ImGui still holds. Called before its context goes.
+		virtual void Destroy_ImGui_Textures(void) = 0;
+
+		// The largest texture edge the renderer accepts.
+		virtual int Texture_Limit(void) const = 0;
+
+		// Writes the renderer's live texture and buffer counts to the debug log.
+		virtual void Log_Resource_Counts(char const * when) const = 0;
+};
+
+
 // Draws RmlUi geometry and Dear ImGui frames through bgfx into the overlay views. Init
 // needs the renderer running; Shutdown comes after Rml::Shutdown, which releases every
 // texture and geometry through this object, and before the renderer stops. bgfx handles
 // are kept as their indices so that no bgfx type appears here.
-class UIRmlBgfxRenderClass : public Rml::RenderInterface
+class UIRmlBgfxRenderClass : public UIRmlRenderClass
 {
 	public:
 		UIRmlBgfxRenderClass(void);
 
-		bool Init(void);
-		void Shutdown(void);
-
-		// Points the document view at the frame's destination rectangle, in window pixels.
-		void Begin_Frame(int x, int y, int width, int height);
-
-		// Points the developer view at the same rectangle.
-		void Begin_Dev_Frame(int x, int y, int width, int height);
-
-		// Draws one Dear ImGui frame into the developer view, creating, updating and
-		// destroying its textures as it asks.
-		void Render_ImGui(ImDrawData * data);
-
-		// Destroys every texture Dear ImGui still holds. Called before its context goes.
-		void Destroy_ImGui_Textures(void);
-
-		// The largest texture edge the renderer accepts.
-		int Texture_Limit(void) const;
-
-		// Writes the renderer's live texture and buffer counts to the debug log.
-		void Log_Resource_Counts(char const * when) const;
+		virtual bool Init(void) override;
+		virtual void Shutdown(void) override;
+		virtual void Begin_Frame(int x, int y, int width, int height) override;
+		virtual void Begin_Dev_Frame(int x, int y, int width, int height) override;
+		virtual void Render_ImGui(ImDrawData * data) override;
+		virtual void Destroy_ImGui_Textures(void) override;
+		virtual int Texture_Limit(void) const override;
+		virtual void Log_Resource_Counts(char const * when) const override;
 
 		virtual Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) override;
 		virtual void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) override;

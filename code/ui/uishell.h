@@ -15,12 +15,19 @@
 #include "ui/uiscreen.h"
 #include "win.h"
 
+#include <functional>
+
 class UIRmlViewClass;
+class UIShellHostClass;
+
+// Runs the game for one pass under a modal screen and reports whether it ended.
+using UIServiceCallback = std::function<bool(void)>;
 
 
 // Needs the window, the renderer and the file search chain. A false return leaves every
-// other entry point inert.
+// other entry point inert. The engine passes its own host; a test passes one it controls.
 bool UI_Init(void);
+bool UI_Init(UIShellHostClass & host);
 void UI_Shutdown(void);
 
 // True when a migrated screen should open its RmlUi view rather than its Win32 dialog. A
@@ -35,8 +42,10 @@ bool UI_Screen_Shown(void);
 bool UI_Legacy_Dialog_Visible(void);
 
 // Prepares, shows and drives a modal screen until its presenter reports a result or the game
-// ends, then releases it. The view's presenter must outlive the call.
+// ends, then releases it. The view's presenter must outlive the call. The engine's entry
+// services the game each pass; a test supplies the service it wants.
 UIResult UI_Run_Modal(UIRmlViewClass & view);
+UIResult UI_Run_Modal(UIRmlViewClass & view, UIServiceCallback const & service);
 
 // Shows a document beside the game without taking its input: a notice the caller updates
 // while it works. It is drawn at once, because such a caller pumps nothing. False when the

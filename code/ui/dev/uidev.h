@@ -11,16 +11,16 @@
 
 #include "win.h"
 
-class UIRmlBgfxRenderClass;
+class UIRmlRenderClass;
 
 
 // The Dear ImGui developer overlays. The context is created on the first toggle, so a
 // build whose developer keys never arm allocates nothing here.
 bool UIDev_Active(void);
-void UIDev_Toggle(UIRmlBgfxRenderClass const & render);
+void UIDev_Toggle(UIRmlRenderClass const & render);
 void UIDev_Tick(void);
-void UIDev_Render(UIRmlBgfxRenderClass & render);
-void UIDev_Shutdown(UIRmlBgfxRenderClass & render);
+void UIDev_Render(UIRmlRenderClass & render);
+void UIDev_Shutdown(UIRmlRenderClass & render);
 
 // Input reaches the overlays before the documents and the game. A true return means the
 // overlays want that message kept from both.
