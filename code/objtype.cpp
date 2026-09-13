@@ -637,10 +637,6 @@ bool ObjectTypeClass::Read_INI(CCINIClass const & ini)
 		IsTheater = ArtINI.Get_Bool(GraphicName, "Theater", IsTheater);
 		IsNewTheater = ArtINI.Get_Bool(GraphicName, "NewTheater", IsNewTheater);
 
-		if (!stricmp(IniName, "HMEC")) {
-			MaxStrength = 1200;
-		}
-
 		IsVoxel = ArtINI.Get_Bool(GraphicName, "Voxel", IsVoxel);
 		if (!IsVoxel) {
 			Fetch_Normal_Image();

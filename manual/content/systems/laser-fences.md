@@ -109,7 +109,7 @@ A [`FirestormWall=yes`](/keys/firestormwall/) BuildingType stays a real structur
 
 ### Filling the gap
 
-The fill scans north, east, south and west for at most `GuardRange` cells, truncated to whole cells, and unlike the fence post it has no one-cell floor: a type whose `GuardRange` resolves below one cell fills nothing at all. The stock firestorm wall never reaches that state, because a type whose ID is `GAFSDF`, `GAWALL` or `NAWALL` has its reach overwritten with a fixed five cells immediately after `GuardRange=` is read, which leaves the key inert on those three types.
+The fill scans north, east, south and west for at most `GuardRange` cells, truncated to whole cells, and unlike the fence post it has no one-cell floor: a type whose `GuardRange` resolves below one cell fills nothing at all. The stock firestorm wall carries `GuardRange=5`, so it reaches five cells.
 
 A direction contributes sections only while **all of**:
 

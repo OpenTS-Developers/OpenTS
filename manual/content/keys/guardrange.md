@@ -23,8 +23,4 @@ Two leash distances come off the same figure. A Guard Area object that is neithe
 A [`LaserFencePost=yes`](/keys/laserfencepost/) building uses it as the number of cells it searches in each of the four directions for its neighboring post, treating anything under one cell as one. A [`FirestormWall=yes`](/keys/firestormwall/) type uses it as the number of cells a newly placed section searches for another section to join to, with no such floor. Both truncate it to whole cells, so changing it on those types changes how far a fence run reaches.
 :::
 
-:::caution[Three BuildingType IDs discard the value]
-`GAFSDF`, `GAWALL` and `NAWALL` have this distance pinned to 5 cells immediately after their sections are read, so an assignment in those three sections has no effect.
-:::
-
 A value of exactly `-1` is indistinguishable from omitting the key: the reader treats it as absent and keeps whatever was already stored.

@@ -181,8 +181,6 @@ A house short of power divides its build time by a multiplier taken from a fixed
 
 The country and difficulty multipliers are combined once, when the house is assigned its difficulty, and not per order. A campaign game drops the country's contribution from both the build-time and the price multiplier, so a `[GDI]` or `[Nod]` section's `Cost=` and `BuildTime=` shape skirmish and multiplayer games only. The two difficulty settings are separate axes: a difficulty block's `Cost=` changes what everything costs without changing how long it takes, and its `BuildTime=` changes how long it takes without changing what it costs.
 
-`GAFSDF`, `GAWALL` and `NAWALL` have their price fixed at 250 after their own `Cost=` is read, which fixes their build time along with it.
-
 ## Paying for it
 
 The full price is charged in installments across the 54 steps. The installment is recomputed at every step as the outstanding balance divided by the number of steps left, so integer division never loses or gains credits; whatever remains at step 54 is charged in one final payment and the balance reaches exactly zero.

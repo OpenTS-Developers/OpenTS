@@ -543,14 +543,7 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		}
 		CollateralDamageCoefficient = ini.Get_Float(Name(), "CollateralDamageCoefficient", CollateralDamageCoefficient);
 
-		if (strcmp(Name(), "GAFSDF") == 0 || strcmp(Name(), "GAWALL") == 0 || strcmp(Name(), "NAWALL") == 0) {
-			ThreatRange = (CELL_LEPTON*5); /// 1280
-		}
-
 		IsExploding = ini.Get_Bool(Name(), "Explodes", IsExploding);
-		if (stricmp(Name(), "E2") == 0) {
-			IsExploding = true;
-		}
 
 		FlightLevel = ini.Get_Int(Name(), "FlightLevel", FlightLevel);
 		IsDropship = ini.Get_Bool(Name(), "IsDropship", IsDropship);
@@ -617,9 +610,6 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 			MaxSpeed = MPHType(_Scale_To_256(maxspeed));
 		}
 		Cost = ini.Get_Int(Name(), "Cost", Cost);
-		if (strcmp(Name(), "GAFSDF") == 0 || strcmp(Name(), "GAWALL") == 0 || strcmp(Name(), "NAWALL") == 0) {
-			Cost = 250;
-		}
 		MaxAmmo = ini.Get_Int(Name(), "Ammo", MaxAmmo);
 		Reward = Points = ini.Get_Int(Name(), "Points", Points);
 		Risk = ini.Get_Int(Name(), "ThreatPosed", Risk);

@@ -135,7 +135,7 @@ The scan walks that many whole cell rings. Where the guard radius falls back to 
 A healer — an object whose weapon damage averages below zero, such as a medic — overrides all of the above with a fixed 2 cells while it is in Guard.
 
 :::caution[`GuardRange` is also a fence connection distance]
-A [`LaserFencePost=yes`](/keys/laserfencepost/) building uses it as the number of cells it reaches along each of the four directions to find the next post, treating anything below one cell as one, and a [`FirestormWall=yes`](/keys/firestormwall/) type uses it as the number of cells a placed section searches for another section to join. Both truncate it to whole cells. The BuildingType IDs `GAFSDF`, `GAWALL` and `NAWALL` have it pinned to 5 cells immediately after their sections are read, so an assignment in those three sections is discarded.
+A [`LaserFencePost=yes`](/keys/laserfencepost/) building uses it as the number of cells it reaches along each of the four directions to find the next post, treating anything below one cell as one, and a [`FirestormWall=yes`](/keys/firestormwall/) type uses it as the number of cells a placed section searches for another section to join. Both truncate it to whole cells, so changing it on those types changes how far a fence run reaches.
 :::
 
 An unarmed building never scans at all — the scan lives on the armed branch of the Guard mission. [`HasStupidGuardMode=yes`](/keys/hasstupidguardmode/) additionally ends an unarmed building's Guard processing outright, so the repair-bay handover and the weapons-factory bib clearing stop running.

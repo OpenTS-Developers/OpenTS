@@ -6,7 +6,6 @@ see_also: [CollateralDamageCoefficient, Explosion, ExpSpread, Primary, MaxDebris
 when_omitted:
   kind: value
   value: "no"
-  note: A section named `E2` is set to `yes` immediately after the read, so that one type always explodes whatever its value says.
 ---
 
 ```ini title="rules.ini"
