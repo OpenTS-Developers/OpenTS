@@ -288,6 +288,7 @@ class TestHostClass : public UIShellHostClass
 		unsigned int CodePage = 65001;
 		bool Down[256] = {};
 		int Presents = 0;
+		int PresentsNow = 0;
 		int Clears = 0;
 		int Focuses = 0;
 		UIShellClass * Shell = nullptr;
@@ -341,6 +342,15 @@ class TestHostClass : public UIShellHostClass
 		virtual void Present_If_Dirty(void) override
 		{
 			Presents++;
+			if (Shell != nullptr) {
+				Shell->Render_Overlay();
+			}
+		}
+
+		virtual void Present_Now(void) override
+		{
+			Presents++;
+			PresentsNow++;
 			if (Shell != nullptr) {
 				Shell->Render_Overlay();
 			}
@@ -2757,11 +2767,19 @@ void Test_Shell(void)
 		UIWaitBoxPresenterClass presenter("Working", false);
 		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
 
+		int const presentsnow = host.PresentsNow;
 		Check(shell.Show_Modeless(*view), "a notice shows beside the game");
 		Check(shell.Is_Modeless_Shown(*view) && view->Is_Shown(), "the shell lists the notice while it shows");
 		Check(!shell.Screen_Shown(), "a notice is not a screen");
+
+		// Its caller then works without pumping, so the frame it is drawn into cannot be
+		// left to the present interval.
+		Check(host.PresentsNow > presentsnow, "showing a notice presents at once rather than when the interval allows");
+
+		int const hidden = host.PresentsNow;
 		shell.Hide_Modeless(*view);
 		Check(!shell.Is_Modeless_Shown(*view) && !view->Is_Shown(), "hiding the notice unlists it");
+		Check(host.PresentsNow > hidden, "and taking it away presents at once too");
 		Check(shell.Show_Modeless(*view), "the notice shows again");
 
 		shell.Shutdown();

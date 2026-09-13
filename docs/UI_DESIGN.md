@@ -587,8 +587,10 @@ Non-modal documents are updated by a `UI_Tick` call in `Main_Loop` next to
 `Map.Input`, and by one at the end of each pass of the legacy dialog driver
 so that a document stays alive under a menu, and are rendered by every
 present. A notice a caller shows while it works goes through
-`UI_Show_Modeless`, `UI_Refresh` and `UI_Hide_Modeless`, which tick and
-present at once because such a caller pumps nothing.
+`Show_Modeless`, `Refresh` and `Hide_Modeless`, which tick and present at
+once because such a caller pumps nothing. That present ignores the interval
+between frames: the caller gets no second chance, so a notice raised soon
+after the last frame would otherwise never be drawn at all.
 
 Teardown order: mark the screen closing and invalidate its token, then drop
 focus and capture and discard its intents, then detach listeners and data
