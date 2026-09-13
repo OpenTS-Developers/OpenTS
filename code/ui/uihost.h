@@ -65,6 +65,8 @@ class UIShellHostClass
 		// Whether a key or mouse button is physically down. VK_LBUTTON and VK_RBUTTON name the
 		// primary and secondary buttons as the messages do, whatever the user swapped.
 		virtual bool Key_Down(int virtualkey) const = 0;
+		// Whether a key that latches rather than repeats, Caps Lock or Num Lock, is on.
+		virtual bool Key_Toggled(int virtualkey) const = 0;
 		// True when text messages carry UTF-16 units; otherwise they carry one byte each of
 		// the code page below.
 		virtual bool Window_Is_Unicode(void) const = 0;

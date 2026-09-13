@@ -447,11 +447,11 @@ fixed_exclusions:
   - site: { file: code/winstub.cpp, function: Create_Main_Window, expression: VK_M }
     reason: Registers a Windows hotkey that has no WM_HOTKEY handler in the current source tree.
   - sites:
-      - { file: code/ui/uishell.cpp, function: Key_Modifiers, expression: VK_SHIFT }
-      - { file: code/ui/uishell.cpp, function: Key_Modifiers, expression: VK_CONTROL }
-      - { file: code/ui/uishell.cpp, function: Key_Modifiers, expression: VK_MENU }
-      - { file: code/ui/uishell.cpp, function: Key_Modifiers, expression: VK_CAPITAL }
-      - { file: code/ui/uishell.cpp, function: Key_Modifiers, expression: VK_NUMLOCK }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_SHIFT }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_CONTROL }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_MENU }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_CAPITAL }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_NUMLOCK }
     reason: UI shell modifier-state encoding for RmlUi, not separate controls.
   - sites:
       - { file: code/ui/uishell.cpp, function: Modifier_Key, expression: VK_SHIFT }

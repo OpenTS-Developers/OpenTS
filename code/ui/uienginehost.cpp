@@ -147,6 +147,11 @@ class UIEngineHostClass : public UIShellHostClass
 			return((GetAsyncKeyState(virtualkey) & 0x8000) != 0);
 		}
 
+		virtual bool Key_Toggled(int virtualkey) const override
+		{
+			return((GetKeyState(virtualkey) & 1) != 0);
+		}
+
 		virtual bool Window_Is_Unicode(void) const override
 		{
 			return(IsWindowUnicode(MainWindow) != FALSE);

@@ -287,6 +287,7 @@ class TestHostClass : public UIShellHostClass
 		bool Unicode = false;
 		unsigned int CodePage = 65001;
 		bool Down[256] = {};
+		bool Toggled[256] = {};
 		int Presents = 0;
 		int PresentsNow = 0;
 		int Clears = 0;
@@ -297,6 +298,11 @@ class TestHostClass : public UIShellHostClass
 		virtual bool Key_Down(int virtualkey) const override
 		{
 			return(Down[virtualkey & 0xFF]);
+		}
+
+		virtual bool Key_Toggled(int virtualkey) const override
+		{
+			return(Toggled[virtualkey & 0xFF]);
 		}
 
 		virtual bool Window_Is_Unicode(void) const override
@@ -2923,10 +2929,8 @@ void Test_Shell(void)
 
 	{
 		// A key has to reach the element the view focused, not the document's accept and cancel
-		// handling, and assigning it must take it off whatever held it before. The key is an
-		// unmodified one because the shell reads its modifiers from the thread's own key state
-		// rather than through the host, which no test can set without disturbing the machine;
-		// Test_Keys covers the modifier bits on their own.
+		// handling, and assigning it must take it off whatever held it before. The shell asks
+		// the host which modifiers are held, so a test can hold one the same way the game does.
 		RecordingKeyboardServiceClass service;
 		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
 		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
@@ -2934,6 +2938,7 @@ void Test_Shell(void)
 		bool listed = false;
 		bool focused = false;
 		bool captured = false;
+		bool modified = false;
 		bool moved = false;
 
 		shell.Run_Modal(*view, [&](void) {
@@ -2949,8 +2954,8 @@ void Test_Shell(void)
 			}
 
 			// Rows two and three are the open category's commands: Alliance, which holds no key,
-			// then Toggle Repair. The key pressed below belongs to a command in the other
-			// category, so assigning it has to take it away from there.
+			// then Toggle Repair. Both keys pressed below belong to commands elsewhere, so
+			// assigning one has to take it away from its holder.
 			if (passes == 2) {
 				Click_Through_Hook(shell, host, rows[2]);
 			}
@@ -2961,20 +2966,31 @@ void Test_Shell(void)
 			}
 			if (passes == 4) {
 				captured = presenter.State.Captured == 88 && presenter.State.AssignedTo == "Scatter" && capture->GetInnerRML().find("K88") != std::string::npos;
-				Click_Through_Hook(shell, host, assign);
+
+				// The same key with Shift held is a different binding, which is the mapping
+				// rml/rmlkeys.cpp owns.
+				host.Down[VK_SHIFT] = true;
+				Send(shell, WM_KEYDOWN, 'R');
+				Send(shell, WM_KEYUP, 'R');
+				host.Down[VK_SHIFT] = false;
 			}
 			if (passes == 5) {
-				moved = presenter.Key_Of(3) == 88 && presenter.Key_Of(2) == 0;
+				modified = presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair";
+				Click_Through_Hook(shell, host, assign);
+			}
+			if (passes == 6) {
+				moved = presenter.Key_Of(3) == 338 && presenter.Key_Of(1) == 0;
 				Click_Through_Hook(shell, host, ok);
 			}
-			return(passes > 6);
+			return(passes > 7);
 		});
 
 		Check(listed && presenter.State.Selected == 3, "a click on a command row selects the command it names");
 		Check(focused, "and moves the focus to the capture element the keys go to");
 		Check(captured, "a key sent through the hook becomes its hotkey number there and names the command holding it");
+		Check(modified, "the same key with a modifier the host reports is a different number naming a different command");
 		Check(moved, "assigning it moves the key to the selected command and off its old owner");
-		Check(service.Calls == std::vector<std::string>{ "save 0=577 1=338 3=88" }, "and accepting saves the table the edits left behind");
+		Check(service.Calls == std::vector<std::string>{ "save 0=577 2=88 3=338" }, "and accepting saves the table the edits left behind");
 	}
 
 	{

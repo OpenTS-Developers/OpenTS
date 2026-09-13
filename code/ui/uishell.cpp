@@ -65,30 +65,6 @@ class UISystemClockClass : public UIClockClass
 };
 
 
-int Key_Modifiers(void)
-{
-	int modifiers = 0;
-
-	if (GetKeyState(VK_SHIFT) & 0x8000) {
-		modifiers |= Rml::Input::KM_SHIFT;
-	}
-	if (GetKeyState(VK_CONTROL) & 0x8000) {
-		modifiers |= Rml::Input::KM_CTRL;
-	}
-	if (GetKeyState(VK_MENU) & 0x8000) {
-		modifiers |= Rml::Input::KM_ALT;
-	}
-	if (GetKeyState(VK_CAPITAL) & 1) {
-		modifiers |= Rml::Input::KM_CAPSLOCK;
-	}
-	if (GetKeyState(VK_NUMLOCK) & 1) {
-		modifiers |= Rml::Input::KM_NUMLOCK;
-	}
-
-	return(modifiers);
-}
-
-
 // The mouse, wheel, key and text messages a shown screen takes whole.
 bool Input_Message(UINT message)
 {
@@ -373,6 +349,32 @@ void UIShellClass::Reset_Text(void)
 
 // The pointer is the documents' while a screen is shown, a document holds a press, or it
 // is over an element that takes it.
+// The modifier state RmlUi wants with every pointer and key message, asked of the host so
+// that the shell reads no key of its own.
+int UIShellClass::Key_Modifiers(void) const
+{
+	int modifiers = 0;
+
+	if (Host.Key_Down(VK_SHIFT)) {
+		modifiers |= Rml::Input::KM_SHIFT;
+	}
+	if (Host.Key_Down(VK_CONTROL)) {
+		modifiers |= Rml::Input::KM_CTRL;
+	}
+	if (Host.Key_Down(VK_MENU)) {
+		modifiers |= Rml::Input::KM_ALT;
+	}
+	if (Host.Key_Toggled(VK_CAPITAL)) {
+		modifiers |= Rml::Input::KM_CAPSLOCK;
+	}
+	if (Host.Key_Toggled(VK_NUMLOCK)) {
+		modifiers |= Rml::Input::KM_NUMLOCK;
+	}
+
+	return(modifiers);
+}
+
+
 bool UIShellClass::Pointer_Owned(void) const
 {
 	return(!Modals.empty() || Input.Has_UI_Mouse() || (MouseInside && Context->IsMouseInteracting()));

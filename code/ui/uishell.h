@@ -140,6 +140,7 @@ class UIShellClass
 		void Apply_Dimensions(void);
 		UIPointerPosition Pointer_Position(LPARAM clientlparam) const;
 		std::array<bool, UIInputStateClass::BUTTON_COUNT> Physical_Buttons(void) const;
+		int Key_Modifiers(void) const;
 		void Quarantine_Held_Input(void);
 		void Reconcile_Held_Input(void);
 		void Drop_Presses(void);
