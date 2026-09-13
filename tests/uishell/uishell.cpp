@@ -500,7 +500,7 @@ bool References_Are_Bare(std::string const & text)
 void Test_FreeType(void)
 {
 	FT_Library library = nullptr;
-	Check(FT_Init_FreeType(&library) == 0 && library != nullptr, "FreeType initialises a library");
+	Check(FT_Init_FreeType(&library) == 0 && library != nullptr, "FreeType initializes a library");
 
 	if (library != nullptr) {
 		FT_Int major = 0;
@@ -2343,8 +2343,8 @@ void Test_Shell(void)
 	UIShellClass & shell = fixture.Shell;
 	TestHostClass & host = fixture.Host;
 
-	Check(!shell.Use_Rml(), "a shell not yet initialised opens no document");
-	Check(shell.Init(), "the shell initialises over the injected interfaces");
+	Check(!shell.Use_Rml(), "a shell not yet initialized opens no document");
+	Check(shell.Init(), "the shell initializes over the injected interfaces");
 	Check(shell.Rml_Context() != nullptr, "the shell holds a context");
 	Check(shell.Use_Rml(), "documents are used while the host asks for no legacy dialogs");
 	host.LegacyRequested = true;
@@ -2788,7 +2788,7 @@ void Test_Shell(void)
 		Check(!shell.Use_Rml(), "a shut-down shell opens no document");
 	}
 
-	Check(shell.Init(), "the shell initialises again after a shutdown");
+	Check(shell.Init(), "the shell initializes again after a shutdown");
 	shell.Shutdown();
 
 	Check(fixture.Render->ReleasedGeometry == fixture.Render->Compiled, "the shell releases every geometry it compiled");

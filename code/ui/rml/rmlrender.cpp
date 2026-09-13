@@ -575,7 +575,7 @@ void UIRmlBgfxRenderClass::Destroy_ImGui_Textures(void)
 }
 
 
-// ImGui rebuilds its geometry every frame, so it travels in transient buffers; its colours
+// ImGui rebuilds its geometry every frame, so it travels in transient buffers; its colors
 // carry straight alpha, unlike the premultiplied documents.
 void UIRmlBgfxRenderClass::Render_ImGui(ImDrawData * data)
 {

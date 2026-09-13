@@ -81,7 +81,7 @@ struct UIKeyboardState
 
 // Edits a copy of the hotkey table. Assigning gives the captured key to the selected command
 // and takes it from whichever command held it; an empty capture leaves the command unbound.
-// Accepting saves the copy; cancelling drops it; a confirmed reset reloads it from the game.
+// Accepting saves the copy; canceling drops it; a confirmed reset reloads it from the game.
 class UIKeyboardPresenterClass : public UIPresenterClass
 {
 	public:
