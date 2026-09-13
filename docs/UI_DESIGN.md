@@ -873,7 +873,8 @@ beyond an ASCII test document.
    with a `data-if` for the in-game half). The behavior pilot: volumes,
    eligible themes, selection, availability, shuffle and repeat, immediate
    previews, play and stop, both templates, frontend and in-game service
-   paths. Runtime evidence still owed.
+   paths. Runtime evidence so far is under
+   [What has been exercised](#what-has-been-exercised).
 6. **Progress and wait** (S, leaf, two changes, landed: milestone effects
    moved out of drawing, then `UIWaitBoxClass` over `wait.rml` for the saving
    and loading boxes and the progress dialog, with the Win32 boxes kept
@@ -973,6 +974,36 @@ Capture paths that read software surfaces omit the overlay; capture after
 composition or state the limitation. No performance target is asserted
 before measurement; idle CPU, update time, submission cost, and texture and
 geometry memory are recorded on an agreed baseline before defaults change.
+
+### What has been exercised
+
+A pass by hand on 13 September 2026 drove the migrated screens from the
+frontend on both platforms, and from a skirmish on `Win32`. The two platforms
+behaved alike. The debug log names each document as it opens and closes, so
+the table below is what the logs of that pass contain.
+
+| Screen | `Win32` | `x64` |
+| --- | --- | --- |
+| Version | yes | not yet |
+| Message box, raised over the keyboard screen by the hotkey reset | yes | yes |
+| Sound, frontend and in game | yes | not yet |
+| Game controls | frontend and in game | frontend |
+| Display, with the mode confirmation, its countdown and its timeout | yes | yes |
+| Keyboard, with key capture, reset, and every category | yes | yes |
+| Options menu | yes | yes |
+| Progress and wait | never shown | never shown |
+
+The pass found eight defects. The two with the widest effect were in the
+shell rather than in any one screen: the pointer shape, and the absence of a
+tick while the graphical menu is up, which left every document and overlay
+frozen there. A screen that looks right is therefore not evidence that the
+shell is.
+
+Still owed: `wait.rml`, whose notice is raised only for as long as a
+synchronous save runs and which no run has yet shown; the progress document,
+which belongs to the multiplayer loading, map generation, and file transfer
+paths; the multiplayer cases where `Main_Loop` runs under a message box; and,
+for each screen, what the paragraph above requires of its own change.
 
 ## Documentation
 
