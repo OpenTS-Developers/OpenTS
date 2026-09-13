@@ -144,25 +144,44 @@ target_include_directories(OpenTS PRIVATE
 # The generated build stamp has to exist before anything compiles.
 add_dependencies(OpenTS OpenTSBuildStamp)
 
-# Only the renderer's own translation unit sees bgfx, so its headers and the shaders it
-# embeds are put on that file rather than on the whole target.
+# Only the renderer's own translation unit and the UI overlay renderer see bgfx, so its
+# headers and the shaders they embed are put on those files rather than on the whole target.
 set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
-set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" PROPERTIES
+set(OPENTS_BGFX_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp"
+)
+set_source_files_properties(${OPENTS_BGFX_SOURCES} PROPERTIES
     INCLUDE_DIRECTORIES
-        "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include;${BGFX_ROOT}/examples/common/imgui"
+        "${BGFX_ROOT}/include;${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bx/include"
     COMPILE_DEFINITIONS
         "BX_CONFIG_DEBUG=$<IF:$<CONFIG:Debug>,1,$<BOOL:${BX_CONFIG_DEBUG}>>"
     COMPILE_OPTIONS "/Zc:preprocessor"
 )
 
+# The frame quad's shaders come from the imgui example and the overlay's from the debug
+# draw example. The imgui example directory also carries an imgui.h that would shadow Dear
+# ImGui's, so only the file that needs those shaders sees it.
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
+    INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/imgui"
+)
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmlrender.cpp" APPEND PROPERTY
+    INCLUDE_DIRECTORIES "${BGFX_ROOT}/examples/common/debugdraw"
+)
+
 # bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
-# compatibility header into the renderer translation unit as well as bx/bgfx so the
+# compatibility header into the renderer translation units as well as bx/bgfx so the
 # MSVC standard-library headers that follow still see the Win32 calling convention.
 if(OPENTS_EXPERIMENTAL_CLANG_CL AND CMAKE_SIZEOF_VOID_P EQUAL 4)
-    set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" APPEND PROPERTY
+    set_property(SOURCE ${OPENTS_BGFX_SOURCES} APPEND PROPERTY
         COMPILE_OPTIONS "/FI${CMAKE_SOURCE_DIR}/thirdparty/bx-clang-compat.h"
     )
 endif()
+
+# The image decoder is a header bimg carries; only the texture loader compiles it.
+set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmltexture.cpp" APPEND PROPERTY
+    INCLUDE_DIRECTORIES "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/stb"
+)
 
 message(STATUS "${PROJECT_NAME}: Adding compilier definitions...")
 target_compile_definitions(OpenTS PRIVATE
@@ -196,6 +215,8 @@ target_link_libraries(OpenTS PRIVATE
     bimg
     miniaudio
     lzo
+    RmlUi::Core
+    imgui
     comctl32
     dbghelp
     iphlpapi
@@ -269,6 +290,20 @@ source_group("Interface Files" FILES
 # General source files
 source_group("Source Files" REGULAR_EXPRESSION ".*\\.(c|cpp)$")
 source_group("Header Files" REGULAR_EXPRESSION ".*\\.(h|hpp)$")
+
+#
+# ---------------------------------------------------------
+# UI files
+# ---------------------------------------------------------
+#
+# The UI documents, styles and font are read beside the executable, like Language.dll. Their
+# own target copies them, so an edited document reaches the output without a relink.
+add_custom_target(OpenTSUIFiles ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_SOURCE_DIR}/ui" "$<TARGET_FILE_DIR:OpenTS>/ui"
+    COMMENT "Copying the UI files beside the executable"
+    VERBATIM
+)
+add_dependencies(OpenTS OpenTSUIFiles)
 
 #
 # ---------------------------------------------------------

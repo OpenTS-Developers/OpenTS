@@ -1,0 +1,18 @@
+<rml>
+<head>
+	<title>Display options</title>
+	<link type="text/rcss" href="display.rcss"/>
+</head>
+<body data-model="display">
+	<div id="panel">
+		<p class="heading" id="title">Display Options:</p>
+		<p class="heading" id="modes-label">Resolution Modes</p>
+		<div id="modes">
+			<div class="mode" data-for="mode : modes" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{mode.label}}</div>
+		</div>
+		<label class="switch" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch movies to fit resolution</label>
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	</div>
+</body>
+</rml>

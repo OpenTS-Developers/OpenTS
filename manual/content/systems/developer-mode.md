@@ -29,7 +29,7 @@ A Debug build started with a windowed-mode option, a resolution, or a map name h
 
 ## What a Debug build allocates
 
-A Debug build creates two extra objects during startup. The first is the scenario editor, which is built whether or not anything ever enters editor state. The second is the set of frame benchmarks, and only where the processor test passes; where it does not, the benchmark page draws nothing and the rest of the diagnostic surface is unaffected.
+A Debug build creates two extra objects during startup. The first is the scenario editor, which is built whether or not anything ever enters editor state. The second is the set of frame benchmarks, which count in processor time-stamp ticks of sixteen cycles each. A Release build creates neither.
 
 ## The debug log
 
@@ -44,6 +44,16 @@ Assertions are live wherever `NDEBUG` is undefined, which is the Debug configura
 :::caution[Each assertion report overwrites the front of the last one]
 `ASSERT.TXT` is opened for writing at its start rather than appended, and the new record is written from the beginning of the file. A shorter report therefore leaves the tail of the previous one in place behind it, and the file never accumulates a history.
 :::
+
+## The UI test document
+
+A Debug build with the debug keys armed shows an RmlUi test document over the game and its menus on [F9](/commands/fixed-debug-ui-test-document/) and hides it again on the next press. The document is a panel in the top left corner of the frame with a button that closes it. It is drawn by the renderer over the presented frame, so it appears over the main menu as well as in play, and it follows the frame's position and scale in the window. A click on the panel never reaches the game; a click beside it does, and a visible menu dialog takes the clicks over its own area first. The document, its style sheet, and the font come from the `ui` directory beside the executable, and each load, show, and hide writes a line to the debug log with the renderer's texture and buffer counts, so a leak across repeated toggles shows there.
+
+## The benchmark overlay
+
+A Debug build with the debug keys armed shows a frame benchmark window on [F6](/commands/fixed-debug-benchmark-overlay/) and hides it on the next press or through the window's own close button. The window is drawn by Dear ImGui over the presented frame, like the test document, and follows the frame's position and scale. It reports the logic frames and the presents of the last second, the frame number, the present interval, and the frame benchmarks the Events page shows, as a share of the frame and an average in microseconds when the processor speed could be measured, in ticks otherwise. The five counters the engine never starts are marked as such.
+
+While the monochrome display is off, the window resets the benchmarks once a second and shows the second just gone; while that display is on, the Events page keeps its reset and the window shows the live running averages, so the two never take samples from each other. A button resets on demand. The window takes the mouse only while the pointer is over it and the keyboard only while one of its fields has focus; everything beside it reaches the game. A visible menu dialog takes the mouse over its own area before the shell sees it, so over a dialog the window answers the pointer only where it covers the frame beside the dialog. A switch opens the Dear ImGui demo window, which exercises the renderer.
 
 ## The monochrome pages
 
@@ -99,7 +109,7 @@ Neither is marked as surviving into multiplayer, so starting a network game clea
 
 ### The version dialog
 
-The version dialog reports the title, the game and internal version names, a build line labeled by configuration and naming the commit the build was made from, the branch it sat on and that commit's date, a processor line, and the version of the language resource library.
+The version dialog reports the title, the game and internal version names, a build line labeled by configuration and naming the commit the build was made from, the branch it sat on and that commit's date, a processor line, and the version of the language resource library. It opens from the classic main menu's [Ctrl+V](/commands/fixed-main-menu-version/) and from the menu entry, and is drawn as an RmlUi document from the `ui` directory unless [`LegacyDialogs`](/keys/legacydialogs/) is `yes`, which keeps the Win32 dialog; both show the same lines. OK, Enter and Escape close the document. When its document, style sheet or font fails to load, the game logs the file name and opens the Win32 dialog instead. [UI files](/systems/ui-files/) covers the directory.
 
 ## Toggles that reach nothing
 

@@ -1,0 +1,227 @@
+body
+{
+	width: 100%;
+	height: 100%;
+	font-family: "Open Sans";
+	font-size: 13dp;
+	color: #e6e6e6;
+}
+
+div, p
+{
+	display: block;
+}
+
+#panel
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 504dp;
+	height: 360dp;
+	margin-left: -252dp;
+	margin-top: -180dp;
+	background-color: #12181fdc;
+	border: 1dp #5a8f6a;
+}
+
+.heading
+{
+	position: absolute;
+	left: 33dp;
+	top: 18dp;
+	width: 438dp;
+	line-height: 15dp;
+	text-align: center;
+}
+
+.column
+{
+	position: absolute;
+	top: 40dp;
+}
+
+#left
+{
+	left: 33dp;
+	width: 207dp;
+}
+
+#right
+{
+	left: 252dp;
+	width: 219dp;
+}
+
+.label
+{
+	margin-top: 6dp;
+	line-height: 15dp;
+}
+
+.value
+{
+	line-height: 15dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+.list
+{
+	overflow-y: auto;
+	background-color: #0c1116;
+	border: 1dp #3d5a68;
+}
+
+#categories
+{
+	height: 72dp;
+}
+
+#commands
+{
+	height: 209dp;
+}
+
+.row
+{
+	padding: 2dp 6dp;
+	line-height: 17dp;
+	white-space: nowrap;
+}
+
+.row:hover
+{
+	background-color: #1f3140;
+}
+
+.row.selected
+{
+	background-color: #225061;
+}
+
+scrollbarvertical
+{
+	width: 12dp;
+}
+
+scrollbarvertical slidertrack
+{
+	background-color: #1a242c;
+}
+
+scrollbarvertical sliderbar
+{
+	background-color: #4d6f80;
+	min-height: 16dp;
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
+{
+	width: 0;
+	height: 0;
+}
+
+.box
+{
+	box-sizing: border-box;
+	height: 60dp;
+	padding: 4dp 6dp;
+	line-height: 15dp;
+	overflow: hidden;
+	background-color: #0c1116;
+	border: 1dp #3d5a68;
+}
+
+#hotkey
+{
+	height: 23dp;
+	white-space: nowrap;
+}
+
+#capture
+{
+	display: inline-block;
+	box-sizing: border-box;
+	width: 127dp;
+	height: 23dp;
+	padding: 0 6dp;
+	line-height: 21dp;
+	vertical-align: top;
+	white-space: nowrap;
+	overflow: hidden;
+	tab-index: auto;
+	background-color: #0c1116;
+	border: 1dp #6f95a8;
+}
+
+#capture:focus
+{
+	border-color: #c6dde8;
+	background-color: #182430;
+}
+
+#capture span
+{
+	focus: none;
+}
+
+button
+{
+	display: inline-block;
+	height: 23dp;
+	text-align: center;
+	line-height: 23dp;
+	vertical-align: top;
+	tab-index: auto;
+	background-color: #2f4a5a;
+	border: 1dp #6f95a8;
+}
+
+button:hover
+{
+	background-color: #3f6478;
+}
+
+button:active
+{
+	background-color: #24394a;
+}
+
+#assign
+{
+	margin-left: 5dp;
+	width: 75dp;
+}
+
+#buttons
+{
+	position: absolute;
+	left: 33dp;
+	top: 320dp;
+	width: 438dp;
+	height: 23dp;
+}
+
+#buttons button
+{
+	position: absolute;
+	top: 0;
+	width: 75dp;
+}
+
+#reset
+{
+	left: 0;
+	width: 81dp;
+}
+
+#ok
+{
+	left: 248dp;
+}
+
+#cancel
+{
+	left: 363dp;
+}

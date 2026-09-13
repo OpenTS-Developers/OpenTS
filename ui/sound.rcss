@@ -1,0 +1,235 @@
+body
+{
+	width: 100%;
+	height: 100%;
+	font-family: "Open Sans";
+	font-size: 13dp;
+	color: #e6e6e6;
+}
+
+div, label
+{
+	display: block;
+}
+
+#panel
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 441dp;
+	height: 349dp;
+	margin-left: -220dp;
+	margin-top: -174dp;
+	background-color: #12181fdc;
+	border: 1dp #5a8f6a;
+}
+
+#panel.lite
+{
+	height: 182dp;
+	margin-top: -91dp;
+}
+
+.row
+{
+	position: absolute;
+	left: 0;
+	width: 100%;
+	height: 24dp;
+}
+
+#row-score
+{
+	top: 19dp;
+}
+
+#row-sound
+{
+	top: 55dp;
+}
+
+#row-voice
+{
+	top: 91dp;
+}
+
+.label
+{
+	position: absolute;
+	left: 33dp;
+	width: 105dp;
+	line-height: 24dp;
+	text-align: right;
+}
+
+input.range
+{
+	position: absolute;
+	left: 145dp;
+	width: 262dp;
+	height: 24dp;
+}
+
+input.range slidertrack
+{
+	margin-top: 8dp;
+	height: 8dp;
+	background-color: #2a3a48;
+	border: 1dp #6f95a8;
+}
+
+input.range sliderbar
+{
+	width: 14dp;
+	height: 24dp;
+	background-color: #6f95a8;
+}
+
+input.range sliderbar:hover, input.range sliderbar:active
+{
+	background-color: #8fb5c8;
+}
+
+input.range sliderarrowdec, input.range sliderarrowinc
+{
+	width: 0;
+	height: 0;
+}
+
+input.range:disabled sliderbar
+{
+	background-color: #4a5a68;
+}
+
+button
+{
+	position: absolute;
+	display: block;
+	height: 23dp;
+	text-align: center;
+	line-height: 23dp;
+	tab-index: auto;
+	background-color: #2f4a5a;
+	border: 1dp #6f95a8;
+}
+
+button:hover
+{
+	background-color: #3f6478;
+}
+
+button:active
+{
+	background-color: #24394a;
+}
+
+#play
+{
+	left: 33dp;
+	top: 140dp;
+	width: 105dp;
+}
+
+#stop
+{
+	left: 33dp;
+	top: 184dp;
+	width: 105dp;
+}
+
+#tracks
+{
+	position: absolute;
+	left: 145dp;
+	top: 133dp;
+	width: 262dp;
+	height: 161dp;
+	overflow-y: auto;
+	background-color: #0c1116;
+	border: 1dp #3d5a68;
+}
+
+.track
+{
+	padding: 2dp 6dp;
+	line-height: 17dp;
+}
+
+.track:hover
+{
+	background-color: #1f3140;
+}
+
+.track.selected
+{
+	background-color: #225061;
+}
+
+scrollbarvertical
+{
+	width: 12dp;
+}
+
+scrollbarvertical slidertrack
+{
+	background-color: #1a242c;
+}
+
+scrollbarvertical sliderbar
+{
+	background-color: #4d6f80;
+	min-height: 16dp;
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
+{
+	width: 0;
+	height: 0;
+}
+
+.switch
+{
+	position: absolute;
+	left: 33dp;
+	width: 105dp;
+	line-height: 23dp;
+}
+
+#switch-shuffle
+{
+	top: 227dp;
+}
+
+#switch-repeat
+{
+	top: 271dp;
+}
+
+input.checkbox
+{
+	width: 14dp;
+	height: 14dp;
+	margin-right: 8dp;
+	vertical-align: -2dp;
+	background-color: #2a3a48;
+	border: 1dp #6f95a8;
+}
+
+input.checkbox:checked
+{
+	background-color: #8fb5c8;
+}
+
+#ok
+{
+	left: 315dp;
+	top: 307dp;
+	width: 93dp;
+}
+
+#panel.lite #ok
+{
+	left: 172dp;
+	top: 140dp;
+}

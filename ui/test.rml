@@ -1,0 +1,13 @@
+<rml>
+<head>
+	<title>UI shell test</title>
+	<link type="text/rcss" href="test.rcss"/>
+</head>
+<body>
+	<div id="panel">
+		<h1>OpenTS UI shell</h1>
+		<p>An RmlUi document drawn by bgfx over the game. Hover the button, then click it to close this panel. F9 brings it back.</p>
+		<button id="close">Close</button>
+	</div>
+</body>
+</rml>

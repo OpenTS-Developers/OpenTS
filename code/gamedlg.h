@@ -52,9 +52,8 @@ class GameControlsClass
 		}
 
 	private:
-		void Set(void);
+		void Run_Win32_Dialog(void);
 
-	private:
 		/*
 		 * This is the window handle of the game controls dialog while it is displayed. The
 		 * player's settings are read back off its controls, so the handle is only

@@ -89,6 +89,7 @@ class OptionsClass {
 		 */
 		int ScrollMethod;
 		int ScrollRate;					// Distance to scroll.
+		bool LegacyDialogs;				// Win32 dialogs for the screens that have an RmlUi view?
 		bool AutoScroll;				// Does map autoscroll?
 
 		/*

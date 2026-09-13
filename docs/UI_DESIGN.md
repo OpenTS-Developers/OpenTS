@@ -1,9 +1,14 @@
 # UI system design
 
-Status: proposal. Nothing here is implemented, built, or measured. Source
-inspection and upstream documentation inform it. This page owns the proposed
-UI architecture and migration; [Building OpenTS](BUILDING.md) owns build
-support and [Project direction](DIRECTION.md) the wider architecture.
+Status: under implementation. Steps 1 through 7 of the
+[migration plan](#migration-plan) have landed: the dependencies, the RmlUi
+shell, the Dear ImGui overlays, the version dialog, the message boxes, the
+sound options, the progress and wait boxes, and the options family (game
+controls, display, mode confirmation, keyboard, options menu). Steps 8
+onward are not yet implemented, built, or measured; source inspection and
+upstream documentation inform them. This page owns the UI architecture and
+migration; [Building OpenTS](BUILDING.md) owns build support and
+[Project direction](DIRECTION.md) the wider architecture.
 
 ## Where the UI stands today
 
@@ -109,6 +114,11 @@ Goals:
   legacy screen available behind a switch until OwnerDraw is retired.
 - Make screens interchangeable at the screen level: a model or presenter that
   knows nothing about the toolkit, and one view per toolkit.
+- Keep the subsystem portable by preparation, the approach
+  [Project direction](DIRECTION.md) sets for the engine. Screen behavior,
+  the screen contract, input ownership, coordinate mapping, and the render
+  checks carry no operating system type, so a later port replaces the host
+  and the platform edge rather than the screens.
 - Leave GadgetClass and MSEngine in place; migrate them later through the same
   screen contract when a screen is worth it. The sidebar follows only after
   the Win32 dialogs are gone, as a player-selectable alternative to the
@@ -130,6 +140,10 @@ Limits, chosen to keep the work bounded:
 - No arbitrary layering of native and GPU UI. The coexistence rule under
   [Input and focus](#input-and-focus) is the whole policy.
 - No user UI scale setting yet. Documents follow the frame scale.
+- No platform abstraction layer. Windows is the only supported target, so the
+  shell's message hook and its host interface are written in Win32 terms. A
+  seam designed against one platform would be guesswork; the coupling is kept
+  where a port can find it instead, under [Portability](#portability).
 - The exception and assertion dialogs stay plain Win32. They must work when
   the renderer is the thing that failed.
 
@@ -137,10 +151,12 @@ Limits, chosen to keep the work bounded:
 
 Three parts, from the bottom up.
 
-The **UI shell** is one module that owns the RmlUi context, the ImGui
-context, the bgfx overlay pass, the input hook, and the modal runner. It is
-the only code that includes RmlUi or ImGui headers, the way `bgfxbackend.cpp`
-is the only code that includes bgfx.
+The **UI shell** is the `code/ui/` module: a `UIShellClass` object that owns
+the RmlUi context, the injected toolkit interfaces, the bgfx overlay pass,
+the input hook, and the modal runner, beside the ImGui context its developer
+module holds. Only its `code/ui/rml/` headers include RmlUi, ImGui, or bgfx,
+the way `bgfxbackend.cpp` is the only other code that includes bgfx; the
+`toolkitheaders` CTest check enforces that.
 
 A **screen** is a presenter plus a view. The presenter is a plain C++ object:
 it holds a view-model struct, answers queries, and executes actions. It never
@@ -160,7 +176,10 @@ Dependency rules:
   ImGui, or bgfx types.
 - Views use their toolkit directly. There is no shared widget API.
 - RmlUi data bindings and document nodes stay inside the RmlUi view.
-- Renderer handles stay inside `code/ui/uirender.cpp`.
+- Renderer handles stay inside `code/ui/rml/rmlrender.cpp`.
+- Headers outside `code/ui/rml/` include no toolkit header, and sources
+  outside `code/ui/` include no RmlUi or ImGui header; the `toolkitheaders`
+  CTest check enforces both.
 - The shell knows which presentation owns a region and an input scope. It
   does not know production rules, save semantics, or option behavior.
 - Existing callers keep their screen functions; composition sits behind
@@ -169,27 +188,41 @@ Dependency rules:
 A read-only screen needs a data builder and a close result. A presenter with
 actions is added only where a screen has real state transitions.
 
+### Shell object
+
+`UIShellClass` (`uishell.h`) holds the shell's state: the RmlUi context, the
+injected system, file and render interfaces, the re-entry guards, the work
+deferred while the context runs, the modal stack and the modeless list. The
+engine's one instance is `UIShell`, declared `extern` in `code/_ui.h` and
+defined in `code/_ui.cpp` over `UI_Engine_Host()`; callers write
+`UIShell.Tick()` or `UIShell.Use_Rml()`. What the shell needs from the program
+around it comes through `UIShellHostClass` (`uihost.h`), so a harness builds
+its own `UIShellClass` over a host and interfaces it controls and never links
+the engine. A modal screen's engine entry calls `UI_Run_Modal(view)` from
+`uienginehost.h`, which runs the screen on `UIShell` with `UI_Service_Game`
+as the service pass.
+
 ### Code layout
 
-New files live in `code/ui/`. The recursive glob in `code/CMakeLists.txt`
-picks them up, and the directory lets the RmlUi, ImGui, and bgfx include
-paths be scoped to the files that need them, as `bgfxbackend.cpp` is scoped
-today.
+Sources live under `code/ui/`, grouped by what they may include. The
+recursive glob in `code/CMakeLists.txt` picks them up; the per-file
+properties carry only the shader headers, the image decoder header, and the
+bgfx debug define, as `bgfxbackend.cpp`'s do today. The library headers reach
+the whole target through the linked targets, so the containment below is a
+rule the tree follows, not a build boundary.
 
-| File | Holds |
-| --- | --- |
-| `uishell.h`, `uishell.cpp` | init and shutdown, resize, input hook, tick, overlay render entry, modal runner, selector |
-| `uirender.cpp` | RmlUi render interface and the ImGui renderer on bgfx; the only UI file that includes bgfx |
-| `uisystem.cpp` | RmlUi system interface: time, logging to `DebugString`, cursor, clipboard, string translation |
-| `uifile.cpp` | RmlUi file interface over `CCFileClass` |
-| `uitexture.cpp` | image decoding, SHP and PCX conversion, surface-backed textures |
-| `uiscreen.h`, `uirmlview.h` | presenter, intent, and result contracts; the RmlUi view base |
-| `uidev.cpp` | ImGui context and developer overlays |
-| one file per screen | presenter, view-model binding, and the RmlUi view glue |
+| Directory | Holds | Status |
+| --- | --- | --- |
+| `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals | landed |
+| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay) | landed |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image decoding: PNG and TGA today, with SHP, PCX and engine surfaces described under [Assets](#assets-and-strings)), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
+| `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
+| `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
+| `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside | landed |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
-repository root. The build copies the tree beside the executable as it copies
-`Language.dll`, and the client package ships it.
+repository root. The build places the tree beside the executable, at
+`<build directory>/bin/<configuration>/ui/`, and the client package ships it.
 
 ## Rendering
 
@@ -205,6 +238,8 @@ UI_Render_Overlay();            // VIEW_UI, then VIEW_DEV
 Backend_End_Frame();            // bgfx::frame()
 ```
 
+`Backend_End_Frame` runs whether or not `Backend_Present` succeeded; it ends
+a frame only when one was begun, so a refused present leaves nothing pending.
 No other code begins or ends a bgfx frame. The view identifiers move from
 `bgfxbackend.cpp` into a small shared header so both translation units agree
 on the order. The overlay views use the frame destination rectangle from
@@ -226,31 +261,48 @@ methods:
 
 | Capability | Behavior |
 | --- | --- |
-| Compiled geometry | Static vertex and index buffers, since RmlUi 6 compiles geometry once and re-submits it; order preserved; released on request; never dependent on transient memory from a previous frame. |
-| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string, sized for the 32-bit process. |
+| Compiled geometry | Static vertex and index buffers, since RmlUi 6 compiles geometry once and re-submits it; order preserved; released on request; never dependent on transient memory from a previous frame. Indices are checked against the vertex count and sizes are checked before the copy; without 32-bit indices, a fragment over 65536 vertices is refused rather than truncated. |
+| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string. Each edge is at most the smaller of the device limit and 4096, and a source must hold exactly width times height times four bytes. |
 | Blending | `ONE, INV_SRC_ALPHA`; vertex colors follow the same premultiplied contract with no double premultiplication. |
-| Scissor | `bgfx::setScissor` in physical target coordinates, intersected with the viewport, empty regions handled. |
+| Scissor | `bgfx::setScissor` in physical target coordinates, rounded outward to whole pixels, intersected with the viewport, empty regions handled. |
+| Limits | 64 MiB per geometry or texture, 128 MiB of live geometry and 128 MiB of live textures, two draw calls short of the device's frame limit. The first refusal is latched with its reason; the shell clears the latch before preparing a document and reads it after, so a document the renderer could not draw whole opens its Win32 view instead. |
 | Projection | The overlay view's orthographic transform; no game-image filter state inherited. |
-| Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a full redraw requested; existing documents redraw without reload. |
+| Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a present without an upload requested; existing documents redraw without reload. |
 
-The program is the embedded imgui vertex and fragment shader that
-`bgfxbackend.cpp` already carries. Its attributes (position, texture
-coordinate, color) match RmlUi's vertex and ImGui's vertex, each with its own
-layout. Clip masks, transforms, layers, filters, and shaders are deferred;
-shipped documents stay within a declared profile (text, images, ordinary
-layout, borders, basic decorators), and a document check enforces it.
+The program is bgfx's embedded debug-draw texture shader pair
+(`vs_debugdraw_fill_texture`, `fs_debugdraw_fill_texture`). The imgui pair the
+frame quad uses multiplies by the view projection alone and drops the model
+matrix, which is where each compiled fragment's per-draw translation travels;
+the debug-draw pair multiplies by the model, view, and projection product. Its
+attributes (position, texture coordinate, color) match RmlUi's vertex and
+ImGui's vertex, each with its own layout. Clip masks, transforms, layers,
+filters, and shaders are deferred; shipped documents stay within a declared
+profile (text, images, ordinary layout, borders, basic decorators), and a
+document check enforces it. A document that reaches one of them anyway, as
+a mod's may, draws without it: the renderer latches the refusal with one
+logged reason and otherwise behaves as RmlUi's defaults do.
 
 ### Invalidation
 
-`Video_Present_If_Dirty` grows a second dirty flag for the overlay: a present
-happens when either flag is set, but the texture upload happens only when the
-frame is dirty. RmlUi has no "needs redraw" query, so the shell marks the
-overlay dirty on every tick that a document is visible or an ImGui window is
-open, and the present pacing caps the rate. Closing or hiding a document also
-marks the overlay dirty so its pixels disappear. A visible menu at 4K then
-costs a few draw calls per refresh, not a 16 MB upload. Invalidation raised
-during a present is kept for the next one rather than cleared with the
-current frame.
+The presenter keeps a game mark, an overlay mark and whether the renderer
+holds an uploaded frame (`VideoDirtyStateClass`, `code/videodirty.h`). A
+present happens when either mark is set; the frame is uploaded only when the
+game mark is set or the renderer has never received it. RmlUi has no "needs
+redraw" query, so the shell marks the overlay dirty on every tick that a
+document is visible or an ImGui window is open, and the present pacing caps
+the rate. Closing or hiding a document also marks the overlay dirty so its
+pixels disappear. A visible menu at 4K then costs a few draw calls per
+refresh, not a 16 MB upload.
+
+A present consumes both marks first, so invalidation raised while it runs is
+kept for the next one rather than cleared with the current frame. A present
+the renderer refuses restores what it consumed and is retried as at least an
+overlay present. A minimized window presents nothing and keeps its marks for
+the restore. A resize arriving inside a present is applied after it. A window
+resize or refresh-rate change marks only the overlay, since the renderer
+keeps the uploaded frame across a reset; `Video_Present_Count` and
+`Video_Frame_Upload_Count` on the developer overlay show a drag-resize
+presenting without uploading.
 
 Movies keep their own presenter path; the shell renders nothing while a movie
 plays.
@@ -305,19 +357,24 @@ migrates as one family.
 ### Hook and priority
 
 The shell gets a hook in `Windows_Procedure` after `Route_Mouse_Message` and
-before `Map.Message_Handler`:
+before `Map.Message_Handler`. The router rewrites a position into the frame's
+own pixels, so the hook receives the position as Windows delivered it:
 
 ```cpp
-if (UI_Handle_Window_Message(hwnd, message, wParam, lParam)) {
+if (UI_Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
     return(0);
 }
 ```
 
 Placing it after the routing keeps legacy child windows working under video
 scaling; placing it before the keyboard handler keeps consumed input out of
-the `KN_` queue. The hook covers mouse, wheel, key, and text messages only.
-Activation, size, paint, transport, and system messages continue on their
-paths. Forwarded or re-targeted messages are delivered to a toolkit once.
+the `KN_` queue. The hook covers mouse, wheel, key, and text messages, and
+watches capture and activation changes to end the presses it owns without
+consuming them. Size, paint, transport, and system messages continue on their
+paths. Forwarded or re-targeted messages are delivered to a toolkit once. A
+developer key is intercepted earlier still, in `Windows_Message_Handler`
+ahead of the dialog loop, so it works whichever window has focus; it only
+records a request that the next tick executes.
 
 Priority follows scope and capture, not toolkit:
 
@@ -336,16 +393,26 @@ The rules the hook applies, in order:
    This mirrors `IgnoreInput` around a legacy dialog and composes with the
    scenario's own input locks rather than replacing them.
 3. Otherwise mouse moves are always delivered and never consumed, so the
-   game keeps tracking the cursor. A button or wheel message is consumed when
-   RmlUi reports that the mouse is interacting with an element (its mouse
-   functions return `false` for that). Keys and text are consumed when an
-   element stopped their propagation, or whenever the focused element is a
-   text field. Documents that float over the game mark their body
-   `pointer-events: none` so empty space passes through.
-4. A button press that a toolkit consumed sets mouse capture on `MainWindow`
-   until the release, and the owner of a press owns its release: crossing a
-   region or opening a modal in between completes or cancels that gesture
-   without activating the newly focused screen.
+   game keeps tracking the cursor. A button press is owned by whoever takes
+   it: ImGui, RmlUi when it reports the mouse interacting with an element
+   (its mouse functions return `false` for that), or the game. A key press
+   is owned the same way, by RmlUi when an element stopped its propagation
+   or the focused element is a text field; a wheel message is consumed when
+   RmlUi consumed it, and text when RmlUi consumed it. Documents that float
+   over the game mark their body `pointer-events: none` so empty space
+   passes through.
+4. The owner of a press owns its release, wherever the release lands. A
+   press a toolkit owns sets mouse capture on `MainWindow` until the last
+   such button is up. A screen closing, another window taking the capture,
+   or the window losing focus suppresses what is held: the toolkits are told
+   their presses ended and the releases are swallowed rather than handed to
+   the game as the end of a press it never saw. What is physically held as a
+   modal screen opens, or as focus returns while something is shown, is
+   suppressed the same way. A suppressed key or button is forgotten once the
+   system reports it up, so a release that went to another window cannot
+   keep the shell active. The five mouse buttons and both wheel axes are
+   routed; the modifier keys are read from the keyboard state and never
+   owned.
 
 Gameplay code that polls `Down` still sees held keys; eligibility is applied
 at the consumers, `GScreenClass::Input` and the gadget and scroll paths, not
@@ -353,15 +420,27 @@ by falsifying physical state.
 
 ### Focus, cursor, clipboard, text
 
-The shell clears the keyboard queue when a modal document opens or closes,
-after marking the screen closing so the pump inside `Keyboard->Clear()`
-cannot re-enter it. Focus loss cancels capture, drags, and composition;
-focus return does not replay held keys as presses. Cursor requests from RmlUi
-(`pointer`, `text`) map to `Win_Cursor_Set` and the previous request is
-restored on close. The clipboard interface uses the Win32 clipboard.
+The shell clears the keyboard queue when a modal document opens and again
+after it is released, so the pump inside `Keyboard->Clear()` meets either
+the shown screen or the ownership table, never a screen mid-teardown. Focus
+loss cancels capture, drags, and composition; focus return does not replay
+held keys as presses. While the pointer is the documents', because a screen
+is shown, a document holds a press, or the pointer is over an element that
+takes it, the shell answers `WM_SETCURSOR`: a document's request (`text`,
+`pointer`, `move`, `not-allowed`) shows the matching system pointer, and
+otherwise the window's arrow, which is what the Win32 dialogs show. The
+game's own shape stays captured under a screen and is blank in the
+frontend, so the answer is never left to it. The game's pointer returns
+when the pointer is no longer the documents'. The clipboard interface
+exchanges Unicode text with the Win32 clipboard and refuses malformed text
+rather than repairing it.
 
-Text input arrives as `WM_CHAR` with surrogate pairs joined. Consuming a
-physical key never suppresses the text message it generates. Editable
+Text arrives as `WM_CHAR`. The main window is a narrow window, so under the
+UTF-8 code page each message carries one byte and the shell decodes the
+sequence, replacing a malformed one with U+FFFD; under another code page it
+joins a lead byte with its trail byte. A Unicode window would deliver UTF-16
+units, which the shell pairs, and a lone surrogate becomes U+FFFD. Consuming
+a physical key never suppresses the text message it generates. Editable
 screens ship only after Tab and Shift+Tab, Enter and Escape, repeat,
 modifiers, paste, dead keys, and IME composition have been exercised for the
 supported languages; the read-only pilot proves none of that.
@@ -381,13 +460,29 @@ class UIPresenterClass {                          // uiscreen.h: no toolkit type
         std::optional<UIResult> Result;
 };
 
-class UIRmlViewClass {                            // uirmlview.h: owns the document
+class UIViewClass {                               // uiview.h: no toolkit types
+    public:
+        virtual bool Prepare(UIShellClass & shell) = 0;   // load; false falls back
+        virtual void Show(bool modal) = 0;
+        virtual void Hide(void) = 0;
+        virtual void Release(void) = 0;
+        virtual void Sync(void) = 0;                      // presenter changes into the view
+        virtual UIPresenterClass & Presenter(void) const = 0;
+};
+
+class UIRmlViewClass : public UIViewClass {       // rml/rmlview.h: owns the document
     public:
         UIRmlViewClass(UIPresenterClass & presenter, char const * document);
         virtual void Bind(Rml::DataModelConstructor & model) = 0;   // view-model fields and events
-        virtual void Sync(void) = 0;                                // dirty what Execute changed
+        virtual void Sync(void) override = 0;                       // dirty what Execute changed
 };
 ```
+
+A screen's factory, `UI_<Name>_View(presenter)`, returns a
+`std::unique_ptr<UIViewClass>`, so the engine entry that builds the presenter
+and runs the view includes no RmlUi header. The shell runs any `UIViewClass`;
+the RmlUi view is the only implementation today, and the Win32 dialogs that
+drive a presenter do so from their dialog procedures rather than as views.
 
 The view-model is a struct of plain values and vectors that RmlUi's data
 binding renders; the document uses `data-model`, `data-value`, `data-for`,
@@ -433,9 +528,11 @@ int WWMessageBox::Process(...) {
 Selection is latched at screen entry or at scenario load, never mid-gesture.
 Preparation (documents, bindings, resources, host scope) completes before a
 view becomes interactive; a preparation failure reports the resource and
-opens the legacy view where one exists. After activation, a view failure
-recreates presentation against the surviving presenter state and never
-replays accepted intents.
+opens the legacy view where one exists. A screen asked to open while a Win32
+dialog is visible opens its legacy view too, so the coexistence rule holds
+until that dialog migrates. After activation, a view failure recreates
+presentation against the surviving presenter state and never replays
+accepted intents.
 
 ## Scheduling
 
@@ -449,15 +546,21 @@ A migrated dialog driver keeps its shape. `Run_Modal` is the RmlUi twin of
 the `Dialog_Message_Handler` loop:
 
 ```cpp
-UIResult UI_Run_Modal(UIScreen & screen);
+UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service);
 // each pass:
-//   Windows_Message_Handler();
-//   Main_Loop() in a network session, else Call_Back();   -- same test as today
+//   service();   -- the engine passes UI_Service_Game: Windows_Message_Handler(),
+//                   then Main_Loop() in a network session, else Call_Back();
+//                   a test passes whatever it wants pumped
+//   refresh the presenter, execute the screen's queued intents, sync the model;
 //   context->Update();
-//   execute the screen's queued intents;
 //   mark the overlay dirty, Video_Present_If_Dirty();
-// until the screen has a result or Main_Loop reports the game ended.
+// until the screen has a result or the service reports the game ended.
 ```
+
+The service pass is injected rather than written into the runner, so the
+shell includes no game-loop header and the harness drives a modal without
+the engine; `UI_Run_Modal(view)` in `uienginehost.h` is the engine's entry
+and binds `UI_Service_Game`.
 
 The result carries the game-ended flag the way `Dialog_Message_Handler`
 returns `true`, so callers keep their logic. Wrappers keep their service
@@ -465,19 +568,29 @@ paths: the main menu keeps title-screen maintenance, an in-game screen keeps
 the guarded multiplayer pump, lobby and loading flows keep their own work.
 
 Event handlers never act directly. A toolkit event queues an intent, and the
-runner executes the queue after `Context::Update` returns. RmlUi gives no
-guarantee about re-entering `Update` from its own event dispatch, so a nested
-modal (options opening a message box) starts from the queue, one level up,
-where `Run_Modal` nests cleanly; and the legacy code already works this way,
-`WM_COMMAND` writing `rc` for the driver to act on after the pump. A modal
-document is shown with RmlUi's modal flag, which keeps other documents from
-taking focus; blocking the game's input is the shell's job through the hook.
+runner executes the queue before the `Context::Update` that pushes the model
+into the documents, so the push carries what the player just changed. A push
+that lagged behind the queue would write the old level onto a slider, whose
+own change event would then queue that level after the player's. RmlUi gives
+no guarantee about re-entering `Update` from its own event dispatch, so a
+nested modal (options opening a message box) starts from the queue, one level
+up, where `Run_Modal` nests cleanly; and the legacy code already works this
+way, `WM_COMMAND` writing `rc` for the driver to act on after the pump. A
+modal document is shown with RmlUi's modal flag, which keeps other documents
+from taking focus; blocking the game's input is the shell's job through the
+hook.
 Paint handlers and the pump never drain intents, advance game logic, or
 update the context; a nested update or present request is recorded and
 served at the next safe point.
 
 Non-modal documents are updated by a `UI_Tick` call in `Main_Loop` next to
-`Map.Input` and rendered by every present.
+`Map.Input`, and by one at the end of each pass of the legacy dialog driver
+so that a document stays alive under a menu, and are rendered by every
+present. A notice a caller shows while it works goes through
+`Show_Modeless`, `Refresh` and `Hide_Modeless`, which tick and present at
+once because such a caller pumps nothing. That present ignores the interval
+between frames: the caller gets no second chance, so a notice raised soon
+after the last frame would otherwise never be drawn at all.
 
 Teardown order: mark the screen closing and invalidate its token, then drop
 focus and capture and discard its intents, then detach listeners and data
@@ -495,19 +608,23 @@ pointer.
 The RmlUi file interface is a thin wrapper over `CCFileClass`. Documents,
 styles, images, and fonts use flat basenames, and the interface resolves
 every relative reference by basename, so the same files load from a loose
-`ui/` directory or from a mix. The run directory's `ui/` is added to the
-`CDFileClass` search paths; the existing order then applies: user path,
+`ui/` directory or from a mix. The `ui/` directory beside the executable is
+added to the `CDFileClass` search paths as an absolute path, whichever data
+directory the deployment names; the existing order then applies: user path,
 current directory, search paths, mix files. A mod overrides a document by
-placing a file earlier in that order or by shipping it in a mix. The `ui/`
-directory on disk is a packaging convenience, not part of the lookup key.
+placing a file earlier in that order; a copy in a mix is used only when no
+loose file exists. The `ui/` directory on disk is a packaging convenience,
+not part of the lookup key.
 The adapter validates sizes, reads, and seeks; RmlUi uses `size_t` where the
 engine uses `int`, and a clamped seek must not look like success. A missing
 required document, style, or font fails preparation with the name reported.
 
 ### Images
 
-Images resolve by extension. PNG and TGA decode through `bimg_decode`, which
-is already vendored and needs only linking. PCX goes through `Read_PCX_File`
+Images resolve by extension. PNG and TGA decode through `stb_image.h`, which
+bimg vendors and the texture loader compiles with only those two formats
+enabled; `bimg_decode` itself stays out because it would bring the AVIF codecs
+and three more decoders along. PCX goes through `Read_PCX_File`
 with the palette named in the source string. SHP frames use a
 `name.shp#frame` form with an optional palette, decoded to RGBA with index
 zero transparent. Surfaces the engine draws at runtime (the map preview, the
@@ -519,9 +636,11 @@ pointers.
 
 ### Fonts
 
-Fonts use RmlUi's FreeType engine with an OFL sans-serif shipped in `ui/`.
-The legacy dialogs already draw with a system TrueType face, so this changes
-nothing about their look. RmlUi uses one font engine per process, installed
+Fonts use RmlUi's FreeType engine with the variable Open Sans (OFL 1.1) from
+Google Fonts shipped in `ui/` as `OpenSans.ttf` beside its license text; the
+engine registers each of its named weights from the one file. The legacy
+dialogs already draw with a system TrueType face, so this changes nothing
+about their look. RmlUi uses one font engine per process, installed
 with `SetFontEngineInterface` before `Rml::Initialise`, and the built-in
 engine is not reachable from a custom one. In-game text that must match the
 bitmap fonts, needed only by the post-migration sidebar view, has two routes:
@@ -531,49 +650,61 @@ commit every document to bitmap faces. That choice waits for that view.
 
 ### Strings
 
-Engine strings become UTF-8 through the process active code page declared
-in `sun.manifest`, a separate change that is a prerequisite for every RmlUi
-screen that shows text. With it, every narrow Win32 API, including the
-`LoadString` behind `Fetch_String`, yields UTF-8 bytes, and the shell copies
-a string out of the `Fetch_String` cache and hands it to RmlUi unchanged.
-Text typed into a field goes into engine buffers unchanged. What the
-transition does not remove: fixed-size engine buffers, packet fields, and
+Engine strings are UTF-8 through the process active code page declared in
+`sun.manifest`; that transition has landed. Every narrow Win32 API, including
+the `LoadString` behind `Fetch_String`, yields UTF-8 bytes, and the shell
+copies a string out of the `Fetch_String` cache and hands it to RmlUi
+unchanged. Text typed into a field goes into engine buffers unchanged. What
+the transition does not remove: fixed-size engine buffers, packet fields, and
 file names are sized in bytes, so a field's character limit is a byte limit
 and truncation never splits a sequence; and `WWFontClass` indexes glyphs by
 byte, which bounds in-game text to the range the transition supports.
 
 Documents reference strings by name: `[[TXT_OK]]`. RmlUi passes every text
 node through `SystemInterface::TranslateString`, where the shell maps the
-name to its identifier. The names are `#define`s in `language.h`, so a CMake
-script generates the name table into the build's generated directory; no
-hand-maintained list. Dynamic text, including player and map names and error
-strings, is inserted as text, never as markup.
+name to its identifier and copies the string out of the `Fetch_String` cache;
+an unknown name stays as typed and is logged. The names are `#define`s in
+`language.h`, so `cmake/StringTable.cmake` generates the name table into the
+build's generated directory at configure time and per build, beside the build
+stamp; no hand-maintained list. RmlUi re-parses a translated text node as
+markup only when it contains `<`; no engine string does, and one that did
+would need its `<` encoded. Dynamic text, including player and map names and
+error strings, is inserted as text, never as markup.
 
 ## Configuration
 
-One transitional key in `SUN.INI`, named by the change that introduces it,
-returns every migrated screen to its legacy view while that view exists.
-Defaults are decided per screen family in code, so a family switches to RmlUi
-by default when its evidence is in without a key per family. The key is
-deleted with OwnerDraw. There is no build option: RmlUi and ImGui are always
+One transitional key in `SUN.INI`, `LegacyDialogs` under `[Options]`, returns
+every migrated screen to its legacy view while that view exists; it defaults
+to `no`. Defaults are decided per screen family in code, so a family switches
+to RmlUi by default when its evidence is in without a key per family. The key
+is deleted with OwnerDraw. There is no build option: RmlUi and ImGui are always
 compiled and linked, so one configuration matrix carries the evidence.
-`Options` reads and writes the key where it handles `[Video]` today, and the
-key gets a manual page. A sidebar view key follows the sidebar view.
+`Options` reads and writes the key with its other `[Options]` settings, a
+caller latches `UI_Use_Rml()` at screen entry because `Options` loads after the
+shell, and the key has a manual page. A sidebar view key follows the sidebar
+view.
 
 ## Dear ImGui
 
 ImGui is vendored as a submodule, compiled into Debug and Release, and
-rendered by a small bgfx adapter in `uirender.cpp` that reuses the same
-program and view setup as the RmlUi renderer, on `VIEW_DEV`. Its platform
-adapter feeds it input through the shell hook and follows the pinned
-version's backend contract for texture creation and destruction. Overlays are
-armed by the developer-mode flags the manual documents; tool visibility and
-frame rate never touch deterministic state. The first uses are single-window
-diagnostics such as frame benchmarks, network statistics, and object and
-house inspectors. A player-facing feature may choose an ImGui view through
-the same screen contract; it then meets the same coexistence, input, and
-evidence rules as an RmlUi view. Docking, extra native viewports, and editor
-architecture are separate work.
+rendered by a small bgfx adapter in `rml/rmlrender.cpp` that reuses the RmlUi
+renderer's program and view setup, on `VIEW_DEV`, with its own vertex layout
+and straight-alpha blending, since ImGui's colors are not premultiplied. Its
+geometry travels in transient buffers every frame, and its textures follow the
+pinned version's contract: the renderer answers each create, update, and
+destroy request and acknowledges it. The glyph atlas is created empty and
+filled by updates, because bgfx makes a texture created with pixels immutable
+and the atlas grows as glyphs are first drawn. Its platform adapter in
+`dev/uidev.cpp` feeds it input through the shell hook ahead of the documents; the
+default font is scaled by the frame's dp ratio. The context is created on the
+first toggle, so a build whose developer keys never arm allocates nothing.
+Overlays are armed by the developer-mode flags the manual documents; tool
+visibility and frame rate never touch deterministic state. The first overlay
+is the frame benchmark window on F6; network statistics and object and house
+inspectors follow the same shape. A player-facing feature may choose an ImGui
+view through the same screen contract; it then meets the same coexistence,
+input, and evidence rules as an RmlUi view. Docking, extra native viewports,
+and editor architecture are separate work.
 
 ## Sidebar
 
@@ -626,11 +757,14 @@ Invariants the split preserves:
 Progress tracking, clamping, milestone text and sound, and the readiness
 queries that `scenario.cpp` consumes move out of the draw path into shared
 behavior, so a repaint cannot repeat a milestone sound and a hidden
-presentation cannot lose one. The screen exposes phase, progress, status, and
-the operations the loader supports; no cancellation is added to a loader that
-cannot cancel. Loading stays on its thread with explicit cooperative service
-points that drain nothing unrelated while scenario objects are being
-replaced, and the first paint happens before long work begins.
+presentation cannot lose one. The milestone half landed with step 6:
+`ProgressScreenClass::Advance_Milestone` notes a threshold crossing and plays
+its sound when the progress moves, and the paint draws the text still owed.
+The screen exposes phase, progress, status, and the operations the loader
+supports; no cancellation is added to a loader that cannot cancel. Loading
+stays on its thread with explicit cooperative service points that drain
+nothing unrelated while scenario objects are being replaced, and the first
+paint happens before long work begins.
 
 MSEngine screens (campaign selection, briefings, score screens) are features
 with animation, audio, and navigation. RmlUi can replace their layout and
@@ -651,7 +785,34 @@ can follow the screen contract when someone wants them.
 | Configuration | Existing keys and defaults unchanged; new keys get owning documentation. |
 | Localization | The UTF-8 transition owns the encoding change; the UI adds no conversion of its own. |
 | Mods and resources | Legacy asset semantics unchanged; document paths, binding names, event names, and the styling profile are experimental until versioned with the first supported override package. |
-| Build | 32-bit MSVC with the static CRT for every new dependency. |
+| Build | Win32 and x64 MSVC with the static CRT for every new dependency; CI builds and tests both platforms. |
+| Portability | No new operating system type outside the coupling listed under [Portability](#portability). |
+
+### Portability
+
+Windows is the supported target and the only platform the shell is written
+for. Portability is a direction rather than a feature here: preparatory work
+does not make another platform supported, and no platform layer is invented
+before there is a second platform to validate it against.
+
+These carry no operating system type today, and a port keeps them as they
+are: the presenters and their service interfaces, the screen contract, the
+view interface, the input ownership table and its text decoding, the pointer
+mapping, the render checks, and the bgfx renderer.
+
+The rest is written in Win32 terms. A port pays for it here:
+
+| Coupling | What a port costs |
+| --- | --- |
+| The shell's window message hook and its pumped-message intercept | The structural item. Messages become a neutral event at the platform edge, which rewrites one signature and the body behind it |
+| The window handle on `UIShellHostClass` | Three uses: two identity comparisons and the clipboard's owner. An opaque handle would serve, and `uihost.h` would stop pulling `win.h` into everything that includes it |
+| Key mapping in `code/ui/rml/rmlkeys.cpp` | Not only code. `KEYBOARD.INI` stores Windows virtual key numbers, so the mapping is also a data-format boundary |
+| The clipboard in `rmlsystem.cpp` and the conversions in `uiunicode.cpp` | Replaceable in place; `tests/uishell` already covers the behavior |
+| The developer overlay's input entry points | They follow whatever event type the hook adopts |
+| `UIWaitBoxClass`'s window member | The only screen header that reaches Win32, and the one leak in the containment rule |
+
+New UI code adds no operating system type outside that list. A presenter, a
+service, or a screen header that needs one has the wrong shape.
 
 ## Dependencies
 
@@ -661,14 +822,14 @@ built static with the static CRT that `thirdparty/CMakeLists.txt` forces:
 | Project | License | Notes |
 | --- | --- | --- |
 | RmlUi 6.x | MIT | `RMLUI_FONT_ENGINE=freetype`, no samples, no backends, static |
-| FreeType 2.13 | FTL | bzip2, PNG, HarfBuzz, and Brotli disabled; aliased as `Freetype::Freetype` for RmlUi's find |
+| FreeType 2.14 | FTL | zlib, bzip2, PNG, HarfBuzz, and Brotli disabled, so the gzip module uses the bundled zlib copy; aliased as `Freetype::Freetype` for RmlUi's dependency check |
 | Dear ImGui | MIT | core sources compiled into a small target; no bundled backends |
 
 `THIRD_PARTY_NOTICES.md`, `thirdparty/licenses/`, and the packaging license
-copy grow by the same three entries. CI already checks out submodules
-recursively. The build stamp step gains the string-name generator, and
-`bimg_decode` loses `EXCLUDE_FROM_ALL` and is linked. Dependency upgrades are
-separate changes.
+copy grow by the three projects and the components they bundle: robin_hood
+and itlib in RmlUi, zlib in FreeType, and the stb headers in Dear ImGui. CI
+already checks out submodules recursively. The build stamp step gains the
+string-name generator. Dependency upgrades are separate changes.
 
 ## Migration plan
 
@@ -680,35 +841,65 @@ takes one. Sizes are rough: S under a day of focused work, M a few days, L a
 week or more. The order is bottom-up because of the coexistence rule: a
 screen migrates only after every screen it can open has migrated.
 
-Prerequisite: the UTF-8 transition lands before step 3. Steps 1 and 2 need no
-text beyond an ASCII test document.
+The UTF-8 transition that step 3 needs has landed. Steps 1 and 2 need no text
+beyond an ASCII test document.
 
-1. **Dependencies** (S). Submodules, CMake, notices, `BUILDING.md`. No engine
+1. **Dependencies** (S, landed). Submodules, CMake, notices, `BUILDING.md`,
+   and a `tests/uishell` smoke test that links the three libraries. No engine
    code uses them. Evidence: Debug and Release build.
-2. **Shell** (M). Everything in the code-layout table except screens, the
-   backend split, the input hook, resize handling, the `ui/` copy step, the
-   file interface with mix resolution, and a Debug-only test document toggled
-   by a developer key. Evidence: the test document renders over the main menu
-   and in game at several resolutions and scale modes; clicks on it are
-   consumed; clicks beside it reach the game; legacy dialogs still open and
-   close; repeated open and close leaks nothing.
-3. **Version dialog** (S, leaf). The integration pilot: fonts, clipping,
+2. **Shell** (M, landed in two changes). Everything in the code-layout table
+   except screens, the backend split, the input hook, resize handling, the
+   `ui/` copy step, the file interface with mix resolution, and a Debug-only
+   test document toggled by F9; then the Dear ImGui context, its renderer, and
+   the frame benchmark window toggled by F6. Evidence: the test document
+   renders over the main menu and in game at several resolutions and scale
+   modes; clicks on it, beside any legacy dialog, are consumed; clicks beside
+   it reach the game; legacy dialogs still open and close; repeated open and
+   close leaks nothing.
+3. **Version dialog** (S, leaf, landed in two changes: the string table, the
+   `LegacyDialogs` key and the coexistence checks, then the screen contract,
+   the modal runner and the dialog). The integration pilot: fonts, clipping,
    mapping, dismissal by mouse and keyboard, focus return, UI-only redraw,
    resize, preparation failure. The main menu keeps hiding around it.
-4. **Modal runner and message boxes** (M, leaf). `WWMessageBox::Process` and
-   `OwnerDraw::Custom_Message_Box` behind the kill switch, preserving button
-   order, default button, Escape, the no-button case, return mappings, and
-   session-end interruption. Evidence includes the multiplayer cases where
-   `Main_Loop` runs under the box.
-5. **Sound** (M, two changes). The behavior pilot: volumes, eligible themes,
-   selection, availability, shuffle and repeat, immediate previews, play and
-   stop, both templates, frontend and in-game service paths.
-6. **Progress and wait** (S, leaf). `IDD_PROGRESS_WAIT`, the saving and
-   loading boxes in `savemgr.cpp`, the `<surface>` element, milestone effects
-   moved out of drawing.
-7. **Options family** (L, two changes each). Main options, display with its
-   timed rollback, game controls (three variants), keyboard with the hotkey
-   capture control, the display-mode confirmation, abort and surrender.
+4. **Message boxes** (M, leaf, landed). The modal runner landed with step 3.
+   `WWMessageBox::Process` behind the kill switch, preserving button order,
+   default button, Escape, the no-button case, return mappings, and
+   session-end interruption; a box raised over a visible Win32 dialog stays a
+   Win32 box until that dialog migrates. `OwnerDraw::Custom_Message_Box` is
+   the modeless progress box of the save and load flows and moves to step 6.
+   Runtime evidence still owed: the multiplayer cases where `Main_Loop` runs
+   under the box.
+5. **Sound** (M, two changes, landed: the behavior sits behind
+   `UISoundPresenterClass` and an engine service, the Win32 dialog drives it
+   with the same calls in the same order, and `sound.rml` is the RmlUi view
+   with a `data-if` for the in-game half). The behavior pilot: volumes,
+   eligible themes, selection, availability, shuffle and repeat, immediate
+   previews, play and stop, both templates, frontend and in-game service
+   paths. Runtime evidence so far is under
+   [What has been exercised](#what-has-been-exercised).
+6. **Progress and wait** (S, leaf, two changes, landed: milestone effects
+   moved out of drawing, then `UIWaitBoxClass` over `wait.rml` for the saving
+   and loading boxes and the progress dialog, with the Win32 boxes kept
+   behind it). `IDD_PROGRESS_WAIT`, the saving and loading boxes in
+   `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the modeless box they
+   show. A progress bar needs no engine surface, so the `<surface>` element
+   waits for the map preview in step 10. Runtime evidence still owed.
+7. **Options family** (L, landed for the frontend and the in-game settings:
+   the game controls sit behind `UIGameControlsPresenterClass` and an engine
+   service with `gamectrl.rml` covering the three Win32 templates through
+   `data-if`; `UIDisplayPresenterClass` hands the caller the mode to try and
+   `UIConfirmModePresenterClass` reads a `UIClockClass` and cancels itself at
+   the timeout, which replaced the posted `WM_DESTROY`, over `display.rml`
+   and `confirm.rml`, the latter counting the seconds down;
+   `UIKeyboardPresenterClass` edits a copy of the hotkey table that OK saves
+   and Cancel drops, where the Win32 procedure edited the game's table and
+   reloaded the file on Cancel, and `keyboard.rml` captures a key through a
+   focusable element that `rml/rmlkeys.cpp` turns back into the `KEYBOARD.INI`
+   number; the options menu is `mainopt.rml`, placed where the main menu's
+   buttons were; surrender runs through the message box screen, while abort
+   keeps its own `IDD_MISSION_ABORT` template and its three answers). The
+   Win32 templates remain the fallback view of every one. The
+   in-game options menu opens load, save and delete, so it follows step 9.
    Evidence: settings round-trip through `SUN.INI` unchanged.
 8. **Main menu family** (M). `IDD_MAIN_MENU`, campaign choice, game type,
    multiplayer game selection. The `NewMenuClass` drivers keep their loops.
@@ -725,18 +916,26 @@ text beyond an ASCII test document.
 14. **Sidebar** (M, then L). The model and view split with the gadget view;
     later the RmlUi view over the whole column and its selection key.
 
-ImGui overlays (S each) can follow step 2: frame benchmarks first, then what
-a developer needs next. GadgetClass screens, MSEngine screens, and the
-credits are unscheduled.
+ImGui overlays (S each) follow step 2: the frame benchmarks landed with it,
+then what a developer needs next. GadgetClass screens, MSEngine screens, and
+the credits are unscheduled.
 
 ## Validation and evidence
 
-A `tests/uishell` CTest target links RmlUi core, FreeType, `uiscreen.h`, the
-string table, and the screen presenters with a recording render interface
-and a null system interface. It runs without game assets:
+Three CTest targets run without game assets and build into
+`<build directory>/test-bin/`.
 
-- Load every shipped document and fail on a parse error or a property
-  outside the declared profile.
+`tests/uishell` brings FreeType and Dear ImGui up and down under the engine's
+link settings, drives RmlUi core through a recording render interface and a
+counting system interface, links the string table and the screen presenters,
+and builds `UIShellClass` itself over a host the test controls:
+
+- Load every shipped document from the source tree with the shipped font,
+  show, update, and render it, and fail on a parse error, an RmlUi warning
+  or error, a call to a render method the shell leaves at its default, a
+  fragment the renderer would refuse, a scissor outside the context, or a
+  resource named by anything but a bare file name; after shutdown, every
+  compiled geometry and texture has been released.
 - Bind a presenter, drive it with `Context::ProcessMouseButtonDown` on a
   known element, and assert the queued intent and result; drive the same
   actions through the legacy adapter and assert the same ordered service
@@ -745,8 +944,34 @@ and a null system interface. It runs without game assets:
   and catalog removal.
 - Scan shipped documents for `[[TXT_*]]` names and check each exists in the
   generated table.
-- Round-trip the coordinate mapping at integer and fractional scales, with
-  letterboxing, resize, outside input, and captured release.
+- Map client positions into the overlay at integer and fractional scales,
+  with letterboxing, exclusive edges, outside input, and the offset a captured
+  pointer keeps outside.
+- Run the shell: initialize over injected interfaces and again after a
+  shutdown; drive a modal with a stub service to each result; consume a press
+  pumped while a screen opens; defer a resize arriving inside a render;
+  suppress what is held as a screen opens, what a lost capture cancels, and
+  what focus return finds held; restore the outer modal's ownership after a
+  nested one; take the side buttons and the horizontal wheel under a modal;
+  decode two UTF-8 bytes into one character; round the clipboard through
+  UTF-16; show and put back the pointer shape; list, unlist and release a
+  modeless notice.
+- Drive whole screens through the hook, one input mechanism each: a button on
+  the options menu, a mode row on the display options, a switch and a
+  backwards slider on the game controls, and a captured key on the keyboard
+  screen. Each is asserted the whole way, from the window message through the
+  intent and the service call to the model that comes back to the document.
+  The mode confirmation runs the same way over a clock the test moves,
+  because its result comes from a refresh rather than from an intent.
+
+`tests/uilogic` compiles the toolkit-free state with no UI library: the input
+ownership table and its cancellations, the UTF-8 decoder, the renderer's
+geometry, size and scissor checks, and the presenter's marks through consume,
+restore and reset.
+
+`toolkitheaders` runs `cmake/CheckToolkitHeaders.cmake` over `code/` and
+fails on a toolkit or renderer header included outside `code/ui/rml/`, or an
+RmlUi or ImGui header included by a source outside `code/ui/`.
 
 Runtime evidence stays per pull request, as `CONTRIBUTING.md` requires: the
 screen exercised in single player, skirmish, and a two-instance LAN game
@@ -759,10 +984,41 @@ composition or state the limitation. No performance target is asserted
 before measurement; idle CPU, update time, submission cost, and texture and
 geometry memory are recorded on an agreed baseline before defaults change.
 
+### What has been exercised
+
+A pass by hand on 13 September 2026 drove the migrated screens from the
+frontend on both platforms, and from a skirmish on `Win32`. The two platforms
+behaved alike. The debug log names each document as it opens and closes, so
+the table below is what the logs of that pass contain.
+
+| Screen | `Win32` | `x64` |
+| --- | --- | --- |
+| Version | yes | not yet |
+| Message box, raised over the keyboard screen by the hotkey reset | yes | yes |
+| Sound, frontend and in game | yes | not yet |
+| Game controls | frontend and in game | frontend |
+| Display, with the mode confirmation, its countdown and its timeout | yes | yes |
+| Keyboard, with key capture, reset, and every category | yes | yes |
+| Options menu | yes | yes |
+| Wait notice, over eleven consecutive quicksaves | yes | not yet |
+| Progress, with its bar | never shown | never shown |
+
+The defects the pass found were mostly in the shell rather than in any one
+screen: the pointer shape, the absence of a tick while the graphical menu is
+up, which left every document and overlay frozen there, and a notice the
+present interval could swallow before it was ever drawn. A screen that looks
+right is therefore not evidence that the shell is.
+
+Still owed: the progress document, which belongs to the multiplayer loading,
+map generation, and file transfer paths; the multiplayer cases where
+`Main_Loop` runs under a message box; and, for each screen, what the paragraph
+above requires of its own change.
+
 ## Documentation
 
 - This page owns the architecture and is updated as steps land.
-- `docs/BUILDING.md` lists the new submodules.
+- `docs/BUILDING.md` lists the new submodules, the harnesses, and where the
+  `ui/` directory lands beside the executable.
 - `THIRD_PARTY_NOTICES.md` and the packaging license copy gain the three
   projects.
 - The manual gains a systems page for the UI files (where they live, the
@@ -772,8 +1028,6 @@ geometry memory are recorded on an agreed baseline before defaults change.
 
 ## Open decisions
 
-- The shipped font.
-- The kill-switch key name, fixed by the change that introduces it.
 - The in-game text route for the sidebar view: TrueType conversions of the
   game fonts or a bitmap font engine for every document.
 - The document and binding versioning rules for mods, fixed with the first

@@ -2197,6 +2197,32 @@ fixed_controls:
   _provenance:
     source: code/wdtsel.cpp
     guard: null
+- id: fixed:debug-ui-test-document
+  route_id: fixed-debug-ui-test-document
+  kind: fixed
+  title: Toggle the UI test document
+  description: Shows or hides the RmlUi test document drawn over the game and its menus.
+  audience: debug
+  availability: *id002
+  bindings:
+  - F9
+  context: Any game window focused, with Debug_Flag enabled
+  _provenance:
+    source: code/ui/uishell.cpp
+    guard: _DEBUG
+- id: fixed:debug-benchmark-overlay
+  route_id: fixed-debug-benchmark-overlay
+  kind: fixed
+  title: Toggle the benchmark overlay
+  description: Shows or hides the Dear ImGui frame benchmark window drawn over the game and its menus.
+  audience: debug
+  availability: *id002
+  bindings:
+  - F6
+  context: Any game window focused, with Debug_Flag enabled
+  _provenance:
+    source: code/ui/uishell.cpp
+    guard: _DEBUG
 launch_options:
 - id: launch:help
   route_id: help

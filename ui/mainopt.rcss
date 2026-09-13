@@ -1,0 +1,82 @@
+body
+{
+	width: 100%;
+	height: 100%;
+	font-family: "Open Sans";
+	font-size: 13dp;
+	color: #e6e6e6;
+}
+
+div
+{
+	display: block;
+}
+
+#panel
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 300dp;
+	height: 222dp;
+	margin-left: -150dp;
+	margin-top: -111dp;
+	background-color: #12181fdc;
+	border: 1dp #5a8f6a;
+}
+
+button
+{
+	position: absolute;
+	left: 55dp;
+	width: 189dp;
+	height: 27dp;
+	display: block;
+	text-align: center;
+	line-height: 27dp;
+	tab-index: auto;
+	background-color: #2f4a5a;
+	border: 1dp #6f95a8;
+}
+
+button:hover
+{
+	background-color: #3f6478;
+}
+
+button:active
+{
+	background-color: #24394a;
+}
+
+button.disabled
+{
+	color: #7a8790;
+	background-color: #24303a;
+	border-color: #4a5a68;
+}
+
+#settings
+{
+	top: 15dp;
+}
+
+#display
+{
+	top: 48dp;
+}
+
+#sound
+{
+	top: 81dp;
+}
+
+#keyboard
+{
+	top: 114dp;
+}
+
+#mainmenu
+{
+	top: 180dp;
+}

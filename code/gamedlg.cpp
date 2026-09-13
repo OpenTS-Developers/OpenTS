@@ -37,10 +37,11 @@
 
 #include "_map.h"
 #include "_tooltip.h"
+#include "_ui.h"
+#include "audio/audioengine.h"
 #include "cctooltip.h"
 #include "data.h"
 #include "dbgprint.h"
-#include "audio/audioengine.h"
 #include "globals.h"
 #include "init.h"
 #include "language/language.h"
@@ -48,6 +49,9 @@
 #include "queue.h"
 #include "session.h"
 #include "techno.h"
+#include "ui/screens/gamectrl/uigamectrl.h"
+#include "ui/uiscreen.h"
+#include "ui/uishell.h"
 
 #include "special.hh"
 
@@ -87,6 +91,72 @@ int GameDifficultyNames[OptionsClass::MAX_DIFFICULTY_SETTING] = {
 INT_PTR CALLBACK Game_Controls_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 void Game_Controls_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
+// The presenter the dialog procedure is a view of, for the life of one Dialog call.
+static UIGameControlsPresenterClass * _Presenter = NULL;
+
+
+static void Queue_And_Drain(UIGameControlsPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+// Hands the controls' current values to the presenter as the accept path always read them:
+// a speed or scroll slider shows its value reversed.
+static void Read_Controls(HWND window, UIGameControlsPresenterClass & presenter)
+{
+	HWND handle = GetDlgItem(window, IDC_GAME_SPEED_SLIDER);
+	if (handle) {
+		Queue_And_Drain(presenter, "speed", (OptionsClass::MAX_SPEED_SETTING-1) - Slider_GetPos(handle));
+	}
+
+	handle = GetDlgItem(window, IDC_SCROLL_SPEED_SLIDER);
+	if (handle) {
+		Queue_And_Drain(presenter, "scroll", (OptionsClass::MAX_SCROLL_SETTING-1) - Slider_GetPos(handle));
+	}
+
+	handle = GetDlgItem(window, IDC_DETAIL_LEVEL_SLIDER);
+	if (handle) {
+		Queue_And_Drain(presenter, "detail", Slider_GetPos(handle));
+	}
+
+	handle = GetDlgItem(window, IDC_SIDEBAR_TEXT);
+	if (handle) {
+		Queue_And_Drain(presenter, "cameo", Button_GetCheck(handle) == TRUE);
+	}
+
+	handle = GetDlgItem(window, IDC_TARGET_LINES);
+	if (handle) {
+		Queue_And_Drain(presenter, "lines", Button_GetCheck(handle) == TRUE);
+	}
+
+	handle = GetDlgItem(window, IDC_TOOLTIPS);
+	if (handle) {
+		Queue_And_Drain(presenter, "tooltips", Button_GetCheck(handle) == TRUE);
+	}
+
+	handle = GetDlgItem(window, IDC_SCROLL_COASTING);
+	if (handle) {
+		Queue_And_Drain(presenter, "coasting", Button_GetCheck(handle) == TRUE);
+	}
+
+	handle = GetDlgItem(window, IDC_EDGE_SCROLL);
+	if (handle) {
+		Queue_And_Drain(presenter, "edge", Button_GetCheck(handle) == TRUE);
+	}
+
+	if (GameActive == false) {
+		handle = GetDlgItem(window, IDC_DIFFICULTY_SLIDER);
+		if (handle) {
+			Queue_And_Drain(presenter, "difficulty", Slider_GetPos(handle));
+		}
+	}
+}
+
 /***********************************************************************************************
  * OptionsClass::Process -- Handles all the options graphic interface.                         *
  *                                                                                             *
@@ -99,11 +169,14 @@ void Game_Controls_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, L
  * HISTORY:                                                                                    *
  *   12/31/1994 MML : Created.                                                                 *
  *=============================================================================================*/
-void GameControlsClass::Dialog(void)
+void GameControlsClass::Run_Win32_Dialog(void)
 {
 	int res = -1;
 
-	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
+	UIGameControlsState state;
+	UI_Game_Controls_State(state);
+	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
+	_Presenter = &presenter;
 
 	if (GameActive == true) {
 		if (Session.Type == GAME_INTERNET) {
@@ -129,95 +202,30 @@ void GameControlsClass::Dialog(void)
 				Title_Screen_Restore();
 			}
 		}
-		if (res == 1) {
-			Set();
-			Options.Save_Settings();
-		}
 
 		OwnerDraw::End_Dialog(_Dialog);
 	}
 
-	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
+	_Presenter = NULL;
+
+	// The Sound and Keyboard buttons accept the settings and name the screen that follows.
+	if (presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND) {
+		SpecialDialog = SDLG_SOUND;
+	} else if (presenter.Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
+		SpecialDialog = SDLG_KEYBOARD;
+	}
 }
 
 
-/// <summary>
-/// Sets the game options from the game controls dialog.
-/// This routine is called when the player accepts the dialog. Each control is asked for
-/// its current value and the answer is handed to the option it governs, along with any
-/// notification the rest of the game needs -- the map is told to rebuild its cell drawers
-/// when the detail level changes, and a game speed change during a network game is issued
-/// as an event so that every player stays in step.
-/// </summary>
-void GameControlsClass::Set(void)
+void GameControlsClass::Dialog(void)
 {
-	HWND handle;
+	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 
-	handle = GetDlgItem(_Dialog, IDC_GAME_SPEED_SLIDER);
-	if (handle) {
-		int gamespeed = (OptionsClass::MAX_SPEED_SETTING-1) - Slider_GetPos(handle);
-		if (Options.GameSpeed != gamespeed) {
-			if (GameActive == true && Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, gamespeed));
-			} else {
-				Options.GameSpeed = gamespeed;
-			}
-		}
+	if (!UIShell.Use_Rml() || !UI_Game_Controls_Dialog()) {
+		Run_Win32_Dialog();
 	}
 
-	handle = GetDlgItem(_Dialog, IDC_SCROLL_SPEED_SLIDER);
-	if (handle) {
-		Options.ScrollRate = (OptionsClass::MAX_SCROLL_SETTING-1) - Slider_GetPos(handle);
-	}
-
-	handle = GetDlgItem(_Dialog, IDC_DETAIL_LEVEL_SLIDER);
-	if (handle) {
-		int detailevel = Slider_GetPos(handle);
-		if (Options.DetailLevel != detailevel) {
-			Options.DetailLevel = detailevel;
-			Map.Reinit_Cell_Drawers();
-		}
-	}
-
-	handle = GetDlgItem(_Dialog, IDC_SIDEBAR_TEXT);
-	if (handle) {
-		bool cameotext = Button_GetCheck(handle) == TRUE;
-		if (Options.SidebarCameoText != cameotext) {
-			Options.SidebarCameoText = cameotext;
-			Map.Toggle_Cameo_Text(cameotext);
-		}
-	}
-
-	handle = GetDlgItem(_Dialog, IDC_TARGET_LINES);
-	if (handle) {
-		Options.ActionLines = Button_GetCheck(handle) == TRUE;
-		TechnoClass::Set_Action_Lines(Options.ActionLines);
-	}
-
-	handle = GetDlgItem(_Dialog, IDC_TOOLTIPS);
-	if (handle) {
-		Options.ToolTips = Button_GetCheck(handle) == TRUE;
-		if (ToolTips != NULL && GameActive == true) {
-			ToolTips->Activate(Options.ToolTips);
-		}
-	}
-
-	handle = GetDlgItem(_Dialog, IDC_SCROLL_COASTING);
-	if (handle) {
-		Options.ScrollMethod = Button_GetCheck(handle) == TRUE ? 0 : 1;
-	}
-
-	handle = GetDlgItem(_Dialog, IDC_EDGE_SCROLL);
-	if (handle) {
-		Options.AutoScroll = Button_GetCheck(handle) == TRUE;
-	}
-
-	if (GameActive == false) {
-		handle = GetDlgItem(_Dialog, IDC_DIFFICULTY_SLIDER);
-		if (handle) {
-			Options.Difficulty = Slider_GetPos(handle);
-		}
-	}
+	DebugString("GameControls: GameSpeed = %d, ScrollRate = %d, Detail = %d\n", Options.GameSpeed, Options.ScrollRate, Options.DetailLevel);
 }
 
 
@@ -237,65 +245,71 @@ INT_PTR CALLBACK Game_Controls_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 
 	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 	if (rc == 0) {
+		UIGameControlsPresenterClass * presenter = _Presenter;
+		if (presenter == NULL) {
+			return(FALSE);
+		}
+		UIGameControlsState const & state = presenter->State;
+
 		switch (message) {
 			case WM_INITDIALOG:
 				handle = GetDlgItem(window, IDC_GAME_SPEED_SLIDER);
 				if (handle) {
 					SendMessage(handle, OD_TRACKNUMBERS, 0, 0);
 					Slider_SetRange(handle, 0, (OptionsClass::MAX_SPEED_SETTING-1));
-					Slider_SetPos(handle, (OptionsClass::MAX_SPEED_SETTING-1) - Options.GameSpeed);
+					Slider_SetPos(handle, (OptionsClass::MAX_SPEED_SETTING-1) - state.Speed);
 				}
 
 				handle = GetDlgItem(window, IDC_SCROLL_SPEED_SLIDER);
 				if (handle) {
 					SendMessage(handle, OD_TRACKNUMBERS, 0, 0);
 					Slider_SetRange(handle, 0, (OptionsClass::MAX_SCROLL_SETTING-1));
-					Slider_SetPos(handle, (OptionsClass::MAX_SCROLL_SETTING-1) - Options.ScrollRate);
+					Slider_SetPos(handle, (OptionsClass::MAX_SCROLL_SETTING-1) - state.Scroll);
 				}
 
 				handle = GetDlgItem(window, IDC_DETAIL_LEVEL_SLIDER);
 				if (handle) {
 					SendMessage(handle, OD_TRACKNUMBERS, 0, 0);
 					Slider_SetRange(handle, 0, (OptionsClass::MAX_DETAIL_SETTING-1));
-					Slider_SetPos(handle, Options.DetailLevel);
+					Slider_SetPos(handle, state.Detail);
 				}
 
 				handle = GetDlgItem(window, IDC_SIDEBAR_TEXT);
 				if (handle) {
-					Button_SetCheck(handle, Options.SidebarCameoText != false);
+					Button_SetCheck(handle, state.CameoText);
 				}
 
 				handle = GetDlgItem(window, IDC_TARGET_LINES);
 				if (handle) {
-					Button_SetCheck(handle, Options.ActionLines != false);
+					Button_SetCheck(handle, state.ActionLines);
 				}
 
 				handle = GetDlgItem(window, IDC_TOOLTIPS);
 				if (handle) {
-					Button_SetCheck(handle, Options.ToolTips != false);
+					Button_SetCheck(handle, state.ToolTips);
 				}
 
 				handle = GetDlgItem(window, IDC_SCROLL_COASTING);
 				if (handle) {
-					Button_SetCheck(handle, Options.ScrollMethod == 0);
+					Button_SetCheck(handle, state.Coasting);
 				}
 
 				handle = GetDlgItem(window, IDC_EDGE_SCROLL);
 				if (handle) {
-					Button_SetCheck(handle, Options.AutoScroll != false);
+					Button_SetCheck(handle, state.EdgeScroll);
 				}
 
 				if (GameActive == true) {
 					handle = GetDlgItem(window, IDC_OPT_SOUND_BTN);
 					if (handle) {
-						EnableWindow(handle, AudioEngine.Is_Available());
+						EnableWindow(handle, state.SoundEnabled);
 					}
 				} else {
 					handle = GetDlgItem(window, IDC_DIFFICULTY_SLIDER);
 					if (handle) {
 						SendMessage(handle, OD_TRACKNUMBERS, 0, 0);
 						Slider_SetRange(handle, 0, (OptionsClass::MAX_DIFFICULTY_SETTING-1));
-						Slider_SetPos(handle, Options.Difficulty);
+						Slider_SetPos(handle, state.Difficulty);
 					}
 				}
 				break;
@@ -347,29 +361,38 @@ INT_PTR CALLBACK Game_Controls_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 void Game_Controls_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	int* retval = (int *)GetWindowLongPtr(window, DWLP_USER);
+	UIGameControlsPresenterClass * presenter = _Presenter;
+	if (presenter == NULL) {
+		return;
+	}
 
 	switch ((INT)message) {
 		case IDC_OPT_KEYBOARD_BTN:
 			if (lparam == 0 && GameActive == true) {
-				SpecialDialog = SDLG_KEYBOARD;
+				Read_Controls(window, *presenter);
+				Queue_And_Drain(*presenter, "keyboard");
 				*retval = IDOK;
 			}
 			break;
 
 		case IDC_OPT_SOUND_BTN:
 			if (lparam == 0 && GameActive == true) {
-				SpecialDialog = SDLG_SOUND;
+				Read_Controls(window, *presenter);
+				Queue_And_Drain(*presenter, "sound");
 				*retval = IDOK;
 			}
 			break;
 
 		case IDOK:
 			if (lparam == 0) {
+				Read_Controls(window, *presenter);
+				Queue_And_Drain(*presenter, "ok");
 				*retval = IDOK;
 			}
 			break;
 
 		case IDCANCEL:
+			Queue_And_Drain(*presenter, "cancel");
 			*retval = IDCANCEL;
 			break;
 	}

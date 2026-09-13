@@ -24,7 +24,7 @@ cmake -S . -B build -G "Visual Studio 17 2022" -A Win32
 cmake --build build --config Debug
 ```
 
-The Debug build writes `GameD.exe`, its symbols, map file, and the matching `Language.dll` to `build/bin/Debug/`. Use `--config Release` to write `Game.exe` to `build/bin/Release/` instead. Nothing is copied out of the build directory, so the two configurations never overwrite each other.
+The Debug build writes `GameD.exe`, its symbols, map file, and the matching `Language.dll` to `build/bin/Debug/`, and places the repository's `ui/` directory of UI documents, styles, and font beside them. Use `--config Release` to write `Game.exe` to `build/bin/Release/` instead. Nothing is copied out of the build directory, so the two configurations never overwrite each other.
 
 `-A x64` builds the 64-bit executable. A build directory holds one platform, so give the 64-bit build its own, such as `-B build/x64`. A saved game belongs to the platform that wrote it, and a network game needs every player on the same platform.
 

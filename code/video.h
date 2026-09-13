@@ -11,6 +11,8 @@
 
 #include "nativewindow.hh"
 
+#include <cstdint>
+
 
 // How the presented frame is filtered when the window is larger than it.
 enum VideoScaleMode {
@@ -46,9 +48,19 @@ void Video_On_Resize(int drawablewidth, int drawableheight);
 void Video_Set_Refresh_Rate(int refreshrate);
 
 void Video_Mark_Dirty(void);
+void Video_Mark_Overlay_Dirty(void);
 void Video_Present(void);
 void Video_Present_If_Dirty(void);
+void Video_Present_Now(void);
 
 VideoScaleInfo const & Video_Get_Scale_Info(void);
+
+unsigned int Video_Presents_Per_Second(void);
+unsigned int Video_Present_Interval(void);
+
+// Presents that reached the window, and frame uploads, since the presenter started. An
+// overlay-only present adds to the first and not the second.
+std::uint64_t Video_Present_Count(void);
+std::uint64_t Video_Frame_Upload_Count(void);
 
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight);

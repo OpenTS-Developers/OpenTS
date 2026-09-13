@@ -40,6 +40,7 @@ void Windows_Message_Handler(void);
 void Remove_Modeless_Dialog(HWND dialog);
 void Add_Modeless_Dialog(HWND dialog);
 HWND Get_Modeless_Dialog_From_Name(const char *name);
+bool Any_Modeless_Dialog_Visible(void);
 
 // Accelerator keys support routines.
 void Add_Accelerator(HWND window, HACCEL accelerator);

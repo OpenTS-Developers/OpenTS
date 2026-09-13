@@ -79,6 +79,7 @@
 #include "_theater.h"
 #include "_timer.h"
 #include "_tooltip.h"
+#include "_ui.h"
 #include "_uicontrol.h"
 #include "_voxel.h"
 #include "abstract.h"
@@ -87,6 +88,7 @@
 #include "airctype.h"
 #include "alphashp.h"
 #include "anim.h"
+#include "audio/audioengine.h"
 #include "autosave.h"
 #include "bench.h"
 #include "blight.h"
@@ -105,7 +107,6 @@
 #include "dbgprint.h"
 #include "deploymentconfig.h"
 #include "dialog.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "egos.h"
 #include "empulse.h"
@@ -133,8 +134,8 @@
 #include "loaddlg.h"
 #include "logic.h"
 #include "mainopt.h"
-#include "mixfile.h"
 #include "misc.h"
+#include "mixfile.h"
 #include "mono.h"
 #include "movie.h"
 #include "mplayer.h"
@@ -162,10 +163,10 @@
 #include "scheme.h"
 #include "script.h"
 #include "session.h"
-#include "spawner.h"
 #include "side.h"
 #include "skirmish.h"
 #include "smudtype.h"
+#include "spawner.h"
 #include "stimer.h"
 #include "tactical.h"
 #include "tag.h"
@@ -178,6 +179,8 @@
 #include "trigger.h"
 #include "tube.h"
 #include "tutorial.h"
+#include "ui/screens/version/uiversion.h"
+#include "ui/uishell.h"
 #include "uicontrol.h"
 #include "unit.h"
 #include "unittype.h"
@@ -199,6 +202,7 @@
 #include <conio.h>
 #include <ctime>
 #include <dos.h>
+#include <string>
 #include <unordered_set>
 #include <vector>
 
@@ -2977,7 +2981,6 @@ INT_PTR CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, L
 {
 	HWND handle;
 	int *res;
-	char buffer[256];
 
 	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
 
@@ -2988,45 +2991,16 @@ INT_PTR CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, L
 	res = (int *)GetWindowLongPtr(window, DWLP_USER);
 
 	switch (message) {
-		case WM_INITDIALOG:
+		case WM_INITDIALOG: {
 			handle = GetDlgItem(window, IDC_VERSION_INFO);
 
-			if (Addon_Installed(ADDON_FIRESTORM) == true) {
-				strcpy(buffer, Fetch_String(TXT_SHORT_TITLE));
-				strcat(buffer, ": ");
-				strcat(buffer, Get_Addon_Title(ADDON_FIRESTORM));
-				ListBox_AddString(handle, buffer);
-			} else {
-				ListBox_AddString(handle, Fetch_String(TXT_SHORT_TITLE));
+			std::vector<std::string> lines;
+			UI_Version_Lines(lines);
+			for (std::string const & line : lines) {
+				ListBox_AddString(handle, line.c_str());
 			}
-
-			sprintf(buffer, "Version %s", Version_Name());
-			ListBox_AddString(handle, buffer);
-
-			sprintf(buffer, "Internal Version %s", VerNum.Version_Name());
-			ListBox_AddString(handle, buffer);
-
-#ifdef _DEBUG
-			sprintf(buffer, "Debug Build: %s - %s", OPENTS_BUILD_DESCRIPTION, OPENTS_COMMIT_DATE);
-#else
-			sprintf(buffer, "Release Build: %s - %s", OPENTS_BUILD_DESCRIPTION, OPENTS_COMMIT_DATE);
-#endif
-			ListBox_AddString(handle, buffer);
-
-			// The braces keep the 'case' label from jumping over these initializations.
-			{
-				int cpu_type = 5;
-				char vendor[32];
-				vendor[0] = '\0';
-				Get_CPU_Type(cpu_type, vendor, sizeof(vendor) - 1);
-
-				sprintf(buffer, "CPU vendor: %s", vendor);
-			ListBox_AddString(handle, buffer);
-			}
-
-			Get_Language_Version(buffer);
-			ListBox_AddString(handle, buffer);
 			break;
+		}
 
 		case WM_COMMAND:
 			switch (LOWORD(wparam)) {
@@ -3051,6 +3025,10 @@ void Version_Dialog(void)
 {
 	HWND dialog;
 	int res = 0;
+
+	if (UIShell.Use_Rml() && UI_Version_Dialog()) {
+		return;
+	}
 
 	dialog = OwnerDraw::Begin_Dialog(IDD_VERSION, Version_Dialog_Proc);
 
@@ -3284,7 +3262,17 @@ void Draw_Version_Text(Surface * surface)
 }
 
 
-static char _cmd_buffer[128];
+// A team command builds its names from its number. Each instance keeps its own copies,
+// because one shared buffer cannot answer two of these accessors at once.
+static char const * Team_Command_String(std::string & cache, char const * format, int team)
+{
+	if (cache.empty()) {
+		char buffer[128];
+		snprintf(buffer, sizeof(buffer), format, team);
+		cache = buffer;
+	}
+	return(cache.c_str());
+}
 
 
 static void Select_Team_Members(int team)
@@ -3323,19 +3311,16 @@ class CreateTeamCommandClass : public CommandClass
 		CreateTeamCommandClass(int team) : Team(team) {}
 
 		virtual char const * Get_Unique_Name(void) const {
-			sprintf(_cmd_buffer, "TeamCreate_%d", Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(UniqueName, "TeamCreate_%d", Team));
 		}
 		virtual char const * Get_Display_Name(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_CREATE_TEAM), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(DisplayName, Fetch_String(TXT_CREATE_TEAM), Team));
 		}
 		virtual char const * Get_Category(void) const {
 			return(Fetch_String((TXT_TEAM)));
 		}
 		virtual char const * Get_Description(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_CREATE_TEAM_DESC), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(Description, Fetch_String(TXT_CREATE_TEAM_DESC), Team));
 		}
 
 		virtual void Execute(void) const {
@@ -3344,6 +3329,10 @@ class CreateTeamCommandClass : public CommandClass
 
 	private:
 		int Team;
+
+		mutable std::string UniqueName;
+		mutable std::string DisplayName;
+		mutable std::string Description;
 };
 
 
@@ -3353,19 +3342,16 @@ class SelectTeamCommandClass : public CommandClass
 		SelectTeamCommandClass(int team) : Team(team) {}
 
 		virtual char const * Get_Unique_Name(void) const {
-			sprintf(_cmd_buffer, "TeamSelect_%d", Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(UniqueName, "TeamSelect_%d", Team));
 		}
 		virtual char const * Get_Display_Name(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_SELECT_TEAM), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(DisplayName, Fetch_String(TXT_SELECT_TEAM), Team));
 		}
 		virtual char const * Get_Category(void) const {
 			return(Fetch_String((TXT_TEAM)));
 		}
 		virtual char const * Get_Description(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_SELECT_TEAM_DESC), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(Description, Fetch_String(TXT_SELECT_TEAM_DESC), Team));
 		}
 
 		virtual void Execute(void) const {
@@ -3399,6 +3385,10 @@ class SelectTeamCommandClass : public CommandClass
 	private:
 		int Team;
 
+		mutable std::string UniqueName;
+		mutable std::string DisplayName;
+		mutable std::string Description;
+
 		inline static int LastTeam = -1;
 		inline static int LastTick = -1;
 };
@@ -3410,19 +3400,16 @@ class AddTeamCommandClass : public CommandClass
 		AddTeamCommandClass(int team) : Team(team) {}
 
 		virtual char const * Get_Unique_Name(void) const {
-			sprintf(_cmd_buffer, "TeamAddSelect_%d", Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(UniqueName, "TeamAddSelect_%d", Team));
 		}
 		virtual char const * Get_Display_Name(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_ADD_SELECT_TEAM), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(DisplayName, Fetch_String(TXT_ADD_SELECT_TEAM), Team));
 		}
 		virtual char const * Get_Category(void) const {
 			return(Fetch_String((TXT_TEAM)));
 		}
 		virtual char const * Get_Description(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_ADD_SELECT_TEAM_DESC), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(Description, Fetch_String(TXT_ADD_SELECT_TEAM_DESC), Team));
 		}
 
 		virtual void Execute(void) const {
@@ -3436,6 +3423,10 @@ class AddTeamCommandClass : public CommandClass
 
 	private:
 		int Team;
+
+		mutable std::string UniqueName;
+		mutable std::string DisplayName;
+		mutable std::string Description;
 };
 
 
@@ -3445,19 +3436,16 @@ class AddToTeamCommandClass : public CommandClass
 		AddToTeamCommandClass(int team) : Team(team) {}
 
 		virtual char const * Get_Unique_Name(void) const {
-			sprintf(_cmd_buffer, "TeamAddTo_%d", Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(UniqueName, "TeamAddTo_%d", Team));
 		}
 		virtual char const * Get_Display_Name(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_ADD_TO_TEAM), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(DisplayName, Fetch_String(TXT_ADD_TO_TEAM), Team));
 		}
 		virtual char const * Get_Category(void) const {
 			return(Fetch_String((TXT_TEAM)));
 		}
 		virtual char const * Get_Description(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_ADD_TO_TEAM_DESC), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(Description, Fetch_String(TXT_ADD_TO_TEAM_DESC), Team));
 		}
 
 		virtual void Execute(void) const {
@@ -3473,6 +3461,10 @@ class AddToTeamCommandClass : public CommandClass
 
 	private:
 		int Team;
+
+		mutable std::string UniqueName;
+		mutable std::string DisplayName;
+		mutable std::string Description;
 };
 
 
@@ -3482,19 +3474,16 @@ class CenterTeamCommandClass : public CommandClass
 		CenterTeamCommandClass(int team) : Team(team) {}
 
 		virtual char const * Get_Unique_Name(void) const {
-			sprintf(_cmd_buffer, "TeamCenter_%d", Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(UniqueName, "TeamCenter_%d", Team));
 		}
 		virtual char const * Get_Display_Name(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_CENTER_TEAM), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(DisplayName, Fetch_String(TXT_CENTER_TEAM), Team));
 		}
 		virtual char const * Get_Category(void) const {
 			return(Fetch_String((TXT_TEAM)));
 		}
 		virtual char const * Get_Description(void) const {
-			sprintf(_cmd_buffer, Fetch_String(TXT_CENTER_TEAM_DESC), Team);
-			return(_cmd_buffer);
+			return(Team_Command_String(Description, Fetch_String(TXT_CENTER_TEAM_DESC), Team));
 		}
 
 		virtual void Execute(void) const {
@@ -3516,6 +3505,10 @@ class CenterTeamCommandClass : public CommandClass
 
 	private:
 		int Team;
+
+		mutable std::string UniqueName;
+		mutable std::string DisplayName;
+		mutable std::string Description;
 };
 
 

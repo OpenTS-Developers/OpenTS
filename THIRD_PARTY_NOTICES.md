@@ -16,6 +16,15 @@ remains under its own license and copyright notices.
 | [miniaudio](https://github.com/mackron/miniaudio)                  | Audio device output, resampling, and WAV, FLAC, and MP3 decoding | MIT-0 or Unlicense |
 | [stb_vorbis](https://github.com/nothings/stb)                      | Ogg Vorbis decoding, bundled with miniaudio | MIT or Unlicense |
 | [LZO](https://www.oberhumer.com/opensource/lzo/)                   | LZO1X compression for maps, saves, and network blocks | GPL-2.0-or-later |
+| [RmlUi](https://github.com/mikke89/RmlUi)                          | User interface documents, styling, and layout | MIT |
+| [robin_hood](https://github.com/martinus/robin-hood-hashing)       | Hash map bundled with RmlUi               | MIT          |
+| [itlib](https://github.com/iboB/itlib)                             | Containers bundled with RmlUi             | MIT          |
+| [FreeType](https://freetype.org)                                   | Font rasterization used by RmlUi          | FTL          |
+| [zlib](https://zlib.net)                                           | Compressed font support, bundled with FreeType | zlib |
+| [Dear ImGui](https://github.com/ocornut/imgui)                     | Developer overlays                        | MIT          |
+| [stb](https://github.com/nothings/stb)                             | Rectangle packing, text editing, and TrueType headers bundled with Dear ImGui | MIT or Unlicense |
+| [stb_image](https://github.com/nothings/stb)                       | PNG and TGA decoding for the UI, bundled with bimg | MIT or Unlicense |
+| [Open Sans](https://github.com/googlefonts/opensans)               | The UI font                               | OFL-1.1      |
 
 The source checkout keeps the license texts under `thirdparty/`. Binary
 packages reproduce the license texts for the components used by OpenTS under

@@ -39,7 +39,9 @@
 #include "msgloop.h"
 
 #include "_tooltip.h"
+#include "_ui.h"
 #include "cctooltip.h"
+#include "ui/uishell.h"
 #include "vector.h"
 #include "video.h"
 
@@ -112,6 +114,11 @@ void Windows_Message_Handler(void)
 			ToolTips->Message_Handler(&msg);
 		}
 
+		// Ahead of the dialogs, so that a developer key works whichever window has focus.
+		if (UIShell.Intercept_Pumped_Message(msg)) {
+			continue;
+		}
+
 		/*
 		**	Pass the windows message through any modeless dialogs that may
 		**	be active. If one of the dialogs processes the message, then
@@ -119,7 +126,9 @@ void Windows_Message_Handler(void)
 		*/
 		bool processed = false;
 		for (int index = 0; index < _ModelessDialogs.Count(); index++) {
-			if (IsDialogMessage(_ModelessDialogs[index], &msg)) {
+			// A driver parks a hidden parent around a child screen; it must not take the keys.
+			HWND dialog = _ModelessDialogs[index];
+			if (IsWindowVisible(dialog) && IsDialogMessage(dialog, &msg)) {
 				processed = true;
 				break;
 			}
@@ -211,6 +220,17 @@ void Add_Modeless_Dialog(HWND dialog)
 void Remove_Modeless_Dialog(HWND dialog)
 {
 	_ModelessDialogs.Delete(dialog);
+}
+
+
+bool Any_Modeless_Dialog_Visible(void)
+{
+	for (int index = 0; index < _ModelessDialogs.Count(); index++) {
+		if (IsWindowVisible(_ModelessDialogs[index])) {
+			return(true);
+		}
+	}
+	return(false);
 }
 
 
