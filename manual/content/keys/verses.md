@@ -13,7 +13,3 @@ Entries are read in the [armor class](/reference/enums/armor/) order `none`, `wo
 :::danger[A list of fewer than five entries stops the game as the rules are read]
 The five entries are taken in turn whatever the line holds, and the reading does not stop when the line runs out: a list of one to four percentages is read past its end and the game halts there, before a match begins. Leaving the key out altogether is safe, because the whole default list is used in place of the line. It is a short line, not a missing one, that cannot be survived.
 :::
-
-:::caution[The ARTYHE warhead ignores this outside campaigns]
-Outside campaign games the warhead named `ARTYHE` has its whole table replaced by hard-coded values, discarding the authored entries.
-:::

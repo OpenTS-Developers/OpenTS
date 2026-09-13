@@ -374,7 +374,7 @@ Two settings named for threat play no part in any of the above.
 - The undiscovered-target rejection applies in campaigns only.
 - The `MultiplayPassive` rejection, and an aircraft's first pass for Tiberium processors on Hunt, apply outside campaigns only. A match that lifts the first scans a neutral house like any other; its buildings must still be able to shoot back to be picked, so a player's units acquire the armed part of a neutral base and leave the scenery. A [launch file](/formats/spawn-ini/) carries the option.
 - Harvester immunity comes from the multiplayer lobby's harvester truce outside campaigns and from a scenario's `HarvesterImmune` setting inside them.
-- Outside campaigns the warhead named `ARTYHE` has its entire `Verses` table replaced by fixed values, which changes every effectiveness term computed from it.
+- A warhead whose `Verses` table [`MPLAYER.INI`](/formats/multiplayer-rules/) rewrites carries different figures outside campaigns, which changes every effectiveness term computed from it.
 
 ## Settings without effect
 

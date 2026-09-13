@@ -54,7 +54,6 @@
 #include "psystype.h"
 #include "rules.h"
 #include "savestream.h"
-#include "session.h"
 #include "sun.h"
 #include "swizzle.h"
 #include "tracker.h"
@@ -219,12 +218,6 @@ bool WeaponTypeClass::Read_INI(CCINIClass const & ini)
 		WarheadPtr = TGet_Class(ini, IniName, "Warhead", WarheadPtr);
 		Bullet = TGet_Class(ini, IniName, "Projectile", Bullet);
 
-		if (Session.Type != GAME_NORMAL) {
-			if (strcmp(IniName, "155mm") == 0) {
-				ROF = 150;
-				Attack = 115;
-			}
-		}
 		return(true);
 	}
 	return(false);

@@ -25,8 +25,6 @@ Four things reshape it on the way to the firer.
 
 An aircraft's mission handlers wait the primary weapon's figure between passes, unadjusted, so this also sets how often an attacking aircraft reconsiders what it is doing.
 
-Outside a campaign game the weapon named `155mm` has its figure replaced with `150` and its damage with `115` after its section is read, whatever the rules say.
-
 :::danger[A weapon with no reload delay stops the game]
 Three routines that rate an object's worth as an anti-air, anti-armor or anti-infantry threat divide by this figure in whole numbers, and none of them checks it first. They are entered whenever a base's defense zones are scored — which happens for every house each time one of its buildings is placed, captured or sold — whenever a computer house decides where to send an object, and whenever one hunts for a target in the field. A weapon carrying `ROF=0`, or omitting the key, which stores the same value, therefore divides by zero and stops the game. The anti-air routine is reached only when the projectile is [`AA=yes`](/keys/aa/), the other two when it is [`AG=yes`](/keys/ag/).
 :::

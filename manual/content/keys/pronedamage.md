@@ -17,7 +17,3 @@ ProneDamage=300% ; a gas that pools where a soldier is lying
 A value above one raises the damage instead of lowering it. The percentage form is divided by 100 as it is read, so `300%` and `3` are the same setting.
 
 A [`Webby=yes`](/keys/webby/) warhead zeroes the damage of any soldier its web catches after this scaling has been applied, so the setting changes nothing there. A soldier with [`IsWebImmune=yes`](/keys/iswebimmune/) is not caught, and keeps the scaled figure.
-
-:::caution[The ARTYHE warhead ignores this outside campaigns]
-Outside campaign games the warhead named `ARTYHE` has this setting replaced with a hard-coded fraction of `0.3`, along with [its whole `Verses` table](/keys/verses/), discarding whatever the rules gave it.
-:::

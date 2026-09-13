@@ -47,7 +47,6 @@
 #include "partsys.h"
 #include "psystype.h"
 #include "savestream.h"
-#include "session.h"
 #include "stimer.h"
 #include "sun.h"
 #include "swizzle.h"
@@ -200,15 +199,6 @@ bool WarheadTypeClass::Read_INI(CCINIClass const & ini)
 		}
 
 		IsOrganic = (Modifier[ARMOR_STEEL] == 0);
-
-		if (Session.Type != GAME_NORMAL && strcmp(Name(), "ARTYHE") == 0) {
-			ProneDamage = .3;
-			Modifier[ARMOR_NONE] = .4;
-			Modifier[ARMOR_WOOD] = .85;
-			Modifier[ARMOR_ALUMINUM] = .68;
-			Modifier[ARMOR_STEEL] = .35;
-			Modifier[ARMOR_CONCRETE] = .35;
-		}
 
 		return(true);
 	}
