@@ -172,9 +172,16 @@ class UIShellClass
 		Rml::Context * Context = nullptr;
 		bool Ready = false;
 		bool FontLoaded = false;
+		bool DialogFontTried = false;
+
+		// RmlUi reads a face straight out of these bytes, so they outlive every document
+		// drawn with them.
+		std::vector<unsigned char> SystemFontData;
 
 		void Register_Fonts(void);
+		void Ensure_Dialog_Font(void);
 		bool Load_Sheet_Font(char const * family);
+		bool Advance_Reveal(UIViewClass & view, float full, int start, float & shown);
 
 		// Set while the context updates or renders, while the hook runs, and while a tick
 		// runs; each refuses to re-enter itself.
@@ -203,6 +210,11 @@ class UIShellClass
 		std::vector<UIViewClass *> Modals;
 		bool ModalClosing = false;
 		std::vector<UIViewClass *> Modeless;
+
+		// The band the innermost modal is opening through, in pixels, and when it began;
+		// nothing while no screen is opening.
+		float RevealShown = 0.0f;
+		int RevealStart = 0;
 
 		bool DevWasActive = false;
 

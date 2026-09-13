@@ -11,6 +11,7 @@ opents_add_test(UIShell
         ui/uiscreen.cpp
         ui/uiinput.cpp
         ui/uishell.cpp
+        ui/uireveal.cpp
         ui/uiunicode.cpp
         utf8.cpp
         hsv.cpp

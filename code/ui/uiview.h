@@ -32,6 +32,15 @@ class UIViewClass
 		virtual void Sync(void) = 0;
 		virtual bool Is_Shown(void) const = 0;
 
+		// The reveal the shell drives as a screen opens, the way the Win32 dialogs opened.
+		// Reveal_Width is the whole of what will be shown, measured before any of it is
+		// hidden; Reveal_To hides all but the middle of that; Reveal_Done puts the screen
+		// back the way its document asked for. A view with nothing to reveal reports zero
+		// and is left alone.
+		virtual float Reveal_Width(void) const { return(0.0f); }
+		virtual void Reveal_To(float width) { (void)width; }
+		virtual void Reveal_Done(void) {}
+
 		virtual UIPresenterClass & Presenter(void) const = 0;
 		// What to call the view in a log line.
 		virtual char const * Name(void) const = 0;

@@ -214,7 +214,7 @@ rule the tree follows, not a build boundary.
 | Directory | Holds | Status |
 | --- | --- | --- |
 | `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals | landed |
-| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay) | landed |
+| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay); `uireveal.h`, `uireveal.cpp` (the schedule a dialog opens on; toolkit-free, so the harness runs it) | landed |
 | `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font; both toolkit-free, so the harness runs them), `rmlfont` (the font engine over those sheets, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
 | `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
 | `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
@@ -674,7 +674,7 @@ which ships with the same Windows, scales freely and needs no strike
 selection. The shell asks the host where the file is rather than naming a
 Windows path itself.
 
-Arima (OFL 1.1) from Google Fonts ships in `ui/` as `Arima.ttf` beside its
+Arimo (OFL 1.1) from Google Fonts ships in `ui/` as `Arimo.ttf` beside its
 license text and stands in for either family when the machine has no system
 face or the player has no game art, so a stylesheet never has to name a
 fallback and the harness renders every document without either.
@@ -690,6 +690,61 @@ In-game text that must match the game's `.fnt` faces, needed only by the
 post-migration sidebar view, still has two routes: convert them to TrueType at
 build time, or extend the sheet engine over `WWFontClass` data. That choice
 waits for that view.
+
+### Dialog kit
+
+`ui/kit.rcss` and `ui/dialog.rml` reproduce the owner-drawn dialog for every
+document: the stylesheet holds the controls in the colors and metrics
+`ownrdraw.cpp` draws them with, and the template holds the chrome around a
+screen's content. A screen links the kit first and its own sheet after, so
+its sheet overrides and holds only where things go, and its body names the
+template. Every length is in `dp` and is the original's pixel value, so a
+document matches its Win32 dialog at 1:1 and keeps its proportion to the game
+frame at any window size; the harness lays the options menu out at ratio 2
+and checks its boxes double, which a `px` length in either file fails.
+
+The chrome is `Draw_Dialog_Back`'s composition: the 640 by 400 wallpaper
+centred on the frame and cut off at the dialog's edges, black beyond it; a
+24-wide bar tiled down each edge with a corner over each end; and sixteen
+one-pixel rings of white inside the bars, alpha 96 falling by 6 a ring. Two
+RmlUi facts shape it. Decorators paint last to first, so a bar is listed
+after its corners. Overflow is measured from static boxes: positioned
+children are laid out after their container has measured what it clips, and
+a relative offset is never counted. So the wallpaper's box, whose only child
+is positioned, and the band, whose chrome sits half a dialog to the left
+until its offset moves it back, are both told to clip outright with
+`clip: always`. The art is the
+player's own and is not shipped; each control has a plain form underneath, a
+fill where a picture would be, so a screen stays usable without it, and that
+form is what the harness renders.
+
+The controls follow the drawing code's metrics: a button is a 24 or 30 tall
+skin with a 7-wide left cap, a tiled middle and a 10-wide right cap, its
+`dlgsys` caption two down from the top; pressing drops the skin two and the
+caption four more and two across; disabled is a half-black wash rather than
+the skin the original loads and never draws. Check boxes, edit boxes, lists,
+scroll bars, track bars, the progress bar, group boxes, hotkey fields and
+tooltips are authored the same way, in the cyan frame `OD_Draw_Rect`
+substitutes for white, and wait for the screens that use them. A screen's
+sheet that still needs a visual rule means the kit is missing a control.
+
+A modal opens as a `Begin_Dialog` dialog did. The screen is laid out whole,
+then let out through a band widening from the middle, 12 pixels a side a
+frame, with the bar art riding the band's edges and `EMBLEM.AUD` once at
+64/255 as it starts. Frame *n* is due at n × (40 − ⌊240(n − 1) / half⌋) ms
+from the start, `half` the dialog's half width in original pixels, so a
+300-wide dialog opens in 13 frames and 276 ms with the schedule tightening as
+it goes. The shell drives the band per modal pass from the host clock through
+`UI_Reveal_Width` in `uireveal.cpp`, a pure function the logic harness runs
+over the whole curve. A pass opens one step at most, however late it comes:
+the original drew every band and only slept while it was ahead, so a slow
+frame rate draws the reveal out rather than skipping to its end, and the debug
+log records each reveal's passes and duration. The band is a clipped box
+whose content is placed against the screen rather than the band, so no
+control moves and input needs no gate; the original's queued input reached
+the same controls after its sleeps. A document opts out with `reveal="none"`
+on its body, and the harness host never animates except in the test that
+watches the band.
 
 ### Strings
 
@@ -1012,13 +1067,19 @@ and builds `UIShellClass` itself over a host the test controls:
   intent and the service call to the model that comes back to the document.
   The mode confirmation runs the same way over a clock the test moves,
   because its result comes from a refresh rather than from an intent.
+- Open the options menu on the dialog kit: the wallpaper's scissor is the
+  menu's own box, the menu and its buttons double at twice the ratio, and
+  under the modal runner over the real clock the band starts narrow, widens
+  by one step a pass at most around content that never moves, ends open, and
+  sounds once.
 
 `tests/uilogic` compiles the toolkit-free state with no UI library: the input
 ownership table and its cancellations, the UTF-8 decoder, the renderer's
 geometry, size and scissor checks, the model matrix a transformed fragment
 draws through and the stencil each clip mask operation asks for, the PCX
 decoder over files the test builds itself, the bitmap font's metrics, remap and
-atlas over sheets it builds itself, and the presenter's marks through consume,
+atlas over sheets it builds itself, the reveal schedule a pass at a time and
+under passes too slow for it, and the presenter's marks through consume,
 restore and reset.
 
 `toolkitheaders` runs `cmake/CheckToolkitHeaders.cmake` over `code/` and
@@ -1060,6 +1121,12 @@ screen: the pointer shape, the absence of a tick while the graphical menu is
 up, which left every document and overlay frozen there, and a notice the
 present interval could swallow before it was ever drawn. A screen that looks
 right is therefore not evidence that the shell is.
+
+The options menu is the first screen on the dialog kit and the one the kit is
+checked against by hand, over the graphical menu at twice the frame scale:
+chrome, wallpaper, reveal, and the buttons at rest, pressed and disabled. The
+other controls in the kit are authored from the drawing code and no screen
+exercises them yet.
 
 Still owed: the progress document, which belongs to the multiplayer loading,
 map generation, and file transfer paths; the multiplayer cases where

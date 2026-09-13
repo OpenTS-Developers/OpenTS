@@ -21,7 +21,9 @@
 #include <RmlUi/Core/Event.h>
 #include <RmlUi/Core/ID.h>
 #include <RmlUi/Core/Input.h>
+#include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/Log.h>
+#include <RmlUi/Core/Property.h>
 #include <RmlUi/Core/Variant.h>
 
 
@@ -130,6 +132,51 @@ void UIRmlViewClass::Release(void)
 bool UIRmlViewClass::Is_Shown(void) const
 {
 	return(Doc != nullptr && Doc->IsVisible());
+}
+
+
+// The element a document puts the whole of its chrome inside when it wants the opening
+// reveal. A document without one is shown whole the moment it opens.
+static Rml::Element * Reveal_Element(Rml::ElementDocument * document)
+{
+	return(document != nullptr ? document->GetElementById("reveal") : nullptr);
+}
+
+
+float UIRmlViewClass::Reveal_Width(void) const
+{
+	if (Doc == nullptr || Doc->GetAttribute<Rml::String>("reveal", "") == "none") {
+		return(0.0f);
+	}
+
+	Rml::Element * reveal = Reveal_Element(Doc);
+	return(reveal != nullptr ? reveal->GetBox().GetSize().x : 0.0f);
+}
+
+
+// The class is what shows the bars that ride the opening edges; the width is what hides
+// everything either side of them.
+void UIRmlViewClass::Reveal_To(float width)
+{
+	Rml::Element * reveal = Reveal_Element(Doc);
+	if (reveal == nullptr) {
+		return;
+	}
+
+	Doc->SetClass("revealing", true);
+	reveal->SetProperty(Rml::PropertyId::Width, Rml::Property(width < 0.0f ? 0.0f : width, Rml::Unit::PX));
+}
+
+
+void UIRmlViewClass::Reveal_Done(void)
+{
+	Rml::Element * reveal = Reveal_Element(Doc);
+	if (reveal == nullptr) {
+		return;
+	}
+
+	Doc->SetClass("revealing", false);
+	reveal->RemoveProperty(Rml::PropertyId::Width);
 }
 
 

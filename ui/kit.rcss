@@ -1,0 +1,466 @@
+/*
+ * The controls the game's own dialogs are built from, in the colors and the metrics they
+ * are drawn with. A screen links this first and its own sheet after, so its sheet overrides
+ * and holds only where things go.
+ *
+ * Every length is in dp, so a screen keeps its proportion to the game frame at any window
+ * size. The numbers are the originals' pixel values, which is what they come to at 1:1.
+ *
+ * The art is the player's own and is not shipped. Where a picture is missing it draws as
+ * nothing, so each control is given a plain form underneath that stays usable without it.
+ */
+
+body
+{
+	width: 100%;
+	height: 100%;
+	font-family: dlgsys;
+	font-size: 16dp;
+	color: #70ff00;
+}
+
+div, form, h1, h2, p
+{
+	display: block;
+}
+
+/* ------------------------------------------------------------------ the dialog chrome */
+
+/*
+ * Nothing but a place to put the dialog. Whatever the game was drawing stays visible around
+ * it, as it does behind a Win32 dialog.
+ */
+#backdrop
+{
+	width: 100%;
+	height: 100%;
+}
+
+/*
+ * The band a dialog opens through. It stays centred as it widens, so the chrome inside it
+ * has to be placed against the screen rather than against the band: half the band across,
+ * then back by half the dialog, which comes to the same place whatever the band's width.
+ * Positioned so a screen can take the top edge the game hands it.
+ *
+ * The band is told to clip outright. RmlUi measures what it has to clip from the chrome's
+ * static box, which the negative margin puts half a dialog to the left, and never counts
+ * the relative offset that moves it back; once the band is wider than that half the chrome
+ * would otherwise show whole.
+ */
+#reveal
+{
+	position: relative;
+	height: 100%;
+	margin: 0 auto;
+	overflow: hidden;
+	clip: always;
+}
+
+#chrome
+{
+	height: 100%;
+}
+
+/*
+ * The wallpaper is one 640 by 400 picture centred on the screen, and a dialog shows the part
+ * of it that lies behind the dialog, so it lines up with whatever the menu behind is drawing;
+ * a dialog reaching past the picture is black there. It scales with the frame like the rest
+ * of the kit: the original drew it at the size it was painted because it drew everything so.
+ *
+ * It hangs off the middle of the dialog, which is the middle of the screen for any dialog
+ * the shell centres; a screen that moves itself elsewhere moves the picture back by as much.
+ * Since it is larger than most dialogs it is held in a box of the dialog's own size that
+ * cuts it off, and that box sits behind everything else the dialog draws: a positioned
+ * element otherwise paints over the controls rather than behind them. The box is told to
+ * clip outright, because RmlUi measures what a box has to clip before it lays out the
+ * positioned children inside it, and so never sees the picture spilling over.
+ */
+#wallpaper
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	z-index: -1;
+	overflow: hidden;
+	clip: always;
+	background-color: #000000;
+	pointer-events: none;
+}
+
+#wallpaper-art
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 640dp;
+	height: 400dp;
+	margin-left: -320dp;
+	margin-top: -200dp;
+	decorator: image(dbak6440.pcx);
+}
+
+/*
+ * Each edge is a bar tiled down the height of the dialog, its last repeat cut off at the
+ * bottom, with a corner stamped over each end, as the original composes it. A tile keeps the
+ * size the artist drew it, scaled with the frame. Decorators paint last to first, so the bar
+ * is listed last to go underneath the corners.
+ */
+#bar-left, #bar-right
+{
+	position: absolute;
+	top: 0;
+	width: 24dp;
+	height: 100%;
+}
+
+#bar-left { left: 0; decorator: image(bar_ul.pcx scale-none left top), image(bar_ll.pcx scale-none left bottom), image(leftbar.pcx repeat-y left top); }
+#bar-right { right: 0; decorator: image(bar_ur.pcx scale-none left top), image(bar_lr.pcx scale-none left bottom), image(rightbar.pcx repeat-y left top); }
+
+/*
+ * The glow is sixteen rings of white, each one dimmer than the last, drawn one inside the
+ * other. The original steps its alpha down by six from ninety-six, and these are those
+ * values written out; it is geometry rather than a blur, so it costs the renderer nothing
+ * beyond the rings themselves.
+ */
+#glow, #bar-left, #bar-right, #edge-left, #edge-right
+{
+	pointer-events: none;
+}
+
+#glow
+{
+	position: absolute;
+	left: 24dp;
+	top: 0;
+	right: 24dp;
+	bottom: 0;
+}
+
+#glow > div
+{
+	position: absolute;
+}
+
+#glow > div:nth-child(1) { left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; border: 1dp #ffffff60; }
+#glow > div:nth-child(2) { left: 1dp; top: 1dp; right: 1dp; bottom: 1dp; border: 1dp #ffffff5a; }
+#glow > div:nth-child(3) { left: 2dp; top: 2dp; right: 2dp; bottom: 2dp; border: 1dp #ffffff54; }
+#glow > div:nth-child(4) { left: 3dp; top: 3dp; right: 3dp; bottom: 3dp; border: 1dp #ffffff4e; }
+#glow > div:nth-child(5) { left: 4dp; top: 4dp; right: 4dp; bottom: 4dp; border: 1dp #ffffff48; }
+#glow > div:nth-child(6) { left: 5dp; top: 5dp; right: 5dp; bottom: 5dp; border: 1dp #ffffff42; }
+#glow > div:nth-child(7) { left: 6dp; top: 6dp; right: 6dp; bottom: 6dp; border: 1dp #ffffff3c; }
+#glow > div:nth-child(8) { left: 7dp; top: 7dp; right: 7dp; bottom: 7dp; border: 1dp #ffffff36; }
+#glow > div:nth-child(9) { left: 8dp; top: 8dp; right: 8dp; bottom: 8dp; border: 1dp #ffffff30; }
+#glow > div:nth-child(10) { left: 9dp; top: 9dp; right: 9dp; bottom: 9dp; border: 1dp #ffffff2a; }
+#glow > div:nth-child(11) { left: 10dp; top: 10dp; right: 10dp; bottom: 10dp; border: 1dp #ffffff24; }
+#glow > div:nth-child(12) { left: 11dp; top: 11dp; right: 11dp; bottom: 11dp; border: 1dp #ffffff1e; }
+#glow > div:nth-child(13) { left: 12dp; top: 12dp; right: 12dp; bottom: 12dp; border: 1dp #ffffff18; }
+#glow > div:nth-child(14) { left: 13dp; top: 13dp; right: 13dp; bottom: 13dp; border: 1dp #ffffff12; }
+#glow > div:nth-child(15) { left: 14dp; top: 14dp; right: 14dp; bottom: 14dp; border: 1dp #ffffff0c; }
+#glow > div:nth-child(16) { left: 15dp; top: 15dp; right: 15dp; bottom: 15dp; border: 1dp #ffffff06; }
+
+/*
+ * The bars ride the opening edges while a dialog reveals and are gone once it is open. The
+ * original stamps the bar alone there, without its corners.
+ */
+#edge-left, #edge-right
+{
+	display: none;
+	position: absolute;
+	top: 0;
+	width: 24dp;
+	height: 100%;
+}
+
+.revealing #edge-left { display: block; left: 0; decorator: image(leftbar.pcx repeat-y left top); }
+.revealing #edge-right { display: block; right: 0; decorator: image(rightbar.pcx repeat-y left top); }
+
+/* ------------------------------------------------------------------------- the controls */
+
+/*
+ * A button is a picture in three parts at one of two heights: a cap either side and a
+ * middle tiled to whatever width the button is. The original draws no outline around one,
+ * so the plain form underneath is a fill the picture covers rather than a border that would
+ * show through it.
+ *
+ * The caption sits two down from the top of a short button and five down from a tall one.
+ * Pressing moves the whole picture two down, and the caption four further down and two
+ * across. A glyph is seventeen tall, so a short button has only seven to give: padding is
+ * what moves the caption, the box counts its padding inside its own size so a pressed button
+ * stays the size it was, and the line is left tall enough that the glyph is never cut off.
+ */
+button
+{
+	display: inline-block;
+	box-sizing: border-box;
+	height: 24dp;
+	padding: 2dp 10dp 0 7dp;
+	text-align: center;
+	vertical-align: middle;
+	line-height: 17dp;
+	color: #70ff00;
+	background-color: #2b2b2b;
+	decorator: tiled-horizontal(bue_li24.pcx, bue_mi24.pcx, bue_ri24.pcx);
+}
+
+button.tall
+{
+	height: 30dp;
+	padding-top: 5dp;
+	decorator: tiled-horizontal(bue_li30.pcx, bue_mi30.pcx, bue_ri30.pcx);
+}
+
+button:active
+{
+	position: relative;
+	top: 2dp;
+	padding: 6dp 8dp 0 9dp;
+	decorator: tiled-horizontal(bde_li24.pcx, bde_mi24.pcx, bde_ri24.pcx);
+}
+
+button.tall:active
+{
+	padding-top: 9dp;
+	decorator: tiled-horizontal(bde_li30.pcx, bde_mi30.pcx, bde_ri30.pcx);
+}
+
+/*
+ * Disabled is a half-black wash over the whole control rather than another picture: the
+ * original loads a disabled skin but never asks for it.
+ */
+button.disabled, button:disabled
+{
+	background-color: #00000080;
+	color: #70ff00;
+}
+
+/* A disabled button takes no press, as the original never hands one the mouse. */
+button.disabled:active, button:disabled:active
+{
+	top: 0dp;
+	padding: 2dp 10dp 0 7dp;
+	decorator: tiled-horizontal(bue_li24.pcx, bue_mi24.pcx, bue_ri24.pcx);
+}
+
+button.tall.disabled:active, button.tall:disabled:active
+{
+	padding-top: 5dp;
+	decorator: tiled-horizontal(bue_li30.pcx, bue_mi30.pcx, bue_ri30.pcx);
+}
+
+/*
+ * A check box is an 18 by 19 picture with its label 20 across, vertically centred. Like a
+ * button it is drawn without an outline, so its plain form is a fill the picture covers.
+ */
+input.checkbox, .checkbox
+{
+	width: 18dp;
+	height: 19dp;
+	vertical-align: top;
+	background-color: #2b2b2b;
+	decorator: image(cue_i.pcx);
+}
+
+input.checkbox:checked, .checkbox:checked
+{
+	decorator: image(cce_i.pcx);
+}
+
+input.checkbox:disabled, .checkbox:disabled
+{
+	background-color: #00000080;
+}
+
+label.check
+{
+	display: inline-block;
+	margin-left: 2dp;
+	width: auto;
+	line-height: 19dp;
+	vertical-align: top;
+}
+
+label.check.disabled
+{
+	color: #909090;
+}
+
+/* Text the dialog layer draws through GDI rather than its bitmap font. */
+.sans, input.text, textarea, select, dataselect, .list, .tooltip, .hotkey, .group > label
+{
+	font-family: dlg-sans;
+	font-size: 14dp;
+}
+
+input selection, textarea selection
+{
+	background-color: #225061;
+	color: #70ff00;
+}
+
+input.text, textarea
+{
+	padding: 1dp;
+	color: #70ff00;
+	background-color: #000000b4;
+	border: 1dp #4eb6dc;
+	caret-color: #70ff00;
+}
+
+/*
+ * A list row is fourteen tall with its text indented two, and a chosen row is filled to its
+ * full width in the dark teal the original fills it with.
+ */
+.list
+{
+	font-size: 12dp;
+	background-color: #000000b4;
+	border: 1dp #4eb6dc;
+	overflow-y: auto;
+}
+
+.list .item
+{
+	display: block;
+	height: 14dp;
+	line-height: 14dp;
+	padding-left: 2dp;
+	color: #70ff00;
+}
+
+.list .item:checked, .list .item.selected
+{
+	background-color: #225061;
+}
+
+/*
+ * A scroll bar is twenty wide with a twenty-two tall arrow box at each end. The grip is
+ * three pieces, the middle tiled, and the original shrinks it as the list grows, never
+ * below fourteen.
+ */
+scrollbarvertical
+{
+	width: 20dp;
+	background-color: #00000028;
+	border: 1dp #4eb6dc;
+}
+
+scrollbarvertical sliderbar
+{
+	width: 18dp;
+	min-height: 14dp;
+	decorator: tiled-vertical(sbgript.pcx, sbgripm.pcx, sbgripb.pcx);
+	background-color: #3c5a68;
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
+{
+	width: 18dp;
+	height: 22dp;
+	background-color: #ffffff28;
+	border: 1dp #7f7f7f;
+}
+
+scrollbarvertical sliderarrowdec { decorator: image(uparrowr.pcx); }
+scrollbarvertical sliderarrowinc { decorator: image(dnarrowr.pcx); }
+scrollbarvertical sliderarrowdec:active { decorator: image(uparrowp.pcx); }
+scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx); }
+
+/*
+ * A track bar is a trough with a twelve wide thumb, and where it shows its value that
+ * number sits in a fifty wide field of its own.
+ */
+input.range
+{
+	height: 24dp;
+	background-color: #000000b4;
+	border: 1dp #4eb6dc;
+}
+
+input.range sliderbar
+{
+	width: 12dp;
+	height: 22dp;
+	decorator: image(trakgrip.pcx);
+	background-color: #70ff00;
+}
+
+input.range:disabled
+{
+	background-color: #00000080;
+	border-color: #909090;
+}
+
+.trough
+{
+	display: inline-block;
+	width: 50dp;
+	height: 24dp;
+	text-align: center;
+	line-height: 24dp;
+	decorator: tiled-horizontal(trofl.pcx, trofm.pcx, trofr.pcx);
+	border: 1dp #4eb6dc;
+}
+
+/* The progress bar the original fills in red, solid across the middle of its height. */
+.progress
+{
+	height: 12dp;
+	background-color: #000000b4;
+	border: 1dp #4eb6dc;
+}
+
+.progress .fill
+{
+	display: block;
+	height: 100%;
+	background-color: #ff0000;
+	decorator: horizontal-gradient(#ff000040 #ff0000);
+}
+
+/* A group box is a caption with a rule at half its height, broken to make room for it. */
+.group
+{
+	border: 1dp #4eb6dc;
+	padding: 8dp;
+}
+
+.group > label
+{
+	display: block;
+	margin-top: -14dp;
+	margin-left: 8dp;
+	padding: 0 4dp;
+	width: auto;
+	background-color: #000000;
+	color: #70ff00;
+}
+
+/* The field a keyboard screen shows a captured key in. */
+.hotkey
+{
+	display: block;
+	padding: 4dp;
+	color: #70ff00;
+	border: 1dp #4eb6dc;
+}
+
+/* A tooltip is a dark box with a lighter bevel at its top and left, under the pointer. */
+.tooltip
+{
+	padding: 3dp 4dp;
+	color: #70ff00;
+	background-color: #0b1b22;
+	border: 1dp #4eb6dc;
+}
+
+.dim
+{
+	color: #109010;
+}
+
+.disabled
+{
+	color: #909090;
+}

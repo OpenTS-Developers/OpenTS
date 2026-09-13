@@ -11,6 +11,7 @@
 
 #include "_keyboar.h"
 #include "_ui.h"
+#include "audio/audioengine.h"
 #include "conquer.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -18,6 +19,7 @@
 #include "goptions.h"
 #include "keyboard.h"
 #include "mainloop.h"
+#include "mixfile.h"
 #include "movies.h"
 #include "msgloop.h"
 #include "session.h"
@@ -74,6 +76,19 @@ class UIEngineHostClass : public UIShellHostClass
 		virtual bool Movie_Playing(void) const override
 		{
 			return(Movie_Is_Playing());
+		}
+
+		virtual void Play_Sample(char const * name, float volume) override
+		{
+			if (Options.SoundVolume <= 0.0) {
+				return;
+			}
+			AudioEngine.Play_Sample(MixFileClass::Retrieve(name), AUDIO_GROUP_SFX, volume, 255);
+		}
+
+		virtual bool Animate_Screens(void) const override
+		{
+			return(true);
 		}
 
 		virtual bool Legacy_Dialog_Visible(void) const override

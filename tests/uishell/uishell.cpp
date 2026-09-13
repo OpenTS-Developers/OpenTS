@@ -15,6 +15,7 @@
 // behaves at the frame's edges.
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -92,6 +93,8 @@ class RecordingRenderInterfaceClass : public UIRmlRenderClass
 		int Transforms = 0;
 		int ClipMasks = 0;
 		bool ClipMaskEnabled = false;
+		bool ScissorOn = false;
+		int Unclipped = 0;
 		std::vector<Rml::Rectanglei> Scissors;
 		std::function<void(void)> OnRender;
 
@@ -151,6 +154,9 @@ class RecordingRenderInterfaceClass : public UIRmlRenderClass
 		virtual void RenderGeometry(Rml::CompiledGeometryHandle, Rml::Vector2f, Rml::TextureHandle) override
 		{
 			Rendered++;
+			if (!ScissorOn) {
+				Unclipped++;
+			}
 			if (OnRender) {
 				OnRender();
 			}
@@ -179,8 +185,9 @@ class RecordingRenderInterfaceClass : public UIRmlRenderClass
 			ReleasedTextures++;
 		}
 
-		virtual void EnableScissorRegion(bool) override
+		virtual void EnableScissorRegion(bool enable) override
 		{
+			ScissorOn = enable;
 		}
 
 		virtual void SetScissorRegion(Rml::Rectanglei region) override
@@ -312,6 +319,24 @@ class TestHostClass : public UIShellHostClass
 		virtual std::string System_Font_Path(char const *) const override
 		{
 			return(std::string());
+		}
+
+		// The samples a screen plays, by name and volume, so a test can assert the reveal
+		// sounded once.
+		std::vector<std::string> Samples;
+
+		virtual void Play_Sample(char const * name, float) override
+		{
+			Samples.push_back(name);
+		}
+
+		// Off by default, so a test that drives a screen sees it whole from the first pass
+		// rather than through the band it opens behind.
+		bool Animate = false;
+
+		virtual bool Animate_Screens(void) const override
+		{
+			return(Animate);
 		}
 
 		virtual bool Window_Is_Unicode(void) const override
@@ -2166,7 +2191,7 @@ std::vector<Rml::Element *> Buttons_Top_Down(Rml::ElementDocument * document)
 
 // Drives the options menu: each button closes it with its choice, a dead Sound button does
 // nothing, Escape leaves, and the panel takes the top edge the game hands it.
-void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system, RecordingRenderInterfaceClass & render)
 {
 	int problems = system.Problems;
 
@@ -2187,9 +2212,34 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		bool ordered = buttons.size() == 5 && buttons[0]->GetId() == "settings" && buttons[1]->GetId() == "display" && buttons[2]->GetId() == "sound" && buttons[3]->GetId() == "keyboard" && buttons[4]->GetId() == "mainmenu";
 		Check(ordered, "the buttons run Game Settings, Display, Sound, Keyboard, Main Menu from the top");
 
-		Rml::Element * panel = Rml(*view).Document()->GetElementById("panel");
+		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
 		float centre = (float)context.GetDimensions().y * 0.5f;
-		Check(panel != nullptr && panel->GetAbsoluteOffset(Rml::BoxArea::Border).y < centre && panel->GetAbsoluteOffset(Rml::BoxArea::Border).y + panel->GetBox().GetSize(Rml::BoxArea::Border).y > centre, "without a top edge the menu sits in the middle");
+		Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y < centre && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize(Rml::BoxArea::Border).y > centre, "without a top edge the menu sits in the middle");
+
+		// The wallpaper is larger than the menu and cut off at its edges, which shows as a
+		// scissor the size of the menu while the picture draws.
+		render.Scissors.clear();
+		context.Render();
+		bool clipped = false;
+		if (dialog != nullptr) {
+			Rml::Vector2f at = dialog->GetAbsoluteOffset(Rml::BoxArea::Border).Round();
+			for (Rml::Rectanglei const & scissor : render.Scissors) {
+				if (scissor.Left() == (int)at.x && scissor.Top() == (int)at.y && scissor.Width() == 300 && scissor.Height() == 241) {
+					clipped = true;
+				}
+			}
+		}
+		Check(clipped, "the wallpaper is cut off at the menu's own edges");
+
+		// Every length in the kit and the screen is in dp, so at twice the ratio the menu
+		// and its buttons are twice the size; a px length in either would show here.
+		context.SetDensityIndependentPixelRatio(2.0f);
+		context.Update();
+		bool doubled = dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(600.0f, 482.0f)
+			&& buttons.size() == 5 && buttons[0]->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(378.0f, 48.0f);
+		Check(doubled, "the menu and its buttons are twice the size at twice the ratio");
+		context.SetDensityIndependentPixelRatio(1.0f);
+		context.Update();
 
 		if (buttons.size() == 5) {
 			Click(context, buttons[1]);
@@ -2212,8 +2262,8 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		view->Show(true);
 		context.Update();
 
-		Rml::Element * panel = Rml(*view).Document()->GetElementById("panel");
-		Check(panel != nullptr && std::fabs(panel->GetAbsoluteOffset(Rml::BoxArea::Border).y - 200.0f) < 1.0f, "the menu sits at the top edge the game hands it");
+		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+		Check(dialog != nullptr && std::fabs(dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y - 200.0f) < 1.0f, "the menu sits at the top edge the game hands it");
 
 		Rml::Element * sound = Rml(*view).Document()->GetElementById("sound");
 		Check(sound != nullptr && sound->IsClassSet("disabled"), "the Sound button shows disabled without an audio device");
@@ -2389,7 +2439,7 @@ void Test_Documents(void)
 
 	// The shipped face stands in for both families a document may name, as it does in the
 	// shell on a machine with neither the system face nor the game's art.
-	std::string shipped = (directory / "Arima.ttf").string();
+	std::string shipped = (directory / "Arimo.ttf").string();
 	Check(Rml::LoadFontFace(shipped), "the shipped font loads");
 	Check(Rml::LoadFontFace(shipped, "dlg-sans", Rml::Style::FontStyle::Normal), "and stands in for the dialogs' sans family");
 	Check(Rml::LoadFontFace(shipped, "dlgsys", Rml::Style::FontStyle::Normal), "and for the bitmap family the art would supply");
@@ -2398,6 +2448,7 @@ void Test_Documents(void)
 	Check(context != nullptr, "a context is created");
 
 	int documents = 0;
+	int templates = 0;
 	for (std::filesystem::directory_entry const & entry : std::filesystem::directory_iterator(directory)) {
 		std::filesystem::path path = entry.path();
 		std::string extension = path.extension().string();
@@ -2405,6 +2456,13 @@ void Test_Documents(void)
 		if (extension == ".rml" || extension == ".rcss") {
 			std::string what = path.filename().string() + " names its resources by bare file name";
 			Check(References_Are_Bare(Read_Text(path)), what.c_str());
+		}
+
+		// A template is markup a document pulls in, not a document; the documents that link
+		// it are what exercise it.
+		if (extension == ".rml" && Read_Text(path).find("<template") != std::string::npos) {
+			templates++;
+			continue;
 		}
 
 		if (extension != ".rml" || context == nullptr) {
@@ -2459,6 +2517,7 @@ void Test_Documents(void)
 	}
 
 	Check(documents > 0, "the ui directory holds at least one document");
+	Check(templates > 0, "and at least one template the documents are built on");
 
 	if (context != nullptr) {
 		Test_Effects_Documents(*context, render, system);
@@ -2468,7 +2527,7 @@ void Test_Documents(void)
 		Test_Game_Controls_Screen(*context, system);
 		Test_Display_Screen(*context, system);
 		Test_Keyboard_Screen(*context, system);
-		Test_Main_Options_Screen(*context, system);
+		Test_Main_Options_Screen(*context, system, render);
 		Test_Wait_Box_Screen(*context, system);
 	}
 
@@ -2922,6 +2981,93 @@ void Test_Shell(void)
 
 		Check(found && refused && passes == 3, "a click on the refused sound button answers nothing and leaves the menu open");
 		Check(presenter.Result.has_value() && presenter.Choice == UI_MAIN_OPTIONS_DISPLAY, "a click reaches the button beneath the pointer and answers with its choice");
+	}
+
+	{
+		// A screen that opens the way the Win32 dialogs did: hidden at first, let out through
+		// a widening band a step a pass, and whole by the time the schedule runs out. The
+		// clock is the real one, so the loop waits the quarter second the original took.
+		UIMainOptionsState state;
+		state.SoundEnabled = true;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
+
+		std::size_t const played = host.Samples.size();
+		host.Animate = true;
+
+		// The shell reads the system clock, so the loop is bounded by that clock rather
+		// than by a pass count a Release build runs through before the schedule is out.
+		std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
+		auto Waited = [&](void) {
+			return((int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - began).count());
+		};
+
+		int passes = 0;
+		float narrowest = 1000.0f;
+		float opened = -1.0f;
+		float chromeleft = -1.0f;
+		float chromewidth = -1.0f;
+		bool anchored = true;
+		bool stepped = true;
+		bool clipped = true;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+			if (dialog == nullptr) {
+				return(true);
+			}
+
+			// The band is read after the pass that laid it out, so the first pass still
+			// shows the width the document asked for.
+			float width = dialog->GetBox().GetSize().x;
+			if (passes > 1 && width < narrowest) {
+				narrowest = width;
+			}
+			if (passes > 2 && width - opened > 24.5f) {
+				stepped = false;
+			}
+			opened = width;
+
+			// The pass before this one drew the band this pass reads, so every draw since
+			// the last pass was clipped to it or was drawn outside it.
+			if (passes > 2 && width < 300.0f) {
+				if (fixture.Render->Unclipped > 0) {
+					clipped = false;
+				}
+				for (Rml::Rectanglei const & scissor : fixture.Render->Scissors) {
+					if (scissor.Width() > (int)width + 1) {
+						clipped = false;
+					}
+				}
+			}
+			fixture.Render->Unclipped = 0;
+			fixture.Render->Scissors.clear();
+
+			// What the band uncovers has to stay where it is on screen, and keep its own
+			// width, or the screen is being squeezed rather than revealed.
+			Rml::Element * chrome = Rml(*view).Document()->GetElementById("chrome");
+			if (chrome != nullptr && passes > 1) {
+				float left = chrome->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+				if (chromeleft >= 0.0f && std::fabs(left - chromeleft) > 0.5f) {
+					anchored = false;
+				}
+				chromeleft = left;
+				chromewidth = chrome->GetBox().GetSize().x;
+			}
+			return(Waited() > 3000 || (passes > 2 && width >= 300.0f));
+		});
+
+		int waited = Waited();
+		host.Animate = false;
+
+		Check(narrowest > 0.0f && narrowest < 300.0f, "a screen is mostly hidden behind its band when it opens");
+		Check(anchored, "and what is inside the band holds still while the band widens around it");
+		Check(stepped, "which widens by one step a pass at most");
+		Check(clipped, "and nothing draws outside the band while it opens");
+		Check(chromewidth == 300.0f, "so the screen is uncovered rather than squeezed out to its full width");
+		Check(opened >= 300.0f && waited >= 250 && waited < 1000, "and the band has let the whole of it out in the quarter second the schedule takes");
+		Check(host.Samples.size() == played + 1 && host.Samples.back() == "EMBLEM.AUD", "opening it sounds once, as the dialog layer sounds it");
 	}
 
 	{

@@ -56,6 +56,10 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		virtual char const * Name(void) const override { return(DocumentName.c_str()); }
 		virtual bool Is_Shown(void) const override;
 
+		virtual float Reveal_Width(void) const override;
+		virtual void Reveal_To(float width) override;
+		virtual void Reveal_Done(void) override;
+
 		// Marks the view-model fields that Execute changed.
 		virtual void Sync(void) override = 0;
 

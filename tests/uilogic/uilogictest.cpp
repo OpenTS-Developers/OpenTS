@@ -16,6 +16,7 @@
 #include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
 #include "ui/uiinput.h"
+#include "ui/uireveal.h"
 #include "videodirty.h"
 
 #include <array>
@@ -451,6 +452,71 @@ void Test_Sheet_Font(void)
 }
 
 
+void Test_Reveal(void)
+{
+	// A 300 pixel dialog: 12 pixels a side a frame is 13 frames, and the original's last
+	// deadline works out at 276 milliseconds.
+	float const full = 300.0f;
+
+	Check(UI_Reveal_Width(full, 1.0f, 0, 0.0f) == 24.0f, "a screen is one step open the moment it appears, 12 each side");
+	Check(UI_Reveal_Width(full, 1.0f, 39, 24.0f) == 24.0f, "and stays there until the next frame falls due");
+	Check(UI_Reveal_Width(full, 1.0f, 40, 24.0f) == 48.0f, "which opens it another 24");
+	Check(UI_Reveal_Width(full, 1.0f, 10000, 24.0f) == 48.0f, "and no more than that however late the pass comes");
+	Check(UI_Reveal_Width(full, 1.0f, 10000, full) == full, "a screen open stays open");
+
+	// A pass every millisecond keeps to the schedule: thirteen frames at the first period
+	// would take over half a second, and the second half of the reveal takes less time than
+	// the first, which is the schedule tightening as it goes.
+	int first = 0;
+	int second = 0;
+	float shown = 0.0f;
+	float previous = 0.0f;
+	bool stepped = true;
+	for (int elapsed = 0; elapsed <= 1000; elapsed++) {
+		shown = UI_Reveal_Width(full, 1.0f, elapsed, shown);
+		if (shown < previous || shown - previous > 24.0f) {
+			stepped = false;
+		}
+		previous = shown;
+		if (first == 0 && shown >= full / 2.0f) {
+			first = elapsed;
+		}
+		if (second == 0 && shown >= full) {
+			second = elapsed - first;
+		}
+	}
+	Check(first > 0 && second > 0 && second < first, "a screen opens its second half quicker than its first");
+	Check(stepped && shown == full, "a screen only ever opens further, a step at a time, and ends open");
+	Check(first + second > 250 && first + second < 300, "and a 300 pixel screen takes the quarter second the original took");
+
+	// A pass every hundred milliseconds cannot keep to the schedule, so it draws the same
+	// thirteen bands over a longer time rather than skipping to the last of them.
+	int passes = 0;
+	shown = 0.0f;
+	while (shown < full && passes < 100) {
+		shown = UI_Reveal_Width(full, 1.0f, passes * 100, shown);
+		passes++;
+	}
+	Check(passes == 13, "a machine that cannot keep up shows every band of the reveal");
+
+	// Twice the scale is twice the width at the same moment, and the same finish.
+	Check(UI_Reveal_Width(full * 2.0f, 2.0f, 40, 48.0f) == 96.0f, "a screen drawn at twice the size opens twice as fast in pixels");
+	shown = 0.0f;
+	bool opening = false;
+	for (int elapsed = 0; elapsed <= 300; elapsed++) {
+		shown = UI_Reveal_Width(full * 2.0f, 2.0f, elapsed, shown);
+		if (elapsed == 200) {
+			opening = shown < full * 2.0f;
+		}
+	}
+	Check(opening && shown == full * 2.0f, "and still takes the same time to open");
+
+	Check(UI_Reveal_Width(0.0f, 1.0f, 0, 0.0f) == 0.0f, "a screen with no width is open already");
+	Check(UI_Reveal_Width(full, 0.0f, 40, 24.0f) == 48.0f, "a scale of nothing is read as one to one");
+	Check(UI_Reveal_Width(full, 1.0f, -5, 24.0f) == full, "a clock that went backwards opens the screen rather than hiding it");
+}
+
+
 void Test_Dirty_State(void)
 {
 	VideoDirtyStateClass dirty;
@@ -507,6 +573,7 @@ int main(void)
 	Test_Render_Mask();
 	Test_Image();
 	Test_Sheet_Font();
+	Test_Reveal();
 	Test_Dirty_State();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

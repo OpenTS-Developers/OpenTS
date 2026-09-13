@@ -47,6 +47,14 @@ class UIShellHostClass
 		virtual void Present_Now(void) = 0;
 		virtual bool Movie_Playing(void) const = 0;
 
+		// Plays a sound effect by name at a volume from zero to one. A host with no audio,
+		// or a player who turned it off, does nothing.
+		virtual void Play_Sample(char const * name, float volume) = 0;
+
+		// Whether a screen opens the way the Win32 dialogs did, through a widening band.
+		// A harness says no, so its screens are whole from the first pass.
+		virtual bool Animate_Screens(void) const = 0;
+
 		// A Win32 dialog is on screen and takes the mouse before a document can.
 		virtual bool Legacy_Dialog_Visible(void) const = 0;
 		// The player asked for the Win32 dialogs instead of the documents.

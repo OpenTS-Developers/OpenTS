@@ -14,4 +14,4 @@ A UI document names one of two font families. `dlgsys` is the bitmap font the ga
 
 Neither is shipped. The engine finds the bitmap sheets in the game's own art and the sans face on the machine, and where either is missing it uses the font that ships with OpenTS, so a document never has to name a fallback of its own.
 
-That shipped font is now Arima rather than Open Sans, and the migrated screens draw with `dlg-sans`, so their text looks different from before. The screens are being rebuilt to match the original dialogs, and this is the first step of it.
+That shipped font is now Arimo rather than Open Sans, and the migrated screens draw with `dlg-sans`, so their text looks different from before. The screens are being rebuilt to match the original dialogs, and this is the first step of it.

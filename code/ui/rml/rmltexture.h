@@ -30,5 +30,9 @@ enum UIImageResult
 // UI_IMAGE_LOADED.
 UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height);
 
+// A whole file straight off the disk by its own path, outside the game's file search,
+// which is how a face kept somewhere the game knows nothing of is read.
+bool UI_Read_File(char const * path, std::vector<unsigned char> & bytes);
+
 // The same file left as palette indices, which is what the bitmap font reads. PCX only.
 bool UI_Load_Indexed_Image(char const * name, UIImageIndexed & image);

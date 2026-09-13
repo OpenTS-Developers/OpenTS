@@ -1,0 +1,23 @@
+<template name="dialog" content="content">
+<head>
+	<link type="text/rcss" href="kit.rcss"/>
+</head>
+<body>
+	<div id="backdrop">
+		<div id="reveal">
+			<div id="chrome">
+				<div id="wallpaper"><div id="wallpaper-art"></div></div>
+				<div id="glow">
+					<div/><div/><div/><div/><div/><div/><div/><div/>
+					<div/><div/><div/><div/><div/><div/><div/><div/>
+				</div>
+				<div id="bar-left"></div>
+				<div id="bar-right"></div>
+				<div id="content"></div>
+			</div>
+			<div id="edge-left"></div>
+			<div id="edge-right"></div>
+		</div>
+	</div>
+</body>
+</template>

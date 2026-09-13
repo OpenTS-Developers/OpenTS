@@ -6,6 +6,6 @@ The key is read from the message pump before any dialog sees it, so it works whi
 
 A click on the panel is consumed before it reaches the game; a click on the frame beside it reaches the game as before. The panel is positioned away from the centered menu dialogs because a visible dialog takes the clicks over its own area first.
 
-The document needs the shipped `Arima.ttf`. When the font failed to load at startup, the key writes a line to the debug log and shows nothing. Each load, show, and hide also logs the renderer's live texture and buffer counts.
+The document needs the shipped `Arimo.ttf`. When the font failed to load at startup, the key writes a line to the debug log and shows nothing. Each load, show, and hide also logs the renderer's live texture and buffer counts.
 
 [Developer mode and diagnostics](/systems/developer-mode/) covers the flag that arms the keys handled directly in code.

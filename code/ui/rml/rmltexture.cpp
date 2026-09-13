@@ -10,6 +10,7 @@
 #include "ui/rml/rmltexture.h"
 
 #include "ccfile.h"
+#include "rawfile.h"
 #include "dbgprint.h"
 #include "ui/rml/rmlimage.h"
 
@@ -38,6 +39,35 @@ static bool Read_Whole_File(char const * name, std::vector<unsigned char> & byte
 	bytes.clear();
 
 	CCFileClass file(name);
+	if (!file.Is_Available()) {
+		return(false);
+	}
+
+	int size = file.Size();
+	if (size <= 0) {
+		return(false);
+	}
+
+	bytes.resize((size_t)size);
+	if (!file.Open(FileClass::READ) || file.Read(bytes.data(), size) != size) {
+		bytes.clear();
+		return(false);
+	}
+	file.Close();
+
+	return(true);
+}
+
+
+bool UI_Read_File(char const * path, std::vector<unsigned char> & bytes)
+{
+	bytes.clear();
+
+	if (path == NULL) {
+		return(false);
+	}
+
+	RawFileClass file(path);
 	if (!file.Is_Available()) {
 		return(false);
 	}

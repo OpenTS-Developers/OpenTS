@@ -10,6 +10,7 @@ opents_add_test(UILogic
         hsv.cpp
         rgb.cpp
         ui/uiinput.cpp
+        ui/uireveal.cpp
         ui/rml/rmlimage.cpp
         ui/rml/rmlfontsheet.cpp
         ui/rml/rmlrendermath.cpp

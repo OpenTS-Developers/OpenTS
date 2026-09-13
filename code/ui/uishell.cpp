@@ -16,6 +16,7 @@
 #include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmltexture.h"
 #include "ui/uihost.h"
+#include "ui/uireveal.h"
 #include "ui/uiview.h"
 
 // windowsx.h, which win.h brings in, names two window walkers the way RmlUi names its
@@ -433,6 +434,8 @@ void UIShellClass::Toggle_Test_Document(void)
 		return;
 	}
 
+	Ensure_Dialog_Font();
+
 	if (TestDocument == nullptr) {
 		TestDocument = Context->LoadDocument("test.rml");
 		if (TestDocument == nullptr) {
@@ -510,7 +513,11 @@ void UIShellClass::Drain_Deferred(void)
 static char const * const UI_SHEET_FONT_FAMILY = "dlgsys";
 static char const * const UI_SANS_FONT_FAMILY = "dlg-sans";
 static char const * const UI_SANS_FONT_FILE = "micross.ttf";
-static char const * const UI_SHIPPED_FONT_FILE = "Arima.ttf";
+static char const * const UI_SHIPPED_FONT_FILE = "Arimo.ttf";
+
+// The sound a dialog opens with, at the volume the dialog layer plays it.
+static char const * const UI_REVEAL_SOUND = "EMBLEM.AUD";
+static const float UI_REVEAL_VOLUME = 64.0f / 255.0f;
 
 
 bool UIShellClass::Load_Sheet_Font(char const * family)
@@ -536,8 +543,14 @@ void UIShellClass::Register_Fonts(void)
 	Fonts->Set_Fallback(Rml::GetFontEngineInterface());
 	Rml::SetFontEngineInterface(Fonts.get());
 
+	// RmlUi opens a font path through its file interface, which here is the game's own
+	// search and knows nothing of a Windows directory, so the face travels as bytes. They
+	// are kept because RmlUi reads glyphs straight out of them for as long as it runs.
+	bool sansloaded = false;
 	std::string sans = Host.System_Font_Path(UI_SANS_FONT_FILE);
-	bool sansloaded = !sans.empty() && Rml::LoadFontFace(sans, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	if (!sans.empty() && UI_Read_File(sans.c_str(), SystemFontData)) {
+		sansloaded = Rml::LoadFontFace(Rml::Span<const Rml::byte>(SystemFontData.data(), SystemFontData.size()), UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	}
 
 	FontLoaded = Rml::LoadFontFace(UI_SHIPPED_FONT_FILE);
 	if (!FontLoaded) {
@@ -550,12 +563,43 @@ void UIShellClass::Register_Fonts(void)
 		Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
 	}
 
-	// The bitmap family is art, not a font file, so a machine without the game's own
-	// interface art gets the shipped face under that name instead.
-	if (!Load_Sheet_Font(UI_SHEET_FONT_FAMILY)) {
-		Log("UI: the %s sheets did not load, so %s is the shipped face\n", UI_SHEET_FONT_FAMILY, UI_SHEET_FONT_FAMILY);
-		Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SHEET_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	// The bitmap family is art rather than a font file, and the archives holding it are
+	// mounted after the shell starts, so the shipped face answers for it until the first
+	// screen asks and the real sheets can be looked for.
+	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SHEET_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+}
+
+
+// Looked for once, the first time a screen is about to be drawn. Sheets that load take the
+// family over from the shipped face, because the engine answers for its own families before
+// it hands anything to the one RmlUi made.
+void UIShellClass::Ensure_Dialog_Font(void)
+{
+	if (DialogFontTried || !Ready) {
+		return;
 	}
+
+	DialogFontTried = true;
+	if (!Load_Sheet_Font(UI_SHEET_FONT_FAMILY)) {
+		Log("UI: the %s sheets are not in the game's art, so %s stays the shipped face\n", UI_SHEET_FONT_FAMILY, UI_SHEET_FONT_FAMILY);
+	}
+}
+
+
+// Shows the next step of an opening screen once its moment has come; `shown` carries the
+// band's width from one pass to the next and starts at nothing. False once the whole of it
+// is out, after which the view is left as its document asked for.
+bool UIShellClass::Advance_Reveal(UIViewClass & view, float full, int start, float & shown)
+{
+	shown = UI_Reveal_Width(full, Context->GetDensityIndependentPixelRatio(), Clock().Milliseconds() - start, shown);
+
+	if (shown >= full) {
+		view.Reveal_Done();
+		return(false);
+	}
+
+	view.Reveal_To(shown);
+	return(true);
 }
 
 
@@ -1069,6 +1113,10 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
 	assert(!Legacy_Dialog_Visible());
 
+	RevealShown = 0.0f;
+	RevealStart = Clock().Milliseconds();
+	Ensure_Dialog_Font();
+
 	if (!Prepare_View(view)) {
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
@@ -1097,10 +1145,27 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 
+	// Measured after the first layout and before anything is hidden, so it is the whole of
+	// what the reveal will uncover. A document without one reports nothing and opens whole.
+	// The band is laid out before anything else runs: clearing the keyboard queue pumps the
+	// window's messages, and a paint among them presents whatever is laid out at the time.
+	float revealwidth = Host.Animate_Screens() ? view.Reveal_Width() : 0.0f;
+	RevealShown = 0.0f;
+	RevealStart = Clock().Milliseconds();
+	int revealpasses = 1;
+	bool revealing = revealwidth > 0.0f;
+	if (revealing) {
+		revealing = Advance_Reveal(view, revealwidth, RevealStart, RevealShown);
+		Tick();
+	}
+
 	Host.Mark_Overlay_Dirty();
 	std::snprintf(label, sizeof(label), "%s shown", view.Name());
 	Render->Log_Resource_Counts(label);
 	Host.Clear_Keyboard_Queue();
+	if (revealing) {
+		Host.Play_Sample(UI_REVEAL_SOUND, UI_REVEAL_VOLUME);
+	}
 
 	UIResult result = UI_RESULT_SESSION_ENDED;
 
@@ -1125,9 +1190,20 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 			break;
 		}
 
+		if (revealing) {
+			revealpasses++;
+			revealing = Advance_Reveal(view, revealwidth, RevealStart, RevealShown);
+			if (!revealing) {
+				Log("UI: %s opened over %d passes in %d ms\n", view.Name(), revealpasses, Clock().Milliseconds() - RevealStart);
+			}
+		}
+
 		Tick();
 		Host.Mark_Overlay_Dirty();
 		Host.Present_If_Dirty();
+		if (!revealing) {
+			RevealShown = 0.0f;
+		}
 	}
 
 	ModalClosing = true;
