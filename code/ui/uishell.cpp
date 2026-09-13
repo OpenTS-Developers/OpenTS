@@ -1307,6 +1307,12 @@ void UIShellClass::Hide_Modeless(UIViewClass & view)
 }
 
 
+void UIShellClass::Play_Click(void)
+{
+	Host.Play_Click();
+}
+
+
 UIClockClass & UIShellClass::Clock(void)
 {
 	static UISystemClockClass clock;

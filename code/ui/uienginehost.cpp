@@ -10,6 +10,7 @@
 #include "ui/uienginehost.h"
 
 #include "_keyboar.h"
+#include "_rules.h"
 #include "_ui.h"
 #include "audio/audioengine.h"
 #include "conquer.h"
@@ -22,9 +23,11 @@
 #include "mixfile.h"
 #include "movies.h"
 #include "msgloop.h"
+#include "rules.h"
 #include "session.h"
 #include "ui/uishell.h"
 #include "video.h"
+#include "voc.h"
 #include "wincursor.h"
 #include "windlg.h"
 
@@ -84,6 +87,11 @@ class UIEngineHostClass : public UIShellHostClass
 				return;
 			}
 			AudioEngine.Play_Sample(MixFileClass::Retrieve(name), AUDIO_GROUP_SFX, volume, 255);
+		}
+
+		virtual void Play_Click(void) override
+		{
+			Sound_Effect(Rule->GenericClick);
 		}
 
 		virtual bool Animate_Screens(void) const override

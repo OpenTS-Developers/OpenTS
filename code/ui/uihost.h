@@ -51,6 +51,10 @@ class UIShellHostClass
 		// or a player who turned it off, does nothing.
 		virtual void Play_Sample(char const * name, float volume) = 0;
 
+		// The sound a control makes as it is pressed, which the rules name rather than the
+		// shell, so a mod that changes the dialogs' click changes this one.
+		virtual void Play_Click(void) = 0;
+
 		// Whether a screen opens the way the Win32 dialogs did, through a widening band.
 		// A harness says no, so its screens are whole from the first pass.
 		virtual bool Animate_Screens(void) const = 0;

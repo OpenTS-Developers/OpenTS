@@ -44,8 +44,9 @@ std::uint8_t UI_Sheet_Font_Coverage(UIImageIndexed const & alpha, int x, int y);
 // Measures a font from its alpha sheet. False when the sheet holds no inked cell to measure.
 bool UI_Sheet_Font_Metrics(UIImageIndexed const & alpha, UISheetFontMetrics & metrics);
 
-// Where a character's cell sits on the sheets. The cell for a character is the one after
-// it, because the sheets start with a cell the font does not draw.
+// Where a character's cell sits on the sheets, and false for a character with nothing to
+// draw: a space, anything below it, and anything past the sheet. The cell for a character
+// is the one after it, because the sheets start with a cell the font does not draw.
 bool UI_Sheet_Font_Cell(UISheetFontMetrics const & metrics, UIImageIndexed const & alpha, int character, int & x, int & y);
 
 // The 256 colors the font's own palette becomes when its text is asked for in one color,

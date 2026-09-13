@@ -88,6 +88,10 @@ class UIShellClass
 		// The system clock a timed screen's presenter reads.
 		UIClockClass & Clock(void);
 
+		// The sound a control makes as it is pressed. A view calls this from its own event
+		// handler, because what counts as a press is the toolkit's business.
+		void Play_Click(void);
+
 		// The frame moved or changed size inside the window.
 		void On_Video_Change(void);
 

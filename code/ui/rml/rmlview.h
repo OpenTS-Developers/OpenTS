@@ -74,8 +74,14 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		Rml::DataModelHandle Model;
 
 	private:
+		// Whether pressing this element is what the dialogs sounded a click for.
+		static bool Sounds_A_Click(Rml::Element const * element);
+
 		UIPresenterClass & Owner;
 		Rml::Context * Host = nullptr;
+		// The shell the screen is running under, which owns the sound; a view prepared
+		// against a bare context has none and stays silent.
+		UIShellClass * Shell = nullptr;
 		Rml::ElementDocument * Doc = nullptr;
 		// The context's shared register refuses a type declared twice, so each view brings its own
 		// and a screen can open again.

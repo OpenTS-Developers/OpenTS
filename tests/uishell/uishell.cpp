@@ -322,12 +322,18 @@ class TestHostClass : public UIShellHostClass
 		}
 
 		// The samples a screen plays, by name and volume, so a test can assert the reveal
-		// sounded once.
+		// sounded once, and how many presses have sounded a click.
 		std::vector<std::string> Samples;
+		int Clicks = 0;
 
 		virtual void Play_Sample(char const * name, float) override
 		{
 			Samples.push_back(name);
+		}
+
+		virtual void Play_Click(void) override
+		{
+			Clicks++;
 		}
 
 		// Off by default, so a test that drives a screen sees it whole from the first pass
@@ -2959,6 +2965,8 @@ void Test_Shell(void)
 		int passes = 0;
 		bool found = false;
 		bool refused = false;
+		bool silent = false;
+		int const clicks = host.Clicks;
 
 		shell.Run_Modal(*view, [&](void) {
 			passes++;
@@ -2974,6 +2982,7 @@ void Test_Shell(void)
 			}
 			if (passes == 3) {
 				refused = !presenter.Result.has_value();
+				silent = host.Clicks == clicks;
 				Click_Through_Hook(shell, host, display);
 			}
 			return(passes > 4);
@@ -2981,6 +2990,7 @@ void Test_Shell(void)
 
 		Check(found && refused && passes == 3, "a click on the refused sound button answers nothing and leaves the menu open");
 		Check(presenter.Result.has_value() && presenter.Choice == UI_MAIN_OPTIONS_DISPLAY, "a click reaches the button beneath the pointer and answers with its choice");
+		Check(silent && host.Clicks == clicks + 1, "a press sounds the dialogs' click, and a disabled button sounds nothing");
 	}
 
 	{

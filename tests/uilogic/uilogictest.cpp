@@ -404,6 +404,7 @@ void Test_Sheet_Font(void)
 	UISheetFontMetrics shallowmetrics;
 	Check(UI_Sheet_Font_Metrics(shallow, shallowmetrics), "a short sheet still measures");
 	Check(!UI_Sheet_Font_Cell(shallowmetrics, shallow, 'A', x, y), "a character past the end of a sheet has no cell");
+	Check(!UI_Sheet_Font_Cell(metrics, alpha, ' ', x, y) && !UI_Sheet_Font_Cell(metrics, alpha, '\t', x, y), "a space is moved over rather than drawn, whatever its cell holds");
 	Check(shallowmetrics.Advance['A'] == 6 / 3 + 1, "and falls back to the blank advance, as a space does");
 
 	UIImageIndexed blank = Build_Sheet(6, 8, 16, 16, 4, 255);

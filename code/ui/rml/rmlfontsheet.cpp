@@ -127,7 +127,9 @@ bool UI_Sheet_Font_Cell(UISheetFontMetrics const & metrics, UIImageIndexed const
 	x = 0;
 	y = 0;
 
-	if (character < 0 || character > 255 || metrics.CellsPerRow <= 0) {
+	// A space is moved over rather than drawn, as the dialog layer moves over every code at
+	// or below it. Its cell on the real sheets is not blank, so drawing it marks the page.
+	if (character <= ' ' || character > 255 || metrics.CellsPerRow <= 0) {
 		return(false);
 	}
 

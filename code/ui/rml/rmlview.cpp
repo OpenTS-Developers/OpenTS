@@ -78,6 +78,7 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	}
 
 	Doc->AddEventListener(Rml::EventId::Keydown, this);
+	Doc->AddEventListener(Rml::EventId::Mousedown, this);
 	Loaded();
 	return(true);
 }
@@ -85,7 +86,12 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 
 bool UIRmlViewClass::Prepare(UIShellClass & shell)
 {
-	return(shell.Rml_Context() != nullptr && Prepare(*shell.Rml_Context()));
+	if (shell.Rml_Context() == nullptr || !Prepare(*shell.Rml_Context())) {
+		return(false);
+	}
+
+	Shell = &shell;
+	return(true);
 }
 
 
@@ -110,6 +116,7 @@ void UIRmlViewClass::Release(void)
 	if (Doc != nullptr) {
 		Doc->Hide();
 		Doc->RemoveEventListener(Rml::EventId::Keydown, this);
+		Doc->RemoveEventListener(Rml::EventId::Mousedown, this);
 	}
 
 	if (Host != nullptr) {
@@ -123,6 +130,7 @@ void UIRmlViewClass::Release(void)
 
 	Doc = nullptr;
 	Host = nullptr;
+	Shell = nullptr;
 	ModelCreated = false;
 	Model = Rml::DataModelHandle();
 	Types.reset();
@@ -180,9 +188,46 @@ void UIRmlViewClass::Reveal_Done(void)
 }
 
 
-// Enter accepts and Escape cancels whichever element has focus, as the dialog keys do.
+// A control the dialog layer drew sounds a click as it goes down. The list is the controls
+// that layer sounded: buttons, check boxes, list rows, the combo and its items, and the
+// track bar. A text field is not among them, because the dialog layer left one to the real
+// Win32 control underneath it.
+bool UIRmlViewClass::Sounds_A_Click(Rml::Element const * element)
+{
+	if (element == nullptr) {
+		return(false);
+	}
+
+	Rml::String const & tag = element->GetTagName();
+	if (tag == "input") {
+		Rml::String type = element->GetAttribute<Rml::String>("type", "text");
+		return(type == "checkbox" || type == "radio" || type == "range" || type == "button" || type == "submit");
+	}
+
+	return(tag == "button" || tag == "select" || tag == "dataselect" || tag == "option" || element->IsClassSet("item"));
+}
+
+
+// Enter accepts and Escape cancels whichever element has focus, as the dialog keys do, and
+// pressing a control sounds the click the dialog layer sounded.
 void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 {
+	if (event.GetId() == Rml::EventId::Mousedown) {
+		if (Shell == nullptr || event.GetParameter<int>("button", 0) != 0) {
+			return;
+		}
+		for (Rml::Element * element = event.GetTargetElement(); element != nullptr && element != Doc; element = element->GetParentNode()) {
+			if (element->IsClassSet("disabled") || element->HasAttribute("disabled")) {
+				return;
+			}
+			if (Sounds_A_Click(element)) {
+				Shell->Play_Click();
+				return;
+			}
+		}
+		return;
+	}
+
 	if (event.GetId() != Rml::EventId::Keydown) {
 		return;
 	}

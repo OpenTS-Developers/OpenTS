@@ -666,7 +666,10 @@ so asking for text in a color moves the whole palette toward that color
 instead of tinting a white sheet, and an atlas is baked per color rather than
 per draw as the dialog layer rebuilt its table. The sheets have one size, so a
 document asking for another gets them magnified; `font-size: 16dp` is that
-size, which is how the family scales with the frame.
+size, which is how the family scales with the frame. A space, and every code
+below it, moves the pen without drawing, as the dialog layer moved over them:
+the sheets' space cell is not blank, and drawing it puts a stray line over the
+text.
 
 `dlg-sans` is the face the Win32 dialogs asked GDI for. They asked for the
 raster "MS Sans Serif"; OpenTS loads its TrueType successor `micross.ttf`,
@@ -727,6 +730,13 @@ scroll bars, track bars, the progress bar, group boxes, hotkey fields and
 tooltips are authored the same way, in the cyan frame `OD_Draw_Rect`
 substitutes for white, and wait for the screens that use them. A screen's
 sheet that still needs a visual rule means the kit is missing a control.
+
+Pressing one of those controls sounds the click the dialog layer sounded, and
+a disabled control stays silent because that layer never handed it the mouse.
+The rules name the sound rather than the shell, so a mod that changes
+`GenericClick` changes this one. The view turns a press into the sound,
+because what counts as a press is the toolkit's business; the shell only
+carries it to the host.
 
 A modal opens as a `Begin_Dialog` dialog did. The screen is laid out whole,
 then let out through a band widening from the middle, 12 pixels a side a
