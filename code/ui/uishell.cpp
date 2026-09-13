@@ -379,6 +379,8 @@ bool UIShellClass::Pointer_Owned(void) const
 }
 
 
+// An arrow request is applied as well: the game keeps its own shape captured under a
+// screen, and in the frontend that shape is blank.
 bool UIShellClass::Handle_Set_Cursor(void)
 {
 	if (!Ready || !Pointer_Owned()) {
@@ -386,28 +388,25 @@ bool UIShellClass::Handle_Set_Cursor(void)
 	}
 
 	UICursor request = System->Cursor_Request();
-	if (request == UI_CURSOR_ARROW) {
-		return(false);
-	}
-
 	Host.Apply_Cursor(request);
 	AppliedCursor = request;
 	return(true);
 }
 
 
-// A hover that changed the request shows the new shape at once rather than at the next
-// WM_SETCURSOR, which only a pointer move brings.
+// A screen that opened or a hover that changed the request shows the new shape at once
+// rather than at the next WM_SETCURSOR, which only a pointer move brings.
 void UIShellClass::Apply_Cursor_Request(void)
 {
-	UICursor request = Pointer_Owned() ? System->Cursor_Request() : UI_CURSOR_ARROW;
-	if (request == AppliedCursor) {
+	if (!Pointer_Owned()) {
+		if (AppliedCursor.has_value()) {
+			Restore_Cursor();
+		}
 		return;
 	}
 
-	if (request == UI_CURSOR_ARROW) {
-		Restore_Cursor();
-	} else {
+	UICursor request = System->Cursor_Request();
+	if (AppliedCursor != request) {
 		Host.Apply_Cursor(request);
 		AppliedCursor = request;
 	}
@@ -416,7 +415,7 @@ void UIShellClass::Apply_Cursor_Request(void)
 
 void UIShellClass::Restore_Cursor(void)
 {
-	AppliedCursor = UI_CURSOR_ARROW;
+	AppliedCursor.reset();
 	Host.Restore_Game_Cursor();
 }
 
@@ -557,6 +556,9 @@ void UIShellClass::Shutdown(void)
 	}
 	Input.Reset();
 	Reset_Text();
+	if (AppliedCursor.has_value()) {
+		Restore_Cursor();
+	}
 
 	// The documents go while the context still exists; a caller hiding its notice
 	// afterwards finds nothing to do.
@@ -1085,7 +1087,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		std::snprintf(label, sizeof(label), "%s closed", view.Name());
 		Render->Log_Resource_Counts(label);
 		System->Reset_Cursor_Request();
-		Restore_Cursor();
+		Apply_Cursor_Request();
 		Host.Clear_Keyboard_Queue();
 		Host.Focus_Main_Window();
 	}
