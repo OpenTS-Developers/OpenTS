@@ -2,7 +2,7 @@ body
 {
 	width: 100%;
 	height: 100%;
-	font-family: "Open Sans";
+	font-family: dlg-sans;
 	font-size: 15dp;
 	color: #e6e6e6;
 	pointer-events: none;

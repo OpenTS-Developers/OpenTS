@@ -12,6 +12,7 @@
 // messages become code points, what the overlay renderer refuses before it draws, and what
 // the presenter owes the screen after a present is taken, refused or skipped.
 
+#include "ui/rml/rmlfontsheet.h"
 #include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
 #include "ui/uiinput.h"
@@ -345,6 +346,111 @@ void Test_Image(void)
 }
 
 
+// Builds a font sheet the way the dialog art is drawn: cells of one size in a grid, with a
+// one-pixel margin above and to the left of every glyph. The first cell is filled solid,
+// because that is the cell the margins and the glyph size are measured against and no
+// character draws from it; every later cell inks `ink` columns, so its advance is known.
+UIImageIndexed Build_Sheet(int glyphwidth, int glyphheight, int cellsperrow, int rows, int ink, std::uint8_t value)
+{
+	int cellw = glyphwidth + 1;
+	int cellh = glyphheight + 1;
+
+	UIImageIndexed sheet;
+	sheet.Width = cellw * cellsperrow;
+	sheet.Height = cellh * rows;
+	sheet.Pixels.assign((std::size_t)sheet.Width * sheet.Height, 0);
+
+	// Index 0 is empty and index 1 carries the value, so coverage reads off the red gun.
+	sheet.Palette[0] = 0;
+	sheet.Palette[3] = value;
+	sheet.Palette[4] = value;
+	sheet.Palette[5] = value;
+
+	for (int cell = 0; cell < cellsperrow * rows; cell++) {
+		int originx = (cell % cellsperrow) * cellw + 1;
+		int originy = (cell / cellsperrow) * cellh + 1;
+		int columns = (cell == 0) ? glyphwidth : ink;
+
+		for (int y = 0; y < glyphheight; y++) {
+			for (int x = 0; x < columns; x++) {
+				sheet.Pixels[(std::size_t)(originy + y) * sheet.Width + originx + x] = 1;
+			}
+		}
+	}
+
+	return(sheet);
+}
+
+
+void Test_Sheet_Font(void)
+{
+	UIImageIndexed alpha = Build_Sheet(6, 8, 16, 16, 4, 255);
+	UISheetFontMetrics metrics;
+
+	Check(UI_Sheet_Font_Metrics(alpha, metrics), "a font measures off its alpha sheet");
+	Check(metrics.TopMargin == 1 && metrics.LeftMargin == 1, "the blank margins around a cell are found");
+	Check(metrics.GlyphWidth == 6 && metrics.GlyphHeight == 8, "and the inked area inside it");
+	Check(metrics.CellsPerRow == 16 && metrics.Cell_Width() == 7 && metrics.Cell_Height() == 9, "a row holds as many cells as the sheet is wide");
+	Check(metrics.Advance['A'] == 4, "a character advances by the columns it inks");
+
+	// The cell for a character is the one after it, so 'A' at 65 sits in cell 66.
+	int x = 0;
+	int y = 0;
+	Check(UI_Sheet_Font_Cell(metrics, alpha, 'A', x, y) && x == (66 % 16) * 7 && y == (66 / 16) * 9, "a character's cell is the one after it");
+
+	// A sheet with only the first two rows of cells cannot hold the later ones.
+	UIImageIndexed shallow = Build_Sheet(6, 8, 16, 2, 4, 255);
+	UISheetFontMetrics shallowmetrics;
+	Check(UI_Sheet_Font_Metrics(shallow, shallowmetrics), "a short sheet still measures");
+	Check(!UI_Sheet_Font_Cell(shallowmetrics, shallow, 'A', x, y), "a character past the end of a sheet has no cell");
+	Check(shallowmetrics.Advance['A'] == 6 / 3 + 1, "and falls back to the blank advance, as a space does");
+
+	UIImageIndexed blank = Build_Sheet(6, 8, 16, 16, 4, 255);
+	blank.Pixels.assign(blank.Pixels.size(), 0);
+	UISheetFontMetrics blankmetrics;
+	Check(!UI_Sheet_Font_Metrics(blank, blankmetrics), "a sheet with nothing inked cannot be measured");
+
+	Check(UI_Sheet_Font_Coverage(alpha, 0, 0) == 0, "the margin around a glyph covers nothing");
+	Check(UI_Sheet_Font_Coverage(alpha, 8, 1) == 255, "an inked pixel covers fully");
+	Check(UI_Sheet_Font_Coverage(alpha, -1, 0) == 0 && UI_Sheet_Font_Coverage(alpha, 0, 10000) == 0, "a pixel off the sheet covers nothing");
+
+	// A palette shading one hue from dark to light: the remap must carry the shading over
+	// rather than flatten it to the color asked for.
+	std::uint8_t palette[768] = {};
+	for (int entry = 0; entry < 256; entry++) {
+		palette[entry * 3 + 1] = (std::uint8_t)entry;
+	}
+
+	std::uint8_t remapped[768] = {};
+	UI_Sheet_Font_Remap(palette, 255, 0, 0, remapped);
+	Check(remapped[0] == 0 && remapped[1] == 0 && remapped[2] == 0, "the darkest entry of a font's palette stays dark");
+	Check(remapped[255 * 3] > remapped[128 * 3], "a lighter entry stays lighter, so the shading survives");
+
+	std::uint8_t green[768] = {};
+	UI_Sheet_Font_Remap(palette, 0, 255, 0, green);
+	Check(std::memcmp(remapped, green, sizeof(remapped)) != 0, "asking for another color gives another palette");
+
+	UIImageIndexed index = Build_Sheet(6, 8, 16, 16, 4, 255);
+	for (std::size_t pixel = 0; pixel < index.Pixels.size(); pixel++) {
+		if (index.Pixels[pixel] != 0) {
+			index.Pixels[pixel] = 255;
+		}
+	}
+	std::memcpy(index.Palette, palette, sizeof(palette));
+
+	std::vector<std::uint8_t> atlas;
+	Check(UI_Sheet_Font_Atlas(index, alpha, remapped, atlas) && atlas.size() == index.Pixels.size() * 4, "an atlas is four bytes a pixel");
+
+	std::size_t inked = ((std::size_t)1 * index.Width + 8) * 4;
+	std::size_t empty = 0;
+	Check(atlas[inked + 3] == 255 && atlas[inked] == remapped[255 * 3], "an inked pixel takes its remapped color at full coverage");
+	Check(atlas[empty + 3] == 0 && atlas[empty] == 0, "a pixel the sheet does not cover is clear, with no color left to bleed");
+
+	UIImageIndexed mismatched = Build_Sheet(6, 8, 8, 16, 4, 255);
+	Check(!UI_Sheet_Font_Atlas(mismatched, alpha, remapped, atlas), "two sheets of different sizes are not a font");
+}
+
+
 void Test_Dirty_State(void)
 {
 	VideoDirtyStateClass dirty;
@@ -400,6 +506,7 @@ int main(void)
 	Test_Render_Transform();
 	Test_Render_Mask();
 	Test_Image();
+	Test_Sheet_Font();
 	Test_Dirty_State();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

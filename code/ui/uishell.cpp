@@ -10,9 +10,11 @@
 #include "ui/uishell.h"
 
 #include "ui/dev/uidev.h"
+#include "ui/rml/rmlfont.h"
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlrender.h"
 #include "ui/rml/rmlsystem.h"
+#include "ui/rml/rmltexture.h"
 #include "ui/uihost.h"
 #include "ui/uiview.h"
 
@@ -181,7 +183,8 @@ UIShellClass::UIShellClass(UIShellHostClass & host, std::unique_ptr<UIRmlSystemC
 	Host(host),
 	System(std::move(system)),
 	File(std::move(file)),
-	Render(std::move(render))
+	Render(std::move(render)),
+	Fonts(std::make_unique<UIFontEngineClass>())
 {
 }
 
@@ -498,6 +501,64 @@ void UIShellClass::Drain_Deferred(void)
 }
 
 
+// Takes a bitmap family's two sheets through the game's own file search and hands them to
+// the font engine. The sheets are the interface's own art, so a player without it simply
+// has no such family and the documents fall back to an outline face.
+// The families a document may name. The bitmap one is the dialog art's own pair of sheets;
+// the sans one is the face the Win32 dialogs asked GDI for, in the TrueType successor that
+// scales; and the shipped one is what stands in for either.
+static char const * const UI_SHEET_FONT_FAMILY = "dlgsys";
+static char const * const UI_SANS_FONT_FAMILY = "dlg-sans";
+static char const * const UI_SANS_FONT_FILE = "micross.ttf";
+static char const * const UI_SHIPPED_FONT_FILE = "Arima.ttf";
+
+
+bool UIShellClass::Load_Sheet_Font(char const * family)
+{
+	std::string index = std::string(family) + "i.pcx";
+	std::string alpha = std::string(family) + "a.pcx";
+
+	UIImageIndexed indexsheet;
+	UIImageIndexed alphasheet;
+	if (!UI_Load_Indexed_Image(index.c_str(), indexsheet) || !UI_Load_Indexed_Image(alpha.c_str(), alphasheet)) {
+		return(false);
+	}
+
+	return(Fonts->Load_Sheets(family, indexsheet, alphasheet));
+}
+
+
+// The faces every document may name. The bitmap family is the dialog art's own; the sans
+// face is the system's, as the Win32 dialogs drew with; and the shipped face stands in for
+// either when it is not there, so a stylesheet never names a fallback of its own.
+void UIShellClass::Register_Fonts(void)
+{
+	Fonts->Set_Fallback(Rml::GetFontEngineInterface());
+	Rml::SetFontEngineInterface(Fonts.get());
+
+	std::string sans = Host.System_Font_Path(UI_SANS_FONT_FILE);
+	bool sansloaded = !sans.empty() && Rml::LoadFontFace(sans, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+
+	FontLoaded = Rml::LoadFontFace(UI_SHIPPED_FONT_FILE);
+	if (!FontLoaded) {
+		Log("UI: %s did not load, so no document can be shown\n", UI_SHIPPED_FONT_FILE);
+		return;
+	}
+
+	if (!sansloaded) {
+		Log("UI: %s is not on this machine, so %s is the shipped face\n", UI_SANS_FONT_FILE, UI_SANS_FONT_FAMILY);
+		Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	}
+
+	// The bitmap family is art, not a font file, so a machine without the game's own
+	// interface art gets the shipped face under that name instead.
+	if (!Load_Sheet_Font(UI_SHEET_FONT_FAMILY)) {
+		Log("UI: the %s sheets did not load, so %s is the shipped face\n", UI_SHEET_FONT_FAMILY, UI_SHEET_FONT_FAMILY);
+		Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SHEET_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	}
+}
+
+
 bool UIShellClass::Init(void)
 {
 	if (Ready) {
@@ -531,10 +592,7 @@ bool UIShellClass::Init(void)
 
 	Apply_Dimensions();
 
-	FontLoaded = Rml::LoadFontFace("OpenSans.ttf");
-	if (!FontLoaded) {
-		Log("UI: OpenSans.ttf did not load, so no document can be shown\n");
-	}
+	Register_Fonts();
 
 	Ready = true;
 	Log("UI: RmlUi %s ready over a %dx%d frame at %.2f pixels per dp\n",
@@ -1004,7 +1062,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 	if (!FontLoaded) {
-		Log("UI: %s needs OpenSans.ttf, which did not load\n", view.Name());
+		Log("UI: %s needs %s, which did not load\n", view.Name(), UI_SHIPPED_FONT_FILE);
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 

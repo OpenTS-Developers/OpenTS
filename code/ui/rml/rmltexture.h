@@ -9,6 +9,8 @@
 
 #pragma once
 
+#include "ui/rml/rmlimage.h"
+
 #include <vector>
 
 
@@ -27,3 +29,6 @@ enum UIImageResult
 // premultiplied RGBA8 rows from the top down. The output is empty unless the result is
 // UI_IMAGE_LOADED.
 UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height);
+
+// The same file left as palette indices, which is what the bitmap font reads. PCX only.
+bool UI_Load_Indexed_Image(char const * name, UIImageIndexed & image);

@@ -31,6 +31,7 @@ namespace Rml
 	class FileInterface;
 }
 
+class UIFontEngineClass;
 class UIRmlRenderClass;
 class UIRmlSystemClass;
 class UIViewClass;
@@ -166,10 +167,14 @@ class UIShellClass
 		std::unique_ptr<UIRmlSystemClass> System;
 		std::unique_ptr<Rml::FileInterface> File;
 		std::unique_ptr<UIRmlRenderClass> Render;
+		std::unique_ptr<UIFontEngineClass> Fonts;
 
 		Rml::Context * Context = nullptr;
 		bool Ready = false;
 		bool FontLoaded = false;
+
+		void Register_Fonts(void);
+		bool Load_Sheet_Font(char const * family);
 
 		// Set while the context updates or renders, while the hook runs, and while a tick
 		// runs; each refuses to re-enter itself.

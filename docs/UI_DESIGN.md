@@ -215,7 +215,7 @@ rule the tree follows, not a build boundary.
 | --- | --- | --- |
 | `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals | landed |
 | `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay) | landed |
-| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA; toolkit-free, so the harness runs it), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font; both toolkit-free, so the harness runs them), `rmlfont` (the font engine over those sheets, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
 | `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
 | `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
 | `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside | landed |
@@ -657,17 +657,39 @@ pointers.
 
 ### Fonts
 
-Fonts use RmlUi's FreeType engine with the variable Open Sans (OFL 1.1) from
-Google Fonts shipped in `ui/` as `OpenSans.ttf` beside its license text; the
-engine registers each of its named weights from the one file. The legacy
-dialogs already draw with a system TrueType face, so this changes nothing
-about their look. RmlUi uses one font engine per process, installed
-with `SetFontEngineInterface` before `Rml::Initialise`, and the built-in
-engine is not reachable from a custom one. In-game text that must match the
-bitmap fonts, needed only by the post-migration sidebar view, has two routes:
-convert the game's `.fnt` faces to TrueType at build time, or write a bitmap
-engine over `WWFontClass` data as RmlUi's `bitmap_font` sample does and
-commit every document to bitmap faces. That choice waits for that view.
+A document names one of two families, and never a fallback of its own.
+
+`dlgsys` is the dialog art's own bitmap font: a pair of PCX sheets of 256
+cells in Windows-1252 order, one naming a color per pixel and one carrying
+coverage, read through `rmlfontsheet`. Its glyphs are shaded rather than flat,
+so asking for text in a color moves the whole palette toward that color
+instead of tinting a white sheet, and an atlas is baked per color rather than
+per draw as the dialog layer rebuilt its table. The sheets have one size, so a
+document asking for another gets them magnified; `font-size: 16dp` is that
+size, which is how the family scales with the frame.
+
+`dlg-sans` is the face the Win32 dialogs asked GDI for. They asked for the
+raster "MS Sans Serif"; OpenTS loads its TrueType successor `micross.ttf`,
+which ships with the same Windows, scales freely and needs no strike
+selection. The shell asks the host where the file is rather than naming a
+Windows path itself.
+
+Arima (OFL 1.1) from Google Fonts ships in `ui/` as `Arima.ttf` beside its
+license text and stands in for either family when the machine has no system
+face or the player has no game art, so a stylesheet never has to name a
+fallback and the harness renders every document without either.
+
+RmlUi uses one font engine per process. `Rml::Initialise` creates its own only
+when none is set, and keeps it alive until shutdown, so OpenTS initialises
+first, takes that engine from `Rml::GetFontEngineInterface`, and installs one
+that answers for the bitmap families and hands everything else to it. RmlUi
+calls `Shutdown` on whichever engine is installed, so the engine it made is
+shut down through that forwarding or not at all.
+
+In-game text that must match the game's `.fnt` faces, needed only by the
+post-migration sidebar view, still has two routes: convert them to TrueType at
+build time, or extend the sheet engine over `WWFontClass` data. That choice
+waits for that view.
 
 ### Strings
 
@@ -951,7 +973,9 @@ link settings, drives RmlUi core through a recording render interface and a
 counting system interface, links the string table and the screen presenters,
 and builds `UIShellClass` itself over a host the test controls:
 
-- Load every shipped document from the source tree with the shipped font,
+- Load every shipped document from the source tree with the shipped font under
+  both family names, which is what a machine with neither the system face nor
+  the game's art has,
   show, update, and render it, and fail on a parse error, an RmlUi warning
   or error, a call to a render method the shell leaves at its default, a
   fragment the renderer would refuse, a scissor outside the context, or a
@@ -993,8 +1017,9 @@ and builds `UIShellClass` itself over a host the test controls:
 ownership table and its cancellations, the UTF-8 decoder, the renderer's
 geometry, size and scissor checks, the model matrix a transformed fragment
 draws through and the stencil each clip mask operation asks for, the PCX
-decoder over files the test builds itself, and the presenter's marks through
-consume, restore and reset.
+decoder over files the test builds itself, the bitmap font's metrics, remap and
+atlas over sheets it builds itself, and the presenter's marks through consume,
+restore and reset.
 
 `toolkitheaders` runs `cmake/CheckToolkitHeaders.cmake` over `code/` and
 fails on a toolkit or renderer header included outside `code/ui/rml/`, or an

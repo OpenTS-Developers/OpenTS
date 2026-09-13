@@ -6,12 +6,18 @@
 # is built in over a host the harness controls and a stub in place of the developer overlays.
 opents_add_test(UIShell
     NAME uishell
-    SOURCES uishell.cpp uidevstub.cpp
+    SOURCES uishell.cpp uidevstub.cpp uitexturestub.cpp
     ENGINE
         ui/uiscreen.cpp
         ui/uiinput.cpp
         ui/uishell.cpp
         ui/uiunicode.cpp
+        utf8.cpp
+        hsv.cpp
+        rgb.cpp
+        ui/rml/rmlfont.cpp
+        ui/rml/rmlfontsheet.cpp
+        ui/rml/rmlimage.cpp
         ui/rml/rmlkeys.cpp
         ui/rml/rmlrenderbase.cpp
         ui/rml/rmlrendermath.cpp

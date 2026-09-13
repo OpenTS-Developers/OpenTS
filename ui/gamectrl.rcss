@@ -5,7 +5,7 @@ body
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	font-family: "Open Sans";
+	font-family: dlg-sans;
 	font-size: 13dp;
 	color: #e6e6e6;
 }

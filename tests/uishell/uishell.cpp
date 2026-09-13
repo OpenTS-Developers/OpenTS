@@ -308,6 +308,12 @@ class TestHostClass : public UIShellHostClass
 			return(Toggled[virtualkey & 0xFF]);
 		}
 
+		// The harness has no machine fonts, so every family falls back to the shipped face.
+		virtual std::string System_Font_Path(char const *) const override
+		{
+			return(std::string());
+		}
+
 		virtual bool Window_Is_Unicode(void) const override
 		{
 			return(Unicode);
@@ -2381,7 +2387,12 @@ void Test_Documents(void)
 	Check(Rml::Initialise(), "RmlUi initialises with the recording interfaces");
 	std::printf("  RmlUi %s\n", Rml::GetVersion().c_str());
 
-	Check(Rml::LoadFontFace((directory / "OpenSans.ttf").string()), "the shipped font loads");
+	// The shipped face stands in for both families a document may name, as it does in the
+	// shell on a machine with neither the system face nor the game's art.
+	std::string shipped = (directory / "Arima.ttf").string();
+	Check(Rml::LoadFontFace(shipped), "the shipped font loads");
+	Check(Rml::LoadFontFace(shipped, "dlg-sans", Rml::Style::FontStyle::Normal), "and stands in for the dialogs' sans family");
+	Check(Rml::LoadFontFace(shipped, "dlgsys", Rml::Style::FontStyle::Normal), "and for the bitmap family the art would supply");
 
 	Rml::Context * context = Rml::CreateContext("test", Rml::Vector2i(1280, 800));
 	Check(context != nullptr, "a context is created");

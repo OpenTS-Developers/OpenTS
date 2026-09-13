@@ -7,8 +7,11 @@ opents_add_test(UILogic
     NAME uilogic
     SOURCES uilogictest.cpp
     ENGINE
+        hsv.cpp
+        rgb.cpp
         ui/uiinput.cpp
         ui/rml/rmlimage.cpp
+        ui/rml/rmlfontsheet.cpp
         ui/rml/rmlrendermath.cpp
         videodirty.cpp
 )

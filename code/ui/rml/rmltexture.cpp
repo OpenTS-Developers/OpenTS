@@ -58,6 +58,23 @@ static bool Read_Whole_File(char const * name, std::vector<unsigned char> & byte
 }
 
 
+bool UI_Load_Indexed_Image(char const * name, UIImageIndexed & image)
+{
+	image = UIImageIndexed();
+
+	if (name == NULL || !Has_Extension(name, ".pcx")) {
+		return(false);
+	}
+
+	std::vector<unsigned char> encoded;
+	if (!Read_Whole_File(name, encoded)) {
+		return(false);
+	}
+
+	return(UI_Decode_PCX(std::span<std::uint8_t const>(encoded.data(), encoded.size()), image));
+}
+
+
 UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height)
 {
 	rgba.clear();

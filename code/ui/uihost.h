@@ -15,6 +15,8 @@
 #include "ui/uiinput.hh"
 #include "win.h"
 
+#include <string>
+
 
 // Where the game's frame lands in the client area, in client pixels, and how many of them
 // one game pixel spans.
@@ -67,6 +69,9 @@ class UIShellHostClass
 		virtual bool Key_Down(int virtualkey) const = 0;
 		// Whether a key that latches rather than repeats, Caps Lock or Num Lock, is on.
 		virtual bool Key_Toggled(int virtualkey) const = 0;
+		// Where the platform keeps the named font file, empty when it has no such face.
+		// The shell names no path of its own, so a port answers this its own way.
+		virtual std::string System_Font_Path(char const * face) const = 0;
 		// True when text messages carry UTF-16 units; otherwise they carry one byte each of
 		// the code page below.
 		virtual bool Window_Is_Unicode(void) const = 0;

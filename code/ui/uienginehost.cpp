@@ -152,6 +152,24 @@ class UIEngineHostClass : public UIShellHostClass
 			return((GetKeyState(virtualkey) & 1) != 0);
 		}
 
+		// Windows keeps its faces in one directory, and the file name is the one the system
+		// has used for that face since it shipped.
+		virtual std::string System_Font_Path(char const * face) const override
+		{
+			char directory[MAX_PATH];
+			unsigned int length = GetWindowsDirectoryA(directory, MAX_PATH);
+			if (length == 0 || length >= MAX_PATH) {
+				return(std::string());
+			}
+
+			std::string path = std::string(directory) + "\\Fonts\\" + face;
+			if (GetFileAttributesA(path.c_str()) == INVALID_FILE_ATTRIBUTES) {
+				return(std::string());
+			}
+
+			return(path);
+		}
+
 		virtual bool Window_Is_Unicode(void) const override
 		{
 			return(IsWindowUnicode(MainWindow) != FALSE);
