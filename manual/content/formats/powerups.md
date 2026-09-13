@@ -8,6 +8,8 @@ files:
   - LANGRULE.INI
   - FIRESTRM.INI
   - LANGFS.INI
+  - MPLAYER.INI
+  - MPLAYERFS.INI
   - map file
 section: Powerups
 syntax: "<crate type>=<shares>,<AnimType ID>,<data>"

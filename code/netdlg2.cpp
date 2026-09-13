@@ -1994,6 +1994,8 @@ static int Request_To_Join(int join_index)
 	DebugString("BuildNumber = %ld\n", Build_Number());
 	DebugString("RuleINI ID = %lX\n", RuleINI->Get_Unique_ID());
 	DebugString("FSRuleINI = %lX\n", FSRuleINI.Get_Unique_ID());
+	DebugString("MPRuleINI = %lX\n", MPRuleINI.Get_Unique_ID());
+	DebugString("FSMPRuleINI = %lX\n", FSMPRuleINI.Get_Unique_ID());
 
 	Ipx.Send_Global_Message(&Session.GPacket, sizeof(GlobalPacketType), 1, &(Session.Games[CurGame]->Address));
 
@@ -3083,6 +3085,8 @@ static void Get_Join_Responses(void)
 				DebugString("BuildNumber = %ld\n", Build_Number());
 				DebugString("RuleINI ID = %lX\n", RuleINI->Get_Unique_ID());
 				DebugString("FSRuleINI = %lX\n", FSRuleINI.Get_Unique_ID());
+				DebugString("MPRuleINI = %lX\n", MPRuleINI.Get_Unique_ID());
+				DebugString("FSMPRuleINI = %lX\n", FSMPRuleINI.Get_Unique_ID());
 				if (Session.GPacket.PlayerInfo.CheatCheck != RulesID) { match = false; }
 				if (Session.GPacket.PlayerInfo.AICheatCheck != RulesClass::Get_AI_Unique_ID()) { match = false; }
 				if (Session.GPacket.PlayerInfo.ArtCheatCheck != ArtID) { match = false; }

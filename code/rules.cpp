@@ -82,6 +82,7 @@
 #include "savestream.h"
 #include "scheme.h"
 #include "script.h"
+#include "session.h"
 #include "side.h"
 #include "smudtype.h"
 #include "stimer.h"
@@ -615,11 +616,13 @@ RulesClass::~RulesClass(void)
 /// <summary>
 /// Builds the game's rule data from scratch.
 /// This routine wipes every object type heap clean, reloads the art database, and then
-/// processes the rule file supplied. The Firestorm and language specific rule files are
-/// layered over the top afterwards, so that each may override what came before it.
+/// processes the rule file supplied. The language, Firestorm and multiplayer rule files are
+/// layered over the top afterwards, so that each may override what came before it. The
+/// caller's own overrides are applied after this returns, so a scenario outranks them all.
 /// </summary>
 /// <remarks>Every type object in the game is destroyed here, so nothing may be holding a
-/// pointer to one when this routine is called.</remarks>
+/// pointer to one when this routine is called. The scalars are not reset first, so one no
+/// file names keeps the value the last game left it with.</remarks>
 void RulesClass::Initialize(CCINIClass const & ini)
 {
 	while (ColorSchemes.Count()) {
@@ -721,6 +724,20 @@ void RulesClass::Initialize(CCINIClass const & ini)
 		CCINIClass langfsini;
 		langfsini.Load(langfsfile, false);
 		Addition(langfsini);
+	}
+
+	// A pass over an empty database still walks every type heap, so the section counts keep
+	// that cost off a deployment that ships neither file.
+	if (Session.Type != GAME_NORMAL) {
+		if (MPRuleINI.Section_Count() > 0) {
+			DebugString("Processing %s\n", DeploymentConfig.MultiplayerRulesFile.c_str());
+			Addition(MPRuleINI);
+		}
+
+		if (Addon_Enabled(ADDON_FIRESTORM) == true && FSMPRuleINI.Section_Count() > 0) {
+			DebugString("Processing %s\n", DeploymentConfig.MultiplayerRulesExpansionFile.c_str());
+			Addition(FSMPRuleINI);
+		}
 	}
 }
 
@@ -2972,7 +2989,9 @@ bool RulesClass::Objects(CCINIClass const & ini)
 /// Fetches the identifying checksum of the main rule file.
 /// This routine is used when comparing rule versions between machines, so that a
 /// multiplayer game can be refused when the players are not running the same rules. The
-/// Firestorm rule file is folded into the result whenever that addon is enabled.
+/// Firestorm rule file is folded into the result whenever that addon is enabled, and each
+/// multiplayer rule file whenever it supplied a section. An absent file has to leave the
+/// result alone, because an empty database still hashes to a value of its own.
 /// </summary>
 /// <returns>Returns with the unique ID of the rules currently in force.</returns>
 int RulesClass::Get_Rule_Unique_ID(void)
@@ -2980,6 +2999,12 @@ int RulesClass::Get_Rule_Unique_ID(void)
 	int id = RuleINI->Get_Unique_ID();
 	if (Addon_Enabled(ADDON_FIRESTORM)) {
 		id += FSRuleINI.Get_Unique_ID();
+	}
+	if (MPRuleINI.Section_Count() > 0) {
+		id += MPRuleINI.Get_Unique_ID();
+	}
+	if (Addon_Enabled(ADDON_FIRESTORM) && FSMPRuleINI.Section_Count() > 0) {
+		id += FSMPRuleINI.Get_Unique_ID();
 	}
 	return(id);
 }

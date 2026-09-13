@@ -49,14 +49,16 @@ Battle=BATTLE.INI
 BattleExpansion=BATTLEFS.INI
 LanguageRules=LANGRULE.INI
 LanguageRulesExpansion=LANGFS.INI
+MultiplayerRules=MPLAYER.INI
+MultiplayerRulesExpansion=MPLAYERFS.INI
 Tutorial=TUTORIAL.INI
 UI=UI.INI
 Settings=SUN.INI
 ```
 
-Each key names one file, and an unwritten key keeps the name above. `Rules` names the rules, `Art` the artwork, `AI` the computer player's data, `Sound` the [sound registry](/formats/sound-ini/), `Theme` the [music registry](/formats/theme-ini/), `Battle` the campaign list, `LanguageRules` the translated rules read over the rest, `Tutorial` the [numbered text lines](/formats/tutorial-ini/), `UI` the [interface settings](/formats/ui-ini/), and `Settings` the file a player's own options are written back to.
+Each key names one file, and an unwritten key keeps the name above. `Rules` names the rules, `Art` the artwork, `AI` the computer player's data, `Sound` the [sound registry](/formats/sound-ini/), `Theme` the [music registry](/formats/theme-ini/), `Battle` the campaign list, `LanguageRules` the translated rules read over the rest, `MultiplayerRules` the [rules read only outside a campaign](/formats/multiplayer-rules/), `Tutorial` the [numbered text lines](/formats/tutorial-ini/), `UI` the [interface settings](/formats/ui-ini/), and `Settings` the file a player's own options are written back to.
 
-The seven `Expansion` keys name the expansion's copy of a file, which is read over the base one. `RulesExpansion` also decides whether the expansion is installed: the game looks for that file and nothing else, so renaming it moves the test.
+The eight `Expansion` keys name the expansion's copy of a file, which is read over the base one. `RulesExpansion` also decides whether the expansion is installed: the game looks for that file and nothing else, so renaming it moves the test.
 
 Renaming a file does not move it. Every name here is searched for in the order the section below gives, the same as any other file the game opens.
 

@@ -718,6 +718,8 @@ void __cdecl Prog_End(void)
 	ArtINI.Clear();
 	FSRuleINI.Clear();
 	FSAIINI.Clear();
+	MPRuleINI.Clear();
+	FSMPRuleINI.Clear();
 	EditorINI.Clear();
 	ConfigINI.Clear();
 	ConfigINI.Clear();

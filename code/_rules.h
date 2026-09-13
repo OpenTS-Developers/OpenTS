@@ -26,6 +26,9 @@ extern CCINIClass ConfigINI;
 extern CCINIClass FSRuleINI;
 extern CCINIClass FSAIINI;
 
+extern CCINIClass MPRuleINI;
+extern CCINIClass FSMPRuleINI;
+
 extern CCINIClass *RuleINI;
 
 extern RulesClass *Rule;

@@ -41,6 +41,8 @@ void DeploymentConfigClass::Read_INI(INIClass const & ini)
 	BattleExpansionFile = ini.Get_String("Files", "BattleExpansion", BattleExpansionFile.c_str());
 	LanguageRulesFile = ini.Get_String("Files", "LanguageRules", LanguageRulesFile.c_str());
 	LanguageRulesExpansionFile = ini.Get_String("Files", "LanguageRulesExpansion", LanguageRulesExpansionFile.c_str());
+	MultiplayerRulesFile = ini.Get_String("Files", "MultiplayerRules", MultiplayerRulesFile.c_str());
+	MultiplayerRulesExpansionFile = ini.Get_String("Files", "MultiplayerRulesExpansion", MultiplayerRulesExpansionFile.c_str());
 	TutorialFile = ini.Get_String("Files", "Tutorial", TutorialFile.c_str());
 	UIFile = ini.Get_String("Files", "UI", UIFile.c_str());
 	SettingsFile = ini.Get_String("Files", "Settings", SettingsFile.c_str());

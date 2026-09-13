@@ -42,6 +42,8 @@ class DeploymentConfigClass
 		std::string BattleExpansionFile = "BATTLEFS.INI";
 		std::string LanguageRulesFile = "LANGRULE.INI";
 		std::string LanguageRulesExpansionFile = "LANGFS.INI";
+		std::string MultiplayerRulesFile = "MPLAYER.INI";
+		std::string MultiplayerRulesExpansionFile = "MPLAYERFS.INI";
 		std::string TutorialFile = "TUTORIAL.INI";
 		std::string UIFile = "UI.INI";
 
