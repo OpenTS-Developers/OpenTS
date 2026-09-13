@@ -114,6 +114,11 @@ Goals:
   legacy screen available behind a switch until OwnerDraw is retired.
 - Make screens interchangeable at the screen level: a model or presenter that
   knows nothing about the toolkit, and one view per toolkit.
+- Keep the subsystem portable by preparation, the approach
+  [Project direction](DIRECTION.md) sets for the engine. Screen behavior,
+  the screen contract, input ownership, coordinate mapping, and the render
+  checks carry no operating system type, so a later port replaces the host
+  and the platform edge rather than the screens.
 - Leave GadgetClass and MSEngine in place; migrate them later through the same
   screen contract when a screen is worth it. The sidebar follows only after
   the Win32 dialogs are gone, as a player-selectable alternative to the
@@ -135,6 +140,10 @@ Limits, chosen to keep the work bounded:
 - No arbitrary layering of native and GPU UI. The coexistence rule under
   [Input and focus](#input-and-focus) is the whole policy.
 - No user UI scale setting yet. Documents follow the frame scale.
+- No platform abstraction layer. Windows is the only supported target, so the
+  shell's message hook and its host interface are written in Win32 terms. A
+  seam designed against one platform would be guesswork; the coupling is kept
+  where a port can find it instead, under [Portability](#portability).
 - The exception and assertion dialogs stay plain Win32. They must work when
   the renderer is the thing that failed.
 
@@ -775,6 +784,33 @@ can follow the screen contract when someone wants them.
 | Localization | The UTF-8 transition owns the encoding change; the UI adds no conversion of its own. |
 | Mods and resources | Legacy asset semantics unchanged; document paths, binding names, event names, and the styling profile are experimental until versioned with the first supported override package. |
 | Build | Win32 and x64 MSVC with the static CRT for every new dependency; CI builds and tests both platforms. |
+| Portability | No new operating system type outside the coupling listed under [Portability](#portability). |
+
+### Portability
+
+Windows is the supported target and the only platform the shell is written
+for. Portability is a direction rather than a feature here: preparatory work
+does not make another platform supported, and no platform layer is invented
+before there is a second platform to validate it against.
+
+These carry no operating system type today, and a port keeps them as they
+are: the presenters and their service interfaces, the screen contract, the
+view interface, the input ownership table and its text decoding, the pointer
+mapping, the render checks, and the bgfx renderer.
+
+The rest is written in Win32 terms. A port pays for it here:
+
+| Coupling | What a port costs |
+| --- | --- |
+| The shell's window message hook and its pumped-message intercept | The structural item. Messages become a neutral event at the platform edge, which rewrites one signature and the body behind it |
+| The window handle on `UIShellHostClass` | Three uses: two identity comparisons and the clipboard's owner. An opaque handle would serve, and `uihost.h` would stop pulling `win.h` into everything that includes it |
+| Key mapping in `code/ui/rml/rmlkeys.cpp` | Not only code. `KEYBOARD.INI` stores Windows virtual key numbers, so the mapping is also a data-format boundary |
+| The clipboard in `rmlsystem.cpp` and the conversions in `uiunicode.cpp` | Replaceable in place; `tests/uishell` already covers the behavior |
+| The developer overlay's input entry points | They follow whatever event type the hook adopts |
+| `UIWaitBoxClass`'s window member | The only screen header that reaches Win32, and the one leak in the containment rule |
+
+New UI code adds no operating system type outside that list. A presenter, a
+service, or a screen header that needs one has the wrong shape.
 
 ## Dependencies
 
