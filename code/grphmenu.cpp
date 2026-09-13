@@ -7,6 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "_ui.h"
+#include "ui/uishell.h"
 #include "always.h"
 
 #include "grphmenu.h"
@@ -216,6 +218,10 @@ int GraphicMenu::Presentation(void)
 				}
 			}
 		}
+
+		// The menu runs its own loop, so nothing else advances a document or an overlay
+		// while it is up.
+		UIShell.Tick();
 
 		Engine.Wait_Delay(1);
 	}
