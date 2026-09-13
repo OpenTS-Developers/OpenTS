@@ -53,6 +53,7 @@ static bool _FrameUploaded = false;
 
 // A frame Backend_Present began that Backend_End_Frame has yet to end.
 static bool _FramePending = false;
+static bool _FramePointSampled = false;
 
 static int _PrescaleWidth = 0;
 static int _PrescaleHeight = 0;
@@ -553,8 +554,16 @@ bool Backend_Present(void const * pixels, int pitch, int destx, int desty, int d
 	bgfx::setViewClear(VIEW_PRESENT, BGFX_CLEAR_COLOR, 0x000000FF);
 	Set_View_Transform(VIEW_PRESENT, _DrawableWidth, _DrawableHeight);
 
+	_FramePointSampled = (samplerflags & BGFX_SAMPLER_POINT) != 0;
+
 	bool flipv = from_prescale && bgfx::getCaps()->originBottomLeft;
 	return(Submit_Quad(VIEW_PRESENT, source, (float)destx, (float)desty, (float)destwidth, (float)destheight, samplerflags, flipv));
+}
+
+
+bool Backend_Frame_Is_Point_Sampled(void)
+{
+	return(_FramePointSampled);
 }
 
 

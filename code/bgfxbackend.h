@@ -52,4 +52,8 @@ void Backend_End_Frame(void);
 // with the origin in its top left corner, shaped for the renderer bgfx settled on.
 void Backend_Build_Ortho_Projection(float * result, int width, int height);
 
+// Whether the frame presented last was magnified with whole pixels, so an overlay drawn
+// over it can be sampled the same way. False before the first present.
+bool Backend_Frame_Is_Point_Sampled(void);
+
 char const * Backend_Renderer_Name(void);

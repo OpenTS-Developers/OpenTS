@@ -201,6 +201,62 @@ void Test_Render_Math(void)
 }
 
 
+void Test_Render_Transform(void)
+{
+	float model[16];
+
+	UI_Render_Model_Matrix(nullptr, 10.0f, 20.0f, model);
+	Check(model[0] == 1.0f && model[5] == 1.0f && model[10] == 1.0f && model[15] == 1.0f && model[12] == 10.0f && model[13] == 20.0f,
+		  "a fragment with no transform travels by its translation alone");
+
+	// Quarter turn: the x axis becomes the y axis, so the translation turns with it.
+	float rotation[16] = {};
+	rotation[1] = 1.0f;
+	rotation[4] = -1.0f;
+	rotation[10] = 1.0f;
+	rotation[15] = 1.0f;
+	UI_Render_Model_Matrix(rotation, 10.0f, 20.0f, model);
+	Check(model[12] == -20.0f && model[13] == 10.0f, "a rotated fragment is translated in the rotated frame, not the screen's");
+	Check(model[1] == 1.0f && model[4] == -1.0f, "and the transform's own columns are left alone");
+
+	// A transform that already carries a translation keeps it, with the fragment's scaled
+	// by the transform and added on top.
+	float scaled[16] = {};
+	scaled[0] = 2.0f;
+	scaled[5] = 2.0f;
+	scaled[10] = 1.0f;
+	scaled[12] = 5.0f;
+	scaled[13] = 6.0f;
+	scaled[15] = 1.0f;
+	UI_Render_Model_Matrix(scaled, 10.0f, 20.0f, model);
+	Check(model[12] == 25.0f && model[13] == 46.0f, "a scaling transform scales the fragment's translation and keeps its own");
+
+	float perspective[16] = {};
+	perspective[0] = 1.0f;
+	perspective[3] = 0.01f;
+	perspective[5] = 1.0f;
+	perspective[10] = 1.0f;
+	perspective[15] = 1.0f;
+	UI_Render_Model_Matrix(perspective, 10.0f, 20.0f, model);
+	Check(model[15] > 1.09f && model[15] < 1.11f, "a perspective row reaches the fragment's translation too");
+}
+
+
+void Test_Render_Mask(void)
+{
+	UIRenderMaskStep step;
+
+	Check(UI_Render_Mask_Step(UI_RENDER_MASK_SET, 7, step) && step.Clear && !step.Increment && step.Write == 1 && step.Reference == 1,
+		  "a mask that starts over clears whatever was there and keeps its own shape");
+	Check(UI_Render_Mask_Step(UI_RENDER_MASK_SET_INVERSE, 7, step) && step.Clear && !step.Increment && step.Write == 1 && step.Reference == 0,
+		  "an inverted mask writes the same shape and keeps everything but it");
+	Check(UI_Render_Mask_Step(UI_RENDER_MASK_INTERSECT, 1, step) && !step.Clear && step.Increment && step.Reference == 2,
+		  "a narrowing mask counts up from what is already there");
+	Check(UI_Render_Mask_Step(UI_RENDER_MASK_INTERSECT, 0, step) && step.Reference == 1, "and counts from nothing as well");
+	Check(!UI_Render_Mask_Step(UI_RENDER_MASK_INTERSECT, 255, step), "masks nested past what eight bits count are refused");
+}
+
+
 void Test_Dirty_State(void)
 {
 	VideoDirtyStateClass dirty;
@@ -253,6 +309,8 @@ int main(void)
 	Test_Reconciliation();
 	Test_Text();
 	Test_Render_Math();
+	Test_Render_Transform();
+	Test_Render_Mask();
 	Test_Dirty_State();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

@@ -89,6 +89,9 @@ class RecordingRenderInterfaceClass : public UIRmlRenderClass
 		int Unsupported = 0;
 		int Invalid = 0;
 		int Frames = 0;
+		int Transforms = 0;
+		int ClipMasks = 0;
+		bool ClipMaskEnabled = false;
 		std::vector<Rml::Rectanglei> Scissors;
 		std::function<void(void)> OnRender;
 
@@ -185,22 +188,22 @@ class RecordingRenderInterfaceClass : public UIRmlRenderClass
 			Scissors.push_back(region);
 		}
 
+		// Transforms and clip masks the engine's renderer draws, so they are counted apart
+		// from the effects it still refuses.
 		virtual void EnableClipMask(bool enable) override
 		{
-			if (enable) {
-				Unsupported++;
-			}
+			ClipMaskEnabled = enable;
 		}
 
 		virtual void RenderToClipMask(Rml::ClipMaskOperation, Rml::CompiledGeometryHandle, Rml::Vector2f) override
 		{
-			Unsupported++;
+			ClipMasks++;
 		}
 
 		virtual void SetTransform(Rml::Matrix4f const * transform) override
 		{
 			if (transform != nullptr) {
-				Unsupported++;
+				Transforms++;
 			}
 		}
 
@@ -2302,6 +2305,66 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 }
 
 
+// The two render effects the engine's renderer draws rather than refuses. A shipped
+// document uses neither yet, so they are written here instead of being added to ui/.
+void Test_Effects_Documents(Rml::Context & context, RecordingRenderInterfaceClass & render, CountingSystemInterfaceClass & system)
+{
+	char const * rotated =
+		"<rml><head><style>"
+		"body { width: 400px; height: 300px; }"
+		"#box { display: block; width: 100px; height: 60px; background-color: #ffffff; transform: rotate(10deg); }"
+		"</style></head><body><div id=\"box\"/></body></rml>";
+
+	// A clipping element with a rounded corner is the ordinary way a document asks for a
+	// mask: RmlUi cannot tell which pixels the curve cuts, so the scissor alone will not do.
+	char const * rounded =
+		"<rml><head><style>"
+		"body { width: 400px; height: 300px; }"
+		"#clip { display: block; width: 100px; height: 60px; overflow: hidden; border-radius: 12px; background-color: #ffffff; }"
+		"#inner { display: block; width: 200px; height: 200px; background-color: #ff0000; }"
+		"</style></head><body><div id=\"clip\"><div id=\"inner\"/></div></body></rml>";
+
+	struct {
+		char const * Markup;
+		bool Transform;
+		char const * What;
+	} const cases[] = {
+		{ rotated, true, "a rotated element" },
+		{ rounded, false, "a rounded element that clips its content" }
+	};
+
+	for (auto const & effect : cases) {
+		int rendered = render.Rendered;
+		int unsupported = render.Unsupported;
+		int transforms = render.Transforms;
+		int masks = render.ClipMasks;
+		int problems = system.Problems;
+
+		Rml::ElementDocument * document = context.LoadDocumentFromMemory(effect.Markup);
+		std::string name = effect.What;
+		Check(document != nullptr, (name + " loads").c_str());
+		if (document == nullptr) {
+			continue;
+		}
+
+		document->Show();
+		context.Update();
+		context.Render();
+
+		Check(render.Rendered > rendered, (name + " draws geometry").c_str());
+		Check(effect.Transform ? render.Transforms > transforms : render.ClipMasks > masks,
+			  (name + " asks the renderer for the effect it needs").c_str());
+		Check(render.Unsupported == unsupported, (name + " stays within the implemented render methods").c_str());
+		Check(system.Problems == problems, (name + " raises no RmlUi warning or error").c_str());
+
+		document->Close();
+		context.Update();
+	}
+
+	Check(!render.ClipMaskEnabled, "a document that clipped leaves no mask in force behind it");
+}
+
+
 void Test_Documents(void)
 {
 	std::filesystem::path directory(OPENTS_UI_DIR);
@@ -2387,6 +2450,7 @@ void Test_Documents(void)
 	Check(documents > 0, "the ui directory holds at least one document");
 
 	if (context != nullptr) {
+		Test_Effects_Documents(*context, render, system);
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);

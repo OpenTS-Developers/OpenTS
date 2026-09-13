@@ -134,9 +134,9 @@ Limits, chosen to keep the work bounded:
   ImGui. Views are whole documents.
 - No scripting layer (RmlUi's Lua plugin), no reactive framework, no global
   message bus, no runtime plugin system.
-- No RmlUi render effects (filters, layers, shaders, box shadows) and no
-  clip mask in the first renderer. The renderer implements the eight
-  required methods; the rest stays default until a screen needs it.
+- No RmlUi render effects (filters, layers, shaders, box shadows). The
+  renderer implements the eight required methods, transforms, and clip masks;
+  the rest stays default until a screen needs it.
 - No arbitrary layering of native and GPU UI. The coexistence rule under
   [Input and focus](#input-and-focus) is the whole policy.
 - No user UI scale setting yet. Documents follow the frame scale.
@@ -257,15 +257,17 @@ model, and a model is removed before its storage is destroyed.
 ### Renderer
 
 The render interface is a bgfx implementation of RmlUi's eight required
-methods:
+methods, plus `SetTransform`, `EnableClipMask`, and `RenderToClipMask`:
 
 | Capability | Behavior |
 | --- | --- |
 | Compiled geometry | Static vertex and index buffers, since RmlUi 6 compiles geometry once and re-submits it; order preserved; released on request; never dependent on transient memory from a previous frame. Indices are checked against the vertex count and sizes are checked before the copy; without 32-bit indices, a fragment over 65536 vertices is refused rather than truncated. |
-| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string. Each edge is at most the smaller of the device limit and 4096, and a source must hold exactly width times height times four bytes. |
+| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string. Each edge is at most the smaller of the device limit and 4096, and a source must hold exactly width times height times four bytes. A document's textures wrap rather than clamp, which is what the tiled decorators repeat through, and are sampled with the filter the frame underneath was magnified by. RmlUi keeps a one-pixel gutter around every glyph, so text is unaffected; a magnified image's outer edge blends half a texel of its opposite edge, as RmlUi's own GL3 backend does. Dear ImGui's atlas keeps its clamp. |
 | Blending | `ONE, INV_SRC_ALPHA`; vertex colors follow the same premultiplied contract with no double premultiplication. |
 | Scissor | `bgfx::setScissor` in physical target coordinates, rounded outward to whole pixels, intersected with the viewport, empty regions handled. |
-| Limits | 64 MiB per geometry or texture, 128 MiB of live geometry and 128 MiB of live textures, two draw calls short of the device's frame limit. The first refusal is latched with its reason; the shell clears the latch before preparing a document and reads it after, so a document the renderer could not draw whole opens its Win32 view instead. |
+| Transform | RmlUi's matrix and bgfx's are both four columns with the translation last, so the sixteen floats pass between them untouched; each draw submits the transform applied to the fragment's own translation. RmlUi sends none until a document has one and dedupes identity, so an untransformed document never reaches it. The view projection is unchanged, and its zero-to-thousand depth range clips a three-dimensional transform that pushes a vertex behind the near plane; a two-dimensional one keeps every vertex at zero. |
+| Clip mask | The back buffer's own stencil, which bgfx attaches unless a caller asks for a depth-only format. A mask that starts over writes zero through a view-sized shape first, because bgfx clears a view only before its first draw, then writes one under the geometry with nothing reaching the color buffer; a narrowing mask counts up instead, and the draws that follow pass where the stencil equals what the last mask left. An inverted mask writes the same shape and tests against the untouched target. Every test carries a read mask, since bgfx reads none by default and an equality test against nothing passes everywhere. |
+| Limits | 64 MiB per geometry or texture, 128 MiB of live geometry and 128 MiB of live textures, two draw calls short of the device's frame limit, and clip masks nested no deeper than the stencil's eight bits count. The first refusal is latched with its reason; the shell clears the latch before preparing a document and reads it after, so a document the renderer could not draw whole opens its Win32 view instead. |
 | Projection | The overlay view's orthographic transform; no game-image filter state inherited. |
 | Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a present without an upload requested; existing documents redraw without reload. |
 
@@ -275,12 +277,16 @@ frame quad uses multiplies by the view projection alone and drops the model
 matrix, which is where each compiled fragment's per-draw translation travels;
 the debug-draw pair multiplies by the model, view, and projection product. Its
 attributes (position, texture coordinate, color) match RmlUi's vertex and
-ImGui's vertex, each with its own layout. Clip masks, transforms, layers,
-filters, and shaders are deferred; shipped documents stay within a declared
-profile (text, images, ordinary layout, borders, basic decorators), and a
-document check enforces it. A document that reaches one of them anyway, as
-a mod's may, draws without it: the renderer latches the refusal with one
-logged reason and otherwise behaves as RmlUi's defaults do.
+ImGui's vertex, each with its own layout. Layers, filters, and shaders are
+deferred, and with them `box-shadow`, which RmlUi renders into a layer and
+saves as a texture: with `SaveLayerAsTexture` returning nothing the shadow
+draws as an untextured white quad and its generation callback runs again every
+frame, which is the one effect that fails visibly rather than quietly. Shipped
+documents stay within a declared profile (text, images, ordinary layout,
+borders, basic decorators, transforms, and clipping), and a document check
+enforces it. A document that reaches a deferred effect anyway, as a mod's may,
+draws without it: the renderer latches the refusal with one logged reason and
+otherwise behaves as RmlUi's defaults do.
 
 ### Invalidation
 
@@ -936,6 +942,10 @@ and builds `UIShellClass` itself over a host the test controls:
   fragment the renderer would refuse, a scissor outside the context, or a
   resource named by anything but a bare file name; after shutdown, every
   compiled geometry and texture has been released.
+- Draw a rotated element and a rounded one that clips its content, each
+  written in the test rather than shipped, and assert that the transform and
+  the clip mask reach the renderer, that no deferred effect is asked for, and
+  that the mask is no longer in force afterwards.
 - Bind a presenter, drive it with `Context::ProcessMouseButtonDown` on a
   known element, and assert the queued intent and result; drive the same
   actions through the legacy adapter and assert the same ordered service
@@ -966,8 +976,9 @@ and builds `UIShellClass` itself over a host the test controls:
 
 `tests/uilogic` compiles the toolkit-free state with no UI library: the input
 ownership table and its cancellations, the UTF-8 decoder, the renderer's
-geometry, size and scissor checks, and the presenter's marks through consume,
-restore and reset.
+geometry, size and scissor checks, the model matrix a transformed fragment
+draws through and the stencil each clip mask operation asks for, and the
+presenter's marks through consume, restore and reset.
 
 `toolkitheaders` runs `cmake/CheckToolkitHeaders.cmake` over `code/` and
 fails on a toolkit or renderer header included outside `code/ui/rml/`, or an

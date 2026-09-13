@@ -70,9 +70,6 @@ class UIRmlRenderClass : public Rml::RenderInterface
 
 		// The render effects outside the styling profile the documents keep to. A document
 		// that reaches one draws without it and the refusal is latched.
-		virtual void EnableClipMask(bool enable) override;
-		virtual void RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation) override;
-		virtual void SetTransform(Rml::Matrix4f const * transform) override;
 		virtual Rml::LayerHandle PushLayer(void) override;
 		virtual void CompositeLayers(Rml::LayerHandle source, Rml::LayerHandle destination, Rml::BlendMode mode, Rml::Span<const Rml::CompiledFilterHandle> filters) override;
 		virtual void PopLayer(void) override;
@@ -123,6 +120,10 @@ class UIRmlBgfxRenderClass : public UIRmlRenderClass
 		virtual void EnableScissorRegion(bool enable) override;
 		virtual void SetScissorRegion(Rml::Rectanglei region) override;
 
+		virtual void SetTransform(Rml::Matrix4f const * transform) override;
+		virtual void EnableClipMask(bool enable) override;
+		virtual void RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation) override;
+
 	protected:
 		virtual void Report(char const * message) override;
 
@@ -130,6 +131,8 @@ class UIRmlBgfxRenderClass : public UIRmlRenderClass
 		void Set_View(unsigned short view, int x, int y, int width, int height);
 		bool Apply_Scissor(void) const;
 		bool Draw_Available(void);
+		bool Submit_Geometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, unsigned short texture, std::uint64_t state, std::uint32_t stencil);
+		bool Clear_Clip_Mask(void);
 		bool Record_Texture(unsigned short index, unsigned int bytes);
 		void Forget_Texture(unsigned short index);
 		void Update_ImGui_Texture(ImTextureData * texture);
@@ -139,6 +142,11 @@ class UIRmlBgfxRenderClass : public UIRmlRenderClass
 		unsigned short Sampler;
 		unsigned short WhiteTexture;
 
+		// The quad a mask that starts over writes zero through, since bgfx clears a view
+		// only before its first draw.
+		unsigned short ClearVertices;
+		unsigned short ClearIndices;
+
 		int ViewX;
 		int ViewY;
 		int ViewWidth;
@@ -146,6 +154,14 @@ class UIRmlBgfxRenderClass : public UIRmlRenderClass
 
 		bool ScissorEnabled;
 		Rml::Rectanglei Scissor;
+
+		bool TransformEnabled;
+		float Transform[16];
+
+		// What the stencil holds where the masks let a draw through, and whether the
+		// document has a mask in force at all.
+		bool ClipMaskEnabled;
+		std::uint8_t StencilReference;
 
 		// The bytes each live texture holds, by bgfx index, for the documents' and the
 		// overlays' textures alike.

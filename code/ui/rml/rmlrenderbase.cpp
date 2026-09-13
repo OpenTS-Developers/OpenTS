@@ -30,28 +30,6 @@ void UIRmlRenderClass::Report(char const *)
 }
 
 
-void UIRmlRenderClass::EnableClipMask(bool enable)
-{
-	if (enable) {
-		Fail("clip masks are outside the supported styling profile");
-	}
-}
-
-
-void UIRmlRenderClass::RenderToClipMask(Rml::ClipMaskOperation, Rml::CompiledGeometryHandle, Rml::Vector2f)
-{
-	Fail("clip masks are outside the supported styling profile");
-}
-
-
-void UIRmlRenderClass::SetTransform(Rml::Matrix4f const * transform)
-{
-	if (transform != nullptr) {
-		Fail("transforms are outside the supported styling profile");
-	}
-}
-
-
 Rml::LayerHandle UIRmlRenderClass::PushLayer(void)
 {
 	Fail("layers are outside the supported styling profile");

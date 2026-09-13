@@ -89,3 +89,57 @@ bool UI_Render_Copy_RGBA_Rect(std::span<std::uint8_t const> pixels, int width, i
 	}
 	return(true);
 }
+
+
+void UI_Render_Model_Matrix(float const * transform, float translationx, float translationy, float * result)
+{
+	if (transform == nullptr) {
+		std::memset(result, 0, 16 * sizeof(float));
+		result[0] = 1.0f;
+		result[5] = 1.0f;
+		result[10] = 1.0f;
+		result[15] = 1.0f;
+		result[12] = translationx;
+		result[13] = translationy;
+		return;
+	}
+
+	// Only the last column moves: it is the transform applied to the translation, which
+	// leaves the first three columns as they were.
+	std::memcpy(result, transform, 12 * sizeof(float));
+	for (int row = 0; row < 4; row++) {
+		result[12 + row] = transform[row] * translationx + transform[4 + row] * translationy + transform[12 + row];
+	}
+}
+
+
+bool UI_Render_Mask_Step(UIRenderMaskOperation operation, std::uint8_t reference, UIRenderMaskStep & step)
+{
+	step = UIRenderMaskStep();
+
+	switch (operation) {
+		case UI_RENDER_MASK_SET:
+			step.Clear = true;
+			step.Write = 1;
+			step.Reference = 1;
+			return(true);
+
+		// The shape is written the same way; what changes is that the draws after it keep
+		// the untouched target rather than the shape.
+		case UI_RENDER_MASK_SET_INVERSE:
+			step.Clear = true;
+			step.Write = 1;
+			step.Reference = 0;
+			return(true);
+
+		case UI_RENDER_MASK_INTERSECT:
+			if (reference == 255) {
+				return(false);
+			}
+			step.Increment = true;
+			step.Reference = (std::uint8_t)(reference + 1);
+			return(true);
+	}
+
+	return(false);
+}

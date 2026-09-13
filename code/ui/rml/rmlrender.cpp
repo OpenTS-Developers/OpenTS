@@ -29,6 +29,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <type_traits>
 #include <vector>
 
 
@@ -50,6 +51,35 @@ static const uint32_t UI_MAX_RESOURCE_BYTES = 64u * 1024u * 1024u;
 static const uint64_t UI_MAX_GEOMETRY_BYTES = 128ull * 1024ull * 1024ull;
 static const uint64_t UI_MAX_TEXTURE_BYTES = 128ull * 1024ull * 1024ull;
 static const int UI_MAX_TEXTURE_DIMENSION = 4096;
+
+// The stencil states a clip mask draws through. Writing a mask puts nothing in the color
+// or depth buffers, and every test carries a read mask, because bgfx reads none by default
+// and an equality test against nothing passes everywhere. The mask lives on the back
+// buffer's own stencil, which bgfx attaches unless a caller asks for a depth-only format.
+static const uint32_t UI_STENCIL_WRITE = BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_RMASK(0xFF)
+	| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE;
+static const uint32_t UI_STENCIL_NARROW = BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_RMASK(0xFF)
+	| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_INCRSAT;
+static const uint32_t UI_STENCIL_TEST = BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_FUNC_RMASK(0xFF)
+	| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP;
+
+
+// RmlUi's matrix travels to bgfx as its own sixteen floats, which holds only while both
+// order them by column.
+static_assert(std::is_same_v<Rml::Matrix4f, Rml::ColumnMajorMatrix4f>, "the renderer hands RmlUi's matrix to bgfx unchanged, which needs column-major storage");
+
+
+static UIRenderMaskOperation Mask_Operation(Rml::ClipMaskOperation operation)
+{
+	switch (operation) {
+		case Rml::ClipMaskOperation::SetInverse:
+			return(UI_RENDER_MASK_SET_INVERSE);
+		case Rml::ClipMaskOperation::Intersect:
+			return(UI_RENDER_MASK_INTERSECT);
+		default:
+			return(UI_RENDER_MASK_SET);
+	}
+}
 
 
 // A compiled document fragment, submitted many times with different translations.
@@ -75,12 +105,18 @@ UIRmlBgfxRenderClass::UIRmlBgfxRenderClass(void) :
 	Program(bgfx::kInvalidHandle),
 	Sampler(bgfx::kInvalidHandle),
 	WhiteTexture(bgfx::kInvalidHandle),
+	ClearVertices(bgfx::kInvalidHandle),
+	ClearIndices(bgfx::kInvalidHandle),
 	ViewX(0),
 	ViewY(0),
 	ViewWidth(0),
 	ViewHeight(0),
 	ScissorEnabled(false),
 	Scissor(Rml::Rectanglei::MakeInvalid()),
+	TransformEnabled(false),
+	Transform(),
+	ClipMaskEnabled(false),
+	StencilReference(0),
 	DevShortageLogged(false)
 {
 }
@@ -131,7 +167,21 @@ bool UIRmlBgfxRenderClass::Init(void)
 	const unsigned int white = 0xFFFFFFFF;
 	bgfx::TextureHandle whitetexture = bgfx::createTexture2D(1, 1, false, 1, bgfx::TextureFormat::RGBA8, 0, bgfx::copy(&white, sizeof(white)));
 
-	if (!bgfx::isValid(program) || !bgfx::isValid(sampler) || !bgfx::isValid(whitetexture)) {
+	// A mask that starts over needs a shape covering the view; its color never reaches the
+	// target, so only the corners matter.
+	const Rml::Vertex corners[4] = {
+		{ Rml::Vector2f(0.0f, 0.0f), Rml::ColourbPremultiplied(255, 255, 255, 255), Rml::Vector2f(0.0f, 0.0f) },
+		{ Rml::Vector2f(1.0f, 0.0f), Rml::ColourbPremultiplied(255, 255, 255, 255), Rml::Vector2f(0.0f, 0.0f) },
+		{ Rml::Vector2f(1.0f, 1.0f), Rml::ColourbPremultiplied(255, 255, 255, 255), Rml::Vector2f(0.0f, 0.0f) },
+		{ Rml::Vector2f(0.0f, 1.0f), Rml::ColourbPremultiplied(255, 255, 255, 255), Rml::Vector2f(0.0f, 0.0f) }
+	};
+	const uint16_t cornerindices[6] = { 0, 1, 2, 0, 2, 3 };
+
+	bgfx::VertexBufferHandle clearvertices = bgfx::createVertexBuffer(bgfx::copy(corners, sizeof(corners)), _VertexLayout);
+	bgfx::IndexBufferHandle clearindices = bgfx::createIndexBuffer(bgfx::copy(cornerindices, sizeof(cornerindices)));
+
+	if (!bgfx::isValid(program) || !bgfx::isValid(sampler) || !bgfx::isValid(whitetexture)
+		|| !bgfx::isValid(clearvertices) || !bgfx::isValid(clearindices)) {
 		if (bgfx::isValid(program)) {
 			bgfx::destroy(program);
 		}
@@ -141,6 +191,12 @@ bool UIRmlBgfxRenderClass::Init(void)
 		if (bgfx::isValid(whitetexture)) {
 			bgfx::destroy(whitetexture);
 		}
+		if (bgfx::isValid(clearvertices)) {
+			bgfx::destroy(clearvertices);
+		}
+		if (bgfx::isValid(clearindices)) {
+			bgfx::destroy(clearindices);
+		}
 		DebugString("UI: the overlay renderer could not be created\n");
 		return(false);
 	}
@@ -148,6 +204,8 @@ bool UIRmlBgfxRenderClass::Init(void)
 	Program = program.idx;
 	Sampler = sampler.idx;
 	WhiteTexture = whitetexture.idx;
+	ClearVertices = clearvertices.idx;
+	ClearIndices = clearindices.idx;
 	Statistics = UIRenderStats();
 	TextureBytes.clear();
 	Clear_Error();
@@ -171,11 +229,17 @@ void UIRmlBgfxRenderClass::Shutdown(void)
 	bgfx::TextureHandle whitetexture = { WhiteTexture };
 	bgfx::UniformHandle sampler = { Sampler };
 	bgfx::ProgramHandle program = { Program };
+	bgfx::VertexBufferHandle clearvertices = { ClearVertices };
+	bgfx::IndexBufferHandle clearindices = { ClearIndices };
 
+	bgfx::destroy(clearindices);
+	bgfx::destroy(clearvertices);
 	bgfx::destroy(whitetexture);
 	bgfx::destroy(sampler);
 	bgfx::destroy(program);
 
+	ClearIndices = bgfx::kInvalidHandle;
+	ClearVertices = bgfx::kInvalidHandle;
 	WhiteTexture = bgfx::kInvalidHandle;
 	Sampler = bgfx::kInvalidHandle;
 	Program = bgfx::kInvalidHandle;
@@ -207,6 +271,9 @@ void UIRmlBgfxRenderClass::Set_View(unsigned short view, int x, int y, int width
 void UIRmlBgfxRenderClass::Begin_Frame(int x, int y, int width, int height)
 {
 	Statistics.DrawCalls = 0;
+	TransformEnabled = false;
+	ClipMaskEnabled = false;
+	StencilReference = 0;
 	Set_View(VIEW_UI, x, y, width, height);
 }
 
@@ -340,49 +407,62 @@ Rml::CompiledGeometryHandle UIRmlBgfxRenderClass::CompileGeometry(Rml::Span<cons
 }
 
 
+// The visible pass and the pass that writes a clip mask differ only in what they put in
+// the target and what they leave in the stencil. Documents are sampled with wrap, which is
+// what the tiled decorators repeat through, and with the filter the frame underneath is
+// magnified by; the overlays keep their own clamp.
+bool UIRmlBgfxRenderClass::Submit_Geometry(Rml::CompiledGeometryHandle handle, Rml::Vector2f translation, unsigned short texture, std::uint64_t state, std::uint32_t stencil)
+{
+	if (!std::isfinite(translation.x) || !std::isfinite(translation.y)) {
+		return(Fail("a fragment's translation is not finite"));
+	}
+	if (!Draw_Available()) {
+		return(false);
+	}
+	if (ScissorEnabled && !Apply_Scissor()) {
+		return(false);
+	}
+
+	UIGeometry const * geometry = (UIGeometry const *)handle;
+
+	float model[16];
+	UI_Render_Model_Matrix(TransformEnabled ? Transform : NULL, translation.x, translation.y, model);
+
+	bgfx::TextureHandle sampled = { texture };
+	bgfx::UniformHandle sampler = { Sampler };
+	bgfx::ProgramHandle program = { Program };
+
+	bgfx::setTransform(model);
+	bgfx::setVertexBuffer(0, geometry->Vertices);
+	bgfx::setIndexBuffer(geometry->Indices);
+	bgfx::setTexture(0, sampler, sampled, Backend_Frame_Is_Point_Sampled() ? BGFX_SAMPLER_POINT : BGFX_SAMPLER_NONE);
+	bgfx::setState(state);
+	bgfx::setStencil(stencil);
+	bgfx::submit(VIEW_UI, program);
+	Statistics.DrawCalls++;
+	return(true);
+}
+
+
 void UIRmlBgfxRenderClass::RenderGeometry(Rml::CompiledGeometryHandle handle, Rml::Vector2f translation, Rml::TextureHandle texture)
 {
 	if (!IsReady || handle == 0) {
 		return;
 	}
-	if (!std::isfinite(translation.x) || !std::isfinite(translation.y)) {
-		Fail("a fragment's translation is not finite");
-		return;
-	}
-	if (!Draw_Available()) {
-		return;
-	}
 
-	if (ScissorEnabled && !Apply_Scissor()) {
-		return;
-	}
-
-	UIGeometry const * geometry = (UIGeometry const *)handle;
-
-	float transform[16];
-	memset(transform, 0, sizeof(transform));
-	transform[0] = 1.0f;
-	transform[5] = 1.0f;
-	transform[10] = 1.0f;
-	transform[12] = translation.x;
-	transform[13] = translation.y;
-	transform[15] = 1.0f;
-	bgfx::setTransform(transform);
-
-	bgfx::TextureHandle sampled = { WhiteTexture };
+	unsigned short sampled = WhiteTexture;
 	if (texture != 0) {
-		sampled = Texture_Handle(texture);
+		sampled = Texture_Handle(texture).idx;
 	}
 
-	bgfx::UniformHandle sampler = { Sampler };
-	bgfx::ProgramHandle program = { Program };
+	uint32_t stencil = BGFX_STENCIL_NONE;
+	if (ClipMaskEnabled) {
+		stencil = UI_STENCIL_TEST | BGFX_STENCIL_FUNC_REF(StencilReference);
+	}
 
-	bgfx::setVertexBuffer(0, geometry->Vertices);
-	bgfx::setIndexBuffer(geometry->Indices);
-	bgfx::setTexture(0, sampler, sampled, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP);
-	bgfx::setState(BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA));
-	bgfx::submit(VIEW_UI, program);
-	Statistics.DrawCalls++;
+	Submit_Geometry(handle, translation, sampled,
+					BGFX_STATE_WRITE_RGB | BGFX_STATE_WRITE_A | BGFX_STATE_BLEND_FUNC(BGFX_STATE_BLEND_ONE, BGFX_STATE_BLEND_INV_SRC_ALPHA),
+					stencil);
 }
 
 
@@ -446,7 +526,7 @@ Rml::TextureHandle UIRmlBgfxRenderClass::GenerateTexture(Rml::Span<const Rml::by
 		return(0);
 	}
 
-	bgfx::TextureHandle texture = bgfx::createTexture2D((uint16_t)dimensions.x, (uint16_t)dimensions.y, false, 1, bgfx::TextureFormat::RGBA8, BGFX_SAMPLER_U_CLAMP | BGFX_SAMPLER_V_CLAMP, bgfx::copy(source.data(), size));
+	bgfx::TextureHandle texture = bgfx::createTexture2D((uint16_t)dimensions.x, (uint16_t)dimensions.y, false, 1, bgfx::TextureFormat::RGBA8, BGFX_TEXTURE_NONE | BGFX_SAMPLER_NONE, bgfx::copy(source.data(), size));
 	if (!bgfx::isValid(texture)) {
 		Fail("a texture could not be created");
 		return(0);
@@ -500,6 +580,95 @@ bool UIRmlBgfxRenderClass::Apply_Scissor(void) const
 	}
 
 	bgfx::setScissor(clip.X, clip.Y, clip.Width, clip.Height);
+	return(true);
+}
+
+
+// RmlUi sends no transform at all until a document has one, and identity when it puts one
+// back, so an untransformed document never reaches this.
+void UIRmlBgfxRenderClass::SetTransform(Rml::Matrix4f const * transform)
+{
+	TransformEnabled = false;
+
+	if (transform == NULL) {
+		return;
+	}
+
+	float const * values = transform->data();
+	for (int index = 0; index < 16; index++) {
+		if (!std::isfinite(values[index])) {
+			Fail("a transform is not finite");
+			return;
+		}
+	}
+
+	memcpy(Transform, values, sizeof(Transform));
+	TransformEnabled = true;
+}
+
+
+void UIRmlBgfxRenderClass::EnableClipMask(bool enable)
+{
+	ClipMaskEnabled = enable;
+}
+
+
+void UIRmlBgfxRenderClass::RenderToClipMask(Rml::ClipMaskOperation operation, Rml::CompiledGeometryHandle handle, Rml::Vector2f translation)
+{
+	if (!IsReady || handle == 0) {
+		return;
+	}
+
+	UIRenderMaskStep step;
+	if (!UI_Render_Mask_Step(Mask_Operation(operation), StencilReference, step)) {
+		Fail("clip masks nest deeper than the stencil counts");
+		return;
+	}
+	if (step.Clear && !Clear_Clip_Mask()) {
+		return;
+	}
+
+	uint32_t stencil = UI_STENCIL_NARROW;
+	if (!step.Increment) {
+		stencil = UI_STENCIL_WRITE | BGFX_STENCIL_FUNC_REF(step.Write);
+	}
+
+	if (Submit_Geometry(handle, translation, WhiteTexture, BGFX_STATE_NONE, stencil)) {
+		StencilReference = step.Reference;
+	}
+}
+
+
+// bgfx clears a view once, before its first draw, so a mask that starts over writes zero
+// over the whole view instead. The scissor is left off, because the mask it replaces may
+// have covered more than the region the next draw clips to.
+bool UIRmlBgfxRenderClass::Clear_Clip_Mask(void)
+{
+	if (!Draw_Available()) {
+		return(false);
+	}
+
+	float model[16];
+	memset(model, 0, sizeof(model));
+	model[0] = (float)ViewWidth;
+	model[5] = (float)ViewHeight;
+	model[10] = 1.0f;
+	model[15] = 1.0f;
+
+	bgfx::VertexBufferHandle vertices = { ClearVertices };
+	bgfx::IndexBufferHandle indices = { ClearIndices };
+	bgfx::TextureHandle sampled = { WhiteTexture };
+	bgfx::UniformHandle sampler = { Sampler };
+	bgfx::ProgramHandle program = { Program };
+
+	bgfx::setTransform(model);
+	bgfx::setVertexBuffer(0, vertices);
+	bgfx::setIndexBuffer(indices);
+	bgfx::setTexture(0, sampler, sampled);
+	bgfx::setState(BGFX_STATE_NONE);
+	bgfx::setStencil(UI_STENCIL_WRITE | BGFX_STENCIL_FUNC_REF(0));
+	bgfx::submit(VIEW_UI, program);
+	Statistics.DrawCalls++;
 	return(true);
 }
 
