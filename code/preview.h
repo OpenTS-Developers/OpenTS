@@ -34,7 +34,7 @@ public:
 	void Blit_Preview(HWND window);
 
 	unsigned * Create_Paletted_Preview(int, int & size);
-	void Create_Preview_Surface(char * buffer);
+	bool Create_Preview_Surface(char * buffer, int length);
 	XSurface * Get_Preview_Surface(void) { return(SurfacePtr); }
 
 private:
@@ -51,6 +51,9 @@ public:
 		int Height;
 	};
 	static_assert(sizeof(Header) == 8, "the preview header is 8 bytes on disk");
+
+	static int const MAX_BLOCK_SIZE = 8 * 1024 * 1024;
+	static int const MAX_COLOR_COUNT = 4096;
 
 
 private:
