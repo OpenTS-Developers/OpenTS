@@ -59,6 +59,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		virtual float Reveal_Width(void) const override;
 		virtual void Reveal_To(float width) override;
 		virtual void Reveal_Done(void) override;
+		virtual void Placed(void) override;
 
 		// Marks the view-model fields that Execute changed.
 		virtual void Sync(void) override = 0;
@@ -76,6 +77,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 	private:
 		// Whether pressing this element is what the dialogs sounded a click for.
 		static bool Sounds_A_Click(Rml::Element const * element);
+		void Place_Wallpaper(void);
 
 		UIPresenterClass & Owner;
 		Rml::Context * Host = nullptr;
@@ -87,6 +89,10 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		// and a screen can open again.
 		Rml::UniquePtr<Rml::DataTypeRegister> Types;
 		bool ModelCreated = false;
+		// Where the wallpaper was last put, so it is only moved when the screen has moved.
+		int Wallpaper = 0x7FFFFFFF;
+		// Whether the chrome is pinned to the middle of the band a screen opens through.
+		bool Anchored = false;
 		Rml::String DocumentName;
 		Rml::String ModelName;
 };

@@ -15,9 +15,9 @@
 	</div>
 
 	<div class="row">
-		<span class="checkbox"></span><label class="check">Check box</label>
-		<span class="checkbox" checked="checked"></span><label class="check">Checked</label>
-		<span class="checkbox disabled"></span><label class="check disabled">Disabled</label>
+		<label class="check"><input type="checkbox"/>Check box</label>
+		<label class="check"><input type="checkbox" checked="checked"/>Checked</label>
+		<label class="check disabled"><input type="checkbox" disabled="disabled"/>Disabled</label>
 	</div>
 
 	<div class="row">
@@ -32,17 +32,17 @@
 		<div class="stack">
 			<div class="group">
 				<label>Group box</label>
-				<input type="range" class="range" min="0" max="10" value="6"/>
+				<input type="range" id="level" min="0" max="10" step="1" value="6"/>
 				<span class="trough">6</span>
 			</div>
 			<div class="hotkey">Ctrl+Shift+K</div>
-			<div class="progress"><div class="fill"></div></div>
+			<progress id="progress" value="0.4"/>
 			<div class="tooltip">A tool tip</div>
 		</div>
 	</div>
 
 	<div class="row">
-		<input type="text" class="text" value="An edit box"/>
+		<input type="text" id="edit" value="An edit box"/>
 	</div>
 </body>
 </rml>

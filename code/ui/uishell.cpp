@@ -754,6 +754,15 @@ void UIShellClass::Tick(void)
 		UIDev_Tick();
 	}
 
+	// What a screen can only place once it knows where it landed is placed against the
+	// layout the update just made.
+	for (UIViewClass * view : Modals) {
+		view->Placed();
+	}
+	for (UIViewClass * view : Modeless) {
+		view->Placed();
+	}
+
 	Apply_Cursor_Request();
 
 	// An overlay closed from inside its own frame still needs one present to clear.

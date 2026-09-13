@@ -1,14 +1,11 @@
 <rml>
 <head>
 	<title>Please wait</title>
+	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="wait.rcss"/>
 </head>
-<body data-model="wait">
-	<div id="panel">
-		<p id="text">{{text}}</p>
-		<div id="frame" data-if="bar">
-			<progress id="fill" max="100" direction="right" data-attr-value="percent"/>
-		</div>
-	</div>
+<body template="dialog" data-model="wait">
+	<p id="text">{{text}}</p>
+	<progress id="bar" data-if="bar" max="100" direction="right" data-attr-value="percent"/>
 </body>
 </rml>

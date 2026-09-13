@@ -1,177 +1,169 @@
-body
-{
-	width: 100%;
-	height: 100%;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-family: dlg-sans;
-	font-size: 13dp;
-	color: #e6e6e6;
-}
+/*
+ * Where the game controls put their parts. In a game it is IDD_OPT_CTRL_GAME_MP at 292 by
+ * 175 dialog units, 438 by 284 pixels: three slider rows of a 95 wide label, a 192 wide
+ * slider and a 75 wide reading, two columns of switches, and three 116 wide buttons. Out of
+ * one it is IDD_OPT_CTRL_GAME_SP at 292 by 179, 438 by 291: wider sliders, a fourth row for
+ * the difficulty and one button in the middle. The Internet template drops the speed row and
+ * is otherwise the in-game one. Everything visual comes from the kit.
+ */
 
-div, label
+#reveal
 {
-	display: block;
-}
-
-#panel
-{
-	box-sizing: border-box;
 	width: 438dp;
-	padding: 18dp 33dp 21dp 33dp;
-	background-color: #12181fdc;
-	border: 1dp #5a8f6a;
+	height: 284dp;
+	top: 50%;
+	margin-top: -142dp;
+}
+
+/*
+ * A difficulty row in a game is no template of the game's own: the front end is the only
+ * place the original offers one. The screen still makes room for it, so a caller that
+ * asks for both is laid out rather than cut off.
+ */
+.difficulty #reveal
+{
+	height: 334dp;
+	margin-top: -167dp;
+}
+
+.frontend #reveal
+{
+	height: 291dp;
+	margin-top: -145dp;
+}
+
+/* The controls reach a little closer to the right edge than to the left. */
+#content
+{
+	padding: 20dp 27dp 0 33dp;
+}
+
+.frontend #content
+{
+	padding-right: 26dp;
 }
 
 .row
 {
+	display: block;
 	height: 24dp;
-	margin-bottom: 9dp;
-	white-space: nowrap;
 }
 
-.label
+.row + .row
 {
-	display: inline-block;
-	width: 87dp;
-	line-height: 24dp;
-	vertical-align: top;
+	margin-top: 26dp;
 }
 
-input.range
+.frontend .row + .row
 {
-	display: inline-block;
-	width: 222dp;
-	height: 24dp;
-	vertical-align: top;
+	margin-top: 12dp;
 }
 
-.value
+.frontend #row-scroll
+{
+	margin-top: 11dp;
+}
+
+.row > .caption
 {
 	display: inline-block;
-	width: 63dp;
+	width: 95dp;
 	line-height: 24dp;
 	text-align: right;
 	vertical-align: top;
 }
 
-input.range slidertrack
+.row > input[type='range']
 {
-	margin-top: 8dp;
-	height: 8dp;
-	background-color: #2a3a48;
-	border: 1dp #6f95a8;
+	width: 192dp;
+	margin-left: 7dp;
+	vertical-align: top;
 }
 
-input.range sliderbar
+.row > .value
 {
-	width: 14dp;
-	height: 24dp;
-	background-color: #6f95a8;
+	display: inline-block;
+	width: 75dp;
+	margin-left: 9dp;
+	line-height: 24dp;
+	vertical-align: top;
 }
 
-input.range sliderbar:hover, input.range sliderbar:active
+/* The front end gives the slider the room the reading and the label give up. */
+.frontend .row > .caption
 {
-	background-color: #8fb5c8;
+	width: 87dp;
+	text-align: left;
 }
 
-input.range sliderarrowdec, input.range sliderarrowinc
+.frontend .row > input[type='range']
 {
-	width: 0;
-	height: 0;
+	width: 222dp;
+	margin-left: 0;
+}
+
+.frontend .row > .value
+{
+	width: 68dp;
+	margin-left: 2dp;
+	text-align: right;
 }
 
 #switches
 {
-	margin-top: 12dp;
-	height: 72dp;
-	white-space: nowrap;
+	display: flex;
+	margin-top: 9dp;
 }
 
-.column
+.frontend #switches
 {
-	display: inline-block;
-	width: 186dp;
-	vertical-align: top;
+	margin-top: 16dp;
 }
 
-.switch
+#switches > .column
 {
-	line-height: 24dp;
+	width: 189dp;
 }
 
-input.checkbox
+#switches > .column > label.check + label.check
 {
-	width: 14dp;
-	height: 14dp;
-	margin-right: 8dp;
-	vertical-align: -2dp;
-	background-color: #2a3a48;
-	border: 1dp #6f95a8;
+	margin-top: 10dp;
 }
 
-input.checkbox:checked
+.frontend #switches > .column > label.check + label.check
 {
-	background-color: #8fb5c8;
+	margin-top: 7dp;
 }
 
+/* Three buttons in a game, one in the middle out of one. */
 #buttons
 {
-	position: relative;
-	margin-top: 15dp;
-	height: 23dp;
+	display: flex;
+	margin-top: 12dp;
 }
 
-button
+.frontend #buttons
 {
-	position: absolute;
-	display: block;
-	top: 0;
-	width: 115dp;
-	height: 23dp;
-	text-align: center;
-	line-height: 23dp;
-	tab-index: auto;
-	background-color: #2f4a5a;
-	border: 1dp #6f95a8;
+	justify-content: center;
+	margin-top: 11dp;
 }
 
-button:hover
+#buttons > button
 {
-	background-color: #3f6478;
-}
-
-button:active
-{
-	background-color: #24394a;
-}
-
-button.disabled
-{
-	color: #7a8790;
-	background-color: #24303a;
-	border-color: #4a5a68;
+	width: 116dp;
 }
 
 #sound
 {
-	left: 0;
+	margin-right: 15dp;
 }
 
 #keyboard
 {
-	left: 129dp;
+	margin-right: 14dp;
 }
 
-#ok
+.frontend #ok
 {
-	right: 0;
-}
-
-#panel.frontend #ok
-{
-	left: 88dp;
-	right: auto;
 	width: 195dp;
 }

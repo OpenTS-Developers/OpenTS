@@ -17,14 +17,6 @@
 	margin-top: -120dp;
 }
 
-#chrome
-{
-	position: relative;
-	left: 50%;
-	margin-left: -150dp;
-	width: 300dp;
-}
-
 #content
 {
 	padding-top: 18dp;

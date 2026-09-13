@@ -179,6 +179,16 @@ div, form, h1, h2, p
 /* ------------------------------------------------------------------------- the controls */
 
 /*
+ * A control's width is the width its template gives it, frame included, so every one counts
+ * its border and padding inside the size it is asked for.
+ */
+button, input, select, dataselect, option, progress, scrollbarvertical, textarea,
+.list, .trough, .group, .hotkey, .tooltip
+{
+	box-sizing: border-box;
+}
+
+/*
  * A button is a picture in three parts at one of two heights: a cap either side and a
  * middle tiled to whatever width the button is. The original draws no outline around one,
  * so the plain form underneath is a fill the picture covers rather than a border that would
@@ -252,9 +262,12 @@ button.tall.disabled:active, button.tall:disabled:active
 /*
  * A check box is an 18 by 19 picture with its label 20 across, vertically centred. Like a
  * button it is drawn without an outline, so its plain form is a fill the picture covers.
+ * A control is matched on the type it was written with rather than on a class it would
+ * otherwise have to carry.
  */
-input.checkbox, .checkbox
+input[type='checkbox']
 {
+	display: inline-block;
 	width: 18dp;
 	height: 19dp;
 	vertical-align: top;
@@ -262,32 +275,51 @@ input.checkbox, .checkbox
 	decorator: image(cue_i.pcx);
 }
 
-input.checkbox:checked, .checkbox:checked
+input[type='checkbox']:checked
 {
 	decorator: image(cce_i.pcx);
 }
 
-input.checkbox:disabled, .checkbox:disabled
+input[type='checkbox']:disabled
 {
 	background-color: #00000080;
 }
 
+/*
+ * The label carries the box, so a whole switch is one element to place. The caption clears
+ * the box by two beyond its width, as the original leaves it.
+ */
 label.check
 {
-	display: inline-block;
-	margin-left: 2dp;
-	width: auto;
+	display: block;
 	line-height: 19dp;
-	vertical-align: top;
+	min-height: 19dp;
 }
 
-label.check.disabled
+label.check input[type='checkbox']
+{
+	margin-right: 2dp;
+}
+
+label.check.disabled, label.check:disabled
 {
 	color: #909090;
 }
 
+/*
+ * The two places a static sits: the caption before a control and the reading after it. The
+ * dialog layer draws a static on one line and never centres it in its box, so neither wraps
+ * however little room its text is given.
+ */
+.caption, .value
+{
+	display: inline-block;
+	white-space: nowrap;
+	vertical-align: top;
+}
+
 /* Text the dialog layer draws through GDI rather than its bitmap font. */
-.sans, input.text, textarea, select, dataselect, .list, .tooltip, .hotkey, .group > label
+.sans, input[type='text'], input[type='password'], textarea, select, dataselect, .list, .tooltip, .hotkey, .group > label
 {
 	font-family: dlg-sans;
 	font-size: 14dp;
@@ -299,7 +331,7 @@ input selection, textarea selection
 	color: #70ff00;
 }
 
-input.text, textarea
+input[type='text'], input[type='password'], textarea
 {
 	padding: 1dp;
 	color: #70ff00;
@@ -371,14 +403,15 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx); }
  * A track bar is a trough with a twelve wide thumb, and where it shows its value that
  * number sits in a fifty wide field of its own.
  */
-input.range
+input[type='range']
 {
+	display: inline-block;
 	height: 24dp;
 	background-color: #000000b4;
 	border: 1dp #4eb6dc;
 }
 
-input.range sliderbar
+input[type='range'] sliderbar
 {
 	width: 12dp;
 	height: 22dp;
@@ -386,7 +419,7 @@ input.range sliderbar
 	background-color: #70ff00;
 }
 
-input.range:disabled
+input[type='range']:disabled
 {
 	background-color: #00000080;
 	border-color: #909090;
@@ -403,17 +436,20 @@ input.range:disabled
 	border: 1dp #4eb6dc;
 }
 
-/* The progress bar the original fills in red, solid across the middle of its height. */
-.progress
+/*
+ * The progress bar the original fills in red, solid across the middle of its height with the
+ * outer quarters ramping away. The element carries its own fill, which is what is coloured.
+ */
+progress
 {
-	height: 12dp;
+	display: block;
+	height: 22dp;
 	background-color: #000000b4;
 	border: 1dp #4eb6dc;
 }
 
-.progress .fill
+progress fill
 {
-	display: block;
 	height: 100%;
 	background-color: #ff0000;
 	decorator: horizontal-gradient(#ff000040 #ff0000);

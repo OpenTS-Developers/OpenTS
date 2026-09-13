@@ -1,40 +1,25 @@
-body
-{
-	width: 100%;
-	height: 100%;
-	font-family: dlg-sans;
-	font-size: 13dp;
-	color: #e6e6e6;
-}
+/*
+ * Where the message box puts its text and its buttons. The box it replaces has three places
+ * for buttons; two buttons take the outer pair and three take all three, which is what
+ * spreading them across the row comes to. Everything visual comes from the kit.
+ */
 
-div, p
+#reveal
 {
-	display: block;
-}
-
-#panel
-{
-	position: absolute;
-	left: 50%;
-	top: 50%;
 	width: 390dp;
 	height: 137dp;
-	margin-left: -195dp;
+	top: 50%;
 	margin-top: -68dp;
-	background-color: #12181fdc;
-	border: 1dp #5a8f6a;
+}
+
+#content
+{
+	padding: 20dp 33dp 0 33dp;
 }
 
 #text
 {
-	position: absolute;
-	left: 33dp;
-	top: 20dp;
-	width: 324dp;
 	height: 62dp;
-	display: flex;
-	align-items: center;
-	justify-content: center;
 	overflow: hidden;
 }
 
@@ -45,41 +30,19 @@ div, p
 	white-space: pre-wrap;
 }
 
+#buttons
+{
+	display: flex;
+	justify-content: space-between;
+	margin-top: 12dp;
+}
+
+#buttons.alone
+{
+	justify-content: center;
+}
+
 button
 {
-	position: absolute;
-	top: 94dp;
 	width: 90dp;
-	height: 23dp;
-	display: block;
-	text-align: center;
-	line-height: 23dp;
-	tab-index: auto;
-	background-color: #2f4a5a;
-	border: 1dp #6f95a8;
-}
-
-button:hover
-{
-	background-color: #3f6478;
-}
-
-button:active
-{
-	background-color: #24394a;
-}
-
-.slot0
-{
-	left: 33dp;
-}
-
-.slot1
-{
-	left: 150dp;
-}
-
-.slot2
-{
-	left: 267dp;
 }

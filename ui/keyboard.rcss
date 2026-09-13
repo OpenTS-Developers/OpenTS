@@ -1,76 +1,66 @@
-body
-{
-	width: 100%;
-	height: 100%;
-	font-family: dlg-sans;
-	font-size: 13dp;
-	color: #e6e6e6;
-}
+/*
+ * Where the keyboard screen puts its parts, from IDD_OPT_KEYBOARD at 336 by 208 dialog
+ * units: 504 pixels across, two columns of 207 and 219 inside a 33 pixel inset, the command
+ * list 219 by 169, and the buttons along the bottom. The screen is taller than the template
+ * because it picks a category from a list where the original dropped a combo box over the
+ * description; the list needs room the dropdown borrowed.
+ *
+ * Everything visual comes from the kit.
+ */
 
-div, p
+#reveal
 {
-	display: block;
-}
-
-#panel
-{
-	position: absolute;
-	left: 50%;
-	top: 50%;
 	width: 504dp;
 	height: 360dp;
-	margin-left: -252dp;
+	top: 50%;
 	margin-top: -180dp;
-	background-color: #12181fdc;
-	border: 1dp #5a8f6a;
 }
 
-.heading
+#content
 {
-	position: absolute;
-	left: 33dp;
-	top: 18dp;
-	width: 438dp;
-	line-height: 15dp;
+	padding: 20dp 33dp 0 33dp;
+}
+
+#title
+{
+	height: 18dp;
 	text-align: center;
 }
 
-.column
+#columns
 {
-	position: absolute;
-	top: 40dp;
+	display: flex;
+	margin-top: 6dp;
 }
 
 #left
 {
-	left: 33dp;
 	width: 207dp;
+	margin-right: 12dp;
 }
 
 #right
 {
-	left: 252dp;
 	width: 219dp;
 }
 
-.label
+.caption
 {
+	display: block;
 	margin-top: 6dp;
 	line-height: 15dp;
 }
 
-.value
+.column > .caption:first-child
 {
-	line-height: 15dp;
-	white-space: nowrap;
-	overflow: hidden;
+	margin-top: 0;
 }
 
-.list
+.value
 {
-	overflow-y: auto;
-	background-color: #0c1116;
-	border: 1dp #3d5a68;
+	display: block;
+	line-height: 16dp;
+	overflow: hidden;
 }
 
 #categories
@@ -80,85 +70,42 @@ div, p
 
 #commands
 {
-	height: 209dp;
+	height: 169dp;
 }
 
-.row
+#about
 {
-	padding: 2dp 6dp;
-	line-height: 17dp;
-	white-space: nowrap;
+	margin-top: 10dp;
 }
 
-.row:hover
+#description
 {
-	background-color: #1f3140;
-}
-
-.row.selected
-{
-	background-color: #225061;
-}
-
-scrollbarvertical
-{
-	width: 12dp;
-}
-
-scrollbarvertical slidertrack
-{
-	background-color: #1a242c;
-}
-
-scrollbarvertical sliderbar
-{
-	background-color: #4d6f80;
-	min-height: 16dp;
-}
-
-scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
-{
-	width: 0;
-	height: 0;
-}
-
-.box
-{
-	box-sizing: border-box;
-	height: 60dp;
-	padding: 4dp 6dp;
-	line-height: 15dp;
+	height: 42dp;
 	overflow: hidden;
-	background-color: #0c1116;
-	border: 1dp #3d5a68;
 }
 
-#hotkey
+#hotkey-row
 {
-	height: 23dp;
-	white-space: nowrap;
+	margin-top: 4dp;
 }
 
 #capture
 {
 	display: inline-block;
-	box-sizing: border-box;
-	width: 127dp;
+	width: 128dp;
 	height: 23dp;
-	padding: 0 6dp;
-	line-height: 21dp;
+	padding: 2dp 6dp;
 	vertical-align: top;
 	white-space: nowrap;
 	overflow: hidden;
 	tab-index: auto;
-	background-color: #0c1116;
-	border: 1dp #6f95a8;
 }
 
-#capture:focus
+#assign
 {
-	border-color: #c6dde8;
-	background-color: #182430;
+	width: 75dp;
+	margin-left: 5dp;
+	vertical-align: top;
 }
 
 #capture span
@@ -166,62 +113,26 @@ scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
 	focus: none;
 }
 
-button
-{
-	display: inline-block;
-	height: 23dp;
-	text-align: center;
-	line-height: 23dp;
-	vertical-align: top;
-	tab-index: auto;
-	background-color: #2f4a5a;
-	border: 1dp #6f95a8;
-}
-
-button:hover
-{
-	background-color: #3f6478;
-}
-
-button:active
-{
-	background-color: #24394a;
-}
-
-#assign
-{
-	margin-left: 5dp;
-	width: 75dp;
-}
-
+/* Reset on the left, then the pair that answers the screen at the right edge. */
 #buttons
 {
-	position: absolute;
-	left: 33dp;
-	top: 320dp;
-	width: 438dp;
-	height: 23dp;
-}
-
-#buttons button
-{
-	position: absolute;
-	top: 0;
-	width: 75dp;
+	display: flex;
+	margin-top: 10dp;
 }
 
 #reset
 {
-	left: 0;
 	width: 81dp;
+	margin-right: 167dp;
 }
 
 #ok
 {
-	left: 248dp;
+	width: 75dp;
+	margin-right: 40dp;
 }
 
 #cancel
 {
-	left: 363dp;
+	width: 75dp;
 }

@@ -1462,10 +1462,12 @@ std::vector<Rml::Element *> Visible_Buttons(Rml::ElementDocument * document)
 		return(buttons);
 	}
 
+	// A repeated element leaves its pattern in the tree, hidden and never laid out, so what
+	// counts as shown is what the layout gave a box to.
 	Rml::ElementList all;
 	document->GetElementsByTagName(all, "button");
 	for (Rml::Element * element : all) {
-		if (element->IsVisible()) {
+		if (element->IsVisible() && element->GetComputedValues().display() != Rml::Style::Display::None) {
 			buttons.push_back(element);
 		}
 	}
@@ -1531,7 +1533,7 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
 		Check(buttons.size() == 2, "two buttons are visible");
 		if (buttons.size() == 2) {
-			float panel = Rml(*view).Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float panel = Rml(*view).Document()->GetElementById("chrome")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
 			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
 			float right = buttons[1]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
 			Check(left < 60.0f && right > 250.0f, "two buttons take the outer slots");
@@ -1557,7 +1559,7 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
 		Check(buttons.size() == 1, "one button is visible");
 		if (buttons.size() == 1) {
-			float panel = Rml(*view).Document()->GetElementById("panel")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float panel = Rml(*view).Document()->GetElementById("chrome")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
 			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
 			Check(left > 100.0f && left < 200.0f, "a lone button takes the middle slot");
 		}
@@ -1589,7 +1591,9 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 }
 
 
-// The visible elements of one class in a document, in document order.
+// The visible elements of one class in a document, in document order. A repeated element
+// leaves its pattern in the tree, hidden and never laid out, so what counts as shown is
+// what the layout gave a box to.
 std::vector<Rml::Element *> Visible_Of_Class(Rml::ElementDocument * document, char const * name)
 {
 	std::vector<Rml::Element *> found;
@@ -1600,11 +1604,44 @@ std::vector<Rml::Element *> Visible_Of_Class(Rml::ElementDocument * document, ch
 	Rml::ElementList all;
 	document->GetElementsByClassName(all, name);
 	for (Rml::Element * element : all) {
-		if (element->IsVisible()) {
+		if (element->IsVisible() && element->GetComputedValues().display() != Rml::Style::Display::None) {
 			found.push_back(element);
 		}
 	}
 	return(found);
+}
+
+
+// The keyboard screen's two lists read as one: its categories, then the open category's
+// commands, which is the order the screen reads down the page.
+std::vector<Rml::Element *> Keyboard_Rows(Rml::ElementDocument * document);
+
+
+// The rows one list of the kit is showing, in order.
+std::vector<Rml::Element *> Visible_Rows(Rml::ElementDocument * document, char const * listid)
+{
+	std::vector<Rml::Element *> found;
+	Rml::Element * list = document != nullptr ? document->GetElementById(listid) : nullptr;
+	if (list == nullptr) {
+		return(found);
+	}
+
+	for (int index = 0; index < list->GetNumChildren(); index++) {
+		Rml::Element * row = list->GetChild(index);
+		if (row->IsClassSet("item") && row->IsVisible() && row->GetComputedValues().display() != Rml::Style::Display::None) {
+			found.push_back(row);
+		}
+	}
+	return(found);
+}
+
+
+std::vector<Rml::Element *> Keyboard_Rows(Rml::ElementDocument * document)
+{
+	std::vector<Rml::Element *> rows = Visible_Rows(document, "categories");
+	std::vector<Rml::Element *> commands = Visible_Rows(document, "commands");
+	rows.insert(rows.end(), commands.begin(), commands.end());
+	return(rows);
 }
 
 
@@ -1939,7 +1976,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Check(system.Problems == problems, "the display screen raises no RmlUi warning or error");
 
 		Rml::ElementDocument * document = Rml(*view).Document();
-		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "mode");
+		std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
 		Check(rows.size() == 3, "the display screen lists one row per mode");
 		Check(rows.size() == 3 && rows[1]->IsClassSet("selected") && rows[1]->GetInnerRML() == "1280 x 800", "the row of the stored mode starts selected");
 
@@ -1984,7 +2021,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		view->Show(true);
 		context.Update();
 
-		std::vector<Rml::Element *> rows = Visible_Of_Class(Rml(*view).Document(), "mode");
+		std::vector<Rml::Element *> rows = Visible_Rows(Rml(*view).Document(), "modes");
 		if (rows.size() == 3) {
 			Click(context, rows[0]);
 			presenter.Drain();
@@ -2083,7 +2120,7 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		Check(system.Problems == problems, "the keyboard screen raises no RmlUi warning or error");
 
 		Rml::ElementDocument * document = Rml(*view).Document();
-		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "row");
+		std::vector<Rml::Element *> rows = Keyboard_Rows(document);
 		Check(rows.size() == 4, "the keyboard screen lists the categories and the open category's commands");
 		Check(rows.size() == 4 && rows[0]->GetInnerRML() == "Interface" && rows[0]->IsClassSet("selected") && rows[2]->GetInnerRML() == "Alliance" && rows[3]->GetInnerRML() == "Toggle Repair", "the first category is open with its commands sorted by name");
 
@@ -2092,7 +2129,7 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 			presenter.Drain();
 			view->Sync();
 			context.Update();
-			rows = Visible_Of_Class(document, "row");
+			rows = Keyboard_Rows(document);
 			Check(rows.size() == 4 && rows[1]->IsClassSet("selected") && rows[2]->GetInnerRML() == "Scatter" && rows[3]->GetInnerRML() == "Select View", "a click on a category lists its commands");
 		}
 
@@ -2327,8 +2364,8 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		Rml::Element * text = document->GetElementById("text");
 		Check(text != nullptr && text->GetInnerRML() == "Mission saving - Please Wait...", "the wait box shows its text");
 
-		Rml::Element * frame = document->GetElementById("frame");
-		Check(frame != nullptr && !frame->IsVisible(), "a wait box without a bar hides the frame");
+		Rml::Element * hidden = document->GetElementById("bar");
+		Check(hidden != nullptr && hidden->GetComputedValues().display() == Rml::Style::Display::None, "a wait box without a bar hides it");
 
 		presenter.Text = "Loading in 3 seconds...";
 		view->Sync();
@@ -2349,9 +2386,8 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		context.Update();
 
 		Rml::ElementDocument * document = Rml(*view).Document();
-		Rml::Element * frame = document->GetElementById("frame");
-		Rml::Element * fill = document->GetElementById("fill");
-		Check(frame != nullptr && frame->IsVisible(), "a wait box with a bar shows the frame");
+		Rml::Element * fill = document->GetElementById("bar");
+		Check(fill != nullptr && fill->IsVisible(), "a wait box with a bar shows one");
 
 		Rml::ElementProgress * progress = rmlui_dynamic_cast<Rml::ElementProgress *>(fill);
 		Check(progress != nullptr && std::fabs(progress->GetValue() - 50.0f) < 0.01f, "the fill stands at fifty at fifty percent");
@@ -3093,7 +3129,7 @@ void Test_Shell(void)
 		shell.Run_Modal(*view, [&](void) {
 			passes++;
 			Rml::ElementDocument * document = Rml(*view).Document();
-			std::vector<Rml::Element *> rows = Visible_Of_Class(document, "mode");
+			std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
 			Rml::Element * ok = document->GetElementById("ok");
 			listed = rows.size() == 3 && ok != nullptr;
 			if (!listed) {
@@ -3175,7 +3211,7 @@ void Test_Shell(void)
 		shell.Run_Modal(*view, [&](void) {
 			passes++;
 			Rml::ElementDocument * document = Rml(*view).Document();
-			std::vector<Rml::Element *> rows = Visible_Of_Class(document, "row");
+			std::vector<Rml::Element *> rows = Keyboard_Rows(document);
 			Rml::Element * capture = document->GetElementById("capture");
 			Rml::Element * assign = document->GetElementById("assign");
 			Rml::Element * ok = document->GetElementById("ok");

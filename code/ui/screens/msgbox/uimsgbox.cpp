@@ -11,6 +11,9 @@
 
 #include "ui/rml/rmlview.h"
 
+#include <RmlUi/Core/Element.h>
+#include <RmlUi/Core/ElementDocument.h>
+
 #include <utility>
 
 
@@ -99,6 +102,16 @@ class UIMessageBoxViewClass : public UIRmlViewClass
 			button.RegisterMember("slot", &UIMessageButton::Slot);
 
 			return(model.RegisterArray<std::vector<UIMessageButton>>() && model.Bind("text", &Data.Text) && model.Bind("buttons", &Data.Buttons));
+		}
+
+		// Two buttons take the outer places and three take all of them, which the row's own
+		// spacing gives; a lone button is the one case the row has to centre instead.
+		virtual void Loaded(void) override
+		{
+			Rml::Element * buttons = Document()->GetElementById("buttons");
+			if (buttons != nullptr) {
+				buttons->SetClass("alone", Data.Buttons.size() == 1);
+			}
 		}
 
 	private:

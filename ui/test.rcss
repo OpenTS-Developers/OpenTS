@@ -32,13 +32,10 @@ p
 	width: 96dp;
 }
 
-.row > .checkbox
-{
-	margin-right: 0;
-}
-
+/* Side by side here, where a dialog stacks them. */
 .row > label.check
 {
+	display: inline-block;
 	margin-right: 16dp;
 }
 
@@ -63,9 +60,8 @@ p
 	margin-bottom: 8dp;
 }
 
-.group > .range
+.group > input[type='range']
 {
-	display: inline-block;
 	width: 120dp;
 	vertical-align: middle;
 }
@@ -75,17 +71,12 @@ p
 	vertical-align: middle;
 }
 
-.progress .fill
-{
-	width: 40%;
-}
-
 .tooltip
 {
 	width: 90dp;
 }
 
-input.text
+#edit
 {
 	width: 240dp;
 	height: 20dp;

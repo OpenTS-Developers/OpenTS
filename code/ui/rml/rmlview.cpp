@@ -132,6 +132,7 @@ void UIRmlViewClass::Release(void)
 	Host = nullptr;
 	Shell = nullptr;
 	ModelCreated = false;
+	Wallpaper = 0x7FFFFFFF;
 	Model = Rml::DataModelHandle();
 	Types.reset();
 }
@@ -164,6 +165,11 @@ float UIRmlViewClass::Reveal_Width(void) const
 
 // The class is what shows the bars that ride the opening edges; the width is what hides
 // everything either side of them.
+//
+// What the band uncovers has to stay where it is on the screen while the band widens around
+// it, so the chrome is pinned to the middle of the band at the width the screen was laid out
+// at: half the band across, then back by half the screen, which comes to the same place
+// whatever the band's width. The width is read on the first pass, before anything is hidden.
 void UIRmlViewClass::Reveal_To(float width)
 {
 	Rml::Element * reveal = Reveal_Element(Doc);
@@ -171,8 +177,55 @@ void UIRmlViewClass::Reveal_To(float width)
 		return;
 	}
 
+	Rml::Element * chrome = Doc->GetElementById("chrome");
+	if (chrome != nullptr && !Anchored) {
+		float full = reveal->GetBox().GetSize().x;
+		chrome->SetProperty(Rml::PropertyId::Position, Rml::Property(Rml::Style::Position::Relative));
+		chrome->SetProperty(Rml::PropertyId::Width, Rml::Property(full, Rml::Unit::PX));
+		chrome->SetProperty(Rml::PropertyId::Left, Rml::Property(50.0f, Rml::Unit::PERCENT));
+		chrome->SetProperty(Rml::PropertyId::MarginLeft, Rml::Property(full * -0.5f, Rml::Unit::PX));
+		Anchored = true;
+	}
+
 	Doc->SetClass("revealing", true);
 	reveal->SetProperty(Rml::PropertyId::Width, Rml::Property(width < 0.0f ? 0.0f : width, Rml::Unit::PX));
+}
+
+
+void UIRmlViewClass::Placed(void)
+{
+	Place_Wallpaper();
+}
+
+
+// The wallpaper belongs to the screen rather than to the dialog: it is one picture centred
+// on the frame, and a dialog shows the part of it lying behind. The kit hangs it off the
+// middle of the dialog, which is the middle of the frame only while the dialog is centred,
+// so a dialog sitting anywhere else pushes it back by however far it is off centre. The
+// picture is sized in dp, so it is placed in dp. A document without the kit's chrome has
+// no picture to place.
+void UIRmlViewClass::Place_Wallpaper(void)
+{
+	Rml::Element * wallpaper = Doc != nullptr ? Doc->GetElementById("wallpaper-art") : nullptr;
+	Rml::Element * dialog = Doc != nullptr ? Doc->GetElementById("reveal") : nullptr;
+	Rml::Context * context = Doc != nullptr ? Doc->GetContext() : nullptr;
+	if (wallpaper == nullptr || dialog == nullptr || context == nullptr) {
+		return;
+	}
+
+	float ratio = context->GetDensityIndependentPixelRatio();
+	if (ratio <= 0.0f) {
+		ratio = 1.0f;
+	}
+
+	float middle = (dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize().y * 0.5f) / ratio;
+	int offset = (int)(-200.0f + (float)context->GetDimensions().y * 0.5f / ratio - middle);
+	if (offset == Wallpaper) {
+		return;
+	}
+
+	Wallpaper = offset;
+	wallpaper->SetProperty("margin-top", Rml::ToString(offset) + "dp");
 }
 
 
@@ -181,6 +234,15 @@ void UIRmlViewClass::Reveal_Done(void)
 	Rml::Element * reveal = Reveal_Element(Doc);
 	if (reveal == nullptr) {
 		return;
+	}
+
+	Rml::Element * chrome = Doc->GetElementById("chrome");
+	if (chrome != nullptr && Anchored) {
+		chrome->RemoveProperty(Rml::PropertyId::Position);
+		chrome->RemoveProperty(Rml::PropertyId::Width);
+		chrome->RemoveProperty(Rml::PropertyId::Left);
+		chrome->RemoveProperty(Rml::PropertyId::MarginLeft);
+		Anchored = false;
 	}
 
 	Doc->SetClass("revealing", false);

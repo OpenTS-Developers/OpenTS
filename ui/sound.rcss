@@ -1,235 +1,131 @@
-body
-{
-	width: 100%;
-	height: 100%;
-	font-family: dlg-sans;
-	font-size: 13dp;
-	color: #e6e6e6;
-}
+/*
+ * Where the sound options put their parts. In a game it is IDD_SOUND_OPTIONS_DIALOG at 294
+ * by 215 dialog units, 441 by 349 pixels: three volume rows of a 105 wide label and a 263
+ * wide slider, then the track list with its buttons and switches beside it, and OK at the
+ * right. Out of one it is IDD_SOUND_OPTIONS_DIALOG_LITE at 294 by 112, 441 by 182: the same
+ * three rows on their own with OK under them. Everything visual comes from the kit.
+ */
 
-div, label
+#reveal
 {
-	display: block;
-}
-
-#panel
-{
-	position: absolute;
-	left: 50%;
-	top: 50%;
 	width: 441dp;
 	height: 349dp;
-	margin-left: -220dp;
+	top: 50%;
 	margin-top: -174dp;
-	background-color: #12181fdc;
-	border: 1dp #5a8f6a;
 }
 
-#panel.lite
+.lite #reveal
 {
 	height: 182dp;
 	margin-top: -91dp;
 }
 
-.row
+#content
 {
-	position: absolute;
-	left: 0;
-	width: 100%;
-	height: 24dp;
+	padding: 20dp 32dp 0 33dp;
 }
 
-#row-score
+.lite #content
 {
-	top: 19dp;
+	padding-top: 28dp;
+}
+
+.row
+{
+	display: block;
+	height: 24dp;
 }
 
 #row-sound
 {
-	top: 55dp;
+	margin-top: 11dp;
 }
 
 #row-voice
 {
-	top: 91dp;
+	margin-top: 12dp;
 }
 
-.label
+.lite #row-sound
 {
-	position: absolute;
-	left: 33dp;
+	margin-top: 13dp;
+}
+
+.row > .caption
+{
+	display: inline-block;
 	width: 105dp;
 	line-height: 24dp;
 	text-align: right;
+	vertical-align: top;
 }
 
-input.range
+.row > input[type='range']
 {
-	position: absolute;
-	left: 145dp;
-	width: 262dp;
-	height: 24dp;
+	width: 263dp;
+	margin-left: 8dp;
+	vertical-align: top;
 }
 
-input.range slidertrack
+/* The lite template holds its sliders three across from the labels and three shorter. */
+.lite .row > input[type='range']
 {
-	margin-top: 8dp;
-	height: 8dp;
-	background-color: #2a3a48;
-	border: 1dp #6f95a8;
+	width: 260dp;
+	margin-left: 11dp;
 }
 
-input.range sliderbar
+/* The list stands beside the column of buttons and switches. */
+#music
 {
-	width: 14dp;
-	height: 24dp;
-	background-color: #6f95a8;
+	display: flex;
+	margin-top: 18dp;
 }
 
-input.range sliderbar:hover, input.range sliderbar:active
+#music-side
 {
-	background-color: #8fb5c8;
-}
-
-input.range sliderarrowdec, input.range sliderarrowinc
-{
-	width: 0;
-	height: 0;
-}
-
-input.range:disabled sliderbar
-{
-	background-color: #4a5a68;
-}
-
-button
-{
-	position: absolute;
-	display: block;
-	height: 23dp;
-	text-align: center;
-	line-height: 23dp;
-	tab-index: auto;
-	background-color: #2f4a5a;
-	border: 1dp #6f95a8;
-}
-
-button:hover
-{
-	background-color: #3f6478;
-}
-
-button:active
-{
-	background-color: #24394a;
+	width: 105dp;
+	margin-right: 8dp;
 }
 
 #play
 {
-	left: 33dp;
-	top: 140dp;
+	display: block;
 	width: 105dp;
+	margin-top: 7dp;
 }
 
 #stop
 {
-	left: 33dp;
-	top: 184dp;
+	display: block;
 	width: 105dp;
-}
-
-#tracks
-{
-	position: absolute;
-	left: 145dp;
-	top: 133dp;
-	width: 262dp;
-	height: 161dp;
-	overflow-y: auto;
-	background-color: #0c1116;
-	border: 1dp #3d5a68;
-}
-
-.track
-{
-	padding: 2dp 6dp;
-	line-height: 17dp;
-}
-
-.track:hover
-{
-	background-color: #1f3140;
-}
-
-.track.selected
-{
-	background-color: #225061;
-}
-
-scrollbarvertical
-{
-	width: 12dp;
-}
-
-scrollbarvertical slidertrack
-{
-	background-color: #1a242c;
-}
-
-scrollbarvertical sliderbar
-{
-	background-color: #4d6f80;
-	min-height: 16dp;
-}
-
-scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
-{
-	width: 0;
-	height: 0;
-}
-
-.switch
-{
-	position: absolute;
-	left: 33dp;
-	width: 105dp;
-	line-height: 23dp;
+	margin-top: 21dp;
 }
 
 #switch-shuffle
 {
-	top: 227dp;
+	margin-top: 21dp;
 }
 
 #switch-repeat
 {
-	top: 271dp;
+	margin-top: 20dp;
 }
 
-input.checkbox
+#tracks
 {
-	width: 14dp;
-	height: 14dp;
-	margin-right: 8dp;
-	vertical-align: -2dp;
-	background-color: #2a3a48;
-	border: 1dp #6f95a8;
-}
-
-input.checkbox:checked
-{
-	background-color: #8fb5c8;
+	width: 263dp;
+	height: 161dp;
 }
 
 #ok
 {
-	left: 315dp;
-	top: 307dp;
+	display: block;
 	width: 93dp;
+	margin: 13dp 0 0 282dp;
 }
 
-#panel.lite #ok
+/* On its own the OK button sits in the middle instead of at the right edge. */
+.lite #ok
 {
-	left: 172dp;
-	top: 140dp;
+	margin: 15dp auto 0 auto;
 }

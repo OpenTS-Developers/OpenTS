@@ -32,6 +32,10 @@ class UIViewClass
 		virtual void Sync(void) = 0;
 		virtual bool Is_Shown(void) const = 0;
 
+		// Called after every layout, for what a view can only place once it knows where it
+		// landed on the screen. It runs every pass, so it has to be cheap when nothing moved.
+		virtual void Placed(void) {}
+
 		// The reveal the shell drives as a screen opens, the way the Win32 dialogs opened.
 		// Reveal_Width is the whole of what will be shown, measured before any of it is
 		// hidden; Reveal_To hides all but the middle of that; Reveal_Done puts the screen

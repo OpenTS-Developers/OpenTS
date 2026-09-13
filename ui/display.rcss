@@ -1,153 +1,58 @@
-body
-{
-	width: 100%;
-	height: 100%;
-	font-family: dlg-sans;
-	font-size: 13dp;
-	color: #e6e6e6;
-}
+/*
+ * Where the display options put their parts, from IDD_OPT_DISPLAY at 229 by 196 dialog
+ * units: 344 by 319 pixels, everything inset 33 across and the first line at 20 down, the
+ * mode list 278 by 179, and two 93 wide buttons at the outer edges. Everything visual
+ * comes from the kit.
+ */
 
-div, p, label
+#reveal
 {
-	display: block;
-}
-
-#panel
-{
-	position: absolute;
-	left: 50%;
-	top: 50%;
 	width: 344dp;
-	height: 294dp;
-	margin-left: -172dp;
-	margin-top: -147dp;
-	background-color: #12181fdc;
-	border: 1dp #5a8f6a;
+	height: 319dp;
+	top: 50%;
+	margin-top: -160dp;
+}
+
+#content
+{
+	padding: 20dp 33dp 0 33dp;
 }
 
 .heading
 {
-	position: absolute;
-	left: 33dp;
-	width: 278dp;
-	line-height: 15dp;
 	text-align: center;
 }
 
 #title
 {
-	top: 18dp;
+	height: 15dp;
 }
 
 #modes-label
 {
-	top: 37dp;
+	margin-top: 6dp;
+	height: 16dp;
 }
 
 #modes
 {
-	position: absolute;
-	left: 33dp;
-	top: 56dp;
-	width: 278dp;
-	height: 165dp;
-	overflow-y: auto;
-	background-color: #0c1116;
-	border: 1dp #3d5a68;
+	margin-top: 3dp;
+	height: 179dp;
 }
 
-.mode
+#switch-stretch
 {
-	padding: 2dp 6dp;
-	line-height: 17dp;
+	margin-top: 10dp;
 }
 
-.mode:hover
+#buttons
 {
-	background-color: #1f3140;
-}
-
-.mode.selected
-{
-	background-color: #225061;
-}
-
-scrollbarvertical
-{
-	width: 12dp;
-}
-
-scrollbarvertical slidertrack
-{
-	background-color: #1a242c;
-}
-
-scrollbarvertical sliderbar
-{
-	background-color: #4d6f80;
-	min-height: 16dp;
-}
-
-scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
-{
-	width: 0;
-	height: 0;
-}
-
-.switch
-{
-	position: absolute;
-	left: 33dp;
-	top: 228dp;
-	width: 278dp;
-	line-height: 23dp;
-}
-
-input.checkbox
-{
-	width: 14dp;
-	height: 14dp;
-	margin-right: 8dp;
-	vertical-align: -2dp;
-	background-color: #2a3a48;
-	border: 1dp #6f95a8;
-}
-
-input.checkbox:checked
-{
-	background-color: #8fb5c8;
+	display: flex;
+	justify-content: space-between;
+	margin-top: 11dp;
 }
 
 button
 {
-	position: absolute;
-	top: 255dp;
 	width: 93dp;
-	height: 23dp;
-	display: block;
-	text-align: center;
-	line-height: 23dp;
-	tab-index: auto;
-	background-color: #2f4a5a;
-	border: 1dp #6f95a8;
-}
-
-button:hover
-{
-	background-color: #3f6478;
-}
-
-button:active
-{
-	background-color: #24394a;
-}
-
-#ok
-{
-	left: 33dp;
-}
-
-#cancel
-{
-	left: 218dp;
 }

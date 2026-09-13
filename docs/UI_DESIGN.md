@@ -706,6 +706,26 @@ document matches its Win32 dialog at 1:1 and keeps its proportion to the game
 frame at any window size; the harness lays the options menu out at ratio 2
 and checks its boxes double, which a `px` length in either file fails.
 
+Every screen is on the kit. Each one's sheet gives the dialog the size its
+Win32 template comes to, then places the controls down the page in flow with
+margins taken from the same template, so a screen holds no visual rule of its
+own and can grow. `Resize_Dialog` normalizes a dialog to 1.5 pixels per unit
+across and 1.63 down, which is where those numbers come from; a control's
+width is its outer width, borders included, because that is what the template
+measures. Three screens carry a second arrangement: the sound options and the
+game controls each have a frontend template and an in-game one, chosen by a
+class the document sets from its model, and the message box places its buttons
+in the three slots its template holds, which come out as a row spread across
+the content. Where a screen departs from its template it says so in its own
+sheet: the keyboard screen is taller than `IDD_OPT_KEYBOARD` because it picks a
+category from a list where the original dropped a combo box over the
+description, and the game controls make room for a difficulty row in a game,
+which no template of the game's own offers.
+
+The kit's combo box and tabs are authored from the drawing code and no
+migrated screen uses one yet; the network lobbies and the skirmish screens are
+what will exercise them.
+
 The chrome is `Draw_Dialog_Back`'s composition: the 640 by 400 wallpaper
 centred on the frame and cut off at the dialog's edges, black beyond it; a
 24-wide bar tiled down each edge with a corner over each end; and sixteen
@@ -749,10 +769,12 @@ it goes. The shell drives the band per modal pass from the host clock through
 over the whole curve. A pass opens one step at most, however late it comes:
 the original drew every band and only slept while it was ahead, so a slow
 frame rate draws the reveal out rather than skipping to its end, and the debug
-log records each reveal's passes and duration. The band is a clipped box
-whose content is placed against the screen rather than the band, so no
-control moves and input needs no gate; the original's queued input reached
-the same controls after its sleeps. A document opts out with `reveal="none"`
+log records each reveal's passes and duration. The band is a clipped box whose
+content is pinned to the middle of it at the width the screen was laid out at,
+so no control moves as the band widens and input needs no gate; the original's
+queued input reached the same controls after its sleeps. The driver pins it,
+reading that width on the first pass before anything is hidden, so a screen
+says nothing about the reveal beyond its own size. A document opts out with `reveal="none"`
 on its body, and the harness host never animates except in the test that
 watches the band.
 
@@ -1132,11 +1154,11 @@ up, which left every document and overlay frozen there, and a notice the
 present interval could swallow before it was ever drawn. A screen that looks
 right is therefore not evidence that the shell is.
 
-The options menu is the first screen on the dialog kit and the one the kit is
-checked against by hand, over the graphical menu at twice the frame scale:
+The options menu was the first screen on the dialog kit and is the one the kit
+was checked against by hand, over the graphical menu at twice the frame scale:
 chrome, wallpaper, reveal, and the buttons at rest, pressed and disabled. The
-other controls in the kit are authored from the drawing code and no screen
-exercises them yet.
+other screens moved onto the kit after it and are owed the same pass; the
+harness covers their layout and their input, not how they look.
 
 Still owed: the progress document, which belongs to the multiplayer loading,
 map generation, and file transfer paths; the multiplayer cases where
