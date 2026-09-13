@@ -115,13 +115,15 @@ void UI_Keyboard_State(UIKeyboardState & state)
 
 	for (int index = 0; index < AllCommands.Count(); index++) {
 		CommandClass const * command = AllCommands[index];
-		char const * category = command->Get_Category();
-		char const * name = command->Get_Display_Name();
-		char const * description = command->Get_Description();
 
+		// Each string is copied before the next is asked for, because an accessor may answer
+		// from storage that the next one reuses.
 		UIHotkeyCommand entry;
+		char const * category = command->Get_Category();
 		entry.Category = (category != NULL) ? category : "";
+		char const * name = command->Get_Display_Name();
 		entry.Name = (name != NULL) ? name : "";
+		char const * description = command->Get_Description();
 		entry.Description = (description != NULL) ? description : "";
 		state.Commands.push_back(entry);
 	}
