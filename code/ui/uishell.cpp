@@ -678,9 +678,6 @@ void UIShellClass::Render_Overlay(void)
 
 	bool documents = Documents_Visible();
 	bool overlays = UIDev_Active();
-	if (!documents && !overlays) {
-		return;
-	}
 
 	if (documents) {
 		UIReentryGuardClass rendering(InContext);
