@@ -130,10 +130,23 @@ class UIGameControlsViewClass : public UIRmlViewClass
 		{
 		}
 
-		// The model is small, so every field is re-read after each drain.
+		// Which rows and buttons the screen has is settled before it opens; the names
+		// follow their levels.
 		virtual void Sync(void) override
 		{
-			Model.DirtyAllVariables();
+			Model.DirtyVariable("speed");
+			Model.DirtyVariable("scroll");
+			Model.DirtyVariable("detail");
+			Model.DirtyVariable("difficulty");
+			Model.DirtyVariable("cameo");
+			Model.DirtyVariable("lines");
+			Model.DirtyVariable("tooltips");
+			Model.DirtyVariable("coasting");
+			Model.DirtyVariable("edge");
+			Model.DirtyVariable("speedname");
+			Model.DirtyVariable("scrollname");
+			Model.DirtyVariable("detailname");
+			Model.DirtyVariable("difficultyname");
 		}
 
 	protected:

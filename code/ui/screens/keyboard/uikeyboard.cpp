@@ -208,8 +208,9 @@ class UIKeyboardViewClass : public UIRmlViewClass
 		{
 		}
 
-		// Selecting a command moves the focus to the capture element, as the Win32 dialog moved it
-		// to its hotkey control.
+		// Every field this screen binds can change, down to the category list that a confirmed
+		// reset rebuilds. Selecting a command also moves the focus to the capture element, as
+		// the Win32 dialog moved it to its hotkey control.
 		virtual void Sync(void) override
 		{
 			Model.DirtyAllVariables();

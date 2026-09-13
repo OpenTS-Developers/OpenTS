@@ -126,10 +126,15 @@ class UISoundViewClass : public UIRmlViewClass
 		{
 		}
 
-		// The model is small, so every field is re-read after each drain.
+		// The audio device, the game state and the track list are settled before the screen opens.
 		virtual void Sync(void) override
 		{
-			Model.DirtyAllVariables();
+			Model.DirtyVariable("score");
+			Model.DirtyVariable("sound");
+			Model.DirtyVariable("voice");
+			Model.DirtyVariable("shuffle");
+			Model.DirtyVariable("repeat");
+			Model.DirtyVariable("selected");
 		}
 
 	protected:

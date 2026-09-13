@@ -95,10 +95,11 @@ class UIDisplayViewClass : public UIRmlViewClass
 		{
 		}
 
-		// The model is small, so every field is re-read after each drain.
+		// The mode list is settled before the screen opens.
 		virtual void Sync(void) override
 		{
-			Model.DirtyAllVariables();
+			Model.DirtyVariable("selected");
+			Model.DirtyVariable("stretch");
 		}
 
 	protected:
@@ -135,7 +136,7 @@ class UIConfirmModeViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
-			Model.DirtyAllVariables();
+			Model.DirtyVariable("seconds");
 		}
 
 	protected:

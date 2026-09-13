@@ -72,9 +72,9 @@ class UIMainOptionsViewClass : public UIRmlViewClass
 		{
 		}
 
+		// Nothing this screen binds changes once it is open, so the first read is the last.
 		virtual void Sync(void) override
 		{
-			Model.DirtyAllVariables();
 		}
 
 	protected:

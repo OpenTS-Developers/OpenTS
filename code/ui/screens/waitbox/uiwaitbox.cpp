@@ -55,9 +55,11 @@ class UIWaitBoxViewClass : public UIRmlViewClass
 		{
 		}
 
+		// Whether the notice has a bar is settled when it is built; its caller writes the rest.
 		virtual void Sync(void) override
 		{
-			Model.DirtyAllVariables();
+			Model.DirtyVariable("text");
+			Model.DirtyVariable("percent");
 		}
 
 	protected:
