@@ -357,6 +357,9 @@ bool Test_Display_Mode_Dialog(int width, int height)
 		DebugString("Resetting display mode @ %dx%d\n", Options.ScreenWidth, Options.ScreenHeight);
 		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
 		LogicalSurface = HiddenSurface;
+
+		// The mode change leaves the frame blank and the screen that follows draws over it.
+		Draw_Menu_Background();
 		return(false);
 	}
 
