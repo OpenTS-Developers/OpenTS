@@ -1137,14 +1137,28 @@ bool UIShellClass::Show_Modeless(UIViewClass & view)
 	view.Show(false);
 	Modeless.push_back(&view);
 	Refresh();
+
+	char label[160];
+	std::snprintf(label, sizeof(label), "%s shown beside the game", view.Name());
+	Render->Log_Resource_Counts(label);
 	return(true);
 }
 
 
 void UIShellClass::Hide_Modeless(UIViewClass & view)
 {
-	Modeless.erase(std::remove(Modeless.begin(), Modeless.end(), &view), Modeless.end());
+	// A caller hides its notice whether or not one was ever shown, so only a listed view
+	// is worth reporting.
+	auto const unlisted = std::remove(Modeless.begin(), Modeless.end(), &view);
+	bool const listed = unlisted != Modeless.end();
+	Modeless.erase(unlisted, Modeless.end());
 	view.Release();
+
+	if (listed && Ready) {
+		char label[160];
+		std::snprintf(label, sizeof(label), "%s hidden", view.Name());
+		Render->Log_Resource_Counts(label);
+	}
 
 	if (Ready && !InContext) {
 		{
