@@ -393,6 +393,21 @@ void Video_Present_If_Dirty(void)
 
 
 /// <summary>
+/// Puts the frame on the screen now, however recently the last one went out.
+/// A caller that shows a notice and then works without pumping gets no second chance, so
+/// the interval must not decide whether its notice was ever drawn.
+/// </summary>
+void Video_Present_Now(void)
+{
+	if (!_Dirty.Is_Dirty()) {
+		return;
+	}
+
+	Present();
+}
+
+
+/// <summary>
 /// Reports where the game's frame is drawn inside the window.
 /// </summary>
 VideoScaleInfo const & Video_Get_Scale_Info(void)

@@ -40,6 +40,9 @@ class UIShellHostClass
 		// The overlay changed and should be drawn at the next present.
 		virtual void Mark_Overlay_Dirty(void) = 0;
 		virtual void Present_If_Dirty(void) = 0;
+		// Presents whatever the interval since the last one, for a caller that will not
+		// pump again before it blocks.
+		virtual void Present_Now(void) = 0;
 		virtual bool Movie_Playing(void) const = 0;
 
 		// A Win32 dialog is on screen and takes the mouse before a document can.

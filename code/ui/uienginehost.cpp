@@ -66,6 +66,11 @@ class UIEngineHostClass : public UIShellHostClass
 			Video_Present_If_Dirty();
 		}
 
+		virtual void Present_Now(void) override
+		{
+			Video_Present_Now();
+		}
+
 		virtual bool Movie_Playing(void) const override
 		{
 			return(Movie_Is_Playing());

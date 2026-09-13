@@ -1166,7 +1166,7 @@ void UIShellClass::Hide_Modeless(UIViewClass & view)
 			Context->Update();
 		}
 		Host.Mark_Overlay_Dirty();
-		Host.Present_If_Dirty();
+		Host.Present_Now();
 	}
 }
 
@@ -1186,7 +1186,10 @@ void UIShellClass::Refresh(void)
 
 	Tick();
 	Host.Mark_Overlay_Dirty();
-	Host.Present_If_Dirty();
+
+	// The caller of a notice works without pumping, so the present interval must not be
+	// what decides whether its notice was ever drawn.
+	Host.Present_Now();
 }
 
 
