@@ -11,6 +11,7 @@
 
 #include "ccfile.h"
 #include "dbgprint.h"
+#include "ui/rml/rmlimage.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_PNG
@@ -30,15 +31,11 @@ static bool Has_Extension(char const * name, char const * extension)
 }
 
 
-bool UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height)
+// The whole file through the game's own search, so a document reaches art inside a mix
+// archive as readily as one beside the executable.
+static bool Read_Whole_File(char const * name, std::vector<unsigned char> & bytes)
 {
-	rgba.clear();
-	width = 0;
-	height = 0;
-
-	if (name == NULL || (!Has_Extension(name, ".png") && !Has_Extension(name, ".tga"))) {
-		return(false);
-	}
+	bytes.clear();
 
 	CCFileClass file(name);
 	if (!file.Is_Available()) {
@@ -50,19 +47,58 @@ bool UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & w
 		return(false);
 	}
 
-	std::vector<unsigned char> encoded((size_t)size);
-	if (!file.Open(FileClass::READ) || file.Read(encoded.data(), size) != size) {
+	bytes.resize((size_t)size);
+	if (!file.Open(FileClass::READ) || file.Read(bytes.data(), size) != size) {
+		bytes.clear();
 		return(false);
 	}
 	file.Close();
 
+	return(true);
+}
+
+
+UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height)
+{
+	rgba.clear();
+	width = 0;
+	height = 0;
+
+	if (name == NULL) {
+		return(UI_IMAGE_MISSING);
+	}
+
+	bool pcx = Has_Extension(name, ".pcx");
+	if (!pcx && !Has_Extension(name, ".png") && !Has_Extension(name, ".tga")) {
+		return(UI_IMAGE_UNREADABLE);
+	}
+
+	std::vector<unsigned char> encoded;
+	if (!Read_Whole_File(name, encoded)) {
+		return(UI_IMAGE_MISSING);
+	}
+
+	if (pcx) {
+		UIImageIndexed image;
+		if (!UI_Decode_PCX(std::span<std::uint8_t const>(encoded.data(), encoded.size()), image)
+			|| !UI_Indexed_To_RGBA(image, rgba)) {
+			DebugString("UI: %s is not an 8-bit run-length PCX\n", name);
+			rgba.clear();
+			return(UI_IMAGE_UNREADABLE);
+		}
+
+		width = image.Width;
+		height = image.Height;
+		return(UI_IMAGE_LOADED);
+	}
+
 	int channels = 0;
-	unsigned char * pixels = stbi_load_from_memory(encoded.data(), size, &width, &height, &channels, 4);
+	unsigned char * pixels = stbi_load_from_memory(encoded.data(), (int)encoded.size(), &width, &height, &channels, 4);
 	if (pixels == NULL) {
 		DebugString("UI: %s did not decode: %s\n", name, stbi_failure_reason());
 		width = 0;
 		height = 0;
-		return(false);
+		return(UI_IMAGE_UNREADABLE);
 	}
 
 	rgba.assign(pixels, pixels + (size_t)width * (size_t)height * 4);
@@ -78,5 +114,5 @@ bool UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & w
 		}
 	}
 
-	return(true);
+	return(UI_IMAGE_LOADED);
 }

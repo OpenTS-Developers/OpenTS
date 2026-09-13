@@ -12,6 +12,7 @@
 // messages become code points, what the overlay renderer refuses before it draws, and what
 // the presenter owes the screen after a present is taken, refused or skipped.
 
+#include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
 #include "ui/uiinput.h"
 #include "videodirty.h"
@@ -19,6 +20,7 @@
 #include <array>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <initializer_list>
 #include <limits>
 #include <vector>
@@ -257,6 +259,92 @@ void Test_Render_Mask(void)
 }
 
 
+// Builds an 8-bit PCX the way one is laid out on disk: a 128-byte header, run-length rows,
+// then the marker and the 256 colors.
+std::vector<std::uint8_t> Build_PCX(int width, int height, int bytesperline, std::vector<std::uint8_t> const & rows, std::vector<std::uint8_t> const & palette)
+{
+	std::vector<std::uint8_t> file(128, 0);
+	file[0] = 10;
+	file[1] = 5;
+	file[2] = 1;
+	file[3] = 8;
+	file[8] = (std::uint8_t)((width - 1) & 0xFF);
+	file[9] = (std::uint8_t)((width - 1) >> 8);
+	file[10] = (std::uint8_t)((height - 1) & 0xFF);
+	file[11] = (std::uint8_t)((height - 1) >> 8);
+	file[65] = 1;
+	file[66] = (std::uint8_t)(bytesperline & 0xFF);
+	file[67] = (std::uint8_t)(bytesperline >> 8);
+
+	file.insert(file.end(), rows.begin(), rows.end());
+	file.push_back(0x0C);
+	file.insert(file.end(), palette.begin(), palette.end());
+	file.resize(file.size() + (768 - palette.size()), 0);
+	return(file);
+}
+
+
+void Test_Image(void)
+{
+	// Index 1 is red, index 2 is the magenta this art is keyed with, and index 3 is white.
+	std::vector<std::uint8_t> palette = { 0, 0, 0, 255, 0, 0, 255, 0, 255, 255, 255, 255 };
+
+	// Two rows of four, each written as one run of four.
+	std::vector<std::uint8_t> compressed = { 0xC4, 1, 0xC4, 3 };
+	UIImageIndexed image;
+	Check(UI_Decode_PCX(Build_PCX(4, 2, 4, compressed, palette), image), "an 8-bit run-length PCX decodes");
+	Check(image.Width == 4 && image.Height == 2 && image.Pixels.size() == 8, "and reports the size its header claims");
+	Check(image.Pixels[0] == 1 && image.Pixels[3] == 1 && image.Pixels[4] == 3 && image.Pixels[7] == 3, "a run fills its whole row");
+	Check(image.Palette[3] == 255 && image.Palette[4] == 0 && image.Palette[5] == 0, "and the palette comes off the end of the file");
+
+	// The same picture written one literal byte at a time.
+	std::vector<std::uint8_t> literal = { 1, 1, 1, 1, 3, 3, 3, 3 };
+	UIImageIndexed plain;
+	Check(UI_Decode_PCX(Build_PCX(4, 2, 4, literal, palette), plain), "an uncompressed PCX decodes");
+	Check(plain.Pixels == image.Pixels, "and holds the same pixels the compressed one does");
+
+	// A row padded to an even length: the fourth pixel is dropped with the padding byte.
+	std::vector<std::uint8_t> padded = { 1, 1, 1, 2, 3, 3, 3, 2 };
+	UIImageIndexed narrow;
+	Check(UI_Decode_PCX(Build_PCX(3, 2, 4, padded, palette), narrow), "a row padded past the picture decodes");
+	Check(narrow.Width == 3 && narrow.Pixels.size() == 6 && narrow.Pixels[2] == 1 && narrow.Pixels[3] == 3, "and the padding never reaches the picture");
+
+	std::vector<std::uint8_t> rgba;
+	Check(UI_Indexed_To_RGBA(image, rgba) && rgba.size() == 32, "an indexed picture becomes four bytes a pixel");
+	Check(rgba[0] == 255 && rgba[1] == 0 && rgba[2] == 0 && rgba[3] == 255, "an opaque pixel takes its palette color");
+
+	UIImageIndexed keyed;
+	keyed.Width = 1;
+	keyed.Height = 1;
+	keyed.Pixels = { 2 };
+	std::memcpy(keyed.Palette, palette.data(), palette.size());
+	Check(UI_Indexed_To_RGBA(keyed, rgba) && rgba[3] == 0 && rgba[0] == 0 && rgba[1] == 0 && rgba[2] == 0,
+		  "a magenta pixel comes back clear, with no color left to bleed");
+
+	UIImageIndexed rejected;
+	Check(!UI_Decode_PCX(std::span<std::uint8_t const>(), rejected), "no bytes at all is not a picture");
+
+	std::vector<std::uint8_t> notpcx = Build_PCX(4, 2, 4, compressed, palette);
+	notpcx[0] = 11;
+	Check(!UI_Decode_PCX(notpcx, rejected), "a file that is not a PCX is refused");
+
+	std::vector<std::uint8_t> truecolor = Build_PCX(4, 2, 4, compressed, palette);
+	truecolor[65] = 3;
+	Check(!UI_Decode_PCX(truecolor, rejected), "so is a PCX of three planes, which this loader does not read");
+
+	std::vector<std::uint8_t> nomarker = Build_PCX(4, 2, 4, compressed, palette);
+	nomarker[nomarker.size() - 769] = 0;
+	Check(!UI_Decode_PCX(nomarker, rejected), "a PCX without its palette marker is refused");
+
+	// A picture whose rows run out of bytes before the header's height is met.
+	std::vector<std::uint8_t> truncated = { 0xC4, 1 };
+	Check(!UI_Decode_PCX(Build_PCX(4, 2, 4, truncated, palette), rejected), "a picture that claims more rows than it holds is refused");
+
+	std::vector<std::uint8_t> emptyrun = { 0xC0, 1, 0xC4, 3 };
+	Check(!UI_Decode_PCX(Build_PCX(4, 2, 4, emptyrun, palette), rejected), "a run of no pixels is refused rather than read forever");
+}
+
+
 void Test_Dirty_State(void)
 {
 	VideoDirtyStateClass dirty;
@@ -311,6 +399,7 @@ int main(void)
 	Test_Render_Math();
 	Test_Render_Transform();
 	Test_Render_Mask();
+	Test_Image();
 	Test_Dirty_State();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

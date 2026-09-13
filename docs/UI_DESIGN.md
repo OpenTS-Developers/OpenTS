@@ -215,7 +215,7 @@ rule the tree follows, not a build boundary.
 | --- | --- | --- |
 | `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals | landed |
 | `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay) | landed |
-| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image decoding: PNG and TGA today, with SHP, PCX and engine surfaces described under [Assets](#assets-and-strings)), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA; toolkit-free, so the harness runs it), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
 | `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
 | `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
 | `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside | landed |
@@ -630,10 +630,25 @@ required document, style, or font fails preparation with the name reported.
 Images resolve by extension. PNG and TGA decode through `stb_image.h`, which
 bimg vendors and the texture loader compiles with only those two formats
 enabled; `bimg_decode` itself stays out because it would bring the AVIF codecs
-and three more decoders along. PCX goes through `Read_PCX_File`
-with the palette named in the source string. SHP frames use a
-`name.shp#frame` form with an optional palette, decoded to RGBA with index
-zero transparent. Surfaces the engine draws at runtime (the map preview, the
+and three more decoders along.
+
+PCX decodes through `rmlimage`, which reads an 8-bit run-length file into
+palette indices and turns those into premultiplied RGBA. Pure magenta is the
+color key the interface art is drawn with, so those pixels come back clear.
+The engine's own `Read_PCX_File` is not reused: it allocates a `BSurface`,
+converts to display-format pixels, and bounds-checks nothing, while a document
+needs RGBA, indices for the bitmap font, and safety against a malformed file.
+Keeping the decoding in a file that knows no toolkit or file system is what
+lets the harness test it over bytes it builds itself, with no art shipped.
+
+Art the player does not have is told apart from art that is present and will
+not decode. A missing image leaves a clear texture and no latched refusal, so
+a screen missing a decoration still opens; an unreadable one latches as
+before, because that is the document's own fault. SHP frames are not decoded
+yet; they are for the sidebar view, in a `name.shp#frame` form with an
+optional palette and index zero transparent.
+
+Surfaces the engine draws at runtime (the map preview, the
 desync host icons, a progress bar) reach a document through a `<surface>`
 custom element bound to a named provider; the shell re-uploads the texture
 when the provider marks it dirty. Original game art stays local runtime data
@@ -977,8 +992,9 @@ and builds `UIShellClass` itself over a host the test controls:
 `tests/uilogic` compiles the toolkit-free state with no UI library: the input
 ownership table and its cancellations, the UTF-8 decoder, the renderer's
 geometry, size and scissor checks, the model matrix a transformed fragment
-draws through and the stencil each clip mask operation asks for, and the
-presenter's marks through consume, restore and reset.
+draws through and the stencil each clip mask operation asks for, the PCX
+decoder over files the test builds itself, and the presenter's marks through
+consume, restore and reset.
 
 `toolkitheaders` runs `cmake/CheckToolkitHeaders.cmake` over `code/` and
 fails on a toolkit or renderer header included outside `code/ui/rml/`, or an

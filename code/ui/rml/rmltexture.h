@@ -12,7 +12,18 @@
 #include <vector>
 
 
-// Decodes a PNG or TGA image, named the way documents name their resources, into
-// premultiplied RGBA8 rows from the top down. False when the file is missing, unreadable
-// or of another kind; the output is then empty.
-bool UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height);
+// What became of a document's request for an image. Art the player does not have is told
+// apart from art that is there and will not decode, because a screen may be missing a
+// decoration and still be worth showing.
+enum UIImageResult
+{
+	UI_IMAGE_LOADED,
+	UI_IMAGE_MISSING,
+	UI_IMAGE_UNREADABLE
+};
+
+
+// Decodes a PCX, PNG or TGA image, named the way documents name their resources, into
+// premultiplied RGBA8 rows from the top down. The output is empty unless the result is
+// UI_IMAGE_LOADED.
+UIImageResult UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & width, int & height);

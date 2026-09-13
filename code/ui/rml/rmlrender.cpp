@@ -481,13 +481,23 @@ void UIRmlBgfxRenderClass::ReleaseGeometry(Rml::CompiledGeometryHandle handle)
 }
 
 
+// Art the player does not have leaves a clear texture behind rather than a refusal, so a
+// screen missing a decoration still opens; art that is there and will not decode is the
+// document's own fault and latches.
 Rml::TextureHandle UIRmlBgfxRenderClass::LoadTexture(Rml::Vector2i & dimensions, Rml::String const & source)
 {
 	std::vector<unsigned char> rgba;
 	int width = 0;
 	int height = 0;
 
-	if (!UI_Load_Image(source.c_str(), rgba, width, height)) {
+	UIImageResult result = UI_Load_Image(source.c_str(), rgba, width, height);
+
+	if (result == UI_IMAGE_MISSING) {
+		const unsigned int clear = 0;
+		rgba.assign((unsigned char const *)&clear, (unsigned char const *)&clear + sizeof(clear));
+		width = 1;
+		height = 1;
+	} else if (result != UI_IMAGE_LOADED) {
 		char message[320];
 		std::snprintf(message, sizeof(message), "%s did not decode", source.c_str());
 		Fail(message);
