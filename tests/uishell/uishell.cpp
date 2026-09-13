@@ -463,6 +463,73 @@ bool Send(UIShellClass & shell, UINT message, WPARAM wparam = 0, LPARAM lparam =
 }
 
 
+// The middle of an element's border box, in the document's own coordinates.
+Rml::Vector2f Center_Of(Rml::Element * element)
+{
+	return(element->GetAbsoluteOffset(Rml::BoxArea::Border) + element->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f);
+}
+
+
+// Where the hook receives a press on an element. The host's frame is where the overlay sits
+// inside the client area, so a document position becomes a client one through it.
+LPARAM Element_Point(TestHostClass const & host, Rml::Element * element)
+{
+	Rml::Vector2f center = Center_Of(element);
+	return(MAKELPARAM((int)center.x + host.Rect.X, (int)center.y + host.Rect.Y));
+}
+
+
+// A click on an element through the shell's hook, with the button state the shell polls kept
+// in step with the messages it is sent.
+void Click_Through_Hook(UIShellClass & shell, TestHostClass & host, Rml::Element * element)
+{
+	LPARAM at = Element_Point(host, element);
+
+	Send(shell, WM_MOUSEMOVE, 0, at);
+	host.Down[VK_LBUTTON] = true;
+	Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+	host.Down[VK_LBUTTON] = false;
+	Send(shell, WM_LBUTTONUP, 0, at);
+}
+
+
+// Drags a range input's bar past the end of its track, so the value lands on the far stop.
+// A slider builds its bar and track as non-DOM children, which a tag search would skip.
+// False means a message reached the game, or the slider had no parts to take hold of.
+bool Drag_Slider_To_End(UIShellClass & shell, TestHostClass & host, Rml::Element * slider)
+{
+	Rml::Element * bar = nullptr;
+	Rml::Element * track = nullptr;
+
+	for (int index = 0; index < slider->GetNumChildren(true); index++) {
+		Rml::Element * child = slider->GetChild(index);
+		if (child->GetTagName() == "sliderbar") {
+			bar = child;
+		} else if (child->GetTagName() == "slidertrack") {
+			track = child;
+		}
+	}
+
+	if (bar == nullptr || track == nullptr) {
+		return(false);
+	}
+
+	Rml::Vector2f from = Center_Of(bar);
+	int const y = (int)from.y + host.Rect.Y;
+	int const past = (int)(track->GetAbsoluteOffset(Rml::BoxArea::Border).x + track->GetBox().GetSize(Rml::BoxArea::Border).x) + host.Rect.X + 40;
+	LPARAM const start = MAKELPARAM((int)from.x + host.Rect.X, y);
+	LPARAM const end = MAKELPARAM(past, y);
+
+	bool consumed = Send(shell, WM_MOUSEMOVE, 0, start);
+	host.Down[VK_LBUTTON] = true;
+	consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, start) && consumed;
+	consumed = Send(shell, WM_MOUSEMOVE, MK_LBUTTON, end) && consumed;
+	host.Down[VK_LBUTTON] = false;
+	consumed = Send(shell, WM_LBUTTONUP, 0, end) && consumed;
+	return(consumed);
+}
+
+
 std::string Read_Text(std::filesystem::path const & path)
 {
 	std::ifstream stream(path, std::ios::binary);
@@ -1277,7 +1344,7 @@ void Test_Version_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Check(ok != nullptr, "the version screen has its OK button");
 
 		if (ok != nullptr) {
-			Rml::Vector2f at = ok->GetAbsoluteOffset(Rml::BoxArea::Border) + ok->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
+			Rml::Vector2f at = Center_Of(ok);
 			context.ProcessMouseMove((int)at.x, (int)at.y, 0);
 			context.Update();
 			Check(!context.ProcessMouseButtonDown(0, 0), "a press on OK interacts with the document");
@@ -1366,7 +1433,7 @@ std::vector<Rml::Element *> Visible_Buttons(Rml::ElementDocument * document)
 
 void Click(Rml::Context & context, Rml::Element * element)
 {
-	Rml::Vector2f at = element->GetAbsoluteOffset(Rml::BoxArea::Border) + element->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
+	Rml::Vector2f at = Center_Of(element);
 	context.ProcessMouseMove((int)at.x, (int)at.y, 0);
 	context.Update();
 	context.ProcessMouseButtonDown(0, 0);
@@ -2678,30 +2745,9 @@ void Test_Shell(void)
 			passes++;
 			Rml::Element * score = Rml(*view).Document()->GetElementById("score");
 			if (passes == 2 && score != nullptr) {
-				// The slider builds its track and bar as non-DOM children, which a tag search skips.
-				Rml::Element * barelement = nullptr;
-				Rml::Element * trackelement = nullptr;
-				for (int index = 0; index < score->GetNumChildren(true); index++) {
-					Rml::Element * child = score->GetChild(index);
-					if (child->GetTagName() == "sliderbar") {
-						barelement = child;
-					} else if (child->GetTagName() == "slidertrack") {
-						trackelement = child;
-					}
-				}
-				if (barelement != nullptr && trackelement != nullptr) {
-					Rml::Vector2f bar = barelement->GetAbsoluteOffset(Rml::BoxArea::Border) + barelement->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
-					Rml::Vector2f track = trackelement->GetAbsoluteOffset(Rml::BoxArea::Border);
-					int right = (int)(track.x + trackelement->GetBox().GetSize(Rml::BoxArea::Border).x) + 40;
-					service.Calls.clear();
-					consumed = Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM((int)bar.x, (int)bar.y));
-					host.Down[VK_LBUTTON] = true;
-					consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM((int)bar.x, (int)bar.y)) && consumed;
-					consumed = Send(shell, WM_MOUSEMOVE, MK_LBUTTON, MAKELPARAM(right, (int)bar.y)) && consumed;
-					host.Down[VK_LBUTTON] = false;
-					consumed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(right, (int)bar.y)) && consumed;
-					dragged = score->GetAttribute<int>("value", -1);
-				}
+				service.Calls.clear();
+				consumed = Drag_Slider_To_End(shell, host, score);
+				dragged = score->GetAttribute<int>("value", -1);
 			}
 			if (passes == 3 && score != nullptr) {
 				held = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
@@ -2737,8 +2783,7 @@ void Test_Shell(void)
 			if (buttons.empty()) {
 				return(true);
 			}
-			Rml::Vector2f centre = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border) + buttons[0]->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
-			LPARAM at = MAKELPARAM((int)centre.x, (int)centre.y);
+			LPARAM at = Element_Point(host, buttons[0]);
 
 			if (passes == 2) {
 				host.Down[VK_LBUTTON] = true;
@@ -2761,6 +2806,200 @@ void Test_Shell(void)
 		Check(unpressed, "that press never reaches the document, so nothing is left pressed");
 		Check(answered, "and it answers nothing");
 		Check(presenter.Result.has_value() && presenter.Choice == 0, "the next click on the same button answers normally");
+	}
+
+	{
+		// A press has to land on the button under it, wherever the menu sits in the frame, and
+		// a button the presenter refuses answers nothing without closing the screen.
+		UIMainOptionsState state;
+		state.SoundEnabled = false;
+		state.Top = 120;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
+		int passes = 0;
+		bool found = false;
+		bool refused = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::Element * sound = document->GetElementById("sound");
+			Rml::Element * display = document->GetElementById("display");
+			found = sound != nullptr && display != nullptr;
+			if (!found) {
+				return(true);
+			}
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, sound);
+			}
+			if (passes == 3) {
+				refused = !presenter.Result.has_value();
+				Click_Through_Hook(shell, host, display);
+			}
+			return(passes > 4);
+		});
+
+		Check(found && refused && passes == 3, "a click on the refused sound button answers nothing and leaves the menu open");
+		Check(presenter.Result.has_value() && presenter.Choice == UI_MAIN_OPTIONS_DISPLAY, "a click reaches the button beneath the pointer and answers with its choice");
+	}
+
+	{
+		// A row hands back its own entry rather than its position, and the model reaches the
+		// document, so the row the player chose is the one that shows as chosen.
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+		int passes = 0;
+		bool listed = false;
+		bool marked = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			std::vector<Rml::Element *> rows = Visible_Of_Class(document, "mode");
+			Rml::Element * ok = document->GetElementById("ok");
+			listed = rows.size() == 3 && ok != nullptr;
+			if (!listed) {
+				return(true);
+			}
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, rows[2]);
+			}
+			if (passes == 3) {
+				marked = rows[2]->IsClassSet("selected") && !rows[1]->IsClassSet("selected");
+				Click_Through_Hook(shell, host, ok);
+			}
+			return(passes > 4);
+		});
+
+		Check(listed && marked, "clicking a mode row marks that row chosen in the document");
+		Check(presenter.State.Selected == 2 && presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "and accepting hands back the mode the row carried, not its index");
+	}
+
+	{
+		// A switch, a slider whose value runs backwards, and the button that hands on to the
+		// next screen. Nothing reaches the service until that button is pressed, and then it
+		// all arrives in one order.
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = true;
+		state.SoundEnabled = true;
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+		int passes = 0;
+		bool found = false;
+		bool dragged = false;
+		bool quiet = false;
+		std::string named;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::Element * cameo = document->GetElementById("cameo");
+			Rml::Element * speed = document->GetElementById("speed");
+			Rml::Element * name = document->GetElementById("speed-name");
+			Rml::Element * sound = document->GetElementById("sound");
+			found = cameo != nullptr && speed != nullptr && name != nullptr && sound != nullptr;
+			if (!found) {
+				return(true);
+			}
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, cameo);
+				dragged = Drag_Slider_To_End(shell, host, speed);
+			}
+			if (passes == 3) {
+				named = name->GetInnerRML();
+				quiet = service.Calls.empty();
+				Click_Through_Hook(shell, host, sound);
+			}
+			return(passes > 4);
+		});
+
+		Check(found && dragged && presenter.State.Speed == 0 && named == "Slowest", "the speed slider runs backwards, so dragging it to the far end takes the slowest setting");
+		Check(!presenter.State.CameoText && quiet, "a switch and a slider change the screen without reaching the engine");
+		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
+		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "and asks for the screen its button names");
+	}
+
+	{
+		// A key has to reach the element the view focused, not the document's accept and cancel
+		// handling, and assigning it must take it off whatever held it before. The key is an
+		// unmodified one because the shell reads its modifiers from the thread's own key state
+		// rather than through the host, which no test can set without disturbing the machine;
+		// Test_Keys covers the modifier bits on their own.
+		RecordingKeyboardServiceClass service;
+		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
+		int passes = 0;
+		bool listed = false;
+		bool focused = false;
+		bool captured = false;
+		bool moved = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			std::vector<Rml::Element *> rows = Visible_Of_Class(document, "row");
+			Rml::Element * capture = document->GetElementById("capture");
+			Rml::Element * assign = document->GetElementById("assign");
+			Rml::Element * ok = document->GetElementById("ok");
+			listed = rows.size() == 4 && capture != nullptr && assign != nullptr && ok != nullptr;
+			if (!listed) {
+				return(true);
+			}
+
+			// Rows two and three are the open category's commands: Alliance, which holds no key,
+			// then Toggle Repair. The key pressed below belongs to a command in the other
+			// category, so assigning it has to take it away from there.
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, rows[2]);
+			}
+			if (passes == 3) {
+				focused = shell.Rml_Context()->GetFocusElement() == capture;
+				Send(shell, WM_KEYDOWN, 'X');
+				Send(shell, WM_KEYUP, 'X');
+			}
+			if (passes == 4) {
+				captured = presenter.State.Captured == 88 && presenter.State.AssignedTo == "Scatter" && capture->GetInnerRML().find("K88") != std::string::npos;
+				Click_Through_Hook(shell, host, assign);
+			}
+			if (passes == 5) {
+				moved = presenter.Key_Of(3) == 88 && presenter.Key_Of(2) == 0;
+				Click_Through_Hook(shell, host, ok);
+			}
+			return(passes > 6);
+		});
+
+		Check(listed && presenter.State.Selected == 3, "a click on a command row selects the command it names");
+		Check(focused, "and moves the focus to the capture element the keys go to");
+		Check(captured, "a key sent through the hook becomes its hotkey number there and names the command holding it");
+		Check(moved, "assigning it moves the key to the selected command and off its old owner");
+		Check(service.Calls == std::vector<std::string>{ "save 0=577 1=338 3=88" }, "and accepting saves the table the edits left behind");
+	}
+
+	{
+		// The one screen whose result comes from the clock rather than from input, which is
+		// what proves the runner refreshes a presenter before it drains.
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
+		int passes = 0;
+		int counted = -1;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 2) {
+				clock.Now = UIConfirmModePresenterClass::DEFAULT_TIMEOUT - 2000;
+			}
+			if (passes == 3) {
+				counted = presenter.Seconds;
+				clock.Now = UIConfirmModePresenterClass::DEFAULT_TIMEOUT;
+			}
+			return(passes > 5);
+		});
+
+		Check(counted == 2, "the confirmation counts down as the runner refreshes it");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.TimedOut && presenter.Seconds == 0, "and silence closes it when the deadline passes, with no intent involved");
 	}
 
 	{
