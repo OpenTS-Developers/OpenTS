@@ -2711,6 +2711,49 @@ void Test_Shell(void)
 	}
 
 	{
+		// A click that brings the window forward arrives with the button already down, so the
+		// activation quarantines it. The document must not see that press at all.
+		UIMessageBoxPresenterClass presenter("Quarantine", { "OK", "Cancel", "" }, 0);
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		int passes = 0;
+		bool consumed = false;
+		bool unpressed = false;
+		bool answered = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementList buttons;
+			Rml(*view).Document()->GetElementsByTagName(buttons, "button");
+			if (buttons.empty()) {
+				return(true);
+			}
+			Rml::Vector2f centre = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border) + buttons[0]->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
+			LPARAM at = MAKELPARAM((int)centre.x, (int)centre.y);
+
+			if (passes == 2) {
+				host.Down[VK_LBUTTON] = true;
+				Send(shell, WM_ACTIVATEAPP, 1, 0);
+				consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+				unpressed = !buttons[0]->IsPseudoClassSet("active");
+				host.Down[VK_LBUTTON] = false;
+				Send(shell, WM_LBUTTONUP, 0, at);
+			}
+			if (passes == 3) {
+				answered = !presenter.Result.has_value();
+				Send(shell, WM_MOUSEMOVE, 0, at);
+				Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+				Send(shell, WM_LBUTTONUP, 0, at);
+			}
+			return(false);
+		});
+
+		Check(consumed, "a press quarantined by the window activating is kept from the game");
+		Check(unpressed, "that press never reaches the document, so nothing is left pressed");
+		Check(answered, "and it answers nothing");
+		Check(presenter.Result.has_value() && presenter.Choice == 0, "the next click on the same button answers normally");
+	}
+
+	{
 		UIWaitBoxPresenterClass presenter("Working", false);
 		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
 

@@ -723,6 +723,14 @@ bool UIShellClass::Handle_Button_Down(int button, LPARAM clientlparam)
 {
 	Input.Reconcile_Cancelled_Mouse(Physical_Buttons());
 
+	// A button quarantined or cancelled while it was held keeps that state until it comes
+	// up. Showing the press to a document would leave a control pressed whose release is
+	// swallowed, which is what a click that activates the window used to do.
+	if (Input.Mouse_Owner((unsigned)button) == UI_INPUT_SUPPRESSED) {
+		Host.Mark_Overlay_Dirty();
+		return(true);
+	}
+
 	UIPointerPosition position = Pointer_Position(clientlparam);
 	int modifiers = Key_Modifiers();
 	bool haduimouse = Input.Has_UI_Mouse();
