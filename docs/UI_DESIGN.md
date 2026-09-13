@@ -893,8 +893,9 @@ beyond an ASCII test document.
    reloaded the file on Cancel, and `keyboard.rml` captures a key through a
    focusable element that `rml/rmlkeys.cpp` turns back into the `KEYBOARD.INI`
    number; the options menu is `mainopt.rml`, placed where the main menu's
-   buttons were; abort and surrender already run through the message box
-   screen). The Win32 templates remain the fallback view of every one. The
+   buttons were; surrender runs through the message box screen, while abort
+   keeps its own `IDD_MISSION_ABORT` template and its three answers). The
+   Win32 templates remain the fallback view of every one. The
    in-game options menu opens load, save and delete, so it follows step 9.
    Evidence: settings round-trip through `SUN.INI` unchanged.
 8. **Main menu family** (M). `IDD_MAIN_MENU`, campaign choice, game type,
