@@ -513,7 +513,7 @@ bool UIShellClass::Init(void)
 	Rml::SetRenderInterface(Render.get());
 
 	if (!Rml::Initialise()) {
-		Log("UI: RmlUi did not initialise\n");
+		Log("UI: RmlUi did not initialize\n");
 		Render->Shutdown();
 		return(false);
 	}
@@ -1199,7 +1199,7 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 		return(false);
 	}
 
-	// Another window taking the capture, or the system cancelling it, ends the presses the
+	// Another window taking the capture, or the system canceling it, ends the presses the
 	// shell holds; the window no longer has the capture to give back.
 	if (message == WM_CAPTURECHANGED || message == WM_CANCELMODE) {
 		bool lost = (message == WM_CANCELMODE) || (HWND)lparam != Host.Main_Window();

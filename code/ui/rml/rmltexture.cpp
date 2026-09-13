@@ -68,7 +68,7 @@ bool UI_Load_Image(char const * name, std::vector<unsigned char> & rgba, int & w
 	rgba.assign(pixels, pixels + (size_t)width * (size_t)height * 4);
 	stbi_image_free(pixels);
 
-	// RmlUi composes premultiplied colour.
+	// RmlUi composes premultiplied color.
 	for (size_t index = 0; index < rgba.size(); index += 4) {
 		unsigned int alpha = rgba[index + 3];
 		if (alpha != 255) {

@@ -689,7 +689,7 @@ view.
 ImGui is vendored as a submodule, compiled into Debug and Release, and
 rendered by a small bgfx adapter in `rml/rmlrender.cpp` that reuses the RmlUi
 renderer's program and view setup, on `VIEW_DEV`, with its own vertex layout
-and straight-alpha blending, since ImGui's colours are not premultiplied. Its
+and straight-alpha blending, since ImGui's colors are not premultiplied. Its
 geometry travels in transient buffers every frame, and its textures follow the
 pinned version's contract: the renderer answers each create, update, and
 destroy request and acknowledges it. The glyph atlas is created empty and
@@ -869,7 +869,7 @@ beyond an ASCII test document.
    the modeless progress box of the save and load flows and moves to step 6.
    Runtime evidence still owed: the multiplayer cases where `Main_Loop` runs
    under the box.
-5. **Sound** (M, two changes, landed: the behaviour sits behind
+5. **Sound** (M, two changes, landed: the behavior sits behind
    `UISoundPresenterClass` and an engine service, the Win32 dialog drives it
    with the same calls in the same order, and `sound.rml` is the RmlUi view
    with a `data-if` for the in-game half). The behavior pilot: volumes,
@@ -947,7 +947,7 @@ and builds `UIShellClass` itself over a host the test controls:
 - Map client positions into the overlay at integer and fractional scales,
   with letterboxing, exclusive edges, outside input, and the offset a captured
   pointer keeps outside.
-- Run the shell: initialise over injected interfaces and again after a
+- Run the shell: initialize over injected interfaces and again after a
   shutdown; drive a modal with a stub service to each result; consume a press
   pumped while a screen opens; defer a resize arriving inside a render;
   suppress what is held as a screen opens, what a lost capture cancels, and

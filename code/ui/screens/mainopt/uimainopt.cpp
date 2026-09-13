@@ -84,7 +84,7 @@ class UIMainOptionsViewClass : public UIRmlViewClass
 		}
 
 		// The menu sits where the main menu's buttons were, so the panel takes that edge over
-		// the centred position the style sheet gives it.
+		// the centered position the style sheet gives it.
 		virtual void Loaded(void) override
 		{
 			Rml::Element * panel = Document()->GetElementById("panel");

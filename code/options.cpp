@@ -668,7 +668,7 @@ static void Hotkey_Dialog_Fill(HWND window, UIKeyboardState const & state)
 /// Handles the messages for the keyboard configuration dialog.
 /// This routine seeds the category, command and hotkey controls from the keyboard presenter
 /// and hands the player's picks back to it. The presenter edits a copy of the assignments:
-/// accepting the dialog saves the copy to KEYBOARD.INI, cancelling drops it.
+/// accepting the dialog saves the copy to KEYBOARD.INI, canceling drops it.
 /// </summary>
 /// <returns>Returns with TRUE if the message was consumed by this dialog.</returns>
 INT_PTR CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
