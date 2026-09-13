@@ -542,8 +542,8 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 //   service();   -- the engine passes UI_Service_Game: Windows_Message_Handler(),
 //                   then Main_Loop() in a network session, else Call_Back();
 //                   a test passes whatever it wants pumped
+//   refresh the presenter, execute the screen's queued intents, sync the model;
 //   context->Update();
-//   execute the screen's queued intents;
 //   mark the overlay dirty, Video_Present_If_Dirty();
 // until the screen has a result or the service reports the game ended.
 ```
@@ -559,13 +559,17 @@ paths: the main menu keeps title-screen maintenance, an in-game screen keeps
 the guarded multiplayer pump, lobby and loading flows keep their own work.
 
 Event handlers never act directly. A toolkit event queues an intent, and the
-runner executes the queue after `Context::Update` returns. RmlUi gives no
-guarantee about re-entering `Update` from its own event dispatch, so a nested
-modal (options opening a message box) starts from the queue, one level up,
-where `Run_Modal` nests cleanly; and the legacy code already works this way,
-`WM_COMMAND` writing `rc` for the driver to act on after the pump. A modal
-document is shown with RmlUi's modal flag, which keeps other documents from
-taking focus; blocking the game's input is the shell's job through the hook.
+runner executes the queue before the `Context::Update` that pushes the model
+into the documents, so the push carries what the player just changed. A push
+that lagged behind the queue would write the old level onto a slider, whose
+own change event would then queue that level after the player's. RmlUi gives
+no guarantee about re-entering `Update` from its own event dispatch, so a
+nested modal (options opening a message box) starts from the queue, one level
+up, where `Run_Modal` nests cleanly; and the legacy code already works this
+way, `WM_COMMAND` writing `rc` for the driver to act on after the pump. A
+modal document is shown with RmlUi's modal flag, which keeps other documents
+from taking focus; blocking the game's input is the shell's job through the
+hook.
 Paint handlers and the pump never drain intents, advance game logic, or
 update the context; a nested update or present request is recorded and
 served at the next safe point.
