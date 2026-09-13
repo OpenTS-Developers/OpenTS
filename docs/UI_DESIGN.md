@@ -993,7 +993,8 @@ the table below is what the logs of that pass contain.
 | Display, with the mode confirmation, its countdown and its timeout | yes | yes |
 | Keyboard, with key capture, reset, and every category | yes | yes |
 | Options menu | yes | yes |
-| Progress and wait | never shown | never shown |
+| Wait notice, over eleven consecutive quicksaves | yes | not yet |
+| Progress, with its bar | never shown | never shown |
 
 The pass found eight defects. The two with the widest effect were in the
 shell rather than in any one screen: the pointer shape, and the absence of a
@@ -1001,11 +1002,10 @@ tick while the graphical menu is up, which left every document and overlay
 frozen there. A screen that looks right is therefore not evidence that the
 shell is.
 
-Still owed: `wait.rml`, whose notice is raised only for as long as a
-synchronous save runs and which no run has yet shown; the progress document,
-which belongs to the multiplayer loading, map generation, and file transfer
-paths; the multiplayer cases where `Main_Loop` runs under a message box; and,
-for each screen, what the paragraph above requires of its own change.
+Still owed: the progress document, which belongs to the multiplayer loading,
+map generation, and file transfer paths; the multiplayer cases where
+`Main_Loop` runs under a message box; and, for each screen, what the paragraph
+above requires of its own change.
 
 ## Documentation
 
