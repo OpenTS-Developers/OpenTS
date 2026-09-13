@@ -27,6 +27,14 @@
 #include "windlg.h"
 
 
+// The pointer the window shows when the game's is off it, as under a Win32 dialog.
+static HCURSOR Window_Cursor(void)
+{
+	HCURSOR cursor = (HCURSOR)GetClassLongPtr(MainWindow, GCLP_HCURSOR);
+	return(cursor != NULL ? cursor : LoadCursor(NULL, IDC_ARROW));
+}
+
+
 class UIEngineHostClass : public UIShellHostClass
 {
 	public:
@@ -146,7 +154,7 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual void Apply_Cursor(UICursor cursor) override
 		{
-			LPCTSTR shape = IDC_ARROW;
+			LPCTSTR shape = NULL;
 			switch (cursor) {
 				case UI_CURSOR_TEXT:
 					shape = IDC_IBEAM;
@@ -175,14 +183,14 @@ class UIEngineHostClass : public UIShellHostClass
 				default:
 					break;
 			}
-			SetCursor(LoadCursor(NULL, shape));
+			SetCursor(shape != NULL ? LoadCursor(NULL, shape) : Window_Cursor());
 		}
 
 		virtual void Restore_Game_Cursor(void) override
 		{
 			Win_Cursor_Refresh();
 			if (!Win_Cursor_Handle_Set_Cursor()) {
-				SetCursor(LoadCursor(NULL, IDC_ARROW));
+				SetCursor(Window_Cursor());
 			}
 		}
 

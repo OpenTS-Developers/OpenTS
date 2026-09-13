@@ -2622,17 +2622,24 @@ void Test_Shell(void)
 	{
 		UIVersionPresenterClass presenter({ "cursor" });
 		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int applied = host.Applied;
 		int restored = host.Restored;
+		bool opened = false;
+		bool arrow = false;
 		bool requested = false;
 		bool shown = false;
 
 		shell.Run_Modal(*view, [&](void) {
+			opened = host.Applied > applied && host.LastCursor == UI_CURSOR_ARROW && host.Restored == restored;
+			arrow = shell.Handle_Set_Cursor() && host.LastCursor == UI_CURSOR_ARROW;
 			fixture.System->SetMouseCursor("text");
 			requested = fixture.System->Cursor_Request() == UI_CURSOR_TEXT;
 			shown = shell.Handle_Set_Cursor() && host.LastCursor == UI_CURSOR_TEXT;
 			Send(shell, WM_KEYDOWN, VK_ESCAPE);
 			return(false);
 		});
+		Check(opened, "opening a screen puts the window's arrow on the pointer before any request");
+		Check(arrow, "WM_SETCURSOR over a shown screen is the screen's even with no request");
 		Check(requested, "a document's pointer request is kept");
 		Check(shown, "WM_SETCURSOR shows the requested shape while a screen is shown");
 		Check(host.Restored - restored == 1 && fixture.System->Cursor_Request() == UI_CURSOR_ARROW && host.LastCursor == UI_CURSOR_ARROW, "closing a screen puts the game's pointer back once and forgets the request");

@@ -415,12 +415,16 @@ The shell clears the keyboard queue when a modal document opens and again
 after it is released, so the pump inside `Keyboard->Clear()` meets either
 the shown screen or the ownership table, never a screen mid-teardown. Focus
 loss cancels capture, drags, and composition; focus return does not replay
-held keys as presses. A document's pointer request (`text`, `pointer`,
-`move`, `not-allowed`) shows the matching system pointer while the pointer
-is the documents': a screen is shown, a document holds a press, or the
-pointer is over an element that takes it. The game's own pointer returns
-when a screen closes. The clipboard interface exchanges Unicode text with
-the Win32 clipboard and refuses malformed text rather than repairing it.
+held keys as presses. While the pointer is the documents', because a screen
+is shown, a document holds a press, or the pointer is over an element that
+takes it, the shell answers `WM_SETCURSOR`: a document's request (`text`,
+`pointer`, `move`, `not-allowed`) shows the matching system pointer, and
+otherwise the window's arrow, which is what the Win32 dialogs show. The
+game's own shape stays captured under a screen and is blank in the
+frontend, so the answer is never left to it. The game's pointer returns
+when the pointer is no longer the documents'. The clipboard interface
+exchanges Unicode text with the Win32 clipboard and refuses malformed text
+rather than repairing it.
 
 Text arrives as `WM_CHAR`. The main window is a narrow window, so under the
 UTF-8 code page each message carries one byte and the shell decodes the

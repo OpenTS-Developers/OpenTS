@@ -20,6 +20,7 @@
 #include <array>
 #include <functional>
 #include <memory>
+#include <optional>
 #include <vector>
 
 namespace Rml
@@ -187,8 +188,9 @@ class UIShellClass
 		UIUTF8DecoderClass Utf8;
 		unsigned char LegacyLead = 0;
 
-		// The shape last put on the pointer for the documents, if any.
-		UICursor AppliedCursor = UI_CURSOR_ARROW;
+		// The shape put on the pointer for the documents, or nothing while the game's
+		// pointer is in charge.
+		std::optional<UICursor> AppliedCursor;
 
 		// The modal screens the runner is driving, innermost last, and whether the
 		// innermost is between releasing its document and handing the input back.
