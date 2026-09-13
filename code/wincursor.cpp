@@ -257,6 +257,12 @@ void Win_Cursor_Set_Visible(bool visible)
 {
 	_CursorVisible = visible;
 
+	// Before play begins no shape has been built, so the game has no pointer to show or
+	// hide and the window's own stands.
+	if (_CurrentCursor == NULL) {
+		return;
+	}
+
 	if (MouseCursor != NULL && MouseCursor->Is_Captured()) {
 		SetCursor(visible ? _CurrentCursor : NULL);
 	}
@@ -266,11 +272,18 @@ void Win_Cursor_Set_Visible(bool visible)
 /// <summary>
 /// Puts the game's pointer back after Windows has asked what the cursor should be.
 /// </summary>
-/// <returns>bool; Was the cursor the game's to choose? While a dialog has the mouse it
-/// is not, and Windows keeps its own arrow.</returns>
+/// <returns>bool; Was the cursor the game's to choose? While a dialog has the mouse, or
+/// before the game has built a pointer of its own, it is not, and Windows keeps its own
+/// arrow.</returns>
 bool Win_Cursor_Handle_Set_Cursor(void)
 {
 	if (MouseCursor == NULL || !MouseCursor->Is_Captured()) {
+		return(false);
+	}
+
+	// With no shape built there is nothing to put back, so the caller falls through to the
+	// window's own pointer rather than being left with a blank one.
+	if (_CurrentCursor == NULL) {
 		return(false);
 	}
 
