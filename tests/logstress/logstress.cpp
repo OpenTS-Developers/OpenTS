@@ -99,7 +99,7 @@ bool Line_Is_Intact(std::string const & raw)
 
 }	// namespace
 
-int main(void)
+int main(int argc, char ** argv)
 {
 	std::string const directory = Log_Directory();
 	std::string const report_path = directory + "\\logstress-report.txt";
@@ -109,7 +109,7 @@ int main(void)
 
 	// The timings below describe the sinks a released game actually runs with, so the console
 	// stays shut until they are done.
-	Debug_Init();
+	Debug_Init(argc, argv);
 
 	std::string const log = Debug_Log_File_Name();
 	Check(!log.empty(), "log file opened");

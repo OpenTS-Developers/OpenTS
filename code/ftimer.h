@@ -21,6 +21,10 @@ extern int Frame;
 class FrameTimerClass
 {
 	public:
+		// The frame counter travels in the save, so a reading of it means the same thing in
+		// the process that loads it and must not be rebased.
+		static constexpr bool Reading_Survives_A_Save = true;
+
 		int operator () (void) const {return(Frame);};
 		operator int (void) const {return(Frame);};
 };

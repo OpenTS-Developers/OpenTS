@@ -80,13 +80,31 @@ class BasicTimerClass {
 		int operator () (void) const;
 
 		/*
-		 * Carries the timer to or from a save game. Only the start reading travels; the
-		 * regulator reads a clock the whole game shares and holds nothing of its own.
+		 * Carries the timer to or from a save game. A regulator whose readings survive a save,
+		 * such as the frame counter, sends the start reading as it stands. One counting from
+		 * the start of the process sends how long ago the timer started instead, and the load
+		 * rebases that onto the clock it finds. -1 marks a stopped timer, so it has to survive
+		 * the trip as itself and an active timer must not land on it.
 		 */
 		template<typename S>
 		void Serialize(S & stream)
 		{
-			stream.Serialize(Started);
+			if constexpr (T::Reading_Survives_A_Save) {
+				stream.Serialize(Started);
+				return;
+			}
+
+			int const now = Timer();
+			int elapsed = (Started == -1) ? -1 : now - Started;
+
+			stream.Serialize(elapsed);
+
+			if (elapsed == -1) {
+				Started = -1;
+			} else {
+				Started = now - elapsed;
+				if (Started == -1) Started = -2;
+			}
 		}
 
 	protected:

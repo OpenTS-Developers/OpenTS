@@ -248,7 +248,7 @@ int main(void)
 {
 	std::printf("OpenTS INI contract\n\n");
 
-	Debug_Init();
+	Debug_Init(0, nullptr);
 
 	{
 		INIClass ini;

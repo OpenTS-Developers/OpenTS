@@ -228,7 +228,7 @@ bool Main_Loop(void)
 	//
 	// Initialize our AI processing timer
 	//
-	Session.ProcessTimer = timeGetTime();/// TickCount;
+	Session.ProcessTimer = System_Milliseconds();/// TickCount;
 
 	if (Session.TrapCheckHeap) {
 		Debug_Trap_Check_Heap = true;
@@ -322,7 +322,7 @@ bool Main_Loop(void)
 	//
 	// Measure how long it took to process the AI
 	//
-	Session.ProcessTicks += std::min<int>(1000, (timeGetTime() - Session.ProcessTimer)); // (TickCount - Session.ProcessTimer)
+	Session.ProcessTicks += std::min<int>(1000, (System_Milliseconds() - Session.ProcessTimer)); // (TickCount - Session.ProcessTimer)
 	Session.ProcessFrames++;
 
 	/*
