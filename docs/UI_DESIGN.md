@@ -956,6 +956,13 @@ and builds `UIShellClass` itself over a host the test controls:
   decode two UTF-8 bytes into one character; round the clipboard through
   UTF-16; show and put back the pointer shape; list, unlist and release a
   modeless notice.
+- Drive whole screens through the hook, one input mechanism each: a button on
+  the options menu, a mode row on the display options, a switch and a
+  backwards slider on the game controls, and a captured key on the keyboard
+  screen. Each is asserted the whole way, from the window message through the
+  intent and the service call to the model that comes back to the document.
+  The mode confirmation runs the same way over a clock the test moves,
+  because its result comes from a refresh rather than from an intent.
 
 `tests/uilogic` compiles the toolkit-free state with no UI library: the input
 ownership table and its cancellations, the UTF-8 decoder, the renderer's
