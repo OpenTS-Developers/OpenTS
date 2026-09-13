@@ -147,8 +147,10 @@ def _method_text(class_name, body, method, resources, team=None, fallback=None):
         if fallback is not None:
             return fallback
         raise ValueError(f"{class_name}: no supported {method}() definition")
+    # A team command builds its text from its own number, through the helper that gives each
+    # instance its own storage.
     formatted = re.search(
-        r"sprintf\s*\(\s*_cmd_buffer\s*,\s*(?:"
+        r"Team_Command_String\s*\(\s*\w+\s*,\s*(?:"
         r'"(?P<literal>(?:[^"\\]|\\.)*)"|'
         r"Fetch_String\s*\(\s*(?P<token>TXT_[A-Z0-9_]+)\s*\))\s*,\s*Team\s*\)",
         source,
