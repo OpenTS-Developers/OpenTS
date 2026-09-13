@@ -996,11 +996,11 @@ the table below is what the logs of that pass contain.
 | Wait notice, over eleven consecutive quicksaves | yes | not yet |
 | Progress, with its bar | never shown | never shown |
 
-The pass found eight defects. The two with the widest effect were in the
-shell rather than in any one screen: the pointer shape, and the absence of a
-tick while the graphical menu is up, which left every document and overlay
-frozen there. A screen that looks right is therefore not evidence that the
-shell is.
+The defects the pass found were mostly in the shell rather than in any one
+screen: the pointer shape, the absence of a tick while the graphical menu is
+up, which left every document and overlay frozen there, and a notice the
+present interval could swallow before it was ever drawn. A screen that looks
+right is therefore not evidence that the shell is.
 
 Still owed: the progress document, which belongs to the multiplayer loading,
 map generation, and file transfer paths; the multiplayer cases where
