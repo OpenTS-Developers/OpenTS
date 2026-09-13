@@ -1039,13 +1039,15 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 
 	UIResult result = UI_RESULT_SESSION_ENDED;
 
+	// The intents a pass pumped drain before the update that pushes the model, or the push
+	// writes the old level back onto a slider and its change event queues that level after
+	// the player's.
 	while (true) {
 		bool ended = service();
 		if (!Ready) {
 			break;
 		}
 
-		Tick();
 		view.Presenter().Refresh();
 		view.Presenter().Drain();
 		view.Sync();
@@ -1058,6 +1060,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 			break;
 		}
 
+		Tick();
 		Host.Mark_Overlay_Dirty();
 		Host.Present_If_Dirty();
 	}

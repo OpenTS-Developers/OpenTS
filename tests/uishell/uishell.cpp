@@ -2647,6 +2647,70 @@ void Test_Shell(void)
 	}
 
 	{
+		// A slider dragged through the hook keeps the level the player left it at across the
+		// passes that follow. The drag waits for the second pass, the first whose update
+		// follows a sync.
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Score = 5;
+		state.Sound = 5;
+		state.Voice = 5;
+		state.Enabled = true;
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+		int passes = 0;
+		int dragged = -1;
+		bool consumed = false;
+		bool held = false;
+		bool kept = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::Element * score = Rml(*view).Document()->GetElementById("score");
+			if (passes == 2 && score != nullptr) {
+				// The slider builds its track and bar as non-DOM children, which a tag search skips.
+				Rml::Element * barelement = nullptr;
+				Rml::Element * trackelement = nullptr;
+				for (int index = 0; index < score->GetNumChildren(true); index++) {
+					Rml::Element * child = score->GetChild(index);
+					if (child->GetTagName() == "sliderbar") {
+						barelement = child;
+					} else if (child->GetTagName() == "slidertrack") {
+						trackelement = child;
+					}
+				}
+				if (barelement != nullptr && trackelement != nullptr) {
+					Rml::Vector2f bar = barelement->GetAbsoluteOffset(Rml::BoxArea::Border) + barelement->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f;
+					Rml::Vector2f track = trackelement->GetAbsoluteOffset(Rml::BoxArea::Border);
+					int right = (int)(track.x + trackelement->GetBox().GetSize(Rml::BoxArea::Border).x) + 40;
+					service.Calls.clear();
+					consumed = Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM((int)bar.x, (int)bar.y));
+					host.Down[VK_LBUTTON] = true;
+					consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, MAKELPARAM((int)bar.x, (int)bar.y)) && consumed;
+					consumed = Send(shell, WM_MOUSEMOVE, MK_LBUTTON, MAKELPARAM(right, (int)bar.y)) && consumed;
+					host.Down[VK_LBUTTON] = false;
+					consumed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(right, (int)bar.y)) && consumed;
+					dragged = score->GetAttribute<int>("value", -1);
+				}
+			}
+			if (passes == 3 && score != nullptr) {
+				held = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
+			}
+			if (passes == 4 && score != nullptr) {
+				kept = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		Send(shell, WM_KEYUP, VK_ESCAPE);
+		shell.Tick();
+
+		Check(consumed && dragged == UISoundPresenterClass::LEVELS, "a drag to the end of the music slider reaches the document and lands on the top level");
+		Check(held, "the level a drag left is what the model holds after the pass");
+		Check(kept && service.Calls.size() == 1, "the level stays put on the next pass and previews once");
+	}
+
+	{
 		UIWaitBoxPresenterClass presenter("Working", false);
 		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
 
