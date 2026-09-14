@@ -873,7 +873,10 @@ the sound options do not, so a document puts the trough after the bar and
 gives the bar the rest. The bar's dim reaches a pixel past its rect, so the
 field is a pixel wider and taller than the fifty it is given, and the layer
 fills the fifty with the middle of its tile, so the kit's field is the two
-ends over a sprite of the tile's centre. A combo box's list is the toolkit's own child element,
+ends over a sprite of the tile's centre. The value inside it is centred in a
+box a pixel narrower than the field, which turns the toolkit's round of a half
+into the layer's floor, and the right end is hung off the field rather than
+off that box so that narrowing it leaves the end where the layer drew it. A combo box's list is the toolkit's own child element,
 placed by it and styled by the kit; a group box's top edge is two line pieces
 either side of its caption, because a border cannot be broken, and its
 caption row is sixteen tall, the height GDI gave the face, so the frame runs

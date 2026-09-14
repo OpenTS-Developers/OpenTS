@@ -597,18 +597,26 @@ input[type='range']:disabled
 	border-color: #949194;
 }
 
+/*
+ * The field is fifty-one wide with its ends over the middle of the tile, and the reading is
+ * centred in what is left. The room left over is halved in whole pixels by the layer where
+ * the toolkit rounds a half up, so the box the reading is centred in is a pixel narrower
+ * than the field, and the right end is hung off the field rather than off that box, which
+ * keeps it where the layer drew it. The margin gives back the pixel the box gives up.
+ */
 .trough
 {
 	display: inline-block;
-	width: 51dp;
+	width: 50dp;
 	height: 26dp;
 	padding: 0 1dp 0 1dp;
+	margin-right: 1dp;
 	z-index: -1;
 	vertical-align: top;
 	text-align: center;
 	line-height: 25dp;
 	background-color: #000000b4;
-	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top) content-box, image(trough-mid scale-none left top);
+	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top) padding-box, image(trough-mid scale-none left top);
 }
 
 @spritesheet trough
