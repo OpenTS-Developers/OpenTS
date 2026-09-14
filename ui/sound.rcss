@@ -1,29 +1,29 @@
 /*
  * Where the sound options put their parts. In a game it is IDD_SOUND_OPTIONS_DIALOG at 294
- * by 215 dialog units, 441 by 349 pixels: three volume rows of a 105 wide label and a 263
- * wide track bar, the last fifty of which is the field the bar shows its volume in, then the
- * track list with its buttons and switches beside it, and OK at the right. Out of one it is
- * IDD_SOUND_OPTIONS_DIALOG_LITE at 294 by 112, 441 by 182: the same three rows on their own
- * with OK under them. Everything visual comes from the kit.
+ * by 215 dialog units, 441 by 351 pixels: three volume rows of a 105 wide label and a 263
+ * by 25 track bar, the last fifty of which is the field the bar shows its volume in, then
+ * the track list with its buttons and switches beside it, and OK at the right. Out of one
+ * it is IDD_SOUND_OPTIONS_DIALOG_LITE at 294 by 112, 441 by 183: the same three rows on
+ * their own with OK under them. Everything visual comes from the kit.
  */
 
 #reveal
 {
 	width: 441dp;
-	height: 349dp;
+	height: 351dp;
 	top: 50%;
-	margin-top: -174dp;
+	margin-top: -175dp;
 }
 
 .lite #reveal
 {
-	height: 182dp;
+	height: 183dp;
 	margin-top: -91dp;
 }
 
 #content
 {
-	padding: 20dp 32dp 0 33dp;
+	padding: 19dp 33dp 0 33dp;
 }
 
 .lite #content
@@ -34,7 +34,7 @@
 .row
 {
 	display: block;
-	height: 24dp;
+	height: 25dp;
 	white-space: nowrap;
 }
 
@@ -45,32 +45,39 @@
 
 #row-voice
 {
-	margin-top: 12dp;
+	margin-top: 11dp;
 }
 
 .lite #row-sound
 {
-	margin-top: 13dp;
+	margin-top: 12dp;
 }
 
+/* A caption is drawn from the top of its box, however tall the template makes the box. */
 .row > .caption
 {
 	width: 105dp;
-	margin-right: 8dp;
-	line-height: 24dp;
+	height: 25dp;
+	margin-right: 7dp;
+	line-height: 17dp;
 	text-align: right;
 }
 
 .row > input[type='range']
 {
 	width: 213dp;
-	height: 24dp;
+	height: 25dp;
+}
+
+.row > .trough
+{
+	height: 25dp;
 }
 
 /* The lite template holds its sliders three across from the labels and three shorter. */
 .lite .row > .caption
 {
-	margin-right: 11dp;
+	margin-right: 10dp;
 }
 
 .lite .row > input[type='range']
@@ -82,13 +89,13 @@
 #music
 {
 	display: flex;
-	margin-top: 18dp;
+	margin-top: 17dp;
 }
 
 #music-side
 {
 	width: 105dp;
-	margin-right: 8dp;
+	margin-right: 7dp;
 }
 
 #play
@@ -102,23 +109,23 @@
 {
 	display: block;
 	width: 105dp;
-	margin-top: 21dp;
+	margin-top: 20dp;
 }
 
 #switch-shuffle
 {
-	margin-top: 21dp;
+	margin-top: 20dp;
 }
 
 #switch-repeat
 {
-	margin-top: 20dp;
+	margin-top: 25dp;
 }
 
 #tracks
 {
 	width: 263dp;
-	height: 161dp;
+	height: 162dp;
 }
 
 #ok
@@ -131,5 +138,5 @@
 /* On its own the OK button sits in the middle instead of at the right edge. */
 .lite #ok
 {
-	margin: 15dp auto 0 auto;
+	margin: 15dp 0 0 139dp;
 }

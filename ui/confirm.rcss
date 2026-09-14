@@ -1,7 +1,7 @@
 /*
  * Where the mode confirmation puts its question and its two answers, from IDD_OPT_CONFIRM_MODE
- * at 239 by 70 dialog units: 359 by 114 pixels, the text at 33,20 over 293 by 42, and the
- * buttons 75 wide at 167 and 251. Everything visual comes from the kit.
+ * at 239 by 70 dialog units: 359 by 114 pixels, the text at 33,19 over 293 by 43, and the
+ * buttons 75 wide at 166 and 250. Everything visual comes from the kit.
  */
 
 #reveal
@@ -14,21 +14,19 @@
 
 #content
 {
-	padding: 20dp 33dp 0 33dp;
+	padding: 19dp 33dp 0 33dp;
 }
 
 #text
 {
-	height: 42dp;
+	height: 43dp;
 	line-height: 15dp;
 }
 
-/* The pair ends at the right edge, so the gap between them is what sets the left one. */
 #buttons
 {
 	display: flex;
-	justify-content: flex-end;
-	margin-top: 10dp;
+	margin-top: 9dp;
 }
 
 button
@@ -38,5 +36,6 @@ button
 
 #ok
 {
+	margin-left: 133dp;
 	margin-right: 9dp;
 }

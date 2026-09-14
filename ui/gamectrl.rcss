@@ -1,8 +1,8 @@
 /*
  * Where the game controls put their parts. In a game it is IDD_OPT_CTRL_GAME_MP at 292 by
- * 175 dialog units, 438 by 284 pixels: three rows of a 95 wide label, a 192 by 24 slider and
+ * 175 dialog units, 438 by 286 pixels: three rows of a 95 wide label, a 192 by 25 slider and
  * a 75 wide reading, two columns of switches, and three 116 wide buttons. Out of one it is
- * IDD_OPT_CTRL_GAME_SP at 292 by 179, 438 by 291: 87 wide labels, 222 by 21 sliders with 68
+ * IDD_OPT_CTRL_GAME_SP at 292 by 179, 438 by 292: 87 wide labels, 222 by 22 sliders with 68
  * wide readings, a fourth row for the difficulty and one button in the middle. The Internet
  * template drops the speed row and is otherwise the in-game one. Everything visual comes
  * from the kit.
@@ -11,9 +11,9 @@
 #reveal
 {
 	width: 438dp;
-	height: 284dp;
+	height: 286dp;
 	top: 50%;
-	margin-top: -142dp;
+	margin-top: -143dp;
 }
 
 /*
@@ -23,31 +23,26 @@
  */
 .difficulty #reveal
 {
-	height: 334dp;
-	margin-top: -167dp;
+	height: 336dp;
+	margin-top: -168dp;
 }
 
 .frontend #reveal
 {
-	height: 291dp;
-	margin-top: -145dp;
+	height: 292dp;
+	margin-top: -146dp;
 }
 
 /* The controls reach a little closer to the right edge than to the left. */
 #content
 {
-	padding: 20dp 27dp 0 33dp;
-}
-
-.frontend #content
-{
-	padding-right: 26dp;
+	padding: 19dp 27dp 0 33dp;
 }
 
 .row
 {
 	display: block;
-	height: 24dp;
+	height: 25dp;
 	white-space: nowrap;
 }
 
@@ -56,79 +51,87 @@
 	margin-top: 26dp;
 }
 
+#row-detail, #row-difficulty
+{
+	margin-top: 25dp;
+}
+
 .frontend .row
 {
-	height: 21dp;
+	height: 22dp;
 }
 
-.frontend .row + .row
-{
-	margin-top: 15dp;
-}
-
-.frontend #row-scroll
+.frontend .row + .row, .frontend #row-detail, .frontend #row-difficulty
 {
 	margin-top: 14dp;
 }
 
+/* A caption is drawn from the top of its box, however tall the template makes the box. */
 .row > .caption
 {
 	width: 95dp;
+	height: 25dp;
 	margin-right: 7dp;
-	line-height: 24dp;
+	line-height: 17dp;
 	text-align: right;
 }
 
 .row > input[type='range']
 {
 	width: 192dp;
-	height: 24dp;
+	height: 25dp;
 }
 
 .row > .value
 {
 	width: 75dp;
+	height: 25dp;
 	margin-left: 9dp;
-	line-height: 24dp;
+	line-height: 17dp;
 }
 
 /* The front end gives the slider the room the reading and the label give up. */
 .frontend .row > .caption
 {
 	width: 87dp;
+	height: 22dp;
 	margin-right: 0;
-	line-height: 21dp;
 	text-align: left;
 }
 
 .frontend .row > input[type='range']
 {
 	width: 222dp;
-	height: 21dp;
+	height: 22dp;
 }
 
 .frontend .row > .value
 {
 	width: 68dp;
-	margin-left: 2dp;
-	line-height: 21dp;
+	height: 22dp;
+	margin-left: 1dp;
 	text-align: right;
 }
 
 #switches
 {
 	display: flex;
-	margin-top: 9dp;
+	margin-top: 8dp;
 }
 
 .frontend #switches
 {
-	margin-top: 19dp;
+	margin-top: 18dp;
 }
 
 #switches > .column
 {
-	width: 189dp;
+	width: 187dp;
+}
+
+.frontend #switches > .column
+{
+	width: 186dp;
 }
 
 #switches > .column > label.check + label.check
@@ -141,7 +144,12 @@
 	margin-top: 7dp;
 }
 
-/* Three buttons in a game, one in the middle out of one. */
+.frontend #switches > .column > #switch-edge
+{
+	margin-top: 8dp;
+}
+
+/* Three buttons in a game, one out of one, placed where its template puts it. */
 #buttons
 {
 	display: flex;
@@ -150,8 +158,7 @@
 
 .frontend #buttons
 {
-	justify-content: center;
-	margin-top: 11dp;
+	margin-top: 10dp;
 }
 
 #buttons > button
@@ -161,15 +168,16 @@
 
 #sound
 {
-	margin-right: 15dp;
+	margin-right: 14dp;
 }
 
 #keyboard
 {
-	margin-right: 14dp;
+	margin-right: 15dp;
 }
 
 .frontend #ok
 {
 	width: 195dp;
+	margin-left: 88dp;
 }

@@ -1,33 +1,34 @@
 /*
- * Where the wait notice puts its message and, while one is running, its bar. Everything
- * visual comes from the kit.
+ * Where the wait notice puts its message and, while one is running, its bar. The notice is
+ * IDD_MSGBOX_1 at 218 by 64 dialog units, 327 by 105 pixels with the text at 33,19 over 261
+ * by 38; the bar is the 150 by 24 frame IDD_PROGRESS_WAIT measures its bar from, put in the
+ * middle. Everything visual comes from the kit.
  */
 
 #reveal
 {
 	width: 327dp;
-	height: 104dp;
+	height: 105dp;
 	top: 50%;
 	margin-top: -52dp;
 }
 
 #content
 {
-	padding: 20dp 33dp 0 33dp;
+	padding: 19dp 33dp 0 33dp;
 }
 
 #text
 {
-	height: 37dp;
-	line-height: 18dp;
+	height: 38dp;
+	line-height: 17dp;
 	text-align: center;
 	white-space: pre-wrap;
 }
 
-/* The frame the progress dialog measures its bar from is 100 by 15 units: 150 by 24. */
 #bar
 {
 	width: 150dp;
 	height: 24dp;
-	margin: 5dp auto 0 auto;
+	margin: 4dp auto 0 auto;
 }

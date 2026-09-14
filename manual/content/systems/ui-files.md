@@ -11,7 +11,7 @@ related:
     id: mix
 ---
 
-The `ui` directory beside the executable holds the RmlUi documents (`.rml`), their style sheets (`.rcss`), the dialog kit `kit.rcss` with its template `dialog.rml`, and the Arimo font `Arimo.ttf` with its license `OFL.txt`. The build places the directory beside the executable, where `Language.dll` is built, and the release package carries it.
+The `ui` directory beside the executable holds the RmlUi documents (`.rml`), their style sheets (`.rcss`), the dialog kit `kit.rcss` with its template `dialog.rml` and its glow picture `glow.png`, and the Arimo font `Arimo.ttf` with its license `OFL.txt`. The build places the directory beside the executable, where `Language.dll` is built, and the release package carries it.
 
 ## The dialog kit
 

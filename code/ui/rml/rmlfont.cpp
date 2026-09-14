@@ -56,13 +56,17 @@ class UISheetFaceClass
 			}
 		}
 
+		// A pixel more than the advances add up to, because the dialog layer starts a
+		// right-aligned run a pixel further from the edge than its width alone would put it.
+		// The advances are scaled as a sum, not one by one, so that a run keeps the width
+		// the frame's scaling gives it at a scale that is no whole number.
 		int String_Width(Rml::StringView string) const
 		{
-			int width = 0;
+			float width = Scale;
 			for (Rml::StringIteratorU8 character(string); character; ++character) {
-				width += (int)(Sheet.Advance[Glyph(*character)] * Scale);
+				width += Sheet.Advance[Glyph(*character)] * Scale;
 			}
-			return(width);
+			return((int)(width + 0.5f));
 		}
 
 		int Generate(Rml::RenderManager & manager, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied colour, Rml::TexturedMeshList & meshes)
@@ -82,7 +86,7 @@ class UISheetFaceClass
 			// a cell hangs above the baseline by its glyph and the blank row over it.
 			float pen = position.x - Scale;
 			float top = position.y - (Sheet.GlyphHeight + Sheet.TopMargin) * Scale;
-			int width = 0;
+			float width = 0.0f;
 
 			for (Rml::StringIteratorU8 character(string); character; ++character) {
 				int glyph = Glyph(*character);
@@ -95,12 +99,12 @@ class UISheetFaceClass
 					Rml::MeshUtilities::GenerateQuad(mesh, Rml::Vector2f(pen, top), cell, opacity, topleft, bottomright);
 				}
 
-				int advance = (int)(Sheet.Advance[glyph] * Scale);
-				pen += (float)advance;
+				float advance = Sheet.Advance[glyph] * Scale;
+				pen += advance;
 				width += advance;
 			}
 
-			return(width);
+			return((int)(width + 0.5f));
 		}
 
 	private:

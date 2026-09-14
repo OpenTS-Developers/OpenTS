@@ -1,33 +1,35 @@
 /*
  * Where the keyboard screen puts its parts, from IDD_OPT_KEYBOARD at 336 by 208 dialog
- * units: 504 by 338 pixels, two columns of 207 and 219 inside a 33 pixel inset, the category
- * combo over the description group, the command list 219 by 169, and the buttons along the
+ * units: 504 by 339 pixels, two columns of 207 and 219 inside a 33 pixel inset, the category
+ * combo over the description group, the command list 219 by 170, and the buttons along the
  * bottom. Everything visual comes from the kit.
  */
 
 #reveal
 {
 	width: 504dp;
-	height: 338dp;
+	height: 339dp;
 	top: 50%;
 	margin-top: -169dp;
 }
 
 #content
 {
-	padding: 20dp 33dp 0 33dp;
+	padding: 19dp 33dp 0 33dp;
 }
 
+/* A caption is drawn from the top of its box, however tall the template makes the box. */
 #title
 {
 	height: 18dp;
+	line-height: 17dp;
 	text-align: center;
 }
 
 #columns
 {
 	display: flex;
-	margin-top: 6dp;
+	margin-top: 7dp;
 }
 
 #left
@@ -44,20 +46,32 @@
 .caption
 {
 	display: block;
-	line-height: 15dp;
+	height: 15dp;
+	line-height: 17dp;
+}
+
+#right > .caption:first-child
+{
+	height: 13dp;
 }
 
 .caption.tall
 {
-	margin-top: 9dp;
-	line-height: 18dp;
+	margin-top: 10dp;
+	height: 18dp;
+}
+
+#right > .caption.tall
+{
+	margin-top: 8dp;
 }
 
 .value
 {
 	display: block;
-	margin-top: 7dp;
-	line-height: 16dp;
+	margin-top: 6dp;
+	height: 17dp;
+	line-height: 17dp;
 	overflow: hidden;
 }
 
@@ -65,19 +79,20 @@
 {
 	display: block;
 	width: 207dp;
-	margin-top: 9dp;
+	margin-top: 8dp;
 }
 
 /* The group's frame starts a caption's half height below where its template rect does. */
 #about
 {
-	margin-top: 8dp;
+	margin-top: 9dp;
 	height: 86dp;
+	padding-left: 10dp;
 }
 
 #description
 {
-	height: 64dp;
+	height: 69dp;
 	overflow: hidden;
 }
 
@@ -86,9 +101,12 @@
 	margin-top: 7dp;
 }
 
+/* The field and its button fill the column exactly, so the row must never wrap them. */
 #hotkey-row
 {
-	margin-top: 5dp;
+	margin-top: 4dp;
+	height: 23dp;
+	white-space: nowrap;
 }
 
 /* The field is 128 wide with its text four in, so the room inside the padding is 120. */
@@ -103,8 +121,11 @@
 	tab-index: auto;
 }
 
+/* The template puts the button two lower than the field beside it. */
 #assign
 {
+	position: relative;
+	top: 2dp;
 	width: 75dp;
 	margin-left: 4dp;
 	vertical-align: top;
@@ -117,27 +138,27 @@
 
 #commands
 {
-	margin-top: 8dp;
-	height: 169dp;
+	margin-top: 10dp;
+	height: 170dp;
 }
 
 /* Reset on the left, then the pair that answers the screen at the right edge. */
 #buttons
 {
 	display: flex;
-	margin-top: 8dp;
+	margin-top: 9dp;
 }
 
 #reset
 {
 	width: 81dp;
-	margin-right: 167dp;
+	margin-right: 166dp;
 }
 
 #ok
 {
 	width: 75dp;
-	margin-right: 40dp;
+	margin-right: 41dp;
 }
 
 #cancel

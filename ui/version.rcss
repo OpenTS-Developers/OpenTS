@@ -1,24 +1,25 @@
 /*
- * Where the version dialog puts its two parts: the lines it reports and the button that
- * dismisses them. Everything visual comes from the kit.
+ * Where the version dialog puts its two parts, from IDD_VERSION at 272 by 106 dialog units:
+ * 408 by 173 pixels, the lines in a 342 by 90 list at 33,19 and a 75 wide button under
+ * them. Everything visual comes from the kit.
  */
 
 #reveal
 {
 	width: 408dp;
-	height: 172dp;
+	height: 173dp;
 	top: 50%;
 	margin-top: -86dp;
 }
 
 #content
 {
-	padding: 20dp 33dp 0 33dp;
+	padding: 19dp 33dp 0 33dp;
 }
 
 #lines
 {
-	height: 89dp;
+	height: 90dp;
 }
 
 #ok

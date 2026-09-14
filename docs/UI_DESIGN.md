@@ -681,7 +681,11 @@ document asking for another gets them magnified; `font-size: 16dp` is that
 size, which is how the family scales with the frame. A space, and every code
 below it, moves the pen without drawing, as the dialog layer moved over them:
 the sheets' space cell is not blank, and drawing it puts a stray line over the
-text.
+text. The pen starts a pixel left of where the text is placed, as the dialog
+layer started it, and a run measures a pixel more than its advances add up
+to, because the layer set a right-aligned run a pixel further from the edge.
+The advances are scaled as a sum rather than one by one, so a run keeps the
+width the frame's scaling gives it at a scale that is no whole number.
 
 `dlg-sans` is the face the Win32 dialogs asked GDI for. They asked for the
 raster "MS Sans Serif"; OpenTS loads its TrueType successor `micross.ttf`,
@@ -721,10 +725,22 @@ and checks its boxes double, which a `px` length in either file fails.
 Every screen is on the kit. Each one's sheet gives the dialog the size its
 Win32 template comes to, then places the controls down the page in flow with
 margins taken from the same template, so a screen holds no visual rule of its
-own and can grow. `Resize_Dialog` normalizes a dialog to 1.5 pixels per unit
-across and 1.63 down, which is where those numbers come from; a control's
-width is its outer width, borders included, because that is what the template
-measures. Three screens carry a second arrangement: the sound options and the
+own and can grow. Windows lays a template out at two pixels a unit, the
+system font's base units, and `Resize_Dialog` scales that by 300/400 across
+and 163/200 down with integer division, adding a pixel to each width and
+height before it scales: a control at unit `x, y, w, h` lands at `⌊1.5x⌋,
+⌊1.63y⌋` and measures `⌊1.5w + 0.75⌋` by `⌊1.63h + 0.815⌋`, and a dialog's
+own size follows the same rule. A control's width is its outer width, borders
+included, because that is what the template measures. A `dlgsys` caption is
+drawn from the top of its box with no leading, so a caption's line height is
+the glyph's height and the box carries the row's height; a check box label is
+the same. The sheets were checked against the Win32 dialogs pixel for pixel
+at 1024x768 on a 4K frame, and where the game draws a control a pixel or two
+from where the rule puts it, the sheet follows the game and says so: the
+display list is two shorter than its template, the keyboard screen's combo
+box sits level with its command list, and its hotkey field and the captions
+under it sit a pixel higher. Three screens carry a second arrangement: the
+sound options and the
 game controls each have a frontend template and an in-game one, chosen by a
 class the document sets from its model, and the message box places its buttons
 in the three slots its template holds, which come out as a row spread across
@@ -740,11 +756,14 @@ The chrome is `Draw_Dialog_Back`'s composition: the 640 by 400 wallpaper
 centred on the frame and cut off at the dialog's edges, black beyond it; a
 24-wide bar tiled down each edge with a corner over each end; and a glow
 inside the bars that the original drew as sixteen one-pixel rings of white,
-alpha 96 falling by 6 a ring. The glow is one gradient strip per edge, from
-that alpha at the edge to nothing sixteen in, because sixteen rings round to
-the pixel grid on their own at any scale but one to one and gap and double
-up; the strips overlap at the corners, which come out a little brighter than
-the original's mitre. Two RmlUi facts shape the rest. Decorators paint last
+alpha 96 falling by 6 a ring. The glow is a picture shipped with the kit,
+`ui/glow.png`: the sixteen rings drawn once with mitred corners, cut nine
+ways by a sprite sheet into corners, edges and a clear middle and drawn with
+`tiled-box`, because sixteen bordered boxes each round to the pixel grid on
+their own at any scale but one to one and gap and double up, and a gradient
+strip per edge overlaps at the corners. It is magnified with the rest of the
+art, so the rings stay whole at any scale. Two RmlUi facts shape the rest.
+Decorators paint last
 to first, so a bar is listed after its corners. Overflow is measured from
 static boxes: positioned children are laid out after their container has
 measured what it clips, and a relative offset is never counted. So the

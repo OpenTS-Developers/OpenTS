@@ -17,7 +17,7 @@
 				<div id="description">{{description}}</div>
 			</div>
 			<p class="caption" id="press">Press new shortcut key:</p>
-			<div id="hotkey-row"><div id="capture" class="hotkey"><span data-if="capturedname == ''">None</span><span data-if="capturedname != ''">{{capturedname}}</span></div><button id="assign" data-event-click="queue('assign')">Assign</button></div>
+			<div id="hotkey-row"><div id="capture" class="hotkey"><span data-if="capturedname != ''">{{capturedname}}</span></div><button id="assign" data-event-click="queue('assign')">Assign</button></div>
 			<p class="caption tall">Currently assigned to:</p>
 			<p class="value" id="assigned-to">{{assignedto}}</p>
 		</div>

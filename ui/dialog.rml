@@ -7,12 +7,7 @@
 		<div id="reveal">
 			<div id="chrome">
 				<div id="wallpaper"><div id="wallpaper-art"></div></div>
-				<div id="glow">
-					<div id="glow-top"></div>
-					<div id="glow-bottom"></div>
-					<div id="glow-left"></div>
-					<div id="glow-right"></div>
-				</div>
+				<div id="glow"></div>
 				<div id="bar-left"></div>
 				<div id="bar-right"></div>
 				<div id="content"></div>

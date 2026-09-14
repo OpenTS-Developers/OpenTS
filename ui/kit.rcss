@@ -120,13 +120,28 @@ div, form, h1, h2, p
 
 /*
  * The glow is sixteen rings of white, each one dimmer than the last, drawn one inside the
- * other: the original steps the alpha down by six a ring from ninety-six. That is a straight
- * ramp from ninety-six at the edge to nothing sixteen in, so each edge is one strip with
- * that ramp across it. Sixteen one-pixel rings would come to the same picture at one to one,
- * but at any other scale each ring rounds to the pixel grid on its own and the rings gap
- * and double up; a ramp has no rings to round. Where two strips meet at a corner both are
- * drawn, so a corner is a little brighter than the original's mitre.
+ * other with mitred corners: the original steps the alpha down by six a ring from
+ * ninety-six. Sixteen bordered boxes would come to the same picture at one to one, but at
+ * any other scale each rounds to the pixel grid on its own and the rings gap and double up.
+ * So the rings are a picture, shipped with the kit rather than taken from the game's art,
+ * cut nine ways: a corner holds the mitre, an edge holds one column of the ramp stretched
+ * along the edge, and the middle is clear. It is magnified like every other picture, so the
+ * rings stay whole however the frame is scaled.
  */
+@spritesheet glow
+{
+	src: glow.png;
+	glow-top-left: 0px 0px 16px 16px;
+	glow-top: 16px 0px 1px 16px;
+	glow-top-right: 17px 0px 16px 16px;
+	glow-left: 0px 16px 16px 1px;
+	glow-middle: 16px 16px 1px 1px;
+	glow-right: 17px 16px 16px 1px;
+	glow-bottom-left: 0px 17px 16px 16px;
+	glow-bottom: 16px 17px 1px 16px;
+	glow-bottom-right: 17px 17px 16px 16px;
+}
+
 #glow, #bar-left, #bar-right, #edge-left, #edge-right
 {
 	pointer-events: none;
@@ -139,17 +154,8 @@ div, form, h1, h2, p
 	top: 0;
 	right: 24dp;
 	bottom: 0;
+	decorator: tiled-box(glow-top-left, glow-top, glow-top-right, glow-left, glow-middle, glow-right, glow-bottom-left, glow-bottom, glow-bottom-right);
 }
-
-#glow > div
-{
-	position: absolute;
-}
-
-#glow-top { left: 0; right: 0; top: 0; height: 16dp; decorator: vertical-gradient(#ffffff60 #ffffff00); }
-#glow-bottom { left: 0; right: 0; bottom: 0; height: 16dp; decorator: vertical-gradient(#ffffff00 #ffffff60); }
-#glow-left { left: 0; top: 0; bottom: 0; width: 16dp; decorator: horizontal-gradient(#ffffff60 #ffffff00); }
-#glow-right { right: 0; top: 0; bottom: 0; width: 16dp; decorator: horizontal-gradient(#ffffff00 #ffffff60); }
 
 /*
  * The bars ride the opening edges while a dialog reveals and are gone once it is open. The
@@ -297,7 +303,7 @@ input[type='checkbox']:disabled
 label.check
 {
 	display: block;
-	line-height: 19dp;
+	line-height: 17dp;
 	min-height: 19dp;
 }
 
@@ -432,6 +438,7 @@ input[type='range'] slidertrack
 input[type='range'] sliderbar
 {
 	width: 12dp;
+	height: 22dp;
 	background-color: #70ff00;
 	decorator: image(trakgrip.pcx scale-none left top);
 }

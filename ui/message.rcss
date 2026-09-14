@@ -1,7 +1,9 @@
 /*
- * Where the message box puts its text and its buttons. The box it replaces has three places
- * for buttons; two buttons take the outer pair and three take all three, which is what
- * spreading them across the row comes to. Everything visual comes from the kit.
+ * Where the message box puts its text and its buttons, from IDD_MSGBOX_3 at 260 by 84 dialog
+ * units: 390 by 137 pixels, the text at 33,19 over 324 by 62, and three 90 wide places for
+ * buttons at 33, 150 and 267. Two buttons take the outer pair and three take all three,
+ * which is what spreading them across the row comes to. Everything visual comes from the
+ * kit.
  */
 
 #reveal
@@ -14,7 +16,7 @@
 
 #content
 {
-	padding: 20dp 33dp 0 33dp;
+	padding: 19dp 33dp 0 33dp;
 }
 
 #text
@@ -34,7 +36,7 @@
 {
 	display: flex;
 	justify-content: space-between;
-	margin-top: 12dp;
+	margin-top: 13dp;
 }
 
 #buttons.alone

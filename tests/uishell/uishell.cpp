@@ -2295,7 +2295,7 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		if (dialog != nullptr) {
 			Rml::Vector2f at = dialog->GetAbsoluteOffset(Rml::BoxArea::Border).Round();
 			for (Rml::Rectanglei const & scissor : render.Scissors) {
-				if (scissor.Left() == (int)at.x && scissor.Top() == (int)at.y && scissor.Width() == 300 && scissor.Height() == 241) {
+				if (scissor.Left() == (int)at.x && scissor.Top() == (int)at.y && scissor.Width() == 300 && scissor.Height() == 242) {
 					clipped = true;
 				}
 			}
@@ -2306,7 +2306,7 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		// and its buttons are twice the size; a px length in either would show here.
 		context.SetDensityIndependentPixelRatio(2.0f);
 		context.Update();
-		bool doubled = dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(600.0f, 482.0f)
+		bool doubled = dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(600.0f, 484.0f)
 			&& buttons.size() == 5 && buttons[0]->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(378.0f, 48.0f);
 		Check(doubled, "the menu and its buttons are twice the size at twice the ratio");
 		context.SetDensityIndependentPixelRatio(1.0f);
