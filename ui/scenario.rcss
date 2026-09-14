@@ -1,0 +1,90 @@
+/*
+ * Where the multiplayer map dialog puts its parts, from IDD_MPLAYER_SELECT_MAP at 360 by 200
+ * dialog units, which the layer draws 540 by 326: a centred title, the mission list down the
+ * left with the map preview beside it, and three buttons along the bottom. The preview frame
+ * carries no caption, so the layer draws it as a plain rectangle corner to corner, a pixel
+ * wider and taller than its rect. Everything visual comes from the kit.
+ */
+
+#reveal
+{
+	width: 540dp;
+	height: 326dp;
+	top: 50%;
+	margin-top: -163dp;
+}
+
+#content
+{
+	padding: 19dp 32dp 0 33dp;
+}
+
+/*
+ * A centred caption sits a pixel left of the middle when the room left over is odd: the
+ * layer halves it in whole pixels where the toolkit rounds a half up.
+ */
+#title
+{
+	width: 472dp;
+	height: 20dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#columns
+{
+	display: flex;
+	margin-top: 3dp;
+}
+
+/*
+ * The layer drew whole rows and left the six pixels its rect had over showing the backdrop;
+ * the toolkit scrolls by the pixel, so a row can stand half drawn at the bottom instead.
+ */
+#maps
+{
+	width: 263dp;
+	height: 232dp;
+	margin-right: 17dp;
+}
+
+/* The preview hangs level with the middle of the list rather than its top. */
+#map
+{
+	position: relative;
+	width: 195dp;
+	height: 132dp;
+	margin-top: 54dp;
+}
+
+#preview
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 193dp;
+	height: 130dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 9dp;
+}
+
+#ok
+{
+	width: 76dp;
+	margin-right: 89dp;
+}
+
+#random
+{
+	width: 160dp;
+	margin-right: 74dp;
+}
+
+#cancel
+{
+	width: 76dp;
+}

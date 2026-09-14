@@ -11,6 +11,8 @@
 
 #include "netshare.h"
 
+#include "ui/screens/scenario/uiscenario.h"
+
 #include "_rules.h"
 #include "conquer.h"
 #include "data.h"
@@ -1168,6 +1170,11 @@ INT_PTR CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPAR
 /// IDCANCEL.</returns>
 int Scenario_Dialog(HWND top)
 {
+	int picked = IDCANCEL;
+	if (UI_Scenario_Dialog(picked)) {
+		return(picked);
+	}
+
 	Hide_Mouse();
 	Draw_Menu_Background();
 	Show_Mouse();

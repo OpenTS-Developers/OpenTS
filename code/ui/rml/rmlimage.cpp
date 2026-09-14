@@ -212,13 +212,15 @@ bool UI_Scale_RGBA_Nearest(std::span<std::uint8_t const> pixels, int width, int 
 
 	result.resize((std::size_t)destwidth * (std::size_t)destheight * 4);
 
+	// Each destination pixel takes the source pixel under its own middle, which is where
+	// GDI's stretch lands when it drops and repeats rows and columns.
 	for (int y = 0; y < destheight; y++) {
-		int row = (int)((std::int64_t)y * (std::int64_t)height / (std::int64_t)destheight);
+		int row = (int)(((std::int64_t)y * 2 + 1) * (std::int64_t)height / ((std::int64_t)destheight * 2));
 		std::uint8_t const * source = pixels.data() + (std::size_t)row * (std::size_t)width * 4;
 		std::uint8_t * out = result.data() + (std::size_t)y * (std::size_t)destwidth * 4;
 
 		for (int x = 0; x < destwidth; x++) {
-			int column = (int)((std::int64_t)x * (std::int64_t)width / (std::int64_t)destwidth);
+			int column = (int)(((std::int64_t)x * 2 + 1) * (std::int64_t)width / ((std::int64_t)destwidth * 2));
 			std::memcpy(out + (std::size_t)x * 4, source + (std::size_t)column * 4, 4);
 		}
 	}

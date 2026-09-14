@@ -39,6 +39,7 @@
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/sound/uisound.h"
+#include "ui/screens/scenario/uiscenario.h"
 #include "ui/screens/skirmish/uiskirmish.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
@@ -2445,6 +2446,74 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 // Drives the skirmish setup: the dialog comes out at its template's size, the two frames at
 // theirs, bases and a short game switch each other the way the Win32 check boxes do, and the
 // map button closes the screen rather than answering inside it.
+// Records what the map dialog asks the engine for, so the screen can be driven without one.
+class RecordingScenarioServiceClass : public UIScenarioServiceClass
+{
+	public:
+		int Asked = 0;
+		int Row = -1;
+
+		virtual void Preview(int index, UIMapPreviewImage & image) override
+		{
+			Asked++;
+			Row = index;
+			image.Width = 2;
+			image.Height = 2;
+			image.Pixels.assign(2 * 2 * 4, 128);
+			image.Generation++;
+		}
+};
+
+
+// Drives the map dialog: it comes out at its template's size, moving the highlight asks the
+// engine for that map's picture, and the generator button closes the screen rather than
+// answering inside it.
+void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	RecordingScenarioServiceClass service;
+	UIScenarioState state;
+	for (int index = 0; index < 4; index++) {
+		UIScenarioEntry entry;
+		entry.Label = "Map " + std::to_string(index + 1);
+		state.Entries.push_back(entry);
+	}
+
+	UIScenarioPresenterClass presenter(service, std::move(state));
+	std::unique_ptr<UIViewClass> view = UI_Scenario_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the map view prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the map dialog raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(540.0f, 326.0f), "the map dialog is the size its template comes to");
+
+	Rml::Element * maps = document->GetElementById("maps");
+	Check(maps != nullptr && maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(263.0f, 232.0f), "the mission list is its template's rect, frame and all");
+
+	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the map dialog holds a surface for the preview");
+
+	Drive(presenter, "select", 2);
+	Check(presenter.State.Selected == 2 && service.Asked == 1 && service.Row == 2, "moving the highlight asks the engine for that map's picture");
+	Drive(presenter, "select", 2);
+	Check(service.Asked == 1, "and standing still asks for nothing");
+	Drive(presenter, "select", 9);
+	Check(presenter.State.Selected == 2 && service.Asked == 1, "a row the list does not hold is ignored");
+
+	Drive(presenter, "random");
+	Check(presenter.Result.has_value() && presenter.Choice == UI_SCENARIO_RANDOM, "the generator button closes the dialog with the generator choice");
+
+	view->Release();
+	context.Update();
+}
+
+
 void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -2560,8 +2629,11 @@ void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass 
 	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 4, 2, scaled)
 		&& scaled.size() == 32 && scaled[0] == 10 && scaled[4] == 10 && scaled[8] == 200 && scaled[12] == 200
 		&& std::memcmp(scaled.data(), scaled.data() + 16, 16) == 0, "a picture stretches by repeating whole pixels");
-	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 1, 1, scaled)
-		&& scaled.size() == 4 && scaled[0] == 10, "and shrinks by dropping them");
+	// Shrinking takes the pixel under each destination pixel's middle: four to two takes the
+	// second and the fourth, which is the stretch the dialog layer was given.
+	std::uint8_t const four[16] = { 1, 0, 0, 255, 2, 0, 0, 255, 3, 0, 0, 255, 4, 0, 0, 255 };
+	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(four, 16), 4, 1, 2, 1, scaled)
+		&& scaled.size() == 8 && scaled[0] == 2 && scaled[4] == 4, "and shrinks by dropping them");
 	Check(!UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 0, 1, scaled) && scaled.empty(),
 		"a picture is not stretched to nothing");
 
@@ -2775,6 +2847,7 @@ void Test_Documents(void)
 		Test_Effects_Documents(*context, render, system);
 		Test_Surface_Element(*context, render, system);
 		Test_Skirmish_Screen(*context, system);
+		Test_Scenario_Screen(*context, system);
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);

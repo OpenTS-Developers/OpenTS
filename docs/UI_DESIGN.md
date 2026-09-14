@@ -668,8 +668,9 @@ picture at all. The pixels travel as bytes in the presenter's state, the way
 every other engine fact reaches a screen, so images have one route rather than
 a second of their own. The element widens a frame surface's five and six bit
 channels by repeating their top bits, places the picture in proportion and
-centred in its box, resamples it there by repeating and dropping whole pixels
-as the stretch GDI gave the dialog layer did, and holds it in a callback
+centred in its box, resamples it there by taking, for each pixel, the one
+under its own middle, which is where the stretch GDI gave the dialog layer
+landed, and holds it in a callback
 texture, so the release of every texture that follows a change of frame scale
 regenerates it. The picture is not magnified with the rest of the art, because
 it is already drawn at the size it is shown. The centring is a deliberate
@@ -780,8 +781,10 @@ departs. The display list is a pixel shorter than its template; the front-end
 sound dialog, the campaign chooser and the three saved-game dialogs are each a
 pixel wider; the in-game options menu is a pixel shorter; the keyboard screen's
 combo box and list sit a pixel lower and wider; the abort question's buttons
-are a pixel narrower; and the in-game menu's Save button sits a row lower than
-the column around it. Five screens carry a second arrangement: the sound
+are a pixel narrower; the in-game menu's Save button sits a row lower than
+the column around it; and the skirmish setup is a pixel wider than its
+template's unit and a half with the frame around its settings a pixel taller
+still. Five screens carry a second arrangement: the sound
 options and the game controls each have a frontend template and an in-game one,
 the in-game options menu has a campaign arrangement and a network one, the
 saved-game screen has one for each of loading, saving and deleting, all chosen
@@ -1182,8 +1185,18 @@ beyond an ASCII test document.
    dialog; the document leaves it out to match what the game shows. Evidence:
    all three match their Win32 dialogs at 3840x2160 apart from the list text,
    and a save through the screen writes its file and brings the menu back.
-10. **Skirmish and map selection** (M, two changes). Includes the scenario
-    picker templates and the preview surface.
+10. **Skirmish and map selection** (M, three changes, landed): the `<surface>`
+    element and the pure work behind it, then `skirmish.rml` over
+    `UISkirmishPresenterClass`, then `scenario.rml` over
+    `UIScenarioPresenterClass` and its service. Both screens close and reopen
+    around what they raise, as the Win32 dialogs hid themselves around the map
+    dialog and the generator, and the map dialog runs over a service pass of
+    its own so that a lobby waiting on the host is still pumped while the host
+    browses. The preview's placement is a deliberate departure, recorded under
+    [Images](#images). Evidence: both match their Win32 dialogs at 3840x2160
+    apart from the list text and the sans glyph widths, the map dialog's
+    preview to the pixel, and a game started through the setup deploys its
+    units.
 11. **Network lobbies** (L, two changes). Host, guest, game list, the `WS_`
     stack, and `netshare.cpp` as one family; then disconnect, desync, and
     reconnect. Packets unchanged.
@@ -1294,6 +1307,8 @@ the table below is what the logs of that pass contain.
 | Keyboard, with key capture, reset, and every category | yes | yes |
 | Options menu | yes | yes |
 | Wait notice, over eleven consecutive quicksaves | yes | not yet |
+| Skirmish setup, through to a game that deploys its units | yes | not yet |
+| Multiplayer map dialog, opened from the skirmish setup | yes | not yet |
 | Progress, with its bar | never shown | never shown |
 
 The defects the pass found were mostly in the shell rather than in any one

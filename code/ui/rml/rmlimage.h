@@ -49,6 +49,7 @@ bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int he
 bool UI_Surface_Fit(int width, int height, int boxwidth, int boxheight, int & x, int & y, int & fitwidth, int & fitheight);
 
 // A picture at another size, by repeating and dropping whole pixels rather than blending
-// them, which is the stretch GDI gave the dialog layer in its COLORONCOLOR mode. False, with
-// the result empty, for a size that is not positive or a picture short of its own.
+// them: each pixel takes the one under its own middle, which is where GDI's COLORONCOLOR
+// stretch landed for the dialog layer. False, with the result empty, for a size that is not
+// positive or a picture short of its own.
 bool UI_Scale_RGBA_Nearest(std::span<std::uint8_t const> pixels, int width, int height, int destwidth, int destheight, std::vector<std::uint8_t> & result);
