@@ -99,9 +99,11 @@
 }
 
 /*
- * A row is three cells the layer drew at fixed places across the list: the description from
+ * A row is three cells the layer drew at fixed places across the list: the description at
  * the row's own indent, then the date and the time. Each keeps its place whatever the one
- * before it holds, as the layer's own cells did, so they are placed rather than flowed.
+ * before it holds, as the layer's own cells did, so they are placed rather than flowed. A
+ * placed cell starts from the row's edge rather than inside its padding, so these are the
+ * positions the layer used, counted from the inside of the list's frame.
  */
 .item
 {
@@ -117,18 +119,17 @@
 
 .cell-description
 {
-	left: 0;
+	left: 2dp;
 }
-
 
 .cell-date
 {
-	left: 253dp;
+	left: 255dp;
 }
 
 .cell-time
 {
-	left: 313dp;
+	left: 315dp;
 }
 
 /*
