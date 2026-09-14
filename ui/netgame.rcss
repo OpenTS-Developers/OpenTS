@@ -51,10 +51,9 @@
 #cap-side { left: 27dp; top: 13dp; }
 #side { left: 108dp; top: 8dp; height: 26dp; }
 #cap-colour { left: 27dp; top: 37dp; }
-#colour { left: 108dp; top: 33dp; height: 27dp; }
 
-/* The colour box is a row taller than the side box, and its reading sits a row lower in it. */
-#colour selectvalue { padding-top: 5dp; }
+/* The colour box starts on the row the side box ends on rather than sharing it. */
+#colour { left: 108dp; top: 34dp; height: 26dp; }
 
 .guest #cap-side { left: 27dp; top: 11dp; }
 .guest #side { left: 98dp; top: 10dp; }
@@ -76,7 +75,9 @@
 /* -------------------------------------------------------------------------- the player list */
 
 #cap-players { left: 27dp; top: 67dp; }
-#players { left: 27dp; top: 91dp; width: 226dp; height: 110dp; }
+
+/* The columned list draws its cells smaller than a plain list box draws its rows. */
+#players { left: 27dp; top: 91dp; width: 226dp; height: 110dp; font-size: 10dp; }
 
 .guest #cap-players { left: 27dp; top: 68dp; }
 .guest #players { height: 111dp; }
@@ -118,18 +119,12 @@
 	pointer-events: auto;
 }
 
-/*
- * The row cuts its own contents off at the bottom: the reading's field is drawn from art three
- * taller than the rect this template gives it, which the layer clipped and a decorator does not.
- */
 #settings > .row
 {
 	left: 249dp;
 	width: 190dp;
 	height: 22dp;
 	white-space: nowrap;
-	overflow: hidden;
-	clip: always;
 }
 
 #settings > .row > .caption
@@ -153,35 +148,47 @@
 {
 	box-sizing: border-box;
 	margin: 0 0 0 3dp;
-	width: 53dp;
+	width: 52dp;
 	height: 22dp;
 	vertical-align: top;
 }
 
 /*
- * The reading's field starts on the track's last column rather than beside it. Its picture is
- * three taller than the rect this template gives it, so the picture is carried by a box inside
- * the field which the field cuts off, where the layer clipped it to the control. RmlUi scissors
- * a box only where its laid-out content overflows, so the inner box is the picture's own height
- * rather than the field's.
+ * The frame is drawn before the thumb, so a thumb as tall as the bar would cover it where the
+ * layer drew the frame over the thumb. The thumb is the room inside the frame instead.
+ */
+#settings input[type='range'] sliderbar
+{
+	height: 20dp;
+}
+
+/*
+ * The field is forty-nine by twenty-four and its picture forty-six by twenty-one, drawn from the
+ * top left, so the row under the picture and the column beside it are black and the two rows and
+ * columns past those are the dim the bar reaches a little beyond its rect with. A bar this short
+ * leaves the layer less room than the kit's fifty-one by twenty-six field, which is why the
+ * picture is a slice of the tile rather than the whole of it.
  */
 #settings .trough
 {
 	width: 49dp;
-	height: 21dp;
-	margin: 1dp 0 0 -1dp;
+	height: 24dp;
+	margin: 1dp 0 0 0;
 	padding: 0;
-	overflow: hidden;
-	decorator: none;
+	border-right: 2dp #182021;
+	border-bottom: 2dp #182021;
+	line-height: 21dp;
+	text-align: center;
+	background-color: #000000;
+	decorator: image(trofl.pcx scale-none left top) padding-box,
+		image(trofr.pcx scale-none right top) padding-box,
+		image(net-trough scale-none left top) padding-box;
 }
 
-#settings .trough .field
+@spritesheet net-trough-field
 {
-	display: block;
-	height: 24dp;
-	line-height: 20dp;
-	text-align: center;
-	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top), image(trough-mid fill);
+	src: trofm.pcx;
+	net-trough: 32px 0px 46px 21px;
 }
 
 #row-speed { top: 43dp; }
@@ -210,12 +217,10 @@
  * A disabled track and field are washed half way to black, as the layer washes every disabled
  * control it draws from a picture. The wash is a flat gradient listed first, which paints last.
  */
-.guest #settings .trough .field
+.guest #settings .trough
 {
-	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(trofl.pcx scale-none left top),
-		image(trofr.pcx scale-none right top),
-		image(trough-mid fill);
+	decorator: horizontal-gradient(#00000080 #00000080) padding-box,
+		image(net-trough scale-none left top);
 }
 
 .guest #settings input[type='range'] sliderbar
@@ -277,22 +282,22 @@
  */
 #kick
 {
-	left: 26dp;
-	top: 353dp;
+	left: 27dp;
+	top: 350dp;
 	width: 31dp;
-	height: 24dp;
+	height: 30dp;
 	border-width: 0;
 	padding: 0;
 	background-color: transparent;
-	decorator: image(woukick.pcx scale-none center center);
+	decorator: image(woukick.pcx scale-none left top);
 }
 
 #kick:active
 {
-	top: 353dp;
+	top: 350dp;
 	border-width: 0;
 	padding: 0;
-	decorator: image(wodkick.pcx scale-none center center);
+	decorator: image(wodkick.pcx scale-none left top);
 }
 
 #cancel { left: 436dp; top: 357dp; width: 80dp; }
