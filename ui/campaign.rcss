@@ -1,0 +1,94 @@
+/*
+ * Where the campaign chooser puts its parts, from IDD_CAMPAIGN at 246 by 149 dialog units:
+ * the title at 33,19 over 310 by 17, the list at 33,45, the difficulty caption and its
+ * reading on one line at 136, the track bar 310 wide at 159, and two 76 wide buttons at 181
+ * and 267. The game draws the dialog 370 by 243 and the list 310 by 84, each a pixel more
+ * than the template alone would make it, so the sheet follows the game.
+ *
+ * Everything visual comes from the kit.
+ */
+
+#reveal
+{
+	width: 370dp;
+	height: 243dp;
+	top: 50%;
+	margin-top: -121dp;
+}
+
+#content
+{
+	padding: 19dp 27dp 0 33dp;
+}
+
+/*
+ * A centred caption sits a pixel left of the middle when the room is odd, as the layer halves
+ * it in whole pixels where the toolkit rounds a half up, so the box is padded on the right.
+ */
+#title
+{
+	height: 17dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#campaigns
+{
+	margin-top: 9dp;
+	height: 84dp;
+}
+
+/*
+ * The caption line is 25 tall in the template but its text is drawn from the top, so the
+ * track bar below it starts two rows before the line ends.
+ */
+#row-difficulty
+{
+	margin-top: 7dp;
+	height: 25dp;
+}
+
+#row-difficulty > .caption
+{
+	width: 205dp;
+	line-height: 17dp;
+}
+
+/* A right-aligned reading ends a pixel in, as the layer's own right edge does. */
+#difficulty-name
+{
+	width: 100dp;
+	margin-left: 5dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: right;
+}
+
+#row-slider
+{
+	margin-top: -2dp;
+}
+
+#difficulty
+{
+	width: 310dp;
+	height: 25dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 14dp;
+}
+
+button
+{
+	width: 76dp;
+}
+
+#ok
+{
+	margin-left: 148dp;
+	margin-right: 10dp;
+}

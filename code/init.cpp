@@ -180,6 +180,7 @@
 #include "tube.h"
 #include "tutorial.h"
 #include "ui/screens/version/uiversion.h"
+#include "ui/screens/campaign/uicampaign.h"
 #include "ui/uishell.h"
 #include "uicontrol.h"
 #include "unit.h"
@@ -728,7 +729,7 @@ void Prepare_Side_Roster(void)
 /// </summary>
 /// <param name="campaign">The campaign to be tested.</param>
 /// <returns>bool; Is the campaign available for the player to select?</returns>
-static bool Campaign_Available(CampaignClass * campaign)
+bool Campaign_Available(CampaignClass * campaign)
 {
 	if (Addon_Enabled(ADDON_ANY) == true) {
 		if (campaign->RequiredAddon == ADDON_BASE_GAME) {
@@ -874,6 +875,13 @@ static CampaignType Choose_Campaign(void)
 
 		if (Campaigns.Count() == 0) {
 			return(CAMPAIGN_NONE);
+		}
+	}
+
+	if (UIShell.Use_Rml()) {
+		std::optional<UICampaignEntry> picked;
+		if (UI_Campaign_Dialog(picked)) {
+			return(picked.has_value() ? (CampaignType)picked->Campaign : CAMPAIGN_NONE);
 		}
 	}
 

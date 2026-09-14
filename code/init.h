@@ -43,6 +43,11 @@ void Title_Screen_Restore(bool force=false);
 
 void Init_Campaigns(void);
 
+class CampaignClass;
+
+// Is the campaign one the enabled addons entitle the player to play?
+bool Campaign_Available(CampaignClass * campaign);
+
 void Prepare_Theater_Roster(void);
 void Prepare_Side_Roster(void);
 

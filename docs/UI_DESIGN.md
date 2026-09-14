@@ -1116,12 +1116,18 @@ beyond an ASCII test document.
    focusable element that `rml/rmlkeys.cpp` turns back into the `KEYBOARD.INI`
    number; the options menu is `mainopt.rml`, placed where the main menu's
    buttons were; surrender runs through the message box screen, while abort
-   keeps its own `IDD_MISSION_ABORT` template and its three answers). The
+   is `abort.rml` over its own `IDD_MISSION_ABORT` template, whose middle
+   answer surrenders rather than restarts outside a campaign mission). The
    Win32 templates remain the fallback view of every one. The
    in-game options menu opens load, save and delete, so it follows step 9.
    Evidence: settings round-trip through `SUN.INI` unchanged.
-8. **Main menu family** (M). `IDD_MAIN_MENU`, campaign choice, game type,
-   multiplayer game selection. The `NewMenuClass` drivers keep their loops.
+8. **Main menu family** (M, campaign choice landed as `campaign.rml`, which
+   names the difficulty the bar is set to from the start where the Win32
+   dialog left its template's caption until the bar first moved).
+   `IDD_MAIN_MENU`, game type and multiplayer game selection remain; all
+   three appear only where `GMENU.MIX` is missing and the graphic menu cannot
+   run, so they are the degraded install's menu rather than the shipped one.
+   The `NewMenuClass` drivers keep their loops.
 9. **Load, save, delete** (M, two changes).
 10. **Skirmish and map selection** (M, two changes). Includes the scenario
     picker templates and the preview surface.

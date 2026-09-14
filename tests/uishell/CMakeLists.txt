@@ -24,6 +24,8 @@ opents_add_test(UIShell
         ui/rml/rmlrendermath.cpp
         ui/rml/rmlsystem.cpp
         ui/rml/rmlview.cpp
+        ui/screens/abort/uiabort.cpp
+        ui/screens/campaign/uicampaign.cpp
         ui/screens/display/uidisplay.cpp
         ui/screens/gamectrl/uigamectrl.cpp
         ui/screens/keyboard/uikeyboard.cpp

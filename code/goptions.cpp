@@ -48,6 +48,9 @@
 #include "savemgr.h"
 #include "scenario.h"
 #include "stats.h"
+#include "_ui.h"
+#include "ui/screens/abort/uiabort.h"
+#include "ui/uishell.h"
 
 #include "special.hh"
 
@@ -361,6 +364,22 @@ void Game_Options_On_INITDIALOG(HWND window)
 int Abort_Dialog(void)
 {
 	int rc = 0;
+
+	if (UIShell.Use_Rml()) {
+		UIAbortChoice choice;
+		if (UI_Abort_Dialog(choice)) {
+			switch (choice) {
+				case UI_ABORT_QUIT:
+					return(IDOK);
+
+				case UI_ABORT_RESTART:
+					return(IDABORT);
+
+				default:
+					return(IDCANCEL);
+			}
+		}
+	}
 
 	HWND dialog = OwnerDraw::Begin_Dialog(IDD_MISSION_ABORT, Abort_Dialog_Proc);
 
