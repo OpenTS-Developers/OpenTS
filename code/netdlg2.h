@@ -18,6 +18,23 @@
 struct GlobalPacketType;
 class IPXAddressClass;
 
+
+// Which of the three lobby dialogs the network flow is standing in. The flow reads this
+// rather than the dialog stack, so that a message box on top of the lobby cannot be
+// mistaken for a change of phase.
+enum Net2LobbyPhaseType
+{
+	NET2_LOBBY_NONE,
+	NET2_LOBBY_GAME_LIST,
+	NET2_LOBBY_HOST,
+	NET2_LOBBY_GUEST
+};
+
+extern Net2LobbyPhaseType Net2LobbyPhase;
+
+void Net2_Show_Lobby(Net2LobbyPhaseType phase);
+void Net2_Close_Lobby(void);
+
 int Net2FirstFreeColor(int reqcolor, int index);
 void Fill_Country_Box(HWND combo);
 int Country_From_Box(HWND combo);

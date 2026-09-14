@@ -71,6 +71,8 @@ char SerialNumber[23];
 bool Net2IsGameListActive = true;
 bool Net2GameStarted = false;
 
+Net2LobbyPhaseType Net2LobbyPhase = NET2_LOBBY_NONE;
+
 int RulesID;
 int ArtID;
 int AIID;
@@ -157,6 +159,67 @@ int Net2FirstFreeColor(int reqcolor, int index)
 		reqcolor %= MAX_PLAYERS;
 	}
 	return(color);
+}
+
+
+/// <summary>
+/// Puts up the lobby dialog the phase names and records the phase.
+/// </summary>
+/// <remarks>The dialog that is up is closed first. A phase of NET2_LOBBY_NONE closes the
+/// lobby and puts nothing up. A template that will not load leaves the phase
+/// unchanged.</remarks>
+void Net2_Show_Lobby(Net2LobbyPhaseType phase)
+{
+	Net2_Close_Lobby();
+
+	int id;
+	DLGPROC proc;
+
+	switch (phase) {
+		case NET2_LOBBY_GAME_LIST:
+			id = IDD_MPLAYER_GAME_LIST;
+			proc = MPlayer_Game_List_Dialog_Proc;
+			break;
+
+		case NET2_LOBBY_HOST:
+			id = IDD_MPLAYER_HOST;
+			proc = MPlayer_Host_Dialog_Proc;
+			break;
+
+		case NET2_LOBBY_GUEST:
+			id = IDD_MPLAYER_GUEST;
+			proc = MPlayer_Guest_Dialog_Proc;
+			break;
+
+		default:
+			return;
+	}
+
+	HWND dialog = WS_Create_Dialog(ProgramInstance, id, MainWindow, proc, FALSE);
+	if (dialog == NULL) {
+		return;
+	}
+
+	Center_Window_Within_Window(dialog);
+	OwnerDraw::Subclass_Dialog(dialog, 0);
+	if (phase == NET2_LOBBY_HOST) {
+		SendMessage(dialog, OD_SETTOP, 0, 1);
+	}
+	ShowWindow(dialog, SW_SHOWNORMAL);
+
+	Net2LobbyPhase = phase;
+}
+
+
+/// <summary>
+/// Takes the lobby dialog down and leaves the flow in no phase.
+/// </summary>
+void Net2_Close_Lobby(void)
+{
+	if (Net2LobbyPhase != NET2_LOBBY_NONE) {
+		WS_Destroy_Dialog(NULL, 0);
+		Net2LobbyPhase = NET2_LOBBY_NONE;
+	}
 }
 
 
@@ -716,10 +779,7 @@ bool Net2Remote_Connect(void)
 
 	OwnerDraw::Register_Control_Classes();
 
-	HWND game_list_dialog = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_GAME_LIST, MainWindow, MPlayer_Game_List_Dialog_Proc, FALSE);
-	Center_Window_Within_Window(game_list_dialog);
-	OwnerDraw::Subclass_Dialog(game_list_dialog, 0);
-	ShowWindow(game_list_dialog, SW_SHOWNORMAL);
+	Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
 	Net2DisplayUsers();
 
 	_netresponse = 0;
@@ -752,10 +812,10 @@ bool Net2Remote_Connect(void)
 				break;
 			}
 
-			if (WS_Top_Window()) {
+			if (Net2LobbyPhase != NET2_LOBBY_NONE) {
 				Send_Join_Queries(false, false, false, false);
 				Get_Join_Responses();
-				if (WS_Top_Window_ID() == IDD_MPLAYER_HOST) {
+				if (Net2LobbyPhase == NET2_LOBBY_HOST) {
 					PumpGameopts(false);
 				}
 				Net2ServiceGameList();
@@ -767,12 +827,12 @@ bool Net2Remote_Connect(void)
 		//.....................................................................
 		if (_netresponse == IDCANCEL) {
 			Session.Write_MultiPlayer_Settings();
-			if (WS_Top_Window_ID() == IDD_MPLAYER_GAME_LIST) {
+			if (Net2LobbyPhase == NET2_LOBBY_GAME_LIST) {
 				if (JoinState > JOIN_NOTHING) {
 					Unjoin_Game(CurGame);
 					Ipx.Service();
 				}
-				WS_Destroy_Dialog(NULL, 0);
+				Net2_Close_Lobby();
 				Clear_Vector(&Session.Players);
 				Clear_Vector(&Session.Games);
 				Clear_Vector(&Session.Chat);
@@ -781,18 +841,14 @@ bool Net2Remote_Connect(void)
 				return(false);
 			}
 
-			if (WS_Top_Window_ID() == IDD_MPLAYER_HOST) {
+			if (Net2LobbyPhase == NET2_LOBBY_HOST) {
 				Unjoin_Game(CurGame);
 				JoinState = JOIN_NOTHING;
-				WS_Destroy_Dialog(WS_Top_Window(), 0);
-				game_list_dialog = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_GAME_LIST, MainWindow, MPlayer_Game_List_Dialog_Proc, 0);
-				Center_Window_Within_Window(game_list_dialog);
-				OwnerDraw::Subclass_Dialog(game_list_dialog, 0);
-				ShowWindow(game_list_dialog, SW_SHOWNORMAL);
+				Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
 				Send_Join_Queries(false, false, true, false);
 			}
 
-			if (WS_Top_Window_ID() == IDD_MPLAYER_GUEST) {
+			if (Net2LobbyPhase == NET2_LOBBY_GUEST) {
 				//...............................................................
 				// If we're joined to a game, make extra sure the other players in
 				//	that game know I'm exiting; send my SIGN_OFF as an ack-required
@@ -837,14 +893,11 @@ bool Net2Remote_Connect(void)
 
 				Session.GameName[0] = '\0';
 				JoinState = JOIN_NOTHING;
-				WS_Destroy_Dialog(0, 0);
+				Net2_Close_Lobby();
 				_netresponse = 0;
 				CurGame = 0;
 				Clear_Vector(&Session.Players);
-				game_list_dialog = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_GAME_LIST, MainWindow, MPlayer_Game_List_Dialog_Proc, 0);
-				Center_Window_Within_Window(game_list_dialog);
-				OwnerDraw::Subclass_Dialog(game_list_dialog, 0);
-				ShowWindow(game_list_dialog, SW_SHOWNORMAL);
+				Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
 			}
 		}
 
@@ -898,7 +951,7 @@ bool Net2Remote_Connect(void)
 				Session.PlayingAgainstVersion = VerNum.Version_Number();
 				Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
 
-				WS_Destroy_Dialog(NULL, NULL);
+				Net2_Close_Lobby();
 				_netresponse = 0;
 
 				//------------------------------------------------------------------------
@@ -932,15 +985,11 @@ bool Net2Remote_Connect(void)
 				//	Pop up the New Network Game dialog; if user selects OK, return
 				//	'true'; otherwise, return to the Join Dialog.
 				//..................................................................
-				HWND host_dialog = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_HOST, MainWindow, MPlayer_Host_Dialog_Proc, 0);
-				Center_Window_Within_Window(host_dialog);
-				OwnerDraw::Subclass_Dialog(host_dialog, 0);
-				SendMessage(host_dialog, OD_SETTOP, 0, 1);
-				ShowWindow(host_dialog, SW_SHOWNORMAL);
+				Net2_Show_Lobby(NET2_LOBBY_HOST);
 			}
 		}
 
-		if (_netresponse != 1 || WS_Top_Window_ID() != IDD_MPLAYER_GUEST) {
+		if (_netresponse != 1 || Net2LobbyPhase != NET2_LOBBY_GUEST) {
 			if (_netresponse == IDC_GO) {
 				Net2GameStarted = 0;
 				Session.Write_MultiPlayer_Settings();
@@ -973,6 +1022,7 @@ bool Net2Remote_Connect(void)
 			 * The guest accepted the host's "go" -- tear down the dialogs, run
 			 * the pregame setup, compute the packet timing and leave the loop.
 			 */
+			Net2_Close_Lobby();
 			while (WS_Destroy_Dialog(NULL, 0) == true) {}
 			_netresponse = 0;
 
@@ -991,8 +1041,10 @@ bool Net2Remote_Connect(void)
 			break;
 		}
 
+		// The computer players belong in this sum, but the original reads their slider from
+		// the game list window, which never carried one, so the term has always been zero.
 		int waypoints = RandomMapWaypointCount(Session.Options.ScenarioIndex);
-		if (waypoints < SendDlgItemMessage(game_list_dialog, IDC_AIPLAYERS, TBM_GETPOS, 0, 0) + Session.Players.Count()) {
+		if (waypoints < Session.Players.Count()) {
 			PMessagePrintf(-1, Fetch_String(TXT_SCENARIO_TOO_SMALL));
 			EnableWindow(GetDlgItem(WS_Top_Window(), IDC_GO), TRUE);
 			_netresponse = 0;
@@ -1111,7 +1163,7 @@ bool Net2Remote_Connect(void)
 				Hide_Mouse();
 				Draw_Menu_Background();
 				Show_Mouse();
-				WS_Destroy_Dialog(NULL, 0);
+				Net2_Close_Lobby();
 				break;
 			}
 		}
@@ -2152,7 +2204,7 @@ static void Send_Join_Queries(int gamenow, int playernow, int chatnow, int init)
 	if (!game_timer || gamenow) {
 
 		game_timer = GAME_QUERY_TIME;
-		if ((WS_Top_Window_ID() != IDD_MPLAYER_HOST) || gamenow) {
+		if ((Net2LobbyPhase != NET2_LOBBY_HOST) || gamenow) {
 			memset (&packet, 0, sizeof(GlobalPacketType));
 
 			packet.Command = NET_QUERY_GAME;
@@ -2338,7 +2390,6 @@ static void Get_Join_Responses(void)
 	char txt[80];
 	bool display_users = false;
 	bool display_games = false;
-	HWND dialog;
 	int resend;
 	unsigned int version;              // version # to use
 
@@ -2360,14 +2411,14 @@ static void Get_Join_Responses(void)
 		}
 
 		if (Session.GPacket.Command==NET_PREVIEW_MODE) {
-			if (WS_Top_Window_ID() == IDD_MPLAYER_GUEST) {
+			if (Net2LobbyPhase == NET2_LOBBY_GUEST) {
 				Receive_Random_Map_Preview();
 			}
 			continue;
 		}
 
 		if (Session.GPacket.Command==NET_REQ_PREVIEW) {
-			if (WS_Top_Window_ID() == IDD_MPLAYER_HOST) {
+			if (Net2LobbyPhase == NET2_LOBBY_HOST) {
 				Send_Preview_To_Guests();
 			}
 			continue;
@@ -2578,12 +2629,8 @@ static void Get_Join_Responses(void)
 				Session.Players.Add (who);
 
 				Net2IsGameListActive = false;
-				WS_Destroy_Dialog(0, 0);
 				_netresponse = 0;
-				dialog = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_GUEST, MainWindow, MPlayer_Guest_Dialog_Proc, FALSE);
-				Center_Window_Within_Window(dialog);
-				OwnerDraw::Subclass_Dialog(dialog, 0);
-				ShowWindow(dialog, SW_SHOWNORMAL);
+				Net2_Show_Lobby(NET2_LOBBY_GUEST);
 				display_users = true;
 
 				Send_Join_Queries(1, 1, 1, 0);
@@ -2678,7 +2725,7 @@ static void Get_Join_Responses(void)
 				if (item) {
 					ODMessageBox(item, 0, Net2Callback, 0);
 				}
-				if ( WS_Top_Window_ID() != IDD_MPLAYER_GAME_LIST ) {
+				if (Net2LobbyPhase != NET2_LOBBY_GAME_LIST) {
 					_netresponse = IDCANCEL;
 				}
 				Send_Join_Queries (0, 0, 1, 0);
@@ -2766,7 +2813,7 @@ static void Get_Join_Responses(void)
 					//...............................................................
 					if (i==CurGame) {
 						Clear_Vector (&Session.Players);
-						if (WS_Top_Window_ID() != IDD_MPLAYER_GAME_LIST && WS_Top_Window_ID() == IDD_MPLAYER_GUEST) {
+						if (Net2LobbyPhase == NET2_LOBBY_GUEST) {
 							_netresponse = 2;
 						}
 					}

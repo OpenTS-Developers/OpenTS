@@ -1316,7 +1316,7 @@ bool Update_Network_Dialog_Preview(void)
 
 	switch (Session.Type) {
 		case GAME_IPX:
-			if (WS_Top_Window_ID() == IDD_MPLAYER_GUEST && !Find_Local_Scenario(Session.ScenarioFileName, Session.ScenarioFileLength, Session.ScenarioDigest, Session.ScenarioIsOfficial)) {
+			if (Net2LobbyPhase == NET2_LOBBY_GUEST && !Find_Local_Scenario(Session.ScenarioFileName, Session.ScenarioFileLength, Session.ScenarioDigest, Session.ScenarioIsOfficial)) {
 				GlobalPacketType packet;
 				memset(&packet, 0, sizeof(packet));
 				packet.Command = NET_REQ_PREVIEW;
