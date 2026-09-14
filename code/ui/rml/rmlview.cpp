@@ -61,7 +61,7 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	bool bound = Bind(constructor);
 	bound = constructor.BindEventCallback("queue", [this](Rml::DataModelHandle, Rml::Event &, Rml::VariantList const & arguments) {
 		if (!arguments.empty()) {
-			// An argument reaches a screen both ways, since a variant converts either way and a
+			// One argument reaches a screen both ways, since a variant converts either way and a
 			// screen knows which of the two its control carries.
 			Rml::String const name = arguments[0].Get<Rml::String>();
 			Rml::String text;
@@ -70,6 +70,13 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 				value = arguments[1].Get<int>();
 				text = arguments[1].Get<Rml::String>();
 			}
+
+			// A third argument is the text alone, for a control whose reading and whose words
+			// are two different things.
+			if (arguments.size() > 2) {
+				text = arguments[2].Get<Rml::String>();
+			}
+
 			Queue(name.c_str(), value, text.c_str());
 		}
 	}) && bound;

@@ -76,8 +76,9 @@ calls around a dialog, pumps Windows messages through
 Nearly every legacy flow hides or destroys its parent before opening a child:
 the main menu hides around the version dialog, the options driver ends the
 main dialog before a sub-dialog, in-game options hide around save and load,
-skirmish hides around the scenario picker. The lobby keeps its host and
-game-list dialogs alive together.
+skirmish hides around the scenario picker. The lobby closed one of its three
+and opened the next, and reads an explicit phase rather than the dialog stack
+to know which of them it is standing in.
 
 Facts elsewhere in the tree that bind the design:
 
@@ -357,8 +358,9 @@ shell sees it. `Windows_Message_Handler` skips hidden dialogs in its
 `IsDialogMessage` loop so a hidden parent cannot take Tab, Enter, or Escape
 from an overlay child. Debug assertions in `OwnerDraw::Begin_Dialog`,
 `OwnerDraw::Display_Dialog`, `WS_Create_Dialog`, and the shell's show path
-enforce the rule. The legacy flows already satisfy it except the lobby, which
-migrates as one family.
+enforce the rule. Every legacy flow satisfies it, the lobby included: its
+three screens migrated as one family, and the message box the lobby raises
+over itself opens as a screen rather than as a dialog.
 
 ### Hook and priority
 
@@ -876,7 +878,20 @@ fills the fifty with the middle of its tile, so the kit's field is the two
 ends over a sprite of the tile's centre. The value inside it is centred in a
 box a pixel narrower than the field, which turns the toolkit's round of a half
 into the layer's floor, and the right end is hung off the field rather than
-off that box so that narrowing it leaves the end where the layer drew it. A combo box's list is the toolkit's own child element,
+off that box so that narrowing it leaves the end where the layer drew it. A
+template that gives its bar fewer rows than the field's picture has, which the
+network lobbies do, leaves the picture standing past the rect: RmlUi scissors a
+box only where its laid-out content overflows, so the picture is carried by a
+box of its own height inside the field, which the field then cuts off. What is
+left of that field is where the lobbies differ from their dialogs most. A line of chat is stored whole and broken into lines by whatever shows it,
+where the layer measured the list box and handed it lines it had already
+broken, so the same message can take a different number of rows in the two
+presentations. The box a line is typed into sends on Enter. The dialog's own
+edit box is one row tall and does not scroll, and the send fires on the
+overflow that ending the line causes, so typing past the right-hand edge sends
+a message in the middle of a word; a document has no such accident to inherit.
+
+A combo box's list is the toolkit's own child element,
 placed by it and styled by the kit; a group box's top edge is two line pieces
 either side of its caption, because a border cannot be broken, and its
 caption row is sixteen tall, the height GDI gave the face, so the frame runs
@@ -1203,9 +1218,21 @@ beyond an ASCII test document.
     apart from the list text and the sans glyph widths, the map dialog's
     preview to the pixel, and a game started through the setup deploys its
     units.
-11. **Network lobbies** (L, two changes). Host, guest, game list, the `WS_`
-    stack, and `netshare.cpp` as one family; then disconnect, desync, and
-    reconnect. Packets unchanged.
+11. **Network lobbies** (L, two changes; the first landed). The browser, the
+    host's setup and the guest's view of it went together, because the flow
+    asked which dialog was up rather than being told: `Net2LobbyPhase` replaced
+    every dialog-stack test, the lobby chat moved out of the list box it lived
+    in so that both presentations read one log, and `ODMessageBox` opens the
+    message box screen in its own shape so that nothing Win32 stands over a
+    document. Entering a lobby settles the session from one place, where each
+    dialog's `WM_INITDIALOG` did it before. The driver keeps its loop and its
+    arms; only the wait for an answer became a modal screen over the pass the
+    lobby already ran, and the lobby comes back whole rather than opening again
+    when it is reopened for another answer. `netlobby.rml` carries the browser
+    and `netgame.rml` both halves of the setup, the guest's being the host's
+    with its right-hand column disabled, as the two templates differ. Evidence
+    under [What has been exercised](#what-has-been-exercised). Disconnect,
+    desync and reconnect are still owed. Packets unchanged.
 12. **Map generator and WDT** (L).
 13. **Retire OwnerDraw** (M). Delete `ownrdraw.cpp`, `windlg.cpp`, the
     modeless dialog list, the dialog templates, the kill switch, and the
@@ -1303,6 +1330,13 @@ frontend on both platforms, and from a skirmish on `Win32`. The two platforms
 behaved alike. The debug log names each document as it opens and closes, so
 the table below is what the logs of that pass contain.
 
+The network lobbies were driven on 14 September 2026 by two copies of the game
+on one machine, each bound to its own port: one hosted, the other found the
+game, joined it, was given a free colour because its own was taken, accepted
+the host's settings, and the two started a game that ran in step on the same
+seed. The host reached the map dialog from its lobby and came back with the
+mission it chose.
+
 | Screen | `Win32` | `x64` |
 | --- | --- | --- |
 | Version | yes | not yet |
@@ -1314,7 +1348,8 @@ the table below is what the logs of that pass contain.
 | Options menu | yes | yes |
 | Wait notice, over eleven consecutive quicksaves | yes | not yet |
 | Skirmish setup, through to a game that deploys its units | yes | not yet |
-| Multiplayer map dialog, opened from the skirmish setup | yes | not yet |
+| Multiplayer map dialog, opened from the skirmish setup and from a host lobby | yes | not yet |
+| Network browser, host lobby and guest lobby, between two copies | yes | not yet |
 | Progress, with its bar | never shown | never shown |
 
 The defects the pass found were mostly in the shell rather than in any one
@@ -1331,10 +1366,10 @@ harness covers their layout and their input, not how they look.
 
 Still owed: the progress document, which belongs to the multiplayer loading,
 map generation, and file transfer paths; the multiplayer cases where
-`Main_Loop` runs under a message box; the map dialog opened from a lobby,
-which is the one path its own service pass exists for and the one the
-two-instance runs have not yet covered, along with its generator button and a
-map carrying no preview of its own; and, for each screen, what the paragraph
+`Main_Loop` runs under a message box; the map dialog's generator button and a
+map carrying no preview of its own; the lobby paths the two-copy run did not
+reach, which are the kick button, a rejected join, a host that disbands its
+game, and more than two players; and, for each screen, what the paragraph
 above requires of its own change.
 
 ## Documentation

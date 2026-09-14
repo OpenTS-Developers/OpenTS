@@ -1,0 +1,302 @@
+/*
+ * Where the network game setup puts its controls. The host is IDD_MPLAYER_HOST and the guest
+ * IDD_MPLAYER_GUEST, both 426 by 240 dialog units: 640 by 391 pixels, the frame the skirmish
+ * setup and the game browser also come to. The two templates carry the same controls at
+ * slightly different places, with the guest's whole right-hand column disabled in the template
+ * rather than at run time, so one document covers both and the class on the body chooses.
+ *
+ * Nothing here shares a row with anything else, so each control is placed at the rect the
+ * dialog layer drew it at rather than flowed, as the browser's sheet does. Everything visual
+ * comes from the kit.
+ */
+
+#reveal
+{
+	width: 640dp;
+	height: 391dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+.caption
+{
+	height: 17dp;
+	line-height: 17dp;
+}
+
+/* ------------------------------------------------------------------- the player's identity */
+
+/*
+ * A combo box is placed rather than flowed, so it carries its frame inside its own size
+ * instead of hanging it over a margin.
+ */
+#side, #colour
+{
+	box-sizing: border-box;
+	margin: 0;
+	width: 116dp;
+}
+
+#cap-side { left: 27dp; top: 13dp; }
+#side { left: 108dp; top: 8dp; height: 26dp; }
+#cap-colour { left: 27dp; top: 37dp; }
+#colour { left: 108dp; top: 33dp; height: 27dp; }
+
+/* The colour box is a row taller than the side box, and its reading sits a row lower in it. */
+#colour selectvalue { padding-top: 5dp; }
+
+.guest #cap-side { left: 27dp; top: 11dp; }
+.guest #side { left: 98dp; top: 10dp; }
+.guest #cap-colour { left: 27dp; top: 39dp; }
+.guest #colour { left: 98dp; top: 38dp; height: 26dp; }
+.guest #colour selectvalue { padding-top: 4dp; }
+
+/* ------------------------------------------------------------------------ the map and its name */
+
+#pick { left: 240dp; top: 8dp; width: 136dp; }
+#mapname { left: 382dp; top: 13dp; width: 230dp; }
+
+.guest #cap-map { left: 223dp; top: 11dp; }
+.guest #mapname { left: 264dp; top: 11dp; width: 349dp; }
+
+#map { left: 421dp; top: 224dp; width: 191dp; height: 120dp; }
+#preview { left: 0; top: 0; width: 189dp; height: 118dp; }
+
+/* -------------------------------------------------------------------------- the player list */
+
+#cap-players { left: 27dp; top: 67dp; }
+#players { left: 27dp; top: 91dp; width: 226dp; height: 110dp; }
+
+.guest #cap-players { left: 27dp; top: 68dp; }
+.guest #players { height: 111dp; }
+
+/*
+ * A row carries the marker for the host or for a player who has accepted, the side's emblem,
+ * and the name in that player's own colour, at the column widths the dialog set: five for the
+ * marker, twenty-five for the emblem and forty-five for the name.
+ */
+#players .item
+{
+	padding-left: 0;
+}
+
+#players .cell-mark, #players .cell-house, #players .cell-name
+{
+	display: inline-block;
+	vertical-align: top;
+}
+
+/* A row without a marker keeps the marker's place, as a columned list box does. */
+#players .cell-mark { width: 20dp; margin-left: 5dp; }
+#players .cell-house { width: 24dp; }
+
+/* ---------------------------------------------------------------------------- the settings */
+
+#settings, #switches
+{
+	left: 0;
+	top: 0;
+	width: 640dp;
+	height: 391dp;
+	pointer-events: none;
+}
+
+#settings > .row, #switches > label
+{
+	position: absolute;
+	pointer-events: auto;
+}
+
+/*
+ * The row cuts its own contents off at the bottom: the reading's field is drawn from art three
+ * taller than the rect this template gives it, which the layer clipped and a decorator does not.
+ */
+#settings > .row
+{
+	left: 249dp;
+	width: 190dp;
+	height: 22dp;
+	white-space: nowrap;
+	overflow: hidden;
+	clip: always;
+}
+
+#settings > .row > .caption
+{
+	display: inline-block;
+	width: 87dp;
+	height: 17dp;
+	line-height: 17dp;
+	text-align: right;
+	vertical-align: top;
+	margin-top: 2dp;
+}
+
+/* The credits row's label is a row lower against its track than the five above it. */
+#settings > #row-credits > .caption
+{
+	margin-top: 3dp;
+}
+
+#settings input[type='range']
+{
+	box-sizing: border-box;
+	margin: 0 0 0 3dp;
+	width: 53dp;
+	height: 22dp;
+	vertical-align: top;
+}
+
+/*
+ * The reading's field starts on the track's last column rather than beside it. Its picture is
+ * three taller than the rect this template gives it, so the picture is carried by a box inside
+ * the field which the field cuts off, where the layer clipped it to the control. RmlUi scissors
+ * a box only where its laid-out content overflows, so the inner box is the picture's own height
+ * rather than the field's.
+ */
+#settings .trough
+{
+	width: 49dp;
+	height: 21dp;
+	margin: 1dp 0 0 -1dp;
+	padding: 0;
+	overflow: hidden;
+	decorator: none;
+}
+
+#settings .trough .field
+{
+	display: block;
+	height: 24dp;
+	line-height: 20dp;
+	text-align: center;
+	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top), image(trough-mid fill);
+}
+
+#row-speed { top: 43dp; }
+#row-aiplayers { top: 69dp; }
+#row-ailevel { top: 95dp; }
+#row-units { top: 121dp; }
+#row-tech { top: 147dp; }
+#row-credits { top: 173dp; }
+
+/*
+ * The guest's labels start further left but end where the host's do, so the track beside them
+ * keeps its place; and its whole right-hand column is disabled in the template rather than at
+ * run time, which the layer draws in a grey of its own rather than the kit's.
+ */
+.guest #settings > .row { left: 243dp; }
+.guest #settings > .row > .caption { width: 85dp; margin-right: 8dp; }
+
+.guest #settings > .row > .caption,
+.guest #settings .trough,
+.guest #switches > label
+{
+	color: #848a84;
+}
+
+/*
+ * A disabled track and field are washed half way to black, as the layer washes every disabled
+ * control it draws from a picture. The wash is a flat gradient listed first, which paints last.
+ */
+.guest #settings .trough .field
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(trofl.pcx scale-none left top),
+		image(trofr.pcx scale-none right top),
+		image(trough-mid fill);
+}
+
+.guest #settings input[type='range'] sliderbar
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(trakgrip.pcx scale-none left top);
+}
+
+/* ---------------------------------------------------------------------------- the switches */
+
+#switches > label
+{
+	left: 450dp;
+	width: 163dp;
+	height: 17dp;
+}
+
+#switch-allies { top: 41dp; }
+#switch-truce { top: 60dp; }
+#switch-bases { top: 80dp; }
+#switch-redeploy { top: 99dp; }
+#switch-fog { top: 119dp; }
+#switch-bridges { top: 138dp; }
+#switch-crates { top: 158dp; }
+#switch-short { top: 177dp; }
+#switch-engineer { top: 197dp; }
+
+.guest #switch-short { width: 127dp; }
+
+/* --------------------------------------------------------------------------- the chat */
+
+#chat { left: 27dp; top: 211dp; width: 384dp; height: 106dp; }
+
+#say
+{
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	left: 27dp;
+	top: 324dp;
+	width: 385dp;
+	height: 21dp;
+}
+
+#chat .line
+{
+	display: block;
+	margin: 0;
+	padding-left: 2dp;
+	line-height: 14dp;
+	white-space: pre-wrap;
+}
+
+/* -------------------------------------------------------------------------- the buttons */
+
+/*
+ * The kick button is a picture rather than a caption on the button skin: the dialog hands the
+ * control its own image and a darker one for while it is held.
+ */
+#kick
+{
+	left: 26dp;
+	top: 353dp;
+	width: 31dp;
+	height: 24dp;
+	border-width: 0;
+	padding: 0;
+	background-color: transparent;
+	decorator: image(woukick.pcx scale-none center center);
+}
+
+#kick:active
+{
+	top: 353dp;
+	border-width: 0;
+	padding: 0;
+	decorator: image(wodkick.pcx scale-none center center);
+}
+
+#cancel { left: 436dp; top: 357dp; width: 80dp; }
+#go { left: 531dp; top: 357dp; width: 82dp; }
+
+.guest #cancel { left: 418dp; top: 352dp; width: 88dp; }
+#accept { left: 525dp; top: 352dp; width: 88dp; }

@@ -39,6 +39,7 @@
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/sound/uisound.h"
+#include "ui/screens/netlobby/uinetlobby.h"
 #include "ui/screens/scenario/uiscenario.h"
 #include "ui/screens/skirmish/uiskirmish.h"
 #include "ui/screens/version/uiversion.h"
@@ -812,6 +813,17 @@ void Drive(UIPresenterClass & presenter, char const * name, int value = 0)
 	UIIntent intent;
 	intent.Name = name;
 	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+void Drive(UIPresenterClass & presenter, char const * name, int value, char const * text)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	intent.Text = text;
 	presenter.Queue(intent);
 	presenter.Drain();
 }
@@ -2537,6 +2549,184 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 }
 
 
+// Answers the lobby screens without a network. The model it hands back is whatever the test
+// put in it, and every call the screen makes is recorded.
+class RecordingNetServiceClass : public UINetLobbyServiceClass
+{
+	public:
+		UINetLobbyState Model;
+
+		int Reads = 0;
+		int Games = 0;
+		int LastGame = -1;
+		std::vector<std::string> Said;
+		std::vector<std::string> Kicked;
+		int Accepts = 0;
+		std::vector<int> Switches;
+		int Sliders = 0;
+
+		virtual void Read(UINetLobbyState & state) override
+		{
+			Reads++;
+			state.Kind = Model.Kind;
+			state.Host = Model.Host;
+			state.Answered = Model.Answered;
+			state.Games = Model.Games;
+			state.Players = Model.Players;
+			state.Chat = Model.Chat;
+			state.Sides = Model.Sides;
+			state.Colours = Model.Colours;
+		}
+
+		virtual void Set_Handle(char const *) override {}
+		virtual void Select_Game(int index) override { Games++; LastGame = index; }
+		virtual void Say(char const * text) override { Said.push_back(text); }
+		virtual void Set_Side(int) override {}
+		virtual void Set_Colour(int) override {}
+		virtual void Set_Switch(UINetSwitch which, bool) override { Switches.push_back((int)which); }
+		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
+		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }
+		virtual void Accept(void) override { Accepts++; }
+};
+
+
+static UINetPlayerRow Net_Player(char const * name)
+{
+	UINetPlayerRow row;
+	row.Name = name;
+	row.Colour = "#ffd800";
+	row.House = "gdii.pcx";
+	row.Hint = "GDI";
+	return(row);
+}
+
+
+// Drives the game browser: it comes out at its template's size, the highlight asks the wire
+// for that game once, a line of chat is sent only when it is ended and long enough, and the
+// buttons close the screen with the answers the driver maps onto the dialog's responses.
+void Test_Net_Browser_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	RecordingNetServiceClass service;
+	service.Model.Kind = UI_NET_LOBBY_GAMES;
+	for (int index = 0; index < 3; index++) {
+		UINetOption game;
+		game.Label = "Game " + std::to_string(index);
+		service.Model.Games.push_back(game);
+	}
+	service.Model.Players.push_back(Net_Player("Someone"));
+
+	UINetLobbyState state = service.Model;
+	UINetLobbyPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Net_Browser_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the browser prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the browser raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the browser is the size its template comes to");
+
+	Rml::Element * chat = document->GetElementById("chat");
+	Check(chat != nullptr && chat->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(400.0f, 271.0f), "the message log is its template's rect, frame and all");
+
+	Rml::Element * games = document->GetElementById("games");
+	Check(games != nullptr && games->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(170.0f, 111.0f), "the game list is its template's rect");
+
+	Drive(presenter, "game", 2);
+	Check(presenter.State.Game == 2 && service.Games == 1 && service.LastGame == 2, "moving the highlight asks the wire about that game");
+	Drive(presenter, "game", 2);
+	Check(service.Games == 1, "and standing still asks for nothing");
+	Drive(presenter, "game", 9);
+	Check(presenter.State.Game == 2 && service.Games == 1, "a row the list does not hold is ignored");
+
+	Drive(presenter, "say", 0, "hello");
+	Check(service.Said.empty(), "a line still being typed is not sent");
+	Drive(presenter, "say", 1, "hi");
+	Check(service.Said.empty(), "a line of two characters is dropped, as the dialog drops it");
+	Drive(presenter, "say", 1, "hello");
+	Check(service.Said.size() == 1 && service.Said[0] == "hello", "ending a line sends it");
+	Check(presenter.State.Say.empty(), "and empties the box");
+
+	Drive(presenter, "new");
+	Check(presenter.Result.has_value() && presenter.Choice == UI_NET_NEW, "the new-game button closes the browser with that answer");
+
+	view->Release();
+	context.Update();
+}
+
+
+// Drives the setup: it is the same size, the host's switches keep the dialog's interlock, the
+// kick button reports who is picked, and a phase the packet handler changed closes the screen.
+void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	RecordingNetServiceClass service;
+	service.Model.Kind = UI_NET_LOBBY_HOST;
+	service.Model.Host = true;
+	service.Model.Players.push_back(Net_Player("Host"));
+	service.Model.Players.push_back(Net_Player("Guest"));
+	UINetOption side;
+	side.Label = "GDI";
+	service.Model.Sides.push_back(side);
+	UINetOption colour;
+	colour.Label = "Gold";
+	colour.Colour = "#ffd800";
+	service.Model.Colours.push_back(colour);
+
+	UINetLobbyState state = service.Model;
+	state.Bases = true;
+	state.ShortGame = true;
+
+	UINetLobbyPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Net_Setup_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the setup prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the setup raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the setup is the size its template comes to");
+
+	Rml::Element * players = document->GetElementById("players");
+	Check(players != nullptr && players->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(226.0f, 110.0f), "the player list is its template's rect");
+
+	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map's picture");
+
+	Drive(presenter, "bases", 0);
+	Check(!presenter.State.Bases && !presenter.State.ShortGame, "clearing bases clears the short game with it");
+	Drive(presenter, "short", 1);
+	Check(presenter.State.Bases && presenter.State.ShortGame, "asking for a short game brings bases back");
+
+	Drive(presenter, "kick");
+	Check(service.Kicked.empty(), "the kick button does nothing while nobody is picked");
+	Drive(presenter, "pick", 1);
+	Check(presenter.State.Players[1].Selected, "a picked row is marked");
+	Drive(presenter, "kick");
+	Check(service.Kicked.size() == 1 && service.Kicked[0] == "Guest", "the kick button reports who was picked");
+	Check(!presenter.State.Players[1].Selected, "and lets them go again");
+
+	// The packet handler moves the flow while the screen is up, which is the one thing a modal
+	// screen cannot do for itself.
+	service.Model.Kind = UI_NET_LOBBY_GAMES;
+	presenter.Refresh();
+	Check(presenter.Result.has_value(), "a lobby the flow has left closes its screen");
+
+	view->Release();
+	context.Update();
+}
+
+
 void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -2871,6 +3061,8 @@ void Test_Documents(void)
 		Test_Surface_Element(*context, render, system);
 		Test_Skirmish_Screen(*context, system);
 		Test_Scenario_Screen(*context, system);
+		Test_Net_Browser_Screen(*context, system);
+		Test_Net_Setup_Screen(*context, system);
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);

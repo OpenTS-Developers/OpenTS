@@ -33,6 +33,7 @@ opents_add_test(UIShell
         ui/screens/keyboard/uikeyboard.cpp
         ui/screens/mainopt/uimainopt.cpp
         ui/screens/msgbox/uimsgbox.cpp
+        ui/screens/netlobby/uinetlobby.cpp
         ui/screens/savegame/uisavegame.cpp
         ui/screens/scenario/uiscenario.cpp
         ui/screens/skirmish/uiskirmish.cpp

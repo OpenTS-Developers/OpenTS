@@ -15,6 +15,10 @@
 
 #include "netdlg2.h"
 
+#include "_ui.h"
+#include "ui/screens/netlobby/uinetlobby.h"
+#include "ui/uishell.h"
+
 #include "_map.h"
 #include "_rand.h"
 #include "_rules.h"
@@ -63,6 +67,8 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 INT_PTR CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 bool Net2ReadyToGo(int load_game);
+void _Net2DisplayUsers(void);
+void Net2ServiceGameList(void);
 
 int CurGame;
 int _netresponse;
@@ -72,6 +78,16 @@ bool Net2IsGameListActive = true;
 bool Net2GameStarted = false;
 
 Net2LobbyPhaseType Net2LobbyPhase = NET2_LOBBY_NONE;
+
+// The lobby dialog that is up, or null while a screen carries the phase instead.
+static HWND Net2LobbyWindow = NULL;
+
+// False once a screen has failed to open, so the flow falls back to the dialogs and stays there.
+static bool Net2UseScreens = false;
+
+// True while the lobby that is up has yet to be opened. A lobby that comes back for another
+// answer comes back whole, as a dialog that was never closed did.
+static bool Net2LobbyReveal = true;
 
 int RulesID;
 int ArtID;
@@ -162,6 +178,320 @@ int Net2FirstFreeColor(int reqcolor, int index)
 }
 
 
+int Net2Response(void)
+{
+	return(_netresponse);
+}
+
+
+int Net2CurrentGame(void)
+{
+	return(CurGame);
+}
+
+
+/// <summary>
+/// Returns the country the side chooser's nth row stands for, or -1 for no such row.
+/// </summary>
+int Net2Country_At(int index)
+{
+	for (int country = 0; country < HouseTypes.Count(); country++) {
+		if (!HouseTypes[country]->IsMultiplay) {
+			continue;
+		}
+		if (index == 0) {
+			return(country);
+		}
+		index--;
+	}
+
+	return(-1);
+}
+
+
+/// <summary>
+/// Takes the name the player typed and tells the lobby about it.
+/// </summary>
+/// <remarks>A name too long for the session's buffer is cut to what fits, so the caller
+/// should read Session.Handle back rather than trusting what it asked for.</remarks>
+void Net2Set_Handle(char const * name)
+{
+	if (strcmp(name, Session.Handle) == 0) {
+		return;
+	}
+
+	UTF8::Copy(Session.Handle, sizeof(Session.Handle), name);
+	Send_Join_Queries(0, 0, 1, 0);
+	_Net2DisplayUsers();
+}
+
+
+/// <summary>
+/// Throws one player out of the game this machine is hosting.
+/// </summary>
+void Net2Kick(char const * name)
+{
+	if (strcmp(name, Session.Handle) == 0) {
+		return;
+	}
+
+	for (int index = 0; index < Session.Players.Count(); index++) {
+		if (strcmp(name, Session.Players[index]->Name) == 0) {
+			memset(&Session.GPacket, 0, sizeof(Session.GPacket));
+			Session.GPacket.Command = NET_REJECT_JOIN;
+			Session.GPacket.Reject.Why = (int)REJECT_BY_OWNER;
+			Ipx.Send_Global_Message(&Session.GPacket, 455, 1, &Session.Players[index]->Address);
+			break;
+		}
+	}
+}
+
+
+/// <summary>
+/// Moves the browser's highlight to another game and asks that game who is in it.
+/// </summary>
+void Net2Select_Game(int index)
+{
+	if (JoinState > JOIN_NOTHING || index < 0 || index >= Session.Games.Count()) {
+		return;
+	}
+
+	int old = CurGame;
+	CurGame = index;
+	strcpy(Session.GameName, Session.Games[index]->Name);
+
+	Clear_Vector(&Session.Players);
+	if (old != CurGame) {
+		Send_Join_Queries(1, 1, 1, 0);
+	}
+	_Net2DisplayUsers();
+}
+
+
+/// <summary>
+/// Gives the host the colour it asked for, or the nearest free one.
+/// </summary>
+/// <remarks>A colour another player already wears is refused with a message, and the host
+/// keeps the nearest colour free of the one it had.</remarks>
+void Net2Host_Take_Colour(int colour)
+{
+	int old_color = Session.ColorIdx;
+
+	Session.ColorIdx = colour;
+	Session.PrefColor = colour;
+
+	int resolved = Net2FirstFreeColor(colour, 0);
+	if (resolved != colour) {
+		PMessagePrintf(ColorSystem, Fetch_String(TXT_COLOR_IN_USE));
+		resolved = Net2FirstFreeColor(old_color, 0);
+	}
+
+	Session.ColorIdx = resolved;
+	if (Session.Players.Count() > 0) {
+		Session.Players[0]->Player.Color = resolved;
+	}
+
+	_Net2DisplayUsers();
+	PumpGameopts(1, 0);
+}
+
+
+/// <summary>
+/// Asks the host for a country and a colour. The host answers by publishing what it gave.
+/// </summary>
+void Net2Request_House_And_Color(int house, int colour)
+{
+	Session.PrefColor = colour;
+
+	char options[64];
+	sprintf(options, "R%d,%d", house, colour);
+	SendPrivateGameopts(Session.GameName, options);
+}
+
+
+/// <summary>
+/// Shows a line of chat here and sends it to everyone this machine is talking to.
+/// </summary>
+/// <remarks>Inside a game that is the players; out in the browser it is everyone the lobby
+/// has heard from.</remarks>
+void Net2Send_Chat(char const * text)
+{
+	PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
+
+	GlobalPacketType gpacket;
+	memset(&gpacket, 0, sizeof(gpacket));
+
+	gpacket.Command = NET_MESSAGE;
+	strcpy(gpacket.Name, Session.Handle);
+	strcpy(gpacket.Message.Buf, text);
+	gpacket.Message.Color = Session.ColorIdx;
+	gpacket.Message.NameCRC = Compute_Name_CRC(Session.GameName);
+
+	DynamicVectorClass<NodeNameType *> & who = (JoinState == JOIN_CONFIRMED) ? Session.Players : Session.Chat;
+	for (int index = 1; index < who.Count(); index++) {
+		Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &who[index]->Address);
+		Call_Back();
+	}
+}
+
+
+// A random map keeps its picture in a file of its own; every other map carries one.
+static void Net2Refresh_Preview(HWND window)
+{
+	if (stricmp((char *)Session.Scenarios[Session.Options.ScenarioIndex] + DESCRIP_MAX, "RandMap.Sed") != 0) {
+		Update_Network_Dialog_Preview(window);
+		return;
+	}
+
+	delete MultiplayerMapPreview;
+	MultiplayerMapPreview = new MapPreviewClass;
+	MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
+	if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
+		Update_Network_Dialog_Preview(window);
+	}
+}
+
+
+/// <summary>
+/// Runs the map dialog for the host and settles what it chose.
+/// </summary>
+/// <remarks>Cancelling puts the mission the host had back and tells the guests about it,
+/// which is what the Win32 dialog does; accepting leaves the new one for the next
+/// publication to carry. The window may be null, for a caller with no dialog.</remarks>
+void Net2Pick_Map(HWND window)
+{
+	int old = Session.Options.ScenarioIndex;
+
+	IsRandomMap = false;
+
+	if (Scenario_Dialog(MainWindow) == IDCANCEL) {
+		Session.Options.ScenarioIndex = old;
+		Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
+		Update_Network_Dialog_Preview(window);
+		IsRandomMap = true;
+		Net2Refresh_Preview(window);
+		PumpGameopts(1, 0);
+	} else {
+		if (!Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex)) {
+			Session.Options.ScenarioIndex = old;
+		}
+		IsRandomMap = true;
+		Net2Refresh_Preview(window);
+	}
+}
+
+
+/// <summary>
+/// Runs one pass of the lobby: the network, the game, the window messages and the join
+/// protocol.
+/// </summary>
+/// <returns>bool; Should the caller stop waiting? The lobby never ends the session, so this
+/// is always false; it is shaped this way because a screen's runner asks it the question.
+/// </returns>
+bool Net2_Service_Lobby(void)
+{
+	Ipx.Service();
+	Sleep(0);
+	Call_Back();
+	Ipx.Service();
+	Title_Screen_Restore();
+
+	MSG msg;
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+	}
+
+	Call_Back();
+	if (_netresponse != 0) {
+		return(false);
+	}
+
+	if (Net2LobbyPhase != NET2_LOBBY_NONE) {
+		Send_Join_Queries(false, false, false, false);
+		Get_Join_Responses();
+		if (Net2LobbyPhase == NET2_LOBBY_HOST) {
+			PumpGameopts(false);
+		}
+		Net2ServiceGameList();
+	}
+
+	return(false);
+}
+
+
+// What entering a lobby does to the session. The dialogs did this from WM_INITDIALOG, where a
+// screen has no such message; both go through here, so the flow settles the same way whichever
+// presentation the lobby is wearing.
+static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
+{
+	switch (phase) {
+		case NET2_LOBBY_GAME_LIST: {
+			CurGame = 0;
+			Net2IsGameListActive = 1;
+			Session.Options.ScenarioDescription[0] = '\0';
+			Session.ColorIdx = Session.PrefColor;
+
+			Clear_Vector(&Session.Games);
+			Clear_Vector(&Session.Players);
+			Clear_Vector(&Session.Chat);
+
+			NodeNameType * who = new NodeNameType;
+			strcpy(who->Name, Session.Handle);
+			who->Chat.LastTime = 0;
+			who->Chat.LastChance = 0;
+			who->Chat.Color = Session.GPacket.PlayerInfo.Color;
+			Session.Chat.Add(who);
+
+			// The browser's first row is the lobby itself rather than a game, and carries no name.
+			NodeNameType * game = new NodeNameType;
+			strcpy(game->Name, "");
+			game->Game.IsOpen = 0;
+			game->Game.LastTime = 0;
+			Session.Games.Add(game);
+
+			Send_Join_Queries(true, false, true, true);
+			break;
+		}
+
+		case NET2_LOBBY_HOST:
+			VerNum.Init_Clipping();
+
+			srand(NonCriticalRandomNumber(1, 0x7FFF));
+			Seed = rand();
+
+			Set_Scenario_Info_From_Index(0);
+			Session.Options.ScenarioIndex = 0;
+			Update_Network_Dialog_Preview();
+
+			if (Session.Players.Count() > 0) {
+				Session.Players[0]->Player.House = Session.House;
+			}
+			PumpGameopts(1, 0);
+			Net2Host_Take_Colour(Session.ColorIdx);
+			break;
+
+		case NET2_LOBBY_GUEST: {
+			int self = -1;
+			for (int index = 0; index < Session.Players.Count(); index++) {
+				if (strcmp(Session.Players[index]->Name, Session.Handle) == 0) {
+					self = index;
+				}
+			}
+			if (self != -1) {
+				Session.Players[self]->Player.Status = 0;
+			}
+
+			Session.Options.ScenarioDescription[0] = '\0';
+			break;
+		}
+
+		default:
+			break;
+	}
+}
+
+
 /// <summary>
 /// Puts up the lobby dialog the phase names and records the phase.
 /// </summary>
@@ -172,6 +502,16 @@ void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 {
 	Net2_Close_Lobby();
 	Net2_Clear_Chat_Log();
+
+	Net2LobbyPhase = phase;
+	Net2LobbyReveal = true;
+	Net2_Enter_Lobby(phase);
+
+	// Under a screen the driver opens the document, because a packet handler can change the
+	// phase while a screen is up and no screen can be raised from inside another one's pass.
+	if (Net2UseScreens || phase == NET2_LOBBY_NONE) {
+		return;
+	}
 
 	int id;
 	DLGPROC proc;
@@ -198,6 +538,7 @@ void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 
 	HWND dialog = WS_Create_Dialog(ProgramInstance, id, MainWindow, proc, FALSE);
 	if (dialog == NULL) {
+		Net2LobbyPhase = NET2_LOBBY_NONE;
 		return;
 	}
 
@@ -208,7 +549,7 @@ void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 	}
 	ShowWindow(dialog, SW_SHOWNORMAL);
 
-	Net2LobbyPhase = phase;
+	Net2LobbyWindow = dialog;
 }
 
 
@@ -217,10 +558,12 @@ void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 /// </summary>
 void Net2_Close_Lobby(void)
 {
-	if (Net2LobbyPhase != NET2_LOBBY_NONE) {
-		WS_Destroy_Dialog(NULL, 0);
-		Net2LobbyPhase = NET2_LOBBY_NONE;
+	if (Net2LobbyWindow != NULL) {
+		WS_Destroy_Dialog(Net2LobbyWindow, 0);
+		Net2LobbyWindow = NULL;
 	}
+
+	Net2LobbyPhase = NET2_LOBBY_NONE;
 }
 
 
@@ -237,9 +580,6 @@ bool Net2Callback(void)
 	Get_Join_Responses();
 	return(false);
 }
-
-
-void _Net2DisplayUsers(void);
 
 
 /// <summary>
@@ -742,6 +1082,33 @@ bool Decrypt_Serial(char * buffer)
  * HISTORY:                                                                                    *
  *   02/14/1995 BR : Created.                                                                  *
  *=============================================================================================*/
+// What a lobby screen answered with, as the responses the Win32 dialogs set.
+static void Net2Apply_Choice(UINetChoice choice)
+{
+	switch (choice) {
+		case UI_NET_CANCEL:
+			_netresponse = IDCANCEL;
+			break;
+
+		case UI_NET_JOIN:
+			_netresponse = IDC_GAMELIST_JOIN;
+			break;
+
+		case UI_NET_NEW:
+			_netresponse = IDC_GAMELIST_NEW;
+			break;
+
+		case UI_NET_GO:
+			Net2GameStarted = true;
+			_netresponse = IDC_GO;
+			break;
+
+		default:
+			break;
+	}
+}
+
+
 bool Net2Remote_Connect(void)
 {
 	RulesID = RulesClass::Get_Rule_Unique_ID();
@@ -780,6 +1147,8 @@ bool Net2Remote_Connect(void)
 
 	OwnerDraw::Register_Control_Classes();
 
+	Net2UseScreens = UIShell.Use_Rml();
+
 	Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
 	Net2DisplayUsers();
 
@@ -793,34 +1162,31 @@ bool Net2Remote_Connect(void)
 	//------------------------------------------------------------------------
 	while (true) {
 		//.....................................................................
-		// Pop up the network Join/New dialog
+		// Wait for the lobby that is up to be answered, or for a packet to move
+		// the flow on under it.
 		//.....................................................................
-		while (_netresponse == 0) {
-			Ipx.Service();
-			Sleep(0);
-			Call_Back();
-			Ipx.Service();
-			Title_Screen_Restore();
+		if (Net2UseScreens) {
+			UINetChoice choice = UI_NET_NONE;
+			if (UI_Net_Lobby_Run(Net2LobbyReveal, choice)) {
+				Net2LobbyReveal = false;
 
-			MSG msg;
-			while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
-				TranslateMessage(&msg);
-				DispatchMessage(&msg);
-			}
-
-			Call_Back();
-			if (_netresponse != 0) {
-				break;
-			}
-
-			if (Net2LobbyPhase != NET2_LOBBY_NONE) {
-				Send_Join_Queries(false, false, false, false);
-				Get_Join_Responses();
-				if (Net2LobbyPhase == NET2_LOBBY_HOST) {
-					PumpGameopts(false);
+				// The map dialog takes the screen's place and the lobby comes back behind it,
+				// as the Win32 host dialog hid itself around the same dialog.
+				if (choice == UI_NET_PICK_MAP) {
+					Net2Pick_Map(NULL);
+					continue;
 				}
-				Net2ServiceGameList();
+
+				Net2Apply_Choice(choice);
+			} else {
+				// Only the first pass can still fall back; from here the dialogs carry the flow.
+				Net2UseScreens = false;
+				Net2_Show_Lobby(Net2LobbyPhase);
 			}
+		}
+
+		while (_netresponse == 0 && !Net2UseScreens) {
+			Net2_Service_Lobby();
 		}
 
 		//.....................................................................
@@ -1189,33 +1555,8 @@ INT_PTR CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM
 	switch (message) {
 
 	case WM_INITDIALOG: {
-		CurGame = 0;
-		Net2IsGameListActive = 1;
-
 		SendDlgItemMessage(window, IDC_YOURNAME, EM_SETLIMITTEXT, 16, 0);
 		SetWindowText(GetDlgItem(window, IDC_YOURNAME), Session.Handle);
-
-		Session.Options.ScenarioDescription[0] = '\0';
-		Session.ColorIdx = Session.PrefColor;
-
-		Clear_Vector(&Session.Games);
-		Clear_Vector(&Session.Players);
-		Clear_Vector(&Session.Chat);
-
-		NodeNameType * who = new NodeNameType;
-		strcpy(who->Name, Session.Handle);
-		who->Chat.LastTime = 0;
-		who->Chat.LastChance = 0;
-		who->Chat.Color = Session.GPacket.PlayerInfo.Color;
-		Session.Chat.Add(who);
-
-		NodeNameType * game = new NodeNameType;
-		strcpy(game->Name, "");
-		game->Game.IsOpen = 0;
-		game->Game.LastTime = 0;
-		Session.Games.Add(game);
-
-		Send_Join_Queries(true, false, true, true);
 		return(0);
 	}
 
@@ -1259,29 +1600,7 @@ INT_PTR CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM
 				SendDlgItemMessage(window, IDC_INPUT, WM_SETTEXT, 0, (LPARAM) "");
 
 				if (len > 2) {
-
-					PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
-
-					GlobalPacketType gpacket;
-					memset(&gpacket, 0, sizeof(gpacket));
-
-					gpacket.Command = NET_MESSAGE;
-					strcpy(gpacket.Name, Session.Handle);
-					strcpy(gpacket.Message.Buf, text);
-					gpacket.Message.Color = Session.ColorIdx;
-					gpacket.Message.NameCRC = Compute_Name_CRC(Session.GameName);
-
-					if (JoinState == JOIN_CONFIRMED) {
-						for (int i = 1; i < Session.Players.Count(); ++i) {
-							Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &Session.Players[i]->Address);
-							Call_Back();
-						}
-					} else {
-						for (int i = 1; i < Session.Chat.Count(); ++i) {
-							Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &Session.Chat[i]->Address);
-							Call_Back();
-						}
-					}
+					Net2Send_Chat(text);
 				}
 			}
 
@@ -1301,23 +1620,18 @@ INT_PTR CALLBACK MPlayer_Game_List_Dialog_Proc(HWND window, UINT message, WPARAM
 				return(0);
 			}
 
-			int old_game = CurGame;
 			LRESULT sel = SendDlgItemMessage(window, IDC_GAMELIST, LB_GETCURSEL, 0, 0);
+
+			if (HIWORD(wparam) == LBN_SELCHANGE) {
+				if (sel >= 0 && Net2IsGameListActive) {
+					Net2Select_Game((int)sel);
+				}
+				return(0);
+			}
 
 			if (sel >= 0 && Net2IsGameListActive) {
 				CurGame = sel;
 				strcpy(Session.GameName, Session.Games[sel]->Name);
-			}
-
-			if (HIWORD(wparam) == LBN_SELCHANGE) {
-				Clear_Vector(&Session.Players);
-
-				if (old_game != CurGame) {
-					Send_Join_Queries(1, 1, 1, 0);
-				}
-
-				_Net2DisplayUsers();
-				return(0);
 			}
 
 			if (HIWORD(wparam) == LBN_DBLCLK) {
@@ -1563,14 +1877,6 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 		return(0);
 
 	case WM_INITDIALOG: {
-		VerNum.Init_Clipping();
-
-		srand(NonCriticalRandomNumber(1, 0x7FFF));
-		Seed = rand();
-
-		Set_Scenario_Info_From_Index(0);
-		Session.Options.ScenarioIndex = 0;
-
 		Center_Window_Within_Window(window);
 
 		Fill_Country_Box(GetDlgItem(window, IDC_YOURSIDE));
@@ -1596,11 +1902,8 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 		}
 
 		SendDlgItemMessage(window, IDC_SCENARIONAME, WM_SETTEXT, 0, (LPARAM)Session.Options.ScenarioDescription);
-
-		Update_Network_Dialog_Preview(window);
-
-		SendMessage(window, WM_COMMAND, MAKEWPARAM(IDC_YOURSIDE, CBN_SELCHANGE), (LPARAM)GetDlgItem(window, IDC_YOURSIDE));
-		SendMessage(window, WM_COMMAND, MAKEWPARAM(IDC_YOURCOLOR, CBN_SELCHANGE), (LPARAM)GetDlgItem(window, IDC_YOURCOLOR));
+		SendDlgItemMessage(window, IDC_YOURCOLOR, CB_SETCURSEL, Session.ColorIdx, 0);
+		InvalidateRect(window, NULL, FALSE);
 
 		return(0);
 	}
@@ -1645,29 +1948,7 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 
 			if (len <= 2) return(0);
 
-			PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
-
-			GlobalPacketType gpacket;
-			memset(&gpacket, 0, sizeof(gpacket));
-
-			gpacket.Command = NET_MESSAGE;
-			strcpy(gpacket.Name, Session.Handle);
-			strcpy(gpacket.Message.Buf, text);
-			gpacket.Message.Color = Session.ColorIdx;
-			gpacket.Message.NameCRC = Compute_Name_CRC(Session.GameName);
-
-
-			if (JoinState == JOIN_CONFIRMED) {
-				for (int i = 1; i < Session.Players.Count(); ++i) {
-					Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &Session.Players[i]->Address);
-					Call_Back();
-				}
-			} else {
-				for (int i = 1; i < Session.Chat.Count(); ++i) {
-					Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &Session.Chat[i]->Address);
-					Call_Back();
-				}
-			}
+			Net2Send_Chat(text);
 
 			return(0);
 		}
@@ -1695,66 +1976,8 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 		 */
 		case IDC_YOURCOLOR:
 			if (HIWORD(wparam) == CBN_SELCHANGE && !Net2GameStarted) {
-
-				int old_color = Session.ColorIdx;
-
-				Session.ColorIdx = SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0);
-				Session.PrefColor = Session.ColorIdx;
-
-				int newcolor;
-				int found;
-				int color = Session.ColorIdx;
-				for (;;) {
-					int count = 0;
-					newcolor = color;
-					found = FALSE;
-
-					while (count < Session.Players.Count()) {
-						if (count != 0 && Session.Players[count]->Player.Color == color) {
-							color++;
-							found = TRUE;
-						}
-						count++;
-					}
-
-					if (!found) break;
-
-					color %= MAX_MPLAYER_COLORS;
-				}
-
-				int resolved = newcolor;
-				if (newcolor != Session.ColorIdx) {
-					PMessagePrintf(ColorSystem, Fetch_String(TXT_COLOR_IN_USE));
-
-					color = old_color;
-					for (;;) {
-						int count = 0;
-						old_color = color;
-						found = FALSE;
-
-						while (count < Session.Players.Count()) {
-							if (count != 0 && Session.Players[count]->Player.Color == color) {
-								color++;
-								found = TRUE;
-							}
-							count++;
-						}
-
-						if (!found) break;
-
-						color %= MAX_MPLAYER_COLORS;
-					}
-
-					resolved = old_color;
-				}
-
-				Session.ColorIdx = resolved;
-				Session.Players[0]->Player.Color = resolved;
-
+				Net2Host_Take_Colour((int)SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0));
 				SendDlgItemMessage(window, IDC_YOURCOLOR, CB_SETCURSEL, Session.ColorIdx, 0);
-
-				_Net2DisplayUsers();
-				PumpGameopts(1, 0);
 			}
 			return(0);
 
@@ -1811,23 +2034,7 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 			while (lbdict.getEntries()) {
 				bool value;
 				lbdict.removeAny(name, value);
-
-				if (strcmp(name.get(), Session.Handle)) {
-					int index = -1;
-					for (int i = 0; i < Session.Players.Count(); ++i) {
-						if (!strcmp(name.get(), Session.Players[i]->Name)) {
-							index = i;
-							break;
-						}
-					}
-
-					if (index != -1) {
-						memset(&Session.GPacket, 0, sizeof(Session.GPacket));
-						Session.GPacket.Command = NET_REJECT_JOIN;
-						Session.GPacket.Reject.Why = (int)REJECT_BY_OWNER;
-						Ipx.Send_Global_Message(&Session.GPacket, 455, 1, &Session.Players[index]->Address);
-					}
-				}
+				Net2Kick(name.get());
 			}
 
 			SendMessage(userwin, LB_SELITEMRANGE, 0, MAKELPARAM(0, -1));
@@ -1844,58 +2051,11 @@ INT_PTR CALLBACK MPlayer_Host_Dialog_Proc(HWND window, UINT message, WPARAM wpar
 		case IDC_MULTIMAP: {
 			if (Net2GameStarted) return(0);
 
-			int old = Session.Options.ScenarioIndex;
-
 			ShowWindow(window, SW_HIDE);
-			IsRandomMap = false;
-
-			if (Scenario_Dialog(MainWindow) == 2) {
-				Session.Options.ScenarioIndex = old;
-				Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
-				Update_Network_Dialog_Preview(window);
-				IsRandomMap = true;
-				ShowWindow(window, SW_SHOW);
-
-				if (!stricmp((char *)Session.Scenarios[Session.Options.ScenarioIndex] + DESCRIP_MAX, "RandMap.Sed")) {
-					if (MultiplayerMapPreview != NULL) {
-						delete MultiplayerMapPreview;
-					}
-					MultiplayerMapPreview = new MapPreviewClass;
-					MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
-					if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
-						Update_Network_Dialog_Preview(window);
-					}
-					InvalidateRect(window, NULL, FALSE);
-				} else {
-					Update_Network_Dialog_Preview(window);
-				}
-
-				PumpGameopts(1, 0);
-				InvalidateRect(window, NULL, FALSE);
-			} else {
-				if (!Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex)) {
-					Session.Options.ScenarioIndex = old;
-				}
-				IsRandomMap = true;
-				ShowWindow(window, SW_SHOW);
-
-				SendDlgItemMessage(window, IDC_SCENARIONAME, WM_SETTEXT, 0, (LPARAM)Session.Options.ScenarioDescription);
-
-				if (!stricmp((char *)Session.Scenarios[Session.Options.ScenarioIndex] + DESCRIP_MAX, "RandMap.Sed")) {
-					if (MultiplayerMapPreview != NULL) {
-						delete MultiplayerMapPreview;
-					}
-					MultiplayerMapPreview = new MapPreviewClass;
-					MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
-					if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
-						Update_Network_Dialog_Preview(window);
-					}
-					InvalidateRect(window, NULL, FALSE);
-				} else {
-					Update_Network_Dialog_Preview(window);
-				}
-			}
-
+			Net2Pick_Map(window);
+			ShowWindow(window, SW_SHOW);
+			SendDlgItemMessage(window, IDC_SCENARIONAME, WM_SETTEXT, 0, (LPARAM)Session.Options.ScenarioDescription);
+			InvalidateRect(window, NULL, FALSE);
 			return(0);
 		}
 
@@ -3399,20 +3559,7 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 		SendDlgItemMessage(window, IDC_YOURCOLOR, CB_SETCURSEL, Session.ColorIdx, 0);
 
 		EnableWindow(GetDlgItem(window, IDC_ACCEPT), FALSE);
-
-		int self_index = -1;
-		for (int i = 0; i < Session.Players.Count(); ++i) {
-			if (!strcmp(Session.Players[i]->Name, Session.Handle)) {
-				self_index = i;
-			}
-		}
-
-		if (self_index != -1) {
-			Session.Players[self_index]->Player.Status = 0;
-		}
-
 		_Net2DisplayUsers();
-		Session.Options.ScenarioDescription[0] = '\0';
 
 		return(0);
 	}
@@ -3438,14 +3585,7 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 		case IDC_YOURCOLOR: {
 			if (HIWORD(wparam) == CBN_SELCHANGE) {
 				int color = (int)SendDlgItemMessage(window, IDC_YOURCOLOR, CB_GETCURSEL, 0, 0);
-
-				int house = Country_From_Box(GetDlgItem(window, IDC_YOURSIDE));
-
-				Session.PrefColor = color;
-
-				char dest[64];
-				sprintf(dest, "R%d,%d", house, color);
-				SendPrivateGameopts(Session.GameName, dest);
+				Net2Request_House_And_Color(Country_From_Box(GetDlgItem(window, IDC_YOURSIDE)), color);
 			}
 			return(0);
 		}
@@ -3467,28 +3607,7 @@ INT_PTR CALLBACK MPlayer_Guest_Dialog_Proc(HWND window, UINT message, WPARAM wpa
 				SendDlgItemMessage(window, IDC_INPUT, WM_SETTEXT, 0, (LPARAM)"");
 
 				if (len > 2) {
-					PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
-
-					GlobalPacketType gpacket;
-					memset(&gpacket, 0, sizeof(gpacket));
-
-					gpacket.Command = NET_MESSAGE;
-					strcpy(gpacket.Name, Session.Handle);
-					strcpy(gpacket.Message.Buf, text);
-					gpacket.Message.Color = Session.ColorIdx;
-					gpacket.Message.NameCRC = Compute_Name_CRC(Session.GameName);
-
-					if (JoinState == JOIN_CONFIRMED) {
-						for (int i = 1; i < Session.Players.Count(); ++i) {
-							Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &Session.Players[i]->Address);
-							Call_Back();
-						}
-					} else {
-						for (int i = 1; i < Session.Chat.Count(); ++i) {
-							Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &Session.Chat[i]->Address);
-							Call_Back();
-						}
-					}
+					Net2Send_Chat(text);
 				}
 			}
 

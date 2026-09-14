@@ -35,6 +35,27 @@ extern Net2LobbyPhaseType Net2LobbyPhase;
 void Net2_Show_Lobby(Net2LobbyPhaseType phase);
 void Net2_Close_Lobby(void);
 
+// What the flow is holding, for a screen that has no dialog to read it from.
+int Net2Response(void);
+int Net2CurrentGame(void);
+
+// One pass of the lobby: the network, the game, the window messages and the join protocol.
+// True when the caller should stop waiting.
+bool Net2_Service_Lobby(void);
+
+// The nth multiplayable country, as the side chooser lists them, or -1 for no such row.
+int Net2Country_At(int index);
+
+// What the dialogs do when a control is used. Each is the body of the matching handler, so
+// that a screen and a dialog reach the wire the same way.
+void Net2Select_Game(int index);
+void Net2Host_Take_Colour(int colour);
+void Net2Request_House_And_Color(int house, int colour);
+void Net2Send_Chat(char const * text);
+void Net2Set_Handle(char const * name);
+void Net2Kick(char const * name);
+void Net2Pick_Map(HWND window);
+
 int Net2FirstFreeColor(int reqcolor, int index);
 void Fill_Country_Box(HWND combo);
 int Country_From_Box(HWND combo);
