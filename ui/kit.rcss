@@ -5,6 +5,10 @@
  *
  * Every length is in dp, so a screen keeps its proportion to the game frame at any window
  * size. The numbers are the originals' pixel values, which is what they come to at 1:1.
+ * The colours are the originals' after their trip through the game's 16-bit frame, five
+ * bits of red and blue and six of green widened again by repeating their top bits, which
+ * is what the game shows; the art goes through the same in the loader, and text does after
+ * its remap, so the text colour here is the one the remap is aimed at, not its result.
  *
  * The art is the player's own and is not shipped. Where a picture is missing it draws as
  * nothing, so each control is given a plain form underneath that stays usable without it.
@@ -200,64 +204,86 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
 {
 	box-sizing: content-box;
 	margin: -1dp;
-	border: 1dp #4eb6dc;
+	border: 1dp #4ab6de;
 }
 
 .list
 {
-	border: 1dp #4eb6dc;
+	border: 1dp #4ab6de;
 }
 
 /*
- * A button is a picture in three parts at one of two heights: a cap either side and a
- * middle tiled to whatever width the button is. The middle repeats rather than stretches,
- * so the three are separate pictures with the middle listed last to lie under the caps.
- * The original draws no outline around one,
- * so the plain form underneath is a fill the picture covers rather than a border that would
- * show through it.
+ * A button is a picture in three parts at one of two heights: a cap either side, seven wide
+ * on the left and ten on the right, and a middle the layer drew from the left cap's end to
+ * three short of the right edge, under the right cap. The middle is the tile's own middle:
+ * the layer sampled the tile from its centre when that run was narrower than the tile, so
+ * the left cap's width is the box's left border, the three columns the run stops short of
+ * are its right border, the run is its padding box, and the tile is centred there and cut
+ * off at either side; a button whose run is wider than the tile carries the class wide and
+ * repeats it from the left instead. The original draws no outline around one, so the plain
+ * form underneath is a fill the picture covers rather than a border that would show
+ * through it.
  *
  * The caption is centred in a box two narrower than the skin, three down from the top of a
  * short button and six down from a tall one, and a pixel left of the middle when the room
  * is odd: the layer halves the room in whole pixels where the toolkit rounds a half up, so
- * the box here is a pixel narrower still, which brings the two to the same place.
- * Pressing moves the whole picture two down, and the caption four further down and two
- * across. A glyph is seventeen tall, so a short button has only seven to give: padding is
- * what moves the caption, the box counts its padding inside its own size so a pressed button
- * stays the size it was, and the line is left tall enough that the glyph is never cut off.
+ * the box here is a pixel narrower still, which brings the two to the same place. Pressing
+ * shows a skin two down that is two shorter, three for a tall one, whose right cap is seven
+ * wide and keeps its place, so the last three columns show through; the caption moves one
+ * further down and one across, which is where the game shows it whatever its source says.
+ * The box keeps its place and size: it is moved rather than laid out lower, and the rows
+ * the skin gives up become a bottom border that shows through. A glyph is seventeen tall,
+ * so a short button has only seven to give: padding is what moves the caption, the box
+ * counts its padding and borders inside its own size, and the line is left tall enough
+ * that the glyph is never cut off.
  */
 button
 {
 	display: inline-block;
 	box-sizing: border-box;
 	height: 24dp;
-	padding: 3dp 3dp 0 0;
+	border-width: 0 3dp 0 7dp;
+	border-color: transparent;
+	padding: 3dp 7dp 0 0;
 	text-align: center;
 	vertical-align: middle;
 	line-height: 17dp;
 	color: #70ff00;
 	background-color: #2b2b2b;
-	decorator: image(bue_li24.pcx scale-none left top), image(bue_ri24.pcx scale-none right top), image(bue_mi24.pcx repeat-x left top);
+	decorator: image(bue_li24.pcx scale-none left top) border-box, image(bue_ri24.pcx scale-none right top) border-box, image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide
+{
+	decorator: image(bue_li24.pcx scale-none left top) border-box, image(bue_ri24.pcx scale-none right top) border-box, image(bue_mi24.pcx repeat-x left top) padding-box;
 }
 
 button.tall
 {
 	height: 30dp;
 	padding-top: 6dp;
-	decorator: image(bue_li30.pcx scale-none left top), image(bue_ri30.pcx scale-none right top), image(bue_mi30.pcx repeat-x left top);
+	decorator: image(bue_li30.pcx scale-none left top) border-box, image(bue_ri30.pcx scale-none right top) border-box, image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
 button:active
 {
 	position: relative;
 	top: 2dp;
-	padding: 7dp 1dp 0 2dp;
-	decorator: image(bde_li24.pcx scale-none left top), image(bde_ri24.pcx scale-none right top), image(bde_mi24.pcx repeat-x left top);
+	border-width: 0 3dp 2dp 7dp;
+	padding: 4dp 6dp 0 1dp;
+	decorator: image(bde_li24.pcx scale-none left top) border-box, image(bde_ri24.pcx scale-none right top) padding-box, image(bde_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide:active
+{
+	decorator: image(bde_li24.pcx scale-none left top) border-box, image(bde_ri24.pcx scale-none right top) padding-box, image(bde_mi24.pcx repeat-x left top) padding-box;
 }
 
 button.tall:active
 {
-	padding-top: 10dp;
-	decorator: image(bde_li30.pcx scale-none left top), image(bde_ri30.pcx scale-none right top), image(bde_mi30.pcx repeat-x left top);
+	border-bottom-width: 3dp;
+	padding-top: 7dp;
+	decorator: image(bde_li30.pcx scale-none left top) border-box, image(bde_ri30.pcx scale-none right top) padding-box, image(bde_mi30.pcx scale-none center top) padding-box;
 }
 
 /*
@@ -274,14 +300,15 @@ button.disabled, button:disabled
 button.disabled:active, button:disabled:active
 {
 	top: 0dp;
-	padding: 3dp 3dp 0 0;
-	decorator: image(bue_li24.pcx scale-none left top), image(bue_ri24.pcx scale-none right top), image(bue_mi24.pcx repeat-x left top);
+	border-width: 0 3dp 0 7dp;
+	padding: 3dp 7dp 0 0;
+	decorator: image(bue_li24.pcx scale-none left top) border-box, image(bue_ri24.pcx scale-none right top) border-box, image(bue_mi24.pcx scale-none center top) padding-box;
 }
 
 button.tall.disabled:active, button.tall:disabled:active
 {
 	padding-top: 6dp;
-	decorator: image(bue_li30.pcx scale-none left top), image(bue_ri30.pcx scale-none right top), image(bue_mi30.pcx repeat-x left top);
+	decorator: image(bue_li30.pcx scale-none left top) border-box, image(bue_ri30.pcx scale-none right top) border-box, image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
 /*
@@ -341,7 +368,7 @@ label.check input[type='checkbox']
 
 label.check.disabled, label.check:disabled
 {
-	color: #909090;
+	color: #949194;
 }
 
 /*
@@ -366,7 +393,7 @@ label.check.disabled, label.check:disabled
 
 input selection, textarea selection
 {
-	background-color: #225061;
+	background-color: #205062;
 	color: #70ff00;
 }
 
@@ -382,11 +409,22 @@ input[type='text'], input[type='password'], textarea
  * A list row is fourteen tall with its text indented two, and a chosen row is filled to its
  * full width in the dark teal the original fills it with.
  */
+/*
+ * The layer dims the rows' area only: its scroll bar stands on the plain background, so the
+ * dim is carried by a box around the rows that is as wide as the room beside the bar and at
+ * least as tall as the list.
+ */
 .list
 {
 	font-size: 12dp;
-	background-color: #000000b4;
 	overflow-y: auto;
+}
+
+.list > .rows
+{
+	display: block;
+	min-height: 100%;
+	background-color: #000000b4;
 }
 
 .list .item
@@ -400,7 +438,7 @@ input[type='text'], input[type='password'], textarea
 
 .list .item:checked, .list .item.selected
 {
-	background-color: #225061;
+	background-color: #205062;
 }
 
 /*
@@ -421,7 +459,7 @@ input[type='text'], input[type='password'], textarea
 scrollbarvertical
 {
 	width: 20dp;
-	border-left: 2dp #4eb6dc;
+	border-left: 2dp #4ab6de;
 }
 
 scrollbarvertical slidertrack
@@ -435,7 +473,7 @@ scrollbarvertical sliderbar
 	width: 18dp;
 	min-height: 14dp;
 	margin-left: 2dp;
-	background-color: #3c5a68;
+	background-color: #39596a;
 	decorator: image(sbgript.pcx scale-none left top), image(sbgripb.pcx scale-none left bottom), image(sbgripm.pcx repeat-y left top);
 }
 
@@ -468,9 +506,11 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * row; the bar is then fifty narrower and the frame ends where the field begins. The
  * field's picture is twenty-six tall, a pixel more than the bar, and the field lies under
  * the bar so the bar's frame closes over its first column, as the layer drew the field
- * before the frame. Its middle is a tile the layer repeated, not stretched, so the field is
- * three pictures with the middle repeating under the two ends. The number is centred in the
- * forty-nine from one in.
+ * before the frame. The bar's dim reaches a pixel past its rect, so the field is a pixel
+ * wider and taller than the fifty it is given; the layer fills the fifty with the middle of
+ * its tile, keeps the right end to the fifty, and centres the number in the forty-nine from
+ * one in: the padding leaves that box, the right end is held to it, and the middle is a
+ * sprite of the tile's centre under both ends.
  *
  * RmlUi places a slider's track and thumb from the input's border corner rather than its
  * content corner, so the track's margins and the thumb's top margin carry the frame's width
@@ -506,21 +546,27 @@ input[type='range'] sliderbar
 input[type='range']:disabled
 {
 	background-color: #000000da;
-	border-color: #909090;
+	border-color: #949194;
 }
 
 .trough
 {
 	display: inline-block;
-	width: 50dp;
+	width: 51dp;
 	height: 26dp;
-	padding-left: 1dp;
+	padding: 0 1dp 0 1dp;
 	z-index: -1;
 	vertical-align: top;
 	text-align: center;
 	line-height: 25dp;
 	background-color: #000000b4;
-	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top), image(trofm.pcx repeat-x left top);
+	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top) content-box, image(trough-mid scale-none left top);
+}
+
+@spritesheet trough
+{
+	src: trofm.pcx;
+	trough-mid: 32px 0px 50px 24px;
 }
 
 /*
@@ -532,7 +578,7 @@ progress
 	display: block;
 	height: 22dp;
 	background-color: #000000b4;
-	border: 1dp #4eb6dc;
+	border: 1dp #4ab6de;
 }
 
 progress fill
@@ -551,7 +597,7 @@ progress fill
 .group
 {
 	position: relative;
-	border: 1dp #4eb6dc;
+	border: 1dp #4ab6de;
 	border-top: 0;
 	padding: 11dp;
 }
@@ -575,7 +621,7 @@ progress fill
 {
 	display: block;
 	height: 1dp;
-	background-color: #4eb6dc;
+	background-color: #4ab6de;
 }
 
 .group > .rule > span:first-child
@@ -631,7 +677,7 @@ select selectbox
 	margin-top: 2dp;
 	padding: 2dp 0;
 	background-color: #000000b4;
-	border: 1dp #4eb6dc;
+	border: 1dp #4ab6de;
 	overflow-y: auto;
 }
 
@@ -647,7 +693,7 @@ select option
 
 select option:checked
 {
-	background-color: #225061;
+	background-color: #205062;
 }
 
 /* The field a keyboard screen shows a captured key in, its text four in from the frame. */
@@ -663,8 +709,8 @@ select option:checked
 {
 	padding: 3dp 4dp;
 	color: #70ff00;
-	background-color: #0b1b22;
-	border: 1dp #4eb6dc;
+	background-color: #081820;
+	border: 1dp #4ab6de;
 }
 
 .dim
@@ -674,5 +720,5 @@ select option:checked
 
 .disabled
 {
-	color: #909090;
+	color: #949194;
 }

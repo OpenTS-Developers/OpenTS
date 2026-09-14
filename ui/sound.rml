@@ -24,9 +24,9 @@
 			<label class="check" id="switch-shuffle"><input type="checkbox" id="shuffle" data-attrif-checked="shuffle" data-attrif-disabled="!enabled" data-event-click="queue('shuffle', shuffle ? 0 : 1)"/>Shuffle</label>
 			<label class="check" id="switch-repeat"><input type="checkbox" id="repeat" data-attrif-checked="repeat" data-attrif-disabled="!enabled" data-event-click="queue('repeat', repeat ? 0 : 1)"/>Repeat</label>
 		</div>
-		<div id="tracks" class="list" data-attrif-disabled="!enabled">
+		<div id="tracks" class="list" data-attrif-disabled="!enabled"><div class="rows">
 			<div class="item track" data-for="track : tracks" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{track.label}}</div>
-		</div>
+		</div></div>
 	</div>
 	<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
 </body>

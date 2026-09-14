@@ -23,9 +23,9 @@
 		</div>
 		<div class="column" id="right">
 			<p class="caption">Commands:</p>
-			<div id="commands" class="list">
+			<div id="commands" class="list"><div class="rows">
 				<div class="item" data-for="row : rows" data-class-selected="row.command == selected" data-event-click="queue('select', row.command)">{{row.name}}</div>
-			</div>
+			</div></div>
 			<p class="caption tall">Current shortcut:</p>
 			<p class="value" id="shortcut">{{shortcut}}</p>
 		</div>

@@ -1385,14 +1385,16 @@ void Test_Version_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		Rml::ElementDocument * document = Rml(*view).Document();
 		Rml::Element * lines = (document != nullptr) ? document->GetElementById("lines") : nullptr;
 
-		// The data-for template stays in the tree hidden beside the paragraphs it produced.
+		// The data-for template stays in the tree hidden beside the paragraphs it produced,
+		// inside the box that carries the list's dim.
+		Rml::Element * rows = (lines != nullptr && lines->GetNumChildren() > 0) ? lines->GetChild(0) : nullptr;
 		int visible = 0;
-		for (int index = 0; lines != nullptr && index < lines->GetNumChildren(); index++) {
-			if (lines->GetChild(index)->IsVisible()) {
+		for (int index = 0; rows != nullptr && index < rows->GetNumChildren(); index++) {
+			if (rows->GetChild(index)->IsVisible()) {
 				visible++;
 			}
 		}
-		Check(lines != nullptr && visible == 2, "the version screen lists one paragraph per line");
+		Check(rows != nullptr && visible == 2, "the version screen lists one paragraph per line");
 
 		Rml::Element * ok = (document != nullptr) ? document->GetElementById("ok") : nullptr;
 		Check(ok != nullptr, "the version screen has its OK button");
@@ -1634,8 +1636,10 @@ std::vector<Rml::Element *> Visible_Rows(Rml::ElementDocument * document, char c
 		return(found);
 	}
 
-	for (int index = 0; index < list->GetNumChildren(); index++) {
-		Rml::Element * row = list->GetChild(index);
+	// The rows sit in a box of their own inside the list, which carries the dim.
+	Rml::Element * rows = list->GetNumChildren() > 0 && list->GetChild(0)->IsClassSet("rows") ? list->GetChild(0) : list;
+	for (int index = 0; index < rows->GetNumChildren(); index++) {
+		Rml::Element * row = rows->GetChild(index);
 		if (row->IsClassSet("item") && row->IsVisible() && row->GetComputedValues().display() != Rml::Style::Display::None) {
 			found.push_back(row);
 		}

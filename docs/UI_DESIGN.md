@@ -667,6 +667,14 @@ when the provider marks it dirty. Original game art stays local runtime data
 outside version control; documents receive artwork identities, never engine
 pointers.
 
+Every colour is what the game's 16-bit frame showed of it: the original drew
+into five bits of red and blue and six of green, and the frame widens them
+again by repeating their top bits, so the loader rounds each picture's palette
+the same way, the sheet font rounds its remapped colours, and the kit's own
+colours are written as they come out. Blended pixels, the glow and the dims,
+can still differ from the original's by a level or two, since the original
+blended in sixteen bits and the kit in eight.
+
 ### Fonts
 
 A document names one of two families, and never a fallback of its own.
@@ -755,7 +763,9 @@ them yet; the network lobbies and the skirmish screens are what will exercise
 them.
 
 The chrome is `Draw_Dialog_Back`'s composition: the 640 by 400 wallpaper
-centred on the frame and cut off at the dialog's edges, black beyond it; a
+centred on the frame in whole pixels and cut off at the dialog's edges, black
+beyond it, which the view places against the dialog's middle to the half pixel
+a dialog of odd height is off the grid; a
 24-wide bar tiled down each edge with a corner over each end; and a glow
 inside the bars that the original drew as sixteen one-pixel rings of white,
 alpha 96 falling by 6 a ring. The glow is a picture shipped with the kit,
@@ -777,13 +787,22 @@ fill where a picture would be, so a screen stays usable without it, and that
 form is what the harness renders.
 
 The controls follow the drawing code's metrics: a button is a 24 or 30 tall
-skin with a 7-wide left cap, a tiled middle and a 10-wide right cap, its
-`dlgsys` caption two down from the top; the middle repeats rather than
-stretches, so a skin, like the track bar's number field, is three `image`
-decorators with the middle listed last to lie under the caps, because
-`tiled-horizontal` always fills its centre; pressing drops the skin two and the
-caption four more and two across; disabled is a half-black wash rather than
-the skin the original loads and never draws. Check boxes, edit boxes, lists,
+skin with a 7-wide left cap, a 10-wide right cap and a middle drawn from the
+left cap's end to three short of the right edge, under the right cap, its
+`dlgsys` caption three down from the top of a short skin and six from a tall
+one, centred in a box two narrower than the skin. The middle is the tile's
+own middle: the layer sampled the 177-wide tile from its centre when the run
+was narrower and repeated it from the left when wider, so the kit draws the
+caps and a centred, clipped tile as three `image` decorators on the box's
+border and padding areas, the middle last to lie under the caps, and a
+button whose run is wider than the tile carries the class `wide` to repeat
+it instead; `tiled-horizontal` is no use here because it always fills its
+centre. Pressing shows a skin two down that is two shorter, three for a tall
+one, whose right cap is seven wide and keeps its place, so the last three
+columns show through, and moves the caption one further down and one across;
+the box keeps its size, with the rows the skin gives up as a bottom border
+that shows through. Disabled is a half-black wash rather than the skin the
+original loads and never draws. Check boxes, edit boxes, lists,
 scroll bars, track bars, combo boxes, the progress bar, group boxes, hotkey
 fields and tooltips are authored the same way, in the cyan frame
 `OD_Draw_Rect` substitutes for white. That frame is drawn a pixel outside the
@@ -796,7 +815,12 @@ bar the original narrows the list by twenty and stands the bar beside it, so
 the list's frame closes a pixel before the bar's opens and the two make a
 double line, and the bar's other three edges share the list's frame; the kit
 stands the bar inside the list's frame, twenty wide, with that double line as
-its left border. RmlUi places a slider's arrows, track and thumb from the
+its left border. The list's dim covers its rows only and the bar's track shows
+the plain background, so the dim is carried by a box around the rows; and the
+grip is as long as the layer made it, the travel less a fifth of it for each
+natural-log step of the rows left over, never under fourteen, which the view
+sets on the grip each pass rather than the share of the rows in view RmlUi
+would give it. RmlUi places a slider's arrows, track and thumb from the
 input's border corner rather than its content corner, so in the kit each of
 those carries the frame's width as a margin: the track bar's track starts two
 in and ends one back, which keeps it a pixel narrower than the bar with the
@@ -804,7 +828,10 @@ thumb inside the frame, and the scroll bar's parts start after its two wide
 border. A track bar shows its value in a fifty
 wide trough unless the dialog turned that off, which the game controls do and
 the sound options do not, so a document puts the trough after the bar and
-gives the bar the rest. A combo box's list is the toolkit's own child element,
+gives the bar the rest. The bar's dim reaches a pixel past its rect, so the
+field is a pixel wider and taller than the fifty it is given, and the layer
+fills the fifty with the middle of its tile, so the kit's field is the two
+ends over a sprite of the tile's centre. A combo box's list is the toolkit's own child element,
 placed by it and styled by the kit; a group box's top edge is two line pieces
 either side of its caption, because a border cannot be broken, and its
 caption row is sixteen tall, the height GDI gave the face, so the frame runs

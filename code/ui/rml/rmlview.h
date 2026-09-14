@@ -78,6 +78,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		// Whether pressing this element is what the dialogs sounded a click for.
 		static bool Sounds_A_Click(Rml::Element const * element);
 		void Place_Wallpaper(void);
+		void Size_Grips(void);
 
 		UIPresenterClass & Owner;
 		Rml::Context * Host = nullptr;
@@ -90,7 +91,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		Rml::UniquePtr<Rml::DataTypeRegister> Types;
 		bool ModelCreated = false;
 		// Where the wallpaper was last put, so it is only moved when the screen has moved.
-		int Wallpaper = 0x7FFFFFFF;
+		float Wallpaper = 1.0e9f;
 		// Whether the chrome is pinned to the middle of the band a screen opens through.
 		bool Anchored = false;
 		Rml::String DocumentName;

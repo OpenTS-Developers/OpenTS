@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "ui/rml/rmlimage.h"
+#include "ui/rml/rmlrendermath.h"
 
 #include <cstring>
 
@@ -120,9 +121,12 @@ bool UI_Indexed_To_RGBA(UIImageIndexed const & image, std::vector<std::uint8_t> 
 			continue;
 		}
 
+		// The game drew every picture through its 16-bit frame, so the colours are what
+		// that frame made of them.
 		out[0] = color[0];
 		out[1] = color[1];
 		out[2] = color[2];
+		UI_Render_Quantize_565(out[0], out[1], out[2]);
 		out[3] = 255;
 	}
 

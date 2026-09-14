@@ -20,7 +20,7 @@
 	<div id="buttons">
 		<button id="sound" data-if="ingame" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
 		<button id="keyboard" data-if="ingame" data-event-click="queue('keyboard')">Keyboard</button>
-		<button id="ok" data-event-click="queue('ok')"><span id="ok-options" data-if="ingame">[[TXT_OPTIONS_MENU]]</span><span id="ok-main" data-if="!ingame">Main Menu</span></button>
+		<button id="ok" data-class-wide="!ingame" data-event-click="queue('ok')"><span id="ok-options" data-if="ingame">[[TXT_OPTIONS_MENU]]</span><span id="ok-main" data-if="!ingame">Main Menu</span></button>
 	</div>
 </body>
 </rml>

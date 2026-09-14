@@ -136,6 +136,9 @@ class UISheetFaceClass
 
 			std::uint8_t remapped[768];
 			UI_Sheet_Font_Remap(Index.Palette, red, green, blue, remapped);
+			for (int entry = 0; entry < 256; entry++) {
+				UI_Render_Quantize_565(remapped[entry * 3], remapped[entry * 3 + 1], remapped[entry * 3 + 2]);
+			}
 
 			std::vector<std::uint8_t> rgba;
 			if (!UI_Sheet_Font_Atlas(Index, Alpha, remapped, rgba)) {

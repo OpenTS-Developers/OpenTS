@@ -18,6 +18,7 @@
 
 #include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <RmlUi/Core/ElementScroll.h>
 #include <RmlUi/Core/Event.h>
 #include <RmlUi/Core/ID.h>
 #include <RmlUi/Core/Input.h>
@@ -25,6 +26,7 @@
 #include <RmlUi/Core/Log.h>
 #include <RmlUi/Core/Property.h>
 #include <RmlUi/Core/Variant.h>
+#include <cmath>
 
 
 UIRmlViewClass::UIRmlViewClass(UIPresenterClass & presenter, char const * document, char const * model) :
@@ -195,13 +197,71 @@ void UIRmlViewClass::Reveal_To(float width)
 void UIRmlViewClass::Placed(void)
 {
 	Place_Wallpaper();
+	Size_Grips();
+}
+
+
+// A scroll bar's grip is as long as the dialog layer made it: the travel less a fifth of it
+// for each natural-log step of the rows left over, never under fourteen, rather than the
+// share of the rows in view the toolkit would give it. The rows are fourteen tall and the
+// travel is the bar's height less its two arrow boxes. The toolkit sizes a grip only when
+// it formats the bar, and reads the height it was given only after its next update, so
+// the bar is formatted again each pass until the grip is the size asked for.
+void UIRmlViewClass::Size_Grips(void)
+{
+	Rml::Context * context = Doc != nullptr ? Doc->GetContext() : nullptr;
+	if (context == nullptr) {
+		return;
+	}
+
+	float ratio = context->GetDensityIndependentPixelRatio();
+	if (ratio <= 0.0f) {
+		ratio = 1.0f;
+	}
+
+	// A scroll bar and its parts are no part of the document tree, so the bar is reached
+	// through its list and its grip among the children the tree does not count.
+	Rml::ElementList lists;
+	Doc->GetElementsByClassName(lists, "list");
+	for (Rml::Element * list : lists) {
+		Rml::Element * bar = list->GetElementScroll()->GetScrollbar(Rml::ElementScroll::VERTICAL);
+		Rml::Element * grip = nullptr;
+		for (int index = 0; bar != nullptr && index < bar->GetNumChildren(true); index++) {
+			if (bar->GetChild(index)->GetTagName() == "sliderbar") {
+				grip = bar->GetChild(index);
+			}
+		}
+		if (bar == nullptr || !bar->IsVisible() || grip == nullptr) {
+			continue;
+		}
+
+		float row = 14.0f * ratio;
+		int visible = (int)(list->GetClientHeight() / row);
+		int count = (int)(list->GetScrollHeight() / row + 0.5f);
+		int range = count - visible;
+		if (range < 1) {
+			continue;
+		}
+
+		float travel = list->GetClientHeight() / ratio - 44.0f;
+		int height = (int)(travel - std::log((double)(range + 1)) * travel * 0.2);
+		if (height < 14) {
+			height = 14;
+		}
+
+		if (std::fabs(grip->GetBox().GetSize().y - (float)height * ratio) > 0.5f) {
+			grip->SetProperty("height", Rml::ToString(height) + "dp");
+			list->GetElementScroll()->FormatScrollbars();
+		}
+	}
 }
 
 
 // The wallpaper belongs to the screen rather than to the dialog: it is one picture centred
-// on the frame, and a dialog shows the part of it lying behind. The kit hangs it off the
-// middle of the dialog, which is the middle of the frame only while the dialog is centred,
-// so a dialog sitting anywhere else pushes it back by however far it is off centre. The
+// on the frame in whole pixels, and a dialog shows the part of it lying behind. The kit
+// hangs it off the middle of the dialog, which is the middle of the frame only while the
+// dialog is centred, so a dialog sitting anywhere else pushes it back by however far it is
+// off centre, and a dialog of odd height by the half pixel its middle is off the grid. The
 // picture is sized in dp, so it is placed in dp. A document without the kit's chrome has
 // no picture to place.
 void UIRmlViewClass::Place_Wallpaper(void)
@@ -219,7 +279,8 @@ void UIRmlViewClass::Place_Wallpaper(void)
 	}
 
 	float middle = (dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize().y * 0.5f) / ratio;
-	int offset = (int)(-200.0f + (float)context->GetDimensions().y * 0.5f / ratio - middle);
+	float top = std::floor(((float)context->GetDimensions().y / ratio - 400.0f) * 0.5f);
+	float offset = top - middle;
 	if (offset == Wallpaper) {
 		return;
 	}
