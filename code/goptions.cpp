@@ -50,6 +50,7 @@
 #include "stats.h"
 #include "_ui.h"
 #include "ui/screens/abort/uiabort.h"
+#include "ui/screens/gameopt/uigameopt.h"
 #include "ui/uishell.h"
 
 #include "special.hh"
@@ -69,18 +70,51 @@ void Abort_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lp
 void Game_Options_Dialog(void)
 {
 	int rc = 0;
-
-	HWND dialog;
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_SP, Game_Options_Dialog_Proc);
-	} else if (Session.Type == GAME_INTERNET) {
-		dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_WOL, Game_Options_Dialog_Proc);
-	} else {
-		dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_MP, Game_Options_Dialog_Proc);
-	}
+	bool shown = false;
 
 	IgnoreInput = true;
 	Keyboard->Clear();
+
+	if (UIShell.Use_Rml()) {
+		UIGameOptionsChoice choice;
+		if (UI_Game_Options_Dialog(choice)) {
+			shown = true;
+			switch (choice) {
+				case UI_GAME_OPTIONS_CONTROLS:
+					SpecialDialog = SDLG_SETTINGS;
+					rc = IDOK;
+					break;
+
+				case UI_GAME_OPTIONS_BRIEFING:
+					rc = IDC_BRIEFING;
+					break;
+
+				case UI_GAME_OPTIONS_LOAD:
+					rc = IDC_LOAD_GAME;
+					break;
+
+				case UI_GAME_OPTIONS_ABORT:
+					SpecialDialog = SDLG_ABORT;
+					rc = IDCANCEL;
+					break;
+
+				default:
+					rc = IDOK;
+					break;
+			}
+		}
+	}
+
+	HWND dialog = NULL;
+	if (!shown) {
+		if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
+			dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_SP, Game_Options_Dialog_Proc);
+		} else if (Session.Type == GAME_INTERNET) {
+			dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_WOL, Game_Options_Dialog_Proc);
+		} else {
+			dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_MP, Game_Options_Dialog_Proc);
+		}
+	}
 
 	if (dialog) {
 

@@ -1,7 +1,8 @@
 /*
  * Where the abort question puts its three answers, from IDD_MISSION_ABORT at 256 by 63
- * dialog units: 384 by 103 pixels, the question at 33,19 over 319 by 31, and three 91 wide
- * buttons at 33, 147 and 261. Everything visual comes from the kit.
+ * dialog units: 384 by 103 pixels, the question at 33,19 and three buttons at 33, 147 and
+ * 261. The game draws each button 90 wide, a pixel short of what the template alone would
+ * make it, so the sheet follows the game. Everything visual comes from the kit.
  */
 
 #reveal
@@ -37,8 +38,8 @@
 
 button
 {
-	width: 91dp;
-	margin-right: 23dp;
+	width: 90dp;
+	margin-right: 24dp;
 }
 
 #cancel

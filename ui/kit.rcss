@@ -288,12 +288,34 @@ button.tall:active
 
 /*
  * Disabled is a half-black wash over the whole control rather than another picture: the
- * original loads a disabled skin but never asks for it.
+ * original loads a disabled skin but never asks for it. A background lies under the skin,
+ * so the wash is a flat gradient listed first, which paints last and covers the skin. Text
+ * is drawn after every decorator, so the caption cannot be washed the same way and carries
+ * the colour the wash would have left it at instead.
  */
 button.disabled, button:disabled
 {
-	background-color: #00000080;
-	color: #70ff00;
+	color: #317d00;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide.disabled, button.wide:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx repeat-x left top) padding-box;
+}
+
+button.tall.disabled, button.tall:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li30.pcx scale-none left top) border-box,
+		image(bue_ri30.pcx scale-none right top) border-box,
+		image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
 /* A disabled button takes no press, as the original never hands one the mouse. */
@@ -302,13 +324,27 @@ button.disabled:active, button:disabled:active
 	top: 0dp;
 	border-width: 0 3dp 0 7dp;
 	padding: 3dp 7dp 0 0;
-	decorator: image(bue_li24.pcx scale-none left top) border-box, image(bue_ri24.pcx scale-none right top) border-box, image(bue_mi24.pcx scale-none center top) padding-box;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide.disabled:active, button.wide:disabled:active
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx repeat-x left top) padding-box;
 }
 
 button.tall.disabled:active, button.tall:disabled:active
 {
 	padding-top: 6dp;
-	decorator: image(bue_li30.pcx scale-none left top) border-box, image(bue_ri30.pcx scale-none right top) border-box, image(bue_mi30.pcx scale-none center top) padding-box;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li30.pcx scale-none left top) border-box,
+		image(bue_ri30.pcx scale-none right top) border-box,
+		image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
 /*
@@ -345,9 +381,15 @@ input[type='checkbox']:checked
 	decorator: image(check-on);
 }
 
+/* The wash covers the box the same way, and the label beside it goes gray instead. */
 input[type='checkbox']:disabled
 {
-	background-color: #00000080;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box, image(check-off);
+}
+
+input[type='checkbox']:checked:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box, image(check-on);
 }
 
 /*

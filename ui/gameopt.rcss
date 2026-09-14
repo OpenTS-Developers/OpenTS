@@ -1,0 +1,69 @@
+/*
+ * Where the in-game options menu puts its buttons. In a campaign or skirmish game it is
+ * IDD_OPT_CTRL_SP at 209 by 140 dialog units, which the game draws 314 by 228, with seven 173 wide buttons
+ * at 70 across and 19, 47, 74, 102, 130, 158 and 185 down. In a network game it is
+ * IDD_OPT_CTRL_MP at 209 by 75, 314 by 123, with three 149 wide buttons at 82 across and 19,
+ * 48 and 78 down. Everything visual comes from the kit.
+ */
+
+#reveal
+{
+	width: 314dp;
+	height: 123dp;
+	top: 50%;
+	margin-top: -61dp;
+}
+
+.solo #reveal
+{
+	height: 228dp;
+	margin-top: -114dp;
+}
+
+#content
+{
+	padding: 19dp 83dp 0 82dp;
+}
+
+.solo #content
+{
+	padding-left: 70dp;
+	padding-right: 71dp;
+}
+
+button
+{
+	display: block;
+	width: 149dp;
+}
+
+.solo button
+{
+	width: 173dp;
+}
+
+#abort
+{
+	margin-top: 5dp;
+}
+
+#resume
+{
+	margin-top: 6dp;
+}
+
+.solo #briefing, .solo #abort
+{
+	margin-top: 4dp;
+}
+
+.solo #load, .solo #delete, .solo #resume
+{
+	margin-top: 3dp;
+}
+
+/* The game draws this one a row lower than the rule the rest of the column follows. */
+.solo #save
+{
+	margin-top: 5dp;
+}

@@ -1,0 +1,16 @@
+<rml>
+<head>
+	<title>Game options</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="gameopt.rcss"/>
+</head>
+<body template="dialog" data-model="gameopt" data-class-solo="solo">
+	<button id="controls" data-event-click="queue('controls')">Game Controls</button>
+	<button id="briefing" data-if="solo" data-class-disabled="!briefingenabled" data-event-click="queue('briefing')">Restate Briefing</button>
+	<button id="load" data-if="solo" data-class-disabled="!loadenabled" data-event-click="queue('load')">Load Game</button>
+	<button id="save" data-if="solo" data-class-disabled="!saveenabled" data-event-click="queue('save')">Save Game</button>
+	<button id="delete" data-if="solo" data-class-disabled="!deleteenabled" data-event-click="queue('delete')">Delete Game</button>
+	<button id="abort" data-event-click="queue('abort')">Abort Mission</button>
+	<button id="resume" data-event-click="queue('resume')">Resume Mission</button>
+</body>
+</rml>

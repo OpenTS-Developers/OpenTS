@@ -802,7 +802,10 @@ one, whose right cap is seven wide and keeps its place, so the last three
 columns show through, and moves the caption one further down and one across;
 the box keeps its size, with the rows the skin gives up as a bottom border
 that shows through. Disabled is a half-black wash rather than the skin the
-original loads and never draws. Check boxes, edit boxes, lists,
+original loads and never draws. That wash is a flat gradient listed ahead of the skin, so
+it paints last and covers it; a caption cannot be covered the same way, because text is
+drawn after every decorator, so a disabled caption carries the colour the wash would have
+left it at. Check boxes, edit boxes, lists,
 scroll bars, track bars, combo boxes, the progress bar, group boxes, hotkey
 fields and tooltips are authored the same way, in the cyan frame
 `OD_Draw_Rect` substitutes for white. That frame is drawn a pixel outside the
@@ -1117,10 +1120,14 @@ beyond an ASCII test document.
    number; the options menu is `mainopt.rml`, placed where the main menu's
    buttons were; surrender runs through the message box screen, while abort
    is `abort.rml` over its own `IDD_MISSION_ABORT` template, whose middle
-   answer surrenders rather than restarts outside a campaign mission). The
-   Win32 templates remain the fallback view of every one. The
-   in-game options menu opens load, save and delete, so it follows step 9.
-   Evidence: settings round-trip through `SUN.INI` unchanged.
+   answer surrenders rather than restarts outside a campaign mission; the
+   in-game options menu itself is `gameopt.rml` over `IDD_OPT_CTRL_SP` and
+   `IDD_OPT_CTRL_MP`, which closes and reopens without revealing around a save
+   or a delete where the Win32 menu hid and re-showed itself). The Win32
+   templates remain the fallback view of every one. Load, save and delete keep
+   their own dialogs until step 9. Evidence: settings round-trip through
+   `SUN.INI` unchanged; the menu and the abort question match their Win32
+   dialogs pixel for pixel at 3840x2160.
 8. **Main menu family** (M, campaign choice landed as `campaign.rml`, which
    names the difficulty the bar is set to from the start where the Win32
    dialog left its template's caption until the bar first moved).
