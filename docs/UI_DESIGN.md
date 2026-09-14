@@ -1331,7 +1331,10 @@ harness covers their layout and their input, not how they look.
 
 Still owed: the progress document, which belongs to the multiplayer loading,
 map generation, and file transfer paths; the multiplayer cases where
-`Main_Loop` runs under a message box; and, for each screen, what the paragraph
+`Main_Loop` runs under a message box; the map dialog opened from a lobby,
+which is the one path its own service pass exists for and the one the
+two-instance runs have not yet covered, along with its generator button and a
+map carrying no preview of its own; and, for each screen, what the paragraph
 above requires of its own change.
 
 ## Documentation
