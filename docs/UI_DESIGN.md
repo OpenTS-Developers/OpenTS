@@ -766,14 +766,17 @@ Win32 template comes to, then places the controls down the page in flow with
 margins taken from the same template, so a screen holds no visual rule of its
 own and can grow. Measured against the Win32 dialogs at 3840x2160, where a
 dp is a pixel, a control at unit `x, y, w, h` lands at `⌊1.5x⌋` across and
-`⌊1.625y⌋` down, rounded rather than floored for a check box, and measures
-`⌊1.5w⌋ + 1` by `⌊1.625h⌋ + 1`: `Resize_Dialog` adds the pixel to every
-control it carries over. A dialog's own size takes no such pixel, and the
-options menu is not carried over at all. A control's width is its outer
-width, borders included, because that is what the template measures. A
-`dlgsys` caption is drawn from the top of its box with no leading, so a
-caption's line height is the glyph's height and the box carries the row's
-height; a check box label is the same. The rule is close but not exact: the
+`⌊1.63y⌋` down, rounded rather than floored for a check box, and measures
+`⌊1.5w⌋ + 1` by `⌊1.63h⌋ + 1`: `Resize_Dialog` adds the pixel to every
+control it carries over. The two factors are `300/400` and `163/200` in
+`windlg.cpp`, where a dialog unit is two pixels wide and two tall before the
+scaling; `1.625` is close enough to agree on many controls and wrong on about
+one row in six, so it is worth taking the factor from the code. A dialog's
+own size takes no such pixel, and the options menu is not carried over at all.
+A control's width is its outer width, borders included, because that is what
+the template measures. A `dlgsys` caption is drawn from the top of its box
+with no leading, so a caption's line height is the glyph's height and the box
+carries the row's height; a check box label is the same. The rule is close but not exact: the
 game draws a few dialogs and controls a pixel from where it puts them, with no
 pattern that the measurements support, so every screen is measured against its
 Win32 dialog at 3840x2160 and its sheet follows the game, saying so where it
