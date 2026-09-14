@@ -1,9 +1,9 @@
 /*
  * Where the display options put their parts, from IDD_OPT_DISPLAY at 229 by 196 dialog
  * units: 344 by 320 pixels, everything inset 33 across and the first line at 19 down, the
- * mode list 278 by 178, and two 93 wide buttons at 33 and 217. The list and the switch
- * under it sit where the game puts them, two short of where the template alone would.
- * Everything visual comes from the kit.
+ * mode list 278 by 179, and two 93 wide buttons at 33 and 217. The list is a pixel shorter
+ * than the template alone would make it, as the game draws it. Everything visual comes
+ * from the kit.
  */
 
 #reveal
@@ -40,7 +40,7 @@
 #modes
 {
 	margin-top: 2dp;
-	height: 178dp;
+	height: 179dp;
 }
 
 #switch-stretch

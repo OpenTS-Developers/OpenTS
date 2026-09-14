@@ -2,7 +2,8 @@
  * Where the keyboard screen puts its parts, from IDD_OPT_KEYBOARD at 336 by 208 dialog
  * units: 504 by 339 pixels, two columns of 207 and 219 inside a 33 pixel inset, the category
  * combo over the description group, the command list 219 by 170, and the buttons along the
- * bottom. Everything visual comes from the kit.
+ * bottom. The list stands a pixel below its template rect, level with the combo's frame, as
+ * the game draws it. Everything visual comes from the kit.
  */
 
 #reveal
@@ -57,7 +58,7 @@
 
 .caption.tall
 {
-	margin-top: 10dp;
+	margin-top: 9dp;
 	height: 18dp;
 }
 
@@ -105,27 +106,28 @@
 #hotkey-row
 {
 	margin-top: 4dp;
-	height: 23dp;
+	height: 24dp;
 	white-space: nowrap;
 }
 
-/* The field is 128 wide with its text four in, so the room inside the padding is 120. */
+/* The field is 128 wide with its text four in, so the room inside the padding is 120; the
+ * game draws it a pixel taller than its template says. */
 #capture
 {
 	display: inline-block;
 	width: 120dp;
-	height: 23dp;
+	height: 24dp;
 	vertical-align: top;
 	white-space: nowrap;
 	overflow: hidden;
 	tab-index: auto;
 }
 
-/* The template puts the button two lower than the field beside it. */
+/* The game puts the button three lower than the field beside it. */
 #assign
 {
 	position: relative;
-	top: 2dp;
+	top: 3dp;
 	width: 75dp;
 	margin-left: 4dp;
 	vertical-align: top;

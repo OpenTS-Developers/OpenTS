@@ -126,7 +126,8 @@ div, form, h1, h2, p
  * So the rings are a picture, shipped with the kit rather than taken from the game's art,
  * cut nine ways: a corner holds the mitre, an edge holds one column of the ramp stretched
  * along the edge, and the middle is clear. It is magnified like every other picture, so the
- * rings stay whole however the frame is scaled.
+ * rings stay whole however the frame is scaled. It goes under the controls, as the original
+ * painted it into the dialog's background before any control drew.
  */
 @spritesheet glow
 {
@@ -154,6 +155,7 @@ div, form, h1, h2, p
 	top: 0;
 	right: 24dp;
 	bottom: 0;
+	z-index: -1;
 	decorator: tiled-box(glow-top-left, glow-top, glow-top-right, glow-left, glow-middle, glow-right, glow-bottom-left, glow-bottom, glow-bottom-right);
 }
 
@@ -186,16 +188,23 @@ button, input, select, dataselect, option, progress, scrollbarvertical, textarea
 }
 
 /*
- * The frame around an edit box, a list, a combo box, a track bar or a hotkey field is drawn
- * a pixel outside the control's rect, as the dialog layer drew it, so the rect a template
- * gives is the inside of the frame: the control is sized to that rect and its frame hangs
- * over the margin. A screen that spaces one from its neighbour does so from the neighbour's
- * side, and gives one that pads its text the width left inside the padding.
+ * The frame around an edit box, a combo box, a track bar or a hotkey field is drawn a pixel
+ * outside the control's rect, as the dialog layer drew it, so the rect a template gives is
+ * the inside of the frame: the control is sized to that rect and its frame hangs over the
+ * margin. A screen that spaces one from its neighbour does so from the neighbour's side,
+ * and gives one that pads its text the width left inside the padding. A list is the other
+ * way about: the layer insets its rows by the frame and draws the frame on the rect's own
+ * edge, so a list is its template's rect, frame and all.
  */
-input[type='range'], input[type='text'], input[type='password'], textarea, select, .list, .hotkey
+input[type='range'], input[type='text'], input[type='password'], textarea, select, .hotkey
 {
 	box-sizing: content-box;
 	margin: -1dp;
+	border: 1dp #4eb6dc;
+}
+
+.list
+{
 	border: 1dp #4eb6dc;
 }
 
@@ -382,25 +391,41 @@ input[type='text'], input[type='password'], textarea
  * way round while it is pressed, with its arrow drawn over the bevel from the corner. The
  * grip is three pieces with the middle tiled, and the original shrinks it as the list
  * grows, never below fourteen.
+ *
+ * The original narrows the list by twenty and stands the bar beside it, so the list's own
+ * frame closes a pixel before the bar's opens and the two make a double line; the bar's
+ * other three edges share the list's frame. Here the bar stands inside the list's frame,
+ * twenty wide with both of those lines as its left border and the list's frame as its other
+ * edges. RmlUi places the arrows, the track and the grip from the bar's border corner, so
+ * each carries that two wide border as a left margin.
  */
 scrollbarvertical
 {
 	width: 20dp;
-	border: 1dp #4eb6dc;
+	border-left: 2dp #4eb6dc;
+}
+
+scrollbarvertical slidertrack
+{
+	width: 18dp;
+	margin-left: 2dp;
 }
 
 scrollbarvertical sliderbar
 {
 	width: 18dp;
 	min-height: 14dp;
+	margin-left: 2dp;
 	background-color: #3c5a68;
 	decorator: image(sbgript.pcx scale-none left top), image(sbgripb.pcx scale-none left bottom), image(sbgripm.pcx repeat-y left top);
 }
 
 scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
 {
+	box-sizing: border-box;
 	width: 18dp;
 	height: 22dp;
+	margin-left: 2dp;
 	background-color: #ffffff28;
 	border-width: 2dp;
 	border-color: #ffffff7f #0000007f #0000007f #ffffff7f;
@@ -422,6 +447,11 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * is what a track a pixel narrower on the left comes to. Where the bar shows its value, that
  * number sits in a fifty wide field of its own, the trough, put after the bar in the same
  * row; the bar is then fifty narrower and the frame ends where the field begins.
+ *
+ * RmlUi places a slider's track and thumb from the input's border corner rather than its
+ * content corner, so the track's margins and the thumb's top margin carry the frame's width
+ * as well: two in from the left and one back on the right keeps the track a pixel narrower
+ * than the bar, and one down puts the thumb inside the frame rather than over it.
  */
 input[type='range']
 {
@@ -432,13 +462,15 @@ input[type='range']
 
 input[type='range'] slidertrack
 {
-	margin-left: 1dp;
+	margin-left: 2dp;
+	margin-right: -1dp;
 }
 
 input[type='range'] sliderbar
 {
 	width: 12dp;
 	height: 22dp;
+	margin-top: 1dp;
 	background-color: #70ff00;
 	decorator: image(trakgrip.pcx scale-none left top);
 }
@@ -501,11 +533,11 @@ progress fill
 	position: absolute;
 	left: -1dp;
 	right: -1dp;
-	top: -7dp;
-	height: 14dp;
+	top: -8dp;
+	height: 16dp;
 	font-family: dlg-sans;
 	font-size: 14dp;
-	line-height: 14dp;
+	line-height: 16dp;
 	color: #70ff00;
 }
 

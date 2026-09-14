@@ -784,13 +784,29 @@ fields and tooltips are authored the same way, in the cyan frame
 `OD_Draw_Rect` substitutes for white. That frame is drawn a pixel outside the
 control's rect, so those controls are sized to the rect their template gives
 and their frame hangs over a negative margin; a screen spaces one from its
-neighbour on the neighbour's side. A track bar shows its value in a fifty
+neighbour on the neighbour's side. A list and a scroll bar are the exception:
+the layer insets their rows by the frame and draws it on the rect's own edge,
+so a list is its template's rect, frame and all. When a list needs a scroll
+bar the original narrows the list by twenty and stands the bar beside it, so
+the list's frame closes a pixel before the bar's opens and the two make a
+double line, and the bar's other three edges share the list's frame; the kit
+stands the bar inside the list's frame, twenty wide, with that double line as
+its left border. RmlUi places a slider's arrows, track and thumb from the
+input's border corner rather than its content corner, so in the kit each of
+those carries the frame's width as a margin: the track bar's track starts two
+in and ends one back, which keeps it a pixel narrower than the bar with the
+thumb inside the frame, and the scroll bar's parts start after its two wide
+border. A track bar shows its value in a fifty
 wide trough unless the dialog turned that off, which the game controls do and
 the sound options do not, so a document puts the trough after the bar and
 gives the bar the rest. A combo box's list is the toolkit's own child element,
 placed by it and styled by the kit; a group box's top edge is two line pieces
-either side of its caption, because a border cannot be broken. A screen's
-sheet that still needs a visual rule means the kit is missing a control.
+either side of its caption, because a border cannot be broken, and its
+caption row is sixteen tall, the height GDI gave the face, so the frame runs
+eight below the caption's top. The glow sits under every control, as the
+original painted it into the dialog's background before any control drew. A
+screen's sheet that still needs a visual rule means the kit is missing a
+control.
 
 Pressing one of those controls sounds the click the dialog layer sounded, and
 a disabled control stays silent because that layer never handed it the mouse.
