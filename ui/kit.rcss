@@ -216,7 +216,10 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
  * so the plain form underneath is a fill the picture covers rather than a border that would
  * show through it.
  *
- * The caption sits two down from the top of a short button and five down from a tall one.
+ * The caption is centred in a box two narrower than the skin, three down from the top of a
+ * short button and six down from a tall one, and a pixel left of the middle when the room
+ * is odd: the layer halves the room in whole pixels where the toolkit rounds a half up, so
+ * the box here is a pixel narrower still, which brings the two to the same place.
  * Pressing moves the whole picture two down, and the caption four further down and two
  * across. A glyph is seventeen tall, so a short button has only seven to give: padding is
  * what moves the caption, the box counts its padding inside its own size so a pressed button
@@ -227,7 +230,7 @@ button
 	display: inline-block;
 	box-sizing: border-box;
 	height: 24dp;
-	padding: 2dp 10dp 0 7dp;
+	padding: 3dp 3dp 0 0;
 	text-align: center;
 	vertical-align: middle;
 	line-height: 17dp;
@@ -239,7 +242,7 @@ button
 button.tall
 {
 	height: 30dp;
-	padding-top: 5dp;
+	padding-top: 6dp;
 	decorator: image(bue_li30.pcx scale-none left top), image(bue_ri30.pcx scale-none right top), image(bue_mi30.pcx repeat-x left top);
 }
 
@@ -247,13 +250,13 @@ button:active
 {
 	position: relative;
 	top: 2dp;
-	padding: 6dp 8dp 0 9dp;
+	padding: 7dp 1dp 0 2dp;
 	decorator: image(bde_li24.pcx scale-none left top), image(bde_ri24.pcx scale-none right top), image(bde_mi24.pcx repeat-x left top);
 }
 
 button.tall:active
 {
-	padding-top: 9dp;
+	padding-top: 10dp;
 	decorator: image(bde_li30.pcx scale-none left top), image(bde_ri30.pcx scale-none right top), image(bde_mi30.pcx repeat-x left top);
 }
 
@@ -271,35 +274,48 @@ button.disabled, button:disabled
 button.disabled:active, button:disabled:active
 {
 	top: 0dp;
-	padding: 2dp 10dp 0 7dp;
+	padding: 3dp 3dp 0 0;
 	decorator: image(bue_li24.pcx scale-none left top), image(bue_ri24.pcx scale-none right top), image(bue_mi24.pcx repeat-x left top);
 }
 
 button.tall.disabled:active, button.tall:disabled:active
 {
-	padding-top: 5dp;
+	padding-top: 6dp;
 	decorator: image(bue_li30.pcx scale-none left top), image(bue_ri30.pcx scale-none right top), image(bue_mi30.pcx repeat-x left top);
 }
 
 /*
- * A check box is an 18 by 19 picture with its label 20 across, vertically centred. Like a
- * button it is drawn without an outline, so its plain form is a fill the picture covers.
- * A control is matched on the type it was written with rather than on a class it would
- * otherwise have to carry.
+ * A check box is the top 18 rows of its 18 by 19 picture, which is what the layer copied out
+ * of it, with its label 20 across, drawn from the control's top. Like a button it is drawn
+ * without an outline, so its plain form is a fill the picture covers. A control is matched
+ * on the type it was written with rather than on a class it would otherwise have to carry.
+ * The picture is a sprite so that only those rows are drawn.
  */
+@spritesheet check-off
+{
+	src: cue_i.pcx;
+	check-off: 0px 0px 18px 18px;
+}
+
+@spritesheet check-on
+{
+	src: cce_i.pcx;
+	check-on: 0px 0px 18px 18px;
+}
+
 input[type='checkbox']
 {
 	display: inline-block;
 	width: 18dp;
-	height: 19dp;
+	height: 18dp;
 	vertical-align: top;
 	background-color: #2b2b2b;
-	decorator: image(cue_i.pcx);
+	decorator: image(check-off);
 }
 
 input[type='checkbox']:checked
 {
-	decorator: image(cce_i.pcx);
+	decorator: image(check-on);
 }
 
 input[type='checkbox']:disabled
@@ -336,6 +352,7 @@ label.check.disabled, label.check:disabled
 .caption, .value
 {
 	display: inline-block;
+	box-sizing: border-box;
 	white-space: nowrap;
 	vertical-align: top;
 }
@@ -452,12 +469,15 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * field's picture is twenty-six tall, a pixel more than the bar, and the field lies under
  * the bar so the bar's frame closes over its first column, as the layer drew the field
  * before the frame. Its middle is a tile the layer repeated, not stretched, so the field is
- * three pictures with the middle repeating under the two ends.
+ * three pictures with the middle repeating under the two ends. The number is centred in the
+ * forty-nine from one in.
  *
  * RmlUi places a slider's track and thumb from the input's border corner rather than its
  * content corner, so the track's margins and the thumb's top margin carry the frame's width
  * as well: two in from the left and one back on the right keeps the track a pixel narrower
- * than the bar, and one down puts the thumb inside the frame rather than over it.
+ * than the bar, and one down puts the thumb inside the frame rather than over it. The
+ * original drops the fraction of the thumb's place where the toolkit rounds it, so the thumb
+ * is pulled back half a pixel, and its right margin gives that half back to the travel.
  */
 input[type='range']
 {
@@ -477,6 +497,8 @@ input[type='range'] sliderbar
 	width: 12dp;
 	height: 22dp;
 	margin-top: 1dp;
+	margin-left: -0.5dp;
+	margin-right: 0.5dp;
 	background-color: #70ff00;
 	decorator: image(trakgrip.pcx scale-none left top);
 }
@@ -492,6 +514,7 @@ input[type='range']:disabled
 	display: inline-block;
 	width: 50dp;
 	height: 26dp;
+	padding-left: 1dp;
 	z-index: -1;
 	vertical-align: top;
 	text-align: center;
@@ -590,7 +613,7 @@ select
 
 select selectvalue
 {
-	padding: 3dp 0 0 2dp;
+	padding: 4dp 0 0 2dp;
 	line-height: 17dp;
 	white-space: nowrap;
 }

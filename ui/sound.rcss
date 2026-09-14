@@ -3,7 +3,7 @@
  * by 215 dialog units, 441 by 351 pixels: three volume rows of a 105 wide label and a 263
  * by 25 track bar, the last fifty of which is the field the bar shows its volume in, then
  * the track list with its buttons and switches beside it, and OK at the right. Out of one
- * it is IDD_SOUND_OPTIONS_DIALOG_LITE at 294 by 112, 441 by 183: the same three rows on
+ * it is IDD_SOUND_OPTIONS_DIALOG_LITE at 294 by 112, 442 by 183: the same three rows on
  * their own with OK under them. Everything visual comes from the kit.
  */
 
@@ -15,8 +15,10 @@
 	margin-top: -175dp;
 }
 
+/* Out of a game the dialog comes out a pixel wider than its template's unit and a half. */
 .lite #reveal
 {
+	width: 442dp;
 	height: 183dp;
 	margin-top: -91dp;
 }
@@ -54,11 +56,13 @@
 }
 
 /* A caption is drawn from the top of its box, however tall the template makes the box. */
+/* A right-aligned run ends a pixel further from the edge in the original, hence the pad. */
 .row > .caption
 {
 	width: 105dp;
 	height: 25dp;
 	margin-right: 7dp;
+	padding-right: 1dp;
 	line-height: 17dp;
 	text-align: right;
 }
@@ -69,10 +73,20 @@
 	height: 25dp;
 }
 
-/* The lite template holds its sliders three across from the labels and three shorter. */
+/*
+ * The lite template holds its sliders three across from the labels and three shorter, and
+ * gives the second and third labels a pixel more than the first.
+ */
 .lite .row > .caption
 {
-	margin-right: 10dp;
+	width: 106dp;
+	margin-right: 9dp;
+}
+
+.lite #row-sound > .caption, .lite #row-voice > .caption
+{
+	width: 107dp;
+	margin-right: 8dp;
 }
 
 .lite .row > input[type='range']
@@ -126,12 +140,12 @@
 #ok
 {
 	display: block;
-	width: 93dp;
+	width: 94dp;
 	margin: 13dp 0 0 282dp;
 }
 
 /* On its own the OK button sits in the middle instead of at the right edge. */
 .lite #ok
 {
-	margin: 15dp 0 0 139dp;
+	margin: 14dp 0 0 139dp;
 }

@@ -14,14 +14,21 @@
 	margin-top: -169dp;
 }
 
+/* The right column reaches a pixel closer to the edge than the left is from its own. */
 #content
 {
-	padding: 19dp 33dp 0 33dp;
+	padding: 19dp 32dp 0 33dp;
 }
 
 /* A caption is drawn from the top of its box, however tall the template makes the box. */
+/*
+ * A caption is drawn from the top of its box, and a centred one a pixel left of the middle
+ * when the room is odd: the layer halves the room in whole pixels where the toolkit rounds a
+ * half up, so the title's box is a pixel narrower than its rect.
+ */
 #title
 {
+	width: 437dp;
 	height: 18dp;
 	line-height: 17dp;
 	text-align: center;
@@ -39,9 +46,10 @@
 	margin-right: 12dp;
 }
 
+/* The game draws the combo, the group, the list and the field each a pixel or two wider. */
 #right
 {
-	width: 219dp;
+	width: 220dp;
 }
 
 .caption
@@ -64,7 +72,7 @@
 
 #right > .caption.tall
 {
-	margin-top: 8dp;
+	margin-top: 9dp;
 }
 
 .value
@@ -79,7 +87,7 @@
 #categories
 {
 	display: block;
-	width: 207dp;
+	width: 208dp;
 	margin-top: 8dp;
 }
 
@@ -87,6 +95,7 @@
 #about
 {
 	margin-top: 9dp;
+	width: 209dp;
 	height: 86dp;
 	padding-left: 10dp;
 }
@@ -115,7 +124,7 @@
 #capture
 {
 	display: inline-block;
-	width: 120dp;
+	width: 121dp;
 	height: 24dp;
 	vertical-align: top;
 	white-space: nowrap;
@@ -123,13 +132,13 @@
 	tab-index: auto;
 }
 
-/* The game puts the button three lower than the field beside it. */
+/* The game puts the button two lower than the field beside it. */
 #assign
 {
 	position: relative;
-	top: 3dp;
-	width: 75dp;
-	margin-left: 4dp;
+	top: 2dp;
+	width: 76dp;
+	margin-left: 3dp;
 	vertical-align: top;
 }
 
@@ -148,22 +157,22 @@
 #buttons
 {
 	display: flex;
-	margin-top: 9dp;
+	margin-top: 8dp;
 }
 
 #reset
 {
-	width: 81dp;
-	margin-right: 166dp;
+	width: 82dp;
+	margin-right: 165dp;
 }
 
 #ok
 {
-	width: 75dp;
-	margin-right: 41dp;
+	width: 76dp;
+	margin-right: 40dp;
 }
 
 #cancel
 {
-	width: 75dp;
+	width: 76dp;
 }

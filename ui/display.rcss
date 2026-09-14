@@ -1,7 +1,7 @@
 /*
  * Where the display options put their parts, from IDD_OPT_DISPLAY at 229 by 196 dialog
  * units: 344 by 320 pixels, everything inset 33 across and the first line at 19 down, the
- * mode list 278 by 179, and two 93 wide buttons at 33 and 217. The list is a pixel shorter
+ * mode list 278 by 179, and two 94 wide buttons at 33 and 217. The list is a pixel shorter
  * than the template alone would make it, as the game draws it. Everything visual comes
  * from the kit.
  */
@@ -19,9 +19,14 @@
 	padding: 19dp 33dp 0 33dp;
 }
 
-/* A caption is drawn from the top of its box, however tall the template makes the box. */
+/*
+ * A caption is drawn from the top of its box, however tall the template makes the box, and a
+ * centred one a pixel left of the middle when the room is odd: the layer halves the room in
+ * whole pixels where the toolkit rounds a half up, so the box is padded a pixel on the right.
+ */
 .heading
 {
+	padding-right: 1dp;
 	line-height: 17dp;
 	text-align: center;
 }
@@ -51,15 +56,15 @@
 #buttons
 {
 	display: flex;
-	margin-top: 10dp;
+	margin-top: 9dp;
 }
 
 button
 {
-	width: 93dp;
+	width: 94dp;
 }
 
 #cancel
 {
-	margin-left: 91dp;
+	margin-left: 90dp;
 }

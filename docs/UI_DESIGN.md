@@ -682,10 +682,13 @@ size, which is how the family scales with the frame. A space, and every code
 below it, moves the pen without drawing, as the dialog layer moved over them:
 the sheets' space cell is not blank, and drawing it puts a stray line over the
 text. The pen starts a pixel left of where the text is placed, as the dialog
-layer started it, and a run measures a pixel more than its advances add up
-to, because the layer set a right-aligned run a pixel further from the edge.
-The advances are scaled as a sum rather than one by one, so a run keeps the
-width the frame's scaling gives it at a scale that is no whole number.
+layer started it, and the advances are scaled as a sum rather than one by
+one, so a run keeps the width the frame's scaling gives it at a scale that is
+no whole number. The layer put a right-aligned run a pixel further from the
+edge than its width alone would, and halved the room around a centred one in
+whole pixels where RmlUi rounds a half up; a sheet gives a right-aligned box
+a pixel of right padding, and the kit makes a centred box a pixel narrower,
+which brings both to the layer's pixel.
 
 `dlg-sans` is the face the Win32 dialogs asked GDI for. They asked for the
 raster "MS Sans Serif"; OpenTS loads its TrueType successor `micross.ttf`,
@@ -725,21 +728,20 @@ and checks its boxes double, which a `px` length in either file fails.
 Every screen is on the kit. Each one's sheet gives the dialog the size its
 Win32 template comes to, then places the controls down the page in flow with
 margins taken from the same template, so a screen holds no visual rule of its
-own and can grow. Windows lays a template out at two pixels a unit, the
-system font's base units, and `Resize_Dialog` scales that by 300/400 across
-and 163/200 down with integer division, adding a pixel to each width and
-height before it scales: a control at unit `x, y, w, h` lands at `⌊1.5x⌋,
-⌊1.63y⌋` and measures `⌊1.5w + 0.75⌋` by `⌊1.63h + 0.815⌋`, and a dialog's
-own size follows the same rule. A control's width is its outer width, borders
-included, because that is what the template measures. A `dlgsys` caption is
-drawn from the top of its box with no leading, so a caption's line height is
-the glyph's height and the box carries the row's height; a check box label is
-the same. The sheets were checked against the Win32 dialogs pixel for pixel
-at 1024x768 on a 4K frame, and where the game draws a control a pixel or two
+own and can grow. Measured against the Win32 dialogs at 3840x2160, where a
+dp is a pixel, a control at unit `x, y, w, h` lands at `⌊1.5x⌋` across and
+`⌊1.625y⌋` down, rounded rather than floored for a check box, and measures
+`⌊1.5w⌋ + 1` by `⌊1.625h⌋ + 1`: `Resize_Dialog` adds the pixel to every
+control it carries over. A dialog's own size takes no such pixel, and the
+options menu is not carried over at all. A control's width is its outer
+width, borders included, because that is what the template measures. A
+`dlgsys` caption is drawn from the top of its box with no leading, so a
+caption's line height is the glyph's height and the box carries the row's
+height; a check box label is the same. Where the game draws a control a pixel
 from where the rule puts it, the sheet follows the game and says so: the
-display list is two shorter than its template, the keyboard screen's combo
-box sits level with its command list, and its hotkey field and the captions
-under it sit a pixel higher. Three screens carry a second arrangement: the
+display list is a pixel shorter than its template, the front-end sound
+dialog a pixel wider, and the keyboard screen's combo box and list a pixel
+lower and wider. Three screens carry a second arrangement: the
 sound options and the
 game controls each have a frontend template and an in-game one, chosen by a
 class the document sets from its model, and the message box places its buttons

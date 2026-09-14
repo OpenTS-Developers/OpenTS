@@ -56,13 +56,12 @@ class UISheetFaceClass
 			}
 		}
 
-		// A pixel more than the advances add up to, because the dialog layer starts a
-		// right-aligned run a pixel further from the edge than its width alone would put it.
 		// The advances are scaled as a sum, not one by one, so that a run keeps the width
-		// the frame's scaling gives it at a scale that is no whole number.
+		// the frame's scaling gives it at a scale that is no whole number. RmlUi measures a
+		// line a word at a time, so nothing is added here that should count once a line.
 		int String_Width(Rml::StringView string) const
 		{
-			float width = Scale;
+			float width = 0.0f;
 			for (Rml::StringIteratorU8 character(string); character; ++character) {
 				width += Sheet.Advance[Glyph(*character)] * Scale;
 			}

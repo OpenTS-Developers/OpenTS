@@ -1,10 +1,10 @@
 /*
  * Where the options menu puts its five buttons, taken from the dialog template the game
  * still ships: 200 by 148 dialog units with the buttons at x 37, width 126, height 18, and
- * tops 10, 32, 54, 76 and 120. The game lays a template out at two pixels a unit and then
- * scales it by 300/400 across and 163/200 down, which makes the dialog 300 by 242 and a
- * button 189 by 30 at 55 across and 16, 52, 88, 123 and 195 down. A button that tall takes
- * the 24 pixel skin with the rest as space around it, so the element here is the skin and
+ * tops 10, 32, 54, 76 and 120. This menu is not put through the game's resize pass: Windows
+ * lays it out at a unit and a half across and thirteen eighths down, which makes the dialog
+ * 300 by 241 and a button 190 by 29 at 55 across and 16, 52, 88, 123 and 195 down. A button
+ * that tall takes the 24 pixel skin two below its top, so the element here is the skin and
  * the gaps carry the difference.
  *
  * Everything visual comes from the kit.
@@ -13,20 +13,20 @@
 #reveal
 {
 	width: 300dp;
-	height: 242dp;
+	height: 241dp;
 	top: 50%;
-	margin-top: -121dp;
+	margin-top: -120dp;
 }
 
 #content
 {
-	padding: 19dp 0 0 55dp;
+	padding: 18dp 0 0 55dp;
 }
 
 button
 {
 	display: block;
-	width: 189dp;
+	width: 190dp;
 	margin-bottom: 12dp;
 }
 

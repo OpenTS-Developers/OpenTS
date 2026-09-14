@@ -67,11 +67,13 @@
 }
 
 /* A caption is drawn from the top of its box, however tall the template makes the box. */
+/* A right-aligned run ends a pixel further from the edge in the original, hence the pad. */
 .row > .caption
 {
 	width: 95dp;
 	height: 25dp;
 	margin-right: 7dp;
+	padding-right: 1dp;
 	line-height: 17dp;
 	text-align: right;
 }
@@ -110,6 +112,7 @@
 	width: 68dp;
 	height: 22dp;
 	margin-left: 1dp;
+	padding-right: 1dp;
 	text-align: right;
 }
 
@@ -119,9 +122,10 @@
 	margin-top: 8dp;
 }
 
+/* The switches sit where the game rounds them to, a pixel under the rule's floor. */
 .frontend #switches
 {
-	margin-top: 18dp;
+	margin-top: 19dp;
 }
 
 #switches > .column
@@ -146,7 +150,7 @@
 
 .frontend #switches > .column > #switch-edge
 {
-	margin-top: 8dp;
+	margin-top: 7dp;
 }
 
 /* Three buttons in a game, one out of one, placed where its template puts it. */
@@ -178,6 +182,6 @@
 
 .frontend #ok
 {
-	width: 195dp;
+	width: 196dp;
 	margin-left: 88dp;
 }
