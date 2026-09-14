@@ -704,6 +704,19 @@ which ships with the same Windows, scales freely and needs no strike
 selection. The shell asks the host where the file is rather than naming a
 Windows path itself.
 
+The two are not the same face, so the sizes are chosen by measurement rather
+than carried over. The layer asks GDI for character heights of fourteen and
+twelve, and GDI answers both from `sserife.fon`, whose eight point strike is
+thirteen pixels tall and whose ten point strike is sixteen: a list row comes
+from the first and everything else from the second. Measured against captures
+of the Win32 dialogs, the successor matches those strikes at `font-size: 13dp`
+for a reading, where its height and its width both land on the layer's, and at
+`11dp` for a list row, where its height lands and its width runs about a
+twentieth long. The substitute is still a scalable face rendered with
+antialiasing, so a glyph's shape and its edges differ from the raster
+original's whatever size it is asked for; matching those as well means reading
+the raster strikes themselves, which the design does not do today.
+
 Arimo (OFL 1.1) from Google Fonts ships in `ui/` as `Arimo.ttf` beside its
 license text and stands in for either family when the machine has no system
 face or the player has no game art, so a stylesheet never has to name a

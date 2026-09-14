@@ -426,11 +426,17 @@ label.check.disabled, label.check:disabled
 	vertical-align: top;
 }
 
-/* Text the dialog layer draws through GDI rather than its bitmap font. */
+/*
+ * Text the dialog layer draws through GDI rather than its bitmap font. The layer asks for
+ * character heights of fourteen and twelve, and GDI answers both from the raster face's
+ * strikes, which are a little smaller. The sizes here are the ones at which the scalable
+ * face this kit puts in its place comes out closest: a reading matches the strike's height
+ * and its width, and a list row matches its height and runs a twentieth long.
+ */
 .sans, input[type='text'], input[type='password'], textarea, .list, .tooltip, .hotkey, .group > label
 {
 	font-family: dlg-sans;
-	font-size: 14dp;
+	font-size: 13dp;
 }
 
 input selection, textarea selection
@@ -458,7 +464,7 @@ input[type='text'], input[type='password'], textarea
  */
 .list
 {
-	font-size: 12dp;
+	font-size: 11dp;
 	overflow-y: auto;
 }
 
@@ -654,7 +660,7 @@ progress fill
 	top: -8dp;
 	height: 16dp;
 	font-family: dlg-sans;
-	font-size: 14dp;
+	font-size: 13dp;
 	line-height: 16dp;
 	color: #70ff00;
 }
