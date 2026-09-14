@@ -18,6 +18,7 @@
 #include <RmlUi/Core/MeshUtilities.h>
 #include <RmlUi/Core/RenderManager.h>
 
+#include <span>
 #include <utility>
 
 
@@ -28,6 +29,8 @@ UIRmlSurfaceElementClass::UIRmlSurfaceElementClass(Rml::String const & tag) :
 	Rml::Element(tag),
 	Width(0),
 	Height(0),
+	DrawnWidth(0),
+	DrawnHeight(0),
 	Dirty(true)
 {
 }
@@ -57,6 +60,8 @@ void UIRmlSurfaceElementClass::Set_Image(int width, int height, std::vector<std:
 	}
 
 	Picture.Release();
+	DrawnWidth = 0;
+	DrawnHeight = 0;
 	Dirty = true;
 }
 
@@ -104,14 +109,24 @@ void UIRmlSurfaceElementClass::Generate_Geometry(void)
 		return;
 	}
 
-	// The texture is remade from the kept bytes rather than held, because a change of frame
-	// scale releases every texture the documents hold and expects them to come back.
-	if (!Picture) {
-		std::vector<std::uint8_t> const pixels = Pixels;
-		Rml::Vector2i dimensions(Width, Height);
-		Picture = manager->MakeCallbackTexture([pixels, dimensions](Rml::CallbackTextureInterface const & interface) {
-			return(interface.GenerateTexture(Rml::Span<const Rml::byte>(pixels.data(), pixels.size()), dimensions));
+	// The picture is resampled to the room it is drawn in rather than left to the sampler,
+	// because the dialog layer stretched it through GDI by repeating and dropping whole
+	// pixels and a blended one would not be the same picture. The texture is remade from the
+	// kept bytes rather than held, because a change of frame scale releases every texture the
+	// documents hold and expects them to come back.
+	if (!Picture || DrawnWidth != width || DrawnHeight != height) {
+		std::vector<std::uint8_t> drawn;
+		if (!UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(Pixels.data(), Pixels.size()), Width, Height, width, height, drawn)) {
+			Picture.Release();
+			return;
+		}
+
+		Rml::Vector2i dimensions(width, height);
+		Picture = manager->MakeCallbackTexture([drawn, dimensions](Rml::CallbackTextureInterface const & interface) {
+			return(interface.GenerateTexture(Rml::Span<const Rml::byte>(drawn.data(), drawn.size()), dimensions));
 		});
+		DrawnWidth = width;
+		DrawnHeight = height;
 	}
 
 	Rml::ComputedValues const & computed = GetComputedValues();

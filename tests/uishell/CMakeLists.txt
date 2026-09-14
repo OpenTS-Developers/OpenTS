@@ -34,6 +34,7 @@ opents_add_test(UIShell
         ui/screens/mainopt/uimainopt.cpp
         ui/screens/msgbox/uimsgbox.cpp
         ui/screens/savegame/uisavegame.cpp
+        ui/screens/skirmish/uiskirmish.cpp
         ui/screens/sound/uisound.cpp
         ui/screens/version/uiversion.cpp
         ui/screens/waitbox/uiwaitbox.cpp

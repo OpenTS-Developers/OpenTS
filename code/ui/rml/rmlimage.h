@@ -41,7 +41,14 @@ bool UI_Indexed_To_RGBA(UIImageIndexed const & image, std::vector<std::uint8_t> 
 // widened by repeating their top bits, the way the frame shows them.
 bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int height, int pitch, std::vector<std::uint8_t> & rgba);
 
-// Where a picture of the given size lands inside a box, kept in proportion and centred, by
-// the thousandths the dialog layer scaled a map preview with. False, leaving nothing placed,
-// for a size that is not positive.
+// Where a picture of the given size lands inside a box, kept in proportion and centred.
+// Whichever side runs out first fills the box exactly. The dialog layer scaled a map preview
+// in thousandths and halved both the box and the picture in whole pixels, which left it a
+// pixel short of the frame and the gap all on one side; this centres it instead. False,
+// leaving nothing placed, for a size that is not positive.
 bool UI_Surface_Fit(int width, int height, int boxwidth, int boxheight, int & x, int & y, int & fitwidth, int & fitheight);
+
+// A picture at another size, by repeating and dropping whole pixels rather than blending
+// them, which is the stretch GDI gave the dialog layer in its COLORONCOLOR mode. False, with
+// the result empty, for a size that is not positive or a picture short of its own.
+bool UI_Scale_RGBA_Nearest(std::span<std::uint8_t const> pixels, int width, int height, int destwidth, int destheight, std::vector<std::uint8_t> & result);

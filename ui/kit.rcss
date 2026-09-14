@@ -760,6 +760,7 @@ select option:checked
  */
 .frame
 {
+	box-sizing: border-box;
 	border: 1dp #4ab6de;
 }
 

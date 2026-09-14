@@ -1,0 +1,254 @@
+/*
+ * Where the skirmish setup puts its parts, from IDD_SKIRMISH at 426 by 240 dialog units,
+ * which the layer draws 640 by 391, a pixel wider than the rule its own size follows. Three columns that do not stack cleanly: the name, side,
+ * colour and map name run down a 118 wide stack on the left, the seven switches sit in a
+ * frame beside them, the six settings sit in a frame down the right with the buttons under
+ * it, and the map preview runs the width of the first two below both. So the left column
+ * holds a row of the stack and the switch frame, and the preview under it.
+ *
+ * The switch and setting frames carry no caption, so the layer draws each as a plain
+ * rectangle corner to corner, a pixel wider and taller than its rect; the setting frame comes
+ * out a pixel taller still. The rows inside both frames are a unit and five eighths apart, so
+ * the layer's rounding spaces them by turns, which is why each is placed on its own here.
+ * Everything visual comes from the kit.
+ */
+
+#reveal
+{
+	width: 640dp;
+	height: 391dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+#content
+{
+	padding: 19dp 32dp 0 33dp;
+}
+
+#columns
+{
+	display: flex;
+}
+
+#left
+{
+	width: 394dp;
+	margin-right: 14dp;
+}
+
+#right
+{
+	width: 167dp;
+}
+
+#top
+{
+	display: flex;
+}
+
+/* ------------------------------------------------------------------ name, side and colour */
+
+/*
+ * The stack is given the height its parts come to, so that the preview below the row it
+ * shares with the switch frame starts where the layer puts it whatever the parts measure.
+ */
+#identity
+{
+	width: 118dp;
+	height: 178dp;
+	margin-right: 24dp;
+}
+
+/* A caption is drawn from the top of its box, however tall the template makes the box. */
+#identity > .caption
+{
+	display: block;
+	height: 14dp;
+	line-height: 17dp;
+}
+
+/*
+ * The edit box alone is drawn with its frame on its rect rather than a pixel outside it, and
+ * the layer insets its text by the frame alone where the kit pads a pixel further in.
+ */
+#handle
+{
+	width: 116dp;
+	height: 18dp;
+	padding: 0 1dp 1dp 0;
+	margin-top: 5dp;
+	margin-left: 0;
+}
+
+#cap-side
+{
+	margin-top: 9dp;
+}
+
+#side
+{
+	width: 118dp;
+	margin-top: 1dp;
+}
+
+#cap-colour
+{
+	margin-top: 8dp;
+}
+
+#colour
+{
+	width: 118dp;
+	margin-top: 2dp;
+}
+
+/* The map row's two captions are a taller box than the three above them. */
+#cap-map
+{
+	height: 17dp;
+	margin-top: 1dp;
+}
+
+/*
+ * The map name is given the width of the dialog rather than the stack it sits in, which it
+ * never fills; it is left aligned, so nothing beside it moves.
+ */
+#mapname
+{
+	width: 403dp;
+	height: 17dp;
+	margin-top: 9dp;
+}
+
+/* ------------------------------------------------------------------------- the switches */
+
+#switches
+{
+	width: 252dp;
+	height: 158dp;
+	padding: 14dp 0 0 8dp;
+}
+
+#switches > label:nth-child(even)
+{
+	margin-top: 1dp;
+}
+
+/* --------------------------------------------------------------------- the map preview */
+
+/*
+ * The preview fills the frame's own rect rather than the room inside its line, because the
+ * layer fitted the picture to the rect and drew the line over it. The caption is drawn under
+ * the picture and over it: the static is a child window, so it paints after the dialog.
+ */
+#map
+{
+	position: relative;
+	width: 324dp;
+	height: 174dp;
+	margin-top: 1dp;
+}
+
+/*
+ * The picture fills the room inside the frame's line rather than the frame's whole rect, so
+ * it is centred in it. The layer fitted it to the rect and drew the line back over the edge
+ * it covered, which left the picture against the left of the frame with the pixel it fell
+ * short showing on the right.
+ */
+#preview
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 322dp;
+	height: 172dp;
+}
+
+#preview-caption
+{
+	position: absolute;
+	left: -1dp;
+	top: 70dp;
+	width: 323dp;
+	height: 22dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+/* -------------------------------------------------------------------- the six settings */
+
+#settings
+{
+	width: 167dp;
+	height: 297dp;
+	padding: 9dp 0 0 5dp;
+}
+
+.setting > .caption
+{
+	display: block;
+	height: 14dp;
+	line-height: 17dp;
+}
+
+.setting > .row
+{
+	height: 23dp;
+	white-space: nowrap;
+}
+
+.setting input[type='range']
+{
+	width: 100dp;
+	height: 23dp;
+}
+
+/*
+ * The reading inside comes out a pixel right of the layer's, which halves the room left over
+ * in whole pixels where the toolkit rounds a half up. Padding the box would bring the two
+ * together but would carry the field's right end in with it, which costs more than it saves.
+ */
+.setting .trough
+{
+	height: 24dp;
+	line-height: 23dp;
+}
+
+#setting-units { height: 47dp; }
+#setting-units > .row { margin-top: 5dp; }
+#setting-credits { height: 47dp; }
+#setting-credits > .row { margin-top: 6dp; }
+#setting-tech { height: 48dp; }
+#setting-tech > .row { margin-top: 6dp; }
+#setting-ailevel { height: 47dp; }
+#setting-ailevel > .row { margin-top: 6dp; }
+#setting-aiplayers { height: 48dp; }
+#setting-aiplayers > .row { margin-top: 5dp; }
+#setting-speed > .row { margin-top: 5dp; }
+
+/* --------------------------------------------------------------------------- the buttons */
+
+#pick
+{
+	width: 166dp;
+	margin-top: 5dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 3dp;
+}
+
+#ok
+{
+	width: 76dp;
+	margin-right: 14dp;
+}
+
+#cancel
+{
+	width: 76dp;
+}

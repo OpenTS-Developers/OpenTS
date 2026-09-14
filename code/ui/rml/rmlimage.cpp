@@ -11,6 +11,7 @@
 #include "ui/rml/rmlrendermath.h"
 
 #include <algorithm>
+#include <cstdint>
 #include <cstring>
 
 
@@ -181,11 +182,46 @@ bool UI_Surface_Fit(int width, int height, int boxwidth, int boxheight, int & x,
 		return(false);
 	}
 
-	int scale = std::min(1000 * boxwidth / width, 1000 * boxheight / height);
+	if ((std::int64_t)width * (std::int64_t)boxheight >= (std::int64_t)height * (std::int64_t)boxwidth) {
+		fitwidth = boxwidth;
+		fitheight = (int)(((std::int64_t)height * (std::int64_t)boxwidth + width / 2) / width);
+	} else {
+		fitheight = boxheight;
+		fitwidth = (int)(((std::int64_t)width * (std::int64_t)boxheight + height / 2) / height);
+	}
 
-	fitwidth = scale * width / 1000;
-	fitheight = scale * height / 1000;
-	x = boxwidth / 2 - scale * width / 2000;
-	y = boxheight / 2 - scale * height / 2000;
+	fitwidth = std::clamp(fitwidth, 1, boxwidth);
+	fitheight = std::clamp(fitheight, 1, boxheight);
+
+	x = (boxwidth - fitwidth) / 2;
+	y = (boxheight - fitheight) / 2;
+	return(true);
+}
+
+
+bool UI_Scale_RGBA_Nearest(std::span<std::uint8_t const> pixels, int width, int height, int destwidth, int destheight, std::vector<std::uint8_t> & result)
+{
+	result.clear();
+
+	if (width <= 0 || height <= 0 || destwidth <= 0 || destheight <= 0) {
+		return(false);
+	}
+	if (pixels.size() != (std::size_t)width * (std::size_t)height * 4) {
+		return(false);
+	}
+
+	result.resize((std::size_t)destwidth * (std::size_t)destheight * 4);
+
+	for (int y = 0; y < destheight; y++) {
+		int row = (int)((std::int64_t)y * (std::int64_t)height / (std::int64_t)destheight);
+		std::uint8_t const * source = pixels.data() + (std::size_t)row * (std::size_t)width * 4;
+		std::uint8_t * out = result.data() + (std::size_t)y * (std::size_t)destwidth * 4;
+
+		for (int x = 0; x < destwidth; x++) {
+			int column = (int)((std::int64_t)x * (std::int64_t)width / (std::int64_t)destwidth);
+			std::memcpy(out + (std::size_t)x * 4, source + (std::size_t)column * 4, 4);
+		}
+	}
+
 	return(true);
 }

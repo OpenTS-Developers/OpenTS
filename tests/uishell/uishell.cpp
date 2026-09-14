@@ -39,6 +39,7 @@
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/sound/uisound.h"
+#include "ui/screens/skirmish/uiskirmish.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
 #include "ui/uicoord.h"
@@ -2441,6 +2442,82 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 // document uses neither yet, so they are written here instead of being added to ui/.
 // The map preview is pixels the engine drew rather than a file, so what turns a frame surface
 // into a picture, what places it, and the element that draws it are all checked without one.
+// Drives the skirmish setup: the dialog comes out at its template's size, the two frames at
+// theirs, bases and a short game switch each other the way the Win32 check boxes do, and the
+// map button closes the screen rather than answering inside it.
+void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UISkirmishState state;
+	state.Handle = "Player";
+	for (int index = 0; index < 2; index++) {
+		UISkirmishOption side;
+		side.Label = index == 0 ? "GDI" : "Nod";
+		side.Value = index;
+		state.Sides.push_back(side);
+
+		UISkirmishOption colour;
+		colour.Label = index == 0 ? "Gold" : "Red";
+		colour.Value = index;
+		colour.Colour = index == 0 ? "#ffdf5a" : "#ff1818";
+		state.Colours.push_back(colour);
+	}
+	state.MapName = "Grand Canyon (2-4)";
+	state.UnitCountMax = 10;
+	state.CreditsMin = 2500;
+	state.CreditsMax = 10000;
+	state.CreditsStep = 250;
+	state.Credits = 5000;
+	state.TechLevelMax = 10;
+	state.Preview.Width = 4;
+	state.Preview.Height = 2;
+	state.Preview.Pixels.assign(4 * 2 * 4, 200);
+	state.Preview.Generation = 1;
+
+	UISkirmishPresenterClass presenter(state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the skirmish view prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the skirmish screen raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the setup is the size its template comes to");
+
+	Rml::Element * switches = document->GetElementById("switches");
+	Check(switches != nullptr && switches->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(252.0f, 158.0f), "the switch frame is its rect and the pixel the layer adds");
+
+	Rml::Element * settings = document->GetElementById("settings");
+	Check(settings != nullptr && settings->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(167.0f, 297.0f), "the setting frame is its rect and the pixel the layer adds");
+
+	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map preview");
+
+	// The Win32 dialog sets bases when a short game is asked for, and clears a short game
+	// when bases go, because a short game is decided by what a player has left standing.
+	presenter.State.Bases = false;
+	presenter.State.ShortGame = false;
+	Drive(presenter, "short", 1);
+	Check(presenter.State.ShortGame && presenter.State.Bases, "asking for a short game brings bases back");
+	Drive(presenter, "bases", 0);
+	Check(!presenter.State.Bases && !presenter.State.ShortGame, "taking bases away ends the short game");
+
+	// A reading the rules bound is held to those bounds however it arrives.
+	Drive(presenter, "credits", 99999);
+	Check(presenter.State.Credits == 10000, "a reading past its bound is held at it");
+
+	Drive(presenter, "map");
+	Check(presenter.Result.has_value() && presenter.Choice == UI_SKIRMISH_PICK_MAP, "the map button closes the setup with the map choice");
+
+	view->Release();
+	context.Update();
+}
+
+
 void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass & render, CountingSystemInterfaceClass & system)
 {
 	// Black, white, and each channel alone. A five or six bit channel is widened by repeating
@@ -2475,6 +2552,18 @@ void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass 
 	Check(UI_Surface_Fit(100, 200, 100, 100, x, y, width, height) && x == 25 && y == 0 && width == 50 && height == 100, "a tall picture fits the height and centres across");
 	Check(UI_Surface_Fit(50, 50, 100, 100, x, y, width, height) && x == 0 && y == 0 && width == 100 && height == 100, "a picture in proportion with its box fills it");
 	Check(!UI_Surface_Fit(0, 10, 100, 100, x, y, width, height) && width == 0 && height == 0, "a picture of nothing is not placed");
+
+	// Stretched by repeating and dropping whole pixels, as GDI did for the dialog layer, so
+	// a picture keeps the colours it was drawn in however large the room it is shown in.
+	std::uint8_t const pair[8] = { 10, 20, 30, 255, 200, 210, 220, 255 };
+	std::vector<std::uint8_t> scaled;
+	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 4, 2, scaled)
+		&& scaled.size() == 32 && scaled[0] == 10 && scaled[4] == 10 && scaled[8] == 200 && scaled[12] == 200
+		&& std::memcmp(scaled.data(), scaled.data() + 16, 16) == 0, "a picture stretches by repeating whole pixels");
+	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 1, 1, scaled)
+		&& scaled.size() == 4 && scaled[0] == 10, "and shrinks by dropping them");
+	Check(!UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 0, 1, scaled) && scaled.empty(),
+		"a picture is not stretched to nothing");
 
 	char const * markup =
 		"<rml><head><style>"
@@ -2685,6 +2774,7 @@ void Test_Documents(void)
 	if (context != nullptr) {
 		Test_Effects_Documents(*context, render, system);
 		Test_Surface_Element(*context, render, system);
+		Test_Skirmish_Screen(*context, system);
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);

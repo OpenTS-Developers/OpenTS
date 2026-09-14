@@ -26,6 +26,9 @@
 #include "newmenu.h"
 #include "ownrdraw.h"
 #include "rules.h"
+#include "_ui.h"
+#include "ui/screens/skirmish/uiskirmish.h"
+#include "ui/uishell.h"
 #include "win.h"
 
 
@@ -227,17 +230,22 @@ bool Skirmish_Mode_Dialog(void)
 	Draw_Menu_Background();
 	Show_Mouse();
 
-	HWND dialog = OwnerDraw::Begin_Dialog(IDD_SKIRMISH, Skirmish_Dialog_Proc);
-	if (dialog) {
-		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
-		OwnerDraw::Display_Dialog(dialog);
-		while (rc != IDOK && rc != IDCANCEL) {
-			if (OwnerDraw::Dialog_Message_Handler() == IDOK) {
-				break;
+	bool started = false;
+	if (UIShell.Use_Rml() && UI_Skirmish_Dialog(started)) {
+		rc = started ? IDOK : IDCANCEL;
+	} else {
+		HWND dialog = OwnerDraw::Begin_Dialog(IDD_SKIRMISH, Skirmish_Dialog_Proc);
+		if (dialog) {
+			SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
+			OwnerDraw::Display_Dialog(dialog);
+			while (rc != IDOK && rc != IDCANCEL) {
+				if (OwnerDraw::Dialog_Message_Handler() == IDOK) {
+					break;
+				}
+				Title_Screen_Restore();
 			}
-			Title_Screen_Restore();
+			OwnerDraw::End_Dialog(dialog);
 		}
-		OwnerDraw::End_Dialog(dialog);
 	}
 
 	if (MultiplayerMapPreview != NULL) {

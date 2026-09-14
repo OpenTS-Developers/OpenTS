@@ -1300,8 +1300,9 @@ void PregameSetup(void)
 /// the scenario locally asks the host for a preview instead of building one, so the picture
 /// may not appear until that download arrives.
 /// </summary>
-/// <param name="win">The dialog window that displays the preview.</param>
-void Update_Network_Dialog_Preview(HWND win)
+/// <returns>bool; Was a preview built? A guest still waiting on one from the host, or a
+/// scenario this machine does not hold, leaves none.</returns>
+bool Update_Network_Dialog_Preview(void)
 {
 	delete MultiplayerMapPreview;
 	MultiplayerMapPreview = NULL;
@@ -1321,7 +1322,7 @@ void Update_Network_Dialog_Preview(HWND win)
 				while (Ipx.Global_Num_Send() != 0) {
 					Call_Back();
 				}
-				return;
+				return(false);
 			}
 			break;
 	}
@@ -1332,7 +1333,7 @@ void Update_Network_Dialog_Preview(HWND win)
 			delete MultiplayerMapPreview;
 			MultiplayerMapPreview = NULL;
 		}
-		return;
+		return(false);
 	}
 
 	if (MultiplayerMapPreview != NULL) {
@@ -1340,8 +1341,22 @@ void Update_Network_Dialog_Preview(HWND win)
 		MultiplayerMapPreview = NULL;
 	}
 	MultiplayerMapPreview = new MapPreviewClass;
-	if (MultiplayerMapPreview != NULL) {
-		MultiplayerMapPreview->Read_INI_Preview(Session.ScenarioFileName);
+	if (MultiplayerMapPreview == NULL) {
+		return(false);
+	}
+
+	MultiplayerMapPreview->Read_INI_Preview(Session.ScenarioFileName);
+	return(true);
+}
+
+
+/// <summary>
+/// Updates the map preview and repaints the dialog showing it.
+/// </summary>
+/// <param name="win">The dialog window that displays the preview.</param>
+void Update_Network_Dialog_Preview(HWND win)
+{
+	if (Update_Network_Dialog_Preview()) {
 		InvalidateRect(win, NULL, FALSE);
 	}
 }

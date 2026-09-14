@@ -1,0 +1,75 @@
+<rml>
+<head>
+	<title>Skirmish</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="skirmish.rcss"/>
+</head>
+<body template="dialog" data-model="skirmish">
+	<div id="columns">
+		<div id="left">
+			<div id="top">
+				<div id="identity">
+					<span class="caption" id="cap-name">Name:</span>
+					<input type="text" id="handle" maxlength="11" data-value="handle" data-event-change="queue('handle', ev.value)"/>
+					<span class="caption" id="cap-side">Side:</span>
+					<select id="side" data-event-change="queue('side', ev.value)">
+						<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == side">{{entry.label}}</option>
+					</select>
+					<span class="caption" id="cap-colour">Color:</span>
+					<select id="colour" data-event-change="queue('colour', ev.value)">
+						<option data-for="entry : colours" data-attr-value="it_index" data-attrif-selected="it_index == colour" data-style-color="entry.colour">{{entry.label}}</option>
+					</select>
+					<span class="caption" id="cap-map">Map:</span>
+					<span class="caption" id="mapname">{{mapname}}</span>
+				</div>
+				<div id="switches" class="frame">
+					<label class="check"><input type="checkbox" data-attrif-checked="bases" data-event-click="queue('bases', bases ? 0 : 1)"/>Bases</label>
+					<label class="check"><input type="checkbox" data-attrif-checked="crates" data-event-click="queue('crates', crates ? 0 : 1)"/>Crates</label>
+					<label class="check"><input type="checkbox" data-attrif-checked="fog" data-event-click="queue('fog', fog ? 0 : 1)"/>Fog Of War</label>
+					<label class="check"><input type="checkbox" data-attrif-checked="bridges" data-event-click="queue('bridges', bridges ? 0 : 1)"/>Bridges Destroyable</label>
+					<label class="check"><input type="checkbox" data-attrif-checked="redeploy" data-event-click="queue('redeploy', redeploy ? 0 : 1)"/>Re-Deployable MCV</label>
+					<label class="check"><input type="checkbox" data-attrif-checked="shortgame" data-event-click="queue('short', shortgame ? 0 : 1)"/>Short Game</label>
+					<label class="check"><input type="checkbox" data-attrif-checked="engineer" data-event-click="queue('engineer', engineer ? 0 : 1)"/>Multi Engineer</label>
+				</div>
+			</div>
+			<div id="map" class="frame">
+				<surface id="preview"/>
+				<span id="preview-caption">Preview</span>
+			</div>
+		</div>
+		<div id="right">
+			<div id="settings" class="frame">
+				<div class="setting" id="setting-units">
+					<span class="caption">Unit Count:</span>
+					<div class="row"><input type="range" id="units" step="1" data-attr-min="unitsmin" data-attr-max="unitsmax" data-attr-value="units" data-event-change="queue('units', ev.value)"/><span class="trough">{{units}}</span></div>
+				</div>
+				<div class="setting" id="setting-credits">
+					<span class="caption">Credits:</span>
+					<div class="row"><input type="range" id="credits" data-attr-step="creditsstep" data-attr-min="creditsmin" data-attr-max="creditsmax" data-attr-value="credits" data-event-change="queue('credits', ev.value)"/><span class="trough">{{credits}}</span></div>
+				</div>
+				<div class="setting" id="setting-tech">
+					<span class="caption">Tech Level:</span>
+					<div class="row"><input type="range" id="tech" step="1" min="1" data-attr-max="techmax" data-attr-value="tech" data-event-change="queue('tech', ev.value)"/><span class="trough">{{tech}}</span></div>
+				</div>
+				<div class="setting" id="setting-ailevel">
+					<span class="caption">AI Level:</span>
+					<div class="row"><input type="range" id="ailevel" step="1" min="0" max="2" data-attr-value="ailevel" data-event-change="queue('ailevel', ev.value)"/><span class="trough">{{ailevel}}</span></div>
+				</div>
+				<div class="setting" id="setting-aiplayers">
+					<span class="caption">AI Players:</span>
+					<div class="row"><input type="range" id="aiplayers" step="1" min="1" data-attr-max="aiplayersmax" data-attr-value="aiplayers" data-event-change="queue('aiplayers', ev.value)"/><span class="trough">{{aiplayers}}</span></div>
+				</div>
+				<div class="setting" id="setting-speed">
+					<span class="caption">Game Speed</span>
+					<div class="row"><input type="range" id="speed" step="1" min="0" max="6" data-attr-value="speed" data-event-change="queue('speed', ev.value)"/><span class="trough">{{speed}}</span></div>
+				</div>
+			</div>
+			<button id="pick" data-event-click="queue('map')">Multiplay Map</button>
+			<div id="buttons">
+				<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+				<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+			</div>
+		</div>
+	</div>
+</body>
+</rml>

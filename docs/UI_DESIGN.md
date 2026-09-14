@@ -668,11 +668,16 @@ picture at all. The pixels travel as bytes in the presenter's state, the way
 every other engine fact reaches a screen, so images have one route rather than
 a second of their own. The element widens a frame surface's five and six bit
 channels by repeating their top bits, places the picture in proportion and
-centred in its box by the thousandths `Blit_Preview` scaled a preview with, and
-holds it in a callback texture, so the release of every texture that follows a
-change of frame scale regenerates it. It is not magnified with the rest of the
-art, because that fit was never a whole-number scale. A map carrying no preview
-leaves the element drawing nothing rather than failing its screen. Original
+centred in its box, resamples it there by repeating and dropping whole pixels
+as the stretch GDI gave the dialog layer did, and holds it in a callback
+texture, so the release of every texture that follows a change of frame scale
+regenerates it. The picture is not magnified with the rest of the art, because
+it is already drawn at the size it is shown. The centring is a deliberate
+departure: the layer scaled a preview in thousandths and then halved both the
+frame and the picture in whole pixels, so the picture came out a pixel short of
+the frame with the whole gap on one side, and the side that runs out first
+fills the frame exactly here. A map carrying no preview leaves the element
+drawing nothing rather than failing its screen. Original
 game art stays local runtime data outside version control; documents receive
 artwork identities, never engine pointers.
 

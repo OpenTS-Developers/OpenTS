@@ -41,6 +41,8 @@ class UIRmlSurfaceElementClass : public Rml::Element
 
 		int Width;
 		int Height;
+		int DrawnWidth;
+		int DrawnHeight;
 		std::vector<std::uint8_t> Pixels;
 		Rml::CallbackTexture Picture;
 		Rml::Geometry Shape;

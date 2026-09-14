@@ -22,6 +22,7 @@ INT_PTR CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPA
 bool Set_Scenario_Info_From_Index(int index);
 void Commit_Session_Specials(void);
 void PregameSetup(void);
+bool Update_Network_Dialog_Preview(void);
 void Update_Network_Dialog_Preview(HWND win);
 void Receive_Random_Map_Preview(void);
 void Send_Preview_To_Guests(void);
