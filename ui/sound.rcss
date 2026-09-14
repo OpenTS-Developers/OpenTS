@@ -69,11 +69,6 @@
 	height: 25dp;
 }
 
-.row > .trough
-{
-	height: 25dp;
-}
-
 /* The lite template holds its sliders three across from the labels and three shorter. */
 .lite .row > .caption
 {

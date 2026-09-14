@@ -446,7 +446,10 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * top of it one in from the left; the thumb's travel is thirteen short of the width, which
  * is what a track a pixel narrower on the left comes to. Where the bar shows its value, that
  * number sits in a fifty wide field of its own, the trough, put after the bar in the same
- * row; the bar is then fifty narrower and the frame ends where the field begins.
+ * row; the bar is then fifty narrower and the frame ends where the field begins. The
+ * field's picture is twenty-six tall, a pixel more than the bar, and the field lies under
+ * the bar so the bar's frame closes over its first column, as the layer drew the field
+ * before the frame.
  *
  * RmlUi places a slider's track and thumb from the input's border corner rather than its
  * content corner, so the track's margins and the thumb's top margin carry the frame's width
@@ -485,10 +488,11 @@ input[type='range']:disabled
 {
 	display: inline-block;
 	width: 50dp;
-	height: 24dp;
+	height: 26dp;
+	z-index: -1;
 	vertical-align: top;
 	text-align: center;
-	line-height: 24dp;
+	line-height: 25dp;
 	background-color: #000000b4;
 	decorator: tiled-horizontal(trofl.pcx, trofm.pcx, trofr.pcx);
 }
