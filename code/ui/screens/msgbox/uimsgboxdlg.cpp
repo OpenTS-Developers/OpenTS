@@ -17,6 +17,7 @@
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
+#include "win.h"
 
 #include <utility>
 
@@ -49,5 +50,55 @@ bool UI_Message_Box(char const * text, int defaultresponse, char const * b1, cha
 	}
 
 	choice = (result == UI_RESULT_SESSION_ENDED) ? -1 : presenter.Choice;
+	return(true);
+}
+
+
+bool UI_Network_Message_Box(char const * text, int type, bool (*idle)(void), int & choice)
+{
+	choice = IDCANCEL;
+
+	// The Win32 templates carry these captions as literals rather than string table entries,
+	// so the box reads the same in every language; the screen matches what it replaces.
+	std::vector<std::string> captions;
+	int ids[2] = { IDOK, IDCANCEL };
+
+	if (type == MB_YESNO) {
+		captions.push_back("No");
+		captions.push_back("Yes");
+		ids[0] = IDNO;
+		ids[1] = IDYES;
+	} else if (type == MB_OKCANCEL) {
+		captions.push_back("OK");
+		captions.push_back("Cancel");
+	} else {
+		captions.push_back("OK");
+	}
+	captions.resize(3);
+
+	UIMessageBoxPresenterClass presenter((text != NULL) ? text : "", std::move(captions), 0);
+	presenter.Network = true;
+
+	if (UIShell.Legacy_Dialog_Visible()) {
+		return(false);
+	}
+
+	std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+
+	UIResult result = UIShell.Run_Modal(*view, [idle](void) {
+		bool ended = UI_Service_Game();
+		if (idle != NULL && idle()) {
+			ended = true;
+		}
+		return(ended);
+	});
+
+	if (result == UI_RESULT_FAILED_TO_OPEN) {
+		return(false);
+	}
+
+	if (result != UI_RESULT_SESSION_ENDED && presenter.Choice >= 0 && presenter.Choice < 2) {
+		choice = ids[presenter.Choice];
+	}
 	return(true);
 }

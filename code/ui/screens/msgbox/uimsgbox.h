@@ -43,6 +43,8 @@ class UIMessageBoxPresenterClass : public UIPresenterClass
 		std::string Text;
 		std::vector<UIMessageButton> Buttons;
 		int Default;
+		// The network box is its own shape, wider and taller than the menu's.
+		bool Network = false;
 		// The legacy return value: the button number, or -1 while nothing has answered.
 		int Choice = -1;
 };
@@ -57,3 +59,9 @@ std::unique_ptr<UIViewClass> UI_Message_Box_View(UIMessageBoxPresenterClass & pr
 // box; otherwise choice carries the legacy return value: the button number, or -1 when the
 // session ended.
 bool UI_Message_Box(char const * text, int defaultresponse, char const * b1, char const * b2, char const * b3, int & choice);
+
+// Runs the network message box as an RmlUi screen, polling the caller's idle routine each pass
+// so that its answers keep flowing while the box is up. The type is the MB_ layout the Win32
+// box takes, and choice comes back as the control id that answered, as ODMessageBox reports it.
+// False means it could not run as a screen and the caller should open its Win32 box.
+bool UI_Network_Message_Box(char const * text, int type, bool (*idle)(void), int & choice);

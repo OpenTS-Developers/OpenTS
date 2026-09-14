@@ -1583,6 +1583,29 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 	}
 
 	{
+		UIMessageBoxPresenterClass presenter("Network", { "OK", "", "" }, 0);
+		presenter.Network = true;
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "the network box prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+		Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(436.0f, 147.0f), "the network box is the size its own template comes to");
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
+		Check(buttons.size() == 1, "the network box shows its lone button");
+		if (buttons.size() == 1) {
+			float panel = Rml(*view).Document()->GetElementById("chrome")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			Check(left == 180.0f, "a lone button stands where the template puts OK");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
 		UIMessageBoxPresenterClass presenter("Default", { "Yes", "No", "Maybe" }, 2);
 		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
 		Check(Rml(*view).Prepare(context), "a box with a default prepares");

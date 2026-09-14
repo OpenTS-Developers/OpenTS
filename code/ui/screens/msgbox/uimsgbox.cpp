@@ -112,6 +112,7 @@ class UIMessageBoxViewClass : public UIRmlViewClass
 			if (buttons != nullptr) {
 				buttons->SetClass("alone", Data.Buttons.size() == 1);
 			}
+			Document()->SetClass("net", Data.Network);
 		}
 
 	private:

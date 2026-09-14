@@ -48,3 +48,46 @@ button
 {
 	width: 90dp;
 }
+
+
+/*
+ * The network box is its own template, IDD_MSGBOX_3_SMALL at 290 by 90 dialog units: 436 by
+ * 147 pixels, the text at 33,19 over 370 by 66, and 76 wide buttons on the row at 104. The
+ * template puts a lone OK in the middle and the yes and no pair at 105 and 253, which is 72
+ * in from the text's edge and 72 apart. MB_OKCANCEL is the one shape that takes a different
+ * template, IDD_MSGBOX_2, whose pair stands at the text's edges instead; nothing calls it.
+ */
+
+.net #reveal
+{
+	width: 436dp;
+	height: 147dp;
+	margin-top: -73dp;
+}
+
+.net #text
+{
+	height: 66dp;
+}
+
+.net #buttons
+{
+	justify-content: flex-start;
+	margin-top: 19dp;
+}
+
+.net #buttons button
+{
+	width: 76dp;
+	margin-left: 72dp;
+}
+
+.net #buttons.alone
+{
+	justify-content: center;
+}
+
+.net #buttons.alone button
+{
+	margin-left: 0;
+}

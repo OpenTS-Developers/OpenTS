@@ -11,7 +11,10 @@
 
 #include "netshare.h"
 
+#include "_ui.h"
+#include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/scenario/uiscenario.h"
+#include "ui/uishell.h"
 
 #include "_rules.h"
 #include "conquer.h"
@@ -395,6 +398,13 @@ int ODMessageBox(const char * text, int type, bool (*callback)(void), bool large
 {
 	if (text != NULL && strlen(text) > 0) {
 		HWND dialog;
+
+		if (UIShell.Use_Rml()) {
+			int choice;
+			if (UI_Network_Message_Box(text, type, callback, choice)) {
+				return(choice);
+			}
+		}
 		if (type == MB_OKCANCEL) {
 			dialog = WS_Create_Dialog(ProgramInstance, IDD_MSGBOX_2, MainWindow, ODMessageBox_Proc, false);
 		} else {
