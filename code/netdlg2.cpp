@@ -171,6 +171,7 @@ int Net2FirstFreeColor(int reqcolor, int index)
 void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 {
 	Net2_Close_Lobby();
+	Net2_Clear_Chat_Log();
 
 	int id;
 	DLGPROC proc;

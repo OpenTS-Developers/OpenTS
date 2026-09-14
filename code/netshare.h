@@ -14,7 +14,18 @@
 #include "preview.h"
 #include "wstring.h"
 
+#include <string>
+#include <vector>
+
 class HouseClass;
+
+
+// One lobby message as the game produced it, before any view broke it into lines.
+struct NetChatLineType
+{
+	int Color;
+	std::string Text;
+};
 
 int ODMessageBox(const char *text, int type, bool (*callback)(void), bool large = false);
 INT_PTR CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
@@ -36,6 +47,11 @@ unsigned int Wstring_Hash(Wstring & string);
 
 void __cdecl PMessagePrintf(int color, const char * fmt, ...);
 void __cdecl SMessagePrintf(int color, const char * fmt, ...);
+
+// The lobby chat, oldest first, capped at the same 500 entries the list box keeps. The
+// message list box is one view of this; a document is another.
+std::vector<NetChatLineType> const & Net2_Chat_Log(void);
+void Net2_Clear_Chat_Log(void);
 
 void _DrawMessage(int color, const char * msg, HWND window);
 void _SetMessageString(HWND window,  const char * msg, int len, int color);

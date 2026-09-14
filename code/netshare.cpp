@@ -126,6 +126,24 @@ HWND GameoptWindow(void)
 }
 
 
+static std::vector<NetChatLineType> _ChatLog;
+
+
+std::vector<NetChatLineType> const & Net2_Chat_Log(void)
+{
+	return(_ChatLog);
+}
+
+
+/// <summary>
+/// Empties the lobby chat. The dialog that showed it is going away with its messages.
+/// </summary>
+void Net2_Clear_Chat_Log(void)
+{
+	_ChatLog.clear();
+}
+
+
 /// <summary>
 /// Prints a formatted chat message to the player.
 /// This routine hunts down the topmost dialog that has somewhere to show public and private
@@ -143,6 +161,11 @@ void __cdecl PMessagePrintf(int color, const char * fmt, ...)
 	va_start(va, fmt);
 	vsprintf(buffer, fmt, va);
 	va_end(va);
+
+	if (_ChatLog.size() >= 500) {
+		_ChatLog.erase(_ChatLog.begin());
+	}
+	_ChatLog.push_back(NetChatLineType{color, buffer});
 
 	if (WS_Top_Window() != 0) {
 		HWND top = WS_Top_Window();
