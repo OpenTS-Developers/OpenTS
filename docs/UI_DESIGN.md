@@ -745,16 +745,22 @@ options menu is not carried over at all. A control's width is its outer
 width, borders included, because that is what the template measures. A
 `dlgsys` caption is drawn from the top of its box with no leading, so a
 caption's line height is the glyph's height and the box carries the row's
-height; a check box label is the same. Where the game draws a control a pixel
-from where the rule puts it, the sheet follows the game and says so: the
-display list is a pixel shorter than its template, the front-end sound
-dialog a pixel wider, and the keyboard screen's combo box and list a pixel
-lower and wider. Three screens carry a second arrangement: the
-sound options and the
-game controls each have a frontend template and an in-game one, chosen by a
-class the document sets from its model, and the message box places its buttons
-in the three slots its template holds, which come out as a row spread across
-the content. Where a screen departs from its template it says so in its own
+height; a check box label is the same. The rule is close but not exact: the
+game draws a few dialogs and controls a pixel from where it puts them, with no
+pattern that the measurements support, so every screen is measured against its
+Win32 dialog at 3840x2160 and its sheet follows the game, saying so where it
+departs. The display list is a pixel shorter than its template; the front-end
+sound dialog, the campaign chooser and the three saved-game dialogs are each a
+pixel wider; the in-game options menu is a pixel shorter; the keyboard screen's
+combo box and list sit a pixel lower and wider; the abort question's buttons
+are a pixel narrower; and the in-game menu's Save button sits a row lower than
+the column around it. Five screens carry a second arrangement: the sound
+options and the game controls each have a frontend template and an in-game one,
+the in-game options menu has a campaign arrangement and a network one, the
+saved-game screen has one for each of loading, saving and deleting, all chosen
+by a class the document sets from its model, and the message box places its
+buttons in the three slots its template holds, which come out as a row spread
+across the content. Where a screen departs from its template it says so in its own
 sheet: the game controls make room for a difficulty row in a game, which no
 template of the game's own offers.
 
@@ -1135,7 +1141,20 @@ beyond an ASCII test document.
    three appear only where `GMENU.MIX` is missing and the graphic menu cannot
    run, so they are the degraded install's menu rather than the shipped one.
    The `NewMenuClass` drivers keep their loops.
-9. **Load, save, delete** (M, two changes).
+9. **Load, save, delete** (M, landed as `savegame.rml` over
+   `IDD_MISSION_LOAD`, `IDD_MISSION_SAVE` and `IDD_MISSION_DELETE`, chosen by
+   a class the document sets from the style the caller asked for).
+   `LoadOptionsClass` keeps every file operation and its message boxes; the
+   gathering of the files moved out of `Fill_List` into `Gather_Files` so that
+   both the Win32 list and the document read the same entries, and the screen's
+   own loop reopens wherever the Win32 loop stayed standing. The list's cells
+   are placed at the positions the layer drew them at rather than flowed, since
+   a cell keeps its place whatever the cell before it holds. The templates carry
+   a third column between the description and the stamp, a heading and a mark
+   for a game that is not a campaign mission, that the game draws in neither
+   dialog; the document leaves it out to match what the game shows. Evidence:
+   all three match their Win32 dialogs at 3840x2160 apart from the list text,
+   and a save through the screen writes its file and brings the menu back.
 10. **Skirmish and map selection** (M, two changes). Includes the scenario
     picker templates and the preview surface.
 11. **Network lobbies** (L, two changes). Host, guest, game list, the `WS_`

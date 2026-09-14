@@ -61,7 +61,16 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 	bool bound = Bind(constructor);
 	bound = constructor.BindEventCallback("queue", [this](Rml::DataModelHandle, Rml::Event &, Rml::VariantList const & arguments) {
 		if (!arguments.empty()) {
-			Queue(arguments[0].Get<Rml::String>().c_str(), arguments.size() > 1 ? arguments[1].Get<int>() : 0);
+			// An argument reaches a screen both ways, since a variant converts either way and a
+			// screen knows which of the two its control carries.
+			Rml::String const name = arguments[0].Get<Rml::String>();
+			Rml::String text;
+			int value = 0;
+			if (arguments.size() > 1) {
+				value = arguments[1].Get<int>();
+				text = arguments[1].Get<Rml::String>();
+			}
+			Queue(name.c_str(), value, text.c_str());
 		}
 	}) && bound;
 	Model = constructor.GetModelHandle();
@@ -367,10 +376,13 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 }
 
 
-void UIRmlViewClass::Queue(char const * name, int value)
+void UIRmlViewClass::Queue(char const * name, int value, char const * text)
 {
 	UIIntent intent;
 	intent.Name = name;
 	intent.Value = value;
+	if (text != nullptr) {
+		intent.Text = text;
+	}
 	Owner.Queue(intent);
 }

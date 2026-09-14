@@ -107,16 +107,23 @@ class LoadOptionsClass
 		virtual bool Delete_File(const char * file_name);
 		virtual bool Read_File(FileEntryClass * entry, WIN32_FIND_DATAA * ff);
 
+		// Prints a save's date and time as its list columns read them; false when it has no stamp.
+		static bool Stamp_Strings(FileEntryClass const & entry, char * date, std::size_t datesize,
+			char * timeofday, std::size_t timesize);
+
 	protected:
 		/*
 		**	Internal routines
 		*/
 		void Clear_List (void);                                     // clears the list & game # array
 		void Fill_List (HWND window);                               // fills the list & game # array
+		void Gather_Files (void);                                   // reads the saves into Files, newest first
+		int Initial_Row (void) const;                               // the row the dialog opens on
 		int Num_From_Ext (char *fname);                             // translates filename to file #
 		static int __cdecl Compare(const void *p1, const void *p2); // for qsort()
 
 		bool Dialog(void);
+		bool Rml_Dialog(void);
 
 		// How many of the newest files the list reads headers for; reading one costs a disk open.
 		virtual std::size_t Scan_Limit(void) const {return(SIZE_MAX);}

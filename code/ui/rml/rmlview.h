@@ -70,7 +70,8 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 		// Runs once the document has loaded, for the listeners a view puts on its elements.
 		virtual void Loaded(void) {}
 		virtual void ProcessEvent(Rml::Event & event) override;
-		void Queue(char const * name, int value = 0);
+		// A document's queue() call: a name, and either a number or the text a control carries.
+		void Queue(char const * name, int value = 0, char const * text = nullptr);
 
 		Rml::DataModelHandle Model;
 

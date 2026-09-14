@@ -32,7 +32,7 @@
  *   LoadOptionsClass::~LoadOptionsClass -- class destructor                                   *
  *   LoadOptionsClass::Process -- main processing routine                                      *
  *   LoadOptionsClass::Clear_List -- clears the list box & Files arrays                        *
- *   LoadOptionsClass::Fill_List -- fills the list box & GameNum arrays                        *
+ *   LoadOptionsClass::Fill_List -- fills the list box from the gathered files                 *
  *   LoadOptionsClass::Num_From_Ext -- clears the list box & GameNum arrays                    *
  *   LoadOptionsClass::Compare -- for qsort                                                    *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -42,6 +42,12 @@
 #include "autosave.h"
 
 #include "loaddlg.h"
+
+#include "_ui.h"
+#include "ui/screens/savegame/uisavegame.h"
+#include "ui/uienginehost.h"
+#include "ui/uishell.h"
+#include "ui/uiview.h"
 
 #include "campaign.h"
 #include "conquer.h"
@@ -391,8 +397,188 @@ static bool Saved_Game_Exists(char const * name)
  * HISTORY:                                                                                    *
  *   02/14/1995 BR : Created.                                                                  *
  *=============================================================================================*/
+/// <summary>
+/// Runs the load, save or delete dialog as an RmlUi screen, doing the same work on the
+/// player's pick that the Win32 loop does and reopening wherever that loop stayed standing.
+/// </summary>
+/// <returns>bool; Was the screen shown at all? False leaves State untouched and the caller
+/// opens its Win32 dialog instead.</returns>
+bool LoadOptionsClass::Rml_Dialog(void)
+{
+	char buffer[256];
+
+	for (;;) {
+		Gather_Files();
+
+		UISaveGameState state;
+		switch (Style) {
+			case SAVE:
+				state.Mode = UI_SAVE_GAME_SAVE;
+				state.Title = "SAVE";
+				state.AcceptCaption = "Save";
+				break;
+
+			case WWDELETE:
+				state.Mode = UI_SAVE_GAME_DELETE;
+				state.Title = "DELETE";
+				state.AcceptCaption = "Delete";
+				break;
+
+			default:
+				state.Mode = UI_SAVE_GAME_LOAD;
+				state.Title = "LOAD";
+				state.AcceptCaption = "Load";
+				break;
+		}
+
+		for (int index = 0; index < Files.Count(); index++) {
+			FileEntryClass const * file = Files[index];
+			UISaveGameEntry entry;
+			entry.Description = file->Descr;
+			char date[128];
+			char timeofday[128];
+			if (Stamp_Strings(*file, date, sizeof(date), timeofday, sizeof(timeofday))) {
+				entry.Date = date;
+				entry.Time = timeofday;
+			}
+			state.Entries.push_back(entry);
+		}
+
+		state.Selected = Initial_Row();
+		state.AcceptEnabled = Files.Count() > 0;
+		if (Style == SAVE && Description != NULL) {
+			state.Description = Description;
+		}
+
+		UISaveGamePresenterClass presenter(std::move(state));
+		std::unique_ptr<UIViewClass> view = UI_Save_Game_View(presenter);
+
+		UIResult result = UI_Run_Modal(*view);
+		if (result == UI_RESULT_FAILED_TO_OPEN) {
+			Clear_List();
+			return(false);
+		}
+
+		if (!presenter.Accepted) {
+			Clear_List();
+			State = STATE_CLOSE;
+			return(true);
+		}
+
+		int const row = presenter.State.Selected;
+		FileEntryClass * entry = (row >= 0 && row < Files.Count()) ? Files[row] : NULL;
+		State = STATE_OK;
+
+		if (entry == NULL) {
+			Clear_List();
+			return(true);
+		}
+
+		switch (Style) {
+
+			/*
+			**	Load: a failed load reports itself and leaves the list standing so that the
+			**	player can try another game.
+			*/
+			case LOAD:
+				if (entry->Num != -1) {
+					Init_Campaigns();
+				}
+				if (!Load_File(entry->Filename)) {
+					WWMessageBox().Process(TXT_ERROR_LOADING_GAME, TXT_OK, TXT_NONE, TXT_NONE);
+					State = STATE_PENDING;
+				}
+				break;
+
+			/*
+			**	Save: an empty description or a refused overwrite leaves the list standing.
+			*/
+			case SAVE: {
+				std::string typed = presenter.State.Description;
+				if (typed.empty()) {
+					WWMessageBox().Process(TXT_MUSTENTER_DESCRIPTION, TXT_OK, TXT_NONE, TXT_NONE);
+					State = STATE_PENDING;
+					break;
+				}
+
+				char const * filename = NULL;
+				char picked[256];
+				if (entry->Valid) {
+					filename = entry->Filename;
+				} else {
+					Pick_Filename(picked);
+					filename = picked;
+				}
+
+				if (filename == NULL) {
+					break;
+				}
+
+				if (Saved_Game_Exists(filename)
+					&& WWMessageBox()._Process(TXT_CONFIRM_SAVE, 1, TXT_YES, TXT_NO, TXT_NONE)) {
+					State = STATE_PENDING;
+					break;
+				}
+
+				if (!Save_File(filename, typed.c_str())) {
+					WWMessageBox().Process(TXT_ERROR_SAVING_GAME, TXT_OK, TXT_NONE, TXT_NONE);
+					State = STATE_PENDING;
+					break;
+				}
+
+				int const confirmation = Save_Confirmation();
+				if (confirmation != TXT_NONE) {
+					WWMessageBox().Process(confirmation, TXT_OK, TXT_NONE, TXT_NONE);
+				}
+				if (Description) {
+					strcpy(Description, typed.c_str());
+				}
+				break;
+			}
+
+			/*
+			**	Delete: the list stays standing while there is anything left to delete.
+			*/
+			case WWDELETE:
+				sprintf(buffer, "%s\n%s", Fetch_String(TXT_DELETE_FILE_QUERY), entry->Descr);
+				if (!WWMessageBox()._Process(buffer, 1, TXT_YES, TXT_NO, TXT_NONE)) {
+					Delete_File(entry->Filename);
+					if (Files.Count() > 1) {
+						State = STATE_PENDING;
+					}
+				} else {
+					State = STATE_PENDING;
+				}
+				break;
+
+			default:
+				break;
+		}
+
+		Clear_List();
+
+		if (State != STATE_PENDING) {
+			return(true);
+		}
+	}
+}
+
+
 bool LoadOptionsClass::Dialog(void)
 {
+	// A save that ran out of room part way through would leave an unusable file behind.
+	if (Style == SAVE && Disk_Space_Available() < MinSpaceRequired) {
+		WWMessageBox().Process(TXT_DISKFULL, TXT_OK, TXT_NONE, TXT_NONE);
+		return(false);
+	}
+
+	if (UIShell.Use_Rml() && !UIShell.Legacy_Dialog_Visible()) {
+		State = STATE_PENDING;
+		if (Rml_Dialog()) {
+			return(State == STATE_OK);
+		}
+	}
+
 	/*
 	**	Dialog variables
 	*/
@@ -408,10 +594,6 @@ bool LoadOptionsClass::Dialog(void)
 			break;
 
 		case SAVE:
-			if (Disk_Space_Available() < MinSpaceRequired) {
-				WWMessageBox().Process(TXT_DISKFULL, TXT_OK, TXT_NONE, TXT_NONE);
-				return(false);
-			}
 			dialog = OwnerDraw::Begin_Dialog(IDD_MISSION_SAVE, Save_Dialog_Proc);
 			list = GetDlgItem(dialog, IDC_MISSION_SAVE_LIST);
 			break;
@@ -618,7 +800,7 @@ void LoadOptionsClass::Clear_List(void)
 
 
 /***********************************************************************************************
- * LoadOptionsClass::Fill_List -- fills the list box & GameNum arrays                          *
+ * LoadOptionsClass::Gather_Files -- reads the saved games into the Files list               *
  *                                                                                             *
  * INPUT:                                                                                      *
  *      none.                                                                                  *
@@ -633,9 +815,8 @@ void LoadOptionsClass::Clear_List(void)
  *   02/14/1995 BR : Created.                                                                  *
  *   06/25/1995 JLB : Shows which saved games are "(old)".                                     *
  *=============================================================================================*/
-void LoadOptionsClass::Fill_List(HWND window)
+void LoadOptionsClass::Gather_Files(void)
 {
-	OwnerDraw::CellData thecell;
 	FileEntryClass * fdata = NULL;  // for adding entries to 'Files'
 	WIN32_FIND_DATAA ff;            // for FindFirstFile
 
@@ -723,14 +904,66 @@ void LoadOptionsClass::Fill_List(HWND window)
 		**	Now sort the list in order of Date/Time (newest first, oldest last)
 		*/
 		qsort((void *)(&Files[0]), Files.Count(), sizeof(class FileEntryClass *), LoadOptionsClass::Compare);
+	}
+}
 
+
+/// <summary>
+/// Prints a save's date and its time the way the list's own columns read them.
+/// </summary>
+/// <returns>bool; Does the save carry a stamp at all?</returns>
+bool LoadOptionsClass::Stamp_Strings(FileEntryClass const & entry, char * date, std::size_t datesize,
+	char * timeofday, std::size_t timesize)
+{
+	date[0] = '\0';
+	timeofday[0] = '\0';
+
+	if (entry.DateTime.dwHighDateTime == -1 && entry.DateTime.dwLowDateTime == -1) {
+		return(false);
+	}
+
+	FILETIME ft;
+	SYSTEMTIME time;
+	FileTimeToLocalFileTime(&entry.DateTime, &ft);
+	FileTimeToSystemTime(&ft, &time);
+	GetDateFormat(LANG_USER_DEFAULT, TIME_NOMINUTESORSECONDS, &time, NULL, date, (int)datesize);
+	GetTimeFormat(LANG_USER_DEFAULT, TIME_NOSECONDS, &time, NULL, timeofday, (int)timesize);
+	return(true);
+}
+
+
+/// <summary>
+/// The row the dialog opens on: the newest loadable save for a load, and the first row,
+/// which is the empty slot, for a save or a delete.
+/// </summary>
+int LoadOptionsClass::Initial_Row(void) const
+{
+	if (Style == LOAD) {
+		for (int index = 0; index < Files.Count(); index++) {
+			if (Files[index]->Valid) {
+				return(index);
+			}
+		}
+	}
+	return(0);
+}
+
+
+void LoadOptionsClass::Fill_List(HWND window)
+{
+	OwnerDraw::CellData thecell;
+	char buffer[128];
+
+	Gather_Files();
+
+	if (Files.Count() > 0) {
 		ListBox_ResetContent(window);
 
 		/*
 		**	Now add every file's name to the list box
 		*/
 		for (int i = 0; i < Files.Count(); i++) {
-			fdata = Files[i];
+			FileEntryClass * fdata = Files[i];
 
 			int row = ListBox_AddString(window, fdata);
 
@@ -740,43 +973,22 @@ void LoadOptionsClass::Fill_List(HWND window)
 				SendMessage(window, OD_SETCELL, MAKEWPARAM(200, row), (LPARAM)&thecell);
 			}
 
-			if (fdata->DateTime.dwHighDateTime != -1 && fdata->DateTime.dwLowDateTime != -1) {
-				FILETIME ft;
-				SYSTEMTIME time;
-				FileTimeToLocalFileTime(&fdata->DateTime, &ft);
-				FileTimeToSystemTime(&ft, &time);
-				GetDateFormat(LANG_USER_DEFAULT, TIME_NOMINUTESORSECONDS, &time, NULL, buffer, sizeof(buffer));
+			char timeofday[128];
+			if (Stamp_Strings(*fdata, buffer, sizeof(buffer), timeofday, sizeof(timeofday))) {
 				thecell.type = OwnerDraw::CellData::TEXT;
 				thecell.string.set(buffer);
 				SendMessage(window, OD_SETCELL, MAKEWPARAM(255, row), (LPARAM)&thecell);
-				GetTimeFormat(LANG_USER_DEFAULT, TIME_NOSECONDS, &time, NULL, buffer, sizeof(buffer));
 				thecell.type = OwnerDraw::CellData::TEXT;
-				thecell.string.set(buffer);
+				thecell.string.set(timeofday);
 				SendMessage(window, OD_SETCELL, MAKEWPARAM(315, row), (LPARAM)&thecell);
 			}
 
 			ListBox_SetItemData(window, row, (LPARAM)fdata);
 		}
 
-		switch (Style) {
-			case LOAD: {
-					for (int i = 0; i < Files.Count(); i++) {
-						if (Files[i]->Valid) {
-							ListBox_SetCurSel(window, i);
-							ListBox_SetTopIndex(window, i);
-							break;
-						}
-					}
-				}
-				break;
-
-			case SAVE:
-			case WWDELETE:
-				ListBox_SetCurSel(window, 0);
-				ListBox_SetTopIndex(window, 0);
-				break;
-		}
-
+		int const row = Initial_Row();
+		ListBox_SetCurSel(window, row);
+		ListBox_SetTopIndex(window, row);
 	}
 }
 
