@@ -52,10 +52,15 @@
 	width: 182dp;
 }
 
+/*
+ * A centred static takes its template's width without the pixel a control's size otherwise
+ * gains, and sits a pixel left of the middle when the room is odd, so the box is padded on
+ * the right to bring the toolkit's rounding down to the layer's.
+ */
 #heading-stamp
 {
 	display: inline-block;
-	width: 109dp;
+	width: 108dp;
 	margin-left: 79dp;
 	padding-right: 1dp;
 	text-align: center;
@@ -63,13 +68,13 @@
 
 .save #heading-stamp
 {
-	width: 100dp;
+	width: 99dp;
 	margin-left: 83dp;
 }
 
 .delete #heading-stamp
 {
-	width: 107dp;
+	width: 106dp;
 }
 
 #files
