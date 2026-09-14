@@ -222,6 +222,9 @@ class UIShellClass
 
 		bool DevWasActive = false;
 
+		// The factor the art was last magnified by, so a frame that changes it reloads the art.
+		int ArtMagnification = 1;
+
 		// The Debug test document a developer key shows over the game.
 		Rml::ElementDocument * TestDocument = nullptr;
 		std::unique_ptr<Rml::EventListener> TestListener;

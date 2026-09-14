@@ -1,10 +1,11 @@
 /*
  * Where the game controls put their parts. In a game it is IDD_OPT_CTRL_GAME_MP at 292 by
- * 175 dialog units, 438 by 284 pixels: three slider rows of a 95 wide label, a 192 wide
- * slider and a 75 wide reading, two columns of switches, and three 116 wide buttons. Out of
- * one it is IDD_OPT_CTRL_GAME_SP at 292 by 179, 438 by 291: wider sliders, a fourth row for
- * the difficulty and one button in the middle. The Internet template drops the speed row and
- * is otherwise the in-game one. Everything visual comes from the kit.
+ * 175 dialog units, 438 by 284 pixels: three rows of a 95 wide label, a 192 by 24 slider and
+ * a 75 wide reading, two columns of switches, and three 116 wide buttons. Out of one it is
+ * IDD_OPT_CTRL_GAME_SP at 292 by 179, 438 by 291: 87 wide labels, 222 by 21 sliders with 68
+ * wide readings, a fourth row for the difficulty and one button in the middle. The Internet
+ * template drops the speed row and is otherwise the in-game one. Everything visual comes
+ * from the kit.
  */
 
 #reveal
@@ -17,8 +18,8 @@
 
 /*
  * A difficulty row in a game is no template of the game's own: the front end is the only
- * place the original offers one. The screen still makes room for it, so a caller that
- * asks for both is laid out rather than cut off.
+ * place the original offers one. The screen still makes room for it, so a caller that asks
+ * for both is laid out rather than cut off.
  */
 .difficulty #reveal
 {
@@ -47,6 +48,7 @@
 {
 	display: block;
 	height: 24dp;
+	white-space: nowrap;
 }
 
 .row + .row
@@ -54,58 +56,62 @@
 	margin-top: 26dp;
 }
 
+.frontend .row
+{
+	height: 21dp;
+}
+
 .frontend .row + .row
 {
-	margin-top: 12dp;
+	margin-top: 15dp;
 }
 
 .frontend #row-scroll
 {
-	margin-top: 11dp;
+	margin-top: 14dp;
 }
 
 .row > .caption
 {
-	display: inline-block;
 	width: 95dp;
+	margin-right: 7dp;
 	line-height: 24dp;
 	text-align: right;
-	vertical-align: top;
 }
 
 .row > input[type='range']
 {
 	width: 192dp;
-	margin-left: 7dp;
-	vertical-align: top;
+	height: 24dp;
 }
 
 .row > .value
 {
-	display: inline-block;
 	width: 75dp;
 	margin-left: 9dp;
 	line-height: 24dp;
-	vertical-align: top;
 }
 
 /* The front end gives the slider the room the reading and the label give up. */
 .frontend .row > .caption
 {
 	width: 87dp;
+	margin-right: 0;
+	line-height: 21dp;
 	text-align: left;
 }
 
 .frontend .row > input[type='range']
 {
 	width: 222dp;
-	margin-left: 0;
+	height: 21dp;
 }
 
 .frontend .row > .value
 {
 	width: 68dp;
 	margin-left: 2dp;
+	line-height: 21dp;
 	text-align: right;
 }
 
@@ -117,7 +123,7 @@
 
 .frontend #switches
 {
-	margin-top: 16dp;
+	margin-top: 19dp;
 }
 
 #switches > .column

@@ -9,6 +9,7 @@
 
 #include "ui/rml/rmlfont.h"
 
+#include "ui/rml/rmlrendermath.h"
 #include "utf8.h"
 
 #include <RmlUi/Core/CallbackTexture.h>
@@ -17,6 +18,7 @@
 #include <RmlUi/Core/RenderManager.h>
 #include <RmlUi/Core/StringUtilities.h>
 
+#include <span>
 #include <unordered_map>
 
 
@@ -26,11 +28,12 @@
 class UISheetFaceClass
 {
 	public:
-		UISheetFaceClass(UIImageIndexed const & index, UIImageIndexed const & alpha, UISheetFontMetrics const & metrics, float scale) :
+		UISheetFaceClass(UIImageIndexed const & index, UIImageIndexed const & alpha, UISheetFontMetrics const & metrics, float scale, int magnification) :
 			Index(index),
 			Alpha(alpha),
 			Sheet(metrics),
-			Scale(scale)
+			Scale(scale),
+			Magnification(magnification < 1 ? 1 : magnification)
 		{
 			Measurements.size = (int)(Sheet.GlyphHeight * scale);
 			Measurements.ascent = Sheet.GlyphHeight * scale;
@@ -43,6 +46,15 @@ class UISheetFaceClass
 		}
 
 		Rml::FontMetrics const & Metrics(void) const { return(Measurements); }
+
+		void Set_Magnification(int magnification)
+		{
+			magnification = magnification < 1 ? 1 : magnification;
+			if (magnification != Magnification) {
+				Magnification = magnification;
+				Atlases.clear();
+			}
+		}
 
 		int String_Width(Rml::StringView string) const
 		{
@@ -127,7 +139,18 @@ class UISheetFaceClass
 				return(Rml::Texture());
 			}
 
+			// The atlas is kept larger than the sheets while the glyph quads keep the sheets'
+			// measure, so the sampler sees whole pixels however the frame is scaled.
 			Rml::Vector2i dimensions(Index.Width, Index.Height);
+			if (Magnification > 1) {
+				std::vector<std::uint8_t> magnified;
+				if (!UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(rgba.data(), rgba.size()), Index.Width, Index.Height, Magnification, magnified)) {
+					return(Rml::Texture());
+				}
+				rgba.swap(magnified);
+				dimensions = Rml::Vector2i(Index.Width * Magnification, Index.Height * Magnification);
+			}
+
 			Rml::CallbackTexture texture = manager.MakeCallbackTexture([rgba, dimensions](Rml::CallbackTextureInterface const & interface) {
 				return(interface.GenerateTexture(Rml::Span<const Rml::byte>(rgba.data(), rgba.size()), dimensions));
 			});
@@ -139,6 +162,7 @@ class UISheetFaceClass
 		UIImageIndexed Alpha;
 		UISheetFontMetrics Sheet;
 		float Scale;
+		int Magnification;
 		Rml::FontMetrics Measurements;
 		std::unordered_map<std::uint32_t, Rml::CallbackTexture> Atlases;
 };
@@ -210,6 +234,15 @@ UISheetFaceClass * UIFontEngineClass::Find_Face(Rml::FontFaceHandle handle) cons
 }
 
 
+void UIFontEngineClass::Set_Magnification(int factor)
+{
+	Magnification = factor < 1 ? 1 : factor;
+	for (std::unique_ptr<UISheetFaceClass> const & face : Faces) {
+		face->Set_Magnification(Magnification);
+	}
+}
+
+
 void UIFontEngineClass::Initialize(void)
 {
 }
@@ -265,7 +298,7 @@ Rml::FontFaceHandle UIFontEngineClass::GetFontFaceHandle(Rml::String const & fam
 		}
 	}
 
-	Faces.push_back(std::make_unique<UISheetFaceClass>(sheets->Index, sheets->Alpha, sheets->Metrics, scale));
+	Faces.push_back(std::make_unique<UISheetFaceClass>(sheets->Index, sheets->Alpha, sheets->Metrics, scale, Magnification));
 	return((Rml::FontFaceHandle)Faces.back().get());
 }
 

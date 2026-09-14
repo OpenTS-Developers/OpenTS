@@ -99,6 +99,27 @@ class UIEngineHostClass : public UIShellHostClass
 			return(true);
 		}
 
+		// The pixel art filter magnifies the frame to the next whole multiple point for
+		// point and shrinks that smoothly; the art follows it so both come out alike.
+		virtual int Art_Magnification(void) const override
+		{
+			if (Options.ScaleMode != VIDEO_SCALE_PIXELART) {
+				return(1);
+			}
+
+			UIFrameRect frame = Frame();
+			float ratio = frame.ScaleX < frame.ScaleY ? frame.ScaleX : frame.ScaleY;
+			if (ratio <= 1.0f) {
+				return(1);
+			}
+
+			int factor = (int)ratio;
+			if ((float)factor < ratio - 0.001f) {
+				factor++;
+			}
+			return(factor);
+		}
+
 		virtual bool Legacy_Dialog_Visible(void) const override
 		{
 			for (int index = 0; index < g_DialogCount; index++) {

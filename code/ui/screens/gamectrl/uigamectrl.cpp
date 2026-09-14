@@ -109,10 +109,12 @@ void UIGameControlsPresenterClass::Apply(void)
 }
 
 
+// The speed and the scroll rate are delays, so the smallest is the fastest; the dialog names
+// them by their slider position, which runs the other way.
 void UIGameControlsPresenterClass::Update_Names(void)
 {
-	State.SpeedName = Name_Of(State.SpeedNames, State.Speed);
-	State.ScrollName = Name_Of(State.ScrollNames, State.Scroll);
+	State.SpeedName = Name_Of(State.SpeedNames, (int)State.SpeedNames.size() - 1 - State.Speed);
+	State.ScrollName = Name_Of(State.ScrollNames, (int)State.ScrollNames.size() - 1 - State.Scroll);
 	State.DetailName = Name_Of(State.DetailNames, State.Detail);
 	State.DifficultyName = Name_Of(State.DifficultyNames, State.Difficulty);
 }

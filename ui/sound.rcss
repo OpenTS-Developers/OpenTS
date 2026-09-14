@@ -1,9 +1,10 @@
 /*
  * Where the sound options put their parts. In a game it is IDD_SOUND_OPTIONS_DIALOG at 294
  * by 215 dialog units, 441 by 349 pixels: three volume rows of a 105 wide label and a 263
- * wide slider, then the track list with its buttons and switches beside it, and OK at the
- * right. Out of one it is IDD_SOUND_OPTIONS_DIALOG_LITE at 294 by 112, 441 by 182: the same
- * three rows on their own with OK under them. Everything visual comes from the kit.
+ * wide track bar, the last fifty of which is the field the bar shows its volume in, then the
+ * track list with its buttons and switches beside it, and OK at the right. Out of one it is
+ * IDD_SOUND_OPTIONS_DIALOG_LITE at 294 by 112, 441 by 182: the same three rows on their own
+ * with OK under them. Everything visual comes from the kit.
  */
 
 #reveal
@@ -34,6 +35,7 @@
 {
 	display: block;
 	height: 24dp;
+	white-space: nowrap;
 }
 
 #row-sound
@@ -53,25 +55,27 @@
 
 .row > .caption
 {
-	display: inline-block;
 	width: 105dp;
+	margin-right: 8dp;
 	line-height: 24dp;
 	text-align: right;
-	vertical-align: top;
 }
 
 .row > input[type='range']
 {
-	width: 263dp;
-	margin-left: 8dp;
-	vertical-align: top;
+	width: 213dp;
+	height: 24dp;
 }
 
 /* The lite template holds its sliders three across from the labels and three shorter. */
+.lite .row > .caption
+{
+	margin-right: 11dp;
+}
+
 .lite .row > input[type='range']
 {
-	width: 260dp;
-	margin-left: 11dp;
+	width: 210dp;
 }
 
 /* The list stands beside the column of buttons and switches. */

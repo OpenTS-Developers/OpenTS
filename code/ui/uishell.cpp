@@ -257,6 +257,16 @@ void UIShellClass::Apply_Dimensions(void)
 
 	Context->SetDimensions(Rml::Vector2i(frame.Width, frame.Height));
 	Context->SetDensityIndependentPixelRatio(ratio);
+
+	// The art already loaded was magnified for the old frame, so it is let go and loads
+	// again at the new factor as the documents next draw it.
+	int magnification = Host.Art_Magnification();
+	if (magnification != ArtMagnification) {
+		ArtMagnification = magnification;
+		Render->Set_Art_Magnification(magnification);
+		Fonts->Set_Magnification(magnification);
+		Rml::ReleaseTextures(Render.get());
+	}
 }
 
 

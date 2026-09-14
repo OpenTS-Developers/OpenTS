@@ -453,6 +453,28 @@ void Test_Sheet_Font(void)
 }
 
 
+void Test_Magnify(void)
+{
+	// A two by two picture of four distinct pixels, three times over.
+	std::uint8_t const picture[16] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 };
+	std::vector<std::uint8_t> result;
+
+	Check(UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(picture, 16), 2, 2, 3, result) && result.size() == 6 * 6 * 4, "a picture magnified three times over is nine times its size");
+	bool repeated = result.size() == 144;
+	for (int y = 0; y < 6 && repeated; y++) {
+		for (int x = 0; x < 6 && repeated; x++) {
+			std::uint8_t const * pixel = picture + ((y / 3) * 2 + (x / 3)) * 4;
+			repeated = std::memcmp(result.data() + (y * 6 + x) * 4, pixel, 4) == 0;
+		}
+	}
+	Check(repeated, "and every pixel of it is the one it came from, repeated");
+
+	Check(UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(picture, 16), 2, 2, 1, result) && result.size() == 16 && std::memcmp(result.data(), picture, 16) == 0, "one times over is the picture itself");
+	Check(!UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(picture, 12), 2, 2, 2, result) && result.empty(), "a picture short of its size is refused");
+	Check(!UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(picture, 16), 2, 2, 0, result), "as is a factor of nothing");
+}
+
+
 void Test_Reveal(void)
 {
 	// A 300 pixel dialog: 12 pixels a side a frame is 13 frames, and the original's last
@@ -575,6 +597,7 @@ int main(void)
 	Test_Image();
 	Test_Sheet_Font();
 	Test_Reveal();
+	Test_Magnify();
 	Test_Dirty_State();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");

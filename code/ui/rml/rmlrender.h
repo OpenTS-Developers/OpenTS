@@ -62,6 +62,11 @@ class UIRmlRenderClass : public Rml::RenderInterface
 		// Writes what the renderer holds to the debug log.
 		virtual void Log_Resource_Counts(char const * when) const = 0;
 
+		// How many times over a loaded picture is magnified pixel for pixel before it is
+		// kept, so that drawing it smoothly at the frame's scale keeps its pixels whole.
+		// Pictures already loaded keep their old factor until they are loaded again.
+		virtual void Set_Art_Magnification(int factor) { (void)factor; }
+
 		// The first refusal since the last clear, empty when there was none. The shell
 		// clears it before preparing a document and reads it after.
 		char const * Error(void) const { return(ErrorText); }
@@ -108,6 +113,7 @@ class UIRmlBgfxRenderClass : public UIRmlRenderClass
 		virtual void Destroy_ImGui_Textures(void) override;
 		virtual int Texture_Limit(void) const override;
 		virtual void Log_Resource_Counts(char const * when) const override;
+		virtual void Set_Art_Magnification(int factor) override { ArtMagnification = factor < 1 ? 1 : factor; }
 
 		virtual Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) override;
 		virtual void RenderGeometry(Rml::CompiledGeometryHandle geometry, Rml::Vector2f translation, Rml::TextureHandle texture) override;
@@ -154,6 +160,7 @@ class UIRmlBgfxRenderClass : public UIRmlRenderClass
 
 		bool ScissorEnabled;
 		Rml::Rectanglei Scissor;
+		int ArtMagnification = 1;
 
 		bool TransformEnabled;
 		float Transform[16];

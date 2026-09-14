@@ -9,16 +9,16 @@
 	<div id="columns">
 		<div class="column" id="left">
 			<p class="caption">Category:</p>
-			<div id="categories" class="list">
-				<div class="item" data-for="name : categories" data-class-selected="it_index == categoryindex" data-event-click="queue('category', it_index)">{{name}}</div>
-			</div>
+			<select id="categories" data-event-change="queue('category', ev.value)">
+				<option data-for="name : categories" data-attr-value="it_index" data-attrif-selected="it_index == categoryindex">{{name}}</option>
+			</select>
 			<div class="group" id="about">
-				<label>Description:</label>
+				<div class="rule"><span></span><label>Description:</label><span></span></div>
 				<div id="description">{{description}}</div>
 			</div>
-			<p class="caption">Press new shortcut key:</p>
+			<p class="caption" id="press">Press new shortcut key:</p>
 			<div id="hotkey-row"><div id="capture" class="hotkey"><span data-if="capturedname == ''">None</span><span data-if="capturedname != ''">{{capturedname}}</span></div><button id="assign" data-event-click="queue('assign')">Assign</button></div>
-			<p class="caption">Currently assigned to:</p>
+			<p class="caption tall">Currently assigned to:</p>
 			<p class="value" id="assigned-to">{{assignedto}}</p>
 		</div>
 		<div class="column" id="right">
@@ -26,7 +26,7 @@
 			<div id="commands" class="list">
 				<div class="item" data-for="row : rows" data-class-selected="row.command == selected" data-event-click="queue('select', row.command)">{{row.name}}</div>
 			</div>
-			<p class="caption">Current shortcut:</p>
+			<p class="caption tall">Current shortcut:</p>
 			<p class="value" id="shortcut">{{shortcut}}</p>
 		</div>
 	</div>

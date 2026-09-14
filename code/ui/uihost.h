@@ -59,6 +59,11 @@ class UIShellHostClass
 		// A harness says no, so its screens are whole from the first pass.
 		virtual bool Animate_Screens(void) const = 0;
 
+		// How many times over the interface art is to be magnified pixel for pixel before it
+		// is drawn smoothly at the frame's scale, so it keeps whole pixels the way the frame
+		// does; one when the frame is drawn smoothly or point for point already.
+		virtual int Art_Magnification(void) const = 0;
+
 		// A Win32 dialog is on screen and takes the mouse before a document can.
 		virtual bool Legacy_Dialog_Visible(void) const = 0;
 		// The player asked for the Win32 dialogs instead of the documents.

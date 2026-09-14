@@ -504,8 +504,17 @@ Rml::TextureHandle UIRmlBgfxRenderClass::LoadTexture(Rml::Vector2i & dimensions,
 		return(0);
 	}
 
+	// The picture is kept larger than it is reported, so the document lays it out at its own
+	// size while the sampler sees whole pixels.
 	dimensions.x = width;
 	dimensions.y = height;
+	if (ArtMagnification > 1) {
+		std::vector<unsigned char> magnified;
+		if (!UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(rgba.data(), rgba.size()), width, height, ArtMagnification, magnified)) {
+			return(Fail("a picture could not be magnified"), (Rml::TextureHandle)0);
+		}
+		return(GenerateTexture(Rml::Span<const Rml::byte>(magnified.data(), magnified.size()), Rml::Vector2i(width * ArtMagnification, height * ArtMagnification)));
+	}
 	return(GenerateTexture(Rml::Span<const Rml::byte>(rgba.data(), rgba.size()), dimensions));
 }
 

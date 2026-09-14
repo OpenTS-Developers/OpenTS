@@ -644,7 +644,19 @@ lets the harness test it over bytes it builds itself, with no art shipped.
 Art the player does not have is told apart from art that is present and will
 not decode. A missing image leaves a clear texture and no latched refusal, so
 a screen missing a decoration still opens; an unreadable one latches as
-before, because that is the document's own fault. SHP frames are not decoded
+before, because that is the document's own fault.
+
+The art is scaled the way the frame is. The pixel art filter magnifies the
+frame point for point to the next whole multiple of its size and shrinks that
+smoothly to the window, so its pixels stay whole and even at any scale; a
+picture drawn by RmlUi at a fractional scale with a linear sampler would blur
+instead, and with a point sampler would come out with uneven pixels. So the
+host reports that whole multiple as `Art_Magnification`, the renderer keeps
+each loaded picture magnified by it while reporting the picture's own size to
+RmlUi, and the sheet font magnifies its atlases the same way, so both are
+sampled smoothly from whole pixels. The factor is one when the frame is drawn
+smoothly or point for point, and a frame that changes it releases every
+texture so the art loads again. SHP frames are not decoded
 yet; they are for the sidebar view, in a `name.shp#frame` form with an
 optional palette and index zero transparent.
 
@@ -717,26 +729,28 @@ game controls each have a frontend template and an in-game one, chosen by a
 class the document sets from its model, and the message box places its buttons
 in the three slots its template holds, which come out as a row spread across
 the content. Where a screen departs from its template it says so in its own
-sheet: the keyboard screen is taller than `IDD_OPT_KEYBOARD` because it picks a
-category from a list where the original dropped a combo box over the
-description, and the game controls make room for a difficulty row in a game,
-which no template of the game's own offers.
+sheet: the game controls make room for a difficulty row in a game, which no
+template of the game's own offers.
 
-The kit's combo box and tabs are authored from the drawing code and no
-migrated screen uses one yet; the network lobbies and the skirmish screens are
-what will exercise them.
+The kit's tabs are authored from the drawing code and no migrated screen uses
+them yet; the network lobbies and the skirmish screens are what will exercise
+them.
 
 The chrome is `Draw_Dialog_Back`'s composition: the 640 by 400 wallpaper
 centred on the frame and cut off at the dialog's edges, black beyond it; a
-24-wide bar tiled down each edge with a corner over each end; and sixteen
-one-pixel rings of white inside the bars, alpha 96 falling by 6 a ring. Two
-RmlUi facts shape it. Decorators paint last to first, so a bar is listed
-after its corners. Overflow is measured from static boxes: positioned
-children are laid out after their container has measured what it clips, and
-a relative offset is never counted. So the wallpaper's box, whose only child
-is positioned, and the band, whose chrome sits half a dialog to the left
-until its offset moves it back, are both told to clip outright with
-`clip: always`. The art is the
+24-wide bar tiled down each edge with a corner over each end; and a glow
+inside the bars that the original drew as sixteen one-pixel rings of white,
+alpha 96 falling by 6 a ring. The glow is one gradient strip per edge, from
+that alpha at the edge to nothing sixteen in, because sixteen rings round to
+the pixel grid on their own at any scale but one to one and gap and double
+up; the strips overlap at the corners, which come out a little brighter than
+the original's mitre. Two RmlUi facts shape the rest. Decorators paint last
+to first, so a bar is listed after its corners. Overflow is measured from
+static boxes: positioned children are laid out after their container has
+measured what it clips, and a relative offset is never counted. So the
+wallpaper's box, whose only child is positioned, and the band, whose chrome
+sits half a dialog to the left until its offset moves it back, are both told
+to clip outright with `clip: always`. The art is the
 player's own and is not shipped; each control has a plain form underneath, a
 fill where a picture would be, so a screen stays usable without it, and that
 form is what the harness renders.
@@ -746,9 +760,17 @@ skin with a 7-wide left cap, a tiled middle and a 10-wide right cap, its
 `dlgsys` caption two down from the top; pressing drops the skin two and the
 caption four more and two across; disabled is a half-black wash rather than
 the skin the original loads and never draws. Check boxes, edit boxes, lists,
-scroll bars, track bars, the progress bar, group boxes, hotkey fields and
-tooltips are authored the same way, in the cyan frame `OD_Draw_Rect`
-substitutes for white, and wait for the screens that use them. A screen's
+scroll bars, track bars, combo boxes, the progress bar, group boxes, hotkey
+fields and tooltips are authored the same way, in the cyan frame
+`OD_Draw_Rect` substitutes for white. That frame is drawn a pixel outside the
+control's rect, so those controls are sized to the rect their template gives
+and their frame hangs over a negative margin; a screen spaces one from its
+neighbour on the neighbour's side. A track bar shows its value in a fifty
+wide trough unless the dialog turned that off, which the game controls do and
+the sound options do not, so a document puts the trough after the bar and
+gives the bar the rest. A combo box's list is the toolkit's own child element,
+placed by it and styled by the kit; a group box's top edge is two line pieces
+either side of its caption, because a border cannot be broken. A screen's
 sheet that still needs a visual rule means the kit is missing a control.
 
 Pressing one of those controls sounds the click the dialog layer sounded, and
@@ -1111,8 +1133,8 @@ geometry, size and scissor checks, the model matrix a transformed fragment
 draws through and the stencil each clip mask operation asks for, the PCX
 decoder over files the test builds itself, the bitmap font's metrics, remap and
 atlas over sheets it builds itself, the reveal schedule a pass at a time and
-under passes too slow for it, and the presenter's marks through consume,
-restore and reset.
+under passes too slow for it, the point for point magnifying of a picture, and
+the presenter's marks through consume, restore and reset.
 
 `toolkitheaders` runs `cmake/CheckToolkitHeaders.cmake` over `code/` and
 fails on a toolkit or renderer header included outside `code/ui/rml/`, or an

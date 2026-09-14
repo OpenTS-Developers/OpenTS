@@ -7,15 +7,15 @@
 <body template="dialog" data-model="sound" data-class-lite="!ingame">
 	<div class="row" id="row-score">
 		<span class="caption">Music Volume:</span>
-		<input type="range" id="score" min="0" max="10" step="1" data-attr-value="score" data-attrif-disabled="!enabled" data-event-change="queue('score', ev.value)"/>
+		<input type="range" id="score" min="0" max="10" step="1" data-attr-value="score" data-attrif-disabled="!enabled" data-event-change="queue('score', ev.value)"/><span class="trough">{{score}}</span>
 	</div>
 	<div class="row" id="row-sound">
 		<span class="caption">Sound Volume:</span>
-		<input type="range" id="sound" min="0" max="10" step="1" data-attr-value="sound" data-attrif-disabled="!enabled" data-event-change="queue('sound', ev.value)"/>
+		<input type="range" id="sound" min="0" max="10" step="1" data-attr-value="sound" data-attrif-disabled="!enabled" data-event-change="queue('sound', ev.value)"/><span class="trough">{{sound}}</span>
 	</div>
 	<div class="row" id="row-voice">
 		<span class="caption">Voice Volume:</span>
-		<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!enabled" data-event-change="queue('voice', ev.value)"/>
+		<input type="range" id="voice" min="0" max="10" step="1" data-attr-value="voice" data-attrif-disabled="!enabled" data-event-change="queue('voice', ev.value)"/><span class="trough">{{voice}}</span>
 	</div>
 	<div id="music" data-if="ingame">
 		<div id="music-side">

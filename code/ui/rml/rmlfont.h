@@ -47,6 +47,11 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 
 		bool Has_Family(Rml::String const & family) const;
 
+		// How many times over the sheets are magnified pixel for pixel before they become an
+		// atlas, so the glyphs keep whole pixels when drawn smoothly at the frame's scale, as
+		// the rest of the art does. The atlases are rebuilt at the next draw.
+		void Set_Magnification(int factor);
+
 		virtual void Initialize(void) override;
 		virtual void Shutdown(void) override;
 
@@ -75,6 +80,7 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		UISheetFaceClass * Find_Face(Rml::FontFaceHandle handle) const;
 
 		Rml::FontEngineInterface * Fallback;
+		int Magnification = 1;
 		std::vector<std::unique_ptr<SheetFamily>> Families;
 		std::vector<std::unique_ptr<UISheetFaceClass>> Faces;
 };

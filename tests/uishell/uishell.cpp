@@ -52,6 +52,7 @@
 #undef GetNextSibling
 
 #include <RmlUi/Core.h>
+#include <RmlUi/Core/Elements/ElementFormControlSelect.h>
 #include <RmlUi/Core/Elements/ElementProgress.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -343,6 +344,13 @@ class TestHostClass : public UIShellHostClass
 		virtual bool Animate_Screens(void) const override
 		{
 			return(Animate);
+		}
+
+		int Magnification = 1;
+
+		virtual int Art_Magnification(void) const override
+		{
+			return(Magnification);
 		}
 
 		virtual bool Window_Is_Unicode(void) const override
@@ -1223,7 +1231,7 @@ void Test_Game_Controls_Presenter(void)
 		Drive(presenter, "edge", 1);
 		Drive(presenter, "difficulty", 2);
 		Check(presenter.State.Speed == 5 && presenter.State.Detail == 2 && presenter.State.CameoText && presenter.State.EdgeScroll, "edits are held in the state and clamped");
-		Check(presenter.State.SpeedName == "Faster" && presenter.State.DetailName == "High", "an edit renames the slider position");
+		Check(presenter.State.SpeedName == "Slower" && presenter.State.DetailName == "High", "an edit renames the slider position, the speed by how far along the slider it lies");
 		Check(service.Calls.empty(), "nothing is applied before the player accepts");
 
 		Drive(presenter, "ok");
@@ -1638,10 +1646,30 @@ std::vector<Rml::Element *> Visible_Rows(Rml::ElementDocument * document, char c
 
 std::vector<Rml::Element *> Keyboard_Rows(Rml::ElementDocument * document)
 {
-	std::vector<Rml::Element *> rows = Visible_Rows(document, "categories");
+	std::vector<Rml::Element *> rows;
+	Rml::ElementFormControlSelect * categories = document != nullptr ? rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("categories")) : nullptr;
+	if (categories != nullptr) {
+		for (int index = 0; index < categories->GetNumOptions(); index++) {
+			Rml::Element * option = categories->GetOption(index);
+			if (!option->HasAttribute("data-for")) {
+				rows.push_back(option);
+			}
+		}
+	}
+
 	std::vector<Rml::Element *> commands = Visible_Rows(document, "commands");
 	rows.insert(rows.end(), commands.begin(), commands.end());
 	return(rows);
+}
+
+
+// Picks a category the way a player does through the combo box: by its position in the list.
+void Pick_Category(Rml::ElementDocument * document, int index)
+{
+	Rml::ElementFormControlSelect * categories = document != nullptr ? rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("categories")) : nullptr;
+	if (categories != nullptr) {
+		categories->SetSelection(index);
+	}
 }
 
 
@@ -1832,7 +1860,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 		Check(speed != nullptr && speed->GetAttribute<int>("value", -1) == 2, "the speed slider runs from slowest to fastest, so it starts at six minus the speed");
 
 		Rml::Element * speed_name = document->GetElementById("speed-name");
-		Check(speed_name != nullptr && speed_name->GetInnerRML() == "Fast", "the speed's name shows beside its slider");
+		Check(speed_name != nullptr && speed_name->GetInnerRML() == "Slow", "the speed's name shows beside its slider, read from the slider's end");
 
 		Rml::Element * detail_name = document->GetElementById("detail-name");
 		Check(detail_name != nullptr && detail_name->GetInnerRML() == "Medium", "the detail level's name shows beside its slider");
@@ -1850,7 +1878,7 @@ void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceCl
 			presenter.Drain();
 			view->Sync();
 			context.Update();
-			Check(presenter.State.Speed == 1 && speed_name->GetInnerRML() == "Slower" && service.Calls.empty(), "dragging the speed slider changes the held speed and its name and applies nothing");
+			Check(presenter.State.Speed == 1 && speed_name->GetInnerRML() == "Faster" && service.Calls.empty(), "dragging the speed slider changes the held speed and its name and applies nothing");
 		}
 
 		Rml::Element * cameo = document->GetElementById("cameo");
@@ -2122,15 +2150,15 @@ void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		Rml::ElementDocument * document = Rml(*view).Document();
 		std::vector<Rml::Element *> rows = Keyboard_Rows(document);
 		Check(rows.size() == 4, "the keyboard screen lists the categories and the open category's commands");
-		Check(rows.size() == 4 && rows[0]->GetInnerRML() == "Interface" && rows[0]->IsClassSet("selected") && rows[2]->GetInnerRML() == "Alliance" && rows[3]->GetInnerRML() == "Toggle Repair", "the first category is open with its commands sorted by name");
+		Check(rows.size() == 4 && rows[0]->GetInnerRML() == "Interface" && rows[0]->HasAttribute("selected") && rows[2]->GetInnerRML() == "Alliance" && rows[3]->GetInnerRML() == "Toggle Repair", "the first category is open with its commands sorted by name");
 
 		if (rows.size() == 4) {
-			Click(context, rows[1]);
+			Pick_Category(document, 1);
 			presenter.Drain();
 			view->Sync();
 			context.Update();
 			rows = Keyboard_Rows(document);
-			Check(rows.size() == 4 && rows[1]->IsClassSet("selected") && rows[2]->GetInnerRML() == "Scatter" && rows[3]->GetInnerRML() == "Select View", "a click on a category lists its commands");
+			Check(rows.size() == 4 && rows[1]->HasAttribute("selected") && rows[2]->GetInnerRML() == "Scatter" && rows[3]->GetInnerRML() == "Select View", "picking a category lists its commands");
 		}
 
 		Rml::Element * capture = document->GetElementById("capture");
@@ -3188,7 +3216,7 @@ void Test_Shell(void)
 			return(passes > 4);
 		});
 
-		Check(found && dragged && presenter.State.Speed == 0 && named == "Slowest", "the speed slider runs backwards, so dragging it to the far end takes the slowest setting");
+		Check(found && dragged && presenter.State.Speed == 0 && named == "Fastest", "the speed slider runs backwards, so dragging it to the far end takes the fastest setting");
 		Check(!presenter.State.CameoText && quiet, "a switch and a slider change the screen without reaching the engine");
 		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
 		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "and asks for the screen its button names");

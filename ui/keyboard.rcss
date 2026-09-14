@@ -1,19 +1,16 @@
 /*
  * Where the keyboard screen puts its parts, from IDD_OPT_KEYBOARD at 336 by 208 dialog
- * units: 504 pixels across, two columns of 207 and 219 inside a 33 pixel inset, the command
- * list 219 by 169, and the buttons along the bottom. The screen is taller than the template
- * because it picks a category from a list where the original dropped a combo box over the
- * description; the list needs room the dropdown borrowed.
- *
- * Everything visual comes from the kit.
+ * units: 504 by 338 pixels, two columns of 207 and 219 inside a 33 pixel inset, the category
+ * combo over the description group, the command list 219 by 169, and the buttons along the
+ * bottom. Everything visual comes from the kit.
  */
 
 #reveal
 {
 	width: 504dp;
-	height: 360dp;
+	height: 338dp;
 	top: 50%;
-	margin-top: -180dp;
+	margin-top: -169dp;
 }
 
 #content
@@ -47,54 +44,59 @@
 .caption
 {
 	display: block;
-	margin-top: 6dp;
 	line-height: 15dp;
 }
 
-.column > .caption:first-child
+.caption.tall
 {
-	margin-top: 0;
+	margin-top: 9dp;
+	line-height: 18dp;
 }
 
 .value
 {
 	display: block;
+	margin-top: 7dp;
 	line-height: 16dp;
 	overflow: hidden;
 }
 
 #categories
 {
-	height: 72dp;
+	display: block;
+	width: 207dp;
+	margin-top: 9dp;
 }
 
-#commands
-{
-	height: 169dp;
-}
-
+/* The group's frame starts a caption's half height below where its template rect does. */
 #about
 {
-	margin-top: 10dp;
+	margin-top: 8dp;
+	height: 86dp;
 }
 
 #description
 {
-	height: 42dp;
+	height: 64dp;
 	overflow: hidden;
+}
+
+#press
+{
+	margin-top: 7dp;
 }
 
 #hotkey-row
 {
-	margin-top: 4dp;
+	margin-top: 5dp;
 }
 
+/* The field is 128 wide with its text four in, so the room inside the padding is 120. */
 #capture
 {
 	display: inline-block;
-	width: 128dp;
+	width: 120dp;
 	height: 23dp;
-	padding: 2dp 6dp;
 	vertical-align: top;
 	white-space: nowrap;
 	overflow: hidden;
@@ -104,7 +106,7 @@
 #assign
 {
 	width: 75dp;
-	margin-left: 5dp;
+	margin-left: 4dp;
 	vertical-align: top;
 }
 
@@ -113,11 +115,17 @@
 	focus: none;
 }
 
+#commands
+{
+	margin-top: 8dp;
+	height: 169dp;
+}
+
 /* Reset on the left, then the pair that answers the screen at the right edge. */
 #buttons
 {
 	display: flex;
-	margin-top: 10dp;
+	margin-top: 8dp;
 }
 
 #reset

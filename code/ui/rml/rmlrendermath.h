@@ -66,6 +66,11 @@ bool UI_Render_Clip_Rect(float left, float top, float right, float bottom, int v
 // rectangle or the image is not what it claims.
 bool UI_Render_Copy_RGBA_Rect(std::span<std::uint8_t const> pixels, int width, int height, int pitch, int x, int y, int rectwidth, int rectheight, std::vector<std::uint8_t> & result);
 
+// A picture `factor` times larger in each direction with every pixel repeated, so that
+// drawing it smoothly keeps whole pixels whole. A factor of one copies. False, with the
+// result empty, for a size or factor that is not positive or a picture short of its size.
+bool UI_Render_Magnify_RGBA(std::span<std::uint8_t const> pixels, int width, int height, int factor, std::vector<std::uint8_t> & result);
+
 // The sixteen floats for one draw: the document's transform, or none, with the fragment's
 // translation applied before it. Both RmlUi and bgfx hold a matrix as four columns, with
 // the translation last, so the result travels between them untouched.

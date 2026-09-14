@@ -91,6 +91,37 @@ bool UI_Render_Copy_RGBA_Rect(std::span<std::uint8_t const> pixels, int width, i
 }
 
 
+bool UI_Render_Magnify_RGBA(std::span<std::uint8_t const> pixels, int width, int height, int factor, std::vector<std::uint8_t> & result)
+{
+	result.clear();
+
+	if (width <= 0 || height <= 0 || factor <= 0 || (std::uint64_t)width * height * 4 > pixels.size()) {
+		return(false);
+	}
+
+	std::uint32_t rowbytes = 0;
+	std::uint32_t totalbytes = 0;
+	if (!UI_Render_Byte_Count((std::size_t)width * factor, 4, rowbytes) || !UI_Render_Byte_Count((std::size_t)height * factor, rowbytes, totalbytes)) {
+		return(false);
+	}
+
+	result.resize(totalbytes);
+	for (int y = 0; y < height; y++) {
+		std::uint8_t * row = result.data() + (std::size_t)y * factor * rowbytes;
+		std::uint8_t const * source = pixels.data() + (std::size_t)y * width * 4;
+		for (int x = 0; x < width; x++) {
+			for (int repeat = 0; repeat < factor; repeat++) {
+				std::memcpy(row + ((std::size_t)x * factor + repeat) * 4, source + (std::size_t)x * 4, 4);
+			}
+		}
+		for (int repeat = 1; repeat < factor; repeat++) {
+			std::memcpy(row + (std::size_t)repeat * rowbytes, row, rowbytes);
+		}
+	}
+	return(true);
+}
+
+
 void UI_Render_Model_Matrix(float const * transform, float translationx, float translationy, float * result)
 {
 	if (transform == nullptr) {

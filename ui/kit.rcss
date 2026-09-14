@@ -120,9 +120,12 @@ div, form, h1, h2, p
 
 /*
  * The glow is sixteen rings of white, each one dimmer than the last, drawn one inside the
- * other. The original steps its alpha down by six from ninety-six, and these are those
- * values written out; it is geometry rather than a blur, so it costs the renderer nothing
- * beyond the rings themselves.
+ * other: the original steps the alpha down by six a ring from ninety-six. That is a straight
+ * ramp from ninety-six at the edge to nothing sixteen in, so each edge is one strip with
+ * that ramp across it. Sixteen one-pixel rings would come to the same picture at one to one,
+ * but at any other scale each ring rounds to the pixel grid on its own and the rings gap
+ * and double up; a ramp has no rings to round. Where two strips meet at a corner both are
+ * drawn, so a corner is a little brighter than the original's mitre.
  */
 #glow, #bar-left, #bar-right, #edge-left, #edge-right
 {
@@ -143,22 +146,10 @@ div, form, h1, h2, p
 	position: absolute;
 }
 
-#glow > div:nth-child(1) { left: 0dp; top: 0dp; right: 0dp; bottom: 0dp; border: 1dp #ffffff60; }
-#glow > div:nth-child(2) { left: 1dp; top: 1dp; right: 1dp; bottom: 1dp; border: 1dp #ffffff5a; }
-#glow > div:nth-child(3) { left: 2dp; top: 2dp; right: 2dp; bottom: 2dp; border: 1dp #ffffff54; }
-#glow > div:nth-child(4) { left: 3dp; top: 3dp; right: 3dp; bottom: 3dp; border: 1dp #ffffff4e; }
-#glow > div:nth-child(5) { left: 4dp; top: 4dp; right: 4dp; bottom: 4dp; border: 1dp #ffffff48; }
-#glow > div:nth-child(6) { left: 5dp; top: 5dp; right: 5dp; bottom: 5dp; border: 1dp #ffffff42; }
-#glow > div:nth-child(7) { left: 6dp; top: 6dp; right: 6dp; bottom: 6dp; border: 1dp #ffffff3c; }
-#glow > div:nth-child(8) { left: 7dp; top: 7dp; right: 7dp; bottom: 7dp; border: 1dp #ffffff36; }
-#glow > div:nth-child(9) { left: 8dp; top: 8dp; right: 8dp; bottom: 8dp; border: 1dp #ffffff30; }
-#glow > div:nth-child(10) { left: 9dp; top: 9dp; right: 9dp; bottom: 9dp; border: 1dp #ffffff2a; }
-#glow > div:nth-child(11) { left: 10dp; top: 10dp; right: 10dp; bottom: 10dp; border: 1dp #ffffff24; }
-#glow > div:nth-child(12) { left: 11dp; top: 11dp; right: 11dp; bottom: 11dp; border: 1dp #ffffff1e; }
-#glow > div:nth-child(13) { left: 12dp; top: 12dp; right: 12dp; bottom: 12dp; border: 1dp #ffffff18; }
-#glow > div:nth-child(14) { left: 13dp; top: 13dp; right: 13dp; bottom: 13dp; border: 1dp #ffffff12; }
-#glow > div:nth-child(15) { left: 14dp; top: 14dp; right: 14dp; bottom: 14dp; border: 1dp #ffffff0c; }
-#glow > div:nth-child(16) { left: 15dp; top: 15dp; right: 15dp; bottom: 15dp; border: 1dp #ffffff06; }
+#glow-top { left: 0; right: 0; top: 0; height: 16dp; decorator: vertical-gradient(#ffffff60 #ffffff00); }
+#glow-bottom { left: 0; right: 0; bottom: 0; height: 16dp; decorator: vertical-gradient(#ffffff00 #ffffff60); }
+#glow-left { left: 0; top: 0; bottom: 0; width: 16dp; decorator: horizontal-gradient(#ffffff60 #ffffff00); }
+#glow-right { right: 0; top: 0; bottom: 0; width: 16dp; decorator: horizontal-gradient(#ffffff00 #ffffff60); }
 
 /*
  * The bars ride the opening edges while a dialog reveals and are gone once it is open. The
@@ -186,6 +177,20 @@ button, input, select, dataselect, option, progress, scrollbarvertical, textarea
 .list, .trough, .group, .hotkey, .tooltip
 {
 	box-sizing: border-box;
+}
+
+/*
+ * The frame around an edit box, a list, a combo box, a track bar or a hotkey field is drawn
+ * a pixel outside the control's rect, as the dialog layer drew it, so the rect a template
+ * gives is the inside of the frame: the control is sized to that rect and its frame hangs
+ * over the margin. A screen that spaces one from its neighbour does so from the neighbour's
+ * side, and gives one that pads its text the width left inside the padding.
+ */
+input[type='range'], input[type='text'], input[type='password'], textarea, select, .list, .hotkey
+{
+	box-sizing: content-box;
+	margin: -1dp;
+	border: 1dp #4eb6dc;
 }
 
 /*
@@ -319,7 +324,7 @@ label.check.disabled, label.check:disabled
 }
 
 /* Text the dialog layer draws through GDI rather than its bitmap font. */
-.sans, input[type='text'], input[type='password'], textarea, select, dataselect, .list, .tooltip, .hotkey, .group > label
+.sans, input[type='text'], input[type='password'], textarea, .list, .tooltip, .hotkey, .group > label
 {
 	font-family: dlg-sans;
 	font-size: 14dp;
@@ -336,7 +341,6 @@ input[type='text'], input[type='password'], textarea
 	padding: 1dp;
 	color: #70ff00;
 	background-color: #000000b4;
-	border: 1dp #4eb6dc;
 	caret-color: #70ff00;
 }
 
@@ -348,7 +352,6 @@ input[type='text'], input[type='password'], textarea
 {
 	font-size: 12dp;
 	background-color: #000000b4;
-	border: 1dp #4eb6dc;
 	overflow-y: auto;
 }
 
@@ -367,14 +370,16 @@ input[type='text'], input[type='password'], textarea
 }
 
 /*
- * A scroll bar is twenty wide with a twenty-two tall arrow box at each end. The grip is
- * three pieces, the middle tiled, and the original shrinks it as the list grows, never
- * below fourteen.
+ * A scroll bar is twenty wide, its frame inside that, with a twenty-two tall arrow box at
+ * each end. The track shows whatever lies behind it; an arrow box is lightened a little and
+ * bevelled two deep, light at the top and left and dark at the bottom and right, the other
+ * way round while it is pressed, with its arrow drawn over the bevel from the corner. The
+ * grip is three pieces with the middle tiled, and the original shrinks it as the list
+ * grows, never below fourteen.
  */
 scrollbarvertical
 {
 	width: 20dp;
-	background-color: #00000028;
 	border: 1dp #4eb6dc;
 }
 
@@ -382,8 +387,8 @@ scrollbarvertical sliderbar
 {
 	width: 18dp;
 	min-height: 14dp;
-	decorator: tiled-vertical(sbgript.pcx, sbgripm.pcx, sbgripb.pcx);
 	background-color: #3c5a68;
+	decorator: image(sbgript.pcx scale-none left top), image(sbgripb.pcx scale-none left bottom), image(sbgripm.pcx repeat-y left top);
 }
 
 scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
@@ -391,37 +396,49 @@ scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
 	width: 18dp;
 	height: 22dp;
 	background-color: #ffffff28;
-	border: 1dp #7f7f7f;
+	border-width: 2dp;
+	border-color: #ffffff7f #0000007f #0000007f #ffffff7f;
 }
 
-scrollbarvertical sliderarrowdec { decorator: image(uparrowr.pcx); }
-scrollbarvertical sliderarrowinc { decorator: image(dnarrowr.pcx); }
-scrollbarvertical sliderarrowdec:active { decorator: image(uparrowp.pcx); }
-scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx); }
+scrollbarvertical sliderarrowdec:active, scrollbarvertical sliderarrowinc:active
+{
+	border-color: #0000007f #ffffff7f #ffffff7f #0000007f;
+}
+
+scrollbarvertical sliderarrowdec { decorator: image(uparrowr.pcx scale-none left top) border-box; }
+scrollbarvertical sliderarrowinc { decorator: image(dnarrowr.pcx scale-none left top) border-box; }
+scrollbarvertical sliderarrowdec:active { decorator: image(uparrowp.pcx scale-none left top) border-box; }
+scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-none left top) border-box; }
 
 /*
- * A track bar is a trough with a twelve wide thumb, and where it shows its value that
- * number sits in a fifty wide field of its own.
+ * A track bar is as tall as its template makes it, with a twelve wide thumb drawn from the
+ * top of it one in from the left; the thumb's travel is thirteen short of the width, which
+ * is what a track a pixel narrower on the left comes to. Where the bar shows its value, that
+ * number sits in a fifty wide field of its own, the trough, put after the bar in the same
+ * row; the bar is then fifty narrower and the frame ends where the field begins.
  */
 input[type='range']
 {
 	display: inline-block;
-	height: 24dp;
+	vertical-align: top;
 	background-color: #000000b4;
-	border: 1dp #4eb6dc;
+}
+
+input[type='range'] slidertrack
+{
+	margin-left: 1dp;
 }
 
 input[type='range'] sliderbar
 {
 	width: 12dp;
-	height: 22dp;
-	decorator: image(trakgrip.pcx);
 	background-color: #70ff00;
+	decorator: image(trakgrip.pcx scale-none left top);
 }
 
 input[type='range']:disabled
 {
-	background-color: #00000080;
+	background-color: #000000da;
 	border-color: #909090;
 }
 
@@ -430,10 +447,11 @@ input[type='range']:disabled
 	display: inline-block;
 	width: 50dp;
 	height: 24dp;
+	vertical-align: top;
 	text-align: center;
 	line-height: 24dp;
+	background-color: #000000b4;
 	decorator: tiled-horizontal(trofl.pcx, trofm.pcx, trofr.pcx);
-	border: 1dp #4eb6dc;
 }
 
 /*
@@ -455,31 +473,120 @@ progress fill
 	decorator: horizontal-gradient(#ff000040 #ff0000);
 }
 
-/* A group box is a caption with a rule at half its height, broken to make room for it. */
+/*
+ * A group box is a frame whose top edge runs through the middle of its caption, broken to
+ * let the caption through: eight along, the caption, twelve clear, then on to the corner.
+ * The frame's top edge is the caption row's two lines rather than a border, because a border
+ * cannot be broken; the row straddles the frame, half above and half below.
+ */
 .group
 {
+	position: relative;
 	border: 1dp #4eb6dc;
-	padding: 8dp;
+	border-top: 0;
+	padding: 11dp;
 }
 
-.group > label
+.group > .rule
 {
-	display: block;
-	margin-top: -14dp;
-	margin-left: 8dp;
-	padding: 0 4dp;
-	width: auto;
-	background-color: #000000;
+	display: flex;
+	align-items: center;
+	position: absolute;
+	left: -1dp;
+	right: -1dp;
+	top: -7dp;
+	height: 14dp;
+	font-family: dlg-sans;
+	font-size: 14dp;
+	line-height: 14dp;
 	color: #70ff00;
 }
 
-/* The field a keyboard screen shows a captured key in. */
+.group > .rule > span
+{
+	display: block;
+	height: 1dp;
+	background-color: #4eb6dc;
+}
+
+.group > .rule > span:first-child
+{
+	width: 8dp;
+}
+
+.group > .rule > label
+{
+	display: block;
+	margin-left: 2dp;
+	white-space: nowrap;
+}
+
+.group > .rule > span:last-child
+{
+	flex: 1;
+	margin-left: 2dp;
+}
+
+/*
+ * A combo box is a closed box, always twenty-four tall, with its arrow one in from the
+ * right and the top, and a list that drops two under it with a row for each item, twenty
+ * apart, a chosen row filled eighteen tall. The list is the toolkit's own child of the box,
+ * so it is placed and shown by the toolkit and only styled here. The box is darkened forty
+ * and washed a further half toward black, which comes to the one shade written here.
+ */
+select
+{
+	display: block;
+	height: 24dp;
+	color: #70ff00;
+	background-color: #00000094;
+}
+
+select selectvalue
+{
+	padding: 3dp 0 0 2dp;
+	line-height: 17dp;
+	white-space: nowrap;
+}
+
+select selectarrow
+{
+	width: 18dp;
+	height: 22dp;
+	margin: 1dp 1dp 0 0;
+	decorator: image(dnarrowr.pcx scale-none left top);
+}
+
+select selectbox
+{
+	margin-top: 2dp;
+	padding: 2dp 0;
+	background-color: #000000b4;
+	border: 1dp #4eb6dc;
+	overflow-y: auto;
+}
+
+select option
+{
+	display: block;
+	height: 18dp;
+	margin: 1dp 0;
+	line-height: 18dp;
+	padding-left: 3dp;
+	color: #70ff00;
+}
+
+select option:checked
+{
+	background-color: #225061;
+}
+
+/* The field a keyboard screen shows a captured key in, its text four in from the frame. */
 .hotkey
 {
 	display: block;
-	padding: 4dp;
+	padding: 0 4dp;
 	color: #70ff00;
-	border: 1dp #4eb6dc;
 }
 
 /* A tooltip is a dark box with a lighter bevel at its top and left, under the pointer. */
