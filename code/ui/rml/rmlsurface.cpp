@@ -1,0 +1,130 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+#include "ui/rml/rmlsurface.h"
+
+#include "ui/rml/rmlimage.h"
+
+#include <RmlUi/Core/ComputedValues.h>
+#include <RmlUi/Core/ElementInstancer.h>
+#include <RmlUi/Core/Factory.h>
+#include <RmlUi/Core/Mesh.h>
+#include <RmlUi/Core/MeshUtilities.h>
+#include <RmlUi/Core/RenderManager.h>
+
+#include <utility>
+
+
+RMLUI_RTTI_Define(UIRmlSurfaceElementClass)
+
+
+UIRmlSurfaceElementClass::UIRmlSurfaceElementClass(Rml::String const & tag) :
+	Rml::Element(tag),
+	Width(0),
+	Height(0),
+	Dirty(true)
+{
+}
+
+
+UIRmlSurfaceElementClass::~UIRmlSurfaceElementClass(void)
+{
+}
+
+
+/// <summary>
+/// Replaces the picture the element draws.
+/// </summary>
+/// <remarks>A picture of nothing, or bytes that do not measure four to a pixel, leaves the
+/// element drawing nothing at all. That is what a map carrying no preview comes to, and it
+/// is not an error: the screen still opens.</remarks>
+void UIRmlSurfaceElementClass::Set_Image(int width, int height, std::vector<std::uint8_t> pixels)
+{
+	if (width <= 0 || height <= 0 || pixels.size() != (std::size_t)width * (std::size_t)height * 4) {
+		Width = 0;
+		Height = 0;
+		Pixels.clear();
+	} else {
+		Width = width;
+		Height = height;
+		Pixels = std::move(pixels);
+	}
+
+	Picture.Release();
+	Dirty = true;
+}
+
+
+void UIRmlSurfaceElementClass::OnRender(void)
+{
+	if (Dirty) {
+		Generate_Geometry();
+	}
+
+	if (Picture) {
+		Shape.Render(GetAbsoluteOffset(Rml::BoxArea::Border), Picture);
+	}
+}
+
+
+void UIRmlSurfaceElementClass::OnResize(void)
+{
+	Dirty = true;
+}
+
+
+void UIRmlSurfaceElementClass::Generate_Geometry(void)
+{
+	Dirty = false;
+
+	Rml::Mesh mesh = Shape.Release(Rml::Geometry::ReleaseMode::ClearMesh);
+	Rml::RenderManager * manager = GetRenderManager();
+
+	if (manager == nullptr || Pixels.empty()) {
+		Picture.Release();
+		return;
+	}
+
+	Rml::RenderBox box = GetRenderBox(Rml::BoxArea::Content);
+	Rml::Vector2f offset = box.GetFillOffset();
+	Rml::Vector2f size = box.GetFillSize();
+
+	int x = 0;
+	int y = 0;
+	int width = 0;
+	int height = 0;
+	if (!UI_Surface_Fit(Width, Height, (int)size.x, (int)size.y, x, y, width, height)) {
+		Picture.Release();
+		return;
+	}
+
+	// The texture is remade from the kept bytes rather than held, because a change of frame
+	// scale releases every texture the documents hold and expects them to come back.
+	if (!Picture) {
+		std::vector<std::uint8_t> const pixels = Pixels;
+		Rml::Vector2i dimensions(Width, Height);
+		Picture = manager->MakeCallbackTexture([pixels, dimensions](Rml::CallbackTextureInterface const & interface) {
+			return(interface.GenerateTexture(Rml::Span<const Rml::byte>(pixels.data(), pixels.size()), dimensions));
+		});
+	}
+
+	Rml::ComputedValues const & computed = GetComputedValues();
+	Rml::ColourbPremultiplied colour = computed.image_color().ToPremultiplied(computed.opacity());
+
+	Rml::MeshUtilities::GenerateQuad(mesh, offset + Rml::Vector2f((float)x, (float)y),
+		Rml::Vector2f((float)width, (float)height), colour, Rml::Vector2f(0.0f, 0.0f), Rml::Vector2f(1.0f, 1.0f));
+	Shape = manager->MakeGeometry(std::move(mesh));
+}
+
+
+void UI_Register_Surface_Element(void)
+{
+	static Rml::ElementInstancerGeneric<UIRmlSurfaceElementClass> instancer;
+	Rml::Factory::RegisterElementInstancer("surface", &instancer);
+}

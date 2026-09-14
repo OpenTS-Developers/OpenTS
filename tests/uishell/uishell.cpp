@@ -28,7 +28,9 @@
 
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlrender.h"
+#include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
+#include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmlview.h"
 #include "ui/screens/display/uidisplay.h"
@@ -2437,6 +2439,90 @@ void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 // The two render effects the engine's renderer draws rather than refuses. A shipped
 // document uses neither yet, so they are written here instead of being added to ui/.
+// The map preview is pixels the engine drew rather than a file, so what turns a frame surface
+// into a picture, what places it, and the element that draws it are all checked without one.
+void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass & render, CountingSystemInterfaceClass & system)
+{
+	// Black, white, and each channel alone. A five or six bit channel is widened by repeating
+	// its top bits, so a full channel reaches 255 rather than stopping at 248 or 252.
+	std::uint16_t const source[] = { 0x0000, 0xFFFF, 0xF800, 0x07E0, 0x001F, 0x8410 };
+	std::vector<std::uint8_t> rgba;
+
+	bool converted = UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(source, 6), 2, 3, 2, rgba);
+	Check(converted && rgba.size() == 2 * 3 * 4, "a 565 picture converts to four bytes a pixel");
+
+	if (converted && rgba.size() == 24) {
+		std::uint8_t const expected[24] = {
+			0, 0, 0, 255,        255, 255, 255, 255,
+			255, 0, 0, 255,      0, 255, 0, 255,
+			0, 0, 255, 255,      131, 129, 131, 255
+		};
+		Check(std::memcmp(rgba.data(), expected, sizeof(expected)) == 0, "and widens each channel by repeating its top bits");
+	}
+
+	// A locked surface is pitched, and its last row is only as long as the picture is wide.
+	std::uint16_t const pitched[] = { 0xF800, 0x07E0, 0x0000, 0x0000, 0x001F, 0xFFFF };
+	Check(UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(pitched, 6), 2, 2, 4, rgba)
+		&& rgba.size() == 16 && rgba[8] == 0 && rgba[10] == 255, "a pitch wider than the picture is followed");
+	Check(!UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(pitched, 5), 2, 2, 4, rgba) && rgba.empty(), "a picture short of its own size converts to nothing");
+
+	// The thousandths the dialog layer scaled a preview with, from Blit_Preview.
+	int x = -1;
+	int y = -1;
+	int width = -1;
+	int height = -1;
+	Check(UI_Surface_Fit(200, 100, 100, 100, x, y, width, height) && x == 0 && y == 25 && width == 100 && height == 50, "a wide picture fits the width of its box and centres down it");
+	Check(UI_Surface_Fit(100, 200, 100, 100, x, y, width, height) && x == 25 && y == 0 && width == 50 && height == 100, "a tall picture fits the height and centres across");
+	Check(UI_Surface_Fit(50, 50, 100, 100, x, y, width, height) && x == 0 && y == 0 && width == 100 && height == 100, "a picture in proportion with its box fills it");
+	Check(!UI_Surface_Fit(0, 10, 100, 100, x, y, width, height) && width == 0 && height == 0, "a picture of nothing is not placed");
+
+	char const * markup =
+		"<rml><head><style>"
+		"body { width: 400px; height: 300px; }"
+		"surface { display: block; width: 120px; height: 80px; }"
+		"</style></head><body><surface id=\"picture\"/></body></rml>";
+
+	int rendered = render.Rendered;
+	int generated = render.Generated;
+	int unsupported = render.Unsupported;
+	int problems = system.Problems;
+
+	Rml::ElementDocument * document = context.LoadDocumentFromMemory(markup);
+	Check(document != nullptr, "a document holding a surface loads");
+	if (document == nullptr) {
+		return;
+	}
+
+	document->Show();
+	context.Update();
+	context.Render();
+	Check(render.Rendered == rendered && render.Generated == generated, "a surface with no picture draws nothing and makes no texture");
+
+	UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("picture"));
+	Check(surface != nullptr, "the surface tag instances the element the shell registered");
+
+	if (surface != nullptr) {
+		surface->Set_Image(4, 2, std::vector<std::uint8_t>(4 * 2 * 4, 255));
+		context.Update();
+		context.Render();
+		Check(render.Generated > generated, "a surface handed pixels makes a texture of them");
+		Check(render.Rendered > rendered, "and draws them");
+
+		rendered = render.Rendered;
+		surface->Set_Image(0, 0, std::vector<std::uint8_t>());
+		context.Update();
+		context.Render();
+		Check(render.Rendered == rendered, "a surface whose picture is taken away draws nothing again");
+	}
+
+	Check(render.Unsupported == unsupported, "a surface stays within the implemented render methods");
+	Check(system.Problems == problems, "a surface raises no RmlUi warning or error");
+
+	document->Close();
+	context.Update();
+}
+
+
 void Test_Effects_Documents(Rml::Context & context, RecordingRenderInterfaceClass & render, CountingSystemInterfaceClass & system)
 {
 	char const * rotated =
@@ -2510,6 +2596,9 @@ void Test_Documents(void)
 
 	Check(Rml::Initialise(), "RmlUi initialises with the recording interfaces");
 	std::printf("  RmlUi %s\n", Rml::GetVersion().c_str());
+
+	// The shell registers it the same way, so the sweep below draws the real element.
+	UI_Register_Surface_Element();
 
 	// The shipped face stands in for both families a document may name, as it does in the
 	// shell on a machine with neither the system face nor the game's art.
@@ -2595,6 +2684,7 @@ void Test_Documents(void)
 
 	if (context != nullptr) {
 		Test_Effects_Documents(*context, render, system);
+		Test_Surface_Element(*context, render, system);
 		Test_Version_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);

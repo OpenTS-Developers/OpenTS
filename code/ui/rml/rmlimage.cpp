@@ -10,6 +10,7 @@
 #include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
 
+#include <algorithm>
 #include <cstring>
 
 
@@ -130,5 +131,61 @@ bool UI_Indexed_To_RGBA(UIImageIndexed const & image, std::vector<std::uint8_t> 
 		out[3] = 255;
 	}
 
+	return(true);
+}
+
+
+bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int height, int pitch, std::vector<std::uint8_t> & rgba)
+{
+	rgba.clear();
+
+	if (width <= 0 || height <= 0 || pitch < width) {
+		return(false);
+	}
+
+	// The last row need only be as long as the picture is wide, which is what a locked
+	// surface hands over when its pitch runs past the final scan line.
+	std::size_t needed = (std::size_t)pitch * (std::size_t)(height - 1) + (std::size_t)width;
+	if (pixels.size() < needed) {
+		return(false);
+	}
+
+	rgba.resize((std::size_t)width * (std::size_t)height * 4);
+
+	for (int row = 0; row < height; row++) {
+		std::uint16_t const * source = pixels.data() + (std::size_t)row * (std::size_t)pitch;
+		std::uint8_t * out = rgba.data() + (std::size_t)row * (std::size_t)width * 4;
+
+		for (int column = 0; column < width; column++) {
+			unsigned int colour = source[column];
+			out[0] = (std::uint8_t)(((colour >> 11) & 31) * 255 / 31);
+			out[1] = (std::uint8_t)(((colour >> 5) & 63) * 255 / 63);
+			out[2] = (std::uint8_t)((colour & 31) * 255 / 31);
+			out[3] = 255;
+			out += 4;
+		}
+	}
+
+	return(true);
+}
+
+
+bool UI_Surface_Fit(int width, int height, int boxwidth, int boxheight, int & x, int & y, int & fitwidth, int & fitheight)
+{
+	x = 0;
+	y = 0;
+	fitwidth = 0;
+	fitheight = 0;
+
+	if (width <= 0 || height <= 0 || boxwidth <= 0 || boxheight <= 0) {
+		return(false);
+	}
+
+	int scale = std::min(1000 * boxwidth / width, 1000 * boxheight / height);
+
+	fitwidth = scale * width / 1000;
+	fitheight = scale * height / 1000;
+	x = boxwidth / 2 - scale * width / 2000;
+	y = boxheight / 2 - scale * height / 2000;
 	return(true);
 }

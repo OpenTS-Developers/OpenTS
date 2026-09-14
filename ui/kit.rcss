@@ -752,6 +752,27 @@ select option:checked
 	color: #70ff00;
 }
 
+/*
+ * A group box the game gives no caption is a plain rectangle rather than a broken top edge:
+ * the caption measures nothing, so the drawing code runs the top edge the whole way across.
+ * It draws corner to corner inclusive, which makes the box a pixel wider and taller than the
+ * rect its template gives it, and it fills nothing, so the wallpaper shows through.
+ */
+.frame
+{
+	border: 1dp #4ab6de;
+}
+
+/*
+ * A picture the engine drew while the game ran, which the screen hands over as pixels rather
+ * than the document naming a file. It is kept in proportion and centred in the element's box,
+ * the way the dialog layer fitted a map preview into the frame it was given.
+ */
+surface
+{
+	display: block;
+}
+
 /* A tooltip is a dark box with a lighter bevel at its top and left, under the pointer. */
 .tooltip
 {

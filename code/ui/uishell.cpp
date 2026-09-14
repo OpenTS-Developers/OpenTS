@@ -24,6 +24,8 @@
 #undef GetFirstChild
 #undef GetNextSibling
 
+#include "ui/rml/rmlsurface.h"
+
 #include <RmlUi/Core.h>
 
 #include <algorithm>
@@ -646,6 +648,7 @@ bool UIShellClass::Init(void)
 
 	Apply_Dimensions();
 
+	UI_Register_Surface_Element();
 	Register_Fonts();
 
 	Ready = true;

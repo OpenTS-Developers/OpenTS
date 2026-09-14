@@ -35,3 +35,13 @@ bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image
 // Premultiplied RGBA8 rows from the top down, as RmlUi composes them. Pure magenta is the
 // color key this art is drawn with, so those pixels come back clear.
 bool UI_Indexed_To_RGBA(UIImageIndexed const & image, std::vector<std::uint8_t> & rgba);
+
+// Premultiplied RGBA8 from a 16-bit 565 picture, which is what every surface the engine
+// draws into holds. Pitch is in pixels rather than bytes. The five and six bit channels are
+// widened by repeating their top bits, the way the frame shows them.
+bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int height, int pitch, std::vector<std::uint8_t> & rgba);
+
+// Where a picture of the given size lands inside a box, kept in proportion and centred, by
+// the thousandths the dialog layer scaled a map preview with. False, leaving nothing placed,
+// for a size that is not positive.
+bool UI_Surface_Fit(int width, int height, int boxwidth, int boxheight, int & x, int & y, int & fitwidth, int & fitheight);

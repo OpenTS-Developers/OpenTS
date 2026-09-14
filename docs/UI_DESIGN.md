@@ -215,7 +215,7 @@ rule the tree follows, not a build boundary.
 | --- | --- | --- |
 | `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals | landed |
 | `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner, selector; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, dialogs, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay); `uireveal.h`, `uireveal.cpp` (the schedule a dialog opens on; toolkit-free, so the harness runs it) | landed |
-| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font; both toolkit-free, so the harness runs them), `rmlfont` (the font engine over those sheets, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA, a frame surface's 565 pixels into RGBA, and the fit of a picture in a box), `rmlsurface` (the `<surface>` element, for a picture the engine drew while the game ran), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font; both toolkit-free, so the harness runs them), `rmlfont` (the font engine over those sheets, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
 | `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
 | `code/ui/screens/<name>/` | one family each for `version`, `msgbox`, `waitbox`, `sound`, `gamectrl`, `display`, `keyboard`, `mainopt`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed; the sound, game controls, keyboard and display Win32 dialogs drive the same presenter as a second view, and the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows |
 | `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside | landed |
@@ -660,12 +660,21 @@ texture so the art loads again. SHP frames are not decoded
 yet; they are for the sidebar view, in a `name.shp#frame` form with an
 optional palette and index zero transparent.
 
-Surfaces the engine draws at runtime (the map preview, the
-desync host icons, a progress bar) reach a document through a `<surface>`
-custom element bound to a named provider; the shell re-uploads the texture
-when the provider marks it dirty. Original game art stays local runtime data
-outside version control; documents receive artwork identities, never engine
-pointers.
+A picture the engine drew while the game ran reaches a document through the
+`<surface>` element, which is handed its pixels rather than naming a file. The
+map preview is the only such picture: the desync dialog's host marker is
+`wolhost.pcx` through the ordinary image path, and a progress bar needs no
+picture at all. The pixels travel as bytes in the presenter's state, the way
+every other engine fact reaches a screen, so images have one route rather than
+a second of their own. The element widens a frame surface's five and six bit
+channels by repeating their top bits, places the picture in proportion and
+centred in its box by the thousandths `Blit_Preview` scaled a preview with, and
+holds it in a callback texture, so the release of every texture that follows a
+change of frame scale regenerates it. It is not magnified with the rest of the
+art, because that fit was never a whole-number scale. A map carrying no preview
+leaves the element drawing nothing rather than failing its screen. Original
+game art stays local runtime data outside version control; documents receive
+artwork identities, never engine pointers.
 
 Every colour is what the game's 16-bit frame showed of it: the original drew
 into five bits of red and blue and six of green, and the frame widens them
