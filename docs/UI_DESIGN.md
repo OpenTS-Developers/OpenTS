@@ -776,7 +776,10 @@ form is what the harness renders.
 
 The controls follow the drawing code's metrics: a button is a 24 or 30 tall
 skin with a 7-wide left cap, a tiled middle and a 10-wide right cap, its
-`dlgsys` caption two down from the top; pressing drops the skin two and the
+`dlgsys` caption two down from the top; the middle repeats rather than
+stretches, so a skin, like the track bar's number field, is three `image`
+decorators with the middle listed last to lie under the caps, because
+`tiled-horizontal` always fills its centre; pressing drops the skin two and the
 caption four more and two across; disabled is a half-black wash rather than
 the skin the original loads and never draws. Check boxes, edit boxes, lists,
 scroll bars, track bars, combo boxes, the progress bar, group boxes, hotkey

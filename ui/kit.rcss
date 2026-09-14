@@ -210,7 +210,9 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
 
 /*
  * A button is a picture in three parts at one of two heights: a cap either side and a
- * middle tiled to whatever width the button is. The original draws no outline around one,
+ * middle tiled to whatever width the button is. The middle repeats rather than stretches,
+ * so the three are separate pictures with the middle listed last to lie under the caps.
+ * The original draws no outline around one,
  * so the plain form underneath is a fill the picture covers rather than a border that would
  * show through it.
  *
@@ -231,14 +233,14 @@ button
 	line-height: 17dp;
 	color: #70ff00;
 	background-color: #2b2b2b;
-	decorator: tiled-horizontal(bue_li24.pcx, bue_mi24.pcx, bue_ri24.pcx);
+	decorator: image(bue_li24.pcx scale-none left top), image(bue_ri24.pcx scale-none right top), image(bue_mi24.pcx repeat-x left top);
 }
 
 button.tall
 {
 	height: 30dp;
 	padding-top: 5dp;
-	decorator: tiled-horizontal(bue_li30.pcx, bue_mi30.pcx, bue_ri30.pcx);
+	decorator: image(bue_li30.pcx scale-none left top), image(bue_ri30.pcx scale-none right top), image(bue_mi30.pcx repeat-x left top);
 }
 
 button:active
@@ -246,13 +248,13 @@ button:active
 	position: relative;
 	top: 2dp;
 	padding: 6dp 8dp 0 9dp;
-	decorator: tiled-horizontal(bde_li24.pcx, bde_mi24.pcx, bde_ri24.pcx);
+	decorator: image(bde_li24.pcx scale-none left top), image(bde_ri24.pcx scale-none right top), image(bde_mi24.pcx repeat-x left top);
 }
 
 button.tall:active
 {
 	padding-top: 9dp;
-	decorator: tiled-horizontal(bde_li30.pcx, bde_mi30.pcx, bde_ri30.pcx);
+	decorator: image(bde_li30.pcx scale-none left top), image(bde_ri30.pcx scale-none right top), image(bde_mi30.pcx repeat-x left top);
 }
 
 /*
@@ -270,13 +272,13 @@ button.disabled:active, button:disabled:active
 {
 	top: 0dp;
 	padding: 2dp 10dp 0 7dp;
-	decorator: tiled-horizontal(bue_li24.pcx, bue_mi24.pcx, bue_ri24.pcx);
+	decorator: image(bue_li24.pcx scale-none left top), image(bue_ri24.pcx scale-none right top), image(bue_mi24.pcx repeat-x left top);
 }
 
 button.tall.disabled:active, button.tall:disabled:active
 {
 	padding-top: 5dp;
-	decorator: tiled-horizontal(bue_li30.pcx, bue_mi30.pcx, bue_ri30.pcx);
+	decorator: image(bue_li30.pcx scale-none left top), image(bue_ri30.pcx scale-none right top), image(bue_mi30.pcx repeat-x left top);
 }
 
 /*
@@ -449,7 +451,8 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * row; the bar is then fifty narrower and the frame ends where the field begins. The
  * field's picture is twenty-six tall, a pixel more than the bar, and the field lies under
  * the bar so the bar's frame closes over its first column, as the layer drew the field
- * before the frame.
+ * before the frame. Its middle is a tile the layer repeated, not stretched, so the field is
+ * three pictures with the middle repeating under the two ends.
  *
  * RmlUi places a slider's track and thumb from the input's border corner rather than its
  * content corner, so the track's margins and the thumb's top margin carry the frame's width
@@ -494,7 +497,7 @@ input[type='range']:disabled
 	text-align: center;
 	line-height: 25dp;
 	background-color: #000000b4;
-	decorator: tiled-horizontal(trofl.pcx, trofm.pcx, trofr.pcx);
+	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top), image(trofm.pcx repeat-x left top);
 }
 
 /*
