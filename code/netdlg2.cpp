@@ -36,6 +36,7 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netshare.h"
+#include "ui/screens/msgbox/uimsgbox.h"
 #include "nettiming.h"
 #include "newmenu.h"
 #include "rules.h"
@@ -288,13 +289,13 @@ static void Net2Refresh_Preview(void)
 /// <remarks>Cancelling puts the mission the host had back and tells the guests about it,
 /// which is what the Win32 dialog did; accepting leaves the new one for the next publication
 /// to carry.</remarks>
-void Net2Pick_Map(HWND window)
+void Net2Pick_Map(void)
 {
 	int old = Session.Options.ScenarioIndex;
 
 	IsRandomMap = false;
 
-	if (Scenario_Dialog(MainWindow) == IDCANCEL) {
+	if (!Scenario_Dialog()) {
 		Session.Options.ScenarioIndex = old;
 		Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
 		Update_Network_Dialog_Preview();
@@ -966,7 +967,7 @@ bool Net2Remote_Connect(void)
 			// Force user to enter a name
 			//...............................................................
 			if (strlen(Session.Handle) < 1) {
-				ODMessageBox(Fetch_String(TXT_NAME_BLANK), 0, Net2Callback);
+				UI_Network_Message_Box(Fetch_String(TXT_NAME_BLANK), UI_NETWORK_MESSAGE_OK, Net2Callback);
 				ok = false;
 			}
 
@@ -975,7 +976,7 @@ bool Net2Remote_Connect(void)
 			//...............................................................
 			for (int i = 0; i < Session.Games.Count(); i++) {
 				if (ok && !strcmp(Session.Games[i]->Name, Session.Handle)) {
-					ODMessageBox(Fetch_String(TXT_GAMENAME_MUSTBE_UNIQUE), 0, Net2Callback);
+					UI_Network_Message_Box(Fetch_String(TXT_GAMENAME_MUSTBE_UNIQUE), UI_NETWORK_MESSAGE_OK, Net2Callback);
 					ok = false;
 					break;
 				}
@@ -1977,7 +1978,7 @@ static void Get_Join_Responses(void)
 					item = (char *)Fetch_String(TXT_SERIAL_DUP);
 				}
 				if (item) {
-					ODMessageBox(item, 0, Net2Callback, 0);
+					UI_Network_Message_Box(item, UI_NETWORK_MESSAGE_OK, Net2Callback);
 				}
 				if (Net2LobbyPhase != NET2_LOBBY_GAME_LIST) {
 					_netresponse = IDCANCEL;

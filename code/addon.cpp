@@ -63,17 +63,17 @@ bool Select_Game_Type_Dialog(AddonType &type)
 		menu.Kind = UI_MENU_GAME_TYPE;
 		menu.Title = "Select Game Type";
 		menu.Wide = false;
-		menu.Items.push_back(UIMenuItemType{"Tiberian Sun (Original)", IDC_GAMETYPE_ORIGINAL, true});
-		menu.Items.push_back(UIMenuItemType{"Firestorm", IDC_GAMETYPE_FIRESTORM, true});
-		menu.Items.push_back(UIMenuItemType{"Main Menu", IDCANCEL, true});
+		menu.Items.push_back(UIMenuItemType{"Tiberian Sun (Original)", ADDON_BASE_GAME, true});
+		menu.Items.push_back(UIMenuItemType{"Firestorm", ADDON_FIRESTORM, true});
+		menu.Items.push_back(UIMenuItemType{"Main Menu", ADDON_ANY, true});
 
-		int chosen = UI_Menu_Dialog(menu);
+		int chosen = UI_Menu_Dialog(menu, ADDON_ANY);
 
 		ActiveAddOns = 1 << ADDON_BASE_GAME;
-		if (chosen == IDC_GAMETYPE_FIRESTORM) {
+		if (chosen == ADDON_FIRESTORM) {
 			Enable_Addon(ADDON_FIRESTORM);
 			type = ADDON_FIRESTORM;
-		} else if (chosen != IDC_GAMETYPE_ORIGINAL) {
+		} else if (chosen != ADDON_BASE_GAME) {
 			return(false);
 		}
 

@@ -55,27 +55,18 @@
 /// </summary>
 void Game_Options_Dialog(void)
 {
-	int rc = IDOK;
-
 	IgnoreInput = true;
 	Keyboard->Clear();
 
-	switch (UI_Game_Options_Dialog()) {
+	UIGameOptionsChoice const choice = UI_Game_Options_Dialog();
+
+	switch (choice) {
 		case UI_GAME_OPTIONS_CONTROLS:
 			SpecialDialog = SDLG_SETTINGS;
 			break;
 
-		case UI_GAME_OPTIONS_BRIEFING:
-			rc = IDC_BRIEFING;
-			break;
-
-		case UI_GAME_OPTIONS_LOAD:
-			rc = IDC_LOAD_GAME;
-			break;
-
 		case UI_GAME_OPTIONS_ABORT:
 			SpecialDialog = SDLG_ABORT;
-			rc = IDCANCEL;
 			break;
 
 		default:
@@ -84,19 +75,19 @@ void Game_Options_Dialog(void)
 
 	Keyboard->Clear();
 
-	if (rc == IDC_BRIEFING) {
+	if (choice == UI_GAME_OPTIONS_BRIEFING) {
 		Restate_Mission(Scen);
 	}
 
 	IgnoreInput = Scen->IsInputLocked;
 
-	if (rc == IDC_LOAD_GAME) {
-		if (IDC_LOAD_GAME) {
-			if (MouseCursor->Is_Hidden() == false && Scen->IsInputLocked == 1) {
-				Hide_Mouse();
-			} else if (MouseCursor->Is_Hidden() == true && Scen->IsInputLocked == 0) {
-				Show_Mouse();
-			}
+	// A load leaves the pointer as the mission's input lock wants it, because the game under
+	// the menu may have taken it away or put it back while the menu stood.
+	if (choice == UI_GAME_OPTIONS_LOAD) {
+		if (MouseCursor->Is_Hidden() == false && Scen->IsInputLocked == 1) {
+			Hide_Mouse();
+		} else if (MouseCursor->Is_Hidden() == true && Scen->IsInputLocked == 0) {
+			Show_Mouse();
 		}
 	}
 
@@ -122,18 +113,8 @@ int Network_Quality_Text_ID(NetTiming::ConnectionQuality quality)
 /// surrender the mission. It does not return until the player has settled on one of the
 /// choices offered.
 /// </summary>
-/// <returns>Returns with IDOK to quit the mission, IDABORT to restart or surrender it, or
-/// IDCANCEL to carry on playing.</returns>
-int Abort_Dialog(void)
+/// <returns>What the player chose.</returns>
+UIAbortChoice Abort_Dialog(void)
 {
-	switch (UI_Abort_Dialog()) {
-		case UI_ABORT_QUIT:
-			return(IDOK);
-
-		case UI_ABORT_RESTART:
-			return(IDABORT);
-
-		default:
-			return(IDCANCEL);
-	}
+	return(UI_Abort_Dialog());
 }

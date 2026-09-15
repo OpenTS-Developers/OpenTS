@@ -123,8 +123,8 @@ void UI_Scenario_State(UIScenarioState & state)
 /// <summary>
 /// Runs the multiplayer map dialog. The generator runs over it rather than in its place.
 /// </summary>
-/// <returns>Returns with IDOK when the player took a map, otherwise IDCANCEL.</returns>
-int UI_Scenario_Dialog(void)
+/// <returns>True when the player took a map.</returns>
+bool UI_Scenario_Dialog(void)
 {
 	UIScenarioState state;
 	UI_Scenario_State(state);
@@ -134,9 +134,9 @@ int UI_Scenario_Dialog(void)
 
 	UIResult result = UIShell.Run_Modal(*view, Service_Pick, true);
 	if (result != UI_RESULT_ACCEPTED || presenter.Choice != UI_SCENARIO_ACCEPT) {
-		return(IDCANCEL);
+		return(false);
 	}
 
 	Session.Options.ScenarioIndex = presenter.State.Selected > 0 ? presenter.State.Selected : 0;
-	return(IDOK);
+	return(true);
 }

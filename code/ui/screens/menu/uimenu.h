@@ -81,6 +81,7 @@ void UI_Menu_Place(UIMenuState & state);
 
 // Runs a menu over the title screen, which is restored each pass as the dialog's own loop
 // restored it. The hook, where one is given, runs after that: it is where the main menu reads
-// the keys it answers to, and it ends the menu by returning true. Returns what the player
-// pressed, or zero when they backed out or the screen could not open.
-int UI_Menu_Dialog(UIMenuState const & state, std::function<bool(void)> const & hook = nullptr);
+// the keys it answers to, and it ends the menu by returning true. Returns the value the
+// pressed button carries, or the caller's own "nothing" when the player backed out or the
+// screen could not open.
+int UI_Menu_Dialog(UIMenuState const & state, int nothing, std::function<bool(void)> const & hook = nullptr);

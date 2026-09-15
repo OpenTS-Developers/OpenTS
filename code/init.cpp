@@ -2906,12 +2906,12 @@ int Main_Menu(unsigned int timeout)
 
 	UIMenuState menu;
 	menu.Kind = UI_MENU_MAIN;
-	menu.Items.push_back(UIMenuItemType{"New Campaign", IDC_NEWCAMPAIGN, true});
-	menu.Items.push_back(UIMenuItemType{"Load Mission", IDC_LOAD_MISSION, LoadOptionsClass().Files_Present()});
-	menu.Items.push_back(UIMenuItemType{"Multiplayer Game", IDC_MULTIPLAYER_GAME, true});
-	menu.Items.push_back(UIMenuItemType{"Intro / Sneak Peek", IDC_INTRO, true});
-	menu.Items.push_back(UIMenuItemType{"Options", IDC_OPTIONS, true});
-	menu.Items.push_back(UIMenuItemType{"Exit Game", IDC_EXIT_GAME, true});
+	menu.Items.push_back(UIMenuItemType{"New Campaign", SEL_CAMPAIGN_GAME, true});
+	menu.Items.push_back(UIMenuItemType{"Load Mission", SEL_LOAD_GAME, LoadOptionsClass().Files_Present()});
+	menu.Items.push_back(UIMenuItemType{"Multiplayer Game", SEL_MULTIPLAYER_GAME, true});
+	menu.Items.push_back(UIMenuItemType{"Intro / Sneak Peek", SEL_INTRO, true});
+	menu.Items.push_back(UIMenuItemType{"Options", SEL_OPTIONS, true});
+	menu.Items.push_back(UIMenuItemType{"Exit Game", SEL_EXIT, true});
 	UI_Menu_Place(menu);
 
 	char * background = Get_New_Menu()->Background;
@@ -2919,14 +2919,9 @@ int Main_Menu(unsigned int timeout)
 	Draw_Version_Text(HiddenSurface);
 	Update_Visible_Surface();
 
-	switch (UI_Menu_Dialog(menu, Main_Menu_Keys)) {
-		case IDC_OPTIONS: retval = SEL_OPTIONS; break;
-		case IDC_EXIT_GAME: retval = SEL_EXIT; break;
-		case IDC_INTRO: retval = SEL_INTRO; break;
-		case IDC_NEWCAMPAIGN: retval = SEL_CAMPAIGN_GAME; break;
-		case IDC_MULTIPLAYER_GAME: retval = SEL_MULTIPLAYER_GAME; break;
-		case IDC_LOAD_MISSION: retval = SEL_LOAD_GAME; break;
-		default: retval = (MainMenuKeyResult != SEL_NONE) ? MainMenuKeyResult : SEL_EXIT; break;
+	retval = UI_Menu_Dialog(menu, SEL_NONE, Main_Menu_Keys);
+	if (retval == SEL_NONE) {
+		retval = (MainMenuKeyResult != SEL_NONE) ? MainMenuKeyResult : SEL_EXIT;
 	}
 
 	/*

@@ -183,22 +183,6 @@ int CountAliveTeams(HouseClass * house)
 /// Puts a message box up over the lobby and waits for an answer. The supplied callback is
 /// polled while it is on screen so that network traffic keeps flowing.
 /// </summary>
-/// <param name="text">The message to display. Nothing at all happens for an empty
-/// message.</param>
-/// <param name="type">The button layout to use; MB_OK, MB_OKCANCEL or MB_YESNO.</param>
-/// <param name="callback">Idle routine to poll while the box is up.</param>
-/// <param name="large">Unused; the box sizes itself to its text.</param>
-/// <returns>Returns with the control ID of the button the player pressed. Zero is returned
-/// if there was nothing to display.</returns>
-int ODMessageBox(const char * text, int type, bool (*callback)(void), bool large)
-{
-	if (text != NULL && strlen(text) > 0) {
-		return(UI_Network_Message_Box(text, type, callback));
-	}
-	return(0);
-}
-
-
 void Net2EncodeGameopt(char *out, int size);
 
 
@@ -703,9 +687,8 @@ int RandomMapWaypointCount(int index)
 /// <summary>
 /// Lets the host choose the scenario for the game.
 /// </summary>
-/// <param name="top">Unused; the screen takes the whole frame.</param>
-/// <returns>Returns with IDOK when the player settled on a map, otherwise IDCANCEL.</returns>
-int Scenario_Dialog(HWND top)
+/// <returns>True when the player settled on a map.</returns>
+bool Scenario_Dialog(void)
 {
 	return(UI_Scenario_Dialog());
 }

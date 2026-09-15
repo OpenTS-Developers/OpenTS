@@ -8,7 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the skirmish setup: the settings the game offers, the map dialog it
-// reopens around, and what the choices come to in the session. The presenter and the view
+// raises over itself, and what the choices come to in the session. The presenter and the view
 // live in uiskirmish.cpp so that the test harness can drive them without the engine.
 
 #include "ui/screens/skirmish/uiskirmish.h"
@@ -122,7 +122,7 @@ static void Pick_Map(UISkirmishState & state)
 {
 	int old = Session.Options.ScenarioIndex;
 
-	if (Scenario_Dialog(MainWindow) == IDCANCEL) {
+	if (!Scenario_Dialog()) {
 		Session.Options.ScenarioIndex = old;
 		Set_Scenario_Info_From_Index(old);
 		Refresh_Preview();
@@ -238,7 +238,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 
 
 /// <summary>
-/// Runs the skirmish setup, reopening it around the map dialog.
+/// Runs the skirmish setup, with the map dialog raised over it.
 /// </summary>
 /// <returns>bool; Did the player ask for the game to begin?</returns>
 bool UI_Skirmish_Dialog(void)

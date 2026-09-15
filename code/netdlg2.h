@@ -52,7 +52,7 @@ void Net2Request_House_And_Color(int house, int color);
 void Net2Send_Chat(char const * text);
 void Net2Set_Handle(char const * name);
 void Net2Kick(char const * name);
-void Net2Pick_Map(HWND window);
+void Net2Pick_Map(void);
 
 int Net2FirstFreeColor(int reqcolor, int index);
 bool Net2Callback(void);

@@ -93,6 +93,6 @@ std::unique_ptr<UIViewClass> UI_Scenario_View(UIScenarioPresenterClass & present
 UIScenarioServiceClass & UI_Scenario_Service(void);
 void UI_Scenario_State(UIScenarioState & state);
 
-// Runs the multiplayer map dialog, reopening it around the generator the way the Win32 dialog
-// hid itself. Returns IDOK when the player took a map, otherwise IDCANCEL.
-int UI_Scenario_Dialog(void);
+// Runs the multiplayer map dialog, with the generator raised over it. True when the player
+// took a map.
+bool UI_Scenario_Dialog(void);

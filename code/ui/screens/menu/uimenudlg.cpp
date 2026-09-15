@@ -30,7 +30,7 @@ void UI_Menu_Place(UIMenuState & state)
 }
 
 
-int UI_Menu_Dialog(UIMenuState const & state, std::function<bool(void)> const & hook)
+int UI_Menu_Dialog(UIMenuState const & state, int nothing, std::function<bool(void)> const & hook)
 {
 	UIMenuPresenterClass presenter(state);
 	std::unique_ptr<UIViewClass> view = UI_Menu_View(presenter);
@@ -44,5 +44,5 @@ int UI_Menu_Dialog(UIMenuState const & state, std::function<bool(void)> const & 
 		return(ended);
 	});
 
-	return((result == UI_RESULT_ACCEPTED) ? presenter.Choice : 0);
+	return((result == UI_RESULT_ACCEPTED) ? presenter.Choice : nothing);
 }

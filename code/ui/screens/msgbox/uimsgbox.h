@@ -58,7 +58,15 @@ std::unique_ptr<UIViewClass> UI_Message_Box_View(UIMessageBoxPresenterClass & pr
 // or the screen could not open.
 int UI_Message_Box(char const * text, int defaultresponse, char const * b1, char const * b2, char const * b3);
 
+// The button layouts the network box takes.
+enum UINetworkMessageButtons
+{
+	UI_NETWORK_MESSAGE_OK,
+	UI_NETWORK_MESSAGE_OK_CANCEL,
+	UI_NETWORK_MESSAGE_YES_NO,
+};
+
 // Runs the network message box, polling the caller's idle routine each pass so that its answers
-// keep flowing while the box is up. The type is the MB_ layout the Win32 box took, and the
-// answer comes back as the control id that gave it, as ODMessageBox reported it.
-int UI_Network_Message_Box(char const * text, int type, bool (*idle)(void));
+// keep flowing while the box is up. True when the player accepted it. A box with nothing to say
+// is not shown, and is not an acceptance.
+bool UI_Network_Message_Box(char const * text, UINetworkMessageButtons buttons, bool (*idle)(void));

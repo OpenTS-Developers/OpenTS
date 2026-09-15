@@ -65,21 +65,21 @@ GameType Select_MPlayer_Game (void)
 	UIMenuState menu;
 	menu.Kind = firestorm ? UI_MENU_MULTIPLAYER_FIRESTORM : UI_MENU_MULTIPLAYER;
 	menu.Title = "Select Multiplayer Game";
-	menu.Items.push_back(UIMenuItemType{"Internet", IDC_INTERNET, false});
+	menu.Items.push_back(UIMenuItemType{"Internet", GAME_INTERNET, false});
 	if (firestorm) {
-		menu.Items.push_back(UIMenuItemType{"World Domination! (Internet)", IDC_WORLDDOM, false});
+		menu.Items.push_back(UIMenuItemType{"World Domination! (Internet)", GAME_WDT, false});
 	}
-	menu.Items.push_back(UIMenuItemType{"Modem / Serial", IDC_MODEMSERIAL, true});
-	menu.Items.push_back(UIMenuItemType{"Network", IDC_NETWORK, true});
-	menu.Items.push_back(UIMenuItemType{"Skirmish", IDC_SKIRMISH, true});
-	menu.Items.push_back(UIMenuItemType{"Main Menu", IDCANCEL, true});
+	// The modem and serial games are retired, so that button leads nowhere and the chooser
+	// answers as backing out does.
+	menu.Items.push_back(UIMenuItemType{"Modem / Serial", GAME_NORMAL, true});
+	menu.Items.push_back(UIMenuItemType{"Network", GAME_IPX, true});
+	menu.Items.push_back(UIMenuItemType{"Skirmish", GAME_SKIRMISH, true});
+	menu.Items.push_back(UIMenuItemType{"Main Menu", GAME_NORMAL, true});
 	UI_Menu_Place(menu);
 
-	int chosen = UI_Menu_Dialog(menu);
-	if (chosen == IDC_NETWORK) {
-		retval = GAME_IPX;
-	} else if (chosen == IDC_SKIRMISH) {
-		retval = GAME_SKIRMISH;
+	int chosen = UI_Menu_Dialog(menu, GAME_NORMAL);
+	if (chosen == GAME_IPX || chosen == GAME_SKIRMISH) {
+		retval = (GameType)chosen;
 	}
 
 	Session.Read_Scenario_Descriptions();

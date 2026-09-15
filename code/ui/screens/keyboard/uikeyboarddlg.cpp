@@ -63,7 +63,7 @@ class UIKeyboardEngineServiceClass : public UIKeyboardServiceClass
 
 		virtual bool Confirm_Reset(void) override
 		{
-			return(WWMessageBox()._Process(TXT_RESET_HOTKEYS, IDOK, TXT_YES, TXT_NO, TXT_NONE, false) == 0);
+			return(WWMessageBox()._Process(TXT_RESET_HOTKEYS, 1, TXT_YES, TXT_NO, TXT_NONE, false) == 0);
 		}
 
 		// Only the player's own file is discarded; the defaults a deployment ships are what

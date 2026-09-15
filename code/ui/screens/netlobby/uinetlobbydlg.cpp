@@ -344,7 +344,7 @@ void UINetLobbyEngineServiceClass::Accept(void)
 
 void UINetLobbyEngineServiceClass::Pick_Map(void)
 {
-	Net2Pick_Map(NULL);
+	Net2Pick_Map();
 }
 
 }

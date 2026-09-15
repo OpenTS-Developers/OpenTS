@@ -47,19 +47,23 @@ int UI_Message_Box(char const * text, int defaultresponse, char const * b1, char
 }
 
 
-int UI_Network_Message_Box(char const * text, int type, bool (*idle)(void))
+bool UI_Network_Message_Box(char const * text, UINetworkMessageButtons buttons, bool (*idle)(void))
 {
-	// The Win32 templates carry these captions as literals rather than string table entries,
-	// so the box reads the same in every language; the screen matches what it replaces.
-	std::vector<std::string> captions;
-	int ids[2] = { IDOK, IDCANCEL };
+	if (text == NULL || text[0] == '\0') {
+		return(false);
+	}
 
-	if (type == MB_YESNO) {
+	// The Win32 templates carry these captions as literals rather than string table entries,
+	// so the box reads the same in every language; the screen matches what it replaces. Yes
+	// and No are the other way about, which is the order that template listed them in.
+	std::vector<std::string> captions;
+	int accepted = 0;
+
+	if (buttons == UI_NETWORK_MESSAGE_YES_NO) {
 		captions.push_back("No");
 		captions.push_back("Yes");
-		ids[0] = IDNO;
-		ids[1] = IDYES;
-	} else if (type == MB_OKCANCEL) {
+		accepted = 1;
+	} else if (buttons == UI_NETWORK_MESSAGE_OK_CANCEL) {
 		captions.push_back("OK");
 		captions.push_back("Cancel");
 	} else {
@@ -67,7 +71,7 @@ int UI_Network_Message_Box(char const * text, int type, bool (*idle)(void))
 	}
 	captions.resize(3);
 
-	UIMessageBoxPresenterClass presenter((text != NULL) ? text : "", std::move(captions), 0);
+	UIMessageBoxPresenterClass presenter(text, std::move(captions), 0);
 	presenter.Network = true;
 
 	std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
@@ -81,11 +85,8 @@ int UI_Network_Message_Box(char const * text, int type, bool (*idle)(void))
 	});
 
 	if (result == UI_RESULT_SESSION_ENDED || result == UI_RESULT_FAILED_TO_OPEN) {
-		return(IDCANCEL);
+		return(false);
 	}
 
-	if (presenter.Choice >= 0 && presenter.Choice < 2) {
-		return(ids[presenter.Choice]);
-	}
-	return(IDCANCEL);
+	return(presenter.Choice == accepted);
 }

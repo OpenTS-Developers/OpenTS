@@ -27,7 +27,6 @@ struct NetChatLineType
 	std::string Text;
 };
 
-int ODMessageBox(const char *text, int type, bool (*callback)(void), bool large = false);
 
 bool Set_Scenario_Info_From_Index(int index);
 void Commit_Session_Specials(void);
@@ -38,7 +37,7 @@ void Send_Preview_To_Guests(void);
 int CountAliveTeams(HouseClass * house);
 
 int RandomMapWaypointCount(int index);
-int Scenario_Dialog(HWND hWndParent);
+bool Scenario_Dialog(void);
 
 unsigned int Wstring_Hash(Wstring & string);
 
