@@ -214,3 +214,12 @@
     - "-MESSAGES"
     - Disable network protection
   summary: Let in-game chat from outside the match through. Removed when a line began to be accepted only from a seat of the match.
+- type: key
+  id: LegacyDialogs
+  route: /keys/legacydialogs/
+  search_aliases:
+    - LegacyDialogs
+  summary: Returned the screens that had both presentations to their Win32 dialogs. Removed with those dialogs; every screen is a UI document.
+  replacement:
+    type: system
+    id: ui-files

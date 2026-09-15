@@ -233,7 +233,6 @@ fixed_controls:
     context: Classic main menu
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Main_Menu, expression: KN_V+KN_CTRL_BIT }
       - { file: code/init.cpp, function: Main_Menu_Keys, expression: KN_V+KN_CTRL_BIT }
   - id: fixed:main-menu-credits
     title: Open credits
@@ -243,7 +242,6 @@ fixed_controls:
     context: Classic main menu
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Main_Menu, expression: VK_C+KN_CTRL_BIT+KN_ALT_BIT }
       - { file: code/init.cpp, function: Main_Menu_Keys, expression: VK_C+KN_CTRL_BIT+KN_ALT_BIT }
   - id: fixed:skip-credits
     title: Exit credits
@@ -370,7 +368,6 @@ fixed_exclusions:
   - site: { file: code/grphmsct.cpp, function: GM_Build_Key, expression: VK_NONE }
     reason: Sentinel used while translating a menu accelerator into a virtual key.
   - sites:
-      - { file: code/init.cpp, function: Main_Menu, expression: KN_RLSE_BIT }
       - { file: code/init.cpp, function: Main_Menu_Keys, expression: KN_RLSE_BIT }
     reason: Filters release events before the classic main-menu cheat handler.
   - sites:
@@ -411,12 +408,6 @@ fixed_exclusions:
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_BACKSPACE }
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_ESC }
     reason: Message editor polling, cursor placement, and text-edit termination.
-  - site: { file: code/ownrdraw.cpp, function: CtrlProc_Internal, expression: VK_TAB }
-    reason: Windows dialog focus traversal handled by the shared control procedure.
-  - sites:
-      - { file: code/ownrdraw.cpp, function: EditBoxCtrlProc, expression: VK_TAB }
-      - { file: code/ownrdraw.cpp, function: EditBoxCtrlProc, expression: VK_RETURN }
-    reason: Windows edit-control navigation handled by the shared dialog procedure.
   - sites:
       - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_MENU }
       - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_CONTROL }

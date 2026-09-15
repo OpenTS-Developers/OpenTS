@@ -2,7 +2,6 @@
 key: BitmapSystemFont
 scope: client-settings
 label: Bitmap dialog text
-see_also: [LegacyDialogs]
 when_omitted:
   kind: value
   value: "yes"

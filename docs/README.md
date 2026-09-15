@@ -10,7 +10,7 @@ The developer guides are split by subject:
   non-obvious implementation choices.
 - [Project direction](DIRECTION.md) — long-term architecture.
 - [UI system design](UI_DESIGN.md) — the RmlUi and ImGui integration,
-  screen-level interchangeable views, and the migration from OwnerDraw.
+  screen-level interchangeable views, and the retirement of OwnerDraw.
 - [The saved game format](SAVE-FORMAT.md) — the layout of a `.SAV` file: its
   header, listing fields, compressed content, and object records.
 

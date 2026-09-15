@@ -10,4 +10,4 @@ credit:
 - ZivDero
 ---
 
-The options menu the main menu opens is an RmlUi document with the same five buttons in the same place, Game Settings, Display, Sound, Keyboard and Main Menu, and the Sound button still goes dead without an audio device. The settings are still written when the player leaves. `LegacyDialogs=yes` keeps the Win32 dialog.
+The options menu the main menu opens is an RmlUi document with the same five buttons in the same place, Game Settings, Display, Sound, Keyboard and Main Menu, and the Sound button still goes dead without an audio device. The settings are still written when the player leaves.

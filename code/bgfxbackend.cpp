@@ -288,9 +288,8 @@ bool Backend_Init(NativeWindow const & window, int drawablewidth, int drawablehe
 		return(true);
 	}
 
-	// Presents happen at whatever depth the engine has reached, including from inside a
-	// dialog's paint handler, so the renderer has to run on this thread. Calling
-	// renderFrame before init is what selects that.
+	// Presents happen at whatever depth the engine has reached, so the renderer has to run on
+	// this thread. Calling renderFrame before init is what selects that.
 	bgfx::renderFrame();
 
 	_DrawableWidth = drawablewidth;
