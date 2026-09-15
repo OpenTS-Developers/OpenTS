@@ -47,6 +47,9 @@
 #include "msgbox.h"
 #include "ownrdraw.h"
 #include "session.h"
+#include "_ui.h"
+#include "ui/screens/menu/uimenu.h"
+#include "ui/uishell.h"
 
 class ListClass;
 
@@ -64,9 +67,40 @@ GameType Select_MPlayer_Game (void)
 		return(retval);
 	}
 
+	bool firestorm = (Addon_Installed(ADDON_FIRESTORM) == ADDON_FIRESTORM);
+
+	UIMenuState menu;
+	menu.Kind = firestorm ? UI_MENU_MULTIPLAYER_FIRESTORM : UI_MENU_MULTIPLAYER;
+	menu.Title = "Select Multiplayer Game";
+	menu.Items.push_back(UIMenuItemType{"Internet", IDC_INTERNET, false});
+	if (firestorm) {
+		menu.Items.push_back(UIMenuItemType{"World Domination! (Internet)", IDC_WORLDDOM, false});
+	}
+	menu.Items.push_back(UIMenuItemType{"Modem / Serial", IDC_MODEMSERIAL, true});
+	menu.Items.push_back(UIMenuItemType{"Network", IDC_NETWORK, true});
+	menu.Items.push_back(UIMenuItemType{"Skirmish", IDC_SKIRMISH, true});
+	menu.Items.push_back(UIMenuItemType{"Main Menu", IDCANCEL, true});
+	UI_Menu_Place(menu);
+
+	// The dialog asks again for anything that is not a game it can start, so the screen does.
+	int chosen = 0;
+	while (UIShell.Use_Rml() && UI_Menu_Dialog(menu, chosen)) {
+		if (chosen == IDC_NETWORK) {
+			retval = GAME_IPX;
+		} else if (chosen == IDC_SKIRMISH) {
+			retval = GAME_SKIRMISH;
+		} else {
+			Session.Read_Scenario_Descriptions();
+			return(GAME_NORMAL);
+		}
+
+		Session.Read_Scenario_Descriptions();
+		return(retval);
+	}
+
 	HWND dialog;
 
-	if (Addon_Installed(ADDON_FIRESTORM) == ADDON_FIRESTORM) {
+	if (firestorm) {
 		dialog = OwnerDraw::Begin_Dialog(IDD_MPLAYER_SELECT_GAME_FS, Select_MPlayer_Game_Dialog_Proc);
 	} else {
 		dialog = OwnerDraw::Begin_Dialog(IDD_MPLAYER_SELECT_GAME, Select_MPlayer_Game_Dialog_Proc);

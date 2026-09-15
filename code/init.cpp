@@ -181,6 +181,7 @@
 #include "tutorial.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/campaign/uicampaign.h"
+#include "ui/screens/menu/uimenu.h"
 #include "ui/uishell.h"
 #include "uicontrol.h"
 #include "unit.h"
@@ -3070,12 +3071,85 @@ void Version_Dialog(void)
  * HISTORY:                                                                *
  *   05/17/1995 BRR : Created.                                             *
  *=========================================================================*/
+// What a key pressed over the main menu answered with, which the menu reads once its screen
+// has closed; the dialog's own loop wrote its result straight into the caller's.
+static int MainMenuKeyResult = SEL_NONE;
+
+
+// The keys the main menu answers to while it stands, which the screen reads for itself
+// because the dialog read them from the loop it ran in.
+static bool Main_Menu_Keys(void)
+{
+	if (!Keyboard->Check()) {
+		return(false);
+	}
+
+	KeyNumType input = Keyboard->Get();
+	switch ((unsigned int)input) {
+		case (KN_V | KN_CTRL_BIT):
+			Version_Dialog();
+			break;
+
+		case VK_C | KN_CTRL_BIT | KN_ALT_BIT:
+			MainMenuKeyResult = SEL_VIEW_CREDITS;
+			return(true);
+
+		default:
+			if ((input & KN_RLSE_BIT) == 0 && Cheat_Key_Process((char)input) == true) {
+				Sound_Effect(Rule->OptionsChanged);
+				Title_Screen_Restore(true);
+			}
+			break;
+	}
+
+	return(false);
+}
+
+
 int Main_Menu(unsigned int timeout)
 {
 	HWND dialog;
 	int retval = SEL_NONE;
 
 	timeout = 0;
+
+	MainMenuKeyResult = SEL_NONE;
+
+	UIMenuState menu;
+	menu.Kind = UI_MENU_MAIN;
+	menu.Items.push_back(UIMenuItemType{"New Campaign", IDC_NEWCAMPAIGN, true});
+	menu.Items.push_back(UIMenuItemType{"Load Mission", IDC_LOAD_MISSION, LoadOptionsClass().Files_Present()});
+	menu.Items.push_back(UIMenuItemType{"Multiplayer Game", IDC_MULTIPLAYER_GAME, true});
+	menu.Items.push_back(UIMenuItemType{"Intro / Sneak Peek", IDC_INTRO, true});
+	menu.Items.push_back(UIMenuItemType{"Options", IDC_OPTIONS, true});
+	menu.Items.push_back(UIMenuItemType{"Exit Game", IDC_EXIT_GAME, true});
+	UI_Menu_Place(menu);
+
+	{
+		char * background = Get_New_Menu()->Background;
+		Load_Title_Screen(background, HiddenSurface, &CCPalette);
+		Draw_Version_Text(HiddenSurface);
+		Update_Visible_Surface();
+
+		int chosen = 0;
+		if (UIShell.Use_Rml() && UI_Menu_Dialog(menu, chosen, Main_Menu_Keys)) {
+			switch (chosen) {
+				case IDC_OPTIONS: retval = SEL_OPTIONS; break;
+				case IDC_EXIT_GAME: retval = SEL_EXIT; break;
+				case IDC_INTRO: retval = SEL_INTRO; break;
+				case IDC_NEWCAMPAIGN: retval = SEL_CAMPAIGN_GAME; break;
+				case IDC_MULTIPLAYER_GAME: retval = SEL_MULTIPLAYER_GAME; break;
+				case IDC_LOAD_MISSION: retval = SEL_LOAD_GAME; break;
+				default: retval = (MainMenuKeyResult != SEL_NONE) ? MainMenuKeyResult : SEL_EXIT; break;
+			}
+
+			SYSTEMTIME stamp;
+			GetSystemTime(&stamp);
+			CryptRandom.Seed_Byte(stamp.wMilliseconds);
+			SetFocus(MainWindow);
+			return(retval);
+		}
+	}
 
 	dialog = OwnerDraw::Begin_Dialog(IDD_MAIN_MENU, Main_Menu_Dialog_Proc);
 	assert(dialog != NULL);

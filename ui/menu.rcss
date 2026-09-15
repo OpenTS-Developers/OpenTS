@@ -1,0 +1,108 @@
+/*
+ * Where the three button menus over the title screen put their parts. None is put through
+ * the game's resize pass: Windows lays one out at a unit and a half across and one and
+ * sixty-three hundredths down, and a control's size takes a pixel more than that. The
+ * eighteen unit buttons come to twenty-nine pixels, which the twenty-four pixel skin sits
+ * two below the top of; the fourteen unit ones come to twenty-three, which it fills.
+ *
+ * The class the screen sets chooses the template: IDD_MAIN_MENU, IDD_MPLAYER_SELECT_GAME
+ * with its Firestorm form, and IDD_SELECT_GAME_TYPE. Everything visual comes from the kit.
+ */
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+/*
+ * A centred caption sits a pixel left of the middle when the room is odd, as the layer halves
+ * it in whole pixels where the toolkit rounds a half up, so the box is padded on the right.
+ */
+#title
+{
+	height: 17dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+button
+{
+	width: 196dp;
+}
+
+/* ------------------------------------------------------------------------ the main menu */
+
+.main #reveal
+{
+	width: 306dp;
+	height: 240dp;
+	top: 50%;
+	margin-top: -119dp;
+}
+
+.main button { left: 55dp; }
+.main button:nth-child(1) { top: 21dp; }
+.main button:nth-child(2) { top: 56dp; }
+.main button:nth-child(3) { top: 90dp; }
+.main button:nth-child(4) { top: 124dp; }
+.main button:nth-child(5) { top: 158dp; }
+.main button:nth-child(6) { top: 193dp; }
+
+/* ------------------------------------------------------- the multiplayer game to play */
+
+.multiplayer #reveal
+{
+	width: 306dp;
+	height: 234dp;
+	top: 50%;
+	margin-top: -117dp;
+}
+
+.multiplayer #title { left: 55dp; top: 19dp; width: 195dp; }
+.multiplayer button { left: 55dp; }
+.multiplayer button:nth-child(1) { top: 47dp; }
+.multiplayer button:nth-child(2) { top: 82dp; }
+.multiplayer button:nth-child(3) { top: 116dp; }
+.multiplayer button:nth-child(4) { top: 150dp; }
+.multiplayer button:nth-child(5) { top: 184dp; }
+
+/* The expansion's own template is narrower, a row taller, and carries one button more. */
+
+.firestorm #reveal
+{
+	width: 296dp;
+	height: 238dp;
+	margin-top: -119dp;
+}
+
+.firestorm #title { left: 45dp; top: 13dp; width: 195dp; }
+.firestorm button { left: 45dp; }
+.firestorm button:nth-child(1) { top: 37dp; }
+.firestorm button:nth-child(2) { top: 69dp; }
+.firestorm button:nth-child(3) { top: 99dp; }
+.firestorm button:nth-child(4) { top: 131dp; }
+.firestorm button:nth-child(5) { top: 161dp; }
+.firestorm button:nth-child(6) { top: 194dp; }
+
+/* -------------------------------------------------------------- the game to play at all */
+
+.gametype #reveal
+{
+	width: 342dp;
+	height: 176dp;
+	top: 50%;
+	margin-top: -88dp;
+}
+
+.gametype #title { left: 33dp; top: 19dp; width: 274dp; }
+.gametype button { left: 93dp; width: 156dp; }
+.gametype button:nth-child(1) { top: 68dp; }
+.gametype button:nth-child(2) { top: 101dp; }
+.gametype button:nth-child(3) { top: 133dp; }

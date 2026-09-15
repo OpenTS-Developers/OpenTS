@@ -37,6 +37,7 @@
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/screens/mainopt/uimainopt.h"
+#include "ui/screens/menu/uimenu.h"
 #include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/sound/uisound.h"
 #include "ui/screens/netlobby/uinetlobby.h"
@@ -2305,6 +2306,54 @@ std::vector<Rml::Element *> Buttons_Top_Down(Rml::ElementDocument * document)
 
 // Drives the options menu: each button closes it with its choice, a dead Sound button does
 // nothing, Escape leaves, and the panel takes the top edge the game hands it.
+void Test_Menu_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UIMenuState state;
+	state.Kind = UI_MENU_MULTIPLAYER_FIRESTORM;
+	state.Title = "Select Multiplayer Game";
+	state.Items.push_back(UIMenuItemType{"Internet", 101, false});
+	state.Items.push_back(UIMenuItemType{"Network", 102, true});
+	state.Items.push_back(UIMenuItemType{"Main Menu", 2, true});
+	state.Top = 400;
+
+	UIMenuPresenterClass presenter(state);
+	std::unique_ptr<UIViewClass> view = UI_Menu_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the menu view prepares against the test context");
+	view->Show(true);
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the menu raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Check(document->IsClassSet("multiplayer") && document->IsClassSet("firestorm"), "the document wears the template it was asked for");
+
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y == 400.0f, "the menu sits at the top edge it was given");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(296.0f, 238.0f), "the expansion's template is its own size");
+
+	std::vector<Rml::Element *> buttons = Buttons_Top_Down(document);
+	Check(buttons.size() == 3, "the menu has a button for each item it was given");
+
+	// A button the caller marked dead is drawn and answers nothing, as the dialog left the
+	// ones leading to the online service.
+	if (buttons.size() == 3) {
+		Click(context, buttons[0]);
+		presenter.Drain();
+		Check(!presenter.Result.has_value() && presenter.Choice == 0, "a button that takes no press answers nothing");
+
+		Click(context, buttons[1]);
+		presenter.Drain();
+		Check(presenter.Result.has_value() && presenter.Choice == 102, "a button answers with what the caller gave it");
+	}
+
+	view->Release();
+	context.Update();
+}
+
+
 void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system, RecordingRenderInterfaceClass & render)
 {
 	int problems = system.Problems;
@@ -3070,6 +3119,7 @@ void Test_Documents(void)
 		Test_Game_Controls_Screen(*context, system);
 		Test_Display_Screen(*context, system);
 		Test_Keyboard_Screen(*context, system);
+		Test_Menu_Screen(*context, system);
 		Test_Main_Options_Screen(*context, system, render);
 		Test_Wait_Box_Screen(*context, system);
 	}

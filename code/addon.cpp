@@ -11,6 +11,10 @@
 
 #include "addon.h"
 
+#include "_ui.h"
+#include "ui/screens/menu/uimenu.h"
+#include "ui/uishell.h"
+
 #include "_deploymentconfig.h"
 #include "ccfile.h"
 #include "data.h"
@@ -62,6 +66,28 @@ bool Select_Game_Type_Dialog(AddonType &type)
 	type = ADDON_BASE_GAME;
 
 	if (Addon_Installed(ADDON_ANY)) {
+		UIMenuState menu;
+		menu.Kind = UI_MENU_GAME_TYPE;
+		menu.Title = "Select Game Type";
+		menu.Wide = false;
+		menu.Items.push_back(UIMenuItemType{"Tiberian Sun (Original)", IDC_GAMETYPE_ORIGINAL, true});
+		menu.Items.push_back(UIMenuItemType{"Firestorm", IDC_GAMETYPE_FIRESTORM, true});
+		menu.Items.push_back(UIMenuItemType{"Main Menu", IDCANCEL, true});
+
+		int chosen = 0;
+		if (UIShell.Use_Rml() && UI_Menu_Dialog(menu, chosen)) {
+			ActiveAddOns = 1 << ADDON_BASE_GAME;
+			if (chosen == IDC_GAMETYPE_FIRESTORM) {
+				Enable_Addon(ADDON_FIRESTORM);
+				type = ADDON_FIRESTORM;
+			} else if (chosen != IDC_GAMETYPE_ORIGINAL) {
+				return(false);
+			}
+
+			Set_Required_Addon(type);
+			return(true);
+		}
+
 		HWND dialog = OwnerDraw::Begin_Dialog(IDD_SELECT_GAME_TYPE, Select_Game_Type_Dialog_Proc);
 		if (dialog != 0) {
 
