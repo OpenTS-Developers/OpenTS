@@ -27,6 +27,9 @@
 #include "loaddlg.h"
 #include "misc.h"
 #include "mpload.h"
+#include "ui/screens/desync/uidesync.h"
+#include "ui/uishell.h"
+#include "_ui.h"
 #include "netdlg.h"
 #include "netglobal.h"
 #include "ownrdraw.h"
@@ -87,11 +90,20 @@ DesyncDialogClass::OutcomeType DesyncDialogClass::Run(void)
 	OpenedAt = Monotonic_Milliseconds();
 	State.Begin(OpenedAt);
 
-	Create_Dialog();
-
 	OutcomeType outcome = OutcomeType::Continue;
 
-	if (Window == NULL) {
+	bool ranscreen = false;
+	if (UIShell.Use_Rml() && !UIShell.Legacy_Dialog_Visible()) {
+		ranscreen = Run_Screen(outcome);
+	}
+
+	if (!ranscreen) {
+		Create_Dialog();
+	}
+
+	if (ranscreen) {
+		// The screen has already settled the outcome.
+	} else if (Window == NULL) {
 		DebugString("The out-of-sync dialog could not be created; continuing\n");
 	} else {
 		while (true) {
@@ -145,6 +157,155 @@ DesyncDialogClass::OutcomeType DesyncDialogClass::Run(void)
 
 	DebugString("Out-of-sync dialog closed with outcome %d\n", (int)outcome);
 	return(outcome);
+}
+
+
+/// <summary>
+/// Whether the master may load a save to bring the session back into step.
+/// </summary>
+bool DesyncDialogClass::Load_Is_Allowed(void) const
+{
+	return(SaveManager.Multiplayer_Load_Is_Allowed() && MultiplayerLoadOptionsClass().Files_Present());
+}
+
+
+/// <summary>
+/// The line under the players naming how long is left before the save loads, or nothing
+/// while no load is pending.
+/// </summary>
+std::string DesyncDialogClass::Countdown_Caption(void) const
+{
+	if (!CountdownActive || !SaveManager.MultiplayerLoad.Is_Pending()) {
+		return(std::string());
+	}
+
+	int const seconds = SaveManager.MultiplayerLoad.Seconds_Left(Monotonic_Milliseconds());
+	char buffer[128];
+	std::snprintf(buffer, sizeof(buffer),
+		Fetch_String(seconds == 1 ? TXT_LOADING_IN_SECOND : TXT_LOADING_IN_SECONDS), seconds);
+	return(std::string(buffer));
+}
+
+
+/// <summary>
+/// How much of the countdown bar is still filled, from one down to nothing.
+/// </summary>
+float DesyncDialogClass::Countdown_Left(void) const
+{
+	if (!CountdownActive || !SaveManager.MultiplayerLoad.Is_Pending()) {
+		return(0.0f);
+	}
+
+	int const total = (int)MultiplayerLoadClass::COUNTDOWN_MS;
+	int const remaining = std::clamp((int)SaveManager.MultiplayerLoad.Milliseconds_Left(Monotonic_Milliseconds()), 0, total);
+	return((total > 0) ? (float)remaining / (float)total : 0.0f);
+}
+
+
+/// <summary>
+/// The colour the bar is filled in, which turns as the wait runs out.
+/// </summary>
+char const * DesyncDialogClass::Countdown_Colour(void) const
+{
+	int const total = (int)MultiplayerLoadClass::COUNTDOWN_MS;
+	int const remaining = std::clamp((int)SaveManager.MultiplayerLoad.Milliseconds_Left(Monotonic_Milliseconds()), 0, total);
+	int const elapsed = total - remaining;
+
+	if (elapsed > total * 4 / 5) {
+		return("#c80000");
+	}
+	if (elapsed > total * 2 / 5) {
+		return("#c8c800");
+	}
+	return("#00c800");
+}
+
+
+/// <summary>
+/// Sends a line of chat to everyone still in the session.
+/// </summary>
+void DesyncDialogClass::Say(char const * text)
+{
+	if (text == NULL || text[0] == 0) {
+		return;
+	}
+
+	Session.MessageScope = ChatScopeType::Everyone;
+	Session.MessageAddress = IPXAddressClass();
+	Chat_Send(text);
+}
+
+
+/// <summary>
+/// Runs the pass the dialog's own loop runs, for a screen standing in its place.
+/// </summary>
+/// <returns>True once the session has settled the outcome without this player choosing
+/// it, which is what closes the screen.</returns>
+bool DesyncDialogClass::Service_Screen(void)
+{
+	if (ScreenSettled) {
+		return(true);
+	}
+
+	std::int64_t const now = Monotonic_Milliseconds();
+	if (!IsHostDialog && !QuitEnabled && now - OpenedAt >= DesyncClass::QUIT_DELAY_MS) {
+		QuitEnabled = true;
+	}
+
+	if (!CountdownActive && SaveManager.MultiplayerLoad.Is_Pending()) {
+		Start_Countdown();
+	}
+
+	if (CountdownActive) {
+		if (SaveManager.MultiplayerLoad.Is_Due(now)) {
+			ScreenOutcome = OutcomeType::Load;
+			ScreenSettled = true;
+		}
+	} else if (ContinueReceived) {
+		ScreenOutcome = OutcomeType::Continue;
+		ScreenSettled = true;
+	}
+
+	return(ScreenSettled);
+}
+
+
+/// <summary>
+/// Runs the screen in the dialog's place, reopening it around anything it raises.
+/// </summary>
+/// <returns>False when the screen could not open, leaving the caller its Win32 dialog.</returns>
+bool DesyncDialogClass::Run_Screen(OutcomeType & outcome)
+{
+	IsHostDialog = Session.Am_I_Master();
+	ScreenActive = true;
+	ScreenSettled = false;
+	ScreenOutcome = OutcomeType::Continue;
+
+	bool ran = true;
+	while (ran && !ScreenSettled) {
+		UIDesyncChoiceType choice = UI_DESYNC_NONE;
+		ran = UI_Desync_Dialog(choice);
+		if (!ran) {
+			break;
+		}
+
+		if (choice == UI_DESYNC_QUIT) {
+			ScreenOutcome = OutcomeType::Quit;
+			ScreenSettled = true;
+
+		} else if (choice == UI_DESYNC_CONTINUE) {
+			Send_Continue();
+			ScreenOutcome = OutcomeType::Continue;
+			ScreenSettled = true;
+
+		} else if (choice == UI_DESYNC_LOAD) {
+			SaveManager.Multiplayer_Load_Prompt();
+		}
+	}
+
+	ScreenActive = false;
+	outcome = ScreenOutcome;
+	return(ran);
 }
 
 

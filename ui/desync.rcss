@@ -1,0 +1,135 @@
+/*
+ * Where the out-of-sync screen puts its parts. IDD_DESYNC_HOST and IDD_DESYNC_WAIT are 360 by
+ * 264 dialog units, and at that size the layer cuts the players caption and the load button
+ * off under the frame and runs the prose over the line beneath it. So the screen is laid out
+ * in the frame the lobbies and the skirmish setup use, 640 by 391. The two templates carry
+ * the same parts; the master's prose names the three decisions it can make and everyone
+ * else's says to wait, so one document covers both and the class on the body chooses.
+ * Everything visual comes from the kit.
+ */
+
+#reveal
+{
+	width: 640dp;
+	height: 391dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+.host .wait-only, .wait .host-only
+{
+	display: none;
+}
+
+/* ------------------------------------------------------------- the head and the players */
+
+#header
+{
+	left: 33dp;
+	top: 14dp;
+	width: 574dp;
+	height: 17dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#cap-players { left: 33dp; top: 40dp; width: 150dp; height: 17dp; line-height: 17dp; }
+
+#players { left: 33dp; top: 60dp; width: 178dp; }
+
+/*
+ * A name is entered in the lobby and can run to sixteen characters, which is about what the
+ * column holds, so a cell that runs over is cut off at its column as the layer cut it rather
+ * than wrapping and making the row taller.
+ */
+#players .cell-mark, #players .cell-name, #players .cell-status
+{
+	display: inline-block;
+	vertical-align: top;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+/*
+ * The marker keeps its column on a row without one, the standing carries its own colour, and
+ * the name is parted from it by the six pixels the layer leaves, so a name that fills its
+ * column does not run into the word beside it.
+ */
+#players .cell-mark { width: 18dp; }
+#players .cell-name { width: 94dp; margin-right: 6dp; }
+
+/* ------------------------------------------------------------------------------ the prose */
+
+/* The paragraphs are parted by less than a line of their own, where the templates part them
+   by a whole one and then run out of room. */
+#prose, #prose-wait
+{
+	left: 218dp;
+	top: 40dp;
+	width: 389dp;
+	line-height: 19dp;
+}
+
+#prose p, #prose-wait p
+{
+	margin-bottom: 10dp;
+}
+
+/* ------------------------------------------------------------------------------- the chat */
+
+#chat { left: 33dp; width: 574dp; }
+
+#chat .line, #chat .item
+{
+	display: block;
+	margin: 0;
+	padding-left: 2dp;
+	white-space: pre-wrap;
+}
+
+#say { left: 34dp; width: 572dp; height: 19dp; }
+
+/* --------------------------------------------------------------------------- the countdown */
+
+#countdown-bar
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 0;
+	height: 22dp;
+	background-color: #70ff00;
+}
+
+/* --------------------------------------- candidate B: the countdown shares the button row */
+
+#players { height: 127dp; }
+#chat { top: 196dp; height: 127dp; }
+#say { top: 330dp; }
+
+/*
+ * While it counts there is nothing left to press but the way out, so the two decisions give
+ * their room to the bar and stand down until the load either lands or is given up on.
+ */
+.counting #load, .counting #continue { display: none; }
+
+#countdown { left: 33dp; top: 361dp; width: 207dp; height: 17dp; line-height: 17dp; }
+#countdown-frame { left: 250dp; top: 358dp; width: 140dp; height: 24dp; }
+
+#load { left: 33dp; top: 358dp; width: 140dp; }
+#continue { left: 250dp; top: 358dp; width: 140dp; }
+#quit { left: 467dp; top: 358dp; width: 140dp; }
+
+.wait #quit { left: 250dp; }
+.wait.counting #quit { left: 467dp; }

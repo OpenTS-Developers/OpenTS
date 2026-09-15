@@ -34,7 +34,26 @@ class DesyncDialogClass
 		// Blocks until a decision has been made; the network is serviced throughout.
 		OutcomeType Run(void);
 
-		bool Is_Active(void) const {return(Window != NULL);}
+		bool Is_Active(void) const {return(Window != NULL || ScreenActive);}
+
+		// What the out-of-sync screen reads and does while it stands in for the dialog. The
+		// dialog's own loop reads the same state directly.
+		bool Is_Host(void) const {return(IsHostDialog);}
+		bool Has_Left(int house) const {return(State.Has_Left(house));}
+		char const * Left_Name(int house) const {return(State.Left_Name(house));}
+		std::vector<std::string> const & Chat_Backlog(void) const {return(ChatBacklog);}
+		bool Is_Counting_Down(void) const {return(CountdownActive);}
+		bool Quit_Is_Allowed(void) const {return(IsHostDialog || QuitEnabled);}
+		bool Load_Is_Allowed(void) const;
+		std::string Countdown_Caption(void) const;
+		float Countdown_Left(void) const;
+		char const * Countdown_Colour(void) const;
+		void Say(char const * text);
+
+		// One pass of the loop the dialog runs in, for a screen's runner to call instead.
+		// True once the outcome has settled without this player choosing it.
+		bool Service_Screen(void);
+		bool Decision_Is_Settled(void) const {return(ScreenSettled);}
 
 		// Sends the heartbeat and drops silent players; called from the network maintenance
 		// so that both outlive a nested dialog's message loop.
@@ -65,8 +84,13 @@ class DesyncDialogClass
 		void Draw_Countdown_Bar(HWND window);
 		static INT_PTR CALLBACK Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
+		bool Run_Screen(OutcomeType & outcome);
+
 		HWND Window = NULL;
 		bool IsHostDialog = false;
+		bool ScreenActive = false;
+		bool ScreenSettled = false;
+		OutcomeType ScreenOutcome = OutcomeType::Continue;
 		int Decision = 0;
 		bool ContinueReceived = false;
 		bool ChatPlaceholderActive = false;
