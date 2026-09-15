@@ -27,7 +27,6 @@
 #include "ui/uishell.h"
 #include "ui/uiview.h"
 #include "win.h"
-#include "windlg.h"
 
 #include <utility>
 

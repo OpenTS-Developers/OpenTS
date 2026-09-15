@@ -318,6 +318,7 @@ namespace OwnerDraw {
 
 int OD_Draw_Text_Remap(Surface & surface, const char * string, Rect const & rect, char const * name, COLORREF color, int flags, int char_spacing);
 int OD_Draw_Text(COLORREF color, HFONT font, Rect const & rect, const char * text, int len, int x_alignment, int y_alignment, Surface * surface);
+HFONT WS_Get_Font(HDC hdc, const char * face_name, int decipt_width, int decipt_height, int attributes);
 void OD_Draw_Rect(Surface & surf, Rect const & rect, int offset, int color);
 
 void On_WM_NCDESTROY(HWND window);

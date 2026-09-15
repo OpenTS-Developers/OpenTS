@@ -34,8 +34,6 @@ HWND WS_Next_Lower_Dialog(HWND window);
 
 void Resize_Dialogs(HWND window);
 
-HFONT WS_Get_Font(HDC hdc, const char * face_name, int decipt_width, int decipt_height, int attributes);
-
 struct WSDialogStruct {
 	/*
 	 * This is the window handle of the dialog occupying this slot. It stays zero until the
