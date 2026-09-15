@@ -47,19 +47,16 @@ void UIMapGenPresenterClass::Execute(UIIntent const & intent)
 		}
 
 	} else if (intent.Name == "save") {
-		Raise = RAISE_SAVE;
-		Result = UI_RESULT_ACCEPTED;
+		Service.Save();
 
 	} else if (intent.Name == "load") {
 		if (State.LoadEnabled) {
-			Raise = RAISE_LOAD;
-			Result = UI_RESULT_ACCEPTED;
+			Service.Load();
 		}
 
 	} else if (intent.Name == "delete") {
 		if (State.DeleteEnabled) {
-			Raise = RAISE_DELETE;
-			Result = UI_RESULT_ACCEPTED;
+			Service.Delete();
 		}
 
 	} else {

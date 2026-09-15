@@ -8,7 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the multiplayer map dialog: the missions the machine holds, the picture
-// of the highlighted one, and the generator it reopens around. The presenter and the view
+// of the highlighted one, and the generator it raises over itself. The presenter and the view
 // live in uiscenario.cpp so that the test harness can drive them without the engine.
 
 #include "ui/screens/scenario/uiscenario.h"
@@ -64,6 +64,16 @@ class UIScenarioEngineServiceClass : public UIScenarioServiceClass
 			Session.Options.ScenarioIndex = original;
 			Set_Scenario_Info_From_Index(original);
 		}
+
+		virtual void Read(UIScenarioState & state) override
+		{
+			UI_Scenario_State(state);
+		}
+
+		virtual int Random(void) override
+		{
+			return(CreateRandomMap());
+		}
 };
 
 
@@ -111,7 +121,7 @@ void UI_Scenario_State(UIScenarioState & state)
 
 
 /// <summary>
-/// Runs the multiplayer map dialog, reopening it around the generator.
+/// Runs the multiplayer map dialog. The generator runs over it rather than in its place.
 /// </summary>
 /// <returns>Returns with IDOK when the player took a map, otherwise IDCANCEL.</returns>
 int UI_Scenario_Dialog(void)
@@ -119,37 +129,14 @@ int UI_Scenario_Dialog(void)
 	UIScenarioState state;
 	UI_Scenario_State(state);
 
-	bool reveal = true;
+	UIScenarioPresenterClass presenter(UI_Scenario_Service(), std::move(state));
+	std::unique_ptr<UIViewClass> view = UI_Scenario_View(presenter);
 
-	for (;;) {
-		state.Reveal = reveal;
-
-		UIScenarioPresenterClass presenter(UI_Scenario_Service(), state);
-		std::unique_ptr<UIViewClass> view = UI_Scenario_View(presenter);
-
-		UIResult result = UIShell.Run_Modal(*view, Service_Pick);
-		if (result == UI_RESULT_FAILED_TO_OPEN) {
-			return(IDCANCEL);
-		}
-
-		state = std::move(presenter.State);
-		reveal = false;
-
-		if (presenter.Choice == UI_SCENARIO_RANDOM) {
-			int scenario = CreateRandomMap();
-			UI_Scenario_State(state);
-			if (scenario >= 0 && scenario < (int)state.Entries.size()) {
-				state.Selected = scenario;
-				UI_Scenario_Service().Preview(state.Selected, state.Preview);
-			}
-			continue;
-		}
-
-		if (result == UI_RESULT_SESSION_ENDED || presenter.Choice != UI_SCENARIO_ACCEPT) {
-			return(IDCANCEL);
-		}
-
-		Session.Options.ScenarioIndex = state.Selected > 0 ? state.Selected : 0;
-		return(IDOK);
+	UIResult result = UIShell.Run_Modal(*view, Service_Pick, true);
+	if (result != UI_RESULT_ACCEPTED || presenter.Choice != UI_SCENARIO_ACCEPT) {
+		return(IDCANCEL);
 	}
+
+	Session.Options.ScenarioIndex = presenter.State.Selected > 0 ? presenter.State.Selected : 0;
+	return(IDOK);
 }

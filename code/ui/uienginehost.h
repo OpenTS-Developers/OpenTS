@@ -29,8 +29,9 @@ std::string UI_Color_Text(COLORREF color);
 // session or Call_Back otherwise. True when the game ended.
 bool UI_Service_Game(void);
 
-// Runs a modal screen on UIShell with the game serviced each pass.
-UIResult UI_Run_Modal(UIViewClass & view);
+// Runs a modal screen on UIShell with the game serviced each pass. A screen that hides its
+// parent takes the screen below it down for its own passes.
+UIResult UI_Run_Modal(UIViewClass & view, bool hideparent = false);
 
 // One pass of a screen standing over the running game, for a game wait to spend its idle time
 // on. Nothing happens when no screen is shown.

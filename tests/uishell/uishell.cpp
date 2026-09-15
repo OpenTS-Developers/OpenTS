@@ -2531,6 +2531,9 @@ class RecordingScenarioServiceClass : public UIScenarioServiceClass
 		int Asked = 0;
 		int Row = -1;
 
+		int Generated = 0;
+		int Made = -1;
+
 		virtual void Preview(int index, UIMapPreviewImage & image) override
 		{
 			Asked++;
@@ -2540,12 +2543,24 @@ class RecordingScenarioServiceClass : public UIScenarioServiceClass
 			image.Pixels.assign(2 * 2 * 4, 128);
 			image.Generation++;
 		}
+
+		// The list the dialog reads back is the one it already holds, so the test can watch
+		// the row the generator hands over rather than a rebuilt list.
+		virtual void Read(UIScenarioState &) override
+		{
+		}
+
+		virtual int Random(void) override
+		{
+			Generated++;
+			return(Made);
+		}
 };
 
 
 // Drives the map dialog: it comes out at its template's size, moving the highlight asks the
 // engine for that map's picture, and the generator button closes the screen rather than
-// answering inside it.
+// closing it.
 void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -2584,8 +2599,10 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Drive(presenter, "select", 9);
 	Check(presenter.State.Selected == 2 && service.Asked == 1, "a row the list does not hold is ignored");
 
+	service.Made = 3;
 	Drive(presenter, "random");
-	Check(presenter.Result.has_value() && presenter.Choice == UI_SCENARIO_RANDOM, "the generator button closes the dialog with the generator choice");
+	Check(!presenter.Result.has_value() && service.Generated == 1, "the generator button runs the generator over the dialog, which stays open");
+	Check(presenter.State.Selected == 3 && service.Row == 3, "and the dialog takes the map it made, with its picture");
 
 	view->Release();
 	context.Update();
@@ -2630,6 +2647,9 @@ class RecordingNetServiceClass : public UINetLobbyServiceClass
 		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
 		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }
 		virtual void Accept(void) override { Accepts++; }
+
+		int Picked = 0;
+		virtual void Pick_Map(void) override { Picked++; }
 };
 
 
@@ -2770,6 +2790,29 @@ void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass 
 }
 
 
+// Answers the skirmish setup without an engine: the map dialog writes back a name of its
+// own, and whether the map can hold the players is whatever the test says.
+class RecordingSkirmishServiceClass : public UISkirmishServiceClass
+{
+	public:
+		int Picked = 0;
+		bool Startable = true;
+		int Asked = 0;
+
+		virtual void Pick_Map(UISkirmishState & state) override
+		{
+			Picked++;
+			state.MapName = "Picked map";
+		}
+
+		virtual bool Can_Start(UISkirmishState const &) override
+		{
+			Asked++;
+			return(Startable);
+		}
+};
+
+
 void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -2800,7 +2843,8 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	state.Preview.Pixels.assign(4 * 2 * 4, 200);
 	state.Preview.Generation = 1;
 
-	UISkirmishPresenterClass presenter(state);
+	RecordingSkirmishServiceClass service;
+	UISkirmishPresenterClass presenter(service, state);
 	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
 
 	Check(Rml(*view).Prepare(context), "the skirmish view prepares against the test context");
@@ -2836,7 +2880,16 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Check(presenter.State.Credits == 10000, "a reading past its bound is held at it");
 
 	Drive(presenter, "map");
-	Check(presenter.Result.has_value() && presenter.Choice == UI_SKIRMISH_PICK_MAP, "the map button closes the setup with the map choice");
+	Check(!presenter.Result.has_value() && service.Picked == 1, "the map button runs the map dialog over the setup, which stays open");
+	Check(presenter.State.MapName == "Picked map", "and the setup takes the map that came back");
+
+	// The Win32 dialog stayed up and said so when the map had too few starting points.
+	service.Startable = false;
+	Drive(presenter, "ok");
+	Check(!presenter.Result.has_value() && service.Asked == 1, "a map that cannot hold the players leaves the setup open");
+	service.Startable = true;
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && presenter.Choice == UI_SKIRMISH_START, "and one that can starts the game");
 
 	view->Release();
 	context.Update();
@@ -3573,6 +3626,45 @@ void Test_Shell(void)
 		Check(nested, "a nested modal is the shown screen at depth two");
 		Check(restored && result == UI_RESULT_ACCEPTED, "closing the inner modal restores the outer one, which still accepts");
 		Check(swallowed, "a press held across the inner close is swallowed by the outer");
+	}
+
+	{
+		// A screen that raises another over itself hides while that one runs, the way the
+		// Win32 dialogs closed and reopened around a child.
+		UIVersionPresenterClass outer({ "covered" });
+		UIMessageBoxPresenterClass inner("Over it", { "OK" }, 0);
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+		int passes = 0;
+		bool shownbefore = false;
+		bool hidden = true;
+		bool shownafter = false;
+		bool stillopen = false;
+
+		shell.Run_Modal(*outerview, [&](void) {
+			passes++;
+			if (passes == 1) {
+				shownbefore = outerview->Is_Shown();
+				int innerpasses = 0;
+				shell.Run_Modal(*innerview, [&](void) {
+					innerpasses++;
+					hidden = hidden && !outerview->Is_Shown();
+					if (innerpasses == 1) {
+						Send(shell, WM_KEYDOWN, VK_RETURN);
+					}
+					return(innerpasses >= 4);
+				}, true);
+				shownafter = outerview->Is_Shown();
+				stillopen = outerview->Reveal_Width() == 0.0f || !shell.Revealing_Shown();
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		Check(shownbefore && shownafter, "a screen is shown before and after the one it raises over itself");
+		Check(hidden, "and is hidden for every pass that one runs");
+		Check(stillopen, "and comes back without opening again");
 	}
 
 	{

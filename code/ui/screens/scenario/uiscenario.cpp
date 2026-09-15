@@ -36,8 +36,14 @@ void UIScenarioPresenterClass::Execute(UIIntent const & intent)
 		Choice = UI_SCENARIO_ACCEPT;
 		Result = UI_RESULT_ACCEPTED;
 	} else if (intent.Name == "random") {
-		Choice = UI_SCENARIO_RANDOM;
-		Result = UI_RESULT_ACCEPTED;
+		// The generator runs over the dialog, which stays open behind it and takes whatever
+		// map it made.
+		int scenario = Service.Random();
+		Service.Read(State);
+		if (scenario >= 0 && scenario < (int)State.Entries.size()) {
+			State.Selected = scenario;
+			Service.Preview(State.Selected, State.Preview);
+		}
 	} else if (intent.Name == "cancel") {
 		Choice = UI_SCENARIO_CANCEL;
 		Result = UI_RESULT_CANCELLED;
@@ -61,14 +67,6 @@ class UIScenarioViewClass : public UIRmlViewClass
 			Data(presenter),
 			Shown(-1)
 		{
-		}
-
-		// Coming back from the generator, the dialog is shown whole rather than opened.
-		virtual void Loaded(void) override
-		{
-			if (!Data.State.Reveal && Document() != nullptr) {
-				Document()->SetAttribute("reveal", Rml::String("none"));
-			}
 		}
 
 		// The missions are settled before the screen opens; the row and its picture are not.

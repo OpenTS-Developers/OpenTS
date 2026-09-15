@@ -25,7 +25,26 @@ enum UISkirmishChoice
 {
 	UI_SKIRMISH_START,
 	UI_SKIRMISH_CANCEL,
-	UI_SKIRMISH_PICK_MAP,
+};
+
+
+struct UISkirmishState;
+
+
+// The map dialog the setup raises over itself. The game supplies one; the harness can hand
+// the screen a recording one.
+class UISkirmishServiceClass
+{
+	public:
+		virtual ~UISkirmishServiceClass(void) = default;
+
+		// Runs the map dialog over the setup and writes back the map the player settled on,
+		// which is the one the setup opened with when they backed out.
+		virtual void Pick_Map(UISkirmishState & state) = 0;
+
+		// Whether the map the setup is on has starting points for the players it asks for.
+		// The player is told why it does not, over the setup.
+		virtual bool Can_Start(UISkirmishState const & state) = 0;
 };
 
 
@@ -74,25 +93,24 @@ struct UISkirmishState
 	int AIPlayers = 1;
 	int AIPlayersMax = 7;
 	int GameSpeed = 0;
-
-	// False on the pass that follows the map dialog, where the Win32 dialog was hidden
-	// rather than closed and came back without opening again.
-	bool Reveal = true;
 };
 
 
-// Holds the settings until the player starts, cancels or asks for the map dialog. Bases and
-// a short game switch each other the way the Win32 dialog's check boxes do.
+// Holds the settings until the player starts or cancels, and raises the map dialog over
+// itself. Bases and a short game switch each other the way the Win32 dialog's check boxes do.
 class UISkirmishPresenterClass : public UIPresenterClass
 {
 	public:
-		explicit UISkirmishPresenterClass(UISkirmishState state);
+		UISkirmishPresenterClass(UISkirmishServiceClass & service, UISkirmishState state);
 
 		virtual void Execute(UIIntent const & intent) override;
 		virtual void Refresh(void) override;
 
 		UISkirmishState State;
 		UISkirmishChoice Choice = UI_SKIRMISH_CANCEL;
+
+	private:
+		UISkirmishServiceClass & Service;
 };
 
 
@@ -103,6 +121,5 @@ std::unique_ptr<UIViewClass> UI_Skirmish_View(UISkirmishPresenterClass & present
 // The settings the running game offers, and the map it opens on.
 void UI_Skirmish_State(UISkirmishState & state);
 
-// Runs the skirmish setup, reopening it around the map dialog the way the Win32 dialog hid
-// itself. True when the player asked for the game to begin.
+// Runs the skirmish setup. True when the player asked for the game to begin.
 bool UI_Skirmish_Dialog(void);

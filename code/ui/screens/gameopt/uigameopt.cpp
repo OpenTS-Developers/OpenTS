@@ -16,8 +16,9 @@
 #include <utility>
 
 
-UIGameOptionsPresenterClass::UIGameOptionsPresenterClass(UIGameOptionsState state) :
-	State(std::move(state))
+UIGameOptionsPresenterClass::UIGameOptionsPresenterClass(UIGameOptionsServiceClass & service, UIGameOptionsState state) :
+	State(std::move(state)),
+	Service(service)
 {
 	Update_Name();
 }
@@ -35,18 +36,27 @@ void UIGameOptionsPresenterClass::Execute(UIIntent const & intent)
 		}
 	} else if (intent.Name == "save") {
 		if (State.SaveEnabled) {
-			Choice = UI_GAME_OPTIONS_SAVE;
-			Result = UI_RESULT_ACCEPTED;
+			if (!State.Solo) {
+				Choice = UI_GAME_OPTIONS_SAVE;
+				Result = UI_RESULT_ACCEPTED;
+			} else {
+				Service.Save();
+				Service.Read(State);
+			}
 		}
 	} else if (intent.Name == "load") {
 		if (State.LoadEnabled) {
-			Choice = UI_GAME_OPTIONS_LOAD;
-			Result = UI_RESULT_ACCEPTED;
+			// A match in play cannot open a list from in here without stalling itself, so the
+			// caller is left to open one between frames.
+			if (!State.Solo || Service.Load()) {
+				Choice = UI_GAME_OPTIONS_LOAD;
+				Result = UI_RESULT_ACCEPTED;
+			}
 		}
 	} else if (intent.Name == "delete") {
 		if (State.DeleteEnabled) {
-			Choice = UI_GAME_OPTIONS_DELETE;
-			Result = UI_RESULT_ACCEPTED;
+			Service.Delete();
+			Service.Read(State);
 		}
 	} else if (intent.Name == "abort") {
 		Choice = UI_GAME_OPTIONS_ABORT;
@@ -86,14 +96,6 @@ class UIGameOptionsViewClass : public UIRmlViewClass
 			UIRmlViewClass(presenter, "gameopt.rml", "gameopt"),
 			Data(presenter)
 		{
-		}
-
-		// Coming back from a save or a delete, the menu is shown whole rather than opened.
-		virtual void Loaded(void) override
-		{
-			if (!Data.State.Reveal && Document() != nullptr) {
-				Document()->SetAttribute("reveal", Rml::String("none"));
-			}
 		}
 
 		virtual void Sync(void) override

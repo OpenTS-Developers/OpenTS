@@ -134,11 +134,6 @@ class UIMapGenPresenterClass : public UIPresenterClass
 		UIMapGenState State;
 		UIMapGenChoiceType Choice = UI_MAPGEN_CANCEL;
 
-		// What the screen must close and reopen around, because the generator raises a dialog
-		// of its own for it.
-		enum RaiseType { RAISE_NOTHING, RAISE_SAVE, RAISE_LOAD, RAISE_DELETE };
-		RaiseType Raise = RAISE_NOTHING;
-
 	private:
 		UIMapGenServiceClass & Service;
 };

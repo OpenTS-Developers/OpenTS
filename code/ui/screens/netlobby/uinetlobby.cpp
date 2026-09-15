@@ -111,8 +111,7 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "credits") {
 		Move(UI_NET_CREDITS, intent.Value);
 	} else if (intent.Name == "map") {
-		Choice = UI_NET_PICK_MAP;
-		Result = UI_RESULT_ACCEPTED;
+		Service.Pick_Map();
 	} else if (intent.Name == "new") {
 		Choice = UI_NET_NEW;
 		Result = UI_RESULT_ACCEPTED;
@@ -250,14 +249,6 @@ class UINetLobbyViewClass : public UIRmlViewClass
 			Data(presenter),
 			Shown(-1)
 		{
-		}
-
-		// Coming back from the map dialog, the lobby is shown whole rather than opened.
-		virtual void Loaded(void) override
-		{
-			if (!Data.State.Reveal && Document() != nullptr) {
-				Document()->SetAttribute("reveal", Rml::String("none"));
-			}
 		}
 
 	protected:

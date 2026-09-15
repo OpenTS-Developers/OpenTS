@@ -106,8 +106,8 @@ struct UINetPlayerRow
 };
 
 
-// What a lobby screen shows. The service fills everything but Say, Selected and Reveal, which
-// belong to the screen for as long as it is open.
+// What a lobby screen shows. The service fills everything but Say and Selected, which belong
+// to the screen for as long as it is open.
 struct UINetLobbyState
 {
 	UINetLobbyKind Kind = UI_NET_LOBBY_NONE;
@@ -116,10 +116,6 @@ struct UINetLobbyState
 	// The flow moved on without the player: the host started the game, or a packet threw the
 	// guest back to the browser.
 	bool Answered = false;
-
-	// False where the screen reopens around the map dialog, as the Win32 dialog came back
-	// from hiding rather than opening again.
-	bool Reveal = true;
 
 	std::string Handle;
 	std::string Say;
@@ -188,6 +184,9 @@ class UINetLobbyServiceClass
 		virtual void Set_Slider(UINetSlider which, int value) = 0;
 		virtual void Kick(std::vector<std::string> const & names) = 0;
 		virtual void Accept(void) = 0;
+
+		// Runs the map dialog over the host's setup, which stays open behind it.
+		virtual void Pick_Map(void) = 0;
 };
 
 
@@ -228,4 +227,4 @@ std::unique_ptr<UIViewClass> UI_Net_Setup_View(UINetLobbyPresenterClass & presen
 // The game's own lobby service, and the screen the network driver runs over it. Both live in
 // uinetlobbydlg.cpp, which is the only part of the screen that knows the engine.
 UINetLobbyServiceClass & UI_Net_Lobby_Service(void);
-UINetChoice UI_Net_Lobby_Run(bool reveal);
+UINetChoice UI_Net_Lobby_Run(void);

@@ -31,11 +31,30 @@ enum UIGameOptionsChoice
 };
 
 
+struct UIGameOptionsState;
+
+
+// The saved-game dialogs the menu raises over itself. The game supplies one; the harness can
+// hand the screen a recording one.
+class UIGameOptionsServiceClass
+{
+	public:
+		virtual ~UIGameOptionsServiceClass(void) = default;
+
+		// Re-reads which buttons take a press, after one of the dialogs has run.
+		virtual void Read(UIGameOptionsState & state) = 0;
+
+		virtual void Save(void) = 0;
+		virtual void Delete(void) = 0;
+
+		// True when a game was loaded, which closes the menu with the load.
+		virtual bool Load(void) = 0;
+};
+
+
 // What the menu shows: the seven-button arrangement of a campaign or skirmish game, the
 // three-button one of a network game, or the Internet game's five buttons over its two
-// readings, and which of the buttons take a press. Reveal is false on the pass that follows a
-// save or a delete, where the Win32 menu was hidden rather than closed and came back without
-// opening again.
+// readings, and which of the buttons take a press.
 struct UIGameOptionsState
 {
 	bool Solo = true;
@@ -57,19 +76,19 @@ struct UIGameOptionsState
 	int ConnectionLowest = 0;
 	int ConnectionHighest = 0;
 	std::string ConnectionName;
-
-	bool Reveal = true;
 };
 
 
 // A leaf of buttons: each press closes the menu with its choice. Resume, Enter and Escape all
 // carry on playing, as the Win32 menu's IDOK and its Resume button do. The Internet game's
 // speed bar is the one control that changes anything, and the caller applies it on the way
-// out as that menu's Resume button did.
+// out as that menu's Resume button did. A solo game's saved-game dialogs run over the menu
+// instead of closing it; a match in play leaves both to the caller, because saving and
+// loading one are the other players' business.
 class UIGameOptionsPresenterClass : public UIPresenterClass
 {
 	public:
-		explicit UIGameOptionsPresenterClass(UIGameOptionsState state);
+		UIGameOptionsPresenterClass(UIGameOptionsServiceClass & service, UIGameOptionsState state);
 
 		virtual void Execute(UIIntent const & intent) override;
 		virtual void Refresh(void) override;
@@ -83,6 +102,8 @@ class UIGameOptionsPresenterClass : public UIPresenterClass
 
 	private:
 		void Update_Name(void);
+
+		UIGameOptionsServiceClass & Service;
 };
 
 

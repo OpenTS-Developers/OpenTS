@@ -19,17 +19,18 @@
 class UIViewClass;
 
 
-// What the map dialog closes with. Asking for a random map closes it too, because the Win32
-// dialog hid itself around the generator and came back afterwards.
+// What the map dialog closes with.
 enum UIScenarioChoice
 {
 	UI_SCENARIO_ACCEPT,
 	UI_SCENARIO_CANCEL,
-	UI_SCENARIO_RANDOM,
 };
 
 
-// The engine call the map dialog makes. The game supplies one that reads the scenario off
+struct UIScenarioState;
+
+
+// The engine calls the map dialog makes. The game supplies one that reads the scenario off
 // disk; the test harness supplies one that records the calls.
 class UIScenarioServiceClass
 {
@@ -39,6 +40,14 @@ class UIScenarioServiceClass
 		// The picture of the scenario at the given row, which the dialog shows as the
 		// highlight moves. The scenario the dialog opened on is left selected either way.
 		virtual void Preview(int index, UIMapPreviewImage & image) = 0;
+
+		// Fills the list and the highlight from the maps the session offers.
+		virtual void Read(UIScenarioState & state) = 0;
+
+		// Runs the generator over the dialog and returns the row its map took. A player who
+		// backs out of the generator is answered with the first row, as the Win32 dialog
+		// answered them.
+		virtual int Random(void) = 0;
 };
 
 
@@ -50,13 +59,12 @@ struct UIScenarioEntry
 
 
 // What the dialog shows: the missions this machine holds, the row it opens on, and the
-// picture of that row. Reveal is false on the pass that follows the generator.
+// picture of that row.
 struct UIScenarioState
 {
 	std::vector<UIScenarioEntry> Entries;
 	int Selected = 0;
 	UIMapPreviewImage Preview;
-	bool Reveal = true;
 };
 
 

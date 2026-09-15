@@ -75,10 +75,6 @@ Net2LobbyPhaseType Net2LobbyPhase = NET2_LOBBY_NONE;
 
 // False once a screen has failed to open, so the flow falls back to the dialogs and stays there.
 
-// True while the lobby that is up has yet to be opened. A lobby that comes back for another
-// answer comes back whole, as a dialog that was never closed did.
-static bool Net2LobbyReveal = true;
-
 int RulesID;
 int ArtID;
 int AIID;
@@ -437,7 +433,6 @@ void Net2_Show_Lobby(Net2LobbyPhaseType phase)
 	Net2_Clear_Chat_Log();
 
 	Net2LobbyPhase = phase;
-	Net2LobbyReveal = true;
 	Net2_Enter_Lobby(phase);
 }
 
@@ -865,15 +860,7 @@ bool Net2Remote_Connect(void)
 		// Wait for the lobby that is up to be answered, or for a packet to move
 		// the flow on under it.
 		//.....................................................................
-		UINetChoice choice = UI_Net_Lobby_Run(Net2LobbyReveal);
-		Net2LobbyReveal = false;
-
-		// The map dialog takes the screen's place and the lobby comes back behind it, as the
-		// Win32 host dialog hid itself around the same dialog.
-		if (choice == UI_NET_PICK_MAP) {
-			Net2Pick_Map(NULL);
-			continue;
-		}
+		UINetChoice choice = UI_Net_Lobby_Run();
 
 		Net2Apply_Choice(choice);
 

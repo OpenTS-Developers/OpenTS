@@ -262,34 +262,9 @@ UIMapGenServiceClass & UI_Map_Generator_Service(void)
 
 UIMapGenChoiceType UI_Map_Generator_Dialog(void)
 {
-	// The screen closes and reopens around the file dialogs the generator raises, as the
-	// Win32 dialog stood while they ran over it.
-	while (true) {
-		UIMapGenPresenterClass presenter(UI_Map_Generator_Service());
-		std::unique_ptr<UIViewClass> view = UI_Map_Generator_View(presenter);
+	UIMapGenPresenterClass presenter(UI_Map_Generator_Service());
+	std::unique_ptr<UIViewClass> view = UI_Map_Generator_View(presenter);
 
-		UIResult result = UI_Run_Modal(*view);
-		if (result == UI_RESULT_FAILED_TO_OPEN) {
-			return(UI_MAPGEN_CANCEL);
-		}
-
-		switch (presenter.Raise) {
-			case UIMapGenPresenterClass::RAISE_SAVE:
-				UI_Map_Generator_Service().Save();
-				continue;
-
-			case UIMapGenPresenterClass::RAISE_LOAD:
-				UI_Map_Generator_Service().Load();
-				continue;
-
-			case UIMapGenPresenterClass::RAISE_DELETE:
-				UI_Map_Generator_Service().Delete();
-				continue;
-
-			default:
-				break;
-		}
-
-		return((result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_MAPGEN_CANCEL);
-	}
+	UIResult result = UI_Run_Modal(*view, true);
+	return((result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_MAPGEN_CANCEL);
 }

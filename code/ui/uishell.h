@@ -73,8 +73,9 @@ class UIShellClass
 
 		// Prepares, shows and drives a modal screen until its presenter reports a result or
 		// the service reports the game ended, then releases it. The view's presenter must
-		// outlive the call.
-		UIResult Run_Modal(UIViewClass & view, UIServiceCallback const & service);
+		// outlive the call. A screen that hides its parent takes the screen below it down for
+		// its own passes and puts it back, without a reveal, when it closes.
+		UIResult Run_Modal(UIViewClass & view, UIServiceCallback const & service, bool hideparent = false);
 
 		// Shows a document beside the game without taking its input: a notice the caller
 		// updates while it works. It is drawn at once, because such a caller pumps nothing.
@@ -120,6 +121,7 @@ class UIShellClass
 		UIViewClass * Modal(void) const;
 		int Modal_Depth(void) const;
 		bool Is_Modeless_Shown(UIViewClass const & view) const;
+		bool Revealing_Shown(void) const { return(Revealing); }
 		UIInputStateClass const & Input_State(void) const { return(Input); }
 
 	private:
@@ -155,6 +157,7 @@ class UIShellClass
 		void Apply_Cursor_Request(void);
 		void Restore_Cursor(void);
 		bool Prepare_View(UIViewClass & view);
+		void Uncover(UIViewClass * covered);
 		void Drain_Deferred(void);
 		void Toggle_Test_Document(void);
 		bool Handle_Mouse_Move(LPARAM clientlparam);

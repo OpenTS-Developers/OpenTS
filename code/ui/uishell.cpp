@@ -1239,7 +1239,7 @@ bool UIShellClass::Handle_Text(char32_t code)
 }
 
 
-UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service)
+UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service, bool hideparent)
 {
 	// Every screen answers as a missing dialog template did when it cannot open, so the reason
 	// is logged here rather than reported by the caller.
@@ -1272,6 +1272,11 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 
 	char label[160];
 
+	UIViewClass * covered = (hideparent && !Modals.empty()) ? Modals.back() : nullptr;
+	if (covered != nullptr) {
+		covered->Hide();
+	}
+
 	Modals.push_back(&view);
 	view.Show(true);
 
@@ -1282,6 +1287,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		Log("UI: %s could not be shown (%s); its legacy view stays in charge\n", view.Name(), Render->Error());
 		view.Release();
 		Modals.pop_back();
+		Uncover(covered);
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 
@@ -1358,6 +1364,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	if (!Modals.empty() && Modals.back() == &view) {
 		Modals.pop_back();
 	}
+	Uncover(covered);
 	ModalClosing = false;
 
 	if (Ready) {
@@ -1371,6 +1378,23 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	}
 
 	return(result);
+}
+
+
+/// <summary>
+/// Shows again the screen a nested one hid, unless a shutdown has already taken it down.
+/// </summary>
+void UIShellClass::Uncover(UIViewClass * covered)
+{
+	if (covered == nullptr || !Ready || Modals.empty() || Modals.back() != covered) {
+		return;
+	}
+
+	// The reveal state belongs to the screen that has just closed, and a screen that was
+	// already open does not open again.
+	Revealing = false;
+	RevealShown = 0.0f;
+	covered->Show(true);
 }
 
 

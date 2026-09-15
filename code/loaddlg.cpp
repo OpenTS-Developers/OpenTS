@@ -253,7 +253,7 @@ bool LoadOptionsClass::Dialog(void)
 		UISaveGamePresenterClass presenter(std::move(state));
 		std::unique_ptr<UIViewClass> view = UI_Save_Game_View(presenter);
 
-		UIResult result = UI_Run_Modal(*view);
+		UIResult result = UI_Run_Modal(*view, true);
 		if (result == UI_RESULT_FAILED_TO_OPEN) {
 			Clear_List();
 			return(false);

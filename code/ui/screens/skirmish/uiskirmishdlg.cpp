@@ -117,7 +117,7 @@ static void Commit(UISkirmishState const & state)
 }
 
 
-// The map dialog, which the Win32 setup hid itself around and came back from.
+// The map dialog, which the setup raises over itself.
 static void Pick_Map(UISkirmishState & state)
 {
 	int old = Session.Options.ScenarioIndex;
@@ -134,6 +134,34 @@ static void Pick_Map(UISkirmishState & state)
 
 	state.MapName = Session.Options.ScenarioDescription;
 	UI_Map_Preview_Image(state.Preview);
+}
+
+
+namespace
+{
+
+class UISkirmishEngineServiceClass : public UISkirmishServiceClass
+{
+	public:
+		virtual void Pick_Map(UISkirmishState & state) override
+		{
+			::Pick_Map(state);
+		}
+
+		virtual bool Can_Start(UISkirmishState const & state) override
+		{
+			int waypoints = RandomMapWaypointCount(Session.Options.ScenarioIndex);
+			if (waypoints >= state.AIPlayers + 1) {
+				return(true);
+			}
+
+			char buffer[256];
+			std::snprintf(buffer, sizeof(buffer), Fetch_String(TXT_SCENARIO_TOO_SMALL), waypoints);
+			WWMessageBox().Process(buffer, TXT_OK);
+			return(false);
+		}
+};
+
 }
 
 
@@ -218,42 +246,20 @@ bool UI_Skirmish_Dialog(void)
 	UISkirmishState state;
 	UI_Skirmish_State(state);
 
-	bool reveal = true;
+	UISkirmishEngineServiceClass service;
+	UISkirmishPresenterClass presenter(service, std::move(state));
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
 
-	for (;;) {
-		state.Reveal = reveal;
-
-		UISkirmishPresenterClass presenter(state);
-		std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
-
-		UIResult result = UI_Run_Modal(*view);
-		if (result == UI_RESULT_FAILED_TO_OPEN) {
-			return(false);
-		}
-
-		state = std::move(presenter.State);
-		reveal = false;
-
-		if (result == UI_RESULT_SESSION_ENDED || presenter.Choice == UI_SKIRMISH_CANCEL) {
-			Remember_Preferences(state);
-			return(false);
-		}
-
-		if (presenter.Choice == UI_SKIRMISH_PICK_MAP) {
-			Pick_Map(state);
-			continue;
-		}
-
-		// A map with fewer starting points than the players asked for cannot be played.
-		int waypoints = RandomMapWaypointCount(Session.Options.ScenarioIndex);
-		if (waypoints < state.AIPlayers + 1) {
-			char buffer[256];
-			std::snprintf(buffer, sizeof(buffer), Fetch_String(TXT_SCENARIO_TOO_SMALL), waypoints);
-			WWMessageBox().Process(buffer, TXT_OK);
-			continue;
-		}
-
-		Commit(state);
-		return(true);
+	UIResult result = UI_Run_Modal(*view);
+	if (result == UI_RESULT_FAILED_TO_OPEN) {
+		return(false);
 	}
+
+	if (result != UI_RESULT_ACCEPTED || presenter.Choice != UI_SKIRMISH_START) {
+		Remember_Preferences(presenter.State);
+		return(false);
+	}
+
+	Commit(presenter.State);
+	return(true);
 }

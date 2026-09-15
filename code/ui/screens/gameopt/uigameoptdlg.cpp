@@ -36,12 +36,43 @@
 #include <cstring>
 
 
+namespace
+{
+
+// The three saved-game dialogs a solo game's menu raises over itself.
+class UIGameOptionsEngineServiceClass : public UIGameOptionsServiceClass
+{
+	public:
+		virtual void Read(UIGameOptionsState & state) override
+		{
+			UI_Game_Options_State(state);
+		}
+
+		virtual void Save(void) override
+		{
+			char description[512];
+			std::strncpy(description, Scen->Description, sizeof(description) - 1);
+			description[sizeof(description) - 1] = '\0';
+			LoadOptionsClass().Save(description);
+		}
+
+		virtual void Delete(void) override
+		{
+			LoadOptionsClass().Delete();
+		}
+
+		virtual bool Load(void) override
+		{
+			return(LoadOptionsClass().Load());
+		}
+};
+
+}
+
+
 void UI_Game_Options_State(UIGameOptionsState & state)
 {
-	bool const reveal = state.Reveal;
-
 	state = UIGameOptionsState();
-	state.Reveal = reveal;
 	state.Solo = (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH);
 	state.Internet = (Session.Type == GAME_INTERNET);
 
@@ -85,61 +116,38 @@ void UI_Game_Options_State(UIGameOptionsState & state)
 
 UIGameOptionsChoice UI_Game_Options_Dialog(void)
 {
-	bool reveal = true;
+	UIGameOptionsState state;
+	UI_Game_Options_State(state);
 
-	for (;;) {
-		UIGameOptionsState state;
-		state.Reveal = reveal;
-		UI_Game_Options_State(state);
+	UIGameOptionsEngineServiceClass service;
+	UIGameOptionsPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Game_Options_View(presenter);
 
-		UIGameOptionsPresenterClass presenter(state);
-		std::unique_ptr<UIViewClass> view = UI_Game_Options_View(presenter);
-
-		if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
-			return(UI_GAME_OPTIONS_RESUME);
-		}
-
-		UIGameOptionsChoice const choice = presenter.Choice;
-
-		// An Internet game's speed reaches the other players as an event, the way that menu's
-		// Resume button sent it.
-		if (state.Internet && presenter.SpeedChanged) {
-			int const speed = (OptionsClass::MAX_SPEED_SETTING - 1) - presenter.State.Speed;
-			if (Options.GameSpeed != speed) {
-				OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
-			}
-		}
-
-		// Saving and loading a match in play are the other players' business, so both are asked
-		// for rather than done here.
-		if (!state.Solo && choice == UI_GAME_OPTIONS_SAVE) {
-			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SAVEGAME));
-			return(choice);
-		}
-		if (!state.Solo && choice == UI_GAME_OPTIONS_LOAD) {
-			// A list opened from in here would sit inside the main loop and stall the match; the
-			// menu loop opens it between frames instead.
-			SpecialDialog = SDLG_LOAD;
-			return(choice);
-		}
-
-		// The Win32 menu hid itself around a save or a delete and came back with its buttons
-		// re-tested, so those two are done here and the menu opens again without revealing.
-		if (choice == UI_GAME_OPTIONS_SAVE) {
-			char description[512];
-			std::strncpy(description, Scen->Description, sizeof(description) - 1);
-			description[sizeof(description) - 1] = '\0';
-			LoadOptionsClass().Save(description);
-		} else if (choice == UI_GAME_OPTIONS_DELETE) {
-			LoadOptionsClass().Delete();
-		} else if (choice == UI_GAME_OPTIONS_LOAD) {
-			if (LoadOptionsClass().Load()) {
-				return(choice);
-			}
-		} else {
-			return(choice);
-		}
-
-		reveal = false;
+	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
+		return(UI_GAME_OPTIONS_RESUME);
 	}
+
+	UIGameOptionsChoice const choice = presenter.Choice;
+
+	// An Internet game's speed reaches the other players as an event, the way that menu's
+	// Resume button sent it.
+	if (state.Internet && presenter.SpeedChanged) {
+		int const speed = (OptionsClass::MAX_SPEED_SETTING - 1) - presenter.State.Speed;
+		if (Options.GameSpeed != speed) {
+			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
+		}
+	}
+
+	// Saving and loading a match in play are the other players' business, so both are asked
+	// for rather than done here.
+	if (!state.Solo && choice == UI_GAME_OPTIONS_SAVE) {
+		OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SAVEGAME));
+	}
+	if (!state.Solo && choice == UI_GAME_OPTIONS_LOAD) {
+		// A list opened from in here would sit inside the main loop and stall the match; the
+		// menu loop opens it between frames instead.
+		SpecialDialog = SDLG_LOAD;
+	}
+
+	return(choice);
 }

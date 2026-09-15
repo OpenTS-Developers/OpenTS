@@ -18,8 +18,9 @@
 #include <utility>
 
 
-UISkirmishPresenterClass::UISkirmishPresenterClass(UISkirmishState state) :
-	State(std::move(state))
+UISkirmishPresenterClass::UISkirmishPresenterClass(UISkirmishServiceClass & service, UISkirmishState state) :
+	State(std::move(state)),
+	Service(service)
 {
 }
 
@@ -83,11 +84,13 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "speed") {
 		State.GameSpeed = Clamp(intent.Value, 0, 6);
 	} else if (intent.Name == "map") {
-		Choice = UI_SKIRMISH_PICK_MAP;
-		Result = UI_RESULT_ACCEPTED;
+		// The map dialog runs over the setup, which stays open behind it.
+		Service.Pick_Map(State);
 	} else if (intent.Name == "ok") {
-		Choice = UI_SKIRMISH_START;
-		Result = UI_RESULT_ACCEPTED;
+		if (Service.Can_Start(State)) {
+			Choice = UI_SKIRMISH_START;
+			Result = UI_RESULT_ACCEPTED;
+		}
 	} else if (intent.Name == "cancel") {
 		Choice = UI_SKIRMISH_CANCEL;
 		Result = UI_RESULT_CANCELLED;
@@ -111,14 +114,6 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Data(presenter),
 			Shown(-1)
 		{
-		}
-
-		// Coming back from the map dialog, the setup is shown whole rather than opened.
-		virtual void Loaded(void) override
-		{
-			if (!Data.State.Reveal && Document() != nullptr) {
-				Document()->SetAttribute("reveal", Rml::String("none"));
-			}
 		}
 
 		// The lists, the bounds and the map name are settled before the screen opens; the

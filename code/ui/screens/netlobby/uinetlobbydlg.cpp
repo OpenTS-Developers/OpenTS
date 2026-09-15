@@ -81,6 +81,7 @@ class UINetLobbyEngineServiceClass : public UINetLobbyServiceClass
 		virtual void Set_Slider(UINetSlider which, int value) override;
 		virtual void Kick(std::vector<std::string> const & names) override;
 		virtual void Accept(void) override;
+		virtual void Pick_Map(void) override;
 };
 
 
@@ -340,6 +341,12 @@ void UINetLobbyEngineServiceClass::Accept(void)
 	SendPublicGameopts("A1");
 }
 
+
+void UINetLobbyEngineServiceClass::Pick_Map(void)
+{
+	Net2Pick_Map(NULL);
+}
+
 }
 
 
@@ -354,14 +361,12 @@ UINetLobbyServiceClass & UI_Net_Lobby_Service(void)
 /// Shows the lobby the flow is standing in, until the player answers or a packet moves the
 /// flow on under it.
 /// </summary>
-/// <param name="reveal">Should the screen open, or come back whole from the map dialog?</param>
 /// <returns>What the player asked for. Nothing comes back from a flow standing in no phase,
 /// which the lobby is serviced through instead; a screen that could not open answers as a
 /// cancel does, which backs the flow out.</returns>
-UINetChoice UI_Net_Lobby_Run(bool reveal)
+UINetChoice UI_Net_Lobby_Run(void)
 {
 	UINetLobbyState state;
-	state.Reveal = reveal;
 	UI_Net_Lobby_Service().Read(state);
 
 	// A packet can leave the flow between phases; there is no screen to run then, so the pass

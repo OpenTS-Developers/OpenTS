@@ -309,9 +309,9 @@ bool UI_Service_Game(void)
 }
 
 
-UIResult UI_Run_Modal(UIViewClass & view)
+UIResult UI_Run_Modal(UIViewClass & view, bool hideparent)
 {
-	return(UIShell.Run_Modal(view, UI_Service_Game));
+	return(UIShell.Run_Modal(view, UI_Service_Game, hideparent));
 }
 
 
