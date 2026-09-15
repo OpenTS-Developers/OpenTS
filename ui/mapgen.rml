@@ -1,0 +1,61 @@
+<rml>
+<head>
+	<title>Random map</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="mapgen.rcss"/>
+</head>
+<body template="dialog" data-model="mapgen" class="fitted">
+	<span id="cap-environment" class="caption">Environment:</span>
+	<select id="environment" data-value="environment" data-event-change="queue('environment', ev.value)">
+		<option data-for="entry : environments" data-attr-value="it_index">{{entry.label}}</option>
+	</select>
+
+	<span id="cap-time" class="caption">Time of Day:</span>
+	<select id="time" data-value="time" data-event-change="queue('time', ev.value)">
+		<option data-for="entry : times" data-attr-value="it_index">{{entry.label}}</option>
+	</select>
+
+	<span id="cap-width" class="caption">Map Width:</span>
+	<select id="width" data-value="width" data-event-change="queue('width', ev.value)">
+		<option data-for="entry : sizes" data-attr-value="it_index">{{entry.label}}</option>
+	</select>
+
+	<span id="cap-height" class="caption">Map Height:</span>
+	<select id="height" data-value="height" data-event-change="queue('height', ev.value)">
+		<option data-for="entry : sizes" data-attr-value="it_index">{{entry.label}}</option>
+	</select>
+
+	<div id="settings">
+		<div class="row" id="row-players"><span class="caption">Players:</span><input type="range" id="players" step="1" min="2" max="8" data-attr-min="playersmin" data-attr-max="playersmax" data-attr-value="players" data-event-change="queue('players', ev.value)"/><span class="trough">{{players}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-cliffs"><span class="caption">Cliffs:</span><input type="range" id="cliffs" step="1" min="0" max="100" data-attr-value="cliffs" data-event-change="queue('cliffs', ev.value)"/><span class="trough">{{cliffs}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-accessibility"><span class="caption">Accessability:</span><input type="range" id="accessibility" step="1" min="0" max="100" data-attr-value="accessibility" data-event-change="queue('accessibility', ev.value)"/><span class="trough">{{accessibility}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-hills"><span class="caption">Hills:</span><input type="range" id="hills" step="1" min="0" max="100" data-attr-value="hills" data-event-change="queue('hills', ev.value)"/><span class="trough">{{hills}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-tiberiumamount"><span class="caption">Tiberium Amount:</span><input type="range" id="tiberiumamount" step="1" min="1" max="100" data-attr-value="tiberiumamount" data-event-change="queue('tiberiumamount', ev.value)"/><span class="trough">{{tiberiumamount}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-tiberiumfields"><span class="caption">Tiberium Fields:</span><input type="range" id="tiberiumfields" step="1" min="0" max="100" data-attr-value="tiberiumfields" data-event-change="queue('tiberiumfields', ev.value)"/><span class="trough">{{tiberiumfields}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-water"><span class="caption">Water:</span><input type="range" id="water" step="1" min="0" max="100" data-attr-value="water" data-event-change="queue('water', ev.value)"/><span class="trough">{{water}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-vegetation"><span class="caption">Vegetation:</span><input type="range" id="vegetation" step="1" min="0" max="100" data-attr-value="vegetation" data-event-change="queue('vegetation', ev.value)"/><span class="trough">{{vegetation}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-cities"><span class="caption">Cities:</span><input type="range" id="cities" step="1" min="0" max="100" data-attr-value="cities" data-event-change="queue('cities', ev.value)"/><span class="trough">{{cities}}</span><span class="trough-edge"></span></div>
+		<div class="row firestorm-only" id="row-veinholes"><span class="caption">Veinholes:</span><input type="range" id="veinholes" step="1" min="0" max="5" data-attr-value="veinholes" data-event-change="queue('veinholes', ev.value)"/><span class="trough">{{veinholes}}</span><span class="trough-edge"></span></div>
+	</div>
+
+	<div id="switches" class="firestorm-only">
+		<label class="check" id="switch-ionstorms"><input type="checkbox" data-attrif-checked="ionstorms" data-event-click="queue('ionstorms', ionstorms ? 0 : 1)"/>Ion Storms</label>
+		<label class="check" id="switch-transitions"><input type="checkbox" data-attrif-checked="transitions" data-event-click="queue('transitions', transitions ? 0 : 1)"/>Transitions</label>
+		<label class="check" id="switch-lifeforms"><input type="checkbox" data-attrif-checked="lifeforms" data-event-click="queue('lifeforms', lifeforms ? 0 : 1)"/>Lifeforms</label>
+	</div>
+
+	<div id="map" class="frame">
+		<surface id="preview"/>
+		<span id="preview-caption">Preview</span>
+	</div>
+
+	<button id="surprise" data-event-click="queue('surprise')">Surprise Me</button>
+	<button id="previewmap" data-class-disabled="!previewenabled" data-event-click="queue('preview')">Preview Map</button>
+
+	<button id="save" data-event-click="queue('save')">Save Map</button>
+	<button id="load" data-class-disabled="!loadenabled" data-event-click="queue('load')">Load Map</button>
+	<button id="delete" data-class-disabled="!deleteenabled" data-event-click="queue('delete')">Delete Map</button>
+	<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+	<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+</body>
+</rml>

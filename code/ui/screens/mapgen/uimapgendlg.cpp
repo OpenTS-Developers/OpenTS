@@ -1,0 +1,230 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+// The engine side of the random map generator: what the screen reads out of the seed the
+// generator keeps, and the entry the generator's own driver calls ahead of its Win32 dialog.
+// The presenter and view live in uimapgen.cpp so that the test harness can drive them
+// without the engine.
+
+#include "ui/screens/mapgen/uimapgen.h"
+
+#include "_ui.h"
+#include "addon.h"
+#include "data.h"
+#include "language/language.h"
+#include "mapgen.h"
+#include "session.h"
+#include "ui/uienginehost.h"
+#include "ui/uipreview.h"
+#include "ui/uishell.h"
+#include "ui/uiview.h"
+
+#include <cstring>
+
+
+namespace
+{
+
+int const UI_MAPGEN_BIOME_NAMES[BIOME_COUNT] = {
+	TXT_BIOME_TUNDRA, TXT_BIOME_TAIGA, TXT_BIOME_TEMPERATE, TXT_BIOME_DESERT, TXT_BIOME_MUTATED
+};
+
+int const UI_MAPGEN_TIME_NAMES[TIME_OF_DAY_COUNT] = {
+	TXT_TIME_MORNING, TXT_TIME_AFTERNOON, TXT_TIME_DUSK, TXT_TIME_NIGHT
+};
+
+int const UI_MAPGEN_SIZE_NAMES[MAPSIZE_COUNT] = {
+	TXT_MAPSIZE_SMALL, TXT_MAPSIZE_MEDIUM, TXT_MAPSIZE_LARGE, TXT_MAPSIZE_VERY_LARGE
+};
+
+
+class UIMapGenEngineServiceClass : public UIMapGenServiceClass
+{
+	public:
+		virtual void Read(UIMapGenState & state) override
+		{
+			MapSeedClass & seed = RandomMapGen.SeedData;
+			seed.Fixup_Settings();
+
+			state.Firestorm = Addon_Enabled(ADDON_FIRESTORM);
+
+			// The expansion's own country is offered only where it is enabled, as the
+			// dialog fills its box.
+			state.Environments.clear();
+			for (int index = BIOME_FIRST; index < BIOME_COUNT; index++) {
+				if (index != BIOME_MUTATED || state.Firestorm) {
+					state.Environments.push_back(UIMapGenOption{Fetch_String(UI_MAPGEN_BIOME_NAMES[index])});
+				}
+			}
+			state.Environment = (seed.Biome >= 0 && seed.Biome < (int)state.Environments.size()) ? seed.Biome : 0;
+
+			state.Times.clear();
+			for (int index = TIME_OF_DAY_FIRST; index < TIME_OF_DAY_COUNT; index++) {
+				state.Times.push_back(UIMapGenOption{Fetch_String(UI_MAPGEN_TIME_NAMES[index])});
+			}
+			state.Time = seed.Time;
+
+			state.Sizes.clear();
+			for (int index = 0; index < MAPSIZE_COUNT; index++) {
+				state.Sizes.push_back(UIMapGenOption{Fetch_String(UI_MAPGEN_SIZE_NAMES[index])});
+			}
+			state.Width = seed.Width;
+			state.Height = seed.Height;
+
+			Set_Slider(state.Players, seed.NumPlayers, 2, MAX_PLAYERS);
+			Set_Slider(state.Cliffs, seed.Cliffs, 0, 100);
+			Set_Slider(state.Accessibility, seed.Accessibility, 0, 100);
+			Set_Slider(state.Hills, seed.Hills, 0, 100);
+			Set_Slider(state.TiberiumAmount, seed.Tiberium, 1, 100);
+			Set_Slider(state.TiberiumFields, seed.TiberiumLayout, 0, 100);
+			Set_Slider(state.Water, seed.WaterAmount, 0, 100);
+			Set_Slider(state.Vegetation, seed.Vegetation, 0, 100);
+			Set_Slider(state.Cities, seed.Cities, 0, 100);
+			Set_Slider(state.Veinholes, seed.VeinholeMonsters, 0, 5);
+
+			state.IonStorms = seed.UseIonStorms;
+			state.Transitions = seed.UseTransitions;
+			state.Lifeforms = seed.TiberiumWildlife > 0;
+
+			bool const present = seed.Files_Present();
+			state.LoadEnabled = present;
+			state.DeleteEnabled = present;
+			state.PreviewEnabled = !Debug_Map;
+
+			UI_Generated_Map_Preview_Image(state.Preview);
+		}
+
+		virtual void Set(char const * name, int value) override
+		{
+			MapSeedClass & seed = RandomMapGen.SeedData;
+
+			if (std::strcmp(name, "environment") == 0) {
+				seed.Biome = value;
+			} else if (std::strcmp(name, "time") == 0) {
+				seed.Time = value;
+			} else if (std::strcmp(name, "width") == 0) {
+				seed.Width = value;
+			} else if (std::strcmp(name, "height") == 0) {
+				seed.Height = value;
+			} else if (std::strcmp(name, "players") == 0) {
+				seed.NumPlayers = value;
+			} else if (std::strcmp(name, "cliffs") == 0) {
+				seed.Cliffs = value;
+			} else if (std::strcmp(name, "accessibility") == 0) {
+				seed.Accessibility = value;
+			} else if (std::strcmp(name, "hills") == 0) {
+				seed.Hills = value;
+			} else if (std::strcmp(name, "tiberiumamount") == 0) {
+				seed.Tiberium = value;
+			} else if (std::strcmp(name, "tiberiumfields") == 0) {
+				seed.TiberiumLayout = value;
+			} else if (std::strcmp(name, "water") == 0) {
+				seed.WaterAmount = value;
+			} else if (std::strcmp(name, "vegetation") == 0) {
+				seed.Vegetation = value;
+			} else if (std::strcmp(name, "cities") == 0) {
+				seed.Cities = value;
+			} else if (std::strcmp(name, "veinholes") == 0) {
+				seed.VeinholeMonsters = value;
+			} else if (std::strcmp(name, "ionstorms") == 0) {
+				seed.UseIonStorms = (value != 0);
+			} else if (std::strcmp(name, "transitions") == 0) {
+				seed.UseTransitions = (value != 0);
+			} else if (std::strcmp(name, "lifeforms") == 0) {
+				seed.TiberiumWildlife = (value != 0) ? 30 : 0;
+			}
+		}
+
+		virtual void Preview(void) override
+		{
+			RandomMapGen.Generate_Random_Map(true, NULL);
+		}
+
+		virtual void Surprise(void) override
+		{
+			RandomMapGen.SeedData.Randomize();
+		}
+
+		virtual void Save(void) override
+		{
+			RandomMapGen.SeedData.MapDescription[0] = '\0';
+			RandomMapGen.SeedData.LoadOptionsClass::Save(RandomMapGen.SeedData.MapDescription);
+		}
+
+		virtual void Load(void) override
+		{
+			if (RandomMapGen.SeedData.LoadOptionsClass::Load() == true) {
+				RandomMapGen.Generate_Random_Map(true, NULL);
+			}
+		}
+
+		virtual void Delete(void) override
+		{
+			RandomMapGen.SeedData.LoadOptionsClass::Delete();
+		}
+
+	private:
+		static void Set_Slider(UIMapGenSlider & slider, int value, int minimum, int maximum)
+		{
+			slider.Minimum = minimum;
+			slider.Maximum = maximum;
+			slider.Value = (value < minimum) ? minimum : ((value > maximum) ? maximum : value);
+		}
+};
+
+}
+
+
+UIMapGenServiceClass & UI_Map_Generator_Service(void)
+{
+	static UIMapGenEngineServiceClass service;
+	return(service);
+}
+
+
+bool UI_Map_Generator_Dialog(UIMapGenChoiceType & choice)
+{
+	choice = UI_MAPGEN_CANCEL;
+
+	if (!UIShell.Use_Rml() || UIShell.Legacy_Dialog_Visible()) {
+		return(false);
+	}
+
+	// The screen closes and reopens around the file dialogs the generator raises, as the
+	// Win32 dialog stood while they ran over it.
+	while (true) {
+		UIMapGenPresenterClass presenter(UI_Map_Generator_Service());
+		std::unique_ptr<UIViewClass> view = UI_Map_Generator_View(presenter);
+
+		UIResult result = UI_Run_Modal(*view);
+		if (result == UI_RESULT_FAILED_TO_OPEN) {
+			return(false);
+		}
+
+		switch (presenter.Raise) {
+			case UIMapGenPresenterClass::RAISE_SAVE:
+				UI_Map_Generator_Service().Save();
+				continue;
+
+			case UIMapGenPresenterClass::RAISE_LOAD:
+				UI_Map_Generator_Service().Load();
+				continue;
+
+			case UIMapGenPresenterClass::RAISE_DELETE:
+				UI_Map_Generator_Service().Delete();
+				continue;
+
+			default:
+				break;
+		}
+
+		choice = (result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_MAPGEN_CANCEL;
+		return(true);
+	}
+}

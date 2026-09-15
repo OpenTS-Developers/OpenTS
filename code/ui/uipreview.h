@@ -30,3 +30,7 @@ struct UIMapPreviewImage
 // Copies the preview the map dialogs share. False, with an empty picture at a fresh
 // generation, when there is none: a map carrying no preview is not an error.
 bool UI_Map_Preview_Image(UIMapPreviewImage & image);
+
+// The same for the picture the random map generator drew, which it keeps apart from the one
+// the map dialogs share.
+bool UI_Generated_Map_Preview_Image(UIMapPreviewImage & image);

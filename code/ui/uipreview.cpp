@@ -11,6 +11,7 @@
 
 #include "ui/uipreview.h"
 
+#include "mapgen.h"
 #include "netshare.h"
 #include "preview.h"
 #include "ui/rml/rmlimage.h"
@@ -31,6 +32,50 @@ bool UI_Map_Preview_Image(UIMapPreviewImage & image)
 	}
 
 	XSurface * surface = MultiplayerMapPreview->Get_Preview_Surface();
+	if (surface == NULL || surface->Bytes_Per_Pixel() != 2) {
+		return(false);
+	}
+
+	int width = surface->Get_Width();
+	int height = surface->Get_Height();
+	int pitch = surface->Stride() / 2;
+	if (width <= 0 || height <= 0 || pitch < width) {
+		return(false);
+	}
+
+	std::uint16_t const * pixels = (std::uint16_t const *)surface->Lock();
+	if (pixels == NULL) {
+		return(false);
+	}
+
+	// The last row is only as wide as the picture, which is all the conversion reads.
+	std::size_t held = (std::size_t)pitch * (std::size_t)(height - 1) + (std::size_t)width;
+	bool copied = UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(pixels, held), width, height, pitch, image.Pixels);
+	surface->Unlock();
+
+	if (!copied) {
+		image.Pixels.clear();
+		return(false);
+	}
+
+	image.Width = width;
+	image.Height = height;
+	return(true);
+}
+
+
+bool UI_Generated_Map_Preview_Image(UIMapPreviewImage & image)
+{
+	int generation = image.Generation + 1;
+
+	image = UIMapPreviewImage();
+	image.Generation = generation;
+
+	if (RandomMapGen.MapPreview == NULL) {
+		return(false);
+	}
+
+	XSurface * surface = RandomMapGen.MapPreview->Get_Preview_Surface();
 	if (surface == NULL || surface->Bytes_Per_Pixel() != 2) {
 		return(false);
 	}

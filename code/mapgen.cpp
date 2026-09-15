@@ -26,6 +26,7 @@
 #include "ccrand.h"
 #include "cell.h"
 #include "conquer.h"
+#include "ui/screens/mapgen/uimapgen.h"
 #include "coord.h"
 #include "data.h"
 #include "dbgprint.h"
@@ -3265,16 +3266,35 @@ int Do_Random_Map_Dialog(bool (*callback)())
 		wdt = WDT_Get_Territory(Session.WDTTerritory);
 	}
 
-	HWND dialog;
-	if (Addon_Enabled(ADDON_FIRESTORM)) {
-		dialog = OwnerDraw::Begin_Dialog(wdt != NULL ? IDD_MAPGEN_WDT : IDD_MAPGEN_FS, Map_Seed_Dialog_Proc);
-	} else {
-		dialog = OwnerDraw::Begin_Dialog(IDD_MAPGEN, Map_Seed_Dialog_Proc);
+	RMGCallback = callback;
+	RandomMapGen.SeedData.Callback = callback;
+
+	// The screen covers the base game's template and the expansion's; a territory's own
+	// bounds still open the Win32 dialog, because only the online game hands them over.
+	if (wdt == NULL) {
+		UIMapGenChoiceType choice = UI_MAPGEN_CANCEL;
+		if (UI_Map_Generator_Dialog(choice)) {
+			if (choice == UI_MAPGEN_ACCEPT) {
+				if (RandomMapGen.MapPreview == NULL || RandomMapGen.MapPreview->Get_Preview_Surface() == NULL) {
+					RandomMapGen.Generate_Random_Map(true, NULL);
+				}
+				res = 1;
+			} else {
+				res = 2;
+			}
+		}
+	}
+
+	HWND dialog = NULL;
+	if (res == 0) {
+		if (Addon_Enabled(ADDON_FIRESTORM)) {
+			dialog = OwnerDraw::Begin_Dialog(wdt != NULL ? IDD_MAPGEN_WDT : IDD_MAPGEN_FS, Map_Seed_Dialog_Proc);
+		} else {
+			dialog = OwnerDraw::Begin_Dialog(IDD_MAPGEN, Map_Seed_Dialog_Proc);
+		}
 	}
 
 	if (dialog) {
-		RMGCallback = callback;
-		RandomMapGen.SeedData.Callback = callback;
 		SetWindowLongPtrA(dialog, DWLP_USER, (LONG_PTR)&res);
 		OwnerDraw::Display_Dialog(dialog);
 		while (res == 0) {

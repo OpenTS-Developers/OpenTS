@@ -1,0 +1,180 @@
+/*
+ * Where the random map generator puts its controls. The base game's template is IDD_MAPGEN at
+ * 424 by 242 dialog units, 636 by 394 pixels; the expansion's is IDD_MAPGEN_FS at 426 by 242,
+ * four wider, and carries the veinhole reading and three switches the base game has not, with
+ * its boxes and readings a little further up and to the left. One document covers both and the
+ * class on the body chooses. Everything visual comes from the kit.
+ */
+
+#reveal
+{
+	width: 636dp;
+	height: 395dp;
+	top: 50%;
+	margin-top: -197dp;
+}
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+.original .firestorm-only
+{
+	display: none;
+}
+
+.caption
+{
+	height: 17dp;
+	line-height: 17dp;
+}
+
+/* --------------------------------------------------------------- the country and the size */
+
+#cap-environment { left: 33dp; top: 13dp; }
+#environment { left: 142dp; top: 13dp; width: 150dp; height: 24dp; }
+#cap-time { left: 33dp; top: 44dp; }
+#time { left: 142dp; top: 41dp; width: 150dp; height: 24dp; }
+
+#cap-width { left: 309dp; top: 13dp; }
+#width { left: 415dp; top: 13dp; width: 95dp; height: 24dp; }
+#cap-height { left: 307dp; top: 41dp; }
+#height { left: 415dp; top: 41dp; width: 95dp; height: 24dp; }
+
+.firestorm #cap-environment { left: 33dp; top: 11dp; }
+.firestorm #environment { left: 118dp; top: 13dp; }
+.firestorm #cap-time { left: 33dp; top: 39dp; }
+.firestorm #time { left: 118dp; top: 40dp; }
+.firestorm #cap-width { left: 280dp; top: 13dp; }
+.firestorm #width { left: 372dp; top: 13dp; width: 94dp; }
+.firestorm #cap-height { left: 279dp; top: 42dp; }
+.firestorm #height { left: 372dp; top: 42dp; width: 94dp; }
+.firestorm #reveal { width: 640dp; }
+
+/* ------------------------------------------------------------------------- the readings */
+
+#settings, #switches
+{
+	left: 0;
+	top: 0;
+	width: 640dp;
+	height: 394dp;
+	pointer-events: none;
+}
+
+#settings > .row
+{
+	position: absolute;
+	left: 33dp;
+	width: 260dp;
+	height: 24dp;
+	white-space: nowrap;
+	pointer-events: auto;
+}
+
+#settings > .row > .caption
+{
+	display: inline-block;
+	width: 111dp;
+	vertical-align: top;
+}
+
+/* The caption's rect runs past where the bar begins, so the bar is pulled back over it. */
+#settings input[type='range']
+{
+	width: 100dp;
+	height: 23dp;
+	margin-left: -3dp;
+}
+
+#settings .trough, #settings .trough-edge
+{
+	height: 24dp;
+}
+
+#settings .trough
+{
+	line-height: 23dp;
+}
+
+#row-players { top: 76dp; }
+#row-cliffs { top: 107dp; }
+#row-accessibility { top: 138dp; }
+#row-hills { top: 169dp; }
+#row-tiberiumamount { top: 200dp; }
+#row-tiberiumfields { top: 231dp; }
+#row-water { top: 262dp; }
+#row-vegetation { top: 293dp; }
+#row-cities { top: 324dp; }
+
+.firestorm #row-players { top: 66dp; }
+.firestorm #row-cliffs { top: 94dp; }
+.firestorm #row-accessibility { top: 122dp; }
+.firestorm #row-hills { top: 149dp; }
+.firestorm #row-tiberiumamount { top: 177dp; }
+.firestorm #row-tiberiumfields { top: 205dp; }
+.firestorm #row-water { top: 233dp; }
+.firestorm #row-vegetation { top: 260dp; }
+.firestorm #row-cities { top: 288dp; }
+.firestorm #row-veinholes { top: 316dp; }
+
+/* -------------------------------------------------------------------------- the switches */
+
+#switches > label
+{
+	position: absolute;
+	left: 480dp;
+	width: 126dp;
+	height: 17dp;
+	pointer-events: auto;
+}
+
+#switch-ionstorms { top: 13dp; }
+#switch-transitions { top: 42dp; }
+#switch-lifeforms { top: 71dp; }
+
+/* ---------------------------------------------------------------------------- the preview */
+
+#map { left: 307dp; top: 76dp; width: 297dp; height: 220dp; }
+.firestorm #map { left: 310dp; top: 92dp; }
+
+/* The frame's rect, which its line is drawn a corner outside of. */
+#preview { position: absolute; left: -1dp; top: -1dp; width: 296dp; height: 219dp; }
+
+/*
+ * The caption is centred in a box a pixel narrower than the layer's, which halves the room
+ * around it in whole pixels where the toolkit rounds a half up, so both put it in the same
+ * column. Its box is a pixel left of where the factor puts it, as the layer draws it.
+ */
+#preview-caption
+{
+	position: absolute;
+	left: 4dp;
+	top: 82dp;
+	width: 290dp;
+	padding-right: 1dp;
+	height: 26dp;
+	line-height: 26dp;
+	text-align: center;
+}
+
+/* ---------------------------------------------------------------------------- the buttons */
+
+#surprise { left: 307dp; top: 314dp; width: 132dp; }
+#previewmap { left: 471dp; top: 314dp; width: 132dp; }
+
+.firestorm #surprise { top: 326dp; }
+.firestorm #previewmap { left: 474dp; top: 326dp; }
+
+#save { left: 33dp; top: 358dp; width: 98dp; }
+#load { left: 150dp; top: 358dp; width: 98dp; }
+#delete { left: 267dp; top: 358dp; width: 98dp; }
+#ok { left: 397dp; top: 358dp; width: 98dp; }
+#cancel { left: 505dp; top: 358dp; width: 98dp; }
