@@ -28,6 +28,7 @@
 
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlrender.h"
+#include "ui/rml/rmlfontfon.h"
 #include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlrendermath.h"
 #include "ui/rml/rmlsurface.h"
@@ -2849,6 +2850,246 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 }
 
 
+// A strike of two characters laid out the way a version two `FNT` is: a header naming the
+// code page its bytes are in, a table of a width and an offset per character with a sentinel
+// after the last, the face's name, and each glyph as columns of eight pixels a byte to the
+// row. The two characters are `first` and the one after it.
+static std::vector<std::uint8_t> Build_Strike(unsigned int charset, unsigned int first, int height = 4, int ascent = 3)
+{
+	int const widths[2] = {3, 9};
+	std::size_t const name = 130;
+	std::size_t const picture = 134;
+	std::size_t const second = picture + (std::size_t)((widths[0] + 7) / 8) * height;
+	std::size_t const end = second + (std::size_t)((widths[1] + 7) / 8) * height;
+
+	std::vector<std::uint8_t> fnt(end, 0);
+	auto word = [&fnt](std::size_t at, unsigned int value) {
+		fnt[at] = (std::uint8_t)(value & 0xFF);
+		fnt[at + 1] = (std::uint8_t)(value >> 8);
+	};
+
+	word(0x00, 0x200);
+	word(0x44, 8);
+	word(0x4A, (unsigned int)ascent);
+	fnt[0x55] = (std::uint8_t)charset;
+	word(0x58, (unsigned int)height);
+	fnt[0x5F] = (std::uint8_t)first;
+	fnt[0x60] = (std::uint8_t)(first + 1);
+	word(0x69, (unsigned int)name);
+	word(0x6B, 0);
+
+	word(0x76, (unsigned int)widths[0]);
+	word(0x78, (unsigned int)picture);
+	word(0x7A, (unsigned int)widths[1]);
+	word(0x7C, (unsigned int)second);
+	word(0x7E, 0);
+	word(0x80, (unsigned int)end);
+
+	fnt[name] = 'T';
+	fnt[name + 1] = 0;
+	fnt[picture] = 0xA0;
+	fnt[second + (std::size_t)height] = 0x80;
+	return(fnt);
+}
+
+
+// The strikes above inside the smallest sixteen-bit image that can carry them, each starting
+// on one of the sixteen byte units the resource table counts in.
+static std::vector<std::uint8_t> Build_Font_Image(std::vector<std::vector<std::uint8_t>> const & fnts)
+{
+	std::vector<std::size_t> starts;
+	std::size_t at = 0x100;
+	for (std::vector<std::uint8_t> const & fnt : fnts) {
+		starts.push_back(at);
+		at += ((fnt.size() + 15) / 16) * 16;
+	}
+
+	std::vector<std::uint8_t> image(at, 0);
+	auto word = [&image](std::size_t place, unsigned int value) {
+		image[place] = (std::uint8_t)(value & 0xFF);
+		image[place + 1] = (std::uint8_t)(value >> 8);
+	};
+
+	image[0] = 'M';
+	image[1] = 'Z';
+	word(0x3C, 0x40);
+	image[0x40] = 'N';
+	image[0x41] = 'E';
+	word(0x40 + 0x24, 0x40);
+
+	word(0x80, 4);
+	word(0x82, 0x8008);
+	word(0x84, (unsigned int)fnts.size());
+
+	std::size_t entry = 0x8A;
+	for (std::size_t index = 0; index < fnts.size(); index++) {
+		std::size_t padded = ((fnts[index].size() + 15) / 16) * 16;
+		word(entry, (unsigned int)(starts[index] >> 4));
+		word(entry + 2, (unsigned int)(padded >> 4));
+		std::memcpy(image.data() + starts[index], fnts[index].data(), fnts[index].size());
+		entry += 12;
+	}
+	word(entry, 0);
+	return(image);
+}
+
+
+static std::vector<std::uint8_t> Build_Font_Image(std::vector<std::uint8_t> const & fnt)
+{
+	return(Build_Font_Image(std::vector<std::vector<std::uint8_t>>{fnt}));
+}
+
+
+static bool Read_Strike(std::vector<std::uint8_t> const & fnt, UIRasterStrike & strike)
+{
+	return(UI_Read_Raster_Strike(std::span<std::uint8_t const>(fnt.data(), fnt.size()), strike));
+}
+
+
+void Test_Raster_Font(void)
+{
+	char32_t const CYRILLIC_A = 0x0410;
+	char32_t const CYRILLIC_BE = 0x0411;
+	char32_t const EURO = 0x20AC;
+
+	std::vector<std::uint8_t> fnt = Build_Strike(0, 'A');
+
+	UIRasterStrike strike;
+	Check(Read_Strike(fnt, strike), "a strike reads");
+	Check(strike.Points == 8 && strike.Height == 4 && strike.Ascent == 3, "a strike carries its size and its baseline");
+	Check(strike.Face == "T", "a strike names its face");
+	Check(strike.Advance(U'A') == 3 && strike.Advance(U'B') == 9, "a character's advance is its own width");
+	Check(strike.Advance(U'C') == 0 && strike.Find(U'C') == nullptr, "a character the strike does not carry has no width");
+	Check(strike.Find(U'A') != nullptr && strike.Find(U'A')->Coverage.size() == 12
+		&& strike.Find(U'A')->Coverage[0] == 255 && strike.Find(U'A')->Coverage[1] == 0 && strike.Find(U'A')->Coverage[2] == 255,
+		"a glyph's first row comes out of the top bits of its first column");
+	Check(strike.Find(U'B') != nullptr && strike.Find(U'B')->Coverage[8] == 255 && strike.Find(U'B')->Coverage[0] == 0,
+		"a glyph wider than eight reads its ninth pixel from a second column");
+
+	// A strike whose table or pictures fall outside the bytes given is refused rather than
+	// read past, because the bytes come from a file the game did not write.
+	std::vector<std::uint8_t> clipped(fnt.begin(), fnt.begin() + 140);
+	UIRasterStrike refused;
+	Check(!UI_Read_Raster_Strike(std::span<std::uint8_t const>(clipped.data(), clipped.size()), refused), "a strike cut short is refused");
+
+	Check(UI_Raster_Charset_Page(0) == 1252 && UI_Raster_Charset_Page(238) == 1250 && UI_Raster_Charset_Page(204) == 1251
+		&& UI_Raster_Charset_Page(161) == 1253 && UI_Raster_Charset_Page(162) == 1254 && UI_Raster_Charset_Page(186) == 1257,
+		"a charset byte names its code page");
+	Check(UI_Raster_Charset_Page(177) == 1252 && UI_Raster_Charset_Page(99) == 1252,
+		"a charset the engine has no table for is read as the page the dialogs were drawn in");
+
+	// A strike is keyed by what its bytes show, not by the bytes, so one picture under two
+	// code pages is two different characters.
+	UIRasterStrike cyrillic;
+	Check(Read_Strike(Build_Strike(204, 0xC0), cyrillic), "a strike in another code page reads");
+	Check(cyrillic.Advance(CYRILLIC_A) == 3 && cyrillic.Advance(CYRILLIC_BE) == 9, "its characters are the ones its page shows");
+	Check(cyrillic.Advance((char32_t)0xC0) == 0, "the byte itself carries nothing");
+
+	UIRasterStrike ascii;
+	Check(Read_Strike(Build_Strike(204, 'A'), ascii) && ascii.Advance(U'A') == 3,
+		"the low row is the same character whatever the page");
+
+	UIRasterStrike undefined;
+	Check(Read_Strike(Build_Strike(0, 0x80), undefined) && undefined.Glyphs.size() == 1 && undefined.Advance(EURO) == 3,
+		"a byte its page leaves undefined is dropped and the one beside it is kept");
+
+	UIRasterStrike control;
+	Check(Read_Strike(Build_Strike(0, 0x1F), control) && control.Glyphs.size() == 1 && control.Advance(U' ') == 9,
+		"a character below a space is dropped");
+
+	for (UIRasterStrike const & sorted : {strike, cyrillic}) {
+		bool ascending = true;
+		for (std::size_t index = 1; index < sorted.Glyphs.size(); index++) {
+			ascending = ascending && sorted.Glyphs[index - 1].Code < sorted.Glyphs[index].Code;
+		}
+		Check(ascending, "a strike holds its glyphs in code order, each code once");
+	}
+
+	std::vector<std::uint8_t> image = Build_Font_Image(fnt);
+	std::vector<UIRasterStrike> strikes;
+	Check(UI_Read_Raster_Font(std::span<std::uint8_t const>(image.data(), image.size()), strikes)
+		&& strikes.size() == 1 && strikes[0].Advance(U'B') == 9, "a font image gives up the strikes it carries");
+
+	std::vector<UIRasterStrike> twice;
+	std::vector<std::uint8_t> pair = Build_Font_Image({Build_Strike(0, 'A'), Build_Strike(204, 0xC0)});
+	Check(UI_Read_Raster_Font(std::span<std::uint8_t const>(pair.data(), pair.size()), twice)
+		&& twice.size() == 1 && twice[0].Advance(U'A') == 3 && twice[0].Advance(CYRILLIC_A) == 0,
+		"a file carrying a second strike of a height it already gave up is read once");
+
+	image[1] = 'X';
+	Check(!UI_Read_Raster_Font(std::span<std::uint8_t const>(image.data(), image.size()), strikes) && strikes.empty(),
+		"bytes that are not a sixteen-bit image give up nothing");
+
+	// Folding another cut of the same face in adds what it carries and leaves what is there.
+	std::vector<UIRasterStrike> family;
+	family.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(family, {cyrillic}) == 2 && family.size() == 1
+		&& family[0].Advance(U'A') == 3 && family[0].Advance(CYRILLIC_A) == 3,
+		"a merge adds the characters the other cut carries");
+
+	std::vector<std::uint8_t> altered = Build_Strike(0, 'A');
+	altered[134] = 0x40;
+	UIRasterStrike other;
+	Check(Read_Strike(altered, other), "a second cut of the same characters reads");
+
+	std::vector<UIRasterStrike> mine;
+	mine.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(mine, {other}) == 0
+		&& mine[0].Find(U'A')->Coverage[0] == 255 && mine[0].Find(U'A')->Coverage[1] == 0,
+		"the strike read first keeps a character both carry");
+
+	std::vector<UIRasterStrike> reversed;
+	reversed.push_back(other);
+	Check(UI_Merge_Raster_Strikes(reversed, {strike}) == 0
+		&& reversed[0].Find(U'A')->Coverage[0] == 0 && reversed[0].Find(U'A')->Coverage[1] == 255,
+		"which cut wins follows the order they are merged in, not which ran last");
+
+	UIRasterStrike taller;
+	Check(Read_Strike(Build_Strike(204, 0xC0, 5), taller), "a strike of another height reads");
+	std::vector<UIRasterStrike> unmatched;
+	unmatched.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(unmatched, {taller}) == 0 && unmatched.size() == 1,
+		"a cut whose height is not already there is left out rather than added beside it");
+
+	UIRasterStrike raised;
+	Check(Read_Strike(Build_Strike(204, 0xC0, 4, 2), raised), "a strike on another baseline reads");
+	std::vector<UIRasterStrike> mismatched;
+	mismatched.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(mismatched, {raised}) == 0 && mismatched[0].Advance(CYRILLIC_A) == 0,
+		"a cut putting its baseline elsewhere at the same height is left out");
+
+	// The atlas is laid out rather than gridded, so it holds whatever a merged strike comes to.
+	std::vector<UIRasterCell> cells;
+	int width = 0;
+	int height = 0;
+	Check(UI_Raster_Strike_Layout(family[0], UI_RASTER_ATLAS_LIMIT, cells, width, height)
+		&& cells.size() == family[0].Glyphs.size(), "every glyph of a strike gets a cell");
+	Check(width <= UI_RASTER_ATLAS_LIMIT && height <= UI_RASTER_ATLAS_LIMIT && height % family[0].Height == 0,
+		"the atlas stays inside the limit and is whole rows of the strike");
+
+	bool placed = true;
+	for (std::size_t index = 0; index < cells.size(); index++) {
+		placed = placed && cells[index].Code == family[0].Glyphs[index].Code
+			&& cells[index].X >= 0 && cells[index].X + cells[index].Advance <= width
+			&& cells[index].Y >= 0 && cells[index].Y + family[0].Height <= height;
+		for (std::size_t earlier = 0; earlier < index; earlier++) {
+			bool apart = cells[index].Y != cells[earlier].Y
+				|| cells[index].X + cells[index].Advance <= cells[earlier].X
+				|| cells[earlier].X + cells[earlier].Advance <= cells[index].X;
+			placed = placed && apart;
+		}
+	}
+	Check(placed, "the cells sit inside the atlas in the strike's own order without overlapping");
+
+	Check(!UI_Raster_Strike_Layout(family[0], 2, cells, width, height) && cells.empty(),
+		"a strike that cannot be laid inside the limit is refused");
+
+	UIRasterStrike nothing;
+	Check(!UI_Raster_Strike_Layout(nothing, UI_RASTER_ATLAS_LIMIT, cells, width, height),
+		"a strike carrying nothing has no atlas");
+}
+
+
 void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass & render, CountingSystemInterfaceClass & system)
 {
 	// Black, white, and each channel alone. A five or six bit channel is widened by repeating
@@ -3108,6 +3349,7 @@ void Test_Documents(void)
 
 	if (context != nullptr) {
 		Test_Effects_Documents(*context, render, system);
+		Test_Raster_Font();
 		Test_Surface_Element(*context, render, system);
 		Test_Skirmish_Screen(*context, system);
 		Test_Scenario_Screen(*context, system);

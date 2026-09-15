@@ -524,6 +524,19 @@ void UIShellClass::Drain_Deferred(void)
 // scales; and the shipped one is what stands in for either.
 static char const * const UI_SHEET_FONT_FAMILY = "dlgsys";
 static char const * const UI_SANS_FONT_FAMILY = "dlg-sans";
+// Windows cuts the dialog face once per code page. The first is the one the dialogs were
+// drawn in, and where two of them carry a character the earlier wins, so the family comes out
+// the same whichever of these a machine has. The right-to-left and the stacking scripts are
+// cut too, and are left out: their glyphs alone would draw in the wrong order or beside the
+// letter they belong over, which the engine does no layout to prevent.
+static char const * const UI_SANS_RASTER_FILES[] = {
+	"sserife.fon",		// Western
+	"sserifee.fon",		// Central European
+	"sserifer.fon",		// Cyrillic
+	"sserifeg.fon",		// Greek
+	"sserifet.fon",		// Turkish
+	"ssee1257.fon",		// Baltic
+};
 static char const * const UI_SANS_FONT_FILE = "micross.ttf";
 static char const * const UI_SHIPPED_FONT_FILE = "Arimo.ttf";
 
@@ -559,9 +572,44 @@ void UIShellClass::Register_Fonts(void)
 	// search and knows nothing of a Windows directory, so the face travels as bytes. They
 	// are kept because RmlUi reads glyphs straight out of them for as long as it runs.
 	bool sansloaded = false;
+	// The raster face the layer actually drew with is read first: its strikes are what GDI
+	// picked, so a document asking for one of their heights gets the layer's own letters. The
+	// cuts are folded into one family rather than loaded one after another, because loading a
+	// family twice replaces it.
+	std::vector<UIRasterStrike> strikes;
+	for (char const * const name : UI_SANS_RASTER_FILES) {
+		std::string path = Host.System_Font_Path(name);
+		std::vector<std::uint8_t> bytes;
+		if (path.empty() || !UI_Read_File(path.c_str(), bytes)) {
+			continue;
+		}
+
+		std::vector<UIRasterStrike> cut;
+		if (!UI_Read_Raster_Font(std::span<std::uint8_t const>(bytes.data(), bytes.size()), cut)) {
+			continue;
+		}
+
+		if (strikes.empty()) {
+			strikes = std::move(cut);
+			Log("UI: %s answers for %s with %d strikes\n", name, UI_SANS_FONT_FAMILY, (int)strikes.size());
+			continue;
+		}
+
+		int added = UI_Merge_Raster_Strikes(strikes, cut);
+		if (added > 0) {
+			Log("UI: %s adds %d characters to %s\n", name, added, UI_SANS_FONT_FAMILY);
+		}
+	}
+
+	if (!strikes.empty()) {
+		sansloaded = Fonts->Load_Strikes(UI_SANS_FONT_FAMILY, strikes);
+	}
+
+	// The outline face is registered whether the strikes answered or not, because it is what
+	// the family falls through to at a scale the strikes cannot be drawn at.
 	std::string sans = Host.System_Font_Path(UI_SANS_FONT_FILE);
 	if (!sans.empty() && UI_Read_File(sans.c_str(), SystemFontData)) {
-		sansloaded = Rml::LoadFontFace(Rml::Span<const Rml::byte>(SystemFontData.data(), SystemFontData.size()), UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+		sansloaded = Rml::LoadFontFace(Rml::Span<const Rml::byte>(SystemFontData.data(), SystemFontData.size()), UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal) || sansloaded;
 	}
 
 	FontLoaded = Rml::LoadFontFace(UI_SHIPPED_FONT_FILE);
@@ -571,9 +619,13 @@ void UIShellClass::Register_Fonts(void)
 	}
 
 	if (!sansloaded) {
-		Log("UI: %s is not on this machine, so %s is the shipped face\n", UI_SANS_FONT_FILE, UI_SANS_FONT_FAMILY);
-		Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+		Log("UI: neither %s nor %s is on this machine, so %s is the shipped face\n",
+			UI_SANS_RASTER_FILES[0], UI_SANS_FONT_FILE, UI_SANS_FONT_FAMILY);
 	}
+
+	// The family is given the shipped face whatever answers for it, because RmlUi looks a
+	// family up before asking an engine for a face in it.
+	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
 
 	// The bitmap family is art rather than a font file, and the archives holding it are
 	// mounted after the shell starts, so the shipped face answers for it until the first

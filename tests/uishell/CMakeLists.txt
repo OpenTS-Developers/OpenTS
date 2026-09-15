@@ -17,6 +17,7 @@ opents_add_test(UIShell
         hsv.cpp
         rgb.cpp
         ui/rml/rmlfont.cpp
+        ui/rml/rmlfontfon.cpp
         ui/rml/rmlfontsheet.cpp
         ui/rml/rmlimage.cpp
         ui/rml/rmlkeys.cpp

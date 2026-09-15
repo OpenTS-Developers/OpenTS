@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "ui/rml/rmlfontfon.h"
 #include "ui/rml/rmlfontsheet.h"
 
 #include <RmlUi/Core/FontEngineInterface.h>
@@ -18,6 +19,7 @@
 
 
 class UISheetFaceClass;
+class UIRasterFaceClass;
 
 
 // The size a document asks for to draw a bitmap family at the size its sheets were drawn.
@@ -40,6 +42,20 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		// coverage. False when they do not measure as a font; the family is then not
 		// answered for and a document naming it falls back to an outline face.
 		bool Load_Sheets(Rml::String const & family, UIImageIndexed const & index, UIImageIndexed const & alpha);
+
+		// Takes a raster family's strikes. A strike is answered for at its own height and
+		// magnified at any other, so a document names the height of the strike it wants.
+		// False for a family with no strike carrying a character.
+		bool Load_Strikes(Rml::String const & family, std::vector<UIRasterStrike> const & strikes);
+
+		// The pixels a dp comes to, which is what a document's size is multiplied by before
+		// it reaches here. A raster family divides it back out to know which strike is meant.
+		void Set_Reference_Scale(float scale) { Reference = (scale > 0.0f) ? scale : 1.0f; }
+
+		// Whether a raster family may answer at all. A strike is drawn at the size it was cut
+		// and cannot be resized well, so a frame that is not at one to one turns this off and
+		// a document naming the family falls through to the outline face registered for it.
+		void Set_Use_Strikes(bool use) { UseStrikes = use; }
 
 		// The engine RmlUi made, which everything this one does not answer for goes to.
 		// Taken after Rml::Initialise and dropped when RmlUi shuts down.
@@ -76,11 +92,23 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 			UISheetFontMetrics Metrics;
 		};
 
+		struct RasterFamily
+		{
+			Rml::String Name;
+			std::vector<UIRasterStrike> Strikes;
+		};
+
 		SheetFamily const * Find_Family(Rml::String const & family) const;
+		RasterFamily const * Find_Raster_Family(Rml::String const & family) const;
 		UISheetFaceClass * Find_Face(Rml::FontFaceHandle handle) const;
+		UIRasterFaceClass * Find_Raster_Face(Rml::FontFaceHandle handle) const;
 
 		Rml::FontEngineInterface * Fallback;
 		int Magnification = 1;
+		float Reference = 1.0f;
+		bool UseStrikes = true;
 		std::vector<std::unique_ptr<SheetFamily>> Families;
 		std::vector<std::unique_ptr<UISheetFaceClass>> Faces;
+		std::vector<std::unique_ptr<RasterFamily>> RasterFamilies;
+		std::vector<std::unique_ptr<UIRasterFaceClass>> RasterFaces;
 };
