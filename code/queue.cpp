@@ -2093,7 +2093,7 @@ static UIReconnectState Reconnect_Notice(FrameSyncStruct * their, int num_conn, 
 			}
 		}
 
-		player.Colour = (progress > 480) ? "#c80000" : ((progress > 240) ? "#c8c800" : "#00c800");
+		player.Color = (progress > 480) ? "#c80000" : ((progress > 240) ? "#c8c800" : "#00c800");
 		player.Filled = (progress >= 900) ? 0.0f : (1.0f - (float)progress / 900.0f);
 		state.Players.push_back(std::move(player));
 	}

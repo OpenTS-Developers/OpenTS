@@ -29,13 +29,13 @@ enum UISkirmishChoice
 };
 
 
-// One row of a chooser: what it reads, the value the game knows it by, and the colour the
-// dropdown draws it in, which only the player colours carry.
+// One row of a chooser: what it reads, the value the game knows it by, and the color the
+// dropdown draws it in, which only the player colors carry.
 struct UISkirmishOption
 {
 	std::string Label;
 	int Value = 0;
-	std::string Colour;
+	std::string Color;
 };
 
 
@@ -47,8 +47,8 @@ struct UISkirmishState
 
 	std::vector<UISkirmishOption> Sides;
 	int Side = 0;
-	std::vector<UISkirmishOption> Colours;
-	int Colour = 0;
+	std::vector<UISkirmishOption> Colors;
+	int Color = 0;
 
 	std::string MapName;
 	UIMapPreviewImage Preview;

@@ -34,7 +34,7 @@ BSurface *SpotLightSurfaces[SpotLightClass::SPOTLIGHT_SURFACE_COUNT + SpotLightC
 
 extern "C" {
 /*
- * Externs to the colour routines in colorops.cpp
+ * Externs to the color routines in colorops.cpp
  */
 void __cdecl Adjust_Color_565(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);
 void __cdecl Adjust_Color_555(void *pal1, void *pal2, int red, int green, int blue, int intensity, char *arg7);

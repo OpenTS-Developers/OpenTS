@@ -1095,7 +1095,7 @@ void __cdecl Draw_Voxel_Regular_Normals(VoxelFuncArgumentStruct * state)
 							ptr++;
 
 							/// Compute buffer index and write color. A voxel covers two
-							/// buffer bytes, so the colour goes down twice.
+							/// buffer bytes, so the color goes down twice.
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
 							VoxelDrawBuffer[buffer_index + 1] = color_index;
@@ -1183,7 +1183,7 @@ void __cdecl Draw_Voxel_Reverse_Normals(VoxelFuncArgumentStruct * state)
 							ptr--;
 
 							/// Compute buffer index and write color. A voxel covers two
-							/// buffer bytes, so the colour goes down twice.
+							/// buffer bytes, so the color goes down twice.
 							unsigned int buffer_index = (pixel_x >> 8) | (pixel_y & 0xFF00);
 							VoxelDrawBuffer[buffer_index] = color_index;
 							VoxelDrawBuffer[buffer_index + 1] = color_index;

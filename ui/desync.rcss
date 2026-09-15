@@ -62,7 +62,7 @@
 }
 
 /*
- * The marker keeps its column on a row without one, the standing carries its own colour, and
+ * The marker keeps its column on a row without one, the standing carries its own color, and
  * the name is parted from it by the six pixels the layer leaves, so a name that fills its
  * column does not run into the word beside it.
  */

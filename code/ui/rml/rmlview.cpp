@@ -273,11 +273,11 @@ void UIRmlViewClass::Size_Grips(void)
 }
 
 
-// The wallpaper belongs to the screen rather than to the dialog: it is one picture centred
+// The wallpaper belongs to the screen rather than to the dialog: it is one picture centered
 // on the frame in whole pixels, and a dialog shows the part of it lying behind. The kit
 // hangs it off the middle of the dialog, which is the middle of the frame only while the
-// dialog is centred, so a dialog sitting anywhere else pushes it back by however far it is
-// off centre, and a dialog of odd height by the half pixel its middle is off the grid. The
+// dialog is centered, so a dialog sitting anywhere else pushes it back by however far it is
+// off center, and a dialog of odd height by the half pixel its middle is off the grid. The
 // picture is sized in dp, so it is placed in dp. A document without the kit's chrome has
 // no picture to place.
 void UIRmlViewClass::Place_Wallpaper(void)

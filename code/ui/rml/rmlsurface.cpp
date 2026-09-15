@@ -130,10 +130,10 @@ void UIRmlSurfaceElementClass::Generate_Geometry(void)
 	}
 
 	Rml::ComputedValues const & computed = GetComputedValues();
-	Rml::ColourbPremultiplied colour = computed.image_color().ToPremultiplied(computed.opacity());
+	Rml::ColourbPremultiplied color = computed.image_color().ToPremultiplied(computed.opacity());
 
 	Rml::MeshUtilities::GenerateQuad(mesh, offset + Rml::Vector2f((float)x, (float)y),
-		Rml::Vector2f((float)width, (float)height), colour, Rml::Vector2f(0.0f, 0.0f), Rml::Vector2f(1.0f, 1.0f));
+		Rml::Vector2f((float)width, (float)height), color, Rml::Vector2f(0.0f, 0.0f), Rml::Vector2f(1.0f, 1.0f));
 	Shape = manager->MakeGeometry(std::move(mesh));
 }
 

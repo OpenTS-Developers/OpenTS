@@ -40,13 +40,13 @@
 // The least a network game can be played for, as the dialog's own constant has it.
 static int const UI_NET_MIN_MONEY = 2500;
 
-// What a list row is drawn in when nothing has coloured it, which is what the list box left
+// What a list row is drawn in when nothing has colored it, which is what the list box left
 // a row at. A document is told this rather than nothing, because a style of nothing is an
 // error to the toolkit and it complains about one on every pass.
 static char const UI_NET_PLAIN[] = "#70ff00";
 
-// The colours a player may wear, in the order the dialogs list them.
-static int const UI_NET_COLOURS[] = {
+// The colors a player may wear, in the order the dialogs list them.
+static int const UI_NET_COLORS[] = {
 	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
 };
 
@@ -76,7 +76,7 @@ class UINetLobbyEngineServiceClass : public UINetLobbyServiceClass
 		virtual void Select_Game(int index) override;
 		virtual void Say(char const * text) override;
 		virtual void Set_Side(int index) override;
-		virtual void Set_Colour(int index) override;
+		virtual void Set_Color(int index) override;
 		virtual void Set_Switch(UINetSwitch which, bool on) override;
 		virtual void Set_Slider(UINetSlider which, int value) override;
 		virtual void Kick(std::vector<std::string> const & names) override;
@@ -114,19 +114,19 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 	}
 
 	// Out in the lobby the list is everyone chatting; inside a game it is the players, each
-	// row carrying its colour, its side's emblem and the marker for the host or for an
+	// row carrying its color, its side's emblem and the marker for the host or for an
 	// accepted player, which is what the columned list box drew.
 	state.Players.clear();
 	if (state.Kind == UI_NET_LOBBY_GAMES && Net2CurrentGame() == 0) {
 		UINetPlayerRow row;
 		row.Name = Session.Handle;
-		row.Colour = UI_NET_PLAIN;
+		row.Color = UI_NET_PLAIN;
 		state.Players.push_back(row);
 
 		for (int index = 1; index < Session.Chat.Count(); index++) {
 			UINetPlayerRow other;
 			other.Name = Session.Chat[index]->Name;
-			other.Colour = UI_NET_PLAIN;
+			other.Color = UI_NET_PLAIN;
 			state.Players.push_back(other);
 		}
 	} else {
@@ -135,7 +135,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 
 			UINetPlayerRow row;
 			row.Name = who->Name;
-			row.Colour = UI_Color_Text(PlayerColorTable[who->Player.Color]);
+			row.Color = UI_Color_Text(PlayerColorTable[who->Player.Color]);
 
 			// Only two emblems ship, so every side past the first borrows the second's.
 			int country = who->Player.House;
@@ -166,7 +166,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 	for (NetChatLineType const & line : Net2_Chat_Log()) {
 		UINetChatLine copy;
 		copy.Text = line.Text;
-		copy.Colour = (line.Color == -1) ? UI_NET_PLAIN : UI_Color_Text((COLORREF)line.Color);
+		copy.Color = (line.Color == -1) ? UI_NET_PLAIN : UI_Color_Text((COLORREF)line.Color);
 		state.Chat.push_back(copy);
 	}
 
@@ -187,16 +187,16 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 		state.Sides.push_back(option);
 	}
 
-	int const palette = (int)(sizeof(UI_NET_COLOURS) / sizeof(UI_NET_COLOURS[0]));
-	state.Colours.clear();
+	int const palette = (int)(sizeof(UI_NET_COLORS) / sizeof(UI_NET_COLORS[0]));
+	state.Colors.clear();
 	for (int index = 0; index < MAX_MPLAYER_COLORS && index < palette; index++) {
 		UINetOption option;
-		option.Label = Fetch_String(UI_NET_COLOURS[index]);
+		option.Label = Fetch_String(UI_NET_COLORS[index]);
 		option.Value = index;
-		option.Colour = UI_Color_Text(PlayerColorTable[index]);
-		state.Colours.push_back(option);
+		option.Color = UI_Color_Text(PlayerColorTable[index]);
+		state.Colors.push_back(option);
 	}
-	state.Colour = (Session.ColorIdx >= 0 && Session.ColorIdx < (int)state.Colours.size()) ? Session.ColorIdx : 0;
+	state.Color = (Session.ColorIdx >= 0 && Session.ColorIdx < (int)state.Colors.size()) ? Session.ColorIdx : 0;
 
 	state.MapName = Session.Options.ScenarioDescription;
 	UI_Map_Preview_Image(state.Preview);
@@ -271,14 +271,14 @@ void UINetLobbyEngineServiceClass::Set_Side(int index)
 }
 
 
-void UINetLobbyEngineServiceClass::Set_Colour(int index)
+void UINetLobbyEngineServiceClass::Set_Color(int index)
 {
 	if (index < 0 || index >= MAX_MPLAYER_COLORS) {
 		return;
 	}
 
 	if (Net2LobbyPhase == NET2_LOBBY_HOST) {
-		Net2Host_Take_Colour(index);
+		Net2Host_Take_Color(index);
 	} else {
 		Session.PrefColor = index;
 		Net2Request_House_And_Color(Session.House, index);

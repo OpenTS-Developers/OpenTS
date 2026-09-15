@@ -79,7 +79,7 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		virtual Rml::FontEffectsHandle PrepareFontEffects(Rml::FontFaceHandle handle, Rml::FontEffectList const & effects) override;
 		virtual Rml::FontMetrics const & GetFontMetrics(Rml::FontFaceHandle handle) override;
 		virtual int GetStringWidth(Rml::FontFaceHandle handle, Rml::StringView string, Rml::TextShapingContext const & shaping, Rml::Character prior) override;
-		virtual int GenerateString(Rml::RenderManager & manager, Rml::FontFaceHandle handle, Rml::FontEffectsHandle effects, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied colour, float opacity, Rml::TextShapingContext const & shaping, Rml::TexturedMeshList & meshes) override;
+		virtual int GenerateString(Rml::RenderManager & manager, Rml::FontFaceHandle handle, Rml::FontEffectsHandle effects, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied color, float opacity, Rml::TextShapingContext const & shaping, Rml::TexturedMeshList & meshes) override;
 		virtual int GetVersion(Rml::FontFaceHandle handle) override;
 		virtual void ReleaseFontResources(void) override;
 

@@ -97,8 +97,8 @@ class UIDesyncViewClass : public UIRmlViewClass
 				float width = Data.State.Countdown;
 				width = (width < 0.0f) ? 0.0f : ((width > 1.0f) ? 1.0f : width);
 				bar->SetProperty("width", std::to_string((int)(width * 100.0f)) + "%");
-				if (!Data.State.CountdownColour.empty()) {
-					bar->SetProperty("background-color", Data.State.CountdownColour);
+				if (!Data.State.CountdownColor.empty()) {
+					bar->SetProperty("background-color", Data.State.CountdownColor);
 				}
 			}
 		}
@@ -112,7 +112,7 @@ class UIDesyncViewClass : public UIRmlViewClass
 			}
 			row.RegisterMember("name", &UIDesyncPlayerRow::Name);
 			row.RegisterMember("status", &UIDesyncPlayerRow::Status);
-			row.RegisterMember("colour", &UIDesyncPlayerRow::Colour);
+			row.RegisterMember("color", &UIDesyncPlayerRow::Color);
 			row.RegisterMember("mark", &UIDesyncPlayerRow::Mark);
 
 			UIDesyncState & state = Data.State;

@@ -5,10 +5,10 @@
  *
  * Every length is in dp, so a screen keeps its proportion to the game frame at any window
  * size. The numbers are the originals' pixel values, which is what they come to at 1:1.
- * The colours are the originals' after their trip through the game's 16-bit frame, five
+ * The colors are the originals' after their trip through the game's 16-bit frame, five
  * bits of red and blue and six of green widened again by repeating their top bits, which
  * is what the game shows; the art goes through the same in the loader, and text does after
- * its remap, so the text colour here is the one the remap is aimed at, not its result.
+ * its remap, so the text color here is the one the remap is aimed at, not its result.
  *
  * The art is the player's own and is not shipped. Where a picture is missing it draws as
  * nothing, so each control is given a plain form underneath that stays usable without it.
@@ -41,7 +41,7 @@ div, form, h1, h2, p
 }
 
 /*
- * The band a dialog opens through. It stays centred as it widens, so the chrome inside it
+ * The band a dialog opens through. It stays centered as it widens, so the chrome inside it
  * has to be placed against the screen rather than against the band: half the band across,
  * then back by half the dialog, which comes to the same place whatever the band's width.
  * Positioned so a screen can take the top edge the game hands it.
@@ -66,13 +66,13 @@ div, form, h1, h2, p
 }
 
 /*
- * The wallpaper is one 640 by 400 picture centred on the screen, and a dialog shows the part
+ * The wallpaper is one 640 by 400 picture centered on the screen, and a dialog shows the part
  * of it that lies behind the dialog, so it lines up with whatever the menu behind is drawing;
  * a dialog reaching past the picture is black there. It scales with the frame like the rest
  * of the kit: the original drew it at the size it was painted because it drew everything so.
  *
  * It hangs off the middle of the dialog, which is the middle of the screen for any dialog
- * the shell centres; a screen that moves itself elsewhere moves the picture back by as much.
+ * the shell centers; a screen that moves itself elsewhere moves the picture back by as much.
  * Since it is larger than most dialogs it is held in a box of the dialog's own size that
  * cuts it off, and that box sits behind everything else the dialog draws: a positioned
  * element otherwise paints over the controls rather than behind them. The box is told to
@@ -216,15 +216,15 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
  * A button is a picture in three parts at one of two heights: a cap either side, seven wide
  * on the left and ten on the right, and a middle the layer drew from the left cap's end to
  * three short of the right edge, under the right cap. The middle is the tile's own middle:
- * the layer sampled the tile from its centre when that run was narrower than the tile, so
+ * the layer sampled the tile from its center when that run was narrower than the tile, so
  * the left cap's width is the box's left border, the three columns the run stops short of
- * are its right border, the run is its padding box, and the tile is centred there and cut
+ * are its right border, the run is its padding box, and the tile is centered there and cut
  * off at either side; a button whose run is wider than the tile carries the class wide and
  * repeats it from the left instead. The original draws no outline around one, so the plain
  * form underneath is a fill the picture covers rather than a border that would show
  * through it.
  *
- * The caption is centred in a box two narrower than the skin, three down from the top of a
+ * The caption is centered in a box two narrower than the skin, three down from the top of a
  * short button and six down from a tall one, and a pixel left of the middle when the room
  * is odd: the layer halves the room in whole pixels where the toolkit rounds a half up, so
  * the box here is a pixel narrower still, which brings the two to the same place. Pressing
@@ -416,7 +416,7 @@ label.check.disabled, label.check:disabled
 
 /*
  * The two places a static sits: the caption before a control and the reading after it. The
- * dialog layer draws a static on one line and never centres it in its box, so neither wraps
+ * dialog layer draws a static on one line and never centers it in its box, so neither wraps
  * however little room its text is given.
  */
 .caption, .value
@@ -559,7 +559,7 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * closes over the field's first column, because the field is drawn before it, which is why
  * the field is put after the bar in the same row and sorted under it. The picture is fifty
  * by twenty-four whatever the template's height: the middle of its tile with the two ends
- * over it, kept to the fifty, and the number centred in the forty-nine from one in. The
+ * over it, kept to the fifty, and the number centered in the forty-nine from one in. The
  * layer also darkens the ground under a bar a column past its right edge and a row past its
  * bottom. A bar tall enough for that to reach below the picture shows the rows under it, so
  * the field's own box carries them; the column beside it never falls under the picture, and
@@ -612,7 +612,7 @@ input[type='range']:disabled sliderbar
 
 /*
  * The room left over around the reading is halved in whole pixels by the layer where the
- * toolkit rounds a half up, so the box it is centred in is a pixel narrower than the
+ * toolkit rounds a half up, so the box it is centered in is a pixel narrower than the
  * forty-nine, and the right end is hung off the field rather than off that box, which keeps
  * it where the layer drew it. A screen whose bar is shorter than the picture gives the field
  * the picture's height and takes the rows the bar's own rect leaves out of the reading's box;
@@ -674,7 +674,7 @@ input[type='range']:disabled sliderbar
 
 /*
  * The progress bar the original fills in red, solid across the middle of its height with the
- * outer quarters ramping away. The element carries its own fill, which is what is coloured.
+ * outer quarters ramping away. The element carries its own fill, which is what is colored.
  */
 progress
 {
@@ -863,7 +863,7 @@ surface
 
 /*
  * Text the layer draws from its own sheets comes out at this shade when it asks for the
- * disabled grey, because the sheet's glyphs are shaded rather than flat.
+ * disabled gray, because the sheet's glyphs are shaded rather than flat.
  */
 .disabled
 {

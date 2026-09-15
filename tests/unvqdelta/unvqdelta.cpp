@@ -7,7 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Holds the VQ delta and colour mode 4 block decoders in vqalib/unvq.cpp to the frame they
+// Holds the VQ delta and color mode 4 block decoders in vqalib/unvq.cpp to the frame they
 // decode on the supported Win32 target. The recorded hashes in unvqdeltagolden.h were taken
 // from that target, so a build for another architecture that walks its destination pointer
 // differently fails here rather than in a movie. Needs no game data.
@@ -19,7 +19,7 @@
 
 #include "vqalib/unvq.h"
 
-// _vqa.h owns the declaration of the colour table the table decoders read through.
+// _vqa.h owns the declaration of the color table the table decoders read through.
 #include "_vqa.h"
 #include "unvqtblc.h"
 
@@ -159,7 +159,7 @@ bool Margin_Intact(int span)
 
 
 /*
- * The table decoders look a solid block's colour up rather than writing it straight out, so
+ * The table decoders look a solid block's color up rather than writing it straight out, so
  * the harness supplies its own table instead of the display dependent one the engine builds.
  */
 unsigned short HicolorStore[65536];

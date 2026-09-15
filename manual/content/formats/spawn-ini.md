@@ -221,8 +221,8 @@ ending movie `PlayMoviesInMultiplayer` asked for still plays. The map's own
 the game would have picked for the player's side and screen size. The name is written
 whole, extension and all, and is looked for as any other game file is: beside the game, in
 the folders a deployment sorts its files into, and inside the archives. A forward slash
-separates folders as a backslash does. The picture is a PCX, in 256 colours or in 24-bit
-colour, and is centred on the screen. A name no file answers to leaves the game's own
+separates folders as a backslash does. The picture is a PCX, in 256 colors or in 24-bit
+color, and is centered on the screen. A name no file answers to leaves the game's own
 picture in place and says so in the log.
 
 `CustomLoadScreenPos` places the loading bars, as `x,y` within the picture rather than on

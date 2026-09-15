@@ -147,7 +147,7 @@ void Build_Layer(unsigned int seed, int columns, int zsize, bool withnormals)
 			VoxelData[at++] = (unsigned char)run;
 
 			/*
-			 * A voxel is a colour and a normal for the drawers that shade, and a colour
+			 * A voxel is a color and a normal for the drawers that shade, and a color
 			 * on its own for the two that do not.
 			 */
 			for (int v = 0; v < run; v++) {

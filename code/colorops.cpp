@@ -18,7 +18,7 @@
 namespace {
 
 /*
- * How one hicolor layout packs a colour. The mask keeps the bits a channel is allowed to
+ * How one hicolor layout packs a color. The mask keeps the bits a channel is allowed to
  * carry, and the shift moves them into place; red and green shift up, blue shifts down.
  */
 struct PackFormat {

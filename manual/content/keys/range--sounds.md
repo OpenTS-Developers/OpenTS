@@ -8,7 +8,7 @@ when_omitted:
   value: "28"
 ---
 
-How far from the view a sound played at a place in the world is still heard, in cells of forty-eight pixels. The loudness falls in a straight line from full at the edge of the view to silence at this distance beyond it, with vertical distance counting double because the view is wider than it is tall; below five percent the sound is not started at all. With `LOCAL` in the sound's [`Type=`](/keys/type/) the distance runs from the centre of the view, and with `GLOBAL` the fall stops at [`MinVolume=`](/keys/minvolume/).
+How far from the view a sound played at a place in the world is still heard, in cells of forty-eight pixels. The loudness falls in a straight line from full at the edge of the view to silence at this distance beyond it, with vertical distance counting double because the view is wider than it is tall; below five percent the sound is not started at all. With `LOCAL` in the sound's [`Type=`](/keys/type/) the distance runs from the center of the view, and with `GLOBAL` the fall stops at [`MinVolume=`](/keys/minvolume/).
 
 ```ini title="sound01.ini"
 [GUN5]

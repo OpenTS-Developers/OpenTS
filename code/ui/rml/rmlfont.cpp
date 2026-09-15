@@ -70,10 +70,10 @@ class UISheetFaceClass
 			return((int)(width + 0.5f));
 		}
 
-		int Generate(Rml::RenderManager & manager, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied colour, Rml::TexturedMeshList & meshes)
+		int Generate(Rml::RenderManager & manager, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied color, Rml::TexturedMeshList & meshes)
 		{
 			meshes.resize(1);
-			meshes[0].texture = Atlas(manager, colour);
+			meshes[0].texture = Atlas(manager, color);
 
 			Rml::Mesh & mesh = meshes[0].mesh;
 			Rml::Vector2f sheet((float)Index.Width, (float)Index.Height);
@@ -81,7 +81,7 @@ class UISheetFaceClass
 
 			// The atlas already carries the color, so the vertices carry only how opaque
 			// the text is.
-			Rml::ColourbPremultiplied opacity(colour.alpha, colour.alpha, colour.alpha, colour.alpha);
+			Rml::ColourbPremultiplied opacity(color.alpha, color.alpha, color.alpha, color.alpha);
 
 			// The pen starts one pixel left of the text, as the dialog layer starts it, and
 			// a cell hangs above the baseline by its glyph and the blank row over it.
@@ -121,14 +121,14 @@ class UISheetFaceClass
 
 		// An atlas per color, because a shaded glyph cannot be tinted. The dialogs use a
 		// handful of colors, so this never grows far.
-		Rml::Texture Atlas(Rml::RenderManager & manager, Rml::ColourbPremultiplied colour)
+		Rml::Texture Atlas(Rml::RenderManager & manager, Rml::ColourbPremultiplied color)
 		{
 			// RmlUi hands the color with the opacity already multiplied in; the atlas wants
 			// the color the document asked for.
-			int alpha = colour.alpha;
-			std::uint8_t red = (std::uint8_t)(alpha > 0 ? std::min(255, colour.red * 255 / alpha) : 255);
-			std::uint8_t green = (std::uint8_t)(alpha > 0 ? std::min(255, colour.green * 255 / alpha) : 255);
-			std::uint8_t blue = (std::uint8_t)(alpha > 0 ? std::min(255, colour.blue * 255 / alpha) : 255);
+			int alpha = color.alpha;
+			std::uint8_t red = (std::uint8_t)(alpha > 0 ? std::min(255, color.red * 255 / alpha) : 255);
+			std::uint8_t green = (std::uint8_t)(alpha > 0 ? std::min(255, color.green * 255 / alpha) : 255);
+			std::uint8_t blue = (std::uint8_t)(alpha > 0 ? std::min(255, color.blue * 255 / alpha) : 255);
 
 			std::uint32_t key = ((std::uint32_t)red << 16) | ((std::uint32_t)green << 8) | blue;
 			std::unordered_map<std::uint32_t, Rml::CallbackTexture>::iterator found = Atlases.find(key);
@@ -221,7 +221,7 @@ class UIRasterFaceClass
 			return((int)(width + 0.5f));
 		}
 
-		int Generate(Rml::RenderManager & manager, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied colour, Rml::TexturedMeshList & meshes)
+		int Generate(Rml::RenderManager & manager, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied color, Rml::TexturedMeshList & meshes)
 		{
 			meshes.resize(1);
 			meshes[0].texture = Atlas(manager);
@@ -248,7 +248,7 @@ class UIRasterFaceClass
 					Rml::Vector2f topleft(x / atlas, y / rows);
 					Rml::Vector2f bottomright((x + advance) / atlas, (y + Strike.Height) / rows);
 					Rml::Vector2f size(advance * Scale, Strike.Height * Scale);
-					Rml::MeshUtilities::GenerateQuad(mesh, Rml::Vector2f(pen, top), size, colour, topleft, bottomright);
+					Rml::MeshUtilities::GenerateQuad(mesh, Rml::Vector2f(pen, top), size, color, topleft, bottomright);
 				}
 
 				pen += advance * Scale;
@@ -617,17 +617,17 @@ int UIFontEngineClass::GetStringWidth(Rml::FontFaceHandle handle, Rml::StringVie
 }
 
 
-int UIFontEngineClass::GenerateString(Rml::RenderManager & manager, Rml::FontFaceHandle handle, Rml::FontEffectsHandle effects, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied colour, float opacity, Rml::TextShapingContext const & shaping, Rml::TexturedMeshList & meshes)
+int UIFontEngineClass::GenerateString(Rml::RenderManager & manager, Rml::FontFaceHandle handle, Rml::FontEffectsHandle effects, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied color, float opacity, Rml::TextShapingContext const & shaping, Rml::TexturedMeshList & meshes)
 {
 	UISheetFaceClass * face = Find_Face(handle);
 	if (face != nullptr) {
-		return(face->Generate(manager, string, position, colour, meshes));
+		return(face->Generate(manager, string, position, color, meshes));
 	}
 	UIRasterFaceClass * strike = Find_Raster_Face(handle);
 	if (strike != nullptr) {
-		return(strike->Generate(manager, string, position, colour, meshes));
+		return(strike->Generate(manager, string, position, color, meshes));
 	}
-	return(Fallback != nullptr ? Fallback->GenerateString(manager, handle, effects, string, position, colour, opacity, shaping, meshes) : 0);
+	return(Fallback != nullptr ? Fallback->GenerateString(manager, handle, effects, string, position, color, opacity, shaping, meshes) : 0);
 }
 
 

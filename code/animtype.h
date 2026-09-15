@@ -375,7 +375,7 @@ class AnimTypeClass : public ObjectTypeClass
 		/*
 		**	If this animation should be rendered in a translucent fashion, this flag
 		**	will be true. Translucent colors are some of the reds and some of the
-		**	greys. Typically, smoke and some fire effects have this flag set.
+		**	grays. Typically, smoke and some fire effects have this flag set.
 		*/
 		bool IsTranslucent;
 

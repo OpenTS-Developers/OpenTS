@@ -43,9 +43,9 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 		if (intent.Value >= 0 && intent.Value < (int)State.Sides.size()) {
 			State.Side = intent.Value;
 		}
-	} else if (intent.Name == "colour") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Colours.size()) {
-			State.Colour = intent.Value;
+	} else if (intent.Name == "color") {
+		if (intent.Value >= 0 && intent.Value < (int)State.Colors.size()) {
+			State.Color = intent.Value;
 		}
 	} else if (intent.Name == "bases") {
 		State.Bases = intent.Value != 0;
@@ -128,7 +128,7 @@ class UISkirmishViewClass : public UIRmlViewClass
 		{
 			Model.DirtyVariable("handle");
 			Model.DirtyVariable("side");
-			Model.DirtyVariable("colour");
+			Model.DirtyVariable("color");
 			Model.DirtyVariable("bases");
 			Model.DirtyVariable("crates");
 			Model.DirtyVariable("fog");
@@ -155,15 +155,15 @@ class UISkirmishViewClass : public UIRmlViewClass
 			}
 			option.RegisterMember("label", &UISkirmishOption::Label);
 			option.RegisterMember("value", &UISkirmishOption::Value);
-			option.RegisterMember("colour", &UISkirmishOption::Colour);
+			option.RegisterMember("color", &UISkirmishOption::Color);
 
 			UISkirmishState & state = Data.State;
 			return(model.RegisterArray<std::vector<UISkirmishOption>>()
 				&& model.Bind("handle", &state.Handle)
 				&& model.Bind("sides", &state.Sides)
 				&& model.Bind("side", &state.Side)
-				&& model.Bind("colours", &state.Colours)
-				&& model.Bind("colour", &state.Colour)
+				&& model.Bind("colors", &state.Colors)
+				&& model.Bind("color", &state.Color)
 				&& model.Bind("mapname", &state.MapName)
 				&& model.Bind("bases", &state.Bases)
 				&& model.Bind("crates", &state.Crates)

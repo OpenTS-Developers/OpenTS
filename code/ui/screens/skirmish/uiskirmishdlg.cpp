@@ -41,8 +41,8 @@
 // The least a skirmish can be played for, as the Win32 dialog's own constant has it.
 static int const UI_SKIRMISH_MIN_MONEY = 2500;
 
-// The colours a player may wear, in the order the dialog lists them.
-static int const UI_SKIRMISH_COLOURS[] = {
+// The colors a player may wear, in the order the dialog lists them.
+static int const UI_SKIRMISH_COLORS[] = {
 	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
 };
 
@@ -67,7 +67,7 @@ static void Refresh_Preview(void)
 }
 
 
-// The handle, side and colour, which the Win32 dialog kept whether the player started or not.
+// The handle, side and color, which the Win32 dialog kept whether the player started or not.
 static void Remember_Preferences(UISkirmishState const & state)
 {
 	std::strncpy(Session.Handle, state.Handle.c_str(), sizeof(Session.Handle) - 1);
@@ -77,8 +77,8 @@ static void Remember_Preferences(UISkirmishState const & state)
 		Session.House = state.Sides[state.Side].Value;
 	}
 
-	Session.ColorIdx = state.Colour;
-	Session.PrefColor = state.Colour;
+	Session.ColorIdx = state.Color;
+	Session.PrefColor = state.Color;
 }
 
 
@@ -158,16 +158,16 @@ void UI_Skirmish_State(UISkirmishState & state)
 		state.Sides.push_back(option);
 	}
 
-	int const palette = (int)(sizeof(UI_SKIRMISH_COLOURS) / sizeof(UI_SKIRMISH_COLOURS[0]));
-	state.Colours.clear();
+	int const palette = (int)(sizeof(UI_SKIRMISH_COLORS) / sizeof(UI_SKIRMISH_COLORS[0]));
+	state.Colors.clear();
 	for (int index = 0; index < MAX_PLAYERS && index < palette; index++) {
 		UISkirmishOption option;
-		option.Label = Fetch_String(UI_SKIRMISH_COLOURS[index]);
+		option.Label = Fetch_String(UI_SKIRMISH_COLORS[index]);
 		option.Value = index;
-		option.Colour = UI_Color_Text(PlayerColorTable[index]);
-		state.Colours.push_back(option);
+		option.Color = UI_Color_Text(PlayerColorTable[index]);
+		state.Colors.push_back(option);
 	}
-	state.Colour = (Session.PrefColor >= 0 && Session.PrefColor < (int)state.Colours.size()) ? Session.PrefColor : 0;
+	state.Color = (Session.PrefColor >= 0 && Session.PrefColor < (int)state.Colors.size()) ? Session.PrefColor : 0;
 
 	state.UnitCountMin = SessionClass::CountMin[1];
 	state.UnitCountMax = SessionClass::CountMax[1];

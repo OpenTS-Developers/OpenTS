@@ -46,7 +46,7 @@ class DesyncDialogClass
 		bool Load_Is_Allowed(void) const;
 		std::string Countdown_Caption(void) const;
 		float Countdown_Left(void) const;
-		char const * Countdown_Colour(void) const;
+		char const * Countdown_Color(void) const;
 		void Say(char const * text);
 
 		// One pass of the loop the screen runs in, for its runner to call. True once the outcome

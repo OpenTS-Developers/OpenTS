@@ -21,7 +21,7 @@
 
 /*
  * A caption is drawn from the top of its box, however tall the template makes the box, and a
- * centred one a pixel left of the middle when the room is odd: the layer halves the room in
+ * centered one a pixel left of the middle when the room is odd: the layer halves the room in
  * whole pixels where the toolkit rounds a half up, so the box is padded a pixel on the right.
  */
 .heading

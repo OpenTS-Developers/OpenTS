@@ -78,8 +78,8 @@ class UIReconnectViewClass : public UIRmlViewClass
 				float filled = player.Filled;
 				filled = (filled < 0.0f) ? 0.0f : ((filled > 1.0f) ? 1.0f : filled);
 				bar->SetProperty("width", std::to_string((int)(filled * 100.0f)) + "%");
-				if (!player.Colour.empty()) {
-					bar->SetProperty("background-color", player.Colour);
+				if (!player.Color.empty()) {
+					bar->SetProperty("background-color", player.Color);
 				}
 			}
 		}

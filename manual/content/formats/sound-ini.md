@@ -85,7 +85,7 @@ The flag values follow Yuri's Revenge, so its documentation of `Type=` and `Cont
 `Type=` flags:
 
 - `NORMAL` or `SCREEN`: the sound fades with the distance of its place from the edge of the view, vertical distance counting double, and is panned by where that place is across the view.
-- `LOCAL`: as `SCREEN`, but measured from the centre of the view.
+- `LOCAL`: as `SCREEN`, but measured from the center of the view.
 - `GLOBAL`: the fade stops at `MinVolume=`.
 - `SHROUD` or `UNSHROUDED`: silent unless the cell of its place has been revealed.
 - `SHROUDED`: silent unless the cell of its place is still unrevealed.

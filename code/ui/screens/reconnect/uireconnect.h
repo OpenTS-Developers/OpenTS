@@ -19,12 +19,12 @@ class UIViewClass;
 
 
 // One player the game is waiting on: their name, how much of their bar is still filled, and
-// the colour it has turned as the wait drags on.
+// the color it has turned as the wait drags on.
 struct UIReconnectPlayer
 {
 	std::string Name;
 	float Filled = 1.0f;
-	std::string Colour;
+	std::string Color;
 };
 
 

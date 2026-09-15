@@ -30,7 +30,7 @@
 #include <utility>
 
 
-// The chooser sits where the main menu's buttons were: a 400 pixel layout centred in the
+// The chooser sits where the main menu's buttons were: a 400 pixel layout centered in the
 // frame, with the buttons 147 pixels down it.
 void UI_Campaign_State(UICampaignState & state)
 {

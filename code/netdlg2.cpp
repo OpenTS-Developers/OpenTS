@@ -204,19 +204,19 @@ void Net2Select_Game(int index)
 
 
 /// <summary>
-/// Gives the host the colour it asked for, or the nearest free one.
+/// Gives the host the color it asked for, or the nearest free one.
 /// </summary>
-/// <remarks>A colour another player already wears is refused with a message, and the host
-/// keeps the nearest colour free of the one it had.</remarks>
-void Net2Host_Take_Colour(int colour)
+/// <remarks>A color another player already wears is refused with a message, and the host
+/// keeps the nearest color free of the one it had.</remarks>
+void Net2Host_Take_Color(int color)
 {
 	int old_color = Session.ColorIdx;
 
-	Session.ColorIdx = colour;
-	Session.PrefColor = colour;
+	Session.ColorIdx = color;
+	Session.PrefColor = color;
 
-	int resolved = Net2FirstFreeColor(colour, 0);
-	if (resolved != colour) {
+	int resolved = Net2FirstFreeColor(color, 0);
+	if (resolved != color) {
 		PMessagePrintf(ColorSystem, Fetch_String(TXT_COLOR_IN_USE));
 		resolved = Net2FirstFreeColor(old_color, 0);
 	}
@@ -231,14 +231,14 @@ void Net2Host_Take_Colour(int colour)
 
 
 /// <summary>
-/// Asks the host for a country and a colour. The host answers by publishing what it gave.
+/// Asks the host for a country and a color. The host answers by publishing what it gave.
 /// </summary>
-void Net2Request_House_And_Color(int house, int colour)
+void Net2Request_House_And_Color(int house, int color)
 {
-	Session.PrefColor = colour;
+	Session.PrefColor = color;
 
 	char options[64];
-	sprintf(options, "R%d,%d", house, colour);
+	sprintf(options, "R%d,%d", house, color);
 	SendPrivateGameopts(Session.GameName, options);
 }
 
@@ -402,7 +402,7 @@ static void Net2_Enter_Lobby(Net2LobbyPhaseType phase)
 				Session.Players[0]->Player.House = Session.House;
 			}
 			PumpGameopts(1, 0);
-			Net2Host_Take_Colour(Session.ColorIdx);
+			Net2Host_Take_Color(Session.ColorIdx);
 			break;
 
 		case NET2_LOBBY_GUEST: {

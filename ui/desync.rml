@@ -12,7 +12,7 @@
 		<div class="item" data-for="row : players">
 			<span class="cell-mark"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
 			<span class="cell-name">{{row.name}}</span>
-			<span class="cell-status" data-style-color="row.colour">{{row.status}}</span>
+			<span class="cell-status" data-style-color="row.color">{{row.status}}</span>
 		</div>
 	</div></div>
 

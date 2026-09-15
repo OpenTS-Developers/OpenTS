@@ -167,7 +167,7 @@ static void ODCacheImages(void)
 
 
 /// <summary>
-/// Sets the colours up, builds the blend masks and loads the art. Later calls do nothing, so
+/// Sets the colors up, builds the blend masks and loads the art. Later calls do nothing, so
 /// anything drawing with them may ask for them.
 /// </summary>
 void OwnerDraw::Prepare_Resources(void)

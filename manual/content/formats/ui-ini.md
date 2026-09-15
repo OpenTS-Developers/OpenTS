@@ -32,7 +32,7 @@ MovementLineColor=0,255,0
 NavComQueueLineThick=yes
 ```
 
-A colour is three values from 0 to 255 for red, green and blue, separated by commas; a value that is not three numbers keeps the default. [Action lines](/systems/action-lines/) explains what each line is and when it is drawn.
+A color is three values from 0 to 255 for red, green and blue, separated by commas; a value that is not three numbers keeps the default. [Action lines](/systems/action-lines/) explains what each line is and when it is drawn.
 
 ## When the file is read
 

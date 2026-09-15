@@ -105,7 +105,7 @@ class UIMessageBoxViewClass : public UIRmlViewClass
 		}
 
 		// Two buttons take the outer places and three take all of them, which the row's own
-		// spacing gives; a lone button is the one case the row has to centre instead.
+		// spacing gives; a lone button is the one case the row has to center instead.
 		virtual void Loaded(void) override
 		{
 			Rml::Element * buttons = Document()->GetElementById("buttons");

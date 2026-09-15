@@ -8,7 +8,7 @@
 	<span class="caption" id="cap-name">Your Name:</span>
 	<input type="text" id="handle" maxlength="16" data-value="handle" data-event-change="queue('handle', 0, ev.value)"/>
 	<div id="chat" class="list"><div class="rows">
-		<p class="line" data-for="line : chat" data-style-color="line.colour">{{line.text}}</p>
+		<p class="line" data-for="line : chat" data-style-color="line.color">{{line.text}}</p>
 	</div></div>
 	<input type="text" id="say" maxlength="255" data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
 	<span class="caption" id="cap-games">Games:</span>

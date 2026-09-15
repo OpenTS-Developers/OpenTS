@@ -122,7 +122,7 @@ unsigned Aud_Decode(void const * data, size_t size, int16_t * output, unsigned c
 bool Aud_Decode_Westwood(void const * source, unsigned compsize, unsigned char * dest, unsigned uncompsize);
 
 // Decodes any format miniaudio supports from memory. Returns false for data it
-// does not recognise.
+// does not recognize.
 bool Audio_Decode_Other(void const * data, size_t size, std::vector<int16_t> & output, AudioPcmFormat & format);
 
 

@@ -149,7 +149,7 @@
 #preview { position: absolute; left: -1dp; top: -1dp; width: 296dp; height: 219dp; }
 
 /*
- * The caption is centred in a box a pixel narrower than the layer's, which halves the room
+ * The caption is centered in a box a pixel narrower than the layer's, which halves the room
  * around it in whole pixels where the toolkit rounds a half up, so both put it in the same
  * column. Its box is a pixel left of where the factor puts it, as the layer draws it.
  */

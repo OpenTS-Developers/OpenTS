@@ -155,7 +155,7 @@ int main(void)
 		Checked++;
 	}
 
-	std::printf("%-52s %s\n", "Colour tinting and brightening match the assembly", Failures == 0 ? "ok" : "FAILED");
+	std::printf("%-52s %s\n", "Color tinting and brightening match the assembly", Failures == 0 ? "ok" : "FAILED");
 	std::printf("checked %d cases, %d mismatches\n", Checked, Failures);
 
 	return(Failures == 0 ? 0 : 1);

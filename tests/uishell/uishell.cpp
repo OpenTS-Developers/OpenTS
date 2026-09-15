@@ -2370,8 +2370,8 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 		Check(ordered, "the buttons run Game Settings, Display, Sound, Keyboard, Main Menu from the top");
 
 		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
-		float centre = (float)context.GetDimensions().y * 0.5f;
-		Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y < centre && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize(Rml::BoxArea::Border).y > centre, "without a top edge the menu sits in the middle");
+		float center = (float)context.GetDimensions().y * 0.5f;
+		Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y < center && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize(Rml::BoxArea::Border).y > center, "without a top edge the menu sits in the middle");
 
 		// The wallpaper is larger than the menu and cut off at its edges, which shows as a
 		// scissor the size of the menu while the picture draws.
@@ -2618,14 +2618,14 @@ class RecordingNetServiceClass : public UINetLobbyServiceClass
 			state.Players = Model.Players;
 			state.Chat = Model.Chat;
 			state.Sides = Model.Sides;
-			state.Colours = Model.Colours;
+			state.Colors = Model.Colors;
 		}
 
 		virtual void Set_Handle(char const *) override {}
 		virtual void Select_Game(int index) override { Games++; LastGame = index; }
 		virtual void Say(char const * text) override { Said.push_back(text); }
 		virtual void Set_Side(int) override {}
-		virtual void Set_Colour(int) override {}
+		virtual void Set_Color(int) override {}
 		virtual void Set_Switch(UINetSwitch which, bool) override { Switches.push_back((int)which); }
 		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
 		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }
@@ -2637,7 +2637,7 @@ static UINetPlayerRow Net_Player(char const * name)
 {
 	UINetPlayerRow row;
 	row.Name = name;
-	row.Colour = "#ffd800";
+	row.Color = "#ffd800";
 	row.House = "gdii.pcx";
 	row.Hint = "GDI";
 	return(row);
@@ -2718,10 +2718,10 @@ void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass 
 	UINetOption side;
 	side.Label = "GDI";
 	service.Model.Sides.push_back(side);
-	UINetOption colour;
-	colour.Label = "Gold";
-	colour.Colour = "#ffd800";
-	service.Model.Colours.push_back(colour);
+	UINetOption color;
+	color.Label = "Gold";
+	color.Color = "#ffd800";
+	service.Model.Colors.push_back(color);
 
 	UINetLobbyState state = service.Model;
 	state.Bases = true;
@@ -2782,11 +2782,11 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		side.Value = index;
 		state.Sides.push_back(side);
 
-		UISkirmishOption colour;
-		colour.Label = index == 0 ? "Gold" : "Red";
-		colour.Value = index;
-		colour.Colour = index == 0 ? "#ffdf5a" : "#ff1818";
-		state.Colours.push_back(colour);
+		UISkirmishOption color;
+		color.Label = index == 0 ? "Gold" : "Red";
+		color.Value = index;
+		color.Color = index == 0 ? "#ffdf5a" : "#ff1818";
+		state.Colors.push_back(color);
 	}
 	state.MapName = "Grand Canyon (2-4)";
 	state.UnitCountMax = 10;
@@ -3112,14 +3112,14 @@ void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass 
 	int y = -1;
 	int width = -1;
 	int height = -1;
-	Check(UI_Surface_Fit(200, 100, 100, 100, x, y, width, height) && x == 0 && y == 25 && width == 100 && height == 50, "a wide picture fits the width of its box and centres down it");
-	Check(UI_Surface_Fit(100, 200, 100, 100, x, y, width, height) && x == 25 && y == 0 && width == 50 && height == 100, "a tall picture fits the height and centres across");
+	Check(UI_Surface_Fit(200, 100, 100, 100, x, y, width, height) && x == 0 && y == 25 && width == 100 && height == 50, "a wide picture fits the width of its box and centers down it");
+	Check(UI_Surface_Fit(100, 200, 100, 100, x, y, width, height) && x == 25 && y == 0 && width == 50 && height == 100, "a tall picture fits the height and centers across");
 	Check(UI_Surface_Fit(50, 50, 100, 100, x, y, width, height) && x == 0 && y == 0 && width == 100 && height == 100, "a picture in proportion with its box fills it");
 	Check(UI_Surface_Fit(3, 1, 10, 10, x, y, width, height) && x == 0 && y == 3 && width == 10 && height == 3, "a picture the box does not divide fills the side that runs out and centers on the other");
 	Check(!UI_Surface_Fit(0, 10, 100, 100, x, y, width, height) && width == 0 && height == 0, "a picture of nothing is not placed");
 
 	// Stretched by repeating and dropping whole pixels, as GDI did for the dialog layer, so
-	// a picture keeps the colours it was drawn in however large the room it is shown in.
+	// a picture keeps the colors it was drawn in however large the room it is shown in.
 	std::uint8_t const pair[8] = { 10, 20, 30, 255, 200, 210, 220, 255 };
 	std::vector<std::uint8_t> scaled;
 	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 4, 2, scaled)

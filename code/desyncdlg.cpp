@@ -126,9 +126,9 @@ float DesyncDialogClass::Countdown_Left(void) const
 
 
 /// <summary>
-/// The colour the bar is filled in, which turns as the wait runs out.
+/// The color the bar is filled in, which turns as the wait runs out.
 /// </summary>
-char const * DesyncDialogClass::Countdown_Colour(void) const
+char const * DesyncDialogClass::Countdown_Color(void) const
 {
 	int const total = (int)MultiplayerLoadClass::COUNTDOWN_MS;
 	int const remaining = std::clamp((int)SaveManager.MultiplayerLoad.Milliseconds_Left(Monotonic_Milliseconds()), 0, total);

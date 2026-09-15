@@ -239,7 +239,7 @@ class WDTTerritory {
 				 * These flags say which of the territory's settings the player is
 				 * left free to change before the battle begins. A setting whose flag
 				 * is clear is fixed by the tour, and its control in the map generator
-				 * and game option dialogs is greyed out.
+				 * and game option dialogs is grayed out.
 				 */
 				unsigned int UserModTimeTransitions : 1;
 				unsigned int UserModTiberiumCreatures : 1;

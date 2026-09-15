@@ -53,10 +53,10 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 			State.Side = intent.Value;
 			Service.Set_Side(State.Side);
 		}
-	} else if (intent.Name == "colour") {
-		if (intent.Value >= 0 && intent.Value < (int)State.Colours.size()) {
-			State.Colour = intent.Value;
-			Service.Set_Colour(State.Colour);
+	} else if (intent.Name == "color") {
+		if (intent.Value >= 0 && intent.Value < (int)State.Colors.size()) {
+			State.Color = intent.Value;
+			Service.Set_Color(State.Color);
 		}
 	} else if (intent.Name == "pick") {
 		if (intent.Value >= 0 && intent.Value < (int)State.Players.size()) {
@@ -272,11 +272,11 @@ class UINetLobbyViewClass : public UIRmlViewClass
 
 			option.RegisterMember("label", &UINetOption::Label);
 			option.RegisterMember("value", &UINetOption::Value);
-			option.RegisterMember("colour", &UINetOption::Colour);
+			option.RegisterMember("color", &UINetOption::Color);
 			line.RegisterMember("text", &UINetChatLine::Text);
-			line.RegisterMember("colour", &UINetChatLine::Colour);
+			line.RegisterMember("color", &UINetChatLine::Color);
 			row.RegisterMember("name", &UINetPlayerRow::Name);
-			row.RegisterMember("colour", &UINetPlayerRow::Colour);
+			row.RegisterMember("color", &UINetPlayerRow::Color);
 			row.RegisterMember("house", &UINetPlayerRow::House);
 			row.RegisterMember("hint", &UINetPlayerRow::Hint);
 			row.RegisterMember("mark", &UINetPlayerRow::Mark);
@@ -388,7 +388,7 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 			Sync_Shared();
 			Model.DirtyVariable("host");
 			Model.DirtyVariable("side");
-			Model.DirtyVariable("colour");
+			Model.DirtyVariable("color");
 			Model.DirtyVariable("mapname");
 			Model.DirtyVariable("bases");
 			Model.DirtyVariable("crates");
@@ -419,8 +419,8 @@ class UINetSetupViewClass : public UINetLobbyViewClass
 				&& model.Bind("host", &state.Host)
 				&& model.Bind("sides", &state.Sides)
 				&& model.Bind("side", &state.Side)
-				&& model.Bind("colours", &state.Colours)
-				&& model.Bind("colour", &state.Colour)
+				&& model.Bind("colors", &state.Colors)
+				&& model.Bind("color", &state.Color)
 				&& model.Bind("mapname", &state.MapName)
 				&& model.Bind("bases", &state.Bases)
 				&& model.Bind("crates", &state.Crates)

@@ -75,7 +75,7 @@ class UICampaignViewClass : public UIRmlViewClass
 		}
 
 		// The chooser sits where the main menu's buttons were, which takes the top the engine
-		// measured over the centred position the style sheet gives it.
+		// measured over the centered position the style sheet gives it.
 		virtual void Loaded(void) override
 		{
 			Rml::Element * dialog = Document()->GetElementById("reveal");

@@ -9,9 +9,9 @@
 	<select id="side" data-event-change="queue('side', ev.value)">
 		<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == side">{{entry.label}}</option>
 	</select>
-	<span class="caption" id="cap-colour">Your Color:</span>
-	<select id="colour" data-event-change="queue('colour', ev.value)">
-		<option data-for="entry : colours" data-attr-value="it_index" data-attrif-selected="it_index == colour" data-style-color="entry.colour">{{entry.label}}</option>
+	<span class="caption" id="cap-color">Your Color:</span>
+	<select id="color" data-event-change="queue('color', ev.value)">
+		<option data-for="entry : colors" data-attr-value="it_index" data-attrif-selected="it_index == color" data-style-color="entry.color">{{entry.label}}</option>
 	</select>
 
 	<button id="pick" data-if="host" data-event-click="queue('map')">Multiplayer Map</button>
@@ -23,7 +23,7 @@
 		<div class="item" data-for="row : players" data-class-selected="row.selected" data-event-click="queue('pick', it_index)">
 			<span class="cell-mark"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
 			<span class="cell-house"><img data-attr-src="row.house"/></span>
-			<span class="cell-name" data-style-color="row.colour">{{row.name}}</span>
+			<span class="cell-name" data-style-color="row.color">{{row.name}}</span>
 		</div>
 	</div></div>
 
@@ -49,7 +49,7 @@
 	</div>
 
 	<div id="chat" class="list"><div class="rows">
-		<p class="line" data-for="line : chat" data-style-color="line.colour">{{line.text}}</p>
+		<p class="line" data-for="line : chat" data-style-color="line.color">{{line.text}}</p>
 	</div></div>
 	<input type="text" id="say" maxlength="255" data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
 

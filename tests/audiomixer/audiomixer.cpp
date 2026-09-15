@@ -198,7 +198,7 @@ void Test_Level_And_Curve(void)
 	rig.Run(RATE / 2);
 	float rms = rig.Rms(1000, RATE / 2, 0);
 	Check(Near(rms, 0.5f / 1.41421f, 0.01f), "full level plays the sine at its own amplitude");
-	Check(Near(rig.Rms(1000, RATE / 2, 1), rms, 0.001f), "centre pan is equal in both channels");
+	Check(Near(rig.Rms(1000, RATE / 2, 1), rms, 0.001f), "center pan is equal in both channels");
 
 	// A 0.5 level is the DirectSound curve's 0.317 gain, and 128/255 the same.
 	rig.Mixer.Push(Simple(AudioCommandType::SET_GAIN, 0, 1, 0.5f, 0.0f));
@@ -241,8 +241,8 @@ void Test_Pan(void)
 
 	rig.Mixer.Push(Simple(AudioCommandType::SET_PAN, 0, 1, 0.0f, 0.0f));
 	rig.Run(4800);
-	Check(Near(rig.Rms(9700, 14400, 0), rig.Rms(9700, 14400, 1), 0.001f), "centre pan is unity on both sides");
-	Check(Near(rig.Rms(9700, 14400, 0), 0.5f / 1.41421f, 0.01f), "centre pan does not attenuate");
+	Check(Near(rig.Rms(9700, 14400, 0), rig.Rms(9700, 14400, 1), 0.001f), "center pan is unity on both sides");
+	Check(Near(rig.Rms(9700, 14400, 0), 0.5f / 1.41421f, 0.01f), "center pan does not attenuate");
 
 	// A ramped pan moves gradually.
 	rig.Mixer.Push(Simple(AudioCommandType::SET_PAN, 0, 1, 1.0f, 0.1f));

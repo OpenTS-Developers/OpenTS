@@ -1,5 +1,5 @@
 ---
-title: Double-tap a team key to centre the view on the team
+title: Double-tap a team key to center the view on the team
 category: feature
 release: 0.2.0
 targets:
@@ -37,8 +37,8 @@ credit: [ZivDero, dkeeton]
 ---
 
 Pressing a Select Team key a second time within half a second, while that team is already the
-selection, centres the view on the team if its first member is out of view. A single press, or a
+selection, centers the view on the team if its first member is out of view. A single press, or a
 second press after a longer pause, only selects the team as before. The Center Team commands
-still centre in one press.
+still center in one press.
 
 dkeeton is credited for the ts-patches double tap this follows.

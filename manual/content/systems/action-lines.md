@@ -49,7 +49,7 @@ The target line runs from the firing point, the turret of a turreted vehicle, to
 
 With [`ShowNavComQueueLines=yes`](/keys/shownavcomqueuelines/) the queued destinations continue from the end of the movement line, one leg per queued order in the order they will be traveled. A queue that loops draws a closed ring, since its current destination is also its last.
 
-Each line is clipped to the tactical view and carries a small square on each end; an end outside the view draws no square. The three lines and the sighting laser each take their own colour from [UI.INI](/formats/ui-ini/), and each can be drawn dashed, doubled to two rows, or over a shadow drawn below it. Dashes are four pixels on and four off and move along the line by the clock rather than by game frame: one pixel every 64 milliseconds on the target line and every 128 on the others.
+Each line is clipped to the tactical view and carries a small square on each end; an end outside the view draws no square. The three lines and the sighting laser each take their own color from [UI.INI](/formats/ui-ini/), and each can be drawn dashed, doubled to two rows, or over a shadow drawn below it. Dashes are four pixels on and four off and move along the line by the clock rather than by game frame: one pixel every 64 milliseconds on the target line and every 128 on the others.
 
 ## The sighting laser
 

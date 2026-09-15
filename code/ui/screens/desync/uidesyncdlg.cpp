@@ -28,10 +28,10 @@
 #include <cstdio>
 
 
-// The colours the dialog draws a player's standing in, as its own cells carry them.
+// The colors the dialog draws a player's standing in, as its own cells carry them.
 static char const * const UI_DESYNC_OK = "#00c800";
 static char const * const UI_DESYNC_OUT = "#c8c800";
-static char const * const UI_DESYNC_LEFT_COLOUR = "#c80000";
+static char const * const UI_DESYNC_LEFT_COLOR = "#c80000";
 
 
 namespace
@@ -58,13 +58,13 @@ class UIDesyncEngineServiceClass : public UIDesyncServiceClass
 				row.Name = (left && kept[0] != '\0') ? kept : housep->IniName.c_str();
 				if (left) {
 					row.Status = Fetch_String(TXT_SYNC_STATUS_LEFT);
-					row.Colour = UI_DESYNC_LEFT_COLOUR;
+					row.Color = UI_DESYNC_LEFT_COLOR;
 				} else if (Sync_Is_Out_Of_Sync(house)) {
 					row.Status = Fetch_String(TXT_SYNC_STATUS_OUT);
-					row.Colour = UI_DESYNC_OUT;
+					row.Color = UI_DESYNC_OUT;
 				} else {
 					row.Status = Fetch_String(TXT_OK);
-					row.Colour = UI_DESYNC_OK;
+					row.Color = UI_DESYNC_OK;
 				}
 				if (house == master) {
 					row.Mark = "wolhost.pcx";
@@ -78,7 +78,7 @@ class UIDesyncEngineServiceClass : public UIDesyncServiceClass
 			state.Counting = DesyncDialog.Is_Counting_Down();
 			state.CountdownText = DesyncDialog.Countdown_Caption();
 			state.Countdown = DesyncDialog.Countdown_Left();
-			state.CountdownColour = DesyncDialog.Countdown_Colour();
+			state.CountdownColor = DesyncDialog.Countdown_Color();
 
 			state.LoadEnabled = state.Host && !state.Counting && DesyncDialog.Load_Is_Allowed();
 			state.ContinueEnabled = state.Host && !state.Counting;

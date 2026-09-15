@@ -9,7 +9,7 @@
 
 // Looping sounds that follow objects. The table stands beside the objects
 // rather than inside them: an object is attached by pointer, its sound is
-// re-aimed at its centre every tick, and the attachment travels with a save
+// re-aimed at its center every tick, and the attachment travels with a save
 // while the playing sound itself does not.
 
 #pragma once

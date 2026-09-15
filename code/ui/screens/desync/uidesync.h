@@ -29,13 +29,13 @@ enum UIDesyncChoiceType
 };
 
 
-// One player: the name, how they stand, the colour that stands in, and the marker the
+// One player: the name, how they stand, the color that stands in, and the marker the
 // session's master carries.
 struct UIDesyncPlayerRow
 {
 	std::string Name;
 	std::string Status;
-	std::string Colour;
+	std::string Color;
 	std::string Mark;
 };
 
@@ -55,9 +55,9 @@ struct UIDesyncState
 	std::string CountdownText;
 
 	// How much of the bar under the countdown is still filled, from one down to nothing,
-	// and the colour it turns as the wait runs out.
+	// and the color it turns as the wait runs out.
 	float Countdown = 0.0f;
-	std::string CountdownColour;
+	std::string CountdownColor;
 };
 
 

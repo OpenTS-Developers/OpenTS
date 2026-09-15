@@ -21,7 +21,7 @@
 }
 
 /*
- * A centred caption sits a pixel left of the middle when the room is odd, as the layer halves
+ * A centered caption sits a pixel left of the middle when the room is odd, as the layer halves
  * it in whole pixels where the toolkit rounds a half up, so the box is padded on the right.
  */
 #title

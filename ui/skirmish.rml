@@ -15,9 +15,9 @@
 					<select id="side" data-event-change="queue('side', ev.value)">
 						<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == side">{{entry.label}}</option>
 					</select>
-					<span class="caption" id="cap-colour">Color:</span>
-					<select id="colour" data-event-change="queue('colour', ev.value)">
-						<option data-for="entry : colours" data-attr-value="it_index" data-attrif-selected="it_index == colour" data-style-color="entry.colour">{{entry.label}}</option>
+					<span class="caption" id="cap-color">Color:</span>
+					<select id="color" data-event-change="queue('color', ev.value)">
+						<option data-for="entry : colors" data-attr-value="it_index" data-attrif-selected="it_index == color" data-style-color="entry.color">{{entry.label}}</option>
 					</select>
 					<span class="caption" id="cap-map">Map:</span>
 					<span class="caption" id="mapname">{{mapname}}</span>

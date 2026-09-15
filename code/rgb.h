@@ -37,7 +37,7 @@ class HSVClass;
 
 
 /*
- * The three colour guns as the game's data files store them. Voxel palettes and the control
+ * The three color guns as the game's data files store them. Voxel palettes and the control
  * section of the isometric tile artwork are read straight onto this layout, so its size and
  * packing are fixed by those formats.
  */

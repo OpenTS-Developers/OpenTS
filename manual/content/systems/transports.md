@@ -39,7 +39,7 @@ Arriving on that cell, the passenger asks once more whether it still fits. The s
 
 A transport unloads by deploying. It first turns to face the direction it means to unload toward, then puts passengers out one per pass. Each passenger is offered the eight surrounding cells in turn, starting from the transport's rear, and takes the first it could drive or walk into; a cell lying under a bridge is skipped.
 
-Where in that cell the passenger lands depends on what it is. Infantry take one of the sub-cell spots that let several of them share a cell. A vehicle is put at the cell centre instead, because a vehicle left on a sub-cell spot draws in the wrong place and cannot dock a repair bay.
+Where in that cell the passenger lands depends on what it is. Infantry take one of the sub-cell spots that let several of them share a cell. A vehicle is put at the cell center instead, because a vehicle left on a sub-cell spot draws in the wrong place and cannot dock a repair bay.
 
 A passenger with nowhere to go is put back aboard and the transport gives up on the rest.
 

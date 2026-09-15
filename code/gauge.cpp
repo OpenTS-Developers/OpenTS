@@ -232,7 +232,7 @@ int GaugeClass::Draw_Me(int forced)
 		Draw_Box (Rect(X, Y, Width, Height), BOXSTYLE_DOWN, true);
 
 		/*
-		**	Colourize the inside of the gauge if indicated.
+		**	Colorize the inside of the gauge if indicated.
 		*/
 		if (IsColorized) {
 			int middle = Value_To_Pixel(CurValue);
@@ -492,7 +492,7 @@ int TriColorGaugeClass::Draw_Me(int forced)
 		Draw_Box (Rect(X, Y, Width, Height), (IsDisabled ? BOXSTYLE_RAISED : BOXSTYLE_DOWN), true);
 
 		/*
-		**	Colourize the inside of the gauge if indicated.
+		**	Colorize the inside of the gauge if indicated.
 		*/
 		int red    = Value_To_Pixel(RedLimit);
 		int yellow = Value_To_Pixel(YellowLimit);

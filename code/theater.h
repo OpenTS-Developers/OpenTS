@@ -66,7 +66,7 @@ class TheaterClass
 		bool IsIceGrowth;
 
 		/*
-		 * How far a cell's two terrain colours are scaled on the radar, at ground level and at
+		 * How far a cell's two terrain colors are scaled on the radar, at ground level and at
 		 * the top of the height range, with the cell interpolated between them by its height.
 		 */
 		float LowRadarBrightness;

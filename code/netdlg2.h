@@ -47,8 +47,8 @@ int Net2Country_At(int index);
 // What the dialogs do when a control is used. Each is the body of the matching handler, so
 // that a screen and a dialog reach the wire the same way.
 void Net2Select_Game(int index);
-void Net2Host_Take_Colour(int colour);
-void Net2Request_House_And_Color(int house, int colour);
+void Net2Host_Take_Color(int color);
+void Net2Request_House_And_Color(int house, int color);
 void Net2Send_Chat(char const * text);
 void Net2Set_Handle(char const * name);
 void Net2Kick(char const * name);

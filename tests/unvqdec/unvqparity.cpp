@@ -60,7 +60,7 @@ unsigned long long Hash(unsigned char const * data, int size)
  * Must build byte for byte what the generator built, or the recorded output describes a
  * different frame than the one replayed here.
  */
-void Build_Pointers(unsigned int seed, unsigned long entries, int maxindex, bool hicolour, int solid)
+void Build_Pointers(unsigned int seed, unsigned long entries, int maxindex, bool hicolor, int solid)
 {
 	Seed = seed;
 
@@ -68,11 +68,11 @@ void Build_Pointers(unsigned int seed, unsigned long entries, int maxindex, bool
 		unsigned int index = 0;
 
 		if ((int)(Next_Random() % 10) < solid) {
-			index = hicolour ? (0x8000 | (Next_Random() & 0x7FFF)) : (0xFF00 | (Next_Random() & 0xFF));
+			index = hicolor ? (0x8000 | (Next_Random() & 0x7FFF)) : (0xFF00 | (Next_Random() & 0xFF));
 		} else {
 			index = Next_Random() % (unsigned int)maxindex;
 
-			if (hicolour) {
+			if (hicolor) {
 				index &= 0x7FFF;
 			} else if ((index >> 8) == 0xFF) {
 				index = 0;

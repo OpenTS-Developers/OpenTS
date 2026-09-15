@@ -16,4 +16,4 @@ The sweep that reveals a new ally's objects and the one that reveals a spied hou
 objects now have each object take an ordinary look instead of revealing its bare `Sight=`.
 The height bonus and veteran sight count, an object never locked to the playable area
 stays dark, a landed aircraft shows one cell, and a structure reveals from the cell it
-stands on rather than from its centre.
+stands on rather than from its center.

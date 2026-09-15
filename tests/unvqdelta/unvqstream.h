@@ -111,7 +111,7 @@ inline int Build_Tagged_4x4(unsigned char * store, int blocksperrow, int numrows
 
 
 /// <summary>
-/// Builds a stream for the 4x4 and 4x2 colour mode 4 keyframe decoders, whose word carries a
+/// Builds a stream for the 4x4 and 4x2 color mode 4 keyframe decoders, whose word carries a
 /// three bit type and a codebook index and always advances one block.
 /// Exercises types 0x0000 and 0x2000, which carry the end-of-row correction.
 /// </summary>
@@ -149,7 +149,7 @@ inline int Build_Keyframe_C4(unsigned char * store, int blocksperrow, int numrow
 
 
 /// <summary>
-/// Builds a stream for the colour mode 4 delta decoders, which read their run lengths as a
+/// Builds a stream for the color mode 4 delta decoders, which read their run lengths as a
 /// byte that follows the word.
 /// Exercises types 0x6000, 0x8000, 0xA000 and 0xC000, all of which carry the end-of-row
 /// correction, plus the 0x0000 skip that does not.

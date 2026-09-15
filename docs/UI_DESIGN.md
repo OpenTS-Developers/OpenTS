@@ -676,7 +676,7 @@ picture at all. The pixels travel as bytes in the presenter's state, the way
 every other engine fact reaches a screen, so images have one route rather than
 a second of their own. The element widens a frame surface's five and six bit
 channels by repeating their top bits, places the picture in proportion and
-centred in its box, resamples it there by taking, for each pixel, the one
+centered in its box, resamples it there by taking, for each pixel, the one
 under its own middle, which is where the stretch GDI gave the dialog layer
 landed, and holds it in a callback
 texture, so the release of every texture that follows a change of frame scale
@@ -716,9 +716,9 @@ text. The pen starts a pixel left of where the text is placed, as the dialog
 layer started it, and the advances are scaled as a sum rather than one by
 one, so a run keeps the width the frame's scaling gives it at a scale that is
 no whole number. The layer put a right-aligned run a pixel further from the
-edge than its width alone would, and halved the room around a centred one in
+edge than its width alone would, and halved the room around a centered one in
 whole pixels where RmlUi rounds a half up; a sheet gives a right-aligned box
-a pixel of right padding, and the kit makes a centred box a pixel narrower,
+a pixel of right padding, and the kit makes a centered box a pixel narrower,
 which brings both to the layer's pixel.
 
 `dlg-sans` is the face the Win32 dialogs asked GDI for, and it is the same
@@ -860,7 +860,7 @@ them yet; the network lobbies and the skirmish screens are what will exercise
 them.
 
 The chrome is `Draw_Dialog_Back`'s composition: the 640 by 400 wallpaper
-centred on the frame in whole pixels and cut off at the dialog's edges, black
+centered on the frame in whole pixels and cut off at the dialog's edges, black
 beyond it, which the view places against the dialog's middle to the half pixel
 a dialog of odd height is off the grid; a
 24-wide bar tiled down each edge with a corner over each end; and a glow
@@ -887,14 +887,14 @@ The controls follow the drawing code's metrics: a button is a 24 or 30 tall
 skin with a 7-wide left cap, a 10-wide right cap and a middle drawn from the
 left cap's end to three short of the right edge, under the right cap, its
 `dlgsys` caption three down from the top of a short skin and six from a tall
-one, centred in a box two narrower than the skin. The middle is the tile's
-own middle: the layer sampled the 177-wide tile from its centre when the run
+one, centered in a box two narrower than the skin. The middle is the tile's
+own middle: the layer sampled the 177-wide tile from its center when the run
 was narrower and repeated it from the left when wider, so the kit draws the
-caps and a centred, clipped tile as three `image` decorators on the box's
+caps and a centered, clipped tile as three `image` decorators on the box's
 border and padding areas, the middle last to lie under the caps, and a
 button whose run is wider than the tile carries the class `wide` to repeat
 it instead; `tiled-horizontal` is no use here because it always fills its
-centre. Pressing shows a skin two down that is two shorter, three for a tall
+center. Pressing shows a skin two down that is two shorter, three for a tall
 one, whose right cap is seven wide and keeps its place, so the last three
 columns show through, and moves the caption one further down and one across;
 the box keeps its size, with the rows the skin gives up as a bottom border
@@ -942,7 +942,7 @@ the sound options do not, so a document puts the trough after the bar and
 gives the bar the rest. The bar's dim reaches a pixel past its rect, so the
 field is a pixel wider and taller than the fifty it is given, and the layer
 fills the fifty with the middle of its tile, so the kit's field is the two
-ends over a sprite of the tile's centre. The value inside it is centred in a
+ends over a sprite of the tile's center. The value inside it is centered in a
 box a pixel narrower than the field, which turns the toolkit's round of a half
 into the layer's floor, and the right end is hung off the field rather than
 off that box so that narrowing it leaves the end where the layer drew it. A
@@ -952,7 +952,7 @@ the last fifty columns of the bar's own rect, drawn before the frame, so the
 frame runs down the field's first column and the picture stands four rows past
 the bar's bottom. The lobby's field is placed over that column and sorted
 behind the bar for that reason, and its picture is hung on the whole box rather
-than on the box the reading is centred in, because RmlUi cuts a decorator off
+than on the box the reading is centered in, because RmlUi cuts a decorator off
 at the area it is given. The layer also darkens the ground a column past the
 bar's rect and a row past its bottom; the field covers all of that but the
 column, which the document draws as a strip of its own.
@@ -1475,7 +1475,7 @@ the table below is what the logs of that pass contain.
 
 The network lobbies were driven on 14 September 2026 by two copies of the game
 on one machine, each bound to its own port: one hosted, the other found the
-game, joined it, was given a free colour because its own was taken, accepted
+game, joined it, was given a free color because its own was taken, accepted
 the host's settings, and the two started a game that ran in step on the same
 seed. The host reached the map dialog from its lobby and came back with the
 mission it chose.

@@ -5002,7 +5002,7 @@ Color:
     section:
       kind: identifier
       source: object-type
-    value_type: colour scheme
+    value_type: color scheme
     status: reviewed
     _provenance:
       default_candidate: '0'
@@ -5016,7 +5016,7 @@ Color:
     section:
       kind: identifier
       source: object-type
-    value_type: colour scheme
+    value_type: color scheme
     status: reviewed
     _provenance:
       default_candidate: '0'
@@ -5031,7 +5031,7 @@ Color:
     section:
       kind: identifier
       source: object-type
-    value_type: colour scheme
+    value_type: color scheme
     status: reviewed
     _provenance:
       default_candidate: '0'
@@ -5046,7 +5046,7 @@ Color:
     section:
       kind: identifier
       source: house
-    value_type: colour scheme
+    value_type: color scheme
     status: reviewed
     _provenance:
       default_candidate: null
@@ -12663,7 +12663,7 @@ LaserColor:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: ''
@@ -12731,7 +12731,7 @@ LaserInnerColor:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: 0,0,0
@@ -12748,7 +12748,7 @@ LaserOuterColor:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: 0,0,0
@@ -12765,7 +12765,7 @@ LaserOuterSpread:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: 0,0,0
@@ -14255,7 +14255,7 @@ MovementLineColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null
@@ -14309,7 +14309,7 @@ MovementLineDropShadowColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null
@@ -14731,7 +14731,7 @@ NavComQueueLineColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null
@@ -14785,7 +14785,7 @@ NavComQueueLineDropShadowColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null
@@ -17570,7 +17570,7 @@ RadialColor:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: 0,0,0
@@ -17584,7 +17584,7 @@ RadialColor:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: 0,0,0
@@ -21361,7 +21361,7 @@ StartColor1:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: ''
@@ -21378,7 +21378,7 @@ StartColor2:
     section:
       kind: identifier
       source: object-type
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: ''
@@ -22158,7 +22158,7 @@ TargetLaserColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null
@@ -22212,7 +22212,7 @@ TargetLaserDropShadowColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null
@@ -22266,7 +22266,7 @@ TargetLineColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null
@@ -22320,7 +22320,7 @@ TargetLineDropShadowColor:
     section:
       kind: literal
       name: Ingame
-    value_type: colour (R,G,B)
+    value_type: color (R,G,B)
     status: generated
     _provenance:
       default_candidate: null

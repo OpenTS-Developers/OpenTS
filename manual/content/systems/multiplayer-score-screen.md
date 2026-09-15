@@ -18,7 +18,7 @@ A skirmish or network match ends at this screen rather than at the campaign one.
 
 One row per house that played. A house whose country is [`MultiplayPassive`](/keys/multiplaypassive/) is left out, and so is an [observer](/systems/observers/). A defeated player keeps its row, so a match of four ends with four rows however it went. Computer players are listed like anyone else, under the name the match gave them.
 
-Rows are ranked by rounds won and then by the round's score, so the winner heads the list. Each row is tinted with the house's own colour, and two houses sharing a colour are drawn alike.
+Rows are ranked by rounds won and then by the round's score, so the winner heads the list. Each row is tinted with the house's own color, and two houses sharing a color are drawn alike.
 
 ## What each column holds
 

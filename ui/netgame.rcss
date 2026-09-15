@@ -41,7 +41,7 @@
  * A combo box is placed rather than flowed, so it carries its frame inside its own size
  * instead of hanging it over a margin.
  */
-#side, #colour
+#side, #color
 {
 	box-sizing: border-box;
 	margin: 0;
@@ -50,16 +50,16 @@
 
 #cap-side { left: 27dp; top: 13dp; }
 #side { left: 108dp; top: 8dp; height: 26dp; }
-#cap-colour { left: 27dp; top: 37dp; }
+#cap-color { left: 27dp; top: 37dp; }
 
-/* The colour box starts on the row the side box ends on rather than sharing it. */
-#colour { left: 108dp; top: 34dp; height: 26dp; }
+/* The color box starts on the row the side box ends on rather than sharing it. */
+#color { left: 108dp; top: 34dp; height: 26dp; }
 
 .guest #cap-side { left: 27dp; top: 11dp; }
 .guest #side { left: 98dp; top: 10dp; }
-.guest #cap-colour { left: 27dp; top: 39dp; }
-.guest #colour { left: 98dp; top: 38dp; height: 26dp; }
-.guest #colour selectvalue { padding-top: 4dp; }
+.guest #cap-color { left: 27dp; top: 39dp; }
+.guest #color { left: 98dp; top: 38dp; height: 26dp; }
+.guest #color selectvalue { padding-top: 4dp; }
 
 /* ------------------------------------------------------------------------ the map and its name */
 
@@ -85,7 +85,7 @@
 
 /*
  * A row carries the marker for the host or for a player who has accepted, the side's emblem,
- * and the name in that player's own colour. The dialog gives each its own column by where it
+ * and the name in that player's own color. The dialog gives each its own column by where it
  * starts rather than by how wide it is: the marker five along, the emblem twenty-five and the
  * name forty-five.
  */
@@ -195,7 +195,7 @@
 /*
  * The guest's labels start further left but end where the host's do, so the track beside them
  * keeps its place; and its whole right-hand column is disabled in the template rather than at
- * run time, which the layer draws in a grey of its own rather than the kit's.
+ * run time, which the layer draws in a gray of its own rather than the kit's.
  */
 .guest #settings > .row { left: 243dp; }
 .guest #settings > .row > .caption { width: 85dp; margin-right: 8dp; }

@@ -73,13 +73,13 @@ enum UINetSlider
 };
 
 
-// One row of a chooser: what it reads and the colour the dropdown draws it in, which only the
-// player colours carry.
+// One row of a chooser: what it reads and the color the dropdown draws it in, which only the
+// player colors carry.
 struct UINetOption
 {
 	std::string Label;
 	int Value = 0;
-	std::string Colour;
+	std::string Color;
 };
 
 
@@ -88,17 +88,17 @@ struct UINetOption
 struct UINetChatLine
 {
 	std::string Text;
-	std::string Colour;
+	std::string Color;
 };
 
 
 // One row of the player list. In the browser only the name is set; in a game the row also
-// carries the colour its name is drawn in, the side's emblem with the side's name as its
+// carries the color its name is drawn in, the side's emblem with the side's name as its
 // tooltip, and the marker for the host or for a player who has accepted.
 struct UINetPlayerRow
 {
 	std::string Name;
-	std::string Colour;
+	std::string Color;
 	std::string House;
 	std::string Hint;
 	std::string Mark;
@@ -132,8 +132,8 @@ struct UINetLobbyState
 
 	std::vector<UINetOption> Sides;
 	int Side = 0;
-	std::vector<UINetOption> Colours;
-	int Colour = 0;
+	std::vector<UINetOption> Colors;
+	int Color = 0;
 
 	std::string MapName;
 	UIMapPreviewImage Preview;
@@ -183,7 +183,7 @@ class UINetLobbyServiceClass
 		virtual void Select_Game(int index) = 0;
 		virtual void Say(char const * text) = 0;
 		virtual void Set_Side(int index) = 0;
-		virtual void Set_Colour(int index) = 0;
+		virtual void Set_Color(int index) = 0;
 		virtual void Set_Switch(UINetSwitch which, bool on) = 0;
 		virtual void Set_Slider(UINetSlider which, int value) = 0;
 		virtual void Kick(std::vector<std::string> const & names) = 0;

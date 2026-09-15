@@ -16,7 +16,7 @@ The same value names five more files:
 | --- | --- |
 | `<Suffix>.MIX` | The theater's second archive |
 | `ISO<Suffix>.PAL` | The palette the tiles are drawn through |
-| `UNIT<Suffix>.PAL` | The palette unit and structure colour schemes are built from |
+| `UNIT<Suffix>.PAL` | The palette unit and structure color schemes are built from |
 | `SLOP01Z.<Suffix>` through `SLOP04Z.<Suffix>` | The depth shapes for sloped ground |
 | `VEINHOLE.<Suffix>` | The veinhole monster's artwork |
 

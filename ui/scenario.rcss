@@ -1,6 +1,6 @@
 /*
  * Where the multiplayer map dialog puts its parts, from IDD_MPLAYER_SELECT_MAP at 360 by 200
- * dialog units, which the layer draws 540 by 326: a centred title, the mission list down the
+ * dialog units, which the layer draws 540 by 326: a centered title, the mission list down the
  * left with the map preview beside it, and three buttons along the bottom. The preview frame
  * carries no caption, so the layer draws it as a plain rectangle corner to corner, a pixel
  * wider and taller than its rect. Everything visual comes from the kit.
@@ -20,7 +20,7 @@
 }
 
 /*
- * A centred caption sits a pixel left of the middle when the room left over is odd: the
+ * A centered caption sits a pixel left of the middle when the room left over is odd: the
  * layer halves it in whole pixels where the toolkit rounds a half up.
  */
 #title

@@ -190,7 +190,7 @@ void Chat_Receive(GlobalPacketType const & packet, IPXAddressClass & from)
 
 
 /// <summary>
-/// Adds a line to the message list in the sender's colour, tagged with its scope. The target
+/// Adds a line to the message list in the sender's color, tagged with its scope. The target
 /// names the recipient of a private message.
 /// </summary>
 void Chat_Show(HouseClass const * sender, ChatScopeType scope, char const * target, char const * text)

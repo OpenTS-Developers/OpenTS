@@ -13,7 +13,7 @@
 // it, the count the decoder reported, and the stream state it left behind.
 //
 // Zero-length decodes and odd sample counts on the stereo path are absent on purpose: the
-// assembly ran off both buffers on those, so it had no behaviour worth preserving.
+// assembly ran off both buffers on those, so it had no behavior worth preserving.
 //
 // Generated file. Do not hand-edit.
 

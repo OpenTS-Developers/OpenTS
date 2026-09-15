@@ -2215,7 +2215,7 @@ static void Init_Patch_Mixfiles(void)
 
 
 /// <summary>
-/// Reads a palette out of the mounted archives and expands it to the game's colour range.
+/// Reads a palette out of the mounted archives and expands it to the game's color range.
 /// </summary>
 /// <param name="palette">The palette to fill, left unchanged if the file is not there.</param>
 /// <param name="name">The palette file to read.</param>

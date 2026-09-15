@@ -9,7 +9,7 @@ Every sound effect the game plays goes through its [SOUND.INI](/formats/sound-in
 
 ## Placed sounds
 
-A sound played at a place in the world is heard from where that place is on screen. Its loudness falls in a straight line from full at the edge of the view to silence at [`Range=`](/keys/range/) cells beyond it, vertical distance counting double, and it is panned by where the place is across the view. The engine re-aims every placed sound each tick, so scrolling away quietens it and scrolling back brings it up again. [`Type=`](/keys/type/) moves the measure to the centre of the view, gives the fade a floor, or ties the sound to whether its cell has been revealed. A sound played without a place, as a button click is, is not attenuated or panned.
+A sound played at a place in the world is heard from where that place is on screen. Its loudness falls in a straight line from full at the edge of the view to silence at [`Range=`](/keys/range/) cells beyond it, vertical distance counting double, and it is panned by where the place is across the view. The engine re-aims every placed sound each tick, so scrolling away quietens it and scrolling back brings it up again. [`Type=`](/keys/type/) moves the measure to the center of the view, gives the fade a floor, or ties the sound to whether its cell has been revealed. A sound played without a place, as a button click is, is not attenuated or panned.
 
 Sounds left at a waypoint by a trigger and sounds attached to objects are kept in tables of their own and re-aimed the same way; a looping one that scrolls out of range stops and starts again without its attack when its place comes back. Both tables travel with a [save game](/formats/save-games/).
 

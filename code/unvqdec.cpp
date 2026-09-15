@@ -49,14 +49,14 @@ inline uint32_t Pair16(uint16_t pixel)
 }
 
 
-inline uint32_t Quad8(uint8_t colour)
+inline uint32_t Quad8(uint8_t color)
 {
-	uint32_t const pair = (static_cast<uint32_t>(colour) << 8) | colour;
+	uint32_t const pair = (static_cast<uint32_t>(color) << 8) | color;
 	return((pair << 16) | pair);
 }
 
 /// <summary>
-/// Draws a 16 bit frame from 4x4 codebook entries, taking a solid block's colour from
+/// Draws a 16 bit frame from 4x4 codebook entries, taking a solid block's color from
 /// HicolorTable.
 /// </summary>
 /// <param name="codebook">Codebook the blocks are drawn from.</param>
@@ -111,7 +111,7 @@ void __cdecl UnVQ1_C1_TABLE(uint8_t * codebook, uint8_t * pointers, uint8_t * bu
 
 /// <summary>
 /// Draws a 16 bit frame from the first and third rows of 4x4 codebook entries, written two
-/// screen rows apart. A solid block's colour comes from HicolorTable.
+/// screen rows apart. A solid block's color comes from HicolorTable.
 /// </summary>
 /// <param name="codebook">Codebook the blocks are drawn from.</param>
 /// <param name="pointers">Block pointer data, low plane then high plane.</param>
@@ -293,12 +293,12 @@ void __cdecl UnVQ_4x4_HALF(uint8_t * codebook, uint8_t * pointers, uint8_t * buf
 			block++;
 
 			if ((index >> 8) == 0xFF) {
-				uint8_t const colour = static_cast<uint8_t>(index & 0xFF);
+				uint8_t const color = static_cast<uint8_t>(index & 0xFF);
 
-				dest[0] = colour;
-				dest[1] = colour;
-				dest[bufwidth] = colour;
-				dest[bufwidth + 1] = colour;
+				dest[0] = color;
+				dest[1] = color;
+				dest[bufwidth] = color;
+				dest[bufwidth + 1] = color;
 			} else {
 				uint8_t const * word = codebook + index * 16;
 
@@ -317,7 +317,7 @@ void __cdecl UnVQ_4x4_HALF(uint8_t * codebook, uint8_t * pointers, uint8_t * buf
 
 
 /// <summary>
-/// Draws a 16 bit frame from 4x4 codebook entries, taking a solid block's colour from the
+/// Draws a 16 bit frame from 4x4 codebook entries, taking a solid block's color from the
 /// pointer value itself rather than through HicolorTable.
 /// </summary>
 /// <param name="codebook">Codebook the blocks are drawn from.</param>

@@ -155,10 +155,10 @@ bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int he
 		std::uint8_t * out = rgba.data() + (std::size_t)row * (std::size_t)width * 4;
 
 		for (int column = 0; column < width; column++) {
-			unsigned int colour = source[column];
-			out[0] = (std::uint8_t)(((colour >> 11) & 31) * 255 / 31);
-			out[1] = (std::uint8_t)(((colour >> 5) & 63) * 255 / 63);
-			out[2] = (std::uint8_t)((colour & 31) * 255 / 31);
+			unsigned int color = source[column];
+			out[0] = (std::uint8_t)(((color >> 11) & 31) * 255 / 31);
+			out[1] = (std::uint8_t)(((color >> 5) & 63) * 255 / 63);
+			out[2] = (std::uint8_t)((color & 31) * 255 / 31);
 			out[3] = 255;
 			out += 4;
 		}
