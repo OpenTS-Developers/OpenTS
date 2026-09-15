@@ -4,7 +4,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="gameopt.rcss"/>
 </head>
-<body template="dialog" data-model="gameopt" class="fitted" data-class-solo="solo" data-class-internet="internet">
+<body template="dialog" data-model="gameopt" data-class-solo="solo" data-class-internet="internet">
 	<button id="controls" data-event-click="queue('controls')">Game Controls</button>
 	<button id="briefing" data-if="solo" data-class-disabled="!briefingenabled" data-event-click="queue('briefing')">Restate Briefing</button>
 	<button id="load" data-if="solo || internet" data-class-disabled="!loadenabled" data-event-click="queue('load')">Load Game</button>

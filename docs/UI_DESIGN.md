@@ -681,10 +681,10 @@ under its own middle, which is where the stretch GDI gave the dialog layer
 landed, and holds it in a callback
 texture, so the release of every texture that follows a change of frame scale
 regenerates it. The picture is not magnified with the rest of the art, because
-it is already drawn at the size it is shown. The placement is the layer's own
-arithmetic: a scale in thousandths rounded down, applied to both sides, and an
-offset that halves the box and the picture in whole pixels separately, so the
-picture can come out a pixel short of the box with the gap all on one side. The
+it is already drawn at the size it is shown. The centering is a deliberate
+departure: the layer scaled a preview in thousandths and then halved both the
+frame and the picture in whole pixels, which left the picture a pixel short of
+the frame with the gap all on one side. The
 box a screen gives it is the frame's rect rather than the room inside the
 frame's line, because a frame draws its line corner to corner inclusive, a
 pixel outside the rect it was given. A map carrying no preview leaves the element
@@ -692,13 +692,11 @@ drawing nothing rather than failing its screen. Original
 game art stays local runtime data outside version control; documents receive
 artwork identities, never engine pointers.
 
-Every colour is what the game's 16-bit frame showed of it: the original drew
-into five bits of red and blue and six of green, and the frame widens them
-again by repeating their top bits, so the loader rounds each picture's palette
-the same way, the sheet font rounds its remapped colours, and the kit's own
-colours are written as they come out. Blended pixels, the glow and the dims,
-can still differ from the original's by a level or two, since the original
-blended in sixteen bits and the kit in eight.
+Colors are the art's own. The original drew into five bits of red and blue and
+six of green, so its pixels carried whatever that frame made of them; the kit
+draws in eight and keeps each picture's palette as the file holds it. A color
+can therefore differ from the original's by a level or two, and a blended pixel
+by more, since the original blended in sixteen bits.
 
 ### Fonts
 
@@ -828,12 +826,8 @@ own size takes no such pixel, and the options menu is not carried over at all.
 A control's width is its outer width, borders included, because that is what
 the template measures. A `dlgsys` caption is drawn from the top of its box
 with no leading, so a caption's line height is the glyph's height and the box
-carries the row's height; a check box label is the same. A disabled button is
-washed over its control's rect rather than over its skin, and the layer centres
-the skin in that rect, so an eighteen unit button is washed two rows above the
-skin and three below while a fourteen unit one is washed over the skin alone: a
-screen whose buttons are all of the shorter sort says `fitted` on its body, and
-one that mixes the two marks the button. The rule is close but not exact: the
+carries the row's height; a check box label is the same. A disabled button's
+wash covers the skin. The rule is close but not exact: the
 game draws a few dialogs and controls a pixel from where it puts them, with no
 pattern that the measurements support, so every screen is measured against its
 Win32 dialog at 3840x2160 and its sheet follows the game, saying so where it
@@ -907,20 +901,17 @@ the box keeps its size, with the rows the skin gives up as a bottom border
 that shows through. Disabled is a half-black wash rather than the skin the
 original loads and never draws. That wash is a flat gradient listed ahead of the skin, so
 it paints last and covers it; a caption cannot be covered the same way, because text is
-drawn after every decorator, so a disabled caption carries the colour the wash would have
+drawn after every decorator, so a disabled caption carries the color the wash would have
 left it at.
 
-Every other control the layer disables takes the same wash over its own rect: a
-check box over its box, a track bar over its bar, its reading and the column
-beside it, and a combo box a further half toward black over the darkening every
-box already carries. A disabled control's text is a shade of its own. The layer
-asks for one grey and gets two, because its sheets shade a glyph rather than
-filling it: text it draws from the sheets comes out a step darker than the grey
-it asked for, while text it draws through GDI and the frames it draws itself
-take that grey as written. The kit carries both, and the wash reaches a frame
-only down the sides of a control, never across its ends, which a single border
-colour cannot say; the two bars a screen shows and does not set are a column of
-frame out because of it.
+Every other control the kit disables takes the same wash: a check box over its
+box, a track bar over its bar, its reading and the column beside it, and a combo
+box a further half toward black over the darkening every box already carries. A
+disabled control's text is a shade of its own, because the sheets shade a glyph
+rather than filling it, so sheet text comes out a step darker than the gray it
+was asked for. A border paints outside every decorator, so a disabled control's
+frame carries the wash already applied and takes it on all four sides, where the
+layer washed only the sides.
 
 Check boxes, edit boxes, lists,
 scroll bars, track bars, combo boxes, the progress bar, group boxes, hotkey
@@ -1312,9 +1303,8 @@ beyond an ASCII test document.
     its own so that a lobby waiting on the host is still pumped while the host
     browses. The preview's placement is a deliberate departure, recorded under
     [Images](#images). Evidence: both match their Win32 dialogs at 3840x2160
-    apart from the list text and the sans glyph widths, the map dialog's
-    preview to the pixel, and a game started through the setup deploys its
-    units.
+    apart from the list text, the sans glyph widths and that placement, and a
+    game started through the setup deploys its units.
 11. **Network lobbies** (L, two changes; the first landed). The browser, the
     host's setup and the guest's view of it went together, because the flow
     asked which dialog was up rather than being told: `Net2LobbyPhase` replaced

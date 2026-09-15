@@ -27,7 +27,6 @@
 #include "preview.h"
 #include "rules.h"
 #include "session.h"
-#include "ui/rml/rmlrendermath.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
@@ -46,20 +45,6 @@ static int const UI_SKIRMISH_MIN_MONEY = 2500;
 static int const UI_SKIRMISH_COLOURS[] = {
 	TXT_GOLD, TXT_RED, TXT_BLUE, TXT_GREEN, TXT_ORANGE, TXT_SKY_BLUE, TXT_PURPLE, TXT_PINK
 };
-
-
-// A colour as a document writes one, rounded to what the game's 16-bit frame showed of it.
-static std::string Colour_Text(COLORREF colour)
-{
-	std::uint8_t red = (std::uint8_t)GetRValue(colour);
-	std::uint8_t green = (std::uint8_t)GetGValue(colour);
-	std::uint8_t blue = (std::uint8_t)GetBValue(colour);
-	UI_Render_Quantize_565(red, green, blue);
-
-	char text[16];
-	std::snprintf(text, sizeof(text), "#%02x%02x%02x", (unsigned)red, (unsigned)green, (unsigned)blue);
-	return(std::string(text));
-}
 
 
 // A random map keeps its picture in a file of its own; every other map carries one.
@@ -179,7 +164,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 		UISkirmishOption option;
 		option.Label = Fetch_String(UI_SKIRMISH_COLOURS[index]);
 		option.Value = index;
-		option.Colour = Colour_Text(PlayerColorTable[index]);
+		option.Colour = UI_Color_Text(PlayerColorTable[index]);
 		state.Colours.push_back(option);
 	}
 	state.Colour = (Session.PrefColor >= 0 && Session.PrefColor < (int)state.Colours.size()) ? Session.PrefColor : 0;

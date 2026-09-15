@@ -222,7 +222,7 @@
 /* The frame meets that rect only in its right column, which the field runs under. */
 .guest #settings input[type='range']
 {
-	border-right-color: #424542;
+	border-right-color: #484848;
 }
 
 .guest #settings input[type='range'] sliderbar

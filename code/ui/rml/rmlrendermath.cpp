@@ -91,14 +91,6 @@ bool UI_Render_Copy_RGBA_Rect(std::span<std::uint8_t const> pixels, int width, i
 }
 
 
-void UI_Render_Quantize_565(std::uint8_t & red, std::uint8_t & green, std::uint8_t & blue)
-{
-	red = (std::uint8_t)((red >> 3) * 255 / 31);
-	green = (std::uint8_t)((green >> 2) * 255 / 63);
-	blue = (std::uint8_t)((blue >> 3) * 255 / 31);
-}
-
-
 bool UI_Render_Magnify_RGBA(std::span<std::uint8_t const> pixels, int width, int height, int factor, std::vector<std::uint8_t> & result)
 {
 	result.clear();

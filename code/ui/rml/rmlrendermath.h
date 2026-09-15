@@ -71,10 +71,6 @@ bool UI_Render_Copy_RGBA_Rect(std::span<std::uint8_t const> pixels, int width, i
 // result empty, for a size or factor that is not positive or a picture short of its size.
 bool UI_Render_Magnify_RGBA(std::span<std::uint8_t const> pixels, int width, int height, int factor, std::vector<std::uint8_t> & result);
 
-// Rounds a colour to what the game's 16-bit frame shows of it: five bits of red and blue
-// and six of green, widened again by repeating their top bits.
-void UI_Render_Quantize_565(std::uint8_t & red, std::uint8_t & green, std::uint8_t & blue);
-
 // The sixteen floats for one draw: the document's transform, or none, with the fragment's
 // translation applied before it. Both RmlUi and bgfx hold a matrix as four columns, with
 // the translation last, so the result travels between them untouched.

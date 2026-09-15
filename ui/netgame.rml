@@ -57,7 +57,7 @@
 
 	<button id="kick" data-if="host" data-event-click="queue('kick')"></button>
 	<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
-	<button id="go" class="fitted" data-if="host" data-class-disabled="!cango" data-event-click="queue('go')">Go!</button>
+	<button id="go" data-if="host" data-class-disabled="!cango" data-event-click="queue('go')">Go!</button>
 	<button id="accept" data-if="!host" data-class-disabled="!canaccept" data-event-click="queue('accept')">Accept</button>
 </body>
 </rml>

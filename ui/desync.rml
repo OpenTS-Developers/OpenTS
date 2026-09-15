@@ -4,7 +4,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="desync.rcss"/>
 </head>
-<body template="dialog" data-model="desync" class="fitted" data-class-counting="counting">
+<body template="dialog" data-model="desync" data-class-counting="counting">
 	<p id="header">Synchronization Error</p>
 	<span id="cap-players" class="caption">Players:</span>
 

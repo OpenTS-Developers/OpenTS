@@ -4,7 +4,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="mapgen.rcss"/>
 </head>
-<body template="dialog" data-model="mapgen" class="fitted">
+<body template="dialog" data-model="mapgen">
 	<span id="cap-environment" class="caption">Environment:</span>
 	<select id="environment" data-class-disabled="!environmenton" data-attrif-disabled="!environmenton" data-value="environment" data-event-change="queue('environment', ev.value)">
 		<option data-for="entry : environments" data-attr-value="it_index">{{entry.label}}</option>

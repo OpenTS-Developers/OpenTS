@@ -204,12 +204,12 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
 {
 	box-sizing: content-box;
 	margin: -1dp;
-	border: 1dp #4ab6de;
+	border: 1dp #4eb6dc;
 }
 
 .list
 {
-	border: 1dp #4ab6de;
+	border: 1dp #4eb6dc;
 }
 
 /*
@@ -287,57 +287,15 @@ button.tall:active
 }
 
 /*
- * Disabled is a half-black wash over the whole control rather than another picture: the
- * original loads a disabled skin but never asks for it. A background lies under the skin,
- * so the wash is a flat gradient listed first, which paints last and covers the skin. Text
- * is drawn after every decorator, so the caption cannot be washed the same way and carries
- * the colour the wash would have left it at instead.
- */
-/*
- * A cap hangs in the left and the right border, so it is placed against the border box and
- * follows it when the wash makes that box taller than the skin. Two of the five spare rows
- * belong above the skin, which is two fifths of them whatever the art is magnified by.
+ * Disabled is a half-black wash over the skin rather than another picture: the original
+ * loads a disabled skin but never asks for it. A background lies under the skin, so the
+ * wash is a flat gradient listed first, which paints last and covers the skin. Text is
+ * drawn after every decorator, so the caption cannot be washed the same way and carries
+ * the color the wash would have left it at instead.
  */
 button.disabled, button:disabled
 {
-	color: #317d00;
-	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li24.pcx scale-none left 40%) border-box,
-		image(bue_ri24.pcx scale-none right 40%) border-box,
-		image(bue_mi24.pcx scale-none center top) padding-box;
-}
-
-/*
- * The wash covers the control's whole rect, which a button taller than its skin leaves rows
- * of above and below it. The borders that draw nothing are those rows, and the margins give
- * back the room they take so the skin stays where it is drawn.
- */
-button.disabled, button:disabled
-{
-	box-sizing: border-box;
-	height: 29dp;
-	border-top: 2dp transparent;
-	border-bottom: 3dp transparent;
-	margin-top: -2dp;
-	margin-bottom: -3dp;
-}
-
-/*
- * How far the wash reaches depends on what the template gave the button, since the layer
- * centres the skin in the control's rect: an eighteen unit button comes to twenty-nine pixels
- * and leaves the rows above and below that the rule before this one gives back, while a
- * fourteen unit one comes to no more than the skin and is washed over the skin alone. A
- * screen whose buttons are all of the shorter sort declares it once on the body; one that
- * mixes the two marks the button.
- */
-.fitted button.disabled, .fitted button:disabled,
-button.fitted.disabled, button.fitted:disabled
-{
-	height: 24dp;
-	border-top-width: 0;
-	border-bottom-width: 0;
-	margin-top: 0;
-	margin-bottom: 0;
+	color: #387f00;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
 		image(bue_li24.pcx scale-none left top) border-box,
 		image(bue_ri24.pcx scale-none right top) border-box,
@@ -348,27 +306,16 @@ button.fitted.disabled, button.fitted:disabled
 button.wide.disabled, button.wide:disabled
 {
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li24.pcx scale-none left 40%) border-box,
-		image(bue_ri24.pcx scale-none right 40%) border-box,
-		image(bue_mi24.pcx repeat-x left top) padding-box;
-}
-
-.fitted button.wide.disabled, .fitted button.wide:disabled,
-button.wide.fitted.disabled, button.wide.fitted:disabled
-{
-	decorator: horizontal-gradient(#00000080 #00000080) border-box,
 		image(bue_li24.pcx scale-none left top) border-box,
 		image(bue_ri24.pcx scale-none right top) border-box,
 		image(bue_mi24.pcx repeat-x left top) padding-box;
 }
 
-/* The taller skin leaves the same five rows over, so its caps sit at the same fraction. */
 button.tall.disabled, button.tall:disabled
 {
-	height: 35dp;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li30.pcx scale-none left 40%) border-box,
-		image(bue_ri30.pcx scale-none right 40%) border-box,
+		image(bue_li30.pcx scale-none left top) border-box,
+		image(bue_ri30.pcx scale-none right top) border-box,
 		image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
@@ -376,18 +323,8 @@ button.tall.disabled, button.tall:disabled
 button.disabled:active, button:disabled:active
 {
 	top: 0dp;
-	border-width: 2dp 3dp 3dp 7dp;
-	padding: 3dp 7dp 0 0;
-	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li24.pcx scale-none left 40%) border-box,
-		image(bue_ri24.pcx scale-none right 40%) border-box,
-		image(bue_mi24.pcx scale-none center top) padding-box;
-}
-
-.fitted button.disabled:active, .fitted button:disabled:active,
-button.fitted.disabled:active, button.fitted:disabled:active
-{
 	border-width: 0 3dp 0 7dp;
+	padding: 3dp 7dp 0 0;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
 		image(bue_li24.pcx scale-none left top) border-box,
 		image(bue_ri24.pcx scale-none right top) border-box,
@@ -397,8 +334,8 @@ button.fitted.disabled:active, button.fitted:disabled:active
 button.wide.disabled:active, button.wide:disabled:active
 {
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li24.pcx scale-none left 40%) border-box,
-		image(bue_ri24.pcx scale-none right 40%) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
 		image(bue_mi24.pcx repeat-x left top) padding-box;
 }
 
@@ -406,8 +343,8 @@ button.tall.disabled:active, button.tall:disabled:active
 {
 	padding-top: 6dp;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li30.pcx scale-none left 40%) border-box,
-		image(bue_ri30.pcx scale-none right 40%) border-box,
+		image(bue_li30.pcx scale-none left top) border-box,
+		image(bue_ri30.pcx scale-none right top) border-box,
 		image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
@@ -506,7 +443,7 @@ label.check.disabled, label.check:disabled
 
 input selection, textarea selection
 {
-	background-color: #205062;
+	background-color: #225061;
 	color: #70ff00;
 }
 
@@ -553,7 +490,7 @@ input[type='text'], input[type='password'], textarea
 
 .list .item:checked, .list .item.selected
 {
-	background-color: #205062;
+	background-color: #225061;
 }
 
 /*
@@ -574,7 +511,7 @@ input[type='text'], input[type='password'], textarea
 scrollbarvertical
 {
 	width: 20dp;
-	border-left: 2dp #4ab6de;
+	border-left: 2dp #4eb6dc;
 }
 
 scrollbarvertical slidertrack
@@ -659,10 +596,11 @@ input[type='range'] sliderbar
 	decorator: image(trakgrip.pcx scale-none left top);
 }
 
+/* A border paints outside every decorator, so the frame carries the wash already applied. */
 input[type='range']:disabled
 {
 	background-color: #000000da;
-	border-color: #949194;
+	border-color: #484848;
 }
 
 /* The wash the layer lays over a disabled control covers its grip along with the rest. */
@@ -743,7 +681,7 @@ progress
 	display: block;
 	height: 22dp;
 	background-color: #000000b4;
-	border: 1dp #4ab6de;
+	border: 1dp #4eb6dc;
 }
 
 progress fill
@@ -762,7 +700,7 @@ progress fill
 .group
 {
 	position: relative;
-	border: 1dp #4ab6de;
+	border: 1dp #4eb6dc;
 	border-top: 0;
 	padding: 11dp;
 }
@@ -786,7 +724,7 @@ progress fill
 {
 	display: block;
 	height: 1dp;
-	background-color: #4ab6de;
+	background-color: #4eb6dc;
 }
 
 .group > .rule > span:first-child
@@ -858,7 +796,7 @@ select selectbox
 	margin-top: 2dp;
 	padding: 2dp 0;
 	background-color: #000000b4;
-	border: 1dp #4ab6de;
+	border: 1dp #4eb6dc;
 	overflow-y: auto;
 }
 
@@ -874,7 +812,7 @@ select option
 
 select option:checked
 {
-	background-color: #205062;
+	background-color: #225061;
 }
 
 /* The field a keyboard screen shows a captured key in, its text four in from the frame. */
@@ -894,7 +832,7 @@ select option:checked
 .frame
 {
 	box-sizing: border-box;
-	border: 1dp #4ab6de;
+	border: 1dp #4eb6dc;
 }
 
 /*
@@ -914,8 +852,8 @@ surface
 {
 	padding: 3dp 4dp;
 	color: #70ff00;
-	background-color: #081820;
-	border: 1dp #4ab6de;
+	background-color: #0b1b22;
+	border: 1dp #4eb6dc;
 }
 
 .dim
@@ -925,8 +863,7 @@ surface
 
 /*
  * Text the layer draws from its own sheets comes out at this shade when it asks for the
- * disabled grey, because the sheet's glyphs are shaded rather than flat. Text it draws
- * through GDI, and the frames it draws itself, take the grey as written.
+ * disabled grey, because the sheet's glyphs are shaded rather than flat.
  */
 .disabled
 {

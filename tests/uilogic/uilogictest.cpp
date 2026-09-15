@@ -471,15 +471,6 @@ void Test_Magnify(void)
 
 	Check(UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(picture, 16), 2, 2, 1, result) && result.size() == 16 && std::memcmp(result.data(), picture, 16) == 0, "one times over is the picture itself");
 
-	// The dialog frame's cyan, as the 16-bit frame showed it, and the ends of the range.
-	std::uint8_t red = 78;
-	std::uint8_t green = 182;
-	std::uint8_t blue = 220;
-	UI_Render_Quantize_565(red, green, blue);
-	Check(red == 74 && green == 182 && blue == 222, "a colour rounds to what the game's 16-bit frame shows of it");
-	red = 255; green = 255; blue = 0;
-	UI_Render_Quantize_565(red, green, blue);
-	Check(red == 255 && green == 255 && blue == 0, "and the ends of the range stay where they are");
 	Check(!UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(picture, 12), 2, 2, 2, result) && result.empty(), "a picture short of its size is refused");
 	Check(!UI_Render_Magnify_RGBA(std::span<std::uint8_t const>(picture, 16), 2, 2, 0, result), "as is a factor of nothing");
 }

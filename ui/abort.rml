@@ -4,7 +4,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="abort.rcss"/>
 </head>
-<body template="dialog" data-model="abort" class="fitted">
+<body template="dialog" data-model="abort">
 	<p id="question">Do you want to abort the mission?</p>
 	<div id="buttons">
 		<button id="abort" data-event-click="queue('abort')">Abort</button>

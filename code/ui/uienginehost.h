@@ -15,10 +15,15 @@
 #include "ui/uihost.h"
 #include "ui/uiscreen.h"
 
+#include <string>
+
 class UIViewClass;
 
 
 UIShellHostClass & UI_Engine_Host(void);
+
+// A color as a document writes one, "#rrggbb".
+std::string UI_Color_Text(COLORREF color);
 
 // One pass of the game under a modal screen: the message pump, then Main_Loop in a network
 // session or Call_Back otherwise. True when the game ended.

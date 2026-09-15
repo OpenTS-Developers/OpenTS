@@ -4,7 +4,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="savegame.rcss"/>
 </head>
-<body template="dialog" data-model="savegame" class="fitted" data-class-load="mode == 0" data-class-save="mode == 1" data-class-delete="mode == 2">
+<body template="dialog" data-model="savegame" data-class-load="mode == 0" data-class-save="mode == 1" data-class-delete="mode == 2">
 	<p id="title">{{title}}</p>
 	<div id="headings"><span id="heading-description">Description</span><span id="heading-stamp">Time Stamp</span></div>
 	<div id="files" class="list"><div class="rows">

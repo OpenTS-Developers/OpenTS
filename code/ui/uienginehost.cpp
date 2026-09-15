@@ -30,6 +30,16 @@
 #include "voc.h"
 #include "wincursor.h"
 
+#include <cstdio>
+
+
+std::string UI_Color_Text(COLORREF color)
+{
+	char text[16];
+	std::snprintf(text, sizeof(text), "#%02x%02x%02x", (unsigned)GetRValue(color), (unsigned)GetGValue(color), (unsigned)GetBValue(color));
+	return(std::string(text));
+}
+
 
 // The pointer the window shows when the game's is off it, as under a Win32 dialog.
 static HCURSOR Window_Cursor(void)
