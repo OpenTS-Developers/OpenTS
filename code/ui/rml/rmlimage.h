@@ -41,10 +41,10 @@ bool UI_Indexed_To_RGBA(UIImageIndexed const & image, std::vector<std::uint8_t> 
 // widened by repeating their top bits, the way the frame shows them.
 bool UI_Hicolor_To_RGBA(std::span<std::uint16_t const> pixels, int width, int height, int pitch, std::vector<std::uint8_t> & rgba);
 
-// Where a picture of the given size lands inside a box, kept in proportion and centred.
-// Whichever side runs out first fills the box exactly. The dialog layer scaled a map preview
-// in thousandths and halved both the box and the picture in whole pixels, which left it a
-// pixel short of the frame and the gap all on one side; this centres it instead. False,
+// Where a picture of the given size lands inside a box, kept in proportion, by the
+// arithmetic the dialog layer used: a scale in thousandths, rounded down, applied to both
+// sides, and an offset that halves the box and the picture in whole pixels separately. The
+// picture can come out a pixel short of the box with the gap all on one side. False,
 // leaving nothing placed, for a size that is not positive.
 bool UI_Surface_Fit(int width, int height, int boxwidth, int boxheight, int & x, int & y, int & fitwidth, int & fitheight);
 

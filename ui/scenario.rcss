@@ -60,10 +60,10 @@
 #preview
 {
 	position: absolute;
-	left: 0;
-	top: 0;
-	width: 193dp;
-	height: 130dp;
+	left: -1dp;
+	top: -1dp;
+	width: 194dp;
+	height: 131dp;
 }
 
 #buttons

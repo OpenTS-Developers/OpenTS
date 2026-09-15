@@ -293,16 +293,68 @@ button.tall:active
  * is drawn after every decorator, so the caption cannot be washed the same way and carries
  * the colour the wash would have left it at instead.
  */
+/*
+ * A cap hangs in the left and the right border, so it is placed against the border box and
+ * follows it when the wash makes that box taller than the skin. Two of the five spare rows
+ * belong above the skin, which is two fifths of them whatever the art is magnified by.
+ */
 button.disabled, button:disabled
 {
 	color: #317d00;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left 40%) border-box,
+		image(bue_ri24.pcx scale-none right 40%) border-box,
+		image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+/*
+ * The wash covers the control's whole rect, which a button taller than its skin leaves rows
+ * of above and below it. The borders that draw nothing are those rows, and the margins give
+ * back the room they take so the skin stays where it is drawn.
+ */
+button.disabled, button:disabled
+{
+	box-sizing: border-box;
+	height: 29dp;
+	border-top: 2dp transparent;
+	border-bottom: 3dp transparent;
+	margin-top: -2dp;
+	margin-bottom: -3dp;
+}
+
+/*
+ * How far the wash reaches depends on what the template gave the button, since the layer
+ * centres the skin in the control's rect: an eighteen unit button comes to twenty-nine pixels
+ * and leaves the rows above and below that the rule before this one gives back, while a
+ * fourteen unit one comes to no more than the skin and is washed over the skin alone. A
+ * screen whose buttons are all of the shorter sort declares it once on the body; one that
+ * mixes the two marks the button.
+ */
+.fitted button.disabled, .fitted button:disabled,
+button.fitted.disabled, button.fitted:disabled
+{
+	height: 24dp;
+	border-top-width: 0;
+	border-bottom-width: 0;
+	margin-top: 0;
+	margin-bottom: 0;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
 		image(bue_li24.pcx scale-none left top) border-box,
 		image(bue_ri24.pcx scale-none right top) border-box,
 		image(bue_mi24.pcx scale-none center top) padding-box;
 }
 
+/* A run wider than the tile repeats it whether the button takes a press or not. */
 button.wide.disabled, button.wide:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left 40%) border-box,
+		image(bue_ri24.pcx scale-none right 40%) border-box,
+		image(bue_mi24.pcx repeat-x left top) padding-box;
+}
+
+.fitted button.wide.disabled, .fitted button.wide:disabled,
+button.wide.fitted.disabled, button.wide.fitted:disabled
 {
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
 		image(bue_li24.pcx scale-none left top) border-box,
@@ -310,11 +362,13 @@ button.wide.disabled, button.wide:disabled
 		image(bue_mi24.pcx repeat-x left top) padding-box;
 }
 
+/* The taller skin leaves the same five rows over, so its caps sit at the same fraction. */
 button.tall.disabled, button.tall:disabled
 {
+	height: 35dp;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li30.pcx scale-none left top) border-box,
-		image(bue_ri30.pcx scale-none right top) border-box,
+		image(bue_li30.pcx scale-none left 40%) border-box,
+		image(bue_ri30.pcx scale-none right 40%) border-box,
 		image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
@@ -322,8 +376,18 @@ button.tall.disabled, button.tall:disabled
 button.disabled:active, button:disabled:active
 {
 	top: 0dp;
-	border-width: 0 3dp 0 7dp;
+	border-width: 2dp 3dp 3dp 7dp;
 	padding: 3dp 7dp 0 0;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left 40%) border-box,
+		image(bue_ri24.pcx scale-none right 40%) border-box,
+		image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+.fitted button.disabled:active, .fitted button:disabled:active,
+button.fitted.disabled:active, button.fitted:disabled:active
+{
+	border-width: 0 3dp 0 7dp;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
 		image(bue_li24.pcx scale-none left top) border-box,
 		image(bue_ri24.pcx scale-none right top) border-box,
@@ -333,8 +397,8 @@ button.disabled:active, button:disabled:active
 button.wide.disabled:active, button.wide:disabled:active
 {
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li24.pcx scale-none left top) border-box,
-		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_li24.pcx scale-none left 40%) border-box,
+		image(bue_ri24.pcx scale-none right 40%) border-box,
 		image(bue_mi24.pcx repeat-x left top) padding-box;
 }
 
@@ -342,8 +406,8 @@ button.tall.disabled:active, button.tall:disabled:active
 {
 	padding-top: 6dp;
 	decorator: horizontal-gradient(#00000080 #00000080) border-box,
-		image(bue_li30.pcx scale-none left top) border-box,
-		image(bue_ri30.pcx scale-none right top) border-box,
+		image(bue_li30.pcx scale-none left 40%) border-box,
+		image(bue_ri30.pcx scale-none right 40%) border-box,
 		image(bue_mi30.pcx scale-none center top) padding-box;
 }
 
@@ -427,16 +491,17 @@ label.check.disabled, label.check:disabled
 }
 
 /*
+/*
  * Text the dialog layer draws through GDI rather than its bitmap font. The layer asks for
- * character heights of fourteen and twelve, and GDI answers both from the raster face's
- * strikes, which are a little smaller. The sizes here are the ones at which the scalable
- * face this kit puts in its place comes out closest: a reading matches the strike's height
- * and its width, and a list row matches its height and runs a twentieth long.
+ * character heights of fourteen and twelve, and GDI answers both out of the raster face's
+ * own strikes: a list row from the thirteen tall one and everything else from the sixteen.
+ * A size here names the strike it wants by its height, so the letters are the layer's.
  */
 .sans, input[type='text'], input[type='password'], textarea, .list, .tooltip, .hotkey, .group > label
 {
 	font-family: dlg-sans;
-	font-size: 13dp;
+	font-size: 16dp;
+	line-height: 16dp;
 }
 
 input selection, textarea selection
@@ -464,7 +529,7 @@ input[type='text'], input[type='password'], textarea
  */
 .list
 {
-	font-size: 11dp;
+	font-size: 13dp;
 	overflow-y: auto;
 }
 
@@ -475,11 +540,13 @@ input[type='text'], input[type='password'], textarea
 	background-color: #000000b4;
 }
 
+/* The layer drew a row's cell on the row's own top, so the line the strike is laid on is
+   the cell itself and the row's spare pixel falls below it. */
 .list .item
 {
 	display: block;
 	height: 14dp;
-	line-height: 14dp;
+	line-height: 13dp;
 	padding-left: 2dp;
 	color: #70ff00;
 }
@@ -550,15 +617,16 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * A track bar is as tall as its template makes it, with a twelve wide thumb drawn from the
  * top of it one in from the left; the thumb's travel is thirteen short of the width, which
  * is what a track a pixel narrower on the left comes to. Where the bar shows its value, that
- * number sits in a fifty wide field of its own, the trough, put after the bar in the same
- * row; the bar is then fifty narrower and the frame ends where the field begins. The
- * field's picture is twenty-six tall, a pixel more than the bar, and the field lies under
- * the bar so the bar's frame closes over its first column, as the layer drew the field
- * before the frame. The bar's dim reaches a pixel past its rect, so the field is a pixel
- * wider and taller than the fifty it is given; the layer fills the fifty with the middle of
- * its tile, keeps the right end to the fifty, and centres the number in the forty-nine from
- * one in: the padding leaves that box, the right end is held to it, and the middle is a
- * sprite of the tile's centre under both ends.
+ * number is not a control beside the bar but the last fifty columns of the bar's own rect,
+ * the trough, and the bar is drawn in what is left; the frame the layer draws around that
+ * closes over the field's first column, because the field is drawn before it, which is why
+ * the field is put after the bar in the same row and sorted under it. The picture is fifty
+ * by twenty-four whatever the template's height: the middle of its tile with the two ends
+ * over it, kept to the fifty, and the number centred in the forty-nine from one in. The
+ * layer also darkens the ground under a bar a column past its right edge and a row past its
+ * bottom. A bar tall enough for that to reach below the picture shows the rows under it, so
+ * the field's own box carries them; the column beside it never falls under the picture, and
+ * is `.trough-edge`.
  *
  * RmlUi places a slider's track and thumb from the input's border corner rather than its
  * content corner, so the track's margins and the thumb's top margin carry the frame's width
@@ -598,11 +666,13 @@ input[type='range']:disabled
 }
 
 /*
- * The field is fifty-one wide with its ends over the middle of the tile, and the reading is
- * centred in what is left. The room left over is halved in whole pixels by the layer where
- * the toolkit rounds a half up, so the box the reading is centred in is a pixel narrower
- * than the field, and the right end is hung off the field rather than off that box, which
- * keeps it where the layer drew it. The margin gives back the pixel the box gives up.
+ * The room left over around the reading is halved in whole pixels by the layer where the
+ * toolkit rounds a half up, so the box it is centred in is a pixel narrower than the
+ * forty-nine, and the right end is hung off the field rather than off that box, which keeps
+ * it where the layer drew it. A screen whose bar is shorter than the picture gives the field
+ * the picture's height and takes the rows the bar's own rect leaves out of the reading's box;
+ * the picture hangs on the whole box either way, because a decorator is cut off at the area
+ * it is given.
  */
 .trough
 {
@@ -610,13 +680,27 @@ input[type='range']:disabled
 	width: 50dp;
 	height: 26dp;
 	padding: 0 1dp 0 1dp;
-	margin-right: 1dp;
 	z-index: -1;
 	vertical-align: top;
 	text-align: center;
 	line-height: 25dp;
 	background-color: #000000b4;
-	decorator: image(trofl.pcx scale-none left top), image(trofr.pcx scale-none right top) padding-box, image(trough-mid scale-none left top);
+	decorator: image(trofl.pcx scale-none left top) border-box,
+		image(trofr.pcx scale-none right top) border-box,
+		image(trough-mid scale-none left top) border-box;
+}
+
+/*
+ * The column the layer darkens past the bar's right edge. A screen gives it the height of the
+ * bar's rect and a row more, which is how far down the layer darkens.
+ */
+.trough-edge
+{
+	display: inline-block;
+	vertical-align: top;
+	width: 1dp;
+	height: 26dp;
+	background-color: #000000b4;
 }
 
 @spritesheet trough
@@ -668,7 +752,7 @@ progress fill
 	top: -8dp;
 	height: 16dp;
 	font-family: dlg-sans;
-	font-size: 13dp;
+	font-size: 16dp;
 	line-height: 16dp;
 	color: #70ff00;
 }
@@ -774,8 +858,10 @@ select option:checked
 
 /*
  * A picture the engine drew while the game ran, which the screen hands over as pixels rather
- * than the document naming a file. It is kept in proportion and centred in the element's box,
- * the way the dialog layer fitted a map preview into the frame it was given.
+ * than the document naming a file. It is fitted to the element's box the way the layer fitted
+ * a map preview to the frame's rect, which is the box a screen gives this: a frame's line is
+ * drawn corner to corner inclusive, so the rect is a pixel smaller than the line each way and
+ * starts on the line's own corner.
  */
 surface
 {

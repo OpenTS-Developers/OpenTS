@@ -4,7 +4,7 @@
 	<link type="text/template" href="dialog.rml"/>
 	<link type="text/rcss" href="gamectrl.rcss"/>
 </head>
-<body template="dialog" data-model="gamectrl" data-class-frontend="!ingame" data-class-difficulty="hasdifficulty">
+<body template="dialog" data-model="gamectrl" class="fitted" data-class-frontend="!ingame" data-class-difficulty="hasdifficulty">
 	<div class="row" id="row-speed" data-if="hasspeed"><span class="caption">Game Speed<span data-if="ingame">:</span></span><input type="range" id="speed" min="0" max="6" step="1" data-attr-value="6 - speed" data-event-change="queue('speed', 6 - ev.value)"/><span class="value" id="speed-name">{{speedname}}</span></div>
 	<div class="row" id="row-scroll"><span class="caption">Scroll Rate<span data-if="ingame">:</span></span><input type="range" id="scroll" min="0" max="6" step="1" data-attr-value="6 - scroll" data-event-change="queue('scroll', 6 - ev.value)"/><span class="value" id="scroll-name">{{scrollname}}</span></div>
 	<div class="row" id="row-detail"><span class="caption">Visual Details<span data-if="ingame">:</span></span><input type="range" id="detail" min="0" max="2" step="1" data-attr-value="detail" data-event-change="queue('detail', ev.value)"/><span class="value" id="detail-name">{{detailname}}</span></div>

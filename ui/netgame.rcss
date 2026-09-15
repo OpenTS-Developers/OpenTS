@@ -70,22 +70,24 @@
 .guest #mapname { left: 264dp; top: 11dp; width: 349dp; }
 
 #map { left: 421dp; top: 224dp; width: 191dp; height: 120dp; }
-#preview { left: 0; top: 0; width: 189dp; height: 118dp; }
+
+/* The frame's rect, which its line is drawn a corner outside of. */
+#preview { position: absolute; left: -1dp; top: -1dp; width: 190dp; height: 119dp; }
 
 /* -------------------------------------------------------------------------- the player list */
 
 #cap-players { left: 27dp; top: 67dp; }
 
-/* The columned list draws its cells smaller than a plain list box draws its rows. */
-#players { left: 27dp; top: 91dp; width: 226dp; height: 110dp; font-size: 10dp; }
+#players { left: 27dp; top: 91dp; width: 226dp; height: 110dp; }
 
 .guest #cap-players { left: 27dp; top: 68dp; }
 .guest #players { height: 111dp; }
 
 /*
  * A row carries the marker for the host or for a player who has accepted, the side's emblem,
- * and the name in that player's own colour, at the column widths the dialog set: five for the
- * marker, twenty-five for the emblem and forty-five for the name.
+ * and the name in that player's own colour. The dialog gives each its own column by where it
+ * starts rather than by how wide it is: the marker five along, the emblem twenty-five and the
+ * name forty-five.
  */
 #players .item
 {
@@ -100,7 +102,8 @@
 
 /* A row without a marker keeps the marker's place, as a columned list box does. */
 #players .cell-mark { width: 20dp; margin-left: 5dp; }
-#players .cell-house { width: 24dp; }
+#players .cell-house { width: 20dp; }
+
 
 /* ---------------------------------------------------------------------------- the settings */
 
@@ -163,32 +166,23 @@
 }
 
 /*
- * The field is forty-nine by twenty-four and its picture forty-six by twenty-one, drawn from the
- * top left, so the row under the picture and the column beside it are black and the two rows and
- * columns past those are the dim the bar reaches a little beyond its rect with. A bar this short
- * leaves the layer less room than the kit's fifty-one by twenty-six field, which is why the
- * picture is a slice of the tile rather than the whole of it.
+ * This bar is shorter than the field's picture, so the field is the picture's own height and
+ * the border that draws nothing keeps the reading inside the twenty rows the bar's rect has.
+ * The bar carries its frame inside its width here rather than over a margin, so the field is
+ * pulled back a column to reach the frame it belongs under.
  */
 #settings .trough
 {
-	width: 49dp;
 	height: 24dp;
-	margin: 1dp 0 0 0;
-	padding: 0;
-	border-right: 2dp #182021;
-	border-bottom: 2dp #182021;
-	line-height: 21dp;
-	text-align: center;
-	background-color: #000000;
-	decorator: image(trofl.pcx scale-none left top) padding-box,
-		image(trofr.pcx scale-none right top) padding-box,
-		image(net-trough scale-none left top) padding-box;
+	margin: 1dp 0 0 -1dp;
+	border-bottom: 4dp transparent;
+	line-height: 19dp;
 }
 
-@spritesheet net-trough-field
+#settings .trough-edge
 {
-	src: trofm.pcx;
-	net-trough: 32px 0px 46px 21px;
+	margin-top: 1dp;
+	height: 21dp;
 }
 
 #row-speed { top: 43dp; }
@@ -214,13 +208,21 @@
 }
 
 /*
- * A disabled track and field are washed half way to black, as the layer washes every disabled
- * control it draws from a picture. The wash is a flat gradient listed first, which paints last.
+ * A disabled control is washed half way to black over its own rect, which stops four rows short
+ * of the field's bottom. The wash is a flat gradient listed first, which paints last.
  */
 .guest #settings .trough
 {
 	decorator: horizontal-gradient(#00000080 #00000080) padding-box,
-		image(net-trough scale-none left top);
+		image(trofl.pcx scale-none left top) border-box,
+		image(trofr.pcx scale-none right top) border-box,
+		image(trough-mid scale-none left top) border-box;
+}
+
+/* The frame meets that rect only in its right column, which the field runs under. */
+.guest #settings input[type='range']
+{
+	border-right-color: #424542;
 }
 
 .guest #settings input[type='range'] sliderbar

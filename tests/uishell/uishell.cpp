@@ -2833,6 +2833,7 @@ void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass 
 	Check(UI_Surface_Fit(200, 100, 100, 100, x, y, width, height) && x == 0 && y == 25 && width == 100 && height == 50, "a wide picture fits the width of its box and centres down it");
 	Check(UI_Surface_Fit(100, 200, 100, 100, x, y, width, height) && x == 25 && y == 0 && width == 50 && height == 100, "a tall picture fits the height and centres across");
 	Check(UI_Surface_Fit(50, 50, 100, 100, x, y, width, height) && x == 0 && y == 0 && width == 100 && height == 100, "a picture in proportion with its box fills it");
+	Check(UI_Surface_Fit(3, 1, 10, 10, x, y, width, height) && x == 1 && y == 4 && width == 9 && height == 3, "a picture the box does not divide comes out short of it, as the layer left it");
 	Check(!UI_Surface_Fit(0, 10, 100, 100, x, y, width, height) && width == 0 && height == 0, "a picture of nothing is not placed");
 
 	// Stretched by repeating and dropping whole pixels, as GDI did for the dialog layer, so

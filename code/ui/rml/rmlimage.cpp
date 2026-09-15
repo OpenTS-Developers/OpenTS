@@ -182,19 +182,18 @@ bool UI_Surface_Fit(int width, int height, int boxwidth, int boxheight, int & x,
 		return(false);
 	}
 
-	if ((std::int64_t)width * (std::int64_t)boxheight >= (std::int64_t)height * (std::int64_t)boxwidth) {
-		fitwidth = boxwidth;
-		fitheight = (int)(((std::int64_t)height * (std::int64_t)boxwidth + width / 2) / width);
-	} else {
-		fitheight = boxheight;
-		fitwidth = (int)(((std::int64_t)width * (std::int64_t)boxheight + height / 2) / height);
+	std::int64_t scale = std::min((std::int64_t)1000 * boxwidth / width, (std::int64_t)1000 * boxheight / height);
+	if (scale <= 0) {
+		scale = 1;
 	}
 
+	fitwidth = (int)(scale * width / 1000);
+	fitheight = (int)(scale * height / 1000);
 	fitwidth = std::clamp(fitwidth, 1, boxwidth);
 	fitheight = std::clamp(fitheight, 1, boxheight);
 
-	x = (boxwidth - fitwidth) / 2;
-	y = (boxheight - fitheight) / 2;
+	x = boxwidth / 2 - (int)(scale * width / 2000);
+	y = boxheight / 2 - (int)(scale * height / 2000);
 	return(true);
 }
 

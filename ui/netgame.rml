@@ -28,12 +28,12 @@
 	</div></div>
 
 	<div id="settings">
-		<div class="row" id="row-speed"><span class="caption">Game Speed<span data-if="host">:</span></span><input type="range" id="speed" step="1" min="0" max="6" data-attr-value="speed" data-attrif-disabled="!host" data-event-change="queue('speed', ev.value)"/><span class="trough">{{speed}}</span></div>
-		<div class="row" id="row-aiplayers"><span class="caption">AI Players<span data-if="host">:</span></span><input type="range" id="aiplayers" step="1" min="0" max="6" data-attr-max="aiplayersmax" data-attr-value="aiplayers" data-attrif-disabled="!host" data-event-change="queue('aiplayers', ev.value)"/><span class="trough">{{aiplayers}}</span></div>
-		<div class="row" id="row-ailevel"><span class="caption">AI Level<span data-if="host">:</span></span><input type="range" id="ailevel" step="1" min="0" max="2" data-attr-value="ailevel" data-attrif-disabled="!host" data-event-change="queue('ailevel', ev.value)"/><span class="trough">{{ailevel}}</span></div>
-		<div class="row" id="row-units"><span class="caption">Unit Count<span data-if="host">:</span></span><input type="range" id="units" step="1" min="1" max="10" data-attr-min="unitsmin" data-attr-max="unitsmax" data-attr-value="units" data-attrif-disabled="!host" data-event-change="queue('units', ev.value)"/><span class="trough">{{units}}</span></div>
-		<div class="row" id="row-tech"><span class="caption">Tech Level<span data-if="host">:</span></span><input type="range" id="tech" step="1" min="1" max="10" data-attr-max="techmax" data-attr-value="tech" data-attrif-disabled="!host" data-event-change="queue('tech', ev.value)"/><span class="trough">{{tech}}</span></div>
-		<div class="row" id="row-credits"><span class="caption">Credits<span data-if="host">:</span></span><input type="range" id="credits" step="100" min="2500" max="10000" data-attr-step="creditsstep" data-attr-min="creditsmin" data-attr-max="creditsmax" data-attr-value="credits" data-attrif-disabled="!host" data-event-change="queue('credits', ev.value)"/><span class="trough">{{credits}}</span></div>
+		<div class="row" id="row-speed"><span class="caption">Game Speed<span data-if="host">:</span></span><input type="range" id="speed" step="1" min="0" max="6" data-attr-value="speed" data-attrif-disabled="!host" data-event-change="queue('speed', ev.value)"/><span class="trough">{{speed}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-aiplayers"><span class="caption">AI Players<span data-if="host">:</span></span><input type="range" id="aiplayers" step="1" min="0" max="6" data-attr-max="aiplayersmax" data-attr-value="aiplayers" data-attrif-disabled="!host" data-event-change="queue('aiplayers', ev.value)"/><span class="trough">{{aiplayers}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-ailevel"><span class="caption">AI Level<span data-if="host">:</span></span><input type="range" id="ailevel" step="1" min="0" max="2" data-attr-value="ailevel" data-attrif-disabled="!host" data-event-change="queue('ailevel', ev.value)"/><span class="trough">{{ailevel}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-units"><span class="caption">Unit Count<span data-if="host">:</span></span><input type="range" id="units" step="1" min="1" max="10" data-attr-min="unitsmin" data-attr-max="unitsmax" data-attr-value="units" data-attrif-disabled="!host" data-event-change="queue('units', ev.value)"/><span class="trough">{{units}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-tech"><span class="caption">Tech Level<span data-if="host">:</span></span><input type="range" id="tech" step="1" min="1" max="10" data-attr-max="techmax" data-attr-value="tech" data-attrif-disabled="!host" data-event-change="queue('tech', ev.value)"/><span class="trough">{{tech}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-credits"><span class="caption">Credits<span data-if="host">:</span></span><input type="range" id="credits" step="100" min="2500" max="10000" data-attr-step="creditsstep" data-attr-min="creditsmin" data-attr-max="creditsmax" data-attr-value="credits" data-attrif-disabled="!host" data-event-change="queue('credits', ev.value)"/><span class="trough">{{credits}}</span><span class="trough-edge"></span></div>
 	</div>
 
 	<div id="switches">
@@ -57,7 +57,7 @@
 
 	<button id="kick" data-if="host" data-event-click="queue('kick')"></button>
 	<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
-	<button id="go" data-if="host" data-class-disabled="!cango" data-event-click="queue('go')">Go!</button>
+	<button id="go" class="fitted" data-if="host" data-class-disabled="!cango" data-event-click="queue('go')">Go!</button>
 	<button id="accept" data-if="!host" data-class-disabled="!canaccept" data-event-click="queue('accept')">Accept</button>
 </body>
 </rml>

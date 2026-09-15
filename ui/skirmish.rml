@@ -41,27 +41,27 @@
 			<div id="settings" class="frame">
 				<div class="setting" id="setting-units">
 					<span class="caption">Unit Count:</span>
-					<div class="row"><input type="range" id="units" step="1" data-attr-min="unitsmin" data-attr-max="unitsmax" data-attr-value="units" data-event-change="queue('units', ev.value)"/><span class="trough">{{units}}</span></div>
+					<div class="row"><input type="range" id="units" step="1" data-attr-min="unitsmin" data-attr-max="unitsmax" data-attr-value="units" data-event-change="queue('units', ev.value)"/><span class="trough">{{units}}</span><span class="trough-edge"></span></div>
 				</div>
 				<div class="setting" id="setting-credits">
 					<span class="caption">Credits:</span>
-					<div class="row"><input type="range" id="credits" data-attr-step="creditsstep" data-attr-min="creditsmin" data-attr-max="creditsmax" data-attr-value="credits" data-event-change="queue('credits', ev.value)"/><span class="trough">{{credits}}</span></div>
+					<div class="row"><input type="range" id="credits" data-attr-step="creditsstep" data-attr-min="creditsmin" data-attr-max="creditsmax" data-attr-value="credits" data-event-change="queue('credits', ev.value)"/><span class="trough">{{credits}}</span><span class="trough-edge"></span></div>
 				</div>
 				<div class="setting" id="setting-tech">
 					<span class="caption">Tech Level:</span>
-					<div class="row"><input type="range" id="tech" step="1" min="1" data-attr-max="techmax" data-attr-value="tech" data-event-change="queue('tech', ev.value)"/><span class="trough">{{tech}}</span></div>
+					<div class="row"><input type="range" id="tech" step="1" min="1" data-attr-max="techmax" data-attr-value="tech" data-event-change="queue('tech', ev.value)"/><span class="trough">{{tech}}</span><span class="trough-edge"></span></div>
 				</div>
 				<div class="setting" id="setting-ailevel">
 					<span class="caption">AI Level:</span>
-					<div class="row"><input type="range" id="ailevel" step="1" min="0" max="2" data-attr-value="ailevel" data-event-change="queue('ailevel', ev.value)"/><span class="trough">{{ailevel}}</span></div>
+					<div class="row"><input type="range" id="ailevel" step="1" min="0" max="2" data-attr-value="ailevel" data-event-change="queue('ailevel', ev.value)"/><span class="trough">{{ailevel}}</span><span class="trough-edge"></span></div>
 				</div>
 				<div class="setting" id="setting-aiplayers">
 					<span class="caption">AI Players:</span>
-					<div class="row"><input type="range" id="aiplayers" step="1" min="1" data-attr-max="aiplayersmax" data-attr-value="aiplayers" data-event-change="queue('aiplayers', ev.value)"/><span class="trough">{{aiplayers}}</span></div>
+					<div class="row"><input type="range" id="aiplayers" step="1" min="1" data-attr-max="aiplayersmax" data-attr-value="aiplayers" data-event-change="queue('aiplayers', ev.value)"/><span class="trough">{{aiplayers}}</span><span class="trough-edge"></span></div>
 				</div>
 				<div class="setting" id="setting-speed">
 					<span class="caption">Game Speed</span>
-					<div class="row"><input type="range" id="speed" step="1" min="0" max="6" data-attr-value="speed" data-event-change="queue('speed', ev.value)"/><span class="trough">{{speed}}</span></div>
+					<div class="row"><input type="range" id="speed" step="1" min="0" max="6" data-attr-value="speed" data-event-change="queue('speed', ev.value)"/><span class="trough">{{speed}}</span><span class="trough-edge"></span></div>
 				</div>
 			</div>
 			<button id="pick" data-event-click="queue('map')">Multiplay Map</button>

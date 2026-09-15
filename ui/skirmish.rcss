@@ -138,9 +138,9 @@
 /* --------------------------------------------------------------------- the map preview */
 
 /*
- * The preview fills the frame's own rect rather than the room inside its line, because the
- * layer fitted the picture to the rect and drew the line over it. The caption is drawn under
- * the picture and over it: the static is a child window, so it paints after the dialog.
+ * The frame's line is drawn a pixel outside its rect, as every frame the layer draws is, so
+ * this box is the line and the picture is fitted to what it encloses. The caption is drawn
+ * under the picture and over it: the static is a child window, so it paints after the dialog.
  */
 #map
 {
@@ -150,19 +150,13 @@
 	margin-top: 1dp;
 }
 
-/*
- * The picture fills the room inside the frame's line rather than the frame's whole rect, so
- * it is centred in it. The layer fitted it to the rect and drew the line back over the edge
- * it covered, which left the picture against the left of the frame with the pixel it fell
- * short showing on the right.
- */
 #preview
 {
 	position: absolute;
-	left: 0;
-	top: 0;
-	width: 322dp;
-	height: 172dp;
+	left: -1dp;
+	top: -1dp;
+	width: 323dp;
+	height: 173dp;
 }
 
 #preview-caption
@@ -210,9 +204,13 @@
  * in whole pixels where the toolkit rounds a half up. Padding the box would bring the two
  * together but would carry the field's right end in with it, which costs more than it saves.
  */
-.setting .trough
+.setting .trough, .setting .trough-edge
 {
 	height: 24dp;
+}
+
+.setting .trough
+{
 	line-height: 23dp;
 }
 
