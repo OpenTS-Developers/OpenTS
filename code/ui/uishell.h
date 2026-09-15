@@ -66,6 +66,11 @@ class UIShellClass
 		// screens.
 		bool Screen_Shown(void) const;
 
+		// Settles every shown screen as though the session ended and takes its document off
+		// the frame, for a caller about to draw a presentation of its own over the whole of
+		// it. Each screen's runner tears it down when the caller hands control back.
+		void End_Screens(void);
+
 		// True while a Win32 dialog is on screen. A screen asked to open over one keeps its
 		// legacy view, because the visible dialog takes the mouse before a document can.
 		bool Legacy_Dialog_Visible(void) const;

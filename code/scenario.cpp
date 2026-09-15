@@ -71,6 +71,7 @@
 #include "_rtti.h"
 #include "_rules.h"
 #include "_surface.h"
+#include "_ui.h"
 #include "_tactica.h"
 #include "_timer.h"
 #include "_tooltip.h"
@@ -142,6 +143,7 @@
 #include "score.h"
 #include "script.h"
 #include "session.h"
+#include "ui/uishell.h"
 #include "smudge.h"
 #include "spawnhouse.h"
 #include "stats.h"
@@ -1148,6 +1150,10 @@ void Clear_Scenario(void)
  *=============================================================================================*/
 void Do_Win(void)
 {
+	// What follows takes the whole frame and runs loops of its own, so a screen the player
+	// opened as the match settled cannot be left standing over it.
+	UIShell.End_Screens();
+
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		if (!Session.Play) {
 			Wait_For_End_Of_Queue();
@@ -1309,6 +1315,8 @@ void Do_Win(void)
  *=============================================================================================*/
 void Do_Lose(void)
 {
+	UIShell.End_Screens();
+
 	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
 		if (!Session.Play) {
 			Wait_For_End_Of_Queue();
