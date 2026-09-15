@@ -836,13 +836,18 @@ sound dialog, the campaign chooser and the three saved-game dialogs are each a
 pixel wider; the in-game options menu is a pixel shorter; the keyboard screen's
 combo box and list sit a pixel lower and wider; the abort question's buttons
 are a pixel narrower; the in-game menu's Save button sits a row lower than
-the column around it; the skirmish setup is a pixel wider than its
+the column around it, and its Internet arrangement's Load button does the same;
+the skirmish setup is a pixel wider than its
 template's unit and a half with the frame around its settings a pixel taller
 still; the classic main menu and the random map generator are each a pixel
-taller than the factor gives; and the generator's preview frame is a pixel
-wider and a pixel taller than its group box. Five screens carry a second arrangement: the sound
+taller than the factor gives; the generator's preview frame is a pixel
+wider and a pixel taller than its group box; and the generator's Map Height
+caption and its Time of Day box each sit a row higher than the factor gives,
+with its two size boxes a pixel wider. Five screens carry a second arrangement: the sound
 options and the game controls each have a frontend template and an in-game one,
-the in-game options menu has a campaign arrangement and a network one, the
+the in-game options menu has a campaign arrangement, a network one and an
+Internet one with two bars under a group box, the random map generator has the
+base game's, the expansion's and a tour territory's, the
 saved-game screen has one for each of loading, saving and deleting, all chosen
 by a class the document sets from its model, and the message box places its
 buttons in the three slots its template holds, which come out as a row spread
@@ -897,7 +902,21 @@ that shows through. Disabled is a half-black wash rather than the skin the
 original loads and never draws. That wash is a flat gradient listed ahead of the skin, so
 it paints last and covers it; a caption cannot be covered the same way, because text is
 drawn after every decorator, so a disabled caption carries the colour the wash would have
-left it at. Check boxes, edit boxes, lists,
+left it at.
+
+Every other control the layer disables takes the same wash over its own rect: a
+check box over its box, a track bar over its bar, its reading and the column
+beside it, and a combo box a further half toward black over the darkening every
+box already carries. A disabled control's text is a shade of its own. The layer
+asks for one grey and gets two, because its sheets shade a glyph rather than
+filling it: text it draws from the sheets comes out a step darker than the grey
+it asked for, while text it draws through GDI and the frames it draws itself
+take that grey as written. The kit carries both, and the wash reaches a frame
+only down the sides of a control, never across its ends, which a single border
+colour cannot say; the two bars a screen shows and does not set are a column of
+frame out because of it.
+
+Check boxes, edit boxes, lists,
 scroll bars, track bars, combo boxes, the progress bar, group boxes, hotkey
 fields and tooltips are authored the same way, in the cyan frame
 `OD_Draw_Rect` substitutes for white. That frame is drawn a pixel outside the
@@ -1238,13 +1257,23 @@ beyond an ASCII test document.
    buttons were; surrender runs through the message box screen, while abort
    is `abort.rml` over its own `IDD_MISSION_ABORT` template, whose middle
    answer surrenders rather than restarts outside a campaign mission; the
-   in-game options menu itself is `gameopt.rml` over `IDD_OPT_CTRL_SP` and
-   `IDD_OPT_CTRL_MP`, which closes and reopens without revealing around a save
+   in-game options menu itself is `gameopt.rml` over `IDD_OPT_CTRL_SP`,
+   `IDD_OPT_CTRL_MP` and `IDD_OPT_CTRL_WOL`, which closes and reopens without
+   revealing around a save
    or a delete where the Win32 menu hid and re-showed itself). The Win32
    templates remain the fallback view of every one. Load, save and delete keep
    their own dialogs until step 9. Evidence: settings round-trip through
    `SUN.INI` unchanged; the menu and the abort question match their Win32
    dialogs pixel for pixel at 3840x2160.
+
+   The Internet arrangement landed with step 13, because a spawned game sets
+   `GAME_INTERNET` and the menu had been giving such a game the network form,
+   which carries neither the speed bar nor the connection reading. Its speed
+   reaches the other players as the `GAMESPEED` event that menu's Resume button
+   sent, and its Save and Load ask the match rather than doing the work here,
+   as that menu's buttons did. The bar names the speed it stands at from the
+   start, where the Win32 dialog left its template's caption standing until the
+   bar first moved.
 8. **Main menu family** (M, landed). Campaign choice is `campaign.rml`, which
    names the difficulty the bar is set to from the start where the Win32
    dialog left its template's caption until the bar first moved. The other
@@ -1334,8 +1363,13 @@ beyond an ASCII test document.
     each pass, where the dialog moved them in and out of its controls in two
     passes of its own. The screen closes and reopens around the save, load and
     delete dialogs the generator raises, as the skirmish setup does around the
-    map dialog. `IDD_MAPGEN_WDT` keeps its dialog: only the online game hands
-    over a territory's bounds, and that game cannot be reached.
+    map dialog. `IDD_MAPGEN_WDT`, the tour's own form, followed with step 13:
+    a battle fought over a territory is the same screen with the players
+    reading replaced by the pair of boxes naming how many the tour fights it
+    between, and every other setting bounded or fixed by the territory, which
+    the screen shows locked rather than taken away. The tour cannot be reached,
+    so the form was measured against its Win32 dialog through a temporary hook
+    that hands the generator a fabricated territory.
 13. **Retire OwnerDraw** (M). Two templates do not migrate and are the reason
     this step is not simply a deletion. `IDD_EXCEPTION` is shown by the crash
     reporter after `Release_Display`, through `DialogBoxParam` rather than the
@@ -1464,7 +1498,8 @@ mission it chose.
 | Multiplayer map dialog, opened from the skirmish setup and from a host lobby | yes | not yet |
 | Network browser, host lobby and guest lobby, between two copies | yes | not yet |
 | Main menu, game type and multiplayer game, with the graphic menu hooked out | yes | not yet |
-| Random map generator, opened from the map dialog | yes | not yet |
+| Random map generator, opened from the map dialog, in the base game's arrangement and a tour territory's | yes | not yet |
+| In-game options menu, the campaign arrangement and the Internet one | yes | not yet |
 | Out-of-sync screen, the master's form and the waiting one, opened on a key from a skirmish | yes | not yet |
 | Progress, with its bar | never shown | never shown |
 

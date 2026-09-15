@@ -6,42 +6,47 @@
 </head>
 <body template="dialog" data-model="mapgen" class="fitted">
 	<span id="cap-environment" class="caption">Environment:</span>
-	<select id="environment" data-value="environment" data-event-change="queue('environment', ev.value)">
+	<select id="environment" data-class-disabled="!environmenton" data-attrif-disabled="!environmenton" data-value="environment" data-event-change="queue('environment', ev.value)">
 		<option data-for="entry : environments" data-attr-value="it_index">{{entry.label}}</option>
 	</select>
 
 	<span id="cap-time" class="caption">Time of Day:</span>
-	<select id="time" data-value="time" data-event-change="queue('time', ev.value)">
+	<select id="time" data-class-disabled="!timeon" data-attrif-disabled="!timeon" data-value="time" data-event-change="queue('time', ev.value)">
 		<option data-for="entry : times" data-attr-value="it_index">{{entry.label}}</option>
 	</select>
 
 	<span id="cap-width" class="caption">Map Width:</span>
-	<select id="width" data-value="width" data-event-change="queue('width', ev.value)">
+	<select id="width" data-class-disabled="!widthon" data-attrif-disabled="!widthon" data-value="width" data-event-change="queue('width', ev.value)">
 		<option data-for="entry : sizes" data-attr-value="it_index">{{entry.label}}</option>
 	</select>
 
 	<span id="cap-height" class="caption">Map Height:</span>
-	<select id="height" data-value="height" data-event-change="queue('height', ev.value)">
+	<select id="height" data-class-disabled="!heighton" data-attrif-disabled="!heighton" data-value="height" data-event-change="queue('height', ev.value)">
 		<option data-for="entry : sizes" data-attr-value="it_index">{{entry.label}}</option>
 	</select>
 
 	<div id="settings">
-		<div class="row" id="row-players"><span class="caption">Players:</span><input type="range" id="players" step="1" min="2" max="8" data-attr-min="playersmin" data-attr-max="playersmax" data-attr-value="players" data-event-change="queue('players', ev.value)"/><span class="trough">{{players}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-cliffs"><span class="caption">Cliffs:</span><input type="range" id="cliffs" step="1" min="0" max="100" data-attr-value="cliffs" data-event-change="queue('cliffs', ev.value)"/><span class="trough">{{cliffs}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-accessibility"><span class="caption">Accessability:</span><input type="range" id="accessibility" step="1" min="0" max="100" data-attr-value="accessibility" data-event-change="queue('accessibility', ev.value)"/><span class="trough">{{accessibility}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-hills"><span class="caption">Hills:</span><input type="range" id="hills" step="1" min="0" max="100" data-attr-value="hills" data-event-change="queue('hills', ev.value)"/><span class="trough">{{hills}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-tiberiumamount"><span class="caption">Tiberium Amount:</span><input type="range" id="tiberiumamount" step="1" min="1" max="100" data-attr-value="tiberiumamount" data-event-change="queue('tiberiumamount', ev.value)"/><span class="trough">{{tiberiumamount}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-tiberiumfields"><span class="caption">Tiberium Fields:</span><input type="range" id="tiberiumfields" step="1" min="0" max="100" data-attr-value="tiberiumfields" data-event-change="queue('tiberiumfields', ev.value)"/><span class="trough">{{tiberiumfields}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-water"><span class="caption">Water:</span><input type="range" id="water" step="1" min="0" max="100" data-attr-value="water" data-event-change="queue('water', ev.value)"/><span class="trough">{{water}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-vegetation"><span class="caption">Vegetation:</span><input type="range" id="vegetation" step="1" min="0" max="100" data-attr-value="vegetation" data-event-change="queue('vegetation', ev.value)"/><span class="trough">{{vegetation}}</span><span class="trough-edge"></span></div>
-		<div class="row" id="row-cities"><span class="caption">Cities:</span><input type="range" id="cities" step="1" min="0" max="100" data-attr-value="cities" data-event-change="queue('cities', ev.value)"/><span class="trough">{{cities}}</span><span class="trough-edge"></span></div>
-		<div class="row firestorm-only" id="row-veinholes"><span class="caption">Veinholes:</span><input type="range" id="veinholes" step="1" min="0" max="5" data-attr-value="veinholes" data-event-change="queue('veinholes', ev.value)"/><span class="trough">{{veinholes}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-players"><span class="caption">Players:</span><input type="range" id="players" step="1" data-attr-min="playersmin" data-attr-max="playersmax" data-attrif-disabled="!playerson" data-attr-value="players" data-event-change="queue('players', ev.value)"/><span class="trough" data-class-disabled="!playerson">{{players}}</span><span class="trough-edge" data-class-disabled="!playerson"></span></div>
+		<div class="row" id="row-cliffs"><span class="caption">Cliffs:</span><input type="range" id="cliffs" step="1" data-attr-min="cliffsmin" data-attr-max="cliffsmax" data-attrif-disabled="!cliffson" data-attr-value="cliffs" data-event-change="queue('cliffs', ev.value)"/><span class="trough" data-class-disabled="!cliffson">{{cliffs}}</span><span class="trough-edge" data-class-disabled="!cliffson"></span></div>
+		<div class="row" id="row-accessibility"><span class="caption">Accessability:</span><input type="range" id="accessibility" step="1" data-attr-min="accessibilitymin" data-attr-max="accessibilitymax" data-attrif-disabled="!accessibilityon" data-attr-value="accessibility" data-event-change="queue('accessibility', ev.value)"/><span class="trough" data-class-disabled="!accessibilityon">{{accessibility}}</span><span class="trough-edge" data-class-disabled="!accessibilityon"></span></div>
+		<div class="row" id="row-hills"><span class="caption">Hills:</span><input type="range" id="hills" step="1" data-attr-min="hillsmin" data-attr-max="hillsmax" data-attrif-disabled="!hillson" data-attr-value="hills" data-event-change="queue('hills', ev.value)"/><span class="trough" data-class-disabled="!hillson">{{hills}}</span><span class="trough-edge" data-class-disabled="!hillson"></span></div>
+		<div class="row" id="row-tiberiumamount"><span class="caption">Tiberium Amount:</span><input type="range" id="tiberiumamount" step="1" data-attr-min="tiberiumamountmin" data-attr-max="tiberiumamountmax" data-attrif-disabled="!tiberiumamounton" data-attr-value="tiberiumamount" data-event-change="queue('tiberiumamount', ev.value)"/><span class="trough" data-class-disabled="!tiberiumamounton">{{tiberiumamount}}</span><span class="trough-edge" data-class-disabled="!tiberiumamounton"></span></div>
+		<div class="row" id="row-tiberiumfields"><span class="caption">Tiberium Fields:</span><input type="range" id="tiberiumfields" step="1" data-attr-min="tiberiumfieldsmin" data-attr-max="tiberiumfieldsmax" data-attrif-disabled="!tiberiumfieldson" data-attr-value="tiberiumfields" data-event-change="queue('tiberiumfields', ev.value)"/><span class="trough" data-class-disabled="!tiberiumfieldson">{{tiberiumfields}}</span><span class="trough-edge" data-class-disabled="!tiberiumfieldson"></span></div>
+		<div class="row" id="row-water"><span class="caption">Water:</span><input type="range" id="water" step="1" data-attr-min="watermin" data-attr-max="watermax" data-attrif-disabled="!wateron" data-attr-value="water" data-event-change="queue('water', ev.value)"/><span class="trough" data-class-disabled="!wateron">{{water}}</span><span class="trough-edge" data-class-disabled="!wateron"></span></div>
+		<div class="row" id="row-vegetation"><span class="caption">Vegetation:</span><input type="range" id="vegetation" step="1" data-attr-min="vegetationmin" data-attr-max="vegetationmax" data-attrif-disabled="!vegetationon" data-attr-value="vegetation" data-event-change="queue('vegetation', ev.value)"/><span class="trough" data-class-disabled="!vegetationon">{{vegetation}}</span><span class="trough-edge" data-class-disabled="!vegetationon"></span></div>
+		<div class="row" id="row-cities"><span class="caption">Cities:</span><input type="range" id="cities" step="1" data-attr-min="citiesmin" data-attr-max="citiesmax" data-attrif-disabled="!citieson" data-attr-value="cities" data-event-change="queue('cities', ev.value)"/><span class="trough" data-class-disabled="!citieson">{{cities}}</span><span class="trough-edge" data-class-disabled="!citieson"></span></div>
+		<div class="row firestorm-only" id="row-veinholes"><span class="caption">Veinholes:</span><input type="range" id="veinholes" step="1" data-attr-min="veinholesmin" data-attr-max="veinholesmax" data-attrif-disabled="!veinholeson" data-attr-value="veinholes" data-event-change="queue('veinholes', ev.value)"/><span class="trough" data-class-disabled="!veinholeson">{{veinholes}}</span><span class="trough-edge" data-class-disabled="!veinholeson"></span></div>
 	</div>
 
 	<div id="switches" class="firestorm-only">
-		<label class="check" id="switch-ionstorms"><input type="checkbox" data-attrif-checked="ionstorms" data-event-click="queue('ionstorms', ionstorms ? 0 : 1)"/>Ion Storms</label>
-		<label class="check" id="switch-transitions"><input type="checkbox" data-attrif-checked="transitions" data-event-click="queue('transitions', transitions ? 0 : 1)"/>Transitions</label>
-		<label class="check" id="switch-lifeforms"><input type="checkbox" data-attrif-checked="lifeforms" data-event-click="queue('lifeforms', lifeforms ? 0 : 1)"/>Lifeforms</label>
+		<label class="check" id="switch-ionstorms" data-class-disabled="!ionstormson"><input type="checkbox" data-attrif-checked="ionstorms" data-attrif-disabled="!ionstormson" data-event-click="queue('ionstorms', ionstorms ? 0 : 1)"/>Ion Storms</label>
+		<label class="check" id="switch-transitions" data-class-disabled="!transitionson"><input type="checkbox" data-attrif-checked="transitions" data-attrif-disabled="!transitionson" data-event-click="queue('transitions', transitions ? 0 : 1)"/>Transitions</label>
+		<label class="check" id="switch-lifeforms" data-class-disabled="!lifeformson"><input type="checkbox" data-attrif-checked="lifeforms" data-attrif-disabled="!lifeformson" data-event-click="queue('lifeforms', lifeforms ? 0 : 1)"/>Lifeforms</label>
+	</div>
+
+	<div id="sides" data-if="territory">
+		<label class="check disabled" id="switch-oneonone"><input type="checkbox" disabled="disabled"/>1 on 1</label>
+		<label class="check disabled" id="switch-twoontwo"><input type="checkbox" checked="checked" disabled="disabled"/>2 on 2</label>
 	</div>
 
 	<div id="map" class="frame">
@@ -49,7 +54,7 @@
 		<span id="preview-caption">Preview</span>
 	</div>
 
-	<button id="surprise" data-event-click="queue('surprise')">Surprise Me</button>
+	<button id="surprise" data-class-disabled="!surpriseon" data-event-click="queue('surprise')">Surprise Me</button>
 	<button id="previewmap" data-class-disabled="!previewenabled" data-event-click="queue('preview')">Preview Map</button>
 
 	<button id="save" data-event-click="queue('save')">Save Map</button>

@@ -51,11 +51,11 @@
 .firestorm #cap-environment { left: 33dp; top: 11dp; }
 .firestorm #environment { left: 118dp; top: 13dp; }
 .firestorm #cap-time { left: 33dp; top: 39dp; }
-.firestorm #time { left: 118dp; top: 40dp; }
+.firestorm #time { left: 118dp; top: 41dp; }
 .firestorm #cap-width { left: 280dp; top: 13dp; }
-.firestorm #width { left: 372dp; top: 13dp; width: 94dp; }
-.firestorm #cap-height { left: 279dp; top: 42dp; }
-.firestorm #height { left: 372dp; top: 42dp; width: 94dp; }
+.firestorm #width { left: 372dp; top: 13dp; width: 95dp; }
+.firestorm #cap-height { left: 279dp; top: 41dp; }
+.firestorm #height { left: 372dp; top: 42dp; width: 95dp; }
 .firestorm #reveal { width: 640dp; }
 
 /* ------------------------------------------------------------------------- the readings */
@@ -178,3 +178,36 @@
 #delete { left: 267dp; top: 358dp; width: 98dp; }
 #ok { left: 397dp; top: 358dp; width: 98dp; }
 #cancel { left: 505dp; top: 358dp; width: 98dp; }
+
+/* ------------------------------------------------------------- the tour's battlefield */
+
+/*
+ * A battle fought over a tour territory is IDD_MAPGEN_WDT, the expansion's template with the
+ * players reading replaced by a pair of boxes naming how many the tour fights the battle
+ * between, and a few of its controls a row further up.
+ */
+.territory #row-players
+{
+	display: none;
+}
+
+#sides > label
+{
+	position: absolute;
+	height: 17dp;
+	width: 110dp;
+}
+
+#switch-oneonone { left: 33dp; top: 71dp; }
+#switch-twoontwo { left: 153dp; top: 71dp; }
+
+.territory #map { top: 91dp; }
+.territory #preview-caption { top: 101dp; }
+.territory #surprise, .territory #previewmap { top: 322dp; }
+.territory #switch-transitions { top: 41dp; }
+.territory #switch-lifeforms { top: 68dp; }
+/* The tour's template puts this one reading a unit further along than the expansion's. */
+.territory #settings #veinholes
+{
+	margin-left: -1dp;
+}

@@ -3,7 +3,9 @@
  * IDD_OPT_CTRL_SP at 209 by 140 dialog units, which the game draws 314 by 228, with seven 173 wide buttons
  * at 70 across and 19, 47, 74, 102, 130, 158 and 185 down. In a network game it is
  * IDD_OPT_CTRL_MP at 209 by 75, 314 by 123, with three 149 wide buttons at 82 across and 19,
- * 48 and 78 down. Everything visual comes from the kit.
+ * 48 and 78 down. An Internet game is IDD_OPT_CTRL_WOL at 340 by 185, 510 by 302, with five
+ * 149 wide buttons at 180 across and 13, 40, 68, 96 and 123 down, over a group box at 42, 149
+ * holding the connection and game speed bars. Everything visual comes from the kit.
  */
 
 #reveal
@@ -67,3 +69,121 @@ button
 {
 	margin-top: 5dp;
 }
+
+/* ------------------------------------------------------------------- the Internet game */
+
+.internet #reveal
+{
+	width: 510dp;
+	height: 302dp;
+	margin-top: -151dp;
+}
+
+.internet #content
+{
+	position: relative;
+	padding: 0;
+}
+
+.internet #content > *
+{
+	position: absolute;
+}
+
+.internet button
+{
+	left: 180dp;
+	width: 149dp;
+	margin-top: 0;
+}
+
+/* The game draws this one a row lower than the factor gives, as it does the Save button. */
+.internet #controls { top: 13dp; }
+.internet #load { top: 41dp; }
+.internet #save { top: 68dp; }
+.internet #abort { top: 96dp; }
+.internet #resume { top: 123dp; }
+
+/*
+ * The frame runs through the middle of its caption row rather than along the rect's top, so
+ * the box starts eight below the rect the template gives it and gives those rows to the row
+ * the kit hangs above it.
+ */
+#timing
+{
+	left: 42dp;
+	top: 157dp;
+	width: 426dp;
+	height: 104dp;
+	padding: 0;
+}
+
+.internet #abort, .internet #resume
+{
+	margin-top: 0;
+}
+
+/*
+ * Each bar is the last fifty columns of its own rect as a reading, the column the layer
+ * darkens beside it, and the bar in what is left. The connection is shown and not set, so it
+ * carries the wash a disabled control takes.
+ */
+.internet .caption
+{
+	left: 58dp;
+	width: 88dp;
+	height: 22dp;
+	line-height: 17dp;
+}
+
+.internet input[type='range']
+{
+	left: 142dp;
+	width: 172dp;
+	height: 22dp;
+}
+
+.internet .trough
+{
+	width: 50dp;
+	height: 24dp;
+	line-height: 21dp;
+}
+
+/*
+ * The line this box's frame runs through starts a pixel further along than the kit's, and the
+ * caption stays where it is, so it gives that pixel back.
+ */
+#timing > .rule > span:first-child
+{
+	width: 9dp;
+}
+
+#timing > .rule > label
+{
+	margin-left: 1dp;
+}
+
+.internet .trough-edge
+{
+	height: 23dp;
+}
+
+.internet .value
+{
+	left: 370dp;
+	height: 22dp;
+	line-height: 17dp;
+	text-align: right;
+	padding-right: 1dp;
+}
+
+#cap-connection, #connection, #trough-connection, #edge-connection, #connection-name { top: 179dp; }
+#cap-speed, #speed, #trough-speed, #edge-speed, #speed-name { top: 215dp; }
+
+/* The bar's frame closes over the reading's first column, which is why it is sorted under. */
+#trough-connection, #trough-speed { left: 314dp; }
+#edge-connection, #edge-speed { left: 364dp; }
+
+#connection-name { width: 96dp; }
+#speed-name { width: 68dp; }

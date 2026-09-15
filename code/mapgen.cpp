@@ -3269,19 +3269,16 @@ int Do_Random_Map_Dialog(bool (*callback)())
 	RMGCallback = callback;
 	RandomMapGen.SeedData.Callback = callback;
 
-	// The screen covers the base game's template and the expansion's; a territory's own
-	// bounds still open the Win32 dialog, because only the online game hands them over.
-	if (wdt == NULL) {
-		UIMapGenChoiceType choice = UI_MAPGEN_CANCEL;
-		if (UI_Map_Generator_Dialog(choice)) {
-			if (choice == UI_MAPGEN_ACCEPT) {
-				if (RandomMapGen.MapPreview == NULL || RandomMapGen.MapPreview->Get_Preview_Surface() == NULL) {
-					RandomMapGen.Generate_Random_Map(true, NULL);
-				}
-				res = 1;
-			} else {
-				res = 2;
+	// The screen covers the base game's template, the expansion's, and the tour's.
+	UIMapGenChoiceType choice = UI_MAPGEN_CANCEL;
+	if (UI_Map_Generator_Dialog(choice)) {
+		if (choice == UI_MAPGEN_ACCEPT) {
+			if (RandomMapGen.MapPreview == NULL || RandomMapGen.MapPreview->Get_Preview_Surface() == NULL) {
+				RandomMapGen.Generate_Random_Map(true, NULL);
 			}
+			res = 1;
+		} else {
+			res = 2;
 		}
 	}
 

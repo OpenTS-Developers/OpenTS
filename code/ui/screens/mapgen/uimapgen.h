@@ -34,20 +34,25 @@ struct UIMapGenOption
 };
 
 
-// One reading the player drags: where it stands and the bounds the generator holds it to.
+// One reading the player drags: where it stands, the bounds the generator holds it to, and
+// whether it may be dragged at all.
 struct UIMapGenSlider
 {
 	int Value = 0;
 	int Minimum = 0;
 	int Maximum = 100;
+	bool Enabled = true;
 };
 
 
 // What the generator shows. The expansion's template carries the veinhole reading and the
-// three switches; the base game's does not, so a class on the body chooses.
+// three switches; the base game's does not, so a class on the body chooses. A battle fought
+// over a tour territory is a third arrangement: the tour settles how many play and bounds or
+// fixes the rest, and a setting it fixed is shown locked rather than taken away.
 struct UIMapGenState
 {
 	bool Firestorm = false;
+	bool Territory = false;
 
 	std::vector<UIMapGenOption> Environments;
 	std::vector<UIMapGenOption> Times;
@@ -71,6 +76,15 @@ struct UIMapGenState
 	bool IonStorms = false;
 	bool Transitions = false;
 	bool Lifeforms = false;
+
+	bool EnvironmentEnabled = true;
+	bool TimeEnabled = true;
+	bool WidthEnabled = true;
+	bool HeightEnabled = true;
+	bool IonStormsEnabled = true;
+	bool TransitionsEnabled = true;
+	bool LifeformsEnabled = true;
+	bool SurpriseEnabled = true;
 
 	bool LoadEnabled = false;
 	bool DeleteEnabled = false;

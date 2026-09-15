@@ -20,6 +20,8 @@
 #include "language/language.h"
 #include "mapgen.h"
 #include "session.h"
+#include "wdtnet.h"
+#include "worlddom.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
@@ -97,12 +99,19 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 			state.DeleteEnabled = present;
 			state.PreviewEnabled = !Debug_Map;
 
+			Read_Territory(state);
+
 			UI_Generated_Map_Preview_Image(state.Preview);
 		}
 
 		virtual void Set(char const * name, int value) override
 		{
 			MapSeedClass & seed = RandomMapGen.SeedData;
+
+			// The tour fights its battles between four, so the reading it hides is not written.
+			if (Territory() != NULL && std::strcmp(name, "players") == 0) {
+				return;
+			}
 
 			if (std::strcmp(name, "environment") == 0) {
 				seed.Biome = value;
@@ -175,6 +184,70 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 			slider.Minimum = minimum;
 			slider.Maximum = maximum;
 			slider.Value = (value < minimum) ? minimum : ((value > maximum) ? maximum : value);
+		}
+
+		static WDTTerritory * Territory(void)
+		{
+			if (Session.Type != GAME_INTERNET || !Session.IsWDT) {
+				return(NULL);
+			}
+			return(WDT_Get_Territory(Session.WDTTerritory));
+		}
+
+		// A reading the tour left nothing to choose between is shown over the whole range and
+		// locked, which is what the dialog's own slider setup did with it.
+		static void Bound(UIMapGenSlider & slider, int minimum, int maximum, bool allowed)
+		{
+			if (maximum <= minimum) {
+				slider.Minimum = 0;
+				slider.Maximum = 100;
+				slider.Enabled = false;
+				return;
+			}
+			slider.Minimum = minimum;
+			slider.Maximum = maximum;
+			slider.Enabled = allowed;
+			slider.Value = (slider.Value < minimum) ? minimum : ((slider.Value > maximum) ? maximum : slider.Value);
+		}
+
+		static void Read_Territory(UIMapGenState & state)
+		{
+			WDTTerritory * territory = Territory();
+			state.Territory = territory != NULL;
+			if (territory == NULL) {
+				return;
+			}
+
+			Bound(state.Cliffs, territory->CliffsMin, territory->CliffsMax, territory->UserModCliffs != 0);
+			Bound(state.Accessibility, territory->AccessibilityMin, territory->AccessibilityMax, territory->UserModAccessability != 0);
+			Bound(state.Hills, territory->HillsMin, territory->HillsMax, territory->UserModHills != 0);
+			Bound(state.TiberiumAmount, territory->TiberiumAmountMin, territory->TiberiumAmountMax, territory->UserModTiberiumAmount != 0);
+			Bound(state.TiberiumFields, territory->TiberiumFieldsMin, territory->TiberiumFieldsMax, territory->UserModTiberiumFields != 0);
+			Bound(state.Water, territory->WaterMin, territory->WaterMax, territory->UserModWater != 0);
+			Bound(state.Vegetation, territory->VegetationMin, territory->VegetationMax, territory->UserModVegetation != 0);
+			Bound(state.Cities, territory->CitiesMin, territory->CitiesMax, territory->UserModCities != 0);
+			state.Veinholes.Enabled = territory->UserModVeinholeMonsters != 0;
+
+			// The tour names the number of players itself, and the dialog's own reading said so
+			// with a pair of boxes rather than a bar.
+			state.Players.Value = 4;
+			state.Players.Enabled = false;
+
+			state.EnvironmentEnabled = territory->UserModBiome != 0;
+			state.TimeEnabled = territory->UserModTime != 0;
+			state.WidthEnabled = territory->UserModWidth != 0;
+			state.HeightEnabled = territory->UserModHeight != 0;
+			state.TransitionsEnabled = territory->UserModTimeTransitions != 0;
+			state.LifeformsEnabled = territory->UserModTiberiumCreatures != 0;
+
+			// Nothing to roll leaves the button dead, as the dialog left it.
+			state.SurpriseEnabled = territory->UserModBiome || territory->UserModTime
+				|| territory->UserModCliffs || territory->UserModAccessability
+				|| territory->UserModHills || territory->UserModTiberiumAmount
+				|| territory->UserModTiberiumFields || territory->UserModWater
+				|| territory->UserModVegetation || territory->UserModCities
+				|| territory->UserModWidth || territory->UserModHeight
+				|| territory->UserModVeinholeMonsters;
 		}
 };
 

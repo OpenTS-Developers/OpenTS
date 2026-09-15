@@ -42,7 +42,9 @@ void UIMapGenPresenterClass::Execute(UIIntent const & intent)
 		}
 
 	} else if (intent.Name == "surprise") {
-		Service.Surprise();
+		if (State.SurpriseEnabled) {
+			Service.Surprise();
+		}
 
 	} else if (intent.Name == "save") {
 		Raise = RAISE_SAVE;
@@ -91,6 +93,10 @@ class UIMapGenViewClass : public UIRmlViewClass
 					"players", "cliffs", "accessibility", "hills", "tiberiumamount",
 					"tiberiumfields", "water", "vegetation", "cities", "veinholes",
 					"ionstorms", "transitions", "lifeforms",
+					"playerson", "cliffson", "accessibilityon", "hillson", "tiberiumamounton",
+					"tiberiumfieldson", "wateron", "vegetationon", "citieson", "veinholeson",
+					"environmenton", "timeon", "widthon", "heighton",
+					"ionstormson", "transitionson", "lifeformson", "surpriseon",
 					"loadenabled", "deleteenabled", "previewenabled"}) {
 				Model.DirtyVariable(name);
 			}
@@ -112,6 +118,7 @@ class UIMapGenViewClass : public UIRmlViewClass
 			UIMapGenState & state = Data.State;
 			return(model.RegisterArray<std::vector<UIMapGenOption>>()
 				&& model.Bind("firestorm", &state.Firestorm)
+				&& model.Bind("territory", &state.Territory)
 				&& model.Bind("environments", &state.Environments)
 				&& model.Bind("times", &state.Times)
 				&& model.Bind("sizes", &state.Sizes)
@@ -132,6 +139,14 @@ class UIMapGenViewClass : public UIRmlViewClass
 				&& model.Bind("ionstorms", &state.IonStorms)
 				&& model.Bind("transitions", &state.Transitions)
 				&& model.Bind("lifeforms", &state.Lifeforms)
+				&& model.Bind("environmenton", &state.EnvironmentEnabled)
+				&& model.Bind("timeon", &state.TimeEnabled)
+				&& model.Bind("widthon", &state.WidthEnabled)
+				&& model.Bind("heighton", &state.HeightEnabled)
+				&& model.Bind("ionstormson", &state.IonStormsEnabled)
+				&& model.Bind("transitionson", &state.TransitionsEnabled)
+				&& model.Bind("lifeformson", &state.LifeformsEnabled)
+				&& model.Bind("surpriseon", &state.SurpriseEnabled)
 				&& model.Bind("loadenabled", &state.LoadEnabled)
 				&& model.Bind("deleteenabled", &state.DeleteEnabled)
 				&& model.Bind("previewenabled", &state.PreviewEnabled));
@@ -140,6 +155,7 @@ class UIMapGenViewClass : public UIRmlViewClass
 		virtual void Loaded(void) override
 		{
 			Document()->SetClass(Data.State.Firestorm ? "firestorm" : "original", true);
+			Document()->SetClass("territory", Data.State.Territory);
 			Shown = -1;
 		}
 
@@ -149,7 +165,8 @@ class UIMapGenViewClass : public UIRmlViewClass
 			std::string base(name);
 			return(model.Bind(base, &slider.Value)
 				&& model.Bind(base + "min", &slider.Minimum)
-				&& model.Bind(base + "max", &slider.Maximum));
+				&& model.Bind(base + "max", &slider.Maximum)
+				&& model.Bind(base + "on", &slider.Enabled));
 		}
 
 		void Show_Preview(void)

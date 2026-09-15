@@ -474,7 +474,7 @@ label.check input[type='checkbox']
 
 label.check.disabled, label.check:disabled
 {
-	color: #949194;
+	color: #848a84;
 }
 
 /*
@@ -665,6 +665,13 @@ input[type='range']:disabled
 	border-color: #949194;
 }
 
+/* The wash the layer lays over a disabled control covers its grip along with the rest. */
+input[type='range']:disabled sliderbar
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(trakgrip.pcx scale-none left top);
+}
+
 /*
  * The room left over around the reading is halved in whole pixels by the layer where the
  * toolkit rounds a half up, so the box it is centred in is a pixel narrower than the
@@ -691,6 +698,19 @@ input[type='range']:disabled
 }
 
 /*
+ * A bar the player is shown but may not set is washed half toward black over its whole rect,
+ * the reading with it, so the wash is a flat gradient listed ahead of the picture.
+ */
+.trough.disabled
+{
+	color: #848a84;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(trofl.pcx scale-none left top) border-box,
+		image(trofr.pcx scale-none right top) border-box,
+		image(trough-mid scale-none left top) border-box;
+}
+
+/*
  * The column the layer darkens past the bar's right edge. A screen gives it the height of the
  * bar's rect and a row more, which is how far down the layer darkens.
  */
@@ -701,6 +721,11 @@ input[type='range']:disabled
 	width: 1dp;
 	height: 26dp;
 	background-color: #000000b4;
+}
+
+.trough-edge.disabled
+{
+	background-color: #000000da;
 }
 
 @spritesheet trough
@@ -812,6 +837,22 @@ select selectarrow
 	decorator: image(dnarrowr.pcx scale-none left top);
 }
 
+/*
+ * A box the player may not open is washed a further half toward black, over the darkening
+ * every box carries, and its arrow with it.
+ */
+select:disabled, select.disabled
+{
+	color: #848a84;
+	background-color: #000000ca;
+}
+
+select:disabled selectarrow, select.disabled selectarrow
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(dnarrowr.pcx scale-none left top);
+}
+
 select selectbox
 {
 	margin-top: 2dp;
@@ -882,7 +923,12 @@ surface
 	color: #109010;
 }
 
+/*
+ * Text the layer draws from its own sheets comes out at this shade when it asks for the
+ * disabled grey, because the sheet's glyphs are shaded rather than flat. Text it draws
+ * through GDI, and the frames it draws itself, take the grey as written.
+ */
 .disabled
 {
-	color: #949194;
+	color: #848a84;
 }

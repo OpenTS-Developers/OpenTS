@@ -19,6 +19,7 @@
 UIGameOptionsPresenterClass::UIGameOptionsPresenterClass(UIGameOptionsState state) :
 	State(std::move(state))
 {
+	Update_Name();
 }
 
 
@@ -50,6 +51,10 @@ void UIGameOptionsPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "abort") {
 		Choice = UI_GAME_OPTIONS_ABORT;
 		Result = UI_RESULT_ACCEPTED;
+	} else if (intent.Name == "speed") {
+		State.Speed = intent.Value;
+		SpeedChanged = true;
+		Update_Name();
 	} else if (intent.Name == "resume" || intent.Name == "ok" || intent.Name == "cancel") {
 		Choice = UI_GAME_OPTIONS_RESUME;
 		Result = UI_RESULT_ACCEPTED;
@@ -59,6 +64,15 @@ void UIGameOptionsPresenterClass::Execute(UIIntent const & intent)
 
 void UIGameOptionsPresenterClass::Refresh(void)
 {
+}
+
+
+// The Win32 menu left its template's caption standing until the bar first moved; the reading
+// here names where the bar is from the start, as the other screens do.
+void UIGameOptionsPresenterClass::Update_Name(void)
+{
+	State.SpeedName = (State.Speed >= 0 && State.Speed < (int)State.SpeedNames.size())
+		? State.SpeedNames[State.Speed] : std::string();
 }
 
 
@@ -84,6 +98,8 @@ class UIGameOptionsViewClass : public UIRmlViewClass
 
 		virtual void Sync(void) override
 		{
+			Model.DirtyVariable("speed");
+			Model.DirtyVariable("speedname");
 		}
 
 	protected:
@@ -91,10 +107,17 @@ class UIGameOptionsViewClass : public UIRmlViewClass
 		{
 			UIGameOptionsState & state = Data.State;
 			return(model.Bind("solo", &state.Solo)
+				&& model.Bind("internet", &state.Internet)
 				&& model.Bind("briefingenabled", &state.BriefingEnabled)
 				&& model.Bind("loadenabled", &state.LoadEnabled)
 				&& model.Bind("saveenabled", &state.SaveEnabled)
-				&& model.Bind("deleteenabled", &state.DeleteEnabled));
+				&& model.Bind("deleteenabled", &state.DeleteEnabled)
+				&& model.Bind("speed", &state.Speed)
+				&& model.Bind("speedname", &state.SpeedName)
+				&& model.Bind("connection", &state.Connection)
+				&& model.Bind("connectionlowest", &state.ConnectionLowest)
+				&& model.Bind("connectionhighest", &state.ConnectionHighest)
+				&& model.Bind("connectionname", &state.ConnectionName));
 		}
 
 	private:
