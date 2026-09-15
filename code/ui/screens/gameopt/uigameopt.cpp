@@ -46,8 +46,7 @@ void UIGameOptionsPresenterClass::Execute(UIIntent const & intent)
 		}
 	} else if (intent.Name == "load") {
 		if (State.LoadEnabled) {
-			// A match in play cannot open a list from in here without stalling itself, so the
-			// caller is left to open one between frames.
+			// A match in play leaves its list to the caller, which opens one between frames.
 			if (!State.Solo || Service.Load()) {
 				Choice = UI_GAME_OPTIONS_LOAD;
 				Result = UI_RESULT_ACCEPTED;

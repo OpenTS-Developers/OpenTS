@@ -47,9 +47,9 @@ class UIWaitBoxClass
 		UIWaitBoxClass(void);
 		~UIWaitBoxClass(void);
 
-		void Show(char const * text);
-		// The same notice with a progress bar. False when the shell could not show it.
-		bool Show_Document(char const * text, bool bar);
+		// Shows the notice, with a progress bar when asked for. False when the shell could
+		// not show it.
+		bool Show(char const * text, bool bar = false);
 		void Set_Text(char const * text);
 		void Set_Fraction(double fraction);
 		void Hide(void);

@@ -109,10 +109,6 @@ class UIShellClass
 		// message is consumed.
 		bool Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
 
-		// Offers a pumped message to the shell before dispatch, whichever window it is for.
-		// True means the message is consumed.
-		bool Intercept_Pumped_Message(MSG const & msg);
-
 		// Answers WM_SETCURSOR over the client area: true when a document's pointer shape is
 		// on the pointer, so the game's own stays off it.
 		bool Handle_Set_Cursor(void);

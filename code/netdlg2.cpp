@@ -72,10 +72,6 @@ bool Net2GameStarted = false;
 
 Net2LobbyPhaseType Net2LobbyPhase = NET2_LOBBY_NONE;
 
-// The lobby dialog that is up, or null while a screen carries the phase instead.
-
-// False once a screen has failed to open, so the flow falls back to the dialogs and stays there.
-
 int RulesID;
 int ArtID;
 int AIID;
@@ -2501,9 +2497,6 @@ static void Get_Join_Responses(void)
 }	/* end of Get_Join_Responses */
 
 
-/// The load_game argument separates NET_GO from NET_LOADGAME, but both cases are treated
-/// alike here, so the argument is vestigial.
-
 /// <summary>
 /// Determines if this machine is ready for the game to begin.
 /// The scenario the host has chosen is located, and fetched from the host when this
@@ -2511,6 +2504,8 @@ static void Get_Join_Responses(void)
 /// join -- the player signs off rather than sit in a game it could never play. The
 /// network timing is primed from the measured response times before returning.
 /// </summary>
+/// <param name="load_game">Separates NET_GO from NET_LOADGAME. Both are treated alike here,
+/// so the argument is vestigial.</param>
 /// <returns>bool; Is this machine ready to go?</returns>
 bool Net2ReadyToGo(int load_game)
 {

@@ -70,10 +70,10 @@ re-enter UI code.
 Nearly every legacy flow hid or destroyed its parent before opening a child:
 the main menu around the version dialog, the options driver ending the main
 dialog before a sub-dialog, in-game options around save and load, skirmish
-around the scenario picker. The screens inherited that shape, closing and
-reopening around a child rather than standing behind it, and the lobby still
-reads an explicit phase rather than a window stack to know which of its three
-it is standing in.
+around the scenario picker. A screen now stays open and hides itself under the
+one it raises, which is what the shell's hide-parent rule under
+[Scheduling](#scheduling) does; the lobby still reads an explicit phase rather
+than a window stack to know which of its three it is standing in.
 
 Facts elsewhere in the tree that bind the design:
 
@@ -543,7 +543,7 @@ A migrated dialog driver keeps its shape. `Run_Modal` is the RmlUi twin of
 the `Dialog_Message_Handler` loop:
 
 ```cpp
-UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service);
+UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service, bool hideparent = false);
 // each pass:
 //   service();   -- the engine passes UI_Service_Game: Windows_Message_Handler(),
 //                   then Main_Loop() in a network session, else Call_Back();
@@ -558,6 +558,16 @@ The service pass is injected rather than written into the runner, so the
 shell includes no game-loop header and the harness drives a modal without
 the engine; `UI_Run_Modal(view)` in `uienginehost.h` is the engine's entry
 and binds `UI_Service_Game`.
+
+A screen raised over another hides it. `hideparent` takes the screen below
+down for the child's passes and shows it again when the child closes, without
+a reveal, so a screen that raises one stays open behind it rather than closing
+and opening again. The five flows that inherited the Win32 hide-and-reopen —
+the skirmish setup around the map dialog, the map dialog around the generator,
+the in-game options and the generator around their saved-game dialogs, and the
+lobby around the map dialog — run the child from the presenter's service
+inside the parent's pass. A message box still nests visibly, as the Win32
+boxes did over their dialogs.
 
 The result carries the game-ended flag the way `Dialog_Message_Handler`
 returns `true`, so callers keep their logic. Wrappers keep their service
@@ -1156,7 +1166,7 @@ The rest is written in Win32 terms. A port pays for it here:
 
 | Coupling | What a port costs |
 | --- | --- |
-| The shell's window message hook and its pumped-message intercept | The structural item. Messages become a neutral event at the platform edge, which rewrites one signature and the body behind it |
+| The shell's window message hook | The structural item. Messages become a neutral event at the platform edge, which rewrites one signature and the body behind it |
 | The window handle on `UIShellHostClass` | Three uses: two identity comparisons and the clipboard's owner. An opaque handle would serve, and `uihost.h` would stop pulling `win.h` into everything that includes it |
 | Key mapping in `code/ui/rml/rmlkeys.cpp` | Not only code. `KEYBOARD.INI` stores Windows virtual key numbers, so the mapping is also a data-format boundary |
 | The clipboard in `rmlsystem.cpp` and the conversions in `uiunicode.cpp` | Replaceable in place; `tests/uishell` already covers the behavior |
@@ -1251,9 +1261,9 @@ beyond an ASCII test document.
    is `abort.rml` over its own `IDD_MISSION_ABORT` template, whose middle
    answer surrenders rather than restarts outside a campaign mission; the
    in-game options menu itself is `gameopt.rml` over `IDD_OPT_CTRL_SP`,
-   `IDD_OPT_CTRL_MP` and `IDD_OPT_CTRL_WOL`, which closes and reopens without
-   revealing around a save
-   or a delete where the Win32 menu hid and re-showed itself). The Win32
+   `IDD_OPT_CTRL_MP` and `IDD_OPT_CTRL_WOL`, which then closed and reopened
+   without revealing around a save or a delete, where the Win32 menu hid and
+   re-showed itself). The Win32
    templates remain the fallback view of every one. Load, save and delete keep
    their own dialogs until step 9. Evidence: settings round-trip through
    `SUN.INI` unchanged; the menu and the abort question match their Win32
@@ -1286,7 +1296,7 @@ beyond an ASCII test document.
    `LoadOptionsClass` keeps every file operation and its message boxes; the
    gathering of the files moved out of `Fill_List` into `Gather_Files` so that
    both the Win32 list and the document read the same entries, and the screen's
-   own loop reopens wherever the Win32 loop stayed standing. The list's cells
+   own loop reopened wherever the Win32 loop stayed standing. The list's cells
    are placed at the positions the layer drew them at rather than flowed, since
    a cell keeps its place whatever the cell before it holds. The templates carry
    a third column between the description and the stamp, a heading and a mark
@@ -1314,8 +1324,8 @@ beyond an ASCII test document.
     document. Entering a lobby settles the session from one place, where each
     dialog's `WM_INITDIALOG` did it before. The driver keeps its loop and its
     arms; only the wait for an answer became a modal screen over the pass the
-    lobby already ran, and the lobby comes back whole rather than opening again
-    when it is reopened for another answer. `netlobby.rml` carries the browser
+    lobby already ran, and the lobby came back whole rather than opening again
+    when it was reopened for another answer. `netlobby.rml` carries the browser
     and `netgame.rml` both halves of the setup, the guest's being the host's
     with its right-hand column disabled, as the two templates differ. Evidence
     under [What has been exercised](#what-has-been-exercised). Packets
@@ -1353,8 +1363,8 @@ beyond an ASCII test document.
     generator's own seed, so the screen's service writes each reading straight
     through by the name the document gives it and reads the whole seed back
     each pass, where the dialog moved them in and out of its controls in two
-    passes of its own. The screen closes and reopens around the save, load and
-    delete dialogs the generator raises, as the skirmish setup does around the
+    passes of its own. The screen then closed and reopened around the save, load and
+    delete dialogs the generator raises, as the skirmish setup did around the
     map dialog. `IDD_MAPGEN_WDT`, the tour's own form, followed with step 13:
     a battle fought over a territory is the same screen with the players
     reading replaced by the pair of boxes naming how many the tour fights it

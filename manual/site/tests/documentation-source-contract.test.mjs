@@ -533,8 +533,18 @@ test('A multiplayer load replaces the match around the seats it keeps', () => {
 	assertOrdered(functionBody(gameopt, 'UIGameOptionsChoice UI_Game_Options_Dialog(void)'), [
 		'!state.Solo && choice == UI_GAME_OPTIONS_LOAD',
 		'SpecialDialog = SDLG_LOAD;',
-		'LoadOptionsClass().Load()',
 	], 'a network game defers the list to the menu loop rather than opening it inside a frame');
+
+	assert.match(
+		functionBody(gameopt, 'virtual bool Load(void) override'),
+		/LoadOptionsClass\(\)\.Load\(\)/,
+		'a solo game opens its own list, over the menu',
+	);
+
+	assertOrdered(functionBody(source('code/ui/screens/gameopt/uigameopt.cpp'), 'void UIGameOptionsPresenterClass::Execute(UIIntent const & intent)'), [
+		'!State.Solo || Service.Load()',
+		'Choice = UI_GAME_OPTIONS_LOAD;',
+	], 'and the menu closes with the load only once a game has been loaded');
 
 	assertOrdered(definitionFrom(source('code/conquer.cpp'), 'void Ingame_Menu_Dialog(void)'), [
 		'case SDLG_OPTIONS:',

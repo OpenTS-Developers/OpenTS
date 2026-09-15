@@ -172,6 +172,7 @@ static Rml::Element * Reveal_Element(Rml::ElementDocument * document)
 
 float UIRmlViewClass::Reveal_Width(void) const
 {
+	// A document can ask to open whole, which is what `ui-files` offers an author.
 	if (Doc == nullptr || Doc->GetAttribute<Rml::String>("reveal", "") == "none") {
 		return(0.0f);
 	}

@@ -41,7 +41,6 @@
 #include "_tooltip.h"
 #include "_ui.h"
 #include "cctooltip.h"
-#include "ui/uishell.h"
 #include "vector.h"
 #include "video.h"
 
@@ -81,11 +80,6 @@ void Windows_Message_Handler(void)
 
 		if (ToolTips != NULL) {
 			ToolTips->Message_Handler(&msg);
-		}
-
-		// Ahead of the dialogs, so that a developer key works whichever window has focus.
-		if (UIShell.Intercept_Pumped_Message(msg)) {
-			continue;
 		}
 
 		/*

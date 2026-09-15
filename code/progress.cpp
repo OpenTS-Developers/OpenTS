@@ -375,7 +375,7 @@ void ProgressScreenClass::Add_Progress_Percent(int index, double value, Point2D 
 /// </summary>
 void ProgressScreenClass::Begin_Dialog(void)
 {
-	if (Box.Show_Document("Working - Please Wait", true)) {
+	if (Box.Show("Working - Please Wait", true)) {
 		Box.Set_Fraction(0.0);
 	}
 }

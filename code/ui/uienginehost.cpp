@@ -286,8 +286,8 @@ UIShellHostClass & UI_Engine_Host(void)
 }
 
 
-// The pass the dialog layer's own loop ran, without its tick: the runner ticks
-// itself so that it can drain the screen's intents between the update and the present.
+// The runner ticks the shell itself, so this pass does not: a screen's intents are drained
+// between the update and the present.
 bool UI_Service_Game(void)
 {
 	static bool inmainloop = false;

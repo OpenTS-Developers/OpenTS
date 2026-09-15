@@ -27,13 +27,7 @@ UIWaitBoxClass::~UIWaitBoxClass(void)
 }
 
 
-void UIWaitBoxClass::Show(char const * text)
-{
-	Show_Document(text, false);
-}
-
-
-bool UIWaitBoxClass::Show_Document(char const * text, bool bar)
+bool UIWaitBoxClass::Show(char const * text, bool bar)
 {
 	Hide();
 

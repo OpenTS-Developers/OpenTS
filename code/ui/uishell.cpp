@@ -1284,7 +1284,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	// is read again after one update.
 	Tick();
 	if (Render->Error()[0] != '\0') {
-		Log("UI: %s could not be shown (%s); its legacy view stays in charge\n", view.Name(), Render->Error());
+		Log("UI: %s could not be shown (%s)\n", view.Name(), Render->Error());
 		view.Release();
 		Modals.pop_back();
 		Uncover(covered);
@@ -1399,7 +1399,8 @@ void UIShellClass::Uncover(UIViewClass * covered)
 
 
 // A document the toolkit could not load whole, or that asked the renderer for what it
-// refuses, stays unshown; the caller opens its Win32 presentation with the reason logged.
+// refuses, stays unshown with the reason logged, and its screen answers as a missing dialog
+// template did.
 bool UIShellClass::Prepare_View(UIViewClass & view)
 {
 	Render->Clear_Error();
@@ -1408,7 +1409,7 @@ bool UIShellClass::Prepare_View(UIViewClass & view)
 	// A style sheet that fails to load leaves the document usable and is reported as an error.
 	bool ready = view.Prepare(*this) && System->Error_Count() == errors && Render->Error()[0] == '\0';
 	if (!ready) {
-		Log("UI: %s could not be prepared (%s); its legacy view stays in charge\n", view.Name(),
+		Log("UI: %s could not be prepared (%s)\n", view.Name(),
 			Render->Error()[0] != '\0' ? Render->Error() : "see the toolkit's log above");
 		view.Release();
 	}
@@ -1503,6 +1504,22 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 	if (!Ready || InHook || hwnd != Host.Main_Window()) {
 		return(false);
 	}
+
+#ifdef _DEBUG
+	// The developer keys are answered ahead of everything else, so that a screen holding the
+	// keyboard cannot swallow them.
+	if (Host.Developer_Keys_Armed() && (message == WM_KEYDOWN || message == WM_KEYUP)
+		&& (wparam == VK_F9 || wparam == VK_F6)) {
+		if (message == WM_KEYDOWN && (lparam & (1 << 30)) == 0) {
+			if (wparam == VK_F9) {
+				Deferred.ToggleTest = true;
+			} else {
+				Deferred.ToggleDev = true;
+			}
+		}
+		return(true);
+	}
+#endif
 
 	// Another window taking the capture, or the system canceling it, ends the presses the
 	// shell holds; the window no longer has the capture to give back.
@@ -1617,23 +1634,3 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 }
 
 
-bool UIShellClass::Intercept_Pumped_Message(MSG const & msg)
-{
-#ifdef _DEBUG
-	if (Ready && Host.Developer_Keys_Armed() && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F9) {
-		if (msg.message == WM_KEYDOWN && (msg.lParam & (1 << 30)) == 0) {
-			Deferred.ToggleTest = true;
-		}
-		return(true);
-	}
-	if (Ready && Host.Developer_Keys_Armed() && (msg.message == WM_KEYDOWN || msg.message == WM_KEYUP) && msg.wParam == VK_F6) {
-		if (msg.message == WM_KEYDOWN && (msg.lParam & (1 << 30)) == 0) {
-			Deferred.ToggleDev = true;
-		}
-		return(true);
-	}
-#else
-	(void)msg;
-#endif
-	return(false);
-}
