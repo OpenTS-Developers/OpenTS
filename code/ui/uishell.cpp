@@ -1356,6 +1356,11 @@ bool UIShellClass::Show_Modeless(UIViewClass & view)
 		return(false);
 	}
 
+	// A notice can be the first document a run ever shows, and it names the dialog face like
+	// any other, so the face is asked for here as well as at a screen.
+	Ensure_Dialog_Font();
+	Apply_Font_Policy();
+
 	if (!Prepare_View(view)) {
 		return(false);
 	}
