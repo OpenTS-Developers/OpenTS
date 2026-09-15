@@ -15,4 +15,4 @@ MinPlayers=2
 MaxPlayers=4
 ```
 
-The value is read into the entry's maximum player count. That count is private to the listing and nothing reads it afterwards, so neither the lobby, the starting-position pass nor the house assignment consults it: a map declaring `MaxPlayers=4` can still be started with eight players.
+The value is read into the entry's maximum player count. The count belongs to the listing and nothing reads it afterwards: not the lobby, not the starting-position pass, not the house assignment. A map declaring `MaxPlayers=4` can still be started with eight players.

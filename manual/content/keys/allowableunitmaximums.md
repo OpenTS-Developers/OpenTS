@@ -21,8 +21,8 @@ Each number pairs by position with the name at the same place in [`AllowableUnit
 | `0` | The type is dropped from the cameo list and cannot be loaded at all |
 | Positive | The type is offered until that many have been taken aboard, then its cameo stops responding |
 
-A list shorter than its companion is padded with `-1`, but the padding closes only half the gap — three names and no numbers leave two numbers behind. Every name past the end of the number list is then paired against whatever lies beyond it in memory. A longer list keeps its extra numbers, and they pair with nothing and do nothing.
+A list shorter than its companion is padded with `-1`, but the padding closes only half the gap. The loop re-counts the number list after every entry it adds, so padding stops once the number list holds about half as many entries as the name list. Three names and no numbers gain two numbers, leaving one name unpaired. An unpaired name is still looked up at its own position, and that position in the number list was never written; the value that answers is whatever the list's storage holds past its last entry. A longer list keeps its extra numbers, and they pair with nothing and do nothing.
 
 :::caution[A mismatched pair silently shifts every later limit]
-Nothing checks that the two lists describe the same units. Writing them in a different order, or dropping a name and leaving its number in place, quietly applies each remaining limit to whichever type now sits at that position.
+Nothing checks that the two lists describe the same units. Writing them in a different order, or dropping a name and leaving its number in place, applies each remaining limit to whichever type now sits at that position.
 :::

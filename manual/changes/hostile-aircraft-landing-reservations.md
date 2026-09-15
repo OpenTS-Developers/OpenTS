@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero]
 ---
 
-An aircraft's landing destination now blocks another aircraft only when both belong to the same house or their houses consider each other allied. Hostile and one-way-allied aircraft can no longer reserve a cell against one another by repeatedly assigning it as a destination, while an aircraft that already occupies the cell remains a blocker.
+An aircraft's landing destination now blocks another aircraft only when both belong to the same house, or their houses consider each other allied. Hostile and one-way-allied aircraft can no longer reserve a cell against one another by repeatedly assigning it as a destination. An aircraft that already occupies the cell remains a blocker.

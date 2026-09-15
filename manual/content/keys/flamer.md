@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-On the frame whose artwork covers the most ground, the animation creates the rules' [`SmallFire`](/keys/smallfire/) at the nearest free spot 64 leptons away in a random direction. It then has an even chance of a second `SmallFire` 160 leptons out and an even chance of a [`LargeFire`](/keys/largefire/) 112 leptons out, each direction picked separately. Every fire runs for one or two times the loop count the fire type carries. A looping animation throws a fresh batch each time it comes back to that frame.
+On the frame whose artwork covers the most ground, the animation creates the rules' [`SmallFire`](/keys/smallfire/) at the nearest free spot 64 leptons away in a random direction. It then has an even chance of a second `SmallFire` 160 leptons out and an even chance of a [`LargeFire`](/keys/largefire/) 112 leptons out, each direction picked separately. Every fire runs for one or two times the loop count the fire type sets. A looping animation throws a fresh batch each time it comes back to that frame.
 
 Nothing filters the fires by height or by the ground underneath, so a flame thrower animation playing over water or high in the air still scatters them.
 

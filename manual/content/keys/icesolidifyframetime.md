@@ -20,5 +20,5 @@ Healing takes neighbors with it: as a cell freezes, any cracked cell directly no
 While the ice is cracked it will not thicken further, and a second heavy crossing of the same cell breaks through it instead of cracking it again.
 
 :::caution[Cracks never heal on a map with ice growth switched off]
-The healing pass runs only while the map carries [`IceGrowthEnabled=yes`](/keys/icegrowthenabled/); the cracking itself does not check the flag. On a snow map with growth disabled, every crack is permanent for the rest of the scenario and the next heavy vehicle over one goes straight through.
+The healing pass runs only while the map sets [`IceGrowthEnabled=yes`](/keys/icegrowthenabled/); the cracking itself does not check the flag. On a snow map with growth disabled, every crack is permanent for the rest of the scenario and the next heavy vehicle over one goes straight through.
 :::

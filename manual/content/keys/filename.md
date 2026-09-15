@@ -18,4 +18,4 @@ TilesInSet=8
 
 Nothing checks that the stem produced a file. A tile whose artwork is absent still becomes a tile type, reports zero width and height, and draws nothing where a cell places it.
 
-The stem's length is not capped. A tile type keeps the whole path it loaded from, so that it can read its artwork again after the theater trims it out of memory.
+The stem is capped at 63 characters; a longer value is cut short when it is read. A tile type keeps the whole path it loaded from, so that it can read its artwork again after the theater trims it out of memory.

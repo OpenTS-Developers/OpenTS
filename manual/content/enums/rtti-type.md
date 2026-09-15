@@ -71,10 +71,10 @@ values:
   - { constant: RTTI_AITRIGGERTYPE, value: 59, input: "AITriggerType", meaning: "AI trigger type definition." }
   - { constant: RTTI_NEURON, value: 60, input: "Neuron", meaning: "A node of an unfinished AI brain; nothing creates one while the game runs." }
   - { constant: RTTI_FOGGEDOBJECT, value: 61, input: "FoggedObject", meaning: "Fog-memory object." }
-  - { constant: RTTI_ALPHASHAPE, value: 62, input: "AlphaShape", meaning: "The blend shape that brightens the map around an object carrying an AlphaImage." }
+  - { constant: RTTI_ALPHASHAPE, value: 62, input: "AlphaShape", meaning: "The blend shape that brightens the map around an object with an AlphaImage." }
   - { constant: RTTI_VEINHOLEMONSTER, value: 63, input: "VeinholeMonster", meaning: "Veinhole monster object." }
 ---
 
-These are engine object kinds, not identifiers a rules file defines. A [`Factory`](/keys/factory/) assignment says which kind of object a structure turns out rather than naming the particular vehicle, structure or other definition, and that page covers which of the kinds put a structure to work at all.
+These are engine object kinds rather than identifiers a rules file defines. A [`Factory`](/keys/factory/) assignment names one of them to say what kind of object a structure produces rather than the particular vehicle, structure or other definition. That page covers which of the kinds put a structure to work at all.
 
-Most of the list never appears in an assignment at all. A kind is what the engine stamps on every live object and every definition so that the two can be told apart while the game runs, which is why so many of the names come in pairs: `Building` for a structure standing on the map against `BuildingType` for the rules entry it was made from. The rest name machinery no rules file can refer to — a cell, a production line, the record a fogged cell keeps of what stood in it, the tunnel route joining one tunnel mouth to another. A name matching nothing in the list resolves to `<none>` rather than leaving the stored value alone, so a misspelling is read as naming no kind.
+Most of the list never appears in an assignment. Every live object and every definition has a kind, so the engine can tell the two apart while the game runs. That is why so many names come in pairs: `Building` for a structure standing on the map, `BuildingType` for the rules entry it was made from. The rest name machinery a rules file has no use for: a cell, a production line, the record a fogged cell keeps of what stood in it, the tunnel route joining one tunnel mouth to another. A name matching nothing in the list resolves to `<none>` rather than leaving the stored value alone, so a misspelling is read as naming no kind.

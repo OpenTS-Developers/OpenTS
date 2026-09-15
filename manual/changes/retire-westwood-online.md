@@ -41,6 +41,6 @@ targets:
 credit: [ZivDero]
 ---
 
-The Westwood Online client has been removed. The service it logged in to, chatted through, listed games on and reported ladder results to has not answered for years, so the login, lobby, ladder and paging screens are gone. The Internet button remains on the main menu and in the multiplayer game-type dialog but is disabled, as is World Domination Tour: the tour was reached over the same service, and while its screens and its maps are still in the game, no tour server can be asked for a campaign.
+The Westwood Online client has been removed. The service it logged in to, chatted through, listed games on and reported ladder results to has not answered for years, so the login, lobby, ladder and paging screens are gone. The Internet button remains on the main menu and in the multiplayer game-type dialog, but it is disabled. World Domination Tour is disabled too, because the tour was reached over the same service and no tour server can be asked for a campaign. Its screens and its maps are still in the game.
 
 A network game is unaffected. The game still builds its results at the end of a match, describing the same fields it always did, but there is no longer a server to send them to.

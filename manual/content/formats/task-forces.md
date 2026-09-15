@@ -23,7 +23,7 @@ source_files:
   - code/scenario.cpp
 ---
 
-`[TaskForces]` values name the TaskForce sections to load. Each TaskForce section accepts numbered member lines `0` through `5`.
+`[TaskForces]` values name the TaskForce sections to load. The number to the left of a `[TaskForces]` line is only that line's name; inside a TaskForce section the number is the member's slot, and each section accepts lines `0` through `5`.
 
 OpenTS loads `AI.INI`, then `AIFS.INI` when Firestorm is enabled, then the map-local definitions.
 

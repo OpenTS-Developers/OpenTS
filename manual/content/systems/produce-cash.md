@@ -21,7 +21,7 @@ related:
     id: power
 ---
 
-A BuildingType carrying these keys moves money without harvesting anything. It offers two payments and may declare either without the other: a **recurring** one that [`ProduceCashAmount`](/keys/producecashamount/) pays its current owner every [`ProduceCashDelay`](/keys/producecashdelay/) frames, and a one-off **startup bonus** that [`ProduceCashStartup`](/keys/producecashstartup/) pays whoever captures the structure off a house taking no part in the contest. An oil derrick paying a lump sum on capture and a trickle afterwards is both on one type.
+A BuildingType with these keys moves money without harvesting anything. It offers two payments and may declare either without the other. The recurring payment is [`ProduceCashAmount`](/keys/producecashamount/), paid to the current owner every [`ProduceCashDelay`](/keys/producecashdelay/) frames. The one-off startup bonus is [`ProduceCashStartup`](/keys/producecashstartup/), paid to whoever captures the structure off a house taking no part in the contest. An oil derrick paying a lump sum on capture and a trickle afterwards is both on one type.
 
 ```ini title="rules.ini"
 [SOMEBUILDING]                ; a BuildingType
@@ -37,7 +37,7 @@ Credits go straight to the house. Nothing here passes through a refinery, counts
 
 ## The interval
 
-A structure produces only once it is **open for business** — the same state that starts its animations and lets it perform its other special abilities. It is reached when construction finishes, when a structure already standing at scenario start is first revealed, and again on every capture. A structure the player owns that begins a campaign mission under shroud therefore produces nothing until the shroud lifts.
+A structure produces only once it is open for business — the same state that starts its animations and lets it perform its other special abilities. It is reached when construction finishes, when a structure already standing at scenario start is first revealed, and again on every capture. A structure the player owns that begins a campaign mission under shroud therefore produces nothing until the shroud lifts.
 
 Opening loads the interval with `ProduceCashDelay` and starts it counting. When it reaches zero the payment is made and the interval reloaded. Each structure keeps its own count, so two identical structures built a few seconds apart pay a few seconds apart.
 
@@ -58,7 +58,7 @@ Money taken by a negative `ProduceCashAmount` joins the house's running total of
 
 ## The budget
 
-[`ProduceCashBudget`](/keys/producecashbudget/) caps the total a single structure will ever move. It is counted without regard to sign, so it limits a drain exactly as it limits a payment, and it is spent only by the recurring payment — the startup bonus is outside it. Zero, the default, sets no limit at all.
+[`ProduceCashBudget`](/keys/producecashbudget/) caps the total a single structure will ever move. It is counted without regard to sign, so it limits a drain exactly as it limits a payment, and it is spent only by the recurring payment; the startup bonus is outside it. Zero, the default, sets no limit at all.
 
 The final installment is paid in full rather than skipped, so `ProduceCashBudget=250` with `ProduceCashAmount=100` pays 100, 100 and then 50. A structure that has spent its budget stops producing and keeps standing.
 
@@ -68,7 +68,7 @@ The final installment is paid in full rather than skipped, so `ProduceCashBudget
 
 The power test applies only to a type declaring [`Powered=yes`](/keys/powered/). Such a structure produces nothing while it is switched off, stunned by an [EM pulse](/systems/emp-pulse/), or short of [power](/systems/power/). A type left on the default `Powered=no` ignores all three and keeps producing.
 
-The interval is **paused** rather than restarted: a structure with four frames left when the lights go out has four frames left when they come back, so restoring power never pays out immediately.
+The interval is paused rather than restarted: a structure with four frames left when the lights go out has four frames left when they come back, so restoring power never pays out immediately.
 
 :::note[A cash structure need not drain power to be stopped by a shortage]
 Whether an ordinary `Powered=yes` structure stops in a brownout depends on it also drawing power and being switchable. Cash production reads the house's power balance directly, so a `Powered=yes` structure that drains nothing stops as well.

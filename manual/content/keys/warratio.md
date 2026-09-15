@@ -8,4 +8,4 @@ when_omitted:
   value: ".1"
 ---
 
-Nothing weighs a computer base by proportion. A war factory reaches the plan because [the first ownable `BuildWeapons` entry is moved to the second slot of the candidate array, behind the barracks](/systems/ai-base-building/#building-the-plan) and because other types name it as a prerequisite, never because a share of the base was reserved for it.
+Nothing weighs a computer base by proportion. A war factory reaches the plan because [the plan assembly](/systems/ai-base-building/#building-the-plan) moves the first `BuildWeapons` entry the country this house [acts as](/keys/actslike/) [may own](/keys/owner/) to the second slot of the candidate array, behind the barracks. The expansion pass appends every candidate whose own [`Prerequisite`](/keys/prerequisite/) list the queue already satisfies. Nothing reserves a share of the base for it.

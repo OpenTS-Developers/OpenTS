@@ -16,8 +16,8 @@ LightGreenTint=0.01
 LightBlueTint=0.01
 ```
 
-The figure is a fraction of full strength on the same scale the map's own color grading uses, so `1` adds as much red at the structure's center as a fully lit map already carries and the addition falls away to nothing at [`LightVisibility`](/keys/lightvisibility/), exactly as [`LightIntensity`](/keys/lightintensity/) does. A negative figure takes red out of the cells instead, which is what the stock negative red light is built from.
+The figure is a fraction of full brightness on the same scale the map's own color grading uses. `1` adds as much red at the structure's center as a fully lit map already has, and the addition falls away to nothing at [`LightVisibility`](/keys/lightvisibility/), exactly as [`LightIntensity`](/keys/lightintensity/) does. A negative figure takes red out of the cells instead, which is what the stock negative red light is built from.
 
-What reaches the screen is the balance between the three tints rather than their size: a cell's three channels are divided through by the strongest of them before the ground is drawn, and the scale taken out is folded into that cell's brightness. Raising all three together therefore brightens the ground rather than coloring it, and one channel well above the others is what gives a light its color.
+What reaches the screen is the balance between the three tints rather than their size. Before the ground is drawn, a cell's three channels are divided through by the strongest of them, and the cell's brightness is multiplied by that same factor, so the division leaves the cell as bright as it was. Raising all three together therefore brightens the ground rather than coloring it, and one channel well above the others is what gives a light its color.
 
-A file read after `rules.ini` that names the same section without this key cuts the stored figure back to a whole number before storing it again, so a `1.5` red drops to `1` and a `0.05` red drops out of the light altogether.
+A file read after `rules.ini` that names the same section without this key cuts the stored figure back to a whole number before storing it again. A `1.5` red drops to `1`; a `0.05` red drops out of the light altogether.

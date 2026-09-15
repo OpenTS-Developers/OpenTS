@@ -18,5 +18,5 @@ SpecialThreatValue=50
 ```
 
 :::caution[Zero cannot be pinned on one type]
-The value is read with a fallback that substitutes [`TargetSpecialThreatCoefficientDefault`](/keys/targetspecialthreatcoefficientdefault/) whenever the stored figure is zero, and the rules are read again for each later layer. An explicit `0` therefore lasts only until the first later layer that carries the type's section without this key, which puts the global default back.
+The value is read with a fallback that substitutes [`TargetSpecialThreatCoefficientDefault`](/keys/targetspecialthreatcoefficientdefault/) whenever the stored figure is zero, and the rules are read again for each later layer. An explicit `0` therefore lasts only until the first later layer that contains the type's section without this key, which puts the global default back.
 :::

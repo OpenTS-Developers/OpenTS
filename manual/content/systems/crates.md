@@ -40,38 +40,38 @@ related:
     id: TACTION_TOGGLE_TRAIN_CARGO
 ---
 
-A crate is an overlay, not an object. Any OverlayType carrying [`Crate=yes`](/keys/crate/) counts as one. [`WoodCrateImg`](/keys/woodcrateimg/) names the overlay the engine places, and `WoodCrateImg` and [`CrateImg`](/keys/crateimg/) together name the two it recognizes as its own. Whether crates appear at all, how a result is chosen, and whether a collected crate is replaced all turn on whether the match is a campaign.
+A crate is an overlay, not an object. Any OverlayType with [`Crate=yes`](/keys/crate/) counts as one. [`WoodCrateImg`](/keys/woodcrateimg/) names the overlay the engine places, and `WoodCrateImg` and [`CrateImg`](/keys/crateimg/) together name the two it recognizes as its own. Whether crates appear at all, how a result is chosen, and whether a collected crate is replaced all turn on whether the match is a campaign.
 
 ## Placing crates
 
 ### At scenario start
 
-Random placement runs once, at the end of scenario setup, and only outside a campaign. Its count is the larger of [`CrateMinimum`](/keys/crateminimum/) and the number of human players the match was set up with, clamped down to [`CrateMaximum`](/keys/cratemaximum/). Network game setup is the only path that records that player count.
+Random placement runs once, at the end of scenario setup, and only outside a campaign and with crates enabled for the match. In `rules.ini`, its count is the larger of [`CrateMinimum` in `[CrateRules]`](/keys/crateminimum/) and the number of human players the match was set up with, clamped down to [`CrateMaximum`](/keys/cratemaximum/). Network game setup is the only path that records that player count; it starts at zero and nothing else writes it. In a skirmish that follows no network game the count is therefore `CrateMinimum`.
 
 Each of those crates goes through the placement search below, and each one that succeeds takes a tracking slot. There are 256 slots. A placement request that finds every slot occupied places nothing, so 256 is the ceiling on tracked crates regardless of `CrateMaximum`.
 
 ### Crates drawn into a map
 
-A map's overlay layer can carry crates, and they survive only in a campaign. Outside one, every crate found in the overlay layer is discarded as the map is read. Cells outside the playfield are dropped for all overlays alike.
+A map's overlay layer can hold crates, and they survive only in a campaign. Outside one, every crate found in the overlay layer is discarded as the map is read. Cells outside the playfield are dropped for all overlays alike.
 
-A crate kept this way is placed while the scenario is still loading, which suppresses the legality test described below: it lands exactly where the map author drew it, on any ground that is flat or carries one of the four standard ramps — the slopes that fall away toward one of the map's four directions with two of the cell's corners raised. The corner, steep and double ramp shapes lie outside that set, and no crate is placed on one however it arrives. A kept crate is also never registered in a tracking slot, so no timer is ever attached to it and nothing expires it. It stays where it was drawn until something collects it.
+A crate kept this way is placed while the scenario is still loading, which suppresses the legality test described below. It lands exactly where the map author drew it, on any ground that is flat or has one of the four standard ramps. A standard ramp falls away toward one of the map's four directions and has two of the cell's corners raised. The corner, steep and double ramp shapes lie outside that set, and no crate is placed on one however it arrives. A kept crate is also never registered in a tracking slot, so no timer is ever attached to it and nothing expires it. It stays where it was drawn until something collects it.
 
 ### Where a random crate can land
 
 Each placement attempt draws a uniformly random cell from the map rectangle — the upright square of cells that encloses the playfield — and applies no legality test to that draw at all. Up to 1000 attempts run before the request is abandoned. An attempt then proceeds as follows.
 
 1. The cell must lie inside the playable area. A cell outside it fails the attempt outright, and the next attempt draws again.
-2. While the cell already carries an overlay of any kind, a fresh random cell is drawn and moved to a nearby cell passable to tracked movement, chosen from the candidates around it rather than the closest one. Tiberium, veins, walls, bridges, and an existing crate all force that redraw, and because the redraw starts from a new random cell it does not stay near the rejected one.
-3. The overlay is created at the surviving cell — always the one named by `WoodCrateImg`. `CrateImg` is never placed by the engine; it exists for map authors and for the campaign result lookup.
+2. While the cell already has an overlay of any kind, a fresh random cell is drawn and moved to a nearby cell passable to tracked movement, chosen from the candidates around it rather than the closest one. Tiberium, veins, walls, bridges, and an existing crate all force that redraw, and because the redraw starts from a new random cell it does not stay near the rejected one.
+3. The overlay is created at the surviving cell, always the one named by `WoodCrateImg`. `CrateImg` is never placed by the engine; it exists for map authors and for the campaign result lookup.
 4. The overlay draws itself into the cell on **all of**, in this order:
 
-   - the cell is flat or carries one of the four standard ramps;
+   - the cell is flat or has one of the four standard ramps;
    - it holds no infantry, vehicle, building or landed aircraft;
-   - it carries no wall;
+   - it has no wall;
    - its land type is passable to tracked movement;
-   - the overlay already in the cell, if there is one, is not of a priority type.
+   - the overlay already in the cell, if there is one, does not set [`Overrides=yes`](/keys/overrides/).
 
-   The wall term and the priority term cannot decide anything here. Step 2 has already redrawn away from every cell that carries an overlay of any kind, so the cell arriving at step 4 carries none at all, wall or otherwise.
+   The wall term and the `Overrides` term cannot decide anything here. Step 2 has already redrawn away from every cell that has an overlay of any kind, so the cell arriving at step 4 has none at all, wall or otherwise.
 
 :::caution[A rejected cell still consumes a crate]
 Step 4 is the only test of terrain and occupancy on the path a crate normally takes, it runs inside the overlay rather than in the placement routine, and its failure is not reported back. The tracking slot records the location and starts its timer regardless, so the attempt counts as a success while no crate appears anywhere on the map. That slot later expires and rolls a replacement in the ordinary way. This is also why no engine-placed crate lands on water: water is not passable to tracked movement, so a crate rolled onto it is silently dropped. A crate the map author drew there survives, because a map's own crates skip this test.
@@ -79,13 +79,13 @@ Step 4 is the only test of terrain and occupancy on the path a crate normally ta
 
 ### How long a crate lasts
 
-A tracked crate's lifetime is drawn at placement, uniformly, between half of [`CrateRegen`](/keys/crateregen/) minutes and twice it. With the engine default of `10` a crate lives between 5 and 20 minutes; at `CrateRegen=3` it lives between 1.5 and 6 minutes.
+A tracked crate's lifetime is drawn at placement, uniformly, between half of [`CrateRegen` in `[CrateRules]`](/keys/crateregen/) minutes and twice it. With the engine default of `10` a crate lives between 5 and 20 minutes; at `CrateRegen=3` it lives between 1.5 and 6 minutes.
 
-:::caution[CrateRegen is the bottom of the range, not the period]
-A crate lasts somewhere between half `CrateRegen` and twice it, so the setting is the lower quarter-point of the range rather than its middle, and the average life is a quarter longer than the figure written. Raising it stretches both ends at once.
+:::caution[CrateRegen is not the period]
+A crate lasts somewhere between half `CrateRegen` and twice it, so the setting sits below the middle of the range and the average life is a quarter longer than the figure written. Raising it stretches both ends at once.
 :::
 
-Outside a campaign, and while crates are enabled for the match, every logic frame sweeps the tracking slots. An expired slot has its crate removed and a fresh random crate placed. Collecting a crate also places a replacement when both the match option and [`Crates`](/keys/crates/) in the rules are enabled.
+Outside a campaign, and while crates are enabled for the match, every logic frame sweeps the tracking slots. An expired slot has its crate removed and a fresh random crate placed. Collecting a crate also places a replacement when both the match option and [`Crates` in the rules' `[MultiplayerDefaults]`](/keys/crates/) are enabled.
 
 :::caution[The rules can still suppress pickup replacements]
 `Crates=yes` seeds the match setting that the game setup screen then overwrites, so the two can end up opposed. With `Crates=no` in the rules and crates switched on for the match, collected crates are not replaced although the expiry sweep keeps working. Switching crates off for the match suppresses both replacement paths whatever the rules say.
@@ -93,17 +93,17 @@ Outside a campaign, and while crates are enabled for the match, every logic fram
 
 ### Crates dropped by destroyed vehicles
 
-A destroyed vehicle of a [`CarriesCrate=yes`](/keys/carriescrate/) type drops a wood crate on a nearby cell that lies inside the playable area, is passable to tracked movement, and carries no overlay. The scenario decides whether the drop happens at all: an [`IsTrain=yes`](/keys/istrain/) type is gated on [`TrainCrate`](/keys/traincrate/) and every other type on [`TruckCrate`](/keys/truckcrate/). The [Toggle Train Cargo](/mapping/actions/taction-toggle-train-cargo/) trigger action flips the train setting mid-mission.
+A destroyed vehicle of a [`CarriesCrate=yes`](/keys/carriescrate/) type drops a wood crate on a nearby cell that lies inside the playable area, is passable to tracked movement, and has no overlay. The scenario decides whether the drop happens at all, through the map's `[Basic]` section: an [`IsTrain=yes`](/keys/istrain/) type is gated on [`TrainCrate`](/keys/traincrate/) and every other type on [`TruckCrate`](/keys/truckcrate/). The [Toggle Train Cargo](/mapping/actions/taction-toggle-train-cargo/) trigger action flips the train setting mid-mission.
 
 A crate dropped this way takes no tracking slot, so like a map-authored crate it never expires.
 
 ## Collecting a crate
 
-A crate is collected as infantry, a walker, a hovercraft or a driven vehicle commits to entering its cell — the walking, mech, hovering and driving locomotors, and no others. Nothing else reaches that check: an infantryman on a jump jet crosses the cell without collecting, so does an aircraft in flight, and a building never moves onto one at all.
+A crate is collected when infantry, a walker, a hovercraft or a driven vehicle commits to entering its cell — the walking, mech, hovering and driving locomotors, and no others. Nothing else reaches that check: an infantryman on a jump jet crosses the cell without collecting, so does an aircraft in flight, and a building never moves onto one at all.
 
-Collection applies no test of its own against the map's regions, so a crate standing anywhere in the playfield can be picked up, the map's border included. Every path the engine puts a crate down on is confined to the playable area, so the only crate ever standing in the border is one a map author drew there.
+Collection applies no test of its own against the map's regions; the collector's own movement test is the only gate. Every path the engine puts a crate down on is confined to the playable area, so the only crate ever standing in the border is one a map author drew there.
 
-Whether the collector reaches the cell at all is settled earlier, by the movement test for its kind, and that test reads two things: whether the collector's house is played by a human, and whether the match is a campaign. The table gives every combination, with the passive-house override on the last row. What it shows is that outside a campaign the two kinds part company — computer vehicles drive onto crates that computer infantry refuse to walk onto.
+Whether the collector reaches the cell at all is settled earlier, by the movement test for its kind. The crate it finds is refused on two counts: whether the collector's house is played by a human, and whether the match is a campaign. The table gives every combination, with the passive-house override on the last row. Outside a campaign the two kinds part company — computer vehicles drive onto crates that computer infantry refuse to walk onto.
 
 | The collector | In a campaign | Outside a campaign |
 | --- | --- | --- |
@@ -117,13 +117,13 @@ The passive override is applied inside the collection routine, once the collecto
 
 ### Springing the crate trigger
 
-When the overlay type also carries [`CrateTrigger=yes`](/keys/cratetrigger/), collection springs [Pickup Crate](/mapping/events/tevent-pickup-crate/) on the collector's own tag before anything else happens. If that trigger destroys the collector, the crate is left in place and no result is chosen. Collection also raises a scenario flag that the next logic pass turns into [Pickup Crate (any)](/mapping/events/tevent-pickup-crate-any/) for every general trigger, then clears.
+When the overlay type also sets [`CrateTrigger=yes`](/keys/cratetrigger/), collection springs [Pickup Crate](/mapping/events/tevent-pickup-crate/) on the collector's own tag before the crate is removed or a result chosen. If that trigger destroys the collector, the crate is left in place and no result is chosen. Collection also raises a scenario flag that the next logic pass turns into [Pickup Crate (any)](/mapping/events/tevent-pickup-crate-any/) for every general trigger, then clears.
 
 ## The `[Powerups]` section
 
-This section carries the vocabulary every draw and conversion below is written in. Anyone already writing `[Powerups]` rows can skip to [choosing the result](#choosing-the-result).
+This section gives the vocabulary every draw and conversion below is written in. Anyone already writing `[Powerups]` rows can skip to [choosing the result](#choosing-the-result).
 
-`[Powerups]` gives each result a share, a result animation, and one number. Its entry names are the result tokens listed on the [crate result](/reference/enums/crate/) page, and each value is a comma list of `Share,Anim,Data`. The animation accepts `<none>`; an AnimType name the rules do not register resolves to no animation rather than failing. The third field is optional and may be written as a percentage, in which case it is divided by 100.
+`[Powerups]` gives each result a share, a result animation, and one number. Its entry names are the result tokens listed on the [crate result](/reference/enums/crate/) page, and each value is a comma list of `Share,Anim,Data`. The animation accepts `<none>` or `none`; an AnimType name the rules do not register resolves to no animation rather than failing. The third field is optional and may be written as a percentage, in which case it is divided by 100: `Armor=33,ARMOR,50%` stores `0.5`.
 
 ```ini title="rules.ini"
 [Powerups]
@@ -134,14 +134,14 @@ Veteran=15,VETERAN,1    ; share 15, plays VETERAN, one promotion step per object
 ```
 
 :::danger[A partial Powerups section erases every result it omits]
-Each entry is read against a hard-coded fallback of `0,NONE` rather than against the value already in force. As soon as any loaded rules layer or map contains a `[Powerups]` section, every result that section does not list has its share set to `0` and its animation cleared; only the third field survives. Listing four results does not adjust four results, it disables the other fifteen. If the surviving shares total zero the draw comes out as 0 or 1: a 0 lands on the first entry and pays money, while a 1 walks past the last entry and reads one position beyond the result tables.
+Each entry is read against a hard-coded fallback of `0,NONE` rather than against the value already in force. As soon as any loaded rules layer or map contains a `[Powerups]` section, every result that section does not list has its share set to `0` and its animation cleared; only the third field survives. The four rows above are an example, not the shipped section. Listing them does not adjust four results; it disables the other fifteen, so a section you write has to list every result you mean to keep. If the surviving shares total zero the draw comes out as 0 or 1. A draw of 0 lands on the first entry and pays money, while a draw of 1 walks past the last entry and reads one position beyond the result tables.
 :::
 
 ## Choosing the result
 
 ### In a campaign
 
-Campaign selection is fixed, with no weighted draw and no substitution beyond the `Squad` rewrite below. The money figure is preloaded from [`SoloCrateMoney`](/keys/solocratemoney/), and two tests then run in order: an overlay matching `CrateImg` selects [`SilverCrate`](/keys/silvercrate/), and an overlay matching `WoodCrateImg` selects [`WoodCrate`](/keys/woodcrate/). A crate overlay that matches neither setting yields the money result. No replacement crate is placed.
+Campaign selection is fixed, with no weighted draw and no substitution beyond the [`Squad`](#settings-and-results-without-effect) rewrite below. The money figure is preloaded from [`SoloCrateMoney`](/keys/solocratemoney/), and two tests then run in order: an overlay matching `CrateImg` selects [`SilverCrate`](/keys/silvercrate/), and an overlay matching `WoodCrateImg` selects [`WoodCrate`](/keys/woodcrate/). A crate overlay that matches neither setting yields the money result. No replacement crate is placed.
 
 :::caution[Pointing both image settings at one overlay hides SilverCrate]
 The two tests are sequential rather than exclusive, and the `WoodCrateImg` test runs second, so when both settings name the same OverlayType the wood result always overwrites the silver one and `SilverCrate` can never take effect. The shipped rules do exactly this: `WoodCrateImg` and `CrateImg` both name `CRATE`, the only overlay type that declares `Crate=yes`. Reaching `SilverCrate` requires a second OverlayType of its own with `Crate=yes`, drawn into the map and named by `CrateImg` alone.
@@ -149,7 +149,7 @@ The two tests are sequential rather than exclusive, and the `WoodCrateImg` test 
 
 ### Outside a campaign
 
-Every result's share is summed, a number is drawn between 1 and that total, and the results are walked in their fixed order until the running total reaches the draw. Shares are absolute weights against that running total rather than percentages, so raising one entry lowers the odds of every other entry. The sum is recomputed from the live values on each collection.
+Every result's share is summed and a number is drawn between 1 and that total. The results are then walked in the fixed order the result tokens are listed in on the [crate result](/reference/enums/crate/) page, until the running total reaches the draw. Shares are absolute weights against that running total rather than percentages, so raising one entry lowers the odds of every other entry. The sum is recomputed from the live values on each collection.
 
 An override then replaces the draw outright. The collector's house takes the unit result, whatever was drawn, on all of:
 
@@ -158,7 +158,7 @@ An override then replaces the draw outright. The collector's house takes the uni
 - it owns no vehicle of any [`BaseUnit`](/keys/baseunit/) type;
 - bases are enabled for the match.
 
-The override raises the flag that later turns that vehicle into an MCV, but it runs before the conversions below rather than after them, so a house holding more than 50 vehicles has the unit result turned straight back into money and never reaches the MCV the flag was raised for.
+The override raises the flag that later turns that vehicle into an MCV, but it runs before the conversions below rather than after them. A house holding more than 50 vehicles therefore has the unit result turned straight back into money, and never reaches the MCV the flag was raised for.
 
 Six results are then converted to money. Five convert only when the collector would gain nothing from them; the sixth converts every time:
 
@@ -210,7 +210,7 @@ The unit result picks a vehicle type in this order:
    When no UnitType satisfies all three, nothing is handed out and the crate pays money instead.
 
 :::caution[UnitCrateType cancels both rescues]
-Step 3 overwrites whatever steps 1 and 2 chose, so naming a type there suppresses the free MCV given to a house that has lost its base and the free harvester given to a house that has lost its last one. Leaving `UnitCrateType=none` is what keeps both rescues reachable.
+Step 3 overwrites whatever steps 1 and 2 chose. Naming a type there suppresses both rescues: the free MCV given to a house that has lost its base, and the free harvester given to a house that has lost its last one. Leaving `UnitCrateType=none` is what keeps both rescues reachable.
 :::
 
 The chosen vehicle is created for the collector's house in [limbo](/glossary/#limbo) and then taken out of it onto the crate cell, or onto a nearby cell its own speed type can occupy. Either success refuses the collector entry into the crate's cell, so the collector stops short of it. If neither placement succeeds the vehicle never leaves limbo: it is deleted and money is paid instead, and outside a campaign that figure is drawn from the `Unit` row's third field rather than the `Money` row's.
@@ -239,13 +239,13 @@ The missile result grants the collector's house a [one-time superweapon](/system
 
 The explosion result damages the collector directly with the [`C4Warhead`](/keys/c4warhead/) warhead, then creates five blasts of the same damage and warhead scattered within two cells of the crate, each with its own explosion animation, lighting flash, and chain reaction.
 
-The napalm result damages the collector with the [`FlameDamage`](/keys/flamedamage/) warhead and applies the same damage as a blast at the midpoint between the crate's cell and the collector, where it also creates an animation. That animation is fixed in the engine and picked by position rather than by name — it is whichever animation the rules register first — so nothing in `[Powerups]` reaches it.
+The napalm result damages the collector with the [`FlameDamage`](/keys/flamedamage/) warhead and applies the same damage as a blast at the midpoint between the crate's cell and the collector, where it also creates an animation. That animation is fixed in the engine: it is whichever animation the rules register first, chosen by position rather than by name, so nothing in `[Powerups]` reaches it.
 
 The gas result applies its damage with the hard-coded `GAS` warhead to the crate's cell and to all eight neighbors, with no source recorded and chain reactions suppressed. Rules that register no warhead named `GAS` make the result do nothing rather than fail.
 
 ### Tiberium
 
-The Tiberium result places one growth stage of a randomly drawn registered [Tiberium](/systems/tiberium/) type on the crate's cell, then between 10 and 20 more scattered within three cells of it. A draw landing on the Tiberium type at index 1 is redirected to the type at index 0, so index 1 never arrives by crate and its share of the draw falls to index 0 instead. A cell already holding that Tiberium gains a stage instead, and any other cell that cannot take it is left as it is.
+The Tiberium result places one growth stage of a randomly drawn registered [Tiberium](/systems/tiberium/) type on the crate's cell, then between 10 and 20 more scattered within three cells of it. A draw landing on the type at index 1 of `[Tiberiums]` is redirected to the type at index 0, so index 1 never arrives by crate and its share of the draw falls to index 0 instead. A cell already holding that Tiberium gains a stage instead, and any other cell that cannot take it is left as it is.
 
 ## Settings and results without effect
 
@@ -257,8 +257,8 @@ Three result tokens have no result handler at all: `Invulnerability`, `IonStorm`
 
 ## What a crate leaves behind
 
-The result animation named by the second `[Powerups]` field is created at the center of the crate's cell, raised slightly off the ground. It is chosen from the result that actually ran, so a converted crate plays the animation of what it was converted into — a wasted firepower crate plays the money animation. A unit result that successfully places its vehicle returns before this step, so a unit crate plays an animation only when the vehicle could not be created.
+The result animation named by the second `[Powerups]` field is created at the center of the crate's cell, raised slightly off the ground. It is chosen from the result that actually ran, so a converted crate plays the animation of what it was converted into: a wasted firepower crate plays the money animation. A unit result that successfully places its vehicle returns before this step, so a unit crate plays an animation only when the vehicle could not be created.
 
 `Armor`, `Speed`, and `Firepower` each speak one EVA line per crate, and only when at least one affected object belongs to a locally controlled house.
 
-An object whose armor or firepower multiplier is above 1, or an infantryman, vehicle or aircraft whose speed multiplier is, draws a different selection bracket. That bracket is the only lasting on-map sign of the three multiplier crates — a veterancy crate shows its promotion insignia and a cloak crate shows itself by cloaking — and it is not shown on every object: buildings and [`IsCoreDefender=yes`](/keys/iscoredefender/) vehicles draw a pip bar instead of a bracket and so never carry it.
+An object whose armor or firepower multiplier is above 1, or an infantryman, vehicle or aircraft whose speed multiplier is, draws a different selection bracket. That bracket is the only lasting on-map sign of the three multiplier crates; a veterancy crate shows its promotion insignia and a cloak crate shows itself by cloaking. It is not shown on every object: buildings and [`IsCoreDefender=yes`](/keys/iscoredefender/) vehicles draw a pip bar instead of a bracket and so never show it.

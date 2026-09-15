@@ -11,7 +11,7 @@ One copy of the animation is placed at the projectile's current position every t
 
 The trail comes from the flight logic rather than the drawing, so a [`Voxel=yes`](/keys/voxel/) projectile leaves one exactly as a shape-drawn projectile does. An [`Inviso=yes`](/keys/inviso/) projectile is already at its target before its first logic frame, so it leaves at most one puff and that puff appears on the target.
 
-The setting is read from the art section named by the projectile's [`Image`](/keys/image/). That assignment is required. Without it the lookup runs against an empty section name, so nothing here is read — not even from an art section named after the projectile, which is where its `Voxel` setting is still found.
+The setting is read from the art section named by the projectile's [`Image`](/keys/image/). That assignment is required. Without it this setting is never read at all, not even from an art section named after the projectile, which is where its `Voxel` setting is still found.
 
 ```ini title="art.ini"
 [MYMISSILEART] ; the Image ID that the projectile's Image assignment names

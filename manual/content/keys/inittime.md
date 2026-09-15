@@ -7,4 +7,4 @@ when_omitted:
   value: "10000"
 ---
 
-The value is stored on the scenario as the map is opened and written back out by the map editor, which is why nearly every shipped mission carries `InitTime=10000`. Nothing between those two points reads it: no timer starts from it, no countdown is seeded with it, and no gameplay path reads it at all.
+The value is stored on the scenario as the map is opened, and nothing reads it afterward: no timer starts from it, no countdown is seeded with it, and no gameplay path reads it. Nearly every shipped mission sets `InitTime=10000` purely because the line is present in its file.

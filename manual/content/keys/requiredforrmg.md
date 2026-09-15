@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-Tile artwork is trimmed after the map has been read: the loader counts how many cells use each tile type and throws away the image of every type the count leaves at zero, so only the part of a theater a scenario actually needs stays resident. On a generated map that count is misleading, because the generator goes on placing tiles after the trim. A set carrying this flag is exempt from the trim on a generated map, and its artwork is loaded instead of discarded.
+Tile artwork is trimmed after the map has been read. The loader counts how many cells use each tile type and throws away the image of every type the count leaves at zero, so only the part of a theater a scenario actually needs stays resident. On a generated map that count is misleading, because the generator goes on placing tiles after the trim. A set with this flag is exempt from the trim on a generated map, and its artwork is loaded instead of discarded.
 
 ```ini title="TEMPERAT.INI"
 [TileSet0042]        ; example set the generator lays down as it works

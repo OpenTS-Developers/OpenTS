@@ -11,5 +11,5 @@ credit: [ZivDero, tomsons26]
 
 `[General] EngineerDamage=` is now read from its own name. The read asked the rules for
 `EngineerCaptureLevel` instead, so the key was never looked for and setting the capture
-level quietly filled the damage figure as well. No gameplay path consults the damage figure,
+level quietly filled the damage figure as well. No gameplay path reads the damage figure,
 so the visible effect is that the two settings no longer contaminate one another.

@@ -114,13 +114,14 @@ Direct `AbstractTypeClass` families do not describe map objects. A weapon, warhe
 
 ## Identity, heaps, and lookup
 
-`AbstractClass` exposes three different identifiers, and they are not interchangeable:
+`AbstractClass` exposes four different identifiers, and they are not interchangeable:
 
 | Interface | Purpose |
 | --- | --- |
 | `What_Am_I()` / `Fetch_RTTI()` | Returns the concrete engine `RTTIType`. Abstract intermediate classes without an override remain abstract; they do not supply `RTTI_NONE` as a default identity. |
 | `Fetch_ID()` | Returns the object's engine identity used by persistence and reference tracking. |
 | `Fetch_Heap_ID()` | Returns the slot in a family-specific heap when the concrete class overrides it; the base implementation returns zero. |
+| `Class_ID()` | Returns the concrete class's 16-byte `ClassID`. Save records and the `Locomotor` key hold it, so it names the class rather than one of its objects. |
 
 An RTTI value selects a class family; a heap ID selects one object within that family's heap; an ObjectType ID is the textual INI name.
 
@@ -158,8 +159,8 @@ Each row pairs a requirement with the class that should hold the field. The rows
 
 | Requirement | Placement | Example |
 | --- | --- | --- |
-| Changes independently for every object during a match | The narrowest runtime class that owns the behavior | Remaining fuel on one `AircraftClass` instance |
-| Shared by every object with one INI identifier | The corresponding concrete `TypeClass` | Maximum fuel on `AircraftTypeClass` |
+| Changes independently for every object during a match | The narrowest runtime class that owns the behavior | Remaining ammo on one `AircraftClass` instance |
+| Shared by every object with one INI identifier | The corresponding concrete `TypeClass` | Maximum ammo on `AircraftTypeClass` |
 | Shared by several map-object definition families | `ObjectTypeClass` or another common type base | A property used by animations, terrain, and technos |
 | Shared only by owned combat definitions | `TechnoTypeClass` | A targeting coefficient used by units, infantry, aircraft, and buildings |
 | Applies to the match rather than an object definition | The owning global or scenario subsystem | A game-wide rule in `RulesClass` |

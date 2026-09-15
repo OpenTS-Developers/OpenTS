@@ -17,4 +17,4 @@ Capturing the structure adds this many credits to the capturing house, but only 
 
 A capturing house that is itself `MultiplayPassive=yes` is paid nothing, and so is zero or a negative figure.
 
-The bonus is independent of the recurring payment. A type may set it alone — the tech structure worth a lump sum on capture and nothing afterwards — and it is outside [`ProduceCashBudget`](/keys/producecashbudget/), so it neither spends the allowance nor is limited by it. Without [`ProduceCashStartupOneTime=yes`](/keys/producecashstartuponetime/) it is paid afresh on every recapture off a neutral house.
+The bonus is independent of the recurring payment. A type may set it alone (the tech structure worth a lump sum on capture and nothing afterwards), and it is outside [`ProduceCashBudget`](/keys/producecashbudget/), so it neither spends the allowance nor is limited by it. Without [`ProduceCashStartupOneTime=yes`](/keys/producecashstartuponetime/) it is paid afresh on every recapture off a neutral house.

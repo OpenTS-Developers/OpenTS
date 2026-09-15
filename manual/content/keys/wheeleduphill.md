@@ -7,10 +7,17 @@ when_omitted:
   value: "1"
 ---
 
-Each cell of a vehicle's journey is costed as a fraction of full speed, drawn from the movement table its [`SpeedType`](/keys/speedtype/) selects, and that fraction is multiplied by this value when the ground under the destination cell stands higher than the ground under the vehicle. A step of two or more terrain levels is costed from the Road row of that table rather than from the destination's own land type. Ground heights are what is compared, so a ramp counts as a climb exactly as a cliff edge does, and a step between cells of equal height takes neither this multiplier nor [`WheeledDownhill`](/keys/wheeleddownhill/).
+Each cell of a vehicle's journey is costed as a fraction of full speed, drawn from the [terrain table](/systems/movement-and-terrain/#the-terrain-table) column its [`SpeedType`](/keys/speedtype/) selects. That fraction is multiplied by this value when the ground under the destination cell stands higher than the ground under the vehicle.
 
-The name is narrower than the rule. Only `SpeedType=Track` is sorted off to [`TrackedUphill`](/keys/trackeduphill/); every other SpeedType a vehicle can carry — `Wheel`, `Hover`, `Float`, `Amphibious`, `Foot`, `Creep`, `Winged` — climbs on this value. Infantry and aircraft take neither pair, and neither does a vehicle whose [`Locomotor`](/keys/locomotor/) hovers or tunnels rather than driving.
+```ini title="rules.ini"
+[General]
+WheeledUphill=0.5
+```
+
+A step of two or more terrain levels is costed from the Road row of that table rather than from the destination's own land type. Ground heights are what is compared, so a ramp counts as a climb exactly as a cliff edge does. A step between cells of equal height takes neither this multiplier nor [`WheeledDownhill`](/keys/wheeleddownhill/).
+
+The name is narrower than the rule. What gates the multiplier is the kind of object: only vehicles reach it, so infantry and aircraft take neither pair. Among vehicles, only `SpeedType=Track` is sorted off to [`TrackedUphill`](/keys/trackeduphill/); every other SpeedType a vehicle can use (`Wheel`, `Hover`, `Float`, `Amphibious`, `Foot`, `Creep`, `Winged`) climbs on this value. A vehicle whose [`Locomotor`](/keys/locomotor/) hovers or tunnels rather than driving moves by another path, and the multiplier never reaches it.
 
 :::caution[The multiplier is applied after the terrain cost is capped]
-The terrain cost is clamped to full speed first and this value is applied afterwards, so a figure above `1` carries a vehicle uphill faster than it moves on the flat. A product of exactly zero is then replaced with half speed, so `WheeledUphill=0` halves a climb rather than forbidding one.
+The terrain cost is clamped to full speed first and this value is applied afterwards, so a figure above `1` moves a vehicle uphill faster than it moves on the flat. A product of exactly zero is then replaced with half speed, so `WheeledUphill=0` halves a climb rather than forbidding one.
 :::

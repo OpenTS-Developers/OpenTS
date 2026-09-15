@@ -33,7 +33,7 @@
           "additionalProperties": false,
           "required": ["kind", "note"],
           "properties": {
-            "kind": { "enum": ["computed", "inherited", "unchanged", "context-dependent"] },
+            "kind": { "enum": ["computed", "inherited", "context-dependent"] },
             "note": { "type": "string", "minLength": 1 }
           }
         }

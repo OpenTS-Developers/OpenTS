@@ -46,7 +46,7 @@ fields:
   - { position: 11, label: Skirmish, value: 0 or 1, required: false }
   - { position: 12, label: Ignored, value: Present but discarded, required: false }
   - { position: 13, label: Side, value: "The side's position in the rules' [Sides] list, counted from one; 0 leaves the trigger unrestricted", required: false }
-  - { position: 14, label: Base defense, value: 0 or 1, required: false, note: "Stored and written back, never consulted; whether a trigger counts as defensive comes from its teams' IsBaseDefense." }
+  - { position: 14, label: Base defense, value: 0 or 1, required: false, note: "Stored and written back, never read; whether a trigger counts as defensive comes from its teams' IsBaseDefense." }
   - { position: 15, label: Secondary team, value: TeamType ID or <none>, required: false }
   - { position: 16, label: Easy, value: 0 or 1, required: false }
   - { position: 17, label: Medium, value: 0 or 1, required: false }
@@ -59,22 +59,22 @@ source_files:
   - code/scenario.cpp
 ---
 
-Entries in `[AITriggerTypes]` are definitions: the key is the AITrigger ID and the value is its serialized record. Positions 1 through 7 must be present for parsing to finish. An incomplete entry remains registered with partially parsed state.
+Parsing stops at the first of positions 1 through 7 that is missing, and every field after it is left unread. An incomplete entry is still registered, holding the fields read before the stop.
 
 OpenTS loads `AI.INI`, then `AIFS.INI` when Firestorm is enabled, then the map-local definitions.
 
 For global definitions, OpenTS enables every loaded AI trigger. For map definitions, `[AITriggerTypesEnable]` maps AITrigger IDs to booleans. In non-campaign sessions, a listed local trigger is enabled regardless of that boolean.
 
-Five condition types are defined. The table sets each one against what it measures and which of the record's two supporting fields that measurement reaches. What the third column settles is which fields a given condition leaves inert — a record may write anything at all in those and none of it is consulted. Only one of the five asks about the owning house; the other four are questions about that house's enemy, and a house with no enemy passes none of them.
+Five condition types are defined. Only one asks about the owning house; the other four are questions about that house's enemy, and a house with no enemy fails all four. A condition that reads neither of the two supporting fields leaves them inert: a record may write anything at all there and none of it is read.
 
 | Value | What it measures | Supporting fields it reads |
 | --- | --- | --- |
 | `0` | How many of the condition object the enemy currently holds | Condition object and comparison block |
 | `1` | How many of the condition object the owning house currently holds | Condition object and comparison block |
-| `2` | The enemy's power output less its drain, against a fixed `100` | Neither |
-| `3` | The enemy's power output less its drain, against a fixed `0` | Neither |
+| `2` | The enemy's power output less its drain, below a fixed `100` | Neither |
+| `3` | The enemy's power output less its drain, below a fixed `0` | Neither |
 | `4` | The enemy's spendable credits | Comparison block |
 
-The comparison block carries two values rather than one: the number being compared against, and which of six comparisons is applied to it — less than, less than or equal to, equal to, greater than or equal to, greater than, or not equal to.
+The comparison block has two values rather than one: the number being compared against, and which of six comparisons is applied to it. The six are less than, less than or equal to, equal to, greater than or equal to, greater than, and not equal to. The block is hexadecimal. Its first four bytes hold the number being compared against and the next four hold the comparison's position in that list counted from zero, each written low byte first. A threshold of 5 with the greater-than-or-equal comparison, for example, opens `0500000003000000`.
 
 The condition object resolves as infantry, vehicle, aircraft, then building, and the first matching ID is used. An ID that matches none of them does not reject the trigger: the count it stands for is taken as zero and the comparison is made against that.

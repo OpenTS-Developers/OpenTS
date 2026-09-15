@@ -8,6 +8,6 @@ when_omitted:
   value: "9"
 ---
 
-A movie keeps its video in step with its audio by asking how much of the sound has been heard and drawing to match. The audio engine answers that from what the mixer has taken of the sound track and what the output device still holds, so there is nothing left for a hand-set offset to correct. The figure once stood in for that device latency on emulated DirectSound drivers.
+A movie keeps its video in step with its audio by asking how much of the sound has been heard and drawing to match. The audio engine works that out from what the mixer has taken of the sound track and what the output device still holds. A hand-set offset has nothing left to correct. The figure once stood in for that device latency on emulated DirectSound drivers.
 
 The setting has no control on any options screen. Saving the options still writes it back to `sun.ini` with the rest, so the file round-trips unchanged.

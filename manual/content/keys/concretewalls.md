@@ -7,6 +7,6 @@ when_omitted:
   value: ""
 ---
 
-The first entry the country this house acts as may own is the type every wall node of a [planned perimeter](/systems/ai-base-building/#walls-and-gates) is created from, and it is the type the defense planner clears away when a base defense placed along a finished wall takes a cell a wall was already planned for.
+The first entry the country this house [acts as](/keys/actslike/) [may own](/keys/owner/) is the type every wall node of a [planned perimeter](/systems/ai-base-building/#walls-and-gates) is created from. It is also the type the defense planner clears away when a base defense placed along a finished wall takes a cell a wall was already planned for.
 
 The engine builds those nodes from that entry without checking that the list held one that country may own.

@@ -7,6 +7,6 @@ when_omitted:
   value: "0"
 ---
 
-A [drone placed beside its structure](/systems/superweapons/#hunter-seeker) starts its climb the moment it is given somewhere to go, and each frame it is moving it rises by the smaller of this figure and the distance still separating it from its flight level. The lift-off ends once it reaches that level, and every later climb uses [`HunterSeekerAscentSpeed`](/keys/hunterseekerascentspeed/) instead.
+A [drone placed beside its structure](/systems/superweapons/#hunter-seeker) starts its climb the moment it is given somewhere to go. Each frame it rises by the smaller of this figure and the distance still left to its flight level. The stock rules use `6`, about a fortieth of a cell a frame. The lift-off ends once it reaches that level. Every later climb uses [`HunterSeekerAscentSpeed`](/keys/hunterseekerascentspeed/) instead.
 
-At the stored figure the step is zero, so the drone gains no altitude at all. The approach that carries a drone onto its target and detonates it is entered only once the drone is off the ground and no longer lifting off.
+At `0` the step is zero, so the drone gains no altitude at all. The approach that takes a drone onto its target and detonates it is entered only once the drone is off the ground and no longer lifting off.

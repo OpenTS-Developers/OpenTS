@@ -7,7 +7,7 @@ when_omitted:
   value: green
 ---
 
-A transport draws one pip per passenger slot up to five, and only where [`PipScale`](/keys/pipscale/) selects the passenger scale, coloring each one from what is standing in it: a slot holding an infantry takes that infantry type's setting, a slot holding anything else is green, and an empty slot is drawn empty. Nothing else reads the value — a soldier on the ground draws no pip of its own, and the setting has no meaning on a type that never rides anywhere.
+A transport draws one pip per passenger slot up to five where its [`PipScale`](/keys/pipscale/) selects the passenger scale, coloring each one from what is standing in it. The pips draw on the tactical view under the selected transport. The count never rises past five: a type with more than five passenger slots leaves its remaining passengers without a pip. A slot holding an infantry takes that infantry type's setting, a slot holding anything else is green, and an empty slot is drawn empty. Nothing else reads the value. A soldier on the ground draws no pip of its own, and the setting has no meaning on a type that never rides anywhere.
 
 ```ini title="rules.ini"
 [MYCOMMANDO] ; example InfantryType

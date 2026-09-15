@@ -9,7 +9,7 @@ when_omitted:
 
 No part of target scoring reads this figure; it is what an object is worth as a danger, not what it is worth as a target. Three systems consume it:
 
-- The weight an object carries when a team tallies its members. Separately, this figure plus the type's [`Points`](/keys/points/) — and the same sum for anything carried as cargo — forms an object's worth to the computer, which nothing in the engine goes on to consult.
+- The weight an object has when a team tallies its members. Separately, this figure plus the type's [`Points`](/keys/points/) (and the same sum for anything carried as cargo) forms an object's worth to the computer. The computer's superweapon targeting reads it: nine times in ten it picks the enemy building with the greatest worth.
 - The per-house, per-region threat map, credited when the object is placed on the map and debited when it leaves. The pathfinder reads that map through [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/).
 - The size of a computer house's response when its base is attacked: the attacker's figure multiplied by [`ComputerBaseDefenseResponse`](/keys/computerbasedefenseresponse/) is the defensive strength the house tries to assemble.
 

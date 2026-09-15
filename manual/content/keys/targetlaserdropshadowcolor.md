@@ -7,4 +7,4 @@ when_omitted:
   value: "0,0,0"
 ---
 
-The three numbers are separated by commas; a value that is not three numbers keeps the default, black. The color is used only with [`TargetLaserDropShadow=yes`](/keys/targetlaserdropshadow/).
+The three numbers are separated by commas; a value that is not three numbers keeps the default, black. A number outside 0 to 255 wraps around, so 300,0,0 is read as 44,0,0. The color is used only with [`TargetLaserDropShadow=yes`](/keys/targetlaserdropshadow/).

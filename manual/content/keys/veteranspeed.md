@@ -1,6 +1,6 @@
 ---
 key: VeteranSpeed
-summary: Movement speed of an object holding the faster ability is multiplied by this value plus one.
+summary: Movement speed of an object holding the faster ability is multiplied by one more than this value.
 see_also: ["system:veterancy"]
 when_omitted:
   kind: value

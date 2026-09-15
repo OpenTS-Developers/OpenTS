@@ -16,5 +16,5 @@ RechargeTime=8.5
 ```
 
 :::caution[`RechargeTime=0` is read as if the key were absent]
-This is the one setting in a superweapon's section that does not pass its current value through. The read treats exactly `0` as nothing written, and both leave the delay standing at whatever the last file to set it left there — five minutes if no file ever has. An instantly recharging superweapon cannot be authored here, and a rules layer cannot use `0` to undo a delay an earlier layer set.
+The read takes no default from the value already in force. A missing key and a written `0` both fail the same test, and both leave the delay standing at whatever the last file to set it left there, five minutes if no file ever has. An instantly recharging superweapon cannot be authored here, and a rules layer cannot use `0` to undo a delay an earlier layer set.
 :::

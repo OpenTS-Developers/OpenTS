@@ -11,13 +11,13 @@ when_omitted:
 [MYSPARK] ; a ParticleType registered in [Particles]
 BehavesLike=Spark
 MaxEC=500
-XVelocity=10 ; sparks are thrown up to 10 leptons a frame along this axis, either way
+XVelocity=10 ; sparks are thrown under 10 leptons a frame along this axis, either way
 YVelocity=10
 MinZVelocity=40
 ZVelocityRange=15
 ```
 
-Every spark in a burst is thrown at its own random speed along this axis — anything up to this figure, either way — measured in leptons a frame. The three axis settings do two jobs at once: together they fix how fast the spark travels, and they fix which way it goes. Whichever direction the holding system then applies — its own spawn direction, or one random direction shared by the whole burst — is added to that vector and the result is scaled back to the speed the three settings produced, so widening the spread makes a burst both faster and looser.
+Every spark in a burst is thrown at its own random speed along this axis. The draw can be anything below this figure, in either direction, and it is measured in leptons a frame. The three axis settings do two jobs at once: together they fix how fast the spark travels, and they fix which way it goes. The type is thrown by its holding system, the [particle system](/systems/particle-systems/) whose `HoldsWhat=` names this type. That system adds a direction to the draw vector, either its own spawn direction or one random direction shared by the whole burst. The sum is normalized and scaled back to the length of the spark's own draw, so the added direction steers the spark without changing how fast it moves. Widening the spread allows longer draws, so a burst is thrown both faster and looser.
 
 Only [`Spark`](/keys/behaveslike/#scope-particletype) particles are thrown this way. Every other behavior takes its speed from [`Velocity`](/keys/velocity/) and ignores the three axis settings. A negative figure behaves as its magnitude does, since the spread is symmetrical either way.
 

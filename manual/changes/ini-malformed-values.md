@@ -9,8 +9,4 @@ targets:
 credit: [ZivDero]
 ---
 
-A floating-point number, point, offset, vector, color or rectangle whose value does not hold
-the numbers it needs now reads as the key's default, and the debug log records the file,
-section, key and value. A value short of three components used to stop the game while the
-rules were read, a short color used to fill its missing channels from whatever was last in
-the storage it was scanned into, and a value that was not a number at all used to do the same.
+A floating-point number, point, offset, vector, color or rectangle the reader cannot convert now reads as the key's default. That is the value the key takes when the assignment is absent. The debug log records the file, section, key and value. A value short of three components used to stop the game while the rules were read, and so did a value that does not start with a number. A short color filled its missing channels from whatever was last in the storage it was scanned into.

@@ -9,7 +9,7 @@ when_omitted:
 
 The turret strip runs from here, one frame for each of the vehicle's [`TurretFacings`](/keys/turretfacings/).
 
-The derived default leaves room for eight walk blocks, and that eight is fixed. A vehicle cut into more than eight [`Facings`](/keys/facings/) therefore has walk blocks that would run through its own turret strip, so its artwork either puts the walk block after the strip or names this key to move the strip elsewhere.
+The derived default leaves room for eight walk blocks, and that eight is fixed. A vehicle cut into more than eight [`Facings`](/keys/facings/) therefore has walk blocks that would run through its own turret strip. Its artwork then either puts the walk block after the strip or names this key to move the strip elsewhere.
 
 ```ini title="art.ini"
 [MYTANK] ; the Image ID of a shape-drawn UnitType
@@ -18,3 +18,5 @@ WalkFrames=3
                   ; the derived strip: frames 24-55, eight blocks of 3
 StartWalkFrame=56 ; the 32 walk blocks begin after it
 ```
+
+The move has none of the derived frames with it: every default is settled before the section's own `StartWalkFrame` line is read. A vehicle with no standing artwork, like this one, draws its resting frames from the walk block itself. Standing, firing or death artwork that has to sit past the strip names its start frame outright.

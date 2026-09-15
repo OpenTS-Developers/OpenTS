@@ -6,14 +6,14 @@ see_also: ["MaxEC", "NextParticle", "Velocity", "WindEffect", "Warhead"]
 when_omitted:
   kind: value
   value: none
-  note: No name is supplied rather than the behavior already in force, so a later file that carries the section without this key leaves the type with no behavior at all.
+  note: No name is supplied rather than the behavior already in force, so a later file that contains the section without this key leaves the type with no behavior at all.
 ---
 
-Seven names are recognized. Each selects one routine that ages a particle of the type and, for four of them, one that moves it, and the choice is fixed — nothing else in the section changes which routines run.
+Seven names are recognized. Each selects one routine that ages a particle of the type, and six of them also move it: `Gas`, `WeakGas`, `Smoke` and `Fire` in a second routine, `Spark` and `Railgun` inside the aging routine itself. `Web` holds its position, and nothing else in the section changes which routines run.
 
 | Value | What a particle of the type does |
 | --- | --- |
-| `Gas` | Settles toward the ground and wanders sideways, glancing off terrain, bridge decks, walls and buildings, and poisons whatever shares its cell. |
+| `Gas` | Settles toward the ground and wanders sideways, glancing off terrain, bridge decks, walls and buildings, and applies its damage and warhead to whatever shares its cell. |
 | `WeakGas` | Moves and ages exactly as `Gas` does, but never applies damage. |
 | `Smoke` | Climbs at its own speed, wanders a little to either side, and slows until it is rising at 3 leptons per frame. |
 | `Fire` | Coasts along the line it was fired on, thins as its states advance, scorches everything sharing its cell except the object its system is attached to, and dies where the ground rises to meet it. |

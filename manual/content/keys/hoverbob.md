@@ -7,7 +7,7 @@ when_omitted:
   value: "30"
 ---
 
-The bob is a sine wave laid over whatever height the cushion has settled on. Only its period is configurable — the amplitude is a fixed two leptons either way, against the 256 leptons that make a cell. The figure is converted at 900 frames to the minute, so the stock `.04` gives a cycle of 36 frames, a little over two seconds.
+The bob is a sine wave laid over whatever height the cushion has settled on. Only its period is configurable: the amplitude is a fixed two leptons up or down, against the 256 leptons that make a cell. The figure is converted at 900 frames to the minute, so the stock `.04` gives a cycle of 36 frames, a little over two seconds.
 
 Hover units are split between exactly this period and 1.1 times it, and each runtime instance enters the cycle at its own point, so a group of them does not rise and fall in unison. The levitation locomotor bobs on the same figure.
 

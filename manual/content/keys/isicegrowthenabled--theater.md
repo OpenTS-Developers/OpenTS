@@ -15,4 +15,4 @@ Ice is a snow feature the rest of the simulation is gated on. Where this is off,
 IsIceGrowthEnabled=no
 ```
 
-It also decides one thing at load time: a theater with ice has the land type of its ice edge tiles rewritten to water, so that units treat the open edge of a sheet as the sea it floats in. A theater without ice keeps whatever land types its tiles declare.
+It also decides one thing at load time. In a theater with ice, the land type of the ice edge tiles is rewritten to water, so that units treat the open edge of a sheet as the sea it floats in. A theater without ice keeps whatever land types its tiles declare.

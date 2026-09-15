@@ -16,4 +16,4 @@ Sounds=LOOPIN LOOPBODY1 LOOPBODY2 LOOPOUT
 Control=LOOP RANDOM ATTACK DECAY
 ```
 
-Each name is looked up when the sound first plays, as `.WAV`, `.OGG`, `.FLAC`, `.MP3` and then `.AUD`, through the file layer that sees loose files and every mounted archive. A name that resolves to nothing is left out of that play, and the next body sample stands in for a missing one, so the sound still plays as long as one sample is found.
+Each name is looked up when the sound first plays: `.WAV`, `.OGG`, `.FLAC`, `.MP3`, then `.AUD`. The lookup goes through the file layer that sees loose files and every mounted archive. A name that resolves to nothing is left out of that play, and the next body sample stands in for a missing one. The sound still plays as long as one sample is found.

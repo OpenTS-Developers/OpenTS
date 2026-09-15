@@ -20,10 +20,10 @@ StartColor2=255,255,100
 ColorSpeed=.13
 ```
 
-Written as a plain `red,green,blue` triplet without brackets, unlike the entries of [`ColorList`](/keys/colorlist/). Each new particle picks a color at a random point between this one and [`StartColor2`](/keys/startcolor2/), interpolating each component separately, so a burst is created as a spread of shades rather than one flat color. Components are held in one byte each and wrap above 255.
+Written as a plain `red,green,blue` triplet without brackets, unlike the entries of [`ColorList`](/keys/colorlist/). Each new particle picks a color at a random point between this one and [`StartColor2`](/keys/startcolor2/), interpolating each component separately. A burst is therefore created as a spread of shades rather than one flat color. Components are held in one byte each and wrap above 255.
 
-The picked color is where the [`ColorList`](/keys/colorlist/) blend starts: it stands in for the list's first entry while the particle is still on its first pair, and once the blend steps past that pair it is never used again. Leaving both ends black hands the job to the list's first entry instead, which is what most of the stock spark and railgun types do. Only [`Spark` and `Railgun`](/keys/behaveslike/#scope-particletype) particles are drawn as the lit pixel that uses the picked color; on every other behavior the pair is read and then never consulted.
+The picked color is where the [`ColorList`](/keys/colorlist/) blend starts: it stands in for the list's first entry while the particle is still on its first pair. Once the blend steps past that pair it is never used again. Leaving both ends black hands the job to the list's first entry instead, which is what most of the stock spark and railgun types do. Only [`Spark` and `Railgun`](/keys/behaveslike/#scope-particletype) particles are drawn as the lit pixel that uses the picked color; on every other behavior the pair is read and then never read.
 
 :::note[A partial triplet reads as the default]
-`StartColor1=80` names one channel where three are needed, so the particles start at their default color and the debug log records the line; [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
+`StartColor1=80` names one channel where three are needed, so the particles start at their default color and the debug log records the line. [INI syntax](/formats/ini-syntax/#malformed-values) has the rule.
 :::

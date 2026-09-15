@@ -14,7 +14,7 @@ DebrisTypes=MYSCRAP,MYTIRE ; VoxelAnimTypes registered in [VoxelAnims]
 DebrisMaximums=4,2 ; at most four MYSCRAP, then at most two MYTIRE
 ```
 
-The list is positional against [`DebrisTypes`](/keys/debristypes/): the first figure caps the first debris type, the second caps the second, and so on. Each figure is an upper bound on a random draw, not a fixed count — the entry contributes anywhere from zero pieces up to that many — and the draw is trimmed again by whatever remains of the [`MaxDebris`](/keys/maxdebris/) budget. A figure of `0` therefore never produces a piece from its debris type and hands the whole remaining budget to the next entry.
+The list is positional against [`DebrisTypes`](/keys/debristypes/): the first figure caps the first debris type, the second caps the second, and so on. Each figure is an upper bound on a random draw, not a fixed count: the entry contributes anywhere from zero pieces up to that many, and the draw is trimmed again by whatever remains of the [`MaxDebris`](/keys/maxdebris/) budget. A figure of `0` therefore never produces a piece from its debris type and hands the whole remaining budget to the next entry.
 
 The list is read only while debris types are being walked, so it does nothing on a type that declares no [`DebrisTypes`](/keys/debristypes/).
 

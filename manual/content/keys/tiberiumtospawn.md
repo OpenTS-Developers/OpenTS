@@ -7,4 +7,4 @@ when_omitted:
   value: "0"
 ---
 
-The value is a slot number in the order the `[Tiberiums]` list registers its types, not a section name, so `0` means the first registered type. It is consulted only while the object declares [`SpawnsTiberium=yes`](/keys/spawnstiberium/), and it decides both the type the object's cell reports and the type its animation seeds.
+The value is a slot number in the order the `[Tiberiums]` list registers its types, not a section name, so `0` means the first registered type. It is read only while the object declares [`SpawnsTiberium=yes`](/keys/spawnstiberium/), and it decides both the type the object's cell reports and the type its animation seeds.

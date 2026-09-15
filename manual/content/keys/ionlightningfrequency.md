@@ -7,7 +7,7 @@ when_omitted:
   value: "25"
 ---
 
-The value is multiplied by ten as it is read, and a storm calls a bolt on a frame when a draw from `0` through `1000` inclusive falls below the product. At `25` that is 250 of 1001 outcomes, a bolt on roughly one frame in four.
+The value is multiplied by ten as it is read and truncated to a whole number, so `IonLightningFrequency=25.5` stores `255`. A storm calls a bolt on a frame when a draw from `0` through `1000` inclusive falls below the product. At `25` that is 250 of 1001 outcomes, a bolt on roughly one frame in four.
 
 ```ini title="rules.ini"
 [General]

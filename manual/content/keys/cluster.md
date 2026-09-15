@@ -9,9 +9,9 @@ when_omitted:
 
 Which of the two the figure counts depends on [`Splits`](/keys/splits/).
 
-An ordinary projectile applies its warhead this many times over. The first blast lands at the point of impact and every later one is thrown exactly one to two cells from that point in a random direction, the distance drawn afresh each time. Each blast carries the projectile's full damage, so the figure multiplies the damage the shot delivers rather than dividing it.
+An ordinary projectile applies its warhead this many times over. The first blast lands at the point of impact and every later one is thrown exactly one to two cells from that point in a random direction, the distance drawn afresh each time. Each blast deals the projectile's full damage, so the figure multiplies the damage the shot delivers rather than dividing it.
 
-A splitting projectile applies its warhead once and releases this many bomblets of its [`AirburstWeapon`](/keys/airburstweapon/) instead.
+A splitting projectile applies its warhead once and releases this many bomblets of its [`AirburstWeapon`](/keys/airburstweapon/) instead. Where each bomblet then aims is [`RetargetAccuracy`](/keys/retargetaccuracy/)'s decision; the figure here only counts them.
 
 ```ini title="rules.ini"
 [MYSHRAPNELSHELL] ; a BulletType, registered by a weapon naming it as its Projectile
@@ -25,5 +25,5 @@ Whether a blast is close enough to the ground to raise a ground explosion at all
 :::
 
 :::caution[`Cluster=0` disarms an ordinary projectile]
-The blasts are counted out one at a time, so a figure of `0` or below runs none of them: no damage is dealt, no explosion animation is played and no lighting flash is thrown, and the projectile is simply removed on impact. A splitting projectile still delivers its own single blast at `0` and merely releases no bomblets.
+The blasts are counted out one at a time, so a figure of `0` or below runs none of them. No damage is dealt, no explosion animation is played and no lighting flash is thrown; the projectile is simply removed on impact. A splitting projectile still delivers its own single blast at `0` and merely releases no bomblets.
 :::

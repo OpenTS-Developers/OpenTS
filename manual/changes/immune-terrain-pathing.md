@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-A vehicle now treats an `Immune=yes` terrain object as impassable even when its selected weapon carries `Wood=yes`. Non-immune terrain remains destroyable by a wood-damaging warhead, while weapons without that flag still cannot clear terrain objects.
+A vehicle now treats an `Immune=yes` terrain object as impassable even when its selected weapon sets `Wood=yes`. `Immune` sits on the terrain type and `Wood` on the warhead, in `rules.ini`. Non-immune terrain remains destroyable by a wood-damaging warhead, while weapons without that flag still cannot clear terrain objects.

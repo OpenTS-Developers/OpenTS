@@ -8,6 +8,12 @@ when_omitted:
   value: "no"
 ---
 
-Placing a terrain object tests every cell of its footprint, and the setting picks which movement kind that test is taken for. A water-based object needs a land type the floating movement kind can cross; every other object needs one a tracked vehicle can cross. A cell whose land type carries a cost of zero for the kind being tested refuses the object, and so does a cell outside the local radar bounds or holding any overlay.
+WaterBound picks the movement kind the engine uses when it tests whether a terrain object may stand on a cell. A water-based object is tested for the floating movement kind; every other object is tested for the kind a tracked vehicle uses. Any of the following fails a cell of the object's footprint:
 
-Neither branch consults [`Buildable=`](/keys/buildable/): a terrain object is placed against movement costs, not against the flag that admits foundations. The object is simply not placed when any cell of its footprint refuses it.
+- It lies outside the playable area.
+- It holds any overlay.
+- Its land type costs nothing for the kind being tested.
+
+The test never reads [`Buildable=`](/keys/buildable/), the flag that admits building foundations.
+
+The engine does not run the test when a scenario places its terrain, so map terrain stands where the map puts it whatever the ground. The test runs when the ground under a placed object changes, which in play happens when a low bridge is destroyed. An object that fails is destroyed with the bridge.

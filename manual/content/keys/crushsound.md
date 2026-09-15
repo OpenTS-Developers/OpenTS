@@ -1,4 +1,4 @@
 ---
 key: CrushSound
-summary: The sound played when a crusher vehicle flattens the object or overlay.
+summary: The sound a crusher vehicle plays as it crushes the object or overlay.
 ---

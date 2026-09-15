@@ -10,4 +10,4 @@ when_omitted:
 
 The number of children is the sum of two independent picks from zero up to this figure, so it runs from none to twice the setting and averages the setting itself. A figure of zero or below spawns nothing, whatever [`Spawns`](/keys/spawns/#scope-animtype) names.
 
-Only a thrown animation spawns at all — one carrying [`Bouncer=yes`](/keys/bouncer/) or [`IsMeteor=yes`](/keys/ismeteor/#scope-animtype) — and not one that ends low over water.
+Only a thrown animation spawns at all: one with [`Bouncer=yes`](/keys/bouncer/) or [`IsMeteor=yes`](/keys/ismeteor/#scope-animtype), and not one that ends low over water.

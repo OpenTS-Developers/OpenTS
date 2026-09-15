@@ -8,4 +8,4 @@ when_omitted:
   value: "A"
 ---
 
-The name promises the letter that begins a country-specific filename. Only the first character of the value is kept — the read is given room for one character and a terminator — and no gameplay path consults the stored letter.
+The key's name suggests the letter that begins a country-specific filename. Only the first character of the value is kept, because the destination has room for one character and a terminator. No gameplay path reads the stored letter.

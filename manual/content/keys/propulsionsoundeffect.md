@@ -7,13 +7,13 @@ when_omitted:
   value: ""
 ---
 
-One entry is picked at random from the list and played at full volume, with no attenuation for how far the unit stands from the view, on every fourth thrust rather than every one. The count that decides which thrust is the fourth is shared by every levitating unit in the match, so a map crowded with them plays the sound as often overall but rarely for any one unit.
+One entry is picked at random from the list and played at full volume, with no attenuation for how far the unit stands from the view. It plays on every fourth thrust rather than every one. The count that decides which thrust is the fourth is shared by every levitating unit in the match, so a map crowded with them plays the sound as often overall but rarely for any one unit.
 
 ```ini title="rules.ini"
 [LEVITATION]
 PropulsionSoundEffect=MYFLOAT1,MYFLOAT2 ; sound IDs registered in SOUND.INI
 ```
 
-An entry naming a sound the game does not know is dropped as the list is read rather than kept as a silent slot, and an empty list is checked for, so leaving the key unwritten costs the thrust its sound and nothing else. The whole line is read into a 128-character buffer before it is split on commas, so a longer list is truncated there and the name the cut falls inside is dropped along with everything past it.
+An entry naming a sound the game does not know is dropped as the list is read rather than kept as a silent slot. An empty list is checked for, so leaving the key unwritten costs the thrust its sound and nothing else.
 
-[`Drag`](/keys/drag/) covers which objects read this section and the `[General]` section a file must carry for any of it to be read at all.
+[`Drag`](/keys/drag/) covers which objects read this section and the `[General]` section a file must contain for any of it to be read at all.

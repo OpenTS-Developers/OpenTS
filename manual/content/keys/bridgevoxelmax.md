@@ -8,4 +8,4 @@ when_omitted:
   value: "3"
 ---
 
-Nothing bounds the debris a collapsing bridge throws. Each cell of a falling section draws its own, and only while [`BridgeExplosions`](/keys/bridgeexplosions/) carries at least one entry: nineteen cells in twenty draw one animation from that list, and half of those draw one from [`MetallicDebris`](/keys/metallicdebris/) beside it.
+Nothing bounds the debris a collapsing bridge throws. Each cell of a falling section draws its own, and only while [`BridgeExplosions`](/keys/bridgeexplosions/) has at least one entry. Nineteen cells in twenty draw one animation from that list, and half of those also draw one from [`MetallicDebris`](/keys/metallicdebris/).

@@ -112,16 +112,16 @@ through as its default and nothing later overwrites it. `when_omitted` and
 affecting behavior.
 
 A constructor initializer is the omitted value only if the containing structure
-is constructed or reset between reads. If state survives a read, omission keeps
-the previous input, and the initializer applies only to the first read. Use
-`kind: unchanged` and state what remains. Trace the reset instead of inferring
-it from a constructor.
+is constructed or reset between reads. If state survives a read, the initializer
+applies only to the first read, so trace what the engine holds at the read site
+and record that concrete value. `kind: unchanged` is never used: carry-over is
+default behavior the record does not document.
 
 A full baseline re-read also counts as a reset. Type definitions survive across
 scenarios, but the rules tree is re-read from the start, so a setting absent
 from every rules file returns to its initializer and uses `kind: value`.
 `[SpecialFlags]` has no baseline file and is read only from the scenario.
-Omission uses `kind: unchanged` and keeps the previous mission's value. If a
+Its record states the concrete value the scenario state holds at the read. If a
 baseline resets only some inputs, explain that layering once on the page that
 owns it rather than on every affected record.
 
@@ -140,6 +140,39 @@ contains no source locations.
 Contributors own AI-assisted work. Verify it to the same evidence standard,
 apply this guide and [Style](STYLE.md), and review the result. AI output is not
 evidence.
+
+### Trace what the engine does, not what the catalog restates
+
+Split a page's behavioral claims before tracing any of them.
+
+- **Trace in full** anything about what the engine does: a formula, an ordering among steps, a
+  condition or a refusal, a count, a limit, a unit of measure, an interaction between two settings,
+  or a claim that contradicts a sibling page.
+- **Accept without tracing** what the generated catalog already establishes: a key's spelling, its
+  file, its section selector, its value type, its applies-to types, and whether it is registered.
+  The catalog is derived from the source and is the authority on these; re-deriving one adds
+  nothing to the page.
+
+`when_omitted` and `no_effect` are not in the second group. They are authored, and the catalog's
+`default_candidate` is only a candidate.
+
+### Frontmatter prose is prose
+
+On an enum page most of the reader-facing text is frontmatter: `values[].meaning` renders into the
+table and is the page's whole modder-facing payload. Scripting pages carry `valid_values` and
+`caveats` the same way, and format pages carry `fields[].note`.
+
+Give those fields the same claim-by-claim trace as the body. A table is trusted more readily than a
+paragraph, so an error there costs more.
+
+### Reachability, not existence
+
+A code branch proves the engine has a behavior; it does not prove a reader can reach it. Document
+paths a reader can reach. Leftovers from removed or unfinished features — an edit mode with no way
+in, an error handler whose body is empty — are not behavior however clearly the code states them.
+
+OpenTS ships no scenario editor. The tree keeps remnants of one, and none of them is reachable in
+play, so no page describes what happens in it.
 
 ## Relationships and structured fields
 
@@ -171,6 +204,25 @@ command metadata, format fields, accepted-key tables, `when_omitted`,
 Concurrent `update` runs replace the same files atomically and can collide. If
 generation fails during another run, retry afterward; do not merge or hand-edit
 the catalogs.
+
+### Have the page read by someone who has not read the source
+
+An author cannot judge whether a page explains itself: tracing a source path destroys the ability
+to tell what the page fails to carry, and a page that reads correctly to the person who just
+verified it may still leave a reader stuck.
+
+Before handoff, have the page read by someone with the rendered page and no repository access, and
+ask what they would write and where. That question is the gate. A reader who cannot answer it has
+found a real gap, not a preference.
+
+Questions about what they could not picture, or expected and did not get, are suggestions rather
+than failures — some of what they ask for is out of scope or owned by another page, and satisfying
+it would duplicate what that page renders. Record those with the reason they were refused.
+
+Feed the reader the page as it renders, not the Markdown: the specification block, the omission
+and no-effect records, the source-file list, the target text of each link, and any backlink the
+template merges in from another page. Withholding those produces complaints about information the
+page already carries.
 
 ## Lifecycle records
 
@@ -232,6 +284,16 @@ answers "what can I do now."
 A change wide enough to need more than three sentences states each visible
 change the same way and stops at one paragraph each. Length comes from the
 number of visible changes, never from explaining one of them.
+
+A record that names a key the reader sets names its file and section and states in prose what the
+key does, including which direction a value moves the behavior. The accepted values and the default
+belong on the key page, which renders them from structured fields; the record reaches them through
+its `targets` list. A record with an empty `targets` list carries no route to them.
+
+State a visible symptom where there is one: what the reader will see, or what they must change.
+A record describing only an internal state transition leaves a reader unable to tell whether it
+affects them. Where a change genuinely has no visible effect, say what the reader can now do
+instead.
 
 ## Handoff
 

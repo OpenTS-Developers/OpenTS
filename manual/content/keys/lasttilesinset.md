@@ -18,9 +18,9 @@ TilesInSet=12      ; twelve tiles are loaded
 LastTilesInSet=8   ; maps were numbered when there were eight
 ```
 
-A shift is recorded only when the two counts differ. Every tile index a map supplies is then run through the recorded shifts in set order, and each one whose insertion point lies at or below that index adds its difference, so an index written against the older numbering arrives at the tile the theater now holds in that place. Indices below the first insertion point are left alone.
+A shift is recorded only when the two counts differ. Every tile index a map supplies is then run through the recorded shifts in set order. A shift whose insertion point lies at or below that index adds its difference, so an index written against the older numbering arrives at the tile the theater now holds in that place. Indices below the first insertion point are left alone.
 
-The insertion points are counted in the *old* numbering, and a set that records a shift contributes its old count rather than its new one to the running total, so a chain of shifts stays consistent as long as every set that grew declares what it grew from.
+The insertion points are counted in the *old* numbering: a set that records a shift contributes its old count rather than its new one to the running total. A chain of shifts stays consistent as long as every set that grew declares what it grew from.
 
 :::caution[The two counts must both be truthful]
 A set that grew but leaves this key out shifts nothing, and every map drawn before it grew reads the wrong tile from that set onward. Declaring a figure larger than the current count records a backward shift instead, which walks older indices down into the set below.

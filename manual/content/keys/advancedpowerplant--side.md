@@ -13,4 +13,4 @@ when_omitted:
 AdvancedPowerPlant=NAAPWR
 ```
 
-The BuildingType a computer house playing for this side inserts to cover a [power shortfall](/systems/ai-base-building/#power-and-money-interventions) once the buildings it owns meet the type's [`Prerequisite`](/keys/prerequisite/) list; before then it inserts its [`RegularPowerPlant`](/keys/regularpowerplant/#scope-side). A side that also names a [`PowerTurbine`](/keys/powerturbine/#scope-side) tries the turbine first. Writing `<none>` clears an inherited value.
+The BuildingType a computer house playing for this side inserts to cover a [power shortfall](/systems/ai-base-building/#power-and-money-interventions) once the buildings it owns meet the type's [`Prerequisite`](/keys/prerequisite/) list; before then it inserts its [`RegularPowerPlant`](/keys/regularpowerplant/). A side that also names a [`PowerTurbine`](/keys/powerturbine/) tries the turbine first. Writing `<none>` clears an inherited value.

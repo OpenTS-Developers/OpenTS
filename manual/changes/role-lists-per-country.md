@@ -42,11 +42,6 @@ targets:
 credit: [ZivDero, AlexB]
 ---
 
-Every list that names the types filling a role is now resolved through the country the house
-acts as, the same ownership bit its construction yard produces against, so that a scenario
-handing a house another country hands it that country's buildings and units as well. Ownership
-had been asked two ways: a house was planned and handed what its own country may own, while
-what it was then allowed to put up was tested against the country it acts as, so a campaign
-house acting as another country could be planned a base out of types it could never build.
+Every list that names the types filling a role is now resolved through the country the house acts as under `ActsLike`. That is the same ownership bit the house's construction yard produces against. A scenario that hands a house another country therefore hands it that country's buildings and units as well. Previously ownership was asked two ways. A house was planned and handed what its own country may own, while what it was allowed to put up was tested against the country it acts as. A campaign house acting as another country could be planned a base out of types it could never build.
 
 AlexB is credited for the ts-patches bundle, which resolves its picks the same way.

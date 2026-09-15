@@ -7,4 +7,4 @@ when_omitted:
   value: "no"
 ---
 
-The flag swaps the freeze for outright destruction and recreation, and is consulted only with [`SpecialAnimPowered=no`](/keys/specialanimpowered/) beside it. [A powered light on any structure](/keys/specialanim/#a-powered-light-on-any-structure) covers the one route by which that pair fills a special slot on a structure that has no use for one. [`SpecialAnim`](/systems/building-animations/#where-each-setting-is-read-from) covers why it is not written in the same section as the slot's animation names.
+The flag swaps the freeze for outright destruction and recreation, and is read only with [`SpecialAnimPowered=no`](/keys/specialanimpowered/) beside it. [A powered light on any structure](/keys/specialanim/#a-powered-light-on-any-structure) covers the one route by which that pair fills a special slot on a structure that has no use for one. [`SpecialAnim`](/systems/building-animations/#where-each-setting-is-read-from) covers why it is not written in the same section as the slot's animation names.

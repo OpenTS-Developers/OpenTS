@@ -30,6 +30,6 @@ targets:
 credit: [ZivDero, JoyfulShush, Rampastring]
 ---
 
-`[General] SelfHealStep`, `SelfHealRate` and `SelfHealCap` set how much strength a self-healing object regains, how often it regains it, and the share of its maximum strength it stops at. `SelfHealingStep`, `SelfHealingRate` and `SelfHealingCap` set the same three on one TechnoType. Each falls back to the game-wide value and then to the setting it replaced, so rules that state none of them heal exactly as they did, and a step below one is raised to one, so no value here switches healing off.
+`[General] SelfHealStep`, `SelfHealRate` and `SelfHealCap` set how much strength a self-healing object regains, how often it regains it, and the share of its maximum strength it stops at. `SelfHealingStep`, `SelfHealingRate` and `SelfHealingCap` set the same three on one TechnoType. Each falls back to the game-wide value and then to the setting it replaced, so rules that state none of them heal exactly as they did. A step below one is raised to one, so a step cannot switch healing off.
 
 A self-healing interval shorter than one frame heals once per frame, where it used to divide by zero and end the game.

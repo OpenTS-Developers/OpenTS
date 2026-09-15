@@ -10,4 +10,4 @@ when_omitted:
 
 An east-west span is found by this end. Whether an engineer is mending a bridge or a span is being brought down, the search accepts a cell at this position showing subtile `8` and then works east from it toward the far end. [`BridgeMiddle1`](/keys/bridgemiddle1/) covers how a position is measured.
 
-An end piece has no condition ladder of its own. It is marked whole or damaged instead, and the mark is carried to every neighboring cell drawn from the same piece.
+An end piece has no condition ladder of its own. It is marked whole or damaged instead, and the mark is copied to every neighboring cell drawn from the same piece.

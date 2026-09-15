@@ -16,4 +16,4 @@ Every object that [mends itself](/systems/repair/#self-healing) gains this many 
 
 [`RepairStep`](/keys/repairstep/) and [`IRepairStep`](/keys/irepairstep/) reach no part of this path; the wrench, the depot and the hospital keep those two to themselves.
 
-A resolved step below `1` is raised to `1`, as at every other repair step in the game, so `0` and negative values still heal a point at a time; `SelfHealing=no` is what switches healing off. A step larger than the damage left is clamped to the object's maximum strength.
+A resolved step below `1` is raised to `1`, so `0` and negative values still heal a point at a time. `SelfHealing=no` switches healing off, unless the object has earned the `SELF_HEAL` veteran ability. A step larger than the damage left is clamped to the object's maximum strength.

@@ -7,7 +7,7 @@ when_omitted:
   value: "0,0,0"
 ---
 
-Three comma-separated channel values from `0` to `255`. The beam is drawn as a single line in this color, with none of the glow a weapon's own beam carries, so this is the whole of its appearance. It is read only where [`Laser=yes`](/keys/laser/) is set on a `Railgun` [system](/keys/behaveslike/#scope-particlesystemtype); every other behavior ignores it.
+Three comma-separated channel values from `0` to `255`. The beam is drawn as a single line in this color, with none of the glow a weapon's own beam has, so this is the whole of its appearance. It is read only where [`Laser=yes`](/keys/laser/) is set on a `Railgun` [system](/keys/behaveslike/#scope-particlesystemtype); every other behavior ignores it.
 
 ```ini title="rules.ini"
 [MyRailgunSys] ; a ParticleSystemType registered in [ParticleSystems]

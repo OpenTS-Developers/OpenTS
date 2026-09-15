@@ -14,4 +14,4 @@ The setting lives in a mission's own section and is read from the mission the da
 Retaliate=no
 ```
 
-A [`Veinhole=yes`](/keys/veinhole/) warhead is the one exception. It provokes a response before this test is reached, so an object in a mission marked `Retaliate=no` still turns on a veinhole monster — unless it is human-owned and already traveling under orders.
+A [`Veinhole=yes`](/keys/veinhole/) warhead is the one exception. It provokes a response before this test is reached, so an object in a mission marked `Retaliate=no` still turns on a veinhole monster. The exception lapses for a human-owned object that already travels under orders.

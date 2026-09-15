@@ -15,11 +15,11 @@ An object that has just been hit and is allowed to answer the attacker scatters 
 - it has no destination of its own;
 - **Any of:** this is on, or it has earned the scatter ability.
 
-That one applies to every house alike, computer and player.
+That one applies to every house alike, computer and player. Earning the scatter ability means the object is a veteran whose type lists the ability under [`VeteranAbilities=`](/keys/veteranabilities/), or an elite whose type lists it under [`VeteranAbilities=`](/keys/veteranabilities/) or [`EliteAbilities=`](/keys/eliteabilities/).
 
 An object that has just been hit and is not allowed to answer scatters under **All of:**
 
-- it is not tethered;
+- it is not tethered (docked at a refinery or aircraft pad, or carried by a transport);
 - it is standing still;
 - it has no target of its own;
 - it has no destination of its own;
@@ -36,6 +36,14 @@ A cell warned that a threat is coming scatters its occupants under **Any of:**
 
 The first three of those settle the whole cell at once; the last two are read per object, so one occupant can scatter while its neighbor stays put.
 
-Infantry adds a refusal of its own on top. A soldier belonging to a house a person commands turns a scatter down outright unless this is on, the soldier has earned the scatter ability, the move was forced, the warning was overriding, or the soldier belongs to a team. Vehicles carry no such refusal.
+Infantry adds a refusal of its own on top. A soldier belonging to a house a person commands turns a scatter down outright unless **Any of:**
+
+- this is on;
+- the soldier has earned the scatter ability;
+- the move was forced;
+- the warning was overriding;
+- the soldier belongs to a team.
+
+Vehicles have no such refusal.
 
 The mission an object is on can forbid scattering before any of this is reached; [`Scatter`](/keys/scatter/#scope-mission-behavior) covers that.

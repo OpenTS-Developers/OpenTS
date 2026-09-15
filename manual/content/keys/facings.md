@@ -11,7 +11,7 @@ Only a vehicle drawn from shape artwork reads this figure; a [`Voxel=yes`](/keys
 
 The setting does two separate jobs. It is the number of facings the vehicle is drawn from, and it is the multiplier the engine uses when it works out where the standing, firing and death blocks begin.
 
-Per-facing drawing happens at `8`, `16`, `32` and `64`. The facing drawn is the vehicle's own heading rounded to that many compass points and then advanced by an eighth of a turn, so northwest is facing 0 at every count: at `8` a vehicle pointing northwest is drawn at facing 0, one pointing north at facing 1, and so on round to west at facing 7. At any other value the facing is fixed at 0, so every instance is drawn the same way whichever way it points.
+Per-facing drawing happens at `8`, `16`, `32` and `64`. The facing drawn is the vehicle's own heading rounded to that many compass points and then advanced by an eighth of a turn, wrapping around, so northwest is facing 0 at every count. At `8` a vehicle pointing northwest is drawn at facing 0, one pointing north at facing 1, and so on round to west at facing 7. At any other value the facing is fixed at 0, so every instance is drawn the same way whichever way it points.
 
 ```ini title="art.ini"
 [JUGGER] ; the Image ID of the stock Juggernaut

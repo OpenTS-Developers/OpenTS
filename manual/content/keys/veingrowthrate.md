@@ -8,4 +8,4 @@ when_omitted:
   value: "1"
 ---
 
-The value is stored and never consulted. Vein growth is timed per monster from [`VeinholeGrowthRate`](/keys/veinholegrowthrate/) in `[General]`.
+The value is stored and never read. Vein growth is timed per monster from [`VeinholeGrowthRate`](/keys/veinholegrowthrate/) in `[General]`.

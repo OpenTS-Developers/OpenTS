@@ -17,6 +17,6 @@ ProduceCashResetOnCapture=yes
 
 Every capture refills the structure's [`ProduceCashBudget`](/keys/producecashbudget/) to the full figure, restarting one that had produced its allowance and stopped. Left out, the remaining allowance carries over untouched, so a spent structure is worth nothing to whoever takes it.
 
-The reset runs on any capture, not only on one off a neutral house — unlike the bonus [`ProduceCashStartup`](/keys/producecashstartup/) pays. [Buildings that produce cash](/systems/produce-cash/#the-budget) covers what that allows.
+The reset runs on any capture, not only on one off a neutral house, unlike the bonus [`ProduceCashStartup`](/keys/producecashstartup/) pays. [Buildings that produce cash](/systems/produce-cash/#the-budget) covers what that allows.
 
 The key does nothing without a `ProduceCashBudget` above zero, since an unlimited structure has nothing to reset.

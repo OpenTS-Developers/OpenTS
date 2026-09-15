@@ -8,4 +8,4 @@ when_omitted:
   value: "no"
 ---
 
-A [`ChainReaction=yes`](/keys/chainreaction/) Tiberium overlay detonates under a warhead carrying this flag, and a sonic wave sets it off with no warhead check; under every other warhead the overlay is inert. The flag means nothing to overlays that are not Tiberium, whose cells hold no Tiberium to set off.
+A [`ChainReaction=yes`](/keys/chainreaction/) Tiberium overlay detonates under a warhead with this flag; under every other warhead the overlay is inert. A sonic wave sets it off with no warhead check. The flag means nothing to overlays that are not Tiberium.

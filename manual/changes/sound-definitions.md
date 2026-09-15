@@ -62,6 +62,6 @@ targets:
 credit: [ZivDero, CCHyper]
 ---
 
-A sound section may now list several samples, loop them with attack and decay samples and random or ordered bodies, delay between cycles, shift pitch and volume at random, limit how many copies play at once, and set how far from the view it is heard. `[Defaults]` supplies the values a section omits and `[General] Channels=` sets how many sound effects play at once. The shipped files read unchanged, and sections written for Yuri's Revenge read with their named priorities and percent volumes.
+A sound section may now list several samples and loop them, with attack and decay samples and a body drawn at random or in order. It may delay between cycles, shift pitch and volume at random, limit how many copies play at once, and set how far from the view it is heard. `[Defaults]` supplies what a section omits, and `[General] Channels=` sets how many sound effects play at once. The shipped files set no `Volume=` and read unchanged. Sections written for Yuri's Revenge read with their named priorities and percent volumes.
 
 CCHyper is credited for the Vinifera additions to the grammar this follows: `SEQUENTIAL`, `QUEUE`, `SHROUDED` and `UNSHROUDED`.

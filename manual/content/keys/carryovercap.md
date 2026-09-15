@@ -13,12 +13,8 @@ CarryOverMoney=0.5
 CarryOverCap=5000
 ```
 
-The figure is a credit total, compared against the money [`CarryOverMoney`](/keys/carryovermoney/) worked out and used in its place whenever it is smaller. A cap of exactly `-1` is the one value treated as "no ceiling" and lets the full share through; every other negative figure is a ceiling like any other and hands the player a debt.
+The figure is a credit total, compared against the money [`CarryOverMoney`](/keys/carryovermoney/) worked out and used in its place whenever it is smaller. A cap of exactly `-1` is the one value treated as "no ceiling" and lets the full share through. Every other negative figure is a ceiling like any other and hands the player a debt.
 
 :::caution[The default cap cancels the carry-over]
 Leaving the key out stores `0`, and a ceiling of zero holds any share to nothing. A mission that wants money carried forward has to state both keys, and a mission that wants the whole share has to write `CarryOverCap=-1`.
-:::
-
-:::caution[Saving the scenario back out divides the figure by 100]
-A scenario written back out records a hundredth of the value it is holding, while reading takes the number exactly as written. A map that is saved and reloaded therefore has its cap cut by two orders of magnitude each time.
 :::

@@ -12,13 +12,6 @@ targets:
 credit: [ZivDero]
 ---
 
-A save game stores each object one named member at a time rather than as a copy of its
-memory. Each class lists what it stores, one list serves both saving and loading, and
-whatever the file cannot carry — artwork, caches, session bookkeeping — is rebuilt as the
-object loads.
+A save game stores each object one named member at a time rather than as a copy of its memory. Each class lists what it stores, and one list serves both saving and loading. Whatever the file cannot hold, such as artwork, caches and session bookkeeping, is rebuilt as the object loads.
 
-Save games written by the vanilla game or by another OpenTS release-cycle version no longer
-load; the version stamp in the file header must match the running project version.
-Presentation state is rebuilt rather than stored, so the power bar and radar animations,
-the mouse cursor's shape, and an in-progress selection or building placement come back at
-their resting values. Internet-game unit tallies are no longer carried across a save.
+Save games written by the vanilla game or by another OpenTS release-cycle version no longer load. The version stamp in the file header has to match the running project version. Presentation state is rebuilt rather than stored, so the power bar, the radar animation and the mouse cursor's shape come back at their resting values. Internet-game tallies are no longer kept across a save.

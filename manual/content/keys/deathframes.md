@@ -6,7 +6,7 @@ when_omitted:
   kind: value
   value: "0"
 ---
-Above `0`, the hit that destroys the vehicle no longer finishes it. The vehicle drops to one point of strength, stays on the map as a wreck that cannot move, and is exploded and removed once its death counter passes [`MaxDeathCounter`](/keys/maxdeathcounter/). At `0` the destroying hit finishes the vehicle outright. The count is kept in a single signed byte, so `256` stores as that same zero and quietly turns the wreck off, while any figure above `127` stores as a negative number.
+Above `0`, the hit that destroys the vehicle no longer finishes it. The vehicle drops to one point of strength, stays on the map as a wreck that cannot move, and is exploded and removed once its death counter reaches [`MaxDeathCounter`](/keys/maxdeathcounter/). At `0` the destroying hit finishes the vehicle outright. The count is kept in a single signed byte, so `256` stores as that same zero and quietly turns the wreck off, while any figure above `127` stores as a negative number.
 
 Nothing the ordinary destruction does happens on the wreck path: no death announcement, no passengers thrown clear, no wooden crate from a crate-carrying truck, and no crew survivor. [`CrewEscape`](/keys/crewescape/) covers the survivor roll that is passed over.
 

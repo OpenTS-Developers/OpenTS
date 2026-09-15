@@ -7,6 +7,6 @@ when_omitted:
   value: "0"
 ---
 
-The value is substituted whenever a type's own [`TargetEffectivenessCoefficient`](/keys/targeteffectivenesscoefficient/) is zero and the section being read omits the key. An explicit `0` in a section survives its own pass; it is replaced only when a later rules layer carries the section without the key. `[General]` is read before the object types in each pass over the rules, so a value written here reaches every type in the same file.
+The value is substituted whenever a type's own [`TargetEffectivenessCoefficient`](/keys/targeteffectivenesscoefficient/) is zero and the section being read omits the key. No shipped section sets a figure of its own. `[General]` is read before the object types on each pass over the rules, and the figure survives into the later rules files. One line in `rules.ini` therefore reaches every type, including those the expansion rules add. An explicit `0` in a section survives its own pass; it is replaced only when [a later rules layer](/systems/target-selection/#where-the-coefficients-come-from), such as the expansion rules or the map, contains the section without the key.
 
-Raising it switches this term of the threat score on for the whole rules file at once, and makes it impossible to hold any single type at zero.
+The term this coefficient scales weighs how badly a candidate could hurt the object choosing, so a positive value draws every affected type toward dangerous candidates. The exception is a candidate already shooting at it, where the term's sign is reversed. Setting the value here switches that term on for the whole rules file at once, and the stock rules already set `-200`.

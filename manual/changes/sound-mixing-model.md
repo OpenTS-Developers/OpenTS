@@ -12,4 +12,4 @@ targets:
 credit: [ZivDero]
 ---
 
-A sound played at a place in the world is now panned by where that place is across the view and fades with its distance from the view's edge, vertical distance counting double, over the sound's `Range=`. It keeps following the view while it plays, so scrolling away from a sound quietens it instead of leaving it as loud as it started. Up to sixteen sound effects play at once, and a new one displaces the lowest-priority one only when the budget is full.
+A sound played at a place in the world is now panned by where that place is across the view. It fades with its distance from the view's edge, vertical distance counting double, over the sound's `Range=`. It keeps following the view while it plays. Scrolling away from a sound therefore quietens it, instead of leaving it as loud as it started. Up to sixteen sound effects play at once by default, and a new one displaces the lowest-priority one only when the budget is full.

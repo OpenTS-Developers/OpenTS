@@ -8,9 +8,9 @@ when_omitted:
   note: No door shape is loaded and none is drawn.
 ---
 
-The value is a filename without its extension, and only a non-empty value is taken. The named `<value>.SHP` is loaded with the rules, after the name has been rewritten for the scenario theater on the structure-art convention: a name beginning `GA`, `GT`, `NA`, `NT`, `CA` or `CT`, compared without regard to case, has its second letter replaced with `T` in temperate and `A` in snow. It is fetched again, under the theater then in force, when a saved game is restored, and on a [`NewTheater=yes`](/keys/newtheater/) type as each theater is set up.
+The value is a filename without its extension, and only a non-empty value is taken. The named `<value>.SHP` is loaded with the rules, after the name has been rewritten for the scenario theater on the structure-art convention. The rewrite compares the name's second letter with the letter of every theater the game lists, without regard to case. A name whose second letter matches any listed theater's letter has that letter replaced with the current theater's letter: `T` in temperate and `A` in snow. A name whose second letter matches no listed theater's letter is loaded as written. A theater declared without a letter leaves names as written. It is fetched again, under the theater then in force, when a saved game is restored, and on a [`NewTheater=yes`](/keys/newtheater/) type as each theater is set up.
 
-The shape is drawn only while the structure is unloading — the sequence a [`WeaponsFactory=yes`](/keys/weaponsfactory/) structure runs while a finished vehicle leaves — and in the pass that draws over the structure, so it covers both the structure and the vehicle standing in the doorway. [`DoorStages`](/keys/doorstages/) covers which frame the door's progress selects.
+The shape is drawn only while the structure is unloading: the sequence a [`WeaponsFactory=yes`](/keys/weaponsfactory/) structure runs while a finished vehicle leaves. It is drawn in the pass that draws over the structure, so it covers both the structure and the vehicle standing in the doorway. [`DoorStages`](/keys/doorstages/) covers which frame the door's progress selects.
 
 ```ini title="art.ini"
 [MYWEAP] ; example war factory, drawn from its own Image ID

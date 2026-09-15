@@ -17,5 +17,5 @@ The gameplay path reads exactly three slots and reads them by position: the firs
 The rest of the game's fires come from elsewhere. [`SmallFire`](/keys/smallfire/) and [`LargeFire`](/keys/largefire/) cover the flames a structure shows without a sparky warhead and while it is being destroyed, and [`TreeFire`](/keys/treefire/) covers a burning terrain object.
 
 :::danger[Fewer than three entries makes the sparky path read past the list]
-Nothing checks the list length before the three slots are taken, and an empty list is where a rules layer starts. [`Sparky`](/keys/sparky/) states the outcome in full: the game either crashes or creates an animation from whatever the missing slot happened to point at.
+Nothing checks the list length before the three slots are taken, and the list starts empty before the rules fill it. [`Sparky`](/keys/sparky/) states the outcome in full: the game either crashes or creates an animation from whatever the missing slot happened to point at.
 :::

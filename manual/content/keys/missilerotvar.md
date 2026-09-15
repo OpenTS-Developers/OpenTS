@@ -7,8 +7,8 @@ when_omitted:
   value: ".25"
 ---
 
-A projectile with a [`ROT`](/keys/rot/#scope-bullettype) above zero is steered by the homing flight model, and this figure is what makes it weave rather than track straight. The rate of turn is scaled by a factor swinging over a fifteen-frame cycle, from `1` at the bottom of the cycle to `1` plus twice this figure at the top, so the swing is entirely above the nominal rate — a value of `0` gives a straight approach and never a slower turn.
+A projectile with a [`ROT`](/keys/rot/#scope-bullettype) above zero is steered by the homing flight model, and this figure is what makes it weave rather than track straight. The rate of turn is scaled by a factor that swings over a fifteen-frame cycle: `1` at the bottom of the cycle, and `1` plus twice this figure at the top. The swing therefore stays at or above the nominal rate for any positive value. At `0` the factor is a constant `1`, so the projectile still turns at its nominal rate but never weaves.
 
 Each projectile enters the cycle at its own point, so missiles launched together do not weave in step.
 
-Two other adjustments sit outside the cycle: a projectile still working up to speed after launch is given no turn at all, and one within a cell of its target turns half again as fast as the cycle asks.
+Two adjustments sit outside the cycle. A projectile still working up to speed after launch is given no turn at all. One within a cell of its target turns half again as fast as the cycle asks.

@@ -8,7 +8,7 @@ when_omitted:
   note: "`TEM` for TEMPERATE and `SNO` for SNOW, which keep their original settings; empty for any other theater, which then looks for artwork under no extension at all and has no unit remap palette."
 ---
 
-The suffix is the file extension every piece of theater-specific artwork carries, and the stem of several files besides. A type marked [`Theater=yes`](/keys/theater/) loads `<name>.<Suffix>`, and so does each tile of a [tile set](/formats/theater-control/).
+The suffix is the file extension every piece of theater-specific artwork uses, and the stem of several files besides. A type marked [`Theater=yes`](/keys/theater/) loads `<name>.<Suffix>`, and so does each tile of a [tile set](/formats/theater-control/).
 
 The same value names five more files:
 
@@ -25,4 +25,4 @@ The same value names five more files:
 Suffix=DES      ; GACNST.DES, DES.MIX, ISODES.PAL, UNITDES.PAL
 ```
 
-The three characters the original game used are not a limit; a longer suffix works everywhere the value is used.
+The three characters the original game used are not a limit; a longer suffix works as long as the file names it forms still fit a file path.

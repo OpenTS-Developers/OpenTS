@@ -23,9 +23,4 @@ migration:
 credit: [ZivDero]
 ---
 
-`[Sides]` is now the roster of record. A country it places keeps that side whatever its own
-`Side=` says, with the conflict logged, so the raw Tiberian Sun rules' `[Nod] Side=GDI` no longer
-moves Nod onto GDI's side. A `Side=` naming a side that `[Sides]` never declared, on a country, a
-score or a mission's `SpeechSide=`, is logged and ignored instead of creating a side, and a
-`[Sides]` value names countries alone: a side name inside one no longer splices that side's roster
-in.
+`[Sides]` is now the roster of record. A country it places keeps that side whatever its own `Side=` says, with the conflict logged. The raw Tiberian Sun rules' `[Nod] Side=GDI` therefore no longer moves Nod onto GDI's side. A `Side=` that names a side `[Sides]` never declared, on a country, a theme or a mission's `SpeechSide=`, is logged and ignored instead of creating a side. A `[Sides]` value names countries alone: a side name inside one no longer splices that side's roster in.

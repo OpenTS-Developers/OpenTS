@@ -8,7 +8,7 @@ when_omitted:
   note: No tile of the set is marked as a caster, though the set still takes one of the five caster slots.
 ---
 
-The key is only looked for on a set that already carries [`ShadowCaster=yes`](/keys/shadowcaster/); on any other set it is not read at all. What the figure then does is decided by whether it is zero, and nothing else: any non-zero figure marks every tile of the set as a caster, and zero marks none of them.
+The key is only looked for on a set that already sets [`ShadowCaster=yes`](/keys/shadowcaster/); on any other set it is not read at all. What the figure then does is decided by whether it is zero, and nothing else: any non-zero figure marks every tile of the set as a caster, and zero marks none of them.
 
 ```ini title="TEMPERAT.INI"
 [TileSet0010]      ; example cliff set

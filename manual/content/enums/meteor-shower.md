@@ -15,7 +15,7 @@ values:
   - { constant: SHOWER_ARMAGEDDON, value: 3, input: "3", meaning: "Maximum Armageddon preset." }
 ---
 
-The presets differ in how many meteors fall and how widely they scatter, and in nothing else. A drizzle drops one meteor, a shower five, a downpour nine and an Armageddon fifteen, each with up to two more added at random, and the area they land over widens with the count. What an individual meteor does where it comes down belongs to the `METLARGE` and `METSMALL` animations the engine picks between, so raising the preset makes a strike larger rather than harder.
+The presets differ in how many meteors fall and how widely they scatter, and in nothing else. A drizzle drops one meteor, a shower five, a downpour nine and an Armageddon fifteen, and each of those counts takes up to two more added at random. The area they land over widens with the count. What an individual meteor does where it comes down belongs to the `METLARGE` and `METSMALL` animations the engine picks between. Raising the preset covers more ground with more meteors, and none of them strikes any harder.
 
 :::caution[There is no fifth intensity]
 The four counts are the whole of this domain and the engine holds no count for a position beyond them. A fifth setting or higher, or a negative one, therefore takes its meteor count from outside the table, and [Meteor Shower At](/mapping/actions/taction-meteor-shower/) covers what falls out of that.

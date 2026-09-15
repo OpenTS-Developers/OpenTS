@@ -8,4 +8,4 @@ when_omitted:
   value: "no"
 ---
 
-The name promises the treatment [an animation](/keys/flat/#scope-animtype) gets from the same spelling: pixels tested against the ground rather than against the standing gradient everything else uses, so that the artwork reads as lying on the terrain. No drawing path consults the structure's copy.
+The name promises the treatment [an animation](/keys/flat/#scope-animtype) gets from the same spelling: pixels tested against the ground rather than against the standing gradient everything else uses, so that the artwork reads as lying on the terrain. No drawing path reads the structure's copy.

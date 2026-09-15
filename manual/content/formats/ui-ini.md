@@ -36,6 +36,6 @@ A color is three values from 0 to 255 for red, green and blue, separated by comm
 
 ## When the file is read
 
-The file is read once at start-up, after the game archives are registered, and again each time a side's archives are mounted, which happens as a scenario loads. Every read first returns each value to its default, so a value the file no longer names goes back to the default rather than lingering from an earlier read, and a copy inside a side's archive takes effect for that side.
+The file is read once at start-up, after the game archives are registered. It is read again each time a side's archives are mounted, which happens as a scenario loads, so a copy inside a side's archive takes effect for that side. Each read resets every value to its default first, so a value the file no longer names goes back to the default instead of lingering from an earlier read.
 
-The file is opened through the game's file layer, so it may be loose in any folder the game searches or inside an archive, and a loose copy is used ahead of an archived one. [OPENTS.INI](/formats/opents-ini/#the-order-files-are-searched-for-in) lists the folders and the order they are searched in.
+The file is opened through the game's file layer, so it may be loose in any folder the game searches or inside an archive. A loose copy is used ahead of an archived one. [OPENTS.INI](/formats/opents-ini/#the-order-files-are-searched-for-in) lists the folders and the order they are searched in.

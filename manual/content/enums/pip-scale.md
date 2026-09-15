@@ -18,4 +18,4 @@ values:
 
 A **pip** is one of the small markers drawn in a row beneath a selected object, and the scale names the quantity that row is counting. The [pip colors](/reference/enums/pip-color/) are a separate domain and decide what an individual marker looks like.
 
-The five scales are fixed by the engine, and [`PipScale`](/keys/pipscale/) covers how each one sizes and fills its row — including the [`MaxCharge`](/keys/maxcharge/) a `Charge` row is measured against, and the length a `Power` row is given without ever being filled.
+The five scales are fixed by the engine, and the match ignores case. [`PipScale`](/keys/pipscale/) covers how each one sizes and fills its row. A `Charge` row is measured against [`MaxCharge`](/keys/maxcharge/), and a `Power` row is given a length that nothing fills.

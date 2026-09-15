@@ -7,4 +7,9 @@ when_omitted:
   value: "1"
 ---
 
-The timer runs for every house and is reloaded with this many game minutes each time it expires, whether or not the house was short of power at that moment. Only when it expires and the house cannot meet its drain does the [structure damage tick](/systems/power/#the-structure-damage-tick) run, so the value sets the cadence and never the condition. A house is first charged the delay when it is created.
+Every house has a timer that is reloaded with this many game minutes each time it expires, whether or not the house was short of power at that moment. The [structure damage tick](/systems/power/#the-structure-damage-tick) runs only when the timer expires and the house cannot meet its drain, so the value sets the cadence, not the condition. A house is first charged the delay when it is created.
+
+```ini title="rules.ini"
+[General]
+DamageDelay=0.25   ; one check every 15 seconds
+```

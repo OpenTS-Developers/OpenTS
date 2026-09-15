@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-The flag is one of the eight that make a structure [one of the deployed-vehicle kinds](/keys/deploysinto/). Such a structure is put down on the deploying vehicle's own cell rather than one cell away and returns to that cell when it undeploys, may be taken back down whether or not the session allows redeploying, and has sparks attached by [an EM pulse](/systems/emp-pulse/#what-a-pulse-reaches) as it is stunned.
+The flag is one of the eight that make a structure [one of the deployed-vehicle kinds](/keys/deploysinto/). Such a structure is put down on the deploying vehicle's own cell rather than one cell away and returns to that cell when it undeploys. It may be taken back down whether or not the session allows redeploying, and [an EM pulse](/systems/emp-pulse/#what-a-pulse-reaches) attaches sparks to it as it is stunned.
 
 One effect belongs to this flag alone: the deploy facing is east, so a vehicle holds its deploy order until it has turned east and the vehicle produced by a later undeploy is created facing east. [`SensorArray=yes`](/keys/sensorarray/) and [`TickTank=yes`](/keys/ticktank/) structures deploy at the same facing.
 

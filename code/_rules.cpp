@@ -31,6 +31,9 @@ CCINIClass ConfigINI;
 CCINIClass FSRuleINI;
 CCINIClass FSAIINI;
 
+CCINIClass MPRuleINI;
+CCINIClass FSMPRuleINI;
+
 CCINIClass *RuleINI;
 
 /***************************************************************************

@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-As a reinforcement group builds its members from the TaskForce, each one whose type sets [`Storage`](/keys/storage/) above zero is created with that many units already in its hold, all of them the first Tiberium type in the rules. A member with no storage is unaffected.
+As a reinforcement group builds its members from the TaskForce, each one whose type sets [`Storage`](/keys/storage/) above zero starts with that many units already in its hold. The units are all the first Tiberium type in the rules. A member with no storage is unaffected.
 
 ```ini title="ai.ini or map file"
 [MyHarvesterDelivery] ; example TeamType
@@ -17,4 +17,4 @@ Script=MyHarvesterScript   ; defined under [ScriptTypes]
 Full=yes
 ```
 
-The value is read at the moment a member is created, alongside [`VeteranLevel`](/keys/veteranlevel/), so it reaches only the paths that build a group from the TaskForce. A team that fills its roster by recruiting objects the house already owns never consults it, and nothing tops a member up again after it has spent the load.
+The value is read at the moment a member is created, alongside [`VeteranLevel`](/keys/veteranlevel/), so it reaches only the paths that build a group from the TaskForce. A team that fills its roster by recruiting objects the house already owns never reads it, and nothing tops a member up again after it has spent the load.

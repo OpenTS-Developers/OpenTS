@@ -15,6 +15,6 @@ values:
   - { constant: TALK_EXCLAMATION, value: 3, input: "3", meaning: "Exclamation-mark bubble." }
 ---
 
-The figure is a frame in `TALKBUBL.SHP`, one higher than the frame drawn, so the three bubbles are simply the first three shapes that file holds and swapping the file changes what each figure shows. A figure above `3` asks for a frame further into the file, and where the file holds no such frame nothing is drawn at all.
+The figure is a frame number in `TALKBUBL.SHP`, one higher than the frame drawn: figure `1` draws frame `0`. The three bubbles are therefore the first three shapes in that file, so swapping the file changes what each figure shows. A figure above `3` asks for a frame further into the file. Where the file holds no such frame, nothing is drawn at all.
 
 [`TalkBubbleTime`](/keys/talkbubbletime/) covers how long a bubble stays up, what else placing one does, and how a second one displaces the first.

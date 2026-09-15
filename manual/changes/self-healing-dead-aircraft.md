@@ -9,6 +9,6 @@ targets:
 credit: [ZivDero, JoyfulShush]
 ---
 
-A self-healing aircraft shot down in flight healed itself on the way down, climbed back to its flight level, and did the same again the next time it was shot down. It now falls and dies like any other.
+A self-healing aircraft shot down in flight healed itself on the way down and climbed back to its flight level. The same happened each time it was shot down. It now falls and dies like any other.
 
 No shipped type reaches this; rules that give an aircraft `SelfHealing=yes` or the `SELF_HEAL` ability do.

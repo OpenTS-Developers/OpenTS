@@ -14,7 +14,7 @@ The name reads as a ceiling and the figure does not work like one. Nothing clamp
 A unit that also has a target uses [`MaxVelocityWhenPissedOff`](/keys/maxvelocitywhenpissedoff/) instead; the target is tested first.
 
 :::caution[A figure of zero strands the unit]
-The test is a strict comparison against the speed carried, so at `0` the coast never ends on its own. Drag brings the unit to a standstill and it stays there, neither braking nor thrusting again, until its destination happens to fall inside `ProximityDistance` or something clears the destination outright.
+The test is a strict comparison against the speed held, so at `0` the coast never ends on its own. Drag brings the unit to a standstill and it stays there, neither braking nor thrusting again, until its destination happens to fall inside `ProximityDistance` or something clears the destination outright.
 :::
 
-[`Drag`](/keys/drag/) covers which objects read this section and the `[General]` section a file must carry for any of it to be read at all.
+[`Drag`](/keys/drag/) covers which objects read this section and the `[General]` section a file must contain for any of it to be read at all.

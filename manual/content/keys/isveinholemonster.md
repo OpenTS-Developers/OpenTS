@@ -7,4 +7,4 @@ when_omitted:
   value: "no"
 ---
 
-An explosion builds its victim list from the cell it is centered on and the eight around it. Finding this overlay on any of those nine cells is what makes it look for a [veinhole monster](/systems/veins/#destruction) as well — but it looks at the blast's own cell, so the monster is collected only when the explosion is centered on the cell the monster occupies. Nothing else in the engine reads the flag.
+An explosion builds its victim list from the cell it is centered on and the eight around it. Finding this overlay on any of those nine cells is what makes it look for a [veinhole monster](/systems/veins/#destruction) as well. The lookup itself names the blast's own cell, so the monster is collected only when the explosion is centered on the cell the monster occupies. Nothing else in the engine reads the flag.

@@ -8,6 +8,6 @@ when_omitted:
   value: "no"
 ---
 
-The flag is stored under its own member on the rules object and nothing anywhere reads that member back — not the tooltip that names the object under the cursor, not the sidebar, not the multiplayer synchronization checksum.
+The flag is stored under its own member on the rules object, and nothing reads that member back. The tooltip that names the object under the cursor, the sidebar, and the multiplayer synchronization checksum all ignore it.
 
-Whether an object is named or glossed over with a generic label is decided per type instead, by [`Nominal`](/keys/nominal/), which the tooltip consults on the object's type and, for a structure, on the runtime instance as well. Without it an enemy object is shown only as an enemy soldier, vehicle or structure.
+Whether an object is named or glossed over with a generic label is decided per type instead, by [`Nominal`](/keys/nominal/). The tooltip reads it on the object's type and, for a structure, on the runtime instance as well. Without it an enemy object is shown only as an enemy soldier, vehicle or structure.

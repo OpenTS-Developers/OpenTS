@@ -12,4 +12,4 @@ when_omitted:
 GenericBeep=BEEP1 ; a sound ID registered in SOUND.INI
 ```
 
-Three volume settings play it as feedback while they are dragged, each as feedback on the new setting and each with its own exception. The music volume plays it only while no music is actually playing, so a slider moved during a score is heard against the score instead. The sound effect volume plays it every time. The speech volume plays it only outside a running game; inside one it speaks a random taunt instead, and only when nothing else is already speaking.
+Three volume sliders play it as feedback while they are dragged. The music volume plays it only while no music is playing; a slider moved while a music track runs is silent. The sound effects volume plays it on every move. The speech volume plays it only outside a running game; inside one, moving it speaks a random GDI or Nod taunt instead, and only when nothing else is already speaking.

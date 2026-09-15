@@ -2,7 +2,7 @@
 enum_id: SourceType
 slug: reinforcement-source
 title: Reinforcement source
-summary: Map-edge and air origins used when objects cross a scenario's boundary.
+summary: Map-edge origins used when objects cross a scenario's boundary.
 representation: token
 bindings:
   key_value_types: [sourcetype]
@@ -13,7 +13,7 @@ values:
   - { constant: SOURCE_EAST, value: 1, input: "East", meaning: "Enter from the east edge." }
   - { constant: SOURCE_SOUTH, value: 2, input: "South", meaning: "Enter from the south edge." }
   - { constant: SOURCE_WEST, value: 3, input: "West", meaning: "Enter from the west edge." }
-  - { constant: SOURCE_AIR, value: 4, input: "Air", meaning: "Arrive by air rather than a map edge." }
+  - { constant: SOURCE_AIR, value: 4, input: "Air", meaning: "Names no boundary; nothing in the engine reads it." }
 ---
 
-Only four of the five name a boundary: `Air` describes how something arrives rather than where, and the routine that turns a source into a cell to scan along has a case for those four alone. [`Edge`](/keys/edge/) covers what each route does with the source a house holds.
+Only four of the five name a boundary. `Air` names none: nothing in the engine reads it, so a house that stores it places reinforcements as though the edge were `North`. The routine that turns a source into a cell to scan along has a case for the four compass values alone. [`Edge`](/keys/edge/) covers what each route does with the source a house holds.

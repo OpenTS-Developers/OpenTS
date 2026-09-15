@@ -6,4 +6,4 @@ targets: []
 credit: [ZivDero]
 ---
 
-The elapsed mission time now survives a save and load. It reset to zero whenever a game was loaded, so the time reported at the end of a mission counted only from the last load rather than from the start of the mission.
+The elapsed mission time now survives a save and load. It reset to zero whenever a game was loaded. The time reported at the end of a mission therefore counted from the last load, not from the start of the mission.

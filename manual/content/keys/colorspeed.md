@@ -7,7 +7,7 @@ when_omitted:
   value: "0"
 ---
 
-The particle carries a fraction between the two [`ColorList`](/keys/colorlist/) entries it is currently mixing. Every frame this figure plus a fresh random amount below `0.05` is added to that fraction, and when the fraction passes 1 the particle steps to the next pair of entries and starts again at 0. A rate of `0.13` therefore steps roughly every six or seven frames, and `0.01` roughly every thirty; the random part alone carries the particle through a step about every forty frames, which is what a type that names no rate gets.
+The particle holds a fraction between the two [`ColorList`](/keys/colorlist/) entries it is currently mixing. Every frame this figure plus a fresh random amount below `0.05` is added to that fraction. When the fraction passes 1, the particle steps to the next pair of entries and starts again at 0. A rate of `0.13` therefore steps roughly every six or seven frames, and `0.01` roughly every thirty. The random part alone takes the particle through a step about every forty frames, which is what a type that names no rate gets.
 
 Only the two pixel-drawn behaviors, [`Spark` and `Railgun`](/keys/behaveslike/#scope-particletype), advance the fraction. The random component is drawn per particle per frame, so no two particles of a burst reach the same color together even when they were created on the same frame.
 

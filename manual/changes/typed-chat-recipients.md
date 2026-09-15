@@ -30,12 +30,6 @@ targets:
 credit: [ZivDero, dkeeton, CCHyper]
 ---
 
-In-game chat now has a line to the team and, for an observer, a line to the other observers,
-beside the lines to everyone and to one player it always had. Backspace starts a team line and
-Enter a line to everyone unless the keyboard file gives those keys or commands to something
-else. A line is delivered and shown only where its kind allows: a team line reaches the houses
-the sender is allied with, an observers line the other observers, and a line from outside the
-match is dropped, so the `-MESSAGES` switch that let such lines through is gone.
+In-game chat now has a line to the team and, for an observer, a line to the other observers. Both come beside the lines to everyone and to one player that chat always had. Backspace starts a team line and Enter a line to everyone unless the keyboard file gives those keys or commands to something else. A line is delivered and shown only where its kind allows. A team line reaches the houses the sender is allied with, an observers line reaches the other observers, and a line from outside the match is dropped. The `-MESSAGES` switch that let such lines through is gone.
 
-dkeeton is credited for the ts-patches team and observer chat this follows, and CCHyper for
-the Vinifera routing and echo.
+dkeeton is credited for the ts-patches team and observer chat this follows, and CCHyper for the Vinifera routing and echo.

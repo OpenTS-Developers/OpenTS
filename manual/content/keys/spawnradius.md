@@ -7,7 +7,7 @@ when_omitted:
   value: "0"
 ---
 
-Each particle the system emits is displaced on both horizontal axes by an independent amount running up to the full radius either way, so the column rises from a patch rather than from a point. The figure is in leptons — 256 to a cell — so the stock plumes, at `3` to `10`, spread across a small fraction of the cell they stand on. Every particle is also lifted a fixed ten leptons above the system, which no setting changes.
+Each particle the system emits is displaced on both horizontal axes by an independent amount running up to the full radius either way, so the column rises from a patch rather than from a point. The figure is in leptons, 256 to a cell, so the stock plumes, at `3` to `10`, spread across a small fraction of the cell they stand on. Every particle is also lifted a fixed ten leptons above the system, which no setting changes.
 
 ```ini title="rules.ini"
 [MySmokeSys] ; a ParticleSystemType registered in [ParticleSystems]

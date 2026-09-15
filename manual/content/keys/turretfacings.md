@@ -7,9 +7,9 @@ when_omitted:
   value: "32"
 ---
 
-Only a [`Turret=yes`](/keys/turret/) vehicle drawn from shape artwork reads this figure, and it owes nothing to the hull's [`Facings`](/keys/facings/). Every stock vehicle cuts its body into eight facings and its turret into thirty-two.
+Only a [`Turret=yes`](/keys/turret/) vehicle drawn from shape artwork reads this figure, and it owes nothing to the hull's [`Facings`](/keys/facings/). Stock vehicles never name `TurretFacings`, so every stock turret strip is cut into the default thirty-two. The stock hulls are cut into eight facings each, except the Hunter-Seeker droid and Limpet Drone, which have no firing animation and no turret and so take the one-facing default.
 
-Per-facing drawing happens at `8`, `16`, `32` and `64`. The facing drawn is the turret's own heading rounded to that many compass points and then advanced by an eighth of a turn, so a turret pointing northwest draws facing 0 at every count. At any other value the facing is fixed at 0 and the turret draws the first frame of its strip however it is aimed.
+Per-facing drawing happens at `8`, `16`, `32` and `64`. The facing drawn is the turret's own heading rounded to that many compass points and then advanced by an eighth of a turn, wrapping around, so a turret pointing northwest draws facing 0 at every count. At any other value the facing is fixed at 0 and the turret draws the first frame of its strip however it is aimed.
 
 ```ini title="art.ini"
 [MYTANK] ; the Image ID of a shape-drawn UnitType

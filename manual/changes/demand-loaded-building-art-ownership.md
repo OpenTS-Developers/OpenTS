@@ -24,7 +24,7 @@ targets:
 credit: [Krisztiaan, ZivDero]
 ---
 
-A structure with `DemandLoad=yes` could corrupt the heap during theater setup, construction-art cleanup or shutdown, because it freed shared archive memory or released its own art through a mismatched call. It now detaches archive-owned art after rules or save loading and loads and releases only its own copy on demand; demand-loaded animations and overlays do the same.
+A structure with `DemandLoad=yes` could corrupt the heap during theater setup, construction-art cleanup or shutdown, because it freed shared archive memory or released its own art through a mismatched call. It now detaches archive-owned art after rules or save loading and loads and releases only its own copy on demand. Demand-loaded animations and overlays do the same.
 
 `FreeBuildup=yes` releases construction art only alongside `DemandLoadBuildup=yes`. Used alone it leaves archive art attached, so later structures keep their construction and deconstruction sequences, their sellability, and the technicians a nominal crew leaves on destruction.
 

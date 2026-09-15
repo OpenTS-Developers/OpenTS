@@ -20,9 +20,9 @@ source_files:
   - code/voc.cpp
 ---
 
-Startup reads `SOUND.INI` and `SOUND01.INI` into one database. Whichever files are present are read, the expansion's file over the base one. A sound both files name comes from `SOUND01.INI`, and one only `SOUND.INI` names is kept. Either file alone is enough, and initialization stops only when neither can be read. Whether Firestorm is installed does not decide which file is read. The same rule applies to `[General]` and `[Defaults]`: a section in the expansion's file replaces the base one.
+Startup reads `SOUND.INI` and `SOUND01.INI` into one database, the expansion's file over the base one. Either file alone is enough, and initialization stops only when neither can be read. A key both files set takes the value from `SOUND01.INI`; a key only `SOUND.INI` sets is kept. That merge covers `[General]`, `[Defaults]`, `[SoundList]` and the sound sections alike. Whether Firestorm is installed does not decide which file is read.
 
-`[SoundList]` values register sound IDs. Each ID names a section; a section that does not exist, or has no keys, gives a sound that plays the sample of the same name with the defaults.
+`[SoundList]` values register sound IDs. The number on the left is only the entry's name; the value names the sound. Each ID names a section; a section that does not exist or has no `Sounds=` gives a sound that plays the sample of the same name with the defaults.
 
 ```ini title="SOUND.INI"
 [General]
@@ -47,11 +47,11 @@ Range=20
 Limit=1
 ```
 
-The whole sound list is discarded and rebuilt each time the file is read, and the entries are registered in the order the section lists them. An ID that is already registered is filled in again rather than added a second time, so naming the same sound twice leaves one sound rather than two.
+The whole sound list is discarded and rebuilt from the merged files at startup, and the entries are registered in the order the section lists them. An ID that is already registered is filled in again rather than added a second time, so naming the same sound twice leaves one sound rather than two.
 
 ## Samples
 
-A sound no longer holds a sample from startup. Each name in its list is looked up when the sound first plays, through the ordinary file layer, so a loose file in the game directory and a member of any mounted archive both serve, and the loose file wins. The formats tried, in order, are `.WAV`, `.OGG`, `.FLAC`, `.MP3` and `.AUD`. A decoded sample stays in memory while the sound plays and for as long as the memory is not needed for another. A name that resolves to nothing is dropped from the list at play time, and a sound whose whole list is missing plays nothing.
+A sound holds no sample from startup. Each name in its list is looked up when the sound first plays, through the ordinary file layer. A loose file in the game directory and a member of any mounted archive both serve, and the loose file wins. The formats tried, in order, are `.WAV`, `.OGG`, `.FLAC`, `.MP3` and `.AUD`. A decoded sample stays in memory while the sound plays and for as long as the memory is not needed for another. A name that resolves to nothing is skipped, and a sound whose whole list is missing plays nothing.
 
 ## `[General]`
 
@@ -59,7 +59,7 @@ A sound no longer holds a sample from startup. Each name in its list is looked u
 
 ## `[Defaults]`
 
-Every key of a sound section may appear here and becomes the value a sound section omits. Without the section, the engine's own defaults apply: those are the values listed under each key below.
+Every key of a sound section except `Sounds=` may appear here and becomes the value a sound section omits. Without the section, the engine's own defaults apply: those are the values listed under each key below.
 
 ## Sound sections
 

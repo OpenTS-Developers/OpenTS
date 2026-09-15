@@ -6,4 +6,4 @@ targets: []
 credit: [ZivDero]
 ---
 
-The first release of the OpenTS manual: reference pages for every INI key, trigger action, trigger event, and team script mission, with formats, commands, systems, and engine internals in one site.
+The first release of the OpenTS manual: reference pages for every INI key, trigger action, trigger event, and team script mission. Formats, commands, systems, and engine internals are in the same site.

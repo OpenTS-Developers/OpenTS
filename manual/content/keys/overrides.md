@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-The flag is consulted on the overlay already standing in a cell, not on the one arriving. An overlay being laid down asks whether the cell is empty of overlay or holds one that does not carry this flag; if the answer is no, the placement is refused and the cell keeps what it had. Everything else about the arriving overlay still happens — the object is discarded either way, and a [`CellAnim`](/keys/cellanim/) is created whether or not the cell accepted the overlay.
+The flag is read on the overlay already standing in a cell, not on the one arriving. An overlay being laid down asks whether the cell is empty of overlay or holds one that does not set this flag; if the answer is no, the placement is refused and the cell keeps what it had. Everything else about the arriving overlay still happens: the object is discarded either way, and a [`CellAnim`](/keys/cellanim/) is created whether or not the cell accepted the overlay.
 
 ```ini title="rules.ini"
 [MYPIPE]         ; example ground fixture that Tiberium must not bury

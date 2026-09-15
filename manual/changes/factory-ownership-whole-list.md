@@ -9,6 +9,6 @@ targets:
 credit: [ZivDero, AlexB]
 ---
 
-A house selling its base back to afford a harvester now counts every `BuildWeapons` entry as a war factory. It asked only the first two, and asked for the second without checking that the list had one, so a one-entry list was read past its end.
+A house selling its base back to afford a harvester now counts every `BuildWeapons` entry in `rules.ini [AI]` as a war factory. It asked only the first two, and asked for the second without checking that the list had one. A one-entry list was read past its end.
 
 AlexB is credited for the ts-patches bundle that first read these lists whole.

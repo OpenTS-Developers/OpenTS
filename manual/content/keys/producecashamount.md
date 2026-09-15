@@ -13,7 +13,7 @@ ProduceCashAmount=100 ; credits
 ProduceCashDelay=750  ; frames between payments
 ```
 
-Each time the interval [`ProduceCashDelay`](/keys/producecashdelay/) sets runs out, this many credits go to whichever house owns the structure. They go straight to that house's credits: no refinery, nothing counted as harvested, no silo cap.
+Each time the interval [`ProduceCashDelay`](/keys/producecashdelay/) sets runs out, this many credits go to whichever house owns the structure. They go straight to that house's credits: no refinery, nothing counted as harvested, no silo cap. Health does not scale the payment; a half-damaged structure pays the same as an intact one.
 
 A negative figure takes the money instead. Spending drains the owner's credits first, then liquidates Tiberium out of the house's own structures to cover the rest, stopping at zero rather than going into debt.
 

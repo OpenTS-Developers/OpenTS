@@ -17,10 +17,18 @@ AllowableUnitMaximums=-1,-1,2
 
 The list decides which cameos the dropship loadout screen shows before a mission that opens with [`StartingDropships`](/keys/startingdropships/) above zero. It is read nowhere else, so a mission without that screen is unaffected by it.
 
-With the list empty, the screen builds its own selection from every infantry and vehicle type, keeping those the player's house may own, whose build level is within the house's tech level, that are not level `-1`, that cost more than `10`, and that are not civilian infantry. With the list populated, that whole filter is replaced: exactly the types named are offered, subject only to house ownership and to a maximum of `0` hiding an entry. Build level and cost no longer matter, so a mission can offer a unit the player could not otherwise build.
+With the list empty, the screen builds its own selection. It considers every infantry and vehicle type, and keeps a type only under **None of:**
+
+- its build level is above the house's tech level;
+- it is civilian infantry;
+- its build level is `-1`;
+- it costs `10` or less;
+- the player's house may not own it.
+
+With the list populated, that whole filter is replaced: exactly the types named are offered, subject only to house ownership and to a maximum of `0` hiding an entry. Build level and cost no longer matter, so a mission can offer a unit the player could not otherwise build.
 
 Entries pair by position with [`AllowableUnitMaximums`](/keys/allowableunitmaximums/), so both lists have to be written in the same order.
 
 :::caution[An unrecognized ID is dropped rather than reported]
-A name matching no registered infantry or vehicle type is skipped as the list is parsed, and the surviving entries close the gap. Every maximum written after the missing name then applies to the wrong type.
+A name matching no registered type at all is skipped as the list is parsed, and the surviving entries close the gap. Every maximum written after the missing name then applies to the wrong type.
 :::

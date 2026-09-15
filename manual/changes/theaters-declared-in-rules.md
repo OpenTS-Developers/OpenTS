@@ -47,8 +47,8 @@ targets:
 credit: [ZivDero]
 ---
 
-A `[Theaters]` list in the rules declares the theaters a game has, each with a section naming its archives, its artwork extension, its image letter and whether it carries ice or arctic terrain. Rules declaring no such list keep `TEMPERATE` and `SNOW`; a list that is present is the whole roster, so a mod may drop, reorder or replace them and has to write out any it means to keep.
+A `[Theaters]` list in the rules declares the theaters a game has. Each entry names a section with that theater's archives, its artwork extension, its image letter, and whether it has ice or arctic terrain. Rules declaring no such list keep `TEMPERATE` and `SNOW`. A list that names a theater is the whole roster, so a mod may drop, reorder or replace them, and has to write out any it means to keep.
 
-`NewTheater` artwork is renamed wherever its second letter is already some theater's image letter, where six fixed two-letter prefixes were matched before. Every piece of artwork the game ships is renamed exactly as it was, and a mod's own prefixes now reach a theater.
+`NewTheater` artwork is renamed wherever its second letter is already some theater's image letter. Six fixed two-letter prefixes were matched before. Every piece of artwork the game ships is renamed exactly as it was, and a mod's own prefixes now reach a theater.
 
 A map naming a theater no rules file declares is reported and played in the first declared theater. It used to load whatever archive names lay in front of the theater table in memory.

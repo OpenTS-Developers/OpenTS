@@ -33,4 +33,4 @@ values:
   - { constant: BSIZE_00, value: 21, input: "0x0", meaning: "Zero-cell footprint." }
 ---
 
-A name is looked up rather than read as a pair of dimensions, so nothing works a block of cells out from the digits and a size not on this list resolves to `1x1`: `Foundation=7x7` gives a single-cell object rather than a footprint of another shape. The block a name stands for is also not the same for every object: a structure has a cell list for all twenty-two, while a TerrainType has one only for the first eight, which [`Foundation`](/keys/foundation/#scope-terraintype) covers.
+A name is looked up rather than read as a pair of dimensions, so `Foundation=7x7` is not a seven-by-seven block of cells. Any other name resolves to `1x1`, a single-cell footprint on a terrain type. The block a name stands for is also not the same for every object. A structure has a list of occupied cells for all twenty-two names, while a TerrainType has one only for the first eight, which [`Foundation`](/keys/foundation/#scope-terraintype) covers.

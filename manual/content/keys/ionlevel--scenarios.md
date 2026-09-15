@@ -14,7 +14,7 @@ Level=.016
 IonLevel=.016
 ```
 
-While a storm runs, this figure replaces [`Level`](/keys/level/#scope-scenarios) as the brightness added for each height level a cell stands above the ground, and it scales the height bonus drawn onto aircraft and onto elevated units and infantry as well.
+While a storm runs, this figure replaces [`Level`](/keys/level/#scope-scenarios) as the brightness added for each height level a cell stands above the ground. It also scales the height bonus drawn onto aircraft and onto elevated units and infantry.
 
 :::danger[The fallback cannot reproduce an ordinary level value]
 Leaving this key out does not copy `Level` across: the fallback is a whole-number division that truncates any fraction below `1` to `0`. A map that omits it is shaded flat for the length of every storm, with cliffs and hills no brighter than the ground beside them. State the value outright to keep the shading.

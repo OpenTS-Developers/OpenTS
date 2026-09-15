@@ -21,14 +21,14 @@ source_files:
 
 Each `RadioClass` contains one non-owning `RadioClass*` contact. The pointer is the default destination for `Transmit_Message`; an explicit destination can receive a message without becoming the contact.
 
-The table gives that pointer, the debug history kept beside it, and the four calls that read or change them. What to take from the last two rows is that delivery is synchronous: the receiver runs inside the sender's own call.
+The table gives that pointer, the message history kept beside it, and the four calls that read or change them. What to take from the last two rows is that delivery is synchronous: the receiver runs inside the sender's own call.
 
 | Member or interface | Contract |
 | --- | --- |
 | `Radio` | Current non-owning contact, or null. Established contacts are expected to be reciprocal. |
 | `In_Radio_Contact()` | Tests whether `Radio` is non-null. |
 | `Contact_With_Whom()` | Returns the contact as `TechnoClass*`. |
-| `Old[3]` | Debug history updated by `RadioClass::Receive_Message`. Only consecutive duplicates are suppressed; `A, B, A` retains both `A` entries. A derived handler that does not call the base does not update this history. |
+| `Old[3]` | Message history updated by `RadioClass::Receive_Message` in every build and displayed by the Debug dump. Only consecutive duplicates are suppressed; `A, B, A` retains both `A` entries. A derived handler that does not call the base does not update this history. |
 | `Transmit_Message(...)` | Calls the receiver immediately and returns its `RadioMessageType` response. |
 | `Receive_Message(...)` | Handles a message in the receiver's virtual override chain. |
 
@@ -53,8 +53,8 @@ The base `RadioClass::Receive_Message` accepts `RADIO_HELLO` only when all of th
 - the receiver's `Strength` is nonzero;
 - the receiver has no contact, or its contact is already the sender;
 - the sender is a non-null `TechnoClass`;
-- the receiver reports `Is_Techno()`;
-- the sender's house treats the receiver as an ally; and
+- the sender's house treats the receiver as an ally;
+- the receiver reports `Is_Techno()`; and
 - the receiver's house treats the sender as an ally.
 
 On acceptance, the receiver stores the sender and returns `RADIO_ROGER`. A nonzero receiver that fails another predicate returns `RADIO_NEGATIVE`. A zero-strength receiver bypasses the `RadioClass` HELLO branch and the base chain returns `RADIO_STATIC`. `Transmit_Message` normalizes every non-`RADIO_ROGER` HELLO response to `RADIO_NEGATIVE`. The sender stores the receiver only after `RADIO_ROGER`, which produces the reciprocal pair.
@@ -77,19 +77,19 @@ Concrete receiver implementations define which messages are valid for a particul
 
 Messages are handled from the concrete receiver toward the base classes. `UnitClass`, `AircraftClass`, `BuildingClass`, `FootClass`, and `TechnoClass` process their own protocol messages and delegate unhandled messages to `BASECLASS::Receive_Message`.
 
-Some handled cases call the base implementation before applying class-specific effects. That base call preserves shared behavior such as radio history, contact teardown, tethering, or `ObjectClass` handling of `RADIO_REDRAW`. An override that returns without handling a message or delegating it changes the protocol for every base-class message.
+Some handled cases call the base implementation before applying class-specific effects. That base call preserves shared behavior such as radio history, contact teardown, tethering, or `ObjectClass` handling of `RADIO_REDRAW`. An override that answers a message without delegating removes the base-class handling that message would otherwise receive. A message that no override in the chain handles comes back as `RADIO_STATIC`.
 
 ## Parameter channel
 
-The message parameter is an `int&`. It is used for both input and output:
+The message parameter is an `intptr_t&`. It is used for both input and output:
 
-- `FootClass` returns its current `NavCom` through `RADIO_NEED_TO_MOVE`.
+- `FootClass` returns its current navigation target, `NavCom`, through `RADIO_NEED_TO_MOVE`.
 - `RADIO_MOVE_HERE` interprets the value as an `ObjectClass*`.
 - `RADIO_ATTACK_THIS` interprets it as an `AbstractClass*`.
 - Building and aircraft handlers place cell or object pointers in it before sending a movement request.
 
-:::danger[The parameter is untyped]
-The parameter is an `intptr_t`, wide enough to carry a pointer, and it is never saved or transmitted. What it holds is decided per message and checked by nothing, so a sender and a receiver that disagree go wrong silently.
+:::caution[The parameter is untyped]
+The parameter is an `intptr_t`, wide enough to hold a pointer, and it is never saved or transmitted. What it holds is decided per message and checked by nothing, so a sender and a receiver that disagree go wrong silently.
 :::
 
 The overload without an explicit parameter passes the global `LParam` by reference. It is appropriate only for messages that do not consume or modify the parameter. Parameterized or nested protocols should use an explicit local value; otherwise a nested call can overwrite state shared with its caller.
@@ -99,9 +99,9 @@ The overload without an explicit parameter passes the global `LParam` by referen
 The refinery/harvester path demonstrates explicit destinations, reciprocal contact, return messages, and pointer parameters:
 
 1. A unit on `MISSION_ENTER` sends `RADIO_DOCKING` directly to the target `BuildingClass`. No contact is required for this first call.
-2. `BuildingClass::Receive_Message` rejects an off building. Otherwise, if the building has no contact, it sends `RADIO_HELLO` back to the unit; `RADIO_DOCKING` itself then returns `RADIO_ROGER`. Service eligibility is handled separately by `RADIO_CAN_LOAD`.
-3. After contact is established, the building sends `RADIO_NEED_TO_MOVE`. `FootClass` returns its current navigation target through `param` and answers whether a new movement order can be accepted.
-4. When `IsDockUnload` or `IsWeeder` is true, the building puts the docking `CellClass*` in `param` and sends `RADIO_MOVE_HERE`.
+2. `BuildingClass::Receive_Message` rejects an off building. Otherwise, if the building has no contact, it sends `RADIO_HELLO` back to the unit and discards the answer; `RADIO_DOCKING` itself returns `RADIO_ROGER` whether or not that contact was accepted. Service eligibility is handled separately by `RADIO_CAN_LOAD`.
+3. After contact is established, the building sends `RADIO_NEED_TO_MOVE`. `FootClass` writes its current navigation target into `param` and answers `RADIO_ROGER` or `RADIO_NEGATIVE` according to whether a new movement order can be accepted.
+4. When `IsDockUnload` or `IsWeeder` is true, the building puts `&Map[Get_Cell() + Cell(2, 1)]` in `param` and sends `RADIO_MOVE_HERE`.
 5. `FootClass` casts `param` back to an object pointer. It assigns that destination and returns `RADIO_ROGER`, or returns `RADIO_YEA_NOW_WHAT` when it already occupies the requested cell.
 6. When the unit is in position, the building sends `RADIO_TETHER` followed by `RADIO_BACKUP_NOW`. The unit begins the refinery backup maneuver.
 
@@ -120,4 +120,4 @@ The cleanup paths are not interchangeable:
 | `Serialize()` | Serializes `Radio` as a swizzled pointer so the saved contact is remapped on load. |
 | `Compute_CRC()` | Adds the contact's engine ID and RTTI to the synchronization checksum. |
 
-A new exit path must either negotiate `RADIO_OVER_OUT` while both endpoints are valid or participate in the engine's detach sweep. A new persistent relationship also requires load swizzling and deterministic-state review.
+A new exit path must either negotiate `RADIO_OVER_OUT` while both endpoints are valid or participate in the engine's detach sweep. A new persistent relationship also requires load swizzling and deterministic-state review. A message type is never transmitted, but `RadioClass::Serialize` persists the `Old` history as raw `RadioMessageType` values, so renumbering the enum changes what a loaded save reports there.

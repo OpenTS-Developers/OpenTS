@@ -25,9 +25,9 @@ source_files:
   - code/scenario.cpp
 ---
 
-`[ScriptTypes]` values name the Script sections to load. Each Script section accepts numbered mission lines `0` through `49`.
+`[ScriptTypes]` values name the Script sections to load. The number to the left of a `[ScriptTypes]` line is only that line's name. Inside a Script section the number is the mission's slot, and each section accepts lines `0` through `49`.
 
-OpenTS loads `AI.INI`, then `AIFS.INI` when Firestorm is enabled, then the map-local definitions.
+OpenTS loads `AI.INI`, then `AIFS.INI` when Firestorm is enabled, then the map-local definitions. When both files use the same `[ScriptTypes]` number, only the later file's script is registered.
 
 ```ini title="AI.INI, AIFS.INI, or map file"
 [ScriptTypes]
@@ -38,4 +38,4 @@ Name=Attack nearest target
 0=0,0
 ```
 
-Lines load in slot order and pack together, so gaps in the numbered slots collapse. The selected team mission defines the meaning of its argument.
+Lines load in slot order and pack together, so gaps in the numbered slots collapse.

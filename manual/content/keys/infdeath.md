@@ -25,12 +25,12 @@ Any value outside that range behaves as `0`.
 InfDeath=4
 ```
 
-A sequence played on the soldier itself — `1`, `2`, and the dog branch of `4` and `5` — holds the body in place until the animation runs out. The soldier is removed at that point, and every type but a dog drops one of the [`DeadBodies`](/keys/deadbodies/) corpses as it goes.
+A sequence played on the soldier itself (`1`, `2`, and the dog branch of `4` and `5`) holds the body in place until the animation runs out. The soldier is removed at that point, and every type but a dog drops one of the [`DeadBodies`](/keys/deadbodies/) corpses as it goes.
 
 Three deaths never reach the setting at all. A prone cyborg and a jump-jet infantryman both leave the `InfantryExplode` animation, and a soldier that dies over water after being knocked off a height leaves a wake and a splash. A soldier killed by a [laser fence](/systems/laser-fences/) is forced onto `5` whatever its attacker's warhead says. A cyborg killed by forced damage is removed at once whatever the setting names: the sequence for `1` or `2` still starts, but the body is taken away on the same step.
 
 :::caution[The electrocution animation is fixed to a slot]
-`InfDeath=5` does not name its animation. It takes whichever animation stands second in the animation list, so inserting, removing or reordering entries ahead of that position changes what an electrocuted soldier leaves behind.
+`InfDeath=5` does not name its animation. It takes the second animation registered in the [`[Animations]` list](/formats/rules-registries/), which is `ELECTRO` in the shipped rules, so inserting, removing or reordering entries ahead of that position changes what an electrocuted soldier leaves behind.
 :::
 
 :::caution[A burning soldier is drawn in the observer's own colors]

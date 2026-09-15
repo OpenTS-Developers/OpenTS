@@ -10,4 +10,4 @@ when_omitted:
 
 The name promises a third condition for the structure's artwork beyond healthy and damaged. Nothing reads the stored flag. A structure's artwork still has exactly two conditions, and [`AnimIdle`](/keys/animidle/) covers where the damaged one begins.
 
-The stored default is `yes`, so writing `ExtraDamageStage=no`, as much of the shipped art does, changes nothing either.
+The stored default is `yes`, so writing `ExtraDamageStage=no` changes nothing either.

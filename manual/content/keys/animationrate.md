@@ -8,7 +8,7 @@ when_omitted:
   note: A pace of zero, which never advances the artwork.
 ---
 
-The figure is only ever applied by [`IsAnimated=yes`](/keys/isanimated/), and only at the moment a stopped animation is started again. It is a countdown in game frames: the artwork advances one frame each time that many pass, so `1` advances every frame — fifteen frames a second — and `15` advances once a second.
+The figure is only ever applied by [`IsAnimated=yes`](/keys/isanimated/), and only at the moment a stopped animation is started again. It is a countdown in game frames: the artwork advances one frame each time that many pass. `1` advances every frame (fifteen frames a second) and `15` advances once a second.
 
 ```ini title="rules.ini"
 [MYTREE]                 ; example blossom tree
@@ -19,5 +19,5 @@ SpawnsTiberium=yes
 ```
 
 :::caution[A pace of zero leaves the object stuck on its first frame]
-Zero is not a pace but a stopped animation, so starting the animation with it stops the animation again in the same step. The object is returned to its first frame, and because it counts as stopped it is eligible to be started again on the very next frame — which returns it to the first frame once more, for as long as the scenario runs.
+Zero is not a pace but a stopped animation, so starting the animation with it stops the animation again in the same step. The object is returned to its first frame, and because it counts as stopped it is eligible to be started again on the very next frame. That start returns it to the first frame once more, for as long as the scenario runs.
 :::

@@ -12,7 +12,7 @@ when_omitted:
 SkipScore=yes
 ```
 
-The score screen is the presentation that follows a won mission, with its own score track and hall of fame. Setting the key removes that screen and nothing else: [`PostScore`](/keys/postscore/) and [`PreMapSelect`](/keys/premapselect/) still play, and the campaign still advances as it would have. The win movie has already been shown by the time the setting is consulted.
+The score screen is the presentation that follows a won mission, with its own score track and hall of fame. Setting the key removes that screen and nothing else: [`PostScore`](/keys/postscore/) and [`PreMapSelect`](/keys/premapselect/) still play, and the campaign still advances as it would have. The win movie has already been shown by the time the setting is read.
 
 A recorded game being played back skips the score screen regardless.
 

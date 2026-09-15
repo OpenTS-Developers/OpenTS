@@ -8,4 +8,4 @@ when_omitted:
   note: No tile set is selected, so the role stays unresolved.
 ---
 
-Blue mold blends by the rule [`ClearToRoughLat`](/keys/cleartoroughlat/) describes, against the single plain [`BlueMoldTile`](/keys/bluemoldtile/) ground tile. It is the last family evaluated in the pass, so it sees whatever tile the six before it settled on — and it is one of the four that keep blending even when their set is unresolved.
+Blue mold blends by the rule [`ClearToRoughLat`](/keys/cleartoroughlat/) describes, against the single plain [`BlueMoldTile`](/keys/bluemoldtile/) ground tile. It is the last family evaluated in the pass, so it sees whatever tile the six before it settled on. It is also one of the four families that keep blending when their set is unresolved.

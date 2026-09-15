@@ -1,6 +1,6 @@
 ---
 key: RatioAITriggerTeam
-summary: The percent chance that a house consults its AI triggers when its team countdown expires.
+summary: The percent chance that a house reads its AI triggers when its team countdown expires.
 see_also: ["system:ai-team-production"]
 when_omitted:
   kind: value

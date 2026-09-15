@@ -12,5 +12,5 @@ The model comes from the object type named by [`ShareSource`](/keys/sharesource/
 The three sharing flags are tested in a fixed order and the first one set decides the part: body, then turret, then barrel. This flag is therefore the one that yields to either of the others.
 
 :::danger[Dropping the flag in a later file frees the lender's model]
-A later rules or map file that declares the same section again without repeating this flag turns the borrowing off, and the section is read as owning its model: the borrowed one is released and a fresh one loaded in its place. The lending object type is then drawn out of freed memory, and its motion data is released a second time when the game shuts down, corrupting the heap. [`ShareSource`](/keys/sharesource/) covers the borrowing in full.
+A later rules or map file that declares the same section again without repeating this flag turns the borrowing off. The section is then read as owning its model: the borrowed one is released, and a fresh one is loaded in its place. The lending object type is then drawn out of freed memory, and the motion data that animates its model is released a second time when the game shuts down, corrupting the heap. [`ShareSource`](/keys/sharesource/) covers the borrowing in full.
 :::

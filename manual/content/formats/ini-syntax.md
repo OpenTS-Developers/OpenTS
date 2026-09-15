@@ -21,7 +21,7 @@ A line beginning with `;` is a comment. A semicolon also starts an inline commen
 
 Text is UTF-8, and a byte order mark at the start of a file is ignored. A line that is not valid UTF-8 is read as Windows-1252, so a file written in that code page keeps its accented characters. Saving the database writes UTF-8 without a byte order mark.
 
-Loading a second file into a database that already holds sections merges the two rather than replacing what is there: a section the database does not carry is added whole, and an assignment repeating a key already present overwrites that key's value.
+Loading a second file into a database that already holds sections merges the two rather than replacing what is there. A section the database does not have is added whole, and an assignment repeating a key already present overwrites that key's value.
 
 A file that repeats a section header continues the section it already opened. An assignment repeating a key overwrites the value read earlier and moves the key to the end of its section. A file is therefore read the same way whether it opens a database or merges into one that already holds sections. A repeat within one file is written to the debug log with the file, section and key; a later file overriding an earlier one is not, since that is how the rules files stack.
 
@@ -29,7 +29,7 @@ A line may be any length. A reader that copies a value into fixed storage keeps 
 
 ## Malformed values
 
-A written value is converted by the reader for the kind of value expected. A value the reader cannot convert leaves the setting at its default, and the debug log records the file, section, key and value.
+A written value is converted by the reader for the kind of value expected. A floating-point number, or a list of comma-separated numbers, that the reader cannot convert leaves the setting at its default, and the debug log records the file, section, key and value.
 
 A floating-point number is read from the start of the value, so a value that does not start with a number is malformed. A percent sign anywhere in the value divides the number by 100 after it is read, so `50%` reads as `0.5`.
 

@@ -15,4 +15,4 @@ A cell draws on the radar in two colors taken from its tile artwork, and this sc
 LowRadarBrightness=1.0
 ```
 
-A cell above ground level is interpolated between this and [`HighRadarBrightness`](/keys/highradarbrightness/) by its height, so the two together set how much relief the radar shows.
+A cell above ground level is interpolated between this and [`HighRadarBrightness`](/keys/highradarbrightness/) by its height. The two together set how much relief the radar shows.

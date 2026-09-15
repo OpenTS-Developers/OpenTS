@@ -12,4 +12,4 @@ targets:
 credit: [ZivDero]
 ---
 
-A movie's sound track now plays through the audio engine instead of a DirectSound buffer of its own, so the game no longer links DirectSound at all. The picture follows the sound as before, timed from what the mixer has taken of the track and what the output device still holds, and it keeps running on wall time while the sound stands still. `SoundLatency` is still read and saved but has no effect.
+A movie's sound track now plays through the audio engine instead of a DirectSound buffer of its own, so the game no longer links DirectSound at all. The picture follows the sound as before, timed from what the mixer has taken of the track and what the output device still holds. It keeps running on wall time while the sound stands still. `SoundLatency` is still read and saved but has no effect.

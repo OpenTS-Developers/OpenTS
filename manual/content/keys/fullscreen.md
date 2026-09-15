@@ -6,7 +6,7 @@ when_omitted:
   value: "yes"
 ---
 
-A full-screen game opens a borderless window the size of the desktop. A windowed game opens an ordinary framed window that can be moved, resized, and maximized. Neither one changes the desktop's own resolution: the game always renders at [`ScreenWidth`](/keys/screenwidth/) by [`ScreenHeight`](/keys/screenheight/) and that picture is scaled into whichever window it has, so alt-tabbing away and back does not disturb the rest of the desktop.
+A full-screen game opens a borderless window the size of the desktop. A windowed game opens an ordinary framed window that can be moved, resized, and maximized. Neither one changes the desktop's own resolution. The game always renders at [`ScreenWidth`](/keys/screenwidth/) by [`ScreenHeight`](/keys/screenheight/), and that picture is scaled into whichever window it has, so alt-tabbing away and back does not disturb the rest of the desktop.
 
 This setting is read before the window is created, well before the rest of `SUN.INI`, and it is written back whenever the game saves its options.
 

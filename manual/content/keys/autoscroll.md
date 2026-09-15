@@ -11,4 +11,4 @@ when_omitted:
 
 [`ScrollMultiplier`](/keys/scrollmultiplier/) scales edge scroll steps alone, so it has nothing to act on once this is off. [`ScrollRate`](/keys/scrollrate/) also divides the coast scroll distance and keeps working either way.
 
-The in-game game controls dialog carries the same switch and writes the choice back to `sun.ini`. Changing it there takes effect at once rather than at the next scenario.
+The in-game game controls dialog has the same switch, writes the choice back to `sun.ini`, and takes effect at once rather than at the next scenario.

@@ -13,4 +13,4 @@ when_omitted:
 AIWallDefenseCoefficient=3
 ```
 
-The difficulty-scaled part of that cap: it is multiplied by `3` minus the house's difficulty slot and the product is added to [`AIWallDefense`](/keys/aiwalldefense/#scope-side), so an advantaged computer house rings its wall with more defenses than a penalized one. [Walls and gates](/systems/ai-base-building/#walls-and-gates) gives the full expression.
+The difficulty-scaled part of that cap: it is multiplied by `3` minus the house's difficulty slot and the product is added to [`AIWallDefense`](/keys/aiwalldefense/). Once the cap binds, an advantaged computer house gets more wall defenses than a penalized one. [Walls and gates](/systems/ai-base-building/#walls-and-gates) gives the full expression.

@@ -17,6 +17,6 @@ FireUp=2 ; the third stage of E1Sequence's six-frame FireUp run
 
 If the shot cannot be taken when the stage arrives, the soldier abandons the firing animation and returns to standing, or to prone if it was lying down.
 
-:::caution[A stage past the end of the run is never reached]
-The stage is matched for exact equality. A figure above the frame count of the run therefore never comes up, and the soldier never releases its round.
+:::caution[A figure past the run's frame count can still release the round]
+The stage is matched for exact equality, and the firing run ends once its frame count is reached. The run itself never reaches such a figure. While the soldier keeps its target, the test keeps running against the stage of every animation it plays next. The first of those to reach the figure releases the round.
 :::

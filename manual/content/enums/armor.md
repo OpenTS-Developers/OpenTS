@@ -16,8 +16,8 @@ values:
   - { constant: ARMOR_CONCRETE, value: 4, input: "concrete", meaning: "Concrete building armor." }
 ---
 
-Armor names are matched without regard to case, and the five classes are fixed by the engine. What each class does with incoming damage is decided entirely by the firing warhead's [`Verses`](/keys/verses/) list.
+Armor names are matched without regard to case, and the five classes are fixed by the engine. What each class does with incoming damage is decided by the firing warhead's [`Verses`](/keys/verses/) list.
 
 :::caution[An unrecognized name resolves to `none`]
-`none` is an ordinary class with a column of its own rather than an error value, so a misspelled armor name does not fail — it quietly moves the type onto the first entry of every warhead's list.
+`none` is an ordinary class with a column of its own rather than an error value. A misspelled armor name therefore does not fail; it quietly moves the type onto the first entry of every warhead's list.
 :::

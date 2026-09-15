@@ -8,4 +8,4 @@ when_omitted:
   value: "0"
 ---
 
-The frame a particle draws is chosen by its animation state, so a `Gas`, `WeakGas`, `Smoke` or `Web` sequence opens at the frame [`StartStateAI`](/keys/startstateai/) names, while a [`Fire`](/keys/behaveslike/#scope-particletype) particle opens at that state offset by the artwork bank its firing direction picks and a `Spark` or `Railgun` particle draws no artwork at all. No drawing path reads the figure stored here.
+The frame a particle draws is chosen by its animation state. A `Gas`, `WeakGas`, `Smoke` or `Web` sequence opens at the frame [`StartStateAI`](/keys/startstateai/) names, and a [`Fire`](/keys/behaveslike/#scope-particletype) particle opens at that state offset by the artwork bank its firing direction picks. A `Spark` or `Railgun` particle draws no artwork at all. No drawing path reads the figure stored here.

@@ -7,7 +7,7 @@ when_omitted:
   value: "30"
 ---
 
-The value is written in degrees and converted to radians as it is read. The fly locomotor banks the aircraft by the angle while its facing is rotating — one way for a clockwise turn and the other for a counter-clockwise one — and only while the aircraft is off the ground and its throttle is above [`PitchSpeed`](/keys/pitchspeed/). It levels out again the moment the turn finishes.
+The value is written in degrees and converted to radians as it is read. The fly locomotor banks the aircraft by the angle while its facing is rotating, one way for a clockwise turn and the other for a counter-clockwise one. It banks only while the aircraft is off the ground and its throttle is above [`PitchSpeed`](/keys/pitchspeed/). It levels out again the moment the turn finishes.
 
 An [`IsDropship=yes`](/keys/isdropship/) type never banks, and neither does an aircraft that has been rocked by a nearby jolt, which is tilted sideways by the jolt instead.
 

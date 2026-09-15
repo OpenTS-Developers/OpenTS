@@ -10,4 +10,4 @@ credit:
 - gunnarbeutner
 ---
 
-A scenario whose `[IsoMapPack4]` or `[IsoMapPack5]` section does not decompress, expands to a length other than its block headers claim, or ends before its terminating `CELL_NONE` now stops loading and reports damaged map data, naming the section in the debug log. Before, the cells read up to that point were kept and the game started with the rest of the map missing.
+A scenario whose `[IsoMapPack4]` or `[IsoMapPack5]` section is damaged now stops loading and reports damaged map data, naming the section in the debug log. A section is damaged when it does not decompress, when it expands to a length other than its block headers claim, or when it ends before its terminating `CELL_NONE`. Before, the cells read up to that point were kept and the game started with the rest of the map missing.

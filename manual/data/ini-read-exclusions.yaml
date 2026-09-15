@@ -133,7 +133,7 @@ site_exclusions:
 
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
-    keys: [SearchPaths, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, Tutorial, UI, Settings, Scheme, Game]
+    keys: [SearchPaths, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Scheme, Game]
     classification: excluded
     reason: Each is a setting of the deployment's own file, documented as that format rather than as game data.
 

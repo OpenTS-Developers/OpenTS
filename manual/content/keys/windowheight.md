@@ -2,8 +2,9 @@
 key: WindowHeight
 summary: The height of the drawable area of the game window, in pixels.
 when_omitted:
-  kind: computed
-  note: The window opens at the height the game renders at, ScreenHeight, and afterwards follows it through a resolution change.
+  kind: value
+  value: "-1"
+  note: The window opens at the height the game renders at, ScreenHeight.
 ---
 
 This is the size of the window's drawable area rather than its outer size, so the border and title bar are added on top of it. The window opens centered on the screen.

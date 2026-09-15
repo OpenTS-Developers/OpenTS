@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-The value names an animation registered in `[Animations]`, which the structure runs as an attached animation on the terms [Building animations](/systems/building-animations/) covers: a separate object pinned to a point on the structure's artwork, cycling on its own timing, and created and destroyed as the structure changes state. Only the first 15 characters of the name are kept, and a name no `[Animations]` entry registers creates nothing.
+The value names an animation registered in `[Animations]`. The structure runs it as an attached animation on the terms [Building animations](/systems/building-animations/) covers: a separate object pinned to a point on the structure's artwork, cycling on its own timing, and created and destroyed as the structure changes state. Only the first 15 characters of the name are kept. A name no `[Animations]` entry registers creates nothing.
 
 Four kinds of structure use the slot, each at its own moment.
 
@@ -24,13 +24,13 @@ Where nothing stops the slot, an animation that plays to its end empties it and 
 The harvester waits while the refinery's slot is running and leaves on the first pass that finds it empty. An animation that loops never empties it, so the harvester stays docked and its house stops collecting.
 :::
 
-:::caution[Only a construction yard reaches the damaged form]
-The construction yard picks between the two names from its own health. The refinery, repair bay and weapons factory each ask for the healthy one however damaged they are, so [`ProductionAnimDamaged=`](/keys/productionanimdamaged/) on those three is never used. Because creating an animation in the healthy form restarts every animation the structure is running in that form, each of those three moments also drops a damaged structure's other animations back to their healthy versions until its health next crosses [`ConditionYellow`](/keys/conditionyellow/).
+:::caution[The three other structures always fill the slot in its healthy form]
+The construction yard picks between the two names from its own health. The refinery, repair bay and weapons factory ask for the healthy name whenever they fill the slot. [`ProductionAnimDamaged=`](/keys/productionanimdamaged/) still reaches them later: when the structure's health falls to [`ConditionYellow`](/keys/conditionyellow/) or below with the slot running, the slot restarts in its damaged form. The same restart also runs in reverse. A damaged structure shows every running animation in its damaged form, so a healthy-form start flips the whole set: each slot with an animation running is restarted from its healthy name in the same moment. The set stays healthy until the next damage or repair event finds the structure at [`ConditionYellow`](/keys/conditionyellow/) or below and restarts it in the damaged forms.
 :::
 
 ## Where the settings are read
 
-The two animation names are read from the structure's `[<Image ID>]` art entry, while the offset and the two draw-order biases are read from the entry named after the BuildingType itself; [where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) sets that split out for every slot. On the ordinary structure, which sets no [`Image=`](/keys/image/), those are the same entry and the split is invisible. A type that borrows another structure's artwork has to write the two halves in two places.
+The two animation names are read from the structure's `[<Image ID>]` art entry. The offset and the two draw-order biases are read from the entry named after the BuildingType itself. [Where each setting is read from](/systems/building-animations/#where-each-setting-is-read-from) sets that split out for every slot. On the ordinary structure, which sets no [`Image=`](/keys/image/), those are the same entry and the split is invisible. A type that borrows another structure's artwork has to write the two halves in two places.
 
 ```ini title="rules.ini"
 [MYPROC] ; example refinery BuildingType
@@ -48,4 +48,4 @@ ProductionAnimY=2
 ProductionAnimZAdjust=-100
 ```
 
-The four are read only once the slot holds a name — either the healthy one or the damaged one is enough. Unlike an active slot, this one has no power flags: a production animation is never frozen or dropped by a power shortfall.
+The four are read only once the slot holds a name (either the healthy one or the damaged one is enough). Unlike an active slot, this one has no power flags: a production animation is never frozen or dropped by a power shortfall.

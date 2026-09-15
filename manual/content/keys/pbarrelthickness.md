@@ -16,6 +16,6 @@ PBarrelLength=80
 PBarrelThickness=12 ; lifts the muzzle onto the barrel's centerline
 ```
 
-Only the muzzle position moves — the fire animation, laser beam, sonic wave, and attached particle systems. An AircraftType, BuildingType or UnitType creates its projectile at the mounting point, which the barrel does not move; an InfantryType creates it at the muzzle instead.
+Only the muzzle position moves: the fire animation, laser beam, sonic wave, and attached particle systems. An AircraftType, BuildingType or UnitType creates its projectile at the mounting point, which the barrel does not move; an InfantryType creates it at the muzzle instead.
 
 The elite weapon slot is filled from this same setting, so an [`Elite`](/keys/elite/) weapon fires from the same point as the weapon it replaces.

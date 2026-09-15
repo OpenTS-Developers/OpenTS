@@ -8,7 +8,7 @@ when_omitted:
   value: ".25"
 ---
 
-The jumpjet locomotor keeps a speed counter and moves the unit that many leptons along its current facing every game frame. This figure is how much the counter gains each frame while it is below the speed the current flight state asks for, and it is never allowed past the ceiling in [`Speed`](/keys/speed/#scope-global-rules). There are 256 leptons to a cell and 15 game frames to the second.
+The jumpjet locomotor keeps a speed counter and moves the unit that many leptons along its current facing every game frame. This figure is how much the counter gains each frame while it is below the speed the current flight state asks for. The counter is never allowed past the ceiling in [`Speed`](/keys/speed/#scope-global-rules). There are 256 leptons to a cell and 15 game frames to the second.
 
 Shedding speed is faster than gaining it. When the flight state asks for less than the counter holds, the counter drops by one and a half times this figure per frame instead, down to a floor of zero. A unit therefore slows into its landing more sharply than it worked up to cruising speed.
 

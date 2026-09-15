@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-A vehicle produced for a computer house by a factory with `WeaponsFactory=no` now keeps the adjacent exit cell as its immediate destination and queues the house-selected base position behind it. The vehicle clears the factory before continuing to the position it guards.
+A vehicle produced for a computer house by a factory with `WeaponsFactory=no` now keeps the adjacent exit cell as its immediate destination. The base position the house selects for it is queued behind the exit cell. The vehicle clears the factory before continuing to the position it guards.

@@ -15,11 +15,6 @@ targets:
 credit: [ZivDero, AlexB]
 ---
 
-The computer's money logic now counts every `BuildRefinery` and `HarvesterUnit` entry, and
-prices and queues the first entry the country it acts as may own, falling back to entry 0. It
-read entry 0 alone, so a computer house whose refinery or harvester was a later entry sold its
-base to replace what it already had, and never queued a replacement harvester; the harvester
-census that spreads a house's harvesters across a field counts them all too. An empty list no
-longer crashes the game.
+The computer's money logic now counts every `BuildRefinery` and `HarvesterUnit` entry. `BuildRefinery` is a list in `[AI]` and `HarvesterUnit` one in `[General]`, both in rules.ini. It prices and queues the first entry the country it acts as may own, falling back to entry 0. `BuildWeapons`, the factory it needs for a harvester, is picked the same way from `[AI]`. It read entry 0 alone. A computer house whose refinery or harvester was a later entry sold its base to replace what it already had, and never queued a replacement harvester. The harvester census that spreads a house's harvesters across a field counts them all too. An empty list no longer crashes the game.
 
 AlexB is credited for the ts-patches bundle that first read these lists whole.

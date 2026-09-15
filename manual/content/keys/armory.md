@@ -7,7 +7,14 @@ when_omitted:
   value: "no"
 ---
 
-A building with this flag offers the enter cursor to a player-controlled infantry of an allied house, provided that infantry is not already elite and the building is switched on, out of construction, not already servicing someone, and still holds ammunition. Admitting the infantry costs one point of the building's [`Ammo`](/keys/ammo/) pool, and an armory — like a hospital — is exempt from the instant ammunition reload other buildings receive, so the pool only ever goes down.
+A building with this flag offers the enter cursor to a player-controlled infantry of an allied house, provided that infantry is not already elite. The building itself must meet **all of** the following:
+
+- it is switched on;
+- it is out of construction;
+- it is not already servicing someone;
+- it still holds ammunition.
+
+Admitting the infantry costs one point of the building's [`Ammo`](/keys/ammo/) pool, and an armory, like a hospital, is exempt from the instant ammunition reload other buildings receive, so the pool only ever goes down.
 
 Once the servicing counter set by [`IRepairRate`](/keys/irepairrate/) runs out, the occupant is promoted and released. [Promotion without kills](/systems/veterancy/#promotion-without-kills) covers where that promotion sits among the other non-combat sources.
 

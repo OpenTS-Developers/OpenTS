@@ -7,9 +7,9 @@ when_omitted:
   value: "no"
 ---
 
-The frame the animation has reached is drawn again and again up the screen, each copy one frame-height above the last and the first half a frame-height above the animation's own position, until a copy has been placed above the top edge of the view. A column of smoke written this way reaches the top of the screen at any resolution rather than at the one it was drawn for. Every copy shows the same frame, so the column moves as one.
+The frame the animation has reached is drawn again and again up the screen. Each copy sits one frame-height above the last, and the first sits half a frame-height above the animation's own position. The repetition stops once a copy has been placed above the top edge of the view. A column of smoke written this way reaches the top of the screen at any resolution rather than at the one it was drawn for. Every copy shows the same frame, so the column moves as one.
 
-The step between copies is the measured height of the shape's first frame, not the shape's nominal height, so a shape whose frames vary in height tiles by whatever the first one measures.
+The step between copies is the height the shape file's header records for the first frame specifically, not the shape set's overall height. A shape whose frames vary in height tiles by whatever the first frame records.
 
 This is a separate drawing path from the ordinary one, and three things do not survive the change:
 
@@ -20,5 +20,5 @@ This is a separate drawing path from the ordinary one, and three things do not s
 The animation's translucency does survive: every copy is drawn at the level the animation had reached.
 
 :::danger[A first frame that measures zero pixels tall hangs the game]
-The copies step upward by the measured height of the first frame, and the loop ends only once a copy has been placed above the top edge. A first frame measuring zero pixels tall never moves them along, so the same copy is drawn in the same place without end and the game stops responding. A shape holding no frames at all measures the same way, since the measurement of a frame the shape does not have comes back as nothing.
+The copies step upward by the height the header records for the first frame, and the loop ends only once a copy has been placed above the top edge. A first frame recorded as zero pixels tall never moves them along, so the same copy is drawn in the same place without end and the game stops responding. A shape holding no frames at all records the same way, since the record of a frame the shape does not have comes back as nothing.
 :::

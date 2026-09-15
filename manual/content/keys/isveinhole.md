@@ -14,6 +14,6 @@ Strength=1000
 IsVeinhole=true
 ```
 
-A [veinhole monster](/systems/veins/#veinhole-monsters) is not a Techno object, so the object picker admits it only through this flag: a click over the monster lands on it rather than passing to the ground beneath. Setting the flag also rewrites two of the type's own settings once its section has been read — the type stops being sentient and becomes a legal target, overriding [`LegalTarget=no`](/keys/legaltarget/) in the same section.
+A [veinhole monster](/systems/veins/#veinhole-monsters) is not a Techno object, so the object picker admits it only through this flag. A click over the monster lands on it rather than passing to the ground beneath. Setting the flag also rewrites two of the type's own settings once its section has been read: the type stops being sentient and becomes a legal target, overriding [`LegalTarget=no`](/keys/legaltarget/) in the same section.
 
-The flag does not select which type a monster is built from; [`VeinholeTypeClass`](/keys/veinholetypeclass/) does that, and it is read whether or not the named type carries this flag.
+The flag does not select which type a monster is built from; [`VeinholeTypeClass`](/keys/veinholetypeclass/) does that, and it is read whether or not the named type sets this flag.

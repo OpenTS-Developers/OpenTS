@@ -7,6 +7,6 @@ when_omitted:
   value: none
 ---
 
-The sound plays once, at the gate's own position, on the pass that starts the door closing — after [`GateCloseDelay`](/keys/gateclosedelay/) has expired with the footprint clear.
+The sound plays once, at the gate's own position, on the pass that starts the door closing, after [`GateCloseDelay`](/keys/gateclosedelay/) has expired with the footprint clear.
 
 Despite the names, this is the closing sound and [`GateDown`](/keys/gatedown/) is the opening one.

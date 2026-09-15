@@ -9,4 +9,11 @@ when_omitted:
 
 This figure is a divisor, so raising it shortens the wait between shots: the default halves the reload delay, and `0` leaves it unchanged. It reaches only an object whose rank grants it the `ROF` ability through [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/).
 
-Several paths return a delay before this step and are therefore never shortened: a sonic weapon, a weapon whose spark, fire, or railgun particle system is attached, a building holding more than one round of ammunition, and the shots inside a burst. Only the delay that follows the final shot of a burst is reduced.
+Several paths settle the delay before this step, so it is never shortened for any of:
+
+- a sonic weapon;
+- a weapon whose spark, fire, or railgun particle system is attached;
+- a building holding more than one round of ammunition;
+- the shots inside a burst.
+
+Only the delay that follows the final shot of a burst is reduced.

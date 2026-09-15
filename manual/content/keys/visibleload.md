@@ -7,4 +7,4 @@ when_omitted:
   value: "no"
 ---
 
-Nothing reads the stored flag, so a transport draws exactly the same whether it is empty or full. What a loaded transport does show is its cargo pips, which [`PipScale`](/keys/pipscale/) and [`Passengers`](/keys/passengers/) control.
+Nothing reads the stored flag, so it cannot change how the object is drawn. What a loaded transport does show is its cargo pips, which [`PipScale`](/keys/pipscale/) and [`Passengers`](/keys/passengers/) control.

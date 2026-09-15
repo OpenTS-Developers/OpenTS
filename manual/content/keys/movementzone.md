@@ -7,9 +7,9 @@ when_omitted:
   value: "Normal"
 ---
 
-The map is divided into connected zones once per [movement zone](/reference/enums/movement-zone/), and every question of the form "can this object get from here to there" is answered against the zone map its type names. The pathfinder uses the same class to decide which terrain a route may cross.
+For each [movement zone](/reference/enums/movement-zone/) class, the map is divided into connected zones, and every question of the form "can this object get from here to there" is answered against the zone map its type names. The pathfinder uses the same class to decide which terrain a route may cross.
 
-`Subterannean` carries one extra consequence: a type that names it is marked as subterranean, which is what puts it on the tunneling path rather than on the surface.
+`Subterannean` has one extra consequence: a type that names it is marked as subterranean, which is what puts it on the tunneling path rather than on the surface.
 
 Two automatic decisions compare zones directly rather than plotting a route.
 

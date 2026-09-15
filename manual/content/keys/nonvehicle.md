@@ -9,7 +9,7 @@ when_omitted:
 
 The flag is narrower than its name. The type is still a UnitType and is still counted against its owner's vehicle total, so neither its registration nor the tallies the house keeps are touched. What it withdraws from is the handful of decisions that ask an object whether it is a vehicle at all.
 
-Two of those decisions matter in a match. A weapon whose [`Damage`](/keys/damage/) is negative — a repair weapon — will not select the type as a target and is refused permission to fire at it, so a mobile repair vehicle cannot mend it. And infantry that take vehicles over pass it by, in three places:
+Two of those decisions matter in a match. A weapon whose [`Damage`](/keys/damage/) is negative (a repair weapon) will not select the type as a target and is refused permission to fire at it, so a mobile repair vehicle cannot mend it. And infantry that take vehicles over pass it by, in three places:
 
 - the type draws no capture cursor;
 - a thief loses its repair and capture cursors over the type, and its exemption to enter the cell the type occupies, so it may still chase such a vehicle and simply never take it;

@@ -6,7 +6,7 @@ see_also: [Ground, IonLevel, "system:ion-storms"]
 when_omitted:
   kind: value
   value: "0"
-  note: The engine starts each scenario with about a sixtieth of full light here, but the fallback used when the key is absent divides two whole numbers and truncates to zero, so an omitted key stores zero rather than that fraction.
+  note: The engine starts each scenario with about a sixtieth of full light here. When the key is absent, the fallback divides two whole numbers and truncates to zero, so the engine stores zero rather than that fraction.
 ---
 
 ```ini title="map file"

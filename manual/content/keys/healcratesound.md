@@ -7,4 +7,4 @@ when_omitted:
   value: none
 ---
 
-The sound plays at the collecting object's position and only while that object belongs to the local player. The healing itself is independent of the setting: every object of the collector's house is restored to its maximum strength wherever it stands, so a crate opened by a computer house heals that house in silence.
+The sound plays at the collecting object's position and only while that object belongs to the local player. The healing itself is independent of the setting: every object of the collector's house is restored to its maximum strength wherever it stands. A crate opened by a computer house heals that house in silence.

@@ -8,6 +8,8 @@ files:
   - LANGRULE.INI
   - FIRESTRM.INI
   - LANGFS.INI
+  - MPLAYER.INI
+  - MPLAYERFS.INI
 registrations:
   - { section: InfantryTypes, id_from: value, entry_section: "<InfantryType ID>" }
   - { section: Houses, id_from: value, entry_section: "<HouseType ID>" }
@@ -33,17 +35,17 @@ source_files:
   - code/init.cpp
 ---
 
-All but two of these registration sections are read the same way. Each entry is taken by its position in the section and only its value is looked at, so the key text decides nothing and the order the lines are written in is the order the types are registered. The value is both the type ID and the name of the section the definition is written in, and is kept to its first thirty-one characters. An empty value registers nothing, and a value naming an ID the game already carries reuses that type instead of adding a second one.
+All but two of these registration sections are read the same way. Each entry is taken by its position in the section, and only its value is looked at. The key text decides nothing, and the order the lines are written in is the order the types are registered. The value is both the type ID and the name of the section the definition is written in, and is kept to its first thirty-one characters. An empty value registers nothing: the line is dropped, so the entries written after it each move up one position. A value naming an ID the game already has reuses that type instead of adding a second one.
 
-The two exceptions read their keys. In `[Sides]` the key is the Side ID and the value is a comma-separated HouseType list; a name in that list that is not a HouseType ID is logged and skipped, so a side does not stand for its countries there. In `[Tiberiums]` the key is a slot number: a number below the count already registered selects that existing Tiberium and the value is discarded, and only a number at or above it creates a new one under the name the value gives.
+The two exceptions read their keys. In `[Sides]` the key is the Side ID and the value is a comma-separated HouseType list. A name in that list that is not a HouseType ID is logged and skipped, so the country it names does not join that side. In `[Tiberiums]` the key is a slot number. A number below the count already registered selects that existing Tiberium and discards the value. Only a number at or above the count creates a new Tiberium, under the name the value gives.
 
-Registering an ID and defining it are separate passes. Registration creates the type carrying the built-in defaults for its kind, and the section named by the ID is read afterwards, so an ID registered with no section of its own is kept with those defaults rather than dropped.
+Registering an ID and defining it are separate passes. Registration creates the type with the built-in defaults for its kind, and the section named by the ID is read afterwards. An ID registered with no section of its own is therefore kept with those defaults rather than dropped.
 
-OpenTS processes the selected `RULE*.INI`, then `LANGRULE.INI`, then `FIRESTRM.INI` when Firestorm is enabled, and finally `LANGFS.INI` when present. [Game data](/using/game-data/) covers what makes Firestorm count as installed.
+OpenTS processes the selected `RULE*.INI`, then `LANGRULE.INI`, then `FIRESTRM.INI` when Firestorm is enabled, then `LANGFS.INI` when present. Outside a campaign it then processes [`MPLAYER.INI`](/formats/multiplayer-rules/), and `MPLAYERFS.INI` as well when Firestorm is enabled. The scenario's own overrides come after all of them. [Game data](/using/game-data/) covers what makes Firestorm count as installed.
 
-`[Theaters]` is read on different terms from the rest, because a map names its theater before anything else about it is read and the archives that theater mounts are what the rest of the load comes out of. It is read once as the game starts, from the selected `RULE*.INI` and from `FIRESTRM.INI` whenever that file is installed rather than only when its addon is enabled — a theater's position must not move between one game and the next, because that position is the number maps, saves and the multiplayer checksum all carry. A map's own rules cannot add a theater.
+`[Theaters]` is read differently from the rest. A map names its theater before anything else about it is read, and the archives that theater mounts supply the rest of the load. The roster therefore has to be settled before any map is loaded. It is read once as the game starts, from the selected `RULE*.INI` and from `FIRESTRM.INI` whenever that file is installed, not only when its addon is enabled. A theater's position must not move between one game and the next, and that position is the number maps, saves and the multiplayer checksum all use. Neither a map's own rules nor the multiplayer files can add a theater, for the same reason: both are read per game, and a roster that changed with the game type would move every theater after the one it added.
 
-Where no rules file declares the section, the two theaters Tiberian Sun shipped are registered in their original order, which is what every unmodified rules file gets. Where the section is present it is the whole roster, so it may drop `SNOW`, reorder the pair, or replace both — and a roster meaning to keep them has to write them out. Naming `TEMPERATE` or `SNOW` in the list does not create a second copy of it; the theater starts from its original settings and its own section overrides what it names.
+Where no rules file declares the section, the two theaters Tiberian Sun shipped are registered in their original order, which is what every unmodified rules file gets. Where the section is present it is the whole roster: it may drop `SNOW`, reorder the pair, or replace both. A roster that means to keep them has to write them out. Naming `TEMPERATE` or `SNOW` in the list does not create a second copy of that theater. It starts from the original settings, and its own section overrides what it names.
 
 ```ini title="rules.ini"
 [InfantryTypes]
@@ -54,6 +56,6 @@ Name=Example infantry
 Strength=100
 ```
 
-Projectiles have no registration section of their own. A projectile is created the first time a weapon's [`Projectile=`](/keys/projectile/) names it, then filled in from the section carrying its name on the same terms as above.
+Projectiles have no registration section of their own. A projectile is created the first time a weapon's [`Projectile=`](/keys/projectile/) names it, then filled in from the section matching its name on the same terms as above.
 
-A weapon `[Weapons]` leaves out is created the same way, the first time a [`Primary=`](/keys/primary/), [`Secondary=`](/keys/secondary/), [`Elite=`](/keys/elite/), [`WeaponType=`](/keys/weapontype/), [`DropPodWeapon=`](/keys/droppodweapon/) or [`AirburstWeapon=`](/keys/airburstweapon/) names it. Weapon sections are read in one pass over the weapons registered by then, and a projectile's `AirburstWeapon=` is read after that pass, so a weapon only that key names is created too late to read its own section and keeps the built-in defaults.
+A weapon `[Weapons]` leaves out is created the same way, the first time a key outside `[Weapons]` names it. The keys that can do this are [`Primary=`](/keys/primary/), [`Secondary=`](/keys/secondary/), [`Elite=`](/keys/elite/), [`WeaponType=`](/keys/weapontype/), [`DropPodWeapon=`](/keys/droppodweapon/) and [`AirburstWeapon=`](/keys/airburstweapon/). Weapon sections are read in one pass over the weapons registered by then. A projectile's `AirburstWeapon=` is read after that pass, so a weapon only that key names is created too late to read its own section and keeps the built-in defaults.

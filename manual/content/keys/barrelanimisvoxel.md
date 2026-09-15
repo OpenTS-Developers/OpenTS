@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-Set, the turret stays an animation and the barrel becomes a voxel model drawn over it. The model — [`VoxelBarrelFile`](/keys/voxelbarrelfile/), or a name derived from [`TurretAnim`](/keys/turretanim/) — is placed each frame by the four barrel pivot offsets and [`VoxelBarrelScale`](/keys/voxelbarrelscale/), turned to the building's facing and elevated to the barrel's pitch.
+Set, the turret stays an animation and the barrel becomes a voxel model drawn over it. The model, [`VoxelBarrelFile`](/keys/voxelbarrelfile/) or a name derived from [`TurretAnim`](/keys/turretanim/), is placed each frame by the four barrel pivot offsets and [`VoxelBarrelScale`](/keys/voxelbarrelscale/), turned to the building's facing and elevated to the barrel's pitch.
 
 ```ini title="rules.ini"
 [MYARTILLERY] ; a BuildingType registered in [BuildingTypes]
@@ -21,7 +21,7 @@ VoxelBarrelOffsetToPitchPivotPoint=15,0,-8
 VoxelBarrelOffsetToBarrelEnd=350,75,0
 ```
 
-The building draws that turret animation itself rather than leaving it to the layer, so the two keep their order as the gun swings: the barrel is drawn over the animation while the gun points anywhere from north-east round through south to south-west, and under it across the rest of the circle. The barrel is written into the depth buffer at a fixed bias of 15 pixels in front, whatever [`TurretAnimZAdjust`](/keys/turretanimzadjust/) says.
+The building draws that turret animation itself rather than leaving it to the layer, so the two keep their order as the gun swings. The barrel is drawn over the animation while the gun points anywhere from north-east round through south to south-west, and under it across the rest of the circle. The barrel is drawn at a fixed depth bias, whatever [`TurretAnimZAdjust`](/keys/turretanimzadjust/) says.
 
 Both the mounting and the muzzle move to the end of the barrel, which [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/) covers, in place of the firing offsets [`PrimaryFireFLH`](/keys/primaryfireflh/) supplies.
 

@@ -7,7 +7,7 @@ when_omitted:
   value: none
 ---
 
-The value names another section of the same file. That section carries one entry per action the soldier can perform, and each entry holds up to four fields: the first frame of the run, the number of frames in it, the number of frames from one facing to the next, and a compass point the soldier is turned to when an ordinary run ends.
+The value names another section of the same file. That section has one entry per action the soldier can perform. Each entry holds up to four fields: the first frame of the run, the number of frames in it, and the number of frames from one facing to the next. An optional fourth field is a compass point the soldier is turned to when an ordinary run ends.
 
 ```ini title="art.ini"
 [E1] ; the Image ID of the stock Light Infantry
@@ -21,13 +21,13 @@ Prone=86,1,6     ; the first frame of each crawl run
 Crawl=86,6,6
 ```
 
-The frame drawn is the run's first frame, plus the animation stage taken as a remainder against the frame count, plus the soldier's heading reduced to one of eight blocks times the per-facing jump. A jump of `0` leaves the run facing-independent, as the idle and death runs above are. A [`JumpJet=yes`](/keys/jumpjet/) soldier with a target uses the direction to that target in place of its own heading.
+The frame drawn is the run's first frame, plus the animation stage taken as a remainder against the frame count, plus the soldier's heading reduced to one of eight blocks times the per-facing jump. A jump of `0` leaves the run facing-independent, as the `Idle1` entry above is. A [`JumpJet=yes`](/keys/jumpjet/) soldier with a target uses the direction to that target in place of its own heading.
 
-An entry the named section does not carry leaves that action with a frame count of `0` — but only the first time a type builds its table, so a later rules layer naming a different section merges into the existing one and leaves the actions it omits at their old frames. An action whose frame count is `0` is never started at all — a soldier whose section omits `Idle1` simply never plays it.
+An entry the named section does not have leaves that action with a frame count of `0`. An action whose frame count is `0` is never started at all, so a soldier whose section omits `Idle1` simply never plays it.
 
 ## Entry names
 
-The table names every entry a sequence section may carry and the action each one drives. Not every name earns the frames cut for it, which is what the line below the table settles.
+The table names every entry a sequence section may have and the action each one drives. Not every name is one the engine ever starts, and the line below the table says which four.
 
 | Entry | Action |
 | --- | --- |
@@ -51,5 +51,5 @@ The table names every entry a sequence section may carry and the action each one
 Four of these are never started by anything: `Guard`, `Die3`, `Die4` and `Tumble`. Frames cut for them are never drawn.
 
 :::danger[An infantry type with no sequence brings the game down]
-Omitting the key leaves the type with no animation table at all, and the per-frame animation update reads that table without checking it, so the first update of any instance of such a type crashes. Naming a section the file does not carry is a different failure: every action is then left with a frame count of `0`, the soldier starts no action and stands on the first frame of its artwork, and that same update reads outside the table on every pass. A type registered only by being named elsewhere — the case [`Crew`](/keys/crew/) describes — has no section of its own and so falls into the first of these.
+Omitting the key leaves the type with no animation table at all, and the per-frame animation update reads that table without checking it, so the first update of any instance of such a type crashes. Naming a section the file does not contain is a different failure: every action is then left with a frame count of `0`, so the soldier starts no action and stands on the first frame of its artwork. A type registered only by being named elsewhere (the case [`Crew`](/keys/crew/) describes) has no section of its own and so falls into the first of these.
 :::

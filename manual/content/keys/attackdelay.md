@@ -1,6 +1,6 @@
 ---
 key: AttackDelay
-summary: Parsed multiplier on a house's first-attack countdown, which no decision consults.
+summary: Parsed multiplier on a house's first-attack countdown, which no decision reads.
 no_effect: true
 see_also: ["system:ai-team-production", AttackInterval, TeamDelays]
 when_omitted:

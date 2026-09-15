@@ -12,6 +12,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-Outside a campaign, an alliance with the player no longer reveals the ground around a
-passive house's objects. The alliance sweep revealed by hand and skipped the rule that such
-objects never look.
+Outside a campaign, an alliance with the player no longer reveals the ground around a passive house's objects. The alliance sweep that `AllyReveal` turns on revealed by hand and skipped the rule that such objects never look.

@@ -11,7 +11,7 @@ The flag does two unrelated things.
 
 In the draw, it cancels the depth bias that [`DrawFlat=no`](/keys/drawflat/) applies, putting the shape back on the ground while leaving the upright gradient it selected in place. On a `DrawFlat=yes` overlay there is no bias to cancel and the flag changes nothing about the draw.
 
-In the depth sorting of everything else, it moves objects standing on sloped ground forward. A vehicle or a soldier on a ramp looks at the cells to its south, east and south-east; if one of them holds an overlay carrying this flag, the object's depth is nudged forward so that it is drawn in front of the rock rather than buried in it.
+In the depth sorting of everything else, it moves objects standing on sloped ground forward. A vehicle or a soldier on a ramp looks at the cells to its south, east and south-east. If one of them holds an overlay with this flag, the object's depth is nudged forward so that it is drawn in front of the rock rather than buried in it.
 
 ```ini title="rules.ini"
 [MYBOULDER]      ; example rock overlay beside cliff ramps

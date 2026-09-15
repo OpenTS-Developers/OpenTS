@@ -217,6 +217,7 @@ void Test_File_Names(void)
 	DeploymentConfigClass config;
 
 	Check(config.RulesFile == "RULES.INI", "with no file the rules come from RULES.INI");
+	Check(config.MultiplayerRulesFile == "MPLAYER.INI", "and the multiplayer rules from MPLAYER.INI");
 	Check(config.SettingsFile == "SUN.INI", "and a player's settings from SUN.INI");
 
 	Write_File(Root + "\\OPENTS.INI", "[Paths]\nSearchPaths=Data\n");
@@ -226,6 +227,7 @@ void Test_File_Names(void)
 	Write_File(Root + "\\OPENTS.INI",
 			"[Files]\nRules=dtarules.ini\nArt=dtaart.ini\nAI=dtaai.ini\nSound=dtasound.ini\n"
 			"Theme=dtatheme.ini\nBattle=dtabattle.ini\nLanguageRules=dtalang.ini\n"
+			"MultiplayerRules=dtamplayer.ini\n"
 			"Tutorial=dtatutorial.ini\nUI=dtaui.ini\nSettings=Settings.ini\n");
 	config.Read_File("");
 	Check(config.RulesFile == "dtarules.ini", "a name it writes for the rules is taken");
@@ -235,6 +237,7 @@ void Test_File_Names(void)
 	Check(config.ThemeFile == "dtatheme.ini", "and for the music");
 	Check(config.BattleFile == "dtabattle.ini", "and for the campaigns");
 	Check(config.LanguageRulesFile == "dtalang.ini", "and for the translated rules");
+	Check(config.MultiplayerRulesFile == "dtamplayer.ini", "and for the multiplayer rules");
 	Check(config.TutorialFile == "dtatutorial.ini", "and for the tutorial text");
 	Check(config.UIFile == "dtaui.ini", "and for the interface");
 	Check(config.SettingsFile == "Settings.ini", "and for a player's settings");
@@ -252,11 +255,12 @@ void Test_Expansion_File_Names(void)
 	DeploymentConfigClass config;
 
 	Check(config.RulesExpansionFile == "FIRESTRM.INI", "with no file the expansion rules are FIRESTRM.INI");
+	Check(config.MultiplayerRulesExpansionFile == "MPLAYERFS.INI", "and the expansion multiplayer rules are MPLAYERFS.INI");
 
 	Write_File(Root + "\\OPENTS.INI",
 			"[Files]\nRulesExpansion=fsrules.ini\nArtExpansion=fsart.ini\nAIExpansion=fsai.ini\n"
 			"SoundExpansion=fssound.ini\nThemeExpansion=fstheme.ini\nBattleExpansion=fsbattle.ini\n"
-			"LanguageRulesExpansion=fslang.ini\n");
+			"LanguageRulesExpansion=fslang.ini\nMultiplayerRulesExpansion=fsmplayer.ini\n");
 	config.Read_File("");
 	Check(config.RulesExpansionFile == "fsrules.ini", "a name it writes for the expansion rules is taken");
 	Check(config.ArtExpansionFile == "fsart.ini", "and for the expansion artwork");
@@ -265,6 +269,7 @@ void Test_Expansion_File_Names(void)
 	Check(config.ThemeExpansionFile == "fstheme.ini", "and for the expansion music");
 	Check(config.BattleExpansionFile == "fsbattle.ini", "and for the expansion campaigns");
 	Check(config.LanguageRulesExpansionFile == "fslang.ini", "and for the translated expansion rules");
+	Check(config.MultiplayerRulesExpansionFile == "fsmplayer.ini", "and for the expansion multiplayer rules");
 	Check(config.RulesFile == "RULES.INI", "while the base files stand where it names none of them");
 
 	Remove_File(Root + "\\OPENTS.INI");

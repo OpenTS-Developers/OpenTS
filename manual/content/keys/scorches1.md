@@ -8,4 +8,4 @@ when_omitted:
   value: ""
 ---
 
-One of the five scorch lists the section carries, each stored in its own place and none of them read. [`Scorches`](/keys/scorches/) covers what actually decides which mark a blast leaves.
+One of the five scorch lists the section sets, each stored in its own place and none of them read. [`Scorches`](/keys/scorches/) covers what actually decides which mark a blast leaves.

@@ -14,4 +14,4 @@ targets:
 credit: [ZivDero]
 ---
 
-`-CD<path>` no longer adds a local file-search path; an argument beginning with it is ignored like any other the game does not recognize. The semicolon-separated list it accepted and the upper-casing its path could not escape go with it, so every directory option now keeps the case it was written in.
+`-CD<path>` no longer adds a local file-search path. An argument beginning with it is ignored like any other the game does not recognize, and the semicolon-separated list it took is gone with it. The path it named was upper-cased, and the remaining directory options now keep the case they were written in.

@@ -6,4 +6,4 @@ targets: []
 credit: [ZivDero, tomsons26]
 ---
 
-An object sitting in ambush now breaks cover and hunts once it is discovered. The test asked whether the house doing the discovering was computer controlled rather than whether the ambusher's own house was, so an ambusher found by a human player stayed put and never attacked.
+An object sitting in ambush now hunts once it is discovered. The old test asked whether the house doing the discovering was computer-controlled, not whether the ambusher's own house was. An ambusher found by a human player therefore stayed put and never attacked.

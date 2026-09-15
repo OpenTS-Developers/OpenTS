@@ -17,12 +17,12 @@ A passive country's houses run no computer AI at all, in any kind of game. Neith
 Everything else the flag does is confined to skirmish and multiplayer games, where a passive house is treated as scenery rather than as an opponent.
 
 - It is exempt from the defeat check that removes a player who has run out of objects, and its defeat is not announced.
-- It is not counted among the players still alive, nor in the test for whether everyone left is allied — except in a skirmish game, where that second exclusion is dropped.
+- It is not counted among the players still alive. The test for whether everyone left is allied skips it too, except in a skirmish game, where it is counted.
 - A computer house never picks it as an enemy, and it never picks one of its own.
-- Its objects are rejected outright by automatic target scans, and they never open a crate they drive over.
+- Automatic target scans reject its objects unless the [launch file](/formats/spawn-ini/) sets `AttackNeutralUnits=`, and they never open a crate they drive over.
 - Its objects do not reveal the map, and its buildings are never marked for automatic repair.
 - It is skipped by the score screen and by the starting-unit generator.
 
 An [observer's](/systems/observers/) house is left out of the same counts, lists and scores without being passive: it plays a country chosen at random and simply starts defeated.
 
-Setup also rewrites two things on its behalf. [`WallOwner`](/keys/wallowner/) is forced off on every passive country and on for every other one, and every house in the game is allied to the house of the country named `Special`.
+Setup also rewrites two things on its behalf. [`WallOwner`](/keys/wallowner/) is forced off on every passive country and on for every other one. The visible result is that a wall arriving with the map falls to the nearest base that is not passive. The walls around a player's or a computer's base can be sold and can anchor [the automatic wall fill](/systems/walls-and-gates/#filling-the-gap-to-the-next-wall); walls with only passive scenery nearby stay unowned. Setup then allies every house in the game to the house of the country named `Special`, a passive country the shipped rules contain. That lookup is by name and never checked, so a rules file without a country named `Special` stops the match during setup.

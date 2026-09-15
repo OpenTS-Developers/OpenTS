@@ -7,4 +7,4 @@ when_omitted:
   value: "yes"
 ---
 
-With the rule off, [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/) is never read and a house may spring an offensive trigger while holding no defensive team at all. The rule is not the only path to that restriction: a house with no enemy is [held to defensive triggers](/systems/ai-team-production/#defensive-teams-and-the-enemy) whatever this value says.
+A defensive team is one whose type sets [`IsBaseDefense=yes`](/keys/isbasedefense/). With the rule off, [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/) is never read, and a house may spring an offensive trigger while holding none of them. The rule is not the only path to that restriction: a house with no enemy is [held to defensive triggers](/systems/ai-team-production/#defensive-teams-and-the-enemy) whatever this value says.

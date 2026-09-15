@@ -28,6 +28,13 @@ condition. Replace vague words such as "safe," "normal," "available," and
 "works" with the exact condition or result. Avoid marketing, personification,
 and editorial status.
 
+Name an operation with the word the engine and the page already use for it.
+Mounting, caching, loading, reading, and writing are distinct operations, and a
+verb chosen for tone in place of one of them hides which one ran. Reuse an
+established verb's grammar as well as the verb: "answers for a name" does not
+license a bare "answers." Where no engine term applies, a plain "is" beats an
+elevated substitute.
+
 Describe the engine and its inputs, not how the manual was produced. Do not
 label public material as generated, extracted, authored, or contract-backed.
 The site may carry one brief notice about AI assistance and possible errors;
@@ -64,6 +71,19 @@ path; do not copy wording from a nearby page or make a global replacement.
 | Score | Points. Use "music" or "music track" for the other sense. |
 | Under way | A team has started. Use "moving" for motion. |
 | Converter, drawer | Do not use these C++ names as reader terms. Name the cell tint table, terrain tile renderer, or shape renderer meant by the code. For example, describe a cell's tint table as "the same tinted terrain palette as the ground beneath it." |
+
+### The key test for a reader term
+
+The bans above are instances of a general test. Before using an engine word in prose, ask whether
+an INI key a modder types carries it.
+
+"Door" passes for a structure: `DoorAnim`, `DoorStages` and `UnderDoorAnim` are art.ini keys, so a
+factory door is the reader's own word. It fails for a vehicle, where no key names one and the word
+is really a shared internal timer covering gates, factories, aircraft and vehicles alike. Where a
+mechanism needs a name and no key carries one, use a plain word the page defines.
+
+Apply the test to `Converter`, `drawer`, `Delay`, `Fuse`, `Flasher` and `Cargo` the same way: each
+is an engine helper whose name is a reader term only where a key uses it.
 
 ### Map regions
 
@@ -121,6 +141,18 @@ Use a structured list for a condition with three or more terms or any nesting.
 Label groups "All of," "Any of," or "None of," indent their terms, and keep the
 engine's test order.
 
+### Locatable is not writable
+
+A page can name exactly the right key, in the right file, in the right section, and still leave
+the reader unable to write it. Where a page names a key the reader sets, it states the accepted
+values, the file and section, and what the key does when absent — or links the page that renders
+them. Naming the key alone is not enough.
+
+The two halves belong to different owners. Values and defaults live on the key page, which renders
+them from structured fields. Prose states what the key does, including which direction a value
+moves the behavior, which no rendered field says. Do not copy the values into prose to save the
+reader a click; link them instead.
+
 ## Examples
 
 Use the smallest concrete input that clarifies a non-obvious syntax, scope,
@@ -145,6 +177,27 @@ Adjacent=5
 An example shows input shape; it does not prove that a runtime result was
 observed. Examples must not require proprietary assets or original executables
 to understand.
+
+### Composition is not restatement
+
+A page documenting several settings that are written together — a system rather than a single
+key — may show them in one fence beside each other:
+
+```ini title="rules.ini"
+[GAPOWR]
+BaseNormal=no  ; this structure cannot anchor later placements
+Adjacent=5     ; how far a pending structure of this type searches for one
+```
+
+No key page can show this, because each owns one key and its rendered specification block names
+only its own file, section and type. The fence is the composition.
+
+It is not a place to repeat what those key pages render. Leave out accepted values, defaults,
+omission records, and any per-key list of files or sections; link the key instead. `Keep one
+source of truth` below still governs.
+
+Without such a fence, a reader finishes a page about a system holding a settings table and no
+way to write the file. That is the failure this section exists to prevent.
 
 ## Markdown vocabulary
 

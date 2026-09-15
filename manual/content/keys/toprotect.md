@@ -15,5 +15,5 @@ ToProtect=yes
 ```
 
 :::caution[The call goes out only on ordinary damage]
-The result of the hit decides which branch of the damage routine runs, and this one is reached only when the hit changed none of the object's damage states. A protected infantry, vehicle or aircraft stays silent on the hit that takes it below half strength, on the hit that takes it into condition red, and on the killing blow — the states worth calling for help about are the ones that never reach it. A structure is not affected: it calls for help on every hit from an attacking object regardless of result.
+The result of the hit decides which branch of the damage routine runs, and this one is reached only when the hit changed none of the object's damage states. A protected infantry, vehicle or aircraft stays silent on the hit that takes it below half strength, on the hit that takes it into condition red, and on the killing blow. Those are the states worth calling for help about, and none of them reaches this branch. A structure is not affected: it calls for help on every hit from an attacking object regardless of result.
 :::

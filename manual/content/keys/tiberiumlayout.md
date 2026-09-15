@@ -3,8 +3,9 @@ key: TiberiumLayout
 summary: How many tiberium fields a generated map is given, as a figure from 0 to 100.
 see_also: [Tiberium, TiberiumWildlife, UseBlueTiberium, NumPlayers]
 when_omitted:
-  kind: unchanged
-  note: The read passes the current setting through, and the generator's settings outlive one map, so an omitted assignment keeps whatever the last map built in this session left behind.
+  kind: value
+  value: "0"
+  note: Three fields spread across the map, on top of the field each player start point gets.
 ---
 
 The field sites and the player start points are chosen together, from one spread of widely separated cells: the start points are taken off the front of that spread and the tiberium fields are what remains. The figure adds one site per ten points, so `0` leaves three fields, `50` leaves eight and `100` leaves thirteen. Only every tenth point changes anything. [Map seed files](/formats/map-seed/) covers the section it is written in.

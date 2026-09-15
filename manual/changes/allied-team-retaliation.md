@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-An AI team that is under way now keeps its target and its members' orders when an allied object damages a member. Damage from a non-allied object can still turn the team onto the attacker, while a stopped team still enters its existing reforming state after any nonzero damage.
+An AI team that is under way now keeps its target and its members' orders when an allied object damages a member. Damage from a non-allied object can still turn the team onto the attacker. A team that has not started still enters its reforming state after any nonzero damage, whoever dealt it.

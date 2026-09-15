@@ -9,6 +9,6 @@ when_omitted:
   value: none
 ---
 
-The sound is played by a crusher as it flattens its victim, and only after that victim has passed a [`Crushable`](/keys/crushable/#scope-animtype) test that an animation can never reach — an animation is never entered into a cell's occupier list, which is where every crush path looks for something to run over. No gameplay path reads the sound.
+The sound is played by a crusher as it flattens its victim, and only after that victim has passed a [`Crushable`](/keys/crushable/#scope-animtype) test that an animation can never reach. Every crush path looks for its victim among a cell's occupiers or at the cell's overlay, and an animation is neither. No gameplay path reads the sound.
 
-An animation's own sound is [`Report`](/keys/report/#scope-animtype), read from the same `art.ini` section.
+An animation's own sound is [`Report`](/keys/report/#scope-animtype), read from the same `art.ini` section. A `CrushSound=` value names a sound ID registered in [SOUND.INI](/formats/sound-ini/).

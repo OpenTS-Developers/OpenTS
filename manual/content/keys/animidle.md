@@ -15,9 +15,9 @@ AnimIdle=0,2,8   ; two frames, eight game frames each
 AnimActive=2,5,4 ; the door opening
 ```
 
-This is the sequence a structure runs whenever nothing else has taken it over. Each time it runs past its last frame, and each time a structure that has already been running something else drops back into it, its delay is adjusted for the selected game speed; the working and auxiliary sequences are used as written. A structure placed on the map has no earlier state to drop back from, so its first idle cycle runs at the delay written in the art entry unless the type sets [`Normalized=yes`](/keys/normalized/), and corrects itself on the first wrap.
+This is the sequence a structure runs whenever nothing else has taken it over. Each time the sequence runs past its last frame, its delay is adjusted for the selected game speed. The same adjustment applies each time a structure that has already been running something else drops back into it. The working and auxiliary sequences are used as written. A structure placed on the map has no earlier state to drop back from, so its first idle cycle runs at the delay written in the art entry unless the type sets [`Normalized=yes`](/keys/normalized/). It corrects itself on the first wrap.
 
-The four sequences together fix where the damaged artwork begins. A damaged structure running this sequence draws one frame further along; a damaged structure running any of the other three is offset by the largest end any of the four reaches, so the damaged block has to start after all of them.
+The four sequences together fix where the damaged artwork begins. A damaged structure running this sequence draws one frame further along. A damaged structure running any of the other three is offset by the largest end any of the four reaches, so the damaged block has to start after all of them.
 
 :::caution[A value with fewer than three numbers leaves the rest as they were]
 The three numbers are taken in order and only as many as the value supplies are stored. `AnimIdle=5` sets the first frame and leaves the frame count and delay at whatever they already held, which for a type that sets nothing else is one frame at no delay.

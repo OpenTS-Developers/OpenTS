@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A segment is never built or paid for. A [`LaserFencePost=yes`](/keys/laserfencepost/) structure creates one segment per cell along a [run it lays toward another post](/systems/laser-fences/#laying-the-run), switches the whole run between its live and slack shapes, and deletes or destroys it again. Only the first declared BuildingType carrying this flag is ever selected when a post lays a run; a second one is never created that way.
+A segment is never built or paid for. A [`LaserFencePost=yes`](/keys/laserfencepost/) structure creates one segment per cell along a [run it lays toward another post](/systems/laser-fences/#laying-the-run), switches the whole run between its live and slack shapes, and deletes or destroys it again. Only the first declared BuildingType with this flag is ever selected when a post lays a run; a second one is never created that way.
 
 The flag also changes what the type may stand on and what may stand on it. A segment needs a cell holding no building and no terrain object. Tiberium or veins in that cell, which would otherwise refuse the placement, are allowed under **All of:**
 

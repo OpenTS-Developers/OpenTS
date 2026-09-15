@@ -12,13 +12,13 @@ related:
     id: spawn-ini
 ---
 
-A skirmish or network match ends at this screen rather than at the campaign one. It appears once the match is decided, to the winner and the loser alike, and the match is over when the player dismisses it: a game the menu started returns to the menu, and one [a client launched](/formats/spawn-ini/) exits. A recorded game being played back never reaches it.
+A skirmish or network match ends at this screen rather than at the campaign one. It appears once the match is decided, to the winner and the loser alike, and the match is over when the player dismisses it. A game the menu started returns to the menu, and one [a client launched](/formats/spawn-ini/) exits. A recorded game being played back never reaches it.
 
 ## Who is listed
 
 One row per house that played. A house whose country is [`MultiplayPassive`](/keys/multiplaypassive/) is left out, and so is an [observer](/systems/observers/). A defeated player keeps its row, so a match of four ends with four rows however it went. Computer players are listed like anyone else, under the name the match gave them.
 
-Rows are ranked by rounds won and then by the round's score, so the winner heads the list. Each row is tinted with the house's own color, and two houses sharing a color are drawn alike.
+Rows are ranked by whether the house was left undefeated, and then by the number in its Score column, so the winner heads the list. Each row is tinted with the house's own color, and two houses sharing a color are drawn alike.
 
 ## What each column holds
 
@@ -29,10 +29,10 @@ Rows are ranked by rounds won and then by the round's score, so the winner heads
 | Economy | What the house spent, as a percentage of what the house that spent most spent. The biggest spender reads 100. |
 | Score | The points the house earned, and for a house left undefeated a bonus of half its opponents' average points, or 100, whichever is larger. |
 
-The three bar columns grow together and the score counts up at the end; every figure finishes at its exact value. A score that would rank below the row beneath it is raised above it before the columns are drawn, so the score column always descends.
+The three bar columns, Losses, Kills and Economy, grow together, and the score counts up at the end; every figure finishes at its exact value. A score that would rank below the row beneath it is raised above it before the columns are drawn, so the score column always descends.
 
-The four tallies come from the counts each house keeps for the whole match, and a [saved game](/formats/save-games/) carries all four, so a resumed match is scored on the whole of it rather than on the part played since the load.
+The four tallies come from the counts each house keeps for the whole match, and a [saved game](/formats/save-games/) holds all four. A resumed match is therefore scored on the whole of it rather than on the part played since the load.
 
 ## Passing over the screen
 
-A client that keeps its own record of a match writes [`SkipScoreScreen=yes`](/formats/spawn-ini/#what-a-player-is-shown), and the match then ends without the screen: the round is still counted, and an ending movie [the file asked for](/formats/spawn-ini/) still plays. The map's [`SkipScore`](/keys/skipscore/) is a campaign setting and does not reach this screen.
+A client that keeps its own record of a match writes [`SkipScoreScreen=yes`](/formats/spawn-ini/#what-a-player-is-shown), and the match then ends without the screen. The round is still counted, and an ending movie [the file asked for](/formats/spawn-ini/) still plays. The map's [`SkipScore`](/keys/skipscore/) is a campaign setting and does not reach this screen.

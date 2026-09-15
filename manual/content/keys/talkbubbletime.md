@@ -6,6 +6,11 @@ when_omitted:
   value: "5"
 ---
 
-The figure is written in seconds, with fractions accepted, and multiplied by 60 as it is stored. The countdown it fills runs on the system clock rather than on game frames, and that clock advances 62.5 times a second, so a bubble is shown for slightly less time than the number written: `5` becomes 300 ticks, which run out after 4.8 seconds.
+The figure is written in seconds, with fractions accepted, and multiplied by 60 as it is stored. The countdown it fills runs on the system clock rather than on game frames, and that clock advances 62.5 times a second. A bubble is therefore shown for slightly less time than the number written: `5` becomes 300 ticks, which run out after 4.8 seconds.
 
-A bubble is placed by the [Talk Bubble...](/mapping/actions/taction-talk-bubble/) trigger action and the [Talk Bubble](/mapping/missions/tmission-talk-bubble/) team mission, both of which also reveal two cells of ground around the speaker so the player can see who is talking. Only one bubble exists at a time, and the trigger action clears it outright when no team is attached to the trigger. Nothing but the drawing of the bubble consults the countdown, so a bubble that runs out simply stops being drawn.
+```ini title="rules.ini"
+[General]
+TalkBubbleTime=8  ; a bubble stays up for about 7.7 seconds
+```
+
+A bubble is placed by the [Talk Bubble](/mapping/missions/tmission-talk-bubble/) team mission. Placing one also reveals two cells of ground around the speaker, so the player can see who is talking. Only one bubble exists at a time, so placing a second takes the first away. The [Talk Bubble...](/mapping/actions/taction-talk-bubble/) trigger action takes a bubble down rather than putting one up. Nothing but the drawing of the bubble reads the countdown, so a bubble that runs out stops being drawn.

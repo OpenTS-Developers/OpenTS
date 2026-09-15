@@ -7,7 +7,7 @@ when_omitted:
   value: "0.0"
 ---
 
-A particle of the trace starts out traveling directly away from the beam, along the same line that placed it. Each of the three axes of that course is then deflected independently by an amount running from half this figure one way to half the other, and the result is normalized back to a direction — so the figure is measured against a course of unit length, and `.3` bends by up to fifteen hundredths of it on each axis. Only the `Railgun` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it.
+A particle of the trace starts out traveling directly away from the beam, along the same line that placed it. Each of the three axes of that course is then deflected independently by an amount running from half this figure one way to half the other. The result is normalized back to a direction. The figure is therefore measured against a course of unit length: `.3` bends by up to fifteen hundredths of it on each axis. Only the `Railgun` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it.
 
 ```ini title="rules.ini"
 [MyRailgunSys] ; a ParticleSystemType registered in [ParticleSystems]

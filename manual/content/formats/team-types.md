@@ -18,7 +18,7 @@ source_files:
   - code/scenario.cpp
 ---
 
-`[TeamTypes]` values name the TeamType sections to load. The keys in each section select its owner, TaskForce, Script, origin waypoint, recruitment rules, and behavior flags.
+`[TeamTypes]` values name the TeamType sections to load, and the number to the left of each line is only that line's name. The keys in each section select its owner, TaskForce, Script, origin waypoint, recruitment rules, and behavior flags.
 
 OpenTS loads `AI.INI`, then `AIFS.INI` when Firestorm is enabled, then the map-local definitions.
 

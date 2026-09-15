@@ -8,4 +8,4 @@ when_omitted:
   note: No tile set is bound to the role.
 ---
 
-Only the [random map generator](/formats/map-seed/) reads this role. It lays a cap counted from it wherever a road it has built stops, choosing the piece by the facing the road runs out in, and its two placement tests treat a cap already on the ground differently from road: a cap may be built over only when the caller allows it, and a cap needs every cell of its footprint at one height, so it will not straddle a slope. Unlike a road piece, a cap is not pavement for the purposes of the pavement blend.
+Only the [random map generator](/formats/map-seed/) reads this role. It lays a cap counted from it wherever a road it has built stops, choosing the piece by the facing the road runs out in. Its two placement tests treat a cap already on the ground differently from road. A cap may be built over only when the caller allows it, and it needs every cell of its footprint at one height, so it will not straddle a slope. Unlike a road piece, a cap is not pavement for the purposes of the pavement blend.

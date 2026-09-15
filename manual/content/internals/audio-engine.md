@@ -1,6 +1,6 @@
 ---
 title: Audio engine
-summary: A fixed pool of voices rendered on the device thread, fed by a lock-free command ring from the game thread and by a feeder thread that fills streams and recovers a lost device.
+summary: A fixed voice pool rendered on the device thread and fed by the game and feeder threads.
 category: architecture
 source_files:
   - code/audio/audiodefs.hh
@@ -26,13 +26,13 @@ The engine lives under `code/audio/` and is owned by one global, `AudioEngine`. 
 
 ## Layers
 
-The device layer is an interface with one implementation over miniaudio, which OpenTS vendors for the device, the resampler and the WAV, OGG, FLAC and MP3 decoders only; no miniaudio engine or node graph is used, so another library could stand in behind the same interface. The device is opened as 48 kHz stereo float with three periods of 10 ms, whatever the hardware's own rate, so a reroute to another device cannot change the mixer's rate.
+The device layer is an interface. The engine's implementation wraps miniaudio, which OpenTS vendors for the device, the resampler and the WAV, OGG, FLAC and MP3 decoders only. No miniaudio engine or node graph is used, so another library could stand in behind the same interface. The device is opened as 48 kHz stereo float with three periods of 10 ms, whatever the hardware's own rate, so a reroute to another device cannot change the mixer's rate.
 
-The mixer holds sixty-four voices. Each voice plays either a sequence of decoded clips, attack, body loop and decay, or a stream ring, resampling from the source rate and pitch to 48 kHz, applying ramped voice, group, duck and master levels through one perceptual loudness curve, and summing into the bus, which is soft-clipped above 0.9. Every change reaches the mixer as a command in a single-producer, single-consumer ring; a command names a voice by slot and generation, so a late command for a voice that has since been reused is dropped. Voice states move from allocated through playing, paused and stopping to done, and the game thread reclaims a voice only after it is done.
+The mixer holds sixty-four voices. Each voice plays either a sequence of decoded clips (attack, body loop and decay) or a stream ring. It resamples from the source rate and pitch to 48 kHz and applies ramped voice, group, duck and master levels through one perceptual loudness curve. Voices sum into the bus, which is soft-clipped above 0.9. Every change is sent to the mixer as a command in a single-producer, single-consumer ring. A command names a voice by slot and generation, so the mixer drops one aimed at a voice that has since been reused. A push into a full ring fails and the change is lost. Voice states move from allocated through playing, paused and stopping to done, and the game thread reclaims a voice only after it is done.
 
-The sample cache keeps decoded PCM keyed by name or by the address and hash of an in-memory AUD, pinned while any event uses it and evicted least-recently-used within sixty-four megabytes; a single sample is capped at eight megabytes.
+The sample cache keeps decoded PCM keyed by name or by the address and hash of an in-memory AUD. A pinned entry stays while any event uses it; an unpinned one is evicted least-recently-used until the cache is back under sixty-four megabytes. Pinned entries alone can hold it above that. A single sample is capped at eight megabytes.
 
-Streams are rings the mixer reads and a producer writes. File streams decode an AUD chunk at a time, or any other format through miniaudio, on the feeder thread, five seconds ahead; the movie player pushes its PCM blocks into a ring of its own and reads the frames the mixer has consumed back as its clock. The feeder runs a plain periodic loop every 16 ms: it fills every attached stream, and while the device reports itself stopped it renders the mixer into the void at wall-clock rate, so voices finish and the movie clock keeps moving, retries the device every two seconds, and reopens it after ten.
+Streams are rings the mixer reads and a producer writes. File streams decode an AUD chunk at a time, or any other format through miniaudio, on the feeder thread, five seconds ahead of the mixer; the first block is decoded at open on the game thread. The movie player pushes its PCM blocks into a stream ring of its own and reads the frames the mixer has consumed back as its clock. The feeder runs a plain loop every 16 ms and fills every attached stream. While the device reports itself stopped, it renders the mixer into a scratch buffer at wall-clock rate, so voices finish and the movie clock keeps moving. It retries the device every two seconds, and reopens it ten seconds after the loss.
 
 The event pool turns a sound type into a sequence and hands it to a voice. It enforces each type's `Limit=`, keeps the effects budget of `Channels=` voices with priority stealing, drives delayed loops one cycle at a time, and answers the four-byte generational handles the game holds. Streams and raw in-memory samples are events too, so one handle type covers everything the game controls.
 
@@ -42,4 +42,4 @@ The event pool turns a sound type into a sequence and hands it to a voice. It en
 
 ## Invariants
 
-The mixer writes voice state; the game reads it. A sequence is written by the game before the play command and never changed while the voice runs it. A stream ring is written by one thread and read by one thread. The random draws for pitch and loudness come from the non-critical generator, so audio never touches the simulation's random sequence. Every engine member is a no-op when no device could be opened.
+The mixer writes a voice's playback state; the game allocates and frees the voice and reads that state. A sequence is written by the game before the play command and never changed while the voice runs it. A stream ring is written by one thread and read by one thread. The random draws for pitch and loudness come from the non-critical generator, so audio never touches the simulation's random sequence. Every engine member is a no-op when no device could be opened. A group or master gain is the exception: it is recorded and applied if a device opens later.

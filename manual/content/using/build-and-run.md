@@ -16,7 +16,7 @@ related:
 
 Install Visual Studio 2022 with the **Desktop development with C++** workload, a Windows SDK, CMake 3.23 or newer, and Git for Windows. The repository's `docs/BUILDING.md` covers toolchain details and options.
 
-The renderer is a vendored dependency, so a clone that did not fetch submodules has to fetch them before configuring. Configuration stops with instructions if they are missing.
+The renderer and the audio layer are vendored dependencies, so a clone that did not fetch submodules has to fetch them before configuring. Configuration stops with instructions if a submodule is missing.
 
 ```powershell title="PowerShell"
 git submodule update --init --recursive
@@ -31,7 +31,9 @@ The Debug build writes `GameD.exe`, its symbols, map file, and the matching `Lan
 Supply the required game data in `Run/`, then launch the built executable and name that data directory:
 
 ```powershell title="PowerShell"
-.\build\bin\Debug\GameD.exe -DATADIR=Run
+.\build\bin\Debug\GameD.exe -DATADIR="$PWD\Run"
 ```
 
-The engine reads every string and dialog it displays from `Language.dll`, and loads it from the directory holding the executable. The freshly built copy is therefore the one that runs, and a localized or edited library sitting in the game data directory is not read.
+The game changes to the directory holding the executable before it reads the command line. A relative `-DATADIR` path is resolved from that directory, not from the one the command runs in.
+
+The engine reads its strings and dialogs from `Language.dll`, and loads it from the directory holding the executable. The freshly built copy is therefore the one that runs, and a localized or edited library sitting in the game data directory is not read.

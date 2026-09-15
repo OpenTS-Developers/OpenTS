@@ -8,7 +8,7 @@ when_omitted:
   note: An AircraftType stores no instead, because the aircraft type overwrites the shared default before any rules file is read.
 ---
 
-An order onto a shrouded cell is refused outright at `no`. At `yes` it is accepted, but only while the cell also lies inside the playable area, and every order but a patrol waypoint is reduced to a plain move — an attack click onto shrouded ground sends the object there rather than making it fire.
+An order onto a shrouded cell is refused outright at `no`. At `yes` it is accepted, but only while the cell also lies inside the playable area. Every order but a patrol waypoint is reduced to a plain move: an attack click onto shrouded ground sends the object there rather than making it fire.
 
 The same refusal covers an order onto a shrouded object, and that second test runs only in a campaign.
 

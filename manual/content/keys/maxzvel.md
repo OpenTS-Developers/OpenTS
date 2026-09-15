@@ -7,7 +7,7 @@ when_omitted:
   value: "5"
 ---
 
-Leptons per frame: 256 leptons to a cell, 15 frames to the second. The vertical launch speed is [`MinZVel`](/keys/minzvel/#scope-voxelanimtype) plus a whole number of leptons drawn from the truncated span between the two settings, so the speeds available are the minimum and whole steps above it, and this figure is itself reached only where it stands a whole number of leptons above the minimum. A minimum of `3.5` against a maximum of `5` truncates to a span of two and offers exactly `3.5` and `4.5`.
+Leptons per frame: 256 leptons to a cell, 15 frames to the second. The vertical launch speed is [`MinZVel`](/keys/minzvel/#scope-voxelanimtype) plus a whole number of leptons drawn from the truncated span between the two settings. The speeds available are the minimum and whole steps above it, and this figure is itself reached only where it stands a whole number of leptons above the minimum. A minimum of `3.5` against a maximum of `5` truncates to a span of two and offers exactly `3.5` and `4.5`.
 
 A meteor ignores the setting entirely: its vertical speed is the minimum, exactly.
 

@@ -17,6 +17,6 @@ Land=Clear
 NoUseTileLandType=no    ; the tile underneath keeps deciding
 ```
 
-Stopping early does more than fix the land type. The whole tile-driven half of the recalculation is skipped for as long as the overlay is on the cell, so the cell does not re-blend against its neighbors, does not attach the animation its tile set names, and does not mark the cells its tile overshadows. Only the cell's ramp is still taken from the tile.
+Stopping early does more than fix the land type. The whole tile-driven half of the recalculation is skipped for as long as the overlay is on the cell. The cell does not re-blend against its neighbors, does not attach the animation its tile set names, and does not mark the cells its tile overshadows. Only the cell's ramp is still taken from the tile. Lighting is not part of that half at all: a cell's light comes from light sources and the scenario's ambient level through a separate recalculation, so an overlay with this flag never darkens or extinguishes a lit tile.
 
 Turning the flag off does not always hand the decision to the tile. [`Land`](/keys/land/) covers the case of a `Clear` overlay standing on a cell where Tiberium is growing, which reports `Tiberium` rather than either.

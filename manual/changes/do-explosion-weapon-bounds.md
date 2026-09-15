@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero]
 ---
 
-Do Explosion At now detonates nothing when the position it names is at or beyond the end of the weapon list. The position went unchecked before, so the action read past the list.
+Do Explosion At now detonates nothing when the weapon it names is not in the weapon list. The index went unchecked before, so the action read past the list.

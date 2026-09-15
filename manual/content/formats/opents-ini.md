@@ -1,7 +1,7 @@
 ---
 format_id: opents-ini
 title: OPENTS.INI
-summary: Names the folders a deployment keeps its game files sorted into, the files it reads them from, and what its saves carry.
+summary: Names the folders a deployment keeps its game files sorted into, the files it reads them from, and what its saves hold.
 kind: file
 source_files:
   - code/deploymentconfig.cpp
@@ -27,9 +27,9 @@ SearchPaths=INI,MIX,Maps,Addons
 
 `SearchPaths` names folders separated by commas, which the game searches in the order written. The whitespace around a name is dropped, a trailing separator is supplied if the name lacks one, and a folder named twice is searched once. Commas separate the entries because a semicolon opens a comment on the line it appears in.
 
-Without the file, and without the key, the game behaves as though `SearchPaths=INI,MIX,Maps` were written: a distribution can sort its files into `INI`, `MIX` and `Maps` folders and ship no configuration at all. A written list **replaces** that default rather than adding to it, so a deployment that wants the default folders as well as its own names them again.
+Without the file, and without the key, the game behaves as though `SearchPaths=INI,MIX,Maps` were written: a distribution can sort its files into `INI`, `MIX` and `Maps` folders and ship no configuration at all. A written list replaces that default rather than adding to it, so a deployment that wants the default folders as well as its own names them again.
 
-The game's own directory is examined before any listed folder, so naming it adds nothing. Naming only it, as `SearchPaths=.`, is how a deployment asks for no other folder to be searched. An empty `SearchPaths=` does not do this: the file reader passes over an entry with nothing after the equals sign, leaving the default in force.
+The game's own directory is examined before any listed folder, so naming it adds nothing. An entry naming it, such as `SearchPaths=.`, is passed over, which makes that a way to ask for no other folder to be searched. An empty `SearchPaths=` does not do this: the file reader passes over an entry with nothing after the equals sign, leaving the default in force.
 
 ## The files it reads
 
@@ -49,18 +49,20 @@ Battle=BATTLE.INI
 BattleExpansion=BATTLEFS.INI
 LanguageRules=LANGRULE.INI
 LanguageRulesExpansion=LANGFS.INI
+MultiplayerRules=MPLAYER.INI
+MultiplayerRulesExpansion=MPLAYERFS.INI
 Tutorial=TUTORIAL.INI
 UI=UI.INI
 Settings=SUN.INI
 ```
 
-Each key names one file, and an unwritten key keeps the name above. `Rules` names the rules, `Art` the artwork, `AI` the computer player's data, `Sound` the [sound registry](/formats/sound-ini/), `Theme` the [music registry](/formats/theme-ini/), `Battle` the campaign list, `LanguageRules` the translated rules read over the rest, `Tutorial` the [numbered text lines](/formats/tutorial-ini/), `UI` the [interface settings](/formats/ui-ini/), and `Settings` the file a player's own options are written back to.
+Each key names one file, and an unwritten key keeps the name above. `Rules` names the rules, `Art` the artwork, `AI` the computer player's data, `Sound` the [sound registry](/formats/sound-ini/), and `Theme` the [music registry](/formats/theme-ini/). `Battle` names the campaign list, `LanguageRules` the translated rules read over the rest, and `MultiplayerRules` the [rules read only outside a campaign](/formats/multiplayer-rules/). `Tutorial` names the [numbered text lines](/formats/tutorial-ini/), `UI` the [interface settings](/formats/ui-ini/), and `Settings` the file a player's own options are written back to.
 
-The seven `Expansion` keys name the expansion's copy of a file, which is read over the base one. `RulesExpansion` also decides whether the expansion is installed: the game looks for that file and nothing else, so renaming it moves the test.
+The eight `Expansion` keys name the expansion's copy of a file, which is read over the base one. `RulesExpansion` also decides whether the expansion is installed: the game looks for that file and nothing else, so renaming it moves the test.
 
 Renaming a file does not move it. Every name here is searched for in the order the section below gives, the same as any other file the game opens.
 
-Rules and campaign files are also gathered by wildcard, as `RULE*.INI` and `BATTLE*.INI`, and those two patterns are fixed. A rules file named outside the pattern is read anyway and is the one the game starts from; where the search turns up others as well, the game asks which set to play with, as it does for a stock installation. Campaign files add to one another, so one named outside the pattern is read alongside those inside it.
+Rules and campaign files are also gathered by wildcard, as `RULE*.INI` and `BATTLE*.INI`, and those two patterns are fixed. A rules file named outside the pattern is read anyway, and it is the one the game starts from. Where the search turns up others as well, the game asks which set to play with. Campaign files add to one another, so one named outside the pattern is read alongside those inside it.
 
 ## The palettes it starts with
 
@@ -81,7 +83,7 @@ A palette file the deployment does not ship leaves that palette unchanged, and t
 CarryScenarioFile=yes
 ```
 
-`CarryScenarioFile=yes` makes a [saved game](/formats/save-games/#what-the-file-holds) carry the scenario file it was played from, and a restart then reads the mission from that copy rather than from disk. The default is `no`: a save holds no copy and a restart reads the file again.
+`CarryScenarioFile=yes` makes a [saved game](/formats/save-games/#what-the-file-holds) include the scenario file it was played from, and a restart then reads the mission from that copy rather than from disk. The default is `no`: a save holds no copy and a restart reads the file again.
 
 The copy matters where the file on disk may no longer be the one the mission started from: a client resuming a save replaces `spawnmap.ini` with a stub, and a restart that reads the stub fails. It costs the size of the map, the least compressible part of a save; a large one adds half again to the file.
 
@@ -102,9 +104,9 @@ The game data directory is what [`-DATADIR`](/using/command-line/data-directory/
 
 Everything the game opens follows that order: archives, rules, artwork, scenarios and launch files alike. A loose file still stands in for an archived one, so a copy found in any of these folders is used ahead of an archived copy of the same name.
 
-A player's own copy is therefore the one the game reads, whatever a deployment ships under the same name. In a shared installation the settings and hotkeys a player has are theirs, and the rest is read from the copy everyone shares.
+A player's own copy is therefore the one the game reads, whatever a deployment ships under the same name. In a shared installation, a player's settings and hotkeys are theirs, and everything else is read from the copy everyone shares.
 
-Wildcard searches — for rules, battle files, map packs, map archives and movie archives — cover every directory in the list rather than stopping at the first that holds a match. A name held by more than one is used once, from the one that comes first, which is the same copy an ordinary open of that name would land on.
+Wildcard searches (for rules, battle files, map packs, map archives and movie archives) cover every directory in the list rather than stopping at the first that holds a match. A name held by more than one is used once, from the one that comes first, which is the same copy an ordinary open of that name would land on.
 
 [Saved games](/formats/save-games/) are the exception to all of this. They keep to a `Saved Games` folder inside the user data directory, and are named there outright rather than searched for, so that a launcher browsing them finds them in one place.
 

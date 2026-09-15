@@ -15,6 +15,6 @@ The text is what the load and delete dialogs list the seed under and what the mu
 Description=Four player temperate map
 ```
 
-The dialogs build their lists by reading the assignment out of each candidate file directly, and that read has no fallback: a file whose `Description` is missing or empty is listed as unusable rather than under a substitute name, and cannot be picked. The generator's own scratch file is passed over and never listed at all.
+The dialogs build their lists by reading the assignment out of each candidate file directly, and that read has no fallback. A file whose `Description` is missing or empty is listed as unusable rather than under a substitute name, and cannot be picked. The generator's own scratch file is passed over and never listed at all.
 
 The text takes no part in what is built. It is deliberately blanked before the settings are digested into the identifier a lobby matches maps by, so renaming a seed does not make it a different map.

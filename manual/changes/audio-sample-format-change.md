@@ -10,4 +10,4 @@ credit:
 - ZivDero
 ---
 
-A sample whose rate, bit depth or channel count differed from 22050 hertz sixteen bit mono did not play, and the sound channel it was given stayed silent for every later sound. Such a sample now plays in its own format.
+A sample did not play unless its rate, bit depth and channel count matched 22050 hertz sixteen bit mono. The sound channel it was given then stayed silent for every later sound. Such a sample now plays in its own format.

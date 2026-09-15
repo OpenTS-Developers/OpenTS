@@ -14,7 +14,7 @@ AuxSound2=MYHELI_Landing ; a sound ID registered in SOUND.INI
 
 Two unrelated paths read the same slot:
 
-- A **structure** plays it at its own position as a deconstruction begins — a sale or an undeploy — once its animations have stopped and an [`IsJuggernaut=yes`](/keys/isjuggernaut/) structure has finished returning its body and barrel to their start values. The reverse build-up follows it; on a sale that puts out no vehicle, the crew evacuation comes between the two.
+- A **structure** plays it at its own position as a deconstruction begins, a sale or an undeploy, once its animations have stopped. An [`IsJuggernaut=yes`](/keys/isjuggernaut/) structure plays it only after finishing the return of its body and barrel to their start values. The reverse build-up follows it. On a sale that puts out no vehicle, the crew evacuation comes between the two.
 - An object flown by the [flyer locomotor](/keys/locomotor/) plays it once per landing, at the ground under it, as it drops below 300 leptons, and only while it still has strength left. A wreck falling out of the sky lands silently.
 
 Nothing else reads the slot, so on a ground vehicle or an infantryman the setting is inert.

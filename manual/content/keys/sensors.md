@@ -7,7 +7,7 @@ when_omitted:
   note: "An InfantryType section starts at yes. An AircraftType, BuildingType or UnitType section starts at no."
 ---
 
-The flag is read in two proximity tests, both of which look at the eight cells around something and neither of which marks a cell as sensed. A hidden vehicle, infantryman or aircraft arriving at the center of a cell is uncloaked when one of the neighboring cells inside the playable area holds a flagged object whose owner does not consider it allied. A cloaked structure is uncloaked, and refused a new cloak, while a flagged object whose owner does not consider the structure allied stands anywhere within one cell of its footprint.
+The flag is read in two proximity tests, and neither marks a cell as sensed. A hidden vehicle, infantryman or aircraft arriving at the center of a cell is uncloaked when one of the eight neighboring cells inside the playable area holds a flagged object whose owner does not consider it allied. A cloaked structure is uncloaked, and refused a new cloak, while a flagged object whose owner does not consider the structure allied stands anywhere within one cell of its footprint.
 
 Both tests use the detector owner's alliance list. The hidden object's owner may consider the detector allied without preventing detection.
 

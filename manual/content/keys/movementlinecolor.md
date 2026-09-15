@@ -7,7 +7,7 @@ when_omitted:
   value: "0,170,0"
 ---
 
-The three numbers are separated by commas; a value that is not three numbers keeps the default, a green. The squares on the line's ends take the same color. The movement line runs from a selected object to the end of its route; [Action lines](/systems/action-lines/) covers when it is drawn.
+The three numbers are separated by commas; a value that is not three numbers keeps the default, a green. A number outside 0 to 255 wraps around, so 300,0,0 is read as 44,0,0. The squares on the line's ends take the same color. The movement line runs from a selected object to the end of its route; [Action lines](/systems/action-lines/) covers when it is drawn.
 
 ```ini title="UI.INI"
 [Ingame]

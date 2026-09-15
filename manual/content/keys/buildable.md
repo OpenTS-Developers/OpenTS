@@ -12,4 +12,4 @@ when_omitted:
 Buildable=yes
 ```
 
-Two tests read the flag: whether a cell can carry a building foundation, and whether a cell will [accept new Tiberium](/systems/tiberium/#spread). A land type left at `no` blocks both at once. Each land type keeps its own setting, and a land type whose section is absent from the rules is not read at all.
+Two tests read the flag: whether a cell can take a building foundation, and whether a cell will [accept new Tiberium](/systems/tiberium/#spread). A land type left at `no` blocks both at once. Each land type keeps its own setting, and a land type whose section is absent from the rules is not read at all.

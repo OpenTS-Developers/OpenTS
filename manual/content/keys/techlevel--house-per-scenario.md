@@ -10,4 +10,4 @@ when_omitted:
 
 This is the level every object type's own [`TechLevel=`](/keys/techlevel/#scope-aircrafttype) is compared against for this house.
 
-Every playing house a non-campaign session sets up has this value overwritten with the level chosen for that session — the Neutral and Special houses keep their default — so the assignment takes effect in campaign games only.
+Every playing house a non-campaign session sets up has this value overwritten with the level chosen for that session; the Neutral and Special houses keep their default. The assignment takes effect in campaign games only.

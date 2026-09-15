@@ -7,6 +7,6 @@ when_omitted:
   value: "0"
 ---
 
-The value is substituted whenever a type's own [`MyEffectivenessCoefficient`](/keys/myeffectivenesscoefficient/) is zero and the section being read omits the key. An explicit `0` in a section survives its own pass; it is replaced only when a later rules layer carries the section without the key. `[General]` is read before the object types in each pass over the rules, so a value written here reaches every type in the same file.
+The value is substituted whenever a type's own [`MyEffectivenessCoefficient`](/keys/myeffectivenesscoefficient/) is zero and the section being read omits the key. An explicit `0` in a section survives its own pass. It is replaced only when a later rules layer contains the section without the key. `[General]` is read before the object types in each pass over the rules, so a value written here reaches every type in the same file.
 
-Raising it switches this term of the threat score on for the whole rules file at once, and makes it impossible to hold any single type at zero.
+Raising it therefore switches this term of the threat score on for every type that never sets the key itself.

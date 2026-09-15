@@ -9,7 +9,7 @@ when_omitted:
 
 ```ini title="rules.ini"
 [AudioVisual]
-CloakSound=Cloak1 ; a sound registered in [SoundList]
+CloakSound=Cloak1 ; a sound ID registered in SOUND.INI
 ```
 
-The sound is played at the coordinate the object stands on, once at the start of each fade, for every object of every house — including each vehicle and infantryman a growing [cloaking field](/systems/cloaking/#cloaking-fields) passes over, and each structure that fades out under one. One start is silent: when a critically damaged object gives up a cloak part way through, the fade back into view begins without the sound.
+The sound is played at the coordinate the object stands on, once at the start of each fade, for every object of every house. That includes each vehicle and infantryman a growing [cloaking field](/systems/cloaking/#cloaking-fields) passes over, and each structure that fades out under one. One start is silent: a critically damaged object (health at or below [`ConditionRed`](/keys/conditionred/)) still fading out abandons the cloak on a ten percent chance each frame, and the fade back into view begins without the sound.

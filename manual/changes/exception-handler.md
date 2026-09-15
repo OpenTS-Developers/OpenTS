@@ -15,12 +15,14 @@ targets:
 credit: [ZivDero]
 ---
 
-A crash now writes a minidump, a readable report, and the end of that run's debug log into a
-folder of its own under an `Exceptions` folder beside the executable. Reporting a crash means
-attaching that one folder; see [Crash reports](/using/crash-reports/) for what it holds.
+A crash now writes a minidump, a readable report, and the end of that run's debug log into a folder of its own under an `Exceptions` folder beside the executable. Reporting a crash means attaching that one folder; see [Crash reports](/using/crash-reports/) for what it holds.
 
-Crashes that previously went unreported now produce one: a crash on any thread rather than the
-main thread alone, a crash during startup before the window, sound, and renderer are up, a
-stack overflow, a pure virtual call, a rejected runtime argument, an aborted run, and an
-unrecoverable engine error, whose message previously went somewhere a windowed program had no
-way of showing.
+Crashes that previously went unreported now produce one, under **Any of:**
+
+- a crash on any thread, rather than the main thread alone;
+- a crash during startup, before the window, sound, and renderer are up;
+- a stack overflow;
+- a pure virtual call;
+- a rejected runtime argument;
+- an aborted run;
+- an unrecoverable engine error, whose message previously went somewhere a windowed program had no way of showing.

@@ -14,7 +14,7 @@ A building with this flag offers the enter cursor to a player-controlled infantr
 - it is not already servicing someone;
 - it still holds ammunition.
 
-Admission costs one point of the building's [`Ammo`](/keys/ammo/) pool, and a hospital is exempt from the instant restock that refills every other building's ammunition, so the pool only ever goes down.
+Admission costs one point of the building's [`Ammo`](/keys/ammo/) pool. A hospital never receives the instant restock that refills an emptied ammunition pool, so the pool only ever goes down.
 
 Healing then runs on [`IRepairRate`](/keys/irepairrate/): each time the counter elapses the occupant gains [`IRepairStep`](/keys/irepairstep/) strength at no charge, and it is released once it reaches full strength. An occupant that turns out to need nothing is released at the first count, having still spent the admission point.
 

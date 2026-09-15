@@ -8,6 +8,11 @@ when_omitted:
   value: "no"
 ---
 
-Setting the flag rewrites two of the overlay type's own settings once its section has been read: its armor becomes wood, and a [`Land=Clear`](/keys/land/) overlay is promoted to the `Tiberium` [land type](/reference/enums/land-type/), which is the ground condition every harvesting test reads. An overlay left on another land type keeps it and is never harvested.
+```ini title="rules.ini"
+[MYTIB] ; an OverlayType registered in [OverlayTypes]
+Tiberium=yes
+```
 
-The flag also makes the overlay eligible for the reverse lookup that decides which registered Tiberium type a cell belongs to; an overlay carrying the flag that falls outside every type's overlay range is reported as the first registered type.
+Setting the flag rewrites two of the overlay type's own settings once its section has been read. Its armor becomes wood even if the section sets [`Armor=`](/keys/armor/) itself, and a [`Land=Clear`](/keys/land/) overlay is promoted to the `Tiberium` [land type](/reference/enums/land-type/). That land type is the ground condition every harvesting test reads. An overlay left on another land type keeps it and is never harvested.
+
+The flag also makes the overlay eligible for the reverse lookup that decides which Tiberium in the rules' [`[Tiberiums]` list](/formats/rules-registries/) a cell belongs to. An overlay with the flag that falls outside every type's overlay range is read as the first type in that list. The bails a harvester lifts there are converted at that type's [`Value=`](/keys/value/).

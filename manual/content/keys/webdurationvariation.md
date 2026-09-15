@@ -22,5 +22,5 @@ The sign makes no difference: the two ends of the range are put in order before 
 The setting is read only while [`Webby=yes`](/keys/webby/) stands in the same section.
 
 :::caution[A variation larger than the duration can pin nothing]
-The shift is applied without a floor. A draw that takes the total to zero or below leaves the soldier's remaining wait untouched, so it plays one struggle and stands straight back up — still having taken no damage from the hit.
+The shift is applied without a floor. A draw that takes the total to zero or below leaves the soldier's remaining wait untouched, so it plays one struggle and stands straight back up, still having taken no damage from the hit.
 :::

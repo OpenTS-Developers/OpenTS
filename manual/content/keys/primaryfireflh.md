@@ -7,14 +7,14 @@ when_omitted:
   value: 0,0,0
 ---
 
-The value is three whole numbers, `X,Y,Z`, each in leptons — 256 leptons to a cell. They are measured in the turret's frame and turned with it, so the offset stays fixed relative to the gun rather than to the map: `X` runs forward along the direction the turret faces, `Y` runs out to the turret's left, and `Z` runs upward. A vehicle or infantryman with no turret uses the direction its body faces. A turretless building aims the offset at whatever it is currently firing on, and an aircraft always uses its turret facing whether or not it carries a turret.
+The value is three whole numbers, `X,Y,Z`, each in leptons (256 to a cell). The offset is measured in the turret's frame and turned with it, so it stays fixed relative to the gun rather than to the map. `X` runs forward along the direction the turret faces, `Y` runs out to the turret's left, and `Z` runs upward. A vehicle or infantryman with no turret uses the direction its body faces. A turretless building aims the offset at whatever it is currently firing on, and an aircraft always uses its turret facing whether or not it has a turret.
 
 ```ini title="art.ini"
 [MYTANK] ; the Image ID of a UnitType
 PrimaryFireFLH=100,0,60 ; a bit under half a cell forward, 60 leptons up
 ```
 
-The offset locates two different points. The **mounting** — where the projectile is created and where the firing solution is measured from — is this offset with [`TurretOffset`](/keys/turretoffset/) added to `X`. A building measures it from its own center, while a vehicle or aircraft measures it through the same transform its artwork is drawn with, so ground slope and body tilt move the mounting even though they do not move the muzzle. The **muzzle** — where the fire animation, laser beam, sonic wave, and attached particle systems appear — starts from that same point, adds [`PBarrelThickness`](/keys/pbarrelthickness/) to `Z`, pitches with the barrel, and then runs [`PBarrelLength`](/keys/pbarrellength/) out along the pitched barrel. Only the muzzle rides up as the barrel elevates.
+The offset locates two different points. The **mounting** (where the projectile is created and where the firing solution is measured from) is this offset with [`TurretOffset`](/keys/turretoffset/) added to `X`. A building measures it from its own center. A vehicle or aircraft measures it through the same transform its artwork is drawn with, so ground slope and body tilt move the mounting even though they do not move the muzzle. The **muzzle** (where the fire animation, laser beam, sonic wave, and attached particle systems appear) starts from that same point. It adds [`PBarrelThickness`](/keys/pbarrelthickness/) to `Z`, pitches with the barrel, and then runs [`PBarrelLength`](/keys/pbarrellength/) out along the pitched barrel. Only the muzzle rides up as the barrel elevates.
 
 :::caution[An infantry type has no separate mounting]
 An InfantryType takes its mounting from the same point as its muzzle, so [`PBarrelThickness`](/keys/pbarrelthickness/) and [`PBarrelLength`](/keys/pbarrellength/) move its projectile as well as its effects.

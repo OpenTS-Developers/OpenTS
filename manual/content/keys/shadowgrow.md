@@ -8,4 +8,4 @@ when_omitted:
   value: "yes"
 ---
 
-The value is stored with the other multiplayer defaults and never consulted; no session option is seeded from it and no setup screen offers one. The spelling that makes the shroud creep back is [`ShroudGrow`](/keys/shroudgrow/) in `[AudioVisual]`, on the interval [`ShroudRate`](/keys/shroudrate/) sets, and it applies to every session type alike.
+The value is stored with the other multiplayer defaults and never read; no session option is seeded from it and no setup screen offers one. The spelling that makes the shroud creep back is [`ShroudGrow`](/keys/shroudgrow/) in `[AudioVisual]`, on the interval [`ShroudRate`](/keys/shroudrate/) sets, and it applies to every session type alike.

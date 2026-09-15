@@ -16,7 +16,7 @@ The animation is created at the soldier's own position, and the soldier is delet
 
 Four deaths reach it, and one non-death:
 
-- a warhead carrying [`InfDeath=3`](/keys/infdeath/), which is the plain choice a mod makes for an exploding death;
+- a warhead with [`InfDeath=3`](/keys/infdeath/), which is the plain choice a mod makes for an exploding death;
 - a [`Cyborg=yes`](/keys/cyborg/) infantryman killed while prone;
 - a jumpjet infantryman, whatever killed it;
 - a forced kill of a `Cyborg=yes` infantryman that was already falling at the time;

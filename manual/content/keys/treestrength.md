@@ -7,7 +7,7 @@ when_omitted:
   value: "25"
 ---
 
-A TerrainType is constructed with a maximum strength of `-1` rather than a usable figure, and the fallback runs immediately after its section is read: a section that never set [`Strength`](/keys/strength/#scope-aircrafttype) — or that set it to `-1` outright — takes this figure instead. `[General]` is read before the object sections, so the value is always in place by then.
+A TerrainType is constructed with a maximum strength of `-1` rather than a usable figure. The fallback runs immediately after the type's own section is read: a section that never set [`Strength`](/keys/strength/#scope-aircrafttype), or that set it to `-1` outright, takes this figure instead. `[General]` is read before the object sections, so the value is always in place by then.
 
 The fallback is one-way. Once a type has taken it the stored strength is no longer `-1`, so a later rules layer that omits `Strength` finds the figure already filled in and changes nothing.
 

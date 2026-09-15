@@ -8,6 +8,6 @@ when_omitted:
   value: "-1"
 ---
 
-The name promises the tile set that takes this one's place when a map is converted to the temperate theater — a conversion only a map editor performs. The value is stored on the first tile of each entry in the set and read back by nothing: no conversion, no draw, and not the multiplayer synchronization checksum, which never visits the isometric tile types.
+The key names the tile set that takes this one's place when a map is converted to the temperate theater. Nothing in OpenTS performs that conversion. The value is stored on the first tile of each entry in the set and read back by nothing. No draw uses it, and the multiplayer synchronization checksum never visits the isometric tile types.
 
 The lettered alternates of a tile do not receive the value at all, so even the stored copy covers only part of the set.

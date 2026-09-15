@@ -10,4 +10,4 @@ when_omitted:
 
 The name promises that the animation pins itself to whatever unit is standing where it appears, which is how an impact explosion would ride the vehicle it went off on. Nothing reads the flag.
 
-Whether an animation ends up pinned to an object is settled by the code that creates it — a parachute pinned to what it is lowering, the fire an object catches when it takes damage, the sparks an EM pulse leaves on what it disabled — and never by the animation's own type.
+Whether an animation ends up pinned to an object is settled by the code that creates it, never by the animation's own type. The code lowering a parachute pins it to what it lowers, the fire an object catches is pinned to that object, and the sparks an EM pulse leaves are pinned to what they disabled.

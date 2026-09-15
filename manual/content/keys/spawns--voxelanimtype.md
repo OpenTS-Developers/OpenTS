@@ -8,9 +8,9 @@ when_omitted:
   value: none
 ---
 
-The voxel animation type a meteor's impact breaks into. The children are all created at once, at the point of impact, and with no owning house — so a child carrying [`IsTiberium=yes`](/keys/istiberium/#scope-voxelanimtype) is drawn in Tiberium colors where a piece thrown off a destroyed vehicle would not be. [`SpawnCount`](/keys/spawncount/#scope-voxelanimtype) fixes how many appear.
+The voxel animation type a meteor's impact breaks into. The children are all created at once, at the point of impact, and with no owning house. A child with [`IsTiberium=yes`](/keys/istiberium/#scope-voxelanimtype) is therefore drawn in Tiberium colors, where a piece thrown off a destroyed vehicle is not. [`SpawnCount`](/keys/spawncount/#scope-voxelanimtype) fixes how many appear.
 
-The branch belongs to [`IsMeteor=yes`](/keys/ismeteor/#scope-voxelanimtype) alone, and is skipped where the meteor comes down low over water.
+The branch belongs to [`IsMeteor=yes`](/keys/ismeteor/#scope-voxelanimtype) alone, and is skipped where the meteor lands in water below the height of a bridge deck, 416 leptons or about a cell and a half above the ground.
 
 A value naming no registered voxel animation is not refused: a type of that name is created on the spot, holding no artwork and every setting at its built-in value, and the impact spawns pieces of it.
 

@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-An object is normally drawn through the color table belonging to its owning house, which is what gives a [`Remapable=yes`](/keys/remapable/) structure its owner's color. With this flag set, a structure is drawn through the color table the cell it stands on carries for its terrain, and the brightness used is the cell's tile lighting rather than the level worked out for the object, so [`ExtraLight`](/keys/extralight/) does not reach it while it is drawn normally.
+An object is normally drawn through the color table belonging to its owning house, which is what gives a [`Remapable=yes`](/keys/remapable/) structure its owner's color. With this flag set, the structure is drawn through the color table its cell uses for terrain. The brightness used is the cell's tile lighting rather than the level worked out for the object, so [`ExtraLight`](/keys/extralight/) does not reach it while it is drawn normally. Only structures read this flag; terrain objects such as trees and rocks do not.
 
 ```ini title="art.ini"
 [MYTREEHOUSE] ; example civilian structure, drawn from its own Image ID

@@ -2,12 +2,11 @@
 key: Official
 scope: scenarios
 label: Unused copy
-no_effect: true
 when_omitted:
   kind: value
   value: "no"
 ---
 
-The entry is read a first time at the very start of the scenario load, before the theater is chosen or the rules are prepared. That copy is placed in a local variable, immediately assigned to itself to keep the compiler quiet, and never looked at again; no gameplay path reads it.
+The entry is read at the very start of the scenario load, before the theater is chosen or the rules are prepared. In a multiplayer or skirmish game its value goes straight to the [start-position pass](/keys/official/#scope-scenarios-2), which settles where every house starts before the map's objects are read.
 
-The copy that does decide something is [read again much later](/keys/official/#scope-scenarios-2), from the same assignment.
+The same assignment is read a second time near the end of the load, when the multiplayer fixups create the starting units. That copy reaches the same start-position logic with the same value.

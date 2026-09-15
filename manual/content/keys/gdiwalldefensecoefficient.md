@@ -7,4 +7,4 @@ when_omitted:
   value: "3"
 ---
 
-The value becomes the first side's [`AIWallDefenseCoefficient`](/keys/aiwalldefensecoefficient/#scope-side) as each rules file sets it; an `AIWallDefenseCoefficient=` in that side's own section of the same file overrides it. Nothing else reads the key.
+The value becomes the first side's [`AIWallDefenseCoefficient`](/keys/aiwalldefensecoefficient/) as each rules file sets it; an `AIWallDefenseCoefficient=` in that side's own section of the same file overrides it. Nothing else reads the key.

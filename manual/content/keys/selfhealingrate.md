@@ -9,7 +9,7 @@ when_omitted:
 ---
 
 ```ini title="rules.ini"
-[4TNK] ; a UnitType registered in [UnitTypes]
+[4TNK] ; a UnitType registered in [VehicleTypes]
 SelfHealingRate=.004
 ```
 

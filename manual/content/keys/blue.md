@@ -12,4 +12,4 @@ when_omitted:
 Blue=.8
 ```
 
-The value is stored in hundredths and tints the terrain palette every cell draws its ground through, from the moment the map loads; house color schemes are never tinted by these keys, and only an ion storm retints them. It is read before its ion counterpart in the same section and is what [`IonBlue`](/keys/ionblue/) falls back to.
+The value is stored in hundredths and tints the terrain palette that every cell draws its ground through, from the moment the map loads. House color schemes are never tinted by these keys; only an ion storm retints them. The engine reads this value before its ion counterpart in the same section, and [`IonBlue`](/keys/ionblue/) falls back to it.

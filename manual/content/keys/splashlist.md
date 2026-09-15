@@ -9,9 +9,9 @@ when_omitted:
 
 Which entry is used depends on what made the splash, and only one of the paths looks at the list as a whole.
 
-An explosion over open water picks by its damage: the first entry for the first thirty-five points, the next for the thirty-five after that, and so on up the list, with the last entry standing for everything past what the list covers. The warhead must be [`Conventional=yes`](/keys/conventional/) and the point must not be over a bridge deck. The splash replaces the warhead's own explosion rather than joining it.
+An explosion over open water picks by its damage: the first entry for the first thirty-five points, the next for the thirty-five after that, and so on up the list. The last entry stands for everything past what the list covers. The warhead must be [`Conventional=yes`](/keys/conventional/) and the point must not be over a bridge deck. The splash replaces the warhead's own explosion rather than joining it.
 
-Every other path takes one fixed entry and ignores the damage. The first entry goes with an ordinary bouncing animation, a piece of voxel debris, a burning infantryman and infantry destroyed over water. The last entry goes with a destroyed vehicle, an ion cannon blast that lands on water, and an `IsMeteor=yes` impact of either kind — the [animation](/keys/ismeteor/#scope-animtype) and the [voxel animation](/keys/ismeteor/#scope-voxelanimtype) both take it. About half of the eight lay a [`Wake`](/keys/wake/) down alongside the splash; the two meteor kinds, an ion cannon blast and a burning infantryman do not.
+Every other path takes one fixed entry and ignores the damage. The first entry goes with an ordinary bouncing animation, a piece of voxel debris, a burning infantryman and infantry destroyed over water. The last entry goes with a destroyed vehicle, an ion cannon blast that lands on water, and an `IsMeteor=yes` impact of either kind; the [animation](/keys/ismeteor/#scope-animtype) and the [voxel animation](/keys/ismeteor/#scope-voxelanimtype) both take it. Four of those eight paths lay a [`Wake`](/keys/wake/) down alongside the splash: the ordinary bouncing animation, the piece of voxel debris, infantry destroyed over water and the destroyed vehicle. The two meteor kinds, an ion cannon blast and a burning infantryman do not.
 
 ```ini title="rules.ini"
 [CombatDamage]

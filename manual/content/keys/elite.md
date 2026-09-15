@@ -8,7 +8,7 @@ when_omitted:
   note: An object type with no elite weapon serves up its primary instead, so an elite object of that type fires exactly what it always did.
 ---
 
-Once an object reaches elite rank, every request for its primary weapon resolves to this one instead — target selection, range tests, reload delay, and the shot itself. The secondary weapon is never substituted, and a veteran fires its ordinary weapons. [What a rank changes](/systems/veterancy/#the-elite-weapon) covers the rest of the substitution.
+Once an object reaches elite rank, every request for its primary weapon resolves to this one instead: target selection, range tests, reload delay, and the shot itself. The secondary weapon is never substituted, and a veteran fires its ordinary weapons. [What a rank changes](/systems/veterancy/#the-elite-weapon) covers the rest of the substitution.
 
 ```ini title="rules.ini"
 [MYTANK] ; example UnitType

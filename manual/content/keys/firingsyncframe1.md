@@ -9,7 +9,7 @@ when_omitted:
 
 Firing a vehicle's primary weapon starts a countdown at `2 × FiringFrames − 1` that falls by one each game frame, and the frame on screen is that countdown halved. This setting holds the countdown value at which the round is actually released, so it places the shot inside the animation rather than in front of it. `FiringSyncFrame1=8` releases while the run's frame 4 is drawn; because each frame is held for two game frames, `9` shows that same frame and releases one game frame earlier.
 
-While the countdown is running and has not reached the value, the weapon reports itself as still rearming and the shot is held. On the frame the countdown matches, the round leaves without the rate-of-fire timer being consulted at all: the animation, not the timer, paces the shot.
+While the countdown is running and has not reached the value, the weapon reports itself as still rearming and the shot is held. On the frame the countdown matches, the round leaves without the rate-of-fire timer being read at all: the animation, not the timer, paces the shot.
 
 ```ini title="art.ini"
 [DEFENDER] ; the Image ID of the stock Core Defender

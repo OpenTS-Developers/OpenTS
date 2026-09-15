@@ -73,9 +73,9 @@ even messages written during startup appear. The window holds about 4000 lines o
 Its close button is disabled, because closing a console window terminates the program that
 owns it. Close the game itself instead.
 
-The console also carries ordinary program output that a windowed application otherwise has
-nowhere to display, such as the `-?` command line help. When the command line is rejected,
-the game waits for a keypress before exiting so that the message stays readable.
+The console also shows ordinary program output that a windowed application otherwise has
+nowhere to display, such as the `-?` command line help. When startup fails before the game
+window opens, the game waits for a keypress before exiting so that the message stays readable.
 
 ## Before sharing a log
 

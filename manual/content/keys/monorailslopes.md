@@ -1,6 +1,6 @@
 ---
 key: MonorailSlopes
-summary: Parsed tile set of monorail ramp pieces that nothing consults.
+summary: Parsed tile set of monorail ramp pieces that nothing reads.
 no_effect: true
 see_also: [PavedRoadSlopes, DirtRoadSlopes]
 when_omitted:

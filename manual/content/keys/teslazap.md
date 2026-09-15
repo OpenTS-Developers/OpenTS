@@ -10,4 +10,4 @@ when_omitted:
 
 The name promises the discharge of a charging turret. The value is resolved against the sound registry and stored, and no gameplay path reads the slot back.
 
-Its companion is live: a structure whose primary weapon carries [`Charges=yes`](/keys/charges/), and which is switched on, fully powered and has a target, plays [`TeslaCharge`](/keys/teslacharge/) at its own position as the wind-up starts. The shot that follows makes only the sounds its own weapon names.
+Its companion is live: a structure whose primary weapon sets [`Charges=yes`](/keys/charges/), and which is switched on, fully powered and has a target, plays [`TeslaCharge`](/keys/teslacharge/) at its own position as the wind-up starts. The shot that follows makes only the sounds its own weapon names.

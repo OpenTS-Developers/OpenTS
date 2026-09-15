@@ -7,6 +7,8 @@ when_omitted:
   value: ""
 ---
 
-Owning at least one live structure of any type on this list satisfies a `BARRACKS` entry in a [`Prerequisite=`](/keys/prerequisite/) list. The entries are alternatives, not requirements: the first one the house owns ends the search, and order carries no other meaning.
+Owning at least one live structure of any type on this list satisfies a `BARRACKS` entry in a [`Prerequisite=`](/keys/prerequisite/) list. The entries are alternatives, not requirements: the first one the house owns ends the search, and order has no other meaning.
 
-The list is read as BuildingType IDs without regard to case, and a name matching none is dropped. An empty list leaves `BARRACKS` impossible to satisfy, which blocks every type naming it.
+The computer's [base planner](/systems/ai-base-building/#building-the-plan) does not read this list. It answers a `BARRACKS` entry from its own build lists instead.
+
+The list is read as BuildingType IDs without regard to case, and a name matching none is dropped. An empty list leaves `BARRACKS` impossible to satisfy, which blocks every type naming it from a player's [production](/systems/production/).

@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-Every entry must be satisfied at once. An entry naming a BuildingType requires at least one live structure of exactly that type; the tally counts a structure from the moment it is placed rather than when its buildup finishes, and keeps counting one that has been switched off.
+Every entry must be satisfied at once. An entry naming a BuildingType requires at least one live structure of exactly that type. The tally counts a structure from the moment it is placed rather than when its buildup finishes, and it keeps counting one that has been switched off.
 
 Seven reserved names stand for a group instead, each satisfied by owning anything on the matching rules list: `POWER`, `FACTORY`, `BARRACKS`, `RADAR`, `TECH`, `GDIFACTORY` and `NODFACTORY`. [Prerequisites](/systems/production/#what-a-house-may-build) maps them to their lists and covers the separate rule an entry naming an upgrade follows.
 
@@ -18,4 +18,4 @@ Prerequisite=FACTORY,MYRADAR
 ; MYRADAR: example radar BuildingType, required by its own ID
 ```
 
-Names are matched without regard to case; an entry matching neither a group name nor a BuildingType ID is dropped. A computer house is not put through this test when it produces — its [base planning](/systems/ai-base-building/) runs its own check over the same key when deciding what to place.
+Names are matched without regard to case; an entry matching neither a group name nor a BuildingType ID is dropped. A computer house is not put through this test when it produces: its [base planning](/systems/ai-base-building/) runs its own check over the same key when deciding what to place.

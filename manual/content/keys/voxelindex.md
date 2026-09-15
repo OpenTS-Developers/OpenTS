@@ -14,5 +14,5 @@ The lighting lookup a piece is shaded through is precalculated from section zero
 :::
 
 :::danger[An index past the last section reads outside the model]
-Nothing measures the index against the number of sections the model holds. An index beyond the last one, or a negative one, takes the piece's bounding box from whatever memory lies outside the section table: the piece is drawn at a size and position that come from unrelated data, and an address far enough outside the tables faults and stops the game.
+Nothing measures the index against the number of sections the model holds. An index beyond the last one, or a negative one, takes the piece's bounding box from whatever memory lies outside the section table. The piece is drawn at a size and position that come from unrelated data, and an address far enough outside the tables faults and stops the game.
 :::

@@ -8,4 +8,4 @@ when_omitted:
   value: "no"
 ---
 
-No drawing path consults the flag. Rotor blades are not drawn over an aircraft at any setting, so a helicopter shows only the frames its own artwork supplies.
+No drawing path reads the flag. Rotor blades are not drawn over an aircraft at any setting, so a helicopter shows only the frames its own artwork supplies.

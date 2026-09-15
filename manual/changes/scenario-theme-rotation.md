@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero, AlexB, Rampastring]
 ---
 
-A scenario with no action movie now queues its configured `Theme` instead of starting it outside the score queue. After that score finishes, the score system selects another allowed track rather than ending the music rotation.
+A scenario with no action movie now queues its configured `Theme` instead of starting it outside the music queue. After that track finishes, the music system selects another allowed track rather than ending the music rotation.

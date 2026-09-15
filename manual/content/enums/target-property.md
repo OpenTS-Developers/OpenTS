@@ -15,11 +15,11 @@ values:
   - { constant: TPROPERTY_FARTHEST, value: 3, input: "3", meaning: "Pick the candidate farthest from the team's first member." }
 ---
 
-The two threat properties do not weigh the building. They read a running figure the team member's own house keeps for each **map region** — a four-by-four block of cells, the unit the whole threat map is kept in — so `Least threat` heads for the quietest part of the map holding a building of that type and `Greatest threat` for the busiest, and neither has anything to say about how dangerous the building itself is.
+Neither threat property weighs the building itself. Each house keeps its [threat map](/systems/base-attacked/) as one figure per **map region**, and a region is a block of four by four cells. Both properties read the figure the team member's own house keeps for the region a candidate stands in. `Least threat` heads for the quietest part of the map holding a building of that type, and `Greatest threat` for the busiest.
 
-That figure is neither confined to the region it is filed under nor a measure of hostile force alone. An object raising it writes across a three-by-three block of regions: its full **risk**, which is its type's [`ThreatPosed`](/keys/threatposed/), in the region it stands in, half of that in the four regions beside it and a quarter in the four corners, so every reading is smeared across a neighborhood.
+That figure is neither confined to the region it is filed under nor a measure of hostile force alone. An object raising it writes across a three-by-three block of regions. Its full **risk**, which is its type's [`ThreatPosed`](/keys/threatposed/), goes into the region it stands in. Half of that goes into the four regions beside it, and a quarter into the four corners, so every reading is smeared across a neighborhood.
 
-Whose figures an object raises is settled by one test, applied as it is placed, as it crosses from one region into another, as its owner changes and as it is taken off the map. The table gives the four positions a house can hold toward the object's owner. Only one kind of ally is spared, which is the point: an alliance protects a human house from its ally's risk and does nothing for a computer one.
+One test settles which houses receive an object's figures. It runs as the object is placed, as it crosses from one region into another, as its owner changes and as it is taken off the map. The table gives the four positions a house can hold toward the object's owner. Only one kind of ally is spared: an alliance protects a human house from its ally's risk and does nothing for a computer one.
 
 | The house keeping the figure | Is the object's risk added to it? |
 | --- | --- |
@@ -28,6 +28,6 @@ Whose figures an object raises is settled by one test, applied as it is placed, 
 | A computer house allied to the owner | Yes |
 | Any house not allied to the owner | Yes |
 
-The rebuild a house runs whenever it makes or breaks an alliance applies that test to infantry, vehicles and aircraft alone. Everything else it counts, structures included, is added with no ownership or alliance test at all, so from that point the house's own structures raise its own figures.
+When a house makes or breaks an alliance it rebuilds its threat map. That rebuild applies the test to infantry, vehicles and aircraft alone. Every other object, structures included, is added with no ownership or alliance test at all, so from that point on a house's own structures raise its own figures.
 
-A value outside the four scores every candidate identically and therefore selects none, which leaves the team with no target and sends it on to the next line of its script.
+A value outside the four scores every candidate identically, so none is selected. Whenever the search leaves the team with no target, it moves on to the next line of its script.

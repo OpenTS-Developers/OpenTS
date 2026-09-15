@@ -14,4 +14,4 @@ when_omitted:
 MinPlayers=2
 ```
 
-The value is read into the entry's minimum player count. That count is private to the listing and nothing reads it afterwards, so neither the lobby, the starting-position pass nor the house assignment consults it: a map declaring `MinPlayers=2` can still be started with eight players.
+The value is read into the entry's minimum player count. The count belongs to the listing and nothing reads it afterwards: not the lobby, not the starting-position pass, not the house assignment. A map declaring `MinPlayers=2` can still be started with one player.

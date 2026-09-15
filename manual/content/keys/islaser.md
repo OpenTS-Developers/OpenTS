@@ -19,10 +19,10 @@ LaserDuration=15
 Projectile=LLine ; a BulletType, registered by a weapon naming it as its Projectile
 ```
 
-The first piece is the beam itself: a thin line in [`LaserInnerColor`](/keys/laserinnercolor/), flanked by a pair of glow lines in [`LaserOuterColor`](/keys/laseroutercolor/) jittered each frame by [`LaserOuterSpread`](/keys/laserouterspread/), lasting [`LaserDuration`](/keys/laserduration/) frames. The second is a screen glow spanning the same line, which brightens only the red of whatever lies beneath it whatever colors the beam was given; [`IsBigLaser=yes`](/keys/isbiglaser/) widens it.
+The first piece is the beam itself: a thin line in [`LaserInnerColor`](/keys/laserinnercolor/), flanked by a pair of glow lines in [`LaserOuterColor`](/keys/laseroutercolor/) jittered each frame by [`LaserOuterSpread`](/keys/laserouterspread/), lasting [`LaserDuration`](/keys/laserduration/) frames. The second is a screen glow spanning the same line, which brightens only the red of whatever lies beneath it whatever colors the beam was given. [`IsBigLaser=yes`](/keys/isbiglaser/) widens it.
 
-A weapon with a barrel normally has its shot stepped forward the moment it is created so that it appears past the muzzle rather than inside it. A laser weapon skips that step, so its projectile starts at the barrel mounting. On a structure the beam also stops the turret animation dead and resets it to its first frame, which is how a [`Charges=yes`](/keys/charges/) turret drops out of its wind-up pose.
+A weapon with a barrel normally has its shot stepped forward the moment it is created so that it appears past the muzzle rather than inside it. A laser weapon skips that step, so its projectile starts at the barrel mounting. On a structure the beam also stops the turret animation dead and resets it to its first frame. That is how a [`Charges=yes`](/keys/charges/) turret drops out of its wind-up pose.
 
 :::caution[The beam always comes from the first weapon slot]
-Whichever slot fired, the colors, the spread, the duration and the wide-or-narrow glow are read from the weapon sitting in the object's first slot. A laser weapon in the second slot therefore draws itself in the first weapon's colors, and a first-slot weapon that is not a laser at all supplies its own unset color and duration to the beam.
+Whichever slot fired, the colors, the spread, the duration and the wide-or-narrow glow are read from the weapon sitting in the object's first slot. A laser weapon in the second slot therefore draws itself in the first weapon's colors. A first-slot weapon that is not a laser at all supplies its own unset color and duration to the beam.
 :::

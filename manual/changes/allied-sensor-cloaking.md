@@ -12,4 +12,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-A structure now keeps or begins its cloak while a nearby detector considers the structure allied. Both structure checks use the detector owner's alliance list, matching the existing detector check for moving vehicles, infantry and aircraft.
+A structure now keeps or begins its cloak while a nearby detector's house treats the structure as an ally. Both structure checks take the alliance from the detector's house, as the check for moving vehicles, infantry and aircraft already did.

@@ -10,4 +10,4 @@ when_omitted:
 
 The set has the same shape and the same treatment as [`Ice1Set`](/keys/ice1set/), which covers the layout the three share.
 
-It carries one role the others do not. The test that asks whether a cell is ice runs from the start of the first set to sixty-four tiles past the start of *this* one, so with the three sets registered in order it accepts the first two and stops before [`Ice3Set`](/keys/ice3set/). Placing this set anywhere other than directly after the first therefore moves the boundary of what counts as ice.
+It has one role the others do not. The test that asks whether a cell is ice runs from the start of the first set to sixty-four tiles past the start of *this* one. With the three sets registered in order it accepts the first two and stops before [`Ice3Set`](/keys/ice3set/). Placing this set anywhere other than directly after the first therefore moves the boundary of what counts as ice.

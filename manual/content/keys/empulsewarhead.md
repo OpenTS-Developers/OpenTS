@@ -8,4 +8,4 @@ when_omitted:
   value: none
 ---
 
-The name promises the warhead an EM pulse cannon discharge detonates with. [Firing the cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) instead fires the building's own primary weapon, so the pulse comes from that weapon's warhead. Nothing beyond the save file and the cleanup that clears the pointer when a warhead is deleted touches the value stored here.
+The name promises the warhead an EM pulse cannon detonates. [Firing the cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) instead fires the building's own primary weapon, so the pulse comes from that weapon's warhead. Nothing beyond the save file and the cleanup that clears the pointer when a warhead is deleted touches the value stored here.

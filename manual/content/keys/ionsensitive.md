@@ -12,6 +12,6 @@ when_omitted:
 IonSensitive=yes
 ```
 
-The refusal is checked once the weapon itself has been resolved, so it applies to whichever object carries the weapon and to both weapon slots. Nothing else about the weapon changes: reload, range, and ammunition are untouched, and the object may still fire its other weapon when that one is not marked.
+The refusal is checked once the weapon itself has been resolved, so it applies to whichever object has the weapon and to both weapon slots. Nothing else about the weapon changes: reload, range, and ammunition are untouched, and the object may still fire its other weapon when that one is not marked.
 
-Aircraft are barred from firing during [a storm](/systems/ion-storms/#aircraft) whatever their weapons carry, so this key changes nothing for them.
+Aircraft are barred from firing during [a storm](/systems/ion-storms/#aircraft) whatever their weapons set, so this key changes nothing for them.

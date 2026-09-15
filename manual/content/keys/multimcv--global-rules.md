@@ -14,6 +14,8 @@ when_omitted:
 MultiMCV=yes
 ```
 
-A construction yard normally produces only the structures whose [`Owner`](/keys/owner/) list includes the country the yard [acts as](/keys/actslike/), which is what lets a captured yard keep building for the country it was built by. With `yes` that test is skipped in the sidebar and in the [factory search](/systems/production/#what-counts-as-a-factory) alike, and the yard's own type's `Owner` overlap with the product is the only ownership gate left. A rules set that gives each faction its own MCV needs it once an MCV can come out of a captured foreign factory: that MCV deploys into a yard acting for its captor, which could otherwise build nothing of its own type's tree.
+A construction yard normally produces only the structures whose [`Owner`](/keys/owner/) list includes the country the yard [acts as](/keys/actslike/). That is what lets a captured yard keep building for the country it was built by. With `yes` the sidebar and the [factory search](/systems/production/#what-counts-as-a-factory) both skip that test, and the only ownership test left is the overlap between the yard type's own `Owner` list and the product's.
 
-The key is shared with Vinifera, where it carries the same meaning and default.
+A rules set that gives each faction its own MCV needs `yes` once an MCV can come out of a captured foreign factory. That MCV deploys into a yard acting for its captor, which could otherwise build nothing of its own type's tree.
+
+The key is shared with Vinifera, where it has the same meaning and default.

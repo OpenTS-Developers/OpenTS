@@ -9,6 +9,6 @@ when_omitted:
   value: "NONE"
 ---
 
-The sync-bug settings are read only as the multiplayer menu is entered, and only while recording playback is armed. `AIRCRAFT`, `ANIM`, `BUILDING`, `BULLET`, `INFANTRY` and `UNIT` are recognized here without regard to letter case, and every other value, `NONE` included, narrows the search to nothing in particular.
+The sync-bug settings are read only as the multiplayer menu is entered, and only while recording playback is armed. `AIRCRAFT`, `ANIM`, `BUILDING`, `BULLET`, `INFANTRY` and `UNIT` are recognized here without regard to letter case, and every other value, `NONE` included, selects no object kind at all.
 
-The name promises the kind of object the hunt should look through, but the routine that would do the looking has an empty body. No gameplay path reads the choice.
+The name promises the kind of object the hunt should look through, but the routine that would do the looking has an empty body. The hunt is the per-frame scan of game objects that the trap's other settings describe. No gameplay path reads the choice. The recognized values change nothing either, so the key is safe to ignore or delete.

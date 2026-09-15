@@ -8,6 +8,6 @@ when_omitted:
   note: The position lands two tiles before the set's first piece rather than on a piece of it.
 ---
 
-This position carries the north-south span the same five conditions in the same order that [`BridgeMiddle1`](/keys/bridgemiddle1/) carries the east-west one, and that page covers how a position is measured and how the ladder is stepped.
+This position covers the north-south span through the same five conditions, in the same order, that [`BridgeMiddle1`](/keys/bridgemiddle1/) covers for the east-west one. That page also covers how a position is measured and how the ladder is stepped.
 
-Which of the two is consulted follows from the direction a span is walked in, not from the tile alone. A walk that runs east steps middles from `BridgeMiddle1`; a walk that runs south steps them from here.
+Which of the two is read follows from the direction a span is walked in, not from the tile alone. A walk that runs east steps middles from `BridgeMiddle1`; a walk that runs south steps them from here.

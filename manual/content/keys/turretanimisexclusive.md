@@ -7,7 +7,7 @@ when_omitted:
   value: "no"
 ---
 
-A building normally runs its turret animation and its [`ActiveAnimTwo`](/keys/activeanimtwo/) alongside each other. Set, the two never run together: the turret animation exists only while the weapon is charging or holding its charge, and `ActiveAnimTwo` is stopped for as long as it does and started again once the charge is spent. A building that is not charging shows `ActiveAnimTwo` and no turret animation at all, whether it has just been built, is being repaired, or has just lost its target.
+A building normally runs its turret animation and its [`ActiveAnimTwo`](/keys/activeanimtwo/) alongside each other. Set, the two never run together. The turret animation exists only while the weapon is charging or holding its charge; `ActiveAnimTwo` is stopped for as long as it does and started again once the charge is spent. A building that is not charging shows `ActiveAnimTwo` and no turret animation at all, whether it has just been built, is being repaired, or has just lost its target.
 
 ```ini title="rules.ini"
 [MYOBELISK] ; a BuildingType registered in [BuildingTypes]

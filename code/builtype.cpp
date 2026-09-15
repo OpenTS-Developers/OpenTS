@@ -1188,9 +1188,6 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		IsUnsellable = ini.Get_Bool(Name(), "Unsellable", IsUnsellable);
 
 		IsBase = ini.Get_Bool(Name(), "BaseNormal", IsBase);
-		if (!stricmp(Name(), "NAFNCE") || !stricmp(Name(), "NAPOST")) {
-			IsBase = false;
-		}
 
 		IsWall = ini.Get_Bool(Name(), "Wall", IsWall);
 		IsWeeder = ini.Get_Bool(Name(), "Weeder", IsWeeder);

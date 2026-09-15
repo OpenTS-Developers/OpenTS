@@ -1,6 +1,6 @@
 ---
 key: Crawls
-summary: A prone soldier of this type crawls, moving at two thirds of its speed instead of half again as fast.
+summary: Chooses whether a prone soldier of this type crawls at two thirds of its speed or moves at half again its speed.
 see_also: ["Sequence", "Speed"]
 when_omitted:
   kind: value

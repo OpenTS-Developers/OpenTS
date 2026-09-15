@@ -9,7 +9,7 @@ when_omitted:
 
 The system's working interval, which starts at [`SpawnFrames`](/keys/spawnframes/) and grows by [`Slowdown`](/keys/slowdown/) each frame, is measured against this figure at the end of every frame. Once it is past, the system stops emitting; it stays on the map until the last particle it already made has died, and then goes. Only the `Smoke` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it.
 
-Set below the opening interval, the test is met on the system's very first frame, so the plume emits one particle and immediately begins winding down — which is what a type that carries neither setting gets. A plume that is meant to run needs a cutoff above `SpawnFrames`, and a non-zero `Slowdown` to reach it at all.
+Set below the opening interval, the test is met on the system's very first frame, so the plume emits at most one particle and is marked spent before that frame ends. A type that has neither setting gets exactly this. A plume that is meant to run needs a cutoff above `SpawnFrames`, and a non-zero `Slowdown` to reach it at all.
 
 ```ini title="rules.ini"
 [MySmokeSys] ; a ParticleSystemType registered in [ParticleSystems]

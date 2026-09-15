@@ -7,9 +7,9 @@ when_omitted:
   value: "1"
 ---
 
-How far above [`MinZVelocity`](/keys/minzvelocity/) a [`Spark`](/keys/behaveslike/#scope-particletype) particle's initial upward speed may reach, in leptons a frame. Each spark draws a random amount below this figure and adds it to that floor, so the range alone decides how ragged the top of a shower looks while the floor decides how high it goes.
+How far above [`MinZVelocity`](/keys/minzvelocity/) a [`Spark`](/keys/behaveslike/#scope-particletype) particle's initial upward speed may reach, in leptons a frame. Each spark draws a random amount below this figure and adds it to that floor. The range alone decides how ragged the top of a shower looks; the floor decides how high it goes. The stock spark types set `MinZVelocity` to `40` and this figure to `15`, so every spark starts out 40 to 54 leptons a frame upward.
 
-The one random direction a whole burst shares draws its vertical part from this figure on its own, without the floor, and that draw may be negative — so a burst thrown in a random direction can be tipped downward even though no individual spark ever is.
+The one random direction a whole burst shares draws its vertical part from this figure on its own, without the floor. That draw may be negative, so a burst thrown in a random direction can be tipped downward, even though no individual spark's own draw ever is.
 
 :::danger[Zero stops the game]
 The random amount is drawn by dividing by this figure, so `ZVelocityRange=0` divides by zero and the game stops the moment a spark system holding the type fires its first burst.

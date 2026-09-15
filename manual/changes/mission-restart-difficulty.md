@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-Restarting a campaign mission or standalone mission now keeps the difficulty assigned while the scenario's houses are read. Applying campaign carry-over state no longer overwrites the player's newly assigned handicap with the environment's older value; global flags, money, inherited mission time, and campaign stage still carry over normally.
+Restarting a campaign mission or standalone mission now keeps the difficulty assigned while the scenario's houses are read. Applying campaign carry-over state no longer overwrites the player's newly assigned handicap with the environment's older value. Global flags, money, inherited mission time, and campaign stage still carry over.

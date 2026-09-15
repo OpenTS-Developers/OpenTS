@@ -8,7 +8,7 @@ when_omitted:
   value: "0"
 ---
 
-One or two percentages of loudness change, drawn once per play. A single value quietens the play by anything up to that much, so `VShift=10` plays between ninety and one hundred percent of the sound's loudness, as Yuri's Revenge reads it. Two values are a signed range, so `VShift=-20 -5` quietens by between five and twenty percent and `VShift=0 10` may play louder than [`Volume=`](/keys/volume/) alone, up to full loudness.
+The value is one or two percentages of loudness change, drawn once per play. A single value reduces the loudness by anything up to that much, so `VShift=10` plays between ninety and one hundred percent of the sound's loudness, as Yuri's Revenge reads it. Two values are a signed range, so `VShift=-20 -5` lowers the loudness by between five and twenty percent. `VShift=` never plays a sound louder than [`Volume=`](/keys/volume/) alone: the engine clamps each draw, so `VShift=0 10` plays at a constant loudness.
 
 ```ini title="sound01.ini"
 [GUN5]

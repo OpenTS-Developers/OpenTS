@@ -17,10 +17,6 @@ credit:
 - CCHyper
 ---
 
-A scenario can carry a `[Tutorial]` section of its own, replacing a line `TUTORIAL.INI` supplies or
-adding one for as long as that mission is played, so mission text no longer has to go into the one
-file every player shares. Those lines travel with the mission's saved game, since a load never
-re-reads the map. A line is no longer cut at 299 characters, and a key that is not a whole number is
-skipped and logged rather than read as line 0.
+A scenario can contain a `[Tutorial]` section of its own, which replaces a line `TUTORIAL.INI` supplies or adds one for as long as that mission is played. Mission text no longer has to go into the one file every player shares. Those lines travel with the mission's saved game, since a load never re-reads the map. A line is no longer cut at 299 characters, and a key that is not a whole number is skipped and logged rather than read as line 0.
 
 CCHyper is credited for the Vinifera feature this ports.

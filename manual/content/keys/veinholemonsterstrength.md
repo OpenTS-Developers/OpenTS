@@ -8,4 +8,4 @@ when_omitted:
   value: "10000"
 ---
 
-The value is stored and never consulted. A monster's strength is the [`Strength`](/keys/strength/) of the section [`VeinholeTypeClass`](/keys/veinholetypeclass/) names.
+The value is stored and never read. A monster's strength is the [`Strength`](/keys/strength/) of the section [`VeinholeTypeClass`](/keys/veinholetypeclass/) names.

@@ -750,8 +750,10 @@ def validate_branch_lifecycle(
 
     current_format_ids = set(current_formats)
     base_format_ids = set(base_formats or {})
-    for entity_id in sorted(current_format_ids - base_format_ids):
-        require_target(errors, changes, "format", entity_id, "added")
+    # Like the enum catalog, the format catalog is a curated documentation
+    # selection: most formats predate OpenTS, so a new page records a decision
+    # to document one rather than an engine addition. Removal stays an engine
+    # lifecycle event because the published route has to survive it.
     for entity_id in sorted(base_format_ids - current_format_ids):
         require_target(errors, changes, "format", entity_id, "removed")
         record = tombstone_map.get(("format", entity_id))

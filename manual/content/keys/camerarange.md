@@ -8,4 +8,4 @@ when_omitted:
   value: "9"
 ---
 
-The value is written in cells and converted to leptons as it is read. Nothing reads it back and nothing falls back to it. The camera-weapon branch its name fits — an aircraft revealing ground instead of firing — is compiled out of the game, and that branch reveals a hard-coded nine cells rather than consulting this value.
+The value is written in cells and converted to leptons as it is read. The camera-weapon branch its name fits is an aircraft revealing ground instead of firing. It is compiled out of the game, and the branch reveals a hard-coded nine cells rather than reading this value.

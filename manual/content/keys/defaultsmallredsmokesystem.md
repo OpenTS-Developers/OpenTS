@@ -8,4 +8,4 @@ when_omitted:
   value: none
 ---
 
-One of the ten `Default…System` names the section carries, each parsed into its own place and nine of the ten never read. [`DefaultDebrisSmokeSystem`](/keys/defaultdebrissmokesystem/) covers where the systems an object or a weapon gives off are actually named.
+One of the ten `Default…System` names the section sets, each parsed into its own place and nine of the ten never read. [`DefaultDebrisSmokeSystem`](/keys/defaultdebrissmokesystem/) covers where the systems an object or a weapon gives off are actually named.

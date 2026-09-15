@@ -9,7 +9,4 @@ targets:
 credit: [ZivDero]
 ---
 
-A computer player the menu seats is now given one of the countries the lobby offers, drawn at
-random from those carrying `Multiplay=yes`, where it drew from the first two countries in the
-rules whatever they were. With the two playable countries the shipped rules name, the draw is the
-same one it always was.
+A computer player the menu seats is now given one of the countries the lobby offers, drawn at random from those with `Multiplay=yes`. It previously drew from the first two countries in the rules, whatever they were. The shipped rules mark two countries `Multiplay=yes`, and both are among the first two. A game on the shipped rules draws as it did before.

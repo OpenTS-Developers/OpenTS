@@ -9,4 +9,4 @@ targets:
 credit: [ZivDero]
 ---
 
-Scenario object rows and trigger definitions now require their registered HouseType to have a live house in the current session. Rows without one are skipped before construction, links to missing or rejected triggers remain empty, and tags that name them remain inert. Vehicle follower IDs are resolved through the original `[Units]` row positions, so skipping or failing to place one row no longer redirects another vehicle's follower link through a compacted runtime list.
+Scenario object rows and trigger definitions now require their registered HouseType to have a live house in the current session. A row without one is skipped before construction, and a link to a missing or rejected trigger stays empty, so a tag naming one remains inert. Vehicle follower IDs are resolved through the original `[Units]` row positions. Skipping or failing to place a row no longer redirects another vehicle's follower link through a compacted runtime list.

@@ -766,8 +766,9 @@ static CampaignType Choose_Campaign(void)
 /// <summary>
 /// Loads the rules and the art control files.
 /// This routine gathers every rules file it can find and, should there be more than one,
-/// asks the player which of them to play with. It then loads the art, expansion, AI and
-/// language override files, and seeds the multiplayer defaults from the rules just read.
+/// asks the player which of them to play with. It then loads the art, expansion, multiplayer,
+/// AI and language override files, and seeds the multiplayer defaults from the rules just
+/// read. The addon is chosen later, so the multiplayer expansion file cannot seed them.
 /// </summary>
 /// <returns>bool; Were the rules loaded successfully?</returns>
 static bool Init_Rules(void)
@@ -828,6 +829,25 @@ static bool Init_Rules(void)
 		}
 	}
 
+	// Unlike the expansion rules above, an unreadable multiplayer file is not fatal; the game
+	// starts without that layer.
+	CCFileClass rules_mp_file(DeploymentConfig.MultiplayerRulesFile.c_str());
+
+	if (rules_mp_file.Is_Available() == true) {
+		if (!MPRuleINI.Load(rules_mp_file, false)) {
+			DebugString("Failed to load %s!\n", DeploymentConfig.MultiplayerRulesFile.c_str());
+		}
+	}
+
+	if (Addon_Installed(ADDON_FIRESTORM)) {
+		CCFileClass rules_mp_fs_file(DeploymentConfig.MultiplayerRulesExpansionFile.c_str());
+		if (rules_mp_fs_file.Is_Available() == true) {
+			if (!FSMPRuleINI.Load(rules_mp_fs_file, false)) {
+				DebugString("Failed to load %s!\n", DeploymentConfig.MultiplayerRulesExpansionFile.c_str());
+			}
+		}
+	}
+
 	if (Rules.Count() == 1) {
 		RuleINI = Rules[0];
 	} else {
@@ -847,6 +867,7 @@ static bool Init_Rules(void)
 	Rule->Do_Movies(art_ini);
 	Rule->Audio_Visual_Rules(*RuleINI);
 	Rule->MPlayer(*RuleINI);
+	Rule->MPlayer(MPRuleINI);
 
 	Session.Options.UnitCount = Rule->MPUnitCount;
 	BuildLevel = Rule->MPBuildLevel;
@@ -6107,16 +6128,25 @@ bool Prep_For_Side(SideType side)
 
 	if (Session.Type == GAME_NORMAL) {
 
-		if (Addon_Enabled(ADDON_ANY) == false) {
-			sprintf(name, "SIDECD%02d.MIX", id);
-		} else {
+		if (Addon_Enabled(ADDON_ANY) == true) {
 			sprintf(name, "E%02dSCD%02d.MIX", Get_Required_Addon(), id);
+
+			DebugString("     Initializing %s\n", name);
+			if (CCFileClass(name).Is_Available()) {
+				SideCDMix = new MFCD(name, &FastKey);
+			}
 		}
 
-		DebugString("     Initializing %s\n", name);
-		if (CCFileClass(name).Is_Available()) {
-			SideCDMix = new MFCD(name, &FastKey);
+		// An installation may keep the expansion's copies in the base archive instead.
+		if (SideCDMix == NULL) {
+			sprintf(name, "SIDECD%02d.MIX", id);
+
+			DebugString("     Initializing %s\n", name);
+			if (CCFileClass(name).Is_Available()) {
+				SideCDMix = new MFCD(name, &FastKey);
+			}
 		}
+
 		if (SideCDMix == NULL) {
 			DebugString("     FAILED!\n");
 			return(false);

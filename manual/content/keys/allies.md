@@ -8,7 +8,7 @@ when_omitted:
   note: An empty list, which leaves the house allied to nobody but itself.
 ---
 
-The value is a comma-separated list of house identifiers, matched without regard to letter case against both the section names and the display names of the loaded houses; a name that matches nothing contributes nothing. A campaign mission reads it from each house record. A skirmish or multiplayer game reads it instead from the [spawn house](/formats/scenario-objects/#spawn-houses) sections `[Spawn1]` through `[Spawn8]`, for the house starting at that position; there a name may also be a spawn house, which allies with the one house holding that position, while a country allies with every house playing it. A section for a position nobody holds is ignored, and an observer is never allied.
+The value is a comma-separated list of house identifiers. Each name is matched without regard to letter case against both the section names and the display names of the loaded houses, and a name that matches nothing contributes nothing. A campaign mission reads it from each house record. A skirmish or multiplayer game reads it instead from the [spawn house](/formats/scenario-objects/#spawn-houses) sections `[Spawn1]` through `[Spawn8]`, and each section belongs to the house starting at that position. There a name may also be a spawn house: the house allies with the one house holding that position. A country name allies it with every house playing that country. A section for a position nobody holds is ignored, and an observer is never allied.
 
 ```ini title="scenario map file"
 [Special] ; a house record in the scenario's own house list

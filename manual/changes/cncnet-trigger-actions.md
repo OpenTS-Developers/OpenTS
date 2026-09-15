@@ -45,6 +45,4 @@ targets:
 credit: [ZivDero, Rampastring]
 ---
 
-Maps gain thirteen trigger actions for credits, building placement, short-game
-rules, allied visibility, object management, missions, alliances, and autosaves.
-Rampastring wrote the Tiberian Sun patches implementation these actions follow.
+Maps gain thirteen trigger actions for credits, building placement, short-game rules, allied visibility, object management, missions, alliances, and autosaves. Rampastring wrote the Tiberian Sun patches implementation these actions follow.

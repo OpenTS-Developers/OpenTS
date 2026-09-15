@@ -26,5 +26,5 @@ AllowBurrowing=no    ; nothing surfaces out of a cliff face
 ```
 
 :::caution[The test is skipped outside the playable area]
-A cell outside the playable area answers yes before the tile is consulted at all, as does a cell whose tile index is unresolved. Only ground inside the playable area is actually protected by the flag.
+A cell outside the playable area answers yes before the tile is checked at all, as does a cell whose tile index is unresolved. Only ground inside the playable area is actually protected by the flag.
 :::

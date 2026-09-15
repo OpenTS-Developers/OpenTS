@@ -7,6 +7,6 @@ when_omitted:
   value: "yes"
 ---
 
-The caption carries the name alone, wrapped to the width of the slot and broken at spaces and hyphens. The price moves with the setting rather than disappearing: with captions on, the tooltip reports the price by itself; with captions off, it reports the name and the price together. A superweapon's tooltip is its name either way.
+The caption shows the name alone, wrapped to the width of the slot and broken at spaces and hyphens. The price moves with the setting rather than disappearing: with captions on, the tooltip reports the price by itself; with captions off, it reports the name and the price together. A superweapon's tooltip is its name either way.
 
-The in-game options dialog carries the same switch and writes the choice back to `sun.ini`.
+The in-game options dialog has the same switch and writes the choice back to `sun.ini`.

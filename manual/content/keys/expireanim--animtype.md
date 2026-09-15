@@ -8,7 +8,7 @@ when_omitted:
   value: none
 ---
 
-An animation of the named type is created where a thrown animation ends its life, provided that end does not come low over water: solid ground, a bridge deck, and anything more than about a cell and a half above the ground all take this path. An animation that ends low over water makes a wake and a small splash instead — a meteor plays the last animation of the rules' [`SplashList`](/keys/splashlist/) — and this setting is not consulted there.
+An animation of the named type is created where a thrown animation ends its life, provided that end does not come low over water. An end counts as low over water when the contact cell's terrain is water and the contact sits less than 416 leptons above the ground height at that cell. That figure is the height of a bridge deck, about a cell and a half. Solid ground, a bridge deck, and anything at or above that height all take the impact path. An animation that ends low over water makes a wake and a small splash instead. A meteor plays the last animation of the rules' [`SplashList`](/keys/splashlist/) in place of both. This setting is not read on a water landing.
 
 The end comes on the first contact of the flight, so the impact effects and the [`BounceAnim`](/keys/bounceanim/#scope-animtype) effects can both appear on the same frame at the same place.
 

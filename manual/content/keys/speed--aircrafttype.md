@@ -9,9 +9,9 @@ when_omitted:
   note: Zero is immobile. Every stock type that moves sets the key.
 ---
 
-The figure is a percentage, not a distance. It is clamped to the range 0 to 100 and then scaled onto the engine's internal 0-to-255 speed scale, so `Speed=100` is the fastest any type can be given, `Speed=50` stores 128, and a figure above 100 is no faster than 100.
+The figure is a percentage, not a distance. It is clamped to the range 0 to 100 and then scaled onto the engine's internal 0-to-255 speed scale. `Speed=100` is the fastest any type can be given, `Speed=50` stores 128, and a figure above 100 is no faster than 100.
 
-What the scaled figure means is the ground the object covers in one game frame, before the things that scale it: [the house's combined ground speed bias](/systems/difficulty/#how-the-figures-are-combined), the veteran speed ability, a limpet drone clamped to a vehicle, the terrain under it, the throttle its locomotor is holding it at, and any speed bias a crate has given it. A vehicle carrying the flag in capture-the-flag travels at half the result.
+The scaled figure is the ground the object covers in one game frame, before anything scales it. The scalers are [the house's combined ground speed bias](/systems/difficulty/#how-the-figures-are-combined), the veteran speed ability, a limpet drone clamped to a vehicle, the throttle its locomotor is holding it at, and any speed bias a crate has given it. A vehicle with the flag in capture-the-flag travels at half the result.
 
 ```ini title="rules.ini"
 [HARV]

@@ -8,4 +8,4 @@ when_omitted:
   value: "0"
 ---
 
-The name promises a heap consistency check running alongside the game. A non-zero value does raise a global flag at the top of every game frame, but nothing anywhere reads that flag back. No gameplay path acts on it.
+Despite its name, no heap consistency check runs alongside the game. The engine reads the value from the `[MultiPlayer]` section of `sun.ini` as the multiplayer menu is entered. A non-zero value sets a global flag at the top of every game frame, and nothing reads that flag back.

@@ -8,7 +8,7 @@ when_omitted:
   note: "`MMT` for TEMPERATE and `MMS` for SNOW, which keep their original settings; empty for any other theater, which then makes no second attempt."
 ---
 
-Where a tile's own artwork is missing and its set does not carry [`NonMarbleMadness=0`](/keys/nonmarblemadness/), the loader tries the name again under this extension. It is how the marble madness tile artwork stands in for tiles a theater does not draw itself.
+Where a tile's own artwork is missing and its set does not set [`NonMarbleMadness=0`](/keys/nonmarblemadness/), the loader tries the name again under this extension. It is how the marble madness tile artwork stands in for tiles a theater does not draw itself.
 
 ```ini title="rules.ini"
 [DESERT]

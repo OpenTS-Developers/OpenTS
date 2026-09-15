@@ -12,4 +12,4 @@ targets:
 credit: [ZivDero]
 ---
 
-A Move to Cell script line split its cell on the old width of 128 columns, which no map wider than that can express, so every such line on a modern map landed somewhere else entirely or off the map. The line now reads its cell on the width the scenario declares, and a number that decodes to a cell outside the map leaves the line without a target instead of aiming the team at a placeholder cell.
+A Move to Cell script line split its cell on the old width of 128 columns, which no map wider than that can express. Every such line on a modern map landed somewhere else entirely, or off the map. The line now reads its cell on the width the scenario declares. A number that decodes to a cell outside the map leaves the line without a target instead of aiming the team at a placeholder cell.

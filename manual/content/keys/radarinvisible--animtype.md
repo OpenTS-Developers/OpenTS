@@ -8,4 +8,4 @@ when_omitted:
   value: "yes"
 ---
 
-An AnimType starts with the flag already set, which changes nothing while nothing consults it.
+An AnimType starts with the flag already set, which changes nothing while nothing reads it.

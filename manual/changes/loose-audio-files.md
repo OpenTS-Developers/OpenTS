@@ -9,6 +9,6 @@ targets:
 credit: [ZivDero, CCHyper]
 ---
 
-A sound effect's sample is now looked up through the file layer when it first plays, so a loose file in the game directory and a member of any mounted archive both play, and a loose file replaces an archived one. Before, a sample had to be in an archive cached at startup. `.WAV`, `.OGG`, `.FLAC` and `.MP3` samples are accepted alongside `.AUD`.
+A sound effect's sample is now looked up through the file layer when it first plays. A loose file in the game directory plays, and so does a member of any mounted archive; a loose file replaces an archived one. Before, a sample had to be in an archive cached at startup. `.WAV`, `.OGG`, `.FLAC` and `.MP3` samples are accepted alongside `.AUD`.
 
 CCHyper is credited for the Vinifera sound loading this follows, which accepts the same formats from loose files.

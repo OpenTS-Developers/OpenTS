@@ -17,10 +17,10 @@ values:
   - { constant: QUARRY_VEHICLES, value: 5, input: "5", meaning: "Combat vehicles." }
   - { constant: QUARRY_FACTORIES, value: 6, input: "6", meaning: "Production factories." }
   - { constant: QUARRY_DEFENSE, value: 7, input: "7", meaning: "Base-defense buildings." }
-  - { constant: QUARRY_THREAT, value: 8, input: "8", meaning: "Runs the same unrestricted scan as category 1; nothing measures proximity to a base." }
+  - { constant: QUARRY_THREAT, value: 8, input: "8", meaning: "Runs the identical scan to category 1; nothing measures distance to a base." }
   - { constant: QUARRY_POWER, value: 9, input: "9", meaning: "Power facilities." }
 ---
 
-A **quarry** is the kind of object a team is hunting rather than any one target it has picked. The category is accordingly a filter on a whole-map scan: a team's attack mission hands it to a member of the team, and [target selection](/systems/target-selection/) decides which candidates that category admits and scores what survives. A value outside the list is treated the same way as category 0 — no target is assigned, and the team is marked ready for its next mission.
+A **quarry** is the kind of object a team is hunting rather than a single target it has picked. The category filters a scan over the whole map. A team's attack mission passes it to the team leader, and [target selection](/systems/target-selection/) scores the candidates it admits. Category 2 admits every building the scan can see, including the power facilities, production factories and base-defense buildings that categories 6, 7 and 9 single out. Those three narrow the scan to their own kind of building. A value outside the list behaves exactly as category 0 does: no target is assigned, and the team moves on to the next mission in its script.
 
-The categories have a second consumer that is not a scan at all: [Preferred target...](/mapping/actions/taction-preferred-target/) stores one on a house rather than handing it to a team, and that page covers what becomes of it.
+The categories have a second consumer that runs no scan. [Preferred target...](/mapping/actions/taction-preferred-target/) stores one on a house instead of passing it to a team, and that page covers what becomes of it.

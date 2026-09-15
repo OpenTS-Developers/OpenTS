@@ -12,4 +12,4 @@ targets:
 credit: [ZivDero, Iran, CCHyper]
 ---
 
-A veterancy crate now promotes only objects whose types have `Trainable=yes`. It promoted every object within its radius before, and still promotes them whoever owns them.
+A veterancy crate now promotes only objects whose types set `Trainable=yes` in their own section of `rules.ini`. It promoted every object within its radius before, and still promotes them whoever owns them.

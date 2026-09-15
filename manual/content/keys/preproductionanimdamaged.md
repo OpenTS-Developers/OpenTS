@@ -7,6 +7,6 @@ when_omitted:
   note: The animation PreProductionAnim names.
 ---
 
-Only a [`ConstructionYard=yes`](/keys/constructionyard/) structure ever asks for this name, and only when its health has fallen to [`ConditionYellow`](/keys/conditionyellow/) or below as the animation is created. An unloading harvester asks for the healthy name however damaged the structure it is docked with, so this one is never reached at a dock.
+At the moment a slot is filled, only a [`ConstructionYard=yes`](/keys/constructionyard/) structure picks this name, and only when its health has fallen to [`ConditionYellow`](/keys/conditionyellow/) or below. An unloading harvester always fills the slot on the structure it docks with in its healthy form. The docked structure switches to this name when its health falls to [`ConditionYellow`](/keys/conditionyellow/) or below while the slot is running.
 
 A slot that names only this one and no healthy animation therefore runs nothing at a dock, and nothing on a healthy construction yard.

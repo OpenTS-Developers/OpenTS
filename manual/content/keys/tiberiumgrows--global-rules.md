@@ -9,4 +9,4 @@ when_omitted:
   value: "yes"
 ---
 
-The value is stored with the other multiplayer defaults and never consulted. The spelling that shortens the growth delay is the [scenario `[SpecialFlags]` entry](/keys/tiberiumgrows/#scope-scenarios).
+The value is stored with the other multiplayer defaults and never read. The spelling that shortens the growth delay is the [scenario `[SpecialFlags]` entry](/keys/tiberiumgrows/#scope-scenarios).

@@ -7,6 +7,6 @@ when_omitted:
   value: ".002"
 ---
 
-The figure is multiplied by the vehicle's top speed and the product is subtracted from its throttle once per frame, both while it is braking over the last [`SlowdownDistance`](/keys/slowdowndistance/) of its journey and whenever it is running faster than the speed it has been told to hold. Braking on the approach never takes the throttle below three tenths; only a stop order brings a vehicle to rest. Only a vehicle carrying [`Accelerates=yes`](/keys/accelerates/) and moved by the drive locomotor is affected.
+The figure is multiplied by the vehicle's top speed, and the product is subtracted from its throttle once per frame. That happens both while it is braking over the last [`SlowdownDistance`](/keys/slowdowndistance/) of its journey and whenever it is running faster than the speed it has been told to hold. Braking on the approach never takes the throttle below three tenths; only a stop order brings a vehicle to rest. Only a vehicle with [`Accelerates=yes`](/keys/accelerates/) and moved by the drive locomotor is affected.
 
-Multiplying by top speed is what makes the two stock figures line up. A vehicle at [`Speed=6`](/keys/speed/#scope-aircrafttype) sheds `.03` of its throttle per frame — exactly what [`AccelerationFactor`](/keys/accelerationfactor/) adds — while a faster type brakes proportionally harder and a slower one more gently, from the same written figure.
+Multiplying by top speed is what makes the two stock figures line up. A vehicle at [`Speed=6`](/keys/speed/#scope-aircrafttype) sheds `.03` of its throttle per frame, exactly what [`AccelerationFactor`](/keys/accelerationfactor/) adds. A faster type brakes proportionally harder and a slower one more gently from the same written figure.

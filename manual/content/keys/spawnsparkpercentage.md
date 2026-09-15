@@ -7,7 +7,7 @@ when_omitted:
   value: "0.0"
 ---
 
-A fraction from `0` to `1`, rolled once per frame while the system still has [`SparkSpawnFrames`](/keys/sparkspawnframes/) left. At `1` every frame throws a burst, and at `.4` about two frames in five do, which is what makes a welding shower stutter rather than pour. Only the `Spark` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it.
+A fraction from `0` to `1`, rolled once per frame while the system still has [`SparkSpawnFrames`](/keys/sparkspawnframes/) left. At `.4` about two frames in five throw a burst, which is what makes a welding shower stutter rather than pour. Each throw scatters one burst, its size set against [`ParticleCap`](/keys/particlecap/). Only the `Spark` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it.
 
 ```ini title="rules.ini"
 [MySparkSys] ; a ParticleSystemType registered in [ParticleSystems]

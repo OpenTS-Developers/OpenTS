@@ -7,12 +7,12 @@ when_omitted:
   value: "no"
 ---
 
-The animation is created on the stage held by [`LoopEnd`](/keys/loopend/) and steps down one stage at a time, finishing once the stage arrives at [`Start`](/keys/start/). Every further pass begins on the loop end again, and [`LoopStart`](/keys/loopstart/) is not consulted at all.
+A stage is the animation's frame counter, and the frame drawn is the type's start frame plus it. A reversed animation is created on the stage held by [`LoopEnd`](/keys/loopend/) and steps down one stage at a time, finishing once the stage arrives at [`Start`](/keys/start/). Every further pass begins on the loop end again, and [`LoopStart`](/keys/loopstart/) is not read at all.
 
-The flag is applied only when the animation is created. One that reaches this type through [`Next=`](/keys/next/) is put on the type's start figure as a stage but keeps stepping the way it already was, so the flag on the type it arrived at is never read.
+The flag is applied only when the animation is created. One that reaches this type through [`Next=`](/keys/next/) is put on the type's start figure as a stage but keeps stepping the way it already was. The flag on the type it arrived at is never read.
 
 :::caution[A reversed animation usually opens on a blank frame]
-The loop end is put on the animation as a stage rather than as a frame number, so the first frame displayed is the start frame added to the loop end. On the ordinary animation, whose start frame is zero, that is the loop end itself — and while the loop end is left at the shape's own frame count, it is one frame past the last frame the shape holds and draws nothing. Setting `LoopEnd=` to the number of the last frame rather than to the frame count removes the blank opening frame.
+The loop end is put on the animation as a stage rather than as a frame number, so the first frame displayed is the start frame added to the loop end. On the ordinary animation, whose start frame is zero, that is the loop end itself. With the loop end left at the shape's own frame count, that frame is one past the last frame the shape holds and draws nothing. Setting `LoopEnd=` to the number of the last frame rather than to the frame count removes the blank opening frame.
 :::
 
 ```ini title="art.ini"

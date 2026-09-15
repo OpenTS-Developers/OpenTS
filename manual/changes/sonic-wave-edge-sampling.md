@@ -6,9 +6,4 @@ targets: []
 credit: [ZivDero]
 ---
 
-Scrolling so that a sonic wave leaves the bottom or a side of the view no longer risks a
-crash. The ripple draws each pixel by lifting a replacement pixel from up to three pixels
-away along the wave's direction of travel, and a wave lying against the view's edge could
-lift its replacement from past the end of the frame, or from the interface beside the
-view. A replacement that would come from outside the view is now left untaken and the
-pixel keeps its own color, so the wave covers exactly the pixels it always did.
+Scrolling so that a sonic wave leaves the bottom or a side of the view no longer risks a crash. The ripple draws each pixel by lifting a replacement pixel from up to three pixels away along the wave's direction of travel. A wave lying against the view's edge could lift its replacement from past the end of the frame, or from the interface beside the view. A replacement that would come from outside the view is now left untaken, and the pixel keeps its own color.

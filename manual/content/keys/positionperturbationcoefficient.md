@@ -7,7 +7,7 @@ when_omitted:
   value: "0.0"
 ---
 
-Each of the three axes is offset independently by a fresh amount running from half the figure one way to half the other, so a setting of `30` scatters a particle up to fifteen leptons in any direction from where the corkscrew put it. The offsets are in leptons, the same units as [`SpiralRadius`](/keys/spiralradius/), and are applied on top of it. Only the `Railgun` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it.
+Each of the three axes is offset independently by a fresh amount running from half the figure one way to half the other. A setting of `30` therefore moves a particle up to fifteen leptons along each axis from where the corkscrew put it. The offsets are in leptons, the same units as [`SpiralRadius`](/keys/spiralradius/), and are applied on top of it. Only the `Railgun` [behavior](/keys/behaveslike/#scope-particlesystemtype) reads it.
 
 ```ini title="rules.ini"
 [MyRailgunSys] ; a ParticleSystemType registered in [ParticleSystems]

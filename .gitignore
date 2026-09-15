@@ -57,3 +57,6 @@ manual/data/.manual-generate-*/
 
 # Agent worktrees, which are checkouts of this repository placed inside it
 /.claude/worktrees/
+
+# Owner-local documents (untracked adjudication material)
+/docs/local/

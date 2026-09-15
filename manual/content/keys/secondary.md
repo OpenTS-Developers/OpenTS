@@ -15,8 +15,8 @@ Primary=MyCannon      ; each names its own weapon section
 Secondary=MyMachineGun
 ```
 
-Writing `none` or `<none>` empties the slot, and an ID with no section of its own registers a WeaponType carrying only its defaults.
+Writing `none` or `<none>` empties the slot, and an ID with no section of its own registers a WeaponType with only its defaults.
 
 :::danger[An empty second slot can still be chosen]
-When the first slot's warhead is [`Webby=yes`](/keys/webby/), weapon choice answers with the second slot for every target the web weapon could otherwise fire at but cannot web — every vehicle and building, a landed aircraft, and every immobilized or [`IsWebImmune=yes`](/keys/iswebimmune/) infantry. Scoring tolerates an empty slot, but the retaliation test reads the warhead out of it without checking that it is filled, so an object with a web weapon and no second weapon fails as soon as such a target damages it. Always give a web weapon a companion in this slot.
+When the first slot's warhead is [`Webby=yes`](/keys/webby/), weapon choice returns the second slot for every target the web weapon could fire at but cannot web. That covers every vehicle and building, a landed aircraft, and every immobilized or [`IsWebImmune=yes`](/keys/iswebimmune/) infantry. Scoring tolerates an empty slot. The retaliation test does not: it reads the warhead out of the second slot without checking that the slot is filled, through a weapon pointer that is not there. An object with a web weapon and no second weapon therefore crashes the moment it tries to retaliate against such a target. Always give a web weapon a companion in this slot.
 :::

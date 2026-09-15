@@ -16,7 +16,7 @@ LightGreenTint=0.01
 LightBlueTint=0.7
 ```
 
-The figure is a fraction of full strength on the same scale the map's own color grading uses, so `1` adds as much blue at the structure's center as a fully lit map already carries and the addition falls away to nothing at [`LightVisibility`](/keys/lightvisibility/), exactly as [`LightIntensity`](/keys/lightintensity/) does. A negative figure takes blue out of the cells instead.
+The figure is a fraction of full brightness on the same scale the map's own color grading uses. `1` adds as much blue at the structure's center as a fully lit map already has, and the addition falls away to nothing at [`LightVisibility`](/keys/lightvisibility/), exactly as [`LightIntensity`](/keys/lightintensity/) does. A negative figure takes blue out of the cells instead.
 
 What reaches the screen is the balance between the three tints rather than their size, which [`LightRedTint`](/keys/lightredtint/) covers.
 

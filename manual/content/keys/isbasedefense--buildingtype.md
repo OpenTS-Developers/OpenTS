@@ -8,4 +8,4 @@ when_omitted:
   value: "no"
 ---
 
-Only a type carrying this flag has its anti-air, anti-armor and anti-infantry values [computed from its primary weapon](/systems/ai-base-building/#base-defenses), and a type whose three values stay at zero never enters a defense candidate list. Outside a campaign game, the node of such a building is retired to a fresh placeholder when the building is taken off the map, so the planner picks a new type and cell rather than rebuilding what was lost.
+Only a type with this flag has its anti-air, anti-armor and anti-infantry values [computed from its primary weapon](/systems/ai-base-building/#base-defenses). A type whose three values stay at zero never enters a defense candidate list. Where the computer is not following a map plan, the node of such a building is retired to a fresh placeholder when the building is taken off the map. The planner then picks a new type and cell rather than rebuilding what was lost.

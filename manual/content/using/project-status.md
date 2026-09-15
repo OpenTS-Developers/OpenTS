@@ -16,15 +16,15 @@ OpenTS is an active continuation of the reconstructed Tiberian Sun engine,
 released as a complete standalone `Game.exe` alongside the engine source and
 this manual.
 
-Release 0.1.0 delivers the complete Tiberian Sun 2.03 Firestorm game with
-the fixes and changes listed in its release notes. The GDI and Nod
+Release 0.1.0 runs the full Tiberian Sun 2.03 Firestorm game, with the fixes
+and changes listed in its release notes. The GDI and Nod
 campaigns, the Firestorm campaigns, skirmish, and saving and loading are
 functional and have received full play-through testing. LAN multiplayer is
 functional with more limited testing. No user-visible regression from the
 original game is currently known. CnCNet play is not yet supported.
 
 Stable releases are published on the project's GitHub releases page. Nightly
-developer builds carry the latest merged changes without release validation,
+developer builds have the latest merged changes without release validation,
 and their downloads expire after 90 days. OpenTS does not distribute the
 original game assets; an existing Tiberian Sun installation provides them.
 

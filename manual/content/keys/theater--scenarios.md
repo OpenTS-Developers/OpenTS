@@ -13,8 +13,8 @@ when_omitted:
 Theater=SNOW
 ```
 
-The theater is settled before any of the map's contents are read, because it decides which tile, art and palette archives are mounted for the whole load. The name matches one the rules declared under [`[Theaters]`](/formats/rules-registries/), ignoring case; unmodified rules declare `TEMPERATE` and `SNOW`. Beyond the artwork the theater also settles the snow-only behavior in the simulation, so [`IceGrowthEnabled`](/keys/icegrowthenabled/) does nothing in a theater without ice.
+The theater is settled before any of the map's contents are read. It decides which tile, art and palette archives are mounted for the whole load. The name matches one of the declared theaters, ignoring case. The declared list comes from the rules file's [`[Theaters]`](/formats/rules-registries/) section; a setup whose rules declare no such section still has `TEMPERATE` and `SNOW`, in that order. The theater also decides whether the ice simulation runs, so [`IceGrowthEnabled`](/keys/icegrowthenabled/) does nothing in a theater whose [`IsIceGrowthEnabled`](/keys/isicegrowthenabled/) is off.
 
-Unlike the rest of the scenario's settings, this one lives in the map's `[Map]` section.
+Scenario-wide settings live mostly in the map file's `[Basic]` section. This one goes under `[Map]`.
 
-A name no theater answers to is reported and the map is played in the first declared theater, as it is when the key is missing altogether.
+A name no theater answers to is logged, and the map is played in the first declared theater. The same fallback applies when the key is missing altogether.

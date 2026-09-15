@@ -9,6 +9,4 @@ targets:
 credit: [ZivDero, dkeeton]
 ---
 
-A WeaponType whose `Burst` is zero or negative now stores one when its rules section is
-read, so the firing and animation paths never receive zero as their burst divisor from
-rules data.
+A WeaponType whose `Burst` is zero or negative now stores one when its rules section is read. The firing and animation paths therefore never receive zero as their burst divisor from rules data.

@@ -6,5 +6,4 @@ targets: []
 credit: [Belonit, ZivDero]
 ---
 
-A map small enough to fit entirely on screen now sits centered and still. It used to flicker and
-slide around as the view scrolled.
+A map whose playable area fits entirely on screen now sits centered and still. It used to flicker and slide around as the view scrolled.

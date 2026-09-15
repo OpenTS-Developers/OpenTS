@@ -2,7 +2,7 @@
 enum_id: CategoryType
 slug: object-category
 title: Object category
-summary: Classification tokens carried by infantry, vehicle, aircraft and building types, which only the dropship loadout screen reads.
+summary: Classification tokens set on by infantry, vehicle, aircraft and building types, which only the dropship loadout screen reads.
 representation: token
 bindings:
   key_value_types: [CategoryType]
@@ -22,11 +22,11 @@ values:
   - { constant: CATEGORY_AIRTRANSPORT, value: 10, input: "AirLift", meaning: "Air transport." }
 ---
 
-Only one of the eleven ever decides anything. The dropship loadout screen leaves an InfantryType marked `Civilian` out of the cameos a player may pick from, and does even that only where the scenario supplies no allowable-units list of its own; nothing the engine itself calls compares against the other ten.
+Only one of the eleven ever decides anything. The dropship loadout screen leaves an InfantryType marked `Civilian` out of the cameos a player may pick from. It does even that only where the scenario supplies no allowable-units list of its own. Nothing the engine itself calls compares against the other ten.
 
-Each category carries two spellings and answers to both. The short token is the one the engine writes back out; the longer description is the wording an editor shows, and it is matched the same way with case ignored. A name that is neither leaves the type with no category at all rather than falling back on the previous one. `Soldier` and `Civilian` spell the two forms alike, so the table pairs the remaining nine — read it in either direction, since a rules file may carry the long form where a modder expects the short.
+Each category has two spellings and answers to both, and the comparison ignores case: `recon vehicle` and `Recon` name the same category. A name that is neither leaves the type with no category at all rather than falling back on the previous one. `Soldier` and `Civilian` spell the two forms alike, so the table pairs the remaining nine. Read it in either direction, since a rules file may use the long form where a modder expects the short.
 
-| Short token | Editor description |
+| Short token | Long description |
 | --- | --- |
 | `VIP` | `VIP/Agent` |
 | `Recon` | `Recon Vehicle` |

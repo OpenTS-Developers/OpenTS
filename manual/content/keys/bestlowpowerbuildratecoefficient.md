@@ -8,4 +8,4 @@ when_omitted:
   value: ".75"
 ---
 
-The gentlest production multiplier a shortfall can impose is fixed in the engine at the same `0.75` this default names, and nothing reads the value; changing it does not move that step. [The production ladder](/systems/power/#production) lists the steps that are actually applied.
+The gentlest production multiplier a shortfall can impose is fixed in the engine at `0.75`, the same figure this default names. [The production ladder](/systems/power/#production) lists the steps that are actually applied.

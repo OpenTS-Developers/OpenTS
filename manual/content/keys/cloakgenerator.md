@@ -14,8 +14,8 @@ The field falls whenever the structure stops being operational, which it does un
 - it is switched off;
 - it is stunned;
 - its strength has reached zero;
-- **All of:** its type is [`Powered=yes`](/keys/powered/), its type carries drain of its own, its type is [`TogglePower=yes`](/keys/togglepower/), and its house's power fraction is below 1.
+- **All of:** its type is [`Powered=yes`](/keys/powered/), its type sets drain of its own, its type is [`TogglePower=yes`](/keys/togglepower/), and its house's power fraction is below 1.
 
 The field regrows ring by ring once the structure is operational again. One caught mid-collapse resumes from the ring it had reached, and only a fully collapsed one starts over from the structure. A generator left at `Powered=no` keeps its field through a shortfall.
 
-The frame a field finishes growing, every operational [`SensorArray=yes`](/keys/sensorarray/) structure on the map — of any house — re-stamps its coverage, refreshing the display of the objects the new field just faded wherever a sensor reaches them.
+The frame a field finishes growing, every operational [`SensorArray=yes`](/keys/sensorarray/) structure on the map (of any house) re-stamps its coverage, refreshing the display of the objects the new field just faded wherever a sensor reaches them.

@@ -7,7 +7,7 @@ when_omitted:
   value: ""
 ---
 
-A comma-separated list of ability tokens, matched without regard to letter case and parsed exactly like [`VeteranAbilities`](/keys/veteranabilities/), including the whitespace and length limits described there. The list is consulted only at elite rank: a veteran of the same type gets nothing from it, and an elite holds the union of both lists. [The ability table](/systems/veterancy/#abilities) lists the eighteen accepted tokens and what each one does.
+A comma-separated list of ability tokens, matched without regard to letter case and parsed exactly like [`VeteranAbilities`](/keys/veteranabilities/), including the whitespace rule described there. The list is read only at elite rank: a veteran of the same type gets nothing from it, and an elite holds the union of both lists. [The ability table](/systems/veterancy/#abilities) lists the eighteen accepted tokens and what each one does.
 
 ```ini title="rules.ini"
 [MYTANK] ; example UnitType
