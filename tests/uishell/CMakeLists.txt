@@ -35,6 +35,7 @@ opents_add_test(UIShell
         ui/screens/desync/uidesync.cpp
         ui/screens/mapgen/uimapgen.cpp
         ui/screens/menu/uimenu.cpp
+        ui/screens/reconnect/uireconnect.cpp
         ui/screens/msgbox/uimsgbox.cpp
         ui/screens/netlobby/uinetlobby.cpp
         ui/screens/savegame/uisavegame.cpp

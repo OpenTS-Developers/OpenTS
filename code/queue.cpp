@@ -75,6 +75,11 @@
 
 #include "always.h"
 
+#include "ui/screens/reconnect/uireconnect.h"
+
+#include <string>
+#include <vector>
+
 #include "queue.h"
 
 #include "_keyboar.h"
@@ -331,6 +336,9 @@ static int Handle_Timeout(ConnManClass *net, FrameSyncStruct *their);
 static void Stop_Game(bool=false);
 INT_PTR CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 static void Close_Reconnect_Dialog(void);
+void ListBox_Trim(HWND listbox);
+void Propose_Kick_Player(HWND window, int id);
+void Reconnect_Say(HWND listbox, char const * text);
 void Kick_Player_Now(ConnManClass *net, int kickee, FrameSyncStruct * their, bool error);
 bool Cast_Kick_Vote(int kicker, int kickee);
 void Multiplayer_Debug_Print(void);
@@ -1158,6 +1166,10 @@ void Wait_For_End_Of_Queue(void)
  *   11/21/1995 BRR : Created.                                             *
  *=========================================================================*/
 static int SyncWaitElapsed;		/// how long Wait_For_Players has been waiting
+
+/// The notice the frame-sync wait shows beside the game, and the lines it has printed.
+static UIReconnectBoxClass ReconnectBox;
+static std::vector<std::string> ReconnectLines;
 static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 	int resend_delta, int dialog_time, int timeout, char *multi_packet_buf,
 	int multi_packet_max, int my_sent, FrameSyncStruct *their)
@@ -2046,6 +2058,62 @@ static int Can_Advance(ConnManClass *net, int max_ahead, FrameSyncStruct *their,
  * HISTORY:                                                                *
  *   11/21/1995 BRR : Created.                                             *
  *=========================================================================*/
+/// <summary>
+/// Prints a line on whichever presentation of the frame-sync notice is up.
+/// </summary>
+/// <param name="listbox">The dialog's message list, or null while a screen stands instead.</param>
+void Reconnect_Say(HWND listbox, char const * text)
+{
+	if (text == NULL) {
+		return;
+	}
+
+	ReconnectLines.push_back(text);
+	if (ReconnectLines.size() > 200) {
+		ReconnectLines.erase(ReconnectLines.begin());
+	}
+
+	if (listbox != NULL) {
+		ListBox_AddString(listbox, text);
+		ListBox_Trim(listbox);
+	}
+}
+
+
+/// <summary>
+/// Gathers what the frame-sync notice shows: a seat for every player with the gauge its wait
+/// has run down to, the lines printed so far, and how long is left.
+/// </summary>
+static UIReconnectState Reconnect_Notice(FrameSyncStruct * their, int num_conn, int seconds)
+{
+	UIReconnectState state;
+
+	for (int index = 0; index < Session.Players.Count() && index < MAX_PLAYERS; index++) {
+		UIReconnectPlayer player;
+		player.Name = Session.Players[index]->Name;
+
+		unsigned progress = 0;
+		if (index > 0) {
+			int const connection = Ipx.Connection_Index(Session.Players[index]->Player.ID);
+			if (connection >= 0 && connection < num_conn) {
+				progress = SyncWaitElapsed - SyncBarFrameSync[connection].timing;
+			}
+		}
+
+		player.Colour = (progress > 480) ? "#c80000" : ((progress > 240) ? "#c8c800" : "#00c800");
+		player.Filled = (progress >= 900) ? 0.0f : (1.0f - (float)progress / 900.0f);
+		state.Players.push_back(std::move(player));
+	}
+
+	state.Messages = ReconnectLines;
+
+	char buffer[128];
+	std::snprintf(buffer, sizeof(buffer), Fetch_String(TXT_TIME_ALLOWED), seconds);
+	state.TimeRemaining = buffer;
+	return(state);
+}
+
+
 static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_timer,
 	FrameSyncStruct *their, int num_conn, int reconn, int fresh,
 	BasicTimerClass<SystemTimerClass> *timer)
@@ -2074,6 +2142,12 @@ static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_time
 	if (fresh) {
 		TacticalActive = false;
 		disconnect_return = -1;
+		ReconnectLines.clear();
+
+		if (ReconnectBox.Show(Reconnect_Notice(their, num_conn, (int)(*timeout_timer / TIMER_SECOND)))) {
+			return(0);
+		}
+
 		disconnect_dialog = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_DISCONNECT, MainWindow, Reconnect_Dialog_Proc, true);
 		Center_Window_Within_Window(disconnect_dialog);
 		if (disconnect_dialog) {
@@ -2088,6 +2162,23 @@ static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_time
 	//------------------------------------------------------------------------
 	/// If the user hit Cancel, bail out of the game.
 	//------------------------------------------------------------------------
+	// The notice stands beside the game, so what the player pressed is read back here rather
+	// than posted into a dialog's result.
+	if (ReconnectBox.Is_Shown()) {
+		int const kick = ReconnectBox.Take_Kick_Vote();
+		if (kick >= 0 && kick < Session.Players.Count()) {
+			Propose_Kick_Player(NULL, kick);
+		}
+
+		if (ReconnectBox.Cancelled()) {
+			Close_Reconnect_Dialog();
+			return(1);
+		}
+
+		ReconnectBox.Update(Reconnect_Notice(their, num_conn, (int)(*timeout_timer / TIMER_SECOND)));
+		return(0);
+	}
+
 	if (disconnect_return == IDCANCEL) {
 		WS_Destroy_Dialog(disconnect_dialog, false);
 		TacticalActive = true;
@@ -2390,14 +2481,12 @@ void Propose_Kick_Player(HWND window, int id)
 	HWND listbox = GetDlgItem(window, IDC_DISCONNECT_MESSAGES);
 
 	if (id == 0) {
-		ListBox_AddString(listbox, Fetch_String(TXT_RECONNECT_KICK_SELF));
-		ListBox_Trim(listbox);
+		Reconnect_Say(listbox, Fetch_String(TXT_RECONNECT_KICK_SELF));
 		return;
 	}
 
 	if (Session.Type == GAME_INTERNET && WestwoodOnline_Tournament) {
-		ListBox_AddString(listbox, Fetch_String(TXT_CANT_KICK));
-		ListBox_Trim(listbox);
+		Reconnect_Say(listbox, Fetch_String(TXT_CANT_KICK));
 		return;
 	}
 
@@ -2631,6 +2720,14 @@ INT_PTR CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 /// </summary>
 static void Close_Reconnect_Dialog(void)
 {
+	if (ReconnectBox.Is_Shown()) {
+		ReconnectBox.Hide();
+		TacticalActive = true;
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+		Map.Render();
+		return;
+	}
+
 	//------------------------------------------------------------------------
 	// If the reconnect dialog was shown, force the map to redraw.
 	//------------------------------------------------------------------------
