@@ -224,6 +224,14 @@ class OptionsClass {
 		KeyNumType KeyQueueMove1;
 		KeyNumType KeyQueueMove2;
 
+		/*
+		 * If the dialog face may be drawn from the bitmap strikes Windows cuts it in, then
+		 * this flag will be true. They are drawn at the size they were cut, so they answer
+		 * only where the frame is at one to one and the outline face answers elsewhere;
+		 * clearing this leaves the outline face answering at every size.
+		 */
+		bool BitmapSystemFont;
+
 	private:
 
 		static char const * const HotkeyName;

@@ -121,6 +121,7 @@ OptionsClass::OptionsClass(void) :
 	VoiceVolume(1.0f),
 	ScoreVolume(.5f),
 	LegacyDialogs(false),
+	BitmapSystemFont(true),
 	AutoScroll(true),
 	IsScoreRepeat(false),
 	IsScoreShuffle(false),
@@ -387,6 +388,9 @@ void OptionsClass::Load_Settings(void)
 	LegacyDialogs = ConfigINI.Get_Bool("Options", "LegacyDialogs", LegacyDialogs);
 	DebugString("LegacyDialogs is %s\n", LegacyDialogs == true ? "ON" : "OFF");
 
+	BitmapSystemFont = ConfigINI.Get_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
+	DebugString("BitmapSystemFont is %s\n", BitmapSystemFont == true ? "ON" : "OFF");
+
 	DetailLevel = ConfigINI.Get_Int("Options", "DetailLevel", DetailLevel);
 	DetailLevel = std::min(DetailLevel, 2);
 	DetailLevel = std::max(DetailLevel, 0);
@@ -478,6 +482,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Options", "ScrollRate", ScrollRate);
 	ConfigINI.Put_Bool("Options", "AutoScroll", AutoScroll);
 	ConfigINI.Put_Bool("Options", "LegacyDialogs", LegacyDialogs);
+	ConfigINI.Put_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
 	ConfigINI.Put_Int("Options", "DetailLevel", DetailLevel);
 	ConfigINI.Put_Bool("Options", "SidebarCameoText", SidebarCameoText);
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);

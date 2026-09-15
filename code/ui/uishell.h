@@ -184,6 +184,7 @@ class UIShellClass
 
 		void Register_Fonts(void);
 		void Ensure_Dialog_Font(void);
+		void Apply_Font_Policy(void);
 		bool Load_Sheet_Font(char const * family);
 		bool Advance_Reveal(UIViewClass & view, float full, int start, float & shown);
 
@@ -224,6 +225,7 @@ class UIShellClass
 
 		// The factor the art was last magnified by, so a frame that changes it reloads the art.
 		int ArtMagnification = 1;
+		float PixelRatio = 1.0f;
 
 		// The Debug test document a developer key shows over the game.
 		Rml::ElementDocument * TestDocument = nullptr;

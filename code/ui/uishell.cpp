@@ -30,6 +30,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cmath>
 #include <cstdarg>
 #include <cstdio>
 
@@ -259,6 +260,12 @@ void UIShellClass::Apply_Dimensions(void)
 
 	Context->SetDimensions(Rml::Vector2i(frame.Width, frame.Height));
 	Context->SetDensityIndependentPixelRatio(ratio);
+
+	// RmlUi asks for a face again whenever the ratio changes, which is the moment the policy
+	// below turns over, so nothing else has to be dirtied for it.
+	Fonts->Set_Reference_Scale(ratio);
+	PixelRatio = ratio;
+	Apply_Font_Policy();
 
 	// The art already loaded was magnified for the old frame, so it is let go and loads
 	// again at the new factor as the documents next draw it.
@@ -637,6 +644,16 @@ void UIShellClass::Register_Fonts(void)
 // Looked for once, the first time a screen is about to be drawn. Sheets that load take the
 // family over from the shipped face, because the engine answers for its own families before
 // it hands anything to the one RmlUi made.
+// A strike is drawn at the size it was cut and cannot be resized well, so it answers only
+// where a dp is a pixel and the outline face answers at any other scale. The shell starts
+// before the settings are read, so this is asked again before a screen shows rather than
+// settled once.
+void UIShellClass::Apply_Font_Policy(void)
+{
+	Fonts->Set_Use_Strikes(Host.Bitmap_System_Font() && std::abs(PixelRatio - 1.0f) < 0.001f);
+}
+
+
 void UIShellClass::Ensure_Dialog_Font(void)
 {
 	if (DialogFontTried || !Ready) {
@@ -1190,6 +1207,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	RevealShown = 0.0f;
 	RevealStart = Clock().Milliseconds();
 	Ensure_Dialog_Font();
+	Apply_Font_Policy();
 
 	if (!Prepare_View(view)) {
 		return(UI_RESULT_FAILED_TO_OPEN);

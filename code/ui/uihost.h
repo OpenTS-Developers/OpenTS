@@ -64,6 +64,11 @@ class UIShellHostClass
 		// does; one when the frame is drawn smoothly or point for point already.
 		virtual int Art_Magnification(void) const = 0;
 
+		// Whether the dialog face may be drawn from the bitmap strikes the system was given
+		// it in. They cannot be resized, so the shell asks for them only where the frame is
+		// at one to one whatever this says.
+		virtual bool Bitmap_System_Font(void) const = 0;
+
 		// A Win32 dialog is on screen and takes the mouse before a document can.
 		virtual bool Legacy_Dialog_Visible(void) const = 0;
 		// The player asked for the Win32 dialogs instead of the documents.

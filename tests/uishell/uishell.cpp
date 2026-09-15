@@ -360,6 +360,11 @@ class TestHostClass : public UIShellHostClass
 			return(Magnification);
 		}
 
+		virtual bool Bitmap_System_Font(void) const override
+		{
+			return(true);
+		}
+
 		virtual bool Window_Is_Unicode(void) const override
 		{
 			return(Unicode);
