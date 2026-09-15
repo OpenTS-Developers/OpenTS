@@ -15,6 +15,8 @@
 
 #include "win.h"
 
+#include "ui/screens/netlobby/uinetlobby.h"
+
 struct GlobalPacketType;
 class IPXAddressClass;
 
@@ -34,7 +36,7 @@ void Net2_Show_Lobby(Net2LobbyPhaseType phase);
 void Net2_Close_Lobby(void);
 
 // What the flow is holding, for a screen that has no dialog to read it from.
-int Net2Response(void);
+UINetChoice Net2Response(void);
 int Net2CurrentGame(void);
 
 // One pass of the lobby: the network, the game, the window messages and the join protocol.

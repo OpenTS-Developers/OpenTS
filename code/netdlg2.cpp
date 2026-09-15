@@ -64,7 +64,7 @@ bool Net2ReadyToGo(int load_game);
 void Net2ServiceGameList(void);
 
 int CurGame;
-int _netresponse;
+UINetChoice _netresponse;
 JoinStateType JoinState;
 char SerialNumber[23];
 bool Net2IsGameListActive = true;
@@ -112,7 +112,7 @@ int Net2FirstFreeColor(int reqcolor, int index)
 }
 
 
-int Net2Response(void)
+UINetChoice Net2Response(void)
 {
 	return(_netresponse);
 }
@@ -334,7 +334,7 @@ bool Net2_Service_Lobby(void)
 	}
 
 	Call_Back();
-	if (_netresponse != 0) {
+	if (_netresponse != UI_NET_NONE) {
 		return(false);
 	}
 
@@ -783,33 +783,6 @@ bool Decrypt_Serial(char * buffer)
  * HISTORY:                                                                                    *
  *   02/14/1995 BR : Created.                                                                  *
  *=============================================================================================*/
-// What a lobby screen answered with, as the responses the Win32 dialogs set.
-static void Net2Apply_Choice(UINetChoice choice)
-{
-	switch (choice) {
-		case UI_NET_CANCEL:
-			_netresponse = IDCANCEL;
-			break;
-
-		case UI_NET_JOIN:
-			_netresponse = IDC_GAMELIST_JOIN;
-			break;
-
-		case UI_NET_NEW:
-			_netresponse = IDC_GAMELIST_NEW;
-			break;
-
-		case UI_NET_GO:
-			Net2GameStarted = true;
-			_netresponse = IDC_GO;
-			break;
-
-		default:
-			break;
-	}
-}
-
-
 bool Net2Remote_Connect(void)
 {
 	RulesID = RulesClass::Get_Rule_Unique_ID();
@@ -848,7 +821,7 @@ bool Net2Remote_Connect(void)
 
 	Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
 
-	_netresponse = 0;
+	_netresponse = UI_NET_NONE;
 	CurGame = 0;
 	JoinState = JOIN_NOTHING;
 	Net2IsGameListActive = true;
@@ -863,12 +836,17 @@ bool Net2Remote_Connect(void)
 		//.....................................................................
 		UINetChoice choice = UI_Net_Lobby_Run();
 
-		Net2Apply_Choice(choice);
+		if (choice == UI_NET_GO) {
+			Net2GameStarted = true;
+		}
+		if (choice != UI_NET_NONE) {
+			_netresponse = choice;
+		}
 
 		//.....................................................................
-		//	-1 = user selected Cancel
+		//	The player backed out, or a packet threw a guest out of its game.
 		//.....................................................................
-		if (_netresponse == IDCANCEL) {
+		if (_netresponse == UI_NET_CANCEL) {
 			Session.Write_MultiPlayer_Settings();
 			if (Net2LobbyPhase == NET2_LOBBY_GAME_LIST) {
 				if (JoinState > JOIN_NOTHING) {
@@ -937,7 +915,7 @@ bool Net2Remote_Connect(void)
 				Session.GameName[0] = '\0';
 				JoinState = JOIN_NOTHING;
 				Net2_Close_Lobby();
-				_netresponse = 0;
+				_netresponse = UI_NET_NONE;
 				CurGame = 0;
 				Clear_Vector(&Session.Players);
 				Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
@@ -947,7 +925,7 @@ bool Net2Remote_Connect(void)
 		//.....................................................................
 		//	0 = user has joined an existing game; save values & return
 		//.....................................................................
-		if (_netresponse == IDC_GAMELIST_JOIN) {
+		if (_netresponse == UI_NET_JOIN) {
 			Session.NetStealth = false;
 			Session.Write_MultiPlayer_Settings();
 
@@ -959,7 +937,7 @@ bool Net2Remote_Connect(void)
 		//.....................................................................
 		//	1 = user requests New Network Game
 		//.....................................................................
-		if (_netresponse == IDC_GAMELIST_NEW) { /// Net_New_Dialog maybe?
+		if (_netresponse == UI_NET_NEW) { /// Net_New_Dialog maybe?
 
 			bool ok = true;
 
@@ -995,7 +973,7 @@ bool Net2Remote_Connect(void)
 				Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
 
 				Net2_Close_Lobby();
-				_netresponse = 0;
+				_netresponse = UI_NET_NONE;
 
 				//------------------------------------------------------------------------
 				// Clear the list of players
@@ -1032,25 +1010,25 @@ bool Net2Remote_Connect(void)
 			}
 		}
 
-		if (_netresponse != 1 || Net2LobbyPhase != NET2_LOBBY_GUEST) {
-			if (_netresponse == IDC_GO) {
+		if (_netresponse != UI_NET_STARTED || Net2LobbyPhase != NET2_LOBBY_GUEST) {
+			if (_netresponse == UI_NET_GO) {
 				Net2GameStarted = 0;
 				Session.Write_MultiPlayer_Settings();
-				if (_netresponse == IDC_GO) {
+				if (_netresponse == UI_NET_GO) {
 
 					//...............................................................
 					//	If there are at least 2 players, go ahead & play; error otherwise
 					//...............................................................
 					if (Session.Players.Count() == 1) {
 						PMessagePrintf(-1, Fetch_String(TXT_ONLY_ONE));
-						_netresponse = 0;
+						_netresponse = UI_NET_NONE;
 					}
 
-					if (_netresponse == IDC_GO) {
+					if (_netresponse == UI_NET_GO) {
 						for (int i = 0; i < Session.Players.Count(); i++) {
 							if (Session.Players[i]->Player.Status == 0) {
 								PMessagePrintf(-1, Fetch_String(TXT_ACCEPTFIRST));
-								_netresponse = 0;
+								_netresponse = UI_NET_NONE;
 										break;
 							}
 						}
@@ -1064,7 +1042,7 @@ bool Net2Remote_Connect(void)
 			 * the pregame setup, compute the packet timing and leave the loop.
 			 */
 			Net2_Close_Lobby();
-			_netresponse = 0;
+			_netresponse = UI_NET_NONE;
 
 			PregameSetup();
 
@@ -1086,15 +1064,15 @@ bool Net2Remote_Connect(void)
 		int waypoints = RandomMapWaypointCount(Session.Options.ScenarioIndex);
 		if (waypoints < Session.Players.Count()) {
 			PMessagePrintf(-1, Fetch_String(TXT_SCENARIO_TOO_SMALL));
-			_netresponse = 0;
+			_netresponse = UI_NET_NONE;
 		} else {
-			if (_netresponse != IDC_GO) {
+			if (_netresponse != UI_NET_GO) {
 
 				/*
 				 * Not the GO button -- there is nothing to do this pass, so reset
 				 * the response and fall back through the main message loop.
 				 */
-				_netresponse = 0;
+				_netresponse = UI_NET_NONE;
 
 			} else {
 				Net2GameStarted = 1;
@@ -1886,7 +1864,7 @@ static void Get_Join_Responses(void)
 				Session.Players.Add (who);
 
 				Net2IsGameListActive = false;
-				_netresponse = 0;
+				_netresponse = UI_NET_NONE;
 				Net2_Show_Lobby(NET2_LOBBY_GUEST);
 
 				Send_Join_Queries(1, 1, 1, 0);
@@ -1981,7 +1959,7 @@ static void Get_Join_Responses(void)
 					UI_Network_Message_Box(item, UI_NETWORK_MESSAGE_OK, Net2Callback);
 				}
 				if (Net2LobbyPhase != NET2_LOBBY_GAME_LIST) {
-					_netresponse = IDCANCEL;
+					_netresponse = UI_NET_CANCEL;
 				}
 				Send_Join_Queries (0, 0, 1, 0);
 			}
@@ -2068,7 +2046,7 @@ static void Get_Join_Responses(void)
 					if (i==CurGame) {
 						Clear_Vector (&Session.Players);
 						if (Net2LobbyPhase == NET2_LOBBY_GUEST) {
-							_netresponse = 2;
+							_netresponse = UI_NET_CANCEL;
 						}
 					}
 
@@ -2190,11 +2168,11 @@ static void Get_Join_Responses(void)
 				}
 				Session.HostAddress = Session.GAddress;
 				Session.NumPlayers = Session.Players.Count();
-				_netresponse = IDOK;
+				_netresponse = UI_NET_STARTED;
 				if (Session.GPacket.Command==NET_GO) {
 					JoinState = JOIN_GAME_START;
 					if (!Net2ReadyToGo(0)) {
-						_netresponse = 2;
+						_netresponse = UI_NET_CANCEL;
 						Net2GameStarted = false;
 					} else {
 						Net2GameStarted = true;

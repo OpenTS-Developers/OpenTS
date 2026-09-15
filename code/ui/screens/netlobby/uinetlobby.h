@@ -33,8 +33,8 @@ enum UINetLobbyKind
 };
 
 
-// What the player asked for. The driver maps these onto the responses the Win32 dialogs set.
-// Picking a map closes the screen, because the Win32 dialog hid itself around the map dialog.
+// What the lobby flow is answering: the four a screen gives, and the one a packet gives for
+// the player when the host starts the game under a guest's lobby.
 enum UINetChoice
 {
 	UI_NET_NONE,
@@ -42,7 +42,7 @@ enum UINetChoice
 	UI_NET_JOIN,
 	UI_NET_NEW,
 	UI_NET_GO,
-	UI_NET_PICK_MAP
+	UI_NET_STARTED,
 };
 
 

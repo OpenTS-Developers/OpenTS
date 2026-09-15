@@ -89,7 +89,7 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 {
 	state.Kind = Kind_Of(Net2LobbyPhase);
 	state.Host = state.Kind == UI_NET_LOBBY_HOST;
-	state.Answered = Net2Response() != 0;
+	state.Answered = Net2Response() != UI_NET_NONE;
 	state.Handle = Session.Handle;
 
 	// The browser lists the lobby and then every game being advertised, as the layer named them.
