@@ -77,6 +77,10 @@ class UIShellClass
 		// its own passes and puts it back, without a reveal, when it closes.
 		UIResult Run_Modal(UIViewClass & view, UIServiceCallback const & service, bool hideparent = false);
 
+		// The service driving the innermost running modal, or nothing while no screen runs,
+		// for a screen opened from under another to be serviced as that one is.
+		UIServiceCallback const * Running_Service(void) const;
+
 		// Shows a document beside the game without taking its input: a notice the caller
 		// updates while it works. It is drawn at once, because such a caller pumps nothing.
 		// False when the shell or the document is not ready, so nothing is shown.
@@ -210,9 +214,11 @@ class UIShellClass
 		// pointer is in charge.
 		std::optional<UICursor> AppliedCursor;
 
-		// The modal screens the runner is driving, innermost last, and whether the
-		// innermost is between releasing its document and handing the input back.
+		// The modal screens the runner is driving, innermost last, the service each is driven
+		// by, and whether the innermost is between releasing its document and handing the
+		// input back.
 		std::vector<UIViewClass *> Modals;
+		std::vector<UIServiceCallback const *> Services;
 		bool ModalClosing = false;
 		std::vector<UIViewClass *> Modeless;
 

@@ -38,10 +38,12 @@
 #include "ui/screens/gamectrl/uigamectrl.h"
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/screens/mainopt/uimainopt.h"
+#include "ui/screens/mapgen/uimapgen.h"
 #include "ui/screens/menu/uimenu.h"
 #include "ui/screens/msgbox/uimsgbox.h"
 #include "ui/screens/sound/uisound.h"
 #include "ui/screens/netlobby/uinetlobby.h"
+#include "ui/screens/reconnect/uireconnect.h"
 #include "ui/screens/scenario/uiscenario.h"
 #include "ui/screens/skirmish/uiskirmish.h"
 #include "ui/screens/version/uiversion.h"
@@ -547,13 +549,12 @@ void Click_Through_Hook(UIShellClass & shell, TestHostClass & host, Rml::Element
 }
 
 
-// Drags a range input's bar past the end of its track, so the value lands on the far stop.
 // A slider builds its bar and track as non-DOM children, which a tag search would skip.
-// False means a message reached the game, or the slider had no parts to take hold of.
-bool Drag_Slider_To_End(UIShellClass & shell, TestHostClass & host, Rml::Element * slider)
+// False means the slider had no parts to take hold of.
+bool Slider_Parts(Rml::Element * slider, Rml::Element * & bar, Rml::Element * & track)
 {
-	Rml::Element * bar = nullptr;
-	Rml::Element * track = nullptr;
+	bar = nullptr;
+	track = nullptr;
 
 	for (int index = 0; index < slider->GetNumChildren(true); index++) {
 		Rml::Element * child = slider->GetChild(index);
@@ -564,15 +565,31 @@ bool Drag_Slider_To_End(UIShellClass & shell, TestHostClass & host, Rml::Element
 		}
 	}
 
-	if (bar == nullptr || track == nullptr) {
+	return(bar != nullptr && track != nullptr);
+}
+
+
+// A client position past the end of a slider's track, on the bar's own line.
+LPARAM Past_Track_End(TestHostClass const & host, Rml::Element * bar, Rml::Element * track)
+{
+	int const y = (int)Center_Of(bar).y + host.Rect.Y;
+	int const past = (int)(track->GetAbsoluteOffset(Rml::BoxArea::Border).x + track->GetBox().GetSize(Rml::BoxArea::Border).x) + host.Rect.X + 40;
+	return(MAKELPARAM(past, y));
+}
+
+
+// Drags a range input's bar past the end of its track, so the value lands on the far stop.
+// False means a message reached the game, or the slider had no parts to take hold of.
+bool Drag_Slider_To_End(UIShellClass & shell, TestHostClass & host, Rml::Element * slider)
+{
+	Rml::Element * bar = nullptr;
+	Rml::Element * track = nullptr;
+	if (!Slider_Parts(slider, bar, track)) {
 		return(false);
 	}
 
-	Rml::Vector2f from = Center_Of(bar);
-	int const y = (int)from.y + host.Rect.Y;
-	int const past = (int)(track->GetAbsoluteOffset(Rml::BoxArea::Border).x + track->GetBox().GetSize(Rml::BoxArea::Border).x) + host.Rect.X + 40;
-	LPARAM const start = MAKELPARAM((int)from.x + host.Rect.X, y);
-	LPARAM const end = MAKELPARAM(past, y);
+	LPARAM const start = Element_Point(host, bar);
+	LPARAM const end = Past_Track_End(host, bar, track);
 
 	bool consumed = Send(shell, WM_MOUSEMOVE, 0, start);
 	host.Down[VK_LBUTTON] = true;
@@ -1280,6 +1297,70 @@ void Test_Game_Controls_Presenter(void)
 
 // The shell resolves [[TXT_NAME]] through the generated table, so a name a document uses
 // must exist there.
+// Holds the generator's settings the way the engine does: a reading written past its bound
+// comes back as the bound.
+class RecordingMapGenServiceClass : public UIMapGenServiceClass
+{
+	public:
+		UIMapGenState Settings;
+		std::vector<std::string> Calls;
+
+		RecordingMapGenServiceClass(void)
+		{
+			Settings.Cliffs.Value = 50;
+			Settings.Cliffs.Maximum = 80;
+		}
+
+		virtual void Read(UIMapGenState & state) override { state = Settings; }
+		virtual void Set(char const * name, int value) override
+		{
+			Calls.push_back(std::string(name) + " " + std::to_string(value));
+			if (std::strcmp(name, "cliffs") == 0) {
+				Settings.Cliffs.Value = std::clamp(value, Settings.Cliffs.Minimum, Settings.Cliffs.Maximum);
+			}
+		}
+		virtual void Preview(void) override { Calls.push_back("preview"); }
+		virtual void Surprise(void) override { Calls.push_back("surprise"); }
+		virtual void Save(void) override { Calls.push_back("save"); }
+		virtual void Load(void) override { Calls.push_back("load"); }
+		virtual void Delete(void) override { Calls.push_back("delete"); }
+};
+
+
+void Test_Map_Generator_Presenter(void)
+{
+	RecordingMapGenServiceClass service;
+	UIMapGenPresenterClass presenter(service);
+	Check(presenter.State.Cliffs.Value == 50, "the generator screen opens on the generator's settings");
+
+	// The runner pushes the model onto the sliders after each drain, so a model still holding
+	// the old reading would write it back over the player's and queue that as the next move.
+	Drive(presenter, "cliffs", 70);
+	Check(presenter.State.Cliffs.Value == 70 && service.Calls.size() == 1 && service.Calls[0] == "cliffs 70", "a slider move reaches the generator and the model follows it at once");
+
+	Drive(presenter, "cliffs", 100);
+	Check(presenter.State.Cliffs.Value == 80, "a reading past the generator's bound comes back as the bound");
+}
+
+
+void Test_Reconnect_Presenter(void)
+{
+	UIReconnectPresenterClass presenter;
+	presenter.State.Players.push_back({ "Host", 1.0f, "" });
+	presenter.State.Players.push_back({ "Guest", 0.5f, "" });
+	Check(!presenter.Cancelled && presenter.Take_Kick_Vote() == -1, "the notice opens with nothing asked for");
+
+	Drive(presenter, "kick", 1);
+	Check(presenter.Take_Kick_Vote() == 1 && presenter.Take_Kick_Vote() == -1, "a kick vote is handed over once");
+
+	Drive(presenter, "kick", 5);
+	Check(presenter.Take_Kick_Vote() == -1, "a kick must name a seat the notice shows");
+
+	Drive(presenter, "cancel");
+	Check(presenter.Cancelled, "cancel asks to leave the game");
+}
+
+
 void Test_Strings(void)
 {
 	int entries = (int)(sizeof(OpenTSStringNames) / sizeof(OpenTSStringNames[0]));
@@ -3590,6 +3671,56 @@ void Test_Shell(void)
 	}
 
 	{
+		// Losing the application while a slider's bar is held ends the drag at the toolkit,
+		// so a pointer that comes back without the button moves nothing. The press waits for
+		// the second pass, the first whose update follows a sync.
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Score = 5;
+		state.Sound = 5;
+		state.Voice = 5;
+		state.Enabled = true;
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+		int passes = 0;
+		bool owned = false;
+		bool dropped = false;
+		bool still = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::Element * score = Rml(*view).Document()->GetElementById("score");
+			Rml::Element * bar = nullptr;
+			Rml::Element * track = nullptr;
+			if (passes == 2 && score != nullptr && Slider_Parts(score, bar, track)) {
+				LPARAM const start = Element_Point(host, bar);
+				Send(shell, WM_MOUSEMOVE, 0, start);
+				host.Down[VK_LBUTTON] = true;
+				Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, start);
+				owned = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML && host.Captured;
+
+				// The button comes up over another window, which the shell never hears of.
+				host.Down[VK_LBUTTON] = false;
+				Send(shell, WM_ACTIVATEAPP, 0, 0);
+				dropped = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && !host.Captured;
+				Send(shell, WM_ACTIVATEAPP, 1, 0);
+				Send(shell, WM_MOUSEMOVE, 0, Past_Track_End(host, bar, track));
+			}
+			if (passes == 3 && score != nullptr) {
+				still = presenter.State.Score == 5 && score->GetAttribute<int>("value", -1) == 5 && !presenter.Has_Pending();
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		Send(shell, WM_KEYUP, VK_ESCAPE);
+		shell.Tick();
+
+		Check(owned, "a press on a slider's bar is the document's and takes the capture");
+		Check(dropped, "losing the application cancels the held button and gives the capture back");
+		Check(still, "a pointer that comes back without the button moves the slider nowhere");
+	}
+
+	{
 		// Two live screens need distinct data models, so the inner one is a message box.
 		UIVersionPresenterClass outer({ "outer" });
 		UIMessageBoxPresenterClass inner("Nested", { "OK", "Cancel" }, 0);
@@ -3626,6 +3757,48 @@ void Test_Shell(void)
 		Check(nested, "a nested modal is the shown screen at depth two");
 		Check(restored && result == UI_RESULT_ACCEPTED, "closing the inner modal restores the outer one, which still accepts");
 		Check(swallowed, "a press held across the inner close is swallowed by the outer");
+	}
+
+	{
+		// The shell says which service drives the running screen, so a screen opened from
+		// under another can be serviced as that one is without each caller being told.
+		UIVersionPresenterClass outer({ "serviced" });
+		UIMessageBoxPresenterClass inner("Under it", { "OK" }, 0);
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+		int passes = 0;
+		int innerpasses = 0;
+		bool outerseen = false;
+		bool innerseen = false;
+		bool outerback = false;
+
+		UIServiceCallback innerservice = [&](void) {
+			innerpasses++;
+			if (innerpasses == 1) {
+				innerseen = shell.Running_Service() == &innerservice;
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(innerpasses >= 4);
+		};
+		UIServiceCallback outerservice = [&](void) {
+			passes++;
+			if (passes == 1) {
+				outerseen = shell.Running_Service() == &outerservice;
+				shell.Run_Modal(*innerview, innerservice);
+				outerback = shell.Running_Service() == &outerservice;
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		};
+
+		Check(shell.Running_Service() == nullptr, "no service runs while no screen is shown");
+		shell.Run_Modal(*outerview, outerservice);
+		Send(shell, WM_KEYUP, VK_RETURN);
+		shell.Tick();
+		Check(outerseen && innerseen, "each running screen reports the service driving it");
+		Check(outerback && shell.Running_Service() == nullptr, "closing a screen hands the service back to the one below, and the last to nobody");
 	}
 
 	{
@@ -4203,6 +4376,8 @@ int main(void)
 	Test_Keys();
 	Test_Keyboard_Presenter();
 	Test_Sound_Presenter();
+	Test_Map_Generator_Presenter();
+	Test_Reconnect_Presenter();
 	Test_Strings();
 	Test_Documents();
 	Test_Shell();

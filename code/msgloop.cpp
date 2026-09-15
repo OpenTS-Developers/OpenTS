@@ -98,4 +98,3 @@ void Windows_Message_Handler(void)
 	 */
 	Video_Present_If_Dirty();
 }
-

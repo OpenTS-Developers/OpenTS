@@ -62,6 +62,7 @@
 #include "savever.h"
 #include "scenario.h"
 #include "session.h"
+#include "utf8.h"
 #include "win.h"
 
 #include <algorithm>
@@ -88,6 +89,7 @@ LoadOptionsClass::LoadOptionsClass(void) :
 	Files(0),
 	Style(NONE),
 	Description(NULL),
+	DescriptionSize(0),
 	State(STATE_PENDING)
 {
 	Style = NONE;
@@ -141,12 +143,15 @@ bool LoadOptionsClass::Load(void)
 /// This routine is used by the options menu when the player wants to record the current
 /// game. The description offered is used to prime the edit field.
 /// </summary>
-/// <param name="description">The description to suggest for the saved game.</param>
+/// <param name="description">The description to suggest for the saved game. It receives the
+/// one the player typed, cut to what the buffer holds.</param>
+/// <param name="size">The bytes the description buffer holds.</param>
 /// <returns>bool; Was the game saved?</returns>
-bool LoadOptionsClass::Save(char *description)
+bool LoadOptionsClass::Save(char *description, std::size_t size)
 {
 	Style = SAVE;
 	Description = description;
+	DescriptionSize = size;
 	return(Dialog());
 }
 
@@ -294,7 +299,12 @@ bool LoadOptionsClass::Dialog(void)
 			**	Save: an empty description or a refused overwrite leaves the list standing.
 			*/
 			case SAVE: {
+				// The field bounds characters; the caller's buffer bounds bytes, and the
+				// file must carry what the caller gets back.
 				std::string typed = presenter.State.Description;
+				if (Description != NULL && DescriptionSize > 0) {
+					typed.resize(UTF8::Boundary_Before(typed.c_str(), DescriptionSize - 1));
+				}
 				if (typed.empty()) {
 					WWMessageBox().Process(TXT_MUSTENTER_DESCRIPTION, TXT_OK, TXT_NONE, TXT_NONE);
 					State = STATE_PENDING;
@@ -330,8 +340,8 @@ bool LoadOptionsClass::Dialog(void)
 				if (confirmation != TXT_NONE) {
 					WWMessageBox().Process(confirmation, TXT_OK, TXT_NONE, TXT_NONE);
 				}
-				if (Description) {
-					strcpy(Description, typed.c_str());
+				if (Description != NULL) {
+					UTF8::Copy(Description, DescriptionSize, typed.c_str());
 				}
 				break;
 			}

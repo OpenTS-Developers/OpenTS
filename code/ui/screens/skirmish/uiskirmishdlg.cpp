@@ -31,6 +31,7 @@
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
+#include "utf8.h"
 #include "win.h"
 
 #include <cstdio>
@@ -70,8 +71,7 @@ static void Refresh_Preview(void)
 // The handle, side and color, which the Win32 dialog kept whether the player started or not.
 static void Remember_Preferences(UISkirmishState const & state)
 {
-	std::strncpy(Session.Handle, state.Handle.c_str(), sizeof(Session.Handle) - 1);
-	Session.Handle[sizeof(Session.Handle) - 1] = 0;
+	UTF8::Copy(Session.Handle, sizeof(Session.Handle), state.Handle.c_str());
 
 	if (state.Side >= 0 && state.Side < (int)state.Sides.size()) {
 		Session.House = state.Sides[state.Side].Value;

@@ -15,6 +15,7 @@
 
 #include "dbgprint.h"
 #include "session.h"
+#include "utf8.h"
 
 
 /// <summary>
@@ -96,8 +97,7 @@ int SaveVersionInfo::Get_Internal_Version(void)
 /// </summary>
 void SaveVersionInfo::Set_Scenario_Description(const char * desc)
 {
-	ScenarioDescription[ARRAY_SIZE(ScenarioDescription) - 1] = 0;
-	strncpy(ScenarioDescription, desc, ARRAY_SIZE(ScenarioDescription) - 1);
+	UTF8::Copy(ScenarioDescription, ARRAY_SIZE(ScenarioDescription), desc);
 }
 
 

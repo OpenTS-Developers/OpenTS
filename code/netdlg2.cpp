@@ -250,7 +250,7 @@ void Net2Send_Chat(char const * text)
 
 	gpacket.Command = NET_MESSAGE;
 	strcpy(gpacket.Name, Session.Handle);
-	strcpy(gpacket.Message.Buf, text);
+	UTF8::Copy(gpacket.Message.Buf, sizeof(gpacket.Message.Buf), text);
 	gpacket.Message.Color = Session.ColorIdx;
 	gpacket.Message.NameCRC = Compute_Name_CRC(Session.GameName);
 

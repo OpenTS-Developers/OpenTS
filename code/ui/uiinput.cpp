@@ -159,18 +159,20 @@ void UIInputStateClass::Cancel_Mouse(void)
 }
 
 
-void UIInputStateClass::Cancel_All(void)
+void UIInputStateClass::Cancel_Keys(void)
 {
 	for (UIInputOwner & owner : Keys) {
 		if (owner != UI_INPUT_NONE) {
 			owner = UI_INPUT_SUPPRESSED;
 		}
 	}
-	for (UIInputOwner & owner : Buttons) {
-		if (owner != UI_INPUT_NONE) {
-			owner = UI_INPUT_SUPPRESSED;
-		}
-	}
+}
+
+
+void UIInputStateClass::Cancel_All(void)
+{
+	Cancel_Keys();
+	Cancel_Mouse();
 }
 
 

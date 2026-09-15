@@ -772,6 +772,7 @@ void UIShellClass::Shutdown(void)
 
 	Ready = false;
 	Modals.clear();
+	Services.clear();
 	ModalClosing = false;
 
 	if (Input.Gesture_Owner() != UI_INPUT_NONE) {
@@ -836,6 +837,12 @@ void UIShellClass::End_Screens(void)
 UIViewClass * UIShellClass::Modal(void) const
 {
 	return(Modals.empty() ? nullptr : Modals.back());
+}
+
+
+UIServiceCallback const * UIShellClass::Running_Service(void) const
+{
+	return(Services.empty() ? nullptr : Services.back());
 }
 
 
@@ -1278,6 +1285,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	}
 
 	Modals.push_back(&view);
+	Services.push_back(&service);
 	view.Show(true);
 
 	// Images load at the first layout, not when the document does, so the renderer's answer
@@ -1287,6 +1295,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		Log("UI: %s could not be shown (%s)\n", view.Name(), Render->Error());
 		view.Release();
 		Modals.pop_back();
+		Services.pop_back();
 		Uncover(covered);
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
@@ -1363,6 +1372,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	// A shutdown inside the loop has already emptied the stack.
 	if (!Modals.empty() && Modals.back() == &view) {
 		Modals.pop_back();
+		Services.pop_back();
 	}
 	Uncover(covered);
 	ModalClosing = false;
@@ -1545,6 +1555,16 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 			UIDev_Focus(activated);
 		}
 		if (!activated) {
+			// The toolkits hear their presses end before the shell stops answering for the
+			// buttons, or a drag outlives the press that began it.
+			if (Input.Gesture_Owner() != UI_INPUT_NONE) {
+				if (InContext) {
+					Deferred.DropPresses = true;
+				} else {
+					UIReentryGuardClass hooking(InHook);
+					Drop_Presses();
+				}
+			}
 			if (MouseInside) {
 				if (InContext) {
 					Deferred.Leave = true;
@@ -1554,7 +1574,7 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 					MouseInside = false;
 				}
 			}
-			Input.Cancel_All();
+			Input.Cancel_Keys();
 			Release_UI_Capture();
 			Reset_Text();
 		} else if (Active()) {
@@ -1632,5 +1652,3 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 
 	return(consumed);
 }
-
-

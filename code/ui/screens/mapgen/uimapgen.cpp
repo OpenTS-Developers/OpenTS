@@ -60,8 +60,10 @@ void UIMapGenPresenterClass::Execute(UIIntent const & intent)
 		}
 
 	} else {
-		// Every other intent names a setting, which the generator holds to its own bounds.
+		// Every other intent names a setting, which the generator holds to its own bounds, so
+		// the model is read back rather than assumed.
 		Service.Set(intent.Name.c_str(), intent.Value);
+		Service.Read(State);
 	}
 }
 

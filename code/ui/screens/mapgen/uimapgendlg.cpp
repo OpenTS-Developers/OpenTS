@@ -162,7 +162,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 		virtual void Save(void) override
 		{
 			RandomMapGen.SeedData.MapDescription[0] = '\0';
-			RandomMapGen.SeedData.LoadOptionsClass::Save(RandomMapGen.SeedData.MapDescription);
+			RandomMapGen.SeedData.LoadOptionsClass::Save(RandomMapGen.SeedData.MapDescription, sizeof(RandomMapGen.SeedData.MapDescription));
 		}
 
 		virtual void Load(void) override

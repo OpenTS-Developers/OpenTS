@@ -76,6 +76,8 @@ class UIReconnectBoxClass
 
 		// False shows nothing, so the caller opens its own Win32 dialog.
 		bool Show(UIReconnectState const & state);
+		// Executes what the player pressed since the last update, then shows the new state;
+		// the two readers below answer for the presses an update has executed.
 		void Update(UIReconnectState const & state);
 		void Hide(void);
 

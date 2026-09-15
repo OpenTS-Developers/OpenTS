@@ -52,6 +52,7 @@ void UIReconnectBoxClass::Update(UIReconnectState const & state)
 		return;
 	}
 
+	Presenter->Drain();
 	Presenter->State = state;
 	View->Sync();
 	UIShell.Refresh();

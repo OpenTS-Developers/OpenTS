@@ -53,7 +53,7 @@ class UIGameOptionsEngineServiceClass : public UIGameOptionsServiceClass
 			char description[512];
 			std::strncpy(description, Scen->Description, sizeof(description) - 1);
 			description[sizeof(description) - 1] = '\0';
-			LoadOptionsClass().Save(description);
+			LoadOptionsClass().Save(description, sizeof(description));
 		}
 
 		virtual void Delete(void) override

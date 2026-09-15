@@ -2183,6 +2183,8 @@ static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_time
 	// The notice stands beside the game, so what the player pressed is read back here rather
 	// than posted into a dialog's result.
 	if (ReconnectBox.Is_Shown()) {
+		ReconnectBox.Update(Reconnect_Notice(their, num_conn, (int)(*timeout_timer / TIMER_SECOND)));
+
 		int const kick = ReconnectBox.Take_Kick_Vote();
 		if (kick >= 0 && kick < Session.Players.Count()) {
 			Propose_Kick_Player(kick);
@@ -2192,8 +2194,6 @@ static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_time
 			Close_Reconnect_Dialog();
 			return(1);
 		}
-
-		ReconnectBox.Update(Reconnect_Notice(their, num_conn, (int)(*timeout_timer / TIMER_SECOND)));
 	}
 
 	return(0);

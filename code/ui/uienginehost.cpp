@@ -311,6 +311,10 @@ bool UI_Service_Game(void)
 
 UIResult UI_Run_Modal(UIViewClass & view, bool hideparent)
 {
+	UIServiceCallback const * running = UIShell.Running_Service();
+	if (running != nullptr) {
+		return(UIShell.Run_Modal(view, *running, hideparent));
+	}
 	return(UIShell.Run_Modal(view, UI_Service_Game, hideparent));
 }
 

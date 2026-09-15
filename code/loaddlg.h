@@ -96,7 +96,7 @@ class LoadOptionsClass
 		virtual ~LoadOptionsClass (void);
 
 		bool Load(void);
-		bool Save(char * description);
+		bool Save(char * description, std::size_t size);
 		bool Delete(void);
 
 		void Pick_Filename(char * file_name);
@@ -143,10 +143,12 @@ class LoadOptionsClass
 
 		/*
 		 * This points to the caller's buffer holding the description to suggest for the game
-		 * about to be saved, and it receives whatever the player finally types. It is NULL
-		 * for the load and delete styles, which have nothing to describe.
+		 * about to be saved, and it receives whatever the player finally types, cut to the
+		 * bytes it holds. It is NULL for the load and delete styles, which have nothing to
+		 * describe.
 		 */
 		char * Description;
+		std::size_t DescriptionSize;
 
 		/*
 		 * This is how much free disk space, expressed in bytes, must be available before the

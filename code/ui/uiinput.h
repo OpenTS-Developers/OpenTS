@@ -50,7 +50,8 @@ class UIInputStateClass
 		void Cancel_UI(void);
 		// Every held button becomes suppressed when another window takes the capture.
 		void Cancel_Mouse(void);
-		// Everything held becomes suppressed when the window loses focus.
+		// Every held key becomes suppressed when the window loses focus.
+		void Cancel_Keys(void);
 		void Cancel_All(void);
 		// Suppressed entries are forgotten once the physical key or button is up, so a
 		// release lost to another window cannot hold them forever.

@@ -397,4 +397,3 @@ void DesyncDialogClass::Start_Countdown(void)
 
 	Append_Chat_Line(Fetch_String(TXT_LOADING_SAVED_GAME));
 }
-

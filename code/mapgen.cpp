@@ -3252,7 +3252,8 @@ MapGeneratorClass::~MapGeneratorClass(void)
 /// skirmish or multiplayer game begins. It does not return until the player accepts the map
 /// or gives up on it, and the title screen behind is kept alive in the meantime.
 /// </summary>
-/// <param name="callback">Progress callback to run while the screen is up.</param>
+/// <param name="callback">Progress callback to run while a map generates. The screen itself
+/// is serviced as the screen it was opened from is.</param>
 /// <returns>Returns with the result -- 1 if the player accepted the map, 2 if they gave up
 /// on it.</returns>
 int Do_Random_Map_Dialog(bool (*callback)())
@@ -3815,7 +3816,7 @@ bool MapSeedClass::Save(const char * name)
 	}
 
 	MapDescription[0] = 0;
-	if (BASECLASS::Save(MapDescription)) {
+	if (BASECLASS::Save(MapDescription, sizeof(MapDescription))) {
 		return(true);
 	}
 	return(false);
