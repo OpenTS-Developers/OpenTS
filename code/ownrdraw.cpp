@@ -140,8 +140,35 @@ void ODInitMasks(void)
 
 
 /// <summary>
-/// Sets the colours and the blend masks up. Later calls do nothing, so anything drawing
-/// with them may ask for them.
+/// Loads the art the surviving drawers read.
+/// The cache is a plain lookup: a name it was never given reads back as no surface at all,
+/// so everything drawn from it has to be put there up front.
+/// </summary>
+static void ODCacheImages(void)
+{
+	// The remap font the briefing and the score animations draw with.
+	SurfaceCache.CachePCX("dlgsysi.pcx", 1);
+	SurfaceCache.CachePalettedPCX("dlgsysa.pcx");
+
+	// The button pieces the mission restate screen builds its buttons out of.
+	SurfaceCache.CachePCX("bue_li24.pcx");
+	SurfaceCache.CachePCX("bue_mi24.pcx");
+	SurfaceCache.CachePCX("bue_ri24.pcx");
+	SurfaceCache.CachePCX("bde_li24.pcx");
+	SurfaceCache.CachePCX("bde_mi24.pcx");
+	SurfaceCache.CachePCX("bde_ri24.pcx");
+	SurfaceCache.CachePCX("bue_li30.pcx");
+	SurfaceCache.CachePCX("bue_mi30.pcx");
+	SurfaceCache.CachePCX("bue_ri30.pcx");
+	SurfaceCache.CachePCX("bde_li30.pcx");
+	SurfaceCache.CachePCX("bde_mi30.pcx");
+	SurfaceCache.CachePCX("bde_ri30.pcx");
+}
+
+
+/// <summary>
+/// Sets the colours up, builds the blend masks and loads the art. Later calls do nothing, so
+/// anything drawing with them may ask for them.
 /// </summary>
 void OwnerDraw::Prepare_Resources(void)
 {
@@ -150,6 +177,7 @@ void OwnerDraw::Prepare_Resources(void)
 	static bool _inited = false;
 	if (!_inited) {
 		ODInitMasks();
+		ODCacheImages();
 		_inited = true;
 	}
 }
