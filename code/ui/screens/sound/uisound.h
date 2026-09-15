@@ -88,11 +88,9 @@ class UISoundPresenterClass : public UIPresenterClass
 // The RmlUi view over a sound presenter, bound to sound.rml. The presenter must outlive it.
 std::unique_ptr<UIViewClass> UI_Sound_View(UISoundPresenterClass & presenter);
 
-// The game's service and the state of the running game, shared by the Win32 dialog and the
-// RmlUi view.
+// The game's service and the state of the running game.
 UISoundServiceClass & UI_Sound_Service(void);
 void UI_Sound_State(UISoundState & state);
 
-// Runs the sound options as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog.
-bool UI_Sound_Dialog(void);
+// Runs the sound options, returning when the player leaves them.
+void UI_Sound_Dialog(void);

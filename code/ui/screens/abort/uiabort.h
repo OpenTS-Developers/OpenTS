@@ -56,6 +56,6 @@ std::unique_ptr<UIViewClass> UI_Abort_View(UIAbortPresenterClass & presenter);
 // What the question shows in the running game.
 void UI_Abort_State(UIAbortState & state);
 
-// Runs the abort question as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog; otherwise choice carries the player's answer.
-bool UI_Abort_Dialog(UIAbortChoice & choice);
+// Runs the abort question, returning the player's answer. Backing out and a screen that could
+// not open both carry on playing.
+UIAbortChoice UI_Abort_Dialog(void);

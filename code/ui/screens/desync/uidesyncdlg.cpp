@@ -8,8 +8,8 @@
  ******************************************************************************/
 
 // The engine side of the out-of-sync screen: what it reads out of the session and the entry
-// the dialog calls ahead of its Win32 one. The presenter and view live in uidesync.cpp so
-// that the test harness can drive them without the engine.
+// DesyncDialogClass calls. The presenter and view live in uidesync.cpp so that the test
+// harness can drive them without the engine.
 
 #include "ui/screens/desync/uidesync.h"
 
@@ -106,14 +106,8 @@ UIDesyncServiceClass & UI_Desync_Service(void)
 }
 
 
-bool UI_Desync_Dialog(UIDesyncChoiceType & choice)
+UIDesyncChoiceType UI_Desync_Dialog(void)
 {
-	choice = UI_DESYNC_NONE;
-
-	if (!UIShell.Use_Rml() || UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIDesyncPresenterClass presenter(UI_Desync_Service());
 	std::unique_ptr<UIViewClass> view = UI_Desync_View(presenter);
 
@@ -124,9 +118,8 @@ bool UI_Desync_Dialog(UIDesyncChoiceType & choice)
 	});
 
 	if (result == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
+		return(UI_DESYNC_NONE);
 	}
 
-	choice = presenter.Choice;
-	return(true);
+	return(presenter.Choice);
 }

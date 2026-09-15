@@ -32,12 +32,6 @@ bool UIReconnectBoxClass::Show(UIReconnectState const & state)
 {
 	Hide();
 
-	// A visible Win32 dialog takes the mouse before a document can, so a notice over one
-	// stays a dialog.
-	if (!UIShell.Use_Rml() || UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	Presenter = std::make_unique<UIReconnectPresenterClass>();
 	Presenter->State = state;
 	View = UI_Reconnect_View(*Presenter);

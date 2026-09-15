@@ -59,7 +59,7 @@ class OptionsClass {
 		int Normalize_Volume(int volume) const;
 		int Get_Scroll_Method(void) const;
 
-		bool Hotkey_Dialog(void);
+		void Hotkey_Dialog(void);
 
 		/*
 		**	File I/O routines
@@ -89,7 +89,6 @@ class OptionsClass {
 		 */
 		int ScrollMethod;
 		int ScrollRate;					// Distance to scroll.
-		bool LegacyDialogs;				// Win32 dialogs for the screens that have an RmlUi view?
 		bool AutoScroll;				// Does map autoscroll?
 
 		/*

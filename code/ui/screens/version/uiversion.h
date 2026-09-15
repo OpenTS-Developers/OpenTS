@@ -37,6 +37,5 @@ std::unique_ptr<UIViewClass> UI_Version_View(UIVersionPresenterClass & presenter
 // The lines the version dialog shows, gathered from the running game.
 void UI_Version_Lines(std::vector<std::string> & lines);
 
-// Runs the version dialog as an RmlUi screen. False means it could not be prepared and the
-// caller should open its legacy dialog.
-bool UI_Version_Dialog(void);
+// Runs the version screen, returning when the player closes it.
+void UI_Version_Dialog(void);

@@ -8,8 +8,8 @@
  ******************************************************************************/
 
 // The engine side of the in-game options menu: which buttons the running game offers, and the
-// entry Game_Options_Dialog calls ahead of its Win32 dialog. The presenter and view live in
-// uigameopt.cpp so that the test harness can drive them without the engine.
+// entry Game_Options_Dialog calls. The presenter and view live in uigameopt.cpp so that the
+// test harness can drive them without the engine.
 
 #include "ui/screens/gameopt/uigameopt.h"
 
@@ -83,14 +83,8 @@ void UI_Game_Options_State(UIGameOptionsState & state)
 }
 
 
-bool UI_Game_Options_Dialog(UIGameOptionsChoice & choice)
+UIGameOptionsChoice UI_Game_Options_Dialog(void)
 {
-	choice = UI_GAME_OPTIONS_RESUME;
-
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	bool reveal = true;
 
 	for (;;) {
@@ -101,13 +95,11 @@ bool UI_Game_Options_Dialog(UIGameOptionsChoice & choice)
 		UIGameOptionsPresenterClass presenter(state);
 		std::unique_ptr<UIViewClass> view = UI_Game_Options_View(presenter);
 
-		UIResult result = UI_Run_Modal(*view);
-		if (result == UI_RESULT_FAILED_TO_OPEN) {
-			// Only the first pass can still fall back; a later one has already shown the menu.
-			return(!reveal);
+		if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
+			return(UI_GAME_OPTIONS_RESUME);
 		}
 
-		choice = presenter.Choice;
+		UIGameOptionsChoice const choice = presenter.Choice;
 
 		// An Internet game's speed reaches the other players as an event, the way that menu's
 		// Resume button sent it.
@@ -122,13 +114,13 @@ bool UI_Game_Options_Dialog(UIGameOptionsChoice & choice)
 		// for rather than done here.
 		if (!state.Solo && choice == UI_GAME_OPTIONS_SAVE) {
 			OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SAVEGAME));
-			return(true);
+			return(choice);
 		}
 		if (!state.Solo && choice == UI_GAME_OPTIONS_LOAD) {
 			// A list opened from in here would sit inside the main loop and stall the match; the
 			// menu loop opens it between frames instead.
 			SpecialDialog = SDLG_LOAD;
-			return(true);
+			return(choice);
 		}
 
 		// The Win32 menu hid itself around a save or a delete and came back with its buttons
@@ -142,10 +134,10 @@ bool UI_Game_Options_Dialog(UIGameOptionsChoice & choice)
 			LoadOptionsClass().Delete();
 		} else if (choice == UI_GAME_OPTIONS_LOAD) {
 			if (LoadOptionsClass().Load()) {
-				return(true);
+				return(choice);
 			}
 		} else {
-			return(true);
+			return(choice);
 		}
 
 		reveal = false;

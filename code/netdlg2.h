@@ -19,9 +19,7 @@ struct GlobalPacketType;
 class IPXAddressClass;
 
 
-// Which of the three lobby dialogs the network flow is standing in. The flow reads this
-// rather than the dialog stack, so that a message box on top of the lobby cannot be
-// mistaken for a change of phase.
+// Which of the three lobby screens the network flow is standing in.
 enum Net2LobbyPhaseType
 {
 	NET2_LOBBY_NONE,
@@ -57,11 +55,7 @@ void Net2Kick(char const * name);
 void Net2Pick_Map(HWND window);
 
 int Net2FirstFreeColor(int reqcolor, int index);
-void Fill_Country_Box(HWND combo);
-int Country_From_Box(HWND combo);
-void Select_Country_In_Box(HWND combo, int country);
 bool Net2Callback(void);
-void Net2DisplayUsers(void);
 bool Net2Init_Network(void);
 void Net2EncodeGameopt(char *out);
 void Net2SetAccept(char *who, int status);
@@ -70,4 +64,3 @@ int Net2SetHouseAndColor(char *who, int house, int color);
 bool Decrypt_Serial(char *buffer);
 bool Net2Remote_Connect(void);
 bool Process_Global_Packet(GlobalPacketType *packet, IPXAddressClass *address);
-void Net2DisplayGameList(void);

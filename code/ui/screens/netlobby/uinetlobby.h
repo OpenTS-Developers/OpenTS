@@ -228,4 +228,4 @@ std::unique_ptr<UIViewClass> UI_Net_Setup_View(UINetLobbyPresenterClass & presen
 // The game's own lobby service, and the screen the network driver runs over it. Both live in
 // uinetlobbydlg.cpp, which is the only part of the screen that knows the engine.
 UINetLobbyServiceClass & UI_Net_Lobby_Service(void);
-bool UI_Net_Lobby_Run(bool reveal, UINetChoice & choice);
+UINetChoice UI_Net_Lobby_Run(bool reveal);

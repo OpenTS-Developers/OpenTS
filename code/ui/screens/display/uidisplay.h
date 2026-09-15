@@ -99,17 +99,13 @@ class UIConfirmModePresenterClass : public UIPresenterClass
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
 
-// The game's service and the state of the display, shared by the Win32 dialog and the RmlUi
-// view.
+// The game's service and the state of the display.
 UIDisplayServiceClass & UI_Display_Service(void);
 void UI_Display_State(UIDisplayState & state);
 
-// Runs the display options as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog; otherwise picked carries the mode the player asked to
-// try, if any.
-bool UI_Display_Dialog(std::optional<UIDisplayMode> & picked);
+// Runs the display options, returning the mode the player asked to try, if any.
+std::optional<UIDisplayMode> UI_Display_Dialog(void);
 
-// Runs the mode confirmation as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog; otherwise kept says whether the player kept the mode
-// before the timeout.
-bool UI_Confirm_Mode_Dialog(bool & kept);
+// Runs the mode confirmation. True when the player kept the mode before the timeout, and when
+// the screen could not open.
+bool UI_Confirm_Mode_Dialog(void);

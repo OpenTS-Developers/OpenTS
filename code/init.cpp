@@ -79,7 +79,6 @@
 #include "_theater.h"
 #include "_timer.h"
 #include "_tooltip.h"
-#include "_ui.h"
 #include "_uicontrol.h"
 #include "_voxel.h"
 #include "abstract.h"
@@ -148,7 +147,7 @@
 #include "overlay.h"
 #include "overtype.h"
 #include "ovrlight.h"
-#include "ownrdraw.h"
+#include "winfix.h"
 #include "partsys.h"
 #include "pcx.h"
 #include "queue.h"
@@ -182,7 +181,6 @@
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/campaign/uicampaign.h"
 #include "ui/screens/menu/uimenu.h"
-#include "ui/uishell.h"
 #include "uicontrol.h"
 #include "unit.h"
 #include "unittype.h"
@@ -209,11 +207,6 @@
 #include <vector>
 
 extern VoxelDataStruct DropPodVoxel;
-
-struct ChooseCampaignStruct {
-	CampaignType ChosenCampaign;
-	bool ChoiceMade;
-};
 
 /**********************************************************************
 **	Optional parameter control for special options.
@@ -261,7 +254,6 @@ void Draw_Version_Text(Surface * surface);
 void Version_Dialog(void);
 
 INT_PTR CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-INT_PTR CALLBACK Main_Menu_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 void Init_Random(void);
 
@@ -751,113 +743,6 @@ bool Campaign_Available(CampaignClass * campaign)
 
 
 /// <summary>
-/// Handles the messages for the campaign choice dialog.
-/// This routine lists the campaigns that the player is entitled to play, drives the
-/// difficulty slider, and leaves the choice where Choose_Campaign will collect it.
-/// </summary>
-static INT_PTR CALLBACK Campaign_Choice_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	HWND item;
-	struct ChooseCampaignStruct * state;
-
-	INT_PTR rc;
-	rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-
-	if (rc) {
-		return(rc);
-	}
-
-	switch (message) {
-
-		case WM_INITDIALOG:
-			item = GetDlgItem(window, IDC_LIST);
-
-			if (item != NULL) {
-				DebugString("Initializing Choose_Campaign() Dialog.\n");
-				for (int index = 0; index < Campaigns.Count(); index++) {
-					CampaignClass * campaign = Campaigns[index];
-
-					if (!Campaign_Available(campaign)) {
-						DebugString("\tSkipping Campaign [%d] - %s\n", index, campaign->Description);
-						continue;
-					}
-
-					DebugString("\tAdding Campaign [%d] - %s\n", index, campaign->Description);
-					int pos = ListBox_AddString(item, campaign->Description);
-					ListBox_SetItemData(item, pos, index);
-				}
-
-				ListBox_SetCurSel(item, 0);
-			}
-
-			item = GetDlgItem(window, IDC_DIFFICULTY_SLIDER);
-
-			if (item != NULL) {
-				SendMessage(item, OD_TRACKNUMBERS, 0, 0);
-				Slider_SetRange(item, 0,2);
-				Slider_SetPos(item, Options.Difficulty);
-			}
-			break;
-
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDOK:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						state = (ChooseCampaignStruct *)GetWindowLongPtr(window, DWLP_USER);
-
-						if (state != NULL) {
-							item = GetDlgItem(window, IDC_LIST);
-
-							if (item != NULL) {
-								int pos = ListBox_GetCurSel(item);
-								state->ChosenCampaign = (CampaignType)ListBox_GetItemData(item, pos);
-								state->ChoiceMade = true;
-							}
-						}
-
-						item = GetDlgItem(window, IDC_DIFFICULTY_SLIDER);
-
-						if (item != NULL) {
-							Options.Difficulty = Slider_GetPos(item);
-						}
-					}
-					break;
-
-				case IDCANCEL:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						state = (ChooseCampaignStruct *)GetWindowLongPtr(window, DWLP_USER);
-
-						if (state != NULL) {
-							state->ChosenCampaign = CAMPAIGN_NONE;
-							state->ChoiceMade = true;
-						}
-					}
-
-					break;
-			}
-			break;
-
-		case WM_HSCROLL: {
-			int diff = HIWORD(wparam);
-			int stringID = 0;
-
-			if ((HWND)lparam == GetDlgItem(window, IDC_DIFFICULTY_SLIDER)) {
-				stringID = GameDifficultyNames[diff];
-				item = GetDlgItem(window, IDC_DIFFICULTY_LABEL);
-				Static_SetText(item, Fetch_String(stringID));
-			}
-			break;
-		}
-
-		default:
-			break;
-	}
-
-	return(FALSE);
-}
-
-
-/// <summary>
 /// Asks the player which campaign to play.
 /// This routine reads the campaign list first if that has not already happened, and then
 /// runs the campaign dialog until the player either commits or backs out.
@@ -865,12 +750,6 @@ static INT_PTR CALLBACK Campaign_Choice_Dialog_Proc(HWND window, UINT message, W
 /// <returns>Returns with the campaign chosen, or CAMPAIGN_NONE if the player backed out.</returns>
 static CampaignType Choose_Campaign(void)
 {
-	HWND dialog;
-	struct ChooseCampaignStruct state;
-
-	state.ChoiceMade = false;
-	state.ChosenCampaign = CAMPAIGN_NONE;
-
 	if (Campaigns.Count() == 0) {
 		Init_Campaigns();
 
@@ -879,32 +758,8 @@ static CampaignType Choose_Campaign(void)
 		}
 	}
 
-	if (UIShell.Use_Rml()) {
-		std::optional<UICampaignEntry> picked;
-		if (UI_Campaign_Dialog(picked)) {
-			return(picked.has_value() ? (CampaignType)picked->Campaign : CAMPAIGN_NONE);
-		}
-	}
-
-	dialog = OwnerDraw::Begin_Dialog(IDD_CAMPAIGN, Campaign_Choice_Dialog_Proc);
-
-	if (dialog != NULL) {
-		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR) &state);
-
-		OwnerDraw::Move_Dialog(dialog, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
-		OwnerDraw::Display_Dialog(dialog);
-
-		while (state.ChoiceMade == false) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				break;
-			}
-			Title_Screen_Restore();
-		}
-
-		OwnerDraw::End_Dialog(dialog);
-	}
-
-	return(state.ChosenCampaign);
+	std::optional<UICampaignEntry> picked = UI_Campaign_Dialog();
+	return(picked.has_value() ? (CampaignType)picked->Campaign : CAMPAIGN_NONE);
 }
 
 
@@ -2981,78 +2836,13 @@ bool Cheat_Key_Process(char chr)
 
 
 /// <summary>
-/// Handles the messages for the version information dialog.
-/// This routine fills the list box with the game's title, its version numbers, the build
-/// stamp, and a description of the processor it finds itself running upon. It is the
-/// first thing to ask for when a player reports a problem.
-/// </summary>
-INT_PTR CALLBACK Version_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	HWND handle;
-	int *res;
-
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-
-	if (rc) {
-		return(rc);
-	}
-
-	res = (int *)GetWindowLongPtr(window, DWLP_USER);
-
-	switch (message) {
-		case WM_INITDIALOG: {
-			handle = GetDlgItem(window, IDC_VERSION_INFO);
-
-			std::vector<std::string> lines;
-			UI_Version_Lines(lines);
-			for (std::string const & line : lines) {
-				ListBox_AddString(handle, line.c_str());
-			}
-			break;
-		}
-
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDCANCEL:
-				case IDOK:
-					*res = LOWORD(wparam);
-					break;
-			}
-			break;
-	}
-
-	return(FALSE);
-}
-
-
-/// <summary>
 /// Displays the version information dialog.
 /// This routine does not return until the player dismisses the dialog, and keeps the
 /// title screen alive behind it while it waits.
 /// </summary>
 void Version_Dialog(void)
 {
-	HWND dialog;
-	int res = 0;
-
-	if (UIShell.Use_Rml() && UI_Version_Dialog()) {
-		return;
-	}
-
-	dialog = OwnerDraw::Begin_Dialog(IDD_VERSION, Version_Dialog_Proc);
-
-	if (dialog != NULL) {
-		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&res);
-		OwnerDraw::Display_Dialog(dialog);
-
-		while (res == 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				break;
-			}
-			Title_Screen_Restore();
-		}
-		OwnerDraw::End_Dialog(dialog);
-	}
+	UI_Version_Dialog();
 }
 
 
@@ -3108,7 +2898,6 @@ static bool Main_Menu_Keys(void)
 
 int Main_Menu(unsigned int timeout)
 {
-	HWND dialog;
 	int retval = SEL_NONE;
 
 	timeout = 0;
@@ -3125,159 +2914,30 @@ int Main_Menu(unsigned int timeout)
 	menu.Items.push_back(UIMenuItemType{"Exit Game", IDC_EXIT_GAME, true});
 	UI_Menu_Place(menu);
 
-	{
-		char * background = Get_New_Menu()->Background;
-		Load_Title_Screen(background, HiddenSurface, &CCPalette);
-		Draw_Version_Text(HiddenSurface);
-		Update_Visible_Surface();
+	char * background = Get_New_Menu()->Background;
+	Load_Title_Screen(background, HiddenSurface, &CCPalette);
+	Draw_Version_Text(HiddenSurface);
+	Update_Visible_Surface();
 
-		int chosen = 0;
-		if (UIShell.Use_Rml() && UI_Menu_Dialog(menu, chosen, Main_Menu_Keys)) {
-			switch (chosen) {
-				case IDC_OPTIONS: retval = SEL_OPTIONS; break;
-				case IDC_EXIT_GAME: retval = SEL_EXIT; break;
-				case IDC_INTRO: retval = SEL_INTRO; break;
-				case IDC_NEWCAMPAIGN: retval = SEL_CAMPAIGN_GAME; break;
-				case IDC_MULTIPLAYER_GAME: retval = SEL_MULTIPLAYER_GAME; break;
-				case IDC_LOAD_MISSION: retval = SEL_LOAD_GAME; break;
-				default: retval = (MainMenuKeyResult != SEL_NONE) ? MainMenuKeyResult : SEL_EXIT; break;
-			}
-
-			SYSTEMTIME stamp;
-			GetSystemTime(&stamp);
-			CryptRandom.Seed_Byte(stamp.wMilliseconds);
-			SetFocus(MainWindow);
-			return(retval);
-		}
+	switch (UI_Menu_Dialog(menu, Main_Menu_Keys)) {
+		case IDC_OPTIONS: retval = SEL_OPTIONS; break;
+		case IDC_EXIT_GAME: retval = SEL_EXIT; break;
+		case IDC_INTRO: retval = SEL_INTRO; break;
+		case IDC_NEWCAMPAIGN: retval = SEL_CAMPAIGN_GAME; break;
+		case IDC_MULTIPLAYER_GAME: retval = SEL_MULTIPLAYER_GAME; break;
+		case IDC_LOAD_MISSION: retval = SEL_LOAD_GAME; break;
+		default: retval = (MainMenuKeyResult != SEL_NONE) ? MainMenuKeyResult : SEL_EXIT; break;
 	}
 
-	dialog = OwnerDraw::Begin_Dialog(IDD_MAIN_MENU, Main_Menu_Dialog_Proc);
-	assert(dialog != NULL);
-
-	if (dialog != NULL) {
-		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&retval);
-		char *menu = Get_New_Menu()->Background;
-		Load_Title_Screen(menu, HiddenSurface, &CCPalette);
-		Draw_Version_Text(HiddenSurface);
-		Update_Visible_Surface();
-		OwnerDraw::Move_Dialog(dialog, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
-		OwnerDraw::Display_Dialog(dialog);
-		SetFocus(MainWindow);
-
-		do {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				retval = SEL_EXIT;
-			}
-
-			Title_Screen_Restore();
-
-			if (Keyboard->Check()) {
-				KeyNumType input = Keyboard->Get();
-
-				switch ((unsigned int)input) {
-					case (KN_V | KN_CTRL_BIT):
-						ShowWindow(dialog, SW_HIDE);
-						UpdateWindow(MainWindow);
-						Version_Dialog();
-						ShowWindow(dialog, SW_SHOW);
-						UpdateWindow(dialog);
-						SetFocus(MainWindow);
-						break;
-
-					case VK_C | KN_CTRL_BIT | KN_ALT_BIT:
-						retval = SEL_VIEW_CREDITS;
-						break;
-
-					default:
-						if ((input & KN_RLSE_BIT) == 0) {
-							if (Cheat_Key_Process((char)input) == true) {
-								Sound_Effect(Rule->OptionsChanged);
-								Title_Screen_Restore(true);
-							}
-						}
-						break;
-				}
-			}
-		}
-		while (retval == SEL_NONE);
-
-		OwnerDraw::End_Dialog(dialog);
-
-		/*
-		 * Seed cryptographic random number generator.
-		 */
-		SYSTEMTIME t;
-		GetSystemTime(&t);
-		CryptRandom.Seed_Byte(t.wMilliseconds);
-	} else {
-		retval = SEL_EXIT;
-	}
+	/*
+	 * Seed cryptographic random number generator.
+	 */
+	SYSTEMTIME stamp;
+	GetSystemTime(&stamp);
+	CryptRandom.Seed_Byte(stamp.wMilliseconds);
 
 	SetFocus(MainWindow);
 	return(retval);
-}
-
-
-/// <summary>
-/// Handles the messages for the main menu dialog.
-/// This routine records the button the player pressed into the result that Main_Menu is
-/// waiting upon, and greys out the load button when there is nothing to load.
-/// </summary>
-INT_PTR CALLBACK Main_Menu_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	int * res;
-
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (rc) {
-		return(rc);
-	}
-
-	res = (int *) GetWindowLongPtr(window, DWLP_USER);
-
-	switch (message) {
-		case WM_INITDIALOG: {
-			HWND control = GetDlgItem(window, IDC_LOAD_MISSION);
-			if (control) {
-				if (LoadOptionsClass().Files_Present() == true) {
-					EnableWindow(control, TRUE);
-					return(FALSE);
-				}
-				EnableWindow(control, FALSE);
-			}
-		}
-		break;
-
-		case WM_COMMAND: {
-			switch (LOWORD(wparam)) {
-				case IDC_OPTIONS:
-					*res = SEL_OPTIONS;
-					break;
-
-				case IDC_EXIT_GAME:
-					*res = SEL_EXIT;
-					break;
-
-				case IDC_INTRO:
-					*res = SEL_INTRO;
-					break;
-
-				case IDC_NEWCAMPAIGN:
-					*res = SEL_CAMPAIGN_GAME;
-					break;
-
-				case IDC_MULTIPLAYER_GAME:
-					*res = SEL_MULTIPLAYER_GAME;
-					break;
-
-				case IDC_LOAD_MISSION:
-					*res = SEL_LOAD_GAME;
-					break;
-			}
-		}
-		break;
-	}
-
-	return(false);
 }
 
 

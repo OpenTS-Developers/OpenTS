@@ -29,7 +29,6 @@
 #include "video.h"
 #include "voc.h"
 #include "wincursor.h"
-#include "windlg.h"
 
 
 // The pointer the window shows when the game's is off it, as under a Win32 dialog.
@@ -118,21 +117,6 @@ class UIEngineHostClass : public UIShellHostClass
 				factor++;
 			}
 			return(factor);
-		}
-
-		virtual bool Legacy_Dialog_Visible(void) const override
-		{
-			for (int index = 0; index < g_DialogCount; index++) {
-				if (g_Dialogs[index].handle != NULL && IsWindowVisible(g_Dialogs[index].handle)) {
-					return(true);
-				}
-			}
-			return(Any_Modeless_Dialog_Visible());
-		}
-
-		virtual bool Legacy_Dialogs_Requested(void) const override
-		{
-			return(Options.LegacyDialogs);
 		}
 
 		virtual bool Bitmap_System_Font(void) const override
@@ -292,7 +276,7 @@ UIShellHostClass & UI_Engine_Host(void)
 }
 
 
-// The service pass of OwnerDraw::Dialog_Message_Handler without its tick: the runner ticks
+// The pass the dialog layer's own loop ran, without its tick: the runner ticks
 // itself so that it can drain the screen's intents between the update and the present.
 bool UI_Service_Game(void)
 {

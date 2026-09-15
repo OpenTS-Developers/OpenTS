@@ -79,9 +79,8 @@ std::unique_ptr<UIViewClass> UI_Menu_View(UIMenuPresenterClass & presenter);
 // The top edge a menu sits at over the title screen.
 void UI_Menu_Place(UIMenuState & state);
 
-// Runs a menu as an RmlUi screen over the title screen, which is restored each pass as the
-// dialog's own loop restored it. The hook, where one is given, runs after that: it is where
-// the main menu reads the keys it answers to, and it ends the menu by returning true.
-// False means the menu could not run as a screen and the caller should open its Win32
-// dialog; otherwise choice carries what the player pressed, or zero.
-bool UI_Menu_Dialog(UIMenuState const & state, int & choice, std::function<bool(void)> const & hook = nullptr);
+// Runs a menu over the title screen, which is restored each pass as the dialog's own loop
+// restored it. The hook, where one is given, runs after that: it is where the main menu reads
+// the keys it answers to, and it ends the menu by returning true. Returns what the player
+// pressed, or zero when they backed out or the screen could not open.
+int UI_Menu_Dialog(UIMenuState const & state, std::function<bool(void)> const & hook = nullptr);

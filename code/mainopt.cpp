@@ -15,7 +15,6 @@
 #include "_mixfile.h"
 #include "_rect.h"
 #include "_surface.h"
-#include "_ui.h"
 #include "audio/audioengine.h"
 #include "convert.h"
 #include "data.h"
@@ -29,14 +28,12 @@
 #include "mixfile.h"
 #include "msgbox.h"
 #include "newmenu.h"
-#include "ownrdraw.h"
 #include "sidebar.h"
 #include "sounddlg.h"
 #include "stimer.h"
 #include "surface.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
-#include "ui/uishell.h"
 #include "video.h"
 #include "wwmouse.h"
 
@@ -45,30 +42,9 @@
 #include <optional>
 
 
-INT_PTR CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-INT_PTR CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 bool Change_Display_Mode(int width, int height);
 bool Test_Display_Mode_Dialog(int width, int height);
-INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-static UIMainOptionsChoice Main_Options_Win32_Dialog(void);
 static void Display_Options_Dialog(void);
-static std::optional<UIDisplayMode> Display_Options_Win32_Dialog(void);
-static bool Confirm_Mode_Win32_Dialog(void);
-
-// The presenters the display and confirmation dialog procedures are views of, each for the
-// life of one dialog.
-static UIDisplayPresenterClass * _DisplayPresenter = NULL;
-static UIConfirmModePresenterClass * _ConfirmPresenter = NULL;
-
-
-static void Queue_And_Drain(UIPresenterClass & presenter, char const * name, int value = 0)
-{
-	UIIntent intent;
-	intent.Name = name;
-	intent.Value = value;
-	presenter.Queue(intent);
-	presenter.Drain();
-}
 
 
 /// <summary>
@@ -84,12 +60,7 @@ void Main_Options_Dialog(void)
 	GameActive = false;
 
 	while (true) {
-		UIMainOptionsChoice choice = UI_MAIN_OPTIONS_LEAVE;
-		if (!UIShell.Use_Rml() || !UI_Main_Options_Dialog(choice)) {
-			choice = Main_Options_Win32_Dialog();
-		}
-
-		switch (choice) {
+		switch (UI_Main_Options_Dialog()) {
 			case UI_MAIN_OPTIONS_SOUND:
 				SoundControlsClass().Dialog();
 				break;
@@ -112,84 +83,6 @@ void Main_Options_Dialog(void)
 				return;
 		}
 	}
-}
-
-
-// The button the player pressed; Escape, Enter and the end of the session all lead back to
-// the main menu.
-static UIMainOptionsChoice Main_Options_Win32_Dialog(void)
-{
-	HWND main_handle;
-	LONG main_rc;
-
-	do {
-		main_rc = -1;
-		main_handle = OwnerDraw::Begin_Dialog(IDD_OPT_MAIN, Main_Options_Dialog_Proc);
-	} while (main_handle == 0);
-	SetWindowLongPtr(main_handle, DWLP_USER, (LONG_PTR)&main_rc);
-
-	OwnerDraw::Move_Dialog(main_handle, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
-	OwnerDraw::Display_Dialog(main_handle);
-
-	while (main_rc < 0) {
-		if (OwnerDraw::Dialog_Message_Handler() == true) {
-			break;
-		}
-		Title_Screen_Restore();
-	}
-
-	OwnerDraw::End_Dialog(main_handle);
-
-	switch (main_rc) {
-		case IDC_OPTMAIN_SOUND:
-			return(UI_MAIN_OPTIONS_SOUND);
-
-		case IDC_OPTMAIN_DISPLAY:
-			return(UI_MAIN_OPTIONS_DISPLAY);
-
-		case IDC_OPTMAIN_KEYBOARD:
-			return(UI_MAIN_OPTIONS_KEYBOARD);
-
-		case IDC_OPTMAIN_GAME_SETTINGS:
-			return(UI_MAIN_OPTIONS_SETTINGS);
-
-		default:
-			return(UI_MAIN_OPTIONS_LEAVE);
-	}
-}
-
-
-/// <summary>
-/// Handles the main options dialog.
-/// This routine reports the button the player pressed back to the options dialog driver so
-/// that it can bring up the appropriate sub dialog. The sound button is disabled when there
-/// is no audio hardware to talk to.
-/// </summary>
-INT_PTR CALLBACK Main_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	int *result;
-	HWND handle;
-
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (rc == 0) {
-		result = (int *)GetWindowLongPtr(window, DWLP_USER);
-		switch (message) {
-
-			case WM_COMMAND:
-				*result = LOWORD(wparam);
-				break;
-
-			case WM_INITDIALOG:
-				handle = GetDlgItem(window, IDC_OPTMAIN_SOUND);
-				if (handle) {
-					EnableWindow(handle, AudioEngine.Is_Available());
-				}
-				break;
-
-		}
-		return(0);
-	}
-	return(rc);
 }
 
 
@@ -348,12 +241,7 @@ bool Test_Display_Mode_Dialog(int width, int height)
 	Show_Mouse();
 	Draw_Menu_Background();
 
-	bool kept = false;
-	if (!UIShell.Use_Rml() || !UI_Confirm_Mode_Dialog(kept)) {
-		kept = Confirm_Mode_Win32_Dialog();
-	}
-
-	if (!kept) {
+	if (!UI_Confirm_Mode_Dialog()) {
 		DebugString("Resetting display mode @ %dx%d\n", Options.ScreenWidth, Options.ScreenHeight);
 		Change_Display_Mode(Options.ScreenWidth, Options.ScreenHeight);
 		LogicalSurface = HiddenSurface;
@@ -369,63 +257,6 @@ bool Test_Display_Mode_Dialog(int width, int height)
 }
 
 
-// A dialog that could not be created keeps the mode, as it always has.
-static bool Confirm_Mode_Win32_Dialog(void)
-{
-	UIConfirmModePresenterClass presenter(UIShell.Clock());
-	_ConfirmPresenter = &presenter;
-
-	HWND dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CONFIRM_MODE, Test_Display_Mode_Dialog_Proc);
-	if (dialog) {
-		OwnerDraw::Display_Dialog(dialog);
-
-		presenter.Refresh();
-		while (!presenter.Result.has_value()) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				break;
-			}
-			Title_Screen_Restore();
-			presenter.Refresh();
-		}
-
-		OwnerDraw::End_Dialog(dialog);
-	}
-	_ConfirmPresenter = NULL;
-
-	if (dialog == NULL) {
-		return(true);
-	}
-	return(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED);
-}
-
-
-/// <summary>
-/// Handles the mode confirmation dialog.
-/// This routine hands the button the player pressed to the confirmation presenter, which
-/// tells the mode test whether the new resolution was accepted or rejected.
-/// </summary>
-INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (rc == 0) {
-		UIConfirmModePresenterClass * presenter = _ConfirmPresenter;
-		if (presenter != NULL && message == WM_COMMAND) {
-			switch (LOWORD(wparam)) {
-				case IDOK:
-					Queue_And_Drain(*presenter, "ok");
-					break;
-
-				case IDCANCEL:
-					Queue_And_Drain(*presenter, "cancel");
-					break;
-			}
-		}
-		return(0);
-	}
-	return(rc);
-}
-
-
 /// <summary>
 /// Runs the display options until the player leaves them or a new display mode is kept.
 /// A picked mode is tried out first, and a mode the player does not confirm brings the
@@ -434,11 +265,7 @@ INT_PTR CALLBACK Test_Display_Mode_Dialog_Proc(HWND window, UINT message, WPARAM
 static void Display_Options_Dialog(void)
 {
 	while (true) {
-		std::optional<UIDisplayMode> picked;
-		if (!UIShell.Use_Rml() || !UI_Display_Dialog(picked)) {
-			picked = Display_Options_Win32_Dialog();
-		}
-
+		std::optional<UIDisplayMode> picked = UI_Display_Dialog();
 		if (!picked.has_value()) {
 			break;
 		}
@@ -452,111 +279,4 @@ static void Display_Options_Dialog(void)
 			break;
 		}
 	}
-}
-
-
-// The mode the player asked to try, or nothing when the dialog closed without one.
-static std::optional<UIDisplayMode> Display_Options_Win32_Dialog(void)
-{
-	UIDisplayState state;
-	UI_Display_State(state);
-	UIDisplayPresenterClass presenter(UI_Display_Service(), state);
-	_DisplayPresenter = &presenter;
-
-	HWND handle;
-	LONG rc;
-	do {
-		rc = -1;
-		handle = OwnerDraw::Begin_Dialog(IDD_OPT_DISPLAY, Display_Options_Dialog_Proc);
-	} while (handle == 0);
-	SetWindowLongPtr(handle, DWLP_USER, (LONG_PTR)&rc);
-	OwnerDraw::Display_Dialog(handle);
-
-	while (rc < 0) {
-		if (OwnerDraw::Dialog_Message_Handler() == true) {
-			break;
-		}
-		Title_Screen_Restore();
-	}
-
-	OwnerDraw::End_Dialog(handle);
-	_DisplayPresenter = NULL;
-
-	return(presenter.Picked);
-}
-
-
-/// <summary>
-/// Handles the display options dialog messages.
-/// This routine seeds the resolution list and the movie switch from the presenter's state
-/// and hands the player's picks back to it; the presenter records the mode to try.
-/// </summary>
-static __forceinline BOOL Display_Options_Dialog_Body(HWND window, UINT message, WPARAM wparam)
-{
-	UIDisplayPresenterClass * presenter = _DisplayPresenter;
-	if (presenter == NULL) {
-		return(0);
-	}
-
-	int * result = (int *)GetWindowLongPtr(window, DWLP_USER);
-	switch (message) {
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				default:
-					return(0);
-
-				case IDC_DISPLAY_RESLIST: {
-					HWND list = GetDlgItem(window, IDC_DISPLAY_RESLIST);
-					Queue_And_Drain(*presenter, "select", ListBox_GetCurSel(list));
-				}
-				return(0);
-
-				case IDOK: {
-					HWND button = GetDlgItem(window, IDC_STRETCH_MOVIES);
-					if (button) {
-						Queue_And_Drain(*presenter, "stretch", Button_GetCheck(button) == BST_CHECKED);
-					}
-					Queue_And_Drain(*presenter, "ok");
-				}
-				break;
-
-				case IDCANCEL:
-					Queue_And_Drain(*presenter, "cancel");
-					break;
-			}
-			*result = LOWORD(wparam);
-			break;
-
-		case WM_INITDIALOG: {
-			UIDisplayState const & state = presenter->State;
-			HWND list = GetDlgItem(window, IDC_DISPLAY_RESLIST);
-			for (UIDisplayMode const & mode : state.Modes) {
-				ListBox_AddString(list, mode.Label.c_str());
-			}
-			ListBox_SetCurSel(list, state.Selected);
-
-			HWND button = GetDlgItem(window, IDC_STRETCH_MOVIES);
-			if (button) {
-				Button_SetCheck(button, state.StretchMovies);
-			}
-		}
-		break;
-
-	}
-	return(0);
-}
-
-
-/// <summary>
-/// Handles the display options dialog.
-/// This routine gives the owner draw dialog system first refusal on the message and only
-/// deals with what it leaves behind.
-/// </summary>
-INT_PTR CALLBACK Display_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (rc == 0) {
-		return(Display_Options_Dialog_Body(window, message, wparam));
-	}
-	return(rc);
 }

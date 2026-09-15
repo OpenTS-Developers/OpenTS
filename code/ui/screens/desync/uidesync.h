@@ -103,6 +103,6 @@ std::unique_ptr<UIViewClass> UI_Desync_View(UIDesyncPresenterClass & presenter);
 // The session's own service, which lives as long as the dialog it belongs to.
 UIDesyncServiceClass & UI_Desync_Service(void);
 
-// Runs the out-of-sync screen. False means it could not run as one and the caller should open
-// its Win32 dialog; otherwise choice carries what the player pressed, if anything.
-bool UI_Desync_Dialog(UIDesyncChoiceType & choice);
+// Runs the out-of-sync screen, returning what the player pressed. Nothing comes back when the
+// session settled the decision under it, and when it could not open.
+UIDesyncChoiceType UI_Desync_Dialog(void);

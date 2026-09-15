@@ -8,8 +8,8 @@
  ******************************************************************************/
 
 // The engine side of the options menu: the state it starts from and the entry the menu
-// driver calls ahead of its Win32 dialog. The presenter and view live in uimainopt.cpp so
-// that the test harness can drive them without the engine.
+// driver calls. The presenter and view live in uimainopt.cpp so that the test harness can
+// drive them without the engine.
 
 #include "ui/screens/mainopt/uimainopt.h"
 
@@ -34,25 +34,17 @@ void UI_Main_Options_State(UIMainOptionsState & state)
 }
 
 
-bool UI_Main_Options_Dialog(UIMainOptionsChoice & choice)
+UIMainOptionsChoice UI_Main_Options_Dialog(void)
 {
-	choice = UI_MAIN_OPTIONS_LEAVE;
-
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIMainOptionsState state;
 	UI_Main_Options_State(state);
 
 	UIMainOptionsPresenterClass presenter(state);
 	std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
 
-	UIResult result = UI_Run_Modal(*view);
-	if (result == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
+	if (UI_Run_Modal(*view) != UI_RESULT_ACCEPTED) {
+		return(UI_MAIN_OPTIONS_LEAVE);
 	}
 
-	choice = (result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_MAIN_OPTIONS_LEAVE;
-	return(true);
+	return(presenter.Choice);
 }

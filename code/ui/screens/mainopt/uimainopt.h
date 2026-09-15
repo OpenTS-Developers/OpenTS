@@ -58,6 +58,6 @@ std::unique_ptr<UIViewClass> UI_Main_Options_View(UIMainOptionsPresenterClass & 
 // The state of the running game.
 void UI_Main_Options_State(UIMainOptionsState & state);
 
-// Runs the options menu as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog; otherwise choice carries the player's pick.
-bool UI_Main_Options_Dialog(UIMainOptionsChoice & choice);
+// Runs the options menu, returning the player's pick. Backing out and a screen that could not
+// open both leave the menu.
+UIMainOptionsChoice UI_Main_Options_Dialog(void);

@@ -8,8 +8,8 @@
  ******************************************************************************/
 
 // The engine side of the abort question: the state it starts from and the entry Abort_Dialog
-// calls ahead of its Win32 dialog. The presenter and view live in uiabort.cpp so that the
-// test harness can drive them without the engine.
+// calls. The presenter and view live in uiabort.cpp so that the test harness can drive them
+// without the engine.
 
 #include "ui/screens/abort/uiabort.h"
 
@@ -42,25 +42,17 @@ void UI_Abort_State(UIAbortState & state)
 }
 
 
-bool UI_Abort_Dialog(UIAbortChoice & choice)
+UIAbortChoice UI_Abort_Dialog(void)
 {
-	choice = UI_ABORT_CONTINUE;
-
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIAbortState state;
 	UI_Abort_State(state);
 
 	UIAbortPresenterClass presenter(state);
 	std::unique_ptr<UIViewClass> view = UI_Abort_View(presenter);
 
-	UIResult result = UI_Run_Modal(*view);
-	if (result == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
+	if (UI_Run_Modal(*view) != UI_RESULT_ACCEPTED) {
+		return(UI_ABORT_CONTINUE);
 	}
 
-	choice = (result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_ABORT_CONTINUE;
-	return(true);
+	return(presenter.Choice);
 }

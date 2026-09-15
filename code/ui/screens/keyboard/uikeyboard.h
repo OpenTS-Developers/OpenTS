@@ -111,11 +111,9 @@ class UIKeyboardPresenterClass : public UIPresenterClass
 // it.
 std::unique_ptr<UIViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & presenter);
 
-// The game's service and the state of the hotkey table, shared by the Win32 dialog and the
-// RmlUi view.
+// The game's service and the state of the hotkey table.
 UIKeyboardServiceClass & UI_Keyboard_Service(void);
 void UI_Keyboard_State(UIKeyboardState & state);
 
-// Runs the keyboard dialog as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog.
-bool UI_Keyboard_Dialog(void);
+// Runs the keyboard screen, returning when the player leaves it.
+void UI_Keyboard_Dialog(void);

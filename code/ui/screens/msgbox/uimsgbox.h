@@ -54,14 +54,11 @@ class UIMessageBoxPresenterClass : public UIPresenterClass
 // outlive it.
 std::unique_ptr<UIViewClass> UI_Message_Box_View(UIMessageBoxPresenterClass & presenter);
 
-// Runs a message box as an RmlUi screen. False means it could not run as one, because a Win32
-// dialog is on screen or the document failed to prepare, and the caller should open its Win32
-// box; otherwise choice carries the legacy return value: the button number, or -1 when the
-// session ended.
-bool UI_Message_Box(char const * text, int defaultresponse, char const * b1, char const * b2, char const * b3, int & choice);
+// Runs a message box, returning the number of the button pressed, or -1 when the session ended
+// or the screen could not open.
+int UI_Message_Box(char const * text, int defaultresponse, char const * b1, char const * b2, char const * b3);
 
-// Runs the network message box as an RmlUi screen, polling the caller's idle routine each pass
-// so that its answers keep flowing while the box is up. The type is the MB_ layout the Win32
-// box takes, and choice comes back as the control id that answered, as ODMessageBox reports it.
-// False means it could not run as a screen and the caller should open its Win32 box.
-bool UI_Network_Message_Box(char const * text, int type, bool (*idle)(void), int & choice);
+// Runs the network message box, polling the caller's idle routine each pass so that its answers
+// keep flowing while the box is up. The type is the MB_ layout the Win32 box took, and the
+// answer comes back as the control id that gave it, as ODMessageBox reported it.
+int UI_Network_Message_Box(char const * text, int type, bool (*idle)(void));

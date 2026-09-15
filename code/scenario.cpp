@@ -401,7 +401,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 		// No dialog has been put up in a game a client launched, so the artwork it draws with
 		// is not built yet.
-		OwnerDraw::Prepare_Resources(MainWindow);
+		OwnerDraw::Prepare_Resources();
 
 		if (Scen->TransitTheme != THEME_NONE) {
 			Theme.Play_Song(Scen->TransitTheme);
@@ -734,7 +734,7 @@ bool Read_Scenario(char const * fname)
 
 	if (Scen->IsRandom) {
 		if (RandomMapGen.SeedData.Load(name)) {
-			RandomMapGen.Generate_Random_Map(false, NULL);
+			RandomMapGen.Generate_Random_Map(false);
 			Multiplayer_Last_Minute_Fixups();
 		} else {
 			state = ScenarioState::NotRead;

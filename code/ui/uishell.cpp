@@ -804,21 +804,9 @@ void UIShellClass::Shutdown(void)
 }
 
 
-bool UIShellClass::Use_Rml(void) const
-{
-	return(Ready && !Host.Legacy_Dialogs_Requested());
-}
-
-
 bool UIShellClass::Screen_Shown(void) const
 {
 	return(!Modals.empty() || ModalClosing);
-}
-
-
-bool UIShellClass::Legacy_Dialog_Visible(void) const
-{
-	return(Host.Legacy_Dialog_Visible());
 }
 
 
@@ -1253,16 +1241,16 @@ bool UIShellClass::Handle_Text(char32_t code)
 
 UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & service)
 {
+	// Every screen answers as a missing dialog template did when it cannot open, so the reason
+	// is logged here rather than reported by the caller.
 	if (!Ready) {
+		Log("UI: %s cannot open; the interface system did not start\n", view.Name());
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 	if (!FontLoaded) {
 		Log("UI: %s needs %s, which did not load\n", view.Name(), UI_SHIPPED_FONT_FILE);
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
-
-	// A legacy dialog and an RmlUi screen never show together; the visible one takes the mouse.
-	assert(!Legacy_Dialog_Visible());
 
 	RevealShown = 0.0f;
 	RevealStart = Clock().Milliseconds();

@@ -61,7 +61,6 @@
 #include "theme.h"
 #include "utf8.h"
 #include "vector.h"
-#include "windlg.h"
 
 #include "color.hh"
 #include "dialog.hh"

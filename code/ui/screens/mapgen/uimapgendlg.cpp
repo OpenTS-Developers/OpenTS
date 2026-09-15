@@ -8,9 +8,8 @@
  ******************************************************************************/
 
 // The engine side of the random map generator: what the screen reads out of the seed the
-// generator keeps, and the entry the generator's own driver calls ahead of its Win32 dialog.
-// The presenter and view live in uimapgen.cpp so that the test harness can drive them
-// without the engine.
+// generator keeps, and the entry the generator's own driver calls. The presenter and view
+// live in uimapgen.cpp so that the test harness can drive them without the engine.
 
 #include "ui/screens/mapgen/uimapgen.h"
 
@@ -152,7 +151,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 
 		virtual void Preview(void) override
 		{
-			RandomMapGen.Generate_Random_Map(true, NULL);
+			RandomMapGen.Generate_Random_Map(true);
 		}
 
 		virtual void Surprise(void) override
@@ -169,7 +168,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 		virtual void Load(void) override
 		{
 			if (RandomMapGen.SeedData.LoadOptionsClass::Load() == true) {
-				RandomMapGen.Generate_Random_Map(true, NULL);
+				RandomMapGen.Generate_Random_Map(true);
 			}
 		}
 
@@ -261,14 +260,8 @@ UIMapGenServiceClass & UI_Map_Generator_Service(void)
 }
 
 
-bool UI_Map_Generator_Dialog(UIMapGenChoiceType & choice)
+UIMapGenChoiceType UI_Map_Generator_Dialog(void)
 {
-	choice = UI_MAPGEN_CANCEL;
-
-	if (!UIShell.Use_Rml() || UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	// The screen closes and reopens around the file dialogs the generator raises, as the
 	// Win32 dialog stood while they ran over it.
 	while (true) {
@@ -277,7 +270,7 @@ bool UI_Map_Generator_Dialog(UIMapGenChoiceType & choice)
 
 		UIResult result = UI_Run_Modal(*view);
 		if (result == UI_RESULT_FAILED_TO_OPEN) {
-			return(false);
+			return(UI_MAPGEN_CANCEL);
 		}
 
 		switch (presenter.Raise) {
@@ -297,7 +290,6 @@ bool UI_Map_Generator_Dialog(UIMapGenChoiceType & choice)
 				break;
 		}
 
-		choice = (result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_MAPGEN_CANCEL;
-		return(true);
+		return((result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_MAPGEN_CANCEL);
 	}
 }

@@ -111,19 +111,11 @@ void UI_Scenario_State(UIScenarioState & state)
 
 
 /// <summary>
-/// Runs the multiplayer map dialog as an RmlUi screen, reopening it around the generator.
+/// Runs the multiplayer map dialog, reopening it around the generator.
 /// </summary>
-/// <param name="picked">IDOK or IDCANCEL. Meaningless when this returns false.</param>
-/// <returns>bool; Was the screen shown at all? False leaves the session untouched and the
-/// caller opens its Win32 dialog instead.</returns>
-bool UI_Scenario_Dialog(int & picked)
+/// <returns>Returns with IDOK when the player took a map, otherwise IDCANCEL.</returns>
+int UI_Scenario_Dialog(void)
 {
-	picked = IDCANCEL;
-
-	if (!UIShell.Use_Rml() || UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIScenarioState state;
 	UI_Scenario_State(state);
 
@@ -137,8 +129,7 @@ bool UI_Scenario_Dialog(int & picked)
 
 		UIResult result = UIShell.Run_Modal(*view, Service_Pick);
 		if (result == UI_RESULT_FAILED_TO_OPEN) {
-			// Only the first pass can still fall back; a later one has already been shown.
-			return(!reveal);
+			return(IDCANCEL);
 		}
 
 		state = std::move(presenter.State);
@@ -155,17 +146,10 @@ bool UI_Scenario_Dialog(int & picked)
 		}
 
 		if (result == UI_RESULT_SESSION_ENDED || presenter.Choice != UI_SCENARIO_ACCEPT) {
-			return(true);
+			return(IDCANCEL);
 		}
 
 		Session.Options.ScenarioIndex = state.Selected > 0 ? state.Selected : 0;
-
-		// The dialog that opened this one shows the mission's name, and is a Win32 one until
-		// its own screen lands; with none up this reaches no window and does nothing.
-		SendDlgItemMessage(GameoptWindow(), IDC_SCENARIONAME, WM_SETTEXT, 0,
-			(LPARAM)Session.Scenarios[Session.Options.ScenarioIndex]->Description());
-
-		picked = IDOK;
-		return(true);
+		return(IDOK);
 	}
 }

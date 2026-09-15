@@ -18,7 +18,6 @@
 #include "language/language.h"
 #include "mapgen.h"
 #include "mixfile.h"
-#include "ownrdraw.h"
 #include "wdtnet.h"
 
 
@@ -37,51 +36,6 @@ extern WDTPointer<void> g_WDTUnusedPointer2;
 extern WDTPointer<Campaign> g_WDTNewCampaign;
 extern WDTPointer<Campaign> g_WDTResumedCampaign;
 
-
-
-/// <summary>
-/// Handles the dialog messages for the tour side choice menu.
-/// This routine gives the owner draw default handler first refusal and, for a button it
-/// does not consume, records the player's choice in the dialog result.
-/// </summary>
-/// <returns>
-/// Returns with the result of the owner draw handler, or FALSE if it left the message alone.
-/// </returns>
-INT_PTR CALLBACK WDT_Faction_Choice_Menu_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	int* retval;
-
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-
-	if (rc == 0) {
-
-		switch (message) {
-			case WM_COMMAND: {
-				retval = (int *)GetWindowLongPtr(window, DWLP_USER);
-				switch (LOWORD(wparam)) {
-					case IDC_PICKCLAN_JOIN:
-						*retval = 1;
-						break;
-
-					case IDC_PICKCLAN_GDI:
-						*retval = 2;
-						break;
-
-					case IDC_PICKCLAN_NOD:
-						*retval = 3;
-						break;
-
-					case IDC_CANCEL:
-						*retval = 4;
-						break;
-				}
-				break;
-			}
-		}
-		return(FALSE);
-	}
-	return(rc);
-}
 
 
 /// <summary>

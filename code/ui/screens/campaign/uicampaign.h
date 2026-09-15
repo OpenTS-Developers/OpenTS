@@ -66,7 +66,6 @@ std::unique_ptr<UIViewClass> UI_Campaign_View(UICampaignPresenterClass & present
 // The campaigns on offer and the difficulty the settings hold.
 void UI_Campaign_State(UICampaignState & state);
 
-// Runs the campaign chooser as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog; otherwise picked carries the campaign, or nothing when
-// the player backed out.
-bool UI_Campaign_Dialog(std::optional<UICampaignEntry> & picked);
+// Runs the campaign chooser. Nothing comes back when the player backed out or the screen
+// could not open.
+std::optional<UICampaignEntry> UI_Campaign_Dialog(void);

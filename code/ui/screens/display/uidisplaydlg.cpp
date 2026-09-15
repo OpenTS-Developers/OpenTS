@@ -84,14 +84,8 @@ void UI_Display_State(UIDisplayState & state)
 }
 
 
-bool UI_Display_Dialog(std::optional<UIDisplayMode> & picked)
+std::optional<UIDisplayMode> UI_Display_Dialog(void)
 {
-	picked.reset();
-
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIDisplayState state;
 	UI_Display_State(state);
 
@@ -99,30 +93,25 @@ bool UI_Display_Dialog(std::optional<UIDisplayMode> & picked)
 	std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
 
 	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
+		return(std::nullopt);
 	}
 
-	picked = presenter.Picked;
-	return(true);
+	return(presenter.Picked);
 }
 
 
-bool UI_Confirm_Mode_Dialog(bool & kept)
+bool UI_Confirm_Mode_Dialog(void)
 {
-	kept = false;
-
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIConfirmModePresenterClass presenter(UIShell.Clock());
 	std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
 
 	UIResult result = UI_Run_Modal(*view);
+
+	// A screen that could not be prepared keeps the mode, as a dialog that would not create
+	// itself always did.
 	if (result == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
+		return(true);
 	}
 
-	kept = (result == UI_RESULT_ACCEPTED);
-	return(true);
+	return(result == UI_RESULT_ACCEPTED);
 }

@@ -116,31 +116,18 @@ class LoadOptionsClass
 		**	Internal routines
 		*/
 		void Clear_List (void);                                     // clears the list & game # array
-		void Fill_List (HWND window);                               // fills the list & game # array
 		void Gather_Files (void);                                   // reads the saves into Files, newest first
 		int Initial_Row (void) const;                               // the row the dialog opens on
 		int Num_From_Ext (char *fname);                             // translates filename to file #
 		static int __cdecl Compare(const void *p1, const void *p2); // for qsort()
 
 		bool Dialog(void);
-		bool Rml_Dialog(void);
 
 		// How many of the newest files the list reads headers for; reading one costs a disk open.
 		virtual std::size_t Scan_Limit(void) const {return(SIZE_MAX);}
 
 		// The box a completed save confirms itself with, or TXT_NONE when it reports elsewhere.
 		virtual int Save_Confirmation(void) const;
-
-		/*
-		 * These handlers are members so that they can reach the dialog's protected data.
-		 */
-		static void Load_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id);
-		static void Save_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id);
-		static void Delete_Dialog_On_WM_COMMAND(HWND window, WPARAM wparam, LPARAM lparam, int id);
-
-		static INT_PTR CALLBACK Load_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-		static INT_PTR CALLBACK Save_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-		static INT_PTR CALLBACK Delete_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 		/*
 		**	This is the requested style of the dialog
@@ -169,13 +156,6 @@ class LoadOptionsClass
 		unsigned int MinSpaceRequired;
 
 	public:
-		/*
-		 * This points to the routine to call on every pass of the dialog's message loop, or
-		 * NULL if there is none. It is what lets the game underneath keep running while the
-		 * dialog is up.
-		 */
-		bool (*Callback)();
-
 		/*
 		 * This records the state of the dialog. It holds STATE_PENDING while the dialog is
 		 * up and becomes the outcome that closed it, so a handler that rejects the player's

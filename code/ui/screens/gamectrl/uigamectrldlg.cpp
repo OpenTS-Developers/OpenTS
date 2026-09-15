@@ -150,26 +150,19 @@ void UI_Game_Controls_State(UIGameControlsState & state)
 }
 
 
-bool UI_Game_Controls_Dialog(void)
+void UI_Game_Controls_Dialog(void)
 {
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIGameControlsState state;
 	UI_Game_Controls_State(state);
 
 	UIGameControlsPresenterClass presenter(UI_Game_Controls_Service(), state);
 	std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
 
-	if (UI_Run_Modal(*view) == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
-	}
+	UI_Run_Modal(*view);
 
 	if (presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND) {
 		SpecialDialog = SDLG_SOUND;
 	} else if (presenter.Next == UIGameControlsPresenterClass::NEXT_KEYBOARD) {
 		SpecialDialog = SDLG_KEYBOARD;
 	}
-	return(true);
 }

@@ -64,7 +64,6 @@
 #include "mainopt.h"
 #include "misc.h"
 #include "movie.h"
-#include "msgroute.h"
 #include "nativewindow.hh"
 #include "opents_version.h"
 #include "pcx.h"
@@ -74,14 +73,15 @@
 #include "theme.h"
 #include "ui/uishell.h"
 #include "video.h"
+#include "vidscale.h"
 #include "win.h"
 #include "wincursor.h"
-#include "windlg.h"
 #include "winfix.h"
 #include "wwmouse.h"
 
 #include <algorithm>
 #include <commctrl.h>
+#include <windowsx.h>
 
 int		ShowCommand;
 HWND	MainWindow;
@@ -153,18 +153,71 @@ void Focus_Restore(void)
 	if (MouseCursor && _MouseCaptured == true && !Debug_Map) {
 		MouseCursor->Capture_Mouse();
 	}
-	Heal_Dialog_Controls();
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 	InvalidateRect(MainWindow, 0, 0);
 	Pause_Ingame_Movie(false);
-	if (WS_Top_Window()) {
-		SetActiveWindow(WS_Top_Window());
-		SetFocus(WS_Top_Window());
-	}
 }
 
 
 extern bool InMovie;
+
+
+// Does this message carry a mouse position in its lParam?
+static bool Is_Mouse_Coordinate_Message(UINT message)
+{
+	switch (message) {
+		case WM_MOUSEMOVE:
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_LBUTTONDBLCLK:
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONUP:
+		case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONUP:
+		case WM_MBUTTONDBLCLK:
+		case WM_MOUSEWHEEL:
+		case WM_XBUTTONDOWN:
+		case WM_XBUTTONUP:
+		case WM_XBUTTONDBLCLK:
+			return(true);
+
+		default:
+			return(false);
+	}
+}
+
+
+/// <summary>
+/// Converts a mouse message's position into the frame's own pixels, so that the game reads a
+/// click where the player aimed it rather than where Windows measured it.
+/// </summary>
+/// <returns>The lParam to carry on with. A position the frame is not scaling comes back
+/// unchanged, as does one belonging to a message that carries no position.</returns>
+static LPARAM Frame_Mouse_LParam(UINT message, LPARAM lparam)
+{
+	if (MainWindow == NULL || !Is_Mouse_Coordinate_Message(message) || !Video_Scaling_Active()) {
+		return(lparam);
+	}
+
+	POINT point;
+	point.x = GET_X_LPARAM(lparam);
+	point.y = GET_Y_LPARAM(lparam);
+
+	// The wheel's position is measured from the corner of the screen, not of the window.
+	bool const screen_space = (message == WM_MOUSEWHEEL);
+	if (screen_space) {
+		ScreenToClient(MainWindow, &point);
+	}
+
+	Window_Point_To_Game(point);
+
+	if (screen_space) {
+		Game_Point_To_Screen(point);
+	}
+
+	return(MAKELPARAM((short)point.x, (short)point.y));
+}
 
 /// <summary>
 /// Handles the Windows messages sent to the main game window.
@@ -177,21 +230,10 @@ extern bool InMovie;
 LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
-	// The router below rewrites a position into the frame's own pixels; the UI overlay lays
-	// itself out in the window's and wants the position as Windows delivered it.
+	// The game reads a position in the frame's own pixels; the UI overlay lays itself out in
+	// the window's and wants the position as Windows delivered it.
 	LPARAM client_lparam = lParam;
-
-	/*
-	 * The frame may be drawn scaled, so a click has to be matched against where the
-	 * player sees the controls rather than where Windows finds them.
-	 */
-	{
-		LPARAM translated_lparam;
-		if (Route_Mouse_Message(hwnd, message, wParam, lParam, &translated_lparam)) {
-			return(0);
-		}
-		lParam = translated_lparam;
-	}
+	lParam = Frame_Mouse_LParam(message, lParam);
 
 	if (UIShell.Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
 		return(0);

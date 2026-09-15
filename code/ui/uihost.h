@@ -69,10 +69,6 @@ class UIShellHostClass
 		// at one to one whatever this says.
 		virtual bool Bitmap_System_Font(void) const = 0;
 
-		// A Win32 dialog is on screen and takes the mouse before a document can.
-		virtual bool Legacy_Dialog_Visible(void) const = 0;
-		// The player asked for the Win32 dialogs instead of the documents.
-		virtual bool Legacy_Dialogs_Requested(void) const = 0;
 		virtual bool Developer_Keys_Armed(void) const = 0;
 
 		// Drops the queued keys and mouse events. The engine's implementation pumps the

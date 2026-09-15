@@ -57,11 +57,6 @@ class UIShellClass
 		bool Init(void);
 		void Shutdown(void);
 
-		// True when a migrated screen should open its RmlUi view rather than its Win32
-		// dialog. A caller reads it once at screen entry; the answer follows the
-		// LegacyDialogs setting.
-		bool Use_Rml(void) const;
-
 		// True while a modal screen is shown or closing. The developer overlays are not
 		// screens.
 		bool Screen_Shown(void) const;
@@ -76,10 +71,6 @@ class UIShellClass
 		// idle time here without the screen acting from inside that wait.
 		void Serve_Shown_Screen(void);
 
-		// True while a Win32 dialog is on screen. A screen asked to open over one keeps its
-		// legacy view, because the visible dialog takes the mouse before a document can.
-		bool Legacy_Dialog_Visible(void) const;
-
 		// Prepares, shows and drives a modal screen until its presenter reports a result or
 		// the service reports the game ended, then releases it. The view's presenter must
 		// outlive the call.
@@ -87,8 +78,7 @@ class UIShellClass
 
 		// Shows a document beside the game without taking its input: a notice the caller
 		// updates while it works. It is drawn at once, because such a caller pumps nothing.
-		// False when the shell or the document is not ready, so the caller opens its Win32
-		// presentation.
+		// False when the shell or the document is not ready, so nothing is shown.
 		bool Show_Modeless(UIViewClass & view);
 		void Hide_Modeless(UIViewClass & view);
 

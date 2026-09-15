@@ -456,27 +456,6 @@ void GScreenClass::Blit_Display(void)
 
 
 /// <summary>
-/// Repaints the dialog controls that the last frame drew over.
-/// The dialogs are ordinary child windows that paint themselves onto the game's own
-/// surfaces, so a frame put on top of them takes their pixels with it. Windows is asked
-/// to repaint them straight away, and the controls are grandchildren of the main window
-/// rather than children, so the whole subtree has to be included.
-/// </summary>
-void Heal_Dialog_Controls(void)
-{
-	if (_dialog_count <= 0 || MainWindow == NULL) {
-		return;
-	}
-
-	for (HWND child = GetWindow(MainWindow, GW_CHILD); child != NULL; child = GetWindow(child, GW_HWNDNEXT)) {
-		if (IsWindowVisible(child)) {
-			RedrawWindow(child, NULL, NULL, RDW_INVALIDATE|RDW_UPDATENOW|RDW_ERASE|RDW_ALLCHILDREN);
-		}
-	}
-}
-
-
-/// <summary>
 /// Presents a rendered surface onto the visible surface.
 /// This is the low level routine that gets a finished frame in front of the player. The
 /// destination is the visible surface, adjusted for the screen shake and for a sidebar
@@ -583,7 +562,6 @@ void Update_Visible_Surface(Surface *surface, Rect *rect)
 	 */
 	VisibleSurface->Blit_From(dest_rect, *surface, src_rect, false, true);
 
-	Heal_Dialog_Controls();
 	Video_Present_If_Dirty();
 }
 

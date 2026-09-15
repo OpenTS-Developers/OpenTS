@@ -132,17 +132,13 @@ void UI_Keyboard_State(UIKeyboardState & state)
 }
 
 
-bool UI_Keyboard_Dialog(void)
+void UI_Keyboard_Dialog(void)
 {
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UIKeyboardState state;
 	UI_Keyboard_State(state);
 
 	UIKeyboardPresenterClass presenter(UI_Keyboard_Service(), state);
 	std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
 
-	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
+	UI_Run_Modal(*view);
 }

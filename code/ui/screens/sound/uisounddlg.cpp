@@ -124,17 +124,13 @@ void UI_Sound_State(UISoundState & state)
 }
 
 
-bool UI_Sound_Dialog(void)
+void UI_Sound_Dialog(void)
 {
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UISoundState state;
 	UI_Sound_State(state);
 
 	UISoundPresenterClass presenter(UI_Sound_Service(), state);
 	std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
 
-	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
+	UI_Run_Modal(*view);
 }

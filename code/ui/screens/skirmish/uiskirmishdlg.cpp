@@ -225,20 +225,11 @@ void UI_Skirmish_State(UISkirmishState & state)
 
 
 /// <summary>
-/// Runs the skirmish setup as an RmlUi screen, reopening it around the map dialog.
+/// Runs the skirmish setup, reopening it around the map dialog.
 /// </summary>
-/// <param name="started">Did the player ask for the game to begin? Meaningless when this
-/// returns false.</param>
-/// <returns>bool; Was the screen shown at all? False leaves the session untouched and the
-/// caller opens its Win32 dialog instead.</returns>
-bool UI_Skirmish_Dialog(bool & started)
+/// <returns>bool; Did the player ask for the game to begin?</returns>
+bool UI_Skirmish_Dialog(void)
 {
-	started = false;
-
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UISkirmishState state;
 	UI_Skirmish_State(state);
 
@@ -252,8 +243,7 @@ bool UI_Skirmish_Dialog(bool & started)
 
 		UIResult result = UI_Run_Modal(*view);
 		if (result == UI_RESULT_FAILED_TO_OPEN) {
-			// Only the first pass can still fall back; a later one has already been shown.
-			return(!reveal);
+			return(false);
 		}
 
 		state = std::move(presenter.State);
@@ -261,7 +251,7 @@ bool UI_Skirmish_Dialog(bool & started)
 
 		if (result == UI_RESULT_SESSION_ENDED || presenter.Choice == UI_SKIRMISH_CANCEL) {
 			Remember_Preferences(state);
-			return(true);
+			return(false);
 		}
 
 		if (presenter.Choice == UI_SKIRMISH_PICK_MAP) {
@@ -279,7 +269,6 @@ bool UI_Skirmish_Dialog(bool & started)
 		}
 
 		Commit(state);
-		started = true;
 		return(true);
 	}
 }

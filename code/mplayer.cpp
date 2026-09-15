@@ -41,19 +41,12 @@
 
 #include "mplayer.h"
 
-#include "_surface.h"
 #include "addon.h"
-#include "init.h"
 #include "msgbox.h"
-#include "ownrdraw.h"
 #include "session.h"
-#include "_ui.h"
 #include "ui/screens/menu/uimenu.h"
-#include "ui/uishell.h"
 
 class ListClass;
-
-INT_PTR CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 /// <summary>
 /// Prompts the player for which kind of multiplayer game to start.
@@ -82,109 +75,16 @@ GameType Select_MPlayer_Game (void)
 	menu.Items.push_back(UIMenuItemType{"Main Menu", IDCANCEL, true});
 	UI_Menu_Place(menu);
 
-	// The dialog asks again for anything that is not a game it can start, so the screen does.
-	int chosen = 0;
-	while (UIShell.Use_Rml() && UI_Menu_Dialog(menu, chosen)) {
-		if (chosen == IDC_NETWORK) {
-			retval = GAME_IPX;
-		} else if (chosen == IDC_SKIRMISH) {
-			retval = GAME_SKIRMISH;
-		} else {
-			Session.Read_Scenario_Descriptions();
-			return(GAME_NORMAL);
-		}
-
-		Session.Read_Scenario_Descriptions();
-		return(retval);
+	int chosen = UI_Menu_Dialog(menu);
+	if (chosen == IDC_NETWORK) {
+		retval = GAME_IPX;
+	} else if (chosen == IDC_SKIRMISH) {
+		retval = GAME_SKIRMISH;
 	}
 
-	HWND dialog;
-
-	if (firestorm) {
-		dialog = OwnerDraw::Begin_Dialog(IDD_MPLAYER_SELECT_GAME_FS, Select_MPlayer_Game_Dialog_Proc);
-	} else {
-		dialog = OwnerDraw::Begin_Dialog(IDD_MPLAYER_SELECT_GAME, Select_MPlayer_Game_Dialog_Proc);
-	}
-
-
-	if (dialog) {
-
-		int rc;
-		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
-
-		bool process = true;
-		while (process) {
-			OwnerDraw::Move_Dialog(dialog, -1, (HiddenSurface->Get_Height() - 400) / 2 + 147);
-			OwnerDraw::Display_Dialog(dialog);
-			rc = -1;
-			while (rc == -1) {
-				if (OwnerDraw::Dialog_Message_Handler() == true) {
-					break;
-				}
-				Title_Screen_Restore();
-			}
-
-			ShowWindow(dialog, SW_HIDE);
-			UpdateWindow(MainWindow);
-			switch (rc) {
-				case IDC_NETWORK:
-					retval = GAME_IPX;
-					break;
-				case IDC_SKIRMISH:
-					retval = GAME_SKIRMISH;
-					break;
-				default:
-					retval = GAME_NORMAL;
-					process = false;
-					break;
-			}
-			if (retval != GAME_NORMAL) {
-				break;
-			}
-		}
-
-		OwnerDraw::End_Dialog(dialog);
-		Session.Read_Scenario_Descriptions();
-	}
+	Session.Read_Scenario_Descriptions();
 	return(retval);
 }	/* end of Select_MPlayer_Game */
-
-
-/// <summary>
-/// Handles the messages for the multiplayer game type dialog.
-/// </summary>
-/// <returns>Returns with the result of the ownerdraw handler, or false when the message was
-/// left unhandled.</returns>
-INT_PTR CALLBACK Select_MPlayer_Game_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	int * retval;
-	HWND handle;
-
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-
-	if (message == WM_INITDIALOG) {
-		// Neither the online service these led to nor the tour it hosted can be reached,
-		// so the buttons are left on the dialog but never answer.
-		handle = GetDlgItem(window, IDC_INTERNET);
-		if (handle) {
-			EnableWindow(handle, FALSE);
-		}
-		handle = GetDlgItem(window, IDC_WORLDDOM);
-		if (handle) {
-			EnableWindow(handle, FALSE);
-		}
-	}
-
-	if (rc != 0) {
-		return(rc);
-	}
-
-	if (message == WM_COMMAND) {
-		retval = (int *)GetWindowLongPtr(window, DWLP_USER);
-		*retval = LOWORD(wparam);
-	}
-	return(false);
-}
 
 
 /***************************************************************************

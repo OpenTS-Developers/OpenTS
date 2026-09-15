@@ -8,8 +8,8 @@
  ******************************************************************************/
 
 // The engine side of the campaign chooser: the campaigns it offers and the entry
-// Choose_Campaign calls ahead of its Win32 dialog. The presenter and view live in
-// uicampaign.cpp so that the test harness can drive them without the engine.
+// Choose_Campaign calls. The presenter and view live in uicampaign.cpp so that the test
+// harness can drive them without the engine.
 
 #include "ui/screens/campaign/uicampaign.h"
 
@@ -60,29 +60,18 @@ void UI_Campaign_State(UICampaignState & state)
 }
 
 
-bool UI_Campaign_Dialog(std::optional<UICampaignEntry> & picked)
+std::optional<UICampaignEntry> UI_Campaign_Dialog(void)
 {
-	picked.reset();
-
-	if (UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UICampaignState state;
 	UI_Campaign_State(state);
 
 	UICampaignPresenterClass presenter(std::move(state));
 	std::unique_ptr<UIViewClass> view = UI_Campaign_View(presenter);
 
-	UIResult result = UI_Run_Modal(*view);
-	if (result == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
+	if (UI_Run_Modal(*view) != UI_RESULT_ACCEPTED) {
+		return(std::nullopt);
 	}
 
-	if (result == UI_RESULT_ACCEPTED) {
-		Options.Difficulty = presenter.State.Difficulty;
-		picked = presenter.Picked;
-	}
-
-	return(true);
+	Options.Difficulty = presenter.State.Difficulty;
+	return(presenter.Picked);
 }

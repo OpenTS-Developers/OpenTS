@@ -342,7 +342,6 @@ void UINetLobbyEngineServiceClass::Kick(std::vector<std::string> const & names)
 		Net2Kick(name.c_str());
 	}
 
-	Net2DisplayUsers();
 }
 
 
@@ -371,23 +370,20 @@ UINetLobbyServiceClass & UI_Net_Lobby_Service(void)
 /// flow on under it.
 /// </summary>
 /// <param name="reveal">Should the screen open, or come back whole from the map dialog?</param>
-/// <param name="choice">What the player asked for. Meaningless when this returns false.</param>
-/// <returns>bool; Was a screen shown at all? False leaves the flow untouched and the caller
-/// keeps its Win32 dialog.</returns>
-bool UI_Net_Lobby_Run(bool reveal, UINetChoice & choice)
+/// <returns>What the player asked for. Nothing comes back from a flow standing in no phase,
+/// which the lobby is serviced through instead; a screen that could not open answers as a
+/// cancel does, which backs the flow out.</returns>
+UINetChoice UI_Net_Lobby_Run(bool reveal)
 {
-	choice = UI_NET_NONE;
-
-	if (!UIShell.Use_Rml() || UIShell.Legacy_Dialog_Visible()) {
-		return(false);
-	}
-
 	UINetLobbyState state;
 	state.Reveal = reveal;
 	UI_Net_Lobby_Service().Read(state);
 
+	// A packet can leave the flow between phases; there is no screen to run then, so the pass
+	// the screen's runner would have made is made here.
 	if (state.Kind == UI_NET_LOBBY_NONE) {
-		return(false);
+		Net2_Service_Lobby();
+		return(UI_NET_NONE);
 	}
 
 	UINetLobbyPresenterClass presenter(UI_Net_Lobby_Service(), std::move(state));
@@ -395,11 +391,9 @@ bool UI_Net_Lobby_Run(bool reveal, UINetChoice & choice)
 		? UI_Net_Browser_View(presenter)
 		: UI_Net_Setup_View(presenter);
 
-	UIResult result = UIShell.Run_Modal(*view, Net2_Service_Lobby);
-	if (result == UI_RESULT_FAILED_TO_OPEN) {
-		return(false);
+	if (UIShell.Run_Modal(*view, Net2_Service_Lobby) == UI_RESULT_FAILED_TO_OPEN) {
+		return(UI_NET_CANCEL);
 	}
 
-	choice = presenter.Choice;
-	return(true);
+	return(presenter.Choice);
 }

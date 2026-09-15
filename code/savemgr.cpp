@@ -12,6 +12,7 @@
 #include "savemgr.h"
 
 #include "_map.h"
+#include "_ui.h"
 #include "_rules.h"
 #include "_wsproto.h"
 #include "ccfile.h"
@@ -25,8 +26,9 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netglobal.h"
-#include "ownrdraw.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
+#include "ui/uienginehost.h"
+#include "ui/uishell.h"
 #include "rawfile.h"
 #include "rules.h"
 #include "saveload.h"
@@ -598,7 +600,8 @@ void SaveManagerClass::Process_Pending_Load_Game(void)
 				Fetch_String(seconds == 1 ? TXT_LOADING_IN_SECOND : TXT_LOADING_IN_SECONDS), seconds);
 			box.Set_Text(buffer);
 		}
-		OwnerDraw::Dialog_Message_Handler();
+		UI_Service_Game();
+		UIShell.Tick();
 		Sleep(10);
 	}
 

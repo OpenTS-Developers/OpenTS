@@ -299,8 +299,6 @@ class TestHostClass : public UIShellHostClass
 {
 	public:
 		UIFrameRect Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
-		bool LegacyRequested = false;
-		bool LegacyVisible = false;
 		bool Captured = false;
 		bool Unicode = false;
 		unsigned int CodePage = 65001;
@@ -425,16 +423,6 @@ class TestHostClass : public UIShellHostClass
 		virtual bool Movie_Playing(void) const override
 		{
 			return(false);
-		}
-
-		virtual bool Legacy_Dialog_Visible(void) const override
-		{
-			return(LegacyVisible);
-		}
-
-		virtual bool Legacy_Dialogs_Requested(void) const override
-		{
-			return(LegacyRequested);
 		}
 
 		virtual bool Developer_Keys_Armed(void) const override
@@ -3390,13 +3378,8 @@ void Test_Shell(void)
 	UIShellClass & shell = fixture.Shell;
 	TestHostClass & host = fixture.Host;
 
-	Check(!shell.Use_Rml(), "a shell not yet initialized opens no document");
 	Check(shell.Init(), "the shell initializes over the injected interfaces");
 	Check(shell.Rml_Context() != nullptr, "the shell holds a context");
-	Check(shell.Use_Rml(), "documents are used while the host asks for no legacy dialogs");
-	host.LegacyRequested = true;
-	Check(!shell.Use_Rml(), "the LegacyDialogs setting turns the documents off");
-	host.LegacyRequested = false;
 	Check(!shell.Screen_Shown() && shell.Modal() == nullptr && shell.Modal_Depth() == 0, "no screen is shown at start");
 
 	{
@@ -4105,7 +4088,6 @@ void Test_Shell(void)
 		shell.Shutdown();
 		Check(!shell.Is_Modeless_Shown(*view) && !view->Is_Shown(), "shutdown releases a notice still shown");
 		shell.Hide_Modeless(*view);
-		Check(!shell.Use_Rml(), "a shut-down shell opens no document");
 	}
 
 	Check(shell.Init(), "the shell initializes again after a shutdown");

@@ -7,9 +7,9 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The engine side of the version screen: the lines it shows and the entry the legacy dialog's
-// wrapper calls. The presenter and view live in uiversion.cpp so that the test harness can
-// drive them without the engine.
+// The engine side of the version screen: the lines it shows and the entry Version_Dialog
+// calls. The presenter and view live in uiversion.cpp so that the test harness can drive
+// them without the engine.
 
 #include "ui/screens/version/uiversion.h"
 
@@ -68,7 +68,7 @@ void UI_Version_Lines(std::vector<std::string> & lines)
 }
 
 
-bool UI_Version_Dialog(void)
+void UI_Version_Dialog(void)
 {
 	std::vector<std::string> lines;
 	UI_Version_Lines(lines);
@@ -76,5 +76,5 @@ bool UI_Version_Dialog(void)
 	UIVersionPresenterClass presenter(std::move(lines));
 	std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
 
-	return(UI_Run_Modal(*view) != UI_RESULT_FAILED_TO_OPEN);
+	UI_Run_Modal(*view);
 }

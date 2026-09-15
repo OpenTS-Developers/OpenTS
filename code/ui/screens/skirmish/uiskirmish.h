@@ -103,7 +103,6 @@ std::unique_ptr<UIViewClass> UI_Skirmish_View(UISkirmishPresenterClass & present
 // The settings the running game offers, and the map it opens on.
 void UI_Skirmish_State(UISkirmishState & state);
 
-// Runs the skirmish setup as an RmlUi screen, reopening it around the map dialog the way the
-// Win32 dialog hid itself. False means it could not run as one and the caller should open
-// its Win32 dialog; otherwise started says whether the player asked for the game to begin.
-bool UI_Skirmish_Dialog(bool & started);
+// Runs the skirmish setup, reopening it around the map dialog the way the Win32 dialog hid
+// itself. True when the player asked for the game to begin.
+bool UI_Skirmish_Dialog(void);

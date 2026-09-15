@@ -151,7 +151,6 @@ std::unique_ptr<UIViewClass> UI_Map_Generator_View(UIMapGenPresenterClass & pres
 // The generator's own service.
 UIMapGenServiceClass & UI_Map_Generator_Service(void);
 
-// Runs the generator as an RmlUi screen, reopening it around anything it raises. False means
-// it could not run as one and the caller should open its Win32 dialog; otherwise choice
-// carries whether the player took the map.
-bool UI_Map_Generator_Dialog(UIMapGenChoiceType & choice);
+// Runs the generator, reopening it around anything it raises. Returns whether the player took
+// the map.
+UIMapGenChoiceType UI_Map_Generator_Dialog(void);

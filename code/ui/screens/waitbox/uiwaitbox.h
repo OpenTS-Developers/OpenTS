@@ -41,8 +41,7 @@ class UIWaitBoxPresenterClass : public UIPresenterClass
 std::unique_ptr<UIViewClass> UI_Wait_Box_View(UIWaitBoxPresenterClass & presenter);
 
 
-// The notice a caller shows while it works: a document when the shell can draw one and no
-// Win32 dialog is on screen, else the Win32 box. It hides itself when it goes out of scope.
+// The notice a caller shows while it works. It hides itself when it goes out of scope.
 class UIWaitBoxClass
 {
 	public:
@@ -50,7 +49,7 @@ class UIWaitBoxClass
 		~UIWaitBoxClass(void);
 
 		void Show(char const * text);
-		// The document alone. False shows nothing, so the caller can open its own Win32 presentation.
+		// The same notice with a progress bar. False when the shell could not show it.
 		bool Show_Document(char const * text, bool bar);
 		void Set_Text(char const * text);
 		void Set_Fraction(double fraction);
@@ -59,7 +58,6 @@ class UIWaitBoxClass
 		bool Is_Shown(void) const;
 
 	private:
-		HWND Dialog;
 		std::unique_ptr<UIWaitBoxPresenterClass> Presenter;
 		std::unique_ptr<UIViewClass> View;
 };

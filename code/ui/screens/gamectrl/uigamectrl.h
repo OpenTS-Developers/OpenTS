@@ -106,12 +106,10 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 // outlive it.
 std::unique_ptr<UIViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter);
 
-// The game's service and the state of the running game, shared by the Win32 dialog and the
-// RmlUi view.
+// The game's service and the state of the running game.
 UIGameControlsServiceClass & UI_Game_Controls_Service(void);
 void UI_Game_Controls_State(UIGameControlsState & state);
 
-// Runs the game controls as an RmlUi screen. False means it could not run as one and the
-// caller should open its Win32 dialog. Sound and Keyboard leave SpecialDialog naming the
-// screen to open next.
-bool UI_Game_Controls_Dialog(void);
+// Runs the game controls. Sound and Keyboard leave SpecialDialog naming the screen to open
+// next.
+void UI_Game_Controls_Dialog(void);

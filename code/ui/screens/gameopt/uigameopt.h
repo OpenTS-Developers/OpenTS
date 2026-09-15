@@ -93,8 +93,7 @@ std::unique_ptr<UIViewClass> UI_Game_Options_View(UIGameOptionsPresenterClass & 
 // Which buttons the running game offers, which of them are live, and what its readings say.
 void UI_Game_Options_State(UIGameOptionsState & state);
 
-// Runs the in-game options menu as an RmlUi screen, reopening it after a save or a delete the
-// way the Win32 menu came back from behind them. False means it could not run as one and the
-// caller should open its Win32 dialog; otherwise choice carries what the player settled on,
-// which is never save or delete because those are done before this returns.
-bool UI_Game_Options_Dialog(UIGameOptionsChoice & choice);
+// Runs the in-game options menu, reopening it after a save or a delete the way the Win32 menu
+// came back from behind them. Returns what the player settled on, which in a solo game is
+// never save or delete because those are done before it returns.
+UIGameOptionsChoice UI_Game_Options_Dialog(void);

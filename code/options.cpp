@@ -64,7 +64,6 @@
 #include "_deploymentconfig.h"
 #include "_map.h"
 #include "_rules.h"
-#include "_ui.h"
 #include "audio/audioengine.h"
 #include "ccfile.h"
 #include "ccrand.h"
@@ -79,13 +78,11 @@
 #include "language/language.h"
 #include "mouse.h"
 #include "msgbox.h"
-#include "ownrdraw.h"
 #include "rules.h"
 #include "session.h"
 #include "techno.h"
 #include "theme.h"
 #include "ui/screens/keyboard/uikeyboard.h"
-#include "ui/uishell.h"
 #include "vector.h"
 #include "video.h"
 #include "vox.h"
@@ -120,7 +117,6 @@ OptionsClass::OptionsClass(void) :
 	SoundVolume(.7f),
 	VoiceVolume(1.0f),
 	ScoreVolume(.5f),
-	LegacyDialogs(false),
 	BitmapSystemFont(true),
 	AutoScroll(true),
 	IsScoreRepeat(false),
@@ -385,8 +381,6 @@ void OptionsClass::Load_Settings(void)
 	AutoScroll = ConfigINI.Get_Bool("Options", "AutoScroll", AutoScroll);
 	DebugString("AutoScroll is %s\n", AutoScroll == true ? "ON" : "OFF");
 
-	LegacyDialogs = ConfigINI.Get_Bool("Options", "LegacyDialogs", LegacyDialogs);
-	DebugString("LegacyDialogs is %s\n", LegacyDialogs == true ? "ON" : "OFF");
 
 	BitmapSystemFont = ConfigINI.Get_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
 	DebugString("BitmapSystemFont is %s\n", BitmapSystemFont == true ? "ON" : "OFF");
@@ -481,7 +475,6 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Int("Options", "ScrollMethod", ScrollMethod);
 	ConfigINI.Put_Int("Options", "ScrollRate", ScrollRate);
 	ConfigINI.Put_Bool("Options", "AutoScroll", AutoScroll);
-	ConfigINI.Put_Bool("Options", "LegacyDialogs", LegacyDialogs);
 	ConfigINI.Put_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
 	ConfigINI.Put_Int("Options", "DetailLevel", DetailLevel);
 	ConfigINI.Put_Bool("Options", "SidebarCameoText", SidebarCameoText);
@@ -603,213 +596,14 @@ int OptionsClass::Normalize_Volume(int volume) const
 }
 
 
-// The presenter the keyboard dialog procedure is a view of, for the life of one Hotkey_Dialog call.
-static UIKeyboardPresenterClass * _KeyboardPresenter = NULL;
-
-
-static void Queue_And_Drain(UIKeyboardPresenterClass & presenter, char const * name, int value = 0)
-{
-	UIIntent intent;
-	intent.Name = name;
-	intent.Value = value;
-	presenter.Queue(intent);
-	presenter.Drain();
-}
-
-
-// The description, the selected command's shortcut, the owner of the captured key and the
-// capture control's own key, from the state.
-static void Hotkey_Dialog_Show(HWND window, UIKeyboardState const & state)
-{
-	SetWindowText(GetDlgItem(window, IDC_KEY_DESCRIPTION), state.Description.c_str());
-	SetWindowText(GetDlgItem(window, IDC_KEY_CURRENT_SHORTCUT), state.Shortcut.c_str());
-	SetWindowText(GetDlgItem(window, IDC_KEY_ASSIGNED_TO), state.AssignedTo.c_str());
-
-	HWND hotkey = GetDlgItem(window, IDC_KEY_HOTKEY);
-	if (hotkey != NULL && (int)SendMessage(hotkey, HKM_GETHOTKEY, 0, 0) != state.Captured) {
-		SendMessage(hotkey, HKM_SETHOTKEY, state.Captured, 0);
-	}
-}
-
-
-// The controls sort their rows themselves, so each row carries the presenter's index as its data.
-static void Hotkey_Dialog_Fill_Commands(HWND window, UIKeyboardState const & state)
-{
-	HWND list = GetDlgItem(window, IDC_KEY_COMMANDS);
-	ListBox_ResetContent(list);
-	for (UIHotkeyRow const & row : state.Visible) {
-		int index = ListBox_AddString(list, row.Name.c_str());
-		if (index != LB_ERR) {
-			ListBox_SetItemData(list, index, row.Command);
-			if (row.Command == state.Selected) {
-				ListBox_SetCurSel(list, index);
-			}
-		}
-	}
-
-	Hotkey_Dialog_Show(window, state);
-}
-
-
-static void Hotkey_Dialog_Fill(HWND window, UIKeyboardState const & state)
-{
-	HWND categories = GetDlgItem(window, IDC_KEY_CATEGORY);
-	ComboBox_ResetContent(categories);
-	for (int category = 0; category < (int)state.Categories.size(); category++) {
-		int index = ComboBox_AddString(categories, state.Categories[category].c_str());
-		if (index != CB_ERR) {
-			ComboBox_SetItemData(categories, index, category);
-			if (category == state.Category) {
-				ComboBox_SetCurSel(categories, index);
-			}
-		}
-	}
-
-	Hotkey_Dialog_Fill_Commands(window, state);
-}
-
-
-/// <summary>
-/// Handles the messages for the keyboard configuration dialog.
-/// This routine seeds the category, command and hotkey controls from the keyboard presenter
-/// and hands the player's picks back to it. The presenter edits a copy of the assignments:
-/// accepting the dialog saves the copy to KEYBOARD.INI, canceling drops it.
-/// </summary>
-/// <returns>Returns with TRUE if the message was consumed by this dialog.</returns>
-INT_PTR CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	int * retval;
-
-	INT_PTR result = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (result) {
-		return(result);
-	}
-
-	UIKeyboardPresenterClass * presenter = _KeyboardPresenter;
-	if (presenter == NULL) {
-		return(FALSE);
-	}
-
-	retval = (int *)GetWindowLongPtr(window, DWLP_USER);
-
-	switch (message) {
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDOK:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						Queue_And_Drain(*presenter, "ok");
-						*retval = IDOK;
-						return(TRUE);
-					}
-					break;
-
-				case IDCANCEL:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						Queue_And_Drain(*presenter, "cancel");
-						*retval = 2;
-						return(TRUE);
-					}
-					break;
-
-				case IDC_KEY_COMMANDS:
-					if (HIWORD(wparam) == LBN_SELCHANGE) {
-						HWND list = (HWND)lparam;
-						int row = ListBox_GetCurSel(list);
-						Queue_And_Drain(*presenter, "select", (row == LB_ERR) ? -1 : (int)ListBox_GetItemData(list, row));
-						Hotkey_Dialog_Show(window, presenter->State);
-						HWND hotkey = GetDlgItem(window, IDC_KEY_HOTKEY);
-						if (hotkey != NULL) {
-							SetFocus(hotkey);
-							return(TRUE);
-						}
-					}
-					break;
-
-				case IDC_KEY_ASSIGN:
-					Queue_And_Drain(*presenter, "assign");
-					Hotkey_Dialog_Show(window, presenter->State);
-					return(TRUE);
-
-				case IDC_KEY_HOTKEY:
-					if (HIWORD(wparam) == EN_CHANGE) {
-						Queue_And_Drain(*presenter, "capture", (int)SendMessage((HWND)lparam, HKM_GETHOTKEY, 0, 0));
-						SetWindowText(GetDlgItem(window, IDC_KEY_ASSIGNED_TO), presenter->State.AssignedTo.c_str());
-						return(TRUE);
-					}
-					break;
-
-				case IDC_KEY_RESET_ALL:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						Queue_And_Drain(*presenter, "reset");
-						Hotkey_Dialog_Fill(window, presenter->State);
-						return(TRUE);
-					}
-					break;
-
-				case IDC_KEY_CATEGORY:
-					if (HIWORD(wparam) == CBN_SELCHANGE) {
-						HWND categories = (HWND)lparam;
-						int row = ComboBox_GetCurSel(categories);
-						Queue_And_Drain(*presenter, "category", (row == CB_ERR) ? -1 : (int)ComboBox_GetItemData(categories, row));
-						Hotkey_Dialog_Fill_Commands(window, presenter->State);
-						return(TRUE);
-					}
-					break;
-			}
-			return(TRUE);
-
-		case WM_INITDIALOG:
-			Hotkey_Dialog_Fill(window, presenter->State);
-			return(FALSE);
-	}
-
-	return(FALSE);
-}
-
-
-// The title screen is kept refreshed while the dialog is up outside of a game.
-static void Hotkey_Win32_Dialog(void)
-{
-	HWND handle;
-	int res = -1;
-
-	UIKeyboardState state;
-	UI_Keyboard_State(state);
-	UIKeyboardPresenterClass presenter(UI_Keyboard_Service(), state);
-	_KeyboardPresenter = &presenter;
-
-	handle = OwnerDraw::Begin_Dialog(IDD_OPT_KEYBOARD, Hotkey_Dialog_Proc);
-
-	if (handle != NULL) {
-		SetWindowLongPtr(handle, DWLP_USER, (LONG_PTR)&res);
-		OwnerDraw::Display_Dialog(handle);
-
-		while (res < 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				res = 2;
-			}
-			if (!GameActive) {
-				Title_Screen_Restore();
-			}
-		}
-		OwnerDraw::End_Dialog(handle);
-	}
-
-	_KeyboardPresenter = NULL;
-}
-
-
 /// <summary>
 /// Displays the keyboard configuration dialog.
 /// This routine brings up the hotkey assignment screen and does not return until the player
 /// dismisses it.
 /// </summary>
-bool OptionsClass::Hotkey_Dialog(void)
+void OptionsClass::Hotkey_Dialog(void)
 {
-	if (!UIShell.Use_Rml() || !UI_Keyboard_Dialog()) {
-		Hotkey_Win32_Dialog();
-	}
-	return(true);
+	UI_Keyboard_Dialog();
 }
 
 
