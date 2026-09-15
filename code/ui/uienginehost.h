@@ -26,3 +26,7 @@ bool UI_Service_Game(void);
 
 // Runs a modal screen on UIShell with the game serviced each pass.
 UIResult UI_Run_Modal(UIViewClass & view);
+
+// One pass of a screen standing over the running game, for a game wait to spend its idle time
+// on. Nothing happens when no screen is shown.
+void UI_Serve_Screen(void);

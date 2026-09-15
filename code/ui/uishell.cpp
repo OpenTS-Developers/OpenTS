@@ -551,6 +551,8 @@ static char const * const UI_SHIPPED_FONT_FILE = "Arimo.ttf";
 static char const * const UI_REVEAL_SOUND = "EMBLEM.AUD";
 static const float UI_REVEAL_VOLUME = 64.0f / 255.0f;
 
+static char const * const UI_REVEAL_DONE = "UI: %s opened over %d passes in %d ms\n";
+
 
 bool UIShellClass::Load_Sheet_Font(char const * family)
 {
@@ -681,6 +683,41 @@ bool UIShellClass::Advance_Reveal(UIViewClass & view, float full, int start, flo
 
 	view.Reveal_To(shown);
 	return(true);
+}
+
+
+// One step of the band the innermost screen is opening through, counted in passes so the log
+// says how many the schedule took. A pass opens one step at most however late it comes, which
+// is what draws a reveal out rather than skipping it to the end.
+void UIShellClass::Advance_Shown_Reveal(UIViewClass & view)
+{
+	if (!Revealing) {
+		return;
+	}
+
+	RevealPasses++;
+	Revealing = Advance_Reveal(view, RevealWidth, RevealStart, RevealShown);
+	if (!Revealing) {
+		Log(UI_REVEAL_DONE, view.Name(), RevealPasses, Clock().Milliseconds() - RevealStart);
+	}
+}
+
+
+// A screen over a running game gets one runner pass per game frame, so on its own its band
+// would open and its controls would follow the pointer at the frame rate. The waits the game
+// spends idle hand their time here. Nothing the player asked for is executed: the intents stay
+// queued for the runner, so a screen never acts from inside a game wait.
+void UIShellClass::Serve_Shown_Screen(void)
+{
+	if (!Ready || Modals.empty() || ModalClosing || InContext || InTick) {
+		return;
+	}
+
+	Advance_Shown_Reveal(*Modals.back());
+
+	Tick();
+	Host.Mark_Overlay_Dirty();
+	Host.Present_If_Dirty();
 }
 
 
@@ -1264,13 +1301,13 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	// what the reveal will uncover. A document without one reports nothing and opens whole.
 	// The band is laid out before anything else runs: clearing the keyboard queue pumps the
 	// window's messages, and a paint among them presents whatever is laid out at the time.
-	float revealwidth = Host.Animate_Screens() ? view.Reveal_Width() : 0.0f;
+	RevealWidth = Host.Animate_Screens() ? view.Reveal_Width() : 0.0f;
 	RevealShown = 0.0f;
 	RevealStart = Clock().Milliseconds();
-	int revealpasses = 1;
-	bool revealing = revealwidth > 0.0f;
-	if (revealing) {
-		revealing = Advance_Reveal(view, revealwidth, RevealStart, RevealShown);
+	RevealPasses = 1;
+	Revealing = RevealWidth > 0.0f;
+	if (Revealing) {
+		Advance_Shown_Reveal(view);
 		Tick();
 	}
 
@@ -1278,7 +1315,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	std::snprintf(label, sizeof(label), "%s shown", view.Name());
 	Render->Log_Resource_Counts(label);
 	Host.Clear_Keyboard_Queue();
-	if (revealing) {
+	if (Revealing) {
 		Host.Play_Sample(UI_REVEAL_SOUND, UI_REVEAL_VOLUME);
 	}
 
@@ -1305,18 +1342,12 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 			break;
 		}
 
-		if (revealing) {
-			revealpasses++;
-			revealing = Advance_Reveal(view, revealwidth, RevealStart, RevealShown);
-			if (!revealing) {
-				Log("UI: %s opened over %d passes in %d ms\n", view.Name(), revealpasses, Clock().Milliseconds() - RevealStart);
-			}
-		}
+		Advance_Shown_Reveal(view);
 
 		Tick();
 		Host.Mark_Overlay_Dirty();
 		Host.Present_If_Dirty();
-		if (!revealing) {
+		if (!Revealing) {
 			RevealShown = 0.0f;
 		}
 	}

@@ -62,6 +62,8 @@
 #include "timer.h"
 #include "tracker.h"
 #include "ui/uishell.h"
+#include "ui/uienginehost.h"
+#include "video.h"
 
 #include "bench.hh"
 #include "special.hh"
@@ -581,6 +583,8 @@ void Sync_Delay(void)
 				if (!NetFrameTimer()) {
 					break;
 				}
+			} else {
+				UI_Serve_Screen();
 			}
 			Sleep(0);
 		}
@@ -597,6 +601,8 @@ void Sync_Delay(void)
 				if (!FrameTimer) {
 					break;
 				}
+			} else {
+				UI_Serve_Screen();
 			}
 			if (GameInFocus || (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH)) {
 				Sleep(0);

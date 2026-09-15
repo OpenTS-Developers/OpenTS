@@ -150,6 +150,7 @@
 #include "scheme.h"
 #include "script.h"
 #include "session.h"
+#include "ui/uienginehost.h"
 #include "side.h"
 #include "smudge.h"
 #include "smudtype.h"
@@ -1471,6 +1472,8 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 				Keyboard_Process(input);
 			TacticalMap->AI();
 			Map.Render();
+		} else if (!first_time) {
+			UI_Serve_Screen();
 		}
 
 		loop_count++;

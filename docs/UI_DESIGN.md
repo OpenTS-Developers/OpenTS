@@ -600,6 +600,24 @@ once because such a caller pumps nothing. That present ignores the interval
 between frames: the caller gets no second chance, so a notice raised soon
 after the last frame would otherwise never be drawn at all.
 
+A screen over a running game is paced by that game. Its runner gets one pass
+per `Main_Loop`, so in a network match, where the loop is held to the session's
+frame rate, the band it opens through and every control under the pointer
+followed the game at thirty passes a second; the Win32 dialog never showed this
+because Windows repainted its controls from their own messages rather than from
+the game's loop. The game already spends that time idle in two waits, the
+frame's own in `Sync_Delay` and the one for the other players' packets in
+`Wait_For_Players`, and both are given to the shown screen instead. A pass taken
+there advances only what the screen looks like: the band, the layout and one
+present. It drains no intents, so a press still waits for the runner rather than
+executing engine work from inside a packet wait.
+
+The game also takes a screen down itself where a presentation of its own is
+about to fill the frame. `Do_Win` and `Do_Lose` call `End_Screens`, because the
+score screen runs its own loop inside the service pass of whatever screen is up,
+which would otherwise leave that screen frozen part-opened over it with its
+presses queued and nobody to execute them.
+
 Teardown order: mark the screen closing and invalidate its token, then drop
 focus and capture and discard its intents, then detach listeners and data
 models and release documents while their storage lives, then remove the

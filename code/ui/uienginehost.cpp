@@ -319,3 +319,18 @@ UIResult UI_Run_Modal(UIViewClass & view)
 {
 	return(UIShell.Run_Modal(view, UI_Service_Game));
 }
+
+
+// A screen over a running game is driven by its runner, which gets one pass per game frame, so
+// on its own a control would follow the pointer at the frame rate. The waits the game already
+// spends idle -- the frame's own and the one for the other players' packets -- are handed to
+// the screen instead.
+void UI_Serve_Screen(void)
+{
+	if (!UIShell.Screen_Shown()) {
+		return;
+	}
+
+	Windows_Message_Handler();
+	UIShell.Serve_Shown_Screen();
+}

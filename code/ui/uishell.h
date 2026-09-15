@@ -71,6 +71,11 @@ class UIShellClass
 		// it. Each screen's runner tears it down when the caller hands control back.
 		void End_Screens(void);
 
+		// Advances what the shown screen looks like: its opening band, its layout and one
+		// present. It executes nothing the player asked for, so a game wait can spend its
+		// idle time here without the screen acting from inside that wait.
+		void Serve_Shown_Screen(void);
+
 		// True while a Win32 dialog is on screen. A screen asked to open over one keeps its
 		// legacy view, because the visible dialog takes the mouse before a document can.
 		bool Legacy_Dialog_Visible(void) const;
@@ -192,6 +197,7 @@ class UIShellClass
 		void Apply_Font_Policy(void);
 		bool Load_Sheet_Font(char const * family);
 		bool Advance_Reveal(UIViewClass & view, float full, int start, float & shown);
+		void Advance_Shown_Reveal(UIViewClass & view);
 
 		// Set while the context updates or renders, while the hook runs, and while a tick
 		// runs; each refuses to re-enter itself.
@@ -221,10 +227,14 @@ class UIShellClass
 		bool ModalClosing = false;
 		std::vector<UIViewClass *> Modeless;
 
-		// The band the innermost modal is opening through, in pixels, and when it began;
-		// nothing while no screen is opening.
+		// The band the innermost modal is opening through, in pixels, when it began, how
+		// wide it will come to and how many passes it has taken; nothing while no screen is
+		// opening. The runner and the waits the game hands over both advance it.
 		float RevealShown = 0.0f;
 		int RevealStart = 0;
+		float RevealWidth = 0.0f;
+		bool Revealing = false;
+		int RevealPasses = 0;
 
 		bool DevWasActive = false;
 
