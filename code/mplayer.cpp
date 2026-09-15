@@ -28,7 +28,7 @@
  *                                                                                             *
  *---------------------------------------------------------------------------------------------*
  * Functions:                                                                                  *
- *   Select_MPlayer_Game -- prompts user for NULL-Modem, Modem, or Network game                *
+ *   Select_MPlayer_Game -- prompts user for a network or skirmish game                        *
  *   Clear_Listbox -- clears the given list box                                                *
  *   Clear_Vector -- clears the given NodeNameType vector                                      *
  *   Computer_Message -- "sends" a message from the computer                                   *
@@ -69,9 +69,6 @@ GameType Select_MPlayer_Game (void)
 	if (firestorm) {
 		menu.Items.push_back(UIMenuItemType{"World Domination! (Internet)", GAME_WDT, false});
 	}
-	// The modem and serial games are retired, so that button leads nowhere and the chooser
-	// answers as backing out does.
-	menu.Items.push_back(UIMenuItemType{"Modem / Serial", GAME_NORMAL, true});
 	menu.Items.push_back(UIMenuItemType{"Network", GAME_IPX, true});
 	menu.Items.push_back(UIMenuItemType{"Skirmish", GAME_SKIRMISH, true});
 	menu.Items.push_back(UIMenuItemType{"Main Menu", GAME_NORMAL, true});

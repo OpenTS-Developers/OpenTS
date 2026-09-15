@@ -60,9 +60,9 @@ button
 .multiplayer #reveal
 {
 	width: 306dp;
-	height: 234dp;
+	height: 200dp;
 	top: 50%;
-	margin-top: -117dp;
+	margin-top: -100dp;
 }
 
 .multiplayer #title { left: 55dp; top: 19dp; width: 195dp; }
@@ -71,15 +71,14 @@ button
 .multiplayer button:nth-child(2) { top: 82dp; }
 .multiplayer button:nth-child(3) { top: 116dp; }
 .multiplayer button:nth-child(4) { top: 150dp; }
-.multiplayer button:nth-child(5) { top: 184dp; }
 
-/* The expansion's own template is narrower, a row taller, and carries one button more. */
+/* The expansion's own list is narrower, a row taller, and carries one button more. */
 
 .firestorm #reveal
 {
 	width: 296dp;
-	height: 238dp;
-	margin-top: -119dp;
+	height: 206dp;
+	margin-top: -103dp;
 }
 
 .firestorm #title { left: 45dp; top: 13dp; width: 195dp; }
@@ -89,7 +88,6 @@ button
 .firestorm button:nth-child(3) { top: 99dp; }
 .firestorm button:nth-child(4) { top: 131dp; }
 .firestorm button:nth-child(5) { top: 161dp; }
-.firestorm button:nth-child(6) { top: 194dp; }
 
 /* -------------------------------------------------------------- the game to play at all */
 

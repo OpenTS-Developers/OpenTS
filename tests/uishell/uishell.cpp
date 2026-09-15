@@ -2326,7 +2326,7 @@ void Test_Menu_Screen(Rml::Context & context, CountingSystemInterfaceClass & sys
 
 	Rml::Element * dialog = document->GetElementById("reveal");
 	Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y == 400.0f, "the menu sits at the top edge it was given");
-	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(296.0f, 238.0f), "the expansion's template is its own size");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(296.0f, 206.0f), "the expansion's template is its own size");
 
 	std::vector<Rml::Element *> buttons = Buttons_Top_Down(document);
 	Check(buttons.size() == 3, "the menu has a button for each item it was given");
