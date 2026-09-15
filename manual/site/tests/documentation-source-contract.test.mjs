@@ -463,7 +463,7 @@ test('Saved games are named in one folder rather than searched for', () => {
 		['code/saveload.cpp', 'bool Save_Game(const char *file_name, char const * descr)'],
 		['code/saveload.cpp', 'bool Load_Game(const char *file_name)'],
 		['code/saveload.cpp', 'bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)'],
-		['code/loaddlg.cpp', 'void LoadOptionsClass::Fill_List(HWND window)'],
+		['code/loaddlg.cpp', 'void LoadOptionsClass::Gather_Files(void)'],
 		['code/loaddlg.cpp', 'bool LoadOptionsClass::Files_Present(void)'],
 		['code/loaddlg.cpp', 'bool LoadOptionsClass::Delete_File(const char * file_name)'],
 	]) {
@@ -475,7 +475,7 @@ test('Saved games are named in one folder rather than searched for', () => {
 	}
 
 	assert.doesNotMatch(
-		functionBody(source('code/loaddlg.cpp'), 'void LoadOptionsClass::Fill_List(HWND window)') +
+		functionBody(source('code/loaddlg.cpp'), 'void LoadOptionsClass::Gather_Files(void)') +
 			functionBody(source('code/loaddlg.cpp'), 'bool LoadOptionsClass::Files_Present(void)'),
 		/Search_Files\(/,
 		'the listing no longer scans the folders the game reads from',
