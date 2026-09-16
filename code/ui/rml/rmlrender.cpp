@@ -694,23 +694,24 @@ bool UIRmlBgfxRenderClass::Clear_Clip_Mask(void)
 
 // Dear ImGui asks for its textures through status requests; each is answered here and
 // acknowledged, and a destroyed texture keeps its pixels so that ImGui can ask again. A
-// request the renderer refuses is left unanswered, so ImGui asks again next frame.
+// request the renderer refuses is left unanswered, so ImGui asks again next frame; the
+// documents are not failed over an overlay's texture.
 void UIRmlBgfxRenderClass::Update_ImGui_Texture(ImTextureData * texture)
 {
 	if (texture->Status == ImTextureStatus_WantCreate) {
 		int limit = Texture_Limit();
 		uint32_t size = 0;
 		if (texture->Format != ImTextureFormat_RGBA32) {
-			Fail("an overlay texture is not RGBA");
+			DebugString("UI: an overlay texture is not RGBA\n");
 			return;
 		}
 		if (texture->Width <= 0 || texture->Height <= 0 || texture->Width > limit || texture->Height > limit) {
-			Fail("an overlay texture is empty or larger on a side than the renderer accepts");
+			DebugString("UI: a %dx%d overlay texture is empty or larger on a side than the renderer accepts\n", texture->Width, texture->Height);
 			return;
 		}
 		if (!UI_Render_Byte_Count((size_t)texture->Width * (size_t)texture->Height, 4, size) || size > UI_MAX_RESOURCE_BYTES
 			|| Statistics.TextureBytes + size > UI_MAX_TEXTURE_BYTES || (size_t)texture->GetSizeInBytes() != size) {
-			Fail("an overlay texture is larger than the renderer accepts");
+			DebugString("UI: a %dx%d overlay texture is larger than the renderer accepts\n", texture->Width, texture->Height);
 			return;
 		}
 
@@ -831,6 +832,11 @@ void UIRmlBgfxRenderClass::Render_ImGui(ImDrawData * data)
 			}
 			if (!Draw_Available()) {
 				return;
+			}
+
+			// A texture the renderer refused has no id yet, and what it would draw waits with it.
+			if (command.TexRef._TexData != nullptr && command.TexRef._TexData->TexID == ImTextureID_Invalid) {
+				continue;
 			}
 
 			bgfx::TextureHandle sampled = { WhiteTexture };
