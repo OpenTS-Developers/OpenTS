@@ -44,6 +44,7 @@
 #include "ui/screens/sound/uisound.h"
 #include "ui/screens/netlobby/uinetlobby.h"
 #include "ui/screens/reconnect/uireconnect.h"
+#include "ui/screens/savegame/uisavegame.h"
 #include "ui/screens/scenario/uiscenario.h"
 #include "ui/screens/skirmish/uiskirmish.h"
 #include "ui/screens/version/uiversion.h"
@@ -2757,6 +2758,119 @@ static UINetPlayerRow Net_Player(char const * name)
 }
 
 
+// Drives the save dialog: a picked row hands its description to the field and the empty slot
+// hands the suggestion back, Enter in the field and a double-click on a row accept, and
+// Escape from the field cancels.
+void Test_Save_Game_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UISaveGameState fixture;
+	fixture.Mode = UI_SAVE_GAME_SAVE;
+	fixture.Title = "SAVE";
+	fixture.AcceptCaption = "Save";
+	fixture.Suggested = "Mission 3";
+	fixture.Description = "Mission 3";
+	UISaveGameEntry slot;
+	slot.Description = "[EMPTY SLOT]";
+	fixture.Entries.push_back(slot);
+	UISaveGameEntry file;
+	file.Description = "Before the bridge";
+	file.Date = "1/1/2026";
+	file.Time = "10:00";
+	file.Valid = true;
+	fixture.Entries.push_back(file);
+
+	auto open = [&](UISaveGamePresenterClass & presenter, std::unique_ptr<UIViewClass> & view) {
+		view = UI_Save_Game_View(presenter);
+		bool prepared = Rml(*view).Prepare(context);
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		return(prepared);
+	};
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares against the test context");
+		context.Render();
+		Check(system.Problems == problems, "the save screen raises no RmlUi warning or error");
+
+		Drive(presenter, "select", 1);
+		Check(presenter.State.Selected == 1 && presenter.State.Description == "Before the bridge", "picking a saved game hands its description to the field");
+		Drive(presenter, "select", 0);
+		Check(presenter.State.Description == "Mission 3", "picking the empty slot hands the suggestion back");
+
+		Drive(presenter, "description", 0, "Before the br");
+		Check(!presenter.Result.has_value() && presenter.State.Description == "Before the br", "typing changes the description and accepts nothing");
+		Drive(presenter, "description", 1, "Before the bridge II");
+		Check(presenter.Accepted && presenter.State.Description == "Before the bridge II", "a line break in the field accepts with what was typed");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares for its keys");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * field = (document != nullptr) ? document->GetElementById("description") : nullptr;
+		Check(field != nullptr, "the save screen has its description field");
+		if (field != nullptr) {
+			field->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+			context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Accepted && presenter.State.Description == "Mission 3", "Enter in the field reaches the presenter as a line break and accepts");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares for Escape");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * field = (document != nullptr) ? document->GetElementById("description") : nullptr;
+		if (field != nullptr) {
+			field->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+			context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Escape from the field cancels the screen");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares for a double-click");
+
+		std::vector<Rml::Element *> rows = Visible_Rows(Rml(*view).Document(), "files");
+		Check(rows.size() == 2, "the save screen lists the empty slot and the file");
+		if (rows.size() == 2) {
+			rows[1]->DispatchEvent(Rml::EventId::Dblclick, Rml::Dictionary());
+			presenter.Drain();
+			Check(presenter.Accepted, "a double-click on a row accepts");
+		}
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
 // Drives the game browser: it comes out at its template's size, the highlight asks the wire
 // for that game once, a line of chat is sent only when it is ended and long enough, and the
 // buttons close the screen with the answers the driver maps onto the dialog's responses.
@@ -3512,6 +3626,7 @@ void Test_Documents(void)
 		Test_Net_Browser_Screen(*context, system);
 		Test_Net_Setup_Screen(*context, system);
 		Test_Version_Screen(*context, system);
+		Test_Save_Game_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);
 		Test_Game_Controls_Screen(*context, system);

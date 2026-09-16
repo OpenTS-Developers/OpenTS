@@ -22,19 +22,34 @@ UISaveGamePresenterClass::UISaveGamePresenterClass(UISaveGameState state) :
 
 void UISaveGamePresenterClass::Execute(UIIntent const & intent)
 {
+	bool accept = false;
+
 	if (intent.Name == "select") {
 		if (intent.Value >= 0 && intent.Value < (int)State.Entries.size()) {
 			State.Selected = intent.Value;
+
+			// A save takes the picked row's description, as the dialog's list did.
+			if (State.Mode == UI_SAVE_GAME_SAVE) {
+				UISaveGameEntry const & entry = State.Entries[State.Selected];
+				if (entry.Valid) {
+					State.Description = entry.Description;
+				} else if (!State.Suggested.empty()) {
+					State.Description = State.Suggested;
+				}
+			}
 		}
 	} else if (intent.Name == "description") {
 		State.Description = intent.Text;
+		accept = intent.Value != 0;
 	} else if (intent.Name == "accept" || intent.Name == "ok") {
-		if (State.AcceptEnabled) {
-			Accepted = true;
-			Result = UI_RESULT_ACCEPTED;
-		}
+		accept = true;
 	} else if (intent.Name == "cancel") {
 		Result = UI_RESULT_CANCELLED;
+	}
+
+	if (accept && State.AcceptEnabled) {
+		Accepted = true;
+		Result = UI_RESULT_ACCEPTED;
 	}
 }
 

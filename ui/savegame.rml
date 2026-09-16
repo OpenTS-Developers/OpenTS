@@ -8,9 +8,9 @@
 	<p id="title">{{title}}</p>
 	<div id="headings"><span id="heading-description">Description</span><span id="heading-stamp">Time Stamp</span></div>
 	<div id="files" class="list"><div class="rows">
-		<div class="item" data-for="entry : entries" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)"><span class="cell-description">{{entry.description}}</span><span class="cell-date">{{entry.date}}</span><span class="cell-time">{{entry.time}}</span></div>
+		<div class="item" data-for="entry : entries" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)" data-event-dblclick="queue('accept')"><span class="cell-description">{{entry.description}}</span><span class="cell-date">{{entry.date}}</span><span class="cell-time">{{entry.time}}</span></div>
 	</div></div>
-	<input type="text" id="description" data-if="mode == 1" maxlength="40" data-value="description" data-event-change="queue('description', ev.value)"/>
+	<input type="text" id="description" data-if="mode == 1" maxlength="79" data-value="description" data-event-change="queue('description', ev.linebreak, ev.value)"/>
 	<div id="buttons">
 		<button id="accept" data-class-disabled="!acceptenabled" data-event-click="queue('accept')">{{acceptcaption}}</button>
 		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>

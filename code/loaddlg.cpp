@@ -225,6 +225,7 @@ bool LoadOptionsClass::Dialog(void)
 			FileEntryClass const * file = Files[index];
 			UISaveGameEntry entry;
 			entry.Description = file->Descr;
+			entry.Valid = file->Valid;
 			char date[128];
 			char timeofday[128];
 			if (Stamp_Strings(*file, date, sizeof(date), timeofday, sizeof(timeofday))) {
@@ -237,6 +238,7 @@ bool LoadOptionsClass::Dialog(void)
 		state.Selected = Initial_Row();
 		state.AcceptEnabled = Files.Count() > 0;
 		if (Style == SAVE && Description != NULL) {
+			state.Suggested = Description;
 			state.Description = Description;
 		}
 

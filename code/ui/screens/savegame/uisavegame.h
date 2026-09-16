@@ -27,23 +27,27 @@ enum UISaveGameMode
 };
 
 
-// One row of the file list: what its three cells read, and the entry it stands for.
+// One row of the file list: what its three cells read, and whether a file stands behind it
+// rather than the empty slot.
 struct UISaveGameEntry
 {
 	std::string Description;
 	std::string Date;
 	std::string Time;
+	bool Valid = false;
 };
 
 
 // What the dialog shows: which of the three it is, the files it found, the row it opens on,
-// the description a save starts from, and the captions the mode gives its title and button.
+// the description a save starts from and the one the empty slot offers, and the captions the
+// mode gives its title and button.
 struct UISaveGameState
 {
 	UISaveGameMode Mode = UI_SAVE_GAME_LOAD;
 	std::vector<UISaveGameEntry> Entries;
 	int Selected = 0;
 	std::string Description;
+	std::string Suggested;
 	std::string Title;
 	std::string AcceptCaption;
 	bool AcceptEnabled = true;

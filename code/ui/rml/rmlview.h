@@ -78,6 +78,7 @@ class UIRmlViewClass : public Rml::EventListener, public UIViewClass
 	private:
 		// Whether pressing this element is what the dialogs sounded a click for.
 		static bool Sounds_A_Click(Rml::Element const * element);
+		static bool Takes_Enter(Rml::Element const * element);
 		void Place_Wallpaper(void);
 		void Size_Grips(void);
 

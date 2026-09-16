@@ -95,7 +95,8 @@ bool UIRmlViewClass::Prepare(Rml::Context & context)
 		return(false);
 	}
 
-	Doc->AddEventListener(Rml::EventId::Keydown, this);
+	// Keys are taken ahead of the target, or a focused text input keeps Enter and Escape.
+	Doc->AddEventListener(Rml::EventId::Keydown, this, true);
 	Doc->AddEventListener(Rml::EventId::Mousedown, this);
 	Loaded();
 	return(true);
@@ -133,7 +134,7 @@ void UIRmlViewClass::Release(void)
 {
 	if (Doc != nullptr) {
 		Doc->Hide();
-		Doc->RemoveEventListener(Rml::EventId::Keydown, this);
+		Doc->RemoveEventListener(Rml::EventId::Keydown, this, true);
 		Doc->RemoveEventListener(Rml::EventId::Mousedown, this);
 	}
 
@@ -348,6 +349,24 @@ bool UIRmlViewClass::Sounds_A_Click(Rml::Element const * element)
 }
 
 
+// A text field answers Enter with a change event that carries a line break, which is how a
+// document sends what was typed.
+bool UIRmlViewClass::Takes_Enter(Rml::Element const * element)
+{
+	if (element == nullptr) {
+		return(false);
+	}
+
+	Rml::String const & tag = element->GetTagName();
+	if (tag == "input") {
+		Rml::String type = element->GetAttribute<Rml::String>("type", "text");
+		return(type == "text" || type == "password");
+	}
+
+	return(tag == "textarea");
+}
+
+
 // Enter accepts and Escape cancels whichever element has focus, as the dialog keys do, and
 // pressing a control sounds the click the dialog layer sounded.
 void UIRmlViewClass::ProcessEvent(Rml::Event & event)
@@ -375,6 +394,9 @@ void UIRmlViewClass::ProcessEvent(Rml::Event & event)
 	int key = event.GetParameter<int>("key_identifier", 0);
 
 	if (key == Rml::Input::KI_RETURN || key == Rml::Input::KI_NUMPADENTER) {
+		if (Takes_Enter(event.GetTargetElement())) {
+			return;
+		}
 		Queue("ok");
 		event.StopPropagation();
 	} else if (key == Rml::Input::KI_ESCAPE) {
