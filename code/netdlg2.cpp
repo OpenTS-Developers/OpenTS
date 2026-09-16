@@ -984,6 +984,8 @@ bool Net2Remote_Connect(void)
 			if (Net2LobbyPhase == NET2_LOBBY_HOST) {
 				Unjoin_Game(CurGame);
 				JoinState = JOIN_NOTHING;
+				delete MultiplayerMapPreview;
+				MultiplayerMapPreview = NULL;
 				Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
 				Send_Join_Queries(false, false, true, false);
 			}
@@ -1049,6 +1051,8 @@ bool Net2Remote_Connect(void)
 			 * the pregame setup, compute the packet timing and leave the loop.
 			 */
 			Net2_Close_Lobby();
+			delete MultiplayerMapPreview;
+			MultiplayerMapPreview = NULL;
 
 			PregameSetup();
 
