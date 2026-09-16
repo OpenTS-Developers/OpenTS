@@ -430,11 +430,14 @@ when the pointer is no longer the documents'. The clipboard interface
 exchanges Unicode text with the Win32 clipboard and refuses malformed text
 rather than repairing it.
 
-Text arrives as `WM_CHAR`. The main window is a narrow window, so under the
-UTF-8 code page each message carries one byte and the shell decodes the
-sequence, replacing a malformed one with U+FFFD; under another code page it
-joins a lead byte with its trail byte. A Unicode window would deliver UTF-16
-units, which the shell pairs, and a lone surrogate becomes U+FFFD. Consuming
+Text arrives as `WM_CHAR`. The main window is registered wide, so each message
+carries a UTF-16 unit, which the shell pairs, and a lone surrogate becomes
+U+FFFD. It has to be wide: a narrow window carries the code page of the
+keyboard layout that produced the key, not the process code page the manifest
+sets, so with a UTF-8 process code page a Cyrillic letter arrived as a byte the
+UTF-8 reader could only take for the start of a sequence. The shell still reads
+a narrow window for a host that has one, decoding a UTF-8 sequence or joining a
+lead byte with its trail byte under another page. Consuming
 a physical key never suppresses the text message it generates. Editable
 screens ship only after Tab and Shift+Tab, Enter and Escape, repeat,
 modifiers, paste, dead keys, and IME composition have been exercised for the

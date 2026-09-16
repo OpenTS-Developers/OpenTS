@@ -403,7 +403,7 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 		return(0);
 	}
 
-	return(DefWindowProc (hwnd, message, wParam, lParam));
+	return(DefWindowProcW (hwnd, message, wParam, lParam));
 }
 
 
@@ -471,14 +471,14 @@ unsigned int Build_Number(void)
 #define CC_ICON		IDI_SUN
 #define CC_CURSOR	IDC_CURSOR1
 
-#define WINDOW_NAME		"Tiberian Sun"
+#define WINDOW_NAME		L"Tiberian Sun"
 
 
 void Create_Main_Window ( HINSTANCE instance , int command_show , int width , int height )
 {
 	InitCommonControls();
 
-	WNDCLASS    	wndclass ;
+	WNDCLASSW   	wndclass ;
 	//
 	// Register the window class
 	//
@@ -492,13 +492,13 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 	wndclass.cbClsExtra    = 0 ;
 	wndclass.cbWndExtra    = 0 ;
 	wndclass.hInstance     = instance ;
-	wndclass.hIcon         = LoadIcon (instance, MAKEINTRESOURCE(CC_ICON)) ;
-	wndclass.hCursor       = LoadCursor(ProgramInstance, MAKEINTRESOURCE(CC_CURSOR));
+	wndclass.hIcon         = LoadIconW (instance, MAKEINTRESOURCEW(CC_ICON)) ;
+	wndclass.hCursor       = LoadCursorW(ProgramInstance, MAKEINTRESOURCEW(CC_CURSOR));
 	wndclass.hbrBackground = NULL;
 	wndclass.lpszMenuName  = NULL;	///WINDOW_NAME
 	wndclass.lpszClassName = WINDOW_NAME;
 
-	RegisterClass (&wndclass) ;
+	RegisterClassW (&wndclass) ;
 
 
 	//
@@ -513,7 +513,7 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 		int clientwidth = (Options.WindowWidth > 0) ? Options.WindowWidth : width;
 		int clientheight = (Options.WindowHeight > 0) ? Options.WindowHeight : height;
 
-		MainWindow = CreateWindowEx (
+		MainWindow = CreateWindowExW (
 								0,
 								WINDOW_NAME,
 								WINDOW_NAME,
@@ -543,7 +543,7 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 		 * The desktop keeps its own resolution and the window simply covers it. The
 		 * frame is scaled to fit at presentation time.
 		 */
-		MainWindow = CreateWindowEx (
+		MainWindow = CreateWindowExW (
 								0,
 								WINDOW_NAME,
 								WINDOW_NAME,

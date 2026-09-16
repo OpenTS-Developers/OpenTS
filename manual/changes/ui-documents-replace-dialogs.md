@@ -47,6 +47,10 @@ waited for and what the wait offers, which only the dialog it replaced showed.
 Its Cancel gives up the wait and leaves the match, where the dialog's button
 did nothing.
 
+Text fields take any character the dialog font can draw, so a player whose
+keyboard writes Cyrillic, Greek or an accented Latin letter can type their name
+and their messages in it.
+
 The keyboard screen stores a captured key as the same `KEYBOARD.INI` number the
 Win32 dialog stored, without the extended-key flag that dialog's hotkey control
 added to some keys.

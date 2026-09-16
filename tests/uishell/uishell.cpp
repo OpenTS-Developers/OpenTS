@@ -63,6 +63,7 @@
 #undef GetNextSibling
 
 #include <RmlUi/Core.h>
+#include <RmlUi/Core/Elements/ElementFormControlInput.h>
 #include <RmlUi/Core/Elements/ElementFormControlSelect.h>
 #include <RmlUi/Core/Elements/ElementProgress.h>
 #include <ft2build.h>
@@ -4193,6 +4194,84 @@ void Test_Shell(void)
 			return(false);
 		});
 		Check(recorder.Texts.size() == 1 && recorder.Texts[0] == "\xC3\xA9", "two UTF-8 bytes on a narrow window reach the document as one character");
+	}
+
+	{
+		// A narrow window on a machine whose code page is not UTF-8 carries one code page byte
+		// per message, which is what a Cyrillic system sends for a Cyrillic letter.
+		class TextRecorderClass : public Rml::EventListener
+		{
+			public:
+				std::vector<Rml::String> Texts;
+
+				virtual void ProcessEvent(Rml::Event & event) override
+				{
+					Texts.push_back(event.GetParameter<Rml::String>("text", ""));
+				}
+		};
+
+		TextRecorderClass recorder;
+		unsigned int page = host.CodePage;
+		host.CodePage = 1251;
+
+		UIVersionPresenterClass presenter({ "cyrillic" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+
+		shell.Run_Modal(*view, [&](void) {
+			Rml(*view).Document()->AddEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_CHAR, 0xCF);
+			Send(shell, WM_CHAR, 0xF0);
+			Send(shell, WM_CHAR, 0xE8);
+			Rml(*view).Document()->RemoveEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		host.CodePage = page;
+
+		Check(recorder.Texts.size() == 3, "a code page byte each reaches the document as its own character");
+		Check(recorder.Texts.size() == 3 && recorder.Texts[0] == "\xD0\x9F" && recorder.Texts[1] == "\xD1\x80" && recorder.Texts[2] == "\xD0\xB8", "and each is the Cyrillic letter its byte names, not a replacement");
+	}
+
+	{
+		// A wide window carries a UTF-16 unit per message, which is what the game's own window
+		// sends once it is registered wide. The text has to reach the field, not just the
+		// document, so this reads the control back.
+		UISaveGameState state;
+		state.Mode = UI_SAVE_GAME_SAVE;
+		state.Title = "SAVE";
+		state.AcceptCaption = "Save";
+		UISaveGameEntry slot;
+		slot.Description = "[EMPTY SLOT]";
+		state.Entries.push_back(slot);
+
+		bool wide = host.Unicode;
+		host.Unicode = true;
+
+		UISaveGamePresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Save_Game_View(presenter);
+		Rml::String typed;
+
+		shell.Run_Modal(*view, [&](void) {
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::ElementFormControlInput * field = (document != nullptr)
+				? rmlui_dynamic_cast<Rml::ElementFormControlInput *>(document->GetElementById("description")) : nullptr;
+			if (field != nullptr) {
+				field->SetValue("");
+				field->Focus();
+				Send(shell, WM_CHAR, 0x041F);
+				Send(shell, WM_CHAR, 0x0440);
+				Send(shell, WM_CHAR, 0x0438);
+				Send(shell, WM_CHAR, 0x0432);
+				Send(shell, WM_CHAR, 0x0435);
+				Send(shell, WM_CHAR, 0x0442);
+				typed = field->GetValue();
+			}
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		host.Unicode = wide;
+
+		Check(typed == "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82", "Cyrillic typed on a wide window reaches the field as the letters themselves");
 	}
 
 	{
