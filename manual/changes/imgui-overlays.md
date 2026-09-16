@@ -1,13 +1,10 @@
 ---
-title: Add the developer overlays and the UI test document
+title: Add the developer overlays
 category: internal
 release: 0.2.0
 targets:
   - type: command
     id: fixed:debug-benchmark-overlay
-    effect: added
-  - type: command
-    id: fixed:debug-ui-test-document
     effect: added
 credit: [ZivDero]
 ---
@@ -21,10 +18,5 @@ has focus.
 The benchmarks it reads are the ones the monochrome Events page shows; the
 window resets them each second only while that display is off, so the two never
 take samples from each other.
-
-The same build shows a UI test document on F9, which is a panel with a button
-that closes it. It exercises the document path the screens use, and each load,
-show and hide writes the renderer's texture and buffer counts to the log, so a
-leak across repeated toggles shows there.
 
 A Release build carries none of this.

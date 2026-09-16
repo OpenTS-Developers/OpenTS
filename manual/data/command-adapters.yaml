@@ -280,15 +280,6 @@ fixed_controls:
     availability: *all
     sites:
       - { file: code/wdtsel.cpp, function: Selection::Check_For_Breakout, expression: VK_ESCAPE }
-  - id: fixed:debug-ui-test-document
-    title: Toggle the UI test document
-    description: Shows or hides the RmlUi test document drawn over the game and its menus.
-    audience: debug
-    bindings: [F9]
-    context: Any game window focused, with Debug_Flag enabled
-    availability: *debug
-    sites:
-      - { file: code/ui/uishell.cpp, function: UIShellClass::Handle_Window_Message, expression: VK_F9, guard: _DEBUG }
   - id: fixed:debug-benchmark-overlay
     title: Toggle the benchmark overlay
     description: Shows or hides the Dear ImGui frame benchmark window drawn over the game and its menus.

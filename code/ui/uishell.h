@@ -26,8 +26,6 @@
 namespace Rml
 {
 	class Context;
-	class ElementDocument;
-	class EventListener;
 	class FileInterface;
 }
 
@@ -129,15 +127,11 @@ class UIShellClass
 		UIInputStateClass const & Input_State(void) const { return(Input); }
 
 	private:
-		friend class UITestListenerClass;
-
 		// Work that arrived while the context was updating or rendering, applied at the
 		// next safe point in the order the fields are declared.
 		struct DeferredWorkType
 		{
-			bool ToggleTest = false;
 			bool ToggleDev = false;
-			bool CloseTest = false;
 			bool Resize = false;
 			bool DropArt = false;
 			bool DropPresses = false;
@@ -165,7 +159,6 @@ class UIShellClass
 		bool Prepare_View(UIViewClass & view);
 		void Uncover(UIViewClass * covered);
 		void Drain_Deferred(void);
-		void Toggle_Test_Document(void);
 		bool Handle_Mouse_Move(LPARAM clientlparam);
 		bool Handle_Button_Down(int button, LPARAM clientlparam);
 		bool Handle_Button_Up(int button, LPARAM clientlparam);
@@ -242,8 +235,4 @@ class UIShellClass
 		// The factor the art was last magnified by, so a frame that changes it reloads the art.
 		int ArtMagnification = 1;
 		float PixelRatio = 1.0f;
-
-		// The Debug test document a developer key shows over the game.
-		Rml::ElementDocument * TestDocument = nullptr;
-		std::unique_ptr<Rml::EventListener> TestListener;
 };

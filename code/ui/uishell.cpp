@@ -163,26 +163,6 @@ bool Modifier_Key(int virtualkey)
 }
 
 
-// The test document is a developer's check of the shell; F9 shows and hides it, and F6 the
-// developer overlays. Its close button asks the shell to hide it at the next tick.
-class UITestListenerClass : public Rml::EventListener
-{
-	public:
-		explicit UITestListenerClass(UIShellClass & shell) :
-			Shell(shell)
-		{
-		}
-
-		virtual void ProcessEvent(Rml::Event &) override
-		{
-			Shell.Deferred.CloseTest = true;
-		}
-
-	private:
-		UIShellClass & Shell;
-};
-
-
 UIShellClass::UIShellClass(UIShellHostClass & host, std::unique_ptr<UIRmlSystemClass> system, std::unique_ptr<Rml::FileInterface> file, std::unique_ptr<UIRmlRenderClass> render) :
 	Host(host),
 	System(std::move(system)),
@@ -465,65 +445,15 @@ void UIShellClass::Restore_Cursor(void)
 }
 
 
-void UIShellClass::Toggle_Test_Document(void)
-{
-#ifdef _DEBUG
-	if (!FontLoaded) {
-		Log("UI: the test document needs the font, which did not load\n");
-		return;
-	}
-
-	Ensure_Dialog_Font();
-
-	if (TestDocument == nullptr) {
-		TestDocument = Context->LoadDocument("test.rml");
-		if (TestDocument == nullptr) {
-			Log("UI: test.rml did not load\n");
-			return;
-		}
-
-		Rml::Element * close = TestDocument->GetElementById("close");
-		if (close != nullptr) {
-			if (TestListener == nullptr) {
-				TestListener = std::make_unique<UITestListenerClass>(*this);
-			}
-			close->AddEventListener(Rml::EventId::Click, TestListener.get());
-		}
-
-		TestDocument->Show();
-		Render->Log_Resource_Counts("test document loaded and shown");
-	} else if (TestDocument->IsVisible()) {
-		TestDocument->Hide();
-		Render->Log_Resource_Counts("test document hidden");
-	} else {
-		TestDocument->Show();
-		Render->Log_Resource_Counts("test document shown");
-	}
-
-	Host.Mark_Overlay_Dirty();
-#endif
-}
-
-
 void UIShellClass::Drain_Deferred(void)
 {
 	DeferredWorkType work = Deferred;
 	Deferred = DeferredWorkType();
 
 #ifdef _DEBUG
-	if (work.ToggleTest) {
-		Toggle_Test_Document();
-	}
 	if (work.ToggleDev) {
 		UIDev_Toggle(*Render);
 		Host.Mark_Overlay_Dirty();
-	}
-	if (work.CloseTest) {
-		if (TestDocument != nullptr && TestDocument->IsVisible()) {
-			TestDocument->Hide();
-			Render->Log_Resource_Counts("test document closed");
-			Host.Mark_Overlay_Dirty();
-		}
 	}
 #endif
 
@@ -816,7 +746,6 @@ void UIShellClass::Shutdown(void)
 
 	UIDev_Shutdown(*Render);
 
-	TestDocument = nullptr;
 	Deferred = DeferredWorkType();
 
 	Rml::RemoveContext("main");
@@ -1564,16 +1493,11 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 	}
 
 #ifdef _DEBUG
-	// The developer keys are answered ahead of everything else, so that a screen holding the
-	// keyboard cannot swallow them.
-	if (Host.Developer_Keys_Armed() && (message == WM_KEYDOWN || message == WM_KEYUP)
-		&& (wparam == VK_F9 || wparam == VK_F6)) {
+	// The developer key is answered ahead of everything else, so that a screen holding the
+	// keyboard cannot swallow it.
+	if (Host.Developer_Keys_Armed() && (message == WM_KEYDOWN || message == WM_KEYUP) && wparam == VK_F6) {
 		if (message == WM_KEYDOWN && (lparam & (1 << 30)) == 0) {
-			if (wparam == VK_F9) {
-				Deferred.ToggleTest = true;
-			} else {
-				Deferred.ToggleDev = true;
-			}
+			Deferred.ToggleDev = true;
 		}
 		return(true);
 	}
