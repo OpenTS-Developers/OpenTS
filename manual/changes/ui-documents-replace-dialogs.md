@@ -44,6 +44,8 @@ campaign chooser and the Internet game's speed bar name the setting they stand
 at from the start, where the dialogs left a template caption standing until the
 bar first moved. The frame-sync notice prints the lines naming the player being
 waited for and what the wait offers, which only the dialog it replaced showed.
+Its Cancel gives up the wait and leaves the match, where the dialog's button
+did nothing.
 
 The keyboard screen stores a captured key as the same `KEYBOARD.INI` number the
 Win32 dialog stored, without the extended-key flag that dialog's hotkey control

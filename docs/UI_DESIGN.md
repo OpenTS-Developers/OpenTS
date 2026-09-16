@@ -20,12 +20,12 @@ keyboard queue but nothing else.
 A fourth system, OwnerDraw, drew the dialogs and is gone. It was the largest
 and the least portable: each dialog a real Win32 child window of `MainWindow`
 created from a resource template, every control subclassed and painting into
-`AlternateSurface` itself, 53 templates in `language.rc` carrying 322
+`AlternateSurface` itself, 53 templates in `language.rc` carrying 325
 `CONTROL` entries, and `Heal_Dialog_Controls` repainting every child window
 after each `Update_Visible_Surface` so that a dialog kept up with the game
 frame. `windlg.cpp`, `msgroute.cpp`, the modeless dialog list, the accelerator
-table and the 53 templates went with it; `ownrdraw.cpp` went from 7,029 lines
-to the 800 that outlived it, the remapped bitmap-font drawer the briefing and
+table and the 53 templates went with it; `ownrdraw.cpp` went from 7,019 lines
+to the 918 that outlived it, the remapped bitmap-font drawer the briefing and
 the restate screen use, the GDI text the credits put on a surface, the surface
 cache, the blend masks, the hotkey spelling and the mouse capture the graphic
 menus take. The string tables stay, and so do the `IDD_` and `IDC_` numbers in
@@ -145,8 +145,9 @@ The **UI shell** is the `code/ui/` module: a `UIShellClass` object that owns
 the RmlUi context, the injected toolkit interfaces, the bgfx overlay pass,
 the input hook, and the modal runner, beside the ImGui context its developer
 module holds. Only its `code/ui/rml/` headers include RmlUi, ImGui, or bgfx,
-the way `bgfxbackend.cpp` is the only other code that includes bgfx; the
-`toolkitheaders` CTest check enforces that.
+and only `code/ui/` sources include RmlUi or ImGui; the `toolkitheaders` CTest
+check enforces both. `bgfxbackend.cpp` is the only other code that includes
+bgfx, by convention rather than by the check.
 
 A **screen** is a presenter plus a view. The presenter is a plain C++ object:
 it holds a view-model struct, answers queries, and executes actions. It never
@@ -202,8 +203,8 @@ rule the tree follows, not a build boundary.
 | Directory | Holds |
 | --- | --- |
 | `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals |
-| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay); `uireveal.h`, `uireveal.cpp` (the schedule a dialog opens on; toolkit-free, so the harness runs it) |
-| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA, a frame surface's 565 pixels into RGBA, and the fit of a picture in a box), `rmlsurface` (the `<surface>` element, for a picture the engine drew while the game ran), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font), `rmlfontfon` (reading the `FNT` strikes out of the raster face the dialogs drew with; all three toolkit-free, so the harness runs them), `rmlfont` (the font engine over the sheets and the strikes, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) |
+| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay); `uireveal.h`, `uireveal.cpp` (the schedule a dialog opens on; toolkit-free, so the harness runs it); `uipreview.h`, `uipreview.cpp` (the map preview pictures the engine drew, read for the `<surface>` element) |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmlrenderbase.cpp` (the failure latch, and the layer, filter and shader calls the renderer declines; built into the harness), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA, a frame surface's 565 pixels into RGBA, and the fit of a picture in a box), `rmlsurface` (the `<surface>` element, for a picture the engine drew while the game ran), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font), `rmlfontfon` (reading the `FNT` strikes out of the raster face the dialogs drew with; all three toolkit-free, so the harness runs them), `rmlfont` (the font engine over the sheets and the strikes, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) |
 | `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays |
 | `code/ui/screens/<name>/` | one family each for `abort`, `campaign`, `desync`, `display`, `gamectrl`, `gameopt`, `keyboard`, `mainopt`, `mapgen`, `menu`, `msgbox`, `netlobby`, `reconnect`, `savegame`, `scenario`, `skirmish`, `sound`, `version`, `waitbox`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link); the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows, and the reconnect family the notice the frame-sync wait stands beside the game |
 | `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside |
@@ -221,9 +222,10 @@ physical resolution of the window. `Backend_Present` splits in two:
 render between them:
 
 ```cpp
-Backend_Present(pixels, ...);   // VIEW_PRESCALE, VIEW_PRESENT
-UI_Render_Overlay();            // VIEW_UI, then VIEW_DEV
-Backend_End_Frame();            // bgfx::frame()
+if (Backend_Present(pixels, ...)) {   // VIEW_PRESCALE, VIEW_PRESENT
+    UIShell.Render_Overlay();         // VIEW_UI, then VIEW_DEV
+}
+Backend_End_Frame();                  // bgfx::frame()
 ```
 
 `Backend_End_Frame` runs whether or not `Backend_Present` succeeded; it ends
@@ -355,7 +357,7 @@ frame's own pixels for the game, so the hook receives the position as Windows
 delivered it:
 
 ```cpp
-if (UI_Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
+if (UIShell.Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
     return(0);
 }
 ```
@@ -465,8 +467,8 @@ class UIViewClass {                               // uiview.h: no toolkit types
 
 class UIRmlViewClass : public UIViewClass {       // rml/rmlview.h: owns the document
     public:
-        UIRmlViewClass(UIPresenterClass & presenter, char const * document);
-        virtual void Bind(Rml::DataModelConstructor & model) = 0;   // view-model fields and events
+        UIRmlViewClass(UIPresenterClass & presenter, char const * document, char const * model);
+        virtual bool Bind(Rml::DataModelConstructor & model) = 0;   // view-model fields and events
         virtual void Sync(void) override = 0;                       // dirty what Execute changed
 };
 ```

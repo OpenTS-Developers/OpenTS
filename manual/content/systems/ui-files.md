@@ -26,7 +26,7 @@ Which archives are mounted changes while the game runs: a side mounts its own wh
 
 ## Strings
 
-A document names an engine string as `[[TXT_NAME]]`, using the identifier names of the language library. The game replaces the reference with the string of that name as it lays the text out. An unknown name stays as typed, so the mistake shows on screen, and a Debug build logs it.
+A document names an engine string as `[[TXT_NAME]]`, using the identifier names of the language library. The game replaces the reference with the string of that name as it lays the text out. An unknown name stays as typed, so the mistake shows on screen, and the debug log names it.
 
 ## Which screens are documents
 
