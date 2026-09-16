@@ -28,9 +28,18 @@ void UISaveGamePresenterClass::Execute(UIIntent const & intent)
 		if (intent.Value >= 0 && intent.Value < (int)State.Entries.size()) {
 			State.Selected = intent.Value;
 
-			// A save takes the picked row's description, as the dialog's list did.
+			/*
+			**	If the user clicks on the list, see if the there is a new current
+			**	item; if so, and if we're in SAVE mode, copy the list item into
+			**	the save-game description field.
+			*/
 			if (State.Mode == UI_SAVE_GAME_SAVE) {
 				UISaveGameEntry const & entry = State.Entries[State.Selected];
+
+				/*
+				**	Copy the game's description, UNLESS it's the empty slot; if
+				**	it is, offer the description the dialog started from.
+				*/
 				if (entry.Valid) {
 					State.Description = entry.Description;
 				} else if (!State.Suggested.empty()) {

@@ -286,8 +286,15 @@ UIShellHostClass & UI_Engine_Host(void)
 }
 
 
-// The runner ticks the shell itself, so this pass does not: a screen's intents are drained
-// between the update and the present.
+/// <summary>
+/// Services the game while a screen is up.
+/// A screen's runner calls this routine every pass. It dispatches the pending Windows
+/// messages and then either runs the game logic loop -- so that a multiplayer game keeps
+/// up while the screen is showing -- or just the maintenance callback.
+/// </summary>
+/// <returns>bool; Has the game ended, so that the screen should be shut down?</returns>
+/// <remarks>The runner ticks the shell itself, so this pass does not: a screen's intents
+/// are drained between the update and the present.</remarks>
 bool UI_Service_Game(void)
 {
 	static bool inmainloop = false;

@@ -48,11 +48,16 @@ class UIDesyncEngineServiceClass : public UIDesyncServiceClass
 			for (int house = 0; house < MAX_PLAYERS && house < Houses.Count(); house++) {
 				HouseClass const * housep = Houses[house];
 				bool const left = DesyncDialog.Has_Left(house);
+
+				// A player who left stays listed, though their seat is no longer human.
 				if (housep == NULL || (!housep->IsHuman && !left)) {
 					continue;
 				}
 
 				UIDesyncPlayerRow row;
+
+				// The roster entry is gone by now, so the kept name is the only copy while the
+				// list rebuilds.
 				char const * kept = DesyncDialog.Left_Name(house);
 				row.Name = (left && kept[0] != '\0') ? kept : housep->IniName.c_str();
 				if (left) {

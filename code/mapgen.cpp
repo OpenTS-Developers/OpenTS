@@ -3648,8 +3648,10 @@ void MapSeedClass::Fixup_WDT_Settings(void)
 /// Forces every map generation setting within its legal range.
 /// This routine is called whenever the settings may have been tampered with -- after the
 /// dialog is read, after a randomize, and after a load -- so that the generator itself never
-/// has to defend against a nonsensical value. A tournament territory gets to narrow the
-/// limits further, and the mutated biome is only allowed when the Firestorm addon is here.
+/// has to defend against a nonsensical value, and an impossible combination can never reach
+/// the generator. A tournament territory gets to narrow the limits further, the mutated
+/// biome is only allowed when the Firestorm addon is here, and the rest of the Firestorm
+/// settings are cleared away when that addon is absent.
 /// </summary>
 void MapSeedClass::Fixup_Settings(void)
 {

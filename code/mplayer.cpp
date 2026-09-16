@@ -65,6 +65,8 @@ GameType Select_MPlayer_Game (void)
 	UIMenuState menu;
 	menu.Kind = firestorm ? UI_MENU_MULTIPLAYER_FIRESTORM : UI_MENU_MULTIPLAYER;
 	menu.Title = "Select Multiplayer Game";
+	// Neither the online service these led to nor the tour it hosted can be reached, so the
+	// entries are left on the menu but never answer.
 	menu.Items.push_back(UIMenuItemType{"Internet", GAME_INTERNET, false});
 	if (firestorm) {
 		menu.Items.push_back(UIMenuItemType{"World Domination! (Internet)", GAME_WDT, false});

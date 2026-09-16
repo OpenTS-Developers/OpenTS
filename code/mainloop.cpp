@@ -190,6 +190,9 @@ static void Finish_Decided_Game(void)
 		Send_Statistics_Packet();
 	}
 
+	/*
+	**	Check for player wins or loses according to global event flag.
+	*/
 	bool const won = PlayerWins;
 	PlayerWins = false;
 	PlayerLoses = false;

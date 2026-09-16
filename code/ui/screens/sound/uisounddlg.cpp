@@ -62,6 +62,9 @@ class UISoundEngineServiceClass : public UISoundServiceClass
 			Theme.Queue_Song((ThemeType)theme);
 		}
 
+		/*
+		**	Stop all themes from playing.
+		*/
 		virtual void Stop(void) override
 		{
 			Theme.Queue_Song(THEME_QUIET);

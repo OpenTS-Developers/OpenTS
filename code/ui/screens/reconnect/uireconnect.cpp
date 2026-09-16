@@ -68,6 +68,8 @@ class UIReconnectViewClass : public UIRmlViewClass
 				return;
 			}
 
+			// Every player in the game gets a bar that shrinks and changes color as the wait on
+			// that player drags on, so the humans can see who the game is actually stalled on.
 			for (std::size_t index = 0; index < Data.State.Players.size(); index++) {
 				UIReconnectPlayer const & player = Data.State.Players[index];
 				Rml::Element * bar = document->GetElementById("bar-" + std::to_string(index));

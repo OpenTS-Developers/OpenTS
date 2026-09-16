@@ -70,6 +70,10 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 			Mark_Picked();
 		}
 	} else if (intent.Name == "kick") {
+		/*
+		**	Kick the selected players from the game: for each name picked, other than
+		**	our own, find the matching player and send a NET_REJECT_JOIN kick packet.
+		*/
 		if (!Picked.empty()) {
 			Service.Kick(Picked);
 			Picked.clear();

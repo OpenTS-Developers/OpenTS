@@ -110,6 +110,8 @@ void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)
 		state.Games.push_back(option);
 	}
 
+	// The current selection is clamped and re-applied, since a game can vanish out from
+	// under the player at any moment.
 	if (Net2CurrentGame() >= (int)state.Games.size()) {
 		state.Game = (int)state.Games.size() - 1;
 	} else {

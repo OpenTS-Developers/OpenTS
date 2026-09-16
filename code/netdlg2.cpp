@@ -82,7 +82,9 @@ int Net2_g_Col_House;
 
 
 /// <summary>
-/// Fills a side box with the multiplayable countries, each entry carrying its country index.
+/// Fetches a player color that nobody else has claimed.
+/// This routine is used when a player asks for a color, so that no two players in the
+/// same game end up wearing the same one.
 /// </summary>
 int Net2FirstFreeColor(int reqcolor, int index)
 {

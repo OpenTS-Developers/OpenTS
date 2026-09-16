@@ -1275,6 +1275,8 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 	Host.Mark_Overlay_Dirty();
 	std::snprintf(label, sizeof(label), "%s shown", view.Name());
 	Render->Log_Resource_Counts(label);
+
+	// The game keyboard is flushed so that no stale keystrokes leak into the screen.
 	Host.Clear_Keyboard_Queue();
 	if (Revealing) {
 		Host.Play_Sample(UI_REVEAL_SOUND, UI_REVEAL_VOLUME);
@@ -1469,6 +1471,10 @@ void UIShellClass::Refresh(void)
 }
 
 
+// A window procedure hands its messages to this routine first and deals with them itself
+// only when they come back unclaimed. InHook is set while a message the shell itself caused
+// is being delivered, so that arrival passes straight through instead of being routed a
+// second time.
 bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam)
 {
 	if (!Ready || InHook || hwnd != Host.Main_Window()) {
