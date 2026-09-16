@@ -3677,6 +3677,18 @@ void MapSeedClass::Fixup_Settings(void)
 		Biome = BIOME_TEMPERATE;
 	}
 
+	// The dialog compared the tiberium amount, a whole number, with 0.75, so blue tiberium
+	// always came with the expansion and none of these came without it.
+	if (Addon_Enabled(ADDON_FIRESTORM)) {
+		UseBlueTiberium = true;
+	} else {
+		TiberiumWildlife = 0;
+		VeinholeMonsters = 0;
+		UseIonStorms = false;
+		UseTransitions = false;
+		UseBlueTiberium = false;
+	}
+
 	if (Time >= TIME_OF_DAY_COUNT) {
 		Time = TIME_OF_DAY_COUNT - 1;
 	} else if (Time < TIME_OF_DAY_FIRST) {

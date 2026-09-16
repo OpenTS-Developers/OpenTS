@@ -148,8 +148,10 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 			}
 		}
 
+		// The settings are put right before every use, as the dialog read them before each.
 		virtual void Preview(void) override
 		{
+			RandomMapGen.SeedData.Fixup_Settings();
 			RandomMapGen.Generate_Random_Map(true);
 		}
 
@@ -160,6 +162,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 
 		virtual void Save(void) override
 		{
+			RandomMapGen.SeedData.Fixup_Settings();
 			RandomMapGen.SeedData.MapDescription[0] = '\0';
 			RandomMapGen.SeedData.LoadOptionsClass::Save(RandomMapGen.SeedData.MapDescription, sizeof(RandomMapGen.SeedData.MapDescription));
 		}
@@ -167,6 +170,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 		virtual void Load(void) override
 		{
 			if (RandomMapGen.SeedData.LoadOptionsClass::Load() == true) {
+				RandomMapGen.SeedData.Fixup_Settings();
 				RandomMapGen.Generate_Random_Map(true);
 			}
 		}
@@ -265,5 +269,6 @@ UIMapGenChoiceType UI_Map_Generator_Dialog(void)
 	std::unique_ptr<UIViewClass> view = UI_Map_Generator_View(presenter);
 
 	UIResult result = UI_Run_Modal(*view, true);
+	RandomMapGen.SeedData.Fixup_Settings();
 	return((result == UI_RESULT_ACCEPTED) ? presenter.Choice : UI_MAPGEN_CANCEL);
 }
