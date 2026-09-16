@@ -238,7 +238,7 @@ bool UI_Read_Raster_Font(std::span<std::uint8_t const> data, std::vector<UIRaste
 
 			std::size_t start = (std::size_t)offset << shift;
 			std::size_t size = (std::size_t)length << shift;
-			if (start + size > data.size()) {
+			if (start > data.size() || size > data.size() - start) {
 				continue;
 			}
 
