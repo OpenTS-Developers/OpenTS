@@ -97,10 +97,10 @@ class UIGameOptionsViewClass : public UIRmlViewClass
 		{
 		}
 
+		// A save or a delete re-reads which buttons take a press, so every binding follows.
 		virtual void Sync(void) override
 		{
-			Model.DirtyVariable("speed");
-			Model.DirtyVariable("speedname");
+			Model.DirtyAllVariables();
 		}
 
 	protected:

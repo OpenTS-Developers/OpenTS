@@ -36,6 +36,7 @@
 #include "ui/rml/rmlview.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/gamectrl/uigamectrl.h"
+#include "ui/screens/gameopt/uigameopt.h"
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "ui/screens/mapgen/uimapgen.h"
@@ -2758,6 +2759,52 @@ static UINetPlayerRow Net_Player(char const * name)
 }
 
 
+// Drives the in-game options menu: a delete that leaves no saves takes the Load and Delete
+// buttons' presses away on the same pass.
+void Test_Game_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	class RecordingGameOptionsServiceClass : public UIGameOptionsServiceClass
+	{
+		public:
+			bool Files = true;
+
+			virtual void Read(UIGameOptionsState & state) override { state.LoadEnabled = Files; state.DeleteEnabled = Files; }
+			virtual void Save(void) override {}
+			virtual void Delete(void) override { Files = false; }
+			virtual bool Load(void) override { return(false); }
+	};
+	RecordingGameOptionsServiceClass service;
+
+	UIGameOptionsState state;
+	state.SpeedNames = { "Slowest", "Fastest" };
+	state.SpeedName = "Slowest";
+	UIGameOptionsPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Game_Options_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the options menu view prepares against the test context");
+	view->Show(true);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the in-game options menu raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * load = (document != nullptr) ? document->GetElementById("load") : nullptr;
+	Rml::Element * erase = (document != nullptr) ? document->GetElementById("delete") : nullptr;
+	Check(load != nullptr && erase != nullptr && !load->IsClassSet("disabled") && !erase->IsClassSet("disabled"), "the menu opens with Load and Delete taking a press");
+
+	Drive(presenter, "delete");
+	view->Sync();
+	context.Update();
+	Check(!presenter.State.LoadEnabled && load != nullptr && erase != nullptr && load->IsClassSet("disabled") && erase->IsClassSet("disabled"), "a delete that leaves no saves takes the presses away on the same pass");
+
+	view->Release();
+	context.Update();
+}
+
+
 // Drives the save dialog: a picked row hands its description to the field and the empty slot
 // hands the suggestion back, Enter in the field and a double-click on a row accept, and
 // Escape from the field cancels.
@@ -3627,6 +3674,7 @@ void Test_Documents(void)
 		Test_Net_Setup_Screen(*context, system);
 		Test_Version_Screen(*context, system);
 		Test_Save_Game_Screen(*context, system);
+		Test_Game_Options_Screen(*context, system);
 		Test_Message_Box_Screen(*context, system);
 		Test_Sound_Screen(*context, system);
 		Test_Game_Controls_Screen(*context, system);
