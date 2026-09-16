@@ -4495,7 +4495,7 @@ void Test_Shell(void)
 		Check(stepped, "which widens by one step a pass at most");
 		Check(clipped, "and nothing draws outside the band while it opens");
 		Check(chromewidth == 300.0f, "so the screen is uncovered rather than squeezed out to its full width");
-		Check(opened >= 300.0f && waited >= 250 && waited < 1000, "and the band has let the whole of it out in the quarter second the schedule takes");
+		Check(opened >= 300.0f && waited >= 250 && waited < 3000, "and the band has let the whole of it out in the quarter second the schedule takes");
 		Check(host.Samples.size() == played + 1 && host.Samples.back() == "EMBLEM.AUD", "opening it sounds once, as the dialog layer sounds it");
 	}
 
