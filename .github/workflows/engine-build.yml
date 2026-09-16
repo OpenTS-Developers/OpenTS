@@ -110,7 +110,7 @@ jobs:
           cp thirdparty/imgui/LICENSE.txt artifact/OpenTS_THIRD_PARTY_LICENSES/dear-imgui.txt
           cp thirdparty/licenses/stb-imgui.txt artifact/OpenTS_THIRD_PARTY_LICENSES/stb-imgui.txt
           cp thirdparty/licenses/stb-image.txt artifact/OpenTS_THIRD_PARTY_LICENSES/stb-image.txt
-          cp ui/OFL.txt artifact/OpenTS_THIRD_PARTY_LICENSES/arima.txt
+          cp ui/OFL.txt artifact/OpenTS_THIRD_PARTY_LICENSES/arimo.txt
 
       - name: Upload runtime files
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
