@@ -55,6 +55,9 @@ void Net2Send_Chat(char const * text);
 void Net2Set_Handle(char const * name);
 void Net2Kick(char const * name);
 void Net2Pick_Map(void);
+void Net2Join_Game(void);
+void Net2Host_Game(void);
+bool Net2Can_Start(void);
 
 int Net2FirstFreeColor(int reqcolor, int index);
 bool Net2Callback(void);

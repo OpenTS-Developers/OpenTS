@@ -33,14 +33,12 @@ enum UINetLobbyKind
 };
 
 
-// What the lobby flow is answering: the four a screen gives, and the one a packet gives for
-// the player when the host starts the game under a guest's lobby.
+// What the lobby flow is answering: the two a screen gives, and the ones a packet gives when
+// a guest is thrown out or the host starts the game under a guest's lobby.
 enum UINetChoice
 {
 	UI_NET_NONE,
 	UI_NET_CANCEL,
-	UI_NET_JOIN,
-	UI_NET_NEW,
 	UI_NET_GO,
 	UI_NET_STARTED,
 };
@@ -187,6 +185,15 @@ class UINetLobbyServiceClass
 
 		// Runs the map dialog over the host's setup, which stays open behind it.
 		virtual void Pick_Map(void) = 0;
+
+		// Asks to join the picked game; the answer arrives as a packet while the browser stays up.
+		virtual void Join(void) = 0;
+
+		// Opens the player's own game, or refuses the name in a box over the browser.
+		virtual void Host(void) = 0;
+
+		// Whether the host may start; a refusal is printed into the chat.
+		virtual bool Can_Start(void) = 0;
 };
 
 

@@ -81,6 +81,9 @@ class UINetLobbyEngineServiceClass : public UINetLobbyServiceClass
 		virtual void Kick(std::vector<std::string> const & names) override;
 		virtual void Accept(void) override;
 		virtual void Pick_Map(void) override;
+		virtual void Join(void) override;
+		virtual void Host(void) override;
+		virtual bool Can_Start(void) override;
 };
 
 
@@ -346,6 +349,24 @@ void UINetLobbyEngineServiceClass::Pick_Map(void)
 	Net2Pick_Map();
 }
 
+
+void UINetLobbyEngineServiceClass::Join(void)
+{
+	Net2Join_Game();
+}
+
+
+void UINetLobbyEngineServiceClass::Host(void)
+{
+	Net2Host_Game();
+}
+
+
+bool UINetLobbyEngineServiceClass::Can_Start(void)
+{
+	return(Net2Can_Start());
+}
+
 }
 
 
@@ -360,9 +381,9 @@ UINetLobbyServiceClass & UI_Net_Lobby_Service(void)
 /// Shows the lobby the flow is standing in, until the player answers or a packet moves the
 /// flow on under it.
 /// </summary>
-/// <returns>What the player asked for. Nothing comes back from a flow standing in no phase,
-/// which the lobby is serviced through instead; a screen that could not open answers as a
-/// cancel does, which backs the flow out.</returns>
+/// <returns>Go or cancel. Nothing comes back when the flow moved on under the screen, or
+/// from a flow standing in no phase, which the lobby is serviced through instead; a screen
+/// that could not open answers as a cancel does, which backs the flow out.</returns>
 UINetChoice UI_Net_Lobby_Run(void)
 {
 	UINetLobbyState state;

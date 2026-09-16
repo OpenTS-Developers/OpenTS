@@ -2734,6 +2734,15 @@ class RecordingNetServiceClass : public UINetLobbyServiceClass
 
 		int Picked = 0;
 		virtual void Pick_Map(void) override { Picked++; }
+
+		int Joins = 0;
+		int Hosts = 0;
+		int Starts = 0;
+		bool Hostable = false;
+		bool Startable = false;
+		virtual void Join(void) override { Joins++; }
+		virtual void Host(void) override { Hosts++; if (Hostable) { Model.Kind = UI_NET_LOBBY_HOST; } }
+		virtual bool Can_Start(void) override { Starts++; return(Startable); }
 };
 
 
@@ -2800,8 +2809,17 @@ void Test_Net_Browser_Screen(Rml::Context & context, CountingSystemInterfaceClas
 	Check(service.Said.size() == 1 && service.Said[0] == "hello", "ending a line sends it");
 	Check(presenter.State.Say.empty(), "and empties the box");
 
+	Drive(presenter, "say", 0, "typ");
+	Drive(presenter, "join");
+	presenter.Refresh();
+	Check(service.Joins == 1 && !presenter.Result.has_value() && presenter.State.Say == "typ", "the join button asks to join and keeps the browser up with its chat line");
 	Drive(presenter, "new");
-	Check(presenter.Result.has_value() && presenter.Choice == UI_NET_NEW, "the new-game button closes the browser with that answer");
+	presenter.Refresh();
+	Check(service.Hosts == 1 && !presenter.Result.has_value(), "a new game the name refuses keeps the browser up");
+	service.Hostable = true;
+	Drive(presenter, "new");
+	presenter.Refresh();
+	Check(presenter.Result.has_value() && presenter.Choice == UI_NET_NONE, "a new game moves the flow to the host's setup, which closes the browser without an answer of its own");
 
 	view->Release();
 	context.Update();
@@ -2863,11 +2881,20 @@ void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass 
 	Check(service.Kicked.size() == 1 && service.Kicked[0] == "Guest", "the kick button reports who was picked");
 	Check(!presenter.State.Players[1].Selected, "and lets them go again");
 
+	Drive(presenter, "pick", 1);
+	Drive(presenter, "go");
+	presenter.Refresh();
+	Check(service.Starts == 1 && !presenter.Result.has_value() && presenter.State.Players[1].Selected, "a start the game refuses keeps the setup up with its pick");
+	service.Startable = true;
+	Drive(presenter, "go");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == UI_NET_GO, "a start the game allows closes the setup with the go answer");
+
 	// The packet handler moves the flow while the screen is up, which is the one thing a modal
 	// screen cannot do for itself.
+	UINetLobbyPresenterClass left(service, state);
 	service.Model.Kind = UI_NET_LOBBY_GAMES;
-	presenter.Refresh();
-	Check(presenter.Result.has_value(), "a lobby the flow has left closes its screen");
+	left.Refresh();
+	Check(left.Result.has_value(), "a lobby the flow has left closes its screen");
 
 	view->Release();
 	context.Update();

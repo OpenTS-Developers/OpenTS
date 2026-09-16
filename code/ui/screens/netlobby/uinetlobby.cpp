@@ -113,13 +113,11 @@ void UINetLobbyPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "map") {
 		Service.Pick_Map();
 	} else if (intent.Name == "new") {
-		Choice = UI_NET_NEW;
-		Result = UI_RESULT_ACCEPTED;
+		Service.Host();
 	} else if (intent.Name == "join") {
-		Choice = UI_NET_JOIN;
-		Result = UI_RESULT_ACCEPTED;
+		Service.Join();
 	} else if (intent.Name == "go") {
-		if (State.CanGo) {
+		if (State.CanGo && Service.Can_Start()) {
 			Choice = UI_NET_GO;
 			Result = UI_RESULT_ACCEPTED;
 		}

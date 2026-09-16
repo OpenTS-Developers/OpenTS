@@ -560,8 +560,10 @@ and opening again. The five flows that inherited the Win32 hide-and-reopen run
 the child from the presenter's service inside the parent's pass: the skirmish
 setup around the map dialog, the map dialog around the generator, the in-game
 options and the generator around their saved-game dialogs, and the lobby around
-the map dialog. A message box still nests visibly, as the Win32
-boxes did over their dialogs.
+the map dialog. The lobby's join, its name check and its refusals to start act
+from the service the same way, so the screen stays up with its chat line and
+its pick until a packet or the host's Go moves the flow on. A message box still
+nests visibly, as the Win32 boxes did over their dialogs.
 
 The result carries the game-ended flag the way `Dialog_Message_Handler`
 returns `true`, so callers keep their logic. Wrappers keep their service

@@ -311,6 +311,130 @@ void Net2Pick_Map(void)
 
 
 /// <summary>
+/// Asks to join the game the player picked. The answer arrives as a packet while the
+/// browser stays up.
+/// </summary>
+void Net2Join_Game(void)
+{
+	Session.NetStealth = false;
+	Session.Write_MultiPlayer_Settings();
+
+	if (Request_To_Join(CurGame)) {
+		JoinState = JOIN_WAIT_CONFIRM;
+	}
+}
+
+
+/// <summary>
+/// Opens a game of the player's own. A blank or taken name is refused in a box over the
+/// browser; otherwise the flow moves to the host's setup.
+/// </summary>
+void Net2Host_Game(void)
+{
+	bool ok = true;
+
+	//...............................................................
+	// Force user to enter a name
+	//...............................................................
+	if (strlen(Session.Handle) < 1) {
+		UI_Network_Message_Box(Fetch_String(TXT_NAME_BLANK), UI_NETWORK_MESSAGE_OK, Net2Callback);
+		ok = false;
+	}
+
+	//...............................................................
+	// Ensure name is unique
+	//...............................................................
+	for (int i = 0; i < Session.Games.Count(); i++) {
+		if (ok && !strcmp(Session.Games[i]->Name, Session.Handle)) {
+			UI_Network_Message_Box(Fetch_String(TXT_GAMENAME_MUSTBE_UNIQUE), UI_NETWORK_MESSAGE_OK, Net2Callback);
+			ok = false;
+			break;
+		}
+	}
+
+	if (ok) {
+		//...............................................................
+		// Save player & game name
+		//...............................................................
+		strcpy(Session.GameName, Session.Handle);
+
+		Session.NetOpen = true;
+		Session.NetStealth = false;
+		Session.Options.ScenarioIndex = 0;
+		Session.PlayingAgainstVersion = VerNum.Version_Number();
+		Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
+
+		//------------------------------------------------------------------------
+		// Clear the list of players
+		//------------------------------------------------------------------------
+		Clear_Vector(&Session.Players);
+
+		//------------------------------------------------------------------------
+		// Add myself to the list, and to the Players vector.
+		//------------------------------------------------------------------------
+		NodeNameType * who = new NodeNameType;
+		strcpy(who->Name, Session.Handle);
+		strcpy(who->Player.Serial, SerialNumber);
+		who->Player.House = Session.House;
+		who->Player.Color = Session.ColorIdx;
+		Session.Players.Add(who);
+
+		JoinState = JOIN_CONFIRMED;
+
+		NodeNameType * game = new NodeNameType;
+		strcpy(game->Name, Session.Handle);
+		game->Address = Session.GAddress;
+		game->Game.IsOpen = true;
+		game->Game.LastTime = TickCount;
+		game->Game.Addon = Addon_Enabled(ADDON_FIRESTORM);
+		Session.Games.Add(game);
+
+		CurGame = Session.Games.Count() - 1;
+
+		//..................................................................
+		//	Pop up the New Network Game dialog; if user selects OK, return
+		//	'true'; otherwise, return to the Join Dialog.
+		//..................................................................
+		Net2_Show_Lobby(NET2_LOBBY_HOST);
+	}
+}
+
+
+/// <summary>
+/// Whether the host may start: two players at least, every one accepted, and a map with a
+/// start for each. A refusal is printed into the chat.
+/// </summary>
+bool Net2Can_Start(void)
+{
+	Session.Write_MultiPlayer_Settings();
+
+	bool ok = true;
+	if (Session.Players.Count() == 1) {
+		PMessagePrintf(-1, Fetch_String(TXT_ONLY_ONE));
+		ok = false;
+	} else {
+		for (int i = 0; i < Session.Players.Count(); i++) {
+			if (Session.Players[i]->Player.Status == 0) {
+				PMessagePrintf(-1, Fetch_String(TXT_ACCEPTFIRST));
+				ok = false;
+				break;
+			}
+		}
+	}
+
+	// The computer players belong in this sum, but the original reads their slider from
+	// the game list window, which never carried one, so the term has always been zero.
+	int waypoints = RandomMapWaypointCount(Session.Options.ScenarioIndex);
+	if (waypoints < Session.Players.Count()) {
+		PMessagePrintf(-1, Fetch_String(TXT_SCENARIO_TOO_SMALL));
+		ok = false;
+	}
+
+	return(ok);
+}
+
+
+/// <summary>
 /// Runs one pass of the lobby: the network, the game, the window messages and the join
 /// protocol.
 /// </summary>
@@ -834,17 +958,14 @@ bool Net2Remote_Connect(void)
 		//.....................................................................
 		UINetChoice choice = UI_Net_Lobby_Run();
 
-		if (choice == UI_NET_GO) {
-			Net2GameStarted = true;
-		}
-		if (choice != UI_NET_NONE) {
-			_netresponse = choice;
-		}
+		// A screen's answer outranks a packet's from the same pass; either is consumed here.
+		UINetChoice const answer = (choice != UI_NET_NONE) ? choice : _netresponse;
+		_netresponse = UI_NET_NONE;
 
 		//.....................................................................
 		//	The player backed out, or a packet threw a guest out of its game.
 		//.....................................................................
-		if (_netresponse == UI_NET_CANCEL) {
+		if (answer == UI_NET_CANCEL) {
 			Session.Write_MultiPlayer_Settings();
 			if (Net2LobbyPhase == NET2_LOBBY_GAME_LIST) {
 				if (JoinState > JOIN_NOTHING) {
@@ -913,7 +1034,6 @@ bool Net2Remote_Connect(void)
 				Session.GameName[0] = '\0';
 				JoinState = JOIN_NOTHING;
 				Net2_Close_Lobby();
-				_netresponse = UI_NET_NONE;
 				CurGame = 0;
 				Clear_Vector(&Session.Players);
 				Net2_Show_Lobby(NET2_LOBBY_GAME_LIST);
@@ -921,126 +1041,14 @@ bool Net2Remote_Connect(void)
 		}
 
 		//.....................................................................
-		//	0 = user has joined an existing game; save values & return
+		//	The host started the game under a guest's lobby.
 		//.....................................................................
-		if (_netresponse == UI_NET_JOIN) {
-			Session.NetStealth = false;
-			Session.Write_MultiPlayer_Settings();
-
-			if (Request_To_Join(CurGame)) {
-				JoinState = JOIN_WAIT_CONFIRM;
-			}
-		}
-
-		//.....................................................................
-		//	1 = user requests New Network Game
-		//.....................................................................
-		if (_netresponse == UI_NET_NEW) { /// Net_New_Dialog maybe?
-
-			bool ok = true;
-
-			//...............................................................
-			// Force user to enter a name
-			//...............................................................
-			if (strlen(Session.Handle) < 1) {
-				UI_Network_Message_Box(Fetch_String(TXT_NAME_BLANK), UI_NETWORK_MESSAGE_OK, Net2Callback);
-				ok = false;
-			}
-
-			//...............................................................
-			// Ensure name is unique
-			//...............................................................
-			for (int i = 0; i < Session.Games.Count(); i++) {
-				if (ok && !strcmp(Session.Games[i]->Name, Session.Handle)) {
-					UI_Network_Message_Box(Fetch_String(TXT_GAMENAME_MUSTBE_UNIQUE), UI_NETWORK_MESSAGE_OK, Net2Callback);
-					ok = false;
-					break;
-				}
-			}
-
-			if (ok) {
-				//...............................................................
-				// Save player & game name
-				//...............................................................
-				strcpy(Session.GameName, Session.Handle);
-
-				Session.NetOpen = true;
-				Session.NetStealth = false;
-				Session.Options.ScenarioIndex = 0;
-				Session.PlayingAgainstVersion = VerNum.Version_Number();
-				Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex);
-
-				Net2_Close_Lobby();
-				_netresponse = UI_NET_NONE;
-
-				//------------------------------------------------------------------------
-				// Clear the list of players
-				//------------------------------------------------------------------------
-				Clear_Vector(&Session.Players);
-
-				//------------------------------------------------------------------------
-				// Add myself to the list, and to the Players vector.
-				//------------------------------------------------------------------------
-				NodeNameType * who = new NodeNameType;
-				strcpy(who->Name, Session.Handle);
-				strcpy(who->Player.Serial, SerialNumber);
-				who->Player.House = Session.House;
-				who->Player.Color = Session.ColorIdx;
-				Session.Players.Add(who);
-
-				JoinState = JOIN_CONFIRMED;
-
-				NodeNameType * game = new NodeNameType;
-				strcpy(game->Name, Session.Handle);
-				game->Address = Session.GAddress;
-				game->Game.IsOpen = true;
-				game->Game.LastTime = TickCount;
-				game->Game.Addon = Addon_Enabled(ADDON_FIRESTORM);
-				Session.Games.Add(game);
-
-				CurGame = Session.Games.Count() - 1;
-
-				//..................................................................
-				//	Pop up the New Network Game dialog; if user selects OK, return
-				//	'true'; otherwise, return to the Join Dialog.
-				//..................................................................
-				Net2_Show_Lobby(NET2_LOBBY_HOST);
-			}
-		}
-
-		if (_netresponse != UI_NET_STARTED || Net2LobbyPhase != NET2_LOBBY_GUEST) {
-			if (_netresponse == UI_NET_GO) {
-				Net2GameStarted = 0;
-				Session.Write_MultiPlayer_Settings();
-				if (_netresponse == UI_NET_GO) {
-
-					//...............................................................
-					//	If there are at least 2 players, go ahead & play; error otherwise
-					//...............................................................
-					if (Session.Players.Count() == 1) {
-						PMessagePrintf(-1, Fetch_String(TXT_ONLY_ONE));
-						_netresponse = UI_NET_NONE;
-					}
-
-					if (_netresponse == UI_NET_GO) {
-						for (int i = 0; i < Session.Players.Count(); i++) {
-							if (Session.Players[i]->Player.Status == 0) {
-								PMessagePrintf(-1, Fetch_String(TXT_ACCEPTFIRST));
-								_netresponse = UI_NET_NONE;
-										break;
-							}
-						}
-					}
-				}
-			}
-		} else {
-
+		if (answer == UI_NET_STARTED && Net2LobbyPhase == NET2_LOBBY_GUEST) {
 			/*
 			 * The guest accepted the host's "go" -- tear down the dialogs, run
 			 * the pregame setup, compute the packet timing and leave the loop.
 			 */
 			Net2_Close_Lobby();
-			_netresponse = UI_NET_NONE;
 
 			PregameSetup();
 
@@ -1057,130 +1065,117 @@ bool Net2Remote_Connect(void)
 			break;
 		}
 
-		// The computer players belong in this sum, but the original reads their slider from
-		// the game list window, which never carried one, so the term has always been zero.
-		int waypoints = RandomMapWaypointCount(Session.Options.ScenarioIndex);
-		if (waypoints < Session.Players.Count()) {
-			PMessagePrintf(-1, Fetch_String(TXT_SCENARIO_TOO_SMALL));
-			_netresponse = UI_NET_NONE;
-		} else {
-			if (_netresponse != UI_NET_GO) {
+		//.....................................................................
+		//	The host pressed Go and the screen found the game may start.
+		//.....................................................................
+		if (answer == UI_NET_GO) {
+			Net2GameStarted = 1;
 
-				/*
-				 * Not the GO button -- there is nothing to do this pass, so reset
-				 * the response and fall back through the main message loop.
-				 */
-				_netresponse = UI_NET_NONE;
+			PumpGameopts(true, true);
 
+			if (MultiplayerMapPreview != NULL) {
+				delete MultiplayerMapPreview;
+				MultiplayerMapPreview = NULL;
+			}
+
+			PregameSetup();
+
+			// A compressed game starts at the fixed bootstrap rung and measures from there.
+			if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
+				NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
+				Session.FrameSendRate = initial.FrameSendRate;
+				Session.MaxAhead = initial.MaxAhead;
 			} else {
-				Net2GameStarted = 1;
+				Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
+				Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
+			}
 
-				PumpGameopts(true, true);
+			Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND / 2, (unsigned int)Ipx.Global_Response_Time() + 2), (unsigned int)-1, 10 * TIMER_SECOND);
 
-				if (MultiplayerMapPreview != NULL) {
-					delete MultiplayerMapPreview;
-					MultiplayerMapPreview = NULL;
-				}
+			//.....................................................................
+			// Send all players the NET_GO packet.  Wait until all ACK's have been
+			// received.
+			//.....................................................................
+			GlobalPacketType gpacket;
+			memset(&gpacket, 0, sizeof(gpacket));
+			gpacket.Command = NET_GO;
+			gpacket.ResponseTime.OneWay = Session.MaxAhead;
+			for (int i = 1; i < Session.Players.Count(); i++) {
+				Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &(Session.Players[i]->Address));
+			}
 
-				PregameSetup();
+			//.....................................................................
+			// Wait for all the ACK's to come in.
+			//.....................................................................
+			CDTimerClass<SystemTimerClass> timeout = TIMER_SECOND * 20;
+			while (Ipx.Global_Num_Send() > 0 && !timeout) {
+				Call_Back();
+			}
 
-				// A compressed game starts at the fixed bootstrap rung and measures from there.
-				if (Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-					NetTiming::TimingSettings const initial = NetTiming::Settings_For_Rung(NetTiming::INITIAL_TIMING_RUNG);
-					Session.FrameSendRate = initial.FrameSendRate;
-					Session.MaxAhead = initial.MaxAhead;
-				} else {
-					Session.FrameSendRate = DEFAULT_FRAME_SEND_RATE;
-					Session.MaxAhead = std::max(((int)Ipx.Global_Response_Time() / 8), NETWORK_MIN_MAX_AHEAD);
-				}
+			/*
+			** Wait for the go responses from each player in case someone needs the scenario
+			** file to be sent.
+			*/
+			int responses[MAX_PLAYERS];
+			memset(responses, 0, sizeof(responses));
+			int num_responses = 0;
+			bool send_scenario = false;
+			DebugString("About to wait for 'GO' response.\n");
+			CDTimerClass<SystemTimerClass> response_timer;    // timeout timer for waiting for responses
+			response_timer = TIMER_SECOND * 10;               // Wait for 10 seconds. If we dont hear by then assume someone crashed
 
-				Ipx.Set_Timing(std::max<unsigned>(TIMER_SECOND / 2, (unsigned int)Ipx.Global_Response_Time() + 2), (unsigned int)-1, 10 * TIMER_SECOND);
-
-				//.....................................................................
-				// Send all players the NET_GO packet.  Wait until all ACK's have been
-				// received.
-				//.....................................................................
-				GlobalPacketType gpacket;
-				memset(&gpacket, 0, sizeof(gpacket));
-				gpacket.Command = NET_GO;
-				gpacket.ResponseTime.OneWay = Session.MaxAhead;
-				for (int i = 1; i < Session.Players.Count(); i++) {
-					Ipx.Send_Global_Message(&gpacket, sizeof(gpacket), 1, &(Session.Players[i]->Address));
-				}
-
-				//.....................................................................
-				// Wait for all the ACK's to come in.
-				//.....................................................................
-				CDTimerClass<SystemTimerClass> timeout = TIMER_SECOND * 20;
-				while (Ipx.Global_Num_Send() > 0 && !timeout) {
-					Call_Back();
-				}
-
-				/*
-				** Wait for the go responses from each player in case someone needs the scenario
-				** file to be sent.
-				*/
-				int responses[MAX_PLAYERS];
-				memset(responses, 0, sizeof(responses));
-				int num_responses = 0;
-				bool send_scenario = false;
-				DebugString("About to wait for 'GO' response.\n");
-				CDTimerClass<SystemTimerClass> response_timer;    // timeout timer for waiting for responses
-				response_timer = TIMER_SECOND * 10;               // Wait for 10 seconds. If we dont hear by then assume someone crashed
-
-				do {
-					Call_Back();
-					int retcode = Ipx.Get_Global_Message(&Session.GPacket, sizeof(Session.GPacket), &Session.GPacketlen, &Session.GAddress, &Session.GProductID);
-					if (retcode && Session.GProductID == IPXGlobalConnClass::COMMAND_AND_CONQUER2) {
-						for (int i = 1; i < Session.Players.Count(); i++) {
-							if (Session.Players[i]->Address == Session.GAddress) {
-								if (!responses[i]) {
-									if (Session.GPacket.Command == NET_REQ_SCENARIO) {
-										DebugString("Received REQ_SCENARIO packet.\n");
-										responses[i] = Session.GPacket.Command;
-										send_scenario = true;
-										num_responses++;
-									}
-									if (Session.GPacket.Command == NET_READY_TO_GO) {
-										DebugString("Received READY_TO_GO packet.\n");
-										responses[i] = Session.GPacket.Command;
-										num_responses++;
-									}
+			do {
+				Call_Back();
+				int retcode = Ipx.Get_Global_Message(&Session.GPacket, sizeof(Session.GPacket), &Session.GPacketlen, &Session.GAddress, &Session.GProductID);
+				if (retcode && Session.GProductID == IPXGlobalConnClass::COMMAND_AND_CONQUER2) {
+					for (int i = 1; i < Session.Players.Count(); i++) {
+						if (Session.Players[i]->Address == Session.GAddress) {
+							if (!responses[i]) {
+								if (Session.GPacket.Command == NET_REQ_SCENARIO) {
+									DebugString("Received REQ_SCENARIO packet.\n");
+									responses[i] = Session.GPacket.Command;
+									send_scenario = true;
+									num_responses++;
+								}
+								if (Session.GPacket.Command == NET_READY_TO_GO) {
+									DebugString("Received READY_TO_GO packet.\n");
+									responses[i] = Session.GPacket.Command;
+									num_responses++;
 								}
 							}
 						}
 					}
-				} while (num_responses < Session.Players.Count() - 1 && response_timer);
-
-				/*
-				** If one of the machines requested that the scenario be sent then send it.
-				*/
-				if (send_scenario) {
-					memset(Session.ScenarioRequests, 0, sizeof(Session.ScenarioRequests));
-					Session.RequestCount = 0;
-					for (int i = 1; i < Session.Players.Count(); i++) {
-						if (responses[i] == NET_REQ_SCENARIO) {
-							Session.ScenarioRequests[Session.RequestCount++] = i;
-						}
-					}
-					Send_Remote_File(Scen->ScenarioName, false, true);
 				}
+			} while (num_responses < Session.Players.Count() - 1 && response_timer);
 
-				//------------------------------------------------------------------------
-				// Init network timing values, using previous response times as a measure
-				// of what our retry delta & timeout should be.
-				//------------------------------------------------------------------------
-				Ipx.Set_Timing(std::max<unsigned>(Ipx.Global_Response_Time() + 2, TIMER_SECOND / 2), (unsigned int)-1, std::max<unsigned>(2 * TIMER_SECOND, Ipx.Global_Response_Time() * 8));
-
-				//------------------------------------------------------------------------
-				// Restore screen
-				//------------------------------------------------------------------------
-				Hide_Mouse();
-				Draw_Menu_Background();
-				Show_Mouse();
-				Net2_Close_Lobby();
-				break;
+			/*
+			** If one of the machines requested that the scenario be sent then send it.
+			*/
+			if (send_scenario) {
+				memset(Session.ScenarioRequests, 0, sizeof(Session.ScenarioRequests));
+				Session.RequestCount = 0;
+				for (int i = 1; i < Session.Players.Count(); i++) {
+					if (responses[i] == NET_REQ_SCENARIO) {
+						Session.ScenarioRequests[Session.RequestCount++] = i;
+					}
+				}
+				Send_Remote_File(Scen->ScenarioName, false, true);
 			}
+
+			//------------------------------------------------------------------------
+			// Init network timing values, using previous response times as a measure
+			// of what our retry delta & timeout should be.
+			//------------------------------------------------------------------------
+			Ipx.Set_Timing(std::max<unsigned>(Ipx.Global_Response_Time() + 2, TIMER_SECOND / 2), (unsigned int)-1, std::max<unsigned>(2 * TIMER_SECOND, Ipx.Global_Response_Time() * 8));
+
+			//------------------------------------------------------------------------
+			// Restore screen
+			//------------------------------------------------------------------------
+			Hide_Mouse();
+			Draw_Menu_Background();
+			Show_Mouse();
+			Net2_Close_Lobby();
+			break;
 		}
 	}
 
