@@ -22,7 +22,7 @@ A screen opens the way the original dialogs did: it slides out from the middle b
 
 A document names every file it uses by bare file name, and the game adds the `ui` directory to its search paths at startup, so a name resolves in the same order as any other game file: the user path, the current directory, the search paths, then the mix files. A loose copy earlier in that order overrides the shipped file, and a copy inside a mix is used only when no loose file exists. A document, style sheet or font that fails to load fails the screen's preparation; the game logs the file name and the screen answers as if the player had backed out of it.
 
-Which archives are mounted changes while the game runs: a side mounts its own when it is prepared and drops them when the side changes. The pictures and the dialog font are read again then, so a side's archives can carry their own interface art. [MIX archives](/formats/mix/) covers which archive answers for a name. An archive mounted at startup still answers first, so a side's copy serves for a name no earlier archive holds.
+Which archives are mounted changes while the game runs: a side mounts its own when it is prepared and drops them when the side changes. The pictures, the dialog font and the style sheets are read again then, so a side's archives can carry their own. A screen already shown keeps the style sheet it was built with, and the next screen opened gets the new one. [MIX archives](/formats/mix/) covers which archive answers for a name. An archive mounted at startup still answers first, so a side's copy serves for a name no earlier archive holds.
 
 ## Strings
 

@@ -3643,6 +3643,22 @@ void Test_Shell(void)
 		Check(dropped, "an archive change lets the art already loaded go");
 		Check(refetched, "a document fetches its art again over the archives now mounted");
 		Check(UITestSheetLookups > lookups, "the dialog font sheets are looked for again");
+
+		// The markup goes with the art, and every screen builds its chrome from the shared
+		// template, so the next one opened has to find both again.
+		int const problems = fixture.System->Problems;
+		UIVersionPresenterClass after({ "reread" });
+		std::unique_ptr<UIViewClass> afterview = UI_Version_View(after);
+		bool built = false;
+
+		shell.Run_Modal(*afterview, [&](void) {
+			Rml::ElementDocument * document = Rml(*afterview).Document();
+			built = document != nullptr && document->GetElementById("chrome") != nullptr;
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+
+		Check(built && fixture.System->Problems == problems, "a screen opened after the change still builds from its template");
 	}
 
 	{

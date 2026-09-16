@@ -98,8 +98,8 @@ class UIShellClass
 		// The frame moved or changed size inside the window.
 		void On_Video_Change(void);
 
-		// The mounted archives changed under the shell, so the art and the dialog font load
-		// again. A screen mid-pass has them loaded at the next safe point.
+		// The mounted archives changed under the shell, so the art, the dialog font and the
+		// style sheets are read again. A screen mid-pass has that done at the next safe point.
 		void On_Archives_Change(void);
 
 		// Advances the documents and the developer overlays. Called at the game's service
@@ -133,7 +133,7 @@ class UIShellClass
 		{
 			bool ToggleDev = false;
 			bool Resize = false;
-			bool DropArt = false;
+			bool DropFiles = false;
 			bool DropPresses = false;
 			bool Leave = false;
 			int DevFocus = -1;
@@ -144,7 +144,7 @@ class UIShellClass
 		bool Documents_Visible(void) const;
 		bool Text_Input_Focused(void) const;
 		void Apply_Dimensions(void);
-		void Drop_Cached_Art(void);
+		void Drop_Cached_Files(void);
 		UIPointerPosition Pointer_Position(LPARAM clientlparam) const;
 		std::array<bool, UIInputStateClass::BUTTON_COUNT> Physical_Buttons(void) const;
 		int Key_Modifiers(void) const;

@@ -728,7 +728,9 @@ which brings both to the layer's pixel.
 
 The sheets are read at the first screen and again whenever a side mounts its
 archives. A face keeps its own copy of them, so the faces cut from the sheets
-that went are let go with them.
+that went are let go with them. A side mounting its archives drops the parsed
+style sheets and templates too, and because a document keeps the sheet it was
+built from, only a screen opened afterwards reads the markup again.
 
 `dlg-sans` is the face the Win32 dialogs asked GDI for, and it is the same
 raster face rather than a stand-in for one. They asked for "MS Sans Serif",

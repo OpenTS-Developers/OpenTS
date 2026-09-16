@@ -259,9 +259,14 @@ void UIShellClass::Apply_Dimensions(void)
 }
 
 
-void UIShellClass::Drop_Cached_Art(void)
+void UIShellClass::Drop_Cached_Files(void)
 {
 	Rml::ReleaseTextures(Render.get());
+
+	// A document keeps the style sheet it was built from, so only a screen opened after
+	// this reads the markup again.
+	Rml::Factory::ClearStyleSheetCache();
+	Rml::Factory::ClearTemplateCache();
 
 	// A face holds its own copy of the sheets it was cut from, so reading the family again
 	// leaves the old face drawing. Letting the faces go updates the documents there and
@@ -460,8 +465,8 @@ void UIShellClass::Drain_Deferred(void)
 	if (work.Resize) {
 		Apply_Dimensions();
 	}
-	if (work.DropArt) {
-		Drop_Cached_Art();
+	if (work.DropFiles) {
+		Drop_Cached_Files();
 	}
 	if (work.DropPresses) {
 		Drop_Presses();
@@ -833,9 +838,9 @@ void UIShellClass::On_Archives_Change(void)
 	}
 
 	if (InContext) {
-		Deferred.DropArt = true;
+		Deferred.DropFiles = true;
 	} else {
-		Drop_Cached_Art();
+		Drop_Cached_Files();
 	}
 
 	Host.Mark_Overlay_Dirty();
