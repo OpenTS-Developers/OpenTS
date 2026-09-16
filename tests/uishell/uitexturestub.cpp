@@ -15,6 +15,10 @@
 #include "ui/rml/rmltexture.h"
 
 
+// Counts the sheet lookups, so a test can tell that the shell asked again.
+int UITestSheetLookups = 0;
+
+
 UIImageResult UI_Load_Image(char const *, std::vector<unsigned char> & rgba, int & width, int & height)
 {
 	rgba.clear();
@@ -33,6 +37,7 @@ bool UI_Read_File(char const *, std::vector<unsigned char> & bytes)
 
 bool UI_Load_Indexed_Image(char const *, UIImageIndexed & image)
 {
+	UITestSheetLookups++;
 	image = UIImageIndexed();
 	return(false);
 }

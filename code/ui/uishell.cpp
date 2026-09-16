@@ -279,6 +279,21 @@ void UIShellClass::Apply_Dimensions(void)
 }
 
 
+void UIShellClass::Drop_Cached_Art(void)
+{
+	Rml::ReleaseTextures(Render.get());
+
+	// A face holds its own copy of the sheets it was cut from, so reading the family again
+	// leaves the old face drawing. Letting the faces go updates the documents there and
+	// then, which is a context pass like any other.
+	DialogFontTried = false;
+	Ensure_Dialog_Font();
+
+	UIReentryGuardClass updating(InContext);
+	Rml::ReleaseFontResources();
+}
+
+
 UIPointerPosition UIShellClass::Pointer_Position(LPARAM clientlparam) const
 {
 	UIFrameRect frame = Host.Frame();
@@ -509,6 +524,9 @@ void UIShellClass::Drain_Deferred(void)
 
 	if (work.Resize) {
 		Apply_Dimensions();
+	}
+	if (work.DropArt) {
+		Drop_Cached_Art();
 	}
 	if (work.DropPresses) {
 		Drop_Presses();
@@ -868,6 +886,22 @@ void UIShellClass::On_Video_Change(void)
 		Deferred.Resize = true;
 	} else {
 		Apply_Dimensions();
+	}
+
+	Host.Mark_Overlay_Dirty();
+}
+
+
+void UIShellClass::On_Archives_Change(void)
+{
+	if (!Ready) {
+		return;
+	}
+
+	if (InContext) {
+		Deferred.DropArt = true;
+	} else {
+		Drop_Cached_Art();
 	}
 
 	Host.Mark_Overlay_Dirty();

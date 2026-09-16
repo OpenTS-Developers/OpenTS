@@ -32,9 +32,11 @@ without the art gets plain fills rather than a screen that will not open, and
 with the pixel art filter the art keeps whole pixels at any window size.
 
 Documents, styles and images load by bare file name through the game's file
-system, so a loose file or a mix entry overrides what ships. A screen whose
-document, style sheet or font will not load names the file in the log and
-answers as though the player had backed out of it.
+system, so a loose file or a mix entry overrides what ships. The pictures and
+the dialog font are read again whenever a side mounts its archives, so a side
+can carry its own interface art. A screen whose document, style sheet or font
+will not load names the file in the log and answers as though the player had
+backed out of it.
 
 Three screens say more than they did. The display options count the seconds
 down before a mode is restored, where the dialog only said to wait. The

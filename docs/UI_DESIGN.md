@@ -668,9 +668,10 @@ each loaded picture magnified by it while reporting the picture's own size to
 RmlUi, and the sheet font magnifies its atlases the same way, so both are
 sampled smoothly from whole pixels. The factor is one when the frame is drawn
 smoothly or point for point, and a frame that changes it releases every
-texture so the art loads again. SHP frames are not decoded
-yet; they are for the sidebar view, in a `name.shp#frame` form with an
-optional palette and index zero transparent.
+texture so the art loads again. So does a side mounting its archives, the
+other moment a name can start answering with different bytes. SHP frames are
+not decoded yet; they are for the sidebar view, in a `name.shp#frame` form
+with an optional palette and index zero transparent.
 
 A picture the engine drew while the game ran reaches a document through the
 `<surface>` element, which is handed its pixels rather than naming a file. The
@@ -724,6 +725,10 @@ edge than its width alone would, and halved the room around a centered one in
 whole pixels where RmlUi rounds a half up; a sheet gives a right-aligned box
 a pixel of right padding, and the kit makes a centered box a pixel narrower,
 which brings both to the layer's pixel.
+
+The sheets are read at the first screen and again whenever a side mounts its
+archives. A face keeps its own copy of them, so the faces cut from the sheets
+that went are let go with them.
 
 `dlg-sans` is the face the Win32 dialogs asked GDI for, and it is the same
 raster face rather than a stand-in for one. They asked for "MS Sans Serif",

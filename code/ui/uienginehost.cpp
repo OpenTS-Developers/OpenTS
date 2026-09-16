@@ -332,3 +332,9 @@ void UI_Serve_Screen(void)
 	Windows_Message_Handler();
 	UIShell.Serve_Shown_Screen();
 }
+
+
+void UI_On_Archives_Change(void)
+{
+	UIShell.On_Archives_Change();
+}

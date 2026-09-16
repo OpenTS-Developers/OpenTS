@@ -69,6 +69,9 @@
 
 #include "opents_strings.h"
 
+// The art stub's tally of the sheet lookups it answered.
+extern int UITestSheetLookups;
+
 namespace {
 
 int Failures = 0;
@@ -3609,6 +3612,69 @@ void Test_Shell(void)
 		host.Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
 		shell.On_Video_Change();
 		Check(shell.Rml_Context()->GetDimensions() == Rml::Vector2i(1280, 800), "a resize outside a render is applied at once");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "archives" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		int released = 0;
+		int fetched = 0;
+		int lookups = 0;
+		bool dropped = false;
+		bool refetched = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				released = fixture.Render->ReleasedTextures;
+				fetched = fixture.Render->Loaded + fixture.Render->Generated;
+				lookups = UITestSheetLookups;
+				shell.On_Archives_Change();
+				dropped = fixture.Render->ReleasedTextures > released;
+			}
+			if (passes == 2) {
+				refetched = fixture.Render->Loaded + fixture.Render->Generated > fetched;
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+
+		Check(dropped, "an archive change lets the art already loaded go");
+		Check(refetched, "a document fetches its art again over the archives now mounted");
+		Check(UITestSheetLookups > lookups, "the dialog font sheets are looked for again");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "remount" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		int released = 0;
+		bool asked = false;
+		bool heldInside = false;
+		bool appliedBefore = false;
+
+		fixture.Render->OnRender = [&](void) {
+			if (!asked) {
+				asked = true;
+				released = fixture.Render->ReleasedTextures;
+				shell.On_Archives_Change();
+				heldInside = fixture.Render->ReleasedTextures == released;
+			}
+		};
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 2) {
+				appliedBefore = fixture.Render->ReleasedTextures > released;
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		fixture.Render->OnRender = nullptr;
+
+		Check(asked && heldInside, "an archive change arriving inside a render is deferred");
+		Check(appliedBefore, "the deferred archive change is applied before the next tick");
 	}
 
 	{

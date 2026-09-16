@@ -38,3 +38,7 @@ UIResult UI_Run_Modal(UIViewClass & view, bool hideparent = false);
 // One pass of a screen standing over the running game, for a game wait to spend its idle time
 // on. Nothing happens when no screen is shown.
 void UI_Serve_Screen(void);
+
+// The mounted archives changed, so a screen's art and dialog font load again. Call it once
+// the new archives are mounted and the old ones gone.
+void UI_On_Archives_Change(void);

@@ -181,6 +181,7 @@
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/campaign/uicampaign.h"
 #include "ui/screens/menu/uimenu.h"
+#include "ui/uienginehost.h"
 #include "uicontrol.h"
 #include "unit.h"
 #include "unittype.h"
@@ -6153,8 +6154,9 @@ bool Prep_For_Side(SideType side)
 		}
 	}
 
-	// A side archive may carry its own copy of the file.
+	// A side archive may carry its own copy of the file, and its own interface art.
 	UIControls.Read_INI_File(DeploymentConfig.UIFile.c_str(), true);
+	UI_On_Archives_Change();
 
 	Map.Init_For_House();
 
