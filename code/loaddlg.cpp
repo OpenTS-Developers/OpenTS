@@ -32,7 +32,7 @@
  *   LoadOptionsClass::~LoadOptionsClass -- class destructor                                   *
  *   LoadOptionsClass::Process -- main processing routine                                      *
  *   LoadOptionsClass::Clear_List -- clears the list box & Files arrays                        *
- *   LoadOptionsClass::Fill_List -- fills the list box from the gathered files                 *
+ *   LoadOptionsClass::Fill_List -- fills the list box & GameNum arrays                        *
  *   LoadOptionsClass::Num_From_Ext -- clears the list box & GameNum arrays                    *
  *   LoadOptionsClass::Compare -- for qsort                                                    *
  * - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
@@ -406,7 +406,7 @@ void LoadOptionsClass::Clear_List(void)
 
 
 /***********************************************************************************************
- * LoadOptionsClass::Gather_Files -- reads the saved games into the Files list               *
+ * LoadOptionsClass::Gather_Files -- reads the saved games into the Files list                 *
  *                                                                                             *
  * INPUT:                                                                                      *
  *      none.                                                                                  *

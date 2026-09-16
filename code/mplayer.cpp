@@ -28,7 +28,7 @@
  *                                                                                             *
  *---------------------------------------------------------------------------------------------*
  * Functions:                                                                                  *
- *   Select_MPlayer_Game -- prompts user for a network or skirmish game                        *
+ *   Select_MPlayer_Game -- prompts user for NULL-Modem, Modem, or Network game                *
  *   Clear_Listbox -- clears the given list box                                                *
  *   Clear_Vector -- clears the given NodeNameType vector                                      *
  *   Computer_Message -- "sends" a message from the computer                                   *
