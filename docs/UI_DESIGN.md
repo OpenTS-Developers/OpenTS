@@ -1,13 +1,8 @@
 # UI system design
 
-Status: under implementation. Steps 1 through 7 of the
-[migration plan](#migration-plan) have landed: the dependencies, the RmlUi
-shell, the Dear ImGui overlays, the version dialog, the message boxes, the
-sound options, the progress and wait boxes, and the options family (game
-controls, display, mode confirmation, keyboard, options menu). Steps 8
-onward are not yet implemented, built, or measured; source inspection and
-upstream documentation inform them. This page owns the UI architecture and
-migration; [Building OpenTS](BUILDING.md) owns build support and
+This page owns the UI architecture: the RmlUi shell that runs the game's
+screens, the Dear ImGui overlays beside it, and the screens still drawn by
+the older systems. [Building OpenTS](BUILDING.md) owns build support and
 [Project direction](DIRECTION.md) the wider architecture.
 
 ## Where the UI stands today
@@ -28,10 +23,13 @@ created from a resource template, every control subclassed and painting into
 `AlternateSurface` itself, 53 templates in `language.rc` carrying 322
 `CONTROL` entries, and `Heal_Dialog_Controls` repainting every child window
 after each `Update_Visible_Surface` so that a dialog kept up with the game
-frame. `ownrdraw.cpp` survives as the few hundred lines that outlived it: the
-remapped bitmap-font drawer the briefing and the restate screen use, the GDI
-text the credits put on a surface, the surface cache, the blend masks, the
-hotkey spelling and the mouse capture the graphic menus take.
+frame. `windlg.cpp`, `msgroute.cpp`, the modeless dialog list, the accelerator
+table and the 53 templates went with it; `ownrdraw.cpp` went from 7,029 lines
+to the 800 that outlived it, the remapped bitmap-font drawer the briefing and
+the restate screen use, the GDI text the credits put on a surface, the surface
+cache, the blend masks, the hotkey spelling and the mouse capture the graphic
+menus take. The string tables stay, and so do the `IDD_` and `IDC_` numbers in
+`language.h`, which are the library's index.
 
 The frame path is simple and already hardware-presented. The game draws 16-bit
 pixels into system-memory surfaces. `Video_Present` hands `VisibleSurface` to
@@ -103,8 +101,7 @@ it enters the `KN_` queue.
 Goals:
 
 - Replace OwnerDraw with RmlUi documents, one screen per change, with the
-  legacy screen available behind a switch until OwnerDraw was retired. Met:
-  the layer and the switch are gone.
+  legacy screen available behind a switch until OwnerDraw was retired.
 - Make screens interchangeable at the screen level: a model or presenter that
   knows nothing about the toolkit, and one view per toolkit.
 - Keep the subsystem portable by preparation, the approach
@@ -156,9 +153,7 @@ it holds a view-model struct, answers queries, and executes actions. It never
 sees an `HWND`, a `Surface`, an `Rml::Element`, or an ImGui call. A view
 renders the view-model and turns user actions into intents. The RmlUi view is
 a document with a data model; an ImGui view is possible for a feature that
-wants it. While OwnerDraw existed, the legacy view was the dialog procedure
-wrapped so that it read and wrote the same presenter. A screen returns a
-result the way a dialog returned `rc`.
+wants it. A screen returns a result the way a dialog returned `rc`.
 
 The **toolkits** are RmlUi, preferred for player-facing screens; the existing
 systems for screens not yet migrated; and ImGui, primarily for tools.
@@ -204,14 +199,14 @@ bgfx debug define, as `bgfxbackend.cpp`'s do today. The library headers reach
 the whole target through the linked targets, so the containment below is a
 rule the tree follows, not a build boundary.
 
-| Directory | Holds | Status |
-| --- | --- | --- |
-| `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals | landed |
-| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay); `uireveal.h`, `uireveal.cpp` (the schedule a dialog opens on; toolkit-free, so the harness runs it) | landed |
-| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA, a frame surface's 565 pixels into RGBA, and the fit of a picture in a box), `rmlsurface` (the `<surface>` element, for a picture the engine drew while the game ran), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font), `rmlfontfon` (reading the `FNT` strikes out of the raster face the dialogs drew with; all three toolkit-free, so the harness runs them), `rmlfont` (the font engine over the sheets and the strikes, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) | landed |
-| `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays | landed with the frame benchmark window |
-| `code/ui/screens/<name>/` | one family each for `abort`, `campaign`, `desync`, `display`, `gamectrl`, `gameopt`, `keyboard`, `mainopt`, `mapgen`, `menu`, `msgbox`, `netlobby`, `reconnect`, `savegame`, `scenario`, `skirmish`, `sound`, `version`, `waitbox`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link) | landed, all nineteen; the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows, and the reconnect family the notice the frame-sync wait stands beside the game |
-| `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside | landed |
+| Directory | Holds |
+| --- | --- |
+| `code/` | `bgfxviews.hh`, the view ids the presenter and the overlays share; `_ui.h`, `_ui.cpp`, the shell's one instance `UIShell` under the underscore-file convention for globals |
+| `code/ui/` | the shell and the toolkit-free contracts: `uishell.h`, `uishell.cpp` (`UIShellClass`: init and shutdown, resize, input hook, developer-key intercept, tick, overlay render entry, modal runner; its toolkit interfaces are injected, so a test builds its own instance); `uihost.h` (`UIShellHostClass`, what the shell needs from the program around it: the window, frame, keyboard queue, strings and log); `uienginehost.h`, `uienginehost.cpp` (the engine's host and the game-service pass a modal runs with; the only shell file that includes engine headers); `uiscreen.h`, `uiscreen.cpp` (presenter, intent, result, clock); `uiview.h` (`UIViewClass`, the view the shell runs); `uiinput.hh`, `uiinput.h`, `uiinput.cpp` (who owns each held key and button, and the UTF-8 decoding of a narrow window's text); `uiunicode.h`, `uiunicode.cpp` (strict UTF-8 and UTF-16 conversion for the clipboard); `uicoord.h` (the pointer mapping from client pixels into the overlay); `uireveal.h`, `uireveal.cpp` (the schedule a dialog opens on; toolkit-free, so the harness runs it) |
+| `code/ui/rml/` | the RmlUi adapters, the only headers that include a toolkit: `rmlsystem` (system interface: time, logging through the host, string translation, the pointer request, the clipboard), `rmlfile` (file interface over `CCFileClass`), `rmlrender` (render interface and the ImGui renderer on bgfx; with `bgfxbackend.cpp` the only files that include bgfx), `rmltexture` (image files: PCX, PNG and TGA today, with SHP and engine surfaces described under [Assets](#assets-and-strings)), `rmlimage` (turning PCX bytes into indices and RGBA, a frame surface's 565 pixels into RGBA, and the fit of a picture in a box), `rmlsurface` (the `<surface>` element, for a picture the engine drew while the game ran), `rmlfontsheet` (measuring and coloring the dialog art's bitmap font), `rmlfontfon` (reading the `FNT` strikes out of the raster face the dialogs drew with; all three toolkit-free, so the harness runs them), `rmlfont` (the font engine over the sheets and the strikes, forwarding every other family to the engine RmlUi made), `rmlkeys` (virtual keys, `KeyIdentifier`, `KEYBOARD.INI` numbers), `rmlview` (`UIRmlViewClass`, the RmlUi view base), `rmlrendermath` (the checks the renderer makes before it draws: index ranges, byte counts, scissors; toolkit-free, so the harness runs them) |
+| `code/ui/dev/` | `uidev.h`, `uidev.cpp`: the ImGui context, its input feed, and the developer overlays |
+| `code/ui/screens/<name>/` | one family each for `abort`, `campaign`, `desync`, `display`, `gamectrl`, `gameopt`, `keyboard`, `mainopt`, `mapgen`, `menu`, `msgbox`, `netlobby`, `reconnect`, `savegame`, `scenario`, `skirmish`, `sound`, `version`, `waitbox`: `ui<name>.h` (presenter, service and state declarations, view factory, engine entry), `ui<name>.cpp` (presenter and RmlUi view; built into the test), `ui<name>dlg.cpp` (engine service and entry, which the test cannot link); the wait box family carries the `UIWaitBoxClass` the save, load and progress code shows, and the reconnect family the notice the frame-sync wait stands beside the game |
+| `tests/uishell/`, `tests/uilogic/` | the two harnesses under [Validation](#validation-and-evidence); `cmake/CheckToolkitHeaders.cmake` is the containment check they run beside |
 
 Shipped UI files (documents, styles, images, the font) live in `ui/` at the
 repository root. The build places the tree beside the executable, at
@@ -346,8 +341,8 @@ While OwnerDraw existed, an RmlUi or ImGui document could be shown only while
 every legacy dialog was hidden or destroyed, and a legacy dialog only while no
 overlay document was visible. Both halves followed from the survey: legacy
 pixels are under the overlay, and a visible legacy window takes the mouse
-before the shell sees it. The rule is what set the migration order -- a screen
-migrated only after every screen it could open had -- and debug assertions in
+before the shell sees it. The rule set the migration order, since a screen
+migrated only after every screen it could open had, and debug assertions in
 the dialog layer and the shell's show path enforced it. One presentation is
 left, so nothing enforces it now, and what remains of the policy is that
 native and GPU UI are never layered.
@@ -460,7 +455,7 @@ class UIPresenterClass {                          // uiscreen.h: no toolkit type
 
 class UIViewClass {                               // uiview.h: no toolkit types
     public:
-        virtual bool Prepare(UIShellClass & shell) = 0;   // load; false falls back
+        virtual bool Prepare(UIShellClass & shell) = 0;   // load; false means it cannot open
         virtual void Show(bool modal) = 0;
         virtual void Hide(void) = 0;
         virtual void Release(void) = 0;
@@ -508,13 +503,12 @@ eligibility, its undrained intents are discarded, not replayed; accepted
 effects are not undone. Production clicks and commands are never coalesced.
 
 Each screen defines its result and, where relevant, distinguishes accepted,
-cancelled, session ended, and failed to open. A wrapper maps these onto the
-existing return values, including `IDOK` and `IDCANCEL`. Settings that apply
+cancelled, session ended, and failed to open. A screen answers with values of
+its own rather than the `IDOK` and `IDCANCEL` its dialog returned; a caller
+that still needs a Win32 number maps it at the call. Settings that apply
 immediately do not gain an apply-and-cancel transaction.
 
-While OwnerDraw existed, a migrated screen kept its legacy view behind a
-selector the caller latched at screen entry. Both are gone. An entry builds
-its presenter, runs its view and answers:
+An entry builds its presenter, runs its view and answers:
 
 ```cpp
 int WWMessageBox::_Process(const char * msg, int defresponse, const char * b1txt, ...) {
@@ -523,8 +517,8 @@ int WWMessageBox::_Process(const char * msg, int defresponse, const char * b1txt
 ```
 
 Preparation (documents, bindings, resources, host scope) completes before a
-view becomes interactive. A screen the shell cannot prepare -- it did not
-start, the shipped font is missing, a document will not parse -- names the
+view becomes interactive. A screen the shell cannot prepare, because it did
+not start, the shipped font is missing or a document will not parse, names the
 reason in the log and answers as a missing dialog template did: `-1` from a
 message box, cancel from a choice. From the main menu that is `SEL_EXIT`, so
 a broken install leaves with its reason recorded rather than hanging. After
@@ -562,11 +556,11 @@ and binds `UI_Service_Game`.
 A screen raised over another hides it. `hideparent` takes the screen below
 down for the child's passes and shows it again when the child closes, without
 a reveal, so a screen that raises one stays open behind it rather than closing
-and opening again. The five flows that inherited the Win32 hide-and-reopen —
-the skirmish setup around the map dialog, the map dialog around the generator,
-the in-game options and the generator around their saved-game dialogs, and the
-lobby around the map dialog — run the child from the presenter's service
-inside the parent's pass. A message box still nests visibly, as the Win32
+and opening again. The five flows that inherited the Win32 hide-and-reopen run
+the child from the presenter's service inside the parent's pass: the skirmish
+setup around the map dialog, the map dialog around the generator, the in-game
+options and the generator around their saved-game dialogs, and the lobby around
+the map dialog. A message box still nests visibly, as the Win32
 boxes did over their dialogs.
 
 The result carries the game-ended flag the way `Dialog_Message_Handler`
@@ -865,124 +859,61 @@ across the content. Where a screen departs from its template it says so in its o
 sheet: the game controls make room for a difficulty row in a game, which no
 template of the game's own offers.
 
-The kit's tabs are authored from the drawing code and no migrated screen uses
-them yet; the network lobbies and the skirmish screens are what will exercise
-them.
+The out-of-sync screen is the one that does not take its template's size. At
+the 540 by 430 of `IDD_DESYNC_HOST` and `IDD_DESYNC_WAIT` the layer cuts the
+players caption and the load button off under the frame and runs the last line
+of prose over the paragraph above it, so the screen is laid out in the 640 by
+391 frame the lobbies and the skirmish setup use, which is wide enough for the
+prose to wrap inside its own column. Two things follow. The prose is four
+paragraphs parted by less than a line rather than four controls at fixed
+places, so the last of them cannot land on the one above it however long a
+translation runs; and the countdown to a load has no row of its own, taking
+the room the two decisions give up, since both are disabled by the time it
+runs. The player list keeps the layer's three columns at the layer's widths,
+marker, name and standing, with the six pixels it leaves between the last two,
+and a name too long for its column is cut off there as the layer cut it.
 
 The chrome is `Draw_Dialog_Back`'s composition: the 640 by 400 wallpaper
 centered on the frame in whole pixels and cut off at the dialog's edges, black
-beyond it, which the view places against the dialog's middle to the half pixel
-a dialog of odd height is off the grid; a
-24-wide bar tiled down each edge with a corner over each end; and a glow
-inside the bars that the original drew as sixteen one-pixel rings of white,
-alpha 96 falling by 6 a ring. The glow is a picture shipped with the kit,
-`ui/glow.png`: the sixteen rings drawn once with mitred corners, cut nine
-ways by a sprite sheet into corners, edges and a clear middle and drawn with
-`tiled-box`, because sixteen bordered boxes each round to the pixel grid on
-their own at any scale but one to one and gap and double up, and a gradient
-strip per edge overlaps at the corners. It is magnified with the rest of the
-art, so the rings stay whole at any scale. Two RmlUi facts shape the rest.
-Decorators paint last
-to first, so a bar is listed after its corners. Overflow is measured from
-static boxes: positioned children are laid out after their container has
-measured what it clips, and a relative offset is never counted. So the
-wallpaper's box, whose only child is positioned, and the band, whose chrome
-sits half a dialog to the left until its offset moves it back, are both told
-to clip outright with `clip: always`. The art is the
-player's own and is not shipped; each control has a plain form underneath, a
-fill where a picture would be, so a screen stays usable without it, and that
-form is what the harness renders.
+beyond it; a 24-wide bar tiled down each edge with a corner over each end; and
+a glow inside the bars that the original drew as sixteen one-pixel rings of
+white, alpha 96 falling by 6 a ring. The glow is the one piece of art the kit
+ships, `ui/glow.png`, because sixteen bordered boxes each round to the pixel
+grid on their own at any scale but one to one, and gap and double up. Every
+other picture is the player's own and is not shipped; each control has a plain
+form underneath, a fill where a picture would be, so a screen stays usable
+without it, and that form is what the harness renders.
 
-The controls follow the drawing code's metrics: a button is a 24 or 30 tall
-skin with a 7-wide left cap, a 10-wide right cap and a middle drawn from the
-left cap's end to three short of the right edge, under the right cap, its
-`dlgsys` caption three down from the top of a short skin and six from a tall
-one, centered in a box two narrower than the skin. The middle is the tile's
-own middle: the layer sampled the 177-wide tile from its center when the run
-was narrower and repeated it from the left when wider, so the kit draws the
-caps and a centered, clipped tile as three `image` decorators on the box's
-border and padding areas, the middle last to lie under the caps, and a
-button whose run is wider than the tile carries the class `wide` to repeat
-it instead; `tiled-horizontal` is no use here because it always fills its
-center. Pressing shows a skin two down that is two shorter, three for a tall
-one, whose right cap is seven wide and keeps its place, so the last three
-columns show through, and moves the caption one further down and one across;
-the box keeps its size, with the rows the skin gives up as a bottom border
-that shows through. Disabled is a half-black wash rather than the skin the
-original loads and never draws. That wash is a flat gradient listed ahead of the skin, so
-it paints last and covers it; a caption cannot be covered the same way, because text is
-drawn after every decorator, so a disabled caption carries the color the wash would have
-left it at.
+The controls carry the drawing code's own metrics, and every rule in
+`kit.rcss` records the measurement it came from, so the geometry is documented
+beside the CSS rather than here. What reaches a screen's own sheet:
 
-Every other control the kit disables takes the same wash: a check box over its
-box, a track bar over its bar, its reading and the column beside it, and a combo
-box a further half toward black over the darkening every box already carries. A
-disabled control's text is a shade of its own, because the sheets shade a glyph
-rather than filling it, so sheet text comes out a step darker than the gray it
-was asked for. A border paints outside every decorator, so a disabled control's
-frame carries the wash already applied and takes it on all four sides, where the
-layer washed only the sides.
+- `OD_Draw_Rect` draws a frame a pixel outside the control's rect, so a framed
+  control is sized to the rect its template gives and its frame hangs over a
+  negative margin; a screen spaces one from its neighbour on the neighbour's
+  side. A list and a scroll bar are the exception, because the layer insets
+  their rows by the frame and draws it on the rect's own edge, so a list is
+  its template's rect, frame and all.
+- A track bar shows its value in a fifty wide trough unless the dialog turned
+  that off, which the game controls do and the sound options do not, so a
+  document puts the trough after the bar and gives the bar the rest. Where a
+  template gives its bar fewer rows than the trough's picture has, as the
+  network lobbies do, the trough is placed over the bar's own last fifty
+  columns and sorted behind it, because the layer drew the frame over the
+  field rather than beside it.
+- A disabled control takes a half-black wash. A caption cannot take one, since
+  text draws after every decorator, so it carries the color the wash would
+  have left it at; sheet text comes out a step darker again, because the
+  sheets shade a glyph rather than filling it.
+- A screen's sheet that still needs a visual rule of its own means the kit is
+  missing a control.
 
-Check boxes, edit boxes, lists,
-scroll bars, track bars, combo boxes, the progress bar, group boxes, hotkey
-fields and tooltips are authored the same way, in the cyan frame
-`OD_Draw_Rect` substitutes for white. That frame is drawn a pixel outside the
-control's rect, so those controls are sized to the rect their template gives
-and their frame hangs over a negative margin; a screen spaces one from its
-neighbour on the neighbour's side. A list and a scroll bar are the exception:
-the layer insets their rows by the frame and draws it on the rect's own edge,
-so a list is its template's rect, frame and all. When a list needs a scroll
-bar the original narrows the list by twenty and stands the bar beside it, so
-the list's frame closes a pixel before the bar's opens and the two make a
-double line, and the bar's other three edges share the list's frame; the kit
-stands the bar inside the list's frame, twenty wide, with that double line as
-its left border. The list's dim covers its rows only and the bar's track shows
-the plain background, so the dim is carried by a box around the rows; and the
-grip is as long as the layer made it, the travel less a fifth of it for each
-natural-log step of the rows left over, never under fourteen, which the view
-sets on the grip each pass rather than the share of the rows in view RmlUi
-would give it. RmlUi places a slider's arrows, track and thumb from the
-input's border corner rather than its content corner, so in the kit each of
-those carries the frame's width as a margin: the track bar's track starts two
-in and ends one back, which keeps it a pixel narrower than the bar with the
-thumb inside the frame, and the scroll bar's parts start after its two wide
-border. A track bar shows its value in a fifty
-wide trough unless the dialog turned that off, which the game controls do and
-the sound options do not, so a document puts the trough after the bar and
-gives the bar the rest. The bar's dim reaches a pixel past its rect, so the
-field is a pixel wider and taller than the fifty it is given, and the layer
-fills the fifty with the middle of its tile, so the kit's field is the two
-ends over a sprite of the tile's center. The value inside it is centered in a
-box a pixel narrower than the field, which turns the toolkit's round of a half
-into the layer's floor, and the right end is hung off the field rather than
-off that box so that narrowing it leaves the end where the layer drew it. A
-template that gives its bar fewer rows than the field's picture has, which the
-network lobbies do, shows what the field is: not a control beside the bar but
-the last fifty columns of the bar's own rect, drawn before the frame, so the
-frame runs down the field's first column and the picture stands four rows past
-the bar's bottom. The lobby's field is placed over that column and sorted
-behind the bar for that reason, and its picture is hung on the whole box rather
-than on the box the reading is centered in, because RmlUi cuts a decorator off
-at the area it is given. The layer also darkens the ground a column past the
-bar's rect and a row past its bottom; the field covers all of that but the
-column, which the document draws as a strip of its own.
-
-A line of chat is stored whole and broken into lines by whatever shows it,
-where the layer measured the list box and handed it lines it had already
-broken, so the same message can take a different number of rows in the two
-presentations. The box a line is typed into sends on Enter. The dialog's own
-edit box is one row tall and does not scroll, and the send fires on the
-overflow that ending the line causes, so typing past the right-hand edge sends
-a message in the middle of a word; a document has no such accident to inherit.
-
-A combo box's list is the toolkit's own child element,
-placed by it and styled by the kit; a group box's top edge is two line pieces
-either side of its caption, because a border cannot be broken, and its
-caption row is sixteen tall, the height GDI gave the face, so the frame runs
-eight below the caption's top. The glow sits under every control, as the
-original painted it into the dialog's background before any control drew. A
-screen's sheet that still needs a visual rule means the kit is missing a
-control.
+Two things the kit cannot hold are the view's. A list's scroll-bar grip is as
+long as the layer made it, the travel less a fifth of it for each natural-log
+step of the rows left over and never under fourteen, which the view sets each
+pass in place of the share of the rows in view RmlUi would give it. The
+wallpaper is placed against the dialog's middle for the same reason: it is one
+picture on the frame rather than on the screen.
 
 Pressing one of those controls sounds the click the dialog layer sounded, and
 a disabled control stays silent because that layer never handed it the mouse.
@@ -1014,7 +945,7 @@ watches the band.
 ### Strings
 
 Engine strings are UTF-8 through the process active code page declared in
-`sun.manifest`; that transition has landed. Every narrow Win32 API, including
+`sun.manifest`. Every narrow Win32 API, including
 the `LoadString` behind `Fetch_String`, yields UTF-8 bytes, and the shell
 copies a string out of the `Fetch_String` cache and hands it to RmlUi
 unchanged. Text typed into a field goes into engine buffers unchanged. What
@@ -1040,9 +971,7 @@ One key in `SUN.INI` under `[Options]`. `BitmapSystemFont` decides whether the
 dialog face may be drawn from the bitmap strikes at all, and defaults to
 `yes`; it is read once at startup and has no screen of its own. `Options`
 reads and writes it with its other `[Options]` settings, and it has a manual
-page. `LegacyDialogs`, which returned every migrated screen to its legacy
-view, went with OwnerDraw and keeps a tombstone at its manual route. There is
-no build option: RmlUi and ImGui are always compiled and
+page. There is no build option: RmlUi and ImGui are always compiled and
 linked, so one configuration matrix carries the evidence. A sidebar view key
 follows the sidebar view.
 
@@ -1119,9 +1048,9 @@ Invariants the split preserves:
 Progress tracking, clamping, milestone text and sound, and the readiness
 queries that `scenario.cpp` consumes move out of the draw path into shared
 behavior, so a repaint cannot repeat a milestone sound and a hidden
-presentation cannot lose one. The milestone half landed with step 6:
-`ProgressScreenClass::Advance_Milestone` notes a threshold crossing and plays
-its sound when the progress moves, and the paint draws the text still owed.
+presentation cannot lose one. `ProgressScreenClass::Advance_Milestone` notes a
+threshold crossing and plays its sound when the progress moves, and the paint
+draws the text still owed.
 The screen exposes phase, progress, status, and the operations the loader
 supports; no cancellation is added to a loader that cannot cancel. Loading
 stays on its thread with explicit cooperative service points that drain
@@ -1192,212 +1121,23 @@ and itlib in RmlUi, zlib in FreeType, and the stb headers in Dear ImGui. CI
 already checks out submodules recursively. The build stamp step gains the
 string-name generator. Dependency upgrades are separate changes.
 
-## Migration plan
+## What is left
 
-Each step is one pull request unless noted, builds and runs on its own, and
-leaves the game playable. A behavior-heavy screen takes two changes: the
-first extracts its behavior behind the presenter with the legacy view still
-selected and classifies as preserved; the second adds the RmlUi view. A leaf
-takes one. Sizes are rough: S under a day of focused work, M a few days, L a
-week or more. The order is bottom-up because of the coexistence rule: a
-screen migrates only after every screen it can open has migrated.
+The migration went one screen per change and bottom-up, since the coexistence
+rule meant a screen could migrate only after every screen it could open had.
+Three things it did not reach:
 
-The UTF-8 transition that step 3 needs has landed. Steps 1 and 2 need no text
-beyond an ASCII test document.
+- The sidebar, which [Sidebar](#sidebar) covers. It is scheduled now that the
+  dialogs are gone.
+- The other GadgetClass screens, the MSEngine screens and the credits, which
+  are unscheduled and keep their own drawing and their own loops beside the
+  shell, as [Where the UI stands today](#where-the-ui-stands-today) records.
+- `IDD_EXCEPTION`. The crash reporter shows it after `Release_Display`
+  through `DialogBoxParam` rather than through the dialog layer, so it stays
+  Win32 and keeps working when the thing it reports on is the renderer.
 
-1. **Dependencies** (S, landed). Submodules, CMake, notices, `BUILDING.md`,
-   and a `tests/uishell` smoke test that links the three libraries. No engine
-   code uses them. Evidence: Debug and Release build.
-2. **Shell** (M, landed in two changes). Everything in the code-layout table
-   except screens, the backend split, the input hook, resize handling, the
-   `ui/` copy step, the file interface with mix resolution, and a Debug-only
-   test document toggled by F9; then the Dear ImGui context, its renderer, and
-   the frame benchmark window toggled by F6. Evidence: the test document
-   renders over the main menu and in game at several resolutions and scale
-   modes; clicks on it, beside any legacy dialog, are consumed; clicks beside
-   it reach the game; legacy dialogs still open and close; repeated open and
-   close leaks nothing.
-3. **Version dialog** (S, leaf, landed in two changes: the string table, the
-   `LegacyDialogs` key and the coexistence checks, then the screen contract,
-   the modal runner and the dialog). The integration pilot: fonts, clipping,
-   mapping, dismissal by mouse and keyboard, focus return, UI-only redraw,
-   resize, preparation failure. The main menu keeps hiding around it.
-4. **Message boxes** (M, leaf, landed). The modal runner landed with step 3.
-   `WWMessageBox::Process` behind the kill switch, preserving button order,
-   default button, Escape, the no-button case, return mappings, and
-   session-end interruption; a box raised over a visible Win32 dialog stays a
-   Win32 box until that dialog migrates. `OwnerDraw::Custom_Message_Box` is
-   the modeless progress box of the save and load flows and moves to step 6.
-   Runtime evidence still owed: the multiplayer cases where `Main_Loop` runs
-   under the box.
-5. **Sound** (M, two changes, landed: the behavior sits behind
-   `UISoundPresenterClass` and an engine service, the Win32 dialog drives it
-   with the same calls in the same order, and `sound.rml` is the RmlUi view
-   with a `data-if` for the in-game half). The behavior pilot: volumes,
-   eligible themes, selection, availability, shuffle and repeat, immediate
-   previews, play and stop, both templates, frontend and in-game service
-   paths. Runtime evidence so far is under
-   [What has been exercised](#what-has-been-exercised).
-6. **Progress and wait** (S, leaf, two changes, landed: milestone effects
-   moved out of drawing, then `UIWaitBoxClass` over `wait.rml` for the saving
-   and loading boxes and the progress dialog, with the Win32 boxes kept
-   behind it). `IDD_PROGRESS_WAIT`, the saving and loading boxes in
-   `savemgr.cpp` with `OwnerDraw::Custom_Message_Box`, the modeless box they
-   show. A progress bar needs no engine surface, so the `<surface>` element
-   waits for the map preview in step 10. Runtime evidence still owed.
-7. **Options family** (L, landed for the frontend and the in-game settings:
-   the game controls sit behind `UIGameControlsPresenterClass` and an engine
-   service with `gamectrl.rml` covering the three Win32 templates through
-   `data-if`; `UIDisplayPresenterClass` hands the caller the mode to try and
-   `UIConfirmModePresenterClass` reads a `UIClockClass` and cancels itself at
-   the timeout, which replaced the posted `WM_DESTROY`, over `display.rml`
-   and `confirm.rml`, the latter counting the seconds down;
-   `UIKeyboardPresenterClass` edits a copy of the hotkey table that OK saves
-   and Cancel drops, where the Win32 procedure edited the game's table and
-   reloaded the file on Cancel, and `keyboard.rml` captures a key through a
-   focusable element that `rml/rmlkeys.cpp` turns back into the `KEYBOARD.INI`
-   number; the options menu is `mainopt.rml`, placed where the main menu's
-   buttons were; surrender runs through the message box screen, while abort
-   is `abort.rml` over its own `IDD_MISSION_ABORT` template, whose middle
-   answer surrenders rather than restarts outside a campaign mission; the
-   in-game options menu itself is `gameopt.rml` over `IDD_OPT_CTRL_SP`,
-   `IDD_OPT_CTRL_MP` and `IDD_OPT_CTRL_WOL`, which then closed and reopened
-   without revealing around a save or a delete, where the Win32 menu hid and
-   re-showed itself). The Win32
-   templates remain the fallback view of every one. Load, save and delete keep
-   their own dialogs until step 9. Evidence: settings round-trip through
-   `SUN.INI` unchanged; the menu and the abort question match their Win32
-   dialogs pixel for pixel at 3840x2160.
-
-   The Internet arrangement landed with step 13, because a spawned game sets
-   `GAME_INTERNET` and the menu had been giving such a game the network form,
-   which carries neither the speed bar nor the connection reading. Its speed
-   reaches the other players as the `GAMESPEED` event that menu's Resume button
-   sent, and its Save and Load ask the match rather than doing the work here,
-   as that menu's buttons did. The bar names the speed it stands at from the
-   start, where the Win32 dialog left its template's caption standing until the
-   bar first moved.
-8. **Main menu family** (M, landed). Campaign choice is `campaign.rml`, which
-   names the difficulty the bar is set to from the start where the Win32
-   dialog left its template's caption until the bar first moved. The other
-   three are one document: `IDD_MAIN_MENU`, `IDD_SELECT_GAME_TYPE` and
-   `IDD_MPLAYER_SELECT_GAME` with its Firestorm form are a caption over a
-   column of buttons, so `menu.rml` carries all four shapes and the caller
-   hands over a list of labels, what each answers with, and whether it can be
-   pressed. They appear only where the graphic menu cannot run, so they are
-   the degraded install's menu rather than the shipped one, and a screen was
-   driven over each by hooking that menu out. The screen restores the title
-   screen once a pass, as each dialog's own loop did, and the main menu reads
-   its keys through a hook the runner calls there, where the dialog read them
-   from the loop it stood in. The `NewMenuClass` drivers keep their loops.
-9. **Load, save, delete** (M, landed as `savegame.rml` over
-   `IDD_MISSION_LOAD`, `IDD_MISSION_SAVE` and `IDD_MISSION_DELETE`, chosen by
-   a class the document sets from the style the caller asked for).
-   `LoadOptionsClass` keeps every file operation and its message boxes; the
-   gathering of the files moved out of `Fill_List` into `Gather_Files` so that
-   both the Win32 list and the document read the same entries, and the screen's
-   own loop reopened wherever the Win32 loop stayed standing. The list's cells
-   are placed at the positions the layer drew them at rather than flowed, since
-   a cell keeps its place whatever the cell before it holds. The templates carry
-   a third column between the description and the stamp, a heading and a mark
-   for a game that is not a campaign mission, that the game draws in neither
-   dialog; the document leaves it out to match what the game shows. Evidence:
-   all three match their Win32 dialogs at 3840x2160 apart from the list text,
-   and a save through the screen writes its file and brings the menu back.
-10. **Skirmish and map selection** (M, three changes, landed): the `<surface>`
-    element and the pure work behind it, then `skirmish.rml` over
-    `UISkirmishPresenterClass`, then `scenario.rml` over
-    `UIScenarioPresenterClass` and its service. Both screens close and reopen
-    around what they raise, as the Win32 dialogs hid themselves around the map
-    dialog and the generator, and the map dialog runs over a service pass of
-    its own so that a lobby waiting on the host is still pumped while the host
-    browses. The preview's placement is a deliberate departure, recorded under
-    [Images](#images). Evidence: both match their Win32 dialogs at 3840x2160
-    apart from the list text, the sans glyph widths and that placement, and a
-    game started through the setup deploys its units.
-11. **Network lobbies** (L, two changes; the first landed). The browser, the
-    host's setup and the guest's view of it went together, because the flow
-    asked which dialog was up rather than being told: `Net2LobbyPhase` replaced
-    every dialog-stack test, the lobby chat moved out of the list box it lived
-    in so that both presentations read one log, and `ODMessageBox` opens the
-    message box screen in its own shape so that nothing Win32 stands over a
-    document. Entering a lobby settles the session from one place, where each
-    dialog's `WM_INITDIALOG` did it before. The driver keeps its loop and its
-    arms; only the wait for an answer became a modal screen over the pass the
-    lobby already ran, and the lobby came back whole rather than opening again
-    when it was reopened for another answer. `netlobby.rml` carries the browser
-    and `netgame.rml` both halves of the setup, the guest's being the host's
-    with its right-hand column disabled, as the two templates differ. Evidence
-    under [What has been exercised](#what-has-been-exercised). Packets
-    unchanged.
-
-    The second change landed with them. `desync.rml` covers `IDD_DESYNC_HOST`
-    and `IDD_DESYNC_WAIT`, whose templates differ only in their prose and their
-    buttons; the dialog's own loop became a modal screen over a pass of that
-    loop, so the heartbeats, the chat, the promotion of a new master and the
-    countdown to a load all keep running, and the screen closes when the
-    session settles the decision without this player as well as when a button
-    is pressed. The screen does not take its templates' 540 by 430. At that
-    size the layer cuts the players caption and the load button off under the
-    frame and runs the last line of prose over the paragraph above it, so the
-    screen is laid out in the 640 by 391 frame the lobbies and the skirmish
-    setup use, which is wide enough for the prose to wrap inside its own
-    column. That is a deliberate departure, and the only migrated screen that
-    does not take its template's size. Two more follow from it. The prose is
-    four paragraphs parted by less than a line rather than four controls at
-    fixed places, so the last of them cannot land on the one above it however
-    long a translation runs. And the countdown to a load has no row of its own:
-    while it runs it takes the room the two decisions give up, since both are
-    already disabled by then, and the way out stays where it is. The player
-    list keeps the layer's own three columns at the layer's widths, marker,
-    name and standing, with the six pixels it leaves between the last two, and
-    a name too long for its column is cut off there as the layer cut it. `reconnect.rml` covers `IDD_MPLAYER_DISCONNECT`, which is not
-    modal: the frame-sync wait keeps its loop and the notice stands beside the
-    game, as the dialog did, with the seats, the gauges and the running message
-    pushed in each pass and the kick votes and the way out read back. A refusal
-    the kick used to write straight into the dialog's list box is handed back
-    instead, so both presentations print it.
-12. **Map generator** (L, landed). `mapgen.rml` covers `IDD_MAPGEN` and
-    `IDD_MAPGEN_FS`: four boxes, ten readings, three switches, the preview and
-    seven buttons, every one of them a kit component. The settings live in the
-    generator's own seed, so the screen's service writes each reading straight
-    through by the name the document gives it and reads the whole seed back
-    each pass, where the dialog moved them in and out of its controls in two
-    passes of its own. The screen then closed and reopened around the save, load and
-    delete dialogs the generator raises, as the skirmish setup did around the
-    map dialog. `IDD_MAPGEN_WDT`, the tour's own form, followed with step 13:
-    a battle fought over a territory is the same screen with the players
-    reading replaced by the pair of boxes naming how many the tour fights it
-    between, and every other setting bounded or fixed by the territory, which
-    the screen shows locked rather than taken away. The tour cannot be reached,
-    so the form was measured against its Win32 dialog through a temporary hook
-    that hands the generator a fabricated territory.
-13. **Retire OwnerDraw** (M, landed in three changes: the two forms no screen
-    covered, the move of what outlives the layer, then the deletion). The
-    survey found `IDD_OPT_CTRL_WOL` reachable after all -- the CnCNet spawner
-    sets `GAME_INTERNET`, so an Internet game had been getting the plain
-    three-button menu and had lost its speed bar with it -- and `IDD_MAPGEN_WDT`
-    was converted against a future tour restore rather than dropped, so both
-    were covered first, against captures taken while the dialogs could still
-    be photographed. `IDD_EXCEPTION` does not migrate: the crash
-    reporter shows it after `Release_Display` through `DialogBoxParam` rather
-    than through the layer, so it stays Win32 and keeps working when the thing
-    it reports on is the renderer. The templates carrying no engine reference
-    at all -- the modem and serial family, `IDD_DROPSHIP_LIMIT` and its list,
-    `IDD_GAME_SETTINGS_FLAGS` and `IDD_GAME_SETTINGS_SLIDERS`,
-    `IDD_WDT_PICK_CLAN`, `IDD_MPLAYER_SELECT_MAP_SIMPLE` and
-    `IDD_EXCEPTION_SIMPLE` -- went with the layer. Gone: `windlg.cpp` and
-    `msgroute.cpp`, the modeless dialog list and the accelerator table, the 53
-    templates, `IDD_TEMPLATE` and `Fetch_Resource`, the Win32 half of every
-    driver, the kill switch and the coexistence assertions. `ownrdraw.cpp`
-    went from 7,029 lines to 800; the string tables stay, and so do the
-    `IDD_` and `IDC_` numbers in `language.h`, which are the library's index.
-14. **Sidebar** (M, then L). The model and view split with the gadget view;
-    later the RmlUi view over the whole column and its selection key.
-
-ImGui overlays (S each) follow step 2: the frame benchmarks landed with it,
-then what a developer needs next. GadgetClass screens, MSEngine screens, and
-the credits are unscheduled.
+Further ImGui overlays are added as a developer wants them; the frame
+benchmark window is the only one so far.
 
 ## Validation and evidence
 
@@ -1521,28 +1261,33 @@ chrome, wallpaper, reveal, and the buttons at rest, pressed and disabled. The
 other screens moved onto the kit after it and are owed the same pass; the
 harness covers their layout and their input, not how they look.
 
-Still owed: the progress document, which belongs to the multiplayer loading,
-map generation, and file transfer paths; the multiplayer cases where
-`Main_Loop` runs under a message box; a map carrying no preview of its own;
-the lobby paths the two-copy run did not reach, which are the kick button, a
-rejected join, a host that disbands its game, and more than two players; the
-out-of-sync screen and the frame-sync notice under a session that has really
-gone out of step or stalled, which needs the impaired-link rig rather than the
-key the screen was photographed through, and with them the countdown to a load,
-which no photographed run reached; the generator's own save, load and
-delete; and, for each screen, what the paragraph above requires of its own
-change.
+The tour's arrangement of the generator was measured through a temporary hook
+that hands the generator a fabricated territory, because the tour itself
+cannot be reached.
+
+Still owed: every screen whose behavior changed after that pass, which is the
+five hide-parent flows and the screens the review fixes touched; the progress
+document, which belongs to the multiplayer loading, map generation, and file
+transfer paths; the multiplayer cases where `Main_Loop` runs under a message
+box; a map carrying no preview of its own; the lobby paths the two-copy run
+did not reach, which are the kick button, a rejected join, a host that
+disbands its game, and more than two players; the out-of-sync screen and the
+frame-sync notice under a session that has really gone out of step or stalled,
+which needs the impaired-link rig rather than the key the screen was
+photographed through, and with them the countdown to a load, which no
+photographed run reached; the generator's own save, load and delete; and, for
+each screen, what the paragraph above requires of its own change.
 
 ## Documentation
 
-- This page owns the architecture and is updated as steps land.
-- `docs/BUILDING.md` lists the new submodules, the harnesses, and where the
-  `ui/` directory lands beside the executable.
-- `THIRD_PARTY_NOTICES.md` and the packaging license copy gain the three
+- This page owns the architecture.
+- `docs/BUILDING.md` lists the submodules, the harnesses, and where the `ui/`
+  directory lands beside the executable.
+- `THIRD_PARTY_NOTICES.md` and the packaging license copy carry the three
   projects.
-- The manual gains a systems page for the UI files (where they live, the
-  override order, the string reference syntax) and a change record per
-  migrated screen. The sidebar page changes when its view key lands.
+- The manual's systems page for the UI files owns where they live, the
+  override order and the string reference syntax; one change record covers
+  the replacement. The sidebar page changes when its view key lands.
 
 ## Open decisions
 

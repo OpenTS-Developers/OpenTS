@@ -106,7 +106,6 @@ class UIGameControlsPresenterClass : public UIPresenterClass
 // outlive it.
 std::unique_ptr<UIViewClass> UI_Game_Controls_View(UIGameControlsPresenterClass & presenter);
 
-// The game's service and the state of the running game.
 UIGameControlsServiceClass & UI_Game_Controls_Service(void);
 void UI_Game_Controls_State(UIGameControlsState & state);
 

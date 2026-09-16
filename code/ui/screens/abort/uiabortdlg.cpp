@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the abort question: the state it starts from and the entry Abort_Dialog
-// calls. The presenter and view live in uiabort.cpp so that the test harness can drive them
-// without the engine.
+// calls.
 
 #include "ui/screens/abort/uiabort.h"
 

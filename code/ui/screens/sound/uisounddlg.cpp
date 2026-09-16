@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the sound options: the service the presenter drives and the state it
-// starts from. The presenter lives in uisound.cpp so that the test harness can drive it
-// against a recording service.
+// starts from.
 
 #include "ui/screens/sound/uisound.h"
 

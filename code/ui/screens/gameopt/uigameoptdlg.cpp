@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the in-game options menu: which buttons the running game offers, and the
-// entry Game_Options_Dialog calls. The presenter and view live in uigameopt.cpp so that the
-// test harness can drive them without the engine.
+// entry Game_Options_Dialog calls.
 
 #include "ui/screens/gameopt/uigameopt.h"
 

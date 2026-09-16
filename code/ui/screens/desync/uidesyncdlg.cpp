@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the out-of-sync screen: what it reads out of the session and the entry
-// DesyncDialogClass calls. The presenter and view live in uidesync.cpp so that the test
-// harness can drive them without the engine.
+// DesyncDialogClass calls.
 
 #include "ui/screens/desync/uidesync.h"
 

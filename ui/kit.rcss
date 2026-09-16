@@ -1,17 +1,16 @@
 /*
  * The controls the game's own dialogs are built from, in the colors and the metrics they
- * are drawn with. A screen links this first and its own sheet after, so its sheet overrides
- * and holds only where things go.
+ * are drawn with. Every rule here carries the measurement it came from, because the numbers
+ * are the original's and not a layout of our own.
  *
- * Every length is in dp, so a screen keeps its proportion to the game frame at any window
- * size. The numbers are the originals' pixel values, which is what they come to at 1:1.
- * The colors are the originals' after their trip through the game's 16-bit frame, five
- * bits of red and blue and six of green widened again by repeating their top bits, which
- * is what the game shows; the art goes through the same in the loader, and text does after
- * its remap, so the text color here is the one the remap is aimed at, not its result.
+ * Every length is in dp, and the number is the original's pixel value, which is what a dp
+ * comes to at 1:1. The colors are the originals' after their trip through the game's 16-bit
+ * frame, five bits of red and blue and six of green widened again by repeating their top
+ * bits; the art goes through the same in the loader, and text does after its remap, so a
+ * text color here is the one the remap is aimed at, not its result.
  *
- * The art is the player's own and is not shipped. Where a picture is missing it draws as
- * nothing, so each control is given a plain form underneath that stays usable without it.
+ * Where a picture is missing a control draws its plain form, the fill underneath, which is
+ * also what the harness renders.
  */
 
 body
@@ -220,14 +219,13 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
  * the left cap's width is the box's left border, the three columns the run stops short of
  * are its right border, the run is its padding box, and the tile is centered there and cut
  * off at either side; a button whose run is wider than the tile carries the class wide and
- * repeats it from the left instead. The original draws no outline around one, so the plain
- * form underneath is a fill the picture covers rather than a border that would show
- * through it.
+ * repeats it from the left instead. `tiled-horizontal` is no use for either, because it
+ * always fills its center. The original draws no outline around one, so the plain form
+ * underneath is a fill the picture covers rather than a border that would show through it.
  *
  * The caption is centered in a box two narrower than the skin, three down from the top of a
- * short button and six down from a tall one, and a pixel left of the middle when the room
- * is odd: the layer halves the room in whole pixels where the toolkit rounds a half up, so
- * the box here is a pixel narrower still, which brings the two to the same place. Pressing
+ * short button and six down from a tall one, and a pixel narrower still for the centering
+ * the statics below carry. Pressing
  * shows a skin two down that is two shorter, three for a tall one, whose right cap is seven
  * wide and keeps its place, so the last three columns show through; the caption moves one
  * further down and one across, which is where the game shows it whatever its source says.
@@ -417,7 +415,12 @@ label.check.disabled, label.check:disabled
 /*
  * The two places a static sits: the caption before a control and the reading after it. The
  * dialog layer draws a static on one line and never centers it in its box, so neither wraps
- * however little room its text is given.
+ * however little room its text is given, and it draws from the top of the box however tall
+ * the template makes the box.
+ *
+ * Both are why a screen pads a static a pixel on the right. A centered run sits a pixel left
+ * of the middle, because the layer halves the room left over in whole pixels where the
+ * toolkit rounds a half up; a right-aligned run ends a pixel further from the edge.
  */
 .caption, .value
 {
@@ -611,10 +614,9 @@ input[type='range']:disabled sliderbar
 }
 
 /*
- * The room left over around the reading is halved in whole pixels by the layer where the
- * toolkit rounds a half up, so the box it is centered in is a pixel narrower than the
- * forty-nine, and the right end is hung off the field rather than off that box, which keeps
- * it where the layer drew it. A screen whose bar is shorter than the picture gives the field
+ * The reading is centered the way the statics above are, so its box is a pixel narrower than
+ * the forty-nine, and the right end is hung off the field rather than off that box, which
+ * keeps it where the layer drew it. A screen whose bar is shorter than the picture gives the field
  * the picture's height and takes the rows the bar's own rect leaves out of the reading's box;
  * the picture hangs on the whole box either way, because a decorator is cut off at the area
  * it is given.

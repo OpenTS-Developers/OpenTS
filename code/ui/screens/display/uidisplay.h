@@ -99,7 +99,6 @@ class UIConfirmModePresenterClass : public UIPresenterClass
 std::unique_ptr<UIViewClass> UI_Display_View(UIDisplayPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Confirm_Mode_View(UIConfirmModePresenterClass & presenter);
 
-// The game's service and the state of the display.
 UIDisplayServiceClass & UI_Display_Service(void);
 void UI_Display_State(UIDisplayState & state);
 

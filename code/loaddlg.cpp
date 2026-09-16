@@ -180,21 +180,6 @@ static bool Saved_Game_Exists(char const * name)
 }
 
 
-/***********************************************************************************************
- * LoadOptionsClass::Process -- main processing routine                                        *
- *                                                                                             *
- * INPUT:                                                                                      *
- *      none.                                                                                  *
- *                                                                                             *
- * OUTPUT:                                                                                     *
- *      false = User cancelled, true = operation completed                                     *
- *                                                                                             *
- * WARNINGS:                                                                                   *
- *      none.                                                                                  *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   02/14/1995 BR : Created.                                                                  *
- *=============================================================================================*/
 /// <summary>
 /// Runs the load, save or delete screen, acting on the player's pick and reopening wherever
 /// the dialog it replaced stayed standing.

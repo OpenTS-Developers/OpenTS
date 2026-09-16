@@ -60,7 +60,6 @@
 	margin-right: 24dp;
 }
 
-/* A caption is drawn from the top of its box, however tall the template makes the box. */
 #identity > .caption
 {
 	display: block;

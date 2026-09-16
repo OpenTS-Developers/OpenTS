@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the skirmish setup: the settings the game offers, the map dialog it
-// raises over itself, and what the choices come to in the session. The presenter and the view
-// live in uiskirmish.cpp so that the test harness can drive them without the engine.
+// raises over itself, and what the choices come to in the session.
 
 #include "ui/screens/skirmish/uiskirmish.h"
 

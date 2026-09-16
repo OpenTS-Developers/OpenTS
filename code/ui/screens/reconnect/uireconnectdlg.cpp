@@ -8,9 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the notice the frame-sync wait shows: it stands beside the game rather
-// than over it, so the wait loop keeps running and reads back what the player pressed. The
-// presenter and view live in uireconnect.cpp so that the test harness can drive them without
-// the engine.
+// than over it, so the wait loop keeps running and reads back what the player pressed.
 
 #include "ui/screens/reconnect/uireconnect.h"
 

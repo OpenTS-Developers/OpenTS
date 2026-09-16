@@ -20,12 +20,7 @@
 	padding: 19dp 32dp 0 33dp;
 }
 
-/* A caption is drawn from the top of its box, however tall the template makes the box. */
-/*
- * A caption is drawn from the top of its box, and a centered one a pixel left of the middle
- * when the room is odd: the layer halves the room in whole pixels where the toolkit rounds a
- * half up, so the title's box is a pixel narrower than its rect.
- */
+/* The title's box is a pixel narrower than its rect, which is what centers it as the layer did. */
 #title
 {
 	width: 437dp;

@@ -89,7 +89,6 @@ class UIScenarioPresenterClass : public UIPresenterClass
 // The RmlUi view over a map presenter, bound to scenario.rml. The presenter must outlive it.
 std::unique_ptr<UIViewClass> UI_Scenario_View(UIScenarioPresenterClass & presenter);
 
-// The game's service and the missions it holds.
 UIScenarioServiceClass & UI_Scenario_Service(void);
 void UI_Scenario_State(UIScenarioState & state);
 

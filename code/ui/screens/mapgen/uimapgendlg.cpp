@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the random map generator: what the screen reads out of the seed the
-// generator keeps, and the entry the generator's own driver calls. The presenter and view
-// live in uimapgen.cpp so that the test harness can drive them without the engine.
+// generator keeps, and the entry the generator's own driver calls.
 
 #include "ui/screens/mapgen/uimapgen.h"
 

@@ -370,8 +370,6 @@ void UIShellClass::Reset_Text(void)
 }
 
 
-// The pointer is the documents' while a screen is shown, a document holds a press, or it
-// is over an element that takes it.
 // The modifier state RmlUi wants with every pointer and key message, asked of the host so
 // that the shell reads no key of its own.
 int UIShellClass::Key_Modifiers(void) const
@@ -398,6 +396,8 @@ int UIShellClass::Key_Modifiers(void) const
 }
 
 
+// The pointer is the documents' while a screen is shown, a document holds a press, or it
+// is over an element that takes it.
 bool UIShellClass::Pointer_Owned(void) const
 {
 	return(!Modals.empty() || Input.Has_UI_Mouse() || (MouseInside && Context->IsMouseInteracting()));
@@ -1645,7 +1645,7 @@ bool UIShellClass::Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam,
 			break;
 	}
 
-	// A shown screen takes every mouse and key message, as a visible legacy dialog does.
+	// A shown screen takes every mouse and key message, as a visible Win32 dialog did.
 	if (!Modals.empty() && Input_Message(message)) {
 		consumed = true;
 	}

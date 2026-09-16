@@ -55,8 +55,6 @@
 	margin-top: 12dp;
 }
 
-/* A caption is drawn from the top of its box, however tall the template makes the box. */
-/* A right-aligned run ends a pixel further from the edge in the original, hence the pad. */
 .row > .caption
 {
 	width: 105dp;

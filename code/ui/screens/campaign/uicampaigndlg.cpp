@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the campaign chooser: the campaigns it offers and the entry
-// Choose_Campaign calls. The presenter and view live in uicampaign.cpp so that the test
-// harness can drive them without the engine.
+// Choose_Campaign calls.
 
 #include "ui/screens/campaign/uicampaign.h"
 

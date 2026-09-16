@@ -7,9 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The engine side of the network lobbies: what the wire holds, what the player's answers do
-// to the session, and the pass the game runs under the screen. The presenters and the views
-// live in uinetlobby.cpp so that the test harness can drive them without the engine.
+// The engine side of the network lobbies: what the wire holds, what the player's answers do to
+// the session, and the pass the game runs under the screen.
 
 #include "ui/screens/netlobby/uinetlobby.h"
 

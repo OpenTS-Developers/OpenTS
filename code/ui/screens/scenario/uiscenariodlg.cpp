@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the multiplayer map dialog: the missions the machine holds, the picture
-// of the highlighted one, and the generator it raises over itself. The presenter and the view
-// live in uiscenario.cpp so that the test harness can drive them without the engine.
+// of the highlighted one, and the generator it raises over itself.
 
 #include "ui/screens/scenario/uiscenario.h"
 

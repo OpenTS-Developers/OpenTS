@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the wait box: the class the save, load and progress code shows while it
-// works. The presenter and view live in uiwaitbox.cpp so that the test harness can drive them
-// without the engine.
+// works.
 
 #include "ui/screens/waitbox/uiwaitbox.h"
 

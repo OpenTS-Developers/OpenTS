@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the game controls: the service the presenter drives and the state it
-// starts from. The presenter lives in uigamectrl.cpp so that the test harness can drive it
-// against a recording service.
+// starts from.
 
 #include "ui/screens/gamectrl/uigamectrl.h"
 

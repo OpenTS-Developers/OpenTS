@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the version screen: the lines it shows and the entry Version_Dialog
-// calls. The presenter and view live in uiversion.cpp so that the test harness can drive
-// them without the engine.
+// calls.
 
 #include "ui/screens/version/uiversion.h"
 

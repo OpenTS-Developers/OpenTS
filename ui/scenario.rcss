@@ -19,10 +19,6 @@
 	padding: 19dp 32dp 0 33dp;
 }
 
-/*
- * A centered caption sits a pixel left of the middle when the room left over is odd: the
- * layer halves it in whole pixels where the toolkit rounds a half up.
- */
 #title
 {
 	width: 472dp;

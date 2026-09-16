@@ -7,9 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The engine side of the options menu: the state it starts from and the entry the menu
-// driver calls. The presenter and view live in uimainopt.cpp so that the test harness can
-// drive them without the engine.
+// The engine side of the options menu: the state it starts from and the entry the menu driver
+// calls.
 
 #include "ui/screens/mainopt/uimainopt.h"
 

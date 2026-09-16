@@ -111,7 +111,6 @@ class UIKeyboardPresenterClass : public UIPresenterClass
 // it.
 std::unique_ptr<UIViewClass> UI_Keyboard_View(UIKeyboardPresenterClass & presenter);
 
-// The game's service and the state of the hotkey table.
 UIKeyboardServiceClass & UI_Keyboard_Service(void);
 void UI_Keyboard_State(UIKeyboardState & state);
 

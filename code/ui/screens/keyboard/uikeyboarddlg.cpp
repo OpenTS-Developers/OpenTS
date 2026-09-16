@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the keyboard dialog: the service the presenter drives and the state it
-// starts from. The presenter lives in uikeyboard.cpp so that the test harness can drive it
-// against a recording service.
+// starts from.
 
 #include "ui/screens/keyboard/uikeyboard.h"
 

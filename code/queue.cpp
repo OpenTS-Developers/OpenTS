@@ -2035,28 +2035,6 @@ static int Can_Advance(ConnManClass *net, int max_ahead, FrameSyncStruct *their,
 }	// end of Can_Advance
 
 
-/***************************************************************************
- * Process_Reconnect_Dialog -- processes the reconnection dialog           *
- *                                                                         *
- * This routine [re]draws the reconnection dialog; if 'reconn' is set,     *
- * it tells the user who we're trying to reconnect to; otherwise, is just  *
- * says something generic like "Waiting for connections".                  *
- *                                                                         *
- * INPUT:                                                                  *
- *      timeout_timer   ptr to count down timer, showing time remaining    *
- *      their_frame      array of other players' frame #'s                 *
- *      num_conn         # connections in 'their_frame'                    *
- *      reconn         1 = reconnect, 0 = waiting for first-time connection*
- *      fresh            1 = draw from scratch, 0 = only update time counter*
- *                                                                         *
- * OUTPUT:                                                                 *
- *      1 = user wants to cancel, 0 = not                                  *
- *                                                                         *
- * WARNINGS:                                                               *
- *                                                                         *
- * HISTORY:                                                                *
- *   11/21/1995 BRR : Created.                                             *
- *=========================================================================*/
 /// <summary>
 /// Prints a line on the frame-sync notice.
 /// </summary>
@@ -2107,6 +2085,28 @@ static UIReconnectState Reconnect_Notice(FrameSyncStruct * their, int num_conn, 
 }
 
 
+/***************************************************************************
+ * Process_Reconnect_Dialog -- processes the reconnection dialog           *
+ *                                                                         *
+ * This routine [re]draws the reconnection dialog; if 'reconn' is set,     *
+ * it tells the user who we're trying to reconnect to; otherwise, is just  *
+ * says something generic like "Waiting for connections".                  *
+ *                                                                         *
+ * INPUT:                                                                  *
+ *      timeout_timer   ptr to count down timer, showing time remaining    *
+ *      their_frame      array of other players' frame #'s                 *
+ *      num_conn         # connections in 'their_frame'                    *
+ *      reconn         1 = reconnect, 0 = waiting for first-time connection*
+ *      fresh            1 = draw from scratch, 0 = only update time counter*
+ *                                                                         *
+ * OUTPUT:                                                                 *
+ *      1 = user wants to cancel, 0 = not                                  *
+ *                                                                         *
+ * WARNINGS:                                                               *
+ *                                                                         *
+ * HISTORY:                                                                *
+ *   11/21/1995 BRR : Created.                                             *
+ *=========================================================================*/
 static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_timer,
 	FrameSyncStruct *their, int num_conn, int reconn, int fresh,
 	BasicTimerClass<SystemTimerClass> *timer)

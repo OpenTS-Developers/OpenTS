@@ -8,8 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the display options: the service the presenter drives and the state it
-// starts from. The presenters live in uidisplay.cpp so that the test harness can drive them
-// against a recording service and a hand-driven clock.
+// starts from.
 
 #include "ui/screens/display/uidisplay.h"
 

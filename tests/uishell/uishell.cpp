@@ -1295,8 +1295,6 @@ void Test_Game_Controls_Presenter(void)
 }
 
 
-// The shell resolves [[TXT_NAME]] through the generated table, so a name a document uses
-// must exist there.
 // Holds the generator's settings the way the engine does: a reading written past its bound
 // comes back as the bound.
 class RecordingMapGenServiceClass : public UIMapGenServiceClass
@@ -1361,6 +1359,8 @@ void Test_Reconnect_Presenter(void)
 }
 
 
+// The shell resolves [[TXT_NAME]] through the generated table, so a name a document uses
+// must exist there.
 void Test_Strings(void)
 {
 	int entries = (int)(sizeof(OpenTSStringNames) / sizeof(OpenTSStringNames[0]));

@@ -88,7 +88,6 @@ class UISoundPresenterClass : public UIPresenterClass
 // The RmlUi view over a sound presenter, bound to sound.rml. The presenter must outlive it.
 std::unique_ptr<UIViewClass> UI_Sound_View(UISoundPresenterClass & presenter);
 
-// The game's service and the state of the running game.
 UISoundServiceClass & UI_Sound_Service(void);
 void UI_Sound_State(UISoundState & state);
 

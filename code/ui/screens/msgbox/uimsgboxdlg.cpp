@@ -7,9 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The engine side of the message box screen: the entry WWMessageBox::Process calls. The
-// presenter and view live in uimsgbox.cpp so that the test harness can drive them without
-// the engine.
+// The engine side of the message box screen: the entry WWMessageBox::Process calls.
 
 #include "ui/screens/msgbox/uimsgbox.h"
 

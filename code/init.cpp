@@ -2867,21 +2867,6 @@ void Version_Dialog(void)
 }
 
 
-/***************************************************************************
- * Main_Menu -- Menu processing                                            *
- *                                                                         *
- * INPUT:                                                                  *
- *      none.                                                              *
- *                                                                         *
- * OUTPUT:                                                                 *
- *      index of item selected, -1 if time out                             *
- *                                                                         *
- * WARNINGS:                                                               *
- *      none.                                                              *
- *                                                                         *
- * HISTORY:                                                                *
- *   05/17/1995 BRR : Created.                                             *
- *=========================================================================*/
 // What a key pressed over the main menu answered with, which the menu reads once its screen
 // has closed; the dialog's own loop wrote its result straight into the caller's.
 static int MainMenuKeyResult = SEL_NONE;
@@ -2917,6 +2902,21 @@ static bool Main_Menu_Keys(void)
 }
 
 
+/***************************************************************************
+ * Main_Menu -- Menu processing                                            *
+ *                                                                         *
+ * INPUT:                                                                  *
+ *      none.                                                              *
+ *                                                                         *
+ * OUTPUT:                                                                 *
+ *      index of item selected, -1 if time out                             *
+ *                                                                         *
+ * WARNINGS:                                                               *
+ *      none.                                                              *
+ *                                                                         *
+ * HISTORY:                                                                *
+ *   05/17/1995 BRR : Created.                                             *
+ *=========================================================================*/
 int Main_Menu(unsigned int timeout)
 {
 	int retval = SEL_NONE;

@@ -112,7 +112,7 @@
 	background-color: #70ff00;
 }
 
-/* --------------------------------------- candidate B: the countdown shares the button row */
+/* ------------------------------- the countdown row, which the two decisions give up for it */
 
 #players { height: 127dp; }
 #chat { top: 196dp; height: 127dp; }

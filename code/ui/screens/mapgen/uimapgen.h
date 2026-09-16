@@ -143,7 +143,6 @@ class UIMapGenPresenterClass : public UIPresenterClass
 // outlive it.
 std::unique_ptr<UIViewClass> UI_Map_Generator_View(UIMapGenPresenterClass & presenter);
 
-// The generator's own service.
 UIMapGenServiceClass & UI_Map_Generator_Service(void);
 
 // Runs the generator, reopening it around anything it raises. Returns whether the player took

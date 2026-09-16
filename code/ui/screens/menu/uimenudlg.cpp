@@ -7,9 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The engine side of the button menus over the title screen: where they sit and the entry
-// each menu driver calls. The presenter and view live in uimenu.cpp so that the test harness
-// can drive them without the engine.
+// The engine side of the button menus over the title screen: where they sit and the entry each
+// menu driver calls.
 
 #include "ui/screens/menu/uimenu.h"
 
