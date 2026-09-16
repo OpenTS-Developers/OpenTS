@@ -177,6 +177,32 @@ static void Check_For_Focus_Loss(void)
 
 bool InMainLoop = false;
 
+
+static void Finish_Decided_Game(void)
+{
+	Unlock_Scenario_Input();
+
+	if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
+		if (WestwoodOnline_Tournament) {
+			Session.SawGameCompletion = true;
+		}
+		Register_Game_End_Time();
+		Send_Statistics_Packet();
+	}
+
+	bool const won = PlayerWins;
+	PlayerWins = false;
+	PlayerLoses = false;
+	PlayerRestarts = false;
+	PlayerAborts = false;
+	if (won) {
+		Do_Win();
+	} else {
+		Do_Lose();
+	}
+}
+
+
 /***********************************************************************************************
  * Main_Loop -- This is the main game loop (as a single loop).                                 *
  *                                                                                             *
@@ -201,6 +227,16 @@ bool Main_Loop(void)
 	//Mono_Set_Cursor(0,0);
 
 	if (!GameActive) {return(!GameActive);}
+
+	// A match decided under a screen finishes once the screen has gone, so the score screen
+	// never runs inside another screen's service pass.
+	if (PlayerWins || PlayerLoses) {
+		if (UIShell.Screen_Shown()) {
+			return(true);
+		}
+		Finish_Decided_Game();
+		return(!GameActive);
+	}
 
 	InMainLoop = true;
 
@@ -339,39 +375,17 @@ bool Main_Loop(void)
 
 	bool done = false;
 	if (PlayerWins || PlayerLoses || PlayerRestarts || PlayerAborts) {
-		Unlock_Scenario_Input();
-
-		/*
-		**	Check for player wins or loses according to global event flag.
-		*/
-		if (PlayerWins) {
-			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
-				if (WestwoodOnline_Tournament) {
-					Session.SawGameCompletion = true;
-				}
-				Register_Game_End_Time();
-				Send_Statistics_Packet();		// Player just won.
+		if (PlayerWins || PlayerLoses) {
+			// The screen closes on this answer and the outer loop finishes the match.
+			if (UIShell.Screen_Shown()) {
+				BEnd(BENCH_GAME_FRAME);
+				InMainLoop = false;
+				return(true);
 			}
-			PlayerLoses = false;
-			PlayerWins = false;
-			PlayerRestarts = false;
-			PlayerAborts = false;
-			Do_Win();
+			Finish_Decided_Game();
 			done = true;
-		} else if (PlayerLoses) {
-			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
-				if (WestwoodOnline_Tournament) {
-					Session.SawGameCompletion = true;
-				}
-				Register_Game_End_Time();
-				Send_Statistics_Packet();		// Player just lost.
-			}
-			PlayerWins = false;
-			PlayerLoses = false;
-			PlayerRestarts = false;
-			PlayerAborts = false;
-			Do_Lose();
-			done = true;
+		} else {
+			Unlock_Scenario_Input();
 		}
 	}
 

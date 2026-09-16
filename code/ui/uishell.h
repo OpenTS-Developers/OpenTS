@@ -59,11 +59,6 @@ class UIShellClass
 		// screens.
 		bool Screen_Shown(void) const;
 
-		// Settles every shown screen as though the session ended and takes its document off
-		// the frame, for a caller about to draw a presentation of its own over the whole of
-		// it. Each screen's runner tears it down when the caller hands control back.
-		void End_Screens(void);
-
 		// Advances what the shown screen looks like: its opening band, its layout and one
 		// present. It executes nothing the player asked for, so a game wait can spend its
 		// idle time here without the screen acting from inside that wait.

@@ -604,11 +604,14 @@ there advances only what the screen looks like: the band, the layout and one
 present. It drains no intents, so a press still waits for the runner rather than
 executing engine work from inside a packet wait.
 
-The game also takes a screen down itself where a presentation of its own is
-about to fill the frame. `Do_Win` and `Do_Lose` call `End_Screens`, because the
-score screen runs its own loop inside the service pass of whatever screen is up,
-which would otherwise leave that screen frozen part-opened over it with its
-presses queued and nobody to execute them.
+A match decided while a screen is up is not finished under it. `Main_Loop` sees
+the win or loss flag with a screen shown, runs nothing further and answers that
+the game ended; every runner on the stack closes on that answer, one per pass,
+and the outer game loop's next `Main_Loop` call finds the flags still set and
+runs `Do_Win` or `Do_Lose` before any further frame. The score screen and the
+movie therefore never run inside a service pass, where the shown screen would
+hold the mouse and key messages they poll for. The `-TIME=` tournament score
+screen is the one presentation still drawn from inside a frame.
 
 Teardown order: mark the screen closing and invalidate its token, then drop
 focus and capture and discard its intents, then detach listeners and data

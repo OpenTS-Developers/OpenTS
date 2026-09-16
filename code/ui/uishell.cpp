@@ -768,28 +768,6 @@ bool UIShellClass::Screen_Shown(void) const
 }
 
 
-// The game ends under a screen when the player opens the menu as the match is settled: the
-// score screen then runs inside the screen's own service pass, and nothing drains its intents
-// or advances its reveal until that screen is done. Taking the documents down here leaves the
-// presentation the caller is about to draw alone on the frame.
-void UIShellClass::End_Screens(void)
-{
-	if (Modals.empty()) {
-		return;
-	}
-
-	for (UIViewClass * view : Modals) {
-		if (!view->Presenter().Result.has_value()) {
-			view->Presenter().Result = UI_RESULT_SESSION_ENDED;
-		}
-		view->Presenter().Discard();
-		view->Hide();
-	}
-
-	Log("UI: %d screen(s) taken down; the game ended under them\n", (int)Modals.size());
-	Host.Mark_Overlay_Dirty();
-}
-
 
 UIViewClass * UIShellClass::Modal(void) const
 {

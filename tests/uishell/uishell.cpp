@@ -3579,6 +3579,27 @@ void Test_Shell(void)
 	}
 
 	{
+		// The game answers that it ended on every pass until no screen is shown, so a nested
+		// stack unwinds one runner a pass.
+		UIVersionPresenterClass outer({ "outer" });
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		int outerPasses = 0;
+		std::optional<UIResult> inner;
+		UIResult result = shell.Run_Modal(*outerview, [&](void) {
+			outerPasses++;
+			if (outerPasses == 1) {
+				UIMessageBoxPresenterClass presenter("inner", { "OK" }, 0);
+				std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+				inner = shell.Run_Modal(*view, [](void) { return(true); });
+				return(false);
+			}
+			return(true);
+		});
+		Check(inner.has_value() && *inner == UI_RESULT_SESSION_ENDED && result == UI_RESULT_SESSION_ENDED && outerPasses == 2, "a game ending under a nested screen closes each runner on its next pass");
+		Check(!shell.Screen_Shown() && !Send(shell, WM_KEYDOWN, VK_SPACE), "and leaves nothing shown to take the score screen's key");
+	}
+
+	{
 		UIVersionPresenterClass presenter({ "resize" });
 		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
 		int passes = 0;
