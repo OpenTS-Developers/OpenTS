@@ -3894,7 +3894,7 @@ void Test_Shell(void)
 					return(innerpasses >= 4);
 				}, true);
 				shownafter = outerview->Is_Shown();
-				stillopen = outerview->Reveal_Width() == 0.0f || !shell.Revealing_Shown();
+				stillopen = !Rml(*outerview).Document()->IsClassSet("revealing") && !shell.Revealing_Shown();
 			}
 			if (passes == 2) {
 				Send(shell, WM_KEYDOWN, VK_RETURN);
@@ -4102,6 +4102,51 @@ void Test_Shell(void)
 	}
 
 	{
+		// A button held as the window goes away is not one the player pressed, and the question
+		// behind it may be a deletion. The window takes the press two ways, and neither answers.
+		for (int loss = 0; loss < 2; loss++) {
+			UIMessageBoxPresenterClass presenter("Delete it?", { "Yes", "No", "" }, 1);
+			std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+			int passes = 0;
+			bool held = false;
+			bool quiet = false;
+
+			shell.Run_Modal(*view, [&](void) {
+				passes++;
+				Rml::ElementList buttons;
+				Rml(*view).Document()->GetElementsByTagName(buttons, "button");
+				if (buttons.empty()) {
+					return(true);
+				}
+				LPARAM at = Element_Point(host, buttons[0]);
+
+				if (passes == 2) {
+					Send(shell, WM_MOUSEMOVE, 0, at);
+					host.Down[VK_LBUTTON] = true;
+					Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+					held = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML;
+
+					host.Down[VK_LBUTTON] = false;
+					if (loss == 0) {
+						Send(shell, WM_ACTIVATEAPP, 0, 0);
+						Send(shell, WM_ACTIVATEAPP, 1, 0);
+					} else {
+						Send(shell, WM_CAPTURECHANGED, 0, (LPARAM)1);
+					}
+				}
+				if (passes == 3) {
+					quiet = !presenter.Result.has_value() && !presenter.Has_Pending();
+					Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				}
+				return(false);
+			});
+
+			Check(held, loss == 0 ? "a press on the question's first button is the document's" : "and again for the capture being taken back");
+			Check(quiet, loss == 0 ? "losing the application over a held button answers nothing" : "and neither does the capture going");
+		}
+	}
+
+	{
 		// A press has to land on the button under it, wherever the menu sits in the frame, and
 		// a button the presenter refuses answers nothing without closing the screen.
 		UIMainOptionsState state;
@@ -4225,6 +4270,64 @@ void Test_Shell(void)
 		Check(chromewidth == 300.0f, "so the screen is uncovered rather than squeezed out to its full width");
 		Check(opened >= 300.0f && waited >= 250 && waited < 1000, "and the band has let the whole of it out in the quarter second the schedule takes");
 		Check(host.Samples.size() == played + 1 && host.Samples.back() == "EMBLEM.AUD", "opening it sounds once, as the dialog layer sounds it");
+	}
+
+	{
+		// One band at a time: a screen raised over one still opening puts that one out whole
+		// first, or it is left behind a band nothing will finish.
+		for (int hide = 0; hide < 2; hide++) {
+			UIVersionPresenterClass outer({ "opening" });
+			UIMessageBoxPresenterClass inner("Over it", { "OK", "", "" }, 0);
+			std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+			std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+			int passes = 0;
+			bool opening = false;
+			bool whole = false;
+			bool stayed = false;
+
+			host.Animate = true;
+			shell.Run_Modal(*outerview, [&](void) {
+				passes++;
+				Rml::ElementDocument * document = Rml(*outerview).Document();
+				Rml::Element * dialog = document->GetElementById("reveal");
+				if (dialog == nullptr) {
+					return(true);
+				}
+
+				// The band clips the screen, so it has to come back to the width of the chrome it
+				// uncovers, not merely lose the class that draws its edges.
+				Rml::Element * chrome = document->GetElementById("chrome");
+				auto uncovered = [&](void) {
+					return(!document->IsClassSet("revealing") && chrome != nullptr && dialog->GetBox().GetSize().x >= chrome->GetBox().GetSize().x);
+				};
+
+				if (passes == 1) {
+					opening = shell.Revealing_Shown() && !uncovered();
+
+					// Answered before its own band is out, so the shell is still opening one as it
+					// closes.
+					int innerpasses = 0;
+					shell.Run_Modal(*innerview, [&](void) {
+						innerpasses++;
+						if (innerpasses == 1) {
+							Send(shell, WM_KEYDOWN, VK_RETURN);
+						}
+						return(false);
+					}, hide != 0);
+					whole = uncovered();
+				}
+				if (passes == 3) {
+					stayed = uncovered();
+					Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				}
+				return(false);
+			});
+			host.Animate = false;
+
+			Check(opening, hide == 0 ? "a screen still behind its band can have another raised over it" : "and can have one raised that hides it");
+			Check(whole, hide == 0 ? "which puts the screen underneath out whole" : "and so does one that hid it");
+			Check(stayed, hide == 0 ? "and leaves it out once the band it took is gone" : "and leaves a hidden one out when it comes back");
+		}
 	}
 
 	{

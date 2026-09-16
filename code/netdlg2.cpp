@@ -243,14 +243,16 @@ void Net2Request_House_And_Color(int house, int color)
 /// has heard from.</remarks>
 void Net2Send_Chat(char const * text)
 {
-	PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, text);
-
 	GlobalPacketType gpacket;
 	memset(&gpacket, 0, sizeof(gpacket));
 
 	gpacket.Command = NET_MESSAGE;
 	strcpy(gpacket.Name, Session.Handle);
 	UTF8::Copy(gpacket.Message.Buf, sizeof(gpacket.Message.Buf), text);
+
+	// Shown from the packet, so this machine reads the line the others were sent.
+	PMessagePrintf(ColorMe, "[%s] %s", Session.Handle, gpacket.Message.Buf);
+
 	gpacket.Message.Color = Session.ColorIdx;
 	gpacket.Message.NameCRC = Compute_Name_CRC(Session.GameName);
 
@@ -1706,7 +1708,7 @@ static void Get_Join_Responses(void)
 									Session.GPacket.Name);
 								Sound_Effect(Rule->GameClosed);
 							}
-							PMessagePrintf(ColorSystem, txt);
+							PMessagePrintf(ColorSystem, "%s", txt);
 						}
 					}
 					break;
@@ -1747,7 +1749,7 @@ static void Get_Join_Responses(void)
 				if (Session.GPacket.GameInfo.IsOpen && JoinState < JOIN_CONFIRMED) {
 					snprintf(txt, sizeof(txt), Fetch_String(TXT_S_FORMED_NEW_GAME),
 						Session.GPacket.Name);
-					PMessagePrintf(ColorSystem, txt);
+					PMessagePrintf(ColorSystem, "%s", txt);
 					Sound_Effect(Rule->GameForming);
 				}
 

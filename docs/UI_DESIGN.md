@@ -947,6 +947,11 @@ says nothing about the reveal beyond its own size. A document opts out with `rev
 on its body, and the harness host never animates except in the test that
 watches the band.
 
+One screen opens at a time. Only the screen a band belongs to can finish it, so a
+screen raised over one still opening puts that one out whole first and takes the
+band with it when it closes. The dialogs never interleaved two either: their
+reveal was a loop that ran to its end before anything else was shown.
+
 ### Strings
 
 Engine strings are UTF-8 through the process active code page declared in

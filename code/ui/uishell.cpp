@@ -353,6 +353,11 @@ void UIShellClass::Reconcile_Held_Input(void)
 // their releases stay with the shell wherever they land.
 void UIShellClass::Drop_Presses(void)
 {
+	// RmlUi clicks whatever a release lands on, and a press the window took away is not one
+	// the player finished.
+	Context->ProcessMouseLeave();
+	MouseInside = false;
+
 	for (unsigned button = 0; button < UIInputStateClass::BUTTON_COUNT; button++) {
 		UIInputOwner owner = Input.Mouse_Owner(button);
 		if (owner == UI_INPUT_IMGUI) {
@@ -1293,6 +1298,13 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
 
+	// Only the screen a band belongs to can finish it, so one still opening is put out whole
+	// before this one takes the band over.
+	if (Revealing && !Modals.empty()) {
+		Modals.back()->Reveal_Done();
+		Revealing = false;
+	}
+
 	RevealShown = 0.0f;
 	RevealStart = Clock().Milliseconds();
 	Ensure_Dialog_Font();
@@ -1408,6 +1420,11 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		Modals.pop_back();
 		Services.pop_back();
 	}
+
+	// The band goes with the screen, finished or not, or the one underneath opens the rest
+	// of the way on this one's measurements.
+	Revealing = false;
+	RevealShown = 0.0f;
 	Uncover(covered);
 	ModalClosing = false;
 
@@ -1434,10 +1451,7 @@ void UIShellClass::Uncover(UIViewClass * covered)
 		return;
 	}
 
-	// The reveal state belongs to the screen that has just closed, and a screen that was
-	// already open does not open again.
-	Revealing = false;
-	RevealShown = 0.0f;
+	// A screen that was already open does not open again.
 	covered->Show(true);
 }
 

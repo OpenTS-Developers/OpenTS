@@ -132,8 +132,11 @@ void __cdecl PMessagePrintf(int color, const char * fmt, ...)
 	memset(buffer, 0, sizeof(buffer));
 
 	va_start(va, fmt);
-	vsprintf(buffer, fmt, va);
+	vsnprintf(buffer, sizeof(buffer), fmt, va);
 	va_end(va);
+
+	// A line that did not fit is cut on a sequence boundary, so what is kept still draws.
+	buffer[UTF8::Boundary_Before(buffer, sizeof(buffer) - 1)] = '\0';
 
 	if (_ChatLog.size() >= 500) {
 		_ChatLog.erase(_ChatLog.begin());
