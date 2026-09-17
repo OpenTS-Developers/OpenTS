@@ -137,7 +137,7 @@ void CreditClass::Graphic_Logic(bool forced)
 				Fancy_Text_Print(TXT_TIME_FORMAT_NO_HOURS, *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), minutes, seconds);
 			}
 		} else {
-			Fancy_Text_Print("%ld", *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), Current);
+			Fancy_Text_Print("%d", *SidebarSurface, SidebarSurface->Get_Rect(), Point2D(xx, 0), ColorSchemes[0], TBLACK, TextPrintType(TPF_USE_GRAD_PAL|TPF_CENTER|TPF_METAL12), Current);
 		}
 
 		if (Scen->MissionTimer.Is_Active()) {

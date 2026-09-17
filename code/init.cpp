@@ -205,6 +205,7 @@
 #include <dos.h>
 #include <string>
 #include <unordered_set>
+#include <string>
 #include <vector>
 
 extern VoxelDataStruct DropPodVoxel;
