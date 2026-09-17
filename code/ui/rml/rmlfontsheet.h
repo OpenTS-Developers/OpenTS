@@ -38,7 +38,7 @@ struct UISheetFontMetrics
 
 
 // The coverage a pixel of the alpha sheet carries. The sheet is read through the red gun of
-// its own palette, as the dialog layer reads it.
+// its palette, as the dialog layer reads it.
 std::uint8_t UI_Sheet_Font_Coverage(UIImageIndexed const & alpha, int x, int y);
 
 // Measures a font from its alpha sheet. False when the sheet holds no inked cell to measure.
@@ -49,7 +49,7 @@ bool UI_Sheet_Font_Metrics(UIImageIndexed const & alpha, UISheetFontMetrics & me
 // is the one after it, because the sheets start with a cell the font does not draw.
 bool UI_Sheet_Font_Cell(UISheetFontMetrics const & metrics, UIImageIndexed const & alpha, int character, int & x, int & y);
 
-// The 256 colors the font's own palette becomes when its text is asked for in one color,
+// The 256 colors the font's palette becomes when its text is asked for in one color,
 // as RGB triples. The shading survives because only the hue is carried over, with the
 // saturation and value of each entry scaled by the color asked for.
 void UI_Sheet_Font_Remap(std::uint8_t const * palette, std::uint8_t red, std::uint8_t green, std::uint8_t blue, std::uint8_t * remapped);

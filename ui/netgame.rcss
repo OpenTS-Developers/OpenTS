@@ -38,7 +38,7 @@
 /* ------------------------------------------------------------------- the player's identity */
 
 /*
- * A combo box is placed rather than flowed, so it carries its frame inside its own size
+ * A combo box is placed rather than flowed, so it carries its frame inside its size
  * instead of hanging it over a margin.
  */
 #side, #color
@@ -85,7 +85,7 @@
 
 /*
  * A row carries the marker for the host or for a player who has accepted, the side's emblem,
- * and the name in that player's own color. The dialog gives each its own column by where it
+ * and the name in that player's color. The dialog gives each its own column by where it
  * starts rather than by how wide it is: the marker five along, the emblem twenty-five and the
  * name forty-five.
  */
@@ -166,7 +166,7 @@
 }
 
 /*
- * This bar is shorter than the field's picture, so the field is the picture's own height and
+ * This bar is shorter than the field's picture, so the field is the picture's height and
  * the border that draws nothing keeps the reading inside the twenty rows the bar's rect has.
  * The bar carries its frame inside its width here rather than over a margin, so the field is
  * pulled back a column to reach the frame it belongs under.
@@ -208,7 +208,7 @@
 }
 
 /*
- * A disabled control is washed half way to black over its own rect, which stops four rows short
+ * A disabled control is washed half way to black over its rect, which stops four rows short
  * of the field's bottom. The wash is a flat gradient listed first, which paints last.
  */
 .guest #settings .trough

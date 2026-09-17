@@ -60,7 +60,7 @@ DesyncDialogClass::OutcomeType DesyncDialogClass::Run(void)
 {
 	DebugString("Out-of-sync dialog opening on frame %d\n", Frame);
 
-	// A raised suspension makes the screen's own pass service the network instead of the game.
+	// A raised suspension makes the screen's pass service the network instead of the game.
 	TacticalActive = false;
 	Session.Suspended++;
 
@@ -160,7 +160,7 @@ void DesyncDialogClass::Say(char const * text)
 
 
 /// <summary>
-/// Runs the pass the dialog's own loop runs, for a screen standing in its place.
+/// Runs the pass the dialog's loop runs, for a screen standing in its place.
 /// </summary>
 /// <returns>True once the session has settled the outcome without this player choosing
 /// it, which is what closes the screen.</returns>

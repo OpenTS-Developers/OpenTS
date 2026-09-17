@@ -42,7 +42,7 @@
 #cap-players { left: 444dp; top: 161dp; }
 
 /*
- * An edit box here is placed rather than flowed, so it carries its frame inside its own size
+ * An edit box here is placed rather than flowed, so it carries its frame inside its size
  * instead of hanging it over a margin, and its text is inset by the frame alone.
  */
 #handle, #say
@@ -61,7 +61,7 @@
 
 /*
  * A chat message is stored whole and broken into lines here, where the layer handed the list
- * box lines it had already broken to the box's own width.
+ * box lines it had already broken to the box's width.
  */
 #chat .line
 {

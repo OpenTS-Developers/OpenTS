@@ -18,7 +18,7 @@
 #include <vector>
 
 
-// A scissor in the target's own pixels, as bgfx takes it.
+// A scissor in the target's pixels, as bgfx takes it.
 struct UIRenderClip
 {
 	std::uint16_t X = 0;

@@ -515,7 +515,7 @@ char32_t UTF8::Windows_Code(unsigned int page, unsigned char byte)
 			if (byte >= 0xA0) {
 				return(byte);
 			}
-			// That table keeps an undefined byte at its own value so text survives a round
+			// That table keeps an undefined byte at its value so text survives a round
 			// trip; a font has nothing to draw for one.
 			char32_t code = Windows_1252_High[byte - 0x80];
 			return((code == byte) ? 0 : code);

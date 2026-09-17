@@ -503,7 +503,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
 
 		// The UI files ship beside the executable, whichever data directory the deployment
-		// names, so they are found through the executable's own directory.
+		// names, so they are found through the executable's directory.
 		std::string uidirectory = path;
 		if (!uidirectory.empty() && uidirectory.back() != '\\' && uidirectory.back() != '/') {
 			uidirectory += '\\';
@@ -582,7 +582,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 			exit(EXIT_FAILURE);
 		}
 
-		// The game runs without the UI shell; its own log says why it stayed off.
+		// The game runs without the UI shell; its log says why it stayed off.
 		UIShell.Init();
 
 		do {

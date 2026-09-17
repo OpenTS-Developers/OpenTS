@@ -14,7 +14,7 @@ The `ui` directory beside the executable holds the RmlUi documents (`.rml`), the
 
 ## The dialog kit
 
-`kit.rcss` styles the controls the way the game's own dialogs draw them, and `dialog.rml` is the frame around a screen: the wallpaper, the side bars and the glow. A document links the kit first and its own style sheet after, so its own sheet only says where things go. The pictures are the game's own interface art, read from its mix files; where a picture is missing, the control keeps a plain fill in its place. Every size in the kit is in `dp`, so a screen matches the original dialog at the game's native size and scales with the frame.
+`kit.rcss` styles the controls the way the game's dialogs draw them, and `dialog.rml` is the frame around a screen: the wallpaper, the side bars and the glow. A document links the kit first and its own style sheet after, so its own sheet only says where things go. The pictures are the game's interface art, read from its mix files; where a picture is missing, the control keeps a plain fill in its place. Every size in the kit is in `dp`, so a screen matches the original dialog at the game's native size and scales with the frame.
 
 A screen opens the way the original dialogs did: it slides out from the middle behind a pair of side bars, with the dialog sound once as it starts. A document that should open at once puts `reveal="none"` on its body.
 

@@ -295,7 +295,7 @@ class UIRasterFaceClass
 		}
 
 		// The strike laid out in rows one strike tall, in the order its characters come.
-		// White with the glyph's coverage, already multiplied in, so a quad's own color is
+		// White with the glyph's coverage, already multiplied in, so a quad's color is
 		// what the text comes out.
 		Rml::Texture Atlas(Rml::RenderManager & manager)
 		{
@@ -538,7 +538,7 @@ Rml::FontFaceHandle UIFontEngineClass::GetFontFaceHandle(Rml::String const & fam
 {
 	RasterFamily const * raster = UseStrikes ? Find_Raster_Family(family) : nullptr;
 	if (raster != nullptr) {
-		// The document names the height of the strike it wants, so the frame's own scaling
+		// The document names the height of the strike it wants, so the frame's scaling
 		// is divided back out before the strikes are searched and multiplied back in after.
 		float wanted = (float)size / Reference;
 		UIRasterStrike const * chosen = &raster->Strikes[0];

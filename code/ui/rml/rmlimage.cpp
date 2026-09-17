@@ -82,7 +82,7 @@ bool UI_Decode_PCX(std::span<std::uint8_t const> encoded, UIImageIndexed & image
 			}
 
 			// A row is padded to an even length and a run may reach into that padding, so
-			// what falls past the picture's own width is counted and dropped. The row holds
+			// what falls past the picture's width is counted and dropped. The row holds
 			// exactly that many bytes, so this bound is also what keeps a padded run inside
 			// the picture.
 			for (int step = 0; step < count && produced + step < width; step++) {
@@ -209,7 +209,7 @@ bool UI_Scale_RGBA_Nearest(std::span<std::uint8_t const> pixels, int width, int 
 
 	result.resize((std::size_t)destwidth * (std::size_t)destheight * 4);
 
-	// Each destination pixel takes the source pixel under its own middle, which is where
+	// Each destination pixel takes the source pixel under its middle, which is where
 	// GDI's stretch lands when it drops and repeats rows and columns.
 	for (int y = 0; y < destheight; y++) {
 		int row = (int)(((std::int64_t)y * 2 + 1) * (std::int64_t)height / ((std::int64_t)destheight * 2));

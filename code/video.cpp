@@ -63,7 +63,7 @@ static unsigned int _PresentsLastSecond = 0;
 static unsigned int _PresentSecondStart = 0;
 
 // Presents can nest, because a dialog repainting itself presents from inside the paint
-// that the engine's own present provoked. A resize that arrives inside one waits for it.
+// that the engine's present provoked. A resize that arrives inside one waits for it.
 static bool _Presenting = false;
 static bool _ResizePending = false;
 static int _PendingWidth = 0;

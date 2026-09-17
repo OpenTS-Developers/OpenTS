@@ -57,7 +57,7 @@ void UIDesyncPresenterClass::Execute(UIIntent const & intent)
 
 
 // The session settles the decision for everyone once one player has made it, so the screen
-// closes on that as well as on a button, the way the dialog's own loop ended.
+// closes on that as well as on a button, the way the dialog's loop ended.
 void UIDesyncPresenterClass::Refresh(void)
 {
 	bool host = State.Host;

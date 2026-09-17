@@ -96,8 +96,8 @@
 
 /*
  * A row is three cells the layer drew at fixed places across the list: the description at
- * the row's own indent, then the date and the time. Each keeps its place whatever the one
- * before it holds, as the layer's own cells did, so they are placed rather than flowed. A
+ * the row's indent, then the date and the time. Each keeps its place whatever the one
+ * before it holds, as the layer's cells did, so they are placed rather than flowed. A
  * placed cell starts from the row's edge rather than inside its padding, so these are the
  * positions the layer used, counted from the inside of the list's frame.
  */

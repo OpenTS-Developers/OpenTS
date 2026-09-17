@@ -46,8 +46,8 @@ lands in the physical client area.
 
 Input reaches the game one way. `MainWindow` is the only window, so
 `Windows_Procedure` sees every message: it maps a mouse position into the
-frame's own pixels where the frame is drawn scaled, then offers the message to
-the shell's hook, then to `Map.Message_Handler`, then to its own switch, then
+frame's pixels where the frame is drawn scaled, then offers the message to
+the shell's hook, then to `Map.Message_Handler`, then to its switch, then
 to `Keyboard->Message_Handler`, which packs keys and mouse buttons with their
 position into the `KN_` queue. Gadgets poll that queue in
 `GadgetClass::Input`; `WWKeyboardClass::Down` reads `GetAsyncKeyState`, so
@@ -252,11 +252,11 @@ methods, plus `SetTransform`, `EnableClipMask`, and `RenderToClipMask`:
 | Capability | Behavior |
 | --- | --- |
 | Compiled geometry | Static vertex and index buffers, since RmlUi 6 compiles geometry once and re-submits it; order preserved; released on request; never dependent on transient memory from a previous frame. Indices are checked against the vertex count and sizes are checked before the copy; without 32-bit indices, a fragment over 65536 vertices is refused rather than truncated. |
-| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string. Each edge is at most the smaller of the device limit and 4096, and a source must hold exactly width times height times four bytes. A document's textures wrap rather than clamp, which is what the tiled decorators repeat through, and are sampled with the filter the frame underneath was magnified by. RmlUi keeps a one-pixel gutter around every glyph, so text is unaffected; a magnified image's outer edge blends half a texel of its opposite edge, as RmlUi's own GL3 backend does. Dear ImGui's atlas keeps its clamp. |
+| Textures | RGBA8, premultiplied alpha as the interface specifies, created and released explicitly, cached by source string. Each edge is at most the smaller of the device limit and 4096, and a source must hold exactly width times height times four bytes. A document's textures wrap rather than clamp, which is what the tiled decorators repeat through, and are sampled with the filter the frame underneath was magnified by. RmlUi keeps a one-pixel gutter around every glyph, so text is unaffected; a magnified image's outer edge blends half a texel of its opposite edge, as RmlUi's GL3 backend does. Dear ImGui's atlas keeps its clamp. |
 | Blending | `ONE, INV_SRC_ALPHA`; vertex colors follow the same premultiplied contract with no double premultiplication. |
 | Scissor | `bgfx::setScissor` in physical target coordinates, rounded outward to whole pixels, intersected with the viewport, empty regions handled. |
-| Transform | RmlUi's matrix and bgfx's are both four columns with the translation last, so the sixteen floats pass between them untouched; each draw submits the transform applied to the fragment's own translation. RmlUi sends none until a document has one and dedupes identity, so an untransformed document never reaches it. The view projection is unchanged, and its zero-to-thousand depth range clips a three-dimensional transform that pushes a vertex behind the near plane; a two-dimensional one keeps every vertex at zero. |
-| Clip mask | The back buffer's own stencil, which bgfx attaches unless a caller asks for a depth-only format. A mask that starts over writes zero through a view-sized shape first, because bgfx clears a view only before its first draw, then writes one under the geometry with nothing reaching the color buffer; a narrowing mask counts up instead, and the draws that follow pass where the stencil equals what the last mask left. An inverted mask writes the same shape and tests against the untouched target. Every test carries a read mask, since bgfx reads none by default and an equality test against nothing passes everywhere. |
+| Transform | RmlUi's matrix and bgfx's are both four columns with the translation last, so the sixteen floats pass between them untouched; each draw submits the transform applied to the fragment's translation. RmlUi sends none until a document has one and dedupes identity, so an untransformed document never reaches it. The view projection is unchanged, and its zero-to-thousand depth range clips a three-dimensional transform that pushes a vertex behind the near plane; a two-dimensional one keeps every vertex at zero. |
+| Clip mask | The back buffer's stencil, which bgfx attaches unless a caller asks for a depth-only format. A mask that starts over writes zero through a view-sized shape first, because bgfx clears a view only before its first draw, then writes one under the geometry with nothing reaching the color buffer; a narrowing mask counts up instead, and the draws that follow pass where the stencil equals what the last mask left. An inverted mask writes the same shape and tests against the untouched target. Every test carries a read mask, since bgfx reads none by default and an equality test against nothing passes everywhere. |
 | Limits | 64 MiB per geometry or texture, 128 MiB of live geometry and 128 MiB of live textures, two draw calls short of the device's frame limit, and clip masks nested no deeper than the stencil's eight bits count. The first refusal is latched with its reason; the shell clears the latch before preparing a document and reads it after, so a document the renderer could not draw whole opens its Win32 view instead. |
 | Projection | The overlay view's orthographic transform; no game-image filter state inherited. |
 | Reset and resize | Target-dependent resources recreated, viewport and scissor refreshed, a present without an upload requested; existing documents redraw without reload. |
@@ -353,7 +353,7 @@ native and GPU UI are never layered.
 
 The shell gets a hook in `Windows_Procedure` after the frame-pixel mapping and
 before `Map.Message_Handler`. The mapping rewrites a scaled position into the
-frame's own pixels for the game, so the hook receives the position as Windows
+frame's pixels for the game, so the hook receives the position as Windows
 delivered it:
 
 ```cpp
@@ -580,7 +580,7 @@ runner executes the queue before the `Context::Update` that pushes the model
 into the documents, so the push carries what the player just changed. A push
 that lagged behind the queue would write the old level onto a slider, whose
 own change event would then queue that level after the player's. RmlUi gives
-no guarantee about re-entering `Update` from its own event dispatch, so a
+no guarantee about re-entering `Update` from its event dispatch, so a
 nested modal (options opening a message box) starts from the queue, one level
 up, where `Run_Modal` nests cleanly; and the legacy code already works this
 way, `WM_COMMAND` writing `rc` for the driver to act on after the pump. A
@@ -592,7 +592,7 @@ update the context; a nested update or present request is recorded and
 served at the next safe point.
 
 Non-modal documents are updated by a `UIShell.Tick` call in `Main_Loop` next
-to `Map.Input`, and by the modal runner's own pass, so a notice stays alive
+to `Map.Input`, and by the modal runner's pass, so a notice stays alive
 under a screen, and are rendered by every present. A notice a caller shows
 while it works goes through `Show_Modeless`, `Refresh` and `Hide_Modeless`,
 which tick and present at once because such a caller pumps nothing. That present ignores the interval
@@ -657,7 +657,7 @@ and three more decoders along.
 PCX decodes through `rmlimage`, which reads an 8-bit run-length file into
 palette indices and turns those into premultiplied RGBA. Pure magenta is the
 color key the interface art is drawn with, so those pixels come back clear.
-The engine's own `Read_PCX_File` is not reused: it allocates a `BSurface`,
+The engine's `Read_PCX_File` is not reused: it allocates a `BSurface`,
 converts to display-format pixels, and bounds-checks nothing, while a document
 needs RGBA, indices for the bitmap font, and safety against a malformed file.
 Keeping the decoding in a file that knows no toolkit or file system is what
@@ -666,7 +666,7 @@ lets the harness test it over bytes it builds itself, with no art shipped.
 Art the player does not have is told apart from art that is present and will
 not decode. A missing image leaves a clear texture and no latched refusal, so
 a screen missing a decoration still opens; an unreadable one latches as
-before, because that is the document's own fault.
+before, because that is the document's fault.
 
 The art is scaled the way the frame is. The pixel art filter magnifies the
 frame point for point to the next whole multiple of its size and shrinks that
@@ -674,7 +674,7 @@ smoothly to the window, so its pixels stay whole and even at any scale; a
 picture drawn by RmlUi at a fractional scale with a linear sampler would blur
 instead, and with a point sampler would come out with uneven pixels. So the
 host reports that whole multiple as `Art_Magnification`, the renderer keeps
-each loaded picture magnified by it while reporting the picture's own size to
+each loaded picture magnified by it while reporting the picture's size to
 RmlUi, and the sheet font magnifies its atlases the same way, so both are
 sampled smoothly from whole pixels. The factor is one when the frame is drawn
 smoothly or point for point, and a frame that changes it releases every
@@ -692,7 +692,7 @@ every other engine fact reaches a screen, so images have one route rather than
 a second of their own. The element widens a frame surface's five and six bit
 channels by repeating their top bits, places the picture in proportion and
 centered in its box, resamples it there by taking, for each pixel, the one
-under its own middle, which is where the stretch GDI gave the dialog layer
+under its middle, which is where the stretch GDI gave the dialog layer
 landed, and holds it in a callback
 texture, so the release of every texture that follows a change of frame scale
 regenerates it. The picture is not magnified with the rest of the art, because
@@ -717,7 +717,7 @@ by more, since the original blended in sixteen bits.
 
 A document names one of two families, and never a fallback of its own.
 
-`dlgsys` is the dialog art's own bitmap font: a pair of PCX sheets of 256
+`dlgsys` is the dialog art's bitmap font: a pair of PCX sheets of 256
 cells in Windows-1252 order, one naming a color per pixel and one carrying
 coverage, read through `rmlfontsheet`. Its glyphs are shaded rather than flat,
 so asking for text in a color moves the whole palette toward that color
@@ -784,7 +784,7 @@ A strike has one size, so a document names the height of the one it wants: the
 layer asks GDI for a character height of twelve for a list row and fourteen for
 everything else, and GDI answers the first from the thirteen pixel strike and
 the second from the sixteen, so a list row is `font-size: 13dp` and everything
-else `16dp`. The frame's own scaling is divided back out before the strikes are
+else `16dp`. The frame's scaling is divided back out before the strikes are
 searched, so the height a document names is the height that is looked for
 whatever the frame does.
 
@@ -881,7 +881,7 @@ the 540 by 430 of `IDD_DESYNC_HOST` and `IDD_DESYNC_WAIT` the layer cuts the
 players caption and the load button off under the frame and runs the last line
 of prose over the paragraph above it, so the screen is laid out in the 640 by
 391 frame the lobbies and the skirmish setup use, which is wide enough for the
-prose to wrap inside its own column. Two things follow. The prose is four
+prose to wrap inside its column. Two things follow. The prose is four
 paragraphs parted by less than a line rather than four controls at fixed
 places, so the last of them cannot land on the one above it however long a
 translation runs; and the countdown to a load has no row of its own, taking
@@ -901,21 +901,21 @@ other picture is the player's own and is not shipped; each control has a plain
 form underneath, a fill where a picture would be, so a screen stays usable
 without it, and that form is what the harness renders.
 
-The controls carry the drawing code's own metrics, and every rule in
+The controls carry the drawing code's metrics, and every rule in
 `kit.rcss` records the measurement it came from, so the geometry is documented
-beside the CSS rather than here. What reaches a screen's own sheet:
+beside the CSS rather than here. What reaches a screen's sheet:
 
 - `OD_Draw_Rect` draws a frame a pixel outside the control's rect, so a framed
   control is sized to the rect its template gives and its frame hangs over a
   negative margin; a screen spaces one from its neighbour on the neighbour's
   side. A list and a scroll bar are the exception, because the layer insets
-  their rows by the frame and draws it on the rect's own edge, so a list is
+  their rows by the frame and draws it on the rect's edge, so a list is
   its template's rect, frame and all.
 - A track bar shows its value in a fifty wide trough unless the dialog turned
   that off, which the game controls do and the sound options do not, so a
   document puts the trough after the bar and gives the bar the rest. Where a
   template gives its bar fewer rows than the trough's picture has, as the
-  network lobbies do, the trough is placed over the bar's own last fifty
+  network lobbies do, the trough is placed over the bar's last fifty
   columns and sorted behind it, because the layer drew the frame over the
   field rather than beside it.
 - A disabled control takes a half-black wash. A caption cannot take one, since
@@ -955,7 +955,7 @@ content is pinned to the middle of it at the width the screen was laid out at,
 so no control moves as the band widens and input needs no gate; the original's
 queued input reached the same controls after its sleeps. The driver pins it,
 reading that width on the first pass before anything is hidden, so a screen
-says nothing about the reveal beyond its own size. A document opts out with `reveal="none"`
+says nothing about the reveal beyond its size. A document opts out with `reveal="none"`
 on its body, and the harness host never animates except in the test that
 watches the band.
 
@@ -1001,7 +1001,7 @@ follows the sidebar view.
 
 ImGui is vendored as a submodule, compiled into Debug and Release, and
 rendered by a small bgfx adapter in `rml/rmlrender.cpp` that reuses the RmlUi
-renderer's program and view setup, on `VIEW_DEV`, with its own vertex layout
+renderer's program and view setup, on `VIEW_DEV`, with its vertex layout
 and straight-alpha blending, since ImGui's colors are not premultiplied. Its
 geometry travels in transient buffers every frame, and its textures follow the
 pinned version's contract: the renderer answers each create, update, and
@@ -1209,7 +1209,7 @@ and builds `UIShellClass` itself over a host the test controls:
   The mode confirmation runs the same way over a clock the test moves,
   because its result comes from a refresh rather than from an intent.
 - Open the options menu on the dialog kit: the wallpaper's scissor is the
-  menu's own box, the menu and its buttons double at twice the ratio, and
+  menu's box, the menu and its buttons double at twice the ratio, and
   under the modal runner over the real clock the band starts narrow, widens
   by one step a pass at most around content that never moves, ends open, and
   sounds once.
@@ -1297,7 +1297,7 @@ disbands its game, and more than two players; the out-of-sync screen and the
 frame-sync notice under a session that has really gone out of step or stalled,
 which needs the impaired-link rig rather than the key the screen was
 photographed through, and with them the countdown to a load, which no
-photographed run reached; the generator's own save, load and delete; and, for
+photographed run reached; the generator's save, load and delete; and, for
 each screen, what the paragraph above requires of its own change.
 
 ## Documentation

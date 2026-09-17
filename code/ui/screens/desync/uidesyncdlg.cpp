@@ -27,7 +27,7 @@
 #include <cstdio>
 
 
-// The colors the dialog draws a player's standing in, as its own cells carry them.
+// The colors the dialog draws a player's standing in, as its cells carry them.
 static char const * const UI_DESYNC_OK = "#00c800";
 static char const * const UI_DESYNC_OUT = "#c8c800";
 static char const * const UI_DESYNC_LEFT_COLOR = "#c80000";

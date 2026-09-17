@@ -144,7 +144,7 @@ target_include_directories(OpenTS PRIVATE
 # The generated build stamp has to exist before anything compiles.
 add_dependencies(OpenTS OpenTSBuildStamp)
 
-# Only the renderer's own translation unit and the UI overlay renderer see bgfx, so its
+# Only the renderer's translation unit and the UI overlay renderer see bgfx, so its
 # headers and the shaders they embed are put on those files rather than on the whole target.
 set(BGFX_ROOT "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bgfx")
 set(OPENTS_BGFX_SOURCES

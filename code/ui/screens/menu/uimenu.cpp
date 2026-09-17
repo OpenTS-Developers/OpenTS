@@ -96,7 +96,7 @@ class UIMenuViewClass : public UIRmlViewClass
 				&& model.Bind("items", &Data.State.Items));
 		}
 
-		// The template's own shape comes from the class, and the menu sits where the title
+		// The template's shape comes from the class, and the menu sits where the title
 		// screen's buttons were rather than in the middle of the frame.
 		virtual void Loaded(void) override
 		{

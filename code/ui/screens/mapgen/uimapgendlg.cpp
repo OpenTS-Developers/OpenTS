@@ -8,7 +8,7 @@
  ******************************************************************************/
 
 // The engine side of the random map generator: what the screen reads out of the seed the
-// generator keeps, and the entry the generator's own driver calls.
+// generator keeps, and the entry the generator's driver calls.
 
 #include "ui/screens/mapgen/uimapgen.h"
 
@@ -54,7 +54,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 
 			state.Firestorm = Addon_Enabled(ADDON_FIRESTORM);
 
-			// The expansion's own country is offered only where it is enabled, as the
+			// The expansion's country is offered only where it is enabled, as the
 			// dialog fills its box.
 			state.Environments.clear();
 			for (int index = BIOME_FIRST; index < BIOME_COUNT; index++) {
@@ -197,7 +197,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 		}
 
 		// A reading the tour left nothing to choose between is shown over the whole range and
-		// locked, which is what the dialog's own slider setup did with it.
+		// locked, which is what the dialog's slider setup did with it.
 		static void Bound(UIMapGenSlider & slider, int minimum, int maximum, bool allowed)
 		{
 			if (maximum <= minimum) {
@@ -230,7 +230,7 @@ class UIMapGenEngineServiceClass : public UIMapGenServiceClass
 			Bound(state.Cities, territory->CitiesMin, territory->CitiesMax, territory->UserModCities != 0);
 			state.Veinholes.Enabled = territory->UserModVeinholeMonsters != 0;
 
-			// The tour names the number of players itself, and the dialog's own reading said so
+			// The tour names the number of players itself, and the dialog's reading said so
 			// with a pair of boxes rather than a bar.
 			state.Players.Value = 4;
 			state.Players.Enabled = false;

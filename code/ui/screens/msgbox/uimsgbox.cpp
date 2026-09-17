@@ -104,7 +104,7 @@ class UIMessageBoxViewClass : public UIRmlViewClass
 			return(model.RegisterArray<std::vector<UIMessageButton>>() && model.Bind("text", &Data.Text) && model.Bind("buttons", &Data.Buttons));
 		}
 
-		// Two buttons take the outer places and three take all of them, which the row's own
+		// Two buttons take the outer places and three take all of them, which the row's
 		// spacing gives; a lone button is the one case the row has to center instead.
 		virtual void Loaded(void) override
 		{

@@ -515,7 +515,7 @@ void LoadOptionsClass::Gather_Files(void)
 
 
 /// <summary>
-/// Prints a save's date and its time the way the list's own columns read them.
+/// Prints a save's date and its time the way the list's columns read them.
 /// </summary>
 /// <returns>bool; Does the save carry a stamp at all?</returns>
 bool LoadOptionsClass::Stamp_Strings(FileEntryClass const & entry, char * date, std::size_t datesize,

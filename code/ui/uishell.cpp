@@ -481,10 +481,10 @@ void UIShellClass::Drain_Deferred(void)
 }
 
 
-// Takes a bitmap family's two sheets through the game's own file search and hands them to
-// the font engine. The sheets are the interface's own art, so a player without it simply
+// Takes a bitmap family's two sheets through the game's file search and hands them to
+// the font engine. The sheets are the interface's art, so a player without it simply
 // has no such family and the documents fall back to an outline face.
-// The families a document may name. The bitmap one is the dialog art's own pair of sheets;
+// The families a document may name. The bitmap one is the dialog art's pair of sheets;
 // the sans one is the face the Win32 dialogs asked GDI for, in the TrueType successor that
 // scales; and the shipped one is what stands in for either.
 static char const * const UI_SHEET_FONT_FAMILY = "dlgsys";
@@ -535,12 +535,12 @@ void UIShellClass::Register_Fonts(void)
 	Fonts->Set_Fallback(Rml::GetFontEngineInterface());
 	Rml::SetFontEngineInterface(Fonts.get());
 
-	// RmlUi opens a font path through its file interface, which here is the game's own
+	// RmlUi opens a font path through its file interface, which here is the game's
 	// search and knows nothing of a Windows directory, so the face travels as bytes. They
 	// are kept because RmlUi reads glyphs straight out of them for as long as it runs.
 	bool sansloaded = false;
 	// The raster face the layer actually drew with is read first: its strikes are what GDI
-	// picked, so a document asking for one of their heights gets the layer's own letters. The
+	// picked, so a document asking for one of their heights gets the layer's letters. The
 	// cuts are folded into one family rather than loaded one after another, because loading a
 	// family twice replaces it.
 	std::vector<UIRasterStrike> strikes;
@@ -853,7 +853,7 @@ void UIShellClass::Tick(void)
 
 	Apply_Cursor_Request();
 
-	// An overlay closed from inside its own frame still needs one present to clear.
+	// An overlay closed from inside its frame still needs one present to clear.
 	bool devactive = UIDev_Active();
 	if (Documents_Visible() || devactive || DevWasActive) {
 		Host.Mark_Overlay_Dirty();
@@ -1125,7 +1125,7 @@ bool UIShellClass::Feed_Text_Unit(wchar_t unit)
 
 
 // A narrow window delivers text one byte per message: UTF-8 under the UTF-8 code page, else
-// the code page's own single and double bytes.
+// the code page's single and double bytes.
 bool UIShellClass::Feed_Text_Byte(unsigned char byte)
 {
 	unsigned int codepage = Host.Text_Code_Page();

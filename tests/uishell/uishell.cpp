@@ -480,7 +480,7 @@ class TestHostClass : public UIShellHostClass
 };
 
 
-// The shell's own system interface with a count of what RmlUi complained about.
+// The shell's system interface with a count of what RmlUi complained about.
 class CountingSystemClass : public UIRmlSystemClass
 {
 	public:
@@ -525,7 +525,7 @@ bool Send(UIShellClass & shell, UINT message, WPARAM wparam = 0, LPARAM lparam =
 }
 
 
-// The middle of an element's border box, in the document's own coordinates.
+// The middle of an element's border box, in the document's coordinates.
 Rml::Vector2f Center_Of(Rml::Element * element)
 {
 	return(element->GetAbsoluteOffset(Rml::BoxArea::Border) + element->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f);
@@ -575,7 +575,7 @@ bool Slider_Parts(Rml::Element * slider, Rml::Element * & bar, Rml::Element * & 
 }
 
 
-// A client position past the end of a slider's track, on the bar's own line.
+// A client position past the end of a slider's track, on the bar's line.
 LPARAM Past_Track_End(TestHostClass const & host, Rml::Element * bar, Rml::Element * track)
 {
 	int const y = (int)Center_Of(bar).y + host.Rect.Y;
@@ -1685,7 +1685,7 @@ void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClas
 		context.Update();
 
 		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
-		Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(436.0f, 147.0f), "the network box is the size its own template comes to");
+		Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(436.0f, 147.0f), "the network box is the size its template comes to");
 
 		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
 		Check(buttons.size() == 1, "the network box shows its lone button");
@@ -2473,7 +2473,7 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 				}
 			}
 		}
-		Check(clipped, "the wallpaper is cut off at the menu's own edges");
+		Check(clipped, "the wallpaper is cut off at the menu's edges");
 
 		// Every length in the kit and the screen is in dp, so at twice the ratio the menu
 		// and its buttons are twice the size; a px length in either would show here.
@@ -3398,7 +3398,7 @@ void Test_Raster_Font(void)
 			placed = placed && apart;
 		}
 	}
-	Check(placed, "the cells sit inside the atlas in the strike's own order without overlapping");
+	Check(placed, "the cells sit inside the atlas in the strike's order without overlapping");
 
 	Check(!UI_Raster_Strike_Layout(family[0], 2, cells, width, height) && cells.empty(),
 		"a strike that cannot be laid inside the limit is refused");
@@ -3569,7 +3569,7 @@ void Test_Documents(void)
 	std::filesystem::path directory(OPENTS_UI_DIR);
 
 	// The shell resolves bare file names through the game's file system; the harness has none,
-	// so it runs from the ui directory and RmlUi's own file interface finds the same names.
+	// so it runs from the ui directory and RmlUi's file interface finds the same names.
 	std::filesystem::current_path(directory);
 
 	RecordingRenderInterfaceClass render;
@@ -4233,7 +4233,7 @@ void Test_Shell(void)
 	}
 
 	{
-		// A wide window carries a UTF-16 unit per message, which is what the game's own window
+		// A wide window carries a UTF-16 unit per message, which is what the game's window
 		// sends once it is registered wide. The text has to reach the field, not just the
 		// document, so this reads the control back.
 		UISaveGameState state;
@@ -4610,7 +4610,7 @@ void Test_Shell(void)
 				if (passes == 1) {
 					opening = shell.Revealing_Shown() && !uncovered();
 
-					// Answered before its own band is out, so the shell is still opening one as it
+					// Answered before its band is out, so the shell is still opening one as it
 					// closes.
 					int innerpasses = 0;
 					shell.Run_Modal(*innerview, [&](void) {

@@ -108,7 +108,7 @@ the selected build directory.
 | Release | `Game.exe`, `Game.pdb`, `Game.map`, `Language.dll`, `ui/` |
 
 `ui/` is the repository's directory of UI documents, styles, and font, placed
-beside the executable by its own target, `OpenTSUIFiles`, so an edited
+beside the executable by its target, `OpenTSUIFiles`, so an edited
 document reaches the output without a relink.
 
 Run a build from its output directory, naming the game data with `-DATADIR=`:

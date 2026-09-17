@@ -124,7 +124,7 @@ button
 }
 
 /*
- * Each bar is the last fifty columns of its own rect as a reading, the column the layer
+ * Each bar is the last fifty columns of its rect as a reading, the column the layer
  * darkens beside it, and the bar in what is left. The connection is shown and not set, so it
  * carries the wash a disabled control takes.
  */

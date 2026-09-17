@@ -67,7 +67,7 @@ class UIShellClass
 		// Prepares, shows and drives a modal screen until its presenter reports a result or
 		// the service reports the game ended, then releases it. The view's presenter must
 		// outlive the call. A screen that hides its parent takes the screen below it down for
-		// its own passes and puts it back, without a reveal, when it closes.
+		// its passes and puts it back, without a reveal, when it closes.
 		UIResult Run_Modal(UIViewClass & view, UIServiceCallback const & service, bool hideparent = false);
 
 		// The service driving the innermost running modal, or nothing while no screen runs,
@@ -86,7 +86,7 @@ class UIShellClass
 		// The system clock a timed screen's presenter reads.
 		UIClockClass & Clock(void);
 
-		// The sound a control makes as it is pressed. A view calls this from its own event
+		// The sound a control makes as it is pressed. A view calls this from its event
 		// handler, because what counts as a press is the toolkit's business.
 		void Play_Click(void);
 

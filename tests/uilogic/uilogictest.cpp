@@ -87,7 +87,7 @@ void Test_Ownership(void)
 	state.Press_Mouse(2, UI_INPUT_GAME);
 	Check(!state.Any_Suppressed(), "nothing is suppressed before a cancel");
 	state.Cancel_UI();
-	Check(state.Key_Owner(65) == UI_INPUT_GAME && state.Mouse_Owner(2) == UI_INPUT_GAME, "closing a screen leaves the game's own presses alone");
+	Check(state.Key_Owner(65) == UI_INPUT_GAME && state.Mouse_Owner(2) == UI_INPUT_GAME, "closing a screen leaves the game's presses alone");
 	Check(state.Key_Owner(66) == UI_INPUT_SUPPRESSED && state.Mouse_Owner(0) == UI_INPUT_SUPPRESSED, "closing a screen suppresses what the toolkits held");
 	Check(state.Any_Suppressed(), "suppressed input is reported");
 	Check(state.Press_Key(66, UI_INPUT_GAME) == UI_INPUT_SUPPRESSED, "a repeat of a suppressed key stays suppressed");
@@ -221,7 +221,7 @@ void Test_Render_Transform(void)
 	rotation[15] = 1.0f;
 	UI_Render_Model_Matrix(rotation, 10.0f, 20.0f, model);
 	Check(model[12] == -20.0f && model[13] == 10.0f, "a rotated fragment is translated in the rotated frame, not the screen's");
-	Check(model[1] == 1.0f && model[4] == -1.0f, "and the transform's own columns are left alone");
+	Check(model[1] == 1.0f && model[4] == -1.0f, "and the transform's columns are left alone");
 
 	// A transform that already carries a translation keeps it, with the fragment's scaled
 	// by the transform and added on top.

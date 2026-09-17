@@ -68,7 +68,7 @@ button
 .multiplayer button:nth-child(3) { top: 116dp; }
 .multiplayer button:nth-child(4) { top: 150dp; }
 
-/* The expansion's own list is narrower, a row taller, and carries one button more. */
+/* The expansion's list is narrower, a row taller, and carries one button more. */
 
 .firestorm #reveal
 {

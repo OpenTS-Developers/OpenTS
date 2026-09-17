@@ -7,7 +7,7 @@ when_omitted:
   value: "yes"
 ---
 
-The dialogs draw their lists, text boxes, tooltips and hotkey fields in the face Windows keeps as a set of fixed-size bitmaps, which is the face the game's own dialogs were drawn with. Clearing this draws them in the scalable face of the same design instead. The captions and the button text are unaffected either way: those come from the game's own art rather than from a system face.
+The dialogs draw their lists, text boxes, tooltips and hotkey fields in the face Windows keeps as a set of fixed-size bitmaps, which is the face the game's dialogs were drawn with. Clearing this draws them in the scalable face of the same design instead. The captions and the button text are unaffected either way: those come from the game's own art rather than from a system face.
 
 A bitmap is cut at one size and cannot be resized without losing its shape, so the bitmap face is used only where the game frame is drawn one screen pixel to one game pixel. At any other window size the scalable face is used whatever this says, which is why the text may change appearance when the resolution does.
 

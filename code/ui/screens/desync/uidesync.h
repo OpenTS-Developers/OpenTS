@@ -19,7 +19,7 @@ class UIViewClass;
 
 
 // What the screen answers with. Nothing means the decision came over the network rather than
-// from this player, which the caller reads from its own state.
+// from this player, which the caller reads from its state.
 enum UIDesyncChoiceType
 {
 	UI_DESYNC_NONE,
@@ -80,7 +80,7 @@ class UIDesyncServiceClass
 
 
 // The screen stands until a button is pressed or the session settles the decision without
-// this player, as the dialog's own loop did.
+// this player, as the dialog's loop did.
 class UIDesyncPresenterClass : public UIPresenterClass
 {
 	public:
@@ -100,7 +100,7 @@ class UIDesyncPresenterClass : public UIPresenterClass
 // The RmlUi view over a desync presenter, bound to desync.rml. The presenter must outlive it.
 std::unique_ptr<UIViewClass> UI_Desync_View(UIDesyncPresenterClass & presenter);
 
-// The session's own service, which lives as long as the dialog it belongs to.
+// The session's service, which lives as long as the dialog it belongs to.
 UIDesyncServiceClass & UI_Desync_Service(void);
 
 // Runs the out-of-sync screen, returning what the player pressed. Nothing comes back when the

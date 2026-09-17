@@ -43,7 +43,7 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		// answered for and a document naming it falls back to an outline face.
 		bool Load_Sheets(Rml::String const & family, UIImageIndexed const & index, UIImageIndexed const & alpha);
 
-		// Takes a raster family's strikes. A strike is answered for at its own height and
+		// Takes a raster family's strikes. A strike is answered for at its height and
 		// magnified at any other, so a document names the height of the strike it wants.
 		// False for a family with no strike carrying a character.
 		bool Load_Strikes(Rml::String const & family, std::vector<UIRasterStrike> const & strikes);

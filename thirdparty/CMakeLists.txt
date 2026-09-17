@@ -127,7 +127,7 @@ set(SKIP_INSTALL_ALL ON CACHE BOOL "" FORCE)
 
 add_subdirectory(freetype)
 
-# RmlUi looks for the target that FindFreetype would create. FreeType's own tree exports
+# RmlUi looks for the target that FindFreetype would create. FreeType's tree exports
 # that name for installed consumers but never defines it inside a build tree.
 add_library(Freetype::Freetype ALIAS freetype)
 

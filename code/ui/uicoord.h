@@ -10,7 +10,7 @@
 #pragma once
 
 
-// A pointer position in the overlay's own pixels.
+// A pointer position in the overlay's pixels.
 struct UIPointerPosition
 {
 	int X;

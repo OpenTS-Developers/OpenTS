@@ -77,7 +77,7 @@ class UIScenarioEngineServiceClass : public UIScenarioServiceClass
 
 
 // The pass of the game the dialog runs over. A lobby waiting on the host has to be pumped
-// through its own handler while the host browses, which is the one thing the ordinary
+// through its handler while the host browses, which is the one thing the ordinary
 // service pass does not do.
 bool Service_Pick(void)
 {

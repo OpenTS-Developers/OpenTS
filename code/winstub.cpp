@@ -189,7 +189,7 @@ static bool Is_Mouse_Coordinate_Message(UINT message)
 
 
 /// <summary>
-/// Converts a mouse message's position into the frame's own pixels, so that the game reads a
+/// Converts a mouse message's position into the frame's pixels, so that the game reads a
 /// click where the player aimed it rather than where Windows measured it.
 /// </summary>
 /// <returns>The lParam to carry on with. A position the frame is not scaling comes back
@@ -230,7 +230,7 @@ static LPARAM Frame_Mouse_LParam(UINT message, LPARAM lparam)
 LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
-	// The game reads a position in the frame's own pixels; the UI overlay lays itself out in
+	// The game reads a position in the frame's pixels; the UI overlay lays itself out in
 	// the window's and wants the position as Windows delivered it.
 	LPARAM client_lparam = lParam;
 	lParam = Frame_Mouse_LParam(message, lParam);

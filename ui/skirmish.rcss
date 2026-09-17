@@ -1,6 +1,6 @@
 /*
  * Where the skirmish setup puts its parts, from IDD_SKIRMISH at 426 by 240 dialog units,
- * which the layer draws 640 by 391, a pixel wider than the rule its own size follows. Three columns that do not stack cleanly: the name, side,
+ * which the layer draws 640 by 391, a pixel wider than the rule its size follows. Three columns that do not stack cleanly: the name, side,
  * color and map name run down a 118 wide stack on the left, the seven switches sit in a
  * frame beside them, the six settings sit in a frame down the right with the buttons under
  * it, and the map preview runs the width of the first two below both. So the left column

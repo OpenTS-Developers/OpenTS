@@ -16,7 +16,7 @@
 
 
 // The hue the sheets are drawn around, and the window either side of a requested hue that
-// the pull toward it is measured over. Both come from the dialog layer's own remap.
+// the pull toward it is measured over. Both come from the dialog layer's remap.
 static const float UI_SHEET_FONT_SOURCE_HUE = 68.0f;
 static const int UI_SHEET_FONT_HUE_WINDOW = 15;
 

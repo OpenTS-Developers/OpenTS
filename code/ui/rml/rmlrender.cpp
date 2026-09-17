@@ -55,7 +55,7 @@ static const int UI_MAX_TEXTURE_DIMENSION = 4096;
 // The stencil states a clip mask draws through. Writing a mask puts nothing in the color
 // or depth buffers, and every test carries a read mask, because bgfx reads none by default
 // and an equality test against nothing passes everywhere. The mask lives on the back
-// buffer's own stencil, which bgfx attaches unless a caller asks for a depth-only format.
+// buffer's stencil, which bgfx attaches unless a caller asks for a depth-only format.
 static const uint32_t UI_STENCIL_WRITE = BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_RMASK(0xFF)
 	| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_REPLACE;
 static const uint32_t UI_STENCIL_NARROW = BGFX_STENCIL_TEST_ALWAYS | BGFX_STENCIL_FUNC_RMASK(0xFF)
@@ -64,7 +64,7 @@ static const uint32_t UI_STENCIL_TEST = BGFX_STENCIL_TEST_EQUAL | BGFX_STENCIL_F
 	| BGFX_STENCIL_OP_FAIL_S_KEEP | BGFX_STENCIL_OP_FAIL_Z_KEEP | BGFX_STENCIL_OP_PASS_Z_KEEP;
 
 
-// RmlUi's matrix travels to bgfx as its own sixteen floats, which holds only while both
+// RmlUi's matrix travels to bgfx as its sixteen floats, which holds only while both
 // order them by column.
 static_assert(std::is_same_v<Rml::Matrix4f, Rml::ColumnMajorMatrix4f>, "the renderer hands RmlUi's matrix to bgfx unchanged, which needs column-major storage");
 
@@ -306,7 +306,7 @@ void UIRmlBgfxRenderClass::Log_Resource_Counts(char const * when) const
 }
 
 
-// Two calls stay in reserve for the presenter's own quads.
+// Two calls stay in reserve for the presenter's quads.
 bool UIRmlBgfxRenderClass::Draw_Available(void)
 {
 	if ((uint64_t)Statistics.DrawCalls + 2 >= bgfx::getCaps()->limits.maxDrawCalls) {
@@ -483,7 +483,7 @@ void UIRmlBgfxRenderClass::ReleaseGeometry(Rml::CompiledGeometryHandle handle)
 
 // Art the player does not have leaves a clear texture behind rather than a refusal, so a
 // screen missing a decoration still opens; art that is there and will not decode is the
-// document's own fault and latches.
+// document's fault and latches.
 Rml::TextureHandle UIRmlBgfxRenderClass::LoadTexture(Rml::Vector2i & dimensions, Rml::String const & source)
 {
 	std::vector<unsigned char> rgba;
@@ -504,7 +504,7 @@ Rml::TextureHandle UIRmlBgfxRenderClass::LoadTexture(Rml::Vector2i & dimensions,
 		return(0);
 	}
 
-	// The picture is kept larger than it is reported, so the document lays it out at its own
+	// The picture is kept larger than it is reported, so the document lays it out at its
 	// size while the sampler sees whole pixels.
 	dimensions.x = width;
 	dimensions.y = height;

@@ -22,7 +22,7 @@
 class UIViewClass;
 
 
-// Which lobby the flow stands in. The engine maps its own phase onto this, so nothing here
+// Which lobby the flow stands in. The engine maps its phase onto this, so nothing here
 // needs the network headers.
 enum UINetLobbyKind
 {
@@ -170,7 +170,7 @@ class UINetLobbyServiceClass
 	public:
 		virtual ~UINetLobbyServiceClass(void) = default;
 
-		// Copies what the lobby holds into the model, leaving the screen's own fields alone.
+		// Copies what the lobby holds into the model, leaving the screen's fields alone.
 		virtual void Read(UINetLobbyState & state) = 0;
 
 		virtual void Set_Handle(char const * name) = 0;
@@ -189,7 +189,7 @@ class UINetLobbyServiceClass
 		// Asks to join the picked game; the answer arrives as a packet while the browser stays up.
 		virtual void Join(void) = 0;
 
-		// Opens the player's own game, or refuses the name in a box over the browser.
+		// Opens the player's game, or refuses the name in a box over the browser.
 		virtual void Host(void) = 0;
 
 		// Whether the host may start; a refusal is printed into the chat.
@@ -231,7 +231,7 @@ class UINetLobbyPresenterClass : public UIPresenterClass
 std::unique_ptr<UIViewClass> UI_Net_Browser_View(UINetLobbyPresenterClass & presenter);
 std::unique_ptr<UIViewClass> UI_Net_Setup_View(UINetLobbyPresenterClass & presenter);
 
-// The game's own lobby service, and the screen the network driver runs over it. Both live in
+// The game's lobby service, and the screen the network driver runs over it. Both live in
 // uinetlobbydlg.cpp, which is the only part of the screen that knows the engine.
 UINetLobbyServiceClass & UI_Net_Lobby_Service(void);
 UINetChoice UI_Net_Lobby_Run(void);

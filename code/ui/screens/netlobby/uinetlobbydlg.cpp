@@ -36,7 +36,7 @@
 #include <utility>
 
 
-// The least a network game can be played for, as the dialog's own constant has it.
+// The least a network game can be played for, as the dialog's constant has it.
 static int const UI_NET_MIN_MONEY = 2500;
 
 // What a list row is drawn in when nothing has colored it, which is what the list box left

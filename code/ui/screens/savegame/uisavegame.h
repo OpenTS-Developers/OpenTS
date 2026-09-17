@@ -55,7 +55,7 @@ struct UISaveGameState
 
 
 // Holds the picked row and the typed description until the player accepts. The caller does
-// the loading, saving or deleting, as the Win32 dialog's own loop did.
+// the loading, saving or deleting, as the Win32 dialog's loop did.
 class UISaveGamePresenterClass : public UIPresenterClass
 {
 	public:

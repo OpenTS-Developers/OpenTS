@@ -10,7 +10,7 @@ credit:
 - ZivDero
 ---
 
-The lists, text boxes, tooltips and hotkey fields of the migrated screens are drawn in the bitmap face the game's own dialogs used, rather than in a scalable stand-in for it, so their letters match the dialogs beside them. `BitmapSystemFont` turns that off and leaves the scalable face drawing at every size.
+The lists, text boxes, tooltips and hotkey fields of the migrated screens are drawn in the bitmap face the game's dialogs used, rather than in a scalable stand-in for it, so their letters match the dialogs beside them. `BitmapSystemFont` turns that off and leaves the scalable face drawing at every size.
 
 The face is assembled from the several bitmaps Windows ships it in, one per writing system, which takes it from 219 characters to 469: Central European, Cyrillic, Greek, Turkish and Baltic text now draws from it. Right-to-left and stacking scripts are left to the scalable face, since they need reordering and mark placement the screens do not do.
 

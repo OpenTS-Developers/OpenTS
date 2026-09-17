@@ -185,7 +185,7 @@ void OwnerDraw::Prepare_Resources(void)
 
 /// <summary>
 /// Converts a key code into its printable name.
-/// This routine is used by the hotkey control to show a binding the way the player's own
+/// This routine is used by the hotkey control to show a binding the way the player's
 /// keyboard layout names it, with the modifier names spelled out ahead of the key.
 /// </summary>
 /// <param name="key">The key, complete with its modifier bits, to spell out.</param>
@@ -743,7 +743,7 @@ HFONT WS_Get_Font(HDC hdc, const char * face_name, int decipt_width, int decipt_
 /// </summary>
 /// <param name="hdc">The device context the font is to be built for.</param>
 /// <param name="decipt_width">The character width in tenths of a point. Zero lets the
-/// typeface choose its own aspect.</param>
+/// typeface choose its aspect.</param>
 /// <param name="decipt_height">The character height in tenths of a point.</param>
 /// <param name="attributes">Bit flags of the EZ_ATTR_ style attributes to apply.</param>
 /// <returns>Returns with a handle to the font created, or NULL if it could not be

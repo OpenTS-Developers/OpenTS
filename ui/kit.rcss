@@ -1,5 +1,5 @@
 /*
- * The controls the game's own dialogs are built from, in the colors and the metrics they
+ * The controls the game's dialogs are built from, in the colors and the metrics they
  * are drawn with. Every rule here carries the measurement it came from, because the numbers
  * are the original's and not a layout of our own.
  *
@@ -72,7 +72,7 @@ div, form, h1, h2, p
  *
  * It hangs off the middle of the dialog, which is the middle of the screen for any dialog
  * the shell centers; a screen that moves itself elsewhere moves the picture back by as much.
- * Since it is larger than most dialogs it is held in a box of the dialog's own size that
+ * Since it is larger than most dialogs it is held in a box of the dialog's size that
  * cuts it off, and that box sits behind everything else the dialog draws: a positioned
  * element otherwise paints over the controls rather than behind them. The box is told to
  * clip outright, because RmlUi measures what a box has to clip before it lays out the
@@ -196,7 +196,7 @@ button, input, select, dataselect, option, progress, scrollbarvertical, textarea
  * the inside of the frame: the control is sized to that rect and its frame hangs over the
  * margin. A screen that spaces one from its neighbour does so from the neighbour's side,
  * and gives one that pads its text the width left inside the padding. A list is the other
- * way about: the layer insets its rows by the frame and draws the frame on the rect's own
+ * way about: the layer insets its rows by the frame and draws the frame on the rect's
  * edge, so a list is its template's rect, frame and all.
  */
 input[type='range'], input[type='text'], input[type='password'], textarea, select, .hotkey
@@ -232,7 +232,7 @@ input[type='range'], input[type='text'], input[type='password'], textarea, selec
  * The box keeps its place and size: it is moved rather than laid out lower, and the rows
  * the skin gives up become a bottom border that shows through. A glyph is seventeen tall,
  * so a short button has only seven to give: padding is what moves the caption, the box
- * counts its padding and borders inside its own size, and the line is left tall enough
+ * counts its padding and borders inside its size, and the line is left tall enough
  * that the glyph is never cut off.
  */
 button
@@ -480,7 +480,7 @@ input[type='text'], input[type='password'], textarea
 	background-color: #000000b4;
 }
 
-/* The layer drew a row's cell on the row's own top, so the line the strike is laid on is
+/* The layer drew a row's cell on the row's top, so the line the strike is laid on is
    the cell itself and the row's spare pixel falls below it. */
 .list .item
 {
@@ -504,7 +504,7 @@ input[type='text'], input[type='password'], textarea
  * grip is three pieces with the middle tiled, and the original shrinks it as the list
  * grows, never below fourteen.
  *
- * The original narrows the list by twenty and stands the bar beside it, so the list's own
+ * The original narrows the list by twenty and stands the bar beside it, so the list's
  * frame closes a pixel before the bar's opens and the two make a double line; the bar's
  * other three edges share the list's frame. Here the bar stands inside the list's frame,
  * twenty wide with both of those lines as its left border and the list's frame as its other
@@ -557,7 +557,7 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * A track bar is as tall as its template makes it, with a twelve wide thumb drawn from the
  * top of it one in from the left; the thumb's travel is thirteen short of the width, which
  * is what a track a pixel narrower on the left comes to. Where the bar shows its value, that
- * number is not a control beside the bar but the last fifty columns of the bar's own rect,
+ * number is not a control beside the bar but the last fifty columns of the bar's rect,
  * the trough, and the bar is drawn in what is left; the frame the layer draws around that
  * closes over the field's first column, because the field is drawn before it, which is why
  * the field is put after the bar in the same row and sorted under it. The picture is fifty
@@ -565,7 +565,7 @@ scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-no
  * over it, kept to the fifty, and the number centered in the forty-nine from one in. The
  * layer also darkens the ground under a bar a column past its right edge and a row past its
  * bottom. A bar tall enough for that to reach below the picture shows the rows under it, so
- * the field's own box carries them; the column beside it never falls under the picture, and
+ * the field's box carries them; the column beside it never falls under the picture, and
  * is `.trough-edge`.
  *
  * RmlUi places a slider's track and thumb from the input's border corner rather than its
@@ -617,7 +617,7 @@ input[type='range']:disabled sliderbar
  * The reading is centered the way the statics above are, so its box is a pixel narrower than
  * the forty-nine, and the right end is hung off the field rather than off that box, which
  * keeps it where the layer drew it. A screen whose bar is shorter than the picture gives the field
- * the picture's height and takes the rows the bar's own rect leaves out of the reading's box;
+ * the picture's height and takes the rows the bar's rect leaves out of the reading's box;
  * the picture hangs on the whole box either way, because a decorator is cut off at the area
  * it is given.
  */
@@ -676,7 +676,7 @@ input[type='range']:disabled sliderbar
 
 /*
  * The progress bar the original fills in red, solid across the middle of its height with the
- * outer quarters ramping away. The element carries its own fill, which is what is colored.
+ * outer quarters ramping away. The element carries its fill, which is what is colored.
  */
 progress
 {
@@ -842,7 +842,7 @@ select option:checked
  * than the document naming a file. It is fitted to the element's box the way the layer fitted
  * a map preview to the frame's rect, which is the box a screen gives this: a frame's line is
  * drawn corner to corner inclusive, so the rect is a pixel smaller than the line each way and
- * starts on the line's own corner.
+ * starts on the line's corner.
  */
 surface
 {
@@ -864,7 +864,7 @@ surface
 }
 
 /*
- * Text the layer draws from its own sheets comes out at this shade when it asks for the
+ * Text the layer draws from its sheets comes out at this shade when it asks for the
  * disabled gray, because the sheet's glyphs are shaded rather than flat.
  */
 .disabled

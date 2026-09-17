@@ -38,7 +38,7 @@
 #include <utility>
 
 
-// The least a skirmish can be played for, as the Win32 dialog's own constant has it.
+// The least a skirmish can be played for, as the Win32 dialog's constant has it.
 static int const UI_SKIRMISH_MIN_MONEY = 2500;
 
 // The colors a player may wear, in the order the dialog lists them.

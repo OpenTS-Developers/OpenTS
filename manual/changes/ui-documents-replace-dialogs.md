@@ -25,7 +25,7 @@ frame-sync notice, the message boxes, and the notices shown while a game saves
 or loads.
 
 Each screen carries the controls of the dialog it replaces, at the size and in
-the place that dialog put them, in the dialog art's own colors and pictures. A
+the place that dialog put them, in the dialog art's colors and pictures. A
 screen opens as the dialogs did, sliding out from the middle behind the side
 bars with the dialog sound, and a control sounds the same click. A player
 without the art gets plain fills rather than a screen that will not open, and

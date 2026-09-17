@@ -538,7 +538,7 @@ test('A multiplayer load replaces the match around the seats it keeps', () => {
 	assert.match(
 		functionBody(gameopt, 'virtual bool Load(void) override'),
 		/LoadOptionsClass\(\)\.Load\(\)/,
-		'a solo game opens its own list, over the menu',
+		'a solo game opens its list, over the menu',
 	);
 
 	assertOrdered(functionBody(source('code/ui/screens/gameopt/uigameopt.cpp'), 'void UIGameOptionsPresenterClass::Execute(UIIntent const & intent)'), [

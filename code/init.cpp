@@ -2870,7 +2870,7 @@ void Version_Dialog(void)
 
 
 // What a key pressed over the main menu answered with, which the menu reads once its screen
-// has closed; the dialog's own loop wrote its result straight into the caller's.
+// has closed; the dialog's loop wrote its result straight into the caller's.
 static int MainMenuKeyResult = SEL_NONE;
 
 

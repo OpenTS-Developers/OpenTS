@@ -32,7 +32,7 @@ static bool Has_Extension(char const * name, char const * extension)
 }
 
 
-// The whole file through the game's own search, so a document reaches art inside a mix
+// The whole file through the game's search, so a document reaches art inside a mix
 // archive as readily as one beside the executable.
 static bool Read_Whole_File(char const * name, std::vector<unsigned char> & bytes)
 {
