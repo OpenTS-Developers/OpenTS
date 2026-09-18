@@ -42,6 +42,9 @@
 class PentiumTimerClass
 {
 	public:
+		// The cycle counter's origin is the processor's, not the game's.
+		static constexpr bool Reading_Survives_A_Save = false;
+
 		unsigned int operator () (void) const {unsigned int h;unsigned int l = Get_CPU_Clock(h);return((l >> 4) | (h << 28));}
 		operator unsigned int (void) const {unsigned int h;unsigned int l = Get_CPU_Clock(h);return((l >> 4) | (h << 28));}
 };

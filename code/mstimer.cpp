@@ -11,49 +11,37 @@
 
 #include "mstimer.h"
 
-#include "win.h"
+#include <chrono>
 
 
 /// <summary>
-/// Asks Windows for one millisecond timer resolution.
-/// This routine is called when the timer is created so that the readings it hands out
-/// are fine grained enough for the game to pace itself by.
+/// Returns the milliseconds elapsed since the first call. The origin is this process, not
+/// the machine, so readings are only meaningful against one another.
 /// </summary>
-MillisecondSystemTimerClass::MillisecondSystemTimerClass(void)
+unsigned int System_Milliseconds(void)
 {
-	timeBeginPeriod(1);
+	using namespace std::chrono;
+
+	static steady_clock::time_point const started = steady_clock::now();
+	return((unsigned int)duration_cast<milliseconds>(steady_clock::now() - started).count());
 }
 
 
 /// <summary>
-/// Returns the system timer to its normal resolution.
-/// This routine undoes the resolution request made when the timer was created, so that
-/// the rest of the system is not left paying for the finer granularity.
+/// Fetches the current millisecond reading. This is the sampling routine that the timer
+/// templates call whenever they need to know how much time has passed.
 /// </summary>
-MillisecondSystemTimerClass::~MillisecondSystemTimerClass(void)
-{
-	timeEndPeriod(1);
-}
-
-
-/// <summary>
-/// Fetches the current millisecond reading of the system clock.
-/// This is the sampling routine that the timer templates call whenever they need to
-/// know how much time has passed.
-/// </summary>
-/// <returns>Returns with the number of milliseconds elapsed since Windows started.</returns>
 int MillisecondSystemTimerClass::operator () (void) const
 {
-	return(timeGetTime());
+	return((int)System_Milliseconds());
 }
 
 
 /// <summary>
-/// Converts the timer into its current millisecond reading.
-/// This routine lets the timer object be used wherever a plain time value is expected.
+/// Converts the timer into its current millisecond reading, so that it can be used wherever
+/// a plain time value is expected.
 /// </summary>
-/// <returns>Returns with the number of milliseconds elapsed since Windows started.</returns>
 MillisecondSystemTimerClass::operator int (void) const
 {
-	return(timeGetTime());
+	return((int)System_Milliseconds());
 }

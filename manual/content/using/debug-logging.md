@@ -16,7 +16,7 @@ related:
 ## Where the log is written
 
 Every run writes a log to a `Debug` folder beside the executable, named for the moment the
-process started:
+logger initialized:
 
 ```
 Debug/DEBUG_17-08-2026_06-00-35.LOG
@@ -44,7 +44,7 @@ named commit. `Options` lists the launch options the game was started with.
 
 ## Reading the rest
 
-Each line after the banner is stamped with the time it was written:
+Each line after the banner is stamped with the time it was reported:
 
 ```
 [06:00:35.412] Video: renderer is Direct3D 11

@@ -9,11 +9,15 @@
 
 #pragma once
 
+// Milliseconds since the first reading, which is all any caller compares.
+unsigned int System_Milliseconds(void);
+
 class MillisecondSystemTimerClass
 {
 	public:
-		MillisecondSystemTimerClass(void);
-		~MillisecondSystemTimerClass(void);
+		// The clock behind this counts from the start of the process, so a reading of it
+		// means nothing in the process that loads it.
+		static constexpr bool Reading_Survives_A_Save = false;
 
 		int operator () (void) const;
 		operator int (void) const;
