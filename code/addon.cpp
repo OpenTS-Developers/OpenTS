@@ -11,15 +11,14 @@
 
 #include "addon.h"
 
+#include "ui/screens/menu/uimenu.h"
+
 #include "_deploymentconfig.h"
 #include "ccfile.h"
 #include "data.h"
 #include "deploymentconfig.h"
-#include "init.h"
 #include "language/language.h"
-#include "ownrdraw.h"
-
-INT_PTR CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+#include "win.h"
 
 int AvailableAddOns = 1 << ADDON_BASE_GAME;
 int ActiveAddOns = 1 << ADDON_BASE_GAME;
@@ -57,44 +56,25 @@ AddonType operator--(AddonType & val)
 /// <returns>bool; Should the game carry on? Returns false if the player backed out.</returns>
 bool Select_Game_Type_Dialog(AddonType &type)
 {
-	int retval;
-
 	type = ADDON_BASE_GAME;
 
 	if (Addon_Installed(ADDON_ANY)) {
-		HWND dialog = OwnerDraw::Begin_Dialog(IDD_SELECT_GAME_TYPE, Select_Game_Type_Dialog_Proc);
-		if (dialog != 0) {
+		UIMenuState menu;
+		menu.Kind = UI_MENU_GAME_TYPE;
+		menu.Title = "Select Game Type";
+		menu.Wide = false;
+		menu.Items.push_back(UIMenuItemType{"Tiberian Sun (Original)", ADDON_BASE_GAME, true});
+		menu.Items.push_back(UIMenuItemType{"Firestorm", ADDON_FIRESTORM, true});
+		menu.Items.push_back(UIMenuItemType{"Main Menu", ADDON_ANY, true});
 
-			SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&retval);
-			OwnerDraw::Display_Dialog(dialog);
+		int chosen = UI_Menu_Dialog(menu, ADDON_ANY);
 
-			retval = -1;
-			while (retval == -1) {
-				if (OwnerDraw::Dialog_Message_Handler() == true) {
-					break;
-				}
-
-				Title_Screen_Restore(false);
-			}
-
-			ShowWindow(dialog, SW_HIDE);
-			UpdateWindow(MainWindow);
-			OwnerDraw::End_Dialog(dialog);
-			ActiveAddOns = 1 << ADDON_BASE_GAME;
-
-			switch (retval) {
-				default:
-					type = ADDON_BASE_GAME;
-					break;
-
-				case IDC_GAMETYPE_FIRESTORM:
-					Enable_Addon(ADDON_FIRESTORM);
-					type = ADDON_FIRESTORM;
-					break;
-
-				case IDCANCEL:
-					return(false);
-			}
+		ActiveAddOns = 1 << ADDON_BASE_GAME;
+		if (chosen == ADDON_FIRESTORM) {
+			Enable_Addon(ADDON_FIRESTORM);
+			type = ADDON_FIRESTORM;
+		} else if (chosen != ADDON_BASE_GAME) {
+			return(false);
 		}
 
 		Set_Required_Addon(type);
@@ -102,31 +82,6 @@ bool Select_Game_Type_Dialog(AddonType &type)
 	}
 
 	return(true);
-}
-
-
-/// <summary>
-/// Handles the messages for the game type selection dialog.
-/// This routine stashes the control that the player pressed into the caller's result
-/// variable, which is what lets the dialog loop know it can stop.
-/// </summary>
-INT_PTR CALLBACK Select_Game_Type_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	int * retval;
-
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-
-	if (rc == 0) {
-		switch (message) {
-			case WM_COMMAND:
-				retval = (int *)GetWindowLongPtr(window, DWLP_USER);
-				*retval = LOWORD(wparam);
-				break;
-		}
-		rc = 0;
-	}
-
-	return(rc);
 }
 
 

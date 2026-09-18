@@ -13,6 +13,7 @@
 
 #include "point.h"
 #include "sun.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
 #include "win.h"
 
 class ShapeSet;
@@ -46,7 +47,7 @@ class ProgressScreenClass
 		void Begin_Dialog(void);
 		void End_Dialog(void);
 	private:
-		static INT_PTR CALLBACK Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
+		void Advance_Milestone(int index, Point2D pt);
 
 	public:
 		/*
@@ -97,11 +98,10 @@ class ProgressScreenClass
 		char PlayerCount;
 
 		/*
-		 * Handle of the progress dialog, or NULL when the progress is presented on the full
-		 * screen instead. The dialog is used where the game must keep a window up while it
-		 * works rather than take the screen over.
+		 * The notice that carries the progress when the caller asks for one rather than for
+		 * the full screen presentation, because the game must keep a window up while it works.
 		 */
-		HWND Dialog;
+		UIWaitBoxClass Box;
 
 		/*
 		 * This is the center of the progress bar display, expressed in screen pixels. A job
@@ -115,6 +115,9 @@ class ProgressScreenClass
 		 * only when the progress first passes its threshold, so that none of them repeat.
 		 */
 		int Percentage;
+
+		int Reached;
+		int Printed;
 };
 
 extern ProgressScreenClass Progress;

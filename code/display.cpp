@@ -3851,7 +3851,7 @@ void DisplayClass::Reposition_Sidebar(void)
 /// <returns>Returns with whatever the default window procedure decides.</returns>
 LRESULT DisplayClass::Windows_Message_Proc(HWND hWnd, UINT Msg, WPARAM wParam, LPARAM lParam)
 {
-	return(DefWindowProc(hWnd, Msg, wParam, lParam));
+	return(DefWindowProcW(hWnd, Msg, wParam, lParam));
 }
 
 

@@ -47,10 +47,10 @@ bool VQA_Message_Handler(void)
 {
 	MSG msg;
 
-	if (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-		if (GetMessage(&msg, NULL, 0, 0)) {
+	if (PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE)) {
+		if (GetMessageW(&msg, NULL, 0, 0)) {
 			TranslateMessage(&msg);
-			DispatchMessage(&msg);
+			DispatchMessageW(&msg);
 		} else {
 			return(false);
 		}

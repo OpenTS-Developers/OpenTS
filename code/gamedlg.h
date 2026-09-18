@@ -50,15 +50,4 @@ class GameControlsClass
 		{
 			return(GameDifficultyNames[difficulty]);
 		}
-
-	private:
-		void Set(void);
-
-	private:
-		/*
-		 * This is the window handle of the game controls dialog while it is displayed. The
-		 * player's settings are read back off its controls, so the handle is only
-		 * meaningful between the dialog being created and destroyed.
-		 */
-		HWND _Dialog;
 };

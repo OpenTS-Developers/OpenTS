@@ -41,10 +41,9 @@
 #include "language/language.h"
 #include "netshare.h"
 #include "nodes.h"
-#include "priority.h"
 #include "overtype.h"
-#include "ownrdraw.h"
 #include "pcx.h"
+#include "priority.h"
 #include "progress.h"
 #include "rules.h"
 #include "smartdeform.h"
@@ -55,6 +54,7 @@
 #include "terrtype.h"
 #include "tiberium.h"
 #include "trigtype.h"
+#include "ui/screens/mapgen/uimapgen.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vector.h"
@@ -73,7 +73,6 @@
 
 bool (*RMGCallback)() = MapGen_Call_Back;
 
-INT_PTR CALLBACK Map_Seed_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 
 double Random_Fraction(void);
@@ -3253,44 +3252,22 @@ MapGeneratorClass::~MapGeneratorClass(void)
 /// skirmish or multiplayer game begins. It does not return until the player accepts the map
 /// or gives up on it, and the title screen behind is kept alive in the meantime.
 /// </summary>
-/// <param name="callback">Progress callback to run while the dialog is up.</param>
-/// <returns>Returns with the dialog result -- 1 if the player accepted the map, 2 if the
-/// dialog was canceled, and 0 if it could not be opened at all.</returns>
+/// <param name="callback">Progress callback to run while a map generates. The screen itself
+/// is serviced as the screen it was opened from is.</param>
+/// <returns>1 if the player accepted the map, 2 if they gave up on it.</returns>
 int Do_Random_Map_Dialog(bool (*callback)())
 {
-	WDTTerritory *wdt = NULL;
-	LONG res = 0;
+	RMGCallback = callback;
 
-	if (Session.Type == GAME_INTERNET && Session.IsWDT) {
-		wdt = WDT_Get_Territory(Session.WDTTerritory);
-	}
-
-	HWND dialog;
-	if (Addon_Enabled(ADDON_FIRESTORM)) {
-		dialog = OwnerDraw::Begin_Dialog(wdt != NULL ? IDD_MAPGEN_WDT : IDD_MAPGEN_FS, Map_Seed_Dialog_Proc);
-	} else {
-		dialog = OwnerDraw::Begin_Dialog(IDD_MAPGEN, Map_Seed_Dialog_Proc);
-	}
-
-	if (dialog) {
-		RMGCallback = callback;
-		RandomMapGen.SeedData.Callback = callback;
-		SetWindowLongPtrA(dialog, DWLP_USER, (LONG_PTR)&res);
-		OwnerDraw::Display_Dialog(dialog);
-		while (res == 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == 1) {
-				break;
-			}
-			if (callback != NULL) {
-				callback();
-			}
-			Title_Screen_Restore(false);
+	LONG res = 2;
+	if (UI_Map_Generator_Dialog() == UI_MAPGEN_ACCEPT) {
+		if (RandomMapGen.MapPreview == NULL || RandomMapGen.MapPreview->Get_Preview_Surface() == NULL) {
+			RandomMapGen.Generate_Random_Map(true);
 		}
-		OwnerDraw::End_Dialog(dialog);
+		res = 1;
 	}
 
 	RMGCallback = MapGen_Call_Back;
-	RandomMapGen.SeedData.Callback = NULL;
 
 	if (RandomMapGen.MapPreview != NULL) {
 		if (RandomMapGen.MapPreview->Get_Preview_Surface() != NULL) {
@@ -3401,9 +3378,8 @@ void Clean_Up_RMCache(void)
 /// merely fetched back, so flipping between two seeds costs nothing the second time. The
 /// finished preview is left in RandMap.img for the lobby to show.
 /// </summary>
-/// <param name="dialog">The dialog to show generation progress within.</param>
 /// <param name="callback">Progress callback to run while the map is being built.</param>
-void Do_Random_Map(HWND dialog, bool (*callback)())
+void Do_Random_Map(bool (*callback)())
 {
 	if (Session.Type == GAME_INTERNET && Session.IsWDT && WDT_Get_Territory(Session.WDTTerritory) != NULL) {
 		RandomMapGen.SeedData.NumPlayers = 4;
@@ -3432,11 +3408,10 @@ void Do_Random_Map(HWND dialog, bool (*callback)())
 	}
 
 	RMGCallback = callback;
-	RandomMapGen.SeedData.Callback = callback;
 	if (RandomMapGen.SeedData.Seed == -1) {
 		RandomMapGen.SeedData.Seed = Sim_Random_Pick(0U, 65535U);
 	}
-	RandomMapGen.Generate_Random_Map(true, dialog);
+	RandomMapGen.Generate_Random_Map(true);
 	RandomMapGen.MapPreview->Create_Preview();
 
 	if (RandomMapGen.MapSeeder != NULL) {
@@ -3468,523 +3443,6 @@ void Do_Random_Map(HWND dialog, bool (*callback)())
 		delete RandomMapGen.MapSeeder;
 		RandomMapGen.MapSeeder = NULL;
 	}
-}
-
-
-/// <summary>
-/// Dialog procedure for the random map generator ("Map Seed") dialog.
-/// Handles previewing, generating, saving, loading and deleting random maps, and randomizing
-/// the generator settings. The dialog's result code is written through the DWLP_USER
-/// pointer set up by Do_Random_Map_Dialog so that writing it ends that dialog's modal
-/// message loop.
-/// </summary>
-/// <param name="window">Handle to the dialog window.</param>
-/// <param name="message">Window message identifier.</param>
-/// <param name="wparam">Message-specific first parameter.</param>
-/// <param name="lparam">Message-specific second parameter.</param>
-/// <returns>TRUE if the message was processed, FALSE otherwise.</returns>
-INT_PTR CALLBACK Map_Seed_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	static int _unused = -1;
-
-	INT_PTR result = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (result) {
-		return(result);
-	}
-
-	LONG * state = (LONG *)GetWindowLongPtrA(window, DWLP_USER);
-
-	switch (message) {
-
-		/*
-		 * Repaint the map preview, if one exists.
-		 */
-		case WM_PAINT:
-			if (RandomMapGen.MapPreview != NULL) {
-				RandomMapGen.MapPreview->Blit_Preview(window);
-			}
-			ValidateRect(window, NULL);
-			return(0);
-
-		/*
-		 * Initialize the dialog controls from the current seed settings.
-		 */
-		case WM_INITDIALOG: {
-			_unused = -1;
-			HWND handle = GetDlgItem(window, IDC_MAPGEN_PREVIEW);
-			if (Debug_Map) {
-				EnableWindow(handle, false);
-			} else {
-				EnableWindow(handle, true);
-			}
-			if (RandomMapGen.SeedData.Seed == -1) {
-				RandomMapGen.SeedData.Seed = Sim_Random_Pick(0U, 65535U);
-			}
-			RandomMapGen.SeedData.Set_Settings(window);
-
-			bool enable = RandomMapGen.SeedData.Files_Present();
-			handle = GetDlgItem(window, IDC_MAPGEN_LOAD_MAP);
-			if (handle != NULL) {
-				EnableWindow(handle, enable);
-			}
-			handle = GetDlgItem(window, IDC_MAPGEN_DELETE_MAP);
-			if (handle == NULL) {
-				return(0);
-			}
-			EnableWindow(handle, enable);
-			return(0);
-		}
-
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-
-				/*
-				 * Generate the map and accept the dialog.
-				 */
-				case IDOK:
-					RandomMapGen.SeedData.Get_Settings(window);
-					if (Debug_Map) {
-						RandomMapGen.Generate_Random_Map(false, window);
-						Scen->Set_Scenario_Name(Fetch_String(TXT_RANDOM_MAP_DESCRIPTION));
-						Write_Scenario_INI("RandMap.Map", true);
-					} else {
-						if (RandomMapGen.MapPreview == NULL || RandomMapGen.MapPreview->Get_Preview_Surface() == NULL) {
-							RandomMapGen.Generate_Random_Map(true, window);
-							if (Debug_Map) {
-								Scen->Set_Scenario_Name(Fetch_String(TXT_RANDOM_MAP_DESCRIPTION));
-								Write_Scenario_INI("RandMap.Map", true);
-							}
-						}
-					}
-					*state = 1;
-					return(1);
-
-				/*
-				 * Cancel the dialog.
-				 */
-				case IDCANCEL:
-					*state = 2;
-					return(1);
-
-				/*
-				 * Load a saved map seed.
-				 */
-				case IDC_MAPGEN_LOAD_MAP:
-					RandomMapGen.SeedData.Get_Settings(window);
-					if (RandomMapGen.SeedData.LoadOptionsClass::Load() == true) {
-						PostMessageA(window, WM_COMMAND, MAKEWPARAM(IDC_MAPGEN_PREVIEW, BN_CLICKED), (LPARAM)GetDlgItem(window, IDC_MAPGEN_PREVIEW));
-					}
-					RandomMapGen.SeedData.Set_Settings(window);
-					return(0);
-
-				/*
-				 * Save the current map seed.
-				 */
-				case IDC_MAPGEN_SAVE_MAP: {
-					RandomMapGen.SeedData.Get_Settings(window);
-					RandomMapGen.SeedData.MapDescription[0] = '\0';
-					RandomMapGen.SeedData.LoadOptionsClass::Save(RandomMapGen.SeedData.MapDescription);
-
-					bool enable = RandomMapGen.SeedData.Files_Present();
-					HWND handle = GetDlgItem(window, IDC_MAPGEN_LOAD_MAP);
-					if (handle != NULL) {
-						EnableWindow(handle, enable);
-					}
-					handle = GetDlgItem(window, IDC_MAPGEN_DELETE_MAP);
-					if (handle == NULL) {
-						return(0);
-					}
-					EnableWindow(handle, enable);
-					return(0);
-				}
-
-				/*
-				 * Delete the saved map seed.
-				 */
-				case IDC_MAPGEN_DELETE_MAP: {
-					RandomMapGen.SeedData.Get_Settings(window);
-					RandomMapGen.SeedData.LoadOptionsClass::Delete();
-
-					bool enable = RandomMapGen.SeedData.Files_Present();
-					HWND handle = GetDlgItem(window, IDC_MAPGEN_LOAD_MAP);
-					if (handle != NULL) {
-						EnableWindow(handle, enable);
-					}
-					handle = GetDlgItem(window, IDC_MAPGEN_DELETE_MAP);
-					if (handle == NULL) {
-						return(0);
-					}
-					EnableWindow(handle, enable);
-					return(0);
-				}
-
-				/*
-				 * Build and display a preview of the current map seed.
-				 */
-				case IDC_MAPGEN_PREVIEW:
-					RandomMapGen.SeedData.Get_Settings(window);
-					RandomMapGen.Generate_Random_Map(true, window);
-					RandomMapGen.MapPreview->Create_Preview();
-					if (RandomMapGen.MapSeeder != NULL) {
-						delete RandomMapGen.MapSeeder;
-					}
-					RandomMapGen.MapSeeder = new MapSeedClass;
-					memcpy(RandomMapGen.MapSeeder, &RandomMapGen.SeedData, sizeof(MapSeedClass));
-					PostMessageA(window, WM_PAINT, 0, 0);
-					return(0);
-
-				/*
-				 * Randomize the generator settings.
-				 */
-				case IDC_MAPGEN_SURPRISE:
-					RandomMapGen.SeedData.Get_Settings(window);
-					RandomMapGen.SeedData.Randomize();
-					RandomMapGen.SeedData.Set_Settings(window);
-					return(0);
-
-				default:
-					return(0);
-			}
-
-		default:
-			return(0);
-	}
-}
-
-
-/// <summary>
-/// Reads the map generator dialog into these settings.
-/// This routine is called before a preview or a generate, so that whatever the player has
-/// dialed in on the controls becomes the seed the generator works from. The settings taken
-/// off the dialog are run through Fixup_Settings, so an impossible combination can never
-/// reach the generator. The Firestorm settings are cleared away when that addon is absent.
-/// </summary>
-/// <param name="dialog">The map generator dialog to read.</param>
-void MapSeedClass::Get_Settings(HWND dialog)
-{
-	WDTTerritory * wdt = NULL;
-	if (Session.Type == GAME_INTERNET && Session.IsWDT) {
-		wdt = WDT_Get_Territory(Session.WDTTerritory);
-	}
-
-	HWND handle;
-	char str[30];
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_ENVIRONMENT);
-	Biome = ComboBox_GetItemData(handle, ComboBox_GetCurSel(handle));
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_TIME_OF_DAY);
-	Time = ComboBox_GetItemData(handle, ComboBox_GetCurSel(handle));
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_MAP_WIDTH);
-	Width = ComboBox_GetItemData(handle, ComboBox_GetCurSel(handle));
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_MAP_HEIGHT);
-	Height = ComboBox_GetItemData(handle, ComboBox_GetCurSel(handle));
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_DIMENSION_EDIT);
-	GetWindowText(handle, str, ARRAY_SIZE(str));
-	Seed = atoi(str);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_TIBERIUM_AMOUNT);
-	Tiberium = Slider_GetPos(handle);
-
-	if (wdt != NULL) {
-		NumPlayers = 4;
-	} else {
-		handle = GetDlgItem(dialog, IDC_MAPGEN_PLAYERS);
-		NumPlayers = Slider_GetPos(handle);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_HILLS);
-	Hills = Slider_GetPos(handle);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_WATER);
-	WaterAmount = Slider_GetPos(handle);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_CLIFFS);
-	Cliffs = Slider_GetPos(handle);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_VEGETATION);
-	Vegetation = Slider_GetPos(handle);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_CITIES);
-	Cities = Slider_GetPos(handle);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_ACCESSIBILITY);
-	Accessibility = Slider_GetPos(handle);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_TIBERIUM_FIELDS);
-	TiberiumLayout = Slider_GetPos(handle);
-
-	TiberiumWildlife = 0;
-	VeinholeMonsters = 0;
-	UseIonStorms = false;
-	UseTransitions = false;
-	UseBlueTiberium = false;
-
-	if (Addon_Enabled(ADDON_FIRESTORM)) {
-		handle = GetDlgItem(dialog, IDC_MAPGEN_LIFEFORMS);
-		if (handle != NULL) {
-			TiberiumWildlife = Button_GetCheck(handle) == BST_CHECKED ? 30 : 0;
-		}
-
-		handle = GetDlgItem(dialog, IDC_MAPGEN_VEINHOLES);
-		if (handle != NULL) {
-			VeinholeMonsters = Slider_GetPos(handle);
-		}
-
-		handle = GetDlgItem(dialog, IDC_MAPGEN_ION_STORMS);
-		if (handle != NULL) {
-			UseIonStorms = Button_GetCheck(handle) == BST_CHECKED;
-		}
-
-		handle = GetDlgItem(dialog, IDC_MAPGEN_TRANSITIONS);
-		if (handle != NULL) {
-			UseTransitions = Button_GetCheck(handle) == BST_CHECKED;
-		}
-
-		UseBlueTiberium = (double)Tiberium > 0.75;
-	}
-
-	Fixup_Settings();
-}
-
-
-/// <summary>
-/// Fills the map generator dialog in from these settings.
-/// This routine is the counterpart of Get_Settings, and is called whenever the dialog must
-/// show a different set of options -- when it first appears, after a randomize, and after a
-/// load. In a tournament game the controls are further restricted, or locked outright, to
-/// whatever the territory permits the player to meddle with.
-/// </summary>
-/// <param name="dialog">The map generator dialog to fill in.</param>
-void MapSeedClass::Set_Settings(HWND dialog)
-{
-	static char _win_name[24];
-
-	static int _biome_names[BIOME_COUNT] = {
-		TXT_BIOME_TUNDRA,
-		TXT_BIOME_TAIGA,
-		TXT_BIOME_TEMPERATE,
-		TXT_BIOME_DESERT,
-		TXT_BIOME_MUTATED
-	};
-
-	static int _time_names[TIME_OF_DAY_COUNT] = {
-		TXT_TIME_MORNING,
-		TXT_TIME_AFTERNOON,
-		TXT_TIME_DUSK,
-		TXT_TIME_NIGHT
-	};
-
-	static int _map_size_names[MAPSIZE_COUNT] = {
-		TXT_MAPSIZE_SMALL,
-		TXT_MAPSIZE_MEDIUM,
-		TXT_MAPSIZE_LARGE,
-		TXT_MAPSIZE_VERY_LARGE
-	};
-
-	WDTTerritory *wdt = NULL;
-	if (Session.Type == GAME_INTERNET && Session.IsWDT) {
-		wdt = WDT_Get_Territory(Session.WDTTerritory);
-	}
-
-	Fixup_Settings();
-
-	HWND handle;
-	LRESULT item;
-	int i;
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_ENVIRONMENT);
-	while (SendMessageA(handle, CB_GETCOUNT, 0, 0) > 0) {
-		SendMessageA(handle, CB_DELETESTRING, 0, 0);
-	}
-	for (i = BIOME_FIRST; i < BIOME_COUNT; i++) {
-		if (i != BIOME_MUTATED || Addon_Enabled(ADDON_FIRESTORM)) {
-			item = SendMessageA(handle, CB_ADDSTRING, 0, (LPARAM)Fetch_String(_biome_names[i]));
-			SendMessageA(handle, CB_SETITEMDATA, item, i);
-		}
-	}
-	item = SendMessageA(handle, CB_FINDSTRING, 0, (LPARAM)Fetch_String(_biome_names[Biome]));
-	SendMessageA(handle, CB_SETCURSEL, item, 0);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_TIME_OF_DAY);
-	while (SendMessageA(handle, CB_GETCOUNT, 0, 0) > 0) {
-		SendMessageA(handle, CB_DELETESTRING, 0, 0);
-	}
-	for (i = TIME_OF_DAY_FIRST; i < TIME_OF_DAY_COUNT; i++) {
-		item = SendMessageA(handle, CB_ADDSTRING, 0, (LPARAM)Fetch_String(_time_names[i]));
-		SendMessageA(handle, CB_SETITEMDATA, item, i);
-	}
-	item = SendMessageA(handle, CB_FINDSTRING, 0, (LPARAM)Fetch_String(_time_names[Time]));
-	SendMessageA(handle, CB_SETCURSEL, item, 0);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_MAP_WIDTH);
-	while (SendMessageA(handle, CB_GETCOUNT, 0, 0) > 0) {
-		SendMessageA(handle, CB_DELETESTRING, 0, 0);
-	}
-	for (i = 0; i < MAPSIZE_COUNT; i++) {
-		item = SendMessageA(handle, CB_ADDSTRING, 0, (LPARAM)Fetch_String(_map_size_names[i]));
-		SendMessageA(handle, CB_SETITEMDATA, item, i);
-	}
-	item = SendMessageA(handle, CB_FINDSTRING, 0, (LPARAM)Fetch_String(_map_size_names[Width]));
-	SendMessageA(handle, CB_SETCURSEL, item, 0);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_MAP_HEIGHT);
-	while (SendMessageA(handle, CB_GETCOUNT, 0, 0) > 0) {
-		SendMessageA(handle, CB_DELETESTRING, 0, 0);
-	}
-	for (i = 0; i < MAPSIZE_COUNT; i++) {
-		item = SendMessageA(handle, CB_ADDSTRING, 0, (LPARAM)Fetch_String(_map_size_names[i]));
-		SendMessageA(handle, CB_SETITEMDATA, item, i);
-	}
-	item = SendMessageA(handle, CB_FINDSTRING, 0, (LPARAM)Fetch_String(_map_size_names[Height]));
-	SendMessageA(handle, CB_SETCURSEL, item, 0);
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_DIMENSION_EDIT);
-	sprintf(_win_name, "%d", Seed);
-	SetWindowTextA(handle, _win_name);
-	if (wdt != NULL) {
-		EnableWindow(handle, wdt->UserModSeed ? TRUE : FALSE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_TIBERIUM_AMOUNT);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->TiberiumAmountMin, wdt->TiberiumAmountMax, Tiberium, wdt->UserModTiberiumAmount);
-
-		CheckDlgButton(dialog, IDC_WDT_1ON1, FALSE);
-		CheckDlgButton(dialog, IDC_WDT_2ON2, TRUE);
-		EnableWindow(GetDlgItem(dialog, IDC_WDT_1ON1), FALSE);
-		EnableWindow(GetDlgItem(dialog, IDC_WDT_2ON2), FALSE);
-	} else {
-		Set_Scroll_Bar(handle, 1, 100, Tiberium, TRUE);
-
-		handle = GetDlgItem(dialog, IDC_MAPGEN_PLAYERS);
-		Set_Scroll_Bar(handle, 2, MAX_PLAYERS, NumPlayers, TRUE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_HILLS);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->HillsMin, wdt->HillsMax, Hills, wdt->UserModHills);
-	} else {
-		Set_Scroll_Bar(handle, 0, 100, Hills, TRUE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_WATER);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->WaterMin, wdt->WaterMax, WaterAmount, wdt->UserModWater);
-	} else {
-		Set_Scroll_Bar(handle, 0, 100, WaterAmount, TRUE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_CLIFFS);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->CliffsMin, wdt->CliffsMax, Cliffs, wdt->UserModCliffs);
-	} else {
-		Set_Scroll_Bar(handle, 0, 100, Cliffs, TRUE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_VEGETATION);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->VegetationMin, wdt->VegetationMax, Vegetation, wdt->UserModVegetation);
-	} else {
-		Set_Scroll_Bar(handle, 0, 100, Vegetation, TRUE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_CITIES);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->CitiesMin, wdt->CitiesMax, Cities, wdt->UserModCities);
-	} else {
-		Set_Scroll_Bar(handle, 0, 100, Cities, TRUE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_TIBERIUM_FIELDS);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->TiberiumFieldsMin, wdt->TiberiumFieldsMax, TiberiumLayout, wdt->UserModTiberiumFields);
-	} else {
-		Set_Scroll_Bar(handle, 0, 100, TiberiumLayout, TRUE);
-	}
-
-	handle = GetDlgItem(dialog, IDC_MAPGEN_ACCESSIBILITY);
-	if (wdt != NULL) {
-		Set_Scroll_Bar(handle, wdt->AccessibilityMin, wdt->AccessibilityMax, Accessibility, wdt->UserModAccessability);
-
-		EnableWindow(GetDlgItem(dialog, IDC_MAPGEN_ENVIRONMENT), wdt->UserModBiome ? TRUE : FALSE);
-		EnableWindow(GetDlgItem(dialog, IDC_MAPGEN_TIME_OF_DAY), wdt->UserModTime ? TRUE : FALSE);
-		EnableWindow(GetDlgItem(dialog, IDC_MAPGEN_MAP_WIDTH), wdt->UserModWidth ? TRUE : FALSE);
-		EnableWindow(GetDlgItem(dialog, IDC_MAPGEN_MAP_HEIGHT), wdt->UserModHeight ? TRUE : FALSE);
-
-		Set_Checkbox(GetDlgItem(dialog, IDC_MAPGEN_LIFEFORMS), TiberiumWildlife > 0, wdt->UserModTiberiumCreatures);
-
-		Set_Scroll_Bar(GetDlgItem(dialog, IDC_MAPGEN_VEINHOLES), 0, 5, VeinholeMonsters, wdt->UserModVeinholeMonsters);
-
-		Set_Checkbox(GetDlgItem(dialog, IDC_MAPGEN_TRANSITIONS), UseTransitions, wdt->UserModTimeTransitions);
-
-		Set_Checkbox(GetDlgItem(dialog, IDC_MAPGEN_ION_STORMS), UseIonStorms, TRUE);
-
-		if (!wdt->UserModBiome && !wdt->UserModTime && !wdt->UserModCliffs && !wdt->UserModAccessability &&
-			!wdt->UserModHills && !wdt->UserModTiberiumAmount && !wdt->UserModTiberiumFields && !wdt->UserModWater &&
-			!wdt->UserModVegetation && !wdt->UserModCities && !wdt->UserModWidth && !wdt->UserModHeight &&
-			!wdt->UserModVeinholeMonsters) {
-			EnableWindow(GetDlgItem(dialog, IDC_MAPGEN_SURPRISE), FALSE);
-		}
-
-	} else {
-
-		Set_Scroll_Bar(handle, 0, 100, Accessibility, TRUE);
-
-		Set_Checkbox(GetDlgItem(dialog, IDC_MAPGEN_LIFEFORMS), TiberiumWildlife > 0, TRUE);
-
-		Set_Scroll_Bar(GetDlgItem(dialog, IDC_MAPGEN_VEINHOLES), 0, 5, VeinholeMonsters, TRUE);
-
-		Set_Checkbox(GetDlgItem(dialog, IDC_MAPGEN_TRANSITIONS), UseTransitions, TRUE);
-
-		Set_Checkbox(GetDlgItem(dialog, IDC_MAPGEN_ION_STORMS), UseIonStorms, TRUE);
-	}
-
-	InvalidateRect(dialog, 0, 0);
-}
-
-
-/// <summary>
-/// Sets up one of the map generation sliders.
-/// This routine is used by Set_Settings to point a slider at the span of values its setting
-/// is permitted to take. A setting with nothing left to choose between is shown disabled
-/// rather than hidden, so the dialog keeps its shape.
-/// </summary>
-/// <param name="handle">The slider control to set up.</param>
-/// <param name="min">The lowest value the slider may be dragged to.</param>
-/// <param name="max">The highest value the slider may be dragged to.</param>
-/// <param name="position">Where the thumb should sit.</param>
-/// <param name="enable">Should the player be allowed to move this slider?</param>
-void MapSeedClass::Set_Scroll_Bar(HWND handle, unsigned int min, unsigned int max, int position, bool enable)
-{
-	if (max <= min) {
-		EnableWindow(handle, FALSE);
-		Slider_SetRange(handle, 0, 100);
-		Slider_SetPos(handle, position);
-	} else {
-		EnableWindow(handle, enable);
-		Slider_SetRange(handle, min, max);
-		Slider_SetPos(handle, position);
-	}
-}
-
-
-/// <summary>
-/// Sets up one of the map generation checkboxes.
-/// This routine is the companion of Set_Scroll_Bar, and is used by Set_Settings to show a
-/// setting the dialog offers as a simple yes or no. A setting the player is not allowed to
-/// touch is shown disabled rather than hidden, so the dialog keeps its shape.
-/// </summary>
-/// <param name="handle">The checkbox control to set up.</param>
-/// <param name="state">Should the box be shown checked?</param>
-/// <param name="enable">Should the player be allowed to change this setting?</param>
-void MapSeedClass::Set_Checkbox(HWND handle, bool state, bool enable)
-{
-	Button_SetCheck(handle, state != 0);
-	Button_Enable(handle, enable);
 }
 
 
@@ -4190,8 +3648,10 @@ void MapSeedClass::Fixup_WDT_Settings(void)
 /// Forces every map generation setting within its legal range.
 /// This routine is called whenever the settings may have been tampered with -- after the
 /// dialog is read, after a randomize, and after a load -- so that the generator itself never
-/// has to defend against a nonsensical value. A tournament territory gets to narrow the
-/// limits further, and the mutated biome is only allowed when the Firestorm addon is here.
+/// has to defend against a nonsensical value, and an impossible combination can never reach
+/// the generator. A tournament territory gets to narrow the limits further, the mutated
+/// biome is only allowed when the Firestorm addon is here, and the rest of the Firestorm
+/// settings are cleared away when that addon is absent.
 /// </summary>
 void MapSeedClass::Fixup_Settings(void)
 {
@@ -4217,6 +3677,16 @@ void MapSeedClass::Fixup_Settings(void)
 
 	if (Biome == BIOME_MUTATED && !Addon_Enabled(ADDON_FIRESTORM)) {
 		Biome = BIOME_TEMPERATE;
+	}
+
+	if (Addon_Enabled(ADDON_FIRESTORM)) {
+		UseBlueTiberium = true;
+	} else {
+		TiberiumWildlife = 0;
+		VeinholeMonsters = 0;
+		UseIonStorms = false;
+		UseTransitions = false;
+		UseBlueTiberium = false;
 	}
 
 	if (Time >= TIME_OF_DAY_COUNT) {
@@ -4357,7 +3827,7 @@ bool MapSeedClass::Save(const char * name)
 	}
 
 	MapDescription[0] = 0;
-	if (BASECLASS::Save(MapDescription)) {
+	if (BASECLASS::Save(MapDescription, sizeof(MapDescription))) {
 		return(true);
 	}
 	return(false);
@@ -4699,8 +4169,7 @@ double Sample_Truncated_Normal(double mean, double scale, double lower_bound, do
 /// </summary>
 /// <param name="full_init">Should the scenario be rebuilt from scratch and the preview redrawn
 /// between phases?</param>
-/// <param name="dialog">The map generator dialog to repaint as the preview is refreshed.</param>
-void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
+void MapGeneratorClass::Generate_Random_Map(bool full_init)
 {
 	if (RMGCallback != NULL) RMGCallback();
 
@@ -4727,7 +4196,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	if (RMGCallback != NULL) RMGCallback();
@@ -4744,7 +4212,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	if (RMGCallback != NULL) RMGCallback();
@@ -4760,7 +4227,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	if (RMGCallback != NULL) RMGCallback();
@@ -4787,7 +4253,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	if (RMGCallback != NULL) RMGCallback();
@@ -4848,7 +4313,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	if (RMGCallback != NULL) RMGCallback();
@@ -4867,7 +4331,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	if (RMGCallback != NULL) RMGCallback();
@@ -4891,7 +4354,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	if (RMGCallback != NULL) RMGCallback();
@@ -4914,7 +4376,6 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	if (full_init) {
 		RandomMapGen.MapPreview->Create_Preview();
-		SendMessage(dialog, WM_PAINT, 0, 0);
 	}
 
 	ScenarioInit--;

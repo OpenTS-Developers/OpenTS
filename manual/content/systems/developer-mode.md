@@ -29,7 +29,7 @@ A Debug build started with a windowed-mode option, a resolution, or a map name h
 
 ## What a Debug build allocates
 
-A Debug build allocates the counters behind the events page during startup, one for each step the page times. That page is the only part of the diagnostic surface that draws from them.
+A Debug build allocates the counters behind the events page during startup, one for each step the page times. They count in processor time-stamp ticks of sixteen cycles each, and the events page and the benchmark overlay both draw from them.
 
 ## The debug log
 
@@ -40,6 +40,12 @@ A Debug build also opens a console window titled `Debug Console` as part of that
 ## Assertions
 
 Assertions use the C runtime's `assert`, so they are live wherever `NDEBUG` is undefined, which is the Debug configuration. A failed assertion ends the run through the C runtime's abort path, and the crash reporter records it like any other fault. There is no continue path.
+
+## The benchmark overlay
+
+A Debug build with the debug keys armed shows a frame benchmark window on [F6](/commands/fixed-debug-benchmark-overlay/) and hides it on the next press or through the window's close button. The window is drawn by Dear ImGui over the presented frame, and follows the frame's position and scale. It reports the logic frames and the presents of the last second, the frame number, the present interval, and the frame benchmarks the Events page shows, as a share of the frame and an average in microseconds when the processor speed could be measured, in ticks otherwise. The five counters the engine never starts are marked as such.
+
+While the monochrome display is off, the window resets the benchmarks once a second and shows the second just gone; while that display is on, the Events page keeps its reset and the window shows the live running averages, so the two never take samples from each other. A button resets on demand. The window takes the mouse only while the pointer is over it and the keyboard only while one of its fields has focus; everything beside it reaches the game. A visible menu dialog takes the mouse over its area before the shell sees it, so over a dialog the window answers the pointer only where it covers the frame beside the dialog. A switch opens the Dear ImGui demo window, which exercises the renderer.
 
 ## The monochrome pages
 
@@ -95,7 +101,7 @@ Neither is marked as surviving into multiplayer, so starting a network game clea
 
 ### The version dialog
 
-The version dialog reports the title, the game and internal version names, and a build line. That line is labeled by configuration and names the commit the build was made from, the branch it sat on and that commit's date. The dialog also reports the CPU vendor and the version of the language resource library.
+The version dialog reports the title, the game and internal version names, and a build line. That line is labeled by configuration and names the commit the build was made from, the branch it sat on and that commit's date. The dialog also reports the CPU vendor and the version of the language resource library. It opens from the classic main menu's [Ctrl+V](/commands/fixed-main-menu-version/) and from the menu entry, and is drawn as an RmlUi document from the `ui` directory. OK, Enter and Escape close the document. When its document, style sheet or font fails to load, the game logs the file name and closes the screen at once. [UI files](/systems/ui-files/) covers the directory.
 
 ## Toggles that reach nothing
 
