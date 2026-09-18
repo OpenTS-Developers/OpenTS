@@ -14,6 +14,7 @@
 #pragma once
 
 #include "session.h"
+#include "ui/screens/abort/uiabort.h"
 
 template<class T> class DynamicVectorClass;
 
@@ -22,4 +23,4 @@ GameType Select_MPlayer_Game (void);
 void Clear_Vector(DynamicVectorClass <NodeNameType *> *vector);
 //void Computer_Message(void);
 int Surrender_Dialog(int text);
-int Abort_Dialog(void);
+UIAbortChoice Abort_Dialog(void);

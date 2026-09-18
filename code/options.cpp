@@ -78,11 +78,11 @@
 #include "language/language.h"
 #include "mouse.h"
 #include "msgbox.h"
-#include "ownrdraw.h"
 #include "rules.h"
 #include "session.h"
 #include "techno.h"
 #include "theme.h"
+#include "ui/screens/keyboard/uikeyboard.h"
 #include "vector.h"
 #include "video.h"
 #include "vox.h"
@@ -381,6 +381,7 @@ void OptionsClass::Load_Settings(void)
 	AutoScroll = ConfigINI.Get_Bool("Options", "AutoScroll", AutoScroll);
 	DebugString("AutoScroll is %s\n", AutoScroll == true ? "ON" : "OFF");
 
+
 	BitmapSystemFont = ConfigINI.Get_Bool("Options", "BitmapSystemFont", BitmapSystemFont);
 	DebugString("BitmapSystemFont is %s\n", BitmapSystemFont == true ? "ON" : "OFF");
 
@@ -595,255 +596,14 @@ int OptionsClass::Normalize_Volume(int volume) const
 }
 
 
-/*
- * Internal state-machine messages the hotkey-configuration dialog posts to
- * itself. wParam/lParam are unused; each just triggers the matching refresh.
- */
-#define HKD_FILL_COMMANDS	(WM_USER + 100)		/// rebuild the command listbox for the selected category
-#define HKD_SHOW_COMMAND	(WM_USER + 101)		/// refresh the description / assigned-key panel for the selected command
-#define HKD_APPLY_HOTKEY	(WM_USER + 102)		/// assign the hotkey edit's key to the selected command
-#define HKD_REINIT			(WM_USER + 103)		/// full refresh: repopulate the category combo and reset
-
-
-/// <summary>
-/// Handles the messages for the keyboard configuration dialog.
-/// This routine drives the category, command and hotkey controls, and hands the reassigned
-/// keys back to the hotkey command list. Accepting the dialog writes the assignments out to
-/// KEYBOARD.INI; canceling puts the previous assignments back.
-/// </summary>
-/// <returns>Returns with TRUE if the message was consumed by this dialog.</returns>
-INT_PTR CALLBACK Hotkey_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	char buffer[64];
-	int * retval;
-	static int current_selection = -1;
-
-	INT_PTR result = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (result) {
-		return(result);
-	}
-
-	retval = (int *)GetWindowLongPtr(window, DWLP_USER);
-
-	switch (message) {
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDOK:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						CCINIClass ini;
-						ini.Clear();
-
-						for (int i = 0; i < HotkeyCommands.Count(); i++) {
-							CommandClass const * cmd = HotkeyCommands.Fetch_By_Position(i);
-							int key = HotkeyCommands.Fetch_ID_By_Position(i);
-							ini.Put_Int("Hotkey", cmd->Get_Unique_Name(), key);
-						}
-
-						CDFileClass file("Keyboard.ini");
-						ini.Save(file, false);
-						*retval = IDOK;
-						return(TRUE);
-					}
-					break;
-
-				case IDCANCEL:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						Init_Hotkeys();
-						*retval = 2;
-						return(TRUE);
-					}
-					break;
-
-				case IDC_KEY_COMMANDS:
-					if (HIWORD(wparam) == LBN_SELCHANGE) {
-						SendMessage(window, HKD_SHOW_COMMAND, 0, 0);
-						HWND hotkey = GetDlgItem(window, IDC_KEY_HOTKEY);
-						if (hotkey != NULL) {
-							SetFocus(hotkey);
-							return(TRUE);
-						}
-					}
-					break;
-
-				case IDC_KEY_ASSIGN:
-					SendMessage(window, HKD_APPLY_HOTKEY, 0, 0);
-					SendMessage(window, HKD_SHOW_COMMAND, 0, 0);
-					return(TRUE);
-
-				case IDC_KEY_HOTKEY:
-					if (HIWORD(wparam) == EN_CHANGE) {
-						int key = SendMessage((HWND)lparam, HKM_GETHOTKEY, 0, 0);
-						char const * key_name;
-						if (HotkeyCommands.Is_Present(key)) {
-							key_name = HotkeyCommands[key]->Get_Display_Name();
-							if (key_name == NULL) {
-								key_name = "";
-							}
-						} else {
-							key_name = "";
-						}
-						HWND hotkey_name = GetDlgItem(window, IDC_KEY_ASSIGNED_TO);
-						SetWindowText(hotkey_name, key_name);
-						return(TRUE);
-					}
-					break;
-
-				case IDC_KEY_RESET_ALL:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						if (WWMessageBox()._Process(TXT_RESET_HOTKEYS, IDOK, TXT_YES, TXT_NO, TXT_NONE, false) == 0) {
-							DebugString("Deleting users KEYBOARD.INI\n");
-							// Only the player's own file is discarded; the defaults a
-							// deployment ships are what the reset falls back on.
-							CCFileClass file("KEYBOARD.INI");
-							file.Delete();
-							Init_Hotkeys();
-							SendMessage(window, HKD_REINIT, 0, 0);
-							return(TRUE);
-						}
-					}
-					break;
-
-				case IDC_KEY_CATEGORY:
-					if (HIWORD(wparam) == CBN_SELCHANGE) {
-						SendMessage(window, HKD_FILL_COMMANDS, 0, 0);
-						return(TRUE);
-					}
-					break;
-			}
-			return(TRUE);
-
-		case HKD_APPLY_HOTKEY: {
-			HWND list_commands = GetDlgItem(window, IDC_KEY_COMMANDS);
-			int selection = ListBox_GetCurSel(list_commands);
-			if (selection != LB_ERR) {
-				CommandClass const * cmd = (CommandClass const *)ListBox_GetItemData(list_commands, selection);
-				for (int i = 0; i < HotkeyCommands.Count(); i++) {
-					if (HotkeyCommands.Fetch_By_Position(i) == cmd) {
-						HotkeyCommands.Remove_Index(HotkeyCommands.Fetch_ID_By_Position(i));
-						break;
-					}
-				}
-				HWND hotkey = GetDlgItem(window, IDC_KEY_HOTKEY);
-				int key = SendMessage(hotkey, HKM_GETHOTKEY, 0, 0);
-				if (key != 0) {
-					HotkeyCommands.Remove_Index(key);
-					HotkeyCommands.Add_Index(key, cmd);
-					return(TRUE);
-				}
-			}
-			return(TRUE);
-		}
-
-		case HKD_SHOW_COMMAND: {
-			HWND list_commands = GetDlgItem(window, IDC_KEY_COMMANDS);
-			int selection = ListBox_GetCurSel(list_commands);
-			if (selection != LB_ERR) {
-				CommandClass const * cmd = (CommandClass const *)ListBox_GetItemData(list_commands, selection);
-				HWND description = GetDlgItem(window, IDC_KEY_DESCRIPTION);
-				SetWindowText(description, cmd->Get_Description());
-
-				int key = 0;
-				for (int i = 0; i < HotkeyCommands.Count(); i++) {
-					if (HotkeyCommands.Fetch_By_Position(i) == cmd) {
-						key = HotkeyCommands.Fetch_ID_By_Position(i);
-						break;
-					}
-				}
-
-				HWND key_label = GetDlgItem(window, IDC_KEY_CURRENT_SHORTCUT);
-				Build_Hotkey_String((KeyNumType)key, buffer);
-				SetWindowText(key_label, buffer);
-
-				HWND hotkey = GetDlgItem(window, IDC_KEY_HOTKEY);
-				SendMessage(hotkey, HKM_SETHOTKEY, 0, 0);
-
-				HWND hotkey_name = GetDlgItem(window, IDC_KEY_ASSIGNED_TO);
-				SetWindowText(hotkey_name, "");
-				return(TRUE);
-			}
-			return(TRUE);
-		}
-
-		case HKD_FILL_COMMANDS: {
-			HWND cmb_category = GetDlgItem(window, IDC_KEY_CATEGORY);
-			if (ComboBox_GetCurSel(cmb_category) != current_selection) {
-				current_selection = ComboBox_GetCurSel(cmb_category);
-				GetWindowText(cmb_category, buffer, sizeof(buffer));
-				HWND list_commands = GetDlgItem(window, IDC_KEY_COMMANDS);
-				ListBox_ResetContent(list_commands);
-				for (int i = 0; i < AllCommands.Count(); i++) {
-					CommandClass const * cmd = AllCommands[i];
-					if (stricmp(cmd->Get_Category(), buffer) == 0) {
-						int index = ListBox_AddString(list_commands, cmd->Get_Display_Name());
-						if (index != LB_ERR) {
-							ListBox_SetItemData(list_commands, index, (LPARAM)cmd);
-						}
-					}
-				}
-				HWND description = GetDlgItem(window, IDC_KEY_DESCRIPTION);
-				SetWindowText(description, "");
-				ListBox_SetCurSel(description, 0);
-				SendMessage(window, HKD_SHOW_COMMAND, 0, 0);
-				return(TRUE);
-			}
-			return(TRUE);
-		}
-
-		case HKD_REINIT: {
-			HWND cmb_category = GetDlgItem(window, IDC_KEY_CATEGORY);
-			ComboBox_ResetContent(cmb_category);
-			for (int i = 0; i < AllCommands.Count(); i++) {
-				CommandClass const * cmd = AllCommands[i];
-				const char * s = cmd->Get_Category();
-				if (ComboBox_FindString(cmb_category, 0, s) == CB_ERR) {
-					s = cmd->Get_Category();
-					ComboBox_AddString(cmb_category, s);
-				}
-			}
-			ComboBox_SetCurSel(cmb_category, 0);
-			SendMessage(window, HKD_FILL_COMMANDS, 0, 0);
-			current_selection = -1;
-			return(TRUE);
-		}
-
-		case WM_INITDIALOG:
-			SendMessage(window, HKD_REINIT, 0, 0);
-			return(FALSE);
-	}
-
-	return(FALSE);
-}
-
-
 /// <summary>
 /// Displays the keyboard configuration dialog.
-/// This routine brings up the hotkey assignment dialog and does not return until the player
-/// dismisses it. The title screen is kept refreshed while the dialog is up outside of a
-/// game.
+/// This routine brings up the hotkey assignment screen and does not return until the player
+/// dismisses it.
 /// </summary>
-bool OptionsClass::Hotkey_Dialog(void)
+void OptionsClass::Hotkey_Dialog(void)
 {
-	HWND handle;
-	int res = -1;
-
-	handle = OwnerDraw::Begin_Dialog(IDD_OPT_KEYBOARD, Hotkey_Dialog_Proc);
-
-	if (handle != NULL) {
-		SetWindowLongPtr(handle, DWLP_USER, (LONG_PTR)&res);
-		OwnerDraw::Display_Dialog(handle);
-
-		while (res < 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				res = 2;
-			}
-			if (!GameActive) {
-				Title_Screen_Restore();
-			}
-		}
-		OwnerDraw::End_Dialog(handle);
-	}
-
-	return(true);
+	UI_Keyboard_Dialog();
 }
 
 

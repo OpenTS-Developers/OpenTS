@@ -74,13 +74,13 @@
 #include "_tactica.h"
 #include "_timer.h"
 #include "_tooltip.h"
+#include "_ui.h"
 #include "_wsproto.h"
 #include "addon.h"
 #include "aircraft.h"
 #include "aitrig.h"
 #include "anim.h"
 #include "astar.h"
-#include "savemgr.h"
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
@@ -137,6 +137,7 @@
 #include "restate.h"
 #include "revent.h"
 #include "rules.h"
+#include "savemgr.h"
 #include "savestream.h"
 #include "scheme.h"
 #include "score.h"
@@ -156,7 +157,6 @@
 #include "teamtype.h"
 #include "terrain.h"
 #include "theme.h"
-#include "voc.h"
 #include "tiberium.h"
 #include "tracker.h"
 #include "trigger.h"
@@ -164,9 +164,11 @@
 #include "trim.h"
 #include "tube.h"
 #include "tutorial.h"
+#include "ui/uishell.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
+#include "voc.h"
 #include "vox.h"
 #include "wave.h"
 #include "waypoint.h"
@@ -732,7 +734,7 @@ bool Read_Scenario(char const * fname)
 
 	if (Scen->IsRandom) {
 		if (RandomMapGen.SeedData.Load(name)) {
-			RandomMapGen.Generate_Random_Map(false, NULL);
+			RandomMapGen.Generate_Random_Map(false);
 			Multiplayer_Last_Minute_Fixups();
 		} else {
 			state = ScenarioState::NotRead;

@@ -37,24 +37,14 @@
 
 #include "_keyboar.h"
 #include "_map.h"
+#include "_xmouse.h"
 #include "data.h"
-#include "dbgprint.h"
-#include "gamedlg.h"
 #include "language/language.h"
-#include "loaddlg.h"
-#include "ownrdraw.h"
-#include "queue.h"
 #include "restate.h"
-#include "savemgr.h"
 #include "scenario.h"
-#include "stats.h"
+#include "ui/screens/abort/uiabort.h"
+#include "ui/screens/gameopt/uigameopt.h"
 
-#include "special.hh"
-
-void Game_Options_On_INITDIALOG(HWND window);
-INT_PTR CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-INT_PTR CALLBACK Abort_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-void Abort_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 /// <summary>
 /// Displays the in game options dialog.
@@ -65,49 +55,37 @@ void Abort_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lp
 /// </summary>
 void Game_Options_Dialog(void)
 {
-	int rc = 0;
-
-	HWND dialog;
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_SP, Game_Options_Dialog_Proc);
-	} else if (Session.Type == GAME_INTERNET) {
-		dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_WOL, Game_Options_Dialog_Proc);
-	} else {
-		dialog = OwnerDraw::Begin_Dialog(IDD_OPT_CTRL_MP, Game_Options_Dialog_Proc);
-	}
-
 	IgnoreInput = true;
 	Keyboard->Clear();
 
-	if (dialog) {
+	UIGameOptionsChoice const choice = UI_Game_Options_Dialog();
 
-		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
+	switch (choice) {
+		case UI_GAME_OPTIONS_CONTROLS:
+			SpecialDialog = SDLG_SETTINGS;
+			break;
 
-		OwnerDraw::Display_Dialog(dialog);
+		case UI_GAME_OPTIONS_ABORT:
+			SpecialDialog = SDLG_ABORT;
+			break;
 
-		while (rc == 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				rc = IDOK;
-			}
-		}
-		OwnerDraw::End_Dialog(dialog);
+		default:
+			break;
 	}
 
 	Keyboard->Clear();
 
-	if (rc == IDC_BRIEFING) {
+	if (choice == UI_GAME_OPTIONS_BRIEFING) {
 		Restate_Mission(Scen);
 	}
 
 	IgnoreInput = Scen->IsInputLocked;
 
-	if (rc == IDC_LOAD_GAME) {
-		if (IDC_LOAD_GAME) {
-			if (MouseCursor->Is_Hidden() == false && Scen->IsInputLocked == 1) {
-				Hide_Mouse();
-			} else if (MouseCursor->Is_Hidden() == true && Scen->IsInputLocked == 0) {
-				Show_Mouse();
-			}
+	if (choice == UI_GAME_OPTIONS_LOAD) {
+		if (MouseCursor->Is_Hidden() == false && Scen->IsInputLocked == 1) {
+			Hide_Mouse();
+		} else if (MouseCursor->Is_Hidden() == true && Scen->IsInputLocked == 0) {
+			Show_Mouse();
 		}
 	}
 
@@ -128,322 +106,13 @@ int Network_Quality_Text_ID(NetTiming::ConnectionQuality quality)
 
 
 /// <summary>
-/// Handles messages for the in game options dialog.
-/// This routine offers every message to the owner draw system first. What is left it uses
-/// to service the option buttons -- save, load, delete, briefing, resume, abort and
-/// settings -- either acting on them directly or noting the player's choice for
-/// Game_Options_Dialog to deal with once the dialog comes down. Dragging the game speed
-/// slider updates the label beside it.
-/// </summary>
-/// <returns>Returns with TRUE if the owner draw system consumed the message.</returns>
-INT_PTR CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-
-	HWND handle;
-
-	if (rc) {
-		return(rc);
-	}
-
-	switch (message) {
-
-		case WM_INITDIALOG:
-			Game_Options_On_INITDIALOG(window);
-			break;
-
-		case WM_COMMAND: {
-			int code = HIWORD(wparam);
-			int* retval = (int *)GetWindowLongPtr(window, DWLP_USER);
-
-			switch (LOWORD(wparam)) {
-
-				case IDC_SAVE_GAME:
-					if (!code) {
-						if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-							ShowWindow(window, SW_HIDE);
-							UpdateWindow(MainWindow);
-							char description[512];
-							strcpy(description, Scen->Description);
-							LoadOptionsClass().Save(description);
-							Game_Options_On_INITDIALOG(window);
-							ShowWindow(window, SW_SHOW);
-							UpdateWindow(window);
-						} else if (SaveManager.Is_Multiplayer_Saving_Allowed()) {
-							OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::SAVEGAME));
-							*retval = IDC_SAVE_GAME;
-						}
-					}
-					break;
-
-				case IDC_LOAD_GAME:
-					if (!code) {
-						if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-							ShowWindow(window, SW_HIDE);
-							UpdateWindow(MainWindow);
-							if (LoadOptionsClass().Load()) {
-								*retval = IDC_LOAD_GAME;
-							} else {
-								ShowWindow(window, SW_SHOW);
-								UpdateWindow(window);
-							}
-						} else if (SaveManager.Multiplayer_Load_Is_Allowed()) {
-							// A list opened from in here would sit inside the main loop and stall the
-							// match; the menu loop opens it between frames instead.
-							SpecialDialog = SDLG_LOAD;
-							*retval = IDC_LOAD_GAME;
-						}
-					}
-					break;
-
-				case IDC_BRIEFING:
-					if (!code) {
-						*retval = IDC_BRIEFING;
-					}
-					break;
-
-				case IDC_DELETE_GAME:
-					if (!code) {
-						ShowWindow(window, SW_HIDE);
-						UpdateWindow(MainWindow);
-						LoadOptionsClass().Delete();
-						Game_Options_On_INITDIALOG(window);
-						ShowWindow(window, SW_SHOW);
-						UpdateWindow(window);
-					}
-					break;
-
-				case IDC_RESUME_MISSION:
-					if (!code) {
-						if (Session.Type == GAME_INTERNET) {
-							handle = GetDlgItem(window, IDC_GAME_SPEED_SLIDER);
-							if (handle) {
-								int speed = (OptionsClass::MAX_SPEED_SETTING-1) - SendMessage(handle, TBM_GETPOS, 0, 0);
-								if (Options.GameSpeed != speed) {
-									OutList.push_back(EventClass(PlayerPtr->HeapID, EventClass::GAMESPEED, speed));
-								}
-							}
-						}
-						*retval = IDOK;
-					}
-					break;
-
-				case IDC_ABORT_MISSION:
-					if (!code) {
-						if (Session.Type == GAME_INTERNET) {
-							SpecialDialog = SDLG_SURRENDER;
-							if (!WestwoodOnline_Tournament) {
-								SpecialDialog = SDLG_ABORT;
-							}
-						} else {
-							SpecialDialog = SDLG_ABORT;
-						}
-						*retval = IDCANCEL;
-					}
-					break;
-
-				case IDC_GAME_CONTROLS:
-					if (!code) {
-						SpecialDialog = SDLG_SETTINGS;
-						*retval = IDOK;
-					}
-					break;
-
-				default:
-					break;
-			}
-			break;
-		}
-
-		case WM_HSCROLL: {
-			if (LOWORD(wparam) == SB_THUMBTRACK) {
-				int pos = HIWORD(wparam);
-				if ((HWND)lparam == GetDlgItem(window, IDC_GAME_SPEED_SLIDER)) {
-					handle = GetDlgItem(window, IDC_GAME_SPEED_LABEL);
-					if (handle) {
-						Static_SetText(handle, Fetch_String(GameSpeedNames[pos]));
-					}
-				}
-			}
-			break;
-		}
-
-		default:
-			break;
-	}
-
-	return(FALSE);
-}
-
-
-/// <summary>
-/// Prepares the controls of the game options dialog.
-/// This routine is called when the dialog is created, and again whenever a save or delete
-/// has changed what is on disk. It decides which buttons the current game type allows the
-/// player to use and primes the game speed and connection-quality controls.
-/// </summary>
-void Game_Options_On_INITDIALOG(HWND window)
-{
-	HWND handle;
-
-	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		bool present = LoadOptionsClass().Files_Present();
-
-		handle = GetDlgItem(window, IDC_LOAD_GAME);
-		if (handle) {
-			EnableWindow(handle, present);
-		}
-
-		handle = GetDlgItem(window, IDC_DELETE_GAME);
-		if (handle) {
-			EnableWindow(handle, present);
-		}
-	}
-
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-		handle = GetDlgItem(window, IDC_SAVE_GAME);
-		if (handle) {
-			EnableWindow(handle, SaveManager.Is_Multiplayer_Saving_Allowed());
-		}
-
-		handle = GetDlgItem(window, IDC_LOAD_GAME);
-		if (handle) {
-			EnableWindow(handle, SaveManager.Multiplayer_Load_Is_Allowed() && MultiplayerLoadOptionsClass().Files_Present());
-		}
-	}
-
-	if (Session.Type == GAME_INTERNET) {
-		NetTiming::TimingSettings const settings{Session.FrameSendRate, Session.MaxAhead};
-		NetTiming::ConnectionQuality const quality = NetTiming::Connection_Quality_For_Settings(settings);
-
-		handle = GetDlgItem(window, IDC_CTRLWOL_CONNECTION);
-		if (handle) {
-			unsigned int const displayed_rung = settings.FrameSendRate >= NetTiming::MINIMUM_TIMING_RUNG
-				&& settings.FrameSendRate <= NetTiming::MAXIMUM_TIMING_RUNG ? settings.FrameSendRate : NetTiming::MAXIMUM_TIMING_RUNG;
-			// The stock slider runs worst to best from left to right, so rung 1 sits at its right end.
-			int const mirrored_rung = NetTiming::MINIMUM_TIMING_RUNG + NetTiming::MAXIMUM_TIMING_RUNG - displayed_rung;
-			SetSliderRangeAndPos(handle, NetTiming::MINIMUM_TIMING_RUNG, NetTiming::MAXIMUM_TIMING_RUNG, mirrored_rung);
-			EnableWindow(handle, FALSE);
-		}
-
-		handle = GetDlgItem(window, IDC_SCROLL_SPEED_LABEL);
-		if (handle) {
-			char label[64];
-			snprintf(label, sizeof(label), Fetch_String(TXT_CONNECTION_QUALITY_RUNG), Fetch_String(Network_Quality_Text_ID(quality)), settings.FrameSendRate);
-			Static_SetText(handle, label);
-		}
-
-		handle = GetDlgItem(window, IDC_GAME_SPEED_SLIDER);
-		if (handle) {
-			Slider_SetRange(handle, 0, OptionsClass::MAX_SPEED_SETTING-1);
-			Slider_SetPos(handle, (OptionsClass::MAX_SPEED_SETTING-1) - Options.GameSpeed);
-		}
-	}
-
-	if (Session.Type == GAME_SKIRMISH) {
-		handle = GetDlgItem(window, IDC_BRIEFING);
-		if (handle) {
-			EnableWindow(handle, FALSE);
-		}
-	}
-
-}
-
-
-/// <summary>
 /// Displays the abort mission dialog and waits for an answer.
 /// This routine is used by the special dialog handler when the player asks to abandon or
 /// surrender the mission. It does not return until the player has settled on one of the
 /// choices offered.
 /// </summary>
-/// <returns>Returns with IDOK to quit the mission, IDABORT to restart or surrender it, or
-/// IDCANCEL to carry on playing.</returns>
-int Abort_Dialog(void)
+/// <returns>What the player chose.</returns>
+UIAbortChoice Abort_Dialog(void)
 {
-	int rc = 0;
-
-	HWND dialog = OwnerDraw::Begin_Dialog(IDD_MISSION_ABORT, Abort_Dialog_Proc);
-
-	if (dialog) {
-
-		SetWindowLongPtr(dialog, DWLP_USER, (LONG_PTR)&rc);
-
-		OwnerDraw::Display_Dialog(dialog);
-
-		while (rc == 0) {
-			if (OwnerDraw::Dialog_Message_Handler() == true) {
-				rc = IDOK;
-			}
-		}
-		OwnerDraw::End_Dialog(dialog);
-	}
-	return(rc);
-}
-
-
-/// <summary>
-/// Handles messages for the abort mission dialog.
-/// This routine offers every message to the owner draw system first. What is left it uses
-/// to relabel the restart button as a surrender for a multiplayer game, and to pass button
-/// presses along to Abort_Dialog_On_COMMAND.
-/// </summary>
-/// <returns>Returns with the result of the owner draw default dialog handler.</returns>
-INT_PTR CALLBACK Abort_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	HWND handle;
-
-	INT_PTR rc = OwnerDraw::Default_Dialog_Proc(window, message, wparam, lparam);
-	if (rc == 0) {
-		switch (message) {
-			case WM_INITDIALOG:
-				handle = GetDlgItem(window, IDC_RESTART_MISSION);
-				if (Session.Type != GAME_NORMAL) {
-					SetWindowText(handle, Fetch_String(TXT_SURRENDER));
-					if (PlayerPtr->IsDefeated || PlayerPtr->IsToWin || PlayerPtr->IsToLose || PlayerPtr->IsToDie) {
-						EnableWindow(handle, FALSE);
-					}
-				}
-				break;
-
-			case WM_COMMAND:
-				Abort_Dialog_On_COMMAND(window, LOWORD(wparam), 0, HIWORD(wparam));
-				break;
-		}
-		rc = 0;
-	}
-	return(rc);
-}
-
-
-/// <summary>
-/// Handles a button press in the abort mission dialog.
-/// This routine records the player's choice in the result variable that Abort_Dialog
-/// attached to the dialog window, which is what ends the dialog's message pump.
-/// </summary>
-/// <param name="message">The control identifier of the button that was pressed.</param>
-/// <param name="lparam">The notification code that came with the button press.</param>
-void Abort_Dialog_On_COMMAND(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	int* retval = (int *)GetWindowLongPtr(window, DWLP_USER);
-
-	switch ((int)message) {
-		case IDC_ABORT_MISSION:
-			if (lparam == 0) {
-				*retval = IDOK;
-			}
-			break;
-
-		case IDC_RESTART_MISSION:
-			if (lparam == 0) {
-				*retval = IDABORT;
-			}
-			break;
-
-		case IDOK:
-		case IDCANCEL:
-			if (lparam == 0) {
-				*retval = IDCANCEL;
-			}
-			break;
-	}
+	return(UI_Abort_Dialog());
 }

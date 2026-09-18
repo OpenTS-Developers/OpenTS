@@ -11,6 +11,10 @@
 
 #include "netshare.h"
 
+#include "_ui.h"
+#include "ui/screens/msgbox/uimsgbox.h"
+#include "ui/screens/scenario/uiscenario.h"
+
 #include "_rules.h"
 #include "conquer.h"
 #include "data.h"
@@ -26,15 +30,13 @@
 #include "netdlg.h"
 #include "netdlg2.h"
 #include "newmenu.h"
-#include "ownrdraw.h"
 #include "rules.h"
 #include "scenario.h"
 #include "sendfile.h"
 #include "session.h"
 #include "stimer.h"
-#include "wdtnet.h"
-#include "windlg.h"
 #include "utf8.h"
+#include "wdtnet.h"
 #include "worlddom.h"
 #include "wstring.h"
 #include "xpipe.h"
@@ -100,35 +102,26 @@ unsigned int Wstring_Hash(Wstring & string)
 }
 
 
-/// <summary>
-/// Fetches the game options dialog that is currently up.
-/// The same options are presented by four different dialogs depending on how the game was
-/// started. Use this routine rather than trying to remember which one the player is looking
-/// at.
-/// </summary>
-/// <returns>Returns with the handle of the open game options dialog. NULL is returned if
-/// none of them is up.</returns>
-HWND GameoptWindow(void)
-{
-	HWND dialog;
+static std::vector<NetChatLineType> _ChatLog;
 
-	dialog = WS_Find_Dialog(IDD_MPLAYER_HOST);
-	if (dialog) {
-		return(dialog);
-	}
-	dialog = WS_Find_Dialog(IDD_MPLAYER_GUEST);
-	if (dialog) {
-		return(dialog);
-	}
-	return(0);
+
+std::vector<NetChatLineType> const & Net2_Chat_Log(void)
+{
+	return(_ChatLog);
 }
 
 
 /// <summary>
-/// Prints a formatted chat message to the player.
-/// This routine hunts down the topmost dialog that has somewhere to show public and private
-/// messages and puts the text there, so the caller does not have to know which dialog the
-/// player is looking at. If no dialog wants chat messages, the message is quietly dropped.
+/// Empties the lobby chat. The dialog that showed it is going away with its messages.
+/// </summary>
+void Net2_Clear_Chat_Log(void)
+{
+	_ChatLog.clear();
+}
+
+
+/// <summary>
+/// Adds a formatted chat message to the lobby's chat log, which is what shows it.
 /// </summary>
 /// <param name="color">Color to display the message in, or -1 for the default.</param>
 /// <param name="fmt">Printf style format string for the message.</param>
@@ -142,177 +135,12 @@ void __cdecl PMessagePrintf(int color, const char * fmt, ...)
 	vsnprintf(buffer, sizeof(buffer), fmt, va);
 	va_end(va);
 
-	if (WS_Top_Window() != 0) {
-		HWND top = WS_Top_Window();
-		HWND msg = GetDlgItem(top, IDC_PMESSAGES);
-		while (msg == 0) {
-			top = WS_Next_Lower_Dialog(top);
-			if (top == 0) {
-				msg = 0;
-				break;
-			}
-			msg = GetDlgItem(top, IDC_PMESSAGES);
-		}
+	buffer[UTF8::Boundary_Before(buffer, sizeof(buffer) - 1)] = '\0';
 
-		if (msg != 0) {
-			_DrawMessage(color, buffer, msg);
-		}
+	if (_ChatLog.size() >= 500) {
+		_ChatLog.erase(_ChatLog.begin());
 	}
-}
-
-
-/// <summary>
-/// Prints a formatted system message to the player.
-/// This routine hunts down the topmost dialog that has somewhere to show system messages and
-/// puts the text there, so the caller does not have to know which dialog the player is
-/// looking at. If no dialog wants system messages, the message is quietly dropped.
-/// </summary>
-/// <param name="color">Color to display the message in, or -1 for the default.</param>
-/// <param name="fmt">Printf style format string for the message.</param>
-void __cdecl SMessagePrintf(int color, const char * fmt, ...)
-{
-	va_list va;
-	static char buffer[1024];
-	memset(buffer, 0, sizeof(buffer));
-
-	va_start(va, fmt);
-	vsnprintf(buffer, sizeof(buffer), fmt, va);
-	va_end(va);
-
-	if (WS_Top_Window() != 0) {
-		HWND top = WS_Top_Window();
-		HWND msg = GetDlgItem(top, IDC_SMESSAGES);
-		while (msg == 0) {
-			top = WS_Next_Lower_Dialog(top);
-			if (top == 0) {
-				msg = 0;
-				break;
-			}
-			msg = GetDlgItem(top, IDC_SMESSAGES);
-		}
-
-		if (msg != 0) {
-			_DrawMessage(color, buffer, msg);
-		}
-	}
-}
-
-
-/// <summary>
-/// Draws a message into a message list box.
-/// This routine word wraps the message to the width of the list box and adds each resulting
-/// line as its own entry, so that a long chat message stays readable. Embedded newlines
-/// break the text as well.
-/// </summary>
-/// <param name="color">Color to display the message in, or -1 for the list box
-/// default.</param>
-/// <param name="message">The text to display.</param>
-/// <param name="window">The message list box to display the text in.</param>
-void _DrawMessage(int color, const char * message, HWND window)
-{
-	RECT rect;
-
-	int length = strlen(message);
-
-	int offset = 18;
-	Get_Display_Rect(window, &rect);
-	if (SendMessage(window, OD_HASATTACHED, 0, 0)) {
-		offset = 1;
-	}
-
-	HDC hdc = GetDC(window);
-	SendMessage(window, OD_RESTOREDC, 0, (LPARAM)hdc);
-
-	while (length) {
-		if (message != NULL) {
-			char const * newline = strchr(message, '\n');
-			if (newline != NULL) {
-				int linelen = newline - message + 1;
-				if (length >= linelen) {
-					length = linelen;
-				}
-			}
-		}
-
-		SIZE size;
-		GetTextExtentPoint32(hdc, message, length, &size);
-		int maxWidth = rect.right - rect.left - offset;
-
-		if (size.cx >= maxWidth - 4) {
-			int reduceBy;
-			if (size.cx / 2 > maxWidth) {
-				reduceBy = 10;
-				length -= reduceBy;
-			} else {
-				reduceBy = 1;
-			}
-
-			int found = -1;
-			int idx = length - 1;
-
-			while (idx > 0) {
-				if (!isgraph((unsigned char)message[idx])) {
-					found = idx;
-					break;
-				}
-				idx--;
-			}
-
-			if (found == -1) {
-				length -= reduceBy;
-				found = length;
-			}
-			length = found;
-		} else {
-			_SetMessageString(window, message, length, color);
-			message += length;
-			length = strlen(message);
-		}
-	}
-
-	ReleaseDC(window, hdc);
-}
-
-
-/// <summary>
-/// Adds a single line of text to a message list box.
-/// This is the low level routine that _DrawMessage uses once it has decided where the text
-/// should break. The list box is capped, so a long game does not pile up messages without
-/// limit.
-/// </summary>
-/// <param name="window">The message list box to add the line to.</param>
-/// <param name="message">The text to add; only the leading characters are taken.</param>
-/// <param name="length">Number of characters of the message to add.</param>
-/// <param name="color">Color to display the line in, or -1 for the list box default.</param>
-void _SetMessageString(HWND window,  const char * message, int length, int color)
-{
-	static char buffer[1024];
-	memset(buffer, 0, sizeof(buffer));
-	strncpy(buffer, message, length);
-	char * line_end = strchr(buffer, '\r');
-	if (line_end != NULL) {
-		line_end[0] = '\0';
-	} else {
-		line_end = strchr(buffer, '\n');
-		if (line_end != NULL) {
-			line_end[0] = '\0';
-		}
-	}
-
-	int old = SendMessage(window, OD_DISABLEPAINT, 0, 1);
-	int topindex = ListBox_GetCount(window);
-	if (topindex > 500) {
-		ListBox_DeleteString(window, 0);
-		topindex--;
-	}
-
-	int index = ListBox_InsertString(window, -1, buffer);
-	if (color != -1) {
-		SendMessage(window, OD_SETCOLOR, index, color);
-	}
-
-	ListBox_SetTopIndex(window, topindex);
-	SendMessage(window, OD_DISABLEPAINT, 0, old);
+	_ChatLog.push_back(NetChatLineType{color, buffer});
 }
 
 
@@ -354,174 +182,9 @@ int CountAliveTeams(HouseClass * house)
 
 
 /// <summary>
-/// Displays an owner drawn message box and waits for an answer.
-/// Use this routine in place of the Windows message box so that the prompt matches the
-/// game's artwork. The box holds up the caller, but the supplied callback is polled while it
-/// is on screen so that network traffic keeps flowing.
+/// Puts a message box up over the lobby and waits for an answer. The supplied callback is
+/// polled while it is on screen so that network traffic keeps flowing.
 /// </summary>
-/// <param name="text">The message to display. Nothing at all happens for an empty
-/// message.</param>
-/// <param name="type">The button layout to use; MB_OK, MB_OKCANCEL or MB_YESNO.</param>
-/// <param name="callback">Idle routine to poll while the box is up.</param>
-/// <param name="large">Should the large version of the box be used?</param>
-/// <returns>Returns with the control ID of the button the player pressed. Zero is returned
-/// if there was nothing to display.</returns>
-int ODMessageBox(const char * text, int type, bool (*callback)(void), bool large)
-{
-	if (text != NULL && strlen(text) > 0) {
-		HWND dialog;
-		if (type == MB_OKCANCEL) {
-			dialog = WS_Create_Dialog(ProgramInstance, IDD_MSGBOX_2, MainWindow, ODMessageBox_Proc, false);
-		} else {
-			if (large) {
-				dialog = WS_Create_Dialog(ProgramInstance, IDD_MSGBOX_3_LARGE, MainWindow, ODMessageBox_Proc, false);
-			} else {
-				dialog = WS_Create_Dialog(ProgramInstance, IDD_MSGBOX_3_SMALL, MainWindow, ODMessageBox_Proc, false);
-			}
-			if (type == MB_OK) {
-				HWND ok = GetDlgItem(dialog, IDOK);
-				SetWindowLong(ok, GWL_STYLE, GetWindowLong(ok, GWL_STYLE) | WS_VISIBLE);
-			}
-			if (type == MB_YESNO) {
-				HWND yes = GetDlgItem(dialog, IDYES);
-				SetWindowLong(yes, GWL_STYLE, GetWindowLong(yes, GWL_STYLE) | WS_VISIBLE);
-				HWND no = GetDlgItem(dialog, IDNO);
-				SetWindowLong(no, GWL_STYLE, GetWindowLong(no, GWL_STYLE) | WS_VISIBLE);
-			}
-		}
-		Center_Window_Within_Window(dialog);
-		SendDlgItemMessage(dialog, IDC_MSGBOX_TEXT, WM_SETTEXT, 0, (LPARAM)text);
-		OwnerDraw::Subclass_Dialog(dialog, 0);
-		ShowWindow(dialog, SW_NORMAL);
-		return(WS_Wait_Dialog(dialog, callback));
-	}
-	return(0);
-}
-
-
-/// <summary>
-/// Handles the messages for the owner drawn message box.
-/// This routine paints the box through the owner draw system and tears it down with
-/// whichever of the buttons the player pressed.
-/// </summary>
-/// <returns>Returns with TRUE if the message was dealt with here, FALSE otherwise.</returns>
-INT_PTR CALLBACK ODMessageBox_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	switch (message) {
-		case WM_DRAWITEM:
-			OwnerDraw::Draw_Item((LPDRAWITEMSTRUCT)lparam);
-			return(TRUE);
-
-		case WM_PAINT:
-			OwnerDraw::Draw_Dialog_Back(window);
-			ValidateRect(window, NULL);
-			return(TRUE);
-
-		case WM_ERASEBKGND:
-			return(TRUE);
-
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDOK:
-				case IDCANCEL:
-				case IDYES:
-				case IDNO:
-					WS_Destroy_Dialog(window, LOWORD(wparam));
-					return(TRUE);
-			}
-			break;
-	}
-	return(FALSE);
-}
-
-
-/// <summary>
-/// Displays the current game options in the setup dialog.
-/// This routine pushes the session options out to the sliders and check boxes. On the
-/// initializing pass it also establishes the slider ranges and greys out whichever options a
-/// World Domination Tour territory refuses to let the players meddle with.
-/// </summary>
-/// <param name="window">The game options dialog to update.</param>
-/// <param name="initialize">Is this the first call for a freshly created dialog?</param>
-void DisplayGameopts(HWND window, BOOL initialize)
-{
-	#define MP_MIN_MONEY 2500
-
-	if (initialize) {
-		if (Session.Type == GAME_INTERNET && Session.IsWDT) {
-			WDTTerritory * territory = WDT_Get_Territory(Session.WDTTerritory);
-			if (territory != NULL) {
-				EnableWindow(GetDlgItem(window, IDC_YOURSIDE), FALSE);
-				EnableWindow(GetDlgItem(window, IDC_AIPLAYERS), FALSE);
-				EnableWindow(GetDlgItem(window, IDC_AILEVEL_SLIDER), FALSE); /// AI Difficulty
-
-				if (!territory->UserModUnitCount) {
-					EnableWindow(GetDlgItem(window, IDC_UNITCOUNT), FALSE);
-				}
-				if (!territory->UserModTechLevel) {
-					EnableWindow(GetDlgItem(window, IDC_TECHLEVEL), FALSE);
-				}
-				if (!territory->UserModCredits) {
-					EnableWindow(GetDlgItem(window, IDC_CREDITS), FALSE);
-				}
-				if (!territory->UserModAlliances) {
-					EnableWindow(GetDlgItem(window, IDC_ALLIES), FALSE);
-				}
-				if (!territory->UserModHarvesterTruce) {
-					EnableWindow(GetDlgItem(window, IDC_HARVTRUCE), FALSE);
-				}
-				if (!territory->UserModBases) {
-					EnableWindow(GetDlgItem(window, IDC_BASES), FALSE);
-				}
-				if (!territory->UserModMCVRedeploy) {
-					EnableWindow(GetDlgItem(window, IDC_REDEPLOY_MCV), FALSE); /// Re-Deployable MCV
-				}
-				if (!territory->UserModFogOfWar) {
-					EnableWindow(GetDlgItem(window, IDC_FOG_OF_WAR), FALSE); /// Fog of War
-				}
-				if (!territory->UserModBridgeDestruction) {
-					EnableWindow(GetDlgItem(window, IDC_BRIDGE_DESTROY), FALSE);
-				}
-				if (!territory->UserModCrates) {
-					EnableWindow(GetDlgItem(window, IDC_CRATES), FALSE);
-				}
-				if (!territory->UserModShortGame) {
-					EnableWindow(GetDlgItem(window, IDC_SHORT_GAME), FALSE); /// Short Game
-				}
-				if (!territory->UserModCrapEngineer) {
-					EnableWindow(GetDlgItem(window, IDC_MULTI_ENGINEER), FALSE); /// Crap Engineers
-				}
-			}
-		}
-		SendDlgItemMessage(window, IDC_UNITCOUNT, TBM_SETRANGE, TRUE, MAKELONG(1, 10));
-		SendDlgItemMessage(window, IDC_TECHLEVEL, TBM_SETRANGE, TRUE, MAKELONG(1, MPLAYER_BUILD_LEVEL_MAX));
-		SendDlgItemMessage(window, IDC_CREDITS, TBM_SETRANGE, TRUE, MAKELONG(MP_MIN_MONEY, Rule->MPMaxMoney));
-		SendDlgItemMessage(window, IDC_CREDITS, OD_SETTRACKSTEP, 0, 100);
-		SendDlgItemMessage(window, IDC_AIPLAYERS, TBM_SETRANGE, TRUE, MAKELONG(0, 6));
-		SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, TBM_SETRANGE, TRUE, MAKELONG(0, 2)); /// AI Difficulty
-		SendDlgItemMessage(window, IDC_GAME_SPEED_SLIDER, TBM_SETRANGE, TRUE, MAKELONG(0, 6)); /// Game Speed
-	}
-
-	SendDlgItemMessage(window, IDC_UNITCOUNT, TBM_SETPOS, TRUE, Session.Options.UnitCount);
-	SendDlgItemMessage(window, IDC_TECHLEVEL, TBM_SETPOS, TRUE, BuildLevel);
-	SendDlgItemMessage(window, IDC_CREDITS, TBM_SETPOS, TRUE, Session.Options.Credits);
-	SendDlgItemMessage(window, IDC_AIPLAYERS, TBM_SETPOS, TRUE, Session.Options.AIPlayers);
-	SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, TBM_SETPOS, TRUE, Session.Options.AIDifficulty);
-	SendDlgItemMessage(window, IDC_GAME_SPEED_SLIDER, TBM_SETPOS, TRUE, 6 - Session.Options.GameSpeed);
-
-	int button_state[] = { BST_UNCHECKED, BST_CHECKED };
-	SendDlgItemMessage(window, IDC_BRIDGE_DESTROY, BM_SETCHECK, button_state[Session.Options.BridgeDestruction], 0);
-	SendDlgItemMessage(window, IDC_FOG_OF_WAR, BM_SETCHECK, button_state[Session.Options.FogOfWar], 0);
-	SendDlgItemMessage(window, IDC_CRATES, BM_SETCHECK, button_state[Session.Options.Goodies], 0);
-	SendDlgItemMessage(window, IDC_ALLIES, BM_SETCHECK, button_state[Session.Options.AlliesAllowed], 0);
-	SendDlgItemMessage(window, IDC_HARVTRUCE, BM_SETCHECK, button_state[Session.Options.HarvTruce], 0);
-	SendDlgItemMessage(window, IDC_BASES, BM_SETCHECK, button_state[Session.Options.Bases], 0);
-	SendDlgItemMessage(window, IDC_REDEPLOY_MCV, BM_SETCHECK, button_state[Session.Options.MCVRedeploy], 0);
-	SendDlgItemMessage(window, IDC_SHORT_GAME, BM_SETCHECK, button_state[Session.Options.ShortGame], 0);
-	SendDlgItemMessage(window, IDC_MULTI_ENGINEER, BM_SETCHECK, button_state[Session.Options.CrapEngineers], 0);
-}
-
-
 void Net2EncodeGameopt(char *out, int size);
 
 
@@ -740,7 +403,6 @@ bool DecodePubGameopt(char * options, char * name)
 		return(false);
 	}
 
-	SendDlgItemMessage(GameoptWindow(), IDC_USERS, OD_DISABLEPAINT, 0, 1);
 	DebugString("Decoding game options %s\n", options);
 
 	token = strtok(token, ",");
@@ -884,8 +546,6 @@ bool DecodePubGameopt(char * options, char * name)
 		}
 	}
 
-	SendDlgItemMessage(GameoptWindow(), IDC_SCENARIONAME, WM_SETTEXT, 0, (LPARAM)Session.Options.ScenarioDescription);
-
 	Scen->Scenario = -1;
 	Frame = 0;
 	Session.CommProtocol = DEFAULT_COMM_PROTOCOL;
@@ -896,7 +556,7 @@ bool DecodePubGameopt(char * options, char * name)
 
 	if (!same_scenario) {
 		DebugString("Not same scenario...");
-		Update_Network_Dialog_Preview(GameoptWindow());
+		Update_Network_Dialog_Preview();
 	}
 
 	if (digest == NULL) {
@@ -932,8 +592,6 @@ bool DecodePubGameopt(char * options, char * name)
 
 	free(string);
 
-	DisplayGameopts(GameoptWindow(), false);
-
 	if (_last_unit_count != Session.Options.UnitCount) do_decode = true;
 	if (_last_tech_level != BuildLevel) do_decode = true;
 	if (_last_credits != Session.Options.Credits) do_decode = true;
@@ -962,20 +620,9 @@ bool DecodePubGameopt(char * options, char * name)
 			char buffer[64];
 			sprintf(buffer, "A0");
 			SendPublicGameopts(buffer);
-
-			EnableWindow(GetDlgItem(GameoptWindow(), IDC_ACCEPT), TRUE);
-			InvalidateRect(GetDlgItem(GameoptWindow(), IDC_ACCEPT), NULL, FALSE);
-		} else {
-			if (!IsWindowEnabled(GetDlgItem(GameoptWindow(), IDC_ACCEPT))) {
-				EnableWindow(GetDlgItem(GameoptWindow(), IDC_ACCEPT), TRUE);
-				InvalidateRect(GetDlgItem(GameoptWindow(), IDC_ACCEPT), NULL, FALSE);
-			}
 		}
 	}
 
-	SendDlgItemMessage(GameoptWindow(), IDC_USERS, OD_DISABLEPAINT, 0, 0);
-
-	Net2DisplayUsers();
 
 	_last_unit_count = Session.Options.UnitCount;
 	_last_tech_level = BuildLevel;
@@ -998,83 +645,6 @@ bool DecodePubGameopt(char * options, char * name)
 		return(true);
 	}
 	return(false);
-}
-
-
-/// <summary>
-/// Saves the current selection of a list box.
-/// The multiplayer dialogs rebuild their list boxes from scratch whenever the game state
-/// changes. Call this routine first so that whatever the player had highlighted can be put
-/// back afterwards.
-/// </summary>
-/// <param name="listbox">The list box to record the selection of.</param>
-/// <param name="lbdict">The dictionary to record the selected entries into.</param>
-void LBSaveSelections(HWND listbox, Dictionary<Wstring,bool> & lbdict)
-{
-	int count = ListBox_GetCount(listbox);
-	char buffer[128];
-	Wstring key;
-
-	if (count) {
-		int style = GetWindowLong(listbox, GWL_STYLE);
-		if (style & LBS_MULTIPLESEL) {
-			for (int i = 0; i < count; i++) {
-				if (ListBox_GetSel(listbox, i) != 0) {
-					ListBox_GetText(listbox, i, buffer);
-					key = buffer;
-					bool value = true;
-					lbdict.add(key, value);
-				}
-			}
-		} else if (!(style & LBS_NOSEL)) {
-			int index = ListBox_GetCurSel(listbox);
-			if (index >= 0) {
-				buffer[0] = '\0';
-				ListBox_GetText(listbox, index, buffer);
-				key = buffer;
-				bool value = true;
-				lbdict.add(key, value);
-			}
-		}
-	}
-}
-
-
-/// <summary>
-/// Restores a list box selection that was saved earlier.
-/// This routine is the other half of LBSaveSelections. Call it once the list box has been
-/// refilled to put the player's highlight back where it was.
-/// </summary>
-/// <param name="listbox">The list box to restore the selection within.</param>
-/// <param name="lbdict">The dictionary the selection was saved into.</param>
-void LBRestoreSelections(HWND listbox, Dictionary<Wstring,bool> & lbdict)
-{
-	int count = ListBox_GetCount(listbox);
-	Wstring key;
-
-	if (count) {
-		int style = GetWindowLong(listbox, GWL_STYLE);
-		if (style & LBS_MULTIPLESEL) {
-			for (int i = 0; i < count; i++) {
-				char buffer[128];
-				ListBox_GetText(listbox, i, buffer);
-				key = buffer;
-				if (lbdict.contains(key)) {
-					ListBox_SetSel(listbox, TRUE, i);
-				}
-			}
-		} else if (!(style & LBS_NOSEL)) {
-			bool value;
-			if (lbdict.removeAny(key, value)) {
-				char buffer[128];
-				strcpy(buffer, key.get());
-				int index = ListBox_FindStringExact(listbox, -1, buffer);
-				if (index != LB_ERR) {
-					ListBox_SetCurSel(listbox, index);
-				}
-			}
-		}
-	}
 }
 
 
@@ -1116,152 +686,14 @@ int RandomMapWaypointCount(int index)
 }
 
 
-static int LastPreviewedScenario;
-static int OriginalScenario;
-static HWND ScenarioPick;
-
-
 /// <summary>
-/// Handles the idle processing while the map selection dialog is up.
-/// This routine keeps the preview in step with whichever map is highlighted and pumps the
-/// network layer the session is using, so that a game sitting in the lobby does not stall
-/// while the host browses for a scenario.
+/// Lets the host choose the scenario for the game.
 /// </summary>
-/// <returns>bool; Should the dialog be shut down?</returns>
-bool Scenario_Select_Callback(void)
+/// <returns>True when the player settled on a map.</returns>
+bool Scenario_Dialog(void)
 {
-	int index = SendDlgItemMessage(ScenarioPick, IDC_AILEVEL_SLIDER, LB_GETCURSEL, 0, 0);
-	if (index != LastPreviewedScenario && index != -1) {
-		Set_Scenario_Info_From_Index(index);
-		if (stricmp(Session.Scenarios[index]->Get_Filename(), "RandMap.Sed") == 0) {
-			delete MultiplayerMapPreview;
-			MultiplayerMapPreview = new MapPreviewClass;
-			MultiplayerMapPreview->Read_PCX_Preview("RandMap.img");
-			if (MultiplayerMapPreview->Get_Preview_Surface() == NULL) {
-				Update_Network_Dialog_Preview(ScenarioPick);
-			}
-			InvalidateRect(ScenarioPick, NULL, FALSE);
-		} else {
-			Update_Network_Dialog_Preview(ScenarioPick);
-		}
-		LastPreviewedScenario = index;
-		Session.Options.ScenarioIndex = OriginalScenario;
-		Set_Scenario_Info_From_Index(OriginalScenario);
-	}
-	if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
-		return(Net2Callback());
-	}
-	Call_Back();
-	return(false);
+	return(UI_Scenario_Dialog());
 }
-
-INT_PTR CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
-
-
-/// <summary>
-/// Brings up the multiplayer map selection dialog.
-/// Use this routine to let the host choose the scenario for the game. The dialog does not
-/// return until the player settles on a map or backs out.
-/// </summary>
-/// <param name="top">The window to parent and center the dialog against.</param>
-/// <returns>Returns with the control ID that dismissed the dialog, either IDOK or
-/// IDCANCEL.</returns>
-int Scenario_Dialog(HWND top)
-{
-	Hide_Mouse();
-	Draw_Menu_Background();
-	Show_Mouse();
-	ScenarioPick = WS_Create_Dialog(ProgramInstance, IDD_MPLAYER_SELECT_MAP, top, Scenario_DlgProc, FALSE);
-	Center_Window_Within_Window(ScenarioPick);
-	OwnerDraw::Subclass_Dialog(ScenarioPick, 0);
-	ShowWindow(ScenarioPick, SW_NORMAL);
-	return(WS_Wait_Dialog(ScenarioPick, Scenario_Select_Callback));
-}
-
-
-/// <summary>
-/// Handles the messages for the multiplayer map selection dialog.
-/// This routine fills the map list, paints the preview of the highlighted map, and services
-/// the random map generator button.
-/// </summary>
-/// <returns>Returns with TRUE if the message was dealt with here, FALSE to leave it to the
-/// dialog manager.</returns>
-INT_PTR CALLBACK Scenario_DlgProc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	switch (message) {
-		case WM_NCDESTROY:
-			On_WM_NCDESTROY(window);
-			break;
-
-		case WM_PAINT:
-			OwnerDraw::Draw_Dialog_Back(window);
-			if (MultiplayerMapPreview) {
-				MultiplayerMapPreview->Blit_Preview(window);
-			}
-			ValidateRect(window, NULL);
-			break;
-
-		case WM_ERASEBKGND:
-			return(TRUE);
-
-		case WM_DRAWITEM:
-			OwnerDraw::Draw_Item((DRAWITEMSTRUCT *)lparam);
-			return(TRUE);
-
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDC_AILEVEL_SLIDER:
-					return(FALSE);
-
-				case IDOK: {
-					int index = SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, LB_GETCURSEL, 0, 0);
-					Session.Options.ScenarioIndex = std::max(0, index);
-					WS_Destroy_Dialog(window, IDOK);
-					SendDlgItemMessage(GameoptWindow(), IDC_SCENARIONAME, WM_SETTEXT, 0, (LPARAM)Session.Scenarios[Session.Options.ScenarioIndex]);
-					break;
-				}
-
-				case IDCANCEL:
-					WS_Destroy_Dialog(window, IDCANCEL);
-					break;
-
-				case IDC_CREATE_RANDOM_MAP: {
-					ShowWindow(window, SW_HIDE);
-					int scenario = CreateRandomMap();
-					if (scenario != -1) {
-						SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, LB_RESETCONTENT, 0, 0);
-						for (int i = 0; i < Session.Scenarios.Count(); i++) {
-							SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, LB_INSERTSTRING, -1, (LPARAM)Session.Scenarios[i]);
-						}
-						SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, LB_SETCURSEL, scenario, 0);
-						Set_Scenario_Info_From_Index(scenario);
-						if (!MultiplayerMapPreview->Get_Preview_Surface()) {
-							Update_Network_Dialog_Preview(window);
-						}
-						Session.Options.ScenarioIndex = OriginalScenario;
-						Set_Scenario_Info_From_Index(OriginalScenario);
-					}
-					ShowWindow(window, SW_SHOW);
-					break;
-				}
-			}
-			break;
-
-		case OD_SUBCLASSED: {
-			SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, LB_RESETCONTENT, 0, 0);
-			for (int i = 0; i < Session.Scenarios.Count(); i++) {
-				SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, LB_INSERTSTRING, -1, (LPARAM)Session.Scenarios[i]);
-			}
-			SendDlgItemMessage(window, IDC_AILEVEL_SLIDER, LB_SETCURSEL, Session.Options.ScenarioIndex, 0);
-			OriginalScenario = Session.Options.ScenarioIndex;
-			LastPreviewedScenario = -1;
-			break;
-		}
-	}
-	return(FALSE);
-}
-
-
 /// <summary>
 /// Puts the options every machine agreed on into the globals the simulation reads, so a match
 /// against other machines is played under one set of rules however it was set up.
@@ -1300,15 +732,16 @@ void PregameSetup(void)
 /// the scenario locally asks the host for a preview instead of building one, so the picture
 /// may not appear until that download arrives.
 /// </summary>
-/// <param name="win">The dialog window that displays the preview.</param>
-void Update_Network_Dialog_Preview(HWND win)
+/// <returns>bool; Was a preview built? A guest still waiting on one from the host, or a
+/// scenario this machine does not hold, leaves none.</returns>
+bool Update_Network_Dialog_Preview(void)
 {
 	delete MultiplayerMapPreview;
 	MultiplayerMapPreview = NULL;
 
 	switch (Session.Type) {
 		case GAME_IPX:
-			if (WS_Top_Window_ID() == IDD_MPLAYER_GUEST && !Find_Local_Scenario(Session.ScenarioFileName, Session.ScenarioFileLength, Session.ScenarioDigest, Session.ScenarioIsOfficial)) {
+			if (Net2LobbyPhase == NET2_LOBBY_GUEST && !Find_Local_Scenario(Session.ScenarioFileName, Session.ScenarioFileLength, Session.ScenarioDigest, Session.ScenarioIsOfficial)) {
 				GlobalPacketType packet;
 				memset(&packet, 0, sizeof(packet));
 				packet.Command = NET_REQ_PREVIEW;
@@ -1321,7 +754,7 @@ void Update_Network_Dialog_Preview(HWND win)
 				while (Ipx.Global_Num_Send() != 0) {
 					Call_Back();
 				}
-				return;
+				return(false);
 			}
 			break;
 	}
@@ -1332,7 +765,7 @@ void Update_Network_Dialog_Preview(HWND win)
 			delete MultiplayerMapPreview;
 			MultiplayerMapPreview = NULL;
 		}
-		return;
+		return(false);
 	}
 
 	if (MultiplayerMapPreview != NULL) {
@@ -1340,11 +773,14 @@ void Update_Network_Dialog_Preview(HWND win)
 		MultiplayerMapPreview = NULL;
 	}
 	MultiplayerMapPreview = new MapPreviewClass;
-	if (MultiplayerMapPreview != NULL) {
-		MultiplayerMapPreview->Read_INI_Preview(Session.ScenarioFileName);
-		InvalidateRect(win, NULL, FALSE);
+	if (MultiplayerMapPreview == NULL) {
+		return(false);
 	}
+
+	MultiplayerMapPreview->Read_INI_Preview(Session.ScenarioFileName);
+	return(true);
 }
+
 
 
 /// <summary>
@@ -1404,7 +840,6 @@ void Receive_Random_Map_Preview(void)
 	}
 	MultiplayerMapPreview = new MapPreviewClass;
 	MultiplayerMapPreview->Create_Preview_Surface(preview);
-	InvalidateRect(WS_Top_Window(), NULL, FALSE);
 
 	DebugString("Cleaning up the temporary decompression buffers\n");
 	delete [] preview;

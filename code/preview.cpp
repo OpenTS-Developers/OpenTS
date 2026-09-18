@@ -23,13 +23,11 @@
 #include "lzopipe.h"
 #include "lzostraw.h"
 #include "overtype.h"
-#include "ownrdraw.h"
 #include "pcx.h"
 #include "scenario.h"
 #include "surface.h"
 #include "tactical.h"
 #include "terrain.h"
-#include "windlg.h"
 #include "xpipe.h"
 #include "xstraw.h"
 
@@ -57,33 +55,6 @@ MapPreviewClass::~MapPreviewClass(void)
 	if (SurfacePtr != NULL) {
 		delete SurfacePtr;
 		SurfacePtr = NULL;
-	}
-}
-
-
-/// <summary>
-/// Draws the preview image into a dialog.
-/// This routine is used by the scenario selection dialogs. The picture is scaled to fit
-/// the preview frame of the window while keeping its proportions.
-/// </summary>
-/// <param name="window">The dialog window that owns the preview frame.</param>
-void MapPreviewClass::Blit_Preview(HWND window)
-{
-	ValidateRect(window, NULL);
-
-	if (SurfacePtr != NULL) {
-		RECT winrect;
-		Get_Display_Rect(GetDlgItem(window, IDC_PREVIEW_FRAME), &winrect);
-		Rect framerect(winrect.left, winrect.top, winrect.right - winrect.left, winrect.bottom - winrect.top);
-		Rect destrect;
-		Rect srcrect = SurfacePtr->Get_Rect();
-		int scale = std::min(1000 * framerect.Width / srcrect.Width, 1000 * framerect.Height / srcrect.Height);
-
-		destrect.X = framerect.X + framerect.Width / 2 - (scale * srcrect.Width) / 2000;
-		destrect.Y = framerect.Y + framerect.Height / 2 - (scale * srcrect.Height) / 2000;
-		destrect.Width = (scale * srcrect.Width) / 1000;
-		destrect.Height = (scale * srcrect.Height) / 1000;
-		AlternateSurface->Blit_From(destrect, *SurfacePtr, SurfacePtr->Get_Rect(), false, false);
 	}
 }
 

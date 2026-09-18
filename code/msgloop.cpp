@@ -103,8 +103,8 @@ void Windows_Message_Handler(void)
 	/*
 	**	Process windows messages until the message queue is exhuasted.
 	*/
-	while (PeekMessage(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-		if (!GetMessage( &msg, NULL, 0, 0 )) {
+	while (PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE)) {
+		if (!GetMessageW( &msg, NULL, 0, 0 )) {
 			return;
 		}
 
@@ -156,7 +156,7 @@ void Windows_Message_Handler(void)
 		**	for the window that it was directed to.
 		*/
 		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		DispatchMessageW(&msg);
 	}
 
 	/*

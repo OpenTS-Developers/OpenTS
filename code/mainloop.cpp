@@ -24,7 +24,9 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "_timer.h"
+#include "_ui.h"
 #include "_xmouse.h"
+#include "audio/audioengine.h"
 #include "bench.h"
 #include "chat.h"
 #include "command.h"
@@ -32,7 +34,6 @@
 #include "data.h"
 #include "debug.h"
 #include "dialog.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "fog.h"
 #include "globals.h"
@@ -60,6 +61,9 @@
 #include "theme.h"
 #include "timer.h"
 #include "tracker.h"
+#include "ui/uienginehost.h"
+#include "ui/uishell.h"
+#include "video.h"
 
 #include "bench.hh"
 #include "special.hh"
@@ -173,6 +177,32 @@ static void Check_For_Focus_Loss(void)
 
 bool InMainLoop = false;
 
+
+static void Finish_Decided_Game(void)
+{
+	Unlock_Scenario_Input();
+
+	if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
+		if (WestwoodOnline_Tournament) {
+			Session.SawGameCompletion = true;
+		}
+		Register_Game_End_Time();
+		Send_Statistics_Packet();
+	}
+
+	bool const won = PlayerWins;
+	PlayerWins = false;
+	PlayerLoses = false;
+	PlayerRestarts = false;
+	PlayerAborts = false;
+	if (won) {
+		Do_Win();
+	} else {
+		Do_Lose();
+	}
+}
+
+
 /***********************************************************************************************
  * Main_Loop -- This is the main game loop (as a single loop).                                 *
  *                                                                                             *
@@ -197,6 +227,14 @@ bool Main_Loop(void)
 	//Mono_Set_Cursor(0,0);
 
 	if (!GameActive) {return(!GameActive);}
+
+	if (PlayerWins || PlayerLoses) {
+		if (UIShell.Screen_Shown()) {
+			return(true);
+		}
+		Finish_Decided_Game();
+		return(!GameActive);
+	}
 
 	InMainLoop = true;
 
@@ -278,6 +316,7 @@ bool Main_Loop(void)
 	*/
 	if (!Session.Play) {
 		if (SpecialDialog == SDLG_NONE && GameInFocus) {
+			UIShell.Tick();
 			Map.Input(input, x, y);
 			if (input) {
 				Keyboard_Process(input);
@@ -334,39 +373,16 @@ bool Main_Loop(void)
 
 	bool done = false;
 	if (PlayerWins || PlayerLoses || PlayerRestarts || PlayerAborts) {
-		Unlock_Scenario_Input();
-
-		/*
-		**	Check for player wins or loses according to global event flag.
-		*/
-		if (PlayerWins) {
-			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
-				if (WestwoodOnline_Tournament) {
-					Session.SawGameCompletion = true;
-				}
-				Register_Game_End_Time();
-				Send_Statistics_Packet();		// Player just won.
+		if (PlayerWins || PlayerLoses) {
+			if (UIShell.Screen_Shown()) {
+				BEnd(BENCH_GAME_FRAME);
+				InMainLoop = false;
+				return(true);
 			}
-			PlayerLoses = false;
-			PlayerWins = false;
-			PlayerRestarts = false;
-			PlayerAborts = false;
-			Do_Win();
+			Finish_Decided_Game();
 			done = true;
-		} else if (PlayerLoses) {
-			if (Session.Type == GAME_INTERNET && !GameStatisticsPacketSent) {
-				if (WestwoodOnline_Tournament) {
-					Session.SawGameCompletion = true;
-				}
-				Register_Game_End_Time();
-				Send_Statistics_Packet();		// Player just lost.
-			}
-			PlayerWins = false;
-			PlayerLoses = false;
-			PlayerRestarts = false;
-			PlayerAborts = false;
-			Do_Lose();
-			done = true;
+		} else {
+			Unlock_Scenario_Input();
 		}
 	}
 
@@ -578,6 +594,8 @@ void Sync_Delay(void)
 				if (!NetFrameTimer()) {
 					break;
 				}
+			} else {
+				UI_Serve_Screen();
 			}
 			Sleep(0);
 		}
@@ -594,6 +612,8 @@ void Sync_Delay(void)
 				if (!FrameTimer) {
 					break;
 				}
+			} else {
+				UI_Serve_Screen();
 			}
 			if (GameInFocus || (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH)) {
 				Sleep(0);
