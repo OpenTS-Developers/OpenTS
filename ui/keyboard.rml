@@ -1,0 +1,39 @@
+<rml>
+<head>
+	<title>Customize keyboard</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="keyboard.rcss"/>
+</head>
+<body template="dialog" data-model="keyboard">
+	<p id="title">Customize Keyboard</p>
+	<div id="columns">
+		<div class="column" id="left">
+			<p class="caption">Category:</p>
+			<select id="categories" data-event-change="queue('category', ev.value)">
+				<option data-for="name : categories" data-attr-value="it_index" data-attrif-selected="it_index == categoryindex">{{name}}</option>
+			</select>
+			<div class="group" id="about">
+				<div class="rule"><span></span><label>Description:</label><span></span></div>
+				<div id="description">{{description}}</div>
+			</div>
+			<p class="caption" id="press">Press new shortcut key:</p>
+			<div id="hotkey-row"><div id="capture" class="hotkey"><span data-if="capturedname != ''">{{capturedname}}</span></div><button id="assign" data-event-click="queue('assign')">Assign</button></div>
+			<p class="caption tall">Currently assigned to:</p>
+			<p class="value" id="assigned-to">{{assignedto}}</p>
+		</div>
+		<div class="column" id="right">
+			<p class="caption">Commands:</p>
+			<div id="commands" class="list"><div class="rows">
+				<div class="item" data-for="row : rows" data-class-selected="row.command == selected" data-event-click="queue('select', row.command)">{{row.name}}</div>
+			</div></div>
+			<p class="caption tall">Current shortcut:</p>
+			<p class="value" id="shortcut">{{shortcut}}</p>
+		</div>
+	</div>
+	<div id="buttons">
+		<button id="reset" data-event-click="queue('reset')">Reset All</button>
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	</div>
+</body>
+</rml>

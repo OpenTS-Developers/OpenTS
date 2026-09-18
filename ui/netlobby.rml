@@ -1,0 +1,26 @@
+<rml>
+<head>
+	<title>Network games</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="netlobby.rcss"/>
+</head>
+<body template="dialog" data-model="netlobby">
+	<span class="caption" id="cap-name">Your Name:</span>
+	<input type="text" id="handle" maxlength="16" data-value="handle" data-event-change="queue('handle', 0, ev.value)"/>
+	<div id="chat" class="list"><div class="rows">
+		<p class="line" data-for="line : chat" data-style-color="line.color">{{line.text}}</p>
+	</div></div>
+	<input type="text" id="say" maxlength="255" data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
+	<span class="caption" id="cap-games">Games:</span>
+	<div id="games" class="list"><div class="rows">
+		<div class="item" data-for="entry : games" data-class-selected="it_index == game" data-event-click="queue('game', it_index)" data-event-dblclick="queue('join')">{{entry.label}}</div>
+	</div></div>
+	<span class="caption" id="cap-players">Players:</span>
+	<div id="players" class="list"><div class="rows">
+		<div class="item" data-for="row : players">{{row.name}}</div>
+	</div></div>
+	<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	<button id="join" data-event-click="queue('join')">[[TXT_JOIN]]</button>
+	<button id="new" data-event-click="queue('new')">[[TXT_NEW]]</button>
+</body>
+</rml>

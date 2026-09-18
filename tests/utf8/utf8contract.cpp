@@ -148,6 +148,26 @@ int main(void)
 	Check(UTF8::Windows_1252_Glyph(0x0141) == 'L', "a Windows-1252 font falls back to the closest letter");
 	Check(UTF8::Windows_1252_Glyph(0x0081) == -1 && UTF8::Windows_1252_Glyph(0x4E2D) == -1, "a Windows-1252 font has no index for a C1 control or a CJK ideograph");
 
+	Check(UTF8::Windows_Code(1250, 'A') == U'A' && UTF8::Windows_Code(1251, 'A') == U'A'
+		&& UTF8::Windows_Code(1253, 'A') == U'A' && UTF8::Windows_Code(1254, 'A') == U'A'
+		&& UTF8::Windows_Code(1257, 'A') == U'A' && UTF8::Windows_Code(1252, 'A') == U'A',
+		"every code page shows the same character below the high row");
+	Check(UTF8::Windows_Code(1252, 0xE9) == U'é' && UTF8::Windows_Code(1252, 0x80) == U'€',
+		"Windows-1252 shows e acute and the euro sign");
+	Check(UTF8::Windows_Code(1250, 0xE8) == U'č' && UTF8::Windows_Code(1251, 0xE8) == U'и'
+		&& UTF8::Windows_Code(1253, 0xE8) == U'θ' && UTF8::Windows_Code(1254, 0xE8) == U'è'
+		&& UTF8::Windows_Code(1257, 0xE8) == U'č',
+		"one byte shows a different character on each page");
+	Check(UTF8::Windows_Code(1251, 0xC0) == U'А' && UTF8::Windows_Code(1253, 0xC1) == U'Α'
+		&& UTF8::Windows_Code(1257, 0xC0) == U'Ą',
+		"the pages carry Cyrillic, Greek and Baltic where Windows-1252 carries accented Latin");
+	Check(UTF8::Windows_Code(1252, 0x81) == 0 && UTF8::Windows_Code(1250, 0x81) == 0
+		&& UTF8::Windows_Code(1251, 0x98) == 0 && UTF8::Windows_Code(1253, 0xFF) == 0
+		&& UTF8::Windows_Code(1257, 0xA1) == 0,
+		"a byte its page leaves undefined shows nothing");
+	Check(UTF8::Windows_Code(1255, 0xE0) == 0 && UTF8::Windows_Code(874, 0xA1) == 0 && UTF8::Windows_Code(0, 0xE9) == 0,
+		"a page the engine carries no table for shows nothing above the low row");
+
 	{
 		char dest[4];
 		std::memset(dest, 'x', sizeof(dest));

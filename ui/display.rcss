@@ -1,0 +1,58 @@
+
+#reveal
+{
+	width: 344dp;
+	height: 320dp;
+	top: 50%;
+	margin-top: -160dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+.heading
+{
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#title
+{
+	height: 15dp;
+}
+
+#modes-label
+{
+	margin-top: 7dp;
+	height: 17dp;
+}
+
+#modes
+{
+	margin-top: 2dp;
+	height: 179dp;
+}
+
+#switch-stretch
+{
+	margin-top: 10dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 9dp;
+}
+
+button
+{
+	width: 94dp;
+}
+
+#cancel
+{
+	margin-left: 90dp;
+}

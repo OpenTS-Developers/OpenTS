@@ -43,7 +43,7 @@ jobs:
             # prefix itself contains a hyphen, so count the fields from the end.
             platform="$(basename "${dir}" | awk -F- '{print $(NF-2)}')"
             ( cd "${dir}" && zip -r "${GITHUB_WORKSPACE}/OpenTS-${TAG}-${platform}.zip" \
-                Game.exe Game.pdb Language.dll \
+                Game.exe Game.pdb Language.dll ui \
                 LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES )
           done
 
