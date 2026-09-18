@@ -1,0 +1,61 @@
+
+#reveal
+{
+	width: 640dp;
+	height: 391dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+.caption
+{
+	height: 17dp;
+	line-height: 17dp;
+}
+
+#cap-name { left: 36dp; top: 14dp; }
+#cap-games { left: 444dp; top: 22dp; }
+#cap-players { left: 444dp; top: 161dp; }
+
+#handle, #say
+{
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+}
+
+#handle { left: 133dp; top: 13dp; width: 103dp; height: 21dp; }
+#say { left: 28dp; top: 322dp; width: 401dp; height: 21dp; }
+
+#chat { left: 28dp; top: 44dp; width: 400dp; height: 271dp; }
+#games { left: 441dp; top: 44dp; width: 170dp; height: 111dp; }
+#players { left: 441dp; top: 181dp; width: 170dp; height: 163dp; }
+
+#chat .line
+{
+	display: block;
+	margin: 0;
+	padding-left: 2dp;
+	line-height: 14dp;
+	white-space: pre-wrap;
+}
+
+#cancel { left: 271dp; top: 350dp; }
+#join { left: 396dp; top: 350dp; }
+#new { left: 517dp; top: 350dp; }
+
+#cancel, #join, #new
+{
+	width: 94dp;
+}

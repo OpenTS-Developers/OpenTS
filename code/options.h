@@ -223,6 +223,8 @@ class OptionsClass {
 		KeyNumType KeyQueueMove1;
 		KeyNumType KeyQueueMove2;
 
+		bool BitmapSystemFont;
+
 	private:
 
 		static char const * const HotkeyName;

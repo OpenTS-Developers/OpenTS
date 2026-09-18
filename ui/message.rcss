@@ -1,0 +1,78 @@
+
+#reveal
+{
+	width: 390dp;
+	height: 137dp;
+	top: 50%;
+	margin-top: -68dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+#text
+{
+	height: 62dp;
+	overflow: hidden;
+}
+
+#text p
+{
+	text-align: center;
+	line-height: 15dp;
+	white-space: pre-wrap;
+}
+
+#buttons
+{
+	display: flex;
+	justify-content: space-between;
+	margin-top: 13dp;
+}
+
+#buttons.alone
+{
+	justify-content: center;
+}
+
+button
+{
+	width: 90dp;
+}
+
+
+.net #reveal
+{
+	width: 436dp;
+	height: 147dp;
+	margin-top: -73dp;
+}
+
+.net #text
+{
+	height: 66dp;
+}
+
+.net #buttons
+{
+	justify-content: flex-start;
+	margin-top: 19dp;
+}
+
+.net #buttons button
+{
+	width: 76dp;
+	margin-left: 72dp;
+}
+
+.net #buttons.alone
+{
+	justify-content: center;
+}
+
+.net #buttons.alone button
+{
+	margin-left: 0;
+}

@@ -49,4 +49,5 @@ namespace UTF8
 	int Windows_1252_Index(char32_t code);
 	int OEM_437_Glyph(char32_t code);
 	int Windows_1252_Glyph(char32_t code);
+	char32_t Windows_Code(unsigned int page, unsigned char byte);
 }

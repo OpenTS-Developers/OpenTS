@@ -1,0 +1,76 @@
+
+#reveal
+{
+	width: 370dp;
+	height: 243dp;
+	top: 50%;
+	margin-top: -121dp;
+}
+
+#content
+{
+	padding: 19dp 27dp 0 33dp;
+}
+
+#title
+{
+	height: 17dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#campaigns
+{
+	margin-top: 9dp;
+	height: 84dp;
+}
+
+#row-difficulty
+{
+	margin-top: 7dp;
+	height: 25dp;
+}
+
+#row-difficulty > .caption
+{
+	width: 205dp;
+	line-height: 17dp;
+}
+
+#difficulty-name
+{
+	width: 100dp;
+	margin-left: 5dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: right;
+}
+
+#row-slider
+{
+	margin-top: -2dp;
+}
+
+#difficulty
+{
+	width: 310dp;
+	height: 25dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 14dp;
+}
+
+button
+{
+	width: 76dp;
+}
+
+#ok
+{
+	margin-left: 148dp;
+	margin-right: 10dp;
+}

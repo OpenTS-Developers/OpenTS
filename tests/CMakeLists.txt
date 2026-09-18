@@ -106,3 +106,12 @@ add_subdirectory(shapefacing)
 add_subdirectory(zbufring)
 add_subdirectory(priorityqueue)
 add_subdirectory(save)
+add_subdirectory(uishell)
+add_subdirectory(uilogic)
+
+# Only code/ui/rml/ headers may include a UI toolkit or the renderer; the script reads the
+# sources directly, so the check needs no compiler and runs in every CI job's ctest step.
+add_test(NAME toolkitheaders
+    COMMAND "${CMAKE_COMMAND}" -DOPENTS_SOURCE_DIR=${CMAKE_SOURCE_DIR}
+        -P "${CMAKE_SOURCE_DIR}/cmake/CheckToolkitHeaders.cmake"
+)

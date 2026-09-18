@@ -1,0 +1,30 @@
+<rml>
+<head>
+	<title>Game options</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="gameopt.rcss"/>
+</head>
+<body template="dialog" data-model="gameopt" data-class-solo="solo" data-class-internet="internet">
+	<button id="controls" data-event-click="queue('controls')">Game Controls</button>
+	<button id="briefing" data-if="solo" data-class-disabled="!briefingenabled" data-event-click="queue('briefing')">Restate Briefing</button>
+	<button id="load" data-if="solo || internet" data-class-disabled="!loadenabled" data-event-click="queue('load')">Load Game</button>
+	<button id="save" data-if="solo || internet" data-class-disabled="!saveenabled" data-event-click="queue('save')">Save Game</button>
+	<button id="delete" data-if="solo" data-class-disabled="!deleteenabled" data-event-click="queue('delete')">Delete Game</button>
+	<button id="abort" data-event-click="queue('abort')">Abort Mission</button>
+	<button id="resume" data-event-click="queue('resume')">Resume Mission</button>
+
+	<div id="timing" class="group" data-if="internet">
+		<div class="rule"><span></span><label>Internet Game Controls</label><span></span></div>
+	</div>
+	<span class="caption" id="cap-connection" data-if="internet">Connection</span>
+	<input type="range" id="connection" step="1" disabled="disabled" data-if="internet" data-attr-min="connectionlowest" data-attr-max="connectionhighest" data-attr-value="connection"/>
+	<span class="trough disabled" id="trough-connection" data-if="internet">{{connection}}</span>
+	<span class="trough-edge" id="edge-connection" data-if="internet"></span>
+	<span class="value" id="connection-name" data-if="internet">{{connectionname}}</span>
+	<span class="caption" id="cap-speed" data-if="internet">Game Speed</span>
+	<input type="range" id="speed" step="1" min="0" max="6" data-if="internet" data-attr-value="speed" data-event-change="queue('speed', ev.value)"/>
+	<span class="trough" id="trough-speed" data-if="internet">{{speed}}</span>
+	<span class="trough-edge" id="edge-speed" data-if="internet"></span>
+	<span class="value" id="speed-name" data-if="internet">{{speedname}}</span>
+</body>
+</rml>

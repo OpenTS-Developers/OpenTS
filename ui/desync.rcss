@@ -1,0 +1,100 @@
+
+#reveal
+{
+	width: 640dp;
+	height: 391dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+.host .wait-only, .wait .host-only
+{
+	display: none;
+}
+
+#header
+{
+	left: 33dp;
+	top: 14dp;
+	width: 574dp;
+	height: 17dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#cap-players { left: 33dp; top: 40dp; width: 150dp; height: 17dp; line-height: 17dp; }
+
+#players { left: 33dp; top: 60dp; width: 178dp; }
+
+#players .cell-mark, #players .cell-name, #players .cell-status
+{
+	display: inline-block;
+	vertical-align: top;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#players .cell-mark { width: 18dp; }
+#players .cell-name { width: 94dp; margin-right: 6dp; }
+
+#prose, #prose-wait
+{
+	left: 218dp;
+	top: 40dp;
+	width: 389dp;
+	line-height: 19dp;
+}
+
+#prose p, #prose-wait p
+{
+	margin-bottom: 10dp;
+}
+
+#chat { left: 33dp; width: 574dp; }
+
+#chat .line, #chat .item
+{
+	display: block;
+	margin: 0;
+	padding-left: 2dp;
+	white-space: pre-wrap;
+}
+
+#say { left: 34dp; width: 572dp; height: 19dp; }
+
+#countdown-bar
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	width: 0;
+	height: 22dp;
+	background-color: #70ff00;
+}
+
+#players { height: 127dp; }
+#chat { top: 196dp; height: 127dp; }
+#say { top: 330dp; }
+
+.counting #load, .counting #continue { display: none; }
+
+#countdown { left: 33dp; top: 361dp; width: 207dp; height: 17dp; line-height: 17dp; }
+#countdown-frame { left: 250dp; top: 358dp; width: 140dp; height: 24dp; }
+
+#load { left: 33dp; top: 358dp; width: 140dp; }
+#continue { left: 250dp; top: 358dp; width: 140dp; }
+#quit { left: 467dp; top: 358dp; width: 140dp; }
+
+.wait #quit { left: 250dp; }
+.wait.counting #quit { left: 467dp; }

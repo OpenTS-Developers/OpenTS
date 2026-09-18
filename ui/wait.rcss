@@ -1,0 +1,28 @@
+
+#reveal
+{
+	width: 327dp;
+	height: 105dp;
+	top: 50%;
+	margin-top: -52dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+#text
+{
+	height: 38dp;
+	line-height: 17dp;
+	text-align: center;
+	white-space: pre-wrap;
+}
+
+#bar
+{
+	width: 150dp;
+	height: 24dp;
+	margin: 4dp auto 0 auto;
+}

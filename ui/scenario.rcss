@@ -1,0 +1,74 @@
+
+#reveal
+{
+	width: 540dp;
+	height: 326dp;
+	top: 50%;
+	margin-top: -163dp;
+}
+
+#content
+{
+	padding: 19dp 32dp 0 33dp;
+}
+
+#title
+{
+	width: 472dp;
+	height: 20dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#columns
+{
+	display: flex;
+	margin-top: 3dp;
+}
+
+#maps
+{
+	width: 263dp;
+	height: 232dp;
+	margin-right: 17dp;
+}
+
+#map
+{
+	position: relative;
+	width: 195dp;
+	height: 132dp;
+	margin-top: 54dp;
+}
+
+#preview
+{
+	position: absolute;
+	left: -1dp;
+	top: -1dp;
+	width: 194dp;
+	height: 131dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 9dp;
+}
+
+#ok
+{
+	width: 76dp;
+	margin-right: 89dp;
+}
+
+#random
+{
+	width: 160dp;
+	margin-right: 74dp;
+}
+
+#cancel
+{
+	width: 76dp;
+}
