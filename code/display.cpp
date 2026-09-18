@@ -3012,41 +3012,44 @@ void DisplayClass::Encroach_Fog(void)
 /// <param name="cell">The cell that the fog is to be regrown upon.</param>
 void DisplayClass::Fog_Cell(Cell const & cell)
 {
-	if (!In_Radar(cell)) return;
+	// An explicit queue avoids running the stack out on a cascade that spans most of the map.
+	std::vector<Cell> pending;
+	pending.push_back(cell);
 
-	CellClass * cellptr = &(*this)[cell];
-	bool fog = false;
+	while (!pending.empty()) {
+		Cell current = pending.back();
+		pending.pop_back();
 
-	if (cellptr->IsFogMapped || cellptr->IsFogVisible) {
-		fog = true;
-	}
+		if (!In_Radar(current)) continue;
 
-	cellptr->IsFogMapped = false;
-	cellptr->IsFogVisible = false;
-	cellptr->FogFrame = -2;
+		CellClass * cellptr = &(*this)[current];
+		bool fog = cellptr->IsFogMapped || cellptr->IsFogVisible;
 
-	if (cellptr->IsMapped) {
-		TacticalMap->Flag_Cell(*cellptr);
-	}
+		cellptr->IsFogMapped = false;
+		cellptr->IsFogVisible = false;
+		cellptr->FogFrame = -2;
 
-	for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
-		Cell c = Adjacent_Cell(cell, dir);
-		CellClass * cptr = &(*this)[c];
-		int fog = TacticalMap->Cell_Shadow(cptr->Fetch_CellID(), true);
+		if (cellptr->IsMapped) {
+			TacticalMap->Flag_Cell(*cellptr);
+		}
 
-		if (fog == -2 && cptr->FogFrame != -2) {
-			Fog_Cell(c);
-		} else {
-			if ((cptr->IsFogVisible || fog != cptr->FogFrame) && fog >= 0 && cptr->FogFrame >= -1) {
-				cptr->FogFrame = fog;
+		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
+			Cell c = Adjacent_Cell(current, dir);
+			CellClass * cptr = &(*this)[c];
+			int fogshape = TacticalMap->Cell_Shadow(cptr->Fetch_CellID(), true);
+
+			if (fogshape == -2 && cptr->FogFrame != -2) {
+				pending.push_back(c);
+			} else if ((cptr->IsFogVisible || fogshape != cptr->FogFrame) && fogshape >= 0 && cptr->FogFrame >= -1) {
+				cptr->FogFrame = fogshape;
 				cptr->IsFogMapped = true;
 				cptr->IsFogVisible = false;
 				TacticalMap->Flag_Cell(*cptr);
 			}
 		}
-	}
-	if (fog) {
-		cellptr->Fog_Cell();
+		if (fog) {
+			cellptr->Fog_Cell();
+		}
 	}
 }
 
