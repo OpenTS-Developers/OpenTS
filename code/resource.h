@@ -17,7 +17,6 @@
 #define IDI_CHECKED                     160
 #define IDI_UNCHECKED                   161
 #define IDI_GREYED                      162
-#define IDD_TEMPLATE                    198
 #define IDD_EXCEPTION                   247
 #define IDC_CURSOR2                     248
 #define IDC_EXCEPTION_FOLDER            1160
