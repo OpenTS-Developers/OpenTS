@@ -333,7 +333,7 @@ BuildingClass * ObjectTypeClass::Who_Can_Build_Me(bool intheory, bool needsnopow
 			building->House == house &&
 			building->Class->ToBuild == RTTI &&
 			(!needsnopower || building->IsOn) &&
-			building->Mission != MISSION_DECONSTRUCTION && building->MissionQueue != MISSION_DECONSTRUCTION &&
+			building->Get_Mission() != MISSION_DECONSTRUCTION && building->MissionQueue != MISSION_DECONSTRUCTION &&
 			(!legal || building->House->Can_Build(this, true, true) > 0) &&
 			(building->Class->Get_Ownable() & ownable) &&
 			(!Rule->BuildConst.Is_In_List(building->Class) || Rule->IsMultiMCV || (building->ActLike != HOUSE_NONE && ((1L << building->ActLike) & ownable) != 0))) {

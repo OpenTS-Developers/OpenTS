@@ -85,7 +85,7 @@ Coord TunnelLocomotionClass::Destination(void)
 	if (Is_Moving()) {
 		return(DestinationCoord);
 	}
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 
@@ -101,7 +101,7 @@ void TunnelLocomotionClass::Move_To(Coord to)
 	if (LinkedTo->StunDuration <= 0) {
 		Coord coord = to;
 		DestinationCoord = LinkedTo->Class_Of()->Coord_Fixup(to);
-		if (coord != COORD_NONE && LinkedTo->HeightAGL < 0) {
+		if (coord != COORD_NONE && LinkedTo->Get_Height_AGL() < 0) {
 			if (State != STATE_DESCENDING && State != STATE_ASCENDING && State != STATE_TURNING && State != STATE_EMERGING && State != STATE_DIGGING_IN) {
 				LinkedTo->Mark(MARK_UP);
 				State = STATE_TUNNELING;
@@ -139,10 +139,10 @@ void TunnelLocomotionClass::Stop_Moving(void)
 			break;
 
 		case STATE_TUNNELING: {
-			Coord pos = LinkedTo->PositionCoord;
+			Coord pos = LinkedTo->Get_Coord();
 			if (Point2D(pos - Point2D(DestinationCoord)).Length() > CELL_LEPTON_DIAG) {
 
-				Cell cell = LinkedTo->PositionCell;
+				Cell cell = LinkedTo->Get_Cell();
 				Cell nearby = Map.Nearby_Location(cell, SPEED_TRACK, Map.Get_Cell_Zone(cell), MZONE_NORMAL, false, Point2D(1, 1), false, false, true);
 
 				if (nearby == CELL_NONE) {
@@ -183,8 +183,8 @@ void TunnelLocomotionClass::Stop_Moving(void)
 bool TunnelLocomotionClass::Process(void)
 {
 	if (Is_Moving()) {
-		int agl = LinkedTo->HeightAGL;
-		int hgt = LinkedTo->Height;
+		int agl = LinkedTo->Get_Height_AGL();
+		int hgt = LinkedTo->Get_Height();
 		int lyr = In_Which_Layer();
 		switch (State) {
 
@@ -232,7 +232,7 @@ bool TunnelLocomotionClass::Process(void)
 
 		if (LinkedTo->IsSelected) {
 			if (!LinkedTo->House->Is_Player_Control()) {
-				if (Map.Is_Shrouded(LinkedTo->PositionCoord) || (Scen->Special.IsFogOfWar && Map.Is_Fogged(LinkedTo->PositionCoord))) {
+				if (Map.Is_Shrouded(LinkedTo->Get_Coord()) || (Scen->Special.IsFogOfWar && Map.Is_Fogged(LinkedTo->Get_Coord()))) {
 					LinkedTo->Unselect();
 				}
 			}
@@ -275,14 +275,14 @@ VisualType TunnelLocomotionClass::Visual_Character(bool flag)
 void TunnelLocomotionClass::Process_Turning(void)
 {
 	if (!LinkedTo->PrimaryFacing.Is_Rotating()) {
-		DirType dir = DirType().Direction(LinkedTo->PositionCoord, DestinationCoord);
+		DirType dir = DirType().Direction(LinkedTo->Get_Coord(), DestinationCoord);
 		if (dir != LinkedTo->PrimaryFacing.Current()) {
 			Do_Turn(dir);
 		} else {
-			DigTimer = ((64.0 / LinkedTo->TClass->ROT) / Rule->TunnelSpeed);
+			DigTimer = ((64.0 / LinkedTo->Techno_Type_Class()->ROT) / Rule->TunnelSpeed);
 			State = STATE_DIGGING_IN;
-			Sound_Effect(Rule->DigSound, LinkedTo->PositionCoord);
-			new AnimClass(Rule->Dig, LinkedTo->PositionCoord);
+			Sound_Effect(Rule->DigSound, LinkedTo->Get_Coord());
+			new AnimClass(Rule->Dig, LinkedTo->Get_Coord());
 			IsUnderground = false;
 		}
 	}
@@ -298,8 +298,8 @@ void TunnelLocomotionClass::Process_Digging_In(void)
 	if (DigTimer.Progress() >= 1.0) {
 		LinkedTo->Set_Speed(1.0);
 		State = STATE_DESCENDING;
-		Sound_Effect(Rule->DigSound, LinkedTo->PositionCoord);
-		new AnimClass(Rule->Dig, LinkedTo->PositionCoord);
+		Sound_Effect(Rule->DigSound, LinkedTo->Get_Coord());
+		new AnimClass(Rule->Dig, LinkedTo->Get_Coord());
 		LinkedTo->Detach_All(false);
 	}
 }
@@ -324,7 +324,7 @@ void TunnelLocomotionClass::Process_Aborting(void)
 /// </summary>
 void TunnelLocomotionClass::Process_Descending(void)
 {
-	Coord coord = LinkedTo->PositionCoord;
+	Coord coord = LinkedTo->Get_Coord();
 
 	int mheight = -CELL_LEPTON;
 
@@ -338,7 +338,7 @@ void TunnelLocomotionClass::Process_Descending(void)
 		if (coord.Z < mheight) {
 			coord.Z = mheight;
 		}
-		LinkedTo->PositionCoord = coord;
+		LinkedTo->Set_Coord(coord);
 
 	} else {
 		LinkedTo->Mark(MARK_UP);
@@ -355,20 +355,20 @@ void TunnelLocomotionClass::Process_Descending(void)
 /// </summary>
 void TunnelLocomotionClass::Process_Tunneling(void)
 {
-	Coord coord = LinkedTo->PositionCoord;
+	Coord coord = LinkedTo->Get_Coord();
 
 	if (Point2D(DestinationCoord).Distance_To(coord) < 20) {
 
 		coord = DestinationCoord;
 		coord.Z = -CELL_LEPTON;
 
-		if (LinkedTo->Can_Enter_Cell(&Map[(Coord const &)(LinkedTo->PositionCoord)]) && Map.In_Local_Radar(LinkedTo->PositionCoord)) {
+		if (LinkedTo->Can_Enter_Cell(&Map[(Coord const &)(LinkedTo->Get_Coord())]) && Map.In_Local_Radar(LinkedTo->Get_Coord())) {
 
-			Cell cell = LinkedTo->PositionCell;
+			Cell cell = LinkedTo->Get_Cell();
 			cell = Map.Nearby_Location(cell, SPEED_TRACK, Map.Get_Cell_Zone(cell), MZONE_NORMAL, false, Point2D(1, 1), false, false, true);
 
 			if (cell == CELL_NONE) {
-				cell = Map.Nearby_Location(LinkedTo->PositionCell, SPEED_TRACK, -1, MZONE_SUBTERANNEAN, false, Point2D(1, 1), false, false, true);
+				cell = Map.Nearby_Location(LinkedTo->Get_Cell(), SPEED_TRACK, -1, MZONE_SUBTERANNEAN, false, Point2D(1, 1), false, false, true);
 			}
 
 			if (cell == CELL_NONE) {
@@ -379,8 +379,8 @@ void TunnelLocomotionClass::Process_Tunneling(void)
 			Move_To(Coord(cell, 0));
 
 		} else {
-			if (LinkedTo->HeightAGL > -50) {
-				Sound_Effect(Rule->DigSound, LinkedTo->PositionCoord);
+			if (LinkedTo->Get_Height_AGL() > -50) {
+				Sound_Effect(Rule->DigSound, LinkedTo->Get_Coord());
 			}
 			State = STATE_ASCENDING;
 			LinkedTo->Mark(MARK_DOWN);
@@ -391,7 +391,7 @@ void TunnelLocomotionClass::Process_Tunneling(void)
 		coord = Move_Coord(coord, DirType().Direction(coord, DestinationCoord), 19);
 	}
 
-	LinkedTo->PositionCoord = coord;
+	LinkedTo->Set_Coord(coord);
 }
 
 
@@ -402,12 +402,12 @@ void TunnelLocomotionClass::Process_Tunneling(void)
 /// </summary>
 void TunnelLocomotionClass::Process_Ascending(void)
 {
-	Coord coord = LinkedTo->PositionCoord;
+	Coord coord = LinkedTo->Get_Coord();
 
 	int mheight = Map.Get_Height_GL(coord);
 
 	if (coord.Z < mheight) {
-		int height = LinkedTo->HeightAGL;
+		int height = LinkedTo->Get_Height_AGL();
 
 		int speed = int(LinkedTo->Current_Speed() * Rule->TunnelSpeed);
 		if (speed <= 5) {
@@ -417,15 +417,15 @@ void TunnelLocomotionClass::Process_Ascending(void)
 		if (coord.Z > mheight) {
 			coord.Z = mheight;
 		}
-		LinkedTo->PositionCoord = coord;
+		LinkedTo->Set_Coord(coord);
 
-		if (height <= -50 && LinkedTo->HeightAGL > -50) {
-			Sound_Effect(Rule->DigSound, LinkedTo->PositionCoord);
-			new AnimClass(Rule->Dig, LinkedTo->PositionCoord);
+		if (height <= -50 && LinkedTo->Get_Height_AGL() > -50) {
+			Sound_Effect(Rule->DigSound, LinkedTo->Get_Coord());
+			new AnimClass(Rule->Dig, LinkedTo->Get_Coord());
 		}
 	} else {
 		LinkedTo->Look();
-		DigTimer = int(64.0 / LinkedTo->TClass->ROT);
+		DigTimer = int(64.0 / LinkedTo->Techno_Type_Class()->ROT);
 		LinkedTo->Set_Speed(0);
 		State = STATE_EMERGING;
 	}
@@ -460,7 +460,7 @@ void TunnelLocomotionClass::Process_Emerging(void)
 Matrix3D TunnelLocomotionClass::Draw_Matrix(int * key)
 {
 	if (State == STATE_IDLE) {
-		int ramp = Map[(Coord const &)(LinkedTo->PositionCoord)].Ramp;
+		int ramp = Map[(Coord const &)(LinkedTo->Get_Coord())].Ramp;
 		Matrix3D mtx;
 		if (key != NULL && *key != -1) {
 			*key = ramp + (*key << 6);
@@ -532,7 +532,7 @@ int TunnelLocomotionClass::Z_Adjust(void)
 {
 	static int tunnel_Z_Adjust[] = {45, 45};
 
-	Coord coord = LinkedTo->PositionCoord;
+	Coord coord = LinkedTo->Get_Coord();
 	Point2D point1;
 	TacticalMap->Coord_To_Pixel(coord, point1);
 

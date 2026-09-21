@@ -185,8 +185,8 @@ bool ScrollClass::Resolve_Point(Point2D const & point, Cell & cell, Coord & coor
 		return(false);
 	}
 
-	cell = (TacticalMap != NULL) ? TacticalMap->Pixel_To_Cell(point + TacticalRect.TopLeft) : CELL_NONE;
-	coord = (TacticalMap != NULL) ? TacticalMap->Pixel_To_Coord(point + TacticalRect.TopLeft) : COORD_NONE;
+	cell = (TacticalMap != NULL) ? TacticalMap->Pixel_To_Cell(point + TacticalRect.Top_Left()) : CELL_NONE;
+	coord = (TacticalMap != NULL) ? TacticalMap->Pixel_To_Coord(point + TacticalRect.Top_Left()) : COORD_NONE;
 
 	if (TacticalMap != NULL && Map.In_Radar(coord)) {
 		Coord coord_height_adjusted = Coord(cell, Map.Get_Height_GL(Coord(cell)));
@@ -215,7 +215,7 @@ bool ScrollClass::Resolve_Point(Point2D const & point, Cell & cell, Coord & coor
 				/*
 				**	Special case check to ignore cloaked object if not owned by the player.
 				*/
-				if (!techno->IsOwnedByPlayer && ((techno->Cloak == CLOAKED && !techno->Is_Sensed_By_Player()) || techno->TClass->IsInvisible)) {
+				if (!techno->IsOwnedByPlayer && ((techno->Cloak == CLOAKED && !techno->Is_Sensed_By_Player()) || techno->Techno_Type_Class()->IsInvisible)) {
 					object = NULL;
 				}
 			}
@@ -271,7 +271,7 @@ ActionType ScrollClass::What_Action(Cell const & cell, ObjectClass * object, boo
 		/*
 		**	Special case check to ignore cloaked object if not owned by the player.
 		*/
-		if (techno != NULL && !techno->IsOwnedByPlayer && ((techno->Cloak == CLOAKED && !techno->Is_Sensed_By_Player()) || techno->TClass->IsInvisible)) {
+		if (techno != NULL && !techno->IsOwnedByPlayer && ((techno->Cloak == CLOAKED && !techno->Is_Sensed_By_Player()) || techno->Techno_Type_Class()->IsInvisible)) {
 			visible = false;
 		}
 

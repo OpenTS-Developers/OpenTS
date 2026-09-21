@@ -5016,7 +5016,7 @@ class SelectSameTypeCommandClass : public CommandClass
 				if (!obj->Is_Techno() || !((TechnoClass *)obj)->House->Is_Player_Control()) {
 					continue;
 				}
-				SoughtTypes.insert(obj->TClass);
+				SoughtTypes.insert(obj->Techno_Type_Class());
 			}
 
 			if (SoughtTypes.empty()) {
@@ -5046,7 +5046,7 @@ class SelectSameTypeCommandClass : public CommandClass
 		/// <remarks>SoughtTypes must hold the desired types before calling this routine.</remarks>
 		static void Select_Callback(ObjectClass * obj)
 		{
-			if (obj != NULL && obj->Is_Techno() && obj->IsDown && !obj->IsSelected && SoughtTypes.contains(obj->TClass) && ((TechnoClass *)obj)->House->Is_Player_Control()) {
+			if (obj != NULL && obj->Is_Techno() && obj->IsDown && !obj->IsSelected && SoughtTypes.contains(obj->Techno_Type_Class()) && ((TechnoClass *)obj)->House->Is_Player_Control()) {
 				obj->Select();
 			}
 		}

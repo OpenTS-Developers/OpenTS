@@ -64,7 +64,7 @@ BuildingLightClass::BuildingLightClass(TechnoClass * owner) :
 	if (owner != NULL) {
 		Init_Rotation_Arc(owner);
 
-		Unlimbo(PositionCoord);
+		Unlimbo(Get_Coord());
 		Set_Behavior_Type(LIGHT_BEHAVIOR_SWEEP);
 		IsOppositeDirection = BuildingLights.ID(this) % 2 != 0;
 	}
@@ -116,7 +116,7 @@ void BuildingLightClass::Draw_It(Point2D const & point, Rect const & cliprect) c
 	spotlight->Draw_It();
 	delete spotlight;
 
-	Coord here = PositionCoord;
+	Coord here = Get_Coord();
 	Coord there = Owner->Center_Coord();
 
 	int distance = Distance(there);
@@ -144,13 +144,13 @@ void BuildingLightClass::Draw_It(Point2D const & point, Rect const & cliprect) c
 		TacticalMap->Coord_To_Pixel(arc2, arc2_px);
 		TacticalMap->Coord_To_Pixel(Coord(there.X, there.Y, there.Z + 430), caster_px);
 
-		arc1_px += TacticalRect.TopLeft;
-		arc2_px += TacticalRect.TopLeft;
-		caster_px += TacticalRect.TopLeft;
+		arc1_px += TacticalRect.Top_Left();
+		arc2_px += TacticalRect.Top_Left();
+		caster_px += TacticalRect.Top_Left();
 		Point2D caster_px2 = caster_px;
 
 		int zstart = -Tactical::Z_Lepton_To_Pixel(there.Z + 400);
-		int zend = -Tactical::Z_Lepton_To_Pixel(PositionCoord.Z + 250);
+		int zend = -Tactical::Z_Lepton_To_Pixel(Get_Coord().Z + 250);
 
 		if (Clip_Line_To_Rect(caster_px, arc1_px, TacticalRect)) {
 			LogicalSurface->Draw_Depth_Glow_Line(LogicalSurface->Get_Rect(), caster_px, arc1_px, 75 - 6 * stage, zstart, zend);
@@ -176,22 +176,22 @@ void BuildingLightClass::AI(void)
 		return;
 	}
 
-	Coord coord = PositionCoord;
+	Coord coord = Get_Coord();
 	switch (Behavior) {
 		default:
-			coord = PositionCoord;
+			coord = Get_Coord();
 			break;
 
 		case LIGHT_BEHAVIOR_FOLLOW:
 			if (Target != NULL && Target->IsActive && Target->Distance_To(Owner) < Rule->SpotlightMovementRadius) {
-				coord = Lerp(PositionCoord, Target->PositionCoord, 0.25);
+				coord = Lerp(Get_Coord(), Target->Get_Coord(), 0.25);
 			} else {
 				Set_Behavior_Type(LIGHT_BEHAVIOR_SWEEP);
 			}
 			break;
 
 		case LIGHT_BEHAVIOR_CIRCLE: {
-			Coord owner_coord = Owner->PositionCoord;
+			Coord owner_coord = Owner->Get_Coord();
 			Speed += Rule->SpotlightSpeed * 4;
 
 			if (Speed > DEG_TO_RAD(360)) {
@@ -243,14 +243,14 @@ void BuildingLightClass::AI(void)
 		break;
 	}
 
-	PositionCoord = coord;
+	Set_Coord(coord);
 
 	BuildingClass * owner_building = (Owner->RTTI == RTTI_BUILDING) ? (BuildingClass *)Owner : NULL;
 
 	if (Behavior == LIGHT_BEHAVIOR_SWEEP) {
 		if (owner_building != NULL && owner_building->IsActive && owner_building->Is_Powered_On() && owner_building->Tag != NULL) {
 			bool found = false;
-			Cell cell = PositionCell;
+			Cell cell = Get_Cell();
 			int detection = Detection_Radius() + 30;
 			HouseClass * house = Owner->House;
 
@@ -351,12 +351,12 @@ void BuildingLightClass::Detach(AbstractClass const * target, bool all)
 /// <param name="owner">The object that this light is mounted upon.</param>
 void BuildingLightClass::Init_Rotation_Arc(TechnoClass * owner)
 {
-	Coord target = Move_Coord(owner->PositionCoord, owner->PrimaryFacing.Current(), Rule->SpotlightLocationRadius);
+	Coord target = Move_Coord(owner->Get_Coord(), owner->PrimaryFacing.Current(), Rule->SpotlightLocationRadius);
 	RotationTarget = target;
 
-	RotationPivot = Move_Coord(owner->PositionCoord, owner->PrimaryFacing.Current(), -Rule->SpotlightMovementRadius);
+	RotationPivot = Move_Coord(owner->Get_Coord(), owner->PrimaryFacing.Current(), -Rule->SpotlightMovementRadius);
 
-	PositionCoord = target;
+	Set_Coord(target);
 }
 
 
@@ -371,7 +371,7 @@ void BuildingLightClass::Set_Behavior_Type(LightBehaviorType type)
 	Speed = 0;
 
 	if (Behavior == LIGHT_BEHAVIOR_FOLLOW) {
-		Cell cell = PositionCell;
+		Cell cell = Get_Cell();
 
 		int mindist = 9999999;
 		ObjectClass * closest = NULL;

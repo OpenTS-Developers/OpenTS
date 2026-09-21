@@ -277,9 +277,9 @@ void ObjectClass::AI(void)
 	if (IsFalling) {
 		LayerType layer = In_Which_Layer();
 
-		Height += Riser.Z;
-		if (HeightAGL <= 0) {
-			HeightAGL = 0;
+		Set_Height(Get_Height() + Riser.Z);
+		if (Get_Height_AGL() <= 0) {
+			Set_Height_AGL(0);
 			IsFalling = false;
 			Per_Cell_Process(PCP_END);
 
@@ -426,7 +426,7 @@ LayerType ObjectClass::In_Which_Layer(void) const
 {
 	assert(this != NULL);
 
-	if (HeightAGL < int(Rule->FlightLevel * 0.6)) {
+	if (Get_Height_AGL() < int(Rule->FlightLevel * 0.6)) {
 		return(LAYER_GROUND);
 	}
 	return(LAYER_TOP);
@@ -985,9 +985,9 @@ void ObjectClass::Move(FacingType facing)
 	assert(this != NULL);
 
 	Mark(MARK_UP);
-	Coord coord = Adjacent_Cell(PositionCoord, facing);
+	Coord coord = Adjacent_Cell(Get_Coord(), facing);
 	if (Can_Enter_Cell(&Map[coord], facing) == MOVE_OK) {
-		PositionCoord = coord;
+		Set_Coord(coord);
 	}
 	Mark(MARK_DOWN);
 }
@@ -1113,7 +1113,7 @@ Rect ObjectClass::Get_Visual_Rect(void) const
 		shape_rect.Width,
 		shape_rect.Height);
 
-	if (TacticalRect.Is_Overlapping(visual_rect + TacticalRect.TopLeft)) {
+	if (TacticalRect.Is_Overlapping(visual_rect + TacticalRect.Top_Left())) {
 		return(visual_rect);
 	}
 
@@ -1393,7 +1393,7 @@ bool ObjectClass::Unlimbo(Coord const & coord, Dir256 )
 			if (objclass != NULL) {
 				ucoord = objclass->Coord_Fixup(coord);
 			}
-			PositionCoord = ucoord;
+			Set_Coord(ucoord);
 
 			if (Mark(MARK_DOWN)) {
 				if (IsActive) {
@@ -1847,7 +1847,7 @@ bool ObjectClass::Mark(MarkType mark)
 		if (tech != NULL) {
 			threat = tech->Risk();
 			house  = tech->Owner();
-			cell   = PositionCell;
+			cell   = Get_Cell();
 		} else {
 			tech = NULL;
 		}
@@ -1922,7 +1922,7 @@ bool ObjectClass::Paradrop(Coord const & coord)
 	if (Unlimbo(coord, DIR_S)) {
 		AnimClass * anim = NULL;
 
-		PositionCoord = coord;
+		Set_Coord(coord);
 
 		if (RTTI == RTTI_BULLET) {
 			anim = new AnimClass(Rule->BombParachute, coord);
@@ -2111,7 +2111,7 @@ int ObjectClass::Get_Height_AGL(void) const
 {
 	assert(this != NULL);
 
-	int height = Position.Z - Map.Get_Height_GL(PositionCoord);
+	int height = Position.Z - Map.Get_Height_GL(Get_Coord());
 	if (IsOnBridge) {
 		height -= BRIDGE_LEPTON_HEIGHT;
 	}
@@ -2136,10 +2136,10 @@ void ObjectClass::Set_Height_AGL(int height)
 	}
 	if (IsDown) {
 		Mark(MARK_UP);
-		Position.Z = height + Map.Get_Height_GL(PositionCoord);
+		Position.Z = height + Map.Get_Height_GL(Get_Coord());
 		Mark(MARK_DOWN);
 	} else {
-		Position.Z = height + Map.Get_Height_GL(PositionCoord);
+		Position.Z = height + Map.Get_Height_GL(Get_Coord());
 	}
 }
 
@@ -2405,7 +2405,7 @@ Coord ObjectClass::Center_Coord(void) const
 {
 	assert(this != NULL);
 
-	return(PositionCoord);
+	return(Get_Coord());
 }
 
 
@@ -2471,11 +2471,11 @@ Rect Vector_Rect(DynamicVectorClass<ObjectClass *> const & list)
 	if (list.Count() > 0) {
 
 		/// Start with the position of the first object
-		bounds.X = list[0]->PositionCoord.X;
-		bounds.Y = list[0]->PositionCoord.Y;
+		bounds.X = list[0]->Get_Coord().X;
+		bounds.Y = list[0]->Get_Coord().Y;
 
 		for (int i = list.Count() - 1; i >= 0; i--) {
-			Coord coord = list[i]->PositionCoord;
+			Coord coord = list[i]->Get_Coord();
 			int x = coord.X;
 			int y = coord.Y;
 
@@ -2512,7 +2512,7 @@ Coord Vector_Center(DynamicVectorClass<ObjectClass *> const & list)
 	Coord center = Coord(0, 0, 0);
 	int count = list.Count();
 	for (int i = count - 1; i >= 0; i--) {
-		center += list[i]->PositionCoord;
+		center += list[i]->Get_Coord();
 	}
 	center.X /= count;
 	center.Y /= count;
@@ -2538,9 +2538,9 @@ ObjectClass * Vector_Closest_Object(DynamicVectorClass<ObjectClass *> const & li
 	for (int i = list.Count() - 1; i >= 0; i--) {
 		if (closest == NULL) {
 			closest = list[i];
-			mindist = coord.Distance_To(closest->PositionCoord);
+			mindist = coord.Distance_To(closest->Get_Coord());
 		} else {
-			int dist = Distance(coord, list[i]->PositionCoord);
+			int dist = Distance(coord, list[i]->Get_Coord());
 			if (dist < mindist) {
 				closest = list[i];
 				mindist = dist;
@@ -2553,7 +2553,7 @@ ObjectClass * Vector_Closest_Object(DynamicVectorClass<ObjectClass *> const & li
 
 /// <summary>
 /// Sets the location of the object.
-/// This is the raw coordinate assignment that backs the PositionCoord property.
+/// This is the raw coordinate assignment method that sets the object's location.
 /// </summary>
 /// <param name="coord">The coordinate to place the object at.</param>
 /// <remarks>No map bookkeeping is performed here. The caller must mark the object off
@@ -2617,7 +2617,7 @@ bool ObjectClass::Is_Moving_Onto_Bridge(void) const
 
 	Coord destination = Destination_Coord();
 	int dest_height = Map.Get_Height_GL(destination);
-	int current_height = Map.Get_Height_GL(PositionCoord);
+	int current_height = Map.Get_Height_GL(Get_Coord());
 
 	/*
 	 * We're not on a bridge, but the destination contains a bridge and is
@@ -2671,7 +2671,7 @@ bool ObjectClass::On_Ground(void) const
 {
 	assert(this != NULL);
 
-	if (IsDown && HeightAGL < LEVEL_LEPTON_H) {
+	if (IsDown && Get_Height_AGL() < LEVEL_LEPTON_H) {
 		return(true);
 	}
 	return(false);
@@ -2689,7 +2689,7 @@ bool ObjectClass::In_Air(void) const
 {
 	assert(this != NULL);
 
-	if (IsDown && HeightAGL >= LEVEL_LEPTON_H) {
+	if (IsDown && Get_Height_AGL() >= LEVEL_LEPTON_H) {
 		return(true);
 	}
 	return(false);
@@ -2746,5 +2746,5 @@ bool ObjectClass::Not_Underground(void) const
 {
 	assert(this != NULL);
 
-	return(HeightAGL > -20);
+	return(Get_Height_AGL() > -20);
 }

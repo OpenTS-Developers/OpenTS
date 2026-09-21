@@ -513,9 +513,9 @@ bool TriggerTypeClass::Read_INI(CCINIClass const & ini)
 
 		token = strtok(NULL, ",");
 		if (token != NULL && atoi(token) == 0) {
-			IsEnabled = true;
+			Set_Enabled(true);
 		} else {
-			IsEnabled = false;
+			Set_Enabled(false);
 		}
 
 		token = strtok(NULL, ",");
@@ -630,7 +630,7 @@ bool TriggerTypeClass::Write_INI(CCINIClass & ini) const
 		(House != NULL) ? (char const *)House->Class->IniName : "<none>",
 		(LinkedTo != NULL) ? (char const *)LinkedTo->IniName : "<none>",
 		(char const *)GivenName,
-		IsEnabled ? 0 : 1,
+		Is_Enabled() ? 0 : 1,
 		IsEnabledOnEasy ? 1 : 0,
 		IsEnabledOnMedium ? 1 : 0,
 		IsEnabledOnHard ? 1 : 0,

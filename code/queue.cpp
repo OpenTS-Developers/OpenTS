@@ -3930,7 +3930,7 @@ static void Compute_Game_CRC(void)
 	//------------------------------------------------------------------------
 	for (i = 0; i < Infantry.Count(); i++) {
 		infp = (InfantryClass *)Infantry[i];
-		Add_CRC (&GameCRC, (int)infp->PositionCoord.As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
+		Add_CRC (&GameCRC, (int)infp->Get_Coord().As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
 	}
 
 	//------------------------------------------------------------------------
@@ -3938,7 +3938,7 @@ static void Compute_Game_CRC(void)
 	//------------------------------------------------------------------------
 	for (i = 0; i < Units.Count(); i++) {
 		unitp = (UnitClass *)Units[i];
-		Add_CRC (&GameCRC, (int)unitp->PositionCoord.As_Int() + (int)unitp->PrimaryFacing.Current().As_Dir256() +
+		Add_CRC (&GameCRC, (int)unitp->Get_Coord().As_Int() + (int)unitp->PrimaryFacing.Current().As_Dir256() +
 			(int)unitp->SecondaryFacing.Current().As_Dir256());
 	}
 
@@ -3947,7 +3947,7 @@ static void Compute_Game_CRC(void)
 	//------------------------------------------------------------------------
 	for (i = 0; i < Buildings.Count(); i++) {
 		bldgp = (BuildingClass *)Buildings[i];
-		Add_CRC (&GameCRC, (int)bldgp->PositionCoord.As_Int() + (int)bldgp->PrimaryFacing.Current().As_Dir256());
+		Add_CRC (&GameCRC, (int)bldgp->Get_Coord().As_Int() + (int)bldgp->PrimaryFacing.Current().As_Dir256());
 	}
 
 	//------------------------------------------------------------------------
@@ -3959,7 +3959,7 @@ static void Compute_Game_CRC(void)
 			if (objp->RTTI == RTTI_ANIM && objp->Fetch_ID() == -2) {
 				continue;
 			}
-			Add_CRC (&GameCRC, (int)objp->PositionCoord.As_Int() + (int)objp->RTTI);
+			Add_CRC (&GameCRC, (int)objp->Get_Coord().As_Int() + (int)objp->RTTI);
 		}
 	}
 
@@ -3971,7 +3971,7 @@ static void Compute_Game_CRC(void)
 		if (objp->RTTI == RTTI_ANIM && objp->Fetch_ID() == -2) {
 			continue;
 		}
-		Add_CRC (&GameCRC, (int)objp->PositionCoord.As_Int() + (int)objp->RTTI);
+		Add_CRC (&GameCRC, (int)objp->Get_Coord().As_Int() + (int)objp->RTTI);
 	}
 
 	//------------------------------------------------------------------------

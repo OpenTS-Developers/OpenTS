@@ -560,7 +560,7 @@ bool Commit_Deform_Grid(Cell center, bool forced)
 
 				for (objindex = 0; objindex < objects.Count(); objindex++) {
 					objects[objindex]->Mark(MARK_DOWN);
-					objects[objindex]->HeightAGL = 0;
+					objects[objindex]->Set_Height_AGL(0);
 				}
 			}
 		}

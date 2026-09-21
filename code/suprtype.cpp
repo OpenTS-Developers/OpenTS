@@ -311,7 +311,7 @@ ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * ob
 
 	if (object != NULL) {
 		target = object;
-		target_cell = object->PositionCell;
+		target_cell = object->Get_Cell();
 	} else {
 		target = &Map[cell];
 		target_cell = cell;
@@ -336,7 +336,7 @@ ActionType SuperWeaponTypeClass::What_Action(Cell const & cell, ObjectClass * ob
 
 	WeaponTypeClass *weap = cannon->Get_Class_Weapon_Data()->Weapon;
 	int range = weap->Range / CELL_LEPTON;
-	Cell cannon_cell = cannon->PositionCell;
+	Cell cannon_cell = cannon->Get_Cell();
 	Cell dist(target_cell - cannon_cell);
 	if (dist.X * dist.X + dist.Y * dist.Y < range * range) {
 		return(ACTION_EMPULSE);

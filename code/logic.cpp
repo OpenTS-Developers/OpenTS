@@ -407,7 +407,7 @@ void LogicClass::AI(void)
 	}
 
 	if (Map.Object_To_Follow() != NULL) {
-		TacticalMap->Set_Tactical_Position(Map.Object_To_Follow()->PositionCoord);
+		TacticalMap->Set_Tactical_Position(Map.Object_To_Follow()->Get_Coord());
 	}
 }
 

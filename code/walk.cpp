@@ -109,7 +109,7 @@ Coord WalkLocomotionClass::Head_To_Coord(void)
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
 	}
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 
@@ -242,7 +242,7 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 
 								if (LinkedTo->IsLocked) {
 									Cell nav_dest = LinkedTo->Destination_Coord().As_Cell();
-									if (!Map.Is_Same_Cell_Zone(nav_dest, dest, LinkedTo->TClass->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[dest].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
+									if (!Map.Is_Same_Cell_Zone(nav_dest, dest, LinkedTo->Techno_Type_Class()->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[dest].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
 										LinkedTo->Assign_Destination(NULL);
 									}
 								}
@@ -252,7 +252,7 @@ void WalkLocomotionClass::Movement_AI(bool first_pass)
 									if (LinkedTo->IsLocked) {
 										if (LinkedTo->TarCom != NULL) {
 											Cell nav_dest = LinkedTo->Destination_Coord().As_Cell();
-											if (!Map.Is_Same_Cell_Zone(nav_dest, tar_dest, LinkedTo->TClass->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[tar_dest].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
+											if (!Map.Is_Same_Cell_Zone(nav_dest, tar_dest, LinkedTo->Techno_Type_Class()->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[tar_dest].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
 												LinkedTo->Assign_Target(NULL);
 											}
 										}
@@ -563,20 +563,20 @@ bool WalkLocomotionClass::Mark_Head_To(Coord const & coord)
 	if (HeadToCoord != COORD_NONE) {
 		LinkedTo->Clear_Occupy_Bit(HeadToCoord);
 	} else {
-		LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
+		LinkedTo->Clear_Occupy_Bit(LinkedTo->Get_Coord());
 	}
 
 	Coord crd = coord;
 	bool any_spot = false;
 
 	if (coord != COORD_NONE) {
-		if (LinkedTo->Mission == MISSION_CAPTURE || LinkedTo->Mission == MISSION_ENTER || LinkedTo->Mission == MISSION_GUARD_AREA || LinkedTo->Mission == MISSION_PATROL) {
+		if (LinkedTo->Get_Mission() == MISSION_CAPTURE || LinkedTo->Get_Mission() == MISSION_ENTER || LinkedTo->Get_Mission() == MISSION_GUARD_AREA || LinkedTo->Get_Mission() == MISSION_PATROL) {
 			UnitClass * unit = dynamic_cast<UnitClass *>(LinkedTo->NavCom);
-			if (unit != NULL && unit->PositionCell == coord.As_Cell()) {
+			if (unit != NULL && unit->Get_Cell() == coord.As_Cell()) {
 				any_spot = true;
 			}
 			AircraftClass * aircraft = dynamic_cast<AircraftClass *>(LinkedTo->NavCom);
-			if (aircraft != NULL && aircraft->PositionCell == coord.As_Cell()) {
+			if (aircraft != NULL && aircraft->Get_Cell() == coord.As_Cell()) {
 				any_spot = true;
 			}
 			BuildingClass * building = dynamic_cast<BuildingClass *>(LinkedTo->NavCom);
@@ -585,7 +585,7 @@ bool WalkLocomotionClass::Mark_Head_To(Coord const & coord)
 			}
 		}
 
-		bool isbridge = Map[crd].IsUnderBridge && LinkedTo->PositionCoord.Z > 3 * LEVEL_LEPTON_H + Map.Get_Height_GL(crd);
+		bool isbridge = Map[crd].IsUnderBridge && LinkedTo->Get_Coord().Z > 3 * LEVEL_LEPTON_H + Map.Get_Height_GL(crd);
 		HeadToCoord = Map[crd].Closest_Free_Spot(crd, any_spot, isbridge);
 
 		if (!Map[HeadToCoord].Goodie_Check(LinkedTo) && !LinkedTo->IsInLimbo) {
@@ -603,7 +603,7 @@ bool WalkLocomotionClass::Mark_Head_To(Coord const & coord)
 		return(true);
 	}
 
-	LinkedTo->Set_Occupy_Bit(LinkedTo->PositionCoord);
+	LinkedTo->Set_Occupy_Bit(LinkedTo->Get_Coord());
 	return(false);
 }
 

@@ -98,8 +98,8 @@ class FactoryClass : public AbstractClass, private StageClass
 		bool Is_Currently_Producing(const TechnoTypeClass * type) const
 		{
 			if (Object == NULL) return(false);
-			if (Object->TClass == NULL) return(true);
-			if (Object->TClass == type) return(true);
+			if (Object->Techno_Type_Class() == NULL) return(true);
+			if (Object->Techno_Type_Class() == type) return(true);
 			return(false);
 		}
 

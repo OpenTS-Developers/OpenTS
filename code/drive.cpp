@@ -291,7 +291,7 @@ bool DriveLocomotionClass::Is_Moving(void)
 	if (DestinationCoord != COORD_NONE) {
 		return(true);
 	}
-	if (HeadToCoord != COORD_NONE && (HeadToCoord.X != LinkedTo->PositionCoord.X || HeadToCoord.Y != LinkedTo->PositionCoord.Y)) {
+	if (HeadToCoord != COORD_NONE && (HeadToCoord.X != LinkedTo->Get_Coord().X || HeadToCoord.Y != LinkedTo->Get_Coord().Y)) {
 		return(true);
 	}
 	return(false);
@@ -337,7 +337,7 @@ Coord DriveLocomotionClass::Head_To_Coord(void)
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
 	}
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 
@@ -368,7 +368,7 @@ void DriveLocomotionClass::Move_To(Coord to)
 void DriveLocomotionClass::Stop_Moving(void)
 {
 	if (HeadToCoord != COORD_NONE) {
-		if (LinkedTo->TClass->IsTrain) {
+		if (LinkedTo->Techno_Type_Class()->IsTrain) {
 			UnitClass *unit = (UnitClass *)LinkedTo;
 
 			if (!unit->IsFollowing) {
@@ -425,8 +425,8 @@ Matrix3D DriveLocomotionClass::Draw_Matrix(int *key)
 		m1.Make_Identity();
 		m2.Make_Identity();
 
-		float val = LinkedTo->TClass->VoxelCenterY;
-		float val2 = LinkedTo->TClass->VoxelCenterX;
+		float val = LinkedTo->Techno_Type_Class()->VoxelCenterY;
+		float val2 = LinkedTo->Techno_Type_Class()->VoxelCenterX;
 
 		float fcos = std::cos(LinkedTo->AngleRotatedForwards);
 		float fsin = std::sin(LinkedTo->AngleRotatedForwards);
@@ -536,12 +536,12 @@ bool DriveLocomotionClass::Process(void)
 		}
 	} else {
 
-		if (LinkedTo->NavCom != NULL && LinkedTo->NavCom->RTTI == RTTI_CELL && LinkedTo->PositionCell == ((CellClass *)LinkedTo->NavCom)->CellID) {
+		if (LinkedTo->NavCom != NULL && LinkedTo->NavCom->RTTI == RTTI_CELL && LinkedTo->Get_Cell() == ((CellClass *)LinkedTo->NavCom)->CellID) {
 			Abandon_Navigation();
 			return(false);
 		} else {
 
-			if (LinkedTo->CurrentMission == MISSION_GUARD && !IsDriving && DestinationCoord != COORD_NONE && LinkedTo->PositionCoord == DestinationCoord) {
+			if (LinkedTo->CurrentMission == MISSION_GUARD && !IsDriving && DestinationCoord != COORD_NONE && LinkedTo->Get_Coord() == DestinationCoord) {
 				Abandon_Navigation();
 				return(false);
 			}
@@ -564,7 +564,7 @@ bool DriveLocomotionClass::Process(void)
 				**	is a navigation target or a remaining path,
 				**	then start on a new track.
 				*/
-				if ((LinkedTo->Mission != MISSION_GUARD || Is_Moving()) && LinkedTo->Mission != MISSION_UNLOAD) {
+				if ((LinkedTo->Get_Mission() != MISSION_GUARD || Is_Moving()) && LinkedTo->Get_Mission() != MISSION_UNLOAD) {
 					if (Is_Moving() || LinkedTo->Path[0] != FACING_NONE) {
 
 						/*
@@ -572,7 +572,7 @@ bool DriveLocomotionClass::Process(void)
 						**	in a zone that this unit can travel to. If not, then abort
 						**	the navigation target.
 						*/
-						if (LinkedTo->IsLocked && LinkedTo->Mission != MISSION_ENTER && Is_Moving() && !LinkedTo->Is_In_Same_Zone(DestinationCoord)) {
+						if (LinkedTo->IsLocked && LinkedTo->Get_Mission() != MISSION_ENTER && Is_Moving() && !LinkedTo->Is_In_Same_Zone(DestinationCoord)) {
 							Stop_Driver();
 							if (Abandon_Navigation()) {
 								return(false);
@@ -602,7 +602,7 @@ bool DriveLocomotionClass::Process(void)
 	if (Is_Moving_Now() && (Frame % 10) == 0) {
 		if (!LinkedTo->IsOnBridge && LinkedTo->Get_Cell_Ptr()->Land_Type() == LAND_WATER) {
 			if (Rule->Wake != NULL) {
-				new AnimClass(Rule->Wake, LinkedTo->PositionCoord);
+				new AnimClass(Rule->Wake, LinkedTo->Get_Coord());
 			}
 		}
 	}
@@ -655,11 +655,11 @@ void DriveLocomotionClass::Mark_Track(Coord const & headto, MarkType type)
 					if (TrackIndex < cellidx && cellidx != -1) {
 						Point2D offset = Smooth_Turn(ptr[cellidx].Offset, dir);
 						if (type == MARK_UP) {
-							Coord coord(offset.X, offset.Y, LinkedTo->Height);
+							Coord coord(offset.X, offset.Y, LinkedTo->Get_Height());
 							LinkedTo->Clear_Occupy_Bit(coord);
 						} else {
 							if (type == MARK_DOWN || type == MARK_DOWN_FORCED) {
-								Coord coord(offset.X, offset.Y, LinkedTo->Height);
+								Coord coord(offset.X, offset.Y, LinkedTo->Get_Height());
 								LinkedTo->Set_Occupy_Bit(coord);
 							}
 						}
@@ -816,7 +816,7 @@ void DriveLocomotionClass::Do_Turn(DirType coord)
 		**	Special rotation track is needed for units that
 		**	cannot rotate in place.
 		*/
-		if (Special.IsThreePoint && TrackNumber == -1 && TClass->Speed == SPEED_WHEEL) {
+		if (Special.IsThreePoint && TrackNumber == -1 && Techno_Type_Class()->Speed == SPEED_WHEEL) {
 			int			facediff;   // Signed difference between current and desired facing.
 			FacingType	face;       // Current facing (ordinal value).
 
@@ -866,21 +866,21 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 	/*
 	**	Perform quick legality checks.
 	*/
-	if ((!IsDriving || TrackNumber == -1) && LinkedTo->Path[0] != FACING_COUNT || (IsRotating && !LinkedTo->TClass->IsTurretEquipped)) {
+	if ((!IsDriving || TrackNumber == -1) && LinkedTo->Path[0] != FACING_COUNT || (IsRotating && !LinkedTo->Techno_Type_Class()->IsTurretEquipped)) {
 		SpeedAccum = 0;		// Kludge?  No speed should accumulate if movement is on hold.
 		return(false);
 	}
-	if (LinkedTo->TClass->IsAccelerates) {
+	if (LinkedTo->Techno_Type_Class()->IsAccelerates) {
 		bool not_passive = LinkedTo->RTTI != RTTI_UNIT || !((UnitClass *)LinkedTo)->Class->IsPassive;
 		if (TrackNumber < BACKUP_INTO_REFINERY && not_passive) {
 			Coord dest_coord = DestinationCoord;
 			dest_coord.Z = Map.Get_Height_GL(dest_coord) + (Map[dest_coord].IsUnderBridge ? BRIDGE_LEPTON_HEIGHT : 0);
-			int distance = (LinkedTo->PositionCoord - dest_coord).Length();//LinkedTo->PositionCoord.Distance_To(dest_coord);
+			int distance = (LinkedTo->Get_Coord() - dest_coord).Length();//LinkedTo->Get_Coord().Distance_To(dest_coord);
 
 			bool forced_speed = false;
 			double speed = LinkedTo->Speed;
 
-			TechnoTypeClass const * tclass = LinkedTo->TClass;
+			TechnoTypeClass const * tclass = LinkedTo->Techno_Type_Class();
 			int maxspeed = LinkedTo->Get_Max_Speed();
 
 			if (distance < tclass->SlowdownDistance) {
@@ -943,7 +943,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 			LinkedTo->CurrentTube = tubenum;
 			LinkedTo->CurrentTubeDir = FACING_FIRST;
 			LinkedTo->LastTubeCoord = Map[Adjacent_Cell((Cell)tube->Enter, tube->Dirs[0])].Cell_Coord();
-			int current_height = Map.Get_Height_GL(LinkedTo->PositionCoord);
+			int current_height = Map.Get_Height_GL(LinkedTo->Get_Coord());
 			int count = tube->Count;
 			c = tube->Exit;
 			LinkedTo->LastTubeCoord.Z = current_height + (Map.Get_Height_GL(c) - current_height) / count;
@@ -1002,14 +1002,14 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 			offset = ptr[TrackIndex].Offset;
 			if (offset != Point2D(0, 0) || !TrackIndex) {
 				if (LinkedTo->Occupies_Cells()) {
-					LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
+					LinkedTo->Clear_Occupy_Bit(LinkedTo->Get_Coord());
 					LinkedTo->IsOccupyingCell = false;
 					LinkedTo->IsToPathAroundBlockage = false;
 				}
 
 				Cell oldcell;
 				if (!TrackIndex) {
-					oldcell = LinkedTo->PositionCell;
+					oldcell = LinkedTo->Get_Cell();
 				} else {
 					dir = ptr[TrackIndex - 1].Facing;
 					Point2D prevoffset = ptr[TrackIndex - 1].Offset;
@@ -1020,9 +1020,9 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 				Coord newcoord = Coord(Smooth_Turn(offset, dir), 0);
 				Cell newcell = newcoord.As_Cell();
 
-				if (LinkedTo->PositionCoord.As_Cell() != newcoord.As_Cell()) {
+				if (LinkedTo->Get_Coord().As_Cell() != newcoord.As_Cell()) {
 					LinkedTo->Mark(MARK_UP);
-					LinkedTo->PositionCoord = newcoord;
+					LinkedTo->Set_Coord(newcoord);
 					CellClass * oldcellptr = &Map[oldcell];
 					CellClass * newcellptr = &Map[newcell];
 					if (newcellptr->Height == oldcellptr->Height - BRIDGE_CELL_HEIGHT && newcellptr->IsUnderBridge) {
@@ -1031,8 +1031,8 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 					if (!newcellptr->IsUnderBridge && oldcellptr->IsUnderBridge) {
 						LinkedTo->IsOnBridge = false;
 					}
-					if (LinkedTo->TClass->IsTrain && !((UnitClass *)LinkedTo)->IsFollowing) {
-						bool is_bridge = LinkedTo->IsOnBridge || (LinkedTo->PositionCoord.Z >= (Map.Get_Height_GL(LinkedTo->PositionCoord) + BRIDGE_LEPTON_HEIGHT));
+					if (LinkedTo->Techno_Type_Class()->IsTrain && !((UnitClass *)LinkedTo)->IsFollowing) {
+						bool is_bridge = LinkedTo->IsOnBridge || (LinkedTo->Get_Coord().Z >= (Map.Get_Height_GL(LinkedTo->Get_Coord()) + BRIDGE_LEPTON_HEIGHT));
 						ObjectClass * occupier;
 						if (is_bridge) {
 							occupier = Map[newcell].Cell_Occupier(true);
@@ -1055,9 +1055,9 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 
 					if (newcellptr->Overlay != OVERLAY_NONE) {
 						OverlayTypeClass * otype = OverlayTypes[newcellptr->Overlay];
-						if (IsRocking && (LinkedTo->TClass->IsCrusher || LinkedTo->Has_Ability(ABILITY_CRUSHER)) && otype->HeapID == OVERLAY_SANDBAG_WALL) {
+						if (IsRocking && (LinkedTo->Techno_Type_Class()->IsCrusher || LinkedTo->Has_Ability(ABILITY_CRUSHER)) && otype->HeapID == OVERLAY_SANDBAG_WALL) {
 							LinkedTo->IsCrushing = true;
-							if (LinkedTo->TClass->IsTiltsWhenCrushes) {
+							if (LinkedTo->Techno_Type_Class()->IsTiltsWhenCrushes) {
 								LinkedTo->RockingForwardsPerFrame = -0.02f;
 							}
 						}
@@ -1065,7 +1065,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 				} else {
 					bool down = LinkedTo->IsDown;
 					LinkedTo->IsDown = false;
-					LinkedTo->PositionCoord = newcoord;
+					LinkedTo->Set_Coord(newcoord);
 					LinkedTo->IsDown = down;
 				}
 
@@ -1075,7 +1075,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 
 				bool down = LinkedTo->IsDown;
 				LinkedTo->IsDown = false;
-				LinkedTo->HeightAGL = 0;
+				LinkedTo->Set_Height_AGL(0);
 				LinkedTo->IsDown = down;
 
 				LinkedTo->PrimaryFacing.Set(dir);
@@ -1084,7 +1084,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 				**	See if "per cell" processing is necessary.
 				*/
 				if (TrackIndex && RawTracks[tracknum-1].Cell == TrackIndex) {
-					LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
+					LinkedTo->Clear_Occupy_Bit(LinkedTo->Get_Coord());
 				}
 
 				/*
@@ -1136,7 +1136,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 
 							case MOVE_TEMP: {
 									bool bridge;
-									if (!Map[c].IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - Map[c].Height) <= 2) {
+									if (!Map[c].IsUnderBridge || abs(LinkedTo->Get_Coord().Z / LEVEL_LEPTON_H - Map[c].Height) <= 2) {
 										bridge = false;
 									} else {
 										bridge = true;
@@ -1150,22 +1150,22 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 				TrackIndex++;
 
 			} else {
-				Coord dc = HeadToCoord - LinkedTo->PositionCoord;
+				Coord dc = HeadToCoord - LinkedTo->Get_Coord();
 				int d = abs(dc.X) + abs(dc.Y);
 				actual += (int)((1.0 - (double)d / 11.0) * 7.0);
 				LinkedTo->IsOccupyingCell = true;
 				LinkedTo->IsToPathAroundBlockage = false;
 
-				if (HeadToCoord.As_Cell() != LinkedTo->PositionCoord.As_Cell()) {
+				if (HeadToCoord.As_Cell() != LinkedTo->Get_Coord().As_Cell()) {
 					LinkedTo->Mark(MARK_UP);
-					LinkedTo->PositionCoord = HeadToCoord;
-					LinkedTo->HeightAGL = 0;
+					LinkedTo->Set_Coord(HeadToCoord);
+					LinkedTo->Set_Height_AGL(0);
 					LinkedTo->Mark(MARK_DOWN);
 				} else {
 					bool down = LinkedTo->IsDown;
 					LinkedTo->IsDown = false;
-					LinkedTo->PositionCoord = HeadToCoord;
-					LinkedTo->HeightAGL = 0;
+					LinkedTo->Set_Coord(HeadToCoord);
+					LinkedTo->Set_Height_AGL(0);
 					LinkedTo->IsDown = down;
 				}
 
@@ -1176,7 +1176,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 				TrackIndex = NULL;
 
 				bool arrived = false;
-				if (LinkedTo->NavCom != NULL && LinkedTo->PositionCell == LinkedTo->NavCom->Destination_Coord().As_Cell()) {
+				if (LinkedTo->NavCom != NULL && LinkedTo->Get_Cell() == LinkedTo->NavCom->Destination_Coord().As_Cell()) {
 					if (abs(LinkedTo->Destination_Coord().Z - DestinationCoord.Z) < 2 * LEVEL_LEPTON_H) {
 						arrived = true;
 						DestinationCoord = COORD_NONE;
@@ -1196,7 +1196,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 				if (arrived) {
 					LinkedTo->NavCom = NULL;
 					LinkedTo->Path[0] = FACING_NONE;
-					if (LinkedTo->Mission == MISSION_MOVE && LinkedTo->Enter_Idle_Mode()) {
+					if (LinkedTo->Get_Mission() == MISSION_MOVE && LinkedTo->Enter_Idle_Mode()) {
 						return(true);
 					}
 				}
@@ -1240,11 +1240,11 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 		offset = ptr[TrackIndex].Offset;
 		if (offset != Point2D(0, 0) || !TrackIndex) {
 
-			Coord oldcoord = LinkedTo->PositionCoord;
+			Coord oldcoord = LinkedTo->Get_Coord();
 
 			dir = ptr[TrackIndex].Facing;
-			Coord movement = Coord(Smooth_Turn(offset, dir) - LinkedTo->PositionCoord, 0);
-			Coord stepcoord = movement + LinkedTo->PositionCoord;
+			Coord movement = Coord(Smooth_Turn(offset, dir) - LinkedTo->Get_Coord(), 0);
+			Coord stepcoord = movement + LinkedTo->Get_Coord();
 			CellClass * stepcellptr = &Map[stepcoord];
 
 			Coord partial(0, 0, 0);
@@ -1254,7 +1254,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 			CellClass * oldcellptr = &Map[oldcoord];
 			CellClass * partialcellptr = &Map[partialcoord];
 
-			Coord poscoord = LinkedTo->PositionCoord;
+			Coord poscoord = LinkedTo->Get_Coord();
 			Coord coord = poscoord;
 
 			if (partialcellptr != stepcellptr && partialcellptr != oldcellptr) {
@@ -1269,9 +1269,9 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 
 			CellClass * newcellptr = &Map[coord];
 
-			if (coord.As_Cell() != LinkedTo->PositionCoord.As_Cell()) {
+			if (coord.As_Cell() != LinkedTo->Get_Coord().As_Cell()) {
 				LinkedTo->Mark(MARK_UP);
-				LinkedTo->PositionCoord = coord;
+				LinkedTo->Set_Coord(coord);
 				if (newcellptr->Height == oldcellptr->Height - BRIDGE_CELL_HEIGHT && newcellptr->IsUnderBridge) {
 					LinkedTo->IsOnBridge = true;
 				}
@@ -1282,7 +1282,7 @@ bool DriveLocomotionClass::While_Moving(bool just_started)
 			} else {
 				bool down = LinkedTo->IsDown;
 				LinkedTo->IsDown = false;
-				LinkedTo->PositionCoord = coord;
+				LinkedTo->Set_Coord(coord);
 				LinkedTo->IsDown = down;
 			}
 		}
@@ -1327,7 +1327,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 	if (!Is_Moving() && facing == FACING_NONE) {
 		IsTurretLockedDown = false;
 		Stop_Driver();
-		if (LinkedTo->Mission == MISSION_MOVE) {
+		if (LinkedTo->Get_Mission() == MISSION_MOVE) {
 			stop_processing = LinkedTo->Enter_Idle_Mode();
 		}
 		return(false);		// Why is it calling this routine!?!
@@ -1383,7 +1383,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 				**	desired. This is quite necessary since it is typical to move
 				**	several units with the same mouse click.
 				*/
-				if (!LinkedTo->Is_On_Priority_Mission() && LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && (LinkedTo->Mission == MISSION_MOVE || LinkedTo->Mission == MISSION_GUARD_AREA)) {
+				if (!LinkedTo->Is_On_Priority_Mission() && LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && (LinkedTo->Get_Mission() == MISSION_MOVE || LinkedTo->Get_Mission() == MISSION_GUARD_AREA)) {
 					Stop_Driver();
 					if (Abandon_Navigation()) return(true);
 					if (!LinkedTo->IsActive) return(false);
@@ -1400,8 +1400,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 							Incoming(cell);
 						} else if (ok == MOVE_TEMP) {
 							CellClass * cellptr = &Map[cell];
-							TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
-							if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
+							TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->Get_Coord().Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
+							if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->Techno_Type_Class()->IsTrain) {
 
 								/*
 								**	If the target can be told to get out of the way, only bother
@@ -1409,8 +1409,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 								**	object can just say "good enough" and stop here.
 								*/
 								if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
-									if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
-										if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
+									if (abs(DestinationCoord.Z - LinkedTo->Get_Coord().Z) < 2 * LEVEL_LEPTON_H) {
+										if (Map[(Coord const &)LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
 											Stop_Driver();
 											return(Abandon_Navigation());
 										}
@@ -1418,7 +1418,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 								}
 
 								bool is_bridge;
-								if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
+								if (!cellptr->IsUnderBridge || abs(LinkedTo->Get_Coord().Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
 									is_bridge = false;
 								} else {
 									is_bridge = true;
@@ -1482,8 +1482,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 				Incoming(cell);
 			} else if (ok == MOVE_TEMP) {
 				CellClass * cellptr = &Map[cell];
-				TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->PositionCoord.Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
-				if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->TClass->IsTrain) {
+				TechnoClass * blockage = cellptr->Cell_Techno(Point2D(0,0), LinkedTo->Get_Coord().Z > (Map.Get_Height_GL(cell) + (2 * LEVEL_LEPTON_H)));
+				if (blockage != NULL && LinkedTo->House->Is_Ally(blockage) && !LinkedTo->Techno_Type_Class()->IsTrain) {
 
 					/*
 					**	If the target can be told to get out of the way, only bother
@@ -1491,8 +1491,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 					**	object can just say "good enough" and stop here.
 					*/
 					if (LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact()) {
-						if (abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H) {
-							if (Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() != LAND_TUNNEL) {
+						if (abs(DestinationCoord.Z - LinkedTo->Get_Coord().Z) < 2 * LEVEL_LEPTON_H) {
+							if (Map[(Coord const &)LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
 								Stop_Driver();
 								return(Abandon_Navigation());
 							}
@@ -1500,7 +1500,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 					}
 
 					bool is_bridge;
-					if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
+					if (!cellptr->IsUnderBridge || abs(LinkedTo->Get_Coord().Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
 						is_bridge = false;
 					} else {
 						is_bridge = true;
@@ -1526,14 +1526,14 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 	/*
 	**	Determine the coordinate of the next cell to move into.
 	*/
-	Coord dest = Adjacent_Cell(LinkedTo->PositionCoord, facing);
+	Coord dest = Adjacent_Cell(LinkedTo->Get_Coord(), facing);
 
-	int cell_height = Map[(Coord const &)LinkedTo->PositionCoord].Height + (LinkedTo->IsOnBridge ? BRIDGE_CELL_HEIGHT : 0);
+	int cell_height = Map[(Coord const &)LinkedTo->Get_Coord()].Height + (LinkedTo->IsOnBridge ? BRIDGE_CELL_HEIGHT : 0);
 
 	/*
 	 * If this move crosses a bridge transition, force a full scan next process.
 	 */
-	if (LinkedTo->IsOnBridge ^ Map[Adjacent_Cell(LinkedTo->PositionCoord, facing)].IsUnderBridge) {
+	if (LinkedTo->IsOnBridge ^ Map[Adjacent_Cell(LinkedTo->Get_Coord(), facing)].IsUnderBridge) {
 		LinkedTo->IsPlanningToLook = true;
 	}
 	if (!LinkedTo->Is_Ready_To_Move()) {
@@ -1573,8 +1573,8 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 		/*
 		 * A train ignores all blockages, and a crusher rolls straight over sandbags.
 		 */
-		if ((cando < MOVE_NO && LinkedTo->TClass->IsTrain)
-			|| ((cando == MOVE_DESTROYABLE || cando == MOVE_FRIENDLY_DESTROYABLE) && LinkedTo->TClass->IsCrusher && destptr->Overlay == OVERLAY_SANDBAG_WALL)) {
+		if ((cando < MOVE_NO && LinkedTo->Techno_Type_Class()->IsTrain)
+			|| ((cando == MOVE_DESTROYABLE || cando == MOVE_FRIENDLY_DESTROYABLE) && LinkedTo->Techno_Type_Class()->IsCrusher && destptr->Overlay == OVERLAY_SANDBAG_WALL)) {
 			cando = MOVE_OK;
 		}
 
@@ -1600,7 +1600,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 			**	get out of the way.
 			*/
 			else if (cando == MOVE_TEMP) {
-				if (!LinkedTo->TClass->IsTrain) {
+				if (!LinkedTo->Techno_Type_Class()->IsTrain) {
 					if (retry) {
 						LinkedTo->Path[0] = FACING_NONE;
 						LinkedTo->PathDelay = 0;
@@ -1609,10 +1609,10 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 					Coord diff = LinkedTo->Center_Coord() - DestinationCoord;
 					int dist = diff.Length();
 					if (dist >= Rule->CloseEnoughDistance
-						|| abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) >= 2 * LEVEL_LEPTON_H
-						|| Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() == LAND_TUNNEL) {
+						|| abs(DestinationCoord.Z - LinkedTo->Get_Coord().Z) >= 2 * LEVEL_LEPTON_H
+						|| Map[(Coord const &)LinkedTo->Get_Coord()].Land_Type() == LAND_TUNNEL) {
 						bool is_bridge;
-						if (!Map[destcell].IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - Map[destcell].Height) <= 2) {
+						if (!Map[destcell].IsUnderBridge || abs(LinkedTo->Get_Coord().Z / LEVEL_LEPTON_H - Map[destcell].Height) <= 2) {
 							is_bridge = false;
 						} else {
 							is_bridge = true;
@@ -1723,14 +1723,14 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 			ground = LAND_ROAD;
 		}
 
-		double speed = Ground[ground].Cost[LinkedTo->TClass->Speed];
+		double speed = Ground[ground].Cost[LinkedTo->Techno_Type_Class()->Speed];
 		if (speed > 1.0) speed = 1.0;
 
 		int destheight = Map.Get_Height_GL(Map[destcell].Cell_Coord());
-		int unitheight = Map.Get_Height_GL(LinkedTo->PositionCoord);
+		int unitheight = Map.Get_Height_GL(LinkedTo->Get_Coord());
 		if (destheight > unitheight) {
 			if (LinkedTo->RTTI == RTTI_UNIT) {
-				if (LinkedTo->TClass->Speed == SPEED_TRACK) {
+				if (LinkedTo->Techno_Type_Class()->Speed == SPEED_TRACK) {
 					speed *= Rule->TrackedUphill;
 				} else {
 					speed *= Rule->WheeledUphill;
@@ -1738,7 +1738,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 			}
 		} else if (destheight < unitheight) {
 			if (LinkedTo->RTTI == RTTI_UNIT) {
-				if (LinkedTo->TClass->Speed == SPEED_TRACK) {
+				if (LinkedTo->Techno_Type_Class()->Speed == SPEED_TRACK) {
 					speed *= Rule->TrackedDownhill;
 				} else {
 					speed *= Rule->WheeledDownhill;
@@ -1750,7 +1750,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 		/*
 		**	A damaged unit has a reduced speed.
 		*/
-		if (LinkedTo->HealthRatio <= Rule->ConditionYellow) {
+		if (LinkedTo->Get_Health_Ratio() <= Rule->ConditionYellow) {
 			speed *= 0.75;	// Three quarters speed.
 		}
 		if (TrackNumber < BACKUP_INTO_REFINERY) {
@@ -1778,7 +1778,7 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 				 * The end of the path was reached but the destination is still far away.
 				 * Regenerate the path so that movement can continue.
 				 */
-				int patharg = LinkedTo->TClass->IsTrain ? 1 : 0;
+				int patharg = LinkedTo->Techno_Type_Class()->IsTrain ? 1 : 0;
 				if (!LinkedTo->Basic_Path(DestinationCoord.As_Cell(), patharg)) {
 					if (LinkedTo == NULL) {
 						stop_processing = true;
@@ -1831,9 +1831,9 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 				dest = Adjacent_Cell(dest, nextface);
 				destcell = dest.As_Cell();
 				nextcando = LinkedTo->Can_Enter_Cell(&Map[destcell], nextface, height);
-				if (nextcando < MOVE_NO && LinkedTo->TClass->IsTrain) {
+				if (nextcando < MOVE_NO && LinkedTo->Techno_Type_Class()->IsTrain) {
 					nextcando = MOVE_OK;
-				} else if (((nextcando == MOVE_FRIENDLY_DESTROYABLE || nextcando == MOVE_DESTROYABLE) && LinkedTo->TClass->IsCrusher && Map[destcell].Overlay == OVERLAY_SANDBAG_WALL)) {
+				} else if (((nextcando == MOVE_FRIENDLY_DESTROYABLE || nextcando == MOVE_DESTROYABLE) && LinkedTo->Techno_Type_Class()->IsCrusher && Map[destcell].Overlay == OVERLAY_SANDBAG_WALL)) {
 					nextcando = MOVE_OK;
 				}
 			}
@@ -1853,18 +1853,18 @@ bool DriveLocomotionClass::Start_Of_Move(bool & stop_processing, bool retry, boo
 				**	get out of the way.
 				*/
 				else if (nextcando == MOVE_TEMP) {
-					if (!LinkedTo->TClass->IsTrain) {
+					if (!LinkedTo->Techno_Type_Class()->IsTrain) {
 						if (retry) {
 							LinkedTo->Path[0] = FACING_NONE;
 							LinkedTo->PathDelay = 0;
 							return(Start_Of_Move(stop_processing, false, false));
 						}
 						if (LinkedTo->Distance(DestinationCoord) >= Rule->CloseEnoughDistance
-							|| abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) >= 2 * LEVEL_LEPTON_H
-							|| Map[(Coord const &)LinkedTo->PositionCoord].Land_Type() == LAND_TUNNEL) {
+							|| abs(DestinationCoord.Z - LinkedTo->Get_Coord().Z) >= 2 * LEVEL_LEPTON_H
+							|| Map[(Coord const &)LinkedTo->Get_Coord()].Land_Type() == LAND_TUNNEL) {
 							CellClass * cellptr = &Map[destcell];
 							bool is_bridge;
-							if (!cellptr->IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
+							if (!cellptr->IsUnderBridge || abs(LinkedTo->Get_Coord().Z / LEVEL_LEPTON_H - cellptr->Height) <= 2) {
 								is_bridge = false;
 							} else {
 								is_bridge = true;
@@ -2143,7 +2143,7 @@ bool DriveLocomotionClass::Is_Moving_Here(Coord to)
 					if (TrackIndex < cellidx && cellidx != -1) {
 						Point2D pt = Smooth_Turn(ptr[cellidx].Offset, dir);
 						Coord coord = Coord(pt.X, pt.Y);
-						coord.Z += LinkedTo->PositionCoord.Z;
+						coord.Z += LinkedTo->Get_Coord().Z;
 						if (coord.As_Cell() == to.As_Cell() && abs(coord.Z - to.Z) <= LEVEL_LEPTON_H) {
 							return(true);
 						}

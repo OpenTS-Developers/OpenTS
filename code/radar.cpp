@@ -1819,7 +1819,7 @@ void RadarClass::Radar_Cell(Cell const & cell)
 /// bare terrain.</param>
 void RadarClass::Resolve_Radar_Point(Point2D const & point, Cell & cell, ObjectClass *& object)
 {
-	Point2D pt = point - RadarRect.TopLeft;
+	Point2D pt = point - RadarRect.Top_Left();
 
 	// A click takes the object at the tail of the pixel's list, which is the last one to have
 	// been tracked there that did not go to the head.
@@ -2178,7 +2178,7 @@ void RadarClass::Render_Radar(void)
 
 		if (CellRedrawRect.Is_Valid()) {
 			RadarSurface->Blit_From(CellRedrawRect, *BackgroundSurface, CellRedrawRect);
-			LastDrawRect = Union(CellRedrawRect, LastDrawRect + RadarRect.TopLeft);
+			LastDrawRect = Union(CellRedrawRect, LastDrawRect + RadarRect.Top_Left());
 
 			for (int x = CellRedrawRect.X; x < CellRedrawRect.X + CellRedrawRect.Width; x++) {
 				for (int y = CellRedrawRect.Y; y < CellRedrawRect.Y + CellRedrawRect.Height; y++) {
@@ -2205,7 +2205,7 @@ void RadarClass::Render_Radar(void)
 			}
 
 			if (LastDrawRect.Is_Valid()) {
-				SidebarSurface->Blit_From(LastDrawRect, *RadarSurface, LastDrawRect - RadarRect.TopLeft);
+				SidebarSurface->Blit_From(LastDrawRect, *RadarSurface, LastDrawRect - RadarRect.Top_Left());
 			}
 
 			SidebarSurface->Draw_Rect(RadarViewRect, DSurface::Build_Hicolor_Pixel(255, 255, 255));

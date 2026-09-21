@@ -126,7 +126,7 @@ Point2D LocomotionClass::Shadow_Point(void)
 	Point2D pt;
 
 	pt.X = 0;
-	pt.Y = TacticalMap->Z_Lepton_To_Pixel(LinkedTo->HeightAGL);
+	pt.Y = TacticalMap->Z_Lepton_To_Pixel(LinkedTo->Get_Height_AGL());
 
 	return(pt);
 }
@@ -492,7 +492,7 @@ Coord LocomotionClass::Destination(void)
 /// <returns>Returns with the coordinate currently being moved toward.</returns>
 Coord LocomotionClass::Head_To_Coord(void)
 {
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 

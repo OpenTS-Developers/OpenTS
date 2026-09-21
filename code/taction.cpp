@@ -753,7 +753,7 @@ bool TActionClass::TAction_REMOVE_PARTICLE_ANIM(HouseClass * , ObjectClass * , T
 	for (int index = 0; index < ParticleSystems.Count(); index++) {
 		ParticleSystemClass * psys = ParticleSystems[index];
 
-		if (psys->IsActive && psys->PositionCell == cell2) {
+		if (psys->IsActive && psys->Get_Cell() == cell2) {
 			psys->Delete_Me();
 		}
 	}
@@ -786,7 +786,7 @@ bool TActionClass::TAction_WAKEUP_SELF(HouseClass * , ObjectClass * , TriggerCla
 	for (int index = 0; index < Technos.Count(); index++) {
 		TechnoClass * techno = Technos[index];
 		if (techno->RTTI != RTTI_BUILDING && techno->IsActive && techno->IsDown && techno->Tag != NULL && techno->Tag->Is_Trigger_Attached(trigger)) {
-			if (techno->Mission == MISSION_SLEEP || techno->Mission == MISSION_HARMLESS) {
+			if (techno->Get_Mission() == MISSION_SLEEP || techno->Get_Mission() == MISSION_HARMLESS) {
 				techno->Assign_Mission(MISSION_GUARD);
 			}
 		}
@@ -833,7 +833,7 @@ bool TActionClass::TAction_WAKEUP_ALL_SLEEP(HouseClass * house, ObjectClass * , 
 {
 	for (int index = 0; index < Feet.Count(); index++) {
 		FootClass * techno = Feet[index];
-		if (techno->Mission == MISSION_SLEEP && techno->Strength > 0 && techno->IsActive && techno->IsDown && !techno->IsInLimbo && house != techno->House ) {
+		if (techno->Get_Mission() == MISSION_SLEEP && techno->Strength > 0 && techno->IsActive && techno->IsDown && !techno->IsInLimbo && house != techno->House ) {
 			techno->Assign_Mission(MISSION_GUARD);
 		}
 	}
@@ -848,7 +848,7 @@ bool TActionClass::TAction_WAKEUP_ALL_HARMLESS(HouseClass * house, ObjectClass *
 {
 	for (int index = 0; index < Feet.Count(); index++) {
 		FootClass * techno = Feet[index];
-		if (techno->Mission == MISSION_HARMLESS && techno->Strength > 0 && techno->IsActive && techno->IsDown && !techno->IsInLimbo && techno->House == house) {
+		if (techno->Get_Mission() == MISSION_HARMLESS && techno->Strength > 0 && techno->IsActive && techno->IsDown && !techno->IsInLimbo && techno->House == house) {
 			techno->Assign_Mission(MISSION_GUARD);
 		}
 	}
@@ -866,7 +866,7 @@ bool TActionClass::TAction_WAKEUP_GROUP(HouseClass * , ObjectClass * , TriggerCl
 	for (int index = 0; index < Feet.Count(); index++) {
 		FootClass * foot = Feet[index];
 		if (foot->Group == Data.Value &&
-				(foot->Mission == MISSION_SLEEP || foot->Mission == MISSION_HARMLESS) &&
+				(foot->Get_Mission() == MISSION_SLEEP || foot->Get_Mission() == MISSION_HARMLESS) &&
 				foot->Strength > 0 &&
 				foot->IsActive &&
 				foot->IsDown &&

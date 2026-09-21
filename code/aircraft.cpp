@@ -254,7 +254,7 @@ void AircraftClass::Init(void)
 		PrimaryFacing.Set_ROT(Class->ROT);
 		SecondaryFacing.Set_ROT(Class->ROT);
 		SecondaryFacing.Set(PrimaryFacing.Current());
-		HeightAGL = Class->Flight_Level();
+		Set_Height_AGL(Class->Flight_Level());
 		Ammo = Class->MaxAmmo;
 		Strength = Class->MaxStrength;
 	}
@@ -298,7 +298,7 @@ bool AircraftClass::Unlimbo(Coord const & coord, Dir256 dir)
 
 	if (BASECLASS::Unlimbo(ucoord, dir)) {
 
-		if (!Class->IsSelectable || !Class->IsLandable || (PrimaryWeapon != NULL && PrimaryWeapon->IsCamera)) {
+		if (!Class->IsSelectable || !Class->IsLandable || (Get_Primary_Weapon() != NULL && Get_Primary_Weapon()->IsCamera)) {
 			IsALoaner = true;
 		}
 
@@ -326,7 +326,7 @@ bool AircraftClass::Unlimbo(Coord const & coord, Dir256 dir)
 		**	When starting at flight level, then give it speed. When landed
 		**	then it must be stationary.
 		*/
-		if (HeightAGL == Class->Flight_Level()) {
+		if (Get_Height_AGL() == Class->Flight_Level()) {
 			Set_Speed(1);
 		} else {
 			Set_Speed(0);
@@ -358,8 +358,8 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 {
 	if (!Debug_Map && MainWindow && Scen->Special.IsFogOfWar) {
 		Coord headto = (Coord)Locomotion->Head_To_Coord();
-		headto.Z = PositionCoord.Z;
-		if (Map.Is_Fogged(headto) && Map.Is_Fogged(PositionCoord) && !House->Is_Player_Control()) {
+		headto.Z = Get_Coord().Z;
+		if (Map.Is_Fogged(headto) && Map.Is_Fogged(Get_Coord()) && !House->Is_Player_Control()) {
 			return;
 		}
 	}
@@ -372,7 +372,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 	}
 
 	if (Class->IsVoxel && Class->Voxel.VoxLib != NULL) {
-		Coord coord = PositionCoord;
+		Coord coord = Get_Coord();
 		coord.Z = Map.Get_Height_GL(coord);
 
 		Point2D shadow;
@@ -380,7 +380,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		shadow += Locomotion->Shadow_Point();
 
 		int key = 0;
-		int height = HeightAGL;
+		int height = Get_Height_AGL();
 
 		bool occupies_cell = Occupies_Cells();
 		((AircraftClass &)*this).IsOccupyingCell = false;
@@ -395,7 +395,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 				(cellptr->IsBridgeEastWest && cellptr->Adjacent_Cell(FACING_N).IsUnderBridge ||
 				!cellptr->IsBridgeEastWest && cellptr->Adjacent_Cell(FACING_W).IsUnderBridge)) {
 
-				((AircraftClass &)*this).HeightAGL = BRIDGE_LEPTON_HEIGHT;
+				((AircraftClass &)*this).Set_Height_AGL(BRIDGE_LEPTON_HEIGHT);
 				shadow.Y -= TacticalMap->Z_Lepton_To_Pixel(BRIDGE_LEPTON_HEIGHT);
 			} else {
 				draw_on_ground = true;
@@ -403,7 +403,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		}
 
 		if (draw_on_ground) {
-			((AircraftClass &)*this).HeightAGL = 0;
+			((AircraftClass &)*this).Set_Height_AGL(0);
 		}
 
 		/*
@@ -413,7 +413,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 		matrix = Locomotion->Shadow_Matrix(&key);
 		Draw_Voxel_Shadow(Class->Voxel, 0, key, &Class->ShadowVoxelIndex, cliprect, shadow, Get_Isometric_View_Matrix() * matrix, true);
 
-		((AircraftClass &)*this).HeightAGL = height;
+		((AircraftClass &)*this).Set_Height_AGL(height);
 		((AircraftClass &)*this).IsOccupyingCell = occupies_cell;
 
 		TacticalMap->Add_To_Selectables((AircraftClass *)this, point);
@@ -425,7 +425,7 @@ void AircraftClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 			brightness = Scen->LevelLight;
 		}
 
-		brightness *= (HeightAGL / (2 * LEVEL_LEPTON_H));
+		brightness *= (Get_Height_AGL() / (2 * LEVEL_LEPTON_H));
 		int newbrightness = brightness + Map[coord].Brightness + Rule->ExtraAircraftLight;
 
 		/*
@@ -467,7 +467,7 @@ void AircraftClass::Draw_Rotors(Point2D const & xy, Rect const & cliprect) const
 	**	The rotor shape number depends on whether the helicopter is idling
 	**	or not. A landed helicopter uses slow moving "idling" blades.
 	*/
-	if (HeightAGL == 0) {
+	if (Get_Height_AGL() == 0) {
 		shapenum = (Fetch_Stage()%8)+4;
 		flags = flags;
 	} else {
@@ -526,10 +526,10 @@ int AircraftClass::Do_MISSION_HUNT(void)
 	} else {
 		if (TarCom == NULL) {
 			if (Session.Type != GAME_NORMAL) {
-				Assign_Target(Greatest_Threat(THREAT_TIBERIUM, PositionCoord, false));
+				Assign_Target(Greatest_Threat(THREAT_TIBERIUM, Get_Coord(), false));
 			}
 			if (TarCom == NULL) {
-				Assign_Target(Greatest_Threat(THREAT_NORMAL, PositionCoord, false));
+				Assign_Target(Greatest_Threat(THREAT_NORMAL, Get_Coord(), false));
 			}
 			if (TarCom == NULL) {
 				Enter_Idle_Mode();
@@ -561,7 +561,7 @@ int AircraftClass::Do_MISSION_HUNT(void)
  *=============================================================================================*/
 void AircraftClass::AI(void)
 {
-	if (Mission == MISSION_SLEEP && HeightAGL > 0) {
+	if (Get_Mission() == MISSION_SLEEP && Get_Height_AGL() > 0) {
 		Assign_Mission(MISSION_GUARD);
 	}
 
@@ -586,7 +586,7 @@ void AircraftClass::AI(void)
 		return;
 	}
 
-	if (!Map.In_Local_Radar(PositionCell) && Should_Delete_Off_Map()) {
+	if (!Map.In_Local_Radar(Get_Cell()) && Should_Delete_Off_Map()) {
 		Delete_Me();
 		return;
 	}
@@ -619,16 +619,16 @@ void AircraftClass::AI(void)
 		SightTimer = TICKS_PER_SECOND;
 	}
 
-	if (HealthRatio < Rule->ConditionRed && HeightAGL > 0) {
+	if (Get_Health_Ratio() < Rule->ConditionRed && Get_Height_AGL() > 0) {
 		if (Percent_Chance(Strength != 0 ? 10 : 80)) {
-			new AnimClass(AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")], PositionCoord);
+			new AnimClass(AnimTypes[AnimTypeClass::From_Name("SGRYSMK1")], Get_Coord());
 		}
 	}
 
 	if (Cargo.Is_Something_Attached() && Class->IsCarryall) {
 		Cargo.Attached_Object()->PrimaryFacing = SecondaryFacing;
 		Cargo.Attached_Object()->SecondaryFacing = SecondaryFacing;
-		Cargo.Attached_Object()->PositionCoord = PositionCoord;
+		Cargo.Attached_Object()->Set_Coord(Get_Coord());
 	}
 }
 
@@ -665,8 +665,8 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 		**	Search for an appropriate destination spot if one isn't already assigned.
 		*/
 		case SEARCH_FOR_LZ:
-			if (HeightAGL == 0 && (double)PitchAngle == 0 && (NavCom == NULL || (PositionCoord == NavCom->Center_Coord()))) {
-				if (Cargo.Is_Something_Attached() && Map[(Coord const &)PositionCoord].Cell_Building() != NULL) {
+			if (Get_Height_AGL() == 0 && (double)PitchAngle == 0 && (NavCom == NULL || (Get_Coord() == NavCom->Center_Coord()))) {
+				if (Cargo.Is_Something_Attached() && Map[(Coord const &)Get_Coord()].Cell_Building() != NULL) {
 					if (House->Is_Human_Player()) {
 						Assign_Destination(NULL);
 						Assign_Mission(MISSION_GUARD);
@@ -681,7 +681,7 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 				}
 				Status = UNLOAD_PASSENGERS;
 			} else {
-				if (NavCom == NULL && Class->IsDropship && HeightAGL > 0) {
+				if (NavCom == NULL && Class->IsDropship && Get_Height_AGL() > 0) {
 					BuildingClass * building = NULL;
 					for (int index = 0; index < Class->Dock.Count(); index++) {
 						building = Find_Docking_Bay(Class->Dock[index], false);
@@ -705,14 +705,14 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 
 						Cell cell = CELL_NONE;
 						if (NavCom->RTTI != RTTI_CELL) {
-							cell = Dynamic_Cast<TechnoClass *>(NavCom)->PositionCoord.As_Cell();
+							cell = Dynamic_Cast<TechnoClass *>(NavCom)->Get_Coord().As_Cell();
 						}
 
 						if (cell != CELL_NONE) {
 							ObjectClass * occupier = Map[cell].Cell_Occupier();
 							while (occupier != NULL) {
 								if (occupier->RTTI != RTTI_BUILDING) {
-									occupier->Scatter(PositionCoord, true, true);
+									occupier->Scatter(Get_Coord(), true, true);
 									occupier = occupier->Next;
 								} else {
 									Assign_Destination(Good_LZ());
@@ -735,7 +735,7 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 
 				} else {
 
-					if (HeightAGL != Class->Flight_Level()) {
+					if (Get_Height_AGL() != Class->Flight_Level()) {
 						Status = TAKE_OFF;
 					} else {
 						Status = FLY_TO_LZ;
@@ -772,7 +772,7 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 		**	transport gets changed to MISSION_RETREAT.
 		*/
 		case UNLOAD_PASSENGERS:
-			if (Cargo.Is_Something_Attached() && Map[(Coord const &)PositionCoord].Cell_Building() != NULL) {
+			if (Cargo.Is_Something_Attached() && Map[(Coord const &)Get_Coord()].Cell_Building() != NULL) {
 				if (House->Is_Human_Player()) {
 					Assign_Destination(NULL);
 					Assign_Mission(MISSION_GUARD);
@@ -800,7 +800,7 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 						**	First thing is to lift the transport off of the map so that the unlimbo
 						**	process for the passengers is more likely to succeed.
 						*/
-						Map.Pick_Up(PositionCell, this);
+						Map.Pick_Up(Get_Cell(), this);
 
 						if (Exit_Object(unit)) {
 							unit->IsInTransport = false;
@@ -811,7 +811,7 @@ int AircraftClass::Do_MISSION_UNLOAD(void)
 						/*
 						**	Restore the transport back down on the map.
 						*/
-						Map.Place_Down(PositionCell, this);
+						Map.Place_Down(Get_Cell(), this);
 
 						if (!unit->IsInTransport) {
 							if (unit->Team != NULL) {
@@ -954,7 +954,7 @@ int AircraftClass::Exit_Object(TechnoClass * unit)
 	*/
 	FacingType face;
 	for (face = FACING_N; face < FACING_COUNT; face++) {
-		cell = Adjacent_Cell(PositionCell, _toface[face]);
+		cell = Adjacent_Cell(Get_Cell(), _toface[face]);
 		if (unit->Can_Enter_Cell(&Map[cell]) == MOVE_OK) break;
 	}
 
@@ -968,7 +968,7 @@ int AircraftClass::Exit_Object(TechnoClass * unit)
 	**	to make sure that the transport waits until the passenger is clear before
 	**	unloading the next passenger or taking off.
 	*/
-	if (unit->Unlimbo(PositionCoord, Facing_Dir(_toface[face]))) {
+	if (unit->Unlimbo(Get_Coord(), Facing_Dir(_toface[face]))) {
 		unit->Assign_Mission(MISSION_MOVE);
 		unit->Assign_Destination(&Map[cell]);
 		if (Transmit_Message(RADIO_HELLO, unit) == RADIO_ROGER) {
@@ -1008,7 +1008,7 @@ int AircraftClass::Paradrop_Cargo(void)
 			/*
 			**	Play a sound effect of the parachute opening.
 			*/
-			Sound_Effect(Rule->ChuteSound, PositionCoord);
+			Sound_Effect(Rule->ChuteSound, Get_Coord());
 
 			if (Team != NULL) {
 				Team->Remove(passenger);
@@ -1076,7 +1076,7 @@ BulletClass * AircraftClass::Fire_At(AbstractClass * target, int which)
 	**	If the weapon is actually a camera, then perform the "snapshot" of the
 	**	ground instead of normal weapon fire.
 	*/
-	if (PrimaryWeapon != NULL && PrimaryWeapon->IsCamera) {
+	if (Get_Primary_Weapon() != NULL && Get_Primary_Weapon()->IsCamera) {
 		if (House->Is_Ally(PlayerPtr)) {
 			Map.Sight_From(Center_Coord().As_Cell(), 9, House, false);
 		}
@@ -1101,17 +1101,17 @@ BulletClass * AircraftClass::Fire_At(AbstractClass * target, int which)
 			TVelocity3D<double> dir(diff.X, diff.Y, diff.Z);
 			bullet->Velocity.Set_Yaw(dir.Get_Yaw());
 			bullet->Velocity.Set_Pitch(dir.Get_Pitch());
-			bullet->Velocity.Set_Speed(PrimaryWeapon->MaxSpeed);
+			bullet->Velocity.Set_Speed(Get_Primary_Weapon()->MaxSpeed);
 		}
 
 		if (House->Is_Player_Control()) {
-			if (Map.Is_Shrouded(PositionCoord) ||
-				Map.Is_Shrouded(PositionCoord + Coord(2 * CELL_LEPTON_W, 2 * CELL_LEPTON_H)) ||
-				Map.Is_Shrouded(PositionCoord + Coord(-2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H)) ||
-				Map.Is_Shrouded(PositionCoord + Coord(2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H)) ||
-				Aircraft_Fire_Shrouded(PositionCoord) ||
+			if (Map.Is_Shrouded(Get_Coord()) ||
+				Map.Is_Shrouded(Get_Coord() + Coord(2 * CELL_LEPTON_W, 2 * CELL_LEPTON_H)) ||
+				Map.Is_Shrouded(Get_Coord() + Coord(-2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H)) ||
+				Map.Is_Shrouded(Get_Coord() + Coord(2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H)) ||
+				Aircraft_Fire_Shrouded(Get_Coord()) ||
 				Map.Is_Shrouded(target->Center_Coord())) {
-				Map.Sight_From(PositionCoord, Rule->AttackingAircraftSightRange, House);
+				Map.Sight_From(Get_Coord(), Rule->AttackingAircraftSightRange, House);
 			}
 		}
 	}
@@ -1285,7 +1285,7 @@ int AircraftClass::Do_MISSION_MOVE_Normal(void)
 				bool proceed_to_wp = false;
 				if (NavCom != NULL) {
 					Coord tar_coord = NavCom->Center_Coord();
-					Coord here_coord = PositionCoord;
+					Coord here_coord = Get_Coord();
 					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
 				} else {
 					proceed_to_wp = true;
@@ -1345,7 +1345,7 @@ void AircraftClass::Drop_Off_Cargo(void)
 
 	FootClass * unit = Cargo.Detach_Object();
 
-	Coord coord = PositionCoord;
+	Coord coord = Get_Coord();
 	coord.Z = Map.Get_Height_GL(coord);
 	if (Map[coord].IsUnderBridge) {
 		coord.Z += BRIDGE_LEPTON_HEIGHT;
@@ -1354,7 +1354,7 @@ void AircraftClass::Drop_Off_Cargo(void)
 		unit->IsOnBridge = false;
 	}
 
-	unit->Locomotion = Create_Locomotor(unit->TClass->Locomotor);
+	unit->Locomotion = Create_Locomotor(unit->Techno_Type_Class()->Locomotor);
 	unit->Locomotion->Link_To_Object(unit);
 
 	if (!unit->Unlimbo(coord)) {
@@ -1474,7 +1474,7 @@ int AircraftClass::Do_MISSION_MOVE_Carryall(void)
 				DebugString("Do_MISSION_MOVE_Carryall - FLY_TO_LZ - Begin landing\n");
 				if (NavCom != NULL && NavCom->RTTI == RTTI_UNIT) {
 					UnitClass *unit = ((UnitClass *)NavCom);
-					if (unit->PositionCoord.As_Cell() != PositionCoord.As_Cell()) {
+					if (unit->Get_Coord().As_Cell() != Get_Coord().As_Cell()) {
 						Status = VALIDATE_LZ;
 						DebugString("Do_MISSION_MOVE_Carryall - FLY_TO_LZ - Target moved\n");
 						return(1);
@@ -1507,7 +1507,7 @@ int AircraftClass::Do_MISSION_MOVE_Carryall(void)
 			} else {
 				DebugString("Do_MISSION_MOVE_Carryall - LAND - Picking up cargo\n");
 				Mark(MARK_UP);
-				UnitClass * unit = Map[(Coord const &)PositionCoord].Cell_Unit(Map[(Coord const &)PositionCoord].IsUnderBridge);
+				UnitClass * unit = Map[(Coord const &)Get_Coord()].Cell_Unit(Map[(Coord const &)Get_Coord()].IsUnderBridge);
 				if (unit != NULL && unit == Contact_With_Whom()) {
 					DebugString("Do_MISSION_MOVE_Carryall - LAND - Got Cell_Unit\n");
 					if (Transmit_Message(RADIO_NEED_TO_MOVE) == RADIO_ROGER) {
@@ -1608,7 +1608,7 @@ int AircraftClass::Do_MISSION_PATROL(void)
 			}
 
 			if (Ammo != 0) {
-				ObjectClass *threat = Greatest_Threat(THREAT_AREA, PositionCoord, false)->As_ObjectClass();
+				ObjectClass *threat = Greatest_Threat(THREAT_AREA, Get_Coord(), false)->As_ObjectClass();
 				if (threat != NULL) {
 					Override_Mission(MISSION_ATTACK, threat, NULL);
 					Status = VALIDATE_LZ;
@@ -1620,7 +1620,7 @@ int AircraftClass::Do_MISSION_PATROL(void)
 				bool proceed_to_wp = false;
 				if (NavCom != NULL) {
 					Coord tar_coord = NavCom->Center_Coord();
-					Coord here_coord = PositionCoord;
+					Coord here_coord = Get_Coord();
 					proceed_to_wp = Coord(here_coord.X, here_coord.Y, 0).Distance_To(Coord(tar_coord.X, tar_coord.Y, 0)) < CELL_LEPTON;
 				} else {
 					proceed_to_wp = true;
@@ -1702,7 +1702,7 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 	MissionType mission = (House->Is_Human_Player() || Team || !Is_Weapon_Equipped()) ? MISSION_GUARD : MISSION_GUARD_AREA;
 
 	int landingalt = Landing_Altitude();
-	if (In_Which_Layer() == LAYER_GROUND || HeightAGL <= landingalt) {
+	if (In_Which_Layer() == LAYER_GROUND || Get_Height_AGL() <= landingalt) {
 		if (IsALoaner) {
 			if (Cargo.Is_Something_Attached()) {
 
@@ -1755,7 +1755,7 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 				}
 			}
 
-			if (PrimaryWeapon != NULL) {
+			if (Get_Primary_Weapon() != NULL) {
 
 				/*
 				**	Weapon equipped helicopters that run out of ammo and were
@@ -1776,7 +1776,7 @@ bool AircraftClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 						}
 					}
 
-				} else if (Ammo && TarCom != NULL && Mission == MISSION_ATTACK || MissionQueue == MISSION_ATTACK) {
+				} else if (Ammo && TarCom != NULL && Get_Mission() == MISSION_ATTACK || MissionQueue == MISSION_ATTACK) {
 					mission = MISSION_ATTACK;
 				} else if (In_Air()) {
 					if (NavCom == NULL || (CurrentMission != MISSION_MOVE && CurrentMission != MISSION_ENTER)) {
@@ -1996,12 +1996,12 @@ ActionType AircraftClass::What_Action(ObjectClass const * target, bool disallow_
 	if (action == ACTION_SELF) {
 		if (!Cargo.How_Many()) {
 		action = ACTION_NONE;
-		} else if (Map[(Coord const &)PositionCoord].Cell_Building() != NULL) {
+		} else if (Map[(Coord const &)Get_Coord()].Cell_Building() != NULL) {
 			action = ACTION_NO_DEPLOY;
 		}
 	}
 
-	if (action == ACTION_ATTACK && PrimaryWeapon == NULL) {
+	if (action == ACTION_ATTACK && Get_Primary_Weapon() == NULL) {
 		action = ACTION_NONE;
 	}
 
@@ -2018,7 +2018,7 @@ ActionType AircraftClass::What_Action(ObjectClass const * target, bool disallow_
 	}
 
 	if (Class->IsCarryall && action == ACTION_TOTE) {
-		Cell cell = target->PositionCell;
+		Cell cell = target->Get_Cell();
 		if (cell != CELL_NONE) {
 			BuildingClass * building = (BuildingClass *)Map[cell].Cell_Building();
 			if (building != NULL && building->Class->IsWeaponsFactory) {
@@ -2057,7 +2057,7 @@ ActionType AircraftClass::What_Action(Cell const & cell, bool check_fog, bool di
 
 	ActionType action = BASECLASS::What_Action(cell, check_fog, disallow_force);
 
-	if (action == ACTION_ATTACK && PrimaryWeapon == NULL) {
+	if (action == ACTION_ATTACK && Get_Primary_Weapon() == NULL) {
 		action = ACTION_NONE;
 	}
 
@@ -2208,7 +2208,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (TarCom != NULL && Ammo) {
 
 				if (Is_Strafe()) {
-					if (Planar_Distance(TarCom) < PrimaryWeapon->Range) {
+					if (Planar_Distance(TarCom) < Get_Primary_Weapon()->Range) {
 						Status = FIRE_AT_TARGET;
 						return(1);
 					}
@@ -2289,7 +2289,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					Map[TarCom->Center_Coord()].Incoming(Get_Coord(), true);
 					if (Is_Strafe()) {
 						Status = STRAFE_SHOT2;
 						IsLockedStraight = true;
@@ -2297,7 +2297,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 						Status = FIRE_AT_TARGET2;
 						break;
 					}
-					return(PrimaryWeapon->ROF);
+					return(Get_Primary_Weapon()->ROF);
 
 				default:
 					if (!Ammo) {
@@ -2349,7 +2349,7 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					Map[TarCom->Center_Coord()].Incoming(Get_Coord(), true);
 
 					if (Ammo) {
 						Status = Rule->IsCurleyShuffle ? PICK_ATTACK_LOCATION : FIRE_AT_TARGET;
@@ -2397,10 +2397,10 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			Map[TarCom->Center_Coord()].Incoming(Get_Coord(), true);
 			Assign_Destination(TarCom);
 			Status = STRAFE_SHOT3;
-			return(PrimaryWeapon->ROF);
+			return(Get_Primary_Weapon()->ROF);
 
 		case STRAFE_SHOT3:
 			if (TarCom == NULL) {
@@ -2427,10 +2427,10 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			Map[TarCom->Center_Coord()].Incoming(Get_Coord(), true);
 			Assign_Destination(TarCom);
 			Status = STRAFE_SHOT4;
-			return(PrimaryWeapon->ROF);
+			return(Get_Primary_Weapon()->ROF);
 
 		case STRAFE_SHOT4:
 			if (TarCom == NULL) {
@@ -2457,10 +2457,10 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 			if (In_Range(TarCom)) {
 				Fire_At(TarCom, 0);
 			}
-			Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+			Map[TarCom->Center_Coord()].Incoming(Get_Coord(), true);
 			Assign_Destination(TarCom);
 			Status = STRAFE_LAST_SHOT;
-			return(PrimaryWeapon->ROF);
+			return(Get_Primary_Weapon()->ROF);
 
 		case STRAFE_LAST_SHOT:
 			if (TarCom == NULL) {
@@ -2475,9 +2475,9 @@ int AircraftClass::Do_MISSION_ATTACK(void)
 					if (In_Range(TarCom)) {
 						Fire_At(TarCom, 0);
 					}
-					Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+					Map[TarCom->Center_Coord()].Incoming(Get_Coord(), true);
 					Status = FLY_TO_POSITION;
-					return((PrimaryWeapon->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
+					return((Get_Primary_Weapon()->Range + 4 * CELL_LEPTON) / Class->MaxSpeed);
 
 				default:
 					if (!Ammo) {
@@ -2612,7 +2612,7 @@ RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageT
 
 		case RADIO_PREPARED:
 			if (TarCom != NULL) return(RADIO_NEGATIVE);
-			if ((HeightAGL == 0 && Ammo == Class->MaxAmmo) || (HeightAGL > 0 && Ammo > 0)) return(RADIO_ROGER);
+			if ((Get_Height_AGL() == 0 && Ammo == Class->MaxAmmo) || (Get_Height_AGL() > 0 && Ammo > 0)) return(RADIO_ROGER);
 			return(RADIO_NEGATIVE);
 
 		case RADIO_ALL_DONE:
@@ -2723,7 +2723,7 @@ RadioMessageType AircraftClass::Receive_Message(RadioClass * from, RadioMessageT
 			return(RADIO_NEGATIVE);
 
 		case RADIO_UNLOADED:
-			if (Class->IsCarryall && Mission == MISSION_MOVE && IsTethered) {
+			if (Class->IsCarryall && Get_Mission() == MISSION_MOVE && IsTethered) {
 				if ((Cargo.Is_Something_Attached() && Cargo.Attached_Object() == from) || NavCom == from) {
 					return(RADIO_NEGATIVE);
 				}
@@ -2938,7 +2938,7 @@ bool AircraftClass::Cell_Seems_Ok(Cell const & cell, bool strict) const
 	for (int index = 0; index < Feet.Count(); index++) {
 		FootClass * foot = Feet[index];
 		if (foot && (!is_toting || NavCom != foot) && (strict || foot != this) && !foot->IsInLimbo && foot->IsDown) {
-			if (foot->PositionCell == cell) {
+			if (foot->Get_Cell() == cell) {
 				return(false);
 			}
 
@@ -3040,13 +3040,13 @@ int AircraftClass::Do_MISSION_ENTER(void)
 			if (Locomotion->Get_Status() == 1) {
 				if (NavCom != NULL) {
 					Coord nav = NavCom->Center_Coord();
-					Coord pos = PositionCoord;
+					Coord pos = Get_Coord();
 					int x = nav.X - pos.X;
 					int y = nav.Y - pos.Y;
 					x = x > 0 ? std::min(5, x) : std::max(-5, x);
 					y = y > 0 ? std::min(5, y) : std::max(-5, y);
 					pos += Coord(x, y, 0);
-					PositionCoord = pos;
+					Set_Coord(pos);
 				}
 				IsReadyToCommence = true;
 			} else {
@@ -3126,7 +3126,7 @@ AbstractClass * AircraftClass::Good_LZ(void) const
 					dist /= 4;
 				}
 				if (bestdist == -1 || dist < bestdist) {
-					Cell cell = building->PositionCell;
+					Cell cell = building->Get_Cell();
 					cell = Map.Nearby_Location(cell, SPEED_FOOT, Map.Get_Cell_Zone(cell), MZONE_NORMAL, false, Point2D(3, 3));
 					if (cell != CELL_NONE) {
 						bestdist = dist;
@@ -3139,7 +3139,7 @@ AbstractClass * AircraftClass::Good_LZ(void) const
 
 	if (bestdist != -1) {
 		if (bestdist < CELL_LEPTON) {
-			bestcell = Map.Nearby_Location(PositionCell, SPEED_FOOT, Map.Get_Cell_Zone(PositionCell));
+			bestcell = Map.Nearby_Location(Get_Cell(), SPEED_FOOT, Map.Get_Cell_Zone(Get_Cell()));
 			return(&Map[bestcell]);
 		}
 		return(&Map[bestcell]);
@@ -3151,7 +3151,7 @@ AbstractClass * AircraftClass::Good_LZ(void) const
 			if (techno && !techno->IsInLimbo && techno->House == House && techno != (AircraftClass *)this) {
 				int dist = Distance_To(techno);
 				if (bestdist == -1 || dist < bestdist) {
-					Cell cell = techno->PositionCell;
+					Cell cell = techno->Get_Cell();
 					cell = Map.Nearby_Location(cell, SPEED_FOOT, Map.Get_Cell_Zone(cell));
 					if (cell != CELL_NONE) {
 						bestdist = dist;
@@ -3172,7 +3172,7 @@ AbstractClass * AircraftClass::Good_LZ(void) const
 	/*
 	**	No good location was found. Just try to land here.
 	*/
-	return(&Map[(Coord const &)PositionCoord]);
+	return(&Map[(Coord const &)Get_Coord()]);
 }
 
 
@@ -3293,7 +3293,7 @@ void AircraftClass::Scatter(Coord const & , bool, bool )
  *=============================================================================================*/
 int AircraftClass::Do_MISSION_GUARD(void)
 {
-	if (HeightAGL == Class->Flight_Level()) {
+	if (Get_Height_AGL() == Class->Flight_Level()) {
 
 		/*
 		**	If part of a team, then do nothing, since the team
@@ -3307,8 +3307,8 @@ int AircraftClass::Do_MISSION_GUARD(void)
 			return(Current_Mission_Control().Normal_Delay());
 		}
 
-		if (PrimaryWeapon == NULL) {
-			Assign_Destination(&Map[(Coord const &)PositionCoord]);
+		if (Get_Primary_Weapon() == NULL) {
+			Assign_Destination(&Map[(Coord const &)Get_Coord()]);
 			Assign_Mission(MISSION_MOVE);
 		} else {
 			if (Team == NULL) Enter_Idle_Mode();
@@ -3321,9 +3321,9 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	**	If the aircraft is very badly damaged, then it will search for a
 	**	repair bay first.
 	*/
-	if (!House->Is_Human_Player() && House->Available_Money() >= 100 && HealthRatio <= Rule->ConditionYellow) {
+	if (!House->Is_Human_Player() && House->Available_Money() >= 100 && Get_Health_Ratio() <= Rule->ConditionYellow) {
 		if (!In_Radio_Contact() ||
-			(HeightAGL == 0 &&
+			(Get_Height_AGL() == 0 &&
 				(Contact_With_Whom()->RTTI != RTTI_BUILDING || ((BuildingClass *)Contact_With_Whom())->Class_Of() != Rule->RepairBay))) {
 
 			BuildingClass * building = Find_Docking_Bay(Rule->RepairBay, true);
@@ -3385,7 +3385,7 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	**	Computer controlled helicopters will defend themselves by bouncing around
 	**	and looking for a free helipad.
 	*/
-	if (HeightAGL == 0 && !In_Radio_Contact()) {
+	if (Get_Height_AGL() == 0 && !In_Radio_Contact()) {
 		//Scatter(COORD_NONE, true);
 		return(TICKS_PER_SECOND*3);
 	}
@@ -3395,7 +3395,7 @@ int AircraftClass::Do_MISSION_GUARD(void)
 	**	shield of their base.
 	*/
 	if (!House->Is_Human_Player() && House->State != STATE_ATTACKED) {
-		AbstractClass * target = House->Find_Juicy_Target(PositionCoord);
+		AbstractClass * target = House->Find_Juicy_Target(Get_Coord());
 
 		if (target != NULL) {
 			Assign_Target(target);
@@ -3430,7 +3430,7 @@ int AircraftClass::Do_MISSION_GUARD(void)
  *=============================================================================================*/
 int AircraftClass::Do_MISSION_GUARD_AREA(void)
 {
-	if (HeightAGL == Class->Flight_Level()) {
+	if (Get_Height_AGL() == Class->Flight_Level()) {
 		if (Team == NULL) Enter_Idle_Mode();
 		return(1);
 	}
@@ -3532,7 +3532,7 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 			 * Special docking logic applies when this aircraft has been ordered to
 			 * enter a building (a helipad or a repair facility).
 			 */
-			if (dest->What_Am_I() == RTTI_BUILDING && (Mission == MISSION_ENTER || MissionQueue == MISSION_ENTER)) {
+			if (dest->What_Am_I() == RTTI_BUILDING && (Get_Mission() == MISSION_ENTER || MissionQueue == MISSION_ENTER)) {
 				BuildingClass * destination = (BuildingClass *)dest;
 
 				if (!In_Radio_Contact()) {
@@ -3542,7 +3542,7 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 					 * Try to find an alternate docking bay to head for instead.
 					 */
 					if (((TechnoClass *)dest)->In_Radio_Contact()) {
-						ArchiveTarget = dest;
+						Assign_Archive_Target(dest);
 
 						if (destination->Class->IsHelipad) {
 							dest = NULL;
@@ -3582,17 +3582,17 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 						if (Transmit_Message(RADIO_DOCKING, (TechnoClass *)dest) != RADIO_ROGER) {
 							Transmit_Message(RADIO_OVER_OUT, LParam, NULL);
 							if (((BuildingClass *)dest)->Class->IsCanUnitRepair || ((BuildingClass *)dest)->Class->IsCanUnitReload) {
-								ArchiveTarget = dest;
+								Assign_Archive_Target(dest);
 								dest = NULL;
 							}
 						}
 
 						if (destination->Class->IsCanUnitRepair || destination->Class->IsCanUnitReload) {
 							if (NavCom != NULL) {
-								ArchiveTarget = NavCom;
+								Assign_Archive_Target(NavCom);
 							}
 						} else {
-							ArchiveTarget = dest;
+							Assign_Archive_Target(dest);
 						}
 					}
 
@@ -3608,7 +3608,7 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 					if (building != NULL) {
 						if (building->In_Radio_Contact()) {
 							if (Contact_With_Whom() != building) {
-								ArchiveTarget = dest;
+								Assign_Archive_Target(dest);
 							}
 						} else {
 							if (Transmit_Message(RADIO_HELLO, building) == RADIO_ROGER) {
@@ -3617,7 +3617,7 @@ void AircraftClass::Assign_Destination(AbstractClass * dest, bool immediate)
 								}
 								Transmit_Message(RADIO_OVER_OUT, LParam, NULL);
 								if (((BuildingClass *)dest)->Class->IsCanUnitRepair || ((BuildingClass *)dest)->Class->IsCanUnitReload) {
-									ArchiveTarget = dest;
+									Assign_Archive_Target(dest);
 									dest = NULL;
 								}
 							}
@@ -3703,16 +3703,16 @@ void AircraftClass::Look(bool incremental, bool dont_map)
 	assert(!IsInLimbo);
 
 	int sight_range = Class->SightRange;
-	if (HeightAGL == 0) {
+	if (Get_Height_AGL() == 0) {
 		sight_range = 1;
 	}
 
 	if (sight_range) {
-		Map.Sight_From(PositionCoord, sight_range, House, incremental, dont_map);
+		Map.Sight_From(Get_Coord(), sight_range, House, incremental, dont_map);
 	} else {
 		if (Scen->Special.IsFogOfWar) {
 			sight_range = Rule->AircraftFogReveal;
-			Map.Sight_From(PositionCoord, sight_range, House, false, false, true, HeightAGL < (Rule->FlightLevel / 2));
+			Map.Sight_From(Get_Coord(), sight_range, House, false, false, true, Get_Height_AGL() < (Rule->FlightLevel / 2));
 		}
 	}
 }
@@ -3753,11 +3753,11 @@ void AircraftClass::Write_INI(CCINIClass & ini)
 			sprintf(buf, "%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d",
 				(char const *)air->House->Class->IniName,
 				(char const *)air->Class->IniName,
-				(int)(air->HealthRatio*256),
-				air->PositionCell.X,
-				air->PositionCell.Y,
+				(int)(air->Get_Health_Ratio()*256),
+				air->Get_Cell().X,
+				air->Get_Cell().Y,
 				air->PrimaryFacing.Current().As_Dir256(),
-				MissionClass::Mission_Name(air->Mission),
+				MissionClass::Mission_Name(air->Get_Mission()),
 				(air->Tag != NULL) ? (char const *)air->Tag->Class->IniName : "None",
 				air->Veterancy.To_Integer(),
 				air->Group,
@@ -3989,7 +3989,7 @@ LONG AircraftClass::Landing_Altitude(void)
 {
 	if (Class->IsCarryall && !Cargo.Is_Something_Attached() && In_Radio_Contact()) {
 		BuildingClass * bptr = (BuildingClass *)Contact_With_Whom();
-		if (Mission == MISSION_ENTER) {
+		if (Get_Mission() == MISSION_ENTER) {
 			if (bptr != NULL) {
 				if (bptr->Class->IsCanUnitRepair || bptr->Class->IsHelipad) {
 					return(0);
@@ -4139,7 +4139,7 @@ bool AircraftClass::Considered_Vehicle(void) const
 /// <returns>bool; Was the aircraft sent into a crash?</returns>
 bool AircraftClass::Crash(TechnoClass * source)
 {
-	if (HeightAGL > 0) {
+	if (Get_Height_AGL() > 0) {
 		if (Strength > 0) {
 			if (source != NULL && Tag != NULL) {
 				Tag->Spring(TEVENT_FIRST_DAMAGED, this);

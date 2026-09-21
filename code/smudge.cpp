@@ -132,7 +132,7 @@ bool SmudgeClass::Mark(MarkType mark)
 {
 	if (BASECLASS::Mark(mark)) {
 		if (mark == MARK_DOWN || mark == MARK_DOWN_FORCED) {
-			Cell origin = (Cell)PositionCell;
+			Cell origin = (Cell)Get_Cell();
 
 			if (ScenarioInit > 0 || Debug_Map || Class->Can_Place_Here(origin, true)) {
 				Class->Place(origin);

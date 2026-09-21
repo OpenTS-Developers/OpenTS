@@ -143,7 +143,7 @@ void EMPulseClass::Create(TechnoClass * source)
 
 		for (int j = 0; j < DisplayClass::Layer[LAYER_UNDERGROUND].Count(); j++) {
 			FootClass * foot = (FootClass *)DisplayClass::Layer[LAYER_UNDERGROUND][j];
-			Cell center = foot->PositionCoord;
+			Cell center = foot->Get_Coord();
 			int x = center.X - CellID.X;
 			int y = center.Y - CellID.Y;
 			if (x * x + y * y < spread_sq) {

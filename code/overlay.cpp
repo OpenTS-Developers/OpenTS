@@ -158,7 +158,7 @@ bool OverlayClass::Mark(MarkType mark)
 
 	if (BASECLASS::Mark(mark)) {
 		if (mark == MARK_DOWN || mark == MARK_DOWN_FORCED) {
-			Cell cell = PositionCell;
+			Cell cell = Get_Cell();
 			CellClass * cellptr = &Map[cell];
 
 			OverlayType type = Class->HeapID;

@@ -218,7 +218,7 @@ int CargoClass::Total_Size(void) const
 
 	ObjectClass * object = CargoHold;
 	while (object != NULL) {
-		size += object->TClass->Size;
+		size += object->Techno_Type_Class()->Size;
 		if (object->Next == NULL || !object->Next->Is_Foot()) break;
 		object = object->Next;
 	}

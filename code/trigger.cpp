@@ -283,7 +283,7 @@ void TriggerClass::Reset_All_Timed_Events(void)
  *=============================================================================================*/
 bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool forced, bool persistent, TechnoClass * source)
 {
-	if (!IsEnabled || Is_Marked_To_Delete()) {
+	if (!Is_Enabled() || Is_Marked_To_Delete()) {
 		return(false);
 	}
 
@@ -328,7 +328,7 @@ bool TriggerClass::Should_Spring(TEventType event, ObjectClass * object, bool fo
 /// <returns>bool; Did any of the actions actually do something?</returns>
 bool TriggerClass::Spring(ObjectClass * object, Cell cell)
 {
-	if (!IsEnabled || Is_Marked_To_Delete()) {
+	if (!Is_Enabled() || Is_Marked_To_Delete()) {
 		return(false);
 	}
 

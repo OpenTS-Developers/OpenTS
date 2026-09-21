@@ -407,7 +407,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		Death_Announcement(source);
 		Stop_Driver();
 		Stun();
-		Mission = MISSION_NONE;
+		Assign_Mission(MISSION_NONE);
 		Assign_Mission(MISSION_GUARD);
 		Commence();
 		Kill_Cargo(source);
@@ -416,19 +416,19 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 		if (forced && Class->IsCyborg) {
 			delthis = true;
 			if (IsToExplode) {
-				new AnimClass(Rule->InfantryExplode, PositionCoord);
+				new AnimClass(Rule->InfantryExplode, Get_Coord());
 			}
 		}
 
-		if (HeightAGL <= 10 && Map[(Coord const &)PositionCoord].Land_Type() == LAND_WATER && IsToExplode) {
-			new AnimClass(Rule->Wake, PositionCoord);
-			new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0,0,3));
+		if (Get_Height_AGL() <= 10 && Map[(Coord const &)Get_Coord()].Land_Type() == LAND_WATER && IsToExplode) {
+			new AnimClass(Rule->Wake, Get_Coord());
+			new AnimClass(Rule->SplashList[0], Get_Coord() + Coord(0,0,3));
 			delthis = true;
 		} else if (Class->IsCyborg && IsProne) {
-			new AnimClass(Rule->InfantryExplode, PositionCoord);
+			new AnimClass(Rule->InfantryExplode, Get_Coord());
 			delthis = true;
 		} else if (Class->IsJumpJet) {
-			new AnimClass(Rule->InfantryExplode, PositionCoord);
+			new AnimClass(Rule->InfantryExplode, Get_Coord());
 			delthis = true;
 		} else {
 
@@ -456,7 +456,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					break;
 
 				case 3:
-					new AnimClass(Rule->InfantryExplode, PositionCoord);
+					new AnimClass(Rule->InfantryExplode, Get_Coord());
 					delthis = true;
 					break;
 
@@ -464,7 +464,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					if (Class->IsDoggie) {
 						Do_Action(DO_FIRE_DEATH, true);
 					} else {
-						AnimClass * anim = new AnimClass(Rule->FlamingInfantry, PositionCoord);
+						AnimClass * anim = new AnimClass(Rule->FlamingInfantry, Get_Coord());
 						anim->AlternativeDrawer = ColorSchemes[PlayerPtr->Scheme]->Converter;
 						delthis = true;
 					}
@@ -474,7 +474,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 					if (Class->IsDoggie) {
 						Do_Action(DO_FIRE_DEATH, true);
 					} else {
-						AnimClass * anim = new AnimClass(AnimTypes[ANIM_ELECT_DIE], PositionCoord);
+						AnimClass * anim = new AnimClass(AnimTypes[ANIM_ELECT_DIE], Get_Coord());
 						delthis = true;
 					}
 					break;
@@ -491,13 +491,13 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 	**	When infantry gets hit, it gets scared.
 	*/
 	if (res != RESULT_DESTROYED) {
-		Coord source_coord = (source) ? source->PositionCoord : COORD_NONE;
+		Coord source_coord = (source) ? source->Get_Coord() : COORD_NONE;
 
 		/*
 		**	If an engineer is damaged and it is just sitting there, then tell it
 		**	to go do something since it will definitely die if it doesn't.
 		*/
-		if (!House->Is_Human_Player() && Class->IsEngineer && (Mission == MISSION_GUARD || Mission == MISSION_GUARD_AREA)) {
+		if (!House->Is_Human_Player() && Class->IsEngineer && (Get_Mission() == MISSION_GUARD || Get_Mission() == MISSION_GUARD_AREA)) {
 			Assign_Mission(MISSION_HUNT);
 		}
 
@@ -515,7 +515,7 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				Fear = FEAR_PANIC;
 			} else if (!Class->IsFearless && !Has_Ability(ABILITY_FEARLESS)) {
 				Fear = FEAR_SCARED;
-				if (Class->IsDoggie && HealthRatio <= Rule->ConditionRed) {
+				if (Class->IsDoggie && Get_Health_Ratio() <= Rule->ConditionRed) {
 					Fear = FEAR_PANIC;
 				}
 			}
@@ -527,8 +527,8 @@ ResultType InfantryClass::Take_Damage(int & damage, int distance, WarheadTypeCla
 				**	quickly if the infantry is damaged.
 				*/
 				int morefear = FEAR_ANXIOUS;
-				if (HealthRatio > Rule->ConditionRed) morefear /= 2;
-				if (HealthRatio > Rule->ConditionYellow) morefear /= 2;
+				if (Get_Health_Ratio() > Rule->ConditionRed) morefear /= 2;
+				if (Get_Health_Ratio() > Rule->ConditionYellow) morefear /= 2;
 				Fear = FearType(std::min<int>((int)Fear + morefear, FEAR_MAXIMUM));
 			}
 		}
@@ -633,7 +633,7 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 	if (CurrentTube == -1) {
 		ClassID const clsid = Locomotion_Class_ID(Locomotion.get());
 
-		if (HeightAGL > 0 && clsid == ClassID_BallisticLocomotion) {
+		if (Get_Height_AGL() > 0 && clsid == ClassID_BallisticLocomotion) {
 			ShapeSet const * shapefile = (ShapeSet const *)MFCD::Retrieve("POD.SHP");
 			Point2D spoint = xpoint + Point2D(Locomotion->Shadow_Point());
 			Draw_Shape(
@@ -667,16 +667,16 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 			TacticalMap->Add_To_Selectables((ObjectClass *)this, point);
 
 			int brightness;
-			if (IsOnBridge || (Map[(Coord const &)PositionCoord].IsOvershadowed && PositionCoord.Z > Map.Get_Height_GL(PositionCoord) + (BRIDGE_LEPTON_HEIGHT / 2))) {
-				int light = (IonStormClass::Is_Ion_Storm_Active() ? Scen->IonLevelLight : Scen->LevelLight) * (HeightAGL / (2 * LEVEL_LEPTON_H));
+			if (IsOnBridge || (Map[(Coord const &)Get_Coord()].IsOvershadowed && Get_Coord().Z > Map.Get_Height_GL(Get_Coord()) + (BRIDGE_LEPTON_HEIGHT / 2))) {
+				int light = (IonStormClass::Is_Ion_Storm_Active() ? Scen->IonLevelLight : Scen->LevelLight) * (Get_Height_AGL() / (2 * LEVEL_LEPTON_H));
 				brightness = Map[tcell].Brightness + light;
 			} else {
-				brightness = Map[tcell].Brightness + (Map[(Coord const &)PositionCoord].IsOvershadowed ? -500 : 0);
+				brightness = Map[tcell].Brightness + (Map[(Coord const &)Get_Coord()].IsOvershadowed ? -500 : 0);
 			}
 			brightness += Rule->ExtraInfantryLight;
 
-			int height = HeightAGL;
-			CellClass *cellptr = &Map[(Coord const &)PositionCoord];
+			int height = Get_Height_AGL();
+			CellClass *cellptr = &Map[(Coord const &)Get_Coord()];
 
 			if (cellptr->IsUnderBridge && height >= BRIDGE_LEPTON_HEIGHT) {
 				if ((cellptr->IsBridgeEastWest && cellptr->Adjacent_Cell(FACING_N).IsUnderBridge) ||
@@ -695,7 +695,7 @@ void InfantryClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) const
 					cliprect,
 					ShapeFlags_Type(SHAPE_ZGRAD|SHAPE_WIN_REL|SHAPE_CENTER|SHAPE_DARKEN),
 					NULL,
-					-5 - TacticalMap->Z_Lepton_To_Pixel(PositionCoord.Z - height)
+					-5 - TacticalMap->Z_Lepton_To_Pixel(Get_Coord().Z - height)
 				);
 			}
 
@@ -738,11 +738,11 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		**	If the infantry unit is entering a cell that contains the building it is trying to
 		**	capture, then capture it.
 		*/
-		if (Mission == MISSION_CAPTURE || Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL) {
+		if (Get_Mission() == MISSION_CAPTURE || Get_Mission() == MISSION_GUARD_AREA || Get_Mission() == MISSION_PATROL) {
 			if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass*)NavCom)->Considered_Vehicle()) {
 				TechnoClass * tech = (TechnoClass *)NavCom;
 				if (tech != NULL) {
-					if (PositionCell == tech->PositionCell) {
+					if (Get_Cell() == tech->Get_Cell()) {
 						if (tech->Tag) {
 							tech->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 						}
@@ -761,7 +761,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						return;
 					} else {
 						Coord destination = Locomotion->Destination();
-						if (destination == COORD_NONE || PositionCell == Cell(destination)) {
+						if (destination == COORD_NONE || Get_Cell() == Cell(destination)) {
 							Assign_Destination(NavCom);
 							BEnd(BENCH_PCP);
 							return;
@@ -785,7 +785,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 						bool train = false;
 						for (int y = -2; y < 3; y++) {
 							for (int x = -2; x < 3; x++) {
-								Cell cell = (Cell)Cell(PositionCell + Cell(x, y));
+								Cell cell = (Cell)Cell(Get_Cell() + Cell(x, y));
 								IsometricTileType ittype = Map[cell].ITType;
 								if (ittype >= IsometricTileTypeClass::TrainBridgeSet && ittype < IsometricTileTypeClass::TrainBridgeSet + TRAIN_BRIDGE_COUNT) {
 									train = true;
@@ -793,9 +793,9 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							}
 						}
 						if (train) {
-							Map.Repair_Train_Bridge(PositionCell);
+							Map.Repair_Train_Bridge(Get_Cell());
 						} else {
-							Map.Repair_Bridge(PositionCell);
+							Map.Repair_Bridge(Get_Cell());
 						}
 						for (int i = Infantry.Count() - 1; i >= 0; i--) {
 							Infantry[i]->Detach(tech, false);
@@ -817,9 +817,9 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							iscapturable = ((BuildingClass *)tech)->Class->IsCaptureable;
 						}
 
-						if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed) {
-							int maxdamage = tech->Strength - int(tech->TClass->MaxStrength * Rule->ConditionRed / 2);
-							int damage = std::min<double>((tech->TClass->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
+						if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->Get_Health_Ratio() > Rule->ConditionRed) {
+							int maxdamage = tech->Strength - int(tech->Techno_Type_Class()->MaxStrength * Rule->ConditionRed / 2);
+							int damage = std::min<double>((tech->Techno_Type_Class()->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
 							tech->Take_Damage(damage, 0, Rule->C4Warhead, this, true);
 						} else if (iscapturable) {
 							if (tech->Tag) {
@@ -888,7 +888,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 			}
 		}
 
-		if (Mission == MISSION_ENTER && techno != NULL && (NavCom == techno || TarCom == techno || on_target_cell != NULL && techno == on_target_cell)) {
+		if (Get_Mission() == MISSION_ENTER && techno != NULL && (NavCom == techno || TarCom == techno || on_target_cell != NULL && techno == on_target_cell)) {
 			if (techno->Tag) {
 				techno->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 			}
@@ -904,7 +904,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 			} else {
 				if (Get_Cell() == techno->Get_Cell() && techno == NavCom) {
 					if (Transmit_Message(RADIO_CAN_LOAD, techno) == RADIO_ROGER) {
-						ArchiveTarget = NULL;
+						Assign_Archive_Target(NULL);
 						Limbo();
 						techno->Cargo.Attach(this);
 						Hidden();
@@ -923,7 +923,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 		**	If the infantry unit is entering a cell that contains the building it is trying to
 		**	sabotage, then sabotage it.
 		*/
-		if (Mission == MISSION_SABOTAGE) {
+		if (Get_Mission() == MISSION_SABOTAGE) {
 			BuildingClass * building = cellptr->Cell_Building();
 			if (building != NULL && building == NavCom) {
 				if (!building->Class->IsRepairable) {
@@ -936,7 +936,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				if (building->Tag) {
 					building->Tag->Spring(TEVENT_PLAYER_ENTERED, this);
 				}
-				if (building->Mission != MISSION_DECONSTRUCTION) {
+				if (building->Get_Mission() != MISSION_DECONSTRUCTION) {
 					building->IsGoingToBlow = true;
 					building->Clicked_As_Target((Rule->C4Delay * TICKS_PER_MINUTE) / 2);
 					building->CountDown = Rule->C4Delay * TICKS_PER_MINUTE;
@@ -950,17 +950,17 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 				return;
 			} else {
 				if (&Map[Center_Coord()] == NavCom) {
-					Explosion_Damage(PositionCoord, Rule->BridgeStrength, this, Rule->C4Warhead);
+					Explosion_Damage(Get_Coord(), Rule->BridgeStrength, this, Rule->C4Warhead);
 
 					Stop_Driver();
-					Scatter(Adjacent_Cell(PositionCoord, (FacingType)PrimaryFacing.Current().As_Dir8()), true, true);
+					Scatter(Adjacent_Cell(Get_Coord(), (FacingType)PrimaryFacing.Current().As_Dir8()), true, true);
 					Assign_Mission(MISSION_MOVE);
 
 					if (NavCom == NULL || Map[NavCom->Center_Coord()].Land_Type() == LAND_WATER) {
 						Mark(MARK_DOWN);		// Needed only so that Tanya will get destroyed by the explosion.
 					}
-					Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
-					Explosion_Damage(PositionCoord, Rule->BridgeStrength, NULL, Rule->C4Warhead);
+					Explosion_Damage(Get_Coord(), Rule->BridgeStrength, NULL, Rule->C4Warhead);
+					Explosion_Damage(Get_Coord(), Rule->BridgeStrength, NULL, Rule->C4Warhead);
 					if (!IsActive) {
 						BEnd(BENCH_PCP);
 						return;
@@ -983,7 +983,7 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 			**	Special voice play.
 			*/
 			if (Class->VoiceComment.Count() > 1) {
-				Sound_Effect((VocType)Class->VoiceComment[1], PositionCoord);
+				Sound_Effect((VocType)Class->VoiceComment[1], Get_Coord());
 			}
 
 			/*
@@ -1128,7 +1128,7 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 	/*
 	**	Handle entry logic here.
 	*/
-	if (Mission == MISSION_ENTER || MissionQueue == MISSION_ENTER) {
+	if (Get_Mission() == MISSION_ENTER || MissionQueue == MISSION_ENTER) {
 
 		/*
 		**	If not already in radio contact (presumed with the transport), then
@@ -1147,10 +1147,10 @@ void InfantryClass::Assign_Destination(AbstractClass * target, bool immediate)
 // TCTCTC -- call for an update from the transport to get a good rendezvous position.
 
 					if (techno->RTTI == RTTI_BUILDING) {
-						ArchiveTarget = NULL;
+						Assign_Archive_Target(NULL);
 						target = NULL;
 					} else {
-						ArchiveTarget = target;
+						Assign_Archive_Target(target);
 					}
 				} else {
 					if (Transmit_Message(RADIO_HELLO, techno) == RADIO_ROGER) {
@@ -1292,7 +1292,7 @@ void InfantryClass::Tunnel_AI(void)
 			CurrentTubeDir++;
 			FacingType tube_dir = tube->Dirs[CurrentTubeDir];
 			finished = tube_dir == FACING_NONE;
-			PositionCoord = LastTubeCoord;
+			Set_Coord(LastTubeCoord);
 
 			if (!finished) {
 				Coord coord = Adjacent_Cell(LastTubeCoord, tube->Dirs[CurrentTubeDir]);
@@ -1300,7 +1300,7 @@ void InfantryClass::Tunnel_AI(void)
 				LastTubeCoord.Z += height_step;
 
 				DirType dir = DirType().Direction(Center_Coord(), LastTubeCoord);
-				Coord new_coord = Move_Coord(PositionCoord, dir, speed - distance);
+				Coord new_coord = Move_Coord(Get_Coord(), dir, speed - distance);
 				double divisor;
 				if (tube_dir % 2) {
 					divisor = CELL_LEPTON_H * M_SQRT2;
@@ -1308,7 +1308,7 @@ void InfantryClass::Tunnel_AI(void)
 					divisor = CELL_LEPTON_H;
 				}
 				new_coord.Z += (speed - distance) / divisor * height_step;
-				PositionCoord = new_coord;
+				Set_Coord(new_coord);
 				return;
 			}
 		} else {
@@ -1321,7 +1321,7 @@ void InfantryClass::Tunnel_AI(void)
 				divisor = CELL_LEPTON_H;
 			}
 			new_coord.Z += speed / divisor * height_step;
-			PositionCoord = new_coord;
+			Set_Coord(new_coord);
 			return;
 		}
 	}
@@ -1342,7 +1342,7 @@ void InfantryClass::Tunnel_AI(void)
 		} else {
 			Coord spot = cellptr->Closest_Free_Spot(Get_Coord());
 			spot.Z = Map.Get_Height_GL(spot);
-			PositionCoord = spot;
+			Set_Coord(spot);
 
 			Locomotion->Force_Immediate_Destination(COORD_NONE);
 			Locomotion->Stop_Movement_Animation();
@@ -1390,7 +1390,7 @@ void InfantryClass::AI(void)
 	**	Act on new orders if the unit is at a good position to do so.
 	*/
 	if (Ready_To_Commence()) {
-		if (Mission == MISSION_NONE && MissionQueue == MISSION_NONE) Enter_Idle_Mode();
+		if (Get_Mission() == MISSION_NONE && MissionQueue == MISSION_NONE) Enter_Idle_Mode();
 		Commence();
 	}
 
@@ -1411,8 +1411,8 @@ void InfantryClass::AI(void)
 		return;
 	}
 
-	if (Mission == MISSION_GUARD) {
-		BuildingClass *building = Map[(Coord const &)PositionCoord].Cell_Building();
+	if (Get_Mission() == MISSION_GUARD) {
+		BuildingClass *building = Map[(Coord const &)Get_Coord()].Cell_Building();
 		if (building != NULL) {
 
 			if (!building->Class->IsInvisibleInGame) {
@@ -1436,7 +1436,7 @@ void InfantryClass::AI(void)
 		}
 	}
 
-	if (Locomotion->Is_Moving_Now() && HeightAGL > 0 && IsOwnedByPlayer && Class->SightRange > 0) {
+	if (Locomotion->Is_Moving_Now() && Get_Height_AGL() > 0 && IsOwnedByPlayer && Class->SightRange > 0) {
 		if (!LookTimer) {
 			Look();
 			LookTimer = TICKS_PER_SECOND;
@@ -1476,7 +1476,7 @@ void InfantryClass::AI(void)
 	**	Act on new orders if the unit is at a good position to do so.
 	*/
 	if (Ready_To_Commence()) {
-		if (Mission == MISSION_NONE && MissionQueue == MISSION_NONE) Enter_Idle_Mode();
+		if (Get_Mission() == MISSION_NONE && MissionQueue == MISSION_NONE) Enter_Idle_Mode();
 		Commence();
 	}
 
@@ -1615,7 +1615,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 				**	If the wall can be destroyed, then return this fact instead of
 				**	a complete failure to enter.
 				*/
-				if (Is_Weapon_Equipped() && PrimaryWeapon->Is_Wall_Destroyer()) {
+				if (Is_Weapon_Equipped() && Get_Primary_Weapon()->Is_Wall_Destroyer()) {
 					if (House->Is_Ally(cellptr->Owner)) {
 						retval = MOVE_FRIENDLY_DESTROYABLE;
 					} else {
@@ -1642,9 +1642,9 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			/*
 			**	Always allow movement if the cell is the object to be captured or sabotaged.
 			*/
-			if (Mission == MISSION_ENTER || Mission == MISSION_CAPTURE || Mission == MISSION_SABOTAGE ||
-				((Mission == MISSION_GUARD_AREA || Mission == MISSION_PATROL || Mission == MISSION_GUARD) && Class->IsEngineer)) {
-				if (obj == NavCom || (&Map[(Coord const &)obj->PositionCoord] == NavCom || obj == TarCom)) {
+			if (Get_Mission() == MISSION_ENTER || Get_Mission() == MISSION_CAPTURE || Get_Mission() == MISSION_SABOTAGE ||
+				((Get_Mission() == MISSION_GUARD_AREA || Get_Mission() == MISSION_PATROL || Get_Mission() == MISSION_GUARD) && Class->IsEngineer)) {
+				if (obj == NavCom || (&Map[(Coord const &)obj->Get_Coord()] == NavCom || obj == TarCom)) {
 					if (!IsTethered && !isbridge && Ground[cellptr->Land_Type()].Cost[Class->Speed] == 0) {
 						return(MOVE_NO);
 					}
@@ -1668,12 +1668,12 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 			**	Guard area should not allow the guarding unit to enter the cell with the
 			**	guarded unit.
 			*/
-			//if (Mission == MISSION_GUARD_AREA && ArchiveTarget == obj && Is_Target_Unit(ArchiveTarget)) {
-			if (Mission == MISSION_GUARD_AREA && ArchiveTarget == obj && ArchiveTarget->RTTI == RTTI_UNIT) {
+			//if (Get_Mission() == MISSION_GUARD_AREA && Fetch_Archive_Target() == obj && Is_Target_Unit(Fetch_Archive_Target())) {
+			if (Get_Mission() == MISSION_GUARD_AREA && Fetch_Archive_Target() == obj && Fetch_Archive_Target()->RTTI == RTTI_UNIT) {
 				return(MOVE_NO);
 			}
 
-			if (Class->IsVehicleThief && obj->Considered_Vehicle() && NavCom == obj && !obj->TClass->IsTrain) {
+			if (Class->IsVehicleThief && obj->Considered_Vehicle() && NavCom == obj && !obj->Techno_Type_Class()->IsTrain) {
 				return(MOVE_OK);
 			}
 
@@ -1741,7 +1741,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 				**	Special check to always allow entry into the building that this infantry
 				**	is trying to capture.
 				*/
-				if (Mission == MISSION_ENTER && obj == NavCom && IsTethered) {
+				if (Get_Mission() == MISSION_ENTER && obj == NavCom && IsTethered) {
 					return(MOVE_OK);
 				}
 
@@ -1812,7 +1812,7 @@ MoveType InfantryClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir
 							case RTTI_TERRAIN:
 #ifdef OBSOLETE
 								if (((TerrainClass *)obj)->Class->Armor == ARMOR_WOOD &&
-										Class->PrimaryWeapon->WarheadPtr->IsWoodDestroyer) {
+										Class->Get_Primary_Weapon()->WarheadPtr->IsWoodDestroyer) {
 
 									if (retval < MOVE_DESTROYABLE) retval = MOVE_DESTROYABLE;
 								} else {
@@ -1942,7 +1942,7 @@ FireErrorType InfantryClass::Can_Fire(AbstractClass * target, int which) const
 	// does not stand over a finished target healing it forever.
 	if (Combat_Damage() < 0) {
 		TechnoClass const * targ = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
-		if (!Can_Heal(targ) || targ->HealthRatio >= Rule->ConditionGreen) {
+		if (!Can_Heal(targ) || targ->Get_Health_Ratio() >= Rule->ConditionGreen) {
 			return(FIRE_ILLEGAL);
 		}
 	}
@@ -2004,10 +2004,10 @@ bool InfantryClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 
 	if (TarCom != NULL) {
 		order = MISSION_ATTACK;
-		if (Mission == MISSION_SABOTAGE) {
+		if (Get_Mission() == MISSION_SABOTAGE) {
 			order = MISSION_SABOTAGE;
 		}
-		if (Mission == MISSION_CAPTURE) {
+		if (Get_Mission() == MISSION_CAPTURE) {
 			order = MISSION_CAPTURE;
 		}
 	} else {
@@ -2016,15 +2016,15 @@ bool InfantryClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 
 		if (NavCom != NULL) {
 			order = MISSION_MOVE;
-			if (Mission == MISSION_CAPTURE) {
+			if (Get_Mission() == MISSION_CAPTURE) {
 				order = MISSION_CAPTURE;
 			}
-			if (Mission == MISSION_SABOTAGE) {
+			if (Get_Mission() == MISSION_SABOTAGE) {
 				order = MISSION_SABOTAGE;
 			}
 		} else {
 
-			if (Mission == MISSION_GUARD || Mission == MISSION_GUARD_AREA || Mission != MISSION_NONE && (Current_Mission_Control().IsZombie || Current_Mission_Control().IsParalyzed)) {
+			if (Get_Mission() == MISSION_GUARD || Get_Mission() == MISSION_GUARD_AREA || Get_Mission() != MISSION_NONE && (Current_Mission_Control().IsZombie || Current_Mission_Control().IsParalyzed)) {
 				return(false);
 			}
 
@@ -2111,7 +2111,7 @@ bool InfantryClass::Random_Animate(void)
 				Do_Action(DO_IDLE2);
 				PrimaryFacing.Set(Facing_Dir(Random_Pick(FACING_N, FACING_NW)));
 				if (!IsSelected && IsOwnedByPlayer && Class->VoiceComment.Count() > 0 && Sim_Random_Pick(0, 2) == 0) {
-					Sound_Effect((VocType)Class->VoiceComment[0], PositionCoord);
+					Sound_Effect((VocType)Class->VoiceComment[0], Get_Coord());
 				}
 				break;
 
@@ -2196,7 +2196,7 @@ void InfantryClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 		FacingType	toface;
 
 		if (threat != COORD_NONE) {
-			toface = Dir_Facing(::Direction(threat, PositionCoord));
+			toface = Dir_Facing(::Direction(threat, Get_Coord()));
 			toface = (FacingType)(toface + Random_Pick(FACING_FIRST, FACING_180) - FACING_90);
 		} else {
 			Point2D coord(Center_Coord().X, Center_Coord().Y);
@@ -2352,7 +2352,7 @@ bool InfantryClass::Stop_Driver(void)
 		Do_Action(DO_STAND_READY);
 	}
 
-	if (Can_Enter_Cell(&Map[(Coord const &)PositionCoord], PrimaryFacing.Current().As_Dir8(), Get_Cell_Height()) == MOVE_OK) {
+	if (Can_Enter_Cell(&Map[(Coord const &)Get_Coord()], PrimaryFacing.Current().As_Dir8(), Get_Cell_Height()) == MOVE_OK) {
 		IsZoneCheat = false;
 	} else {
 		IsZoneCheat = true;
@@ -2402,7 +2402,7 @@ bool InfantryClass::Start_Driver(Coord & headto)
 		/*
 		**	Remove the occupation bit from the infantry's current location.
 		*/
-		Clear_Occupy_Bit(PositionCoord);
+		Clear_Occupy_Bit(Get_Coord());
 
 		/*
 		**	Set the occupation bit for the new headto location.
@@ -2469,7 +2469,7 @@ BulletClass * InfantryClass::Fire_At(AbstractClass * target, int which)
 		*/
 		if (Class->IsFraidyCat && !Ammo) {
 			Fear = FEAR_MAXIMUM;
-			if (Mission == MISSION_ATTACK || Mission == MISSION_HUNT) {
+			if (Get_Mission() == MISSION_ATTACK || Get_Mission() == MISSION_HUNT) {
 				Assign_Mission(MISSION_GUARD);
 			}
 		}
@@ -2569,7 +2569,7 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 	}
 
 	if (Class->IsVehicleThief) {
-		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->TClass->IsTrain && Distance(NavCom) < 15 * CELL_LEPTON) {
+		if (NavCom != NULL && NavCom->Is_Techno() && ((TechnoClass *)NavCom)->Considered_Vehicle() && !((TechnoClass *)NavCom)->Techno_Type_Class()->IsTrain && Distance(NavCom) < 15 * CELL_LEPTON) {
 			return(NavCom);
 		}
 	}
@@ -2584,11 +2584,11 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 	}
 
 	if ((threat & (THREAT_INFANTRY|THREAT_VEHICLES|THREAT_BUILDINGS|THREAT_TIBERIUM|THREAT_CIVILIANS|THREAT_POWER|THREAT_FACTORIES|THREAT_BASE_DEFENSE)) == 0) {
-		if (PrimaryWeapon != NULL) {
-			threat = ThreatType(threat | PrimaryWeapon->Allowed_Threats());
+		if (Get_Primary_Weapon() != NULL) {
+			threat = ThreatType(threat | Get_Primary_Weapon()->Allowed_Threats());
 		}
-		if (SecondaryWeapon != NULL) {
-			threat = ThreatType(threat | SecondaryWeapon->Allowed_Threats());
+		if (Get_Secondary_Weapon() != NULL) {
+			threat = ThreatType(threat | Get_Secondary_Weapon()->Allowed_Threats());
 		}
 	}
 
@@ -2596,7 +2596,7 @@ AbstractClass * InfantryClass::Greatest_Threat(ThreatType threat, Coord const & 
 	**	Organic weapon types don't consider anything but infantry to be a threat. Such
 	**	weapon types would be the dog jaw and the medic first aid kit.
 	*/
-	if (Is_Weapon_Equipped() && PrimaryWeapon->WarheadPtr->IsOrganic) {
+	if (Is_Weapon_Equipped() && Get_Primary_Weapon()->WarheadPtr->IsOrganic) {
 		threat = ThreatType(threat & ~(THREAT_BUILDINGS|THREAT_VEHICLES|THREAT_BOATS|THREAT_AIR));
 	}
 
@@ -2662,14 +2662,14 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 					return(Map.Can_Repair_Bridge(bldg->Center_Coord()) ? ACTION_GREPAIR : ACTION_NO_GREPAIR);
 				}
 				if (House->Is_Ally(bldg)) {
-					if (bldg->HealthRatio == Rule->ConditionGreen) {
+					if (bldg->Get_Health_Ratio() == Rule->ConditionGreen) {
 						return(ACTION_NO_GREPAIR);
 					}
 					return(ACTION_GREPAIR);
 				} else {
 
 					if (bldg->Class->IsCaptureable) {
-						if (bldg->HealthRatio > Rule->EngineerCaptureLevel) {
+						if (bldg->Get_Health_Ratio() > Rule->EngineerCaptureLevel) {
 							return(ACTION_DAMAGE);
 						}
 						return(ACTION_CAPTURE);
@@ -2687,12 +2687,12 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 				return(ACTION_GUARD_AREA);
 			}
 			const TechnoClass *tech = ::Dynamic_Cast<TechnoClass const *>(object);
-			bool boarding = !disallow_force && tech != NULL && tech->TClass->Max_Passengers() > 0
+			bool boarding = !disallow_force && tech != NULL && tech->Techno_Type_Class()->Max_Passengers() > 0
 				&& (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
-			if (!boarding && Can_Heal(object) && object->HealthRatio < Rule->ConditionGreen) {
+			if (!boarding && Can_Heal(object) && object->Get_Health_Ratio() < Rule->ConditionGreen) {
 				return(object->RTTI == RTTI_INFANTRY ? ACTION_HEAL : ACTION_GREPAIR);
 			}
-			if (tech == NULL || !tech->TClass->Max_Passengers()) {
+			if (tech == NULL || !tech->Techno_Type_Class()->Max_Passengers()) {
 				if (action == ACTION_GUARD_AREA || action == ACTION_MOVE) {
 					return(action);
 				}
@@ -2708,7 +2708,7 @@ ActionType InfantryClass::What_Action(ObjectClass const * object, bool disallow_
 	**	See if it's a thief attacking an enemy vehicle, let him CAPTURE it.
 	*/
 	if (House->Is_Player_Control() && Class->IsVehicleThief && object->RTTI != RTTI_BUILDING && object->Considered_Vehicle()) {
-		if (object->TClass->IsTrain) {
+		if (object->Techno_Type_Class()->IsTrain) {
 			return(ACTION_SELECT);
 		}
 		if (((UnitClass *)object)->House != House) {
@@ -3270,12 +3270,12 @@ void InfantryClass::Write_INI(CCINIClass & ini)
 			sprintf(buf, "%s,%s,%d,%d,%d,%d,%s,%d,%s,%d,%d,%d,%d,%d",
 					(char const *)infantry->House->Class->IniName,
 					(char const *)infantry->Class->IniName,
-					int(infantry->HealthRatio*256),
-					infantry->PositionCell.X,
-					infantry->PositionCell.Y,
-					CellClass::Spot_Index(infantry->PositionCoord),
-					MissionClass::Mission_Name((infantry->Mission == MISSION_NONE) ?
-						infantry->MissionQueue : infantry->Mission),
+					int(infantry->Get_Health_Ratio()*256),
+					infantry->Get_Cell().X,
+					infantry->Get_Cell().Y,
+					CellClass::Spot_Index(infantry->Get_Coord()),
+					MissionClass::Mission_Name((infantry->Get_Mission() == MISSION_NONE) ?
+						infantry->MissionQueue : infantry->Get_Mission()),
 					infantry->PrimaryFacing.Current().As_Dir256(),
 					infantry->Tag != NULL ? (char const *)infantry->Tag->Class->IniName : "None",
 					infantry->Veterancy.To_Integer(),
@@ -3316,7 +3316,7 @@ void InfantryClass::Fear_AI(void)
 		if (Class->IsDoggie) {
 			if (Fear >= FEAR_PANIC) {
 				if (!Locomotion->Is_Moving() && NavCom == NULL) {
-					if (Map[(Coord const &)PositionCoord].Land_Type() == LAND_TIBERIUM) {
+					if (Map[(Coord const &)Get_Coord()].Land_Type() == LAND_TIBERIUM) {
 						Do_Action(DO_LIE_DOWN);
 					} else {
 						Goto_Tiberium(16, false);
@@ -3399,7 +3399,7 @@ bool InfantryClass::Edge_Of_World_AI(void)
 	*/
 	if (Team != NULL && IsLocked) Team->IsLeaveMap = true;
 
-	if (Team == NULL && Mission == MISSION_GUARD && !Map.In_Radar(PositionCoord)) {
+	if (Team == NULL && Get_Mission() == MISSION_GUARD && !Map.In_Radar(Get_Coord())) {
 		Stun();
 		Delete_Me();
 		return(true);
@@ -3499,7 +3499,7 @@ void InfantryClass::Firing_AI(void)
 					if (Combat_Damage(primary) < 0) {
 						ObjectClass * targ = dynamic_cast<ObjectClass *>(TarCom);
 						if (Can_Heal(targ)) {
-							if (targ->HealthRatio >= Rule->ConditionGreen) {
+							if (targ->Get_Health_Ratio() >= Rule->ConditionGreen) {
 								Assign_Target(NULL);
 							}
 						} else {
@@ -3567,7 +3567,7 @@ void InfantryClass::Firing_AI(void)
 
 			const WeaponDataStruct * wdata = Get_Class_Weapon_Data(0);
 			if (wdata->Weapon->MaxSpeed < Rule->Incoming) {
-				Map[TarCom->Center_Coord()].Incoming(PositionCoord, true);
+				Map[TarCom->Center_Coord()].Incoming(Get_Coord(), true);
 			}
 		}
 	} else {
@@ -3664,11 +3664,11 @@ void InfantryClass::Movement_AI(void)
 	**	Special hack check to ensure that infantry will never get stuck in a movement order if
 	**	there is no place to go.
 	*/
-	if (Mission == MISSION_MOVE && NavCom == NULL && !Locomotion->Is_Moving()) {
+	if (Get_Mission() == MISSION_MOVE && NavCom == NULL && !Locomotion->Is_Moving()) {
 		Enter_Idle_Mode();
 	}
 
-	if (Mission == MISSION_MOVE && NavCom != NULL && !Locomotion->Is_Moving()) {
+	if (Get_Mission() == MISSION_MOVE && NavCom != NULL && !Locomotion->Is_Moving()) {
 		Assign_Destination(NavCom);
 		Set_Speed(1.0);
 	}
@@ -3683,7 +3683,7 @@ void InfantryClass::Movement_AI(void)
 		*/
 		if ((!IsZoneCheat || Can_Enter_Cell(Get_Target_Cell_Ptr()) != MOVE_NO) && !Locomotion->Is_Moving() && !IsTethered && NavCom != NULL && IsLocked && !Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), cell, Class->MZone, Is_Moving_Onto_Bridge(), Map[cell].IsUnderBridge, Is_Allowed_To_Leave_Map())) {
 // hack: if it's tanya, spy, or engineer, let 'em move there anyway.
-			if (!Class->IsCapture && Mission != MISSION_ENTER) {
+			if (!Class->IsCapture && Get_Mission() != MISSION_ENTER) {
 				Assign_Destination(NULL);
 			}
 		}
@@ -4002,7 +4002,7 @@ bool InfantryClass::Ready_To_Commence(void)
 {
 	if (CurrentMission != MISSION_STICKY && CurrentMission != MISSION_RESCUE) {
 		if (!IsFiring && !IsFalling) {
-			if (Locomotion->Is_Moving_Now() && Mission != MISSION_GUARD && Mission != MISSION_HUNT && (Mission != MISSION_ATTACK || TarCom)) {
+			if (Locomotion->Is_Moving_Now() && Get_Mission() != MISSION_GUARD && Get_Mission() != MISSION_HUNT && (Get_Mission() != MISSION_ATTACK || TarCom)) {
 				return(false);
 			}
 			if (Doing == DO_NOTHING || InfantryClass::MasterDoControls[Doing].Interrupt) {
@@ -4207,14 +4207,14 @@ bool InfantryClass::Is_JumpJet(void) const
 /// <returns>bool; Should the trip be made by air?</returns>
 bool InfantryClass::Should_JumpJet_Fly(Cell const & from, Cell const & to)
 {
-	int height = HeightAGL;
+	int height = Get_Height_AGL();
 	height = height; /// dead code
 
 	if (IonStormClass::Is_Ion_Storm_Active()) {
 		return(false);
 	}
 
-	if (HeightAGL > 0) {
+	if (Get_Height_AGL() > 0) {
 		return(true);
 	}
 

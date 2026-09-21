@@ -294,7 +294,7 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 			if (aircraft->IsActive) {
 				if (aircraft->IsDown && aircraft->Strength > 0) {
-					distance = coord.Distance_To(aircraft->PositionCoord);
+					distance = coord.Distance_To(aircraft->Get_Coord());
 					if (distance < CELL_LEPTON_W) {
 						objects.Delete(aircraft);
 						objects.Add(aircraft);
@@ -308,7 +308,7 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 			if (infantry->IsActive && infantry->Class->IsJumpJet) {
 				if (infantry->IsDown && infantry->Strength > 0) {
-					distance = coord.Distance_To(infantry->PositionCoord);
+					distance = coord.Distance_To(infantry->Get_Coord());
 					if (distance < CELL_LEPTON_W) {
 						objects.Delete(infantry);
 						objects.Add(infantry);
@@ -322,7 +322,7 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 
 			if (unit->IsActive && unit->Class->IsJellyfish) {
 				if (unit->IsDown && unit->Strength > 0) {
-					distance = coord.Distance_To(unit->PositionCoord);
+					distance = coord.Distance_To(unit->Get_Coord());
 					if (distance < CELL_LEPTON_W) {
 						objects.Delete(unit);
 						objects.Add(unit);
@@ -423,9 +423,9 @@ void Explosion_Damage(Coord const & coord, int strength, TechnoClass * source, W
 					TechnoClass * techno = Dynamic_Cast<TechnoClass *>(object);
 					if (techno != NULL) {
 						if (Cell(x, y) == cell && source) {
-							Coord tcoord = techno->PositionCoord;
+							Coord tcoord = techno->Get_Coord();
 
-							Coord scoord = source->PositionCoord;
+							Coord scoord = source->Get_Coord();
 							TPoint3D<float> rockdirf((float)(scoord.X - tcoord.X), (float)(scoord.Y - tcoord.Y), (float)(scoord.Z - tcoord.Z));
 							rockdirf = rockdirf.Normalize() * 10;
 

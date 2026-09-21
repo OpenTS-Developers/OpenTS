@@ -368,7 +368,7 @@ void BulletClass::AI(void)
 	**	Move the projectile forward according to its speed
 	**	and direction.
 	*/
-	coord = PositionCoord;
+	coord = Get_Coord();
 
 	/*
 	 * Projectiles that leave a trail behind them drop one puff of it every
@@ -484,10 +484,10 @@ void BulletClass::AI(void)
 		 * since it is meant to go off overhead.
 		 */
 		double half_speed = Velocity.Speed() * 0.5;
-		if (distance <= half_speed || HeightAGL <= 0) {
+		if (distance <= half_speed || Get_Height_AGL() <= 0) {
 			forced = true;
 			impact = IMPACT_NORMAL;
-			if (HeightAGL > 0 && !Class->IsAirburst) {
+			if (Get_Height_AGL() > 0 && !Class->IsAirburst) {
 				coord = target_coord;
 			}
 		}
@@ -730,10 +730,10 @@ void BulletClass::AI(void)
 			TechnoClass * techno = Map[coord].Cell_Techno();
 			if (Payback == NULL || techno != Payback) {
 				if (techno != NULL && (Payback == NULL || !Payback->House->Is_Ally(techno))) {
-					if (coord.Distance_To(techno->PositionCoord) < CELL_LEPTON / 2) {
+					if (coord.Distance_To(techno->Get_Coord()) < CELL_LEPTON / 2) {
 						forced = true;
 						impact = IMPACT_NORMAL;
-						coord = techno->PositionCoord;
+						coord = techno->Get_Coord();
 					}
 				}
 			}
@@ -744,7 +744,7 @@ void BulletClass::AI(void)
 		 * last known position and vanishes.
 		 */
 		if (!Map.In_Radar(coord)) {
-			coord = PositionCoord;
+			coord = Get_Coord();
 			forced = true;
 			impact = IMPACT_EDGE;
 		}
@@ -757,7 +757,7 @@ void BulletClass::AI(void)
 		 * A projectile that is barely moving and lying close to the ground has
 		 * finished bouncing and settles where it is.
 		 */
-		if (Velocity.Speed() < 10 && HeightAGL < 10) {
+		if (Velocity.Speed() < 10 && Get_Height_AGL() < 10) {
 			forced = true;
 			impact = IMPACT_NORMAL;
 		}
@@ -789,12 +789,12 @@ void BulletClass::AI(void)
 			 * fuel is spent, it detonates wherever it happens to be.
 			 */
 			if (Class->IsFueled) {
-				Range -= coord.Distance_To(PositionCoord);
+				Range -= coord.Distance_To(Get_Coord());
 				if (Range <= 0) {
 					forced = true;
 				}
 			}
-			PositionCoord = coord;
+			Set_Coord(coord);
 
 			/*
 			 * A projectile that flies into an active firestorm wall is consumed
@@ -817,9 +817,9 @@ void BulletClass::AI(void)
 			**	the fuse would otherwise indicate. Maybe the bullet hit a wall?
 			*/
 			if (!forced) {
-				Coord cur_coord = PositionCoord;
+				Coord cur_coord = Get_Coord();
 				forced = Is_Forced_To_Explode(cur_coord);
-				PositionCoord = cur_coord;
+				Set_Coord(cur_coord);
 			}
 
 			/*
@@ -856,7 +856,7 @@ void BulletClass::AI(void)
 						}
 
 						if (fuse == FUSE_EXPLODE_CLOSE || target_distance <= std::max(CELL_LEPTON / 2.0, Velocity.Speed() * 2)) {
-							PositionCoord = TarCom->Center_Coord();
+							Set_Coord(TarCom->Center_Coord());
 						}
 					}
 				}
@@ -920,7 +920,7 @@ int BulletClass::Shape_Number(void) const
  *=============================================================================================*/
 void BulletClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
-	if (Scen->Special.IsFogOfWar && Map.Is_Fogged(PositionCoord)) return;
+	if (Scen->Special.IsFogOfWar && Map.Is_Fogged(Get_Coord())) return;
 
 	/*
 	**	Certain projectiles aren't visible. This includes small bullets (which are actually
@@ -948,10 +948,10 @@ void BulletClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		*/
 		int shapenum = Shape_Number();
 
-		int height_agl = HeightAGL;
-		int height_gl = Map.Get_Height_GL(PositionCoord);
+		int height_agl = Get_Height_AGL();
+		int height_gl = Map.Get_Height_GL(Get_Coord());
 
-		if (!IsOnBridge && Map[(Coord const &)PositionCoord].IsUnderBridge && height_agl >= BRIDGE_LEPTON_HEIGHT) {
+		if (!IsOnBridge && Map[(Coord const &)Get_Coord()].IsUnderBridge && height_agl >= BRIDGE_LEPTON_HEIGHT) {
 			height_agl -= BRIDGE_LEPTON_HEIGHT;
 			height_gl += BRIDGE_LEPTON_HEIGHT;
 		}
@@ -972,7 +972,7 @@ void BulletClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		if (Class->IsAnimPalette) {
 			drawer = AnimDrawer;
 		}
-		Draw_Shape(*LogicalSurface, *drawer, shapeptr, shapenum, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA|SHAPE_ZGRAD), 0, -30 - TacticalMap->Z_Lepton_To_Pixel(Height));
+		Draw_Shape(*LogicalSurface, *drawer, shapeptr, shapenum, point, cliprect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ALPHA|SHAPE_ZGRAD), 0, -30 - TacticalMap->Z_Lepton_To_Pixel(Get_Height()));
 	}
 }
 
@@ -1098,12 +1098,12 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 		if (Class->IsInvisible) {
 			Coord firestorm_coord = Map.Firestorm_On_Path(coord, tcoord, Payback != NULL ? Payback->House : NULL);
 			if (firestorm_coord == COORD_NONE) {
-				PositionCoord = tcoord;
+				Set_Coord(tcoord);
 				MaxSpeed = 0;
 				Velocity.Set_Speed(0);
 			} else {
 				firestorm_coord.Z = Map.Get_Height_GL(firestorm_coord);
-				PositionCoord = firestorm_coord;
+				Set_Coord(firestorm_coord);
 				BuildingClass * bptr = Map[firestorm_coord].Cell_Building();
 				bptr->Crossing_Firestorm(this, false);
 				Delete_Me();
@@ -1113,7 +1113,7 @@ bool BulletClass::Unlimbo(Coord const & coord, TVelocity3D<double> const & veloc
 		/*
 		**	Arm the fuse.
 		*/
-		Fuse.Arm_Fuse(PositionCoord, tcoord, dynamic_cast<AircraftClass *>(TarCom) != NULL ? 0 : Class->Arming);
+		Fuse.Arm_Fuse(Get_Coord(), tcoord, dynamic_cast<AircraftClass *>(TarCom) != NULL ? 0 : Class->Arming);
 
 		if (Is_Homing()) {
 			Velocity.Set_Speed(1);
@@ -1170,9 +1170,9 @@ LayerType BulletClass::In_Which_Layer(void) const
  *=============================================================================================*/
 bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 {
-	coord = PositionCoord;
+	coord = Get_Coord();
 	CellClass const * cellptr = &Map[coord];
-	int height = HeightAGL;
+	int height = Get_Height_AGL();
 
 	/*
 	**	Check for impact on a wall or other high obstacle.
@@ -1189,7 +1189,7 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
 	**	Bullets are generally more effective when they are fired at aircraft.
 	*/
 	if (Class->IsAntiAircraft && TarCom != NULL &&
-		(TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->RTTI == RTTI_INFANTRY && ((InfantryClass *)TarCom)->Is_JumpJet()) && ((InfantryClass *)TarCom)->HeightAGL > 0) &&
+		(TarCom->RTTI == RTTI_AIRCRAFT || (TarCom->RTTI == RTTI_INFANTRY && ((InfantryClass *)TarCom)->Is_JumpJet()) && ((InfantryClass *)TarCom)->Get_Height_AGL() > 0) &&
 		Distance(TarCom) < CELL_LEPTON / 2) {
 
 		return(true);
@@ -1220,7 +1220,7 @@ bool BulletClass::Is_Forced_To_Explode(Coord & coord) const
  *=============================================================================================*/
 void BulletClass::Bullet_Explodes(bool forced)
 {
-	Coord coord = PositionCoord;
+	Coord coord = Get_Coord();
 	TechnoClass *target = NULL;
 	if (TarCom != NULL && TarCom->In_Air()) {
 		target = (TechnoClass *)TarCom;
@@ -1344,10 +1344,10 @@ void BulletClass::Detonate(Coord const & coord)
 	*/
 	LandType land = LAND_NONE;
 	if (blast_coord.Z - Map.Get_Height_GL(blast_coord) < 2 * LEVEL_LEPTON_H) {
-		land = Map[(Coord const &)PositionCoord].Land_Type();
+		land = Map[(Coord const &)Get_Coord()].Land_Type();
 	}
 
-	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, PositionCoord);
+	const AnimTypeClass * anim = Combat_Anim(Strength, Warhead, land, Get_Coord());
 
 	if (IsBright) {
 		Combat_Lighting(blast_coord, Strength, Warhead, true);
@@ -1373,13 +1373,13 @@ void BulletClass::Detonate(Coord const & coord)
 	if (Class->IsSplits) {
 		DynamicVectorClass<AbstractClass *> targets;
 
-		Coord split_coord = PositionCoord;
+		Coord split_coord = Get_Coord();
 		Cell split_cell = Center_Coord().As_Cell();
 
 		if (TarCom != NULL) {
 			ObjectClass * object = TarCom->As_ObjectClass();
 			if (object != NULL) {
-				split_coord = object->PositionCoord;
+				split_coord = object->Get_Coord();
 				split_cell = object->Center_Coord().As_Cell();
 			}
 		}
@@ -1388,7 +1388,7 @@ void BulletClass::Detonate(Coord const & coord)
 		for (i = 0; i < Technos.Count(); i++) {
 			TechnoClass * tptr = Technos[i];
 			if (tptr->IsLocked && tptr->IsDown && tptr->Strength > 0) {
-				if (split_coord.Distance_To(tptr->PositionCoord) < CELL_LEPTON * 5) {
+				if (split_coord.Distance_To(tptr->Get_Coord()) < CELL_LEPTON * 5) {
 					targets.Add(tptr);
 				}
 			}
@@ -1423,7 +1423,7 @@ void BulletClass::Detonate(Coord const & coord)
 					 * random scatter in the heading.
 					 */
 					TVelocity3D<double> velocity(DirType((Dir256)Random_Pick(DIR_MIN, DIR_NE)), DirType(DIR_S), weapon->MaxSpeed);
-					bullet->Unlimbo(PositionCoord, velocity);
+					bullet->Unlimbo(Get_Coord(), velocity);
 				}
 			}
 		}

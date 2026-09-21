@@ -745,7 +745,7 @@ void EventClass::Execute(void)
 		case ARCHIVE:
 			techno = Data.NavCom.Whom.As_Techno();
 			if (techno && techno->IsActive) {
-				techno->ArchiveTarget = Data.NavCom.Where.As_Abstract();
+				techno->Assign_Archive_Target(Data.NavCom.Where.As_Abstract());
 			}
 			break;
 
@@ -1042,10 +1042,10 @@ void EventClass::Execute(void)
 				if (Data.MegaMission.Mission == MISSION_GUARD_AREA && techno->Is_Foot()) {
 					techno->Assign_Target(NULL);
 					techno->Assign_Destination(Data.MegaMission.Target.As_Abstract());
-					techno->ArchiveTarget = Data.MegaMission.Target.As_Abstract();
+					techno->Assign_Archive_Target(Data.MegaMission.Target.As_Abstract());
 				} else {
 					if (foot != NULL) {
-						foot->ArchiveTarget = NULL;
+						foot->Assign_Archive_Target(NULL);
 					}
 					if (q && foot != NULL) {
 						foot->Queue_Navigation_List(Data.MegaMission.Destination.As_Abstract());
@@ -1062,7 +1062,7 @@ void EventClass::Execute(void)
 				if ((techno->What_Am_I() == RTTI_UNIT || techno->What_Am_I() == RTTI_INFANTRY) &&
 						Data.MegaMission.Mission == MISSION_GUARD_AREA) {
 
-					((FootClass *)techno)->ArchiveTarget = Data.MegaMission.Destination;
+					((FootClass *)techno)->Assign_Archive_Target(Data.MegaMission.Destination);
 				}
 #endif
 			}
@@ -1079,7 +1079,7 @@ void EventClass::Execute(void)
 					break;
 				}
 
-				if (!techno->IsOnBridge && Map[(Coord const &)techno->PositionCoord].Ramp == RAMP_NONE && techno->Is_On_Elevation()) {
+				if (!techno->IsOnBridge && Map[(Coord const &)techno->Get_Coord()].Ramp == RAMP_NONE && techno->Is_On_Elevation()) {
 					break;
 				}
 
@@ -1106,7 +1106,7 @@ void EventClass::Execute(void)
 			if (techno != NULL && techno->IsActive && !techno->IsInLimbo && !techno->IsTethered && techno->StunDuration == 0) {
 
 				if (!techno->IsOnBridge) {
-					if (!Map[(Coord const &)techno->PositionCoord].Ramp != 0 && techno->Is_On_Elevation()) {
+					if (!Map[(Coord const &)techno->Get_Coord()].Ramp != 0 && techno->Is_On_Elevation()) {
 						break;
 					}
 				}
@@ -1116,7 +1116,7 @@ void EventClass::Execute(void)
 				}
 
 				bool should_unload = false;
-				Cell cell = techno->PositionCell;
+				Cell cell = techno->Get_Cell();
 				if (cell == CELL_NONE) {
 					should_unload = true;
 				} else {

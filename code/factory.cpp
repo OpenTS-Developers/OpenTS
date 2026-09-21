@@ -736,7 +736,7 @@ int FactoryClass::Total(const TechnoTypeClass *type)
 {
 	int total = 0;
 	if (Object != NULL) {
-		if (Object->TClass == type) {
+		if (Object->Techno_Type_Class() == type) {
 			total++;
 		}
 	}

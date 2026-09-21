@@ -165,7 +165,7 @@ void ParticleSystemClass::Draw_It(Point2D const & point, Rect const & cliprect) 
 			float cap = (float)SystemParticles.Count() / (float)Class->ParticleCap;
 			float fullness = std::max(0.4f, std::min(1.0f, cap));
 			int spotsize = (int)(fullness * Class->LightSize);
-			SpotLightClass * spotlight = new SpotLightClass(PositionCoord, spotsize);
+			SpotLightClass * spotlight = new SpotLightClass(Get_Coord(), spotsize);
 			spotlight->Set_Radius(SparkRadius);
 			spotlight->Draw_It();
 			delete spotlight;
@@ -305,7 +305,7 @@ void ParticleSystemClass::Gas_AI(void)
 		ParticleClass *spart = SystemParticles[i];
 		if (spart->IsToDie) {
 			if (spart->Class->NextParticle != PARTICLE_NONE) {
-				Coord coord = spart->PositionCoord;
+				Coord coord = spart->Get_Coord();
 				ParticleTypeClass *next = ParticleTypes[spart->Class->NextParticle];
 				Coord ncoord = coord + spart->Class->NextParticleOffset;
 				ParticleClass *npart = new ParticleClass(next, ncoord);
@@ -351,7 +351,7 @@ void ParticleSystemClass::Spark_AI(void)
 			spark.Y = (float)(rand_a % held->YVelocity);
 
 			while (count > 0) {
-				ParticleClass * particle = Spawn_Held_Particle(PositionCoord, PositionCoord);
+				ParticleClass * particle = Spawn_Held_Particle(Get_Coord(), Get_Coord());
 
 				ParticleTypeClass const * ptype = particle->Class;
 				Vector3 & dir = particle->MovementDirection;
@@ -375,7 +375,7 @@ void ParticleSystemClass::Spark_AI(void)
 
 			if (Options.DetailLevel == 2) {
 				if (SparkSpawnFrames == Class->SparkSpawnFrames && Class->LightSize > 0 && !Class->OneFrameLight) {
-					new SpotLightClass(PositionCoord, Class->LightSize);
+					new SpotLightClass(Get_Coord(), Class->LightSize);
 				}
 			}
 		}
@@ -586,7 +586,7 @@ void ParticleSystemClass::Railgun_AI(void)
 
 				scaled += tmp;
 				Coord ic((int)scaled.X, (int)scaled.Y, (int)scaled.Z);
-				Coord particle_pos = ic + Lerp(PositionCoord, SpawnCoord, frac);
+				Coord particle_pos = ic + Lerp(Get_Coord(), SpawnCoord, frac);
 
 				ParticleClass * particle = Spawn_Held_Particle(particle_pos, particle_pos);
 
@@ -602,7 +602,7 @@ void ParticleSystemClass::Railgun_AI(void)
 		}
 
 		if (Class->IsLaser) {
-			new LaserDrawClass(PositionCoord, SpawnCoord, 0, true, Class->LaserColor, RGBClass(0, 0, 0), RGBClass(0, 0, 0), 10, false, true, 0.5f, 0.0f);
+			new LaserDrawClass(Get_Coord(), SpawnCoord, 0, true, Class->LaserColor, RGBClass(0, 0, 0), RGBClass(0, 0, 0), 10, false, true, 0.5f, 0.0f);
 		}
 
 		IsMarkedForDeletion = true;
@@ -716,7 +716,7 @@ void ParticleSystemClass::Web_AI(void)
 		ParticleClass *spart = SystemParticles[i];
 		if (spart->IsToDie) {
 			if (spart->Class->NextParticle != PARTICLE_NONE) {
-				Coord coord = spart->PositionCoord;
+				Coord coord = spart->Get_Coord();
 				ParticleTypeClass *next = ParticleTypes[spart->Class->NextParticle];
 				Coord ncoord = coord + spart->Class->NextParticleOffset;
 				ParticleClass *npart = new ParticleClass(next, ncoord);

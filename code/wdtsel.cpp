@@ -253,12 +253,12 @@ void Selection::Init_Regions(INIClass const & ini, const char * section, bool vq
 
 	char background_name[64];
 	sprintf(background_name, "%sBack.PCX", region_prefix);
-	CancelButtonAnim = new MSPCXAnim(background_name, &Anims, CancelButtonRectangle.TopLeft, true);
+	CancelButtonAnim = new MSPCXAnim(background_name, &Anims, CancelButtonRectangle.Top_Left(), true);
 	CancelButtonAnim->Set_Active(false);
 	Add_Animation(CancelButtonAnim);
 
 	sprintf(background_name, "%sBackh.PCX", region_prefix);
-	CancelButtonHoverAnim = new MSPCXAnim(background_name, &Anims, CancelButtonRectangle.TopLeft, true);
+	CancelButtonHoverAnim = new MSPCXAnim(background_name, &Anims, CancelButtonRectangle.Top_Left(), true);
 	CancelButtonHoverAnim->Set_Active(false);
 	Add_Animation(CancelButtonHoverAnim);
 }

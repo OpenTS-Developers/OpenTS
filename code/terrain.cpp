@@ -416,7 +416,7 @@ void TerrainClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		}
 
 		Point2D drawpoint = point;
-		int zadjust = -TacticalMap->Z_Lepton_To_Pixel(Height);
+		int zadjust = -TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 
 		if (cellptr.Drawer == NULL) {
 			cellptr.Init_Drawer();
@@ -478,7 +478,7 @@ void TerrainClass::Editor_Draw_It(Point2D const & point, Rect const & cliprect) 
 		}
 
 		Point2D drawpoint = point;
-		int zadjust = -TacticalMap->Z_Lepton_To_Pixel(Height);
+		int zadjust = -TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 
 		if (cellptr.Drawer == NULL) {
 			cellptr.Init_Drawer();

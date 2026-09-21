@@ -300,15 +300,15 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 		CurrentCellHeight = from_ptr->Height + BRIDGE_CELL_HEIGHT;
 	}
 
-	if (foot->TClass->IsTrain) {
+	if (foot->Techno_Type_Class()->IsTrain) {
 		if (from_ptr->IsUnderBridge) {
-			if (abs(foot->PositionCoord.Z / LEVEL_LEPTON_H - CurrentCellHeight) > 2) {
+			if (abs(foot->Get_Coord().Z / LEVEL_LEPTON_H - CurrentCellHeight) > 2) {
 				CurrentCellHeight += BRIDGE_CELL_HEIGHT;
 			}
 		}
 	}
 
-	ObjectSpeed = foot->TClass->Speed;
+	ObjectSpeed = foot->Techno_Type_Class()->Speed;
 	HierNodeIndex = 0;
 	HierLastNodeCell = from;
 	int * fine_final_ids = HierOnPath[0];
@@ -342,7 +342,7 @@ PathStruct * AStarClass::Find_Path_Regular(Cell const & from, Cell const & to, F
 	};
 
 	bool is_train = false;
-	if (foot->TClass->IsTrain) {
+	if (foot->Techno_Type_Class()->IsTrain) {
 		is_train = true;
 		for (face = FACING_FIRST; face <= FACING_COUNT; face++) {
 			int facing_diff = foot->PrimaryFacing.Current().As_Dir8() - face;
@@ -891,14 +891,14 @@ void AStarClass::Apply_Path_Collision_Avoidance(FootClass * foot)
 		}
 
 		bool marked_path = false;
-		const TechnoTypeClass * foot_type = foot->TClass;
+		const TechnoTypeClass * foot_type = foot->Techno_Type_Class();
 
 		while (blocker != NULL) {
 			if (blocker->RTTI == RTTI_UNIT || blocker->RTTI == RTTI_INFANTRY) {
 
 				int index = 0;
 				Cell blocker_cell = blocker->LastPathingCell;
-				const TechnoTypeClass * blocker_type = blocker->TClass;
+				const TechnoTypeClass * blocker_type = blocker->Techno_Type_Class();
 
 				if (Avoidance == AVOIDANCE_HARD || (foot_type != blocker_type && foot_type->MaxSpeed > blocker_type->MaxSpeed && Map.In_Local_Radar(blocker_cell, true))) {
 					if (blocker->RTTI == RTTI_UNIT) {
@@ -1769,13 +1769,13 @@ PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass
 	CellClass * from_ptr = &Map[from];
 	CellClass * to_ptr = &Map[to];
 
-	int from_zone = Map.Get_Cell_Zone(from, mzone != MZONE_NONE ? mzone : foot->TClass->MZone, foot->IsOnBridge);
-	int to_zone = Map.Get_Cell_Zone(to,  mzone != MZONE_NONE ? mzone : foot->TClass->MZone, Map[to].IsUnderBridge);
+	int from_zone = Map.Get_Cell_Zone(from, mzone != MZONE_NONE ? mzone : foot->Techno_Type_Class()->MZone, foot->IsOnBridge);
+	int to_zone = Map.Get_Cell_Zone(to,  mzone != MZONE_NONE ? mzone : foot->Techno_Type_Class()->MZone, Map[to].IsUnderBridge);
 
 	Cell hs_from = Map.Get_Bridge_Zone_Connection_Cell(from_ptr, foot->IsOnBridge);
 	Cell hs_to = Map.Get_Bridge_Zone_Connection_Cell(to_ptr, to_ptr->IsUnderBridge);
 
-	MZoneType move_zone = mzone != MZONE_NONE ? mzone : foot->TClass->MZone;
+	MZoneType move_zone = mzone != MZONE_NONE ? mzone : foot->Techno_Type_Class()->MZone;
 
 	if (foot->RTTI == RTTI_INFANTRY) {
 		if (((InfantryClass *)foot)->Class->IsJumpJet) {
@@ -1784,7 +1784,7 @@ PathStruct * AStarClass::Find_Path(Cell const & from, Cell const & to, FootClass
 	}
 
 	bool with_hs;
-	if (foot->TClass->IsTrain) {
+	if (foot->Techno_Type_Class()->IsTrain) {
 		/// Hierarchical search doesn't work on trains
 		with_hs = false;
 	} else if (!foot->IsLocked || foot->Is_Allowed_To_Leave_Map()) {
@@ -2021,7 +2021,7 @@ int AStarClass::Test_Cell_Walk(Cell const & from, Cell const & to, FootClass con
 
 	if (mzone == MZONE_NONE) {
 		if (foot) {
-			mzone = foot->TClass->MZone;
+			mzone = foot->Techno_Type_Class()->MZone;
 		} else {
 			mzone = MZONE_NORMAL;
 		}

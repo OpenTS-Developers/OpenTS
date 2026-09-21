@@ -69,7 +69,7 @@ HoverLocomotionClass::HoverLocomotionClass(void) :
 void HoverLocomotionClass::Link_To_Object(void *pointer)
 {
 	BASECLASS::Link_To_Object(pointer);
-	FacingClass face(2 * LinkedTo->TClass->ROT);
+	FacingClass face(2 * LinkedTo->Techno_Type_Class()->ROT);
 	Facing = face;
 }
 
@@ -91,12 +91,12 @@ HoverLocomotionClass::~HoverLocomotionClass(void)
 /// </summary>
 void HoverLocomotionClass::Gravity_AI(void)
 {
-	int height = LinkedTo->HeightAGL;
+	int height = LinkedTo->Get_Height_AGL();
 	int clearance = height;
 
 	if (LinkedTo->Path[0] != FACING_NONE) {
-		int mheight = Map.Get_Height_GL(LinkedTo->PositionCoord);
-		if (Map.Get_Height_GL(Adjacent_Cell(LinkedTo->PositionCoord, LinkedTo->Path[0])) > mheight) {
+		int mheight = Map.Get_Height_GL(LinkedTo->Get_Coord());
+		if (Map.Get_Height_GL(Adjacent_Cell(LinkedTo->Get_Coord(), LinkedTo->Path[0])) > mheight) {
 			clearance -= Rule->HoverHeight;
 		}
 	}
@@ -116,7 +116,7 @@ void HoverLocomotionClass::Gravity_AI(void)
 
 	bool wasdown = LinkedTo->IsDown;
 	LinkedTo->IsDown = false;
-	LinkedTo->HeightAGL = height;
+	LinkedTo->Set_Height_AGL(height);
 	LinkedTo->IsDown = wasdown;
 
 	if (clearance < Rule->HoverHeight) {
@@ -143,7 +143,7 @@ void HoverLocomotionClass::Gravity_AI(void)
 Matrix3D HoverLocomotionClass::Draw_Matrix(int *key)
 {
 	if (!Is_Powered()) {
-		int ramp = Map[(Coord const &)(LinkedTo->PositionCoord)].Ramp;
+		int ramp = Map[(Coord const &)(LinkedTo->Get_Coord())].Ramp;
 		Matrix3D mtx = Get_Slope_Matrix(ramp);
 		mtx.Rotate_Z(LinkedTo->PrimaryFacing.Current().As_Radian32());
 		if (key != NULL && *key != -1) {
@@ -168,7 +168,7 @@ bool HoverLocomotionClass::Process(void)
 	if (Is_Moving() && Is_Moving1()) {
 		Motion_AI();
 
-		int height = LinkedTo->Height;
+		int height = LinkedTo->Get_Height();
 		int speed = LinkedTo->Current_Speed() * Acceleration;
 		DirType direction = Direction(LinkedTo->Center_Coord(), HeadToCoord);
 
@@ -177,7 +177,7 @@ bool HoverLocomotionClass::Process(void)
 			speed = LinkedTo->Current_Speed() * Acceleration;
 		}
 
-		if (speed >= Point2D(LinkedTo->PositionCoord).Distance_To(HeadToCoord)) {
+		if (speed >= Point2D(LinkedTo->Get_Coord()).Distance_To(HeadToCoord)) {
 			LinkedTo->IsOccupyingCell = true;
 			LinkedTo->IsToPathAroundBlockage = false;
 			WasPushed = false;
@@ -209,10 +209,10 @@ bool HoverLocomotionClass::Process(void)
 		}
 
 		if (speed > 0) {
-			Coord coord = LinkedTo->PositionCoord;
+			Coord coord = LinkedTo->Get_Coord();
 
 			if (LinkedTo->Occupies_Cells() && HeadToCoord != COORD_NONE) {
-				LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
+				LinkedTo->Clear_Occupy_Bit(LinkedTo->Get_Coord());
 				LinkedTo->IsOccupyingCell = false;
 				LinkedTo->IsToPathAroundBlockage = false;
 			}
@@ -220,10 +220,10 @@ bool HoverLocomotionClass::Process(void)
 			coord = Move_Coord(coord, Facing.Current(), speed);
 			if (coord.As_Cell() != LinkedTo->Get_Coord().As_Cell()) {
 				LinkedTo->Mark(MARK_UP);
-				LinkedTo->PositionCoord = coord;
-				LinkedTo->Height = height;
+				LinkedTo->Set_Coord(coord);
+				LinkedTo->Set_Height(height);
 				CellClass * cellptr = &Map[coord];
-				if (!LinkedTo->IsOnBridge && cellptr->IsUnderBridge && LinkedTo->HeightAGL >= BRIDGE_LEPTON_HEIGHT) {
+				if (!LinkedTo->IsOnBridge && cellptr->IsUnderBridge && LinkedTo->Get_Height_AGL() >= BRIDGE_LEPTON_HEIGHT) {
 					LinkedTo->IsOnBridge = true;
 				}
 				if (LinkedTo->IsOnBridge == true && !cellptr->IsUnderBridge) {
@@ -233,8 +233,8 @@ bool HoverLocomotionClass::Process(void)
 			} else {
 				bool wasdown = LinkedTo->IsDown;
 				LinkedTo->IsDown = false;
-				LinkedTo->PositionCoord = coord;
-				LinkedTo->Height = height;
+				LinkedTo->Set_Coord(coord);
+				LinkedTo->Set_Height(height);
 				LinkedTo->IsDown = wasdown;
 			}
 		}
@@ -329,7 +329,7 @@ Coord HoverLocomotionClass::Head_To_Coord(void)
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
 	}
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 
@@ -407,7 +407,7 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 		TubeType tubenum = (TubeType)Map[LinkedTo->Get_Coord()].Tube;
 		if (tubenum >= TUBE_FIRST && tubenum < Tubes.Count()) {
 			LinkedTo->Mark(MARK_UP);
-			LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
+			LinkedTo->Clear_Occupy_Bit(LinkedTo->Get_Coord());
 			TubeClass * tube = Tubes[tubenum];
 			Cell exit = tube->Exit;
 			HeadToCoord = exit.As_Coord();
@@ -415,9 +415,9 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 			LinkedTo->LastPathingCell = HeadToCoord.As_Cell();
 			LinkedTo->CurrentTube = tubenum;
 			LinkedTo->CurrentTubeDir = FACING_FIRST;
-			LinkedTo->LastTubeCoord = Map[Adjacent_Cell((Cell)tube->Enter, tube->Dirs[0])].Cell_Coord() - Coord((Cell)tube->Enter) + LinkedTo->PositionCoord;
-			int height = LinkedTo->Height;
-			int current_height = Map.Get_Height_GL(LinkedTo->PositionCoord);
+			LinkedTo->LastTubeCoord = Map[Adjacent_Cell((Cell)tube->Enter, tube->Dirs[0])].Cell_Coord() - Coord((Cell)tube->Enter) + LinkedTo->Get_Coord();
+			int height = LinkedTo->Get_Height();
+			int current_height = Map.Get_Height_GL(LinkedTo->Get_Coord());
 			int count = tube->Count;
 			exit = tube->Exit;
 			LinkedTo->LastTubeCoord.Z = height + (Map.Get_Height_GL(exit) - current_height) / count;
@@ -431,9 +431,9 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 	}
 
 	if (nextface != FACING_NONE) {
-		HeadToCoord = Adjacent_Cell(LinkedTo->PositionCell, nextface).As_Coord();
+		HeadToCoord = Adjacent_Cell(LinkedTo->Get_Cell(), nextface).As_Coord();
 		HeadToCoord.Z = Map.Get_Height_GL(HeadToCoord);
-		if (LinkedTo->PositionCoord.Z >= HeadToCoord.Z + 2 * LEVEL_LEPTON_H + LEVEL_LEPTON_H) {
+		if (LinkedTo->Get_Coord().Z >= HeadToCoord.Z + 2 * LEVEL_LEPTON_H + LEVEL_LEPTON_H) {
 			HeadToCoord.Z += BRIDGE_LEPTON_HEIGHT;
 		}
 
@@ -451,7 +451,7 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 
 		if (!LinkedTo->IsActive || LinkedTo->IsInLimbo || LinkedTo->IsFalling) return(MOVE_NO);
 
-		if (LinkedTo->IsOnBridge != (int)Map[Adjacent_Cell(LinkedTo->PositionCoord, nextface)].IsUnderBridge) {
+		if (LinkedTo->IsOnBridge != (int)Map[Adjacent_Cell(LinkedTo->Get_Coord(), nextface)].IsUnderBridge) {
 			LinkedTo->IsPlanningToLook = true;
 		}
 
@@ -489,13 +489,13 @@ MoveType HoverLocomotionClass::While_Moving(bool first_pass)
 				Start_Of_Move(0);
 				ok = While_Moving(false);
 			} else {
-				if (LinkedTo->Center_Coord().Distance_To(DestinationCoord) < Rule->CloseEnoughDistance && abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H && Map[LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
+				if (LinkedTo->Center_Coord().Distance_To(DestinationCoord) < Rule->CloseEnoughDistance && abs(DestinationCoord.Z - LinkedTo->Get_Coord().Z) < 2 * LEVEL_LEPTON_H && Map[LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
 					Stop_Moving();
 					LinkedTo->Assign_Destination(NULL);
 					return(MOVE_NO);
 				}
 				bool bridge;
-				if (!Map[HeadToCoord].IsUnderBridge || abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - Map[HeadToCoord].Height) <= 2) {
+				if (!Map[HeadToCoord].IsUnderBridge || abs(LinkedTo->Get_Coord().Z / LEVEL_LEPTON_H - Map[HeadToCoord].Height) <= 2) {
 					bridge = false;
 				} else {
 					bridge = true;
@@ -788,7 +788,7 @@ void HoverLocomotionClass::Start_Of_Move(int num)
 	facing = LinkedTo->Path[0];
 
 	if (DestinationCoord != COORD_NONE) {
-		if (LinkedTo->PositionCell == DestinationCoord.As_Cell() && abs(LinkedTo->Destination_Coord().Z - DestinationCoord.Z) < 2 * LEVEL_LEPTON_H) {
+		if (LinkedTo->Get_Cell() == DestinationCoord.As_Cell() && abs(LinkedTo->Destination_Coord().Z - DestinationCoord.Z) < 2 * LEVEL_LEPTON_H) {
 			Stop_Moving();
 			LinkedTo->Assign_Destination(NULL);
 			return;
@@ -804,7 +804,7 @@ void HoverLocomotionClass::Start_Of_Move(int num)
 			return;
 		}
 
-		if (LinkedTo->PositionCell == DestinationCoord.As_Cell() && abs(LinkedTo->Destination_Coord().Z - DestinationCoord.Z) <= 2 * LEVEL_LEPTON_H) {
+		if (LinkedTo->Get_Cell() == DestinationCoord.As_Cell() && abs(LinkedTo->Destination_Coord().Z - DestinationCoord.Z) <= 2 * LEVEL_LEPTON_H) {
 			return;
 		}
 
@@ -832,7 +832,7 @@ void HoverLocomotionClass::Start_Of_Move(int num)
 			**	desired. This is quite necessary since it is typical to move
 			**	several units with the same mouse click.
 			*/
-			if (!LinkedTo->Is_On_Priority_Mission() && LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && (LinkedTo->Mission == MISSION_MOVE || LinkedTo->Mission == MISSION_GUARD_AREA)) {
+			if (!LinkedTo->Is_On_Priority_Mission() && LinkedTo->Distance(DestinationCoord) < Rule->CloseEnoughDistance && (LinkedTo->Get_Mission() == MISSION_MOVE || LinkedTo->Get_Mission() == MISSION_GUARD_AREA)) {
 				LinkedTo->Assign_Destination(NULL);
 				if (!LinkedTo->IsActive) return;
 			} else {
@@ -882,7 +882,7 @@ void HoverLocomotionClass::Start_Of_Move(int num)
 			MoveType ok = LinkedTo->Can_Enter_Cell(&Map[cell], LinkedTo->Path[0], LinkedTo->Get_Cell_Height());
 			if (ok == MOVE_TEMP) {
 				CellClass * cellptr = &Map[cell];
-				ObjectClass * blockage = cellptr->Cell_Techno(Point2D(0, 0), LinkedTo->PositionCoord.Z > Map.Get_Height_GL(cell) + 3 * LEVEL_LEPTON_H);
+				ObjectClass * blockage = cellptr->Cell_Techno(Point2D(0, 0), LinkedTo->Get_Coord().Z > Map.Get_Height_GL(cell) + 3 * LEVEL_LEPTON_H);
 				if (blockage && LinkedTo->House->Is_Ally(blockage)) {
 
 					/*
@@ -891,13 +891,13 @@ void HoverLocomotionClass::Start_Of_Move(int num)
 					**	object can just say "good enough" and stop here.
 					*/
 					if (LinkedTo->Center_Coord().Distance_To(DestinationCoord) < Rule->CloseEnoughDistance && !LinkedTo->In_Radio_Contact() &&
-						abs(DestinationCoord.Z - LinkedTo->PositionCoord.Z) < 2 * LEVEL_LEPTON_H && Map[LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
+						abs(DestinationCoord.Z - LinkedTo->Get_Coord().Z) < 2 * LEVEL_LEPTON_H && Map[LinkedTo->Get_Coord()].Land_Type() != LAND_TUNNEL) {
 
 						Stop_Moving();
 						LinkedTo->Assign_Destination(NULL);
 						return;
 					} else {
-						bool bridge = (cellptr->IsUnderBridge && abs(LinkedTo->PositionCoord.Z / LEVEL_LEPTON_H - cellptr->Height) > 2);
+						bool bridge = (cellptr->IsUnderBridge && abs(LinkedTo->Get_Coord().Z / LEVEL_LEPTON_H - cellptr->Height) > 2);
 						cellptr->Incoming(COORD_NONE, true, true, bridge);
 					}
 				}
@@ -938,7 +938,7 @@ bool HoverLocomotionClass::Power_Off(void)
 /// <returns>bool; Is the object still under power?</returns>
 bool HoverLocomotionClass::Is_Powered(void)
 {
-	if (!BASECLASS::Is_Powered() && LinkedTo->HeightAGL <= 0) {
+	if (!BASECLASS::Is_Powered() && LinkedTo->Get_Height_AGL() <= 0) {
 		return(false);
 	}
 	return(true);
@@ -966,11 +966,11 @@ bool HoverLocomotionClass::Is_Ion_Sensitive(void)
 		}
 	}
 
-	bptr = Map[(Coord const &)LinkedTo->PositionCoord].Cell_Building();
+	bptr = Map[(Coord const &)LinkedTo->Get_Coord()].Cell_Building();
 
 	if (bptr != NULL && bptr->Class->IsWeaponsFactory) {
 
-		Cell diff = LinkedTo->PositionCoord.As_Cell() - bptr->PositionCoord.As_Cell();
+		Cell diff = LinkedTo->Get_Coord().As_Cell() - bptr->Get_Coord().As_Cell();
 
 		if (diff.X == 0 && diff.Y == 1) {
 			return(false);
@@ -1001,7 +1001,7 @@ bool HoverLocomotionClass::Push(DirType dir)
 	if (Is_Powered() && !WasPushed) {
 
 		FacingType face = dir.As_Facing();
-		Cell cell = Adjacent_Cell(LinkedTo->PositionCell, face);
+		Cell cell = Adjacent_Cell(LinkedTo->Get_Cell(), face);
 
 		FootClass * link = LinkedTo;
 
@@ -1018,7 +1018,7 @@ bool HoverLocomotionClass::Push(DirType dir)
 				HeadToCoord = cell;
 				HeadToCoord.Z = Map.Get_Height_GL(HeadToCoord);
 
-				if (LinkedTo->PositionCoord.Z >= HeadToCoord.Z + 2 * LEVEL_LEPTON_H + LEVEL_LEPTON_H) {
+				if (LinkedTo->Get_Coord().Z >= HeadToCoord.Z + 2 * LEVEL_LEPTON_H + LEVEL_LEPTON_H) {
 					HeadToCoord.Z += BRIDGE_LEPTON_HEIGHT;
 				}
 
@@ -1112,7 +1112,7 @@ LayerType HoverLocomotionClass::In_Which_Layer(void)
 /// </summary>
 void HoverLocomotionClass::Start(void)
 {
-	bool anew = HeadToCoord == COORD_NONE || LinkedTo->PositionCell == HeadToCoord.As_Cell();
+	bool anew = HeadToCoord == COORD_NONE || LinkedTo->Get_Cell() == HeadToCoord.As_Cell();
 
 	Height = 1.0;
 	LinkedTo->Set_Speed(1.0);

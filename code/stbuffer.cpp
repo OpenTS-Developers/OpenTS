@@ -76,7 +76,7 @@ StaticBufferClass::Entry * StaticBufferClass::Add(Surface & surface, SurfaceRegi
 	header->Height = region.Bounds.Height;
 	header->Data = Cursor;
 
-	unsigned char * data = (unsigned char *)surface.Lock(region.Bounds.TopLeft);
+	unsigned char * data = (unsigned char *)surface.Lock(region.Bounds.Top_Left());
 
 	RLEEngine rle;
 	int line = 0;
@@ -123,7 +123,7 @@ StaticBufferClass::Entry * StaticBufferClass::Add(Surface & surface, Rect const 
 	header->Height = cliprect.Height;
 	header->Data = Cursor;
 
-	unsigned char * data = (unsigned char *)surface.Lock(cliprect.TopLeft);
+	unsigned char * data = (unsigned char *)surface.Lock(cliprect.Top_Left());
 
 	RLEEngine rle;
 	int line = 0;
