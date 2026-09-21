@@ -1033,3 +1033,41 @@ test('Every building placement path asks whether the overlay may be built over',
 		'a computer house running a wall line asks it',
 	);
 });
+
+test('The sidebar offers only a type some factory can build', () => {
+	const buildables = functionBody(source('code/building.cpp'), 'void BuildingClass::Update_Buildables(void)');
+
+	assert.match(
+		buildables,
+		/auto should_be_on_sidebar = \[this\]\(ObjectTypeClass const \* type\) \{\s*return\(PlayerPtr->Can_Build\(type, false, true\) != 0\s*&& \(type->Can_Be_Built_At\(this, false, false, PlayerPtr\) \|\| type->Who_Can_Build_Me\(true, false, false, PlayerPtr\) != NULL\)\);/,
+		'a cameo needs a buildable type and a factory both, and a build-limited type still counts',
+	);
+
+	assert.equal(
+		buildables.match(/should_be_on_sidebar\(/g)?.length,
+		4,
+		'all four type loops ask through the one test',
+	);
+
+	assert.equal(
+		buildables.match(/Can_Build\(/g)?.length,
+		1,
+		'and none of them asks a second way',
+	);
+});
+
+test('The sidebar sweep re-checks buildability behind its rules key', () => {
+	const recalc = functionBody(source('code/sidebar.cpp'), 'bool SidebarClass::StripClass::Recalc(void)');
+
+	assert.match(
+		recalc,
+		/ok = who != NULL && who->House->Can_Build\(tech, !Rule->IsRecheckPrerequisites, true\);/,
+		'the key supplies the forced argument, and the result stays a truth test so a build-limited cameo is kept',
+	);
+
+	assert.match(
+		recalc,
+		/EventClass::ABANDON_COUNT/,
+		'the abandon travels as an event, because the sweep runs for the local player alone',
+	);
+});

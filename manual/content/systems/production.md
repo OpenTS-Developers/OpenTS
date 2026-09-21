@@ -128,7 +128,7 @@ For a BuildingType, its `Owner=` list must not be empty. The house must also own
 
 ### Build-limit gate
 
-The last gate, and the only one the factory search puts again on its own; [build limits](#build-limits) covers it.
+The last gate, and the only one the factory search puts again on its own; [build limits](#build-limits) covers it. [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) makes [the sidebar sweep](/systems/sidebar/#what-removes-a-cameo) put all four again instead, and cancel production of whatever fails.
 
 ### Computer houses
 

@@ -32,6 +32,7 @@ namespace {
 using Bytes = std::vector<std::byte>;
 using VariableDataType = decltype(std::declval<EventClass>().Data.Variable);
 using NetworkReportType = decltype(std::declval<EventClass>().Data.NetworkReport);
+using AbandonCountType = decltype(std::declval<EventClass>().Data.AbandonCount);
 
 constexpr int Sender = 3;
 constexpr int Frame = 120;
@@ -153,9 +154,11 @@ void Test_Reader(void)
 void Test_Event_Contract(void)
 {
 	Check(EventClass::LATENCYFUDGE == 35, "the last inherited event keeps numeric ID 35");
-	Check(EventClass::NETWORK_REPORT == 36 && EventClass::LAST_EVENT == 37, "the timing report appends without renumbering inherited events");
+	Check(EventClass::NETWORK_REPORT == 36 && EventClass::ABANDON_COUNT == 37 && EventClass::LAST_EVENT == 38, "the timing report and the multi-abandon append without renumbering inherited events");
 	Check(EventClass::EventLength[EventClass::NETWORK_REPORT] == sizeof(NetworkReportType) && sizeof(NetworkReportType) == 6, "NETWORK_REPORT uses its six-byte payload");
 	Check(std::strcmp(EventClass::EventNames[EventClass::NETWORK_REPORT], "NETWORK_REPORT") == 0, "NETWORK_REPORT has a diagnostic name");
+	Check(EventClass::EventLength[EventClass::ABANDON_COUNT] == sizeof(AbandonCountType) && sizeof(AbandonCountType) == 12, "ABANDON_COUNT uses its twelve-byte payload");
+	Check(std::strcmp(EventClass::EventNames[EventClass::ABANDON_COUNT], "ABANDON_COUNT") == 0, "ABANDON_COUNT has a diagnostic name");
 	Check(EventClass::NETWORK_RTT_UNAVAILABLE == UINT16_MAX, "the unavailable RTT sentinel is uint16 max");
 	Check(sizeof(EventClass) == 46 && EnvelopeSize == 17, "the report fits without changing full or envelope event layouts");
 }

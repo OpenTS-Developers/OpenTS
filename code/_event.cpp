@@ -58,6 +58,7 @@ unsigned char EventClass::EventLength[EventClass::LAST_EVENT] = {
 	size_of(EventClass, Data.General),               // REMOVEPLAYER
 	size_of(EventClass, Data.General),               // LATENCYFUDGE
 	size_of(EventClass, Data.NetworkReport),         // NETWORK_REPORT
+	size_of(EventClass, Data.AbandonCount),          // ABANDON_COUNT
 };
 
 char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
@@ -98,4 +99,5 @@ char const * EventClass::EventNames[EventClass::LAST_EVENT] = {
 	"REMOVEPLAYER",
 	"LATENCYFUDGE",
 	"NETWORK_REPORT",
+	"ABANDON_COUNT",
 };

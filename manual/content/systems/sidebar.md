@@ -7,6 +7,7 @@ keys:
   - CameoSortOrder
   - CreditTicks
   - MaximumQueuedObjects
+  - RecheckPrerequisites
   - ScoldSound
   - SidebarCameoText
   - SidebarSorting
@@ -59,7 +60,7 @@ A strip holds 225 entries and shows at most 60 of them at a time, so the arrows 
 
 ### What removes a cameo
 
-The pass that revalidates the strips asks a much narrower question than the one that put a cameo there. It skips tech level, prerequisites and ownership outright and drops straight to the build limit. A cameo therefore leaves a strip on **Any of** these tests:
+The pass that revalidates the strips asks a much narrower question than the one that put a cameo there. It skips tech level, prerequisites and ownership outright and drops straight to the build limit, unless [`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) puts all four back. A cameo therefore leaves a strip on **Any of** these tests:
 
 - the player owns no structure that could produce that kind of object — **All of:** it is on the map, it is neither being sold nor queued to be sold, its [`Factory=`](/keys/factory/) names that kind of object, and its [`Owner=`](/keys/owner/) overlaps the object's;
 - the type's [`BuildLimit=`](/keys/buildlimit/) is zero or below and has been spent.
@@ -70,6 +71,8 @@ The same factory search runs before a cameo is added, so a type no structure the
 
 :::caution[Losing a prerequisite leaves the cameo in place]
 Selling or losing the structure a type names in [`Prerequisite=`](/keys/prerequisite/) does not remove that type's cameo, does not darken it, and does not stop it answering a click. The order that click sends is accepted as well, because the check made when production starts skips prerequisites in the same way. A house can go on building from a cameo whose prerequisite is rubble.
+
+[`RecheckPrerequisites=yes`](/keys/recheckprerequisites/) is what changes this. The cameo leaves on the next sweep, and everything the factory holds of that type is cancelled with it.
 :::
 
 A removal closes the gap in the strip. The strip then tries to keep whichever of the previously visible entries survived on the row it already occupied. When none survived, it returns to its top.

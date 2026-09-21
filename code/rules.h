@@ -2083,6 +2083,12 @@ class RulesClass
 		bool IsMultiMCV;
 
 		/*
+		 * If true, the sidebar also rechecks prerequisites and tech level, cancelling production
+		 * of anything that fails.
+		 */
+		bool IsRecheckPrerequisites;
+
+		/*
 		 * If the fog is to be blended evenly into the terrain beneath it, then this flag
 		 * will be true. Otherwise the fog is dithered on, covering every other pixel in a
 		 * checkerboard so that half the terrain still shows through.
