@@ -40,7 +40,7 @@ related:
     id: TACTION_TOGGLE_TRAIN_CARGO
 ---
 
-A crate is an overlay, not an object. Any OverlayType with [`Crate=yes`](/keys/crate/) counts as one. [`WoodCrateImg`](/keys/woodcrateimg/) names the overlay the engine places, and `WoodCrateImg` and [`CrateImg`](/keys/crateimg/) together name the two it recognizes as its own. Whether crates appear at all, how a result is chosen, and whether a collected crate is replaced all turn on whether the match is a campaign.
+A crate is an overlay, not an object. Any OverlayType with [`Crate=yes`](/keys/crate/) counts as one. [`WoodCrateImg`](/keys/woodcrateimg/) names the overlay the engine places, and `WoodCrateImg` and [`CrateImg`](/keys/crateimg/) together name the two it recognizes as its own. Whether the engine scatters crates of its own, how a result is chosen, and whether a collected crate is replaced all turn on whether the match is a campaign. A crate a map draws is kept whatever the match.
 
 ## Placing crates
 
@@ -52,7 +52,7 @@ Each of those crates goes through the placement search below, and each one that 
 
 ### Crates drawn into a map
 
-A map's overlay layer can hold crates, and they survive only in a campaign. Outside one, every crate found in the overlay layer is discarded as the map is read. Cells outside the playfield are dropped for all overlays alike.
+A map's overlay layer can hold crates, and they are kept whatever the match is. Cells outside the playfield are dropped for all overlays alike. The match option governs random placement alone, so a map author's crates stand even where it is switched off.
 
 A crate kept this way is placed while the scenario is still loading, which suppresses the legality test described below. It lands exactly where the map author drew it, on any ground that is flat or has one of the four standard ramps. A standard ramp falls away toward one of the map's four directions and has two of the cell's corners raised. The corner, steep and double ramp shapes lie outside that set, and no crate is placed on one however it arrives. A kept crate is also never registered in a tracking slot, so no timer is ever attached to it and nothing expires it. It stays where it was drawn until something collects it.
 

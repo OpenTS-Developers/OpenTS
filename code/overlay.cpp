@@ -64,7 +64,6 @@
 #include "savestream.h"
 #include "scenario.h"
 #include "scheme.h"
-#include "session.h"
 #include "surface.h"
 #include "tactical.h"
 #include "tiberium.h"
@@ -414,22 +413,16 @@ void OverlayClass::Read_INI(CCINIClass const & ini)
 					if (classid != OVERLAY_NONE && (OverlayTypes[classid]->Get_Image_Data() != NULL || OverlayTypes[classid]->CellAnim)) {
 
 						/*
-						**	Don't allow placement of crates in the multiplayer scenarios.
+						**	Don't allow placement of overlays on the top or bottom rows of
+						**	the map.
 						*/
-						if (Session.Type == GAME_NORMAL || !OverlayTypes[classid]->IsCrate) {
+						if (Map.In_Radar(cell)) {
+							unsigned char old_overlay_data = (&Map[cell])->OverlayData;
+							new OverlayClass(OverlayTypes[classid], cell);
 
-							/*
-							**	Don't allow placement of overlays on the top or bottom rows of
-							**	the map.
-							*/
-							if (Map.In_Radar(cell)) {
-								unsigned char old_overlay_data = (&Map[cell])->OverlayData;
-								new OverlayClass(OverlayTypes[classid], cell);
-
-								if ((int)classid == OVERLAY_BRIDGE1 || (int)classid == OVERLAY_BRIDGE2 ||
-									(int)classid == OVERLAY_RAIL_BRIDGE1 || (int)classid == OVERLAY_RAIL_BRIDGE2) {
-									(&Map[cell])->OverlayData = old_overlay_data;
-								}
+							if ((int)classid == OVERLAY_BRIDGE1 || (int)classid == OVERLAY_BRIDGE2 ||
+								(int)classid == OVERLAY_RAIL_BRIDGE1 || (int)classid == OVERLAY_RAIL_BRIDGE2) {
+								(&Map[cell])->OverlayData = old_overlay_data;
 							}
 						}
 					}
