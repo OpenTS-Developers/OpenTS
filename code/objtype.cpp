@@ -294,6 +294,31 @@ void ObjectTypeClass::One_Time(void)
 }
 
 
+/// <summary>
+/// Can the building produce this type for the house, busy or not?
+/// </summary>
+/// <param name="needsnopower">Must the factory be powered?</param>
+/// <param name="legal">Must the house also meet the prerequisites and tech level?</param>
+bool ObjectTypeClass::Can_Be_Built_At(BuildingClass const * building, bool needsnopower, bool legal, HouseClass const * house) const
+{
+	if (building->IsInLimbo || building->House != house || building->Class->ToBuild != RTTI) {
+		return(false);
+	}
+	if ((needsnopower && !building->IsOn) || building->Mission == MISSION_DECONSTRUCTION || building->MissionQueue == MISSION_DECONSTRUCTION) {
+		return(false);
+	}
+	if (legal && building->House->Can_Build(this, true, true) <= 0) {
+		return(false);
+	}
+
+	int const ownable = Get_Ownable();
+	if ((building->Class->Get_Ownable() & ownable) == 0) {
+		return(false);
+	}
+	return(!Rule->BuildConst.Is_In_List(building->Class) || Rule->IsMultiMCV || (building->ActLike != HOUSE_NONE && ((1L << building->ActLike) & ownable) != 0));
+}
+
+
 /***********************************************************************************************
  * ObjectTypeClass::Who_Can_Build_Me -- Determine what building can build this object type.    *
  *                                                                                             *
@@ -323,20 +348,12 @@ BuildingClass * ObjectTypeClass::Who_Can_Build_Me(bool intheory, bool needsnopow
 {
 	BuildingClass * freebuilding = NULL;
 	BuildingClass * anybuilding = NULL;
-	int ownable = Get_Ownable();
 
 	for (int index = 0; index < Buildings.Count(); index++) {
 		BuildingClass * building = Buildings[index];
 		assert(building != NULL);
 
-		if (!building->IsInLimbo &&
-			building->House == house &&
-			building->Class->ToBuild == RTTI &&
-			(!needsnopower || building->IsOn) &&
-			building->Mission != MISSION_DECONSTRUCTION && building->MissionQueue != MISSION_DECONSTRUCTION &&
-			(!legal || building->House->Can_Build(this, true, true) > 0) &&
-			(building->Class->Get_Ownable() & ownable) &&
-			(!Rule->BuildConst.Is_In_List(building->Class) || Rule->IsMultiMCV || (building->ActLike != HOUSE_NONE && ((1L << building->ActLike) & ownable) != 0))) {
+		if (Can_Be_Built_At(building, needsnopower, legal, house)) {
 
 			/*
 			**	HACK ALERT: Helipads can build aircraft and airstrips can build

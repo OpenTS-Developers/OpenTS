@@ -684,7 +684,7 @@ test('A house counts every listed construction yard type towards its own', () =>
 		assert.doesNotMatch(source(path), /BuildConst\[0\]/, `${path} reads no construction yard by position`);
 	}
 	assert.match(
-		functionBody(source('code/objtype.cpp'), 'BuildingClass * ObjectTypeClass::Who_Can_Build_Me(bool intheory, bool needsnopower, bool legal, HouseClass * house) const'),
+		functionBody(source('code/objtype.cpp'), 'bool ObjectTypeClass::Can_Be_Built_At(BuildingClass const * building, bool needsnopower, bool legal, HouseClass const * house) const'),
 		/Rule->BuildConst\.Is_In_List\(building->Class\)/,
 		'every listed yard produces only for the country its record names',
 	);

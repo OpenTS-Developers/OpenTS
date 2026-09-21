@@ -28,7 +28,7 @@ The panel fills a fixed-width column against the right edge of the screen. From 
 
 ## What the strips list
 
-Every structure the player owns that is on the map, discovered and switched on offers a whole category at once. The engine reads that structure's [`Factory=`](/keys/factory/) and walks the type list for the kind it names (`[BuildingTypes]`, `[VehicleTypes]`, `[InfantryTypes]` or `[AircraftTypes]`), adding every type on it that [the house may build](/systems/production/#what-a-house-may-build). A type already listed is not added twice.
+Every structure the player owns that is on the map, discovered and switched on offers a whole category at once. The engine reads that structure's [`Factory=`](/keys/factory/) and walks the type list for the kind it names (`[BuildingTypes]`, `[VehicleTypes]`, `[InfantryTypes]` or `[AircraftTypes]`), adding every type on it that [the house may build](/systems/production/#what-a-house-may-build) and that some structure the house owns could produce. A type already listed is not added twice.
 
 The left strip holds structures. The right strip holds everything else: vehicles, infantry, aircraft and [superweapon cameos](/systems/superweapons/#the-sidebar-cameo).
 
@@ -65,6 +65,8 @@ The pass that revalidates the strips asks a much narrower question than the one 
 - the type's [`BuildLimit=`](/keys/buildlimit/) is zero or below and has been spent.
 
 That first test is [the factory search](/systems/production/#what-counts-as-a-factory) without its switched-on check, construction-yard clause included. That is why switching every factory of a category off darkens those cameos without removing them. A superweapon's cameo leaves when no structure the house owns supplies it any more.
+
+The same factory search runs before a cameo is added, so a type no structure the house owns could produce never reaches a strip at all. It leaves one only when the structure that could have produced it is lost.
 
 :::caution[Losing a prerequisite leaves the cameo in place]
 Selling or losing the structure a type names in [`Prerequisite=`](/keys/prerequisite/) does not remove that type's cameo, does not darken it, and does not stop it answering a click. The order that click sends is accepted as well, because the check made when production starts skips prerequisites in the same way. A house can go on building from a cameo whose prerequisite is rubble.

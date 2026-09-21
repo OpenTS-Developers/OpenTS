@@ -209,6 +209,7 @@ class ObjectTypeClass : public AbstractTypeClass
 		virtual ObjectClass * Create_One_Of(HouseClass *) const = 0;
 		virtual Cell const * Occupy_List(bool placement=false) const;
 		virtual BuildingClass * Who_Can_Build_Me(bool intheory, bool needsnopower, bool legal, HouseClass * house) const;
+		bool Can_Be_Built_At(BuildingClass const * building, bool needsnopower, bool legal, HouseClass const * house) const;
 		virtual void const * Get_Cameo_Data(void) const;
 		virtual void const * Get_Image_Data(void) const {return(ImageData);};
 

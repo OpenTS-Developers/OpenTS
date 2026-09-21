@@ -114,6 +114,7 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "aircraft.h"
+#include "airctype.h"
 #include "anim.h"
 #include "animtype.h"
 #include "blight.h"
@@ -3270,6 +3271,15 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 void BuildingClass::Update_Buildables(void)
 {
 	if (House == PlayerPtr && !IsInLimbo && IsDiscoveredByPlayer && IsOn) {
+
+		// This must match the test the sidebar sweep removes cameos by, or the two would add and
+		// remove a cameo in turn. Can_Build's -1 means a type at its build limit, which stays.
+		// Asking this factory first usually saves scanning every building.
+		auto should_be_on_sidebar = [this](ObjectTypeClass const * type) {
+			return(PlayerPtr->Can_Build(type, false, true) != 0
+				&& (type->Can_Be_Built_At(this, false, false, PlayerPtr) || type->Who_Can_Build_Me(true, false, false, PlayerPtr) != NULL));
+		};
+
 		switch (Class->ToBuild) {
 			StructType i;
 			UnitType u;
@@ -3278,7 +3288,7 @@ void BuildingClass::Update_Buildables(void)
 
 			case RTTI_BUILDINGTYPE:
 				for (i = STRUCT_FIRST; i < BuildingTypes.Count(); i++) {
-					if (PlayerPtr->Can_Build((const ObjectTypeClass *)BuildingTypes[i], false, true)) {
+					if (should_be_on_sidebar(BuildingTypes[i])) {
 						Map.Add(RTTI_BUILDINGTYPE, i);
 					}
 				}
@@ -3286,7 +3296,7 @@ void BuildingClass::Update_Buildables(void)
 
 			case RTTI_UNITTYPE:
 				for (u = UNIT_FIRST; u < UnitTypes.Count(); u++) {
-					if (PlayerPtr->Can_Build((const ObjectTypeClass *)UnitTypes[u], false, true)) {
+					if (should_be_on_sidebar(UnitTypes[u])) {
 						Map.Add(RTTI_UNITTYPE, u);
 					}
 				}
@@ -3294,7 +3304,7 @@ void BuildingClass::Update_Buildables(void)
 
 			case RTTI_INFANTRYTYPE:
 				for (f = INFANTRY_FIRST; f < InfantryTypes.Count(); f++) {
-					if (PlayerPtr->Can_Build((const ObjectTypeClass *)InfantryTypes[f], false, true)) {
+					if (should_be_on_sidebar(InfantryTypes[f])) {
 						Map.Add(RTTI_INFANTRYTYPE, f);
 					}
 				}
@@ -3302,7 +3312,7 @@ void BuildingClass::Update_Buildables(void)
 
 			case RTTI_AIRCRAFTTYPE:
 				for (a = AIRCRAFT_FIRST; a < AircraftTypes.Count(); a++) {
-					if (PlayerPtr->Can_Build((const ObjectTypeClass *)AircraftTypes[a], false, true)) {
+					if (should_be_on_sidebar(AircraftTypes[a])) {
 						Map.Add(RTTI_AIRCRAFTTYPE, a);
 					}
 				}
