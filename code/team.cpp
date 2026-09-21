@@ -590,7 +590,7 @@ void TeamClass::AI(void)
 			Script->Next_Mission();
 			FootClass * techno = Member;
 			while (techno) {
-				techno->ArchiveTarget = NULL;
+				techno->Assign_Archive_Target(NULL);
 				techno = techno->Member;
 			}
 
@@ -751,7 +751,7 @@ void TeamClass::Regroup(void)
 		for (int index = 0; index < Buildings.Count(); index++) {
 			BuildingClass * b = Buildings[index];
 
-			if (b != NULL && !b->IsInLimbo && b->House == House && b->PrimaryWeapon == NULL) {
+			if (b != NULL && !b->IsInLimbo && b->House == House && b->Get_Primary_Weapon() == NULL) {
 				Cell cell = b->Center_Coord().As_Cell();
 				int dist = b->Distance(Zone->Center_Coord()) * (Map.Cell_Threat(cell, *House) + 1);
 
@@ -917,7 +917,7 @@ bool TeamClass::Add(FootClass * obj)
 	**	If a common trigger is designated for this team type, then attach the
 	**	trigger to this team member.
 	*/
-	if (Tag != NULL && (!Class->OnTransOnly || obj->TClass->MaxPassengers > 0)) {
+	if (Tag != NULL && (!Class->OnTransOnly || obj->Techno_Type_Class()->MaxPassengers > 0)) {
 		obj->Attach_Tag(Tag);
 	}
 
@@ -980,7 +980,7 @@ bool TeamClass::Can_Add(FootClass * obj, int & typeindex) const
 	**	If the object is doing some mission that precludes it from joining
 	**	a team then don't add it.
 	*/
-	if (obj->Mission != MISSION_NONE && !MissionClass::Is_Recruitable_Mission(obj->Mission)) {
+	if (obj->Get_Mission() != MISSION_NONE && !MissionClass::Is_Recruitable_Mission(obj->Get_Mission())) {
 		return(false);
 	}
 
@@ -1004,7 +1004,7 @@ bool TeamClass::Can_Add(FootClass * obj, int & typeindex) const
 	/*
 	**	Aircraft that have no ammo for their weapons cannot be recruited into a team.
 	*/
-	if (obj->RTTI == RTTI_AIRCRAFT && obj->PrimaryWeapon != NULL && !obj->Ammo) {
+	if (obj->RTTI == RTTI_AIRCRAFT && obj->Get_Primary_Weapon() != NULL && !obj->Ammo) {
 		return(false);
 	}
 
@@ -1518,13 +1518,13 @@ void TeamClass::Calc_Center(AbstractClass *& center, AbstractClass *& close_memb
 				/*
 				**	Accumulate X and Y components of qualified team members.
 				*/
-				x += team_member->PositionCoord.X;
-				y += team_member->PositionCoord.Y;
+				x += team_member->Get_Coord().X;
+				y += team_member->Get_Coord().Y;
 				quantity++;
 
 				if (Class->IsGuardSlower && team_member->Is_Considered_Slow()) {
-					x += team_member->PositionCoord.X;
-					y += team_member->PositionCoord.Y;
+					x += team_member->Get_Coord().X;
+					y += team_member->Get_Coord().Y;
 					quantity++;
 				}
 
@@ -1607,7 +1607,7 @@ void TeamClass::Took_Damage(FootClass * , ResultType result, TechnoClass * sourc
 			/*
 			** Respond to the attack, but not if we're an aircraft or a LST.
 			*/
-			if (source && !House->Is_Ally(source) && !Is_A_Member(source) && Member && Member->RTTI != RTTI_AIRCRAFT && Member->PrimaryWeapon != NULL) {
+			if (source && !House->Is_Ally(source) && !Is_A_Member(source) && Member && Member->RTTI != RTTI_AIRCRAFT && Member->Get_Primary_Weapon() != NULL) {
 				if (Target != source) {
 
 					if (Class->IsAnnoyance) {
@@ -1623,7 +1623,7 @@ void TeamClass::Took_Damage(FootClass * , ResultType result, TechnoClass * sourc
 					if (Target != NULL) {
 						TechnoClass * techno = Dynamic_Cast<TechnoClass *>(Target);
 
-						if (techno != NULL && techno->PrimaryWeapon != NULL) {
+						if (techno != NULL && techno->Get_Primary_Weapon() != NULL) {
 							if (Zone == NULL || techno->In_Range(Zone->Center_Coord())) {
 								return;
 							}
@@ -1706,7 +1706,7 @@ void TeamClass::Coordinate_Attack(void)
 					unit->Assign_Mission(MISSION_CAPTURE);
 					unit->Assign_Target(Target);
 				} else {
-					if (unit->Mission != MISSION_ATTACK && unit->Mission != MISSION_ENTER && unit->Mission != MISSION_CAPTURE && (unit->Mission != MISSION_UNLOAD || !unit->Deploy_To_Fire())) {
+					if (unit->Get_Mission() != MISSION_ATTACK && unit->Get_Mission() != MISSION_ENTER && unit->Get_Mission() != MISSION_CAPTURE && (unit->Get_Mission() != MISSION_UNLOAD || !unit->Deploy_To_Fire())) {
 						unit->Transmit_Message(RADIO_OVER_OUT);
 						unit->Assign_Mission(MISSION_ATTACK);
 						unit->Assign_Target(NULL);
@@ -1718,7 +1718,7 @@ void TeamClass::Coordinate_Attack(void)
 					unit->Assign_Target(Target);
 				}
 
-				if (unit->RTTI != RTTI_AIRCRAFT || unit->PrimaryWeapon == NULL || unit->Ammo > 0) {
+				if (unit->RTTI != RTTI_AIRCRAFT || unit->Get_Primary_Weapon() == NULL || unit->Ammo > 0) {
 					has_attacker = true;
 				}
 			}
@@ -1762,7 +1762,7 @@ bool TeamClass::Coordinate_Regroup(void)
 
 		if (_Is_It_Playing(unit)) {
 
-			if (unit->Distance(Zone) > Rule->StrayDistance && (unit->Mission != MISSION_GUARD_AREA || unit->TarCom == NULL)) {
+			if (unit->Distance(Zone) > Rule->StrayDistance && (unit->Get_Mission() != MISSION_GUARD_AREA || unit->TarCom == NULL)) {
 				if (unit->NavCom == NULL) {
 // TCTCTC
 //				if (unit->NavCom == NULL || ::Distance(unit->NavCom, Zone) > Rule->StrayDistance) {
@@ -1779,7 +1779,7 @@ bool TeamClass::Coordinate_Regroup(void)
 				/*
 				**	The team is regrouping, so just sit here and wait.
 				*/
-				if (unit->Mission != MISSION_GUARD_AREA) {
+				if (unit->Get_Mission() != MISSION_GUARD_AREA) {
 					unit->Assign_Mission(MISSION_GUARD);
 					unit->Assign_Destination(NULL);
 				}
@@ -1831,8 +1831,8 @@ void TeamClass::Coordinate_Move(void)
 				if (!obj) {
 					break;
 				}
-				if (obj->TClass->Max_Passengers() > 0 && obj->ArchiveTarget == NULL) {
-					obj->ArchiveTarget = &Map[obj->Get_Coord()];
+				if (obj->Techno_Type_Class()->Max_Passengers() > 0 && obj->Fetch_Archive_Target() == NULL) {
+					obj->Assign_Archive_Target(&Map[obj->Get_Coord()]);
 				}
 				obj = obj->Member;
 			}
@@ -1853,11 +1853,11 @@ void TeamClass::Coordinate_Move(void)
 					finished = false;
 				}
 
-				if (unit->Mission == MISSION_UNLOAD || unit->MissionQueue == MISSION_UNLOAD) {
+				if (unit->Get_Mission() == MISSION_UNLOAD || unit->MissionQueue == MISSION_UNLOAD) {
 					finished = false;
 				}
 
-				if (_Is_It_Playing(unit) && unit->Mission != MISSION_UNLOAD && unit->MissionQueue != MISSION_UNLOAD) {
+				if (_Is_It_Playing(unit) && unit->Get_Mission() != MISSION_UNLOAD && unit->MissionQueue != MISSION_UNLOAD) {
 					int stray = Rule->StrayDistance;
 					if (unit->RTTI == RTTI_AIRCRAFT) {
 						stray *= 3;
@@ -1868,16 +1868,16 @@ void TeamClass::Coordinate_Move(void)
 					int dist = unit->Distance(Target);
 
 					if (dist > stray ||
-						(unit->HeightAGL < 0 &&
+						(unit->Get_Height_AGL() < 0 &&
 						Script->Get_Next_Mission().Mission != TMISSION_MOVE) ||
 						(unit->RTTI == RTTI_AIRCRAFT &&
 //						(unit->In_Which_Layer() == LAYER_TOP &&
-						((AircraftClass *)unit)->Height > 0 &&
+						((AircraftClass *)unit)->Get_Height() > 0 &&
 						&Map[unit->Center_Coord()] != Target &&
 						Script->Get_Next_Mission().Mission != TMISSION_MOVE)) {
 
 						if (!Class->IsAggressive || unit->TarCom == NULL) {
-							if (unit->Mission != MISSION_MOVE) {
+							if (unit->Get_Mission() != MISSION_MOVE) {
 								unit->Assign_Mission(MISSION_MOVE);
 								if (unit->Ready_To_Commence()) {
 									unit->Commence();
@@ -1892,7 +1892,7 @@ void TeamClass::Coordinate_Move(void)
 						}
 
 					} else {
-						if (unit->Mission == MISSION_MOVE && (unit->NavCom == NULL || unit->Distance(unit->NavCom) <= Rule->CloseEnoughDistance && !unit->Locomotion->Is_Moving())) {
+						if (unit->Get_Mission() == MISSION_MOVE && (unit->NavCom == NULL || unit->Distance(unit->NavCom) <= Rule->CloseEnoughDistance && !unit->Locomotion->Is_Moving())) {
 							if (unit->TarCom == NULL) {
 								unit->Assign_Destination(NULL);
 								unit->Enter_Idle_Mode();
@@ -2001,7 +2001,7 @@ bool TeamClass::Lagging_Units(void)
 				**	We need to order all of the other units to hold their
 				**	position until all lagging units catch up.
 				*/
-				if (unit->Mission != MISSION_GUARD) {
+				if (unit->Get_Mission() != MISSION_GUARD) {
 					unit->Assign_Mission(MISSION_GUARD);
 					unit->Assign_Destination(NULL);
 				}
@@ -2401,7 +2401,7 @@ void TeamClass::TMission_MOVE(TeamMissionClass * mission, bool first_time)
 		Assign_Mission_Target(&Map[movecell]);
 		if (!Is_Leaving_Map()) {
 			if (leader->Can_Enter_Cell(&Map[movecell], FACING_NONE, -1, NULL, false) != MOVE_OK) {
-				movecell = Map.Nearby_Location(movecell, leader->TClass->Speed);
+				movecell = Map.Nearby_Location(movecell, leader->Techno_Type_Class()->Speed);
 			}
 		}
 		if (movecell != CELL_NONE) {
@@ -2485,7 +2485,7 @@ void TeamClass::TMission_PATROL(TeamMissionClass * mission, bool first_time)
 	if (Frame % int(Rule->PatrolTime * TICKS_PER_MINUTE) == 0) {
 		FootClass * leader = Fetch_A_Leader();
 		if (leader != NULL) {
-			AbstractClass * target = leader->Greatest_Threat(ThreatType(THREAT_NORMAL|THREAT_RANGE), leader->PositionCoord, false);
+			AbstractClass * target = leader->Greatest_Threat(ThreatType(THREAT_NORMAL|THREAT_RANGE), leader->Get_Coord(), false);
 
 			if (target != NULL) {
 				Assign_Mission_Target(target);
@@ -2653,39 +2653,39 @@ void TeamClass::TMission_ATTACK(TeamMissionClass * mission, bool)
 		*/
 		switch (mission->Data.Quarry) {
 			case QUARRY_ANYTHING:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_NORMAL, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_NORMAL, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_BUILDINGS:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_BUILDINGS, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_BUILDINGS, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_HARVESTERS:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_TIBERIUM, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_TIBERIUM, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_INFANTRY:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_INFANTRY, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_INFANTRY, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_VEHICLES:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_VEHICLES, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_VEHICLES, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_FACTORIES:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_FACTORIES, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_FACTORIES, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_DEFENSE:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_BASE_DEFENSE, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_BASE_DEFENSE, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_THREAT:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_NORMAL, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_NORMAL, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			case QUARRY_POWER:
-				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_POWER, candidate->PositionCoord, Class->OnlyTargetHouseEnemy));
+				Assign_Mission_Target(candidate->Greatest_Threat(THREAT_POWER, candidate->Get_Coord(), Class->OnlyTargetHouseEnemy));
 				break;
 
 			default:
@@ -2769,7 +2769,7 @@ void TeamClass::TMission_LOAD(TeamMissionClass * mission, bool)
 		*/
 		if (_Is_It_Playing(unit) && unit != trans) {
 			finished = false;
-			if (unit->Mission != MISSION_ENTER) {
+			if (unit->Get_Mission() != MISSION_ENTER) {
 				unit->Assign_Mission(MISSION_ENTER);
 				unit->Assign_Target(NULL);
 				unit->Assign_Destination(trans);
@@ -2807,10 +2807,10 @@ void TeamClass::TMission_DEPLOY(TeamMissionClass * mission, bool)
 				UnitClass * unit = (UnitClass *)obj;
 				if (unit->Class->DeploysInto != NULL) {
 					finished = false;
-					if (unit->Mission != MISSION_UNLOAD) {
+					if (unit->Get_Mission() != MISSION_UNLOAD) {
 						unit->Mark(MARK_UP);
-						if (!unit->Class->DeploysInto->Legal_Placement(unit->PositionCell, NULL)) {
-							unit->Class->DeploysInto->Flush_For_Placement(unit->PositionCell, unit->House);
+						if (!unit->Class->DeploysInto->Legal_Placement(unit->Get_Cell(), NULL)) {
+							unit->Class->DeploysInto->Flush_For_Placement(unit->Get_Cell(), unit->House);
 							unit->Mark(MARK_DOWN);
 						} else {
 							unit->Mark(MARK_DOWN);
@@ -2906,8 +2906,8 @@ void TeamClass::TMission_DO(TeamMissionClass * mission, bool)
 				/*
 				**	The team is regrouping, so just sit here and wait.
 				*/
-				if (unit->TarCom == NULL && unit->NavCom == NULL && unit->Mission != do_mission && (do_mission != MISSION_GUARD || unit->Mission != MISSION_UNLOAD)) {
-					unit->ArchiveTarget = NULL;
+				if (unit->TarCom == NULL && unit->NavCom == NULL && unit->Get_Mission() != do_mission && (do_mission != MISSION_GUARD || unit->Get_Mission() != MISSION_UNLOAD)) {
+					unit->Assign_Archive_Target(NULL);
 					unit->Assign_Mission(do_mission);
 					unit->Assign_Target(NULL);
 					unit->Assign_Destination(NULL);
@@ -3009,7 +3009,7 @@ void TeamClass::TMission_HOUND_DOG(TeamMissionClass * mission, bool)
 					unit->Assign_Target(NULL);
 				}
 				if (trgt->TarCom != NULL) {
-					if (!unit->Locomotion->Is_Moving() && unit->Is_Weapon_Equipped() && unit->Mission == MISSION_GUARD) {
+					if (!unit->Locomotion->Is_Moving() && unit->Is_Weapon_Equipped() && unit->Get_Mission() == MISSION_GUARD) {
 						unit->Assign_Mission(MISSION_ATTACK);
 						unit->Assign_Target(trgt->TarCom);
 					}
@@ -3361,7 +3361,7 @@ void TeamClass::TMission_FULLY_LOADED(TeamMissionClass * mission, bool)
 {
 	FootClass *unit = Member;
 	while (unit != NULL) {
-		if (unit->TClass->Max_Passengers() > unit->Cargo.How_Many()) {
+		if (unit->Techno_Type_Class()->Max_Passengers() > unit->Cargo.How_Many()) {
 			return;
 		}
 		unit = unit->Member;
@@ -3380,7 +3380,7 @@ void TeamClass::TMission_UNLOAD_TRUCK(TeamMissionClass * mission, bool)
 	FootClass *unit = Member;
 	while (unit != NULL) {
 		if (unit->RTTI == RTTI_UNIT) {
-			if (!strcmpi(unit->TClass->IniName, "TRUCKB")) {
+			if (!strcmpi(unit->Techno_Type_Class()->IniName, "TRUCKB")) {
 				((UnitClass *)unit)->Class = UnitTypes[UnitTypeClass::From_Name("TRUCKA")];
 			}
 		}
@@ -3400,7 +3400,7 @@ void TeamClass::TMission_LOAD_TRUCK(TeamMissionClass * mission, bool)
 	FootClass *unit = Member;
 	while (unit != NULL) {
 		if (unit->RTTI == RTTI_UNIT) {
-			if (!strcmpi(unit->TClass->IniName, "TRUCKA")) {
+			if (!strcmpi(unit->Techno_Type_Class()->IniName, "TRUCKA")) {
 				((UnitClass *)unit)->Class = UnitTypes[UnitTypeClass::From_Name("TRUCKB")];
 			}
 		}
@@ -3463,9 +3463,9 @@ void TeamClass::TMission_MOVETO_BUILDING_WITH_PROPERTY(TeamMissionClass * missio
 
 			BuildingClass * bptr = Pick_Building_With_Property(btype, eptr, unit, prop, Class->OnlyTargetHouseEnemy);
 			if (bptr != NULL) {
-				MZoneType mzone = unit->TClass->MZone;
-				Cell cell = bptr->PositionCoord.As_Cell();
-				Cell newcell = Map.Nearby_Location(cell, unit->TClass->Speed, Map.Get_Cell_Zone(cell, mzone, unit->IsOnBridge), mzone, false, Point2D(3,3));
+				MZoneType mzone = unit->Techno_Type_Class()->MZone;
+				Cell cell = bptr->Get_Coord().As_Cell();
+				Cell newcell = Map.Nearby_Location(cell, unit->Techno_Type_Class()->Speed, Map.Get_Cell_Zone(cell, mzone, unit->IsOnBridge), mzone, false, Point2D(3,3));
 				if (newcell != CELL_NONE) {
 					Assign_Mission_Target(&Map[newcell]);
 				} else {
@@ -3531,7 +3531,7 @@ void TeamClass::TMission_SCOUT(TeamMissionClass * mission, bool)
 
 				FootClass * leader = Fetch_A_Leader();
 				if (leader != NULL) {
-					Cell cell = Map.Nearby_Location(target->PositionCoord.As_Cell(), leader->TClass->Speed);
+					Cell cell = Map.Nearby_Location(target->Get_Coord().As_Cell(), leader->Techno_Type_Class()->Speed);
 					if (cell != CELL_NONE) {
 						Assign_Mission_Target(&Map[cell]);
 					} else {
@@ -3683,7 +3683,7 @@ void TeamClass::TMission_UNLOAD(TeamMissionClass * mission, bool)
 				**	the mine layer. During this time, it should not be considered to have
 				**	finished its unload mission.
 				*/
-				if (Map[unit->Center_Coord()].Cell_Building() == NULL && unit->Mission != MISSION_UNLOAD) {
+				if (Map[unit->Center_Coord()].Cell_Building() == NULL && unit->Get_Mission() != MISSION_UNLOAD) {
 					unit->Assign_Destination(NULL);
 					unit->Assign_Target(NULL);
 					unit->Assign_Mission(MISSION_UNLOAD);
@@ -3703,22 +3703,22 @@ void TeamClass::TMission_UNLOAD(TeamMissionClass * mission, bool)
 		while (unit != NULL) {
 			FootClass *next = unit->Member;
 
-			if (unit->TClass->Max_Passengers() == 0 || (transportisaircraft && unit->RTTI != RTTI_AIRCRAFT)) {
+			if (unit->Techno_Type_Class()->Max_Passengers() == 0 || (transportisaircraft && unit->RTTI != RTTI_AIRCRAFT)) {
 				if (unload == 1 || unload == 3) {
 					Remove(unit);
 					unit->Assign_Target(NULL);
 					unit->Assign_Destination(NULL);
 				}
-			} else if (unit->TClass->Max_Passengers() > 0) {
+			} else if (unit->Techno_Type_Class()->Max_Passengers() > 0) {
 				if (Class->TransportsReturnOnUnload) {
 					Remove(unit);
 					unit->Assign_Target(NULL);
-					unit->Assign_Destination(unit->ArchiveTarget);
+					unit->Assign_Destination(unit->Fetch_Archive_Target());
 					unit->Assign_Mission(MISSION_MOVE);
 					if (unit->Ready_To_Commence()) {
 						unit->Commence();
 					}
-					unit->ArchiveTarget = NULL;
+					unit->Assign_Archive_Target(NULL);
 				}
 				else if (unload == 3 || unload == 2) {
 
@@ -3785,7 +3785,7 @@ void TeamClass::Team_Members(TEAM_MEMBER_LIST & list)
 
 	FootClass *unit = Member;
 	while (unit != NULL) {
-		list.Delete(unit->TClass);
+		list.Delete(unit->Techno_Type_Class());
 		unit = unit->Member;
 	}
 }
@@ -3873,7 +3873,7 @@ bool TeamClass::Ammo_Check(void) const
 
 	FootClass *unit = Member;
 	while (unit != NULL) {
-		if (unit->TClass->MaxAmmo <= 0 || unit->Ammo > 0) {
+		if (unit->Techno_Type_Class()->MaxAmmo <= 0 || unit->Ammo > 0) {
 			r = true;
 			break;
 		}

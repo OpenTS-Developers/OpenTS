@@ -106,7 +106,7 @@ test('Blocked Drop pod touchdown retains its exact damage, animation, and deleti
 	);
 	assertOrdered(process, [
 		'FootClass * linked = LinkedTo;',
-		'coord = linked->PositionCoord;',
+		'coord = linked->Get_Coord();',
 		'linked->Limbo();',
 		'LinkedTo->Locomotion = std::move(carried);',
 		'if (!linked->Unlimbo(coord, DIR_N)) {',

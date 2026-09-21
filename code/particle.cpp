@@ -109,7 +109,7 @@ ParticleClass::ParticleClass(ParticleTypeClass const * type, Coord const & origi
 	if (coord.Z <= Map.Get_Height_GL(origin)) {
 		coord.Z = Map.Get_Height_GL(origin);
 	}
-	PositionCoord = coord;
+	Set_Coord(coord);
 
 	float length = MovementDirection.Length();
 	Vector3 normalized;
@@ -305,7 +305,7 @@ void ParticleClass::Gas_Behavior_AI(void)
 			Slope_Vector(velocity, coord2, 1);
 		}
 
-		if (HeightAGL > 5 && (Frame % 2) == 0) {
+		if (Get_Height_AGL() > 5 && (Frame % 2) == 0) {
 			GasDrift.Z = std::max(-5, GasDrift.Z - 1);
 		} else {
 			GasDrift.Z = std::max(GasDrift.Z, 0);
@@ -374,7 +374,7 @@ void ParticleClass::Railgun_Behavior_AI(void)
 	Speed += Random_Double(-0.5, 0.5) * 0.1;
 	PrecisePosition += velocity;
 	Coord pos(PrecisePosition.X, PrecisePosition.Y, PrecisePosition.Z);
-	PositionCoord = pos;
+	Set_Coord(pos);
 	ColorAccum += Class->ColorSpeed + Random_Double(0.0, 0.05);
 	if (ColorAccum > 1.0) {
 		if (ColorIndex < Class->ColorList.Count() - 2) {
@@ -441,7 +441,7 @@ void ParticleClass::Smoke_Behavior_AI(void)
 /// </summary>
 void ParticleClass::Spark_Behavior_AI(void)
 {
-	Coord coord = PositionCoord;
+	Coord coord = Get_Coord();
 	MovementDirection.Z -= Rule->Gravity;
 	Vector3 velocity(MovementDirection.X, MovementDirection.Y, MovementDirection.Z);
 	Vector3 position(coord.X, coord.Y, coord.Z);
@@ -554,13 +554,13 @@ void ParticleClass::Fire_Behavior_AI(void)
 		RemainingDC--;
 		if (RemainingDC == 0 && Class->Damage && StateAI <= (char)Class->FinalDamageState) {
 			RemainingDC = Class->MaxDC;
-			CellClass *cellptr = &Map[(Coord const &)PositionCoord];
-			bool onbridge = cellptr->IsUnderBridge && PositionCoord.Z >= LEVEL_LEPTON_H * (cellptr->Height + BRIDGE_CELL_HEIGHT);
+			CellClass *cellptr = &Map[(Coord const &)Get_Coord()];
+			bool onbridge = cellptr->IsUnderBridge && Get_Coord().Z >= LEVEL_LEPTON_H * (cellptr->Height + BRIDGE_CELL_HEIGHT);
 			ObjectClass *optr = cellptr->Cell_Occupier(onbridge);
 			while (optr != NULL) {
-				optr->PositionCoord;
-				PositionCoord;
-				int dist = Distance(optr->PositionCoord);
+				optr->Get_Coord();
+				Get_Coord();
+				int dist = Distance(optr->Get_Coord());
 				const ParticleTypeClass *ptype = Class;
 				int damage = ptype->Damage;
 				if ( optr->Strength > 0 && optr->IsActive && optr != System->Source_Object() )
@@ -661,10 +661,10 @@ void ParticleClass::Behavior_AI(void)
 void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 {
 	if (Options.DetailLevel != 0 || Class->BehavesLike != BEHAVIOR_SMOKE && Class->BehavesLike != BEHAVIOR_SPARK) {
-		if (Debug_Map || MainWindow == 0 || !Scen->Special.IsFogOfWar || !Map.Is_Fogged((Coord const &)PositionCoord)) {
+		if (Debug_Map || MainWindow == 0 || !Scen->Special.IsFogOfWar || !Map.Is_Fogged((Coord const &)Get_Coord())) {
 
 			if (Class->BehavesLike != BEHAVIOR_SPARK && Class->BehavesLike != BEHAVIOR_RAILGUN) {
-				int height_offset = -15 - TacticalMap->Z_Lepton_To_Pixel(Height);
+				int height_offset = -15 - TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 				ShapeSet const * shape = (ShapeSet const *)Get_Image_Data();
 				if (shape != NULL) {
 					ShapeFlags_Type flags = ShapeFlags_Type(SHAPE_ALPHA|SHAPE_ZGRAD);
@@ -682,14 +682,14 @@ void ParticleClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				}
 			} else {
 				Point2D pixel;
-				TacticalMap->Coord_To_Pixel(PositionCoord, pixel);
+				TacticalMap->Coord_To_Pixel(Get_Coord(), pixel);
 				pixel.Y += TacticalRect.Y;
 				if (cliprect.Is_Point_Within(pixel)) {
 					Point2D alpha_point = pixel - Point2D(0, AlphaBuffer->Get_Bounds().Y);
 					int alpha = *AlphaBuffer->Get_Buffer_Offset(alpha_point);
 					if (alpha != 0) {
 						Point2D depth_point = pixel - Point2D(0, DepthBuffer->Get_Bounds().Y);
-						int zdepth = (unsigned short)(DepthBuffer->Get_Bounds().Y + DepthBuffer->Get_Scroll_Delta(pixel.Y)) - TacticalMap->Z_Lepton_To_Pixel(PositionCoord.Z) - 50;
+						int zdepth = (unsigned short)(DepthBuffer->Get_Bounds().Y + DepthBuffer->Get_Scroll_Delta(pixel.Y)) - TacticalMap->Z_Lepton_To_Pixel(Get_Coord().Z) - 50;
 						int depth = *DepthBuffer->Get_Buffer_Offset(depth_point);
 						if (zdepth < depth) {
 							RGBClass color1 = ColorIndex == 0 ? Color : Class->ColorList[ColorIndex];
@@ -759,7 +759,7 @@ void ParticleClass::Gas_Motion_AI(void)
 {
 	static const double _level_scale = 2.5;
 
-	Coord coord = PositionCoord;
+	Coord coord = Get_Coord();
 	Coord previous_coord = coord;
 
 	int wind_effect = Class->WindEffect;
@@ -781,7 +781,7 @@ void ParticleClass::Gas_Motion_AI(void)
 		}
 	}
 
-	PositionCoord = coord;
+	Set_Coord(coord);
 }
 
 
@@ -793,7 +793,7 @@ void ParticleClass::Gas_Motion_AI(void)
 /// </summary>
 void ParticleClass::Fire_Motion_AI(void)
 {
-	Coord coord = PositionCoord;
+	Coord coord = Get_Coord();
 	Coord previous_coord = coord;
 	if (Speed > 0.0) {
 		coord += FireMoveDelta;
@@ -807,7 +807,7 @@ void ParticleClass::Fire_Motion_AI(void)
 		}
 	}
 
-	PositionCoord = coord;
+	Set_Coord(coord);
 }
 
 

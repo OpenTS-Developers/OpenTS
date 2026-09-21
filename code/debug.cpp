@@ -185,7 +185,7 @@ void Debug_Key(unsigned input)
 					AircraftTypeClass *airtype = AircraftTypes[AircraftTypeClass::From_Name("ORCA")];
 					AircraftClass * air = new AircraftClass(airtype, PlayerPtr);
 					if (air) {
-						air->Height = 0;
+						air->Set_Height(0);
 						air->Unlimbo(coord, DIR_N);
 					}
 				}
@@ -196,7 +196,7 @@ void Debug_Key(unsigned input)
 					AircraftTypeClass *airtype = AircraftTypes[AircraftTypeClass::From_Name("ORCA")];
 					AircraftClass * air = new AircraftClass(airtype, PlayerPtr);
 					if (air) {
-						air->Height = 0;
+						air->Set_Height(0);
 						air->Unlimbo(coord, DIR_N);
 					}
 				}

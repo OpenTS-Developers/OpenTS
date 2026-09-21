@@ -303,7 +303,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		for (i = 0; i < Infantry.Count(); i++) {
 			infp = (InfantryClass *)Infantry[i];
 			if (infp->House==housep) {
-				Coord coord = infp->PositionCoord;
+				Coord coord = infp->Get_Coord();
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)infp->PrimaryFacing.Current().As_Dir256());
 
 				int tarcom_index = 0;
@@ -358,7 +358,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		for (i = 0; i < Units.Count(); i++) {
 			unitp = (UnitClass *)Units[i];
 			if (unitp->House==housep) {
-				Coord coord = unitp->PositionCoord;
+				Coord coord = unitp->Get_Coord();
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)unitp->PrimaryFacing.Current().As_Dir256() +
 					(int)unitp->SecondaryFacing.Current().As_Dir256());
 
@@ -414,7 +414,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		for (i = 0; i < Buildings.Count(); i++) {
 			bldgp = (BuildingClass *)Buildings[i];
 			if (bldgp->House==housep) {
-				Coord coord = bldgp->PositionCoord;
+				Coord coord = bldgp->Get_Coord();
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)bldgp->PrimaryFacing.Current().As_Dir256());
 				char type_text[32];
 				snprintf(type_text, sizeof(type_text), "%d(%s)", bldgp->Class->HeapID, bldgp->Class->Name());
@@ -439,7 +439,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		for (i = 0; i < Aircraft.Count(); i++) {
 			airp = (AircraftClass *)Aircraft[i];
 			if (airp->House==housep) {
-				Coord coord = airp->PositionCoord;
+				Coord coord = airp->Get_Coord();
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)airp->PrimaryFacing.Current().As_Dir256());
 				char type_text[32];
 				snprintf(type_text, sizeof(type_text), "%d(%s)", airp->Class->HeapID, airp->Class->Name());
@@ -476,7 +476,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 		for (j = 0; j < Map.Layer[i].Count(); j++) {
 			objp = Map.Layer[i][j];
 			if (objp->RTTI != RTTI_ANIM || objp->Fetch_ID() != -2) {
-				Coord coord = objp->PositionCoord;
+				Coord coord = objp->Get_Coord();
 				Add_CRC (&GameCRC, (int)coord.As_Int() + (int)objp->RTTI);
 				fprintf(fp,"Object %-5d %6d,%6d,%5d  ",j,coord.X,coord.Y,coord.Z);
 				if (objp->RTTI != RTTI_WAVE && objp->RTTI != RTTI_LIGHT) {
@@ -508,7 +508,7 @@ void Print_CRCs(EventClass const * events, int count, unsigned const * crc_ring,
 	for (i = 0; i < Logic.Count(); i++) {
 		objp = Logic[i];
 		if (objp->RTTI != RTTI_ANIM || objp->Fetch_ID() != -2) {
-			Coord coord = objp->PositionCoord;
+			Coord coord = objp->Get_Coord();
 			Add_CRC (&GameCRC, (int)coord.As_Int() + (int)objp->RTTI);
 			fprintf(fp,"Object %-5d %6d,%6d,%5d  ",i,coord.X,coord.Y,coord.Z);
 

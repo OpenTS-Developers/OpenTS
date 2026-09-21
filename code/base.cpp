@@ -223,7 +223,7 @@ BuildingClass * BaseClass::Get_Building(int index) const
 			BuildingTypeClass const * btype = BuildingTypes[build];
 			BuildingClass * bldg = Map[cell].Cell_Building();
 
-			if (bldg != NULL && bldg->PositionCell == Nodes[index].CellID && bldg->House == House) {
+			if (bldg != NULL && bldg->Get_Cell() == Nodes[index].CellID && bldg->House == House) {
 
 				if (bldg->Class == btype) {
 					return(bldg);
@@ -241,7 +241,7 @@ BuildingClass * BaseClass::Get_Building(int index) const
 					for (i = 0; i < index; i++) {
 						build = Nodes[i].Type;
 						if (build >= STRUCT_FIRST && BuildingTypes[build] == btype) {
-							if (Nodes[i].CellID == bldg->PositionCoord.As_Cell()) {
+							if (Nodes[i].CellID == bldg->Get_Coord().As_Cell()) {
 								upgrades--;
 							}
 						}

@@ -69,7 +69,7 @@ Coord TeleportLocomotionClass::Destination(void)
 	if (Is_Moving()) {
 		return(DestinationCoord);
 	}
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 
@@ -106,7 +106,7 @@ bool TeleportLocomotionClass::Process(void)
 {
 	if (Is_Moving()) {
 		LinkedTo->Mark(MARK_UP);
-		LinkedTo->PositionCoord = DestinationCoord;
+		LinkedTo->Set_Coord(DestinationCoord);
 		LinkedTo->Mark(MARK_DOWN);
 		Stop_Moving();
 		LinkedTo->Per_Cell_Process(PCP_END);

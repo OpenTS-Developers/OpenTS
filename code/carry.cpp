@@ -68,15 +68,15 @@ CarryoverClass::CarryoverClass(TechnoClass * techno) :
 
 		switch (RTTI) {
 			case RTTI_UNIT:
-				Type.Unit = (UnitType)((UnitClass *)techno)->TClass->Fetch_Heap_ID();
+				Type.Unit = (UnitType)((UnitClass *)techno)->Techno_Type_Class()->Fetch_Heap_ID();
 				break;
 
 			case RTTI_BUILDING:
-				Type.Building = (StructType)((BuildingClass *)techno)->TClass->Fetch_Heap_ID();
+				Type.Building = (StructType)((BuildingClass *)techno)->Techno_Type_Class()->Fetch_Heap_ID();
 				break;
 
 			case RTTI_INFANTRY:
-				Type.Infantry = (InfantryType)((InfantryClass *)techno)->TClass->Fetch_Heap_ID();
+				Type.Infantry = (InfantryType)((InfantryClass *)techno)->Techno_Type_Class()->Fetch_Heap_ID();
 				break;
 
 			default:
@@ -85,7 +85,7 @@ CarryoverClass::CarryoverClass(TechnoClass * techno) :
 
 		House = techno->House->Class->House;
 		Strength = techno->Strength;
-		CellID = techno->PositionCell;
+		CellID = techno->Get_Cell();
 	}
 }
 

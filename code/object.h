@@ -224,7 +224,6 @@ class ObjectClass : public AbstractClass
 		virtual bool Not_Underground(void) const;
 		virtual bool Considered_Vehicle(void) const {return(false);}
 		virtual TechnoTypeClass const * Techno_Type_Class(void) const;
-		__declspec( property( get=Techno_Type_Class) ) TechnoTypeClass const * TClass;
 		virtual ObjectTypeClass const * Class_Of(void) const {return(0);}
 		bool Is_Infantry(void) const {return(Fetch_RTTI() == RTTI_INFANTRY);}
 		bool Is_Foot(void) const;
@@ -288,8 +287,6 @@ class ObjectClass : public AbstractClass
 		double Get_Health_Ratio(void) const;
 		void Set_Health_Ratio(double health);
 
-		__declspec( property( get=Get_Health_Ratio, put=Set_Health_Ratio ) ) double HealthRatio;
-
 		virtual void Draw_Pre_Render(Point2D const & point, Rect const & cliprect) const { }
 		virtual void Draw_Post_Render(Point2D const & point, Rect const & cliprect) const { }
 		virtual void Draw_It(Point2D const & point, Rect const & cliprect) const { }
@@ -329,8 +326,6 @@ class ObjectClass : public AbstractClass
 		virtual MissionType Get_Mission(void) const;
 		virtual void Assign_Mission(MissionType mission) {}
 
-		__declspec( property( get=Get_Mission, put=Assign_Mission ) ) MissionType Mission;
-
 		/*
 		**	AI.
 		*/
@@ -350,11 +345,7 @@ class ObjectClass : public AbstractClass
 		virtual Coord Get_Coord(void) const {return(Position);}
 		virtual void Set_Coord(Coord const & coord);
 
-		__declspec( property( get=Get_Coord, put=Set_Coord ) ) Coord PositionCoord;
-
 		virtual Cell Get_Cell(void) const {return(Position.As_Cell());}
-
-		__declspec( property( get=Get_Cell /*put=*/ ) ) Cell PositionCell;
 
 		virtual CellClass * Get_Cell_Ptr(void) const;
 		virtual Cell Get_Target_Cell(void) const;
@@ -365,12 +356,8 @@ class ObjectClass : public AbstractClass
 		virtual int Get_Height_AGL(void) const;
 		virtual void Set_Height_AGL(int);
 
-		__declspec( property( get=Get_Height_AGL, put=Set_Height_AGL ) ) int HeightAGL;
-
 		virtual int Get_Height(void) const;
 		void Set_Height(int height);
-
-		__declspec( property( get=Get_Height, put=Set_Height ) ) int Height;
 
 		void Spring_Tag(TEventType event=TEVENT_ANY, ObjectClass * object=NULL, Cell const & cell=CELL_NONE, bool forced=false, TechnoClass *source=NULL)
 		{

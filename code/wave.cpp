@@ -304,7 +304,7 @@ void WaveClass::Sonic_Damage(Coord const & coord)
 	if (Source != NULL) {
 		CellClass *cptr = &Map[coord.As_Cell()];
 
-		WeaponTypeClass * weapon = Source->PrimaryWeapon;
+		WeaponTypeClass * weapon = Source->Get_Primary_Weapon();
 		WarheadTypeClass const * warhead = weapon->WarheadPtr;
 
 		int damage = weapon->AmbientDamage;
@@ -506,7 +506,7 @@ bool WaveClass::Unlimbo(Coord const & coord, Dir256 facing)
 		if (ScenarioInit || Can_Enter_Cell(&Map[coord], FACING_NONE, coord.Z) == MOVE_OK) {
 			IsInLimbo = false;
 			IsToDisplay = false;
-			PositionCoord = coord;
+			Set_Coord(coord);
 
 			if (Mark(MARK_DOWN)) {
 				if (IsActive) {
@@ -1056,7 +1056,7 @@ void WaveClass::Build_Wave_Shape(Coord const & source_coord, Coord const & targe
 
 	/// Set initial coordinates
 	StartCoord = start_coord;
-	PositionCoord = StartCoord;
+	Set_Coord(StartCoord);
 	EndCoord = end_coord;
 
 	WaveShape.Count = 6;
@@ -1140,7 +1140,7 @@ void WaveClass::Build_Wave_Shape(Coord const & source_coord, Coord const & targe
 void WaveClass::Wave_Shape_AI(void)
 {
 	if (Target != NULL && Source != NULL && WaveEC != (int)(1.0 / WaveStep) && Source->TarCom == Target) {
-		if ((Source->PositionCoord - Target->As_Coord()).Length() > CELL_LEPTON_DIAG * 6.0) {
+		if ((Source->Get_Coord() - Target->As_Coord()).Length() > CELL_LEPTON_DIAG * 6.0) {
 			IsWaveActive = false;
 		}
 	} else {

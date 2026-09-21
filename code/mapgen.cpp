@@ -9371,7 +9371,7 @@ void MapGeneratorClass::Generate_Urban_Units(const DynamicVectorClass<Cell> & ce
 						} else if (Random_Fraction() < condition_yellow_chance) {
 							health_ratio = Rule->ConditionYellow;
 						}
-						foot->Strength = foot->TClass->MaxStrength * health_ratio;
+						foot->Strength = foot->Techno_Type_Class()->MaxStrength * health_ratio;
 
 						foot->Mark(MARK_CHANGE);
 						was_placed = true;
@@ -10160,7 +10160,7 @@ void MapGeneratorClass::Generate_Rural_Units(const Cell & cell)
 					} else if (Random_Fraction() < condition_yellow_chance) {
 						health_ratio = Rule->ConditionYellow;
 					}
-					foot->Strength = foot->TClass->MaxStrength * health_ratio;
+					foot->Strength = foot->Techno_Type_Class()->MaxStrength * health_ratio;
 
 					foot->Mark(MARK_CHANGE);
 					was_placed = true;

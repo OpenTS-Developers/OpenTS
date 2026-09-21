@@ -336,7 +336,7 @@ TechnoTypeClass const * TechnoClass::Techno_Type_Class(void) const
 /// <returns>True if the object may scatter, false otherwise.</returns>
 bool TechnoClass::Can_Scatter(void) const
 {
-	if (Mission != MISSION_SLEEP && Mission != MISSION_STICKY && Mission != MISSION_UNLOAD && !TClass->IsTrain) {
+	if (Get_Mission() != MISSION_SLEEP && Get_Mission() != MISSION_STICKY && Get_Mission() != MISSION_UNLOAD && !Techno_Type_Class()->IsTrain) {
 		return(true);
 	}
 
@@ -403,7 +403,7 @@ bool TechnoClass::Is_Players_Army(void) const
 	/*
 	**	If not selectable, then not really part of the player's active army.
 	*/
-	if (!TClass->IsSelectable) {
+	if (!Techno_Type_Class()->IsSelectable) {
 		return(false);
 	}
 
@@ -461,7 +461,7 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 	if (ok == FIRE_CANT || ok == FIRE_ILLEGAL || ok == FIRE_REARM) {
 		w1 = 0;
 	} else {
-		WeaponTypeClass const * wptr = PrimaryWeapon;
+		WeaponTypeClass const * wptr = Get_Primary_Weapon();
 		if (wptr != NULL) {
 			if (wptr->WarheadPtr != NULL) {
 				webby1 = wptr->WarheadPtr->IsWebby;
@@ -480,7 +480,7 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
 	if (ok == FIRE_CANT || ok == FIRE_ILLEGAL || ok == FIRE_REARM) {
 		w2 = 0;
 	} else {
-		WeaponTypeClass const * wptr = SecondaryWeapon;
+		WeaponTypeClass const * wptr = Get_Secondary_Weapon();
 		if (wptr != NULL) {
 			if (wptr->WarheadPtr != NULL) {
 				webby2 = wptr->WarheadPtr->IsWebby;
@@ -545,7 +545,7 @@ int TechnoClass::What_Weapon_Should_I_Use(AbstractClass * target) const
  *=============================================================================================*/
 int TechnoClass::How_Many_Survivors(void) const
 {
-	if (TClass->IsCrew) {
+	if (Techno_Type_Class()->IsCrew) {
 		return(1);
 	}
 	return(0);
@@ -574,17 +574,17 @@ int TechnoClass::Combat_Damage(int which) const
 	int value = 0;
 
 	if (which == 0 || which == -1) {
-		if (PrimaryWeapon != NULL) {
-			value += PrimaryWeapon->Attack;
-			value += PrimaryWeapon->AmbientDamage;
+		if (Get_Primary_Weapon() != NULL) {
+			value += Get_Primary_Weapon()->Attack;
+			value += Get_Primary_Weapon()->AmbientDamage;
 			divisor = 1;
 		}
 	}
 
 	if (which == 1 || which == -1) {
-		if (SecondaryWeapon != NULL) {
-			value += SecondaryWeapon->Attack;
-			value += SecondaryWeapon->AmbientDamage;
+		if (Get_Secondary_Weapon() != NULL) {
+			value += Get_Secondary_Weapon()->Attack;
+			value += Get_Secondary_Weapon()->AmbientDamage;
 			divisor += 1;
 		}
 	}
@@ -605,10 +605,10 @@ int TechnoClass::Combat_Damage(int which) const
 /// <returns>ThreatType; What kinds of object should a healer of this type look for?</returns>
 ThreatType TechnoClass::Heal_Threats(void) const
 {
-	if (TClass->IsOmniHealer) {
+	if (Techno_Type_Class()->IsOmniHealer) {
 		return(ThreatType(THREAT_INFANTRY|THREAT_VEHICLES|THREAT_ALLIES));
 	}
-	if (TClass->IsMechanic || RTTI != RTTI_INFANTRY) {
+	if (Techno_Type_Class()->IsMechanic || RTTI != RTTI_INFANTRY) {
 		return(ThreatType(THREAT_VEHICLES|THREAT_ALLIES));
 	}
 	return(ThreatType(THREAT_INFANTRY|THREAT_ALLIES));
@@ -659,7 +659,7 @@ bool TechnoClass::Can_Heal(ObjectClass const * object) const
  *=============================================================================================*/
 Coord TechnoClass::Fire_Coord(int which) const
 {
-	TechnoTypeClass const * tclass = TClass;
+	TechnoTypeClass const * tclass = Techno_Type_Class();
 	WeaponDataStruct const * weapon = Get_Class_Weapon_Data(which);
 
 	int flhx = weapon->FireFLH.X;
@@ -691,7 +691,7 @@ Coord TechnoClass::Fire_Coord(int which) const
 /// <returns>Returns with the coordinate the projectile should be created at.</returns>
 Coord TechnoClass::Turret_Coord(int which) const
 {
-	TechnoTypeClass const * tclass = TClass;
+	TechnoTypeClass const * tclass = Techno_Type_Class();
 	WeaponDataStruct const * weapon = Get_Class_Weapon_Data(which);
 
 	int flhx = weapon->FireFLH.X;
@@ -751,8 +751,8 @@ void TechnoClass::Debug_Dump(MonoClass * mono) const
 	if (SuspendedTarCom != NULL) {
 		mono->Set_Cursor(38, 3);mono->Printf("%08X", SuspendedTarCom);
 	}
-	if (ArchiveTarget != NULL) {
-		mono->Set_Cursor(69, 5);mono->Printf("%08X", ArchiveTarget);
+	if (Fetch_Archive_Target() != NULL) {
+		mono->Set_Cursor(69, 5);mono->Printf("%08X", Fetch_Archive_Target());
 	}
 	mono->Set_Cursor(47, 3);mono->Printf("%02X:%02X", PrimaryFacing.Current(), PrimaryFacing.Desired());
 	mono->Set_Cursor(64, 1);mono->Printf("%d(%d)", Cloak, CloakingDevice.Fetch_Stage());
@@ -880,7 +880,7 @@ bool TechnoClass::Revealed(HouseClass * house)
 		**	An enemy object that is discovered will go into hunt mode if
 		**	its current mission is to ambush.
 		*/
-		if (!House->Is_Human_Player() && Mission == MISSION_AMBUSH) {
+		if (!House->Is_Human_Player() && Get_Mission() == MISSION_AMBUSH) {
 			Assign_Mission(MISSION_HUNT);
 		}
 
@@ -1008,7 +1008,7 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 		**	Just received instructions to attack the specified target.
 		*/
 		case RADIO_ATTACK_THIS:
-			if (PrimaryWeapon != NULL) {
+			if (Get_Primary_Weapon() != NULL) {
 				Assign_Target((AbstractClass *)param);
 				Assign_Mission(MISSION_ATTACK);
 				return(RADIO_ROGER);
@@ -1070,7 +1070,7 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 		**	Handle reloading one ammo point for this unit.
 		*/
 		case RADIO_RELOAD:
-			if (Ammo == TClass->MaxAmmo) return(RADIO_NEGATIVE);
+			if (Ammo == Techno_Type_Class()->MaxAmmo) return(RADIO_NEGATIVE);
 			Ammo++;
 			return(RADIO_ROGER);
 
@@ -1081,14 +1081,14 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 			LimpetType = 0;
 			LimpetSpeedFactor = 0;
 
-			PrimaryFacing.Set_ROT(TClass->ROT);
-			SecondaryFacing.Set_ROT(TClass->ROT);
+			PrimaryFacing.Set_ROT(Techno_Type_Class()->ROT);
+			SecondaryFacing.Set_ROT(Techno_Type_Class()->ROT);
 
 			/*
 			**	If it's a mine layer, re-arm him if he's empty. This always takes precedence
 			**	over repair, since this operation is free.
 			*/
-			if (TClass->IsManualReload && ((UnitClass *)this)->Ammo < ((UnitClass *)this)->Class->MaxAmmo) {
+			if (Techno_Type_Class()->IsManualReload && ((UnitClass *)this)->Ammo < ((UnitClass *)this)->Class->MaxAmmo) {
 				((UnitClass *)this)->Ammo = ((UnitClass *)this)->Class->MaxAmmo;
 				return(RADIO_NEGATIVE);
 			}
@@ -1097,9 +1097,9 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 			**	Determine if this unit can be repaired becaause it is under strength. If so, then
 			**	proceed with the repair process.
 			*/
-			if (HealthRatio < Rule->ConditionGreen) {
-				int cost = TClass->Repair_Cost();
-				int step = TClass->Repair_Step();
+			if (Get_Health_Ratio() < Rule->ConditionGreen) {
+				int cost = Techno_Type_Class()->Repair_Cost();
+				int step = Techno_Type_Class()->Repair_Step();
 				step = std::max(step, 1);
 
 				/*
@@ -1112,7 +1112,7 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 					}
 					Strength += step;
 
-					if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
+					if (Get_Health_Ratio() > Rule->ConditionYellow || Get_Height_AGL() < -10) {
 						if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE]) {
 							ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
 						}
@@ -1123,10 +1123,10 @@ RadioMessageType TechnoClass::Receive_Message(RadioClass * from, RadioMessageTyp
 					**	lets the repairing object know if it should abort the repair control process
 					**	or continue it.
 					*/
-					if (HealthRatio < Rule->ConditionGreen) {
+					if (Get_Health_Ratio() < Rule->ConditionGreen) {
 						return(RADIO_ROGER);
 					} else {
-						Strength = TClass->MaxStrength;
+						Strength = Techno_Type_Class()->MaxStrength;
 						return(RADIO_ALL_DONE);
 					}
 				} else {
@@ -1236,7 +1236,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	bool sensed_underground = false;
 	if (!IsSelected) {
 		CellClass * cell = Get_Cell_Ptr();
-		if (HeightAGL < -20 && cell->Is_Sensed(PlayerPtr->HeapID)) {
+		if (Get_Height_AGL() < -20 && cell->Is_Sensed(PlayerPtr->HeapID)) {
 			sensed_underground = true;
 		}
 	}
@@ -1252,11 +1252,11 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 			if (LimpetType > 0) {
 				color = YELLOW;
 			}
-			if (HeightAGL < -4) {
+			if (Get_Height_AGL() < -4) {
 				color = BLACK;
 			}
 
-			Coord dim = TClass->Lepton_Dimensions();
+			Coord dim = Techno_Type_Class()->Lepton_Dimensions();
 			int x = dim.X / 2;
 			int y = dim.Y / 2;
 			color = NormalDrawer->Convert_Pixel(color);
@@ -1378,10 +1378,10 @@ void TechnoClass::Draw_Pre_Render(Point2D const & point, Rect const & cliprect) 
 		if (LimpetType > 0) {
 			color = YELLOW;
 		}
-		if (HeightAGL < -4) {
+		if (Get_Height_AGL() < -4) {
 			color = BLACK;
 		}
-		Coord dim = TClass->Lepton_Dimensions();
+		Coord dim = Techno_Type_Class()->Lepton_Dimensions();
 		dim.X /= 2;
 		dim.Y /= 2;
 		color = NormalDrawer->Convert_Pixel(color);
@@ -1403,7 +1403,7 @@ void TechnoClass::Draw_Pre_Render(Point2D const & point, Rect const & cliprect) 
 bool TechnoClass::Is_Decoration_Visible(void) const
 {
 	if (!IsOwnedByPlayer) {
-		if ((Cloak == CLOAKED && !Is_Sensed_By_Player()) || TClass->IsInvisible) {
+		if ((Cloak == CLOAKED && !Is_Sensed_By_Player()) || Techno_Type_Class()->IsInvisible) {
 			return(false);
 		}
 	}
@@ -1439,7 +1439,7 @@ Point2D TechnoClass::Pip_Origin(Point2D const & point) const
 	UnitClass const * unit = (RTTI == RTTI_UNIT) ? dynamic_cast<UnitClass const *>(this) : NULL;
 
 	if (RTTI == RTTI_BUILDING || (unit != NULL && unit->Class->IsCoreDefender)) {
-		Point3D dim = TClass->Lepton_Dimensions();
+		Point3D dim = Techno_Type_Class()->Lepton_Dimensions();
 		Coord corner = dim - Point3D(dim.X / 2, dim.Y / 2, dim.Z / 2);
 		corner.X = -corner.X;
 		corner.Z = 0;
@@ -1465,9 +1465,9 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 		/*
 		 * Build the screen-space pip bar from the object's lepton dimensions.
 		 */
-		HeightAGL;
+		Get_Height_AGL();
 
-		Point3D dim = TClass->Lepton_Dimensions();
+		Point3D dim = Techno_Type_Class()->Lepton_Dimensions();
 
 		Point3D half(dim.X / 2, dim.Y / 2, dim.Z / 2);
 
@@ -1491,7 +1491,7 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 
 		int barlen = (p0.Y - p1.Y) / 2;
 
-		int n = (int)(HealthRatio * (double)barlen);
+		int n = (int)(Get_Health_Ratio() * (double)barlen);
 		if (n <= 1) {
 			n = 1;
 		}
@@ -1500,10 +1500,10 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 		}
 
 		int condcolor = 1;
-		if (HealthRatio <= Rule->ConditionYellow) {
+		if (Get_Health_Ratio() <= Rule->ConditionYellow) {
 			condcolor = 2;
 		}
-		if (HealthRatio <= Rule->ConditionRed) {
+		if (Get_Health_Ratio() <= Rule->ConditionRed) {
 			condcolor = 4;
 		}
 
@@ -1560,7 +1560,7 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 			health_bar_count = 17;
 		}
 
-		int n = (int)(HealthRatio * (double)health_bar_count);
+		int n = (int)(Get_Health_Ratio() * (double)health_bar_count);
 		if (n <= 1) {
 			n = 1;
 		}
@@ -1569,10 +1569,10 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 		}
 
 		int shapenum = 9;
-		if (HealthRatio <= Rule->ConditionYellow) {
+		if (Get_Health_Ratio() <= Rule->ConditionYellow) {
 			shapenum = 10;
 		}
-		if (HealthRatio <= Rule->ConditionRed) {
+		if (Get_Health_Ratio() <= Rule->ConditionRed) {
 			shapenum = 11;
 		}
 
@@ -1786,7 +1786,7 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		HousesType owner = Owner();
 		Get_Cell_Ptr()->Adjust_Threat(owner, risk);
 
-		RadarPos = Map.Coord_To_Radar_Pixel(PositionCoord, true);
+		RadarPos = Map.Coord_To_Radar_Pixel(Get_Coord(), true);
 
 		if (ActLike == HOUSE_NONE) {
 			ActLike = House->ActLike;
@@ -1839,7 +1839,7 @@ bool TechnoClass::In_Range(AbstractClass * target, int which) const
 		coord.Z = target->Center_Coord().Z;
 	}
 
-	return(TClass->In_Range(coord, target, Get_Class_Weapon_Data(which)->Weapon));
+	return(Techno_Type_Class()->In_Range(coord, target, Get_Class_Weapon_Data(which)->Weapon));
 }
 
 
@@ -1888,8 +1888,8 @@ bool TechnoClass::In_Range(Coord const & coord, int which) const
  *=============================================================================================*/
 double TechnoClass::Area_Modify(Cell const & cell) const
 {
-//	assert(PrimaryWeapon != NULL);
-	if (PrimaryWeapon == NULL || !PrimaryWeapon->IsSupressed) return(1);
+//	assert(Get_Primary_Weapon() != NULL);
+	if (Get_Primary_Weapon() == NULL || !Get_Primary_Weapon()->IsSupressed) return(1);
 
 	int crange = Rule->SupressRadius / CELL_LEPTON;
 	double odds = 1;
@@ -2033,7 +2033,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 		return(false);
 	}
 
-	if (object->HeightAGL < -20) {
+	if (object->Get_Height_AGL() < -20) {
 		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
@@ -2043,7 +2043,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	zone checking is desired.
 	*/
 	Coord objectcoord = object->Center_Coord();
-	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), TClass->MZone, object->IsOnBridge) != zone) {
+	if (zone != -1 && Map.Get_Cell_Zone(objectcoord.As_Cell(), Techno_Type_Class()->MZone, object->IsOnBridge) != zone) {
 		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
@@ -2055,13 +2055,13 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	*/
 	if ((RTTI != RTTI_INFANTRY || !((InfantryClass *)this)->IsBerzerk) && House->Is_Ally(object)) {
 		if (Combat_Damage() < 0 || engineer) {
-			if (object->HealthRatio == Rule->ConditionGreen) {
+			if (object->Get_Health_Ratio() == Rule->ConditionGreen) {
 				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
 			if (Combat_Damage() < 0) {
 				if (object->RTTI == RTTI_AIRCRAFT) {
-					if (object->HeightAGL > 0) {
+					if (object->Get_Height_AGL() > 0) {
 						BEnd(BENCH_EVAL_OBJECT);
 						return(false);
 					}
@@ -2098,7 +2098,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 
 	if (range == 0) {
 		if (!Is_Weapon_Equipped()) {
-			if (dist > TClass->ThreatRange) {
+			if (dist > Techno_Type_Class()->ThreatRange) {
 				BEnd(BENCH_EVAL_OBJECT);
 				return(false);
 			}
@@ -2144,7 +2144,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	Determine if the target is theoretically allowed to be a target. If
 	**	not, then bail.
 	*/
-	TechnoTypeClass const * tclass = object->TClass;
+	TechnoTypeClass const * tclass = object->Techno_Type_Class();
 	if (!tclass->IsLegalTarget) {
 		BEnd(BENCH_EVAL_OBJECT);
 		return(false);		// Legality failure.
@@ -2166,8 +2166,8 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	/*
 	**	Special case so that SAM site doesn't fire on aircraft that are landed.
 	*/
-	if (PrimaryWeapon != NULL && !PrimaryWeapon->Bullet->IsAntiGround){
-		if (((AircraftClass *)object)->Height == 0) {
+	if (Get_Primary_Weapon() != NULL && !Get_Primary_Weapon()->Bullet->IsAntiGround){
+		if (((AircraftClass *)object)->Get_Height() == 0) {
 			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
@@ -2200,7 +2200,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	if ((!Is_Foot() || !((FootClass *)this)->Team != NULL) &&
 			House->Is_Human_Player() && !object->Considered_Vehicle() &&
 			otype == RTTI_BUILDING &&
-			(object->PrimaryWeapon == NULL || object->PrimaryWeapon->Range == 0)) {
+			(object->Get_Primary_Weapon() == NULL || object->Get_Primary_Weapon()->Range == 0)) {
 
 		if (!engineer) {
 			BEnd(BENCH_EVAL_OBJECT);
@@ -2209,7 +2209,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	if (engineer) {
-		if (object->RTTI != RTTI_BUILDING || (House->Is_Ally(object->House) && (object->HealthRatio > Rule->ConditionRed || !((BuildingClass *)object)->Class->Cost_Of(House)))) {
+		if (object->RTTI != RTTI_BUILDING || (House->Is_Ally(object->House) && (object->Get_Health_Ratio() > Rule->ConditionRed || !((BuildingClass *)object)->Class->Cost_Of(House)))) {
 			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
@@ -2235,7 +2235,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 
 	bool webbysecondary = false;
 	WarheadTypeClass const * wh = NULL;
-	WeaponTypeClass const * secondary = SecondaryWeapon;
+	WeaponTypeClass const * secondary = Get_Secondary_Weapon();
 	if (secondary != NULL) {
 		wh = secondary->WarheadPtr;
 		if (wh != NULL && wh->IsWebby) {
@@ -2244,7 +2244,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	}
 
 	if (!webbysecondary) {
-		WeaponTypeClass const * primary = PrimaryWeapon;
+		WeaponTypeClass const * primary = Get_Primary_Weapon();
 		if (primary != NULL) {
 			wh = primary->WarheadPtr;
 		} else {
@@ -2307,7 +2307,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	don't consider an unarmed building to be a threat.
 	*/
 	if (method & THREAT_BASE_DEFENSE) {
-		if (object->PrimaryWeapon == NULL) {
+		if (object->Get_Primary_Weapon() == NULL) {
 			value = 0;
 		}
 	}
@@ -2382,7 +2382,7 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 	**	Don't consider for evaluation a cell that is not within the same zone. Only
 	**	perform this check if zone checking is required.
 	*/
-	if (zone != -1 && Map.Get_Cell_Zone(cell, TClass->MZone, true) != zone) {
+	if (zone != -1 && Map.Get_Cell_Zone(cell, Techno_Type_Class()->MZone, true) != zone) {
 		BEnd(BENCH_EVAL_CELL);
 		return(false);
 	}
@@ -2398,14 +2398,14 @@ bool TechnoClass::Evaluate_Cell(ThreatType method, int mask, Cell const & cell, 
 			tech = Dynamic_Cast<TechnoClass *>((ObjectClass *)tentative);
 			if (tech) {
 				if (Combat_Damage() < 0) {
-					if (tech->HealthRatio < Rule->ConditionGreen && House->Is_Ally(tech) && Can_Heal(tech)) break;
+					if (tech->Get_Health_Ratio() < Rule->ConditionGreen && House->Is_Ally(tech) && Can_Heal(tech)) break;
 				} else {
 					if (!House->Is_Ally(tech)
 						|| (RTTI == RTTI_INFANTRY
 							&& (((InfantryClass*)this)->IsBerzerk
 							|| (((InfantryClass*)this)->Class->IsEngineer
 								&& CurrentMission == MISSION_GUARD_AREA
-								&& tech->HealthRatio <= Rule->ConditionRed
+								&& tech->Get_Health_Ratio() <= Rule->ConditionRed
 								&& tech->RTTI == RTTI_BUILDING
 								&& ((BuildingClass*)tech)->Class->Cost_Of(tech->House) > 0)))) {
 
@@ -2489,7 +2489,7 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
 	/*
 	**	See if the object has a weapon that can damage walls.
 	*/
-	if (PrimaryWeapon == NULL || PrimaryWeapon->WarheadPtr == NULL) {
+	if (Get_Primary_Weapon() == NULL || Get_Primary_Weapon()->WarheadPtr == NULL) {
 		BEnd(BENCH_EVAL_WALL);
 		return(0);
 	}
@@ -2498,7 +2498,7 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
 	**	If the weapon cannot deal with ground based targets, then don't consider
 	**	this a valid cell target.
 	*/
-	if (PrimaryWeapon->Bullet != NULL && !PrimaryWeapon->Bullet->IsAntiGround) {
+	if (Get_Primary_Weapon()->Bullet != NULL && !Get_Primary_Weapon()->Bullet->IsAntiGround) {
 		BEnd(BENCH_EVAL_WALL);
 		return(0);
 	}
@@ -2507,7 +2507,7 @@ int TechnoClass::Evaluate_Just_Cell(Cell const & cell) const
 	**	If the primary weapon cannot destroy a wall, then don't give the cell any
 	**	value as a target.
 	*/
-	if (!PrimaryWeapon->WarheadPtr->IsWallDestroyer) {
+	if (!Get_Primary_Weapon()->WarheadPtr->IsWallDestroyer) {
 		BEnd(BENCH_EVAL_WALL);
 		return(0);
 	}
@@ -2561,7 +2561,7 @@ AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & co
 
 	TargetScan++;
 
-	if (TClass->IsNoAutoFire && House->Is_Human_Player()) {
+	if (Techno_Type_Class()->IsNoAutoFire && House->Is_Human_Player()) {
 		BEnd(BENCH_GREATEST_THREAT);
 		return(NULL);
 	}
@@ -2576,7 +2576,7 @@ AbstractClass * TechnoClass::Greatest_Threat(ThreatType method, Coord const & co
 		RTTI != RTTI_BUILDING &&
 		RTTI != RTTI_AIRCRAFT) {
 
-		zone = Map.Get_Cell_Zone(Center_Coord().As_Cell(), TClass->MZone, true);
+		zone = Map.Get_Cell_Zone(Center_Coord().As_Cell(), Techno_Type_Class()->MZone, true);
 	}
 
 	/*
@@ -2933,10 +2933,10 @@ void TechnoClass::Clicked_As_Target(int count)
 /// <returns>bool; is the voxel library loaded successfully?</returns>
 bool TechnoClass::Is_Voxel_Loaded(void) const
 {
-	if (TClass->Voxel.VoxLib == NULL) {
+	if (Techno_Type_Class()->Voxel.VoxLib == NULL) {
 		return(false);
 	}
-	if (TClass->Voxel.VoxLib->Load_Failed()) {
+	if (Techno_Type_Class()->Voxel.VoxLib->Load_Failed()) {
 		return(false);
 	}
 	return(true);
@@ -2980,9 +2980,9 @@ void TechnoClass::AI(void)
 		IsInRecoilState = false;
 	}
 
-	if (TarCom != NULL && PrimaryWeapon != NULL) {
+	if (TarCom != NULL && Get_Primary_Weapon() != NULL) {
 		BarrelPitch.Set_Desired(Barrel_Pitch(TarCom));
-		if (RTTI != RTTI_BUILDING || !PrimaryWeapon->IsLaser) {
+		if (RTTI != RTTI_BUILDING || !Get_Primary_Weapon()->IsLaser) {
 			Coord coord = Predict_Target_Coord() - Turret_Coord();
 			WeaponDataStruct const * wdata = Get_Class_Weapon_Data(0);
 			WeaponTypeClass const * weapon = wdata->Weapon;
@@ -2995,12 +2995,12 @@ void TechnoClass::AI(void)
 			if (Calculate_Projectile_Pitch(Should_Use_High_Arc(0), weapon->MaxSpeed, std::sqrt(coord.X * coord.X + coord.Y * coord.Y), coord.Z, gravity, dir)) {
 				BarrelPitch.Set_Desired(dir);
 			} else {
-				BarrelPitch.Set_Desired(DirType(DIR_E) - DirType(Dir256(TClass->FireAngle)));
+				BarrelPitch.Set_Desired(DirType(DIR_E) - DirType(Dir256(Techno_Type_Class()->FireAngle)));
 			}
 		}
 	} else {
-		if (RTTI != RTTI_BUILDING && Mission != MISSION_UNLOAD) {
-			BarrelPitch.Set_Desired(DirType(DIR_E) - DirType(Dir256(TClass->FireAngle)));
+		if (RTTI != RTTI_BUILDING && Get_Mission() != MISSION_UNLOAD) {
+			BarrelPitch.Set_Desired(DirType(DIR_E) - DirType(Dir256(Techno_Type_Class()->FireAngle)));
 		}
 	}
 
@@ -3028,8 +3028,8 @@ void TechnoClass::AI(void)
 	**	the heal logic here.
 	*/
 	if (Should_Self_Heal_Now()) {
-		Strength = std::min(Strength + TClass->Self_Heal_Step(), TClass->MaxStrength);
-		if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
+		Strength = std::min(Strength + Techno_Type_Class()->Self_Heal_Step(), Techno_Type_Class()->MaxStrength);
+		if (Get_Health_Ratio() > Rule->ConditionYellow || Get_Height_AGL() < -10) {
 			if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE] != NULL) {
 				ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
 			}
@@ -3075,7 +3075,7 @@ void TechnoClass::AI(void)
 
 	if (TarCom != NULL && TarCom->RTTI == RTTI_AIRCRAFT) {
 		AircraftClass * tarcom = (AircraftClass *)TarCom;
-		if (Combat_Damage() < 0 && (tarcom->HeightAGL > 0 || Map[tarcom->Get_Coord()].Cell_Building() != NULL)) {
+		if (Combat_Damage() < 0 && (tarcom->Get_Height_AGL() > 0 || Map[tarcom->Get_Coord()].Cell_Building() != NULL)) {
 			Assign_Target(NULL);
 		}
 	}
@@ -3129,8 +3129,8 @@ void TechnoClass::AI(void)
 		}
 	}
 
-	TechnoTypeClass const * tclass = TClass;
-	if (tclass->IsDamageSparks && HealthRatio < Rule->ConditionYellow && HeightAGL > -10) {
+	TechnoTypeClass const * tclass = Techno_Type_Class();
+	if (tclass->IsDamageSparks && Get_Health_Ratio() < Rule->ConditionYellow && Get_Height_AGL() > -10) {
 		DynamicVectorClass<ParticleSystemTypeClass const *> sparks;
 		for (int i = 0; i < tclass->DamageParticleSystems.Count(); i++) {
 			if (tclass->DamageParticleSystems[i]->BehavesLike == PSYS_BEHAVIOR_SPARK) {
@@ -3139,9 +3139,9 @@ void TechnoClass::AI(void)
 		}
 
 		if (ParticleSystems[ATTACHED_PARTICLE_SPARK] == NULL && sparks.Count() > 0) {
-			double probability = HealthRatio < Rule->ConditionRed ? Rule->ConditionRedSparkingProbability : Rule->ConditionYellowSparkingProbability;
+			double probability = Get_Health_Ratio() < Rule->ConditionRed ? Rule->ConditionRedSparkingProbability : Rule->ConditionYellowSparkingProbability;
 			if (Random_Double(0.0, 1.0) < probability) {
-				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + TClass->DamageSmokeOffset, NULL, this);
+				ParticleSystems[ATTACHED_PARTICLE_SPARK] = new ParticleSystemClass(sparks[Random_Pick(0, sparks.Count() - 1)], Center_Coord() + Techno_Type_Class()->DamageSmokeOffset, NULL, this);
 			}
 		}
 	}
@@ -3171,7 +3171,7 @@ void TechnoClass::AI(void)
 					((FootClass *)foot)->Locomotion->Power_On();
 				}
 				UnitClass * unit = dynamic_cast<UnitClass *>(foot);
-				if (unit != NULL && unit->Mission != MISSION_UNLOAD) {
+				if (unit != NULL && unit->Get_Mission() != MISSION_UNLOAD) {
 					if (Rule->HarvesterUnit.Is_In_List(unit->Class)) {
 						unit->Assign_Destination(NULL);
 						unit->Assign_Mission(MISSION_HARVEST);
@@ -3217,7 +3217,7 @@ void TechnoClass::Cloaking_AI(bool)
 			if (radio == NULL || !(radio->RTTI == RTTI_BUILDING && ((BuildingClass *)radio)->Class->IsWeaponsFactory)) {
 				CloakingDevice.Graphic_Logic();
 				if (Is_Ready_To_Cloak()) {
-					if (HealthRatio > Rule->ConditionRed) {
+					if (Get_Health_Ratio() > Rule->ConditionRed) {
 						Do_Cloak();
 					} else {
 						if (Percent_Chance(4)) {
@@ -3272,7 +3272,7 @@ void TechnoClass::Cloaking_AI(bool)
 					**	If badly damaged, then it can never fully cloak.
 					*/
 					case VISUAL_DARKEN:
-						if (HealthRatio <= Rule->ConditionRed && Percent_Chance(10)) {
+						if (Get_Health_Ratio() <= Rule->ConditionRed && Percent_Chance(10)) {
 							Do_Uncloak(true);
 						}
 						break;
@@ -3600,7 +3600,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 		}
 	}
 
-	if (TClass->IsHunterSeeker) {
+	if (Techno_Type_Class()->IsHunterSeeker) {
 		return(FIRE_RANGE);
 	}
 	return(FIRE_OK);
@@ -3670,7 +3670,7 @@ void TechnoClass::Assign_Target(AbstractClass * target)
 		**	Prevent targeting of self.
 		*/
 		if (target == this) {
-			target = &Map[(Coord const &)PositionCoord];
+			target = &Map[(Coord const &)Get_Coord()];
 		} else {
 
 			/*
@@ -3850,11 +3850,11 @@ void TechnoClass::Laser_Zap(AbstractClass * target, int which, WeaponTypeClass c
 /// <returns>Returns with the pitch to set the barrel to.</returns>
 DirType TechnoClass::Barrel_Pitch(AbstractClass * target) const
 {
-	DirType pitch(Dir256(TClass->FireAngle));
+	DirType pitch(Dir256(Techno_Type_Class()->FireAngle));
 	if (target != NULL) {
 		Coord predicted = Predict_Target_Coord();
 		Coord coord = predicted - Turret_Coord();
-		WeaponTypeClass const * weapon = PrimaryWeapon;
+		WeaponTypeClass const * weapon = Get_Primary_Weapon();
 		double gravity = Rule->Gravity;
 		BulletTypeClass const * bullet = weapon->Bullet;
 		if (bullet != NULL && bullet->IsFloater) {
@@ -3918,15 +3918,15 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 		if ((techno->LimpetType & 1 << House->HeapID) == 0) {
 			techno->LimpetType |= 1 << House->HeapID;
 			techno->LimpetSpeedFactor = (double)(100 - weapon->WarheadPtr->LimpetFactor) / 100.0;
-			PrimaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
-			SecondaryFacing.Set_ROT((int)((double)TClass->ROT * techno->LimpetSpeedFactor));
+			PrimaryFacing.Set_ROT((int)((double)Techno_Type_Class()->ROT * techno->LimpetSpeedFactor));
+			SecondaryFacing.Set_ROT((int)((double)Techno_Type_Class()->ROT * techno->LimpetSpeedFactor));
 			if (weapon->Sound.Count() > 0) {
 				Sound_Effect((VocType)weapon->Sound.Pick(SoundRandomSeed));
 			}
 			if (techno->Tag != NULL) {
 				techno->Tag->Spring(TEVENT_LIMPED, techno);
 			}
-			DebugString("Limped %s\n", (char const *)techno->TClass->IniName);
+			DebugString("Limped %s\n", (char const *)techno->Techno_Type_Class()->IniName);
 			Delete_Me();
 		}
 		return(NULL);
@@ -4136,7 +4136,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 					Wave = new WaveClass(Fire_Coord(which), target_coord, this, WAVE_SONIC, (TechnoClass *)target);
 				}
 
-				if (TClass->IsTargetLaser && House->Is_Player_Control()) {
+				if (Techno_Type_Class()->IsTargetLaser && House->Is_Player_Control()) {
 					TargetingLaserTimer = UIControls.TargetLaserTime;
 				}
 
@@ -4145,7 +4145,7 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				 */
 				if (weapon->IsLaser) {
 					BuildingClass * building = dynamic_cast<BuildingClass *>(this);
-					Laser_Zap(target, which, PrimaryWeapon, COORD_NONE);
+					Laser_Zap(target, which, Get_Primary_Weapon(), COORD_NONE);
 					if (building != NULL) {
 						building->BuildingStage.Set_Stage(0);
 						building->BuildingStage.Set_Rate(0);
@@ -4328,7 +4328,7 @@ ActionType TechnoClass::What_Action(ObjectClass const * object, bool disallow_fo
 		/*
 		**	If firing is possible and legal, then return this action potential.
 		*/
-		TechnoTypeClass const * ttype = TClass;
+		TechnoTypeClass const * ttype = Techno_Type_Class();
 		if (object->Not_Underground() && House->Is_Player_Control() && (ctrldown || !House->Is_Ally(object)) && (ctrldown || object->Class_Of()->IsLegalTarget || (Rule->IsTreeTarget && object->RTTI == RTTI_TERRAIN))) {
 
 			if (Is_Weapon_Equipped() ||
@@ -4575,7 +4575,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 			}
 		}
 		if (unit->Class->Max_Passengers() > 0) {
-			Cell cell = PositionCell;
+			Cell cell = Get_Cell();
 			CellClass * cellptr = &Map[cell];
 			if (cellptr != NULL) {
 				CellClass * cellptr_s = &Map[Adjacent_Cell(cell, FACING_S)];
@@ -4595,7 +4595,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 		}
 	} else {
 		blocked = Is_Immobilized();
-		if (TClass->Max_Passengers() == 0) {
+		if (Techno_Type_Class()->Max_Passengers() == 0) {
 			blocked = true;
 		}
 	}
@@ -4605,7 +4605,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
 		blocked = false;
 	}
 
-	Cell cell = PositionCell;
+	Cell cell = Get_Cell();
 	CellClass * cellptr = &Map[cell];
 	if ((cellptr != NULL && cellptr->Is_Near_Tunnel_NW()) || blocked) {
 		return(false);
@@ -4632,7 +4632,7 @@ bool TechnoClass::Can_Deploy_Now(void) const
  *=============================================================================================*/
 bool TechnoClass::Can_Player_Fire(void) const
 {
-	if (House->Is_Player_Control() && PrimaryWeapon != NULL && !Is_Immobilized()) {
+	if (House->Is_Player_Control() && Get_Primary_Weapon() != NULL && !Is_Immobilized()) {
 		return(true);
 	}
 	return(false);
@@ -4667,7 +4667,7 @@ bool TechnoClass::Is_Immobilized(void) const
  *=============================================================================================*/
 bool TechnoClass::Is_Weapon_Equipped(void) const
 {
-	return(PrimaryWeapon != NULL);
+	return(Get_Primary_Weapon() != NULL);
 }
 
 
@@ -4696,7 +4696,7 @@ bool TechnoClass::Can_Repair(void) const
 	if (RTTI != RTTI_BUILDING) {
 		return(false);
 	}
-	return(TClass->IsRepairable && Strength != Class_Of()->MaxStrength || LimpetType);
+	return(Techno_Type_Class()->IsRepairable && Strength != Class_Of()->MaxStrength || LimpetType);
 }
 
 
@@ -4794,10 +4794,10 @@ bool TechnoClass::Restore_Mission(void)
 void TechnoClass::Renovate(void)
 {
 	Mark(MARK_CHANGE);
-	Strength = TClass->MaxStrength;
+	Strength = Techno_Type_Class()->MaxStrength;
 	if (RTTI == RTTI_BUILDING) {
 		((BuildingClass *)this)->Repair(0);
-		((BuildingClass *)this)->Set_Anim_Damage_State(HealthRatio <= Rule->ConditionYellow);
+		((BuildingClass *)this)->Set_Anim_Damage_State(Get_Health_Ratio() <= Rule->ConditionYellow);
 	}
 }
 
@@ -4847,7 +4847,7 @@ bool TechnoClass::Captured(HouseClass * newowner)
 		/*
 		**	Special kill record logic for capture process.
 		*/
-		newowner->PointTotal += TClass->Cost_Of(House);
+		newowner->PointTotal += Techno_Type_Class()->Cost_Of(House);
 		House->Tracking_Remove(this);
 		newowner->Tracking_Add(this);
 		switch ((RTTIType)RTTI) {
@@ -4962,8 +4962,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		 * owned by the same house.
 		 */
 		if (source != NULL) {
-			if (TClass->IsTypeImmune) {
-				if (TClass == source->TClass && House == source->House) {
+			if (Techno_Type_Class()->IsTypeImmune) {
+				if (Techno_Type_Class() == source->Techno_Type_Class() && House == source->House) {
 					return(RESULT_NONE);
 				}
 			}
@@ -4977,8 +4977,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	if (negative == true) {
 		LimpetType = 0;
 		LimpetSpeedFactor = 0.0;
-		PrimaryFacing.Set_ROT(TClass->ROT);
-		SecondaryFacing.Set_ROT(TClass->ROT);
+		PrimaryFacing.Set_ROT(Techno_Type_Class()->ROT);
+		SecondaryFacing.Set_ROT(Techno_Type_Class()->ROT);
 	}
 
 	ResultType result = (ResultType)ObjectClass::Take_Damage(damage, distance, warhead, source, forced, no_crew);
@@ -4987,7 +4987,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 	 * Inform the owning house of the anger level this damage produced.
 	 */
 	if (source != NULL) {
-		House->Add_Anger((int)((double)TClass->Raw_Cost() * ((double)damage / (double)(int)TClass->MaxStrength)), source->House);
+		House->Add_Anger((int)((double)Techno_Type_Class()->Raw_Cost() * ((double)damage / (double)(int)Techno_Type_Class()->MaxStrength)), source->House);
 	}
 
 	if (result == RESULT_ALREADY_DESTROYED) {
@@ -5015,8 +5015,8 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			/*
 			 * Play the death voice response.
 			 */
-			if (TClass->VoiceDie.Count() > 0) {
-				VocType voc = (VocType)TClass->VoiceDie.Pick(NonCriticalRandomNumber());
+			if (Techno_Type_Class()->VoiceDie.Count() > 0) {
+				VocType voc = (VocType)Techno_Type_Class()->VoiceDie.Pick(NonCriticalRandomNumber());
 				Sound_Effect(voc, Get_Coord());
 			}
 
@@ -5026,7 +5026,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			/*
 			 * Tiberium-healing objects spew tiberium into the adjacent cells when destroyed.
 			 */
-			if (TClass->IsTiberiumHeal) {
+			if (Techno_Type_Class()->IsTiberiumHeal) {
 				static FacingType _heal_facing[] = {FACING_NONE, FACING_N, FACING_E, FACING_S, FACING_W};
 
 				Cell center = Center_Coord().As_Cell();
@@ -5049,7 +5049,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 * If destroyed while in/near the water and flagged to explode, bail out so the
 			 * splash logic (handled elsewhere) is not stomped by debris.
 			 */
-			if (HeightAGL <= 10) {
+			if (Get_Height_AGL() <= 10) {
 				if (IsToExplode) {
 					if (Map[Get_Coord()].Land_Type() == LAND_WATER) {
 						break;
@@ -5061,25 +5061,25 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 * Spawn destruction debris -- either the explicit voxel debris list (with
 			 * per-type maximums) or generic metallic debris animations.
 			 */
-			if (TClass->MaxDebris > 0) {
-				if (TClass->DebrisTypes.Count() > 0) {
-					int remaining = TClass->MaxDebris;
+			if (Techno_Type_Class()->MaxDebris > 0) {
+				if (Techno_Type_Class()->DebrisTypes.Count() > 0) {
+					int remaining = Techno_Type_Class()->MaxDebris;
 					for (int index = 0; remaining > 0; index++) {
-						if (index >= TClass->DebrisTypes.Count()) {
+						if (index >= Techno_Type_Class()->DebrisTypes.Count()) {
 							break;
 						}
 
-						int count = abs(Scen->RandomNumber) % (TClass->DebrisMaximums[index] + 1);
+						int count = abs(Scen->RandomNumber) % (Techno_Type_Class()->DebrisMaximums[index] + 1);
 						if (count >= remaining) {
 							count = remaining;
 						}
 						for (int j = 0; j < count; j++) {
-							new VoxelAnimClass(TClass->DebrisTypes[index], Center_Coord(), House);
+							new VoxelAnimClass(Techno_Type_Class()->DebrisTypes[index], Center_Coord(), House);
 						}
 						remaining -= count;
 					}
 				} else {
-					int count = Scen->RandomNumber(0, TClass->MaxDebris);
+					int count = Scen->RandomNumber(0, Techno_Type_Class()->MaxDebris);
 					for (int index = 0; index < count; index++) {
 						new AnimClass(Rule->MetallicDebris[Scen->RandomNumber(0, Rule->MetallicDebris.Count() - 1)], Center_Coord() + Coord(0, 0, 20), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL), 0);
 					}
@@ -5090,7 +5090,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			 * Determine whether this object performs a violent collateral explosion on death.
 			 * Either the type is flagged exploding, or a veteran/elite has the explodes ability.
 			 */
-			if (!TClass->IsExploding && !Has_Ability(ABILITY_EXPLODES)) {
+			if (!Techno_Type_Class()->IsExploding && !Has_Ability(ABILITY_EXPLODES)) {
 				break;
 			}
 
@@ -5132,7 +5132,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 
 				static FacingType _scatter_facing[] = {FACING_NONE, FACING_E, FACING_NW, FACING_NE, FACING_S, FACING_SE, FACING_N, FACING_SW, FACING_W};
 
-				int amount = (int)((double)Storage.Get_Total_Amount() / (double)TClass->Capacity * 9.0);
+				int amount = (int)((double)Storage.Get_Total_Amount() / (double)Techno_Type_Class()->Capacity * 9.0);
 				Cell center = Center_Coord().As_Cell();
 				for (int index = 0; index < ARRAY_SIZE(_scatter_facing); index++) {
 					Cell cell = Adjacent_Cell(center, _scatter_facing[index]);
@@ -5151,7 +5151,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			/*
 			 * Half-strength transition may trigger a feedback voice response.
 			 */
-			TechnoTypeClass const * ttype = TClass;
+			TechnoTypeClass const * ttype = Techno_Type_Class();
 			if (ttype->VoiceFeedback.Count() > 0 && Scen->RandomNumber(0, 99) < 30) {
 				VocType voc = (VocType)ttype->VoiceFeedback.Pick(Scen->RandomNumber());
 				Sound_Effect(voc, Center_Coord());
@@ -5168,7 +5168,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 			/*
 			 * Protected or rescue-needing AI objects notify their base when attacked.
 			 */
-			if ((TClass->IsToProtect || IsNeedingRescue) && !House->Is_Human_Player()) {
+			if ((Techno_Type_Class()->IsToProtect || IsNeedingRescue) && !House->Is_Human_Player()) {
 				if (source != NULL) {
 					Base_Is_Attacked(source);
 				}
@@ -5188,7 +5188,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 		}
 		Do_Shimmer();
 
-		if (HealthRatio > Rule->ConditionYellow) {
+		if (Get_Health_Ratio() > Rule->ConditionYellow) {
 			if (ParticleSystems[3] != NULL) {
 				ParticleSystems[3]->Delete_Me();
 			}
@@ -5197,14 +5197,14 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 				DynamicVectorClass<ParticleSystemTypeClass const *> systems;
 				systems.Set_Growth_Step(10);
 
-				for (int index = TClass->DamageParticleSystems.Count() - 1; index >= 0; index--) {
-					if (TClass->DamageParticleSystems[index]->Behaves_Like() == PSYS_BEHAVIOR_SMOKE) {
-						systems.Add(TClass->DamageParticleSystems[index]);
+				for (int index = Techno_Type_Class()->DamageParticleSystems.Count() - 1; index >= 0; index--) {
+					if (Techno_Type_Class()->DamageParticleSystems[index]->Behaves_Like() == PSYS_BEHAVIOR_SMOKE) {
+						systems.Add(Techno_Type_Class()->DamageParticleSystems[index]);
 					}
 				}
 
-				if (ParticleSystems[3] == NULL && systems.Count() > 0 && HeightAGL > -10) {
-					Coord spawn = TClass->DamageSmokeOffset;
+				if (ParticleSystems[3] == NULL && systems.Count() > 0 && Get_Height_AGL() > -10) {
+					Coord spawn = Techno_Type_Class()->DamageSmokeOffset;
 					ParticleSystems[3] = new ParticleSystemClass(systems[Scen->RandomNumber(0, systems.Count() - 1)], Get_Coord() + spawn, NULL, this, COORD_NONE);
 				}
 			}
@@ -5228,7 +5228,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 					bool retaliate = In_Range(target, which);
 					if (!retaliate) {
 						if (House->Is_Human_Player()) {
-							retaliate = ((double)(int)Distance(target->Center_Coord()) <= ((double)TClass->SightRange + 0.5) * CELL_LEPTON);
+							retaliate = ((double)(int)Distance(target->Center_Coord()) <= ((double)Techno_Type_Class()->SightRange + 0.5) * CELL_LEPTON);
 						} else {
 							retaliate = true;
 						}
@@ -5289,7 +5289,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 {
 	int total_recorded = 0;
 
-	int points = TClass->Cost_Of(House);
+	int points = Techno_Type_Class()->Cost_Of(House);
 
 	/*
 	**	Handle any trigger event associated with this object.
@@ -5308,8 +5308,8 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 	}
 
 	if (source != NULL) {
-		if (source->TClass->IsTrainable && !House->Is_Ally(source)) {
-			source->Veterancy.Made_A_Kill(source->TClass->Cost_Of(House), points);
+		if (source->Techno_Type_Class()->IsTrainable && !House->Is_Ally(source)) {
+			source->Veterancy.Made_A_Kill(source->Techno_Type_Class()->Cost_Of(House), points);
 		}
 
 		House->WhoLastHurtMe = source->Owner();
@@ -5323,7 +5323,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
 	switch ((RTTIType)RTTI) {
 		case RTTI_BUILDING:
 			{
-				if (!TClass->IsInsignificant) {
+				if (!Techno_Type_Class()->IsInsignificant) {
 					if (((BuildingClass *)this)->WhoLastHurtMe != HOUSE_NONE) {
 						House->BuildingsLost++;
 					}
@@ -5407,7 +5407,7 @@ void TechnoClass::Record_The_Kill(TechnoClass * source)
  *=============================================================================================*/
 Cell TechnoClass::Nearby_Location(TechnoClass const * techno) const
 {
-	SpeedType speed = TClass->Speed;
+	SpeedType speed = Techno_Type_Class()->Speed;
 	if (speed == SPEED_WINGED) {
 		speed = SPEED_TRACK;
 	}
@@ -5419,7 +5419,7 @@ Cell TechnoClass::Nearby_Location(TechnoClass const * techno) const
 		cell = Center_Coord().As_Cell();
 	}
 
-	MZoneType mzone = TClass->MZone;
+	MZoneType mzone = Techno_Type_Class()->MZone;
 	int zone = mzone != MZONE_NONE ? Map.Get_Cell_Zone(cell, mzone, IsOnBridge) : -1;
 	return(Map.Nearby_Location(cell, speed, zone, mzone, IsOnBridge));
 }
@@ -5446,10 +5446,10 @@ void TechnoClass::Do_Uncloak(bool silent)
 	if (Cloak == CLOAKED || Cloak == CLOAKING) {
 		Cloak = UNCLOAKING;
 		CloakingDevice.Set_Stage(Rule->CloakingStages - 1);
-		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
+		CloakingDevice.Set_Rate(Techno_Type_Class()->CloakingSpeed);
 		CloakingDevice.Set_Step(-1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Sound_Effect(Rule->CloakSound, Get_Coord());
 		}
 	}
 }
@@ -5475,10 +5475,10 @@ void TechnoClass::Do_Cloak(bool silent)
 		Detach_All(false);
 		Cloak = CLOAKING;
 		CloakingDevice.Set_Stage(0);
-		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
+		CloakingDevice.Set_Rate(Techno_Type_Class()->CloakingSpeed);
 		CloakingDevice.Set_Step(1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			Sound_Effect(Rule->CloakSound, Get_Coord());
 		}
 	}
 }
@@ -5526,8 +5526,8 @@ void TechnoClass::Do_Shimmer(void)
  *=============================================================================================*/
 VisualType TechnoClass::Visual_Character(bool raw, HouseClass const * house) const
 {
-	if (TClass->IsInvisible && IsOwnedByPlayer) return(VISUAL_NORMAL);
-	if (TClass->IsInvisible && !IsOwnedByPlayer && !Debug_Map) return(VISUAL_HIDDEN);
+	if (Techno_Type_Class()->IsInvisible && IsOwnedByPlayer) return(VISUAL_NORMAL);
+	if (Techno_Type_Class()->IsInvisible && !IsOwnedByPlayer && !Debug_Map) return(VISUAL_HIDDEN);
 
 	/*
 	**	When uncloaked or in map editor mode, always draw the object normally.
@@ -5681,7 +5681,7 @@ int TechnoClass::Get_Z_Fudge_Column(void) const
 int TechnoClass::Get_Z_Fudge_Tunnel(void) const
 {
 	int fudge = 0;
-	Cell cell = PositionCell;
+	Cell cell = Get_Cell();
 
 	if (!IsOnBridge) {
 		CellClass * north = &Map[Adjacent_Cell(cell, DIR_N)];
@@ -5773,14 +5773,14 @@ int TechnoClass::Get_Z_Adjust(void) const
 	int z = -TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 	int zadjust2 = z;
 	int zadjust = z;
-	Cell cell = PositionCell;
+	Cell cell = Get_Cell();
 	CellClass *cptr = &Map[cell];
 	UnitClass *unit = (UnitClass *)this;
 
 	if (unit->RTTI == RTTI_UNIT) {
 		if (unit->IsTethered) {
 			BuildingClass *building = (BuildingClass *)unit->Contact_With_Whom();
-			if (building->RTTI == RTTI_BUILDING && building->Mission == MISSION_UNLOAD) {
+			if (building->RTTI == RTTI_BUILDING && building->Get_Mission() == MISSION_UNLOAD) {
 				return(zadjust2 - 3);
 			}
 		}
@@ -6014,23 +6014,23 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 				if (((UnitClass *)this)->Class->IsSmallVisceroid || ((UnitClass *)this)->Class->IsLargeVisceroid) {
 					shadow = false;
 				}
-				if (HeightAGL == 0) {
+				if (Get_Height_AGL() == 0) {
 					zadjust += Get_Z_Adjust();
 				} else {
-					zadjust -= TacticalMap->Z_Lepton_To_Pixel(Height);
+					zadjust -= TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 				}
 				break;
 
 			case RTTI_AIRCRAFT:
-				drawpoint.Y -= TacticalMap->Z_Lepton_To_Pixel(Height);
-				zadjust -= TacticalMap->Z_Lepton_To_Pixel(Height);
+				drawpoint.Y -= TacticalMap->Z_Lepton_To_Pixel(Get_Height());
+				zadjust -= TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 				break;
 
 			case RTTI_INFANTRY:
-				if (HeightAGL == 0) {
+				if (Get_Height_AGL() == 0) {
 					zadjust += Get_Z_Adjust();
 				} else {
-					zadjust -= TacticalMap->Z_Lepton_To_Pixel(Height);
+					zadjust -= TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 					shadow = false;
 				}
 				break;
@@ -6075,7 +6075,7 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 			case VISUAL_NORMAL:
 				Draw_Shape(*LogicalSurface, *converter, shapefile, shapenum, drawpoint, rect, ShapeFlags_Type(flags|SHAPE_CENTER|SHAPE_WIN_REL), NULL, zadjust - 2, zgrad, brightness, zshapefile, zshapenum, zoff);
 				if (shadow) {
-					zadjust = -2 - TacticalMap->Z_Lepton_To_Pixel(Height);
+					zadjust = -2 - TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 					if (IsInTransport) {
 						drawpoint.Y -= 14;
 					}
@@ -6086,7 +6086,7 @@ void TechnoClass::Techno_Draw_Object(ShapeSet const * shapefile, int shapenum, P
 			case VISUAL_INDISTINCT:
 				Draw_Shape(*LogicalSurface, *converter, shapefile, shapenum, drawpoint, rect, ShapeFlags_Type(flags|SHAPE_CENTER|SHAPE_WIN_REL), NULL, zadjust - 2, zgrad, brightness, zshapefile, zshapenum, zoff);
 				if (DrawShapeShadows) {
-					zadjust = -2 - TacticalMap->Z_Lepton_To_Pixel(Height);
+					zadjust = -2 - TacticalMap->Z_Lepton_To_Pixel(Get_Height());
 					flags = ShapeFlags_Type(flags & ~SHAPE_TRANSLUCENT75);
 					if (IsInTransport) {
 						drawpoint.Y -= 14;
@@ -6474,8 +6474,8 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 		if (NearbyObject == target) {
 			NearbyObject = NULL;
 		}
-		if (ArchiveTarget == target) {
-			ArchiveTarget = NULL;
+		if (Fetch_Archive_Target() == target) {
+			Assign_Archive_Target(NULL);
 		}
 	}
 }
@@ -6518,13 +6518,13 @@ bool TechnoClass::Can_Fit_Passenger(ObjectClass const * passenger) const
 {
 	if (passenger == NULL) return(false);
 
-	TechnoTypeClass const * ptype = passenger->TClass;
+	TechnoTypeClass const * ptype = passenger->Techno_Type_Class();
 	if (ptype == NULL) return(false);
 
-	if (passenger->RTTI == RTTI_UNIT && !TClass->IsVehicleTransport) return(false);
+	if (passenger->RTTI == RTTI_UNIT && !Techno_Type_Class()->IsVehicleTransport) return(false);
 
-	return(ptype->Size <= TClass->SizeLimit &&
-		Cargo.Total_Size() + ptype->Size <= TClass->Max_Passengers());
+	return(ptype->Size <= Techno_Type_Class()->SizeLimit &&
+		Cargo.Total_Size() + ptype->Size <= Techno_Type_Class()->Max_Passengers());
 }
 
 
@@ -6550,7 +6550,7 @@ InfantryTypeClass const * TechnoClass::Crew_Type(void) const
 	**	If this object contains no crew, then there can be no
 	**	crew inside, duh... return this news.
 	*/
-	if (!TClass->IsCrew) {
+	if (!Techno_Type_Class()->IsCrew) {
 		return(NULL);
 	}
 
@@ -6606,7 +6606,7 @@ int TechnoClass::Value(void) const
 		}
 	}
 
-	return(Risk() + TClass->Reward + value);
+	return(Risk() + Techno_Type_Class()->Reward + value);
 }
 
 
@@ -6649,8 +6649,8 @@ int TechnoClass::Threat_Range(int control) const
 		**	threat range value as specified by the object's type class.
 		*/
 		bool is_renovator = Is_Renovator();
-		if (TClass->ThreatRange != 0 && !is_renovator) {
-			return(TClass->ThreatRange);
+		if (Techno_Type_Class()->ThreatRange != 0 && !is_renovator) {
+			return(Techno_Type_Class()->ThreatRange);
 		}
 		return(0);
 	}
@@ -6659,7 +6659,7 @@ int TechnoClass::Threat_Range(int control) const
 	**	Area guard range is specified, so figure twice the weapon range of the
 	**	longest range weapon this object is equipped with.
 	*/
-	int range = TClass->ThreatRange;
+	int range = Techno_Type_Class()->ThreatRange;
 	if (range == 0) {
 		range = std::max(Weapon_Range(0), Weapon_Range(1));
 	}
@@ -6692,7 +6692,7 @@ int TechnoClass::Threat_Range(int control) const
  *=============================================================================================*/
 bool TechnoClass::Is_In_Same_Zone(Coord const & coord) const
 {
-	MZoneType zone = TClass->MZone;
+	MZoneType zone = Techno_Type_Class()->MZone;
 
 	if (zone != MZONE_NONE) {
 		if (coord != COORD_NONE) {
@@ -6764,7 +6764,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 	**	If we are a certain type of building, such as a barrel or land mine,
 	**	ignore the attack.
 	*/
-	if (TClass->IsInsignificant) {
+	if (Techno_Type_Class()->IsInsignificant) {
 		return;
 	}
 
@@ -6806,7 +6806,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Don't allow a response if it doesn't have a weapon that will affect the
 			**	enemy object.
 			*/
-			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->TClass->Armor] == 0) {
+			if (infantry->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->Techno_Type_Class()->Armor] == 0) {
 				continue;
 			}
 
@@ -6833,7 +6833,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Greatly increase the threat value if this unit is already assigned to protect
 			**	the target.
 			*/
-			if (ArchiveTarget == this) {
+			if (Fetch_Archive_Target() == this) {
 				threat *= 100;
 			}
 
@@ -6895,7 +6895,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Don't allow a response if it doesn't have a weapon that will affect the
 			**	enemy object.
 			*/
-			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->TClass->Armor] == 0) {
+			if (unit->Get_Class_Weapon_Data(0)->Weapon->WarheadPtr->Modifier[enemy->Techno_Type_Class()->Armor] == 0) {
 				continue;
 			}
 
@@ -6922,7 +6922,7 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			**	Greatly increase the threat value if this unit is already assigned to protect
 			**	the target.
 			*/
-			if (threat > 0 && ArchiveTarget == this) {
+			if (threat > 0 && Fetch_Archive_Target() == this) {
 				threat *= 10;
 			}
 
@@ -6988,10 +6988,10 @@ void TechnoClass::Base_Is_Attacked(TechnoClass const * enemy)
 			bool basedefense = defender[lp]->Team != NULL && defender[lp]->Team->Class->IsBaseDefense;
 			if (Percent_Chance(66) && !basedefense) {
 				defender[lp]->Assign_Mission(MISSION_RESCUE);
-				defender[lp]->ArchiveTarget = this;
+				defender[lp]->Assign_Archive_Target(this);
 			} else {
 				defender[lp]->Assign_Mission(MISSION_GUARD_AREA);
-				defender[lp]->ArchiveTarget = this;
+				defender[lp]->Assign_Archive_Target(this);
 			}
 			defender[lp]->Assign_Target((AbstractClass *)enemy);
 			risktotal += defender[lp]->Risk();
@@ -7057,11 +7057,11 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
 	**	If this is not equipped with a weapon that can attack the molester, then
 	**	don't allow retaliation.
 	*/
-	TechnoTypeClass const * ttype = TClass;
+	TechnoTypeClass const * ttype = Techno_Type_Class();
 	int which = What_Weapon_Should_I_Use((AbstractClass *)source);
 	WeaponDataStruct const * wdata = Get_Class_Weapon_Data(which);
 	if (wdata->Weapon->WarheadPtr != NULL &&
-		wdata->Weapon->WarheadPtr->Modifier[source->TClass->Armor] == 0) {
+		wdata->Weapon->WarheadPtr->Modifier[source->Techno_Type_Class()->Armor] == 0) {
 			return(false);
 	}
 
@@ -7136,7 +7136,7 @@ bool TechnoClass::Is_Allowed_To_Retaliate(TechnoClass const * source, WarheadTyp
  *=============================================================================================*/
 int TechnoClass::Get_Ownable(void) const
 {
-	return(TClass->Get_Ownable());
+	return(Techno_Type_Class()->Get_Ownable());
 }
 
 
@@ -7156,7 +7156,7 @@ int TechnoClass::Get_Ownable(void) const
  *=============================================================================================*/
 int TechnoClass::Risk(void) const
 {
-	TechnoTypeClass const *ttptr = TClass;
+	TechnoTypeClass const *ttptr = Techno_Type_Class();
 	if (ttptr != NULL) {
 		return(ttptr->Risk);
 	}
@@ -7238,17 +7238,17 @@ int TechnoClass::Pip_Count(void) const
 {
 	bool valid = false;
 	double maximum, current;
-	switch (TClass->PipScale) {
+	switch (Techno_Type_Class()->PipScale) {
 
 		case PIPSCALE_PASSENGERS:
 			current = Cargo.Total_Size();
-			maximum = TClass->Max_Passengers();
+			maximum = Techno_Type_Class()->Max_Passengers();
 			valid = true;
 			break;
 
 		case PIPSCALE_AMMO:
 			current = Ammo;
-			maximum = TClass->MaxAmmo;
+			maximum = Techno_Type_Class()->MaxAmmo;
 			valid = true;
 			break;
 
@@ -7257,7 +7257,7 @@ int TechnoClass::Pip_Count(void) const
 	}
 
 	if (valid) {
-		int retval = TClass->Max_Pips() * (current / maximum) + 0.5;
+		int retval = Techno_Type_Class()->Max_Pips() * (current / maximum) + 0.5;
 		if (!retval && current > 0) retval = 1;
 		return(retval);
 	}
@@ -7305,8 +7305,8 @@ DirType TechnoClass::Fire_Direction(void) const
  *=============================================================================================*/
 void TechnoClass::Response_Select(void)
 {
-	if (AllowVoice && TClass->VoiceSelect.Count()) {
-		Sound_Effect((VocType)TClass->VoiceSelect.Pick(NonCriticalRandomNumber));
+	if (AllowVoice && Techno_Type_Class()->VoiceSelect.Count()) {
+		Sound_Effect((VocType)Techno_Type_Class()->VoiceSelect.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -7328,8 +7328,8 @@ void TechnoClass::Response_Select(void)
  *=============================================================================================*/
 void TechnoClass::Response_Move(void)
 {
-	if (AllowVoice && TClass->VoiceMove.Count()) {
-		Sound_Effect((VocType)TClass->VoiceMove.Pick(NonCriticalRandomNumber));
+	if (AllowVoice && Techno_Type_Class()->VoiceMove.Count()) {
+		Sound_Effect((VocType)Techno_Type_Class()->VoiceMove.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -7351,8 +7351,8 @@ void TechnoClass::Response_Move(void)
  *=============================================================================================*/
 void TechnoClass::Response_Attack(void)
 {
-	if (AllowVoice && TClass->VoiceAttack.Count()) {
-		Sound_Effect((VocType)TClass->VoiceAttack.Pick(NonCriticalRandomNumber));
+	if (AllowVoice && Techno_Type_Class()->VoiceAttack.Count()) {
+		Sound_Effect((VocType)Techno_Type_Class()->VoiceAttack.Pick(NonCriticalRandomNumber));
 	}
 }
 
@@ -7569,9 +7569,9 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 	**	Transporter type objects have a different graphic representation for the pips. The
 	**	pip color represents the type of occupant.
 	*/
-	if (TClass->Max_Passengers() > 0) {
+	if (Techno_Type_Class()->Max_Passengers() > 0) {
 		ObjectClass const * object = Cargo.Attached_Object();
-		int remaining = (object != NULL) ? object->TClass->Size : 0;
+		int remaining = (object != NULL) ? object->Techno_Type_Class()->Size : 0;
 
 		for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
 			PipEnum pip = PIP_EMPTY;
@@ -7586,7 +7586,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 				remaining--;
 				if (remaining <= 0) {
 					object = object->Next;
-					remaining = (object != NULL) ? object->TClass->Size : 0;
+					remaining = (object != NULL) ? object->Techno_Type_Class()->Size : 0;
 				}
 			}
 			Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, pip, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
@@ -7604,12 +7604,12 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		**	Check if it's a harvester, to show the right type of pips for the
 		**	various minerals it could have harvested.
 		*/
-		if (RTTI == RTTI_UNIT && TClass->PipScale == PIPSCALE_TIBERIUM) {
+		if (RTTI == RTTI_UNIT && Techno_Type_Class()->PipScale == PIPSCALE_TIBERIUM) {
 
 			int iron = Storage.Get_Amount(0);
 			int nickel = Storage.Get_Total_Amount() - iron;
-			int greenpips   = TClass->Max_Pips() * (double(iron) / TClass->Capacity) + 0.5;
-			int bluepips  = TClass->Max_Pips() * (double(nickel) / TClass->Capacity) + 0.5;
+			int greenpips   = Techno_Type_Class()->Max_Pips() * (double(iron) / Techno_Type_Class()->Capacity) + 0.5;
+			int bluepips  = Techno_Type_Class()->Max_Pips() * (double(nickel) / Techno_Type_Class()->Capacity) + 0.5;
 
 			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
 				int shape = PIP_EMPTY;
@@ -7627,7 +7627,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		/*
 		**
 		*/
-		else if (TClass->PipScale == PIPSCALE_AMMO) {
+		else if (Techno_Type_Class()->PipScale == PIPSCALE_AMMO) {
 			int _pips = pips;
 			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
 				if (_pips > 0) {
@@ -7640,7 +7640,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		/*
 		**
 		*/
-		else if (RTTI == RTTI_BUILDING && TClass->PipScale == PIPSCALE_TIBERIUM) {
+		else if (RTTI == RTTI_BUILDING && Techno_Type_Class()->PipScale == PIPSCALE_TIBERIUM) {
 			int _pips = pips;
 			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
 				int shape = PIP_EMPTY;
@@ -7655,7 +7655,7 @@ void TechnoClass::Draw_Pips(Point2D const & bottomleft, Point2D const & center, 
 		/*
 		**
 		*/
-		else if (TClass->PipScale == PIPSCALE_CHARGE) {
+		else if (Techno_Type_Class()->PipScale == PIPSCALE_CHARGE) {
 			for (int index = 0; index < Class_Of()->Max_Pips(); index++) {
 				Draw_Shape(*LogicalSurface, *NormalDrawer, pip_shapes, index < pips ? 1 : 0, xy + offset * index, rect, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL));
 			}
@@ -7769,7 +7769,7 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 				!building->IsInLimbo &&
 				building->Class == b &&
 				(!evenoccupied || !building->In_Radio_Contact()) &&
-				(RTTI == RTTI_AIRCRAFT || Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), building->Center_Coord().As_Cell(), TClass->MZone, Is_Moving_Onto_Bridge(), false, false)) &&
+				(RTTI == RTTI_AIRCRAFT || Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), building->Center_Coord().As_Cell(), Techno_Type_Class()->MZone, Is_Moving_Onto_Bridge(), false, false)) &&
 				((TechnoClass *)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER) {
 
 				/*
@@ -7829,7 +7829,7 @@ Cell TechnoClass::Find_Exit_Cell(TechnoClass const *) const
  *=============================================================================================*/
 int TechnoClass::Refund_Amount(void) const
 {
-	int cost = TClass->Cost_Of(House);
+	int cost = Techno_Type_Class()->Cost_Of(House);
 
 	if (House->Is_Human_Player()) {
 		cost = cost * Rule->RefundPercent;
@@ -7858,14 +7858,14 @@ int TechnoClass::Anti_Air(void) const
 {
 	if (Is_Weapon_Equipped()) {
 
-		WeaponTypeClass const * weapon = PrimaryWeapon;
+		WeaponTypeClass const * weapon = Get_Primary_Weapon();
 		BulletTypeClass const * bullet = weapon->Bullet;
 		WarheadTypeClass const * warhead = weapon->WarheadPtr;
 
 		if (bullet->IsAntiAircraft) {
 			int value = ((weapon->Attack * warhead->Modifier[ARMOR_ALUMINUM]) * weapon->Range) / weapon->ROF;
 
-			if (TClass->Is_Two_Shooter()) {
+			if (Techno_Type_Class()->Is_Two_Shooter()) {
 				value *= 2;
 			}
 			return(value/50);
@@ -7894,15 +7894,15 @@ int TechnoClass::Anti_Air(void) const
 int TechnoClass::Anti_Armor(void) const
 {
 	if (Is_Weapon_Equipped()) {
-		if (!PrimaryWeapon->Bullet->IsAntiGround) return(0);
+		if (!Get_Primary_Weapon()->Bullet->IsAntiGround) return(0);
 
-		WeaponTypeClass const * weapon = PrimaryWeapon;
+		WeaponTypeClass const * weapon = Get_Primary_Weapon();
 		BulletTypeClass const * bullet = weapon->Bullet;
 		WarheadTypeClass const * warhead = weapon->WarheadPtr;
 		int mrange = std::min(weapon->Range, 4 * CELL_LEPTON);
 
 		int value = ((weapon->Attack * warhead->Modifier[ARMOR_STEEL]) * mrange * warhead->SpreadFactor) / weapon->ROF;
-		if (TClass->Is_Two_Shooter()) {
+		if (Techno_Type_Class()->Is_Two_Shooter()) {
 			value *= 2;
 		}
 		if (bullet->IsInaccurate) {
@@ -7933,15 +7933,15 @@ int TechnoClass::Anti_Armor(void) const
 int TechnoClass::Anti_Infantry(void) const
 {
 	if (Is_Weapon_Equipped()) {
-		if (!PrimaryWeapon->Bullet->IsAntiGround) return(0);
+		if (!Get_Primary_Weapon()->Bullet->IsAntiGround) return(0);
 
-		WeaponTypeClass const * weapon = PrimaryWeapon;
+		WeaponTypeClass const * weapon = Get_Primary_Weapon();
 		BulletTypeClass const * bullet = weapon->Bullet;
 		WarheadTypeClass const * warhead = weapon->WarheadPtr;
 		int mrange = std::min(weapon->Range, 4 * CELL_LEPTON);
 
 		int value = ((weapon->Attack * warhead->Modifier[ARMOR_NONE]) * mrange * warhead->SpreadFactor) / weapon->ROF;
-		if (TClass->Is_Two_Shooter()) {
+		if (Techno_Type_Class()->Is_Two_Shooter()) {
 			value *= 2;
 		}
 		if (bullet->IsInaccurate) {
@@ -7982,7 +7982,7 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 		}
 		SightIncrease = sight_increase;
 
-		int sight_range = TClass->SightRange * (SightIncrease * 0.01 + 1.0);
+		int sight_range = Techno_Type_Class()->SightRange * (SightIncrease * 0.01 + 1.0);
 		if (Has_Ability(ABILITY_SIGHT) && Rule->VeteranSight != 0.0) {
 			sight_range *= Rule->VeteranSight + 1;
 		}
@@ -7992,7 +7992,7 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 			if (((1 << PlayerPtr->HeapID) & LimpetType) != 0) {
 				house = PlayerPtr;
 			}
-			Map.Sight_From(PositionCoord, sight_range, house, incremental, dontmap);
+			Map.Sight_From(Get_Coord(), sight_range, house, incremental, dontmap);
 		}
 	}
 }
@@ -8008,8 +8008,8 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 /// <param name="force">How violent the jolt was.</param>
 void TechnoClass::Rock(Coord const & coord, float force)
 {
-	if (TClass->Voxel.VoxLib != NULL && !TClass->Voxel.VoxLib->Load_Failed()) {
-		Coord pos = PositionCoord;
+	if (Techno_Type_Class()->Voxel.VoxLib != NULL && !Techno_Type_Class()->Voxel.VoxLib->Load_Failed()) {
+		Coord pos = Get_Coord();
 		Vector3 vec1;
 		vec1.X = pos.X - coord.X;
 		vec1.Y = coord.Y - pos.Y;
@@ -8022,7 +8022,7 @@ void TechnoClass::Rock(Coord const & coord, float force)
 
 		float dist1 = vec1.Length();
 
-		float scale = (float)((0.04f - (double)dist1 * 0.000025f) * force / TClass->Weight);
+		float scale = (float)((0.04f - (double)dist1 * 0.000025f) * force / Techno_Type_Class()->Weight);
 
 		if (fabs(dist1) >= 0.00002 && scale >= 0.01f) {
 			if (scale > 0.05f) {
@@ -8176,7 +8176,7 @@ Coord TechnoClass::Predict_Target_Coord(void) const
 			if (unit != NULL && unit->Locomotion->Is_Moving()) {
 				int speed = unit->Current_Speed();
 				int distance = Distance(TarCom);
-				WeaponTypeClass const * weapon = PrimaryWeapon;
+				WeaponTypeClass const * weapon = Get_Primary_Weapon();
 				if (weapon != NULL) {
 					int travel = (distance / (weapon->MaxSpeed * 0.9) * speed);
 					double dir = unit->PrimaryFacing.Current().As_Radian();
@@ -8211,7 +8211,7 @@ int TechnoClass::Get_Predator_Offset(void) const
 /// <returns>bool; Should the object self heal this frame?</returns>
 bool TechnoClass::Should_Self_Heal_Now(void) const
 {
-	if (!TClass->IsSelfHealing) {
+	if (!Techno_Type_Class()->IsSelfHealing) {
 		if (!Has_Ability(ABILITY_SELF_HEAL)) {
 			return(false);
 		}
@@ -8221,13 +8221,13 @@ bool TechnoClass::Should_Self_Heal_Now(void) const
 	if (Strength <= 0) {
 		return(false);
 	}
-	if (Strength >= TClass->MaxStrength) {
+	if (Strength >= Techno_Type_Class()->MaxStrength) {
 		return(false);
 	}
-	if ((Frame % std::max((int)(TClass->Self_Heal_Rate() * TICKS_PER_MINUTE), 1)) != 0) {
+	if ((Frame % std::max((int)(Techno_Type_Class()->Self_Heal_Rate() * TICKS_PER_MINUTE), 1)) != 0) {
 		return(false);
 	}
-	return(HealthRatio > TClass->Self_Heal_Cap() ? false : true);
+	return(Get_Health_Ratio() > Techno_Type_Class()->Self_Heal_Cap() ? false : true);
 }
 
 
@@ -8482,7 +8482,7 @@ Coord TechnoClass::Railgun_Beam_Damage(Coord & coord, AbstractClass *abstract, W
 							 * perpendicular to the beam, then project the offset onto it
 							 * and normalize.
 							 */
-							Coord obj_coord = optr->PositionCoord;
+							Coord obj_coord = optr->Get_Coord();
 							Vector3 obj(obj_coord.X, obj_coord.Y, obj_coord.Z);
 							Vector3 off = obj - start;
 							Vector3 cross = Vector3::Cross_Product(off, delta);
@@ -8594,7 +8594,7 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 	double target_strength_coefficient;
 	double target_distance_coefficient;
 
-	TechnoTypeClass const * ttype = TClass;
+	TechnoTypeClass const * ttype = Techno_Type_Class();
 
 	if (target->Class_Of() == NULL) {
 		return(0);
@@ -8632,7 +8632,7 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 				}
 			}
 
-			threat += target_special_threat_coefficient * target->TClass->SpecialThreatValue;
+			threat += target_special_threat_coefficient * target->Techno_Type_Class()->SpecialThreatValue;
 
 			if (House->Enemy != HOUSE_NONE && House->Enemy == target->House->HeapID) {
 				threat += Rule->EnemyHouseThreatBonus;
@@ -8644,9 +8644,9 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 		threat += my_effectiveness_coefficient * my_weapon->WarheadPtr->Modifier[target->Class_Of()->Armor];
 	}
 
-	threat += target->HealthRatio * target_strength_coefficient;
+	threat += target->Get_Health_Ratio() * target_strength_coefficient;
 
-	int range = my_weapon != NULL ? my_weapon->Range : TClass->ThreatRange;
+	int range = my_weapon != NULL ? my_weapon->Range : Techno_Type_Class()->ThreatRange;
 	range /= CELL_LEPTON;
 
 	int dist;
@@ -8671,7 +8671,7 @@ double TechnoClass::Target_Threat(TechnoClass * target, Coord const & firing_coo
 bool TechnoClass::Has_Ability(AbilityType ability) const
 {
 	if (Veterancy.Is_Veteran() || Veterancy.Is_Elite()) {
-		TechnoTypeClass const * ttype = TClass;
+		TechnoTypeClass const * ttype = Techno_Type_Class();
 		if (Veterancy.Is_Veteran() && ttype->VeteranAbilities[ability]) {
 			return(true);
 		}
@@ -8732,7 +8732,7 @@ int TechnoClass::Apparent_Brightness(int brightness) const
 /// <returns>bool; Should the object appear on the radar?</returns>
 bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 {
-	TechnoTypeClass const * ttype = TClass;
+	TechnoTypeClass const * ttype = Techno_Type_Class();
 	if (!ttype->IsInvisible) {
 		if (ttype->IsRadarVisible) {
 			return(true);
@@ -8742,7 +8742,7 @@ bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 			return(IsDiscoveredByPlayer ? true : false);
 		}
 
-		int height = HeightAGL;
+		int height = Get_Height_AGL();
 		bool ability_radar_invisible = Has_Ability(ABILITY_RADAR_INVISIBLE);
 		bool is_shrouded = Map.Is_Shrouded(Get_Coord()) && MainWindow;
 		bool is_fogged = Scen->Special.IsFogOfWar && Map.Is_Fogged(Get_Coord());
@@ -8883,7 +8883,7 @@ void TechnoClass::Reduce_Ammunition(void)
 /// <returns>Returns with the collateral damage figure.</returns>
 int TechnoClass::Get_Collateral_Damage(void) const
 {
-	return(int((float)TClass->MaxStrength * TClass->CollateralDamageCoefficient));
+	return(int((float)Techno_Type_Class()->MaxStrength * Techno_Type_Class()->CollateralDamageCoefficient));
 }
 
 
@@ -8894,7 +8894,7 @@ int TechnoClass::Get_Collateral_Damage(void) const
 /// </summary>
 void TechnoClass::Remove_Damage_Particle(void)
 {
-	if (HealthRatio > Rule->ConditionYellow || HeightAGL < -10) {
+	if (Get_Health_Ratio() > Rule->ConditionYellow || Get_Height_AGL() < -10) {
 		if (ParticleSystems[ATTACHED_PARTICLE_DAMAGE]) {
 			ParticleSystems[ATTACHED_PARTICLE_DAMAGE]->Delete_Me();
 		}
@@ -8994,7 +8994,7 @@ void TechnoClass::Update_Radar_Position(bool force_update)
 
 	Point2D point;
 	if (RTTI != RTTI_BUILDING || force_update) {
-		point = Map.Coord_To_Radar_Pixel(PositionCoord, false);
+		point = Map.Coord_To_Radar_Pixel(Get_Coord(), false);
 	} else {
 		point = RadarPos;
 	}
@@ -9050,7 +9050,7 @@ void TechnoClass::Update_Radar_Position(bool force_update)
 /// <returns>The type's MaxSpeed, or 0 when no type is present.</returns>
 int TechnoClass::Get_Max_Speed(void) const
 {
-	TechnoTypeClass const * ttype = TClass;
+	TechnoTypeClass const * ttype = Techno_Type_Class();
 	if (ttype) {
 		return(ttype->MaxSpeed);
 	}

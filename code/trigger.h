@@ -88,7 +88,6 @@ class TriggerClass : public AbstractClass
 		void Disable(void);
 		void Set_Enabled(bool val) {if (val) Enable(); else Disable();}
 		bool Is_Enabled(void) const {return(IsActive);}
-		__declspec(property(get=Is_Enabled, put=Set_Enabled)) bool IsEnabled;
 
 		void Flag_Event_Tripped(int event);
 		void Flag_Event_Untripped(int event);

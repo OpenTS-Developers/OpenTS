@@ -40,7 +40,7 @@ bool IsometricTileClass::Mark(MarkType mark)
 
 		for (int y = 0; y < Class->Height; y++) {
 			for (int x = 0; x < Class->Width; x++) {
-				Cell cell = PositionCell;
+				Cell cell = Get_Cell();
 				cell += Cell(x, y);
 
 				if (Map.In_Radar(cell)) {
@@ -105,7 +105,7 @@ bool IsometricTileClass::Mark(MarkType mark)
 								for (int i = 0; i < Anims.Count(); i++) {
 									AnimClass *anim = Anims[i];
 									if (anim->Class == OverlayTypes[cptr->Overlay]->CellAnim) {
-										if (anim->PositionCoord == ccoord) {
+										if (anim->Get_Coord() == ccoord) {
 											delete anim;
 											break;
 										}
@@ -191,7 +191,7 @@ void IsometricTileClass::Serialize(SaveStreamClass & stream)
 bool IsometricTileClass::Unlimbo(Coord const & coord, Dir256 dir)
 {
 	IsInLimbo = false;
-	PositionCoord = coord;
+	Set_Coord(coord);
 	return(Mark(MARK_DOWN));
 }
 

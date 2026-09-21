@@ -178,9 +178,9 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	Set_Stage(0);
 
 	if (!Class->IsGroundLayer) {
-		Height = Rule->FlightLevel;
+		Set_Height(Rule->FlightLevel);
 	} else {
-		HeightAGL = 0;
+		Set_Height_AGL(0);
 	}
 
 	if (Class->IsReverse) {
@@ -541,7 +541,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				flags = ShapeFlags_Type(flags|SHAPE_ALPHA);
 			}
 
-			int height = HeightAGL;
+			int height = Get_Height_AGL();
 			int brightness = NORMAL_LIGHT;
 			ConvertClass * convert;
 
@@ -579,7 +579,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 			*/
 			if (IsBouncing) {
 				Point2D drawpoint(point.X, point.Y + Class->YDrawOffset + TacticalMap->Z_Lepton_To_Pixel(height));
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height));
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, drawpoint, cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Get_Height()));
 			}
 
 			if (Class->IsTiled) {
@@ -587,7 +587,7 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 				Point2D origin = point;
 				Point2D drawpoint = origin - Point2D(0, frameheight / 2);
 				bool done = false;
-				int height_offset = ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2;
+				int height_offset = ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Get_Height()) - 2;
 				while (!done) {
 					Draw_Shape(*LogicalSurface, *AnimDrawer, shapefile, shapenum, Point2D(origin.X, drawpoint.Y + Class->YDrawOffset), TacticalRect, flags, NULL, height_offset, ZGRAD_90DEG, brightness);
 					if (drawpoint.Y < 0) done = true;
@@ -595,14 +595,14 @@ void AnimClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 					drawpoint.Y -= frameheight;
 				}
 			} else if (Class->IsFlat) {
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2, ZGRAD_GROUND, brightness);
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Get_Height()) - 2, ZGRAD_GROUND, brightness);
 			} else {
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 2, ZGRAD_90DEG, brightness);
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(flags|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Get_Height()) - 2, ZGRAD_90DEG, brightness);
 			}
 
 			if (Class->IsFlamingGuy && !IsFalling) {
 				shapenum += shapefile->Get_Count() / 2;
-				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Height) - 3, ZGRAD_GROUND, brightness);
+				Draw_Shape(*LogicalSurface, *convert, shapefile, shapenum, Point2D(point.X, point.Y + Class->YDrawOffset), cliprect, ShapeFlags_Type(SHAPE_DARKEN|SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), NULL, ZAdjust + Class->YDrawOffset - TacticalMap->Z_Lepton_To_Pixel(Get_Height()) - 3, ZGRAD_GROUND, brightness);
 			}
 		}
 		BEnd(BENCH_ANIMS);
@@ -699,7 +699,7 @@ BounceResultType AnimClass::Bounce_AI(void)
 			break;
 	}
 
-	PositionCoord = bounce.Get_Bounce_Coord();
+	Set_Coord(bounce.Get_Bounce_Coord());
 
 	return(bounce_result);
 }
@@ -730,15 +730,15 @@ void AnimClass::AI(void)
 	if (IsBouncing) {
 		BounceResultType bounce_result = Bounce_AI();
 		if (bounce_result == BOUNCE_SETTLED || bounce_result == BOUNCE_IMPACT) {
-			bool water = Map[(Coord const &)PositionCoord].Land_Type() == LAND_WATER;
-			bool bridge = PositionCoord.Z >= Map.Get_Height_GL(PositionCoord) + BRIDGE_LEPTON_HEIGHT;
+			bool water = Map[(Coord const &)Get_Coord()].Land_Type() == LAND_WATER;
+			bool bridge = Get_Coord().Z >= Map.Get_Height_GL(Get_Coord()) + BRIDGE_LEPTON_HEIGHT;
 
 			if (water && !bridge) {
 				if (Class->IsMeteor) {
-					new AnimClass(Rule->SplashList[Rule->SplashList.Count()-1], PositionCoord + Coord(0, 0, 3));
+					new AnimClass(Rule->SplashList[Rule->SplashList.Count()-1], Get_Coord() + Coord(0, 0, 3));
 				} else {
-					new AnimClass(Rule->Wake, PositionCoord);
-					new AnimClass(Rule->SplashList[0], PositionCoord + Coord(0, 0, 3));
+					new AnimClass(Rule->Wake, Get_Coord());
+					new AnimClass(Rule->SplashList[0], Get_Coord() + Coord(0, 0, 3));
 				}
 			} else {
 				if (Class->ExpireAnim != NULL) {
@@ -1031,7 +1031,7 @@ void AnimClass::Attach_To(ObjectClass * obj)
 		Coord center = Center_Coord();
 		xObject = NULL;
 
-		PositionCoord = center;
+		Set_Coord(center);
 
 		if (down) {
 			Map.Submit(this);
@@ -1045,7 +1045,7 @@ void AnimClass::Attach_To(ObjectClass * obj)
 	Map.Remove(this);
 	obj->IsAnimAttached = true;
 	xObject = obj;
-	PositionCoord = center - obj->Center_Coord();
+	Set_Coord(center - obj->Center_Coord());
 	Map.Submit(this);
 }
 
@@ -1127,7 +1127,7 @@ void AnimClass::Start(void)
 				debris->AlternativeBrightness = cptr->Brightness;
 			}
 
-			Explosion_Damage(PositionCoord, Rule->TiberiumExplosionDamage, NULL, Rule->C4Warhead, false);
+			Explosion_Damage(Get_Coord(), Rule->TiberiumExplosionDamage, NULL, Rule->C4Warhead, false);
 
 			cptr->Recalc_Attributes();
 			Map.Update_Cell_Zone(cptr->CellID);
@@ -1168,7 +1168,7 @@ void AnimClass::Middle(void)
 		height = shapefile->Get_Rect(Class->Biggest).Height;
 	}
 
-	if (HeightAGL < 30) {
+	if (Get_Height_AGL() < 30) {
 
 		/*
 		**	If this animation leaves scorch marks (e.g., napalm), then do so at this time.
@@ -1212,8 +1212,8 @@ void AnimClass::Middle(void)
 			new AnimClass(Rule->LargeFire, Map.Closest_Free_Spot(Coord_Scatter(Center_Coord(), 7 * CELL_LEPTON / 16), true), 0, Random_Pick(1, 2));
 		}
 	} else if (Class->IsScorcher) {
-		if (HeightAGL < 10) {
-			LandType land = Map[(Coord const &)PositionCoord].Land_Type();
+		if (Get_Height_AGL() < 10) {
+			LandType land = Map[(Coord const &)Get_Coord()].Land_Type();
 			if (land != LAND_WATER && land != LAND_BEACH && land != LAND_ICE && land != LAND_ROCK) {
 				newanim = new AnimClass(Rule->SmallFire, Center_Coord(), 0, Random_Pick(1, 2));
 				if (newanim != NULL && xObject != NULL) {
@@ -1422,7 +1422,7 @@ ObjectTypeClass const * AnimClass::Class_Of(void) const
 bool AnimClass::Limbo(void)
 {
 	if (Class->IsVeins) {
-		Map[(Coord const &)PositionCoord].IsAnimAttached = false;
+		Map[(Coord const &)Get_Coord()].IsAnimAttached = false;
 	}
 
 	if (BASECLASS::Limbo()) {
@@ -1445,10 +1445,10 @@ bool AnimClass::Limbo(void)
 /// </summary>
 void AnimClass::Vein_Attack_AI(void)
 {
-	CellClass * cellptr = &Map[(Coord const &)PositionCoord];
+	CellClass * cellptr = &Map[(Coord const &)Get_Coord()];
 	ObjectClass * optr = cellptr->Cell_Occupier();
 
-	if (optr == NULL || optr->HeightAGL > 0 || cellptr->Overlay != OVERLAY_VEINS || cellptr->OverlayData < OVERLAYDATA_FIRST_SOLID_VEIN || cellptr->Ramp != 0) {
+	if (optr == NULL || optr->Get_Height_AGL() > 0 || cellptr->Overlay != OVERLAY_VEINS || cellptr->OverlayData < OVERLAYDATA_FIRST_SOLID_VEIN || cellptr->Ramp != 0) {
 		IsToDelete = true;
 	}
 
@@ -1457,7 +1457,7 @@ void AnimClass::Vein_Attack_AI(void)
 			ObjectClass * next = optr->Next;
 			int damage = Rule->VeinDamage;
 			TechnoClass * tech = Dynamic_Cast<TechnoClass *>(optr);
-			if (tech != NULL && !tech->TClass->IsImmuneToVeins && !tech->Has_Ability(ABILITY_VEIN_PROOF) && tech->Strength > 0 && tech->IsActive && tech->HeightAGL <= 5) {
+			if (tech != NULL && !tech->Techno_Type_Class()->IsImmuneToVeins && !tech->Has_Ability(ABILITY_VEIN_PROOF) && tech->Strength > 0 && tech->IsActive && tech->Get_Height_AGL() <= 5) {
 				tech->Take_Damage(damage, 0, Rule->VeinholeWarhead);
 			}
 			optr = next;
@@ -1513,24 +1513,24 @@ void AnimClass::Flaming_Guy_AI(void)
 	}
 
 	if (FlamingGuyCoords != COORD_NONE && !IsFlamingGuyEnd) {
-		Coord coord = PositionCoord;
+		Coord coord = Get_Coord();
 		coord.Z = 0;
 		Coord target = FlamingGuyCoords;
 		target.Z = 0;
 		if (coord.Distance_To(target) <= _max_distance) {
 			if (!IsFalling) {
 				Coord nextcoord = Next_Flaming_Guy_Coord();
-				bool sink = Map[FlamingGuyCoords].Land_Type() == LAND_WATER && HeightAGL <= LEVEL_LEPTON_H;
+				bool sink = Map[FlamingGuyCoords].Land_Type() == LAND_WATER && Get_Height_AGL() <= LEVEL_LEPTON_H;
 				if (nextcoord != COORD_NONE && FlamingGuyRetries < _max_tries && !sink) {
 					FlamingGuyRetries++;
-					int z = PositionCoord.Z;
+					int z = Get_Coord().Z;
 					Coord oldcoord = FlamingGuyCoords;
 					if (z <= Map.Get_Height_GL(oldcoord) + 2 * LEVEL_LEPTON_H) {
 						oldcoord.Z = Map.Get_Height_GL(oldcoord);
 					} else {
 						oldcoord.Z = Map.Get_Height_GL(oldcoord) + BRIDGE_LEPTON_HEIGHT;
 					}
-					PositionCoord = oldcoord;
+					Set_Coord(oldcoord);
 					FlamingGuyCoords = nextcoord;
 				} else {
 					FlamingGuyCoords = COORD_NONE;
@@ -1541,20 +1541,20 @@ void AnimClass::Flaming_Guy_AI(void)
 				}
 			}
 		} else {
-			int z = PositionCoord.Z;
+			int z = Get_Coord().Z;
 			DirType direction = DirType().Direction(Center_Coord(), FlamingGuyCoords);
-			Coord newcoord = Move_Coord(PositionCoord, direction, (float)_max_distance);
+			Coord newcoord = Move_Coord(Get_Coord(), direction, (float)_max_distance);
 			if (z <= Map.Get_Height_GL(newcoord) + 2 * LEVEL_LEPTON_H) {
 				newcoord.Z = Map.Get_Height_GL(newcoord);
 			} else {
 				newcoord.Z = Map.Get_Height_GL(newcoord) + BRIDGE_LEPTON_HEIGHT;
 			}
-			PositionCoord = newcoord;
+			Set_Coord(newcoord);
 		}
 
 		if (!IsFalling) {
-			Cell position = PositionCoord.As_Cell();
-			if (PositionCoord.Z >= Map.Get_Height_GL(PositionCoord) + BRIDGE_LEPTON_HEIGHT) {
+			Cell position = Get_Coord().As_Cell();
+			if (Get_Coord().Z >= Map.Get_Height_GL(Get_Coord()) + BRIDGE_LEPTON_HEIGHT) {
 				if (!Map[Get_Coord()].IsUnderBridge && !Map[Adjacent_Cell(position, FACING_W)].IsUnderBridge && !Map[Adjacent_Cell(position, FACING_N)].IsUnderBridge) {
 					IsFalling = true;
 				}
@@ -1603,7 +1603,7 @@ Coord AnimClass::Next_Flaming_Guy_Coord(void)
 {
 	bool any = false;
 
-	Cell cell = PositionCoord.As_Cell();
+	Cell cell = Get_Coord().As_Cell();
 	int mindist = 10000;
 	Cell mincell = CELL_NONE;
 

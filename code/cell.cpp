@@ -2628,7 +2628,7 @@ void CellClass::Draw_It(Point2D const & xdrawpoint, Rect const & cliprect, bool 
 		**	Redraw any smudge.
 		*/
 		if (Smudge != SMUDGE_NONE) {
-			SmudgeTypes[Smudge]->Draw_It(drawpoint + Point2D(ISO_TILE_PIXEL_W / 2, TacticalRect.Y) - cliprect.TopLeft, cliprect, SmudgeData, LEVEL_LEPTON_H * Height, CellID);
+			SmudgeTypes[Smudge]->Draw_It(drawpoint + Point2D(ISO_TILE_PIXEL_W / 2, TacticalRect.Y) - cliprect.Top_Left(), cliprect, SmudgeData, LEVEL_LEPTON_H * Height, CellID);
 		}
 
 		BEnd(BENCH_CELL);
@@ -3848,7 +3848,7 @@ crate_money:
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
 					if (obj != NULL && obj->IsDown && obj->Is_Techno() &&
-						((TechnoClass *)obj)->TClass->IsTrainable && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
+						((TechnoClass *)obj)->Techno_Type_Class()->IsTrainable && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
 						for (int count = 0; count < data; count++) {
 							VeterancyClass * vet = &((TechnoClass *)obj)->Veterancy;
 							if (vet->Is_Veteran()) vet->Set_Elite(true);
@@ -5040,7 +5040,7 @@ void CellClass::Force_New_Slope_For_Occupiers(void) const
 
 	for (int i = 0; i < count; i++) {
 		occupier = occupiers[i];
-		occupier->HeightAGL = 0;
+		occupier->Set_Height_AGL(0);
 		if (occupier->RTTI == RTTI_UNIT || occupier->RTTI == RTTI_AIRCRAFT) {
 			((FootClass *)occupier)->Locomotion->Force_New_Slope(Ramp);
 		}
@@ -5336,7 +5336,7 @@ void CellClass::Redraw_Veins(void)
 			}
 			adjacent.Recalc_Attributes();
 
-			rect = Union(rect, Union(adjacent.Overlay_Render_Rect(), adjacent.Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+			rect = Union(rect, Union(adjacent.Overlay_Render_Rect(), adjacent.Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 			TacticalMap->Register_Dirty_Area(rect);
 			Map.Radar_Background(adjacent.CellID);
 		}
@@ -5346,7 +5346,7 @@ void CellClass::Redraw_Veins(void)
 	 * Finally flag this cell's combined (old + new) area for redraw and
 	 * recalculate its land attributes.
 	 */
-	dirty = Union(dirty, Union(Overlay_Render_Rect(), Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+	dirty = Union(dirty, Union(Overlay_Render_Rect(), Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 	TacticalMap->Register_Dirty_Area(dirty);
 	Recalc_Attributes();
 }
@@ -5393,7 +5393,7 @@ void CellClass::Place_Veins(void)
 						adjacent.Overlay = OVERLAY_VEINS;
 						adjacent.OverlayData = 3 * frame + abs(Scen->RandomNumber() % 3);
 						adjacent.Recalc_Attributes();
-						Point2D origin = TacticalRect.TopLeft;
+						Point2D origin = TacticalRect.Top_Left();
 						adjrect = Union(adjrect, Union(adjacent.Overlay_Render_Rect(), adjacent.Overlay_Shadow_Render_Rect())) - origin;
 						TacticalMap->Register_Dirty_Area(adjrect);
 					}
@@ -5402,7 +5402,7 @@ void CellClass::Place_Veins(void)
 					adjrect = Union(adjrect, Union(adjacent.Overlay_Render_Rect(), adjacent.Overlay_Shadow_Render_Rect()));
 					adjacent.Overlay = OVERLAY_VEINS;
 					adjacent.OverlayData = 2 * adjacent.Ramp + (abs(Scen->RandomNumber()) & 1) + OVERLAYDATA_FIRST_RAMP_VEIN;
-					adjrect = Union(adjrect, Union(adjacent.Overlay_Render_Rect(), adjacent.Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+					adjrect = Union(adjrect, Union(adjacent.Overlay_Render_Rect(), adjacent.Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 					TacticalMap->Register_Dirty_Area(adjrect);
 				}
 
@@ -5414,7 +5414,7 @@ void CellClass::Place_Veins(void)
 			OverlayData = 2 * Ramp + (abs(Scen->RandomNumber()) & 1) + OVERLAYDATA_FIRST_RAMP_VEIN;
 		}
 
-		rect = Union(rect, Union(Overlay_Render_Rect(), Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+		rect = Union(rect, Union(Overlay_Render_Rect(), Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 		TacticalMap->Register_Dirty_Area(rect);
 		Recalc_Attributes();
 	}
@@ -5828,8 +5828,8 @@ void CellClass::Trigger_Veins(void)
 	if (Overlay == OVERLAY_VEINS && OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN && Ramp == RAMP_NONE && !IsAnimAttached) {
 		ObjectClass * occupier = Cell_Occupier();
 		while (occupier != NULL) {
-			if (occupier->HeightAGL <= 5 && occupier->Is_Techno() &&
-				!occupier->TClass->IsImmuneToVeins && !((TechnoClass *)occupier)->Has_Ability(ABILITY_VEIN_PROOF)) {
+			if (occupier->Get_Height_AGL() <= 5 && occupier->Is_Techno() &&
+				!occupier->Techno_Type_Class()->IsImmuneToVeins && !((TechnoClass *)occupier)->Has_Ability(ABILITY_VEIN_PROOF)) {
 
 				new AnimClass(Rule->VeinAttack, Cell_Coord() - Coord(CELL_LEPTON_W / 2, CELL_LEPTON_H / 2));
 				IsAnimAttached = true;
@@ -5867,7 +5867,7 @@ void CellClass::Fog_Cell(void)
 						int rtti = occupier->What_Am_I();
 						if (rtti == RTTI_BUILDING) {
 							BuildingClass * building = (BuildingClass *)occupier;
-							building->PositionCell;
+							building->Get_Cell();
 							if (building->Should_Fog()) {
 								bool fade;
 								if (building->Considered_Vehicle() || building->TranslucencyLevel == 15) {
@@ -5996,7 +5996,7 @@ int CellClass::Reduce_Weed(void)
 void CellClass::Register_For_Redraw(void)
 {
 	Rect rect = Union(Union(Cell_Render_Rect(), Overlay_Render_Rect()), Overlay_Shadow_Render_Rect());
-	TacticalMap->Register_Dirty_Area(rect - TacticalRect.TopLeft);
+	TacticalMap->Register_Dirty_Area(rect - TacticalRect.Top_Left());
 	Map.Radar_Background(CellID);
 }
 
@@ -6119,7 +6119,7 @@ bool CellClass::Place_Tiberium(TiberiumType tib, int data)
 				OverlayData += data;
 				OverlayData = std::min<int>(OverlayData, tiberium->FrameCount - 1);
 				Rect rect = Union(Union(Cell_Render_Rect(), Overlay_Render_Rect()), Overlay_Shadow_Render_Rect());
-				TacticalMap->Register_Dirty_Area(rect - TacticalRect.TopLeft);
+				TacticalMap->Register_Dirty_Area(rect - TacticalRect.Top_Left());
 				tiberium->Queue_Spread(CellID);
 				return(true);
 			}

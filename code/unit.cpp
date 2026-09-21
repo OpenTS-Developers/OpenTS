@@ -361,7 +361,7 @@ void UnitClass::Tunnel_AI(void)
 			CurrentTubeDir++;
 			FacingType tube_dir = tube->Dirs[CurrentTubeDir];
 			finished = tube_dir == FACING_NONE;
-			PositionCoord = LastTubeCoord;
+			Set_Coord(LastTubeCoord);
 
 			if (!finished) {
 				coord = Adjacent_Cell(LastTubeCoord, tube_dir);
@@ -370,7 +370,7 @@ void UnitClass::Tunnel_AI(void)
 				LastTubeCoord.Z += height_step;
 
 				DirType dir = DirType().Direction(Center_Coord(), LastTubeCoord);
-				Coord new_coord = Move_Coord(PositionCoord, dir, speed - distance);
+				Coord new_coord = Move_Coord(Get_Coord(), dir, speed - distance);
 				double divisor;
 				if (tube_dir % 2) {
 					divisor = CELL_LEPTON_H * M_SQRT2;
@@ -378,7 +378,7 @@ void UnitClass::Tunnel_AI(void)
 					divisor = CELL_LEPTON_H;
 				}
 				new_coord.Z += (speed - distance) / divisor * height_step;
-				PositionCoord = new_coord;
+				Set_Coord(new_coord);
 				return;
 			}
 		} else {
@@ -391,7 +391,7 @@ void UnitClass::Tunnel_AI(void)
 				divisor = CELL_LEPTON_H;
 			}
 			new_coord.Z += (speed) / divisor * height_step;
-			PositionCoord = new_coord;
+			Set_Coord(new_coord);
 			return;
 		}
 	}
@@ -421,7 +421,7 @@ void UnitClass::Tunnel_AI(void)
 			TubeClass * tube = Tubes[CurrentTube];
 			Cell exit_cell = tube->Exit;
 			Coord exit_coord(exit_cell, LastTubeCoord.Z);
-			PositionCoord = exit_coord;
+			Set_Coord(exit_coord);
 			CurrentTube = TUBE_NONE;
 
 			if (was_marked) Mark(MARK_DOWN);
@@ -514,11 +514,11 @@ void UnitClass::AI(void)
 			Coord( 0,  0, 0)
 		};
 
-		Coord coord = PositionCoord;
+		Coord coord = Get_Coord();
 		coord += _sink_coords[PrimaryFacing.Current().As_Dir8()] * 3;
-		PositionCoord = coord - Coord(0, 0, 9);
+		Set_Coord(coord - Coord(0, 0, 9));
 
-		if (HeightAGL < -400) {
+		if (Get_Height_AGL() < -400) {
 			Record_The_Kill(NULL);
 			Delete_Me();
 			return;
@@ -532,7 +532,7 @@ void UnitClass::AI(void)
 	/*
 	**	Hack check to ensure that a harvester won't harvest if it is not harvesting.
 	*/
-	if (Mission != MISSION_HARVEST) {
+	if (Get_Mission() != MISSION_HARVEST) {
 		IsHarvesting = false;
 	}
 
@@ -589,7 +589,7 @@ void UnitClass::AI(void)
 		**	Double check that there is a passenger that is trying to load or unload.
 		**	If not, then close the door.
 		*/
-		if (!Door.Is_Door_Closed() && Mission != MISSION_UNLOAD && Transmit_Message(RADIO_TRYING_TO_LOAD) != RADIO_ROGER) {
+		if (!Door.Is_Door_Closed() && Get_Mission() != MISSION_UNLOAD && Transmit_Message(RADIO_TRYING_TO_LOAD) != RADIO_ROGER) {
 			APC_Close_Door();
 		}
 	}
@@ -611,11 +611,11 @@ void UnitClass::AI(void)
 
 	if ((unsigned)Frame % 16 == 0) {
 		if ((CurrentMission == MISSION_GUARD_AREA || CurrentMission ==  MISSION_GUARD) && !House->Is_Human_Player() && MissionQueue == MISSION_NONE) {
-			if (Strength < Class->MaxStrength && (ArchiveTarget == NULL || CurrentMission == MISSION_GUARD_AREA) && !Class->IsToHarvest && !Class->IsToVeinHarvest) {
+			if (Strength < Class->MaxStrength && (Fetch_Archive_Target() == NULL || CurrentMission == MISSION_GUARD_AREA) && !Class->IsToHarvest && !Class->IsToVeinHarvest) {
 				BuildingClass * repair = Find_Unit_Repair_Facility(House, this);
 				if (repair != NULL) {
-					if (ArchiveTarget == NULL) {
-						ArchiveTarget = &Map[Get_Coord()];
+					if (Fetch_Archive_Target() == NULL) {
+						Assign_Archive_Target(&Map[Get_Coord()]);
 					}
 					Assign_Mission(MISSION_ENTER);
 					Assign_Target(NULL);
@@ -712,7 +712,7 @@ void UnitClass::Rotation_AI(void)
  *=============================================================================================*/
 bool UnitClass::Edge_Of_World_AI(void)
 {
-	if (Mission == MISSION_GUARD && !Map.In_Radar(Get_Coord()) && IsLocked) {
+	if (Get_Mission() == MISSION_GUARD && !Map.In_Radar(Get_Coord()) && IsLocked) {
 		if (Team != NULL) Team->IsLeaveMap = true;
 		Stun();
 		Delete_Me();
@@ -805,7 +805,7 @@ bool UnitClass::Deploy_To_Fire(void) const
  *=============================================================================================*/
 void UnitClass::Firing_AI(void)
 {
-	if (TarCom != NULL && PrimaryWeapon != NULL) {
+	if (TarCom != NULL && Get_Primary_Weapon() != NULL) {
 
 		/*
 		**	Determine which weapon can fire. First check for the primary weapon. If that weapon
@@ -840,7 +840,7 @@ void UnitClass::Firing_AI(void)
 					ObjectClass * obj = dynamic_cast<ObjectClass*>(TarCom);
 					if (!Can_Heal(obj)) {
 						Assign_Target(NULL);
-					} else if (obj->HealthRatio >= Rule->ConditionGreen) {
+					} else if (obj->Get_Health_Ratio() >= Rule->ConditionGreen) {
 						Assign_Target(NULL);
 					}
 				}
@@ -914,7 +914,7 @@ void UnitClass::Firing_AI(void)
 /// </summary>
 void UnitClass::Visceroid_AI(void)
 {
-	Cell cell = PositionCell;
+	Cell cell = Get_Cell();
 	int stage = Fetch_Stage();
 
 	if (stage >= 90) {
@@ -950,7 +950,7 @@ void UnitClass::Visceroid_AI(void)
 		}
 
 		bool is_healing = false;
-		if (HealthRatio < Rule->ConditionYellow) {
+		if (Get_Health_Ratio() < Rule->ConditionYellow) {
 			if (Map[Center_Coord()].Land_Type() != LAND_TIBERIUM) {
 				Goto_Tiberium(16, false);
 				if (NavCom != NULL) {
@@ -990,7 +990,7 @@ void UnitClass::Visceroid_AI(void)
 /// </summary>
 void UnitClass::Jellyfish_AI(void)
 {
-	Cell pos = PositionCell;
+	Cell pos = Get_Cell();
 	WeaponTypeClass const * weapon = Class->Get_Weapon(0)->Weapon;
 	WarheadTypeClass const * warhead = weapon ? weapon->WarheadPtr : NULL;
 	int stage = Fetch_Stage();
@@ -1007,7 +1007,7 @@ void UnitClass::Jellyfish_AI(void)
 				CellClass * newcellptr = &Map[newcell];
 				if (newcellptr != NULL) {
 					Coord cell_crd = newcellptr->Cell_Coord();
-					if (abs(cell_crd.Z - PositionCoord.Z) < 3.0 * CELL_LEPTON / 2.0) {
+					if (abs(cell_crd.Z - Get_Coord().Z) < 3.0 * CELL_LEPTON / 2.0) {
 						ObjectClass * occupier = newcellptr->Cell_Occupier(newcellptr->IsUnderBridge && (!cellptr->IsUnderBridge || IsOnBridge));
 						while (occupier != NULL) {
 							ObjectClass * next = occupier->Next;
@@ -1026,7 +1026,7 @@ void UnitClass::Jellyfish_AI(void)
 									}
 
 									if (!visceroid && !invisible && !House->Is_Ally(techno)) {
-										int damage = weapon->Attack * warhead->Modifier[techno->TClass->Armor];
+										int damage = weapon->Attack * warhead->Modifier[techno->Techno_Type_Class()->Armor];
 										techno->Take_Damage(damage, 0, warhead, this);
 										attacked = true;
 									}
@@ -1116,7 +1116,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 
 		case RADIO_WANT_RIDE:
 			if (!Map[Destination_Coord()].IsUnderBridge || Is_Moving_Onto_Bridge()) {
-				if (Mission == MISSION_UNLOAD) {
+				if (Get_Mission() == MISSION_UNLOAD) {
 					return(RADIO_NEGATIVE);
 				}
 				if (IsTethered) {
@@ -1148,7 +1148,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 			if (Class->Max_Passengers() == 0 || from == NULL || !House->Is_Ally(from)) return(RADIO_STATIC);
 			if (from->RTTI == RTTI_UNIT && !Class->IsVehicleTransport) return(RADIO_STATIC);
 			if (Can_Fit_Passenger(from)) {
-				Cell cell = PositionCell;
+				Cell cell = Get_Cell();
 				CellClass * cellptr = &Map[cell];
 				if (!cellptr->Is_Tile_With_Water() && !cellptr->Is_Tile_Shore()) {
 					return(RADIO_ROGER);
@@ -1168,7 +1168,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 				if (!Locomotion->Is_Moving()) {
 					TechnoClass	* whom = Contact_With_Whom();
 					if (IsTethered && whom != NULL) {
-						if (whom->RTTI == RTTI_BUILDING && Mission == MISSION_ENTER) {
+						if (whom->RTTI == RTTI_BUILDING && Get_Mission() == MISSION_ENTER) {
 							if (Transmit_Message(RADIO_IM_IN, whom) == RADIO_ROGER) {
 								//Transmit_Message(RADIO_UNLOADED, whom);
 							}
@@ -1282,7 +1282,7 @@ RadioMessageType UnitClass::Receive_Message(RadioClass * from, RadioMessageType 
 		**	has already turned its radio off. Turn this radio off as well.
 		*/
 		case RADIO_OVER_OUT:
-			if (Mission == MISSION_RETURN) {
+			if (Get_Mission() == MISSION_RETURN) {
 				Assign_Mission(MISSION_GUARD);
 			}
 			BASECLASS::Receive_Message(from, message, param);
@@ -1420,9 +1420,9 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 					partsys->Sparks_To_Use_Random_Direction();
 					count--;
 				} ;
-			} else if (HeightAGL <= 10 && IsToExplode && Map[Get_Coord()].Land_Type() == LAND_WATER) {
-				new AnimClass(Rule->Wake, PositionCoord);
-				new AnimClass(Rule->SplashList[Rule->SplashList.Count() - 1], PositionCoord + Coord(0, 0, 5));
+			} else if (Get_Height_AGL() <= 10 && IsToExplode && Map[Get_Coord()].Land_Type() == LAND_WATER) {
+				new AnimClass(Rule->Wake, Get_Coord());
+				new AnimClass(Rule->SplashList[Rule->SplashList.Count() - 1], Get_Coord() + Coord(0, 0, 5));
 			} else {
 				Explode();
 			}
@@ -1464,7 +1464,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 				**	A passenger can run from a destroyed vehicle, if the ground it stood on
 				**	will take it. Even then, it is not a sure thing.
 				*/
-				if (!forced && !IsToExplode && object->Can_Enter_Cell(&Map[Get_Coord()]) == MOVE_OK && object->Unlimbo(PositionCoord, DIR_N)) {
+				if (!forced && !IsToExplode && object->Can_Enter_Cell(&Map[Get_Coord()]) == MOVE_OK && object->Unlimbo(Get_Coord(), DIR_N)) {
 					object->Scatter(COORD_NONE, true);
 					if (select) object->Select();
 				} else {
@@ -1509,7 +1509,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 
 			if (i != NULL) {
 				i->IsOnBridge = IsOnBridge;
-				if (i->Unlimbo(PositionCoord, DIR_N)) {
+				if (i->Unlimbo(Get_Coord(), DIR_N)) {
 					i->Strength = Random_Pick(5, (int)i->Class->MaxStrength/2);
 					i->Scatter(COORD_NONE, true);
 					if (!House->Is_Human_Player()) {
@@ -1529,7 +1529,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 			**	if the scenario so indicates and there is room.
 			*/
 			if (Class->IsCarriesCrate && (Scen->IsTruckCrate && !Class->IsTrain || Scen->IsTrainCargo && Class->IsTrain)) {
-				Cell cell = Map.Nearby_Location(PositionCell, SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(1,1), true);
+				Cell cell = Map.Nearby_Location(Get_Cell(), SPEED_TRACK, -1, MZONE_NORMAL, false, Point2D(1,1), true);
 				if (cell != CELL_NONE) {
 					new OverlayClass(Rule->WoodCrateImg, cell);
 					Map[cell].Register_For_Redraw();
@@ -1574,7 +1574,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 				**	Try to return to base if possible.
 				*/
 				BuildingClass * building = NULL;
-				if ((Class->IsToHarvest || Class->IsToVeinHarvest) && Pip_Count() > 0 && HealthRatio <= Rule->ConditionYellow) {
+				if ((Class->IsToHarvest || Class->IsToVeinHarvest) && Pip_Count() > 0 && Get_Health_Ratio() <= Rule->ConditionYellow) {
 
 					/*
 					**	Find nearby refinery and head to it?
@@ -1713,7 +1713,7 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 	**	A movement mission without a NavCom would be pointless to have a radio contact since
 	**	no radio coordination occurs on a just a simple movement mission.
 	*/
-	if (Mission == MISSION_MOVE && NavCom == NULL && PositionCoord == PositionCell.As_Coord()) {
+	if (Get_Mission() == MISSION_MOVE && NavCom == NULL && Get_Coord() == Get_Cell().As_Coord()) {
 		Transmit_Message(RADIO_OVER_OUT);
 	}
 
@@ -1722,10 +1722,10 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 		order = MISSION_MOVE;
 	} else {
 
-		if (!Class->IsMobileEMP || Mission != MISSION_UNLOAD) {
+		if (!Class->IsMobileEMP || Get_Mission() != MISSION_UNLOAD) {
 			if (!Is_Weapon_Equipped()) {
 				if (Class->IsToHarvest || Class->IsToVeinHarvest) {
-					if (!In_Radio_Contact() && Mission != MISSION_HARVEST && MissionQueue != MISSION_HARVEST) {
+					if (!In_Radio_Contact() && Get_Mission() != MISSION_HARVEST && MissionQueue != MISSION_HARVEST) {
 						if (initial || !House->Is_Human_Player() || Map[Get_Coord()].Land_Type() == (Class->IsToHarvest ? LAND_TIBERIUM : LAND_WEEDS)) {
 							order = MISSION_HARVEST;
 						} else {
@@ -1751,7 +1751,7 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 				}
 			} else {
 
-				if (Mission == MISSION_GUARD || Mission == MISSION_GUARD_AREA || (Mission != MISSION_NONE && (Current_Mission_Control().IsParalyzed || Current_Mission_Control().IsZombie))) {
+				if (Get_Mission() == MISSION_GUARD || Get_Mission() == MISSION_GUARD_AREA || (Get_Mission() != MISSION_NONE && (Current_Mission_Control().IsParalyzed || Current_Mission_Control().IsZombie))) {
 					return(res);
 				}
 
@@ -1896,7 +1896,7 @@ bool UnitClass::Try_To_Deploy(void)
 			Mark(MARK_UP);
 			Locomotion->Mark_All_Occupation_Bits(MARK_UP);
 			Cell cell;
-			Cell ncell = PositionCell;
+			Cell ncell = Get_Cell();
 			if (Class->DeploysInto->Is_Mobile_Deployer()) {
 				cell = ncell;
 			} else {
@@ -1952,7 +1952,7 @@ bool UnitClass::Try_To_Deploy(void)
 						TechnoClass * techno = Technos[i];
 						if (techno->TarCom != NULL && techno->TarCom->RTTI == RTTI_UNIT && techno->TarCom == this) {
 							if (techno->IsActive && techno != this && techno != building) {
-								if ((building->Class->IsMobileWar || building->Class->IsConstructionYard) && techno->RTTI == RTTI_INFANTRY && ((InfantryTypeClass *)techno->TClass)->IsVehicleThief) {
+								if ((building->Class->IsMobileWar || building->Class->IsConstructionYard) && techno->RTTI == RTTI_INFANTRY && ((InfantryTypeClass *)techno->Techno_Type_Class())->IsVehicleThief) {
 									techno->Assign_Target(NULL);
 								} else {
 									techno->Assign_Target(building);
@@ -1999,7 +1999,7 @@ bool UnitClass::Try_To_Deploy(void)
 					**	base.
 					*/
 					if (!House->Is_Human_Player() && building->Class->IsConstructionYard && Session.Type != GAME_NORMAL) {
-						Cell center = building->PositionCoord.As_Cell();
+						Cell center = building->Get_Coord().As_Cell();
 						House->Center = center;
 						House->Begin_Construction(center);
 						House->IsStarted = true;
@@ -2011,7 +2011,7 @@ bool UnitClass::Try_To_Deploy(void)
 					**	Force the newly placed construction yard to be in the same strength
 					**	ratio as the MCV that deployed into it.
 					*/
-					building->Strength = HealthRatio * building->Class->MaxStrength;
+					building->Strength = Get_Health_Ratio() * building->Class->MaxStrength;
 					building->Strength = std::max(building->Strength, 1);
 
 					if (selected) building->Select();
@@ -2069,7 +2069,7 @@ bool UnitClass::Try_To_Deploy(void)
  *=============================================================================================*/
 void UnitClass::Per_Cell_Process(PCPType why)
 {
-	Cell	cell = PositionCell;
+	Cell	cell = Get_Cell();
 
 	if (why == PCP_END || why == PCP_ROTATION) {
 		/*
@@ -2102,7 +2102,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		}
 
 		TechnoClass	* whom = Contact_With_Whom();
-		if ((Mission == MISSION_ENTER || Mission == MISSION_PATROL) && whom != NULL) {
+		if ((Get_Mission() == MISSION_ENTER || Get_Mission() == MISSION_PATROL) && whom != NULL) {
 			Cell center = Center_Coord();
 			Cell whom_center = whom->Center_Coord();
 			if (Center_Coord().As_Cell() == whom->Center_Coord().As_Cell() && whom->RTTI == RTTI_BUILDING) {
@@ -2125,7 +2125,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	the building as the final step.
 		*/
 		if (IsTethered && whom != NULL) {
-			if (whom->RTTI == RTTI_BUILDING && Mission == MISSION_ENTER) {
+			if (whom->RTTI == RTTI_BUILDING && Get_Mission() == MISSION_ENTER) {
 				if (whom == Map[cell - Cell(0, 1)].Cell_Building()) {
 					switch (Transmit_Message(RADIO_IM_IN, whom)) {
 						case RADIO_ROGER:
@@ -2148,12 +2148,12 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	Unit entering a transport vehicle will break radio contact
 		**	and attach itself to the transporter.
 		*/
-		TechnoTypeClass const * ttype = (techno != NULL) ? techno->TClass : NULL;
+		TechnoTypeClass const * ttype = (techno != NULL) ? techno->Techno_Type_Class() : NULL;
 
 		// NavCom is not tested here: a walking passenger clears it before it arrives, so
 		// the radio contact is what identifies the transport.
-		if (Mission == MISSION_ENTER && ttype != NULL && ttype->Max_Passengers() > 0 &&
-			PositionCell == techno->PositionCell) {
+		if (Get_Mission() == MISSION_ENTER && ttype != NULL && ttype->Max_Passengers() > 0 &&
+			Get_Cell() == techno->Get_Cell()) {
 
 			BASECLASS::Per_Cell_Process(PCP_END);
 
@@ -2172,15 +2172,15 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	When breaking away from a transport object or building, possibly
 		**	scatter or otherwise begin normal unit operations.
 		*/
-		if (IsTethered && (Mission != MISSION_ENTER ||
+		if (IsTethered && (Get_Mission() != MISSION_ENTER ||
 				(Dynamic_Cast<TechnoClass *>(NavCom) != NULL && Contact_With_Whom() != NavCom)
 				) &&
-				Mission != MISSION_UNLOAD) {
+				Get_Mission() != MISSION_UNLOAD) {
 
 			bool arrived = NavCom == NULL;
 			if (Is_Target_Cell(NavCom)) {
 				CellClass *cptr = static_cast<CellClass *>(NavCom);
-				if (cptr->CellID == PositionCoord.As_Cell()) {
+				if (cptr->CellID == Get_Coord().As_Cell()) {
 					arrived = true;
 				}
 			}
@@ -2190,9 +2190,9 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			**	cell, if it is still on the building (e.g., service depot), have
 			**	it scatter again.
 			*/
-			if (Map[(Coord const &)PositionCoord].Cell_Building() == NULL || arrived) {
+			if (Map[(Coord const &)Get_Coord()].Cell_Building() == NULL || arrived) {
 				TechnoClass * contact = Contact_With_Whom();
-				if (arrived || contact == NULL || contact->RTTI != RTTI_BUILDING || !static_cast<BuildingClass *>(contact)->Class->IsWeaponsFactory || Map[(Coord const &)PositionCoord].Cell_Building() != contact) {
+				if (arrived || contact == NULL || contact->RTTI != RTTI_BUILDING || !static_cast<BuildingClass *>(contact)->Class->IsWeaponsFactory || Map[(Coord const &)Get_Coord()].Cell_Building() != contact) {
 					RadioMessageType response = Transmit_Message(RADIO_UNLOADED);
 					if (response == RADIO_RUN_AWAY) {
 						if (NavCom != NULL && NavCom != Get_Cell_Ptr()) {
@@ -2214,13 +2214,13 @@ void UnitClass::Per_Cell_Process(PCPType why)
 									Assign_Mission(MISSION_MOVE);
 									Assign_Destination(&Map[where]);
 									Commence();
-									ArchiveTarget = &Map[where];
+									Assign_Archive_Target(&Map[where]);
 									Assign_Mission(MISSION_GUARD_AREA);
 								} else {
-									ArchiveTarget = NULL;
+									Assign_Archive_Target(NULL);
 								}
 							} else {
-								AbstractClass * target = ArchiveTarget;
+								AbstractClass * target = Fetch_Archive_Target();
 								if (target != NULL && target != NavCom) {
 									Assign_Destination(target);
 								} else {
@@ -2232,10 +2232,10 @@ void UnitClass::Per_Cell_Process(PCPType why)
 
 					} else {
 						if (response != RADIO_NEGATIVE && (Class->IsToHarvest || Class->IsToVeinHarvest)) {
-							if (ArchiveTarget != NULL) {
+							if (Fetch_Archive_Target() != NULL) {
 								Assign_Mission(MISSION_HARVEST);
-								Assign_Destination(ArchiveTarget);
-								ArchiveTarget = NULL;
+								Assign_Destination(Fetch_Archive_Target());
+								Assign_Archive_Target(NULL);
 							} else {
 
 								/*
@@ -2251,7 +2251,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 				}
 			}
 
-			if (Map[(Coord const &)PositionCoord].Cell_Building() && NavCom == NULL && NavQueue.Count() == 0 && RouteQueue.Count() == 0) {
+			if (Map[(Coord const &)Get_Coord()].Cell_Building() && NavCom == NULL && NavQueue.Count() == 0 && RouteQueue.Count() == 0) {
 				Scatter(COORD_NONE, true, true);
 			}
 		}
@@ -2283,9 +2283,9 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		if (TheaterClass::As_Reference(Scen->Theater).IsIceGrowth) {
 			Map.DirtyIceCells.Clear();
 			if (Class->Weight >= Rule->IceBreakingWeight) {
-				broke_ice = Map.Break_Ice(&Map[(Coord const &)PositionCoord], this);
+				broke_ice = Map.Break_Ice(&Map[(Coord const &)Get_Coord()], this);
 			} else if (Class->Weight >= Rule->IceCrackingWeight) {
-				broke_ice = Map.Crack_Ice(&Map[(Coord const &)PositionCoord], this);
+				broke_ice = Map.Crack_Ice(&Map[(Coord const &)Get_Coord()], this);
 			}
 			if (broke_ice) {
 				IsSinking = true;
@@ -2301,14 +2301,14 @@ void UnitClass::Per_Cell_Process(PCPType why)
 			Commence();
 		}
 
-		if (Class->IsToHarvest && Mission != MISSION_UNLOAD && CurrentMission != MISSION_ENTER && MissionQueue != MISSION_ENTER && !IsDumping) {
+		if (Class->IsToHarvest && Get_Mission() != MISSION_UNLOAD && CurrentMission != MISSION_ENTER && MissionQueue != MISSION_ENTER && !IsDumping) {
 			RadioClass * radio = Contact_With_Whom();
 			if (radio != NULL && radio->What_Am_I() == RTTI_BUILDING && static_cast<BuildingClass *>(radio)->Class->IsRefinery) {
 				Transmit_Message(RADIO_OVER_OUT);
 			}
 		}
 
-		if (Class->IsToVeinHarvest && Mission != MISSION_UNLOAD && CurrentMission != MISSION_ENTER && MissionQueue != MISSION_ENTER && !IsDumping) {
+		if (Class->IsToVeinHarvest && Get_Mission() != MISSION_UNLOAD && CurrentMission != MISSION_ENTER && MissionQueue != MISSION_ENTER && !IsDumping) {
 			RadioClass * radio = Contact_With_Whom();
 			if (radio != NULL && radio->What_Am_I() == RTTI_BUILDING && static_cast<BuildingClass *>(radio)->Class->IsWeeder) {
 				Transmit_Message(RADIO_OVER_OUT);
@@ -2330,10 +2330,10 @@ void UnitClass::Per_Cell_Process(PCPType why)
 		**	before the unit completes it's move. In such a case the unit should have been destroyed
 		**	anyway, so blow it up now.
 		*/
-		CellClass * cellptr = &Map[(Coord const &)PositionCoord];
+		CellClass * cellptr = &Map[(Coord const &)Get_Coord()];
 		LandType land = cellptr->Land_Type();
 		if (!Locomotion->Is_Moving() && Can_Enter_Cell(cellptr) == MOVE_NO && (!IsOnBridge || !cellptr->IsUnderBridge) && !IsSinking) {
-			new AnimClass(Combat_Anim(Strength, Rule->C4Warhead, land, PositionCoord), PositionCoord, 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), Get_Explosion_Z(PositionCoord));
+			new AnimClass(Combat_Anim(Strength, Rule->C4Warhead, land, Get_Coord()), Get_Coord(), 0, 1, ShapeFlags_Type(SHAPE_CENTER|SHAPE_WIN_REL|SHAPE_ZGRAD), Get_Explosion_Z(Get_Coord()));
 			int damage = Strength;
 			Combat_Lighting(Center_Coord(), damage, Rule->C4Warhead, false);
 			Take_Damage(damage, 0, Rule->C4Warhead, NULL, true);
@@ -2360,7 +2360,7 @@ void UnitClass::Per_Cell_Process(PCPType why)
 	/*
 	**	Check to see if crushing of any unfortunate infantry is warranted.
 	*/
-	Overrun_Square(PositionCell, false);
+	Overrun_Square(Get_Cell(), false);
 
 	if (!IsActive) {
 		BEnd(BENCH_PCP);
@@ -2384,7 +2384,7 @@ bool UnitClass::Render(Rect & rect, bool forced, bool extras_only) const
 	if (IsTethered) {
 		TechnoClass * radio = Contact_With_Whom();
 		if (radio->RTTI == RTTI_BUILDING) {
-			if (radio->Mission == MISSION_UNLOAD || radio->MissionQueue == MISSION_UNLOAD) {
+			if (radio->Get_Mission() == MISSION_UNLOAD || radio->MissionQueue == MISSION_UNLOAD) {
 				if (!radio->Door.Is_Ready_To_Close()) {
 					return(false);
 				}
@@ -2547,7 +2547,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 	if (!IsSinking) {
 		Point2D shadow_drawpoint = xdrawpoint;
 		if (Class->IsHunterSeeker) {
-			Coord coord = PositionCoord;
+			Coord coord = Get_Coord();
 			coord.Z = Map.Get_Height_GL(coord);
 			TacticalMap->Coord_To_Pixel(coord, shadow_drawpoint);
 			shadow_drawpoint += Locomotion->Shadow_Point();
@@ -2557,7 +2557,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 			shadow_drawpoint.Y -= 14;
 		}
 
-		int height = HeightAGL;
+		int height = Get_Height_AGL();
 		CellClass * cellptr = &Map[Get_Coord()];
 
 		if (IsInTransport) {
@@ -2600,7 +2600,7 @@ void UnitClass::Unit_Draw_Voxel(Point2D xdrawpoint, Rect xcliprect, int brightne
 
 	UnitCompositeDirtyRect = RECT_NONE;
 
-	if (strcmp(Class->IniName, "APC") == 0 && Map[Get_Coord()].Land_Type() == LAND_WATER && !IsOnBridge && HeightAGL < LEVEL_LEPTON_H) {
+	if (strcmp(Class->IniName, "APC") == 0 && Map[Get_Coord()].Land_Type() == LAND_WATER && !IsOnBridge && Get_Height_AGL() < LEVEL_LEPTON_H) {
 		Draw_Voxel(Class->AuxVoxel, frame, -1, NULL, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
 	} else {
 		Draw_Voxel(Class->Voxel, frame, key, &Class->VoxelIndex, rect, drawpoint, Get_Isometric_View_Matrix() * main_matrix, brightness, flags);
@@ -2736,7 +2736,7 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 	if (Class->IsJellyfish || Class->IsLimpetDrone) {
 		int zoff = 0;
 		if (Class->IsJellyfish) {
-			zoff = -TacticalMap->Z_Lepton_To_Pixel(PositionCoord.Z);
+			zoff = -TacticalMap->Z_Lepton_To_Pixel(Get_Coord().Z);
 		}
 		Draw_Object(shapefile, Fetch_Stage(), xdrawpoint, xcliprect, DIR_N, 256, zoff, ZGRAD_90DEG, false, brightness);
 		return;
@@ -2818,7 +2818,7 @@ void UnitClass::Unit_Draw_Shape(Point2D xdrawpoint, Rect xcliprect, int brightne
 			nmtx.Translate(-flh);
 
 			FacingClass face = BarrelPitch;
-			if (PrimaryWeapon->Bullet->IsInvisible) {
+			if (Get_Primary_Weapon()->Bullet->IsInvisible) {
 				Dir256 dir256 = face.Current().As_Dir256();
 				if (dir256 > DIR_E && dir256 <= DIR_S) {
 					dir256 = (Dir256)((dir256 - DIR_E) / 3 + DIR_E);
@@ -2916,7 +2916,7 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 		adjusted_point.Y += 14;
 	}
 
-	Cell cell = PositionCell;
+	Cell cell = Get_Cell();
 
 	/*
 	**	If drawing of this unit is not explicitly prohibited, then proceed
@@ -2925,7 +2925,7 @@ void UnitClass::Draw_It(Point2D const & point, Rect const & cliprect) const
 	if (Visual_Character(false, NULL) != VISUAL_HIDDEN) {
 
 		TacticalMap->Add_To_Selectables((ObjectClass *)this, adjusted_point);
-		int height = HeightAGL;
+		int height = Get_Height_AGL();
 		CellClass * cptr = &Map[Get_Coord()];
 
 		int brightness = 0;
@@ -3137,7 +3137,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 
 						for (FacingType face = FACING_N; face < FACING_COUNT; face++, nextface++) {
 							FacingType newface = Facing_Add(nextface, FACING_0);
-							newcell = Adjacent_Cell(PositionCell, newface);
+							newcell = Adjacent_Cell(Get_Cell(), newface);
 
 							if (passenger->Can_Enter_Cell(&Map[newcell], newface, Get_Cell_Height()) == MOVE_OK) {
 								if (Map[newcell].IsUnderBridge == false) {
@@ -3215,7 +3215,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 			Set_Rate(1);
 
 			if (Class->IsToHarvest) {
-				building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+				building = Map[Adjacent_Cell(Get_Cell(), FACING_W)].Cell_Building();
 				if (building != NULL) {
 					building->Begin_Anim(BANIM_PRE_PRODUCTION, false);
 				}
@@ -3244,7 +3244,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 							}
 						}
 					} else {
-						building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+						building = Map[Adjacent_Cell(Get_Cell(), FACING_W)].Cell_Building();
 						bool active = false;
 						if (building != NULL && building->Class->IsRefinery) {
 							active = building->Anim_Active(BANIM_PRODUCTION);
@@ -3274,7 +3274,7 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 					break;
 
 				case 3:
-					building = Map[Adjacent_Cell(PositionCell, FACING_W)].Cell_Building();
+					building = Map[Adjacent_Cell(Get_Cell(), FACING_W)].Cell_Building();
 					if (Fetch_Stage() >= Rule->HarvesterDumpRate * TICKS_PER_MINUTE) {
 						bool dumped = false;
 						int slot = Storage.First_Used_Slot();
@@ -3442,9 +3442,9 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				**	Look for ore where we last found some - mine the same patch
 				*/
 				bool hastarget = true;
-				if (ArchiveTarget != NULL) {
-					Assign_Destination(ArchiveTarget);
-					ArchiveTarget = 0;
+				if (Fetch_Archive_Target() != NULL) {
+					Assign_Destination(Fetch_Archive_Target());
+					Assign_Archive_Target(0);
 					hastarget = false;
 				}
 				IsHarvesting = false;
@@ -3475,8 +3475,8 @@ int UnitClass::Do_MISSION_HARVEST(void)
 						**	solve the case where the harvester gets stuck and can't find Tiberium just because
 						**	it is greater than 32 squares away.
 						*/
-						if (ArchiveTarget != NULL) {
-							Assign_Destination(ArchiveTarget);
+						if (Fetch_Archive_Target() != NULL) {
+							Assign_Destination(Fetch_Archive_Target());
 						} else {
 							Status = GOINGTOIDLE;
 							IsUseless = true;
@@ -3513,9 +3513,9 @@ int UnitClass::Do_MISSION_HARVEST(void)
 						cell = Search_For_Weed(Rule->TiberiumShortScan / CELL_LEPTON_W);
 					}
 					if (cell != CELL_NONE) {
-						ArchiveTarget = &Map[cell];
+						Assign_Archive_Target(&Map[cell]);
 					} else {
-						ArchiveTarget = NULL;
+						Assign_Archive_Target(NULL);
 					}
 				} else {
 					bool ok;
@@ -3525,7 +3525,7 @@ int UnitClass::Do_MISSION_HARVEST(void)
 						ok = Goto_Weed(Rule->TiberiumShortScan / CELL_LEPTON_W);
 					}
 					if (!ok && NavCom == NULL)	{
-						ArchiveTarget = NULL;
+						Assign_Archive_Target(NULL);
 						Status = FINDHOME;
 					} else {
 						Status = HARVESTING;
@@ -3610,7 +3610,7 @@ int UnitClass::Do_MISSION_HARVEST(void)
 					Assign_Mission(MISSION_HUNT);
 				}
 			}
-			BuildingClass *bptr = Map[(Coord const &)PositionCoord].Cell_Building();
+			BuildingClass *bptr = Map[(Coord const &)Get_Coord()].Cell_Building();
 			if (bptr != NULL) {
 				if (bptr->Class->IsRefinery || bptr->Class->IsWeeder) {
 					Assign_Destination(&Map[Nearby_Location(bptr)]);
@@ -3815,7 +3815,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 				}
 			} else {
 				if (Is_Weapon_Equipped()) {
-					WarheadTypeClass const * whead = PrimaryWeapon->WarheadPtr;
+					WarheadTypeClass const * whead = Get_Primary_Weapon()->WarheadPtr;
 
 					if (whead->IsWallDestroyer || (whead->IsWoodDestroyer && optr->Armor == ARMOR_WOOD)) {
 						if (House->Is_Ally(cellptr->Owner)) {
@@ -3916,7 +3916,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 					}
 					if (Class->IsToHarvest && bptr->Class->IsRefinery &&
 						House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
-						Cell bcell = bptr->PositionCell;
+						Cell bcell = bptr->Get_Cell();
 						if (cellptr->CellID == bcell + Cell(2, 1)) {
 							obj = obj->Next;
 							continue;
@@ -3924,7 +3924,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 					}
 					if (Class->IsToVeinHarvest && bptr->Class->IsWeeder &&
 						House->Is_Ally(bptr->House) && bptr->House->Is_Ally(House)) {
-						Cell bcell = bptr->PositionCell;
+						Cell bcell = bptr->Get_Cell();
 						if (cellptr->CellID == bcell + Cell(2, 1)) {
 							obj = obj->Next;
 							continue;
@@ -3937,7 +3937,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			**	Special check to allow entry into the sea transport this vehicle
 			**	is trying to enter.
 			*/
-			if (Mission == MISSION_ENTER && obj == NavCom && obj->RTTI == RTTI_UNIT) {
+			if (Get_Mission() == MISSION_ENTER && obj == NavCom && obj->RTTI == RTTI_UNIT) {
 				return(MOVE_OK);
 			}
 
@@ -3945,7 +3945,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 			**	Guard area should not allow the guarding unit to enter the cell with the
 			**	guarded unit.
 			*/
-			if (Mission == MISSION_GUARD_AREA && ArchiveTarget == obj) {
+			if (Get_Mission() == MISSION_GUARD_AREA && Fetch_Archive_Target() == obj) {
 				return(MOVE_NO);
 			}
 
@@ -3959,7 +3959,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 					int face = PrimaryFacing.Current().As_Dir8();
 					DirType d = ((FootClass const *)obj)->PrimaryFacing.Current().Right_180();
 					int techface = d.As_Dir8();
-					DirType direction = ::Direction(PositionCoord, ((ObjectClass *)obj)->PositionCoord);
+					DirType direction = ::Direction(Get_Coord(), ((ObjectClass *)obj)->Get_Coord());
 					if (face == techface && Distance(((ObjectClass *)obj)->Center_Coord()) <= 2 * CELL_LEPTON - 1 && direction.As_Dir8() == face) {
 						return(MOVE_NO);
 					}
@@ -4000,7 +4000,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 						 * Any non-allied blockage is considered impassable if the unit
 						 * is not equipped with a weapon (unless it is a train).
 						 */
-						if (PrimaryWeapon == NULL && !Class->IsTrain) return(MOVE_NO);
+						if (Get_Primary_Weapon() == NULL && !Class->IsTrain) return(MOVE_NO);
 
 						/*
 						**	Some kinds of terrain are considered destroyable if the unit is equipped
@@ -4089,7 +4089,7 @@ MoveType UnitClass::Can_Enter_Cell(CellClass const * cellptr, FacingType dir, in
 				**	this vehicle should avoid the cell altogether.
 				*/
 				if (!Class->IsCrusher && !Has_Ability(ABILITY_CRUSHER)) {
-					if (Class->IsTrain || (PrimaryWeapon != NULL && PrimaryWeapon->Bullet->IsAntiGround)) {
+					if (Class->IsTrain || (Get_Primary_Weapon() != NULL && Get_Primary_Weapon()->Bullet->IsAntiGround)) {
 						retval = MOVE_DESTROYABLE;
 					} else {
 						return(MOVE_NO);
@@ -4193,9 +4193,9 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 					if (IsOnBridge) {
 						can_deploy = true;
 					} else {
-						CellClass * cellptr = &Map[(Coord const &)PositionCoord];
+						CellClass * cellptr = &Map[(Coord const &)Get_Coord()];
 						ObjectClass * object = Cargo.Attached_Object();
-						if (object == NULL || Ground[cellptr->Land_Type()].Cost[object->TClass->Speed] >= 0.01) {
+						if (object == NULL || Ground[cellptr->Land_Type()].Cost[object->Techno_Type_Class()->Speed] >= 0.01) {
 							can_deploy = true;
 						}
 					}
@@ -4246,7 +4246,7 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 		if (House->Is_Ally(object)) {
 			if (Can_Heal(object) && object != this && object->Not_Underground()) {
 				if ( object->RTTI != RTTI_AIRCRAFT || Map[object->Center_Coord()].Cell_Building() == NULL) {
-					if (object->HealthRatio < Rule->ConditionGreen) {
+					if (object->Get_Health_Ratio() < Rule->ConditionGreen) {
 						action = object->RTTI == RTTI_INFANTRY ? ACTION_HEAL : ACTION_GREPAIR;
 					}
 				}
@@ -4505,7 +4505,7 @@ FacingType UnitClass::Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) c
 	int bestval = -1;
 	for (; face < FACING_COUNT; face++) {
 		int value = 0;
-		Cell cellnum = Adjacent_Cell(PositionCell, face);
+		Cell cellnum = Adjacent_Cell(Get_Cell(), face);
 
 		/*
 		**	Base the initial value of the potential cell according to whether the passenger is
@@ -4513,7 +4513,7 @@ FacingType UnitClass::Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) c
 		**	cell so that it is prevented from ever choosing that cell for load/unload.
 		*/
 		if (passenger != NULL) {
-			value = (passenger->Can_Enter_Cell(&Map[cellnum], face, Get_Cell_Height()) == MOVE_OK || passenger->PositionCell == cellnum) ? 128 : -128;
+			value = (passenger->Can_Enter_Cell(&Map[cellnum], face, Get_Cell_Height()) == MOVE_OK || passenger->Get_Cell() == cellnum) ? 128 : -128;
 		} else {
 			CellClass * cell = &Map[Cell(cellnum)];
 			if (Ground[cell->Land_Type()].Cost[SPEED_FOOT] == 0 || cell->Flag.Occupy.Building || cell->Flag.Occupy.Vehicle || cell->Flag.Occupy.Monolith || (cell->Flag.Composite & 0x01F) == 0x01F) {
@@ -4553,7 +4553,7 @@ FacingType UnitClass::Desired_Load_Dir(ObjectClass * passenger, Cell & moveto) c
 	FacingType facing = FACING_S;
 	moveto = CELL_NONE;
 	if (bestval > 0) {
-		moveto = Adjacent_Cell(PositionCell, bestdir);
+		moveto = Adjacent_Cell(Get_Cell(), bestdir);
 		facing = (FacingType)Harvester_Load_List[bestdir];
 	}
 
@@ -4815,7 +4815,7 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 	FireErrorType	fire = BASECLASS::Can_Fire(target, which);
 
 	if (fire == FIRE_OK || fire == FIRE_FACING) {
-		bool buildable = Map[(Coord const &)PositionCoord].Can_Build_Here();
+		bool buildable = Map[(Coord const &)Get_Coord()].Can_Build_Here();
 		if (Class->IsDeployToFire && Deploy_To_Fire() && !buildable) {
 			return(FIRE_MUST_DEPLOY);
 		}
@@ -4830,7 +4830,7 @@ FireErrorType UnitClass::Can_Fire(AbstractClass * target, int which) const
 
 		if (Combat_Damage() < 0) {
 			TechnoClass const * techno = Dynamic_Cast<TechnoClass const *>((AbstractClass const *)target);
-			if (!Can_Heal(techno) || techno->HealthRatio >= Rule->ConditionGreen) {
+			if (!Can_Heal(techno) || techno->Get_Health_Ratio() >= Rule->ConditionGreen) {
 				return(FIRE_ILLEGAL);
 			}
 		}
@@ -5104,7 +5104,7 @@ void UnitClass::Overrun_Square(Cell const & cell, bool threaten)
 						/*
 						**	Record credit for the kill(s)
 						*/
-						Sound_Effect(object->Class_Of()->CrushSound, PositionCoord);
+						Sound_Effect(object->Class_Of()->CrushSound, Get_Coord());
 						object->Record_The_Kill(this);
 						object->Mark(MARK_UP);
 						object->Limbo();
@@ -5162,7 +5162,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	/*
 	 * If tethered to a carryall while sleeping, untether before moving.
 	 */
-	if (target != NULL && In_Radio_Contact() && Mission == MISSION_SLEEP && IsTethered && Contact_With_Whom()->RTTI == RTTI_AIRCRAFT) {
+	if (target != NULL && In_Radio_Contact() && Get_Mission() == MISSION_SLEEP && IsTethered && Contact_With_Whom()->RTTI == RTTI_AIRCRAFT) {
 		AircraftClass * a = (AircraftClass *)Contact_With_Whom();
 		if (a->Class->IsCarryall) {
 			a->Assign_Destination(NULL);
@@ -5176,7 +5176,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	/*
 	**	Handle entry logic here.
 	*/
-	if (Mission == MISSION_ENTER || MissionQueue == MISSION_ENTER) {
+	if (Get_Mission() == MISSION_ENTER || MissionQueue == MISSION_ENTER) {
 
 		/*
 		**	If not already in radio contact (presumed with the transport), then
@@ -5191,7 +5191,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 				**	toward the transport and try to establish contact at a later time.
 				*/
 				if (b->In_Radio_Contact()) {
-					ArchiveTarget = target;
+					Assign_Archive_Target(target);
 
 					/*
 					**	HACK ALERT: The repair bay is counting on the assignment of the NavCom by this routine.
@@ -5206,7 +5206,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 					if (Transmit_Message(RADIO_DOCKING, b) != RADIO_ROGER) {
 						Transmit_Message(RADIO_OVER_OUT);
 						if (b->Class->IsCanUnitRepair) {
-							ArchiveTarget = target;
+							Assign_Archive_Target(target);
 						}
 					} else {
 						if (b->Class->IsDockUnload && NavCom != oldnav) {
@@ -5223,7 +5223,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 					**	toward the transport and try to establish contact at a later time.
 					*/
 					if (techno->In_Radio_Contact()) {
-						ArchiveTarget = target;
+						Assign_Archive_Target(target);
 					} else {
 						if (Transmit_Message(RADIO_HELLO, techno) == RADIO_ROGER) {
 							if (Transmit_Message(RADIO_DOCKING) == RADIO_ROGER) {
@@ -5387,7 +5387,7 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	*/
 	if (b != NULL && b->Class->IsCanUnitRepair) {
 		if (b->In_Radio_Contact() && b->Contact_With_Whom() != this) {
-			ArchiveTarget = target;
+			Assign_Archive_Target(target);
 		} else {
 
 			/*
@@ -5434,10 +5434,10 @@ void UnitClass::Assign_Destination(AbstractClass * target, bool immediate)
 	 */
 	if (b != NULL && Class->Dock.Count() > 0 && b->Class == (BuildingTypeClass *)Class->Dock[0] &&
 		Fetch_RTTI() == RTTI_UNIT && (Class->IsToHarvest || Class->IsToVeinHarvest) &&
-		Mission != MISSION_UNLOAD && b->House->Is_Ally(House) && House->Is_Ally(b->House)) {
+		Get_Mission() != MISSION_UNLOAD && b->House->Is_Ally(House) && House->Is_Ally(b->House)) {
 
 		if (Contact_With_Whom() != b && !b->In_Radio_Contact() && Transmit_Message(RADIO_HELLO, b) == RADIO_ROGER &&
-			Mission != MISSION_ENTER && Mission != MISSION_HARVEST) {
+			Get_Mission() != MISSION_ENTER && Get_Mission() != MISSION_HARVEST) {
 			Assign_Mission(MISSION_ENTER);
 			target = NULL;
 		} else {
@@ -5496,11 +5496,11 @@ AbstractClass * UnitClass::Greatest_Threat(ThreatType threat, Coord const & coor
 		return(NULL);
 	}
 	if (!(threat & (THREAT_INFANTRY|THREAT_VEHICLES|THREAT_BUILDINGS|THREAT_TIBERIUM|THREAT_CIVILIANS|THREAT_POWER|THREAT_FACTORIES|THREAT_BASE_DEFENSE))) {
-		if (PrimaryWeapon != NULL) {
-			threat = ThreatType(threat | PrimaryWeapon->Allowed_Threats());
+		if (Get_Primary_Weapon() != NULL) {
+			threat = ThreatType(threat | Get_Primary_Weapon()->Allowed_Threats());
 		}
-		if (SecondaryWeapon != NULL) {
-			threat = ThreatType(threat | SecondaryWeapon->Allowed_Threats());
+		if (Get_Secondary_Weapon() != NULL) {
+			threat = ThreatType(threat | Get_Secondary_Weapon()->Allowed_Threats());
 		}
 	}
 
@@ -5688,11 +5688,11 @@ void UnitClass::Write_INI(CCINIClass & ini)
 			sprintf(buf, "%s,%s,%d,%d,%d,%d,%s,%s,%d,%d,%d,%d,%d,%d",
 				(char const *)unit->House->Class->IniName,
 				(char const *)unit->Class->IniName,
-				(int)(unit->HealthRatio*256),
-				unit->PositionCell.X,
-				unit->PositionCell.Y,
+				(int)(unit->Get_Health_Ratio()*256),
+				unit->Get_Cell().X,
+				unit->Get_Cell().Y,
 				unit->PrimaryFacing.Current().As_Dir256(),
-				MissionClass::Mission_Name(unit->Mission),
+				MissionClass::Mission_Name(unit->Get_Mission()),
 				(unit->Tag != NULL && unit->Tag->Class != NULL) ? (char const *)unit->Tag->Class->IniName : "None",
 				unit->Veterancy.To_Integer(),
 				unit->Group,
@@ -5751,7 +5751,7 @@ bool UnitClass::Should_Crush_It(TechnoClass const * it) const
 	**	If this unit cannot crush anything or the candidate object cannot be crushed,
 	**	then it obviously should not try to crush it -- return negative answer.
 	*/
-	if (!(Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) || it == NULL || !it->TClass->IsCrushable) return(false);
+	if (!(Class->IsCrusher || Has_Ability(ABILITY_CRUSHER)) || it == NULL || !it->Techno_Type_Class()->IsCrushable) return(false);
 
 	/*
 	**	Objects that are far away should really be fired upon rather than crushed.
@@ -5837,7 +5837,7 @@ void UnitClass::Scatter(Coord const & threat, bool forced, bool nokidding)
 			FacingType	toface;
 
 			if (threat != COORD_NONE) {
-				toface = Dir_Facing(::Direction(threat, PositionCoord));
+				toface = Dir_Facing(::Direction(threat, Get_Coord()));
 				toface = Facing_Add(toface, Random_Pick(FACING_0, FACING_90)-FACING_45);
 			} else {
 				toface = (PrimaryFacing.Current().As_Dir8());
@@ -6003,8 +6003,8 @@ bool UnitClass::Ready_To_Commence(void)
 	}
 
 	if (MissionQueue != MISSION_ENTER) {
-		if (Locomotion->Is_Moving_Now() && HeightAGL >= 0 &&
-			Mission != MISSION_GUARD && (Mission != MISSION_ATTACK || TarCom != NULL) && !IsMissionUnloadStandby) {
+		if (Locomotion->Is_Moving_Now() && Get_Height_AGL() >= 0 &&
+			Get_Mission() != MISSION_GUARD && (Get_Mission() != MISSION_ATTACK || TarCom != NULL) && !IsMissionUnloadStandby) {
 
 			return(false);
 		}
@@ -6021,7 +6021,7 @@ bool UnitClass::Ready_To_Commence(void)
 		}
 	} else {
 		BuildingClass * building = Map[Get_Coord()].Cell_Building();
-		if (building != NULL && building->Class->IsWeaponsFactory && (PositionCoord.As_Cell() - building->PositionCoord.As_Cell() == Cell(0, 1))) {
+		if (building != NULL && building->Class->IsWeaponsFactory && (Get_Coord().As_Cell() - building->Get_Coord().As_Cell() == Cell(0, 1))) {
 			return(false);
 		}
 	}
@@ -6511,7 +6511,7 @@ AbstractClass * UnitClass::Plan_Route(AbstractClass const & object) const
 /// <returns>true if there is no clean direct route between the cells.</returns>
 bool UnitClass::Is_Route_Broken(Cell const & from, Cell const & to) const
 {
-	if (HeightAGL >= 0 && Map.Is_Same_Cell_Zone(from, to, MZONE_NORMAL, 0, 0, 0)) {
+	if (Get_Height_AGL() >= 0 && Map.Is_Same_Cell_Zone(from, to, MZONE_NORMAL, 0, 0, 0)) {
 		if (from == to) {
 			return(false);
 		}
@@ -6581,7 +6581,7 @@ void UnitClass::EMPulse_Blast(void)
 			CellClass * cptr = &Map[Center_Coord().As_Cell()];
 			BulletClass * bullet = Create_Bullet(weapon->Bullet, cptr, this, weapon->Attack, weapon->WarheadPtr, 1234, weapon->ProjectileRange, weapon->IsBright);
 			if (bullet != NULL) {
-				bullet->Set_Coord(PositionCoord);
+				bullet->Set_Coord(Get_Coord());
 				bullet->Bullet_Explodes(true);
 				bullet->Delete_Me();
 			}
@@ -6612,7 +6612,7 @@ void UnitClass::Explode(void)
 			}
 		}
 
-		new AnimClass(anim, PositionCoord);
+		new AnimClass(anim, Get_Coord());
 
 		/*
 		**	Harvesters explode with a force equal to the amount of
@@ -6623,7 +6623,7 @@ void UnitClass::Explode(void)
 			for (int i = 0; i < Tiberiums.Count(); i++) {
 				power += Storage.Get_Amount(i) * Tiberiums[i]->Power;
 			}
-			Wide_Area_Damage(PositionCoord, CELL_LEPTON * 1.5, power, this, Rule->C4Warhead);
+			Wide_Area_Damage(Get_Coord(), CELL_LEPTON * 1.5, power, this, Rule->C4Warhead);
 		}
 
 		/*

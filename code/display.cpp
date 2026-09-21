@@ -695,7 +695,7 @@ Cell DisplayClass::Set_Cursor_Pos(Cell const & xpos)
 	**	Follow the mouse position if no cell number is provided.
 	*/
 	if (pos == CELL_NONE) {
-		Point2D tl = TacticalRect.TopLeft;
+		Point2D tl = TacticalRect.Top_Left();
 		if (TacticalRect.Is_Point_Within(MouseCursor->Get_Mouse_Point())) {
 			Point2D mouse = MouseCursor->Get_Mouse_Point();
 			Cell click = Map.Click_Cell_Calc(mouse);
@@ -2042,7 +2042,7 @@ void DisplayClass::Mouse_Left_Up(Cell const & cell, bool shadow, ObjectClass * o
 				break;
 
 			case ACTION_NOMOVE:
-				if (CurrentObject.Count() && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->TClass->IsMoveToShroud) {
+				if (CurrentObject.Count() && CurrentObject[0]->Is_Techno() && ((TechnoClass *)CurrentObject[0])->Techno_Type_Class()->IsMoveToShroud) {
 					Set_Default_Mouse(MOUSE_CAN_MOVE, wsmall);
 					break;
 				}
@@ -2629,7 +2629,7 @@ void DisplayClass::Compute_Start_Pos(void)
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * tech = Technos[i];
 		if (!tech->IsInLimbo && tech->IsOwnedByPlayer) {
-			coord += tech->PositionCoord;
+			coord += tech->Get_Coord();
 			num++;
 		}
 	}
@@ -3640,12 +3640,12 @@ void DisplayClass::Constrained_Look(Coord const & center, LEPTON distance)
 //			if (tech->What_Am_I() == RTTI_BUILDING && units_only) continue;
 
 			if (tech->House->Is_Player_Control()) {
-				if (tech->IsDiscoveredByPlayer && Distance(center, tech->Center_Coord()) <= (tech->TClass->SightRange * CELL_LEPTON_W) + distance) {
+				if (tech->IsDiscoveredByPlayer && Distance(center, tech->Center_Coord()) <= (tech->Techno_Type_Class()->SightRange * CELL_LEPTON_W) + distance) {
 					tech->Look();
 				}
 			} else {
 				if (tech->RTTI == RTTI_BUILDING && Rule->IsAllyReveal && tech->House->Is_Ally(PlayerPtr) &&
-					Distance(tech->Center_Coord(), center) <= (tech->TClass->SightRange * CELL_LEPTON_W) + distance) {
+					Distance(tech->Center_Coord(), center) <= (tech->Techno_Type_Class()->SightRange * CELL_LEPTON_W) + distance) {
 					tech->Look();
 				}
 			}
@@ -3680,7 +3680,7 @@ void DisplayClass::Center_Map(void)
 
 		Coord center(0,0,0);
 		for (index = 0; index < CurrentObject.Count(); index++) {
-			center += CurrentObject[index]->PositionCoord;
+			center += CurrentObject[index]->Get_Coord();
 		}
 
 		Coord coord = center;
@@ -3691,9 +3691,9 @@ void DisplayClass::Center_Map(void)
 			Coord bestc(0,0,0);
 			int bestd = 0;
 			for (index = 0; index < CurrentObject.Count(); index++) {
-				int d = Distance(center, CurrentObject[index]->PositionCoord);
+				int d = Distance(center, CurrentObject[index]->Get_Coord());
 				if (d > bestd) {
-					bestc = CurrentObject[index]->PositionCoord;
+					bestc = CurrentObject[index]->Get_Coord();
 					bestd = d;
 				}
 			}
@@ -3761,7 +3761,7 @@ char const * DisplayClass::Help_Text(int id)
 	ObjectClass * object;
 	bool fog, shadow;
 
-	Map.Resolve_Point(Get_Mouse_Point() - TacticalRect.TopLeft, cell, coord, object, fog, shadow);
+	Map.Resolve_Point(Get_Mouse_Point() - TacticalRect.Top_Left(), cell, coord, object, fog, shadow);
 
 	/*
 	**	Give a generic help message when over shadow terrain.
@@ -3775,7 +3775,7 @@ char const * DisplayClass::Help_Text(int id)
 		if (techno->Cloak == CLOAKED && !techno->Is_Sensed_By_Player()) {
 			return(NULL);
 		}
-		if (techno->TClass->IsInvisible) {
+		if (techno->Techno_Type_Class()->IsInvisible) {
 			return(NULL);
 		}
 	}
@@ -4000,7 +4000,7 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 			IndexClass<int, ObjectClass *> distance_sorted;
 
 			for (index = 0; index < movers.Count(); index++) {
-				distance_sorted.Add_Index(index + 1000 * Distance(movers[index]->Center_Coord(), anchor->PositionCoord), movers[index]);
+				distance_sorted.Add_Index(index + 1000 * Distance(movers[index]->Center_Coord(), anchor->Get_Coord()), movers[index]);
 				if (action == ACTION_PATROL_WAYPOINT) {
 					((TechnoClass *)movers[index])->IsOnWaypointPatrol = true;
 				}
@@ -4017,7 +4017,7 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 				command_issued.Add(false);
 			}
 
-			Cell closest_cell = anchor->PositionCell;
+			Cell closest_cell = anchor->Get_Cell();
 			int zone;
 			int diff1, diff2;
 
@@ -4046,7 +4046,7 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 					int tries = 0;
 					bool blocked = false;
 
-					const TechnoTypeClass *ttype = mover->TClass;
+					const TechnoTypeClass *ttype = mover->Techno_Type_Class();
 					zone = Map.Get_Cell_Zone(cell, ttype->MZone, true);
 
 					Cell trycell;
@@ -4118,7 +4118,7 @@ void DisplayClass::Active_Click(ObjectClass * object, Cell cell, ActionType acti
 
 				for (int scan = index + 1; scan < movers.Count(); scan++) {
 					if (!command_issued[scan]) {
-						if (mover->PositionCell == movers[scan]->PositionCell) {
+						if (mover->Get_Cell() == movers[scan]->Get_Cell()) {
 							movers[scan]->Active_Click_With(movers[scan]->What_Action(assigned_cell), assigned_cell, false);
 							command_issued[scan] = true;
 						}

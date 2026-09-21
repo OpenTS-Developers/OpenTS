@@ -882,7 +882,7 @@ void MapClass::Set_Map_Dimensions(Rect const & rect, bool reset_cells, int cell_
 
 		for (i = 0; i < Objects.Count(); i++) {
 			if (Objects[i]->RTTI != RTTI_PARTICLESYSTEM || ((ParticleSystemClass *)Objects[i])->Class->Behaves_Like() != PSYS_BEHAVIOR_GAS) {
-				Cell cell = Objects[i]->PositionCell;
+				Cell cell = Objects[i]->Get_Cell();
 				const Cell *list = Objects[i]->Occupy_List();
 				while (*list != REFRESH_EOL) {
 					Cell ncell = cell + *list;
@@ -1009,7 +1009,7 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
 	for (int i = 0; i < Technos.Count(); i++) {
 		TechnoClass * t = Technos[i];
 		bool was = t->IsLocked;
-		t->IsLocked = In_Local_Radar(t->PositionCell);
+		t->IsLocked = In_Local_Radar(t->Get_Cell());
 		if (!was && t->IsLocked && t->House->Is_Player_Control() && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
 			t->Look();
 		}
@@ -2685,7 +2685,7 @@ int MapClass::Validate(void)
 				((unsigned int)obj->Next & 0xff000000) ||
 //				((unsigned int)obj->Trigger & 0xff000000) ||
 				obj->IsInLimbo ||
-				((unsigned int)obj->PositionCell >= MAP_CELL_TOTAL)) {
+				((unsigned int)obj->Get_Cell() >= MAP_CELL_TOTAL)) {
 
 				return(false);
 			}
@@ -2702,7 +2702,7 @@ int MapClass::Validate(void)
 					((unsigned int)obj->Next & 0xff000000) ||
 //					((unsigned int)obj->Trigger & 0xff000000) ||
 					obj->IsInLimbo ||
-					((unsigned int)obj->PositionCell >= MAP_CELL_TOTAL)) {
+					((unsigned int)obj->Get_Cell() >= MAP_CELL_TOTAL)) {
 
 					return(false);
 				}
@@ -7483,12 +7483,12 @@ bool MapClass::Break_Ice(CellClass * cellptr, FootClass * object)
 					occupier = occupier->Next;
 
 					if (foot != NULL) {
-						MZoneType mzone = foot->TClass->MZone;
+						MZoneType mzone = foot->Techno_Type_Class()->MZone;
 						if (foot->RTTI != RTTI_AIRCRAFT && foot->RTTI != RTTI_INFANTRY) {
 							if (mzone != MZONE_AMPHIBIOUS_DESTROYER && mzone != MZONE_AMPHIBIOUS_CRUSHER && mzone != MZONE_AMPHIBIOUS) {
 								foot->IsSinking = true;
 								foot->Stun();
-								new AnimClass(Rule->Wake, foot->PositionCoord);
+								new AnimClass(Rule->Wake, foot->Get_Coord());
 							}
 						} else {
 							if (foot->IsActive && foot->Tag != NULL) {
@@ -7498,7 +7498,7 @@ bool MapClass::Break_Ice(CellClass * cellptr, FootClass * object)
 								foot->Tag->Spring(TEVENT_DESTROYED_ANY_X, foot);
 							}
 							foot->Delete_Me();
-							new AnimClass(Rule->Wake, foot->PositionCoord);
+							new AnimClass(Rule->Wake, foot->Get_Coord());
 						}
 					}
 				}
@@ -9042,7 +9042,7 @@ bool MapClass::Damage_Low_Bridge_EW(Cell const & cell)
 			break;
 		}
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 		TacticalMap->Register_Dirty_Area(draw_rect);
 
 		cellptr1->Recalc_Attributes(-1);
@@ -9118,7 +9118,7 @@ bool MapClass::Damage_Low_Bridge_NS(Cell const & cell)
 			break;
 		}
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 		TacticalMap->Register_Dirty_Area(draw_rect);
 
 		cellptr1->Recalc_Attributes(-1);
@@ -9254,7 +9254,7 @@ void MapClass::Damage_Low_Bridge_Piece_EW(Cell const & cell)
 
 		cellptr3->Overlay = cellptr2->Overlay = cellptr1->Overlay = newoverlay;
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 		TacticalMap->Register_Dirty_Area(draw_rect, false);
 
 		if (newoverlay == OVERLAY_LOWBRIDGE_27) {
@@ -9333,7 +9333,7 @@ void MapClass::Damage_Low_Bridge_Piece_NS(Cell const & cell)
 
 		cellptr3->Overlay = cellptr2->Overlay = cellptr1->Overlay = newoverlay;
 
-		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+		draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 		TacticalMap->Register_Dirty_Area(draw_rect, false);
 
 		if (newoverlay == OVERLAY_LOWBRIDGE_28) {
@@ -9445,7 +9445,7 @@ void MapClass::Repair_Low_Bridge_EW(Cell const & cell)
 			cellptr2->Overlay = newtype;
 			cellptr3->Overlay = newtype;
 
-			draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+			draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 			TacticalMap->Register_Dirty_Area(draw_rect, false);
 
 			if (otype == OVERLAY_LOWBRIDGE_27) {
@@ -9530,7 +9530,7 @@ void MapClass::Repair_Low_Bridge_NS(Cell const & cell)
 			cellptr2->Overlay = newtype;
 			cellptr3->Overlay = newtype;
 
-			draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.TopLeft;
+			draw_rect = Union(draw_rect, Union(cellptr1->Overlay_Render_Rect(), cellptr1->Overlay_Shadow_Render_Rect())) - TacticalRect.Top_Left();
 			TacticalMap->Register_Dirty_Area(draw_rect, false);
 
 			if (otype == OVERLAY_LOWBRIDGE_28) {
@@ -10712,7 +10712,7 @@ bool MapClass::Build_Reachable_Subzones(CellClass * cptr, int subzone_level, Dyn
 	_subzone_flood_stack[0] = cptr;
 	_subzone_flood_visited[(dim - 1) & cptr->CellID.X][(dim - 1) & cptr->CellID.Y] = 1;
 
-	int * mzone_table = MZonePassability[foot->TClass->MZone];
+	int * mzone_table = MZonePassability[foot->Techno_Type_Class()->MZone];
 
 	while (true) {
 

@@ -970,7 +970,7 @@ bool TeamTypeClass::Can_Recruit(FootClass * foot, HouseClass * house) const
 		return(false);
 	}
 
-	if (foot->Mission != MISSION_NONE && !MissionClass::Is_Recruitable_Mission(foot->Mission)) {
+	if (foot->Get_Mission() != MISSION_NONE && !MissionClass::Is_Recruitable_Mission(foot->Get_Mission())) {
 		return(false);
 	}
 
@@ -982,7 +982,7 @@ bool TeamTypeClass::Can_Recruit(FootClass * foot, HouseClass * house) const
 		return(false);
 	}
 
-	if (foot->RTTI == RTTI_AIRCRAFT && foot->PrimaryWeapon != NULL && foot->Ammo == NULL) {
+	if (foot->RTTI == RTTI_AIRCRAFT && foot->Get_Primary_Weapon() != NULL && foot->Ammo == NULL) {
 		return(false);
 	}
 

@@ -625,14 +625,11 @@ class TechnoClass :	public RadioClass,
 
 		void Assign_Archive_Target(AbstractClass * target);
 		AbstractClass * Fetch_Archive_Target(void) const { return(ArchivedTarget); }
-		__declspec( property( get=Fetch_Archive_Target, put=Assign_Archive_Target) ) AbstractClass * ArchiveTarget;
 
 		Coord Railgun_Beam_Damage(Coord & coord, AbstractClass *abstract, WeaponTypeClass *weapon);
 
 		inline WeaponTypeClass * Get_Primary_Weapon(void) const { const WeaponDataStruct * wdata = Get_Class_Weapon_Data(0); return(wdata->Weapon); }
 		inline WeaponTypeClass * Get_Secondary_Weapon(void) const { const WeaponDataStruct * wdata = Get_Class_Weapon_Data(1); return(wdata->Weapon); }
-		__declspec( property( get=Get_Primary_Weapon) ) WeaponTypeClass * PrimaryWeapon;
-		__declspec( property( get=Get_Secondary_Weapon) ) WeaponTypeClass * SecondaryWeapon;
 
 		/*
 		**	AI.
@@ -750,7 +747,7 @@ class TechnoClass :	public RadioClass,
 
 inline bool TechnoClass::Is_Allowed_To_Leave_Map(void) const { return(false); }
 inline bool TechnoClass::Is_Renovator(void) const { return(false); }
-inline bool TechnoClass::Is_Turret_Equipped(void) const { return(TClass->IsTurretEquipped); }
+inline bool TechnoClass::Is_Turret_Equipped(void) const { return(Techno_Type_Class()->IsTurretEquipped); }
 inline bool TechnoClass::Is_Move_Override(void) const { return(false); }
 inline bool TechnoClass::Is_In_Team(void) const { return(false); }
 inline bool TechnoClass::Is_Ready_To_Move(void) const { return(true); }
@@ -765,10 +762,10 @@ inline DirType TechnoClass::Turret_Facing(void) const
 inline WeaponDataStruct const * TechnoClass::Get_Class_Weapon_Data(int which) const
 {
 	if (Veterancy.Is_Elite() && which == 0) {
-		return(TClass->Get_Weapon(2));
+		return(Techno_Type_Class()->Get_Weapon(2));
 	}
 
-	return(TClass->Get_Weapon(which));
+	return(Techno_Type_Class()->Get_Weapon(which));
 }
 
 

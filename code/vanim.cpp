@@ -252,7 +252,7 @@ void VoxelAnimClass::Draw_It(Point2D const & xpoint, Rect const & cliprect) cons
 					drawpoint.X = x + point.X;
 					drawpoint.Y = y + point.Y;
 
-					Blit_Block(*LogicalSurface, *drawer, *VoxelDrawSystem::Get_Surface(), fromrect, drawpoint, cliprect, 0, drawer->Blitter_From_Flags(flags), -2 - TacticalMap->Z_Lepton_To_Pixel(Height), ZGRAD_GROUND, brightness);
+					Blit_Block(*LogicalSurface, *drawer, *VoxelDrawSystem::Get_Surface(), fromrect, drawpoint, cliprect, 0, drawer->Blitter_From_Flags(flags), -2 - TacticalMap->Z_Lepton_To_Pixel(Get_Height()), ZGRAD_GROUND, brightness);
 				}
 			}
 		}
@@ -471,7 +471,7 @@ void VoxelAnimClass::AI(void)
 				}
 				if (Class->Warhead != NULL) {
 					for (ObjectClass * occupier = Map[Get_Bounce_Coord()].Cell_Occupier(); occupier != NULL; occupier = occupier->Next) {
-						Coord occoord = occupier->PositionCoord;
+						Coord occoord = occupier->Get_Coord();
 						Coord mycoord = Get_Bounce_Coord();
 						int lepton = abs(mycoord.X - occoord.X) + abs(mycoord.Y - occoord.Y);
 						if (lepton <= Class->DamageRadius) {
@@ -489,7 +489,7 @@ void VoxelAnimClass::AI(void)
 			break;
 	}
 
-	PositionCoord = Get_Bounce_Coord();
+	Set_Coord(Get_Bounce_Coord());
 }
 
 

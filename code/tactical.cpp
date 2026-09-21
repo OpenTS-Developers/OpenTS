@@ -542,7 +542,7 @@ void Tactical::Wipe_Depth(bool fullredraw, int xoff, int yoff, Rect const & clip
 		for (int i = DirtyAreas.Count() - 1; i >= 0; i--) {
 			Rect redraw = DirtyAreas[i].Area;
 			redraw += Point2D(xoff, yoff);
-			redraw = Intersect(TacticalRect - TacticalRect.TopLeft, redraw);
+			redraw = Intersect(TacticalRect - TacticalRect.Top_Left(), redraw);
 			DirtyAreas[i].Area = redraw;
 
 			if (!redraw.Is_Valid()) {
@@ -560,7 +560,7 @@ void Tactical::Wipe_Depth(bool fullredraw, int xoff, int yoff, Rect const & clip
 			Point2D pixel;
 			Coord_To_Pixel(coord, pixel);
 			pixel += Point2D(ISO_TILE_PIXEL_W, ISO_TILE_PIXEL_H) / -2;
-			pixel += TacticalRect.TopLeft;
+			pixel += TacticalRect.Top_Left();
 
 			if (MainWindow) {
 				CellRedraw[i]->Wipe_Depth(pixel, cliprect);
@@ -847,7 +847,7 @@ void Tactical::Render_Shroud(Rect const & xpanrect, Rect const & ypanrect, Rect 
 			Point2D pixel;
 			Coord_To_Pixel(coord, pixel);
 			pixel += Point2D(ISO_TILE_PIXEL_W, ISO_TILE_PIXEL_H) / -2;
-			pixel += TacticalRect.TopLeft;
+			pixel += TacticalRect.Top_Left();
 
 			if (MainWindow) {
 				CellRedraw[i]->Draw_Shroud_And_Fog(pixel, cliprect);
@@ -872,7 +872,7 @@ void Tactical::Render_Shroud(Rect const & xpanrect, Rect const & ypanrect, Rect 
 	 * The areas that were registered as dirty.
 	 */
 	for (int i = 0; i < DirtyAreas.Count(); i++) {
-		Rect redraw = DirtyAreas[i].Area + TacticalRect.TopLeft;
+		Rect redraw = DirtyAreas[i].Area + TacticalRect.Top_Left();
 		Rect inter = Intersect(redraw, cliprect);
 
 		if (DirtyAreas[i].IsToRefreshShroud) {
@@ -2760,7 +2760,7 @@ void Tactical::Draw_Objects(bool forced)
 				 * cached and must render here. Under the fog it stays hidden -- the fog
 				 * layer shows it as the player last saw it.
 				 */
-				if (MainWindow && !Debug_Map && Map.Is_Fogged(obj->PositionCoord)) {
+				if (MainWindow && !Debug_Map && Map.Is_Fogged(obj->Get_Coord())) {
 					continue;
 				}
 				obj->Render(TacticalRect, forced, false);
@@ -2792,13 +2792,13 @@ void Tactical::Draw_Objects(bool forced)
 
 					/// The results of both calls are discarded.
 					obj->Destination_Coord();
-					obj->PositionCoord;
+					obj->Get_Coord();
 
 					/*
 					 * A unit that has slipped back under the fog of war is not drawn at
 					 * all. What the player remembers of it is drawn by the fog layer.
 					 */
-					if (MainWindow && !Debug_Map && Scen->Special.IsFogOfWar && Map.Is_Fogged(obj->PositionCoord)) {
+					if (MainWindow && !Debug_Map && Scen->Special.IsFogOfWar && Map.Is_Fogged(obj->Get_Coord())) {
 						continue;
 					}
 				}
@@ -2961,7 +2961,7 @@ void Tactical::Add_Buildings_To_Selectable(Rect rect)
 	for (int i = 0; i < Buildings.Count(); i++) {
 		BuildingClass *bptr = Buildings[i];
 		if (bptr->IsActive  && bptr->IsDown && !bptr->Class->IsInvisibleInGame) {
-			Point2D point = Coord_To_Pixel_Absolute(bptr->PositionCoord);
+			Point2D point = Coord_To_Pixel_Absolute(bptr->Get_Coord());
 			if (point.X >= top_left.X && point.X <= bottom_right.X && point.Y >= top_left.Y && point.Y <= bottom_right.Y) {
 				Add_To_Selectables(bptr, point - Point2D(TacPixelX, TacPixelY));
 			}
@@ -3426,7 +3426,7 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 			continue;
 		}
 
-		if (building->ArchiveTarget == NULL) {
+		if (building->Fetch_Archive_Target() == NULL) {
 			continue;
 		}
 
@@ -3445,7 +3445,7 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 		 * Compute the screen-space end point at the rally point. Snap the rally
 		 * coordinate to the ground height and lift it onto the bridge if needed.
 		 */
-		Coord rally = building->ArchiveTarget->Center_Coord();
+		Coord rally = building->Fetch_Archive_Target()->Center_Coord();
 		rally.Z = Map.Get_Height_GL(rally);
 		if (Map[rally].IsUnderBridge) {
 			rally.Z += BRIDGE_LEPTON_HEIGHT;

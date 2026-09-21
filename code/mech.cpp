@@ -86,7 +86,7 @@ Coord MechLocomotionClass::Head_To_Coord(void)
 	if (HeadToCoord != COORD_NONE) {
 		return(HeadToCoord);
 	}
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 
@@ -213,7 +213,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 								Cell dest_cell = DestinationCoord;
 								if (LinkedTo->IsLocked) {
 									Cell src_cell = LinkedTo->Destination_Coord().As_Cell();
-									if (!Map.Is_Same_Cell_Zone(src_cell, dest_cell, LinkedTo->TClass->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[dest_cell].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
+									if (!Map.Is_Same_Cell_Zone(src_cell, dest_cell, LinkedTo->Techno_Type_Class()->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[dest_cell].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
 										LinkedTo->Assign_Destination(NULL);
 									}
 								}
@@ -222,7 +222,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 									Cell tar_cell = LinkedTo->TarCom->Destination_Coord().As_Cell();
 									if (LinkedTo->IsLocked) {
 										Cell src_cell = LinkedTo->Destination_Coord().As_Cell();
-										if (!Map.Is_Same_Cell_Zone(src_cell, tar_cell, LinkedTo->TClass->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[tar_cell].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
+										if (!Map.Is_Same_Cell_Zone(src_cell, tar_cell, LinkedTo->Techno_Type_Class()->MZone, LinkedTo->Is_Moving_Onto_Bridge(), Map[tar_cell].IsUnderBridge, LinkedTo->Is_Allowed_To_Leave_Map())) {
 											LinkedTo->Assign_Target(NULL);
 										}
 									}
@@ -306,7 +306,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 			 * A crusher driving into an occupied destroyable cell that has crushable
 			 * overlay just crushes through it -- treat as a normal (clear) move.
 			 */
-			if (((can_enter != MOVE_DESTROYABLE && can_enter != MOVE_FRIENDLY_DESTROYABLE) || !LinkedTo->TClass->IsCrusher || what_cell->Overlay != OVERLAY_FIRST) && can_enter != MOVE_OK) {
+			if (((can_enter != MOVE_DESTROYABLE && can_enter != MOVE_FRIENDLY_DESTROYABLE) || !LinkedTo->Techno_Type_Class()->IsCrusher || what_cell->Overlay != OVERLAY_FIRST) && can_enter != MOVE_OK) {
 
 				LinkedTo->Stop_Movement_Animation();
 
@@ -440,9 +440,9 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 					OverlayType overlay = Map[cell].Overlay;
 					if (overlay != OVERLAY_NONE) {
 						OverlayTypeClass * otype = OverlayTypes[overlay];
-						if ((LinkedTo->TClass->IsCrusher || LinkedTo->Has_Ability(ABILITY_CRUSHER)) && otype->HeapID == OVERLAY_SANDBAG_WALL) {
+						if ((LinkedTo->Techno_Type_Class()->IsCrusher || LinkedTo->Has_Ability(ABILITY_CRUSHER)) && otype->HeapID == OVERLAY_SANDBAG_WALL) {
 							LinkedTo->IsCrushing = true;
-							if (LinkedTo->TClass->IsTiltsWhenCrushes) {
+							if (LinkedTo->Techno_Type_Class()->IsTiltsWhenCrushes) {
 								LinkedTo->RockingForwardsPerFrame = -0.01f;
 							}
 						}
@@ -493,7 +493,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 
 			LinkedTo->Set_Coord(HeadToCoord);
 			LinkedTo->LastPathingCell = HeadToCoord.As_Cell();
-			LinkedTo->HeightAGL = 0;
+			LinkedTo->Set_Height_AGL(0);
 
 			Mark_Head_To(COORD_NONE);
 
@@ -530,10 +530,10 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 						OverlayType overlay = Map[check_coord].Overlay;
 						if (overlay != OVERLAY_NONE) {
 							OverlayTypeClass * otype = OverlayTypes[overlay];
-							if ((LinkedTo->TClass->IsCrusher || LinkedTo->Has_Ability(ABILITY_CRUSHER)) && otype->HeapID == OVERLAY_SANDBAG_WALL) {
+							if ((LinkedTo->Techno_Type_Class()->IsCrusher || LinkedTo->Has_Ability(ABILITY_CRUSHER)) && otype->HeapID == OVERLAY_SANDBAG_WALL) {
 								LinkedTo->IsCrushing = true;
 
-								if (LinkedTo->TClass->IsTiltsWhenCrushes) {
+								if (LinkedTo->Techno_Type_Class()->IsTiltsWhenCrushes) {
 									LinkedTo->RockingForwardsPerFrame = -0.01f;
 								}
 							}
@@ -588,7 +588,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 				LinkedTo->IsOnBridge = false;
 			}
 
-			LinkedTo->HeightAGL = 0;
+			LinkedTo->Set_Height_AGL(0);
 			LinkedTo->Mark(MARK_DOWN);
 
 			Map[LinkedTo->Get_Coord()].Trigger_Veins();
@@ -599,7 +599,7 @@ void MechLocomotionClass::Movement_AI(bool continue_moving)
 			bool was_down = LinkedTo->IsDown;
 			LinkedTo->IsDown = false;
 			LinkedTo->Set_Coord(new_coord);
-			LinkedTo->HeightAGL = 0;
+			LinkedTo->Set_Height_AGL(0);
 			LinkedTo->IsDown = was_down;
 			LinkedTo->IsNewNavCom = false;
 			return;
@@ -646,7 +646,7 @@ bool MechLocomotionClass::Mark_Head_To(Coord const & coord)
 		return(true);
 	}
 
-	LinkedTo->Set_Occupy_Bit(LinkedTo->PositionCoord);
+	LinkedTo->Set_Occupy_Bit(LinkedTo->Get_Coord());
 	return(false);
 }
 

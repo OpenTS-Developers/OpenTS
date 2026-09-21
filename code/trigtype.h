@@ -104,7 +104,6 @@ class TriggerTypeClass : public AbstractTypeClass
 
 		bool Is_Enabled(void) const {return(_IsEnabled);}
 		void Set_Enabled(bool val) {_IsEnabled = val;}
-		__declspec(property(get=Is_Enabled, put=Set_Enabled)) bool IsEnabled;
 
 	public:
 

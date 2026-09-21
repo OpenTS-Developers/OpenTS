@@ -113,7 +113,7 @@ RadarEventClass::RadarEventClass(RadarEventType type, Cell cell):
 	IsRotating(true),
 	IsVisible(true)
 {
-	Offset = Map.Cell_To_Radar_Pixel(cell).TopLeft - Map.RadarRect.TopLeft;
+	Offset = Map.Cell_To_Radar_Pixel(cell).Top_Left() - Map.RadarRect.Top_Left();
 	Radius = std::max(Offset.X, std::max(Offset.Y, std::max(Map.RadarRect.Width - Offset.X, Map.RadarRect.Height - Offset.Y)));
 	LastRadarEventCell = cell;
 	RadarEvents.Add(this);
@@ -246,7 +246,7 @@ void RadarEventClass::Draw(void)
 
 	if (Map.RadarMode == RadarClass::RMODE_TACTICAL && Map.RadarState == RadarClass::RSTATE_ACTIVE) {
 		for (i = 0; i < ARRAY_SIZE(event_rect); i++) {
-			Map.LastDrawRect = Intersect(Union(Map.LastDrawRect, Rect(event_rect[i].X, event_rect[i].Y, 1, 1) + Map.RadarRect.TopLeft), Map.RadarRect);
+			Map.LastDrawRect = Intersect(Union(Map.LastDrawRect, Rect(event_rect[i].X, event_rect[i].Y, 1, 1) + Map.RadarRect.Top_Left()), Map.RadarRect);
 		}
 	}
 }
@@ -328,7 +328,7 @@ void RadarEventClass::Plot(void)
 
 	if (Map.RadarMode == RadarClass::RMODE_TACTICAL && Map.RadarState == RadarClass::RSTATE_ACTIVE) {
 		for (i = 0; i < ARRAY_SIZE(event_rect); i++) {
-			Map.LastDrawRect = Intersect(Union(Map.LastDrawRect, Rect(event_rect[i].X, event_rect[i].Y, 1, 1) + Map.RadarRect.TopLeft), Map.RadarRect);
+			Map.LastDrawRect = Intersect(Union(Map.LastDrawRect, Rect(event_rect[i].X, event_rect[i].Y, 1, 1) + Map.RadarRect.Top_Left()), Map.RadarRect);
 		}
 	}
 }

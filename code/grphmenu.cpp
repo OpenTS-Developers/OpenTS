@@ -83,7 +83,7 @@ GraphicMenu * _Graphic_Menu(INIClass const & ini, const char * name)
 		}
 
 		menu->Set_Animation(anim);
-		pt = anim->Get_Rect().TopLeft;
+		pt = anim->Get_Rect().Top_Left();
 	}
 
 	if (ini.Get_String(name, "Theme", "", buffer, sizeof(buffer)) > 0) {

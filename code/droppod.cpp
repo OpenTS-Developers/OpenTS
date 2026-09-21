@@ -86,10 +86,10 @@ bool DropPodLocomotionClass::Process(void)
 	// so that the pod outlives every member this routine still reads.
 	std::unique_ptr<ILocomotion> self;
 
-	Coord coord = LinkedTo->PositionCoord;
+	Coord coord = LinkedTo->Get_Coord();
 	Coord smoke_coord = coord;
 
-	int speed = LinkedTo->HeightAGL / 10 + 2;
+	int speed = LinkedTo->Get_Height_AGL() / 10 + 2;
 	if (Rule->DropPodSpeed > speed) {
 		speed = Rule->DropPodSpeed;
 	}
@@ -114,12 +114,12 @@ bool DropPodLocomotionClass::Process(void)
 
 	coord.Z -= std::sin(Rule->DropPodAngle) * speed;
 
-	int height = LinkedTo->HeightAGL;
+	int height = LinkedTo->Get_Height_AGL();
 	FootClass * linked = LinkedTo;
 
 	if (height <= 0) {
-		linked->HeightAGL = 0;
-		coord = linked->PositionCoord;
+		linked->Set_Height_AGL(0);
+		coord = linked->Get_Coord();
 		linked->Limbo();
 
 		// A pod that carries nothing stays the object's locomotor.
@@ -136,13 +136,13 @@ bool DropPodLocomotionClass::Process(void)
 		} else {
 			new AnimClass(Rule->DropPod[Direction % Rule->DropPod.Count()], coord);
 			linked->Mark(MARK_DOWN);
-			linked->HeightAGL = 0;
+			linked->Set_Height_AGL(0);
 			linked->Enter_Idle_Mode();
 			linked->Commence();
 			linked->Scatter(COORD_NONE);
 		}
 	} else {
-		LinkedTo->PositionCoord = coord;
+		LinkedTo->Set_Coord(coord);
 		WeaponTypeClass const * weapon = Rule->DropPodWeapon;
 
 		if (weapon != NULL) {
@@ -208,10 +208,10 @@ void DropPodLocomotionClass::Move_To(Coord to)
 			}
 		}
 
-		LinkedTo->PositionCoord = dropcoord;
+		LinkedTo->Set_Coord(dropcoord);
 
 		if (LinkedTo->Unlimbo(dropcoord, DIR_S)) {
-			LinkedTo->PositionCoord = dropcoord;
+			LinkedTo->Set_Coord(dropcoord);
 			LinkedTo->PrimaryFacing.Set(DIR_S << 8);
 			new AnimClass(Rule->AtmosphereEntry, dropcoord);
 		} else {

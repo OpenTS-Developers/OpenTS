@@ -100,12 +100,12 @@ LevitateLocomotionClass::~LevitateLocomotionClass(void)
 /// </summary>
 void LevitateLocomotionClass::Hover_AI(void)
 {
-	int height = LinkedTo->HeightAGL;
+	int height = LinkedTo->Get_Height_AGL();
 	int target_height = height;
 
 	if (LinkedTo->Path[0] != FACING_NONE) {
-		int here_terrain = Map.Get_Height_GL(LinkedTo->PositionCoord);
-		if (Map.Get_Height_GL(Adjacent_Cell(LinkedTo->PositionCoord, (FacingType)LinkedTo->Path[0])) > here_terrain) {
+		int here_terrain = Map.Get_Height_GL(LinkedTo->Get_Coord());
+		if (Map.Get_Height_GL(Adjacent_Cell(LinkedTo->Get_Coord(), (FacingType)LinkedTo->Path[0])) > here_terrain) {
 			target_height = height - Rule->HoverHeight;
 		}
 	}
@@ -193,8 +193,8 @@ void LevitateLocomotionClass::Process_Idle(void)
 	} else if (Validate_NavCom()) {
 		Steer_Towards(LinkedTo->NavCom->Center_Coord());
 	} else {
-		if (LinkedTo->Mission != MISSION_STICKY) {
-			if (LinkedTo->Mission != MISSION_SLEEP) {
+		if (LinkedTo->Get_Mission() != MISSION_STICKY) {
+			if (LinkedTo->Get_Mission() != MISSION_SLEEP) {
 				if (Random_Double(0.0, 1.0) < GlobalControls.AccelerationProbability) {
 					double angle = DEG_TO_RAD(360) * (Random_Double(0.0, 1.0));
 					Accelerate(angle);
@@ -206,7 +206,7 @@ void LevitateLocomotionClass::Process_Idle(void)
 	if (State != STATE_IDLE) {
 		if (LinkedTo->IsOccupyingCell) {
 			LinkedTo->IsOccupyingCell = false;
-			LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
+			LinkedTo->Clear_Occupy_Bit(LinkedTo->Get_Coord());
 		}
 	}
 }
@@ -254,7 +254,7 @@ void LevitateLocomotionClass::Process_Cruising(void)
 			MoveX = 0;
 			if (!LinkedTo->IsOccupyingCell) {
 				LinkedTo->IsOccupyingCell = true;
-				LinkedTo->Set_Occupy_Bit(LinkedTo->PositionCoord);
+				LinkedTo->Set_Occupy_Bit(LinkedTo->Get_Coord());
 			}
 		} else {
 			if (AccelerationsRemaining == 0) {
@@ -289,7 +289,7 @@ void LevitateLocomotionClass::Process_Decelerating(void)
 			MoveX = 0;
 			if (!LinkedTo->IsOccupyingCell) {
 				LinkedTo->IsOccupyingCell = true;
-				LinkedTo->Set_Occupy_Bit(LinkedTo->PositionCoord);
+				LinkedTo->Set_Occupy_Bit(LinkedTo->Get_Coord());
 			}
 		}
 	}
@@ -336,7 +336,7 @@ void LevitateLocomotionClass::Process_Arrived(void)
 		MoveX = 0;
 		if (!LinkedTo->IsOccupyingCell) {
 			LinkedTo->IsOccupyingCell = true;
-			LinkedTo->Set_Occupy_Bit(LinkedTo->PositionCoord);
+			LinkedTo->Set_Occupy_Bit(LinkedTo->Get_Coord());
 		}
 	}
 }
@@ -350,7 +350,7 @@ void LevitateLocomotionClass::Process_Arrived(void)
 /// </summary>
 void LevitateLocomotionClass::Process_Recentering(void)
 {
-	Coord home = Coord_Snap(LinkedTo->PositionCoord);
+	Coord home = Coord_Snap(LinkedTo->Get_Coord());
 
 	Point2D pt(home.X, home.Y);
 	Point2D p(LinkedTo->Center_Coord());
@@ -371,7 +371,7 @@ void LevitateLocomotionClass::Process_Recentering(void)
 
 		DirType dir;
 		if (LinkedTo->Path[0] == FACING_NONE) {
-			dir = Direction(LinkedTo->PositionCoord, center);
+			dir = Direction(LinkedTo->Get_Coord(), center);
 		} else {
 			dir = DirType(LinkedTo->Path[0]);
 		}
@@ -467,8 +467,8 @@ void LevitateLocomotionClass::Accelerate(double & angle)
 	MoveY -= GlobalControls.InitialBoost * sine;
 	Update_Speed();
 
-	ParticleSystemClass *psys = new ParticleSystemClass(ParticleSystemTypes[ParticleSystemTypeClass::From_Name("GasPuffSys")], LinkedTo->PositionCoord);
-	ParticleClass *part = psys->Spawn_Held_Particle(LinkedTo->PositionCoord, LinkedTo->PositionCoord);
+	ParticleSystemClass *psys = new ParticleSystemClass(ParticleSystemTypes[ParticleSystemTypeClass::From_Name("GasPuffSys")], LinkedTo->Get_Coord());
+	ParticleClass *part = psys->Spawn_Held_Particle(LinkedTo->Get_Coord(), LinkedTo->Get_Coord());
 	part->GasDrift.Z = -12;
 	part->GasDrift.X = (int)(cosine * -16.0);
 	part->GasDrift.Y = (int)(sine * 16.0);
@@ -484,9 +484,9 @@ void LevitateLocomotionClass::Accelerate(double & angle)
 void LevitateLocomotionClass::Accelerate_Towards(Coord const & coord)
 {
 	DirType dir;
-	dir.Direction(LinkedTo->PositionCoord, coord);
+	dir.Direction(LinkedTo->Get_Coord(), coord);
 	double angle = dir.As_Radian();
-	//double angle = Direction(LinkedTo->PositionCoord, coord).As_Radian(); // this gives wrong stack
+	//double angle = Direction(LinkedTo->Get_Coord(), coord).As_Radian(); // this gives wrong stack
 	Accelerate(angle);
 }
 
@@ -498,7 +498,7 @@ void LevitateLocomotionClass::Accelerate_Towards(Coord const & coord)
 /// <param name="coord">World coordinate to drift toward.</param>
 void LevitateLocomotionClass::Drift_Towards(Coord const & coord)
 {
-	Coord position = LinkedTo->PositionCoord;
+	Coord position = LinkedTo->Get_Coord();
 	Drift(DirType().Direction(position, coord));
 	int dx = coord.X - position.X;
 	int dy = coord.Y - position.Y;
@@ -627,7 +627,7 @@ void LevitateLocomotionClass::Move_AI(void)
 
 	Update_Speed();
 
-	Coord coord = LinkedTo->PositionCoord;
+	Coord coord = LinkedTo->Get_Coord();
 	int move_x = (int)MoveX;
 	int move_y = (int)MoveY;
 	coord.X += move_x;
@@ -684,7 +684,7 @@ void LevitateLocomotionClass::Move_AI(void)
 			}
 		}
 
-		Drift_Towards(Coord_Snap(LinkedTo->PositionCoord));
+		Drift_Towards(Coord_Snap(LinkedTo->Get_Coord()));
 		State = STATE_RECENTERING;
 		return;
 	}
@@ -711,7 +711,7 @@ double LevitateLocomotionClass::Update_Speed(void)
 /// <returns>True if the coord is on a different cell.</returns>
 bool LevitateLocomotionClass::Is_Not_On_Cell(Coord const & coord)
 {
-	return(coord.As_Cell() != LinkedTo->PositionCoord.As_Cell());
+	return(coord.As_Cell() != LinkedTo->Get_Coord().As_Cell());
 }
 
 
@@ -724,7 +724,7 @@ void LevitateLocomotionClass::Set_Coord(Coord const & coord)
 {
 	bool was_down = LinkedTo->IsDown;
 	LinkedTo->IsDown = false;
-	LinkedTo->PositionCoord = coord;
+	LinkedTo->Set_Coord(coord);
 	LinkedTo->IsDown = was_down;
 }
 
@@ -738,7 +738,7 @@ void LevitateLocomotionClass::Set_Coord(Coord const & coord)
 /// <returns>True if the move is allowed.</returns>
 bool LevitateLocomotionClass::Can_Move_Here(Coord const & coord)
 {
-	CellClass * here_cellptr = &Map[(Coord const &)LinkedTo->PositionCoord];
+	CellClass * here_cellptr = &Map[(Coord const &)LinkedTo->Get_Coord()];
 	CellClass * there_cellptr = &Map[coord];
 	FacingType facing = FACING_NW;
 	/// The loop test can never fire -- the step below only ever yields a facing of 0 to 7 --
@@ -758,7 +758,7 @@ bool LevitateLocomotionClass::Can_Move_Here(Coord const & coord)
 				bool all_foot = true;
 				ObjectClass * occupier;
 				CellClass * cellptr = &Map[coord];
-				if (abs(coord.Z - LinkedTo->PositionCoord.Z) < 2 * CELL_LEPTON) {
+				if (abs(coord.Z - LinkedTo->Get_Coord().Z) < 2 * CELL_LEPTON) {
 					occupier = cellptr->Cell_Occupier(false);
 				} else if (cellptr->IsBridgeDeck) {
 					occupier = cellptr->Cell_Occupier(true);
@@ -789,7 +789,7 @@ bool LevitateLocomotionClass::Can_Move_Here(Coord const & coord)
 void LevitateLocomotionClass::Update_Bridge_State(Coord const & coord)
 {
 	CellClass * cellptr = &Map[coord];
-	if (!LinkedTo->IsOnBridge && cellptr->IsUnderBridge && LinkedTo->HeightAGL >= BRIDGE_LEPTON_HEIGHT) {
+	if (!LinkedTo->IsOnBridge && cellptr->IsUnderBridge && LinkedTo->Get_Height_AGL() >= BRIDGE_LEPTON_HEIGHT) {
 		LinkedTo->IsOnBridge = true;
 	}
 	if (LinkedTo->IsOnBridge == true && !cellptr->IsUnderBridge) {
@@ -832,7 +832,7 @@ bool LevitateLocomotionClass::Process(void)
 	Move_AI();
 	if (Is_Moving_Now() && (Frame % 10) == 0) {
 		if (!LinkedTo->IsOnBridge && LinkedTo->Get_Cell_Ptr()->Land_Type() == LAND_WATER && Rule->Wake != NULL) {
-			new AnimClass(Rule->Wake, LinkedTo->PositionCoord);
+			new AnimClass(Rule->Wake, LinkedTo->Get_Coord());
 		}
 
 	}
@@ -878,7 +878,7 @@ Coord LevitateLocomotionClass::Destination(void)
 /// <returns>The current position.</returns>
 Coord LevitateLocomotionClass::Head_To_Coord(void)
 {
-	return(LinkedTo->PositionCoord);
+	return(LinkedTo->Get_Coord());
 }
 
 
@@ -963,8 +963,8 @@ void LevitateLocomotionClass::Read_INI(CCINIClass const & ini)
 void LevitateLocomotionClass::Mark_All_Occupation_Bits(int mark)
 {
 	if (mark == MARK_UP) {
-		LinkedTo->Clear_Occupy_Bit(LinkedTo->PositionCoord);
+		LinkedTo->Clear_Occupy_Bit(LinkedTo->Get_Coord());
 	} else {
-		LinkedTo->Set_Occupy_Bit(LinkedTo->PositionCoord);
+		LinkedTo->Set_Occupy_Bit(LinkedTo->Get_Coord());
 	}
 }

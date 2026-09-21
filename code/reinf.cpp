@@ -532,7 +532,7 @@ bool Do_Reinforcements(TeamTypeClass const * teamtype, WAYPOINT wp)
 inline bool _Can_Burrow(FootClass * object)
 {
 	while (object != NULL) {
-		TechnoTypeClass const * tclass = object->TClass;
+		TechnoTypeClass const * tclass = object->Techno_Type_Class();
 		if (tclass->Locomotor != ClassID_TunnelLocomotion) {
 			return(false);
 		}
@@ -582,9 +582,9 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 		}
 
 		eface = (FacingType)(source << 1);
-		cell = Map.Calculated_Cell(source, cell, CELL_NONE, object->TClass->Speed);
+		cell = Map.Calculated_Cell(source, cell, CELL_NONE, object->Techno_Type_Class()->Speed);
 	} else {
-		cell = Map.Nearby_Location(cell, object->TClass->Speed);
+		cell = Map.Nearby_Location(cell, object->Techno_Type_Class()->Speed);
 	}
 
 	Cell newcell = cell;
@@ -608,7 +608,7 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 			bool placed = false;
 
 			if (drop_pod) {
-				object->PositionCoord = newcell;
+				object->Set_Coord(newcell);
 				object->Assign_Destination(&Map[newcell]);
 				object->Locomotion->Move_To(newcell.As_Coord());
 				object->Look();
@@ -617,7 +617,7 @@ bool Create_Reinforcement(TeamTypeClass const * teamtype, FootClass * object, Ce
 				Coord coord = Map[newcell].Cell_Coord() - Coord(0, 0, 400);
 				placed = object->Unlimbo(coord, desiredfacing.As_Dir256());
 				if (placed) {
-					object->PositionCoord += Coord(0, 0, -CELL_LEPTON - object->Height);
+					object->Set_Coord(object->Get_Coord() + Coord(0, 0, -CELL_LEPTON - object->Get_Height()));
 					object->Assign_Destination(&Map[newcell]);
 					object->Set_Speed(1);
 					object->Locomotion->Move_To(newcell.As_Coord());

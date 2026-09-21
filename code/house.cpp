@@ -1019,7 +1019,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 						for (int j = Buildings.Count() - 1; j >= 0; j--) {
 							bptr = Buildings[j];
 							if (!bptr->IsInLimbo && bptr->House == this && bptr->IsOn) {
-								if (bptr->Mission != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
+								if (bptr->Get_Mission() != MISSION_DECONSTRUCTION && bptr->MissionQueue != MISSION_DECONSTRUCTION) {
 									found = true;
 									break;
 								}
@@ -1061,7 +1061,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 			for (int i = 0; i < ConYards.Count() && !found; i++) {
 				BuildingClass * conyard = ConYards[i];
 				if (!conyard->IsInLimbo && conyard->IsOn) {
-					if (conyard->Mission != MISSION_DECONSTRUCTION && conyard->MissionQueue != MISSION_DECONSTRUCTION) {
+					if (conyard->Get_Mission() != MISSION_DECONSTRUCTION && conyard->MissionQueue != MISSION_DECONSTRUCTION) {
 						if (conyard->ActLike != HOUSE_NONE && ((1 << conyard->ActLike) & own) != 0) {
 							found = true;
 						}
@@ -1088,7 +1088,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 			if (include_in_progress) {
 				for (int i = 0; i < Factories.Count(); i++) {
 					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
+					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->Techno_Type_Class() == type) {
 						if (Factories[i] != NULL) {
 							return(1);
 						}
@@ -1120,7 +1120,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 			if (include_in_progress && count == itype->BuildLimit) {
 				for (int i = 0; i < Factories.Count(); i++) {
 					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
+					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->Techno_Type_Class() == type) {
 						if (Factories[i] != NULL) {
 							return(1);
 						}
@@ -1144,7 +1144,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 			if (include_in_progress) {
 				for (int i = 0; i < Factories.Count(); i++) {
 					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
+					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->Techno_Type_Class() == type) {
 						if (Factories[i] != NULL) {
 							return(1);
 						}
@@ -1168,7 +1168,7 @@ int HouseClass::Can_Build(ObjectTypeClass const * type, bool forced, bool includ
 			if (include_in_progress) {
 				for (int i = 0; i < Factories.Count(); i++) {
 					FactoryClass * fptr = Factories[i];
-					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->TClass == type) {
+					if (fptr->House == this && fptr->Get_Object() != NULL && fptr->Get_Object()->Techno_Type_Class() == type) {
 						if (Factories[i] != NULL) {
 							return(1);
 						}
@@ -1198,7 +1198,7 @@ FactoryClass *HouseClass::Factory_Producing_This(ObjectTypeClass const * object)
 
 	for (int i = 0; i < Factories.Count(); i++) {
 		if (Factories[i]->Get_House() == this && Factories[i]->Get_Object() != NULL) {
-			if (Factories[i]->Get_Object()->TClass == object) {
+			if (Factories[i]->Get_Object()->Techno_Type_Class() == object) {
 				fptr = Factories[i];
 				break;
 			}
@@ -1407,7 +1407,7 @@ void HouseClass::AI(void)
 			for (int index = 0; index < Buildings.Count(); index++) {
 				BuildingClass & b = *Buildings[index];
 
-				if (b.House == this && b.HealthRatio > Rule->ConditionYellow) {
+				if (b.House == this && b.Get_Health_Ratio() > Rule->ConditionYellow) {
 					// BG: Only damage buildings that require power, to keep the
 					//     land mines from blowing up under low-power conditions
 					if (b.Class->Drain) {
@@ -1661,7 +1661,7 @@ void HouseClass::AI(void)
 			*/
 			for (int index = 0; index < Buildings.Count(); index++) {
 				BuildingClass * building = Buildings[index];
-				if (building && building->IsActive && building->Strength > 0 && building->House == this && building->Mission != MISSION_DECONSTRUCTION && building->MissionQueue != MISSION_DECONSTRUCTION) {
+				if (building && building->IsActive && building->Strength > 0 && building->House == this && building->Get_Mission() != MISSION_DECONSTRUCTION && building->MissionQueue != MISSION_DECONSTRUCTION) {
 
 					if (PlayerPtr == building->House) {
 						building->Update_Buildables();
@@ -2431,7 +2431,7 @@ ProdFailType HouseClass::Begin_Production(RTTIType type, int id, bool resume)
 	if (fptr->IsSuspended) {
 		TechnoClass *object = fptr->Object;
 		if (object != NULL) {
-			if (object->TClass == tech) {
+			if (object->Techno_Type_Class() == tech) {
 				has_suspended = true;
 			}
 		}
@@ -2814,7 +2814,7 @@ void HouseClass::Just_Built(TechnoClass * product)
 {
 	IsBuiltSomething = true;
 
-	TechnoTypeClass const * ttype = product->TClass;
+	TechnoTypeClass const * ttype = product->Techno_Type_Class();
 
 	switch (product->Fetch_RTTI()) {
 		case RTTI_UNIT:
@@ -4957,7 +4957,7 @@ void HouseClass::Production_Begun(TechnoClass const * product)
  *=============================================================================================*/
 void HouseClass::Tracking_Remove(TechnoClass const * techno)
 {
-	if (techno->TClass->IsInsignificant) return;
+	if (techno->Techno_Type_Class()->IsInsignificant) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
@@ -4966,22 +4966,22 @@ void HouseClass::Tracking_Remove(TechnoClass const * techno)
 			} else {
 				CurBuildings--;
 			}
-			BQuantity.Decrement(techno->TClass->Fetch_Heap_ID());
+			BQuantity.Decrement(techno->Techno_Type_Class()->Fetch_Heap_ID());
 			break;
 
 		case RTTI_AIRCRAFT:
 			CurAircraft--;
-			AQuantity.Decrement(techno->TClass->Fetch_Heap_ID());
+			AQuantity.Decrement(techno->Techno_Type_Class()->Fetch_Heap_ID());
 			break;
 
 		case RTTI_INFANTRY:
 			CurInfantry--;
-			IQuantity.Decrement(techno->TClass->Fetch_Heap_ID());
+			IQuantity.Decrement(techno->Techno_Type_Class()->Fetch_Heap_ID());
 			break;
 
 		case RTTI_UNIT:
 			CurUnits--;
-			UQuantity.Decrement(techno->TClass->Fetch_Heap_ID());
+			UQuantity.Decrement(techno->Techno_Type_Class()->Fetch_Heap_ID());
 			break;
 
 		default:
@@ -5013,7 +5013,7 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 	InfantryType infantry;
 	UnitType unit;
 
-	if (techno->TClass->IsInsignificant) return;
+	if (techno->Techno_Type_Class()->IsInsignificant) return;
 
 	switch ((RTTIType)techno->RTTI) {
 		case RTTI_BUILDING:
@@ -5022,7 +5022,7 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 			} else {
 				CurBuildings++;
 			}
-			building = (StructType)techno->TClass->Fetch_Heap_ID();
+			building = (StructType)techno->Techno_Type_Class()->Fetch_Heap_ID();
 			BQuantity.Increment(building);
 			if (Session.Type == GAME_INTERNET) {
 				BuildingTotals->Increment_Unit_Total(building);
@@ -5031,7 +5031,7 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 
 		case RTTI_AIRCRAFT:
 			CurAircraft++;
-			aircraft = (AircraftType)techno->TClass->Fetch_Heap_ID();
+			aircraft = (AircraftType)techno->Techno_Type_Class()->Fetch_Heap_ID();
 			AQuantity.Increment(aircraft);
 			if (Session.Type == GAME_INTERNET) {
 				AircraftTotals->Increment_Unit_Total(aircraft);
@@ -5039,7 +5039,7 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 			break;
 
 		case RTTI_INFANTRY:
-			infantry = (InfantryType)techno->TClass->Fetch_Heap_ID();
+			infantry = (InfantryType)techno->Techno_Type_Class()->Fetch_Heap_ID();
 			CurInfantry++;
 			IQuantity.Increment(infantry);
 			if (Session.Type == GAME_INTERNET) {
@@ -5049,7 +5049,7 @@ void HouseClass::Tracking_Add(TechnoClass const * techno)
 
 		case RTTI_UNIT:
 			CurUnits++;
-			unit = (UnitType)techno->TClass->Fetch_Heap_ID();
+			unit = (UnitType)techno->Techno_Type_Class()->Fetch_Heap_ID();
 			UQuantity.Increment(unit);
 			if (Session.Type == GAME_INTERNET) {
 				UnitTotals->Increment_Unit_Total(unit);
@@ -5306,7 +5306,7 @@ Cell HouseClass::Where_To_Go(FootClass const * object) const
 	Cell cell = Random_Cell_In_Zone(zone);
 	assert(cell != CELL_NONE);
 
-	return(Map.Nearby_Location(cell, SPEED_TRACK, Map.Get_Cell_Zone(object->PositionCoord.As_Cell())));
+	return(Map.Nearby_Location(cell, SPEED_TRACK, Map.Get_Cell_Zone(object->Get_Coord().As_Cell())));
 }
 
 
@@ -5334,7 +5334,7 @@ AbstractClass * HouseClass::Find_Juicy_Target(Coord const & coord) const
 	for (int index = 0; index < Units.Count(); index++) {
 		UnitClass * unit = Units[index];
 
-		if (unit && !unit->IsInLimbo && !Is_Ally(unit) && unit->House->Which_Zone(unit) == ZONE_NONE && unit->HeightAGL >= -20 && unit->Cloak != CLOAKED) {
+		if (unit && !unit->IsInLimbo && !Is_Ally(unit) && unit->House->Which_Zone(unit) == ZONE_NONE && unit->Get_Height_AGL() >= -20 && unit->Cloak != CLOAKED) {
 			int val = coord.Distance_To(unit->Center_Coord());
 
 			if (unit->Anti_Air()) val *= 2;
@@ -6211,7 +6211,7 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 
 	switch (techno->Fetch_RTTI()) {
 		case RTTI_BUILDING:
-			ttype = techno->TClass;
+			ttype = techno->Techno_Type_Class();
 			ABQuantity.Decrement(ttype->Fetch_Heap_ID());
 
 			if (techno != NULL) {
@@ -6234,17 +6234,17 @@ void HouseClass::Tracking_Active_Remove(TechnoClass * techno, bool bycapture)
 			break;
 
 		case RTTI_AIRCRAFT:
-			ttype = techno->TClass;
+			ttype = techno->Techno_Type_Class();
 			AAQuantity.Decrement(ttype->Fetch_Heap_ID());
 			break;
 
 		case RTTI_INFANTRY:
-			ttype = techno->TClass;
+			ttype = techno->Techno_Type_Class();
 			AIQuantity.Decrement(ttype->Fetch_Heap_ID());
 			break;
 
 		case RTTI_UNIT:
-			ttype = techno->TClass;
+			ttype = techno->Techno_Type_Class();
 			AUQuantity.Decrement(ttype->Fetch_Heap_ID());
 			break;
 	}
@@ -6264,7 +6264,7 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 
 	switch (techno->Fetch_RTTI()) {
 		case RTTI_BUILDING:
-			ttype = techno->TClass;
+			ttype = techno->Techno_Type_Class();
 			ABQuantity.Increment(ttype->Fetch_Heap_ID());
 			bptr = dynamic_cast<BuildingClass *>(techno);
 			if (bptr != NULL) {
@@ -6275,19 +6275,19 @@ void HouseClass::Tracking_Active_Add(TechnoClass * techno, bool bycapture)
 			break;
 
 		case RTTI_AIRCRAFT:
-			ttype = techno->TClass;
+			ttype = techno->Techno_Type_Class();
 			AAQuantity.Increment(ttype->Fetch_Heap_ID());
 			break;
 
 		case RTTI_INFANTRY:
 			if (!((InfantryClass *)techno)->IsTechnician) {
-				ttype = techno->TClass;
+				ttype = techno->Techno_Type_Class();
 				AIQuantity.Increment(ttype->Fetch_Heap_ID());
 			}
 			break;
 
 		case RTTI_UNIT:
-			ttype = techno->TClass;
+			ttype = techno->Techno_Type_Class();
 			AUQuantity.Increment(ttype->Fetch_Heap_ID());
 			break;
 	}
@@ -6715,7 +6715,7 @@ void HouseClass::Lost_Firestorm_Generator(void)
 		for (int i = Buildings.Count() - 1; i >= 0; i--) {
 			BuildingClass * b = Buildings[i];
 			if (b->Class == Rule->GDIFirestormGenerator && b->House == this && b->IsOn && !b->IsInLimbo &&
-				b->Mission != MISSION_DECONSTRUCTION && b->Mission != MISSION_CONSTRUCTION) {
+				b->Get_Mission() != MISSION_DECONSTRUCTION && b->Get_Mission() != MISSION_CONSTRUCTION) {
 
 				return;
 			}
@@ -7428,7 +7428,7 @@ Cell HouseClass::Where_To_Place_Upgrade(BuildingTypeClass const * upgrade) const
 	}
 
 	if (upgradee != NULL) {
-		return(upgradee->PositionCoord.As_Cell());
+		return(upgradee->Get_Coord().As_Cell());
 	}
 
 	return(Cell(0, 0));
@@ -7475,7 +7475,7 @@ void HouseClass::Calculate_Defense_Values(BuildingClass const * building, int va
 {
 	if (value <= 0) value = 1;
 
-	Cell center = building->PositionCoord.As_Cell();
+	Cell center = building->Get_Coord().As_Cell();
 
 	int x_min = std::max(center.X - 6, area.X);
 	int x_max = std::min(area.X + area.Width, center.X + 6);
@@ -7571,7 +7571,7 @@ bool HouseClass::AI_Build_Defense(int nodeindex, DynamicVectorClass<Cell> * cell
 	for (i = 0; i < Buildings.Count(); i++) {
 		BuildingClass * building = Buildings[i];
 		if (building->House == this) {
-			Cell offset = building->PositionCell - Base.PlacementCenter;
+			Cell offset = building->Get_Cell() - Base.PlacementCenter;
 			if (offset.X != 0 || offset.Y != 0) {
 				DirType dir = DirType(std::atan2((double)-offset.Y, (double)offset.X));
 				int quadrant = dir.As_Dir4();
@@ -8199,11 +8199,11 @@ void HouseClass::Update_Factories(RTTIType rtti)
 			}
 		}
 		if (factory->Object != NULL) {
-			if (factory->Object->TClass->Who_Can_Build_Me(true, false, true, this) == NULL) {
+			if (factory->Object->Techno_Type_Class()->Who_Can_Build_Me(true, false, true, this) == NULL) {
 				factory->Abandon();
 				factory->Resume_Queue();
 			} else {
-				if (factory->Object->TClass->Who_Can_Build_Me(true, true, true, this) == NULL) {
+				if (factory->Object->Techno_Type_Class()->Who_Can_Build_Me(true, true, true, this) == NULL) {
 					factory->Suspend(false);
 					if (PlayerPtr == this) {
 						Map.SidebarClass::IsToRedraw = true;
@@ -8338,7 +8338,7 @@ bool HouseClass::Can_Create_Team(TeamTypeClass const * teamtype)
 				bool found = false;
 				for (int j = Feet.Count() - 1; j >= 0; j--) {
 					FootClass * foot = Feet[j];
-					if (foot->House == this && ttype == foot->TClass && teamtype->Can_Recruit(foot, this)) {
+					if (foot->House == this && ttype == foot->Techno_Type_Class() && teamtype->Can_Recruit(foot, this)) {
 						found = true;
 						break;
 					}
@@ -8679,7 +8679,7 @@ void HouseClass::AI_Chem_Missile(SuperClass * super)
 void HouseClass::Invalidate_Base_Node_Position(BuildingClass * building)
 {
 	if (!Debug_Map) {
-		Cell cell = building->PositionCoord.As_Cell();
+		Cell cell = building->Get_Coord().As_Cell();
 		for (int i = 0; i < Base.Nodes.Count(); i++) {
 			if (Base.Nodes[i].Type == building->Class->HeapID && Base.Nodes[i].CellID == cell) {
 				Cell node_cell = Base.Nodes[i].CellID;
@@ -8745,7 +8745,7 @@ void HouseClass::AI_Takeover(void)
 		return;
 	}
 
-	Cell center = conyard->PositionCoord.As_Cell();
+	Cell center = conyard->Get_Coord().As_Cell();
 	Center = Coord(center, 0);
 	Begin_Construction(center);
 	IsStarted = true;
@@ -8764,7 +8764,7 @@ void HouseClass::AI_Takeover(void)
 				if (building->House == this && !building->IsInLimbo
 					&& (building->Class == btype || building->Upgrades[0] == btype
 						|| building->Upgrades[1] == btype || building->Upgrades[2] == btype)) {
-					Base.Nodes[j].CellID = building->PositionCoord.As_Cell();
+					Base.Nodes[j].CellID = building->Get_Coord().As_Cell();
 				}
 			}
 		}
@@ -8812,13 +8812,13 @@ void HouseClass::AI_Takeover(void)
 		while (l < count) {
 			if (Base.Nodes[l].Type == STRUCT_NONE) {
 				if (building->Class == Rule->WallTower) {
-					Base.Nodes.Insert_After(l, BaseNodeClass(building->Upgrades[building->UpgradeLevel - 1]->HeapID, building->PositionCoord.As_Cell()));
+					Base.Nodes.Insert_After(l, BaseNodeClass(building->Upgrades[building->UpgradeLevel - 1]->HeapID, building->Get_Coord().As_Cell()));
 					Base.Nodes[l].Type = building->Class->HeapID;
-					Base.Nodes[l].CellID = building->PositionCoord.As_Cell();
+					Base.Nodes[l].CellID = building->Get_Coord().As_Cell();
 					l++;
 				} else {
 					Base.Nodes[l].Type = btype->HeapID;
-					Base.Nodes[l].CellID = building->PositionCoord.As_Cell();
+					Base.Nodes[l].CellID = building->Get_Coord().As_Cell();
 				}
 				l++;
 				break;
@@ -8840,7 +8840,7 @@ void HouseClass::AI_Takeover(void)
 		if (!Is_Side_Power_Plant(btype)) {
 			continue;
 		}
-		if (building->PositionCoord.As_Cell() == Base.Nodes[1].CellID) {
+		if (building->Get_Coord().As_Cell() == Base.Nodes[1].CellID) {
 			continue;
 		}
 		if (!building->Class->Who_Can_Build_Me(1, 0, 1, this)) {
@@ -8853,7 +8853,7 @@ void HouseClass::AI_Takeover(void)
 				power_add += ntype->Power;
 				drain_add += ntype->Drain;
 				if (node_index > 0 && power_add < drain_add + PowerSurplus) {
-					Base.Nodes.Insert_After(node_index - 1, BaseNodeClass(building->Class->HeapID, building->PositionCoord.As_Cell()));
+					Base.Nodes.Insert_After(node_index - 1, BaseNodeClass(building->Class->HeapID, building->Get_Coord().As_Cell()));
 					power_add += building->Class->Power;
 					drain_add -= ntype->Drain;
 					node_index++;
@@ -8882,7 +8882,7 @@ void HouseClass::AI_Takeover(void)
 							power += ntype->Power;
 							drain += ntype->Drain;
 							if (bindex > 0 && power < drain + PowerSurplus) {
-								Base.Nodes.Insert_After(bindex - 1, BaseNodeClass(side->PowerTurbine->HeapID, building->PositionCoord.As_Cell()));
+								Base.Nodes.Insert_After(bindex - 1, BaseNodeClass(side->PowerTurbine->HeapID, building->Get_Coord().As_Cell()));
 								power += side->PowerTurbine->Power;
 								drain -= ntype->Drain;
 								bindex++;
