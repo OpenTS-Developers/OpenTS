@@ -155,6 +155,12 @@ class OverlayTypeClass: public ObjectTypeClass
 		 */
 		bool IsARock;
 
+		/*
+		 * If a building may be placed on a cell this overlay occupies, then this flag will be
+		 * true. A wall refuses placement whether or not it is set.
+		 */
+		bool IsBuildableOver;
+
 		//----------------------------------------------------------
 		OverlayTypeClass(char const * ininame = NULL);
 		~OverlayTypeClass(void);
@@ -182,4 +188,6 @@ class OverlayTypeClass: public ObjectTypeClass
 		virtual void const * Get_Image_Data(void) const override;
 
 		RGBClass Get_Radar_Color(int shape) const;
+
+		bool Can_Build_Over(void) const {return(IsBuildableOver && !IsWall);}
 };

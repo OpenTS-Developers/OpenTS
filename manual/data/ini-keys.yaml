@@ -3889,6 +3889,24 @@ Buildable:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+BuildableOver:
+  key: BuildableOver
+  scopes:
+  - applies_to: &id016
+    - OverlayType
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OverlayTypeClass
+      member: IsBuildableOver
+      source: code/overtype.cpp
+      guard: null
+    level: OverlayTypeClass
 BuildingDrop:
   key: BuildingDrop
   scopes:
@@ -4361,8 +4379,7 @@ Cell:
 CellAnim:
   key: CellAnim
   scopes:
-  - applies_to: &id016
-    - OverlayType
+  - applies_to: *id016
     file: rules.ini
     section:
       kind: identifier

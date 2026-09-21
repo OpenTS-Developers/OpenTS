@@ -7937,7 +7937,7 @@ void HouseClass::AI_Build_Wall(void)
 
 			bool height_check = abs(cellptr->Height - base_height) <= 2;
 			bool land_check = land != LAND_ROCK && land != LAND_WATER && land != LAND_ICE && adjland != LAND_ROCK && adjland != LAND_WATER && adjland != LAND_ICE;
-			bool overlay_check = cellptr->Overlay == OVERLAY_NONE;
+			bool overlay_check = cellptr->Overlay == OVERLAY_NONE || OverlayTypes[cellptr->Overlay]->Can_Build_Over();
 			bool building_check = cellptr->Cell_Building() == NULL && adjptr->Cell_Building() == NULL;
 			bool terrain_check = cellptr->Cell_Terrain() == NULL && adjptr->Cell_Terrain() == NULL;
 			bool ramp_check = cellptr->Ramp == 0;

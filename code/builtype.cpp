@@ -915,7 +915,8 @@ int BuildingTypeClass::Flush_For_Placement(Cell const & cell, HouseClass * house
 
 			if (Map.In_Radar(newcell)) {
 				CellClass & cptr = Map[newcell];
-				if (cptr.Overlay != OVERLAY_NONE && (this != Rule->WallTower || cptr.Overlay != OVERLAY_BRICK_WALL)) {
+				if (cptr.Overlay != OVERLAY_NONE && !OverlayTypes[cptr.Overlay]->Can_Build_Over()
+						&& (this != Rule->WallTower || cptr.Overlay != OVERLAY_BRICK_WALL)) {
 					return(2);
 				}
 				ObjectClass * occupier = cptr.Cell_Occupier();

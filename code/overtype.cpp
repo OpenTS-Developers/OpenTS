@@ -120,7 +120,8 @@ OverlayTypeClass::OverlayTypeClass(char const * ininame) :
 	IsOverrides(false),
 	CellAnim(NULL),
 	IsDrawFlat(true),
-	IsARock(false)
+	IsARock(false),
+	IsBuildableOver(false)
 {
 	Create_ID();
 
@@ -373,6 +374,7 @@ bool OverlayTypeClass::Read_INI(CCINIClass const & ini)
 		IsChainReaction = ini.Get_Bool(IniName, "ChainReaction", IsChainReaction);
 		IsDrawFlat = ini.Get_Bool(IniName, "DrawFlat", IsDrawFlat);
 		IsARock = ini.Get_Bool(IniName, "IsARock", IsARock);
+		IsBuildableOver = ini.Get_Bool(IniName, "BuildableOver", IsBuildableOver);
 
 		return(true);
 	}
@@ -478,6 +480,7 @@ void OverlayTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsOverrides);
 	stream.Serialize(IsDrawFlat);
 	stream.Serialize(IsARock);
+	stream.Serialize(IsBuildableOver);
 }
 
 

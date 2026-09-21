@@ -781,7 +781,7 @@ bool CellClass::Is_Clear_To_Build(SpeedType loco, BuildingTypeClass * what, Hous
 
 	/*
 	**	Walls are always considered to block the terrain for general passability
-	**	purposes. In normal game mode, all overlays are not buildable.
+	**	purposes. In normal game mode, an overlay blocks building unless it is buildable over.
 	*/
 	if (Overlay != OVERLAY_NONE) {
 		HouseClass * owner = NULL;
@@ -818,7 +818,7 @@ bool CellClass::Is_Clear_To_Build(SpeedType loco, BuildingTypeClass * what, Hous
 			}
 		}
 
-		if (!Debug_Map || OverlayTypes[Overlay]->IsWall) {
+		if (OverlayTypes[Overlay]->IsWall || (!Debug_Map && !OverlayTypes[Overlay]->Can_Build_Over())) {
 			return(false);
 		}
 	}

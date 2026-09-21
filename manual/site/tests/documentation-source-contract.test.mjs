@@ -1007,3 +1007,29 @@ test('The deployment names the files the game reads', () => {
 		'the expansion is looked for under the name the deployment gives it',
 	);
 });
+
+test('Every building placement path asks whether the overlay may be built over', () => {
+	assert.match(
+		source('code/overtype.h'),
+		/bool Can_Build_Over\(void\) const \{return\(IsBuildableOver && !IsWall\);\}/,
+		'a wall is refused before the key is consulted',
+	);
+
+	assert.match(
+		functionBody(source('code/cell.cpp'), 'bool CellClass::Is_Clear_To_Build(SpeedType loco, BuildingTypeClass * what, HouseClass * who) const'),
+		/OverlayTypes\[Overlay\]->Can_Build_Over\(\)/,
+		'a player placing a building asks it',
+	);
+
+	assert.match(
+		functionBody(source('code/builtype.cpp'), 'int BuildingTypeClass::Flush_For_Placement(Cell const & cell, HouseClass * house) const'),
+		/OverlayTypes\[cptr\.Overlay\]->Can_Build_Over\(\)/,
+		'a computer house laying its base asks it',
+	);
+
+	assert.match(
+		functionBody(source('code/house.cpp'), 'void HouseClass::AI_Build_Wall(void)'),
+		/OverlayTypes\[cellptr->Overlay\]->Can_Build_Over\(\)/,
+		'a computer house running a wall line asks it',
+	);
+});
