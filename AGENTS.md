@@ -28,20 +28,23 @@ supported build targets. A build result is not runtime evidence.
 
 ## Writing prose
 
-Write documentation and project communication in plain, direct English. Use
-concrete claims and familiar words. Cut restatement, stock caveats,
-meta-commentary about the writing or edit, and ceremonial conclusions that
-only recap the preceding text.
+Write documentation and project communication in plain, direct English. Lead
+with the result, then its condition, then only the mechanism a reader needs to
+predict an exception. Use concrete claims and familiar words. Cut restatement,
+stock caveats, meta-commentary about the writing or edit, and ceremonial
+conclusions that only recap the preceding text.
 
 These prose rules apply to repository files and durable project communication.
 They do not constrain chat-only execution plans or status updates. Plans should
 prioritize clarity, dependencies, risks, and verification over brevity.
 
-Keep reference and workflow documents dense and easy to scan. History,
-rationale, and other narrative documents may keep the context, detail, and
-transitions needed to explain why events or decisions matter. Never remove a
-useful distinction, qualification, or example merely to make a document
-shorter.
+In reference and workflow documents, give every sentence a fact the reader can
+act on and every paragraph one job. Leave out mechanism the reader cannot use,
+such as an explanation that a failure goes unreported. History, rationale, and
+other narrative documents may keep the context, detail, and transitions needed
+to explain why events or decisions matter. Length is not the measure: lengthen
+a sentence when the shorter version is ambiguous, and never remove a useful
+distinction, qualification, or example merely to make a document shorter.
 
 Treat AI-assisted prose as a draft. Verify every claim, then rewrite and trim
 it before submission. These rules bind every edit path, including files

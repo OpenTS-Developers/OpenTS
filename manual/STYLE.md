@@ -1,8 +1,13 @@
 # Manual style
 
-Write for readers making configuration or maintenance decisions. Keep prose
-short, literal, and focused on behavior that catalogs and frontmatter do not
-already show.
+Write for readers making configuration or maintenance decisions. Keep the page
+to behavior that catalogs and frontmatter do not already show, and write it so
+each sentence lands in one pass. A sentence that must be read twice is a
+defect, however short it is.
+
+[Veterancy and promotion](content/systems/veterancy.md) is the current model
+for a system page: the result first, one job to a paragraph, and the mechanism
+left on the page that owns it.
 
 ## Audience and voice
 
@@ -25,8 +30,10 @@ the [glossary](site/src/content/docs/glossary.md).
 
 Use present-tense, declarative sentences. Lead with the result, then give its
 condition. Replace vague words such as "safe," "normal," "available," and
-"works" with the exact condition or result. Avoid marketing, personification,
-and editorial status.
+"works" with the exact condition or result. Where a setting can be written
+wrongly, give the instruction rather than the diagnosis: "keep `VeteranRatio`
+above `0`" serves the reader better than an account of the missing guard.
+Avoid marketing, personification, and editorial status.
 
 Name an operation with the word the engine and the page already use for it.
 Mounting, caching, loading, reading, and writing are distinct operations, and a
@@ -211,7 +218,9 @@ Prefer ordinary Markdown:
 Use `note` for necessary context, `tip` for a source-supported or tested recipe,
 `caution` for an easy misconfiguration or surprising exception, and `danger`
 for a demonstrated crash, corruption, desynchronization, or compatibility
-risk. A danger aside states the input and the outcome.
+risk. A danger aside states the input and the outcome. Title an aside with its
+topic or the action it asks for rather than a verdict on the engine, and do not
+raise a severity for emphasis.
 
 Avoid raw HTML, MDX-only widgets, one-off components, empty paragraphs, and
 callouts used only for visual hierarchy. Put recurring presentation in shared
