@@ -2969,6 +2969,8 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 					ScenarioInit++;
 					if (base->Unlimbo(exitcoord, dir)) {
 
+						Begin_Anim(BANIM_PRODUCTION, false);
+
 						base->Assign_Mission(MISSION_MOVE);
 						base->Assign_Destination(&Map[exitcell]);
 
@@ -3036,6 +3038,11 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 
 					ScenarioInit++;
 					if (base->Unlimbo(exitcoord, dir)) {
+
+						// A hospital or armory also exits its infantry here without having produced them.
+						if (Class->ToBuild == RTTI_INFANTRYTYPE) {
+							Begin_Anim(BANIM_PRODUCTION, false);
+						}
 
 						if (((FootClass *)base)->NavCom != NULL) {
 							base->ArchiveTarget = ((FootClass *)base)->NavCom;

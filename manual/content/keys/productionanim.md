@@ -9,7 +9,7 @@ when_omitted:
 
 The value names an animation registered in `[Animations]`. The structure runs it as an attached animation on the terms [Building animations](/systems/building-animations/) covers: a separate object pinned to a point on the structure's artwork, cycling on its own timing, and created and destroyed as the structure changes state. Only the first 15 characters of the name are kept. A name no `[Animations]` entry registers creates nothing.
 
-Four kinds of structure use the slot, each at its own moment.
+Five kinds of structure fill the production slot, each at a different moment.
 
 | Structure | The slot starts | The slot ends |
 | --- | --- | --- |
@@ -17,15 +17,18 @@ Four kinds of structure use the slot, each at its own moment.
 | [`Refinery=yes`](/keys/refinery/) | The docked harvester has emptied the last of its load, or the docked harvester is given a destination and a queued mission other than harvest | Nothing stops it |
 | [`UnitRepair=yes`](/keys/unitrepair/) | The bay begins repairing the vehicle standing over it | The repair finishes, the house cannot pay for the next step, contact with the vehicle drops, or the bay leaves the repair mission |
 | [`WeaponsFactory=yes`](/keys/weaponsfactory/) | The door begins opening for a finished vehicle | Nothing stops it |
+| Any other structure with [`Factory=`](/keys/factory/) | A finished vehicle or infantryman leaves it | Nothing stops it |
 
 Where nothing stops the slot, an animation that plays to its end empties it and a looping one holds it.
+
+The last row covers barracks and structures that build vehicles without `WeaponsFactory=yes`. A [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure does not start the animation when a healed or upgraded infantryman leaves, unless its own `Factory=` is `InfantryType`. Tiberian Sun ships no structure in that row with a `ProductionAnim`, so the row matters only to a mod that adds one.
 
 :::caution[A refinery's looping animation holds the harvester at the dock]
 The harvester waits while the refinery's slot is running and leaves on the first pass that finds it empty. An animation that loops never empties it, so the harvester stays docked and its house stops collecting.
 :::
 
-:::caution[The three other structures always fill the slot in its healthy form]
-The construction yard picks between the two names from its own health. The refinery, repair bay and weapons factory ask for the healthy name whenever they fill the slot. [`ProductionAnimDamaged=`](/keys/productionanimdamaged/) still reaches them later: when the structure's health falls to [`ConditionYellow`](/keys/conditionyellow/) or below with the slot running, the slot restarts in its damaged form. The same restart also runs in reverse. A damaged structure shows every running animation in its damaged form, so a healthy-form start flips the whole set: each slot with an animation running is restarted from its healthy name in the same moment. The set stays healthy until the next damage or repair event finds the structure at [`ConditionYellow`](/keys/conditionyellow/) or below and restarts it in the damaged forms.
+:::caution[A damaged structure starts the healthy animation]
+Only the construction yard chooses between `ProductionAnim` and [`ProductionAnimDamaged=`](/keys/productionanimdamaged/) by its health. Every other structure starts the healthy `ProductionAnim` even when damaged, and that start switches every animation the damaged structure is running to its healthy form. The damaged forms return at the next hit or repair step that finds the structure at [`ConditionYellow`](/keys/conditionyellow/) or below.
 :::
 
 ## Where the settings are read
