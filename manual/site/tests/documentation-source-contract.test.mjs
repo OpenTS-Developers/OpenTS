@@ -1594,10 +1594,11 @@ test('Every Tiberium overlay set is read with twelve growth stages', () => {
 		[
 			'case 2:',
 			'Overlay = OverlayTypes[OVERLAY_LARGE_TIBERIUM01];',
+			'RampVariety = 0;',
 			'FrameCount = 12;',
 			'case 3:',
 		],
-		'the large-Tiberium arm still names its own overlay and leaves RampVariety alone',
+		'the large-Tiberium arm names its own overlay and no slope overlays, whatever an earlier read set',
 	);
 });
 

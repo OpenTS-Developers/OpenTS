@@ -15,3 +15,5 @@ Seeding a bare cell now draws its overlay from the number of flat overlays the T
 A Tiberium type whose overlay set carries no slope artwork also draws nothing on a slope, instead of dividing by the number of slope overlays it does not have. Spreading already refused such ground, so the cells that reach this are the ones a map or a third-party editor placed.
 
 Tiberium a map places on a corner, steep or double slope also draws nothing. No set has an overlay for those slopes, so such a cell used to show an overlay from outside its type's set, drawn against the wrong slope, which could crash the game. The radar picked its color for a Tiberium cell with the same arithmetic and neither check, and now follows the same rule.
+
+A type moved onto `Image=2` by a later file, such as `firestrm.ini` or a map, now has no slope overlays. It used to keep the slope overlay count of the set it was first read with, so its slope cells were drawn with the overlays that follow the large-Tiberium set.

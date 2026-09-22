@@ -115,6 +115,7 @@ bool TiberiumClass::Read_INI(CCINIClass const & ini)
 
 			case 2:
 				Overlay = OverlayTypes[OVERLAY_LARGE_TIBERIUM01];
+				RampVariety = 0;
 				FrameCount = 12;
 				Variety = 12;
 				break;
