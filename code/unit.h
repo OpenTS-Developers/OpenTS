@@ -75,6 +75,12 @@ class UnitClass : public FootClass
 		UnitClass * FollowingMe;
 
 		/*
+		 * The docking building this loaded harvester is waiting for, so others can count the
+		 * loads queued there. It is not a reservation.
+		 */
+		BuildingClass * QueuedDock;
+
+		/*
 		**	This records the house flag that this object is currently carrying.
 		*/
 		HousesType Flagged;
@@ -267,6 +273,7 @@ class UnitClass : public FootClass
 	private:
 
 		MissionType Idle_Guard_Mission(void) const;
+		int Queue_Wait_Distance(BuildingClass * dock) const;
 
 		/*
 		 * This is the list of animation stages to use when a visceroid attacks, indexed by

@@ -131,6 +131,9 @@ class DriveLocomotionClass : public LocomotionClass, public IPiggyback
 			F_D=0x08    // Two cell consumption?
 		};
 
+		static int Travel_Leptons(int maxspeed, int frames);
+		static int Travel_Frames(int maxspeed, int leptons);
+
 	private:
 
 		struct TurnTrackType {

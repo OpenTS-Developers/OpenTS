@@ -1111,3 +1111,35 @@ test('The docking bay search rates candidates in a width that cannot overflow', 
 		'the running best and each candidate are both held wide enough for any map',
 	);
 });
+
+test('A harvester weighs every dock type and the queue at each', () => {
+	const harvest = functionBody(source('code/unit.cpp'), 'int UnitClass::Do_MISSION_HARVEST(void)');
+
+	assertOrdered(
+		harvest,
+		['Find_Docking_Bay(Class->Dock, false, false, &freedist);', 'ScenarioInit++;', 'Find_Docking_Bay(Class->Dock, false, false, &anydist);', 'ScenarioInit--;'],
+		'the whole list is weighed twice over, once for free bays and once counting reserved ones',
+	);
+
+	assert.match(
+		harvest,
+		/freedist > anydist \+ Queue_Wait_Distance\(anybay\)/,
+		'and a far free bay only wins by more than the wait at the near one is worth',
+	);
+
+	const wait = functionBody(source('code/unit.cpp'), 'int UnitClass::Queue_Wait_Distance(BuildingClass * dock) const');
+
+	assertOrdered(
+		wait,
+		['dock->Contact_With_Whom()', 'waiter->QueuedDock == dock', 'DriveLocomotionClass::Travel_Leptons(Class->MaxSpeed, frames)'],
+		'the wait is the load being handed over plus the loads queued behind it, priced as distance',
+	);
+
+	const unit = source('code/unit.cpp');
+
+	assertOrdered(
+		unit,
+		['stream.Serialize(QueuedDock);', 'crc(QueuedDock->Fetch_ID());', 'if (QueuedDock == target) {'],
+		'the place in line survives a save, joins the checksum, and drops when the building does',
+	);
+});

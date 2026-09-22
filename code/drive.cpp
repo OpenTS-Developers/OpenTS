@@ -2317,6 +2317,36 @@ DriveLocomotionClass::TrackType const DriveLocomotionClass::Track1[24] = {
 	{{0,0},(Dir256)0}
 };
 
+
+/// <summary>
+/// The leptons a vehicle with this MPHType top speed covers in the given frames, driving straight
+/// at full speed. A real trip is never shorter.
+/// </summary>
+int DriveLocomotionClass::Travel_Leptons(int maxspeed, int frames)
+{
+	// A straight track spends this much of the speed accumulator crossing one cell.
+	int const percell = ARRAY_SIZE(Track1) * ((PIXEL_LEPTON_W + PIXEL_LEPTON_H) / 2);
+
+	return(int((static_cast<long long>(maxspeed) * frames * CELL_LEPTON) / percell));
+}
+
+
+/// <summary>
+/// The frames a vehicle with this MPHType top speed needs for the given leptons, the inverse of
+/// Travel_Leptons, or zero for no speed.
+/// </summary>
+int DriveLocomotionClass::Travel_Frames(int maxspeed, int leptons)
+{
+	if (maxspeed <= 0) {
+		return(0);
+	}
+
+	int const percell = ARRAY_SIZE(Track1) * ((PIXEL_LEPTON_W + PIXEL_LEPTON_H) / 2);
+
+	return(int((static_cast<long long>(leptons) * percell) / (static_cast<long long>(maxspeed) * CELL_LEPTON)));
+}
+
+
 DriveLocomotionClass::TrackType const DriveLocomotionClass::Track2[] = {
 	{{-248,248},(Dir256)32},
 	{{-240,240},(Dir256)32},

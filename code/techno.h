@@ -529,6 +529,7 @@ class TechnoClass :	public RadioClass,
 		virtual ZGradientType Get_Z_Gradient(void) const {return(ZGRAD_90DEG);}
 
 		virtual BuildingClass * Find_Docking_Bay(BuildingTypeClass const * b, bool friendly = false, bool evenoccupied = false) const;
+		BuildingClass * Find_Docking_Bay(TypeList<BuildingTypeClass const *> const & list, bool friendly = false, bool evenoccupied = false, int * distance = NULL) const;
 		virtual Cell Find_Exit_Cell(TechnoClass const * techno) const;
 		virtual Coord Turret_Coord(int which=0) const;
 		virtual FacingType Desired_Load_Dir(ObjectClass * , Cell & moveto) const;

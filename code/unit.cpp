@@ -124,6 +124,7 @@
 #include "combat.h"
 #include "conquer.h"
 #include "draw.h"
+#include "drive.h"
 #include "fog.h"
 #include "house.h"
 #include "houstype.h"
@@ -213,6 +214,7 @@ UnitClass::UnitClass(UnitTypeClass const * type, HouseClass * house) :
 	VisceroidFacing(FACING_NONE),
 	DeathCounter(-1),
 	FollowingMe(NULL),
+	QueuedDock(NULL),
 	IsFollowing(false),
 	IsCompositingToEightBitSurface(false),
 	Charge(0)
@@ -1579,12 +1581,7 @@ ResultType UnitClass::Take_Damage(int & damage, int distance, WarheadTypeClass c
 					/*
 					**	Find nearby refinery and head to it?
 					*/
-					for (int i = 0; i < Class->Dock.Count(); i++) {
-						building = Find_Docking_Bay(Class->Dock[i], false);
-						if (building != NULL) {
-							break;
-						}
-					}
+					building = Find_Docking_Bay(Class->Dock, false);
 
 					/*
 					**	Since the refinery said it was ok to load, establish radio
@@ -3373,6 +3370,40 @@ int UnitClass::Do_MISSION_UNLOAD(void)
 }
 
 
+/// <summary>
+/// The leptons this harvester could drive in the time it would wait at the dock: the load being
+/// unloaded plus every load queued there by harvesters naming it in QueuedDock.
+/// </summary>
+int UnitClass::Queue_Wait_Distance(BuildingClass * dock) const
+{
+	int const perunit = int(Rule->HarvesterDumpRate * TICKS_PER_MINUTE);
+	int frames = 0;
+
+	TechnoClass * holder = dock->Contact_With_Whom();
+	if (holder != NULL && holder->RTTI == RTTI_UNIT) {
+		UnitClass * incumbent = (UnitClass *)holder;
+		frames = incumbent->Storage.Get_Total_Amount() * perunit;
+		if (incumbent->IsDumping) {
+			frames -= incumbent->Fetch_Stage();
+		} else {
+			frames += DriveLocomotionClass::Travel_Frames(incumbent->Class->MaxSpeed, incumbent->Distance(dock));
+		}
+	}
+
+	for (int index = 0; index < Units.Count(); index++) {
+		UnitClass * waiter = Units[index];
+		if (waiter != this && waiter->QueuedDock == dock && waiter->Mission == MISSION_HARVEST) {
+			frames += waiter->Storage.Get_Total_Amount() * perunit;
+		}
+	}
+
+	if (frames <= 0) {
+		return(0);
+	}
+	return(DriveLocomotionClass::Travel_Leptons(Class->MaxSpeed, frames));
+}
+
+
 /***********************************************************************************************
  * UnitClass::Mission_Harvest -- Handles the harvesting process used by harvesters.            *
  *                                                                                             *
@@ -3408,6 +3439,11 @@ int UnitClass::Do_MISSION_HARVEST(void)
 	**	allows combat units to act "brain dead".
 	*/
 	if (!Class->IsToHarvest && !Class->IsToVeinHarvest) return(TICKS_PER_SECOND*30);
+
+	// A harvester holds a place in line only while it is still looking for one.
+	if (Status != FINDHOME) {
+		QueuedDock = NULL;
+	}
 
 	if (Class->Dock.Count() == 0 && !House->Is_Human_Player()) {
 		Assign_Mission(MISSION_GUARD);
@@ -3555,14 +3591,23 @@ int UnitClass::Do_MISSION_HARVEST(void)
 				/*
 				**	Find nearby refinery and head to it?
 				*/
-				BuildingClass * nearest = NULL;
+				int freedist = 0;
+				int anydist = 0;
+				BuildingClass * freebay = Find_Docking_Bay(Class->Dock, false, false, &freedist);
 
-				for (i = 0; i < Class->Dock.Count(); i++) {
-					nearest = Find_Docking_Bay(Class->Dock[i], false);
-					if (nearest != NULL) {
-						break;
-					}
+				// Under ScenarioInit a busy refinery does not refuse, so this sweep sees every bay.
+				ScenarioInit++;
+				BuildingClass * anybay = Find_Docking_Bay(Class->Dock, false, false, &anydist);
+				ScenarioInit--;
+
+				BuildingClass * nearest = freebay;
+				if (freebay != NULL && anybay != NULL && freebay != anybay &&
+					freedist > anydist + Queue_Wait_Distance(anybay)) {
+
+					nearest = NULL;
 				}
+
+				QueuedDock = NULL;
 
 				/*
 				**	Since the refinery said it was ok to load, establish radio
@@ -3573,25 +3618,17 @@ int UnitClass::Do_MISSION_HARVEST(void)
 ///					if (nearest->House == PlayerPtr && (PlayerPtr->Capacity - PlayerPtr->Tiberium) < 300 && PlayerPtr->Capacity > 500 && (PlayerPtr->ActiveBScan & (STRUCTF_REFINERY | STRUCTF_CONST))) {
 ///						Speak(VOX_NEED_MO_CAPACITY);
 ///					}
-				} else {
-					ScenarioInit++;
-					nearest = NULL;
-					for (i = 0; i < Class->Dock.Count(); i++) {
-						nearest = Find_Docking_Bay(Class->Dock[i], false);
-						if (nearest != NULL) {
-							break;
-						}
-					}
-					ScenarioInit--;
-					if (nearest != NULL) {
-						if (Distance_To(nearest) > 3 * CELL_LEPTON) {
-							Cell cell = Cell(nearest->Get_Coord());
-							Cell nearby = Map.Nearby_Location(Cell(nearest->Get_Coord()), SPEED_WHEEL, Map.Get_Cell_Zone(cell, Class->MZone), Class->MZone, false, Point2D(1, 1), false, true, false, false);
-							if (nearby != CELL_NONE) {
-								Assign_Destination(&Map[nearby]);
-							} else {
-								Assign_Destination(NULL);
-							}
+				} else if (anybay != NULL) {
+
+					// Nothing is reserved, so the choice is made again on arrival.
+					QueuedDock = anybay;
+					if (Distance_To(anybay) > 3 * CELL_LEPTON) {
+						Cell cell = Cell(anybay->Get_Coord());
+						Cell nearby = Map.Nearby_Location(cell, SPEED_WHEEL, Map.Get_Cell_Zone(cell, Class->MZone), Class->MZone, false, Point2D(1, 1), false, true, false, false);
+						if (nearby != CELL_NONE) {
+							Assign_Destination(&Map[nearby]);
+						} else {
+							Assign_Destination(NULL);
 						}
 					}
 				}
@@ -6066,6 +6103,7 @@ void UnitClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(Reload);
 	stream.Serialize(Class);
 	stream.Serialize(FollowingMe);
+	stream.Serialize(QueuedDock);
 	stream.Serialize(Flagged);
 	stream.Serialize(IsFollowing);
 	stream.Serialize(IsDumping);
@@ -6105,6 +6143,9 @@ void UnitClass::Compute_CRC(CRCEngine & crc) const
 	if (FollowingMe != NULL) {
 		crc(FollowingMe->Fetch_ID());
 	}
+	if (QueuedDock != NULL) {
+		crc(QueuedDock->Fetch_ID());
+	}
 	crc(Flagged);
 	crc(IsFollowing);
 	crc(IsDumping);
@@ -6125,6 +6166,9 @@ void UnitClass::Detach(AbstractClass const * target, bool all)
 	BASECLASS::Detach(target, all);
 	if (FollowingMe == target) {
 		FollowingMe = NULL;
+	}
+	if (QueuedDock == target) {
+		QueuedDock = NULL;
 	}
 	if (Class == target) {
 		Class = NULL;

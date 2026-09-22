@@ -7794,6 +7794,37 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 }
 
 
+/// <summary>
+/// Finds the nearest building of any type in the list that will take this object; a tie keeps
+/// the earlier type.
+/// </summary>
+/// <param name="friendly">Allow an allied house's buildings too.</param>
+/// <param name="evenoccupied">Refuse a building that is already in radio contact.</param>
+/// <param name="distance">Optional; receives the distance in leptons when a building is found.</param>
+/// <returns>The building, or NULL.</returns>
+BuildingClass * TechnoClass::Find_Docking_Bay(TypeList<BuildingTypeClass const *> const & list, bool friendly, bool evenoccupied, int * distance) const
+{
+	BuildingClass * best = NULL;
+	int bestval = -1;
+
+	for (int index = 0; index < list.Count(); index++) {
+		BuildingClass * building = Find_Docking_Bay(list[index], friendly, evenoccupied);
+		if (building != NULL) {
+			int dist = Distance(building);
+			if (bestval == -1 || dist < bestval) {
+				best = building;
+				bestval = dist;
+			}
+		}
+	}
+
+	if (best != NULL && distance != NULL) {
+		*distance = bestval;
+	}
+	return(best);
+}
+
+
 /***********************************************************************************************
  * TechnoClass::Find_Exit_Cell -- Finds an appropriate exit cell for this object.              *
  *                                                                                             *
