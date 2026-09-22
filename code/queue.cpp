@@ -1480,21 +1480,6 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 }	// end of Wait_For_Players
 
 
-static int Game_Speed_Frame_Rate(void)
-{
-	switch (Options.GameSpeed) {
-		case 0: return(60);
-		case 1: return(45);
-		case 2: return(30);
-		case 3: return(20);
-		case 4: return(15);
-		case 5: return(12);
-		case 6: return(10);
-		default: return(60);
-	}
-}
-
-
 /// <summary>Queues timing selected from the synchronized report census.</summary>
 static void Generate_Real_Timing_Event(void)
 {
@@ -1511,7 +1496,7 @@ static void Generate_Real_Timing_Event(void)
 
 	NetTiming::TimingCensus const census = Session.Network_Timing_Census(frame);
 	unsigned int const desired_frame_rate = NetTiming::Select_Desired_Frame_Rate(census,
-		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), static_cast<unsigned int>(Game_Speed_Frame_Rate()));
+		static_cast<unsigned int>(std::clamp(Session.DesiredFrameRate, 1, 60)), NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
 	NetTiming::TimingEvaluation const evaluation = Session.Evaluate_Network_Timing(census, desired_frame_rate, frame);
 	if (evaluation.Evaluated) {
 		DebugString("Network timing evaluation at frame %u: %u of %u reports fresh, worst process %u ms, RTT %u ms%s, wait %u ms, %u fps -> %s %u/%u\n",

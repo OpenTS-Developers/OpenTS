@@ -1435,6 +1435,31 @@ test('A solo game may keep running while the window is away', () => {
 	);
 });
 
+test('A game played alone is paced the way a network game is', () => {
+	const mainloop = source('code/mainloop.cpp');
+
+	assert.match(
+		functionBody(definitionFrom(mainloop, 'static int Target_Frame_Rate(void)'), 'static int Target_Frame_Rate(void)'),
+		/NetTiming::Game_Speed_Frame_Rate\(Options\.GameSpeed\)/,
+		'a solo game takes its rate from the table that caps a network game',
+	);
+	assert.doesNotMatch(
+		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
+		/FrameTimer\s*=\s*Options\.GameSpeed/,
+		'the speed setting is a frame rate, not a count of timer ticks',
+	);
+	assert.doesNotMatch(
+		functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'),
+		/GAME_NORMAL|GAME_SKIRMISH/,
+		'one wait serves every kind of game',
+	);
+	assert.doesNotMatch(
+		source('code/queue.cpp'),
+		/static int Game_Speed_Frame_Rate/,
+		'and the table is kept in one place',
+	);
+});
+
 test('An insignificant unit dies without announcing it', () => {
 	assert.equal(
 		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const')

@@ -1,13 +1,13 @@
 ---
 key: GameSpeed
-summary: The pace the game is held to, counted in sixtieths of a second between frames.
+summary: The frame rate the game is held to, from 0 for the fastest to 6 for the slowest.
 see_also: [ScrollRate, DetailLevel]
 when_omitted:
   kind: value
   value: "3"
 ---
 
-A frame is not begun until the delay has run out, so a larger figure gives a slower game. `0` runs as fast as the machine manages, and `3` holds the game to twenty frames a second at most. A single player mission, a skirmish, and a network game still using the older command protocol all run on this delay. A network game on the current protocol turns the figure into a frame rate instead: 60 at `0`, 45 at `1`, and sixty divided by the figure above that. Whichever is lower wins, that frame rate or the rate the machines can sustain.
+Each figure holds the game to a frame rate: 60 frames a second at `0`, 45 at `1`, 30 at `2`, 20 at `3`, 15 at `4`, 12 at `5` and 10 at `6`. The one exception is a single player mission or a skirmish at `0`, which is held to nothing and runs as fast as the machine manages. A network game runs at the lower of its figure's rate and the rate the slowest machine can sustain. A figure above `6` is held to 60.
 
 The same figure rescales delays that have to keep their real-world timing whatever the frame rate is: building animations, infantry sequences, and the pauses between EVA reminders. Lowering the figure speeds the game up, but those delays do not shrink in proportion.
 

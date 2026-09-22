@@ -46,6 +46,7 @@
 #include "msgloop.h"
 #include "mstimer.h"
 #include "netdlg.h"
+#include "nettiming.h"
 #include "pcx.h"
 #include "queue.h"
 #include "rules.h"
@@ -172,6 +173,22 @@ static void Check_For_Focus_Loss(void)
 
 bool InMainLoop = false;
 
+
+/// <summary>
+/// The frame rate the loop is held to, or zero to run as fast as the machine allows. A game
+/// played alone is held to the rate its speed setting gives a network game, except that its
+/// fastest setting is held to nothing.
+/// </summary>
+static int Target_Frame_Rate(void)
+{
+	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
+		return(Options.GameSpeed == 0 ? 0 : (int)NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+	}
+
+	// A recording is played back as fast as possible.
+	return(Session.Play ? 0 : Session.DesiredFrameRate);
+}
+
 /***********************************************************************************************
  * Main_Loop -- This is the main game loop (as a single loop).                                 *
  *                                                                                             *
@@ -191,7 +208,6 @@ bool Main_Loop(void)
 	KeyNumType	input;					// Player input.
 	int x;
 	int y;
-	int framedelay;
 
 	//Mono_Set_Cursor(0,0);
 
@@ -241,22 +257,13 @@ bool Main_Loop(void)
 	/*
 	**	Setup the timer so that the Main_Loop function processes at the correct rate.
 	*/
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH &&
-		Session.CommProtocol == COMM_PROTOCOL_MULTI_E_COMP) {
-
-		//
-		// In playback mode, run as fast as possible.
-		//
-		if (Session.Play) {
-			FrameTimer = 0;
-		} else {
-			framedelay = TIMER_SECOND / Session.DesiredFrameRate;
-			FrameTimer = framedelay;
-			framedelay = 1000 / Session.DesiredFrameRate;
-			NetFrameTimer = framedelay;
-		}
+	int const rate = Target_Frame_Rate();
+	if (rate > 0) {
+		FrameTimer = TIMER_SECOND / rate;
+		NetFrameTimer = 1000 / rate;
 	} else {
-		FrameTimer = Options.GameSpeed;
+		FrameTimer = 0;
+		NetFrameTimer = 0;
 	}
 
 	/*
@@ -523,23 +530,10 @@ void Keyboard_Process(KeyNumType & input)
 }
 
 
-/***********************************************************************************************
- * Sync_Delay -- Forces the game into a 15 FPS rate.                                           *
- *                                                                                             *
- *    This routine will wait until the timer for the current frame has expired before          *
- *    returning. It is called at the end of every game loop in order to force the game loop    *
- *    to run at a fixed rate.                                                                  *
- *                                                                                             *
- * INPUT:   none                                                                               *
- *                                                                                             *
- * OUTPUT:  none                                                                               *
- *                                                                                             *
- * WARNINGS:   This routine will delay an amount of time according to the game speed setting.  *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   01/04/1995 JLB : Created.                                                                 *
- *   03/06/1995 JLB : Fixed.                                                                   *
- *=============================================================================================*/
+/// <summary>
+/// Waits out the rest of the frame the main loop armed, taking input and redrawing the view
+/// while there is time.
+/// </summary>
 void Sync_Delay(void)
 {
 	/*
@@ -547,46 +541,26 @@ void Sync_Delay(void)
 	*/
 	SpareTicks += FrameTimer;
 
-	if (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH) {
-		while (NetFrameTimer) {
-			Call_Back();
-			if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
-				KeyNumType input = KN_NONE;
-				int x, y;
-				if (NetFrameTimer > 10) {
-					Map.Input(input, x, y);
-					Keyboard_Process(input);
-					TacticalMap->AI();
-					Map.Render();
-				} else {
-					Sleep(0);
-				}
-				if (!NetFrameTimer()) {
-					break;
-				}
-			}
-			Sleep(0);
-		}
-	} else {
-		while (FrameTimer) {
-			Call_Back();
-			if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
-				KeyNumType input = KN_NONE;
-				int x, y;
+	while (NetFrameTimer) {
+		Call_Back();
+		if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
+			KeyNumType input = KN_NONE;
+			int x, y;
+			if (NetFrameTimer > 10) {
 				Map.Input(input, x, y);
 				Keyboard_Process(input);
 				TacticalMap->AI();
 				Map.Render();
-				if (!FrameTimer) {
-					break;
-				}
-			}
-			if (GameInFocus || (Session.Type != GAME_NORMAL && Session.Type != GAME_SKIRMISH)) {
-				Sleep(0);
 			} else {
-				Sleep(16 * FrameTimer);
+				Sleep(0);
+			}
+			if (!NetFrameTimer()) {
+				break;
 			}
 		}
+
+		// Out of focus nothing is drawn, so the wait gives the processor back.
+		Sleep(GameInFocus ? 0 : 1);
 	}
 
 	static CDTimerClass<SystemTimerClass> fps_timer;
