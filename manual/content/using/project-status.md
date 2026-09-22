@@ -23,6 +23,8 @@ functional and have received full play-through testing. LAN multiplayer is
 functional with more limited testing. No user-visible regression from the
 original game is currently known. CnCNet play is not yet supported.
 
+## Releases and developer builds
+
 Stable releases are published on the project's GitHub releases page. Nightly
 developer builds have the latest merged changes without release validation,
 and their downloads expire after 90 days. OpenTS does not distribute the
