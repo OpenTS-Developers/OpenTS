@@ -4288,6 +4288,9 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 		}
 	}
 
+	// A repairing vehicle that can deploy keeps its deploy verdict over itself.
+	bool deploying = object == this && (action == ACTION_SELF || action == ACTION_NO_DEPLOY);
+
 	if (Combat_Damage() < 0 && House->Is_Player_Control()) {
 		if (House->Is_Ally(object)) {
 			if (Can_Heal(object) && object != this && object->Not_Underground()) {
@@ -4296,7 +4299,7 @@ ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_forc
 						action = object->RTTI == RTTI_INFANTRY ? ACTION_HEAL : ACTION_GREPAIR;
 					}
 				}
-			} else if ( object->RTTI != RTTI_BUILDING ) {
+			} else if ( object->RTTI != RTTI_BUILDING && !deploying ) {
 				action = ACTION_SELECT;
 			}
 		} else {

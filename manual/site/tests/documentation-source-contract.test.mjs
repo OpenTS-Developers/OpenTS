@@ -1308,3 +1308,20 @@ test('A type can set how many pips its row has', () => {
 		'and a structure keeps the allowance it sizes from its own footprint',
 	);
 });
+
+test('A repairing vehicle keeps its own deploy cursor', () => {
+	const action = functionBody(
+		source('code/unit.cpp'),
+		'ActionType UnitClass::What_Action(ObjectClass const * object, bool disallow_force) const',
+	);
+
+	assertOrdered(
+		action,
+		[
+			'bool deploying = object == this && (action == ACTION_SELF || action == ACTION_NO_DEPLOY);',
+			'if (Combat_Damage() < 0 && House->Is_Player_Control()) {',
+			'} else if ( object->RTTI != RTTI_BUILDING && !deploying ) {',
+		],
+		'the repair rules run after the deploy rules and must not overwrite them',
+	);
+});
