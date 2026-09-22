@@ -1,6 +1,6 @@
 ---
 title: Veins and veinhole monsters
-summary: "Veinhole monsters grow fields of vein overlay that hurt what stands in them and fill a house's weed pool."
+summary: "Veinhole monsters grow vein fields that damage objects standing in them; weeders harvest the veins to charge the chemical missile."
 category: buildings-economy
 keys:
   - Dock
@@ -39,9 +39,7 @@ related:
 
 ## Veinhole monsters
 
-Anyone already familiar with veinhole monsters and how one is declared can skip to [vein fields](#vein-fields).
-
-A veinhole monster stands in one cell and owns the field of veins that spreads out from it. It is neither a building nor a vehicle: it belongs to no house, and every monster in the scenario is given its logic and drawn from a list of its own rather than through the ordinary object layers. Its type definition is the TerrainType named by [`VeinholeTypeClass`](/keys/veinholetypeclass/), which supplies the monster's maximum strength, armor, and immunity to damage.
+A veinhole monster sits in one cell and grows a field of veins around itself. It belongs to no house and is neither a building nor a vehicle. Every monster uses the TerrainType named by [`VeinholeTypeClass`](/keys/veinholetypeclass/) in `[General]`, so that type's [`Strength`](/keys/strength/), [`Armor`](/keys/armor/) and [`Immune`](/keys/immune/) settings apply to all of them. The monster is drawn from the current theater's `VEINHOLE` shape file, such as `VEINHOLE.TEM`, not from the type's `Image`.
 
 ```ini title="rules.ini"
 [General]
@@ -55,142 +53,145 @@ Strength=1000
 IsVeinhole=true
 ```
 
-[`IsVeinhole=yes`](/keys/isveinhole/) is what lets the mouse pick the monster out of the cell it stands in, and setting it also forces the type to be a legal target once its section has been read.
+Set [`IsVeinhole=yes`](/keys/isveinhole/) on that TerrainType so that players can click the monster. The flag also makes the type a legal target, even if its section sets `LegalTarget=no`.
 
-:::danger[The named type must resolve]
-[`VeinholeTypeClass`](/keys/veinholetypeclass/) has no built-in value, and a monster reads its maximum strength straight off the type as it is created: a map holding a veinhole overlay with the setting unresolved faults while it loads. A setting that names a section which does not exist fails more quietly. The type is created anyway and keeps the negative maximum strength it was constructed with, so the monster spawns below zero strength; every hit is then refused before its armor is read.
+:::danger[Name an existing TerrainType]
+If `VeinholeTypeClass` is not set, the game crashes when it creates a monster: while it loads a map containing a veinhole, or while it generates a random map that plants one. If the setting names a section that does not exist, every monster starts below zero strength and cannot be damaged.
 :::
 
 ### Placement
 
-Two paths create a monster. A map's overlay layer holds the veinhole overlay, which also stamps the eight surrounding cells with the dummy overlay the monster's artwork covers; or a map seed asks the random map generator for one. [`VeinholeMonsters`](/keys/veinholemonsters/) says how many to plant, and the generator makes at most 200 placement attempts in total, so a crowded map ends up with fewer. Each monster the generator plants is given a starting ring of veins around the border of its five-by-five block.
+A map places a monster with the `VEINHOLE` overlay on its center cell. When the map loads, the engine fills the eight surrounding cells with the `VEINHOLEDUMMY` overlay itself. It neither checks nor reshapes the ground under a monster placed this way, so draw the pit in the map if the monster should sit in one.
 
-Outside scenario setup a monster is placed only where all of the following hold, tested in this order:
+The random map generator plants the number of monsters set by [`VeinholeMonsters`](/keys/veinholemonsters/). It makes at most 200 placement attempts in total, so a crowded map gets fewer. Each attempt picks a site as that page describes, and a monster is then placed only where all of the following hold, tested in this order:
 
-1. no other monster stands within two cells of the center on both axes at once;
-2. the center cell stands at least one height level above the map floor;
-3. every cell of the three-by-three block around the center is flat, of the `Clear` [land type](/reference/enums/land-type/), and at the center's own height.
+1. no other monster stands inside the five-by-five block centered on the site;
+2. the center cell is at height 1 or higher;
+3. every cell of the three-by-three block around the center is flat, of the `Clear` [land type](/reference/enums/land-type/), and at the center's height.
 
-A monster accepted there digs its pit: all nine cells drop one height level, the center stays flat, and the eight around it take ramps back up to the ground beyond.
-
-While a scenario is still being set up, that test is passed without any of those checks and the pit is not dug. A monster the map places is therefore accepted wherever the map puts it, and it keeps the ground the map drew for it.
+The generator then digs the monster's pit: all nine cells drop one height level, the center stays flat, and the eight cells around it slope back up to the surrounding ground. It also puts mature veins on the outer ring of the monster's five-by-five block, wherever that ground accepts them.
 
 ### Idle, alert, and attacking
 
-A monster steps through four states: idle, alert, attacking, and dying. It changes between them only at the one animation stage its current state allows, so a pending change waits for the animation to reach that stage. It moves from idle to alert while any cell of the five-by-five block around it holds an occupier, and back to idle once that block is empty again. An occupier is the building, vehicle, infantryman, landed aircraft or terrain object that a cell records as standing in it. Terrain counts as readily as anything else, so a single tree inside the block holds a monster on alert for as long as the tree stands.
+A monster is alert while any cell of the five-by-five block centered on it holds a building, vehicle, infantry, landed aircraft or terrain object, and idle when the block is empty. A single tree in the block keeps the monster alert for as long as the tree stands. Being alert changes only the monster's animation.
 
-Damage is what makes it attack. Any hit that leaves it standing puts it into the attacking state and holds it there for 120 frames (8 seconds); proximity alone never does. While the attack animation holds its open-mouth frame, one hard-coded `GasCloudM1` particle is created in the scenario's gas particle system at the monster's cell. It sits 400 leptons above the ground and drifts upward and outward in a random direction. No further cloud is created until the animation moves off that frame.
+A monster attacks only after it is damaged. A hit that damages it without destroying it makes it attack for 120 frames (8 seconds); a hit that deals no damage does not. While attacking, the monster releases one particle of the `GasCloudM1` type, whose name is fixed, each time its mouth opens fully. The particle appears 400 leptons above the monster's cell, drifts away in a random direction, and joins the scenario's shared [gas cloud system](/systems/particle-systems/#systems-that-no-attachment-holds). The particle type decides what the cloud does; in the shipped rules it becomes a `GasCloud1` cloud, which damages objects beneath it.
+
+A change of state waits until the monster's current animation reaches a point where it can switch, so the monster can react a moment late.
 
 ### Destruction
 
-An attack order aimed at the monster's cell resolves to the monster rather than to the ground, so a monster still standing takes directed fire like any other target.
+Players can attack the monster by clicking it. Vehicles, infantry and aircraft ordered to attack its cell also attack the monster itself. A building given that order fires at the ground in the cell instead.
 
-:::caution[Splash damage reaches the monster only at its own cell]
-An explosion looks the monster up at the blast's own cell. A blast centered one cell away still spills its damage into the veinhole cell for everything else standing there, but finds no monster to add and leaves it untouched.
+:::caution[Splash damage reaches the monster only in its own cell]
+An explosion damages the monster only when it is centered on the monster's cell, and only if the `VEINHOLE` overlay sets [`IsVeinholeMonster=yes`](/keys/isveinholemonster/), as the shipped one does. An explosion in a neighboring cell still damages other objects in the monster's cell, but not the monster.
 :::
 
-A destroyed monster enters its dying state. At the end of that animation it replaces the veinhole and dummy overlays on its own cell and the four cells beside it with vein overlay, and clears the four diagonal cells outright. It then runs vein placement over its whole five-by-five block, leaving the pit behind as ordinary vein-covered ground with no veinhole in it.
+A destroyed monster plays its dying animation and then turns its pit into part of the field. Its own cell and the four cells beside it take vein overlay, and the four diagonal cells lose their overlay. Veins are then placed across the five-by-five block wherever the ground accepts them, which leaves the pit's corner slopes bare.
 
-From then on the monster withers its field instead of growing it. Its queue is refilled with the mature cells it owns, scored by distance so that the cells farthest from the veinhole go first. Each step then takes one ripeness step off 1 to 4 of them, on a delay of [`VeinholeShrinkRate`](/keys/veinholeshrinkrate/) frames plus a random extra of up to half that figure. Withering is not gated by the scenario's growth switch. Once the queue is empty the monster is disposed of, and its disposal strips any vein overlay still standing in its five-by-five block.
+The field then withers. Every [`VeinholeShrinkRate`](/keys/veinholeshrinkrate/) frames, plus a random extra of up to half as many, 1 to 4 of the monster's mature cells turn thin or lose their vein, starting with those farthest from the veinhole. Each mature cell withers once, and thin veins disappear once no mature cell remains next to them. Withering continues even while [`VeinGrowthEnabled`](/keys/veingrowthenabled/) is off. When every mature cell has withered, the monster is removed, together with any vein left in its five-by-five block, even vein another monster owns. Veins outside that block stay on the map.
 
 ## Vein fields
 
-:::danger[The three vein overlays are fixed to their slots]
-Veins, the veinhole, and the dummy ring are the `VEINS`, `VEINHOLE` and `VEINHOLEDUMMY` entries of `[OverlayTypes]`, at positions 126, 167 and 178 in the shipped file. They are identified by those positions and not by anything in their sections. Overlay types are created in list order, so inserting, removing, or reordering entries ahead of them moves them off the slots the engine reads and breaks every part of this system.
+:::danger[Keep the vein overlays at their positions]
+The engine finds the `VEINS`, `VEINHOLE` and `VEINHOLEDUMMY` overlays by their positions in `[OverlayTypes]`, not by anything in their sections. The shipped rules list them at positions 126, 167 and 178, counting entries from 0 in the order they appear; the numbers left of `=` do not matter. Add new overlay types after them, and do not insert, remove or reorder entries before them. If one of the three moves, the engine treats whichever overlay now holds its position as that overlay, and the vein system stops working.
 :::
 
 ### Ripeness
 
-A vein cell is either still growing (thin) or mature. Only a mature cell is harvested, damages what stands in it, spreads the field further, and counts against a monster's coverage limit. A thin cell instead stores which of its four cardinal neighbors are mature, and a thin cell left with no mature cardinal neighbor loses its overlay altogether. A mature cell on a slope stores a piece cut for that slope; it is harvested and spread from like any other mature cell, but it never attacks.
+A vein cell is either thin or mature. Only mature veins spread the field, attack objects, and can be harvested. Thin veins are the connecting pieces drawn beside mature cells. Veins have no numbered growth stages like a [Tiberium cell](/systems/tiberium/#cell-state).
 
-:::note[Vein ripeness is not a Tiberium growth stage]
-A vein cell has no growth stage and never climbs the numbered ripening a [Tiberium cell](/systems/tiberium/#cell-state) does. It is thin or it is mature, and every gameplay test asks only which; the two overlays keep their state in the same place and read it in unrelated ways.
-:::
+Harvesting or withering a mature cell makes it thin, or removes its vein if none of its four cardinal neighbors is mature. A thin neighbor left with no mature cardinal neighbor loses its vein as well.
 
-A vein overlay with [`Land=Weeds`](/keys/land/) makes its cell report that [land type](/reference/enums/land-type/) outright, ahead of whatever the ground tile underneath would say. That land type, not the overlay, is what the weed search and the loading test read.
+A mature vein on a slope spreads the field and can be harvested, but it never attacks, and harvesting removes it instead of making it thin.
+
+The shipped `VEINS` overlay sets [`Land=Weeds`](/keys/land/), which gives its cell the `Weeds` [land type](/reference/enums/land-type/) whatever the ground tile beneath it. Weeders look for that land type when they search for veins and when they load, so they cannot harvest a vein overlay without it.
 
 ### Growth
 
-Each monster keeps its own growth timer. The first step falls due [`VeinholeGrowthRate`](/keys/veinholegrowthrate/) frames after the monster is created, and every later step reloads with that figure plus a random extra of up to half of it.
+Each monster grows its own field in steps. The first step comes [`VeinholeGrowthRate`](/keys/veinholegrowthrate/) frames after the monster is created. Each later step comes that many frames after the previous one, plus a random extra of up to half as many.
 
-A step takes 1 to 5 cells off the monster's frontier, lowest score first. The frontier is the queue of cells the monster has claimed to grow into but has not yet grown, held in the score order set out below. A cell not yet mature is made mature if it still accepts veins. Each cardinal neighbor that is not already mature vein is drawn into the field, as thin vein on flat ground or as a mature ramp piece on a slope. A cell that is mature then offers each of its four cardinal neighbors to the frontier; the field advances on the cardinals only, never diagonally. A neighbor is queued when all of the following hold:
+A step takes the next 1 to 5 cells from the monster's growth queue. Each cell taken becomes mature if it still accepts veins.
+
+A cell that matures on flat ground also puts vein on each cardinal neighbor that does not already hold mature vein or a `VEINHOLE` or `VEINHOLEDUMMY` overlay. A flat neighbor gets thin vein, and a sloped neighbor gets mature vein at once.
+
+Each cell taken that is mature after the step, whether it has just matured or already was, then adds its cardinal neighbors to the queue. A neighbor is added when all of the following hold:
 
 1. it lies inside the playable area;
-2. its height differs from the source cell's by less than two levels;
-3. it accepts veins;
-4. no monster has claimed it already; and
-5. the monster has handed out fewer than [`MaxVeinholeGrowth`](/keys/maxveinholegrowth/) frontier entries.
+2. its height differs from the mature cell's by less than two levels;
+3. it [accepts veins](#what-stops-veins);
+4. no monster owns it yet.
 
-A queued cell is scored from the current frame divided by fifty plus a random figure of one to fifty. The base therefore rises by one every fifty frames, while two draws of the jitter can differ by as much as forty-nine. Closing a gap of forty-nine takes the base 2,450 frames, nearly three minutes of play. Two cells queued anywhere inside that span can come out in either order, which is why the field advances unevenly rather than as a ring.
+Veins spread only to cardinal neighbors, never diagonally. Cells leave the queue roughly in the order they joined it, but a random offset lets two cells queued up to 2,450 frames apart, nearly three minutes, grow in either order. A field therefore spreads unevenly instead of as an expanding ring.
 
-A step runs only while all of the following hold:
+The monster that queues a cell owns it. That monster regrows the cell when harvesting leaves thin vein in it, and withers it after the monster is destroyed.
 
-1. the monster has handed out no more than `MaxVeinholeGrowth` minus 40 frontier entries;
-2. it covers no more than `MaxVeinholeGrowth` minus 100 mature cells; and
-3. the scenario's [`VeinGrowthEnabled`](/keys/veingrowthenabled/) switch is on.
+A growth step runs only while all of the following hold:
 
-The [Vein growth](/mapping/actions/taction-vein-growth/) trigger action turns that switch on and off during play.
+1. the monster has queued no more than [`MaxVeinholeGrowth`](/keys/maxveinholegrowth/) minus 40 cells in total;
+2. it covers no more than `MaxVeinholeGrowth` minus 100 mature cells, its coverage limit; and
+3. the scenario's `VeinGrowthEnabled` switch is on. The [Vein growth](/mapping/actions/taction-vein-growth/) trigger action turns it on and off during play.
+
+The queued total is a budget for the whole scenario. It never goes down, a saved game keeps it, and a harvested cell queued to grow back also adds to it. Once the total passes `MaxVeinholeGrowth` minus 40, the monster stops growing for the rest of the scenario, and cells harvested after that stay thin. No cell is ever queued past `MaxVeinholeGrowth` itself.
 
 ### What stops veins
 
 A cell accepts veins when all of the following hold:
 
-1. it is flat, or on one of the four standard ramps: the slopes that fall away toward one of the map's four directions, raising two of the cell's corners. Every other ramp shape is refused;
-2. its land type is not `Water`, `Rock`, `Ice`, or `Beach`;
-3. it has no overlay, or one declaring [`IsVeins=yes`](/keys/isveins/#scope-overlaytype); and
-4. each of its four cardinal neighbors satisfies **all of**, in this order:
+1. it is flat, or on one of the four simple slopes, which raise two adjacent corners of the cell. Every other slope shape refuses veins;
+2. its land type is not `Water`, `Rock`, `Ice` or `Beach`;
+3. it has no overlay, or an overlay with [`IsVeins=yes`](/keys/isveins/#scope-overlaytype). The shipped `VEINS`, `VEINHOLE` and `VEINHOLEDUMMY` overlays all set it; and
+4. each of its four cardinal neighbors meets **all of** the following, in this order:
 
-   - where the neighbor stands on a slope outside the four standard ramps while this cell is flat, it already has an `IsVeins=yes` overlay;
-   - its land type is outside that same list of four;
-   - it has no overlay other than an `IsVeins=yes` one.
+   - if this cell is flat, the neighbor is flat, on a simple slope, or has an `IsVeins=yes` overlay;
+   - its land type is not `Water`, `Rock`, `Ice` or `Beach`;
+   - it has no overlay, or an `IsVeins=yes` overlay.
 
-The neighbor clause is the strict one: a field stops one cell short of a wall, a bridge, a crate, or a [Tiberium](/systems/tiberium/) cell even where the cell it would take is itself clear. The refusal runs both ways, since [Tiberium germinates](/systems/tiberium/#spread) only on a cell with no overlay at all.
+The neighbor test is why a field stops one cell short of a wall, a bridge, a crate or [Tiberium](/systems/tiberium/), even where the cell it would grow into is clear. Tiberium is kept out in return, because it [spreads](/systems/tiberium/#spread) only onto cells with no overlay.
 
 ### Loading a scenario
 
-Every vein overlay in a map is stripped when the scenario finishes loading. Only the cells that were mature are then placed again, which re-derives the connecting pieces around them from the ground as it now stands. A thin vein stored in a map file does not survive that pass: the ripeness the pass reads is the per-cell overlay data the scenario file's [overlay packs](/formats/scenario-terrain/#overlay-packs) hold, so a field has to be stored already mature.
+Store vein fields in a map as mature cells. While a scenario loads, right after its overlays are read, the engine removes every vein overlay and places veins again on each stored mature cell that still accepts them. The thin pieces around those cells are redrawn to fit the ground, and thin veins stored in the map are discarded. A cell's ripeness is stored in the map's [overlay packs](/formats/scenario-terrain/#overlay-packs).
 
-The growth system is built afterward: each monster claims the connected field around its own cell, counts it, and queues the cells that can still take more. Any vein cell no monster claims by the end of that pass is removed. A monster with no vein cell in its five-by-five block has nothing to flood outward from, so its frontier stays empty and it never grows. A map that places a monster by hand has to hold the mature vein cells the field grows out of.
+Each monster then takes ownership of the vein field connected to its five-by-five block, counting diagonal connections, and queues the thin cells in that field to grow first. Vein cells that no monster owns are removed, so a map without monsters loses all its veins. A monster with no vein in its five-by-five block never grows, so a map that places a monster needs mature veins in that block.
+
+The mature cells a monster takes over count toward its [coverage limit](#growth), and the cells it queues count toward its queued total. A monster that takes over more than `MaxVeinholeGrowth` minus 100 mature cells, 1,900 with the shipped rules, therefore never grows.
 
 ## Standing in veins
 
-A cell takes an attack when all of the following hold, tested in this order:
+Flat, mature veins attack buildings, vehicles, infantry and aircraft standing in them. An object is not attacked while it is more than 5 leptons above the ground, when its type sets [`ImmuneToVeins=yes`](/keys/immunetoveins/), or when it has the [`VEIN_PROOF`](/systems/veterancy/#abilities) veteran ability. Thin veins and veins on a slope never attack.
 
-1. it has vein overlay;
-2. that vein is mature;
-3. the cell is flat, so veins on a slope never take an attack;
-4. no attack is already attached to it;
-5. it holds a building, vehicle, infantryman or aircraft that stands within 5 leptons of the ground and has neither [`ImmuneToVeins=yes`](/keys/immunetoveins/) nor the [`VEIN_PROOF`](/systems/veterancy/#abilities) veteran ability.
+A cell checks for vulnerable objects, and starts an attack if it finds any, whenever an object finishes moving into it, however it travels, or is placed on the map there. It checks again when its vein matures under objects already standing in it. A cell that already has an attack running starts no new one.
 
-That test runs when an object finishes a move into the cell by any means, including driving, walking, stepping, hovering, teleporting, landing a jump jet, surfacing from a tunnel or a subterranean passage, and falling to the ground. It also runs when a flying object stops tumbling over the cell, when an object is placed onto the map over it, and when the cell itself ripens to mature vein under whatever is already standing there.
+The attack is the [`VeinAttack`](/keys/veinattack/) animation. On every other frame, it deals [`VeinDamage`](/keys/veindamage/) with [`VeinholeWarhead`](/keys/veinholewarhead/) to every vulnerable object in its cell. It ends when the cell is empty, when the cell no longer holds flat mature vein, or when the object that entered the cell last is off the ground. The cell can then start another attack.
 
-One trigger creates one attack for every vulnerable object standing in the cell at that moment, and each of them deals its full damage to everything there. A cell holding three vulnerable infantry therefore damages all of them three times over for as long as the attacks run.
+A cell starts one animation for each vulnerable object standing in it, and each animation damages every vulnerable object there. Three vulnerable infantry in one cell therefore each take three hits every other frame.
 
-The attack is the [`VeinAttack`](/keys/veinattack/) animation, and the animation does the damage itself: on every other frame it applies [`VeinDamage`](/keys/veindamage/) with [`VeinholeWarhead`](/keys/veinholewarhead/) to every object in its cell that is within 5 leptons of the ground and not immune. It removes itself once the cell's first occupier is gone or has left the ground, or once the cell stops holding flat mature vein; removing it is what frees the cell to be triggered again.
+:::danger[Configure the vein attack animation]
+Set `VeinAttack` to a valid animation type. If it is not set, the game crashes the first time veins attack, whether an object enters mature vein or a vein matures under one.
 
-:::danger[The attack animation must resolve and declare itself]
-[`VeinAttack`](/keys/veinattack/) has no built-in value. With the setting unresolved, the first time a vulnerable object and mature flat vein meet in the same cell, the cell builds an animation from a null type and faults. That happens whether the object arrives or the vein ripens under it. The animation type must also set [`IsVeins=yes`](/keys/isveins/#scope-animtype) in `art.ini`. Without it the animation plays as ordinary art and deals nothing, and it never releases the cell's attack slot, so that cell can never be triggered again.
+Set [`IsVeins=yes`](/keys/isveins/#scope-animtype) in that animation's `art.ini` section. Otherwise the animation deals no damage, and its cell never starts another attack.
 :::
 
-:::caution[Veins with no warhead are harmless]
-[`VeinholeWarhead`](/keys/veinholewarhead/) has no built-in value either. Damage with no warhead is modified to zero and dropped before any object's strength changes, so a field with the setting unresolved still plays its attack over every cell and takes nothing off anything.
+:::caution[Set a vein warhead]
+If `VeinholeWarhead` is not set, vein attacks still play but deal no damage.
 :::
 
-A warhead declaring [`Veinhole=yes`](/keys/veinhole/) resolves an attacker from the ground when the damage names none. The victim retaliates against the monster that owns the veins in the cell it is heading for, which is its own cell while it stands still. A computer-owned object retaliates in every case; a player-owned one does so while it has neither a target nor a movement order of its own.
+If the vein warhead sets [`Veinhole=yes`](/keys/veinhole/), a damaged object fights back against the monster that owns the veins where it stands, or, if it is moving, where it steps next. A computer-owned object always does. A player-owned object does so only while it has no target and no movement order, and only when the monster is within its weapon range or sight.
 
 ## Weed harvesting
 
 ### Finding and loading
 
-A UnitType with [`Weeder=yes`](/keys/weeder/#scope-unittype) runs the same mission as a [Tiberium harvester](/systems/tiberium/#harvesting) with the vein branch taken at each fork. It starts on that mission and returns to it on its own whether or not it is armed. A player-owned weeder that goes idle away from vein ground is put on guard, an unarmed one on plain guard and an armed one on the area guard an ordinary combat vehicle takes.
+A UnitType with [`Weeder=yes`](/keys/weeder/#scope-unittype) harvests veins through the same harvest mission as a [Tiberium harvester](/systems/tiberium/#harvesting). It starts harvesting when it is placed on the map, including when it leaves a factory or a repair bay. When it later goes idle, it resumes harvesting if its house is computer-controlled or it is standing on veins. A player-owned weeder that goes idle anywhere else takes a guard mission instead, so a player can park it. A weeder whose house owns none of the buildings in its [`Dock`](/keys/dock/) list switches to guard. Do not also set [`Harvester=yes`](/keys/harvester/#scope-unittype): such a vehicle waits for Tiberium ground instead, as [Tiberium harvesting](/systems/tiberium/#harvesting) explains.
 
-The patch search reads the same two distances as the Tiberium search, both in cells: [`TiberiumFarScan`](/keys/tiberiumfarscan/) when the weeder sets out with no patch in mind, and [`TiberiumNearScan`](/keys/tiberiumnearscan/) once it is working a field. The weeder takes its own cell when that already qualifies, and otherwise rings outward and takes the last qualifying cell of the first ring that yields any. A cell qualifies when all of the following hold, tested in this order:
+A weeder first checks its own cell, then searches outward one ring at a time and takes a qualifying cell from the nearest ring that has one. The search covers every ring closer than [`TiberiumFarScan`](/keys/tiberiumfarscan/) cells when the weeder sets out, and closer than [`TiberiumNearScan`](/keys/tiberiumnearscan/) cells while it works a field. A cell qualifies when all of the following hold, tested in this order:
 
 1. it lies inside the playable area;
-2. **Any of:** the match is not a campaign, the weeder does not belong to the local player, or the cell is not shrouded;
-3. it sits in the same [movement zone](/glossary/#movement-zone) as the weeder's destination;
-4. the weeder can enter it;
-5. it reports the `Weeds` land type;
+2. in a campaign, if the local player owns the weeder, the cell is not shrouded;
+3. it is in the same [movement zone](/glossary/#movement-zone) as the cell the weeder is heading to, or its own cell when it is not moving;
+4. the weeder can enter it now, so a cell with a vehicle parked in it does not qualify;
+5. it has the `Weeds` land type;
 6. it holds mature vein.
 
 ```ini title="rules.ini"
@@ -199,36 +200,52 @@ Weeder=yes
 Dock=NAWAST
 Storage=7
 PipScale=Tiberium
+ImmuneToVeins=yes  ; otherwise the veins it harvests damage it
 
 [NAWAST] ; the stock weed refinery
 Weeder=yes
+Bib=yes
 PipScale=Tiberium
 ```
 
-A loading cycle is nine stage ticks of three times [`HarvesterLoadRate`](/keys/harvesterloadrate/) frames each, so it runs at a third of the Tiberium cycle's pace. Each cycle takes one ripeness step off the cell the weeder stands on. It adds one unit of weed to the weeder's first storage compartment, and a second unit when the first did not fill it. A unit here is the counted quantity a compartment holds, not an object, and [`Storage`](/keys/storage/) is the ceiling that decides when the weeder is full.
+A weeder harvests a mature cell in one go. Each cell gives two units of weed, or one if the first unit fills the weeder; [`Storage`](/keys/storage/) sets how many units it can carry. The cell then turns thin or loses its vein, as described under [Ripeness](#ripeness). After each cell, the weeder waits 27 times [`HarvesterLoadRate`](/keys/harvesterloadrate/) frames before it moves on, and it harvests the next cell no sooner than 9 times `HarvesterLoadRate` frames after it leaves the previous one.
 
-The cell is reduced through the monster that owns it, so a harvested cell drops back to thin vein and returns to that monster's frontier to be grown again. A vein cell no monster claims is demoted the same way. Nothing puts it back on a frontier until the frontier is rebuilt, which happens when the map is generated or the scenario is loaded.
+A harvested cell that is left with thin vein and belongs to a live monster rejoins that monster's growth queue and can mature again, within the limits under [Growth](#growth). A harvested cell that loses its vein, or that no monster owns, is not queued to grow back. A monster's field can still spread into it again from a neighboring cell that matures.
 
 ### Docking and unloading
 
-A BuildingType with [`Weeder=yes`](/keys/weeder/#scope-buildingtype) is the only kind of building a weeder unloads at, and the weeder still reaches it through its own [`Dock`](/keys/dock/) list and its own house. Unlike a Tiberium refinery it does not need [`DockUnload=yes`](/keys/dockunload/): the weed branch of the docking request reads only the building's own flag and that nothing is attached to it yet. A weeder directed at another house's weed refinery may enter the bib and dock only when each house declares the other an ally; `Dock` does not make another building type compatible. Its docking cell is a fixed two-by-one offset from the building's own cell rather than a point at its center. A weed refinery with [`Bib=yes`](/keys/bib/) stops blocking that cell. On a three-cell-wide foundation the cell is the structure's own eastern edge, so the building does not block it and any vehicle drives over it. On a wider foundation the building stands directly east of the cell and does block it, so the pass is narrowed to a mutually allied vein harvester. One that omits `Bib=` blocks the cell as it blocks any other cell it stands on.
+A weeder unloads only at a BuildingType with [`Weeder=yes`](/keys/weeder/#scope-buildingtype), which needs no [`DockUnload=yes`](/keys/dockunload/). A weeder returning on its own looks only among its own house's buildings whose types are in its `Dock` list, so that list must name at least one weed refinery. A player can also send a weeder into another house's weed refinery, but only when each house is allied with the other.
 
-Unloading is the refinery cycle with the animations left out. The weeder turns to face east and hands one unit to its house every [`HarvesterDumpRate`](/keys/harvesterdumprate/) minutes' worth of frames. No pre-production animation plays at the building, none is waited for once the weeder is empty, and a weeder never draws the harvesting artwork a Tiberium harvester draws. A weeder that is to change its artwork while it stands there names an [`UnloadingClass`](/keys/unloadingclass/); the rules-wide [`UnloadingHarvester`](/keys/unloadingharvester/) does not reach one. An emptied weeder takes the harvest mission again straight away.
+The weeder docks on a fixed cell of the building's [`Foundation=WxH`](/keys/foundation/#scope-buildingtype): the third cell along `W` and the second along `H`, counting from the foundation's top corner. Give the building [`Bib=yes`](/keys/bib/) so that vehicles can drive onto that cell:
+
+- With a foundation three cells wide, such as the `3x3` of the shipped `NAWAST`, the dock cell is on the building's last column, and any vehicle can drive onto it.
+- With a wider foundation, only a weeder whose house and the building's house are allied with each other can enter it.
+- With a foundation narrower than three cells, or only one row deep, the dock cell lies outside the building.
+
+Without `Bib=yes`, a dock cell inside the foundation is blocked like the rest of the building, so no weeder can drive onto it.
+
+A docked weeder faces east and hands its house one unit every [`HarvesterDumpRate`](/keys/harvesterdumprate/) minutes of game time. Unlike a Tiberium refinery, the building plays no pre-production animation, and the weeder does not wait for a production animation to finish. To change the weeder's artwork while it unloads, set [`UnloadingClass`](/keys/unloadingclass/) on its type; the rules-wide [`UnloadingHarvester`](/keys/unloadingharvester/) applies only to Tiberium harvesters. A weeder also never shows the harvesting artwork a Tiberium harvester shows. Once it is empty, the weeder returns to harvesting.
 
 ### The weed pool
 
-A house holds its weed apart from its Tiberium. Each unloaded unit is added one at a time up to [`WeedCapacity`](/keys/weedcapacity/), and everything past that figure is thrown away.
+Each house stores weed separately from Tiberium, up to [`WeedCapacity`](/keys/weedcapacity/) units. Weed unloaded while the pool is full is lost.
 
-:::caution[Harvesting weeds earns no money]
-Nothing turns weed into credits and nothing adds it to a house's score, in any game type and for a computer house as much as a player's. That is a contrast with the [Tiberium a harvester brings home](/systems/tiberium/#credits-and-storage). The pool has exactly one consumer. While a house holds exactly `WeedCapacity` units and owns a [chemical missile superweapon](/systems/superweapons/#declaring-a-superweapon) that is not already charged, the superweapon is recharged and the whole pool is emptied in the same step. A house short of the full figure, or one harvesting without owning that superweapon, gets nothing at all for the trip.
+:::caution[Weed earns no credits]
+Weed never becomes credits or score, for any house in any game type. Its only use is charging a chemical missile superweapon.
 :::
 
-:::caution[Weed storage holds nothing until a capacity is set]
-`WeedCapacity` is `0` when no rules file sets it, and that is the engine's own figure rather than an artifact of any shipped file. At `0` the store refuses the first unit offered to it, so a weeder loads, drives home, unloads, and the house's pool stays empty.
+When a house's pool holds exactly `WeedCapacity` units and the house owns a `Type=ChemMissile` superweapon that is not ready, the pool is emptied and the weapon's countdown restarts at its full [`RechargeTime`](/keys/rechargetime/). A pool below `WeedCapacity` does nothing.
+
+A full pool restarts a countdown that is already running, so the progress made so far is lost. While the weapon is ready, a full pool waits and further weed is lost.
+
+The shipped chemical missile sets [`ManualControl=yes`](/keys/manualcontrol/), so it does not charge at all until its house's pool fills. [Manual control](/systems/superweapons/#manual-control) explains the setting.
+
+:::caution[Set a weed capacity]
+Set `WeedCapacity` above `0`. While it is `0` or not set, the pool refuses every unit, so weeders unload and nothing is stored.
 :::
 
-A `Weeder=yes` building with [`PipScale=Tiberium`](/keys/pipscale/) shows the house's weed pool rather than its own contents, and its pip count is bounded by `WeedCapacity` instead of by its own `Storage`.
+A `Weeder=yes` building with [`PipScale=Tiberium`](/keys/pipscale/) shows how full its house's weed pool is, not its own contents. It shows at most `WeedCapacity` pips, and fewer if its [`MaxPips`](/keys/maxpips/) or foundation leaves room for fewer.
 
 ## Settings the engine parses but never reads
 
-[`VeinholeMonsterStrength`](/keys/veinholemonsterstrength/) and [`VeinGrowthRate`](/keys/veingrowthrate/) are stored and never read. A monster's strength comes from the [`Strength`](/keys/strength/) of the section [`VeinholeTypeClass`](/keys/veinholetypeclass/) names, and growth timing comes from [`VeinholeGrowthRate`](/keys/veinholegrowthrate/).
+[`VeinholeMonsterStrength`](/keys/veinholemonsterstrength/) and [`VeinGrowthRate`](/keys/veingrowthrate/) have no effect. Set a monster's strength with [`Strength`](/keys/strength/) on the type [`VeinholeTypeClass`](/keys/veinholetypeclass/) names, and the time between growth steps with [`VeinholeGrowthRate`](/keys/veinholegrowthrate/).
