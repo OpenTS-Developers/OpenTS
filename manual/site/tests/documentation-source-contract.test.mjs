@@ -1095,3 +1095,19 @@ test('A harvester let out of a factory goes to work', () => {
 		'both the harvester refusal and the armed branch take the same guard decision',
 	);
 });
+
+test('The docking bay search rates candidates in a width that cannot overflow', () => {
+	const search = functionBody(source('code/techno.cpp'), 'BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool friendly, bool evenoccupied) const');
+
+	assert.doesNotMatch(
+		search,
+		/Relative_Distance\(/,
+		'the int-wide squared distance is gone, because it turns negative past about 181 cells',
+	);
+
+	assertOrdered(
+		search,
+		['long long bestval = -1;', 'long long dist = (dx * dx) + (dy * dy);', 'if (bestval == -1 || dist < bestval'],
+		'the running best and each candidate are both held wide enough for any map',
+	);
+});

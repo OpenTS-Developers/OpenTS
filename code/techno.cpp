@@ -7752,7 +7752,7 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 	**	for one.
 	*/
 	if (House->BQuantity.Value(b->HeapID) != 0) {
-		int bestval = -1;
+		long long bestval = -1;
 
 		/*
 		**	Loop through all the buildings and find the one that matches the specification
@@ -7777,7 +7777,12 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 				**	last qualifying building (as rated by distance), then record
 				**	this building and keep scanning.
 				*/
-				int dist = Relative_Distance(building);
+				// Squared lepton distance overflows an int past about 181 cells.
+				Coord here = Center_Coord();
+				Coord there = building->Center_Coord();
+				long long dx = here.X - there.X;
+				long long dy = here.Y - there.Y;
+				long long dist = (dx * dx) + (dy * dy);
 				if (bestval == -1 || dist < bestval || building->IsLeader) {
 					best = building;
 					bestval = dist;
