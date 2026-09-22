@@ -54,6 +54,7 @@
 #include "animtype.h"
 #include "blight.h"
 #include "brain.h"
+#include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
 #include "bullet.h"
@@ -809,7 +810,7 @@ void __cdecl Prog_End(void)
 	}
 
 	if (CloakingSurface != NULL) {
-		delete (Surface *)CloakingSurface;
+		delete CloakingSurface;
 		CloakingSurface = NULL;
 	}
 
