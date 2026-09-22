@@ -127,6 +127,8 @@ A saved game keeps the picture and the bar position, so a mission restarted from
 
 `DifficultyName` names the difficulty in the message a campaign mission opens with.
 
+`QuickMatch=yes` shows every player, computer players included, as `Player 1` through `Player 8` instead of by name. This covers the loading screen, the radar's name list, chat, the messages about alliances, defeats, changed settings and players leaving, the reconnect and out-of-sync dialogs, the vote to skip a movie, the score screen, and the [`-MPDEBUG`](/using/command-line/multiplayer-debug/) overlay. A player's number is their seat's place in [the order the houses are made](#who-is-playing), so it is the same on every machine and does not change when others leave. The real names stay in this file and still appear in the game's log.
+
 ## A game against other machines
 
 Each machine writes its own file, with itself in `[Settings]` and everybody else in the `[OtherN]` sections. Those sections set `Ip` and `Port` as well, naming the address a machine answers on. A `[Tunnel]` section with its own `Ip` and `Port` routes the match through a tunnel instead, and each machine is then named by the tunnel number its own `Port` key names rather than by its address.
@@ -179,4 +181,4 @@ How far ahead the machines run and how often they exchange their orders are set 
 
 A client that launches a custom mission writes the mission's own section into the file, names it with `ReadMissionSection`, and identifies it with `CustomMissionID`. None of the three is read. The section holds the loading-screen names another game in the series reads and an identity that game stamps into its saves; the picture a mission wants reaches this game through `CustomLoadScreen` instead.
 
-These keys are read but change nothing yet: `Tournament`, `GameID`, `WriteStatistics`, and `QuickMatch`.
+`Tournament`, `GameID` and `WriteStatistics` are read but have no effect.

@@ -103,7 +103,7 @@ bool Chat_Begin(ChatScopeType scope, int house)
 			if (house < 0 || Ipx.Connection_Address(house) == NULL) {
 				return(false);
 			}
-			std::snprintf(prefix, sizeof(prefix), Fetch_String(TXT_TO), Ipx.Connection_Name(house));
+			std::snprintf(prefix, sizeof(prefix), Fetch_String(TXT_TO), Session.Shown_Name(house, Ipx.Connection_Name(house)).c_str());
 			break;
 	}
 
@@ -151,9 +151,9 @@ void Chat_Send(char const * text)
 		}
 	}
 
-	char const * target = NULL;
+	int target = -1;
 	if (scope == ChatScopeType::Player) {
-		target = Ipx.Connection_Name(Session.MessageTarget);
+		target = Session.MessageTarget;
 	}
 	Chat_Show(PlayerPtr, scope, target, Session.GPacket.Message.Buf);
 	std::strcpy(Session.LastMessage, Session.GPacket.Message.Buf);
@@ -184,16 +184,16 @@ void Chat_Receive(GlobalPacketType const & packet, IPXAddressClass & from)
 		return;
 	}
 
-	Chat_Show(sender, packet.Message.Scope, Session.Players[0]->Name, packet.Message.Buf);
+	Chat_Show(sender, packet.Message.Scope, PlayerPtr->HeapID, packet.Message.Buf);
 	std::strcpy(Session.LastMessage, packet.Message.Buf);
 }
 
 
 /// <summary>
 /// Adds a line to the message list in the sender's color, tagged with its scope. The target
-/// names the recipient of a private message.
+/// is the house a private message is for.
 /// </summary>
-void Chat_Show(HouseClass const * sender, ChatScopeType scope, char const * target, char const * text)
+void Chat_Show(HouseClass const * sender, ChatScopeType scope, int target, char const * text)
 {
 	char tag[MPLAYER_NAME_MAX + 16];
 	switch (scope) {
@@ -206,7 +206,8 @@ void Chat_Show(HouseClass const * sender, ChatScopeType scope, char const * targ
 			break;
 
 		case ChatScopeType::Player:
-			std::snprintf(tag, sizeof(tag), Fetch_String(TXT_CHAT_TO_PLAYER), target != NULL ? target : "");
+			std::snprintf(tag, sizeof(tag), Fetch_String(TXT_CHAT_TO_PLAYER),
+				target >= 0 && target < Houses.Count() ? Session.Shown_Name(Houses[target]).c_str() : "");
 			break;
 
 		default:
@@ -216,9 +217,9 @@ void Chat_Show(HouseClass const * sender, ChatScopeType scope, char const * targ
 
 	char name[HOUSE_NAME_MAX + sizeof(tag) + 4];
 	if (tag[0] != '\0') {
-		std::snprintf(name, sizeof(name), Fetch_String(TXT_CHAT_TAGGED), (char const *)sender->IniName, tag);
+		std::snprintf(name, sizeof(name), Fetch_String(TXT_CHAT_TAGGED), Session.Shown_Name(sender).c_str(), tag);
 	} else {
-		std::snprintf(name, sizeof(name), "%s", (char const *)sender->IniName);
+		std::snprintf(name, sizeof(name), "%s", Session.Shown_Name(sender).c_str());
 	}
 
 	int timeout = int(Rule->MessageDelay * TICKS_PER_MINUTE);

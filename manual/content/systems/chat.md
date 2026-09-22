@@ -42,6 +42,6 @@ A line goes only to the connections its kind allows, and the receiving game appl
 
 ## What is shown
 
-A line reads `Name: text` in the sender's color. A team line shows the tag `[to team]` after the name, an observers line `[to observers]`, and a private line `[to Name]` with the recipient's name; a line to everyone has none. The sender's own screen shows the line the same way as it is sent, so a team line with nobody to reach still appears there. Each line added plays [`IncomingMessage`](/keys/incomingmessage/) once and stays for [`MessageDelay`](/keys/messagedelay/) minutes.
+A line reads `Name: text` in the sender's color. A team line shows the tag `[to team]` after the name, an observers line `[to observers]`, and a private line `[to Name]` with the recipient's name; a line to everyone has none. In a match launched with [`QuickMatch=yes`](/formats/spawn-ini/#what-a-player-is-shown), each name is the player's number. The sender's own screen shows the line the same way as it is sent, so a team line with nobody to reach still appears there. Each line added plays [`IncomingMessage`](/keys/incomingmessage/) once and stays for [`MessageDelay`](/keys/messagedelay/) minutes.
 
 The list holds six lines over the tactical view. [`TextBackgroundColor`](/keys/textbackgroundcolor/) draws a color behind every glyph of the list and of the editor.

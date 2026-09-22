@@ -1433,7 +1433,7 @@ void IPXManagerClass::Multiplayer_Debug_Print(int top)
 		if (house != NULL && house != PlayerPtr) {
 			int scheme = house->Scheme;
 
-			Fancy_Text_Print(Connection[i]->Name, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 2), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+			Fancy_Text_Print(Session.Shown_Name(Connection[i]->ID, Connection[i]->Name).c_str(), *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 2), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int avg = Connection[i]->Queue->Avg_Response_Time();
 			sprintf(buffer, "Average  : %d", 1000 * avg / TIMER_SECOND);

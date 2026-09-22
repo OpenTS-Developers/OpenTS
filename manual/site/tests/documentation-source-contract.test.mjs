@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import test from 'node:test';
 import { fileURLToPath } from 'node:url';
@@ -216,6 +216,73 @@ test('Every field the launch file reader carries is bound or named as unhonored'
 			new RegExp(String.raw`\b${field}\b`),
 			`${field} is read from a launch file but code/spawner.cpp neither binds it nor names it in the "Read, not honored" ledger`,
 		);
+	}
+});
+
+test('Every name a match shows passes through the session', () => {
+	const shown = /Shown_(?:Seat_)?Name\(/;
+
+	// Each of these strings puts a player's name on the screen.
+	const naming = [
+		'TXT_TO', 'TXT_CONNECTION_LOST', 'TXT_LEFT_GAME', 'TXT_PLAYER_DEFEATED', 'TXT_RECONNECTING_TO',
+		'TXT_HAS_ALLIED', 'TXT_AT_WAR', 'TXT_SPECIAL_WARNING', 'TXT_PLAYER_CHANGED_SPEED',
+		'TXT_PLAYER_CHANGED_LATENCY', 'TXT_CHAT_TAGGED', 'TXT_CHAT_TO_PLAYER', 'TXT_MOVIE_SKIP_ONE',
+		'TXT_RECONNECT_KICK_RECEIVED',
+	];
+	const named = new RegExp(String.raw`\b(?:${naming.join('|')})\b`, 'g');
+
+	// The lobby dialogs come before a match, and a launch file never opens them.
+	const lobby = new Set(['netdlg2.cpp', 'skirmish.cpp']);
+	const files = readdirSync(resolve(repository, 'code')).filter((name) => name.endsWith('.cpp') && !lobby.has(name));
+
+	let formats = 0;
+	for (const file of files) {
+		const text = source(`code/${file}`);
+		for (const match of text.matchAll(named)) {
+			const start = Math.max(
+				text.lastIndexOf(';', match.index),
+				text.lastIndexOf('{', match.index),
+				text.lastIndexOf('}', match.index),
+			) + 1;
+
+			// A string fetched in one statement is formatted in a later one.
+			let end = text.indexOf(';', match.index);
+			while (end !== -1 && end - start < 1000 && !text.slice(start, end).includes('printf(')) {
+				end = text.indexOf(';', end + 1);
+			}
+			const line = text.slice(0, match.index).split('\n').length;
+			assert.ok(end !== -1 && end - start < 1000, `code/${file}:${line} fetches ${match[0]} and never formats it`);
+
+			formats++;
+			assert.match(
+				text.slice(start, end),
+				shown,
+				`code/${file}:${line} formats ${match[0]} with a name that does not pass through the session`,
+			);
+		}
+	}
+	assert.ok(formats >= 17, `expected the names in every match message to be found, found ${formats}`);
+
+	// These draw or keep a name without a string of their own.
+	const draws = [
+		['code/radar.cpp', 'void RadarClass::Draw_Names(void)'],
+		['code/progress.cpp', 'void ProgressScreenClass::Set_Graphic_Data('],
+		['code/chat.cpp', 'void Chat_Show(HouseClass const * sender'],
+		['code/ipxmgr.cpp', 'void IPXManagerClass::Multiplayer_Debug_Print(int top)'],
+		['code/mpscore.cpp', 'void MultiScore::Tally_Score(void)'],
+		['code/desyncdlg.cpp', 'void DesyncDialogClass::Update_Player_List(void)'],
+		['code/queue.cpp', 'INT_PTR CALLBACK Reconnect_Dialog_Proc('],
+	];
+	for (const [path, signature] of draws) {
+		const body = functionBody(definitionFrom(source(path), signature), signature);
+		assert.match(body, shown, `${signature} in ${path} shows a player without asking the session how`);
+
+		for (const statement of body.split(';')) {
+			if (/IniName|->Name\b|Connection_Name\(|Left_Name\(/.test(statement)
+				&& /printf\(|Fancy_Text_Print\(|WM_SETTEXT|ListBox_AddString\(|strncpy\(/.test(statement)) {
+				assert.match(statement, shown, `${signature} in ${path} shows a name the session did not choose: ${statement.trim()}`);
+			}
+		}
 	}
 });
 

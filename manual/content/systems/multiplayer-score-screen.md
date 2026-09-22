@@ -16,7 +16,7 @@ A skirmish or network match ends at this screen rather than at the campaign one.
 
 ## Who is listed
 
-One row per house that played. A house whose country is [`MultiplayPassive`](/keys/multiplaypassive/) is left out, and so is an [observer](/systems/observers/). A defeated player keeps its row, so a match of four ends with four rows however it went. Computer players are listed like anyone else, under the name the match gave them.
+One row per house that played. A house whose country is [`MultiplayPassive`](/keys/multiplaypassive/) is left out, and so is an [observer](/systems/observers/). A defeated player keeps its row, so a match of four ends with four rows however it went. Computer players are listed like anyone else, under the name the match gave them. In a match launched with [`QuickMatch=yes`](/formats/spawn-ini/#what-a-player-is-shown), every row shows the player's number instead.
 
 Rows are ranked by whether the house was left undefeated, and then by the number in its Score column, so the winner heads the list. Each row is tinted with the house's own color, and two houses sharing a color are drawn alike.
 

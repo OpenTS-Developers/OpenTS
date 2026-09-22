@@ -155,7 +155,7 @@ void ProgressScreenClass::Set_Graphic_Data(const char * progbar, const char * ba
 				if (PlayerCount != 1) {
 					pt.X = rect.X - 80;
 					pt.Y = rect.Y;
-					Fancy_Text_Print(Session.Players[i]->Name, *HiddenSurface, HiddenSurface->Get_Rect(), pt, Fetch_Scheme_By_Name("Green"), 0, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
+					Fancy_Text_Print(Session.Shown_Seat_Name(Session.Players[i]).c_str(), *HiddenSurface, HiddenSurface->Get_Rect(), pt, Fetch_Scheme_By_Name("Green"), 0, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 				}
 			}
 		}

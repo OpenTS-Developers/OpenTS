@@ -100,6 +100,7 @@
 #include "rules.h"
 #include "savestream.h"
 #include "scheme.h"
+#include "session.h"
 #include "tactical.h"
 #include "voc.h"
 #include "vox.h"
@@ -790,7 +791,7 @@ void RadarClass::Draw_Names(void)
 		**	Initialize our message
 		*/
 		txt[0] = 0;
-		sprintf(txt, "%s", (char const *)ptr->IniName);
+		snprintf(txt, sizeof(txt), "%s", Session.Shown_Name(ptr).c_str());
 
 		if (strlen(txt) == 0) {
 			strcpy(txt,"________");

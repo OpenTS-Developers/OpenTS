@@ -393,7 +393,7 @@ void MultiScore::Tally_Score(void)
 		**	Initialize this new score entry
 		*/
 		Session.Score[score_index].Wins = 0;
-		strncpy(Session.Score[score_index].Name, hptr->IniName, MPLAYER_NAME_MAX);
+		strncpy(Session.Score[score_index].Name, Session.Shown_Name(hptr).c_str(), MPLAYER_NAME_MAX);
 		Session.Score[score_index].Name[MPLAYER_NAME_MAX - 1] = '\0';
 
 		/*

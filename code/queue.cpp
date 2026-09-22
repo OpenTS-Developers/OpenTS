@@ -2142,9 +2142,10 @@ static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_time
 						}
 					}
 					if (Session.Type == GAME_IPX || Session.Type == GAME_INTERNET) {
-						sprintf(buf, Fetch_String(TXT_RECONNECTING_TO), Ipx.Connection_Name(Ipx.Connection_ID(oldest_index)));
+						int const oldest_id = Ipx.Connection_ID(oldest_index);
+						sprintf(buf, Fetch_String(TXT_RECONNECTING_TO), Session.Shown_Name(oldest_id, Ipx.Connection_Name(oldest_id)).c_str());
 					} else {
-						sprintf(buf, Fetch_String(TXT_RECONNECTING_TO), Session.Players[1]->Name);
+						sprintf(buf, Fetch_String(TXT_RECONNECTING_TO), Session.Shown_Name(Session.Players[1]->Player.ID, Session.Players[1]->Name).c_str());
 					}
 					ListBox_AddString(listbox, buf);
 					ListBox_AddString(listbox, "");
@@ -2498,7 +2499,7 @@ bool Cast_Kick_Vote(int kicker, int kickee)
 		DebugString("Player %s votes to kick player %s from the game\n",
 			kicker_player->Name, kickee_player->Name);
 		snprintf(buffer, sizeof(buffer), Fetch_String(TXT_RECONNECT_KICK_RECEIVED),
-			kicker_player->Name, kickee_player->Name);
+			Session.Shown_Name(kicker, kicker_player->Name).c_str(), Session.Shown_Name(kickee, kickee_player->Name).c_str());
 
 		HWND topwindow = WS_Top_Window();
 		HWND listbox = GetDlgItem(topwindow, IDC_DISCONNECT_MESSAGES);
@@ -2551,7 +2552,7 @@ INT_PTR CALLBACK Reconnect_Dialog_Proc(HWND window, UINT message, WPARAM wparam,
 				HWND button = GetDlgItem(window, SyncNameButtonControlsIDs[i]);
 				HWND bar = GetDlgItem(window, SyncBarControlIDs[i]);
 				if (i < Session.Players.Count()) {
-					SendMessage(button, WM_SETTEXT, 0, (LPARAM)Session.Players[i]->Name);
+					SendMessage(button, WM_SETTEXT, 0, (LPARAM)Session.Shown_Name(Session.Players[i]->Player.ID, Session.Players[i]->Name).c_str());
 					EnableWindow(button, TRUE);
 					EnableWindow(bar, TRUE);
 				} else {

@@ -52,6 +52,7 @@
 #include "diff.hh"
 
 #include <optional>
+#include <string>
 
 //---------------------------------------------------------------------------
 // Forward declarations
@@ -542,6 +543,9 @@ class SessionClass
 		void Update_Progress(int percent);
 		void Init_Fixed_Alliances(void);
 		int Color_Index_To_Scheme(int id);
+		std::string Shown_Name(int house, char const * name) const;
+		std::string Shown_Name(HouseClass const * house) const;
+		std::string Shown_Seat_Name(NodeNameType const * node) const;
 
 		//.....................................................................
 		// File I/O
@@ -766,6 +770,7 @@ class SessionClass
 		bool NetOpen;                                   // 1 = game is open for joining
 		bool PlayMovies;                                // a launch file asked for movies outside a campaign
 		bool SkipScoreScreen;                           // a launch file asked that the score screen be passed over
+		bool QuickMatch;                                // a launch file asked that players be shown by number
 		char LoadScreen[_MAX_PATH];                     // the picture to show while the scenario loads, or empty
 		int LoadScreenX;                                // where in that picture the loading bars go, or zero for
 		int LoadScreenY;                                // the position the game picks for its own

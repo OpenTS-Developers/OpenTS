@@ -259,10 +259,9 @@ static void Spawner_Bind_Options(void)
 	 *   SaveGameName                  - read to decide the kind of launch and name the save.
 	 *   Tournament, GameID,
 	 *   WriteStatistics               - naming a match and reporting how it went.
-	 *   QuickMatch                    - what a player is shown around the match.
 	 *
 	 * Spawner_Bind_Presentation binds SkipScoreScreen, CustomLoadScreen, CustomLoadScreenX,
-	 * CustomLoadScreenY and DifficultyName.
+	 * CustomLoadScreenY, DifficultyName and QuickMatch.
 	 */
 }
 
@@ -274,6 +273,7 @@ static void Spawner_Bind_Options(void)
 static void Spawner_Bind_Presentation(void)
 {
 	Session.SkipScoreScreen = SpawnConfig.SkipScoreScreen;
+	Session.QuickMatch = SpawnConfig.QuickMatch;
 	std::snprintf(Session.LoadScreen, sizeof(Session.LoadScreen), "%s", SpawnConfig.CustomLoadScreen.c_str());
 	Session.LoadScreenX = SpawnConfig.CustomLoadScreenX;
 	Session.LoadScreenY = SpawnConfig.CustomLoadScreenY;

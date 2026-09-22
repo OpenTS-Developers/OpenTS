@@ -185,7 +185,7 @@ void DesyncDialogClass::Notify_Player_Left(int house, char const * name)
 
 	if (name != NULL && name[0] != '\0') {
 		char buffer[128];
-		std::snprintf(buffer, sizeof(buffer), Fetch_String(TXT_LEFT_GAME), name);
+		std::snprintf(buffer, sizeof(buffer), Fetch_String(TXT_LEFT_GAME), Session.Shown_Name(house, name).c_str());
 		Append_Chat_Line(buffer);
 	}
 
@@ -383,8 +383,8 @@ void DesyncDialogClass::Update_Player_List(void)
 		}
 
 		// The roster entry is gone by now, so the kept name is the only copy while the list rebuilds.
-		char const * name = left && State.Left_Name(house)[0] != '\0' ? State.Left_Name(house) : housep->IniName.c_str();
-		int const row = ListBox_AddString(list, name);
+		std::string const name = Session.Shown_Name(house, left && State.Left_Name(house)[0] != '\0' ? State.Left_Name(house) : housep->IniName.c_str());
+		int const row = ListBox_AddString(list, name.c_str());
 		if (row < 0) {
 			continue;
 		}

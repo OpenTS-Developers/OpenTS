@@ -478,6 +478,7 @@ int main(void)
 		two.MapName = "A Map By Another Name";
 		two.DifficultyName = "Gentle";
 		two.SkipScoreScreen = !two.SkipScoreScreen;
+		two.QuickMatch = !two.QuickMatch;
 		two.CustomLoadScreen = "Resources/l600s02.pcx";
 		two.Slots[0].Name = "Somebody Else";
 		Check(one.Session_Identity_CRC() == two.Session_Identity_CRC(),
@@ -640,7 +641,8 @@ int main(void)
 			"[Settings]\n"
 			"SkipScoreScreen=Yes\n"
 			"CustomLoadScreen=Resources/l600s01.pcx\n"
-			"DifficultyName=Gentle\n";
+			"DifficultyName=Gentle\n"
+			"QuickMatch=Yes\n";
 		SpawnerConfigClass config = Read(shown, sizeof(shown) - 1);
 
 		Check(config.SkipScoreScreen, "a match may ask that its score screen be passed over");
@@ -648,11 +650,13 @@ int main(void)
 			"the load screen is named exactly as the client wrote it");
 		Check(config.DifficultyName == "Gentle",
 			"a campaign may be played under a difficulty name of its own");
+		Check(config.QuickMatch, "a match may ask that its players be shown by number");
 
 		char const silent[] = "[Settings]\n";
 		config = Read(silent, sizeof(silent) - 1);
 
 		Check(!config.SkipScoreScreen, "an unwritten key still shows the score screen");
+		Check(!config.QuickMatch, "and still shows each player by name");
 		Check(config.CustomLoadScreen.empty() && config.DifficultyName.empty(),
 			"the game's own load screen and difficulty names stand unasked");
 	}

@@ -233,6 +233,7 @@ SessionClass::SessionClass(void)
 	NetOpen = 0;
 	PlayMovies = false;
 	SkipScoreScreen = false;
+	QuickMatch = false;
 	LoadScreen[0] = '\0';
 	LoadScreenX = 0;
 	LoadScreenY = 0;
@@ -1184,6 +1185,45 @@ int SessionClass::Color_Index_To_Scheme(int id)
 		return(_table[id]);
 	}
 	return(id);
+}
+
+
+/// <summary>
+/// The name shown for a player: its own, or "Player N" in a quick match, the same on every machine.
+/// </summary>
+/// <param name="house">The player's house, by its position in the heap.</param>
+std::string SessionClass::Shown_Name(int house, char const * name) const
+{
+	if (!QuickMatch) {
+		return(name != NULL ? name : "");
+	}
+
+	char shown[MPLAYER_NAME_MAX];
+	std::snprintf(shown, sizeof(shown), Fetch_String(TXT_PLAYER_NUMBER), house + 1);
+	return(shown);
+}
+
+
+std::string SessionClass::Shown_Name(HouseClass const * house) const
+{
+	return(Shown_Name(house->HeapID, house->IniName));
+}
+
+
+/// <summary>
+/// The name shown for a seat before the houses exist, matching its house's later name.
+/// </summary>
+std::string SessionClass::Shown_Seat_Name(NodeNameType const * node) const
+{
+	// Assign_Houses makes the human houses first, lowest color first, and no two share a color.
+	int house = 0;
+	for (int index = 0; index < Players.Count(); index++) {
+		if (Players[index]->Player.Color < node->Player.Color) {
+			house++;
+		}
+	}
+
+	return(Shown_Name(house, node->Name));
 }
 
 

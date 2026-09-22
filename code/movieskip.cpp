@@ -293,7 +293,8 @@ namespace MovieSkip
 
 		char status[128];
 		if (remote_votes == 1) {
-			std::snprintf(status, sizeof(status), Fetch_String(TXT_MOVIE_SKIP_ONE), Player_Name(remote_voter));
+			std::snprintf(status, sizeof(status), Fetch_String(TXT_MOVIE_SKIP_ONE),
+				Session.Shown_Name(remote_voter, Player_Name(remote_voter)).c_str());
 		} else if (remote_votes == 0) {
 			std::snprintf(status, sizeof(status), "%s", Fetch_String(TXT_MOVIE_SKIP_SELF));
 		} else {

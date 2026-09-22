@@ -256,9 +256,9 @@ void Destroy_Connection(int id, int error)
 	//------------------------------------------------------------------------
 	txt[0] = '\0';
 	if (error==1) {
-		sprintf(txt,Fetch_String(TXT_CONNECTION_LOST), housep->IniName.c_str());
+		sprintf(txt,Fetch_String(TXT_CONNECTION_LOST), Session.Shown_Name(housep).c_str());
 	} else if (error==0) {
-		sprintf(txt,Fetch_String(TXT_LEFT_GAME), housep->IniName.c_str());
+		sprintf(txt,Fetch_String(TXT_LEFT_GAME), Session.Shown_Name(housep).c_str());
 	}
 
 	if (strlen(txt)) {

@@ -22,4 +22,4 @@ bool Chat_Reaches(HouseClass const * from, HouseClass const * to, ChatScopeType 
 bool Chat_Begin(ChatScopeType scope, int house = -1);
 void Chat_Send(char const * text);
 void Chat_Receive(GlobalPacketType const & packet, IPXAddressClass & from);
-void Chat_Show(HouseClass const * sender, ChatScopeType scope, char const * target, char const * text);
+void Chat_Show(HouseClass const * sender, ChatScopeType scope, int target, char const * text);

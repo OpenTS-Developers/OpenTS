@@ -807,7 +807,7 @@ void EventClass::Execute(void)
 				Special = Data.Options.Data;
 				Scen->Special = Data.Options.Data;
 
-				sprintf(txt, Fetch_String(TXT_SPECIAL_WARNING), (char const *)house->IniName);
+				sprintf(txt, Fetch_String(TXT_SPECIAL_WARNING), Session.Shown_Name(house).c_str());
 				Session.Messages.Add_Message(NULL, 0, txt,
 					house->Scheme,
 					TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), 1200);
@@ -1235,7 +1235,7 @@ void EventClass::Execute(void)
 			if (house != PlayerPtr && house != NULL) {
 				str = Fetch_String(TXT_PLAYER_CHANGED_SPEED);
 				if (str != NULL && strlen(str) != 0) {
-					sprintf(msg, str, house->IniName.c_str());
+					sprintf(msg, str, Session.Shown_Name(house).c_str());
 					Session.Messages.Add_Message(NULL, 0, msg, house->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 				}
 			}
@@ -1325,7 +1325,7 @@ void EventClass::Execute(void)
 			if (house != PlayerPtr && house != NULL) {
 				str = Fetch_String(TXT_PLAYER_CHANGED_LATENCY);
 				if (str != NULL && strlen(str) != 0) {
-					sprintf(msg, str, house->IniName.c_str());
+					sprintf(msg, str, Session.Shown_Name(house).c_str());
 					Session.Messages.Add_Message(NULL, 0, msg, house->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
 				}
 			}
