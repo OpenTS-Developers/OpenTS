@@ -15,6 +15,7 @@
 
 class CellClass;
 class MapPreviewClass;
+enum class ScenarioState;
 
 #define RANDOM_MAP_FILE_NAME "RandMap.Sed"
 
@@ -337,6 +338,8 @@ class MapSeedClass : public LoadOptionsClass
 		bool Delete(void);
 
 		virtual bool Load_File(const char * file_name) override;
+		void Read_INI(INIClass const & ini);
+		void Reset_Settings(void);
 		virtual bool Save_File(const char * file_name, const char * descr) override;
 		virtual bool Delete_File(const char * file_name) override;
 		virtual bool Read_File(FileEntryClass * entry, WIN32_FIND_DATAA * ff) override;
@@ -495,8 +498,8 @@ class MapGeneratorClass
 		/*
 		 * Top-level generation and housekeeping.
 		 */
-		void Generate_Random_Map(bool full_init, HWND dialog);
-		void Init_Map(bool full_init);
+		ScenarioState Generate_Random_Map(bool full_init, HWND dialog, CCINIClass * scenario = NULL);
+		ScenarioState Init_Map(bool full_init, CCINIClass * scenario = NULL);
 		void Cleanup(void);
 		void Update_Progress(int percent_progress);
 

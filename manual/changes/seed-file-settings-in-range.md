@@ -13,6 +13,6 @@ credit:
 - ZivDero
 ---
 
-A seed file played as a scenario is now held to the ranges the random-map dialog allows before a map is built from it. A setting written outside its range, such as `NumPlayers=9` or `Biome=7`, used to read past the generator's tables, and a `RegionSize` below `-10` kept the generator working forever. Each is now pulled back to the nearest legal value.
+A seed file, or a map file with `RandomMap=yes`, now has each `[RandomMap]` setting pulled into the range the random map dialog allows, and a setting it leaves out takes its default. An out-of-range value such as `NumPlayers=9` used to read past the generator's tables, a `RegionSize` below `-10` hung it, and a missing setting kept whatever the generator last held, so two machines could build different maps.
 
-`Seed=-1` becomes `0` on this path, so a seed file shipped with it now builds the map seed `0` gives.
+`Seed=-1` now becomes `0` on this path, so a seed file shipped with it builds the map that seed `0` gives.

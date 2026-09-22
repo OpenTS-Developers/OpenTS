@@ -859,7 +859,7 @@ GLOBAL_UNITS = [
     ], None),
     ("scenario.cpp", "ScenarioClass", [
         "Read_INI", "Read_Global_INI", "Read_Local_INI", "Read_Waypoints",
-        ":Read_Scenario_INI",
+        ":Read_Scenario_INI", ":Read_Scenario",
     ], {"file": "map file", "group": "scenarios"}),
     ("special.cpp", "SpecialClass", ["Read_INI"],
      {"file": "map file", "group": "scenarios"}),

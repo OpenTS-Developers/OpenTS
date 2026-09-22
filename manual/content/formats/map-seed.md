@@ -17,6 +17,8 @@ source_files:
 
 The random-map dialog reads and writes one `[RandomMap]` section. Scenario loading recognizes the `.SED` extension, loads the section, and generates a map from its values. That file is the generator's own `RandMap.Sed`, written by the random-map dialog for the match and read back through the ordinary file layer. A `.SED` the player saves is a settings file rather than a scenario. It keeps to the [saved-games folder](/formats/save-games/), and the random-map dialog is what lists and loads it.
 
+A scenario file can carry the same section. With [`RandomMap=yes`](/keys/randommap/) in its `[Basic]` section, its map is generated from that `[RandomMap]` section, and its other sections still apply.
+
 ```ini title="MyMap.SED"
 [RandomMap]
 Description=Four-player temperate map

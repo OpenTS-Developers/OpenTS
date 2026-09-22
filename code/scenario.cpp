@@ -190,6 +190,7 @@ static Cell const Clip_Scatter(Cell const & cell, int maxdist);
 static Cell const Clip_Move(Cell const & cell, FacingType facing, int dist);
 static void Multiplayer_Last_Minute_Fixups(bool official = true);
 static char const * Pick_Load_Background_Name(Point2D & text_pos);
+static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest);
 
 
 /***********************************************************************************************
@@ -684,13 +685,20 @@ bool Read_Scenario(char const * fname)
 
 	char * ext = name + strlen(name) - 4;
 
-	if (stricmp((ext), ".SED") == 0) {
-		Scen->IsRandom = true;
-		DebugString("Scen->IsRandom = true\n");
-	} else {
-		Scen->IsRandom = false;
-		DebugString("Scen->IsRandom = false\n");
+	// Any file but a seed file is read once, both to see whether it asks to be generated and to play.
+	CCINIClass requested;
+	bool const is_seed_file = (stricmp(ext, ".SED") == 0);
+	bool file_read = false;
+	bool random_map = false;
+	if (!is_seed_file) {
+		file_read = Load_Scenario_File(requested, name, true) != 0;
+		if (file_read) {
+			random_map = requested.Get_Bool("Basic", "RandomMap", false);
+		}
 	}
+
+	Scen->IsRandom = is_seed_file || random_map;
+	DebugString("Scen->IsRandom = %s\n", Scen->IsRandom ? "true" : "false");
 
 	if (!Debug_Map) {
 
@@ -731,16 +739,35 @@ bool Read_Scenario(char const * fname)
 	ScenarioState state = ScenarioState::Ok;
 
 	if (Scen->IsRandom) {
-		if (RandomMapGen.SeedData.Load(name)) {
+		bool loaded = true;
+		if (random_map) {
+			RandomMapGen.SeedData.Read_INI(requested);
+		} else {
+			loaded = RandomMapGen.SeedData.Load(name);
+		}
+
+		if (loaded) {
 			RandomMapGen.SeedData.Fixup_Settings();
-			RandomMapGen.Generate_Random_Map(false, NULL);
-			Multiplayer_Last_Minute_Fixups();
+
+			// Such a file makes a new map each match, from the seed every machine was given.
+			if (random_map) {
+				RandomMapGen.SeedData.Seed = Seed;
+			}
+
+			state = RandomMapGen.Generate_Random_Map(false, NULL, random_map ? &requested : NULL);
+			if (state == ScenarioState::Ok) {
+				Multiplayer_Last_Minute_Fixups();
+			}
 		} else {
 			state = ScenarioState::NotRead;
 		}
 		strcpy(Scen->ScenarioName, name);
+	} else if (file_read) {
+		strcpy(Scen->ScenarioName, name);
+		state = Read_Scenario_INI(requested);
 	} else {
-		state = Read_Scenario_INI(name);
+		DebugString("Scenario ini load failed!\n");
+		state = ScenarioState::NotRead;
 	}
 
 	if (state != ScenarioState::Ok) {
@@ -1541,53 +1568,6 @@ static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdige
 		Scen->SourceFile.Assign(name, std::move(bytes));
 	}
 	return(result);
-}
-
-
-/***********************************************************************************************
- * Read_Scenario_INI -- Read specified scenario INI file.                                      *
- *                                                                                             *
- *    Read in the scenario INI file. This routine only sets the game                           *
- *    globals with that data that is explicitly defined in the INI file.                       *
- *    The remaining necessary interpolated data is generated elsewhere.                        *
- *                                                                                             *
- * INPUT:                                                                                      *
- *          root      root filename for scenario file to read                                  *
- *                                                                                             *
- *          fresh      true = should the current scenario be cleared?                          *
- *                                                                                             *
- * OUTPUT:  bool; Was the scenario read successful?                                            *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   10/07/1992 JLB : Created.                                                                 *
- *=============================================================================================*/
-ScenarioState Read_Scenario_INI(char const * fname, bool)
-{
-	Frame = 0;
-
-	if (TournamentTime > 0) {
-		TournamentTimer = TournamentTime * TICKS_PER_MINUTE;
-	}
-
-	/*
-	**	Create scenario filename and read the file.
-	*/
-	CCINIClass ini;
-
-	DebugString("Read_Scenario_INI - Filename is %s\n", fname);
-
-	int result = Load_Scenario_File(ini, fname, true);
-
-	if (result == 0) {
-		DebugString("Scenario ini load failed!\n");
-		return(ScenarioState::NotRead);
-	}
-
-	strcpy(Scen->ScenarioName, fname);
-
-	return(Read_Scenario_INI(ini));
 }
 
 

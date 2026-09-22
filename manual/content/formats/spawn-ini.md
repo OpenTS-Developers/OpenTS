@@ -77,7 +77,7 @@ Read from `[Settings]`: `Bases`, `Credits`, `BridgeDestroy`, `Crates`, `ShortGam
 
 `PlayMoviesInMultiplayer=yes` plays the scenario's movies in the game the file starts, which a skirmish or a game against other machines otherwise leaves out. Every machine's file must have the same value, as every machine must hold the movies; [multiplayer movies](/systems/multiplayer-movies/) owns what plays and how the machines skip a movie together.
 
-A written `Seed` makes a launch repeatable: the same file played twice places every house the same way. A seed of `0` leaves the placement to chance, which is also what an absent `Seed` means.
+Launching the same file twice with the same `Seed` places every house the same way, and builds the same map from a scenario file with [`RandomMap=yes`](/keys/randommap/). The exception is `0`, which is also what an absent `Seed` means: outside [a game against other machines](#a-game-against-other-machines), it draws a new seed at each launch.
 
 `HarvesterTruce` applies in a game against other machines. A skirmish records it with the rest of the match's options but does not apply it, exactly as a skirmish set up from the menu does not.
 

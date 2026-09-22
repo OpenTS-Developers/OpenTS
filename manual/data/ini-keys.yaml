@@ -17732,6 +17732,24 @@ RandomLoopDelay:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+RandomMap:
+  key: RandomMap
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Basic
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: ScenarioClass
+      member: random_map
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
 RandomRate:
   key: RandomRate
   scopes:

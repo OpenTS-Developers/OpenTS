@@ -605,7 +605,6 @@ enum class ScenarioState {
 	TerrainDamaged,
 };
 
-ScenarioState Read_Scenario_INI(char const * root, bool fresh=true);
 ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen=false);
 SideType Side_For_Player(void);
 int Scan_Place_Object(ObjectClass * obj, Cell const & cell, int min_dist = 1, int max_dist = 31);

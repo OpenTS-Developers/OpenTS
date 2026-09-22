@@ -94,11 +94,11 @@ A seed reaches the generator by two routes that share the passes and nothing els
 | Route | How the settings arrive | What is generated |
 | --- | --- | --- |
 | The map generator dialog | Taken off the dialog controls, rolled by its randomize button, or loaded from a saved seed and written back into the controls. All three of those actions hold every setting inside its legal range | A preview. The previous scenario is torn down first, down to its objects, houses, theater and tile artwork, and rebuilt around the new map. A thumbnail is drawn from the result |
-| Starting a scenario whose filename ends `.SED` | Read straight out of the file's `[RandomMap]` section, over whatever the generator's settings currently hold, then held to the ranges the dialog allows | The map that is played. It is generated into the scenario already being loaded, with no teardown |
+| Starting a scenario whose filename ends `.SED`, or whose `[Basic]` section sets [`RandomMap=yes`](/keys/randommap/) | Read straight out of the file's `[RandomMap]` section, over whatever the generator's settings currently hold, then held to the ranges the dialog allows. A `RandomMap=yes` file is built from the match's own seed instead of its `Seed` | The map that is played. It is generated into the scenario already being loaded, with no teardown. A `RandomMap=yes` file's other sections apply to it |
 
 Accepting the dialog does not hand its map to the game. It writes the settings out to `RandMap.Sed` and registers that file in the scenario list. The lobby then starts `RandMap.Sed` as a scenario, and the second route builds the map over again from the same settings. The preview exists to be looked at, and is discarded.
 
-The file extension carries weight beyond the generator, too. Recognizing `.SED` marks the scenario as a generated one for the rest of the load. That is what keeps a tile set marked [`RequiredForRMG=yes`](/keys/requiredforrmg/) resident when the loader trims artwork no cell is using yet.
+Recognizing a generated scenario carries weight beyond the generator, too. A `.SED` name or `RandomMap=yes` marks the scenario as a generated one for the rest of the load. That is what keeps a tile set marked [`RequiredForRMG=yes`](/keys/requiredforrmg/) resident when the loader trims artwork no cell is using yet.
 
 The check that holds each setting to its limits runs four times: when the dialog is read, when it is filled in, when its randomize button rolls a fresh set, and when a seed file is read as a scenario starts.
 
@@ -230,7 +230,7 @@ The generator has no terrain artwork of its own; it works entirely through the r
 | Settlements | [`PavedRoads`](/keys/pavedroads/), [`PavedRoadEnds`](/keys/pavedroadends/), [`DirtRoadCurve`](/keys/dirtroadcurve/), [`DirtRoadJunction`](/keys/dirtroadjunction/), and the pavement and median sets |
 | Ground cover | The green, rough, sand, rock, mold and crystal sets |
 
-Tile artwork is trimmed as a map is read, by counting how many cells use each type and discarding the artwork of every type the count leaves at zero. A generated map places most of its tiles after that count has been taken, which is what [`RequiredForRMG=yes`](/keys/requiredforrmg/) exists for. It exempts a set from the trim, but only on a map the loader knows is generated, and recognizing the `.SED` extension is what tells it that.
+Tile artwork is trimmed as a map is read, by counting how many cells use each type and discarding the artwork of every type the count leaves at zero. A generated map places most of its tiles after that count has been taken, which is what [`RequiredForRMG=yes`](/keys/requiredforrmg/) exists for. It exempts a set from the trim, but only on a map the loader knows is generated, and a `.SED` name or `RandomMap=yes` is what tells it that.
 
 ## Handing the map over
 

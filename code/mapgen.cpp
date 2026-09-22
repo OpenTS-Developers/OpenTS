@@ -3203,6 +3203,36 @@ MapSeedClass::MapSeedClass(void) :
 
 
 /// <summary>
+/// Puts every setting and the description back to the dialog's defaults.
+/// </summary>
+void MapSeedClass::Reset_Settings(void)
+{
+	MapSeedClass const defaults;
+
+	Biome = defaults.Biome;
+	Hills = defaults.Hills;
+	Time = defaults.Time;
+	WaterAmount = defaults.WaterAmount;
+	NumPlayers = defaults.NumPlayers;
+	Tiberium = defaults.Tiberium;
+	TiberiumLayout = defaults.TiberiumLayout;
+	Vegetation = defaults.Vegetation;
+	Cities = defaults.Cities;
+	Width = defaults.Width;
+	Height = defaults.Height;
+	Accessibility = defaults.Accessibility;
+	Cliffs = defaults.Cliffs;
+	Seed = defaults.Seed;
+	TiberiumWildlife = defaults.TiberiumWildlife;
+	VeinholeMonsters = defaults.VeinholeMonsters;
+	UseIonStorms = defaults.UseIonStorms;
+	UseBlueTiberium = defaults.UseBlueTiberium;
+	UseTransitions = defaults.UseTransitions;
+	memcpy(MapDescription, defaults.MapDescription, sizeof(MapDescription));
+}
+
+
+/// <summary>
 /// Constructs the random map generator.
 /// The game keeps a single generator for its whole run; this routine merely puts it into the
 /// idle state it must be in before the first map is asked of it.
@@ -4465,31 +4495,41 @@ bool MapSeedClass::Load_File(const char * file_name)
 		INIClass ini;
 
 		if (ini.Load(file)) {
-			memset(MapDescription, 0, sizeof(MapDescription));
-			ini.Get_String("RandomMap", "Description", Fetch_String(TXT_RANDOM_MAP_DESCRIPTION), MapDescription, sizeof(MapDescription));
-			Width = ini.Get_Int("RandomMap", "Width", Width);
-			Height = ini.Get_Int("RandomMap", "Height", Height);
-			NumPlayers = ini.Get_Int("RandomMap", "NumPlayers", NumPlayers);
-			Seed = ini.Get_Int("RandomMap", "Seed", Seed);
-			Biome = ini.Get_Int("RandomMap", "Biome", Biome);
-			Time = ini.Get_Int("RandomMap", "Time", Time);
-			Cliffs = ini.Get_Int("RandomMap", "RegionSize", Cliffs);
-			Hills = ini.Get_Int("RandomMap", "Ruggedness", Hills);
-			Accessibility = ini.Get_Int("RandomMap", "Accessibility", Accessibility);
-			WaterAmount = ini.Get_Int("RandomMap", "WaterAmount", WaterAmount);
-			Tiberium = ini.Get_Int("RandomMap", "Tiberium", Tiberium);
-			TiberiumLayout = ini.Get_Int("RandomMap", "TiberiumLayout", TiberiumLayout);
-			Vegetation = ini.Get_Int("RandomMap", "Vegetation", Vegetation);
-			Cities = ini.Get_Int("RandomMap", "UrbanPresence", Cities);
-			VeinholeMonsters = ini.Get_Int("RandomMap", "VeinholeMonsters", VeinholeMonsters);
-			TiberiumWildlife = ini.Get_Int("RandomMap", "TiberiumWildlife", TiberiumWildlife);
-			UseIonStorms = ini.Get_Bool("RandomMap", "UseIonStorms", UseIonStorms);
-			UseBlueTiberium = ini.Get_Bool("RandomMap", "UseBlueTiberium", UseBlueTiberium);
-			UseTransitions = ini.Get_Bool("RandomMap", "UseTransitions", UseTransitions);
+			Read_INI(ini);
 			return(true);
 		}
 	}
 	return(false);
+}
+
+
+/// <summary>
+/// Takes the map generator settings from the database's [RandomMap] section. Any setting the
+/// section leaves out takes its default, and nothing is held to its range here.
+/// </summary>
+void MapSeedClass::Read_INI(INIClass const & ini)
+{
+	Reset_Settings();
+	ini.Get_String("RandomMap", "Description", Fetch_String(TXT_RANDOM_MAP_DESCRIPTION), MapDescription, sizeof(MapDescription));
+	Width = ini.Get_Int("RandomMap", "Width", Width);
+	Height = ini.Get_Int("RandomMap", "Height", Height);
+	NumPlayers = ini.Get_Int("RandomMap", "NumPlayers", NumPlayers);
+	Seed = ini.Get_Int("RandomMap", "Seed", Seed);
+	Biome = ini.Get_Int("RandomMap", "Biome", Biome);
+	Time = ini.Get_Int("RandomMap", "Time", Time);
+	Cliffs = ini.Get_Int("RandomMap", "RegionSize", Cliffs);
+	Hills = ini.Get_Int("RandomMap", "Ruggedness", Hills);
+	Accessibility = ini.Get_Int("RandomMap", "Accessibility", Accessibility);
+	WaterAmount = ini.Get_Int("RandomMap", "WaterAmount", WaterAmount);
+	Tiberium = ini.Get_Int("RandomMap", "Tiberium", Tiberium);
+	TiberiumLayout = ini.Get_Int("RandomMap", "TiberiumLayout", TiberiumLayout);
+	Vegetation = ini.Get_Int("RandomMap", "Vegetation", Vegetation);
+	Cities = ini.Get_Int("RandomMap", "UrbanPresence", Cities);
+	VeinholeMonsters = ini.Get_Int("RandomMap", "VeinholeMonsters", VeinholeMonsters);
+	TiberiumWildlife = ini.Get_Int("RandomMap", "TiberiumWildlife", TiberiumWildlife);
+	UseIonStorms = ini.Get_Bool("RandomMap", "UseIonStorms", UseIonStorms);
+	UseBlueTiberium = ini.Get_Bool("RandomMap", "UseBlueTiberium", UseBlueTiberium);
+	UseTransitions = ini.Get_Bool("RandomMap", "UseTransitions", UseTransitions);
 }
 
 
@@ -4700,7 +4740,10 @@ double Sample_Truncated_Normal(double mean, double scale, double lower_bound, do
 /// <param name="full_init">Should the scenario be rebuilt from scratch and the preview redrawn
 /// between phases?</param>
 /// <param name="dialog">The map generator dialog to repaint as the preview is refreshed.</param>
-void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
+/// <param name="scenario">A map file that asked to be generated. Its sections apply where the
+/// generator writes none of its own, and the generator writes into it.</param>
+/// <returns>How the scenario read back; anything but Ok leaves the map ungenerated.</returns>
+ScenarioState MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog, CCINIClass * scenario)
 {
 	if (RMGCallback != NULL) RMGCallback();
 
@@ -4719,7 +4762,11 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 
 	DebugString("RMG: Init random map\n");
 
-	Init_Map(full_init);
+	ScenarioState const state = Init_Map(full_init, scenario);
+	if (state != ScenarioState::Ok) {
+		Progress.End_Dialog();
+		return(state);
+	}
 
 	if (RMGCallback != NULL) RMGCallback();
 
@@ -4963,6 +5010,7 @@ void MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog)
 	DebugString("RMG: Done\n");
 
 	Progress.End_Dialog();
+	return(ScenarioState::Ok);
 }
 
 
@@ -5005,7 +5053,10 @@ void MapGeneratorClass::Cleanup(void)
 /// objects, houses and theater data -- which is what the generator dialog does between previews.
 /// </summary>
 /// <param name="full_init">Should the whole scenario and theater be rebuilt from scratch?</param>
-void MapGeneratorClass::Init_Map(bool full_init)
+/// <param name="scenario">A scenario file that asked to be generated, as Generate_Random_Map
+/// describes.</param>
+/// <returns>How the scenario read back, always Ok for a full initialization.</returns>
+ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 {
 	int biome = SeedData.Biome;
 
@@ -5063,12 +5114,12 @@ void MapGeneratorClass::Init_Map(bool full_init)
 	LocalWidth = (int)std::lerp((double)_width_min[size_index], (double)_width_max[size_index], (double)width_frac);
 	LocalHeight = (int)std::lerp((double)_height_min[size_index], (double)_height_max[size_index], (double)height_frac);
 
-	CCINIClass ini;
+	// The entries written below replace any a requesting scenario file gave for the same keys.
+	CCINIClass generated;
+	CCINIClass & ini = scenario != NULL ? *scenario : generated;
 
 	Rect size(0, 0, LocalWidth + 4, LocalHeight + 12);
 	Rect lsize(2, 5, LocalWidth, LocalHeight);
-
-	ini.Clear();
 
 	CellHeight = 4;
 
@@ -5100,10 +5151,11 @@ void MapGeneratorClass::Init_Map(bool full_init)
 		if (Debug_Map) {
 			Clear_Scenario();
 		}
-		// The generator wrote this database itself, so anything it cannot read back is a fault
-		// here rather than damaged data.
-		if (Read_Scenario_INI(ini, true) != ScenarioState::Ok) {
-			DebugString("The generated scenario did not read back cleanly.\n");
+		ScenarioState const state = Read_Scenario_INI(ini, true);
+		if (state != ScenarioState::Ok) {
+			DebugString("RMG: The scenario did not read back cleanly.\n");
+			ScenarioInit--;
+			return(state);
 		}
 		Fill_In_Data();
 		Cell c;
@@ -5376,6 +5428,7 @@ void MapGeneratorClass::Init_Map(bool full_init)
 	}
 
 	Update_Progress(50);
+	return(ScenarioState::Ok);
 }
 
 

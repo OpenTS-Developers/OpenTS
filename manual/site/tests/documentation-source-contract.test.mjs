@@ -686,7 +686,7 @@ test('A match against other machines is assembled whole and wired to its network
 test('The scenario file is kept from its first read and carried in the save', () => {
 	const scenario = source('code/scenario.cpp');
 
-	assertOrdered(functionBody(scenario, 'static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)'), [
+	assertOrdered(functionBody(definitionFrom(scenario, 'static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)'), 'static int Load_Scenario_File(CCINIClass & ini, char const * name, bool withdigest)'), [
 		'Scen->SourceFile.Matches(name)',
 		'Load_Held_Scenario_File(ini, name, withdigest)',
 		'CCFileClass file(name);',
@@ -694,10 +694,11 @@ test('The scenario file is kept from its first read and carried in the save', ()
 		'Scen->SourceFile.Assign(name, std::move(bytes));',
 	], 'a name the scenario already holds is served from memory, and a fresh read is kept where the deployment asked for it');
 
-	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(char const * fname, bool)'), [
-		'Load_Scenario_File(ini, fname, true)',
-		'strcpy(Scen->ScenarioName, fname);',
-	], 'the scenario is read through the holder');
+	assertOrdered(functionBody(scenario, 'bool Read_Scenario(char const * fname)'), [
+		'file_read = Load_Scenario_File(requested, name, true) != 0;',
+		'strcpy(Scen->ScenarioName, name);',
+		'state = Read_Scenario_INI(requested);',
+	], 'the scenario is read once, through the holder');
 
 	assertOrdered(functionBody(scenario, 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'), [
 		'Scen->SourceFile.Clear();',
@@ -724,6 +725,40 @@ test('A seed file played as a scenario is held to the ranges the dialog allows',
 		'RandomMapGen.SeedData.Fixup_Settings();',
 		'RandomMapGen.Generate_Random_Map(',
 	], 'the settings are checked after they are read and before anything is built from them');
+
+	assertOrdered(functionBody(source('code/mapgen.cpp'), 'void MapSeedClass::Read_INI(INIClass const & ini)'), [
+		'Reset_Settings();',
+		'ini.Get_String("RandomMap", "Description"',
+	], 'a setting the file leaves out starts from its default, not from what the generator last held');
+});
+
+test('A map file may ask to be generated, and is built from the match seed', () => {
+	assertOrdered(functionBody(source('code/scenario.cpp'), 'bool Read_Scenario(char const * fname)'), [
+		'random_map = requested.Get_Bool("Basic", "RandomMap", false);',
+		'Scen->IsRandom = is_seed_file || random_map;',
+		'RandomMapGen.SeedData.Read_INI(requested);',
+		'RandomMapGen.SeedData.Fixup_Settings();',
+		'RandomMapGen.SeedData.Seed = Seed;',
+		'state = RandomMapGen.Generate_Random_Map(false, NULL, random_map ? &requested : NULL);',
+		'if (state == ScenarioState::Ok) {',
+		'Multiplayer_Last_Minute_Fixups();',
+	], 'the file decides before the branch, its settings are checked, and the match seed replaces its own after the check');
+
+	const mapgen = source('code/mapgen.cpp');
+
+	assertOrdered(functionBody(mapgen, 'ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)'), [
+		'CCINIClass & ini = scenario != NULL ? *scenario : generated;',
+		'ini.Put_String("Map", "Theater"',
+		'ScenarioState const state = Read_Scenario_INI(ini, true);',
+		'ScenarioInit--;',
+		'return(state);',
+	], 'the generator writes its own entries over the requesting file before the scenario is read from it, and a file that fails to read stops the build');
+
+	assertOrdered(functionBody(mapgen, 'ScenarioState MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog, CCINIClass * scenario)'), [
+		'ScenarioState const state = Init_Map(full_init, scenario);',
+		'return(state);',
+		'return(ScenarioState::Ok);',
+	], 'and the failure reaches the scenario loader, which reports it as it would any map');
 });
 
 test('Owning a factory is asked of the whole list rather than of its first entries', () => {

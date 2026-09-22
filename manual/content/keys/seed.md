@@ -20,6 +20,8 @@ NumPlayers=4
 
 `-1` is the request for a fresh number: the map generator dialog replaces it with a draw from `0` through `65535` as it opens, and the preview and generate buttons replace it again if it has somehow survived. The dialog's randomize button draws from the same range, and the settings taken off the dialog are held to it.
 
+A scenario file with [`RandomMap=yes`](/keys/randommap/) ignores `Seed` and builds its map from the match's seed.
+
 :::caution[A seed file never gets a fresh seed]
 Whether a seed file is loaded into the map generator dialog or played as a scenario, a negative `Seed`, `-1` included, becomes `0`, and a value above `65535` becomes `65535`. A seed file shipped with `Seed=-1` therefore builds the same map as `Seed=0` every time.
 :::

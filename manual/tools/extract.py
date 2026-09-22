@@ -67,7 +67,7 @@ ADAPTER_UNITS = [
           "SetName": section_selectors.identifier("tile-set"),
           "section": section_selectors.identifier("tile-set"),
       }}),
-    ("mapgen.cpp", "MapSeedClass", ["Load_File", "Read_File"],
+    ("mapgen.cpp", "MapSeedClass", ["Read_INI", "Read_File"],
      {"file": "map seed file", "group": "random map generation",
       "section_vars": {
           "MAPSEED_SECTION": section_selectors.literal("MapSeed"),
