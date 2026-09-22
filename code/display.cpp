@@ -2583,11 +2583,9 @@ void DisplayClass::Mouse_Left_Held(Point2D const & point)
 		*/
 		if (IsTentative) {
 
-			/*
-			**	The mouse must have moved a minimum distance before rubber band mode can be
-			**	initiated.
-			*/
-			if ((point - (Point2D &)BandX).Length() > 4) {
+			// The system drag distance follows the display scale and accessibility settings.
+			Point2D travel = point - (Point2D &)BandX;
+			if (abs(travel.X) > GetSystemMetrics(SM_CXDRAG) || abs(travel.Y) > GetSystemMetrics(SM_CYDRAG)) {
 				IsRubberBand = true;
 				IsTentative = false;
 				if (!IsWaypointMode) {

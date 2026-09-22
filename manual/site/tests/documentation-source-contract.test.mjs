@@ -1325,3 +1325,17 @@ test('A repairing vehicle keeps its own deploy cursor', () => {
 		'the repair rules run after the deploy rules and must not overwrite them',
 	);
 });
+
+test('Both halves of the drag gesture read the same system setting', () => {
+	assert.match(
+		functionBody(source('code/display.cpp'), 'void DisplayClass::Mouse_Left_Held(Point2D const & point)'),
+		/if \(abs\(travel\.X\) > GetSystemMetrics\(SM_CXDRAG\) \|\| abs\(travel\.Y\) > GetSystemMetrics\(SM_CYDRAG\)\) \{/,
+		'a band starts at the distance the system calls a drag',
+	);
+
+	assert.match(
+		functionBody(source('code/scroll.cpp'), 'void ScrollClass::Scroll_Coast(Point2D const & point)'),
+		/GetSystemMetrics\(SM_CXDRAG\) \* 2/,
+		'and coast scrolling keeps reading the same setting, doubled',
+	);
+});
