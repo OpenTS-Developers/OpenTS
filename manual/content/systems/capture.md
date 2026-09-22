@@ -200,7 +200,7 @@ A structure adds to that:
 - Anything loaded inside is captured with it. So is anything in radio contact at a weapons factory, or within a quarter of a cell of the docking coordinate; anything further off is told to run away and contact is broken.
 - Production in progress is abandoned. The object under construction is deleted and the money spent on it so far is refunded to the losing house.
 - Both houses recount their factories, and a captured construction yard moves between their construction-yard lists. A player who has just lost the last of them also loses any placement cursor in progress.
-- The structure re-opens for business as a capture rather than as a new build, which skips the two gifts a fresh structure hands out: a captured [`FreeUnit`](/keys/freeunit/) structure yields no free vehicle and a captured helipad no free aircraft.
+- The structure re-opens for business as a capture rather than as a new build, which skips the two gifts a fresh structure hands out: a captured [`FreeUnit`](/keys/freeunit/) structure yields nothing and a captured helipad no free aircraft.
 - The repair flag is cleared, a cloak generator's radius is reset and re-enabled if it still has power, and EVA announces the capture when either side is under player control.
 - The losing house records the structure as its recapture target, which is what its own engineers head for.
 

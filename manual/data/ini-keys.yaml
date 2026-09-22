@@ -9128,7 +9128,7 @@ FreeUnit:
     section:
       kind: identifier
       source: object-type
-    value_type: class
+    value_type: UnitType, InfantryType or AircraftType
     status: generated
     _provenance:
       default_candidate: none

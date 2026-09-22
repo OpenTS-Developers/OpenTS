@@ -1143,3 +1143,64 @@ test('A harvester weighs every dock type and the queue at each', () => {
 		'the place in line survives a save, joins the checksum, and drops when the building does',
 	);
 });
+
+test('A free unit may come from any of the three object heaps', () => {
+	const lookup = functionBody(
+		source('code/ccini.cpp'),
+		'TechnoTypeClass const * CCINIClass::Get_Foot_Type(char const * section, char const * entry, TechnoTypeClass const * defvalue) const',
+	);
+
+	assertOrdered(
+		lookup,
+		['UnitTypeClass::From_Name(buffer)', 'InfantryTypeClass::From_Name(buffer)', 'AircraftTypeClass::From_Name(buffer)'],
+		'a name is looked for among vehicles first, then infantry, then aircraft',
+	);
+
+	assert.doesNotMatch(
+		lookup,
+		/Find_Or_Make/,
+		'and a name in none of them invents no type',
+	);
+
+	const grant = functionBody(source('code/building.cpp'), 'void BuildingClass::Place_Free_Unit(void)');
+
+	assertOrdered(
+		grant,
+		[
+			'type->Fetch_RTTI() == RTTI_AIRCRAFTTYPE',
+			'Place_Free_Aircraft(static_cast<AircraftTypeClass const *>(type))',
+			'type->Fetch_RTTI() == RTTI_INFANTRYTYPE',
+			'new InfantryClass(static_cast<InfantryTypeClass const *>(type), House)',
+			'new UnitClass(unittype, House)',
+		],
+		'each heap builds the object its own class calls for',
+	);
+
+	assertOrdered(
+		grant,
+		['harvests = unittype->IsToHarvest || unittype->IsToVeinHarvest;', 'if (harvests) {', 'Assign_Mission(MISSION_HARVEST)', 'Enter_Idle_Mode(true)'],
+		'and only a vehicle that harvests is sent harvesting',
+	);
+
+	const padded = functionBody(source('code/builtype.cpp'), 'bool BuildingTypeClass::Is_Pad_Aircraft_Dock(void) const');
+
+	assert.match(
+		padded,
+		/if \(FreeUnit != NULL && FreeUnit->Fetch_RTTI\(\) == RTTI_AIRCRAFTTYPE\) \{/,
+		'a free aircraft is priced in place of the pad aircraft',
+	);
+
+	const opening = functionBody(source('code/building.cpp'), 'void BuildingClass::Grand_Opening(bool captured)');
+
+	assert.match(
+		opening,
+		/bool const gives_aircraft = Class->FreeUnit != NULL && Class->FreeUnit->Fetch_RTTI\(\) == RTTI_AIRCRAFTTYPE;\s*if \([^)]*Rule->PadAircraft\.Count\(\) > 0 && !gives_aircraft\)/,
+		'and handed over in place of it, even when the free aircraft could not be placed and was refunded',
+	);
+
+	assert.match(
+		opening,
+		/Place_Free_Aircraft\(Rule->PadAircraft\[0\]\)/,
+		'both grants stand an aircraft on the structure the one way',
+	);
+});

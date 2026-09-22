@@ -10,7 +10,7 @@ An object's price is the figure most credit amounts in the game are worked out f
 A structure that comes with something else has that thing's price taken out of its own to make a second, lower figure:
 
 - a [`FreeUnit=`](/keys/freeunit/) grant deducts that unit's own price, and the result is held at `0` rather than allowed to go negative;
-- the structure named as the first [`Dock=`](/keys/dock/) target of the first [`PadAircraft=`](/keys/padaircraft/) entry deducts the mean price of the whole [`PadAircraft=`](/keys/padaircraft/) list, rounded down, unless [`SeparateAircraft=yes`](/keys/separateaircraft/).
+- the first structure in the [`Dock=`](/keys/dock/) list of the first [`PadAircraft=`](/keys/padaircraft/) entry deducts the average price of the whole `PadAircraft=` list, rounded down, unless [`SeparateAircraft=yes`](/keys/separateaircraft/) is set or the structure's own [`FreeUnit=`](/keys/freeunit/) is an aircraft.
 
 Almost nothing uses that lower figure. The price asked for the structure adds both deductions straight back, so what a factory charges, what a sale refunds, and what a kill is worth in score and experience all come to the written number. A refinery written at `2000` that hands over a `1400` harvester is still bought, sold and killed as a `2000` structure.
 

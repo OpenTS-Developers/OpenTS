@@ -237,7 +237,7 @@ A structure that has just been placed runs its construction animation before it 
 
 The step delay for that animation is [`BuildupTime`](/keys/builduptime/) converted to frames and divided by the step count. That count is half the number of frames in the [buildup art](/keys/buildup/), or [`GateStages`](/keys/gatestages/) plus one for a [`Gate=yes`](/keys/gate/) type. That delay is then adjusted by the game-speed setting before it becomes the animation rate. How long a buildup takes therefore tracks the selected game speed as well as the configured value. A type with no buildup art skips the wait and opens at once.
 
-Only when it opens does a structure hand over what came bundled with it. A `FreeUnit` is put down beside it and sent harvesting, and a [`HoverPad=yes`](/keys/hoverpad/) structure receives the first [`PadAircraft`](/keys/padaircraft/) entry unless [`SeparateAircraft=yes`](/keys/separateaircraft/). A free unit that cannot be placed anywhere refunds its own price instead.
+Only when it opens does a structure hand over what came bundled with it. A [`FreeUnit`](/keys/freeunit/) vehicle or infantryman is put down beside the structure and a free aircraft on the structure itself, and one that cannot be placed anywhere refunds its own price instead. A [`HoverPad=yes`](/keys/hoverpad/) structure receives the first [`PadAircraft`](/keys/padaircraft/) entry as well, unless [`SeparateAircraft=yes`](/keys/separateaircraft/) or it is already holding the free aircraft it just handed out.
 
 ## When a factory is lost
 

@@ -2108,6 +2108,41 @@ TargetClass CCINIClass::Get_Target(char const * section, char const * entry, Tar
 
 
 /// <summary>
+/// Reads a vehicle, infantry or aircraft type by name, searching the lists in that order.
+/// Nothing is created: a name in no list, "none" included, reads as null.
+/// </summary>
+/// <returns>The type, the default when the entry is absent, or null.</returns>
+TechnoTypeClass const * CCINIClass::Get_Foot_Type(char const * section, char const * entry, TechnoTypeClass const * defvalue) const
+{
+	char buffer[128];
+
+	if (Get_String(section, entry, "", buffer, sizeof(buffer)) == 0) {
+		return(defvalue);
+	}
+
+	UnitType unit = UnitTypeClass::From_Name(buffer);
+	if (unit != UNIT_NONE) {
+		return(UnitTypes[unit]);
+	}
+
+	InfantryType infantry = InfantryTypeClass::From_Name(buffer);
+	if (infantry != INFANTRY_NONE) {
+		return(InfantryTypes[infantry]);
+	}
+
+	AircraftType aircraft = AircraftTypeClass::From_Name(buffer);
+	if (aircraft != AIRCRAFT_NONE) {
+		return(AircraftTypes[aircraft]);
+	}
+
+	if (strcmpi(buffer, "<none>") != 0 && strcmpi(buffer, "none") != 0) {
+		DebugString("[%s] %s names \"%s\", which is no vehicle, infantry or aircraft type.\n", section, entry, buffer);
+	}
+	return(NULL);
+}
+
+
+/// <summary>
 /// Stores a target to the INI database.
 /// The target is recorded by the name of the object type it refers to. A target that does
 /// not resolve to an object type is recorded as having none.

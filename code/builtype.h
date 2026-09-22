@@ -118,10 +118,10 @@ class BuildingTypeClass : public TechnoTypeClass
 		TStringID<23> PowersUpBuilding;
 
 		/*
-		 * This is the unit given away free when this building is first completed -- the
+		 * This is the object given away free when this building is first completed -- the
 		 * harvester a refinery arrives with. Its cost is refunded if it cannot be placed.
 		 */
-		UnitTypeClass const * FreeUnit;
+		TechnoTypeClass const * FreeUnit;
 
 		/*
 		**	This is the direction (from the center cell) of the building in order to find a

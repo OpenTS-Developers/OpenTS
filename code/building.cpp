@@ -3550,6 +3550,115 @@ AbstractClass * BuildingClass::Greatest_Threat(ThreatType threat, Coord const & 
 }
 
 
+/// <summary>
+/// Stands a new aircraft on this structure's cell, guarding and not in radio contact. Nothing
+/// is refunded on failure.
+/// </summary>
+/// <returns>The aircraft, or null if it could not be created or placed.</returns>
+AircraftClass * BuildingClass::Place_Free_Aircraft(AircraftTypeClass const * type)
+{
+	ScenarioInit++;
+
+	AircraftClass * air = new AircraftClass(type, House);
+	if (air != NULL) {
+		air->HeightAGL = 0;
+		if (air->Unlimbo(Center_Coord(), air->Pose_Dir())) {
+			air->Assign_Mission(MISSION_GUARD);
+		} else {
+			delete air;
+			air = NULL;
+		}
+	}
+
+	ScenarioInit--;
+	return(air);
+}
+
+
+/// <summary>
+/// Gives the house this structure's FreeUnit, refunding it if it cannot be placed. The caller
+/// decides whether the house has earned it.
+/// </summary>
+void BuildingClass::Place_Free_Unit(void)
+{
+	TechnoTypeClass const * type = Class->FreeUnit;
+
+	if (type->Fetch_RTTI() == RTTI_AIRCRAFTTYPE) {
+		AircraftClass * air = Place_Free_Aircraft(static_cast<AircraftTypeClass const *>(type));
+		if (air == NULL) {
+			House->Refund_Money(type->Raw_Cost());
+			return;
+		}
+
+		// Only a pad holds the aircraft; another structure keeps its radio for what it docks.
+		if (Class->IsHelipad || Class->IsHoverPad) {
+			air->Transmit_Message(RADIO_HELLO, this);
+			Transmit_Message(RADIO_TETHER);
+		}
+		return;
+	}
+
+	Cell cell = Adjacent_Cell(Center_Coord().As_Cell(), DIR_S);
+
+	bool placed = false;
+	bool harvests = false;
+	FootClass * object = NULL;
+	if (type->Fetch_RTTI() == RTTI_INFANTRYTYPE) {
+		object = new InfantryClass(static_cast<InfantryTypeClass const *>(type), House);
+	} else {
+		UnitTypeClass const * unittype = static_cast<UnitTypeClass const *>(type);
+		harvests = unittype->IsToHarvest || unittype->IsToVeinHarvest;
+		object = new UnitClass(unittype, House);
+	}
+
+	if (object != NULL) {
+
+		/*
+		**	Try to place down the object. If it could not be placed, then try
+		**	to place it in a nearby location.
+		*/
+		if (!object->Unlimbo(cell, DIR_W)) {
+			cell = Map.Nearby_Location(PositionCoord.As_Cell(), type->Speed, Map.Get_Cell_Zone(PositionCoord.As_Cell(), type->MZone), type->MZone, false, Point2D(1,1), true, true, false, false);
+
+			if (cell == CELL_NONE || !object->Unlimbo(cell, DIR_SW)) {
+				Cell newcell = Map.Nearby_Location(PositionCoord.As_Cell(), type->Speed, Map.Get_Cell_Zone(PositionCoord.As_Cell(), type->MZone), type->MZone, false, Point2D(1,1), false, true, false, false);
+
+				/*
+				**	If the object could still not be placed, then refund the money
+				**	to the owner and then bail.
+				*/
+				if (newcell == CELL_NONE || !object->Unlimbo(newcell, DIR_SW)) {
+					House->Refund_Money(type->Raw_Cost());
+					delete object;
+				} else {
+					placed = true;
+				}
+			} else {
+				placed = true;
+			}
+		} else {
+			placed = true;
+		}
+
+		if (placed) {
+			if (harvests) {
+				object->Assign_Mission(MISSION_HARVEST);
+			} else {
+				object->Enter_Idle_Mode(true);
+			}
+			object->Commence();
+		}
+	} else {
+
+		/*
+		**	If the object could not be created in the first place, then give
+		**	the full refund price to the owning player.
+		*/
+		House->Refund_Money(type->Cost_Of(House));
+	}
+}
+
+
 /***********************************************************************************************
  * BuildingClass::Grand_Opening -- Handles construction completed special operations.          *
  *                                                                                             *
@@ -3634,68 +3743,17 @@ void BuildingClass::Grand_Opening(bool captured)
 		**	reinforcement list at this time.
 		*/
 		if (Class->FreeUnit != NULL && !ScenarioInit && !captured && !Debug_Map && (!House->Is_Human_Player() || PurchasePrice == 0 || PurchasePrice > Class->Raw_Cost())) {
-			Cell cell = Adjacent_Cell(Center_Coord().As_Cell(), DIR_S);
-
-			bool placed = false;
-			UnitClass * unit = new UnitClass(Class->FreeUnit, House);
-			if (unit != NULL) {
-
-				/*
-				**	Try to place down the harvesters. If it could not be placed, then try
-				**	to place it in a nearby location.
-				*/
-				if (!unit->Unlimbo(cell, DIR_W)) {
-					cell = Map.Nearby_Location(PositionCoord.As_Cell(), SPEED_WHEEL, Map.Get_Cell_Zone(PositionCoord.As_Cell(), unit->Class->MZone), unit->Class->MZone, false, Point2D(1,1), true, true, false, false);
-
-					if (cell == CELL_NONE || !unit->Unlimbo(cell, DIR_SW)) {
-						Cell newcell = Map.Nearby_Location(PositionCoord.As_Cell(), SPEED_WHEEL, Map.Get_Cell_Zone(PositionCoord.As_Cell(), unit->Class->MZone), unit->Class->MZone, false, Point2D(1,1), false, true, false, false);
-
-						/*
-						**	If the harvester could still not be placed, then refund the money
-						**	to the owner and then bail.
-						*/
-						if (newcell == CELL_NONE || !unit->Unlimbo(newcell, DIR_SW)) {
-							House->Refund_Money(unit->Class->Raw_Cost());
-							delete unit;
-						} else {
-							placed = true;
-						}
-					} else {
-						placed = true;
-					}
-				} else {
-					placed = true;
-				}
-
-				if (placed) {
-					unit->Assign_Mission(MISSION_HARVEST);
-					unit->Commence();
-				}
-			} else {
-
-				/*
-				**	If the harvester could not be created in the first place, then give
-				**	the full refund price to the owning player.
-				*/
-				House->Refund_Money(Class->FreeUnit->Cost_Of(House));
-			}
+			Place_Free_Unit();
 		}
 
-		/*
-		**	Helicopter pads get a free attack helicopter.
-		*/
-		if (!Rule->IsSeparate && Class->IsHoverPad && !captured && Rule->PadAircraft.Count() > 0) {
-			ScenarioInit++;
-			AircraftClass * air = new AircraftClass(Rule->PadAircraft[0], House);
-			if (air) {
-				air->HeightAGL = 0;
-				if (air->Unlimbo(Center_Coord(), air->Pose_Dir())) {
-					air->Assign_Mission(MISSION_GUARD);
-					air->Transmit_Message(RADIO_HELLO, this);
-					Transmit_Message(RADIO_TETHER);
-				}
+		// A structure priced without the pad aircraft gets none, even when its own could not be placed.
+		bool const gives_aircraft = Class->FreeUnit != NULL && Class->FreeUnit->Fetch_RTTI() == RTTI_AIRCRAFTTYPE;
+		if (!Rule->IsSeparate && Class->IsHoverPad && !captured && Rule->PadAircraft.Count() > 0 && !gives_aircraft) {
+			AircraftClass * air = Place_Free_Aircraft(Rule->PadAircraft[0]);
+			if (air != NULL) {
+				air->Transmit_Message(RADIO_HELLO, this);
+				Transmit_Message(RADIO_TETHER);
 			}
-			ScenarioInit--;
 		}
 	}
 }

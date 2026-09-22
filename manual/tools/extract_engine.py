@@ -97,6 +97,7 @@ VALUE_TYPES = {
     "Owners": "list of HouseTypes",
     "Scheme_Index": "color scheme",
     "BuildingType_List": "list of BuildingTypes",
+    "Foot_Type": "UnitType, InfantryType or AircraftType",
     "Entry": "string",
     "TextBlock": "text",
     "UUBlock": "binary block",

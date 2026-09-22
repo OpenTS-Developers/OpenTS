@@ -167,6 +167,7 @@ class CCINIClass : public INIClass
 		TypeList<TechnoTypeClass *> Get_TechnoType_List(const char * section, const char * entry, TypeList<TechnoTypeClass *> defvalue) const;
 		TypeList<int> Get_House_List(const char * section, const char * entry, TypeList<int> defvalue) const;
 		TargetClass Get_Target(char const * section, char const * entry, TargetClass const & defvalue) const;
+		TechnoTypeClass const * Get_Foot_Type(char const * section, char const * entry, TechnoTypeClass const * defvalue) const;
 		SpeedType Get_SpeedType(char const * section, char const * entry, SpeedType defvalue) const;
 		static TypeList<int> Get_VocType_List(CCINIClass const & ini, const char * section, const char * entry, TypeList<int> defvalue);
 

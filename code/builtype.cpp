@@ -881,6 +881,12 @@ bool BuildingTypeClass::Is_Pad_Aircraft_Dock(void) const
 	if (Rule->IsSeparate || Rule->PadAircraft.Count() == 0) {
 		return(false);
 	}
+
+	// A free aircraft stands in for the pad aircraft, so its price is the one that counts.
+	if (FreeUnit != NULL && FreeUnit->Fetch_RTTI() == RTTI_AIRCRAFTTYPE) {
+		return(false);
+	}
+
 	AircraftTypeClass const * aircraft = Rule->PadAircraft[0];
 	return(aircraft->Dock.Count() > 0 && this == aircraft->Dock[0]);
 }
@@ -1214,7 +1220,7 @@ bool BuildingTypeClass::Read_INI(CCINIClass const & ini)
 		AuxSound1 = ini.Get_VocType(Name(), "DeploySound", AuxSound1);
 		AuxSound2 = ini.Get_VocType(Name(), "UndeploySound", AuxSound2);
 		ToBuild = ini.Get_RTTIType(Name(), "Factory", ToBuild);
-		FreeUnit = TGet_Class(ini, Name(), "FreeUnit", FreeUnit);
+		FreeUnit = ini.Get_Foot_Type(Name(), "FreeUnit", FreeUnit);
 		IsHoverPad = ini.Get_Bool(Name(), "HoverPad", IsHoverPad);
 		IsTemple = ini.Get_Bool(Name(), "IsTemple", IsTemple);
 		IsPlug = ini.Get_Bool(Name(), "IsPlug", IsPlug);

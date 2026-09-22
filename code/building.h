@@ -584,6 +584,8 @@ class BuildingClass : public TechnoClass
 
 	private:
 		void Drop_Debris(AbstractClass * source = NULL);
+		AircraftClass * Place_Free_Aircraft(AircraftTypeClass const * type);
+		void Place_Free_Unit(void);
 		void Produce_Cash_Startup(void);
 
 		/*
