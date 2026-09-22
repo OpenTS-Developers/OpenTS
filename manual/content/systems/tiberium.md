@@ -99,7 +99,7 @@ When a scenario loads, the engine replaces the stage of every Tiberium cell. The
 
 A cell shows the frame for its stage from one of its type's overlays. The cell's map position picks that overlay, not the overlay the cell actually holds. Flat cells use the set's flat overlays and sloped cells use its slope overlays. The type's [`Color`](/keys/color/#scope-tiberium) recolors the result.
 
-Only the four simple slopes have slope overlays, and only in a set that has any. Tiberium shows nothing on any other slope, and a type whose set has no slope overlays shows nothing on any slope. Only a map can place Tiberium on such a cell. A cell whose stage has no frame in the chosen shape is not drawn either.
+Slope overlays exist only for the four simple slopes, and the large-Tiberium set has none. A type on that set never spreads onto a slope, and shows nothing on one where a map or an animation's [`TiberiumSpawnType`](/keys/tiberiumspawntype/) places it. A cell is also not drawn when the chosen overlay has no frame for its stage.
 
 ## Growth
 
@@ -154,7 +154,7 @@ A neighbor accepts growth when all of the following hold, tested in this order:
 7. it is flat or on one of the four simple slopes, and it is flat if the type's overlay set has no slope overlays;
 8. its tile set is [`AllowTiberium=yes`](/keys/allowtiberium/).
 
-The four simple slopes each raise two adjacent corners of the cell. Corner, steep and double slopes never accept Tiberium. A map can still place Tiberium on one, and it stays there and can be harvested, but it is not drawn.
+The four simple slopes each raise two adjacent corners of the cell. Corner, steep and double slopes never accept Tiberium, and any Tiberium a map places on one is removed as the map loads.
 
 Only a cell that has a neighbor accepting growth spends budget. A cell with none, or one that fails the spread tests, leaves the queue without spending any.
 

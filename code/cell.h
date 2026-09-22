@@ -663,6 +663,7 @@ class CellClass : public AbstractClass
 		bool Has_Wall_Or_Gate(OverlayType type=OVERLAY_NONE, FacingType facing=FACING_NONE) const;
 		BuildingClass * Get_Gate(void) const;
 		void Recalc_Attributes(int cell_height=-1);
+		void Remove_Steep_Slope_Tiberium(void);
 		void Recalc_Passability(void);
 		void Destroy_Bridge(void);
 		void On_Bridge_Collapse(void);

@@ -2039,6 +2039,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 	Map.Reset_Iterator();
 	CellClass * cptr = Map.Iterate();
 	while (cptr) {
+		cptr->Remove_Steep_Slope_Tiberium();
 		cptr->Recalc_Attributes();
 		cptr = Map.Iterate();
 	}

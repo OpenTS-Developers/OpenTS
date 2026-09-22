@@ -1564,6 +1564,29 @@ test('A Tiberium overlay is chosen inside the type that owns it', () => {
 		'and the radar picks its color by the same rule',
 	);
 
+	assertOrdered(
+		functionBody(cell, 'void CellClass::Remove_Steep_Slope_Tiberium(void)'),
+		['OverlayTypes[Overlay]->IsTiberium', 'Ramp_Type(SubTile) > RAMP_SOUTH', 'Overlay = OVERLAY_NONE;'],
+		'and Tiberium a map puts on a steep slope is cleared',
+	);
+
+	assertOrdered(
+		functionBody(source('code/scenario.cpp'), 'ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)'),
+		[
+			'OverlayClass::Read_INI(ini);',
+			'cptr->Remove_Steep_Slope_Tiberium();',
+			'cptr->Recalc_Attributes();',
+			'TiberiumClass::Init_Tiberium_Growth_System();',
+		],
+		'once, as the map loads, before the growth and spread lists are built',
+	);
+
+	assert.doesNotMatch(
+		functionBody(cell, 'void CellClass::Recalc_Attributes(int cell_height)'),
+		/Ramp_Type\(SubTile\) > RAMP_SOUTH/,
+		'and a cell recalculated during play keeps its overlay',
+	);
+
 	assert.match(
 		functionBody(source('code/cell.cpp'), 'bool CellClass::Place_Tiberium(TiberiumType tib, int data)'),
 		/HeapID \+ Random_Pick\(0, tiberium->Variety - 1\)/,

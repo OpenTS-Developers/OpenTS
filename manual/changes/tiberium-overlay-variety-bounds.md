@@ -1,19 +1,25 @@
 ---
-title: Keep a Tiberium overlay inside its own set
+title: Fix Tiberium on the large-crystal set and on slopes
 category: fix
 release: 0.2.0
 targets:
 - type: system
   id: tiberium
   effect: changed
+- type: key
+  id: Image
+  scope: tiberium
+  effect: changed
 credit:
 - ZivDero
+- Rampastring
+- dkeeton
 ---
 
-Seeding a bare cell now draws its overlay from the number of flat overlays the Tiberium type has, rather than from a fixed twelve. Every `Image=` value sets that number to twelve, so no rules can tell the difference; the fixed figure was simply not the one the rest of the system reads.
+A Tiberium type on `Image=2` now has twelve growth stages instead of one, so it can grow, spread and yield several loads per cell. The stock `Cruentus` still neither grows nor spreads, and a mod that wants the set harvested must also give its overlays a land type harvesting reads, since the shipped ones are rock.
 
-A Tiberium type whose overlay set carries no slope artwork also draws nothing on a slope, instead of dividing by the number of slope overlays it does not have. Spreading already refused such ground, so the cells that reach this are the ones a map or a third-party editor placed.
+That set has no slope artwork, so a type on it, including one moved there by a later file, now draws nothing on a slope. It used to divide by zero or draw overlays from outside its set.
 
-Tiberium a map places on a corner, steep or double slope also draws nothing. No set has an overlay for those slopes, so such a cell used to show an overlay from outside its type's set, drawn against the wrong slope, which could crash the game. The radar picked its color for a Tiberium cell with the same arithmetic and neither check, and now follows the same rule.
+Tiberium a map places on a corner, steep or double slope is now removed when the map loads. It used to be drawn with another set's overlay and could crash the game. No shipped map places Tiberium there.
 
-A type moved onto `Image=2` by a later file, such as `firestrm.ini` or a map, now has no slope overlays. It used to keep the slope overlay count of the set it was first read with, so its slope cells were drawn with the overlays that follow the large-Tiberium set.
+Rampastring and dkeeton are credited for the ts-patches fix that gave the large-crystal set twelve stages.

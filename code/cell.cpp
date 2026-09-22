@@ -1206,6 +1206,20 @@ void CellClass::Set_Wall_Owner(void)
 }
 
 
+/// <summary>
+/// Removes Tiberium a map placed on a corner, steep or double slope. Call it after the overlays
+/// are read and before the Tiberium growth and spread lists are built.
+/// </summary>
+void CellClass::Remove_Steep_Slope_Tiberium(void)
+{
+	if (Overlay != OVERLAY_NONE && OverlayTypes[Overlay]->IsTiberium && ITType != ISOTILE_NONE && ITType < IsometricTileTypes.Count()
+		&& IsometricTileTypes[ITType]->Ramp_Type(SubTile) > RAMP_SOUTH) {
+		Overlay = OVERLAY_NONE;
+		OverlayData = 0;
+	}
+}
+
+
 /***********************************************************************************************
  * CellClass::Recalc_Attributes -- Recalculates the ground type attributes for the cell.       *
  *                                                                                             *
