@@ -532,7 +532,9 @@ void VeinholeMonsterClass::Grow(void)
 
 			if (cell.OverlayData < OVERLAYDATA_FIRST_SOLID_VEIN) {
 				cell.Place_Veins();
-				VeinCount++;
+				if (cell.OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN) {
+					VeinCount++;
+				}
 			}
 
 			if (cell.Overlay == OVERLAY_VEINS) {
@@ -692,9 +694,10 @@ void VeinholeMonsterClass::Build_Growth_Queue(void)
 					GlobalGrowthState[index] = true;
 					GrowthState[index] = true;
 					cellptr->IsToGrowVeins = true;
-					if (cellptr->OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN && cellptr->OverlayData <= OVERLAYDATA_FIRST_SOLID_VEIN + 3) {
+					if (cellptr->OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN) {
 						VeinCount++;
-					} else {
+					}
+					if (cellptr->OverlayData < OVERLAYDATA_FIRST_SOLID_VEIN || cellptr->OverlayData > OVERLAYDATA_FIRST_SOLID_VEIN + 3) {
 						if (GrowthCount < Rule->MaxVeinholeGrowth) {
 							GrowthQueue.Insert(CellNode(cellptr->CellID, 0.0f));
 							GrowthCount++;
@@ -716,7 +719,6 @@ void VeinholeMonsterClass::Build_Growth_Queue(void)
 			if (adjacent->Overlay == OVERLAY_VEINS && !adjacent->IsToGrowVeins) {
 				if ((adjacent->OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN && adjacent->OverlayData < (OVERLAYDATA_FIRST_SOLID_VEIN + 5)) || !adjacent->Can_Place_Veins()) {
 					cells.Add(adjacent->CellID);
-					VeinCount++;
 				} else {
 					if (GrowthCount < Rule->MaxVeinholeGrowth) {
 						GrowthQueue.Insert(CellNode(adjacent->CellID, 0.0f));
@@ -731,7 +733,9 @@ void VeinholeMonsterClass::Build_Growth_Queue(void)
 					GlobalGrowthState[index] = true;
 					GrowthState[index] = true;
 				}
-				VeinCount++;
+				if (adjacent->OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN) {
+					VeinCount++;
+				}
 			}
 		}
 	}

@@ -152,8 +152,8 @@ class VeinholeMonsterClass : public ObjectClass
 		bool IsToPuffGas;
 
 		/*
-		 * This is the number of cells this monster has covered with veins, weighed against
-		 * the vein limit in the rules before it is allowed to spread any further.
+		 * This is the number of mature vein cells this monster owns, weighed against the
+		 * vein limit in the rules before it is allowed to spread any further.
 		 */
 		int VeinCount;
 
