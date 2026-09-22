@@ -1688,7 +1688,7 @@ BEGIN
     TXT_OFF                 "Off"
     TXT_MULTIPLAYER_GAME    "Multiplayer Game"
     TXT_SCRNCAP             "Screen Capture"
-    TXT_SCRNCAP_DESC        "Take a snapshot of the game screen. (Saved as 'SCRNxxxx.PCX' file in Tiberian Sun run directory.)"
+    TXT_SCRNCAP_DESC        "Take a snapshot of the game screen. (Saved as 'SCRNxxxx.png' in the Screenshots folder.)"
     TXT_SENDING_GO          "Sending GO request - Please Wait..."
     TXT_WAITING_GO          "Waiting for GO response - Please Wait..."
 END

@@ -108,7 +108,7 @@ A player's own copy is therefore the one the game reads, whatever a deployment s
 
 Wildcard searches (for rules, battle files, map packs, map archives and movie archives) cover every directory in the list rather than stopping at the first that holds a match. A name held by more than one is used once, from the one that comes first, which is the same copy an ordinary open of that name would land on.
 
-[Saved games](/formats/save-games/) are the exception to all of this. They keep to a `Saved Games` folder inside the user data directory, and are named there outright rather than searched for, so that a launcher browsing them finds them in one place.
+[Saved games](/formats/save-games/) and [screen captures](/commands/screencapture/) are not searched for. Saves are written, listed and loaded only in a `Saved Games` folder inside the user data directory, so a launcher finds every save in one place. Captures go only to a `Screenshots` folder in the same directory.
 
 :::caution[Files the game writes are not searched for]
 Settings, saved games, recordings and everything else the game writes go to the user data directory, or to the game's own directory when there is none. A file the game deletes is its own copy, so deleting a player's hotkeys returns the game to the ones a deployment shipped rather than leaving it with none. Nothing listed here is ever written to or deleted from.

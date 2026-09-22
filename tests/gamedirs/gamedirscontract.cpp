@@ -107,6 +107,12 @@ void Make_Directory(std::string const & path)
 }
 
 
+void Remove_Directory(std::string const & path)
+{
+	RemoveDirectory(path.c_str());
+}
+
+
 /*
  * Every case starts from the same empty tree, with no folders configured and the current
  * directory back at the root, so that one case cannot decide another's outcome.
@@ -532,6 +538,48 @@ void Test_Saved_Games_Folder(void)
 }
 
 
+/*
+ * Screen captures keep to a folder of their own on the same terms, except that the folder is
+ * made on every request rather than once, so removing it mid-session costs nothing.
+ */
+void Test_Screenshots_Folder(void)
+{
+	Reset();
+	Init_Search_Folders(Default_List().c_str());
+
+	Check(Screenshot_Name("SCRN0000.pcx") == "Screenshots\\SCRN0000.pcx",
+		"a capture is named inside the folder screen captures are kept in");
+	Check(File_Exists(Root + "\\Screenshots"),
+		"asking for a capture makes the folder to keep it in");
+
+	for (int index = 0; ; index++) {
+		char const * path = CDFileClass::Search_Path(index);
+		if (path == NULL) {
+			break;
+		}
+
+		Check(std::string(path).find("Screenshots") == std::string::npos,
+			"the folder screen captures are kept in is not one of the searched folders");
+	}
+
+	Reset();
+	Set_User_Directory((Root + "\\User\\Shots").c_str());
+	Apply_Game_Directories();
+
+	std::string const expected = Root + "\\User\\Shots\\Screenshots";
+	Check(Screenshot_Name("SCRN0001.png") == expected + "\\SCRN0001.png",
+		"a user directory takes the captures with it");
+	Check(File_Exists(expected),
+		"the folder is made inside the user directory");
+
+	Remove_Directory(expected);
+	Check(!File_Exists(expected), "the folder can be taken away while the game runs");
+	Check(Screenshot_Name("SCRN0002.png") == expected + "\\SCRN0002.png",
+		"and naming the next capture still answers");
+	Check(File_Exists(expected), "which makes the folder again");
+}
+
+
 bool Make_Root(void)
 {
 	char temp[MAX_PATH];
@@ -592,6 +640,7 @@ int main(void)
 	Test_Placing_A_File_Is_Repeatable();
 	Test_Without_A_User_Directory_Nothing_Moves();
 	Test_Saved_Games_Folder();
+	Test_Screenshots_Folder();
 
 	Reset();
 	Remove_Root();

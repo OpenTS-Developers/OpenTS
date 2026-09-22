@@ -32,6 +32,6 @@ Do not place game data in the CMake build directory. The build writes the execut
 
 `-DATADIR=<path>` reads the game's data from the directory named instead of requiring it beside the executable. `-USERDIR=<path>` keeps what the game writes, including settings, saved games, recordings and downloaded maps, in a directory of its own. Together they let one copy of the data serve several people, each writing only to their own directory and reading their own files ahead of the shared ones.
 
-[Saved games](/formats/save-games/) go one step further, into a `Saved Games` folder of their own inside that directory. That folder is not searched, so a save is written, listed and deleted by name in it rather than looked for across the folders the game reads from.
+Inside that directory, [saved games](/formats/save-games/) go into a `Saved Games` folder and [screen captures](/commands/screencapture/) into a `Screenshots` folder. The game lists and loads saves only from their folder, and its search for other files skips both folders.
 
 The data may be sorted into folders rather than left in one directory. Without any configuration the game also searches `INI`, `MIX` and `Maps`; [`OPENTS.INI`](/formats/opents-ini/) names other folders and the order they are searched in.

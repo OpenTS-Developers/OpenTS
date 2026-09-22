@@ -1504,7 +1504,7 @@ registered_commands:
   route_id: screencapture
   kind: registered
   title: Screen Capture
-  description: Take a snapshot of the game screen. (Saved as 'SCRNxxxx.PCX' file in Tiberian Sun run directory.)
+  description: Take a snapshot of the game screen. (Saved as 'SCRNxxxx.png' in the Screenshots folder.)
   category: Interface
   audience: player
   availability:

@@ -31,6 +31,8 @@ static std::string UserDirectory;
  */
 static char const * const SavedGamesFolder = "Saved Games";
 
+static char const * const ScreenshotsFolder = "Screenshots";
+
 
 static std::string Trim_Path(std::string const & path)
 {
@@ -269,6 +271,16 @@ std::string User_File_Write_Name(char const * filename)
 }
 
 
+static std::string Own_Folder_Name(char const * folder, char const * filename)
+{
+	std::string const path = UserDirectory + folder;
+
+	CreateDirectory(path.c_str(), NULL);
+
+	return(path + (char)std::filesystem::path::preferred_separator + filename);
+}
+
+
 /// <summary>
 /// Names a saved game inside the folder they are kept in. The folder is not one of the
 /// searched ones and is created here, so a launcher can browse it before the first save is
@@ -277,11 +289,16 @@ std::string User_File_Write_Name(char const * filename)
 /// <returns>The name to open, delete or scan for.</returns>
 std::string Saved_Game_Name(char const * filename)
 {
-	std::string const folder = UserDirectory + SavedGamesFolder;
+	return(Own_Folder_Name(SavedGamesFolder, filename));
+}
 
-	CreateDirectory(folder.c_str(), NULL);
 
-	return(folder + (char)std::filesystem::path::preferred_separator + filename);
+/// <summary>
+/// Names a screen capture inside the Screenshots folder, making the folder on every call.
+/// </summary>
+std::string Screenshot_Name(char const * filename)
+{
+	return(Own_Folder_Name(ScreenshotsFolder, filename));
 }
 
 

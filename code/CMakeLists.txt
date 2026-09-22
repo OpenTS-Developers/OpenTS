@@ -155,6 +155,12 @@ set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/bgfxbackend.cpp" PROPER
     COMPILE_OPTIONS "/Zc:preprocessor"
 )
 
+# writepng.cpp takes miniz from bimg, which the link already carries.
+set_source_files_properties("${CMAKE_CURRENT_SOURCE_DIR}/writepng.cpp" PROPERTIES
+    INCLUDE_DIRECTORIES
+        "${CMAKE_SOURCE_DIR}/thirdparty/bgfx.cmake/bimg/3rdparty/tinyexr/deps"
+)
+
 # bx rewrites __stdcall while its headers are being parsed by clang-cl.  Force the
 # compatibility header into the renderer translation unit as well as bx/bgfx so the
 # MSVC standard-library headers that follow still see the Win32 calling convention.

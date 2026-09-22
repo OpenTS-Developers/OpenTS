@@ -455,9 +455,13 @@ test('Saved games are named in one folder rather than searched for', () => {
 	const gamedirs = source('code/gamedirs.cpp');
 
 	assertOrdered(functionBody(gamedirs, 'std::string Saved_Game_Name(char const * filename)'), [
-		'UserDirectory + SavedGamesFolder',
-		'CreateDirectory(folder.c_str(), NULL);',
-	], 'a saved game is named inside the user directory, and the folder is made on the way');
+		'Own_Folder_Name(SavedGamesFolder, filename)',
+	], 'a saved game is named inside the folder saved games are kept in');
+
+	assertOrdered(functionBody(gamedirs, 'static std::string Own_Folder_Name(char const * folder, char const * filename)'), [
+		'UserDirectory + folder',
+		'CreateDirectory(path.c_str(), NULL);',
+	], 'and that folder sits in the user directory and is made on the way');
 
 	for (const [file, signature] of [
 		['code/saveload.cpp', 'bool Save_Game(const char *file_name, char const * descr)'],
@@ -1431,5 +1435,50 @@ test('Every Tiberium overlay set is read with twelve growth stages', () => {
 			'case 3:',
 		],
 		'the large-Tiberium arm still names its own overlay and leaves RampVariety alone',
+	);
+});
+
+test('A screen capture is named in the folder it is kept in', () => {
+	const capture = functionBody(
+		source('code/init.cpp'),
+		'class ScreenCaptureCommandClass',
+	);
+
+	assertOrdered(
+		capture,
+		[
+			'sprintf(fname, "SCRN%04d.png", index);',
+			'path = Screenshot_Name(fname);',
+			'} while (RawFileClass(path.c_str()).Is_Available());',
+			'RawFileClass file(path.c_str());',
+		],
+		'the free number is looked for in that folder alone, and the file is opened by name',
+	);
+
+	for (const [pattern, why] of [
+		[/CCFileClass/, 'nothing consults the read path or the archives for it'],
+		[/GetFileAttributes/, 'and the file layer is asked rather than the platform'],
+	]) {
+		assert.doesNotMatch(capture, pattern, why);
+	}
+
+	assertOrdered(
+		capture,
+		[
+			'surface->Get_Buffer()',
+			'Write_PNG_File(file, surface->Get_Width(), surface->Get_Height(), surface->Stride(), pixels)',
+			'file.Delete();',
+		],
+		'the frame as presented is written out whole, and a failed one is not left behind',
+	);
+
+	for (const gone of [/Blit_From/, /Hide_Mouse/, /Show_Mouse/, /HiddenSurface/]) {
+		assert.doesNotMatch(capture, gone, `a capture no longer needs ${gone.source}`);
+	}
+
+	assertOrdered(
+		functionBody(source('code/gamedirs.cpp'), 'std::string Screenshot_Name(char const * filename)'),
+		['Own_Folder_Name(ScreenshotsFolder, filename)'],
+		'and the folder is made on every request, as it is for a saved game',
 	);
 });

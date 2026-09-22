@@ -50,5 +50,7 @@ std::string User_File_Write_Name(char const * filename);
  */
 std::string Saved_Game_Name(char const * filename);
 
+std::string Screenshot_Name(char const * filename);
+
 std::vector<std::string> Parse_Search_Folders(char const * list);
 std::vector<std::string> Search_Files(char const * pattern);

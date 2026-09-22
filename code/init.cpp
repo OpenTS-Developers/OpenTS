@@ -149,7 +149,7 @@
 #include "ovrlight.h"
 #include "ownrdraw.h"
 #include "partsys.h"
-#include "pcx.h"
+#include "png.h"
 #include "queue.h"
 #include "ramfile.h"
 #include "revent.h"
@@ -4883,31 +4883,29 @@ class ScreenCaptureCommandClass : public CommandClass
 		}
 		virtual void Execute(void) const {
 			{
-				/*
-				 * The whole frame is captured whatever size the window happens to be,
-				 * limited only by the surface it is copied into.
-				 */
-				Rect dest_rect = VisibleSurface->Get_Rect();
-				dest_rect.Width = std::min(dest_rect.Width, HiddenSurface->Get_Width());
-				dest_rect.Height = std::min(dest_rect.Height, HiddenSurface->Get_Height());
+				// The presented frame, at render resolution whatever the window size.
+				DSurface const * surface = (DSurface const *)VisibleSurface;
+				unsigned short const * pixels = (unsigned short const *)surface->Get_Buffer();
+				if (pixels == NULL) {
+					return;
+				}
 
-				Hide_Mouse();
-
-				HiddenSurface->Blit_From(Rect(0, 0, HiddenSurface->Get_Width(), HiddenSurface->Get_Height()),
-					*VisibleSurface, dest_rect);
-
-				Show_Mouse();
-
+				// Only the Screenshots folder is searched for a free number.
 				char fname[128];
+				std::string path;
 				int index = -1;
 
 				do {
 					index++;
-					sprintf(fname, "SCRN%04d.pcx", index);
-				} while (CCFileClass(fname).Is_Available());
+					sprintf(fname, "SCRN%04d.png", index);
+					path = Screenshot_Name(fname);
+				} while (RawFileClass(path.c_str()).Is_Available());
 
-				CCFileClass file(fname);
-				Write_PCX_File(file, *HiddenSurface, &GamePalette);
+				RawFileClass file(path.c_str());
+				if (!Write_PNG_File(file, surface->Get_Width(), surface->Get_Height(), surface->Stride(), pixels)) {
+					DebugString("Failed to write screen capture %s!\n", path.c_str());
+					file.Delete();
+				}
 			}
 		}
 };
