@@ -163,11 +163,13 @@ static void Check_For_Focus_Loss(void)
 	bool parks = (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && !Options.SimulateWhileUnfocused;
 
 	while (!GameInFocus) {
-		Sleep(10);
-		Windows_Message_Handler();
+		// A running game already sleeps in Sync_Delay, so a pause here would only slow it.
 		if (!parks) {
+			Windows_Message_Handler();
 			break;
 		}
+		Sleep(10);
+		Windows_Message_Handler();
 	}
 }
 

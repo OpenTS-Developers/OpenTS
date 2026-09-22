@@ -1467,6 +1467,8 @@ test('A solo game may keep running while the window is away', () => {
 			'bool parks = (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && !Options.SimulateWhileUnfocused;',
 			'while (!GameInFocus) {',
 			'if (!parks) {',
+			'break;',
+			'Sleep(10);',
 		],
 		'and only a session that parks waits for the focus to come back',
 	);
