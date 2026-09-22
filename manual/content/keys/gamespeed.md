@@ -7,7 +7,14 @@ when_omitted:
   value: "3"
 ---
 
-Each figure holds the game to a frame rate: 60 frames a second at `0`, 45 at `1`, 30 at `2`, 20 at `3`, 15 at `4`, 12 at `5` and 10 at `6`. The one exception is a single player mission or a skirmish at `0`, which is held to nothing and runs as fast as the machine manages. A network game runs at the lower of its figure's rate and the rate the slowest machine can sustain. A figure above `6` is held to 60.
+Each figure holds the game to a frame rate, in frames per second. A single-player mission or skirmish uses a faster table than a network game at every figure except `6`:
+
+| Figure | `0` | `1` | `2` | `3` | `4` | `5` | `6` |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Network game | 60 | 45 | 30 | 20 | 15 | 12 | 10 |
+| Single-player mission or skirmish | No limit | 60 | 45 | 30 | 20 | 15 | 10 |
+
+With no limit, the game runs as fast as the computer allows. A network game runs at its figure's rate or the rate the slowest player's computer can sustain, whichever is lower. A figure above `6` counts as `0`.
 
 The same figure rescales delays that have to keep their real-world timing whatever the frame rate is: building animations, infantry sequences, and the pauses between EVA reminders. Lowering the figure speeds the game up, but those delays do not shrink in proportion.
 

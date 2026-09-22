@@ -440,13 +440,26 @@ namespace
 	{
 		using namespace NetTiming;
 
-		// A game played alone is paced by the same table, so these rates hold for every kind of game.
 		unsigned int const expected[] = { 60u, 45u, 30u, 20u, 15u, 12u, 10u };
 		for (int speed = 0; speed < 7; speed++) {
 			Expect_Equal("speed " + std::to_string(speed) + " frame rate", Game_Speed_Frame_Rate(speed), expected[speed]);
 		}
 		Expect_Equal("an unknown speed is held to the fastest rate", Game_Speed_Frame_Rate(7), 60u);
 		Expect_Equal("a negative speed is held to the fastest rate", Game_Speed_Frame_Rate(-1), 60u);
+	}
+
+
+	void Test_Solo_Game_Speed_Frame_Rate(void)
+	{
+		using namespace NetTiming;
+
+		// Zero is no limit at all.
+		unsigned int const expected[] = { 0u, 60u, 45u, 30u, 20u, 15u, 10u };
+		for (int speed = 0; speed < 7; speed++) {
+			Expect_Equal("solo speed " + std::to_string(speed) + " frame rate", Solo_Game_Speed_Frame_Rate(speed), expected[speed]);
+		}
+		Expect_Equal("an unknown solo speed runs unlimited", Solo_Game_Speed_Frame_Rate(7), 0u);
+		Expect_Equal("a negative solo speed runs unlimited", Solo_Game_Speed_Frame_Rate(-1), 0u);
 	}
 
 
@@ -1273,6 +1286,7 @@ int main(void)
 	Test_Provisional_Seed();
 	Test_Note_Retransmit_Guards();
 	Test_Game_Speed_Frame_Rate();
+	Test_Solo_Game_Speed_Frame_Rate();
 	Test_Census();
 	Test_Rungs();
 	Test_Connection_Quality();

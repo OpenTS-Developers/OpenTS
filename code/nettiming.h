@@ -155,6 +155,7 @@ namespace NetTiming
 	};
 
 	unsigned int Game_Speed_Frame_Rate(int game_speed);
+	unsigned int Solo_Game_Speed_Frame_Rate(int game_speed);
 	unsigned int Select_Desired_Frame_Rate(TimingCensus const & census, unsigned int synchronized_fps, unsigned int game_speed_fps);
 
 	struct TimingEvaluation {

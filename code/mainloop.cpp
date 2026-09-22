@@ -175,14 +175,12 @@ bool InMainLoop = false;
 
 
 /// <summary>
-/// The frame rate the loop is held to, or zero to run as fast as the machine allows. A game
-/// played alone is held to the rate its speed setting gives a network game, except that its
-/// fastest setting is held to nothing.
+/// The frame rate the loop is held to, or zero for no limit.
 /// </summary>
 static int Target_Frame_Rate(void)
 {
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-		return(Options.GameSpeed == 0 ? 0 : (int)NetTiming::Game_Speed_Frame_Rate(Options.GameSpeed));
+		return((int)NetTiming::Solo_Game_Speed_Frame_Rate(Options.GameSpeed));
 	}
 
 	// A recording is played back as fast as possible.

@@ -1478,13 +1478,13 @@ test('A solo game may keep running while the window is away', () => {
 	);
 });
 
-test('A game played alone is paced the way a network game is', () => {
+test('A game played alone is paced by its own speed table', () => {
 	const mainloop = source('code/mainloop.cpp');
 
 	assert.match(
 		functionBody(definitionFrom(mainloop, 'static int Target_Frame_Rate(void)'), 'static int Target_Frame_Rate(void)'),
-		/NetTiming::Game_Speed_Frame_Rate\(Options\.GameSpeed\)/,
-		'a solo game takes its rate from the table that caps a network game',
+		/NetTiming::Solo_Game_Speed_Frame_Rate\(Options\.GameSpeed\)/,
+		'a solo game takes its rate from the single-player table',
 	);
 	assert.doesNotMatch(
 		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
