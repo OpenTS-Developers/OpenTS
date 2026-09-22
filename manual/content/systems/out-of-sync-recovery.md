@@ -58,6 +58,6 @@ Quit tells every other machine that this player is leaving, and ends the game on
 
 The master decides for everyone. In a match started from the menu, or from launch files that name no host, the master is the lowest seat. In a match started from launch files, the [host](/formats/spawn-ini/#the-host) is the master when it holds the lowest seat.
 
-When the master leaves during play, the lowest seat still held becomes the master on every machine.
+The master keeps the role until they leave the match. The lowest seat still held then becomes the master on every machine, as the [master handoff](/systems/network-synchronization/#master-handoff) describes. After a [multiplayer load](#loading-a-saved-game), the host named by the launch files is the master again if it is still playing, whichever seat it holds.
 
 When the master leaves while the dialog is open, nobody takes over. The other players cannot continue or load a saved game, and can only quit.

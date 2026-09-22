@@ -266,7 +266,7 @@ On an overlay with `ChainReaction=yes`, an explosion that passes the warhead tes
 
 An animation with [`TiberiumChainReaction=yes`](/keys/tiberiumchainreaction/) that starts on a Tiberium cell clears the cell and deals [`TiberiumExplosionDamage`](/keys/tiberiumexplosiondamage/) through the `C4Warhead`. One time in three, it also leaves one of the type's [`Debris`](/keys/debris/) animations, recolored with the type's [`Color`](/keys/color/#scope-tiberium).
 
-With [`TiberiumExplosive=yes`](/keys/tiberiumexplosive/#scope-global-rules) in `[CombatDamage]`, a destroyed vehicle carrying Tiberium explodes over a radius of one and a half cells. The damage is the sum, over its compartments, of the amount held multiplied by that type's `Power`. A scenario with [`HarvesterImmune=yes`](/keys/harvesterimmune/) prevents the blast. [A vehicle](/systems/destruction-and-debris/#a-vehicle) covers when it goes off.
+With [`TiberiumExplosive=yes`](/keys/tiberiumexplosive/#scope-global-rules) in `[CombatDamage]`, a destroyed vehicle carrying Tiberium explodes over a radius of one and a half cells. The damage is the sum, over its compartments, of the amount held multiplied by that type's `Power`. A vehicle with no death explosion from [`Explosion`](/keys/explosion/) never sets it off, and a scenario with [`HarvesterImmune=yes`](/keys/harvesterimmune/) prevents it. [Spilled harvester loads](/systems/destruction-and-debris/#spilled-harvester-loads) covers when it goes off.
 
 Some effects remove stages outright. An animation with [`Crater=yes`](/keys/crater/#scope-animtype) that plays at ground level removes six stages from its cell. If it also sets [`Scorch=yes`](/keys/scorch/), it does so only half the time. Laying a [laser fence](/systems/laser-fences/) clears every cell along the run.
 
@@ -280,7 +280,7 @@ A Tiberium [crate](/systems/crates/) places stage 1 Tiberium of a randomly chose
 
 A VoxelAnimType with [`IsTiberium=yes`](/keys/istiberium/#scope-voxelanimtype) seeds stage 0 Tiberium where it comes down, unless it lands in water or on a bridge. With [`IsMeteor=yes`](/keys/ismeteor/#scope-voxelanimtype) it seeds the eight cells around the impact instead of the impact cell. The type is always the first registered type with `Image=3`, or slot 0 if no type uses that set.
 
-A destroyed object whose type sets [`TiberiumHeal=yes`](/keys/tiberiumheal/) seeds slot 0 Tiberium around itself, and a destroyed harvester can spill its load as slot 0 Tiberium. [Destruction and debris](/systems/destruction-and-debris/#spilled-harvester-loads) covers both.
+A destroyed object whose type sets [`TiberiumHeal=yes`](/keys/tiberiumheal/) seeds slot 0 Tiberium in the cells to its north-west, north, east, south and west, but not in the cell it stood on. [The step every kind shares](/systems/destruction-and-debris/#the-step-every-kind-shares) covers it. A destroyed harvester can spill its load as slot 0 Tiberium, as [Spilled harvester loads](/systems/destruction-and-debris/#spilled-harvester-loads) describes.
 
 ## Settings the engine parses but never reads
 

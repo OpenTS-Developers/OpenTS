@@ -12,9 +12,9 @@ when_omitted:
 Official=yes
 ```
 
-In a multiplayer or skirmish game, and not on a generated random map, this assignment decides which of the placed waypoints `0` through `7` the [start positions](/systems/starting-forces/#the-start-position) are drawn from. It does so only when no seat in the launch file named a position by number. Those waypoints are the pool each house draws from: the first house takes one at random, and every house after it takes whichever open one lies furthest from those already held.
+In a multiplayer or skirmish game, this assignment decides which of the placed waypoints `0` through `7` the [start positions](/systems/starting-forces/#the-start-position) are drawn from. It does so only when no seat in the launch file named a position by number. Those waypoints are the pool each house draws from: the first house takes one at random, and every house after it takes whichever open one lies furthest from those already held.
 
-Marked official, the pass draws from waypoint `0` onward up to a cutoff. The cutoff is the larger of two numbers: how many houses have to be seated, and how many waypoints are placed in an unbroken run starting at `0`. A placed waypoint beyond the cutoff is not drawn from. Left at the default, every placed waypoint is drawn from. A seat that named a position makes every placed waypoint eligible whatever this assignment says.
+Marked official, the pass draws from waypoint `0` onward up to a cutoff. The cutoff is the larger of two numbers: how many houses have to be seated, and how many waypoints are placed in an unbroken run starting at `0`. A placed waypoint beyond the cutoff is not drawn from. Left at the default, every placed waypoint is drawn from. A generated random map is always treated as marked official. A seat that named a position makes every placed waypoint eligible whatever this assignment says.
 
 A house left over once the eligible waypoints have all been taken starts on a random cell of open ground, found as the scenario finishes loading.
 

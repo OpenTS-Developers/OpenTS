@@ -8,7 +8,7 @@ when_omitted:
   value: "16"
 ---
 
-The number of sound effects that may play at once, from 4 to 32, read from `[General]` in `SOUND.INI` or `SOUND01.INI`. Music, speech and movie sound are not counted. When every voice is taken, a new sound displaces the playing sound with the lowest [`Priority=`](/keys/priority/), the quietest among equals, and only when it outranks it.
+The number of sound effects that may play at once, from 4 to 32, read from `[General]` in `SOUND.INI` or `SOUND01.INI`. Music, speech and movie sound are not counted. When every voice is taken, a new sound can displace the playing sound with the lowest [`Priority=`](/keys/priority/), the quietest among equals. It does so when its priority is higher, or when the priorities are equal and the playing sound is more than a tenth quieter than the new one.
 
 ```ini title="sound01.ini"
 [General]

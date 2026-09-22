@@ -23,6 +23,6 @@ Everything else the flag does is confined to skirmish and multiplayer games, whe
 - Its objects do not reveal the map, and its buildings are never marked for automatic repair.
 - It is skipped by the score screen and by the starting-unit generator.
 
-An [observer's](/systems/observers/) house is left out of the same counts, lists and scores without being passive: it plays a country chosen at random and simply starts defeated.
+An [observer's](/systems/observers/) house is left out of the same counts, lists and scores without being passive: it simply starts defeated.
 
-Setup also rewrites two things on its behalf. [`WallOwner`](/keys/wallowner/) is forced off on every passive country and on for every other one. The visible result is that a wall arriving with the map falls to the nearest base that is not passive. The walls around a player's or a computer's base can be sold and can anchor [the automatic wall fill](/systems/walls-and-gates/#filling-the-gap-to-the-next-wall); walls with only passive scenery nearby stay unowned. Setup then allies every house in the game to the house of the country named `Special`, a passive country the shipped rules contain. That lookup is by name and never checked, so a rules file without a country named `Special` stops the match during setup.
+Setup also forces [`WallOwner`](/keys/wallowner/) off on every passive country and on for every other one, but only after the map's walls already have their owners, so no wall changes hands. Setup then allies every house in the game to the house of the country named `Special`, a passive country the shipped rules contain. That lookup is by name and never checked, so a rules file without a country named `Special` stops the match during setup.

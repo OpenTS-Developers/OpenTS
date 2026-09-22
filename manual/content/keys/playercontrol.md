@@ -17,7 +17,7 @@ Edge=North
 
 What that answer governs is everything the engine does *for* a player rather than *to* a house. It decides the difficulty slot the house is given, the EVA lines it hears, the radar events drawn for it, and the sidebar and placement feedback it is given. [Difficulty settings and handicaps](/systems/difficulty/#from-the-setting-to-a-slot) covers that first half, which is where a missing flag is felt hardest.
 
-The setting is cleared, permanently, when a house passes to the computer.
+Nothing clears the setting in a campaign. Only a multiplayer game clears it, when the computer takes over the house of a player who has left.
 
 :::caution[Setting it on more than one house is allowed]
 Nothing restricts the flag to a single house, and each house with it is treated as player-controlled in its own right. When difficulty slots are assigned, every one of them is given the player's slot rather than the computer's.

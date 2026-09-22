@@ -7,8 +7,8 @@ when_omitted:
   value: ".5"
 ---
 
-The fraction is the level of the music group in the mixer, set as the file is read and again whenever the slider moves. A score already playing turns to the new volume without being restarted. A score is not started at all while the resulting volume is zero or below. The request is remembered as pending instead, so raising the volume later starts the score that was waiting.
+The fraction is the level of the music group in the mixer, set as the file is read and again whenever the slider moves. A track already playing turns to the new volume without being restarted. A track is not started at all while the resulting volume is zero or below. The request is remembered as pending instead, so raising the volume later starts the track that was waiting.
 
-The read holds the fraction to `1` at the top but not at the bottom, so a negative figure is stored as written and leaves every score pending.
+The read holds the fraction to `1` at the top but not at the bottom, so a negative figure is stored as written and leaves every track pending.
 
 The sound options dialog offers the fraction as a ten-step slider, and leaving the options screen behind it writes the setting back to `sun.ini`. The credits screen raises a fraction of zero to `.4` for the length of its own theme and puts the stored figure back afterward.

@@ -246,7 +246,7 @@ A storm ends when its duration runs out, or when `Ion Storm stop...` or `Ion sto
 1. Restores power to every object with an ion-sensitive locomotor, including those in [limbo](/glossary/#limbo) that the break skipped.
 2. Makes the scenario's ambient level the target of the ambient fade, so the map fades back instead of snapping. That level is `Ambient`, or the level a `Set ambient light...` action stored during the storm.
 3. Has the player's radar re-evaluated.
-4. Stops the storm music and resumes the track that was playing when the storm broke.
+4. Stops the storm music and restarts, from its beginning, the track that was playing when the storm broke.
 5. Removes the ion tint from every terrain palette and color scheme, again behind screen static.
 
 Losses are permanent. Crashed aircraft and destroyed jumpjets do not come back. Nothing schedules another storm; it needs another trigger action or team mission.

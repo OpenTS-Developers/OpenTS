@@ -17,4 +17,4 @@ The interval is loaded with this many frames when the structure opens for busine
 
 Zero or a negative figure produces nothing at all, which makes the recurring payment opt-in. A type setting only [`ProduceCashStartup`](/keys/producecashstartup/) pays its capture bonus and nothing else, rather than paying an unset amount on every frame.
 
-On a [`Powered=yes`](/keys/powered/) structure the count is paused rather than restarted whenever the structure cannot produce, so [restoring power](/systems/produce-cash/#power) resumes the interval where it stopped instead of paying immediately.
+On a [`Powered=yes`](/keys/powered/) structure the count is paused rather than restarted whenever the structure cannot produce, so [restoring power](/systems/produce-cash/#power) resumes the interval where it stopped. A structure whose count had already run out when power failed pays as soon as power returns.

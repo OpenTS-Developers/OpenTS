@@ -117,7 +117,7 @@ A computer player may share the color a person plays; in a game against other ma
 
 These keys change what appears around the match without changing the match itself, so two machines playing one game need not write them alike.
 
-`SkipScoreScreen=yes` ends a skirmish or network match without its [score screen](/systems/multiplayer-score-screen/): the round is still counted, and an ending movie `PlayMoviesInMultiplayer` asked for still plays. The map's own [`SkipScore`](/keys/skipscore/) is a campaign setting and is not touched by this one.
+`SkipScoreScreen=yes` ends a skirmish or network match without its [score screen](/systems/multiplayer-score-screen/). An ending movie that `PlayMoviesInMultiplayer` asked for still plays. The map's own [`SkipScore`](/keys/skipscore/) is a campaign setting and is not touched by this one.
 
 `CustomLoadScreen` names the picture shown while the scenario loads, in place of the one the game would have picked for the player's side and screen size. The name is written whole, extension and all, and is looked for as any other game file is: beside the game, in the folders a deployment sorts its files into, and inside the archives. A forward slash separates folders as a backslash does. The picture is a PCX, in 256 colors or in 24-bit color, and is centered on the screen. A name no file answers to leaves the game's own picture in place and says so in the log.
 
@@ -139,7 +139,7 @@ The seed is taken exactly as written, and the same on every machine, `0` include
 
 When a `[Tunnel]` section names a server, the match is played through it; otherwise each machine is reached straight at the address its section names, while this machine listens on the port its own `Port` key names. Loading progress reaches the other machines with the in-game retry cadence: a second between retries and ten seconds before a report is given up.
 
-`ConnTimeout` and `ReconnectTimeout` say how long this machine waits on another, in frames of which there are sixty to the second. `ConnTimeout`, 3600 by default, is how long a machine may make no progress on the loading screen before it is dropped, measured again from each report of progress. `ReconnectTimeout`, 2400 by default, is how long one may go quiet during play, and is what the [reconnect dialog](/systems/reconnect-dialog/) counts down. A wait outside one second to ten minutes is brought within those bounds rather than refusing the match.
+`ConnTimeout` and `ReconnectTimeout` say how long this machine waits on another, in ticks of 16 milliseconds, 62.5 to the second. `ConnTimeout`, 3600 by default (about 58 seconds), is how long a machine may make no progress on the loading screen before it is dropped, measured again from each report of progress. `ReconnectTimeout`, 2400 by default (about 38 seconds), is how long one may go quiet during play, and is what the [reconnect dialog](/systems/reconnect-dialog/) counts down. A wait outside 60 to 36000 ticks, 0.96 seconds to 9.6 minutes, is brought within those bounds rather than refusing the match.
 
 Both are this machine's alone: they say when it stops waiting, never what the match computes, so a file may set them for one machine without putting the match out of step. Writing the same value everywhere is still the sound choice, since whichever machine gives up first is the one that decides who is dropped.
 

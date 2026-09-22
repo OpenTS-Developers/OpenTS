@@ -15,4 +15,4 @@ credit:
 - CCHyper
 ---
 
-`SkipScoreScreen=yes` in `[Settings]` of `SPAWN.INI` ends a skirmish or network match without its score screen. The round is still counted, and an ending movie that `PlayMoviesInMultiplayer` asked for still plays. A map's own `SkipScore` keeps its campaign meaning and does not reach that screen.
+`SkipScoreScreen=yes` in `[Settings]` of `SPAWN.INI` ends a skirmish or network match without its score screen. An ending movie that `PlayMoviesInMultiplayer` asked for still plays. A map's own `SkipScore` keeps its campaign meaning and does not reach that screen.
