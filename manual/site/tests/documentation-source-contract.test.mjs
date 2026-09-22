@@ -1543,20 +1543,25 @@ test('An insignificant unit dies without announcing it', () => {
 });
 
 test('A Tiberium overlay is chosen inside the type that owns it', () => {
-	const image = functionBody(
-		source('code/cell.cpp'),
-		'static ShapeSet const * Tiberium_Overlay_Image(CellClass const & cell, TiberiumClass const & tiberium)',
-	);
+	const cell = source('code/cell.cpp');
+	const signature = 'static OverlayType Tiberium_Overlay_Here(CellClass const & cell, TiberiumClass const & tiberium)';
+	const overlay = functionBody(definitionFrom(cell, signature), signature);
 
 	assertOrdered(
-		image,
+		overlay,
 		[
 			'if (cell.Ramp != RAMP_NONE) {',
-			'if (tiberium.RampVariety < 4) {',
-			'return(NULL);',
+			'if (cell.Ramp > RAMP_SOUTH || tiberium.RampVariety < 4) {',
+			'return(OVERLAY_NONE);',
 			'tiberium.RampVariety / 4',
 		],
-		'the slope branch refuses a type with no slope overlays before it divides by their count',
+		'the slope branch refuses a slope the set has no overlay for before it divides by their count',
+	);
+
+	assert.match(
+		functionBody(cell, 'void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const'),
+		/Tiberium_Overlay_Here\(\*this, \*tiberium\)/,
+		'and the radar picks its color by the same rule',
 	);
 
 	assert.match(

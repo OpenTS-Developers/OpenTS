@@ -140,6 +140,9 @@
 #include <algorithm>
 
 
+static OverlayType Tiberium_Overlay_Here(CellClass const & cell, TiberiumClass const & tiberium);
+
+
 /// <summary>
 /// Fetches the ground height at a point within this cell.
 /// A ramp cell slopes across its own width, so a single height for the whole cell will not
@@ -447,23 +450,24 @@ void CellClass::Cell_Color(RGBClass & lowcolor, RGBClass & highcolor) const
 		if (tib != TIBERIUM_NONE) {
 			TiberiumClass * tiberium = Tiberiums[tib];
 
-			int index;
-			if (Ramp != 0) {
-				index = tiberium->Variety + tiberium->Overlay->HeapID + tiberium->RampVariety / 4 * (Ramp - 1) + CellID.X * CellID.Y % (tiberium->RampVariety / 4);
-			} else {
-				index = tiberium->Overlay->HeapID + CellID.X * CellID.Y % tiberium->Variety;
+			// A slope the set draws nothing on still takes the color of one of its flat overlays.
+			OverlayType index = Tiberium_Overlay_Here(*this, *tiberium);
+			if (index == OVERLAY_NONE) {
+				index = OverlayType(tiberium->Overlay->HeapID + CellID.X * CellID.Y % tiberium->Variety);
 			}
 
 			ShapeSet * shape = (ShapeSet *)OverlayTypes[index]->Get_Image_Data();
-			RGBClass color = shape->Get_Color(OverlayData);
+			if (shape != NULL) {
+				RGBClass color = shape->Get_Color(OverlayData);
 
-			if ((Overlay >= OVERLAY_TIBERIUM2_01 && Overlay <= OVERLAY_TIBERIUM2_12) ||
-				(Overlay >= OVERLAY_TIBERIUM3_01 && Overlay <= OVERLAY_TIBERIUM3_12)) {
-				color = RGBClass(color.Get_Red(), color.Get_Blue(), color.Get_Green());
+				if ((Overlay >= OVERLAY_TIBERIUM2_01 && Overlay <= OVERLAY_TIBERIUM2_12) ||
+					(Overlay >= OVERLAY_TIBERIUM3_01 && Overlay <= OVERLAY_TIBERIUM3_12)) {
+					color = RGBClass(color.Get_Red(), color.Get_Blue(), color.Get_Green());
+				}
+
+				highcolor = lowcolor = color;
+				return;
 			}
-
-			highcolor = lowcolor = color;
-			return;
 		}
 	}
 
@@ -2159,13 +2163,16 @@ void CellClass::Draw_Fog_Shape(Point2D const & drawpoint, Rect const & cliprect,
 }
 
 
-static ShapeSet const * Tiberium_Overlay_Image(CellClass const & cell, TiberiumClass const & tiberium)
+/// <summary>
+/// The overlay that draws this type's Tiberium in the cell, or OVERLAY_NONE where its set has
+/// no artwork for the cell's slope.
+/// </summary>
+static OverlayType Tiberium_Overlay_Here(CellClass const & cell, TiberiumClass const & tiberium)
 {
 	int overlay = tiberium.Overlay->HeapID;
 	if (cell.Ramp != RAMP_NONE) {
-		// A type with no slope overlays has nothing to draw here, and leaves the divisor below at zero.
-		if (tiberium.RampVariety < 4) {
-			return(NULL);
+		if (cell.Ramp > RAMP_SOUTH || tiberium.RampVariety < 4) {
+			return(OVERLAY_NONE);
 		}
 
 		overlay += tiberium.Variety
@@ -2173,6 +2180,16 @@ static ShapeSet const * Tiberium_Overlay_Image(CellClass const & cell, TiberiumC
 			+ cell.CellID.X * cell.CellID.Y % (tiberium.RampVariety / 4);
 	} else {
 		overlay += cell.CellID.X * cell.CellID.Y % tiberium.Variety;
+	}
+	return(OverlayType(overlay));
+}
+
+
+static ShapeSet const * Tiberium_Overlay_Image(CellClass const & cell, TiberiumClass const & tiberium)
+{
+	OverlayType const overlay = Tiberium_Overlay_Here(cell, tiberium);
+	if (overlay == OVERLAY_NONE) {
+		return(NULL);
 	}
 	return((ShapeSet const *)OverlayTypes[overlay]->Get_Image_Data());
 }
