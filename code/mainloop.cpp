@@ -692,7 +692,7 @@ void Multiplayer_Debug_Print(void)
 	sprintf(buffer, "MaxAhead : %d", Session.MaxAhead);
 	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 18), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
-	sprintf(buffer, "Resp Time : %d ms", (int)(Ipx.Response_Time() * 1000) / TIMER_SECOND);
+	sprintf(buffer, "Resp Time : %d ms", (int)(Ipx.Response_Time() * TIMER_TICK_MILLISECONDS));
 	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 26), Fetch_Scheme_By_Name("Grey"), 0, (TextPrintType)(TPF_EFNT | TPF_NOSHADOW));
 
 	sprintf(buffer, "Req fps : %d", Session.DesiredFrameRate);

@@ -1410,17 +1410,18 @@ void IPXManagerClass::Multiplayer_Debug_Print(int top)
 {
 	char buffer[256];
 
-	sprintf(buffer, "Rtr delta : %d", 1000 * RetryDelta / TIMER_SECOND);
+	sprintf(buffer, "Rtr delta : %d", RetryDelta * TIMER_TICK_MILLISECONDS);
 	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 50), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 
-	sprintf(buffer, "Rtr timeout : %d", 1000 * Timeout / TIMER_SECOND);
+	sprintf(buffer, "Rtr timeout : %d", Timeout * TIMER_TICK_MILLISECONDS);
 	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 58), Fetch_Scheme_By_Name("Grey"), 0, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 
 	sprintf(buffer, "Lat Fudge : %d", Session.LatencyFudge);
 	Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 66), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 
-	if (SentFrameSyncTimer / TIMER_SECOND) {
-		sprintf(buffer, "FSPS : %d", SentFrameSyncCount / (SentFrameSyncTimer / TIMER_SECOND));
+	int const sync_milliseconds = SentFrameSyncTimer * TIMER_TICK_MILLISECONDS;
+	if (sync_milliseconds >= 1000) {
+		sprintf(buffer, "FSPS : %d", SentFrameSyncCount * 1000 / sync_milliseconds);
 		Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D(0, top + 74), Fetch_Scheme_By_Name("Grey"), TBLACK, TextPrintType(TPF_NOSHADOW|TPF_EFNT));
 		if ((Frame & 0x7F) == 0x7F) {
 			SentFrameSyncTimer = 0;
@@ -1436,11 +1437,11 @@ void IPXManagerClass::Multiplayer_Debug_Print(int top)
 			Fancy_Text_Print(Session.Shown_Name(Connection[i]->ID, Connection[i]->Name).c_str(), *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 2), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int avg = Connection[i]->Queue->Avg_Response_Time();
-			sprintf(buffer, "Average  : %d", 1000 * avg / TIMER_SECOND);
+			sprintf(buffer, "Average  : %d", avg * TIMER_TICK_MILLISECONDS);
 			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 11), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int max = Connection[i]->Queue->Max_Response_Time();
-			sprintf(buffer, "Max      : %d", 1000 * max / TIMER_SECOND);
+			sprintf(buffer, "Max      : %d", max * TIMER_TICK_MILLISECONDS);
 			Fancy_Text_Print(buffer, *LogicalSurface, LogicalSurface->Get_Rect(), Point2D((i + 1) * 100, top + 18), ColorSchemes[scheme], TBLACK, TextPrintType(TPF_EFNT|TPF_NOSHADOW));
 
 			int resends = Connection[i]->Num_Resends();
