@@ -2163,6 +2163,11 @@ static ShapeSet const * Tiberium_Overlay_Image(CellClass const & cell, TiberiumC
 {
 	int overlay = tiberium.Overlay->HeapID;
 	if (cell.Ramp != RAMP_NONE) {
+		// A type with no slope overlays has nothing to draw here, and leaves the divisor below at zero.
+		if (tiberium.RampVariety < 4) {
+			return(NULL);
+		}
+
 		overlay += tiberium.Variety
 			+ tiberium.RampVariety / 4 * (cell.Ramp - 1)
 			+ cell.CellID.X * cell.CellID.Y % (tiberium.RampVariety / 4);
@@ -6106,7 +6111,7 @@ bool CellClass::Place_Tiberium(TiberiumType tib, int data)
 			if (Ramp != RAMP_NONE) {
 				new OverlayClass(OverlayTypes[tiberium->Overlay->HeapID + tiberium->Variety + 2 * Ramp + (Random_Pick(0, 1) - 2)], Fetch_CellID());
 			} else {
-				new OverlayClass(OverlayTypes[tiberium->Overlay->HeapID + Random_Pick(0, 11)], Fetch_CellID());
+				new OverlayClass(OverlayTypes[tiberium->Overlay->HeapID + Random_Pick(0, tiberium->Variety - 1)], Fetch_CellID());
 			}
 			tiberium->Queue_Growth(CellID);
 			OverlayData = data;

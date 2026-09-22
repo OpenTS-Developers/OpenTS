@@ -86,7 +86,7 @@ An overlay declared [`Tiberium=yes`](/keys/tiberium/#scope-overlaytype) whose ow
 
 When a scenario finishes loading, and again whenever a Tiberium overlay is placed onto the map directly, the cell's stage is replaced by a smoothing lookup. That lookup counts the cell's eight neighbors that hold the same type. On a twelve-stage set, the stage rises with that count, one value per neighbor from 0 through 8: 0, 1, 3, 4, 6, 7, 8, 10, 11. A stage stored in the map file does not survive that pass.
 
-Drawing a cell uses that stage as a frame number in the selected flat or slope overlay. If the selected SHP does not have that frame, the overlay is omitted from both the tactical view and its redraw rectangle instead of reading beyond the artwork's frame table.
+Drawing a cell uses that stage as a frame number in one of the type's overlays. Which one is settled by the cell's own coordinates, so a field does not repeat itself: a flat cell draws from the set's flat overlays and a sloped cell from its slope overlays. A type whose set has no slope overlays draws nothing on a slope, which is ground only a map or a third-party editor can put its Tiberium on. If the selected SHP does not have the stage's frame, the overlay is omitted from both the tactical view and its redraw rectangle instead of reading beyond the artwork's frame table.
 
 ## Growth
 
@@ -129,7 +129,7 @@ A cell may spread when all of the following hold, tested in this order:
 The stage a cell must exceed is half the type's slot number, rounded down: types in slots 0 and 1 spread from stage 1, and types in slots 2 and 3 only from stage 2. Reordering `[Tiberiums]` therefore changes how ripe a field must be before it creeps.
 :::
 
-The source cell picks a random starting facing, walks all eight neighbors from there, and seeds the first that accepts growth. A newly seeded cell starts at stage 5.
+The source cell picks a random starting facing, walks all eight neighbors from there, and seeds the first that accepts growth. A newly seeded cell starts at stage 5, and is given an overlay drawn at random from the type's own set.
 
 A neighboring cell accepts growth when all of the following hold, tested in this order:
 

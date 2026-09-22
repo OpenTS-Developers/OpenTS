@@ -1379,3 +1379,27 @@ test('An insignificant unit dies without announcing it', () => {
 		'and the announcement has one site, inherited by every kind of foot object',
 	);
 });
+
+test('A Tiberium overlay is chosen inside the type that owns it', () => {
+	const image = functionBody(
+		source('code/cell.cpp'),
+		'static ShapeSet const * Tiberium_Overlay_Image(CellClass const & cell, TiberiumClass const & tiberium)',
+	);
+
+	assertOrdered(
+		image,
+		[
+			'if (cell.Ramp != RAMP_NONE) {',
+			'if (tiberium.RampVariety < 4) {',
+			'return(NULL);',
+			'tiberium.RampVariety / 4',
+		],
+		'the slope branch refuses a type with no slope overlays before it divides by their count',
+	);
+
+	assert.match(
+		functionBody(source('code/cell.cpp'), 'bool CellClass::Place_Tiberium(TiberiumType tib, int data)'),
+		/HeapID \+ Random_Pick\(0, tiberium->Variety - 1\)/,
+		'and a bare cell germinates inside the flat overlays the type owns',
+	);
+});
