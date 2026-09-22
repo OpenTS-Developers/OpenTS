@@ -148,7 +148,7 @@ The census that decides whether a cell is worth a pass runs that same list, and 
 
 ## Harvesting
 
-A UnitType with [`Harvester=yes`](/keys/harvester/#scope-unittype) takes the harvest mission on its own. A vehicle with neither that flag nor [`Weeder=yes`](/keys/weeder/#scope-unittype) given the same mission stands still for 30 seconds at a time. A harvester whose house owns no building named in its [`Dock`](/keys/dock/) list, including one with an empty list, is switched to guard.
+A UnitType with [`Harvester=yes`](/keys/harvester/#scope-unittype) takes the harvest mission on its own. It does so when it is first placed on the map, when it drives out of a factory or a repair bay, whenever its house is computer-controlled, and whenever it goes idle standing on Tiberium. A player-owned one that goes idle anywhere else takes guard instead, which is what lets a harvester be parked. Carrying a weapon changes none of this, only which guard mission it falls back to. A vehicle with neither that flag nor [`Weeder=yes`](/keys/weeder/#scope-unittype) given the same mission stands still for 30 seconds at a time. A harvester whose house owns no building named in its [`Dock`](/keys/dock/) list, including one with an empty list, is switched to guard.
 
 :::caution[A vein harvester never lifts Tiberium]
 A vehicle with both [`Weeder=yes`](/keys/weeder/#scope-unittype) and `Harvester=yes` takes the vein branch, while the eligibility test still reads the Tiberium branch. It waits for Tiberium ground, then loads one or two units into the first Tiberium compartment each cycle, and leaves the cell's stages untouched. A unit here is the counted quantity a compartment holds, not an object on the map.

@@ -182,7 +182,7 @@ A warhead declaring [`Veinhole=yes`](/keys/veinhole/) resolves an attacker from 
 
 ### Finding and loading
 
-A UnitType with [`Weeder=yes`](/keys/weeder/#scope-unittype) runs the same mission as a [Tiberium harvester](/systems/tiberium/#harvesting) with the vein branch taken at each fork. It starts on that mission and returns to it on its own only while it has no weapon. An armed weeder falls back to the guard behavior of an ordinary combat vehicle, and a player-owned weeder that goes idle away from vein ground is put on plain guard.
+A UnitType with [`Weeder=yes`](/keys/weeder/#scope-unittype) runs the same mission as a [Tiberium harvester](/systems/tiberium/#harvesting) with the vein branch taken at each fork. It starts on that mission and returns to it on its own whether or not it is armed. A player-owned weeder that goes idle away from vein ground is put on guard, an unarmed one on plain guard and an armed one on the area guard an ordinary combat vehicle takes.
 
 The patch search reads the same two distances as the Tiberium search, both in cells: [`TiberiumFarScan`](/keys/tiberiumfarscan/) when the weeder sets out with no patch in mind, and [`TiberiumNearScan`](/keys/tiberiumnearscan/) once it is working a field. The weeder takes its own cell when that already qualifies, and otherwise rings outward and takes the last qualifying cell of the first ring that yields any. A cell qualifies when all of the following hold, tested in this order:
 

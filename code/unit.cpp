@@ -1683,6 +1683,18 @@ bool UnitClass::Active_Click_With(ActionType action, Cell const & cell, bool is_
 }
 
 
+MissionType UnitClass::Idle_Guard_Mission(void) const
+{
+	if (!Is_Weapon_Equipped()) {
+		return(MISSION_GUARD);
+	}
+	if (House->IQ < Rule->IQGuardArea && !Has_Ability(ABILITY_GUARD_AREA) || Team != NULL) {
+		return(MISSION_GUARD);
+	}
+	return(MISSION_GUARD_AREA);
+}
+
+
 /***********************************************************************************************
  * UnitClass::Enter_Idle_Mode -- Unit enters idle mode state.                                  *
  *                                                                                             *
@@ -1723,30 +1735,28 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 	} else {
 
 		if (!Class->IsMobileEMP || Mission != MISSION_UNLOAD) {
-			if (!Is_Weapon_Equipped()) {
-				if (Class->IsToHarvest || Class->IsToVeinHarvest) {
-					if (!In_Radio_Contact() && Mission != MISSION_HARVEST && MissionQueue != MISSION_HARVEST) {
-						if (initial || !House->Is_Human_Player() || Map[Get_Coord()].Land_Type() == (Class->IsToHarvest ? LAND_TIBERIUM : LAND_WEEDS)) {
-							order = MISSION_HARVEST;
-						} else {
-							order = MISSION_GUARD;
-						}
+			if (Class->IsToHarvest || Class->IsToVeinHarvest) {
+				if (!In_Radio_Contact() && Mission != MISSION_HARVEST && MissionQueue != MISSION_HARVEST) {
+					if (initial || !House->Is_Human_Player() || Map[Get_Coord()].Land_Type() == (Class->IsToHarvest ? LAND_TIBERIUM : LAND_WEEDS)) {
+						order = MISSION_HARVEST;
+					} else {
+						order = Idle_Guard_Mission();
+					}
+					Assign_Target(NULL);
+					Assign_Destination(NULL);
+				} else {
+					return(res);
+				}
+			} else if (!Is_Weapon_Equipped()) {
+				if (IsALoaner && Class->Max_Passengers() > 0 && Cargo.Is_Something_Attached() && Team == NULL) {
+					order = MISSION_UNLOAD;
+				} else {
+					if (!IsDeploying && (CurrentMission != MISSION_UNLOAD || Class->DeploysInto == NULL) && CurrentMission != MISSION_GUARD_AREA) {
+						order = MISSION_GUARD;
 						Assign_Target(NULL);
 						Assign_Destination(NULL);
 					} else {
 						return(res);
-					}
-				} else {
-					if (IsALoaner && Class->Max_Passengers() > 0 && Cargo.Is_Something_Attached() && Team == NULL) {
-						order = MISSION_UNLOAD;
-					} else {
-						if (!IsDeploying && (CurrentMission != MISSION_UNLOAD || Class->DeploysInto == NULL) && CurrentMission != MISSION_GUARD_AREA) {
-							order = MISSION_GUARD;
-							Assign_Target(NULL);
-							Assign_Destination(NULL);
-						} else {
-							return(res);
-						}
 					}
 				}
 			} else {
@@ -1755,11 +1765,7 @@ bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)
 					return(res);
 				}
 
-				if (House->IQ < Rule->IQGuardArea && !Has_Ability(ABILITY_GUARD_AREA) || Team != NULL) {
-					order = MISSION_GUARD;
-				} else {
-					order = MISSION_GUARD_AREA;
-				}
+				order = Idle_Guard_Mission();
 			}
 		} else {
 			return(res);
@@ -2206,6 +2212,9 @@ void UnitClass::Per_Cell_Process(PCPType why)
 							if (techno != NULL) {
 								Transmit_Message(RADIO_DOCKING, techno);
 							}
+						} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {
+							// Only a weapons factory or a repair bay answers RADIO_RUN_AWAY.
+							Assign_Mission(MISSION_HARVEST);
 						} else {
 							BuildingClass * building = dynamic_cast<BuildingClass *>(contact);
 							if (!House->Is_Human_Player() && building != NULL && building->Class->IsWeaponsFactory) {

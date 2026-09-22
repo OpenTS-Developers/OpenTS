@@ -266,6 +266,8 @@ class UnitClass : public FootClass
 
 	private:
 
+		MissionType Idle_Guard_Mission(void) const;
+
 		/*
 		 * This is the list of animation stages to use when a visceroid attacks, indexed by
 		 * the direction of its target.

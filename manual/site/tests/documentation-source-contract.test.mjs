@@ -1071,3 +1071,27 @@ test('The sidebar sweep re-checks buildability behind its rules key', () => {
 		'the abandon travels as an event, because the sweep runs for the local player alone',
 	);
 });
+
+test('A harvester let out of a factory goes to work', () => {
+	const percell = functionBody(source('code/unit.cpp'), 'void UnitClass::Per_Cell_Process(PCPType why)');
+
+	assertOrdered(
+		percell,
+		['} else if (Class->IsToHarvest || Class->IsToVeinHarvest) {', 'Assign_Mission(MISSION_HARVEST);'],
+		'the capability alone decides it, so an armed harvester is let out to work too',
+	);
+
+	const idle = functionBody(source('code/unit.cpp'), 'bool UnitClass::Enter_Idle_Mode(bool initial, bool resume_waypoint)');
+
+	assertOrdered(
+		idle,
+		['if (Class->IsToHarvest || Class->IsToVeinHarvest) {', '} else if (!Is_Weapon_Equipped()) {'],
+		'the idle fork asks what the vehicle does before it asks what it carries',
+	);
+
+	assert.equal(
+		idle.match(/Idle_Guard_Mission\(\)/g)?.length,
+		2,
+		'both the harvester refusal and the armed branch take the same guard decision',
+	);
+});
