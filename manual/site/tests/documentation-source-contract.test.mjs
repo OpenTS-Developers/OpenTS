@@ -1339,3 +1339,27 @@ test('Both halves of the drag gesture read the same system setting', () => {
 		'and coast scrolling keeps reading the same setting, doubled',
 	);
 });
+
+test('A solo game may keep running while the window is away', () => {
+	assert.match(
+		functionBody(source('code/options.cpp'), 'void OptionsClass::Load_Settings(void)'),
+		/SimulateWhileUnfocused = ConfigINI\.Get_Bool\("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused\);/,
+		'the player owns it in their own settings file',
+	);
+
+	assertOrdered(
+		functionBody(source('code/mainloop.cpp'), 'static void Check_For_Focus_Loss(void)'),
+		[
+			'bool parks = (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && !Options.SimulateWhileUnfocused;',
+			'while (!GameInFocus) {',
+			'if (!parks) {',
+		],
+		'and only a session that parks waits for the focus to come back',
+	);
+
+	assert.equal(
+		(source('code/mainloop.cpp').match(/while \(!GameInFocus\)/g) ?? []).length,
+		1,
+		'the rule is written once, not once per copy of the loop',
+	);
+});

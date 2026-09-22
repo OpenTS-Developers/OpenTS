@@ -154,21 +154,20 @@ void Motion_Capture(void)
 /// Handles the game losing the input focus.
 /// This routine parks the main loop while another application holds the focus, pumping
 /// the Windows message queue so that the game can be restored. A network game cannot
-/// afford to stall, so it pumps the queue once and lets play carry on regardless.
+/// afford to stall, so it pumps the queue once and lets play carry on regardless, and
+/// the SimulateWhileUnfocused option asks for the same of a solo or skirmish game.
 /// </summary>
 static void Check_For_Focus_Loss(void)
 {
+	bool parks = (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) && !Options.SimulateWhileUnfocused;
+
 	while (!GameInFocus) {
-		if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-			Sleep(500);
-			Windows_Message_Handler();
-		} else {
-			Sleep(10);
-			Windows_Message_Handler();
+		Sleep(10);
+		Windows_Message_Handler();
+		if (!parks) {
 			break;
 		}
 	}
-	return;
 }
 
 bool InMainLoop = false;
@@ -203,20 +202,7 @@ bool Main_Loop(void)
 	/*
 	**	Call the focus loss handler
 	*/
-	#if 0
 	Check_For_Focus_Loss();
-	#else
-	while (!GameInFocus) {
-		if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
-			Sleep(500);
-			Windows_Message_Handler();
-		} else {
-			Sleep(10);
-			Windows_Message_Handler();
-			break;
-		}
-	}
-	#endif
 
 	/*
 	**	Sync-bug trapping code

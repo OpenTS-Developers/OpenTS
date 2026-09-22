@@ -20011,6 +20011,24 @@ SilverCrate:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+SimulateWhileUnfocused:
+  key: SimulateWhileUnfocused
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: SimulateWhileUnfocused
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 Size:
   key: Size
   scopes:

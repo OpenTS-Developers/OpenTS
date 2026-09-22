@@ -133,6 +133,12 @@ class OptionsClass {
 		bool AltToRally;
 
 		/*
+		 * If true, a solo or skirmish game keeps running, silent and without input, while
+		 * another program has the focus.
+		 */
+		bool SimulateWhileUnfocused;
+
+		/*
 		 * The palette index drawn behind each glyph of the in-game message list, or zero for
 		 * none. Twelve, black, is the value the CnCNet client's chat background option writes.
 		 */
