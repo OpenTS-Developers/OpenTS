@@ -1,6 +1,6 @@
 ---
 title: Band selection
-summary: "Dragging the left button across the tactical view selects the player's own objects inside the box."
+summary: "Dragging the left button across the tactical view selects the player's objects inside the box."
 category: interface-controls
 keys:
   - Selectable
@@ -10,21 +10,32 @@ keys:
 
 ## Starting a band
 
-Pressing the left button over the tactical view arms the gesture, unless the player is in repair, power or sell mode, is targeting a superweapon, or is holding a building waiting for placement. Nothing is drawn yet.
+A left-button press on the tactical view can start a selection box. No box starts while the player is in repair, power or sell mode, is targeting a superweapon, or has a structure waiting to be placed.
 
-The box appears once the pointer has travelled further from the press point than the system's drag distance, measured on either axis. That distance is the one Windows reports for a drag, so it follows the display scale and the pointer accessibility settings rather than a fixed number of pixels. Coast scrolling on the right button reads the same setting and doubles it.
+The box appears once the pointer has moved further from the press point than the Windows drag distance, on either axis. That distance follows the display scale and the pointer accessibility settings, so it is not a fixed number of pixels. Coast scrolling on the right button starts at twice the same distance.
 
-While the button is held, the loose corner follows the pointer and the box is drawn each frame. Dragging with the right button at the same time abandons the band and selects nothing.
+While the button is held, the far corner of the box follows the pointer and stops at the edge of the tactical view. The map does not scroll at the screen edge while the left button is held.
+
+In waypoint mode no box appears and a drag selects nothing. Releasing the button still clears the current selection unless left Shift is held.
+
+Releasing the right button while the left is still held abandons the box, so the later left release selects nothing. That right release also clears the current selection, as any right click with no mode active does.
+
+The box is also abandoned, and selects nothing, when the in-game menu opens, when a trigger action or the end of a campaign mission locks the player's input, or when another window takes the mouse.
 
 ## What the box takes
 
-Releasing the button clears the current selection first, unless left Shift is held, and then offers every object whose position on screen falls inside the box. An object is taken when **all of**:
+Releasing the button clears the current selection, unless left Shift is held.
+
+An object's drawing position is the single point on screen where it is drawn, not the cells it covers. An object whose art overlaps the box is not selected unless that point lies inside it.
+
+The box then selects each object whose drawing position lies inside it and that meets **all of**:
 
 - the player owns it;
-- its type is [`Selectable=yes`](/keys/selectable/);
+- its type has [`Selectable=yes`](/keys/selectable/);
+- it is not a structure, or it is a structure that [undeploys into a vehicle](/keys/undeploysinto/) and is neither a [construction yard](/keys/constructionyard/) nor an [`IsMobileWar=yes`](/keys/ismobilewar/) structure;
 - it is out of [limbo](/glossary/#limbo);
-- it is not a structure, or it is a structure that [undeploys into a vehicle](/keys/undeploysinto/) and is neither a construction yard nor an [`IsMobileWar=yes`](/keys/ismobilewar/) one.
+- it is not a loaner, meaning an object the scenario only lends the player. A loaner the player cannot currently move, such as one stunned by an [EMP pulse](/systems/emp-pulse/), is taken.
 
-So a deployed artillery piece or tick tank is caught by a box drawn over it, while a construction yard, a mobile war factory and every ordinary structure are not. Only the first object taken gives its acknowledgement, however many the box caught.
+A deployed artillery piece or tick tank is therefore selected by a box drawn over it. A construction yard, a deployed mobile war factory and every structure that does not undeploy are not.
 
-The test is the object's drawing position against the box on screen, not its cell against a map region, so an object whose art overlaps the box but whose position does not is left alone.
+Only the first object the box selects plays its selection response. The [Selected by player](/mapping/events/tevent-selected/) trigger event also springs for that first object only.

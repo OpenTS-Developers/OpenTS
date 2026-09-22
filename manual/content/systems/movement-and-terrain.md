@@ -1,6 +1,6 @@
 ---
 title: Movement and terrain
-summary: "Settles which cells an object may step into and what fraction of its top speed it crosses each one at."
+summary: "Which cells an object may enter, which destinations it can reach, and how fast it crosses each cell."
 category: units-movement
 keys:
   - Acceleration
@@ -59,29 +59,46 @@ related:
     id: drop-pods
 ---
 
-An object that will not go where it is sent and an object that arrives slower than its [`Speed=`](/keys/speed/) suggests are two different faults, and three mechanisms stand between the order and the moving object. A per-step test decides whether this object may enter that [cell](/glossary/#cell) at all. A map-wide grouping decides whether the destination is reachable before a route is attempted. A throttle decides what fraction of the type's top speed the object crosses at. Four things feed those three: one table in the rules files, and the type's [`SpeedType`](/keys/speedtype/), [`MovementZone`](/keys/movementzone/) and [`Locomotor`](/keys/locomotor/).
+Three separate checks stand between a move order and a moving object:
 
-The four are routinely mistaken for one another. `SpeedType` picks a column of the terrain table and reaches both the per-step test and the throttle. `MovementZone` reaches the grouping and nothing else. The locomotor decides how the object travels and, for all but one of the ten, has no say in the terrain figures or the per-step test. Setting one without the others is the usual reason a change appears to do nothing.
+- A **per-step test** decides whether the object may enter the next [cell](/glossary/#cell).
+- A map-wide **zone map** decides whether the destination can be reached at all, before any route is planned.
+- A **throttle** decides what fraction of its top speed a vehicle crosses each cell at.
+
+An object that will not go where it is sent has failed one of the first two. An object that arrives slower than its [`Speed=`](/keys/speed/) suggests is being held back by the third.
+
+Four inputs feed these checks, and each reaches only some of them. Changing one without the others can leave the result unchanged.
+
+| Input | What it reaches |
+| --- | --- |
+| The terrain table in `rules.ini` | The per-step test, the throttle, and (through its `Wheel=` column only) the zone map |
+| [`SpeedType`](/keys/speedtype/) | Picks the terrain table column that the per-step test and the throttle read |
+| [`MovementZone`](/keys/movementzone/) | Picks which set of zones decides whether a destination is reachable, and nothing else on this page |
+| [`Locomotor`](/keys/locomotor/) | How the object travels. Only the drive locomotor applies the terrain figures to speed, and only the tunnel locomotor adds a test of its own to the per-step test |
 
 ## The cell
 
-A [cell](/glossary/#cell) is the grid unit the map is made of, and ranges, footprints, scan radii and waypoints are all written in cells. One cell is 256 [leptons](/glossary/#lepton) across, a lepton being the engine's internal distance unit, and a height level is 104 of them. A distance written in cells is multiplied by 256 as it is read, so a cell coordinate becomes a lepton position, and a lepton position divided by 256 names the cell that holds it.
+A [cell](/glossary/#cell) is one square of the map grid. Ranges, footprints, scan radii and waypoints are all written in cells. The engine measures distance in [leptons](/glossary/#lepton). One cell is 256 leptons across, and one height level is 104 leptons. A setting that takes a distance in cells is converted to leptons as it is read, so `1.5` becomes 384 leptons, and dividing a lepton position by 256 gives the cell that holds it.
 
-A cell is not a single place to stand. It is divided into several places, each occupied on its own. Three of them are offered to infantry, which is how three infantry share one cell, while a vehicle or a structure takes the whole of it. A cell spanned by a bridge deck holds a second, independent set of places for the deck, so the ground under the deck and the deck itself are occupied separately.
+A cell has several places to stand, each occupied separately. Three of them are open to infantry, which is how three infantry share one cell. A vehicle or a structure takes the whole cell. A cell under a bridge has a second, separate set of places for the deck, so the ground under the deck and the deck itself are occupied independently.
 
 ## The terrain table
 
-Twelve `rules.ini` sections hold the whole of it, one per [land type](/reference/enums/land-type/): `[Clear]`, `[Road]`, `[Water]`, `[Rock]`, `[Wall]`, `[Tiberium]`, `[Beach]`, `[Rough]`, `[Ice]`, `[Railroad]`, `[Tunnel]` and `[Weeds]`. Each holds one figure per [speed type](/reference/enums/speed-type/): `Foot=`, `Track=`, `Wheel=`, `Hover=`, `Winged=`, `Float=`, `Amphibious=` and `Creep=`, with [`Buildable=`](/keys/buildable/) beside them. Ninety-six figures in all, and the engine supplies none of them.
+The terrain table is twelve `rules.ini` sections, one per [land type](/reference/enums/land-type/): `[Clear]`, `[Road]`, `[Water]`, `[Rock]`, `[Wall]`, `[Tiberium]`, `[Beach]`, `[Rough]`, `[Ice]`, `[Railroad]`, `[Tunnel]` and `[Weeds]`. Each section holds one figure per [speed type](/reference/enums/speed-type/), `Foot=`, `Track=`, `Wheel=`, `Hover=`, `Winged=`, `Float=`, `Amphibious=` and `Creep=`, plus [`Buildable=`](/keys/buildable/). The engine has no built-in values for any of the 96 figures.
 
-A land type whose section appears in no file is passed over entirely: the section heading is what admits the reads. A land type nothing declares keeps a figure of zero for every speed type and a cleared buildable flag. Zero is the impassable marker rather than a slow one, so removing `[Rough]` does not make rough ground quick: it closes rough ground to everything that walks, drives, hovers or floats. Where the section is present, all nine reads run, each defaulting to the figure already in force, so a later file or a map may override one entry without disturbing its neighbors. A figure above `1` is cut to `1` as it is read; nothing clamps the bottom of the range.
+A land type is read only from files that contain its section. If no file declares the section, every figure for that land type is zero and `Buildable` is off. Zero means impassable, not slow, so deleting `[Rough]` closes rough ground to every infantryman and vehicle instead of speeding it up.
 
-Every one of the ninety-six is read twice over, in opposite directions:
+When a file does contain the section, each key it writes replaces the figure already in force and each key it leaves out keeps it. A later file or a map can therefore change one entry without restating the rest.
 
-- **Exactly zero** means the cell is refused. This is the reading that decides passability, and it is the only reading infantry, hovercraft, mechs, tunnelers and aircraft ever get.
-- **Anything else** is a fraction of full speed, where `1` is full speed and smaller is slower. A value with a `%` sign is divided by a hundred as it is read, so `70%` and `0.7` are the same figure while a bare `70` is cut to `1`. Only a vehicle moved by the drive locomotor is throttled by it.
+Each figure is used in two ways:
+
+- **Exactly zero** refuses the cell. This is the only use the per-step test makes of the table.
+- **Any other value** is a fraction of full speed, where `1` is full speed and smaller is slower. Only a vehicle moved by the drive locomotor is slowed by it. Every other object on the ground, including infantry, hovercraft, mechs and tunnelers, uses the zero test alone.
+
+A value above `1` is cut to `1` as it is read, and nothing corrects a negative value. A value with a `%` sign is divided by 100, so `70%` and `0.7` are the same figure, while a bare `70` is cut to `1`.
 
 ```ini title="rules.ini"
-[Water] ; the figures the game ships for water, less Float= and Creep=
+[Water] ; the figures the game ships for water, less Float=
 Foot=0%
 Track=0%
 Wheel=0%
@@ -95,66 +112,102 @@ MovementZone=AmphibiousCrusher
 Locomotor={4A582742-9839-11D1-B709-00A024DDAFD1} ; hover
 ```
 
-Nothing that governs flight reads the `Winged` column. An aircraft's cell test is answered before the table is reached, and the sections the game ships have no `Winged=` line at all, which leaves that column at zero for all twelve land types. A vehicle given `SpeedType=Winged` is therefore refused every cell on the map until a rules file writes the column in.
+The skimmer needs its first two settings to cross water. `SpeedType=Hover` makes it read `Hover=100%`, which is not zero, so the per-step test lets it onto water. `MovementZone=AmphibiousCrusher` makes water count as reachable on the [zone map](#the-zone-map).
+
+The hover locomotor is not needed to cross water. It moves the skimmer at the same speed whatever the `Hover=` figure is, as long as it is not zero. The drive locomotor would scale that speed by the figure.
+
+Aircraft never read the `Winged` column, because the aircraft cell test treats every cell as clear before it reaches the table. The sections the game ships contain no `Winged=` line, so that column is zero for all twelve land types. A vehicle given `SpeedType=Winged` is therefore refused every cell on the map until a rules file fills the column in.
 
 ## Why a cell refuses a vehicle
 
-The tests run in the order below, and which one a vehicle stops at is usually the whole explanation. Only some of them end the question; the rest raise a price instead.
+A vehicle's per-step test runs the checks below in this order. Most checks can refuse the cell outright. The rest record an obstruction, which the route search prices instead of avoiding.
 
-1. **The land type restriction.** [`MovementRestrictedTo=`](/keys/movementrestrictedto/) refuses every cell whose land type is not the one named, before anything else is looked at.
-2. **Tunnel geometry.** A cell holding a tunnel is refused when the vehicle is entering it more than a quarter turn off the tunnel's own facing. The cell it is leaving is tested on the same terms, which is what stops a vehicle crossing a tunnel mouth sideways.
-3. **The height step.** Covered [below](#height-ramps-and-bridges), and the most common flat refusal on a hand-built map.
-4. **The map edge.** A cell outside the playable area is refused unless the vehicle is one of the few [allowed to leave the map](/keys/landable/).
-5. **The locomotor's own say.** Nine of the ten locomotors accept every cell. The tunnel locomotor is the exception, refusing every cell a subterranean object may not [burrow through](/keys/allowburrowing/).
-6. **Overlay.** A wall overlay is refused outright unless the vehicle is a [`Crusher=yes`](/keys/crusher/) one and the wall [`Crushable=yes`](/keys/crushable/), or it uses a warhead that brings walls down; [walls in combat and movement](/systems/walls-and-gates/#walls-in-combat-and-movement) owns the pairings. A crate is refused to a computer-controlled vehicle in a campaign.
-7. **What is standing there.** Buildings, gates, allied objects moving and stationary, enemy objects, crushable objects and cloaked objects each contribute a verdict of their own. A long list of exemptions applies on top: a transport the vehicle is boarding, a repair bay it is entering, a refinery bib it is docking at. An invisible or limpet-mine structure, an open laser fence and an inactive firestorm wall are passed over in the same way. A terrain object is destroyable only where the selected weapon sets [`Wood=yes`](/keys/wood/) and the terrain type is not [`Immune=yes`](/keys/immune/#scope-aircrafttype); otherwise it is strictly impassable.
-8. **The terrain figure.** The `SpeedType` column of the destination's land type, refused only where it reads exactly zero. This test sits near the end, not the beginning.
-9. **Reservations.** A cell another object has already claimed for its own next step is treated as blocked by something moving. An enemy infantry reservation is destroyable to a vehicle whose weapon can fire on the ground, and refused to one that cannot crush and has no such weapon.
+1. **Land type restriction.** A vehicle with [`MovementRestrictedTo=`](/keys/movementrestrictedto/) is refused every cell of any other land type, apart from the tunnel and rail bridge allowances that key describes.
+2. **Tunnel direction.** A vehicle may not enter a tunnel cell more than a quarter turn off the tunnel's direction. The same limit applies to a tunnel cell it is leaving, so a vehicle cannot cross a tunnel mouth sideways.
+3. **Height step.** A step between cells at different heights is refused unless a ramp or a bridge joins them. [Height, ramps and bridges](#height-ramps-and-bridges) gives the rules.
+4. **Map edge.** Once a vehicle has entered the map, cells outside the playable area are refused. A train, a vehicle on the retreat mission and a vehicle in a team that is leaving the map are exempt.
+5. **Locomotor.** The tunnel locomotor refuses every cell a subterranean vehicle may not [burrow through](/keys/allowburrowing/). The other nine locomotors accept every cell.
+6. **Crate.** In a campaign, a computer-controlled vehicle is refused a cell holding a crate.
+7. **Wall.** A wall is refused unless the vehicle can get through it. It gets through a [`Crushable=yes`](/keys/crushable/) wall if it can crush, through [`Crusher=yes`](/keys/crusher/) or the veteran [`CRUSHER` ability](/systems/veterancy/#abilities). It gets through any other wall only if its primary weapon's warhead can destroy that wall. [Walls in combat and movement](/systems/walls-and-gates/#walls-in-combat-and-movement) gives the pairings.
+8. **Occupants.** Each object in the cell adds a verdict. Buildings, gates, allied objects moving or standing still, enemy objects, crushable objects and cloaked objects are all weighed. Some occupants never block:
+   - the transport the vehicle is boarding, and the repair bay it is entering;
+   - the refinery bib a harvester is docking at;
+   - an invisible structure, a limpet mine, an open laser fence and an inactive firestorm wall.
+9. **Terrain figure.** The cell is refused when its land type's figure in the vehicle's `SpeedType` column is exactly zero. This check comes near the end, so an earlier refusal can hide it.
+10. **Reservations.** A cell that another object has claimed for its next step counts as blocked by something moving. If enemy infantry claimed it, a vehicle that can crush infantry treats the cell as clear, and one with a weapon that fires at ground targets treats the infantry as destroyable. Any other vehicle is refused.
 
-One vehicle is exempt from most of this. An [`IsTrain=yes`](/keys/istrain/) car treats every obstruction short of the strictly prohibited as a clear cell, so only the tests that refuse outright still stop it.
+A terrain object such as a tree counts as destroyable only when the warhead of the weapon the vehicle would use against it has [`Wood=yes`](/keys/wood/) and the terrain type is not [`Immune=yes`](/keys/immune/#scope-aircrafttype). Otherwise the tree refuses the cell.
 
-Otherwise the answer is not yes or no. Eight verdicts are possible, and the test keeps the most severe one it meets, so the order they are listed in here is the order it ranks them. The first four leave the cell enterable: clear, a cloaked enemy, something moving through, and a closed friendly gate. Three more name an obstruction: a friendly one that could be destroyed, an enemy one that could be destroyed, and a friendly one temporarily in the way. The eighth, strictly prohibited, is the only verdict that keeps a route out of the cell. Every other one is a [path cost](/glossary/#path-cost) the search pays and moves on, which is why a vehicle sent through a wall it can shoot goes and shoots it rather than routing around it.
+An [`IsTrain=yes`](/keys/istrain/) vehicle ignores every verdict except an outright refusal, both while its route is planned and while it drives.
 
-A cell spanned by a bridge is two places. It is asked about at the deck's height or at the ground beneath it, and the terrain figure is skipped entirely for the deck, which is how a tracked vehicle whose `[Water] Track=` reads `0` crosses a river. At ground level under that same bridge it is refused exactly as it would be in the open.
+When no check refuses the cell, the test returns the most severe obstruction it found. From least to most severe, the verdicts are:
+
+1. Clear.
+2. A cloaked enemy.
+3. Something moving through.
+4. A closed friendly gate.
+5. A friendly obstruction that could be destroyed.
+6. An enemy obstruction that could be destroyed.
+7. A friendly object standing in the way.
+8. Strictly prohibited.
+
+Only the last keeps a route out of the cell. The route search enters a cell with any other verdict at a [path cost](/glossary/#path-cost) that depends on the verdict, so a route can lead through a wall the vehicle is able to destroy. [Route search](/systems/route-search/) gives those costs.
+
+A cell under a bridge is tested either at the deck's height or at ground level. At deck height the terrain figure is skipped, which is how a tracked vehicle crosses a river on a bridge although `[Water] Track=` is `0`. At ground level under the same bridge, the cell is tested exactly as it would be in the open.
 
 ### Height, ramps and bridges
 
-Before terrain or occupancy is weighed, the step between the two cells is measured. A **ramp** here is a sloped tile, the artwork that carries ground from one height level to the next.
+Every step compares the height of the cell being left with the height of the cell being entered. A **ramp** here is a sloped tile, the artwork that carries ground from one height level to the next.
 
-- **Level ground.** Allowed.
-- **One level apart.** Allowed only across a ramp, and the ramp must be the cell at the lower of the two heights: climbing, the cell being left; descending, the cell being entered.
-- **Four levels apart.** The bridge case. Allowed only where the cell beneath the deck is marked as spanned and the span is one that may be traveled.
-- **Anything else.** Refused.
+- **Same height.** Allowed.
+- **One level apart.** Allowed only across a ramp, and the ramp must be the lower of the two cells. Climbing, that is the cell being left; descending, it is the cell being entered.
+- **Four levels apart.** The bridge case. Allowed only where the lower cell is spanned by a bridge and the span can be traveled.
+- **Any other difference.** Refused.
 
-Nothing grants an exception. A cliff two levels high stops every ground object whatever its land type is priced at, whatever its movement zone accepts and whatever locomotor it uses.
+A cliff two levels high stops every vehicle and every infantryman moving across the ground, whatever its terrain figures or movement zone. A tunneler can pass under it by burrowing.
 
 ### Infantry and aircraft answer differently
 
-Infantry run the same shape of test with four differences. They have no land type restriction, and their test never asks the locomotor at all, so an infantryman moved by the tunnel locomotor is not held to the burrowing test the way a vehicle is. A wall whose damage stage has reached its last is a hole they walk through with nothing else tested. Every Tiberium overlay family follows the cell's land type and the `Foot` figure like any other non-wall overlay; no image-number range is refused separately. The terrain figure is skipped while an infantryman is tethered to something (boarding a transport, capturing a structure), so an engineer may finish a capture on ground its own column prices at zero.
+Infantry run a similar test, with these differences:
 
-An aircraft's test reads no terrain at all. Its speed type is winged, which the cell test answers as clear before looking at anything else, so one condition remains. A player's own aircraft that is not a [loaner](/keys/landable/) is refused a shrouded cell in a campaign. Height, walls, cliffs, water and occupancy are invisible to it.
+- [`MovementRestrictedTo=`](/keys/movementrestrictedto/) does not apply to them.
+- Their test never asks the locomotor, so an infantryman moved by the tunnel locomotor is not held to the burrowing test.
+- A wall at its last damage stage is a gap they can walk through. A wall at any earlier stage refuses them unless their weapon can destroy walls.
+- A computer-controlled infantryman is refused a cell holding a crate in every game mode, not only in a campaign.
+- Tiberium gets no separate treatment. Its cells are tested through their land type's figure like any other ground.
+- The terrain figure is skipped while the infantryman is being unloaded, as when it steps out of the structure that built it or out of a transport aircraft.
+
+An aircraft's test reads no terrain at all. Height, walls, cliffs, water and occupants do not stop it. One rule remains: in a campaign, a player's aircraft that is not a [loaner](/keys/landable/) is refused a shrouded cell.
 
 ## The zone map
 
-Reachability is judged before a route is attempted, against a grouping rebuilt whenever the ground changes. Every cell is boiled down to one **blockage rating** out of seven. Each of the ten [movement zone](/reference/enums/movement-zone/) classes accepts or refuses each rating, and connected runs of accepted ground become that class's [movement zones](/glossary/#movement-zone).
+Before a route is planned, the engine checks that the destination is reachable on the zone map, which is rebuilt when the ground changes. The zone map is built in three stages:
 
-The rating is settled in the order below, and the first line that fits wins. Nothing in it reads the object being moved, its speed type, or any column but `Wheel`, so one rating serves every class.
+1. Every cell gets one of seven **blockage ratings**.
+2. Each of the ten [movement zone](/reference/enums/movement-zone/) classes accepts some ratings and refuses the others.
+3. Each connected run of accepted cells becomes one of that class's [movement zones](/glossary/#movement-zone). A destination outside the object's zone is unreachable.
+
+A cell takes the first rating in this table that fits. The rating ignores the object, its speed type and every terrain column except `Wheel`, so one rating serves every class.
 
 | Rating | Set by |
 | --- | --- |
 | Outside | The cell lies outside the playable area |
 | Crushable | The cell has a [`Crushable=yes`](/keys/crushable/) overlay |
 | Blocked | The cell has a wall overlay |
-| Impassable | The overlay's own land type prices `Wheel=` at exactly zero |
+| Impassable | The overlay's land type prices `Wheel=` at exactly zero |
 | Water | The land type is `Water` or `Beach`, whatever those sections say |
-| Impassable | The cell's own land type prices `Wheel=` at `0.01` or below, or an active firestorm wall stands there |
-| Partly blocked | A terrain object stands there covering some but not all of the places infantry could stand in |
-| Blocked | A terrain object stands there covering all of them |
+| Impassable | The cell's land type prices `Wheel=` at `0.01` or below, or an active firestorm wall stands there |
+| Partly blocked | A terrain object covers some, but not all, of the places infantry could stand in the cell |
+| Blocked | A terrain object covers all of those places |
 | Open land | Nothing above applied |
 
-A land type priced generously for `Track` or `Hover` and at zero for `Wheel` is rated impassable, so every class that ought to cross it loses every cell of it. Only the subterranean and flying classes still reach such ground. It is why a hovercraft needs a movement zone accepting water as well as a `[Water] Hover=` above zero: the two are read from different places and neither covers for the other. The two thresholds above differ as well, so a `Wheel=` figure of `0.005` is enterable by the per-step test and still rates the land impassable.
+Because only `Wheel=` is read, a land type priced at zero for `Wheel` is rated impassable even when its `Track=` or `Hover=` figure is generous. Every class except `Subterannean` and `Fly` then loses all of that ground.
 
-Which classes accept which rating is the whole of what a movement zone name means. The table below reads the other way round from the enum list, because the useful question is which classes a piece of ground is open to.
+Water and beach cells are rated by land type alone. A hovercraft therefore needs both a `[Water] Hover=` figure above zero, for the per-step test, and a movement zone that accepts water, for the zone map. Neither setting covers for the other.
+
+The two impassable thresholds differ. A cell whose own land type has a `Wheel=` figure of `0.005` lets a wheeled vehicle step in, but it is rated impassable, so most classes cannot plan a route to it.
+
+The table below shows which classes accept each rating. A movement zone name means nothing more than this row of choices.
 
 | Rating | Movement zones that accept it |
 | --- | --- |
@@ -166,66 +219,97 @@ Which classes accept which rating is the whole of what a movement zone name mean
 | Impassable | `Subterannean`, `Fly` |
 | Outside | None |
 
-Two readings off it are worth stating. `Normal`, `Amphibious` and `Infantry` all refuse crushable ground, so a plain amphibious vehicle routes around a sandbag wall exactly as an ordinary one does. And no class holds a zone outside the playable area, `Fly` included, so nothing has a route to ground beyond that boundary.
+`Normal`, `Amphibious` and `Infantry` all refuse crushable ground, so a plain amphibious vehicle routes around a sandbag wall just as an ordinary vehicle does. No class accepts ground outside the playable area, `Fly` included, so no route leads there.
 
-Height enters separately from the rating. A zone is filled one run of cells at a time, and each run is grown outward from its seed in two directions, every cell being compared against the one before it rather than against the seed. Two things follow. A slope climbing a single level per cell is never broken however high it eventually reaches, so a long ramp stays one zone from bottom to top. And the two directions do not stop at the same step: growing one way ends the run at a difference of two levels, and the other at four. The same boundary can therefore fall inside a zone or between two, according to which side of it the fill arrived from. A drop of four levels or more breaks the run in both directions, which puts its top and the ground below it in different zones for every class at once. Bridges and tunnels are recorded as crossings and stitched across afterwards, which makes them the only joins between zones the terrain itself keeps apart.
+Height also separates zones. The zone map compares each cell with its neighbor, not with the cell where the zone started, so:
+
+- A slope that climbs one level per cell never breaks. A long ramp is one zone from bottom to top.
+- A drop of four levels or more always separates the cells on either side of it. Its top and bottom share a zone only if some other connection joins them.
+- A drop of two or three levels may or may not separate them. The zone map is filled in two directions, and one direction stops at a two-level difference while the other stops at four, so the result depends on which side the fill reached the drop from.
+
+An intact bridge span or a tunnel then links the zones at its two ends. Bridges and tunnels are the only links between zones that the ground itself keeps apart.
 
 ## The route search prices no terrain
 
-The route search adds up a [path cost](/glossary/#path-cost) and never prices terrain into it. It reaches the table only through the per-step test above, where zero means the cell cannot be entered and every other figure is a step like any other. A road and a patch of rough ground cost the search the same, so a route that follows roads is a coincidence of geometry rather than a preference. The terrain figures act afterwards, on the throttle.
+The route search adds up a [path cost](/glossary/#path-cost) for each route, and terrain is never part of it. The terrain table reaches the search only through the per-step test, where zero refuses a cell and every other figure is treated the same. A road and a patch of rough ground cost the same, so a route that follows roads does so because of the map's layout, not because the search prefers roads. The terrain figures act later, on the throttle.
 
-What the search does price, and the settings beside it that are fixed where nothing can reach them, belong to [Route search](/systems/route-search/).
+[Route search](/systems/route-search/) covers what the search does price, and the search settings that no INI key controls.
 
 ## Why it is slower than its Speed says
 
-`Speed=` is a figure from `0` to `100`, and one above `100` is cut to `100` before it is scaled into the top speed the object keeps. Raising a fast type's `Speed=` past that ceiling therefore changes nothing.
+[`Speed=`](/keys/speed/) takes a value from `0` to `100`. A value above `100` is treated as `100`, so raising a fast type's `Speed=` past that changes nothing.
 
-The table gives the whole chain for a driving vehicle in order. Steps 1 to 4 settle the **throttle**: a fraction from 0 to 1 that the locomotor writes as each step into a new cell begins, and the only part of the chain the ground reaches. Steps 5 to 9 turn that throttle into the distance covered, and are worked out afresh every frame.
+For a vehicle moved by the drive locomotor, the distance it covers each frame comes from the chain of factors below. Steps 1 to 4 set the **throttle**, a fraction from 0 to 1. Steps 1 to 3 are worked out as the vehicle starts each step into a new cell. The terrain affects only the throttle. Steps 5 to 10 are recalculated every frame.
 
 | Step | Factor |
 | --- | --- |
-| 1 | The terrain figure for the destination cell's land type, capped at full speed |
-| 2 | The slope multiplier, where the ground under the destination stands higher or lower than the ground under the vehicle |
+| 1 | The terrain figure for the destination cell's land type |
+| 2 | The slope multiplier, when the ground under the destination is higher or lower than the ground under the vehicle |
 | 3 | Three quarters, once the vehicle's health has fallen to the yellow condition |
-| 4 | Either a fifth while the vehicle is crushing something, or the acceleration ramp; both only on an [`Accelerates=yes`](/keys/accelerates/) vehicle, and the crushing clamp taking precedence. [`TiltsWhenCrushes`](/keys/tiltswhencrushes/) changes only whether the hull lurches while it goes through |
-| 5 | The type's top speed, cut by any limpet drone clamped to the vehicle |
-| 6 | The owner's [ground speed bias](/systems/difficulty/#how-the-figures-are-combined), which folds together the country's, the difficulty slot's and the rules-wide one |
-| 7 | The speed multiplier a [crate](/systems/crates/#results-that-sweep-a-radius) left on the object, which one crate sets and no later crate raises |
-| 8 | [`VeteranSpeed`](/keys/veteranspeed/) plus one, for a crew that has the [`FASTER` ability](/systems/veterancy/#abilities) |
-| 9 | Half, while the vehicle is carrying a captured flag |
+| 4 | On an [`Accelerates=yes`](/keys/accelerates/) vehicle only: at most a fifth while the vehicle is crushing something, otherwise the acceleration ramp toward the throttle from steps 1 to 3 |
+| 5 | The type's top speed, reduced by any limpet drone clamped to the vehicle |
+| 6 | The owner's [ground speed bias](/systems/difficulty/#how-the-figures-are-combined), which combines the country's, the difficulty setting's and the rules-wide bias |
+| 7 | The speed multiplier a [crate](/systems/crates/#results-that-sweep-a-radius) gave the vehicle. Only the first speed crate counts; later ones do not raise it |
+| 8 | [`VeteranSpeed`](/keys/veteranspeed/) plus one, for a vehicle that has the [`FASTER` ability](/systems/veterancy/#abilities) |
+| 9 | The throttle from steps 1 to 4 |
+| 10 | Half, while the vehicle is carrying a captured flag |
 
-Four details in that chain are easy to miss. A step of two or more height levels is costed from the `[Road]` row rather than from the destination's own land type, which is how a vehicle keeps its speed climbing onto a bridge deck over water. The slope multiplier is chosen by speed type alone: `Track` takes [`TrackedUphill`](/keys/trackeduphill/) and [`TrackedDownhill`](/keys/trackeddownhill/), and every other speed type on a vehicle takes [`WheeledUphill`](/keys/wheeleduphill/) and [`WheeledDownhill`](/keys/wheeleddownhill/) whatever its name suggests. A product of exactly zero is replaced with half speed rather than a stop. And steps 5 to 9 truncate to whole numbers after each multiplication, so a slow type loses proportionally more to each factor than a fast one does.
+Several details change the result:
 
-The damage penalty belongs to the drive locomotor alone: everything else on the map travels at the same speed damaged as undamaged.
+- Step 1 uses the `[Road]` figures whenever the destination's ground is two or more levels from the height the vehicle travels at, as on a bridge deck. A vehicle therefore keeps its speed on a bridge over water.
+- The slope multiplier depends only on speed type. `Track` uses [`TrackedUphill`](/keys/trackeduphill/) and [`TrackedDownhill`](/keys/trackeddownhill/). Every other speed type uses [`WheeledUphill`](/keys/wheeleduphill/) and [`WheeledDownhill`](/keys/wheeleddownhill/), whatever its name suggests.
+- If the terrain figure times the slope multiplier is exactly zero, the vehicle moves at half speed instead of stopping.
+- Steps 5 to 10 round down to a whole number several times along the way, so a slow type loses proportionally more to each factor than a fast one.
+- [`TiltsWhenCrushes`](/keys/tiltswhencrushes/) changes only whether the hull tilts while the vehicle crushes something, not its speed.
+
+The damage penalty in step 3 belongs to the drive locomotor alone. Every other object moves at the same speed damaged or undamaged.
 
 ## What each locomotor drives its speed from
 
-[`Locomotor=`](/keys/locomotor/) names one of ten travel routines, and which one it is settles more about how a type moves than the rest of this page put together. The table gives where each takes its speed; the last column is the one to read first, because only one entry in it reads the terrain table at all.
+[`Locomotor=`](/keys/locomotor/) names one of ten travel routines. Only the drive locomotor uses the terrain figures for speed.
 
 | Locomotor | Speed comes from | Terrain figure |
 | --- | --- | --- |
-| Drive | The full chain above | Throttles it |
-| Walk, Mech | The chain above at a fixed full throttle | Ignored |
-| Hover | The same, times the locomotor's own acceleration ramp | Ignored |
-| Tunnel | The same, times [`TunnelSpeed`](/keys/tunnelspeed/) going down and coming up; a fixed rate underground | Ignored |
-| Fly | The type's top speed times its own throttle, and nothing else | Ignored |
-| Jumpjet | `[JumpjetControls]` alone; the type's own `Speed=` is not read | Ignored |
-| Levitate | `[LEVITATION]` alone; the type's own `Speed=` is not read | Ignored |
-| Drop pod | Its height above the ground, floored at the rules-wide descent rate | Ignored |
+| Drive | The full chain above | Sets the throttle |
+| Walk, Mech | Steps 5 to 10 above, with the throttle fixed at full | Ignored |
+| Hover | The same, times the hover locomotor's own acceleration ramp | Ignored |
+| Tunnel | The same, times [`TunnelSpeed`](/keys/tunnelspeed/) while digging down and coming up; a fixed rate underground | Ignored |
+| Fly | The type's top speed times the aircraft's own throttle, and nothing else | Ignored |
+| Jumpjet | `[JumpjetControls]` alone; the type's `Speed=` is not read | Ignored |
+| Levitate | `[LEVITATION]` alone; the type's `Speed=` is not read | Ignored |
+| Drop pod | Its height above the ground, with the rules-wide descent rate as the minimum | Ignored |
 | Teleport | Instantaneous | Ignored |
 
-The fly locomotor's entry is worth reading twice: an aircraft's travel bypasses the ground speed bias, the crate multiplier, the veteran ability, the flag penalty and the damage penalty alike. The setting meant to give aircraft a bias of their own is stored and never read, which [difficulty settings](/systems/difficulty/#parsed-settings-without-effect) covers.
+An aircraft's speed therefore ignores the ground speed bias, the crate multiplier, the veteran ability, the flag penalty and the damage penalty. The setting meant to give aircraft a bias of their own is stored but never read; [difficulty settings](/systems/difficulty/#parsed-settings-without-effect) covers it.
 
-The rest of the cluster divides the same way, each setting reaching one locomotor. [`Accelerates`](/keys/accelerates/), [`AccelerationFactor`](/keys/accelerationfactor/), [`DeaccelerationFactor`](/keys/deaccelerationfactor/) and the slope multipliers reach the drive locomotor. [`PitchAngle`](/keys/pitchangle/), [`PitchSpeed`](/keys/pitchspeed/), [`RollAngle`](/keys/rollangle/), [`FlightLevel`](/keys/flightlevel/) and [`IsDropship`](/keys/isdropship/) reach the fly locomotor. [`HoverBob`](/keys/hoverbob/) and [`HoverDampen`](/keys/hoverdampen/) reach the hover and levitate locomotors together. [`AllowBurrowing`](/keys/allowburrowing/) and [`TunnelSpeed`](/keys/tunnelspeed/) reach the tunnel locomotor. [`SlowdownDistance`](/keys/slowdowndistance/) is the one read by two, the fly and the drive.
+The other movement settings on this page each reach only the locomotors listed here:
 
-Five more belong to no type at all and are read only from the shared `[JumpjetControls]` section: [`Climb`](/keys/climb/), [`CruiseHeight`](/keys/cruiseheight/), [`WobbleDeviation`](/keys/wobbledeviation/), [`WobblesPerSecond`](/keys/wobblespersecond/) and [`TurnRate`](/keys/turnrate/). [`Acceleration`](/keys/acceleration/) is the exception twice over: the levitate locomotor reads a figure of its own from `[LEVITATION]`, and a projectile has one on its `BulletType`.
+| Settings | Read by |
+| --- | --- |
+| [`Accelerates`](/keys/accelerates/), [`AccelerationFactor`](/keys/accelerationfactor/), [`DeaccelerationFactor`](/keys/deaccelerationfactor/) and the slope multipliers | Drive |
+| [`PitchAngle`](/keys/pitchangle/), [`PitchSpeed`](/keys/pitchspeed/), [`RollAngle`](/keys/rollangle/), [`FlightLevel`](/keys/flightlevel/), [`IsDropship`](/keys/isdropship/) | Fly |
+| [`HoverBob`](/keys/hoverbob/), [`HoverDampen`](/keys/hoverdampen/) | Hover and levitate |
+| [`AllowBurrowing`](/keys/allowburrowing/), [`TunnelSpeed`](/keys/tunnelspeed/) | Tunnel |
+| [`SlowdownDistance`](/keys/slowdowndistance/) | Fly and drive |
+| [`Climb`](/keys/climb/), [`CruiseHeight`](/keys/cruiseheight/), [`WobbleDeviation`](/keys/wobbledeviation/), [`WobblesPerSecond`](/keys/wobblespersecond/), [`TurnRate`](/keys/turnrate/) | Jumpjet, from the shared `[JumpjetControls]` section only |
 
-[`ROT`](/keys/rot/) is read differently again. A mech stands still until its turn is finished, and so does a turretless driving vehicle; one with a turret keeps moving through the turn. A hovercraft is given twice its written figure and steers a drive direction separately from the facing it is drawn at, which is why it slews rather than turns. Infantry are created on a fixed maximum rate rather than the figure written on their type, and pick that figure up the first time they are healed.
+[`Acceleration`](/keys/acceleration/) is read in three places: in `[JumpjetControls]` for the jumpjet locomotor, in `[LEVITATION]` for the levitate locomotor, and on a projectile's BulletType.
 
-A running object can be moved by a locomotor other than the one its type names: a tunneler leaving a war factory, a passenger falling in a drop pod, a jump jet infantryman on the ground. [Locomotion and piggybacking](/internals/locomotion/) covers the swap.
+[`ROT`](/keys/rot/) affects each locomotor differently:
+
+- A mech stops until it finishes turning, and so does a driving vehicle without a turret. A driving vehicle with a turret keeps moving while it turns.
+- A hovercraft turns at twice its `ROT`. It steers its direction of travel separately from the facing it is drawn at, so it slides through turns instead of pivoting.
+- Infantry start with a fixed turn rate instead of their type's `ROT`, and take on their `ROT` the first time they are healed.
+
+A running object can be moved by a locomotor other than the one its type names. A tunneler leaving a war factory, a passenger falling in a drop pod and a jumpjet infantryman on the ground are examples. [Locomotion and piggybacking](/internals/locomotion/) covers the swap.
 
 ## Settings that reach no decision
 
-Four of the cluster are parsed and never act on movement. [`MaxBlockCount`](/keys/maxblockcount/) keeps a tally of consecutive blocked frames that nothing turns on. [`PlayerAutoCrush`](/keys/playerautocrush/) is settled by a test that has already excluded every case it could apply to, and the per-type [`AutoCrush`](/keys/autocrush/) has no live reader either. [`TooBigToFitUnderBridge`](/keys/toobigtofitunderbridge/) reads as a movement restriction and is not one: it changes how a vehicle's image is sorted against a bridge deck, and neither restricts movement nor keeps a vehicle off a bridge cell.
+Four settings in this group are read but never change movement:
 
-[`Weight`](/keys/weight/) and [`DeployToFire`](/keys/deploytofire/) reach decisions, but not this one. The first governs how far a blast rocks a voxel object and whether a vehicle breaks the ice beneath it. The second governs where a vehicle may shoot from, through the [`Buildable=`](/keys/buildable/) flag in each land type's section.
+- [`MaxBlockCount`](/keys/maxblockcount/) keeps a count of blocked frames that nothing acts on.
+- [`PlayerAutoCrush`](/keys/playerautocrush/) applies to houses a player commands, but the only check that reads it runs for computer-controlled houses.
+- The per-type [`AutoCrush`](/keys/autocrush/) has no effect either.
+- [`TooBigToFitUnderBridge`](/keys/toobigtofitunderbridge/) changes how a vehicle is drawn against a bridge deck. It does not restrict movement or keep a vehicle off a bridge cell.
+
+[`Weight`](/keys/weight/) and [`DeployToFire`](/keys/deploytofire/) affect other decisions. `Weight` sets how far a blast rocks a voxel object and whether a vehicle breaks the ice beneath it. `DeployToFire` limits where a vehicle may fire from, using each land type's [`Buildable=`](/keys/buildable/) flag.

@@ -1,6 +1,6 @@
 ---
 title: Multiplayer score screen
-summary: "Ranks the houses that played a skirmish or network match and shows what each lost, killed, built and scored."
+summary: "Ranks the houses that played a skirmish or network match and shows what each lost, killed, spent and scored."
 category: multiplayer-networking
 keys:
   - MultiplayPassive
@@ -12,27 +12,45 @@ related:
     id: spawn-ini
 ---
 
-A skirmish or network match ends at this screen rather than at the campaign one. It appears once the match is decided, to the winner and the loser alike, and the match is over when the player dismisses it. A game the menu started returns to the menu, and one [a client launched](/formats/spawn-ini/) exits. A recorded game being played back never reaches it.
+Skirmish and network matches end at this screen instead of the campaign score screen. Every player sees it when the match ends, whether they won or lost. A defeated player keeps watching the match while another human player is still undefeated, and sees the screen when the match ends. The match also ends once no human player is left undefeated, even while computer players fight on, so in a skirmish the player's defeat ends it at once. A recorded game being played back skips the screen.
+
+Click, or press Space or Escape, to close the screen. If the launch file enables [multiplayer movies](/systems/multiplayer-movies/), the map's win or lose movie then plays. After that, a match started from the game's menu returns to the menu, and a match [a client launched](/formats/spawn-ini/) exits the game.
 
 ## Who is listed
 
-One row per house that played. A house whose country is [`MultiplayPassive`](/keys/multiplaypassive/) is left out, and so is an [observer](/systems/observers/). A defeated player keeps its row, so a match of four ends with four rows however it went. Computer players are listed like anyone else, under the name the match gave them. In a match launched with [`QuickMatch=yes`](/formats/spawn-ini/#what-a-player-is-shown), every row shows the player's number instead.
+The screen has one row for each house that played. Houses whose country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/) are left out, and so are [observers](/systems/observers/). Defeated players keep their rows, so a four-player match always ends with four rows.
 
-Rows are ranked by whether the house was left undefeated, and then by the number in its Score column, so the winner heads the list. Each row is tinted with the house's own color, and two houses sharing a color are drawn alike.
+Each row shows the house's name in the match, computer players included. With [`QuickMatch=yes`](/formats/spawn-ini/#what-a-player-is-shown) in the launch file, each row shows the player's number instead of a name.
+
+Undefeated houses are listed first, then defeated ones. Within each group, the house with the higher score ranks first.
+
+Each row's name band and bars use the house's color, so two houses with the same color look alike.
 
 ## What each column holds
 
 | Column | What it counts |
 | --- | --- |
-| Losses | The house's own units and structures that were destroyed. |
-| Kills | The units and structures the house destroyed, whoever owned them. |
-| Economy | What the house spent, as a percentage of what the house that spent most spent. The biggest spender reads 100. |
-| Score | The points the house earned, and for a house left undefeated a bonus of half its opponents' average points, or 100, whichever is larger. |
+| Losses | The house's vehicles, infantry, aircraft and structures that were destroyed or captured. A sold structure does not count. |
+| Kills | The vehicles, infantry, aircraft and structures the house destroyed or captured, whoever owned them, including the house itself. |
+| Economy | The credits the house spent, as a percentage of what the biggest spender spent. The biggest spender reads 100. |
+| Score | The points the house earned, plus a bonus if the house is undefeated. |
 
-The three bar columns, Losses, Kills and Economy, grow together, and the score counts up at the end; every figure finishes at its exact value. A score that would rank below the row beneath it is raised above it before the columns are drawn, so the score column always descends.
+A destroyed structure with [`Insignificant=yes`](/keys/insignificant/) counts in neither Losses nor Kills.
 
-The four tallies come from the counts each house keeps for the whole match, and a [saved game](/formats/save-games/) holds all four. A resumed match is therefore scored on the whole of it rather than on the part played since the load.
+Destroying or capturing an object earns points equal to its cost. Harvesting also earns points.
+
+An undefeated house receives a bonus of half the average points of all the other listed houses, allies included. The bonus is at least 100.
+
+A player who surrenders a skirmish is still ranked with the undefeated houses on this screen and receives the undefeated bonus.
+
+Scores never increase down the list. If an undefeated house scored less than the house listed below it, its shown score becomes the lower house's score plus a random amount. The amount is between 1 and the average points of all listed houses, or between 1 and 100 if that average is below 100. A raised score can pass the house listed above, which is then raised the same way. Several undefeated houses, the winner included, can therefore show more than they earned.
+
+The Losses, Kills and Economy columns fill one after another, with every bar in a column growing at the same time. The Score column then counts up. Each figure stops at its exact value.
+
+A [saved game](/formats/save-games/) keeps the counts behind all four columns. A resumed match is therefore scored on the whole match, not only the part played since loading.
 
 ## Passing over the screen
 
-A client that keeps its own record of a match writes [`SkipScoreScreen=yes`](/formats/spawn-ini/#what-a-player-is-shown), and the match then ends without the screen. The round is still counted, and an ending movie [the file asked for](/formats/spawn-ini/) still plays. The map's [`SkipScore`](/keys/skipscore/) is a campaign setting and does not reach this screen.
+[`SkipScoreScreen=yes`](/formats/spawn-ini/#what-a-player-is-shown) in the launch file ends a skirmish or network match without this screen. The ending movie still plays if the launch file enables multiplayer movies.
+
+The map's [`SkipScore`](/keys/skipscore/) key applies only to the campaign score screen and has no effect here.

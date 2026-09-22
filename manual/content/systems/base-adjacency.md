@@ -1,6 +1,6 @@
 ---
 title: Base placement and adjacency
-summary: "Determines whether a pending building placement is allowed, from the eligible buildings and owned cells around it."
+summary: "Whether a player may place a building at a site, based on the anchor buildings and owned wall cells near it."
 category: buildings-economy
 keys:
   - Adjacent
@@ -11,39 +11,52 @@ related:
     id: spawn-ini
 ---
 
-The proximity check runs for the local player's own house only. It applies to a pending BuildingType placement with a valid foundation, and a placement for any other house passes without a scan. The check looks at the cells around that foundation for an anchor: a building already on the map that the placement may be built against. An anchor must belong to the same house, or to a mutually allied one when the match allows it.
+A player can place a building only near an **anchor**: a building already on the map that the new one may be built against. The anchor must belong to the player, or to a mutually allied player when the match allows [building off an ally](#building-off-an-ally). Where no anchor is in range, the placement cursor shows the site as blocked and clicking there does not place the building.
+
+The rule applies only to buildings a player places from the sidebar. Computer houses place their buildings without it. An upgrade clicked onto a building that accepts it is also exempt.
+
+Only the placing player's machine runs the check. The other machines in the match accept the placement without repeating it.
 
 ## Anchor eligibility
 
-Two settings on the object types decide the check, and the table sets each against the object it is read from: one comes from what already stands on the map, the other from what is being placed. Neither is a radius the existing building projects, so changing `Adjacent` on a BuildingType moves where that type may be placed and leaves every other type where it was.
+Two keys decide the check. [`BaseNormal`](/keys/basenormal/) belongs to the building already on the map, and [`Adjacent`](/keys/adjacent/) belongs to the building being placed.
 
 | Setting | Read from | What it controls |
 | --- | --- | --- |
 | [`BaseNormal`](/keys/basenormal/) | The type of a building already on the map | Whether a building of that type may serve as an anchor |
-| [`Adjacent`](/keys/adjacent/) | The BuildingType being placed | How far its pending foundation searches for an anchor |
+| [`Adjacent`](/keys/adjacent/) | The BuildingType being placed | How far its foundation searches for an anchor |
 
 ```ini title="rules.ini"
 [GAPOWR]
-BaseNormal=no ; placed instances cannot anchor later placements
-Adjacent=5   ; pending instances use this search distance
+BaseNormal=no ; a placed GAPOWR cannot anchor later placements
+Adjacent=5    ; a GAPOWR being placed searches this far for an anchor
 ```
 
-Two building types can never anchor, whatever the assignment says: a type whose ObjectType ID is `NAFNCE` or `NAPOST` has `BaseNormal` forced to no.
+`Adjacent` is not a radius around an existing building. Raising it on one BuildingType lets that type be placed farther from its anchor and changes nothing for other types.
+
+Laser fence types anchor like any other building unless their section sets `BaseNormal=no`. Stock rules set it for the fence post `NAPOST` but not for the fence section `NAFNCE`.
 
 ## Placement decision order
 
-1. Take the pending BuildingType's foundation dimensions, and add one cell to its `Adjacent` value on every side to form a rectangular scan area.
-2. Skip cells covered by the pending foundation.
-3. Accept a wall placement when a scanned cell belongs to the same house, whether or not a building stands in that cell. A house owns the cells its own walls stand on.
-4. Accept any placement, a wall's included, when a scanned cell holds an eligible anchor: a building whose type has `BaseNormal=yes`, owned by the same house or by an ally the match admits.
-5. Reject the placement when no scanned cell satisfies either test.
+The search covers the block of cells that extends `Adjacent` + 1 cells beyond each edge of the pending foundation, corners included. Cells inside the foundation itself are not examined. With `Adjacent=5`, for example, the search reaches six cells out from each side. A negative value leaves no cells to examine, so the check always fails.
+
+The adjacency check passes when any examined cell passes one of these tests:
+
+- **Placing any building:** the cell holds an eligible anchor. That is a building whose type has `BaseNormal=yes`, owned by the placing player or by an ally the match admits.
+- **Placing a wall:** the cell is owned by the placing player, whether or not a building stands there. A player owns the cells under their walls; [walls and gates](/systems/walls-and-gates/#who-owns-a-wall) explains how wall cells get an owner. This lets a wall run extend from the end of an earlier wall.
+
+If no examined cell passes either test, the check fails and the building cannot be placed there.
+
+:::note[Adjacent zero still permits contact]
+Because the search reaches one cell beyond the `Adjacent` value, `Adjacent=0` still finds an anchor that touches the foundation, including diagonally.
+:::
 
 ## Building off an ally
 
-A match may admit a mutually allied house's buildings as anchors alongside your own. The alliance must run both ways: a house that has allied you but has not been allied in return anchors nothing. The anchor still needs `BaseNormal=yes`, and step 3 is untouched, so an ally's walls and bibs open no ground. Setting [`BuildOffAllyAnyStructure=no`](/keys/buildoffallyanystructure/) narrows which of the ally's buildings count, from any of them to construction yards alone.
+`BuildOffAlly=yes` in the [launch file](/formats/spawn-ini/) lets a player's placements use a mutually allied player's buildings as anchors. The alliance must run both ways. A one-sided alliance, in either direction, anchors nothing.
 
-Only the placing machine runs the check; nothing re-tests adjacency when the placement reaches the others. A computer house builds its base by a rule of its own that never looks at an ally, so the option reaches human placement alone. A [launch file](/formats/spawn-ini/) sets it.
+An ally's building must still have `BaseNormal=yes`. [`BuildOffAllyAnyStructure=no`](/keys/buildoffallyanystructure/) further limits ally anchors to construction yards. A player's own buildings anchor their placements under either setting.
 
-:::note[Adjacent zero still permits contact]
-The scan adds one cell to the stored value. `Adjacent=0` can therefore find an eligible anchor touching the pending foundation.
-:::
+The wall test is unchanged. It accepts only cells the placing player owns, so a wall run cannot start from an ally's wall.
+
+Like the rest of the check, `BuildOffAlly` affects only human players.

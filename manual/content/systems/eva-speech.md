@@ -1,26 +1,49 @@
 ---
 title: EVA speech
-summary: EVA lines are queued and spoken one at a time through the speech stream, with a one second pause before a burst and half a second between lines.
+summary: Speech lines wait in a queue of up to eight and play one at a time, after a one-second wait for the first line and half a second apart.
 category: audio-speech
 keys: [VoiceVolume]
 ---
 
-Every request to speak a line goes into a queue that holds up to eight lines. Nothing is spoken for a second after the first request of a burst, so the lines a single event scatters across a few frames collect before the first is heard. Half a second of silence then separates one line from the next. A line asked for at once skips that pause and goes ahead of the queue, but never cuts a line that is already speaking. The incoming-transmission call of a radar movie is asked for that way.
+Every line spoken during a game goes through one queue and plays one at a time. That includes EVA's announcements and the lines that [Play speech](/mapping/actions/taction-play-speech/) asks for. Up to eight lines can wait in the queue.
+
+When a line is requested while nothing is speaking or waiting, the game waits about a second before playing it. The other lines an event requests over the next few frames join the queue during that second. After each line ends, the next one waits half a second.
+
+A line whose file cannot be opened is skipped, and the next waiting line plays in its place.
+
+A line can also be requested to play at once. It ends the one-second wait and goes ahead of the ordinary waiting lines, but it does not cut a line that is already speaking, and it still waits out the half-second gap. The incoming-transmission call that opens a radar movie is requested this way.
 
 ## Order
 
-Lines wait by class, then by priority, then by age. Mission accomplished and mission failed are critical and go ahead of everything waiting. Every other line is queued at one priority, so the queue plays them in the order they were asked for. A line that is speaking or already waiting is not queued a second time. When the queue is full, the oldest of the lowest-priority lines in the lowest class makes room, and a critical line gives way only to another.
+Waiting lines play in this order:
+
+1. Mission accomplished and mission failed.
+2. Lines requested to play at once.
+3. Every other line, oldest first.
+
+A line that is speaking or already waiting is not added again. When all eight places are taken, a new line replaces the oldest ordinary waiting line. If none is waiting, it replaces the oldest line requested at once. Mission accomplished and mission failed are never replaced.
 
 ## What stops a line
 
-Stopping speech empties the queue and cuts the line that is speaking. The scenario's end does this, and so does the switch of speech files at the start of a scenario. A line never plays past the archive it came from. Turning EVA off through the trigger system keeps her own lines out of the queue while letting other speech through. [Disable Speech](/mapping/actions/taction-disable-speech/) is the action that does it and [Enable Speech](/mapping/actions/taction-enable-speech/) is the one that undoes it. Whether EVA may speak travels with a save game.
+Stopping speech empties the queue and cuts the line that is speaking. It happens when:
+
+- a mission is lost, once every waiting line has played or about five seconds pass;
+- a scenario or saved game loads, because the game switches speech files.
+
+Aborting a game stops speech at once. EVA then announces the exit, and speech stops again when that line ends or after about five seconds. While EVA is turned off, no exit announcement plays.
+
+## Turning EVA off
+
+An EVA line is one whose file name starts with `00-` or `01-`. [Disable Speech](/mapping/actions/taction-disable-speech/) keeps new EVA lines out of the queue until [Enable Speech](/mapping/actions/taction-enable-speech/) lets them in again. Other lines are still queued, and lines already waiting or speaking still play.
+
+Each scenario starts with EVA enabled. A saved game restores the setting it had when it was saved.
 
 ## Volume
 
-The `VoiceVolume` setting scales the whole speech stream and takes effect on the line that is speaking. Speech is silent while any of these hold, tested in this order:
+[`VoiceVolume`](/keys/voicevolume/) sets the volume of all speech. A change applies at once, including to the line that is speaking.
 
-- the game was started with the quiet launch option;
-- `VoiceVolume` is zero;
+While any of these holds, every request to speak is refused and nothing is queued:
+
+- the game was started with the [quiet launch option](/using/command-line/quiet/);
+- `VoiceVolume` is below 1/255 (about 0.004), which includes zero;
 - no audio device is available.
-
-Nothing is queued in that state either.

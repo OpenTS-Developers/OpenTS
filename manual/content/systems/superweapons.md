@@ -1,6 +1,6 @@
 ---
 title: Superweapons
-summary: "Charges one timer per house for every superweapon a rules section declares, and delivers that section's hard-coded effect where the shot is aimed."
+summary: "How a house gains, charges and fires each declared superweapon, and what each of the seven hard-coded behaviors delivers."
 category: superweapons-special
 keys:
   - AIIonCannonAPCValue
@@ -60,13 +60,13 @@ related:
     id: TACTION_DEACTIVATE_FIRESTORM
 ---
 
-A superweapon exists in two layers. The rules section declares one weapon for the whole game and fixes its recharge delay, its cameo, its mouse action and its behavior. Every house then holds its own copy of that weapon, with its own countdown and its own availability. Two houses holding the same weapon share nothing but the settings.
+Every superweapon has one rules section and one copy in each house. The section sets what all copies share: the recharge delay, the cameo, the mouse action and the behavior. Each house's copy keeps its own state: whether the house holds the weapon, whether it is suspended, and how far its countdown has run.
 
-Three words keep that split through the rest of the page. A weapon's **behavior** is one of seven effects wired into the engine and chosen by `Type=`; a section picks one of the seven and cannot add to them. The **declared list** is the order `[SuperWeaponTypes]` puts the sections in. A weapon's **position** in that list is the only name every later reference uses for it. Everything a house's own copy holds is per house and is written in no section: whether the house has the weapon, whether it is suspended, and where its countdown stands.
+A weapon's **behavior** is the effect it delivers when fired. `Type=` selects one of seven behaviors built into the engine, and rules cannot add more. The **declared list** is `[SuperWeaponTypes]`, and a weapon's **position** in that list is the number trigger actions use to name it.
 
 ## Declaring a superweapon
 
-`[SuperWeaponTypes]` is a numbered list whose values name the sections that describe each weapon.
+`[SuperWeaponTypes]` lists the sections that declare superweapons.
 
 ```ini title="rules.ini"
 [SuperWeaponTypes]
@@ -79,23 +79,32 @@ Three words keep that split through the rest of the page. A weapon's **behavior*
 7=DropPodSpecial
 ```
 
-The list is read in order. Each name the game has not already heard of takes the next position at the end of the declared set. `FIRESTRM.INI` and a scenario's own rules override are read afterward through the same path, so a name that appears only there is appended after everything `rules.ini` declared. Every house is given one copy of each declared weapon, in the same order, as it is created. That position is the place a house's copy occupies among its own set, and it is the number the two granting trigger actions take: [Add 1-time special weapon](/mapping/actions/taction-1-special/) and [Add repeating special weapon](/mapping/actions/taction-full-special/). A structure reaches the same weapon by name: [`SuperWeapon=`](/keys/superweapon/) and [`SuperWeapon2=`](/keys/superweapon2/) take a declared section's name.
+The list is read in order, and each new name takes the next position. Later rules files, such as `FIRESTRM.INI` and a scenario's rules override, can add names. A name that first appears there goes after everything `rules.ini` declared. A name that is already declared keeps its position.
 
-A name listed with no matching section is still declared. It keeps every default, which means it charges for five minutes, shows no artwork at all, and does nothing when fired.
+Each house receives one copy of every declared weapon when the house is created, in list order. The two trigger actions that grant a weapon, [Add 1-time special weapon](/mapping/actions/taction-1-special/) and [Add repeating special weapon](/mapping/actions/taction-full-special/), name it by its position. A structure names it by section name, in [`SuperWeapon=`](/keys/superweapon/) or [`SuperWeapon2=`](/keys/superweapon2/).
 
-[`Type=`](/keys/type/#scope-superweapontype) chooses which of seven hard-coded behaviors the section delivers. Several sections may name the same behavior. Each still gets its own cameo, its own timer and its own grant condition. A section left with no recognized behavior charges and shows a cameo like any other, but delivers no effect.
+A listed name with no matching section is still declared, with every default. It charges for five minutes, has no cameo artwork, and does nothing when fired.
 
-:::danger[Reordering `[SuperWeaponTypes]` misdirects a missile silo]
-A missile silo remembers the behavior number of the weapon that ordered the launch. It then reaches into the declared list at that number to fetch the projectile, warhead, speed and range it fires. The two agree only while the list is declared in exactly the behavior order `MultiMissile`, `EMPulse`, `Firestorm`, `IonCannon`, `HunterSeeker`, `ChemMissile`, `DropPod`. That is the order the shipped list above happens to use. Inserting, removing or reordering an entry makes the silo launch the [`WeaponType=`](/keys/weapontype/) of whichever section now stands in that position. Two sections that name the same missile behavior therefore share one missile, because both send the silo to the same position. A position past the end of the list is not checked before it is read.
+[`Type=`](/keys/type/#scope-superweapontype) selects the behavior. Several sections may use the same behavior, and each still has a separate cameo, countdown and grant condition. A section with no recognized `Type=` charges and shows a cameo like any other, but firing it has no effect.
+
+:::danger[Keep `[SuperWeaponTypes]` in the shipped order]
+A missile silo does not launch the `WeaponType=` of the weapon that ordered the launch. It uses the section whose position matches that weapon's behavior, in this order: `MultiMissile`, `EMPulse`, `Firestorm`, `IonCannon`, `HunterSeeker`, `ChemMissile`, `DropPod`. The first section in the list therefore supplies every `Type=MultiMissile` launch, and the sixth supplies every `Type=ChemMissile` launch. The shipped list follows this order.
+
+If you insert, remove or reorder entries, a silo launches the [`WeaponType=`](/keys/weapontype/) of whichever section now holds that position. Two sections with the same missile behavior always launch the same missile. A list with fewer than six entries makes a chemical missile launch read past the end of the list.
 :::
 
 ## Becoming available
 
-A house re-examines its superweapons on its own turn, whenever something has flagged its build options for a rebuild. The flag is set by a structure placed, sold, destroyed, captured, switched on or off, or fitted with a plug. Two passes then run in sequence. The first takes away or suspends what the house can no longer support, and the second switches on everything its structures now grant. A house that has been defeated is stripped by the first pass and skipped entirely by the second. A power balance that crosses the full-power line runs the first pass on its own, without the second.
+A house updates which superweapons it holds after one of its structures is built, placed, sold, destroyed, captured, switched on or off, or fitted with a plug. On the house's next update, two passes run in order:
+
+1. The first pass removes each weapon whose granting structures are gone, and suspends or resumes the rest. [Power output and drain](/systems/power/#superweapons) covers when a held weapon is suspended.
+2. The second pass grants every weapon that the house's structures now provide.
+
+A defeated house loses every weapon in the first pass, including one-time and trigger-granted weapons, and skips the second pass. When the house's power crosses the full-power line, only the first pass runs.
 
 ### From a structure or a plug
 
-For every weapon the house does not already hold, the engine walks the structure list from its end backward. It keeps the entries this house owns that are active and out of [limbo](/glossary/#limbo). The first such structure that names the weapon in [`SuperWeapon=`](/keys/superweapon/) or [`SuperWeapon2=`](/keys/superweapon2/) grants it, and so does one with a plug whose type names it. When the house is the local player's, the same step puts the cameo on the sidebar.
+A house gains a weapon it does not already hold when it owns a structure that grants the weapon and is active and out of [limbo](/glossary/#limbo). A structure grants the weapons its type names in [`SuperWeapon=`](/keys/superweapon/) and [`SuperWeapon2=`](/keys/superweapon2/), and the weapons named the same way by a plug fitted to it. For the local player, the cameo appears on the sidebar at the same time.
 
 ```ini title="rules.ini"
 [NAMISL]        ; Missile Silo
@@ -108,75 +117,102 @@ PowersUpBuilding=GAPLUG
 SuperWeapon=IonCannonSpecial
 ```
 
-[`AuxBuilding=`](/keys/auxbuilding/) is tested on the structure's own grant: a weapon that names one is withheld unless its house has at least one standing structure of that BuildingType.
+[`AuxBuilding=`](/keys/auxbuilding/) adds a condition to the grant that comes from a structure's type. A weapon that names an `AuxBuilding=` is granted by a structure's `SuperWeapon=` or `SuperWeapon2=` only while its house owns at least one standing structure of that BuildingType.
 
-:::caution[A plug is never checked against `AuxBuilding=`]
-The upgrade slots are matched straight against `SuperWeapon=` and `SuperWeapon2=` without the test the host structure's own settings go through. A weapon supplied by a plug is therefore granted whether or not its `AuxBuilding=` stands, and the later pass keeps it present for the same reason. In the stock set the ion cannon and the drop pods arrive only through plugs, so an `AuxBuilding=` on either has no effect. The hunter seeker arrives both from a plug and from the Nod temple's own grant, and on that grant the test does apply.
+:::caution[A plug ignores `AuxBuilding=`]
+A plug grants its weapon without the `AuxBuilding=` check, and the house keeps the weapon on the same terms. In the shipped rules the ion cannon and the drop pods come only from plugs, so an `AuxBuilding=` on either has no effect. The hunter seeker comes both from a plug and from the Nod temple, and the check applies to the temple's grant.
 :::
 
-A weapon that becomes available while its house is already below full power is granted suspended, whatever [`IsPowered=`](/keys/ispowered/) says. Suspension by power, and what it costs a charge-draining weapon, are covered by [power output and drain](/systems/power/#superweapons).
+A weapon granted while its house is short of power arrives suspended, even with [`IsPowered=no`](/keys/ispowered/), and its `ChargingVoice=` does not play. [Power output and drain](/systems/power/#superweapons) covers suspension by power and what it costs a charge-draining weapon.
 
 ### One shot at a time
 
-Two paths hand out a single-use weapon. The [Add 1-time special weapon](/mapping/actions/taction-1-special/) trigger action names the position of a weapon in the declared list; a [missile crate](/systems/crates/#what-each-result-does) picks one of its own. A one-time weapon is forced to full charge the instant it is granted, and is never suspended. It is taken away from the house the moment it discharges.
+The [Add 1-time special weapon](/mapping/actions/taction-1-special/) trigger action grants a single-use copy of the weapon at the position it names. A [missile crate](/systems/crates/#what-each-result-does) also grants one; the warning below explains which weapon.
 
-:::danger[The ICBM crate tests one section and hands out another]
-The crate looks through the opening house for a weapon whose `Type=MultiMissile` and discards what it found. It then hands out the first section in the declared list whose [`Action=Nuke`](/keys/action/#scope-superweapontype). When a `Type=MultiMissile` section exists and no section declares `Action=Nuke`, that second lookup returns nothing and the crate uses the result anyway, which faults. Keep the two on one section, as the shipped rules do.
+A one-time weapon is fully charged the moment it is granted and is never suspended. It needs no structure, and it is removed from the house as soon as it fires. No voice announces the grant.
+
+A house that already holds the weapon gains nothing from either path. Its copy keeps its current charge and stays a repeating weapon.
+
+:::danger[Keep `Type=MultiMissile` and `Action=Nuke` on one section]
+The missile crate checks that the collecting house has a `Type=MultiMissile` weapon. It then grants the first section in the declared list that sets [`Action=Nuke`](/keys/action/#scope-superweapontype), which need not be the same section. If a `Type=MultiMissile` section exists and no section sets `Action=Nuke`, collecting the crate crashes the game. If no `Type=MultiMissile` section exists, the crate grants nothing. The shipped rules put both on `MultiSpecial`.
 :::
 
 ### Granted outright
 
-The [Add repeating special weapon](/mapping/actions/taction-full-special/) trigger action grants a weapon and cancels its dependence on a building at the same time. Such a weapon recharges for as long as the house lives. The removal pass no longer examines it, so no structure can be sold to take it away, and low power can never suspend it. Only defeat removes it.
+The [Add repeating special weapon](/mapping/actions/taction-full-special/) trigger action grants the weapon and frees it from structures. An ordinary weapon recharges after every shot for as long as the house lives, and a `ManualControl=yes` weapon still waits for its [next start](#manual-control). Losing or selling structures cannot remove the weapon, and low power cannot suspend it. Only defeat removes it.
+
+If the house already holds the weapon, the action only frees it from structures. A one-time copy the house already holds stays one-time and is still removed when it fires.
+
+:::caution[Granting a weapon that is on hold]
+If the weapon is suspended when the action runs, it stays suspended for the rest of the match. Only the structure check can resume a suspended weapon, and the action removes the weapon from that check.
+:::
 
 ## Charging
 
-[`RechargeTime=`](/keys/rechargetime/) is authored in minutes and converted to game frames at 900 frames to the minute. The timer counts down toward zero and the weapon becomes ready when it arrives.
+[`RechargeTime=`](/keys/rechargetime/) sets the charge delay in minutes, which the game converts at 900 frames a minute. The weapon's countdown starts at that delay, and the weapon is ready when the countdown reaches zero.
 
-Every event that touches that timer is listed below, with what it leaves on the clock. The table draws two distinctions. It shows which events put the full delay back rather than resuming from where the clock stopped, and which leave the timer stopped. A stopped timer never reaches zero on its own, so the weapon waits for something else to start it.
+The table lists the events that change an ordinary weapon's countdown. The weed pool and charge-draining weapons are covered below. A stopped countdown does not run, so the weapon stays uncharged until another event starts it again.
 
-| Event | Effect on the timer |
+| Event | Effect on the countdown |
 | --- | --- |
 | Granted, ordinary weapon | started at the full delay |
 | Granted, `ManualControl=yes` | set to the full delay and stopped |
-| Granted as a one-time weapon | forced to zero, ready at once |
+| Granted as a one-time weapon | set to zero, so the weapon is ready at once |
 | Suspended | stopped where it stands |
 | Resumed, ordinary weapon | continues from where it stopped |
-| Resumed, `UseChargeDrain=yes` | set back to the full delay |
-| Discharged, repeating weapon | restarted at the full delay |
-| Discharged, `ManualControl=yes` | set to the full delay and stopped |
-| Discharged, one-time weapon | the weapon is removed from the house |
+| Resumed, `ManualControl=yes` | stays stopped |
+| Resumed, `UseChargeDrain=yes` | restarted at the full delay |
+| Fired, repeating weapon | restarted at the full delay |
+| Fired, `ManualControl=yes` | set to the full delay and stopped |
+| Fired, one-time weapon | the weapon is removed from the house |
 
-Only the local player's own weapon is announced. [`ChargingVoice=`](/keys/chargingvoice/) speaks as it starts its charge and [`RechargeVoice=`](/keys/rechargevoice/) as it reaches zero. Every other house charges silently. A charge-draining weapon still speaks `ChargingVoice=` on the grant that starts it, but announces neither end of its running cycle after that.
+Voices play only for the local player's weapons. [`ChargingVoice=`](/keys/chargingvoice/) plays when a countdown starts: when a structure grants the weapon, after each shot, and when the weed pool restarts a chemical missile. [`RechargeVoice=`](/keys/rechargevoice/) plays when the countdown reaches zero. No voice plays when a trigger action or a crate grants the weapon, or when a suspended weapon resumes. A charge-draining weapon plays `ChargingVoice=` only when a structure grants it; its later charge and drain cycles are silent.
 
-:::caution[`RechargeTime=0` reads as if the key were absent]
-An instantly recharging superweapon cannot be authored, because the read treats exactly `0` as nothing written. [`RechargeTime=`](/keys/rechargetime/) covers what the delay does then.
+:::caution[`RechargeTime=0` counts as unset]
+A value of exactly `0` is ignored. The weapon keeps the delay an earlier rules file set, or five minutes if none did. A near-instant recharge needs a small positive value.
 :::
 
 ### Manual control
 
-[`ManualControl=yes`](/keys/manualcontrol/) leaves the timer stopped when the weapon is granted and stops it again after every discharge. The weapon therefore does not count down on its own, and something else has to start it. The engine has exactly one such starter, and only a `Type=ChemMissile` weapon uses it. On each of the house's turns, a `Type=ChemMissile` weapon that is present and not already charged restarts its charge when its house's [weed pool](/systems/veins/#the-weed-pool) is not empty and holds exactly [`WeedCapacity`](/keys/weedcapacity/) units. That pool is then spent.
+[`ManualControl=yes`](/keys/manualcontrol/) stops the countdown when the weapon is granted and again after every shot, so the weapon never charges on its own. The only event that starts it is a full weed pool, and only for a `Type=ChemMissile` weapon. A weapon of any other behavior with `ManualControl=yes` never charges, although a one-time grant still arrives fully charged.
+
+When a house's [weed pool](/systems/veins/#the-weed-pool) holds exactly [`WeedCapacity`](/keys/weedcapacity/) units, the first `Type=ChemMissile` weapon the house holds that is not ready restarts its countdown at the full delay, and the pool is emptied. This happens with or without `ManualControl=yes`, and a countdown that is already running starts over.
+
+Two states change what a full pool does:
+
+- A ready weapon leaves the pool full. The countdown restarts as soon as the weapon fires.
+- A suspended weapon still empties the pool, but its countdown does not start.
 
 ## Charge-draining weapons
 
-[`UseChargeDrain=yes`](/keys/usechargedrain/) replaces the ordinary ready-or-charging pair with three states: charging, ready, and discharged. Firing a ready weapon moves it to the discharged state and rescales the timer by [`ChargeToDrainRatio`](/keys/chargetodrainratio/). The clock now measures how long the effect lasts. Firing it again returns it to the ready state with the ratio applied in the other direction. Letting the drain run to zero returns the weapon to charging with a full delay on the clock and takes the effect down.
+[`UseChargeDrain=yes`](/keys/usechargedrain/) gives a weapon three states: charging, ready and discharged. Firing a ready weapon delivers its `Type=` effect and moves it to the discharged state, where the countdown measures how long the effect lasts. Firing it again during the drain returns it to ready. When the drain runs out, the weapon returns to charging with a full delay on the countdown, and the effect ends.
 
-The two conversions are inverses of each other, and the arithmetic is short enough to follow. The charge a weapon has built up is `RechargeTime` less whatever is still on the clock. Firing puts that difference times the ratio on the clock as drain; firing again puts `RechargeTime` less the remaining drain divided by the ratio back on it as charge. An effect switched off the instant it came on therefore runs the second conversion on the whole drain. That reads `RechargeTime - (RechargeTime * ratio) / ratio`, which is zero, so the weapon is ready again with nothing left to charge. An effect switched off with half its drain still standing leaves half of `RechargeTime` on the clock, which is a half-charged weapon. Any other share comes back in the same proportion.
+[`ChargeToDrainRatio`](/keys/chargetodrainratio/) converts between charge and drain time:
 
-The flag, rather than [`Type=`](/keys/type/#scope-superweapontype), is also what shapes the cameo. A charge-draining weapon always reports itself as charging, so it always draws a clock and never shows the plain ready face. It can be fired from any state but charging or suspended.
+- On firing, the charge built so far (`RechargeTime` minus the time left on the countdown) is multiplied by the ratio and becomes the drain time.
+- On firing again, the unspent drain is divided by the ratio and returned as charge.
 
-The whole three-state cycle runs only for a house under human control. Firing the weapon in any other house toggles its effect on or off and touches neither the state nor the clock.
+An effect switched off the moment it starts therefore gives back the full charge. An effect switched off with half its drain left gives back half. A weapon returned to ready can be fired again at once, but its next drain lasts only as long as the charge it holds allows. Meanwhile its countdown keeps running toward a full charge.
+
+A charge-draining weapon always shows a clock on its cameo and never shows the plain ready face. It can be fired while ready or discharged, but not while charging or suspended.
+
+This cycle runs only for a house under human control. For any other house, firing the weapon only switches the effect on or off; the state and the countdown do not change.
 
 ### The firestorm defense
 
-`Type=Firestorm` is the one behavior wired to this machinery. Firing the weapon raises every [`FirestormWall=yes`](/keys/firestormwall/) structure the house owns, and firing it again lowers them. Damage aimed at a raised section is converted through [`DamageToFirestormDamageCoefficient`](/keys/damagetofirestormdamagecoefficient/) into charge taken off this weapon's clock instead of health taken off the section. Losing the last working [`GDIFirestormGenerator`](/keys/gdifirestormgenerator/) structure while the wall is up discharges the weapon outright. [The firestorm wall](/systems/laser-fences/#the-firestorm-wall) covers the wall itself: what a raised section does to what it touches, through [`FirestormWarhead`](/keys/firestormwarhead/) and the animations beside it, and how the two halves of the cycle are measured.
+`Type=Firestorm` is the only behavior built for this cycle. Firing the weapon raises every [`FirestormWall=yes`](/keys/firestormwall/) structure its house owns, and firing it again lowers them.
+
+Two events outside the cycle also change the wall. Damage aimed at a raised section [shortens the countdown](/systems/laser-fences/#damage-while-the-wall-is-up) through [`DamageToFirestormDamageCoefficient`](/keys/damagetofirestormdamagecoefficient/). Losing the last working [`GDIFirestormGenerator`](/keys/gdifirestormgenerator/) structure [lowers the wall](/systems/laser-fences/#losing-the-generator), as if the weapon had been fired again.
+
+[The firestorm wall](/systems/laser-fences/#the-firestorm-wall) covers what a raised section does to what it touches, through [`FirestormWarhead`](/keys/firestormwarhead/) and the animations beside it.
 
 ## Firing it
 
 ### The sidebar cameo
 
-A superweapon's artwork is the shape file named by [`SidebarImage=`](/keys/sidebarimage/), falling back to `XXICON.SHP` when that file cannot be found. There is no numeric countdown anywhere on the cameo; the charge readout is a clock and a short caption. [The sidebar](/systems/sidebar/) covers where the cameo sits, how it is announced, how it is captioned, and when it leaves.
+A superweapon's cameo is the shape file named by [`SidebarImage=`](/keys/sidebarimage/), or `XXICON.SHP` when that file cannot be found. The cameo shows no numeric countdown. Its charge appears as a clock and a short caption. [The sidebar](/systems/sidebar/) covers where the cameo sits, how it is announced, how it is captioned, and when it leaves.
 
-The table gives the caption each state shows. A charge-draining weapon is captioned while it charges, where an ordinary weapon is captioned with nothing, and it reaches a fourth state that no ordinary weapon has.
+The caption depends on the weapon's state. A charge-draining weapon has a caption while it charges and a fourth state that ordinary weapons lack.
 
 | Weapon state | Caption |
 | --- | --- |
@@ -185,42 +221,53 @@ The table gives the caption each state shows. A charge-draining weapon is captio
 | Ready | "Ready", or "Release" for `Type=HunterSeeker` |
 | Discharged, charge-draining | "Activated" |
 
-The clock is drawn while the weapon is not fully charged, and because a charge-draining weapon is always treated as charging, its cameo always shows one. Two clock shapes are used: the charge-up art while the weapon cannot be fired and the discharge art once it can.
+The clock is drawn while the weapon is not fully charged, and on every charge-draining weapon. It uses the charge-up art while the weapon cannot be fired and the discharge art once it can.
 
-Clicking a cameo that cannot be fired speaks [`SuspendVoice=`](/keys/suspendvoice/) when the timer is stopped and [`ImpatientVoice=`](/keys/impatientvoice/) otherwise. A `ManualControl=yes` weapon sits with its timer stopped between firings, so it answers with the suspend voice rather than the impatient one.
+Clicking a cameo that cannot be fired plays [`SuspendVoice=`](/keys/suspendvoice/) when its countdown is stopped and [`ImpatientVoice=`](/keys/impatientvoice/) otherwise. A `ManualControl=yes` weapon waiting for its next start has a stopped countdown, so it plays `SuspendVoice=`.
 
 ### Aiming and the click
 
-Clicking a cameo that can be fired takes one of two paths, decided by [`Action=`](/keys/action/#scope-superweapontype). `Action=None` fires the weapon immediately at cell 0,0 with no targeting step at all. That is how the firestorm and the hunter seeker are fired, neither of which has a mouse action of its own. Any other value arms targeting mode, deselects everything, and speaks the select-target announcement.
+[`Action=`](/keys/action/#scope-superweapontype) decides what clicking a cameo that can be fired does:
 
-While targeting mode is armed, the cursor over the map reports the weapon's `Action=` in place of the ordinary one. Releasing the left button fires the weapon at the cell under the pointer. A right click on the cameo or on the map cancels targeting, and band selection is suppressed while it is armed. The minimap does not accept superweapon actions, so a shot cannot be aimed there.
+- `Action=None` fires the weapon at once at cell 0,0, with no targeting step. The shipped firestorm and hunter seeker are fired this way.
+- Any other value arms targeting mode, deselects everything, and plays the select-target announcement.
 
-Every left click that resolves to an action searches the declared list for the first section whose `Action=` matches. This happens whether or not targeting mode was armed, and without asking which weapon armed it. Two sections sharing one `Action=` therefore always fire the earlier of the two. An `Action=` that ordinary orders also produce discharges a charged weapon on the next such order.
+While targeting mode is armed, the cursor over the map shows the weapon's `Action=` in place of the usual cursor. An EM pulse also shows an out-of-range cursor, which [the EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) covers.
+
+Releasing the left button fires the weapon at the cell under the pointer. A right click on the cameo or on the map cancels targeting.
+
+Band selection is off while targeting mode is armed. The minimap does not accept superweapon actions, so a shot cannot be aimed there.
+
+A left click fires the first section in the declared list whose `Action=` matches the click's action. This happens whether or not targeting mode is armed, and whichever cameo armed it. Two sections that share one `Action=` therefore always fire the earlier section. Clicking the later section's cameo arms targeting, but the shot fires the earlier section, or nothing if that section is not ready.
+
+If a section's `Action=` is one that ordinary orders also use, the player's next such order fires the weapon whenever it is charged. For example, a ready weapon with `Action=Attack` fires at the target of the player's next attack order.
 
 :::caution[A misspelled `Action=` becomes `None`]
-An `Action=` value the engine does not recognize is not rejected; it reads as `None`. The weapon then takes the immediate-fire path. Clicking the charged cameo discharges it on the spot at cell 0,0, with no targeting step and no opportunity to choose where the effect lands.
+An `Action=` value the engine does not recognize reads as `None`. Clicking the charged cameo then fires the weapon at once at cell 0,0, with no way to choose where the effect lands.
 :::
 
 ### The computer's use
 
-A computer house fires its superweapons from its periodic decision pass, which re-arms itself with 7 to 7.5 seconds each time it runs. Outside a campaign that pass always reaches the superweapon step. In a campaign it is reached only when the house's [`IQ=`](/keys/iq/) is at least [`SuperWeapons`](/keys/superweapons/) in `[IQ]`. A campaign house's intelligence is whatever its own scenario section sets, starting at 0.
+A computer house fires its ready superweapons during its periodic AI pass, which runs every 7 to 7.5 seconds. Outside a campaign, the pass always fires them. In a campaign, it fires them only when the house's [`IQ=`](/keys/iq/) is at least [`SuperWeapons`](/keys/superweapons/) in `[IQ]`. A campaign house takes its `IQ=` from its section in the scenario, and has 0 when the section sets none.
 
-Every weapon that has finished charging is then handed to the handler for its `Type=`. There is no handler for `EMPulse` and none for `Firestorm`, so a computer house never fires either from this pass. Its wall is raised only by the [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) trigger action.
+Each ready weapon goes to the handler for its `Type=`. There is no handler for `EMPulse` or `Firestorm`, so the computer never fires either on its own. Its firestorm wall goes up only through the [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) trigger action.
 
-Every handler refuses to fire while the house has no [declared enemy](/systems/base-attacked/#picking-a-first-enemy). The computer's own enemy pick is skipped in a campaign, so a campaign house has no declared enemy until damage or a trigger raises its anger against someone. Its superweapons stay charged and unused until then.
+Every handler waits until the house has a [declared enemy](/systems/base-attacked/#picking-a-first-enemy). In a campaign the computer does not pick an enemy on its own, so a campaign house has none until damage or a trigger makes it angry at someone. Until then its superweapons stay charged and unused.
 
-- **Multi missile and chem missile** take the enemy structure whose cell has the highest figure on the firing house's own [threat map](/systems/base-attacked/#the-threat-map). A building at full translucency is rated at a random 0 to 100 instead of by the threat map. Full translucency is the last step of the cloak fade, at which the building counts as cloaked. Nothing on this loop tests limbo, strength or alliance.
-- **Hunter seeker** is fired with no target at all.
-- **Drop pods** pick a random point in one of the four compass quadrants of the firing house's *own* base, between one and two base radii out from its center. They then take the closest cell to that point that infantry could walk into. The computer's pods land around its own base, not the enemy's.
-- **Ion cannon** rates every object the enemy house owns and strikes one of the best rated.
+- **Multi missile and chem missile** target the enemy structure whose cell rates highest on the firing house's [threat map](/systems/base-attacked/#the-threat-map). A structure at full translucency, the last step of a cloak's fade, is rated at random from 0 to 100 instead. Every structure the enemy owns is considered, including one in [limbo](/glossary/#limbo).
+- **Hunter seeker** is released with no target; the drone chooses one itself.
+- **Drop pods** land around the computer's *own* base, not the enemy's. The handler picks a random point in one of four compass quadrants, one to two base radii from the base's center, with the radius held between 3 and 8 cells. It then aims at the nearest cell to that point that infantry can enter.
+- **Ion cannon** rates every enemy object and strikes one of the highest rated.
 
-The ion cannon's rating is the only one of the four with settings behind it.
+The ion cannon's rating is the only one of the four with settings.
 
-Only an enemy object on the ground layer, active and out of [limbo](/glossary/#limbo), is a candidate at all. In difficulty slot 0 an object still inside a factory that is running and not suspended also qualifies. Every candidate opens at a rating of 1 and a structure at 3. Those two opening figures are what the table below replaces. The table is read only for a candidate whose current strength is at or below [`IonCannonDamage`](/keys/ioncannondamage/), and anything above that keeps its opening figure whatever it is. The comparison is against the raw figure alone, not a prediction that the blast will kill the object.
+Only enemy objects that are on the ground layer, active and out of [limbo](/glossary/#limbo) are candidates. In difficulty slot 0, an object still being built also counts, if its factory is producing and not on hold.
 
-What a rating decides is rank, not worth. The routine remembers the highest rating it has seen, collects every candidate that ties with it, and fires at one of those at random. A premium of `4` and a premium of `40` therefore pick out the same object as long as nothing outrates it. A premium replaces the opening figure rather than adding to it, so a premium below that figure demotes its object. An [`AIIonCannonHarvesterValue`](/keys/aiioncannonharvestervalue/) entry of `1` leaves a nearly destroyed harvester rated below an untouched structure standing beside it.
+Each candidate starts at a rating of 1, or 3 for a structure. A candidate whose current strength is at or below [`IonCannonDamage`](/keys/ioncannondamage/) takes its rating from the table below. A candidate above that figure keeps its starting rating. The test compares strength with the damage figure only; it does not predict whether the blast will destroy the object.
 
-The rows are tested top to bottom and the first match wins. A base defense that also produces vehicles is therefore rated as a war factory and never reaches the base defense row. The right-hand column is what the rating column alone hides. Three rows are numbers fixed in the engine, and no rules file can move them. Every other row names a per-difficulty list read at the position of the *firing* house's own [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot), never the target's. None of those lists has a built-in value, so each needs one entry per difficulty written for it.
+Only the highest rating matters. The computer collects every candidate that ties for the highest rating and strikes one of them at random. Apart from cloaked objects, described below, a table value of `4` and one of `40` therefore select the same target when nothing else rates 4 or higher. A table value replaces the starting rating; it is not added to it. A value below another candidate's rating ranks the object below that candidate. For example, an [`AIIonCannonConYardValue`](/keys/aiioncannonconyardvalue/) of `2` ranks a nearly destroyed construction yard below any structure still above `IonCannonDamage`, which keeps its starting 3.
+
+The rows are tested from the top for each kind of object, and the first match wins. A base defense that also produces vehicles is therefore rated as a war factory. Rows marked as fixed cannot be changed by any rules file. Each per-difficulty list is read at the position of the *firing* house's [difficulty slot](/systems/difficulty/#from-the-setting-to-a-slot), not the target's. None of these lists has a built-in value, so each needs one entry for every difficulty.
 
 | Candidate | Rating | Where the figure comes from |
 | --- | --- | --- |
@@ -240,46 +287,56 @@ The rows are tested top to bottom and the first match wins. A base defense that 
 | Vehicle with [`Passengers`](/keys/passengers/) above zero | [`AIIonCannonAPCValue`](/keys/aiioncannonapcvalue/) | Per-difficulty list |
 | Any other vehicle | `2` | Fixed in the engine |
 
-Nothing else the enemy owns matches a row, so an aircraft standing on the ground is a candidate rated 1 however badly damaged it is.
+No row covers aircraft, so an aircraft on the ground is a candidate rated 1 however badly damaged it is.
 
-One override then runs on top of whatever the table produced. A cloaked object, and a building at full translucency, each take a rating drawn at random from zero up to ten above the best rating collected so far. Such an object's rating therefore depends on where it falls in the scan, and it can outrate everything found before it. This is not the same rule as the flat 0 to 100 the missile handlers draw for a fully translucent building. The two are separate scales measuring different things: threat-map figures there, these premiums here. Each random range is sized for its own scale, so neither figure can be read across from one handler to the other.
+A cloaked object, or a structure at full translucency, takes a random rating instead, from 0 up to ten above the best rating found so far in the scan. It can therefore outrate everything scanned before it, and its chance depends on its place in the scan. The higher the best rating so far, the less likely the draw is to beat it, so large table values make cloaked objects rarely chosen. This rule is separate from the 0 to 100 draw the missile handlers use.
 
 ## What each behavior delivers
 
-`Type=DropPod` calls the [drop-pod delivery](/systems/drop-pods/#drop-pods-superweapon) on the chosen cell, and `Type=Firestorm` toggles [the firestorm defense](#the-firestorm-defense). The rest are set out here.
+`Type=DropPod` calls the [drop-pod delivery](/systems/drop-pods/#drop-pods-superweapon) on the chosen cell, and `Type=Firestorm` toggles [the firestorm defense](#the-firestorm-defense). This section covers the other behaviors.
 
 ### Ion cannon
 
-The blast lands at the target cell, at the height of that cell's terrain. Over water it draws the last entry of [`SplashList`](/keys/splashlist/); over anything else it draws [`IonBlast`](/keys/ionblast/). The [`IonBeam`](/keys/ionbeam/) animation is created in both cases. It then applies `IonCannonDamage` through [`IonCannonWarhead`](/keys/ioncannonwarhead/) with no source, so the warhead's [`Verses`](/keys/verses/) table, its spread falloff and [`Immune=yes`](/keys/immune/) all apply and no kill is credited. It also lights the scene when that warhead is declared bright. A cell that lies under a bridge is detonated twice: once at bridge height and once at ground level. A shockwave then rolls outward over the following frames.
+The blast lands on the target cell, at the height of that cell's terrain. It plays [`IonBlast`](/keys/ionblast/), or the last entry of [`SplashList`](/keys/splashlist/) over water, and always plays [`IonBeam`](/keys/ionbeam/).
+
+The blast deals `IonCannonDamage` through [`IonCannonWarhead`](/keys/ioncannonwarhead/) with no attacker. The warhead's [`Verses`](/keys/verses/) table, its spread falloff and [`Immune=yes`](/keys/immune/) all apply, and no kill is credited. A bright warhead also lights the scene. A cell under a bridge is hit twice: once at bridge height and once at ground level.
+
+A shockwave then rolls outward and stops the infantry and vehicles it passes near the target. Vehicles driving out of a war factory, or standing on its exit cells, keep moving.
 
 ### Multi missile and chem missile
 
-An ordinary weapon of either behavior searches the declared BuildingTypes for the first [`NukeSilo=yes`](/keys/nukesilo/) type that names this weapon in `SuperWeapon=` or `SuperWeapon2=`. It then looks for one of the house's structures of that type. That silo takes the missile mission, and the target is stored on the house as a single value. A second launch therefore overwrites a destination the silo has not yet read. A missile already in flight keeps the cell it was launched against.
+A repeating missile launches from a silo. The engine finds the first BuildingType with [`NukeSilo=yes`](/keys/nukesilo/) that names this weapon in `SuperWeapon=` or `SuperWeapon2=`, and uses one of the house's structures of that type. If the house owns none, nothing launches, but the charge is spent. Only that first type is searched, so a silo of a later type that grants the same weapon never launches it.
 
-The silo opens its door, holds it, and launches a projectile drawn from the recorded weapon's `WeaponType=`. That supplies the projectile, warhead, maximum speed and projectile range. The projectile has a hard-coded strength of 200. It is released 160 leptons (five eighths of a cell) north of the structure's center and pointed straight up. The launch-detected announcement plays whenever the launching house is not player-controlled. The door then closes and the structure returns to guard.
+The house stores a single missile target. A second launch before the first silo has launched its missile therefore redirects that silo. A missile already in flight keeps its target.
 
-A one-time missile has no silo at all. It is created from the map edge closest to the target, out of the hard-coded weapon `MultiLauncher` or `ChemLauncher` according to the behavior. It is fired at a hard-coded range of `100000`, which is longer than any map is wide.
+The silo opens its door, launches the missile, closes the door and returns to guard. The projectile, warhead, maximum speed and range come from the `WeaponType=` of the section the [declaration warning](#declaring-a-superweapon) describes. The silo ignores that weapon's `Damage=` and gives the projectile a fixed strength of 200. The missile leaves five eighths of a cell (160 leptons) north of the silo's center, pointing straight up. When the launching house is not the local player's, the player hears the launch-detected announcement.
+
+A one-time missile needs no silo. It enters from the map edge nearest the target. It is built from the hard-coded weapon `MultiLauncher` or `ChemLauncher`, according to the behavior, and deals that weapon's `Damage=`. It is fired with a range of `100000` leptons, longer than any map is wide.
 
 ### Hunter seeker
 
-The house's structures are scanned against [`HSBuilding`](/keys/hsbuilding/) and the last match is kept, not the first. The drone appears at the closest cell to that structure that infantry could walk into; the drone is a vehicle, but the search that places it asks for ground crossable on foot. It appears only if that cell lies inside the playable area, the region a scenario declares with `[Map] LocalSize=`. Otherwise nothing is created and the charge is spent. The type is the [`HunterSeeker`](/keys/hunterseeker/#scope-side) of the side of the country the firing house [acts as](/keys/actslike/). In `rules.ini`, [`GDIHunterSeeker`](/keys/gdihunterseeker/) and [`NodHunterSeeker`](/keys/nodhunterseeker/) in `[General]` fill that setting for the first two sides in `[Sides]`, unless a side's own section sets it. A house acting for no side, or for a side that names no drone, spends the charge and launches nothing. A drone that cannot be placed is deleted; one that can acquires its own target and attacks.
+The drone comes out of the house's structure whose type is listed in [`HSBuilding`](/keys/hsbuilding/). If the house owns several, the newest is used. If it owns none, the charge is spent and nothing launches.
+
+The drone appears at the nearest cell to that structure that infantry could enter, even though the drone is a vehicle. If that cell lies outside the playable area, the region a scenario declares with `[Map] LocalSize=`, or the drone cannot be placed there, nothing launches and the charge is spent. A placed drone chooses a target and attacks it.
+
+The drone type is the [`HunterSeeker`](/keys/hunterseeker/#scope-side) of the side the firing house [acts as](/keys/actslike/). In each rules file, [`GDIHunterSeeker`](/keys/gdihunterseeker/) and [`NodHunterSeeker`](/keys/nodhunterseeker/) in `[General]` set it for the first two sides in `[Sides]`, and a side's section in the same file overrides them. A house with no side, or whose side names no drone, spends the charge and launches nothing.
 
 ### EM pulse
 
-The shot is handed to the [EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) the house owns nearest the target. That page covers everything the pulse then does.
+The shot goes to the house's [EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) nearest the target. That page covers everything the pulse then does.
 
-:::caution[A one-time EM pulse can never discharge]
-This is the one behavior with a second guard on it: the branch runs only for a charged weapon that is either not a one-time weapon or no longer present. A weapon granted by the [Add 1-time special weapon](/mapping/actions/taction-1-special/) trigger action or by a missile crate is still both one-time and present when the branch is reached, so nothing is launched. The discharge around it still spends the charge and takes the weapon away. The same section granted by [Add repeating special weapon](/mapping/actions/taction-full-special/) is not a one-time weapon and reaches the launch normally.
+:::caution[A one-time EM pulse launches nothing]
+An EM pulse granted by the [Add 1-time special weapon](/mapping/actions/taction-1-special/) trigger action or by a missile crate spends its charge and is removed from the house, but no cannon fires. The same section granted by a structure or by [Add repeating special weapon](/mapping/actions/taction-full-special/) launches normally.
 :::
 
 ## Scripting
 
-Two trigger actions grant a weapon, and [becoming available](#becoming-available) covers what each one does to it. Two more toggle the firestorm defense. [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) and [Deactivate Firestorm Defense](/mapping/actions/taction-deactivate-firestorm/) each fire the house's first `Type=Firestorm` weapon at cell 0,0. Each does nothing when the wall is already in the state it asks for.
+Two trigger actions grant a weapon, and [becoming available](#becoming-available) covers what each one does. Two more toggle the firestorm defense. [Activate Firestorm Defense](/mapping/actions/taction-activate-firestorm/) and [Deactivate Firestorm Defense](/mapping/actions/taction-deactivate-firestorm/) each fire the house's first `Type=Firestorm` weapon at cell 0,0. Each does nothing when the wall is already in the state it asks for.
 
-Three strike actions do not touch this system at all: [Ion-cannon strike](/mapping/actions/taction-ion-cannon/), [Nuke strike](/mapping/actions/taction-multi-missile/) and [Chem-missile strike](/mapping/actions/taction-chem-missile/). They create the effect directly at the waypoint, so they need no weapon, no charge, no silo and no house that owns one.
+Three strike actions do not use superweapons at all: [Ion-cannon strike](/mapping/actions/taction-ion-cannon/), [Nuke strike](/mapping/actions/taction-multi-missile/) and [Chem-missile strike](/mapping/actions/taction-chem-missile/). They create the effect directly at the waypoint, so they need no weapon, no charge, no silo and no house that owns one.
 
-The [Preferred target](/mapping/actions/taction-preferred-target/) action sets a value no superweapon routine reads; a computer house's aim is entirely the [per-behavior choice](#the-computers-use) above.
+The [Preferred target](/mapping/actions/taction-preferred-target/) action does not affect superweapons. A computer house aims each behavior as [the computer's use](#the-computers-use) describes.
 
 ## Parsed settings without effect
 
-[`NukeProjectile`](/keys/nukeprojectile/) and [`NukeDown`](/keys/nukedown/) in `[SpecialWeapons]` are read into the rules and nothing reads them; a silo takes its projectile from the firing weapon's `WeaponType=` instead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in the same section are inert too, and are covered by [the EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) they appear to describe.
+[`NukeProjectile`](/keys/nukeprojectile/) and [`NukeDown`](/keys/nukedown/) in `[SpecialWeapons]` are read but have no effect; a silo takes its projectile from a section's `WeaponType=` instead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in the same section have no effect either. [The EM pulse cannon](/systems/emp-pulse/#em-pulse-cannon-superweapon) covers them.

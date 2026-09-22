@@ -1,6 +1,6 @@
 ---
 title: Route search
-summary: "Plans a route in blocks of cells, walks it cell by cell, and prices each step by what stands in the way."
+summary: "Plans a route across blocks of cells, then cell by cell, and prices each step by what stands in the way."
 category: units-movement
 keys:
   - AvoidThreats
@@ -25,157 +25,204 @@ related:
     id: locomotion
 ---
 
-An object told to go somewhere is handed a finished route before it sets off: a list of single steps from one [cell](/glossary/#cell) to the next, worked out in one go and then followed a step at a time. Nothing revises it while the object travels. A step that turns out to be blocked throws the whole list away and runs the search again.
+A vehicle or infantryman ordered to move is given a route: a list of single steps from one [cell](/glossary/#cell) to the next. The search plans the whole way to the destination, but the object keeps only the next 24 steps. When it has taken them, a new search runs from where it stands. A step that turns out to be blocked can also start a new search.
 
-Two questions are settled outside this page. Whether the destination is reachable at all is decided before any search is attempted, against [the zone map](/systems/movement-and-terrain/#the-zone-map). A destination in a different [movement zone](/glossary/#movement-zone) is refused without a search. Whether one particular cell may be stepped into is decided by [the per-step test](/systems/movement-and-terrain/#why-a-cell-refuses-a-vehicle). This page covers what is left: how the search chooses among the cells it is allowed to enter, and what that choice costs.
+Two decisions belong to [movement and terrain](/systems/movement-and-terrain/). [The zone map](/systems/movement-and-terrain/#the-zone-map) decides whether the destination can be reached at all, and an order to a destination in a different [movement zone](/glossary/#movement-zone) is refused before any search runs. [The per-step test](/systems/movement-and-terrain/#why-a-cell-refuses-a-vehicle) decides whether one cell may be entered. This page covers how the search chooses among the cells it may enter, and what each choice costs.
 
 ## How a route is found
 
-The search runs in two stages. The first plans across the map in blocks of cells and produces a **corridor**: a chain of small blocks leading from the start to the destination. The second walks the map cell by cell and stays inside that corridor. Without the first stage, the second would have to weigh every cell between the two ends. The corridor is what makes a route across a large map affordable.
+The search runs in two stages. The block stage plans across the map in blocks of cells and produces a **corridor**: a chain of small blocks leading from the start to the destination. The cell stage then searches cell by cell and stays inside that corridor. The corridor is what keeps a route across a large map affordable, because the cell stage never has to weigh every cell between the two ends.
 
 ### Planning in blocks
 
-The playfield is divided into blocks at three sizes: 8 by 8 cells, 4 by 4, and 2 by 2, each size cut along grid lines aligned to the map. A block at one size is a single run of connected cells sharing one [blockage rating](/systems/movement-and-terrain/#the-zone-map), no wider or taller than that size, with no abrupt height change across it. The block stage runs once at each size, largest first. The largest size answers to no parent, and each smaller size may enter only blocks lying inside one that the size above it settled on. The chain of 2-by-2 blocks that falls out of the last of the three is the corridor.
+The playfield is divided into squares at three sizes: 8 by 8 cells, 4 by 4, and 2 by 2, each cut along grid lines aligned to the map. A block is one connected group of cells inside one square. Its cells share one [blockage rating](/systems/movement-and-terrain/#the-zone-map), and no two neighboring cells in it differ by two or more height levels. One square can therefore hold several blocks.
 
-A block is entered only where the object's [movement zone](/keys/movementzone/) class accepts the rating of the ground it holds. That page owns which classes accept which. Where the block is accepted, the step into it is priced by that same rating, on a table the cell stage never uses:
+The block stage runs once at each size, largest first. At the 4-by-4 and 2-by-2 sizes it may enter only blocks that lie inside the chain found at the size above. A crushable block is the exception and may be entered outside that chain. The chain of 2-by-2 blocks found last is the corridor.
+
+A block can be entered only where the object's [movement zone](/keys/movementzone/) accepts its rating. That page owns which movement zones accept which ratings. The step into an accepted block is priced by its rating, on a table the cell stage never uses:
 
 | Rating of the block being entered | Price |
 | --- | --- |
 | Crushable, blocked, or partly blocked | 0 |
 | Open land, water, or impassable | 1 |
 
-The threat of the region the block sits in is added on top, through [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/). [Base defense response](/systems/base-attacked/#what-reads-the-map) owns where that per-region figure comes from. The coefficient is read from the type, and an [`AvoidThreats=yes`](/keys/avoidthreats/) override on its team's TeamType replaces it with `1`.
+An ordinary vehicle's movement zone accepts open land and nothing else, so every block costs it 1, and its corridor is the chain that crosses the fewest blocks. A movement zone that accepts more than open land finds some blocks free, and its corridor is drawn through them. A crushing vehicle's corridor runs through a line of crushable wall instead of around it, because the wall costs nothing and the open ground beside it costs 1.
 
-An ordinary vehicle's class accepts open land and nothing else, so every step costs it 1. Its corridor is then the chain that crosses the fewest blocks. For a class that accepts more than open land, some blocks cost nothing, and the corridor is drawn through them. A crushing vehicle's corridor runs through a run of sandbags rather than around it, because the wall costs nothing and the open ground beside it costs 1.
+At the 8-by-8 and 4-by-4 sizes, the threat of the ground the step crosses is added to the price. The threat is multiplied by [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/) and rounded down to a whole number, so a product below 1 adds nothing. The 2-by-2 stage adds no threat. [Base defense response](/systems/base-attacked/#what-reads-the-map) explains where each region's threat comes from. The coefficient comes from the object's type. A team whose TeamType sets [`AvoidThreats=yes`](/keys/avoidthreats/) uses `1` for its members instead.
 
-The corridor stage is skipped outright under **any of:**
+The block stage is skipped under **any of:**
 
-- the object is a train, which [`IsTrain=yes`](/keys/istrain/) covers;
-- the object has not yet entered the playable area, or is one of the few [allowed to leave the map](/keys/landable/);
+- the object is a train ([`IsTrain=yes`](/keys/istrain/));
+- the object has not yet entered the playable area, or is one of the few objects [allowed to leave the map](/keys/landable/);
 - either end of the journey lies outside the playable area.
 
-With the stage skipped, the cell search may spread across the whole playfield instead of staying inside a corridor.
+With no corridor, the cell stage may spread across the whole map.
 
-:::caution[A corridor of more than 500 blocks is abandoned]
-Each of the three block sizes has a list of 500 entries to record its chain in. A chain longer than the list is refused, and the cell search runs unrestricted instead.
+:::caution[Very long corridors are abandoned]
+The block stage records each chain in a list of 500 blocks. Before the first pass, a chain longer than that is refused, and the cell stage runs without a corridor. It may then spread across the whole map, which costs far more effort. After a failed pass, the same refusal ends the request with no route.
 
-The 2-by-2 chain is the one that fills first. A route crosses about one 2-by-2 block every two cells, so five hundred of them is a walk of roughly a thousand cells, half the 2,000-cell limit at the foot of this page. A block holds at most four cells of a route, and the estimate above rests on the usual two. A journey that long gives up the corridor and prices every cell it passes, which costs more effort than a corridor would have.
+The 2-by-2 chain is the longest, so it reaches the limit first. A route crosses a 2-by-2 block about every two cells, so the limit is reached on journeys of roughly 1,000 cells, and sooner where the ground breaks into smaller blocks.
 
-The block stage runs before the cell search, so this is settled before a single cell has been priced. It also runs on its own whenever the game measures how far an object would have to walk between two cells, and that measurement takes none of the skips above.
+The game also uses the block stage alone to estimate walking distance, for example when it picks a nearby cell to stand in for an occupied destination. That estimate reports a destination whose corridor exceeds 500 blocks as unreachable.
 :::
 
 ### The cell-by-cell search
 
-The cell stage starts at the cell the object is heading into, which is the cell it stands in when it is not moving, and spreads outward from there. Every cell it reaches holds two figures: what the steps taken to get there have cost, and that total plus a guess at what is left to run. The search repeatedly takes up whichever reached cell has the lowest second figure, prices the eight neighbors of that cell and, where the cell is a tunnel mouth, the cell at the tunnel's far end, then goes round again. It finishes when the cell it takes up is the destination.
+The cell stage starts from the cell the object is heading into, or the cell it stands in when it is not moving. Each cell the search reaches carries two figures: the cost of the steps taken to get there, and that cost plus an estimate of what remains. The estimate is the straight-line distance to the destination, measured in cells.
 
-The guess is the straight-line distance from the cell to the destination, measured in cells.
+The search repeatedly takes up the reached cell with the lowest second figure. It prices the step into each of that cell's eight neighbors and, at a tunnel mouth, the step to the tunnel's far end. It finishes when the cell it takes up is the destination.
 
-A cell outside the corridor is passed over, with two exceptions. A step onto a bridge deck is always considered, and so is a step into a cell with an object standing in any of the eight cells around it. That second exception is what lets a route work its way past an obstruction the corridor gave a wide berth.
+A cell outside the corridor is skipped, with two exceptions:
+
+- a cell on a bridge deck;
+- a cell next to a vehicle, infantryman, aircraft, wall or terrain object such as a tree, in any of the eight directions;
+- a cell on or beside a structure.
+
+The last two exceptions let a route step out of the corridor to get around an object standing in it.
 
 ### Effort, retries and failure
 
-A pass of the cell stage may take up at most 65,527 cells, nine short of 65,536, and a pass that reaches that limit yields no route.
+One pass of the cell stage may take up at most 65,527 cells. A pass that reaches that limit finds no route.
 
-Where a pass fails and a corridor was in force, the block links the search could not walk are struck out, and both stages run again to a limit of five passes. Where the search stalled inside a block rather than at a link between two, the links around that block are struck out as well. Where that leaves no alternative chain at all, the corridor is abandoned, and the passes still to come search the map unrestricted.
+When a pass fails inside a corridor, the search strikes out corridor links at the furthest corridor block it reached, then runs both stages again. A request gets at most five passes. Depending on where the search stopped, it strikes one of two sets of links:
 
-A request that ends with no route at all arms the object's [`PathDelay`](/keys/pathdelay/) countdown. The object stands still until that expires, instead of searching again on the next frame.
+- the links out of that block that the search could not use;
+- the corridor links around that block.
 
-The four rules settings the search reads, in the two sections that hold them:
+In the second case, if that block is not on the corridor or the corridor has only one block, the corridor is dropped instead. If the five passes are not used up, one final pass then searches without it.
+
+If the block stage then finds no chain that avoids the struck links, the request ends with no route.
+
+When the search finds no route, the object stops. What happens next depends on where the destination is:
+
+- **More than one cell away, or under a bridge while the object is not on a bridge:** the object gives up the order. It leaves its team and drops its destination and target. A player's object takes the guard mission. A computer-controlled object takes the area guard mission. Outside a campaign it is also sent to a random cell around its base, the same kind of place new units are sent to wait.
+- **Within one cell:** the object keeps its destination, and the [`PathDelay`](/keys/pathdelay/) countdown holds off its next search.
+
+These four settings affect the search. All are in `rules.ini`; the values shown are examples, and the linked key pages give the defaults.
 
 ```ini title="rules.ini"
 [General]
-CloseEnough=2         ; cells; a blocked object within this of its destination treats it as reached
-Stray=3               ; cells; a team member may drift this far before it is ordered back
+CloseEnough=2         ; cells; an occupied destination further away than this is swapped for a nearby cell
+Stray=3               ; cells; the same distance for an object on a team
 
 [AI]
-PathDelay=.03         ; minutes an object stands still after a search that found nothing
-BlockagePathDelay=45  ; frames it prefers to wait out a moving obstruction before insisting on routing around one
+PathDelay=.03         ; minutes an object waits before it searches again after a failed search
+BlockagePathDelay=45  ; frames a blocked object prefers to wait before it insists on a detour
 ```
 
-:::caution[A route completed on exactly the ten-thousandth cell is thrown away]
-Alongside the effort limit, a finished pass is checked against a second figure. A pass that reaches the destination having taken up exactly 10,000 cells is treated as a failure. It hands back no route, although the route was found and is complete. No other count is treated that way. Nothing about such a route distinguishes it from one found a cell earlier or later.
+:::caution[A route found on exactly the 10,000th cell is discarded]
+A pass that reaches the destination after taking up exactly 10,000 cells is treated as a failure and returns no route, although the route is complete. No other count is treated this way.
 :::
 
-:::caution[A pass that reaches more than 131,072 cells stops taking new ones]
-The effort limit counts the cells a pass takes up, but a cell is recorded the moment it is first priced, well before it is taken up, and for many cells it never is. Cells on the search's outer edge count against the record too. The record holds 131,072 of them. A pass that has filled it passes over every further cell it reaches, so it runs out of candidates and hands back no route.
+:::caution[A pass that records 131,072 cells stops adding new ones]
+The search records a cell when it first prices the step into it, not when it takes the cell up. The record holds 131,072 cells. Once it is full, the pass stops recording new cells but keeps taking up the ones already recorded. It then fails unless the destination was recorded before the record filled.
 
-A cell is recorded once and no more, so reaching that many needs ground to match. The pass must have more than 131,072 cells the object may enter. The playable area is a diamond rather than a square. One declared 256 cells on a side spans about 512 cells across the grid, so it holds about 131,000 cells where a square of the same declaration would hold 65,536. A cell spanned by a bridge is recorded twice over, once for the ground and once for the deck. The destination also has to be far enough off, or awkward enough to reach, for the search to spread over all that ground before it settles.
+Each cell is recorded only once, and a cell spanned by a bridge counts twice, once for the ground and once for the deck. A pass takes up at most 65,527 cells, so the record fills only when more than about 65,500 recorded cells are waiting to be taken up at the same moment.
 :::
 
 ## Why a route is not the shortest one
 
-The search is built to return the cheapest route and does not, in general, return it. Two independent things inside it break that guarantee, and either one alone is enough.
+The search aims for the cheapest route but does not always return it. Two properties of the search cause this, and either one is enough.
 
-**A cell is never reconsidered.** Once the search has reached a cell it never looks at it again, however cheaply it is reached later. Two tests early in each step do compare the cost of arriving through the cell in hand against the cost already recorded for the neighbor, and a cheaper arrival passes them. A third test, made just before the neighbor would be added, rejects any cell already reached and does not compare cost at all, so the cheaper arrival is discarded with the rest. Every cell keeps the first route into it that the search happened to find.
+**A cell keeps the first route into it.** Once the search has reached a cell, it never replaces the route into that cell, even when it later finds a cheaper one.
 
-**The guess overshoots.** A diagonal step and a straight one have the same base price. Over clear ground, the least the remaining run can cost is the number of steps left, which is the larger of the two distances in cells. The guess used instead is the straight-line distance, which is larger than the true minimum for anything off a straight line, by about two fifths on an exact diagonal. A guess that comes in above the truth is what lets the search settle on a route while a cheaper one is still sitting unexamined.
+**The estimate runs high.** A diagonal step and a straight step have the same base price. Over clear ground, the fewest steps left to the destination is the larger of the two cell distances. The estimate uses the straight-line distance, which is larger for any destination not due along a row or column. On an exact diagonal it is about two fifths larger. An estimate above the true remaining cost lets the search settle on a route while a cheaper one is still unexamined.
 
-The corridor adds a third cause from outside the search. The cell stage may not leave it, so a cheaper route through blocks the block stage passed over is never seen at all. The block stage chose those blocks on the separate table above, one on which a wall is free and the open ground beside it is not.
+The corridor adds a third cause. The cell stage cannot leave it, so it never sees a cheaper route through blocks the block stage passed over. The block stage chose its blocks on a different price table, where a crushable or blocked block costs nothing to a movement zone that accepts it.
 
-:::caution[A long way round is the ordinary output of the search]
-None of the three is a threshold that can be crossed or a figure that can be moved. The threat term the block stage adds is the one key-driven part of the three, and it can only push a corridor away from a region, never shorten one. A route that takes a visibly longer way round while a shorter one stands clear is what the search does. It is not a sign that a terrain figure, a movement zone or a piece of map geometry is wrong.
+:::caution[A longer way round is normal]
+No setting removes any of the three causes. Threat avoidance is the only part a key controls, and it can only push a corridor away from a region. A route that takes a visibly longer way round while a shorter one is clear does not mean that a terrain figure, a movement zone or the map is wrong.
 :::
 
 ## What a step costs
 
-[Path cost](/glossary/#path-cost) is the total the search adds up while it chooses between routes. Every entry below is one step's contribution to it, and the search works toward a cheap total rather than a guaranteed cheapest one.
+[Path cost](/glossary/#path-cost) is the total the search adds up to compare routes. Each entry below is one step's contribution to it.
 
-A step is priced by why the cell being entered can be entered: the verdict the [per-step test](/systems/movement-and-terrain/#why-a-cell-refuses-a-vehicle) returns. Nothing about the ground itself reaches the price, so a road and a patch of rough ground cost the same. The land-type numbers act elsewhere, on the object's speed, which [movement and terrain](/systems/movement-and-terrain/#the-route-search-prices-no-terrain) sets out.
+A step's price depends on the verdict the [per-step test](/systems/movement-and-terrain/#why-a-cell-refuses-a-vehicle) gives for the cell being entered. The ground itself does not affect the price, so a road and rough ground cost the same. Land-type figures affect the object's speed instead, as [movement and terrain](/systems/movement-and-terrain/#the-route-search-prices-no-terrain) explains.
 
 | Verdict on the cell being entered | Price |
 | --- | --- |
 | Clear | 1 |
 | A closed friendly gate | 1 |
 | Something moving through | 1, 4, or 1000 |
-| A friendly object temporarily in the way | 8 |
+| A friendly object standing in the way | 8 |
 | An enemy obstruction that could be destroyed | 20 |
 | A friendly obstruction that could be destroyed | 60 |
 | A cloaked enemy | 1000 |
 
-A friendly obstruction that has to be shot through is priced at three times an enemy one, so a vehicle picks the enemy's wall over its own where both stand in reach. A closed friendly gate is priced like clear ground, so a route runs straight through the gates of its own base. A cell whose verdict is strictly prohibited is priced as well, at 10,000. No cell with that verdict is ever added to the search, and the destination is the one case where pricing a prohibited step ends the search rather than skipping it.
+A friendly obstruction costs three times as much as an enemy one, so a vehicle that can reach both would rather shoot through the enemy's wall than its own. A closed friendly gate costs the same as clear ground, so a route runs straight through its house's gates and its allies' gates.
 
-Something moving through is the one verdict with three prices. Where the request asks for no avoidance, the search follows the queue in front of the cell. It starts with the object standing there, then the cell that object is heading into, then whatever stands in that one, and follows that chain for up to ten objects. It prices the step at 1 where the queue ends in an empty cell, or in a stopped object with no route of its own. It prices the step at 4 where the queue instead reaches something that does not move under its own power, or runs the full ten deep. Where the request asks for avoidance, the queue is not followed at all: a merely preferred avoidance prices the step at 4 and an insisted-on one at 1000. [`BlockagePathDelay`](/keys/blockagepathdelay/) owns which of the three a retry asks for.
+A strictly prohibited cell is never entered. When the prohibited cell is the destination, the search may stop beside it, as [where a route begins and ends](#where-a-route-begins-and-ends) describes.
 
-Three adjustments follow.
+In the search, a train treats every verdict except strictly prohibited as clear, so each step it can take costs 1.
 
-- The price is quadrupled where the cell has the mark collision avoidance puts up. That covers the cells the objects in the way are about to walk through, and the occupied cells immediately in front of the object being routed. The marks go up for the search and come down again after it, and only where avoidance was asked for.
-- A sliver is added for the direction of the step. The four steps to an edge-sharing neighbor take `0.001` through `0.004` clockwise from north, and the four diagonals `0.005` through `0.008` clockwise from northeast. A tie is therefore settled in favor of stepping straight, and among steps of one kind in the order given above.
-- A step through a tunnel is priced apart from all of this. It costs the larger of the two cell distances between the tunnel's mouths, along the cell grid's own axes, and takes neither the verdict price above nor the direction sliver.
+### Something moving through
+
+The price for a cell that something is moving through depends on whether the search avoids moving objects. An ordinary search asks for no avoidance. When a step is refused because something is moving through the next cell, the new search prefers avoidance until the object's [`BlockagePathDelay`](/keys/blockagepathdelay/) countdown runs out, and insists on it after that.
+
+- **Avoidance preferred:** 4.
+- **Avoidance insisted on:** 1000.
+- **No avoidance:** the search follows the line of objects ahead of the cell, up to ten deep. It starts with the object in the cell, then looks at the cell that object is heading into, and so on. The price is 1 if the line ends in an empty cell or in a stopped object with no route of its own. The price is 4 in three cases: the line reaches something that cannot move under its own power, it reaches a stopped object about to enter a tunnel, or it runs ten deep.
+
+The cell ahead is the one the routed object faces. A preferred avoidance applies only when a qualifying object stands in the cell ahead or is heading into it. Otherwise the search runs as if no avoidance had been asked for.
+
+A qualifying object is a vehicle or infantryman of a different type, slower by [`Speed`](/keys/speed/), with at least two steps of its route left, or three for infantry.
+
+An insisted-on avoidance always applies. It counts any vehicle or infantryman in or heading into the cell ahead that has those steps left, whatever its type or speed.
+
+While avoidance applies, a step into a marked cell costs four times its price. The search marks:
+
+- the rest of the route of each object it counts;
+- occupied cells within two cells of the cell ahead, other than the routed object's cell;
+- the cell ahead itself.
+
+Each mark flips the cell, so a cell marked twice ends up unmarked. An occupied cell ahead is therefore left unmarked. So is a cell on two of the marked routes, or an occupied cell near the cell ahead that is also on one.
+
+The marks exist only for the duration of the search.
+
+### Direction and tunnels
+
+Each step also adds a tiny amount for its direction, which settles ties between otherwise equal routes. Steps to the four edge-sharing neighbors add `0.001` to `0.004`, clockwise from north. The four diagonal steps add `0.005` to `0.008`, clockwise from northeast. A tie therefore goes to stepping straight, and among steps of the same kind, to the direction listed first.
+
+A step through a tunnel costs the larger of the two cell distances between its mouths, along the cell grid's axes. It takes neither a verdict price nor a direction amount.
 
 ## Where a route begins and ends
 
-The destination searched for is not always the destination that was ordered. Where the cell ordered has a friendly object temporarily in the way and lies further off than [`CloseEnough`](/keys/closeenough/), a nearby enterable cell is looked for. For an object on a team, [`Stray`](/keys/stray/) sets that separation instead. The order moves to that cell under **all of:**
+The search does not always look for the ordered cell. If a friendly object stands in the ordered cell and the ordered cell is further away than [`CloseEnough`](/keys/closeenough/), the game looks for a nearby cell the object can enter. For an object on a team, [`Stray`](/keys/stray/) replaces `CloseEnough`. The order moves to that cell under **all of:**
 
-- one was found;
-- it lies nearer the ordered cell than the object itself does;
-- the walk from it to the ordered cell is no more than six cells longer than the straight distance between the two.
+- a cell was found;
+- it is nearer the ordered cell than the object is;
+- the estimated walk from it to the ordered cell is at most six cells longer than the straight distance between the two.
 
-Where the cell ordered is strictly prohibited and holds a structure, the order moves to a nearby cell with none of those tests. Neither substitution is made for a train.
+If the ordered cell is strictly prohibited and holds a structure, the order moves to a nearby enterable cell without these tests. Neither substitution is made for a train.
 
-A destination spanned by a bridge has to be reached at the deck's height. Stopping at the ground beneath it does not count, and the search carries on.
+A train's route never enters the three cells that are behind the train when the search starts.
 
-Where the destination's own verdict is strictly prohibited, so that the step into it is never taken, the search stops as soon as it prices that step and hands back the route it has. That route ends beside the destination, at whichever cell the search happened to be taking up at that moment, not at the nearest or the best one. Two things fall out of that. A route consisting of nothing but the cell the object is already in is rejected, so an object standing beside a prohibited destination is left with no route at all. And a [`Passive=yes`](/keys/passive/) vehicle takes no such offer.
+A destination spanned by a bridge must be reached at deck height. Reaching the ground beneath the bridge does not end the search.
+
+If the destination is strictly prohibited, the search stops when it prices the step into the destination from a cell within one height level of it. The route then ends at that cell, beside the destination. It is the first such cell the search takes up, not necessarily the nearest or best one. Two exceptions apply:
+
+- An object already standing next to such a destination gets no route at all, because a route that never leaves the object's cell is rejected.
+- A [`Passive=yes`](/keys/passive/) vehicle does not stop beside the destination. It keeps searching, and it gets no route.
 
 ## Straightening the finished route
 
-The move list is worked over twice before the object is given it, and both passes can change the ground the route covers.
+The finished route goes through two straightening passes before the object gets it. Both can change the ground the route covers.
 
-The first looks for a corner where two diagonal runs meet at a right angle. It takes the steps either side of the corner, as many as the shorter of the two runs holds, and replaces them with a straight run twice that long, ending where they did. Any surplus steps of the longer run are left alone. The straight run is tested cell by cell, and is taken only where every cell of it is clear outright, not merely cheap, and is unmarked by claimed traffic. Where it does not fit, the attempt is shifted one step along and shortened by one, until it fits or is given up on. A corner involving a tunnel step is never touched.
+The first pass looks for a corner where two diagonal runs meet at a right angle, such as northeast steps followed by southeast steps. Take the shorter of the two runs and call its length *n*. The pass replaces the last *n* steps before the corner and the first *n* after it with 2*n* straight steps that end at the same cell. The replacement is used only where every cell of it is clear, not merely cheap, and not marked by [avoidance](#something-moving-through). It is also refused when the threat at the cell it starts from, multiplied by [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/), is `1` or more. If the replacement does not fit, the pass starts it one step later and makes it one step shorter each side, until it fits or runs out. A corner that involves a tunnel step is never changed.
 
-The second looks only at the first twenty steps. It follows how far the route has carried the object from the point the current leg began, and where a step fails to carry it further, that wandering tail is thrown away. The tail is replotted as a two-leg run, one diagonal leg and one straight leg. Every cell of the replot must be clear outright and unmarked as before, and no more than three of them may be threatened. [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/) decides which cells count as threatened. The run is tried with the diagonal leg first and, if that fails, with the straight leg first; where neither order is clear the replot is abandoned and the original steps stand. A successful one can shorten the route. Nothing past the twentieth step is examined.
+The second pass examines only the first 20 steps, and follows them in stretches between turns. When a step leaves the object no further from the stretch's first cell than the step before did, the pass replots the stretch as a diagonal run and a straight run. It tries the diagonal run first, then the straight run first. If neither order fits, the original steps stand. A successful replot can shorten the route.
+
+Every cell of a replot must be clear and unmarked. A threatened cell also blocks a replot within the 20 steps. A final replot at the end of them may cross up to three threatened cells. [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/) decides which cells count as threatened.
 
 ## Settings and state without effect
 
-Three switches inside the search are set once, when the pathfinder is created, and are never changed. No rules key reaches them, no saved game holds them, and there is one pathfinder for the whole game.
+The search has three fixed switches. No rules key reaches them and no saved game stores them.
 
-- **Bridge avoidance** is off. The step cost has a branch that would multiply a step onto a bridge by ten where the span does not continue and by two where it does, so that routes shy away from bridges. The branch never runs, so a bridge step is priced exactly like a ground step.
-- **The cost multiplier** is fixed at `1`. Every step's price passes through it before the direction sliver is added, and it changes nothing. It is the figure that would let what stands in the way weigh more heavily against distance.
-- **The locomotor question** is on, and this one leaves nothing unreachable. A vehicle's per-step test ends by putting the cell to the object's own travel routine. The switch decides whether it bothers, and the search always has it ask. [Nine of the ten locomotors accept every cell](/systems/movement-and-terrain/#why-a-cell-refuses-a-vehicle) and the tunneling one does not. What is settled here, then, is that a tunneling vehicle is held to the burrowing test while its route is being plotted as well as while it drives. Other parts of the game outside movement take the cell without asking.
+- **Bridge avoidance is off.** A step onto a bridge deck costs the same as a step on the ground.
+- **Step prices are not scaled.** No setting changes how heavily step prices count against the distance estimate.
+- **The locomotor is always consulted.** The [tunnel locomotor refuses cells a subterranean vehicle may not burrow through](/systems/movement-and-terrain/#why-a-cell-refuses-a-vehicle), and the other nine accept every cell. A tunneling vehicle is therefore held to the burrowing test while its route is planned, as well as while it drives.
 
-Two limits the search is handed are not read. The one routine that asks for a route names a ceiling on the list it will accept, and names a clear cell as the worst verdict it is prepared to walk into. Neither limit reaches the search, which sizes the route by what it finds and prices worse verdicts rather than refusing them. The search also records the type's [`Speed=`](/keys/speed/) as it starts and reads it nowhere.
-
-:::caution[A route longer than 2,000 cells is never returned]
-The search stops extending a route at 2,000 cells, so a journey that needs a longer one ends with no route at all. That arms [`PathDelay`](/keys/pathdelay/) like any other failure, and the object stands still until the countdown expires.
-
-A single pass may still take up more than thirty times that many cells before it gives up. The limit is on the route returned, not on the effort spent looking for one. The buffer the caller hands the search is sized one entry longer than the longest route the search can return, and the ceiling the caller names is that same figure, which the search never reads. No rules key moves any of the limits on this page.
+:::caution[Routes longer than 2,000 steps are never returned]
+The search stops extending a route at 1,999 steps, so a journey that needs 2,000 or more gets none, with the result described under [effort, retries and failure](#effort-retries-and-failure). A pass can still take up more than thirty times that many cells before it gives up, because this limit applies to the route returned, not to the search effort. No rules key changes any of the limits on this page.
 :::

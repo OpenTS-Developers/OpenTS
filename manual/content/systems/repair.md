@@ -50,48 +50,63 @@ related:
     id: ToggleRepair
 ---
 
-Five paths restore strength or rank, and they share nothing but the settings they read: the wrench a player puts on a structure, the depot a vehicle drives onto, and the hospital or armory an infantry walks into. The other two are the mending an object performs on itself and the Tiberium an infantry, vehicle or aircraft stands in. The rate and step settings do not divide along those lines, and their names do not say which path each one reaches. The table gives each setting the paths it actually reaches. Most of them reach more than one, so retuning a setting for the wrench moves self-healing with it, and retuning one for the hospital moves the armory. Only self-healing can be taken off the shared settings, by the three keys listed last.
+The game restores strength in five ways: the repair wrench on a structure, a service depot for vehicles and aircraft, a hospital for infantry, self-healing, and Tiberium healing. An armory uses the hospital's settings to promote infantry instead of healing them.
 
-| Setting | What it reaches |
+The paths share their rules settings, and a setting's name does not say which paths read it. Most settings reach more than one path. Changing `RepairRate` for the wrench also changes self-healing, and changing `IRepairRate` for the hospital also changes the armory. Only self-healing can be moved off the shared settings, using the three keys at the end of the table.
+
+| Setting | What it controls |
 | --- | --- |
-| [`RepairRate`](/keys/repairrate/) | The interval between structure repair steps, and the interval between self-healing steps that no `SelfHealRate` has claimed |
-| [`URepairRate`](/keys/urepairrate/) | The interval between service-depot steps. It sets no step size |
+| [`RepairRate`](/keys/repairrate/) | The interval between structure repair steps, and between self-healing steps when `SelfHealRate` is not set |
+| [`URepairRate`](/keys/urepairrate/) | The interval between service depot steps. It sets no step size |
 | [`IRepairRate`](/keys/irepairrate/) | The count a hospital reaches before it heals a step, and the count an armory reaches before it promotes |
-| [`RepairStep`](/keys/repairstep/) | The strength one step restores to a structure, vehicle or aircraft, and the divisor inside the credit cost |
+| [`RepairStep`](/keys/repairstep/) | The strength one step restores to a structure, vehicle or aircraft, and a divisor in the credit cost |
 | [`IRepairStep`](/keys/irepairstep/) | The strength one step restores to infantry |
 | [`RepairPercent`](/keys/repairpercent/) | The multiplier at the end of the credit cost |
 | [`TiberiumHeal`](/keys/tiberiumheal/#scope-global-rules) | The interval between Tiberium healing steps |
-| [`SelfHealRate`](/keys/selfhealrate/) | The interval between self-healing steps, replacing `RepairRate` on that path alone |
+| [`SelfHealRate`](/keys/selfhealrate/) | The interval between self-healing steps, replacing `RepairRate` for self-healing only |
 | [`SelfHealStep`](/keys/selfhealstep/) | The strength one self-healing step restores |
-| [`SelfHealCap`](/keys/selfhealcap/) | The share of maximum strength at which self-healing stops, replacing `ConditionYellow` on that path alone |
+| [`SelfHealCap`](/keys/selfhealcap/) | The share of maximum strength at which self-healing stops, replacing `ConditionYellow` for self-healing only |
 
-Each of the five intervals is a fraction of a minute, multiplied by 900 frames where a path uses it. A path that tests the frame counter against that figure truncates it to whole frames; a path that counts up to it reaches the first whole number above it. At the engine defaults, where `SelfHealRate` is unset, a structure repair step and a self-healing step fall every 14 frames. A Tiberium healing step falls every 15, and the depot, the hospital and the armory act on the count of 15. What that count is worth in wall time differs by a factor of fourteen between the hospital and the armory, for the reason given under [Hospitals and armories](#hospitals-and-armories).
+Each interval setting is a fraction of a minute, which the engine multiplies by 900 frames. The wrench, self-healing and Tiberium healing step on frames that are multiples of the result, truncated to whole frames. The depot, the hospital and the armory count up and act when the count reaches the result, rounded up to a whole number. At the engine defaults, with `SelfHealRate` unset, the paths step at these intervals:
+
+| Path | Default interval |
+| --- | --- |
+| Structure repair | 14 frames |
+| Self-healing | 14 frames |
+| Tiberium healing | 15 frames |
+| Service depot | 15 frames |
+| Hospital | 15 frames |
+| Armory | About 210 frames, explained under [Hospitals and armories](#hospitals-and-armories) |
 
 ## Repairing a structure
 
 ### Turning the wrench on
 
-[Repair Mode](/commands/togglerepair/) does nothing while a building is waiting to be placed, and it engages only if the player owns at least one building. Every change of the mode clears sell mode, power mode and waypoint mode. Inside repair mode the cursor accepts an object only when its owner is under player control and the object is a repair candidate; everything else takes the refusal cursor.
+[Repair Mode](/commands/togglerepair/) does nothing while a building is waiting to be placed. It turns on only if the player owns at least one building, and turning it on deselects everything. Every change of the mode turns off sell mode, power mode and waypoint mode.
 
-A building is a candidate under **all of**, in this order:
+In repair mode, the wrench cursor appears only over a repair candidate that the player controls. Everything else shows the refusal cursor.
+
+A building is a repair candidate under **all of**, in this order:
 
 - its strength is above zero;
 - it is not a deployed vehicle (a type with [`UndeploysInto`](/keys/undeploysinto/) counts as one unless it is a construction yard);
 - **Any of:**
-  - **All of:** its type is [`Repairable=yes`](/keys/repairable/), and it stands below its maximum [`Strength`](/keys/strength/#scope-aircrafttype);
-  - it has a limpet mine, the mark a [`LimpetFactor`](/keys/limpetfactor/) warhead leaves on whatever it hits.
+  - **All of:** its type is [`Repairable=yes`](/keys/repairable/), and it is below its maximum [`Strength`](/keys/strength/#scope-aircrafttype);
+  - it carries a limpet mine, the mark a [`LimpetFactor`](/keys/limpetfactor/) warhead leaves on whatever it hits.
 
-That last term is why a mined structure is a candidate at any strength, undamaged or not.
+A mined structure is therefore a candidate even when it is undamaged.
 
-Non-buildings are rejected before any of those tests, so the wrench never appears over a vehicle, an infantry or an aircraft, and the click that would queue the order is issued for buildings alone. A damaged vehicle is served by [a depot](#service-depots) instead.
+Vehicles, infantry and aircraft are never candidates, so the wrench never appears over them. A damaged vehicle is served by [a depot](#service-depots) instead.
 
-Each click toggles the flag. Turning it on below maximum strength plays the click sound and marks the building. Turning it on at maximum strength plays the scold sound and still leaves the flag set; only a mined structure reaches that state.
+Each click switches the building's repair on or off. Switching it on plays the click sound and flashes the building. Switching it on at maximum strength plays the scold sound instead, but still switches repair on; only a mined structure can be in that state.
 
 ### The repair tick
 
-A repairing structure steps whenever the global frame counter is divisible by `RepairRate * 900`, so every repair running anywhere in the match lands on the same 14-frame boundary rather than on a boundary of its own.
+A structure under repair takes a step on every frame that is a multiple of `RepairRate * 900`. Every structure repair in the match therefore steps on the same frames, every 14 frames at the default.
 
-One step charges the house before it heals: the cost is computed, and if the house's available money covers it the money is spent and the step is added to the structure's strength. Reaching maximum strength clamps the value and clears the flag. The animation damage state, the damage particle system and the idle animations are re-evaluated on every step that is paid for. A structure crossing back above [`ConditionYellow`](/keys/conditionyellow/) therefore drops its damage smoke and returns to undamaged artwork at that moment.
+Each step charges the owner before it heals. If the owner's available money covers [the cost of one step](#the-cost-of-one-step), the money is spent and `RepairStep` strength is added. A step that reaches maximum strength caps the strength there and ends the repair.
+
+After each paid step, the structure's damaged animations and damage smoke are updated. A structure that rises above [`ConditionYellow`](/keys/conditionyellow/) loses its damage smoke and returns to its undamaged artwork on that step.
 
 ### The cost of one step
 
@@ -99,118 +114,163 @@ One step charges the house before it heals: the cost is computed, and if the hou
 cost = (raw cost / (Strength / RepairStep)) * RepairPercent, never below 1
 ```
 
-Both divisions are integer divisions and the multiplication is truncated, so the credits charged over a full repair rarely land on `RepairPercent` of the building's price. Take a structure costing 1000 with `Strength=400`, at the engine defaults of `RepairStep=5` and `RepairPercent=0.25`. The step count is 400 divided by 5, or 80. One step costs 1000 divided by 80, which the integer division cuts from 12.5 to 12, multiplied by 0.25 and truncated again, giving 3. Eighty steps at 3 credits is 240 credits to rebuild the structure from one hit point, not the 250 the multiplier suggests.
+Both divisions drop the remainder, and the multiplication is truncated to whole credits. A full repair therefore rarely costs exactly `RepairPercent` of the building's price. Take a structure with a raw cost of 1000 and `Strength=400`, at the engine defaults of `RepairStep=5` and `RepairPercent=0.25`:
 
-The one-credit floor pushes the other way on anything cheap with a large strength. A structure costing 100 with `Strength=1000` has 200 steps. One hundred divided by 200 is already 0 before the multiplier runs, so every one of those steps pays the floor instead: 200 credits, twice what the structure cost to build.
+1. `400 / 5` gives 80 steps.
+2. `1000 / 80` is 12.5, which the division cuts to 12.
+3. `12 * 0.25` gives 3 credits per step.
 
-The raw cost is the building's own [`Cost`](/keys/cost/#scope-aircrafttype), before any country or difficulty multiplier, less whatever the structure hands out. Its [`FreeUnit`](/keys/freeunit/) cost comes off, and so does the average cost of the types listed in [`PadAircraft`](/keys/padaircraft/) on the one structure that the first entry of that list docks at, unless [`SeparateAircraft=yes`](/keys/separateaircraft/) or that structure names an aircraft of its own under [`FreeUnit`](/keys/freeunit/). A construction yard that comes with a free vehicle is therefore cheaper to repair than its listed price implies.
+Repairing the structure from one hit point takes 80 steps and costs 240 credits, not the 250 that the multiplier suggests.
 
-:::danger[Two settings can divide by zero]
-`Strength / RepairStep` is evaluated first and in integers. A `RepairStep` of `0` divides by zero outright, and one larger than the type's `Strength` makes that term zero so the next division crashes the game. `RepairRate * 900` is truncated to an integer and used as a modulus, so any value below `1/900` crashes it as well. Self-healing reads the same figure but raises a truncated interval back to one frame, so that second crash reaches structures under the wrench alone.
+The one-credit minimum raises the cost of a cheap structure with high strength. A structure with a raw cost of 100 and `Strength=1000` has 200 steps. `100 / 200` is already 0 before the multiplier applies, so every step costs the 1-credit minimum. A full repair costs 200 credits, twice what the structure cost to build.
+
+The raw cost is the type's [`Cost`](/keys/cost/#scope-aircrafttype), before any country or difficulty multiplier. For a structure, the price of what it gives away is subtracted:
+
+- the cost of its [`FreeUnit`](/keys/freeunit/);
+- the average cost of the [`PadAircraft`](/keys/padaircraft/) types, on one structure type only: the first entry in the `Dock` list of the first `PadAircraft` type. This subtraction does not apply when [`SeparateAircraft=yes`](/keys/separateaircraft/), or when that structure's `FreeUnit` is an aircraft.
+
+When the type has a `FreeUnit`, the result is never below 0. A refinery that comes with a free harvester is therefore cheaper to repair than its listed price suggests.
+
+:::danger[Keep `RepairStep` and `RepairRate` in range]
+Keep `RepairStep` above `0` and no larger than the `Strength` of any structure, vehicle or aircraft that can be repaired. A value of `0`, or one above such an object's `Strength`, crashes the game on the first repair step of that object, under the wrench or at a depot. So does a negative value further below `0` than that `Strength`.
+
+A negative `RepairStep` closer to `0` does not crash. Each wrench step then takes that much strength from the structure, while a depot step restores `1` point.
+
+Keep `RepairRate` at `1/900` (about `0.0011`) or above. A smaller value crashes the game on the first frame a structure is under repair. Self-healing also reads `RepairRate`, but it treats a too-small interval as one frame and does not crash.
 :::
 
 ### What stops a repair
 
 - Reaching maximum strength.
-- A step the house cannot pay for. The flag is cleared silently at that tick; unlike the depot, the wrench reports nothing.
+- A step the owner cannot pay for. The repair ends on that step.
 - Another click.
-- Selling. Deconstruction forces the flag off as its first act.
-- Capture, which clears the flag for the new owner.
-- An engineer, which restores a building to maximum strength outright and forces the flag off. That restoration is not a repair step and costs nothing.
+- Selling the structure.
+- Capture. The new owner receives the structure with repair off.
+- An engineer. It restores the structure to maximum strength at no cost and switches repair off.
 
-A limpet mine is not one of them. The mark survives the repair, so a mined structure at maximum strength stays a candidate. The wrench engages, one step's credits are spent for nothing at the next tick, and the repair flag clears on that same tick, when the step's strength is clamped back down to the maximum. Nothing in that sequence touches the mark itself.
+A limpet mine does not stop a repair, and repairing does not remove it. A mined structure at maximum strength therefore stays a candidate. If the player switches repair on, the next step charges one step's cost, caps the strength at the maximum again, and ends the repair. The mine stays.
 
 ## Service depots
 
 ### Two settings, two different questions
 
-[`UnitRepair=yes`](/keys/unitrepair/) makes a building answer the docking request, offer the player's move-onto-the-pad cursor, and run the repair cycle. [`RepairBay`](/keys/repairbay/) names the single BuildingType that a repair order steers toward. They are read independently and can name different things.
+[`UnitRepair=yes`](/keys/unitrepair/) makes a building a service depot. The depot accepts vehicles and aircraft that ask to dock, offers the player's selected vehicles a move cursor onto its pad, and runs the repair cycle.
 
-A `RepairBay` type without `UnitRepair=yes` refuses every docking request, and a vehicle ordered to repair keeps retrying the search for as long as its house owns one of them. A depot that `RepairBay` does not name still serves anything that reaches it, but no repair order will ever send a vehicle there.
+[`RepairBay`](/keys/repairbay/) names the one BuildingType that repair orders look for. The engine reads the two settings separately, so they can name different buildings:
 
-:::danger[`RepairBay` must name a building type]
-With no `RepairBay=` in the rules the setting names no building type at all, and neither the docking-bay search nor the ownership count behind it checks that before using the name. Any vehicle that takes the repair order crashes the game, including a computer harvester that has run out of Tiberium and heads for the pad to be sold.
+- A `RepairBay` type without `UnitRepair=yes` refuses every docking request. A vehicle ordered to repair keeps searching for as long as its house owns one.
+- A depot that `RepairBay` does not name serves anything that reaches it, but a repair order never sends a vehicle there.
+
+:::danger[Set `RepairBay` to a building type]
+If the rules name no `RepairBay` type, the game crashes when any of these happens:
+
+- a vehicle receives the repair order;
+- a harvester or weeder runs out of places to harvest, whichever house owns it;
+- a computer-owned aircraft at or below [`ConditionYellow`](/keys/conditionyellow/) looks for a repair bay while its house has at least 100 credits.
 :::
 
 ### Reaching the pad
 
-Five routes end on a pad, and they do not agree about which of the two settings decides that a building will do.
+Five routes lead to a depot. Some look for a `UnitRepair` building and some look for the `RepairBay` type.
 
-| Route | Keys on | Conditions |
+| Route | Looks for | Conditions |
 | --- | --- | --- |
-| Player moves a vehicle onto a depot | `UnitRepair` | The building is allied, idle, and holds nothing; damage is not required |
-| Player sends an aircraft in | `UnitRepair` or a helipad | The building is idle and holds nothing |
-| Repair order | `RepairBay` | The nearest building of exactly that type that answers, own house or allied, in the same [movement zone](/glossary/#movement-zone) as the cell the vehicle is heading for. The scan runs at all only while the vehicle's own house owns one of the type. A building with its house's [primary-factory flag](/systems/production/#the-primary-factory) is taken whatever its distance. Its own distance then becomes the figure to beat, so it displaces every building scanned before it and is displaced in turn by any building scanned after it that is strictly nearer. Which of them the scan reaches first follows the order the engine holds its buildings in, which nothing on the map shows. A depot has that flag only if its type also produces something |
-| Computer vehicle, every 16 frames | `UnitRepair` | Own house only, below maximum strength, on guard or guard-area duty, not a harvester or weeder, within twenty cell diagonals of the building, a little over 28 cells |
-| Computer aircraft | `RepairBay` | At or below [`ConditionYellow`](/keys/conditionyellow/) with at least 100 credits in hand, a floor fixed in the engine |
+| Player moves a vehicle onto a depot | `UnitRepair` | The depot is allied, not serving anyone, and holds nothing. The vehicle does not need to be damaged |
+| Player sends an aircraft in | `UnitRepair` or a helipad | The building is allied, not serving anyone, and holds nothing |
+| Repair order | `RepairBay` | The nearest own or allied building of exactly that type that accepts the vehicle, in the same [movement zone](/glossary/#movement-zone) as the vehicle's destination cell. The search runs only while the vehicle's house owns a building of that type |
+| Computer vehicle, checked every 16 frames | `UnitRepair` | The vehicle is damaged, has no mission queued, and is not a harvester or weeder. It is on area guard duty, or on guard duty with no remembered position. It picks its house's nearest depot within twenty cell diagonals, a little over 28 cells |
+| Computer aircraft | `RepairBay` | The aircraft is on guard duty below its flight level, and at or below [`ConditionYellow`](/keys/conditionyellow/). It is not in contact with another object, unless it has landed and that object is not a `RepairBay` building. Its house has at least 100 credits, a floor fixed in the engine. The building is chosen as for a repair order, except that aircraft skip the movement-zone test |
 
-A computer vehicle records where it was standing before it leaves, and is sent back there once the repair finishes.
+The repair order search normally takes the nearest building. A building with its house's [primary-factory flag](/systems/production/#the-primary-factory) is the exception: it replaces every building checked before it, whatever the distance. A building checked after it still replaces it if that building is strictly nearer. The check order follows the engine's internal building list, which nothing on the map shows. A depot has the primary-factory flag only if its type also produces something.
+
+A computer vehicle remembers where it stood before it leaves for the depot, and returns there after the repair.
 
 ### Docking
 
-The building answers a [docking request](/internals/radio/) only for an allied object, and only while it is switched on and neither under construction nor being deconstructed. It also refuses while it is already in contact with someone else. A depot accepts a vehicle or an aircraft, but refuses one that is already standing on it. On arrival the building takes the repair mission and the client is put to sleep.
+A depot accepts a [docking request](/internals/radio/) only from an allied vehicle or aircraft. It also refuses while any of these is true:
 
-The building then pins its customer: once the client is within 150 leptons its locomotor is powered off and its destination is cleared, which is what keeps a vehicle still on the pad. The power-on half of that handling is suppressed while an ion storm is running, so a depot does not restore a client's power for as long as the storm lasts.
+- it is switched off;
+- it is under construction, being sold, or still playing its buildup;
+- it is already in contact with another object;
+- the requesting object is already standing on it.
+
+When the object arrives, the depot starts its service mission and the object goes to sleep. Once the object is within 150 leptons of the depot's center, the depot switches off the object's locomotor and clears its destination. This holds the object still on the pad.
 
 ### One step at a time
 
-Every exchange is a request the building makes and the client answers, and the client refuses while it has a destination of its own. The first request comes as soon as the customer is parked: a client that needs nothing is released again straight away, and the repair cycle opens only once a step has actually been paid for. A client whose house cannot afford that first step stays on the pad and is asked again on every mission update (14 frames at the default of the mission's own [`Rate`](/keys/rate/#scope-mission-behavior)), without any announcement.
+The depot asks the parked object for one repair step at a time. The object refuses while it has a destination.
 
-Inside the cycle the depot counts to `URepairRate * 900` before each further request. The count advances once per frame, so steps fall about a second apart at the engine defaults. A step at the depot is the same arithmetic as a structure's: the same [`RepairStep`](/keys/repairstep/) and the same cost formula, for vehicles and aircraft alike, which take both figures straight from the rules. The depot acts on the answer rather than on its own view of the client:
+The first request comes as soon as the object is parked:
+
+- An object that needs nothing is released at once.
+- If the first step is paid for, the repair cycle starts.
+- If the owner cannot pay for the first step, the object stays on the pad. The depot asks again at each update of its mission, every 14 frames at the default [`Rate`](/keys/rate/#scope-mission-behavior) of the `[Repair]` mission, and makes no announcement.
+
+During the cycle, the depot counts to `URepairRate * 900` before each further request, one count per frame. Steps therefore fall 15 frames apart at the engine default. Each step restores `RepairStep` strength. Its cost comes from [the structure formula](#the-cost-of-one-step), using the vehicle's or aircraft's `Cost` and `Strength`.
+
+The depot acts on the object's answer to each request:
 
 - **Paid.** The strength is added and the cycle continues.
-- **Unaffordable.** The depot announces the shortfall and drops back to idle with the client still parked.
-- **Anything else.** A finished repair, a client that needs nothing, and a client that has been given somewhere to go all end the visit the same way. The depot announces a completed repair and releases the client to the position a computer house archived for it, or to an exit cell beside the building.
+- **Unaffordable.** The depot announces insufficient funds and stops the cycle. The object stays parked, and the depot asks again at each mission update as it does for the first step.
+- **Anything else.** This covers a step that finishes the repair, an object that needs nothing, and an object that has been given a destination. The depot announces that the unit is repaired and releases the object. A computer-owned object with a remembered position returns there, as a computer vehicle does after [reaching the pad](#reaching-the-pad) on its own. Every other object moves to an exit cell beside the depot.
 
 ### What a depot does for free
 
-Every request first clears the client's limpet mark and resets its turret and body rates of turn to the type's [`ROT`](/keys/rot/#scope-aircrafttype), at no charge.
+Each request to an object with no destination clears its limpet mine and resets its turret and body turn rates to the type's [`ROT`](/keys/rot/#scope-aircrafttype), at no charge.
 
-A [`ManualReload=yes`](/keys/manualreload/) client whose magazine is not full then has it filled in one go, also free, and that refill pre-empts the repair for that exchange. An undamaged mine layer is therefore rearmed and released on the spot, and a damaged one spends its first exchange rearming and begins repairing at the next.
+A [`ManualReload=yes`](/keys/manualreload/) object whose ammunition is not full is then refilled completely, also for free. The refill takes the place of the repair step for that request. An undamaged mine layer is therefore rearmed and released at once. A damaged one is rearmed at the first request and starts repairing at the next.
 
 ### Selling at the pad
 
-Selling a depot that has something parked within half a cell sells the parked object instead: the customer is released from radio contact, sold, and the depot returns to guard duty untouched. The same proximity makes a docked vehicle or aircraft a legal sell target for the player in the first place.
+Selling a depot while an object is parked within half a cell of it sells the object instead. The object is released and sold, the depot is not sold, and the depot returns to guard duty. The same condition is what lets the player sell a parked vehicle or aircraft at all.
 
-A computer house sells a client outright at the moment the repair cycle would otherwise open, once the client has nothing left to do. That is the state a harvester reaches with no Tiberium in range. A human house's harvester in the same state is repaired and released instead.
+A computer house sells a harvester or weeder that has run out of places to harvest, if it is below maximum strength. The depot first charges for and restores one step, then sells the harvester at the point where the repair cycle would start. At maximum strength, such a harvester is released at once like any object that needs nothing. A human house's harvester in the same state is repaired and released as usual.
 
 ### `UnitReload` is a different service
 
-[`UnitReload=yes`](/keys/unitreload/) is a separate branch that hands the docked object one ammunition point per [`ReloadRate`](/keys/reloadrate/) interval, 45 frames at the engine default, and repairs nothing. A helipad needs the flag to rearm the aircraft that land on it.
+[`UnitReload=yes`](/keys/unitreload/) makes a building give the docked object one ammunition point per [`ReloadRate`](/keys/reloadrate/) interval, 45 frames at the engine default. It repairs nothing. A helipad needs this flag to rearm the aircraft that land on it.
 
-Only one branch runs per building. The mission checks construction yard, then hospital, then armory, then `UnitRepair`, then `UnitReload`, and stops at the first flag the type sets. The docking answer is ordered differently, testing `UnitRepair` before the two infantry flags, so a type that is both a depot and a hospital turns infantry away at the door.
+A building runs only one service. Its service mission checks these flags in order and runs the first one the type sets:
+
+1. construction yard;
+2. `Hospital`;
+3. `Armory`;
+4. `UnitRepair`;
+5. `UnitReload`.
+
+The docking check uses a different order and tests `UnitRepair` before the two infantry flags. A type that is both a depot and a hospital therefore refuses infantry at the door.
 
 ## Hospitals and armories
 
-[`Hospital=yes`](/keys/hospital/) and [`Armory=yes`](/keys/armory/) take infantry only, and only through the enter cursor of an object under player control. A hospital offers the cursor while the infantry stands below its maximum strength, and an armory offers it while the infantry is not already elite; both need the building to be allied.
+[`Hospital=yes`](/keys/hospital/) and [`Armory=yes`](/keys/armory/) serve infantry only, and only infantry that the player sends in with the enter cursor. The building must be allied. A hospital offers the cursor to damaged infantry, and an armory to infantry that is not yet elite.
 
-The building's own answer to the request needs **all of**, in this order:
+The building admits the infantry under **all of**, in this order:
 
 - its house is allied with the infantry's;
-- it is neither under construction nor being deconstructed, and is not still playing its buildup;
-- it is not in radio contact with anything other than this infantry;
+- it is not under construction, being sold, or still playing its buildup;
+- it is not in contact with anything other than this infantry;
 - it is switched on;
-- the caller is infantry rather than a vehicle or an aircraft;
-- its [`Ammo`](/keys/ammo/) pool is not zero;
-- it is not already running the service mission for somebody else.
+- the caller is infantry, not a vehicle or an aircraft;
+- its [`Ammo`](/keys/ammo/) count is not zero;
+- it is not already serving someone.
 
-Admission then spends one point of that pool.
+Each admission uses up one point of `Ammo`.
 
-:::danger[A building with no `Ammo` serves exactly one visitor]
-An unset ammunition pool is `-1`, which passes the non-zero test. The decrement on the first admission takes it to `-2` and the clamp that follows pins it at `0`, and the instant restock that refills every other building's ammunition explicitly skips hospitals and armories. The building then refuses everyone for the rest of the match. Give a hospital or an armory an explicit `Ammo` count equal to the number of visits it should ever serve.
+:::caution[Give hospitals and armories an `Ammo` count]
+Set `Ammo` to the number of visits the building should serve for the whole match. Hospitals and armories never restock, unlike other buildings. A building with no `Ammo` set admits one visitor and then refuses everyone for the rest of the match.
 :::
 
-A hospital heals on the infantry figures: [`IRepairStep`](/keys/irepairstep/) strength per step and no charge at all, because infantry replace the credit formula with zero rather than paying what a vehicle would. Each count of `IRepairRate * 900` buys one step, the count advances once per frame, and the occupant is released once it reaches maximum strength. An occupant that turns out to need nothing is released at the first count, having still spent the admission point.
+A hospital heals [`IRepairStep`](/keys/irepairstep/) strength per step, at no charge. It takes a step each time its count reaches `IRepairRate * 900`, counting once per frame. It releases the occupant at maximum strength. An occupant that needs no healing is released at the first count and still uses up its admission.
 
-An armory heals nothing at all. When its count elapses it promotes the occupant and shows it the door. A below-rookie infantry leaves veteran and everything else leaves elite, so a rookie gains two ranks in one visit and a veteran gains one. [Promotion without kills](/systems/veterancy/#promotion-without-kills) places the armory among the other sources of rank. The [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/) the new rank unlocks apply from the moment the occupant walks out.
+An armory heals nothing. When its count reaches `IRepairRate * 900`, it promotes the occupant and releases it. Below-rookie infantry leaves as veteran, and any other infantry leaves as elite. A rookie therefore gains two ranks in one visit, and a veteran gains one. [Promotion without kills](/systems/veterancy/#promotion-without-kills) compares the armory with the other sources of rank. The [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/) of the new rank apply as soon as the occupant leaves.
 
-:::caution[The same setting runs fourteen times slower in an armory]
-A hospital's loop asks to be called again on the next frame, so its count advances once per frame and completes in about 15 frames. The armory's loop asks for nothing and falls back to the delay its mission sets, 14 frames at the default of the mission's own [`Rate`](/keys/rate/#scope-mission-behavior). Its count therefore advances once per invocation and takes about 210 frames to reach the same figure. `IRepairRate` cannot be tuned for one building kind without moving the other by the same factor.
+:::caution[The same `IRepairRate` runs about fourteen times slower in an armory]
+A hospital's count advances once per frame, so it reaches 15 in 15 frames at the default. An armory's count advances once per update of its service mission, every 14 frames at the default `Rate` of the `[Repair]` mission, so it takes about 210 frames. Changing `IRepairRate` changes both buildings by the same factor; neither can be tuned alone.
 :::
 
 ## Self-healing
 
-[`SelfHealing=yes`](/keys/selfhealing/), or the `SELF_HEAL` ability from [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/), makes an object mend itself with no building, no order and no credits. It applies to structures, vehicles, aircraft and infantry alike.
+[`SelfHealing=yes`](/keys/selfhealing/), or the `SELF_HEAL` ability from [`VeteranAbilities`](/keys/veteranabilities/) or [`EliteAbilities`](/keys/eliteabilities/), makes an object heal itself with no building, order or credits. It works for structures, vehicles, aircraft and infantry.
 
 Three settings decide what a tick does:
 
@@ -220,54 +280,66 @@ Three settings decide what a tick does:
 | The rules | [`SelfHealStep`](/keys/selfhealstep/) | [`SelfHealRate`](/keys/selfhealrate/) | [`SelfHealCap`](/keys/selfhealcap/) |
 | Neither | `1` | [`RepairRate`](/keys/repairrate/) | [`ConditionYellow`](/keys/conditionyellow/) |
 
-Each column is read down: a value below zero falls to the row beneath. Rules that state none of them therefore heal a point every 14 frames up to half strength, as they always did, and `RepairStep` and `IRepairStep` reach no part of this path at any setting.
+Read each column from the top. A value below zero passes to the row beneath. With none of them set, an object heals one point every 14 frames until it passes half strength. `RepairStep` and `IRepairStep` never affect self-healing.
 
-The interval is tested against the global frame counter, so everything healing on one interval steps on the same frames. An interval that truncates below a frame is raised to a frame here, where the wrench's divides by zero. A step below one is raised to one, and the sum is clamped to the object's maximum strength, so no setting overheals and a step or interval of zero is read as one. A ceiling of zero does stop healing, because a tick needs a strength ratio at or below the ceiling and any object with strength left has one above zero. `SelfHealing=no` stops the path unless `SELF_HEAL` grants it.
+Self-healing steps on frames that are multiples of the interval, so every object on the same interval heals on the same frames. Each tick adds the step and caps the result at maximum strength, so no setting overheals. A step below `1` heals `1` point, and an interval shorter than one frame heals on every frame.
 
-An object at zero strength is never healed. Only an aircraft reaches that state and lives: one killed in the air keeps flying until it touches down, and the descent that kills it tests for exactly zero. A healing aircraft would otherwise recover in mid-air and fly on.
+A ceiling of `0` turns self-healing off. A tick needs the object's strength ratio to be at or below the ceiling. Any object with strength left has a ratio above `0`, so it never heals.
+
+`SelfHealing=no` turns self-healing off unless the object has the `SELF_HEAL` ability.
+
+An object at zero strength never heals. Only an aircraft can be at zero strength and still in play: one killed in the air keeps flying until it lands. Without this rule it could heal in mid-air and fly on.
 
 :::caution[The ceiling is not the damage threshold]
-A tick is refused as soon as the strength ratio rises above the ceiling, so healing ends one step past it. [`ConditionYellow`](/keys/conditionyellow/) still decides on its own when an object counts as damaged, so a ceiling on either side of it leaves the healing and the damage state out of step. The damage smoke goes out on the healing tick that crosses `ConditionYellow`, but a structure's damaged artwork does not: only a hit or a paid repair step re-evaluates that.
+Healing continues while the strength ratio is at or below the ceiling, so the last tick can carry the object up to one step past it. [`ConditionYellow`](/keys/conditionyellow/) still decides when an object counts as damaged, so a ceiling above or below it leaves healing and the damaged state out of step. When self-healing lifts a structure above `ConditionYellow`, its damage smoke stops. Its animations stay in their damaged form until something else refreshes them, such as a hit, a paid repair step, an engineer, an upgrade or the start of a new animation.
 :::
 
-Tiberium healing is the contrasting case. The object type's [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype), or the `TIBERIUM_HEAL` ability, restores an infantry, vehicle or aircraft standing on Tiberium. A second assignment of the same name, the game-wide [`TiberiumHeal`](/keys/tiberiumheal/#scope-global-rules), sets the interval: a fraction of a minute that gives 15 frames at the engine default. The amount is the type's repair step, `IRepairStep` for infantry and `RepairStep` for everything else. It runs while the object is below maximum strength and clamps to that maximum, so it finishes the job without needing a ceiling raised. Buildings never heal this way.
+Tiberium healing is a separate path. [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) on an infantry, vehicle or aircraft type, or the `TIBERIUM_HEAL` ability, heals the object while its cell contains Tiberium. Height is not checked, so such an aircraft also heals while flying over Tiberium. Structures never heal this way.
 
-A weapon that deals negative damage, as a medic or a mechanic does, restores strength through ordinary combat processing rather than through any path on this page. It also clears the target's limpet mark and resets its rates of turn to the type's `ROT`.
+The rules key of the same name, [`TiberiumHeal`](/keys/tiberiumheal/#scope-global-rules), sets the interval, 15 frames at the engine default. Each tick restores the type's repair step: `IRepairStep` for infantry and `RepairStep` for vehicles and aircraft, with a minimum of `1`. Tiberium healing continues to maximum strength and has no ceiling.
 
-Which objects such a weapon may be turned on follows its owner's kind: a soldier mends infantry, a vehicle mends vehicles. [`Mechanic=yes`](/keys/mechanic/) trades one for the other, and [`OmniHealer=yes`](/keys/omnihealer/) grants both.
+A weapon that deals negative damage, such as a medic's or a mechanic's, heals through ordinary damage and uses none of the settings on this page. Each heal also clears the target's limpet mine and resets its turn rates to the type's `ROT`.
+
+A healer's kind decides what it can heal: infantry heal infantry, and every other healer heals vehicles, including landed aircraft. [`Mechanic=yes`](/keys/mechanic/) makes infantry heal vehicles instead of infantry, and [`OmniHealer=yes`](/keys/omnihealer/) makes a healer heal both.
 
 ## When the computer repairs
 
-The computer's decision runs on each of its buildings, in this order:
+The computer decides on each of its buildings in turn. It switches a building's repair on when these tests pass, in this order:
 
-1. The owning house's [`IQ`](/keys/iq/) is at or above [`RepairSell`](/keys/repairsell/), and the building is neither under construction nor being deconstructed.
+1. The owning house's [`IQ`](/keys/iq/) is at or above [`RepairSell`](/keys/repairsell/), and the building is neither under construction nor being sold.
 2. The building is a repair candidate by the same test the wrench uses.
 3. The house's available money is at or above [`CreditReserve`](/keys/creditreserve/).
-4. The house has not started a repair since its throttle last expired.
-5. The building is not already repairing, and is either captured, flagged for repair, or owned by a human-controlled house.
+4. The house has not started a repair since its waiting time last ran out.
+5. The building is not already under repair, and it has been captured, is flagged for repair, or belongs to a human-controlled house.
 
-Only then is the wrench switched on; from there the repair is the ordinary tick, paid for out of the same treasury. Outside campaign games every computer house is forced to the maximum IQ, so the first gate filters nothing there as long as `RepairSell` stays at or below [`MaxIQLevels`](/keys/maxiqlevels/).
+The repair then runs as an ordinary [repair tick](#the-repair-tick), paid from the house's money. Outside campaign games every computer house has the maximum IQ, so the first test passes whenever `RepairSell` is at or below [`MaxIQLevels`](/keys/maxiqlevels/).
 
-The repair flag is set on every building of a non-human, non-passive house at the moment it appears outside a campaign game. It is also set on the construction yard a computer MCV deploys, and on any structure a map's own building line marks for repair.
+Three things flag a building for repair:
 
-After a house starts one repair it waits between `RepairDelay * 225` and `RepairDelay * 1800` frames before it may start another. At the [`RepairDelay`](/keys/repairdelay/) default that is 4 to 36 frames, which spreads a base's repairs out instead of committing the treasury to all of them at once. A human-controlled house arms no such timer, so its permission returns on the next house pass.
+- outside campaign games, placing any building of a computer house that is not [`MultiplayPassive=yes`](/keys/multiplaypassive/);
+- a computer MCV deploying into a construction yard;
+- a map record for the structure that flags it for repair.
 
-:::caution[A map can give the player automatic repair]
-The human-player clause sits in the same list as the repair flag. A map that sets `IQ` at or above `RepairSell` on the player's own house therefore turns the wrench on automatically for every damaged building that house owns, spending its credits without a click. A house's `IQ` above the maximum is replaced by `1` rather than by the maximum, so an over-large value switches this off rather than on.
+After a computer house starts one repair, it waits a random time between `RepairDelay * 225` and `RepairDelay * 1800` frames before it may start another. At the [`RepairDelay`](/keys/repairdelay/) default that is 4 to 36 frames, so a base's repairs start one at a time. A human-controlled house has no waiting time and may start another repair on its next update.
+
+:::caution[A map can give the player automatic repair and sale]
+Human-controlled houses always pass the last test. A map that sets the player's house `IQ` at or above `RepairSell` therefore switches repair on for every damaged building that house owns, one after another, spending its credits without a click. The same setting lets the sale rules below sell that house's damaged buildings when its money falls under `CreditReserve`. An `IQ` above the maximum is replaced by `1`, so an oversized value turns this off unless `RepairSell` is `1` or lower.
 :::
 
-When the house is below its credit reserve, the same routine considers selling the building instead. Past the first two gates above, that decision needs **all of**, in this order:
+When the house's money is below its credit reserve, the computer considers selling the building instead. After the first two tests above, the sale needs **all of**, in this order:
 
 - **Any of:** the game is not a campaign game, or the structure is marked sellable;
-- the structure has taken damage from something its house is not allied with;
+- the structure has been damaged by something its house is not allied with;
 - the owning house's tech level is at or above [`SellBack`](/keys/sellback/);
-- a draw from `0` through `50` comes out below that same tech level;
+- a random number from `0` to `50` is below that same tech level;
 - the structure has no trigger tag;
-- its type produces no buildings;
+- its type does not produce buildings;
 - its strength ratio is below [`ConditionRed`](/keys/conditionred/).
 
-The mark in the first term is not a rules setting. Every structure starts marked, and loses the mark outright when its type has no build-up animation. A structure the scenario placed takes the mark from the field that follows the trigger name in its own record instead, whatever the type's artwork holds. That field reads as `0` when the record leaves it out. Outside a campaign game the term is skipped and the mark is never read at all.
+The random number is drawn again on every frame while the other terms hold, so it delays a sale but does not prevent one.
 
-The build-up animation is tested again by the sale itself, in every mode, so the fallback is a no-op for a type that has none however the mark stands.
+The sellable mark belongs to the structure, not to its type's rules. A structure starts marked unless its type has no buildup animation. A structure placed by the map takes the mark from the field after the trigger name in its map record instead, whatever its type's artwork. A record that leaves the field out gives `0`, not sellable. Outside campaign games the mark is never checked.
 
-Neither branch reads the house's base layout: a computer house repairs and sells through this routine alone, and [rebuilding a destroyed structure](/systems/ai-base-building/) is a separate decision.
+The sale itself also requires a buildup animation, in every game mode. A type without one is never sold this way, whatever its mark.
+
+A computer house repairs and sells its buildings only through this routine. [Rebuilding a destroyed structure](/systems/ai-base-building/) is a separate decision.

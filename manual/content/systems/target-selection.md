@@ -1,6 +1,6 @@
 ---
 title: Target selection and threat rating
-summary: "Scores the candidates an object could shoot at from per-type coefficients weighing armor, health, distance and the house's declared enemy."
+summary: "How objects pick targets on their own, which candidates they reject, and how per-type threat coefficients score the rest."
 category: combat-targeting
 keys:
   - AA
@@ -53,17 +53,17 @@ related:
 
 Anyone already writing mission sections in a rules file can skip to [the five stages](#the-five-stages).
 
-A **mission** is what an object is doing at this moment: guarding, moving toward a destination, hunting, harvesting, selling itself. Every object on the map is in exactly one, and the [mission](/reference/enums/mission/) page lists them all. A mission is not an order the player issues, and not a line of a team's script. A player order, a script, a trigger action and the engine's own idle handling all work by putting an object into a mission. Nothing below depends on how the object got there.
+A **mission** is what an object is doing at this moment: guarding, moving toward a destination, hunting, harvesting, selling itself. Every object on the map is in exactly one, and the [mission](/reference/enums/mission/) page lists them all. A player order, a team script, a trigger action and the engine's idle handling all work by putting an object into a mission. Nothing below depends on how the object got there.
 
-Each mission also owns a rules section named after it: `[Guard]`, `[Area Guard]`, `[Hunt]`, `[Harmless]`, one per entry on that list. What is written there governs every object in that mission, whatever type it is. A mission section is therefore the one place a behavior can be changed for all of them at once. A mission whose section is absent keeps the engine's own values.
+Each mission has a rules section named after it, such as `[Guard]`, `[Area Guard]`, `[Hunt]` or `[Harmless]`. Its settings apply to every object in that mission, whatever the object's type, so a mission section changes a behavior for all of them at once. A mission with no section keeps the engine's values.
 
-Four of the settings those sections set reach the decisions on this page and on [engineers, capture and sabotage](/systems/capture/).
+Four mission settings affect the decisions on this page and on [engineers, capture and sabotage](/systems/capture/).
 
 | Setting | What it decides for an object in that mission |
 | --- | --- |
-| [`NoThreat`](/keys/nothreat/) | At `yes`, no other object's scan will [accept it as a candidate](#why-a-candidate-is-rejected). It is read from the candidate's mission, never from the scanning object's |
+| [`NoThreat`](/keys/nothreat/) | At `yes`, no other object's scan will [accept it as a candidate](#why-a-candidate-is-rejected). The candidate's mission decides this, not the scanning object's |
 | [`Retaliate`](/keys/retaliate/) | At `no`, damage never makes it [turn on its attacker](#retaliation) |
-| [`Scatter`](/keys/scatter/#scope-mission-behavior) | At `no`, the object will not scatter from a threat; on this page that is what stops an object [refused retaliation](#retaliation) from stepping aside |
+| [`Scatter`](/keys/scatter/#scope-mission-behavior) | At `no`, the object does not scatter from a threat. On this page, that stops an object [refused retaliation](#retaliation) from stepping aside |
 | [`Rate`](/keys/rate/#scope-mission-behavior) | The fraction of a minute between one servicing pass of the mission and the next |
 
 Written out, one mission section looks like this.
@@ -75,148 +75,156 @@ Retaliate=no
 Rate=.5
 ```
 
-An object put into Harmless is passed over by every scan, never fires back, and has its mission serviced about twice a minute.
+An object in Harmless is passed over by every scan, does not turn on an attacker, and has its mission serviced about twice a minute. It stays harmless only until an attacker damages it. An object outside a team then returns to its idle mission unless the section also sets [`Zombie=yes`](/keys/zombie/).
 
 ## The five stages
 
-An object scans for a target only when its current mission asks it to. Five stages then resolve one target, each narrowing what the next one sees. The first stage decides whether there is a scan at all, and only the last one scores anything.
+An object scans for a target only when its current mission calls for a scan. Five stages then produce one target, and each stage narrows what the next one sees. The first stage decides whether there is a scan at all, and only the last one scores anything.
 
 | Stage | What it decides |
 | --- | --- |
-| Mission | Whether to scan, the coordinate to scan from, and which target categories are wanted |
-| Object kind | Rewrites those categories from the object's own weapons and role |
-| Scan | Walks rings of cells outward from the coordinate, or the whole object list |
+| Mission | Whether to scan, the point to scan from, and which kinds of target are wanted |
+| Object kind | Rewrites those kinds from the object's weapons and role |
+| Scan | Walks rings of cells outward from the scan point, or walks every object on the map |
 | Cell | Offers at most one occupant per cell |
-| Candidate | Rejects what may not be attacked, then scores what survives |
+| Candidate | Rejects what may not be attacked, then scores what is left |
 
-The survivor is assigned as the object's target. Retaliation is a separate path that never scans.
+The object takes the chosen candidate as its target. Retaliation is a separate path that never scans.
 
 ## When an object scans
 
 ### Mission entry points
 
-These are the entry points that scan: the object missions that run one, plus the two team missions at the foot that make a member scan on the team's behalf. A mission absent from this table **never scans at all**, so an object left in one acquires a target only by being handed one or by retaliating.
+The table lists every mission that scans. The last two rows are team missions, in which one member scans on the team's behalf. A mission not in this table **never scans**. An object in one gets a target only by being given one or by retaliating.
 
-The middle column gives the shape and the reach of each scan. A *ring* scan walks whole cell rings outward from a coordinate and stops at the radius named, which [the next section](#scan-radius) derives. A *whole map* scan walks the object lists instead and has no radius.
+The middle column gives each scan's shape and reach. A *ring* scan walks whole rings of cells outward from a point and stops at the radius named; [the next section](#scan-radius) gives the three radii. A *whole map* scan walks every object instead and has no radius.
 
 | Mission | Scan | Notes |
 | --- | --- | --- |
-| Guard | Ring, guard radius | Skipped on an engineer, and on a computer-controlled aircraft that already has a target. Other existing targets are validated and may be replaced |
+| Guard | Ring, guard radius | Not run on an engineer. An aircraft seldom reaches this scan. It attacks a target it already holds, returns to idle handling at cruising height, and does not scan while landed unless it is docked. A human-owned aircraft scans only while airborne. A computer-owned aircraft whose house is not under attack first looks for an enemy vehicle outside that vehicle's base, preferring near ones and ones that cannot fire at aircraft. If it finds one, it attacks it without scanning |
 | Guard area | Ring, area radius, from the home position | Runs only while the object has no target |
-| Patrol | Ring, patrol radius, from the object, then re-scanned from the patrol cell | Also used by an aircraft that is patrolling with ammunition left |
-| Move | Ring, guard radius | Only while the object has no target, only for a computer [house](/glossary/#house), and never for a member of a [`Suicide=yes`](/keys/suicide/) team |
-| Hunt | Whole map | Outside campaigns an aircraft first asks for Tiberium processors alone (objects whose type declares a nonzero [`Storage`](/keys/storage/)), then repeats without restriction |
-| Rescue | Whole map | The result is taken only when it is within 1.5 times the area radius of the spot the mission began at |
-| Guard, on an armed building | Ring, guard radius | Runs only while the building has no target. Not run on an EM pulse cannon, or on a building holding a chemical missile |
-| Team attack | Whole map | The category comes from the team mission's [Quarry](/reference/enums/quarry/) |
-| Team patrol | Ring, guard radius | Re-scanned from the team leader every [`PatrolScan`](/keys/patrolscan/) minutes |
+| Patrol | Ring, patrol radius, from the object, then re-scanned from the patrol cell | An aircraft on patrol with ammunition left runs only the first scan |
+| Move | Ring, guard radius | Runs only while the object has no target, only for a computer [house](/glossary/#house), never on an aircraft, and never for a member of a [`Suicide=yes`](/keys/suicide/) team |
+| Hunt | Whole map | Outside campaigns, an aircraft first scans for Tiberium processors alone (objects whose type sets a nonzero [`Storage`](/keys/storage/)), then scans again without that restriction |
+| Rescue | Whole map | The result is kept only when it lies within 1.5 times the area radius of the spot where the mission began |
+| Guard, on an armed building | Ring, guard radius | Runs only while the building has no target. Not run on an EM pulse cannon, or on a building that holds a chemical missile |
+| Team attack | Whole map | The team mission's [Quarry](/reference/enums/quarry/) sets the kind of target. A TeamType with [`OnlyTargetHouseEnemy=yes`](/keys/onlytargethouseenemy/) considers only its house's declared enemy |
+| Team patrol | Ring, guard radius | The team leader scans every [`PatrolScan`](/keys/patrolscan/) minutes |
 
-On Guard, a non-engineer ground object and a human-controlled aircraft test an existing target before scanning. A target out of range of the weapon chosen against it is cleared before another candidate is considered, so the object does not keep chasing something it can no longer shoot. A computer-controlled aircraft keeps an existing target without this test; with no target it runs the ring scan the table gives.
+In Guard, an infantry or vehicle that is not an engineer checks its current target before scanning. If the target is out of range of the weapon chosen against it, the object drops it and scans for another. It therefore does not keep chasing something it can no longer shoot.
 
-Three settings stop the scan before it starts, and **any of** them is enough on its own. Each is read only on a human-owned object, so a computer house ignores all three:
+Three conditions stop a scan before it starts. **Any of** them is enough, and each applies only to a human-owned object:
 
 - [`NoAutoFire=yes`](/keys/noautofire/) on the object's type;
-- the object is in Guard and either its type can cloak or it holds the `CLOAK` ability;
+- the object is in Guard, and it can cloak (from its type or a cloaking crate) or holds the `CLOAK` ability;
 - [`DeployToFire=yes`](/keys/deploytofire/) on a vehicle.
 
 ### Scan radius
 
-Three radii are derived from [`GuardRange`](/keys/guardrange/), the object type's own guard distance in [cells](/glossary/#cell). The mission table above says which of the three a mission asks for, and only the guard radius has a fallback.
+Three scan radii are derived from [`GuardRange`](/keys/guardrange/), the object type's guard distance in [cells](/glossary/#cell). The mission table above says which one a mission uses.
 
 | Radius | Value |
 | --- | --- |
-| Guard | `GuardRange`, when it is not zero and the object is not an engineer; otherwise weapon range |
-| Area | Twice `GuardRange`, or twice the longer weapon range when `GuardRange` is zero, clamped to at most 16 cells |
-| Patrol | The same figure, clamped to between 7 and 16 cells |
+| Guard | `GuardRange`, when it is not zero and the object is not an engineer. Otherwise the object's weapon range, as described below |
+| Area | Twice `GuardRange`, or twice the longer weapon range when `GuardRange` is zero. At most 16 cells |
+| Patrol | The same figure as the area radius, but kept between 7 and 16 cells |
 
-The scan walks that many whole cell rings. Where the guard radius falls back to weapon range, two things change at once. The ring count becomes the longer of the two weapon ranges in whole cells, plus one. Each candidate also has to pass a live range test, and which test that is depends on what the object has.
+The scan walks that many whole rings of cells.
 
-- With a primary weapon, the candidate must be in range of the weapon chosen against it.
-- With no primary weapon at all, there is no such test, and the candidate is accepted within `GuardRange`.
+When the guard radius falls back to weapon range, the scan changes in two ways:
 
-A healer is an object whose weapon damage averages below zero, such as a medic. In Guard it overrides all of the above with a fixed 2 cells.
+- It walks as many rings as the longer of the two weapon ranges, in whole cells, plus one. An object with no weapon at all therefore scans only the cell it stands in.
+- Each candidate must also pass a range test. An object with a primary weapon accepts a candidate only within range of the weapon it would choose against it. An object with no primary weapon accepts a candidate within `GuardRange`.
+
+A healer is an object whose weapons average negative damage, such as a medic. In Guard, a healer scans a fixed 2 cells, whatever the radius rules above give.
 
 :::caution[`GuardRange` is also a fence connection distance]
-A [`LaserFencePost=yes`](/keys/laserfencepost/) building uses it as the number of cells it reaches in each of the four cardinal directions to find the next post, and treats anything below one cell as one. A [`FirestormWall=yes`](/keys/firestormwall/) type uses it as the number of cells a placed section searches for another section to join. Both truncate it to whole cells, so changing it on those types changes how far a fence run reaches.
+A [`LaserFencePost=yes`](/keys/laserfencepost/) building uses `GuardRange` as the number of cells it searches in each of the four cardinal directions for the next post, and treats anything below one cell as one. A [`FirestormWall=yes`](/keys/firestormwall/) type uses it as the number of cells a placed section searches for another section to join. Both round it down to whole cells, so changing `GuardRange` on those types changes how far a fence run reaches.
 :::
 
-An unarmed building never scans at all, because the scan lives on the armed branch of the Guard mission. [`HasStupidGuardMode=yes`](/keys/hasstupidguardmode/) goes further and ends an unarmed building's Guard processing outright, so the repair-bay handover and the weapons-factory bib clearing stop running.
+An unarmed building never scans. [`HasStupidGuardMode=yes`](/keys/hasstupidguardmode/) goes further: it ends an unarmed building's Guard processing outright. A repair bay with this setting no longer hands off a waiting unit, and a weapons factory no longer clears its exit.
 
-An idle object settles into either Guard or Area Guard, the mission that scans at the area radius. What sends it to Area Guard differs by kind.
+An idle object settles into either Guard or Area Guard, and Area Guard is the mission that scans at the area radius. What sends an idle object to Area Guard depends on its kind:
 
-- A computer-owned infantry outside a team reaches Area Guard once its house's [`IQ`](/keys/iq/) reaches the [`GuardArea`](/keys/guardarea/) level in `[IQ]`. At that level an armed infantry qualifies, and so does an unarmed engineer or vehicle thief; any other unarmed infantry takes Guard, and so does every infantry below the level.
-- A human-owned infantry reaches Area Guard through the `GUARD_AREA` ability, and only while it stands outside a team.
-- An armed vehicle takes Area Guard once that same `IQ` level is reached, or whenever it holds the `GUARD_AREA` ability, and never while it is in a team. Nothing on this path asks who owns the vehicle, so a human house whose scenario gives it the `IQ` sends its idle vehicles out as well.
-- An armed aircraft takes Area Guard while it is computer-owned and outside a team, whatever the level says.
+- A computer-owned infantry outside a team takes Area Guard once its house's [`IQ`](/keys/iq/) reaches the [`GuardArea`](/keys/guardarea/) level in `[IQ]`, provided it is armed, an engineer or a vehicle thief. Other unarmed infantry take Guard, and so does every infantry below that level.
+- A human-owned infantry takes Area Guard only through the `GUARD_AREA` ability, and only while it is outside a team.
+- An armed vehicle outside a team takes Area Guard once its house reaches that `IQ` level, or whenever it holds the `GUARD_AREA` ability. The `IQ` test does not check who owns the vehicle, so a human house whose scenario gives it that `IQ` sends its idle vehicles to Area Guard as well.
+- An armed aircraft takes Area Guard while it is computer-owned and outside a team, whatever its house's `IQ`.
 
 ## What each kind of object considers
 
-The mission's request is rewritten before the scan runs.
+Before the scan runs, the kind of object doing the looking rewrites the list of wanted target kinds.
 
-For an infantry or a vehicle, a request that names no category at all is filled in from the object's own weapons, one slot at a time.
+When the mission asks for no particular kind, an infantry or a vehicle fills the list from its weapons, one weapon slot at a time.
 
-| Projectile setting | Categories contributed |
+| Projectile setting | Target kinds added |
 | --- | --- |
-| [`AV=yes`](/keys/av/) | Vehicles, and nothing else. The answer is returned at once, so `AA` and `AG` on the same projectile contribute nothing |
+| [`AV=yes`](/keys/av/) | Vehicles only. `AA` and `AG` on the same projectile add nothing |
 | [`AA=yes`](/keys/aa/) | Aircraft |
 | [`AG=yes`](/keys/ag/) | Infantry, vehicles and buildings |
 
-An aircraft gets no such fill. It falls through to the rewrites below, so the categories its own projectile would have contributed never reach its own scans.
+An aircraft does not fill the list from its weapons. It takes the ground fill in the next table instead, so the kinds its projectile would add never reach its scans.
 
-On top of that fill, each kind of object rewrites the request again. The row that applies is the one for the object doing the looking, not the one being looked at.
+Each kind of object then changes the list further. The row that applies is the one for the object doing the looking, not the one being looked at.
 
-| Object | Rewrite |
+| Object | Changes |
 | --- | --- |
-| Anything that moves | An area request becomes a range request while the object is under a scan restriction. That restriction is imposed when the object's path is completely blocked and its target is out of range, it spreads to every member when the object is in a team, and it lifts as soon as a scan finds nothing. A still-empty request gains infantry, vehicles and buildings. |
-| Infantry | See below. |
-| Vehicle | A human-owned `DeployToFire=yes` vehicle finds nothing; otherwise only the weapon fill applies. |
-| Building | Both weapon slots are added whether or not the request already named a category, a human-owned building drops buildings from the request, and the scan is forced into a ring. A building can never scan the whole map. |
+| Anything that moves | A list that names no infantry, vehicle or building kind gains all three |
+| Anything that moves, under a scan restriction | An area scan becomes a range scan. The restriction starts when the object stops because its path is completely blocked while its target is out of range. In a team, every member gets it. It lifts as soon as a scan finds nothing |
+| Infantry | See below |
+| Vehicle | A human-owned `DeployToFire=yes` vehicle finds nothing. Otherwise only the weapon fill applies |
+| Building | Adds what both weapon slots can attack, even when the mission already named a kind. A human-owned building drops buildings from the list. A building always runs a ring scan, never a whole-map scan |
 
-Infantry make the most changes, in this order:
+Infantry make the most changes. They apply in this order:
 
-- A computer-owned unarmed [`Infiltrate=yes`](/keys/infiltrate/) infantry heads straight for the house's recapture target when it is within 15 cells, with no scan at all; otherwise capturable buildings are added to the request. [`C4=yes`](/keys/c4/) and [`Engineer=yes`](/keys/engineer/) both set `Infiltrate` as well.
-- A [`VehicleThief=yes`](/keys/vehiclethief/) infantry already driving toward a non-[`IsTrain`](/keys/istrain/) vehicle within 15 cells keeps it, again without scanning. These two are the only paths that reach a target without scoring it.
-- An unarmed infantry that is neither of those finds nothing. An unarmed vehicle thief has buildings and aircraft struck out of its request and vehicles put in.
-- When the primary weapon's warhead is organic, buildings, vehicles and aircraft are struck out, leaving infantry. Organic is derived, not configured: a warhead counts as organic when its [`Verses`](/keys/verses/) percentage against `heavy` armor is exactly `0%`. This is what confines a dog to infantry. A healer's request is replaced outright by the rewrite below, so the strike-out never decides what it treats.
-- A human-owned armed infantry drops buildings. A computer-owned `C4=yes` infantry, or one holding the `C4` ability, adds them; ownership keeps the two rules apart.
-- A [`Thief=yes`](/keys/thief/) infantry adds capturable buildings and Tiberium processors.
+- A computer-owned unarmed [`Infiltrate=yes`](/keys/infiltrate/) infantry goes straight for its house's recapture target when that building is within 15 cells, without scanning. Otherwise its scan is limited to capturable buildings. [`C4=yes`](/keys/c4/) and [`Engineer=yes`](/keys/engineer/) both imply `Infiltrate=yes`.
+- A [`VehicleThief=yes`](/keys/vehiclethief/) infantry already heading for a vehicle within 15 cells that is not [`IsTrain=yes`](/keys/istrain/) keeps that vehicle as its target, without scanning.
+- An unarmed infantry that is neither `Infiltrate=yes` nor `VehicleThief=yes` finds nothing. An unarmed vehicle thief looks for vehicles, never buildings or aircraft.
+- An infantry whose primary weapon has an organic warhead considers only infantry. A warhead counts as organic when its [`Verses`](/keys/verses/) percentage against `heavy` armor is exactly `0%`; no setting marks it directly. This is what confines a dog to infantry. A healer's list is replaced by the healer rule below, so this rule never decides what a healer treats.
+- A human-owned armed infantry drops buildings. A computer-owned `C4=yes` infantry, or one holding the `C4` ability, adds them.
+- A [`Thief=yes`](/keys/thief/) infantry considers only capturable buildings that have a nonzero `Storage`.
 
-Two more rewrites follow. A healing infantry or vehicle has its whole request replaced by allies plus the kinds it mends. That is infantry for an infantry and vehicles for a vehicle, or whatever [`Mechanic=yes`](/keys/mechanic/) or [`OmniHealer=yes`](/keys/omnihealer/) names instead. An engineer, whoever owns it, has infantry and vehicles struck out.
+The organic rule and the human-owned rule do not undo a team attack's [Quarry](/reference/enums/quarry/). A quarry that names a kind of building, such as power plants or factories, still reaches buildings.
+
+Two more rules apply after these, to infantry and vehicles:
+
+- A healing infantry or vehicle considers only damaged allies of the kinds it mends. An infantry mends infantry and a vehicle mends vehicles; [`Mechanic=yes`](/keys/mechanic/) switches that to vehicles and [`OmniHealer=yes`](/keys/omnihealer/) to both.
+- An engineer, whoever owns it, never considers infantry or vehicles.
 
 ## Why a candidate is rejected
 
-Every candidate the scan offers runs this gauntlet in order, and the first row that matches ends it. Nothing further down is read and no score is computed. The left column is the test and the right is what it turns on, so a row with an empty right column has nothing else to it.
+The engine tests each candidate against these rows in order and rejects it at the first row that matches. A rejected candidate is not scored.
 
 | Rejected when | Detail |
 | --- | --- |
 | The candidate is in [limbo](/glossary/#limbo), or already at zero strength | |
 | It is cloaked, its cell is not sensed by this house, and it belongs to another house | |
-| It has not yet entered the playable area | Reinforcements still crossing in from off map are not targeted |
+| It has not yet entered the playable area | Reinforcements still crossing in from off the map are not targeted |
 | Its current mission sets [`NoThreat=yes`](/keys/nothreat/) | |
-| It sits more than 20 leptons below ground level | A lepton is the engine's internal distance unit; 256 of them make one cell |
-| It is in a different [movement zone](/glossary/#movement-zone) | The cell is tested on a ring scan and the candidate on a full-map scan; neither test runs for a range-limited request, nor for a building or an aircraft |
-| It is an ally | Unless this object heals or is an engineer and the ally is damaged. A berzerk infantry ignores allegiance entirely: that is a [`Cyborg=yes`](/keys/cyborg/) type sent out of its mind by damage under [`BerzerkAllowed=yes`](/keys/berzerkallowed/), after which it attacks whatever is near it. A healer also rejects an airborne aircraft, an aircraft standing in a building's cell, and any ally of a kind it does not mend |
-| Harvester immunity is on and its type is listed in [`HarvesterUnit`](/keys/harvesterunit/) | From the multiplayer harvester truce, or from a scenario's [`HarvesterImmune`](/keys/harvesterimmune/) setting |
+| It is more than 20 leptons below ground level | A cell is 256 leptons across |
+| It is in a different [movement zone](/glossary/#movement-zone) | A ring scan tests the cell and a whole-map scan tests the candidate. Neither test runs for a range scan, or when the scanning object is a building or an aircraft |
+| It is an ally | Unless this object heals or is an engineer and the ally is damaged. A healer also rejects an allied aircraft that is airborne or standing in a building's cell, and an ally of a kind it does not mend. A berzerk infantry skips this row and attacks whatever is near it. Infantry goes berzerk through the [Go Berzerk](/mapping/actions/taction-go-berzerk/) trigger action or [team mission](/mapping/missions/tmission-berzerk/), or from damage when its type is [`Cyborg=yes`](/keys/cyborg/) under [`BerzerkAllowed=yes`](/keys/berzerkallowed/) |
+| Harvester immunity is on and its type is listed in [`HarvesterUnit`](/keys/harvesterunit/) | Immunity comes from the multiplayer harvester truce or from a scenario's [`HarvesterImmune`](/keys/harvesterimmune/) setting |
 | It is beyond the scan radius | Or, when the scan uses weapon range, out of range of the weapon chosen against it |
-| Campaign games only, and only when the scanning house is under player control: the candidate is not the player's, has never been discovered by the player, and is not an aircraft | A computer house's campaign scan never applies this filter |
+| Campaigns only, when the scanning house is the player's: the candidate is not the player's, the player has never discovered it, and it is not an aircraft | A computer house's campaign scan skips this row |
 | It is a building whose type sets [`InvisibleInGame=yes`](/keys/invisibleingame/) | |
-| Its kind is not among the requested categories | A landed aircraft counts as a vehicle, and so does a building that can undeploy into one unless it is a construction yard |
-| Skirmish and multiplayer only: its house's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/) | Unless the match admits neutral houses to the scan |
+| Its kind is not among the wanted kinds | A landed aircraft counts as a vehicle. So does a building that can undeploy into a vehicle, unless it is a construction yard |
+| Skirmish and multiplayer only: its house's country sets [`MultiplayPassive=yes`](/keys/multiplaypassive/) | Unless the match lets objects attack neutral houses |
 | Its type sets [`LegalTarget=no`](/keys/legaltarget/) | |
 | It is an `IsTrain=yes` type and this object is a vehicle thief | |
-| It is a [`Disguised=yes`](/keys/disguised/) infantry | Unless this object's type sets [`DetectDisguise=yes`](/keys/detectdisguise/), or [`AIDetectDisguise=yes`](/keys/aidetectdisguise/) is set and the scanning house is not under player control |
-| This object's primary projectile is `AG=no` and the candidate is at ground level | This rejects every ground object, not only landed aircraft, and it reads the primary slot even when the secondary would be fired |
-| The request asked for civilians | |
-| The request asked for capturable buildings and this is not a [`Capturable=yes`](/keys/capturable/) building | |
-| A human-owned object outside a team is looking at a building that cannot shoot back | A building with no weapon in its first slot, or one whose weapon has no range. Unless the object is an engineer, or the building can undeploy into a vehicle |
+| It is a [`Disguised=yes`](/keys/disguised/) infantry | Unless this object's type sets [`DetectDisguise=yes`](/keys/detectdisguise/), or [`AIDetectDisguise=yes`](/keys/aidetectdisguise/) is set and the scanning house is computer-controlled |
+| This object's primary projectile is `AG=no` and the candidate is at ground level | This rejects every ground object, not only landed aircraft. It reads the primary slot even when the secondary would be fired |
+| The scan asked for civilians | |
+| The scan is limited to capturable buildings and this is not a [`Capturable=yes`](/keys/capturable/) building | |
+| A human-owned object outside a team is looking at a building that cannot shoot back | That is a building with no weapon in its first slot, or one whose weapon has no range. Engineers are exempt, and so is a building that can undeploy into a vehicle |
 | This object is an engineer and the candidate is not a building, or is an ally above [`ConditionRed`](/keys/conditionred/), or is an ally that costs nothing | |
-| The request asked for Tiberium processors and the candidate's [`Storage`](/keys/storage/) is zero | |
-| Both stand in bridge cells and only one of the two is up on the bridge | |
-| A web warhead is in play and the candidate is an infantry that has been struggling for longer than a quarter of [`WebDuration`](/keys/webduration/) | The second slot's warhead is used when it is [`Webby=yes`](/keys/webby/), otherwise the first slot's |
+| The scan is limited to Tiberium processors and the candidate's [`Storage`](/keys/storage/) is zero | |
+| Both stand in bridge cells, and only one of the two is up on the bridge | |
+| This object has a web warhead and the candidate is an infantry still webbed for more than a quarter of the warhead's [`WebDuration`](/keys/webduration/) | The secondary slot's warhead is used when it is [`Webby=yes`](/keys/webby/), otherwise the primary slot's |
 
 ## The threat score
 
-Whatever survives is scored by five coefficients. All five are read from the type of the object doing the choosing, never from the candidate's type. Retuning one changes what that type prefers, and nothing about how other types treat it.
+Each candidate that passes gets a threat score from five coefficients. All five come from the type of the object doing the choosing, never from the candidate's type. Changing one changes what that type prefers, not how other types treat it.
 
 | Setting | Multiplies | Sign |
 | --- | --- | --- |
@@ -224,9 +232,9 @@ Whatever survives is scored by five coefficients. All five are read from the typ
 | [`TargetSpecialThreatCoefficient`](/keys/targetspecialthreatcoefficient/) | The candidate type's [`SpecialThreatValue`](/keys/specialthreatvalue/) | Positive prefers a high `SpecialThreatValue` |
 | [`MyEffectivenessCoefficient`](/keys/myeffectivenesscoefficient/) | The `Verses` percentage of this object's chosen warhead against the candidate's armor | Positive prefers candidates this object can hurt |
 | [`TargetStrengthCoefficient`](/keys/targetstrengthcoefficient/) | The candidate's current strength as a fraction of its maximum, from `0` to `1` | Positive prefers healthy candidates, negative prefers wounded ones |
-| [`TargetDistanceCoefficient`](/keys/targetdistancecoefficient/) | How far beyond weapon range the candidate lies, and zero inside it | Must be negative to penalize distance; positive rewards distant candidates |
+| [`TargetDistanceCoefficient`](/keys/targetdistancecoefficient/) | How far beyond weapon range the candidate lies, and zero inside it | Negative penalizes distance; positive rewards distant candidates |
 
-[`Verses`](/keys/verses/) is the multiplier in both effectiveness terms, read as a fraction against the candidate's or this object's [armor class](/reference/enums/armor/): `none`, `wood`, `light`, `heavy` or `concrete`.
+Both effectiveness terms use [`Verses`](/keys/verses/) as a fraction against the relevant [armor class](/reference/enums/armor/): `none`, `wood`, `light`, `heavy` or `concrete`.
 
 ```text title="threat score, in evaluation order"
 threat = ± TargetEffectivenessCoefficient × Verses of the candidate's warhead vs. my armor
@@ -238,26 +246,26 @@ threat = ± TargetEffectivenessCoefficient × Verses of the candidate's warhead 
        +   100000
 ```
 
-The `100000` added to every score is fixed in the engine. [`EnemyHouseThreatBonus`](/keys/enemyhousethreatbonus/) is a flat addition, applied when the candidate's house is the one this house has [declared as its enemy](/systems/base-attacked/#anger-and-the-declared-enemy). The finished figure is stored as a whole number, so the fraction is discarded.
+Every score includes a fixed `100000`. [`EnemyHouseThreatBonus`](/keys/enemyhousethreatbonus/) is a flat addition for a candidate that belongs to the house this house has [declared as its enemy](/systems/base-attacked/#anger-and-the-declared-enemy). The finished score is rounded down to a whole number.
 
-:::caution[The stock coefficients are all zero]
-Every one of the five, and `EnemyHouseThreatBonus`, starts at zero. With a rules file that sets none of them, every surviving candidate scores exactly `100000`. The choice then falls through to the order the scan happened to visit them in. Threat rating does nothing at all until at least one coefficient is written.
+:::caution[Unset coefficients are zero]
+All five coefficients, their `[General]` defaults, and `EnemyHouseThreatBonus` are zero unless a rules file sets them. If none is set, every candidate scores exactly `100000`, and the choice depends only on the order in which the scan reaches the candidates. The retail `rules.ini` sets the five `[General]` defaults and `EnemyHouseThreatBonus`, so a mod that replaces that file must set them itself.
 :::
 
 :::caution[A candidate already shooting at this object scores lower]
-The first term's sign is flipped when the candidate's own target is this object. A candidate shooting at something else outscores an otherwise identical one shooting at this object, by twice that term. A positive `TargetEffectivenessCoefficient`, meant to draw fire toward dangerous targets, therefore draws it toward the dangerous targets that are shooting at somebody else.
+The first term changes sign when the candidate is targeting this object. Of two otherwise identical candidates, the one shooting at something else outscores the one shooting at this object by twice that term. A positive `TargetEffectivenessCoefficient` therefore draws fire toward dangerous candidates that are shooting at somebody else.
 :::
 
 :::caution[The distance term acts only outside weapon range]
-`max(0, distance − range)` is zero for anything the object can already shoot, so `TargetDistanceCoefficient` changes nothing among in-range candidates. Range is always in cells, and so is distance, except on the full-map ground scan. That scan measures distance in leptons, so the same coefficient bites roughly 256 times harder there than on a ring scan.
+`max(0, distance − range)` is zero for anything the object can already shoot, so `TargetDistanceCoefficient` does not separate candidates within range. Distance and range are both counted in cells, except in the ground part of a whole-map scan. There, distance is counted in leptons from the scan's center while range stays in cells. Almost every candidate there takes the penalty, about 256 times as strongly as on a ring scan.
 :::
 
 ### Where the coefficients come from
 
-Each per-type coefficient is read with a fallback: when the type's stored value is zero, the matching `[General]` setting supplies the value instead. Those five settings are [`MyEffectivenessCoefficientDefault`](/keys/myeffectivenesscoefficientdefault/), [`TargetEffectivenessCoefficientDefault`](/keys/targeteffectivenesscoefficientdefault/), [`TargetSpecialThreatCoefficientDefault`](/keys/targetspecialthreatcoefficientdefault/), [`TargetStrengthCoefficientDefault`](/keys/targetstrengthcoefficientdefault/) and [`TargetDistanceCoefficientDefault`](/keys/targetdistancecoefficientdefault/). `SpecialThreatValue` has no such fallback.
+When a type does not set a coefficient, the matching `[General]` setting supplies it: [`MyEffectivenessCoefficientDefault`](/keys/myeffectivenesscoefficientdefault/), [`TargetEffectivenessCoefficientDefault`](/keys/targeteffectivenesscoefficientdefault/), [`TargetSpecialThreatCoefficientDefault`](/keys/targetspecialthreatcoefficientdefault/), [`TargetStrengthCoefficientDefault`](/keys/targetstrengthcoefficientdefault/) and [`TargetDistanceCoefficientDefault`](/keys/targetdistancecoefficientdefault/). `SpecialThreatValue` has no such default.
 
-:::caution[A per-type coefficient cannot be pinned at zero]
-The rules are read again for each later layer: the language rules, the expansion rules, and the map. Each layer that contains the type's section re-runs that same fallback. A coefficient explicitly written as `0` is therefore replaced by the global default on the first later layer whose copy of the section omits the key. Zero survives only while the matching `[General]` default is itself zero.
+:::caution[A per-type zero does not survive a later layer]
+Each later rules layer that contains the type's section, such as the map, reads the coefficients again with the same fallback. A coefficient written as `0` is replaced by the `[General]` default at the first later layer whose copy of the section omits the key. An explicit `0` therefore lasts only until such a layer, unless the matching `[General]` default is also zero.
 :::
 
 ```ini title="rules.ini"
@@ -270,117 +278,144 @@ MyEffectivenessCoefficient=2
 TargetStrengthCoefficient=-0.5
 ```
 
-`MYTANK` weighs what it can hurt at twice the rate, prefers wounded candidates, and takes the two global defaults for the two coefficients it does not name.
+`MYTANK` gives double weight to how much it can hurt a candidate, prefers wounded candidates, and takes the two `[General]` defaults for the coefficients it does not set. These are example values, not recommendations.
 
-:::caution[The per-type coefficients are always the ones used]
-A second, house-wide set of coefficients exists behind a flag that is meant to be switched on by owning a threat rating structure. Every house sets that flag the moment it is created, and nothing ever clears it. The per-type coefficients above are therefore in force from the first frame of every game, and the house-wide set is unreachable. [`IsThreatRatingNode=yes`](/keys/isthreatratingnode/) still has two consumers, both on the upgrade path: plugging such an upgrade into a host building sets the flag, and so does removing a host that has one. A standalone building with the setting, one that is not a [`PowersUpBuilding`](/keys/powersupbuilding/) upgrade, triggers neither.
+:::caution[`IsThreatRatingNode` has no effect]
+The per-type coefficients are in force for every house from the first frame of every game. [`IsThreatRatingNode=yes`](/keys/isthreatratingnode/) was meant to switch them on when a house owned such a structure, so it changes nothing. The house-wide coefficients it would have replaced are listed under [settings without effect](#settings-without-effect).
 :::
 
 ### Adjustments after scoring
 
-- A house ordered to hunt everything sets the score of any candidate outside its declared enemy to exactly `1`.
-- A request for power plants adds `Power × 1000` for a building with a positive [`Power`](/keys/power/), and zeroes any other building.
-- A request for factories zeroes a building that produces nothing.
-- A request for base defenses zeroes any candidate with no primary weapon.
-- When this object's primary weapon sets [`Supress=yes`](/keys/supress/), the score is halved once for every ring cell holding an allied building around the candidate's cell. Those rings reach one cell short of the [`FireSupress`](/keys/firesupress/) distance in `[CombatDamage]`, and a building spanning several ring cells halves the score several times. The default of `1` cell leaves no ring to walk, so the check never fires until `FireSupress` is raised.
-- A score of exactly zero rejects the candidate; anything else is raised to at least `1`.
+These adjustments apply after the score is calculated, in this order:
+
+1. If this house has been ordered to hunt with everything and has a declared enemy, any candidate outside that enemy scores exactly `1`.
+2. A scan for power plants adds `Power × 1000` for a building with a positive [`Power`](/keys/power/), and sets any other building's score to zero.
+3. A scan for factories sets the score of a building that produces nothing to zero.
+4. A scan for base defenses sets the score of any candidate with no primary weapon to zero.
+5. If this object's primary weapon sets [`Supress=yes`](/keys/supress/), the score is halved once for each cell near the candidate that holds a building of this house or an ally. The cells checked are the square rings around the candidate's cell, out to one cell less than the [`FireSupress`](/keys/firesupress/) distance in `[CombatDamage]`. A building that covers several of those cells halves the score several times. At `FireSupress=1` there is no ring to check, so the halving never happens until `FireSupress` is raised.
+6. A score of exactly zero rejects the candidate. Any other score below `1` is raised to `1`.
 
 ## Which weapon the score assumes
 
-Both effectiveness terms, and every range test in the gauntlet, use the weapon each side would choose against the other. Each of the two slots is scored as its warhead's `Verses` percentage against the target's armor, multiplied by `1000`. That score doubles when the target is within the slot's range, and drops to zero when the slot cannot fire at that moment: no line of fire, an illegal target, or still reloading. The higher score wins, and a tie takes the primary. A target that is not an object at all is treated as armor class `none`.
+The effectiveness terms and every range test in the rejection table use the weapon each side would choose against the other. Unless a web weapon is involved, the choice compares the two weapon slots:
 
-The primary slot is not always [`Primary`](/keys/primary/). An elite object substitutes its [`Elite`](/keys/elite/) weapon into that slot, and a building resolves the slot through its plugged-in upgrades before either; [the elite weapon](/systems/veterancy/#the-elite-weapon) covers both substitutions. Everything on this page that reads "primary weapon" means the weapon that slot resolves to.
+- Each slot scores its warhead's `Verses` percentage against the target's armor, multiplied by `1000`.
+- The score doubles when the target is within that slot's range.
+- The score is zero when the slot cannot fire at the target at that moment: the target is illegal for it, it is reloading, or something else stops it firing, such as an unpowered building.
+- The higher score wins, and a tie goes to the primary slot.
+
+A web weapon replaces those scores. When either slot has a [`Webby=yes`](/keys/webby/) warhead and can fire at the target at that moment, the web slot is chosen against infantry that can be webbed and against most map cells. Infantry can be webbed unless it is [`IsWebImmune=yes`](/keys/iswebimmune/) or immobilized. The other slot is chosen against everything else.
+
+A target that is not an object, such as a cell, counts as armor class `none`.
+
+The primary slot does not always hold [`Primary`](/keys/primary/). An elite object uses its [`Elite`](/keys/elite/) weapon in that slot, and a building's plugged-in upgrades can replace the weapon in either case; [the elite weapon](/systems/veterancy/#the-elite-weapon) covers both. On this page, "primary weapon" means whatever weapon that slot holds.
 
 :::danger[A web primary with no secondary reads an empty weapon slot]
-When the primary's warhead is `Webby=yes` and the secondary slot is empty, weapon choice returns the secondary slot for every target the web weapon could otherwise fire at but cannot web. That is every vehicle and building, a landed aircraft, and every [`IsWebImmune=yes`](/keys/iswebimmune/) or immobilized infantry. Scoring tolerates the empty slot and falls back to `GuardRange` for the range term. The retaliation check does not: it reads that slot's warhead without testing whether the slot is filled, so damage from anything the object cannot web makes the check read a weapon that is not there. Give any object with a web primary a secondary weapon.
+When the primary's warhead is `Webby=yes` and the secondary slot is empty, the web rule above picks the empty secondary slot for any target the web weapon can fire at but cannot web. That covers every vehicle and building, a landed aircraft, and every `IsWebImmune=yes` or immobilized infantry. Scoring copes with the empty slot and uses `GuardRange` as the range. The retaliation check does not: when such an object is damaged by something its web weapon can fire at but cannot web, the check reads the warhead of the empty slot, which is an invalid memory access. Give any object with a web primary a secondary weapon.
 :::
 
 ## Picking the winner
 
-:::caution[A ring scan does not rank its candidates]
-The four loops that walk a ring of cells never raise the running best score. Each qualifying candidate simply replaces the one before it, so the object returned is the last one visited, not the highest-scoring. Every guard, guard area, patrol, move and building scan is a ring scan. Tuning the coefficients still decides whether a candidate qualifies at all, but among those that qualify it changes nothing; only the full-map scan compares scores.
+:::caution[A ring scan does not rank ground candidates]
+A ring scan does not keep the highest score among ground candidates. Each ground candidate that passes replaces the one before it, so the scan returns the last one it reached, not the best one. Every Guard, Area Guard, Patrol, Move and building scan is a ring scan. On a ring scan, the coefficients matter in three places:
+
+- they rank the aircraft and airborne infantry found by the flying-object passes below;
+- a ground candidate must outscore the best of those to replace it;
+- a score brought to exactly zero rejects the candidate.
 :::
 
-When aircraft are wanted, two passes over the flying layers run before the rings, and they do keep the highest score. The first takes aircraft and [`JumpJet=yes`](/keys/jumpjet/) infantry; the second takes any infantry off the ground. Neither looks at vehicles, so a vehicle flying on a jumpjet locomotor reaches neither. The ring loops that follow compare against whatever figure those passes left behind, but never update it themselves.
+When aircraft are wanted, a ring scan first makes two passes over flying objects, and these passes do keep the highest score. The first pass takes aircraft and [`JumpJet=yes`](/keys/jumpjet/) infantry; the second takes any other infantry that is off the ground. Neither looks at vehicles, so a vehicle with a jumpjet locomotor is found by neither. A ground candidate then replaces the flying one only if it scores higher than the best flying score.
 
-A ring scan stops early: once it holds any object it returns at the ring that is a quarter of the scan radius and again at the ring that is half of it. A landed aircraft is found by the ground rings whenever vehicles are wanted.
+A ring scan can stop early. Once it has found an object, it stops at the end of the ring a quarter of the way out, or at the end of the ring halfway out. An object found beyond the halfway ring does not stop the scan, and later candidates keep replacing it.
 
-While no object has been found, each ring also weighs its cells as wall targets. Wall targeting is computer-only: a human-owned object weighs no cell at all. Beyond that, a cell is weighed only while **none of** these holds; the first one that does ends the weighing there:
+Until a ring scan finds an object, it also looks for a wall to attack in each cell. Only computer-owned objects attack walls this way. A cell counts as a wall target only when **none of** these is true:
 
 1. the difficulty sets [`DestroyWalls=no`](/keys/destroywalls/);
-2. the cell has no overlay, or has one whose type is not [`Wall=yes`](/keys/wall/);
+2. the cell has no overlay, or its overlay type is not [`Wall=yes`](/keys/wall/);
 3. the wall is out of range of the weapon chosen against it;
 4. this object has no primary weapon, or its primary weapon names no warhead;
 5. the primary weapon's projectile sets `AG=no`;
 6. the primary weapon's warhead is not `Wall=yes`;
-7. the wall is unowned, or belongs to a house this one is allied with.
+7. the wall has no owner, or belongs to this house or an ally.
 
-Only the third test reads the weapon chosen against the wall. The three after it read the primary slot whether or not that is the slot that would fire, so a secondary weapon built to break walls never makes a wall a target. A wall that passes all seven is scored by how far inside the primary weapon's range it sits, and ends the scan at the end of the ring that found it.
+Only the third test uses the weapon chosen against the wall. The three after it read the primary slot, even when the secondary would fire, so a secondary weapon built to break walls never makes a wall a target. A nearer wall scores higher. The scan returns the best wall at the end of the ring where it found one, even if an object turns up later in that ring.
 
-The full-map scan is the only path that ranks: it walks the aircraft list and then every ground object, keeping the highest score at each step.
+The whole-map scan is the only scan that ranks ground candidates. It checks aircraft and then every ground object, and keeps the highest score. When two candidates tie, the one reached first wins.
 
 ## Retaliation
 
-Damage is answered without any scan. The table runs top to bottom, and the first row an object matches settles the question.
+Damage is answered without a scan. The engine tests the rows below in order, and the first row the object matches decides whether it retaliates.
 
 | Condition | Retaliates |
 | --- | --- |
-| Human-owned and already has a target | No, because player orders are not overridden |
-| The warhead is [`Veinhole=yes`](/keys/veinhole/) | Yes, unless the object is human-owned and moving under orders |
-| No source object | No |
+| Human-owned and already has a target | No |
+| The warhead is [`Veinhole=yes`](/keys/veinhole/) | Yes, unless the object is human-owned and has a movement destination |
+| No attacker is known | No |
 | The current mission sets [`Retaliate=no`](/keys/retaliate/) | No |
-| The source is an ally | No |
+| The attacker is an ally | No |
 | The object's weapons average zero damage or less, or it has no primary weapon | No |
-| The chosen weapon's `Verses` against the source's armor is `0%` | No |
-| The source is an aircraft and the chosen weapon's projectile is `AA=no` | No |
+| The chosen weapon's `Verses` against the attacker's armor is `0%` | No |
+| The attacker is an aircraft and the chosen weapon's projectile is `AA=no` | No |
 | Human-owned `C4=yes` infantry, or any human-owned object holding the `C4` ability, damaged by a building | No |
 | Human-owned vehicle whose [`DeploysInto`](/keys/deploysinto/) type is [`Artillary=yes`](/keys/artillary/) | No |
-| Human-owned non-building, with [`PlayerReturnFire=no`](/keys/playerreturnfire/) in `[CombatDamage]`, outside Guard, Area Guard and Patrol | No |
+| Human-owned object other than a building, with [`PlayerReturnFire=no`](/keys/playerreturnfire/) in `[CombatDamage]`, outside Guard, Area Guard and Patrol | No |
 | Member of a `Suicide=yes` team | No |
-| Computer-owned, already shooting at something that scores higher than the source | No |
+| Computer-owned, and its current target scores higher than the attacker | No |
 | Otherwise | Yes |
 
-That comparison against the current target is the only place a threat score is read at full precision; everywhere else it is truncated to a whole number.
+The computer-owned comparison uses the unrounded threat score, so a fraction can decide it.
 
-An object that does retaliate attacks the source directly, overriding its current mission. It does so at once when the source is in range. Out of range, a computer house retaliates from any distance, and a human house only when the source is within [`Sight`](/keys/sight/) plus half a cell.
+An object that retaliates switches to attacking the attacker, whatever its mission. It does so at once when the attacker is in range. Out of range, a computer-owned object still retaliates, but a human-owned one does so only when the attacker is within [`Sight`](/keys/sight/) plus half a cell.
 
-A damaged building has a second, scan-free path besides this one. An attacking enemy becomes its target directly, as long as the building is not deconstructing, has a primary weapon whose projectile is not `AA=yes`, and either holds no target or holds one out of range. The attacker must not be an aircraft, and a human house also needs [`PlayerReturnFire=yes`](/keys/playerreturnfire/). Failing any of that, the building only turns to a random facing.
+### A damaged building
 
-Scattering fills the gap on either branch, and only for an object that moves.
+A damaged building can also take its attacker as a target directly, without the table above. **All of** these must hold:
 
-An object the table allowed to retaliate, but that came out of it holding neither a target nor a destination, scatters under **any of**:
+- the building is not being deconstructed;
+- the attacker is not an ally;
+- the building has a primary weapon whose projectile is not `AA=yes`;
+- the building has no target, or its target is out of range.
+
+The building then targets the attacker, unless the attacker is an aircraft, or the building is human-owned and [`PlayerReturnFire=no`](/keys/playerreturnfire/) is set. In those two cases it turns to a random facing instead.
+
+### Scattering after damage
+
+Only objects that can move scatter.
+
+An object allowed to retaliate still scatters if it ends up with neither a target nor a destination. **Any of** these is enough:
 
 - [`PlayerScatter=yes`](/keys/playerscatter/) in `[CombatDamage]`;
-- the `SCATTER` ability.
+- the object holds the `SCATTER` ability.
 
-Turning on the attacker sets the target in the same step, so this branch is reached only where the permitted retaliation produced no attack at all. That leaves two cases: a `Veinhole=yes` warhead with no monster behind it to turn on, or a human-owned object whose attacker lies beyond both weapon range and `Sight` plus half a cell.
+Retaliating sets a target at once, so this happens only when an allowed retaliation produced no attack. There are two such cases: a `Veinhole=yes` warhead with no veinhole monster to turn on, and a human-owned object whose attacker is beyond both weapon range and `Sight` plus half a cell.
 
-An object refused retaliation scatters under **all of**:
+An object refused retaliation scatters when **all of** these hold:
 
 - its current mission sets [`Scatter=yes`](/keys/scatter/#scope-mission-behavior);
-- it is untethered;
-- it is stationary;
-- it holds neither a target nor a destination;
+- it is not tethered;
+- it is not moving;
+- it has neither a target nor a destination;
 - it is not an aircraft;
 - **any of:** the object is computer-owned; `PlayerScatter=yes` is set; it holds the `SCATTER` ability.
 
 ## Threat ratings that are not target selection
 
-Two settings named for threat play no part in any of the above.
+Two settings named for threat play no part in choosing a target.
 
-[`ThreatPosed`](/keys/threatposed/) is what an object is worth as a danger, not what it is worth as a target. It feeds the value an object has when a team weighs its members, and the per-region threat map each house keeps. It also sizes a computer house's [base defense response](/systems/base-attacked/#the-strength-budget), which multiplies the attacker's figure by [`ComputerBaseDefenseResponse`](/keys/computerbasedefenseresponse/) in `[AI]`.
+[`ThreatPosed`](/keys/threatposed/) measures how dangerous an object is, not how attractive it is as a target. It sets the object's value when a team weighs its members, and feeds the per-region threat map each house keeps. It also sizes a computer house's [base defense response](/systems/base-attacked/#the-strength-budget), which multiplies the attacker's value by [`ComputerBaseDefenseResponse`](/keys/computerbasedefenseresponse/) in `[AI]`.
 
-[`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/) is read only by the pathfinder, where it scales the threat map figure a route is allowed to cross. A team's [`AvoidThreats=yes`](/keys/avoidthreats/) raises it to `1` for its members.
+[`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/) is used only for pathfinding, where it scales how much of the threat map a route may cross. A team's [`AvoidThreats=yes`](/keys/avoidthreats/) raises it to `1` for its members.
 
 ## Campaign and skirmish differences
 
-- The undiscovered-target rejection applies in campaigns only.
-- The `MultiplayPassive` rejection, and an aircraft's first pass for Tiberium processors on Hunt, apply outside campaigns only. A match that lifts the first scans a neutral house like any other. Its buildings must still be able to shoot back to be picked, so a player's units acquire the armed part of a neutral base and leave the scenery. A [launch file](/formats/spawn-ini/) sets the option.
-- Harvester immunity comes from the multiplayer lobby's harvester truce outside campaigns and from a scenario's `HarvesterImmune` setting inside them.
-- A warhead whose `Verses` table [`MPLAYER.INI`](/formats/multiplayer-rules/) rewrites has different figures outside campaigns, which changes every effectiveness term computed from it.
+- The undiscovered-target rejection applies only in campaigns.
+- The `MultiplayPassive` rejection applies only outside campaigns. A [launch file](/formats/spawn-ini/) can lift it, and a neutral house is then scanned like any other. A player's units outside a team still ignore buildings that cannot shoot back, so they attack the armed part of a neutral base and leave the rest.
+- An aircraft on Hunt first scans for Tiberium processors only outside campaigns.
+- Harvester immunity comes from the multiplayer lobby's harvester truce outside campaigns, and from a scenario's `HarvesterImmune` setting in campaigns.
+- Outside campaigns, [`MPLAYER.INI`](/formats/multiplayer-rules/) can rewrite a warhead's `Verses`, which changes every effectiveness term that uses that warhead.
 
 ## Settings without effect
 
-Five house-wide coefficients are parsed and stored but can never be reached, because the flag that would select them is already set on every house. They are [`DumbMyEffectivenessCoefficient`](/keys/dumbmyeffectivenesscoefficient/), [`DumbTargetEffectivenessCoefficient`](/keys/dumbtargeteffectivenesscoefficient/), [`DumbTargetSpecialThreatCoefficient`](/keys/dumbtargetspecialthreatcoefficient/), [`DumbTargetStrengthCoefficient`](/keys/dumbtargetstrengthcoefficient/) and [`DumbTargetDistanceCoefficient`](/keys/dumbtargetdistancecoefficient/).
+Five house-wide coefficients are read and stored but never used, because every house uses the per-type coefficients instead: [`DumbMyEffectivenessCoefficient`](/keys/dumbmyeffectivenesscoefficient/), [`DumbTargetEffectivenessCoefficient`](/keys/dumbtargeteffectivenesscoefficient/), [`DumbTargetSpecialThreatCoefficient`](/keys/dumbtargetspecialthreatcoefficient/), [`DumbTargetStrengthCoefficient`](/keys/dumbtargetstrengthcoefficient/) and [`DumbTargetDistanceCoefficient`](/keys/dumbtargetdistancecoefficient/).
 
-Two scan categories are inert as well. Nothing ever asks for civilians, and a request that did would reject every candidate it examined. The boats category is contributed by `AG=yes` but is never turned into a target kind, so it neither widens nor narrows a scan.
+Two target kinds have no effect either. Nothing ever scans for civilians, and a scan that did would reject every candidate. `AG=yes` also adds a boats kind, but no object counts as a boat, so it neither widens nor narrows a scan.

@@ -56,17 +56,17 @@ related:
     id: target-selection
 ---
 
-A projectile has none of a shot's own figures. The firing weapon hands over the damage, the warhead, the launch speed, the flight allowance and the object credited with a kill. The projectile's own type settles how the shot travels, what ends the journey, and how many blasts it leaves behind.
+A projectile carries figures from the weapon that fired it. The weapon supplies the damage, the warhead, the launch speed, the flight allowance, and the object credited with any kill. The projectile type decides how the shot travels, what ends its flight, and how many blasts it delivers.
 
-Two flight models exist and one setting chooses between them. A projectile whose [`ROT`](/keys/rot/#scope-bullettype) is above zero is flown by the missile autopilot, which turns it toward its target each frame and lifts it over the ground in the way. A projectile with no rate of turn is left to the arc it was launched along. Gravity pulls it down, and it bounces off whatever it lands on. Almost every setting below belongs to one model or the other, and a setting written on the wrong kind of projectile changes nothing at all.
+[`ROT`](/keys/rot/#scope-bullettype) chooses between two flight models. A projectile with `ROT` above zero is steered: the missile autopilot turns it toward its target each frame and lifts it over the ground in the way. A projectile with `ROT=0` is ballistic: it follows the arc it was launched along, falls under gravity, and bounces off whatever it lands on. Most settings on this page affect only one of the two models.
 
 [Firing geometry and beam weapons](/systems/firing-geometry/) owns where a shot appears and what is drawn alongside it. This page owns the shot itself, from the velocity it leaves with to the last blast it delivers.
 
 ## Projectile types in brief
 
-A **BulletType** is a rules section describing one kind of shot. No list registers it. A weapon's [`Projectile=`](/keys/projectile/) names it, and a name the game has not met before is created on the spot. A misspelling therefore produces a projectile with none of the intended settings rather than an error.
+A **BulletType** is a rules section describing one kind of shot. No list registers it. A weapon's [`Projectile=`](/keys/projectile/) names it, and a name the game has not seen before creates a new projectile type with default settings. A misspelled name therefore produces a projectile with none of the intended settings, and no error.
 
-The division of labor between the weapon section and the projectile section is fixed. The weapon holds how hard the shot hits, how far it may be fired and how often. The projectile holds how it flies, what it may be aimed at, and what its impact is broken into.
+The weapon section holds how hard the shot hits, how far it can be fired, and how often. The projectile section holds how the shot flies, what it can be aimed at, and what its impact breaks into.
 
 ```ini title="rules.ini"
 [MyRocketPod]      ; a WeaponType, registered by an object naming it as its Primary
@@ -83,142 +83,197 @@ Ranged=yes         ; spends the weapon's ProjectileRange as fuel
 AA=yes
 ```
 
-At runtime a projectile is an object that stands in no cell. It claims no cells of its own and is never entered into a cell's list of occupiers, so nothing runs into it and nothing that scans a cell finds it. It is submitted to the air layer whatever its height.
+A projectile in flight occupies no cell. Nothing collides with it, and nothing that searches a cell for occupants finds it. It is always drawn with the airborne objects, whatever its height.
 
 ## What the shot leaves with
 
-Five things are settled at the moment of launch, and the projectile then lives with all of them.
+Five things are fixed at launch: the aim point, the direction, the pitch, the speed, and, on a steered projectile, the fuse.
 
-The aim point is solved to where the firer expects its current target to have got to, not to where that target stands. A projectile that is both [`Inaccurate=yes`](/keys/inaccurate/) and [`Arcing=yes`](/keys/arcing/) has that point displaced first, by [`BallisticScatter`](/keys/ballisticscatter/). Everything below is then solved to the displaced point.
+The firer aims at its current target's position. When that target is a moving vehicle, the firer aims ahead of it, at where the vehicle will be when a shot at the speed of the firer's primary weapon arrives. On a projectile that is both [`Inaccurate=yes`](/keys/inaccurate/) and [`Arcing=yes`](/keys/arcing/), that aim point is then moved in a random direction by between half and all of [`BallisticScatter`](/keys/ballisticscatter/). The pitch and speed below are worked out for the moved point.
 
-The direction comes from the firer's own gun heading on a homing or [`Dropping=yes`](/keys/dropping/) projectile, whatever direction the target lies in. Every other projectile leaves pointed at the aim point. The gun heading is the turret facing on a vehicle or aircraft that has a turret, and the body facing on one that does not and on infantry. On a building it is the turret facing, or the direction from the building's center to what it is shooting at where there is no turret.
+A steered projectile or a [`Dropping=yes`](/keys/dropping/) projectile leaves along the firer's gun heading, whichever way the target lies. Every other projectile leaves pointed at the aim point. The gun heading depends on the firer:
 
-The pitch is decided by the first of these that applies:
+- a vehicle with a turret uses its turret facing;
+- infantry and a vehicle without a turret use their body facing;
+- an aircraft uses the heading its body is drawn at;
+- a structure with a turret that is not a voxel uses its turret facing, rounded to one of 32 directions;
+- any other structure, including one with a voxel turret, fires straight toward its target.
 
-- an [`Arcing=yes`](/keys/arcing/) projectile has a ballistic arc solved for it, high or flat, which the weapon's [`Lobber`](/keys/lobber/) setting picks between, and the shot is abandoned outright when no arc at that speed reaches;
-- a [`Voxel=yes`](/keys/voxel/) projectile leaves straight up instead of level;
-- otherwise the shot leaves level unless the aim point lies more than 200 leptons above or below the mounting, in which case it is pitched at that point with 20 leptons taken off the height difference first. A lepton is the engine's internal distance unit, at 256 to the cell, and a terrain level is 104 of them, so 200 leptons come to a little under two terrain levels. A structure is the exception: the target's height is taken as 200 times its [`Height`](/keys/height/#scope-buildingtype) before the same 20 leptons come off.
+A lepton is the engine's distance unit. A cell is 256 leptons across and a terrain level is 104 leptons high, so 200 leptons is just under two terrain levels.
 
-The launch speed is the weapon's [`Speed=`](/keys/speed/#scope-weapontype), which for any unguided projectile the rules pass has already replaced with a figure derived from the weapon's [`Range=`](/keys/range/). It is then held to half the distance to the aim point, so a shot taken at very close quarters leaves more slowly than the same shot taken across the weapon's full reach. On an arcing shot the arc is solved at that reduced speed. A homing projectile ignores both figures at launch: it starts at one lepton a frame and works up to the weapon's figure over the course of the flight, as [steered flight](#steered-flight) describes.
+The pitch comes from the first of these rules that applies:
 
-Only a homing projectile ever reads a fuse. It is armed with the aim point and the type's [`Arm`](/keys/arm/) delay, which that page covers along with the two ways it trips.
+1. An [`Arcing=yes`](/keys/arcing/) projectile gets a ballistic arc to the aim point. The high arc is used when the weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. Otherwise the flat arc is used. When no arc at the launch speed reaches the aim point, the weapon does not fire.
+2. A [`Voxel=yes`](/keys/voxel/) projectile leaves pointing straight up.
+3. Any other projectile leaves almost level, about 1.4 degrees up, unless the aim point is more than 200 leptons above or below the weapon's mounting. Then it is pitched at the aim point, with the height difference reduced by 20 leptons first.
+   - When that happens and the firer's target is a structure, the aim height becomes 200 leptons for each point of the structure's [`Height`](/keys/height/#scope-buildingtype). That height is counted from the map's zero height, not from the ground the structure stands on.
 
-An [`Inviso=yes`](/keys/inviso/) projectile skips the flight entirely. It is placed on its target's own coordinate as it is launched, not on the aim point solved above.
+A ballistic projectile does not use the weapon's [`Speed=`](/keys/speed/#scope-weapontype). Once the rules are read, the engine replaces it with a speed worked out from the weapon's [`Range=`](/keys/range/) and gravity, fast enough to carry the shot the weapon's full range. At launch that speed is capped at half the distance to the aim point, so a point-blank shot leaves more slowly than a shot at full range. An arcing shot's arc is worked out at the capped speed.
 
-:::caution[An aircraft overwrites the launch velocity it was just given]
-When the firer is an aircraft, the shot's velocity is rewritten after it has been created and launched. Which rewrite it gets depends on the exact rate of turn.
+A steered projectile leaves at 1 lepton a frame, whatever the distance, and works up to the weapon's `Speed=` in flight, as [steered flight](#steered-flight) describes.
 
-| `ROT` | What the aircraft imposes |
+Only a steered projectile uses a fuse. The fuse is set on the target's position at the moment of launch, not on the predicted aim point. It stays shut for the projectile's [`Arm`](/keys/arm/) delay, except that a shot at an aircraft is armed at once. The `Arm` page covers when the fuse trips.
+
+An [`Inviso=yes`](/keys/inviso/) projectile skips the flight. It is placed directly on its target's position as it is launched. If a raised [firestorm wall](/systems/laser-fences/#projectiles) lies on the path, the wall consumes it instead.
+
+:::caution[An aircraft replaces the launch velocity]
+When an aircraft fires, it rewrites the projectile's velocity after launch. The rewrite depends on the projectile's exact `ROT`.
+
+| `ROT` | Velocity after launch |
 | --- | --- |
-| `0` | Level pitch, the aircraft's own turret heading, and the aircraft's current travel speed. The arc solved above, the pitch and the launch speed are all discarded, so an [`Arcing=yes`](/keys/arcing/) bomb dropped from the air does not follow the arc its weapon worked out |
-| `1` | Aimed straight at the target's center in three dimensions, at the full [`Speed=`](/keys/speed/#scope-weapontype) of the weapon in the aircraft's first weapon slot, whichever weapon slot the shot came from, rather than along the gun heading at one lepton a frame |
-| `2` or more | Nothing. The launch stands as solved |
-
-A rate of turn of exactly `1` is therefore not simply a very slow missile when the firer is an aircraft: it is a missile that starts pointed at its target and at full speed.
+| `0` | Level, along the aircraft's heading, at the aircraft's current speed. The arc, pitch and speed worked out above are discarded, so an [`Arcing=yes`](/keys/arcing/) bomb dropped from the air does not follow its weapon's arc |
+| `1` | Pointed straight at the target's center in three dimensions, at the full [`Speed=`](/keys/speed/#scope-weapontype) of the aircraft's primary weapon, whichever weapon fired. It does not start along the gun heading at 1 lepton a frame |
+| `2` or more | Unchanged |
 :::
 
 ## The turn
 
-Projectiles take their turns at a fixed point in the logic frame, after animations and building lights. Structures, aircraft, infantry and vehicles all take theirs afterwards. Each list is walked from the end toward the start.
+Every object takes its turn each frame in the order it was placed on the map, and a projectile is placed when it is fired. A projectile therefore normally moves after its target in the same frame, and sees the target where this frame left it. An object that leaves the map and returns, such as a unit leaving a transport, moves to the back of the order.
 
-A projectile therefore moves before anything it might hit has moved on that frame, and it reads its target where the previous frame left it.
+Each turn runs these steps in order:
 
-The steps below run in this order on every turn.
+1. A [`Dropping=yes`](/keys/dropping/) projectile is marked to detonate.
+2. When [`AnimLow`](/keys/animlow/) or [`AnimHigh`](/keys/animhigh/) is not zero, the flight animation counts down toward its next frame.
+3. On every third frame of the game clock, a [`Trailer`](/keys/trailer/) puff is left at the position the projectile is about to leave.
+4. One of the two flight models moves the projectile, and may mark it to detonate.
+5. A [`Ranged=yes`](/keys/ranged/) projectile subtracts the distance it just moved from its allowance, and is marked when the allowance runs out.
+6. The projectile takes up its new position. If it now stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through, the wall consumes it and the turn ends.
+7. A projectile not already marked goes through three standing tests: a tall overlay in its cell, ground level, and the anti-aircraft proximity test. [What ends a flight](#what-ends-a-flight) lists them.
+8. A steered projectile checks its fuse.
+9. A projectile that is not marked, and whose fuse has not tripped, keeps flying. A [`Degenerates=yes`](/keys/degenerates/) projectile then loses 1 point of damage, down to a floor of 5. Any other projectile detonates and is removed.
 
-1. A [`Dropping=yes`](/keys/dropping/) projectile is marked for detonation.
-2. The flight animation advances one step when either [`AnimLow`](/keys/animlow/) or [`AnimHigh`](/keys/animhigh/) is other than zero.
-3. A [`Trailer`](/keys/trailer/) puff is dropped at the position the projectile is about to leave, on every third frame of the game clock.
-4. One of the two flight models steps the projectile forward and may mark it for detonation.
-5. A [`Ranged=yes`](/keys/ranged/) projectile pays the distance it just covered out of its allowance and is marked when the allowance runs out.
-6. The new position is taken up. A projectile standing in a raised [firestorm wall](/systems/laser-fences/#projectiles) is consumed there and the turn ends.
-7. A projectile not already marked is put through the three standing tests listed below: a tall overlay in its cell, ground level, and the anti-aircraft proximity.
-8. A homing projectile checks its fuse.
-9. Either the projectile is still flying, in which case a [`Degenerates=yes`](/keys/degenerates/) projectile loses a point of damage, or it detonates and is removed.
-
-A shot from a weapon mounted on a barrel is the exception: two of these turns run for it immediately, inside the firing sequence, so that it appears past the muzzle rather than inside it. [The firing sequence](/systems/firing-geometry/#the-shot-step-by-step) covers which shots are given that head start. Every other shot waits until the next logic frame for its first step.
+A shot from a weapon with a barrel gets a head start: two of these turns run immediately during firing, so the shot appears past the muzzle, not inside it. [The firing sequence](/systems/firing-geometry/#the-shot-step-by-step) says which shots get the head start. Every other shot takes its first turn later in the same frame, once every object ahead of it in the turn order has moved. A head-start shot takes that turn as well, so it moves three times in the frame it is fired.
 
 ## Steered flight
 
-A projectile with a rate of turn is flown by the autopilot every frame. Its speed is worked toward the weapon's figure, gaining [`Acceleration`](/keys/acceleration/#scope-bullettype) a frame. A projectile that is moving faster than that figure coasts back down at half that rate. A projectile is still launching until it has reached cruising speed or been given a weapon [`Speed=`](/keys/speed/#scope-weapontype) of `16` or more, which is `40` leptons a frame on that key's 0-to-100 scale. While it is still launching, the gain is one lepton every other frame instead, and it does not turn at all. The rate of turn itself is scaled up and down again on a fifteen-frame cycle by [`MissileROTVar`](/keys/missilerotvar/), which is what makes a missile weave. Over the last cell of the approach it is increased by half again.
+The autopilot flies a projectile whose `ROT` is above zero. It homes on the target itself, at the point weapons aim at on it, and reads that point again every frame.
 
-Within one frame the autopilot takes one of two branches. It follows the terrain under **all of:**
+Each frame the autopilot moves the projectile's speed toward the weapon's figure, gaining [`Acceleration`](/keys/acceleration/#scope-bullettype) leptons a frame. A projectile already faster than that figure slows by half of `Acceleration` a frame, rounded down.
+
+A new steered projectile is launching until it reaches that speed, unless the weapon's [`Speed=`](/keys/speed/#scope-weapontype) is `16` or more. `Speed=` is written on a 0-to-100 scale, and `16` converts to 40 leptons a frame. While launching, the projectile gains 1 lepton every other frame instead of `Acceleration`. It keeps its heading, and its pitch turns toward the target by less than one degree a frame.
+
+After launching, the projectile may turn by up to its turn allowance each frame. The allowance is measured in 256ths of a full turn. It swings between `ROT` and `ROT` × (1 + 2 × [`MissileROTVar`](/keys/missilerotvar/)) over a 15-frame cycle, rounded down, which makes missiles weave. The cycle is offset for each projectile, so missiles fired together do not all weave in step. Within one cell of the target the allowance is multiplied by 1.5.
+
+The heading turns toward the target by up to the full allowance. The pitch follows one of two branches. The projectile follows the terrain only when all of these hold:
 
 - the target is not an aircraft;
-- **Any of:** the projectile is [`Airburst=yes`](/keys/airburst/); the horizontal distance still to run is over three cells, or over six for a [`VeryHigh=yes`](/keys/veryhigh/) projectile;
-- the frame's turn allowance is more than one direction unit, a 256th of a turn.
+- **Any of:** the projectile is [`Airburst=yes`](/keys/airburst/); the horizontal distance to the target is over three cells, or over six for a [`VeryHigh=yes`](/keys/veryhigh/) projectile;
+- the turn allowance this frame is more than 1.
 
-A projectile that is still launching is given no turn allowance at all, and at the engine's own [`MissileROTVar`](/keys/missilerotvar/) a projectile whose [`ROT`](/keys/rot/#scope-bullettype) is `1` never rises above one either. Neither of those ever follows the terrain. A `ROT` of `2` or more does clear the gate at that value of `MissileROTVar`.
+Otherwise the projectile dives.
 
-Terrain following samples the ground six frames of travel ahead and holds the projectile a fixed clearance above it, nudging its height 18 leptons at a time. It turns its pitch up, down or level by half the frame's turn allowance. Otherwise the projectile dives: its pitch is turned straight at the target with an allowance so large that it effectively snaps. The clearance the following branch holds, and the distance at which the dive begins, are what [`VeryHigh`](/keys/veryhigh/) and [`Airburst`](/keys/airburst/) change.
+A launching projectile's turn allowance is zero, so it never follows terrain. It always takes the dive branch, which is what turns its pitch slightly. At a `MissileROTVar` of `0.5` or less, a `ROT=1` projectile's allowance never exceeds 1, so it always dives. A `ROT` of 2 or more always passes the allowance test.
 
-The projectile has arrived once the distance still to run is no more than half of one frame's travel, or once it has reached the ground. That distance counts only a quarter of the height difference, and none of it at all for an airburst projectile. A projectile that arrives while still in the air is moved onto the aim point first, unless it is an airburst.
+Terrain following looks six frames of travel ahead and holds the projectile above the ground there. The clearance is one terrain level for each whole cell still to the target, up to five levels. An `Airburst=yes` or `VeryHigh=yes` projectile holds ten levels instead. When the projectile is more than 20 leptons off that height, it is moved 18 leptons toward it each frame. Its pitch turns at half the allowance: toward a 45-degree climb when it is more than half a level too low, toward an 11-degree descent when it is more than half a level too high, and toward level flight otherwise.
 
-A projectile that is not gaining on its target is made to detonate rather than circle it forever. How fast it is closing is accumulated plainly over its first sixty frames of cruise, then kept as a decaying total. The flight ends once that total lands anywhere between zero and sixty leptons. A projectile that is losing ground has a negative average and is not caught by it. The test therefore reaches the one that has stopped closing, not the one that is running away. `Airburst=yes` and `VeryHigh=yes` projectiles are exempt, since both are meant to sit above their targets rather than close on them.
+In a dive, the pitch turns straight toward the target at just over half the allowance.
 
-Crossing the plane of a bridge deck, from above or from below, ends the flight at deck height.
+[`VeryHigh`](/keys/veryhigh/) raises the clearance and starts the dive farther out. [`Airburst`](/keys/airburst/) raises the clearance and keeps following the terrain all the way to the target, as long as the other two conditions hold.
 
-:::caution[A homing shot whose target is taken off the map detonates at the corner of the world]
-A projectile is detached from its target when that target is destroyed, enters a transport or a building, or merely cloaks. The detach ignores the flag that separates a permanent loss from a temporary one. The projectile is left with no target and no aim point, and the autopilot answers a missing aim point by holding the projectile still and reporting one lepton left to run. That is inside half a frame's travel for anything moving faster than two leptons a frame, so the projectile counts as having arrived. The arrival step then moves it onto its aim point, which is now the coordinate `0,0,0`, the corner of the cell array outside the playfield. The blast, its animation and its lighting all happen there, and nothing near the flight path is touched. An [`Airburst=yes`](/keys/airburst/) projectile is spared the move and goes off where it stands.
+The projectile has arrived when the distance still to go is no more than half its speed per frame, or when it is at ground level. That distance counts only a quarter of the height difference, or none of it for an `Airburst=yes` projectile. A projectile that arrives in the air is moved onto its homing point, unless it is `Airburst=yes`.
+
+A steered projectile that stops gaining on its target detonates instead of circling it forever. After its first 60 frames past launching, the engine keeps a running average of how fast the projectile closes on its target. The flight ends when that average is at least 0 but below 1 lepton a frame. A projectile that is losing ground has a negative average, so this test does not stop it. `Airburst=yes` and `VeryHigh=yes` projectiles are exempt, because both are meant to stay above their targets.
+
+A steered projectile that crosses the height of a bridge deck over a bridge cell, from above or below, ends its flight at deck height.
+
+:::caution[A homing shot that loses its target detonates at the map corner]
+A steered projectile loses its target when that target is destroyed, captured, enters a transport or a structure, or starts to cloak. With nothing to home on, the projectile stops moving and counts as arrived once its speed is 2 leptons a frame or more. Arriving moves it onto its homing point, which is now the coordinate `0,0,0`, the corner of the cell grid outside the playfield. The blast, its explosion and its lighting all happen there, and nothing near the flight path is damaged. An [`Airburst=yes`](/keys/airburst/) projectile, or one already at ground level, goes off where it stands instead.
 :::
 
 ## Ballistic flight
 
-A projectile with no rate of turn is stepped along its arc. Its vertical speed loses [`[AudioVisual] Gravity`](/keys/gravity/) each frame, halved for a [`Floater=yes`](/keys/floater/) projectile, and the whole velocity is then added to its position.
+Each frame, a ballistic projectile's vertical speed drops by [`[AudioVisual] Gravity`](/keys/gravity/), or by half of it for a [`Floater=yes`](/keys/floater/) projectile. The projectile then moves by its whole velocity.
 
-Where that step puts the projectile at or below the ground, or through a bridge deck, or into an obstacle, the projectile has landed. The obstacle test looks for a structure or a wall standing in the cell, and only while the projectile is within 150 leptons above the ground. Four kinds of structure are passed through untouched: the firer's own, a [slack laser fence segment](/systems/laser-fences/#what-a-live-run-stops), one that counts as a deployed vehicle, and one belonging to an ally of the firer. A wall is given none of those exemptions, so a house's own wall stops its own ballistic fire exactly as an enemy's does. Only two entries in the overlay list are recognized as walls by this test, the brick wall and the Nod wall, `GAWALL` and `NAWALL`. An overlay marked [`High=yes`](/keys/high/#scope-bullettype) that is neither of them stops a shot through [the standing test](#what-ends-a-flight) later in the same turn instead, which reaches both flight models and exempts only a `High=yes` projectile. A sandbag wall sets [`Wall=yes`](/keys/wall/) but no `High=yes`, so neither test stops a shot through it.
+Several tests below ignore friendly objects: those that belong to the firer's house or to a house allied with it.
 
-A landing always computes a rebound, whether or not the projectile will survive it. The velocity is rotated into the frame of reference of the ground slope, scaled by [`Elasticity`](/keys/elasticity/#scope-bullettype), then reflected and rotated back out. That is what throws a shot that lands on a ramp off downhill. [`Bouncy`](/keys/bouncy/) decides whether the projectile then carries on or is detonated where it came down.
+A projectile forgets its firer when the firer is destroyed, captured, enters a transport or a structure, or starts to cloak. For the rest of its flight nothing counts as friendly, so the shot can go off on its own side's units and structures.
 
-Two further things can end a ballistic flight in mid-air. A projectile that passes within 128 leptons (half a cell) of an object that is neither the firer nor one of the firer's allies detonates on that object. A projectile that leaves the playfield is removed at its last known position without detonating at all.
+The projectile has landed when a step takes it below ground level, through a bridge deck, or into an obstacle. It is then placed on the ground or deck it struck.
 
-Two dead branches sit in this step and are worth naming so that nobody tunes against them. A test at the head of the step marks a projectile moving slower than eight leptons a frame as having landed. It sets only the kind of the impact and never the flag that ends the flight. Since the impact kind on its own is treated the same as no impact, nothing follows from the test. The test at the foot of the step is the one that ends the flight. It applies to a projectile moving slower than ten leptons a frame and lying within ten leptons of the ground. A projectile aimed at a cell rather than at an object was meant to detonate as soon as it landed in that cell. The cell-target test sits after the one that has already forced every projectile which is not `Bouncy=yes` to detonate, so it is never reached.
+An obstacle is a structure or a wall in the cell, and it counts only while the projectile is less than 150 leptons above the ground. These structures do not stop the shot:
+
+- the structure that fired it;
+- a [slack laser fence segment](/systems/laser-fences/#what-a-live-run-stops);
+- a structure that counts as a deployed vehicle;
+- a friendly structure.
+
+Walls have no exemptions, so a wall also stops ballistic fire from its owner's house and allies. Only two overlays count as walls in this test: the ones at positions 2 and 26 of the `[OverlayTypes]` list, counting from 0. The stock list puts `GAWALL` and `NAWALL` there.
+
+Another overlay marked [`High=yes`](/keys/high/#scope-overlaytype) stops a shot only through the tall-overlay test in [What ends a flight](#what-ends-a-flight). That test applies to both flight models and exempts a projectile marked [`High=yes`](/keys/high/#scope-bullettype). A `High=yes` projectile gets no exemption from the wall test above. The stock sandbag wall, `GASAND`, sets [`Wall=yes`](/keys/wall/) but not `High=yes`, so neither test stops a shot passing over it.
+
+Every landing works out a rebound, even when the projectile is about to detonate. The velocity is scaled by [`Elasticity`](/keys/elasticity/#scope-bullettype) and reflected off the slope of the ground it landed on, so a shot that lands on a ramp bounces off downhill. What happens next depends on [`Bouncy`](/keys/bouncy/):
+
+- A projectile that is not `Bouncy=yes` detonates where it landed.
+- A `Bouncy=yes` projectile detonates when the cell it was in at the start of the turn holds an object that is not friendly. The firer's cell never counts. Otherwise it flies on.
+- Any projectile detonates on its third landing.
+
+Three more checks can end a ballistic flight after the move:
+
+1. A projectile not already marked to detonate goes off on an object that is not friendly when that object stands in the cell the projectile just entered, within 128 leptons (half a cell) of it.
+2. A projectile that has left the playfield is removed at its previous position without detonating, even if it had just landed.
+3. A projectile moving slower than 10 leptons a frame, and lying within 10 leptons of the ground, detonates where it lies.
 
 ## What ends a flight
 
-Every route to a detonation is gathered here, in the order a single turn tests them. The middle column is the flight model each applies to, and the last says where the blast is placed, since several of them move the projectile before it goes off.
+This table gathers every way a flight ends, in the order a turn tests them. The middle column gives the flight model each applies to. The last column says where the blast is placed, since several of these move the projectile first.
 
 | What ends the flight | Applies to | Where it goes off |
 | --- | --- | --- |
-| The projectile is [`Dropping=yes`](/keys/dropping/) | Both | Where it stands, which is one frame's travel from the muzzle |
-| It has arrived: no more than half a frame's travel left, or it reached the ground | Steered | On the aim point, unless it is [`Airburst=yes`](/keys/airburst/) or already on the ground |
+| The projectile is [`Dropping=yes`](/keys/dropping/) | Both | Where it stands, one frame's travel from where it was launched |
+| It has arrived: half a frame's travel or less to go, or it is at ground level | Steered | On its homing point, unless it is [`Airburst=yes`](/keys/airburst/) or at ground level |
 | It has stopped gaining on its target | Steered | Where it stands. `Airburst=yes` and [`VeryHigh=yes`](/keys/veryhigh/) are exempt |
-| It crossed the plane of a bridge deck | Steered | At deck height |
-| It landed, and either is not [`Bouncy=yes`](/keys/bouncy/) or bounced out of a cell holding an object that is not the firer or an ally | Ballistic | On the surface it struck |
-| It has bounced three times | Ballistic | Where it came down |
-| It passed within 128 leptons of an object that is not the firer or an ally | Ballistic | On that object |
-| It left the playfield | Ballistic | Nowhere — it is removed without a blast |
-| It is moving under ten leptons a frame and lying within ten of the ground | Ballistic | Where it lies |
-| A [`Ranged=yes`](/keys/ranged/) projectile has spent its allowance | Both | Where it stands |
-| It is standing in a raised [firestorm wall](/systems/laser-fences/#projectiles) | Both | Nowhere — it is consumed without a blast |
-| A tall overlay stands in its cell, it is below 100 leptons, and it is not [`High=yes`](/keys/high/#scope-bullettype) | Both | Where it stands |
+| It crossed the height of a bridge deck | Steered | At deck height |
+| It landed, and either is not [`Bouncy=yes`](/keys/bouncy/) or the cell it was in at the start of the turn holds an object that is not friendly | Ballistic | On the ground or deck it struck |
+| It landed for the third time | Ballistic | Where it came down |
+| It came within 128 leptons of an object that is not friendly, in the cell it just entered | Ballistic | On that object |
+| It left the playfield | Ballistic | Nowhere. It is removed without a blast |
+| It is moving slower than 10 leptons a frame and lies within 10 leptons of the ground | Ballistic | Where it lies |
+| A [`Ranged=yes`](/keys/ranged/) projectile has used up its allowance | Both | Where it stands |
+| It stands in a raised [firestorm wall](/systems/laser-fences/#projectiles) that does not let it through | Both | Nowhere. The wall consumes it without a blast |
+| A [`High=yes`](/keys/high/#scope-overlaytype) overlay stands in its cell, the projectile is less than 100 leptons above the ground, and it is not [`High=yes`](/keys/high/#scope-bullettype) itself | Both | Where it stands |
 | It is below ground level | Both | Where it stands |
-| It is [`AA=yes`](/keys/aa/) and within 128 leptons of the aircraft or airborne jumpjet it is chasing | Both | Where it stands |
-| Its fuse tripped | Steered, and never a `Dropping=yes` projectile | Where it stands, before the adjustments below |
+| It is [`AA=yes`](/keys/aa/) and within 128 leptons of the aircraft, or the airborne jumpjet infantry, it is chasing | Both | Where it stands |
+| Its fuse tripped | Steered, but never a `Dropping=yes` projectile | Where it stands. A trip within 64 leptons of the fuse point moves it onto the target, as described below |
 
 ## Where the blast lands
 
-The point of impact is not simply where the projectile was standing. Up to two adjustments move it, and they run in this order.
+The blast does not always go off where the projectile stood. Up to three moves pull it onto the target, applied in this order. None of them applies once the projectile has lost its target.
 
-First, a projectile that went off within 32 leptons of its target's center is moved onto that center, so that the explosion is seen to strike the victim. `Airburst=yes` and [`Inaccurate=yes`](/keys/inaccurate/) both suppress this one. The airburst is left where it goes off so that it stays overhead, and a shot thrown off its aim point on purpose is not pulled back onto the target.
+1. The blast moves onto the target's center when the projectile is not [`Airburst=yes`](/keys/airburst/) and **Any of:**
+   - the fuse tripped within 64 leptons of the point it was set on;
+   - a ballistic shot landed and went off because it is not `Bouncy=yes`, or because the cell it was in at the start of the turn held an object that is not friendly. It must also have come down within 384 leptons (a cell and a half) of the target, or within six times its rebound speed if that is farther. Only half the height difference counts toward that distance.
+2. The blast moves onto the target's center when it is within 32 leptons of it. `Airburst=yes` and [`Inaccurate=yes`](/keys/inaccurate/) projectiles skip this move.
+3. Unless the warhead is [`EMEffect=yes`](/keys/emeffect/) or the projectile is [`Splits=yes`](/keys/splits/), the blast moves onto a nearby target. An airborne target within 128 leptons of the projectile pulls the blast onto the point weapons aim at on it. Any other target within 42 leptons pulls the blast onto its position, and a structure's distance is measured to its edge. `Inaccurate=yes` does not prevent this move.
 
-Then, provided the warhead is not [`EMEffect=yes`](/keys/emeffect/) and the projectile is not [`Splits=yes`](/keys/splits/), one further nudge is applied. Where the target is airborne and the projectile went off within 128 leptons of it, the blast moves to the target's own aim point. Otherwise, where it went off within 42 leptons of any target, the blast moves onto that target's coordinate.
-
-A third adjustment is written alongside those two and cannot be reached. It would pull the blast back onto the point the fuse was aimed at. It asks for a projectile that neither homes nor arcs and that was not forced to detonate, but a projectile that does not home never reads its fuse, so being forced is the only way it ever detonates.
-
-What the blast then does belongs to the warhead: [`AnimList`](/keys/animlist/) chooses the explosion by damage, [`SplashList`](/keys/splashlist/) replaces it over water, and [`Spread`](/keys/spread/#scope-warheadtype) sets how the damage thins with distance. An [`EMEffect=yes`](/keys/emeffect/) warhead spends the damage as [a pulse](/systems/emp-pulse/) instead.
+The warhead decides what the blast does. [`AnimList`](/keys/animlist/) chooses the explosion by damage, [`SplashList`](/keys/splashlist/) replaces it over water, and [`Spread`](/keys/spread/#scope-warheadtype) sets how the damage thins with distance. An [`EMEffect=yes`](/keys/emeffect/) warhead spends the damage as [a pulse](/systems/emp-pulse/) instead.
 
 ## Clusters and splitting
 
-[`Cluster`](/keys/cluster/) counts one of two very different things, and [`Splits`](/keys/splits/) chooses which. An ordinary projectile repeats its whole detonation that many times. The first blast lands on the point of impact, and every later one is thrown one to two cells from it. Each is drawn afresh from that same original point, so the blasts do not walk away from it. A splitting projectile detonates exactly once and then releases that many bomblets of its [`AirburstWeapon`](/keys/airburstweapon/).
+[`Cluster`](/keys/cluster/) counts one of two things, and [`Splits`](/keys/splits/) chooses which. An `Airburst=yes` projectile splits unless it sets `Splits=no`; the `Splits` page explains why.
 
-The ordering inside a split is worth stating because it decides what a bomblet can still find. The carrier's own blast, its explosion animation and its lighting flash all happen first. The candidate list is then gathered from the objects standing within five cells of the carrier's target, or of the carrier itself when the target is a cell. The bomblets are created last, at the carrier's own position rather than at the adjusted point of impact. Anything the carrier's blast destroyed is therefore already gone from the list, and [`RetargetAccuracy`](/keys/retargetaccuracy/) governs the draw against what remains.
+An ordinary projectile repeats its whole detonation `Cluster` times. The first blast lands on the point of impact. Each later blast lands one to two cells from that same point, in a random direction, so the blasts do not walk away from it.
+
+A splitting projectile detonates once and then releases `Cluster` bomblets of its [`AirburstWeapon`](/keys/airburstweapon/). The split runs in this order, which decides what a bomblet can still target:
+
+1. The carrier's blast, explosion and lighting flash happen.
+2. The candidate list is built from the objects within five cells of the carrier's target, or of the carrier itself when its target is a cell. Objects the carrier's blast destroyed are already gone.
+3. Each bomblet keeps the carrier's target at the [`RetargetAccuracy`](/keys/retargetaccuracy/) chance, and otherwise draws from the list.
+4. The bomblets are created at the carrier's position, pointing straight down. That position ignores the 32-lepton move onto the target.
 
 ## Where a projectile's artwork is read from
 
-Write an `Image=` in every projectile's section. A projectile is the one object type whose image name can be cleared by the file that describes it. Every type reads [`Image=`](/keys/image/) with its current name as the default, so leaving the key out keeps whatever the name already was. That name starts as the section's own name. A projectile then reads the same key a second time with an empty default, into the same storage. A section that does not set `Image=` is left holding no image name at all.
+Write `Image=` in a projectile's rules section, even when it would name the section itself. Repeat it in every rules file that declares the section, including a map's rules. A section without `Image=` clears the projectile's image name.
 
-The shape artwork survives that, because it was already fetched under the section name by the first read and a failed fetch does not clear what is there. What does not survive is every art section lookup that follows. [`Trailer`](/keys/trailer/) and [`Rotates`](/keys/rotates/) are read only when that second read still found a name, so they are skipped outright. [`AnimLow`](/keys/animlow/), [`AnimHigh`](/keys/animhigh/), [`AnimRate`](/keys/animrate/) and [`AnimPalette`](/keys/animpalette/) are looked up under an empty section name and keep whatever they held. Those four key pages each record the effect on their own setting. This is the mechanism behind all of them, and the reason a section named after the projectile is not read either.
+Every object type reads [`Image=`](/keys/image/) with its current image name as the default, and that name starts as the section name. A projectile then reads `Image=` a second time, with an empty default. When the section does not set `Image=`, the second read leaves the projectile with no image name.
 
-:::danger[A voxel projectile that omits `Image=` has no model left to draw]
-The voxel model is fetched after the name has been cleared rather than before, so the fetch fails, and a failed voxel fetch discards the whole set rather than leaving the previous one in place. The projectile is then left marked [`Voxel=yes`](/keys/voxel/) with nothing behind it. The drawing routine reads the model's layer count without first testing that a model is there, so the game stops the first time such a projectile is drawn. That needs the projectile to be on screen, not fogged, and not [`Inviso=yes`](/keys/inviso/). Give every voxel projectile an `Image=` in its rules section.
+The art settings read after that point are affected:
+
+- The shape artwork survives, because it was already loaded under the earlier name and a failed load keeps it.
+- [`Trailer`](/keys/trailer/) and [`Rotates`](/keys/rotates/) are not read at all.
+- [`AnimLow`](/keys/animlow/), [`AnimHigh`](/keys/animhigh/), [`AnimRate`](/keys/animrate/) and [`AnimPalette`](/keys/animpalette/) are looked up in an art section with an empty name, so they are not found.
+
+These six settings keep their defaults, or the values an earlier file gave them. An art section named after the projectile does not supply them either. Each of their key pages records the effect on that setting.
+
+:::danger[Give every voxel projectile an `Image=` in every rules file]
+The voxel model is loaded after the image name has been cleared, so the load fails, and a failed voxel load discards any model the projectile already had. The projectile stays [`Voxel=yes`](/keys/voxel/) with no model behind it. The game crashes the first time it draws such a projectile, which happens once the projectile is on screen, not under fog, and not [`Inviso=yes`](/keys/inviso/).
 :::

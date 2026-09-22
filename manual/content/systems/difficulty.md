@@ -40,70 +40,82 @@ related:
 
 ## From the setting to a slot
 
-This section introduces the difficulty slot the rest of the page turns on. Anyone who already knows that a computer house is handed the inverse of the setting the player chose can skip to [what one difficulty section sets](#what-one-difficulty-section-sets).
+Every house plays at a difficulty slot of 0, 1 or 2. The slot selects the rules section the house takes its handicap from: `[Easy]` for slot 0, `[Normal]` for slot 1 and `[Difficult]` for slot 2. The section names describe the game from the side of the house that reads them. A computer house reading `[Easy]` is the opponent a player meets on Hard.
 
-A scenario has two difficulty slots. In a campaign game both come from [`Difficulty=`](/keys/difficulty/), the campaign setting kept in `sun.ini`, or from a [launch file](/formats/spawn-ini/#what-a-player-is-shown) that supplies the pair itself. Outside a campaign both come from the difficulty chosen for the session. One slot is the setting itself and the other is `2` minus it, so the two always move in opposite directions.
+A scenario holds two difficulties, one for the player and one for the computer:
 
-A slot selects one of three sections in the rules: `[Easy]` is slot 0, `[Normal]` slot 1 and `[Difficult]` slot 2. The section names describe the house reading them rather than the player's skill.
+- In a campaign game, both come from [`Difficulty=`](/keys/difficulty/), the campaign setting kept in `sun.ini`. The player's difficulty is that setting, and the computer's is `2` minus it.
+- A [launch file](/formats/spawn-ini/#a-campaign-mission) that starts a campaign mission sets the two separately instead, so it can pair any player difficulty with any computer difficulty.
+- Outside a campaign, both come from the difficulty chosen for the session. The computer's is again `2` minus the player's.
 
-The table gives the section each kind of house ends up reading, for each setting a player can choose. Read the two right-hand columns against each other: they are mirror images, and every later table on this page is a consequence of that one step.
+With the menu's settings, the player's houses and the computer's houses read opposite sections:
 
-| Setting chosen | A player-controlled house in a campaign | Every other house |
+| Setting chosen | A player-controlled house in a campaign | A computer house |
 | --- | --- | --- |
 | Easy | `[Easy]` | `[Difficult]` |
 | Normal | `[Normal]` | `[Normal]` |
 | Hard | `[Difficult]` | `[Easy]` |
 
-Outside a campaign game the right-hand column reaches computer houses only. Every human house is handed slot 1 whatever the session was set to, so the setting tunes the computer alone there.
+Outside a campaign game, every human house plays at slot 1, whatever the session was set to. There, only the computer houses take their handicap from the setting.
 
-A campaign mission names its difficulty in a message as it starts. The name says how hard the mission is, which is the mirror of the section the computer reads. A mission whose computer houses read `[Easy]` is announced as Hard, `[Normal]` as Medium and `[Difficult]` as Easy. A [launch file](/formats/spawn-ini/#what-a-player-is-shown) may give the setting a name of its own instead. That is how a client offering more difficulties than the game's three names the one it chose.
+A computer seat's `[HouseHandicaps]` entry in a [launch file](/formats/spawn-ini/#who-is-playing) sets that house's slot directly. The entry replaces the computer's slot from the table and [the multiplayer bonus](#the-computers-bonus-with-more-than-one-human).
 
-In a campaign the handicap is given to each of the scenario's houses as its own section is read. The only thing that puts a house in the left-hand column is [`PlayerControl=yes`](/keys/playercontrol/) in that house's own section. More than one house may set it, and each one that does takes the player's column.
+A campaign mission names its difficulty in a message as it starts. The name follows the computer's difficulty and describes the game from the player's side. When the computer houses read `[Easy]` the mission is announced as Hard, `[Normal]` as Medium and `[Difficult]` as Easy. A launch file can supply its own name instead, so a client that offers more than three difficulties can name the one it chose.
 
-:::caution[A campaign map that omits `PlayerControl` leaves the player wearing the computer handicap]
-The house named by the map's `[Basic] Player=` entry is not resolved until after every house has been created and handicapped. The player-control flag that entry sets arrives too late for the test. A campaign map that names a player house without also setting `PlayerControl=yes` in that house's own section therefore runs the whole mission with that house in the right-hand column. At the Easy setting, that column is `[Difficult]`. Nothing re-assigns it during that mission; the next scenario reads and handicaps its own houses again.
+In a campaign, each house gets its handicap as the game reads that house's section of the map. Only [`PlayerControl=yes`](/keys/playercontrol/) in that section puts the house in the player's column. More than one house may set it, and each one that does reads the player's section.
+
+:::caution[Set `PlayerControl=yes` on a campaign's player house]
+The map's `[Basic] Player=` entry does not put its house in the player's column. The game applies that entry only after every house already has its handicap. A player house without `PlayerControl=yes` in its section therefore plays the whole mission with the computer's handicap. At the Easy setting, that means `[Difficult]`. The next scenario assigns every house's handicap again.
 :::
 
 ## What one difficulty section sets
 
-A difficulty section has eight settings that reach a decision. The table gives all eight, with what a house in that slot does with each. Each of the six multipliers states in its own row which way a figure above 1 moves, because the direction is not the same for all of them. Above 1 makes a house deal more damage, move faster and survive longer. It also makes that house fire more slowly, pay more and build more slowly. None of the figures is inverted the way the slot is: a house simply reads what its own section holds.
+A difficulty section has eight settings that take effect. The six multipliers do not all point the same way. A value above 1 makes the house deal more damage, move faster and take less damage. It also makes the house fire more slowly, pay more and build more slowly. Each house uses the values in its section as written; only the choice of section is inverted.
 
 | Setting | Effect on a house in that slot |
 | --- | --- |
-| [`FirePower=`](/keys/firepower-difficulty-settings/) | Multiplies the damage its objects deal when they fire a weapon; above 1 deals more. Projectiles the engine creates outside that path (a nuke silo, either EM pulse, a superweapon, a trigger action, a splitting bullet) are never scaled |
-| [`Groundspeed=`](/keys/groundspeed/#scope-difficulty-settings) | Multiplies the speed of its ground movement; above 1 travels faster |
-| [`Armor=`](/keys/armor/#scope-difficulty-settings) | Divides the damage its objects take; above 1 survives longer |
-| [`ROF=`](/keys/rof/#scope-difficulty-settings) | Multiplies the delay between its shots; above 1 fires more slowly |
-| [`Cost=`](/keys/cost/#scope-difficulty-settings) | Multiplies every price it pays; above 1 pays more |
-| [`BuildTime=`](/keys/buildtime/#scope-difficulty-settings) | Multiplies the build time of everything it produces; above 1 builds more slowly |
-| [`RepairDelay=`](/keys/repairdelay/) | Scales the wait a computer house takes between starting one building repair and the next, the result being drawn at random between a quarter of the scaled figure and twice it, in minutes |
-| [`DestroyWalls=`](/keys/destroywalls/) | `no` stops its computer objects [scoring walls as targets](/systems/target-selection/#picking-the-winner) |
+| [`FirePower=`](/keys/firepower-difficulty-settings/) | Multiplies the damage of most weapons its objects fire; above 1 deals more. The key page lists the projectiles it does not scale. |
+| [`Groundspeed=`](/keys/groundspeed/#scope-difficulty-settings) | Multiplies the speed of its ground movement; above 1 travels faster. |
+| [`Armor=`](/keys/armor/#scope-difficulty-settings) | Divides the damage its objects take; above 1 takes less. |
+| [`ROF=`](/keys/rof/#scope-difficulty-settings) | Multiplies the delay between its shots; above 1 fires more slowly. |
+| [`Cost=`](/keys/cost/#scope-difficulty-settings) | Multiplies the prices it pays; above 1 pays more. |
+| [`BuildTime=`](/keys/buildtime/#scope-difficulty-settings) | Multiplies the build time of everything it produces; above 1 builds more slowly. |
+| [`RepairDelay=`](/keys/repairdelay/) | Sets how long a computer house waits after starting one building repair before it can start another. The wait is a random time between a quarter of the value and twice the value, in minutes. |
+| [`DestroyWalls=`](/keys/destroywalls/) | `no` stops a computer house's objects from [scoring walls as targets](/systems/target-selection/#picking-the-winner). |
 
 ```ini title="rules.ini"
-[Difficult]
-FirePower=1.2
-Groundspeed=1.1
-Armor=1.2
-ROF=0.9
-Cost=0.9
-BuildTime=0.9
-RepairDelay=.02
-DestroyWalls=yes
+[Difficult] ; example values that weaken the house reading this section
+FirePower=0.8
+Groundspeed=0.9
+Armor=0.8
+ROF=1.2
+Cost=1.2
+BuildTime=1.2
+RepairDelay=0.05
+DestroyWalls=no
 ```
 
-The first seven are folded into figures the house keeps. `DestroyWalls` is read from the section itself at the moment the decision is made, so no country setting and no per-house value can shift it.
+The linked key pages give the defaults.
 
-:::caution[A section absent from every file leaves its figures at zero]
-The three sections start at zero: every multiplier `0`, the delays `0`, the flags `no`. Each section is read only out of a file that actually contains it. A rules tree in which `[Difficult]` never appears therefore leaves a house in that slot dealing zero damage, moving at zero speed and paying zero for everything. Incoming damage is divided by the armor figure, so every hit such a house takes divides by zero. Each hit then lands on the engine's floor of 1 point, the least a hit can take off. The house is left nearly invulnerable rather than crashing. `DestroyWalls` comes out `no` rather than `yes` at the same time. Nothing supplies these figures except a file with the section.
+The first seven settings are copied into the house when it gets its slot, as [the next section](#how-the-figures-are-combined) describes. `DestroyWalls` is read from the section whenever a computer object considers a wall. The section's current value therefore always applies, and no country setting changes it.
+
+:::caution[Keep all three sections in the rules files]
+Until some file supplies a difficulty section, every value in it is zero and each flag is `no`. A house in that slot deals no damage, has zero ground speed and pays nothing. Each hit it takes does only 1 point of damage, the least a hit can do. A computer house in that slot also ignores walls as targets, since `DestroyWalls` is `no`.
+
+When no rules file supplies a section, the version a map or a campaign's companion file supplied stays in force for later scenarios in the same session, until another file supplies that section again. A rules file that supplies the section replaces the map's version at the next scenario load.
 :::
 
-:::caution[A later file that contains the section resets the rest of the block]
-Each section is re-read from fixed built-in values, never from the values already in force. Every file that contains the section is read this way, in this order: [each rules file in turn](/formats/rules-registries/), then the map, and in a campaign the companion `.INI` named for the scenario. A map that declares `[Difficult]` to change one multiplier restores every other key in that section to the engine's own default for that key, not to the zero an absent section leaves. Only repeating the whole block keeps it.
+:::caution[Repeat the whole section when overriding it]
+A file that contains a difficulty section resets every key it leaves out to that key's built-in default. A map that declares `[Difficult]` to change one multiplier therefore returns the section's other keys to those defaults, not to the values in the rules files. Copy the whole section to keep the other values.
 :::
+
+Files that contain a difficulty section are read in this order: [each rules file in turn](/formats/rules-registries/), then the map. In a campaign, the companion `.INI` named for the scenario is read after every house already has its handicap. Its difficulty sections therefore change only `DestroyWalls`, not the seven figures the houses already hold.
 
 ## How the figures are combined
 
-The seven copied figures are worked out once, at the moment the house is given its slot, and not per shot, per order or per frame. The table gives what each of the seven is combined with in each mode. The difference to read off it is that outside a campaign game the house's country section contributes a second multiplier to six of them. A campaign game drops that contribution and keeps everything else.
+A house's seven copied figures are computed once, when the house gets its slot. They are not recomputed per shot, order or frame, so a later change to a difficulty section or a country reaches the house only when it is re-handicapped.
+
+Outside a campaign game, six of the figures are also multiplied by the matching setting in the house's country section. A campaign game leaves the country out and keeps everything else:
 
 | Difficulty setting | Campaign game | Outside a campaign |
 | --- | --- | --- |
@@ -115,33 +127,32 @@ The seven copied figures are worked out once, at the moment the house is given i
 | `BuildTime=` | Times `GameSpeedBias` | Times the country's [`BuildTime=`](/keys/buildtime/#scope-housetype) and `GameSpeedBias` |
 | `RepairDelay=` | Taken as written | Taken as written |
 
-The country's own multipliers sit in its HouseType section and each default to 1, so a rules tree that never sets them leaves the two columns identical. [How long it takes](/systems/production/#how-long-it-takes) places the build-time figure in the production chain, and [when the computer repairs](/systems/repair/#when-the-computer-repairs) covers what the repair delay does with its value.
+The country multipliers each default to 1, so a rules tree that never sets them gives the same figures in both columns.
+
+[How long it takes](/systems/production/#how-long-it-takes) places the build-time figure in the production chain. [When the computer repairs](/systems/repair/#when-the-computer-repairs) covers how the repair delay is used.
 
 ## When a house is re-handicapped
 
-- **Campaign scenario load or restart.** Each house in the scenario's `[Houses]` list, as it is created. Applying carry-over state afterward does not replace that handicap.
-- **Every other mode.** As the session's houses are assigned: humans to slot 1, computer houses to the inverted slot minus the bonus below. The `Neutral` and `Special` houses created alongside them are never handicapped and keep a multiplier of 1 throughout.
-- **A house passing to the computer.** The house is re-handicapped with `2` minus the slot it already holds.
+A house is assigned its slot and its figures again at these points:
 
-That last one runs only on a house a person was playing, and it is the same inversion applied a second time. The table traces a campaign house through it: the right-hand column is exactly what [the table above](#from-the-setting-to-a-slot) gives every other house at the same setting. A base captured from the player therefore ends up handicapped as though the computer had held it from the start.
-
-| Setting chosen | Slot the house holds while a person plays it | Slot after it passes to the computer |
-| --- | --- | --- |
-| Easy | 0, the `[Easy]` section | 2, the `[Difficult]` section |
-| Normal | 1, the `[Normal]` section | 1, the `[Normal]` section |
-| Hard | 2, the `[Difficult]` section | 0, the `[Easy]` section |
-
-Outside a campaign every human house sits in slot 1 whatever the session was set to, so there the inversion leaves the house exactly where it was.
+- **Campaign scenario load or restart.** Each house in the scenario's `[Houses]` list, as its section is read. Nothing carried over from the previous mission changes the slot.
+- **Every other mode.** As the session's houses are assigned: human houses to slot 1, and computer houses to the computer's slot, adjusted by [the bonus below](#the-computers-bonus-with-more-than-one-human) or set by the launch file. The `Neutral` and `Special` houses created alongside them get no handicap, and all their multipliers stay at 1.
+- **A player leaving a network game.** When [the computer takes over the departed player's base](/systems/leaving-a-match/#what-becomes-of-their-base), the house keeps slot 1 and keeps reading `[Normal]`, whatever the session was set to. It does not take the other computer houses' slot. Its figures are computed again and its team countdown restarts.
 
 ## The per-difficulty lists
 
-`[General]` holds lists with one entry per difficulty, and every one is indexed with the raw slot, leaving the inversion in place. Entry 0 is therefore the hardest game setting and entry 2 the easiest.
+`[General]` holds lists with one entry per difficulty slot. Each house reads the entry matching its slot, with no further inversion. For a computer house, entry 0 is therefore the one used at the Hard setting and entry 2 the one used at Easy.
 
-[`TeamDelays`](/keys/teamdelays/), [`TotalAITeamCap`](/keys/totalaiteamcap/), [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/), [`MaximumAIDefensiveTeams`](/keys/maximumaidefensiveteams/) and [`FillEarliestTeamProbability`](/keys/fillearliestteamprobability/) are read in every mode. So are the twelve `[General]` lists whose names begin `AIIonCannon`, one per kind of object the computer's Ion Cannon prefers to hit. [`AIIonCannonEngineerValue`](/keys/aiioncannonengineervalue/) is one of them. [`AIHateDelays`](/keys/aihatedelays/) and [`MultiplayerAICM`](/keys/multiplayeraicm/) are applied once, as a scenario outside a campaign finishes loading, and never in a campaign game.
+These lists are read in every mode:
 
-[`MultiplayerAICM`](/keys/multiplayeraicm/) adds to what a computer house holds rather than replacing it. Its entry is a percentage of the house's credits plus the value of its stored Tiberium, handed to the house on top of what it already had. An entry of `100` therefore leaves it with twice its starting money, and an entry of `0` changes nothing.
+- [`TeamDelays`](/keys/teamdelays/), [`TotalAITeamCap`](/keys/totalaiteamcap/), [`MinimumAIDefensiveTeams`](/keys/minimumaidefensiveteams/), [`MaximumAIDefensiveTeams`](/keys/maximumaidefensiveteams/) and [`FillEarliestTeamProbability`](/keys/fillearliestteamprobability/).
+- The twelve lists whose names begin `AIIonCannon`, one for each kind of target the computer's Ion Cannon rates, such as [`AIIonCannonEngineerValue`](/keys/aiioncannonengineervalue/).
 
-The team-creation countdown that `TeamDelays` sizes runs for every house, human or computer, and each house reads the list with its own slot. In a campaign game that puts the player's house and the computer's houses at opposite ends of one list. The table gives the entry each of them takes, and the two columns are mirror images. The entry the player's house takes at the Easy setting is the entry a computer house takes at the Hard setting.
+[`AIHateDelays`](/keys/aihatedelays/) and [`MultiplayerAICM`](/keys/multiplayeraicm/) are applied once to each computer house, as a scenario outside a campaign finishes loading. A campaign game never uses them.
+
+`MultiplayerAICM` gives a computer house extra money. Its entry is a percentage of the money the house holds at that moment, counting its credits and the value of its stored Tiberium, and that amount is added as credits. An entry of `100` leaves the house with twice its starting money, and `0` adds nothing.
+
+The team-creation countdown that `TeamDelays` sets runs for every house, human or computer, and each house reads the entry for its slot. In a campaign, the player's house and the computer houses therefore read opposite ends of the list:
 
 | Setting chosen | Entry a player-controlled campaign house reads | Entry a computer house reads |
 | --- | --- | --- |
@@ -149,39 +160,44 @@ The team-creation countdown that `TeamDelays` sizes runs for every house, human 
 | Normal | 1 | 1 |
 | Hard | 2 | 0 |
 
-:::caution[The player's own house reads `TeamDelays` from the hard end]
-Nothing about the countdown is restricted to computer houses. Lowering a campaign's difficulty moves the player's own house toward entry 0, the entry written for the hardest game setting. A map that switches that house into [the AI-trigger pass](/systems/ai-team-production/#when-the-pass-runs) then runs the pass on that entry.
+:::caution[The player's house reads `TeamDelays` from the hard end]
+At the Easy setting, the player's house reads entry 0, the entry a computer house uses at the Hard setting. This matters when a map turns on [the AI-trigger switch](/systems/ai-team-production/#when-the-pass-runs) of the player's house: that house then draws AI triggers on entry 0's delay.
 :::
 
-[AI triggers and team production](/systems/ai-team-production/#difficulty) covers what the AI lists do. It also covers why an AI trigger's difficulty flags mean the same thing in both modes while these lists do not.
+[AI triggers and team production](/systems/ai-team-production/#difficulty) covers what the AI lists do. It also explains why an AI trigger's difficulty flags mean the same thing in both modes while these lists do not.
 
 ## The computer's bonus with more than one human
 
-Outside a campaign game, [`CompEasyBonus=yes`](/keys/compeasybonus/) drops a computer house one slot as it is assigned. It does so only when the session holds more than one human entry, and never for a house already in slot 0. A skirmish registers exactly one human entry, so the bonus never fires there; it takes a LAN or online session.
+Outside a campaign game, [`CompEasyBonus=yes`](/keys/compeasybonus/) moves each computer house down one slot as it is assigned. It applies only when the session has more than one human entry, and a house already in slot 0 stays there. A skirmish set up from the menu has one human entry, so the bonus applies only in a LAN or online session.
 
-The name says easy and the step does the opposite: a computer house already holds the inverse of the setting the player chose. Dropping it a slot moves it to the slot the next harder setting would have given it. The table traces one computer house through both steps, and its right-hand column is the setting that handicap then matches. That setting is never easier than the one chosen.
+Despite its name, the bonus makes the computer stronger. A computer house already holds the inverse of the player's setting, so moving it down a slot gives it the handicap of the next harder setting. The table follows one computer house through both steps. Its last column is never easier than the setting chosen.
 
 | Setting chosen | Slot the computer house holds | Slot after the bonus | Setting it then behaves like |
 | --- | --- | --- | --- |
 | Easy | 2, the `[Difficult]` section | 1, the `[Normal]` section | Normal |
 | Normal | 1, the `[Normal]` section | 0, the `[Easy]` section | Hard |
-| Hard | 0, the `[Easy]` section | 0, the `[Easy]` section; no drop | Hard |
+| Hard | 0, the `[Easy]` section | 0, the `[Easy]` section; no change | Hard |
 
 ## What else the slot decides
 
-Every row below reads a house's own slot directly, with no second inversion applied on top of it. So a row naming slot 0 or the `[Easy]` section describes what a computer house does when the player chose Hard. A row naming slot 2 describes what it does when the player chose Easy.
+Each row below reads the house's slot directly. A row naming slot 0 or the `[Easy]` section describes a computer house when the player chose Hard. A row naming slot 2 describes one when the player chose Easy.
 
 | Where | What the slot changes |
 | --- | --- |
 | [The computer's base plan](/systems/ai-base-building/#building-the-plan) | The `2 - slot` extra refineries and the `3 - slot` term in the extra defense placeholders |
 | [The GDI wall ring](/systems/ai-base-building/#walls-and-gates) | The `3 - slot` term in the cap on wall defenses |
-| A computer house's harvesters | In a campaign one harvester per refinery is enough before it builds a replacement. Outside a campaign it needs two, or one in slot 2 |
-| The computer's Ion Cannon | In slot 0 it also rates objects still under construction |
-| Crushing an attacker | A computer house in slot 2 never answers fire by running the attacker down |
-| A map's triggers | A trigger whose difficulty flags exclude the scenario's difficulty is disabled as it is created, and the enable-trigger action leaves it alone; outside a campaign the difficulty is the one the lobby's computer skill sets |
+| A computer house's harvesters | It builds replacements until it owns one harvester per refinery in a campaign. Outside a campaign it builds up to two per refinery, or one in slot 2 |
+| The computer's Ion Cannon | In slot 0 it also rates enemy objects still being built in a factory |
+| Crushing an attacker | A computer house's vehicles in slot 2 never answer fire by driving over the attacker |
+
+A map's triggers do not use a house's slot. They follow the scenario's difficulty, which is the player's difficulty in a campaign and the session's difficulty outside one. [Trigger springing](/systems/trigger-springing/#difficulty) covers which triggers that disables. AI triggers have a separate set of three difficulty flags, which decide whether the trigger can be drawn; [AI triggers and team production](/systems/ai-team-production/#difficulty) covers them.
 
 ## Parsed settings without effect
 
-The difficulty sections have four settings no gameplay path reads, in three different states. [`BuildSlowdown`](/keys/buildslowdown/) has no reader at all. [`ContentScan`](/keys/contentscan/#scope-difficulty-settings) is compared in a routine nothing calls. [`Airspeed`](/keys/airspeed/#scope-difficulty-settings) and [`BuildDelay`](/keys/builddelay/) are folded into figures the house keeps, but no gameplay path reads those figures either. A country's own [`Airspeed=`](/keys/airspeed/#scope-housetype) is stored the same way and read no further. `[General]` sets [`FineDiffControl`](/keys/finediffcontrol/), and the [`ContentScan`](/keys/contentscan/#scope-global-rules) threshold in `[IQ]` is the other half of the same unreachable comparison.
+Four keys in the difficulty sections are read but change nothing:
 
-The slot reaches nothing in a map's own triggers, which answer to the difficulty itself rather than to a house's slot. A trigger declares three per-difficulty fields and is disabled as it is created when the one for the scenario's difficulty is clear. [Trigger springing](/systems/trigger-springing/#difficulty) covers what that leaves it able to do. The three flags an AI trigger declares are a different set and do decide whether it is drawn.
+- [`BuildSlowdown`](/keys/buildslowdown/) is never used.
+- [`ContentScan`](/keys/contentscan/#scope-difficulty-settings) is tested only in code the game never runs.
+- [`Airspeed`](/keys/airspeed/#scope-difficulty-settings) and [`BuildDelay`](/keys/builddelay/) are copied into the house's figures, but nothing uses those figures. A country's [`Airspeed=`](/keys/airspeed/#scope-housetype) is combined into the same unused figure.
+
+Two related keys elsewhere have no effect either. [`FineDiffControl`](/keys/finediffcontrol/) in `[General]` is never used. The [`ContentScan`](/keys/contentscan/#scope-global-rules) threshold in `[IQ]` belongs to the same test as the difficulty section's `ContentScan`, which never runs.

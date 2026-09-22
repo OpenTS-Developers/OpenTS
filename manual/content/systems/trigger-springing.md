@@ -1,6 +1,6 @@
 ---
 title: Trigger springing
-summary: "Fires a trigger when every event on it is satisfied in one pass, runs its actions, and then keeps or destroys the tag that held it."
+summary: "When a trigger fires on an occurrence offered to its tag, which occurrences can satisfy its events, and whether the tag survives firing."
 category: maps-scenarios
 keys: []
 related:
@@ -26,15 +26,15 @@ related:
     id: TACTION_FORCE_TRIGGER
 ---
 
-Triggers are not examined on a schedule of their own. Something that happens in the game, such as a bridge collapsing, a countdown reaching zero or a house passing a credit total, is offered to the tag that holds the trigger by whatever part of the game produced it. The trigger fires only if everything it waits for is satisfied during that one offer. That offer is called **Springing**: handing a tag something that has just happened, so that the triggers riding on the tag can decide whether to fire.
+A trigger never checks its events by itself. It is checked only when some part of the game offers an occurrence to the tag that holds it, such as a bridge collapsing, a crate being collected or a new frame starting. Each such offer is called **springing** the tag. The trigger fires only if all of its events are satisfied during that one offer, unless earlier offers have already [marked some of them](#remembering-a-satisfied-event).
 
-What follows is the machinery around that offer: how an event is satisfied, which parts of the game make the offers, what a satisfied event is remembered as, and what becomes of the tag afterwards. What each event tests belongs to [the event's own page](/mapping/events/), and what each action does to [the action's own](/mapping/actions/).
+Each [event page](/mapping/events/) says what its event tests, and each [action page](/mapping/actions/) says what its action does.
 
 ## Tags, triggers and events in brief
 
-A trigger's owner and starting state are written in `[Triggers]`, with its events in `[Events]` and its actions in `[Actions]`. Its persistence is written in `[Tags]`. The engine keeps those as separate records, and which record holds what decides most of the behavior below.
+A map describes triggers in four sections. `[Triggers]` gives each trigger's owner, its starting state and an optional linked trigger. `[Events]` and `[Actions]` list its events and actions. `[Tags]` declares the tag that holds the trigger and the tag's persistence.
 
-A **trigger** holds the [house](/glossary/#house) that owns it, its events, its actions, whether it starts enabled, and an optional link to a second trigger. A **tag** names one trigger, or the head of a chain of linked triggers, and holds the persistence. The tag is the part that rides on something. Nothing offers an event to a trigger directly: everything is offered to a tag, which passes it along the chain.
+A **trigger** holds the [house](/glossary/#house) that owns it, its events, its actions, whether it starts enabled, and an optional link to a second trigger. A **tag** holds one trigger, or the first trigger of a linked chain, and the persistence. Tags are what ride on objects and cells. Every offer goes to a tag, never directly to a trigger, and the tag passes it to each trigger in its chain.
 
 ```ini title="map file"
 [Tags]
@@ -53,138 +53,173 @@ A **trigger** holds the [house](/glossary/#house) that owns it, its events, its 
 32100=01000000 ; the tag rides on cell 32100
 ```
 
-A tag declared in the map exists once, however many things name it. Every object and cell that names the same tag shares one record, and the record counts its holders. The one exception is a tag named by a TeamType. Each team built from that type makes a private tag of its own and attaches it to every member it accepts, so two teams of one type have two independent tags.
+A tag declared in the map exists once, however many objects and cells name it. They all share that one tag, and the tag counts how many objects and cells hold it. A tag named by a TeamType is the exception. Each team built from that type makes a separate copy of the tag and attaches it to every member it accepts, so two teams of the same type have two independent tags.
 
-An **attachment** is a thing the tag rides on, and there are five kinds. The first two hold the tag directly: a scenario object, and a map cell listed in `[CellTags]`. The other three are lists the tag joins as the scenario starts: one per house, one general list, and one list of zone tags. A tag whose events have nothing to ride on lives on one of those.
+A tag can be reached through five kinds of **attachment**. Two hold the tag directly: a scenario object, and a map cell listed in `[CellTags]`. The other three are lists the tag joins when the scenario starts: the house list of the house that owns the tag's trigger, the general list, and the zone list. A tag whose events have nothing to ride on is reached through one of these lists.
 
-Which of the five a tag joins is derived from every event and every action of every trigger in its chain, combined. A tag therefore reaches a list because of one event, and is then offered occurrences that a different event on the same trigger can answer. An event can also permit more than one kind of attachment, and permitting one is not the same as being reachable there. The attachment set decides which lists the tag joins: each [event page](/mapping/events/) states what its event may attach to. Those pages name the attachments `cell`, `object`, `house`, `general` and `map`, and `map` is the list of zone tags. The [springing sites below](#where-a-tag-is-offered-an-event) say where an offer will actually arrive.
+The events of every trigger in a tag's chain, taken together, decide which lists the tag joins. Each [event page](/mapping/events/) states what its event may attach to, using the names `cell`, `object`, `house`, `general` and `map`, where `map` is the zone list. Because the lists are combined, one event can put a tag on a list, and that list's offers can then satisfy a different event on the same trigger. Permitting an attachment does not mean the event is ever offered there. The [springing sites below](#where-a-tag-is-offered-an-event) say where offers actually arrive.
 
 ## What springing does
 
-Springing a tag walks its chain of triggers and offers each one the occurrence. A trigger takes the offer under **all of:**
+When a tag is sprung, it offers the occurrence to each trigger in its chain. A trigger fires when **all of:**
 
 - it is enabled;
 - it has not been marked for destruction;
-- **all of** its events are satisfied by that one offer.
+- every one of its events is satisfied during this offer.
 
-Every event has to be satisfied; there is no way to write an alternative. Only when the last of them agrees does the trigger fire. Firing runs every action on it, in the order the map file lists them. The events are examined in the reverse of that order, which matters in two places, described [under memory](#remembering-a-satisfied-event) and again [under settings](#settings-and-state-without-effect).
+A firing trigger runs its actions in the order `[Actions]` lists them.
 
-A tag will not spring while it is already springing. An action that causes something a trigger of the same tag watches for therefore cannot set that tag off again from inside its own firing.
+Its events are examined in the reverse of their order in `[Events]`, which matters when events are [remembered](#remembering-a-satisfied-event) and when a trigger has [several countdowns](#settings-and-state-without-effect).
 
-Disabling a trigger stops it taking any offer at all; it stays attached to whatever it was on and does nothing until something enables it again. The map file's disabled flag decides only the state a trigger starts in; it is a different field from the three per-difficulty ones under [Difficulty](#difficulty).
+A tag cannot be sprung again while it is already being sprung. If a firing trigger's action causes an occurrence that the same tag watches for, that occurrence is not offered to the tag.
+
+A disabled trigger ignores every offer but stays attached until something enables it. The disabled field in `[Triggers]` sets only the state the trigger starts in. It is separate from the three per-difficulty fields described under [Difficulty](#difficulty).
 
 ## Temporal and standing events
 
-Every event is one of two kinds, and the difference decides whether the event can be reached at all.
+Every event is either standing or temporal, and the difference decides which offers can satisfy it. Each offer names the event that has just occurred, or names nothing in particular.
 
-A **standing event** describes a condition the engine can examine at any moment: a credit total, a global variable, the ambient light level, whether a house still holds a factory. Whatever offer arrives, a standing event simply looks at the thing it watches and answers. It does not care what the offer was about.
+A **standing event** tests a condition that can be checked at any moment, such as a credit total, a global variable, the ambient light level or whether a house still has a factory. It gives the same answer whatever the offer names. Elapsed time and random delay are standing events too: they test the trigger's countdown.
 
-A **temporal event** describes a moment: an object destroyed, a crate collected, a line crossed. Nothing about the world afterwards proves it happened, so the engine only accepts it when the offer names that exact event. An offer about something else, or an offer that names nothing in particular, leaves a temporal event unsatisfied even where the thing it describes has already occurred.
+A **temporal event** describes a moment, such as an object destroyed, a crate collected or a line crossed. Nothing in the world afterwards proves the moment happened, so the event accepts only an offer that names it. An offer that names anything else, or nothing, leaves the event unsatisfied even if what it describes has already happened. Apart from the [ten exempt events](#the-exempt-events), a temporal event is satisfied when **all of:**
 
-That gate is the whole of the distinction. Ten events are [exempt from it](#the-exempt-events); every other temporal event is satisfied under **all of:**
+- the offer names this event;
+- any further test the event applies passes.
 
-- the offer names this same event;
-- whatever further test the event applies is passed.
+A standing event needs no offer written for it. Each one puts its tag on a house list or on the general list, and both lists are offered something every frame, so the event is examined every frame. The null event is the exception, because nothing satisfies it.
 
-Two consequences run through everything else on this page. Set the null event aside, since nothing ever satisfies it. Every standing event places its tag on a house list or on the general list, and both of those are offered something every frame, so a standing event needs nothing written for it and is examined constantly. A temporal event needs one particular offer, written into the part of the game that produces the occurrence. An event with no such offer written for it can never be satisfied, however faithfully its own test would answer. Three of them are in that position, and they are [covered below](#three-events-that-cannot-be-reached).
+A temporal event is satisfied only if the part of the game that produces the occurrence makes an offer naming it. Three temporal events have no such offer and [can never be satisfied](#three-events-that-cannot-be-reached).
 
 ### The exempt events
 
-All ten are temporal events. Four of them gain the whole exemption. Build Building Type, Build Unit Type, Build Infantry Type and Build Aircraft Type each read the record of what their house most recently completed and compare it against the type the event names. Any offer that reaches the tag will do. Those four attach to a house, the house list is offered something every frame, and the comparison catches the frame on which the house finished the named type.
+All ten exempt events are temporal. Four of them are fully exempt: Build Building Type, Build Unit Type, Build Infantry Type and Build Aircraft Type. Each compares the type it names with the last type of that kind recorded for its house, and accepts any offer. These events put their tag on the house list, which is offered something every frame. The event is therefore satisfied from the frame the named type is recorded until the house records a different type of that kind. The event pages say what records a type.
 
-The other six impose the naming requirement again in their own tests, so they behave like any other temporal event. They are the cell entry event, the two line crossing events, the zone entry event, the proximity event and the attacked-by-house event.
+The other six also require the offer to name them, so they behave like any other temporal event. They are cell entry, the two line crossings, zone entry, the proximity event and the attacked-by-house event.
 
 ## Where a tag is offered an event
 
-Four parts of the game make offers, on four different cadences. The table gives when each runs and what it names.
+Four parts of the game make offers, each on a different schedule:
 
 | Site | When it runs | What it names |
 | --- | --- | --- |
-| The general list | Once at the top of every logic frame, before teams, objects and houses take their turns | Elapsed time and random delay every frame; crate collection, global and local variable changes, ambient light changes and mission timer expiry only on the frame that produced each |
-| A house's list | Once per house, at the end of the logic frame, after objects have taken their turns | Nothing in particular. [Damage to a base](/systems/base-attacked/) names the attacked event on the same list separately |
-| Cells, and the zone list | Each time an uncloaked infantry, vehicle or aircraft reaches the center of a new cell | Cell entry on that cell's own tag; the two line crossings, on every tagged cell along the row or the column, when the cell reached is marked as a crossing line; and zone entry on each zone tag whose cell shares a [movement zone](/glossary/#movement-zone) with the destination |
-| An object's own tag | At the moment the occurrence happens to that object | The one event that has just happened |
+| The general list | Once at the start of every logic frame, before teams, objects and houses are processed | Elapsed time and random delay, every frame. Crate collection, a global or local variable change, an ambient light change and mission timer expiry, only when one has happened since the previous pass |
+| A house's list | Once per house every frame, after teams and objects have been processed | Nothing in particular. [Damage to a base](/systems/base-attacked/) also offers the attacked event to this list when it happens |
+| Cells, and the zone list | Each time an uncloaked infantry or vehicle finishes moving into a cell | Cell entry, to that cell's tag. The two line crossings, to every cell along the row or column whose tag watches for that crossing, when the cell entered is on a crossing line. Zone entry, to each zone tag whose cell shares a [movement zone](/glossary/#movement-zone) with the destination of the infantry or vehicle |
+| An object's tag | At the moment the occurrence happens to that object | The one event that has just happened |
 
-The general list is offered elapsed time and random delay with no condition attached, so a tag on that list is offered something every frame however few of its events are time based. A tag whose trigger fires on one of the offers made during that walk is not given the later offers in the same frame.
+Team processing also offers the team-left-map event to every tag on the general list when it disposes of an empty team that was leaving the map. [Leaves map (team)...](/mapping/events/tevent-leaves-map/) says when that happens.
 
-The conditional offers on that list are gated by a mark set when the occurrence happens, and those marks are cleared once the walk over the list has finished. A variable changed by a trigger part-way through the walk is therefore offered only to the tags the walk has not yet reached. The tags it has already passed do not receive that change on the following frame either, because the mark recording it is gone by then. A change made anywhere outside that walk is waiting when the next one begins, and every tag on the list sees it.
+A tag on the general list that fires on one of these offers gets no further offers from that frame's pass over the list. When firing destroys that tag, the tag listed after it also misses that frame's pass.
 
-The zone list is offered only to tags whose triggers watch for zone entry, so it is in practice the list of zone tags rather than a general map list.
+The extra offers for variables, ambient light and the mission timer change nothing for the standing events they name, because every tag on the list is already examined on the elapsed-time offer each frame. Crate collection is the one temporal event these offers name. A crate picked up during a frame is offered to the general list at the start of the next frame.
 
-Offers made to an object's tag are the largest group and the least uniform. Each is written at the point in the game that produces the occurrence, such as the damage handling, the destruction handling or the discovery handling, and each names exactly one event. This is why a temporal event is reachable only where somebody wrote the offer for it, and why an event that permits an attachment is not thereby reachable through it.
+Flying aircraft never make cell or zone offers. Infantry or a vehicle passing under a bridge does not trigger cell entry for the cells beneath it. Infantry or a vehicle on the bridge does.
+
+A cell where a horizontal and a vertical line cross always offers the horizontal crossing. It offers the vertical crossing only if a vertical line also passes through the last cell of that row.
+
+Only tags whose triggers include zone entry receive offers from the zone list, so in practice the zone list is the list of zone tags.
+
+Offers to an object's tag are the most numerous and the least uniform. Each is made where the game handles the occurrence, such as damage, destruction or discovery, and names exactly one event. A temporal event can therefore be satisfied only where such an offer exists. An event that permits an object attachment is not necessarily offered through one.
 
 ## Remembering a satisfied event
 
-A temporal event can be marked off, so that a later offer finds it already satisfied and does not re-examine it. Marking is what lets one trigger combine occurrences that can never arrive in one offer.
+A trigger can collect its temporal events over several offers. When a temporal event is satisfied during a remembering offer, it is **marked**. A marked event counts as satisfied on every later offer without being tested again. Marking is how one trigger combines occurrences that never arrive in the same offer.
 
-An event is marked off under **all of:**
+A satisfied event is marked when **all of:**
 
-- the offer is a remembering one;
+- the offer is a remembering offer;
 - the event is temporal;
-- the event admits being remembered.
+- the event can be remembered.
 
-An offer is a remembering one when the tag is persistent. It also becomes one part-way through, when certain events agree: cell entry, the two line crossings, zone entry, the team-left-map event, the building-exists event and the four build events. Any of those switches remembering on for the rest of that offer. The events are examined in the reverse of their order on the trigger's line in `[Events]`. An event that switches remembering on this way therefore reaches only the events written *before* it on that line.
+An offer is a remembering offer when the tag is persistent. An offer to a tag of any persistence also becomes remembering partway through when certain events are satisfied during it. They are cell entry, either line crossing, zone entry, the team-left-map event, the building-exists event and the four build events. Remembering then stays on for the rest of that trigger's examination. Events are examined in the reverse of their order in `[Events]`, so such an event can mark only the events written before it on that line, and itself when it can be remembered.
 
-Five events refuse to be remembered and are re-examined on every offer: the two attacked events, cell entry, the paralyzed event, and the repeating spotlight event. The plain spotlight event is remembered normally, and that is the whole difference between the two spotlight events.
+Five events can never be remembered and are tested again on every offer: the two attacked events, cell entry, the paralyzed event and the repeating spotlight event. The plain spotlight event can be remembered, which is the only difference between the two spotlight events.
 
-**A volatile or semi-persistent trigger must have all of its events true during a single offer.** Pairing two temporal events, say an object destroyed and a crate collected, asks for both occurrences in one offer. One offer names one event. **A persistent trigger accumulates them instead.** Each temporal event is marked off as it happens and stays marked, so the trigger fires on the offer that satisfies the last one outstanding.
+Without marking, every event must be satisfied during a single offer. Two temporal events, such as an object destroyed and a crate collected, can then never be satisfied together, because each offer names only one event. Give such a trigger a persistent tag. Each temporal event is then marked when it happens and stays marked, and the trigger fires on the offer that satisfies the last event outstanding.
 
-Marking is never undone except for elapsed time and random delay, which are rearmed whenever the trigger's timer restarts. The timer restarts when the trigger is created, when it is enabled, when a global or local variable the trigger watches changes value, and on any offer that satisfies every event of a remembering trigger. That last one is what makes a persistent timed trigger repeat.
+A mark is never cleared. Elapsed time and random delay are standing events and are never marked. Their countdown restarts:
+
+- when the trigger is created;
+- whenever Enable Trigger names it, even if it is already enabled;
+- when a global or local variable that one of its events names changes value;
+- on every remembering offer that satisfies all of its events.
+
+The last case is what makes a persistent timed trigger fire repeatedly.
 
 ## Tag lifetimes
 
-The tag's persistence decides what happens after its triggers fire. Every tag is one of three kinds, declared in `[Tags]` as the number before the tag's name: `0` volatile, `1` semi-persistent, `2` persistent.
+A tag's persistence decides what happens after its triggers fire. It is the number before the tag's name in `[Tags]`: `0` volatile, `1` semi-persistent, `2` persistent.
 
 | Persistence | On firing | Afterwards |
 | --- | --- | --- |
-| Volatile | Fires on the first offer that satisfies the trigger | The tag comes off the object or cell that sprang it, where there was one, and is destroyed, taking its triggers with it |
-| Semi-persistent | Fires only when one attachment is left; an earlier offer that satisfies the trigger fires nothing | The offers before the last one detach the tag from whatever sprang them; the last one destroys it |
-| Persistent | Fires on every offer that satisfies the trigger | Nothing. The tag stays where it is and fires again |
+| Volatile | Fires on the first offer that satisfies the trigger | The tag is destroyed with all of its triggers and removed from everything it rode on |
+| Semi-persistent | Fires only on an offer made while the tag has one attachment left. An earlier offer that satisfies the trigger fires nothing | An earlier satisfying offer made for an object or cell that holds the tag removes the tag from that object or cell. The firing offer destroys the tag |
+| Persistent | Fires on every offer that satisfies the trigger | Nothing changes. The tag stays where it is and can fire again |
 
-Semi-persistent is the lifetime for going off on the last of a group rather than the first. A team's tag is attached to every member the team accepts, drops one member each time that member satisfies the trigger, and fires on the one attachment left. A team can also restrict the tag to members that can carry passengers, in which case those are the only members it goes onto and the only ones counted.
+Semi-persistent fires on the last of a group instead of the first. A team's tag, for example, goes onto every member the team accepts. A member drops out of the count when it satisfies the trigger. A member of a computer player's team also drops out when it leaves the team, which includes being destroyed. The trigger fires for the last member still counted. A team can restrict its tag to members that can carry passengers. Only those members then receive the tag and count toward it.
+
+Any other object holding the tag that leaves the game without satisfying the trigger still counts. The count then never falls to one while a living holder remains, so the tag never fires.
+
+Three offers are made for the moving unit, not for the holder of the tag:
+
+- Infantry entering a building or vehicle never lowers the count of that building's or vehicle's tag.
+- A line crossing lowers the count only when the cell the unit entered holds the tag.
+- Zone entry lowers the count only when the unit's destination holds the tag.
 
 :::caution[Semi-persistent fires nothing unless the tag rides on an object or a cell]
-The count a semi-persistent tag waits on counts objects and map cells only. Placement on a house list, on the general list or on the zone list adds nothing to it. A semi-persistent tag that rides on neither an object nor a cell therefore sits at a count of zero, and never reaches the count of one it fires at. Every offer it takes leaves it exactly as it was, for the whole scenario. Elapsed time, credit totals, global variables and every other event with nowhere to ride need a volatile or a persistent tag.
+The count a semi-persistent tag waits on includes only objects and map cells. Joining a house list, the general list or the zone list adds nothing to it. A semi-persistent tag that rides on no object or cell stays at zero, never reaches one, and never fires for the whole scenario. Events with nothing to ride on, such as elapsed time, credit totals and global variables, need a volatile or a persistent tag.
 :::
 
-A destroyed tag and its triggers are not disposed of on the spot. They stop taking offers immediately and are released at the point in the frame where nothing is still walking a list of them. The triggers that fired go first and the tag follows. Each trigger released this way unhooks itself from the tag on the way out, moving the tag's link on to the next trigger in its chain. A tag that held a single trigger therefore reaches its own release naming nothing at all. That ordering is what the next section turns on.
+A destroyed tag and its triggers stop taking offers at once but are released only at the end of the frame. The triggers that fired are released first, and the tag after them. As each trigger is released, the tag's link moves on to the next trigger in its chain. A tag that held a single trigger therefore has no trigger left when its release runs, which decides the Allow Win case below.
 
 ## Holding back the victory
 
-[Allow Win](/mapping/actions/taction-allowwin/) is the one action whose outcome a tag's disposal settles, so the three lifetimes above decide whether the hold it places is ever lifted. The action does nothing at all when it runs. The hold it places on its house's victory is counted before the first frame, and the only thing that lifts it is the tag being disposed of while it still names a trigger. That page owns the count and the disposal that does clear it.
+In a campaign or standalone mission, [Allow Win](/mapping/actions/taction-allowwin/) holds back its house's victory. The action does nothing when it runs. The hold is counted before the first frame, and it is lifted only when the tag is released while it still holds a trigger. The Allow Win page owns the count and [the release that does lift it](/mapping/actions/taction-allowwin/#destroying-the-tag-instead).
 
-:::danger[Dying on firing does not lift the hold]
-The release order above decides this. A tag holding a single trigger, which is the ordinary shape, has lost its link to that trigger before its own release runs. Firing therefore disposes of the tag and leaves the hold standing. Only a tag holding a chain that keeps a trigger through its own release lifts the hold by firing.
+:::caution[Firing a single-trigger tag does not lift the hold]
+A tag with a single trigger, the usual shape, loses its link to that trigger before its release runs. Firing therefore destroys a volatile or semi-persistent tag of that shape and leaves the hold in place. Firing lifts the hold only when at least one trigger in the tag's chain did not fire and is still linked when the tag is released.
 :::
 
-Everything that keeps such a tag from being disposed of at all holds the victory the same way, and there are several. A persistent tag never dies. Neither does a volatile or semi-persistent tag whose trigger is never satisfied, one that is left disabled, or one declared in the map and attached to nothing that ever receives an offer. The same is true of a semi-persistent tag riding on neither an object nor a cell. It takes offers, its trigger is satisfied, and it still neither fires nor dies, because the count it waits on never reaches one. Each of these leaves the house the hold is charged to unable to win the mission for the rest of the game.
+A tag that is never released holds the victory the same way. That includes:
+
+- a persistent tag, which firing never destroys;
+- a volatile or semi-persistent tag whose trigger is never satisfied or stays disabled;
+- a tag declared in the map that rides on nothing that receives offers;
+- a semi-persistent tag that rides on no object or cell, which never fires or dies even when its trigger is satisfied.
+
+Unless [Destroy Tag](/mapping/actions/taction-destroy-tag/) removes such a tag, the house the hold is charged to cannot win the mission for the rest of the game.
 
 ## Reaching a trigger from another trigger
 
-Five actions operate on triggers and tags by name rather than on whatever sprang them. [Enable Trigger](/mapping/actions/taction-enable-trigger/) and [Disable Trigger](/mapping/actions/taction-disable-trigger/) switch every trigger of the named type on and off. [Destroy Trigger](/mapping/actions/taction-destroy-trigger/) removes them permanently; nothing brings a destroyed trigger back. [Destroy Tag](/mapping/actions/taction-destroy-tag/) removes every tag of the named type, so whatever those tags rode on loses its link to them.
+Five actions work on triggers and tags by name, not on whatever sprang them. [Enable Trigger](/mapping/actions/taction-enable-trigger/) and [Disable Trigger](/mapping/actions/taction-disable-trigger/) switch every trigger of the named type on or off. [Destroy Trigger](/mapping/actions/taction-destroy-trigger/) removes every trigger of the named type permanently. [Destroy Tag](/mapping/actions/taction-destroy-tag/) removes every tag of the named type, so whatever those tags rode on is no longer linked to them.
 
-[Force Trigger](/mapping/actions/taction-force-trigger/) fires every trigger of the named type outright. It is the one route that ignores events completely: the trigger's own events are not examined, so a trigger whose events could never be satisfied still fires. Two limits come with it. The forced trigger is fired without an object or a cell, so any of its actions that work on the thing a trigger is attached to have nothing to work on. And the tag is bypassed entirely: persistence is not read, nothing is detached, and no tag is destroyed, so forcing a volatile trigger leaves it in place to be forced again.
+[Force Trigger](/mapping/actions/taction-force-trigger/) fires every trigger of the named type without examining its events, so it fires even a trigger whose events can never be satisfied. It has two limits:
 
-A disabled trigger cannot be forced.
+- The trigger fires without an object or a cell, so actions that work on the thing the trigger is attached to have nothing to work on.
+- The tag is bypassed: its persistence is ignored, nothing is detached and no tag is destroyed. A forced volatile trigger therefore stays in place and can be forced again.
+
+Force Trigger does not fire a disabled trigger or one already marked for destruction.
 
 ## Three events that cannot be reached
 
-:::danger[Spied upon, Thieved by... and Civilians Evacuated can never be satisfied]
-[Spied upon](/mapping/events/tevent-spied/), [Thieved by...](/mapping/events/tevent-thieved/) and [Civilians Evacuated](/mapping/events/tevent-evac-civilian/) are all temporal and none of them is exempt from the gate. Each therefore needs an offer naming it, and no part of the game makes one. Every offer that reaches such a trigger names something else or names nothing in particular, and the gate rejects it before the event's own test is read. A trigger whose events include any of the three never fires by itself. Neither does one that pairs one of them with events that do work, because every event on a trigger has to be satisfied.
+:::caution[Spied upon, Thieved by... and Civilians Evacuated can never be satisfied]
+[Spied upon](/mapping/events/tevent-spied/), [Thieved by...](/mapping/events/tevent-thieved/) and [Civilians Evacuated](/mapping/events/tevent-evac-civilian/) are temporal and not exempt, so each needs an offer that names it. No part of the game makes one. Every offer that reaches such a trigger names another event or nothing in particular.
 
-Both house marks behind those events are maintained, which is what makes the events look alive. Losing a structure to an engineer [marks the losing house as robbed](/systems/capture/#capturing-a-non-allied-structure), and an aircraft that retreats outside the playable area with [a civilian](/keys/civilian/) aboard marks that passenger's house. Neither mark is ever cleared, and nothing reads either one except the event that cannot be reached. The spy event has no test of its own beyond the gate: were an offer ever made for it, it would be satisfied on the spot.
-
-Force Trigger is the only way to get any consequence out of a trigger built on one of the three, and it fires the actions regardless of the event rather than because of it.
+A trigger with any of these events never fires unless forced, even when its other events work, because every event on a trigger must be satisfied.
 :::
+
+The house conditions that two of these events test are still recorded, which makes the events look usable. Losing a structure to an engineer [marks the losing house as robbed](/systems/capture/#capturing-a-non-allied-structure). An aircraft that retreats out of the playable area with [a civilian](/keys/civilian/) aboard marks that passenger's house as having evacuated a civilian. Neither mark is ever cleared, and nothing reads either one except these unreachable events.
+
+[Force Trigger](/mapping/actions/taction-force-trigger/) is the only way to run the actions of a trigger that uses one of the three.
 
 ## Difficulty
 
-A trigger record holds three per-difficulty fields in `[Triggers]`, in easy, normal and hard order, and only the one for the difficulty the scenario is being played at is read. A trigger whose field reads `0` there is disabled as it is created, so it never springs, and [Enable Trigger](/mapping/actions/taction-enable-trigger/) leaves it alone rather than bringing it back.
+`[Triggers]` holds three per-difficulty fields for each trigger: easy, normal and hard, in that order. Only the field for the difficulty being played is read. If it is `0`, the trigger starts disabled and stays disabled: [Enable Trigger](/mapping/actions/taction-enable-trigger/) does not enable it, and Force Trigger does not fire it.
 
-A campaign mission is played at the difficulty the player chose. A skirmish or multiplayer game is played at the one the lobby's computer skill sets. A saved game keeps the state it was stored with, including which triggers are enabled, which events are marked off, and how many attachments a semi-persistent tag still has.
+A campaign mission uses the difficulty the player chose. A skirmish or multiplayer game uses the computer skill set in the lobby.
+
+A saved game restores trigger state as it was saved, including which triggers are enabled, which events are marked, and how many attachments each semi-persistent tag still has.
 
 ## Settings and state without effect
 
-A trigger keeps one countdown, not one per event. A trigger with more than one elapsed time or random delay event has each of them overwrite that single countdown as the list is walked. The delay that takes effect is therefore the one written first in the map file, and the others are inert.
-
-Springing sets a flag for firing a tag's triggers without examining their events, and nothing sets it. Force Trigger, the action that would want it, reaches the trigger directly instead.
+A trigger has one countdown, shared by all of its events. When a trigger has more than one elapsed time or random delay event, each restart sets the countdown from every one of them in turn. The event written first in `[Events]` is applied last, so its delay is the one that takes effect, and the other delays are ignored.

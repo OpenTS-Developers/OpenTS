@@ -1,6 +1,6 @@
 ---
 title: Power output and drain
-summary: "Tallies each house's power output against its drain and degrades its base while the balance falls short."
+summary: "How a house's power output and drain are totaled, and what a house short of power loses."
 category: buildings-economy
 keys:
   - BuildSpeed
@@ -42,107 +42,147 @@ related:
     id: TACTION_TURN_ON_ATTACHED
 ---
 
-Every house holds two figures: the power its structures produce and the power they consume. Every consequence on this page is read from the ratio between them. Both figures are rebuilt from zero rather than adjusted as structures come and go.
+Each house keeps two totals: its **output**, the power its structures produce, and its **drain**, the power they consume. A house whose output is below its drain is **short of power**.
 
 ## How the balance is computed
 
-A rebuild walks every structure in the game and keeps the ones this house owns that are out of [limbo](/glossary/#limbo) and standing on the map, then adds each one's output and drain. A structure counts from the moment it is placed, so one still playing its buildup animation is already on both sides of the ledger.
+A house's totals include every structure it owns that is placed on the map and not in [limbo](/glossary/#limbo). A structure counts as soon as it is placed, so one still playing its buildup animation already adds both its output and its drain.
 
-In a campaign game a house under the player's control skips any of its own structures the player has not discovered yet, so a base handed over by a trigger contributes nothing until it is seen. Discovering an object flags the tally for a rebuild.
+In a campaign game, a structure owned by a player-controlled house counts only after the player has discovered it. A base handed to the player by a trigger therefore adds nothing until the player sees it.
 
 ### Writing the assignments
 
-A producer, a consumer, a plug and the global settings that govern a shortfall are written like this:
+This example defines a power plant, a structure that consumes power, a plug for the plant, and the two `[General]` settings that govern a shortfall. The values are examples; the linked key pages give the defaults.
 
 ```ini title="rules.ini"
-[MYPOWER]        ; example BuildingType that supplies the grid
+[MYPOWER]        ; example power plant
 Power=100
-Upgrades=1       ; upgrade slots this kind of structure offers
+Upgrades=1       ; upgrade slots this structure offers
 
-[MYSAM]          ; example BuildingType that draws from it
+[MYSAM]          ; example structure that consumes power
 Power=-50
 
-[MYTURBINE]      ; example plug, fitting the slot above
+[MYTURBINE]      ; example plug for MYPOWER's upgrade slot
 PowersUpBuilding=MYPOWER
-Power=50         ; the plug's own contribution, added before the scaling
+Power=50         ; added to the host's output before damage scaling
 
 [General]
-DamageDelay=2            ; game minutes between damage ticks while short
-MinProductionSpeed=0.75  ; floor under the production multiplier
+DamageDelay=2            ; game minutes between damage ticks while short of power
+MinProductionSpeed=0.75  ; lowest production multiplier a shortfall can impose
 ```
 
 ### What each structure contributes
 
-Output is the type's [`Power=`](/keys/power/#scope-buildingtype) plus the value of every plug the structure holds. A plug is a structure type with [`PowersUpBuilding=`](/keys/powersupbuilding/), installed into one of the host's [upgrade slots](/keys/upgrades/). That sum is scaled by the structure's current strength as a fraction of its maximum, and truncated to a whole number. Drain is the same sum over the type and its plugs, and is not scaled at all.
+A structure's output is its type's positive [`Power=`](/keys/power/#scope-buildingtype) plus the positive `Power=` of every plug installed in it. A plug is a structure type with [`PowersUpBuilding=`](/keys/powersupbuilding/), installed into one of the host's [upgrade slots](/keys/upgrades/). The sum is multiplied by the structure's current strength as a fraction of its maximum and rounded down.
 
-The table gives each contributor and each condition against its effect on the two sides, and a stun there is an [EM pulse](/systems/emp-pulse/) holding the structure down for a set number of frames. Only one row tells the two columns apart, and that row decides what a base under fire loses.
+A structure's drain is the size of its type's negative `Power=`, plus the drain of its plugs. Damage does not change it.
+
+The table shows what affects each total. A stun is an [EM pulse](/systems/emp-pulse/) disabling the structure for a set number of frames.
 
 | | Output | Drain |
 | --- | --- | --- |
-| Type | positive `Power=` | magnitude of a negative `Power=` |
+| Type | positive `Power=` | size of a negative `Power=` |
 | Plugs | added before scaling | added |
-| Damage | scales the total, truncated | ignored |
+| Damage | scales the total, rounded down | ignored |
 | Switched off | nothing | nothing |
 | Stunned | unchanged | unchanged |
 
-Three consequences follow. Damage costs output from the first point taken, with no threshold under it: a plant rated 100 with 999 strength of 1000 supplies 99, and the same plant at 1 strength supplies nothing at all. Drain never falls with damage, so a base being shelled loses supply while demand holds steady and slips into low power. Only the on/off switch takes a structure off either side, and an EM pulse never touches that switch. A stunned plant therefore keeps feeding the grid, and a stunned consumer keeps drawing.
+Damage reduces output from the first point lost. A plant with `Power=100` supplies 99 at 999 of 1000 strength, and nothing at 1 strength. Because drain does not fall with damage, a base under attack loses output while its demand holds steady, and it can become short of power.
+
+Only switching a structure off removes it from both totals. An EM pulse does not switch a structure off, so a stunned plant keeps supplying power and a stunned consumer keeps drawing it.
 
 ### When the tally is rebuilt
 
-The tally is flagged as stale rather than recomputed on the spot, and the rebuild runs on the house's next turn; anything that could move either figure sets the flag. That covers a structure's strength changing, opening for business, being taken off the map, changing hands, having a plug installed or sold, being switched on or off, and being discovered.
+A house recalculates both totals on its next update after any of these events:
 
-The rebuild then brings the house's structures into line with the new balance, re-rates its factories and marks its radar for re-evaluation, and refreshes the house's superweapons when the rebuild took the house across the full-power line.
+- one of its structures changes strength;
+- a structure finishes its buildup or is captured;
+- a structure is taken off the map or changes owner;
+- a plug is installed or sold;
+- a structure is switched on or off;
+- the player discovers a structure.
 
-Outside campaign games a computer house answers a shortfall in its own way, by inserting a power plant ahead of the node that would have caused it; [AI base planning](/systems/ai-base-building/#power-and-money-interventions) covers that and the margin it works to.
+After recalculating, the house:
+
+- starts or stops its structures' power-dependent animations, lights, fences and cloaking fields to match the new balance;
+- recalculates the speed of its factories;
+- rechecks whether its radar should be up;
+- rechecks its superweapons, if the house has just become short of power or just stopped being short.
 
 ## The power fraction
 
-The fraction is 1 whenever output is at least drain, and also 1 for a house with no drain at all however little that house produces. Below that the fraction is output divided by drain, and 0 when output is zero.
+The **power fraction** is output divided by drain, capped at 1:
+
+- 1 when output is at least drain;
+- 1 when drain is 0, even with no output;
+- 0 when output is 0 and drain is above 0;
+- otherwise, output divided by drain.
+
+A house is short of power exactly when its fraction is below 1.
 
 :::caution[Surplus buys nothing]
-The fraction is never above 1. A house at twice its drain is in the same state as a house at exactly its drain, so extra plants are insurance against losing one, not an upgrade.
+The fraction is never above 1, so a house producing twice its drain is in the same state as a house producing exactly its drain. Extra output only protects against losing a plant or taking damage.
 :::
 
 ## Switching a structure off
 
-Power mode is entered from [Power Mode](/commands/togglepower/) or the sidebar's power button. Its cursor offers the toggle only over an object that clears all of these, in this order:
+Players enter power mode with [Power Mode](/commands/togglepower/) or the sidebar's power button. The power cursor offers the toggle only over an object that passes all of these tests, in this order:
 
 - it belongs to a player-controlled house;
 - it is a structure;
 - its type is [`Selectable=yes`](/keys/selectable/);
 - its type is not a deployed vehicle (one with [`UndeploysInto=`](/keys/undeploysinto/) without being [`ConstructionYard=yes`](/keys/constructionyard/));
 - its type is [`TogglePower=yes`](/keys/togglepower/);
-- **Any of:** its type sets drain, or its type is [`Powered=yes`](/keys/powered/).
+- **Any of:** its type has drain, or its type is [`Powered=yes`](/keys/powered/).
 
-The toggle order the cursor queues refuses a [`FirestormWall=yes`](/keys/firestormwall/) type outright.
+Even where the cursor offers it, a switch order for a [`FirestormWall=yes`](/keys/firestormwall/) structure is refused.
 
-The switch itself asks less than the cursor does. It needs only that the type drains power or is `Powered=yes`. A [Turn off building](/mapping/actions/taction-turn-off-attached/) trigger action or a scenario's own structure record can therefore put a `TogglePower=no` structure out of service, and the player can never switch it back. Switching a structure on is refused while it is stunned.
+A [Turn off building](/mapping/actions/taction-turn-off-attached/) trigger action or a scenario's structure record can switch off any structure whose type has drain or is `Powered=yes`. They ignore `TogglePower`. A `TogglePower=no` structure switched off this way cannot be switched back on by the player.
 
-Taking a structure out of service removes it from both sides of the tally, disables its light source, collapses its cloaking field, drops its laser fences, and stops its powered animations. It announces the change to a player-controlled house, and when the structure is a factory it re-examines what its house may still produce. Switching off the house's last working firestorm generator also discharges an active firestorm wall. While a structure is off and its house is player-controlled, a marker is drawn over it wherever the cell is neither shrouded nor fogged.
+A stunned structure cannot be switched on.
+
+Switching a structure off:
+
+- removes it from both totals;
+- turns off its light source;
+- starts shrinking its cloaking field;
+- drops its laser fences;
+- stops its powered animations;
+- refuses units that try to dock with it, such as harvesters at a refinery or vehicles at a repair depot;
+- makes its house recheck what it can produce, if the structure is a factory;
+- discharges an active firestorm wall, if it was the house's last switched-on [`GDIFirestormGenerator`](/keys/gdifirestormgenerator/).
+
+A player-controlled house hears an announcement when a structure is switched off or back on.
+
+While a player-controlled house's structure is switched off, a marker is drawn over it unless its cell is shrouded or fogged.
 
 ## What low power costs
 
-Everything below reads the same fraction, and applies to every house, the computer's included, except where noted.
+Each effect below applies to every house, computer houses included, unless noted.
+
+A computer house that is not following a map plan also tries to avoid a shortfall. It builds a power plant before a structure that would leave it short; [AI base planning](/systems/ai-base-building/#power-and-money-interventions) covers that rule and the margin it keeps.
 
 ### The structure damage tick
 
-Each house holds a timer reloaded with [`DamageDelay`](/keys/damagedelay/) game minutes. When it expires and the house's fraction is below 1, 1 point of damage goes through [`C4Warhead`](/keys/c4warhead/) to every structure that clears all of these:
+While a house is short of power, its structures that consume power take 1 point of damage every [`DamageDelay`](/keys/damagedelay/) game minutes. The house's timer runs whether or not the house is short, so the first tick lands anywhere up to `DamageDelay` minutes after a shortfall begins. A shortfall that ends before the next expiry costs no damage.
+
+When the timer expires while the house is short, each structure that passes all of these tests takes 1 point of damage through [`C4Warhead`](/keys/c4warhead/):
 
 - the house owns it;
-- its strength stands strictly above [`ConditionYellow`](/keys/conditionyellow/) of its maximum;
-- its type sets drain of its own.
+- its strength is strictly above [`ConditionYellow`](/keys/conditionyellow/) of its maximum;
+- its type has drain.
 
-The timer is reloaded whether or not the house was short, so the cadence never drifts.
+The tick ignores the on/off switch. A switched-off structure still takes damage, although it no longer adds to the drain. The drain test reads the structure's type only, so a structure whose drain comes entirely from its plugs is never damaged.
 
-Those three tests are the whole filter. A structure that has been switched off still ticks, although it has already stopped adding to the drain that caused the shortfall. The test is on the type's own drain, so a structure that draws power only through its plugs is never touched. And because only structures above `ConditionYellow` are hit, a shortfall grinds a base down to that threshold and stops there. At the stock one-point tick it cannot destroy anything, though a raised [`MinDamage`](/keys/mindamage/) can overshoot the threshold and, once it exceeds a structure's remaining strength, destroy it outright.
+A shortfall wears a base down to `ConditionYellow` and stops there. With a 1-point tick, it destroys nothing. Raising [`MinDamage`](/keys/mindamage/) makes every tick larger, and a tick larger than a structure's remaining strength destroys it.
 
 :::caution[Verses cannot soften the tick]
-The point of damage is not forced, so it goes through the warhead's [`Verses`](/keys/verses/) table. At a raw damage of 1 no percentage below 200 can reduce it, and the result is then raised to [`MinDamage`](/keys/mindamage/). Only 200 percent and above multiplies the tick, and raising `MinDamage` raises it for every structure at once. [`Immune=yes`](/keys/immune/) is the way out.
+The tick is not forced damage, so the warhead's [`Verses`](/keys/verses/) table applies. A 1-point hit multiplied by any percentage below 200, including 0, still deals 1 point. Only 200 percent and above increases it. To exempt a structure, give its type [`Immune=yes`](/keys/immune/).
 :::
 
 ### Production
 
-The fraction is turned into a production multiplier on a fixed ladder. Each row of the table is a band of the fraction and the multiplier that band produces. The bottom row settles that the multiplier never falls below 0.5, so even a house producing nothing at all still builds at half speed.
+A house short of power builds more slowly. Its build time is divided by a production multiplier that depends on its power fraction:
 
 | Power fraction | Production multiplier |
 | --- | --- |
@@ -151,95 +191,107 @@ The fraction is turned into a production multiplier on a fixed ladder. Each row 
 | 0.5 up to but not including 0.75 | the fraction itself |
 | below 0.5 | 0.5 |
 
-The multiplier is then raised to [`MinProductionSpeed`](/keys/minproductionspeed/) when it falls below it, and the object's build time is divided by the result, where 0.75 makes a build a third longer and 0.5 doubles it.
+If the multiplier is below [`MinProductionSpeed`](/keys/minproductionspeed/), it is raised to that value. A multiplier of 0.75 makes a build take a third longer, and 0.5 doubles it. The bottom row means a house with no output at all still builds at half speed or better.
 
-:::caution[The middle band is the only one that tracks the shortfall]
-Between half and three quarters the multiplier is the raw fraction, so a house at 0.6 builds slower than one at 0.74. Above and below that band the penalty is flat. At the default `MinProductionSpeed` the floor sits exactly on the bottom step, so it changes nothing until it is moved; raising it lifts the whole ladder at once.
+:::caution[Only the middle band tracks the shortfall]
+Between 0.5 and 0.75 the multiplier equals the fraction, so a house at 0.6 builds more slowly than one at 0.74. Above and below that band the penalty is flat. At the default `MinProductionSpeed` the floor equals the bottom step and changes nothing. Raising it lifts every step below the new value to that value.
 :::
 
-Build time reaches that division already shaped. It starts from the object's cost through [`BuildSpeed`](/keys/buildspeed/) and is multiplied by the country and difficulty [`BuildTime`](/keys/buildtime/) figures the house was handed. After the power division it is adjusted for the number of factories through [`MultipleFactory`](/keys/multiplefactory/) and, for a wall, by [`WallBuildSpeedCoefficient`](/keys/wallbuildspeedcoefficient/).
+The power division is one step in the build-time calculation. [How long it takes](/systems/production/#how-long-it-takes) gives the full order, including [`BuildSpeed`](/keys/buildspeed/), the country and difficulty [`BuildTime`](/keys/buildtime/) multipliers, [`MultipleFactory`](/keys/multiplefactory/), and [`WallBuildSpeedCoefficient`](/keys/wallbuildspeedcoefficient/).
 
-Every change to the balance re-rates the house's factories. Each one recomputes the delay between production steps from the new build time but keeps the step it had already reached, so low power slows a build in place instead of restarting it. Restoring power speeds it up again from where it stands. That delay is a whole number of frames between 1 and 255, so once a step already takes 255 frames a deeper shortfall costs nothing further.
+Every recalculation of the balance updates the speed of the house's factories. A build in progress keeps the progress it has made and continues at the new speed, so low power slows it without restarting it, and restoring power speeds it up again. The delay between [production steps](/systems/production/#production-steps) cannot exceed 255 frames, so once a build reaches that limit a deeper shortfall slows it no further.
 
-What a shortfall never does is remove an option. Whether a house may build something is decided by whether it owns a switched-on factory of the right kind; the power balance is not read. Low power therefore leaves every cameo on the sidebar and only slows what comes out of it.
+Low power never removes an option from the sidebar. It only slows production.
+
+### Cash income
+
+A [`Powered=yes`](/keys/powered/) structure that [produces cash](/systems/produce-cash/#power) pauses its income while its house is short of power, even if it draws no power itself.
 
 ### Radar
 
-Only the local player's house has a radar map to lose. It is raised while all of these hold:
+Only the local player's house can lose its radar map. The radar is up while all of these hold:
 
 - no ion storm is running;
-- the house's output is at least its drain (the raw comparison, not the fraction);
+- the house is not short of power;
 - **Any of:**
   - the scenario sets [`FreeRadar=yes`](/keys/freeradar/);
-  - the house owns a [`Radar=yes`](/keys/radar/) structure that is **All of:** switched on, out of limbo, on the map, and not being deconstructed.
+  - the house owns a [`Radar=yes`](/keys/radar/) structure that is **All of:** switched on, out of limbo, on the map, and not being sold.
 
-The campaign discovery skip applies to that search too. A player who has been given the whole map keeps the radar whatever these tests say; [observers and coach mode](/systems/observers/) owns that rule.
+In a campaign game, a radar structure the player has not discovered does not count. A player who has been given the whole map keeps the radar whatever these tests say; [observers and coach mode](/systems/observers/) covers that rule.
 
-:::caution[The search stops at the first radar it finds]
-Structures are scanned in creation order and the scan ends at the first eligible one, which supplies the radar only if it is not stunned. A stunned radar reached first therefore keeps the map dark while a second, working one stands beside it.
+:::caution[A stunned radar can block a working one]
+The house checks its radar structures in the order they were created and stops at the first one that passes the tests above. That structure supplies the radar only if it is not stunned. A stunned radar found first therefore keeps the map dark even while a second, working radar stands beside it.
 :::
 
 ### Superweapons
 
-A superweapon that depends on a building counts as enabled while a structure granting it is switched on, whether the grant comes from that structure's own type or from a plug. It is disabled outright whenever the house's output is below its drain. A disabled weapon is suspended only if its type is [`IsPowered=yes`](/keys/ispowered/); the resume step does not read that value, so a weapon suspended some other way still comes back.
+A superweapon that comes from a structure is enabled while its house owns a switched-on structure that grants it, through the structure's type or through a plug. A stunned structure still counts. The weapon is disabled whenever its house is short of power.
 
-Suspension stops the charge timer where it stands, replaces the sidebar cameo's status text with the engine's hold caption, and refuses the targeting cursor. A weapon that becomes available while its house is already short of power arrives suspended. A weapon granted by the [Add repeating special weapon](/mapping/actions/taction-full-special/) trigger action no longer needs a building and is never suspended by this path.
+A disabled weapon is suspended only if its type is [`IsPowered=yes`](/keys/ispowered/). Suspension stops the charge timer where it stands, replaces the status text on the sidebar cameo with a hold caption, and refuses the targeting cursor. The weapon resumes when it is enabled again.
 
-:::caution[A charge-draining weapon loses its charge, not just its time]
-Where an ordinary weapon resumes from the point its timer stopped, a [`UseChargeDrain=yes`](/keys/usechargedrain/) weapon has its timer reset to a full [`RechargeTime`](/keys/rechargetime/) on resume. Each spell of low power, however brief, therefore costs it every second of charge it had accumulated.
+A weapon that becomes available while its house is short of power arrives suspended, even when it is `IsPowered=no`. It resumes once power is restored.
+
+A weapon granted by the [Add repeating special weapon](/mapping/actions/taction-full-special/) trigger action no longer needs a structure, so low power never suspends it.
+
+:::caution[A charge-draining weapon loses its charge]
+When a suspended [`UseChargeDrain=yes`](/keys/usechargedrain/) weapon resumes, its timer restarts from a full [`RechargeTime`](/keys/rechargetime/). Any shortfall that suspends it, however brief, discards all the charge it had built up. Suspending it also brings down an active firestorm wall.
 :::
 
 ### Defenses
 
-Three separate tests stand between a shortfall and a silent defense, and they do not agree with each other.
+Four separate tests decide whether low power stops a defense, and they treat `TogglePower` differently.
 
-1. **Out of service.** A structure is **operational** while none of these holds:
+1. **Out of service.** A structure is **operational** unless any of these holds:
 
    - it is switched off;
    - it is stunned;
    - its strength has reached zero;
-   - **All of:** its type is `Powered=yes`, its type sets drain of its own, its type is `TogglePower=yes`, and its house's power fraction is below 1.
+   - **All of:** its type is `Powered=yes`, its type has drain, its type is `TogglePower=yes`, and its house is short of power.
 
-   That is the first gate on firing, and the test used by spotlights, [laser fences](/systems/laser-fences/), sensor-array refreshes and cloak-generator regrowth.
+   A structure that is not operational cannot fire. Spotlights, [laser fences](/systems/laser-fences/), sensor-array refreshes, cloak generators, and the choice of which EM pulse cannon fires use the same test.
 
-2. **Weapons.** Past that gate, a structure whose type is `Powered=yes` with drain reports itself busy while the fraction is below 1. This test omits `TogglePower`, so a `Powered=yes`, `TogglePower=no` defense is silenced even though the first test spared it.
+2. **Weapons.** An operational structure still cannot fire while its house is short of power if its type is `Powered=yes` and has drain. This test ignores `TogglePower`, so a `Powered=yes`, `TogglePower=no` defense stops firing even though it remains operational.
 
-3. **SAM tracking.** A [`SAM=yes`](/keys/sam/) launcher stalls in its ready state under the same `Powered`/drain/fraction test, so it never turns toward its target in the first place.
+3. **SAM tracking.** A [`SAM=yes`](/keys/sam/) launcher that is `Powered=yes` with drain stays in its ready state while its house is short of power, so it never turns toward its target.
 
-A structure whose primary weapon is an electric weapon charges only while it holds a target, its house is at full power, and it is switched on. That branch reads neither `Powered` nor `TogglePower`. A defense of this kind therefore refuses to charge while its house is short even if it draws no power at all, and an uncharged electric weapon reports that it needs to rearm.
+4. **Charging.** A structure whose primary weapon has [`Charges=yes`](/keys/charges/) charges only while it has a target, its house is not short of power, and it is switched on. This test ignores `Powered` and `TogglePower`, so such a defense cannot charge during a shortfall even if it draws no power. When any of those conditions fails, the weapon loses the charge it held. An uncharged weapon of this kind cannot fire.
 
 ### Fields, fences and lights
 
-- A [`CloakGenerator=yes`](/keys/cloakgenerator/) structure collapses its field one ring per frame when it stops being operational and regrows it the same way afterwards. A generator left at `Powered=no` is exempt and keeps its field through any shortfall.
-- [Laser fences](/systems/laser-fences/) are re-evaluated on every change to the balance, and a run energizes only while the posts at both ends are operational, so low power drops the whole run.
+- A [`CloakGenerator=yes`](/keys/cloakgenerator/) structure that stops being operational shrinks its field ring by ring. It regrows the field the same way, out to [`CloakRadiusInCells`](/keys/cloakradiusincells/), once it is operational again and, for a `Powered=yes` type, once its house is no longer short of power. A generator that stays operational, such as one left at `Powered=no`, keeps its field through any shortfall.
+- [Laser fences](/systems/laser-fences/) are rechecked at every change to the balance. A fence run is up only while the posts at both ends are operational, so low power at either end drops the whole run.
 - A spotlight is neither drawn nor able to notice an intruder unless its structure is operational.
-- At full power, powered animations are enabled and powered lights started for every structure the house owns. Below full power the matching shutdown runs only for a type that is `Powered=yes` with drain and `TogglePower=yes`.
+- When a house is not short of power, every structure it owns runs its powered animations and powered lights, including a structure that is switched off. When the house is short, only a type that is `Powered=yes`, has drain, and is `TogglePower=yes` stops them.
 
 :::caution[A sensor array does not go dark with the rest of the base]
-Nothing lifts sensor coverage on a power change; a [`SensorArray=yes`](/keys/sensorarray/) structure gives its cells up only when it is taken off the map. What a shortfall costs it is the refresh, since the re-marking that follows a cloak field completing or another array shutting down skips an array that is not operational. Its cloak-generator counterpart, which shares [`CloakRadiusInCells`](/keys/cloakradiusincells/), collapses immediately.
+A power change does not remove sensor coverage. A [`SensorArray=yes`](/keys/sensorarray/) structure gives up its cells only when it is taken off the map. Low power only stops the array from being refreshed. Arrays are re-marked when a cloak field finishes growing or another array is taken off the map, and an array that is not operational is skipped. An array that finishes building while it is not operational marks no cells until one of those refreshes.
 :::
 
 :::caution[A TogglePower=no defense is silenced but stays lit]
-The animation shutdown and the out-of-service test both spare a `TogglePower=no` structure, while the weapon test does not. Such a defense holds fire through a shortfall with its idle animations and lights still running, which reads on screen as a working turret.
+The animation shutdown and the out-of-service test both spare a `TogglePower=no` structure, but the weapon test does not. Such a defense holds fire through a shortfall while its animations and lights keep running, so it looks like a working turret.
 :::
 
 ### Player feedback
 
-The low power announcement is made while all of these hold:
+The game announces low power while all of these hold:
 
 - the house is the local player's;
-- its own announcement timer has expired;
-- its power fraction is below 1;
-- it has at least one structure of a [`BuildConst`](/keys/buildconst/) type on the map, switched on or not.
+- the house's announcement timer has expired;
+- the house is short of power;
+- it owns at least one structure of a [`BuildConst`](/keys/buildconst/) type, switched on or not.
 
-The announcement speaks the warning, posts the on-screen text for [`MessageDelay`](/keys/messagedelay/) minutes, and re-arms the timer with [`SpeakDelay`](/keys/speakdelay/) minutes.
+The announcement plays the warning, shows its on-screen text for [`MessageDelay`](/keys/messagedelay/) minutes, and restarts the timer with [`SpeakDelay`](/keys/speakdelay/) minutes.
 
-The sidebar power bar is measured differently from the tally that runs the game. Its height comes from the type-level output and drain of every structure the player owns, leaving out the plugs, so a switched-off or half-destroyed structure still counts at its full rated figure. Only the split into colored bands is taken from the real tally. The bar can therefore look healthy while the base is running short of power.
+The height of the sidebar power bar grows with the size of the `Power=` rating of every structure the player owns, producers and consumers alike, leaving out plugs. A damaged or switched-off structure still adds its full rating to the height.
+
+The bar's colors follow the real totals. While the house is short of power, the whole bar is red. Otherwise, the drain shows red, the first 100 points of surplus show yellow, and any surplus beyond that shows green.
 
 ## Scripting
 
-The [Power Low](/mapping/events/tevent-low-power/) trigger event holds while the named house's fraction is below 1. The [Turn off building](/mapping/actions/taction-turn-off-attached/) and [Turn on building](/mapping/actions/taction-turn-on-attached/) actions reach the same switch the power cursor does, for every structure tagged with the trigger that is on the map. The first takes only the structures currently on and the second only those currently off, and a stunned structure refuses to come back on.
+The [Power Low](/mapping/events/tevent-low-power/) trigger event holds while the named house is short of power.
+
+The [Turn off building](/mapping/actions/taction-turn-off-attached/) and [Turn on building](/mapping/actions/taction-turn-on-attached/) actions use the same switch as the power cursor, for every structure on the map that carries the trigger's tag. Turn off building affects only structures that are on, and Turn on building only those that are off.
 
 ## Parsed settings without effect
 
-The production ladder above is fixed in the engine. [`WorstLowPowerBuildRateCoefficient`](/keys/worstlowpowerbuildratecoefficient/) and [`BestLowPowerBuildRateCoefficient`](/keys/bestlowpowerbuildratecoefficient/) in `[General]` are read into the rules and nothing reads them. The gentler hard-coded step is 0.75 (the figure `BestLowPowerBuildRateCoefficient` already defaults to), which is why moving that setting appears to do nothing.
+The production ladder above is fixed in the engine. [`WorstLowPowerBuildRateCoefficient`](/keys/worstlowpowerbuildratecoefficient/) and [`BestLowPowerBuildRateCoefficient`](/keys/bestlowpowerbuildratecoefficient/) in `[General]` are read but never used. Changing either setting has no effect. The ladder's fixed 0.75 step happens to equal the default of `BestLowPowerBuildRateCoefficient`.

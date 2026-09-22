@@ -23,13 +23,17 @@ related:
 
 ### Drop Pods superweapon
 
-The superweapon chooses an inclusive count between [`DropPodInfantryMinimum`](/keys/droppodinfantryminimum/) and [`DropPodInfantryMaximum`](/keys/droppodinfantrymaximum/). Each requested passenger is an elite `E1` or `E2`, selected with equal probability.
+The superweapon drops a squad of elite infantry around its target cell. The squad size is a random whole number from [`DropPodInfantryMinimum`](/keys/droppodinfantryminimum/) to [`DropPodInfantryMaximum`](/keys/droppodinfantrymaximum/), both included. Each soldier is an `E1` or an `E2` with equal chance. These two type names are fixed.
 
-The placement loop shares one budget of `3 * count` attempts across the whole squad. Every attempt consumes the budget, successful or not, so one hard-to-place passenger can use up attempts that other passengers would otherwise receive. The delivered count is lower when the budget runs out before enough nearby cells an infantryman can enter are found.
+The squad lands in a cluster. The first soldier is aimed at the enterable cell nearest the target. Each later soldier is aimed near an enterable cell next to the previous soldier's destination.
+
+The squad can arrive smaller than the chosen size. The superweapon allows three placement attempts per soldier, pooled across the squad, so a squad of four gets twelve attempts. An attempt fails when the soldier cannot enter the chosen cell or cannot be placed at the start of its fall. Each attempt creates a new soldier and discards it if the attempt fails. When a soldier cannot enter its chosen cell, the aim point stays where it was, so the next attempt starts from the same place. One blocked spot can therefore use up the rest of the pool.
 
 ### Droppod TeamType
 
-The other path is a reinforcement team. A **TeamType** is the INI definition a team is built from, and it names a **TaskForce**, the roster of object types and counts the team is filled with. [TeamTypes and AI triggers in brief](/systems/ai-team-production/#teamtypes-and-ai-triggers-in-brief) introduces both and the sections that declare them. [`Droppod=yes`](/keys/droppod-teamtype/) on the TeamType is what makes the reinforcement arrive by pod instead of on foot.
+The other path is a reinforcement team. A **TeamType** is the INI definition a team is built from, and it names a **TaskForce**, the roster of object types and counts the team is filled with. [TeamTypes and AI triggers in brief](/systems/ai-team-production/#teamtypes-and-ai-triggers-in-brief) introduces both and the sections that declare them.
+
+[`Droppod=yes`](/keys/droppod-teamtype/) on the TeamType makes the team arrive by pod. It applies only when the team is delivered by the [Reinforcement (team)](/mapping/actions/taction-reinforcements/) or [Reinforcement (team) [at waypoint]](/mapping/actions/taction-reinforcements-special/) trigger action. Teams the AI builds and recruits never arrive by pod.
 
 ```ini title="AI.INI, AIFS.INI, or map file"
 [TaskForces]
@@ -49,65 +53,82 @@ TaskForce=MyInfantryTaskForce
 Droppod=yes
 ```
 
-Every TaskForce member must resolve to an InfantryType. If any member resolves to a vehicle or aircraft type, reinforcement creation uses the configured waypoint or map-edge path instead; it does not drop the infantry subset.
+Every TaskForce member must be an InfantryType. If any member is another kind of type, such as a vehicle or aircraft, the whole team arrives as an ordinary reinforcement. Its infantry do not drop.
+
+The first member lands at the nearest usable cell to the team's waypoint, or to the waypoint the action names. Each later member is aimed at the cell north of the previous member's cell. When that cell is outside the playfield, the next neighbor clockwise is used instead. Those later cells are not checked for room, so a member aimed at a blocked cell can be destroyed on landing, as [Touchdown](#touchdown) describes.
 
 ## Approach and descent
 
-Both entry paths attach a temporary drop-pod locomotor. The passenger's current locomotor is retained through [piggybacking](/internals/locomotion/#piggybacking) and restored at touchdown.
+For the fall, each passenger gets a temporary drop-pod locomotor. Its usual locomotor is set aside through [piggybacking](/internals/locomotion/#piggybacking) and restored at touchdown.
 
 ### Approach selection
 
-The horizontal start offset is `DropPodHeight / tan(DropPodAngle)`. The engine checks candidates in this order:
+A pod starts above and to one side of its destination, then falls in a straight line onto it. The start point is [`DropPodHeight`](/keys/droppodheight/) above the ground at the destination, and `DropPodHeight / tan(DropPodAngle)` away horizontally.
 
-1. NE at `+X`;
-2. NW at `-X`;
-3. SE at `+Y`; then
-4. SW at `-Y` as an unconditional fallback.
+The engine tries four approaches in this order and uses the first whose start point lies over the [playable area](/glossary/#playable-area):
 
-The first three elevated start coordinates must lie inside the [playable area](/glossary/#playable-area). The SW coordinate is selected when all three checks fail, even when it is also outside that area.
+1. NE, offset along `+X`;
+2. NW, offset along `-X`;
+3. SE, offset along `+Y`;
+4. SW, offset along `-Y`.
 
-The direction settled here decides four things at once. It fixes which way the pod comes in, and so the sign of the horizontal step taken on every frame of the descent. The same direction picks one of the two frames in the hard-coded `POD.SHP` artwork, which is the pod's appearance for the whole fall. It picks the entry in [`DropPod`](/keys/droppod-global-rules/) that supplies the landing animation at touchdown. And it fixes the coordinate the [`AtmosphereEntry`](/keys/atmosphereentry/) animation is created at, which is the elevated start coordinate the pod is placed on.
+If the first three start points are all outside the playable area, the pod uses SW, even when that start point is outside it as well.
 
-The table sets the four directions against those choices. The pod frames repeat: NE and SE share one, NW and SW share the other, so the artwork distinguishes only the axis the pod is falling along. The landing slots do not repeat, so a four-entry `DropPod` list gives all four approaches distinct touchdown animations.
+The approach decides where the [`AtmosphereEntry`](/keys/atmosphereentry/) animation appears, since it is created at the start point. It also decides how the falling pod looks and which landing animation plays:
 
-| Direction | Offset axis | Hard-coded `POD.SHP` frame | `DropPod` landing slot with four entries | `AtmosphereEntry` effect |
-| --- | --- | ---: | ---: | --- |
-| NE | `+X` | 0 | 0 | Elevated NE start coordinate |
-| NW | `-X` | 1 | 1 | Elevated NW start coordinate |
-| SE | `+Y` | 0 | 2 | Elevated SE start coordinate |
-| SW | `-Y` | 1 | 3 | Elevated SW start coordinate |
+| Approach | Start offset | `POD.SHP` frame while falling | [`DropPod`](/keys/droppod-global-rules/) entry with four entries |
+| --- | --- | ---: | ---: |
+| NE | `+X` | 0 | 0 |
+| NW | `-X` | 1 | 1 |
+| SE | `+Y` | 0 | 2 |
+| SW | `-Y` | 1 | 3 |
+
+While it falls, the passenger is drawn as a frame of `POD.SHP` in place of its own art. The file name is fixed. Only frames 0 and 1 are used: NE and SE show frame 0, and NW and SW show frame 1.
+
+Number the approaches 0 to 3 in the order above. The landing animation is the `DropPod` entry at that number, wrapping back to the first entry past the end of the list. A four-entry list gives each approach its own animation. With two entries, NE and SE share the first and NW and SW share the second. A single entry serves every approach.
 
 ### Descent and airborne effects
 
 ```ini title="rules.ini"
 [General]
-DropPodHeight=1500
+DropPodHeight=1500   ; example values; the key pages give the defaults
 DropPodSpeed=40
 DropPodAngle=0.785398
 ```
 
-[`DropPodAngle`](/keys/droppodangle/) is in radians and is clamped to 22.5 through 67.5 degrees. Per-frame speed is the greater of [`DropPodSpeed`](/keys/droppodspeed/) and `height above ground / 10 + 2`. The horizontal component is `cos(DropPodAngle) * speed`; descent is `sin(DropPodAngle) * speed`.
+[`DropPodAngle`](/keys/droppodangle/) is the fall's angle above the horizontal, in radians. The engine clamps it to 22.5 through 67.5 degrees. A larger angle gives a steeper fall that starts closer to the destination.
 
-The hard-coded `POD.SHP` frame in the table is used while the passenger is airborne. When the first elevated placement succeeds, the engine also creates the configured `AtmosphereEntry` animation at that coordinate. A failed first placement is repeated once without creating this effect.
+Each frame the pod travels `speed` along its line, where `speed` is the larger of [`DropPodSpeed`](/keys/droppodspeed/) and `height above ground / 10 + 2`. A pod high above the ground therefore falls fast and slows to `DropPodSpeed` near the ground. Of that distance, `cos(DropPodAngle) * speed` is horizontal and `sin(DropPodAngle) * speed` is vertical.
 
-The [`DropPodWeapon`](/keys/droppodweapon/) branch controls both airborne effects:
+The `AtmosphereEntry` animation appears only if the passenger is placed at the start point on the first try. The engine tries once more when that placement fails, but creates no animation on the second try.
 
-- Every six frames, it creates the hard-coded `SMOKEY` animation at the pod's trail position.
-- Every three frames, it reads whatever vehicle, infantryman, aircraft or structure stands in the destination cell, and fires unless that object is allied to the passenger's house. A cell nobody is standing in receives covering fire all the same.
-- The impact coordinate is scattered within radius 85 of the destination. The passenger is the source of raw `2 * Damage` applied with the weapon's warhead. The weapon report plays, and the matching clear-land combat animation is created at the impact coordinate.
+[`DropPodWeapon`](/keys/droppodweapon/) adds two effects while the pod is in the air:
 
-The whole `DropPodWeapon` branch applies area damage directly: no projectile is created, and neither the weapon's range nor its rate of fire is read. A null `DropPodWeapon` skips the entire branch, including `SMOKEY`.
+- Every six frames, the `SMOKEY` animation, a fixed name, appears at the pod's position.
+- Every three frames, the pod fires on its destination unless the object standing there is allied to the passenger's owner. An empty destination cell is fired on as well. When several objects share the cell, only one of them is checked.
+
+Each shot lands one third of a cell from the destination, in a random direction. It explodes for twice the weapon's `Damage`, using the weapon's `Warhead`, with the passenger as the attacker. The weapon's `Report` sound plays at the pod, and the warhead's clear-ground explosion animation for that damage plays at the impact point.
+
+Allied objects near the impact point still take damage. The ally check covers only the one object tested in the destination cell.
+
+No projectile is fired, and the weapon's range and rate of fire have no effect. Without a `DropPodWeapon`, the pod fires nothing and leaves no `SMOKEY` trail.
 
 ## Touchdown
 
-At ground contact, the passenger enters [limbo](/glossary/#limbo), the previous locomotor replaces the piggyback locomotor, and the engine attempts to place the passenger at the current ground-contact coordinate. Successful placement creates the landing animation selected by the approach direction, enters idle behavior, and scatters the passenger.
+When the pod reaches the ground, the passenger's usual locomotor returns and the engine places the passenger where the pod landed. A placed passenger gets the landing animation its approach selected, goes idle, and scatters from the landing point.
 
-:::danger[Provide at least one landing animation]
-The landing branch selects from `DropPod` using `direction % list length`. An absent or empty list makes the selection a division by zero, and the game crashes as the first pod touches down. Four entries give NE, NW, SE, and SW distinct landing slots as shown above.
+:::danger[Configure the pod animations]
+Give `DropPod` at least one entry. If the list is absent or empty, the game crashes the first time a passenger is placed at touchdown.
+
+Also set `AtmosphereEntry`. If it is unset, the game crashes the first time a passenger is placed at the start of its fall.
+
+Give `DropPodWeapon` a nonzero `Damage` and a warhead that lists at least one `AnimList` animation. Otherwise the game crashes on the pod's first shot.
+
+Give [`C4Warhead`](/keys/c4warhead/) at least one `AnimList` animation. If it is unset or lists none, the game crashes at the first blocked touchdown.
 :::
 
 :::caution[A blocked touchdown destroys the passenger]
-If the restored locomotor cannot place the passenger, the engine applies raw damage 100 at the current ground-contact coordinate with the passenger as the source and [`C4Warhead`](/keys/c4warhead/) as the warhead. Standard 1.5-cell explosion processing can damage nearby objects, and a clear-land combat animation is selected from the same damage and warhead. The passenger is then deleted; the configured landing animation, idle transition, and scatter do not run. Actual HP loss depends on distance, armor, and the warhead's behavior.
+If the passenger cannot be placed where the pod lands, it is destroyed. The landing point takes an explosion of 100 damage with [`C4Warhead`](/keys/c4warhead/), with the passenger as the attacker. The explosion can damage objects within 1.5 cells, and the actual loss depends on distance, armor, and the warhead. The warhead's clear-ground animation plays, but the `DropPod` landing animation does not.
 :::
 
 :::caution[Preserve the exact key spelling]

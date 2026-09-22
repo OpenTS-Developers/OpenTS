@@ -57,73 +57,75 @@ related:
     id: crates
 ---
 
-A map seed is not a map. It has no cells, no tiles and no waypoints. It holds twenty settings, and the generator turns those into terrain, water, cliffs, roads, buildings, tiberium and one starting position per player. [Map seed files](/formats/map-seed/) owns the file itself: how it is recognized, what its one section is called, and why the two size settings are indices rather than cell counts. This page owns what happens once it has been read.
+The random map generator builds a map from a map seed. A seed holds twenty settings and no map data: no cells, no tiles and no waypoints. From those settings the generator makes the terrain, water, cliffs, roads, buildings, tiberium and one start point per player. [Map seed files](/formats/map-seed/) covers the file itself, including how it is recognized and why the two size settings are indices, not cell counts. This page covers what the generator does with the settings.
 
-A seed is one section holding the whole set:
+A seed is one `[RandomMap]` section holding all twenty:
 
 ```ini title="map seed file"
 [RandomMap]
 Description=Four-player temperate map
-Width=2            ; size index; the tables turn it into a cell count
+Width=2            ; size index from 0 to 3, not a cell count
 Height=2
-NumPlayers=4       ; picks the row of minimum and maximum sizes, and the start-point count
-Seed=90210         ; the state every random draw in every pass starts from
-Biome=2            ; selects the theater and its light scale
-Time=1             ; selects the hour's ambient level and the floodlight count
-RegionSize=40      ; the dry-region size that splitting halves
-Ruggedness=4       ; fixes the hill walk's step size and wander
-Accessibility=50   ; the chance a region pair asks for extra ramps
-WaterAmount=30     ; the budget the lake and river routines spend
-Tiberium=10        ; how much tiberium each field receives
-TiberiumLayout=50  ; how long the layout spread, and so how many fields, runs
-Vegetation=50      ; scales the green and woods ground-cover chances
-UrbanPresence=50   ; buys the settlements a biome admits
-VeinholeMonsters=4 ; how many veinholes the pass asks for
-TiberiumWildlife=1 ; scales each field's creature budget
-UseIonStorms=yes   ; loads ION.INI and registers its triggers
+NumPlayers=4       ; start points, and the row of map sizes Width and Height pick from
+Seed=9021          ; starts the generator's random sequence
+Biome=2            ; theater and ground cover; 2 is temperate
+Time=1             ; ambient light and floodlights; 1 is afternoon
+RegionSize=40      ; how large a piece of ground may stay at one height
+Ruggedness=4       ; how far hills rise and fall
+Accessibility=50   ; chance that two regions get extra ramps between them
+WaterAmount=30     ; how much water the river and lake may lay
+Tiberium=10        ; how much tiberium the fields across the map receive
+TiberiumLayout=50  ; how many tiberium fields are spread across the map
+Vegetation=50      ; chance of green ground and woods
+UrbanPresence=2    ; how many settlements are attempted
+VeinholeMonsters=4 ; how many veinhole monsters are attempted
+TiberiumWildlife=30 ; creature budget of each tiberium field
+UseIonStorms=yes   ; loads ION.INI
 UseBlueTiberium=no
-UseTransitions=no  ; loads the hour's settings file and registers its triggers
+UseTransitions=no  ; loads the hour's settings file
 ```
 
-Two things govern everything below. The passes run in one fixed order, and each reads a known handful of the twenty settings. A setting that appears to do nothing is usually a setting whose pass this particular seed never reaches. Every random choice in generation comes from one sequence started from [`Seed`](/keys/seed/), so two maps built from identical settings come out identical cell for cell. Changing any setting that alters how many draws an earlier pass makes changes everything after it too.
+The passes run in a fixed order, and each reads only a few of the settings. If a setting seems to do nothing, check whether this seed skips the pass that reads it. [The passes in order](#the-passes-in-order) lists the conditions.
+
+The generator makes every random choice from one sequence started from [`Seed`](/keys/seed/). The same settings with the same game data build the same map, cell for cell. A setting that changes how many random choices an early pass makes also changes every pass after it, so a small change can reshape the whole map.
 
 ## The dialog path and the scenario path
 
-A seed reaches the generator by two routes that share the passes and nothing else. The table sets both out. The last column matters most, because the map a player fights on is never the map the dialog built.
+A seed reaches the generator by one of two routes. Both run the same passes, but only the scenario route builds a map that is played.
 
-| Route | How the settings arrive | What is generated |
+| Route | Where the settings come from | What is built |
 | --- | --- | --- |
-| The map generator dialog | Taken off the dialog controls, rolled by its randomize button, or loaded from a saved seed and written back into the controls. All three of those actions hold every setting inside its legal range | A preview. The previous scenario is torn down first, down to its objects, houses, theater and tile artwork, and rebuilt around the new map. A thumbnail is drawn from the result |
-| Starting a scenario whose filename ends `.SED`, or whose `[Basic]` section sets [`RandomMap=yes`](/keys/randommap/) | Read straight out of the file's `[RandomMap]` section, over whatever the generator's settings currently hold, then held to the ranges the dialog allows. A `RandomMap=yes` file is built from the match's own seed instead of its `Seed` | The map that is played. It is generated into the scenario already being loaded, with no teardown. A `RandomMap=yes` file's other sections apply to it |
+| The map generator dialog | The dialog's controls. Loading a saved seed or pressing the randomize button fills the controls first | A preview and its thumbnail. The dialog clears the previous map before each build |
+| A scenario whose filename ends `.SED`, or whose `[Basic]` section sets [`RandomMap=yes`](/keys/randommap/) | The file's `[RandomMap]` section. A setting the section leaves out takes its default. A `RandomMap=yes` file uses the match's seed instead of the section's `Seed` | The map that is played, built while the scenario loads. The `RandomMap=yes` page explains which of the file's other sections still apply |
 
-Accepting the dialog does not hand its map to the game. It writes the settings out to `RandMap.Sed` and registers that file in the scenario list. The lobby then starts `RandMap.Sed` as a scenario, and the second route builds the map over again from the same settings. The preview exists to be looked at, and is discarded.
+The preview is never played. Accepting the dialog saves its settings to `RandMap.Sed` and adds that file to the lobby's scenario list. When the match starts, the scenario route builds the map again from those settings.
 
-Recognizing a generated scenario carries weight beyond the generator, too. A `.SED` name or `RandomMap=yes` marks the scenario as a generated one for the rest of the load. That is what keeps a tile set marked [`RequiredForRMG=yes`](/keys/requiredforrmg/) resident when the loader trims artwork no cell is using yet.
+Accepting the dialog builds a preview only when none has been built since the dialog opened. Otherwise it reuses the last preview. If a setting changed after the last preview, the lobby thumbnail still shows the older map, while the match uses the new settings.
 
-The check that holds each setting to its limits runs four times: when the dialog is read, when it is filled in, when its randomize button rolls a fresh set, and when a seed file is read as a scenario starts.
+Both routes hold every setting to its legal range before a map is built. The dialog does this whenever it reads its controls, fills them in or rolls a random set. The scenario route does it after reading the file. Each setting's key page gives its range.
 
 ## Sizing and the blank map
 
-The first pass turns the seed into a blank scenario for the rest of them to work on.
+The first pass builds the blank map that the other passes work on.
 
-The playable area is measured first. [`NumPlayers`](/keys/numplayers/#scope-random-map-generation) picks a row of minimum and maximum figures, and [`Width`](/keys/width/#scope-random-map-generation) and [`Height`](/keys/height/#scope-random-map-generation) each interpolate within that row. The table of figures is on the [map seed](/formats/map-seed/) page. The playfield is then written four cells wider and twelve taller, with the playable area inset two columns and five rows inside it. The border a generated map has is therefore fixed, and is not a function of any setting.
+[`NumPlayers`](/keys/numplayers/#scope-random-map-generation) selects a row of minimum and maximum sizes, and [`Width`](/keys/width/#scope-random-map-generation) and [`Height`](/keys/height/#scope-random-map-generation) each pick a point within that row. [Map seed files](/formats/map-seed/) has the table. The result is the playable area. The playfield is four cells wider and twelve cells taller, with the playable area inset two columns and five rows. No setting changes that border.
 
-[`Biome`](/keys/biome/) chooses the theater, which is snow for tundra and taiga and temperate for the other three, and the light scale that theater uses. Every biome fills with the same `Clear` ground, so the fill is fixed too. [`Time`](/keys/time/) chooses the hour's ambient level. Those settings, the playfield, the playable area and a starting ground level of 4 are written into a scenario held in memory, which the scenario route then reads back as though it were a map file. What comes out is a map every cell of which is clear ground at one height. A per-cell working grid is allocated beside it to hold the region numbers, heights and ground-cover chances the later passes accumulate.
+[`Biome`](/keys/biome/) selects the theater: snow for tundra and taiga, temperate for the other three. [`Time`](/keys/time/) selects the ambient light level. Every cell starts as `Clear` ground at height 4, whatever the biome.
 
-Two settings pull outside material in at this point, both of them before a single cell of terrain is placed:
+Two settings load extra files before any terrain is placed:
 
-- [`UseTransitions=yes`](/keys/usetransitions/) loads the settings file belonging to the hour (`MORNING.INI`, `DAY.INI`, `DUSK.INI` or `NIGHT.INI`) and registers its trigger types and tag types.
-- [`UseIonStorms=yes`](/keys/useionstorms/) loads `ION.INI` and applies its `[General]` section over the loaded rules. It takes [`IonAmbient`](/keys/ionambient/#scope-random-map-generation), [`IonRed`](/keys/ionred/#scope-random-map-generation), [`IonGreen`](/keys/iongreen/#scope-random-map-generation), [`IonBlue`](/keys/ionblue/#scope-random-map-generation), [`IonGround`](/keys/ionground/#scope-random-map-generation) and [`IonLevel`](/keys/ionlevel/#scope-random-map-generation) from its `[Lighting]` section, and registers its trigger types and tag types. [Ion storms](/systems/ion-storms/#random-maps) covers what those triggers then do.
+- [`UseTransitions=yes`](/keys/usetransitions/) loads the hour's settings file: `MORNING.INI`, `DAY.INI`, `DUSK.INI` or `NIGHT.INI`. The map takes its trigger types, tag types and local variables. Its local variables replace any that the scenario file named.
+- [`UseIonStorms=yes`](/keys/useionstorms/) loads `ION.INI` and applies its `[General]` section over the loaded rules. The map takes [`IonAmbient`](/keys/ionambient/#scope-random-map-generation), [`IonRed`](/keys/ionred/#scope-random-map-generation), [`IonGreen`](/keys/iongreen/#scope-random-map-generation), [`IonBlue`](/keys/ionblue/#scope-random-map-generation), [`IonGround`](/keys/ionground/#scope-random-map-generation) and [`IonLevel`](/keys/ionlevel/#scope-random-map-generation) from its `[Lighting]` section, along with its trigger types and tag types. [Ion storms](/systems/ion-storms/#random-maps) covers what those triggers do.
 
-One draw is also made here rather than in the pass that uses it. Whether this map's rivers may end in a waterfall is rolled once, at one chance in four, and holds for the whole map.
+This pass also decides, with one chance in four, whether a river on this map may have a waterfall.
 
-:::caution[The snow theater's light cut does not reach the level an ion storm restores]
-The ambient level written into the map is the hour's level cut by a quarter in the snow theater, and that is the level a generated map is lit at. The generator separately records the hour's level *without* that cut as the scenario's base ambient light. That is the value the end of an ion storm restores the map to. On a tundra or taiga map with `UseIonStorms=yes`, the first storm to pass therefore leaves the map permanently brighter than it began.
+:::caution[An ion storm leaves a snow map brighter than it started]
+A tundra or taiga map is lit at three quarters of the hour's ambient level. The level an ion storm restores when it ends is the hour's full level. On a snow map with `UseIonStorms=yes`, the first storm to end therefore leaves the map brighter than it began.
 :::
 
 ## The passes in order
 
-The table lists every pass in the order it runs, with the settings each one reads. The hills are raised late, after the tiberium, the towns and the roads are already down, so the ground those passes chose is not quite the ground that ends up beneath them. And [`Description`](/keys/description/#scope-random-map-generation) appears nowhere in it: it is the one assignment of the twenty that no pass reads.
+The passes run in the order below. Each reads only the settings listed beside it. No pass reads [`Description`](/keys/description/#scope-random-map-generation).
 
 | Pass | Settings it reads |
 | --- | --- |
@@ -139,89 +141,162 @@ The table lists every pass in the order it runs, with the settings each one read
 | Hills | `Ruggedness` |
 | Ground cover | `Vegetation`, `Biome`, `Width`, `Height` |
 
-Most of those passes can be skipped outright, and nearly every condition that skips one is the biome. The table below gives each condition. A reader whose setting appears to do nothing can check first whether its pass ran at all.
+Many passes and branches run only under a condition, and most of those conditions are the biome:
 
 | Pass or branch | Runs only when |
 | --- | --- |
-| The water pass as a whole | [`WaterAmount`](/keys/wateramount/) is not `0` |
-| The river within it | `WaterAmount` is above `20`, and the biome is not desert |
+| The water pass | [`WaterAmount`](/keys/wateramount/) is not `0` |
+| The river | `WaterAmount` is above `20`, and the biome is not desert |
 | The arctic lake and river, which lay ice | The biome is tundra; taiga uses the ordinary ones |
 | Ice smoothing | The biome is tundra |
-| Region splitting, which is where a generated map's cliffs come from | The biome is **not** tundra |
+| Region splitting, the source of a generated map's cliffs | The biome is **not** tundra |
+| Floodlights | `Time` is dusk or night, or `UseTransitions=yes` |
 | Veinholes | The theater is not arctic, so never on tundra or taiga |
-| Creatures in a tiberium field | The Firestorm addon is present, and the field is not one of the start-point fields |
+| Creatures in a tiberium field | The Firestorm addon is present, and the field is not a start-point field |
 | Urban areas | The biome is temperate, desert or mutated |
 | Rural settlements | The biome is tundra or taiga |
 | Mold and crystal growths | The biome is mutated |
+| Scattered rock overlays | The biome is temperate, desert or mutated |
 | The hill height walk | [`Ruggedness`](/keys/ruggedness/) is at least `2` |
 
 ## Water
 
-The water pass spends a budget rather than filling a proportion. The budget is [`WaterAmount`](/keys/wateramount/) multiplied by the playable area and by a factor chosen per biome, with a hundred cells added on top. The lake and river routines spend against it and stop when it runs out.
+[`WaterAmount`](/keys/wateramount/) sets a budget of water cells, not a share of the map. The budget is `WaterAmount` times the playable area times a factor for the biome, plus 100 cells. The river and the lake each spend from that budget.
 
-A river is attempted first, up to ten times, and only on a wet enough map that is not desert. A lake follows, also up to ten times. Tundra uses arctic variants of both, which lay ice rather than open water; the ice smoothing pass afterwards has to blend them into the ground around them. Taiga is also a snow-theater map, but it gets the ordinary lake and river and no ice at all. On the mutated biome up to two stretches of a lake are then soured into swamp. Both routines read the theater's [`WaterSet`](/keys/waterset/) to decide what already counts as water. A river that reaches a drop in height may finish in a waterfall, where the once-per-map roll allowed one.
+The pass tries to lay one river and then one lake, making up to ten attempts at each. On tundra both are arctic variants that lay ice instead of open water, and the ice smoothing pass then blends the ice into the ground around it. Taiga is also a snow map, but it gets the ordinary river and lake and no ice.
 
-The pass leaves the map's water recorded as regions in the working grid rather than as loose cells. That is what lets the next pass treat a lake as a single object and span it with bridges.
+Open water uses tiles from the theater's [`WaterSet`](/keys/waterset/). On the mutated biome, up to two stretches of the lake are turned into swamp. An ordinary river can include one waterfall, but only on a map where the one-in-four roll allowed waterfalls. A tundra river never has one.
 
 ## Regions, cliffs and ramps
 
-A **region** here is a group of connected cells that the generator holds at one ground height. The pass builds them in three stages.
+A **region** is a group of connected cells at one ground height. Regions decide where a generated map has cliffs, ramps and bridges. The pass builds them in three steps:
 
-The water just laid becomes regions of its own first, each grown four rings outward and allowed to absorb the ground it reaches. Everything left over is then carved into land regions. Finally, any dry region larger than the limit [`RegionSize`](/keys/regionsize/) sets is split in two, with one half moved to a new height, and the splitting repeats until nothing oversized is left. The cliff faces of a generated map are a by-product of that last stage; nothing places a cliff directly. The stage is skipped altogether on tundra, which is why the setting changes nothing there.
+1. Each body of water becomes a region and grows four cells outward into the ground around it.
+2. The remaining ground is divided into land regions.
+3. Any dry region larger than the limit [`RegionSize`](/keys/regionsize/) sets is split in two, and one half moves to a new height. Splitting repeats until no dry region is over the limit. A higher `RegionSize` allows larger regions, so the map has fewer height changes.
 
-Once the heights have settled, every region works out which regions it borders and connects itself to them. A water region spans itself with bridges to the dry land on either side, and only where both sides stand at the water's own height. A dry region instead carves ramps down to each lower neighbor. One ramp is always asked for, and [`Accessibility`](/keys/accessibility/) is the chance, rolled once per pair, that the pair asks for one or two more. The artwork comes from the theater, and the roles that describe rock face ([`CliffRamps`](/keys/clifframps/) among them) are what tell the generator which tiles it must not build over while it works.
+Nothing places a cliff directly. Cliffs form where the regions from step 3 meet at different heights. Tundra skips step 3, so `RegionSize` has no effect there.
+
+The pass then connects neighboring regions:
+
+- A water region gets bridges between the dry regions on its banks, but only where both banks stand at the water's height.
+- Where two dry regions meet at different heights, the generator tries to carve one ramp between them. With a chance of about [`Accessibility`](/keys/accessibility/) percent, rolled once per pair, it tries for one or two more. A pair can get fewer ramps than requested when no suitable spot is found.
+
+Ramp and cliff artwork comes from the theater. Tiles from the cliff roles, including [`CliffRamps`](/keys/clifframps/), count as rock face, and the generator does not build over them.
 
 ## Start points and the layout spread
 
-The start points are chosen only now, out of the finished terrain, and they are chosen together with the tiberium field sites.
+The start points are chosen from the finished terrain, in the same step as the tiberium field sites:
 
-Fifteen candidate cells per player are gathered from the large regions that are mutually reachable. Each candidate needs a ten-by-ten block that a paved road could be laid in, and a position at least four cells inside the playable area. The most widely separated of those candidates are then picked out as a single spread, with cells lying in different regions treated as further apart than they are, so that the picks favor separate pieces of ground. The first [`NumPlayers`](/keys/numplayers/#scope-random-map-generation) cells of that spread become the start waypoints. What remains of it is the tiberium layout, and [`TiberiumLayout`](/keys/tiberiumlayout/) is what decided how long the spread was to begin with.
+1. The generator gathers fifteen candidate cells per player. It takes them from the large regions that can reach one another over ground, or from anywhere on the map when no region qualifies. Each candidate must be at least four cells inside the playable area, with a ten-by-ten block around it where a paved road could be laid.
+2. From the candidates it picks a spread of cells as far apart as possible. Cells in different regions count as farther apart than they are, so the picks favor separate pieces of ground.
+3. The first [`NumPlayers`](/keys/numplayers/#scope-random-map-generation) cells of the spread become the start points. The rest become the tiberium field sites. [`TiberiumLayout`](/keys/tiberiumlayout/) sets how long the spread is, and so how many field sites remain.
 
-Each start point then has to flood exactly four hundred clear cells around itself. Every cell that flood reaches is marked **protected**, a per-cell flag the later placement passes avoid. That is what keeps towns, veinholes and ground cover out of a player's opening room. If any player's flood runs dry short of four hundred, the whole selection is thrown away and made again from the next state of the random sequence, with the terrain kept as it stands. Nothing caps that retry.
+Each start point then claims the 400 nearest clear cells as **protected** ground. Protected ground gets no tiberium, no veinhole and no tree, and no ground-cover patch starts on it. The settlement passes avoid it, and hills do not raise or lower it.
+
+Protected ground can still receive some ground cover. A patch that starts nearby can spread onto it, and scattered rough-ground tiles and rock overlays can land on it.
+
+If any start point cannot reach 400 clear cells, the generator discards all the start points and picks again from the next values in the random sequence. The terrain stays as it is. Nothing limits the number of retries.
 
 ## Floodlights, veinholes and tiberium
 
 Three placement passes follow, in this order.
 
-The floodlight pass rings each start point with civilian lights, in a number [`Time`](/keys/time/) fixes and [`UseTransitions=yes`](/keys/usetransitions/) overrides. A ring goes down only where every light in it can legally stand, and twenty-one ring angles are tried before a start point is left dark.
+### Floodlights
 
-The veinhole pass asks for [`VeinholeMonsters`](/keys/veinholemonsters/) monsters, with at most two hundred attempts made in total, so a crowded map simply ends up with fewer of them. Each attempt draws a cell and accepts it only when all of these hold, in this order:
+The floodlight pass rings each start point with `GALITE` structures, eight cells out. [`Time`](/keys/time/) sets how many: none in the morning or afternoon, two at dusk and four at night. [`UseTransitions=yes`](/keys/usetransitions/) always gives four and attaches the hour file's `Light On/Off` tag to each. A ring is placed only where every light in it can stand. The generator tries 21 ring angles before it leaves a start point unlit.
 
-1. The five-by-five block centered on the cell, and the ring of cells around that block, lie within the playable area.
+### Veinholes
+
+The veinhole pass tries to place [`VeinholeMonsters`](/keys/veinholemonsters/) monsters. It makes at most 200 attempts in total, so a crowded map gets fewer. Each attempt picks a random clear cell and accepts it only when all of these hold, tested in this order:
+
+1. The five-by-five block centered on the cell, plus a one-cell margin around it, lies within the playable area.
 2. **All of:**
    - no cell of the block is protected ground;
-   - every cell of the block is clear tile, stands at the block's own height, and has no overlay.
+   - every cell of the block is clear ground at the center's height, with no overlay.
 3. The [veinhole placement test](/systems/veins/#placement) accepts the cell.
 
-An accepted cell takes the veinhole overlay, its eight neighbors take the dummy overlay, and the border of the block is given a starting ring of veins.
+An accepted cell takes the `VEINHOLE` overlay, and its eight neighbors take `VEINHOLEDUMMY`. Veins are placed on the outer ring of the five-by-five block.
 
-The tiberium pass grows every cell of the layout spread into a field, and then gives each player a compensating field at their own start point. That field's size is the difference between the player's mean distance to the layout sites and the smallest such mean among all the players, multiplied by fifteen, plus a flat five hundred. The player sitting farthest from the map's tiberium therefore gets the largest field on their doorstep, and the closest player gets the bare five hundred. [`Tiberium`](/keys/tiberium/#scope-random-map-generation) sets how much tiberium each field receives, and [`TiberiumLayout`](/keys/tiberiumlayout/) sets how many fields the spread leaves.
+### Tiberium
 
-A field grows outward from its site over open ground, thickening tiberium already there rather than overwriting it, and starts over from its origin up to ten times if the growth stalls early. Which overlay set it grows is settled per field. With [`UseBlueTiberium`](/keys/usebluetiberium/) clear, every field grows the first set; with it set, each layout field is rolled for separately. The start-point fields are handled differently. One roll covers all of them, so every player's opening field grows the same set as every other player's, and that same roll also decides whether a tiberium tree is planted at the heart of each.
+The tiberium pass grows a field at every layout site, then one at each start point.
 
-:::danger[A field's creature budget is either nothing or more than it can spend]
-[`TiberiumWildlife`](/keys/tiberiumwildlife/) scales a budget drawn once per field from five outcomes. Two of the five were meant to come out negative and be discarded, but the subtraction runs in unsigned arithmetic and wraps them to about four thousand million instead. At the `30` the map generator dialog's check box writes, the three surviving outcomes truncate to no creatures at all. The two wrapped ones scale to something above a thousand million, a budget no field can exhaust, so the field goes on turning a creature loose at intervals for as long as it keeps growing. A field therefore gets either nothing or a stream, and the one or two creatures the draw was shaped to give never occur. That is not the same as nothing ever being placed: a map built at the check box's figure does have creatures, on roughly two of its spread fields in five.
+The layout fields share an amount of tiberium set by [`Tiberium`](/keys/tiberium/#scope-random-map-generation) and `NumPlayers`. It is divided evenly among them, with a small random variation per field, so more fields means smaller ones.
+
+Each player's start field has a size of 500, plus 15 for every cell the player sits farther from the layout sites, on average, than the closest player does. The player farthest from the map's tiberium gets the largest start field, and the closest player gets 500. `Tiberium` does not change start fields.
+
+A start field's site is the start point, inside the player's protected ground. Protected ground takes no tiberium, so the field grows from the edge of that ground.
+
+A field grows outward from its site over clear ground in the playable area. It covers bare cells and thickens tiberium already there.
+
+If growth runs out of room before the field reaches its size, the field starts again from its site. It gets at most nine attempts in all, and a field still short after the last one stays short.
+
+Each field grows one of two tiberium overlay sets:
+
+- With [`UseBlueTiberium=no`](/keys/usebluetiberium/), every field grows the first set.
+- With `UseBlueTiberium=yes`, each layout field is rolled separately, with about a 70 percent chance of the first set. All start fields share one roll, with about a 75 percent chance of the first set, so every player starts beside the same kind.
+
+A start field that grows the first set also gets a tiberium tree at its first cell. A layout field that grows the first set has about a one-in-four chance of one.
+
+:::caution[At the dialog's setting, a field gets no creatures or a steady stream]
+The map generator dialog's check box writes `TiberiumWildlife=30`. At that figure, each layout field's creature budget comes out as zero in three draws out of five. In the other two it is effectively unlimited, because of an arithmetic error that [`TiberiumWildlife`](/keys/tiberiumwildlife/) explains. A field with the unlimited budget keeps releasing creatures for as long as it grows. On a map built at the dialog's setting, about two layout fields in five have creatures and the rest have none.
 :::
 
 ## Settlements
 
-[`UrbanPresence`](/keys/urbanpresence/) buys different things on different biomes. Tundra and taiga get rural settlements: a dirt road junction on open unprotected ground, a handful of civilian buildings along the roads grown from it, and a few civilian vehicles. Temperate, desert and mutated get urban areas: a paved district flood-filled outward from a cell, with its own road network, buildings, traffic and a pavement blend around the edge. Both branches give up after ten attempts, however many were asked for. The key page covers what that ceiling does to the range.
+[`UrbanPresence`](/keys/urbanpresence/) places a different kind of settlement on each group of biomes:
 
-Both draw their road pieces from the theater. The rural branch works from a library counted off [`DirtRoadCurve`](/keys/dirtroadcurve/) and opens each network on a shape from [`DirtRoadJunction`](/keys/dirtroadjunction/). The urban branch lays numbered pieces counted off [`PavedRoads`](/keys/pavedroads/) and caps each run with a piece from [`PavedRoadEnds`](/keys/pavedroadends/). Neither branch ever selects a ramp piece. That is why [`DirtRoadSlopes`](/keys/dirtroadslopes/) and [`PavedRoadSlopes`](/keys/pavedroadslopes/) are inert, and a generated road stops at a slope rather than climbing it.
+- **Tundra and taiga** get rural settlements. Each is a dirt road junction on open, unprotected ground, with a few civilian buildings along its roads and a few civilian vehicles.
+- **Temperate, desert and mutated** get urban areas. Each is a paved district grown outward from a cell, with roads, buildings, traffic and a pavement edge.
 
-:::caution[The urban branch can never fall back to a rural settlement]
-The urban pass has a branch that would place a rural settlement instead, taken against a chance of one minus the setting. The setting is a whole number from `0` to `100` rather than a fraction. That chance is zero at `UrbanPresence=1` and negative above it, so the branch is never taken. At `UrbanPresence=0` the pass asks for nothing and stops before it could be. A temperate, desert or mutated map therefore only ever receives urban areas.
+Either pass stops after ten attempts, however many settlements were asked for. The `UrbanPresence` page explains what that ceiling does to the setting's useful range.
+
+Road pieces come from the theater. Rural roads use pieces counted from [`DirtRoadCurve`](/keys/dirtroadcurve/), and each network starts on a junction from [`DirtRoadJunction`](/keys/dirtroadjunction/). Urban roads use pieces counted from [`PavedRoads`](/keys/pavedroads/), and each run ends with a piece from [`PavedRoadEnds`](/keys/pavedroadends/). Neither pass ever selects a ramp piece, so [`DirtRoadSlopes`](/keys/dirtroadslopes/) and [`PavedRoadSlopes`](/keys/pavedroadslopes/) have no effect, and a generated road stops at a slope.
+
+:::note[Temperate, desert and mutated maps get no rural settlements]
+The urban pass contains a branch that would place a rural settlement, with a chance of one minus `UrbanPresence`. The setting is a whole number from `0` to `100`, so that chance is zero or less at every value from `1` up, and at `0` the pass places nothing. These three biomes therefore only ever receive urban areas.
 :::
 
 ## Hills and ground cover
 
-The hills come after all of the above. Cells beside a shoreline or a cliff face are pinned down first, so the walk that follows cannot raise a hill into the water or bury an existing cliff. That walk then sweeps the map, giving each cell a height drawn from the neighbors already settled. [`Ruggedness`](/keys/ruggedness/) fixes both the size of each step and how far the walk may wander around it. The terrain is finally stepped up or down one level at a time to meet the result, with the smoothing system cutting slopes and ramps in as it goes. Below `Ruggedness=2` the walk is skipped and no cell is given an offset at all.
+### Hills
 
-Ground cover is last. Each cell is first given four chances: green ground, rough ground, sand and woods. [`Vegetation`](/keys/vegetation/) scales the green and the woods alone, and those two are multiplied tenfold again along a shoreline. Each cell is then rolled against the four in that order, and the first to come up decides what the cell gets. A cell is considered only while it is clear tile, has no ramp and no overlay, has nothing standing on it and is not protected ground. A mutated map has its mold and crystal growths laid down before this, in numbers derived from the two size indices, and desert and mutated maps also get a scatter of loose rough ground first. The pass finishes by fixing up the transition tiles and littering the map with rock overlays.
+Hills are raised after the tiberium, settlements and roads are in place. Those features keep their height, and the ground around them rises and falls. A cell keeps its height if any of these holds:
+
+- it holds an overlay, such as tiberium or veins;
+- something stands on it, such as a building, a tree or a creature;
+- it is protected ground;
+- its tile comes from a set without [`Morphable=yes`](/keys/morphable/).
+
+Before the hills are worked out, one clear cell beside each shore tile and each cliff tile is also protected.
+
+Each remaining cell then gets a height offset drawn from the offsets of its neighbors, which makes the ground roll instead of jump. Offsets range from two levels down to two levels up. [`Ruggedness`](/keys/ruggedness/) sets both the size of each step and how far the offsets may wander. The terrain is then raised or lowered one level at a time to meet the offsets, with slopes cut in as it changes. Below `Ruggedness=2` this walk is skipped, and the terrain keeps the heights the region pass gave it.
+
+### Ground cover
+
+Ground cover is placed last, and the two biome groups are handled differently. Both grow patches of tiles and woods, each from a single cell.
+
+A patch or wood starts only on a cell that is clear ground, has no ramp and is not protected. On temperate, desert and mutated maps, that cell must also have no overlay and nothing standing on it.
+
+From that cell, a patch spreads over neighboring clear ground with no ramp, no overlay and nothing standing on it. Protected ground does not stop it. A wood also spreads, but never onto protected ground.
+
+On **temperate, desert and mutated** maps:
+
+1. A mutated map first gets mold and crystal growths. Their numbers are drawn from ranges that grow with `Width` and `Height`.
+2. A desert or mutated map gets 5 to 30 rough-ground tiles scattered across it.
+3. Each cell where a patch may start is rolled for green ground, rough ground, sand and woods, in that order. The first roll that succeeds decides what the cell gets, and the rest are skipped. [`Vegetation`](/keys/vegetation/) scales only the green ground and woods chances. Temperate and mutated maps have no sand chance, and desert maps have no green ground chance.
+4. Transition tiles are fixed up, and rock overlays are scattered across the map. A temperate map gets half as many rocks.
+
+On **tundra and taiga** maps:
+
+1. 5 to 30 rough-ground tiles are scattered across the map.
+2. Each cell where a patch may start is rolled separately for a rough patch, a wood and a patch of rock tiles, so one cell can start more than one. `Vegetation` scales only the woods chance, and there is no green ground.
+3. Transition tiles are fixed up. These maps get no rock overlays.
 
 ## What the theater must supply
 
-The generator has no terrain artwork of its own; it works entirely through the roles a theater control file declares. The table groups those roles by the pass that needs them, so a modder adding or renumbering tile sets can see which part of generation a missing role would reach. [Theater control files](/formats/theater-control/) explains how a `[General]` role is resolved to a live tile index.
+The generator takes all its terrain artwork from the tile set roles a theater control file declares. The table groups those roles by the pass that needs them, so a modder adding or renumbering tile sets can see which part of generation a missing role would affect. [Theater control files](/formats/theater-control/) explains how a `[General]` role is resolved to a tile index.
 
 | Pass | Roles it reads |
 | --- | --- |
@@ -230,12 +305,12 @@ The generator has no terrain artwork of its own; it works entirely through the r
 | Settlements | [`PavedRoads`](/keys/pavedroads/), [`PavedRoadEnds`](/keys/pavedroadends/), [`DirtRoadCurve`](/keys/dirtroadcurve/), [`DirtRoadJunction`](/keys/dirtroadjunction/), and the pavement and median sets |
 | Ground cover | The green, rough, sand, rock, mold and crystal sets |
 
-Tile artwork is trimmed as a map is read, by counting how many cells use each type and discarding the artwork of every type the count leaves at zero. A generated map places most of its tiles after that count has been taken, which is what [`RequiredForRMG=yes`](/keys/requiredforrmg/) exists for. It exempts a set from the trim, but only on a map the loader knows is generated, and a `.SED` name or `RandomMap=yes` is what tells it that.
+When a map is read, the engine discards the artwork of every tile type that no cell uses yet. A generated map places most of its tiles after that, so a tile set the generator needs must set [`RequiredForRMG=yes`](/keys/requiredforrmg/) to keep its artwork. The exemption applies only to a generated map: every map the dialog builds, and a scenario whose filename ends `.SED` or that sets `RandomMap=yes`.
 
 ## Handing the map over
 
-When the last pass finishes, the vein and tiberium growth and spread systems are started, and the working grid and the region records are thrown away. The map's overpass and radar image are computed, and the finished map is handed back to the scenario load already in progress.
+When the last pass finishes, the generator starts vein growth and tiberium growth and spread, computes the radar image and returns the finished map to the scenario load.
 
-Only then do the multiplayer fixups run. They are deliberately held back while a generated scenario is being read, because until generation finishes there is nothing for them to work on. Each house's starting force is created at the start waypoints the generator wrote, [crates](/systems/crates/) are scattered if the session asked for them, and computer houses take their credit multipliers. A generated map is an ordinary scenario from that point on.
+The multiplayer setup runs only after that, because the start points do not exist until generation ends. Each house's starting units are created at the generated start points, [crates](/systems/crates/) are scattered if the match enables them, and computer players receive their credit multipliers. From then on, a generated map behaves as an ordinary scenario.
 
-Two lobby-side reads happen before any of this, and both look at the seed file rather than at a map. The multiplayer and skirmish lobbies check that the chosen scenario has somewhere to put everybody by counting its `[Waypoints]` entries. They fall back to reading [`NumPlayers`](/keys/numplayers/#scope-random-map-generation-2) when it has none, which is always true of a seed file, whose start points do not exist until the map is generated. A saved seed is identified, both in the lobby and in the dialog's preview cache, by a digest taken over the settings that stops short of [`UseTransitions`](/keys/usetransitions/). Two seeds differing in nothing but that flag are treated as the same map.
+Before any of this, the multiplayer and skirmish lobbies check that the chosen scenario has a start point for every player by counting its `[Waypoints]` entries. A seed file has none, because its start points do not exist until the map is generated. For a file with no waypoints, the lobbies read [`NumPlayers`](/keys/numplayers/#scope-random-map-generation-2) from its `[RandomMap]` section instead.

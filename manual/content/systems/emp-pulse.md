@@ -19,11 +19,15 @@ related:
 
 ## Firing a pulse
 
-A projectile whose warhead sets [`EMEffect=yes`](/keys/emeffect/) creates a pulse at its detonation cell instead of applying blast damage. Its radius in cells is the warhead's [`Spread`](/keys/spread/#scope-warheadtype). Its duration in game frames is the strength the projectile holds, which is the firing weapon's [`Damage`](/keys/damage/#scope-weapontype) scaled by the firer's firepower modifiers when the shot comes from ordinary combat.
+A projectile whose warhead sets [`EMEffect=yes`](/keys/emeffect/) creates a pulse where it detonates, instead of dealing blast damage. The warhead's [`Spread`](/keys/spread/#scope-warheadtype) sets the pulse's radius in cells. The firing weapon's [`Damage`](/keys/damage/#scope-weapontype) sets how long its stun lasts, in game frames.
 
-:::caution[Damage is a duration, not damage]
-Detonation branches on the warhead: an `EMEffect` warhead takes the branch that creates the pulse, so it never reaches the blast damage the other branch applies and the pulse costs no health. `Damage` is spent as the stun length in frames instead. A pulse applies itself only while its duration still has a frame left to run, and it makes that test on the frame it is created. `Damage=0` therefore reaches nothing at all: it stuns nobody and springs no trigger event. Where the same warhead also deals blast damage, as on the scripted path below, `Spread` shapes that damage's falloff as well, so the pulse radius and the falloff cannot be tuned apart.
+In ordinary combat, the firer's firepower modifiers scale `Damage` before it becomes the duration. The EM pulse cannon and the mobile EMP vehicle below use `Damage` unscaled.
+
+:::caution[Damage sets a duration]
+A pulse deals no damage. Set `Damage` to at least `1`: with `Damage=0` the pulse stuns nothing and springs no trigger events.
 :::
+
+The explosion animation is picked at random from the warhead's [`AnimList`](/keys/animlist/), not by the size of `Damage`.
 
 ```ini title="rules.ini"
 [EMPuls]           ; the warhead that makes the pulse
@@ -32,7 +36,7 @@ EMEffect=yes       ; detonation creates a pulse instead of blast damage
 
 [EMPulseWeapon]    ; the weapon the pulse comes from
 Damage=1200        ; the pulse's duration, in frames
-Range=40           ; how far the launch cursor allows the shot
+Range=40           ; how far from the cannon the cursor allows a launch
 Warhead=EMPuls
 
 [NAPULS]           ; a structure that can serve as a launch site
@@ -42,66 +46,131 @@ Primary=EMPulseWeapon
 
 [EMPulseSpecial]   ; the superweapon that launch site serves
 Type=EMPulse
+Action=EMPulse     ; the targeting cursor
 ```
 
 ### EM Pulse Cannon superweapon
 
-A superweapon declared [`Type=EMPulse`](/keys/type/) needs a launch site, and it takes the one nearest the target among the buildings that satisfy **all of**:
+A superweapon declared [`Type=EMPulse`](/keys/type/#scope-superweapontype) fires from a launch site. On launch it picks the structure nearest the target that meets **all of**:
 
 - it belongs to the firing house;
-- it is out of [limbo](/glossary/#limbo);
+- it is on the map, not in [limbo](/glossary/#limbo);
 - its type sets [`EMPulseCannon=yes`](/keys/empulsecannon/);
-- it is powered on.
+- it is [operational](/systems/power/#defenses): not stunned, not switched off, and not idled by low power.
 
-That building takes the missile mission and the target becomes the house's only pulse destination, so a second launch retargets a sequence in flight. With no eligible building the launch does nothing and the superweapon still discharges. The cursor reports the shot in range only while the player owns a powered cannon and the target lies inside that weapon's [`Range`](/keys/range/).
+If no structure qualifies, nothing is fired, but the superweapon's charge is still spent. [Superweapons](/systems/superweapons/#em-pulse) covers why a one-time EM pulse never launches.
 
-The cannon creates the hard-coded `PULSBALL` animation at its firing coordinate, waits 32 frames, then fires its primary weapon; the pulse comes from that weapon's own warhead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in `[SpecialWeapons]` are read into the rules and nothing reads them.
+Each house holds one pulse target. A second launch before a cannon has fired therefore sends that cannon's shot to the new target.
+
+Give the superweapon [`Action=EMPulse`](/keys/action/#scope-superweapontype) so the player can aim it. A click on the in-range cursor fires the first superweapon that declares `Action=EMPulse`, so two EM pulse superweapons cannot be aimed separately.
+
+While the player aims an EM pulse superweapon, the cursor shows the in-range form only if the player owns an operational cannon and the target lies within the [`Range`](/keys/range/#scope-weapontype) of the nearest such cannon's primary weapon. Elsewhere it shows the out-of-range form. The superweapon's `Action` does not change which form appears.
+
+A click on the out-of-range cursor fires the first superweapon that declares `Action=EMPulseRange`, and launches nothing if none does. The launch has no range limit of its own, so an EM pulse superweapon declared `Action=EMPulseRange` fires at any distance.
+
+The chosen cannon turns toward the target and creates the hard-coded animation `PULSBALL` at its muzzle. Thirty-two frames later it fires its primary weapon at the target, and the pulse comes from that weapon's warhead. [`EMPulseWarhead`](/keys/empulsewarhead/) and [`EMPulseProjectile`](/keys/empulseprojectile/) in `[SpecialWeapons]` have no effect.
 
 ### Mobile EMP vehicle
 
-A UnitType with [`IsMobileEMP=yes`](/keys/ismobileemp/) gains one charge point per frame while it is not immobilized, from [`StartCharge`](/keys/startcharge/) up to [`MaxCharge`](/keys/maxcharge/); the deploy cursor is refused below full charge. Deploying detonates a projectile of the hard-coded weapon `MobileEMPulseWeapon` at the vehicle's own position and resets the charge to zero.
+A UnitType with [`IsMobileEMP=yes`](/keys/ismobileemp/) starts with [`StartCharge`](/keys/startcharge/) and gains one point of charge per frame up to [`MaxCharge`](/keys/maxcharge/). It gains nothing while stunned. Deploying does nothing until the charge is full, and the deploy cursor is refused until then.
+
+With a full charge, deploying fires the weapon `MobileEMPulseWeapon` at the vehicle's position, resets the charge to `0`, and returns the vehicle to guard. The weapon name is hard-coded. The pulse does not stun the vehicle that fired it.
+
+:::caution[Define `MobileEMPulseWeapon`]
+Give that weapon a [`Projectile`](/keys/projectile/) and a [`Warhead`](/keys/warhead/#scope-weapontype) with `EMEffect=yes`. If either is missing, deploying still empties the charge but fires nothing. Without `EMEffect=yes`, the warhead deals ordinary blast damage around the vehicle instead of a pulse.
+:::
 
 ### Scripted explosion
 
-The [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger action applies its weapon's ordinary blast damage, then creates a pulse from that warhead's `Spread` and that weapon's `Damage` when the weapon's ID matches the hard-coded name `empulseweapon` in any letter case. No source is recorded.
+The [Do Explosion At](/mapping/actions/taction-do-explosion/) trigger action deals its weapon's ordinary blast damage at the waypoint. If the weapon's ID is `empulseweapon`, in any letter case, it then also creates a pulse there from that weapon's `Damage` and its warhead's `Spread`.
+
+Because the same warhead deals the blast, `Spread` sets both the pulse's radius and the blast's falloff. The two cannot be tuned separately on this path.
+
+A scripted pulse has no firer. Kills it causes are credited to no one.
 
 ## What a pulse reaches
 
-The pulse applies itself once, at creation; it never grows and never re-scans, so an object entering the circle afterwards is unaffected.
+A pulse takes effect once, on the frame it is created. It never grows, and an object that enters the radius afterward is unaffected. The pulse checks aircraft first, then burrowing objects, then every cell in its radius. That cell sweep covers every cell within `Spread` cells of the pulse's cell, measured in whole cells, boundary included.
 
-Aircraft are handled first, in a pass of their own. That pass takes an aircraft under **all of**:
+An **immune** type is one that sets [`ImmuneToEMP=yes`](/keys/immunetoemp/). A structure or vehicle type that omits the key is immune when it sets [`IsCoreDefender=yes`](/keys/iscoredefender/).
 
-- it is placed down on the map and out of limbo;
+### Aircraft
+
+The pulse catches an aircraft when **all of**:
+
+- it is on the map, not in limbo;
 - its strength is above zero;
 - it is less than one height level above the ground;
-- the distance from its center to the center of the pulse's cell is under `Spread` cells.
+- its center is less than `Spread` cells from the center of the pulse's cell.
 
-Such an aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its tag and is then put through the crash path, which acts only above zero height and is skipped altogether when the type is [`ImmuneToEMP=yes`](/keys/immunetoemp/). The aircraft pass and the crash path use different height thresholds. An aircraft between the ground and one height level (one taking off, or settling onto a pad) springs the event and then crashes; the crash zeroes its strength, credits the kill to the firer, and kills its cargo. An aircraft at exactly zero height springs the event, and the crash path returns having done nothing. It is still standing in its cell like any ground object, so the cell sweep below reaches it a second time and stuns it there.
+The distance also counts the aircraft's height above the map's lowest ground level. Each terrain height level adds about four tenths of a cell, so over raised terrain the reach shrinks. On high ground a small pulse can miss an aircraft in its own cell.
 
-An aircraft a full height level or more above the ground is reached by nothing at all. The aircraft pass has already excluded it, and the cell sweep below cannot see it either, because an aircraft off the deck is drawn in the top layer and is entered in no cell's occupancy. A pulse under a flight of aircraft leaves them flying.
+A caught aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its trigger. If it is off the ground, it crashes unless its type is immune. Its strength drops to zero, the firer is credited with the kill, and its passengers die. An aircraft taking off or landing is caught this way.
 
-Anything underground inside the radius is stunned next, unless its type is [`ImmuneToEMP=yes`](/keys/immunetoemp/); either way it springs its trigger. A tunnel-locomotor object is only underground while it is burrowing; at either end of the trip it stands in its cell like anything else. The pulse's three range tests are not one test: the aircraft pass above measures a distance, while this pass and the cell sweep after it compare whole-cell offsets, and those two part at the boundary. The underground pass takes a cell strictly inside the radius; the cell sweep takes one at exactly `Spread` cells as well, so it reaches a ring the underground pass leaves alone. That sweep covers every valid cell it takes:
+An aircraft standing on the ground does not crash. The cell sweep below then treats it like a vehicle, so it springs Paralyzed a second time and, unless immune, is stunned. The sweep skips it if it stands in a structure's cell.
 
-- **Buildings** register only on the cell holding their center. An [`InvisibleInGame=yes`](/keys/invisibleingame/) building is skipped. Of the rest, one whose type is [`ImmuneToEMP=yes`](/keys/immunetoemp/) springs its trigger and takes nothing else, a limpet mine is destroyed outright with the firer credited, and every other building is powered off, stunned, and given an [`EMPulseSparkles`](/keys/empulsesparkles/) animation when its type is [one of the eight marks](/keys/deploysinto/) that make a structure the deployed form of a vehicle.
-- **Ground objects** in a cell that holds no building are stunned while **all of**:
-  - **Any of:**
-    - **All of:** it is a vehicle or an aircraft, it has a locomotor, and it is not the object that fired the pulse;
-    - it is an infantryman whose type is a cyborg;
-  - its type is not [`ImmuneToEMP=yes`](/keys/immunetoemp/);
-  - it is not a large or small visceroid.
+An aircraft one height level or more above the ground is out of the pulse's reach entirely, so a pulse under a flight of aircraft leaves them flying.
 
-An exempt object is passed over for the stun and springs the paralyzed event in its place, which is all it is given. Without the exemption, a visceroid and the object that fired the pulse are passed over with no event at all.
+### Burrowing objects
 
-:::caution[Non-cyborg infantry are never affected]
-The cell sweep stuns an infantryman only when the type is a cyborg. Ordinary infantry pass through a pulse untouched.
+An object traveling underground with a tunnel locomotor is stunned when its cell is less than `Spread` cells from the pulse's cell. An immune type is not stunned, but it still springs Paralyzed.
+
+At either end of its trip the object stands on the surface, and the cell sweep handles it instead. The sweep also takes cells exactly `Spread` cells away, so at that distance an underground object escapes where a surface object would not.
+
+### Structures
+
+A structure is tested only on the cell that holds its center:
+
+- An [`InvisibleInGame=yes`](/keys/invisibleingame/) structure is skipped entirely.
+- An immune structure springs Paralyzed and nothing else.
+- An [`IsLimpetMine=yes`](/keys/islimpetmine/) structure is destroyed, with the firer credited.
+- Any other structure is powered off and stunned, and springs Paralyzed. A structure that is one of the [deployed-vehicle kinds](/keys/deploysinto/) also gets an [`EMPulseSparkles`](/keys/empulsesparkles/) animation.
+
+:::caution[A structure is tested on one cell only]
+A structure whose footprint overlaps the circle is untouched when its center cell lies outside it.
 :::
 
-:::caution[A building is tested on one cell only]
-Only the cell holding a building's center is compared against the radius. A structure whose footprint overlaps the circle is untouched when its center cell lies outside it.
+### Vehicles and infantry
+
+The sweep reaches only objects on the ground. A vehicle in the air, such as a jumpjet in flight, is out of reach.
+
+The sweep skips every object in a cell that holds any part of a structure, even when that structure is outside the radius. Objects on a bridge are not reached either.
+
+In other cells, the result depends on the object:
+
+| Object | Result |
+| --- | --- |
+| Vehicle or aircraft | Stunned and springs Paralyzed |
+| Infantry whose type sets [`Cyborg=yes`](/keys/cyborg/) | Stunned and springs Paralyzed |
+| Either of the above with an immune type | Springs Paralyzed only |
+| The vehicle or aircraft that fired the pulse | Nothing, or Paralyzed only if its type is immune |
+| A [large](/keys/largevisceroid/#scope-unittype) or [small](/keys/smallvisceroid/#scope-unittype) visceroid | Nothing, unless its type is immune, which springs Paralyzed only |
+| Other infantry | Nothing |
+
+When several objects share a cell, as cyborgs can, the sweep may miss some of them.
+
+:::caution[Ordinary infantry are never stunned]
+Only cyborgs among infantry are stunned. Other soldiers walk through a pulse untouched and spring no event.
 :::
 
-A stunned object cannot move, and cannot fire unless it is a visceroid. It uncloaks, and cannot recloak without the cloak ability or cloaking cover. Deploy orders are refused, except for a building that may always undeploy. A stunned building reports itself unpowered, refuses to be switched back on, drops radar coverage for the player's house, and cannot serve as a launch site. House power output and drain are read from each building's player-set on/off state, which a pulse never changes, so a stunned power plant keeps feeding the grid at its normal output.
+## While stunned
+
+A stun lasts the pulse's full duration. A second pulse sets the stun to its own duration, which can shorten a stun already running.
+
+A stunned vehicle, cyborg or aircraft stops where it is and cannot move. It is given an [`EMPulseSparkles`](/keys/empulsesparkles/) animation. The player cannot deploy it, and a mobile EMP vehicle neither charges nor discharges.
+
+A stunned object cannot fire. Unless it has the `CLOAK` ability or stands in its house's cloaking field, it [uncloaks](/systems/cloaking/) and cannot recloak until the stun ends.
+
+A stunned structure is powered off: its lights, laser fence and cloaking field stop. Its powered animations stop too, but restart the next time its house's power balance changes while the house has enough power. The player cannot switch it back on or undeploy it. It cannot serve as a launch site for the EM pulse cannon. A stunned [`Radar=yes`](/keys/radar/) structure can take away the player's radar map, as [radar](/systems/power/#radar) describes.
+
+A stun does not change a structure's power output or drain. A stunned power plant keeps feeding the grid, as [what each structure contributes](/systems/power/#what-each-structure-contributes) describes.
 
 ## Recovery
 
-The pulse is removed once its duration elapses, and its removal touches no object. Each caught object counts its own stun down and recovers on the frame it reaches zero. A building powers back on and refreshes radar coverage; a vehicle, infantryman or aircraft powers its locomotor back on; and a harvester that is not unloading returns to harvesting.
+Each object recovers when its own stun runs out:
+
+- A structure powers back on, and a `Radar=yes` structure can supply the radar map again. One the player had switched off stays off.
+- A vehicle, cyborg or aircraft can move again.
+- A harvester listed in [`HarvesterUnit`](/keys/harvesterunit/) is sent back to harvesting, unless it was unloading.
+
+A sparkle animation still playing stops at the end of its current loop.

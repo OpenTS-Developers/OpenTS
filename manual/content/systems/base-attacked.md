@@ -1,6 +1,6 @@
 ---
 title: Base defense response
-summary: "Answers damage to a base by raising the owner's anger toward the attacker and calling a computer house's armed infantry and vehicles back to fight it."
+summary: "How damage raises one house's anger at another, what each house's threat map records, and how a computer house calls armed infantry and vehicles back to defend."
 category: ai-teams
 keys:
   - AIHateDelays
@@ -29,221 +29,274 @@ related:
     id: MissionType
 ---
 
-Damage moves three separate mechanisms. **Anger** is a running figure each house keeps against every other house, and a hit raises the anger the damaged object's house holds toward whoever caused it. A house treats whichever house it holds the most anger toward as its declared enemy. Every house's threat map records where each object stands, weighted by how dangerous its type is. Only a computer house runs the third: a call-up that empties its teams and sends armed infantry and vehicles back to the object that was hit.
+Damage to an object has two effects. It raises the anger the object's owner holds toward the attacker's house, and each house treats the house it is angriest at as its **declared enemy**. If a computer house owns the object, the hit can also start a **call-up**, which empties the house's low-priority teams and sends armed infantry and vehicles back to fight the attacker.
 
-That call-up is expressed through teams and the definitions they are built from. A **team** is a group of infantry, vehicles and aircraft that one house owns and that acts together. A **TeamType** is the scenario section a team is built from, and it holds the settings a team is measured by. [AI triggers and team production](/systems/ai-team-production/#teamtypes-and-ai-triggers-in-brief) introduces both entities in full; the individual settings this page turns on are defined where they are used.
+Each house also keeps a **threat map** of where other houses' objects stand, weighted by each type's [`ThreatPosed`](/keys/threatposed/). Damage does not change the map. The call-up is sized from the same `ThreatPosed` ratings, and the computer's missiles, its teams and the pathfinder read the map.
+
+The call-up works through teams. A **team** is a group of infantry, vehicles and aircraft that one house owns and that acts together. A **TeamType** is the scenario section a team is built from. [AI triggers and team production](/systems/ai-team-production/#teamtypes-and-ai-triggers-in-brief) introduces both. This page defines each TeamType setting it uses where that setting appears.
 
 ## What counts as an attack
 
-Two damage paths reach the call-up, and each hands it the object that caused the damage.
+Two kinds of hit run the call-up: any hit on a structure, and an ordinary hit on a `ToProtect=yes` object. Both pass the call-up the object that caused the damage.
 
 ### Damage to a structure
 
-A building damaged by another object stamps the current frame on its house and runs the call-up. The exception is a building that names an [`UndeploysInto`](/keys/undeploysinto/) vehicle and is not a construction yard: that structure counts as a deployed vehicle rather than as part of the base. Both happen before any strength is lost and before the branches that end the damage routine early. A hit absorbed entirely therefore still counts as an attack on the base, whether a laser fence stopped it, an immune bridge repair hut ignored it, or a firestorm wall drained it off the firestorm defense's own charge.
+A structure runs the call-up whenever another object hits it. The call-up runs before the structure loses any strength, so a hit that does no damage still counts as an attack on the base. This includes a hit a laser fence ignores, a hit on an immune bridge repair hut, and a hit a firestorm wall absorbs by draining the Firestorm Defense charge. The same hit starts the owner's [attacked state](#the-attacked-state).
+
+A structure with an [`UndeploysInto`](/keys/undeploysinto/) vehicle counts as a deployed vehicle, not as part of the base, and never runs the call-up. A construction yard is the exception and counts as part of the base.
 
 ### A protected object
 
-[`ToProtect=yes`](/keys/toprotect/) puts the same call-up on the type's runtime instances, for a computer house only. Any protected object of such a house is answered the same way, and a protected structure takes this call-up on top of the one every damaged structure already runs.
+[`ToProtect=yes`](/keys/toprotect/) makes objects of that type run the call-up when a computer house owns them. A protected structure runs it a second time, on top of the structure call-up above. The second run is refused if the first one started [the attacker's cooldown](#the-attackers-cooldown).
 
 :::caution[A protected object calls for help only on ordinary damage]
-The damage result selects which branch of the damage routine runs, and the call-up sits on one branch alone. That branch is the hit that landed damage and changed nothing else about the object's condition. A `ToProtect=yes` object therefore calls for help when **none of** the following describes the hit:
+A `ToProtect=yes` object calls for help only on a hit that damages it without changing its condition. It stays silent on a hit that:
 
-- it registered no damage at all;
-- it took the object across the half-strength line;
-- it took the object across the condition red line;
-- it destroyed the object.
+- does no damage;
+- takes it below half strength;
+- takes it below the [`ConditionRed`](/keys/conditionred/) threshold;
+- destroys it.
 
-So a protected object stays silent on the hit that halves it, on the hit that takes it into the red, and on the killing blow. A protected structure is unaffected by this, because it already calls for help on every hit from an attacking object whatever the result.
+A protected structure still calls for help on those hits through the structure rule.
 :::
 
 ### What the house announces
 
-The announcement is a separate mechanism from the call-up. It is reached under **all of** the following:
+A hit on a structure can also produce a spoken warning and spring the owner's attacked trigger event. This happens when **all of** the following hold:
 
-- the damage had a source;
-- some damage actually registered;
-- the damaged building does not set [`Insignificant=yes`](/keys/insignificant/);
-- the damaged building is not a deployed vehicle.
+- the hit came from another object;
+- the hit did damage, so a hit that was absorbed entirely does not count;
+- the structure does not set [`Insignificant=yes`](/keys/insignificant/);
+- the structure is not a deployed vehicle.
 
-What is then said depends on who is watching. A house under player control submits a radar event at the building's cell and speaks the base-under-attack line. A house allied to the local player speaks the ally-attacked line instead. Outside a campaign, that line also requires the attacked house's own country not to set [`MultiplayPassive=yes`](/keys/multiplaypassive/). [`SpeakDelay`](/keys/speakdelay/) holds off both lines and the radar event with them.
+The warning depends on the owner:
 
-Every tag attached to a house then springs its attacked event, whichever house owns the building, and `SpeakDelay` does not hold that off.
+- If the local player controls the owner, the radar marks the structure's cell and the base-under-attack line plays.
+- If the owner is allied to the local player, the ally-attacked line plays instead. Outside a campaign, this line also requires that the owner's country does not set [`MultiplayPassive=yes`](/keys/multiplaypassive/).
+
+After either line, the owner plays no further warning and marks no further radar cell for [`SpeakDelay`](/keys/speakdelay/) minutes.
+
+Every such hit also springs the attacked event on each trigger tag attached to the owner, whether a computer or a human controls it. `SpeakDelay` does not delay the event.
 
 ### The attacked state
 
-A house is in its attacked state while the frame stamped by the most recent hit on one of its structures lies within the previous minute. It leaves the state a minute after that hit. Two decisions read it. While the state holds, a house never reports a fire-sale urgency. That is the judgment that a house still holding buildings, but none of them able to produce anything, should sell the whole base off at once. The state also stops a computer-owned aircraft on Guard from looking for enemy vehicles caught outside any base.
+The expert AI is a computer house's periodic decision pass. It runs every 7 to 7.5 seconds and also [fires the computer's superweapons](/systems/superweapons/#the-computers-use). A computer house whose country sets `MultiplayPassive=yes` never runs it.
 
-The state is entered and left by the expert AI, the computer's periodic decision pass. That pass re-arms itself with 7 to 7.5 seconds each time it runs, and it is also [what fires a computer house's superweapons](/systems/superweapons/#the-computers-use). The stamp starts at frame zero, so every computer house that runs the pass begins the match in the attacked state and stays there for the first minute, before anything has been attacked. A `MultiplayPassive=yes` computer house never runs the pass and so never enters the state at all.
+A computer house is in its attacked state for one minute after the most recent hit on one of its structures. The state starts and ends only when the house's expert AI runs, so each change can come up to 7.5 seconds late. A house that never runs the expert AI never enters the state.
+
+Every computer house that runs the expert AI is in the attacked state for the first minute of the match, before anything attacks it, because the time of the last hit starts at zero.
+
+Two decisions read the state:
+
+- A house in the attacked state never orders a fire sale. A fire sale sells the whole base when the house owns structures but none of them can produce anything.
+- A computer-owned aircraft on Guard does not look for enemy vehicles caught far from their owner's base.
 
 ## Anger and the declared enemy
 
-Every house holds one anger figure for every other house, and never one for itself. Its declared enemy is whichever house it holds the most anger toward.
+Each house holds one anger figure for every other house, and none for itself. Its declared enemy is the house it holds the most anger toward, among the houses it is allowed to choose.
 
 ### What raises it
 
-Every damage event with a source raises the anger the damaged object's house holds against the attacker's house. The amount is the damaged type's build cost, scaled by the fraction of its [`Strength`](/keys/strength/) the hit removed and truncated to a whole number. For a structure the build cost is its [`Cost`](/keys/cost/), less any free unit it comes with and less any aircraft share bundled into it. The figure uses the damage that was applied, after armor, after distance falloff, and after a killing blow has been cut back to the strength that was left. A hit worth less than one whole unit therefore adds nothing at all. Healing is negative damage, so being repaired by a hostile healer takes anger back off.
+Every hit from another house's object raises the anger the damaged object's owner holds toward that house. This applies to every house, computer or human, allied or not, and to damage to any object, not only to structures.
 
-This runs for every house, computer or human, allied or not, and it runs on damage to any object, not just to a structure.
+The increase is the damaged type's build cost multiplied by the fraction of its [`Strength`](/keys/strength/) the hit removed, with the fraction dropped. For a structure, the build cost is its [`Cost`](/keys/cost/) less the cost of any free unit it comes with, and less the average price of the aircraft it comes with on a helipad. For example, a vehicle costing `1000` with `Strength=400` that loses `100` strength raises anger by `250`.
+
+The damage counted is the damage applied after armor and distance falloff. On a killing blow it is cut back to the strength that was left. A hit worth less than one whole point adds nothing. Healing counts as negative damage, so being repaired by another house's object lowers the anger toward that house.
+
+These hits add no anger:
+
+- a hit that a laser fence ignores;
+- a hit on an immune bridge repair hut;
+- a hit that an active firestorm wall absorbs.
+
+A hit on an [`Immune=yes`](/keys/immune/) object adds anger for its damage without the warhead's `Verses` against the object's `Armor` or the distance falloff.
+
+A house also gains one point of anger toward a house it turns hostile to, whether or not the two were allied. Breaking an alliance and the [Make enemy](/mapping/actions/taction-make-enemy/) trigger action both do this. Outside a campaign, neither happens when either country sets `MultiplayPassive=yes`.
 
 ### How the enemy is chosen
 
-The whole ledger is re-read on every one of those events. The house holding the highest figure becomes the declared enemy, provided it is neither defeated nor a current ally. A tie goes to whichever house was created first. A figure of zero never wins, and when nothing qualifies the declared enemy is cleared outright.
+A house re-runs the choice whenever damage, an alliance change or the first-enemy pick changes its anger. The house with the highest anger figure becomes the declared enemy, skipping defeated houses and current allies. A figure must be above zero to win. A tie goes to the house created first. When no house qualifies, the house has no declared enemy.
 
-Defeated houses and allies are excluded from the choice but not from the ledger. Their figures are kept, and they count again if the exclusion lifts. Allying with a house zeroes the anger held against it and drops it as the declared enemy. Breaking an alliance adds one point of anger and rebuilds both houses' threat maps. A computer house also clears the record of a declared enemy that has been defeated.
+Alliances and defeats change the choice directly:
+
+- Allying with a house zeroes the anger held toward it and drops it as the declared enemy.
+- When a computer house's declared enemy is defeated, the computer house zeroes its anger toward that house. It then has no declared enemy until its anger next changes.
+
+Apart from those two resets, the choice only skips defeated houses and allies. Their figures stay. An ally's figure, including anger from hits after the alliance formed, counts again once the alliance ends.
 
 ### Decay
 
-Every hundredth frame, each figure above one is reduced by one.
+Every 100 frames, each anger figure above `1` drops by `1`.
 
 :::caution[Anger decays to one, never to zero]
-The step is skipped for a figure already at one. Nothing therefore leaves the ledger through decay alone, and a house that landed a single hit long ago remains a candidate forever. Decay also does not re-run the choice, so a house keeps its declared enemy until the next damage event, alliance change or defeat check moves it.
+A figure at `1` does not decay. A house that landed even one hit long ago stays a candidate for declared enemy for the rest of the match. Decay also does not re-run the choice, so a house keeps its declared enemy until the next damage, alliance change or defeat changes it.
 :::
 
 ### Picking a first enemy
 
-A computer house adds one point of anger against another house under **all of** the following, tested in this order:
+Outside a campaign, a computer house with no declared enemy picks one. On each run of the expert AI, it adds one point of anger toward another house when **all of** the following hold, tested in this order:
 
-- its [`AIHateDelays`](/keys/aihatedelays/) countdown has run out, which is seeded once as a multiplayer session is set up;
-- it holds no declared enemy;
-- the game is not a campaign;
-- its country is not `MultiplayPassive=yes`;
-- it has a base center, which it gains as soon as one of its buildings is finished.
+1. its [`AIHateDelays`](/keys/aihatedelays/) countdown has run out; the countdown is set once when a skirmish or multiplayer match starts;
+2. it has no declared enemy;
+3. the game is not a campaign;
+4. its country does not set `MultiplayPassive=yes`;
+5. it has a base center, which it has while at least one of its structures is on the map.
 
-The point goes to whichever other house has the nearest base center, counting only houses that are neither defeated nor `MultiplayPassive=yes`. The pick is not filtered by alliance, so picking a current ally raises a figure the choice above will still refuse to act on.
+The point goes to the house whose base center is nearest, counting only houses that are not defeated and whose country does not set `MultiplayPassive=yes`. The pick ignores alliances. If the nearest house is an ally, the point goes to that ally, which the choice never accepts.
 
-:::caution[A campaign house has no enemy until it is hurt]
-A campaign house is never given a first enemy: the expert AI reads the countdown, then refuses the pick outright in a campaign. A campaign house's record stays empty until something damages it or one of its objects. While it is empty, [only defensive AI triggers can spring](/systems/ai-team-production/#defensive-teams-and-the-enemy), and the ion cannon, multi-missile, chemical missile, hunter-seeker and drop-pod routines all stand down.
+The point then re-runs the choice, so the eligible house with the most anger becomes the declared enemy, whichever house received the point. If no other eligible house has anger above zero, the house stays without a declared enemy while that ally is nearest. After a declared enemy is defeated, other houses often still hold anger, and the first point makes the angriest of them the enemy.
+
+:::caution[A campaign house has no enemy until its anger rises]
+A campaign house never picks a first enemy. It has no declared enemy until damage or a Make enemy trigger action raises its anger. Until then, [only defensive AI triggers can pass](/systems/ai-team-production/#defensive-teams-and-the-enemy), and the computer does not fire its ion cannon, multi-missile, chemical missile, hunter seeker or drop pods.
 :::
 
 ### What the declared enemy drives
 
-- Whether a non-defensive [AI trigger](/systems/ai-team-production/#which-triggers-are-eligible) may be considered at all, and the house every trigger condition but one measures.
-- Which house the ion cannon rates objects from, and which house's buildings the multi-missile and chemical missile choose between.
-- Whether the hunter seeker and the computer's drop pods fire.
-- The preferred house for the two team missions that attack or move to a building with a named property.
-- [`EnemyHouseThreatBonus`](/keys/enemyhousethreatbonus/) in target scoring, and the clamp a house ordered to hunt everything applies to anything outside the enemy's ownership. Both belong to [target selection](/systems/target-selection/#the-threat-score).
+- Whether a non-defensive [AI trigger](/systems/ai-team-production/#which-triggers-are-eligible) can be considered at all. Every trigger condition except the one about the house's own holdings measures the declared enemy.
+- Which house the computer's ion cannon rates targets from, and which house's structures its multi-missile and chemical missile choose between.
+- Whether the computer fires its hunter seeker and drop pods. Outside a campaign, a computer house's hunter seeker hunts only the declared enemy's objects.
+- The preferred house for the two team missions that attack or move to a structure with a named property.
+- [`EnemyHouseThreatBonus`](/keys/enemyhousethreatbonus/) in target scoring, and the low score a house ordered to hunt everything gives to objects the declared enemy does not own. Both belong to [target selection](/systems/target-selection/#the-threat-score).
 
 ## The threat map
 
-Every house keeps one figure per map region, and a region is a block of 4 by 4 cells. An object contributes its type's [`ThreatPosed`](/keys/threatposed/) to every house's map except its owner's.
+Each house keeps one threat figure for every region of the map. A region is a block of 4 by 4 cells. Every infantry, vehicle, aircraft and structure adds its type's [`ThreatPosed`](/keys/threatposed/) to the maps of the other houses, never to its owner's.
 
-Each contribution is stamped across a 3 by 3 block of regions. The whole figure goes into the region the object stands in, half of it into the four regions beside that one, and a quarter into the four corners, each step discarding its remainder. Taking a contribution back runs the same stamp as a subtraction. Every region floors at zero, so one that has already bottomed out does not return what it was never charged, and the two operations are not exactly reversible.
+Allies are handled by who controls the house. A human-controlled house leaves its allies' objects off its map. A computer house counts its allies' objects as threats like everyone else's.
+
+Each contribution is spread over a 3 by 3 block of regions around the object's region. The center region gets the full figure, the four regions beside it get half, and the four corner regions get a quarter, each with the fraction dropped. Removing a contribution subtracts the same shares.
+
+A region never drops below zero. Any part of a subtraction that would take it below zero is lost, so after such a subtraction the map can end up higher than the objects on it account for.
 
 ### What adds and removes a contribution
 
-Five events add a contribution or take one back. Because the stamp covers a 3 by 3 block of regions, each of them has to name one cell to center that block on. The second column below is that cell, not wherever the object happens to be standing. The last two rows are the ones that do not balance, and each is taken up by what follows the table. An ownership change stamps the contribution the wrong way round, and a visceroid merge is the one event here that adds a contribution nothing ever takes back.
+Each event below adds or removes a contribution, spread around the cell in the second column. That cell is not always where the object currently stands. For infantry, vehicles and aircraft, the **recorded cell** is the last cell the object finished moving into on the ground, or the cell where an aircraft last landed.
 
-| Event | Cell the stamp is centered on |
+| Event | Cell the contribution is spread around |
 | --- | --- |
-| The object is placed on the map | The cell it appears in |
-| The object leaves the map | For infantry, vehicles and aircraft, the last cell recorded for it; for anything else, its own cell |
-| A ground object finishes moving into a cell | Credited at the new cell and debited at the old one, and only when the two fall in different regions |
-| The object changes owner | Withdrawn under the previous owner's identity and re-stamped under the new owner's, at the same cell: the previous owner's own map gains the contribution and the new owner's loses it |
-| A small visceroid merges into a large one | Credited at the enlarged unit's last recorded cell, with no matching debit |
+| An object is placed on the map | The cell it appears in |
+| An object is taken off the map, for example when destroyed or loaded into a transport | For infantry, vehicles and aircraft, the recorded cell; for a structure, the cell it stands in |
+| An infantry or vehicle finishes moving into a cell in a different region | Added around the new cell and removed around the previous one |
+| An object changes owner | The same cell as when it is taken off the map. The previous owner's map gains the contribution, and the new owner's map loses it. |
+| A small visceroid merges into a large one | Added around the large visceroid's recorded cell, with nothing removed |
 
-The owner exemption is narrower than it looks. A house skips its own objects always. It skips an ally's objects only while that house is under human control, so a computer house records its allies' objects as threats along with everybody else's.
+The visceroid merge is the only event that does not balance. The large visceroid's contribution is added on top of the small visceroid it replaced, and only the large figure is removed later. The small visceroid's `ThreatPosed` therefore stays on the map where the merge happened.
 
 :::caution[An aircraft's contribution does not follow it]
-Only the ground-movement step moves a contribution between regions, and aircraft do not run it. An aircraft's contribution therefore stays in the region it was placed in for as long as it flies. Landing updates the cell it will eventually be debited at, without moving the contribution there. An aircraft that flies far from where it started therefore leaves its threat behind and takes its debit somewhere else again.
+Only ground movement moves a contribution between regions, and aircraft do not use it. An aircraft's contribution stays in the region where it was placed for as long as it exists. Landing changes the recorded cell, where the contribution will eventually be removed, without moving the contribution there. An aircraft that lands far from where it was placed leaves its threat behind, and its removal subtracts from a different part of the map.
 :::
 
 ### Rebuilding the map
 
-A house rebuilds its entire map in two situations only: when it forms an alliance, and when an alliance is broken, on both sides. Outside a campaign every house is allied with the neutral Special house once every object has been placed, so every house's map is rebuilt at scenario start. In a campaign those alliances are read before any object exists, and nothing rebuilds. The map is otherwise purely incremental.
+A house clears its map and rebuilds it from every object in the match in two situations:
 
-:::caution[A rebuild records the house's own buildings as threats]
-The rebuild walks every object in the match. It applies the ownership and alliance test to infantry, vehicles and aircraft, but the branch that handles everything else applies neither. Every building in the scenario is therefore stamped into the map, this house's own and its allies' included, while objects that have never stood on the ground are dropped from it entirely. A house that has just allied, or has just had an alliance broken, therefore reads a map that no longer matches the one its incremental accounting maintained. Its own base is among the most dangerous ground on that map.
+- it allies with another house;
+- an alliance between it and another house is broken, in which case both houses rebuild.
+
+Outside a campaign, every house allies with the neutral Special house when the match starts, after the map's objects are placed, so every house rebuilds its map then. In a campaign, alliances are set before any object exists, so no rebuild happens at the start. Otherwise the map changes only through the events in the table above.
+
+:::caution[A rebuild counts the house's own structures as threats]
+A rebuild applies the owner and ally exemptions to infantry, vehicles and aircraft only. It adds every structure in the match, including the house's own and its allies', and it leaves out aircraft that have never landed. It also counts objects that are off the map, such as passengers in a transport. A passenger that unloads after a rebuild then adds its contribution a second time. After a rebuild, the house's own structures with a `ThreatPosed` raise the figures around its base. Because every house rebuilds at the start of a skirmish or multiplayer match, this applies there from the start.
 :::
 
 ### What reads the map
 
-- The multi-missile and the chemical missile each strike the enemy building standing in the highest-rated region.
-- A team that has begun to move and has [fallen under strength](/systems/ai-team-execution/#the-state-flags) is sent to gather at one of its house's unarmed buildings. The building is ranked by distance multiplied by the region's figure plus one, and halved for a building that repairs vehicles.
-- The least-threat and greatest-threat building properties a team script can ask for.
-- The pathfinder reads it through [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/). A diagonal shortcut is refused where the region figure times the coefficient reaches `1`. A two-leg straight line counts each cell whose product reaches `0.01` as threatened and abandons the line once too many have accumulated. The hierarchical route planner prices a step from the regions it spans.
+- The computer's multi-missile and chemical missile strike the declared enemy's structure that stands in the highest-rated region.
+- A team that is under way and has [fallen under strength](/systems/ai-team-execution/#the-state-flags) regroups at one of its house's unarmed structures. Each structure is scored by its distance from the team multiplied by one more than its region's figure, and the score is halved for a structure that repairs vehicles. The lowest score wins.
+- The least-threat and greatest-threat structure properties a team script can ask for.
+- The pathfinder, through the moving object's [`ThreatAvoidanceCoefficient`](/keys/threatavoidancecoefficient/):
+  - A diagonal shortcut is refused when the figure at the cell where it starts, multiplied by the coefficient, reaches `1`.
+  - A straight-line shortcut counts each cell whose figure multiplied by the coefficient reaches `0.01` as threatened. Depending on the pass, one threatened cell or more than three abandon the shortcut.
+  - The coarse corridor search of [route search](/systems/route-search/) adds the region figure, multiplied by the coefficient, to the price of each step.
 
-:::caution[Threat avoidance is off until a coefficient is written]
-Every type's coefficient starts at `0`. A team's [`AvoidThreats=yes`](/keys/avoidthreats/) raises it to `1` for that team's members and is the only thing that raises it without a rules edit. At zero every product the pathfinder tests is zero, so no cell is ever counted as threatened and no shortcut is ever refused, however high the region figures climb.
+:::caution[Threat avoidance is off until a coefficient is set]
+Every type's `ThreatAvoidanceCoefficient` starts at `0`. At zero every product the pathfinder tests is zero, so no cell counts as threatened and no shortcut is refused, however high the region figures climb. A team's [`AvoidThreats=yes`](/keys/avoidthreats/) sets the coefficient to `1` for that team's members, and is the only way to raise it without a rules change.
 :::
 
 ## Calling defenders back
 
 ### When the call-up is refused
 
-The call-up ends before doing anything when any of the following holds, tested in this order. The whole table is about the damaged object and its attacker, not about the defenders, so nothing here can be fixed by giving the house better troops. The last row is the one that leaves a repeat attack by the same attacker unanswered.
+The call-up does nothing when any of the following holds, tested in this order. Every condition concerns the damaged object and the attacker. None depends on which defenders the house has.
 
 | Refused when | Detail |
 | --- | --- |
-| The attacker is an ally of the damaged object's house | |
-| The house is under human control | Player control in a campaign, and a human player otherwise |
-| The damaged object has a primary weapon | Campaign games only: a base defense structure defends itself and pulls nobody back |
-| The attacker is neither an infantry nor a vehicle | Aircraft and buildings never provoke a response |
+| The attacker is an ally of the damaged object's owner | |
+| A human controls the owner | In a campaign, the house under player control; otherwise any house a human plays |
+| The damaged object has a primary weapon | Campaigns only. An armed structure or protected object calls no one back, even when its weapon cannot hit the attacker, such as an anti-aircraft structure hit by infantry. |
+| The attacker is not an infantry or a vehicle | Aircraft and structures never provoke a response |
 | The damaged type sets `Insignificant=yes` | |
-| The attacker's cooldown from an earlier response is still running | Below |
+| The attacker's cooldown from an earlier call-up is still running | See [the attacker's cooldown](#the-attackers-cooldown) |
+
+A call-up that passes these checks [empties the house's low-priority teams](#teams-are-emptied-first) before it looks for defenders.
 
 ### The strength budget
 
-The response is sized once, at the attacker's [`ThreatPosed`](/keys/threatposed/) multiplied by [`ComputerBaseDefenseResponse`](/keys/computerbasedefenseresponse/) in `[AI]`. An attacker whose type leaves `ThreatPosed` at zero produces a budget of zero and calls up nobody, whatever the multiplier is.
+The call-up looks for defenders worth the attacker's [`ThreatPosed`](/keys/threatposed/) multiplied by [`ComputerBaseDefenseResponse`](/keys/computerbasedefenseresponse/) in `[AI]`. That product is the **budget**. An attacker whose type has `ThreatPosed=0` gives a budget of zero, and no one is called back, whatever the multiplier is.
 
-Anything already firing at the attacker is counted off that budget rather than added to the shortlist, at its own `ThreatPosed`. At the stock multiplier of `3`, one such defender whose own `ThreatPosed` is three times the attacker's takes the budget to exactly zero, cancelling the response by itself. Exactly zero rather than below it is the distinction [the cooldown](#the-attackers-cooldown) turns on.
+A qualifying object that is already targeting the attacker is not called back again. Its `ThreatPosed` is subtracted from the budget instead. Once the budget reaches zero or below, the search for defenders stops.
+
+With `ComputerBaseDefenseResponse=3`, suppose one object is already targeting the attacker, and its `ThreatPosed` is three times the attacker's. It brings the budget to exactly zero, so no defender is called back. Whether the budget ends at exactly zero or below it decides whether [the cooldown](#the-attackers-cooldown) starts.
 
 ### Teams are emptied first
 
-Before any candidate is examined, every team the house owns is measured against one threshold. A TeamType's [`Priority`](/keys/priority/#scope-teamtype) is the figure that settles which of two teams wins a member they both want. [`SuspendPriority`](/keys/suspendpriority/) in `[General]` is the level a team's own priority has to reach to survive a call-up. Every team below it has all of its members removed and is suspended for [`SuspendDelay`](/keys/suspenddelay/) minutes, meaning the team takes no logic turn of any kind until that timer runs out.
+Before looking for defenders, the call-up empties every team of the house whose TeamType [`Priority`](/keys/priority/#scope-teamtype) is below [`SuspendPriority`](/keys/suspendpriority/) in `[General]`. Each emptied team is suspended for [`SuspendDelay`](/keys/suspenddelay/) minutes and does nothing until that time has passed. Its former members have no team for the rest of the call-up, which lets them qualify as defenders.
 
-The team object outlives the suspension, but it does not come back. A team holds a mark set the first time it ever reached full strength, or the first time it was set in motion. Full strength here is the member count its TaskForce asks for, which is a roster figure and nothing to do with health. The mark is never cleared afterward. When the suspension expires, a team holding that mark is deleted outright for having no members. A team that never earned it gets one pass at recruiting instead. It then falls to [the ordinary rule](/systems/ai-team-production/#recruitment) that dissolves a team still empty a set number of frames after it was created, which applies outside a campaign only. Either way the members freed by the emptying have no team for the rest of the same call-up, which is what makes them eligible below.
+Teams are emptied on every call-up that passes the refusal checks, even when the budget is zero or no defender qualifies. A call-up that sets no cooldown runs again on the attacker's next hit and restarts the suspension. An attack that keeps hitting without starting a cooldown therefore keeps those teams empty and suspended.
 
-:::caution[At the engine defaults every base attack empties every team]
-`SuspendPriority` defaults to `20` and a TeamType's `Priority` defaults to `7`, so a TeamType that does not state a priority sits below the threshold. With neither key written, every team the house owns is stripped of its members every time a call-up actually runs, and stays empty for two minutes. That covers attack teams and scenario-placed teams alike. Lower `SuspendPriority` to the lowest priority that should survive, or give those TeamTypes a priority at or above it.
+What happens when the suspension ends depends on whether the team had started. A team has started once it has reached full strength or been flagged into action, and nothing clears that mark. Full strength here is the member count its TaskForce asks for, not hit points.
+
+- A team that had started is deleted, because it has no members.
+- A team that had not started resumes recruiting. Outside a campaign, [the ordinary rule](/systems/ai-team-production/#recruitment) dissolves it if it is still empty [`DissolveUnfilledTeamDelay`](/keys/dissolveunfilledteamdelay/) frames after it was created.
+
+:::caution[With the default priorities, every call-up empties every team]
+`SuspendPriority` defaults to `20` and a TeamType's `Priority` defaults to `7`. If neither is set, every call-up empties all of the house's teams, attack teams and scenario-placed teams alike, and suspends them for `SuspendDelay` minutes, two by default. To keep a team, raise its TeamType's `Priority` to at least `SuspendPriority`, or lower `SuspendPriority` to that team's priority or below.
 :::
 
-The four rules settings the response reads, in the two sections that hold them:
+The call-up reads four settings from `rules.ini`. These are example values; the linked key pages give the defaults.
 
 ```ini title="rules.ini"
 [AI]
-ComputerBaseDefenseResponse=4 ; scales the budget the attacker's ThreatPosed is multiplied by
+ComputerBaseDefenseResponse=4 ; budget is the attacker's ThreatPosed times 4
 
 [General]
-BaseDefenseDelay=1            ; minutes before the same attacker can be answered again
-SuspendPriority=10            ; a team below this priority is emptied and suspended
-SuspendDelay=3                ; minutes an emptied team takes no logic turn
+BaseDefenseDelay=1            ; minutes before any house answers the same attacker again
+SuspendPriority=10            ; teams with a Priority below 10 are emptied
+SuspendDelay=3                ; minutes an emptied team stays suspended
 ```
 
 ### Which objects qualify
 
-Infantry are walked first, then vehicles; aircraft and buildings are never candidates. Both passes stop the moment the budget is used up. Each candidate is rejected on the first of these that matches, so a candidate that survives the whole table can reach the damaged object and hurt its attacker once it arrives. The rows fall into two halves. The first five ask whether the candidate is available at all. The last three ask about this particular attack: the attacker's armor, the ground in between, and whether the candidate has anything left to bring. No amount of strength standing nearby can talk around any of those three.
+The call-up examines infantry first, then vehicles. Aircraft and structures are never called back. Both passes stop once the budget reaches zero or below. An object is rejected on the first of these that applies:
 
 | Rejected when | Detail |
 | --- | --- |
-| It is inactive, or belongs to another house | |
-| It is on a team whose TeamType is not [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-teamtype) | A team member that is already a base defender may be taken; any other team member may not |
-| Its recruitable state, or its autocreate-recruitable state, is off | Both start set on every object |
+| It is inactive, or another house owns it | |
+| It is on a team whose TeamType does not set [`IsBaseDefense=yes`](/keys/isbasedefense/#scope-teamtype) | A member of a base-defense team can be called back; a member of any other team cannot |
+| Its recruitable state or its autocreate-recruitable state is off | Both start set; see [recruitment](/systems/ai-team-production/#recruitment) |
 | It has no primary weapon | |
-| Its current mission sets [`Recruitable=no`](/keys/recruitable/) | Campaign games only |
-| Its primary warhead's [`Verses`](/keys/verses/) percentage against the attacker's [`Armor`](/keys/armor/) is exactly `0%` | |
-| It is not in the same movement zone as the damaged object | The two destinations are compared, not the two positions, using the candidate's [`MovementZone`](/keys/movementzone/) |
-| It cannot bring any strength to bear | Below |
+| Its current mission sets [`Recruitable=no`](/keys/recruitable/) | Campaigns only |
+| Its weapon's warhead has a [`Verses`](/keys/verses/) value of exactly `0%` against the attacker's [`Armor`](/keys/armor/) | The primary weapon, or the elite weapon for an elite object |
+| It is not in the same movement zone as the damaged object | Its destination is compared with the damaged object's, using its [`MovementZone`](/keys/movementzone/) |
+| Its rating is zero | See below |
 
-A candidate brings nothing — a rating of zero, which drops it — under **any of** the following, tested in this order:
+An object that passes these checks and is already targeting the attacker reduces [the budget](#the-strength-budget). Otherwise it gets a **rating**, which measures how much strength it can bring against the attacker. The rating is zero, and the object is dropped, when **any of** the following holds, tested in this order:
 
-- it is already attacking something that has a weapon;
-- it is on a team whose TeamType is not `IsBaseDefense=yes`;
+- it is targeting something else that has a primary weapon;
 - its mission is Harvest;
-- its own `ThreatPosed` is zero.
+- its `ThreatPosed` is `0`.
 
-Otherwise its rating is `ThreatPosed` times `1024`. That figure stands as it is when the attacker is already inside the candidate's weapon range. When it is not, the figure is divided by the distance still to cover, measured in multiples of the candidate's own top speed, and never falls below `1`. A candidate already targeting the attacker rates minus its `ThreatPosed` instead, and that negative rating is what the budget is reduced by.
-
-:::caution[The already-engaged multiplier is asymmetric, and can cancel the response]
-Both passes apply a multiplier meant to favor a defender already sent to protect this object, a hundredfold for infantry and tenfold for vehicles. The vehicle pass applies it only to a positive rating. The infantry pass applies it before the sign is tested, so a negative rating is multiplied too. Where the condition holds, an infantry already firing at the attacker takes a hundred times its own `ThreatPosed` off the budget in one step, enough to end the response for every other candidate. The condition both passes test belongs to the damaged object rather than to the candidate, so within one call-up the multiplier applies to every candidate or to none.
-:::
+Otherwise its rating is its `ThreatPosed` multiplied by `1024` when the attacker is already within its primary weapon's range. When the attacker is out of range, the rating is divided by the distance beyond that range, measured in multiples of the object's top speed. The divisor is at least `1`, and the rating never drops below `1`. A closer or faster object therefore rates higher.
 
 ### The shortlist and the orders
 
-The shortlist holds six entries, shared between the two passes and filled in order. Once it is full, a stronger candidate is meant to replace the weakest entry. The entry to replace is found by matching the stored ratings against a running minimum kept beside the list. That running minimum starts at zero and is updated only by a candidate examined after the list filled, so for one candidate it matches nothing the list holds.
+The call-up keeps a shortlist of up to six candidates, shared between infantry and vehicles. The first six candidates fill it in the order they are examined, without being compared.
 
-The table walks eight candidates through the list with one illustrative set of ratings. The first six fill it and never touch the running minimum. The last two run into the replacement rule.
+After the list is full, a candidate whose rating beats a **recorded low** replaces the entry whose rating equals the recorded low. The recorded low starts at zero and is updated only by candidates examined after the list filled. No entry holds zero, so the first replacement attempt always fails.
 
-| Candidate | Its rating | The shortlist after it | The running minimum after it |
+The table follows eight candidates through the list with example ratings.
+
+| Candidate | Rating | Shortlist after it | Recorded low after it |
 | --- | --- | --- | --- |
 | 1 | 30 | 30 | 0 |
 | 2 | 25 | 30, 25 | 0 |
@@ -251,41 +304,52 @@ The table walks eight candidates through the list with one illustrative set of r
 | 4 | 20 | 30, 25, 40, 20 | 0 |
 | 5 | 35 | 30, 25, 40, 20, 35 | 0 |
 | 6 | 45 | 30, 25, 40, 20, 35, 45 (full) | 0 |
-| 7 | 50 | unchanged: it beats the running minimum, but no entry holds `0`, so nothing is replaced | 20 |
+| 7 | 50 | unchanged: 50 beats the recorded low, but no entry holds `0`, so nothing is replaced | 20 |
 | 8 | 28 | 30, 25, 40, **28**, 35, 45 | 25 |
 
-Candidate 7 is the one that pays for repairing the running minimum. It clears the minimum of zero, finds no entry to overwrite, and its whole effect is to leave the minimum standing at the list's true weakest figure. Candidate 8 is the first that displaces anything. Because infantry are walked before vehicles, six qualifying infantry therefore cost the first vehicle examined its place, and every vehicle after that one competes normally. That is how vehicles come to displace infantry that were admitted without being ranked against anything.
+The rule has three consequences:
 
-One further case keeps the list closed for longer. A candidate rated below the list's own weakest entry leaves the running minimum at its own rating rather than the list's. That again matches nothing, so the candidate after it is dropped as well. The running minimum settles onto the list's weakest figure only once a candidate rated at or above that figure has been examined. When more than one entry holds the running minimum, all of them are overwritten with the same candidate, so the list can hold one object several times.
+- The first candidate examined after the list fills is always dropped, whatever its rating. It only sets the recorded low. Because infantry are examined first, when exactly six infantry qualify, the first qualifying vehicle is the one dropped. Later vehicles compete normally and can replace infantry.
+- While the recorded low is below every entry, every candidate is dropped. This happens when the first candidate after the list fills is rated below all six, because that candidate sets the recorded low to its rating. It ends once a candidate rated at or above the list's lowest entry is examined. That candidate is dropped too, but it sets the recorded low to the list's lowest entry, so the next candidate competes normally.
+- When several entries share the recorded low, a replacing candidate overwrites all of them. The list can then hold one object several times, and each copy counts toward the budget when orders are given.
 
-The list is sorted from strongest to weakest and worked through in that order. Each defender takes the [Rescue](/reference/enums/mission/) mission on a 66 percent chance and Area Guard otherwise; a member of an `IsBaseDefense=yes` team always takes Area Guard. Either way the damaged object is recorded as what the defender was sent to protect, and the attacker is assigned as its target.
+The shortlist is sorted from highest to lowest rating, and defenders are ordered in that sequence. Each takes the [Rescue](/reference/enums/mission/) mission on a 66 percent chance and Area Guard otherwise. A member of an `IsBaseDefense=yes` team always takes Area Guard. Either way, the attacker becomes the defender's target, and the damaged object is recorded as what it is protecting.
 
-A defender on Rescue engages whatever [it finds near the damaged object](/systems/target-selection/#when-an-object-scans) and then heads for a cell its house nominates, settling into Area Guard when it arrives. An object with no offensive value at all is sent to the core of the base, a random point within one base radius of the base center. Everything else is sent to one of the four edge zones at random. An edge zone is the ground lying in one compass quadrant of the base, between one and two base radii out from that same center.
+After each order, the defender's `ThreatPosed` is added to a running total. Orders stop once the total exceeds the budget. The first defender is therefore always sent, even when it alone covers the whole budget.
 
-Each defender's `ThreatPosed` is subtracted from the budget after it has already been given its orders, so the first defender is always sent even when it alone covers the whole budget.
+A defender on Rescue first attacks the attacker. Once it has no target, it attacks [whatever it finds near the damaged object](/systems/target-selection/#when-an-object-scans). When nothing is left, it moves to a point its house chooses and switches to Area Guard on arrival:
+
+- An object with no offensive value goes to the core of the base, a random point within one base radius of the base center.
+- Every other object goes to one of the four edge zones at random. An edge zone is the ground in one compass quadrant of the base, between one and two base radii from the center.
+
+For these points, the base radius counts as at least 3 and at most 8 cells.
 
 ### The attacker's cooldown
 
-Once the dispatched defenders have covered the budget, a countdown of [`BaseDefenseDelay`](/keys/basedefensedelay/) minutes in `[General]` starts. It is stored on the attacker rather than on the defending house, so one satisfied call-up stops every house on the map from answering that same attacker until it expires.
+A call-up starts a cooldown of [`BaseDefenseDelay`](/keys/basedefensedelay/) minutes, set in `[General]`, when the `ThreatPosed` of the defenders it ordered exceeds the budget. The cooldown belongs to the attacker, not to the defending house. While it runs, no house calls defenders back against that attacker.
 
-A call-up that ran out of candidates before covering the budget sets no cooldown and runs again on the attacker's next hit. A call-up canceled by defenders already fighting the attacker sets it only when their combined ratings pushed the budget below zero. One canceled to exactly zero, the case of the single defender in [the strength budget](#the-strength-budget) above, sets nothing. Neither does an attacker whose own rating is zero.
+These call-ups set no cooldown and run again on the attacker's next hit:
+
+- one that ran out of candidates before the defenders' total exceeded the budget;
+- one whose budget reached exactly zero because of objects already targeting the attacker, as in [the strength budget](#the-strength-budget) example;
+- one for an attacker whose `ThreatPosed` is `0`.
+
+A budget pushed below zero by objects already targeting the attacker does start the cooldown.
 
 ## Campaign and skirmish differences
 
-Five of the decisions above are settled differently by game type, and they are gathered here so that a page written mostly in one voice does not have to be re-read for the other. A campaign holds the response back. No first enemy is ever picked, an armed building keeps its own defenders instead of calling for help, and a mission that forbids recruitment is honored where the other game types ignore it. Breaking an alliance is the one rule a campaign relaxes rather than tightens.
+These rules differ between campaigns and skirmish or multiplayer games:
 
 | Behavior | Campaign | Skirmish and multiplayer |
 | --- | --- | --- |
-| Picking a first enemy | Never happens | The nearest non-passive, undefeated house, once the countdown expires |
-| An armed building answering its own attack | Refuses the call-up and defends itself alone | Calls for help like any other structure |
+| Picking a first enemy | Never happens | The nearest undefeated house whose country is not passive, once the countdown expires |
+| A damaged object with a primary weapon | Calls no one back | Calls for help like any other |
 | A candidate whose mission sets `Recruitable=no` | Rejected | Accepted; the mission's setting is not read |
-| Which houses count as human | The house under player control | Every house flagged as human |
-| Breaking an alliance | Always proceeds | Requires that neither country is `MultiplayPassive=yes` |
+| Which houses count as human | The house under player control | Every house a human plays |
+| Breaking an alliance | Always proceeds | Requires that neither country sets `MultiplayPassive=yes` |
 
 ## Settings and state without effect
 
-[`Whiner=yes`](/keys/whiner/) on a TeamType is read into a flag whose only test can never be reached. The damage routine sends a team member's damage to its team and everything else down a second branch. The flag is tested on that second branch, behind a test for a team that the branch itself has already excluded, so nothing that holds a team ever reaches it. A team that is hit before it began to move regroups instead, and one that is hit while moving turns on its attacker.
+[`Whiner=yes`](/keys/whiner/) on a TeamType has no effect. A team member that takes damage always reports it to its team, which responds as [answering damage](/systems/ai-team-execution/#answering-damage) describes, so the setting never starts a call-up.
 
-A house also sets a flag for having been alerted to an enemy. It is set for every computer house that builds a base, or whose [`IQ`](/keys/iq/) reaches the production level, and set again by the [Autocreate Begins...](/mapping/actions/taction-autocreate/) trigger action. The team-creation block that would have read it is disabled, and the live pass that replaced it ignores the parameter it is handed, so there is no alerted-team behavior. [`AutocreateTime`](/keys/autocreatetime/) reaches [the same disabled block](/systems/ai-team-production/#parsed-settings-without-effect).
-
-Two pieces of state are written and never read. Alongside the frame stamp that drives [the attacked state](#the-attacked-state), a damaged structure records which house the attacker belongs to, and nothing reads that record. The engine also declares a further house state for an enemy closing in on the base, which nothing ever assigns and nothing ever tests.
+The [Autocreate Begins...](/mapping/actions/taction-autocreate/) trigger action has no effect on team creation. The team-creation step it was meant to start is disabled, and the step that replaced it does not read what the action sets. [`AutocreateTime`](/keys/autocreatetime/) belonged to [the same disabled step](/systems/ai-team-production/#parsed-settings-without-effect).

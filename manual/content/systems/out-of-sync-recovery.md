@@ -1,6 +1,6 @@
 ---
 title: Out-of-sync recovery
-summary: "What the players see when a network game goes out of sync, and how the master's choice to load a saved game, continue or quit is carried out on every machine."
+summary: "What the players see when a network game goes out of sync, and how the master's choice to load a saved game or continue is carried out on every machine."
 category: multiplayer-networking
 keys: []
 related:
@@ -18,28 +18,46 @@ related:
 
 ## When the game goes out of sync
 
-Every machine checks the checksums the others report before it runs a frame's commands, so the same frame boundary is checked everywhere. Each then writes its [report](/using/out-of-sync-reports/), halts the game, and opens a dialog. The master chooses between loading a saved game, continuing, and quitting; everyone else waits for that choice, and can quit after ten seconds.
+Before a machine runs a frame's commands, it compares its own checksum with the checksums the other machines reported. Every machine therefore detects a divergence at the same frame. Each machine then writes its [out-of-sync report](/using/out-of-sync-reports/), halts the game, and opens the out-of-sync dialog.
 
-Both dialogs list the players. The host icon marks the master, and each player is shown as `OK`, as `Desynced` when their checksum disagreed with this machine's, or as `Quit`. A chat box under the list reaches everyone, and a line typed there is shown in the message list as well, as [in-game chat](/systems/chat/) is.
+The [master](#the-master) gets a decision dialog with three buttons: Load Game, Continue and Quit. Every other player gets a waiting dialog whose only button is Quit.
 
-No frames are exchanged while the dialog is open, so each machine sends the others a heartbeat once a second instead. A player silent for twenty-five seconds is dropped, with the same "connection lost" notice a player who stops answering during play gets. A player who quits is shown as such the moment their sign-off arrives.
+Both dialogs list the players. The host icon marks the master, and each player has one of these statuses:
+
+- `OK`: in step with this machine.
+- `Desynced`: their checksum disagreed with this machine's.
+- `Quit`: they left while the dialog was open. The status appears as soon as their sign-off arrives or this machine drops them for silence.
+
+A chat box under the list sends to every player. A line typed there also appears in the on-screen message list, as [in-game chat](/systems/chat/) does.
+
+The game sends no frames while the dialog is open, so each machine sends the others a heartbeat once a second. Each machine drops a player after twenty-five seconds with no heartbeat from them. The count starts when that machine's dialog opens and restarts with each heartbeat. The dialog then lists that player as `Quit`, and the on-screen message list gets the same "connection lost" line as for a player who stops answering during play.
+
+A recording played back has nobody to decide with. It shows the plain "The game is out of sync." box, with Continue and Stop.
 
 ## Continuing
 
-Continue drops the players that are out of sync with this machine and plays on. Their houses pass to the computer, as they do for any player who leaves. The players on the other side of the divergence do the same, so the match splits into games that carry on separately. The players still in step with each other keep playing together, and a later divergence among them opens the dialog again.
+When the master presses Continue, every machine drops the players who are out of sync with it and plays on. The bases of the dropped players go the way of any player who [leaves the match](/systems/leaving-a-match/#what-becomes-of-their-base).
+
+The machines out of sync with the master drop the master in the same way, so the match splits into separate games that carry on independently. If the players in one of those games diverge later, the dialog opens again.
 
 ## Loading a saved game
 
-The master can instead pick one of the match's [saved games](/formats/save-games/#loading-during-a-match). Every machine then shows a five-second countdown and loads its own copy of the file the master named. It keeps the seats it had, and synchronizes again at the save's frame. A player who has left since the save was written fights on under the computer. The same load can be started from the options menu in a match that has not gone out of sync; the game keeps running under the list while the master browses it.
+The master can instead press Load Game and pick one of the match's [saved games](/formats/save-games/#loading-during-a-match). The button is grayed out when the master has no saved game from this match. The game stays halted for everyone while the master browses the list.
 
-A machine that cannot load the file leaves the match with the usual loading error, and the others carry on without it.
+Once the master picks a save, every machine shows a five-second countdown in its dialog and then loads the [save with the same number](/formats/save-games/#numbered-multiplayer-saves) from its own Saved Games folder. The master's Load Game and Continue buttons are grayed out during the countdown. The computer plays the house of anyone who has left since the save was written.
+
+A machine that cannot load the save shows the usual loading error and leaves the match. The other machines carry on without it.
+
+The master can start the same load from the options menu in a match that has not gone out of sync. There the game keeps running while the master browses the list. If the game goes out of sync while that load is counting down, each machine still writes its report, but no dialog opens and the load goes ahead.
 
 ## Quitting
 
-Quit signs this machine off to every seat and ends the game here; for the others it is a player leaving. On the waiting dialog the button enables after ten seconds, so nobody quits by reflex.
+Quit tells every other machine that this player is leaving, and ends the game on this machine. The other machines treat it as a player [leaving the match](/systems/leaving-a-match/). The master can quit at once. A waiting player's Quit button becomes available ten seconds after the dialog opens.
 
 ## The master
 
-Whoever is master decides, and every machine names the same one: the seat the [launch file's host](/formats/spawn-ini/#the-host) announced, while that player holds a seat, and otherwise the lowest seat still held. When the master leaves during the dialog, the next in line takes over at once. Its waiting dialog becomes the decision dialog with the chat so far kept.
+The master decides for everyone. In a match started from the menu, or from launch files that name no host, the master is the lowest seat. In a match started from launch files, the [host](/formats/spawn-ini/#the-host) is the master when it holds the lowest seat.
 
-A recording played back has nobody to decide with, so it keeps the plain "out of sync" box.
+When the master leaves during play, the lowest seat still held becomes the master on every machine.
+
+When the master leaves while the dialog is open, nobody takes over. The other players cannot continue or load a saved game, and can only quit.

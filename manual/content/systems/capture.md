@@ -33,7 +33,7 @@ related:
     id: produce-cash
 ---
 
-Almost everything below turns on which [mission](/systems/target-selection/#missions-in-brief) a soldier is in. A mission is the state that says what the soldier is doing at this moment, and it is the rules section named after that state. Target selection introduces both.
+Most of this page depends on the soldier's current [mission](/systems/target-selection/#missions-in-brief), such as capture, sabotage or area guard. A mission is what the soldier is doing at the moment. Each mission also has a rules section of the same name, such as `[Capture]`, that controls it, including how often it runs. Target selection introduces both.
 
 ## Who can walk in
 
@@ -43,228 +43,286 @@ Six settings on an InfantryType decide what a soldier does when it reaches whate
 | --- | --- |
 | [`Engineer=yes`](/keys/engineer/#scope-infantrytype) | Restores an allied structure, takes or damages a non-allied one, repairs a bridge |
 | [`C4=yes`](/keys/c4/) | Arms a [`Repairable=yes`](/keys/repairable/) structure with a demolition charge and walks away |
-| [`Agent=yes`](/keys/agent/) | Infiltrates a structure and reports what it holds |
-| [`Infiltrate=yes`](/keys/infiltrate/) | Nothing on its own. It is what lets a soldier be given a structure as a target and a destination at all |
+| [`Agent=yes`](/keys/agent/) | Spies on the structure it enters |
+| [`Infiltrate=yes`](/keys/infiltrate/) | Lets the soldier be sent into a structure. On its own, the soldier is consumed on arrival and nothing else happens |
 | [`VehicleThief=yes`](/keys/vehiclethief/) | Takes the vehicle it was sent at |
 | [`Thief=yes`](/keys/thief/) | Takes a non-allied vehicle it is walking toward, under any mission |
 
 :::caution[`Infiltrate=no` cannot be written on an engineer or a demolition type]
-`C4=yes` and `Engineer=yes` each force the infiltrate flag on, and they do it immediately after the section's own `Infiltrate` line has been read. An explicit `Infiltrate=no` in such a section is overwritten in the same pass and changes nothing. The forcing also outlives the flag that caused it. A later rules layer that writes `Engineer=no` over an engineer type clears the engineer behavior but leaves the infiltrate behavior in place. The type still takes the enter cursor over a `Capturable=yes` structure, still walks in, and does nothing when it arrives. `Agent=yes` forces nothing, so a spy needs an explicit `Infiltrate=yes` before it can be given a structure as a target.
+`C4=yes` and `Engineer=yes` each turn `Infiltrate` on after the section is read, so an explicit `Infiltrate=no` in the same section changes nothing. The forced value also stays after the flag that caused it is gone. If a later rules layer writes `Engineer=no` over an engineer type and does not also write `Infiltrate=no`, the type loses its engineer behavior but keeps `Infiltrate`. It still takes the enter cursor over a `Capturable=yes` structure, still walks in, and is consumed with no effect. `Agent=yes` forces nothing, so a spy needs an explicit `Infiltrate=yes` before it can be sent into a structure.
 :::
 
 ## The cursor
 
 ### An engineer over a structure
 
-A **deployed vehicle** is a structure that names an [`UndeploysInto`](/keys/undeploysinto/) vehicle and is not a construction yard. The engine counts one as a vehicle rather than as a structure, and that distinction runs through the rest of this page.
+A **deployed vehicle** is a structure whose type names an [`UndeploysInto`](/keys/undeploysinto/) vehicle and is not a construction yard. The engine counts a deployed vehicle as a vehicle, not as a structure, and that distinction runs through the rest of this page.
 
-A player-controlled engineer has cursor rules of its own. They apply to a structure meeting **all of**:
+A player-controlled engineer has separate cursor rules for a structure that meets **all of**:
 
 - **Any of:** it is not a deployed vehicle; it is [`IsMobileWar=yes`](/keys/ismobilewar/).
 - **Any of:** it is [`Repairable=yes`](/keys/repairable/); it is `IsMobileWar=yes`.
 
-An `IsMobileWar=yes` structure therefore reaches these rules whatever else it is, and every other structure has to clear both groups. For one that does, the table gives the cursor produced.
+An `IsMobileWar=yes` structure therefore always reaches these rules, and any other structure must pass both groups. For a structure that does, the table gives the cursor.
 
 | Structure | Cursor |
 | --- | --- |
 | A [`BridgeRepairHut=yes`](/keys/bridgerepairhut/) type | The repair cursor when a bridge near it can be repaired, the refusal cursor otherwise |
 | An allied structure at full [`Strength`](/keys/strength/#scope-aircrafttype) | The refusal cursor |
 | An allied structure below full strength | The repair cursor |
-| A non-allied [`Capturable=yes`](/keys/capturable/) structure above [`EngineerCaptureLevel`](/keys/engineercapturelevel/) | The damage action, which has no cursor art of its own |
+| A non-allied [`Capturable=yes`](/keys/capturable/) structure whose strength fraction is above [`EngineerCaptureLevel`](/keys/engineercapturelevel/) | The damage action, which has no cursor art |
 | A non-allied `Capturable=yes` structure at or below that fraction | The enter cursor |
 
-The full-strength test compares against a figure fixed at `1` in the engine and reads the strength live, so the repair cursor appears the moment an allied structure drops a single point.
+Full strength means exactly maximum strength, so the repair cursor appears as soon as an allied structure loses one point.
 
-Anything these rules do not settle falls through to the general rewrite every `Infiltrate=yes` soldier shares. That covers two cases: a structure the two groups above rejected, and a non-allied structure that clears them but is not `Capturable=yes`, which matches no row. That rewrite offers the enter cursor over a non-allied `Capturable=yes` structure with no strength test at all. It is the route a `Repairable=no` structure takes, such as a barrel, a mine or a wall, and the route a spy takes for everything. It withholds the cursor when no cell adjacent to the structure's footprint sits in the same [movement zone](/glossary/#movement-zone) as the soldier, which is what keeps it off a naval yard that no land route reaches.
+Two cases get no cursor from these rules: a structure that failed either group above, and a non-allied structure that passes both but is not `Capturable=yes`. Both fall through to the rule every `Infiltrate=yes` soldier uses, including a spy. That rule gives the enter cursor over any non-allied `Capturable=yes` structure whose type is [`LegalTarget=yes`](/keys/legaltarget/), whatever its strength. This is how an engineer is offered a `Repairable=no` structure such as a barrel, a mine or a wall, if its type is `Capturable=yes`.
 
-:::caution[The capture threshold moves the cursor and nothing else]
-`EngineerCaptureLevel` picks between the enter cursor and a damage action, and the click folds the repair cursor, the damage action and the enter cursor into a single capture order before it is issued. What happens at the structure is decided again from the flags found there. The damage action has no cursor art of its own, so its cursor falls back to the ordinary pointer. At the engine default of `1` it cannot be produced at all, because a structure's strength as a fraction of its maximum can never rise above `1`.
+The shared rule shows the no-move cursor instead when the soldier cannot walk up to the structure. That happens when no cell next to the structure's footprint is in the soldier's [movement zone](/glossary/#movement-zone), as with a naval yard that no land route reaches.
+
+:::caution[The capture threshold changes only the cursor]
+`EngineerCaptureLevel` chooses between the enter cursor and the damage action. A click on either one, or on the repair cursor, gives the same capture order. When the engineer arrives, the structure's current flags decide what happens, not the cursor the player saw. The damage action has no cursor art, so it shows the ordinary pointer. At `EngineerCaptureLevel=1` the damage action never appears, because a structure's strength fraction never rises above `1`.
 :::
 
-With fog of war switched on, an engineer's cursor over a cell that holds a fogged structure record ignores ownership, strength and `Capturable` alike. A bridge repair hut takes the repair or refusal cursor, and any `Repairable=yes` type takes the enter cursor. The enter cursor's click issues the capture order against the cell rather than against an object.
+With fog of war on, an engineer over a cell holding a fogged structure record gets a cursor that ignores ownership, strength and `Capturable`. A bridge repair hut gives the repair or refusal cursor, and any `Repairable=yes` type gives the enter cursor. The click itself does not use this rule: it gives whatever order the cell would give without the fogged record, so it never issues a capture or bridge repair order.
 
 ### A commando over a structure
 
-For a player-controlled infantry with `C4=yes` or the [`C4` ability](/systems/veterancy/#abilities), an attack cursor over a structure that is not a deployed vehicle becomes the demolitions cursor when the type is `Repairable=yes`. On any other structure the attack cursor stays, which is how a commando shoots a barrel and bombs everything else. Force fire reaches an allied or own structure the same way, because holding it produces the attack cursor there in the first place.
+A player-controlled soldier with `C4=yes` or the [`C4` ability](/systems/veterancy/#abilities) gets the demolitions cursor in place of the attack cursor over a `Repairable=yes` structure that is not a deployed vehicle. Over any other structure the attack cursor stays, but the attack order [turns into a capture order](#what-the-click-issues). The commando then walks up to the structure and is consumed when it arrives, unless the structure is destroyed first. Force fire gives the attack cursor over an allied or own structure too, so the same rule lets a commando bomb a `Repairable=yes` structure of its own side.
+
+A `C4=yes` soldier also gets the demolitions cursor over a non-allied `Capturable=yes`, `LegalTarget=yes` deployed vehicle. The click gives an order only when that type is also `Repairable=yes`.
 
 ### A vehicle thief over a vehicle
 
-A player-controlled `VehicleThief=yes` soldier takes the enter cursor over any non-structure counted as a vehicle, which includes a landed aircraft. An [`IsTrain=yes`](/keys/istrain/) type takes the select cursor instead. The ownership test is house identity rather than alliance, so the cursor appears over an allied house's vehicle as readily as over an enemy's.
+A player-controlled `VehicleThief=yes` soldier gets the enter cursor over any vehicle owned by another house. That includes a landed aircraft but not a deployed vehicle. A [`NonVehicle=yes`](/keys/nonvehicle/) type does not count as a vehicle. An [`IsTrain=yes`](/keys/istrain/) type gives the select cursor instead. The test compares houses, not alliances, so an allied player's vehicle gets the enter cursor too.
 
 :::note[The harvester truce withholds the enter cursor]
-While the [`HarvesterImmune`](/keys/harvesterimmune/) truce is on, a vehicle whose type is listed in [`HarvesterUnit`](/keys/harvesterunit/) takes the select cursor instead of the enter cursor. That is the same exemption [target selection](/systems/target-selection/#why-a-candidate-is-rejected) applies when it rejects a candidate.
+While the [`HarvesterImmune`](/keys/harvesterimmune/) truce is on, a vehicle whose type is listed in [`HarvesterUnit`](/keys/harvesterunit/) gives the select cursor instead of the enter cursor. [Target selection](/systems/target-selection/#why-a-candidate-is-rejected) applies the same exemption when it rejects a candidate.
 :::
 
 ### What the click issues
 
-The three sections above each settle a cursor, and a guard-area order over a structure settles one more. This table takes over from there: the left column is what those rules produced and the right is the order a click on it issues. Three of them share the first row, which is why what happens at the structure is settled again on arrival rather than by the cursor the player saw.
+A click on an object gives an order according to the cursor the rules above produced. The area guard row applies to the area guard order, given by holding both force-fire and force-move.
 
-| What the cursor test produced | Order issued |
+| Cursor | Order issued |
 | --- | --- |
-| Repair, enter, or the damage action, over an object | The [capture mission](/reference/enums/mission/), with the object as the destination |
-| Demolitions | The sabotage mission, with the object as the destination |
-| Enter, over a cell | The capture mission, with the cell as the destination |
-| Area guard, over a non-allied `Repairable=yes` structure, from a `C4=yes` soldier | The sabotage mission |
+| Repair, enter, or the damage action | The [capture mission](/reference/enums/mission/), with the object as the destination |
+| Demolitions | The sabotage mission, with the structure as the destination, when the structure is `Repairable=yes` |
+| Area guard, over a non-allied `Repairable=yes` structure, from a soldier with `C4=yes` or the `C4` ability | The sabotage mission |
 | Refusal | Nothing |
 
-Both missions are serviced on the cadence their own [`Rate`](/keys/rate/#scope-mission-behavior) sets in the `[Capture]` and `[Sabotage]` sections, plus a jitter of up to two frames. A vehicle ordered to capture or sabotage attacks instead. An `Infiltrate=yes` soldier given a structure as an attack target converts that order into the capture mission, and a soldier with `C4=yes` or the `C4` ability converts it into sabotage instead when the structure is `Repairable=yes`.
+The repair cursor gives an attack order instead when the soldier's weapon heals.
+
+Both missions run at the interval their [`Rate`](/keys/rate/#scope-mission-behavior) sets in the `[Capture]` and `[Sabotage]` sections, plus up to two extra frames at random.
+
+An attack order against a structure can also turn into one of these missions. A soldier with `C4=yes` or the `C4` ability switches to sabotage when the structure is `Repairable=yes`. Otherwise an `Infiltrate=yes` soldier switches to capture.
 
 ## Walking in
 
-Everything in this section happens when the soldier finishes a move onto a cell while on the capture, area guard or patrol mission. Area guard and patrol are in that gate, which is how a computer engineer restores a structure without an explicit order.
+Everything in this section happens when a soldier finishes a move onto a cell while on the capture, area guard or patrol mission. Area guard and patrol are included, which is how a computer engineer restores a structure without an explicit order.
 
-An infantry on the capture, sabotage or enter mission may step into the cell holding its destination. An engineer gets the same allowance on guard, area guard and patrol, and a vehicle thief gets it for any non-`IsTrain=yes` vehicle it is aimed at. Under the capture, enter, area guard and patrol missions the walking locomotor will also let the soldier claim a sub-cell position that another soldier already holds. A [cell](/glossary/#cell) offers infantry three standing places, and a sub-cell position is one of them. An `Infiltrate=yes` type is exempt from the check that would otherwise discard a destination lying in another [movement zone](/glossary/#movement-zone).
+A soldier on the capture, sabotage or enter mission may step into the cell holding its destination or its target. An engineer may also do so on guard, area guard and patrol. A vehicle thief may step into the cell of any non-`IsTrain=yes` vehicle that is its destination.
+
+A [cell](/glossary/#cell) has three standing places for infantry. On the capture, enter, area guard and patrol missions, a soldier walking into its destination's cell may take a standing place that another soldier already holds.
+
+An ordinary soldier drops a destination in another [movement zone](/glossary/#movement-zone). An `Infiltrate=yes` type keeps it, and so does any soldier on the enter mission.
+
+When a soldier walks into its target structure, the structure's entered trigger springs first, whatever kind of soldier it is.
 
 ### The vehicle branch
 
-The first test is on the destination alone: a live object counted as a vehicle. There is no flag test, no alliance test and no `Capturable` test. While the soldier is off the cell, the destination is simply re-aimed at the vehicle. Once the two stand on the same cell, this runs in order:
+This branch applies to any live destination the engine counts as a vehicle, including a deployed vehicle. It checks no flag on the soldier, no alliance and no `Capturable`. While the soldier is on a different cell, it keeps heading for the vehicle. Once both stand on the same cell, the following happens in order:
 
-1. the entered trigger on the vehicle springs;
-2. the vehicle detaches from everything tracking it;
-3. ownership changes;
-4. infantry heading into the vehicle scatter, which happens only when the destination is a deployed vehicle;
-5. the soldier's tag moves onto the vehicle, if that tag is transferable;
-6. the soldier's own destroyed-anything trigger springs;
+1. the vehicle's entered trigger springs;
+2. everything tracking the vehicle drops it;
+3. the vehicle changes owner, which springs its entered trigger again;
+4. infantry heading into a deployed vehicle scatter;
+5. the soldier's tag moves onto the vehicle, if the tag is transferable;
+6. the soldier's destroyed-anything trigger springs;
 7. the soldier is deleted.
 
-A soldier's **tag** is the scenario tag attached to it: the record that binds a trigger to an object. It is **transferable** when the trigger behind it, or any trigger linked behind that one, sets the transferable field of its own record. A tag that is not transferable does not move; step 7 deletes the soldier still holding it.
+A soldier's **tag** is the scenario tag attached to it, which links it to a trigger. The tag is **transferable** when its trigger, or any trigger linked after it, sets [field 8 of its trigger row](/formats/scenario-triggers/#the-trigger-row), which hands the tag on. A tag that is not transferable does not move to the vehicle.
 
-:::caution[An engineer takes a mobile war factory outright]
-Because a deployed vehicle counts as a vehicle here, this branch runs ahead of all the engineer handling and applies none of its tests. An engineer that reaches a deployed mobile war factory changes its owner on the spot, at any strength, whatever `Capturable` says, and including an allied one. The allied case is reachable straight from the cursor: a damaged allied `IsMobileWar=yes` structure offers the engineer's repair cursor, and that click issues the same capture order.
+A vehicle that already belongs to the soldier's house does not change owner, but the soldier is still consumed.
+
+:::caution[A deployed vehicle is taken outright]
+A deployed vehicle counts as a vehicle here, so this branch runs before any engineer handling and applies none of its tests. A soldier that reaches another house's deployed vehicle on the capture mission takes it at any strength, whatever its `Capturable` setting. Two cursors let a player order this:
+
+- Any `Infiltrate=yes` soldier without `C4=yes`, a spy included, gets the enter cursor over a non-allied `Capturable=yes`, `LegalTarget=yes` deployed vehicle.
+- An engineer gets the repair cursor over a damaged allied `IsMobileWar=yes` structure. That click gives the same capture order, so the engineer takes the allied player's mobile war factory.
 :::
 
 ### Restoring an allied structure
 
-An engineer that reaches an allied structure restores it to full strength at no cost, and [that also forces the repair flag off](/systems/repair/#what-stops-a-repair). The damage animation state is re-evaluated on the new strength. Nothing else about the structure changes.
+An engineer that reaches an allied structure restores it to full strength at no cost. It also [switches the structure's repair off](/systems/repair/#what-stops-a-repair). The structure's damaged appearance updates to the new strength. Nothing else about the structure changes.
 
 ### Repairing a bridge
 
-A `BridgeRepairHut=yes` structure replaces both the restore and the capture branches, so a hut is never restored and never changes hands whoever owns it. EVA announces the repair for a player-controlled house. The repair to run is chosen from the five-by-five block of cells centered on the soldier: a rail bridge tile anywhere inside it selects the rail repair, and the road repair runs otherwise. Every infantry then drops the hut as a target, and infantry heading into the cell scatter.
+An engineer that reaches a `BridgeRepairHut=yes` structure repairs a bridge, whoever owns the hut. The hut is never restored and never changes hands. EVA announces the repair when the engineer belongs to a player-controlled house.
+
+The engineer's position decides the kind of repair. A rail bridge tile anywhere in the five-by-five block of cells centered on the engineer selects the rail bridge repair. Otherwise the road bridge repair runs. Every infantry then stops targeting the hut, and infantry heading into its cell scatter.
 
 ### Capturing a non-allied structure
 
-For a non-allied `Capturable=yes` structure the entered trigger springs again and the losing house is marked as having been robbed. The soldier's tag is attached to the structure if it is transferable, ownership changes, and infantry heading into the cell scatter.
+An engineer that reaches a non-allied `Capturable=yes` structure takes it. The structure's entered trigger springs again, and the losing house is marked as robbed. The soldier's tag moves onto the structure if it is transferable. Ownership then changes, which springs the entered trigger a third time, and infantry heading into the cell scatter.
 
-That mark is the one the [Thieved by...](/mapping/events/tevent-thieved/) trigger event tests. It is set here and nowhere else — not by a stolen vehicle — and nothing ever clears it, so once a house has lost one structure to an engineer the mark stands for the rest of the match. Nothing announces the event, though, so a trigger whose only event is this one never fires, and no other part of the game reads the mark.
+The robbed mark is what the [Thieved by...](/mapping/events/tevent-thieved/) trigger event tests. Only this capture sets it; a stolen vehicle does not. Nothing clears it, so once a house loses one structure to an engineer, the mark stays for the rest of the match. A trigger that uses this event still [never fires](/systems/trigger-springing/#three-events-that-cannot-be-reached), and no other part of the game reads the mark.
 
 ### Damaging it instead
 
-The engineer damages the structure instead of taking it under **all of**:
+An engineer damages a non-allied structure instead of taking it when **all of** these hold:
 
 - the game is not a campaign game;
-- the lobby's multiplayer engineer option is on;
+- the multiplayer engineer option is on (`MultiEngineer` in a [spawn file](/formats/spawn-ini/));
 - the structure's strength fraction is above [`ConditionRed`](/keys/conditionred/).
 
-`Capturable` is not read on this branch.
+This branch does not read `Capturable`, so it also damages a structure the engineer could never take.
 
 ```text title="damage one engineer deals"
 damage = min(Strength − MaxStrength × ConditionRed / 2,
              MaxStrength × (1 − ConditionRed / 2) / 2)
 ```
 
-The figure is applied as forced damage with [`C4Warhead`](/keys/c4warhead/) and the engineer as the source. Forced damage skips the warhead's own effectiveness table, the house and object armor biases, the veteran armor bonus and [`Immune=yes`](/keys/immune/) alike, so the structure takes the whole figure. At the default `ConditionRed` of `0.5` that is a bite of at most 37.5% of maximum strength, and the branch stops as soon as the structure is at or below half strength:
+The damage uses [`C4Warhead`](/keys/c4warhead/) and credits the engineer. It is forced damage, so the warhead's effectiveness against the structure's armor, the house and object armor biases, the veteran armor bonus and [`Immune=yes`](/keys/immune/) do not reduce it.
+
+With `ConditionRed=0.5`, each engineer removes at most 37.5% of maximum strength, and damage stops once the structure is at or below half strength:
 
 | Engineer | Strength before | Strength after |
 | --- | --- | --- |
 | First | 100% | 62.5% |
 | Second | 62.5% | 25% |
-| Third | 25% | Captured |
+| Third | 25% | Captured, if `Capturable=yes` |
 
-`ConditionRed` therefore sets both the band in which the branch runs and the size of the step, and at `1` or above the branch is unreachable, since the strength fraction can never exceed it.
+`ConditionRed` sets both the strength range where engineers deal damage and the size of each hit. At `1` or above, engineers never deal damage, because the strength fraction cannot exceed it.
 
-:::danger[This branch reads `C4Warhead` without checking it]
-A structure that crosses the half-strength or the red-strength mark runs the fire-and-smoke handling, which reads the warhead it was damaged with and never tests it first. `C4Warhead` holds nothing until `[CombatDamage]` names one, so with the setting absent the second engineer's hit, the one that crosses both marks, reads a warhead that was never supplied. Name a `C4Warhead` before switching the multiplayer engineer option on.
+:::danger[Set `C4Warhead` before turning on the multiplayer engineer option]
+When a structure drops below half strength or below `ConditionRed`, the game reads the damaging warhead to choose fire effects. `C4Warhead` has no warhead until `[CombatDamage]` names one. Without it, the first engineer hit that crosses either mark crashes the game. With `ConditionRed=0.5` that is the second engineer.
 :::
 
 ### Infiltrating it
 
-A soldier that is not an engineer does anything at the structure only when it is `Agent=yes`. EVA announces the infiltration for a player-controlled house, and the house is recorded as spying on that structure. A spied structure shows its status overlay whenever the spying player selects it, and a spied factory also draws its current product through the same cameo palette as the sidebar.
+A soldier that is not an engineer has an effect at the structure only when it is `Agent=yes`. EVA announces the infiltration when the spy belongs to a player-controlled house, and the spy's house is recorded as spying on that structure. There is no alliance test. Capturing a structure clears the capturing house's spy record on it.
 
-A [`Radar=yes`](/keys/radar/) structure adds far more. Spying on one marks the whole owning house as radar-spied. While that mark stands, every sight the victim's objects take is credited to the local player instead, a standing share of the victim's vision rather than a single reveal. The mark is recomputed only when a spied radar structure is destroyed or changes hands, and capturing a structure clears the capturing house's own spy mark on it. Spying on a structure with positive [`Power`](/keys/power/#scope-buildingtype) adds nothing but a redraw of whichever spied structures the player has selected at that moment.
+When the spying player selects a spied structure, it shows the same status display and health pips as an allied structure. A spied factory also shows the cameo of whatever it is producing.
+
+Spying on a [`Radar=yes`](/keys/radar/) structure also marks the whole owning house as radar-spied. While that mark stands, the spying player sees whatever the victim's objects see. The mark is recalculated only when a spied radar structure is destroyed, or captured by a house that had spied on it.
+
+Spying on a structure with positive [`Power`](/keys/power/#scope-buildingtype) has no further effect.
 
 ### The soldier is consumed
 
-Every path through the structure branch deletes the soldier, including the paths where nothing at all happens. An engineer at a non-capturable non-allied structure inside a campaign is consumed, and so is any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the one entry path on this page that leaves the soldier alive.
+Every soldier that walks into its target structure is deleted, even when nothing happens there. That includes an engineer at a non-allied structure that is not `Capturable=yes` in a campaign, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the only arrival on this page that leaves the soldier alive.
 
 ## What changes hands
 
-Change of ownership is one shared routine, and it runs the same way for a structure, a vehicle and an aircraft.
+A structure, a vehicle and an aircraft change owner through the same steps.
 
-- The object is booked as a kill with no source attached. The capturing house collects the score points and [nothing gains experience](/systems/veterancy/#earning-experience); the object keeps the rank it was already holding.
-- The losing house's inventory counts fall and the new owner's rise, except on an [`Insignificant=yes`](/keys/insignificant/#scope-aircrafttype) type, which changes hands without moving between the two tallies at all.
-- The object's current target and destination are cleared, it detaches from everything tracking it, cell threat moves from one house to the other, and it re-enters idle behavior.
+- The object's entered trigger springs.
+- The object is recorded as a kill with no attacker. The capturing house gains score points equal to the object's cost, and [nothing gains experience](/systems/veterancy/#earning-experience). The object keeps its current rank.
+- The object moves from the losing house's inventory counts to the new owner's. An [`Insignificant=yes`](/keys/insignificant/#scope-aircrafttype) type is kept out of those counts, so nothing moves.
+- The object's target and destination are cleared, and everything tracking it drops it. Its threat on the map moves from one house to the other.
 
-A structure adds to that:
+A captured structure also goes through these steps:
 
-- The storage capacity its [`Storage`](/keys/storage/) declares moves to the new owner, and so does whatever the structure is holding, which lands straight in the new owner's spendable credits. The loser simply loses it; it is not booked as harvested on the way out.
-- Anything loaded inside is captured with it. So is anything in radio contact at a weapons factory, or within a quarter of a cell of the docking coordinate; anything further off is told to run away and contact is broken.
-- Production in progress is abandoned. The object under construction is deleted and the money spent on it so far is refunded to the losing house.
-- Both houses recount their factories, and a captured construction yard moves between their construction-yard lists. A player who has just lost the last of them also loses any placement cursor in progress.
-- The structure re-opens for business as a capture rather than as a new build, which skips the two gifts a fresh structure hands out: a captured [`FreeUnit`](/keys/freeunit/) structure yields nothing and a captured helipad no free aircraft.
-- The repair flag is cleared, a cloak generator's radius is reset and re-enabled if it still has power, and EVA announces the capture when either side is under player control.
-- The losing house records the structure as its recapture target, which is what its own engineers head for.
+- The storage capacity from its [`Storage`](/keys/storage/) moves to the new owner. So does the Tiberium stored in it: the losing house loses it, and the new owner gains it at once without it counting as harvested.
+- Anything loaded inside is captured with it. An object in radio contact is captured too if the structure is a weapons factory or the object is within a quarter of a cell of the docking point. Any other object in radio contact is told to move away, and contact is broken.
+- Production in progress is abandoned. The object under construction is removed, and the money spent on it so far is refunded to the losing house.
+- Both houses recount their factories. A captured construction yard moves between the two houses' lists of construction yards. If the player loses their last construction yard this way, any structure placement in progress is canceled.
+- The structure opens as a capture, not as a new build. It therefore gives out no free units: a captured [`FreeUnit`](/keys/freeunit/) structure yields nothing, and a captured helipad gets no free aircraft.
+- A structure that produces cash follows the rules under [cash-producing structures](/systems/produce-cash/#capture).
+- The repair flag is cleared. A cloak generator's radius is reset and re-enabled if it still has power. EVA announces the capture when either house is under player control.
+- The losing house records the structure as its recapture target. [Computer-controlled engineers](#computer-controlled-engineers) covers when its engineers head for it.
 
 :::caution[A computer house sells what it captures]
-Outside a campaign game, a capture by a non-human house refunds and removes every upgrade plugged into the structure and then sells the structure itself. The only exception is a structure that produces buildings and that the capturing house now owns at most one of. A type with no build-up animation cannot be sold, so there the upgrades are still stripped and refunded and the bare structure stays — except a firestorm wall section, which is removed outright with no refund.
+Outside a campaign game, a computer house that captures a structure sells it. It first refunds and removes every upgrade plugged into it. A structure that produces buildings is kept when it is the only one of its type the capturing house owns.
+
+A type with no build-up animation cannot be sold. Its upgrades are still removed and refunded, but the bare structure stays. A firestorm wall section is the exception: it is removed outright with no refund.
 :::
 
-Capture leaves three lasting marks besides the change of owner. A captured structure halves the number of survivors it will ever produce and worsens their odds. It never returns the `[General]` [`Engineer`](/keys/engineer/#scope-global-rules) type among its crew, whether it is destroyed or sold. It satisfies [the computer's last repair gate](/systems/repair/#when-the-computer-repairs) on its own, without the structure having been marked for repair. Nothing clears the captured mark, so recapturing it back undoes none of them.
+A captured structure keeps three effects for the rest of the match:
 
-Rank, abilities and the elite weapon [survive the change intact](/systems/veterancy/#carrying-rank-between-objects). Strength is neither restored nor reduced. An armed demolition charge keeps its countdown running through the whole thing.
+- It produces fewer survivors when destroyed. The count is halved before the one-to-five limit, and each footprint cell has worse odds of producing one. [Survivors](#survivors) gives the numbers.
+- It never produces the `[General]` [`Engineer`](/keys/engineer/#scope-global-rules) type as a survivor, whether it is destroyed or sold. An uncaptured structure that produces buildings can.
+- It passes [the computer's last repair check](/systems/repair/#when-the-computer-repairs) without being marked for repair.
+
+Nothing clears the captured state, so capturing the structure back undoes none of these.
+
+Rank, abilities and the elite weapon [are kept](/systems/veterancy/#carrying-rank-between-objects). Strength does not change. An armed demolition charge keeps counting down.
 
 ## Demolition charges
 
 ### Arming a structure
 
-Arming requires the sabotage mission, a `Repairable=yes` structure as the destination, and the type still has that flag when the soldier arrives. A sabotage mission whose destination is a structure without that flag, whether stale or assigned directly, is canceled and the soldier is put back on guard. There is no alliance test, so force fire can still send a saboteur against a qualifying structure belonging to its own house. Unless the structure is already deconstructing, the charge is set and the saboteur is recorded against it. The structure begins flashing as a designated target, and the countdown is set to [`C4Delay`](/keys/c4delay/) minutes' worth of frames. At the default of `0.03` that is 27 frames, about 1.8 seconds. The saboteur then clears its destination, uncloaks, takes a rearm delay and scatters away from the structure's center.
+A soldier arms a charge when it reaches a structure while on the sabotage mission, with that structure as its destination. The structure must still be `Repairable=yes` when the soldier arrives. If it is not, the soldier drops its target and destination and goes idle. There is no alliance test, so force fire can send a saboteur against a structure of its own house.
+
+The charge is armed unless the structure is already being sold. The structure then flashes as a target, and the countdown starts at [`C4Delay`](/keys/c4delay/) minutes converted to frames. For example, `C4Delay=0.03` gives 27 frames. The saboteur is recorded against the structure.
+
+Whether or not the charge was armed, the saboteur then drops its destination, uncloaks, waits out its rearm delay before it can fire again, and runs away from the structure.
 
 ### Detonation
 
-When the countdown reaches zero the structure takes damage equal to its current strength, applied as forced damage with `C4Warhead` and sourced to the saboteur. If the saboteur died first, the damage is sourced to nobody, which also costs its house the kill credit.
+When the countdown reaches zero, the structure takes damage equal to its current strength. The damage is forced, uses `C4Warhead`, and credits the saboteur. If the saboteur has died, the damage credits nobody, so its house gets no credit for the kill.
 
-:::danger[A charge cannot be defused]
-Nothing anywhere clears the armed state. Repairing the structure, restoring it with an engineer and capturing it all leave the charge armed and the countdown running. A sale requested explicitly, by a computer house, by a trigger action or by the capture sell-off above, is refused while a charge is armed. A player's own sell order does not check the charge and begins deconstruction with the countdown still going.
+:::caution[A charge cannot be defused]
+Nothing removes an armed charge. Repairing the structure, restoring it with an engineer and capturing it all leave the countdown running.
+
+An armed charge blocks every sale except a player's sell order. A sale by a computer house, by a trigger action, or by the capture sell-off above is refused. A player's sell order starts selling the structure with the countdown still running.
 :::
 
 ### Survivors
 
-The count is `Cost × SurvivorRate / SurvivorDivisor`, clamped to between 1 and 5, doubled in the divisor for a captured structure, and zero for a type that is not [`Crewed=yes`](/keys/crewed/). Each cell of the footprint then rolls once for one survivor, at odds set by two independent facts about the structure: whether it was ever captured, and whether a live saboteur is on record against it. Arming a charge is what puts a saboteur on record, and the saboteur's own death takes it off again.
+A destroyed structure produces up to `Cost × SurvivorRate / SurvivorDivisor` survivors, limited to between 1 and 5. The divisor is doubled for a captured structure. A type that is not [`Crewed=yes`](/keys/crewed/) produces none, and so does any structure when `SurvivorDivisor` is `0`.
+
+Each footprint cell then rolls once for one survivor until that count is reached. Two facts set the odds: whether the structure was ever captured, and whether a live saboteur is on record against it. Arming a charge puts the saboteur on record, and the saboteur's death removes it.
 
 | Roll per footprint cell | No saboteur on record | Saboteur on record |
 | --- | --- | --- |
 | Never captured | One in three | One in two |
 | Captured | One in nine | One in eight |
 
-Being captured is by far the heavier of the two: it costs more than the saboteur gains, so a captured structure is a poorer source of survivors even with a charge ticking on it. The survivors attack the saboteur on record when it is not allied to the structure's house; otherwise a human house's wander off and a computer house's go hunting.
+A captured structure with a saboteur on record still rolls worse (one in eight) than an uncaptured one without (one in three).
 
-A structure destroyed by its own charge produces none of them. The detonation is forced damage, and a forced destruction is marked survivorless before the count is taken. The improved right-hand column is therefore only reached on a structure that something else finished off first, and only while the saboteur is still alive to hold its place on the record.
+If the saboteur on record is not allied to the structure's owner, the survivors attack it. Otherwise a computer house's survivors go hunting, and a human house's survivors only scatter.
+
+A structure destroyed by its charge produces no survivors, because forced damage that destroys a structure leaves no survivors. The saboteur column therefore applies only when something else destroys the structure first, while the saboteur is still alive.
 
 ## Stealing a vehicle
 
-`VehicleThief=yes` and `Thief=yes` are separate settings with separate cursors, targeting and limits. They meet in one place: both stamp the vehicle with the type that took it, which is what puts a hijacker back on the map when the stolen vehicle dies.
+`VehicleThief=yes` and `Thief=yes` are separate settings with separate cursors, targeting and limits. Both record the soldier type that took the vehicle. When a vehicle stolen either way is destroyed, a soldier of that type steps back out of the wreck. It is created at the wreck with strength between 5 and half its maximum, whatever `Crewed=` says and with no crew-escape roll. It hunts for a computer house and stands guard for a human one. A stolen aircraft does not return its thief.
 
-A `VehicleThief=yes` soldier is the one with a cursor. It takes the vehicle through [the vehicle branch](#the-vehicle-branch), and a computer house turns its hunt into a capture order and leaves it on area guard when idle. Two consequences outlive the theft:
+A `VehicleThief=yes` soldier is the one with a cursor. It takes the vehicle through [the vehicle branch](#the-vehicle-branch).
 
-- The stolen vehicle counts against the thief type's [`BuildLimit`](/keys/buildlimit/) for as long as it lives, so a hijacker limited to one cannot be rebuilt while its prize survives.
-- When that vehicle is destroyed, the hijacker steps back out. It is recreated at the wreck with a strength between 5 and half its maximum, with no `Crewed=yes` requirement and no crew-escape roll to pass, hunting for a computer house and standing guard for a human one.
+A hunting vehicle thief turns its target into a capture order. An idle computer-owned one outside a team goes on area guard once its house's IQ reaches [`GuardArea`](/keys/guardarea/).
 
-A vehicle thief also loses its target outright when the vehicle it is chasing deploys into a mobile war factory or a construction yard, while every other object chasing that vehicle is handed the new structure instead.
+While the house owns a vehicle stolen by a `VehicleThief=yes` type, that vehicle counts against the type's positive [`BuildLimit`](/keys/buildlimit/). A hijacker limited to one cannot be rebuilt while its stolen vehicle survives. A stolen aircraft does not count.
 
-`Thief=yes` has no cursor anywhere. Its steal runs on every one of the soldier's own passes regardless of mission, and needs a non-allied vehicle as the movement destination. Within half a cell and one height level, the vehicle's entered trigger springs, radio contact breaks, the thief's tag moves across if it is transferable, ownership changes and the thief is deleted. Beyond that it re-aims at the vehicle whenever the vehicle wanders off. The flag also [widens what its owner scans for](/systems/target-selection/#what-each-kind-of-object-considers).
+When the vehicle a thief is targeting deploys into a mobile war factory or a construction yard, the thief drops its target. Every other object targeting that vehicle switches to the new structure.
+
+When a crusher that is not `IsTrain=yes` drives over a crushable, non-allied vehicle thief heading for it, the thief is deleted and its house takes the crusher. The thief's tag does not move. This theft does not record the thief's type, so it counts against no build limit and no hijacker returns when the vehicle dies.
+
+A `Thief=yes` soldier has no cursor. It tries to steal on every game frame, whatever its mission, whenever its movement destination is a non-allied vehicle. Aircraft and deployed vehicles do not count. Within half a cell and one height level, it takes the vehicle:
+
+1. the vehicle's entered trigger springs;
+2. the vehicle breaks radio contact;
+3. everything tracking the vehicle drops it;
+4. the thief's tag moves onto the vehicle, if it is transferable;
+5. the vehicle changes owner, which springs its entered trigger again;
+6. the thief is deleted.
+
+Farther away, the thief re-aims at the vehicle whenever the vehicle moves off. The flag also [widens what its owner scans for](/systems/target-selection/#what-each-kind-of-object-considers).
 
 ## Computer-controlled engineers
 
-A computer house aims engineers through [target selection](/systems/target-selection/#what-each-kind-of-object-considers), which covers the scanning rules, the fifteen-cell shortcut to the house's recapture target, and the filter that lets an engineer accept a damaged ally and reject everything else. Four mission conversions sit outside that:
+A computer house aims engineers through [target selection](/systems/target-selection/#what-each-kind-of-object-considers). That page covers the scanning rules, the fifteen-cell shortcut to the house's recapture target, and the filter that accepts a damaged allied structure and rejects other allied ones. Four mission changes happen outside target selection:
 
-- A hunt becomes a capture order for an engineer that is neither `C4=yes` nor holding the `C4` ability, and for a vehicle thief.
-- A hunt becomes a sabotage order for a `C4=yes` soldier whose target is a `Repairable=yes` structure.
-- Guard and area guard become a sabotage order under the same condition, for a computer house only.
-- A patrolling engineer drops an allied structure as a target once that structure climbs back above `ConditionRed`.
+- A hunt becomes a capture order for an engineer that has neither `C4=yes` nor the `C4` ability, and for a vehicle thief.
+- A hunt becomes a sabotage order for a soldier with `C4=yes` or the `C4` ability whose target is a `Repairable=yes` structure.
+- For a computer house only, guard and area guard become a sabotage order under the same condition.
+- A patrolling engineer drops an allied structure as a target once that structure's strength rises above `ConditionRed`.
 
-An engineer skips target scanning altogether on plain guard, and being shot at while standing on guard or area guard sends a computer-owned one hunting.
+An engineer does not scan for targets on plain guard. A computer-owned engineer that takes damage on guard or area guard switches to hunt.
+
+The guard and area guard changes keep the soldier's current destination. A computer saboteur whose destination is a cell can therefore run the sabotage mission and reach that cell. It then sets off three explosions centered on itself, each dealing [`BridgeStrength`](/keys/bridgestrength/) damage with `C4Warhead`. No player order produces this, because no cursor gives the sabotage order over a cell.
 
 ## Settings without effect
 
-[`EngineerDamage`](/keys/engineerdamage/) is read from `[General]` under its own name, but no gameplay path reads the figure it fills, so writing it changes nothing.
-
-The sabotage handling has a second branch, for a saboteur whose destination is a bare cell rather than a structure, that fires three area explosions of [`BridgeStrength`](/keys/bridgestrength/) with `C4Warhead` at the soldier's own position. No cursor produces that combination, because the cell branch of the click handler is never reached. The computer's guard and area-guard conversions do not clear an existing destination, so a computer-owned saboteur can run the mission with a cell destination and reach it that way.
+[`EngineerDamage`](/keys/engineerdamage/) is read from `[General]`, but nothing in play uses the value, so setting it changes nothing.

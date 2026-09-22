@@ -26,7 +26,9 @@ related:
     id: veterancy
 ---
 
-The pass runs once, as a skirmish or multiplayer scenario finishes loading, and never in a campaign. It visits every house in turn and skips a house whose country is [`MultiplayPassive`](/keys/multiplaypassive/) and an [observer's](/systems/observers/) house. Each remaining house is placed at its start position and given a base unit when bases are on. It then draws random vehicles and infantry until a budget is spent.
+Each house in a skirmish or multiplayer match starts with a base unit when bases are on, followed by randomly chosen vehicles and infantry up to a budget. The forces are placed once, as the scenario finishes loading. A campaign mission gets them only when it is a [generated map](/systems/map-generation/).
+
+A house whose country sets [`MultiplayPassive`](/keys/multiplaypassive/) gets no starting forces and holds no start position. Neither does an [observer's](/systems/observers/) house.
 
 A mod sets the starting forces in `rules.ini`:
 
@@ -37,7 +39,7 @@ A mod sets the starting forces in `rules.ini`:
 BaseUnit=MCV    ; the first entry a house may own becomes its starting base unit
 
 [MultiplayerDefaults]
-UnitCount=8     ; the lobby's unit count starts here
+UnitCount=8     ; the setup screen's unit count starts here
 
 [MYINF]         ; example InfantryType that joins the draw
 Cost=100        ; what a drawn type charges the budget
@@ -48,40 +50,87 @@ Owner=GDI       ; the house's country must be listed here
 AllowedToStartInMultiplayer=no
 ```
 
+In this example, a `GDI` house whose tech level is at least `2` can draw `MYINF`. No house draws `MYCIV`, and its price does not count toward the budget.
+
 ## The budget
 
-Every house draws against one budget worked out once for the match. Every InfantryType, and every UnitType not listed in [`BaseUnit`](/keys/baseunit/), that is [`AllowedToStartInMultiplayer=yes`](/keys/allowedtostartinmultiplayer/) contributes its [`Cost`](/keys/cost/) to an average price, whoever may own it. The budget is that average multiplied by the lobby's [unit count](/keys/unitcount/). With [bases](/keys/bases/) on and `BaseUnit` naming anything, the count is one lower, leaving room in the same figure for the base unit. The base unit is never charged against the budget. When no type is allowed at all the average is zero, and so is the budget: nothing more is drawn, so a house is left with its base unit alone, or with nothing when bases are off.
+Every house spends the same budget: the average price of the allowed types, multiplied by the match's unit count.
+
+The average covers every InfantryType and every UnitType set to [`AllowedToStartInMultiplayer=yes`](/keys/allowedtostartinmultiplayer/), except the UnitTypes listed in [`BaseUnit`](/keys/baseunit/). Each type counts once at its [`Cost`](/keys/cost/#scope-aircrafttype), whatever its tech level and whichever countries may own it.
+
+The unit count is a match option, set by `UnitCount` in the [launch file's `[Settings]`](/formats/spawn-ini/#the-options-every-house-plays-under) or on the setup screen. [`UnitCount`](/keys/unitcount/) in `[MultiplayerDefaults]` gives the setup screen its starting figure.
+
+With [bases](/keys/bases/) on and `BaseUnit` naming at least one type, the unit count is reduced by one before the multiplication. That leaves room in the budget for the base unit, which is never charged against it.
+
+If no type is allowed, the average and the budget are both zero. Each house then starts with its base unit alone, or with nothing when bases are off.
 
 ## Each house's shortlist
 
-A house then makes its own shortlist from the allowed types: those whose [`TechLevel`](/keys/techlevel/) its tech level reaches and whose [`Owner`](/keys/owner/) admits its country. Vehicles and infantry are listed separately, and the base unit is held out of the vehicle list.
+Each house draws only from its shortlist of allowed types. A type is on the shortlist when both of these hold:
+
+- its [`TechLevel`](/keys/techlevel/#scope-aircrafttype) is at or below the house's tech level;
+- its [`Owner`](/keys/owner/) lists the house's country.
+
+Vehicles and infantry have separate shortlists. `BaseUnit` types never appear on the vehicle shortlist.
 
 ## The start position
 
-Positions are settled as the scenario loads, before its spawn house sections, teams, triggers, and objects are read, so that a [spawn house](/formats/scenario-objects/#spawn-houses) can name the house that starts there. The pool is the map's placed waypoints `0` through `7`. A map whose [`Official`](/keys/official/#scope-scenarios-2) flag is set narrows that pool to the consecutive run of placed waypoints starting at `0`, unless a seat names a position. A position named for a seat in [the launch file](/formats/spawn-ini/#who-is-playing) is held for that house before anybody draws. The first house to draw takes an open position at random, and every house after it takes whichever open position lies furthest from those already held. A house left over when the eligible waypoints run out starts on a random cell of open ground, found once the map is loaded, and holds no numbered position. The cell chosen becomes the house's center.
+Each playing house starts at one of the map's placed waypoints `0` through `7`. A house left over when those run out starts on open ground.
+
+Every placed waypoint from `0` to `7` is eligible, with one exception. On a map whose [`Official`](/keys/official/#scope-scenarios-2) flag is set, only waypoints below a cutoff are eligible; the key page gives the cutoff. The exception does not apply when any playing seat in the launch file names a start position.
+
+Houses take positions in this order:
+
+1. A house whose seat names a start position in [the launch file](/formats/spawn-ini/#who-is-playing) holds it before anybody draws. If that waypoint is not eligible, or another house already holds it, the house draws with the others instead.
+2. The remaining houses draw in turn. When no position is held yet, the house takes an eligible position at random. Otherwise it takes the open position with the greatest total distance from the positions already held.
+3. A house still without a position once every eligible waypoint is held starts at a random spot where an 8-by-8 block of cells is open ground that a tracked vehicle can cross. This cell is found after the map has loaded, and the house holds no numbered position.
+
+On a map read from a file, the numbered positions are settled after the waypoints are read and before the spawn house sections, teams, triggers, and objects. That lets a [spawn house](/formats/scenario-objects/#spawn-houses) name the house that starts at each position.
 
 ## The base unit
 
-With bases on, each house is given the first [`BaseUnit`](/keys/baseunit/) entry the country it acts as may own, or entry 0 when it may own none. The unit lands on the start cell when the cell takes it, and otherwise on the nearest cell the [placement search](#where-an-object-lands) finds between one and thirty-one cells out. A base unit no cell takes is discarded. In capture the flag the house's flag is attached to it. With bases off nothing is placed ahead of the random objects.
+With bases on, each house starts with the first [`BaseUnit`](/keys/baseunit/) entry that the country the house [acts as](/keys/actslike/) may own. If that country may own none of them, the house gets the first entry. With bases off, or with `BaseUnit` empty, no base unit is placed.
 
-A match may deploy the base unit the moment it is placed, for every house rather than only the people playing. It deploys where it stands, into the cell its building's foundation reaches from there. The placement search keeps the two cells nearest the start clear for that. Ground that will not take the building leaves a unit: a person's stands where it was placed, and a computer's goes looking for ground it can use. The option is `AutoDeployMCV` in `[Settings]` of the [launch file](/formats/spawn-ini/#the-options-every-house-plays-under).
+The base unit goes on the start cell when it can stand there. Otherwise the [placement search](#where-an-object-lands) puts it on the nearest cell it finds, from one to thirty-one cells out. If no cell takes it, the house has no base unit.
+
+With `AutoDeployMCV=yes` in the [launch file's `[Settings]`](/formats/spawn-ini/#the-options-every-house-plays-under), every house's base unit starts deploying as soon as it is placed. This includes computer houses. The unit deploys where it stands, with the building's foundation laid over and around the unit's cell.
+
+If the ground there cannot take the building, or an object stands in its foundation, the unit stays undeployed. A human player's base unit waits where it was placed. A computer house's base unit drives off to find ground it can deploy on, provided its building is listed in [`BuildConst`](/keys/buildconst/); otherwise it hunts enemies.
 
 ## Spending the budget
 
-The house draws objects one at a time until the budget is spent or nothing is left to draw, charging each placed object its own `Cost`. While less than two thirds of the budget is spent and the vehicle list holds anything, the draw is a vehicle chosen at random from that list. Otherwise it is an infantry type chosen at random from the infantry list. An object the search cannot place is discarded without being charged, and the draw is repeated. A placed object is put on guard, or on area guard for a computer house, and [`InitialVeteran`](/keys/initialveteran/) makes it [elite](/systems/veterancy/) as it is created; the base unit is not covered.
+Each house draws one object at a time and adds each placed object's `Cost` to what it has spent. Drawing stops once the spent total reaches the budget, so the last object can take the total past it.
+
+Each draw picks, in this order:
+
+1. While less than two thirds of the budget is spent and the vehicle shortlist is not empty, a random vehicle from it.
+2. Otherwise, a random infantry type from the infantry shortlist.
+3. If step 2 finds the infantry shortlist empty, the house stops drawing. [When placement fails](#when-placement-fails) covers the result.
+
+If the [placement search](#where-an-object-lands) cannot place a drawn object, the object is removed without being charged, and the house draws again.
+
+A placed object starts on guard, or on area guard for a computer house. With [`InitialVeteran`](/keys/initialveteran/) set, each placed object starts [elite](/systems/veterancy/). Neither applies to the base unit.
 
 ## Where an object lands
 
-The search tries the start cell itself first, whatever distance range it was given, so with bases off the first random object stands on the start position. With bases on, the base unit already holds it. It then works outward one distance at a time, from three to thirty-two cells for the random objects and from one to thirty-one cells for the base unit itself. The random objects start at three so that the two cells nearest the start stay clear for the base unit to deploy into.
+The search first tries the start cell, then works outward one distance at a time. The random objects are tried from three to thirty-two cells out, and the base unit from one to thirty-one cells out. With bases off, the first random object that can stand on the start cell is placed there; with bases on, the base unit holds it whenever the base unit could stand there.
 
-At each distance the search picks a random compass direction to begin from and tries the eight cells that far out along the compass directions in turn. When none takes the object it tries the same eight again, each shifted at random by up to one cell in each axis. Candidates are clipped to the map rectangle, the upright square of cells enclosing the playfield, so near an edge the spokes bunch along it. A candidate is skipped when the shift has brought it back to the start cell, or when it lies outside the playfield, the diamond of cells the map has. The map rectangle is larger than the playfield, so near a corner the clip can put a candidate outside it. A cell already holding a vehicle, infantryman, aircraft or structure is refused unless both it and the object are infantry. Beyond that the object's own placement test decides, so ground the type cannot enter is refused too.
+The random objects start three cells out to leave the base unit room to deploy. The shifted second pass described below can still place a random object two cells from the start, and near a map corner an object can land closer still.
+
+At each distance, the search starts from a random compass direction and tries the cell that far out in each of the eight directions in turn. If none takes the object, it tries the same eight cells again, each shifted at random by up to one cell along each axis. A candidate that lands back on the start cell is skipped.
+
+A candidate that falls off the map is skipped. Near one of the map's four corners, a candidate past the corner can instead be pulled back onto it, so objects bunch there.
+
+A cell that already holds a vehicle, infantry, aircraft, or structure is refused, except that infantry may share a cell with infantry. Otherwise the object's placement test decides, so a cell the type cannot enter is refused too.
 
 ## When placement fails
 
-:::danger[A start that cannot hold the budget never finishes loading]
-The search gives up on an object past its farthest distance and the object is discarded without being charged, but the draw is repeated with no limit on attempts. A start position whose surroundings cannot take every object the budget buys keeps drawing and discarding, and the scenario never finishes loading.
+:::danger[Leave room around each start position for the whole budget]
+The house draws again after every object the search cannot place, with no limit on attempts. If the search area around a start position cannot hold what the budget buys, the house keeps drawing and discarding objects, and the scenario never finishes loading.
 :::
 
-:::caution[A house with nothing left to draw stops short of its budget]
-Once two thirds of the budget is spent only infantry may be drawn, so a house whose infantry list is empty keeps the vehicles it has and spends no more. A house whose vehicle list and infantry list are both empty, because every allowed type is above its tech level or not ownable by its country, draws nothing at all. Denying every type at once makes every budget zero, with the same result.
+:::caution[An empty shortlist leaves a house short of its budget]
+Once two thirds of the budget is spent, only infantry is drawn. A house with no infantry on its shortlist keeps the vehicles it has drawn by then and gets nothing more.
+
+A house with nothing on either shortlist gets no random objects. This happens when every allowed type is above the house's tech level or not ownable by its country. Denying every type makes every budget zero, with the same result.
 :::

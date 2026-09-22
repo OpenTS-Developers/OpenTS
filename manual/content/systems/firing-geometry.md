@@ -1,6 +1,6 @@
 ---
 title: Firing geometry and beam weapons
-summary: "Settles where an object's shots and firing effects appear, in what order one shot produces them, and which of them hold the weapon shut until they burn out."
+summary: "Where a shot and its firing effects appear, the order in which one shot produces them, and which effects stop the weapon firing until they end."
 category: weapons-projectiles
 keys:
   - AmbientDamage
@@ -52,22 +52,24 @@ related:
     id: veterancy
 ---
 
-One routine turns a decision to shoot into the whole shot: the projectile, the beam or wave that goes with it, the muzzle flash, the report, the recoil, the round spent and the delay before the next one. It runs in a fixed order. Several of the things it produces are anchored at different points on the artwork, and several are read from a different weapon slot. That is how a beam and the shell it accompanies can leave from opposite sides of the same gun.
+One shot can produce a projectile, a laser beam or sonic wave, weapon particle effects, a firing animation, a sound, recoil, a spent round and a reload delay. These parts do not all appear at the same point on the firer, and some take their settings from a different weapon slot than the one that fired. As a result, a beam and the shell fired with it can leave from opposite sides of the same gun.
 
-[Projectile flight and impact](/systems/projectile-flight/) owns what the shot does once it is in the air. This page owns the moment of firing.
+[Projectile flight and impact](/systems/projectile-flight/) covers the projectile after launch. This page covers the moment of firing.
 
 ## Weapon slots in brief
 
-An object type has three weapon slots. [`Primary=`](/keys/primary/) and [`Secondary=`](/keys/secondary/) fill the first two; [`Elite=`](/keys/elite/) fills a third that is never fired on its own. Each slot holds more than a weapon: it also holds the firing offset, barrel length and barrel thickness that weapon uses, and those come from the art entry rather than from the rules.
+An object type has three weapon slots. [`Primary=`](/keys/primary/) fills the first, [`Secondary=`](/keys/secondary/) the second, and [`Elite=`](/keys/elite/) the third. The third slot is never fired directly; it only replaces the first slot on an elite object.
 
-Two substitutions replace a whole slot, offsets included, and both are settled every time the slot is used rather than once.
+Each slot also holds a firing offset, a barrel length and a barrel thickness. These come from the type's image section in art.ini, not from rules.ini. The first slot uses [`PrimaryFireFLH`](/keys/primaryfireflh/), [`PBarrelLength`](/keys/pbarrellength/) and [`PBarrelThickness`](/keys/pbarrelthickness/). The second slot uses [`SecondaryFireFLH`](/keys/secondaryfireflh/), [`SBarrelLength`](/keys/sbarrellength/) and [`SBarrelThickness`](/keys/sbarrelthickness/). The third slot uses the first slot's three values.
 
-- An object that has reached elite [rank](/systems/veterancy/#the-elite-weapon) reads the third slot in place of the first. The offsets travel with the slot, and the third slot is filled from the first weapon's [`PrimaryFireFLH`](/keys/primaryfireflh/), [`PBarrelLength`](/keys/pbarrellength/) and [`PBarrelThickness`](/keys/pbarrelthickness/). An elite weapon therefore fires from the same point on the artwork as the weapon it replaces.
-- A structure with anything plugged into an upgrade slot takes the requested slot from the first plugged-in type that supplies a weapon there. It also takes that type's firing offsets, not its own.
+Two substitutions can replace a whole slot, including its offsets. Both are checked each time the slot is used, so a promotion or a new upgrade applies from the next shot.
 
-Throughout this page **the firing slot** means whichever slot the shot was ordered from, after those substitutions. **The first slot** means slot zero after them, which is the elite weapon on an elite object.
+- An object at elite [rank](/systems/veterancy/#the-elite-weapon) uses the third slot in place of the first. Because the third slot takes the first slot's offsets, the elite weapon fires from the same point on the artwork. If the type sets no `Elite=` weapon, the first slot's weapon stays in use.
+- A structure with upgrades plugged in takes each slot from the first upgrade type that has a weapon in that slot. It also takes that upgrade type's offsets for the slot. This replacement is checked before rank, so an upgrade's first-slot weapon also replaces the elite weapon.
 
-An object type names its weapons in rules.ini, and the offsets those weapons fire from are written against the type's image in art.ini. This example is abridged to the assignments this page turns on:
+On this page, **the firing slot** means the slot the shot was ordered from, after these substitutions. **The first slot** means slot one after these substitutions, so on an elite object it holds the elite weapon.
+
+This abridged example shows where the settings go. The weapons are named in rules.ini, and their offsets are set in art.ini under the type's image, which is the type's ID unless `Image=` names another:
 
 ```ini title="rules.ini"
 [GunTower]
@@ -83,111 +85,132 @@ Burst=2                ; alternates the shot between the two sides of the gun
 PrimaryFireFLH=120,20,80   ; forward, lateral and height of the first slot's mounting
 PBarrelLength=40           ; how far that slot's muzzle runs past the mounting
 PBarrelThickness=6         ; how far that muzzle sits above it
-SecondaryFireFLH=140,0,60 ; the second slot's mounting, in the same three parts
+SecondaryFireFLH=140,0,60  ; the second slot's mounting, in the same three parts
 SBarrelLength=40
 SBarrelThickness=6
 ```
 
 ## The shot, step by step
 
-The order matters because a step that fails ends the shot, and everything below it is skipped. The numbered steps below all belong to one call.
+One shot runs the steps below in order. A step that ends the shot skips every later step, so no round is spent and no reload delay is set.
 
-1. The firing slot's weapon and projectile are fetched. A slot with no weapon does nothing at all.
-2. A warhead whose [`LimpetFactor`](/keys/limpetfactor/) is `1` or more diverts here whenever the target is a structure, vehicle, infantry or aircraft. The mark is clamped on and the firer removes itself. A target this house has already marked ends the shot here too, leaving the firer standing. Either way no shot is created.
-3. The shot is refused outright where the effect this weapon would produce is still alive (see [below](#effects-that-hold-the-weapon-shut)).
-4. The barrel is given its desired elevation.
-5. The damage the shot will deal is worked out. An [`IsSonic=yes`](/keys/issonic/) or [`UseFireParticles=yes`](/keys/usefireparticles/) weapon has none at all. Anything else deals the weapon's [`Damage`](/keys/damage/#scope-weapontype) scaled by the house's and the object's firepower bias, and by the veteran firepower ability.
-6. The projectile is created and [launched from the mounting](/systems/projectile-flight/#what-the-shot-leaves-with). A weapon that also draws a beam or a wave still creates its projectile here. A shot that finds no ballistic solution, or that cannot be placed at the mounting, ends here: nothing below runs, and no round is spent or reload started.
-7. A turreted object goes into recoil.
-8. A shot from a weapon whose slot has a barrel length above zero is given [two flight turns](/systems/projectile-flight/#the-turn) immediately, so that it appears past the muzzle rather than inside it. An [`IsLaser=yes`](/keys/islaser/) weapon and an [`Inviso=yes`](/keys/inviso/) projectile are both excluded. Those two turns are ordinary ones, so a shot that would detonate on them does.
-9. The fire, spark and railgun effects are spawned at the muzzle, each only where its own hold is empty. The railgun's beam is walked and its damage dealt at this point, before anything below.
-10. The burst counter advances, the reload delay is set from it, and the counter wraps.
-11. The weapon's [`Report`](/keys/report/) sound plays from the mounting, or from the firer's own center when the projectile is [`Dropping=yes`](/keys/dropping/).
-12. The firing animation from the weapon's [`Anim`](/keys/anim/) list is created at the muzzle. It is attached to the firer, unless the firer is a structure, which gets a depth adjustment instead. A list of 8, 16, 32 or 64 entries is indexed by the gun heading rounded to that many directions. The list is rotated so that its first entry belongs to a gun facing north-west; on an eight-entry list the second entry is north, the third north-east, and so on. A list of any other length always uses its first entry.
-13. The sonic wave is created, from the muzzle to the target.
-14. The laser beam is drawn, from the muzzle to the target. On a structure this also stops the turret animation dead. Where the structure is down to its last round it discharges its turret as well; [`Charges`](/keys/charges/) covers what that costs a charging weapon.
-15. A round of ammunition is spent, and a firer standing hidden in shroud or fog reveals the ground around itself to the target's owner where that owner is under player control.
+1. The firing slot must hold a weapon. An empty slot fires nothing.
+2. If the weapon's warhead has a [`LimpetFactor`](/keys/limpetfactor/) above `0` and the target is a vehicle, infantry, aircraft or structure, no projectile is fired. If the firer's house has not yet marked that target, the target is marked, the weapon's [`Report`](/keys/report/) sound plays, and the firer is taken off the map. If that house has already marked the target, the shot ends and the firer stays.
+3. The shot ends if this weapon's effect from an earlier shot is still alive. [Effects that hold the weapon shut](#effects-that-hold-the-weapon-shut) lists these effects.
+4. The barrel starts turning to the elevation chosen for this target.
+5. The projectile's damage is set. An [`IsSonic=yes`](/keys/issonic/) or [`UseFireParticles=yes`](/keys/usefireparticles/) weapon gives its projectile no damage. For any other weapon, a positive [`Damage`](/keys/damage/#scope-weapontype) is multiplied by the house's firepower bias and the object's firepower bias, and raised further by the veteran firepower ability. A zero or negative `Damage` is used unchanged.
+6. The projectile is created and [launched from the mounting](/systems/projectile-flight/#what-the-shot-leaves-with). A laser, railgun or sonic weapon also creates its projectile here. The shot ends if the projectile cannot be created, if no ballistic arc reaches the target, or if the projectile cannot be placed at the mounting.
+7. A turreted object recoils.
+8. If the firing slot's barrel length is above `0`, the projectile takes [two flight turns](/systems/projectile-flight/#the-turn) at once, so it starts two turns further along its path. A projectile with a [`ROT`](/keys/rot/#scope-bullettype) above `0` launches at a speed of 1, so these turns move it only a short way. [`IsLaser=yes`](/keys/islaser/) weapons and [`Inviso=yes`](/keys/inviso/) projectiles skip these turns. They are ordinary flight turns, so a projectile that would detonate during them does.
+9. A `UseFireParticles=yes`, [`UseSparkParticles=yes`](/keys/usesparkparticles/) or [`IsRailgun=yes`](/keys/israilgun/) weapon starts its effect at the muzzle. The railgun beam deals its damage now, before any later step; `IsRailgun` covers what it hits.
+10. The burst counter advances, the reload delay is set from the advanced counter, and the counter returns to `0` after the last round of the burst.
+11. The weapon's [`Report`](/keys/report/) sound plays at the mounting. When the projectile is [`Dropping=yes`](/keys/dropping/), it plays at the firer's center.
+12. The firing animation from the weapon's [`Anim`](/keys/anim/) list appears at the muzzle. It is attached to a firing vehicle, infantry or aircraft and moves with it. On a structure it stays where it appeared and is drawn with a depth adjustment.
+13. An `IsSonic=yes` weapon creates its sonic wave, from the muzzle to the target.
+14. An `IsLaser=yes` weapon draws its beam, from the muzzle to the target. On a structure, the beam also resets the turret's charge animation to its first frame. The structure then discharges its turret unless it has more than one round of [`Ammo`](/keys/ammo/) left, so every structure with the default unlimited `Ammo` discharges. [`Charges`](/keys/charges/) covers what that means for a charging weapon.
+15. A round of ammunition is spent.
+16. When the target is an object owned by a player-controlled house, a firer that stands in shroud or fog, or that the local player has not yet discovered, reveals the area within two cells of itself to that house. A shot at the ground reveals nothing. The local player's aircraft are exempt from the shroud and fog test.
 
-The reload delay is set at step 10, so the effects at step 9 are already alive when it is worked out. That is what lets the effect weapons take a different delay from everything else.
+The `Anim` list is indexed by the direction the object is firing. A list of 8, 16, 32 or 64 entries uses the entry for that direction, rounded to the list's number of directions. The first entry is for north-west, and the list continues clockwise, so on an eight-entry list the second entry is north and the third north-east. A list of any other length always uses its first entry.
+
+Step 10 sets the reload delay after step 9 has started the weapon's effects. This lets the delay depend on whether an effect is alive; [The reload delay](#the-reload-delay) gives the result.
 
 ## The mounting and the muzzle
 
-Two distinct points are computed for every shot, and they move differently as the gun aims.
+Every shot uses two points on the firer, and they move differently as the gun aims.
 
-The **mounting** is where the projectile is created and where the firing solution is measured from. It is built by taking a frame aligned with the gun heading, then displacing it by the firing slot's own offset, with [`TurretOffset`](/keys/turretoffset/) added to the forward component. The barrel is deliberately not part of it, so the mounting holds still while the gun elevates.
+The **mounting** is where the projectile is created and the point its aim is calculated from. It is the firing slot's offset turned to the gun heading, with [`TurretOffset`](/keys/turretoffset/) added to the forward distance. It ignores the barrel, so it stays in place while the gun elevates.
 
-The **muzzle** is where the fire animation, the laser beam, the sonic wave and the attached particle systems appear. It carries on from the same displacement. It adds the slot's barrel thickness upward, then runs out along the pitched barrel by its length.
+The **muzzle** is where the firing animation, the laser beam, the sonic wave and the weapon particle effects appear. It starts from the same offset, rises by the slot's barrel thickness, then extends by the barrel length along the elevated barrel.
 
-The gun heading is not the same thing for every kind of object, and neither is the frame the two points are measured in.
+The gun heading, and whether the points tilt with the body, depend on the kind of firer:
 
 | Firer | Gun heading | Mounting | Muzzle |
 | --- | --- | --- | --- |
-| Vehicle with a turret | The turret facing | Measured inside the transform the body is drawn with, so ground slope and body tilt move it | Measured upright, so slope and tilt do not move it |
-| Vehicle without a turret | The body facing | As above | As above |
-| Aircraft | The turret facing, whether or not it has a turret | As above | As above |
-| Infantry | The body facing | The same point as the muzzle, so barrel length and thickness move the projectile too | Measured upright |
-| Structure with a turret | The turret facing | Measured upright | Measured upright |
-| Structure without a turret | The direction from its center to what it is shooting at | Measured upright | Measured upright |
+| Vehicle with a turret | The turret facing | Tilts with the body on slopes | Stays upright |
+| Vehicle without a turret | The body facing | Tilts with the body on slopes | Stays upright |
+| Aircraft | The turret facing, whether or not it has a turret | Tilts with the body | Stays upright |
+| Infantry | The body facing | The same point as the muzzle, so barrel length and thickness move the projectile too | Stays upright |
+| Structure with a turret | The turret facing | Stays upright | Stays upright |
+| Structure without a turret | The direction from its center to its target | Stays upright | Stays upright |
 
-A structure has two further layers on top of that, tested in this order for both points alike:
+A structure can replace both points. The engine tests these cases in order and uses the first that applies:
 
-1. A [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` replaces both outright, whichever slot is firing. The offset is a screen offset projected back onto the ground, and nothing below is read.
-2. A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) structure takes both from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/) run through the barrel's own placement. The two points then coincide at the end of the barrel, and both rise as it elevates.
-3. Otherwise the ordinary transform applies, with the turret animation's own screen offset added when the turret is drawn as a voxel.
+1. A structure with a [`PrimaryFirePixelOffset`](/keys/primaryfirepixeloffset/) other than `65535,65535` uses that screen offset, projected onto the ground, for both points and for every slot.
+2. A [`BarrelAnimIsVoxel=yes`](/keys/barrelanimisvoxel/) structure places both points at the end of its voxel barrel, from [`VoxelBarrelOffsetToBarrelEnd`](/keys/voxelbarreloffsettobarrelend/). Both points rise as the barrel elevates.
+3. Any other structure uses the points described above. When its turret is a voxel, the turret animation's screen offset is added to both.
 
-The barrel elevation itself is decided per firer as well. A structure whose first weapon is [`IsLaser=yes`](/keys/islaser/) points its barrel straight at the aim point rather than solving anything. An EM pulse cannon solves a ballistic arc, and retries a quarter faster when the first solve fails. Every other object solves the arc for its first weapon, which is why [`Lobber`](/keys/lobber/) in the second slot does not raise the barrel.
+The barrel's elevation is chosen from the first slot, whichever slot fires:
+
+- A structure whose first-slot weapon has `IsLaser=yes` points its barrel straight at the aim point.
+- An [`EMPulseCannon=yes`](/keys/empulsecannon/) structure solves a ballistic arc. If no arc reaches the target, it tries again with a launch speed a quarter higher.
+- Every other object solves a ballistic arc for its first-slot weapon. The barrel takes the high arc when that weapon is [`Lobber=yes`](/keys/lobber/), or when the target stands higher above the firer than it is away horizontally. `Lobber` on the second slot does not raise the barrel. The projectile itself still follows its own weapon's `Lobber`.
 
 ### How a burst alternates muzzles
 
-A burst counter runs from zero to one less than the weapon's [`Burst`](/keys/burst/), and the geometry reads it as well as the reload. The lateral component of the firing offset is negated whenever the counter is odd, which is what gives a burst weapon a pair of muzzles either side of the centerline. A structure with a voxel barrel alternates through its barrel offset instead, and centers the third shot and any after it.
+The burst counter runs from `0` up to one less than the weapon's [`Burst`](/keys/burst/). When the counter is odd, the lateral part of the firing offset is reversed. A burst weapon therefore fires alternately from two points on either side of the centerline. A structure with a voxel barrel alternates the lateral part of its barrel offset instead. The first shot of a burst uses one side and the second the other. The third and later shots come from the center.
 
 :::caution[A burst weapon's beam and its shell leave from opposite muzzles]
-The counter advances at step 10 of the sequence above, and the parts of a shot are split either side of that. The projectile, the railgun beam and the attached particle systems are placed with the counter as it stood for this shot. The firing animation, the sonic wave and the laser beam are placed with the counter as it now stands, which is the next shot's. On a `Burst=2` weapon those are always the two opposite muzzles, so the flash and the beam appear on the far side of the gun from the shell. A structure with a voxel barrel is displaced the other way, because its barrel lookup subtracts one from the counter to compensate. There the animation, wave and beam land on the same barrel as the projectile, and the projectile's own effects land on the previous shot's barrel.
+Step 10 advances the burst counter partway through the shot, so the parts of one shot are placed with two different counter values:
 
-Only a weapon whose `Burst` is above one and whose firing offset has a non-zero lateral component is affected. Everything else places both groups at the same point.
+- **This shot's counter:** the projectile, the report sound, and the fire, spark and railgun effects.
+- **The next shot's counter:** the firing animation, the sonic wave and the laser beam.
+
+The two groups appear on opposite sides of the gun when one counter value is odd and the other even. With an even `Burst` that is every shot. With an odd `Burst` it is every shot except the last of each burst.
+
+A structure with a voxel barrel works the other way, because its muzzle uses the previous counter value, which cancels the advance. There the firing animation, sonic wave and laser beam appear at the projectile's barrel, while the fire, spark and railgun effects appear at the previous shot's barrel.
+
+A weapon is affected only if its `Burst` is above `1` and its lateral offset is not zero. `PrimaryFirePixelOffset` places every part at one point.
 :::
 
 ## What each part of a shot reads
 
-Several parts of a shot are read from the first slot rather than from the slot that fired, which matters as soon as a beam or wave weapon is put in the second slot. The table gathers where each part is anchored and which slot supplies its settings.
+Several parts of a shot take their settings from the first slot, not from the slot that fired. This matters when a beam or wave weapon is in the second slot, or when the two slots have different offsets.
 
-| Part of the shot | Anchored at | Read from |
+| Part of the shot | Appears at | Settings from |
 | --- | --- | --- |
 | The projectile, its damage, warhead and [projectile range](/keys/projectilerange/) | The mounting | The firing slot |
-| The report sound and the firing animation | The mounting and the muzzle respectively | The firing slot |
+| The report sound | The mounting | The firing slot |
+| The firing animation | The muzzle | The firing slot |
 | The fire and spark particle systems | The muzzle | The firing slot |
-| The railgun beam, its ambient damage, warhead and particle system | The muzzle | The firing slot |
-| The sonic wave's ambient damage and warhead | The muzzle at creation, then re-anchored each frame to the first slot's muzzle | The first slot |
-| The laser beam's [`LaserInnerColor`](/keys/laserinnercolor/), [`LaserOuterColor`](/keys/laseroutercolor/), [`LaserOuterSpread`](/keys/laserouterspread/) and [`LaserDuration`](/keys/laserduration/) | The muzzle | The first slot |
-| The barrel elevation and whether it is lobbed | — | The first slot |
-| The reload delay | — | The firing slot |
+| The railgun beam, its [`AmbientDamage`](/keys/ambientdamage/), warhead and [`AttachedParticleSystem`](/keys/attachedparticlesystem/) | The muzzle | The firing slot |
+| The sonic wave's `AmbientDamage` and warhead | The firing slot's muzzle when created, then the first slot's muzzle | The first slot |
+| The laser beam's [`LaserInnerColor`](/keys/laserinnercolor/), [`LaserOuterColor`](/keys/laseroutercolor/), [`LaserOuterSpread`](/keys/laserouterspread/), [`LaserDuration`](/keys/laserduration/) and [`IsBigLaser`](/keys/isbiglaser/) | The firing slot's muzzle | The first slot |
+| The barrel elevation, including the high arc from `Lobber` | Not placed | The first slot |
+| The reload delay | Not placed | The firing slot |
 
-A sonic wave is created from the muzzle that fired it, and then follows the first slot's muzzle for the rest of its life. A second-slot sonic weapon on an object whose slots have different offsets therefore sees its wave jump on the frame after it is fired. A [`UseFireParticles=yes`](/keys/usefireparticles/) stream behaves the same way; [particle systems](/systems/particle-systems/#what-each-system-behavior-reads) owns the re-anchoring itself.
+A sonic wave starts at the muzzle of the slot that fired it. From the next frame it is redrawn from the first slot's muzzle. If the two slots have different offsets, a second-slot sonic wave therefore jumps one frame after it is fired. A [`UseFireParticles=yes`](/keys/usefireparticles/) stream also moves to the first slot's muzzle, but only on frames when the firer has a target and is still turning. [Particle systems](/systems/particle-systems/#what-each-system-behavior-reads) covers how it follows the firer.
 
 ## Effects that hold the weapon shut
 
-Four effects lock an object out of firing while they are alive: a fire particle stream, a spark particle spray, a railgun particle trace, and a sonic wave. The first three each occupy one of the object's [particle holds](/systems/particle-systems/#the-five-holds-an-object-keeps). The wave occupies a single slot of its own, so an object can have only one wave in flight.
+Four weapon effects stop an object from firing while they are alive:
 
-The lock is applied at three separate places, and the three do not answer alike.
+- the fire stream of a [`UseFireParticles=yes`](/keys/usefireparticles/) weapon;
+- the spark spray of a [`UseSparkParticles=yes`](/keys/usesparkparticles/) weapon;
+- the railgun trace of an [`IsRailgun=yes`](/keys/israilgun/) weapon;
+- the sonic wave of an [`IsSonic=yes`](/keys/issonic/) weapon.
 
-- Before the shot is considered at all, the slot that is **not** firing is examined. A live effect belonging to that slot's weapon reports the object as unable to fire at this target at all.
-- The firing slot's own weapon is examined next, and a live effect there reports the object as still rearming.
-- The firing routine tests the same four conditions again and returns without creating anything.
+The first three each occupy one of the object's [particle holds](/systems/particle-systems/#the-five-holds-an-object-keeps). An object has room for one sonic wave, so it can have only one alive at a time.
 
-The tests ask whether the *hold* is occupied, not whether this weapon's own effect is the thing occupying it. That matters for one hold only: sparks from a damaged object and a spark weapon's spray share theirs, and [particle systems](/systems/particle-systems/#the-five-holds-an-object-keeps) records what that costs.
+The object checks these effects in three places, with a different result each time:
 
-A vehicle has one further gate that is not about effects at all. [`FiringSyncFrame1`](/keys/firingsyncframe1/) ties the first round of a burst to the firing animation, and [`FiringSyncFrame2`](/keys/firingsyncframe2/) the second. The gate holds the weapon as rearming until the animation reaches the named frame, and then releases the round without checking the reload timer. Only the first slot is tied this way; a shot from the second slot is never held.
+1. **The other slot.** If the weapon in the slot that is not firing has a live effect, the object reports that it cannot fire at this target at all.
+2. **The firing slot.** If the firing slot's weapon has a live effect, the object is treated as still reloading.
+3. **The shot itself.** Step 3 of the firing sequence repeats the firing slot's check and ends the shot.
+
+Each check asks only whether the hold is occupied, not what occupies it. This matters only for the spark hold, which a damaged object's sparks share with a spark weapon's spray. [Particle systems](/systems/particle-systems/#the-five-holds-an-object-keeps) covers the result.
+
+Vehicles have one more gate, unrelated to effects. [`FiringSyncFrame1`](/keys/firingsyncframe1/) times the first round of each burst to the firing animation, and [`FiringSyncFrame2`](/keys/firingsyncframe2/) times the second round. A weapon without a burst uses `FiringSyncFrame1` for every round. While the firing animation is playing, the round is treated as still reloading until the animation reaches the named frame. It then fires even if the reload delay has not run out. Only first-slot shots are timed this way.
 
 ## The reload delay
 
-The delay before the next shot is chosen by the first of these that applies, so a row further down is reached only when every row above it has been passed over.
+The delay before the next shot comes from the first row that applies:
 
 | The firer and its weapon | Frames until the next shot |
 | --- | --- |
-| A structure whose [`Ammo`](/keys/ammo/) pool holds more than one round | 1 |
-| The firing slot holds no weapon | 1 |
-| The weapon is [`IsSonic=yes`](/keys/issonic/) (whether or not a wave is actually alive), or is a fire, spark or railgun weapon whose matching particle hold is occupied | Exactly [`ROF`](/keys/rof/) |
-| The burst is not finished | The matching [`BurstDelay0`](/keys/burstdelay0/) to [`BurstDelay3`](/keys/burstdelay3/), or a random 3 to 5 where that entry is `-1` or the shot is past the fourth |
-| Anything else | `ROF` scaled by the house's rate-of-fire bias, plus a random 0 to 2, and shortened by the veteran rate-of-fire ability |
+| A structure that had more than one round of [`Ammo`](/keys/ammo/) when it fired | 1 |
+| The weapon is [`IsSonic=yes`](/keys/issonic/), whether or not a wave is alive, or is a fire, spark or railgun weapon whose particle hold is occupied | Exactly [`ROF`](/keys/rof/) |
+| The burst has rounds left | [`BurstDelay0`](/keys/burstdelay0/) after the first round, up to [`BurstDelay3`](/keys/burstdelay3/) after the fourth. A random 3 to 5 when that entry is `-1`, or after the fifth or a later round |
+| Any other shot | `ROF` multiplied by the house's rate-of-fire bias, plus a random 0 to 2, then shortened by the veteran rate-of-fire ability |
 
-The third row is why an effect weapon fires at the pace it does. It skips the bias, the burst gaps and the random padding alike, so `ROF` and the effect's own lifetime decide the firing rate and nothing else does. On a structure with a stock of rounds even `ROF` drops out, because the first row has already returned a single frame and only the effect's lifetime is left to pace it.
+The third row sets the pace of the effect weapons. It skips the house bias, the burst delays and the random extra frames, and the effect blocks firing until it ends. The next shot therefore waits until both `ROF` has passed and the effect has ended. A structure with more than one round left matches the first row instead, so only the effect's lifetime paces it.

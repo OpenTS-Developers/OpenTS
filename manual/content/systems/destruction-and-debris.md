@@ -1,6 +1,6 @@
 ---
 title: Destruction and debris
-summary: "Works a destroying hit through one shared step and then the object's own, and settles what is left standing on the cell."
+summary: "What happens when a vehicle, structure, infantry soldier or aircraft is destroyed, and what it leaves on the ground."
 category: weapons-projectiles
 keys:
   - C4Warhead
@@ -49,130 +49,168 @@ related:
     id: CenterOnRadarEvent
 ---
 
-A destroying hit is worked through twice. One step runs for every kind of object and settles the wreckage and the collateral blast. The other belongs to the kind: vehicle, structure, infantry or aircraft. It settles the explosion animation, who walks away from it, and when the object is taken off the map. Which step a setting is read at decides whether the sequence's three exits reach it at all: a fall into water, a wreck animation, and a structure's delayed removal.
+A destroyed vehicle, structure, infantry soldier or aircraft goes through two steps. The shared step runs first for every kind of object: it throws wreckage and sets off the collateral blast. The step for the object's kind follows. It plays the death animation, lets any survivors walk away, and takes the object off the map. Three cases change that sequence: a fall into water, a vehicle's wreck animation, and a structure whose removal is delayed.
 
-What put the damage there is not this page's concern. [Projectile flight and impact](/systems/projectile-flight/) owns where a blast is placed and how many of them a shot delivers. The soldiers a destroyed structure turns loose belong with the rest of its crew handling in [engineers, capture and sabotage](/systems/capture/#survivors). That count is read on a sale as readily as on a destruction, so it is not a step of this sequence at all. The count also decides one step of the sequence: the footprint walk covered in [the structure section](#survivors-and-the-scarring-are-one-walk).
+This page starts once the object is destroyed. [Projectile flight and impact](/systems/projectile-flight/) covers where a blast lands and how many blasts a shot delivers. [Engineers, capture and sabotage](/systems/capture/#survivors) owns the number of soldiers a destroyed structure releases, because selling a structure uses the same count. That count also decides whether the structure's [footprint walk](#survivors-and-the-scarring-are-one-walk) runs.
 
 ## Writing the settings
 
-The frame counts of a wreck animation belong to the type's art section. Everything else this page covers is written on the object type itself, in the type's own section.
+Write the per-type settings in the object type's rules section. The wreck animation's frame counts go in the art section that the type's `Image=` names. The shared animations and warheads, such as `SmallFire` and `C4Warhead`, are global rules settings; each key page names its section. The values below are examples.
 
 ```ini title="rules.ini"
 [MYTANK] ; a UnitType registered in [VehicleTypes]
-Explodes=yes           ; the collateral blast, sized by CollateralDamageCoefficient
-Crewed=yes             ; whether one of the crew can escape the final death
-MaxDebris=5            ; how many pieces of wreckage may be thrown
+Explodes=yes           ; sets off the collateral blast
+Crewed=yes             ; lets one crew member escape
+MaxDebris=5            ; at most five pieces of wreckage
 DebrisTypes=TIRE,WTRAK ; VoxelAnimTypes registered in [VoxelAnims], thrown in order
-DebrisMaximums=4,2     ; one figure per DebrisTypes entry, paired in that order
+DebrisMaximums=4,2     ; at most four TIRE, then at most two WTRAK
 ```
 
 ```ini title="art.ini"
 [MYTANK] ; the art section the type's Image= names
-DeathFrames=2      ; frames of wreck animation played at one point of strength
-MaxDeathCounter=16 ; frames the wreck lingers before the vehicle explodes
+DeathFrames=2      ; frames in the wreck animation
+MaxDeathCounter=16 ; game frames the wreck stands before it explodes
 ```
 
 ## The step every kind shares
 
-The shared step runs first, in this order, on a vehicle, a structure, an infantry soldier and an aircraft alike.
+The shared step runs first, in this order, for a vehicle, a structure, an infantry soldier and an aircraft alike.
 
-1. One entry of the type's death voice is played at the object's position.
-2. Radio contact is broken and the object is stunned.
-3. A [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type spreads [Tiberium](/systems/tiberium/) into the five cells north-west, north, east, south and west of it. Its own cell takes none.
-4. Any flame particle system attached to it is deleted.
-5. **The water exit.** Everything below is skipped when **all of** these hold:
-   - the object stands no more than 10 [leptons](/glossary/#lepton) above the ground;
-   - it was knocked off a height and fell to its destruction;
-   - the land type beneath it is water.
+1. One of the type's [`VoiceDie`](/keys/voicedie/) sounds plays at the object's position.
+2. The object breaks radio contact, stops, and drops its target and destination.
+3. A [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type seeds [Tiberium](/systems/tiberium/) in the five cells to its north-west, north, east, south and west. Each cell that accepts growth gets a random stage from 0 to 2 of the first registered Tiberium type. The object's cell gets none.
+4. Any flame particle system attached to the object is removed.
+5. **The water exit.** The rest of this step is skipped when **all of** these hold:
+   - the object is no more than 10 [leptons](/glossary/#lepton) above the ground;
+   - it fell from a height, for example when a bridge collapsed under it;
+   - the ground beneath it is water.
 
-   No debris and no blast follow, and the kind's own step substitutes a wake and a splash.
-6. **The wreckage.** [`MaxDebris`](/keys/maxdebris/) above zero throws pieces from [`DebrisTypes`](/keys/debristypes/) at the object's center, or from [`MetallicDebris`](/keys/metallicdebris/) twenty leptons above it where the type declares no list of its own.
-7. **The collateral blast**, on an [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) type or one whose crew has earned [the explodes ability](/systems/veterancy/#abilities): a combat explosion animation, a lighting flash and area damage sized by [`CollateralDamageCoefficient`](/keys/collateraldamagecoefficient/), using the warhead of the object's own first weapon.
+   The infantry step, and the step for a vehicle without [`DeathFrames`](/keys/deathframes/), then leave a wake and a splash in place of the usual death animation.
+6. **The wreckage.** An object whose type sets [`MaxDebris`](/keys/maxdebris/) above zero throws wreckage. A type with a [`DebrisTypes`](/keys/debristypes/) list throws those animations from its center. A type without one throws [`MetallicDebris`](/keys/metallicdebris/) animations from twenty leptons above its center. `MaxDebris` caps the number of pieces either way.
+7. **The collateral blast.** An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) type, or an object whose rank grants [the explodes ability](/systems/veterancy/#abilities), deals area damage sized by [`CollateralDamageCoefficient`](/keys/collateraldamagecoefficient/). The blast plays a combat explosion animation and uses the warhead of the object's current primary weapon: its elite weapon at elite rank, or an upgrade's weapon on a structure. A [`Bright=yes`](/keys/bright/#scope-warheadtype) warhead adds a lighting flash. An object with no weapon in that slot gets no animation, flash or damage from this step. `Explodes` owns the radius and damage figures.
 
-Two consequences of that order decide what is left behind. Debris is thrown before the blast, so a type that both sheds wreckage and explodes scatters its pieces into its own explosion rather than out of it. The water exit sits above both, which is why a vehicle knocked off a bridge into a river leaves nothing but the splash, whatever its wreckage settings say.
+Because the water exit comes before the wreckage and the blast, a vehicle without `DeathFrames` that falls off a bridge into a river leaves only the splash, whatever its wreckage and explosion settings. A vehicle with `DeathFrames` also skips the wreckage and the blast, but it still becomes [a wreck](#a-vehicle). The wreck gets no splash, and it plays its death explosion when its counter runs out.
 
-A destroyed harvester's cargo is spilled inside step 7 rather than beside it. The Tiberium goes out one cell at a time to the eight neighbors, always as the first registered Tiberium type whatever it had aboard. It reaches as many neighbors as the fraction of [`Storage`](/keys/storage/) it was carrying covers. Because the spill sits inside the collateral blast, a harvester that is neither `Explodes=yes` nor holding the ability keeps its load and is taken off the map with it. The extra blast the load itself produces is a separate setting, [`TiberiumExplosive`](/keys/tiberiumexplosive/#scope-global-rules).
+### Spilled harvester loads
+
+An object carrying Tiberium, such as a harvester, spills its load only when it is `Explodes=yes` or holds the explodes ability. It spills even when it has no weapon and so sets off no collateral blast. A harvester that is neither keeps its load and is taken off the map with it. A scenario with [`HarvesterImmune=yes`](/keys/harvesterimmune/) spills nothing. A structure's stored Tiberium is spilled in [the structure's step](#a-structure) instead.
+
+The spill is always the first registered Tiberium type, whatever the harvester carried. The number of placements is nine times the fraction of its [`Storage`](/keys/storage/) that it held, rounded down, but at least one. Each placement adds a random stage from 0 to 2 to one neighboring cell. The cells come in a fixed order that starts at the north-west cell and returns to it on the third placement. A full load therefore reaches all eight neighbors, and a smaller load reaches fewer.
+
+The load can also explode. That blast is a separate setting, [`TiberiumExplosive`](/keys/tiberiumexplosive/#scope-global-rules). It goes off when the vehicle plays its death explosion: at [an outright death](#a-vehicle) that is neither a firestorm kill nor a fall into water, and when its wreck finally explodes. A vehicle with no death explosion, from [`Explosion`](/keys/explosion/) or from `ScrapExplosion` under `ScrapMetal`, never sets it off.
 
 ## The loss announcement
 
-After that shared step, a destroyed vehicle, soldier or aircraft belonging to the player at this machine has its loss announced: EVA says so, and the cell that [Goto Radar Event](/commands/centeronradarevent/) jumps to moves to it. The cell taken is where the object was heading rather than where it fell. That is the exit of the tunnel it is traveling through, or the coordinate its [locomotor](/glossary/#locomotor) was driving toward, or its own center when it was going nowhere.
+When a vehicle, soldier or aircraft owned by the player at this machine is destroyed, EVA announces the loss. The cell that [Goto Radar Event](/commands/centeronradarevent/) jumps to moves to where the object was heading, which is the first of these that applies:
 
-A type marked [`Insignificant=yes`](/keys/insignificant/) announces nothing and leaves that cell where it was. A structure announces nothing either, whatever its settings say. Neither does a vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/), because the announcement sits on the outright exit below and that vehicle takes the wreck path instead.
+1. the exit of the tunnel it is traveling through;
+2. the coordinate its [locomotor](/glossary/#locomotor) was driving toward;
+3. its center, when it was going nowhere.
+
+Three deaths are not announced, and they leave the Goto Radar Event cell where it was:
+
+- a type marked [`Insignificant=yes`](/keys/insignificant/);
+- a structure, whatever its settings;
+- a vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/), including when its wreck finally explodes.
 
 ## A vehicle
 
-A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) is not finished by the hit. It is put back to one point of strength and left standing where it is. It plays a wreck animation until its counter passes [`MaxDeathCounter`](/keys/maxdeathcounter/); only then is the explosion animation created and the vehicle taken off the map. The passengers, the crew and the truck crate are all skipped on that path. [`CrewEscape`](/keys/crewescape/) owns the crew roll that this path skips.
+A vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/) survives the destroying hit as a wreck. It is put back to one point of strength and stays where it is, unable to move, while it plays its wreck animation. When its counter passes [`MaxDeathCounter`](/keys/maxdeathcounter/), it plays its death explosion, picked the same way as for an outright death below, and it is taken off the map. The wreck path releases no passengers, no crew and no truck crate. [`CrewEscape`](/keys/crewescape/) covers the crew roll that it skips.
 
-:::danger[A wreck playing a death animation can be killed over and over]
-The wreck is still on the map, still holding its cell, and nothing records that it has already died. Every further hit that takes its one point off drives it to zero again and puts the wreck back to one point. Each of those hits also books the kill again: score for the attacker, experience toward the attacker's next rank, and another entry in both houses' loss and kill tallies. Each then runs the whole shared step again. A vehicle standing in sustained fire therefore sheds a fresh batch of [`DebrisTypes`](/keys/debristypes/) wreckage for every hit it absorbs while the animation plays, and an `Explodes=yes` one a fresh collateral blast. The [Destroyed by any house](/mapping/events/tevent-destroyed/) event is offered again on every one of those hits, and [trigger persistence](/systems/trigger-springing/) decides whether a tag is still there to take it.
+:::caution[Hits on a wreck count as new kills]
+Nothing records that a wreck has already died. It stays on the map and holds its cell, and any hit that takes its last point of strength destroys it again and puts it back to one point. Each such hit:
+
+- books the kill again: score and any experience for the attacker, and another entry in both houses' loss and kill counts;
+- runs the whole shared step again, so the wreck throws a fresh batch of wreckage, and an `Explodes=yes` vehicle sets off a fresh collateral blast;
+- offers the destruction events to the wreck's tag again. [Destroyed by any house](/mapping/events/tevent-destroyed/) needs an attacker, and [Destroyed by anything](/mapping/events/tevent-destroyed-any/) does not. [Trigger persistence](/systems/trigger-springing/) decides whether a tag is still there to take them.
 :::
 
-A vehicle finished outright takes one of three exits, and the first that applies wins:
+A vehicle without `DeathFrames` is finished outright. Its death animation is the first of these that applies:
 
-- killed by [`[CombatDamage] FirestormWarhead`](/keys/firestormwarhead/), it is replaced by seven to nine firestorm particle systems;
-- falling to its destruction over water, it leaves a [`Wake`](/keys/wake/) and the last entry of [`SplashList`](/keys/splashlist/);
-- otherwise one entry of its [`Explosion`](/keys/explosion/) list is created where it stood, or of its [`ScrapExplosion`](/keys/scrapexplosion/) list where the game is played with [`ScrapMetal`](/keys/scrapmetal/) on and the type names one.
+1. Killed by the [`[CombatDamage] FirestormWarhead`](/keys/firestormwarhead/): seven to nine firestorm particle systems.
+2. Fallen into water, as the water exit describes: a [`Wake`](/keys/wake/) and the last entry of [`SplashList`](/keys/splashlist/).
+3. Otherwise: one random entry of its [`Explosion`](/keys/explosion/) list, where it stood. With [`ScrapMetal`](/keys/scrapmetal/) on, a type that names a [`ScrapExplosion`](/keys/scrapexplosion/) list uses that list instead. An `Explodes=yes` vehicle, or one with the explodes ability, plays the last entry of the list while it still has [ammunition](/keys/ammo/), which includes unlimited ammunition.
 
-The rest follows in order. A train car releases whatever was following it, and the vehicle is lifted off its cells. Passengers are put out or killed with it, the crew rolls to escape, and a crate-carrying truck may drop a wooden crate on a nearby cell.
+The rest follows in this order:
+
+1. A train car is uncoupled, and the cars behind it stop.
+2. The vehicle is lifted off its cells.
+3. Each passenger gets out if it can enter the vehicle's cell, and the rest are killed. Every passenger is killed when the damage was forced or the vehicle fell from a height.
+4. One crew member may escape; [`CrewEscape`](/keys/crewescape/) owns that roll. A vehicle taken by a hijacker skips the roll, and [the hijacker steps back out](/systems/capture/#stealing-a-vehicle) instead.
+5. A crate-carrying truck may drop a wooden crate on a nearby cell, when the scenario enables [truck crates](/keys/truckcrate/) or, for a train, [train crates](/keys/traincrate/).
+6. The vehicle is taken off the map.
 
 ## A structure
 
-A structure's own step runs in this order.
+A structure's step runs in the order below. Its *origin cell* is the cell at the top corner of its footprint.
 
-1. A vehicle in radio contact with it (a harvester at a refinery, say) is destroyed outright when it stands within one cell of the structure's center, and told to get out of the way otherwise. Any light it was casting is switched off.
-2. Everything loaded inside is killed with it, and the standing effects it supplied are unwound: leaked vision from a spied radar structure, a cloak generator's field, a laser fence post's connections.
-3. **The central ground mark.** A structure at least two cells wide *and* two cells deep lays one mark at its own cell: an even chance of a scorch and otherwise a crater. A **smudge** is that mark: a flat stain laid on the ground, which stays there once laid. Only the multiple-cell smudge types are eligible here, and the structure's own footprint does not block the placement. A structure narrower or shallower than that lays nothing, and the mark is never offset inside the footprint.
-4. **Fire and explosions over the footprint.** Each cell takes an even chance of a [`SmallFire`](/keys/smallfire/), and half of those a [`LargeFire`](/keys/largefire/) beside it. It also takes one entry of the type's [`Explosion`](/keys/explosion/) list, drawn afresh for each cell rather than once for the building.
-5. An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) structure sets fire to any [explosive overlay](/keys/explodes/#scope-overlaytype) standing in the four cells beside it.
-6. Whatever the structure was storing is spilled onto the surrounding cells as [Tiberium](/systems/tiberium/), one unit at a time.
-7. Strength is fixed at zero. Forced damage, the kind that skips the armor table and [`Immune=yes`](/keys/immune/), marks the structure survivorless as well, and the walk below then runs.
+1. A unit in radio contact with it, such as a harvester docked at a refinery or an aircraft on its pad, is destroyed when its center is less than one cell from the structure's center. No attacker is credited for that kill. A unit farther away is told to move off.
+2. The structure's light source is switched off.
+3. Everything inside it is killed. The effects it supplied end: vision from a spied radar structure, a cloak generator's field, and a laser fence post's connections.
+4. **The central ground mark.** A structure at least two cells wide *and* two cells deep lays one mark on its origin cell. A smaller structure lays none. The mark is a **smudge**, a flat stain on the ground that stays once laid. It is a scorch or a crater, with even odds, and it lands only where a smudge type of that kind fits; [`Scorch`](/keys/scorch/) lists what makes a spot fit. The structure standing on the cell does not block this mark, but Tiberium or another overlay there does. A multiple-cell smudge type is preferred, and a single-cell type is used when no larger one fits.
+5. **Fire and explosions over the footprint.** Each footprint cell has an even chance of a [`SmallFire`](/keys/smallfire/), and a cell that gets one has an even chance of a [`LargeFire`](/keys/largefire/) beside it. Each cell also plays one entry of the type's [`Explosion`](/keys/explosion/) list, or its `ScrapExplosion` list with `ScrapMetal` on, drawn separately for each cell.
+6. An [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) structure places a `FIRE3` fire animation on any [explosive overlay](/keys/explodes/#scope-overlaytype) in the four cells that share an edge with its origin cell. On a structure at least two cells wide and deep, two of those cells lie inside its footprint. The explodes ability does not count here.
+7. Whatever the structure was storing is spilled one unit at a time. Each unit keeps its Tiberium type and lands one to three cells from the origin cell, wherever the ground accepts growth; [credits and storage](/systems/tiberium/#credits-and-storage) covers the rest.
+8. Strength is set to zero. Forced damage, which skips the armor table and [`Immune=yes`](/keys/immune/), marks the structure as leaving no survivors. The footprint walk below then runs.
 
 ### Survivors and the scarring are one walk
 
-The soldiers and the ground marks come out of the same walk over the footprint, and the survivor count is taken before the walk begins. A count of zero abandons the walk outright, and that leaves the footprint completely unmarked, with no scorch and no crater on any cell of it, when **any of** these holds:
+The footprint walk releases survivors and marks the ground in one pass over the footprint. It takes the survivor count first, and a count of zero ends the walk before it starts, so the footprint gets neither survivors nor marks from it. The count is zero when **any of** these holds:
 
 - the structure is not [`Crewed=yes`](/keys/crewed/);
 - it was destroyed by forced damage;
-- it plays under a [`SurvivorDivisor`](/keys/survivordivisor/) of `0`.
+- the game uses a [`SurvivorDivisor`](/keys/survivordivisor/) of `0`.
 
-Only the single central mark from step 3 survives, and only on a structure large enough to have laid one.
+When the count is above zero, each footprint cell in turn may release one survivor, at the odds [capture](/systems/capture/#survivors) sets out, until the count runs out. A multiplayer house whose player has resigned gets no survivors, and neither does one whose player left a game without AI takeover.
 
-Where the count is above zero, each footprint cell in turn offers one survivor at the odds [capture](/systems/capture/#survivors) sets out. It then takes a mark of its own on the same even chance between a scorch and a crater. A cell only takes that mark if a tracked vehicle could stand there: infantry and any building or vehicle on the cell are disregarded. One whose land type prices [`Track=`](/systems/movement-and-terrain/#the-terrain-table) at exactly zero takes nothing, which is why a structure standing partly on water or on rock comes out patchily marked.
+The same cell then takes a mark: a scorch or a crater, with even odds. Only a cell a tracked vehicle could enter takes a mark, and infantry, vehicles and structures on the cell do not count against it. A cell whose land type has a [`Track=`](/systems/movement-and-terrain/#the-terrain-table) cost of zero takes no mark, so a structure standing partly on water or rock is marked in patches.
+
+A mark cannot land on a cell a structure still stands on, and the walk runs while the destroyed structure is still in place. An ordinary destruction therefore leaves no marks from the walk. Only the second walk of a [delayed removal](#when-the-structure-leaves-the-map) marks the footprint.
 
 ### When the structure leaves the map
 
-An ordinary structure is removed on the same frame it dies, immediately after that walk. A structure that was already deconstructing when it died, and any `Explodes=yes` structure, is not. It is left standing at zero strength and removed on the next pass of its own logic instead.
+An ordinary structure is taken off the map on the frame it dies, right after the walk. Two kinds stay at zero strength and are removed on their next update:
 
-:::danger[A structure removed late produces two sets of survivors and two sets of marks]
-The delayed removal runs the survivor-and-scarring walk a second time before deleting the structure, and nothing records that it has already run. An `Explodes=yes` structure, and one destroyed while a sale was in progress, therefore turn out up to twice the intended number of soldiers and mark their footprint twice over. The ordinary case escapes it only because it is deleted before its own logic can come round again.
+- a structure that was being sold when it died;
+- an `Explodes=yes` structure. The explodes ability does not delay removal.
+
+The delayed removal lifts the structure off its cells, runs the footprint walk a second time, and then deletes the structure.
+
+:::caution[A delayed removal releases survivors twice]
+Nothing records that the walk has already run. A structure removed late therefore releases up to twice the usual number of soldiers: once when it dies and once when it is removed.
 :::
 
 ## Infantry and aircraft
 
-A forced kill of a [`Cyborg=yes`](/keys/cyborg/) soldier is settled first and separately: the soldier is removed whatever follows, and one that was falling at the time leaves an [`InfantryExplode`](/keys/infantryexplode/) animation. The chain then runs regardless, and the first of these that applies wins:
+A forced kill of a [`Cyborg=yes`](/keys/cyborg/) soldier always removes it, whatever death is chosen below, and leaves an [`InfantryExplode`](/keys/infantryexplode/) animation when the soldier fell from a height. A soldier's death is the first of these that applies:
 
-1. the same water exit the shared step tested, which here leaves a [`Wake`](/keys/wake/) and the first entry of [`SplashList`](/keys/splashlist/);
-2. a prone `Cyborg=yes` soldier, which leaves `InfantryExplode`;
-3. a jumpjet soldier, which leaves the same;
-4. otherwise the death the killing warhead's [`InfDeath`](/keys/infdeath/) names, forced to the electrocution death when a [laser fence](/systems/laser-fences/) did the killing.
+1. the water exit from the shared step, which here leaves a [`Wake`](/keys/wake/) and the first entry of [`SplashList`](/keys/splashlist/);
+2. a prone `Cyborg=yes` soldier, which leaves `InfantryExplode` (a standing cyborg [survives its first unforced killing hit](/keys/cyborg/) and goes prone);
+3. a jumpjet soldier, which leaves `InfantryExplode`;
+4. otherwise the death that the killing warhead's [`InfDeath`](/keys/infdeath/) names. A kill by a [laser fence](/systems/laser-fences/) uses the electrocution death, or the burning death on a [`Doggie=yes`](/keys/doggie/) type.
 
-Only three of those deaths are played out on the body itself: the gun death, the explosion death, and a [`Doggie=yes`](/keys/doggie/) type's burning death. Only the first two leave a corpse from [`DeadBodies`](/keys/deadbodies/), and it is created when the sequence reaches its end rather than when the soldier dies. Every other route removes the soldier at once and leaves an animation in its place, or nothing.
+The soldier stays on the map to play three of those deaths: the gun death, the explosion death, and the burning death of a `Doggie=yes` type. When a gun or explosion death finishes, a soldier that is not `Doggie=yes` leaves a corpse from [`DeadBodies`](/keys/deadbodies/). Every other death removes the soldier at once and leaves an animation in its place, or nothing.
 
-An aircraft creates its [`Explosion`](/keys/explosion/) entry, or firestorm particle systems on the firestorm warhead, and is then removed at once if it was on the ground. One in the air is not. It is stunned, its passengers are killed, and it falls, gathering speed, until it reaches the ground. There it goes off with a fixed 1000 points of area damage through [`C4Warhead`](/keys/c4warhead/) and nobody credited. The blast plays a combat explosion animation and a lighting flash sized to that figure, and the aircraft is removed. Its debris was created at the shared step, where the aircraft was hit rather than where it came down, so a kill high above the ground scatters wreckage nowhere near the crash.
+An aircraft plays one entry of its [`Explosion`](/keys/explosion/) list where it was hit, or of its `ScrapExplosion` list with `ScrapMetal` on. A kill by the firestorm warhead plays seven to nine firestorm particle systems instead. An aircraft on the ground is then removed at once.
+
+An aircraft in the air falls instead. Its passengers are killed, and it falls faster and faster until it reaches the ground. There it explodes with a fixed 1000 points of area damage through [`C4Warhead`](/keys/c4warhead/), credited to no one. The crash plays a combat explosion animation sized to that figure, with a lighting flash when `C4Warhead` is `Bright=yes`, and the aircraft is removed. Its wreckage and its `Explosion` entry appear where it was hit, not where it crashes.
 
 ## What the ground keeps
 
-The hit itself never lays a mark. Marks come from the animations the death created, and only from those declaring [`Scorch=yes`](/keys/scorch/) or [`Crater=yes`](/keys/crater/#scope-animtype). Such an animation stamps the ground as it reaches its widest frame, and only while standing under 30 leptons above it. Which mark is laid is chosen afresh every time, from every smudge type with the matching flag that will fit the spot.
+A vehicle, soldier or aircraft lays no ground mark itself. A structure lays [its central mark](#a-structure), and its footprint walk lays more on a delayed removal. Every other mark comes from an animation the death created that declares [`Scorch=yes`](/keys/scorch/) or [`Crater=yes`](/keys/crater/#scope-animtype).
 
-The table gathers what can survive on the cell after each kind of object dies, beyond the Tiberium a [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type of any kind spreads around it. It is what to check a wreck against when it leaves less than expected.
+Such an animation stamps the ground on its largest frame if it is under 30 leptons above the ground. The mark is picked at random each time from the smudge types with the matching flag that fit the spot; [`Scorch`](/keys/scorch/) lists what makes a spot fit. No mark lands on a cell a structure still stands on, except a structure's central mark. A [`Flamer=yes`](/keys/flamer/) or `Scorch=yes` animation also starts fires, within the height and ground limits that [`Scorch`](/keys/scorch/#the-fire) gives.
+
+The table lists what can remain after each kind of object dies, besides the Tiberium a [`TiberiumHeal=yes`](/keys/tiberiumheal/#scope-aircrafttype) type seeds. Check it when a death leaves less than you expect.
 
 | Left behind | Vehicle | Structure | Infantry | Aircraft |
 | --- | --- | --- | --- | --- |
-| Voxel wreckage from [`DebrisTypes`](/keys/debristypes/) | Yes | Yes | Yes | Yes, at the point of the kill |
-| A smudge from the explosion animation | Only where the animation sets the flag | Yes, and from the footprint walk besides | Only where the animation sets the flag | Only where the animation sets the flag |
-| Fire animations | No | One or two per footprint cell | No | No |
-| A corpse | No | No | Only on the gun and explosion deaths | No |
-| Escaping soldiers | One, on the crew roll | Up to five, over the footprint | No | No |
-| Tiberium | Only a loaded [`Explodes=yes`](/keys/explodes/#scope-aircrafttype) harvester | Whatever it was storing | No | No |
+| Wreckage from [`DebrisTypes`](/keys/debristypes/) or [`MetallicDebris`](/keys/metallicdebris/) | Where `MaxDebris` is above 0 | Where `MaxDebris` is above 0 | Where `MaxDebris` is above 0 | Where `MaxDebris` is above 0, at the point of the kill |
+| A mark from a death animation | Where the animation sets `Scorch` or `Crater` | Where the animation sets `Scorch` or `Crater` | Where the animation sets `Scorch` or `Crater` | Where the animation sets `Scorch` or `Crater` |
+| Marks laid by the object itself | No | The central mark on a structure at least 2×2, and footprint marks on a delayed removal | No | No |
+| Fire animations | Only from a `Flamer=yes` or `Scorch=yes` animation | Up to two per footprint cell | Only from a `Flamer=yes` or `Scorch=yes` animation | Only from a `Flamer=yes` or `Scorch=yes` animation |
+| A corpse | No | No | After a gun or explosion death, except on a `Doggie=yes` type | No |
+| Soldiers who walk away | Passengers who can get out, and one crew member on the crew roll or the hijacker who stole it; none from a wreck | Up to five, twice that on a delayed removal | No | No |
+| Tiberium | A harvester's load, when it is `Explodes=yes` or has the explodes ability | Whatever it was storing | No | No |
 
-A terrain object is the exception to all of it. One brought to zero strength starts its crumbling animation and is removed from the map on the same step, so the crumble is never seen. A [`SpawnsTiberium=yes`](/keys/spawnstiberium/) tree substitutes a 100-point blast and a chain reaction for the crumble instead. Either way the cell is left bare.
+A terrain object, such as a tree, leaves nothing standing. When one is destroyed, it starts to crumble and is removed from the map in the same step, so the crumble is never seen. A [`SpawnsTiberium=yes`](/keys/spawnstiberium/) tree skips the crumble. It explodes with 100 points of damage through `C4Warhead` and can set off [the Tiberium in its cell](/systems/tiberium/#damage).

@@ -48,154 +48,158 @@ related:
     id: locomotion
 ---
 
-One storm exists at a time and it covers the whole map for every house. Nothing raises one on its own: no rules setting, timer, or weather model schedules a storm, so every storm in a scenario comes from scenario scripting.
+One storm runs at a time, and it covers the whole map for every house. Every storm comes from scenario scripting. No rules setting, timer, or weather model starts one.
 
 ## Locomotors in brief
 
-This section introduces the entity the rest of the page turns on. Anyone who already knows what a locomotor is can skip to [starting a storm](#starting-a-storm).
+A storm grounds objects by cutting the power to their locomotor. Readers who already know locomotors can skip to [starting a storm](#starting-a-storm).
 
-A **locomotor** is a separate object that moves one aircraft, infantryman or vehicle about. It settles whether that object drives, walks, hovers, flies, burrows or steps, and it is what an ion storm switches off underneath it. Each instance is given one as it is created, of the class its type's [`Locomotor=`](/keys/locomotor/) names; ten classes are registered, and that page lists them.
+A **locomotor** is the part of an aircraft, vehicle, or infantryman that moves it. It decides whether the object drives, walks, hovers, flies, burrows, or steps. Each object gets the locomotor class that its type's [`Locomotor=`](/keys/locomotor/) names. That page lists the ten classes.
 
-Only two of the ten report themselves sensitive to an ion storm: the flying locomotor, which aircraft use, and the hover locomotor, which hovercraft use. Drive, walk, jumpjet, tunnel, teleport, mech, levitate and ballistic objects keep their power throughout, and the jumpjet is [handled separately and more harshly](#jumpjet-infantry).
+Only two classes are ion-sensitive: the flying locomotor, which aircraft use, and the hover locomotor, which hovercraft use. Objects on the drive, walk, jumpjet, tunnel, teleport, mech, levitate, and ballistic locomotors keep their power. Jumpjets follow [separate and harsher rules](#jumpjet-infantry).
 
-A storm therefore reaches an object through its locomotor rather than through what kind of object it is. That is why aircraft and hovercraft are named together below wherever a locomotor decides the outcome, and vehicles, infantry and aircraft are named together wherever something else does.
+On this page, "aircraft" means objects of a type listed in `[AircraftTypes]`. A vehicle type given the flying locomotor loses power in a storm like an aircraft, but the rules below that name aircraft do not apply to it.
 
 ## Starting a storm
 
 ### Trigger action
 
-[Ion Storm start...](/mapping/actions/taction-ion-storm-start/) takes a number and starts a storm that lasts that many **seconds**. The action is refused outright while a storm is already running.
+[Ion Storm start...](/mapping/actions/taction-ion-storm-start/) takes a number and starts a storm that lasts that many **seconds**. The action does nothing while a storm is already running.
 
 ### Team mission
 
-[Ion storm start in...](/mapping/missions/tmission-ion-storm-start/) takes a number and starts a storm that lasts that many **game frames**. It is skipped while a storm is already running.
+[Ion storm start in...](/mapping/missions/tmission-ion-storm-start/) takes a number and starts a storm that lasts that many **game frames**. The team skips the mission while a storm is already running.
 
 :::caution[The two scripted durations use different units]
-The trigger action multiplies its number by the frame rate of 15 frames per second; the team mission passes its number through unchanged. `Ion Storm start...` with `20` runs for 20 seconds, and `Ion storm start in...` with `20` runs for 20 frames.
+The trigger action multiplies its number by 15 frames per second. The team mission uses its number as frames. `Ion Storm start...` with `20` gives a storm of 20 seconds, and `Ion storm start in...` with `20` gives a storm of 20 frames.
 :::
 
-A duration of `-1` is the one value that never expires; a storm started with it lasts until [Ion Storm stop...](/mapping/actions/taction-ion-storm-stop/) or [Ion storn end](/mapping/missions/tmission-ion-storm-end/) (the engine's own spelling of that mission's name) runs. Only the team mission can deliver that value unchanged.
+A duration of `-1` never expires. Such a storm lasts until [Ion Storm stop...](/mapping/actions/taction-ion-storm-stop/) or [Ion storn end](/mapping/missions/tmission-ion-storm-end/) runs. "Ion storn end" is the engine's spelling of that mission's name.
+
+Only the team mission can give a duration of `-1`, because the trigger action turns `-1` into `-15`. Any other duration of `0` or less ends the storm on the frame it breaks or the next one. Such a storm still has every effect of [the break](#the-storm-breaks), so the airborne aircraft it crashes stay lost.
 
 ### Random maps
 
-[`UseIonStorms=yes`](/keys/useionstorms/) in a map seed makes the generator load the hard-coded file `ION.INI` while it builds the map. The generator applies that file's `[General]` section over the loaded rules, reads the six ion values from its `[Lighting]` section, and registers that file's trigger types and tag types with the generated map. Storms then come from whatever triggers the file holds, because the engine never schedules one itself. When the generator randomizes a seed itself, it turns the option on for about half of all seeds, and only while the Firestorm addon is enabled.
+[`UseIonStorms=yes`](/keys/useionstorms/) in a random map seed makes the generator load the file `ION.INI`. The generator applies that file's `[General]` section over the loaded rules and takes the six ion lighting values from its `[Lighting]` section. It also adds the file's trigger types and tag types to the generated map. Storms come only from those triggers; the option does not schedule any storm itself.
 
 ## The warning
 
-Both scripted entry points schedule the storm rather than breaking it at once: they arm a countdown of [`IonStormWarning`](/keys/ionstormwarning/) seconds, which then runs down one frame at a time. Every fifteen seconds of that countdown, the EVA line for an approaching ion storm plays and an on-screen message holds for ten seconds. At the default of 31 seconds the warning is therefore announced twice, 30 and 15 seconds out. A warning of fifteen seconds or less never reaches a multiple, so no announcement plays. Setting `IonStormWarning=0` breaks the storm on the frame the action or mission runs.
+Both the trigger action and the team mission start a countdown of [`IonStormWarning`](/keys/ionstormwarning/) seconds. The storm breaks when the countdown ends. With `IonStormWarning=0`, there is no countdown and the storm breaks on the frame the action or mission runs.
 
-A second start request during the countdown keeps the shorter of the two countdowns, but replaces the pending duration outright, so the storm arrives on the earlier schedule and runs for the later request's length.
+Each time the remaining time reaches a multiple of 15 seconds, EVA announces the approaching storm and an on-screen message shows for ten seconds. With `IonStormWarning=31`, the announcements come 30 and 15 seconds before the storm. A countdown of 15 seconds or less gives no announcement.
+
+A second start request during the countdown does not restart it. The storm still breaks when the first countdown ends, but it lasts as long as the second request asked.
 
 ## The storm breaks
 
-When the countdown reaches zero the engine, in order:
+When the countdown ends, the engine does the following, in order:
 
-1. Cuts the power to every aircraft and hovercraft that is on the map and whose locomotor is one of the two ion-sensitive ones, and crashes the aircraft among them.
-2. Sets the desired ambient light to [`IonAmbient`](/keys/ionambient/) and marks the player's radar for re-evaluation.
-3. Remembers which music track is playing and stops it.
-4. Retints every terrain lighting table, and the shape remap table of every color scheme with more than one intensity level, to [`IonRed`](/keys/ionred/), [`IonGreen`](/keys/iongreen/), and [`IonBlue`](/keys/ionblue/). Screen static is tiled over the tactical view while those palettes are rebuilt.
-5. Starts the music track registered as `IONSTORM` and posts an on-screen ion-storm message for ten seconds. No EVA line accompanies the break itself. The approach warnings are the only spoken cue.
+1. Cuts the power of every object on the map with an ion-sensitive locomotor, and crashes the airborne aircraft among them. [Grounded locomotors](#grounded-locomotors) lists the objects that keep their power.
+2. Makes [`IonAmbient`](/keys/ionambient/) the target of [the ambient fade](#the-ambient-ramp), and has the player's [radar](#radar) re-evaluated.
+3. Stops the music and remembers which track was playing.
+4. Tints every terrain palette, and the palette of every color scheme with more than one intensity level, with [`IonRed`](/keys/ionred/), [`IonGreen`](/keys/iongreen/), and [`IonBlue`](/keys/ionblue/). Screen static covers the tactical view while the palettes are rebuilt.
+5. Starts the music track registered as `IONSTORM` and shows an ion storm message for ten seconds. EVA says nothing when the storm breaks; the countdown announcements are the only spoken warning.
 
-:::caution[The storm music track must be registered under that exact name]
-The engine looks the storm track up by the name `IONSTORM`: first matched case-insensitively against registered music filenames, then case-sensitively as a substring of their full names. [THEME.INI](/formats/theme-ini/) registers the track. When no registered track matches, the break stops whatever was playing and starts nothing.
+:::caution[Register the storm music as IONSTORM]
+[THEME.INI](/formats/theme-ini/) must register a track whose section is named `IONSTORM`, in any case. If no section has that name, the engine plays the first track whose `Name=` contains `IONSTORM` in exactly that case. If neither matches, the storm stops the music and plays nothing.
 :::
 
 ## Lightning
 
 ### How often a bolt falls
 
-Every frame of a storm draws one number from `0` through `1000` inclusive and calls a bolt when it falls below ten times [`IonLightningFrequency`](/keys/ionlightningfrequency/). At the default of `25` that is a bolt on roughly one frame in four. The multiplication is part of how the value is read, so the figure written in `[General]` is a tenth of the threshold actually compared.
+Each frame of a storm calls a bolt with a chance of about [`IonLightningFrequency`](/keys/ionlightningfrequency/) percent. With `IonLightningFrequency=25`, a bolt is called on about one frame in four. Digits beyond the first decimal place are dropped.
 
 ### Where it strikes
 
-[`IonLightningRandomness`](/keys/ionlightningrandomness/) is the percentage of bolts that land on a random cell. The remainder are aimed at an object.
+[`IonLightningRandomness`](/keys/ionlightningrandomness/) is the percentage of bolts that strike a random cell. The other bolts are aimed at an object.
 
-A random bolt draws a cell from the map rectangle, the upright square of cells that encloses the playfield. It redraws until the cell lies inside the playfield, so a bolt never falls on a cell the map does not have.
+A random bolt strikes a random cell of the playfield. It can hit empty ground, including cells outside the playable area.
 
-An aimed bolt builds a candidate list by walking every active object on the map, regardless of house. Aircraft are dropped at once. Each of the rest is put through one exemption and then rolled against a chance that its own kind and state decide.
+An aimed bolt first builds a list of candidates, then strikes the center cell of one candidate chosen with equal odds. If the list is empty, no bolt falls that frame. With `IonLightningRandomness=0`, a storm over a map with no candidates never strikes anything.
 
-An object is entered into the candidate list under **any of**:
+Aircraft are never candidates. Every building of any house can be one. A vehicle or infantryman of any house can be one under **any of** these conditions:
 
-- it is a building, which is never on a team at all;
-- it is on no team, or its team's TeamType is not [`IonImmune=yes`](/keys/ionimmune/);
-- its own type sets `LightningRod=yes`, which overrides `IonImmune` whatever the TeamType says.
+- it is not on a team, or its team's TeamType does not set [`IonImmune=yes`](/keys/ionimmune/);
+- its type sets [`LightningRod=yes`](/keys/lightningrod/), which puts it back in the list despite `IonImmune`.
 
-The table then gives the chance each survivor is rolled against. What to read off it is how much a lightning rod is worth and where it stops being worth anything. A switched-on building has twenty-one times the base chance and a moving object six times it, but the rod is worth nothing at all once the thing holding it goes dark. A rod on a switched-off building and a rod on a vehicle or infantryman whose locomotor has lost power both fall back to the base figure rather than dropping the object out.
+Each object that qualifies joins the list with the chance in this table. A lightning rod raises the chance only while the object holding it has power. A rod on a switched-off building, or on a vehicle or infantryman whose locomotor has lost power, gives the base 2%.
 
 | Candidate | Chance of entering the list |
 | --- | ---: |
 | Any building, vehicle or infantryman not covered by a row below | 2% |
-| Building with [`LightningRod=yes`](/keys/lightningrod/) that is switched on | 42% |
+| Building with `LightningRod=yes` that is switched on | 42% |
 | Vehicle or infantryman with `LightningRod=yes` whose locomotor still has power | 12% |
-| Aircraft | dropped before any of the above is tested |
-
-One entry is then drawn from the finished list with equal probability and its center cell is struck. An empty list produces no bolt on that frame, so a storm over a map with no objects and `IonLightningRandomness=0` never strikes anything.
+| Aircraft | never |
 
 ### What a strike does
 
-The strike point is the cell's ground level, raised by the bridge height when the cell lies under a bridge. At that point the engine:
+A bolt strikes the ground of its cell, or the bridge deck when the cell has a bridge over it. At the strike point, the engine:
 
-- plays [`LightningSound`](/keys/lightningsound/) without a position, so the clap is at full volume wherever on the map the bolt lands;
-- creates the combat animation selected by [`IonLightningDamage`](/keys/ionlightningdamage/), [`IonStormWarhead`](/keys/ionstormwarhead/), and the cell's land type;
-- adds a spotlight flash when that warhead sets [`Bright=yes`](/keys/bright/);
-- applies `IonLightningDamage` through `IonStormWarhead` across the standard 1.5-cell explosion radius, with no source recorded, so no house is credited with a kill;
-- throws between two and six animations drawn from [`MetallicDebris`](/keys/metallicdebris/) under **any of**:
-  - the building standing in the cell after the blast is not the one that stood there before it;
-  - the vehicle, infantryman or aircraft in the cell is likewise not the one that was there before it;
-  - the cell's terrain height changed;
-  - the cell held neither a building nor any such object to begin with and its land type is road, rock, wall or weeds. This last term asks for no change at all, so an empty stretch of road throws debris on every strike;
-- draws the bolt itself as a chain of laser segments climbing from the strike point to 200 height levels, each segment displaced by up to 128 leptons horizontally.
+- plays [`LightningSound`](/keys/lightningsound/) at full volume, wherever on the map the bolt lands;
+- plays the explosion animation that [`IonLightningDamage`](/keys/ionlightningdamage/) and [`IonStormWarhead`](/keys/ionstormwarhead/) select for the cell's land type;
+- adds a flash of light when that warhead sets [`Bright=yes`](/keys/bright/);
+- deals `IonLightningDamage` through `IonStormWarhead` to everything within the standard explosion radius of 1.5 cells. The bolt has no attacker, so no house gets credit for a kill;
+- throws debris when the strike changed the cell, as described below;
+- draws the bolt as a jagged line from the strike point up to a height of 200 levels.
 
-A vehicle, infantryman or aircraft on a team whose TeamType sets `IonImmune=yes` takes no damage from the blast. Unlike the candidate list above, this test does reach aircraft. It is also keyed to the warhead rather than to the storm: any weapon configured with the same warhead as `IonStormWarhead` skips such objects in the same way.
+The strike throws two to six animations picked from [`MetallicDebris`](/keys/metallicdebris/) under **any of** these conditions:
 
-[Lightning strike at...](/mapping/actions/taction-ion-lightning-strike/) calls this same routine at its waypoint cell. It is independent of the storm state and works whether or not a storm is running.
+- the building in the cell after the blast is not the one that stood there before it;
+- the vehicle, infantryman, aircraft, or building nearest the cell's north corner after the blast is not the one nearest it before. In a cell holding several objects, only that nearest one is compared;
+- the cell's height changed;
+- the cell held no building, vehicle, infantryman, or aircraft before the blast, and its land type is road, rock, wall, or weeds. Such a cell throws debris on every strike, even when nothing changes.
+
+A vehicle, infantryman, or aircraft on a team whose TeamType sets `IonImmune=yes` takes no damage from the blast. Unlike the candidate list, this protection covers aircraft. It also covers any explosion whose warhead is the one `IonStormWarhead` names, not only lightning. `LightningRod=yes` does not remove this protection, so such a unit attracts bolts and survives them.
+
+[Lightning strike at...](/mapping/actions/taction-ion-lightning-strike/) strikes its waypoint's cell in the same way, whether or not a storm is running.
 
 ## Battlefield effects
 
 ### Grounded locomotors
 
-Each of the [two ion-sensitive locomotors](#locomotors-in-brief) has its own exemption, and the two are not the same shape.
+Each of the [two ion-sensitive locomotors](#locomotors-in-brief) has its own exemption.
 
-The flying one has a single term: an object on the flying locomotor whose type sets [`HunterSeeker=yes`](/keys/hunterseeker/) is never sensitive.
+An object on the flying locomotor keeps its power if its type sets [`HunterSeeker=yes`](/keys/hunterseeker/).
 
-The hover one is two separate exemptions rather than one two-part test, and either alone spares the object. An object on the hover locomotor is exempt under **any of**:
+An object on the hover locomotor keeps its power under **any of** these conditions:
 
-- it is in radio contact with a building whose type is [`WeaponsFactory=yes`](/keys/weaponsfactory/);
-- it stands on one of a `WeaponsFactory=yes` building's own doorway cells, in the second row of that building's foundation at zero, two, or three cells across.
+- it is in radio contact with a building whose type sets [`WeaponsFactory=yes`](/keys/weaponsfactory/);
+- it stands on the first, third, or fourth cell of the second row of a `WeaponsFactory=yes` building's foundation.
 
-Either way a storm cannot strand a newly built vehicle in the doorway. The exemption is re-tested rather than remembered. A hover object handed a move order while a storm is running puts itself through both terms again on the spot, and cuts its own power there and then if neither still holds.
+These exemptions keep a storm from stranding a newly built hovercraft in the factory doorway. An exempt hovercraft keeps its power until it receives a move order during the storm while neither condition holds. It loses power when it receives that order.
 
-An unpowered locomotor moves its object nowhere, which is also part of what [an EM pulse](/systems/emp-pulse/#what-a-pulse-reaches) does. A storm stops there: it does not stun, so a grounded hovercraft may still fire. An aircraft that was moving tumbles, stops, and sinks; a hovercraft abandons its move order, drifts as it settles, and comes to rest on the slope of the cell beneath it. An object created during a storm arrives with its locomotor already off if that locomotor is ion-sensitive.
+An object whose locomotor has lost power cannot move, the same result [an EM pulse](/systems/emp-pulse/#what-a-pulse-reaches) has on movement. A storm does not stun, so a grounded hovercraft can still fire.
+
+A moving aircraft tumbles, stops, and sinks. A hovercraft drops its move order, drifts as it settles, and comes to rest tilted to the slope of its cell.
+
+An object with an ion-sensitive locomotor that is placed on the map during a storm, such as a newly built aircraft, arrives without power unless an exemption applies.
 
 ### Aircraft
 
-Cutting the power to a sensitive flying locomotor also puts the aircraft through the crash path. One that is off the ground at all has its strength set to zero with no kill credited, kills its cargo, and starts tumbling. One that was already on the ground is only powered off, because the crash path does nothing at zero height.
+An aircraft that loses power while off the ground crashes. Its strength drops to zero, its passengers die, and it tumbles down. No house gets credit for the kill. An aircraft already on the ground only loses power.
 
-For the rest of the storm no aircraft may fire at all, whatever its weapons, and a repair or reload building an aircraft is parked on will not restore its power. Aircraft are also skipped when lightning picks a target.
+For the rest of the storm, no aircraft can fire, whatever its weapons. Parking on a repair or reload building does not restore an aircraft's power. Lightning never aims at aircraft.
 
 ### Jumpjet infantry
 
-The jumpjet locomotor is not ion-sensitive and keeps its power, but a storm handles it separately and more harshly. A jumpjet that is moving and not on the ground takes damage equal to its whole current strength through the `[CombatDamage]` warhead [`C4Warhead`](/keys/c4warhead/) with no source, which destroys it. Its locomotor ends that frame as soon as the damage destroys or otherwise removes the infantryman, without taking another flight-state step. A grounded jumpjet cannot take off: it never leaves its grounded flight state, and the decision to make a trip by air is refused for the duration. Move-order resolution demotes a flyer movement zone to the infantry movement zone while a storm runs, so surviving jumpjets route on foot.
+The jumpjet locomotor is not ion-sensitive, but a storm destroys a jumpjet that moves while it is off the ground. Such a jumpjet takes damage equal to its current strength through the [`C4Warhead`](/keys/c4warhead/) warhead in `[CombatDamage]`. Armor does not reduce this damage, and no house gets credit for the kill. A jumpjet hovering in place with no move order survives until it is ordered to move.
 
-:::caution[Airborne jumpjets die where airborne aircraft crash]
-Both are taken out of the air, but a crashing aircraft goes through the ordinary crash path and a jumpjet is killed by direct damage.
-:::
+A jumpjet on the ground cannot take off during a storm. Move orders route surviving jumpjets on foot, like ordinary infantry.
 
 ### Radar
 
-The player's house loses radar outright for the duration. The radar availability pass refuses the radar while a storm is running, before it looks at power or at radar buildings, and switches the map's radar off. Only the player's own house is evaluated, and coverage is recalculated on the first house pass after the storm ends. A player who has been given the whole map keeps the radar through the storm; [observers and coach mode](/systems/observers/) owns that rule.
+The player loses the radar for the whole storm, whatever their power and radar buildings. When the storm ends, the radar returns if [power and a radar building](/systems/power/#radar) would otherwise provide it. A player given the whole map keeps the radar during a storm; [observers and coach mode](/systems/observers/) owns that rule.
 
 ### Weapons, production, and repair
 
-- A weapon with [`IonSensitive=yes`](/keys/ionsensitive/) cannot fire for the duration.
-- A factory that finishes an aircraft during a storm places it on a nearby free cell instead of docking it.
-- A service depot does not power a docked vehicle back on during a storm, and neither does a repair building the vehicle is standing on.
+- A weapon with [`IonSensitive=yes`](/keys/ionsensitive/) cannot fire during a storm.
+- A factory that finishes an aircraft during a storm places it on the ground on a nearby cell instead of docking it.
+- A service depot does not restore power to a docked vehicle during a storm, and neither does a repair building the vehicle stands on.
 
 ## Lighting
 
-A scenario's `[Lighting]` section holds two complete sets of values: the ordinary [`Ambient`](/keys/ambient/), [`Red`](/keys/red/), [`Green`](/keys/green/), [`Blue`](/keys/blue/), [`Ground`](/keys/ground/), and [`Level`](/keys/level/#scope-scenarios), and their `Ion` counterparts. While a storm is active, cell brightness is computed from [`IonLevel`](/keys/ionlevel/) and [`IonGround`](/keys/ionground/) in place of `Level` and `Ground`. The height bonus drawn onto aircraft and onto elevated vehicles and infantry uses `IonLevel` as well. Any lighting table built while the storm runs — the terrain one a newly lit cell asks for, or a color scheme's shape remap table — is created with the ion tint already applied.
-
-A map writes both sets into the same section:
+A scenario's `[Lighting]` section holds two sets of values: the ordinary [`Ambient`](/keys/ambient/), [`Red`](/keys/red/), [`Green`](/keys/green/), [`Blue`](/keys/blue/), [`Ground`](/keys/ground/), and [`Level`](/keys/level/#scope-scenarios), and their `Ion` counterparts. A map writes both sets in the same section:
 
 ```ini title="map file"
 [Lighting]
@@ -206,45 +210,52 @@ Blue=1.000000
 Ground=0.000000     ; ground darkening while no storm runs
 Level=0.000000      ; height shading while no storm runs
 IonAmbient=0.500000 ; the level the storm fades the map toward
-IonRed=1.620000     ; the tint the storm lays over every lighting table
+IonRed=1.620000     ; the tint the storm lays over every palette
 IonGreen=1.250000
 IonBlue=0.340000
 IonGround=0.000000  ; ground darkening while the storm runs
 IonLevel=0.000000   ; height shading while the storm runs
 ```
 
-The two halves of the change do not run on the same clock. The palette tint is applied outright when the storm breaks and reversed outright when it ends. The ambient level is only a target: the storm sets the desired level to `IonAmbient`, and the ramp below takes the current level toward it over time.
+While a storm runs, cell brightness uses [`IonLevel`](/keys/ionlevel/) and [`IonGround`](/keys/ionground/) in place of `Level` and `Ground`. Aircraft also take their height brightness from `IonLevel`, and so do vehicles and infantry above the ground. A palette created during the storm, such as one for a newly lit cell, gets the ion tint at once.
 
-Each ion key falls back to the ordinary key read earlier in the same section, so a map that sets only `Ambient`, `Red`, `Green`, and `Blue` gets ion values to match. The ground and level keys are the exception.
+The tint and the light level change on different schedules. The tint switches when the storm breaks and switches back when it ends. The light level fades toward `IonAmbient` through [the ambient ramp](#the-ambient-ramp), and fades back to `Ambient` after the storm.
 
-:::caution[The four ground and level keys collapse to zero when omitted]
-The fallback for `Ground`, `Level`, `IonGround`, and `IonLevel` divides two whole numbers, so any fraction below `1` truncates to `0`. Omitting `Ground` or `Level` stores `0` rather than the engine's own starting fractions. An omitted `IonGround` or `IonLevel` takes the ordinary key read just before it, truncated the same way, so an ordinary key set below `1` leaves its ion key at `0`. The truncation is in the fallback alone: a fraction written to `IonGround` or `IonLevel` itself is kept. A scenario that wants ground darkening or height shading during a storm has to state `IonGround` and `IonLevel` outright.
+An omitted ion key takes the value of the ordinary key it pairs with, so a map that sets only `Ambient`, `Red`, `Green`, and `Blue` gets matching ion values. The ground and level keys are the exception.
+
+:::caution[Set IonGround and IonLevel explicitly]
+When `Ground`, `Level`, `IonGround`, or `IonLevel` is omitted, its fallback value is rounded down to a whole number, so any fraction becomes `0`. An omitted `Ground` or `Level` is therefore `0`. An omitted `IonGround` or `IonLevel` copies `Ground` or `Level` rounded down, which is `0` unless that key is `1` or more. A value written to any of the four keys is kept as written. To have ground darkening or height shading during a storm, set `IonGround` and `IonLevel`.
 :::
 
 ### The ambient ramp
 
-Whenever the current ambient level differs from the desired one, the engine waits [`AmbientChangeRate`](/keys/ambientchangerate/) minutes, at 900 frames to the minute. It then moves the current level by [`AmbientChangeStep`](/keys/ambientchangestep/) times 100, clamped so it never passes the target. The storm's darkening and the return to daylight both travel this way.
+While the current light level differs from its target, the engine moves it toward the target by [`AmbientChangeStep`](/keys/ambientchangestep/), in the same units as `Ambient`. It then waits [`AmbientChangeRate`](/keys/ambientchangerate/) minutes, at 900 frames to the minute, before the next step. A step never passes the target. Both the storm's darkening and the return to daylight use this ramp.
 
-:::caution[A rate of zero freezes the ambient level]
-The ramp is guarded on a non-zero `AmbientChangeRate`. At `0` the current ambient level never moves again, so a storm retints the palette but never darkens the map, and the scripted [Set ambient light...](/mapping/actions/taction-set-ambient-light/) action never takes visible effect either.
+:::caution[Keep AmbientChangeRate above 0]
+With `AmbientChangeRate=0`, the light level never fades. A storm then tints the map but never darkens it, and the [Set ambient light...](/mapping/actions/taction-set-ambient-light/) action has no visible effect.
 :::
 
-Every completed step raises the ambient-changed flag, which is what admits [Ambient light <= ...](/mapping/events/tevent-ambient-less-than/) and [Ambient light >= ...](/mapping/events/tevent-ambient-greater-than/) to that frame's trigger evaluation. Those events are therefore tested only while a fade is stepping, and a storm's darkening and its return to daylight are each a run of such frames.
+[Ambient light <= ...](/mapping/events/tevent-ambient-less-than/) and [Ambient light >= ...](/mapping/events/tevent-ambient-greater-than/) are tested only after a fade step. A storm's darkening and its return to daylight each produce a series of such steps.
 
-`Set ambient light...` stores its new level immediately but withholds the fade while a storm is running; the map travels to it once the storm clears. [Set ambient rate...](/mapping/actions/taction-set-ambient-rate/) and [Set ambient step...](/mapping/actions/taction-set-ambient-step/) overwrite the ramp's rate and step in the loaded rules, and those overwrites outlive the storm.
+`Set ambient light...` stores its new level at once. While a storm runs, the map does not fade to it; the map fades to that level when the storm ends. [Set ambient rate...](/mapping/actions/taction-set-ambient-rate/) and [Set ambient step...](/mapping/actions/taction-set-ambient-step/) change the ramp's rate and step for the rest of the scenario, whether or not a storm is running.
 
 ## The storm ends
 
-A storm ends when its duration elapses, or when `Ion Storm stop...` or `Ion storn end` runs. The engine then:
+A storm ends when its duration runs out, or when `Ion Storm stop...` or `Ion storn end` runs. Neither of those stops a storm that is still in its warning countdown, so that storm breaks as scheduled. When a storm ends, the engine:
 
-1. Restores the power of every aircraft and hovercraft, including the ones in [limbo](/glossary/#limbo) that the opening pass skipped.
-2. Sets the desired ambient light back to `Ambient`, so the map fades home rather than snapping.
-3. Marks the player's radar for re-evaluation.
-4. Stops the storm music track and resumes the one that was playing when the storm broke.
-5. Returns every terrain lighting table and every color scheme's shape remap table to its remembered tint, again behind screen static.
+1. Restores power to every object with an ion-sensitive locomotor, including those in [limbo](/glossary/#limbo) that the break skipped.
+2. Makes the scenario's ambient level the target of the ambient fade, so the map fades back instead of snapping. That level is `Ambient`, or the level a `Set ambient light...` action stored during the storm.
+3. Has the player's radar re-evaluated.
+4. Stops the storm music and resumes the track that was playing when the storm broke.
+5. Removes the ion tint from every terrain palette and color scheme, again behind screen static.
 
-Losses are permanent. Aircraft that crashed and jumpjets that were destroyed do not come back, and nothing schedules a repeat: another storm needs another trigger action or team mission.
+Losses are permanent. Crashed aircraft and destroyed jumpjets do not come back. Nothing schedules another storm; it needs another trigger action or team mission.
 
 ## Settings the engine ignores
 
-Two settings look like ion-storm controls and are read into the engine, but nothing reads them. [`IonStormDuration`](/keys/ionstormduration/) in `[General]` is not a default storm length. Every storm's length comes from the number its trigger action or team mission names. [`IonStorms`](/keys/ionstorms/) in `[SpecialFlags]` does not gate storms; scripted storms run whether it is set or cleared. The ion-storm crate result is inert in the same way: drawing it consumes the crate and plays that row's own animation, and no storm starts. [Crates](/systems/crates/#settings-and-results-without-effect) owns that result.
+Two settings look like ion storm controls but have no effect:
+
+- [`IonStormDuration`](/keys/ionstormduration/) in `[General]` is not a default storm length. Every storm lasts as long as its trigger action or team mission says.
+- [`IonStorms`](/keys/ionstorms/) in `[SpecialFlags]` does not enable or disable storms. Scripted storms run whether it is set or cleared.
+
+The ion storm crate result starts no storm. [Crates](/systems/crates/#settings-and-results-without-effect) owns that result.

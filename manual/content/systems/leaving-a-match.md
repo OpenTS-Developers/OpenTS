@@ -14,20 +14,42 @@ related:
     id: observers
 ---
 
-A player leaves either on purpose or by falling silent until a wait runs out. The deliberate routes are the options menu, the close button and the out-of-sync dialog's Quit. A silent player waits out [spawn.ini's](/formats/spawn-ini/#a-game-against-other-machines) `ConnTimeout` on the loading screen. During play the wait is `ReconnectTimeout`, the one the [reconnect dialog](/systems/reconnect-dialog/) counts down. The other players are told which it was, a departure or a lost connection. Both go through the same synchronized removal, so every machine drops the seat on the same frame.
+A player leaves a network game by quitting, by going silent for too long, or by being dropped when the master [continues](/systems/out-of-sync-recovery/#continuing) an out-of-sync game. Every machine removes the player's seat on the same frame. The other players see a message that says whether the player left or lost the connection. No message names a player dropped from an out-of-sync game.
+
+A player quits with any of these:
+
+- Abort Mission in the options menu, then Abort.
+- The window's close button or Alt+F4, described [below](#the-close-button).
+- Quit in the [out-of-sync dialog](/systems/out-of-sync-recovery/).
+
+Surrender, in the same dialog as Abort, does not leave the match. It destroys the player's base and keeps them in the game.
+
+The [launch file](/formats/spawn-ini/#a-game-against-other-machines) sets how long the other machines wait for a silent player:
+
+- On the loading screen, `ConnTimeout` is how long loading may go without progress. When it runs out, every player who has not finished loading is dropped.
+- During play, `ReconnectTimeout` is the wait that the [reconnect dialog](/systems/reconnect-dialog/) counts down. When it runs out, the player furthest behind is dropped.
 
 ## What becomes of their base
 
-The [launch file](/formats/spawn-ini/#the-options-every-house-plays-under) settles it with `AutoSurrender`. Left as it comes, the departed player's buildings and units are destroyed where they stand. Written as `No`, the computer takes the base over and plays it out. A match arranged from the menu hands it over, no file asking otherwise. A tournament game destroys it whatever the file says.
+`AutoSurrender` in the [launch file](/formats/spawn-ini/#the-options-every-house-plays-under) decides what happens to the base of a player who leaves:
 
-The seat keeps the player's name either way, in the radar list, in chat and in the statistics the match reports, so a later report still says who was where.
+- Omitted, or written as `Yes`, it destroys the player's buildings and units where they stand, after the short [`SavourDelay`](/keys/savourdelay/) countdown.
+- Written as `No`, it hands the base to the computer, which keeps playing it.
+
+Every machine's launch file must give `AutoSurrender` the same value. A match set up from the game's own menu always hands the base to the computer.
+
+A player who leaves keeps their name on the seat, even when the computer takes it over. The radar list, chat and the score screen still show who held it.
+
+An [observer](/systems/observers/) has no base, so an observer's departure leaves nothing to destroy or hand over.
 
 ## When the match ends
 
-A match ends once no person is left playing it. The exception is a match in which every seat is [watching](/systems/observers/) rather than playing. With nobody left to lose it, that match runs until one side remains.
+A destroyed base leaves its house with nothing, so that house is defeated as soon as the destruction happens, and the other players are told. A base the computer took over is defeated only when it loses in play.
 
-A destroyed base leaves its house with nothing, so it is beaten at once and the other players are told. A base the computer took over is beaten only when it loses.
+The match ends when no person is left playing it, meaning every player has left or been defeated. The game checks this each time a house is defeated. When the last person still playing leaves and the computer takes over their base, no house is defeated, so the match continues until one is.
+
+A match in which every seat is an [observer](/systems/observers/) never has a person playing, so that rule does not apply. It continues until only one side remains.
 
 ## The close button
 
-Closing the window during a match, or pressing Alt and F4, resigns the way the options menu's abort does. The other machines are told, the statistics are reported, and the game ends itself rather than the window being torn out from under it. Outside a match the button does nothing.
+During a game, the window's close button and Alt+F4 quit the same way as Abort in the options menu. In a network game the other players are told the player left, and the departure then follows the rules above. Outside a game, and while a recorded game plays back, the close button does nothing.
