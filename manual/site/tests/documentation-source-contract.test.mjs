@@ -1280,3 +1280,31 @@ test('An EM pulse can be refused by type', () => {
 		'and an immune object springs its trigger in place of the stun',
 	);
 });
+
+test('A type can set how many pips its row has', () => {
+	const techtype = source('code/techtype.cpp');
+
+	assertOrdered(
+		functionBody(techtype, 'bool TechnoTypeClass::Read_INI(CCINIClass const & ini)'),
+		['if (ini.Is_Present(Name(), "MaxPips")) {', 'MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);'],
+		'an absent entry leaves the length an earlier layer gave',
+	);
+
+	assertOrdered(
+		functionBody(techtype, 'int TechnoTypeClass::Max_Pips(void) const'),
+		[
+			'return(MaxPips.value_or(10));',
+			'return(std::min(MaxAmmo, MaxPips.value_or(5)));',
+			'return(MaxPips.value_or(5));',
+			'return(std::min(MaxPassengers, MaxPips.value_or(5)));',
+			'return(MaxPips.value_or(8));',
+		],
+		'every pip scale keeps its own length as the default',
+	);
+
+	assert.match(
+		functionBody(source('code/builtype.cpp'), 'int BuildingTypeClass::Max_Pips(void) const'),
+		/int maxpips = MaxPips\.value_or\(\(Width\(\) \* ISO_TILE_PIXEL_W\) \/ 8\);/,
+		'and a structure keeps the allowance it sizes from its own footprint',
+	);
+});

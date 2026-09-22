@@ -782,7 +782,7 @@ int BuildingTypeClass::Height(bool bib) const
  *=============================================================================================*/
 int BuildingTypeClass::Max_Pips(void) const
 {
-	int maxpips = (Width() * ISO_TILE_PIXEL_W) / 8;
+	int maxpips = MaxPips.value_or((Width() * ISO_TILE_PIXEL_W) / 8);
 
 	switch (PipScale) {
 		case PIPSCALE_TIBERIUM:

@@ -197,6 +197,11 @@ class TechnoTypeClass : public ObjectTypeClass
 		PipScaleType PipScale;
 
 		/*
+		 * The number of pips in this type's row, if set. Unset, each pip scale has its own length.
+		 */
+		std::optional<int> MaxPips;
+
+		/*
 		 * These are the building types this object docks with for service, listed in order of
 		 * preference. An aircraft rearms at one, and a harvester unloads its tiberium at one.
 		 */

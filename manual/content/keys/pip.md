@@ -1,13 +1,13 @@
 ---
 key: Pip
 summary: The color of the pip a transport draws for this soldier while it is carried.
-see_also: [Passengers, PipScale, Size, "system:transports"]
+see_also: [Passengers, PipScale, MaxPips, Size, "system:transports"]
 when_omitted:
   kind: value
   value: green
 ---
 
-A transport draws one pip per passenger slot up to five where its [`PipScale`](/keys/pipscale/) selects the passenger scale, coloring each one from what is standing in it. The pips draw on the tactical view under the selected transport. The count never rises past five: a type with more than five passenger slots leaves its remaining passengers without a pip. A slot holding an infantry takes that infantry type's setting, a slot holding anything else is green, and an empty slot is drawn empty. Nothing else reads the value. A soldier on the ground draws no pip of its own, and the setting has no meaning on a type that never rides anywhere.
+A selected transport's pip row shows its hold, one pip per unit of passenger space. An infantry passenger's pips take its type's `Pip` color, any other passenger's pips are green, and free space is drawn empty. The row's length comes from the transport's [`PipScale`](/keys/pipscale/) and [`MaxPips`](/keys/maxpips/): under `PipScale=Passengers` it is five pips, or `MaxPips` where set, but never more than the transport's [`Passengers`](/keys/passengers/). Passengers past the end of the row get no pip. Nothing else reads the value, so it has no effect on an infantry type that never rides in a transport.
 
 ```ini title="rules.ini"
 [MYCOMMANDO] ; example InfantryType

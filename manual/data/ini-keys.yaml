@@ -13619,6 +13619,23 @@ MaxMoney:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MaxPips:
+  key: MaxPips
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: TechnoTypeClass
+      member: null
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 MaxPlayers:
   key: MaxPlayers
   scopes:

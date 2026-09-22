@@ -612,6 +612,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsCloakable = ini.Get_Bool(Name(), "Cloakable", IsCloakable);
 		IsScanner = ini.Get_Bool(Name(), "Sensors", IsScanner);
 		PipScale = ini.Get_PipScaleType(Name(), "PipScale", PipScale);
+		if (ini.Is_Present(Name(), "MaxPips")) {
+			MaxPips = std::max(ini.Get_Int(Name(), "MaxPips", 0), 0);
+		}
 		Prerequisite = ini.Get_BuildingType_List(ini, IniName, "Prerequisite", Prerequisite);
 		SightRange = ini.Get_Int(Name(), "Sight", SightRange);
 		Level = ini.Get_Int(Name(), "TechLevel", Level);
@@ -793,19 +796,19 @@ int TechnoTypeClass::Max_Pips(void) const
 {
 	switch (PipScale) {
 		case PIPSCALE_POWER:
-			return(10);
+			return(MaxPips.value_or(10));
 
 		case PIPSCALE_AMMO:
-			return(std::min(MaxAmmo, 5));
+			return(std::min(MaxAmmo, MaxPips.value_or(5)));
 
 		case PIPSCALE_TIBERIUM:
-			return(5);
+			return(MaxPips.value_or(5));
 
 		case PIPSCALE_PASSENGERS:
-			return(std::min(MaxPassengers, 5));
+			return(std::min(MaxPassengers, MaxPips.value_or(5)));
 
 		case PIPSCALE_CHARGE:
-			return(8);
+			return(MaxPips.value_or(8));
 	}
 	return(0);
 }
@@ -978,6 +981,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(DeployTime);
 	stream.Serialize(FireAngle);
 	stream.Serialize(PipScale);
+	stream.Serialize(MaxPips);
 	stream.Serialize(Dock);
 	stream.Serialize(DeploysInto);
 	stream.Serialize(UndeploysInto);
@@ -1112,6 +1116,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(DeployTime);
 	crc(FireAngle);
 	crc(PipScale);
+	crc(Max_Pips());
 	crc(VoiceSelect.Count());
 	crc(VoiceMove.Count());
 	crc(VoiceAttack.Count());

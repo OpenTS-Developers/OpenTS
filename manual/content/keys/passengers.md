@@ -1,7 +1,7 @@
 ---
 key: Passengers
 summary: How much passenger space the type can carry at once.
-see_also: [Size, SizeLimit, IsVehicleTransport, PipScale, CrewEscape, Crewed, VisibleLoad, AIIonCannonAPCValue, "system:transports"]
+see_also: [Size, SizeLimit, IsVehicleTransport, PipScale, MaxPips, CrewEscape, Crewed, VisibleLoad, AIIonCannonAPCValue, "system:transports"]
 when_omitted:
   kind: value
   value: "0"
@@ -19,7 +19,7 @@ Zero is what makes a type not a transport at all, and that is checked before any
 
 Any capacity above zero changes several unrelated things about the type:
 
-- Its pip row switches to showing the hold, one pip per unit of space colored by each passenger's own [`Pip`](/keys/pip/), instead of a scaled quantity. The row still has no pips until [`PipScale`](/keys/pipscale/) gives it a length, and that length is whatever [`PipScale`](/keys/pipscale/) gives: five under the passenger scale however large the capacity, ten under `Power`, eight under `Charge`.
+- Its pip row switches to showing the hold, one pip per unit of space colored by each passenger's own [`Pip`](/keys/pip/), instead of a scaled quantity. The row still has no pips until [`PipScale`](/keys/pipscale/) gives it a length, and that length is five under the passenger scale however large the capacity, ten under `Power` and eight under `Charge`, until [`MaxPips`](/keys/maxpips/) sets it outright.
 - A vehicle gains the ability to deploy (unloading is a deploy). A vehicle with no capacity, no [`DeploysInto`](/keys/deploysinto/) and no [`IsMobileEMP=yes`](/keys/ismobileemp/) has nothing to deploy into and is refused. That unload is then blocked while the vehicle stands on a bridge, and blocked again when its own cell or any of the four cells around it lies under one.
 - A vehicle stops producing an escaping crew when it dies, whatever [`Crewed=yes`](/keys/crewed/) says; [`CrewEscape`](/keys/crewescape/) covers that exclusion.
 - A computer house treats the type as a transport. Teams look for it when a script wants one, and an enemy ion cannon rates it at [`AIIonCannonAPCValue`](/keys/aiioncannonapcvalue/) rather than as an ordinary vehicle.
