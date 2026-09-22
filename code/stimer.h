@@ -33,8 +33,10 @@
 
 /****************************************************************************
 **	Timer constants. These are used when setting the countdown timer.
-**	Note that this is based upon a timer that ticks every 60th of a second.
+**	Note that this is based upon a timer that ticks every 16 milliseconds, so
+**	TIMER_SECOND lasts 960 milliseconds.
 */
+#define	TIMER_TICK_MILLISECONDS	16
 #define	TIMER_SECOND			60
 #define	TIMER_MINUTE			(TIMER_SECOND*60)
 

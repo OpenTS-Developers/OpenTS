@@ -1507,6 +1507,11 @@ test('A game played alone is paced the way a network game is', () => {
 		/MillisecondSystemTimerClass::MillisecondSystemTimerClass/,
 		'and arming it each frame asks Windows for nothing',
 	);
+	assertOrdered(functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'), [
+		'static CDTimerClass<MillisecondSystemTimerClass> fps_timer;',
+		'LastFramesPerSecond = FramesThisSecond;',
+		'fps_timer = 1000;',
+	], 'frames are counted over a second of the millisecond clock, not sixty ticks of the old one');
 });
 
 test('An insignificant unit dies without announcing it', () => {

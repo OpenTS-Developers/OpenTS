@@ -557,7 +557,7 @@ void Sync_Delay(void)
 		Sleep(GameInFocus ? 0 : 1);
 	}
 
-	static CDTimerClass<SystemTimerClass> fps_timer;
+	static CDTimerClass<MillisecondSystemTimerClass> fps_timer;
 	if (!fps_timer) {
 		LastFramesPerSecond = FramesThisSecond;
 		FramesThisSecond = 0;
@@ -567,7 +567,7 @@ void Sync_Delay(void)
 			TotalFrames = 0;
 			SecondsPassed = 0;
 		}
-		fps_timer = TIMER_SECOND;
+		fps_timer = 1000;
 	}
 }
 

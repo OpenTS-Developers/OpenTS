@@ -1836,9 +1836,10 @@ static RetcodeType Process_Receive_Packet(ConnManClass *net,
 		if (Session.Type != GAME_INTERNET) {
 			Session.PlayerLatency[index] = 0;
 		} else {
+			// The response time is counted in system timer ticks and the frame rate over a second.
 			unsigned int f = Ipx.Avg_Response_Time(index) / 2;
 			f *= LastFramesPerSecond;
-			Session.PlayerLatency[index] = (Frame - (f / TIMER_SECOND)) - frame;
+			Session.PlayerLatency[index] = (Frame - (f * TIMER_TICK_MILLISECONDS / 1000)) - frame;
 		}
 	}
 

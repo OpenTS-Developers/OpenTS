@@ -54,7 +54,7 @@
 /// <returns>Returns with the current system time, expressed in timer ticks.</returns>
 int SystemTimerClass::operator () (void) const
 {
-	return(timeGetTime()/16);
+	return(timeGetTime()/TIMER_TICK_MILLISECONDS);
 }
 
 
@@ -66,5 +66,5 @@ int SystemTimerClass::operator () (void) const
 /// <returns>Returns with the current system time, expressed in timer ticks.</returns>
 SystemTimerClass::operator int (void) const
 {
-	return(timeGetTime()/16);
+	return(timeGetTime()/TIMER_TICK_MILLISECONDS);
 }
