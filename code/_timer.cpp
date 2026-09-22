@@ -36,9 +36,7 @@
 /***************************************************************************
 **	Game frame timer (this is synced between processes).
 */
-CDTimerClass<SystemTimerClass> FrameTimer;
-
-CDTimerClass<MillisecondSystemTimerClass> NetFrameTimer;
+CDTimerClass<MillisecondSystemTimerClass> FrameTimer;
 
 /***************************************************************************
 **	Tick Count global timer object.

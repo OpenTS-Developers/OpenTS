@@ -1501,6 +1501,12 @@ test('A game played alone is paced the way a network game is', () => {
 		/static int Game_Speed_Frame_Rate/,
 		'and the table is kept in one place',
 	);
+	assert.doesNotMatch(source('code/_timer.h'), /NetFrameTimer/, 'one timer holds every frame to its rate');
+	assert.doesNotMatch(
+		source('code/mstimer.cpp'),
+		/MillisecondSystemTimerClass::MillisecondSystemTimerClass/,
+		'and arming it each frame asks Windows for nothing',
+	);
 });
 
 test('An insignificant unit dies without announcing it', () => {

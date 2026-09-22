@@ -38,6 +38,5 @@
 class SystemTimerClass;
 class MillisecondSystemTimerClass;
 
-extern CDTimerClass<SystemTimerClass> FrameTimer;
-extern CDTimerClass<MillisecondSystemTimerClass> NetFrameTimer;
+extern CDTimerClass<MillisecondSystemTimerClass> FrameTimer;
 extern TTimerClass<SystemTimerClass> TickCount;

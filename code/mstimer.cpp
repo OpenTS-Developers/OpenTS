@@ -14,26 +14,15 @@
 #include "win.h"
 
 
-/// <summary>
-/// Asks Windows for one millisecond timer resolution.
-/// This routine is called when the timer is created so that the readings it hands out
-/// are fine grained enough for the game to pace itself by.
-/// </summary>
-MillisecondSystemTimerClass::MillisecondSystemTimerClass(void)
+/*
+ * One request held for the life of the process gives every reading millisecond resolution,
+ * so a timer can be made and dropped as often as the game likes without asking again.
+ */
+static struct MillisecondResolutionClass
 {
-	timeBeginPeriod(1);
-}
-
-
-/// <summary>
-/// Returns the system timer to its normal resolution.
-/// This routine undoes the resolution request made when the timer was created, so that
-/// the rest of the system is not left paying for the finer granularity.
-/// </summary>
-MillisecondSystemTimerClass::~MillisecondSystemTimerClass(void)
-{
-	timeEndPeriod(1);
-}
+	MillisecondResolutionClass(void) { timeBeginPeriod(1); }
+	~MillisecondResolutionClass(void) { timeEndPeriod(1); }
+} MillisecondResolution;
 
 
 /// <summary>

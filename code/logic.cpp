@@ -132,7 +132,7 @@ void LogicClass::Debug_Dump(MonoClass * mono) const
 	mono->Set_Cursor(1, 21);mono->Printf("%3d", TriggerTypes.Count());
 	mono->Set_Cursor(1, 22);mono->Printf("%3d", Factories.Count());
 
-	SpareTicks = std::min((int)SpareTicks, (int)TIMER_SECOND);
+	SpareTicks = std::min((int)SpareTicks, 1000);
 
 	/*
 	**	CPU utilization record.
@@ -140,7 +140,7 @@ void LogicClass::Debug_Dump(MonoClass * mono) const
 	mono->Sub_Window(15, 1, 6, 11);
 	mono->Scroll();
 	mono->Set_Cursor(0, 10);
-	mono->Printf("%3d%%", ((TIMER_SECOND-SpareTicks)*100) / TIMER_SECOND);
+	mono->Printf("%3d%%", ((1000-SpareTicks)*100) / 1000);
 
 	/*
 	**	Update the frame rate log.

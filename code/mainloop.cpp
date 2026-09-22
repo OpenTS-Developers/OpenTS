@@ -258,13 +258,7 @@ bool Main_Loop(void)
 	**	Setup the timer so that the Main_Loop function processes at the correct rate.
 	*/
 	int const rate = Target_Frame_Rate();
-	if (rate > 0) {
-		FrameTimer = TIMER_SECOND / rate;
-		NetFrameTimer = 1000 / rate;
-	} else {
-		FrameTimer = 0;
-		NetFrameTimer = 0;
-	}
+	FrameTimer = rate > 0 ? 1000 / rate : 0;
 
 	/*
 	**	Update the display, unless we're inside a dialog.
@@ -541,12 +535,12 @@ void Sync_Delay(void)
 	*/
 	SpareTicks += FrameTimer;
 
-	while (NetFrameTimer) {
+	while (FrameTimer) {
 		Call_Back();
 		if (SpecialDialog == SDLG_NONE && GameInFocus == true) {
 			KeyNumType input = KN_NONE;
 			int x, y;
-			if (NetFrameTimer > 10) {
+			if (FrameTimer > 10) {
 				Map.Input(input, x, y);
 				Keyboard_Process(input);
 				TacticalMap->AI();
@@ -554,7 +548,7 @@ void Sync_Delay(void)
 			} else {
 				Sleep(0);
 			}
-			if (!NetFrameTimer()) {
+			if (!FrameTimer()) {
 				break;
 			}
 		}

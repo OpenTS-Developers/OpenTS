@@ -12,9 +12,6 @@
 class MillisecondSystemTimerClass
 {
 	public:
-		MillisecondSystemTimerClass(void);
-		~MillisecondSystemTimerClass(void);
-
 		int operator () (void) const;
 		operator int (void) const;
 };
