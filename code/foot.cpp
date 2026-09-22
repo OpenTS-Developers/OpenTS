@@ -2544,7 +2544,7 @@ int FootClass::Rescue_Mission(AbstractClass * tarcom)
  *=============================================================================================*/
 void FootClass::Death_Announcement(TechnoClass const * ) const
 {
-	if (IsOwnedByPlayer) {
+	if (IsOwnedByPlayer && !TClass->IsInsignificant) {
 		LastRadarEventCell = Destination_Coord().As_Cell();
 		Speak(VOX_UNIT_LOST);
 	}

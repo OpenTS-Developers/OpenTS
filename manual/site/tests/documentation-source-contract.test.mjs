@@ -1363,3 +1363,19 @@ test('A solo game may keep running while the window is away', () => {
 		'the rule is written once, not once per copy of the loop',
 	);
 });
+
+test('An insignificant unit dies without announcing it', () => {
+	assert.equal(
+		functionBody(source('code/foot.cpp'), 'void FootClass::Death_Announcement(TechnoClass const * ) const')
+			.replace(/[\s]+/g, ' ')
+			.trim(),
+		'if (IsOwnedByPlayer && !TClass->IsInsignificant) { LastRadarEventCell = Destination_Coord().As_Cell(); Speak(VOX_UNIT_LOST); }',
+		'the voice and the remembered cell are refused together',
+	);
+
+	assert.equal(
+		(source('code/foot.cpp').match(/Speak\(VOX_UNIT_LOST\)/g) ?? []).length,
+		1,
+		'and the announcement has one site, inherited by every kind of foot object',
+	);
+});

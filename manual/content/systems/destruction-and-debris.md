@@ -20,6 +20,7 @@ keys:
   - Immune
   - InfDeath
   - InfantryExplode
+  - Insignificant
   - LargeFire
   - MaxDebris
   - MaxDeathCounter
@@ -44,6 +45,8 @@ related:
     id: tiberium
   - type: system
     id: veterancy
+  - type: command
+    id: CenterOnRadarEvent
 ---
 
 A destroying hit is worked through twice. One step runs for every kind of object and settles the wreckage and the collateral blast. The other belongs to the kind: vehicle, structure, infantry or aircraft. It settles the explosion animation, who walks away from it, and when the object is taken off the map. Which step a setting is read at decides whether the sequence's three exits reach it at all: a fall into water, a wreck animation, and a structure's delayed removal.
@@ -89,6 +92,12 @@ The shared step runs first, in this order, on a vehicle, a structure, an infantr
 Two consequences of that order decide what is left behind. Debris is thrown before the blast, so a type that both sheds wreckage and explodes scatters its pieces into its own explosion rather than out of it. The water exit sits above both, which is why a vehicle knocked off a bridge into a river leaves nothing but the splash, whatever its wreckage settings say.
 
 A destroyed harvester's cargo is spilled inside step 7 rather than beside it. The Tiberium goes out one cell at a time to the eight neighbors, always as the first registered Tiberium type whatever it had aboard. It reaches as many neighbors as the fraction of [`Storage`](/keys/storage/) it was carrying covers. Because the spill sits inside the collateral blast, a harvester that is neither `Explodes=yes` nor holding the ability keeps its load and is taken off the map with it. The extra blast the load itself produces is a separate setting, [`TiberiumExplosive`](/keys/tiberiumexplosive/#scope-global-rules).
+
+## The loss announcement
+
+After that shared step, a destroyed vehicle, soldier or aircraft belonging to the player at this machine has its loss announced: EVA says so, and the cell that [Goto Radar Event](/commands/centeronradarevent/) jumps to moves to it. The cell taken is where the object was heading rather than where it fell. That is the exit of the tunnel it is traveling through, or the coordinate its [locomotor](/glossary/#locomotor) was driving toward, or its own center when it was going nowhere.
+
+A type marked [`Insignificant=yes`](/keys/insignificant/) announces nothing and leaves that cell where it was. A structure announces nothing either, whatever its settings say. Neither does a vehicle whose artwork declares [`DeathFrames`](/keys/deathframes/), because the announcement sits on the outright exit below and that vehicle takes the wreck path instead.
 
 ## A vehicle
 
