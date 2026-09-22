@@ -14,3 +14,5 @@ The structure still counts as a vehicle at the moment the engineer arrives, and 
 :::
 
 Three smaller effects follow the setting. The structure may undeploy in circumstances that would otherwise forbid it. Band-box selection passes it over as it does a construction yard. A vehicle thief chasing the vehicle loses its target outright when that vehicle deploys; every other object chasing it is handed the new structure instead. Opening for business also toggles the structure's primary-factory state for its production kind.
+
+Because a mobile war factory both builds vehicles and packs up, a plain click on the ground sets its [rally point](/systems/production/#rally-points) and the force-move key packs it up. [`AltToRally=yes`](/keys/alttorally/) swaps the two.

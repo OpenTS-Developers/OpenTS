@@ -1837,6 +1837,24 @@ AltPalette:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
+AltToRally:
+  key: AltToRally
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: Options
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: AltToRally
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 AlwaysShowActionLines:
   key: AlwaysShowActionLines
   scopes:

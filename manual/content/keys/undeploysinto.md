@@ -1,7 +1,7 @@
 ---
 key: UndeploysInto
 summary: The UnitType a structure turns back into when it is taken down.
-see_also: ["DeploysInto", "UnloadingClass"]
+see_also: ["DeploysInto", "UnloadingClass", AltToRally]
 when_omitted:
   kind: value
   value: none
@@ -18,7 +18,9 @@ The "structure sold" announcement is suppressed and no crew leaves the building.
 
 Not every structure that names a type may actually undeploy. The undeploy path also requires the structure to be one of the deployed-vehicle kinds, or a mobile war factory or limpet mine. Outside a campaign game, a structure holding a destination from a move order also passes, as long as it belongs to a human house in a session set up with the MCV redeploy option on. A [`ConstructionYard=yes`](/keys/constructionyard/) structure refuses in a campaign game, refuses for a computer house anywhere, and refuses in any session where redeploying is switched off.
 
-Naming a type also makes the structure count as a vehicle rather than a building. It takes the move cursor, it can be given a destination, and it answers a movement test against the target cell. A band selection picks it up the way it picks up a unit instead of requiring a click of its own. A construction yard is deliberately excluded from the selection and vehicle-counting parts of that, so it keeps behaving like a structure.
+Naming a type also makes the structure count as a vehicle rather than a building. It takes the move cursor, it can be given a destination, and it answers a movement test against the target cell. A band selection picks it up the way it picks up a unit instead of requiring a click of its own. A construction yard is deliberately excluded from the selection and vehicle-counting parts of that, so it keeps behaving like a structure, and a band selection also skips an [`IsMobileWar=yes`](/keys/ismobilewar/) structure.
+
+If the structure's [`Factory=`](/keys/factory/) is `UnitType`, `InfantryType` or `AircraftType`, a plain click on the ground sets its [rally point](/systems/production/#rally-points), and the move order needs the force-move key. [`AltToRally=yes`](/keys/alttorally/) swaps the two. Any other structure, including a construction yard, takes the move order on a plain click.
 
 A name that matches no registered UnitType registers a new, unconfigured vehicle under that name rather than failing. The values `none` and `<none>` resolve to nothing at all, exactly as if the key had been left out.
 

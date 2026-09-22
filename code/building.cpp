@@ -3966,9 +3966,9 @@ ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_
 	if (action == ACTION_MOVE || action == ACTION_NOMOVE) {
 		if (!Can_Player_Move()) {
 			action = ACTION_SELECT;
-		} else if (Class->ToBuild == RTTI_INFANTRYTYPE || Class->ToBuild == RTTI_UNITTYPE || Class->ToBuild == RTTI_AIRCRAFTTYPE) {
+		} else if (Is_Move_Override()) {
 			bool altdown = (Keyboard->Down(Options.KeyForceMove1) || Keyboard->Down(Options.KeyForceMove2));
-			if (!altdown) {
+			if (altdown != Options.AltToRally) {
 				action = ACTION_SELECT;
 			} else {
 				Cell cell = object->Center_Coord().As_Cell();

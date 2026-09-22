@@ -3,6 +3,7 @@ title: Production and factories
 summary: "Builds one object of each kind per house at a time, charging for it step by step, and hands the finished object to a factory building to leave from."
 category: buildings-economy
 keys:
+  - AltToRally
   - Armory
   - BuildLimit
   - BuildSpeed
@@ -238,6 +239,21 @@ A structure that has just been placed runs its construction animation before it 
 The step delay for that animation is [`BuildupTime`](/keys/builduptime/) converted to frames and divided by the step count. That count is half the number of frames in the [buildup art](/keys/buildup/), or [`GateStages`](/keys/gatestages/) plus one for a [`Gate=yes`](/keys/gate/) type. That delay is then adjusted by the game-speed setting before it becomes the animation rate. How long a buildup takes therefore tracks the selected game speed as well as the configured value. A type with no buildup art skips the wait and opens at once.
 
 Only when it opens does a structure hand over what came bundled with it. A [`FreeUnit`](/keys/freeunit/) vehicle or infantryman is put down beside the structure and a free aircraft on the structure itself, and one that cannot be placed anywhere refunds its own price instead. A [`HoverPad=yes`](/keys/hoverpad/) structure receives the first [`PadAircraft`](/keys/padaircraft/) entry as well, unless [`SeparateAircraft=yes`](/keys/separateaircraft/) or it is already holding the free aircraft it just handed out.
+
+## Rally points
+
+A structure that names a [`Factory=`](/keys/factory/) kind holds a rally point. Selecting it and clicking the ground sets one, and holding the force-move key gives it a move order instead, which on a structure that also names an [`UndeploysInto`](/keys/undeploysinto/) type packs it up. [`AltToRally=yes`](/keys/alttorally/) swaps the two.
+
+The clicked cell is not the cell recorded. What is recorded is the nearest cell to it that a foot object could stand on, or a flyer at an aircraft factory, searched within the structure's own movement zone; when no such cell turns up, nothing is recorded at all. Cursor rules narrow it further. A cell outside the playable area is refused, and so is one in another zone or on ground that is not passable land, both of which an aircraft factory is exempt from.
+
+What the object that leaves does with the point depends on the factory:
+
+- An aircraft heads for it as soon as it appears, whether on its pad or at the edge of the playable area. During an ion storm the aircraft appears on a nearby cell and ignores the rally point.
+- A [`WeaponsFactory=yes`](/keys/weaponsfactory/) structure hands it to the vehicle, which heads for it once it has cleared the building.
+- A barracks, [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure hands it to the infantryman, who walks to the exit cell first and takes the rally point up when he next falls idle.
+- Every other factory ignores it. A `Factory=UnitType` structure with [`WeaponsFactory=no`](/keys/weaponsfactory/) accepts a rally point and the vehicles it releases stop on the exit cell anyway.
+
+A structure holds the point where it holds a move destination of its own, so one that undeploys hands it on to the vehicle it becomes.
 
 ## When a factory is lost
 

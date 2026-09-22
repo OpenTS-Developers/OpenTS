@@ -125,6 +125,7 @@ OptionsClass::OptionsClass(void) :
 	SidebarSorting(true),
 	ActionLines(true),
 	ToolTips(true),
+	AltToRally(false),
 	TextBackgroundColor(12),
 	AutoSaveInterval(10800),
 	ScreenWidth(-1),
@@ -400,6 +401,9 @@ void OptionsClass::Load_Settings(void)
 	ToolTips = ConfigINI.Get_Bool("Options", "ToolTips", ToolTips);
 	DebugString("ToolTips are %s\n", ToolTips == true ? "ON" : "OFF");
 
+	AltToRally = ConfigINI.Get_Bool("Options", "AltToRally", AltToRally);
+	DebugString("AltToRally is %s\n", AltToRally == true ? "ON" : "OFF");
+
 	TextBackgroundColor = ConfigINI.Get_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	DebugString("TextBackgroundColor = %d\n", TextBackgroundColor);
 
@@ -475,6 +479,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "SidebarSorting", SidebarSorting);
 	ConfigINI.Put_Bool("Options", "UnitActionLines", ActionLines);
 	ConfigINI.Put_Bool("Options", "ToolTips", ToolTips);
+	ConfigINI.Put_Bool("Options", "AltToRally", AltToRally);
 	ConfigINI.Put_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	ConfigINI.Put_Int("Options", "AutoSaveInterval", AutoSaveInterval);
 	ConfigINI.Put_Int("Video", "ScreenWidth", ScreenWidth);

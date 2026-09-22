@@ -4483,7 +4483,9 @@ ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disa
 		}
 
 		if (Is_Move_Override()) {
-			if (altdown) {
+
+			// AltToRally swaps the plain click and the force-move key.
+			if (!disallow_force && altdown == Options.AltToRally) {
 				return(ACTION_RALLY_TO_POINT);
 			}
 			if (!Can_Player_Move()) {

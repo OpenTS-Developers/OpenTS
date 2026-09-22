@@ -128,6 +128,11 @@ class OptionsClass {
 		bool ToolTips;
 
 		/*
+		 * If true, the force-move key sets a rally point and the plain click moves the structure.
+		 */
+		bool AltToRally;
+
+		/*
 		 * The palette index drawn behind each glyph of the in-game message list, or zero for
 		 * none. Twelve, black, is the value the CnCNet client's chat background option writes.
 		 */

@@ -1204,3 +1204,33 @@ test('A free unit may come from any of the three object heaps', () => {
 		'both grants stand an aircraft on the structure the one way',
 	);
 });
+
+test('A rally point is set with the plain click', () => {
+	const action = functionBody(
+		source('code/techno.cpp'),
+		'ActionType TechnoClass::What_Action(Cell const & cell, bool check_fog, bool disallow_force) const',
+	);
+
+	assertOrdered(
+		action,
+		['if (Is_Move_Override()) {', 'if (!disallow_force && altdown == Options.AltToRally) {', 'return(ACTION_RALLY_TO_POINT);'],
+		'the key the rally point answers to comes from the setting rather than from the force-move key alone',
+	);
+
+	const clicked = functionBody(
+		source('code/building.cpp'),
+		'ActionType BuildingClass::What_Action(ObjectClass const * object, bool disallow_force) const',
+	);
+
+	assertOrdered(
+		clicked,
+		['} else if (Is_Move_Override()) {', 'if (altdown != Options.AltToRally) {'],
+		'a click on an object asks the same question of the same predicate',
+	);
+
+	assert.match(
+		functionBody(source('code/options.cpp'), 'void OptionsClass::Load_Settings(void)'),
+		/AltToRally = ConfigINI\.Get_Bool\("Options", "AltToRally", AltToRally\);/,
+		'and the player owns it in their own settings file',
+	);
+});
