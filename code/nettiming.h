@@ -156,6 +156,17 @@ namespace NetTiming
 
 	unsigned int Game_Speed_Frame_Rate(int game_speed);
 	unsigned int Solo_Game_Speed_Frame_Rate(int game_speed);
+
+	class FramePacer
+	{
+		public:
+			Milliseconds Next_Wait(unsigned int rate);
+
+		private:
+			unsigned int Rate = 0;
+			// The part of a millisecond each frame is owed, counted in 1/Rate of a millisecond.
+			unsigned int Leftover = 0;
+	};
 	unsigned int Select_Desired_Frame_Rate(TimingCensus const & census, unsigned int synchronized_fps, unsigned int game_speed_fps);
 
 	struct TimingEvaluation {

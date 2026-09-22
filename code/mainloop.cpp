@@ -257,8 +257,8 @@ bool Main_Loop(void)
 	/*
 	**	Setup the timer so that the Main_Loop function processes at the correct rate.
 	*/
-	int const rate = Target_Frame_Rate();
-	FrameTimer = rate > 0 ? 1000 / rate : 0;
+	static NetTiming::FramePacer pacer;
+	FrameTimer = pacer.Next_Wait(Target_Frame_Rate());
 
 	/*
 	**	Update the display, unless we're inside a dialog.

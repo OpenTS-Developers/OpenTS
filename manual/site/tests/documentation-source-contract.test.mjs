@@ -1493,6 +1493,11 @@ test('A game played alone is paced by its own speed table', () => {
 		/FrameTimer\s*=\s*Options\.GameSpeed/,
 		'the speed setting is a frame rate, not a count of timer ticks',
 	);
+	assert.match(
+		functionBody(definitionFrom(mainloop, 'bool Main_Loop(void)'), 'bool Main_Loop(void)'),
+		/FrameTimer = pacer\.Next_Wait\(Target_Frame_Rate\(\)\);/,
+		'and each frame waits whatever keeps the average on that rate',
+	);
 	assert.doesNotMatch(
 		functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'),
 		/GAME_NORMAL|GAME_SKIRMISH/,
