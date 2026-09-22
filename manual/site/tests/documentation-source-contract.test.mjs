@@ -1507,6 +1507,11 @@ test('A game played alone is paced by its own speed table', () => {
 		/MillisecondSystemTimerClass::MillisecondSystemTimerClass/,
 		'and arming it each frame asks Windows for nothing',
 	);
+	assert.match(
+		source('code/mstimer.cpp'),
+		/ControlMask = PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;/,
+		'and the millisecond request holds while the window is out of sight',
+	);
 	assertOrdered(functionBody(definitionFrom(mainloop, 'void Sync_Delay(void)'), 'void Sync_Delay(void)'), [
 		'static CDTimerClass<MillisecondSystemTimerClass> fps_timer;',
 		'LastFramesPerSecond = FramesThisSecond;',

@@ -14,13 +14,19 @@
 #include "win.h"
 
 
-/*
- * One request held for the life of the process gives every reading millisecond resolution,
- * so a timer can be made and dropped as often as the game likes without asking again.
- */
+// One request for the life of the process gives every timer millisecond resolution. Without
+// the opt-out, Windows 11 drops it while the window is minimized and each sleep lasts about 16 ms.
 static struct MillisecondResolutionClass
 {
-	MillisecondResolutionClass(void) { timeBeginPeriod(1); }
+	MillisecondResolutionClass(void)
+	{
+		PROCESS_POWER_THROTTLING_STATE state = {};
+		state.Version = PROCESS_POWER_THROTTLING_CURRENT_VERSION;
+		state.ControlMask = PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION;
+		state.StateMask = 0;
+		SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, &state, sizeof(state));
+		timeBeginPeriod(1);
+	}
 	~MillisecondResolutionClass(void) { timeEndPeriod(1); }
 } MillisecondResolution;
 
