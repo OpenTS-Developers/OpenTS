@@ -51,8 +51,7 @@ TypeList<T const *> TGet_TypeList(CCINIClass const & ini, char const * section, 
 		while (token != NULL && token[0] != '\0') {
 			T const *ptr = T::Find_Or_Make(token);
 
-			assert(ptr != NULL);
-
+			// "none" yields NULL, so Key=none replaces the default with an empty list.
 			if (ptr) {
 				list.Add(ptr);
 			}

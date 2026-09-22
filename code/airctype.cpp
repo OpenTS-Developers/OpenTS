@@ -339,7 +339,7 @@ ClassID AircraftTypeClass::Class_ID(void) const
 /// aircraft type heap and filled in later.
 /// </summary>
 /// <param name="name">The INI name of the aircraft type to look for.</param>
-/// <returns>Returns with a pointer to the aircraft type. This will never be NULL.</returns>
+/// <returns>Returns with a pointer to the aircraft type, or NULL for "none".</returns>
 AircraftTypeClass * AircraftTypeClass::Find_Or_Make(char const * name)
 {
 	return(TFind_Or_Make<AircraftTypeClass>(name, AircraftTypes));
