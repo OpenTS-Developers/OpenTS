@@ -94,15 +94,13 @@ A seed reaches the generator by two routes that share the passes and nothing els
 | Route | How the settings arrive | What is generated |
 | --- | --- | --- |
 | The map generator dialog | Taken off the dialog controls, rolled by its randomize button, or loaded from a saved seed and written back into the controls. All three of those actions hold every setting inside its legal range | A preview. The previous scenario is torn down first, down to its objects, houses, theater and tile artwork, and rebuilt around the new map. A thumbnail is drawn from the result |
-| Starting a scenario whose filename ends `.SED` | Read straight out of the file's `[RandomMap]` section, over whatever the generator's settings currently hold. No range check runs | The map that is played. It is generated into the scenario already being loaded, with no teardown |
+| Starting a scenario whose filename ends `.SED` | Read straight out of the file's `[RandomMap]` section, over whatever the generator's settings currently hold, then held to the ranges the dialog allows | The map that is played. It is generated into the scenario already being loaded, with no teardown |
 
 Accepting the dialog does not hand its map to the game. It writes the settings out to `RandMap.Sed` and registers that file in the scenario list. The lobby then starts `RandMap.Sed` as a scenario, and the second route builds the map over again from the same settings. The preview exists to be looked at, and is discarded.
 
 The file extension carries weight beyond the generator, too. Recognizing `.SED` marks the scenario as a generated one for the rest of the load. That is what keeps a tile set marked [`RequiredForRMG=yes`](/keys/requiredforrmg/) resident when the loader trims artwork no cell is using yet.
 
-:::danger[Nothing holds a seed file's settings inside their legal ranges]
-The check that pins each setting to its limits belongs to the dialog. It runs at exactly three moments: when the dialog is read, when the dialog is filled in, and when its randomize button rolls a fresh set. Reading a seed file performs all twenty assignments and returns without it. A scenario started from a `.SED` therefore reaches the generator with whatever the file says. Several of those settings then index fixed tables that have no bounds check of their own. [`Biome`](/keys/biome/) selects the theater name that loads the tile set, [`NumPlayers`](/keys/numplayers/#scope-random-map-generation) selects the row of the size tables, and [`Time`](/keys/time/) selects the ambient light level. Loading the same file through the dialog is safe, because filling the controls in runs the check.
-:::
+The check that holds each setting to its limits runs four times: when the dialog is read, when it is filled in, when its randomize button rolls a fresh set, and when a seed file is read as a scenario starts.
 
 ## Sizing and the blank map
 

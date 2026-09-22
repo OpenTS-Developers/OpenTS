@@ -13,6 +13,6 @@ when_omitted:
 VeinholeMonsters=3
 ```
 
-The figure is held to `0` through `5` only on [the dialog path](/systems/map-generation/#the-dialog-path-and-the-scenario-path), so a larger figure written by hand in a seed file simply asks for more monsters. The generator makes at most 200 placement attempts in total either way, so a crowded map ends up with fewer monsters than asked for rather than holding the generator up. Each attempt has to find a five-by-five block of untouched, level, overlay-free ground that also satisfies the [placement test](/systems/veins/#placement). Every monster it plants is given a starting ring of veins around the border of that block.
+The generator tries to plant this many veinhole monsters. When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `0` becomes `0` and one above `5` becomes `5`. The generator makes at most 200 placement attempts in total, so a crowded map can get fewer monsters than requested. Each attempt picks a five-by-five block. The block must be clear, level ground inside the playable area, with no overlay and no cell in the ground reserved around a start point, and its center must pass the [placement test](/systems/veins/#placement). Each monster planted starts with a ring of veins along the border of that block.
 
 The pass runs only where the generated map is built in the temperate theater, so a map whose [`Biome`](/keys/biome/) is tundra or taiga is left without monsters whatever the figure says.

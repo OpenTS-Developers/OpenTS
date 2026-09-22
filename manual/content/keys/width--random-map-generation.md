@@ -21,4 +21,4 @@ The index is also compared directly, alongside the height and the player count, 
 
 On a mutated map the two indices are added to one another as small whole numbers to scale the growths. The mold count is drawn from three up to a quarter of `(Width + 1) × (Height + 1)` plus four. The crystal count is drawn from six up to that product plus eight.
 
-The figure is held to `0` through `3` on the same paths as the height, and left alone on the same one: a seed file read as the game starts. An out-of-range figure reads past no table, unlike [`Time`](/keys/time/): it stretches the interpolation fraction [`Height`](/keys/height/#scope-random-map-generation) describes, and the map scales with it.
+When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `0` becomes `0` and one above `3` becomes `3`.

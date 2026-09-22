@@ -732,6 +732,7 @@ bool Read_Scenario(char const * fname)
 
 	if (Scen->IsRandom) {
 		if (RandomMapGen.SeedData.Load(name)) {
+			RandomMapGen.SeedData.Fixup_Settings();
 			RandomMapGen.Generate_Random_Map(false, NULL);
 			Multiplayer_Last_Minute_Fixups();
 		} else {

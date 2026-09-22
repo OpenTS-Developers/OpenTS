@@ -24,6 +24,4 @@ A seed file that leaves the figure out cannot be started at all. The skirmish an
 
 The figure reaches the tiberium as well. The spread that supplied the start points supplies the map's tiberium fields from what is left over. The amount of tiberium each field is grown to is multiplied by the player count, so a map built for more players is not left thinner. [`TiberiumLayout`](/keys/tiberiumlayout/) covers how many fields there are, which the player count does not change.
 
-:::danger[A figure outside two through eight reads past the size tables]
-The figure is held to `2` through `8` whenever the map generator dialog is read or filled in and whenever the settings are randomized. A seed file read as the game starts goes through none of those. The row of the size tables is chosen as the figure minus two, with no bounds check. `1` or `0` reads before the front of all four tables and `9` or more reads past the back. The playable area is then sized from whatever those reads return, and the map is laid out at that size before a single cell is placed.
-:::
+When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `2` becomes `2` and one above `8` becomes `8`.

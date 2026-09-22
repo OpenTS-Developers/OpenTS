@@ -19,4 +19,4 @@ The ramps are cut at cells drawn at random from the higher region's border, and 
 
 Water is joined differently and takes no notice of the figure. A region of water spans itself with bridges to the dry land on either side, and only where both sides stand at the water's own height.
 
-The figure is held to `0` through `100` only on [the dialog path](/systems/map-generation/#the-dialog-path-and-the-scenario-path). A figure written by hand in a seed file reaches the generator as it stands: above `100` every pair wins its roll for extra ramps, and below `0` no pair does.
+When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `0` becomes `0` and one above `100` becomes `100`.

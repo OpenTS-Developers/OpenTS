@@ -40,6 +40,4 @@ Seed=12345
 
 An index of `1` or `2` lands one third or two thirds of the way between the two ends and is truncated to a whole number. The figures that come out are written as the playable area, the region `[Map] LocalSize=` declares; the playfield the generator writes around it, `[Map] Size=`, is four cells wider and twelve taller.
 
-:::danger[A player count outside two to eight reads outside the tables]
-The player count selects a row by its own value less two, and nothing on the scenario loading path bounds it. The clamping that holds the random-map dialog inside the tables is not run on a `.SED` opened as a scenario. A file with `NumPlayers=1` or `NumPlayers=9` reads its two ends from memory outside the tables. The map is then built to whatever dimensions came back.
-:::
+Before a map is built, a setting the section leaves out takes its default, and a value outside the range the random-map dialog allows is moved to the nearer end of that range. This applies whether the file is loaded into the dialog or played as a scenario. `NumPlayers=9`, for example, builds an eight-player map. Each setting's key page gives its default and range.

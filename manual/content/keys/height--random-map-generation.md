@@ -17,4 +17,4 @@ NumPlayers=4
 Height=3
 ```
 
-The figure is held to `0` through `3` only on [the dialog path](/systems/map-generation/#the-dialog-path-and-the-scenario-path). A figure written by hand in a seed file reaches the generator as it stands: a larger one extrapolates past the maximum and a negative one shrinks the map below the minimum.
+When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `0` becomes `0` and one above `3` becomes `3`.

@@ -17,7 +17,7 @@ RegionSize=20
 
 A region is split while it holds more cells than the limit. The limit is a tenth of the playable area's width times its height, plus a hundredth of that product for every point. On a map whose playable area is 100 by 100 cells, the limit at `0` is 1,000 cells and every point adds another 100, so `RegionSize=40` sets a limit of 5,000. A generated map is a diamond and holds about twice its full width-times-height in cells. The split pass ranges over the whole diamond, border included. The limit therefore works out at about a twenty-fifth of the map at `0` and between two fifths and half of it at `100`. A region small enough to keep is marked so that it is never examined again, and a region holding water is never split at all.
 
-The figure is held to `0` through `100` only on [the dialog path](/systems/map-generation/#the-dialog-path-and-the-scenario-path). A figure written by hand in a seed file reaches the generator as it stands. One so large that it passes the map's whole cell count splits nothing at all. A negative one past `-10` pushes the limit to zero and below. No region then ever counts as small enough to keep, so the pass runs forever.
+When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `0` becomes `0` and one above `100` becomes `100`.
 
 :::caution[The setting does nothing at all on the tundra biome]
 The splitting pass is skipped outright when [`Biome`](/keys/biome/) is `0`, the tundra, so on a tundra map the figure changes nothing whatever it is set to. On every other biome the figure stays live across its whole range. Even at `100` the limit reaches only about half the map, so a single large region is still broken up.

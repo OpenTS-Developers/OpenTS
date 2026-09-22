@@ -718,6 +718,14 @@ test('The scenario file is kept from its first read and carried in the save', ()
 	);
 });
 
+test('A seed file played as a scenario is held to the ranges the dialog allows', () => {
+	assertOrdered(functionBody(source('code/scenario.cpp'), 'bool Read_Scenario(char const * fname)'), [
+		'RandomMapGen.SeedData.Load(',
+		'RandomMapGen.SeedData.Fixup_Settings();',
+		'RandomMapGen.Generate_Random_Map(',
+	], 'the settings are checked after they are read and before anything is built from them');
+});
+
 test('Owning a factory is asked of the whole list rather than of its first entries', () => {
 	const house = source('code/house.cpp');
 

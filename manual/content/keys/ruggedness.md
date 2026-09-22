@@ -17,4 +17,4 @@ Ruggedness=40
 
 The walk is skipped entirely unless the figure is at least `2`, so `0` and `1` both leave the ground exactly as the region pass left it. This is separate from the cliffs: [`RegionSize`](/keys/regionsize/) governs the sharp height changes between regions, and this figure the gentle relief laid over them afterward.
 
-The figure is held to `0` through `100` only on [the dialog path](/systems/map-generation/#the-dialog-path-and-the-scenario-path). A figure written by hand in a seed file reaches the generator as it stands. Below `2` the walk is skipped anyway, and above `100` it only raises how far and how widely each step may move.
+When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `0` becomes `0` and one above `100` becomes `100`.

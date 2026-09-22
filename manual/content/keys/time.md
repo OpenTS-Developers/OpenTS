@@ -19,6 +19,4 @@ The hour settles two things. It picks the map's ambient light: three quarters at
 
 With [`UseTransitions`](/keys/usetransitions/) set the hour also names the settings file loaded into the map, and every start point is ringed with four lights whatever the hour.
 
-:::danger[A figure outside 0 through 3 reads past two tables]
-The map generator dialog offers the four hours only, and the settings taken off it are held to that range, but a seed file read as the game starts goes through neither. A figure written by hand indexes both the four-entry light-level table, which is read before anything is built, and the four-entry floodlight-count table. The map's ambient light is then set from whatever the first read returns. The number of floodlights each start point is ringed with comes from whatever the second returns.
-:::
+When a map is [generated from a file](/systems/map-generation/#the-dialog-path-and-the-scenario-path), a value below `0` becomes `0` and one above `3` becomes `3`.
