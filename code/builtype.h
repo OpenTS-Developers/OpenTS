@@ -709,8 +709,7 @@ class BuildingTypeClass : public TechnoTypeClass
 
 		/*
 		 * If this building is the deployed form of a core defender, then this flag will be
-		 * true. An EM pulse leaves such a structure running where it would shut down any
-		 * other building.
+		 * true. It also supplies the default for IsImmuneToEMP.
 		 */
 		bool IsCoreDefender;
 
@@ -903,6 +902,7 @@ class BuildingTypeClass : public TechnoTypeClass
 		static void Post_Read_Tile_Fixup(void);
 		bool Can_Always_Undeploy(void) const;
 		bool Is_Mobile_Deployer(void) const;
+		virtual bool Is_Immune_To_EMP(void) const override;
 		Dir256 Deploy_Facing(void) const;
 		void Calculate_Base_Defense_Values(void);
 

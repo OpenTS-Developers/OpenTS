@@ -1234,3 +1234,49 @@ test('A rally point is set with the plain click', () => {
 		'and the player owns it in their own settings file',
 	);
 });
+
+test('An EM pulse can be refused by type', () => {
+	const read = functionBody(source('code/techtype.cpp'), 'bool TechnoTypeClass::Read_INI(CCINIClass const & ini)');
+
+	assertOrdered(
+		read,
+		['if (ini.Is_Present(Name(), "ImmuneToEMP")) {', 'IsImmuneToEMP = ini.Get_Bool(Name(), "ImmuneToEMP", false);'],
+		'an absent entry leaves the answer an earlier layer gave',
+	);
+
+	assert.match(
+		functionBody(source('code/techtype.cpp'), 'bool TechnoTypeClass::Is_Immune_To_EMP(void) const'),
+		/return\(IsImmuneToEMP\.value_or\(false\)\);/,
+		'a type that has been told nothing is not immune',
+	);
+
+	for (const [path, signature] of [
+		['code/builtype.cpp', 'bool BuildingTypeClass::Is_Immune_To_EMP(void) const'],
+		['code/unittype.cpp', 'bool UnitTypeClass::Is_Immune_To_EMP(void) const'],
+	]) {
+		assert.match(
+			functionBody(source(path), signature),
+			/return\(IsImmuneToEMP\.value_or\(IsCoreDefender\)\);/,
+			`${signature} takes its default from the core defender flag`,
+		);
+	}
+
+	const pulse = functionBody(source('code/empulse.cpp'), 'void EMPulseClass::Create(TechnoClass * source)');
+
+	assertOrdered(
+		pulse,
+		[
+			'if (!aircraft->Class->Is_Immune_To_EMP()) {',
+			'if (!foot->TClass->Is_Immune_To_EMP()) {',
+			'if (!building->Class->Is_Immune_To_EMP()) {',
+			'bool immune = techno->TClass->Is_Immune_To_EMP();',
+		],
+		'every effect a pulse has asks the same question',
+	);
+
+	assertOrdered(
+		pulse,
+		['if (caught) {', 'if (immune) {', 'techno->Spring_Tag(TEVENT_PARALYZED, techno, CELL_NONE, false, source);'],
+		'and an immune object springs its trigger in place of the stun',
+	);
+});

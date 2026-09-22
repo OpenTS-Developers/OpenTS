@@ -14,6 +14,7 @@
 #include "_map.h"
 #include "_rules.h"
 #include "aircraft.h"
+#include "airctype.h"
 #include "anim.h"
 #include "building.h"
 #include "ccrand.h"
@@ -121,9 +122,9 @@ void EMPulseClass::Update_All(void)
 /// <summary>
 /// Applies the pulse's effect to everything within its radius.
 /// Aircraft that are aloft are brought down, subterranean and surface units are stunned
-/// and left sparking, and buildings are powered off for as long as the pulse lasts. Core
-/// defenders and limpet mines have their own reactions, and everything caught is given the
-/// chance to spring a paralyzed trigger event.
+/// and left sparking, and buildings are powered off for as long as the pulse lasts. A limpet
+/// mine is destroyed instead, a type that is immune to the pulse takes none of it, and
+/// everything caught is given the chance to spring a paralyzed trigger event.
 /// </summary>
 /// <param name="source">The object that will be credited with the pulse's handiwork.</param>
 void EMPulseClass::Create(TechnoClass * source)
@@ -136,7 +137,9 @@ void EMPulseClass::Create(TechnoClass * source)
 			if (aircraft->IsDown && !aircraft->IsInLimbo && !aircraft->In_Air() && aircraft->Strength > 0) {
 				if (aircraft->Center_Coord().Distance_To(CellID.As_Coord()) < Spread * CELL_LEPTON) {
 					aircraft->Spring_Tag(TEVENT_PARALYZED, aircraft, CELL_NONE, false, source);
-					aircraft->Crash(source);
+					if (!aircraft->Class->Is_Immune_To_EMP()) {
+						aircraft->Crash(source);
+					}
 				}
 			}
 		}
@@ -147,14 +150,16 @@ void EMPulseClass::Create(TechnoClass * source)
 			int x = center.X - CellID.X;
 			int y = center.Y - CellID.Y;
 			if (x * x + y * y < spread_sq) {
-				foot->Locomotion->Power_Off();
-				if (foot->Locomotion->Is_Moving()) {
-					foot->Locomotion->Stop_Moving();
-				}
-				foot->StunDuration = Duration;
-				AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, foot->Center_Coord(), Random_Pick(0, 25));
-				if (sparks != NULL) {
-					sparks->Attach_To(foot);
+				if (!foot->TClass->Is_Immune_To_EMP()) {
+					foot->Locomotion->Power_Off();
+					if (foot->Locomotion->Is_Moving()) {
+						foot->Locomotion->Stop_Moving();
+					}
+					foot->StunDuration = Duration;
+					AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, foot->Center_Coord(), Random_Pick(0, 25));
+					if (sparks != NULL) {
+						sparks->Attach_To(foot);
+					}
 				}
 				foot->Spring_Tag(TEVENT_PARALYZED, foot, CELL_NONE, false, source);
 			}
@@ -174,22 +179,24 @@ void EMPulseClass::Create(TechnoClass * source)
 							if (building != NULL) {
 								if (building->Center_Coord().As_Cell() == cell) {
 									if (!building->Class->IsInvisibleInGame) {
-										if (building->Class->IsLimpetMine == true) {
-											building->Do_Destruction(NULL, source, true, building->Occupy_List());
-										} else if (!building->Class->IsCoreDefender) {
-											building->Power_Off();
-											building->StunDuration = Duration;
-											if (building->Class->IsRadar) {
-												building->House->RecalcRadar = true;
-											}
-											if (building->Class->Is_Mobile_Deployer()) {
-												Coord coord = building->Center_Coord();
-												coord.X += CELL_LEPTON_W / 4;
-												coord.Y += CELL_LEPTON_H / 4;
-												coord.Z += LEVEL_LEPTON_H / 2;
-												AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, coord, Random_Pick(0, 25));
-												if (sparks != NULL) {
-													sparks->Attach_To(building);
+										if (!building->Class->Is_Immune_To_EMP()) {
+											if (building->Class->IsLimpetMine == true) {
+												building->Do_Destruction(NULL, source, true, building->Occupy_List());
+											} else {
+												building->Power_Off();
+												building->StunDuration = Duration;
+												if (building->Class->IsRadar) {
+													building->House->RecalcRadar = true;
+												}
+												if (building->Class->Is_Mobile_Deployer()) {
+													Coord coord = building->Center_Coord();
+													coord.X += CELL_LEPTON_W / 4;
+													coord.Y += CELL_LEPTON_H / 4;
+													coord.Z += LEVEL_LEPTON_H / 2;
+													AnimClass * sparks = new AnimClass(Rule->EMPulseSparkles, coord, Random_Pick(0, 25));
+													if (sparks != NULL) {
+														sparks->Attach_To(building);
+													}
 												}
 											}
 										}
@@ -199,20 +206,22 @@ void EMPulseClass::Create(TechnoClass * source)
 							} else {
 								TechnoClass * techno = cellptr.Cell_Techno();
 								while (techno != NULL) {
-									bool paralyze = false;
+									bool immune = techno->TClass->Is_Immune_To_EMP();
+
+									bool caught = false;
 									if ((techno->RTTI == RTTI_UNIT || techno->RTTI == RTTI_AIRCRAFT) && techno->Is_Foot()) {
 										if (((FootClass *)techno)->Locomotion != NULL) {
-											UnitClass * unit = dynamic_cast<UnitClass *>(techno);
-											if (unit != NULL && unit->Class->IsCoreDefender) {
-												paralyze = false;
-												techno->Spring_Tag(TEVENT_PARALYZED, unit, CELL_NONE, false, source);
-											} else {
-												paralyze = techno != source;
-											}
+											caught = immune || techno != source;
 										}
 									}
-									if (techno->RTTI == RTTI_INFANTRY && ((InfantryClass *)techno)->Class->IsCyborg || paralyze) {
-										if (techno->RTTI != RTTI_UNIT || (!((UnitClass *)techno)->Class->IsLargeVisceroid && !((UnitClass *)techno)->Class->IsSmallVisceroid)) {
+									if (techno->RTTI == RTTI_INFANTRY && ((InfantryClass *)techno)->Class->IsCyborg) {
+										caught = true;
+									}
+
+									if (caught) {
+										if (immune) {
+											techno->Spring_Tag(TEVENT_PARALYZED, techno, CELL_NONE, false, source);
+										} else if (techno->RTTI != RTTI_UNIT || (!((UnitClass *)techno)->Class->IsLargeVisceroid && !((UnitClass *)techno)->Class->IsSmallVisceroid)) {
 											FootClass * foot = ((FootClass *) techno);
 											foot->Locomotion->Power_Off();
 											if (foot->Locomotion->Is_Moving()) {

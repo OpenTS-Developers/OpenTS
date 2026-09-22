@@ -188,7 +188,7 @@ class UnitTypeClass : public TechnoTypeClass
 		/*
 		 * If this vehicle is the core defender, then this flag will be true. It is treated
 		 * as a building where its selection box and health bar are concerned, it stands
-		 * taller than an ordinary vehicle, and an EM pulse cannot paralyze it.
+		 * taller than an ordinary vehicle, and it is the default answer to IsImmuneToEMP.
 		 */
 		bool IsCoreDefender;
 
@@ -334,6 +334,7 @@ class UnitTypeClass : public TechnoTypeClass
 		virtual bool Create_And_Place(Cell const & cell, HouseClass * house = NULL) const override;
 		virtual ObjectClass * Create_One_Of(HouseClass * house) const override;
 		virtual int Repair_Step(void) const override;
+		virtual bool Is_Immune_To_EMP(void) const override;
 
 		TPoint2D<int> Turret_Adjust(Dir256 dir, TPoint2D<int> const & xy) const;
 

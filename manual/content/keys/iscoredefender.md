@@ -1,5 +1,5 @@
 ---
 key: IsCoreDefender
-summary: Takes a structure or a vehicle through an EM pulse untouched, and marks a flagged structure as a deployed vehicle.
-see_also: ["system:emp-pulse"]
+summary: Makes a vehicle or structure type immune to EM pulses by default, draws the vehicle like a structure, and marks the structure as a deployed vehicle.
+see_also: ["ImmuneToEMP", "system:emp-pulse"]
 ---

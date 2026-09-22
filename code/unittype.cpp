@@ -494,6 +494,15 @@ int UnitTypeClass::Repair_Step(void) const
 }
 
 
+/// <summary>
+/// Does an EM pulse leave this type alone? Unset, a vehicle follows IsCoreDefender.
+/// </summary>
+bool UnitTypeClass::Is_Immune_To_EMP(void) const
+{
+	return(IsImmuneToEMP.value_or(IsCoreDefender));
+}
+
+
 ClassID UnitTypeClass::Class_ID(void) const
 {
 	return(ClassID_UnitTypeClass);

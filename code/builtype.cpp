@@ -2195,6 +2195,15 @@ bool BuildingTypeClass::Is_Mobile_Deployer(void) const
 
 
 /// <summary>
+/// Does an EM pulse leave this type alone? Unset, a structure follows IsCoreDefender.
+/// </summary>
+bool BuildingTypeClass::Is_Immune_To_EMP(void) const
+{
+	return(IsImmuneToEMP.value_or(IsCoreDefender));
+}
+
+
+/// <summary>
 /// Fetches the facing this building takes when it deploys.
 /// This routine is used when a mobile deployer converts between its unit and building
 /// forms so that the two share a sensible orientation.

@@ -18,6 +18,8 @@
 #include "objtype.h"
 #include "typelist.h"
 
+#include <optional>
+
 #include "category.hh"
 #include "mission.hh"
 #include "mph.hh"
@@ -493,6 +495,12 @@ class TechnoTypeClass : public ObjectTypeClass
 		bool IsImmuneToVeins;
 
 		/*
+		 * Whether an EM pulse leaves this type alone, if set. Unset, a structure or vehicle
+		 * follows IsCoreDefender and anything else is not immune.
+		 */
+		std::optional<bool> IsImmuneToEMP;
+
+		/*
 		 * If this object mends itself while it stands on tiberium, then this flag will be
 		 * true. It recovers a repair step at the interval given by the TiberiumHeal rule, and
 		 * when it is destroyed it spills tiberium back into the cells around it.
@@ -738,6 +746,7 @@ class TechnoTypeClass : public ObjectTypeClass
 
 		virtual void Compute_CRC(CRCEngine & crc) const override;
 		bool Is_Two_Shooter(void) const;
+		virtual bool Is_Immune_To_EMP(void) const;
 		virtual bool Legal_Placement(Cell const & pos, HouseClass * house) const;
 		virtual int Raw_Cost(void) const;
 		int Max_Passengers(void) const {return(MaxPassengers);}

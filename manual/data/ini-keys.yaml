@@ -11022,6 +11022,23 @@ Immune:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
+ImmuneToEMP:
+  key: ImmuneToEMP
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: TechnoTypeClass
+      member: IsImmuneToEMP
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 ImmuneToVeins:
   key: ImmuneToVeins
   scopes:

@@ -476,6 +476,16 @@ bool TechnoTypeClass::Is_Two_Shooter(void) const
 }
 
 
+/// <summary>
+/// Does an EM pulse leave this type alone? An immune object still springs its paralyzed
+/// trigger event.
+/// </summary>
+bool TechnoTypeClass::Is_Immune_To_EMP(void) const
+{
+	return(IsImmuneToEMP.value_or(false));
+}
+
+
 /***********************************************************************************************
  * _Scale_To_256 -- Scales a 1..100 number into a 1..255 number.                               *
  *                                                                                             *
@@ -637,6 +647,9 @@ bool TechnoTypeClass::Read_INI(CCINIClass const & ini)
 		IsToProtect = ini.Get_Bool(Name(), "ToProtect", IsToProtect);
 		IsTiberiumHeal = ini.Get_Bool(Name(), "TiberiumHeal", IsTiberiumHeal);
 		IsImmuneToVeins = ini.Get_Bool(Name(), "ImmuneToVeins", IsImmuneToVeins);
+		if (ini.Is_Present(Name(), "ImmuneToEMP")) {
+			IsImmuneToEMP = ini.Get_Bool(Name(), "ImmuneToEMP", false);
+		}
 		IsAllowedToStartInMultiplayer = ini.Get_Bool(Name(), "AllowedToStartInMultiplayer", IsAllowedToStartInMultiplayer);
 		IsTargetLaser = ini.Get_Bool(Name(), "TargetLaser", IsTargetLaser);
 		IsHunterSeeker = ini.Get_Bool(Name(), "HunterSeeker", IsHunterSeeker);
@@ -1019,6 +1032,7 @@ void TechnoTypeClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsDamageSparks);
 	stream.Serialize(IsTargetLaser);
 	stream.Serialize(IsImmuneToVeins);
+	stream.Serialize(IsImmuneToEMP);
 	stream.Serialize(IsTiberiumHeal);
 	stream.Serialize(IsCloakStop);
 	stream.Serialize(IsTrain);
@@ -1086,6 +1100,7 @@ void TechnoTypeClass::Compute_CRC(class CRCEngine & crc) const
 	crc(PhysicalSize);
 	crc(InitialMission);
 	crc(IsImmuneToVeins);
+	crc(Is_Immune_To_EMP());
 	crc(IsTiberiumHeal);
 	crc(IsTargetLaser);
 	crc(RollAngle);

@@ -7,6 +7,7 @@ keys:
   - EMEffect
   - EMPulseCannon
   - EMPulseSparkles
+  - ImmuneToEMP
   - IsMobileEMP
   - MaxCharge
   - Spread
@@ -75,20 +76,21 @@ Aircraft are handled first, in a pass of their own. That pass takes an aircraft 
 - it is less than one height level above the ground;
 - the distance from its center to the center of the pulse's cell is under `Spread` cells.
 
-Such an aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its tag and is then put through the crash path, which acts only above zero height. The aircraft pass and the crash path use different height thresholds. An aircraft between the ground and one height level (one taking off, or settling onto a pad) springs the event and then crashes; the crash zeroes its strength, credits the kill to the firer, and kills its cargo. An aircraft at exactly zero height springs the event, and the crash path returns having done nothing. It is still standing in its cell like any ground object, so the cell sweep below reaches it a second time and stuns it there.
+Such an aircraft springs the [Paralyzed](/mapping/events/tevent-paralyzed/) event on its tag and is then put through the crash path, which acts only above zero height and is skipped altogether when the type is [`ImmuneToEMP=yes`](/keys/immunetoemp/). The aircraft pass and the crash path use different height thresholds. An aircraft between the ground and one height level (one taking off, or settling onto a pad) springs the event and then crashes; the crash zeroes its strength, credits the kill to the firer, and kills its cargo. An aircraft at exactly zero height springs the event, and the crash path returns having done nothing. It is still standing in its cell like any ground object, so the cell sweep below reaches it a second time and stuns it there.
 
 An aircraft a full height level or more above the ground is reached by nothing at all. The aircraft pass has already excluded it, and the cell sweep below cannot see it either, because an aircraft off the deck is drawn in the top layer and is entered in no cell's occupancy. A pulse under a flight of aircraft leaves them flying.
 
-Anything underground inside the radius is stunned next. A tunnel-locomotor object is only underground while it is burrowing; at either end of the trip it stands in its cell like anything else. The pulse's three range tests are not one test: the aircraft pass above measures a distance, while this pass and the cell sweep after it compare whole-cell offsets, and those two part at the boundary. The underground pass takes a cell strictly inside the radius; the cell sweep takes one at exactly `Spread` cells as well, so it reaches a ring the underground pass leaves alone. That sweep covers every valid cell it takes:
+Anything underground inside the radius is stunned next, unless its type is [`ImmuneToEMP=yes`](/keys/immunetoemp/); either way it springs its trigger. A tunnel-locomotor object is only underground while it is burrowing; at either end of the trip it stands in its cell like anything else. The pulse's three range tests are not one test: the aircraft pass above measures a distance, while this pass and the cell sweep after it compare whole-cell offsets, and those two part at the boundary. The underground pass takes a cell strictly inside the radius; the cell sweep takes one at exactly `Spread` cells as well, so it reaches a ring the underground pass leaves alone. That sweep covers every valid cell it takes:
 
-- **Buildings** register only on the cell holding their center. An [`InvisibleInGame=yes`](/keys/invisibleingame/) building is skipped, a limpet mine is destroyed outright with the firer credited, and a building whose type is [`IsCoreDefender=yes`](/keys/iscoredefender/#scope-buildingtype) springs its trigger without being stunned. Every other building is powered off, stunned, and given an [`EMPulseSparkles`](/keys/empulsesparkles/) animation when its type is [one of the eight marks](/keys/deploysinto/) that make a structure the deployed form of a vehicle.
+- **Buildings** register only on the cell holding their center. An [`InvisibleInGame=yes`](/keys/invisibleingame/) building is skipped. Of the rest, one whose type is [`ImmuneToEMP=yes`](/keys/immunetoemp/) springs its trigger and takes nothing else, a limpet mine is destroyed outright with the firer credited, and every other building is powered off, stunned, and given an [`EMPulseSparkles`](/keys/empulsesparkles/) animation when its type is [one of the eight marks](/keys/deploysinto/) that make a structure the deployed form of a vehicle.
 - **Ground objects** in a cell that holds no building are stunned while **all of**:
   - **Any of:**
-    - **All of:** it is a vehicle or an aircraft, it has a locomotor, its type is not [`IsCoreDefender=yes`](/keys/iscoredefender/#scope-unittype), and it is not the object that fired the pulse;
+    - **All of:** it is a vehicle or an aircraft, it has a locomotor, and it is not the object that fired the pulse;
     - it is an infantryman whose type is a cyborg;
+  - its type is not [`ImmuneToEMP=yes`](/keys/immunetoemp/);
   - it is not a large or small visceroid.
 
-A core-defender vehicle is passed over for the stun, but it still springs the paralyzed event, and that event is all it is given in place of the stun. The engine tests `IsCoreDefender` on vehicles alone, so an aircraft never reads it. A visceroid, and the vehicle or aircraft that fired the pulse, are passed over without one.
+An exempt object is passed over for the stun and springs the paralyzed event in its place, which is all it is given. Without the exemption, a visceroid and the object that fired the pulse are passed over with no event at all.
 
 :::caution[Non-cyborg infantry are never affected]
 The cell sweep stuns an infantryman only when the type is a cyborg. Ordinary infantry pass through a pulse untouched.
