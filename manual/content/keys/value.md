@@ -8,6 +8,6 @@ when_omitted:
   note: Cells of the type are worth nothing.
 ---
 
-A cell is worth this figure multiplied by its growth stage plus one, so a fully ripened cell of a twelve-stage overlay set is worth twelve times the setting. That worth is what the [harvester's patch search](/systems/tiberium/#finding-a-patch) ranks candidate cells by.
+The [harvester's patch search](/systems/tiberium/#finding-a-patch) ranks cells by this value multiplied by their growth stage plus one, so a full-grown cell counts twelve times the setting.
 
 A harvester stores growth stages rather than credits. For most houses a stored unit is converted at this value only when the house spends it, so changing the setting re-prices Tiberium already sitting in a silo. A computer house in a skirmish or multiplayer game is the exception. It converts each unit as it is handed over and never stores it, so a later change to the figure leaves that house's income unchanged.

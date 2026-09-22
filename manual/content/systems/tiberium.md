@@ -68,10 +68,10 @@ The slot selects the storage compartment a harvested load occupies, and it raise
 A house and a harvester each track exactly four Tiberium compartments. A fifth registered type is given slot 4, and every deposit or withdrawal made for it writes past the end of that record.
 :::
 
-[`Image`](/keys/image/#scope-tiberium) selects the overlay set, and through it two runtime limits: the number of growth stages the set has, and whether the type is allowed onto sloped ground.
+[`Image`](/keys/image/#scope-tiberium) selects the overlay set, and through it whether the type is allowed onto sloped ground. Every set carries twelve growth stages.
 
-:::caution[The large-Tiberium set has a single stage]
-[`Image=2`](/keys/image/#scope-tiberium) gives the type one growth stage. Growth requires a cell below the last stage, and seeding a bare cell places stage 5, so a type on that set can neither grow nor be created by spreading. It appears only where the map or a third-party editor puts it, or, for the first registered type, where a destroyed `TiberiumHeal=yes` object spews it.
+:::note[The large-Tiberium set carries no artwork of its own]
+The twelve overlays the shipped rules give [`Image=2`](/keys/image/#scope-tiberium) name no shape and draw through their [`CellAnim`](/keys/cellanim/) instead, so a cell of that set looks the same at every stage it reaches. The set has no slope overlays either, which is what refuses the type every slope.
 :::
 
 :::danger[Every registered type needs an overlay set]
@@ -80,11 +80,11 @@ Identifying the Tiberium in a cell walks the registered types in order and reads
 
 ## Cell state
 
-A cell holds one Tiberium overlay and one growth stage from 0 through 11. The cell is worth [`Value`](/keys/value/) multiplied by the stage plus one, so a ripe cell of a twelve-stage set is worth twelve times the setting. A blossom tree is a terrain object that seeds Tiberium into the ground beside it. It sits on a cell that reports the type it seeds but is worth nothing, because worth comes from the overlay and that cell has none. The [other sources](#other-sources-of-tiberium) section covers the seeding.
+A cell holds one Tiberium overlay and one growth stage from 0 through 11. The cell is worth [`Value`](/keys/value/) multiplied by the stage plus one, so a ripe cell is worth twelve times the setting. A blossom tree is a terrain object that seeds Tiberium into the ground beside it. It sits on a cell that reports the type it seeds but is worth nothing, because worth comes from the overlay and that cell has none. The [other sources](#other-sources-of-tiberium) section covers the seeding.
 
 An overlay declared [`Tiberium=yes`](/keys/tiberium/#scope-overlaytype) whose own land type is clear gives its cell the `Tiberium` [land type](/reference/enums/land-type/), and that land type, not the overlay, is what every harvesting test reads.
 
-When a scenario finishes loading, and again whenever a Tiberium overlay is placed onto the map directly, the cell's stage is replaced by a smoothing lookup. That lookup counts the cell's eight neighbors that hold the same type. On a twelve-stage set, the stage rises with that count, one value per neighbor from 0 through 8: 0, 1, 3, 4, 6, 7, 8, 10, 11. A stage stored in the map file does not survive that pass.
+When a scenario finishes loading, and again whenever a Tiberium overlay is placed onto the map directly, the cell's stage is replaced by a smoothing lookup. That lookup counts the cell's eight neighbors that hold the same type. The stage rises with that count, one value per neighbor from 0 through 8: 0, 1, 3, 4, 6, 7, 8, 10, 11. A stage stored in the map file does not survive that pass.
 
 Drawing a cell uses that stage as a frame number in one of the type's overlays. Which one is settled by the cell's own coordinates, so a field does not repeat itself: a flat cell draws from the set's flat overlays and a sloped cell from its slope overlays. A type whose set has no slope overlays draws nothing on a slope, which is ground only a map or a third-party editor can put its Tiberium on. If the selected SHP does not have the stage's frame, the overlay is omitted from both the tactical view and its redraw rectangle instead of reading beyond the artwork's frame table.
 

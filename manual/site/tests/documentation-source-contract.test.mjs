@@ -1403,3 +1403,33 @@ test('A Tiberium overlay is chosen inside the type that owns it', () => {
 		'and a bare cell germinates inside the flat overlays the type owns',
 	);
 });
+
+test('Every Tiberium overlay set is read with twelve growth stages', () => {
+	const read = functionBody(
+		source('code/tiberium.cpp'),
+		'bool TiberiumClass::Read_INI(CCINIClass const & ini)',
+	);
+
+	assert.equal(
+		(read.match(/FrameCount = 12;/g) ?? []).length,
+		4,
+		'each arm of the Image switch carries the same count',
+	);
+
+	assert.equal(
+		(read.match(/FrameCount = (?!12;)/g) ?? []).length,
+		0,
+		'and no arm carries another',
+	);
+
+	assertOrdered(
+		read,
+		[
+			'case 2:',
+			'Overlay = OverlayTypes[OVERLAY_LARGE_TIBERIUM01];',
+			'FrameCount = 12;',
+			'case 3:',
+		],
+		'the large-Tiberium arm still names its own overlay and leaves RampVariety alone',
+	);
+});
