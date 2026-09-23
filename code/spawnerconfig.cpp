@@ -487,8 +487,6 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	IsCampaign = ini.Get_Bool(SETTINGS, "IsSinglePlayer", IsCampaign);
 	IsHost = ini.Get_Bool(SETTINGS, "Host", IsHost);
 	CampaignID = ini.Get_Int(SETTINGS, "CampaignID", CampaignID);
-	Tournament = ini.Get_Int(SETTINGS, "Tournament", Tournament);
-	GameID = ini.Get_Int(SETTINGS, "GameID", GameID);
 
 	ScenarioName = Read_Text(ini, SETTINGS, "Scenario", ScenarioName);
 	MapName = Read_Text(ini, SETTINGS, "UIMapName", MapName);
@@ -545,7 +543,6 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 
 	QuickMatch = ini.Get_Bool(SETTINGS, "QuickMatch", QuickMatch);
 	SkipScoreScreen = ini.Get_Bool(SETTINGS, "SkipScoreScreen", SkipScoreScreen);
-	WriteStatistics = ini.Get_Bool(SETTINGS, "WriteStatistics", WriteStatistics);
 	AINamesByDifficulty = ini.Get_Bool(SETTINGS, "DifficultyBasedAINames", AINamesByDifficulty);
 	CoachMode = ini.Get_Bool(SETTINGS, "CoachMode", CoachMode);
 	AutoSurrender = ini.Get_Bool(SETTINGS, "AutoSurrender", AutoSurrender);

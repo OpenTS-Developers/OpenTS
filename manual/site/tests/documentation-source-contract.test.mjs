@@ -193,15 +193,14 @@ test('Building main-shape Image is additive to the inherited ObjectType Image re
 	assert.doesNotMatch(fetchImage, /\bGraphicName\s*=/);
 });
 
-test('Every field the launch file reader carries is bound or named as unhonored', () => {
+test('Every field the launch file reader carries is used', () => {
 	const header = source('code/spawnerconfig.h');
-	const spawner = source('code/spawner.cpp');
-
-	assert.match(
-		spawner,
-		/Read, not honored/,
-		'the binding step keeps its ledger of fields it deliberately leaves alone',
-	);
+	const config = source('code/spawnerconfig.cpp');
+	const users = [
+		source('code/spawner.cpp'),
+		functionBody(config, 'SpawnerConfigClass::LaunchType SpawnerConfigClass::Launch_Type(void) const'),
+		functionBody(config, 'bool SpawnerConfigClass::Is_Playable(int countries, int colors, std::string & fault) const'),
+	].join('\n');
 
 	const fields = [];
 	for (const line of header.split('\n')) {
@@ -212,9 +211,9 @@ test('Every field the launch file reader carries is bound or named as unhonored'
 
 	for (const field of fields) {
 		assert.match(
-			spawner,
+			users,
 			new RegExp(String.raw`\b${field}\b`),
-			`${field} is read from a launch file but code/spawner.cpp neither binds it nor names it in the "Read, not honored" ledger`,
+			`${field} is read from a launch file but neither code/spawner.cpp nor the launch checks use it`,
 		);
 	}
 });

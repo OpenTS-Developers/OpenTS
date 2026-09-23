@@ -78,8 +78,6 @@ class SpawnerConfigClass
 		bool IsCampaign = false;
 		bool IsHost = false;
 		int CampaignID = -1;
-		int Tournament = 0;
-		int GameID = 0;
 
 		// The scenario and the saved game.
 		std::string ScenarioName = "spawnmap.ini";
@@ -130,7 +128,6 @@ class SpawnerConfigClass
 		// What a player is shown.
 		bool QuickMatch = false;
 		bool SkipScoreScreen = false;
-		bool WriteStatistics = false;
 		bool AINamesByDifficulty = false;
 		bool CoachMode = false;
 		bool AutoSurrender = true;

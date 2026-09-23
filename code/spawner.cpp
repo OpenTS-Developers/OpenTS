@@ -249,20 +249,6 @@ static void Spawner_Bind_Options(void)
 
 	// Init_Random uses this for a game played alone, and draws its own seed when it is zero.
 	CustomSeed = SpawnConfig.Seed;
-
-	/*
-	 * Read, not honored. Every field the reader carries is bound above, consulted when a launch
-	 * is refused, or listed here, so a new field forces a decision. A contract test enforces it.
-	 *
-	 *   MapName                       - shown while loading; bound with the scenario below.
-	 *   IsCampaign, LoadSaveGame,
-	 *   SaveGameName                  - read to decide the kind of launch and name the save.
-	 *   Tournament, GameID,
-	 *   WriteStatistics               - naming a match and reporting how it went.
-	 *
-	 * Spawner_Bind_Presentation binds SkipScoreScreen, CustomLoadScreen, CustomLoadScreenX,
-	 * CustomLoadScreenY, DifficultyName and QuickMatch.
-	 */
 }
 
 

@@ -181,4 +181,4 @@ How far ahead the machines run and how often they exchange their orders are set 
 
 A client that launches a custom mission writes the mission's own section into the file, names it with `ReadMissionSection`, and identifies it with `CustomMissionID`. None of the three is read. The section holds the loading-screen names another game in the series reads and an identity that game stamps into its saves; the picture a mission wants reaches this game through `CustomLoadScreen` instead.
 
-`Tournament`, `GameID` and `WriteStatistics` are read but have no effect.
+`Tournament`, `GameID` and `WriteStatistics` are not read.
