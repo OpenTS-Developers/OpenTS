@@ -23,7 +23,7 @@ credit:
 - Rampastring
 ---
 
-An out-of-sync game used to show a two-button box whose Continue dropped every connection. It now opens a dialog: the master loads one of the match's saved games, plays on, or quits. Everyone else waits with a player list and a chat box, and the lowest remaining seat takes over if the master leaves. Continue drops only the players whose checksum disagreed with this machine's. The master can also load a multiplayer save from the options menu during play, and a new `Host=` in the launch file's `[Settings]` section makes this machine the master; without it the first seat is.
+An out-of-sync game used to show a two-button box whose Continue dropped every connection. It now opens a dialog: the master loads one of the match's saved games, plays on, or quits. Everyone else waits with a player list and a chat box, and the lowest remaining seat takes over if the master leaves. Continue drops only the players whose checksum disagreed with this machine's. The master can also load a multiplayer save from the options menu during play, and a new `Host=` in the launch file's `[Settings]` section makes this machine the master after an in-game load. Until then, and without it, the lowest seat is.
 
 Multiplayer saves are numbered by the game, `SVGM_000.NET` upward, in every network game, and a new match drops the previous match's files. A client-launched match writes `spawnSG.ini` at its first save. `SAVEGAME.NET`, which the client watched for to do both, is no longer written.
 

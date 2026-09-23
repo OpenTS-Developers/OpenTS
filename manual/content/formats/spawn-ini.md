@@ -29,15 +29,15 @@ The `[Settings]` section says what kind of game to start.
 | `Scenario` | The scenario file to play. Defaults to `spawnmap.ini`. |
 | `IsSinglePlayer` | `yes` plays a campaign mission rather than a match. |
 | `LoadSaveGame`, `SaveGameName` | `LoadSaveGame=yes` resumes the saved game named by `SaveGameName`. |
-| `Host` | `yes` marks this machine as the host of a game against other machines. [The host](#the-host) says when to use it. |
+| `Host` | `yes` marks this machine as the host of a game against other machines. [The host](#the-host) says what it changes. |
 
 `IsSinglePlayer`, `LoadSaveGame` and `Host` default to `no`. `LoadSaveGame=yes` takes precedence over `IsSinglePlayer=yes`. Without `LoadSaveGame=yes` or `IsSinglePlayer=yes`, a file that seats more than one person starts a [game against other machines](#a-game-against-other-machines), and a file that seats only this machine's player starts a skirmish. [Who is playing](#who-is-playing) describes how the file seats people.
 
 ## The host
 
-The [master](/systems/out-of-sync-recovery/#the-master) of a game against other machines sets the network timing, decides for everyone when the game goes out of sync, and can load a saved game during play. Without a host, the master is the lowest seat in [house order](#who-is-playing): the person with the lowest `Color`. When the master leaves, the lowest seat still held takes over.
+The [master](/systems/out-of-sync-recovery/#the-master) of a game against other machines sets the network timing, decides for everyone when the game goes out of sync, and can load a saved game during play. When the match starts, the master is the lowest seat in [house order](#who-is-playing), the person with the lowest `Color`, on every machine. When the master leaves, the lowest seat still held takes over.
 
-`Host=yes` marks this machine as the host. Write it only in the file of the person with the lowest `Color`, or in no file. When the match starts, a host in any other seat is the master only on its own machine; the other machines keep the lowest seat as their master.
+`Host=yes` marks this machine as the host, in any seat. The host becomes the master after an in-game load, if it is still playing, whichever seat it holds. Until then it is the master only when it holds the lowest seat.
 
 ## Resuming a saved game
 
