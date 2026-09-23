@@ -2094,6 +2094,31 @@ bool HouseClass::Sees_Whole_Map(void) const
 
 
 /// <summary>
+/// Fetches the house whose view a person sees for this one: the player's house for every house
+/// the player controls in a campaign, the house itself for a human seat outside one, and NULL
+/// for a house no person plays.
+/// </summary>
+HouseClass * HouseClass::Player_View(void) const
+{
+	if (Session.Type == GAME_NORMAL) {
+		return(Is_Player_Control() ? PlayerPtr : NULL);
+	}
+	// The heap entry is this house, without casting away const.
+	return(IsHuman ? Houses[HeapID] : NULL);
+}
+
+
+/// <summary>
+/// Is this house a player's view itself? Only such a house discovers objects by sight and
+/// receives scripted reveals.
+/// </summary>
+bool HouseClass::Is_Player_View(void) const
+{
+	return(Player_View() == this);
+}
+
+
+/// <summary>
 /// Does this house see the other as its owner does? True for an ally, and either way round
 /// once the local player has the whole map. Display only; never a simulation rule.
 /// </summary>
@@ -2779,10 +2804,11 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 						Abandon_Production(type, -1);
 						placed = true;
 
+						if (tech->IsActive && !tech->DiscoveredBy[this]) {
+							tech->Revealed(this);
+						}
+
 						if (PlayerPtr == this) {
-							if (tech->IsActive && !tech->IsDiscoveredByPlayer) {
-								tech->Revealed(this);
-							}
 							Sound_Effect(Rule->BuildingSlam);
 							Map.Set_Cursor_Shape(0);
 							Map.PendingObjectPtr = 0;
@@ -8074,7 +8100,7 @@ void HouseClass::Recalc_Power_Drain(void)
 	for (int i = 0; i < Buildings.Count(); i++) {
 		BuildingClass * b = Buildings[i];
 		if (b && b->House == this && !b->IsInLimbo && b->IsDown) {
-			if (Is_Player_Control() && !b->IsDiscoveredByPlayer && Session.Type == GAME_NORMAL) continue;
+			if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 			Power += Buildings[i]->Power_Output();
 			Drain += b->Power_Drain();
 		}
@@ -8112,7 +8138,7 @@ void HouseClass::Recalc_Radar_Availability(void)
 				for (int i = 0; i < Buildings.Count(); i++) {
 					BuildingClass * b = Buildings[i];
 					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown) {
-						if (Is_Player_Control() && !b->IsDiscoveredByPlayer && Session.Type == GAME_NORMAL) continue;
+						if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
 						if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
 							if (b->StunDuration == 0) {
 								radar_on = true;

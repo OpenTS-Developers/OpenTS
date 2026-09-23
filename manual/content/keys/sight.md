@@ -1,6 +1,6 @@
 ---
 key: Sight
-summary: Radius in cells that the type reveals around itself for the local player.
+summary: Radius in cells that the type reveals around itself for its owner.
 see_also: ["system:map-visibility"]
 when_omitted:
   kind: value

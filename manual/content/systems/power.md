@@ -100,7 +100,7 @@ A house recalculates both totals on its next update after any of these events:
 - a structure is taken off the map or changes owner;
 - a plug is installed or sold;
 - a structure is switched on or off;
-- the player discovers a structure.
+- a human player discovers a structure.
 
 After recalculating, the house:
 

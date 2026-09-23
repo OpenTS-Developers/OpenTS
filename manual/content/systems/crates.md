@@ -267,7 +267,7 @@ The `Armor` row's third field is not clamped. A value of `0` makes damage to eve
 
 `HealBase` restores every object of the collector's house that is on the map to maximum strength. `CrateRadius` does not limit it. Passengers inside a transport are not healed. [`HealCrateSound`](/keys/healcratesound/) plays at the collector when the collector belongs to the local player.
 
-`Darkness` covers the whole map in shroud again, and `Reveal` reveals the whole map. Both act only when the local player controls the collecting house. Collected by any other house, either crate is used up and plays its animation without changing anyone's vision.
+`Darkness` covers the whole map in shroud again, and `Reveal` reveals the whole map. Both act for the player who controls the collecting house, including, in a campaign, a house the scenario marks [`PlayerControl=yes`](/keys/playercontrol/). Collected by any other house, either crate is used up and plays its animation without changing anyone's vision.
 
 `Darkness` is the only crate result that restores shroud.
 

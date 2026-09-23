@@ -13,4 +13,4 @@ The figure is written in seconds, with fractions accepted, and multiplied by 60 
 TalkBubbleTime=8  ; a bubble stays up for about 7.7 seconds
 ```
 
-A bubble is placed by the [Talk Bubble](/mapping/missions/tmission-talk-bubble/) team mission. Placing one also reveals two cells of ground around the speaker, so the player can see who is talking. Only one bubble exists at a time, so placing a second takes the first away. The [Talk Bubble...](/mapping/actions/taction-talk-bubble/) trigger action takes a bubble down rather than putting one up. Nothing but the drawing of the bubble reads the countdown, so a bubble that runs out stops being drawn.
+A bubble is placed by the [Talk Bubble](/mapping/missions/tmission-talk-bubble/) team mission. Placing one also reveals two cells of ground around the speaker, so every human player can see who is talking. Only one bubble exists at a time, so placing a second takes the first away. The [Talk Bubble...](/mapping/actions/taction-talk-bubble/) trigger action takes a bubble down rather than putting one up. Nothing but the drawing of the bubble reads the countdown, so a bubble that runs out stops being drawn.

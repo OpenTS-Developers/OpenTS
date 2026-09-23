@@ -383,12 +383,7 @@ class TechnoClass :	public RadioClass,
 		**	or not. This is because the state of discovery can often control how the object
 		**	behaves. In addition, this fact is used in radar and user I/O processing.
 		*/
-		bool IsDiscoveredByPlayer;
-
-		/*
-		**	This is used to control the computer recognizing this object.
-		*/
-		bool IsDiscoveredByComputer;
+		HouseSet DiscoveredBy;
 
 		/*
 		**	Some game objects can be of the "lemon" variety. This means that they take damage
@@ -678,6 +673,7 @@ class TechnoClass :	public RadioClass,
 		virtual void Draw_Insignia(Point2D const & bottomleft, Point2D const & center, Rect const & rect) const;
 		virtual void Draw_Text_Overlay(Point2D const & point1, Point2D const & point2, Rect const & rect) const;
 		virtual void Hidden(void) override;
+		void Forget_Human_Discovery(void);
 		virtual bool Mark(MarkType mark=MARK_CHANGE) override;
 		virtual int Exit_Object(TechnoClass *) override;
 		virtual void Do_Uncloak(bool silent=false);

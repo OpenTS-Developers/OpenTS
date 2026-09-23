@@ -1773,10 +1773,13 @@ void CellClass::Occupy_Down(ObjectClass * object, bool bridge)
 
 	/*
 	**	If being placed down on a visible square, then flag this
-	**	techno object as being revealed to the player.
+	**	techno object as being revealed to each player who sees it.
 	*/
-	if (!Map.Is_Shrouded(Cell_Coord()) && !Map.Is_Fogged(Cell_Coord()) || Session.Type != GAME_NORMAL) {
-		object->Revealed(PlayerPtr);
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (house->Is_Player_View() && (Session.Type != GAME_NORMAL || (!Map.Is_Shrouded(Cell_Coord(), house) && !Map.Is_Fogged(Cell_Coord(), house)))) {
+			object->Revealed(house);
+		}
 	}
 
 	/*
@@ -3701,8 +3704,8 @@ bool CellClass::Goodie_Check(FootClass * object)
 			*/
 			case CRATE_DARKNESS:
 				DebugString("Crate at %d,%d contains 'shroud'\n", CellID.X, CellID.Y);
-				if (object->House->Is_Player_Control()) {
-					Map.Shroud_The_Map(PlayerPtr);
+				if (object->House->Player_View() != NULL) {
+					Map.Shroud_The_Map(object->House->Player_View());
 				}
 				break;
 
@@ -3711,8 +3714,8 @@ bool CellClass::Goodie_Check(FootClass * object)
 			*/
 			case CRATE_REVEAL:
 				DebugString("Crate at %d,%d contains 'reveal'\n", CellID.X, CellID.Y);
-				if (object->House->Is_Player_Control()) {
-					Map.Reveal_The_Map(PlayerPtr);
+				if (object->House->Player_View() != NULL) {
+					Map.Reveal_The_Map(object->House->Player_View());
 				}
 				break;
 

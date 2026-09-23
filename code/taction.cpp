@@ -1274,17 +1274,18 @@ bool TActionClass::TAction_CLEAR_GLOBAL(HouseClass * , ObjectClass * , TriggerCl
 
 
 /// <summary>
-/// Reveals the map around a waypoint.
-/// This routine handles the trigger action that uncovers a patch of terrain for the player.
-/// The radius comes from the rules file, and nothing is revealed once the player has already
-/// been granted full vision.
+/// Reveals the map around a waypoint to every player who has not already been granted full
+/// vision. The radius comes from the rules file.
 /// </summary>
 bool TActionClass::TAction_REVEAL_SOME(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (!PlayerPtr->IsVisionary) {
-		Cell waypoint = Scen->Get_Waypoint_Cell(Data.Value);
-		int height = Map[waypoint].Height + ((Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge) ? BRIDGE_CELL_HEIGHT : 0);
-		Map.Sight_From(Coord(waypoint - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), Rule->RevealTriggerRadius, PlayerPtr, false ,false, false, true);
+	Cell waypoint = Scen->Get_Waypoint_Cell(Data.Value);
+	int height = Map[waypoint].Height + ((Map[waypoint].IsUnderBridge || Map[waypoint].WasUnderBridge) ? BRIDGE_CELL_HEIGHT : 0);
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (house->Is_Player_View() && !house->IsVisionary) {
+			Map.Sight_From(Coord(waypoint - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), Rule->RevealTriggerRadius, house, false ,false, false, true);
+		}
 	}
 	return(true);
 }
@@ -1304,14 +1305,16 @@ bool TActionClass::TAction_REDUCE_TIBERIUM(HouseClass * , ObjectClass * , Trigge
 
 
 /// <summary>
-/// Reveals the movement zone that a waypoint sits in.
-/// This routine handles the trigger action that uncovers a whole landmass at once, leaving
-/// terrain the player cannot drive to still shrouded.
+/// Reveals the movement zone that a waypoint sits in to every player who has not already
+/// been granted full vision, leaving terrain that cannot be driven to still shrouded.
 /// </summary>
 bool TActionClass::TAction_REVEAL_ZONE(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (!PlayerPtr->IsVisionary) {
-		int zone = Map.Get_Cell_Zone(Scen->Get_Waypoint_Cell(Data.Value), MZONE_CRUSHER);
+	int zone = Map.Get_Cell_Zone(Scen->Get_Waypoint_Cell(Data.Value), MZONE_CRUSHER);
+
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (!house->Is_Player_View() || house->IsVisionary) continue;
 
 		Map.Reset_Local_Iterator();
 		CellClass *cellptr = Map.Local_Iterate();
@@ -1319,7 +1322,7 @@ bool TActionClass::TAction_REVEAL_ZONE(HouseClass * , ObjectClass * , TriggerCla
 		while (cellptr) {
 			if (Map.Get_Cell_Zone(cellptr->CellID, MZONE_CRUSHER) == zone) {
 				int height = cellptr->Height/2;
-				Map.Sight_From(Coord(cellptr->CellID - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), 2, PlayerPtr, false, false, false, true);
+				Map.Sight_From(Coord(cellptr->CellID - Cell(height/2, height/2)) + Coord(0, 0, height * LEVEL_LEPTON_H), 2, house, false, false, false, true);
 			}
 			cellptr = Map.Local_Iterate();
 		}
@@ -1330,24 +1333,27 @@ bool TActionClass::TAction_REVEAL_ZONE(HouseClass * , ObjectClass * , TriggerCla
 
 
 /// <summary>
-/// Reveals the entire map to the player.
-/// This routine handles the trigger action that lifts the shroud everywhere. The player is
-/// marked as visionary so that the later reveal actions know there is nothing left to
-/// uncover.
+/// Reveals the entire map to every player and marks each as visionary, so that the later
+/// reveal actions know there is nothing left to uncover for them.
 /// </summary>
 bool TActionClass::TAction_REVEAL_ALL(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	if (!PlayerPtr->IsVisionary) {
-		PlayerPtr->IsVisionary = true;
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (!house->Is_Player_View() || house->IsVisionary) continue;
+
+		house->IsVisionary = true;
 
 		Map.Reset_Iterator();
 		CellClass *cellptr = Map.Iterate();
 
 		while (cellptr) {
-			Map.Map_Cell(cellptr->CellID, PlayerPtr);
+			Map.Map_Cell(cellptr->CellID, house);
 			cellptr = Map.Iterate();
 		}
-		Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		if (house == PlayerPtr) {
+			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		}
 	}
 	return(true);
 }
@@ -2077,13 +2083,16 @@ bool TActionClass::TAction_ZOOM_OUT(HouseClass * , ObjectClass * , TriggerClass 
 
 
 /// <summary>
-/// Shrouds the entire map once more.
-/// This routine is used to hide the map from the player again, as if it had never been
-/// explored at all.
+/// Shrouds the entire map again for every player, except one who sees the whole map.
 /// </summary>
 bool TActionClass::TAction_RESHROUD(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Map.Shroud_The_Map(PlayerPtr);
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (house->Is_Player_View() && !house->Sees_Whole_Map()) {
+			Map.Shroud_The_Map(house);
+		}
+	}
 	return(true);
 }
 

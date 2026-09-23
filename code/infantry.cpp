@@ -2523,7 +2523,7 @@ bool InfantryClass::Unlimbo(Coord const & xcoord, Dir256 facing)
 		**	it actually appears in a cell mapped by the player.
 		*/
 		if (Class->SightRange == 0) {
-			IsDiscoveredByPlayer = false;
+			Forget_Human_Discovery();
 		}
 
 		if (coord.Z <= height + BRIDGE_LEPTON_HEIGHT) {

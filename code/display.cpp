@@ -1069,6 +1069,9 @@ bool DisplayClass::Uncover_Cell(Cell const & cell, HouseClass * house, bool shro
 	bool wasfogged = !cellptr->IsFogMapped[house];
 	bool changed = (shroud && !cellptr->IsMapped[house]) || (fog && !cellptr->IsFogMapped[house]);
 	bool newlymapped = changed;
+	bool redraw = false;
+	int oldshadow = shroud ? TacticalMap->Cell_Shadow(cell, false, house) : 0;
+	int oldfog = fog ? TacticalMap->Cell_Shadow(cell, true, house) : 0;
 
 	auto refresh_frames_around = [&](Cell const & center, bool isfog) {
 		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
@@ -1097,8 +1100,11 @@ bool DisplayClass::Uncover_Cell(Cell const & cell, HouseClass * house, bool shro
 
 	if (shroud) {
 		char sframe = (char)TacticalMap->Cell_Shadow(cell, false, house);
-		if (view && sframe != cellptr->ShadowFrame) {
+		if (sframe != oldshadow) {
 			changed = true;
+		}
+		if (view && sframe != cellptr->ShadowFrame) {
+			redraw = true;
 			cellptr->ShadowFrame = sframe;
 		}
 		if (sframe == -1) {
@@ -1108,8 +1114,11 @@ bool DisplayClass::Uncover_Cell(Cell const & cell, HouseClass * house, bool shro
 
 	if (fog) {
 		char fframe = (char)TacticalMap->Cell_Shadow(cell, true, house);
-		if (view && fframe != cellptr->FogFrame) {
+		if (fframe != oldfog) {
 			changed = true;
+		}
+		if (view && fframe != cellptr->FogFrame) {
+			redraw = true;
 			cellptr->FogFrame = fframe;
 		}
 		if (fframe == -1) {
@@ -1117,7 +1126,7 @@ bool DisplayClass::Uncover_Cell(Cell const & cell, HouseClass * house, bool shro
 		}
 	}
 
-	if (view && changed) {
+	if (view && (changed || redraw)) {
 		TacticalMap->Flag_Cell(*cellptr);
 	}
 
@@ -1176,7 +1185,7 @@ bool DisplayClass::Uncover_Cell(Cell const & cell, HouseClass * house, bool shro
 		}
 	}
 
-	if (view && changed) {
+	if (changed && house->Is_Player_View()) {
 		Map.Reveal_Nearby_Technos(cellptr, house, newlymapped);
 	}
 
@@ -3480,7 +3489,7 @@ void DisplayClass::All_To_Look(bool units_only, bool is_fog, HouseClass const * 
 			if (Session.Type != GAME_NORMAL) {
 				tech->Look(false, is_fog);
 			} else if (tech->House->Is_Player_Control()) {
-				if (tech->IsDiscoveredByPlayer) {
+				if (tech->DiscoveredBy[PlayerPtr]) {
 					tech->Look(false, is_fog);
 				}
 			} else {

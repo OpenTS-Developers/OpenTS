@@ -9611,7 +9611,7 @@ CellClass * MapClass::Find_Nearby_Shroud(FootClass * foot)
 			if (In_Local_Radar(cell, true)) {
 				Coord coord(cell, 0);
 				coord.Z = Get_Height_GL(coord);
-				if (Is_Shrouded(coord)) {
+				if (Is_Shrouded(coord, foot->House)) {
 					cells[found++] = cell;
 				}
 			}
@@ -9623,7 +9623,7 @@ CellClass * MapClass::Find_Nearby_Shroud(FootClass * foot)
 			if (In_Local_Radar(cell, true)) {
 				Coord coord(cell, 0);
 				coord.Z = Get_Height_GL(coord);
-				if (Is_Shrouded(coord)) {
+				if (Is_Shrouded(coord, foot->House)) {
 					cells[found++] = cell;
 				}
 			}
@@ -9644,7 +9644,7 @@ CellClass * MapClass::Find_Nearby_Shroud(FootClass * foot)
 			if (In_Local_Radar(cell, true)) {
 				Coord coord(cell, 0);
 				coord.Z = Get_Height_GL(coord);
-				if (Is_Shrouded(coord)) {
+				if (Is_Shrouded(coord, foot->House)) {
 					cells[found++] = cell;
 				}
 			}
@@ -9656,7 +9656,7 @@ CellClass * MapClass::Find_Nearby_Shroud(FootClass * foot)
 			if (In_Local_Radar(cell, true)) {
 				Coord coord(cell, 0);
 				coord.Z = Map[coord].Get_Height(coord);
-				if (Is_Shrouded(coord)) {
+				if (Is_Shrouded(coord, foot->House)) {
 					cells[found++] = cell;
 				}
 			}
@@ -11599,6 +11599,35 @@ bool MapClass::Is_Fogged(Coord const & coord)
 
 
 /// <summary>
+/// Determines if a coordinate is hidden under a house's fog of war.
+/// </summary>
+/// <returns>bool; Is the coordinate under that house's fog?</returns>
+bool MapClass::Is_Fogged(Coord const & coord, HouseClass const * house)
+{
+	if (house->Sees_Whole_Map()) {
+		return(false);
+	}
+
+	CellClass * cptr;
+	int level_height = coord.Z / LEVEL_LEPTON_H;
+	if ((level_height & 1) != 0) {
+		int offset = level_height / 2 + 1;
+		Cell cell = coord.As_Cell();
+		cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
+		if (cptr->IsFogMapped[house]) {
+			return(false);
+		}
+		cptr = &cptr->Adjacent_Cell(FACING_SE);
+	} else {
+		int offset = level_height / 2;
+		Cell cell = coord.As_Cell();
+		cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
+	}
+	return(!cptr->IsFogMapped[house]);
+}
+
+
+/// <summary>
 /// Reveals the objects that stand where this cell is drawn.
 /// Raising the ground lifts a cell up the screen, so cells at several different heights can
 /// end up sharing one spot in the view. This routine follows that line and reveals whatever it
@@ -11614,7 +11643,7 @@ void MapClass::Reveal_Nearby_Technos(CellClass * cptr, HouseClass * house, bool 
 		CellClass * cellptr = &Map[cell];
 		int cell_height = cellptr->Height;
 		if (cell_height >= i - 2 && cell_height <= i) {
-			if (onradar) {
+			if (onradar && house == PlayerPtr) {
 				Map.Radar_Cell(cellptr->CellID);
 			}
 			TechnoClass * t = cellptr->Cell_Techno();

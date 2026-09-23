@@ -225,7 +225,11 @@ AnimClass::AnimClass(AnimTypeClass const * type, Coord const & coord, int timede
 	**	Drop zone smoke always reveals the map around itself.
 	*/
 	if (Class == Rule->FlareAnim) {
-		Map.Sight_From(coord, Rule->DropZoneRadius / CELL_LEPTON_W, PlayerPtr, false);
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index]->Is_Player_View()) {
+				Map.Sight_From(coord, Rule->DropZoneRadius / CELL_LEPTON_W, Houses[index], false);
+			}
+		}
 	}
 
 	loop = std::max(loop, 1) * Class->Loops;

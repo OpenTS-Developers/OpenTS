@@ -59,6 +59,8 @@ related:
 
 Two covers hide terrain: the shroud and the fog of war. Every scenario starts fully shrouded. The fog starts off and is switched on by the game options or, in a campaign, by the map. Each house has its own shroud and fog. The tactical view and the radar show the local player's.
 
+On this page, a human player is the house the player plays in a campaign, and any house a person plays outside a campaign, observers included. In a campaign, the player-controlled houses are the player's house and every other house the scenario marks [`PlayerControl=yes`](/keys/playercontrol/); only the player's house among them is a human player.
+
 The `rules.ini` settings below affect shroud, fog and the radar. The values are examples; each key page gives the default.
 
 ```ini title="rules.ini"
@@ -91,7 +93,7 @@ A look uncovers cells for the looker's house and for every house that shares its
 
 A house with a limpet drone attached to the looker also gets the look, as if one of its own objects had made it.
 
-A computer house has its own shroud and fog but ignores them when it chooses targets. What a computer house knows about other houses' objects is recorded on each object as discovery, described under [What the other houses know](#what-the-other-houses-know). The [Goto nearby shroud](/mapping/missions/tmission-goto-shroud/) team mission still reads the local player's shroud: it sends a team toward cells that are shrouded for the player at this machine.
+A computer house has its own shroud and fog but ignores them when it chooses targets. The [Goto nearby shroud](/mapping/missions/tmission-goto-shroud/) team mission sends a team toward cells that are shrouded for the team's own house.
 
 ## Cell state
 
@@ -108,7 +110,7 @@ Every map starts fully dark. Reading a scenario's `[Map]` [`Size`](/keys/size/),
 
 A raised coordinate is tested against the cell it is drawn over, not the cell it stands on. Every two height levels move the tested cell one step up the screen. At an odd height the coordinate lies between two cells, and it counts as uncovered if either of them is uncovered.
 
-The reverse also applies. When a cell is uncovered, objects standing on high ground that is drawn over it are [discovered](#what-the-other-houses-know) too. The game checks the cells below it on screen, one step at a time:
+The reverse also applies. When a cell is uncovered for a human player, objects standing on high ground that is drawn over it are [discovered](#what-the-other-houses-know) by that player too. The game checks the cells below it on screen, one step at a time:
 
 - the cell itself, if its ground is at most one level high;
 - the next cell down the screen, if its ground is one to three levels high;
@@ -170,24 +172,22 @@ An object also looks at once when:
 - it arrives by drop pod;
 - it is a structure, and it is captured;
 - it is a vehicle, infantryman or aircraft, and the playable area grows to include it; in a campaign, only a player-controlled house's objects look then;
-- the local player discovers it.
+- a human player [discovers](#what-the-other-houses-know) it.
 
-In a campaign, only the player's own objects make the discovery look; outside a campaign, every object does. Like any look, it uncovers ground for the object's owner and the houses that share its view, so a stranger's object reveals nothing to the local player by being discovered. Outside a campaign, a structure an ally places uncovers the ground around it as soon as it is placed, while `AllyReveal=yes`.
+In a campaign, only the player's own objects make the discovery look. Outside a campaign, an object looks each time a human player discovers it. The discovery look is an ordinary look: it uncovers ground for the object's owner and the houses that share the owner's view, and the player who discovered the object gains nothing from it without that view. Outside a campaign, every human player discovers each object as it is placed, so a structure an ally places uncovers the ground around it at once while `AllyReveal=yes`.
 
 Terrain objects and animations never look. Only vehicles, infantry, aircraft and structures do.
 
 Several other events reveal ground.
 
-An object that fires can reveal a fixed two cells around itself. The reveal is made for the target's owner, not the firer's. It happens when the target belongs to a human player and either of these holds:
+When an object fires at an object that a human player owns, it reveals the ground within two cells of itself to that player if either of these holds:
 
-- the firer is not the local player's, and the local player has not discovered it;
-- the firer stands on shrouded or fogged ground, and it is not an aircraft of the local player's.
+- the firer belongs to another house, and that player has not discovered it;
+- the firer stands on ground that is shrouded or fogged for that player, and it is not one of that player's aircraft.
 
-The second case depends only on where the firer stands. It applies to the local player's vehicles, infantry and structures as well.
+A human player's aircraft that fires reveals [`AttackingAircraftSightRange`](/keys/attackingaircraftsightrange/) cells around itself to its owner if the owner's shroud covers the target, the aircraft's own position, or any of three points two cells diagonally from the aircraft.
 
-A human player's aircraft that fires reveals [`AttackingAircraftSightRange`](/keys/attackingaircraftsightrange/) cells around itself when its target is shrouded, or when the shroud lies under it or two cells from it.
-
-Both firing reveals uncover ground for the house they are made for and for the houses that share its view, as [Whose looks count](#whose-looks-count) describes.
+Both firing reveals uncover ground for the house they are made for and for the houses that share its view. In a campaign, both reveals also apply to the other player-controlled houses, and their tests read the player's own shroud, fog and discoveries.
 
 When a house makes another its ally while `AllyReveal=yes`, every object of the house that made the alliance looks at once, so the new ally sees what those objects see. Outside a campaign, the objects of a [passive house](/keys/multiplaypassive/) never look, so its alliances reveal nothing.
 
@@ -197,14 +197,18 @@ The mark is recomputed from the spied house's remaining radar structures when a 
 
 ### Reveals granted outright
 
+These trigger actions and this team mission reveal ground for every human player:
+
 - [Reveal around waypoint...](/mapping/actions/taction-reveal-some/) reveals [`RevealTriggerRadius`](/keys/revealtriggerradius/) cells around a waypoint, with the height test.
 - [Reveal zone of waypoint...](/mapping/actions/taction-reveal-zone/) reveals two cells around every playable-area cell that shares the waypoint's crusher [movement zone](/glossary/#movement-zone), with the height test.
 - [Reveal all map](/mapping/actions/taction-reveal-all/) lifts both covers from every cell of the playfield.
 - [Reveal map](/mapping/missions/tmission-reveal/) lifts the shroud only and leaves the fog.
-- An observer's seat, and a house's defeat outside coach mode, lift both covers from every cell for that house. [Observers and coach mode](/systems/observers/) owns that view. Under coach mode, defeat changes nothing.
-- The reveal and darkness crate results are described under [crates](/systems/crates/#results-that-reach-the-whole-map).
 
-Reveal all map, Reveal map and the reveal crate each mark the map as fully revealed. Once the map is marked, every reveal in the list above reveals nothing, apart from an observer's seat and defeat. After Reveal map or the reveal crate, Reveal all map can therefore no longer lift the fog they left.
+An observer's seat, and a house's defeat outside coach mode, lift both covers from every cell for that house. [Observers and coach mode](/systems/observers/) owns that view. Under coach mode, defeat changes nothing.
+
+The reveal and darkness crate results act for the player who controls the collecting house, as [crates](/systems/crates/#results-that-reach-the-whole-map) describes.
+
+Reveal all map, Reveal map and the reveal crate mark each house they reveal the map to as fully revealed. After that, the four reveals listed above and the reveal crate do nothing more for that house; only an observer's seat or defeat still reveals everything. Reveal all map therefore cannot lift the fog that Reveal map or the reveal crate left.
 
 ## The fog of war
 
@@ -252,7 +256,7 @@ The exception is an allied computer structure in a campaign while `AllyReveal=ye
 
 ### Re-shrouding everything
 
-[Reshroud map](/mapping/actions/taction-reshroud/) and its [team mission](/mapping/missions/tmission-reshroud/) return every cell to shrouded and fogged. The watching objects then look again. They also clear the fully-revealed mark, so the reveal actions work again.
+[Reshroud map](/mapping/actions/taction-reshroud/) and its [team mission](/mapping/missions/tmission-reshroud/) return every cell to shrouded and fogged for every human player, and clear each such player's fully-revealed mark so the reveal actions work for them again. An observer, and a player defeated outside coach mode, keep [the whole map](/systems/observers/#the-whole-map). The watching objects then look again and uncover what they can still see.
 
 ## The radar map
 
@@ -288,26 +292,28 @@ Whether the pane is raised at all is decided elsewhere. [Power output and drain]
 
 ## What the other houses know
 
-Discovery is recorded per object, not per cell. Each object has two flags:
+Discovery is recorded on each object, separately for each house. Every machine in a network game records the same marks.
 
-- one records that the local player has discovered it;
-- the other records that some other house has discovered it. That flag is shared by all other houses and is never cleared.
+Only human players discover other houses' objects. Outside a campaign, every human player discovers every object as soon as it is placed on the map. In a campaign, the player discovers an object as it is placed if its cell is free of both the shroud and the fog; a structure is also discovered if its cell is completely clear of shroud. In both, an object placed outside the playable area, and an infantryman whose type has `Sight=0`, start undiscovered by every human player.
 
-When the local player discovers an object of another house, the object's tag springs the [Discovered by player](/mapping/events/tevent-discovered/) event. A discovered object also looks, as [Who looks, and when](#who-looks-and-when) describes.
+After placement, a human player discovers an object when either of these happens:
 
-The local player's flag is cleared in three cases:
+- the cell the object is drawn over is uncovered for that player;
+- the object reaches the center of a cell that is completely clear of that player's shroud.
 
-- A computer house's object goes into [limbo](/glossary/#limbo), for example by boarding a transport. A human player's objects keep the flag.
-- Any object placed outside the playable area starts undiscovered.
-- An infantryman whose type has `Sight=0` starts undiscovered, wherever it is placed.
+In a campaign, the player also discovers any object as soon as its position is no longer shrouded, even under fog. An object discovered this way does not spring Discovered by player and does not look, so the event can be missed for it.
 
-Apart from those cases, outside a campaign the local player discovers every object as soon as it is placed on the map. In a campaign, discovery waits for the covers:
+A computer house discovers only its own objects, as they are placed. Every house also discovers a structure it builds as soon as it places it.
 
-- An object placed on a cell is discovered only if the cell is free of both the shroud and the fog.
-- A structure is discovered only if its cell is completely clear of shroud.
-- Any object is discovered as soon as its position is no longer shrouded, even under fog. An object discovered this way does not spring Discovered by player and does not look, so the event can be missed for it.
+The first time a human player other than the owner discovers an object:
 
-Also in a campaign, a human player's objects do not pick an undiscovered object of another house as an automatic target, unless it is an aircraft.
+- the object's tag springs the [Discovered by player](/mapping/events/tevent-discovered/) event;
+- the owner's house counts as discovered for [House Discovered...](/mapping/events/tevent-house-discovered/);
+- a computer house's object on an Ambush mission switches to Hunt.
+
+None of these happens again until the human players' marks on the object are cleared. That happens when the object goes into [limbo](/glossary/#limbo), for example by boarding a transport, unless it belongs to a human player or, in a campaign, to any player-controlled house. Computer houses keep their marks. A discovered object can also look, as [Who looks, and when](#who-looks-and-when) describes.
+
+Also in a campaign, the objects of every player-controlled house do not automatically target an object of another house that the player has not discovered, unless that object is an aircraft.
 
 The shroud also limits orders. An order onto a shrouded cell is refused unless the object's type has [`MoveToShroud=yes`](/keys/movetoshroud/) and the cell lies inside the playable area. An allowed order becomes a plain move, except a patrol waypoint order. In a campaign, an order onto a shrouded object also becomes a plain move for a `MoveToShroud=yes` type and is refused for any other.
 

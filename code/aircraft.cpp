@@ -1044,9 +1044,9 @@ int AircraftClass::Paradrop_Cargo(void)
  * HISTORY:                                                                                    *
  *   03/19/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-static inline bool Aircraft_Fire_Shrouded(Coord const & coord)
+static inline bool Aircraft_Fire_Shrouded(Coord const & coord, HouseClass const * house)
 {
-	return(Map.Is_Shrouded(coord + Coord(2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H)));
+	return(Map.Is_Shrouded(coord + Coord(2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H), house));
 }
 
 
@@ -1104,13 +1104,14 @@ BulletClass * AircraftClass::Fire_At(AbstractClass * target, int which)
 			bullet->Velocity.Set_Speed(PrimaryWeapon->MaxSpeed);
 		}
 
-		if (House->Is_Player_Control()) {
-			if (Map.Is_Shrouded(PositionCoord) ||
-				Map.Is_Shrouded(PositionCoord + Coord(2 * CELL_LEPTON_W, 2 * CELL_LEPTON_H)) ||
-				Map.Is_Shrouded(PositionCoord + Coord(-2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H)) ||
-				Map.Is_Shrouded(PositionCoord + Coord(2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H)) ||
-				Aircraft_Fire_Shrouded(PositionCoord) ||
-				Map.Is_Shrouded(target->Center_Coord())) {
+		HouseClass const * viewer = House->Player_View();
+		if (viewer != NULL) {
+			if (Map.Is_Shrouded(PositionCoord, viewer) ||
+				Map.Is_Shrouded(PositionCoord + Coord(2 * CELL_LEPTON_W, 2 * CELL_LEPTON_H), viewer) ||
+				Map.Is_Shrouded(PositionCoord + Coord(-2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H), viewer) ||
+				Map.Is_Shrouded(PositionCoord + Coord(2 * CELL_LEPTON_W, -2 * CELL_LEPTON_H), viewer) ||
+				Aircraft_Fire_Shrouded(PositionCoord, viewer) ||
+				Map.Is_Shrouded(target->Center_Coord(), viewer)) {
 				Map.Sight_From(PositionCoord, Rule->AttackingAircraftSightRange, House);
 			}
 		}

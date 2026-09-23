@@ -1521,9 +1521,7 @@ bool BuildingClass::Mark(MarkType mark)
 										}
 										IsometricTileClass *iptr = (IsometricTileClass *)Class->ToTile->Create_One_Of(House);
 										iptr->Unlimbo(Coord(newcell));
-										if (House == PlayerPtr) {
-											Map.Sight_From(newcell, 1, PlayerPtr);
-										}
+										Map.Sight_From(newcell, 1, House);
 										any_created = true;
 									}
 								}
@@ -1996,9 +1994,15 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 		House->IsRecalcNeeded = true;
 		LastStrength = 0;
 
-		if ((!IsDiscoveredByPlayer && Map[coord].IsVisible[PlayerPtr]) || Session.Type != GAME_NORMAL) {
-			Revealed(PlayerPtr);
-		} else if (Class->LightIntensity != 0) {
+		bool revealed = false;
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * house = Houses[index];
+			if (house->Is_Player_View() && ((!DiscoveredBy[house] && Map[coord].IsVisible[house]) || Session.Type != GAME_NORMAL)) {
+				Revealed(house);
+				revealed = true;
+			}
+		}
+		if (!revealed && Class->LightIntensity != 0) {
 			if (LightSource == NULL) {
 				LightSource = new LightSourceClass(Center_Coord(), Class->LightVisibility, Class->LightIntensity, Class->LightRedTint, Class->LightGreenTint, Class->LightBlueTint);
 			}
@@ -3270,7 +3274,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
  *=============================================================================================*/
 void BuildingClass::Update_Buildables(void)
 {
-	if (House == PlayerPtr && !IsInLimbo && IsDiscoveredByPlayer && IsOn) {
+	if (House == PlayerPtr && !IsInLimbo && DiscoveredBy[PlayerPtr] && IsOn) {
 
 		// This must match the test the sidebar sweep removes cameos by, or the two would add and
 		// remove a cameo in turn. Can_Build's -1 means a type at its build limit, which stays.
@@ -10058,7 +10062,7 @@ bool BuildingClass::Is_Radar_Visible(DetectedType & detected) const
 			return(true);
 		}
 		if (House->Is_Player_Control()) {
-			return(IsDiscoveredByPlayer ? true : false);
+			return(DiscoveredBy[PlayerPtr]);
 		}
 
 		int height = Class->Height() * CELL_LEPTON_H - CELL_LEPTON;

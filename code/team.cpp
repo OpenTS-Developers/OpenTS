@@ -3332,22 +3332,32 @@ void TeamClass::TMission_CENTER_VIEWPOINT(TeamMissionClass * mission, bool)
 
 /// <summary>
 /// Handles the reshroud map team mission.
-/// This routine draws the shroud back over the entire map.
+/// This routine draws the shroud back over the entire map for every player, except one who
+/// sees the whole map.
 /// </summary>
 void TeamClass::TMission_RESHROUD(TeamMissionClass * mission, bool)
 {
-	Map.Shroud_The_Map(PlayerPtr);
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * house = Houses[index];
+		if (house->Is_Player_View() && !house->Sees_Whole_Map()) {
+			Map.Shroud_The_Map(house);
+		}
+	}
 	IsNextMission = true;
 }
 
 
 /// <summary>
 /// Handles the reveal map team mission.
-/// This routine lifts the shroud from the entire map.
+/// This routine lifts the shroud from the entire map for every player.
 /// </summary>
 void TeamClass::TMission_REVEAL(TeamMissionClass * mission, bool)
 {
-	Map.Reveal_The_Map(PlayerPtr);
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index]->Is_Player_View()) {
+			Map.Reveal_The_Map(Houses[index]);
+		}
+	}
 	IsNextMission = true;
 }
 

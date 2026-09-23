@@ -144,9 +144,10 @@ bool JumpjetLocomotionClass::Process(void)
 			}
 		}
 
-		if (!LinkedTo->IsDiscoveredByPlayer && LinkedTo->House != PlayerPtr) {
-			if (!Map.Is_Shrouded(LinkedTo->PositionCoord)) {
-				LinkedTo->Revealed(PlayerPtr);
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * house = Houses[index];
+			if (house != LinkedTo->House && house->Is_Player_View() && !LinkedTo->DiscoveredBy[house] && !Map.Is_Shrouded(LinkedTo->PositionCoord, house)) {
+				LinkedTo->Revealed(house);
 			}
 		}
 	}

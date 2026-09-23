@@ -47,7 +47,7 @@ An observer is given the whole map, and so is a defeated player in a match witho
 
 | Subject | What is shown |
 | --- | --- |
-| Shroud and fog | Every cell is revealed and unfogged, and the fogged stand-ins for structures are discarded. Neither [regrowth pass](/systems/map-visibility/#losing-ground-again) covers the map again. |
+| Shroud and fog | Every cell is revealed and unfogged, and the fogged stand-ins for structures are discarded. Neither [regrowth pass](/systems/map-visibility/#losing-ground-again) covers the map again, and neither does [Reshroud map](/mapping/actions/taction-reshroud/) or its [team mission](/mapping/missions/tmission-reshroud/). |
 | Radar | The pane stays up whatever the [power](/systems/power/#radar) and [ion storm](/systems/ion-storms/#radar) tests say, and it shows the whole map. |
 | Hidden objects | A cloaked object is drawn shadowy and can be selected. Cloaked and underground objects are plotted on the radar. None of them raises a [detection](/systems/cloaking/#on-the-radar) event. |
 | Decorations | Every house's objects show cargo pips, [rank insignia](/systems/veterancy/#rank-display) and the healer's cross. A selected structure that generates power shows its house's power output and drain, and a selected factory shows the cameo of what it is building. A tooltip names an object by its type, not as an enemy. |
@@ -96,7 +96,3 @@ Any number of people may watch, as long as somebody plays; a computer player cou
 One person may play alone beside observers. With no opponent, that match ends when the player is defeated.
 
 When an observer [leaves](/systems/leaving-a-match/), the departure is announced as any other player's is. The observer's house has nothing to hand to the computer.
-
-:::caution[Reshroud map hides the map from observers]
-[Reshroud map](/mapping/actions/taction-reshroud/) and its [team mission](/mapping/missions/tmission-reshroud/) shroud the whole map for the player at each machine, including an observer and any player given the whole map. After either runs, an observer sees only shroud until a trigger or team mission reveals the map again. Leave both out of a map meant to be watched.
-:::

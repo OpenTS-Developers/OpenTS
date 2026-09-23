@@ -16,7 +16,7 @@ The [Drop Zone Flare (waypoint)](/mapping/actions/taction-dz/) trigger action cr
 
 Two further behaviors are keyed to the animation type itself rather than to the action:
 
-- Every animation of this type reveals the ground around itself to the local player as it is created, out to [`DropZoneRadius`](/keys/dropzoneradius/). The reveal is one-shot and ignores whose trigger dropped the flare.
+- Every animation of this type reveals the ground around itself to every human player as it is created, out to [`DropZoneRadius`](/keys/dropzoneradius/). The reveal is one-shot and ignores whose trigger dropped the flare.
 - Every animation of this type standing over a structure marks itself for deletion on its next pass. That is what makes a flare vanish when a player builds on the spot it marks.
 
 :::caution[Reusing the animation elsewhere spreads both behaviors]

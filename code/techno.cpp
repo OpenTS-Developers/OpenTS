@@ -246,8 +246,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	IsInRecoilState(false),
 	IsTethered(false),
 	IsOwnedByPlayer(false),
-	IsDiscoveredByPlayer(false),
-	IsDiscoveredByComputer(false),
+	DiscoveredBy(),
 	IsALemon(false),
 	ArmorBias(1),
 	FirepowerBias(1),
@@ -396,7 +395,7 @@ bool TechnoClass::Is_Players_Army(void) const
 	**	If not discoverd by the player, then don't consider it part of the
 	**	player's army (yet).
 	*/
-	if (!IsDiscoveredByPlayer) {
+	if (!DiscoveredBy[PlayerPtr]) {
 		return(false);
 	}
 
@@ -766,8 +765,8 @@ void TechnoClass::Debug_Dump(MonoClass * mono) const
 	mono->Fill_Attrib(27, 16, 12, 1, IsInRecoilState ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(27, 17, 12, 1, IsTethered ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(40, 13, 12, 1, IsOwnedByPlayer ? MonoClass::INVERSE : MonoClass::NORMAL);
-	mono->Fill_Attrib(40, 14, 12, 1, IsDiscoveredByPlayer ? MonoClass::INVERSE : MonoClass::NORMAL);
-	mono->Fill_Attrib(40, 15, 12, 1, IsDiscoveredByComputer ? MonoClass::INVERSE : MonoClass::NORMAL);
+	mono->Fill_Attrib(40, 14, 12, 1, DiscoveredBy[PlayerPtr] ? MonoClass::INVERSE : MonoClass::NORMAL);
+	mono->Fill_Attrib(40, 15, 12, 1, DiscoveredBy.Any() ? MonoClass::INVERSE : MonoClass::NORMAL);
 	mono->Fill_Attrib(40, 16, 12, 1, IsALemon ? MonoClass::INVERSE : MonoClass::NORMAL);
 
 	BASECLASS::Debug_Dump(mono);
@@ -868,28 +867,40 @@ int TechnoClass::Time_To_Build(void) const
  *=============================================================================================*/
 bool TechnoClass::Revealed(HouseClass * house)
 {
-	if (house == PlayerPtr && IsDiscoveredByPlayer) return(false);
-	if (house != PlayerPtr) {
-		if (IsDiscoveredByComputer) return(false);
-		IsDiscoveredByComputer = true;
-	}
+	if (house == NULL || DiscoveredBy[house]) return(false);
 
 	if (BASECLASS::Revealed(house)) {
+		bool const human = house->Is_Player_View();
+
+		// An ambusher wakes for the first player and the first other house to find it; the
+		// trigger springs only for the first player other than the owner.
+		bool first_of_kind = true;
+		bool found_by_stranger = false;
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * other = Houses[index];
+			if (!DiscoveredBy[other]) continue;
+			if (other->Is_Player_View() == human) {
+				first_of_kind = false;
+			}
+			if (other != House && other->Is_Player_View()) {
+				found_by_stranger = true;
+			}
+		}
+		DiscoveredBy.Set(house);
 
 		/*
 		**	An enemy object that is discovered will go into hunt mode if
 		**	its current mission is to ambush.
 		*/
-		if (!House->Is_Human_Player() && Mission == MISSION_AMBUSH) {
+		if (first_of_kind && !House->Is_Human_Player() && Mission == MISSION_AMBUSH) {
 			Assign_Mission(MISSION_HUNT);
 		}
 
-		if (house == PlayerPtr) {
-			IsDiscoveredByPlayer = true;
+		if (human) {
 			House->RecalcPower = true;
 			House->RecalcRadar = true;
 
-			if (!IsOwnedByPlayer) {
+			if (house != House && !found_by_stranger) {
 
 				/*
 				**	If there is a trigger event associated with this object, then process
@@ -909,11 +920,9 @@ bool TechnoClass::Revealed(HouseClass * house)
 			// lifts, so an ally's placed structure reveals for the player; a campaign keeps
 			// the look to the player's own objects so discovery does not chain through an
 			// allied base.
-			if (IsOwnedByPlayer || Session.Type != GAME_NORMAL) {
+			if (house == House || Session.Type != GAME_NORMAL) {
 				Look();
 			}
-		} else {
-			IsDiscoveredByComputer = true;
 		}
 		return(true);
 	}
@@ -939,9 +948,21 @@ bool TechnoClass::Revealed(HouseClass * house)
  *=============================================================================================*/
 void TechnoClass::Hidden(void)
 {
-	if (!IsDiscoveredByPlayer) return;
 	if (!House->Is_Human_Player()) {
-		IsDiscoveredByPlayer = false;
+		Forget_Human_Discovery();
+	}
+}
+
+
+/// <summary>
+/// Makes every house that is a player's view discover this object again.
+/// </summary>
+void TechnoClass::Forget_Human_Discovery(void)
+{
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index]->Is_Player_View()) {
+			DiscoveredBy.Clear(Houses[index]);
+		}
 	}
 }
 
@@ -1213,8 +1234,11 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 		**	If this object somehow moves into mapped terrain, but is not yet
 		**	discovered, then flag it to be discovered.
 		*/
-		if (!IsDiscoveredByPlayer && Map[cell].IsVisible[PlayerPtr]) {
-			Revealed(PlayerPtr);
+		for (int index = 0; index < Houses.Count(); index++) {
+			HouseClass * house = Houses[index];
+			if (house->Is_Player_View() && !DiscoveredBy[house] && Map[cell].IsVisible[house]) {
+				Revealed(house);
+			}
 		}
 
 		Map[cell].Trigger_Veins();
@@ -1779,7 +1803,7 @@ bool TechnoClass::Unlimbo(Coord const & coord, Dir256 dir)
 		SightIncrease = Get_Sight_Bonus(coord);
 
 		if (!Map.In_Local_Radar(coord.As_Cell())) {
-			IsDiscoveredByPlayer = false;
+			Forget_Human_Discovery();
 		}
 
 		int risk = Risk();
@@ -2115,7 +2139,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	If the object is not visible, then bail. Human controlled units
 	**	are always considered to be visible.
 	*/
-	if (House->Is_Player_Control() && !object->IsOwnedByPlayer && !object->IsDiscoveredByPlayer && Session.Type == GAME_NORMAL && object->RTTI != RTTI_AIRCRAFT) {
+	if (House->Is_Player_Control() && !object->IsOwnedByPlayer && !object->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && object->RTTI != RTTI_AIRCRAFT) {
 		BEnd(BENCH_EVAL_OBJECT);
 		return(false);
 	}
@@ -3434,7 +3458,7 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
  *=============================================================================================*/
 bool TechnoClass::Select(void)
 {
-	if (!IsDiscoveredByPlayer && !House->Is_Player_Control() && MainWindow) {
+	if (!DiscoveredBy[PlayerPtr] && !House->Is_Player_Control() && MainWindow) {
 		return(false);
 	}
 
@@ -4172,17 +4196,16 @@ BulletClass * TechnoClass::Fire_At(AbstractClass * target, int which)
 				/*
 				**	If a projectile was fired from a unit that is hidden in the darkness,
 				**	reveal that unit and a little area around it.
-				**	For multiplayer games, only reveal the unit if the target is the
-				**	local player.
+				**	Only reveal the unit if the target belongs to a human player.
 				*/
-				if ((!IsOwnedByPlayer && !IsDiscoveredByPlayer) || ((Map.Is_Shrouded(Center_Coord()) || Map.Is_Fogged(Center_Coord())) && (RTTI != RTTI_AIRCRAFT || !IsOwnedByPlayer))) {
-					ObjectClass * obj = target->As_ObjectClass();
-					if (obj != NULL) {
-						HouseClass * tgt_owner = obj->Owner_HouseClass();
-
-						if (tgt_owner != NULL && tgt_owner->Is_Player_Control()) {
-							Map.Sight_From(Center_Coord(), 2, tgt_owner);
-						}
+				ObjectClass * obj = target->As_ObjectClass();
+				HouseClass * tgt_owner = (obj != NULL) ? obj->Owner_HouseClass() : NULL;
+				HouseClass * viewer = (tgt_owner != NULL) ? tgt_owner->Player_View() : NULL;
+				if (viewer != NULL) {
+					bool owned = (House == viewer);
+					bool hidden = Map.Is_Shrouded(Center_Coord(), viewer) || Map.Is_Fogged(Center_Coord(), viewer);
+					if ((!owned && !DiscoveredBy[viewer]) || (hidden && (RTTI != RTTI_AIRCRAFT || !owned))) {
+						Map.Sight_From(Center_Coord(), 2, tgt_owner);
 					}
 				}
 			}
@@ -8333,8 +8356,7 @@ void TechnoClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsInRecoilState);
 	stream.Serialize(IsTethered);
 	stream.Serialize(IsOwnedByPlayer);
-	stream.Serialize(IsDiscoveredByPlayer);
-	stream.Serialize(IsDiscoveredByComputer);
+	stream.Serialize(DiscoveredBy);
 	stream.Serialize(IsALemon);
 	stream.Serialize(UnusedCooldown);
 	stream.Serialize(Unused1);
@@ -8401,9 +8423,8 @@ void TechnoClass::Compute_CRC(CRCEngine & crc) const
 	crc(IsTethered);
 	if (Session.Type == GAME_NORMAL || Session.Type == GAME_SKIRMISH) {
 		crc(IsOwnedByPlayer);
-		crc(IsDiscoveredByPlayer);
-		crc(IsDiscoveredByComputer);
 	}
+	DiscoveredBy.Compute_CRC(crc);
 	crc(IsALemon);
 	crc(StunDuration);
 	crc(UnusedCooldown);
@@ -8780,7 +8801,7 @@ bool TechnoClass::Is_Radar_Visible(DetectedType & detected) const
 		}
 
 		if (House->Is_Player_Control()) {
-			return(IsDiscoveredByPlayer ? true : false);
+			return(DiscoveredBy[PlayerPtr]);
 		}
 
 		int height = HeightAGL;
@@ -9029,8 +9050,8 @@ void TechnoClass::Update_Radar_Position(bool force_update)
 		return;
 	}
 
-	if (!IsDiscoveredByPlayer && Session.Type == GAME_NORMAL) {
-		IsDiscoveredByPlayer = !Map.Is_Shrouded(Center_Coord());
+	if (!DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL && !Map.Is_Shrouded(Center_Coord())) {
+		DiscoveredBy.Set(PlayerPtr);
 	}
 
 	Point2D point;
@@ -9113,7 +9134,11 @@ void TechnoClass::Set_Talker(TechnoClass * techno, TalkType bubble)
 		TalkBubbleType = bubble;
 		TalkBubbleOwner = techno;
 		TalkBubbleTimer = Rule->TalkBubbleTime;
-		Map.Sight_From(techno->Center_Coord(), 2, PlayerPtr);
+		for (int index = 0; index < Houses.Count(); index++) {
+			if (Houses[index]->Is_Player_View()) {
+				Map.Sight_From(techno->Center_Coord(), 2, Houses[index]);
+			}
+		}
 	} else {
 		TalkBubbleType = TALK_NONE;
 		TalkBubbleOwner = NULL;
