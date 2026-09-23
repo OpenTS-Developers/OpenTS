@@ -1089,7 +1089,7 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 
 	if (house != NULL && PlayerPtr != NULL) {
 		if (house != PlayerPtr) {
-			if ((house->RadarSpied & (1 << PlayerPtr->Class->House)) != 0) {
+			if (house->RadarSpied[PlayerPtr]) {
 				house = PlayerPtr;
 			}
 		}
@@ -11657,15 +11657,14 @@ void MapClass::Deinit_Fog_System(void)
 /// This routine checks that the house is not already occupying any part of the area and that
 /// the whole of it lies on the playable map.
 /// </summary>
-/// <param name="house">The house index whose occupancy is being tested for.</param>
+/// <param name="house">The house whose occupancy is being tested for.</param>
 /// <returns>bool; Is the area clear of this house and on the map?</returns>
-bool MapClass::Is_Area_Available(Rect const & rect, int house)
+bool MapClass::Is_Area_Available(Rect const & rect, HouseClass const * house)
 {
-	int mask = 1 << house;
 	for (int x = rect.X; x < rect.X + rect.Width; x++) {
 		for (int y = rect.Y; y < rect.Y + rect.Height; y++) {
 			CellClass * cptr = &Map[Cell(x,y)];
-			if (cptr->OccupiedBy & mask) {
+			if (cptr->OccupiedBy[house]) {
 				return(false);
 			}
 		}

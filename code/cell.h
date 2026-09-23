@@ -35,6 +35,7 @@
 #include "_map.h"
 #include "abstract.h"
 #include "globals.h"
+#include "houseset.h"
 #include "map.h"
 #include "rect.h"
 
@@ -174,7 +175,7 @@ class CellClass : public AbstractClass
 		 */
 		unsigned CloakedBy;
 		unsigned SensedBy;
-		unsigned OccupiedBy;
+		HouseSet OccupiedBy;
 
 	private:
 
@@ -618,7 +619,7 @@ class CellClass : public AbstractClass
 		bool Is_Fogged(void) const;
 		bool Is_Shrouded(void) const;
 		bool Can_Build_Here(void) const;
-		int Occupation_Mask(HousesType house) const;
+		int Occupation_Mask(HouseClass const * house) const;
 
 		/*
 		**	Object placement and removal flag operations.

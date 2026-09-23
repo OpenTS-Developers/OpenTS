@@ -300,7 +300,7 @@ CellClass::CellClass(void) :
 	FogFrame(-2),
 	CloakedBy(0),
 	SensedBy(0),
-	OccupiedBy(0),
+	OccupiedBy(),
 	Intensity(0x10000),
 	Ambient(0),
 	Brightness(NORMAL_LIGHT),
@@ -5990,16 +5990,16 @@ void CellClass::Remove_Fogged_Objects(void)
 /// </summary>
 /// <returns>Returns with a facing bit mask of the adjacent cells that house occupies. If
 /// the house does not occupy this cell at all, -1 is returned.</returns>
-int CellClass::Occupation_Mask(HousesType house) const
+int CellClass::Occupation_Mask(HouseClass const * house) const
 {
-	if (!(OccupiedBy & (1 << house))) {
+	if (!OccupiedBy[house]) {
 		return(-1);
 	}
 
 	int mask = 0;
 	for (int dir = 0; dir < FACING_COUNT; dir++) {
 		CellClass const & adjacent = Adjacent_Cell(FacingType(dir));
-		if (adjacent.OccupiedBy & (1 << house)) {
+		if (adjacent.OccupiedBy[house]) {
 			mask |= (1 << dir);
 		}
 	}

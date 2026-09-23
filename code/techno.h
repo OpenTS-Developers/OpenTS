@@ -125,7 +125,7 @@ class TechnoClass :	public RadioClass,
 		**	This is a list of bits of which houses are spying on this building,
 		**	if in fact this is a building.
 		*/
-		unsigned SpiedBy;
+		HouseSet SpiedBy;
 
 		/*
 		**	If this object is part of a pseudo-team that the player is managing, then
@@ -472,7 +472,7 @@ class TechnoClass :	public RadioClass,
 		 * object. A house that has limpeted an object sees whatever that object sees, so the
 		 * drone serves as a spy that travels along with its victim.
 		 */
-		unsigned LimpetType;
+		HouseSet LimpetType;
 
 		/*
 		 * This is the speed penalty imposed by an attached limpet drone, expressed as a
