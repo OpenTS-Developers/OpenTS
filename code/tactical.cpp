@@ -3422,9 +3422,7 @@ void Tactical::Draw_Rally_Points(bool inshroud)
 			continue;
 		}
 
-		if (building->Class->ToBuild != RTTI_INFANTRYTYPE &&
-			building->Class->ToBuild != RTTI_UNITTYPE &&
-			building->Class->ToBuild != RTTI_AIRCRAFTTYPE) {
+		if (!building->Is_Move_Override()) {
 			continue;
 		}
 
