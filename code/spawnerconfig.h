@@ -26,7 +26,7 @@ class SpawnerConfigClass
 {
 	public:
 
-		// Counts changes to what the game makes of a launch file, never the file's own vocabulary.
+		// Bump when the game's reading of a launch file changes; it feeds the session identity.
 		static constexpr int SCHEMA_VERSION = 1;
 
 		// One seat per house a match may hold, and the fifty scenario flags the engine keeps.
@@ -41,7 +41,7 @@ class SpawnerConfigClass
 			Resume,
 		};
 
-		// A file marks a seat human by writing a section for it; an unwritten one is a computer.
+		// A seat is human when the file writes a section for it; otherwise AIPlayers decides.
 		enum class OccupancyType {
 			Empty,
 			Human,
@@ -110,6 +110,11 @@ class SpawnerConfigClass
 		bool Firestorm = true;
 		int CampaignDifficulty = 1;
 		int CampaignCDifficulty = 1;
+		bool CoachMode = false;
+		bool AutoSurrender = true;
+		bool AttackNeutralUnits = false;
+		bool ScrapMetal = false;
+		bool PlayMoviesInMultiplayer = false;
 		std::array<bool, GLOBAL_FLAG_COUNT> GlobalFlags = {};
 
 		// Where the machines reach one another, settled by whatever service arranged the match.
@@ -118,8 +123,7 @@ class SpawnerConfigClass
 		std::string TunnelAddress = "0.0.0.0";
 		int TunnelPort = 0;
 
-		// How long this machine waits on another, in game ticks. A value outside the bounds is
-		// brought within them.
+		// How long this machine waits on another, in 16 ms ticks, clamped to these bounds.
 		static constexpr int TIMEOUT_MIN = 60;
 		static constexpr int TIMEOUT_MAX = 36000;
 		int ConnTimeout = 3600;
@@ -129,11 +133,6 @@ class SpawnerConfigClass
 		bool QuickMatch = false;
 		bool SkipScoreScreen = false;
 		bool AINamesByDifficulty = false;
-		bool CoachMode = false;
-		bool AutoSurrender = true;
-		bool AttackNeutralUnits = false;
-		bool ScrapMetal = false;
-		bool PlayMoviesInMultiplayer = false;
 		std::string CustomLoadScreen;
 		int CustomLoadScreenX = 0;
 		int CustomLoadScreenY = 0;

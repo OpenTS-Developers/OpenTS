@@ -47,10 +47,7 @@
 static_assert(HOUSE_NAME_MAX == MPLAYER_NAME_MAX,
 	"a seat is judged and ordered by the name the session carries");
 
-/*
- * Only the first launch runs. A later call answers false, so the process exits rather than
- * falling into the menu.
- */
+// Only the first launch runs; a later Spawner_Prepare answers false, so the game exits.
 static bool SpawnRequested = false;
 static bool SpawnConsumed = false;
 static SpawnerConfigClass SpawnConfig;
@@ -232,15 +229,12 @@ static void Spawner_Bind_Options(void)
 	Session.Options.AttackNeutralUnits = SpawnConfig.AttackNeutralUnits;
 	Session.Options.ScrapMetal = SpawnConfig.ScrapMetal;
 
-	// The file names what a departing player does; the session names what becomes of the seat.
+	// AutoSurrender=no hands a departing player's base to the computer.
 	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;
 
-	/*
-	 * Only a match against other machines commits this to the simulation; a skirmish never does.
-	 */
+	// Only a network match applies the truce; a skirmish records it and ignores it.
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
-	// These live outside the session's option block.
 	Options.GameSpeed = SpawnConfig.GameSpeed;
 	BuildLevel = SpawnConfig.TechLevel;
 	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
@@ -253,8 +247,7 @@ static void Spawner_Bind_Options(void)
 
 
 /// <summary>
-/// Hands the session what a launch file asks a player be shown, so that the scenario and the
-/// score screen need know nothing of launch files.
+/// Copies what the launch file asks a player be shown into the session.
 /// </summary>
 static void Spawner_Bind_Presentation(void)
 {
@@ -377,10 +370,7 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("Resuming a game arranged over the local network is not supported."));
 	}
 
-	/*
-	 * The file seats the same people again, so the network opens before the load and the queue
-	 * synchronizes at the resumed frame.
-	 */
+	// The file seats the same people again, so the network opens before the load.
 	if (type == GAME_INTERNET) {
 		std::string fault;
 		if (!SpawnConfig.Is_Playable(HouseTypes.Count(), MAX_MPLAYER_COLORS, fault)) {
@@ -409,10 +399,7 @@ static bool Spawner_Resume(bool & gameloaded)
 		return(Spawner_Refuse("The saved game and the file do not agree on who is playing."));
 	}
 
-	/*
-	 * A save carries the options it was played under, but game speed, whether movies play and
-	 * the waits this machine keeps are the player's own.
-	 */
+	// The save's options apply, except game speed, movies and this machine's waits.
 	Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.PlayMovies = SpawnConfig.PlayMoviesInMultiplayer;
 	Session.ConnTimeout = SpawnConfig.ConnTimeout;
@@ -554,9 +541,7 @@ bool Spawner_Prepare(bool & gameloaded)
 	Spawner_Bind_Autosave();
 	Spawner_Bind_Presentation();
 
-	/*
-	 * Every kind of launch is played at this speed, so it is checked before the kinds part.
-	 */
+	// Every kind of launch uses this speed, so it is checked first.
 	if (SpawnConfig.GameSpeed < 0 || SpawnConfig.GameSpeed >= OptionsClass::MAX_SPEED_SETTING) {
 		return(Spawner_Refuse("The file asks for game speed %d, and the game has 0 through %d.",
 			SpawnConfig.GameSpeed, OptionsClass::MAX_SPEED_SETTING - 1));
