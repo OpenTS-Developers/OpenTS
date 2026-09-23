@@ -7767,7 +7767,7 @@ void TechnoClass::Draw_Text_Overlay(Point2D const & point1, Point2D const & poin
  *   07/18/1995 JLB : Created.                                                                 *
  *   08/13/1995 JLB : Recognizes the "IsLeader" method of building preference.                 *
  *=============================================================================================*/
-BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool friendly, bool evenoccupied) const
+BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool friendly, bool unoccupied) const
 {
 	BuildingClass * best = 0;
 
@@ -7793,7 +7793,7 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 				(friendly ? building->House->Is_Ally(this) : building->House == House) &&
 				!building->IsInLimbo &&
 				building->Class == b &&
-				(!evenoccupied || !building->In_Radio_Contact()) &&
+				(!unoccupied || !building->In_Radio_Contact()) &&
 				(RTTI == RTTI_AIRCRAFT || Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), building->Center_Coord().As_Cell(), TClass->MZone, Is_Moving_Onto_Bridge(), false, false)) &&
 				((TechnoClass *)this)->Transmit_Message(RADIO_CAN_LOAD, building) == RADIO_ROGER) {
 
@@ -7824,16 +7824,16 @@ BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool 
 /// the earlier type.
 /// </summary>
 /// <param name="friendly">Allow an allied house's buildings too.</param>
-/// <param name="evenoccupied">Refuse a building that is already in radio contact.</param>
+/// <param name="unoccupied">Refuse a building that is already in radio contact.</param>
 /// <param name="distance">Optional; receives the distance in leptons when a building is found.</param>
 /// <returns>The building, or NULL.</returns>
-BuildingClass * TechnoClass::Find_Docking_Bay(TypeList<BuildingTypeClass const *> const & list, bool friendly, bool evenoccupied, int * distance) const
+BuildingClass * TechnoClass::Find_Docking_Bay(TypeList<BuildingTypeClass const *> const & list, bool friendly, bool unoccupied, int * distance) const
 {
 	BuildingClass * best = NULL;
 	int bestval = -1;
 
 	for (int index = 0; index < list.Count(); index++) {
-		BuildingClass * building = Find_Docking_Bay(list[index], friendly, evenoccupied);
+		BuildingClass * building = Find_Docking_Bay(list[index], friendly, unoccupied);
 		if (building != NULL) {
 			int dist = Distance(building);
 			if (bestval == -1 || dist < bestval) {

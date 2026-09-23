@@ -1247,7 +1247,7 @@ test('A harvester let out of a factory goes to work', () => {
 });
 
 test('The docking bay search rates candidates in a width that cannot overflow', () => {
-	const search = functionBody(source('code/techno.cpp'), 'BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool friendly, bool evenoccupied) const');
+	const search = functionBody(source('code/techno.cpp'), 'BuildingClass * TechnoClass::Find_Docking_Bay(BuildingTypeClass const * b, bool friendly, bool unoccupied) const');
 
 	assert.doesNotMatch(
 		search,
