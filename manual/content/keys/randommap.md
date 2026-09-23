@@ -25,6 +25,6 @@ Biome=3         ; desert
 Speed=5
 ```
 
-The file's other sections are still read. Rules sections such as `[MCV]` above change the rules for the match, and `[Basic]` settings such as [`FreeRadar`](/keys/freeradar/) work as on an ordinary map. The generator writes its own `[Map]` size, theater and `Fill`, and its own `[Lighting]` `Ambient`, `Ground` and `Level`, replacing any values the file gives. It also places the start points. If the other sections cannot be read, the map fails to load as an ordinary map would.
+The file's other sections are still read. Rules sections such as `[MCV]` above change the rules for the match, and `[Basic]` settings such as [`FreeRadar`](/keys/freeradar/) work as on an ordinary map. The generator writes its own `[Map]` size, theater and `Fill`, and its own `[Lighting]` `Ambient`, `Red`, `Green`, `Blue`, `Ground` and `Level`, replacing any values the file gives. It also places the start points. If the other sections cannot be read, the map fails to load as an ordinary map would.
 
 The map is built from the match's seed, not from the `[RandomMap]` section's [`Seed`](/keys/seed/). A match started from a [launch file](/formats/spawn-ini/) uses the seed that file names: every machine builds the same map, and a different seed builds a different one. A `.SED` seed file needs no `RandomMap` key: it is always generated, from its own `Seed`, so it builds the same map every time.

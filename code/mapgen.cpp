@@ -5131,9 +5131,9 @@ ScenarioState MapGeneratorClass::Init_Map(bool full_init, CCINIClass * scenario)
 	ini.Put_String(HouseTypes[HOUSE_GOOD]->IniName, "TechLevel", "0");
 	ini.Put_String("Basic", "Player", HouseTypes[HOUSE_GOOD]->IniName);
 	ini.Put_Float("Lighting", "Ambient", tod * scale);
-	ini.Put_Float("Lighting", "RedTint", 1.0);
-	ini.Put_Float("Lighting", "GreenTint", 1.0);
-	ini.Put_Float("Lighting", "BlueTint", 1.0);
+	ini.Put_Float("Lighting", "Red", 1.0);
+	ini.Put_Float("Lighting", "Green", 1.0);
+	ini.Put_Float("Lighting", "Blue", 1.0);
 	ini.Put_Float("Lighting", "Ground", 0.0);
 	ini.Put_Float("Lighting", "Level", 0.01);
 
