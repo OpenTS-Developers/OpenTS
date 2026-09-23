@@ -19,4 +19,4 @@ A scenario set to [`FreeRadar=yes`](/keys/freeradar/) skips that search but stil
 Buildings are scanned in creation order and the scan ends at the first eligible structure, which supplies the radar only if it is not stunned. A stunned radar found first therefore keeps the map dark even when a second, working one stands beside it.
 :::
 
-The value also marks the structure as an intelligence target. While the local player has a spy inside an enemy's `Radar=yes` structure, every reveal that enemy's objects make is credited to the local player instead. The enemy's own sight of the map is shared out as it moves.
+The value also marks the structure as an intelligence target. Once a house has a spy inside an enemy's `Radar=yes` structure, every look that enemy's objects make also uncovers the map for the spy's house.

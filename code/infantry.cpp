@@ -1436,7 +1436,7 @@ void InfantryClass::AI(void)
 		}
 	}
 
-	if (Locomotion->Is_Moving_Now() && HeightAGL > 0 && IsOwnedByPlayer && Class->SightRange > 0) {
+	if (Locomotion->Is_Moving_Now() && HeightAGL > 0 && Class->SightRange > 0) {
 		if (!LookTimer) {
 			Look();
 			LookTimer = TICKS_PER_SECOND;

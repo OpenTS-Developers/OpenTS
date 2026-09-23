@@ -4073,7 +4073,7 @@ bool FootClass::Tiberium_Check(Cell & center)
 	*/
 	if (!Map.In_Local_Radar(center)) return(false);
 
-	if ((Session.Type != GAME_NORMAL || (!IsOwnedByPlayer || !Map.Is_Shrouded(center.As_Coord(Map.Get_Height_GL(center)))))) {
+	if ((Session.Type != GAME_NORMAL || (!IsOwnedByPlayer || !Map.Is_Shrouded(center.As_Coord(Map.Get_Height_GL(center)), House)))) {
 		if (!Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), center, TClass->MZone, Is_Moving_Onto_Bridge(), false, false)) return(false);
 		CellClass * cptr = &Map[center];
 		if (!Can_Enter_Cell(cptr) && cptr->Land_Type() == LAND_TIBERIUM) {
@@ -4385,7 +4385,7 @@ bool FootClass::Weed_Check(Cell & center, int x, int y)
 	 */
 	center = cell;
 
-	if ((Session.Type != GAME_NORMAL || (!IsOwnedByPlayer || !Map.Is_Shrouded(center.As_Coord(Map.Get_Height_GL(center)))))) {
+	if ((Session.Type != GAME_NORMAL || (!IsOwnedByPlayer || !Map.Is_Shrouded(center.As_Coord(Map.Get_Height_GL(center)), House)))) {
 		if (!Map.Is_Same_Cell_Zone(Destination_Coord().As_Cell(), center, TClass->MZone, Is_Moving_Onto_Bridge(), false, false)) return(false);
 		CellClass * cptr = &Map[center];
 		if (!Can_Enter_Cell(cptr) && cptr->Land_Type() == LAND_WEEDS && cptr->OverlayData >= OVERLAYDATA_FIRST_SOLID_VEIN) {

@@ -117,8 +117,8 @@ class MapClass: public GScreenClass
 		Cell Pick_Random_Location(void) const;
 		bool Place_Random_Crate(void);
 		bool Remove_Crate(Cell const & cell);
-		void Shroud_The_Map(void);
-		void Reveal_The_Map(bool unfog = false);
+		void Shroud_The_Map(HouseClass * house);
+		void Reveal_The_Map(HouseClass * house, bool unfog = false);
 		virtual void Detach(AbstractClass const * , bool all = true);
 
 		/*
@@ -296,6 +296,7 @@ class MapClass: public GScreenClass
 		 * Fog and shroud
 		 */
 		bool Is_Shrouded(Coord const & coord);
+		bool Is_Shrouded(Coord const & coord, HouseClass const * house);
 		bool Is_Fogged(Coord const & coord);
 		void Init_Fog_System(void);
 		void Deinit_Fog_System(void);

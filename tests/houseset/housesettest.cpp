@@ -97,6 +97,7 @@ void Check_Set(void)
 	Check(set[&House[HOUSE_MAX - 1]], "the last house is marked");
 	Check(!set[&House[1]], "an unmarked house reads clear");
 	Check(!set[&House[8]], "a house one byte along reads clear");
+	Check(!set[static_cast<HouseClass const *>(nullptr)], "no house reads clear");
 
 	set.Clear(&House[40]);
 	Check(!set[&House[40]], "clearing a house removes only its mark");

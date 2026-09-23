@@ -803,6 +803,7 @@ class HouseClass : public AbstractClass
 		bool Is_Ally(ObjectClass const * object) const;
 		bool Is_Ally(AbstractClass const * target) const;
 		bool Shares_View_With(HouseClass const * house) const;
+		bool Sees_Whole_Map(void) const;
 #ifdef _DEBUG
 		void Debug_Dump(MonoClass *mono) const;
 		void Print_Zone_Stats(int x, int y, ZoneType zone, MonoClass * mono) const;

@@ -36,8 +36,9 @@ class HouseSet
 	public:
 		constexpr HouseSet(void) : Bits(0) {}
 
+		// A NULL house is in no set.
 		template<std::same_as<HouseClass> H>
-		bool operator[](H const * house) const {return((Bits & Bit(house)) != 0);}
+		bool operator[](H const * house) const {return(house != nullptr && (Bits & Bit(house)) != 0);}
 
 		template<std::same_as<HouseClass> H>
 		void Set(H const * house) {Bits |= Bit(house);}

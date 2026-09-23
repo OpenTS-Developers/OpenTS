@@ -2547,6 +2547,8 @@ bool Tactical::Clamp_To_Tactical_Rect(Point2D & pixel)
  *                                                                                             *
  * INPUT:   cell     -- The cell to examine.                                                   *
  *                                                                                             *
+ *          house    -- The house whose shroud or fog is examined.                             *
+ *                                                                                             *
  * OUTPUT:  Returns with the shadow icon to use. -2= all black.                                *
  *                                                -1= map cell.                                *
  *                                                                                             *
@@ -2557,7 +2559,7 @@ bool Tactical::Clamp_To_Tactical_Rect(Point2D & pixel)
  *   04/04/1994 JLB : Revamped for new shadow icon method.                                     *
  *   04/30/1994 JLB : Converted to member function.                                            *
  *=============================================================================================*/
-int Tactical::Cell_Shadow(Cell const & cell, bool fog)
+int Tactical::Cell_Shadow(Cell const & cell, bool fog, HouseClass const * house)
 {
 	static char const _shadow[1 << FACING_COUNT]={
 		-1,33, 2, 2,34,37, 2, 2,
@@ -2605,9 +2607,9 @@ int Tactical::Cell_Shadow(Cell const & cell, bool fog)
 		/*
 		**	Presume solid black if that is what is here already.
 		*/
-		if (!cellptr->IsFogVisible && !cellptr->IsFogMapped) value = -2;
+		if (!cellptr->IsFogVisible[house] && !cellptr->IsFogMapped[house]) value = -2;
 
-		if (cellptr->IsFogMapped /*&& !cellptr->IsFogVisible*/) {
+		if (cellptr->IsFogMapped[house] /*&& !cellptr->IsFogVisible*/) {
 			/*
 			**	Build an index into the lookup table using all 8 surrounding cells.
 			**	We're mapping a revealed cell and we only care about the existence
@@ -2616,21 +2618,21 @@ int Tactical::Cell_Shadow(Cell const & cell, bool fog)
 			*/
 			Cell c;
 			c = cell + Cell(-1, -1);
-			if (!Map[c].IsFogMapped) index |= 0x40;
+			if (!Map[c].IsFogMapped[house]) index |= 0x40;
 			c = cell + Cell(+0, -1);
-			if (!Map[c].IsFogMapped) index |= 0x80;
+			if (!Map[c].IsFogMapped[house]) index |= 0x80;
 			c = cell + Cell(+1, -1);
-			if (!Map[c].IsFogMapped) index |= 0x01;
+			if (!Map[c].IsFogMapped[house]) index |= 0x01;
 			c = cell + Cell(-1, +0);
-			if (!Map[c].IsFogMapped) index |= 0x20;
+			if (!Map[c].IsFogMapped[house]) index |= 0x20;
 			c = cell + Cell(+1, +0);
-			if (!Map[c].IsFogMapped) index |= 0x02;
+			if (!Map[c].IsFogMapped[house]) index |= 0x02;
 			c = cell + Cell(-1, +1);
-			if (!Map[c].IsFogMapped) index |= 0x10;
+			if (!Map[c].IsFogMapped[house]) index |= 0x10;
 			c = cell + Cell(+0, +1);
-			if (!Map[c].IsFogMapped) index |= 0x08;
+			if (!Map[c].IsFogMapped[house]) index |= 0x08;
 			c = cell + Cell(+1, +1);
-			if (!Map[c].IsFogMapped) index |= 0x04;
+			if (!Map[c].IsFogMapped[house]) index |= 0x04;
 
 			value = _shadow[index];
 		}
@@ -2639,9 +2641,9 @@ int Tactical::Cell_Shadow(Cell const & cell, bool fog)
 		/*
 		**	Presume solid black if that is what is here already.
 		*/
-		if (!cellptr->IsVisible && !cellptr->IsMapped) value = -2;
+		if (!cellptr->IsVisible[house] && !cellptr->IsMapped[house]) value = -2;
 
-		if (cellptr->IsMapped /*&& !cellptr->IsVisible*/) {
+		if (cellptr->IsMapped[house] /*&& !cellptr->IsVisible*/) {
 			/*
 			**	Build an index into the lookup table using all 8 surrounding cells.
 			**	We're mapping a revealed cell and we only care about the existence
@@ -2650,21 +2652,21 @@ int Tactical::Cell_Shadow(Cell const & cell, bool fog)
 			*/
 			Cell c;
 			c = cell + Cell(-1, -1);
-			if (!Map[c].IsMapped) index |= 0x40;
+			if (!Map[c].IsMapped[house]) index |= 0x40;
 			c = cell + Cell(+0, -1);
-			if (!Map[c].IsMapped) index |= 0x80;
+			if (!Map[c].IsMapped[house]) index |= 0x80;
 			c = cell + Cell(+1, -1);
-			if (!Map[c].IsMapped) index |= 0x01;
+			if (!Map[c].IsMapped[house]) index |= 0x01;
 			c = cell + Cell(-1, +0);
-			if (!Map[c].IsMapped) index |= 0x20;
+			if (!Map[c].IsMapped[house]) index |= 0x20;
 			c = cell + Cell(+1, +0);
-			if (!Map[c].IsMapped) index |= 0x02;
+			if (!Map[c].IsMapped[house]) index |= 0x02;
 			c = cell + Cell(-1, +1);
-			if (!Map[c].IsMapped) index |= 0x10;
+			if (!Map[c].IsMapped[house]) index |= 0x10;
 			c = cell + Cell(+0, +1);
-			if (!Map[c].IsMapped) index |= 0x08;
+			if (!Map[c].IsMapped[house]) index |= 0x08;
 			c = cell + Cell(+1, +1);
-			if (!Map[c].IsMapped) index |= 0x04;
+			if (!Map[c].IsMapped[house]) index |= 0x04;
 
 			value = _shadow[index];
 		}
@@ -3332,7 +3334,7 @@ void Tactical::Select_These(Rect const & rect, void (*select_callback)(ObjectCla
  *=============================================================================================*/
 void Tactical::Flag_Cell(CellClass & cell)
 {
-	if (Map.DrawFlags == GS_REDRAW_DIRTY && cell.LastRedrawFrame != Frame && cell.IsMapped) {
+	if (Map.DrawFlags == GS_REDRAW_DIRTY && cell.LastRedrawFrame != Frame && cell.IsMapped[PlayerPtr]) {
 		cell.LastRedrawFrame = Frame;
 
 		Coord coord = cell.Cell_Coord();
@@ -3340,7 +3342,7 @@ void Tactical::Flag_Cell(CellClass & cell)
 		Coord ground = Coord(coord.X, coord.Y, 0);
 
 		Point2D pixel;
-		if (cell.IsMapped && cell.IsVisible) {
+		if (cell.IsMapped[PlayerPtr] && cell.IsVisible[PlayerPtr]) {
 			Coord_To_Pixel(ground, pixel);
 		} else {
 			pixel = Coord_To_Pixel_Absolute(ground);

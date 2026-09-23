@@ -1996,7 +1996,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 		House->IsRecalcNeeded = true;
 		LastStrength = 0;
 
-		if ((!IsDiscoveredByPlayer && Map[coord].IsVisible) || Session.Type != GAME_NORMAL) {
+		if ((!IsDiscoveredByPlayer && Map[coord].IsVisible[PlayerPtr]) || Session.Type != GAME_NORMAL) {
 			Revealed(PlayerPtr);
 		} else if (Class->LightIntensity != 0) {
 			if (LightSource == NULL) {
@@ -4441,12 +4441,9 @@ bool BuildingClass::Captured(HouseClass * newowner)
 		}
 
 		/*
-		**	Perform a look operation when captured if it was the player
-		**	that performed the capture.
+		**	Perform a look operation when captured.
 		*/
-		if (House->Is_Player_Control()) {
-			Look(false);
-		}
+		Look(false);
 
 		/*
 		**	If it was spied upon by the player who just captured it, clear the

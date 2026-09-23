@@ -614,7 +614,7 @@ void AircraftClass::AI(void)
 		}
 	}
 
-	if (House->Is_Ally(PlayerPtr) && SightTimer == 0) {
+	if (SightTimer == 0) {
 		Look();
 		SightTimer = TICKS_PER_SECOND;
 	}
@@ -2806,7 +2806,7 @@ MoveType AircraftClass::Can_Enter_Cell(CellClass const * cell, FacingType, int c
 		if (!cell->Is_Clear_To_Move(SPEED_WINGED, false, false)) return(MOVE_NO);
 	}
 
-	if (Session.Type == GAME_NORMAL && IsOwnedByPlayer && !IsALoaner && Map.Is_Shrouded(cell->Center_Coord())) {
+	if (Session.Type == GAME_NORMAL && IsOwnedByPlayer && !IsALoaner && Map.Is_Shrouded(cell->Center_Coord(), House)) {
 		return(MOVE_NO);
 	}
 
@@ -2862,7 +2862,7 @@ AbstractClass * AircraftClass::Good_Fire_Location(AbstractClass * target) const
 				Coord newcoord = Move_Coord(tcoord, (Dir256)face, r);
 				Cell newcell = newcoord.As_Cell();
 
-				if (Map.In_Local_Radar(newcell) && (Session.Type != GAME_NORMAL || Map[newcell].IsVisible) && Cell_Seems_Ok(newcell, true)) {
+				if (Map.In_Local_Radar(newcell) && (Session.Type != GAME_NORMAL || Map[newcell].IsVisible[PlayerPtr]) && Cell_Seems_Ok(newcell, true)) {
 					int dist;
 					if (altcoord != COORD_NONE) {
 						dist = Point2D(newcoord).Distance_To(Point2D(altcoord));

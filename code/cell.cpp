@@ -249,15 +249,15 @@ CellClass::CellClass(void) :
 	CellID(CELL_NONE),
 	IsPlot(false),
 	IsCursorHere(false),
-	IsMapped(false),
-	IsVisible(false),
-	IsFogMapped(false),
-	IsFogVisible(false),
+	IsMapped(),
+	IsVisible(),
+	IsFogMapped(),
+	IsFogVisible(),
 	IsWaypoint(false),
 	IsRadarCursor(false),
 	IsFlagged(false),
-	IsToShroud(false),
-	IsToFog(false),
+	IsToShroud(),
+	IsToFog(),
 	IsBridgeDeck(false),
 	IsUnderBridge(false),
 	IsBridgeTraversable(false),
@@ -2528,7 +2528,7 @@ void CellClass::Wipe_Depth(Point2D const & point, Rect const & cliprect)
 /// <param name="cliprect">The clipping rectangle to draw within.</param>
 void CellClass::Draw_Shroud_And_Fog(Point2D const & point, Rect const & cliprect)
 {
-	ShadowFrame = TacticalMap->Cell_Shadow(CellID, false);
+	ShadowFrame = TacticalMap->Cell_Shadow(CellID, false, PlayerPtr);
 
 	int shadow_frame = ShadowFrame;
 	if (shadow_frame == -2) {
@@ -2539,7 +2539,7 @@ void CellClass::Draw_Shroud_And_Fog(Point2D const & point, Rect const & cliprect
 
 	Draw_Shroud_Or_Fog_Shape(point, cliprect, shadow_frame);
 
-	FogFrame = TacticalMap->Cell_Shadow(CellID, true);
+	FogFrame = TacticalMap->Cell_Shadow(CellID, true, PlayerPtr);
 
 	if (!Scen->Special.IsFogOfWar || Session.ObiWan) {
 		return;
@@ -3702,7 +3702,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 			case CRATE_DARKNESS:
 				DebugString("Crate at %d,%d contains 'shroud'\n", CellID.X, CellID.Y);
 				if (object->House->Is_Player_Control()) {
-					Map.Shroud_The_Map();
+					Map.Shroud_The_Map(PlayerPtr);
 				}
 				break;
 
@@ -3712,7 +3712,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 			case CRATE_REVEAL:
 				DebugString("Crate at %d,%d contains 'reveal'\n", CellID.X, CellID.Y);
 				if (object->House->Is_Player_Control()) {
-					Map.Reveal_The_Map();
+					Map.Reveal_The_Map(PlayerPtr);
 				}
 				break;
 
@@ -4473,15 +4473,13 @@ void CellClass::Serialize(SaveStreamClass & stream)
 
 	SERIALIZE_BIT(stream, IsPlot);
 	SERIALIZE_BIT(stream, IsCursorHere);
-	SERIALIZE_BIT(stream, IsMapped);
-	SERIALIZE_BIT(stream, IsVisible);
-	SERIALIZE_BIT(stream, IsFogVisible);
-	SERIALIZE_BIT(stream, IsFogMapped);
+	stream.Serialize(IsMapped);
+	stream.Serialize(IsVisible);
+	stream.Serialize(IsFogVisible);
+	stream.Serialize(IsFogMapped);
 	SERIALIZE_BIT(stream, IsWaypoint);
 	SERIALIZE_BIT(stream, IsRadarCursor);
 	SERIALIZE_BIT(stream, IsFlagged);
-	SERIALIZE_BIT(stream, IsToShroud);
-	SERIALIZE_BIT(stream, IsToFog);
 	SERIALIZE_BIT(stream, IsBridgeDeck);
 	SERIALIZE_BIT(stream, IsUnderBridge);
 	SERIALIZE_BIT(stream, IsBridgeTraversable);

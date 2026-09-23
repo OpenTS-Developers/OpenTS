@@ -347,25 +347,25 @@ class CellClass : public AbstractClass
 		**	A mapped cell has some portion of it visible. Maybe it has a shroud piece
 		**	over it and maybe not.
 		*/
-		unsigned IsMapped:1;
+		HouseSet IsMapped;
 
 		/*
 		**	A visible cell means that it is completely visible with no shroud over
 		**	it at all.
 		*/
-		unsigned IsVisible:1;
+		HouseSet IsVisible;
 
 		/*
 		 * A visible cell means that it is completely visible with no fog over
 		 * it at all.
 		 */
-		unsigned IsFogVisible:1;
+		HouseSet IsFogVisible;
 
 		/*
 		 * A mapped cell has some portion of it visible. Maybe it has a fog piece
 		 * over it and maybe not.
 		 */
-		unsigned IsFogMapped:1;
+		HouseSet IsFogMapped;
 
 		/*
 		**	Every cell can be assigned a waypoint.  A waypoint can only be assigned
@@ -391,14 +391,14 @@ class CellClass : public AbstractClass
 		**	shrouded. By using this flag it allows a single pass through the map
 		**	cells for determining shadow regrowth logic.
 		*/
-		unsigned IsToShroud:1;
+		HouseSet IsToShroud;
 
 		/*
 		 * This is a working flag used to help keep track of what cells should be
 		 * fogged. By using this flag it allows a single pass through the map
 		 * cells for determining fog regrowth logic.
 		 */
-		unsigned IsToFog:1;
+		HouseSet IsToFog;
 
 		/*
 		 * This cell hosts a bridge deck piece: it carries the bridge overlay and

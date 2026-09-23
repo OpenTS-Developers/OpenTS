@@ -24,6 +24,7 @@
 #include "cell.h"
 #include "globals.h"
 #include "goptions.h"
+#include "house.h"
 #include "map.h"
 #include "savestream.h"
 #include "tactical.h"
@@ -251,7 +252,7 @@ float Calculate_Volume_And_Pan(Coord const & coord, AudioEventTypeClass const & 
 		bool seen = false;
 		if (Map.Is_Valid(cell)) {
 			CellClass const & place = Map[cell];
-			seen = place.IsMapped || place.IsVisible;
+			seen = place.IsMapped[PlayerPtr] || place.IsVisible[PlayerPtr];
 		}
 		if ((type.Type & SOUND_TYPE_SHROUD) && !seen) {
 			return(0.0f);

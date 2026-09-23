@@ -1213,7 +1213,7 @@ void TechnoClass::Per_Cell_Process(PCPType why)
 		**	If this object somehow moves into mapped terrain, but is not yet
 		**	discovered, then flag it to be discovered.
 		*/
-		if (!IsDiscoveredByPlayer && Map[cell].IsVisible) {
+		if (!IsDiscoveredByPlayer && Map[cell].IsVisible[PlayerPtr]) {
 			Revealed(PlayerPtr);
 		}
 
@@ -8026,11 +8026,14 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 		}
 
 		if (sight_range) {
-			HouseClass * house = House;
-			if (LimpetType[PlayerPtr]) {
-				house = PlayerPtr;
+			Map.Sight_From(PositionCoord, sight_range, House, incremental, dontmap);
+
+			for (int index = 0; index < Houses.Count(); index++) {
+				HouseClass * limpet_owner = Houses[index];
+				if (limpet_owner != House && LimpetType[limpet_owner]) {
+					Map.Sight_From(PositionCoord, sight_range, limpet_owner, incremental, dontmap);
+				}
 			}
-			Map.Sight_From(PositionCoord, sight_range, house, incremental, dontmap);
 		}
 	}
 }

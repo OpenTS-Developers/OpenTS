@@ -3336,7 +3336,7 @@ void TeamClass::TMission_CENTER_VIEWPOINT(TeamMissionClass * mission, bool)
 /// </summary>
 void TeamClass::TMission_RESHROUD(TeamMissionClass * mission, bool)
 {
-	Map.Shroud_The_Map();
+	Map.Shroud_The_Map(PlayerPtr);
 	IsNextMission = true;
 }
 
@@ -3347,7 +3347,7 @@ void TeamClass::TMission_RESHROUD(TeamMissionClass * mission, bool)
 /// </summary>
 void TeamClass::TMission_REVEAL(TeamMissionClass * mission, bool)
 {
-	Map.Reveal_The_Map();
+	Map.Reveal_The_Map(PlayerPtr);
 	IsNextMission = true;
 }
 

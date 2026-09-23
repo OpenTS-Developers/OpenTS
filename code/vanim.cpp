@@ -160,7 +160,7 @@ VoxelAnimClass::~VoxelAnimClass(void)
 /// <returns>bool; Was the animation queued for rendering?</returns>
 bool VoxelAnimClass::Render(Rect &cliprect, bool forced, bool extras_only) const
 {
-	if (Map[Center_Coord()].IsVisible) {
+	if (Map[Center_Coord()].IsVisible[PlayerPtr]) {
 		IsToDisplay = true;
 	}
 	return(BASECLASS::Render(cliprect, forced, false));

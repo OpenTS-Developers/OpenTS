@@ -1,6 +1,6 @@
 ---
 title: Shroud, fog and the radar map
-summary: "How the shroud and the fog of war hide terrain from the player at this machine, and how the radar map draws through them."
+summary: "How the shroud and the fog of war hide terrain from each house, and how the radar map draws through them."
 category: maps-scenarios
 keys:
   - AircraftFogReveal
@@ -57,7 +57,7 @@ related:
     id: CenterOnRadarEvent
 ---
 
-Two covers hide terrain: the shroud and the fog of war. Every scenario starts fully shrouded. The fog starts off and is switched on by the game options or, in a campaign, by the map. Both covers are stored once, on the map's cells, and both belong to the player at this machine.
+Two covers hide terrain: the shroud and the fog of war. Every scenario starts fully shrouded. The fog starts off and is switched on by the game options or, in a campaign, by the map. Each house has its own shroud and fog. The tactical view and the radar show the local player's.
 
 The `rules.ini` settings below affect shroud, fog and the radar. The values are examples; each key page gives the default.
 
@@ -84,17 +84,18 @@ FogRate=.1                      ; game minutes between fog regrowth passes
 
 A look is the scan an object makes of the cells around it. It uncovers each cell it reaches. The object making it is the looker.
 
-Only looks made for the local player uncover anything. A look made for any other house does nothing unless it is redirected to the local player. These conditions are tested in order, and any one of them redirects the look:
+A look uncovers cells for the looker's house and for every house that shares its view:
 
-1. A limpet drone belonging to the local player is attached to the looker.
-2. The local player has spied on the radar of the looker's house.
-3. The looker's house is allied to the local player, and [`AllyReveal=yes`](/keys/allyreveal/).
+- every house that has spied on the radar of the looker's house;
+- while [`AllyReveal=yes`](/keys/allyreveal/), every house that the looker's house counts as an ally.
 
-Computer houses have no shroud or fog. What a computer house knows is recorded on each object as discovery, described under [What the other houses know](#what-the-other-houses-know). The [Goto nearby shroud](/mapping/missions/tmission-goto-shroud/) team mission reads the local player's shroud: it sends its members toward cells that are shrouded for the player at this machine.
+A house with a limpet drone attached to the looker also gets the look, as if one of its own objects had made it.
+
+A computer house has its own shroud and fog but ignores them when it chooses targets. What a computer house knows about other houses' objects is recorded on each object as discovery, described under [What the other houses know](#what-the-other-houses-know). The [Goto nearby shroud](/mapping/missions/tmission-goto-shroud/) team mission still reads the local player's shroud: it sends a team toward cells that are shrouded for the player at this machine.
 
 ## Cell state
 
-Each cell tracks the shroud and the fog separately. For each cover, a cell can be:
+Each cell tracks the shroud and the fog separately, for every house. For each cover, a cell can be:
 
 - **mapped**, when some part of it is uncovered but a partial piece of the cover may still be drawn over it;
 - **clear**, when no part of that cover remains over it.
@@ -155,8 +156,8 @@ Outside a campaign, the vehicles, infantry and structures of a house with [`Mult
 Regular looks happen as follows:
 
 - A vehicle or infantryman looks each time it reaches the center of a cell.
-- An infantryman of the local player's looks once a second while it is moving in the air, if its `Sight=` is above zero.
-- An aircraft of the local player or an ally looks every 15 frames. It skips the playable-area test, the height bonus and the veteran bonus.
+- An infantryman looks once a second while it is moving in the air, if its `Sight=` is above zero.
+- An aircraft looks every 15 frames. It skips the playable-area test, the height bonus and the veteran bonus.
 
 A landed aircraft sees one cell, whatever its `Sight=`.
 
@@ -167,11 +168,11 @@ An object also looks at once when:
 - an aircraft transport sets it down;
 - it finishes a teleport, surfaces from a tunnel, or lands from a jumpjet flight;
 - it arrives by drop pod;
-- it is a structure, and a human player captures it;
-- it is a human player's vehicle, infantryman or aircraft, and the playable area grows to include it;
+- it is a structure, and it is captured;
+- it is a vehicle, infantryman or aircraft, and the playable area grows to include it; in a campaign, only a player-controlled house's objects look then;
 - the local player discovers it.
 
-The discovery look applies only to the player's objects in a campaign, and to every object outside one. It still passes the redirect test under [Whose looks count](#whose-looks-count). A stranger's object therefore reveals nothing by being discovered. Outside a campaign, a structure an ally places uncovers the ground around it as soon as it is placed, while `AllyReveal=yes`.
+In a campaign, only the player's own objects make the discovery look; outside a campaign, every object does. Like any look, it uncovers ground for the object's owner and the houses that share its view, so a stranger's object reveals nothing to the local player by being discovered. Outside a campaign, a structure an ally places uncovers the ground around it as soon as it is placed, while `AllyReveal=yes`.
 
 Terrain objects and animations never look. Only vehicles, infantry, aircraft and structures do.
 
@@ -186,13 +187,13 @@ The second case depends only on where the firer stands. It applies to the local 
 
 A human player's aircraft that fires reveals [`AttackingAircraftSightRange`](/keys/attackingaircraftsightrange/) cells around itself when its target is shrouded, or when the shroud lies under it or two cells from it.
 
-Both firing reveals pass the test under [Whose looks count](#whose-looks-count). They uncover ground only when made for the local player, for an ally while `AllyReveal=yes`, or for a house the local player has spied on.
+Both firing reveals uncover ground for the house they are made for and for the houses that share its view, as [Whose looks count](#whose-looks-count) describes.
 
-When a house allies with the local player and `AllyReveal=yes`, every object of that house looks at once. The usual rules still apply, so the vehicles, infantry and structures of a [passive house](/keys/multiplaypassive/) that allies outside a campaign reveal nothing.
+When a house makes another its ally while `AllyReveal=yes`, every object of the house that made the alliance looks at once, so the new ally sees what those objects see. Outside a campaign, the objects of a [passive house](/keys/multiplaypassive/) never look, so its alliances reveal nothing.
 
-A spy that enters a [`Radar=yes`](/keys/radar/) structure marks the structure's owner as spied on by the spy's house. If the spy is the local player's, every object of the spied house looks at once. From then on, that house's looks reveal ground for the local player until the mark is removed.
+A spy that enters a [`Radar=yes`](/keys/radar/) structure marks the structure's owner as spied on by the spy's house. Every object of the spied house then looks at once. From then on, that house's looks also uncover ground for the spy's house until the mark is removed.
 
-The mark is recomputed from the house's remaining radar structures when a spied radar structure is destroyed, or when the house that spied on it captures it.
+The mark is recomputed from the spied house's remaining radar structures when a spied radar structure is destroyed, or when the house that spied on it captures it.
 
 ### Reveals granted outright
 
@@ -200,7 +201,7 @@ The mark is recomputed from the house's remaining radar structures when a spied 
 - [Reveal zone of waypoint...](/mapping/actions/taction-reveal-zone/) reveals two cells around every playable-area cell that shares the waypoint's crusher [movement zone](/glossary/#movement-zone), with the height test.
 - [Reveal all map](/mapping/actions/taction-reveal-all/) lifts both covers from every cell of the playfield.
 - [Reveal map](/mapping/missions/tmission-reveal/) lifts the shroud only and leaves the fog.
-- An observer's seat, and the local player's defeat outside coach mode, lift both covers from every cell and discard the fog stand-ins. [Observers and coach mode](/systems/observers/) owns that view. Under coach mode, defeat changes nothing.
+- An observer's seat, and a house's defeat outside coach mode, lift both covers from every cell for that house. [Observers and coach mode](/systems/observers/) owns that view. Under coach mode, defeat changes nothing.
 - The reveal and darkness crate results are described under [crates](/systems/crates/#results-that-reach-the-whole-map).
 
 Reveal all map, Reveal map and the reveal crate each mark the map as fully revealed. Once the map is marked, every reveal in the list above reveals nothing, apart from an observer's seat and defeat. After Reveal map or the reveal crate, Reveal all map can therefore no longer lift the fog they left.
@@ -212,7 +213,7 @@ Whether fog is on depends on the game type:
 - In a campaign, fog starts off, and only the map's [`FogOfWar=yes`](/keys/fogofwar/) turns it on.
 - In a skirmish or network game, the game options decide, and the map's setting is ignored.
 
-When fog is on, the end of scenario loading fogs every cell the player has not yet uncovered. While fog is on, the shroud is drawn with the fog artwork, so both covers look the same.
+When fog is on, the end of scenario loading fogs every cell the local player has not yet uncovered. While fog is on, the shroud is drawn with the fog artwork, so both covers look the same.
 
 A cell that goes under the fog records what stands on it. A structure whose whole footprint is fogged leaves a stand-in on each footprint cell, and the player keeps seeing the structure as it was. A vehicle, infantryman or aircraft leaves no stand-in and is deselected, so it disappears from view. Lifting the fog discards the stand-ins, removing a multi-cell stand-in from every cell it covered.
 
@@ -222,16 +223,16 @@ Nothing is fogged for an observer or for a defeated player outside coach mode, a
 
 ## Losing ground again
 
-Neither regrowth pass runs for an observer or for a defeated player outside coach mode; [observers and coach mode](/systems/observers/#the-whole-map) owns that view.
+Two regrowth passes cover ground again, one for the shroud and one for the fog. Each covers ground for every house except the house of an observer and a house defeated outside coach mode, which keep [the whole map](/systems/observers/#the-whole-map).
 
-Both passes spare the ground that the watching objects can still see. The watching objects are:
+Both passes leave uncovered the ground that watching objects can still see. Outside a campaign, every vehicle, infantryman and structure on the ground is a watching object, and it keeps ground uncovered for its owner and for the houses that share the owner's view. Aircraft in flight do not watch.
 
-- the objects on the ground that belong to human players and that the local player has discovered;
-- while `AllyReveal=yes`, the structures of computer houses allied to the local player.
+In a campaign, the watching objects are:
 
-A watching object spares ground only if its looks count for the local player, as [Whose looks count](#whose-looks-count) describes. In a network game, an opponent's objects spare nothing unless the opponent is allied while `AllyReveal=yes` or has been spied on.
+- the objects on the ground of player-controlled houses that the player has discovered;
+- while `AllyReveal=yes`, the structures of computer houses allied to the player.
 
-An allied computer house's vehicles and infantry are not watching objects. They uncover ground only when they move, so regrowth can cover the ground around them while they stand still.
+An allied computer house's vehicles and infantry are not watching objects in a campaign. They uncover ground only when they move, so a mission can keep the ground around them hidden until the player reaches it.
 
 ### Shroud regrowth
 
@@ -247,7 +248,7 @@ While fog of war is on and [`FogRate`](/keys/fograte/) is not zero, a fog pass r
 
 Each pass works on the edge of the fog the way the shroud pass works on the edge of the shroud. It fogs the edge cells that no watching object can see, so the fog also creeps inward one cell per pass. The watching objects only keep their cells clear; they do not uncover new ground.
 
-The exception is an allied computer structure while `AllyReveal=yes`. Its look during the pass is an ordinary one, so each fog pass lifts both covers around it.
+The exception is an allied computer structure in a campaign while `AllyReveal=yes`. Its look during the pass is an ordinary one, so each fog pass lifts both covers around it.
 
 ### Re-shrouding everything
 

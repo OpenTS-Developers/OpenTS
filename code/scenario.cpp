@@ -2219,6 +2219,12 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Map.Init_Fog_System();
 	}
 
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (Houses[index]->IsObserver) {
+			Map.Reveal_The_Map(Houses[index], true);
+		}
+	}
+
 	if (Session.Type != GAME_NORMAL && PlayerPtr->IsObserver) {
 		PlayerPtr->Become_ObiWan();
 	}

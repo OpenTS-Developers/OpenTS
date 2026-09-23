@@ -1688,9 +1688,9 @@ void HouseClass::AI(void)
 		DidRepair = false;
 	}
 
-	if (this == PlayerPtr && IsToLook) {
+	if (IsToLook) {
 		IsToLook = false;
-		Map.All_To_Look();
+		Map.All_To_Look(false, false, this);
 	}
 }
 
@@ -2085,6 +2085,15 @@ bool HouseClass::Is_Ally(AbstractClass const * target) const
 
 
 /// <summary>
+/// Does this house keep the whole map uncovered for the rest of the match?
+/// </summary>
+bool HouseClass::Sees_Whole_Map(void) const
+{
+	return(IsObserver || (IsDefeated && !Session.Options.CoachMode));
+}
+
+
+/// <summary>
 /// Does this house see the other as its owner does? True for an ally, and either way round
 /// once the local player has the whole map. Display only; never a simulation rule.
 /// </summary>
@@ -2177,7 +2186,7 @@ void HouseClass::Make_Ally(HouseClass * house)
 			**	Cause all structures to be revealed to the house that has been
 			**	allied with.
 			*/
-			if (Rule->IsAllyReveal && house == PlayerPtr) {
+			if (Rule->IsAllyReveal) {
 				for (int index = 0; index < Technos.Count(); index++) {
 					TechnoClass * t = Technos[index];
 
@@ -2274,13 +2283,12 @@ void HouseClass::Make_Enemy(HouseClass * house)
 
 
 /// <summary>
-/// Gives the local player the whole map for the rest of the match: shroud and fog are lifted
-/// everywhere, the radar stays up, and messages can only go to everyone.
+/// Gives the local player the whole map for the rest of the match: the fog is no longer drawn,
+/// the radar stays up, and messages can only go to everyone. The caller reveals the map first.
 /// </summary>
 void HouseClass::Become_ObiWan(void)
 {
 	Session.ObiWan = 1;
-	Map.Reveal_The_Map(true);
 	HiddenSurface->Fill(TBLACK);
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 	RecalcRadar = true;
@@ -3307,6 +3315,10 @@ void HouseClass::MPlayer_Defeated(void)
 	**	map -- unless coach mode leaves me with my allies' vision instead
 	**	- Add my defeat message
 	*/
+	if (Sees_Whole_Map()) {
+		Map.Reveal_The_Map(this, true);
+	}
+
 	if (PlayerPtr == this) {
 		if (!Session.Options.CoachMode) {
 			Become_ObiWan();
@@ -8239,13 +8251,13 @@ void HouseClass::Update_Factories(RTTIType rtti)
 void HouseClass::Update_Spied_Radar(HouseClass * house)
 {
 	RadarSpied.Set(house);
-	if (house == PlayerPtr) {
-		for (int index = 0; index < Technos.Count(); index++) {
-			TechnoClass * obj = Technos[index];
-			if (obj && !obj->IsInLimbo && obj->House == this) {
-				obj->Look();
-			}
+	for (int index = 0; index < Technos.Count(); index++) {
+		TechnoClass * obj = Technos[index];
+		if (obj && !obj->IsInLimbo && obj->House == this) {
+			obj->Look();
 		}
+	}
+	if (house == PlayerPtr) {
 		Map.Flag_To_Redraw(GS_REDRAW_ALL);
 	}
 }

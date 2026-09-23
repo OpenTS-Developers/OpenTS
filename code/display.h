@@ -138,11 +138,10 @@ class DisplayClass: public MapClass
 		/*
 		**	Added functionality.
 		*/
-		void All_To_Look(bool units_only=false, bool=false);
-		void Constrained_Look(Coord const & coord, LEPTON distance);
-		void Shroud_Cell(Cell const & cell);
+		void All_To_Look(bool units_only=false, bool=false, HouseClass const * house=NULL);
+		void Shroud_Cell(Cell const & cell, HouseClass * house);
 		void Encroach_Shadow(void);
-		void Fog_Cell(Cell const & cell);
+		void Fog_Cell(Cell const & cell, HouseClass * house);
 		void Encroach_Fog(void);
 		void Center_Map(void);
 		virtual char const * Help_Text(int id);
@@ -297,6 +296,8 @@ class DisplayClass: public MapClass
 		static TacticalClass TacButton;
 
 	private:
+
+		bool Uncover_Cell(Cell const & cell, HouseClass * house, bool shroud, bool fog);
 
 		/*
 		**	This is a utility flag that is set during the icon draw process only if there

@@ -1032,265 +1032,92 @@ bool DisplayClass::Scroll_Map(FacingType facing, int & distance, bool really)
  *=============================================================================================*/
 bool DisplayClass::Map_Cell(Cell const & cell, HouseClass * house)
 {
-	CellClass * cellptr = &(*this)[cell];
-
-	bool wasfogged = cellptr->IsFogMapped == false;
-	bool changed = !cellptr->IsFogMapped || !cellptr->IsMapped;
-	bool newlymapped = changed;
-
-	cellptr->IsToFog = false;
-
-	/*
-	**	Mark the cell as being mapped. This must be done first because
-	**	if the IsVisible flag must be set, then it might affect the
-	**	adjacent cell processing.
-	*/
-	cellptr->IsFogMapped = true;
-	cellptr->IsMapped = true;
-
-	signed char sframe = TacticalMap->Cell_Shadow(cell, false);
-	if (sframe != cellptr->ShadowFrame) {
-		changed = true;
-		cellptr->ShadowFrame = sframe;
-	}
-	if (cellptr->ShadowFrame == -1) {
-		cellptr->IsVisible = true;
-	}
-
-	signed char fframe = TacticalMap->Cell_Shadow(cell, true);
-	if (fframe != cellptr->FogFrame) {
-		changed = true;
-		cellptr->FogFrame = fframe;
-	}
-	if (cellptr->FogFrame == -1) {
-		cellptr->IsFogVisible = true;
-	}
-
-	if (changed) {
-		TacticalMap->Flag_Cell(*cellptr);
-	}
-
-	/*
-	**	Check out all adjacent cells to see if they need
-	**	to be mapped as well. This is necessary because of the
-	**	"unique" method of showing shadowed cells. Many combinations
-	**	are not allowed, and to fix this, just map the cells until
-	**	all is ok.
-	*/
-	for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
-		int	shadow;
-		int fog;
-
-		Cell c = Adjacent_Cell(cell, dir);
-		CellClass * cptr = &(*this)[c];
-
-		if (c != cell && !cptr->IsVisible) {
-			shadow = TacticalMap->Cell_Shadow(c, false);
-
-			if (shadow == -1) {
-				if (!cptr->IsMapped) {
-					Map_Cell(c, house);
-				} else {
-					cptr->IsVisible = true;
-					TacticalMap->Flag_Cell(*cptr);
-					for (FacingType dir2 = FACING_FIRST; dir2 < FACING_COUNT; dir2++) {
-						Cell cc = Adjacent_Cell(c, dir2);
-						CellClass * scptr = &(*this)[cc];
-						signed char sframe = TacticalMap->Cell_Shadow(cc, false);
-						if (sframe != scptr->ShadowFrame) {
-							scptr->ShadowFrame = sframe;
-							TacticalMap->Flag_Cell(*scptr);
-						}
-					}
-				}
-			} else {
-				if (shadow != -2 && !cptr->IsMapped) {
-					Map_Cell(c, house);
-				} else {
-					if (shadow >= 0 && shadow != cptr->ShadowFrame) {
-						cptr->ShadowFrame = shadow;
-						TacticalMap->Flag_Cell(*cptr);
-					}
-				}
-			}
-		}
-
-		if (c != cell && !cptr->IsFogVisible) {
-			fog = TacticalMap->Cell_Shadow(c, true);
-
-			if (fog == -1) {
-				if (!cptr->IsFogMapped) {
-					Map_Cell(c, house);
-				} else {
-					cptr->IsFogVisible = true;
-					TacticalMap->Flag_Cell(*cptr);
-					for (FacingType dir2 = FACING_FIRST; dir2 < FACING_COUNT; dir2++) {
-						Cell cc = Adjacent_Cell(c, dir2);
-						CellClass * fcptr = &(*this)[cc];
-						signed char fframe = TacticalMap->Cell_Shadow(cc, true);
-						if (fframe != fcptr->FogFrame) {
-							fcptr->FogFrame = fframe;
-							TacticalMap->Flag_Cell(*fcptr);
-						}
-					}
-				}
-			} else {
-				if (fog != -2 && !cptr->IsFogMapped) {
-					Map_Cell(c, house);
-				} else {
-					if (fog >= 0 && fog != cptr->FogFrame) {
-						cptr->FogFrame = fog;
-						TacticalMap->Flag_Cell(*cptr);
-					}
-				}
-			}
-		}
-	}
-
-	if (changed) {
-		Map.Reveal_Nearby_Technos(cellptr, house, newlymapped);
-	}
-
-	if (cellptr->IsFogMapped && wasfogged && Scen->Special.IsFogOfWar) {
-		cellptr->Unfog_Cell();
-	}
-
-	return(changed);
+	return(Uncover_Cell(cell, house, true, true));
 }
 
 
 /// <summary>
-/// Marks the specified cell as no longer fogged.
-/// This is the fog of war counterpart to Shadow_Map_Cell. The cell is unfogged and the fog
-/// artwork of the adjacent cells is brought up to date, unfogging any neighbor whose fog
-/// piece would otherwise have no legal artwork.
+/// Lifts the fog from a cell for a house, leaving the shroud as it is.
 /// </summary>
-/// <param name="cell">The cell that is to be unfogged.</param>
-/// <param name="house">The player that is doing the unfogging.</param>
-/// <returns>bool; Was action taken to unfog this cell?</returns>
+/// <returns>bool; Did anything change for that house?</returns>
 bool DisplayClass::Fog_Map_Cell(Cell const & cell, HouseClass * house)
 {
-	CellClass * cellptr = &(*this)[cell];
-
-	bool wasfogged = cellptr->IsFogMapped == false;
-	bool changed = !cellptr->IsFogMapped;
-	bool newlymapped = changed;
-
-	cellptr->IsToFog = false;
-
-	/*
-	** Mark the cell as being mapped. This must be done first because
-	**	if the IsVisible flag must be set, then it might affect the
-	**	adjacent cell processing.
-	*/
-	cellptr->IsFogMapped = true;
-
-	signed char fframe = TacticalMap->Cell_Shadow(cell, true);
-	if (fframe != cellptr->FogFrame) {
-		changed = true;
-		cellptr->FogFrame = fframe;
-	}
-	if (cellptr->FogFrame == -1) {
-		cellptr->IsFogVisible = true;
-	}
-
-	if (changed) {
-		TacticalMap->Flag_Cell(*cellptr);
-	}
-
-	/*
-	**	Check out all adjacent cells to see if they need
-	**	to be mapped as well. This is necessary because of the
-	**	"unique" method of showing shadowed cells. Many combinations
-	**	are not allowed, and to fix this, just map the cells until
-	**	all is ok.
-	*/
-	for (int dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
-		int fog;
-
-		Cell c = Adjacent_Cell(cell, (FacingType)dir);
-		CellClass * cptr = &(*this)[c];
-
-		if (c != cell && !cptr->IsFogVisible) {
-			fog = TacticalMap->Cell_Shadow(c, true);
-
-			if (fog == -1) {
-				if (!cptr->IsFogMapped) {
-					Fog_Map_Cell(c, house);
-				} else {
-					cptr->IsFogVisible = true;
-					TacticalMap->Flag_Cell(*cptr);
-					for (int dir2 = FACING_FIRST; dir2 < FACING_COUNT; dir2++) {
-						Cell cc = Adjacent_Cell(c, (FacingType)dir2);
-						CellClass * fcptr = &(*this)[cc];
-						signed char fframe = TacticalMap->Cell_Shadow(cc, true);
-						if (fframe != fcptr->FogFrame) {
-							fcptr->FogFrame = fframe;
-							TacticalMap->Flag_Cell(*fcptr);
-						}
-					}
-				}
-			} else {
-				if (fog != -2 && !cptr->IsFogMapped) {
-					Fog_Map_Cell(c, house);
-				} else {
-					if (fog >= 0 && fog != cptr->FogFrame) {
-						cptr->FogFrame = fog;
-						TacticalMap->Flag_Cell(*cptr);
-					}
-				}
-			}
-		}
-	}
-
-	if (changed) {
-		Map.Reveal_Nearby_Technos(cellptr, house, newlymapped);
-	}
-
-	if (cellptr->IsFogMapped && wasfogged && Scen->Special.IsFogOfWar) {
-		cellptr->Unfog_Cell();
-	}
-
-	return(changed);
+	return(Uncover_Cell(cell, house, false, true));
 }
 
 
 /// <summary>
-/// Marks the specified cell as no longer shrouded.
-/// This routine reveals the cell to the player and brings the shadow artwork of the
-/// adjacent cells up to date. Any neighbor whose shadow piece would have no legal artwork
-/// is revealed as well, so that the edge of the shroud always draws correctly.
+/// Lifts the shroud from a cell for a house, leaving the fog as it is.
 /// </summary>
-/// <param name="cell">The cell that is to be revealed.</param>
-/// <param name="house">The player that is doing the revealing.</param>
-/// <returns>bool; Was action taken to reveal this cell?</returns>
+/// <returns>bool; Did anything change for that house?</returns>
 bool DisplayClass::Shadow_Map_Cell(Cell const & cell, HouseClass * house)
 {
+	return(Uncover_Cell(cell, house, true, false));
+}
+
+
+/// <summary>
+/// Uncovers a cell for a house from the shroud, the fog, or both. The frames, redraw flags,
+/// radar and fogged stand-ins of the local view follow only the local player's house.
+/// </summary>
+/// <returns>bool; Did anything change for that house?</returns>
+bool DisplayClass::Uncover_Cell(Cell const & cell, HouseClass * house, bool shroud, bool fog)
+{
 	CellClass * cellptr = &(*this)[cell];
+	bool const view = (house == PlayerPtr);
 
-	/// Unused here -- unlike Map_Cell, this routine never unfogs the cell.
-	bool wasfogged = cellptr->IsFogMapped == false;
-
-	bool changed = !cellptr->IsMapped;
+	bool wasfogged = !cellptr->IsFogMapped[house];
+	bool changed = (shroud && !cellptr->IsMapped[house]) || (fog && !cellptr->IsFogMapped[house]);
 	bool newlymapped = changed;
+
+	auto refresh_frames_around = [&](Cell const & center, bool isfog) {
+		for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
+			CellClass * around = &(*this)[Adjacent_Cell(center, dir)];
+			char frame = (char)TacticalMap->Cell_Shadow(around->CellID, isfog, house);
+			char & cached = isfog ? around->FogFrame : around->ShadowFrame;
+			if (frame != cached) {
+				cached = frame;
+				TacticalMap->Flag_Cell(*around);
+			}
+		}
+	};
 
 	/*
 	**	Mark the cell as being mapped. This must be done first because
 	**	if the IsVisible flag must be set, then it might affect the
 	**	adjacent cell processing.
 	*/
-	cellptr->IsMapped = true;
-
-	signed char sframe = TacticalMap->Cell_Shadow(cell, false);
-	if (sframe != cellptr->ShadowFrame) {
-		changed = true;
-		cellptr->ShadowFrame = sframe;
+	if (fog) {
+		cellptr->IsToFog.Clear(house);
+		cellptr->IsFogMapped.Set(house);
 	}
-	if (cellptr->ShadowFrame == -1) {
-		cellptr->IsVisible = true;
+	if (shroud) {
+		cellptr->IsMapped.Set(house);
 	}
 
-	if (changed) {
+	if (shroud) {
+		char sframe = (char)TacticalMap->Cell_Shadow(cell, false, house);
+		if (view && sframe != cellptr->ShadowFrame) {
+			changed = true;
+			cellptr->ShadowFrame = sframe;
+		}
+		if (sframe == -1) {
+			cellptr->IsVisible.Set(house);
+		}
+	}
+
+	if (fog) {
+		char fframe = (char)TacticalMap->Cell_Shadow(cell, true, house);
+		if (view && fframe != cellptr->FogFrame) {
+			changed = true;
+			cellptr->FogFrame = fframe;
+		}
+		if (fframe == -1) {
+			cellptr->IsFogVisible.Set(house);
+		}
+	}
+
+	if (view && changed) {
 		TacticalMap->Flag_Cell(*cellptr);
 	}
 
@@ -1302,45 +1129,59 @@ bool DisplayClass::Shadow_Map_Cell(Cell const & cell, HouseClass * house)
 	**	all is ok.
 	*/
 	for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
-		int	shadow;
-
 		Cell c = Adjacent_Cell(cell, dir);
+		if (c == cell) continue;
 		CellClass * cptr = &(*this)[c];
 
-		if (c != cell && !cptr->IsVisible) {
-			shadow = TacticalMap->Cell_Shadow(c, false);
+		if (shroud && !cptr->IsVisible[house]) {
+			int shadow = TacticalMap->Cell_Shadow(c, false, house);
 
 			if (shadow == -1) {
-				if (!cptr->IsMapped) {
-					Shadow_Map_Cell(c, house);
+				if (!cptr->IsMapped[house]) {
+					Uncover_Cell(c, house, shroud, fog);
 				} else {
-					cptr->IsVisible = true;
-					TacticalMap->Flag_Cell(*cptr);
-					for (FacingType dir2 = FACING_FIRST; dir2 < FACING_COUNT; dir2++) {
-						Cell cc = Adjacent_Cell(c, dir2);
-						CellClass * scptr = &(*this)[cc];
-						signed char sframe = TacticalMap->Cell_Shadow(cc, false);
-						if (sframe != scptr->ShadowFrame) {
-							scptr->ShadowFrame = sframe;
-							TacticalMap->Flag_Cell(*scptr);
-						}
-					}
-				}
-			} else {
-				if (shadow != -2 && !cptr->IsMapped) {
-					Shadow_Map_Cell(c, house);
-				} else {
-					if (shadow >= 0 && shadow != cptr->ShadowFrame) {
-						cptr->ShadowFrame = shadow;
+					cptr->IsVisible.Set(house);
+					if (view) {
 						TacticalMap->Flag_Cell(*cptr);
+						refresh_frames_around(c, false);
 					}
 				}
+			} else if (shadow != -2 && !cptr->IsMapped[house]) {
+				Uncover_Cell(c, house, shroud, fog);
+			} else if (view && shadow >= 0 && shadow != cptr->ShadowFrame) {
+				cptr->ShadowFrame = (char)shadow;
+				TacticalMap->Flag_Cell(*cptr);
+			}
+		}
+
+		if (fog && !cptr->IsFogVisible[house]) {
+			int fogframe = TacticalMap->Cell_Shadow(c, true, house);
+
+			if (fogframe == -1) {
+				if (!cptr->IsFogMapped[house]) {
+					Uncover_Cell(c, house, shroud, fog);
+				} else {
+					cptr->IsFogVisible.Set(house);
+					if (view) {
+						TacticalMap->Flag_Cell(*cptr);
+						refresh_frames_around(c, true);
+					}
+				}
+			} else if (fogframe != -2 && !cptr->IsFogMapped[house]) {
+				Uncover_Cell(c, house, shroud, fog);
+			} else if (view && fogframe >= 0 && fogframe != cptr->FogFrame) {
+				cptr->FogFrame = (char)fogframe;
+				TacticalMap->Flag_Cell(*cptr);
 			}
 		}
 	}
 
-	if (changed) {
+	if (view && changed) {
 		Map.Reveal_Nearby_Technos(cellptr, house, newlymapped);
+	}
+
+	if (view && fog && wasfogged && Scen->Special.IsFogOfWar) {
+		cellptr->Unfog_Cell();
 	}
 
 	return(changed);
@@ -2903,6 +2744,18 @@ bool DisplayClass::Is_Spot_Free(Coord const & coord, bool bridge) const
 }
 
 
+static HouseSet Regrowing_Houses(void)
+{
+	HouseSet houses;
+	for (int index = 0; index < Houses.Count(); index++) {
+		if (!Houses[index]->Sees_Whole_Map()) {
+			houses.Set(Houses[index]);
+		}
+	}
+	return(houses);
+}
+
+
 /***********************************************************************************************
  * DisplayClass::Encroach_Shadow -- Causes the shadow to creep back by one cell.               *
  *                                                                                             *
@@ -2921,8 +2774,8 @@ bool DisplayClass::Is_Spot_Free(Coord const & coord, bool bridge) const
  *=============================================================================================*/
 void DisplayClass::Encroach_Shadow(void)
 {
-	// A player given the whole map keeps it.
-	if (Session.ObiWan) {
+	HouseSet regrow = Regrowing_Houses();
+	if (!regrow.Any()) {
 		return;
 	}
 
@@ -2939,9 +2792,7 @@ void DisplayClass::Encroach_Shadow(void)
 			c.X = x;
 			c.Y = y;
 			CellClass * cellptr = &(*this)[c];
-			if (cellptr->IsVisible || !cellptr->IsMapped) continue;
-
-			cellptr->IsToShroud = true;
+			cellptr->IsToShroud = cellptr->IsMapped & ~cellptr->IsVisible & regrow;
 		}
 	}
 
@@ -2955,9 +2806,15 @@ void DisplayClass::Encroach_Shadow(void)
 			cell.Y = y;
 			if (!In_Radar(cell)) continue;
 
-			if ((*this)[cell].IsToShroud) {
-				(*this)[cell].IsToShroud = false;
-				Shroud_Cell(cell);
+			CellClass * cellptr = &(*this)[cell];
+			if (!cellptr->IsToShroud.Any()) continue;
+
+			for (int index = 0; index < Houses.Count(); index++) {
+				HouseClass * house = Houses[index];
+				if (cellptr->IsToShroud[house]) {
+					cellptr->IsToShroud.Clear(house);
+					Shroud_Cell(cell, house);
+				}
 			}
 		}
 	}
@@ -2969,32 +2826,34 @@ void DisplayClass::Encroach_Shadow(void)
 
 
 /// <summary>
-/// Causes the fog of war to creep back over the map.
-/// This is the fog counterpart of Encroach_Shadow. Every cell that no player controlled
-/// object can currently see is returned to the fogged condition, so that only what is
-/// actually being watched stays clear.
+/// Lets the fog of war creep back by one cell for every house that does not see the whole
+/// map. Cells that an object sharing the house's view can still see stay clear.
 /// </summary>
 void DisplayClass::Encroach_Fog(void)
 {
-	if (Session.ObiWan) {
+	HouseSet regrow = Regrowing_Houses();
+	if (!regrow.Any()) {
 		return;
 	}
 
 	Reset_Iterator();
 	CellClass *cellptr = Iterate();
 	while (cellptr) {
-		if (!cellptr->IsFogVisible && cellptr->IsFogMapped) {
-			cellptr->IsToFog = true;
-		}
+		cellptr->IsToFog = cellptr->IsFogMapped & ~cellptr->IsFogVisible & regrow;
 		cellptr = Iterate();
 	}
 	All_To_Look(false, true);
 	Reset_Iterator();
 	cellptr = Iterate();
 	while (cellptr) {
-		if (cellptr->IsToFog) {
-			cellptr->IsToFog = false;
-			Fog_Cell(cellptr->Fetch_CellID());
+		if (cellptr->IsToFog.Any()) {
+			for (int index = 0; index < Houses.Count(); index++) {
+				HouseClass * house = Houses[index];
+				if (cellptr->IsToFog[house]) {
+					cellptr->IsToFog.Clear(house);
+					Fog_Cell(cellptr->Fetch_CellID(), house);
+				}
+			}
 		}
 		cellptr = Iterate();
 	}
@@ -3002,48 +2861,49 @@ void DisplayClass::Encroach_Fog(void)
 
 
 /// <summary>
-/// Returns the specified cell to the fogged condition.
-/// This routine is called when the fog of war is to regrow over a cell that the player can
-/// no longer see. Adjacent cells are brought up to date as well, and may be fogged outright
-/// when the partial fog artwork has no legal piece for the combination that would result.
+/// Returns a cell to the fogged condition for a house. A neighbor whose partial fog piece
+/// would have no legal artwork is fogged as well.
 /// </summary>
-/// <param name="cell">The cell that the fog is to be regrown upon.</param>
-void DisplayClass::Fog_Cell(Cell const & cell)
+void DisplayClass::Fog_Cell(Cell const & cell, HouseClass * house)
 {
 	if (!In_Radar(cell)) return;
 
 	CellClass * cellptr = &(*this)[cell];
-	bool fog = false;
+	bool const view = (house == PlayerPtr);
+	bool wasuncovered = cellptr->IsFogMapped[house] || cellptr->IsFogVisible[house];
 
-	if (cellptr->IsFogMapped || cellptr->IsFogVisible) {
-		fog = true;
-	}
+	cellptr->IsFogMapped.Clear(house);
+	cellptr->IsFogVisible.Clear(house);
 
-	cellptr->IsFogMapped = false;
-	cellptr->IsFogVisible = false;
-	cellptr->FogFrame = -2;
-
-	if (cellptr->IsMapped) {
-		TacticalMap->Flag_Cell(*cellptr);
+	if (view) {
+		cellptr->FogFrame = -2;
+		if (cellptr->IsMapped[house]) {
+			TacticalMap->Flag_Cell(*cellptr);
+		}
 	}
 
 	for (FacingType dir = FACING_FIRST; dir < FACING_COUNT; dir++) {
 		Cell c = Adjacent_Cell(cell, dir);
 		CellClass * cptr = &(*this)[c];
-		int fog = TacticalMap->Cell_Shadow(cptr->Fetch_CellID(), true);
+		bool uncovered = cptr->IsFogMapped[house] || cptr->IsFogVisible[house];
+		if (!uncovered) continue;
 
-		if (fog == -2 && cptr->FogFrame != -2) {
-			Fog_Cell(c);
-		} else {
-			if ((cptr->IsFogVisible || fog != cptr->FogFrame) && fog >= 0 && cptr->FogFrame >= -1) {
-				cptr->FogFrame = fog;
-				cptr->IsFogMapped = true;
-				cptr->IsFogVisible = false;
+		int fog = TacticalMap->Cell_Shadow(c, true, house);
+
+		if (fog == -2) {
+			Fog_Cell(c, house);
+		} else if (fog >= 0) {
+			bool wasvisible = cptr->IsFogVisible[house];
+			cptr->IsFogMapped.Set(house);
+			cptr->IsFogVisible.Clear(house);
+			if (view && (wasvisible || fog != cptr->FogFrame)) {
+				cptr->FogFrame = (char)fog;
 				TacticalMap->Flag_Cell(*cptr);
 			}
 		}
 	}
-	if (fog) {
+
+	if (view && wasuncovered) {
 		cellptr->Fog_Cell();
 	}
 }
@@ -3057,6 +2917,8 @@ void DisplayClass::Fog_Cell(Cell const & cell)
  *                                                                                             *
  * INPUT:   cell  -- The cell that the shroud is to be regenerated upon.                       *
  *                                                                                             *
+ *          house -- The house the cell is shrouded for.                                       *
+ *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
  * WARNINGS:   Adjacent cells might be affected by this routine. The affect is determined      *
@@ -3067,16 +2929,19 @@ void DisplayClass::Fog_Cell(Cell const & cell)
  *   10/17/1995 JLB : Created.                                                                 *
  *   06/17/1996 JLB : Modified to handle the new shadow pieces.                                *
  *=============================================================================================*/
-void DisplayClass::Shroud_Cell(Cell const & cell)
+void DisplayClass::Shroud_Cell(Cell const & cell, HouseClass * house)
 {
 	if (!In_Radar(cell)) return;
 
 	CellClass * cellptr = &(*this)[cell];
-	if (cellptr->IsMapped) {
+	if (cellptr->IsMapped[house]) {
+		bool const view = (house == PlayerPtr);
 
-		cellptr->IsMapped = false;
-		cellptr->IsVisible = false;
-		TacticalMap->Flag_Cell(*cellptr);
+		cellptr->IsMapped.Clear(house);
+		cellptr->IsVisible.Clear(house);
+		if (view) {
+			TacticalMap->Flag_Cell(*cellptr);
+		}
 
 		/*
 		**	Check adjacent cells. There might be some weird combination of
@@ -3093,8 +2958,10 @@ void DisplayClass::Shroud_Cell(Cell const & cell)
 			**	shroud that cell.
 			*/
 			if (c != cell) {
-				cptr->IsVisible = false;
-				TacticalMap->Flag_Cell(*cptr);
+				cptr->IsVisible.Clear(house);
+				if (view) {
+					TacticalMap->Flag_Cell(*cptr);
+				}
 			}
 		}
 	}
@@ -3600,51 +3467,25 @@ void DisplayClass::Restore_Map_State(void * stash)
  * HISTORY:                                                                                    *
  *   09/23/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
-void DisplayClass::All_To_Look(bool units_only, bool is_fog)
+void DisplayClass::All_To_Look(bool units_only, bool is_fog, HouseClass const * house)
 {
 	for (int index = 0; index < Layer[LAYER_GROUND].Count(); index++) {
 		TechnoClass * tech = Dynamic_Cast<TechnoClass *>(Layer[LAYER_GROUND][index]);
 		if (tech != NULL) {
 			if (tech->RTTI == RTTI_BUILDING && units_only) continue;
+			if (house != NULL && tech->House != house) continue;
 
-			if (tech->House->Is_Player_Control()) {
+			// A campaign keeps the original sweep, which leaves an ally's vehicles and infantry out;
+			// elsewhere every object looks for its own house.
+			if (Session.Type != GAME_NORMAL) {
+				tech->Look(false, is_fog);
+			} else if (tech->House->Is_Player_Control()) {
 				if (tech->IsDiscoveredByPlayer) {
 					tech->Look(false, is_fog);
 				}
 			} else {
 				if (tech->RTTI == RTTI_BUILDING && Rule->IsAllyReveal && tech->House->Is_Ally(PlayerPtr)) {
 					tech->Look(is_fog, false);
-				}
-			}
-		}
-	}
-}
-
-
-/// <summary>
-/// Directs the objects near a point to look around for the player.
-/// This routine works like All_To_Look, but only those objects whose sight reaches the
-/// specified area are told to look. Use it when only part of the map needs revealing again
-/// rather than the whole of it.
-/// </summary>
-/// <param name="center">The center of the area that is to be revealed.</param>
-/// <param name="distance">How far past the center an object's sight may start, in leptons.</param>
-void DisplayClass::Constrained_Look(Coord const & center, LEPTON distance)
-{
-	for (int index = 0; index < Layer[LAYER_GROUND].Count(); index++) {
-		TechnoClass * tech = Dynamic_Cast<TechnoClass *>(Layer[LAYER_GROUND][index]);
-		if (tech != NULL) {
-
-//			if (tech->What_Am_I() == RTTI_BUILDING && units_only) continue;
-
-			if (tech->House->Is_Player_Control()) {
-				if (tech->IsDiscoveredByPlayer && Distance(center, tech->Center_Coord()) <= (tech->TClass->SightRange * CELL_LEPTON_W) + distance) {
-					tech->Look();
-				}
-			} else {
-				if (tech->RTTI == RTTI_BUILDING && Rule->IsAllyReveal && tech->House->Is_Ally(PlayerPtr) &&
-					Distance(tech->Center_Coord(), center) <= (tech->TClass->SightRange * CELL_LEPTON_W) + distance) {
-					tech->Look();
 				}
 			}
 		}
@@ -3764,7 +3605,7 @@ char const * DisplayClass::Help_Text(int id)
 	/*
 	**	Give a generic help message when over shadow terrain.
 	*/
-	if (!Map[coord].IsMapped && MainWindow) {
+	if (!Map[coord].IsMapped[PlayerPtr] && MainWindow) {
 		return(Fetch_String(TXT_SHADOW));
 	}
 

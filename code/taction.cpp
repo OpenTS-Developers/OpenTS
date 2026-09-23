@@ -2083,7 +2083,7 @@ bool TActionClass::TAction_ZOOM_OUT(HouseClass * , ObjectClass * , TriggerClass 
 /// </summary>
 bool TActionClass::TAction_RESHROUD(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	Map.Shroud_The_Map();
+	Map.Shroud_The_Map(PlayerPtr);
 	return(true);
 }
 

@@ -24,6 +24,7 @@
 template<class T> class DynamicVectorClass;
 class CellClass;
 class Cell;
+class HouseClass;
 class ShadowControlClass;
 class Surface;
 
@@ -230,7 +231,7 @@ class Tactical : public AbstractClass
 		CellClass *Find_Bridge_Owner_Cell(Cell const & cell);
 		void Add_Shadow_Control(ShadowControlClass control);
 
-		int Cell_Shadow(Cell const & cell, bool fog);
+		int Cell_Shadow(Cell const & cell, bool fog, HouseClass const * house);
 		bool Is_Cell_Visible (Cell const & cell);
 		void Update_Visible_Cells(void);
 

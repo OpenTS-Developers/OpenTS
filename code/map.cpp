@@ -1010,7 +1010,7 @@ void MapClass::Set_Local_Dimensions(Rect const & size)
 		TechnoClass * t = Technos[i];
 		bool was = t->IsLocked;
 		t->IsLocked = In_Local_Radar(t->PositionCell);
-		if (!was && t->IsLocked && t->House->Is_Player_Control() && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
+		if (!was && t->IsLocked && (Session.Type != GAME_NORMAL || t->House->Is_Player_Control()) && t->RTTI != RTTI_BUILDING && t->IsActive && !t->IsInLimbo) {
 			t->Look();
 		}
 	}
@@ -1087,21 +1087,15 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 	}
 	ptr2--;
 
-	if (house != NULL && PlayerPtr != NULL) {
-		if (house != PlayerPtr) {
-			if (house->RadarSpied[PlayerPtr]) {
-				house = PlayerPtr;
-			}
-		}
-		if (house != PlayerPtr) {
-			if (house->Is_Ally(PlayerPtr) && Rule->IsAllyReveal) {
-				house = PlayerPtr;
-			}
-		}
-	}
+	if (house == NULL) return;
 
-	if (house != PlayerPtr) {
-		return;
+	HouseClass * viewers[HOUSE_MAX];
+	int viewer_count = 0;
+	for (int index = 0; index < Houses.Count(); index++) {
+		HouseClass * other = Houses[index];
+		if (other == house || house->RadarSpied[other] || (Rule->IsAllyReveal && house->Is_Ally(other))) {
+			viewers[viewer_count++] = other;
+		}
 	}
 
 	/*
@@ -1140,14 +1134,17 @@ void MapClass::Sight_From(Coord const & xcoord, int sightrange, HouseClass * hou
 		}
 
 		if (ok) {
-			cellptr->IsToFog = false;
-			if (unfog) {
-				if ((!cellptr->IsFogVisible || !cellptr->IsFogMapped) && cellptr->IsMapped) {
-					Map.Fog_Map_Cell(newcell, house);
-				}
-			} else {
-				if ((!cellptr->IsMapped || !cellptr->IsVisible || !cellptr->IsFogVisible || !cellptr->IsFogMapped) && !dont_map) {
-					Map.Map_Cell(newcell, house);
+			for (int index = 0; index < viewer_count; index++) {
+				HouseClass * viewer = viewers[index];
+				cellptr->IsToFog.Clear(viewer);
+				if (unfog) {
+					if ((!cellptr->IsFogVisible[viewer] || !cellptr->IsFogMapped[viewer]) && cellptr->IsMapped[viewer]) {
+						Map.Fog_Map_Cell(newcell, viewer);
+					}
+				} else {
+					if ((!cellptr->IsMapped[viewer] || !cellptr->IsVisible[viewer] || !cellptr->IsFogVisible[viewer] || !cellptr->IsFogMapped[viewer]) && !dont_map) {
+						Map.Map_Cell(newcell, viewer);
+					}
 				}
 			}
 		}
@@ -6432,7 +6429,7 @@ Cell MapClass::Pick_Random_Location(void) const
 /***********************************************************************************************
  * MapClass::Shroud_The_Map -- cover the whole map in darkness (usually from blackout crate)   *
  *                                                                                             *
- * INPUT:   none                                                                               *
+ * INPUT:   house -- The house the map is shrouded for.                                        *
  *                                                                                             *
  * OUTPUT:  Returns with a cell that is within the map.                                        *
  *                                                                                             *
@@ -6441,51 +6438,53 @@ Cell MapClass::Pick_Random_Location(void) const
  * HISTORY:                                                                                    *
  *   10/19/1996 BWG : Created.                                                                 *
  *=============================================================================================*/
-void MapClass::Shroud_The_Map(void)
+void MapClass::Shroud_The_Map(HouseClass * house)
 {
 	Reset_Iterator();
 	CellClass *cellptr = Iterate();
 
 	while (cellptr != NULL) {
-		cellptr->IsMapped = false;
-		cellptr->IsVisible = false;
-		cellptr->IsFogMapped = false;
-		cellptr->IsFogVisible = false;
+		cellptr->IsMapped.Clear(house);
+		cellptr->IsVisible.Clear(house);
+		cellptr->IsFogMapped.Clear(house);
+		cellptr->IsFogVisible.Clear(house);
 
 		cellptr = Iterate();
 	}
 
 	Map.All_To_Look();
-	PlayerPtr->IsVisionary = false;
-	Map.Complete_Radar_Refresh();
-	Flag_To_Redraw(GS_REDRAW_ALL);
+	house->IsVisionary = false;
+	if (house == PlayerPtr) {
+		Map.Complete_Radar_Refresh();
+		Flag_To_Redraw(GS_REDRAW_ALL);
+	}
 }
 
 
 /// <summary>
-/// Reveals the whole map to the player.
-/// This routine is used by the reveal crate, by the reveal team mission, and by the
-/// player's own defeat, which leaves them free to watch the rest of the game play out.
-/// A player who can see everything already is left alone, unless the fog is to go as well.
+/// Reveals the whole map to a house and marks it as seeing everything. A house already marked
+/// is left alone unless the fog is to go as well.
 /// </summary>
-/// <param name="unfog">Lift the fog of war too, and discard the stand-ins fogged structures leave behind.</param>
-void MapClass::Reveal_The_Map(bool unfog)
+/// <param name="unfog">Lift the fog of war too.</param>
+void MapClass::Reveal_The_Map(HouseClass * house, bool unfog)
 {
-	if (!PlayerPtr->IsVisionary || unfog) {
-		PlayerPtr->IsVisionary = true;
+	if (!house->IsVisionary || unfog) {
+		house->IsVisionary = true;
 		Map.Reset_Iterator();
 		CellClass *cellptr = Map.Iterate();
 		while (cellptr != NULL) {
 			if (unfog) {
-				Map.Map_Cell(cellptr->CellID, PlayerPtr);
+				Map.Map_Cell(cellptr->CellID, house);
 			} else {
-				Map.Shadow_Map_Cell(cellptr->CellID, PlayerPtr);
+				Map.Shadow_Map_Cell(cellptr->CellID, house);
 			}
 			cellptr = Map.Iterate();
 		}
 
-		Map.Complete_Radar_Refresh();
-		Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		if (house == PlayerPtr) {
+			Map.Complete_Radar_Refresh();
+			Map.Flag_To_Redraw(GS_REDRAW_TACTICAL);
+		}
 	}
 }
 
@@ -11523,30 +11522,30 @@ bool MapClass::Is_Something_Nearby(Cell const & cell, int radius)
 
 
 /// <summary>
-/// Determines if a coordinate is still under the shroud.
+/// Determines if a coordinate is still under a house's shroud.
 /// Which cell a coordinate appears over depends on how high it is, so the height is folded
 /// into the lookup before the shroud is consulted.
 /// </summary>
 /// <returns>bool; Is the coordinate still shrouded?</returns>
-bool MapClass::Is_Shrouded(Coord const & coord)
+bool MapClass::Is_Shrouded(Coord const & coord, HouseClass const * house)
 {
 	int level_height = coord.Z / LEVEL_LEPTON_H;
 	if ((level_height & 1) != 0) {
 		int offset = level_height / 2 + 1;
 		Cell cell = coord.As_Cell();
 		CellClass * cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
-		if (cptr->IsMapped) {
+		if (cptr->IsMapped[house]) {
 			return(false);
 		}
 		cptr = &cptr->Adjacent_Cell(FACING_SE);
-		if (!cptr->IsMapped) {
+		if (!cptr->IsMapped[house]) {
 			return(true);
 		}
 	} else {
 		int offset = level_height / 2;
 		Cell cell = coord.As_Cell();
 		CellClass * cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
-		if (!cptr->IsMapped) {
+		if (!cptr->IsMapped[house]) {
 			return(true);
 		}
 	}
@@ -11555,7 +11554,17 @@ bool MapClass::Is_Shrouded(Coord const & coord)
 
 
 /// <summary>
-/// Determines if a coordinate is hidden under the fog of war.
+/// Determines if a coordinate is still under the local player's shroud.
+/// </summary>
+/// <returns>bool; Is the coordinate still shrouded?</returns>
+bool MapClass::Is_Shrouded(Coord const & coord)
+{
+	return(Is_Shrouded(coord, PlayerPtr));
+}
+
+
+/// <summary>
+/// Determines if a coordinate is hidden under the local player's fog of war.
 /// Which cell a coordinate appears over depends on how high it is, so the height is folded
 /// into the lookup before the fog is consulted. A player given the whole map, an observer or
 /// a defeated player outside coach mode, sees through the fog, and nothing is reported as
@@ -11572,7 +11581,7 @@ bool MapClass::Is_Fogged(Coord const & coord)
 			int offset = level_height / 2 + 1;
 			Cell cell = coord.As_Cell();
 			cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
-			if (cptr->IsFogMapped) {
+			if (cptr->IsFogMapped[PlayerPtr]) {
 				return(false);
 			}
 			cptr = &cptr->Adjacent_Cell(FACING_SE);
@@ -11581,7 +11590,7 @@ bool MapClass::Is_Fogged(Coord const & coord)
 			Cell cell = coord.As_Cell();
 			cptr = &Map[Cell(cell.X - offset, cell.Y - offset)];
 		}
-		if (!cptr->IsFogMapped) {
+		if (!cptr->IsFogMapped[PlayerPtr]) {
 			return(true);
 		}
 	}
@@ -11628,7 +11637,7 @@ void MapClass::Init_Fog_System(void)
 	Reset_Iterator();
 	CellClass * cellptr = Iterate();
 	while (cellptr != NULL) {
-		if (!cellptr->IsFogMapped) {
+		if (!cellptr->IsFogMapped[PlayerPtr]) {
 			cellptr->Fog_Cell();
 		}
 		cellptr = Iterate();
