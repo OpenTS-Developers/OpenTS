@@ -69,6 +69,12 @@ an invariant, or a compatibility constraint. A function comment describes its
 effect for the caller, not its implementation. A clearly named private helper
 needs no comment. Do not restate the code or narrate the edit that produced it.
 
+Comment prose follows the repository
+[writing rules](../AGENTS.md#writing-prose). State the effect or constraint
+first, with its condition in the same sentence. Use plain terms rather than
+personifying the code. The claim must hold on every path it covers, including
+failure and cleanup.
+
 Use `//` or a plain `/* */` block for new prose. Reserve `///` for genuine XML
 documentation; inherited trailing `///` prose is not a convention to follow.
 XML documentation sits above the definition rather than the declaration, so it

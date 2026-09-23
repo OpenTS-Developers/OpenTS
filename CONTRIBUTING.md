@@ -101,6 +101,9 @@ fact in one guide and link to it elsewhere. Document current behavior,
 supported inputs, relevant limits, and migration requirements; do not present
 plans or assumptions as current behavior.
 
+Write documentation, change records, source comments, commit messages, and
+pull-request text by the repository [writing rules](AGENTS.md#writing-prose).
+
 For manual work, follow [Authoring](manual/AUTHORING.md) and
 [Manual style](manual/STYLE.md). Changes to manual tooling, schemas, generated
 data contracts, lifecycle machinery, routes, or publishing also require

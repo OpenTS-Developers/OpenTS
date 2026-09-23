@@ -31,26 +31,101 @@ supported build targets. A build result is not runtime evidence.
 Write documentation and project communication in plain, direct English. Lead
 with the result, then its condition, then only the mechanism a reader needs to
 predict an exception. Use concrete claims and familiar words. Cut restatement,
-stock caveats, meta-commentary about the writing or edit, and ceremonial
-conclusions that only recap the preceding text.
+"not X but Y" contrasts, dramatic titles, stock caveats, meta-commentary about
+the writing or edit, and ceremonial conclusions that only recap the preceding
+text. Do not replace them with forced casualness, fragments, or a performed
+voice.
 
-These prose rules apply to repository files and durable project communication.
-They do not constrain chat-only execution plans or status updates. Plans should
-prioritize clarity, dependencies, risks, and verification over brevity.
+These prose rules apply to repository files and durable project communication:
+documentation, manual pages, change records, source comments, commit messages,
+and pull requests. Source comments also follow `## Comments` in
+`code/AGENTS.md`, and manual pages and change records also follow the manual
+guides. The rules do not constrain chat-only execution plans or status
+updates. Plans should prioritize clarity, dependencies, risks, and
+verification over brevity.
 
 In reference and workflow documents, give every sentence a fact the reader can
-act on and every paragraph one job. Leave out mechanism the reader cannot use,
-such as an explanation that a failure goes unreported. History, rationale, and
-other narrative documents may keep the context, detail, and transitions needed
-to explain why events or decisions matter. Length is not the measure: lengthen
-a sentence when the shorter version is ambiguous, and never remove a useful
-distinction, qualification, or example merely to make a document shorter.
+act on and every paragraph one job. Keep a mechanism only when it explains an
+observable result, a configuration decision, or an invariant the reader relies
+on. Leave out the rest, such as an explanation that a failure goes unreported
+or the sequence of calls behind a result already stated. History, rationale,
+and other narrative documents may keep the context, detail, and transitions
+needed to explain why events or decisions matter. Length is not the measure:
+lengthen a sentence when the shorter version is ambiguous, and never remove a
+useful distinction, qualification, or example merely to make a document
+shorter.
+
+### Plan before drafting
+
+Before choosing words, work out the questions the reader brings and the
+verified facts that answer them. For a configurable behavior these are usually
+what it does, what controls it, what limits it, and what happens in
+exceptional cases; take the questions from the subject rather than imposing
+that list. Draft from those facts and open with the answer. To fix an unclear
+passage, redraft it from its facts: shorter sentences in the old order leave
+the reader the same work.
+
+### Keep claims true
+
+- Check each outcome against the conditions that make it true, even when the
+  sentence has no word such as "always." Follow the branches to their exits
+  and look for a reachable case that contradicts the wording.
+- Keep apart the cases the code separates, such as no eligible choice, a
+  failed creation, a failed placement, and success. Keep the deciding
+  condition beside its result.
+- A claim that something survives, stays unchanged, or is protected must also
+  hold through later cleanup, deletion, and reset.
+- For a formula, check which values it uses, whose modifiers apply, where it
+  rounds and clamps, and what happens at the boundaries. Equal multipliers do
+  not cancel exactly when intermediate values are rounded. Check every worked
+  example against the actual arithmetic.
+- Text carried over from an older version needs the same evidence as new
+  text. Where the evidence is incomplete, narrow the claim or keep its
+  qualification.
+
+### Choose words for the reader
+
+- Use the reader's terms for what they see and set, such as an object's
+  experience, its owner, a cost, or a delay. Keep exact names where the reader
+  must type or search for them.
+- Use concrete subjects and familiar verbs. Do not personify code or data, and
+  do not use a metaphor where the exact consequence can be stated.
+- Use one term for one thing throughout. Do not rotate synonyms for variety.
+- Define a term the reader would otherwise have to translate, such as
+  "resolved" or "handed out," or replace it with the observable action.
+
+### Shape the text
+
+- Give each paragraph one job from its first sentence to its last. Split a
+  paragraph that mixes separate rules, and keep each condition with its
+  consequence.
+- Put an exception next to the rule it qualifies. A short, concrete
+  qualification is better than an absolute claim followed by a distant
+  warning.
+- Use tables for real mappings, lists for choices or conditions, and headings
+  for topics a reader will look up. Do not give every short paragraph its own
+  heading or callout.
+- Write a warning as an instruction: what to set or avoid, and what happens
+  otherwise. Keep warnings for real traps.
+
+### Review before handoff
 
 Treat AI-assisted prose as a draft. Verify every claim, then rewrite and trim
 it before submission. These rules bind every edit path, including files
 written through scripts or shell commands; review the final diff against them
-before handing off. The contrasts below illustrate the style; they are not
-project facts or templates to copy.
+before handing off.
+
+- Read each section's opening on its own. It should state the main behavior,
+  instruction, or condition.
+- Reread the whole text, including passages you did not change. Look for
+  dropped prerequisites, widened claims, ambiguous pronouns, examples that no
+  longer match their explanation, and neighboring statements that contradict
+  each other.
+- Stop when the facts read clearly. Do not tune toward a word count, a reading
+  grade, or an AI-detector score.
+
+The contrasts below illustrate the style; they are not project facts or
+templates to copy.
 
 - Reference prose: avoid "This option is used in order to select which output
   directory will be used." Prefer "`OutputDirectory=` selects the output
@@ -59,6 +134,13 @@ project facts or templates to copy.
   replacement." Prefer "The team first adopted the library because it matched
   the existing API. Testing later exposed timing differences, so it was
   replaced."
+- Condition and outcome: avoid "A failed request rejoins the queue." Prefer
+  "A request that timed out rejoins the queue; one the server refused is
+  dropped."
+- Plain terms: avoid "The loader asks the cache, which turns stale entries
+  away." Prefer "The loader reads a stale entry from disk."
+- Warning: avoid "The path must resolve." Prefer "Set `OutputDirectory=` to an
+  existing folder; otherwise nothing is written."
 
 ## Source changes
 

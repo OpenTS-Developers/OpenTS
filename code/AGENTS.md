@@ -46,6 +46,11 @@ point of view: its result, prerequisites, side effects, ownership, failure
 behavior, or compatibility requirements. Do not describe how its body works.
 A clearly named private helper needs no comment.
 
+Comment prose follows `## Writing prose` in the root `AGENTS.md`. State the
+effect or constraint first, with its condition in the same sentence. Use plain
+terms rather than personifying the code. The claim must hold on every path it
+covers, including failure and cleanup.
+
 The inherited tree mixes comment forms. Match local indentation and width, but
 use the following forms:
 
@@ -102,4 +107,12 @@ A clear private helper needs no comment:
 ```diff
 -// Rebuilds the lookup table.
  void Rebuild_Lookup_Table();
+```
+
+A claim keeps the condition that makes it true, in plain terms:
+
+```diff
+-// Failed entries get sent back to wait their turn.
++// An entry that timed out is queued again; a refused one is dropped.
+ Requeue_Failed_Entries();
 ```

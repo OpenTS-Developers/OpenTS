@@ -213,7 +213,10 @@ verified it may still leave a reader stuck.
 
 Before handoff, have the page read by someone with the rendered page and no repository access, and
 ask what they would write and where. That question is the gate. A reader who cannot answer it has
-found a real gap, not a preference.
+found a real gap, not a preference. Give them no earlier draft and no account of what you meant.
+
+Also ask which sentences they had to read twice, and why. A reader who eventually finds the right
+settings has not shown that the page is easy to read.
 
 Questions about what they could not picture, or expected and did not get, are suggestions rather
 than failures — some of what they ask for is out of scope or owned by another page, and satisfying
