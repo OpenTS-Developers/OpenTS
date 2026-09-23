@@ -324,6 +324,7 @@ static void Send_FrameSync(ConnManClass *net, int cmd_count);
 static RetcodeType Process_Receive_Packet(ConnManClass *net,
 	char *multi_packet_buf, int id, int packetlen, FrameSyncStruct *their, BasicTimerClass<SystemTimerClass> *timer);
 static int Can_Advance(ConnManClass *net, int max_ahead, FrameSyncStruct *their, int *frame_stall, int *count_stall);
+static Rect Stall_Marker_Rect(int connection, int offset, int width);
 static int Process_Reconnect_Dialog(CDTimerClass<SystemTimerClass> *timeout_timer,
 	FrameSyncStruct *their, int num_conn, int reconn, int fresh,
 	BasicTimerClass<SystemTimerClass> *timer);
@@ -1430,13 +1431,13 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 			if (show_stall) {
 				if (frame_stall != -1) {
 					if (Session.ShowInternetDebug) {
-						VisibleSurface->Fill_Rect(Rect(frame_stall + 100, 475, 35, 3), DSurface::Build_Hicolor_Pixel(255, 255, 40));
+						VisibleSurface->Fill_Rect(Stall_Marker_Rect(frame_stall, 0, 35), DSurface::Build_Hicolor_Pixel(255, 255, 40));
 					}
 					Session.ConnectionStats[frame_stall].FrameSyncStalls++;
 				}
 				if (count_stall != -1) {
 					if (Session.ShowInternetDebug) {
-						VisibleSurface->Fill_Rect(Rect(count_stall + 140, 475, 40, 3), DSurface::Build_Hicolor_Pixel(255, 40, 40));
+						VisibleSurface->Fill_Rect(Stall_Marker_Rect(count_stall, 40, 40), DSurface::Build_Hicolor_Pixel(255, 40, 40));
 					}
 					Session.ConnectionStats[count_stall].CommandCountStalls++;
 				}
@@ -1472,12 +1473,23 @@ static RetcodeType Wait_For_Players(int first_time, ConnManClass *net,
 		Close_Reconnect_Dialog();
 	}
 	if (stall_drawn && Session.ShowInternetDebug) {
-		Rect rect(100, 475, 540, 4);
+		Rect rect = Stall_Marker_Rect(0, 0, VisibleSurface->Get_Width() - 100);
+		rect.Height = 4;
 		VisibleSurface->Fill_Rect(rect, 0);
 	}
 	return(RC_NORMAL);
 
 }	// end of Wait_For_Players
+
+
+/// <summary>
+/// Places a stall marker along the bottom edge of the -MPDEBUG strip, under the column that
+/// Multiplayer_Debug_Print gives the connection being waited on.
+/// </summary>
+static Rect Stall_Marker_Rect(int connection, int offset, int width)
+{
+	return(Rect((connection + 1) * 100 + offset, VisibleSurface->Get_Height() - 5, width, 3));
+}
 
 
 /// <summary>Queues timing selected from the synchronized report census.</summary>
