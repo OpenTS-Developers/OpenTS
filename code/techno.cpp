@@ -1174,12 +1174,12 @@ void TechnoClass::Try_To_Cloak(void)
 	int i;
 
 	CellClass & cell = Map[Center_Coord().As_Cell()];
-	if (cell.Is_Cloaked(House->HeapID) && Is_Ready_To_Cloak()) {
+	if (cell.Is_Cloaked(House) && Is_Ready_To_Cloak()) {
 		DynamicVectorClass<TechnoClass *> targeting_me;
 		for (i = Technos.Count() - 1; i >= 0; i--) {
 			TechnoClass * tech = Technos[i];
 			if (tech->TarCom == this) {
-				if (Map[Center_Coord()].Is_Sensed(tech->House->HeapID) || tech->House == House) {
+				if (Map[Center_Coord()].Is_Sensed(tech->House) || tech->House == House) {
 					targeting_me.Add(tech);
 				}
 			}
@@ -1260,7 +1260,7 @@ void TechnoClass::Draw_Post_Render(Point2D const & point, Rect const & cliprect)
 	bool sensed_underground = false;
 	if (!IsSelected) {
 		CellClass * cell = Get_Cell_Ptr();
-		if (HeightAGL < -20 && cell->Is_Sensed(PlayerPtr->HeapID)) {
+		if (HeightAGL < -20 && cell->Is_Sensed(PlayerPtr)) {
 			sensed_underground = true;
 		}
 	}
@@ -2037,7 +2037,7 @@ bool TechnoClass::Evaluate_Object(ThreatType method, int mask, int range, Techno
 	**	If the object is cloaked, then it isn't a legal target.
 	*/
 	if (object->Cloak == CLOAKED) {
-		if (!Map[object->Center_Coord()].Is_Sensed(House->HeapID) && House != object->House) {
+		if (!Map[object->Center_Coord()].Is_Sensed(House) && House != object->House) {
 			BEnd(BENCH_EVAL_OBJECT);
 			return(false);
 		}
@@ -3066,13 +3066,13 @@ void TechnoClass::AI(void)
 	Cloaking_AI();
 
 	if (Cloak == UNCLOAKED) {
-		if (Map[Center_Coord()].Is_Cloaked(House->HeapID)) {
+		if (Map[Center_Coord()].Is_Cloaked(House)) {
 			Try_To_Cloak();
 		}
 	}
 
 	if (Cloak == CLOAKED) {
-		if (!Map[Center_Coord()].Is_Cloaked(House->HeapID)) {
+		if (!Map[Center_Coord()].Is_Cloaked(House)) {
 			Try_To_Cloak();
 		}
 	}
@@ -3318,7 +3318,7 @@ void TechnoClass::Cloaking_AI(bool)
 							for (i = Technos.Count() - 1; i >= 0; i--) {
 								TechnoClass * tech = Technos[i];
 								if (tech->TarCom == this) {
-									if (Map[Center_Coord()].Is_Sensed(tech->House->HeapID) || tech->House == House) {
+									if (Map[Center_Coord()].Is_Sensed(tech->House) || tech->House == House) {
 										targeting_me.Add(tech);
 									}
 								}
@@ -3361,7 +3361,7 @@ void TechnoClass::Cloaking_AI(bool)
 /// <returns>bool; Should the object uncloak now?</returns>
 bool TechnoClass::Should_Uncloak(void) const
 {
-	bool cloaked = Map[Center_Coord().As_Cell()].Is_Cloaked(House->HeapID);
+	bool cloaked = Map[Center_Coord().As_Cell()].Is_Cloaked(House);
 	if (!(Is_Allowed_To_Recloak() || IsCloakable) || Is_Immobilized()) {
 		if (Has_Ability(ABILITY_CLOAK)) return(false);
 		if (!cloaked) return(true);
@@ -3392,7 +3392,7 @@ bool TechnoClass::Is_Ready_To_Cloak(void) const
 	**	If the object cannot recloak, then it certainly is not allowed to start.
 	*/
 	if (!Is_Allowed_To_Recloak() && !Has_Ability(ABILITY_CLOAK)) {
-		if (!Map[Center_Coord().As_Cell()].Is_Cloaked(House->HeapID) && !IsCloakable) {
+		if (!Map[Center_Coord().As_Cell()].Is_Cloaked(House) && !IsCloakable) {
 			return(false);
 		}
 	}
@@ -3513,7 +3513,7 @@ FireErrorType TechnoClass::Can_Fire(AbstractClass * target, int which) const
 	**	If the object is completely cloaked, then you can't fire on it.
 	*/
 	if (techno != NULL && techno->Visual_Character(true, House) == VISUAL_HIDDEN
-		&& !cellptr->Is_Sensed(House->HeapID) && techno->House != House
+		&& !cellptr->Is_Sensed(House) && techno->House != House
 		&& (Combat_Damage() > 0 || !techno->House->Is_Ally(House)))	{
 
 		goto CANT_FIRE;
@@ -5564,7 +5564,7 @@ VisualType TechnoClass::Visual_Character(bool raw, HouseClass const * house) con
 	**	by the player.
 	*/
 	if (Cloak == CLOAKED) {
-		if (raw && house != NULL && Map[Get_Coord().As_Cell()].Is_Sensed(house->HeapID)) return(VISUAL_SHADOWY);
+		if (raw && house != NULL && Map[Get_Coord().As_Cell()].Is_Sensed(house)) return(VISUAL_SHADOWY);
 		if (!raw && !MainWindow) return(VISUAL_SHADOWY);
 		if (!raw && IsOwnedByPlayer) return(VISUAL_SHADOWY);
 		if (!raw && Is_Sensed_By_Player()) return(VISUAL_SHADOWY);
@@ -6457,7 +6457,7 @@ void TechnoClass::Detach(AbstractClass const * target, bool all)
 
 	if (!all && target->Is_Techno()) {
 		CellClass * cptr = &Map[target->Center_Coord()];
-		if (cptr->Is_Sensed(House->HeapID)) {
+		if (cptr->Is_Sensed(House)) {
 			clear_target = false;
 		}
 	}
@@ -8838,7 +8838,7 @@ bool TechnoClass::Is_Sensed_By_Player(void) const
 			return(true);
 		}
 		CellClass * cptr = &Map[Center_Coord()];
-		return(cptr->Is_Sensed(PlayerPtr->HeapID));
+		return(cptr->Is_Sensed(PlayerPtr));
 	}
 	return(false);
 }
@@ -8853,7 +8853,7 @@ bool TechnoClass::Is_Sensed_By_House(HouseClass const * house) const
 {
 	if (house != NULL) {
 		CellClass * cptr = &Map[Center_Coord()];
-		return(cptr->Is_Sensed(house->HeapID));
+		return(cptr->Is_Sensed(house));
 	}
 	return(false);
 }

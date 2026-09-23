@@ -2659,7 +2659,7 @@ void FootClass::Detach(AbstractClass const * target, bool all)
 	*/
 	if (NavCom == target) {
 		CellClass * cptr;
-		if (all || !target->Is_Techno() || (cptr = &Map[target->Center_Coord()], !cptr->Is_Sensed(House->HeapID))) {
+		if (all || !target->Is_Techno() || (cptr = &Map[target->Center_Coord()], !cptr->Is_Sensed(House))) {
 			NavCom = NULL;
 		}
 		//Restore_Mission();

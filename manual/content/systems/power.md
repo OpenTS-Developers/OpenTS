@@ -264,7 +264,7 @@ Four separate tests decide whether low power stops a defense, and they treat `To
 - When a house is not short of power, every structure it owns runs its powered animations and powered lights, including a structure that is switched off. When the house is short, only a type that is `Powered=yes`, has drain, and is `TogglePower=yes` stops them.
 
 :::caution[A sensor array does not go dark with the rest of the base]
-A power change does not remove sensor coverage. A [`SensorArray=yes`](/keys/sensorarray/) structure gives up its cells only when it is taken off the map. Low power only stops the array from being refreshed. Arrays are re-marked when a cloak field finishes growing or another array is taken off the map, and an array that is not operational is skipped. An array that finishes building while it is not operational marks no cells until one of those refreshes.
+A power change does not remove sensor coverage. A [`SensorArray=yes`](/keys/sensorarray/) structure keeps its cells until it is taken off the map or captured. Low power matters only to an array that has not marked its cells yet: an array that finishes building while it is not operational marks nothing until any house's cloak field finishes growing while it is operational.
 :::
 
 :::caution[A TogglePower=no defense is silenced but stays lit]

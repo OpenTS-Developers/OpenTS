@@ -298,8 +298,8 @@ CellClass::CellClass(void) :
 	Tube(-1),
 	ShadowFrame(-2),
 	FogFrame(-2),
-	CloakedBy(0),
-	SensedBy(0),
+	CloakCount(),
+	SensorCount(),
 	OccupiedBy(),
 	Intensity(0x10000),
 	Ambient(0),
@@ -4440,8 +4440,8 @@ void CellClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(LastUnknownDrawFrame);
 	stream.Serialize(LastBridgeDrawFrame);
 	stream.Serialize(LastBridgeDrawRect);
-	stream.Serialize(CloakedBy);
-	stream.Serialize(SensedBy);
+	stream.Serialize(CloakCount);
+	stream.Serialize(SensorCount);
 	stream.Serialize(OccupiedBy);
 	stream.Serialize(OccupierPtr);
 	stream.Serialize(BridgeOccupierPtr);
@@ -5788,14 +5788,14 @@ bool CellClass::Is_Tile_Clear_To_Green_LAT(void) const
 /// </summary>
 /// <param name="house">The house whose cloaking is to be considered.</param>
 /// <returns>bool; Should the cell be drawn cloaked?</returns>
-bool CellClass::Should_Draw_As_Cloaked(HousesType house) const
+bool CellClass::Should_Draw_As_Cloaked(HouseClass const * house) const
 {
 	if (PlayerPtr != NULL) {
 		if (Is_Cloaked(house)) {
-			if (house == PlayerPtr->HeapID){
+			if (house == PlayerPtr){
 				return(true);
 			}
-			if (!Is_Sensed(PlayerPtr->HeapID)) {
+			if (!Is_Sensed(PlayerPtr)) {
 				return(true);
 			}
 		}
@@ -6069,9 +6069,9 @@ bool CellClass::Can_Burrow_Here(void) const
 /// Determines if the house specified has cloaked this cell.
 /// </summary>
 /// <returns>bool; Is the cell cloaked by that house?</returns>
-bool CellClass::Is_Cloaked(HousesType house) const
+bool CellClass::Is_Cloaked(HouseClass const * house) const
 {
-	return((CloakedBy & (1 << house)) != 0);
+	return(CloakCount[house] != 0);
 }
 
 
@@ -6079,50 +6079,58 @@ bool CellClass::Is_Cloaked(HousesType house) const
 /// Determines if the house specified has a sensor covering this cell.
 /// </summary>
 /// <returns>bool; Is the cell sensed by that house?</returns>
-bool CellClass::Is_Sensed(HousesType house) const
+bool CellClass::Is_Sensed(HouseClass const * house) const
 {
-	return((SensedBy & (1 << house)) != 0);
+	return(SensorCount[house] != 0);
 }
 
 
 /// <summary>
-/// Marks this cell as cloaked by the house specified.
-/// This routine is called as a cloaking field is laid down over the cell.
+/// Counts one more cloak generator of the house specified over this cell.
 /// </summary>
-void CellClass::Cloaked_By(HousesType house)
+/// <returns>bool; Was the cell not cloaked by that house before?</returns>
+bool CellClass::Add_Cloak(HouseClass const * house)
 {
-	CloakedBy |= (1 << house);
+	return(++CloakCount[house] == 1);
 }
 
 
 /// <summary>
-/// Clears the cloak flag for the house specified.
-/// This routine is called as a cloaking field is lifted from this cell.
+/// Counts one cloak generator of the house specified off this cell.
 /// </summary>
-void CellClass::Uncloaked_By(HousesType house)
+/// <returns>bool; Is the cell no longer cloaked by that house?</returns>
+bool CellClass::Remove_Cloak(HouseClass const * house)
 {
-	CloakedBy &= ~(1 << house);
+	assert(CloakCount[house] > 0);
+	if (CloakCount[house] == 0) {
+		return(false);
+	}
+	return(--CloakCount[house] == 0);
 }
 
 
 /// <summary>
-/// Marks this cell as covered by a sensor of the house specified.
-/// A sensed cell gives away any cloaked object standing on it to that house.
+/// Counts one more sensor array of the house specified over this cell. A sensed cell gives
+/// away any cloaked object standing on it to that house.
 /// </summary>
-void CellClass::Sensed_By(HousesType house)
+/// <returns>bool; Was the cell not sensed by that house before?</returns>
+bool CellClass::Add_Sensor(HouseClass const * house)
 {
-	SensedBy |= (1 << house);
+	return(++SensorCount[house] == 1);
 }
 
 
 /// <summary>
-/// Clears the sensor flag for the house specified.
-/// This routine is called as a sensor field is lifted from this cell, letting cloaked
-/// objects standing here hide from that house once more.
+/// Counts one sensor array of the house specified off this cell.
 /// </summary>
-void CellClass::Unsensed_By(HousesType house)
+/// <returns>bool; Is the cell no longer sensed by that house?</returns>
+bool CellClass::Remove_Sensor(HouseClass const * house)
 {
-	SensedBy &= ~(1 << house);
+	assert(SensorCount[house] > 0);
+	if (SensorCount[house] == 0) {
+		return(false);
+	}
+	return(--SensorCount[house] == 0);
 }
 
 

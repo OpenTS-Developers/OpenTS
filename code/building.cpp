@@ -260,8 +260,9 @@ BuildingClass::BuildingClass(BuildingTypeClass const * type, HouseClass * house)
 	IsFogged(false),
 	HasBuildupData(false),
 	IsPoweredOn(true),
-	CloakGeneratorState(0),
+	CloakGeneratorState(CLOAK_SETTLED),
 	CurrentCloakRadius(0),
+	IsSensing(false),
 	TranslucencyLevel(0),
 	Brightness(NORMAL_LIGHT),
 	UpgradeLevel(0),
@@ -4404,11 +4405,17 @@ bool BuildingClass::Captured(HouseClass * newowner)
 			CurrentCloakRadius = 1;
 			Cloaking_AI(true);
 		}
+		if (Class->IsSensorArray) {
+			Disable_Sensor_Array();
+		}
 
 		BASECLASS::Captured(newowner);
 
 		if (Class->IsCloakGenerator && Is_Powered_On()) {
 			Enable_Cloak_Generator();
+		}
+		if (Class->IsSensorArray) {
+			Enable_Sensor_Array();
 		}
 
 		oldowner->ToCapture = this;
@@ -8976,6 +8983,8 @@ void BuildingClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(IsPoweredOn);
 	stream.Serialize(CloakGeneratorState);
 	stream.Serialize(CurrentCloakRadius);
+	stream.Serialize(CloakFieldCells);
+	stream.Serialize(IsSensing);
 	stream.Serialize(TranslucencyLevel);
 	stream.Serialize(Brightness);
 	stream.Serialize(UpgradeLevel);
@@ -9080,7 +9089,7 @@ VisualType BuildingClass::Visual_Character(bool raw, HouseClass const * house) c
 		if (TranslucencyLevel > 10) {
 			if (raw) {
 				if (house != NULL) {
-					if (Map[PositionCoord.As_Cell()].Is_Sensed(house->HeapID)) {
+					if (Map[PositionCoord.As_Cell()].Is_Sensed(house)) {
 						return(VISUAL_SHADOWY);
 					}
 				}
@@ -9171,7 +9180,7 @@ void Adjust_House_Power(HouseClass * house)
 void BuildingClass::Enable_Cloak_Generator(void)
 {
 	if (Class->IsCloakGenerator) {
-		CloakGeneratorState = 1;
+		CloakGeneratorState = CLOAK_GROWING;
 		if (CurrentCloakRadius == Class->CloakRadiusInCells) {
 			CurrentCloakRadius = 0;
 		}
@@ -9188,7 +9197,7 @@ void BuildingClass::Enable_Cloak_Generator(void)
 void BuildingClass::Disable_Cloak_Generator(void)
 {
 	if (Class->IsCloakGenerator) {
-		CloakGeneratorState = -1;
+		CloakGeneratorState = CLOAK_COLLAPSING;
 		if (CurrentCloakRadius == 0) {
 			CurrentCloakRadius = Class->CloakRadiusInCells;
 		}
@@ -9213,6 +9222,21 @@ void Cloak_Cell_Occupiers(CellClass * cellptr)
 		}
 		occupier = occupier->Next;
 	}
+}
+
+
+/// <summary>
+/// Marks a cell of the cloaking grid as covered by this generator's field, or not, and counts
+/// the change on the cell. A cell already in that state is left alone.
+/// </summary>
+/// <returns>bool; Did the house's cloak on the cell switch on or off?</returns>
+bool BuildingClass::Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover)
+{
+	if ((CloakFieldCells[index] != 0) == cover) {
+		return(false);
+	}
+	CloakFieldCells[index] = cover ? 1 : 0;
+	return(cover ? cellptr->Add_Cloak(House) : cellptr->Remove_Cloak(House));
 }
 
 
@@ -9280,10 +9304,11 @@ void BuildingClass::Cloaking_AI(bool fast)
 		BSurface * cloaking_surface = CloakingSurface;
 		int width = cloaking_surface->Get_Width();
 		int width_half = width / 2;
+		CloakFieldCells.resize(width * width);
 
 		if (CloakGeneratorState > 0) {
 			if (CurrentCloakRadius == Class->CloakRadiusInCells) {
-				CloakGeneratorState = 0;
+				CloakGeneratorState = CLOAK_SETTLED;
 				for (int i = 0; i < Buildings.Count(); i++) {
 					BuildingClass * building = Buildings[i];
 					if (building->IsActive && building->Class->IsSensorArray && building->Is_Powered_On()) {
@@ -9302,13 +9327,13 @@ void BuildingClass::Cloaking_AI(bool fast)
 						if (*data++ != 0) {
 							Cell current = origin + Cell(x, y);
 							CellClass * cellptr = &Map[current];
-							if (!cellptr->Is_Cloaked(houseid)) {
-								cellptr->Cloaked_By(houseid);
+							if (Cover_Cloak_Cell(y * width + x, cellptr, true)) {
 								Cloak_Cell_Occupiers(cellptr);
 								BuildingClass * building = cellptr->Cell_Building();
 								if (building != NULL && building->House->HeapID == houseid) {
 									if (building->Center_Coord().As_Cell() == current) {
 										CurrentCloakRadius--;
+										cloaking_surface->Unlock();
 										return;
 									}
 								}
@@ -9316,10 +9341,11 @@ void BuildingClass::Cloaking_AI(bool fast)
 						}
 					}
 				}
+				cloaking_surface->Unlock();
 			}
 		}
 		else if (CurrentCloakRadius == 0) {
-			CloakGeneratorState = 0;
+			CloakGeneratorState = CLOAK_SETTLED;
 		}
 		else {
 			CurrentCloakRadius--;
@@ -9336,13 +9362,13 @@ void BuildingClass::Cloaking_AI(bool fast)
 					if (*data++ == 0) {
 						Cell current = origin + Cell(x, y);
 						CellClass * cellptr = &Map[current];
-						if (cellptr->Is_Cloaked(houseid)) {
-							cellptr->Uncloaked_By(houseid);
+						if (Cover_Cloak_Cell(y * width + x, cellptr, false)) {
 							Cloak_Cell_Occupiers(cellptr);
 							BuildingClass * building = cellptr->Cell_Building();
 							if (building != NULL && building->House->HeapID == houseid) {
 								if (building->Center_Coord().As_Cell() == current && !fast) {
 									CurrentCloakRadius++;
+									cloaking_surface->Unlock();
 									return;
 								}
 							}
@@ -9350,24 +9376,7 @@ void BuildingClass::Cloaking_AI(bool fast)
 					}
 				}
 			}
-
-			if (CurrentCloakRadius == 0) {
-				for (int i = 0; i < Buildings.Count(); i++) {
-					BuildingClass * building = Buildings[i];
-					if (building->IsActive && building != this && building->Class->IsCloakGenerator && building->Is_Powered_On()) {
-						if (building->CloakGeneratorState == 0) {
-							Cell diff = center - building->Center_Coord().As_Cell();
-							int maxdist = (Class->CloakRadiusInCells + 2);
-							if (diff.X*diff.X + diff.Y*diff.Y < 4 * (maxdist * maxdist)) {
-								building->Enable_Cloak_Generator();
-								if (building->CurrentCloakRadius != 0) {
-									building->CurrentCloakRadius--;
-								}
-							}
-						}
-					}
-				}
-			}
+			cloaking_surface->Unlock();
 		}
 	}
 }
@@ -9404,23 +9413,24 @@ bool BuildingClass::Is_Powered_On(void) const
 
 /// <summary>
 /// Switches this sensor array off.
-/// The sensed flag is lifted from every cell within the array's radius, so that cloaked
-/// objects standing there are hidden again. The house's other sensor arrays are then
-/// re-enabled, since their coverage may well have overlapped the area just given up.
+/// The array's coverage is lifted from every cell within its radius, so that cloaked objects
+/// standing there are hidden again unless another array of the house still covers them.
 /// </summary>
 void BuildingClass::Disable_Sensor_Array(void)
 {
+	if (!IsSensing) {
+		return;
+	}
+
 	int radius = Class->CloakRadiusInCells;
 	int dist = radius * radius;
-	HousesType houseid = House->HeapID;
 	Cell origin = Center_Coord().As_Cell();
 	for (int y = -radius; y < radius; y++) {
 		for (int x = -radius; x < radius; x++) {
 			Cell newcell = Cell(origin.X + x, origin.Y + y);
 			if (x * x + y * y < dist) {
 				CellClass * cellptr = &Map[newcell];
-				if (cellptr->Is_Sensed(houseid)) {
-					cellptr->Unsensed_By(houseid);
+				if (cellptr->Remove_Sensor(House)) {
 					Cloak_Cell_Occupiers(cellptr);
 					BuildingClass * building = cellptr->Cell_Building();
 					if (building != NULL && building->House != PlayerPtr) {
@@ -9432,13 +9442,7 @@ void BuildingClass::Disable_Sensor_Array(void)
 			}
 		}
 	}
-
-	for (int i = 0; i < Buildings.Count(); i++) {
-		BuildingClass * building = Buildings[i];
-		if (building->IsActive && building != +this && building->Class->IsSensorArray && building->Is_Powered_On()) {
-			building->Enable_Sensor_Array();
-		}
-	}
+	IsSensing = false;
 }
 
 
@@ -9451,16 +9455,19 @@ void BuildingClass::Disable_Sensor_Array(void)
 void BuildingClass::Enable_Sensor_Array(void)
 {
 	if (Is_Powered_On()) {
+		bool add = !IsSensing;
+		IsSensing = true;
 		int radius = Class->CloakRadiusInCells;
 		int dist = radius * radius;
-		HousesType houseid = House->HeapID;
 		Cell origin = Center_Coord().As_Cell();
 		for (int y = -radius; y < radius; y++) {
 			for (int x = -radius; x < radius; x++) {
 				Cell newcell = Cell(origin.X + x, origin.Y + y);
 				if (x * x + y * y < dist) {
 					CellClass * cellptr = &Map[newcell];
-					cellptr->Sensed_By(houseid);
+					if (add) {
+						cellptr->Add_Sensor(House);
+					}
 					Cloak_Cell_Occupiers(cellptr);
 					BuildingClass * building = cellptr->Cell_Building();
 					if (building != NULL && building->House != PlayerPtr) {

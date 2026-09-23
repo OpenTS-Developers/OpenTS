@@ -57,6 +57,9 @@ class ByteStream
 	public:
 		explicit ByteStream(bool saving) : Saving(saving), Cursor(0) {}
 
+		bool Is_Saving(void) const {return(Saving);}
+		bool Is_Loading(void) const {return(!Saving);}
+
 		template<typename T>
 		void Serialize(T & value)
 		{
@@ -175,6 +178,15 @@ void Check_Save(void)
 	Check(set_back == set, "a set comes back from a save with every house");
 	Check(counts_back[&House[3]] == 9 && counts_back[&House[63]] == 1234, "an array comes back from a save with every value");
 	Check(in.Cursor == out.Bytes.size(), "a load reads exactly what the save wrote");
+	Check(out.Bytes.size() == sizeof(std::uint64_t) + sizeof(std::uint64_t) + 2 * sizeof(std::uint16_t), "an array saves only the houses that hold a value");
+
+	HouseArray<std::uint16_t> stale;
+	stale[&House[7]] = 5;
+	ByteStream again(false);
+	again.Bytes = out.Bytes;
+	again.Cursor = sizeof(std::uint64_t);
+	stale.Serialize(again);
+	Check(stale[&House[7]] == 0 && stale[&House[63]] == 1234, "a load clears the houses the save left out");
 }
 
 

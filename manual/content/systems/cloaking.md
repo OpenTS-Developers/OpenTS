@@ -128,9 +128,9 @@ Sensor coverage is not on the list. Marking a cell as sensed never uncloaks anyt
 
 ### Growing and collapsing
 
-A [`CloakGenerator=yes`](/keys/cloakgenerator/) structure covers the cells around it for its house, out to [`CloakRadiusInCells`](/keys/cloakradiusincells/). The field grows by one cell of radius per frame. Each frame, every cell inside the current radius that is not yet covered becomes covered, and the objects standing on it are asked to hide.
+A [`CloakGenerator=yes`](/keys/cloakgenerator/) structure covers the cells around it for its house, out to [`CloakRadiusInCells`](/keys/cloakradiusincells/). The field grows by one ring of cells per frame. When a cell becomes covered for the house, the vehicles, infantry and aircraft on it try to cloak.
 
-A collapse runs in reverse, giving up one ring per frame. Each cell the field gives up asks its occupants whether they may stay hidden.
+A collapse runs in reverse, giving up one ring per frame. When a cell stops being covered for the house, the vehicles, infantry and aircraft on it check whether they may stay hidden.
 
 When the growth covers the center cell of a structure of the generator's house, the generator included, it pauses for one frame. A collapse pauses the same way when it uncovers such a cell. Each such structure therefore adds one frame to a growth or a collapse.
 
@@ -138,10 +138,9 @@ Growth starts when the structure becomes [operational](/systems/power/#defenses)
 
 Destroying, selling or capturing the generator removes the whole field in a single frame. The same happens whenever the structure is deleted from the game. A captured generator raises a new field for its new owner as soon as it is operational.
 
-Two refreshes follow a field's changes:
+Fields of one house may overlap. A cell stays covered while any of the house's generators covers it, so a field that collapses or is removed leaves the cells its neighbors cover in place.
 
-- On the frame a field finishes growing, every operational [`SensorArray=yes`](/keys/sensorarray/) structure of any house marks its cells again.
-- On the frame a field finishes collapsing, other generators nearby regrow their fields from the center. This applies to every operational generator of any house that is not already growing or collapsing, and whose center is less than 2 × `CloakRadiusInCells` + 4 cells from the collapsed generator's center. The regrowth restores cells that a same-house neighbor shared with the collapsed field. Regrowth only adds cover, so the neighbor's field stays up while it regrows.
+On the frame a field finishes growing, every operational [`SensorArray=yes`](/keys/sensorarray/) structure, whatever its house, marks its cells if it has not marked them yet.
 
 ### What a field covers
 
@@ -169,15 +168,11 @@ Neither test marks a cell as sensed. A detector lets its house see or target not
 
 A [`SensorArray=yes`](/keys/sensorarray/) structure marks as sensed every cell whose distance from it is less than [`CloakRadiusInCells`](/keys/cloakradiusincells/). This is the same key that sizes a cloak generator's field, but an array's coverage is not cut off by the square grid a field is drawn on.
 
-The array marks its cells when it first opens, in a single frame, and only if it is operational at that moment. An array that is not operational when it opens marks nothing until one of the refreshes below.
+The array marks its cells when it first opens, in a single frame, and only if it is operational at that moment. An array that is not operational when it opens marks nothing until a cloaking field next finishes growing while the array is operational.
 
-Coverage is lifted only when the array is taken off the map. A power shortfall never lifts it.
+Coverage is lifted when the array is taken off the map. Capturing an array moves its coverage: the old owner stops sensing the array's cells, and the new owner senses them at once if the array is operational. A power shortfall never lifts coverage.
 
-Coverage is re-marked when a cloaking field finishes growing, and when any array is taken off the map. In the second case every other operational array of any house marks its cells again, so overlapping coverage is not lost. An array that is not operational at that moment is skipped.
-
-:::caution[Capturing an array leaves the old owner's coverage behind]
-Capture does not move the marks. The old owner keeps sensing the cells it had, and destroying or selling the array later does not lift them, because removal lifts the marks of the house that owns the array at that moment. The new owner senses nothing from the array until one of the refreshes above: a cloaking field finishing its growth, or another array being taken off the map.
-:::
+Arrays of one house may overlap. A cell stays sensed while any of the house's arrays covers it, so taking one array away leaves the cells the others cover in place.
 
 ### What sensing changes
 

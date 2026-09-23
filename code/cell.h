@@ -168,13 +168,13 @@ class CellClass : public AbstractClass
 		Rect LastBridgeDrawRect;
 
 		/*
-		 * These are bit lists of which houses have cloaked, sensed or built over this
-		 * cell -- one bit per house. Cloaking and sensing are per house because an object
-		 * hidden from one player may be plainly visible to another, and the occupation
-		 * bits let base placement logic tell whose structures already stand here.
+		 * These count, for each house, the cloak generators and sensor arrays covering this
+		 * cell, and mark the houses that have built over it. Cloaking and sensing are per house
+		 * because an object hidden from one player may be plainly visible to another, and the
+		 * occupation marks let base placement logic tell whose structures already stand here.
 		 */
-		unsigned CloakedBy;
-		unsigned SensedBy;
+		HouseArray<std::uint16_t> CloakCount;
+		HouseArray<std::uint16_t> SensorCount;
 		HouseSet OccupiedBy;
 
 	private:
@@ -579,13 +579,13 @@ class CellClass : public AbstractClass
 		virtual Coord Center_Coord(void) const override;
 		virtual Coord As_Coord(void) const override;
 
-		bool Is_Cloaked(HousesType house) const;
-		bool Is_Sensed(HousesType house) const;
-		void Cloaked_By(HousesType house);
-		void Uncloaked_By(HousesType house);
-		void Sensed_By(HousesType house);
-		void Unsensed_By(HousesType house);
-		bool Should_Draw_As_Cloaked(HousesType house) const;
+		bool Is_Cloaked(HouseClass const * house) const;
+		bool Is_Sensed(HouseClass const * house) const;
+		bool Add_Cloak(HouseClass const * house);
+		bool Remove_Cloak(HouseClass const * house);
+		bool Add_Sensor(HouseClass const * house);
+		bool Remove_Sensor(HouseClass const * house);
+		bool Should_Draw_As_Cloaked(HouseClass const * house) const;
 
 		int Get_Vein_Frame(void) const;
 		bool Can_Place_Veins(void);

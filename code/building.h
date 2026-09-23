@@ -41,6 +41,7 @@
 #include "check.hh"
 
 #include <cstdint>
+#include <vector>
 
 #define	MAX_DOOR_STAGE			18	// # of frames of door opening on weapons factory
 #define	DOOR_OPEN_STAGE			9	// frame on which the door is entirely open
@@ -309,15 +310,31 @@ class BuildingClass : public TechnoClass
 		bool IsPoweredOn;
 
 		/*
-		 * This is which way a cloak generator's field is moving -- 1 while it grows outward, -1
-		 * while it collapses back, and 0 once it has settled. It moves one ring of cells a frame.
+		 * This is which way a cloak generator's field is moving. It moves one ring of cells a
+		 * frame.
 		 */
-		char CloakGeneratorState;
+		enum {
+			CLOAK_COLLAPSING = -1,
+			CLOAK_SETTLED = 0,
+			CLOAK_GROWING = 1,
+		} CloakGeneratorState;
 
 		/*
 		 * This is how far a cloak generator's field currently reaches, expressed in cells.
 		 */
 		char CurrentCloakRadius;
+
+		/*
+		 * These mark the cells of the cloaking grid around a cloak generator that its own field
+		 * covers, so its cover is counted on and off without disturbing another generator's.
+		 */
+		std::vector<std::uint8_t> CloakFieldCells;
+
+		/*
+		 * Has this sensor array counted its coverage on the map? The coverage is counted once,
+		 * however often the array is switched on.
+		 */
+		bool IsSensing;
 
 		/*
 		 * This is how far this building has faded from sight, from 0 (solid) to 15 (invisible).
@@ -520,6 +537,7 @@ class BuildingClass : public TechnoClass
 		int Flush_For_Placement(TechnoClass * techno, Cell const & cell);
 		void Enable_Cloak_Generator(void);
 		void Disable_Cloak_Generator(void);
+		bool Cover_Cloak_Cell(int index, CellClass * cellptr, bool cover);
 		void Disable_Sensor_Array(void);
 		void Enable_Sensor_Array(void);
 

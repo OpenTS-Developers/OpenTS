@@ -100,10 +100,26 @@ class HouseArray
 
 		void Fill(T const & value) {Values.fill(value);}
 
+		// Writes only the non-default slots, since most houses hold nothing in most cells.
 		template<typename S>
 		void Serialize(S & stream)
 		{
-			stream.Serialize(Values);
+			std::uint64_t present = 0;
+			if (stream.Is_Saving()) {
+				for (int slot = 0; slot < HOUSE_MAX; slot++) {
+					if (!(Values[slot] == T{})) {
+						present |= std::uint64_t(1) << slot;
+					}
+				}
+			}
+			stream.Serialize(present);
+			for (int slot = 0; slot < HOUSE_MAX; slot++) {
+				if ((present & (std::uint64_t(1) << slot)) != 0) {
+					stream.Serialize(Values[slot]);
+				} else if (stream.Is_Loading()) {
+					Values[slot] = T{};
+				}
+			}
 		}
 
 	private:
