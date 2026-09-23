@@ -778,6 +778,7 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Do_VoxelAnimTypes(ini);
 	Do_ParticleTypes(ini);
 	Do_ParticleSystemTypes(ini);
+	Do_Tiberiums(ini);
 
 	Jumpjet_Controls(ini);
 	MPlayer(ini);
@@ -793,11 +794,10 @@ bool RulesClass::Addition(CCINIClass const & ini)
 	Combat_Damage(ini);
 	Audio_Visual_Rules(ini);
 	Special_Weapons(ini);
-	bool result = TiberiumClass::Process(ini);
 
 	BEnd(BENCH_RULES);
 
-	return(result);
+	return(true);
 }
 
 
@@ -1746,6 +1746,26 @@ bool RulesClass::Do_ParticleSystemTypes(CCINIClass const & ini)
 	for (int i = 0; i < count; i++) {
 		if (ini.Get_String(PARTICLESYSTEMS, ini.Get_Entry(PARTICLESYSTEMS, i), "", buffer, sizeof(buffer))) {
 			ParticleSystemTypeClass::Find_Or_Make(buffer);
+		}
+	}
+	return(count > 0);
+}
+
+
+/// <summary>
+/// Creates the tiberium types declared in the control file.
+/// Each entry of the tiberium list names a type, which is created if the game has not heard
+/// of it before and one of the four slots is free.
+/// </summary>
+/// <returns>bool; Were any tiberium types declared?</returns>
+bool RulesClass::Do_Tiberiums(CCINIClass const & ini)
+{
+	static char const * const TIBERIUMS = "Tiberiums";
+	char buffer[32];
+	int count = ini.Entry_Count(TIBERIUMS);
+	for (int i = 0; i < count; i++) {
+		if (ini.Get_String(TIBERIUMS, ini.Get_Entry(TIBERIUMS, i), "", buffer, sizeof(buffer))) {
+			TiberiumClass::Find_Or_Make(buffer);
 		}
 	}
 	return(count > 0);
@@ -2974,6 +2994,10 @@ bool RulesClass::Objects(CCINIClass const & ini)
 
 	for (int vindex = 0; vindex < VoxelAnimTypes.Count(); vindex++) {
 		VoxelAnimTypes[vindex]->Read_INI(ini);
+	}
+
+	for (int tibindex = 0; tibindex < Tiberiums.Count(); tibindex++) {
+		Tiberiums[tibindex]->Read_INI(ini);
 	}
 
 	/*

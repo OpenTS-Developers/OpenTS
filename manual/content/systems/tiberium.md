@@ -61,16 +61,16 @@ Spread=2200
 SpreadPercentage=.09
 ```
 
-Each entry in `[Tiberiums]` names the rules section that defines one Tiberium type. Types are registered in the order of the entries, and each type's Tiberium slot is its position in that order, counted from 0. With the conventional `0=` through `3=` list, the entry numbers and the slots match.
+Each entry in `[Tiberiums]` names the rules section that defines one Tiberium type. Types are registered in the order the entries first name them, and each type's Tiberium slot is its position in that order, counted from 0. The number on an entry is ignored. An entry naming a type already registered, by this file or an earlier one, reuses that type.
 
-An entry whose number is lower than the count of types registered so far does not register a new type. It re-reads the section of the type already in that slot, and the section name on the entry is ignored. Every other entry registers a new type in the next free slot, whatever its number.
+Every rules file, and the scenario's own overrides, reads the section of each registered type, whether or not that file has a `[Tiberiums]` list. A map can therefore change a shipped type by writing its section alone. [Rules registration lists](/formats/rules-registries/) gives the order the files are read in.
 
 If the named section does not exist, the type keeps its built-in values, which include no overlay set.
 
 A type's slot decides which storage compartment its harvested Tiberium goes into, and how ripe its cells must be before they [spread](#spread). [`TiberiumToSpawn`](/keys/tiberiumtospawn/), Tiberium crates and several destruction effects also name a type by its slot.
 
-:::danger[Register at most four types]
-Harvesters, storage buildings and houses each hold exactly four Tiberium compartments, one for each slot from 0 to 3. A fifth type registers in slot 4. Harvesting, storing or spending it writes outside those compartments and corrupts memory.
+:::note[At most four types]
+Harvesters, storage buildings and houses each hold four Tiberium compartments, one for each slot from 0 to 3. Once four types are registered, an entry naming a new type is skipped, and the debug log names it.
 :::
 
 [`Image`](/keys/image/#scope-tiberium) selects the type's overlay set. Every set has twelve growth stages, and the set decides whether the type can grow on sloped ground.

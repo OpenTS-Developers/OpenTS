@@ -128,6 +128,7 @@ class RulesClass
 		bool Do_WarheadTypes(CCINIClass const & ini);
 		bool Do_ParticleTypes(CCINIClass const & ini);
 		bool Do_ParticleSystemTypes(CCINIClass const & ini);
+		bool Do_Tiberiums(CCINIClass const & ini);
 
 		bool AI(CCINIClass const & ini);
 		bool Powerups(CCINIClass const & ini);

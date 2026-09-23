@@ -133,6 +133,35 @@ test('DropPodWeapon remains a null default loaded before object type registratio
 	assertOrdered(addition, ['General(ini);', 'Objects(ini);'], 'Rules addition order');
 });
 
+test('Tiberium types register by name, stop at four, and read every rules file', () => {
+	const rules = source('code/rules.cpp');
+	const addition = functionBody(rules, 'bool RulesClass::Addition(CCINIClass const & ini)');
+	assertOrdered(
+		addition,
+		['Do_ParticleSystemTypes(ini);', 'Do_Tiberiums(ini);', 'Objects(ini);'],
+		'Tiberium registration order',
+	);
+	assert.doesNotMatch(addition, /TiberiumClass::/);
+
+	const register = functionBody(rules, 'bool RulesClass::Do_Tiberiums(CCINIClass const & ini)');
+	assert.match(register, /TiberiumClass::Find_Or_Make\(buffer\);/);
+
+	const findOrMake = functionBody(
+		source('code/tiberium.cpp'),
+		'TiberiumClass * TiberiumClass::Find_Or_Make(char const * name)',
+	);
+	assertOrdered(findOrMake, [
+		'if (Tiberiums.Count() < TIBERIUM_COUNT)',
+		'TFind_Or_Make<TiberiumClass>(name, Tiberiums)',
+		'return(Tiberiums[index]);',
+		'return(NULL);',
+	], 'Tiberium Find_Or_Make');
+	assert.match(source('code/tiberium.hh'), /TIBERIUM_RIPARIUS,\s+TIBERIUM_CRUENTUS,\s+TIBERIUM_VINIFERA,\s+TIBERIUM_ABOREUS,\s+TIBERIUM_COUNT,/);
+
+	const objects = functionBody(rules, 'bool RulesClass::Objects(CCINIClass const & ini)');
+	assert.match(objects, /Tiberiums\[tibindex\]->Read_INI\(ini\);/);
+});
+
 test('Drop pod superweapon placement draws on one shared 3-per-passenger attempt budget', () => {
 	const dropPods = functionBody(
 		source('code/super.cpp'),

@@ -35,9 +35,9 @@ source_files:
   - code/init.cpp
 ---
 
-All but two of these registration sections are read the same way. Each entry is taken by its position in the section, and only its value is looked at. The key text decides nothing, and the order the lines are written in is the order the types are registered. The value is both the type ID and the name of the section the definition is written in, and is kept to its first thirty-one characters. An empty value registers nothing: the line is dropped, so the entries written after it each move up one position. A value naming an ID the game already has reuses that type instead of adding a second one.
+Every one of these registration sections except `[Sides]` is read the same way. Each entry is taken by its position in the section, and only its value is looked at. The key text decides nothing, and the order the lines are written in is the order the types are registered. The value is both the type ID and the name of the section the definition is written in, and is kept to its first thirty-one characters. An empty value registers nothing: the line is dropped, so the entries written after it each move up one position. A value naming an ID the game already has reuses that type instead of adding a second one.
 
-The two exceptions read their keys. In `[Sides]` the key is the Side ID and the value is a comma-separated HouseType list. A name in that list that is not a HouseType ID is logged and skipped, so the country it names does not join that side. In `[Tiberiums]` the key is a slot number. A number below the count already registered selects that existing Tiberium and discards the value. Only a number at or above the count creates a new Tiberium, under the name the value gives.
+`[Sides]` reads its keys instead. The key is the Side ID and the value is a comma-separated HouseType list. A name in that list that is not a HouseType ID is logged and skipped, so the country it names does not join that side. `[Tiberiums]` stops registering new types at four, as [Tiberium types](/systems/tiberium/#tiberium-types) explains.
 
 Registering an ID and defining it are separate passes. Registration creates the type with the built-in defaults for its kind, and the section named by the ID is read afterwards. An ID registered with no section of its own is therefore kept with those defaults rather than dropped.
 

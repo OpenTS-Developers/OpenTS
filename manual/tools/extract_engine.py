@@ -187,6 +187,7 @@ RULES_OBJECTS_LOADERS = {
     'ParticleTypes': 'ParticleTypeClass',
     'ParticleSystemTypes': 'ParticleSystemTypeClass',
     'VoxelAnimTypes': 'VoxelAnimTypeClass',
+    'Tiberiums': 'TiberiumClass',
     'miss': 'MissionControlClass',
 }
 

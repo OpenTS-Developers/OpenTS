@@ -16,6 +16,7 @@
 #include "astar.h"
 #include "ccini.h"
 #include "cell.h"
+#include "dbgprint.h"
 #include "findmake.h"
 #include "globals.h"
 #include "incdec.h"
@@ -150,28 +151,25 @@ bool TiberiumClass::Read_INI(CCINIClass const & ini)
 
 
 /// <summary>
-/// Creates the tiberium types the rules ask for.
-/// This routine walks the list of tiberium names in the rules and either updates the
-/// matching tiberium type or creates a fresh one for each name it finds there.
+/// Finds the tiberium type of the name given, creating it when a slot is free.
 /// </summary>
-bool TiberiumClass::Process(CCINIClass const & ini)
+/// <returns>Returns with the tiberium type, or NULL for "none" or when all four slots are
+/// taken.</returns>
+TiberiumClass * TiberiumClass::Find_Or_Make(char const * name)
 {
-	char buffer[24];
-	int count = ini.Entry_Count("Tiberiums");
-	for (int i = 0; i < count; i++) {
-		char const * index = ini.Get_Entry("Tiberiums", i);
-		if (ini.Get_String("Tiberiums", index, "", buffer, sizeof(buffer)) > 0) {
-			int tibindex = atoi(index);
-			TiberiumClass * tib;
-			if (tibindex < Tiberiums.Count()) {
-				tib = Tiberiums[tibindex];
-			} else {
-				tib = new TiberiumClass(buffer);
-			}
-			tib->Read_INI(ini);
+	if (Tiberiums.Count() < TIBERIUM_COUNT) {
+		return(TFind_Or_Make<TiberiumClass>(name, Tiberiums));
+	}
+
+	for (int index = 0; index < Tiberiums.Count(); index++) {
+		if (stricmp(Tiberiums[index]->IniName, name) == 0) {
+			return(Tiberiums[index]);
 		}
 	}
-	return(true);
+
+	// Storage has compartments for only four slots.
+	DebugString("[Tiberiums] %s skipped: only %d types fit.\n", name, TIBERIUM_COUNT);
+	return(NULL);
 }
 
 

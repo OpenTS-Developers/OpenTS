@@ -201,7 +201,7 @@ Slot is the engine's word for six unrelated things, and it means nothing on its 
 - A weapon slot is one of the three positions a type's weapons sit in, filled by `Primary=`, `Secondary=` and `Elite=`.
 - A cameo slot is one place on a sidebar strip, showing one build option.
 - An upgrade slot is one of the plugs a structure's `Upgrades=` list fills.
-- A Tiberium slot is one entry's place in the `[Tiberiums]` registration list.
+- A Tiberium slot is a type's place in the order the `[Tiberiums]` registration list first names the types, from 0 to 3.
 - A landing slot is one entry in the `DropPod` list, which supplies the landing animation for one approach direction.
 
 An unqualified "slot" says nothing, because only the surrounding sentence names which of the six is meant. [Difficulty settings and handicaps](/systems/difficulty/#from-the-setting-to-a-slot) owns the first of them.

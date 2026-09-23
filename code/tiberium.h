@@ -48,7 +48,7 @@ class TiberiumClass : public AbstractTypeClass
 		virtual int Fetch_Heap_ID(void) const override { return(HeapID); }
 		virtual bool Read_INI(CCINIClass const & ini) override;
 
-		static bool Process(CCINIClass const & ini);
+		static TiberiumClass * Find_Or_Make(char const * name);
 
 		static void Tiberium_Spread(void);
 		static void Init_Tiberium_Spread_System(void);
