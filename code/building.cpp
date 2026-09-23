@@ -2718,6 +2718,26 @@ void BuildingClass::Assign_Rally_Point(Cell const & cell)
 }
 
 
+/// <summary>
+/// Fetches the rally point for an object leaving this structure, or NULL for none. A player's
+/// object that cannot be ordered into the shroud ignores a rally point the player has not uncovered.
+/// </summary>
+AbstractClass * BuildingClass::Rally_Point_For(TechnoClass const * techno) const
+{
+	if (ArchiveTarget == NULL) {
+		return(NULL);
+	}
+
+	TechnoTypeClass const * type = techno->TClass;
+	bool may_enter_shroud = type->IsMoveToShroud && (!type->IsSubterranean || Rule->IsShroudedSubteranneanMovesAllowed);
+	HouseClass const * view = techno->House->Player_View();
+	if (!may_enter_shroud && view != NULL && Map.Is_Shrouded(ArchiveTarget->Center_Coord(), view)) {
+		return(NULL);
+	}
+	return(ArchiveTarget);
+}
+
+
 /***********************************************************************************************
  * BuildingClass::Assign_Target -- Assigns a target to the building.                           *
  *                                                                                             *
@@ -2822,8 +2842,9 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 						Transmit_Message(RADIO_HELLO, air);
 						Transmit_Message(RADIO_TETHER);
 
-						if (ArchiveTarget != NULL) {
-							air->Assign_Destination(ArchiveTarget);
+						AbstractClass * rally = Rally_Point_For(air);
+						if (rally != NULL) {
+							air->Assign_Destination(rally);
 							air->Assign_Mission(MISSION_MOVE);
 						}
 						ScenarioInit--;
@@ -2856,8 +2877,9 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 
 				ScenarioInit++;
 				if (base->Unlimbo(Coord(spawncell, 0), DIR_N)) {
-					if (ArchiveTarget != NULL) {
-						base->Assign_Destination(ArchiveTarget);
+					AbstractClass * rally = Rally_Point_For(base);
+					if (rally != NULL) {
+						base->Assign_Destination(rally);
 						base->Assign_Mission(MISSION_MOVE);
 					} else {
 						cell = base->Nearby_Location(this);
@@ -2905,7 +2927,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 
 				if (Class->IsWeaponsFactory) {
 
-					base->ArchiveTarget = ArchiveTarget;
+					base->ArchiveTarget = Rally_Point_For(base);
 
 					if (Mission == MISSION_UNLOAD) {
 						for (int index = 0; index < Buildings.Count(); index++) {
@@ -3002,7 +3024,7 @@ int BuildingClass::Exit_Object(TechnoClass * base)
 
 				} else {
 
-					base->ArchiveTarget = ArchiveTarget;
+					base->ArchiveTarget = Rally_Point_For(base);
 					Coord exitcoord;
 
 					Cell exitcell = Find_Exit_Cell(base);

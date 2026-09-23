@@ -556,6 +556,7 @@ class BuildingClass : public TechnoClass
 		virtual int Apparent_Brightness(int brightness = 1000) const override;
 		virtual void Assign_Destination(AbstractClass * target, bool = true) override;
 		void Assign_Rally_Point(Cell const & cell);
+		AbstractClass * Rally_Point_For(TechnoClass const * techno) const;
 		virtual bool Enter_Idle_Mode(bool initial=false,  bool = true) override;
 		virtual void Radar_Track(void) override;
 		virtual void Radar_Untrack(void) override;

@@ -13,3 +13,5 @@ An order onto a shrouded cell is refused outright at `no`. At `yes` it is accept
 The same refusal covers an order onto a shrouded object, and that second test runs only in a campaign.
 
 An aircraft section therefore has to state `MoveToShroud=yes` outright to accept such an order at all.
+
+At `no`, a player's object leaving a factory also ignores a rally point that is still shrouded for the player, as [rally points](/systems/production/#rally-points) describes.

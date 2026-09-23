@@ -316,6 +316,8 @@ What the departing object does with the rally point depends on the factory:
 - A barracks, [`Hospital=yes`](/keys/hospital/) or [`Armory=yes`](/keys/armory/) structure passes it to the infantryman, who walks to the exit cell first and heads for the rally point the next time he is idle.
 - Every other factory ignores it. A `Factory=UnitType` structure with [`WeaponsFactory=no`](/keys/weaponsfactory/) accepts a rally point, but the vehicles it releases stop on the exit cell.
 
+If a departing object belongs to a house a player controls and its type cannot be ordered into the shroud, the object ignores a rally point that is still shrouded for that player and leaves as if the factory had no rally point. That covers a type with [`MoveToShroud=no`](/keys/movetoshroud/), the default for aircraft types, and a subterranean type while [`AllowShroudedSubteranneanMoves=no`](/keys/allowshroudedsubteranneanmoves/). The check is made as each object leaves, so the rally point works again once the player uncovers that ground.
+
 A structure stores its rally point as its move destination, so a structure that undeploys passes the rally point to the vehicle it becomes.
 
 ## When a factory is lost
