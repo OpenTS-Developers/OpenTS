@@ -33,6 +33,8 @@
 
 #include "xmouse.h"
 
+#include <vector>
+
 class ShapeSet;
 struct PlatformCursor;
 
@@ -125,19 +127,17 @@ class WWMouseClass : public Mouse {
 		int ReleasedState;
 
 		// The pointer is a system cursor built from the game's shapes, so moving it needs no new frame.
-		struct CursorCacheEntry
+		struct CachedCursor
 		{
-			ShapeSet const * Shape;
-			int Frame;
 			int HotX;
 			int HotY;
 			PlatformCursor * Cursor;
 		};
 
-		// One cursor per shape frame the game actually asks for. MOUSE.SHP holds a few hundred
-		// of them, so the cache is emptied rather than grown when it fills.
-		CursorCacheEntry CursorCache[384];
-		int CursorCacheCount;
+		// One slot per frame of CursorShape, holding the cursor once the game has asked for
+		// that frame at CursorCacheScale.
+		ShapeSet const * CursorShape;
+		std::vector<CachedCursor> CursorCache;
 		int CursorCacheScale;
 
 		ShapeSet const * CurrentShape;
