@@ -1133,7 +1133,7 @@ void EventClass::Execute(void)
 				techno->Transmit_Message(RADIO_OVER_OUT);
 				techno->Assign_Destination(NULL);
 				techno->Assign_Target(NULL);
-				if (techno->RTTI == RTTI_UNIT && ((UnitClass *)techno)->Class->IsToHarvest && techno->CurrentMission == MISSION_HARVEST) {
+				if (techno->RTTI != RTTI_AIRCRAFT) {
 					techno->Assign_Mission(MISSION_GUARD);
 					techno->Commence();
 				}
