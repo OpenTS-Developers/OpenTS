@@ -91,8 +91,19 @@ static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hot
 		return(NULL);
 	}
 
-	int width = shape->Get_Width() * scale;
-	int height = shape->Get_Height() * scale;
+	int eff = scale;
+	int maxw = GetSystemMetrics(SM_CXCURSOR);
+	int maxh = GetSystemMetrics(SM_CYCURSOR);
+	if (shape->Get_Width() > 0 && shape->Get_Height() > 0 && maxw > 0 && maxh > 0) {
+		int capw = maxw / shape->Get_Width();
+		int caph = maxh / shape->Get_Height();
+		if (eff > capw) eff = capw;
+		if (eff > caph) eff = caph;
+		if (eff < 1) eff = 1;
+	}
+
+	int width = shape->Get_Width() * eff;
+	int height = shape->Get_Height() * eff;
 
 	if (width <= 0 || height <= 0) {
 		return(NULL);
@@ -134,9 +145,9 @@ static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hot
 			unsigned long blue = (pixel & 0x1F) << 3;
 			unsigned long argb = 0xFF000000UL | (red << 16) | (green << 8) | blue;
 
-			for (int suby = 0; suby < scale; suby++) {
-				unsigned long * row = (unsigned long *)bits + ((rect.Y + y) * scale + suby) * width + (rect.X + x) * scale;
-				for (int subx = 0; subx < scale; subx++) {
+			for (int suby = 0; suby < eff; suby++) {
+				unsigned long * row = (unsigned long *)bits + ((rect.Y + y) * eff + suby) * width + (rect.X + x) * eff;
+				for (int subx = 0; subx < eff; subx++) {
 					row[subx] = argb;
 				}
 			}
@@ -151,8 +162,8 @@ static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hot
 	HBITMAP mask = CreateBitmap(width, height, 1, 1, mask_bits);
 	delete [] mask_bits;
 
-	int cursor_hotx = hotx * scale;
-	int cursor_hoty = hoty * scale;
+	int cursor_hotx = hotx * eff;
+	int cursor_hoty = hoty * eff;
 	if (cursor_hotx < 0) cursor_hotx = 0;
 	if (cursor_hoty < 0) cursor_hoty = 0;
 	if (cursor_hotx >= width) cursor_hotx = width - 1;
