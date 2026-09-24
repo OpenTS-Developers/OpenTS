@@ -9,9 +9,9 @@
 
 // Pins what the game receives from the platform's event pump: each event SDL queues reaches
 // the game once and in order, and the keys the platform reports held during an event are
-// those held as of that event, however many events one pump delivers. It also pins that the
-// lock keys are read again when the window regains focus, and that a capture Windows takes
-// away reaches the game as a lost capture.
+// those held as of that event, however many events one pump delivers, AltGr's Ctrl included.
+// It also pins that the lock keys are read again when the window regains focus, and that a
+// capture Windows takes away reaches the game as a lost capture.
 
 #include "gamewindow.h"
 #include "platform/platform.h"
@@ -22,6 +22,7 @@
 #include <SDL3/SDL_events.h>
 
 #include <cstdio>
+#include <cstring>
 #include <vector>
 
 namespace {
@@ -164,6 +165,29 @@ int main(void)
 	Check(released, "a key or click after Ctrl's release in the same pump sees it released");
 
 	Push_Key(false, SDL_SCANCODE_B, SDLK_B);
+	Pumped(WINDOW_EVENT_KEY_UP);
+
+	// Windows reports the Left Ctrl it presses for AltGr only while the Right Alt press is queued.
+	BYTE state[256] = {};
+	state[VK_CONTROL] = 0x80;
+	state[VK_LCONTROL] = 0x80;
+	SetKeyboardState(state);
+	Push_Key(true, SDL_SCANCODE_RALT, SDLK_RALT, SDL_KMOD_RALT);
+	std::memset(state, 0, sizeof(state));
+	SetKeyboardState(state);
+	Push_Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT);
+	Push_Key(false, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT);
+	Push_Key(false, SDL_SCANCODE_RALT, SDLK_RALT);
+	keys = Pumped(WINDOW_EVENT_KEY_DOWN);
+	Check(keys.size() == 2 && keys[1].Ctrl && keys[1].Event.Modifiers == (WINDOW_MOD_CTRL | WINDOW_MOD_ALT) && !keys[1].Event.System, "a key typed with AltGr in one pump carries AltGr's Ctrl");
+	Check(!Platform_Key_Down(VK_CONTROL), "and Ctrl is released with AltGr");
+
+	Push_Key(true, SDL_SCANCODE_RALT, SDLK_RALT, SDL_KMOD_RALT);
+	Push_Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT);
+	keys = Pumped(WINDOW_EVENT_KEY_DOWN);
+	Check(keys.size() == 2 && !keys[1].Ctrl && keys[1].Event.Modifiers == WINDOW_MOD_ALT && keys[1].Event.System, "a Right Alt that is not AltGr is Alt alone");
+	Push_Key(false, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT);
+	Push_Key(false, SDL_SCANCODE_RALT, SDLK_RALT);
 	Pumped(WINDOW_EVENT_KEY_UP);
 
 	SDL_SetModState(SDL_KMOD_CAPS);

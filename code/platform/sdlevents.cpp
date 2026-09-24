@@ -40,7 +40,7 @@ bool Mouse_Button(Uint8 button, WindowMouseButton & result)
 }
 
 
-int Key_Modifiers(SDL_Keymod modifiers)
+int Key_Modifiers(SDL_Keymod modifiers, bool altgr)
 {
 	int result = 0;
 	if ((modifiers & SDL_KMOD_SHIFT) != 0) {
@@ -61,7 +61,7 @@ int Key_Modifiers(SDL_Keymod modifiers)
 
 	// Windows presses Left Ctrl along with AltGr, which SDL leaves out; hotkeys saved under
 	// Windows recorded AltGr as Ctrl+Alt.
-	if ((modifiers & SDL_KMOD_RALT) != 0 && (GetKeyState(VK_LCONTROL) & 0x8000) != 0) {
+	if ((modifiers & SDL_KMOD_RALT) != 0 && altgr) {
 		result |= WINDOW_MOD_CTRL;
 	}
 
@@ -79,7 +79,7 @@ WindowEvent Window_Event(WindowEventType type)
 }
 
 
-void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, std::vector<WindowEvent> & events)
+void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, bool altgr, std::vector<WindowEvent> & events)
 {
 	WindowEvent event;
 
@@ -133,7 +133,7 @@ void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, std:
 				break;
 			}
 			event.Type = sdlevent.key.down ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
-			event.Modifiers = Key_Modifiers(sdlevent.key.mod);
+			event.Modifiers = Key_Modifiers(sdlevent.key.mod, altgr);
 			event.Repeat = sdlevent.key.down && sdlevent.key.repeat;
 
 			// Windows treats keys pressed with Alt, but not with AltGr, as system keys, and F10.

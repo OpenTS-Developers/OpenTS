@@ -46,10 +46,10 @@ SDL_Event Event_Of(Uint32 type)
 }
 
 
-std::vector<WindowEvent> Translate(SDL_Event const & event, float pixeldensity = 1.0f)
+std::vector<WindowEvent> Translate(SDL_Event const & event, float pixeldensity = 1.0f, bool altgr = false)
 {
 	std::vector<WindowEvent> events;
-	Window_Events_From_SDL(event, pixeldensity, events);
+	Window_Events_From_SDL(event, pixeldensity, altgr, events);
 	return(events);
 }
 
@@ -154,6 +154,12 @@ int main(void)
 
 	events = Translate(Key(true, SDL_SCANCODE_Q, SDLK_Q, (SDL_Keymod)(SDL_KMOD_LALT | SDL_KMOD_LCTRL)));
 	Check(One(events, WINDOW_EVENT_KEY_DOWN) && !events[0].System, "a key pressed with Ctrl and Alt held is not a system key");
+
+	events = Translate(Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT), 1.0f, true);
+	Check(One(events, WINDOW_EVENT_KEY_DOWN) && events[0].Modifiers == (WINDOW_MOD_CTRL | WINDOW_MOD_ALT) && !events[0].System, "a key pressed with AltGr carries the Ctrl Windows adds");
+
+	events = Translate(Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT));
+	Check(One(events, WINDOW_EVENT_KEY_DOWN) && events[0].Modifiers == WINDOW_MOD_ALT && events[0].System, "a key pressed with a Right Alt that is not AltGr is a system key");
 
 	events = Translate(Key(true, SDL_SCANCODE_LANG1, SDLK_UNKNOWN, SDL_KMOD_NONE));
 	Check(events.empty(), "a key Windows has no code for is dropped");
