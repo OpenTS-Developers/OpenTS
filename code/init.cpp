@@ -2542,10 +2542,6 @@ static bool Init_Secondary_Mixfiles(void)
 
 	DebugStringNoPrefix(" SCORES.MIX");
 
-	if (ScoresMix == NULL) {
-		return(false);
-	}
-
 	if (CCFileClass("SCORES01.MIX").Is_Available()) {
 		Scores01Mix = new MFCD("SCORES01.MIX", &FastKey);
 	}
@@ -2571,10 +2567,6 @@ static bool Init_Secondary_Mixfiles(void)
 
 			MoviesMixLocal.Add(mix);
 		}
-	}
-
-	if (MoviesMix == NULL) {
-		return(false);
 	}
 
 	return(true);
