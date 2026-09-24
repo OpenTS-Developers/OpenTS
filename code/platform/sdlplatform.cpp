@@ -732,9 +732,9 @@ void Platform_Warp_Cursor(int x, int y)
 
 
 /// <summary>
-/// Reports whether a key or mouse button is held. Mouse buttons are read from the system as
-/// they stand, with the left and right buttons as the player sees them; keys are as of the
-/// last pump.
+/// Reports whether a key or mouse button is held. A key is reported as of the input event being
+/// handled, or as of the last one handled between pumps. A mouse button is read from the system
+/// as it stands, and follows the player's left-handed button setting.
 /// </summary>
 bool Platform_Key_Down(int virtualkey)
 {
