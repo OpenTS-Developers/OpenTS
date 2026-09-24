@@ -9,8 +9,9 @@
 
 // Pins what the game receives from the platform's event pump: each event SDL queues reaches
 // the game once and in order, and the keys the platform reports held during an event are
-// those held as of that event, however many events one pump delivers. It also pins that a
-// capture Windows takes away reaches the game as a lost capture.
+// those held as of that event, however many events one pump delivers. It also pins that the
+// lock keys are read again when the window regains focus, and that a capture Windows takes
+// away reaches the game as a lost capture.
 
 #include "gamewindow.h"
 #include "platform/platform.h"
@@ -52,6 +53,14 @@ void Push_Key(bool down, SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod 
 	event.key.key = keycode;
 	event.key.mod = modifiers;
 	event.key.down = down;
+	SDL_PushEvent(&event);
+}
+
+
+void Push_Window(SDL_EventType type)
+{
+	SDL_Event event = {};
+	event.type = type;
 	SDL_PushEvent(&event);
 }
 
@@ -156,6 +165,14 @@ int main(void)
 
 	Push_Key(false, SDL_SCANCODE_B, SDLK_B);
 	Pumped(WINDOW_EVENT_KEY_UP);
+
+	SDL_SetModState(SDL_KMOD_CAPS);
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
+	Pumped(WINDOW_EVENT_FOCUS_GAINED);
+	Check(Platform_Key_Toggled(VK_CAPITAL), "the lock keys are read again when the window regains focus");
+	SDL_SetModState(SDL_KMOD_NONE);
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
+	Pumped(WINDOW_EVENT_FOCUS_GAINED);
 
 	HWND const window = (HWND)Platform_Native_Window().Handle;
 

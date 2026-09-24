@@ -134,21 +134,22 @@ void Press_Key(int scancode, int virtualkey, bool down)
 }
 
 
-// Starts from the keys SDL last saw held, for keys pressed before the window opened.
-void Seed_Held_Keys(void)
+// No key starts held, because SDL sees no key until its window has the focus. The lock keys
+// start as SDL read them from Windows when it started.
+void Reset_Held_Keys(void)
 {
 	std::memset(_PressedAs, 0, sizeof(_PressedAs));
 	_KeyModifiers = SDL_GetModState();
-
-	int count = 0;
-	bool const * state = SDL_GetKeyboardState(&count);
-	for (int scancode = 0; scancode < count && scancode < SDL_SCANCODE_COUNT; scancode++) {
-		if (state[scancode]) {
-			SDL_Keycode keycode = SDL_GetKeyFromScancode((SDL_Scancode)scancode, _KeyModifiers, true);
-			Press_Key(scancode, Virtual_Key_From_SDL(scancode, (unsigned int)keycode, (unsigned int)_KeyModifiers), true);
-		}
-	}
 	Rebuild_Held_Keys();
+}
+
+
+// SDL reads the lock keys from Windows again when the window regains the focus, and sends no
+// key event for them.
+void Refresh_Lock_Keys(void)
+{
+	SDL_Keymod const locks = SDL_KMOD_CAPS | SDL_KMOD_NUM | SDL_KMOD_SCROLL;
+	_KeyModifiers = (SDL_Keymod)((_KeyModifiers & ~locks) | (SDL_GetModState() & locks));
 }
 
 
@@ -187,6 +188,10 @@ int Held_Modifiers(void)
 
 void Dispatch(WindowEvent const & event)
 {
+	if (event.Type == WINDOW_EVENT_FOCUS_GAINED) {
+		Refresh_Lock_Keys();
+	}
+
 	// The screen saver may start while the player is elsewhere, but not over the game.
 	if (event.Type == WINDOW_EVENT_FOCUS_GAINED) {
 		SDL_DisableScreenSaver();
@@ -468,7 +473,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 
 	SDL_AddEventWatch(Watch_Window, nullptr);
 	SetWindowSubclass(Main_Window_Handle(), Watch_Capture, CaptureSubclass, 0);
-	Seed_Held_Keys();
+	Reset_Held_Keys();
 
 	SDL_ShowWindow(_Window);
 	SDL_RaiseWindow(_Window);
