@@ -92,6 +92,12 @@ int main(void)
 	Check(key == 'Q' && keyboard.To_ASCII(key) == 0, "a held key's repeat neither queues nor types");
 	Check(keyboard.Check() == 0, "and its character is dropped");
 
+	keyboard.Handle_Window_Event(Key(false, 'Q'));
+	keyboard.Get();
+	keyboard.Handle_Window_Event(Text(0x65E5));
+	key = (keyboard.Check() != 0) ? keyboard.Get() : 0;
+	Check(key == KN_TEXT && keyboard.To_ASCII(key) == 0x65E5, "text after the repeating key's release is kept");
+
 	keyboard.Handle_Window_Event(Key(true, VK_OEM_7));
 	keyboard.Handle_Window_Event(Key(true, 'X'));
 	keyboard.Handle_Window_Event(Text(0x00B4));
