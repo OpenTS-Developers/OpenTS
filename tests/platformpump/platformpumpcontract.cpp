@@ -8,10 +8,11 @@
  ******************************************************************************/
 
 // Pins what the game receives from the platform's event pump: each event SDL queues reaches
-// the sink once and in order, and the keys the platform reports held during an event are
+// the game once and in order, and the keys the platform reports held during an event are
 // those held as of that event, however many events one pump delivers. It also pins that a
 // capture Windows takes away reaches the game as a lost capture.
 
+#include "gamewindow.h"
 #include "platform/platform.h"
 #include "platform/windowevent.hh"
 
@@ -41,19 +42,6 @@ std::vector<WindowEvent> Received;
 
 // Whether the platform reported Ctrl held while each received event was handled.
 std::vector<bool> CtrlHeld;
-
-
-bool Record(WindowEvent const & event)
-{
-	Received.push_back(event);
-	CtrlHeld.push_back(Platform_Key_Down(VK_CONTROL));
-	return(true);
-}
-
-
-void Update_Cursor(void)
-{
-}
 
 
 void Push_Key(bool down, SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod modifiers = SDL_KMOD_NONE)
@@ -106,13 +94,23 @@ std::vector<Delivered> Pumped(WindowEventType type)
 }
 
 
+// Stands in for the game's window handler and records what the platform hands it.
+bool Game_Window_Handle_Event(WindowEvent const & event)
+{
+	Received.push_back(event);
+	CtrlHeld.push_back(Platform_Key_Down(VK_CONTROL));
+	return(true);
+}
+
+
+void Game_Window_Update_Cursor(void)
+{
+}
+
+
 int main(void)
 {
-	PlatformEventSink sink;
-	sink.Handle_Event = Record;
-	sink.Update_Cursor = Update_Cursor;
-
-	if (!Platform_Init(sink) || !Platform_Create_Main_Window(true, 64, 48)) {
+	if (!Platform_Init() || !Platform_Create_Main_Window(true, 64, 48)) {
 		std::printf("the main window could not be created\n\nFAILED\n");
 		return(1);
 	}
@@ -121,7 +119,7 @@ int main(void)
 	Push_Key(true, SDL_SCANCODE_A, SDLK_A);
 	Push_Key(true, SDL_SCANCODE_B, SDLK_B);
 	std::vector<Delivered> keys = Pumped(WINDOW_EVENT_KEY_DOWN);
-	Check(keys.size() == 2 && keys[0].Event.VirtualKey == 'A' && keys[1].Event.VirtualKey == 'B', "each queued key reaches the sink once, in order");
+	Check(keys.size() == 2 && keys[0].Event.VirtualKey == 'A' && keys[1].Event.VirtualKey == 'B', "each queued key reaches the game once, in order");
 
 	Push_Key(false, SDL_SCANCODE_A, SDLK_A);
 	Push_Key(false, SDL_SCANCODE_B, SDLK_B);
