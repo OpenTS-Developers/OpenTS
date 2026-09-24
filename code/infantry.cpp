@@ -817,7 +817,8 @@ void InfantryClass::Per_Cell_Process(PCPType why)
 							iscapturable = ((BuildingClass *)tech)->Class->IsCaptureable;
 						}
 
-						if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed) {
+						if (Session.Type != GAME_NORMAL && Session.Options.CrapEngineers && tech->HealthRatio > Rule->ConditionRed
+							&& tech->House->Class->HeapID != HouseTypeClass::From_Name("Neutral")) {
 							int maxdamage = tech->Strength - int(tech->TClass->MaxStrength * Rule->ConditionRed / 2);
 							int damage = std::min<double>((tech->TClass->MaxStrength) * ((1 - Rule->ConditionRed / 2) / 2), maxdamage);
 							tech->Take_Damage(damage, 0, Rule->C4Warhead, this, true);

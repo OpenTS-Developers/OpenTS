@@ -173,7 +173,10 @@ An engineer damages a non-allied structure instead of taking it when **all of** 
 
 - the game is not a campaign game;
 - the multiplayer engineer option is on (`MultiEngineer` in a [spawn file](/formats/spawn-ini/));
-- the structure's strength fraction is above [`ConditionRed`](/keys/conditionred/).
+- the structure's strength fraction is above [`ConditionRed`](/keys/conditionred/);
+- the structure does not belong to the `Neutral` house.
+
+A single engineer therefore takes a `Capturable=yes` `Neutral` structure at any strength, as it does with the option off.
 
 This branch does not read `Capturable`, so it also damages a structure the engineer could never take.
 
@@ -210,7 +213,7 @@ Spying on a structure with positive [`Power`](/keys/power/#scope-buildingtype) h
 
 ### The soldier is consumed
 
-Every soldier that walks into its target structure is deleted, even when nothing happens there. That includes an engineer at a non-allied structure that is not `Capturable=yes` in a campaign, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the only arrival on this page that leaves the soldier alive.
+Every soldier that walks into its target structure is deleted, even when nothing happens there. That includes an engineer at a non-allied structure that is not `Capturable=yes` and that it does not [damage](#damaging-it-instead) either, and any soldier that is neither an engineer nor `Agent=yes`. Arming a demolition charge is the only arrival on this page that leaves the soldier alive.
 
 ## What changes hands
 
