@@ -129,10 +129,10 @@ void ToolTipManager::Service(void)
 		int x = 0;
 		int y = 0;
 		Platform_Cursor_Position(x, y);
-		LastMousePos.x = x;
-		LastMousePos.y = y;
+		LastMousePos.X = x;
+		LastMousePos.Y = y;
 		Window_Point_To_Game(LastMousePos);
-		CurrentToolTip = Find_From_Pos((Point2D &)LastMousePos);
+		CurrentToolTip = Find_From_Pos(LastMousePos);
 		if (Process() == true) {
 			Start_Timer(ToolTipLifetime);
 		}
@@ -309,8 +309,8 @@ bool ToolTipManager::Update(ToolTipText *text)
 /// <param name="text">The tooltip display record being retired.</param>
 void ToolTipManager::Reset(const ToolTipText *text)
 {
-	CurrentToolTipInfo.Pos.x = 0;
-	CurrentToolTipInfo.Pos.y = 0;
+	CurrentToolTipInfo.Pos.X = 0;
+	CurrentToolTipInfo.Pos.Y = 0;
 	CurrentToolTipInfo.TextWidth = 0;
 	CurrentToolTipInfo.TextHeight = 0;
 	CurrentToolTip = NULL;
@@ -333,24 +333,24 @@ bool ToolTipManager::Process(void)
 
 			strncpy(CurrentToolTipInfo.Text, str, sizeof(CurrentToolTipInfo.Text));
 
-			CurrentToolTipInfo.Pos.x = LastMousePos.x;
-			CurrentToolTipInfo.Pos.y = LastMousePos.y;
+			CurrentToolTipInfo.Pos.X = LastMousePos.X;
+			CurrentToolTipInfo.Pos.Y = LastMousePos.Y;
 			CurrentToolTipInfo.TextWidth = 0;
 			CurrentToolTipInfo.TextHeight = 0;
 
 			ToolTipText & txt = CurrentToolTipInfo;
 
 			if (!Update(&CurrentToolTipInfo)) {
-				txt.Pos.x = 0;
-				txt.Pos.y = 0;
+				txt.Pos.X = 0;
+				txt.Pos.Y = 0;
 				txt.TextWidth = 0;
 				txt.TextHeight = 0;
 				CurrentToolTip = NULL;
 			}
 
 		} else {
-			CurrentToolTipInfo.Pos.x = 0;
-			CurrentToolTipInfo.Pos.y = 0;
+			CurrentToolTipInfo.Pos.X = 0;
+			CurrentToolTipInfo.Pos.Y = 0;
 			CurrentToolTipInfo.TextWidth = 0;
 			CurrentToolTipInfo.TextHeight = 0;
 			CurrentToolTip = NULL;

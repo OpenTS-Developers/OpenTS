@@ -13,12 +13,12 @@
 
 #pragma once
 
-#include "win.h"
+#include "point.h"
 
 
 bool Video_Scaling_Active(void);
 
-void Window_Point_To_Game(POINT & point);
-void Game_Point_To_Window(POINT & point);
+void Window_Point_To_Game(Point2D & point);
+void Game_Point_To_Window(Point2D & point);
 
-void Clamp_To_Game(POINT & point);
+void Clamp_To_Game(Point2D & point);

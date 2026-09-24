@@ -14,9 +14,9 @@
 #pragma once
 
 #include "index.h"
+#include "point.h"
 #include "rect.h"
 #include "vector.h"
-#include "win.h"
 
 struct WindowEvent;
 
@@ -50,7 +50,7 @@ public:
 
 struct ToolTipText
 {
-	POINT Pos;
+	Point2D Pos;
 	int TextWidth;
 	int TextHeight;
 	char Text[256];
@@ -116,7 +116,7 @@ class ToolTipManager
 		 * This is where the cursor was, in frame coordinates, when the hover delay expired.
 		 * It decides which tooltip is chosen and where the tooltip box is placed.
 		 */
-		POINT LastMousePos;
+		Point2D LastMousePos;
 
 		/*
 		 * This points to the tooltip the mouse is currently resting over, or NULL when

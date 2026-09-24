@@ -12,7 +12,6 @@
 #include "vidscale.h"
 
 #include "video.h"
-#include "win.h"
 
 #include <cmath>
 
@@ -35,13 +34,13 @@ bool Video_Scaling_Active(void)
 /// pulled onto its edge.
 /// </summary>
 /// <param name="point">The position to convert in place.</param>
-void Window_Point_To_Game(POINT & point)
+void Window_Point_To_Game(Point2D & point)
 {
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
 
 	if (scale.DestWidth > 0 && scale.DestHeight > 0) {
-		point.x = (LONG)floor((point.x - scale.DestX) * (double)scale.GameWidth / (double)scale.DestWidth);
-		point.y = (LONG)floor((point.y - scale.DestY) * (double)scale.GameHeight / (double)scale.DestHeight);
+		point.X = (int)floor((point.X - scale.DestX) * (double)scale.GameWidth / (double)scale.DestWidth);
+		point.Y = (int)floor((point.Y - scale.DestY) * (double)scale.GameHeight / (double)scale.DestHeight);
 	}
 }
 
@@ -51,13 +50,13 @@ void Window_Point_To_Game(POINT & point)
 /// </summary>
 /// <param name="point">The position to convert in place. It comes back at the top left
 /// corner of the area the frame pixel covers on screen.</param>
-void Game_Point_To_Window(POINT & point)
+void Game_Point_To_Window(Point2D & point)
 {
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
 
 	if (scale.GameWidth > 0 && scale.GameHeight > 0) {
-		point.x = scale.DestX + (LONG)floor(point.x * (double)scale.DestWidth / (double)scale.GameWidth);
-		point.y = scale.DestY + (LONG)floor(point.y * (double)scale.DestHeight / (double)scale.GameHeight);
+		point.X = scale.DestX + (int)floor(point.X * (double)scale.DestWidth / (double)scale.GameWidth);
+		point.Y = scale.DestY + (int)floor(point.Y * (double)scale.DestHeight / (double)scale.GameHeight);
 	}
 }
 
@@ -66,12 +65,12 @@ void Game_Point_To_Window(POINT & point)
 /// Pulls a position onto the frame if it lies outside it.
 /// </summary>
 /// <param name="point">The position to clamp in place.</param>
-void Clamp_To_Game(POINT & point)
+void Clamp_To_Game(Point2D & point)
 {
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
 
-	if (point.x < 0) point.x = 0;
-	if (point.y < 0) point.y = 0;
-	if (scale.GameWidth > 0 && point.x >= scale.GameWidth) point.x = scale.GameWidth - 1;
-	if (scale.GameHeight > 0 && point.y >= scale.GameHeight) point.y = scale.GameHeight - 1;
+	if (point.X < 0) point.X = 0;
+	if (point.Y < 0) point.Y = 0;
+	if (scale.GameWidth > 0 && point.X >= scale.GameWidth) point.X = scale.GameWidth - 1;
+	if (scale.GameHeight > 0 && point.Y >= scale.GameHeight) point.Y = scale.GameHeight - 1;
 }

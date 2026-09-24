@@ -109,12 +109,10 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 	// The map and the key queue work in frame coordinates.
 	WindowEvent frame = event;
 	if (Is_Mouse_Event(event.Type) && Video_Scaling_Active()) {
-		POINT point;
-		point.x = event.X;
-		point.y = event.Y;
+		Point2D point(event.X, event.Y);
 		Window_Point_To_Game(point);
-		frame.X = point.x;
-		frame.Y = point.y;
+		frame.X = point.X;
+		frame.Y = point.Y;
 	}
 
 	Map.Handle_Window_Event(frame);
