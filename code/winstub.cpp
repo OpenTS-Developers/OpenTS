@@ -168,7 +168,10 @@ bool Create_Main_Window(int width, int height)
 	// The rules chooser and the map editor are built from the common controls.
 	InitCommonControls();
 
-	if (!Platform_Init()) {
+	PlatformEventSink sink;
+	sink.Handle_Event = Game_Window_Handle_Event;
+	sink.Update_Cursor = Game_Window_Update_Cursor;
+	if (!Platform_Init(sink)) {
 		return(false);
 	}
 

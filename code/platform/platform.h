@@ -29,9 +29,19 @@ enum PlatformCursorShape
 };
 
 struct PlatformCursor;
+struct WindowEvent;
+
+// The game's handlers for the main window, which the platform calls while it pumps events.
+struct PlatformEventSink
+{
+	bool (*Handle_Event)(WindowEvent const & event);
+
+	// Called after a mouse move or a focus gain, so the game can choose the pointer.
+	void (*Update_Cursor)(void);
+};
 
 
-bool Platform_Init(void);
+bool Platform_Init(PlatformEventSink const & sink);
 void Platform_Shutdown(void);
 
 bool Platform_Create_Main_Window(bool windowed, int width, int height);
@@ -72,11 +82,14 @@ bool Platform_Key_Toggled(int virtualkey);
 std::string Platform_Key_Name(int virtualkey);
 
 // The pixels are 32-bit ARGB, top row first. Returns NULL when the cursor cannot be made.
+// The caller owns the cursor and frees it with Platform_Destroy_Cursor.
 PlatformCursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty);
 void Platform_Destroy_Cursor(PlatformCursor * cursor);
 
 // Shows the cursor over the main window, or hides the pointer there when cursor is NULL.
 void Platform_Set_Cursor(PlatformCursor * cursor);
+
+// The platform owns system cursors and frees them in Platform_Shutdown; do not destroy one.
 PlatformCursor * Platform_System_Cursor(PlatformCursorShape shape);
 
 std::string Platform_Clipboard_Text(void);
