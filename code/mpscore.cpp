@@ -35,7 +35,6 @@
 #include "session.h"
 #include "stats.h"
 #include "surface.h"
-#include "windlg.h"
 #include "winstub.h"
 
 #include "color.hh"
@@ -182,8 +181,6 @@ bool MultiScore::Multi_Presentation(void)
 	if (AlternateSurface == NULL || HiddenSurface == NULL) {
 		return(false);
 	}
-
-	while (WS_Destroy_Dialog(0, 0)) { }
 
 	if (Init() == true) {
 		Keyboard->Clear();

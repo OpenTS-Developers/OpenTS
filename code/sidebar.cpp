@@ -84,6 +84,7 @@
 #include "_rules.h"
 #include "_surface.h"
 #include "_tooltip.h"
+#include "_ui.h"
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
@@ -115,8 +116,9 @@
 #include "suprtype.h"
 #include "surface.h"
 #include "techtype.h"
-#include "voc.h"
+#include "ui/uishell.h"
 #include "utf8.h"
+#include "voc.h"
 #include "vox.h"
 
 #include "bench.hh"
@@ -837,7 +839,7 @@ bool SidebarClass::Add(RTTIType type, int id)
  *=============================================================================================*/
 bool SidebarClass::Scroll(bool up, int column)
 {
-	if (_dialog_count != 0) {
+	if (UIShell.Screen_Shown()) {
 		return(false);
 	}
 

@@ -74,13 +74,13 @@
 #include "_tactica.h"
 #include "_timer.h"
 #include "_tooltip.h"
+#include "_ui.h"
 #include "_wsproto.h"
 #include "addon.h"
 #include "aircraft.h"
 #include "aitrig.h"
 #include "anim.h"
 #include "astar.h"
-#include "savemgr.h"
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
@@ -127,7 +127,6 @@
 #include "newmenu.h"
 #include "overlay.h"
 #include "overtype.h"
-#include "ownrdraw.h"
 #include "partsys.h"
 #include "pcx.h"
 #include "preview.h"
@@ -137,6 +136,7 @@
 #include "restate.h"
 #include "revent.h"
 #include "rules.h"
+#include "savemgr.h"
 #include "savestream.h"
 #include "scheme.h"
 #include "score.h"
@@ -156,7 +156,6 @@
 #include "teamtype.h"
 #include "terrain.h"
 #include "theme.h"
-#include "voc.h"
 #include "tiberium.h"
 #include "tracker.h"
 #include "trigger.h"
@@ -164,9 +163,11 @@
 #include "trim.h"
 #include "tube.h"
 #include "tutorial.h"
+#include "ui/uishell.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
+#include "voc.h"
 #include "vox.h"
 #include "wave.h"
 #include "waypoint.h"
@@ -397,11 +398,6 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	bool transit_playing = false;
 
 	if (briefing && Session.Type == GAME_NORMAL && !has_briefing_movie) {
-
-		// No dialog has been put up in a game a client launched, so the artwork it draws with
-		// is not built yet.
-		OwnerDraw::Prepare_Resources(MainWindow);
-
 		if (Scen->TransitTheme != THEME_NONE) {
 			Theme.Play_Song(Scen->TransitTheme);
 			transit_playing = true;
@@ -754,7 +750,7 @@ bool Read_Scenario(char const * fname)
 				RandomMapGen.SeedData.Seed = Seed;
 			}
 
-			state = RandomMapGen.Generate_Random_Map(false, NULL, random_map ? &requested : NULL);
+			state = RandomMapGen.Generate_Random_Map(false, random_map ? &requested : NULL);
 			if (state == ScenarioState::Ok) {
 				Multiplayer_Last_Minute_Fixups();
 			}

@@ -277,18 +277,12 @@ void Ingame_Menu_Dialog(void)
 
 				case SDLG_ABORT:
 					switch (Abort_Dialog()) {
-
-						/// cancel
-						case 1:
+						case UI_ABORT_QUIT:
 							Queue_Exit();
 							SpecialDialog = SDLG_NONE;
 							break;
 
-						case 2:
-							break;
-
-						// abort
-						case 3:
+						case UI_ABORT_RESTART:
 							if (Session.Type == GAME_NORMAL) {
 								PlayerRestarts = true;
 							} else {
@@ -297,6 +291,8 @@ void Ingame_Menu_Dialog(void)
 							}
 							break;
 
+						case UI_ABORT_CONTINUE:
+							break;
 					}
 					SpecialDialog = SDLG_NONE;
 					break;

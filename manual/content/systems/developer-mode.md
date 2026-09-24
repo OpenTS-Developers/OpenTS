@@ -17,7 +17,7 @@ related:
     id: project-status
 ---
 
-The debug keys, the monochrome pages and assertions exist only in a Debug build. Both configurations write the debug log, crash reports, out-of-sync reports and the multiplayer statistics file, and both have the main-menu codes and the version dialog. [The command reference](/commands/) records which build has each command, control and launch option.
+The debug keys, the benchmark overlay, the monochrome pages and assertions exist only in a Debug build. Both configurations write the debug log, crash reports, out-of-sync reports and the multiplayer statistics file, and both have the main-menu codes and the version dialog. [The command reference](/commands/) records which build has each command, control and launch option.
 
 ## Arming the debug keys
 
@@ -50,6 +50,22 @@ Assertions are compiled only into a Debug build. A failed assertion shows the C 
 - `Abort` ends the run, and the [crash reporter](/using/crash-reports/) records it as an aborted run.
 - `Retry` breaks into an attached debugger. Without one, the game closes and no crash report is written.
 - `Ignore` continues past the failed assertion.
+
+## The benchmark overlay
+
+A Debug build with the debug keys armed shows a frame benchmark window on [F6](/commands/fixed-debug-benchmark-overlay/). Dear ImGui draws it over the presented frame and over any screen on show, following the frame's position and scale. Each time F6 shows or hides it, the renderer's live texture and buffer counts are written to the debug log. A Release build has no overlay.
+
+The window reports the logic frames and the presents of the last second, the frame number, the present interval, and the frame benchmarks that the [events page](#the-monochrome-pages) shows. Each benchmark is a counter that times one step of a frame. Only a Debug build keeps them, and they count processor time-stamp ticks of sixteen cycles each. The window shows each as a share of the frame, and as an average in microseconds where the processor speed could be measured and in ticks otherwise. The five counters the engine never starts read "not instrumented". A checkbox opens the Dear ImGui demo window, which exercises the renderer.
+
+The window and the events page read the same counters, and at most one of the two resets them on a schedule:
+
+- With **Reset every second** ticked, as it is when the game starts, and the monochrome display off, the window resets the counters once a second and reports the second just gone.
+- While the monochrome display is on, the window leaves the resets to the events page, which resets the counters each time it is drawn. The window reports the averages since the last reset.
+- With the box cleared and the display off, nothing resets them, and the window reports the averages since the last reset.
+
+**Reset** resets the counters at once.
+
+The window takes the mouse while the pointer is over it, even where it covers a screen, and the keyboard only while one of its fields has focus. Everything else reaches the game or the screen.
 
 ## The monochrome pages
 
@@ -114,7 +130,7 @@ Starting a LAN game switches both codes off. A skirmish game keeps them. No sett
 
 ### The version dialog
 
-The [version dialog](/commands/fixed-main-menu-version/) shows the title, the game and internal version names, and a build line. The build line says whether the build is Debug or Release, and names the commit the build was made from, the branch it was on and that commit's date. The dialog also shows the CPU vendor and the version of the language resource library.
+The version dialog opens from the graphical main menu's version entry and from [Ctrl+V](/commands/fixed-main-menu-version/) on the classic main menu, and closes on OK, Enter or Escape. It shows the title, the game and internal version names, the CPU vendor, the version of the language resource library, and a build line. The build line says whether the build is Debug or Release, and names the commit the build was made from, the branch it was on and that commit's date.
 
 ## Toggles that reach nothing
 

@@ -233,7 +233,7 @@ fixed_controls:
     context: Classic main menu
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Main_Menu, expression: KN_V+KN_CTRL_BIT }
+      - { file: code/init.cpp, function: Main_Menu_Keys, expression: KN_V+KN_CTRL_BIT }
   - id: fixed:main-menu-credits
     title: Open credits
     description: Opens the credits from the classic main menu.
@@ -242,7 +242,7 @@ fixed_controls:
     context: Classic main menu
     availability: *all
     sites:
-      - { file: code/init.cpp, function: Main_Menu, expression: VK_C+KN_CTRL_BIT+KN_ALT_BIT }
+      - { file: code/init.cpp, function: Main_Menu_Keys, expression: VK_C+KN_CTRL_BIT+KN_ALT_BIT }
   - id: fixed:skip-credits
     title: Exit credits
     description: Stops the credits and returns to the menu.
@@ -359,7 +359,7 @@ fixed_exclusions:
   - site: { file: code/grphmsct.cpp, function: GM_Build_Key, expression: VK_NONE }
     reason: Sentinel used while translating a menu accelerator into a virtual key.
   - sites:
-      - { file: code/init.cpp, function: Main_Menu, expression: KN_RLSE_BIT }
+      - { file: code/init.cpp, function: Main_Menu_Keys, expression: KN_RLSE_BIT }
     reason: Filters release events before the classic main-menu cheat handler.
   - sites:
       - { file: code/init.cpp, function: Init_Commands, expression: KN_DELETE }

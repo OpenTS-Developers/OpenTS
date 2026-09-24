@@ -45,6 +45,7 @@
 #include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
+#include "_ui.h"
 #include "_zbuffer.h"
 #include "aircraft.h"
 #include "airctype.h"
@@ -52,6 +53,7 @@
 #include "alphashp.h"
 #include "anim.h"
 #include "animtype.h"
+#include "audio/audioengine.h"
 #include "blight.h"
 #include "brain.h"
 #include "bsurface.h"
@@ -69,7 +71,6 @@
 #include "deploymentconfig.h"
 #include "drive.h"
 #include "droppod.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "empulse.h"
 #include "except.h"
@@ -94,8 +95,8 @@
 #include "light.h"
 #include "lightcon.h"
 #include "mech.h"
-#include "mixfile.h"
 #include "misc.h"
+#include "mixfile.h"
 #include "movie.h"
 #include "msgloop.h"
 #include "netdlg.h" // for Shutdown_Network.
@@ -114,9 +115,9 @@
 #include "shapeset.h"
 #include "side.h"
 #include "sidebar.h"
-#include "spawner.h"
 #include "smudge.h"
 #include "smudtype.h"
+#include "spawner.h"
 #include "sun.h"
 #include "super.h"
 #include "suprtype.h"
@@ -140,6 +141,7 @@
 #include "tube.h"
 #include "tunnel.h"
 #include "tutorial.h"
+#include "ui/uishell.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vanim.h"
@@ -157,13 +159,11 @@
 #include "wwmouse.h"
 #include "zbuffer.h"
 
-#include <lzo/lzoconf.h>
-
-#include <shellapi.h>
-
+#include <cfloat>
 #include <conio.h>
 #include <io.h>
-#include <cfloat>
+#include <lzo/lzoconf.h>
+#include <shellapi.h>
 #include <string>
 #include <vector>
 
@@ -215,6 +215,7 @@ void Reset_Surfaces(void)
 			VisibleSurface = NULL;
 		}
 
+		UIShell.Shutdown();
 		Video_Shutdown();
 
 		surfaces_reset = true;
@@ -516,6 +517,13 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		DeploymentConfig.Read_File(Data_Directory().c_str());
 		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
 
+		std::string uidirectory = path;
+		if (!uidirectory.empty() && uidirectory.back() != '\\' && uidirectory.back() != '/') {
+			uidirectory += '\\';
+		}
+		uidirectory += "ui\\";
+		CDFileClass::Add_Search_Drive(uidirectory.c_str());
+
 		// The recording's name was settled during static initialization, before there was
 		// anywhere for a player's files to go. Naming it again settles it where it belongs.
 		Session.RecordFile.Set_Name("RECORD.BIN");
@@ -586,6 +594,8 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 			MessageBox(MainWindow, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
 			exit(EXIT_FAILURE);
 		}
+
+		UIShell.Init();
 
 		do {
 			Windows_Message_Handler();

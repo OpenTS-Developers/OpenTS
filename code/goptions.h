@@ -35,6 +35,7 @@
 #include "gadget.h"
 #include "nettiming.h"
 #include "options.h"
+#include "ui/screens/abort/uiabort.h"
 
 
 class GameOptionsClass : public OptionsClass {
@@ -42,6 +43,6 @@ class GameOptionsClass : public OptionsClass {
 		GameOptionsClass(void): OptionsClass () { };
 };
 
-int Abort_Dialog(void);
+UIAbortChoice Abort_Dialog(void);
 int Network_Quality_Text_ID(NetTiming::ConnectionQuality quality);
 void Game_Options_Dialog(void);

@@ -48,38 +48,41 @@
 #include "_map.h"
 #include "_rect.h"
 #include "_tooltip.h"
+#include "_ui.h"
+#include "audio/audioengine.h"
 #include "ccfile.h"
 #include "cctooltip.h"
+#include "conquer.h"
 #include "convert.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "except.h"
 #include "gamewindow.h"
 #include "globals.h"
 #include "goptions.h"
+#include "mainopt.h"
 #include "misc.h"
 #include "movie.h"
-#include "msgroute.h"
-#include "nativewindow.hh"
+#include "opents_version.h"
 #include "pcx.h"
 #include "queue.h"
 #include "resource.h"
 #include "session.h"
 #include "theme.h"
+#include "ui/uishell.h"
 #include "video.h"
+#include "vidscale.h"
 #include "win.h"
 #include "wincursor.h"
-#include "windlg.h"
 #include "winfix.h"
 #include "wwmouse.h"
-#include "mainopt.h"
-#include "conquer.h"
-#include "opents_version.h"
+
+#include "nativewindow.hh"
 
 #include <algorithm>
 #include <commctrl.h>
+#include <windowsx.h>
 
 int		ShowCommand;
 HWND	MainWindow;
@@ -151,18 +154,63 @@ void Focus_Restore(void)
 	if (MouseCursor && _MouseCaptured == true && !Debug_Map) {
 		MouseCursor->Capture_Mouse();
 	}
-	Heal_Dialog_Controls();
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
 	InvalidateRect(MainWindow, 0, 0);
 	Pause_Ingame_Movie(false);
-	if (WS_Top_Window()) {
-		SetActiveWindow(WS_Top_Window());
-		SetFocus(WS_Top_Window());
-	}
 }
 
 
 extern bool InMovie;
+
+
+static bool Is_Mouse_Coordinate_Message(UINT message)
+{
+	switch (message) {
+		case WM_MOUSEMOVE:
+		case WM_LBUTTONDOWN:
+		case WM_LBUTTONUP:
+		case WM_LBUTTONDBLCLK:
+		case WM_RBUTTONDOWN:
+		case WM_RBUTTONUP:
+		case WM_RBUTTONDBLCLK:
+		case WM_MBUTTONDOWN:
+		case WM_MBUTTONUP:
+		case WM_MBUTTONDBLCLK:
+		case WM_MOUSEWHEEL:
+		case WM_XBUTTONDOWN:
+		case WM_XBUTTONUP:
+		case WM_XBUTTONDBLCLK:
+			return(true);
+
+		default:
+			return(false);
+	}
+}
+
+
+static LPARAM Frame_Mouse_LParam(UINT message, LPARAM lparam)
+{
+	if (MainWindow == NULL || !Is_Mouse_Coordinate_Message(message) || !Video_Scaling_Active()) {
+		return(lparam);
+	}
+
+	POINT point;
+	point.x = GET_X_LPARAM(lparam);
+	point.y = GET_Y_LPARAM(lparam);
+
+	bool const screen_space = (message == WM_MOUSEWHEEL);
+	if (screen_space) {
+		ScreenToClient(MainWindow, &point);
+	}
+
+	Window_Point_To_Game(point);
+
+	if (screen_space) {
+		Game_Point_To_Screen(point);
+	}
+
+	return(MAKELPARAM((short)point.x, (short)point.y));
+}
 
 /// <summary>
 /// Handles the Windows messages sent to the main game window.
@@ -175,16 +223,11 @@ extern bool InMovie;
 LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
 
-	/*
-	 * The frame may be drawn scaled, so a click has to be matched against where the
-	 * player sees the controls rather than where Windows finds them.
-	 */
-	{
-		LPARAM translated_lparam;
-		if (Route_Mouse_Message(hwnd, message, wParam, lParam, &translated_lparam)) {
-			return(0);
-		}
-		lParam = translated_lparam;
+	LPARAM client_lparam = lParam;
+	lParam = Frame_Mouse_LParam(message, lParam);
+
+	if (UIShell.Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
+		return(0);
 	}
 
 	int	low_param = LOWORD(wParam);
@@ -234,7 +277,7 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 			return(1);
 
 		case WM_SETCURSOR:
-			if (LOWORD(lParam) == HTCLIENT && Win_Cursor_Handle_Set_Cursor()) {
+			if (LOWORD(lParam) == HTCLIENT && (UIShell.Handle_Set_Cursor() || Win_Cursor_Handle_Set_Cursor())) {
 				return(TRUE);
 			}
 			break;
@@ -351,7 +394,7 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 		return(0);
 	}
 
-	return(DefWindowProc (hwnd, message, wParam, lParam));
+	return(DefWindowProcW (hwnd, message, wParam, lParam));
 }
 
 
@@ -419,14 +462,14 @@ unsigned int Build_Number(void)
 #define CC_ICON		IDI_SUN
 #define CC_CURSOR	IDC_CURSOR1
 
-#define WINDOW_NAME		"Tiberian Sun"
+#define WINDOW_NAME		L"Tiberian Sun"
 
 
 void Create_Main_Window ( HINSTANCE instance , int command_show , int width , int height )
 {
 	InitCommonControls();
 
-	WNDCLASS    	wndclass ;
+	WNDCLASSW   	wndclass ;
 	//
 	// Register the window class
 	//
@@ -440,13 +483,13 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 	wndclass.cbClsExtra    = 0 ;
 	wndclass.cbWndExtra    = 0 ;
 	wndclass.hInstance     = instance ;
-	wndclass.hIcon         = LoadIcon (instance, MAKEINTRESOURCE(CC_ICON)) ;
-	wndclass.hCursor       = LoadCursor(ProgramInstance, MAKEINTRESOURCE(CC_CURSOR));
+	wndclass.hIcon         = LoadIconW (instance, MAKEINTRESOURCEW(CC_ICON)) ;
+	wndclass.hCursor       = LoadCursorW(ProgramInstance, MAKEINTRESOURCEW(CC_CURSOR));
 	wndclass.hbrBackground = NULL;
 	wndclass.lpszMenuName  = NULL;	///WINDOW_NAME
 	wndclass.lpszClassName = WINDOW_NAME;
 
-	RegisterClass (&wndclass) ;
+	RegisterClassW (&wndclass) ;
 
 
 	//
@@ -461,7 +504,7 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 		int clientwidth = (Options.WindowWidth > 0) ? Options.WindowWidth : width;
 		int clientheight = (Options.WindowHeight > 0) ? Options.WindowHeight : height;
 
-		MainWindow = CreateWindowEx (
+		MainWindow = CreateWindowExW (
 								0,
 								WINDOW_NAME,
 								WINDOW_NAME,
@@ -491,7 +534,7 @@ void Create_Main_Window ( HINSTANCE instance , int command_show , int width , in
 		 * The desktop keeps its own resolution and the window simply covers it. The
 		 * frame is scaled to fit at presentation time.
 		 */
-		MainWindow = CreateWindowEx (
+		MainWindow = CreateWindowExW (
 								0,
 								WINDOW_NAME,
 								WINDOW_NAME,
