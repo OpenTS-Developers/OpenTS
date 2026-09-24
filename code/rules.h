@@ -1468,6 +1468,11 @@ class RulesClass
 		int SoloCrateMoney;
 
 		/*
+		 * A money crate that pays its [Powerups] value adds up to this many credits to it at random.
+		 */
+		int CrateMoneyBonus;
+
+		/*
 		 * These let an armor or firepower crate upgrade an object that a crate of the same
 		 * kind already upgraded.
 		 */

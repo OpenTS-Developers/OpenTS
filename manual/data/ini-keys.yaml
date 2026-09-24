@@ -5521,6 +5521,24 @@ CrateMinimum:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CrateMoneyBonus:
+  key: CrateMoneyBonus
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CrateRules
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '900'
+      declared_in: RulesClass
+      member: CrateMoneyBonus
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 CrateRadius:
   key: CrateRadius
   scopes:

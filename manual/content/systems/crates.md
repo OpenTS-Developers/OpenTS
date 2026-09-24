@@ -10,6 +10,7 @@ keys:
   - CrateImg
   - CrateMaximum
   - CrateMinimum
+  - CrateMoneyBonus
   - CrateRadius
   - CrateRegen
   - CrateTrigger
@@ -211,7 +212,7 @@ The third field of a result's `[Powerups]` row is the only per-result number the
 
 | Result | What the third field sets |
 | --- | --- |
-| `Money` | The minimum credits paid outside a campaign; a random bonus of up to 900 is added |
+| `Money` | The minimum credits paid outside a campaign; a random bonus of up to [`CrateMoneyBonus`](/keys/cratemoneybonus/) is added |
 | `Unit` | The minimum credits paid outside a campaign when the vehicle cannot be placed |
 | `Explosion` | Raw damage of the direct hit on the collector and of each of the five blasts |
 | `Napalm` | Raw damage of the direct hit on the collector and of the blast |
@@ -224,7 +225,7 @@ The third field of a result's `[Powerups]` row is the only per-result number the
 
 ### Money and free units
 
-Outside a campaign, a money crate pays a random amount between the `Money` row's third field and that figure plus 900 credits, inclusive. In a campaign it pays [`SoloCrateMoney`](/keys/solocratemoney/) instead. If `SoloCrateMoney` is `0`, a campaign crate uses the random range.
+Outside a campaign, a money crate pays a random amount between the `Money` row's third field and that figure plus [`CrateMoneyBonus`](/keys/cratemoneybonus/) credits, inclusive. In a campaign it pays [`SoloCrateMoney`](/keys/solocratemoney/) instead. If `SoloCrateMoney` is `0`, a campaign crate uses the random range.
 
 In a campaign, money from a crate collected by any house the local player controls goes to the player's house, not to the collecting house.
 
@@ -247,7 +248,7 @@ Leave `UnitCrateType` unset to keep both rescues. A type named in `UnitCrateType
 
 The vehicle appears on the crate's cell or on a nearby cell it can occupy. Either way, the collector stops short of the crate's cell.
 
-If the vehicle cannot be placed in either location, the crate pays money instead. Outside a campaign, the amount is drawn from the `Unit` row's third field up to 900 credits more, not from the `Money` row.
+If the vehicle cannot be placed in either location, the crate pays money instead. Outside a campaign, the amount is drawn from the `Unit` row's third field up to `CrateMoneyBonus` credits more, not from the `Money` row.
 
 ### Results that sweep a radius
 

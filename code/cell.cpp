@@ -3821,7 +3821,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 crate_money:
 				DebugString("Crate at %d,%d contains money\n", CellID.X, CellID.Y);
 				if (!force_money) {
-					force_money = Random_Pick((int)data, (int)data+900);
+					force_money = Random_Pick((int)data, (int)data + std::max(Rule->CrateMoneyBonus, 0));
 				}
 				if (!object->House->Is_Player_Control() || Session.Type != GAME_NORMAL) {
 					object->House->Refund_Money(force_money);
