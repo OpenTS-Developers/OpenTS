@@ -29,19 +29,9 @@ enum PlatformCursorShape
 };
 
 struct PlatformCursor;
-struct WindowEvent;
-
-// The game's handlers for the main window, which the platform calls while it pumps events.
-struct PlatformEventSink
-{
-	bool (*Handle_Event)(WindowEvent const & event);
-
-	// Called after a mouse move or a focus gain, so the game can choose the pointer.
-	void (*Update_Cursor)(void);
-};
 
 
-bool Platform_Init(PlatformEventSink const & sink);
+bool Platform_Init(void);
 void Platform_Shutdown(void);
 
 bool Platform_Create_Main_Window(bool windowed, int width, int height);

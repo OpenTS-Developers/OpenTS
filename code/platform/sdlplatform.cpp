@@ -10,6 +10,7 @@
 #include "platform/platform.h"
 
 #include "dbgprint.h"
+#include "gamewindow.h"
 #include "platform/sdlevents.h"
 #include "platform/sdlkeys.h"
 #include "resource.h"
@@ -31,7 +32,6 @@ namespace
 {
 
 bool _Started = false;
-PlatformEventSink _Sink = {};
 SDL_Window * _Window = nullptr;
 int _NativeModals = 0;
 bool _Watching = false;
@@ -194,13 +194,11 @@ void Dispatch(WindowEvent const & event)
 		SDL_EnableScreenSaver();
 	}
 
-	if (_Sink.Handle_Event != nullptr) {
-		_Sink.Handle_Event(event);
-	}
+	Game_Window_Handle_Event(event);
 
 	// Windows asked for the pointer on every mouse move; SDL leaves choosing it to the game.
-	if ((event.Type == WINDOW_EVENT_MOUSE_MOVE || event.Type == WINDOW_EVENT_FOCUS_GAINED) && _Sink.Update_Cursor != nullptr) {
-		_Sink.Update_Cursor();
+	if (event.Type == WINDOW_EVENT_MOUSE_MOVE || event.Type == WINDOW_EVENT_FOCUS_GAINED) {
+		Game_Window_Update_Cursor();
 	}
 }
 
@@ -365,17 +363,15 @@ SDL_SystemCursor System_Cursor_Of(PlatformCursorShape shape)
 
 
 /// <summary>
-/// Starts SDL's video subsystem and sends the main window's events to the sink from then on.
-/// It must run before the main window is created, and once the settings that decide how the
-/// window looks have been read.
+/// Starts SDL's video subsystem. It must run before the main window is created, and once the
+/// settings that decide how the window looks have been read.
 /// </summary>
 /// <returns>False when SDL cannot start, which leaves the game without a window.</returns>
-bool Platform_Init(PlatformEventSink const & sink)
+bool Platform_Init(void)
 {
 	if (_Started) {
 		return(true);
 	}
-	_Sink = sink;
 
 	Set_Hints();
 
