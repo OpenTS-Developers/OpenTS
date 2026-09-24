@@ -22,7 +22,7 @@ ScatterObject=88    ; X
 
 After the file loads, OpenTS clears the current hotkey table and adds entries whose command name is registered and whose keyboard identifier is not zero. Unknown command names and zero values are ignored, and a name has to match the registered spelling exactly, including its case.
 
-The table is cleared only once the file has been read. A file that is missing or that cannot be parsed leaves the table as it stands rather than emptying it. OpenTS looks the file up through the ordinary file layer, so a loose `KEYBOARD.INI` in the game directory stands in for an archived one. The keyboard dialog writes the bindings in force back to a loose `KEYBOARD.INI`. Its reset control deletes that file and loads `KEYBOARD.INI` again, which clears and rebuilds the table only when the file layer still finds one.
+The table is cleared only once the file has been read. A file that is missing or that cannot be parsed leaves the table as it stands rather than emptying it. OpenTS looks the file up through the ordinary file layer, so a loose `KEYBOARD.INI` in the game directory stands in for an archived one. The keyboard dialog writes the bindings the player accepted back to a loose `KEYBOARD.INI`, and canceling it drops the edits. Its reset control deletes that file at once, even if the dialog is then canceled, and loads `KEYBOARD.INI` again, which clears and rebuilds the table only when the file layer still finds one.
 
 Two commands are bound again once the file has been processed, taking their keys back from whatever the file gave them: [`DeleteWaypoint`](/commands/deletewaypoint/) takes Delete and [`Options`](/commands/options/) takes Escape. The file's own binding for either command is left alone, so it can end up answering to two keys.
 

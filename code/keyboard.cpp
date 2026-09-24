@@ -752,7 +752,7 @@ int WWKeyboardClass::Message_Handler(HWND window, UINT message, WPARAM wParam, L
 	**	directly.
 	*/
 	if (processed) {
-		DefWindowProc(window, message, wParam, lParam);
+		DefWindowProcW(window, message, wParam, lParam);
 		return(true);
 	}
 	return(false);

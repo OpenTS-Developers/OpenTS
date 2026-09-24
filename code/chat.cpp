@@ -24,6 +24,7 @@
 #include "rules.h"
 #include "session.h"
 #include "stimer.h"
+#include "utf8.h"
 
 #include "dialog.hh"
 
@@ -136,7 +137,7 @@ void Chat_Send(char const * text)
 	// Nothing in a match reads the game-name CRC; the lobby keeps its own.
 	Session.GPacket.Message.NameCRC = 0;
 	Session.GPacket.Message.Scope = scope;
-	std::snprintf(Session.GPacket.Message.Buf, sizeof(Session.GPacket.Message.Buf), "%s", text);
+	UTF8::Copy(Session.GPacket.Message.Buf, sizeof(Session.GPacket.Message.Buf), text);
 
 	if (scope == ChatScopeType::Player) {
 		Ipx.Send_Global_Message(&Session.GPacket, sizeof(GlobalPacketType), 1, &Session.MessageAddress);

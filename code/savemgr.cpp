@@ -13,6 +13,7 @@
 
 #include "_map.h"
 #include "_rules.h"
+#include "_ui.h"
 #include "_wsproto.h"
 #include "ccfile.h"
 #include "data.h"
@@ -25,7 +26,6 @@
 #include "msgbox.h"
 #include "netdlg.h"
 #include "netglobal.h"
-#include "ownrdraw.h"
 #include "rawfile.h"
 #include "rules.h"
 #include "saveload.h"
@@ -34,6 +34,9 @@
 #include "session.h"
 #include "spawner.h"
 #include "stimer.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
+#include "ui/uienginehost.h"
+#include "ui/uishell.h"
 #include "wsproto.h"
 
 #include "dialog.hh"
@@ -150,17 +153,12 @@ void SaveManagerClass::Process_Pending_Save_Game(void)
 	PendingSaveNotice = NoticeType::None;
 
 	if (MultiplayerSavingAllowed) {
-		HWND dialog = 0;
+		UIWaitBoxClass box;
 		if (!quiet) {
-			dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_SAVING_GAME), NULL, NULL);
-		}
-		if (dialog != 0) {
-			OwnerDraw::Display_Dialog(dialog);
+			box.Show(Fetch_String(TXT_SAVING_GAME));
 		}
 		bool saved = Save_Game(file_name.c_str(), description.c_str());
-		if (dialog != 0) {
-			OwnerDraw::End_Dialog(dialog);
-		}
+		box.Hide();
 		Record_Save_Outcome(notice, saved);
 		if (saved && SpawnCopyPending) {
 			Write_Spawn_Copy();
@@ -314,15 +312,11 @@ void SaveManagerClass::Quick_Save_Service(void)
 	char description[512];
 	std::snprintf(description, sizeof(description), Fetch_String(TXT_QUICKSAVE_DESCRIPTION), Scen->Description);
 
-	HWND dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_SAVING_GAME), NULL, NULL);
-	if (dialog != 0) {
-		OwnerDraw::Display_Dialog(dialog);
-	}
+	UIWaitBoxClass box;
+	box.Show(Fetch_String(TXT_SAVING_GAME));
 	Request_Save_Game(Quick_Save_File_Name(Single_Player_Kind()).c_str(), description, false,
 		NoticeType::Requested);
-	if (dialog != 0) {
-		OwnerDraw::End_Dialog(dialog);
-	}
+	box.Hide();
 }
 
 
@@ -593,28 +587,25 @@ void SaveManagerClass::Process_Pending_Load_Game(void)
 	Session.Suspended++;
 	TacticalActive = false;
 
-	HWND dialog = OwnerDraw::Custom_Message_Box(Fetch_String(TXT_LOADING_SAVED_GAME), NULL, NULL);
-	if (dialog != 0) {
-		OwnerDraw::Display_Dialog(dialog);
-	}
+	UIWaitBoxClass box;
+	box.Show(Fetch_String(TXT_LOADING_SAVED_GAME));
 
 	int shown = -1;
 	while (!MultiplayerLoad.Is_Due(Monotonic_Milliseconds())) {
 		int seconds = MultiplayerLoad.Seconds_Left(Monotonic_Milliseconds());
-		if (dialog != 0 && seconds != shown) {
+		if (box.Is_Shown() && seconds != shown) {
 			shown = seconds;
 			char buffer[128];
 			std::snprintf(buffer, sizeof(buffer),
 				Fetch_String(seconds == 1 ? TXT_LOADING_IN_SECOND : TXT_LOADING_IN_SECONDS), seconds);
-			OwnerDraw::Set_Custom_Message_Box_Text(dialog, buffer);
+			box.Set_Text(buffer);
 		}
-		OwnerDraw::Dialog_Message_Handler();
+		UI_Service_Game();
+		UIShell.Tick();
 		Sleep(10);
 	}
 
-	if (dialog != 0) {
-		OwnerDraw::End_Dialog(dialog);
-	}
+	box.Hide();
 	Session.Suspended--;
 	TacticalActive = true;
 

@@ -13,6 +13,7 @@
 
 #include "_keyboar.h"
 #include "_surface.h"
+#include "_ui.h"
 #include "ccfile.h"
 #include "globals.h"
 #include "grphmitm.h"
@@ -21,6 +22,7 @@
 #include "msanim.h"
 #include "ownrdraw.h"
 #include "theme.h"
+#include "ui/uishell.h"
 
 GraphicMenu * _Graphic_Menu(INIClass const & ini, const char * name);
 GraphicMenuItem * GM_Create_Item_From_INI(const char * name, INIClass const & ini, MSEngine & engine, Point2D & image_size);
@@ -216,6 +218,8 @@ int GraphicMenu::Presentation(void)
 				}
 			}
 		}
+
+		UIShell.Tick();
 
 		Engine.Wait_Delay(1);
 	}

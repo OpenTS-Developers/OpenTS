@@ -298,8 +298,8 @@ test('Every name a match shows passes through the session', () => {
 		['code/chat.cpp', 'void Chat_Show(HouseClass const * sender'],
 		['code/ipxmgr.cpp', 'void IPXManagerClass::Multiplayer_Debug_Print(int top)'],
 		['code/mpscore.cpp', 'void MultiScore::Tally_Score(void)'],
-		['code/desyncdlg.cpp', 'void DesyncDialogClass::Update_Player_List(void)'],
-		['code/queue.cpp', 'INT_PTR CALLBACK Reconnect_Dialog_Proc('],
+		['code/ui/screens/desync/uidesyncdlg.cpp', 'virtual void Read(UIDesyncState & state) override'],
+		['code/queue.cpp', 'static UIReconnectState Reconnect_Notice(FrameSyncStruct * their, int num_conn, int seconds)'],
 	];
 	for (const [path, signature] of draws) {
 		const body = functionBody(definitionFrom(source(path), signature), signature);
@@ -307,7 +307,7 @@ test('Every name a match shows passes through the session', () => {
 
 		for (const statement of body.split(';')) {
 			if (/IniName|->Name\b|Connection_Name\(|Left_Name\(/.test(statement)
-				&& /printf\(|Fancy_Text_Print\(|WM_SETTEXT|ListBox_AddString\(|strncpy\(/.test(statement)) {
+				&& /printf\(|Fancy_Text_Print\(|WM_SETTEXT|ListBox_AddString\(|strncpy\(|\.Name = /.test(statement)) {
 				assert.match(statement, shown, `${signature} in ${path} shows a name the session did not choose: ${statement.trim()}`);
 			}
 		}
@@ -509,15 +509,10 @@ test('A resume is judged before it is loaded, and the save answers for the rest'
 		'gameloaded = true;',
 	], 'a network resume seats the players and opens the network before the save is read');
 
-	for (const dialog of ['IDD_OPT_CTRL_WOL']) {
-		const template = source('code/language/language.rc');
-		const body = template.slice(template.indexOf(dialog + ' DIALOG'));
-		assert.match(
-			body.slice(0, body.indexOf('END')),
-			/IDC_SAVE_GAME/,
-			`${dialog} offers the synchronized save the options handler has always known`,
-		);
-	}
+	assertOrdered(functionBody(source('code/ui/screens/gameopt/uigameoptdlg.cpp'), 'void UI_Game_Options_State(UIGameOptionsState & state)'), [
+		'state.Internet = (Session.Type == GAME_INTERNET);',
+		'state.SaveEnabled = SaveManager.Is_Multiplayer_Saving_Allowed();',
+	], 'an internet game offers the synchronized save the options menu has always known');
 
 	assertOrdered(functionBody(source('code/saveload.cpp'), 'bool Reconcile_Players(void)'), [
 		'stricmp(Session.Players[i]->Name, Houses[house]->IniName) == 0',
@@ -562,7 +557,7 @@ test('Saved games are named in one folder rather than searched for', () => {
 		['code/saveload.cpp', 'bool Save_Game(const char *file_name, char const * descr)'],
 		['code/saveload.cpp', 'bool Load_Game(const char *file_name)'],
 		['code/saveload.cpp', 'bool Get_Savefile_Info(char const * name, SaveVersionInfo * info)'],
-		['code/loaddlg.cpp', 'void LoadOptionsClass::Fill_List(HWND window)'],
+		['code/loaddlg.cpp', 'void LoadOptionsClass::Gather_Files(void)'],
 		['code/loaddlg.cpp', 'bool LoadOptionsClass::Files_Present(void)'],
 		['code/loaddlg.cpp', 'bool LoadOptionsClass::Delete_File(const char * file_name)'],
 	]) {
@@ -574,7 +569,7 @@ test('Saved games are named in one folder rather than searched for', () => {
 	}
 
 	assert.doesNotMatch(
-		functionBody(source('code/loaddlg.cpp'), 'void LoadOptionsClass::Fill_List(HWND window)') +
+		functionBody(source('code/loaddlg.cpp'), 'void LoadOptionsClass::Gather_Files(void)') +
 			functionBody(source('code/loaddlg.cpp'), 'bool LoadOptionsClass::Files_Present(void)'),
 		/Search_Files\(/,
 		'the listing no longer scans the folders the game reads from',
@@ -626,20 +621,29 @@ test('A multiplayer load replaces the match around the seats it keeps', () => {
 		'Reset_Multiplayer_Save_State();',
 	], 'the old traffic is discarded, the save read, the seats matched, and the connections rebuilt in that order');
 
-	const template = source('code/language/language.rc');
-	const body = template.slice(template.indexOf('IDD_OPT_CTRL_WOL DIALOG'));
+	const gameopt = source('code/ui/screens/gameopt/uigameoptdlg.cpp');
+
 	assert.match(
-		body.slice(0, body.indexOf('END')),
-		/IDC_LOAD_GAME/,
+		functionBody(gameopt, 'void UI_Game_Options_State(UIGameOptionsState & state)'),
+		/state\.LoadEnabled = SaveManager\.Multiplayer_Load_Is_Allowed\(\)/,
 		'the internet options offer the load the master starts for every machine',
 	);
 
-	assertOrdered(definitionFrom(source('code/goptions.cpp'), 'INT_PTR CALLBACK Game_Options_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)'), [
-		'case IDC_LOAD_GAME:',
-		'LoadOptionsClass().Load()',
-		'Multiplayer_Load_Is_Allowed()',
+	assertOrdered(functionBody(gameopt, 'UIGameOptionsChoice UI_Game_Options_Dialog(void)'), [
+		'!state.Solo && choice == UI_GAME_OPTIONS_LOAD',
 		'SpecialDialog = SDLG_LOAD;',
-	], 'a network game defers the list to the menu loop rather than nesting it in the options dialog');
+	], 'a network game defers the list to the menu loop rather than opening it inside a frame');
+
+	assert.match(
+		functionBody(gameopt, 'virtual bool Load(void) override'),
+		/LoadOptionsClass\(\)\.Load\(\)/,
+		'a solo game opens its list, over the menu',
+	);
+
+	assertOrdered(functionBody(source('code/ui/screens/gameopt/uigameopt.cpp'), 'void UIGameOptionsPresenterClass::Execute(UIIntent const & intent)'), [
+		'!State.Solo || Service.Load()',
+		'Choice = UI_GAME_OPTIONS_LOAD;',
+	], 'and the menu closes with the load only once a game has been loaded');
 
 	assertOrdered(definitionFrom(source('code/conquer.cpp'), 'void Ingame_Menu_Dialog(void)'), [
 		'case SDLG_OPTIONS:',
@@ -767,7 +771,7 @@ test('A map file may ask to be generated, and is built from the match seed', () 
 		'RandomMapGen.SeedData.Read_INI(requested);',
 		'RandomMapGen.SeedData.Fixup_Settings();',
 		'RandomMapGen.SeedData.Seed = Seed;',
-		'state = RandomMapGen.Generate_Random_Map(false, NULL, random_map ? &requested : NULL);',
+		'state = RandomMapGen.Generate_Random_Map(false, random_map ? &requested : NULL);',
 		'if (state == ScenarioState::Ok) {',
 		'Multiplayer_Last_Minute_Fixups();',
 	], 'the file decides before the branch, its settings are checked, and the match seed replaces its own after the check');
@@ -790,7 +794,7 @@ test('A map file may ask to be generated, and is built from the match seed', () 
 		assert.ok(readScenario.includes(`ini.Get_Float(LIGHTING, "${key}"`), `the scenario reads the [Lighting] ${key} the generator writes`);
 	}
 
-	assertOrdered(functionBody(mapgen, 'ScenarioState MapGeneratorClass::Generate_Random_Map(bool full_init, HWND dialog, CCINIClass * scenario)'), [
+	assertOrdered(functionBody(mapgen, 'ScenarioState MapGeneratorClass::Generate_Random_Map(bool full_init, CCINIClass * scenario)'), [
 		'ScenarioState const state = Init_Map(full_init, scenario);',
 		'return(state);',
 		'return(ScenarioState::Ok);',
@@ -967,12 +971,26 @@ test('A computer player draws a country from the lobby roster', () => {
 });
 
 test('A lobby side entry carries its country', () => {
-	const netdlg = source('code/netdlg2.cpp');
+	const lobby = source('code/ui/screens/netlobby/uinetlobbydlg.cpp');
 
-	assertOrdered(functionBody(netdlg, 'void Fill_Country_Box(HWND combo)'), ['CB_INSERTSTRING', 'CB_SETITEMDATA'], 'each entry carries its country');
-	assert.match(functionBody(netdlg, 'int Country_From_Box(HWND combo)'), /CB_GETITEMDATA/, 'the selection is read back through its country');
-	assert.doesNotMatch(netdlg, /CB_SETCURSEL, Session\.House/, 'no box is positioned by a country index');
-	assert.doesNotMatch(source('code/skirmish.cpp'), /Session\.House = ComboBox_GetCurSel/, 'the skirmish box stores a country, not a position');
+	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Read(UINetLobbyState & state)'), [
+		'house->IsMultiplay',
+		'option.Value = index;',
+		'if (index == Session.House) {',
+	], 'each entry carries its country and the list is positioned by the country it holds');
+	assertOrdered(functionBody(lobby, 'void UINetLobbyEngineServiceClass::Set_Side(int index)'), [
+		'Net2Country_At(index)',
+		'Session.House = country;',
+	], 'the selection is read back through its country');
+	assertOrdered(functionBody(source('code/netdlg2.cpp'), 'int Net2Country_At(int index)'), [
+		'HouseTypes[country]->IsMultiplay',
+		'return(country);',
+	], 'a row names the country standing at it');
+	assert.match(
+		functionBody(source('code/ui/screens/skirmish/uiskirmishdlg.cpp'), 'static void Remember_Preferences(UISkirmishState const & state)'),
+		/Session\.House = state\.Sides\[state\.Side\]\.Value;/,
+		'the skirmish list stores a country, not a position',
+	);
 });
 
 test('A side is declared in the side list alone', () => {

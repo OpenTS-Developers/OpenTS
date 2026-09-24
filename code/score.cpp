@@ -51,12 +51,12 @@
 #include "_palette.h"
 #include "_surface.h"
 #include "_timer.h"
+#include "audio/audioengine.h"
 #include "conquer.h"
 #include "convert.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "audio/audioengine.h"
 #include "dsurface.h"
 #include "goptions.h"
 #include "houstype.h"
@@ -72,7 +72,6 @@
 #include "surface.h"
 #include "theme.h"
 #include "utf8.h"
-#include "windlg.h"
 #include "winstub.h"
 
 #include <algorithm>
@@ -124,10 +123,6 @@ void ScoreClass::Presentation(void)
 
 	CCFileClass file;
 	struct Fame hallfame[NUMFAMENAMES];
-
-	while (WS_Destroy_Dialog(NULL, NULL)) {
-		;
-	}
 
 	XPos = (HiddenSurface->Get_Width() - 640) / 2;
 	YPos = (HiddenSurface->Get_Height() - 400) / 2;
