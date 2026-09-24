@@ -2359,6 +2359,18 @@ launch_options:
   _provenance:
     source: code/init.cpp
     guard: null
+- id: launch:multiple-instances
+  route_id: multiple-instances
+  kind: launch
+  title: Multiple copies
+  description: Lets this copy start while another copy of the game is running. Without it, a second copy
+    brings the running copy's window to the front and exits.
+  audience: developer
+  availability: *id001
+  syntax: -MULTIINSTANCE
+  _provenance:
+    source: code/init.cpp
+    guard: null
 - id: launch:exception-test
   route_id: exception-test
   kind: launch

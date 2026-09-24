@@ -546,6 +546,16 @@ launch_options:
     availability: *all
     sites:
       - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-WIN' }
+  - id: launch:multiple-instances
+    title: Multiple copies
+    syntax: -MULTIINSTANCE
+    description: >-
+      Lets this copy start while another copy of the game is running. Without it, a second copy
+      brings the running copy's window to the front and exits.
+    audience: developer
+    availability: *all
+    sites:
+      - { file: code/init.cpp, function: Parse_Command_Line, expression: 'literal:-MULTIINSTANCE' }
   - id: launch:exception-test
     title: Exception reporting test
     syntax: -EXCEPTIONTEST=<fault>

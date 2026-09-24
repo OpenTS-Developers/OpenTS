@@ -1791,6 +1791,11 @@ bool Parse_Command_Line(int argc, char * argv[])
 			continue;
 		}
 
+		if (stricmp(string, "-MULTIINSTANCE") == 0) {
+			Debug_MultipleInstances = true;
+			continue;
+		}
+
 		/*
 		 * Arms a deliberate fault; the mode decides where it is raised later.
 		 */

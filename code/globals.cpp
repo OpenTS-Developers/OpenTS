@@ -115,6 +115,7 @@ bool Debug_Playtest = false;
 bool Debug_Trap_Check_Heap = false; // true = check the Heap
 bool Debug_Print_Events = false;    // true = print event & packet processing
 bool Debug_Console = false;
+bool Debug_MultipleInstances = false;	// true = let this copy run beside another one
 
 
 ParticleSystemClass * GasSystem;

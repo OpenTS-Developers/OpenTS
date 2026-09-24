@@ -77,6 +77,7 @@
 #include "fly.h"
 #include "fog.h"
 #include "gamedirs.h"
+#include "globals.h"
 #include "goptions.h"
 #include "house.h"
 #include "houstype.h"
@@ -341,6 +342,87 @@ static int Build_Arguments(char const * path_to_exe, char ** & argv)
 }
 
 
+/// <summary>
+/// Claims the mutexes that keep a second copy of the game from running.
+/// When another copy already holds them, its window is brought to the front instead.
+/// </summary>
+/// <returns>bool; Were the mutexes claimed? False means another copy is running.</returns>
+static bool Claim_Single_Instance(void)
+{
+	/*
+	 * Create a mutex with a unique name to TibSun in order to determine if
+	 * our app is already running.
+	 *
+	 * WARNING: DO NOT use this number for any other application except TibSun
+	 */
+	AppMutex = ::CreateMutex (NULL, FALSE, APP_GUID);
+
+	//
+	// Is there already an instance of this app somewhere?
+	//
+	if (::GetLastError () == ERROR_ALREADY_EXISTS) {
+		//
+		// Find the previous instance
+		//
+		HWND main_wnd = ::FindWindow (APP_GUID, NULL);
+		if (main_wnd != NULL) {
+			::SetForegroundWindow (main_wnd);
+			::ShowWindow (main_wnd, SW_RESTORE);
+		}
+		if (AppMutex != NULL) {
+			CloseHandle(AppMutex);
+			AppMutex = NULL;
+		}
+		DebugString("TibSun is already running...Bail!\n");
+		return(false);
+	} else {
+
+		DebugString("Create AppMutex okay.\n");
+
+		//
+		// Obtain the mutex unique to the Renegade AutoPlay application.
+		//
+		// WARNING: DO NOT use this number for any other application except Renegade AutoPlay
+		//
+		do
+		{
+			//
+			// Attempt to open the mutex
+			//
+			AutoPlayMutex = ::OpenMutex (MUTEX_ALL_ACCESS, FALSE, AUTOPLAY_GUID);
+			if (AutoPlayMutex != NULL) {
+				DebugString( "Waiting for Autoplay to quit!\n");
+				if (::WaitForSingleObject (AutoPlayMutex, 30000) == WAIT_FAILED) {
+					DebugString ("Failed waiting for AutoPlayMutex\n");
+					::CloseHandle (AutoPlayMutex);
+					AutoPlayMutex = NULL;
+				}
+			}
+
+			/*
+			 * Create a mutex with a name unique to the TibSun AutoPlay application.
+			 * This prevents the autoplay from running since it cannot get the mutex.
+			 * TibSun needs both of these mutexs before it is allowed to run.
+			 */
+			if (AutoPlayMutex == NULL) {
+				AutoPlayMutex = CreateMutex (NULL, FALSE, AUTOPLAY_GUID);
+				if (GetLastError () == ERROR_ALREADY_EXISTS) {
+					CloseHandle (AutoPlayMutex);
+					AutoPlayMutex = NULL;
+					Sleep (2500);
+				} else {
+					DebugString("Create AutoPlayMutex.\n");
+				}
+			}
+		} while (AutoPlayMutex == NULL);
+
+		DebugString ("Got AutoPlayMutex okay.\n");
+	}
+
+	return(true);
+}
+
+
 /***********************************************************************************************
  * main -- Initial startup routine (preps library systems).                                    *
  *                                                                                             *
@@ -386,76 +468,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		return(EXIT_FAILURE);
 	}
 
-	/*
-	 * Create a mutex with a unique name to TibSun in order to determine if
-	 * our app is already running.
-	 *
-	 * WARNING: DO NOT use this number for any other application except TibSun
-	 */
-	AppMutex = ::CreateMutex (NULL, FALSE, APP_GUID);
-
-	//
-	// Is there already an instance of this app somewhere?
-	//
-	if (::GetLastError () == ERROR_ALREADY_EXISTS) {
-		//
-		// Find the previous instance
-		//
-		HWND main_wnd = ::FindWindow (APP_GUID, NULL);
-		if (main_wnd != NULL) {
-			::SetForegroundWindow (main_wnd);
-			::ShowWindow (main_wnd, SW_RESTORE);
-		}
-		if (AppMutex != NULL) {
-			CloseHandle(AppMutex);
-			AppMutex = NULL;
-		}
-		DebugString("TibSun is already running...Bail!\n");
-		return(EXIT_SUCCESS);
-	} else {
-
-		DebugString("Create AppMutex okay.\n");
-
-		//
-		// Obtain the mutex unique to the Renegade AutoPlay application.
-		//
-		// WARNING: DO NOT use this number for any other application except Renegade AutoPlay
-		//
-		do
-		{
-			//
-			// Attempt to open the mutex
-			//
-			AutoPlayMutex = ::OpenMutex (MUTEX_ALL_ACCESS, FALSE, AUTOPLAY_GUID);
-			if (AutoPlayMutex != NULL) {
-				DebugString( "Waiting for Autoplay to quit!\n");
-				if (::WaitForSingleObject (AutoPlayMutex, 30000) == WAIT_FAILED) {
-					DebugString ("Failed waiting for AutoPlayMutex\n");
-					::CloseHandle (AutoPlayMutex);
-					AutoPlayMutex = NULL;
-				}
-			}
-
-			/*
-			 * Create a mutex with a name unique to the TibSun AutoPlay application.
-			 * This prevents the autoplay from running since it cannot get the mutex.
-			 * TibSun needs both of these mutexs before it is allowed to run.
-			 */
-			if (AutoPlayMutex == NULL) {
-				AutoPlayMutex = CreateMutex (NULL, FALSE, AUTOPLAY_GUID);
-				if (GetLastError () == ERROR_ALREADY_EXISTS) {
-					CloseHandle (AutoPlayMutex);
-					AutoPlayMutex = NULL;
-					Sleep (2500);
-				} else {
-					DebugString("Create AutoPlayMutex.\n");
-				}
-			}
-		} while (AutoPlayMutex == NULL);
-
-		DebugString ("Got AutoPlayMutex okay.\n");
-	}
-
 	atexit(Prog_End);
 
 	if (!Init_Language_Resources(true)) {
@@ -489,6 +501,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 	int error_code = EXIT_FAILURE;
 
 	if (Parse_Command_Line(argc, argv) && Apply_Game_Directories()) {
+
+		if (!Debug_MultipleInstances && !Claim_Single_Instance()) {
+			return(EXIT_SUCCESS);
+		}
 
 		Exception_Run_Immediate_Test();
 
