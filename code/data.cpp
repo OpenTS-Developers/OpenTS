@@ -267,31 +267,6 @@ char const * Fetch_String(int id)
 
 
 /// <summary>
-/// Fetches a raw resource from the language library.
-/// This routine locates the named resource and locks it down so that the caller may read
-/// straight out of it. The data stays mapped for as long as the library is loaded, so
-/// there is nothing to release afterwards.
-/// </summary>
-/// <param name="resname">Name or identifier of the resource to fetch.</param>
-/// <param name="restype">Type of the resource to fetch.</param>
-/// <returns>Returns with a pointer to the resource data. Otherwise, NULL is returned.</returns>
-void const * Fetch_Resource(LPCSTR resname, LPCSTR restype)
-{
-	HRSRC handle = FindResource(LanguageResources, resname, restype);
-	if (handle == NULL) {
-		return(NULL);
-	}
-
-	HGLOBAL rhandle = LoadResource(LanguageResources, handle);
-	if (rhandle == NULL) {
-		return(NULL);
-	}
-
-	return(LockResource(rhandle));
-}
-
-
-/// <summary>
 /// Loads a compressed picture into the buffer specified.
 /// This routine is a convenience layer over Load_Uncompress for callers that deal in whole
 /// screen images and would rather think in pages than in bytes.
