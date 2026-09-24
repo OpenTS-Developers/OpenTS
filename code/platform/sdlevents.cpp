@@ -190,10 +190,6 @@ void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, bool
 			events.push_back(Window_Event(WINDOW_EVENT_CLOSE_REQUESTED));
 			break;
 
-		case SDL_EVENT_KEYMAP_CHANGED:
-			events.push_back(Window_Event(WINDOW_EVENT_KEYMAP_CHANGED));
-			break;
-
 		default:
 			break;
 	}
