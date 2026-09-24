@@ -1,0 +1,143 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 441dp;
+	height: 351dp;
+	top: 50%;
+	margin-top: -175dp;
+}
+
+.lite #reveal
+{
+	width: 442dp;
+	height: 183dp;
+	margin-top: -91dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+.lite #content
+{
+	padding-top: 28dp;
+}
+
+.row
+{
+	display: block;
+	height: 25dp;
+	white-space: nowrap;
+}
+
+#row-sound
+{
+	margin-top: 11dp;
+}
+
+#row-voice
+{
+	margin-top: 11dp;
+}
+
+.lite #row-sound
+{
+	margin-top: 12dp;
+}
+
+.row > .caption
+{
+	width: 105dp;
+	height: 25dp;
+	margin-right: 7dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: right;
+}
+
+.row > input[type='range']
+{
+	width: 213dp;
+	height: 25dp;
+}
+
+.lite .row > .caption
+{
+	width: 106dp;
+	margin-right: 9dp;
+}
+
+.lite #row-sound > .caption, .lite #row-voice > .caption
+{
+	width: 107dp;
+	margin-right: 8dp;
+}
+
+.lite .row > input[type='range']
+{
+	width: 210dp;
+}
+
+#music
+{
+	display: flex;
+	margin-top: 17dp;
+}
+
+#music-side
+{
+	width: 105dp;
+	margin-right: 7dp;
+}
+
+#play
+{
+	display: block;
+	width: 105dp;
+	margin-top: 7dp;
+}
+
+#stop
+{
+	display: block;
+	width: 105dp;
+	margin-top: 20dp;
+}
+
+#switch-shuffle
+{
+	margin-top: 20dp;
+}
+
+#switch-repeat
+{
+	margin-top: 25dp;
+}
+
+#tracks
+{
+	width: 263dp;
+	height: 162dp;
+}
+
+#ok
+{
+	display: block;
+	width: 94dp;
+	margin: 13dp 0 0 282dp;
+}
+
+.lite #ok
+{
+	margin: 14dp 0 0 139dp;
+}

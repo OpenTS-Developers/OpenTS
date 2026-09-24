@@ -1,0 +1,93 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+#title
+{
+	height: 17dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+button
+{
+	width: 196dp;
+}
+
+.main #reveal
+{
+	width: 306dp;
+	height: 240dp;
+	top: 50%;
+	margin-top: -119dp;
+}
+
+.main button { left: 55dp; }
+.main button:nth-child(1) { top: 21dp; }
+.main button:nth-child(2) { top: 56dp; }
+.main button:nth-child(3) { top: 90dp; }
+.main button:nth-child(4) { top: 124dp; }
+.main button:nth-child(5) { top: 158dp; }
+.main button:nth-child(6) { top: 193dp; }
+
+.multiplayer #reveal
+{
+	width: 306dp;
+	height: 200dp;
+	top: 50%;
+	margin-top: -100dp;
+}
+
+.multiplayer #title { left: 55dp; top: 19dp; width: 195dp; }
+.multiplayer button { left: 55dp; }
+.multiplayer button:nth-child(1) { top: 47dp; }
+.multiplayer button:nth-child(2) { top: 82dp; }
+.multiplayer button:nth-child(3) { top: 116dp; }
+.multiplayer button:nth-child(4) { top: 150dp; }
+
+.firestorm #reveal
+{
+	width: 296dp;
+	height: 206dp;
+	margin-top: -103dp;
+}
+
+.firestorm #title { left: 45dp; top: 13dp; width: 195dp; }
+.firestorm button { left: 45dp; }
+.firestorm button:nth-child(1) { top: 37dp; }
+.firestorm button:nth-child(2) { top: 69dp; }
+.firestorm button:nth-child(3) { top: 99dp; }
+.firestorm button:nth-child(4) { top: 131dp; }
+.firestorm button:nth-child(5) { top: 161dp; }
+
+.gametype #reveal
+{
+	width: 342dp;
+	height: 176dp;
+	top: 50%;
+	margin-top: -88dp;
+}
+
+.gametype #title { left: 33dp; top: 19dp; width: 274dp; }
+.gametype button { left: 93dp; width: 156dp; }
+.gametype button:nth-child(1) { top: 68dp; }
+.gametype button:nth-child(2) { top: 101dp; }
+.gametype button:nth-child(3) { top: 133dp; }

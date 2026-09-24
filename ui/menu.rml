@@ -1,0 +1,20 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Menu</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="menu.rcss"/>
+</head>
+<body template="dialog" data-model="menu">
+	<button data-for="item : items" data-class-wide="wide" data-class-disabled="!item.enabled" data-event-click="queue('pick', it_index)">{{item.label}}</button>
+	<p id="title" data-if="title != ''">{{title}}</p>
+</body>
+</rml>

@@ -54,6 +54,14 @@ The audio layer uses [miniaudio](https://github.com/mackron/miniaudio),
 vendored through `thirdparty/miniaudio` at a tested tag and compiled as one
 translation unit from `thirdparty/miniaudio-impl.c`.
 
+The user interface toolkits are [RmlUi](https://github.com/mikke89/RmlUi),
+with [FreeType](https://freetype.org) rasterizing its fonts, and
+[Dear ImGui](https://github.com/ocornut/imgui) for developer overlays. They are
+vendored through `thirdparty/RmlUi`, `thirdparty/freetype`, and
+`thirdparty/imgui` at tested tags. FreeType builds with its bundled zlib copy
+and without bzip2, PNG, HarfBuzz, or Brotli; Dear ImGui is compiled from its
+core sources without any of its bundled backends.
+
 For a fresh clone, use `git clone --recurse-submodules`. Configuration stops
 with instructions if a submodule is missing. Update a pinned tag in a
 separate change.
@@ -96,8 +104,12 @@ the selected build directory.
 
 | Configuration | Runtime files |
 | --- | --- |
-| Debug | `GameD.exe`, `GameD.pdb`, `GameD.map`, `Language.dll` |
-| Release | `Game.exe`, `Game.pdb`, `Game.map`, `Language.dll` |
+| Debug | `GameD.exe`, `GameD.pdb`, `GameD.map`, `Language.dll`, `ui/` |
+| Release | `Game.exe`, `Game.pdb`, `Game.map`, `Language.dll`, `ui/` |
+
+`ui/` is the repository's directory of UI documents, styles, and font. The
+`OpenTSUIFiles` target places it beside the executable, so an edited document
+reaches the output without a relink.
 
 Run a build from its output directory, naming the game data with `-DATADIR=`:
 
@@ -208,17 +220,18 @@ the latest successful scheduled run attached to downloadable artifacts.
 Both use the reusable `Engine build` workflow. It runs one job per platform and
 configuration, four by default, each on its own Windows runner with Visual
 Studio 2022. A job configures and builds its platform with the commands above,
-runs CTest, and uploads the executable, language library, symbol file, and
-license notices. Artifact names contain the platform, configuration, and short
-commit, as in `opents-x64-Release-ab12cd3`. Linker maps are omitted because the
-symbol files are sufficient. A failure on either platform fails the workflow.
+runs CTest, and uploads the executable, language library, symbol file, `ui/`
+directory, and license notices. Artifact names contain the platform,
+configuration, and short commit, as in `opents-x64-Release-ab12cd3`. Linker maps
+are omitted because the symbol files are sufficient. A failure on either platform
+fails the workflow.
 After a successful pull-request build, `Engine build comment` maintains one
 pull-request comment with direct nightly.link downloads.
 
 Publishing a GitHub release runs `Engine release`. It builds the release commit
 for both platforms with `-DOPENTS_OFFICIAL_BUILD=ON`, and packages each one's
-`Game.exe`, `Language.dll`, `Game.pdb`, and the project and third-party license
-notices in a zip named after the release tag and the platform, such as
+`Game.exe`, `Language.dll`, `Game.pdb`, `ui/`, and the project and third-party
+license notices in a zip named after the release tag and the platform, such as
 `OpenTS-v0.2.0-x64.zip`. It attaches both to the release, and appends notes
 generated from the manual's change records by
 `python manual/tools/manage.py release-notes`. See

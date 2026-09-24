@@ -1,0 +1,24 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Message</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="message.rcss"/>
+</head>
+<body template="dialog" data-model="message">
+	<div id="text">
+		<p class="sans">{{text}}</p>
+	</div>
+	<div id="buttons">
+		<button data-for="button : buttons" data-class-slot0="button.slot == 0" data-class-slot1="button.slot == 1" data-class-slot2="button.slot == 2" data-event-click="queue('button', button.index)">{{button.caption}}</button>
+	</div>
+</body>
+</rml>

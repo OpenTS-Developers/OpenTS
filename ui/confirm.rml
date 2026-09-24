@@ -1,0 +1,23 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Confirm display mode</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="confirm.rcss"/>
+</head>
+<body template="dialog" data-model="confirm">
+	<p id="text" class="sans">Click OK to keep this display mode. Your old display settings will be restored in <span id="seconds">{{seconds}}</span><span data-if="seconds == 1"> second</span><span data-if="seconds != 1"> seconds</span>.</p>
+	<div id="buttons">
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	</div>
+</body>
+</rml>

@@ -1,0 +1,37 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 327dp;
+	height: 105dp;
+	top: 50%;
+	margin-top: -52dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+#text
+{
+	height: 38dp;
+	line-height: 17dp;
+	text-align: center;
+	white-space: pre-wrap;
+}
+
+#bar
+{
+	width: 150dp;
+	height: 24dp;
+	margin: 4dp auto 0 auto;
+}

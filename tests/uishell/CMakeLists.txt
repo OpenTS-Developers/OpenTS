@@ -1,0 +1,52 @@
+# Links the vendored UI toolkits as the engine does and loads the shipped documents through a
+# recording render interface, so a runtime library mismatch, a document that fails to parse,
+# or a style that needs an unimplemented render method fails here. The documents are read
+# from the source tree and the string table comes from the per-build stamp target, so the
+# test needs no run directory. The shell runs over a host the harness controls, with a stub
+# for the developer overlays.
+opents_add_test(UIShell
+    NAME uishell
+    SOURCES uishell.cpp uidevstub.cpp uitexturestub.cpp
+    ENGINE
+        ui/uiscreen.cpp
+        ui/uiinput.cpp
+        ui/uishell.cpp
+        ui/uireveal.cpp
+        ui/uiunicode.cpp
+        utf8.cpp
+        hsv.cpp
+        rgb.cpp
+        ui/rml/rmlfont.cpp
+        ui/rml/rmlfontfon.cpp
+        ui/rml/rmlfontsheet.cpp
+        ui/rml/rmlimage.cpp
+        ui/rml/rmlkeys.cpp
+        ui/rml/rmlrenderbase.cpp
+        ui/rml/rmlrendermath.cpp
+        ui/rml/rmlsurface.cpp
+        ui/rml/rmlsystem.cpp
+        ui/rml/rmlview.cpp
+        ui/screens/abort/uiabort.cpp
+        ui/screens/campaign/uicampaign.cpp
+        ui/screens/display/uidisplay.cpp
+        ui/screens/gamectrl/uigamectrl.cpp
+        ui/screens/gameopt/uigameopt.cpp
+        ui/screens/keyboard/uikeyboard.cpp
+        ui/screens/mainopt/uimainopt.cpp
+        ui/screens/desync/uidesync.cpp
+        ui/screens/mapgen/uimapgen.cpp
+        ui/screens/menu/uimenu.cpp
+        ui/screens/reconnect/uireconnect.cpp
+        ui/screens/msgbox/uimsgbox.cpp
+        ui/screens/netlobby/uinetlobby.cpp
+        ui/screens/savegame/uisavegame.cpp
+        ui/screens/scenario/uiscenario.cpp
+        ui/screens/skirmish/uiskirmish.cpp
+        ui/screens/sound/uisound.cpp
+        ui/screens/version/uiversion.cpp
+        ui/screens/waitbox/uiwaitbox.cpp
+    INCLUDES "${OPENTS_GENERATED_DIR}"
+    DEFINITIONS WIN32 _WINDOWS NOMINMAX "OPENTS_UI_DIR=\"${CMAKE_SOURCE_DIR}/ui\""
+    LIBRARIES RmlUi::Core freetype imgui
+    STAMP
+)

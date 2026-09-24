@@ -1,0 +1,23 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Options menu</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="mainopt.rcss"/>
+</head>
+<body template="dialog" data-model="mainopt">
+	<button class="wide" id="settings" data-event-click="queue('settings')">Game Settings</button>
+	<button class="wide" id="display" data-event-click="queue('display')">Display</button>
+	<button class="wide" id="sound" data-class-disabled="!soundenabled" data-event-click="queue('sound')">Sound</button>
+	<button class="wide" id="keyboard" data-event-click="queue('keyboard')">Keyboard</button>
+	<button class="wide" id="mainmenu" data-event-click="queue('ok')">Main Menu</button>
+</body>
+</rml>

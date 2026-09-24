@@ -16,6 +16,7 @@
 #include "video.h"
 
 #include "_surface.h"
+#include "_ui.h"
 #include "bgfxbackend.h"
 #include "dbgprint.h"
 #include "dsurface.h"
@@ -23,8 +24,11 @@
 #include "goptions.h"
 #include "misc.h"
 #include "surface.h"
+#include "ui/uishell.h"
+#include "videodirty.h"
 #include "wincursor.h"
 
+#include <cstdint>
 #include <cstdlib>
 
 
@@ -44,16 +48,24 @@ bool WindowedMode = false;
 static bool _Initialized = false;
 static VideoScaleInfo _ScaleInfo;
 
-// Set whenever the visible surface is written to, and cleared once that frame has been
-// presented. A frame that is skipped for pacing stays marked, so the next present shows
-// the newest content rather than a stale one.
-static bool _FrameIsDirty = false;
+static VideoDirtyStateClass _Dirty;
+
 static unsigned int _LastPresentTime = 0;
 static unsigned int _PresentInterval = 16;
 
-// Presents can nest, because a dialog repainting itself presents from inside the paint
-// that the engine's own present provoked.
+static unsigned int _PresentsThisSecond = 0;
+static unsigned int _PresentsLastSecond = 0;
+static unsigned int _PresentSecondStart = 0;
+
+// A window that repaints itself can start a present inside the engine's own; the inner one is
+// skipped. A resize that arrives during a present waits for it to finish.
 static bool _Presenting = false;
+static bool _ResizePending = false;
+static int _PendingWidth = 0;
+static int _PendingHeight = 0;
+
+static std::uint64_t _PresentCount = 0;
+static std::uint64_t _FrameUploadCount = 0;
 
 
 /// <summary>
@@ -184,7 +196,13 @@ void Video_Shutdown(void)
 	Win_Cursor_Shutdown();
 	Backend_Shutdown();
 	_Initialized = false;
-	_FrameIsDirty = false;
+	_Dirty.Reset();
+	_ResizePending = false;
+	_PresentsThisSecond = 0;
+	_PresentsLastSecond = 0;
+	_PresentSecondStart = 0;
+	_PresentCount = 0;
+	_FrameUploadCount = 0;
 }
 
 
@@ -211,7 +229,8 @@ bool Video_Set_Mode(int width, int height)
 
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
-	_FrameIsDirty = true;
+	UIShell.On_Video_Change();
+	_Dirty.Invalidate_Frame();
 	return(true);
 }
 
@@ -225,12 +244,21 @@ void Video_On_Resize(int drawablewidth, int drawableheight)
 		return;
 	}
 
+	if (_Presenting) {
+		_ResizePending = true;
+		_PendingWidth = drawablewidth;
+		_PendingHeight = drawableheight;
+		DebugString("Video: resize to %dx%d deferred past the present under way\n", drawablewidth, drawableheight);
+		return;
+	}
+
 	_ScaleInfo.DrawableWidth = drawablewidth;
 	_ScaleInfo.DrawableHeight = drawableheight;
 	Backend_On_Resize(drawablewidth, drawableheight);
 	Update_Scale_Info();
 	Win_Cursor_Refresh();
-	Video_Mark_Dirty();
+	UIShell.On_Video_Change();
+	Video_Mark_Overlay_Dirty();
 }
 
 
@@ -244,7 +272,7 @@ void Video_Set_Refresh_Rate(int refreshrate)
 	}
 
 	Update_Present_Interval(refreshrate);
-	Video_Mark_Dirty();
+	Video_Mark_Overlay_Dirty();
 }
 
 
@@ -253,44 +281,87 @@ void Video_Set_Refresh_Rate(int refreshrate)
 /// </summary>
 void Video_Mark_Dirty(void)
 {
-	_FrameIsDirty = true;
+	_Dirty.Mark_Game();
 }
 
 
 /// <summary>
-/// Puts the visible surface on the screen whatever its state.
+/// Records that the UI overlay has changed since the last present.
 /// </summary>
-void Video_Present(void)
+void Video_Mark_Overlay_Dirty(void)
+{
+	_Dirty.Mark_Overlay();
+}
+
+
+static void Present(void)
 {
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
 	}
-
-	DSurface * surface = (DSurface *)VisibleSurface;
-	void * pixels = surface->Get_Buffer();
-
-	if (pixels == NULL) {
+	if (MainWindow != NULL && IsIconic(MainWindow)) {
 		return;
 	}
 
+	VideoDirtySnapshotType snapshot = _Dirty.Consume();
+
+	DSurface * surface = (DSurface *)VisibleSurface;
+	void * pixels = snapshot.Upload ? surface->Get_Buffer() : NULL;
+	if (snapshot.Upload && pixels == NULL) {
+		_Dirty.Restore(snapshot);
+		return;
+	}
+
+	_LastPresentTime = timeGetTime();
+
 	_Presenting = true;
-	Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode());
+	bool presented = Backend_Present(pixels, surface->Stride(), _ScaleInfo.DestX, _ScaleInfo.DestY, _ScaleInfo.DestWidth, _ScaleInfo.DestHeight, Backend_Scale_Mode());
+	if (presented) {
+		if (snapshot.Upload) {
+			_Dirty.Upload_Completed();
+			_FrameUploadCount++;
+		}
+		UIShell.Render_Overlay();
+	}
+	Backend_End_Frame();
 	_Presenting = false;
 
-	_FrameIsDirty = false;
-	_LastPresentTime = timeGetTime();
+	if (presented) {
+		if (_LastPresentTime - _PresentSecondStart >= 1000) {
+			_PresentsLastSecond = _PresentsThisSecond;
+			_PresentsThisSecond = 0;
+			_PresentSecondStart = _LastPresentTime;
+		}
+		_PresentsThisSecond++;
+		_PresentCount++;
+	} else {
+		_Dirty.Restore(snapshot);
+		DebugString("Video: present refused, marks kept\n");
+	}
+
+	if (_ResizePending) {
+		_ResizePending = false;
+		Video_On_Resize(_PendingWidth, _PendingHeight);
+	}
+}
+
+
+void Video_Present(void)
+{
+	_Dirty.Mark_Game();
+	Present();
 }
 
 
 /// <summary>
-/// Puts the visible surface on the screen if it has changed and the display is ready for
-/// another frame.
-/// A skipped present leaves the frame marked, so the next one shows the newest content.
+/// Puts the visible surface on the screen if it or the UI overlay has changed and a display
+/// refresh has passed since the last present.
+/// A skipped present keeps the changes marked, so the next present shows the newest content.
 /// This never waits: the game loop is not paced by presentation.
 /// </summary>
 void Video_Present_If_Dirty(void)
 {
-	if (!_FrameIsDirty) {
+	if (!_Dirty.Is_Dirty()) {
 		return;
 	}
 
@@ -299,7 +370,17 @@ void Video_Present_If_Dirty(void)
 		return;
 	}
 
-	Video_Present();
+	Present();
+}
+
+
+void Video_Present_Now(void)
+{
+	if (!_Dirty.Is_Dirty()) {
+		return;
+	}
+
+	Present();
 }
 
 
@@ -309,6 +390,30 @@ void Video_Present_If_Dirty(void)
 VideoScaleInfo const & Video_Get_Scale_Info(void)
 {
 	return(_ScaleInfo);
+}
+
+
+unsigned int Video_Presents_Per_Second(void)
+{
+	return(_PresentsLastSecond);
+}
+
+
+unsigned int Video_Present_Interval(void)
+{
+	return(_PresentInterval);
+}
+
+
+std::uint64_t Video_Present_Count(void)
+{
+	return(_PresentCount);
+}
+
+
+std::uint64_t Video_Frame_Upload_Count(void)
+{
+	return(_FrameUploadCount);
 }
 
 

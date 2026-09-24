@@ -1,0 +1,22 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Version</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="version.rcss"/>
+</head>
+<body template="dialog" data-model="version">
+	<div id="lines" class="list"><div class="rows">
+		<p class="item" data-for="line : lines">{{line}}</p>
+	</div></div>
+	<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+</body>
+</rml>
