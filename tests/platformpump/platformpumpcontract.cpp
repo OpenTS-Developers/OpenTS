@@ -9,7 +9,8 @@
 
 // Pins what the game receives from the platform's event pump: each event SDL queues reaches
 // the sink once and in order, and the keys the platform reports held during an event are
-// those held as of that event, however many events one pump delivers.
+// those held as of that event, however many events one pump delivers. It also pins that a
+// capture Windows takes away reaches the game as a lost capture.
 
 #include "platform/platform.h"
 #include "platform/windowevent.hh"
@@ -157,6 +158,32 @@ int main(void)
 
 	Push_Key(false, SDL_SCANCODE_B, SDLK_B);
 	Pumped(WINDOW_EVENT_KEY_UP);
+
+	HWND const window = (HWND)Platform_Native_Window().Handle;
+
+	Platform_Capture_Mouse(true);
+	bool const captured = Platform_Mouse_Captured() && GetCapture() == window;
+	Check(captured, "the window can take the mouse capture");
+	if (captured) {
+		SendMessageW(window, WM_CANCELMODE, 0, 0);
+		Check(!Platform_Mouse_Captured(), "a capture Windows cancels is reported gone at once");
+		Check(Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "and reaches the game as one lost capture");
+
+		Platform_Capture_Mouse(true);
+		Check(Platform_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was cancelled");
+
+		Platform_Capture_Mouse(false);
+		Check(!Platform_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
+
+		HWND other = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 8, 8, NULL, NULL, GetModuleHandleW(NULL), NULL);
+		Platform_Capture_Mouse(true);
+		SetCapture(other);
+		Check(!Platform_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
+		ReleaseCapture();
+		DestroyWindow(other);
+		Platform_Capture_Mouse(false);
+		Pumped(WINDOW_EVENT_CAPTURE_LOST);
+	}
 
 	Platform_Shutdown();
 

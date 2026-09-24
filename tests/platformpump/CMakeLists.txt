@@ -10,6 +10,6 @@ opents_add_test(PlatformPump
         platform/sdlkeys.cpp
         utf8.cpp
     DEFINITIONS WIN32 _WINDOWS NOMINMAX
-    LIBRARIES SDL3::SDL3-static
+    LIBRARIES SDL3::SDL3-static comctl32
     UTF8
 )

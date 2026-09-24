@@ -15,6 +15,8 @@
 #include "resource.h"
 #include "win.h"
 
+#include <commctrl.h>
+
 #define SDL_MAIN_HANDLED
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
@@ -41,6 +43,10 @@ unsigned char _PressedAs[SDL_SCANCODE_COUNT];
 SDL_Keymod _KeyModifiers = SDL_KMOD_NONE;
 
 SDL_Cursor * _SystemCursors[PLATFORM_CURSOR_COUNT];
+
+// The SDL event type the main window posts when Windows takes its mouse capture away.
+Uint32 _CaptureCancelled = 0;
+UINT_PTR const CaptureSubclass = 2;
 
 
 void Set_Hint(char const * name, char const * value)
@@ -199,8 +205,39 @@ void Dispatch(WindowEvent const & event)
 }
 
 
+HWND Main_Window_Handle(void)
+{
+	if (_Window == nullptr) {
+		return(NULL);
+	}
+	return((HWND)SDL_GetPointerProperty(SDL_GetWindowProperties(_Window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
+}
+
+
+// Windows can end the capture while the window keeps the focus, for a system menu or another
+// window taking the mouse, and SDL reports neither. The window's own releases are ignored.
+LRESULT CALLBACK Watch_Capture(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR, DWORD_PTR)
+{
+	bool const cancelled = (message == WM_CANCELMODE) || (message == WM_CAPTURECHANGED && lparam != 0 && (HWND)lparam != window);
+	if (cancelled && _CaptureCancelled != 0) {
+		SDL_Event event;
+		SDL_zero(event);
+		event.type = _CaptureCancelled;
+		SDL_PushEvent(&event);
+	}
+	return(DefSubclassProc(window, message, wparam, lparam));
+}
+
+
 void Handle_SDL_Event(SDL_Event const & sdlevent)
 {
+	if (_CaptureCancelled != 0 && sdlevent.type == _CaptureCancelled) {
+		WindowEvent event;
+		event.Type = WINDOW_EVENT_CAPTURE_LOST;
+		Dispatch(event);
+		return;
+	}
+
 	if (sdlevent.type == SDL_EVENT_QUIT) {
 		DebugString("SDL: the system asked the game to quit\n");
 	}
@@ -354,6 +391,7 @@ bool Platform_Init(PlatformEventSink const & sink)
 		return(false);
 	}
 
+	_CaptureCancelled = SDL_RegisterEvents(1);
 	_Started = true;
 	return(true);
 }
@@ -378,6 +416,7 @@ void Platform_Shutdown(void)
 
 	if (_Window != nullptr) {
 		SDL_RemoveEventWatch(Watch_Window, nullptr);
+		RemoveWindowSubclass(Main_Window_Handle(), Watch_Capture, CaptureSubclass);
 		SDL_DestroyWindow(_Window);
 		_Window = nullptr;
 	}
@@ -432,6 +471,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 	}
 
 	SDL_AddEventWatch(Watch_Window, nullptr);
+	SetWindowSubclass(Main_Window_Handle(), Watch_Capture, CaptureSubclass, 0);
 	Seed_Held_Keys();
 
 	SDL_ShowWindow(_Window);
@@ -578,15 +618,23 @@ void Platform_End_Native_Modal(void)
 
 void Platform_Capture_Mouse(bool capture)
 {
-	if (_Window != nullptr) {
-		SDL_CaptureMouse(capture);
+	if (_Window == nullptr) {
+		return;
+	}
+	SDL_CaptureMouse(capture);
+
+	// SDL still records a capture Windows took away, so it does not ask for it again.
+	HWND const window = Main_Window_Handle();
+	if (capture && (SDL_GetWindowFlags(_Window) & SDL_WINDOW_MOUSE_CAPTURE) != 0 && GetCapture() != window) {
+		SetCapture(window);
 	}
 }
 
 
 bool Platform_Mouse_Captured(void)
 {
-	return(_Window != nullptr && (SDL_GetWindowFlags(_Window) & SDL_WINDOW_MOUSE_CAPTURE) != 0);
+	HWND const window = Main_Window_Handle();
+	return(window != NULL && GetCapture() == window);
 }
 
 
