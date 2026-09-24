@@ -42,8 +42,6 @@
 #include <winnt.h>
 #include <winuser.h>
 
-extern int			ShowCommand;
 extern HINSTANCE	ProgramInstance;
 extern HWND			MainWindow;
-extern HWND			UnusedWindow;
 extern bool			GameInFocus;

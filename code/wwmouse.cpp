@@ -68,15 +68,12 @@
 
 
 /// <summary>
-/// Constructs the mouse handler object.
-/// The handler is bound to the game window and derives the confining rectangle from it.
+/// Constructs the mouse handler object for the main window, which must already exist.
 /// The mouse begins in a non-captured state.
 /// </summary>
-/// <param name="window">Handle to the game window that the mouse is bound to.</param>
-WWMouseClass::WWMouseClass(HWND window) :
+WWMouseClass::WWMouseClass(void) :
 	MouseState(-1),
 	IsCaptured(false),
-	Window(window),
 	ConfiningRect(RECT_NONE),
 	ReleasedState(0)
 {
@@ -85,28 +82,20 @@ WWMouseClass::WWMouseClass(HWND window) :
 
 
 /// <summary>
-/// Recalculates the screen rectangle that the mouse is confined to.
-/// This routine converts the game window's client area into screen coordinates. The mouse
-/// capture logic clips the cursor to this rectangle, so the window creation and window
-/// move handlers call this routine to keep it current.
+/// Recalculates the desktop rectangle of the main window's client area, which
+/// Convert_Coordinate measures positions from. The window's move and resize handlers call
+/// this routine to keep it current.
 /// </summary>
 void WWMouseClass::Calc_Confining_Rect(void)
 {
-	RECT rect;
-	GetClientRect(Window, &rect);
+	int x = 0;
+	int y = 0;
+	int width = 0;
+	int height = 0;
+	Platform_Window_Client_Rect(x, y, width, height);
 
-	POINT point;
-	point.x = rect.left;
-	point.y = rect.top;
-	ClientToScreen(Window, &point);
-
-	POINT lr;
-	lr.x = rect.right;
-	lr.y = rect.bottom;
-	ClientToScreen(Window, &lr);
-
-	ConfiningRect = Rect(point.x, point.y, lr.x-point.x, lr.y-point.y);
-	DebugString("Calc_Confining_Rect(%d,%d,%d,%d)\n", point.x, point.y, lr.x-point.x, lr.y-point.y);
+	ConfiningRect = Rect(x, y, width, height);
+	DebugString("Calc_Confining_Rect(%d,%d,%d,%d)\n", x, y, width, height);
 }
 
 

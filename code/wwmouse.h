@@ -47,7 +47,7 @@ class WWMouseClass : public Mouse {
 		/*
 		**	Private constructor.
 		*/
-		WWMouseClass(HWND window);
+		WWMouseClass(void);
 
 		/*
 		**	Sets the game-drawn mouse imagery.
@@ -113,16 +113,7 @@ class WWMouseClass : public Mouse {
 		*/
 		bool IsCaptured;
 
-		/*
-		**	This is the window handle that is used to bind and bias the mouse
-		**	position.
-		*/
-		HWND Window;
-
-		/*
-		 * The screen rectangle that the mouse is confined to while it is captured.
-		 * It tracks the game window's client area.
-		 */
+		// The desktop rectangle of the game window's client area.
 		Rect ConfiningRect;
 
 		// The pointer's show count while the mouse is released, which hides the window's

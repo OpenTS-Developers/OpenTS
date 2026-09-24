@@ -371,11 +371,6 @@ fixed_exclusions:
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_RBUTTON }
     reason: Keyboard-backend classification of mouse virtual keys.
   - sites:
-      - { file: code/winevent.cpp, function: Win_Message_Context, expression: VK_SHIFT }
-      - { file: code/winevent.cpp, function: Win_Message_Context, expression: VK_CONTROL }
-      - { file: code/winevent.cpp, function: Win_Message_Context, expression: VK_MENU }
-    reason: Keyboard-backend modifier-state encoding, not separate controls.
-  - sites:
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_LBUTTON }
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_RBUTTON }
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_MBUTTON }
@@ -441,8 +436,6 @@ fixed_exclusions:
       - { file: code/wdtsel.cpp, function: Selection::Pick_Territory, expression: KN_NONE }
       - { file: code/wdtsel.cpp, function: Selection::Pick_Territory, expression: KN_LMOUSE }
     reason: World Domination Tour territory-screen polling and hit-testing.
-  - site: { file: code/winstub.cpp, function: Create_Main_Window, expression: VK_M }
-    reason: Registers a Windows hotkey that has no WM_HOTKEY handler in the current source tree.
   - sites:
       - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_SHIFT }
       - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_CONTROL }

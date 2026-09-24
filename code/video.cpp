@@ -23,6 +23,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "misc.h"
+#include "platform/platform.h"
 #include "surface.h"
 #include "ui/uishell.h"
 #include "videodirty.h"
@@ -299,7 +300,7 @@ static void Present(void)
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
 	}
-	if (MainWindow != NULL && IsIconic(MainWindow)) {
+	if (Platform_Window_Minimized()) {
 		return;
 	}
 

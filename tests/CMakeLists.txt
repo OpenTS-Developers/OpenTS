@@ -110,7 +110,6 @@ add_subdirectory(png)
 add_subdirectory(houseset)
 add_subdirectory(uishell)
 add_subdirectory(uilogic)
-add_subdirectory(winevent)
 add_subdirectory(sdlkeys)
 add_subdirectory(sdlevents)
 

@@ -66,7 +66,6 @@
 #include "movie.h"
 #include "opents_version.h"
 #include "platform/platform.h"
-#include "platform/windowevent.hh"
 #include "pcx.h"
 #include "queue.h"
 #include "resource.h"
@@ -77,7 +76,6 @@
 #include "vidscale.h"
 #include "win.h"
 #include "wincursor.h"
-#include "winevent.h"
 #include "winfix.h"
 #include "wwmouse.h"
 
@@ -86,9 +84,7 @@
 #include <commctrl.h>
 #include <windowsx.h>
 
-int		ShowCommand;
 HWND	MainWindow;
-HWND	UnusedWindow;
 
 HINSTANCE	ProgramInstance;
 bool _MouseCaptured;
@@ -96,19 +92,6 @@ bool _MouseCaptured;
 
 //void output(short,short)
 //{}
-
-/*
- * Taken from later Windows SDK after what is shipped in VS6
- */
-
-#ifndef WM_MOUSEWHEEL
-#define WM_MOUSEWHEEL (WM_MOUSELAST+1)  /// message that will be supported
-#endif
-
-#ifndef GET_WHEEL_DELTA_WPARAM
-#define GET_WHEEL_DELTA_WPARAM(wParam)  ((short)HIWORD(wParam))
-#endif
-///////////////////////////////////////////////////////////
 
 //unsigned long CCFocusMessage = WM_USER+50;	//Private message for receiving application focus
 extern	void VQA_PauseAudio(void);
@@ -162,117 +145,6 @@ void Focus_Restore(void)
 }
 
 
-extern bool InMovie;
-
-
-static WinEventTranslatorClass _WindowEvents;
-
-
-/// <summary>
-/// Handles the Windows messages sent to the main game window.
-/// This is the window procedure registered for the main window. It hands each message to the
-/// game as window events, deals with the messages only Windows needs answered -- painting,
-/// the pointer shape, window movement, the screen saver and shutdown -- and passes
-/// everything else back to Windows.
-/// </summary>
-/// <returns>Returns with the result Windows expects for the message handled.</returns>
-LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
-{
-	WindowEvent events[4];
-	int const count = _WindowEvents.Translate(message, wParam, lParam, Win_Message_Context(hwnd, message, lParam), events, ARRAY_SIZE(events));
-
-	bool consumed = false;
-	for (int index = 0; index < count; index++) {
-		consumed = Game_Window_Handle_Event(events[index]) || consumed;
-	}
-	if (consumed) {
-		return(0);
-	}
-
-	switch ( message ) {
-		// Raised on request so that crash reporting can be exercised from inside window
-		// procedure dispatch, which the operating system unwinds differently from a call.
-		case WM_EXCEPTION_TEST:
-			Exception_Wndproc_Test_Fault();
-			return(0);
-
-		case WM_SHOWWINDOW:
-			return(0);
-
-		case WM_PAINT:
-			ValidateRect(hwnd, NULL);
-			break;
-
-		case WM_ERASEBKGND:
-			return(1);
-
-		case WM_SETCURSOR:
-			if (LOWORD(lParam) == HTCLIENT && Game_Window_Select_Cursor()) {
-				return(TRUE);
-			}
-			break;
-
-		case WM_CREATE:
-			ToolTips = new CCToolTip();
-			if (ToolTips) {
-				ToolTips->Set_Timer_Delay(500);
-			}
-			break;
-
-			/*
-			**	Windoze message says we have to shut down. Try and do it cleanly.
-			*/
-		case WM_DESTROY:
-			if (ToolTips != NULL) {
-				delete ToolTips;
-				ToolTips = NULL;
-			}
-			MainWindow = 0;
-
-			/*
-			**	If we are shutting down gracefully than flag that the message loop has finished.
-			**	If this is a forced shutdown (ReadyToQuit == 0) then try and close down everything
-			**	before we exit.
-			*/
-			switch (ReadyToQuit) {
-				default:
-				case 1:
-					ReadyToQuit = 2;
-					break;
-
-				case 0:
-					break;
-
-			}
-			return(0);
-
-		case WM_ACTIVATEAPP:
-			return(0);
-
-		case WM_MOVING:
-			return(On_WM_MOVING(hwnd, wParam, lParam));
-
-		case WM_SYSCOMMAND:
-			switch ( wParam ) {
-
-				case SC_CLOSE:
-					return(0);
-
-				case SC_SCREENSAVE:
-					/*
-					**	Windoze is about to start the screen saver. If we just return without passing
-					**	this message to DefWindowProc then the screen saver will not be allowed to start.
-					*/
-					return(0);
-			}
-			break;
-
-	}
-
-	return(DefWindowProcW (hwnd, message, wParam, lParam));
-}
-
-
 /// <summary>
 /// Fetches the build number of this executable.
 /// This routine is used by the network code to check that every machine joining a
@@ -291,7 +163,7 @@ unsigned int Build_Number(void)
 /// is not set; otherwise the window covers the primary display.
 /// </summary>
 /// <returns>False when SDL could not start or the window could not be created.</returns>
-bool Create_Main_Window(int command_show, int width, int height)
+bool Create_Main_Window(int width, int height)
 {
 	// The rules chooser and the map editor are built from the common controls.
 	InitCommonControls();
@@ -316,12 +188,9 @@ bool Create_Main_Window(int command_show, int width, int height)
 	}
 
 	MainWindow = (HWND)Platform_Native_Window().Handle;
-	ShowCommand = command_show;
 
 	ToolTips = new CCToolTip();
 	ToolTips->Set_Timer_Delay(500);
-
-	RegisterHotKey(MainWindow, 1, MOD_ALT|MOD_CONTROL|MOD_SHIFT, VK_M);
 
 	Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
 	return(true);

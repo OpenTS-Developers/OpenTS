@@ -443,7 +443,7 @@ static bool Claim_Single_Instance(void)
  * HISTORY:                                                                                    *
  *   03/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_show )
+int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 {
 	int		argc;       //Command line argument count
 	char **	argv;       //Pointers to command line arguments
@@ -575,8 +575,8 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		VideoModeWidth = Options.ScreenWidth;
 		VideoModeHeight = Options.ScreenHeight;
 
-		if (!Create_Main_Window(command_show, Options.ScreenWidth, Options.ScreenHeight)) {
-			MessageBox(NULL, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
+		if (!Create_Main_Window(Options.ScreenWidth, Options.ScreenHeight)) {
+			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
@@ -590,13 +590,13 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		NativeWindow nativewindow = Platform_Native_Window();
 		if (!Platform_Window_Drawable_Size(drawablewidth, drawableheight)
 			|| !Video_Init(nativewindow, drawablewidth, drawableheight, refreshrate)) {
-			MessageBox(MainWindow, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
+			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
 		VisibleSurface = DSurface::Create_Primary();
 		if (VisibleSurface == NULL) {
-			MessageBox(MainWindow, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
+			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
@@ -622,7 +622,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 		AlphaBuffer = new ABuffer(Rect(TacticalRect.X, TacticalRect.Y, 480, 480 - TacticalRect.Y));
 
-		MouseCursor = new WWMouseClass(MainWindow);
+		MouseCursor = new WWMouseClass();
 		MouseCursor->Capture_Mouse();
 
 		/*
@@ -1054,8 +1054,6 @@ void Emergency_Exit(void)
 		delete MouseCursor;
 	}
 	MouseCursor = NULL;
-
-	PostQuitMessage(EXIT_SUCCESS);
 
 	Shutdown_Network();
 
