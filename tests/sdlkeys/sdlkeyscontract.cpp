@@ -8,9 +8,10 @@
  ******************************************************************************/
 
 // Pins the Windows virtual-key code each SDL key becomes, since saved hotkeys store those
-// codes: letters and digits by the layout, the keypad by Num Lock, and everything else by
-// its US position. It also pins the names the keyboard screen shows for those codes. It links
-// the static SDL library the game links, so a runtime library mismatch fails here too.
+// codes: the main block's character keys by the layout's own codes, the keypad by Num Lock,
+// and everything else by its US position. It also pins the names the keyboard screen shows
+// for those codes. It links the static SDL library the game links, so a runtime library
+// mismatch fails here too.
 
 #include "platform/sdlkeys.h"
 
@@ -49,6 +50,41 @@ int Unprinted(SDL_Scancode scancode, SDL_Keymod modifiers = SDL_KMOD_NONE)
 	return(Key(scancode, SDLK_UNKNOWN, modifiers));
 }
 
+
+int Scanned(SDL_Scancode scancode, unsigned int raw, HKL layout, SDL_Keymod modifiers = SDL_KMOD_NONE)
+{
+	return(Virtual_Key_From_SDL((int)scancode, (unsigned int)SDLK_UNKNOWN, (unsigned int)modifiers, raw, layout));
+}
+
+
+// The German layout, which the checks load only when the session lacks it and unload after.
+struct GermanLayout
+{
+	HKL Layout = NULL;
+	bool Loaded = false;
+
+	GermanLayout(void)
+	{
+		HKL layouts[64];
+		int const count = GetKeyboardLayoutList(64, layouts);
+		for (int index = 0; index < count; index++) {
+			if (LOWORD((UINT_PTR)layouts[index]) == 0x0407) {
+				Layout = layouts[index];
+				return;
+			}
+		}
+		Layout = LoadKeyboardLayoutW(L"00000407", KLF_NOTELLSHELL);
+		Loaded = (Layout != NULL);
+	}
+
+	~GermanLayout(void)
+	{
+		if (Loaded) {
+			UnloadKeyboardLayout(Layout);
+		}
+	}
+};
+
 }
 
 
@@ -63,7 +99,7 @@ int main(void)
 	Check(Key(SDL_SCANCODE_M, SDLK_COMMA) == VK_OEM_COMMA, "the key a layout prints a comma on is the comma key");
 	Check(Key(SDL_SCANCODE_RIGHTBRACKET, SDLK_PLUS) == VK_OEM_PLUS, "the key a layout prints a plus on is the plus key");
 	Check(Key(SDL_SCANCODE_EQUALS, SDLK_EQUALS) == VK_OEM_PLUS, "the US equals key is the plus key");
-	Check(Key(SDL_SCANCODE_MINUS, (SDL_Keycode)0xDF) == VK_OEM_MINUS, "a key printing a letter Windows has no code for keeps its US position");
+	Check(Key(SDL_SCANCODE_MINUS, (SDL_Keycode)0xDF) == VK_OEM_MINUS, "without a scan code, a key printing a letter with no code keeps its US position");
 	Check(Key(SDL_SCANCODE_GRAVE, SDLK_GRAVE) == VK_OEM_3 && Key(SDL_SCANCODE_SLASH, SDLK_SLASH) == VK_OEM_2, "the other punctuation keys keep their US positions");
 	Check(Key(SDL_SCANCODE_NONUSBACKSLASH, SDLK_LESS) == VK_OEM_102, "the extra key beside left Shift is its own key");
 
@@ -99,6 +135,34 @@ int main(void)
 		named = named && Unprinted(scancode) == 'A' + letter;
 	}
 	Check(named, "every letter key named by SDL is its letter when its layout prints none");
+
+	HKL const current = GetKeyboardLayout(0);
+	Check(Scanned(SDL_SCANCODE_F1, 0x3B, current) == VK_F1 && Scanned(SDL_SCANCODE_UP, 0xE048, current) == VK_UP, "a scan code leaves the function and arrow keys their fixed codes");
+	Check(Scanned(SDL_SCANCODE_KP_8, 0x48, current, SDL_KMOD_NUM) == VK_NUMPAD8 && Scanned(SDL_SCANCODE_KP_8, 0x48, current) == VK_UP, "and the keypad still follows Num Lock");
+	Check(Scanned(SDL_SCANCODE_RSHIFT, 0x36, current) == VK_SHIFT && Scanned(SDL_SCANCODE_RCTRL, 0xE01D, current) == VK_CONTROL, "and either side of a modifier is still the modifier");
+	Check(Scanned(SDL_SCANCODE_PAUSE, 0xE046, current) == VK_PAUSE, "and Pause is Pause");
+
+	bool native = true;
+	for (unsigned int raw = 0x02; raw <= 0x35; raw++) {
+		UINT const expected = MapVirtualKeyExW(raw, MAPVK_VSC_TO_VK_EX, current);
+		if (expected >= 'A' && expected <= 'Z') {
+			native = native && Scanned(SDL_SCANCODE_A, raw, current) == (int)expected;
+		}
+	}
+	Check(native, "a character key takes the code the active layout gives its scan code");
+
+	{
+		GermanLayout german;
+		if (german.Layout != NULL && MapVirtualKeyExW(0x0C, MAPVK_VSC_TO_VK_EX, german.Layout) == 0xDB) {
+			Check(Scanned(SDL_SCANCODE_MINUS, 0x0C, german.Layout) == 0xDB, "on a German layout, the sharp s key keeps its own code");
+			Check(Scanned(SDL_SCANCODE_SLASH, 0x35, german.Layout) == VK_OEM_MINUS, "and the minus key keeps the minus code");
+			Check(Scanned(SDL_SCANCODE_SEMICOLON, 0x27, german.Layout) == 0xC0 && Scanned(SDL_SCANCODE_LEFTBRACKET, 0x1A, german.Layout) == 0xBA, "and the umlaut keys keep theirs");
+			Check(Scanned(SDL_SCANCODE_Y, 0x15, german.Layout) == 'Z' && Scanned(SDL_SCANCODE_Z, 0x2C, german.Layout) == 'Y', "and the Z and Y keys swap");
+			Check(Virtual_Key_Name(0xDB, german.Layout) == "\xC3\x9F" && Virtual_Key_Name(0xC0, german.Layout) == "\xC3\x96", "and those keys are named by what German prints on them");
+		} else {
+			std::printf("%-76s %s\n", "the German layout checks", "skipped: the system has no German layout");
+		}
+	}
 
 	// With no video subsystem started, SDL names keys from its US layout.
 	Check(Virtual_Key_Name('A') == "A" && Virtual_Key_Name('7') == "7", "a letter or digit key is named by what it prints");

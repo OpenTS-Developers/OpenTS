@@ -46,8 +46,8 @@ int Keypad_Key(SDL_Scancode scancode, SDL_Keymod modifiers)
 }
 
 
-// Windows names letter and digit keys after what the layout prints on them, and the comma,
-// period, minus and plus keys after their character, wherever the layout puts them.
+// Without a scan code, a letter or digit key takes the code of what the layout prints on it,
+// and the comma, period, minus and plus keys the code of their character.
 int Layout_Key(SDL_Keycode keycode)
 {
 	if (keycode >= 'a' && keycode <= 'z') {
@@ -65,6 +65,21 @@ int Layout_Key(SDL_Keycode keycode)
 		case '+':	return(VK_OEM_PLUS);
 		default:	return(0);
 	}
+}
+
+
+// Windows gives these keys the codes of the active layout; every other key has a fixed code.
+bool Layout_Position(SDL_Scancode scancode)
+{
+	return((scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_0)
+		|| (scancode >= SDL_SCANCODE_MINUS && scancode <= SDL_SCANCODE_SLASH)
+		|| scancode == SDL_SCANCODE_NONUSBACKSLASH);
+}
+
+
+HKL Layout_Or_Current(void * layout)
+{
+	return((layout != nullptr) ? (HKL)layout : GetKeyboardLayout(0));
 }
 
 
@@ -147,7 +162,7 @@ int Position_Key(SDL_Scancode scancode)
 }
 
 
-int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifiers)
+int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifiers, unsigned int raw, void * layout)
 {
 	SDL_Scancode const code = (SDL_Scancode)scancode;
 
@@ -156,11 +171,15 @@ int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifi
 		return(key);
 	}
 
-	// The main block's printable keys follow the layout; nothing else does.
-	bool const printable = (code >= SDL_SCANCODE_A && code <= SDL_SCANCODE_0)
-		|| (code >= SDL_SCANCODE_MINUS && code <= SDL_SCANCODE_SLASH)
-		|| code == SDL_SCANCODE_NONUSBACKSLASH;
-	if (printable) {
+	if (Layout_Position(code)) {
+		// Some layouts give an unused key 0xFF, which is no key.
+		if (raw != 0) {
+			key = (int)MapVirtualKeyExW(raw, MAPVK_VSC_TO_VK_EX, Layout_Or_Current(layout));
+			if (key > 0 && key < 0xFF) {
+				return(key);
+			}
+		}
+
 		key = Layout_Key((SDL_Keycode)keycode);
 		if (key != 0) {
 			return(key);
@@ -189,7 +208,7 @@ static int Scancode_Of(int virtualkey)
 }
 
 
-std::string Virtual_Key_Name(int virtualkey)
+std::string Virtual_Key_Name(int virtualkey, void * layout)
 {
 	if (virtualkey <= 0) {
 		return(std::string());
@@ -203,6 +222,22 @@ std::string Virtual_Key_Name(int virtualkey)
 	}
 
 	int const scancode = Scancode_Of(virtualkey);
+	if (scancode == SDL_SCANCODE_UNKNOWN || Layout_Position((SDL_Scancode)scancode)) {
+
+		// The top bit marks a dead key, which still prints its accent.
+		UINT const character = MapVirtualKeyExW((UINT)virtualkey, MAPVK_VK_TO_CHAR, Layout_Or_Current(layout)) & 0x7FFFFFFF;
+		if (character != 0 && character <= 0xFFFF) {
+			wchar_t wide[2] = { (wchar_t)character, L'\0' };
+			CharUpperW(wide);
+
+			char utf8[8];
+			int const length = WideCharToMultiByte(CP_UTF8, 0, wide, 1, utf8, sizeof(utf8), nullptr, nullptr);
+			if (length > 0) {
+				return(std::string(utf8, (size_t)length));
+			}
+		}
+	}
+
 	if (scancode == SDL_SCANCODE_UNKNOWN) {
 		return(std::string());
 	}
