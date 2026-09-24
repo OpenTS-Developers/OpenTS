@@ -242,7 +242,11 @@ bool WWKeyboardClass::Put(unsigned short key)
  *=============================================================================================*/
 bool WWKeyboardClass::Put_Key_Message(unsigned short vk_key, bool release, int modifiers)
 {
-	// Mouse buttons carry no modifier bits, as in the DOS version.
+	/*
+	**	Get the status of all of the different keyboard modifiers.  Note that we do not
+	**	want to set the shift, ctrl and alt bits for Mouse keypresses as this would be
+	**	incompatible with the dos version.
+	*/
 	if (!Is_Mouse_Key(vk_key)) {
 		if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
 			vk_key |= WWKEY_SHIFT_BIT;
@@ -335,14 +339,29 @@ bool WWKeyboardClass::Put_Mouse_Message(unsigned short vk_key, int x, int y, boo
 }
 
 
-/// <summary>
-/// Gives the character a key typed, taking the keyboard layout into account.
-/// </summary>
-/// <param name="key">A key the last Get returned. Esc, Enter, Backspace and Tab give their
-/// control characters whichever entry they come from.</param>
-/// <returns>The Unicode code point, or 0 for a release or a key that typed nothing.</returns>
+/***********************************************************************************************
+ * WWKeyboardClass::To_ASCII -- Convert the key value into the character it typed.             *
+ *                                                                                             *
+ *    This routine will convert the key code specified into the character it typed. This       *
+ *    takes into consideration the language and keyboard mapping of the host system. Only      *
+ *    the key the last Get returned carries its character; Esc, Enter, Backspace and Tab       *
+ *    give their control characters whichever entry they come from.                            *
+ *                                                                                             *
+ * INPUT:   key   -- The key code to convert; the key the last Get returned.                   *
+ *                                                                                             *
+ * OUTPUT:  Returns with the key converted into its Unicode character. If the key is a         *
+ *          release or typed no character, then '\0' is returned.                              *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   09/30/1996 JLB : Created.                                                                 *
+ *=============================================================================================*/
 int WWKeyboardClass::To_ASCII(unsigned short key)
 {
+	/*
+	**	Released keys never translate into a character.
+	*/
 	if (key & WWKEY_RLS_BIT) {
 		return(0);
 	}
@@ -574,12 +593,24 @@ void WWKeyboardClass::Clear(void)
 }
 
 
-/// <summary>
-/// Queues the key presses and releases, the typed characters, and the mouse button presses
-/// and releases of an event from the main window. Mouse positions must already be in frame
-/// coordinates; they are held inside the frame as they are queued.
-/// </summary>
-/// <returns>True when the event was one the queue records.</returns>
+/***********************************************************************************************
+ * WWKeyboardClass::Handle_Window_Event -- Process a window event as it relates to the keyboard*
+ *                                                                                             *
+ *    This routine will examine the window event specified. If the event relates to one that   *
+ *    the keyboard input system needs to process, then it will be processed accordingly. Key   *
+ *    presses, releases and typed characters are queued, and so are mouse button presses and   *
+ *    releases, whose positions are held inside the frame.                                     *
+ *                                                                                             *
+ * INPUT:   event -- The window event to examine. Mouse positions must already be in frame     *
+ *                   coordinates.                                                              *
+ *                                                                                             *
+ * OUTPUT:  bool; Was this keyboard event recognized and processed?                            *
+ *                                                                                             *
+ * WARNINGS:   none                                                                            *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *   09/30/1996 JLB : Created.                                                                 *
+ *=============================================================================================*/
 bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 {
 	POINT point;
@@ -587,7 +618,15 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 	point.y = event.Y;
 	Clamp_To_Game(point);
 
+	/*
+	**	Examine the event to see if it is one that should be processed. Only keyboard and
+	**	pertinent mouse events are processed.
+	*/
 	switch (event.Type) {
+
+		/*
+		**	A key has been pressed. This is the normal keyboard event.
+		*/
 		case WINDOW_EVENT_KEY_DOWN:
 			if (event.VirtualKey == VK_SCROLL) {
 				Stop_Execution();
@@ -599,6 +638,9 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 			}
 			return(true);
 
+		/*
+		**	The key has been released. This is the normal key release event.
+		*/
 		case WINDOW_EVENT_KEY_UP:
 			Put_Key_Message((unsigned short)event.VirtualKey, true, event.Modifiers);
 			return(true);
@@ -611,6 +653,10 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 		case WINDOW_EVENT_MOUSE_UP:
 			break;
 
+		/*
+		**	If the event is not pertinent to the keyboard system,
+		**	then do nothing.
+		*/
 		default:
 			return(false);
 	}
@@ -636,8 +682,12 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 	if (event.Type == WINDOW_EVENT_MOUSE_UP) {
 		Put_Mouse_Message(button, point.x, point.y, true);
 	} else {
-		// A double click is queued as an extra press and release.
 		Put_Mouse_Message(button, point.x, point.y);
+
+		/*
+		**	Double click of a mouse button. Fake this into being
+		**	just a rapid click of the button twice.
+		*/
 		if (event.Clicks >= 2) {
 			Put_Mouse_Message(button, point.x, point.y, true);
 		}

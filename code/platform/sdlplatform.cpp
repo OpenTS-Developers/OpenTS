@@ -379,7 +379,10 @@ bool Platform_Init(PlatformEventSink const & sink)
 
 	Set_Hints();
 
-	// The window class keeps the game's own name, which tools looking for the window use.
+	//
+	// Register the window class
+	//
+	// The class keeps the game's own name, which tools looking for the window use.
 	if (!SDL_RegisterApp("Tiberian Sun", 0, ProgramInstance)) {
 		DebugString("SDL: the window class was not registered: %s\n", SDL_GetError());
 	}

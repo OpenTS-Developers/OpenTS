@@ -169,6 +169,9 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 			break;
 	}
 
+	/*
+	**	Pass this event through to the keyboard handler.
+	*/
 	if (Keyboard != NULL) {
 		Keyboard->Handle_Window_Event(frame);
 	}
@@ -214,6 +217,9 @@ void Game_Window_Closed(void)
 	}
 	MainWindow = NULL;
 
+	/*
+	**	If we are shutting down gracefully then flag that the message loop has finished.
+	*/
 	if (ReadyToQuit == 1) {
 		ReadyToQuit = 2;
 	}
