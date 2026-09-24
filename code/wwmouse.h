@@ -82,11 +82,7 @@ class WWMouseClass : public Mouse {
 		*/
 		virtual int Get_Mouse_State(void) const override;
 
-		/*
-		 * The position is asked of Windows on demand. There used to be a timer thread
-		 * keeping a copy fresh, but its real job was repainting a software pointer,
-		 * and the pointer is Windows' own now.
-		 */
+		// The position is asked of the system on demand.
 		virtual int Get_Mouse_X(void) const override {int x; int y; Get_Bounded_Position(x, y); return(x);}
 		virtual int Get_Mouse_Y(void) const override {int x; int y; Get_Bounded_Position(x, y); return(y);}
 		virtual Point2D Get_Mouse_Point(void) const override {int x; int y; Get_Bounded_Position(x, y); return(Point2D(x, y));}
@@ -129,7 +125,13 @@ class WWMouseClass : public Mouse {
 		 */
 		Rect ConfiningRect;
 
+		// The pointer's show count while the mouse is released, which hides the window's
+		// arrow while it is below zero.
+		int ReleasedState;
+
 		void Get_Bounded_Position(int & x, int & y) const;
+		void Client_To_Game(int & x, int & y) const;
+		void Show_Released_Pointer(void) const;
 
 		virtual bool Is_Hidden(void) const override {return(MouseState < 0);}
 };

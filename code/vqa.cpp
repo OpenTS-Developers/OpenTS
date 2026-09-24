@@ -21,6 +21,7 @@
 #include "goptions.h"
 #include "mixfile.h"
 #include "movies.h"
+#include "platform/platform.h"
 #include "session.h"
 #include "unvqtblc.h"
 #include "vector.h"
@@ -45,16 +46,7 @@ intptr_t __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, l
 
 bool VQA_Message_Handler(void)
 {
-	MSG msg;
-
-	if (PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-		if (GetMessageW(&msg, NULL, 0, 0)) {
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
-		} else {
-			return(false);
-		}
-	}
+	Platform_Pump_Events();
 	return(true);
 }
 

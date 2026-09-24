@@ -365,9 +365,16 @@ class TestHostClass : public UIShellHostClass
 			LastCursor = UI_CURSOR_ARROW;
 		}
 
-		virtual HWND Main_Window(void) const override
+		std::string Clipboard;
+
+		virtual std::string Clipboard_Text(void) const override
 		{
-			return(nullptr);
+			return(Clipboard);
+		}
+
+		virtual void Set_Clipboard_Text(std::string const & text) override
+		{
+			Clipboard = text;
 		}
 
 		virtual UIFrameRect Frame(void) const override
@@ -4626,7 +4633,7 @@ void Test_Shell(void)
 		fixture.System->SetClipboardText(sample);
 		Rml::String after;
 		fixture.System->GetClipboardText(after);
-		Check(after == sample, "clipboard text survives a round trip");
+		Check(after == sample && host.Clipboard == sample, "clipboard text goes through the host and survives a round trip");
 		fixture.System->SetClipboardText(before);
 	}
 

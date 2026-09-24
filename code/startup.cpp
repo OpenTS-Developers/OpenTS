@@ -78,6 +78,7 @@
 #include "fly.h"
 #include "fog.h"
 #include "gamedirs.h"
+#include "gamewindow.h"
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
@@ -105,6 +106,7 @@
 #include "ovrlight.h"
 #include "particle.h"
 #include "partsys.h"
+#include "platform/platform.h"
 #include "psystype.h"
 #include "ptype.h"
 #include "rules.h"
@@ -573,7 +575,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		VideoModeWidth = Options.ScreenWidth;
 		VideoModeHeight = Options.ScreenHeight;
 
-		Create_Main_Window(instance, command_show, Options.ScreenWidth, Options.ScreenHeight);
+		if (!Create_Main_Window(command_show, Options.ScreenWidth, Options.ScreenHeight)) {
+			MessageBox(NULL, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
+			exit(EXIT_FAILURE);
+		}
 
 		Exception_Run_Post_Window_Test();
 
@@ -581,9 +586,9 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 		int drawablewidth = 0;
 		int drawableheight = 0;
-		int refreshrate = Win_Window_Refresh_Rate(MainWindow);
-		NativeWindow nativewindow = Win_Native_Window(MainWindow);
-		if (!Win_Window_Drawable_Size(MainWindow, drawablewidth, drawableheight)
+		int refreshrate = Platform_Window_Refresh_Rate();
+		NativeWindow nativewindow = Platform_Native_Window();
+		if (!Platform_Window_Drawable_Size(drawablewidth, drawableheight)
 			|| !Video_Init(nativewindow, drawablewidth, drawableheight, refreshrate)) {
 			MessageBox(MainWindow, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
 			exit(EXIT_FAILURE);
@@ -657,18 +662,9 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 		AudioEngine.End();
 
-		/*
-		**	Post a message to our message handler to tell it to clean up.
-		*/
-		PostMessage(MainWindow, WM_DESTROY, 0, 0);
-
-		/*
-		**	Wait until the message handler has dealt with the message
-		*/
-		do
-		{
-			Windows_Message_Handler();
-		}while (ReadyToQuit == 1);
+		// Deal with whatever is still waiting, then let go of the window.
+		Windows_Message_Handler();
+		Game_Window_Closed();
 
 		error_code = EXIT_SUCCESS;
 
@@ -1023,6 +1019,10 @@ void __cdecl Prog_End(void)
 		CloseHandle(AppMutex);
 		AppMutex = NULL;
 	}
+
+	// The renderer let go of the window when the surfaces were reset above.
+	Platform_Shutdown();
+	MainWindow = NULL;
 }
 
 /***********************************************************************************************
@@ -1045,17 +1045,8 @@ void Emergency_Exit(void)
 
 	ReadyToQuit = 1;
 
-	/*
-	**	Post a message to our message handler to tell it to clean up.
-	*/
-	PostMessage(MainWindow, WM_DESTROY, 0, 0);
-
-	while (MainWindow) {
-		Windows_Message_Handler();
-		if (ReadyToQuit != 1) {
-			break;
-		}
-	}
+	Windows_Message_Handler();
+	Game_Window_Closed();
 
 
 	if (MouseCursor) {

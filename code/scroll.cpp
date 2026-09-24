@@ -55,6 +55,7 @@
 #include "inline.h"
 #include "misc.h"
 #include "overtype.h"
+#include "platform/platform.h"
 #include "platform/windowevent.hh"
 #include "rules.h"
 #include "savestream.h"
@@ -661,7 +662,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
 				Map.Mouse_Left_Press(point);
-				SetCapture(MainWindow);
+				Platform_Capture_Mouse(true);
 				IsMouseDown = true;
 			}
 		}
@@ -675,7 +676,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			Resolve_Point(point, cell, coord, object, fog, shadow);
 			Map.Mouse_Left_Release(coord, cell, object, What_Action(cell, object, false));
 			IsMouseDown = false;
-			ReleaseCapture();
+			Platform_Capture_Mouse(false);
 		}
 
 	} else if (press && event.Button == WINDOW_BUTTON_RIGHT) {
@@ -686,7 +687,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 
 			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				Map.Mouse_Right_Press(point);
-				SetCapture(MainWindow);
+				Platform_Capture_Mouse(true);
 				IsMouseDown = true;
 			}
 		}
@@ -696,7 +697,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			Map.Mouse_Right_Release(point);
 			BASECLASS::Abort_Drag_Select();
 			IsMouseDown = false;
-			ReleaseCapture();
+			Platform_Capture_Mouse(false);
 		}
 	}
 }
@@ -790,8 +791,8 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 						POINT pt;
 						pt.x = RightPressPoint.X + TacticalRect.X;
 						pt.y = RightPressPoint.Y + TacticalRect.Y;
-						Game_Point_To_Screen(pt);
-						SetCursorPos(pt.x, pt.y);
+						Game_Point_To_Window(pt);
+						Platform_Warp_Cursor(pt.x, pt.y);
 					}
 					break;
 
@@ -804,8 +805,8 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 						POINT pt;
 						pt.x = RightPressPoint.X + TacticalRect.X;
 						pt.y = RightPressPoint.Y + TacticalRect.Y;
-						Game_Point_To_Screen(pt);
-						SetCursorPos(pt.x, pt.y);
+						Game_Point_To_Window(pt);
+						Platform_Warp_Cursor(pt.x, pt.y);
 					}
 					break;
 			}
@@ -898,8 +899,5 @@ void ScrollClass::Abort_Drag_Select(void)
 {
 	BASECLASS::Abort_Drag_Select();
 	IsMouseDown = false;
-	HWND hwnd = GetCapture();
-	if (hwnd == MainWindow) {
-		ReleaseCapture();
-	}
+	Platform_Capture_Mouse(false);
 }

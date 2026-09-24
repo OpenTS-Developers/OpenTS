@@ -376,10 +376,21 @@ fixed_exclusions:
       - { file: code/winevent.cpp, function: Win_Message_Context, expression: VK_MENU }
     reason: Keyboard-backend modifier-state encoding, not separate controls.
   - sites:
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_LBUTTON }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_RBUTTON }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_LBUTTON+VK_RBUTTON }
-    reason: Keyboard-backend normalization for the Windows swapped-button setting.
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_LBUTTON }
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_RBUTTON }
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_MBUTTON }
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_XBUTTON1 }
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_XBUTTON2 }
+    reason: Platform-backend mouse button state, not controls.
+  - sites:
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_CAPITAL }
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_NUMLOCK }
+      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_SCROLL }
+    reason: Platform-backend lock-key state, not controls.
+  - site: { file: code/platform/sdlevents.cpp, function: Key_Modifiers, expression: VK_LCONTROL }
+    reason: Platform-backend detection of the Ctrl that Windows presses with AltGr, not a control.
+  - site: { file: code/platform/sdlevents.cpp, function: Window_Events_From_SDL, expression: VK_F10 }
+    reason: Platform-backend classification of F10 as a system key, as Windows reports it; it does not dispatch a game command.
   - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
     reason: Synchronizes the backend Scroll Lock state; it does not dispatch a game command.
   - sites:
@@ -452,10 +463,6 @@ fixed_exclusions:
     reason: UI shell modifier keys kept out of press ownership, not separate controls.
   - site: { file: code/ui/uishell.cpp, function: UIShellClass::Quarantine_Held_Input, expression: VK_XBUTTON2 }
     reason: UI shell loop bound over the virtual keys past the mouse buttons, not a control.
-  - sites:
-      - { file: code/ui/uienginehost.cpp, function: <file-scope>, expression: VK_LBUTTON }
-      - { file: code/ui/uienginehost.cpp, function: <file-scope>, expression: VK_RBUTTON }
-    reason: UI shell host naming the primary and secondary buttons as the messages do when the user swapped them, not controls.
 
 launch_options:
   - id: launch:help

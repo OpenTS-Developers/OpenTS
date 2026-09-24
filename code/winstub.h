@@ -17,12 +17,8 @@
 
 class Surface;
 class PaletteClass;
-struct NativeWindow;
 
-void Create_Main_Window ( HINSTANCE instance , int command_show , int width , int height);
-NativeWindow Win_Native_Window(HWND window);
-bool Win_Window_Drawable_Size(HWND window, int & width, int & height);
-int Win_Window_Refresh_Rate(HWND window);
+bool Create_Main_Window(int command_show, int width, int height);
 
 void Focus_Loss(void);
 void Focus_Restore(void);
