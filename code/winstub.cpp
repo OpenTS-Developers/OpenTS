@@ -76,7 +76,6 @@
 #include "vidscale.h"
 #include "win.h"
 #include "wincursor.h"
-#include "winfix.h"
 #include "wwmouse.h"
 
 
