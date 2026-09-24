@@ -31,7 +31,6 @@
 #include "ui/uishell.h"
 #include "video.h"
 #include "vidscale.h"
-#include "wincursor.h"
 #include "winstub.h"
 #include "wwmouse.h"
 
@@ -184,7 +183,7 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 /// <returns>True when either of them chose a pointer.</returns>
 bool Game_Window_Select_Cursor(void)
 {
-	return(UIShell.Handle_Set_Cursor() || Win_Cursor_Handle_Set_Cursor());
+	return(UIShell.Handle_Set_Cursor() || (MouseCursor != NULL && ((WWMouseClass *)MouseCursor)->Show_Game_Pointer()));
 }
 
 
