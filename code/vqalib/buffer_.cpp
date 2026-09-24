@@ -17,7 +17,7 @@
 #include	<string.h>
 #include	"vqamem.h"
 
-extern long VQA_Set_DrawBuffer(VQAHandle *vqa, unsigned char *buffer, unsigned long width, unsigned long height, long xpos, long ypos);
+extern VQAErrorType VQA_Set_DrawBuffer(VQAHandle *vqa, unsigned char *buffer, unsigned long width, unsigned long height, long xpos, long ypos);
 
 
 _STATIC void VQA_BufferPerpareLoop(VQAHandleP *vqap, long * needs_start_cb, long * needs_end_cb);
@@ -58,7 +58,7 @@ _STATIC void VQA_BufferPerpareLoop(VQAHandleP *vqap, long * needs_start_cb, long
 *
 ****************************************************************************/
 
-STATIC long AllocBuffers(VQAHandleP *vqap)
+STATIC VQAErrorType AllocBuffers(VQAHandleP *vqap)
 {
 	long needs_start_cb;
 	long needs_end_cb;
@@ -706,7 +706,7 @@ STATIC void FreeBuffers(VQAHandleP *vqap)
 }
 
 
-long VQA_Configure_Buffer(VQAHandleP *vqap)
+VQAErrorType VQA_Configure_Buffer(VQAHandleP *vqap)
 {
 	unsigned char *buf;
 	int w;
