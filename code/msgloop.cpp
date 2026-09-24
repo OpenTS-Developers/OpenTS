@@ -78,10 +78,6 @@ void Windows_Message_Handler(void)
 			return;
 		}
 
-		if (ToolTips != NULL) {
-			ToolTips->Message_Handler(&msg);
-		}
-
 		/*
 		**	If the message makes it to this point, then it must be a normal message. Process
 		**	it in the normal fashion. The message will appear in the window message handler
@@ -89,6 +85,10 @@ void Windows_Message_Handler(void)
 		*/
 		TranslateMessage(&msg);
 		DispatchMessageW(&msg);
+	}
+
+	if (ToolTips != NULL) {
+		ToolTips->Service();
 	}
 
 	/*

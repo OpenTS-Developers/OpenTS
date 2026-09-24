@@ -288,7 +288,7 @@ fixed_controls:
     context: Any game window focused, with Debug_Flag enabled
     availability: *debug
     sites:
-      - { file: code/ui/uishell.cpp, function: UIShellClass::Handle_Window_Message, expression: VK_F6, guard: _DEBUG }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Handle_Window_Event, expression: VK_F6, guard: _DEBUG }
 
 fixed_exclusions:
   - site: { file: code/debug.cpp, function: Debug_Key, expression: KN_BUTTON, guard: _DEBUG }
@@ -371,16 +371,16 @@ fixed_exclusions:
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_RBUTTON }
     reason: Keyboard-backend classification of mouse virtual keys.
   - sites:
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Key_Message, expression: VK_SHIFT }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Key_Message, expression: VK_CONTROL }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Key_Message, expression: VK_MENU }
+      - { file: code/winevent.cpp, function: Win_Message_Context, expression: VK_SHIFT }
+      - { file: code/winevent.cpp, function: Win_Message_Context, expression: VK_CONTROL }
+      - { file: code/winevent.cpp, function: Win_Message_Context, expression: VK_MENU }
     reason: Keyboard-backend modifier-state encoding, not separate controls.
   - sites:
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_LBUTTON }
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_RBUTTON }
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_LBUTTON+VK_RBUTTON }
     reason: Keyboard-backend normalization for the Windows swapped-button setting.
-  - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Message_Handler, expression: VK_SCROLL }
+  - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
     reason: Synchronizes the backend Scroll Lock state; it does not dispatch a game command.
   - sites:
       - { file: code/list.cpp, function: ListClass::Action, expression: KN_UP }

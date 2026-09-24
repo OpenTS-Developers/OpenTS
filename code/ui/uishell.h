@@ -11,7 +11,6 @@
 
 #include "ui/uiinput.h"
 #include "ui/uiscreen.h"
-#include "win.h"
 
 #include <array>
 #include <functional>
@@ -30,6 +29,7 @@ class UIRmlRenderClass;
 class UIRmlSystemClass;
 class UIViewClass;
 class UIShellHostClass;
+struct WindowEvent;
 
 using UIServiceCallback = std::function<bool(void)>;
 
@@ -62,7 +62,7 @@ class UIShellClass
 		void Tick(void);
 		void Render_Overlay(void);
 
-		bool Handle_Window_Message(HWND hwnd, UINT message, WPARAM wparam, LPARAM lparam);
+		bool Handle_Window_Event(WindowEvent const & event);
 		bool Handle_Set_Cursor(void);
 
 		Rml::Context * Rml_Context(void) const { return(Context); }
@@ -89,28 +89,25 @@ class UIShellClass
 		bool Text_Input_Focused(void) const;
 		void Apply_Dimensions(void);
 		void Drop_Cached_Files(void);
-		UIPointerPosition Pointer_Position(LPARAM clientlparam) const;
+		UIPointerPosition Pointer_Position(int x, int y) const;
 		std::array<bool, UIInputStateClass::BUTTON_COUNT> Physical_Buttons(void) const;
 		int Key_Modifiers(void) const;
 		void Quarantine_Held_Input(void);
 		void Reconcile_Held_Input(void);
 		void Drop_Presses(void);
 		void Release_UI_Capture(void);
-		void Reset_Text(void);
 		bool Pointer_Owned(void) const;
 		void Apply_Cursor_Request(void);
 		void Restore_Cursor(void);
 		bool Prepare_View(UIViewClass & view);
 		void Uncover(UIViewClass * covered);
 		void Drain_Deferred(void);
-		bool Handle_Mouse_Move(LPARAM clientlparam);
-		bool Handle_Button_Down(int button, LPARAM clientlparam);
-		bool Handle_Button_Up(int button, LPARAM clientlparam);
-		bool Handle_Wheel(WPARAM wparam, LPARAM screenlparam, bool horizontal);
-		bool Handle_Key(UINT message, WPARAM wparam, LPARAM lparam);
-		bool Handle_Char(WPARAM wparam);
-		bool Feed_Text_Unit(wchar_t unit);
-		bool Feed_Text_Byte(unsigned char byte);
+		bool Handle_Input_Event(WindowEvent const & event);
+		bool Handle_Mouse_Move(int x, int y);
+		bool Handle_Button_Down(int button, int x, int y);
+		bool Handle_Button_Up(int button, int x, int y);
+		bool Handle_Wheel(int x, int y, float notches, bool horizontal);
+		bool Handle_Key(bool down, int virtualkey, bool repeat);
 		bool Handle_Text(char32_t code);
 
 		UIShellHostClass & Host;
@@ -141,10 +138,6 @@ class UIShellClass
 		UIInputStateClass Input;
 		bool TookCapture = false;
 		bool MouseInside = false;
-
-		wchar_t HighSurrogate = 0;
-		UIUTF8DecoderClass Utf8;
-		unsigned char LegacyLead = 0;
 
 		std::optional<UICursor> AppliedCursor;
 

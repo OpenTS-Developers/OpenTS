@@ -56,6 +56,7 @@
 
 #include "_xmouse.h"
 #include "msgloop.h"
+#include "platform/windowevent.hh"
 #include "vidscale.h"
 
 #include <cmath>
@@ -218,25 +219,17 @@ bool WWKeyboardClass::Put(unsigned short key)
  * HISTORY:                                                                                    *
  *   10/16/1995 PWG : Created.                                                                 *
  *=============================================================================================*/
-bool WWKeyboardClass::Put_Key_Message(unsigned short vk_key, bool release)
+bool WWKeyboardClass::Put_Key_Message(unsigned short vk_key, bool release, int modifiers)
 {
-	/*
-	**	Get the status of all of the different keyboard modifiers.  Note, only pay attention
-	**	to numlock and caps lock if we are dealing with a key that is affected by them.  Note
-	**	that we do not want to set the shift, ctrl and alt bits for Mouse keypresses as this
-	**	would be incompatible with the dos version.
-	*/
+	// Mouse buttons carry no modifier bits, as in the DOS version.
 	if (!Is_Mouse_Key(vk_key)) {
-		if (((GetKeyState(VK_SHIFT) & 0x8000) != 0) /*||
-			((GetKeyState(VK_CAPITAL) & 0x0008) != 0) ||
-			((GetKeyState(VK_NUMLOCK) & 0x0008) != 0)*/) {
-
+		if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
 			vk_key |= WWKEY_SHIFT_BIT;
 		}
-		if ((GetKeyState(VK_CONTROL) & 0x8000) != 0) {
+		if ((modifiers & WINDOW_MOD_CTRL) != 0) {
 			vk_key |= WWKEY_CTRL_BIT;
 		}
-		if ((GetKeyState(VK_MENU) & 0x8000) != 0) {
+		if ((modifiers & WINDOW_MOD_ALT) != 0) {
 			vk_key |= WWKEY_ALT_BIT;
 		}
 	}
@@ -583,179 +576,68 @@ void WWKeyboardClass::Clear(void)
 }
 
 
-/***********************************************************************************************
- * WWKeyboardClass::Message_Handler -- Process a windows message as it relates to the keyboard *
- *                                                                                             *
- *    This routine will examine the Windows message specified. If the message relates to an    *
- *    event that the keyboard input system needs to process, then it will be processed         *
- *    accordingly.                                                                             *
- *                                                                                             *
- * INPUT:   window   -- Handle to the window receiving the message.                            *
- *                                                                                             *
- *          message  -- The message number of this event.                                      *
- *                                                                                             *
- *          wParam   -- The windows specific word parameter (meaning depends on message).      *
- *                                                                                             *
- *          lParam   -- The windows specific long word parameter (meaning is message dependant)*
- *                                                                                             *
- * OUTPUT:  bool; Was this keyboard message recognized and processed? A 'false' return value   *
- *                means that the message should be processed normally.                         *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/30/1996 JLB : Created.                                                                 *
- *=============================================================================================*/
-int WWKeyboardClass::Message_Handler(HWND window, UINT message, WPARAM wParam, LPARAM lParam)
+/// <summary>
+/// Queues the key presses and releases, and the mouse button presses and releases, of an
+/// event from the main window. Mouse positions must already be in frame coordinates; they
+/// are held inside the frame as they are queued.
+/// </summary>
+/// <returns>True when the event was a key or button the queue records.</returns>
+bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 {
-	bool processed = false;
-
-	/*
-	 * The message router has already put mouse positions into frame coordinates, so
-	 * there is no screen round trip to make here; the position only needs holding
-	 * inside the frame.
-	 */
 	POINT point;
-	point.x = (short)LOWORD(lParam);
-	point.y = (short)HIWORD(lParam);
+	point.x = event.X;
+	point.y = event.Y;
 	Clamp_To_Game(point);
-	LONG x = point.x;
-	LONG y = point.y;
 
-	/*
-	**	Examine the message to see if it is one that should be processed. Only keyboard and
-	**	pertinant mouse messages are processed.
-	*/
-	switch (message) {
-
-		/*
-		**	System key has been pressed. This is the normal keyboard event message.
-		*/
-		case WM_SYSKEYDOWN:
-		case WM_KEYDOWN:
-			if (wParam == VK_SCROLL) {
+	switch (event.Type) {
+		case WINDOW_EVENT_KEY_DOWN:
+			if (event.VirtualKey == VK_SCROLL) {
 				Stop_Execution();
-			/*
-			 * https://learn.microsoft.com/en-us/windows/win32/inputdev/wm-keydown
-			 * check the previous key-state flag. A value of 1 if the key is down before
-			 * the message is sent, or it is zero if the key is up.
-			 */
-			} else if (!(lParam & (1 << 30))) {
-				Put_Key_Message((unsigned short)wParam);
+			} else if (!event.Repeat) {
+				Put_Key_Message((unsigned short)event.VirtualKey, false, event.Modifiers);
 			}
-			processed = true;
+			return(true);
+
+		case WINDOW_EVENT_KEY_UP:
+			Put_Key_Message((unsigned short)event.VirtualKey, true, event.Modifiers);
+			return(true);
+
+		case WINDOW_EVENT_MOUSE_DOWN:
+		case WINDOW_EVENT_MOUSE_UP:
 			break;
 
-		/*
-		**	The key has been released. This is the normal key release message.
-		*/
-		case WM_SYSKEYUP:
-		case WM_KEYUP:
-			Put_Key_Message((unsigned short)wParam, true);
-			processed = true;
-			break;
-
-		/*
-		**	Press of the left mouse button.
-		*/
-		case WM_LBUTTONDOWN:
-			Put_Mouse_Message(VK_LBUTTON, x, y);
-			processed = true;
-			break;
-
-		/*
-		**	Release of the left mouse button.
-		*/
-		case WM_LBUTTONUP:
-			Put_Mouse_Message(VK_LBUTTON, x, y, true);
-			processed = true;
-			break;
-
-		/*
-		**	Double click of the left mouse button. Fake this into being
-		**	just a rapid click of the left button twice.
-		*/
-		case WM_LBUTTONDBLCLK:
-			Put_Mouse_Message(VK_LBUTTON, x, y);
-			Put_Mouse_Message(VK_LBUTTON, x, y, true);
-			//Put_Mouse_Message(VK_LBUTTON, x, y);
-			//Put_Mouse_Message(VK_LBUTTON, x, y, true);
-			processed = true;
-			break;
-
-		/*
-		**	Press of the middle mouse button.
-		*/
-		case WM_MBUTTONDOWN:
-			Put_Mouse_Message(VK_MBUTTON, x, y);
-			processed = true;
-			break;
-
-		/*
-		**	Release of the middle mouse button.
-		*/
-		case WM_MBUTTONUP:
-			Put_Mouse_Message(VK_MBUTTON, x, y, true);
-			processed = true;
-			break;
-
-		/*
-		**	Middle button double click gets translated into two
-		**	regular middle button clicks.
-		*/
-		case WM_MBUTTONDBLCLK:
-			Put_Mouse_Message(VK_MBUTTON, x, y);
-			Put_Mouse_Message(VK_MBUTTON, x, y, true);
-			//Put_Mouse_Message(VK_MBUTTON, x, y);
-			//Put_Mouse_Message(VK_MBUTTON, x, y, true);
-			processed = true;
-			break;
-
-		/*
-		**	Right mouse button press.
-		*/
-		case WM_RBUTTONDOWN:
-			Put_Mouse_Message(VK_RBUTTON, x, y);
-			processed = true;
-			break;
-
-		/*
-		**	Right mouse button release.
-		*/
-		case WM_RBUTTONUP:
-			Put_Mouse_Message(VK_RBUTTON, x, y, true);
-			processed = true;
-			break;
-
-		/*
-		**	Translate a double click of the right button
-		**	into being just two regular right button clicks.
-		*/
-		case WM_RBUTTONDBLCLK:
-			Put_Mouse_Message(VK_RBUTTON, x, y);
-			Put_Mouse_Message(VK_RBUTTON, x, y, true);
-			//Put_Mouse_Message(VK_RBUTTON, x, y);
-			//Put_Mouse_Message(VK_RBUTTON, x, y, true);
-			processed = true;
-			break;
-
-		/*
-		**	If the message is not pertinant to the keyboard system,
-		**	then do nothing.
-		*/
 		default:
-			break;
+			return(false);
 	}
 
-	/*
-	**	If this message has been processed, then pass it on to the system
-	**	directly.
-	*/
-	if (processed) {
-		DefWindowProcW(window, message, wParam, lParam);
-		return(true);
+	unsigned short button;
+	switch (event.Button) {
+		case WINDOW_BUTTON_LEFT:
+			button = VK_LBUTTON;
+			break;
+
+		case WINDOW_BUTTON_RIGHT:
+			button = VK_RBUTTON;
+			break;
+
+		case WINDOW_BUTTON_MIDDLE:
+			button = VK_MBUTTON;
+			break;
+
+		default:
+			return(false);
 	}
-	return(false);
+
+	if (event.Type == WINDOW_EVENT_MOUSE_UP) {
+		Put_Mouse_Message(button, point.x, point.y, true);
+	} else {
+		// A double click is queued as an extra press and release.
+		Put_Mouse_Message(button, point.x, point.y);
+		if (event.Clicks >= 2) {
+			Put_Mouse_Message(button, point.x, point.y, true);
+		}
+	}
+	return(true);
 }
 
 

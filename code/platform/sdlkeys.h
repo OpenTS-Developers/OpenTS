@@ -10,11 +10,6 @@
 #pragma once
 
 
-struct WindowEvent;
-
-bool Game_Window_Handle_Event(WindowEvent const & event);
-bool Game_Window_Select_Cursor(void);
-
-void Game_Window_On_Paint(bool update_surface);
-void Game_Window_On_Right_Mouse_Up(void);
-void Game_Window_On_Mouse_Wheel(int delta);
+// Takes an SDL scancode, the keycode the current layout gives it, and the SDL modifier state.
+// Returns the Windows virtual-key code for the key, or 0 when the key has none.
+int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifiers);

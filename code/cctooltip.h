@@ -19,8 +19,8 @@ class CCToolTip : public ToolTipManager
 		typedef ToolTipManager BASECLASS;
 
 	public:
-		CCToolTip(HWND hWnd) :			/// Inlined in Windows_Procedure
-			BASECLASS(hWnd),
+		CCToolTip(void) :			// Inlined in Windows_Procedure
+			BASECLASS(),
 			UseSidebarSurface(false),
 			Style(TPF_MAP)
 		{

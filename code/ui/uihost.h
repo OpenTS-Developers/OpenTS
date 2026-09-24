@@ -47,13 +47,10 @@ class UIShellHostClass
 		virtual void Focus_Main_Window(void) = 0;
 		virtual bool Take_Capture(void) = 0;
 		virtual void Release_Capture(void) = 0;
-		virtual bool Screen_To_Client(int & x, int & y) const = 0;
 
 		virtual bool Key_Down(int virtualkey) const = 0;
 		virtual bool Key_Toggled(int virtualkey) const = 0;
 		virtual std::string System_Font_Path(char const * face) const = 0;
-		virtual bool Window_Is_Unicode(void) const = 0;
-		virtual unsigned int Text_Code_Page(void) const = 0;
 		virtual void Apply_Cursor(UICursor cursor) = 0;
 		virtual void Restore_Game_Cursor(void) = 0;
 

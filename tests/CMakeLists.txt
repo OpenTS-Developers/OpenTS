@@ -110,6 +110,8 @@ add_subdirectory(png)
 add_subdirectory(houseset)
 add_subdirectory(uishell)
 add_subdirectory(uilogic)
+add_subdirectory(winevent)
+add_subdirectory(sdlkeys)
 
 # The script reads the sources directly, so the check needs no compiler and runs in every CI
 # job's ctest step.
