@@ -9082,6 +9082,12 @@ bool HouseClass::Is_Build_Limited(TechnoTypeClass const * type) const
 		FactoryClass * factory = Fetch_Factory(type->RTTI);
 		if (factory != NULL) {
 			queued = factory->Total(type);
+
+			// A positive limit already counts the object under construction among those owned.
+			TechnoClass const * object = factory->Get_Object();
+			if (type->BuildLimit > 0 && object != NULL && object->TClass == type && !type->IsInsignificant) {
+				queued--;
+			}
 		}
 
 		switch ((RTTIType)type->RTTI) {

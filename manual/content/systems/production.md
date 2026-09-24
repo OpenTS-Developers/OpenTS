@@ -184,7 +184,7 @@ On the sidebar, a type that has reached a positive limit is drawn darkened. A ty
 A player's orders are checked against the limit in two places:
 
 1. The factory search rejects every structure while the product is at its limit, so a new order fails.
-2. An order that would join a [queue](#the-queue) is refused when the objects owned or produced, plus the object under construction and everything already queued, reach the limit. At a positive limit, the object under construction is already among the objects owned, so it counts twice and the queue refuses an order one object early. With `BuildLimit=2`, nothing finished and one in production, a second order is refused. For a vehicle, this check does not count deployed structures. It has no case for structures, which are never queued.
+2. An order that would join a [queue](#the-queue) is refused when the objects owned or produced, plus the object under construction and everything already queued, reach the limit. At a positive limit, the object under construction is already among the objects owned, so the check counts it only once. With `BuildLimit=2`, nothing finished and one in production, one more order joins the queue and the next is refused. For a vehicle, this check does not count deployed structures. It has no case for structures, which are never queued.
 
 :::caution[Build limits do not restrain a computer house]
 A computer house's factories never check the limit, so the computer keeps producing a type past it. The limit still applies on a few other computer paths. The most visible is team creation. Outside campaigns, a computer team that names a member at its build limit cannot be created. In a campaign it can still form if the house already owns a recruitable member of that type.
