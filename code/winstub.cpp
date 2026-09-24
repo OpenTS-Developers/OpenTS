@@ -157,12 +157,23 @@ unsigned int Build_Number(void)
 }
 
 
-/// <summary>
-/// Starts SDL and opens the main window. A window for windowed play has the client size the
-/// WindowWidth and WindowHeight settings give, taking the frame's size for either one that
-/// is not set; otherwise the window covers the primary display.
-/// </summary>
-/// <returns>False when SDL could not start or the window could not be created.</returns>
+/***********************************************************************************************
+ * Create_Main_Window -- opens the MainWindow for C&C                                          *
+ *                                                                                             *
+ *    Starts SDL and opens the main window. A window for windowed play has the client size     *
+ *    the WindowWidth and WindowHeight settings give, taking the frame's size for either one   *
+ *    that is not set; otherwise the window covers the primary display.                        *
+ *                                                                                             *
+ * INPUT:    width  -- width of the frame                                                      *
+ *           height -- height of the frame                                                     *
+ *                                                                                             *
+ * OUTPUT:   Returns false when SDL could not start or the window could not be created.        *
+ *                                                                                             *
+ * WARNINGS: None                                                                              *
+ *                                                                                             *
+ * HISTORY:                                                                                    *
+ *    10/10/95 4:08PM ST : Created                                                             *
+ *=============================================================================================*/
 bool Create_Main_Window(int width, int height)
 {
 	// The rules chooser and the map editor are built from the common controls.
@@ -186,6 +197,9 @@ bool Create_Main_Window(int width, int height)
 		}
 	}
 
+	//
+	// Create our main window
+	//
 	if (!Platform_Create_Main_Window(WindowedMode, clientwidth, clientheight)) {
 		return(false);
 	}

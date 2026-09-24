@@ -662,8 +662,12 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 		AudioEngine.End();
 
-		// Deal with whatever is still waiting, then let go of the window.
+		// Deal with whatever is still waiting.
 		Windows_Message_Handler();
+
+		/*
+		**	Tell our message handler to clean up.
+		*/
 		Game_Window_Closed();
 
 		error_code = EXIT_SUCCESS;
@@ -1046,6 +1050,10 @@ void Emergency_Exit(void)
 	ReadyToQuit = 1;
 
 	Windows_Message_Handler();
+
+	/*
+	**	Tell our message handler to clean up.
+	*/
 	Game_Window_Closed();
 
 

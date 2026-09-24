@@ -69,6 +69,9 @@ void Windows_Message_Handler(void)
 {
 	if (MainWindow == 0) return;
 
+	/*
+	**	Process windows messages until the message queue is exhausted.
+	*/
 	Platform_Pump_Events();
 
 	if (ToolTips != NULL) {
