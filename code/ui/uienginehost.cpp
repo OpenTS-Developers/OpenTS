@@ -14,6 +14,7 @@
 #include "_keyboar.h"
 #include "_rules.h"
 #include "_ui.h"
+#include "_xmouse.h"
 #include "audio/audioengine.h"
 #include "conquer.h"
 #include "data.h"
@@ -31,7 +32,7 @@
 #include "ui/uishell.h"
 #include "video.h"
 #include "voc.h"
-#include "wincursor.h"
+#include "wwmouse.h"
 
 #include <cstdio>
 
@@ -213,8 +214,11 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual void Restore_Game_Cursor(void) override
 		{
-			Win_Cursor_Refresh();
-			if (!Win_Cursor_Handle_Set_Cursor()) {
+			WWMouseClass * mouse = (WWMouseClass *)MouseCursor;
+			if (mouse != NULL) {
+				mouse->Refresh_Pointer_Scale();
+			}
+			if (mouse == NULL || !mouse->Show_Game_Pointer()) {
 				Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
 			}
 		}

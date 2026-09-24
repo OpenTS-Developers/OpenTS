@@ -34,6 +34,7 @@
 #include "xmouse.h"
 
 class ShapeSet;
+struct PlatformCursor;
 
 /*
 **	Handles the mouse as it relates to the C&C game engine. It is expected that only
@@ -47,6 +48,7 @@ class WWMouseClass : public Mouse {
 		**	Private constructor.
 		*/
 		WWMouseClass(void);
+		virtual ~WWMouseClass(void) override;
 
 		/*
 		**	Sets the game-drawn mouse imagery.
@@ -96,6 +98,9 @@ class WWMouseClass : public Mouse {
 		*/
 		void Calc_Confining_Rect(void);
 
+		bool Show_Game_Pointer(void);
+		void Refresh_Pointer_Scale(void);
+
 	private:
 
 		/*
@@ -119,9 +124,35 @@ class WWMouseClass : public Mouse {
 		// arrow while it is below zero.
 		int ReleasedState;
 
+		// The pointer is a system cursor built from the game's shapes, so moving it needs no new frame.
+		struct CursorCacheEntry
+		{
+			ShapeSet const * Shape;
+			int Frame;
+			int HotX;
+			int HotY;
+			PlatformCursor * Cursor;
+		};
+
+		// One cursor per shape frame the game actually asks for. MOUSE.SHP holds a few hundred
+		// of them, so the cache is emptied rather than grown when it fills.
+		CursorCacheEntry CursorCache[384];
+		int CursorCacheCount;
+		int CursorCacheScale;
+
+		ShapeSet const * CurrentShape;
+		int CurrentFrame;
+		int CurrentHotX;
+		int CurrentHotY;
+		PlatformCursor * CurrentCursor;
+		bool CursorVisible;
+
 		void Get_Bounded_Position(int & x, int & y) const;
 		void Client_To_Game(int & x, int & y) const;
 		void Show_Released_Pointer(void) const;
+		void Select_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, bool apply);
+		void Set_Cursor_Visible(bool visible);
+		void Flush_Cursor_Cache(void);
 
 		virtual bool Is_Hidden(void) const override {return(MouseState < 0);}
 };
