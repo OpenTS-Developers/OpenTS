@@ -27,6 +27,6 @@ bool Platform_Key_Down(int)
 }
 
 
-void Clamp_To_Game(POINT &)
+void Clamp_To_Game(Point2D &)
 {
 }

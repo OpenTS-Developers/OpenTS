@@ -788,11 +788,9 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						POINT pt;
-						pt.x = RightPressPoint.X + TacticalRect.X;
-						pt.y = RightPressPoint.Y + TacticalRect.Y;
+						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
 						Game_Point_To_Window(pt);
-						Platform_Warp_Cursor(pt.x, pt.y);
+						Platform_Warp_Cursor(pt.X, pt.Y);
 					}
 					break;
 
@@ -802,11 +800,9 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						POINT pt;
-						pt.x = RightPressPoint.X + TacticalRect.X;
-						pt.y = RightPressPoint.Y + TacticalRect.Y;
+						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
 						Game_Point_To_Window(pt);
-						Platform_Warp_Cursor(pt.x, pt.y);
+						Platform_Warp_Cursor(pt.X, pt.Y);
 					}
 					break;
 			}

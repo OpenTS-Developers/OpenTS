@@ -31,7 +31,6 @@
 
 #pragma once
 
-#include "win.h"
 #include "xmouse.h"
 
 class ShapeSet;

@@ -47,14 +47,14 @@ bool CCToolTip::Update(ToolTipText * text)
 
 		Rect * trect;
 		if (Options.IsSidebarOnRight == true) {
-			if (text->Pos.x <= TacticalRect.X + TacticalRect.Width) {
+			if (text->Pos.X <= TacticalRect.X + TacticalRect.Width) {
 				trect = &TacticalRect;
 			} else {
 				trect = &SidebarRect;
 				Map.SidebarClass::IsToRedraw = true;
 			}
 		} else {
-			if (text->Pos.x <= SidebarRect.X + SidebarRect.Width) {
+			if (text->Pos.X <= SidebarRect.X + SidebarRect.Width) {
 				trect = &SidebarRect;
 				Map.SidebarClass::IsToRedraw = true;
 			} else {
@@ -72,17 +72,17 @@ bool CCToolTip::Update(ToolTipText * text)
 				text->TextHeight = std::max(rect.Height, text->TextHeight);
 			}
 
-			int x = text->Pos.x + text->TextWidth - trect->Width - trect->X;
+			int x = text->Pos.X + text->TextWidth - trect->Width - trect->X;
 			if (x > 0) {
-				text->Pos.x -= x;
+				text->Pos.X -= x;
 			}
 
-			text->Pos.y += 16;
-			if (text->Pos.y + text->TextHeight - trect->Height - trect->Y > 0) {
-				text->Pos.y = text->Pos.y - text->TextHeight - 16;
+			text->Pos.Y += 16;
+			if (text->Pos.Y + text->TextHeight - trect->Height - trect->Y > 0) {
+				text->Pos.Y = text->Pos.Y - text->TextHeight - 16;
 			}
-			if (text->Pos.y < trect->Y) {
-				text->Pos.y = trect->Y;
+			if (text->Pos.Y < trect->Y) {
+				text->Pos.Y = trect->Y;
 			}
 		}
 
@@ -103,11 +103,11 @@ void CCToolTip::Reset(const ToolTipText * text)
 {
 	bool redraw = false;
 	if (Options.IsSidebarOnRight == true) {
-		if (text->Pos.x >= TacticalRect.X + TacticalRect.Width) {
+		if (text->Pos.X >= TacticalRect.X + TacticalRect.Width) {
 			redraw = true;
 		}
 	} else {
-		if (text->Pos.x <= SidebarRect.X + SidebarRect.Width) {
+		if (text->Pos.X <= SidebarRect.X + SidebarRect.Width) {
 			redraw = true;
 		}
 	}
@@ -146,7 +146,7 @@ void CCToolTip::Draw_Current(bool sidebar)
 void CCToolTip::Draw(const ToolTipText * text)
 {
 	Rect drawrect;
-	Point2D point = Point2D(text->Pos.x, text->Pos.y);
+	Point2D point = Point2D(text->Pos.X, text->Pos.Y);
 	Surface * surface = NULL;
 
 	if (Options.IsSidebarOnRight == true) {

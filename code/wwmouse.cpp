@@ -361,14 +361,12 @@ void WWMouseClass::Convert_Coordinate(int & x, int & y) const
 // Converts a position in the window's client area into one held inside the frame.
 void WWMouseClass::Client_To_Game(int & x, int & y) const
 {
-	POINT point;
-	point.x = x;
-	point.y = y;
+	Point2D point(x, y);
 	Window_Point_To_Game(point);
 
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
-	x = point.x;
-	y = point.y;
+	x = point.X;
+	y = point.Y;
 	if (x < 0) x = 0;
 	if (y < 0) y = 0;
 	if (x >= scale.GameWidth) x = scale.GameWidth-1;

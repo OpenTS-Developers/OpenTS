@@ -44,6 +44,7 @@
 #include "platform/platform.h"
 #include "vector.h"
 #include "video.h"
+#include "win.h"
 
 
 /***********************************************************************************************

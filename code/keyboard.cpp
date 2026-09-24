@@ -613,9 +613,7 @@ void WWKeyboardClass::Clear(void)
  *=============================================================================================*/
 bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 {
-	POINT point;
-	point.x = event.X;
-	point.y = event.Y;
+	Point2D point(event.X, event.Y);
 	Clamp_To_Game(point);
 
 	/*
@@ -680,16 +678,16 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 	}
 
 	if (event.Type == WINDOW_EVENT_MOUSE_UP) {
-		Put_Mouse_Message(button, point.x, point.y, true);
+		Put_Mouse_Message(button, point.X, point.Y, true);
 	} else {
-		Put_Mouse_Message(button, point.x, point.y);
+		Put_Mouse_Message(button, point.X, point.Y);
 
 		/*
 		**	Double click of a mouse button. Fake this into being
 		**	just a rapid click of the button twice.
 		*/
 		if (event.Clicks >= 2) {
-			Put_Mouse_Message(button, point.x, point.y, true);
+			Put_Mouse_Message(button, point.X, point.Y, true);
 		}
 	}
 	return(true);
