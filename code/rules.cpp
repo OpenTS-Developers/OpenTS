@@ -414,6 +414,7 @@ RulesClass::RulesClass(void) :
 	TiberiumStrength(10),
 	MinLowPowerProductionSpeed(.5),
 	MultipleFactory(1),
+	MultipleFactoryCap(0),
 	CraterLevel(4),
 	TreeFlammability(.1),
 	MissileSpeedVar(.25),
@@ -1098,6 +1099,7 @@ bool RulesClass::General(CCINIClass const & ini)
 		AircraftFogReveal = ini.Get_Int(GENERAL, "AircraftFogReveal", AircraftFogReveal);
 		MinLowPowerProductionSpeed = ini.Get_Float(GENERAL, "MinProductionSpeed", MinLowPowerProductionSpeed);
 		MultipleFactory = ini.Get_Float(GENERAL, "MultipleFactory", MultipleFactory);
+		MultipleFactoryCap = ini.Get_Int(GENERAL, "MultipleFactoryCap", MultipleFactoryCap);
 		CraterLevel = ini.Get_Int(GENERAL, "CraterLevel", CraterLevel);
 		TreeFlammability = ini.Get_Float(GENERAL, "TreeFlammability", TreeFlammability);
 		MissileROTVar = ini.Get_Float(GENERAL, "MissileROTVar", MissileROTVar);
@@ -2229,6 +2231,7 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(TiberiumStrength);
 	stream.Serialize(MinLowPowerProductionSpeed);
 	stream.Serialize(MultipleFactory);
+	stream.Serialize(MultipleFactoryCap);
 	stream.Serialize(CraterLevel);
 	stream.Serialize(TreeFlammability);
 	stream.Serialize(MissileSpeedVar);

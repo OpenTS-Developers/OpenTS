@@ -14562,6 +14562,24 @@ MultipleFactory:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+MultipleFactoryCap:
+  key: MultipleFactoryCap
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: General
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: MultipleFactoryCap
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 MyEffectivenessCoefficient:
   key: MyEffectivenessCoefficient
   scopes:

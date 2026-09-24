@@ -21,6 +21,7 @@ keys:
   - MaximumQueuedObjects
   - MinProductionSpeed
   - MultipleFactory
+  - MultipleFactoryCap
   - Owner
   - PadAircraft
   - PlacementDelay
@@ -209,16 +210,16 @@ The 1-to-255 range on the step sets the shortest build at 54 frames (3.6 seconds
 
 ### More than one factory
 
-Extra factories of a category can shorten its build times, depending on [`MultipleFactory`](/keys/multiplefactory/). The house counts its structures whose `Factory=` names the product's category, including ones switched off or still in buildup. The build time is multiplied once by `1 / ((count - 1) × MultipleFactory)`, so one factory leaves it unchanged.
+Extra factories of a category can shorten its build times, depending on [`MultipleFactory`](/keys/multiplefactory/). The house counts its structures whose `Factory=` names the product's category, including ones switched off or still in buildup. The build time is multiplied by `MultipleFactory` once for each factory past the first and truncated after each multiplication. [`MultipleFactoryCap`](/keys/multiplefactorycap/) limits how many factories count; at `0` every factory counts.
 
-| Factories | Multiplier at `MultipleFactory=1` | At `MultipleFactory=0.5` |
+| Factories | Multiplier at `MultipleFactory=0.8` | With `MultipleFactoryCap=3` as well |
 | ---: | --- | --- |
 | 1 | 1 | 1 |
-| 2 | 1 | 2 |
-| 3 | 0.5 | 1 |
-| 4 | 0.333 | 0.667 |
+| 2 | 0.8 | 0.8 |
+| 3 | 0.64 | 0.64 |
+| 4 | 0.512 | 0.64 |
 
-At `MultipleFactory=1`, a second factory changes nothing and a third halves the time. Below 1, a pair of factories builds more slowly than a single one. Above 1, the second factory already speeds production. A value of `0` or below skips the adjustment.
+A value of `1` changes nothing, and a value above `1` makes each extra factory lengthen build times. A value of `0` or below skips the adjustment, as the stock rules do.
 
 ### Power
 

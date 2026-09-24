@@ -837,9 +837,14 @@ int TechnoClass::Time_To_Build(void) const
 	power = std::max(power, Rule->MinLowPowerProductionSpeed);
 	val /= power;
 
-	int divisor = House->Factory_Count(RTTI);
-	if (divisor > 1 && Rule->MultipleFactory > 0) {
-		val *= 1.0 / ((divisor - 1) * Rule->MultipleFactory);
+	int extra = House->Factory_Count(RTTI) - 1;
+	if (Rule->MultipleFactoryCap > 0) {
+		extra = std::min(extra, Rule->MultipleFactoryCap - 1);
+	}
+	if (Rule->MultipleFactory > 0) {
+		for (; extra > 0; extra--) {
+			val *= Rule->MultipleFactory;
+		}
 	}
 	if (RTTI == RTTI_BUILDING && ((BuildingClass *)this)->Class->IsWall) {
 		val *= Rule->WallBuildSpeedCoefficient;

@@ -1,11 +1,11 @@
 ---
 key: MultipleFactory
-summary: The speed-up each factory past the first gives to production of its category.
+summary: The build-time multiplier each factory past the first applies to production of its category.
 when_omitted:
   kind: value
   value: "1"
 ---
 
-A house that owns more than one factory able to produce the object's category has its build time multiplied by `1 / ((count - 1) * MultipleFactory)`. It counts the house's structures whose [`Factory=`](/keys/factory/) names that category, switched on or not. A value of zero or below skips the adjustment.
+A house that owns more than one factory able to produce the object's category multiplies the build time by `MultipleFactory` once for each factory past the first, dropping any fraction of a frame after each multiplication. It counts the house's structures whose [`Factory=`](/keys/factory/) names that category, switched on or not. [`MultipleFactoryCap`](/keys/multiplefactorycap/) limits how many of them count.
 
-At the default the second factory therefore changes nothing, since one divided by one is one, and the third halves the time. A value below 1 makes a pair of factories slower than a single one.
+A value below `1` shortens build times: at `0.8`, two factories build in 80% of the time and three in 64%. A value of `1` changes nothing, a value above `1` lengthens build times, and `0` or below skips the adjustment.

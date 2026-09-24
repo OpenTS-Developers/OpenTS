@@ -518,10 +518,15 @@ class RulesClass
 		double MinLowPowerProductionSpeed;
 
 		/*
-		 * This weights the build time discount a house earns for owning more than one
-		 * factory of the appropriate kind. If zero, then extra factories grant none.
+		 * Each factory of the appropriate kind past the first multiplies the build time by
+		 * this. Zero or below grants no discount.
 		 */
 		double MultipleFactory;
+
+		/*
+		 * This caps how many factories count toward that discount. Zero leaves it uncapped.
+		 */
+		int MultipleFactoryCap;
 
 		/*
 		 * This controls how widely a meteor impact deforms the terrain (0 - 4). Zero
