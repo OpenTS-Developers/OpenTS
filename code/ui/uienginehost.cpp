@@ -25,6 +25,7 @@
 #include "mixfile.h"
 #include "movies.h"
 #include "msgloop.h"
+#include "platform/platform.h"
 #include "rules.h"
 #include "session.h"
 #include "ui/uishell.h"
@@ -43,21 +44,9 @@ std::string UI_Color_Text(COLORREF color)
 }
 
 
-static HCURSOR Window_Cursor(void)
-{
-	HCURSOR cursor = (HCURSOR)GetClassLongPtr(MainWindow, GCLP_HCURSOR);
-	return(cursor != NULL ? cursor : LoadCursor(NULL, IDC_ARROW));
-}
-
-
 class UIEngineHostClass : public UIShellHostClass
 {
 	public:
-		virtual HWND Main_Window(void) const override
-		{
-			return(MainWindow);
-		}
-
 		virtual UIFrameRect Frame(void) const override
 		{
 			VideoScaleInfo const & scale = Video_Get_Scale_Info();
@@ -150,35 +139,26 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual bool Take_Capture(void) override
 		{
-			if (GetCapture() == MainWindow) {
+			if (Platform_Mouse_Captured()) {
 				return(false);
 			}
-			SetCapture(MainWindow);
+			Platform_Capture_Mouse(true);
 			return(true);
 		}
 
 		virtual void Release_Capture(void) override
 		{
-			if (GetCapture() == MainWindow) {
-				ReleaseCapture();
-			}
+			Platform_Capture_Mouse(false);
 		}
 
 		virtual bool Key_Down(int virtualkey) const override
 		{
-			if (GetSystemMetrics(SM_SWAPBUTTON) != 0) {
-				if (virtualkey == VK_LBUTTON) {
-					virtualkey = VK_RBUTTON;
-				} else if (virtualkey == VK_RBUTTON) {
-					virtualkey = VK_LBUTTON;
-				}
-			}
-			return((GetAsyncKeyState(virtualkey) & 0x8000) != 0);
+			return(Platform_Key_Down(virtualkey));
 		}
 
 		virtual bool Key_Toggled(int virtualkey) const override
 		{
-			return((GetKeyState(virtualkey) & 1) != 0);
+			return(Platform_Key_Toggled(virtualkey));
 		}
 
 		virtual std::string System_Font_Path(char const * face) const override
@@ -199,44 +179,54 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual void Apply_Cursor(UICursor cursor) override
 		{
-			LPCTSTR shape = NULL;
+			PlatformCursorShape shape = PLATFORM_CURSOR_ARROW;
 			switch (cursor) {
 				case UI_CURSOR_TEXT:
-					shape = IDC_IBEAM;
+					shape = PLATFORM_CURSOR_TEXT;
 					break;
 				case UI_CURSOR_HAND:
-					shape = IDC_HAND;
+					shape = PLATFORM_CURSOR_HAND;
 					break;
 				case UI_CURSOR_RESIZE_NS:
-					shape = IDC_SIZENS;
+					shape = PLATFORM_CURSOR_RESIZE_NS;
 					break;
 				case UI_CURSOR_RESIZE_EW:
-					shape = IDC_SIZEWE;
+					shape = PLATFORM_CURSOR_RESIZE_EW;
 					break;
 				case UI_CURSOR_RESIZE_NESW:
-					shape = IDC_SIZENESW;
+					shape = PLATFORM_CURSOR_RESIZE_NESW;
 					break;
 				case UI_CURSOR_RESIZE_NWSE:
-					shape = IDC_SIZENWSE;
+					shape = PLATFORM_CURSOR_RESIZE_NWSE;
 					break;
 				case UI_CURSOR_MOVE:
-					shape = IDC_SIZEALL;
+					shape = PLATFORM_CURSOR_MOVE;
 					break;
 				case UI_CURSOR_UNAVAILABLE:
-					shape = IDC_NO;
+					shape = PLATFORM_CURSOR_UNAVAILABLE;
 					break;
 				default:
 					break;
 			}
-			SetCursor(shape != NULL ? LoadCursor(NULL, shape) : Window_Cursor());
+			Platform_Set_Cursor(Platform_System_Cursor(shape));
 		}
 
 		virtual void Restore_Game_Cursor(void) override
 		{
 			Win_Cursor_Refresh();
 			if (!Win_Cursor_Handle_Set_Cursor()) {
-				SetCursor(Window_Cursor());
+				Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
 			}
+		}
+
+		virtual std::string Clipboard_Text(void) const override
+		{
+			return(Platform_Clipboard_Text());
+		}
+
+		virtual void Set_Clipboard_Text(std::string const & text) override
+		{
+			Platform_Set_Clipboard_Text(text);
 		}
 
 		virtual char const * String(int id) const override

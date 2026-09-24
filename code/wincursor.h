@@ -7,9 +7,9 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// The mouse pointer, as a real Windows cursor built from the game's own shapes.
+// The mouse pointer, as a system cursor built from the game's own shapes.
 //
-// Windows composites it over the presented frame, so pointing the mouse costs nothing:
+// The system composites it over the presented frame, so pointing the mouse costs nothing:
 // the cursor never touches a game surface and moving it needs no new frame.
 
 #pragma once

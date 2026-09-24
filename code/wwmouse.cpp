@@ -60,6 +60,7 @@
 
 #include "dbgprint.h"
 #include "misc.h"
+#include "platform/platform.h"
 #include "video.h"
 #include "vidscale.h"
 #include "win.h"
@@ -76,7 +77,8 @@ WWMouseClass::WWMouseClass(HWND window) :
 	MouseState(-1),
 	IsCaptured(false),
 	Window(window),
-	ConfiningRect(RECT_NONE)
+	ConfiningRect(RECT_NONE),
+	ReleasedState(0)
 {
 	Calc_Confining_Rect();
 }
@@ -127,9 +129,7 @@ void WWMouseClass::Calc_Confining_Rect(void)
 int WWMouseClass::Get_Mouse_State(void) const
 {
 	if (!Is_Captured()) {
-		ShowCursor(FALSE);
-		int state = ShowCursor(TRUE);
-		return(state);
+		return(ReleasedState);
 	}
 	return(MouseState);
 }
@@ -182,7 +182,8 @@ void WWMouseClass::Set_Cursor(Point2D const & hotspot, ShapeSet const * cursor, 
 void WWMouseClass::Show_Mouse(void)
 {
 	if (!Is_Captured()) {
-		ShowCursor(TRUE);
+		ReleasedState++;
+		Show_Released_Pointer();
 	} else {
 		MouseState++;
 		if (MouseState > 0) MouseState = 0;
@@ -209,7 +210,8 @@ void WWMouseClass::Show_Mouse(void)
 void WWMouseClass::Hide_Mouse(void)
 {
 	if (!Is_Captured()) {
-		ShowCursor(FALSE);
+		ReleasedState--;
+		Show_Released_Pointer();
 	} else {
 		MouseState--;
 		Win_Cursor_Set_Visible(!Is_Hidden());
@@ -244,18 +246,16 @@ void WWMouseClass::Capture_Mouse(void)
 		 * The game's pointer is the O/S pointer, so its display count has to come
 		 * back up; it was left negative while the game drew a pointer of its own.
 		 */
-		while (ShowCursor(TRUE) < 0) {}
+		if (ReleasedState < 0) {
+			ReleasedState = 0;
+		}
 
 		/*
 		 * There is no exclusive display mode any more, so the pointer is kept inside
 		 * the window by hand while the game covers the screen.
 		 */
 		if (!WindowedMode) {
-			RECT clip_rect;
-			GetClientRect(Window, &clip_rect);
-			ClientToScreen(Window, (LPPOINT)&clip_rect.left);
-			ClientToScreen(Window, (LPPOINT)&clip_rect.right);
-			ClipCursor(&clip_rect);
+			Platform_Confine_Cursor(true);
 		}
 
 		Show_Mouse();
@@ -290,9 +290,11 @@ void WWMouseClass::Release_Mouse(void)
 		DebugString("Release_Mouse()\n");
 		Hide_Mouse();
 		IsCaptured = false;
-		ClipCursor(NULL);
-		if (GetCapture() == Window) ReleaseCapture();
-		while (ShowCursor(TRUE) < 0) {}
+		Platform_Confine_Cursor(false);
+		Platform_Capture_Mouse(false);
+		if (ReleasedState < 0) {
+			ReleasedState = 0;
+		}
 		Show_Mouse();
 	}
 }
@@ -361,9 +363,18 @@ void WWMouseClass::Convert_Coordinate(int & x, int & y) const
 	/*
 	**	Convert the mouse position to legal bounds.
 	*/
+	x -= ConfiningRect.X;
+	y -= ConfiningRect.Y;
+	Client_To_Game(x, y);
+}
+
+
+// Converts a position in the window's client area into one held inside the frame.
+void WWMouseClass::Client_To_Game(int & x, int & y) const
+{
 	POINT point;
-	point.x = x - ConfiningRect.X;
-	point.y = y - ConfiningRect.Y;
+	point.x = x;
+	point.y = y;
 	Window_Point_To_Game(point);
 
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
@@ -373,6 +384,13 @@ void WWMouseClass::Convert_Coordinate(int & x, int & y) const
 	if (y < 0) y = 0;
 	if (x >= scale.GameWidth) x = scale.GameWidth-1;
 	if (y >= scale.GameHeight) y = scale.GameHeight-1;
+}
+
+
+// Shows the window's arrow while the released pointer's show count allows it.
+void WWMouseClass::Show_Released_Pointer(void) const
+{
+	Platform_Set_Cursor(ReleasedState >= 0 ? Platform_System_Cursor(PLATFORM_CURSOR_ARROW) : NULL);
 }
 
 
@@ -395,9 +413,8 @@ void WWMouseClass::Get_Bounded_Position(int & x, int & y) const
 	/*
 	**	Get the mouse's current real cursor position
 	*/
-	POINT pt;
-	GetCursorPos(&pt);			// get the current cursor position
-	x = pt.x;
-	y = pt.y;
-	Convert_Coordinate(x, y);
+	x = 0;
+	y = 0;
+	Platform_Cursor_Position(x, y);
+	Client_To_Game(x, y);
 }

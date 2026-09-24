@@ -9,14 +9,13 @@
 
 #pragma once
 
+#include "platform/windowevent.hh"
 
-struct WindowEvent;
+#include <vector>
 
-bool Game_Window_Handle_Event(WindowEvent const & event);
-bool Game_Window_Select_Cursor(void);
-void Game_Window_Update_Cursor(void);
-void Game_Window_Closed(void);
+union SDL_Event;
 
-void Game_Window_On_Paint(bool update_surface);
-void Game_Window_On_Right_Mouse_Up(void);
-void Game_Window_On_Mouse_Wheel(int delta);
+
+// Appends the window events an SDL event stands for, which is none for an event the game
+// does not use. Positions are scaled by the window's pixel density into client pixels.
+void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, std::vector<WindowEvent> & events);

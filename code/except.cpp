@@ -54,6 +54,7 @@
 #include "version.h"
 #include "win.h"
 
+#include <commctrl.h>
 #include <dbghelp.h>
 #include <tlhelp32.h>
 
@@ -2178,12 +2179,25 @@ void Exception_Run_Immediate_Test(void)
 }
 
 
+// Hooks the main window's procedure, which belongs to SDL, so the test fault is raised
+// inside window procedure dispatch.
+static LRESULT CALLBACK Test_Window_Procedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR, DWORD_PTR)
+{
+	if (message == WM_EXCEPTION_TEST) {
+		Exception_Wndproc_Test_Fault();
+		return(0);
+	}
+	return(DefSubclassProc(window, message, wparam, lparam));
+}
+
+
 /// <summary>
 /// Raises the requested test fault, for the faults that need a window to happen inside.
 /// </summary>
 void Exception_Run_Post_Window_Test(void)
 {
 	if (stricmp(TestMode, "wndproc") == 0) {
+		SetWindowSubclass(MainWindow, Test_Window_Procedure, 1, 0);
 		PostMessage(MainWindow, WM_EXCEPTION_TEST, 0, 0);
 
 	} else if (stricmp(TestMode, "timer") == 0) {

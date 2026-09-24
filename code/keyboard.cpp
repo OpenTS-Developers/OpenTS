@@ -56,6 +56,7 @@
 
 #include "_xmouse.h"
 #include "msgloop.h"
+#include "platform/platform.h"
 #include "platform/windowevent.hh"
 #include "vidscale.h"
 
@@ -373,13 +374,7 @@ int WWKeyboardClass::To_ASCII(unsigned short key)
  *=============================================================================================*/
 bool WWKeyboardClass::Down(unsigned short key)
 {
-	key &= 0xFF;
-
-	if ((key == VK_LBUTTON || key == VK_RBUTTON) && GetSystemMetrics(SM_SWAPBUTTON) == TRUE) {
-		key = (key != VK_LBUTTON) ? VK_LBUTTON : VK_RBUTTON;
-	}
-
-	return(GetAsyncKeyState(key) != 0);
+	return(Platform_Key_Down(key & 0xFF));
 }
 
 

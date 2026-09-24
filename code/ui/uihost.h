@@ -30,7 +30,6 @@ class UIShellHostClass
 {
 	public:
 		virtual ~UIShellHostClass(void) = default;
-		virtual HWND Main_Window(void) const = 0;
 		virtual UIFrameRect Frame(void) const = 0;
 		virtual void Mark_Overlay_Dirty(void) = 0;
 		virtual void Present_If_Dirty(void) = 0;
@@ -53,6 +52,8 @@ class UIShellHostClass
 		virtual std::string System_Font_Path(char const * face) const = 0;
 		virtual void Apply_Cursor(UICursor cursor) = 0;
 		virtual void Restore_Game_Cursor(void) = 0;
+		virtual std::string Clipboard_Text(void) const = 0;
+		virtual void Set_Clipboard_Text(std::string const & text) = 0;
 
 		virtual char const * String(int id) const = 0;
 		virtual void Log(char const * text) = 0;

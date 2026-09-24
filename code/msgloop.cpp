@@ -41,6 +41,7 @@
 #include "_tooltip.h"
 #include "_ui.h"
 #include "cctooltip.h"
+#include "platform/platform.h"
 #include "vector.h"
 #include "video.h"
 
@@ -68,24 +69,7 @@ void Windows_Message_Handler(void)
 {
 	if (MainWindow == 0) return;
 
-	MSG msg;
-
-	/*
-	**	Process windows messages until the message queue is exhuasted.
-	*/
-	while (PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-		if (!GetMessageW( &msg, NULL, 0, 0 )) {
-			return;
-		}
-
-		/*
-		**	If the message makes it to this point, then it must be a normal message. Process
-		**	it in the normal fashion. The message will appear in the window message handler
-		**	for the window that it was directed to.
-		*/
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
-	}
+	Platform_Pump_Events();
 
 	if (ToolTips != NULL) {
 		ToolTips->Service();

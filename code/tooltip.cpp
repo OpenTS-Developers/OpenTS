@@ -17,6 +17,7 @@
 
 #include "data.h"
 #include "dbgprint.h"
+#include "platform/platform.h"
 #include "platform/windowevent.hh"
 #include "vidscale.h"
 
@@ -125,8 +126,12 @@ void ToolTipManager::Service(void)
 	if (CurrentToolTip != NULL) {
 		Reset_Current();
 	} else {
-		GetCursorPos((LPPOINT)&LastMousePos);
-		Screen_Point_To_Game((POINT &)LastMousePos);
+		int x = 0;
+		int y = 0;
+		Platform_Cursor_Position(x, y);
+		LastMousePos.x = x;
+		LastMousePos.y = y;
+		Window_Point_To_Game(LastMousePos);
 		CurrentToolTip = Find_From_Pos((Point2D &)LastMousePos);
 		if (Process() == true) {
 			Start_Timer(ToolTipLifetime);

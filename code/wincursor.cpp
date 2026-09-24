@@ -16,12 +16,14 @@
 #include "convert.h"
 #include "globals.h"
 #include "goptions.h"
+#include "platform/platform.h"
 #include "shapeset.h"
 #include "video.h"
 #include "win.h"
 #include "xmouse.h"
 
 #include <cstring>
+#include <vector>
 
 
 struct CursorCacheEntry
@@ -30,7 +32,7 @@ struct CursorCacheEntry
 	int Frame;
 	int HotX;
 	int HotY;
-	HCURSOR Cursor;
+	PlatformCursor * Cursor;
 };
 
 // One cursor per shape frame the game actually asks for. MOUSE.SHP holds a few hundred
@@ -43,7 +45,7 @@ static ShapeSet const * _CurrentShape = NULL;
 static int _CurrentFrame = 0;
 static int _CurrentHotX = 0;
 static int _CurrentHotY = 0;
-static HCURSOR _CurrentCursor = NULL;
+static PlatformCursor * _CurrentCursor = NULL;
 static bool _CursorVisible = true;
 
 
@@ -72,13 +74,13 @@ static int Cursor_Scale(void)
 
 
 /// <summary>
-/// Draws one shape frame into a Windows cursor.
+/// Draws one shape frame into a cursor.
 /// The canvas covers the shape's whole frame rather than the trimmed part that holds
 /// pixels, so the hotspot, which is measured from the frame's corner, still lands in the
 /// right place. Palette entry zero is the transparent one.
 /// </summary>
 /// <returns>The cursor, or NULL if it could not be built.</returns>
-static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, int scale)
+static PlatformCursor * Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, int scale)
 {
 	if (shape == NULL || MouseDrawer == NULL) {
 		return(NULL);
@@ -98,23 +100,7 @@ static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hot
 		return(NULL);
 	}
 
-	BITMAPINFO info;
-	memset(&info, '\0', sizeof(info));
-	info.bmiHeader.biSize = sizeof(BITMAPINFOHEADER);
-	info.bmiHeader.biWidth = width;
-	info.bmiHeader.biHeight = -height;
-	info.bmiHeader.biPlanes = 1;
-	info.bmiHeader.biBitCount = 32;
-	info.bmiHeader.biCompression = BI_RGB;
-
-	void * bits = NULL;
-	HBITMAP color = CreateDIBSection(NULL, &info, DIB_RGB_COLORS, &bits, NULL, 0);
-
-	if (color == NULL) {
-		return(NULL);
-	}
-
-	memset(bits, '\0', width * height * 4);
+	std::vector<unsigned int> bits((size_t)width * height, 0);
 
 	// The shapes are palette indices and the primary is 565, so the drawer's table is
 	// what turns one into the other.
@@ -129,27 +115,19 @@ static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hot
 			}
 
 			unsigned short pixel = table[index];
-			unsigned long red = ((pixel >> 11) & 0x1F) << 3;
-			unsigned long green = ((pixel >> 5) & 0x3F) << 2;
-			unsigned long blue = (pixel & 0x1F) << 3;
-			unsigned long argb = 0xFF000000UL | (red << 16) | (green << 8) | blue;
+			unsigned int red = ((pixel >> 11) & 0x1F) << 3;
+			unsigned int green = ((pixel >> 5) & 0x3F) << 2;
+			unsigned int blue = (pixel & 0x1F) << 3;
+			unsigned int argb = 0xFF000000U | (red << 16) | (green << 8) | blue;
 
 			for (int suby = 0; suby < scale; suby++) {
-				unsigned long * row = (unsigned long *)bits + ((rect.Y + y) * scale + suby) * width + (rect.X + x) * scale;
+				unsigned int * row = bits.data() + ((rect.Y + y) * scale + suby) * width + (rect.X + x) * scale;
 				for (int subx = 0; subx < scale; subx++) {
 					row[subx] = argb;
 				}
 			}
 		}
 	}
-
-	// A color cursor carries its transparency in the alpha channel, but Windows still
-	// wants a mask bitmap alongside it.
-	int mask_pitch = ((width + 15) / 16) * 2;
-	char * mask_bits = new char[mask_pitch * height];
-	memset(mask_bits, '\0', mask_pitch * height);
-	HBITMAP mask = CreateBitmap(width, height, 1, 1, mask_bits);
-	delete [] mask_bits;
 
 	int cursor_hotx = hotx * scale;
 	int cursor_hoty = hoty * scale;
@@ -158,26 +136,14 @@ static HCURSOR Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hot
 	if (cursor_hotx >= width) cursor_hotx = width - 1;
 	if (cursor_hoty >= height) cursor_hoty = height - 1;
 
-	ICONINFO icon;
-	icon.fIcon = FALSE;
-	icon.xHotspot = cursor_hotx;
-	icon.yHotspot = cursor_hoty;
-	icon.hbmMask = mask;
-	icon.hbmColor = color;
-	HCURSOR cursor = (HCURSOR)CreateIconIndirect(&icon);
-
-	DeleteObject(mask);
-	DeleteObject(color);
-	return(cursor);
+	return(Platform_Create_Cursor(bits.data(), width, height, cursor_hotx, cursor_hoty));
 }
 
 
 static void Flush_Cursor_Cache(void)
 {
 	for (int index = 0; index < _CursorCacheCount; index++) {
-		if (_CursorCache[index].Cursor != NULL) {
-			DestroyCursor(_CursorCache[index].Cursor);
-		}
+		Platform_Destroy_Cursor(_CursorCache[index].Cursor);
 	}
 
 	_CursorCacheCount = 0;
@@ -207,15 +173,13 @@ void Win_Cursor_Set(ShapeSet const * shape, int frame, int hotx, int hoty, bool 
 	_CurrentHotX = hotx;
 	_CurrentHotY = hoty;
 
-	HCURSOR cursor = NULL;
+	PlatformCursor * cursor = NULL;
 
 	for (int index = 0; index < _CursorCacheCount; index++) {
 		CursorCacheEntry & entry = _CursorCache[index];
 		if (entry.Shape == shape && entry.Frame == frame) {
 			if (entry.HotX != hotx || entry.HotY != hoty) {
-				if (entry.Cursor != NULL) {
-					DestroyCursor(entry.Cursor);
-				}
+				Platform_Destroy_Cursor(entry.Cursor);
 				entry.Cursor = Build_Cursor(shape, frame, hotx, hoty, scale);
 				entry.HotX = hotx;
 				entry.HotY = hoty;
@@ -245,7 +209,7 @@ void Win_Cursor_Set(ShapeSet const * shape, int frame, int hotx, int hoty, bool 
 	_CurrentCursor = cursor;
 
 	if (apply) {
-		SetCursor(_CursorVisible ? _CurrentCursor : NULL);
+		Platform_Set_Cursor(_CursorVisible ? _CurrentCursor : NULL);
 	}
 }
 
@@ -262,17 +226,17 @@ void Win_Cursor_Set_Visible(bool visible)
 	}
 
 	if (MouseCursor != NULL && MouseCursor->Is_Captured()) {
-		SetCursor(visible ? _CurrentCursor : NULL);
+		Platform_Set_Cursor(visible ? _CurrentCursor : NULL);
 	}
 }
 
 
 /// <summary>
-/// Puts the game's pointer back after Windows has asked what the cursor should be.
+/// Puts the game's pointer back over the window.
 /// </summary>
 /// <returns>bool; Was the cursor the game's to choose? It is not while the game has released
-/// the mouse, as it does when it loses the focus, or before it has built a pointer; Windows
-/// then keeps its arrow.</returns>
+/// the mouse, as it does when it loses the focus, or before it has built a pointer; the
+/// window then shows its arrow.</returns>
 bool Win_Cursor_Handle_Set_Cursor(void)
 {
 	if (MouseCursor == NULL || !MouseCursor->Is_Captured()) {
@@ -283,7 +247,7 @@ bool Win_Cursor_Handle_Set_Cursor(void)
 		return(false);
 	}
 
-	SetCursor(_CursorVisible ? _CurrentCursor : NULL);
+	Platform_Set_Cursor(_CursorVisible ? _CurrentCursor : NULL);
 	return(true);
 }
 
@@ -305,7 +269,7 @@ void Win_Cursor_Refresh(void)
 /// </summary>
 void Win_Cursor_Shutdown(void)
 {
-	SetCursor(NULL);
+	Platform_Set_Cursor(NULL);
 	Flush_Cursor_Cache();
 	_CurrentShape = NULL;
 }

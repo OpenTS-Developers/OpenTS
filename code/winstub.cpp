@@ -81,7 +81,6 @@
 #include "winfix.h"
 #include "wwmouse.h"
 
-#include "nativewindow.hh"
 
 #include <algorithm>
 #include <commctrl.h>
@@ -274,46 +273,6 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 }
 
 
-int Platform_Window_Refresh_Rate(void)
-{
-	return(Win_Window_Refresh_Rate(MainWindow));
-}
-
-
-NativeWindow Win_Native_Window(HWND window)
-{
-	return(NativeWindow{ NATIVE_WINDOW_DEFAULT, nullptr, window });
-}
-
-
-// Client dimensions are physical pixels because the process is per-monitor DPI aware.
-bool Win_Window_Drawable_Size(HWND window, int & width, int & height)
-{
-	RECT client;
-	if (window == NULL || !GetClientRect(window, &client)) {
-		return(false);
-	}
-
-	width = client.right - client.left;
-	height = client.bottom - client.top;
-	return(width > 0 && height > 0);
-}
-
-
-int Win_Window_Refresh_Rate(HWND window)
-{
-	int refreshrate = 0;
-	HDC dc = GetDC(window);
-
-	if (dc != NULL) {
-		refreshrate = GetDeviceCaps(dc, VREFRESH);
-		ReleaseDC(window, dc);
-	}
-
-	return(refreshrate);
-}
-
-
 /// <summary>
 /// Fetches the build number of this executable.
 /// This routine is used by the network code to check that every machine joining a
@@ -326,123 +285,46 @@ unsigned int Build_Number(void)
 }
 
 
-/***********************************************************************************************
- * Create_Main_Window -- opens the MainWindow for C&C                                          *
- *                                                                                             *
- *                                                                                             *
- *                                                                                             *
- * INPUT:    instance -- handle to program instance                                            *
- *                                                                                             *
- * OUTPUT:   Nothing                                                                           *
- *                                                                                             *
- * WARNINGS: None                                                                              *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *    10/10/95 4:08PM ST : Created                                                             *
- *=============================================================================================*/
-
-#define CC_ICON		IDI_SUN
-#define CC_CURSOR	IDC_CURSOR1
-
-#define WINDOW_NAME		L"Tiberian Sun"
-
-
-void Create_Main_Window ( HINSTANCE instance , int command_show , int width , int height )
+/// <summary>
+/// Starts SDL and opens the main window. A window for windowed play has the client size the
+/// WindowWidth and WindowHeight settings give, taking the frame's size for either one that
+/// is not set; otherwise the window covers the primary display.
+/// </summary>
+/// <returns>False when SDL could not start or the window could not be created.</returns>
+bool Create_Main_Window(int command_show, int width, int height)
 {
+	// The rules chooser and the map editor are built from the common controls.
 	InitCommonControls();
 
-	WNDCLASSW   	wndclass ;
-	//
-	// Register the window class
-	//
-
-	/*
-	 * The dialog controls are hit tested through the main window, so its class has to
-	 * report the double clicks they expect.
-	 */
-	wndclass.style         = CS_HREDRAW | CS_VREDRAW | CS_DBLCLKS ;
-	wndclass.lpfnWndProc   = Windows_Procedure ;
-	wndclass.cbClsExtra    = 0 ;
-	wndclass.cbWndExtra    = 0 ;
-	wndclass.hInstance     = instance ;
-	wndclass.hIcon         = LoadIconW (instance, MAKEINTRESOURCEW(CC_ICON)) ;
-	wndclass.hCursor       = LoadCursorW(ProgramInstance, MAKEINTRESOURCEW(CC_CURSOR));
-	wndclass.hbrBackground = NULL;
-	wndclass.lpszMenuName  = NULL;	///WINDOW_NAME
-	wndclass.lpszClassName = WINDOW_NAME;
-
-	RegisterClassW (&wndclass) ;
-
-
-	//
-	// Create our main window
-	//
-	/*
-	 * The dialogs paint themselves onto the game's surfaces rather than into their own
-	 * windows, so clipping their regions out of the main window would leave holes where
-	 * they sit.
-	 */
-	if (WindowedMode) {
-		int clientwidth = (Options.WindowWidth > 0) ? Options.WindowWidth : width;
-		int clientheight = (Options.WindowHeight > 0) ? Options.WindowHeight : height;
-
-		MainWindow = CreateWindowExW (
-								0,
-								WINDOW_NAME,
-								WINDOW_NAME,
-								WS_OVERLAPPEDWINDOW,
-								0,
-								0,
-								0,
-								0,
-								NULL,
-								NULL,
-								instance,
-								NULL );
-
-		RECT rect;
-		SetRect(&rect, 0, 0, clientwidth, clientheight);
-		AdjustWindowRectEx(&rect, GetWindowLong(MainWindow, GWL_STYLE), FALSE, GetWindowLong(MainWindow, GWL_EXSTYLE));
-
-		int windowwidth = rect.right - rect.left;
-		int windowheight = rect.bottom - rect.top;
-		int x = (GetSystemMetrics(SM_CXSCREEN) - windowwidth) / 2;
-		int y = (GetSystemMetrics(SM_CYSCREEN) - windowheight) / 2;
-
-		MoveWindow(MainWindow, std::max(x, 0), std::max(y, 0), windowwidth, windowheight, 1);
-
-	} else {
-		/*
-		 * The desktop keeps its own resolution and the window simply covers it. The
-		 * frame is scaled to fit at presentation time.
-		 */
-		MainWindow = CreateWindowExW (
-								0,
-								WINDOW_NAME,
-								WINDOW_NAME,
-								WS_POPUP,
-								0,
-								0,
-								GetSystemMetrics(SM_CXSCREEN),
-								GetSystemMetrics(SM_CYSCREEN),
-								NULL,
-								NULL,
-								instance,
-								NULL );
+	if (!Platform_Init()) {
+		return(false);
 	}
 
-	ShowWindow (MainWindow, SW_NORMAL);
+	int clientwidth = width;
+	int clientheight = height;
+	if (WindowedMode) {
+		if (Options.WindowWidth > 0) {
+			clientwidth = Options.WindowWidth;
+		}
+		if (Options.WindowHeight > 0) {
+			clientheight = Options.WindowHeight;
+		}
+	}
+
+	if (!Platform_Create_Main_Window(WindowedMode, clientwidth, clientheight)) {
+		return(false);
+	}
+
+	MainWindow = (HWND)Platform_Native_Window().Handle;
 	ShowCommand = command_show;
-	UpdateWindow (MainWindow);
-	SetFocus (MainWindow);
+
+	ToolTips = new CCToolTip();
+	ToolTips->Set_Timer_Delay(500);
 
 	RegisterHotKey(MainWindow, 1, MOD_ALT|MOD_CONTROL|MOD_SHIFT, VK_M);
 
-	SetCursor(LoadCursor(ProgramInstance, MAKEINTRESOURCE(CC_CURSOR)));
-
-	//Misc_Focus_Loss_Function = &Focus_Loss;
-	//Misc_Focus_Restore_Function = &Focus_Restore;
-	//Gbuffer_Focus_Loss_Function = &Focus_Loss;
+	Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
+	return(true);
 }
 
 

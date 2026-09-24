@@ -177,6 +177,39 @@ bool Game_Window_Select_Cursor(void)
 
 
 /// <summary>
+/// Shows the pointer the interface or the game wants, or the window's arrow when neither
+/// chooses one. The arrow stays hidden while the game has hidden the pointer it released.
+/// </summary>
+void Game_Window_Update_Cursor(void)
+{
+	if (Game_Window_Select_Cursor()) {
+		return;
+	}
+
+	bool const visible = (MouseCursor == NULL || MouseCursor->Get_Mouse_State() >= 0);
+	Platform_Set_Cursor(visible ? Platform_System_Cursor(PLATFORM_CURSOR_ARROW) : NULL);
+}
+
+
+/// <summary>
+/// Lets go of the main window at shutdown. Nothing is pumped from it afterwards, and a clean
+/// shutdown in progress is marked finished.
+/// </summary>
+void Game_Window_Closed(void)
+{
+	if (ToolTips != NULL) {
+		delete ToolTips;
+		ToolTips = NULL;
+	}
+	MainWindow = NULL;
+
+	if (ReadyToQuit == 1) {
+		ReadyToQuit = 2;
+	}
+}
+
+
+/// <summary>
 /// Updates and presents the frame when the application window needs repainting.
 /// </summary>
 void Game_Window_On_Paint(bool update_surface)

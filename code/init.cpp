@@ -145,6 +145,7 @@
 #include "obscure.h"
 #include "opents_build.h"
 #include "overlay.h"
+#include "platform/platform.h"
 #include "overtype.h"
 #include "ovrlight.h"
 #include "ownrdraw.h"
@@ -857,7 +858,9 @@ static bool Init_Rules(void)
 		RuleINI = Rules[0];
 	} else {
 		MouseCursor->Release_Mouse();
+		Platform_Begin_Native_Modal();
 		int rules_choice = DialogBoxParam(ProgramInstance, MAKEINTRESOURCE(IDD_RULES_CHOICE), MainWindow, Rules_Choice_Dialog_Proc, (LPARAM)&Rules);
+		Platform_End_Native_Modal();
 		MouseCursor->Capture_Mouse();
 
 		if (rules_choice == -1) {
