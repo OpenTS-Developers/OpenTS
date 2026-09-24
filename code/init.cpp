@@ -1817,7 +1817,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 		**	Specify the random number seed (for debugging)
 		*/
 		if (strstr(string, "-SEED")) {
-			CustomSeed = (unsigned short)(atoi(string + strlen("SEED")));
+			CustomSeed = (unsigned short)(atoi(string + strlen("-SEED")));
 			continue;
 		}
 #endif

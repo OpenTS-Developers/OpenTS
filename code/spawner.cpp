@@ -421,6 +421,7 @@ static bool Spawner_Setup_Campaign(void)
 	Options.GameSpeed = SpawnConfig.GameSpeed;
 	Session.CampaignDifficulty = (DiffType)SpawnConfig.CampaignDifficulty;
 	Session.CampaignCDifficulty = (DiffType)SpawnConfig.CampaignCDifficulty;
+	CustomSeed = SpawnConfig.Seed;
 	Scen->Campaign = (CampaignType)SpawnConfig.CampaignID;
 
 	// A fresh launch carries nothing over, so the file's flags replace an earlier mission's.

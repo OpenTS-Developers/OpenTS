@@ -61,7 +61,7 @@ The game's startup movies are skipped, but the mission's own movies and [briefin
 
 As the mission begins, a message names its difficulty. The name is `DifficultyName` when the file sets it, and otherwise Hard, Medium or Easy for a `DifficultyModeComputer` of `0`, `1` or `2`.
 
-Of the [match options](#the-options-every-house-plays-under), a campaign mission uses only `GameSpeed` and `Firestorm`.
+Of the [match options](#the-options-every-house-plays-under), a campaign mission uses only `GameSpeed`, `Firestorm` and `Seed`.
 
 ## The options every house plays under
 
@@ -110,7 +110,7 @@ A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty sett
 
 `PlayMoviesInMultiplayer=yes` plays the scenario's movies, which a skirmish or a game against other machines otherwise leaves out. Every machine must have the same value and hold the movies; [multiplayer movies](/systems/multiplayer-movies/) owns what plays and how the machines skip a movie together.
 
-A nonzero `Seed` makes a launch repeatable: launching the same file again places every house the same way, and builds the same map from a scenario file with [`RandomMap=yes`](/keys/randommap/). In a skirmish, `0` draws a new seed at each launch. In a [game against other machines](#a-game-against-other-machines), every machine uses the seed exactly as written, `0` included, so write a new seed for each match.
+A nonzero `Seed` makes a launch repeatable: launching the same file again places every house the same way, and builds the same map from a scenario file with [`RandomMap=yes`](/keys/randommap/). In a skirmish or a campaign mission, `0` draws a new seed at each launch. In a [game against other machines](#a-game-against-other-machines), every machine uses the seed exactly as written, `0` included, so write a new seed for each match.
 
 `HarvesterTruce` applies only in a game against other machines. A skirmish ignores it, as a skirmish set up from the menu does.
 

@@ -2401,8 +2401,8 @@ launch_options:
   route_id: seed
   kind: launch
   title: Random seed
-  description: Selects a custom random seed; the current parser does not advance past the option name
-    and resolves the suffix to zero.
+  description: Seeds the random number generator with the number given, for a campaign mission or skirmish
+    started from the menu, so it repeats the same random draws each time. 0 draws a new seed.
   audience: debug
   availability: *id002
   syntax: -SEED<number>
