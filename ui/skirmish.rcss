@@ -1,0 +1,213 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 640dp;
+	height: 391dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+#content
+{
+	padding: 19dp 32dp 0 33dp;
+}
+
+#columns
+{
+	display: flex;
+}
+
+#left
+{
+	width: 394dp;
+	margin-right: 14dp;
+}
+
+#right
+{
+	width: 167dp;
+}
+
+#top
+{
+	display: flex;
+}
+
+#identity
+{
+	width: 118dp;
+	height: 178dp;
+	margin-right: 24dp;
+}
+
+#identity > .caption
+{
+	display: block;
+	height: 14dp;
+	line-height: 17dp;
+}
+
+#handle
+{
+	width: 116dp;
+	height: 18dp;
+	padding: 0 1dp 1dp 0;
+	margin-top: 5dp;
+	margin-left: 0;
+}
+
+#cap-side
+{
+	margin-top: 9dp;
+}
+
+#side
+{
+	width: 118dp;
+	margin-top: 1dp;
+}
+
+#cap-color
+{
+	margin-top: 8dp;
+}
+
+#color
+{
+	width: 118dp;
+	margin-top: 2dp;
+}
+
+#cap-map
+{
+	height: 17dp;
+	margin-top: 1dp;
+}
+
+#mapname
+{
+	width: 403dp;
+	height: 17dp;
+	margin-top: 9dp;
+}
+
+#switches
+{
+	width: 252dp;
+	height: 158dp;
+	padding: 14dp 0 0 8dp;
+}
+
+#switches > label:nth-child(even)
+{
+	margin-top: 1dp;
+}
+
+#map
+{
+	position: relative;
+	width: 324dp;
+	height: 174dp;
+	margin-top: 1dp;
+}
+
+#preview
+{
+	position: absolute;
+	left: -1dp;
+	top: -1dp;
+	width: 323dp;
+	height: 173dp;
+}
+
+#preview-caption
+{
+	position: absolute;
+	left: -1dp;
+	top: 70dp;
+	width: 323dp;
+	height: 22dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#settings
+{
+	width: 167dp;
+	height: 297dp;
+	padding: 9dp 0 0 5dp;
+}
+
+.setting > .caption
+{
+	display: block;
+	height: 14dp;
+	line-height: 17dp;
+}
+
+.setting > .row
+{
+	height: 23dp;
+	white-space: nowrap;
+}
+
+.setting input[type='range']
+{
+	width: 100dp;
+	height: 23dp;
+}
+
+.setting .trough, .setting .trough-edge
+{
+	height: 24dp;
+}
+
+.setting .trough
+{
+	line-height: 23dp;
+}
+
+#setting-units { height: 47dp; }
+#setting-units > .row { margin-top: 5dp; }
+#setting-credits { height: 47dp; }
+#setting-credits > .row { margin-top: 6dp; }
+#setting-tech { height: 48dp; }
+#setting-tech > .row { margin-top: 6dp; }
+#setting-ailevel { height: 47dp; }
+#setting-ailevel > .row { margin-top: 6dp; }
+#setting-aiplayers { height: 48dp; }
+#setting-aiplayers > .row { margin-top: 5dp; }
+#setting-speed > .row { margin-top: 5dp; }
+
+#pick
+{
+	width: 166dp;
+	margin-top: 5dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 3dp;
+}
+
+#ok
+{
+	width: 76dp;
+	margin-right: 14dp;
+}
+
+#cancel
+{
+	width: 76dp;
+}

@@ -1,0 +1,176 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 438dp;
+	height: 286dp;
+	top: 50%;
+	margin-top: -143dp;
+}
+
+.difficulty #reveal
+{
+	height: 336dp;
+	margin-top: -168dp;
+}
+
+.frontend #reveal
+{
+	height: 292dp;
+	margin-top: -146dp;
+}
+
+#content
+{
+	padding: 19dp 27dp 0 33dp;
+}
+
+.row
+{
+	display: block;
+	height: 25dp;
+	white-space: nowrap;
+}
+
+.row + .row
+{
+	margin-top: 26dp;
+}
+
+#row-detail, #row-difficulty
+{
+	margin-top: 25dp;
+}
+
+.frontend .row
+{
+	height: 22dp;
+}
+
+.frontend .row + .row, .frontend #row-detail, .frontend #row-difficulty
+{
+	margin-top: 14dp;
+}
+
+.row > .caption
+{
+	width: 95dp;
+	height: 25dp;
+	margin-right: 7dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: right;
+}
+
+.row > input[type='range']
+{
+	width: 192dp;
+	height: 25dp;
+}
+
+.row > .value
+{
+	width: 75dp;
+	height: 25dp;
+	margin-left: 9dp;
+	line-height: 17dp;
+}
+
+.frontend .row > .caption
+{
+	width: 87dp;
+	height: 22dp;
+	margin-right: 0;
+	text-align: left;
+}
+
+.frontend .row > input[type='range']
+{
+	width: 222dp;
+	height: 22dp;
+}
+
+.frontend .row > .value
+{
+	width: 68dp;
+	height: 22dp;
+	margin-left: 1dp;
+	padding-right: 1dp;
+	text-align: right;
+}
+
+#switches
+{
+	display: flex;
+	margin-top: 8dp;
+}
+
+.frontend #switches
+{
+	margin-top: 19dp;
+}
+
+#switches > .column
+{
+	width: 187dp;
+}
+
+.frontend #switches > .column
+{
+	width: 186dp;
+}
+
+#switches > .column > label.check + label.check
+{
+	margin-top: 10dp;
+}
+
+.frontend #switches > .column > label.check + label.check
+{
+	margin-top: 7dp;
+}
+
+.frontend #switches > .column > #switch-edge
+{
+	margin-top: 7dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 12dp;
+}
+
+.frontend #buttons
+{
+	margin-top: 10dp;
+}
+
+#buttons > button
+{
+	width: 116dp;
+}
+
+#sound
+{
+	margin-right: 14dp;
+}
+
+#keyboard
+{
+	margin-right: 15dp;
+}
+
+.frontend #ok
+{
+	width: 196dp;
+	margin-left: 88dp;
+}

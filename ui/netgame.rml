@@ -1,0 +1,72 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Network game</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="netgame.rcss"/>
+</head>
+<body template="dialog" data-model="netlobby">
+	<span class="caption" id="cap-side">Your Side:</span>
+	<select id="side" data-event-change="queue('side', ev.value)">
+		<option data-for="entry : sides" data-attr-value="it_index" data-attrif-selected="it_index == side">{{entry.label}}</option>
+	</select>
+	<span class="caption" id="cap-color">Your Color:</span>
+	<select id="color" data-event-change="queue('color', ev.value)">
+		<option data-for="entry : colors" data-attr-value="it_index" data-attrif-selected="it_index == color" data-style-color="entry.color">{{entry.label}}</option>
+	</select>
+
+	<button id="pick" data-if="host" data-event-click="queue('map')">Multiplayer Map</button>
+	<span class="caption" id="cap-map" data-if="!host">Map:</span>
+	<span class="caption" id="mapname">{{mapname}}</span>
+
+	<span class="caption" id="cap-players">Players:</span>
+	<div id="players" class="list"><div class="rows">
+		<div class="item" data-for="row : players" data-class-selected="row.selected" data-event-click="queue('pick', it_index)">
+			<span class="cell-mark"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
+			<span class="cell-house" data-attr-tip="row.hint"><img data-attr-src="row.house"/></span>
+			<span class="cell-name" data-style-color="row.color">{{row.name}}</span>
+		</div>
+	</div></div>
+
+	<div id="settings">
+		<div class="row" id="row-speed"><span class="caption">Game Speed<span data-if="host">:</span></span><input type="range" id="speed" step="1" min="0" max="6" data-attr-value="speed" data-attrif-disabled="!host" data-event-change="queue('speed', ev.value)"/><span class="trough">{{speed}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-aiplayers"><span class="caption">AI Players<span data-if="host">:</span></span><input type="range" id="aiplayers" step="1" min="0" max="6" data-attr-max="aiplayersmax" data-attr-value="aiplayers" data-attrif-disabled="!host" data-event-change="queue('aiplayers', ev.value)"/><span class="trough">{{aiplayers}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-ailevel"><span class="caption">AI Level<span data-if="host">:</span></span><input type="range" id="ailevel" step="1" min="0" max="2" data-attr-value="ailevel" data-attrif-disabled="!host" data-event-change="queue('ailevel', ev.value)"/><span class="trough">{{ailevel}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-units"><span class="caption">Unit Count<span data-if="host">:</span></span><input type="range" id="units" step="1" min="1" max="10" data-attr-min="unitsmin" data-attr-max="unitsmax" data-attr-value="units" data-attrif-disabled="!host" data-event-change="queue('units', ev.value)"/><span class="trough">{{units}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-tech"><span class="caption">Tech Level<span data-if="host">:</span></span><input type="range" id="tech" step="1" min="1" max="10" data-attr-max="techmax" data-attr-value="tech" data-attrif-disabled="!host" data-event-change="queue('tech', ev.value)"/><span class="trough">{{tech}}</span><span class="trough-edge"></span></div>
+		<div class="row" id="row-credits"><span class="caption">Credits<span data-if="host">:</span></span><input type="range" id="credits" step="100" min="2500" max="10000" data-attr-step="creditsstep" data-attr-min="creditsmin" data-attr-max="creditsmax" data-attr-value="credits" data-attrif-disabled="!host" data-event-change="queue('credits', ev.value)"/><span class="trough">{{credits}}</span><span class="trough-edge"></span></div>
+	</div>
+
+	<div id="switches">
+		<label class="check" id="switch-allies"><input type="checkbox" data-attrif-checked="allies" data-attrif-disabled="!host" data-event-click="queue('allies', allies ? 0 : 1)"/>Allies allowed</label>
+		<label class="check" id="switch-truce"><input type="checkbox" data-attrif-checked="truce" data-attrif-disabled="!host" data-event-click="queue('truce', truce ? 0 : 1)"/>Harvester Truce</label>
+		<label class="check" id="switch-bases"><input type="checkbox" data-attrif-checked="bases" data-attrif-disabled="!host" data-event-click="queue('bases', bases ? 0 : 1)"/>Bases</label>
+		<label class="check" id="switch-redeploy"><input type="checkbox" data-attrif-checked="redeploy" data-attrif-disabled="!host" data-event-click="queue('redeploy', redeploy ? 0 : 1)"/>Re-Deployable MCV</label>
+		<label class="check" id="switch-fog"><input type="checkbox" data-attrif-checked="fog" data-attrif-disabled="!host" data-event-click="queue('fog', fog ? 0 : 1)"/>Fog Of War</label>
+		<label class="check" id="switch-bridges"><input type="checkbox" data-attrif-checked="bridges" data-attrif-disabled="!host" data-event-click="queue('bridges', bridges ? 0 : 1)"/>Bridges Destroyable</label>
+		<label class="check" id="switch-crates"><input type="checkbox" data-attrif-checked="crates" data-attrif-disabled="!host" data-event-click="queue('crates', crates ? 0 : 1)"/>Crates</label>
+		<label class="check" id="switch-short"><input type="checkbox" data-attrif-checked="shortgame" data-attrif-disabled="!host" data-event-click="queue('short', shortgame ? 0 : 1)"/>Short Game</label>
+		<label class="check" id="switch-engineer"><input type="checkbox" data-attrif-checked="engineer" data-attrif-disabled="!host" data-event-click="queue('engineer', engineer ? 0 : 1)"/>Multi Engineer</label>
+	</div>
+
+	<div id="chat" class="list log"><div class="rows">
+		<p class="line" data-for="line : chat" data-style-color="line.color">{{line.text}}</p>
+	</div></div>
+	<input type="text" id="say" maxlength="255" data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
+
+	<div id="map" class="frame"><surface id="preview"/></div>
+
+	<button id="kick" data-if="host" tip="Kick a user from your game" data-event-click="queue('kick')"></button>
+	<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	<button id="go" data-if="host" data-class-disabled="!cango" data-event-click="queue('go')">Go!</button>
+	<button id="accept" data-if="!host" data-class-disabled="!canaccept" data-event-click="queue('accept')">Accept</button>
+</body>
+</rml>

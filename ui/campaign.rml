@@ -1,0 +1,28 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Select campaign</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="campaign.rcss"/>
+</head>
+<body template="dialog" data-model="campaign">
+	<p id="title">Select Campaign:</p>
+	<div id="campaigns" class="list"><div class="rows">
+		<div class="item" data-for="entry : entries" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{entry.description}}</div>
+	</div></div>
+	<div id="row-difficulty"><span class="caption">Difficulty</span><span class="value" id="difficulty-name">{{difficultyname}}</span></div>
+	<div id="row-slider"><input type="range" id="difficulty" min="0" max="2" step="1" data-attr-value="difficulty" data-event-change="queue('difficulty', ev.value)"/></div>
+	<div id="buttons">
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	</div>
+</body>
+</rml>

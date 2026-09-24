@@ -1,0 +1,53 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Out of sync</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="desync.rcss"/>
+</head>
+<body template="dialog" data-model="desync" data-class-counting="counting">
+	<p id="header">Synchronization Error</p>
+	<span id="cap-players" class="caption">Players:</span>
+
+	<div id="players" class="list"><div class="rows">
+		<div class="item" data-for="row : players">
+			<span class="cell-mark"><img data-if="row.mark != ''" data-attr-src="row.mark"/></span>
+			<span class="cell-name">{{row.name}}</span>
+			<span class="cell-status" data-style-color="row.color">{{row.status}}</span>
+		</div>
+	</div></div>
+
+	<div id="prose" class="host-only">
+		<p>The game has gone out of sync.</p>
+		<p>Press "Load Game" to load a saved game from this session, re-syncing the game for all players.</p>
+		<p>Press "Continue" to continue playing without the desynced players. They will continue in a separate game session.</p>
+		<p>Press "Quit" to exit the game.</p>
+	</div>
+	<div id="prose-wait" class="wait-only">
+		<p>The game has gone out of sync.</p>
+		<p>If there are saves available from this session, the game host can attempt to load a save to re-sync the game.</p>
+		<p>Alternatively, the host can choose for the desynced players to continue playing in separate game sessions.</p>
+		<p>Please wait while the host is making a decision.</p>
+	</div>
+
+	<div id="chat" class="list log"><div class="rows">
+		<div class="item" data-for="line : chat">{{line}}</div>
+	</div></div>
+	<input type="text" id="say" maxlength="255" data-value="say" data-event-change="queue('say', ev.linebreak, ev.value)"/>
+
+	<span id="countdown" data-if="counting">{{countdowntext}}</span>
+	<div id="countdown-frame" class="frame" data-if="counting"><div id="countdown-bar"></div></div>
+
+	<button id="load" class="host-only" data-class-disabled="!loadenabled" data-event-click="queue('load')">Load Game</button>
+	<button id="continue" class="host-only" data-class-disabled="!continueenabled" data-event-click="queue('continue')">Continue</button>
+	<button id="quit" data-class-disabled="!quitenabled" data-event-click="queue('quit')">Quit</button>
+</body>
+</rml>

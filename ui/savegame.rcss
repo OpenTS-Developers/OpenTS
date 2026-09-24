@@ -1,0 +1,160 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 454dp;
+	height: 323dp;
+	top: 50%;
+	margin-top: -161dp;
+}
+
+#content
+{
+	padding: 19dp 33dp 0 33dp;
+}
+
+#title
+{
+	height: 14dp;
+	padding-right: 1dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#headings
+{
+	margin-top: 9dp;
+	height: 14dp;
+	line-height: 17dp;
+	white-space: nowrap;
+}
+
+#heading-description
+{
+	display: inline-block;
+	width: 182dp;
+}
+
+#heading-stamp
+{
+	display: inline-block;
+	width: 108dp;
+	margin-left: 79dp;
+	padding-right: 1dp;
+	text-align: center;
+}
+
+.save #heading-stamp
+{
+	width: 99dp;
+	margin-left: 83dp;
+}
+
+.delete #heading-stamp
+{
+	width: 106dp;
+}
+
+#files
+{
+	margin-top: 9dp;
+	height: 202dp;
+}
+
+.save #files, .delete #files
+{
+	margin-top: 12dp;
+}
+
+.save #files
+{
+	height: 172dp;
+}
+
+.delete #files
+{
+	height: 199dp;
+}
+
+.item
+{
+	position: relative;
+}
+
+.item > span
+{
+	position: absolute;
+	top: 0;
+	white-space: nowrap;
+}
+
+.cell-description
+{
+	left: 2dp;
+}
+
+.cell-date
+{
+	left: 255dp;
+}
+
+.cell-time
+{
+	left: 315dp;
+}
+
+#description
+{
+	margin-top: 10dp;
+	margin-left: 0;
+	margin-right: 0;
+	height: 21dp;
+	width: 385dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 12dp;
+}
+
+.save #buttons
+{
+	margin-top: 5dp;
+}
+
+.delete #buttons
+{
+	margin-top: 13dp;
+}
+
+button
+{
+	width: 76dp;
+}
+
+#accept
+{
+	margin-left: 223dp;
+	margin-right: 13dp;
+}
+
+.save #accept
+{
+	margin-left: 228dp;
+	margin-right: 8dp;
+}
+
+.delete #accept
+{
+	margin-left: 226dp;
+	margin-right: 10dp;
+}

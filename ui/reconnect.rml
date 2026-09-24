@@ -1,0 +1,32 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Waiting for players</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="reconnect.rcss"/>
+</head>
+<body template="dialog" data-model="reconnect">
+	<div id="seats">
+		<div class="seat" data-for="player : players">
+			<button data-event-click="queue('kick', it_index)">{{player.name}}</button>
+			<div class="gauge frame"><div class="fill" data-attr-id="'bar-' + it_index"></div></div>
+		</div>
+	</div>
+
+	<span id="timeremaining" class="sans">{{timeremaining}}</span>
+
+	<div id="messages" class="list log"><div class="rows">
+		<div class="item" data-for="line : messages">{{line}}</div>
+	</div></div>
+
+	<button id="cancel" class="wide" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+</body>
+</rml>

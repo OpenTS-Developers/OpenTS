@@ -1,0 +1,696 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+/* The document, and the elements a screen lays out in blocks. */
+body
+{
+	width: 100%;
+	height: 100%;
+	font-family: dlgsys;
+	font-size: 16dp;
+	color: #70ff00;
+}
+
+div, form, h1, h2, p
+{
+	display: block;
+}
+
+/* The frame a screen opens inside: the backdrop, the slide, and the chrome. */
+#backdrop
+{
+	width: 100%;
+	height: 100%;
+}
+
+#reveal
+{
+	position: relative;
+	height: 100%;
+	margin: 0 auto;
+	overflow: hidden;
+	clip: always;
+}
+
+#chrome
+{
+	height: 100%;
+}
+
+#wallpaper
+{
+	position: absolute;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	z-index: -1;
+	overflow: hidden;
+	clip: always;
+	background-color: #000000;
+	pointer-events: none;
+}
+
+#wallpaper-art
+{
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	width: 640dp;
+	height: 400dp;
+	margin-left: -320dp;
+	margin-top: -200dp;
+	decorator: image(dbak6440.pcx);
+}
+
+#bar-left, #bar-right
+{
+	position: absolute;
+	top: 0;
+	width: 24dp;
+	height: 100%;
+}
+
+#bar-left { left: 0; decorator: image(bar_ul.pcx scale-none left top), image(bar_ll.pcx scale-none left bottom), image(leftbar.pcx repeat-y left top); }
+#bar-right { right: 0; decorator: image(bar_ur.pcx scale-none left top), image(bar_lr.pcx scale-none left bottom), image(rightbar.pcx repeat-y left top); }
+
+@spritesheet glow
+{
+	src: glow.png;
+	glow-top-left: 0px 0px 16px 16px;
+	glow-top: 16px 0px 1px 16px;
+	glow-top-right: 17px 0px 16px 16px;
+	glow-left: 0px 16px 16px 1px;
+	glow-middle: 16px 16px 1px 1px;
+	glow-right: 17px 16px 16px 1px;
+	glow-bottom-left: 0px 17px 16px 16px;
+	glow-bottom: 16px 17px 1px 16px;
+	glow-bottom-right: 17px 17px 16px 16px;
+}
+
+#glow, #bar-left, #bar-right, #edge-left, #edge-right
+{
+	pointer-events: none;
+}
+
+#glow
+{
+	position: absolute;
+	left: 24dp;
+	top: 0;
+	right: 24dp;
+	bottom: 0;
+	z-index: -1;
+	decorator: tiled-box(glow-top-left, glow-top, glow-top-right, glow-left, glow-middle, glow-right, glow-bottom-left, glow-bottom, glow-bottom-right);
+}
+
+#edge-left, #edge-right
+{
+	display: none;
+	position: absolute;
+	top: 0;
+	width: 24dp;
+	height: 100%;
+}
+
+.revealing #edge-left { display: block; left: 0; decorator: image(leftbar.pcx repeat-y left top); }
+.revealing #edge-right { display: block; right: 0; decorator: image(rightbar.pcx repeat-y left top); }
+
+/* What every control shares: how it is measured, its border, and its focus order. */
+button, input, select, dataselect, option, progress, scrollbarvertical, textarea,
+.list, .trough, .group, .hotkey, .tooltip
+{
+	box-sizing: border-box;
+}
+
+input[type='range'], input[type='text'], input[type='password'], textarea, select, .hotkey
+{
+	box-sizing: content-box;
+	margin: -1dp;
+	border: 1dp #4eb6dc;
+}
+
+.list
+{
+	border: 1dp #4eb6dc;
+}
+
+button, .list
+{
+	tab-index: auto;
+}
+
+button.disabled, button[disabled], .list.log, .list[disabled]
+{
+	tab-index: none;
+}
+
+.list.log
+{
+	focus: none;
+}
+
+/* The focus mark while a screen is driven from the keyboard. It recolors the control,
+   because the renderer does not implement box-shadow. */
+.keys button:focus, .keys label.check:focus
+{
+	color: #ffffff;
+}
+
+.keys button.disabled:focus
+{
+	color: #387f00;
+}
+
+.keys .list:focus, .keys select:focus, .keys input[type='range']:focus
+{
+	border-color: #ffffff;
+}
+
+/* Buttons, in their normal, pressed and disabled forms. */
+button
+{
+	display: inline-block;
+	box-sizing: border-box;
+	height: 24dp;
+	border-width: 0 3dp 0 7dp;
+	border-color: transparent;
+	padding: 3dp 7dp 0 0;
+	text-align: center;
+	vertical-align: middle;
+	line-height: 17dp;
+	color: #70ff00;
+	background-color: #2b2b2b;
+	decorator: image(bue_li24.pcx scale-none left top) border-box, image(bue_ri24.pcx scale-none right top) border-box, image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide
+{
+	decorator: image(bue_li24.pcx scale-none left top) border-box, image(bue_ri24.pcx scale-none right top) border-box, image(bue_mi24.pcx repeat-x left top) padding-box;
+}
+
+button.tall
+{
+	height: 30dp;
+	padding-top: 6dp;
+	decorator: image(bue_li30.pcx scale-none left top) border-box, image(bue_ri30.pcx scale-none right top) border-box, image(bue_mi30.pcx scale-none center top) padding-box;
+}
+
+button:active
+{
+	position: relative;
+	top: 2dp;
+	border-width: 0 3dp 2dp 7dp;
+	padding: 4dp 6dp 0 1dp;
+	decorator: image(bde_li24.pcx scale-none left top) border-box, image(bde_ri24.pcx scale-none right top) padding-box, image(bde_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide:active
+{
+	decorator: image(bde_li24.pcx scale-none left top) border-box, image(bde_ri24.pcx scale-none right top) padding-box, image(bde_mi24.pcx repeat-x left top) padding-box;
+}
+
+button.tall:active
+{
+	border-bottom-width: 3dp;
+	padding-top: 7dp;
+	decorator: image(bde_li30.pcx scale-none left top) border-box, image(bde_ri30.pcx scale-none right top) padding-box, image(bde_mi30.pcx scale-none center top) padding-box;
+}
+
+button.disabled, button:disabled
+{
+	color: #387f00;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide.disabled, button.wide:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx repeat-x left top) padding-box;
+}
+
+button.tall.disabled, button.tall:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li30.pcx scale-none left top) border-box,
+		image(bue_ri30.pcx scale-none right top) border-box,
+		image(bue_mi30.pcx scale-none center top) padding-box;
+}
+
+button.disabled:active, button:disabled:active
+{
+	top: 0dp;
+	border-width: 0 3dp 0 7dp;
+	padding: 3dp 7dp 0 0;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx scale-none center top) padding-box;
+}
+
+button.wide.disabled:active, button.wide:disabled:active
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li24.pcx scale-none left top) border-box,
+		image(bue_ri24.pcx scale-none right top) border-box,
+		image(bue_mi24.pcx repeat-x left top) padding-box;
+}
+
+button.tall.disabled:active, button.tall:disabled:active
+{
+	padding-top: 6dp;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(bue_li30.pcx scale-none left top) border-box,
+		image(bue_ri30.pcx scale-none right top) border-box,
+		image(bue_mi30.pcx scale-none center top) padding-box;
+}
+
+/* Check boxes, and the label that clicks one. */
+@spritesheet check-off
+{
+	src: cue_i.pcx;
+	check-off: 0px 0px 18px 18px;
+}
+
+@spritesheet check-on
+{
+	src: cce_i.pcx;
+	check-on: 0px 0px 18px 18px;
+}
+
+input[type='checkbox']
+{
+	display: inline-block;
+	width: 18dp;
+	height: 18dp;
+	vertical-align: top;
+	background-color: #2b2b2b;
+	decorator: image(check-off);
+}
+
+input[type='checkbox']:checked
+{
+	decorator: image(check-on);
+}
+
+input[type='checkbox']:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box, image(check-off);
+}
+
+input[type='checkbox']:checked:disabled
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box, image(check-on);
+}
+
+label.check
+{
+	display: block;
+	line-height: 17dp;
+	min-height: 19dp;
+}
+
+label.check input[type='checkbox']
+{
+	margin-right: 2dp;
+}
+
+label.check.disabled, label.check:disabled
+{
+	color: #848a84;
+}
+
+/* Text: the caption beside a control, and the face the fields use. */
+.caption, .value
+{
+	display: inline-block;
+	box-sizing: border-box;
+	white-space: nowrap;
+	vertical-align: top;
+}
+
+.sans, input[type='text'], input[type='password'], textarea, .list, .tooltip, .hotkey, .group > label
+{
+	font-family: dlg-sans;
+	font-size: 16dp;
+	line-height: 16dp;
+}
+
+input selection, textarea selection
+{
+	background-color: #225061;
+	color: #70ff00;
+}
+
+input[type='text'], input[type='password'], textarea
+{
+	padding: 1dp;
+	color: #70ff00;
+	background-color: #000000b4;
+	caret-color: #70ff00;
+}
+
+/* Lists and their rows. */
+.list
+{
+	font-size: 13dp;
+	overflow-y: auto;
+}
+
+.list > .rows
+{
+	display: block;
+	min-height: 100%;
+	background-color: #000000b4;
+}
+
+.list .item
+{
+	display: block;
+	height: 14dp;
+	line-height: 13dp;
+	padding-left: 2dp;
+	color: #70ff00;
+}
+
+.list .item:checked, .list .item.selected
+{
+	background-color: #225061;
+}
+
+/* The scrollbar a list or a dropdown grows when its rows overflow. */
+scrollbarvertical
+{
+	width: 20dp;
+	border-left: 2dp #4eb6dc;
+}
+
+scrollbarvertical slidertrack
+{
+	width: 18dp;
+	margin-left: 2dp;
+}
+
+scrollbarvertical sliderbar
+{
+	width: 18dp;
+	min-height: 14dp;
+	margin-left: 2dp;
+	background-color: #39596a;
+	decorator: image(sbgript.pcx scale-none left top), image(sbgripb.pcx scale-none left bottom), image(sbgripm.pcx repeat-y left top);
+}
+
+scrollbarvertical sliderarrowdec, scrollbarvertical sliderarrowinc
+{
+	box-sizing: border-box;
+	width: 18dp;
+	height: 22dp;
+	margin-left: 2dp;
+	background-color: #ffffff28;
+	border-width: 2dp;
+	border-color: #ffffff7f #0000007f #0000007f #ffffff7f;
+}
+
+scrollbarvertical sliderarrowdec:active, scrollbarvertical sliderarrowinc:active
+{
+	border-color: #0000007f #ffffff7f #ffffff7f #0000007f;
+}
+
+scrollbarvertical sliderarrowdec { decorator: image(uparrowr.pcx scale-none left top) border-box; }
+scrollbarvertical sliderarrowinc { decorator: image(dnarrowr.pcx scale-none left top) border-box; }
+scrollbarvertical sliderarrowdec:active { decorator: image(uparrowp.pcx scale-none left top) border-box; }
+scrollbarvertical sliderarrowinc:active { decorator: image(dnarrowp.pcx scale-none left top) border-box; }
+
+/* Sliders, and the trough that reads out the value beside one. */
+input[type='range']
+{
+	display: inline-block;
+	vertical-align: top;
+	background-color: #000000b4;
+}
+
+input[type='range'] slidertrack
+{
+	margin-left: 2dp;
+	margin-right: -1dp;
+}
+
+input[type='range'] sliderbar
+{
+	width: 12dp;
+	height: 22dp;
+	margin-top: 1dp;
+	margin-left: -0.5dp;
+	margin-right: 0.5dp;
+	background-color: #70ff00;
+	decorator: image(trakgrip.pcx scale-none left top);
+}
+
+input[type='range']:disabled
+{
+	background-color: #000000da;
+	border-color: #484848;
+}
+
+input[type='range']:disabled sliderbar
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(trakgrip.pcx scale-none left top);
+}
+
+.trough
+{
+	display: inline-block;
+	width: 50dp;
+	height: 26dp;
+	padding: 0 1dp 0 1dp;
+	z-index: -1;
+	vertical-align: top;
+	text-align: center;
+	line-height: 25dp;
+	background-color: #000000b4;
+	decorator: image(trofl.pcx scale-none left top) border-box,
+		image(trofr.pcx scale-none right top) border-box,
+		image(trough-mid scale-none left top) border-box;
+}
+
+.trough.disabled
+{
+	color: #848a84;
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(trofl.pcx scale-none left top) border-box,
+		image(trofr.pcx scale-none right top) border-box,
+		image(trough-mid scale-none left top) border-box;
+}
+
+.trough-edge
+{
+	display: inline-block;
+	vertical-align: top;
+	width: 1dp;
+	height: 26dp;
+	background-color: #000000b4;
+}
+
+.trough-edge.disabled
+{
+	background-color: #000000da;
+}
+
+@spritesheet trough
+{
+	src: trofm.pcx;
+	trough-mid: 32px 0px 50px 24px;
+}
+
+/* Progress bars. */
+progress
+{
+	display: block;
+	height: 22dp;
+	background-color: #000000b4;
+	border: 1dp #4eb6dc;
+}
+
+progress fill
+{
+	height: 100%;
+	background-color: #ff0000;
+	decorator: horizontal-gradient(#ff000040 #ff0000);
+}
+
+/* A bordered block with a labeled rule, as the game options and keyboard screens use. */
+.group
+{
+	position: relative;
+	border: 1dp #4eb6dc;
+	border-top: 0;
+	padding: 11dp;
+}
+
+.group > .rule
+{
+	display: flex;
+	align-items: center;
+	position: absolute;
+	left: -1dp;
+	right: -1dp;
+	top: -8dp;
+	height: 16dp;
+	font-family: dlg-sans;
+	font-size: 16dp;
+	line-height: 16dp;
+	color: #70ff00;
+}
+
+.group > .rule > span
+{
+	display: block;
+	height: 1dp;
+	background-color: #4eb6dc;
+}
+
+.group > .rule > span:first-child
+{
+	width: 8dp;
+}
+
+.group > .rule > label
+{
+	display: block;
+	margin-left: 2dp;
+	white-space: nowrap;
+}
+
+.group > .rule > span:last-child
+{
+	flex: 1;
+	margin-left: 2dp;
+}
+
+/* Dropdowns, and the box one opens. */
+select
+{
+	display: block;
+	height: 24dp;
+	color: #70ff00;
+	background-color: #00000094;
+}
+
+select selectvalue
+{
+	padding: 4dp 0 0 2dp;
+	line-height: 17dp;
+	white-space: nowrap;
+}
+
+select selectarrow
+{
+	width: 18dp;
+	height: 22dp;
+	margin: 1dp 1dp 0 0;
+	decorator: image(dnarrowr.pcx scale-none left top);
+}
+
+select:disabled, select.disabled
+{
+	color: #848a84;
+	background-color: #000000ca;
+}
+
+select:disabled selectarrow, select.disabled selectarrow
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(dnarrowr.pcx scale-none left top);
+}
+
+select selectbox
+{
+	margin-top: 2dp;
+	padding: 2dp 0;
+	background-color: #000000b4;
+	border: 1dp #4eb6dc;
+	overflow-y: auto;
+}
+
+select option
+{
+	display: block;
+	height: 18dp;
+	margin: 1dp 0;
+	line-height: 18dp;
+	padding-left: 3dp;
+	color: #70ff00;
+}
+
+select option:checked
+{
+	background-color: #225061;
+}
+
+/* The field the keyboard screen shows a captured key in. */
+.hotkey
+{
+	display: block;
+	padding: 0 4dp;
+	color: #70ff00;
+}
+
+/* The tip a control shows while the pointer rests on it. It is laid out even while
+   hidden, so its size is known before it is placed. */
+#tip
+{
+	position: absolute;
+	z-index: 1;
+	visibility: hidden;
+	white-space: nowrap;
+}
+
+#tip.up
+{
+	visibility: visible;
+}
+
+
+/* A framed area, such as a map preview or a drawn surface. */
+.frame
+{
+	box-sizing: border-box;
+	border: 1dp #4eb6dc;
+}
+
+surface
+{
+	display: block;
+}
+
+.tooltip
+{
+	padding: 3dp 4dp;
+	color: #70ff00;
+	background-color: #0b1b22;
+	border: 1dp #4eb6dc;
+}
+
+/* The colors a screen sets on text by class. */
+.dim
+{
+	color: #109010;
+}
+
+.disabled
+{
+	color: #848a84;
+}

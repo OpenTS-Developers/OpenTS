@@ -1,0 +1,170 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 314dp;
+	height: 123dp;
+	top: 50%;
+	margin-top: -61dp;
+}
+
+.solo #reveal
+{
+	height: 228dp;
+	margin-top: -114dp;
+}
+
+#content
+{
+	padding: 19dp 83dp 0 82dp;
+}
+
+.solo #content
+{
+	padding-left: 70dp;
+	padding-right: 71dp;
+}
+
+button
+{
+	display: block;
+	width: 149dp;
+}
+
+.solo button
+{
+	width: 173dp;
+}
+
+#abort
+{
+	margin-top: 5dp;
+}
+
+#resume
+{
+	margin-top: 6dp;
+}
+
+.solo #briefing, .solo #abort
+{
+	margin-top: 4dp;
+}
+
+.solo #load, .solo #delete, .solo #resume
+{
+	margin-top: 3dp;
+}
+
+.solo #save
+{
+	margin-top: 5dp;
+}
+
+.internet #reveal
+{
+	width: 510dp;
+	height: 302dp;
+	margin-top: -151dp;
+}
+
+.internet #content
+{
+	position: relative;
+	padding: 0;
+}
+
+.internet #content > *
+{
+	position: absolute;
+}
+
+.internet button
+{
+	left: 180dp;
+	width: 149dp;
+	margin-top: 0;
+}
+
+.internet #controls { top: 13dp; }
+.internet #load { top: 41dp; }
+.internet #save { top: 68dp; }
+.internet #abort { top: 96dp; }
+.internet #resume { top: 123dp; }
+
+#timing
+{
+	left: 42dp;
+	top: 157dp;
+	width: 426dp;
+	height: 104dp;
+	padding: 0;
+}
+
+.internet #abort, .internet #resume
+{
+	margin-top: 0;
+}
+
+.internet .caption
+{
+	left: 58dp;
+	width: 88dp;
+	height: 22dp;
+	line-height: 17dp;
+}
+
+.internet input[type='range']
+{
+	left: 142dp;
+	width: 172dp;
+	height: 22dp;
+}
+
+.internet .trough
+{
+	width: 50dp;
+	height: 24dp;
+	line-height: 21dp;
+}
+
+#timing > .rule > span:first-child
+{
+	width: 9dp;
+}
+
+#timing > .rule > label
+{
+	margin-left: 1dp;
+}
+
+.internet .trough-edge
+{
+	height: 23dp;
+}
+
+.internet .value
+{
+	left: 370dp;
+	height: 22dp;
+	line-height: 17dp;
+	text-align: right;
+	padding-right: 1dp;
+}
+
+#cap-connection, #connection, #trough-connection, #edge-connection, #connection-name { top: 179dp; }
+#cap-speed, #speed, #trough-speed, #edge-speed, #speed-name { top: 215dp; }
+
+#trough-connection, #trough-speed { left: 314dp; }
+#edge-connection, #edge-speed { left: 364dp; }
+
+#connection-name { width: 96dp; }
+#speed-name { width: 68dp; }

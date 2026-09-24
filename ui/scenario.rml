@@ -1,0 +1,30 @@
+<!--
+	*************************************************************************
+	                              O P E N  T S
+	*************************************************************************
+	SPDX-License-Identifier: GPL-3.0-or-later
+	Copyright 2026 OpenTS contributors
+
+	See LICENSE.md for applicable additional terms and warranty disclaimers.
+-->
+<rml>
+<head>
+	<title>Select map</title>
+	<link type="text/template" href="dialog.rml"/>
+	<link type="text/rcss" href="scenario.rcss"/>
+</head>
+<body template="dialog" data-model="scenario">
+	<p id="title">Select Multiplayer Map</p>
+	<div id="columns">
+		<div id="maps" class="list"><div class="rows">
+			<div class="item" data-for="entry : entries" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{entry.label}}</div>
+		</div></div>
+		<div id="map" class="frame"><surface id="preview"/></div>
+	</div>
+	<div id="buttons">
+		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
+		<button id="random" data-event-click="queue('random')">Create Random Map</button>
+		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>
+	</div>
+</body>
+</rml>

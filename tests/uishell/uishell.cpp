@@ -1,0 +1,5195 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+#include "ui/uishell.h"
+
+#include "ui/rml/rmlfontfon.h"
+#include "ui/rml/rmlimage.h"
+#include "ui/rml/rmlkeys.h"
+#include "ui/rml/rmlrender.h"
+#include "ui/rml/rmlrendermath.h"
+#include "ui/rml/rmlsurface.h"
+#include "ui/rml/rmlsystem.h"
+#include "ui/rml/rmlview.h"
+#include "ui/screens/display/uidisplay.h"
+#include "ui/screens/gamectrl/uigamectrl.h"
+#include "ui/screens/gameopt/uigameopt.h"
+#include "ui/screens/keyboard/uikeyboard.h"
+#include "ui/screens/mainopt/uimainopt.h"
+#include "ui/screens/mapgen/uimapgen.h"
+#include "ui/screens/menu/uimenu.h"
+#include "ui/screens/msgbox/uimsgbox.h"
+#include "ui/screens/netlobby/uinetlobby.h"
+#include "ui/screens/reconnect/uireconnect.h"
+#include "ui/screens/savegame/uisavegame.h"
+#include "ui/screens/scenario/uiscenario.h"
+#include "ui/screens/skirmish/uiskirmish.h"
+#include "ui/screens/sound/uisound.h"
+#include "ui/screens/version/uiversion.h"
+#include "ui/screens/waitbox/uiwaitbox.h"
+#include "ui/uihost.h"
+#include "ui/uiinput.h"
+#include "ui/uiscreen.h"
+#include "ui/uiunicode.h"
+#include "ui/uiview.h"
+
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdio>
+#include <cstring>
+#include <filesystem>
+#include <fstream>
+#include <functional>
+#include <memory>
+#include <string>
+#include <vector>
+
+#undef GetFirstChild
+#undef GetNextSibling
+
+#include <RmlUi/Core.h>
+#include <RmlUi/Core/Elements/ElementFormControlInput.h>
+#include <RmlUi/Core/Elements/ElementFormControlSelect.h>
+#include <RmlUi/Core/Elements/ElementProgress.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+
+#include "opents_strings.h"
+
+#include <imgui.h>
+
+extern int UITestSheetLookups;
+
+namespace {
+
+int Failures = 0;
+
+
+void Check(bool condition, char const * what)
+{
+	std::printf("%-76s %s\n", what, condition ? "ok" : "FAILED");
+
+	if (!condition) {
+		Failures++;
+	}
+}
+
+
+class RecordingRenderInterfaceClass : public UIRmlRenderClass
+{
+	public:
+		int Compiled = 0;
+		int Rendered = 0;
+		int ReleasedGeometry = 0;
+		int Loaded = 0;
+		int Generated = 0;
+		int ReleasedTextures = 0;
+		int Unsupported = 0;
+		int Invalid = 0;
+		int Frames = 0;
+		int Transforms = 0;
+		int ClipMasks = 0;
+		bool ClipMaskEnabled = false;
+		bool ScissorOn = false;
+		int Unclipped = 0;
+		std::vector<Rml::Rectanglei> Scissors;
+		std::function<void(void)> OnRender;
+
+		virtual bool Init(void) override
+		{
+			return(true);
+		}
+
+		virtual void Shutdown(void) override
+		{
+		}
+
+		virtual void Begin_Frame(int, int, int, int) override
+		{
+			Frames++;
+		}
+
+		virtual void Begin_Dev_Frame(int, int, int, int) override
+		{
+		}
+
+		virtual void Render_ImGui(ImDrawData *) override
+		{
+		}
+
+		virtual void Destroy_ImGui_Textures(void) override
+		{
+		}
+
+		virtual int Texture_Limit(void) const override
+		{
+			return(4096);
+		}
+
+		virtual void Log_Resource_Counts(char const *) const override
+		{
+		}
+
+		virtual Rml::CompiledGeometryHandle CompileGeometry(Rml::Span<const Rml::Vertex> vertices, Rml::Span<const int> indices) override
+		{
+			Compiled++;
+
+			std::uint32_t bytes = 0;
+			bool finite = std::all_of(vertices.begin(), vertices.end(), [](Rml::Vertex const & vertex) {
+				return(std::isfinite(vertex.position.x) && std::isfinite(vertex.position.y) && std::isfinite(vertex.tex_coord.x) && std::isfinite(vertex.tex_coord.y));
+			});
+			if (!UI_Render_Index_Range(std::span<int const>(indices.data(), indices.size()), vertices.size())
+				|| vertices.size() > 65536 || !UI_Render_Byte_Count(vertices.size(), sizeof(Rml::Vertex), bytes) || !finite) {
+				Invalid++;
+			}
+
+			return((Rml::CompiledGeometryHandle)Compiled);
+		}
+
+		virtual void RenderGeometry(Rml::CompiledGeometryHandle, Rml::Vector2f, Rml::TextureHandle) override
+		{
+			Rendered++;
+			if (!ScissorOn) {
+				Unclipped++;
+			}
+			if (OnRender) {
+				OnRender();
+			}
+		}
+
+		virtual void ReleaseGeometry(Rml::CompiledGeometryHandle) override
+		{
+			ReleasedGeometry++;
+		}
+
+		virtual Rml::TextureHandle LoadTexture(Rml::Vector2i & dimensions, Rml::String const &) override
+		{
+			Loaded++;
+			dimensions = Rml::Vector2i(1, 1);
+			return((Rml::TextureHandle)(Loaded + Generated));
+		}
+
+		virtual Rml::TextureHandle GenerateTexture(Rml::Span<const Rml::byte>, Rml::Vector2i) override
+		{
+			Generated++;
+			return((Rml::TextureHandle)(Loaded + Generated));
+		}
+
+		virtual void ReleaseTexture(Rml::TextureHandle) override
+		{
+			ReleasedTextures++;
+		}
+
+		virtual void EnableScissorRegion(bool enable) override
+		{
+			ScissorOn = enable;
+		}
+
+		virtual void SetScissorRegion(Rml::Rectanglei region) override
+		{
+			Scissors.push_back(region);
+		}
+
+		virtual void EnableClipMask(bool enable) override
+		{
+			ClipMaskEnabled = enable;
+		}
+
+		virtual void RenderToClipMask(Rml::ClipMaskOperation, Rml::CompiledGeometryHandle, Rml::Vector2f) override
+		{
+			ClipMasks++;
+		}
+
+		virtual void SetTransform(Rml::Matrix4f const * transform) override
+		{
+			if (transform != nullptr) {
+				Transforms++;
+			}
+		}
+
+		virtual Rml::LayerHandle PushLayer(void) override
+		{
+			Unsupported++;
+			return(0);
+		}
+
+		virtual void CompositeLayers(Rml::LayerHandle, Rml::LayerHandle, Rml::BlendMode, Rml::Span<const Rml::CompiledFilterHandle>) override
+		{
+			Unsupported++;
+		}
+
+		virtual void PopLayer(void) override
+		{
+			Unsupported++;
+		}
+
+		virtual Rml::TextureHandle SaveLayerAsTexture(void) override
+		{
+			Unsupported++;
+			return(0);
+		}
+
+		virtual Rml::CompiledFilterHandle SaveLayerAsMaskImage(void) override
+		{
+			Unsupported++;
+			return(0);
+		}
+
+		virtual Rml::CompiledFilterHandle CompileFilter(Rml::String const &, Rml::Dictionary const &) override
+		{
+			Unsupported++;
+			return(0);
+		}
+
+		virtual void ReleaseFilter(Rml::CompiledFilterHandle) override
+		{
+		}
+
+		virtual Rml::CompiledShaderHandle CompileShader(Rml::String const &, Rml::Dictionary const &) override
+		{
+			Unsupported++;
+			return(0);
+		}
+
+		virtual void RenderShader(Rml::CompiledShaderHandle, Rml::CompiledGeometryHandle, Rml::Vector2f, Rml::TextureHandle) override
+		{
+			Unsupported++;
+		}
+
+		virtual void ReleaseShader(Rml::CompiledShaderHandle) override
+		{
+		}
+};
+
+
+class CountingSystemInterfaceClass : public Rml::SystemInterface
+{
+	public:
+		int Problems = 0;
+
+		virtual bool LogMessage(Rml::Log::Type type, Rml::String const & message) override
+		{
+			if (type == Rml::Log::LT_ERROR || type == Rml::Log::LT_ASSERT || type == Rml::Log::LT_WARNING) {
+				Problems++;
+				std::printf("  RmlUi: %s\n", message.c_str());
+			}
+			return(true);
+		}
+};
+
+
+class TestHostClass : public UIShellHostClass
+{
+	public:
+		UIFrameRect Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
+		bool Captured = false;
+		bool Unicode = false;
+		unsigned int CodePage = 65001;
+		bool Down[256] = {};
+		bool Toggled[256] = {};
+		int Presents = 0;
+		int PresentsNow = 0;
+		int Clears = 0;
+		int Focuses = 0;
+		int Now = 0;
+		bool Held = false;
+		UIShellClass * Shell = nullptr;
+		std::function<void(void)> OnClear;
+
+		virtual bool Key_Down(int virtualkey) const override
+		{
+			return(Down[virtualkey & 0xFF]);
+		}
+
+		virtual bool Key_Toggled(int virtualkey) const override
+		{
+			return(Toggled[virtualkey & 0xFF]);
+		}
+
+		virtual std::string System_Font_Path(char const *) const override
+		{
+			return(std::string());
+		}
+
+		std::vector<std::string> Samples;
+		int Clicks = 0;
+
+		virtual void Play_Sample(char const * name, float) override
+		{
+			Samples.push_back(name);
+		}
+
+		virtual void Play_Click(void) override
+		{
+			Clicks++;
+		}
+
+		bool Animate = false;
+
+		virtual bool Animate_Screens(void) const override
+		{
+			return(Animate);
+		}
+
+		int Magnification = 1;
+
+		virtual int Art_Magnification(void) const override
+		{
+			return(Magnification);
+		}
+
+		virtual bool Bitmap_System_Font(void) const override
+		{
+			return(true);
+		}
+
+		virtual bool Window_Is_Unicode(void) const override
+		{
+			return(Unicode);
+		}
+
+		virtual unsigned int Text_Code_Page(void) const override
+		{
+			return(CodePage);
+		}
+
+		int Applied = 0;
+		int Restored = 0;
+		UICursor LastCursor = UI_CURSOR_ARROW;
+
+		virtual void Apply_Cursor(UICursor cursor) override
+		{
+			Applied++;
+			LastCursor = cursor;
+		}
+
+		virtual void Restore_Game_Cursor(void) override
+		{
+			Restored++;
+			LastCursor = UI_CURSOR_ARROW;
+		}
+
+		virtual HWND Main_Window(void) const override
+		{
+			return(nullptr);
+		}
+
+		virtual UIFrameRect Frame(void) const override
+		{
+			return(Rect);
+		}
+
+		virtual void Mark_Overlay_Dirty(void) override
+		{
+		}
+
+		virtual void Present_If_Dirty(void) override
+		{
+			Presents++;
+			if (Shell != nullptr) {
+				Shell->Render_Overlay();
+			}
+		}
+
+		virtual void Present_Now(void) override
+		{
+			Presents++;
+			PresentsNow++;
+			if (Shell != nullptr) {
+				Shell->Render_Overlay();
+			}
+		}
+
+		virtual bool Movie_Playing(void) const override
+		{
+			return(false);
+		}
+
+		virtual bool Developer_Keys_Armed(void) const override
+		{
+			return(false);
+		}
+
+		virtual void Clear_Keyboard_Queue(void) override
+		{
+			Clears++;
+			if (OnClear) {
+				OnClear();
+			}
+		}
+
+		virtual void Focus_Main_Window(void) override
+		{
+			Focuses++;
+		}
+
+		virtual bool Take_Capture(void) override
+		{
+			bool took = !Captured;
+			Captured = true;
+			return(took);
+		}
+
+		virtual void Release_Capture(void) override
+		{
+			Captured = false;
+		}
+
+		virtual bool Screen_To_Client(int &, int &) const override
+		{
+			return(true);
+		}
+
+		virtual char const * String(int) const override
+		{
+			return("string");
+		}
+
+		virtual void Log(char const * text) override
+		{
+			std::printf("  shell: %s", text);
+		}
+
+		virtual int Milliseconds(void) const override
+		{
+			return(Held ? Now : (int)GetTickCount64());
+		}
+};
+
+
+class CountingSystemClass : public UIRmlSystemClass
+{
+	public:
+		int Problems = 0;
+
+		explicit CountingSystemClass(UIShellHostClass & host) :
+			UIRmlSystemClass(host)
+		{
+		}
+
+		virtual bool LogMessage(Rml::Log::Type type, Rml::String const & message) override
+		{
+			if (type == Rml::Log::LT_ERROR || type == Rml::Log::LT_ASSERT || type == Rml::Log::LT_WARNING) {
+				Problems++;
+			}
+			return(UIRmlSystemClass::LogMessage(type, message));
+		}
+};
+
+
+struct ShellFixtureType
+{
+	TestHostClass Host;
+	RecordingRenderInterfaceClass * Render;
+	CountingSystemClass * System;
+	UIShellClass Shell;
+
+	ShellFixtureType(void) :
+		Render(new RecordingRenderInterfaceClass()),
+		System(new CountingSystemClass(Host)),
+		Shell(Host, std::unique_ptr<UIRmlSystemClass>(System), nullptr, std::unique_ptr<UIRmlRenderClass>(Render))
+	{
+		Host.Shell = &Shell;
+	}
+};
+
+
+bool Send(UIShellClass & shell, UINT message, WPARAM wparam = 0, LPARAM lparam = 0)
+{
+	return(shell.Handle_Window_Message(nullptr, message, wparam, lparam));
+}
+
+
+Rml::Vector2f Center_Of(Rml::Element * element)
+{
+	return(element->GetAbsoluteOffset(Rml::BoxArea::Border) + element->GetBox().GetSize(Rml::BoxArea::Border) * 0.5f);
+}
+
+
+LPARAM Element_Point(TestHostClass const & host, Rml::Element * element)
+{
+	Rml::Vector2f center = Center_Of(element);
+	return(MAKELPARAM((int)center.x + host.Rect.X, (int)center.y + host.Rect.Y));
+}
+
+
+void Click_Through_Hook(UIShellClass & shell, TestHostClass & host, Rml::Element * element)
+{
+	LPARAM at = Element_Point(host, element);
+
+	Send(shell, WM_MOUSEMOVE, 0, at);
+	host.Down[VK_LBUTTON] = true;
+	Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+	host.Down[VK_LBUTTON] = false;
+	Send(shell, WM_LBUTTONUP, 0, at);
+}
+
+
+bool Slider_Parts(Rml::Element * slider, Rml::Element * & bar, Rml::Element * & track)
+{
+	bar = nullptr;
+	track = nullptr;
+
+	for (int index = 0; index < slider->GetNumChildren(true); index++) {
+		Rml::Element * child = slider->GetChild(index);
+		if (child->GetTagName() == "sliderbar") {
+			bar = child;
+		} else if (child->GetTagName() == "slidertrack") {
+			track = child;
+		}
+	}
+
+	return(bar != nullptr && track != nullptr);
+}
+
+
+LPARAM Past_Track_End(TestHostClass const & host, Rml::Element * bar, Rml::Element * track)
+{
+	int const y = (int)Center_Of(bar).y + host.Rect.Y;
+	int const past = (int)(track->GetAbsoluteOffset(Rml::BoxArea::Border).x + track->GetBox().GetSize(Rml::BoxArea::Border).x) + host.Rect.X + 40;
+	return(MAKELPARAM(past, y));
+}
+
+
+bool Drag_Slider_To_End(UIShellClass & shell, TestHostClass & host, Rml::Element * slider)
+{
+	Rml::Element * bar = nullptr;
+	Rml::Element * track = nullptr;
+	if (!Slider_Parts(slider, bar, track)) {
+		return(false);
+	}
+
+	LPARAM const start = Element_Point(host, bar);
+	LPARAM const end = Past_Track_End(host, bar, track);
+
+	bool consumed = Send(shell, WM_MOUSEMOVE, 0, start);
+	host.Down[VK_LBUTTON] = true;
+	consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, start) && consumed;
+	consumed = Send(shell, WM_MOUSEMOVE, MK_LBUTTON, end) && consumed;
+	host.Down[VK_LBUTTON] = false;
+	consumed = Send(shell, WM_LBUTTONUP, 0, end) && consumed;
+	return(consumed);
+}
+
+
+std::string Read_Text(std::filesystem::path const & path)
+{
+	std::ifstream stream(path, std::ios::binary);
+	return(std::string((std::istreambuf_iterator<char>(stream)), std::istreambuf_iterator<char>()));
+}
+
+
+bool References_Are_Bare(std::string const & text)
+{
+	static char const * const openers[] = { "href=\"", "src=\"", "url(" };
+
+	for (char const * opener : openers) {
+		size_t at = text.find(opener);
+		while (at != std::string::npos) {
+			size_t start = at + std::strlen(opener);
+			size_t end = text.find_first_of("\")", start);
+			if (end == std::string::npos) {
+				return(false);
+			}
+			std::string reference = text.substr(start, end - start);
+			if (reference.find_first_of("/\\") != std::string::npos) {
+				std::printf("  %s is not a bare name\n", reference.c_str());
+				return(false);
+			}
+			at = text.find(opener, end);
+		}
+	}
+
+	return(true);
+}
+
+
+void Test_FreeType(void)
+{
+	FT_Library library = nullptr;
+	Check(FT_Init_FreeType(&library) == 0 && library != nullptr, "FreeType initializes a library");
+
+	if (library != nullptr) {
+		FT_Int major = 0;
+		FT_Int minor = 0;
+		FT_Int patch = 0;
+		FT_Library_Version(library, &major, &minor, &patch);
+		std::printf("  FreeType %d.%d.%d\n", major, minor, patch);
+		Check(major == 2, "FreeType reports the 2.x API");
+
+		FT_Done_FreeType(library);
+	}
+}
+
+
+void Draw_ImGui_Test_Window(void)
+{
+	ImGui::SetNextWindowSize(ImVec2(400.0f, 300.0f), ImGuiCond_Always);
+	ImGui::Begin("Test window");
+	ImGui::TextUnformatted("A frame drawn without a renderer.");
+	if (ImGui::BeginTable("rows", 3, ImGuiTableFlags_Borders)) {
+		ImGui::TableSetupColumn("Process");
+		ImGui::TableSetupColumn("Frame %");
+		ImGui::TableSetupColumn("Average");
+		ImGui::TableHeadersRow();
+		for (int row = 0; row < 3; row++) {
+			ImGui::TableNextRow();
+			ImGui::TableNextColumn();
+			ImGui::Text("Row %d", row);
+			ImGui::TableNextColumn();
+			ImGui::Text("%.1f", row * 10.0f);
+			ImGui::TableNextColumn();
+			ImGui::Text("%d", row * 100);
+		}
+		ImGui::EndTable();
+	}
+	ImGui::End();
+}
+
+
+void Test_ImGui(void)
+{
+	Check(IMGUI_CHECKVERSION(), "ImGui header and library agree on structure layouts");
+
+	ImGuiContext * context = ImGui::CreateContext();
+	Check(context != nullptr, "ImGui creates a context");
+	std::printf("  Dear ImGui %s\n", ImGui::GetVersion());
+	if (context == nullptr) {
+		return;
+	}
+
+	ImGuiIO & io = ImGui::GetIO();
+	io.IniFilename = nullptr;
+	io.LogFilename = nullptr;
+	io.BackendFlags |= ImGuiBackendFlags_RendererHasTextures | ImGuiBackendFlags_RendererHasVtxOffset;
+	io.DisplaySize = ImVec2(1280.0f, 800.0f);
+	io.DeltaTime = 1.0f / 60.0f;
+
+	ImGui::NewFrame();
+	Draw_ImGui_Test_Window();
+	ImGui::Render();
+
+	ImDrawData * data = ImGui::GetDrawData();
+	Check(data != nullptr && data->Valid, "the first ImGui frame produces draw data");
+	Check(data != nullptr && data->CmdLists.Size > 0 && data->TotalVtxCount > 0, "the first ImGui frame draws geometry");
+
+	ImTextureData * atlas = nullptr;
+	if (data != nullptr && data->Textures != nullptr && data->Textures->Size == 1) {
+		atlas = (*data->Textures)[0];
+	}
+	Check(atlas != nullptr, "the first ImGui frame lists one texture, the font atlas");
+	Check(atlas != nullptr && atlas->Status == ImTextureStatus_WantCreate, "the font atlas asks to be created");
+	Check(atlas != nullptr && atlas->Format == ImTextureFormat_RGBA32 && atlas->Width > 0 && atlas->Height > 0, "the font atlas is RGBA32 with a size");
+
+	if (atlas != nullptr) {
+		atlas->SetTexID((ImTextureID)1);
+		atlas->SetStatus(ImTextureStatus_OK);
+	}
+
+	ImGui::NewFrame();
+	Draw_ImGui_Test_Window();
+	ImGui::Render();
+	data = ImGui::GetDrawData();
+
+	bool acknowledged = data != nullptr && data->Textures != nullptr;
+	if (acknowledged) {
+		for (ImTextureData * texture : *data->Textures) {
+			if (texture->Status != ImTextureStatus_OK) {
+				acknowledged = false;
+			}
+		}
+	}
+	Check(acknowledged, "the second ImGui frame leaves every texture acknowledged");
+
+	bool textured = data != nullptr;
+	if (textured) {
+		for (ImDrawList const * list : data->CmdLists) {
+			for (ImDrawCmd const & command : list->CmdBuffer) {
+				if (command.UserCallback == nullptr && command.ElemCount > 0 && command.GetTexID() == ImTextureID_Invalid) {
+					textured = false;
+				}
+			}
+		}
+	}
+	Check(textured, "every ImGui draw command carries a texture id");
+
+	ImGui::DestroyContext(context);
+}
+
+
+void Test_Coordinates(void)
+{
+	UIPointerPosition position = UI_Client_To_Overlay(0, 0, 640, 480, 100, 200);
+	Check(position.Inside && position.X == 100 && position.Y == 200, "an unscaled frame maps client pixels to itself");
+
+	position = UI_Client_To_Overlay(160, 0, 960, 720, 160, 0);
+	Check(position.Inside && position.X == 0 && position.Y == 0, "the top left corner of the frame is inside at the origin");
+	position = UI_Client_To_Overlay(160, 0, 960, 720, 159, 10);
+	Check(!position.Inside && position.X == -1, "a point on the left bar is outside and keeps its offset");
+	position = UI_Client_To_Overlay(160, 0, 960, 720, 1119, 719);
+	Check(position.Inside && position.X == 959 && position.Y == 719, "the last pixel of the frame is inside");
+	position = UI_Client_To_Overlay(160, 0, 960, 720, 1120, 719);
+	Check(!position.Inside && position.X == 960, "the right edge is exclusive");
+
+	position = UI_Client_To_Overlay(0, 0, 960, 720, 959, 719);
+	Check(position.Inside, "a fractional scale keeps its last pixel inside");
+	position = UI_Client_To_Overlay(0, 0, 960, 720, 960, 0);
+	Check(!position.Inside, "a fractional scale keeps the edge exclusive");
+
+	position = UI_Client_To_Overlay(0, 0, 960, 720, -5, 3);
+	Check(!position.Inside && position.X == -5, "a negative client position is outside with its offset kept");
+}
+
+
+class RecordingSoundServiceClass : public UISoundServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+
+		virtual void Set_Score_Volume(float volume, bool feedback) override { Record("score", volume, feedback); }
+		virtual void Set_Sound_Volume(float volume, bool feedback) override { Record("sound", volume, feedback); }
+		virtual void Set_Voice_Volume(float volume, bool feedback) override { Record("voice", volume, feedback); }
+		virtual void Set_Shuffle(bool on) override { Calls.push_back(on ? "shuffle on" : "shuffle off"); }
+		virtual void Set_Repeat(bool on) override { Calls.push_back(on ? "repeat on" : "repeat off"); }
+		virtual void Play(int theme) override { Calls.push_back("play " + std::to_string(theme)); }
+		virtual void Stop(void) override { Calls.push_back("stop"); }
+
+		std::string Joined(void) const
+		{
+			std::string all;
+			for (std::string const & call : Calls) {
+				all += (all.empty() ? "" : "; ") + call;
+			}
+			return(all);
+		}
+
+	private:
+		void Record(char const * what, float volume, bool feedback)
+		{
+			char text[64];
+			std::snprintf(text, sizeof(text), "%s %.1f%s", what, volume, feedback ? " feedback" : "");
+			Calls.push_back(text);
+		}
+};
+
+
+void Drive(UISoundPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+void Drive(UIPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+void Drive(UIPresenterClass & presenter, char const * name, int value, char const * text)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	intent.Text = text;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+class RecordingDisplayServiceClass : public UIDisplayServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+
+		virtual void Set_Stretch_Movies(bool on) override { Calls.push_back(on ? "stretch on" : "stretch off"); }
+};
+
+
+class FakeClockClass : public UIClockClass
+{
+	public:
+		int Now = 0;
+
+		virtual int Milliseconds(void) override { return(Now); }
+};
+
+
+UIDisplayState Display_Fixture(void)
+{
+	UIDisplayState state;
+	state.Modes = { { 640, 400, "640 x 400" }, { 1280, 800, "1280 x 800" }, { 1920, 1080, "1920 x 1080" } };
+	state.Selected = 1;
+	return(state);
+}
+
+
+void Test_Display_Presenter(void)
+{
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 2);
+		Drive(presenter, "stretch", 1);
+		Check(presenter.State.Selected == 2 && presenter.State.StretchMovies && service.Calls.empty() && !presenter.Picked.has_value(), "display edits are held until the player accepts");
+
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls.size() == 1 && service.Calls[0] == "stretch on", "accepting the display options applies the movie switch");
+		Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "accepting with a new row hands the caller that mode to try");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 2);
+		Drive(presenter, "select", 1);
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls.size() == 1 && service.Calls[0] == "stretch off", "accepting on the starting row applies the switch and tries no mode");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 0);
+		Drive(presenter, "stretch", 1);
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty() && !presenter.Picked.has_value(), "cancelling the display options applies nothing");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Drive(presenter, "select", 7);
+		Check(presenter.State.Selected == -1, "a row outside the list selects nothing");
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && !presenter.Picked.has_value(), "accepting with no row selected tries no mode");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayState state = Display_Fixture();
+		state.Selected = -1;
+		UIDisplayPresenterClass presenter(service, state);
+		Drive(presenter, "select", 0);
+		Drive(presenter, "ok");
+		Check(presenter.Picked.has_value() && presenter.Picked->Width == 640 && presenter.Picked->Height == 400, "a pick with no starting row is a mode to try");
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		Check(presenter.Seconds == 10, "the confirmation starts with the full ten seconds");
+
+		clock.Now = 5000;
+		presenter.Refresh();
+		Check(presenter.Seconds == 10 && !presenter.Result.has_value(), "the clock starts at the first refresh");
+
+		clock.Now = 5000 + 8100;
+		presenter.Refresh();
+		Check(presenter.Seconds == 2 && !presenter.Result.has_value(), "the seconds left count down");
+
+		clock.Now = 5000 + 10000;
+		presenter.Refresh();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.TimedOut && presenter.Seconds == 0, "silence cancels the confirmation when the timeout passes");
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		presenter.Refresh();
+		Drive(presenter, "ok");
+		clock.Now = 20000;
+		presenter.Refresh();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.TimedOut, "OK keeps the mode and a later refresh does not overturn it");
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		presenter.Refresh();
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && !presenter.TimedOut, "Cancel refuses the mode before the timeout");
+	}
+}
+
+
+class RecordingKeyboardServiceClass : public UIKeyboardServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+		bool ConfirmAnswer = true;
+		std::vector<UIHotkeyBinding> ResetTable;
+
+		virtual std::string Key_Name(int key) override
+		{
+			return("K" + std::to_string(key));
+		}
+
+		virtual bool Confirm_Reset(void) override
+		{
+			Calls.push_back("confirm");
+			return(ConfirmAnswer);
+		}
+
+		virtual void Reset(std::vector<UIHotkeyBinding> & bindings) override
+		{
+			Calls.push_back("reset");
+			bindings = ResetTable;
+		}
+
+		virtual void Save(std::vector<UIHotkeyBinding> const & bindings) override
+		{
+			std::vector<UIHotkeyBinding> sorted = bindings;
+			std::sort(sorted.begin(), sorted.end(), [](UIHotkeyBinding const & a, UIHotkeyBinding const & b) {
+				return(a.Command < b.Command);
+			});
+			std::string call = "save";
+			for (UIHotkeyBinding const & binding : sorted) {
+				call += " " + std::to_string(binding.Command) + "=" + std::to_string(binding.Key);
+			}
+			Calls.push_back(call);
+		}
+};
+
+
+UIKeyboardState Keyboard_Fixture(void)
+{
+	UIKeyboardState state;
+	state.Commands = {
+		{ "Selection", "Select View", "Selects the view" },
+		{ "Interface", "Toggle Repair", "Toggles repair mode" },
+		{ "selection", "Scatter", "Scatters the selection" },
+		{ "Interface", "Alliance", "Toggles an alliance" },
+	};
+	state.Bindings = { { 577, 0 }, { 338, 1 }, { 88, 2 } };
+	return(state);
+}
+
+
+std::vector<int> Visible_Commands(UIKeyboardState const & state)
+{
+	std::vector<int> commands;
+	for (UIHotkeyRow const & row : state.Visible) {
+		commands.push_back(row.Command);
+	}
+	return(commands);
+}
+
+
+void Test_Keys(void)
+{
+	Check(UI_Key_Identifier(0x41) == Rml::Input::KI_A && UI_Key_Identifier(0x39) == Rml::Input::KI_9 && UI_Key_Identifier(0x70) == Rml::Input::KI_F1, "letters, digits and function keys map to their identifiers");
+	Check(UI_Key_Identifier(0x1B) == Rml::Input::KI_ESCAPE && UI_Key_Identifier(0x07) == Rml::Input::KI_UNKNOWN, "named keys map and an unassigned code stays unknown");
+
+	bool roundtrip = true;
+	for (int code = 0; code < 256; code++) {
+		Rml::Input::KeyIdentifier key = UI_Key_Identifier(code);
+		if (key != Rml::Input::KI_UNKNOWN && UI_Key_Identifier(UI_Virtual_Key(key)) != key) {
+			roundtrip = false;
+		}
+	}
+	Check(roundtrip, "every identifier maps back to a virtual key that maps to it");
+	Check(UI_Virtual_Key(Rml::Input::KI_UNKNOWN) == 0, "the unknown identifier has no virtual key");
+
+	Check(UI_Key_Number(Rml::Input::KI_A, false, true, false) == 577, "Control and A make the KEYBOARD.INI number 577");
+	Check(UI_Key_Number(Rml::Input::KI_R, true, false, false) == 338 && UI_Key_Number(Rml::Input::KI_X, false, false, false) == 88, "Shift adds 256 and a bare key is its virtual key");
+	Check(UI_Key_Number(Rml::Input::KI_F5, false, false, true) == (0x74 | 0x400), "Alt adds 1024");
+	Check(UI_Key_Number(Rml::Input::KI_LSHIFT, true, false, false) == 0 && UI_Key_Number(Rml::Input::KI_RCONTROL, false, true, false) == 0 && UI_Key_Number(Rml::Input::KI_LMENU, false, false, true) == 0, "a modifier on its own is no key");
+	Check(UI_Key_Number(Rml::Input::KI_UNKNOWN, false, false, false) == 0, "an unknown key is no key");
+}
+
+
+void Test_Keyboard_Presenter(void)
+{
+	RecordingKeyboardServiceClass service;
+	UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+
+	Check(presenter.State.Categories == std::vector<std::string>{ "Interface", "Selection" }, "the categories are listed once each, sorted without regard to case");
+	Check(presenter.State.Category == 0 && Visible_Commands(presenter.State) == std::vector<int>{ 3, 1 } && presenter.State.Selected == -1, "the first category opens with its commands sorted by name and none selected");
+	Check(presenter.State.Visible.size() == 2 && presenter.State.Visible[0].Name == "Alliance", "a row carries its command's name");
+
+	Drive(presenter, "category", 1);
+	Check(Visible_Commands(presenter.State) == std::vector<int>{ 2, 0 } && presenter.State.Description.empty(), "another category lists its own commands with the description cleared");
+
+	Drive(presenter, "select", 0);
+	Check(presenter.State.Description == "Selects the view" && presenter.State.Shortcut == "K577", "selecting a command shows its description and shortcut");
+
+	Drive(presenter, "capture", 338);
+	Check(presenter.State.CapturedName == "K338" && presenter.State.AssignedTo == "Toggle Repair", "a captured key names the command that holds it");
+
+	Drive(presenter, "capture", 999);
+	Check(presenter.State.AssignedTo.empty(), "a free key names no command");
+
+	Drive(presenter, "capture", 338);
+	Drive(presenter, "assign");
+	Check(presenter.Key_Of(0) == 338 && presenter.Key_Of(1) == 0 && presenter.Owner_Of(577) == -1, "assigning moves the key to the selected command and unbinds its previous holder");
+	Check(presenter.State.Shortcut == "K338" && presenter.State.Captured == 0 && presenter.State.AssignedTo.empty(), "assigning shows the new shortcut and clears the capture");
+
+	Drive(presenter, "select", 2);
+	Drive(presenter, "assign");
+	Check(presenter.Key_Of(2) == 0 && presenter.State.Shortcut.empty(), "assigning an empty capture unbinds the command");
+
+	Drive(presenter, "select", -1);
+	Drive(presenter, "capture", 65);
+	Drive(presenter, "assign");
+	Check(presenter.Owner_Of(65) == -1 && presenter.State.Captured == 65, "assigning with no command selected changes nothing");
+
+	Check(service.Calls.empty(), "nothing reaches the game before the player accepts");
+
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "save 0=338" }, "OK saves the edited table");
+
+	{
+		RecordingKeyboardServiceClass quiet;
+		UIKeyboardPresenterClass cancelled(quiet, Keyboard_Fixture());
+		Drive(cancelled, "select", 3);
+		Drive(cancelled, "capture", 70);
+		Drive(cancelled, "assign");
+		Drive(cancelled, "cancel");
+		Check(cancelled.Result.has_value() && *cancelled.Result == UI_RESULT_CANCELLED && quiet.Calls.empty(), "Cancel drops the edits without a call");
+	}
+
+	{
+		RecordingKeyboardServiceClass declined;
+		declined.ConfirmAnswer = false;
+		UIKeyboardPresenterClass kept(declined, Keyboard_Fixture());
+		Drive(kept, "category", 1);
+		Drive(kept, "reset");
+		Check(declined.Calls == std::vector<std::string>{ "confirm" } && kept.Key_Of(0) == 577 && kept.State.Category == 1, "a declined reset asks and changes nothing");
+	}
+
+	{
+		RecordingKeyboardServiceClass confirmed;
+		confirmed.ResetTable = { { 65, 3 } };
+		UIKeyboardPresenterClass reset(confirmed, Keyboard_Fixture());
+		Drive(reset, "category", 1);
+		Drive(reset, "select", 0);
+		Drive(reset, "reset");
+		Check(confirmed.Calls == std::vector<std::string>{ "confirm", "reset" } && reset.Key_Of(3) == 65 && reset.Key_Of(0) == 0, "a confirmed reset reloads the table from the game");
+		Check(reset.State.Category == 0 && reset.State.Selected == -1 && reset.State.Description.empty(), "a reset reopens the first category with nothing selected");
+	}
+}
+
+
+void Test_Sound_Presenter(void)
+{
+	Check(UISoundPresenterClass::Level_Of(0.7f) == 7 && UISoundPresenterClass::Level_Of(0.04f) == 0 && UISoundPresenterClass::Level_Of(1.0f) == 10, "volumes round to slider levels the way the dialog did");
+
+	RecordingSoundServiceClass service;
+	UISoundState state;
+	state.Score = 7;
+	state.Sound = 5;
+	state.Voice = 10;
+	state.Enabled = true;
+	state.InGame = true;
+	state.Tracks.push_back({ "01 - First [3:00]", 5 });
+	state.Tracks.push_back({ "02 - Second [2:30]", 6 });
+	state.Tracks.push_back({ "03 - Third [4:05]", 9 });
+	state.Selected = 1;
+
+	UISoundPresenterClass presenter(service, state);
+
+	Drive(presenter, "score", 7);
+	Drive(presenter, "sound", 5);
+	Drive(presenter, "voice", 10);
+	Check(service.Calls.empty(), "a slider reporting the level it already holds previews nothing");
+
+	Drive(presenter, "score", 4);
+	Check(presenter.State.Score == 4 && service.Joined() == "score 0.4 feedback", "a music slider move previews the new volume at once");
+	service.Calls.clear();
+
+	Drive(presenter, "voice", 2);
+	service.Calls.clear();
+	Drive(presenter, "voice", 14);
+	Check(presenter.State.Voice == 10 && service.Joined() == "voice 1.0 feedback", "a slider level is clamped to the top step");
+	service.Calls.clear();
+
+	Drive(presenter, "shuffle", 1);
+	Check(presenter.State.Shuffle && !presenter.State.Repeat && service.Joined() == "shuffle on; repeat off", "turning shuffle on turns repeat off");
+	service.Calls.clear();
+
+	Drive(presenter, "repeat", 1);
+	Check(presenter.State.Repeat && !presenter.State.Shuffle && service.Joined() == "repeat on; shuffle off", "turning repeat on turns shuffle off");
+	service.Calls.clear();
+
+	Drive(presenter, "repeat", 0);
+	Check(!presenter.State.Repeat && service.Joined() == "repeat off", "turning repeat off leaves shuffle alone");
+	service.Calls.clear();
+
+	Drive(presenter, "play");
+	Check(service.Joined() == "play 6", "play starts the selected track");
+	service.Calls.clear();
+
+	Drive(presenter, "select", 2);
+	Drive(presenter, "play");
+	Check(presenter.State.Selected == 2 && service.Joined() == "play 9", "play starts a newly selected track");
+	service.Calls.clear();
+
+	Drive(presenter, "select", 7);
+	Drive(presenter, "play");
+	Check(presenter.State.Selected == -1 && service.Calls.empty(), "a row outside the list selects nothing and plays nothing");
+
+	Drive(presenter, "stop");
+	Check(service.Joined() == "stop", "stop fades the music out");
+	service.Calls.clear();
+
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "score 0.4; sound 0.5; voice 1.0", "OK re-applies the levels without feedback and closes");
+}
+
+
+class RecordingGameControlsServiceClass : public UIGameControlsServiceClass
+{
+	public:
+		std::vector<std::string> Calls;
+
+		virtual void Set_Game_Speed(int speed) override { Calls.push_back("speed " + std::to_string(speed)); }
+		virtual void Set_Scroll_Rate(int rate) override { Calls.push_back("scroll " + std::to_string(rate)); }
+		virtual void Set_Detail_Level(int level) override { Calls.push_back("detail " + std::to_string(level)); }
+		virtual void Set_Cameo_Text(bool on) override { Calls.push_back(on ? "cameo on" : "cameo off"); }
+		virtual void Set_Action_Lines(bool on) override { Calls.push_back(on ? "lines on" : "lines off"); }
+		virtual void Set_Tool_Tips(bool on) override { Calls.push_back(on ? "tooltips on" : "tooltips off"); }
+		virtual void Set_Scroll_Coasting(bool on) override { Calls.push_back(on ? "coasting on" : "coasting off"); }
+		virtual void Set_Edge_Scroll(bool on) override { Calls.push_back(on ? "edge on" : "edge off"); }
+		virtual void Set_Difficulty(int difficulty) override { Calls.push_back("difficulty " + std::to_string(difficulty)); }
+		virtual void Save(void) override { Calls.push_back("save"); }
+
+		std::string Joined(void) const
+		{
+			std::string all;
+			for (std::string const & call : Calls) {
+				all += (all.empty() ? "" : "; ") + call;
+			}
+			return(all);
+		}
+};
+
+
+void Drive(UIGameControlsPresenterClass & presenter, char const * name, int value = 0)
+{
+	UIIntent intent;
+	intent.Name = name;
+	intent.Value = value;
+	presenter.Queue(intent);
+	presenter.Drain();
+}
+
+
+void Test_Game_Controls_Presenter(void)
+{
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.Speed = 3;
+		state.Scroll = 3;
+		state.Detail = 2;
+		state.Difficulty = 1;
+		state.InGame = false;
+		state.HasSpeed = true;
+		state.HasDifficulty = true;
+		state.SpeedNames = { "Slowest", "Slower", "Slow", "Medium", "Fast", "Faster", "Fastest" };
+		state.DetailNames = { "Low", "Medium", "High" };
+
+		UIGameControlsPresenterClass presenter(service, state);
+		Check(presenter.State.SpeedName == "Medium" && presenter.State.DetailName == "High" && presenter.State.ScrollName.empty(), "the presenter names the starting slider positions it has names for");
+
+		Drive(presenter, "speed", 5);
+		Drive(presenter, "detail", 9);
+		Drive(presenter, "cameo", 1);
+		Drive(presenter, "edge", 1);
+		Drive(presenter, "difficulty", 2);
+		Check(presenter.State.Speed == 5 && presenter.State.Detail == 2 && presenter.State.CameoText && presenter.State.EdgeScroll, "edits are held in the state and clamped");
+		Check(presenter.State.SpeedName == "Slower" && presenter.State.DetailName == "High", "an edit renames the slider position, the speed by how far along the slider it lies");
+		Check(service.Calls.empty(), "nothing is applied before the player accepts");
+
+		Drive(presenter, "ok");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "OK accepts the game controls");
+		Check(service.Joined() == "speed 5; scroll 3; detail 2; cameo on; lines off; tooltips off; coasting off; edge on; difficulty 2; save", "OK applies the settings in the accept path's order and saves");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		state.InGame = true;
+		state.HasSpeed = false;
+		state.HasDifficulty = false;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "sound");
+		Check(!presenter.Result.has_value() && service.Calls.empty(), "the Sound button does nothing without an audio device");
+
+		presenter.State.SoundEnabled = true;
+		Drive(presenter, "sound");
+		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts and names the sound options next");
+		Check(service.Joined() == "scroll 0; detail 0; cameo off; lines off; tooltips off; coasting off; edge off; save", "an Internet game applies no game speed and no difficulty");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state;
+		UIGameControlsPresenterClass presenter(service, state);
+		Drive(presenter, "scroll", 1);
+		Drive(presenter, "cancel");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Cancel applies nothing");
+	}
+}
+
+
+class RecordingMapGenServiceClass : public UIMapGenServiceClass
+{
+	public:
+		UIMapGenState Settings;
+		std::vector<std::string> Calls;
+
+		RecordingMapGenServiceClass(void)
+		{
+			Settings.Cliffs.Value = 50;
+			Settings.Cliffs.Maximum = 80;
+		}
+
+		virtual void Read(UIMapGenState & state) override { state = Settings; }
+		virtual void Set(char const * name, int value) override
+		{
+			Calls.push_back(std::string(name) + " " + std::to_string(value));
+			if (std::strcmp(name, "cliffs") == 0) {
+				Settings.Cliffs.Value = std::clamp(value, Settings.Cliffs.Minimum, Settings.Cliffs.Maximum);
+			}
+		}
+		virtual void Preview(void) override { Calls.push_back("preview"); }
+		virtual void Surprise(void) override { Calls.push_back("surprise"); }
+		virtual void Save(void) override { Calls.push_back("save"); }
+		virtual void Load(void) override { Calls.push_back("load"); }
+		virtual void Delete(void) override { Calls.push_back("delete"); }
+};
+
+
+void Test_Map_Generator_Presenter(void)
+{
+	RecordingMapGenServiceClass service;
+	UIMapGenPresenterClass presenter(service);
+	Check(presenter.State.Cliffs.Value == 50, "the generator screen opens on the generator's settings");
+
+	Drive(presenter, "cliffs", 70);
+	Check(presenter.State.Cliffs.Value == 70 && service.Calls.size() == 1 && service.Calls[0] == "cliffs 70", "a slider move reaches the generator and the model follows it at once");
+
+	Drive(presenter, "cliffs", 100);
+	Check(presenter.State.Cliffs.Value == 80, "a reading past the generator's bound comes back as the bound");
+
+	std::vector<UIMapGenOption> biomes = {
+		{ "Tundra", 0 }, { "Taiga", 1 }, { "Temperate", 2 }, { "Desert", 3 }, { "Mutated", 4 },
+	};
+	UI_Sort_Map_Gen_Options(biomes);
+	Check(biomes.front().Label == "Desert" && biomes.front().Value == 3
+		&& biomes.back().Label == "Tundra" && biomes.back().Value == 0, "the environments read alphabetically, each keeping the generator's number");
+
+	Check(UI_Map_Gen_Option_Value(biomes, 2) == 2, "a setting the generator holds is kept through the sort");
+	Check(UI_Map_Gen_Option_Value(biomes, 9) == 3, "and one it does not falls back to the first option shown");
+}
+
+
+void Test_Reconnect_Presenter(void)
+{
+	UIReconnectPresenterClass presenter;
+	presenter.State.Players.push_back({ "Host", 1.0f, "" });
+	presenter.State.Players.push_back({ "Guest", 0.5f, "" });
+	Check(!presenter.Cancelled && presenter.Take_Kick_Vote() == -1, "the notice opens with nothing asked for");
+
+	Drive(presenter, "kick", 1);
+	Check(presenter.Take_Kick_Vote() == 1 && presenter.Take_Kick_Vote() == -1, "a kick vote is handed over once");
+
+	Drive(presenter, "kick", 5);
+	Check(presenter.Take_Kick_Vote() == -1, "a kick must name a seat the notice shows");
+
+	Drive(presenter, "cancel");
+	Check(presenter.Cancelled, "cancel asks to leave the game");
+}
+
+
+void Test_Strings(void)
+{
+	int entries = (int)(sizeof(OpenTSStringNames) / sizeof(OpenTSStringNames[0]));
+	Check(OpenTSStringNameCount == entries, "the string table's count matches its entries");
+	Check(OpenTSStringNameCount > 700, "the string table carries the language header's identifiers");
+
+	int ok = -1;
+	for (OpenTSStringName const & entry : OpenTSStringNames) {
+		if (std::strcmp(entry.Name, "TXT_OK") == 0) {
+			ok = entry.Id;
+		}
+	}
+	Check(ok == 10, "TXT_OK maps to its identifier");
+
+	std::filesystem::path directory(OPENTS_UI_DIR);
+	int references = 0;
+	bool resolved = true;
+
+	for (std::filesystem::directory_entry const & entry : std::filesystem::directory_iterator(directory)) {
+		std::filesystem::path path = entry.path();
+		if (path.extension().string() != ".rml") {
+			continue;
+		}
+
+		std::string text = Read_Text(path);
+		size_t from = 0;
+		while (true) {
+			size_t open = text.find("[[", from);
+			size_t close = (open == std::string::npos) ? std::string::npos : text.find("]]", open + 2);
+			if (close == std::string::npos) {
+				break;
+			}
+
+			std::string name = text.substr(open + 2, close - open - 2);
+			bool known = false;
+			for (OpenTSStringName const & known_entry : OpenTSStringNames) {
+				if (name == known_entry.Name) {
+					known = true;
+				}
+			}
+			if (!known) {
+				std::printf("  %s names %s, which the table does not know\n", path.filename().string().c_str(), name.c_str());
+				resolved = false;
+			}
+
+			references++;
+			from = close + 2;
+		}
+	}
+
+	Check(resolved, "every string a document names exists in the table");
+	std::printf("  %d string references in the shipped documents\n", references);
+}
+
+
+std::string Data_Model_Name(std::string const & text)
+{
+	size_t start = text.find("data-model=\"");
+	if (start == std::string::npos) {
+		return("");
+	}
+	start += std::strlen("data-model=\"");
+	size_t end = text.find('"', start);
+	return(end == std::string::npos ? "" : text.substr(start, end - start));
+}
+
+
+static UIRmlViewClass & Rml(UIViewClass & view)
+{
+	return(static_cast<UIRmlViewClass &>(view));
+}
+
+
+class MissingViewClass : public UIRmlViewClass
+{
+	public:
+		explicit MissingViewClass(UIPresenterClass & presenter) :
+			UIRmlViewClass(presenter, "missing.rml", "missing")
+		{
+		}
+
+		virtual void Sync(void) override
+		{
+		}
+
+	protected:
+		virtual bool Bind(Rml::DataModelConstructor &) override
+		{
+			return(true);
+		}
+};
+
+
+void Test_Version_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		UIVersionPresenterClass presenter({ "Line 1", "Line 2" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the version view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the version screen raises no RmlUi warning or error");
+		Check(view->Is_Shown(), "the version screen is shown");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * lines = (document != nullptr) ? document->GetElementById("lines") : nullptr;
+
+		Rml::Element * rows = (lines != nullptr && lines->GetNumChildren() > 0) ? lines->GetChild(0) : nullptr;
+		int visible = 0;
+		for (int index = 0; rows != nullptr && index < rows->GetNumChildren(); index++) {
+			if (rows->GetChild(index)->IsVisible()) {
+				visible++;
+			}
+		}
+		Check(rows != nullptr && visible == 2, "the version screen lists one paragraph per line");
+
+		Rml::Element * ok = (document != nullptr) ? document->GetElementById("ok") : nullptr;
+		Check(ok != nullptr, "the version screen has its OK button");
+
+		if (ok != nullptr) {
+			Rml::Vector2f at = Center_Of(ok);
+			context.ProcessMouseMove((int)at.x, (int)at.y, 0);
+			context.Update();
+			Check(!context.ProcessMouseButtonDown(0, 0), "a press on OK interacts with the document");
+			context.ProcessMouseButtonUp(0, 0);
+			Check(!presenter.Result.has_value() && presenter.Has_Pending(), "the click queues an intent and does not act");
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "draining the click accepts the screen");
+		}
+
+		UIIntent late;
+		late.Name = "cancel";
+		presenter.Queue(late);
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.Has_Pending(), "an intent after the result is dropped");
+
+		view->Release();
+		context.Update();
+	}
+
+	for (int pass = 0; pass < 2; pass++) {
+		bool escape = (pass == 0);
+		UIVersionPresenterClass presenter({ "Line" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+
+		Check(Rml(*view).Prepare(context), escape ? "the version view prepares for the Escape pass" : "the version view prepares for the Enter pass");
+		view->Show(true);
+		context.Update();
+		context.ProcessKeyDown(escape ? Rml::Input::KI_ESCAPE : Rml::Input::KI_RETURN, 0);
+		context.ProcessKeyUp(escape ? Rml::Input::KI_ESCAPE : Rml::Input::KI_RETURN, 0);
+		context.Update();
+		presenter.Drain();
+
+		UIResult expected = escape ? UI_RESULT_CANCELLED : UI_RESULT_ACCEPTED;
+		Check(presenter.Result.has_value() && *presenter.Result == expected, escape ? "Escape cancels the version screen" : "Enter accepts the version screen");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIVersionPresenterClass presenter({});
+		UIIntent intent;
+		intent.Name = "ok";
+		presenter.Queue(intent);
+		Check(presenter.Has_Pending(), "a queued intent is pending until drained");
+		presenter.Discard();
+		Check(!presenter.Has_Pending() && !presenter.Result.has_value(), "discarding drops queued intents without a result");
+	}
+
+	{
+		UIVersionPresenterClass presenter({});
+		MissingViewClass view(presenter);
+		int before = system.Problems;
+
+		Check(!view.Prepare(context), "a missing document fails preparation");
+		Check(system.Problems > before, "a failed preparation is reported");
+		Check(!context.GetDataModel("missing"), "a failed preparation leaves no data model behind");
+		context.Update();
+	}
+}
+
+
+std::vector<Rml::Element *> Visible_Buttons(Rml::ElementDocument * document)
+{
+	std::vector<Rml::Element *> buttons;
+	if (document == nullptr) {
+		return(buttons);
+	}
+
+	Rml::ElementList all;
+	document->GetElementsByTagName(all, "button");
+	for (Rml::Element * element : all) {
+		if (element->IsVisible() && element->GetComputedValues().display() != Rml::Style::Display::None) {
+			buttons.push_back(element);
+		}
+	}
+
+	std::sort(buttons.begin(), buttons.end(), [](Rml::Element * a, Rml::Element * b) {
+		return(a->GetAbsoluteOffset(Rml::BoxArea::Border).x < b->GetAbsoluteOffset(Rml::BoxArea::Border).x);
+	});
+	return(buttons);
+}
+
+
+void Click(Rml::Context & context, Rml::Element * element)
+{
+	Rml::Vector2f at = Center_Of(element);
+	context.ProcessMouseMove((int)at.x, (int)at.y, 0);
+	context.Update();
+	context.ProcessMouseButtonDown(0, 0);
+	context.ProcessMouseButtonUp(0, 0);
+	context.Update();
+}
+
+
+void Test_Message_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		UIMessageBoxPresenterClass presenter("Do you want to abort the mission?", { "First", "Second", "Third" }, 0);
+		Check(presenter.Button_Count() == 3, "three captions make three buttons");
+
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "the message box view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the message box raises no RmlUi warning or error");
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
+		Check(buttons.size() == 3, "three buttons are visible");
+		bool ordered = buttons.size() == 3 && buttons[0]->GetInnerRML() == "First" && buttons[1]->GetInnerRML() == "Third" && buttons[2]->GetInnerRML() == "Second";
+		Check(ordered, "the buttons read first, third, second from left to right");
+
+		if (buttons.size() == 3) {
+			Click(context, buttons[1]);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == 2, "a click on the middle button answers with the third button");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Two buttons", { "OK", "Cancel", "" }, 0);
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "a two-button box prepares");
+		view->Show(true);
+		context.Update();
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
+		Check(buttons.size() == 2, "two buttons are visible");
+		if (buttons.size() == 2) {
+			float panel = Rml(*view).Document()->GetElementById("chrome")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			float right = buttons[1]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			Check(left < 60.0f && right > 250.0f, "two buttons take the outer slots");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.Choice == 1, "Escape answers with the second button");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("One button", { "OK", "", "" }, 0);
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "a one-button box prepares");
+		view->Show(true);
+		context.Update();
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
+		Check(buttons.size() == 1, "one button is visible");
+		if (buttons.size() == 1) {
+			float panel = Rml(*view).Document()->GetElementById("chrome")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			Check(left > 100.0f && left < 200.0f, "a lone button takes the middle slot");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Network", { "OK", "", "" }, 0);
+		presenter.Network = true;
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "the network box prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+		Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(436.0f, 147.0f), "the network box is the size its template comes to");
+
+		std::vector<Rml::Element *> buttons = Visible_Buttons(Rml(*view).Document());
+		Check(buttons.size() == 1, "the network box shows its lone button");
+		if (buttons.size() == 1) {
+			float panel = Rml(*view).Document()->GetElementById("chrome")->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+			float left = buttons[0]->GetAbsoluteOffset(Rml::BoxArea::Border).x - panel;
+			Check(left == 180.0f, "a lone button stands where the template puts OK");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Default", { "Yes", "No", "Maybe" }, 2);
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		Check(Rml(*view).Prepare(context), "a box with a default prepares");
+		view->Show(true);
+		context.Update();
+		context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+		context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == 2, "Enter answers with the default button");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Nothing", { "", "", "" }, 0);
+		Check(presenter.Button_Count() == 0, "empty captions make no buttons");
+	}
+}
+
+
+std::vector<Rml::Element *> Visible_Of_Class(Rml::ElementDocument * document, char const * name)
+{
+	std::vector<Rml::Element *> found;
+	if (document == nullptr) {
+		return(found);
+	}
+
+	Rml::ElementList all;
+	document->GetElementsByClassName(all, name);
+	for (Rml::Element * element : all) {
+		if (element->IsVisible() && element->GetComputedValues().display() != Rml::Style::Display::None) {
+			found.push_back(element);
+		}
+	}
+	return(found);
+}
+
+
+std::vector<Rml::Element *> Keyboard_Rows(Rml::ElementDocument * document);
+
+
+std::vector<Rml::Element *> Visible_Rows(Rml::ElementDocument * document, char const * listid)
+{
+	std::vector<Rml::Element *> found;
+	Rml::Element * list = document != nullptr ? document->GetElementById(listid) : nullptr;
+	if (list == nullptr) {
+		return(found);
+	}
+
+	Rml::Element * rows = list->GetNumChildren() > 0 && list->GetChild(0)->IsClassSet("rows") ? list->GetChild(0) : list;
+	for (int index = 0; index < rows->GetNumChildren(); index++) {
+		Rml::Element * row = rows->GetChild(index);
+		if (row->IsClassSet("item") && row->IsVisible() && row->GetComputedValues().display() != Rml::Style::Display::None) {
+			found.push_back(row);
+		}
+	}
+	return(found);
+}
+
+
+std::vector<Rml::Element *> Keyboard_Rows(Rml::ElementDocument * document)
+{
+	std::vector<Rml::Element *> rows;
+	Rml::ElementFormControlSelect * categories = document != nullptr ? rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("categories")) : nullptr;
+	if (categories != nullptr) {
+		for (int index = 0; index < categories->GetNumOptions(); index++) {
+			Rml::Element * option = categories->GetOption(index);
+			if (!option->HasAttribute("data-for")) {
+				rows.push_back(option);
+			}
+		}
+	}
+
+	std::vector<Rml::Element *> commands = Visible_Rows(document, "commands");
+	rows.insert(rows.end(), commands.begin(), commands.end());
+	return(rows);
+}
+
+
+void Pick_Category(Rml::ElementDocument * document, int index)
+{
+	Rml::ElementFormControlSelect * categories = document != nullptr ? rmlui_dynamic_cast<Rml::ElementFormControlSelect *>(document->GetElementById("categories")) : nullptr;
+	if (categories != nullptr) {
+		categories->SetSelection(index);
+	}
+}
+
+
+void Test_Sound_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Score = 7;
+		state.Sound = 5;
+		state.Voice = 10;
+		state.Enabled = true;
+		state.InGame = true;
+		state.Tracks.push_back({ "01 - First [3:00]", 5 });
+		state.Tracks.push_back({ "02 - Second [2:30]", 6 });
+		state.Tracks.push_back({ "03 - Third [4:05]", 9 });
+		state.Selected = 1;
+
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the sound view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the sound screen raises no RmlUi warning or error");
+
+		presenter.Drain();
+		Check(presenter.State.Score == 7 && presenter.State.Sound == 5 && presenter.State.Voice == 10 && service.Calls.empty(), "opening the sound screen plays no feedback");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::ElementList inputs;
+		document->GetElementsByTagName(inputs, "input");
+		int sliders = 0;
+		for (Rml::Element * input : inputs) {
+			if (input->GetAttribute<Rml::String>("type", "") == "range") {
+				sliders++;
+			}
+		}
+		Check(sliders == 3, "the sound screen has three sliders");
+
+		Rml::Element * score = document->GetElementById("score");
+		Check(score != nullptr && score->GetAttribute<int>("value", -1) == 7, "the music slider starts at the music level");
+
+		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "track");
+		Check(rows.size() == 3, "the track list shows one row per allowed track");
+		Check(rows.size() == 3 && rows[1]->IsClassSet("selected") && !rows[0]->IsClassSet("selected"), "the playing track's row is marked selected");
+
+		if (rows.size() == 3) {
+			Click(context, rows[2]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Selected == 2 && rows[2]->IsClassSet("selected") && !rows[1]->IsClassSet("selected"), "a click on a row selects it");
+		}
+
+		Rml::Element * play = document->GetElementById("play");
+		if (play != nullptr) {
+			service.Calls.clear();
+			Click(context, play);
+			presenter.Drain();
+			Check(service.Joined() == "play 9", "the Play button plays the selected track");
+		}
+
+		Rml::Element * shuffle = document->GetElementById("shuffle");
+		if (shuffle != nullptr) {
+			service.Calls.clear();
+			Click(context, shuffle);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Shuffle && service.Joined() == "shuffle on; repeat off" && shuffle->HasAttribute("checked"), "the shuffle switch turns shuffle on and shows it");
+		}
+
+		if (score != nullptr) {
+			service.Calls.clear();
+			Rml::Dictionary parameters;
+			parameters["value"] = Rml::Variant(3.0f);
+			score->DispatchEvent(Rml::EventId::Change, parameters);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Score == 3 && service.Joined() == "score 0.3 feedback" && score->GetAttribute<int>("value", -1) == 3, "a slider change previews the level and the slider follows the model");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "Escape closes the sound screen without reverting anything");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Enabled = true;
+		state.InGame = false;
+
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the frontend sound view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::Element * music = Rml(*view).Document()->GetElementById("music");
+		Check(music != nullptr && !music->IsVisible(), "the frontend sound screen hides the music half");
+		Check(Visible_Of_Class(Rml(*view).Document(), "track").empty(), "the frontend sound screen lists no tracks");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
+int Visible_Sliders(Rml::ElementDocument * document)
+{
+	int sliders = 0;
+	Rml::ElementList inputs;
+	document->GetElementsByTagName(inputs, "input");
+	for (Rml::Element * input : inputs) {
+		if (input->GetAttribute<Rml::String>("type", "") == "range" && input->IsVisible(true)) {
+			sliders++;
+		}
+	}
+	return(sliders);
+}
+
+
+UIGameControlsState Game_Controls_Fixture(void)
+{
+	UIGameControlsState state;
+	state.Speed = 4;
+	state.Scroll = 2;
+	state.Detail = 1;
+	state.Difficulty = 2;
+	state.CameoText = true;
+	state.ToolTips = true;
+	state.SpeedNames = { "Slowest", "Slower", "Slow", "Medium", "Fast", "Faster", "Fastest" };
+	state.ScrollNames = state.SpeedNames;
+	state.DetailNames = { "Low", "Medium", "High" };
+	state.DifficultyNames = { "Easy", "Normal", "Hard" };
+	return(state);
+}
+
+
+void Test_Game_Controls_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = true;
+		state.HasSpeed = true;
+		state.HasDifficulty = false;
+		state.SoundEnabled = true;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the game controls view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the game controls screen raises no RmlUi warning or error");
+
+		presenter.Drain();
+		Check(presenter.State.Speed == 4 && presenter.State.Scroll == 2 && presenter.State.Detail == 1 && service.Calls.empty(), "opening the game controls holds the starting settings and applies nothing");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Check(Visible_Sliders(document) == 3, "the in-game screen has three sliders");
+
+		Rml::Element * speed = document->GetElementById("speed");
+		Check(speed != nullptr && speed->GetAttribute<int>("value", -1) == 2, "the speed slider runs from slowest to fastest, so it starts at six minus the speed");
+
+		Rml::Element * speed_name = document->GetElementById("speed-name");
+		Check(speed_name != nullptr && speed_name->GetInnerRML() == "Slow", "the speed's name shows beside its slider, read from the slider's end");
+
+		Rml::Element * detail_name = document->GetElementById("detail-name");
+		Check(detail_name != nullptr && detail_name->GetInnerRML() == "Medium", "the detail level's name shows beside its slider");
+
+		Rml::Element * sound = document->GetElementById("sound");
+		Rml::Element * keyboard = document->GetElementById("keyboard");
+		Rml::Element * options = document->GetElementById("ok-options");
+		Check(sound != nullptr && sound->IsVisible() && keyboard != nullptr && keyboard->IsVisible(), "the in-game screen has its Sound and Keyboard buttons");
+		Check(options != nullptr && options->IsVisible(true), "the in-game accept button reads Options Menu");
+
+		if (speed != nullptr && speed_name != nullptr) {
+			Rml::Dictionary parameters;
+			parameters["value"] = Rml::Variant(5.0f);
+			speed->DispatchEvent(Rml::EventId::Change, parameters);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Speed == 1 && speed_name->GetInnerRML() == "Faster" && service.Calls.empty(), "dragging the speed slider changes the held speed and its name and applies nothing");
+		}
+
+		Rml::Element * cameo = document->GetElementById("cameo");
+		if (cameo != nullptr) {
+			Click(context, cameo);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(!presenter.State.CameoText && !cameo->HasAttribute("checked"), "a click on the cameo text switch turns it off and shows it");
+		}
+
+		if (sound != nullptr) {
+			Click(context, sound);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "the Sound button accepts the screen and names the sound options next");
+			Check(service.Joined() == "speed 1; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; save", "the Sound button applies the edited settings in order and saves");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = false;
+		state.HasSpeed = true;
+		state.HasDifficulty = true;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the frontend game controls view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Check(Visible_Sliders(document) == 4, "the frontend screen adds the difficulty slider");
+
+		Rml::Element * difficulty_name = document->GetElementById("difficulty-name");
+		Check(difficulty_name != nullptr && difficulty_name->GetInnerRML() == "Hard", "the difficulty's name shows beside its slider");
+
+		Rml::Element * sound = document->GetElementById("sound");
+		Rml::Element * keyboard = document->GetElementById("keyboard");
+		Rml::Element * main = document->GetElementById("ok-main");
+		Check(sound != nullptr && !sound->IsVisible() && keyboard != nullptr && !keyboard->IsVisible(), "the frontend screen has no Sound or Keyboard button");
+		Check(main != nullptr && main->IsVisible(true), "the frontend accept button reads Main Menu");
+
+		Rml::Element * edge = document->GetElementById("edge");
+		if (edge != nullptr) {
+			Click(context, edge);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.EdgeScroll && edge->HasAttribute("checked"), "a click on the edge scrolling switch turns it on and shows it");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty(), "Escape leaves the game controls with nothing applied");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = true;
+		state.HasSpeed = false;
+		state.HasDifficulty = false;
+		state.SoundEnabled = false;
+
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the Internet game controls view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Check(Visible_Sliders(document) == 2, "the Internet screen has no game speed slider");
+
+		Rml::Element * sound = document->GetElementById("sound");
+		Check(sound != nullptr && sound->IsClassSet("disabled"), "the Sound button shows disabled without an audio device");
+
+		if (sound != nullptr) {
+			Click(context, sound);
+			presenter.Drain();
+			Check(!presenter.Result.has_value() && service.Calls.empty(), "a disabled Sound button does nothing");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+		context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Joined() == "scroll 2; detail 1; cameo on; lines off; tooltips on; coasting off; edge off; save", "Enter accepts the Internet screen without a game speed or a difficulty");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
+void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the display screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
+		Check(rows.size() == 3, "the display screen lists one row per mode");
+		Check(rows.size() == 3 && rows[1]->IsClassSet("selected") && rows[1]->GetInnerRML() == "1280 x 800", "the row of the stored mode starts selected");
+
+		if (rows.size() == 3) {
+			Click(context, rows[2]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Selected == 2 && rows[2]->IsClassSet("selected") && !rows[1]->IsClassSet("selected"), "a click on a row selects it");
+		}
+
+		Rml::Element * stretch = document->GetElementById("stretch");
+		if (stretch != nullptr) {
+			Click(context, stretch);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.StretchMovies && stretch->HasAttribute("checked") && service.Calls.empty(), "the movie switch turns on and shows it without applying");
+		}
+
+		Rml::Element * ok = document->GetElementById("ok");
+		Rml::Element * cancel = document->GetElementById("cancel");
+		Check(ok != nullptr && cancel != nullptr && ok->GetAbsoluteOffset(Rml::BoxArea::Border).x < cancel->GetAbsoluteOffset(Rml::BoxArea::Border).x, "OK sits left of Cancel");
+
+		if (ok != nullptr) {
+			Click(context, ok);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls.size() == 1 && service.Calls[0] == "stretch on", "OK applies the movie switch");
+			Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "OK hands the caller the picked mode");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "a second display view prepares");
+		view->Show(true);
+		context.Update();
+
+		std::vector<Rml::Element *> rows = Visible_Rows(Rml(*view).Document(), "modes");
+		if (rows.size() == 3) {
+			Click(context, rows[0]);
+			presenter.Drain();
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.empty() && !presenter.Picked.has_value(), "Escape leaves the display options with nothing applied");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the confirmation view prepares against the test context");
+		presenter.Refresh();
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the confirmation screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * seconds = document->GetElementById("seconds");
+		Check(seconds != nullptr && seconds->GetInnerRML() == "10", "the confirmation shows the ten seconds left");
+
+		clock.Now = 7500;
+		presenter.Refresh();
+		view->Sync();
+		context.Update();
+		Check(seconds != nullptr && seconds->GetInnerRML() == "3", "the seconds shown follow the clock");
+
+		Check(Visible_Buttons(document).size() == 2, "the confirmation has OK and Cancel");
+
+		Rml::Element * ok = document->GetElementById("ok");
+		if (ok != nullptr) {
+			Click(context, ok);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && !presenter.TimedOut, "OK keeps the mode");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "a second confirmation view prepares");
+		presenter.Refresh();
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		clock.Now = 10000;
+		presenter.Refresh();
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+
+		Rml::Element * seconds = Rml(*view).Document()->GetElementById("seconds");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.TimedOut, "the confirmation cancels itself when the clock runs out");
+		Check(seconds != nullptr && seconds->GetInnerRML() == "0", "the countdown ends at zero");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
+void Test_Keyboard_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingKeyboardServiceClass service;
+		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the keyboard view prepares against the test context");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the keyboard screen raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		std::vector<Rml::Element *> rows = Keyboard_Rows(document);
+		Check(rows.size() == 4, "the keyboard screen lists the categories and the open category's commands");
+		Check(rows.size() == 4 && rows[0]->GetInnerRML() == "Interface" && rows[0]->HasAttribute("selected") && rows[2]->GetInnerRML() == "Alliance" && rows[3]->GetInnerRML() == "Toggle Repair", "the first category is open with its commands sorted by name");
+
+		if (rows.size() == 4) {
+			Pick_Category(document, 1);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			rows = Keyboard_Rows(document);
+			Check(rows.size() == 4 && rows[1]->HasAttribute("selected") && rows[2]->GetInnerRML() == "Scatter" && rows[3]->GetInnerRML() == "Select View", "picking a category lists its commands");
+		}
+
+		Rml::Element * capture = document->GetElementById("capture");
+		Rml::Element * description = document->GetElementById("description");
+		Rml::Element * shortcut = document->GetElementById("shortcut");
+		Check(capture != nullptr && description != nullptr && shortcut != nullptr, "the keyboard screen has its capture element, description and shortcut");
+
+		if (rows.size() == 4) {
+			Click(context, rows[3]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Selected == 0 && description->GetInnerRML() == "Selects the view" && shortcut->GetInnerRML() == "K577", "a click on a command shows its description and shortcut");
+			Check(context.GetFocusElement() == capture, "selecting a command focuses the capture element");
+		}
+
+		if (capture != nullptr) {
+			capture->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_R, Rml::Input::KM_SHIFT);
+			context.ProcessKeyUp(Rml::Input::KI_R, Rml::Input::KM_SHIFT);
+			context.Update();
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair", "Shift and R in the capture element become the number 338 and name its holder");
+			Check(capture->GetInnerRML().find("K338") != std::string::npos, "the capture element shows the captured key");
+
+			context.ProcessKeyDown(Rml::Input::KI_LSHIFT, Rml::Input::KM_SHIFT);
+			context.ProcessKeyUp(Rml::Input::KI_LSHIFT, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.State.Captured == 338, "a modifier on its own leaves the capture as it was");
+		}
+
+		Rml::Element * assign = document->GetElementById("assign");
+		if (assign != nullptr) {
+			Click(context, assign);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.Key_Of(0) == 338 && presenter.Key_Of(1) == 0 && shortcut->GetInnerRML() == "K338" && presenter.State.Captured == 0, "Assign moves the key to the selected command and shows the new shortcut");
+		}
+
+		if (capture != nullptr) {
+			capture->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+			context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "save 0=338 2=88" }, "Enter in the capture element accepts the screen and saves");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingKeyboardServiceClass service;
+		service.ConfirmAnswer = false;
+		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "a second keyboard view prepares");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * reset = Rml(*view).Document()->GetElementById("reset");
+		if (reset != nullptr) {
+			Click(context, reset);
+			presenter.Drain();
+			Check(service.Calls == std::vector<std::string>{ "confirm" } && presenter.Key_Of(0) == 577, "Reset All asks first and a refusal changes nothing");
+		}
+
+		Rml::Element * capture = Rml(*view).Document()->GetElementById("capture");
+		if (capture != nullptr) {
+			capture->Focus();
+		}
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && service.Calls.size() == 1, "Escape in the capture element cancels the screen without saving");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
+std::vector<Rml::Element *> Buttons_Top_Down(Rml::ElementDocument * document)
+{
+	std::vector<Rml::Element *> buttons = Visible_Buttons(document);
+	std::sort(buttons.begin(), buttons.end(), [](Rml::Element * a, Rml::Element * b) {
+		return(a->GetAbsoluteOffset(Rml::BoxArea::Border).y < b->GetAbsoluteOffset(Rml::BoxArea::Border).y);
+	});
+	return(buttons);
+}
+
+
+void Press(Rml::Context & context, Rml::Input::KeyIdentifier key, int modifiers = 0)
+{
+	context.ProcessKeyDown(key, modifiers);
+	context.ProcessKeyUp(key, modifiers);
+	context.Update();
+}
+
+
+UIDisplayState Paged_Display_Fixture(void)
+{
+	UIDisplayState state;
+	state.Modes = {
+		{ 640, 400, "640 x 400" }, { 800, 600, "800 x 600" }, { 1024, 768, "1024 x 768" },
+		{ 1280, 800, "1280 x 800" }, { 1400, 1050, "1400 x 1050" }, { 1600, 900, "1600 x 900" },
+		{ 1680, 1050, "1680 x 1050" }, { 1920, 1080, "1920 x 1080" },
+	};
+	state.Selected = 0;
+	return(state);
+}
+
+
+void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceClass & system, RecordingRenderInterfaceClass & render)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for the tab order");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * modes = document->GetElementById("modes");
+		Rml::Element * stretch = document->GetElementById("stretch");
+		Rml::Element * ok = document->GetElementById("ok");
+		Rml::Element * cancel = document->GetElementById("cancel");
+
+		int unsupported = render.Unsupported;
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == modes && modes->IsPseudoClassSet("focus-visible"), "the first tab stop is the list, and it shows the focus");
+		Check(document->IsClassSet("keys"), "driving by keyboard marks the document");
+
+		context.Render();
+		Check(render.Unsupported == unsupported, "the focus mark stays within the implemented render methods");
+
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == stretch, "the next tab stop is the movie switch");
+
+		Press(context, Rml::Input::KI_SPACE);
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+		Check(presenter.State.StretchMovies && stretch->HasAttribute("checked"), "a space on the switch turns it on");
+
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == ok, "OK follows the switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == cancel, "and Cancel follows OK");
+
+		Press(context, Rml::Input::KI_RETURN);
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Enter presses the button that holds the focus, not OK");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for a space on a button");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * ok = Rml(*view).Document()->GetElementById("ok");
+		if (ok != nullptr) {
+			ok->Focus();
+			Press(context, Rml::Input::KI_SPACE);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "a space presses the focused button");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for a disabled button");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * ok = Rml(*view).Document()->GetElementById("ok");
+		if (ok != nullptr) {
+			ok->SetClass("disabled", true);
+			context.Update();
+			ok->Focus();
+
+			Press(context, Rml::Input::KI_SPACE);
+			presenter.Drain();
+			Check(!presenter.Result.has_value(), "a space on a disabled button presses nothing");
+
+			Press(context, Rml::Input::KI_RETURN);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED, "and Enter falls back to accepting the screen");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Paged_Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for list navigation");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * modes = document->GetElementById("modes");
+		modes->SetProperty("height", "60dp");
+		context.Update();
+
+		auto step = [&](Rml::Input::KeyIdentifier key) {
+			Press(context, key);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		};
+
+		std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
+		Check(rows.size() == 8, "the list holds every mode of the fixture");
+
+		float height = rows.empty() ? 0.0f : rows[0]->GetBox().GetSize(Rml::BoxArea::Border).y;
+		int page = (height > 0.0f) ? (int)(modes->GetClientHeight() / height) : 0;
+		Check(page > 1 && page < 8, "the shrunk list shows a page of more than one row and fewer than all");
+
+		modes->Focus();
+		step(Rml::Input::KI_DOWN);
+		Check(presenter.State.Selected == 1, "down moves to the next row");
+		step(Rml::Input::KI_DOWN);
+		step(Rml::Input::KI_UP);
+		Check(presenter.State.Selected == 1, "up moves back");
+		step(Rml::Input::KI_END);
+		Check(presenter.State.Selected == 7, "End picks the last row");
+		step(Rml::Input::KI_HOME);
+		Check(presenter.State.Selected == 0, "Home picks the first");
+		step(Rml::Input::KI_NEXT);
+		Check(presenter.State.Selected == page, "Page Down moves by the rows the list shows");
+		step(Rml::Input::KI_PRIOR);
+		Check(presenter.State.Selected == 0, "and Page Up comes back");
+
+		context.ProcessTextInput('8');
+		presenter.Drain();
+		view->Sync();
+		context.Update();
+		Check(presenter.State.Selected == 1, "typing a character picks the next row that starts with it");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Paged_Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the display view prepares for a click then a key");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		std::vector<Rml::Element *> rows = Visible_Rows(Rml(*view).Document(), "modes");
+		if (rows.size() == 8) {
+			Click(context, rows[3]);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(context.GetFocusElement() == rows[3], "a click leaves the focus on the row, not the list");
+
+			Press(context, Rml::Input::KI_DOWN);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+			Check(presenter.State.Selected == 4, "and the arrow still moves the list the row belongs to");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Score = 7;
+		state.Enabled = true;
+		state.InGame = false;
+
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the sound view prepares for slider keys");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * score = Rml(*view).Document()->GetElementById("score");
+		auto step = [&](Rml::Input::KeyIdentifier key) {
+			Press(context, key);
+			presenter.Drain();
+			view->Sync();
+			context.Update();
+		};
+
+		if (score != nullptr) {
+			score->Focus();
+			step(Rml::Input::KI_HOME);
+			Check(presenter.State.Score == 0, "Home takes the slider to its lowest");
+			step(Rml::Input::KI_DOWN);
+			Check(presenter.State.Score == 1, "down raises it by one step");
+			step(Rml::Input::KI_UP);
+			Check(presenter.State.Score == 0, "up lowers it again");
+			step(Rml::Input::KI_NEXT);
+			Check(presenter.State.Score == 2, "Page Down moves it by a fifth of the range");
+			step(Rml::Input::KI_END);
+			Check(presenter.State.Score == 10, "End takes it to its highest");
+			step(Rml::Input::KI_PRIOR);
+			Check(presenter.State.Score == 8, "and Page Up brings it back down");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGameState fixture;
+		fixture.Mode = UI_SAVE_GAME_SAVE;
+		fixture.Title = "SAVE";
+		fixture.AcceptCaption = "Save";
+		fixture.Description = "Mission 3";
+		UISaveGameEntry slot;
+		slot.Description = "[EMPTY SLOT]";
+		fixture.Entries.push_back(slot);
+
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view = UI_Save_Game_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the save view prepares for a space in its field");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementFormControlInput * field = rmlui_dynamic_cast<Rml::ElementFormControlInput *>(Rml(*view).Document()->GetElementById("description"));
+		if (field != nullptr) {
+			field->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_SPACE, 0);
+			context.ProcessTextInput(' ');
+			context.ProcessKeyUp(Rml::Input::KI_SPACE, 0);
+			context.Update();
+			presenter.Drain();
+			Check(!presenter.Accepted && field->GetValue().find(' ') != std::string::npos, "a space in a text field is text, not a button press");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingKeyboardServiceClass service;
+		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the keyboard view prepares for a captured space");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::Element * capture = Rml(*view).Document()->GetElementById("capture");
+		if (capture != nullptr) {
+			capture->Focus();
+			Press(context, Rml::Input::KI_SPACE);
+			presenter.Drain();
+			Check(presenter.State.Captured == UI_Key_Number(Rml::Input::KI_SPACE, false, false, false), "a space in the capture element is recorded as a shortcut");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	Check(system.Problems == problems, "keyboard navigation raises no RmlUi warning or error");
+}
+
+
+void Test_Menu_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UIMenuState state;
+	state.Kind = UI_MENU_MULTIPLAYER_FIRESTORM;
+	state.Title = "Select Multiplayer Game";
+	state.Items.push_back(UIMenuItemType{"Internet", 101, false});
+	state.Items.push_back(UIMenuItemType{"Network", 102, true});
+	state.Items.push_back(UIMenuItemType{"Main Menu", 2, true});
+	state.Top = 400;
+
+	UIMenuPresenterClass presenter(state);
+	std::unique_ptr<UIViewClass> view = UI_Menu_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the menu view prepares against the test context");
+	view->Show(true);
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the menu raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Check(document->IsClassSet("multiplayer") && document->IsClassSet("firestorm"), "the document wears the template it was asked for");
+
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y == 400.0f, "the menu sits at the top edge it was given");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(296.0f, 206.0f), "the expansion's template is its own size");
+
+	std::vector<Rml::Element *> buttons = Buttons_Top_Down(document);
+	Check(buttons.size() == 3, "the menu has a button for each item it was given");
+
+	if (buttons.size() == 3) {
+		Click(context, buttons[0]);
+		presenter.Drain();
+		Check(!presenter.Result.has_value() && presenter.Choice == 0, "a button that takes no press answers nothing");
+
+		Click(context, buttons[1]);
+		presenter.Drain();
+		Check(presenter.Result.has_value() && presenter.Choice == 102, "a button answers with what the caller gave it");
+	}
+
+	view->Release();
+	context.Update();
+}
+
+
+void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system, RecordingRenderInterfaceClass & render)
+{
+	int problems = system.Problems;
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = true;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the options menu view prepares against the test context");
+		view->Show(true);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the options menu raises no RmlUi warning or error");
+
+		std::vector<Rml::Element *> buttons = Buttons_Top_Down(Rml(*view).Document());
+		Check(buttons.size() == 5, "the options menu has five buttons");
+		bool ordered = buttons.size() == 5 && buttons[0]->GetId() == "settings" && buttons[1]->GetId() == "display" && buttons[2]->GetId() == "sound" && buttons[3]->GetId() == "keyboard" && buttons[4]->GetId() == "mainmenu";
+		Check(ordered, "the buttons run Game Settings, Display, Sound, Keyboard, Main Menu from the top");
+
+		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+		float center = (float)context.GetDimensions().y * 0.5f;
+		Check(dialog != nullptr && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y < center && dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y + dialog->GetBox().GetSize(Rml::BoxArea::Border).y > center, "without a top edge the menu sits in the middle");
+
+		render.Scissors.clear();
+		context.Render();
+		bool clipped = false;
+		if (dialog != nullptr) {
+			Rml::Vector2f at = dialog->GetAbsoluteOffset(Rml::BoxArea::Border).Round();
+			for (Rml::Rectanglei const & scissor : render.Scissors) {
+				if (scissor.Left() == (int)at.x && scissor.Top() == (int)at.y && scissor.Width() == 300 && scissor.Height() == 241) {
+					clipped = true;
+				}
+			}
+		}
+		Check(clipped, "the wallpaper is cut off at the menu's edges");
+
+		context.SetDensityIndependentPixelRatio(2.0f);
+		context.Update();
+		bool doubled = dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(600.0f, 482.0f)
+			&& buttons.size() == 5 && buttons[0]->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(380.0f, 48.0f);
+		Check(doubled, "the menu and its buttons are twice the size at twice the ratio");
+		context.SetDensityIndependentPixelRatio(1.0f);
+		context.Update();
+
+		if (buttons.size() == 5) {
+			Click(context, buttons[1]);
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == UI_MAIN_OPTIONS_DISPLAY, "the Display button closes the menu with the display choice");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = false;
+		state.Top = 200;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "a second options menu view prepares");
+		view->Show(true);
+		context.Update();
+
+		Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+		Check(dialog != nullptr && std::fabs(dialog->GetAbsoluteOffset(Rml::BoxArea::Border).y - 200.0f) < 1.0f, "the menu sits at the top edge the game hands it");
+
+		Rml::Element * sound = Rml(*view).Document()->GetElementById("sound");
+		Check(sound != nullptr && sound->IsClassSet("disabled"), "the Sound button shows disabled without an audio device");
+		if (sound != nullptr) {
+			Click(context, sound);
+			presenter.Drain();
+			Check(!presenter.Result.has_value(), "a disabled Sound button does nothing");
+		}
+
+		context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+		context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+		context.Update();
+		presenter.Drain();
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.Choice == UI_MAIN_OPTIONS_LEAVE, "Escape leaves the options menu");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = true;
+		UIMainOptionsPresenterClass presenter(state);
+		Drive(presenter, "sound");
+		Check(presenter.Result.has_value() && presenter.Choice == UI_MAIN_OPTIONS_SOUND, "a live Sound button picks the sound options");
+
+		UIMainOptionsPresenterClass keyboard(state);
+		Drive(keyboard, "keyboard");
+		UIMainOptionsPresenterClass settings(state);
+		Drive(settings, "settings");
+		UIMainOptionsPresenterClass leave(state);
+		Drive(leave, "ok");
+		Check(keyboard.Choice == UI_MAIN_OPTIONS_KEYBOARD && settings.Choice == UI_MAIN_OPTIONS_SETTINGS && leave.Choice == UI_MAIN_OPTIONS_LEAVE && leave.Result.has_value() && *leave.Result == UI_RESULT_ACCEPTED, "Keyboard, Game Settings and Main Menu each answer with their choice");
+	}
+}
+
+
+void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		UIWaitBoxPresenterClass presenter("Mission saving - Please Wait...", false);
+		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the wait box view prepares against the test context");
+		view->Show(false);
+		context.Update();
+		context.Render();
+		Check(system.Problems == problems, "the wait box raises no RmlUi warning or error");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * text = document->GetElementById("text");
+		Check(text != nullptr && text->GetInnerRML() == "Mission saving - Please Wait...", "the wait box shows its text");
+
+		Rml::Element * hidden = document->GetElementById("bar");
+		Check(hidden != nullptr && hidden->GetComputedValues().display() == Rml::Style::Display::None, "a wait box without a bar hides it");
+
+		presenter.Text = "Loading in 3 seconds...";
+		view->Sync();
+		context.Update();
+		Check(text != nullptr && text->GetInnerRML() == "Loading in 3 seconds...", "the wait box text follows the presenter");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UIWaitBoxPresenterClass presenter("Working - Please Wait", true);
+		presenter.Set_Fraction(0.5);
+		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "a wait box with a bar prepares");
+		view->Show(false);
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * fill = document->GetElementById("bar");
+		Check(fill != nullptr && fill->IsVisible(), "a wait box with a bar shows one");
+
+		Rml::ElementProgress * progress = rmlui_dynamic_cast<Rml::ElementProgress *>(fill);
+		Check(progress != nullptr && std::fabs(progress->GetValue() - 50.0f) < 0.01f, "the fill stands at fifty at fifty percent");
+
+		presenter.Set_Fraction(1.5);
+		view->Sync();
+		context.Update();
+		Check(presenter.Percent == 100 && progress != nullptr && std::fabs(progress->GetValue() - 100.0f) < 0.01f, "the fraction clamps to a full bar");
+
+		view->Release();
+		context.Update();
+	}
+}
+
+
+class RecordingScenarioServiceClass : public UIScenarioServiceClass
+{
+	public:
+		int Asked = 0;
+		int Row = -1;
+
+		int Generated = 0;
+		int Made = -1;
+
+		virtual void Preview(int index, UIMapPreviewImage & image) override
+		{
+			Asked++;
+			Row = index;
+			image.Width = 2;
+			image.Height = 2;
+			image.Pixels.assign(2 * 2 * 4, 128);
+			image.Generation++;
+		}
+
+		virtual void Read(UIScenarioState &) override
+		{
+		}
+
+		virtual int Random(void) override
+		{
+			Generated++;
+			return(Made);
+		}
+};
+
+
+void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	RecordingScenarioServiceClass service;
+	UIScenarioState state;
+	for (int index = 0; index < 4; index++) {
+		UIScenarioEntry entry;
+		entry.Label = "Map " + std::to_string(index + 1);
+		state.Entries.push_back(entry);
+	}
+
+	UIScenarioPresenterClass presenter(service, std::move(state));
+	std::unique_ptr<UIViewClass> view = UI_Scenario_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the map view prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the map dialog raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(540.0f, 326.0f), "the map dialog is the size its template comes to");
+
+	Rml::Element * maps = document->GetElementById("maps");
+	Check(maps != nullptr && maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(263.0f, 232.0f), "the mission list is its template's rect, frame and all");
+
+	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the map dialog holds a surface for the preview");
+
+	Drive(presenter, "select", 2);
+	Check(presenter.State.Selected == 2 && service.Asked == 1 && service.Row == 2, "moving the highlight asks the engine for that map's picture");
+	Drive(presenter, "select", 2);
+	Check(service.Asked == 1, "and standing still asks for nothing");
+	Drive(presenter, "select", 9);
+	Check(presenter.State.Selected == 2 && service.Asked == 1, "a row the list does not hold is ignored");
+
+	service.Made = 3;
+	Drive(presenter, "random");
+	Check(!presenter.Result.has_value() && service.Generated == 1, "the generator button runs the generator over the dialog, which stays open");
+	Check(presenter.State.Selected == 3 && service.Row == 3, "and the dialog takes the map it made, with its picture");
+
+	view->Release();
+	context.Update();
+}
+
+
+class RecordingNetServiceClass : public UINetLobbyServiceClass
+{
+	public:
+		UINetLobbyState Model;
+
+		int Reads = 0;
+		int Games = 0;
+		int LastGame = -1;
+		std::vector<std::string> Said;
+		std::vector<std::string> Kicked;
+		int Accepts = 0;
+		std::vector<int> Switches;
+		int Sliders = 0;
+
+		virtual void Read(UINetLobbyState & state) override
+		{
+			Reads++;
+			state.Kind = Model.Kind;
+			state.Host = Model.Host;
+			state.Answered = Model.Answered;
+			state.Games = Model.Games;
+			state.Players = Model.Players;
+			state.Chat = Model.Chat;
+			state.Sides = Model.Sides;
+			state.Colors = Model.Colors;
+		}
+
+		virtual void Set_Handle(char const *) override {}
+		virtual void Select_Game(int index) override { Games++; LastGame = index; }
+		virtual void Say(char const * text) override { Said.push_back(text); }
+		virtual void Set_Side(int) override {}
+		virtual void Set_Color(int) override {}
+		virtual void Set_Switch(UINetSwitch which, bool) override { Switches.push_back((int)which); }
+		virtual void Set_Slider(UINetSlider, int) override { Sliders++; }
+		virtual void Kick(std::vector<std::string> const & names) override { Kicked = names; }
+		virtual void Accept(void) override { Accepts++; }
+
+		int Picked = 0;
+		virtual void Pick_Map(void) override { Picked++; }
+
+		int Joins = 0;
+		int Hosts = 0;
+		int Starts = 0;
+		bool Hostable = false;
+		bool Startable = false;
+		virtual void Join(void) override { Joins++; }
+		virtual void Host(void) override { Hosts++; if (Hostable) { Model.Kind = UI_NET_LOBBY_HOST; } }
+		virtual bool Can_Start(void) override { Starts++; return(Startable); }
+};
+
+
+static UINetPlayerRow Net_Player(char const * name)
+{
+	UINetPlayerRow row;
+	row.Name = name;
+	row.Color = "#ffd800";
+	row.House = "gdii.pcx";
+	row.Hint = "GDI";
+	return(row);
+}
+
+
+void Test_Game_Options_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	class RecordingGameOptionsServiceClass : public UIGameOptionsServiceClass
+	{
+		public:
+			bool Files = true;
+
+			virtual void Read(UIGameOptionsState & state) override { state.LoadEnabled = Files; state.DeleteEnabled = Files; }
+			virtual void Save(void) override {}
+			virtual void Delete(void) override { Files = false; }
+			virtual bool Load(void) override { return(false); }
+	};
+	RecordingGameOptionsServiceClass service;
+
+	UIGameOptionsState state;
+	state.SpeedNames = { "Slowest", "Fastest" };
+	state.SpeedName = "Slowest";
+	UIGameOptionsPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Game_Options_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the options menu view prepares against the test context");
+	view->Show(true);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the in-game options menu raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * load = (document != nullptr) ? document->GetElementById("load") : nullptr;
+	Rml::Element * erase = (document != nullptr) ? document->GetElementById("delete") : nullptr;
+	Check(load != nullptr && erase != nullptr && !load->IsClassSet("disabled") && !erase->IsClassSet("disabled"), "the menu opens with Load and Delete taking a press");
+
+	Drive(presenter, "delete");
+	view->Sync();
+	context.Update();
+	Check(!presenter.State.LoadEnabled && load != nullptr && erase != nullptr && load->IsClassSet("disabled") && erase->IsClassSet("disabled"), "a delete that leaves no saves takes the presses away on the same pass");
+
+	view->Release();
+	context.Update();
+}
+
+
+void Test_Save_Game_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UISaveGameState fixture;
+	fixture.Mode = UI_SAVE_GAME_SAVE;
+	fixture.Title = "SAVE";
+	fixture.AcceptCaption = "Save";
+	fixture.Suggested = "Mission 3";
+	fixture.Description = "Mission 3";
+	UISaveGameEntry slot;
+	slot.Description = "[EMPTY SLOT]";
+	fixture.Entries.push_back(slot);
+	UISaveGameEntry file;
+	file.Description = "Before the bridge";
+	file.Date = "1/1/2026";
+	file.Time = "10:00";
+	file.Valid = true;
+	fixture.Entries.push_back(file);
+
+	auto open = [&](UISaveGamePresenterClass & presenter, std::unique_ptr<UIViewClass> & view) {
+		view = UI_Save_Game_View(presenter);
+		bool prepared = Rml(*view).Prepare(context);
+		view->Show(true);
+		view->Sync();
+		context.Update();
+		return(prepared);
+	};
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares against the test context");
+		context.Render();
+		Check(system.Problems == problems, "the save screen raises no RmlUi warning or error");
+
+		Drive(presenter, "select", 1);
+		Check(presenter.State.Selected == 1 && presenter.State.Description == "Before the bridge", "picking a saved game hands its description to the field");
+		Drive(presenter, "select", 0);
+		Check(presenter.State.Description == "Mission 3", "picking the empty slot hands the suggestion back");
+
+		Drive(presenter, "description", 0, "Before the br");
+		Check(!presenter.Result.has_value() && presenter.State.Description == "Before the br", "typing changes the description and accepts nothing");
+		Drive(presenter, "description", 1, "Before the bridge II");
+		Check(presenter.Accepted && presenter.State.Description == "Before the bridge II", "a line break in the field accepts with what was typed");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares for the field to follow a pick");
+
+		Rml::ElementFormControlInput * field = rmlui_dynamic_cast<Rml::ElementFormControlInput *>(Rml(*view).Document()->GetElementById("description"));
+		Check(field != nullptr && context.GetFocusElement() != field, "the description does not hold the focus while the list is untouched");
+
+		Drive(presenter, "select", 1);
+		view->Sync();
+		context.Update();
+		view->Placed();
+		context.Update();
+
+		if (field != nullptr) {
+			int start = 0;
+			int end = 0;
+			std::string selected;
+			field->GetSelection(&start, &end, &selected);
+			Check(context.GetFocusElement() == field, "picking a saved game moves the focus to the description");
+			Check(selected == "Before the bridge", "with the whole description selected");
+
+			context.ProcessTextInput('X');
+			context.Update();
+			Check(field->GetValue() == "X", "so that typing replaces it");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares for its keys");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * field = (document != nullptr) ? document->GetElementById("description") : nullptr;
+		Check(field != nullptr, "the save screen has its description field");
+		if (field != nullptr) {
+			field->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_RETURN, 0);
+			context.ProcessKeyUp(Rml::Input::KI_RETURN, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Accepted && presenter.State.Description == "Mission 3", "Enter in the field reaches the presenter as a line break and accepts");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares for Escape");
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * field = (document != nullptr) ? document->GetElementById("description") : nullptr;
+		if (field != nullptr) {
+			field->Focus();
+			context.ProcessKeyDown(Rml::Input::KI_ESCAPE, 0);
+			context.ProcessKeyUp(Rml::Input::KI_ESCAPE, 0);
+			context.Update();
+			presenter.Drain();
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED, "Escape from the field cancels the screen");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGamePresenterClass presenter(fixture);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the save view prepares for a double-click");
+
+		std::vector<Rml::Element *> rows = Visible_Rows(Rml(*view).Document(), "files");
+		Check(rows.size() == 2, "the save screen lists the empty slot and the file");
+		if (rows.size() == 2) {
+			rows[1]->DispatchEvent(Rml::EventId::Dblclick, Rml::Dictionary());
+			presenter.Drain();
+			Check(!presenter.Accepted, "a double-click in the save list saves nothing");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGameState loading = fixture;
+		loading.Mode = UI_SAVE_GAME_LOAD;
+		loading.Title = "LOAD";
+		loading.AcceptCaption = "Load";
+
+		UISaveGamePresenterClass presenter(loading);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the load view prepares for a double-click");
+
+		std::vector<Rml::Element *> rows = Visible_Rows(Rml(*view).Document(), "files");
+		if (rows.size() == 2) {
+			rows[1]->DispatchEvent(Rml::EventId::Dblclick, Rml::Dictionary());
+			presenter.Drain();
+			Check(presenter.Accepted, "a double-click in the load list loads that game");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		UISaveGameState deleting = fixture;
+		deleting.Mode = UI_SAVE_GAME_DELETE;
+		deleting.Title = "DELETE";
+		deleting.AcceptCaption = "Delete";
+
+		UISaveGamePresenterClass presenter(deleting);
+		std::unique_ptr<UIViewClass> view;
+		Check(open(presenter, view), "the delete view prepares for a double-click");
+
+		std::vector<Rml::Element *> rows = Visible_Rows(Rml(*view).Document(), "files");
+		if (rows.size() == 2) {
+			rows[1]->DispatchEvent(Rml::EventId::Dblclick, Rml::Dictionary());
+			presenter.Drain();
+			Check(!presenter.Accepted, "a double-click in the delete list deletes nothing");
+		}
+
+		view->Release();
+		context.Update();
+	}
+
+}
+
+
+void Test_Net_Browser_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	RecordingNetServiceClass service;
+	service.Model.Kind = UI_NET_LOBBY_GAMES;
+	for (int index = 0; index < 3; index++) {
+		UINetOption game;
+		game.Label = "Game " + std::to_string(index);
+		service.Model.Games.push_back(game);
+	}
+	service.Model.Players.push_back(Net_Player("Someone"));
+
+	UINetLobbyState state = service.Model;
+	UINetLobbyPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Net_Browser_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the browser prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the browser raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the browser is the size its template comes to");
+
+	Rml::Element * chat = document->GetElementById("chat");
+	Check(chat != nullptr && chat->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(400.0f, 271.0f), "the message log is its template's rect, frame and all");
+
+	Rml::Element * games = document->GetElementById("games");
+	Check(games != nullptr && games->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(170.0f, 111.0f), "the game list is its template's rect");
+
+	Drive(presenter, "game", 2);
+	Check(presenter.State.Game == 2 && service.Games == 1 && service.LastGame == 2, "moving the highlight asks the wire about that game");
+	Drive(presenter, "game", 2);
+	Check(service.Games == 1, "and standing still asks for nothing");
+	Drive(presenter, "game", 9);
+	Check(presenter.State.Game == 2 && service.Games == 1, "a row the list does not hold is ignored");
+
+	Drive(presenter, "say", 0, "hello");
+	Check(service.Said.empty(), "a line still being typed is not sent");
+	Drive(presenter, "say", 1, "hi");
+	Check(service.Said.empty(), "a line of two characters is dropped, as the dialog drops it");
+	Drive(presenter, "say", 1, "hello");
+	Check(service.Said.size() == 1 && service.Said[0] == "hello", "ending a line sends it");
+	Check(presenter.State.Say.empty(), "and empties the box");
+
+	Drive(presenter, "say", 0, "typ");
+	Drive(presenter, "join");
+	presenter.Refresh();
+	Check(service.Joins == 1 && !presenter.Result.has_value() && presenter.State.Say == "typ", "the join button asks to join and keeps the browser up with its chat line");
+	Drive(presenter, "new");
+	presenter.Refresh();
+	Check(service.Hosts == 1 && !presenter.Result.has_value(), "a new game the name refuses keeps the browser up");
+	service.Hostable = true;
+	Drive(presenter, "new");
+	presenter.Refresh();
+	Check(presenter.Result.has_value() && presenter.Choice == UI_NET_NONE, "a new game moves the flow to the host's setup, which closes the browser without an answer of its own");
+
+	view->Release();
+	context.Update();
+}
+
+
+void Test_Net_Setup_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	RecordingNetServiceClass service;
+	service.Model.Kind = UI_NET_LOBBY_HOST;
+	service.Model.Host = true;
+	service.Model.Players.push_back(Net_Player("Host"));
+	service.Model.Players.push_back(Net_Player("Guest"));
+	UINetOption side;
+	side.Label = "GDI";
+	service.Model.Sides.push_back(side);
+	UINetOption color;
+	color.Label = "Gold";
+	color.Color = "#ffd800";
+	service.Model.Colors.push_back(color);
+
+	UINetLobbyState state = service.Model;
+	state.Bases = true;
+	state.ShortGame = true;
+
+	UINetLobbyPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Net_Setup_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the setup prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the setup raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the setup is the size its template comes to");
+
+	Rml::Element * players = document->GetElementById("players");
+	Check(players != nullptr && players->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(226.0f, 110.0f), "the player list is its template's rect");
+
+	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map's picture");
+
+	Drive(presenter, "bases", 0);
+	Check(!presenter.State.Bases && !presenter.State.ShortGame, "clearing bases clears the short game with it");
+	Drive(presenter, "short", 1);
+	Check(presenter.State.Bases && presenter.State.ShortGame, "asking for a short game brings bases back");
+
+	Drive(presenter, "kick");
+	Check(service.Kicked.empty(), "the kick button does nothing while nobody is picked");
+	Drive(presenter, "pick", 1);
+	Check(presenter.State.Players[1].Selected, "a picked row is marked");
+	Drive(presenter, "kick");
+	Check(service.Kicked.size() == 1 && service.Kicked[0] == "Guest", "the kick button reports who was picked");
+	Check(!presenter.State.Players[1].Selected, "and lets them go again");
+
+	Drive(presenter, "pick", 1);
+	Drive(presenter, "go");
+	presenter.Refresh();
+	Check(service.Starts == 1 && !presenter.Result.has_value() && presenter.State.Players[1].Selected, "a start the game refuses keeps the setup up with its pick");
+	service.Startable = true;
+	Drive(presenter, "go");
+	Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && presenter.Choice == UI_NET_GO, "a start the game allows closes the setup with the go answer");
+
+	UINetLobbyPresenterClass left(service, state);
+	service.Model.Kind = UI_NET_LOBBY_GAMES;
+	left.Refresh();
+	Check(left.Result.has_value(), "a lobby the flow has left closes its screen");
+
+	view->Release();
+	context.Update();
+}
+
+
+class RecordingSkirmishServiceClass : public UISkirmishServiceClass
+{
+	public:
+		int Picked = 0;
+		bool Startable = true;
+		int Asked = 0;
+
+		virtual void Pick_Map(UISkirmishState & state) override
+		{
+			Picked++;
+			state.MapName = "Picked map";
+		}
+
+		virtual bool Can_Start(UISkirmishState const &) override
+		{
+			Asked++;
+			return(Startable);
+		}
+};
+
+
+bool Row_Is_In_View(Rml::Element * list, Rml::Element * row)
+{
+	float client = list->GetAbsoluteOffset(Rml::BoxArea::Border).y + list->GetClientTop();
+	float top = row->GetAbsoluteOffset(Rml::BoxArea::Border).y - client;
+	return(top >= -1.5f && top + row->GetBox().GetSize(Rml::BoxArea::Border).y <= list->GetClientHeight() + 1.5f);
+}
+
+
+void Test_List_Scrolling(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Enabled = true;
+		state.InGame = true;
+		for (int index = 0; index < 12; index++) {
+			state.Tracks.push_back({ "Track " + std::to_string(index), index });
+		}
+		state.Selected = 10;
+
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the sound view prepares for a long track list");
+		view->Show(true);
+		view->Sync();
+		context.Update();
+
+		Rml::ElementDocument * document = Rml(*view).Document();
+		Rml::Element * tracks = document->GetElementById("tracks");
+		tracks->SetProperty("height", "60dp");
+		context.Update();
+		view->Placed();
+		context.Update();
+
+		std::vector<Rml::Element *> rows = Visible_Of_Class(document, "track");
+		Check(rows.size() == 12, "the track list holds every track");
+
+		float down = tracks->GetScrollTop();
+		Check(down > 0.0f, "opening on a late track scrolls the list down to it");
+		Check(rows.size() == 12 && Row_Is_In_View(tracks, rows[10]), "and the playing track is in view");
+
+		Drive(presenter, "select", 0);
+		view->Sync();
+		context.Update();
+		view->Placed();
+		context.Update();
+		Check(tracks->GetScrollTop() < down, "picking the first track scrolls back up");
+		Check(rows.size() == 12 && Row_Is_In_View(tracks, rows[0]), "and brings that track into view");
+
+		view->Release();
+		context.Update();
+	}
+
+	{
+		RecordingNetServiceClass service;
+		service.Model.Kind = UI_NET_LOBBY_GAMES;
+		for (int index = 0; index < 40; index++) {
+			service.Model.Chat.push_back({ "Line " + std::to_string(index), "#70ff00" });
+		}
+
+		UINetLobbyState state = service.Model;
+		UINetLobbyPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Net_Browser_View(presenter);
+
+		Check(Rml(*view).Prepare(context), "the browser prepares for a full message log");
+		view->Show(false);
+		view->Sync();
+		context.Update();
+		view->Placed();
+		context.Update();
+
+		Rml::Element * chat = Rml(*view).Document()->GetElementById("chat");
+		float bottom = chat->GetScrollHeight() - chat->GetClientHeight();
+		Check(bottom > 0.0f, "the log holds more lines than it can show");
+		Check(std::fabs(chat->GetScrollTop() - bottom) < 1.0f, "the log opens on its newest line");
+
+		presenter.State.Chat.push_back({ "One more", "#70ff00" });
+		view->Sync();
+		context.Update();
+		view->Placed();
+		context.Update();
+
+		bottom = chat->GetScrollHeight() - chat->GetClientHeight();
+		Check(std::fabs(chat->GetScrollTop() - bottom) < 1.0f, "and stays on the newest line as messages arrive");
+
+		view->Release();
+		context.Update();
+	}
+
+	Check(system.Problems == problems, "list scrolling raises no RmlUi warning or error");
+}
+
+
+void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UISkirmishState state;
+	state.Handle = "Player";
+	for (int index = 0; index < 2; index++) {
+		UISkirmishOption side;
+		side.Label = index == 0 ? "GDI" : "Nod";
+		side.Value = index;
+		state.Sides.push_back(side);
+
+		UISkirmishOption color;
+		color.Label = index == 0 ? "Gold" : "Red";
+		color.Value = index;
+		color.Color = index == 0 ? "#ffdf5a" : "#ff1818";
+		state.Colors.push_back(color);
+	}
+	state.MapName = "Grand Canyon (2-4)";
+	state.UnitCountMax = 10;
+	state.CreditsMin = 2500;
+	state.CreditsMax = 10000;
+	state.CreditsStep = 250;
+	state.Credits = 5000;
+	state.TechLevelMax = 10;
+	state.Preview.Width = 4;
+	state.Preview.Height = 2;
+	state.Preview.Pixels.assign(4 * 2 * 4, 200);
+	state.Preview.Generation = 1;
+
+	RecordingSkirmishServiceClass service;
+	UISkirmishPresenterClass presenter(service, state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_View(presenter);
+
+	Check(Rml(*view).Prepare(context), "the skirmish view prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	Check(system.Problems == problems, "the skirmish screen raises no RmlUi warning or error");
+
+	Rml::ElementDocument * document = Rml(*view).Document();
+	Rml::Element * dialog = document->GetElementById("reveal");
+	Check(dialog != nullptr && dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the setup is the size its template comes to");
+
+	Rml::Element * switches = document->GetElementById("switches");
+	Check(switches != nullptr && switches->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(252.0f, 158.0f), "the switch frame is its rect and the pixel the layer adds");
+
+	Rml::Element * settings = document->GetElementById("settings");
+	Check(settings != nullptr && settings->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(167.0f, 297.0f), "the setting frame is its rect and the pixel the layer adds");
+
+	Check(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map preview");
+
+	presenter.State.Bases = false;
+	presenter.State.ShortGame = false;
+	Drive(presenter, "short", 1);
+	Check(presenter.State.ShortGame && presenter.State.Bases, "asking for a short game brings bases back");
+	Drive(presenter, "bases", 0);
+	Check(!presenter.State.Bases && !presenter.State.ShortGame, "taking bases away ends the short game");
+
+	Drive(presenter, "credits", 99999);
+	Check(presenter.State.Credits == 10000, "a reading past its bound is held at it");
+
+	Drive(presenter, "map");
+	Check(!presenter.Result.has_value() && service.Picked == 1, "the map button runs the map dialog over the setup, which stays open");
+	Check(presenter.State.MapName == "Picked map", "and the setup takes the map that came back");
+
+	service.Startable = false;
+	Drive(presenter, "ok");
+	Check(!presenter.Result.has_value() && service.Asked == 1, "a map that cannot hold the players leaves the setup open");
+	service.Startable = true;
+	Drive(presenter, "ok");
+	Check(presenter.Result.has_value() && presenter.Choice == UI_SKIRMISH_START, "and one that can starts the game");
+
+	view->Release();
+	context.Update();
+}
+
+
+static std::vector<std::uint8_t> Build_Strike(unsigned int charset, unsigned int first, int height = 4, int ascent = 3)
+{
+	int const widths[2] = {3, 9};
+	std::size_t const name = 130;
+	std::size_t const picture = 134;
+	std::size_t const second = picture + (std::size_t)((widths[0] + 7) / 8) * height;
+	std::size_t const end = second + (std::size_t)((widths[1] + 7) / 8) * height;
+
+	std::vector<std::uint8_t> fnt(end, 0);
+	auto word = [&fnt](std::size_t at, unsigned int value) {
+		fnt[at] = (std::uint8_t)(value & 0xFF);
+		fnt[at + 1] = (std::uint8_t)(value >> 8);
+	};
+
+	word(0x00, 0x200);
+	word(0x44, 8);
+	word(0x4A, (unsigned int)ascent);
+	fnt[0x55] = (std::uint8_t)charset;
+	word(0x58, (unsigned int)height);
+	fnt[0x5F] = (std::uint8_t)first;
+	fnt[0x60] = (std::uint8_t)(first + 1);
+	word(0x69, (unsigned int)name);
+	word(0x6B, 0);
+
+	word(0x76, (unsigned int)widths[0]);
+	word(0x78, (unsigned int)picture);
+	word(0x7A, (unsigned int)widths[1]);
+	word(0x7C, (unsigned int)second);
+	word(0x7E, 0);
+	word(0x80, (unsigned int)end);
+
+	fnt[name] = 'T';
+	fnt[name + 1] = 0;
+	fnt[picture] = 0xA0;
+	fnt[second + (std::size_t)height] = 0x80;
+	return(fnt);
+}
+
+
+static std::vector<std::uint8_t> Build_Font_Image(std::vector<std::vector<std::uint8_t>> const & fnts)
+{
+	std::vector<std::size_t> starts;
+	std::size_t at = 0x100;
+	for (std::vector<std::uint8_t> const & fnt : fnts) {
+		starts.push_back(at);
+		at += ((fnt.size() + 15) / 16) * 16;
+	}
+
+	std::vector<std::uint8_t> image(at, 0);
+	auto word = [&image](std::size_t place, unsigned int value) {
+		image[place] = (std::uint8_t)(value & 0xFF);
+		image[place + 1] = (std::uint8_t)(value >> 8);
+	};
+
+	image[0] = 'M';
+	image[1] = 'Z';
+	word(0x3C, 0x40);
+	image[0x40] = 'N';
+	image[0x41] = 'E';
+	word(0x40 + 0x24, 0x40);
+
+	word(0x80, 4);
+	word(0x82, 0x8008);
+	word(0x84, (unsigned int)fnts.size());
+
+	std::size_t entry = 0x8A;
+	for (std::size_t index = 0; index < fnts.size(); index++) {
+		std::size_t padded = ((fnts[index].size() + 15) / 16) * 16;
+		word(entry, (unsigned int)(starts[index] >> 4));
+		word(entry + 2, (unsigned int)(padded >> 4));
+		std::memcpy(image.data() + starts[index], fnts[index].data(), fnts[index].size());
+		entry += 12;
+	}
+	word(entry, 0);
+	return(image);
+}
+
+
+static std::vector<std::uint8_t> Build_Font_Image(std::vector<std::uint8_t> const & fnt)
+{
+	return(Build_Font_Image(std::vector<std::vector<std::uint8_t>>{fnt}));
+}
+
+
+static bool Read_Strike(std::vector<std::uint8_t> const & fnt, UIRasterStrike & strike)
+{
+	return(UI_Read_Raster_Strike(std::span<std::uint8_t const>(fnt.data(), fnt.size()), strike));
+}
+
+
+void Test_Raster_Font(void)
+{
+	char32_t const CYRILLIC_A = 0x0410;
+	char32_t const CYRILLIC_BE = 0x0411;
+	char32_t const EURO = 0x20AC;
+
+	std::vector<std::uint8_t> fnt = Build_Strike(0, 'A');
+
+	UIRasterStrike strike;
+	Check(Read_Strike(fnt, strike), "a strike reads");
+	Check(strike.Points == 8 && strike.Height == 4 && strike.Ascent == 3, "a strike carries its size and its baseline");
+	Check(strike.Face == "T", "a strike names its face");
+	Check(strike.Advance(U'A') == 3 && strike.Advance(U'B') == 9, "a character's advance is its own width");
+	Check(strike.Advance(U'C') == 0 && strike.Find(U'C') == nullptr, "a character the strike does not carry has no width");
+	Check(strike.Find(U'A') != nullptr && strike.Find(U'A')->Coverage.size() == 12
+		&& strike.Find(U'A')->Coverage[0] == 255 && strike.Find(U'A')->Coverage[1] == 0 && strike.Find(U'A')->Coverage[2] == 255,
+		"a glyph's first row comes out of the top bits of its first column");
+	Check(strike.Find(U'B') != nullptr && strike.Find(U'B')->Coverage[8] == 255 && strike.Find(U'B')->Coverage[0] == 0,
+		"a glyph wider than eight reads its ninth pixel from a second column");
+
+	std::vector<std::uint8_t> clipped(fnt.begin(), fnt.begin() + 140);
+	UIRasterStrike refused;
+	Check(!UI_Read_Raster_Strike(std::span<std::uint8_t const>(clipped.data(), clipped.size()), refused), "a strike cut short is refused");
+
+	Check(UI_Raster_Charset_Page(0) == 1252 && UI_Raster_Charset_Page(238) == 1250 && UI_Raster_Charset_Page(204) == 1251
+		&& UI_Raster_Charset_Page(161) == 1253 && UI_Raster_Charset_Page(162) == 1254 && UI_Raster_Charset_Page(186) == 1257,
+		"a charset byte names its code page");
+	Check(UI_Raster_Charset_Page(177) == 1252 && UI_Raster_Charset_Page(99) == 1252,
+		"a charset the engine has no table for is read as the page the dialogs were drawn in");
+
+	UIRasterStrike cyrillic;
+	Check(Read_Strike(Build_Strike(204, 0xC0), cyrillic), "a strike in another code page reads");
+	Check(cyrillic.Advance(CYRILLIC_A) == 3 && cyrillic.Advance(CYRILLIC_BE) == 9, "its characters are the ones its page shows");
+	Check(cyrillic.Advance((char32_t)0xC0) == 0, "the byte itself carries nothing");
+
+	UIRasterStrike ascii;
+	Check(Read_Strike(Build_Strike(204, 'A'), ascii) && ascii.Advance(U'A') == 3,
+		"the low row is the same character whatever the page");
+
+	UIRasterStrike undefined;
+	Check(Read_Strike(Build_Strike(0, 0x80), undefined) && undefined.Glyphs.size() == 1 && undefined.Advance(EURO) == 3,
+		"a byte its page leaves undefined is dropped and the one beside it is kept");
+
+	UIRasterStrike control;
+	Check(Read_Strike(Build_Strike(0, 0x1F), control) && control.Glyphs.size() == 1 && control.Advance(U' ') == 9,
+		"a character below a space is dropped");
+
+	for (UIRasterStrike const & sorted : {strike, cyrillic}) {
+		bool ascending = true;
+		for (std::size_t index = 1; index < sorted.Glyphs.size(); index++) {
+			ascending = ascending && sorted.Glyphs[index - 1].Code < sorted.Glyphs[index].Code;
+		}
+		Check(ascending, "a strike holds its glyphs in code order, each code once");
+	}
+
+	std::vector<std::uint8_t> image = Build_Font_Image(fnt);
+	std::vector<UIRasterStrike> strikes;
+	Check(UI_Read_Raster_Font(std::span<std::uint8_t const>(image.data(), image.size()), strikes)
+		&& strikes.size() == 1 && strikes[0].Advance(U'B') == 9, "a font image gives up the strikes it carries");
+
+	std::vector<UIRasterStrike> twice;
+	std::vector<std::uint8_t> pair = Build_Font_Image({Build_Strike(0, 'A'), Build_Strike(204, 0xC0)});
+	Check(UI_Read_Raster_Font(std::span<std::uint8_t const>(pair.data(), pair.size()), twice)
+		&& twice.size() == 1 && twice[0].Advance(U'A') == 3 && twice[0].Advance(CYRILLIC_A) == 0,
+		"a file carrying a second strike of a height it already gave up is read once");
+
+	image[1] = 'X';
+	Check(!UI_Read_Raster_Font(std::span<std::uint8_t const>(image.data(), image.size()), strikes) && strikes.empty(),
+		"bytes that are not a sixteen-bit image give up nothing");
+
+	std::vector<UIRasterStrike> family;
+	family.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(family, {cyrillic}) == 2 && family.size() == 1
+		&& family[0].Advance(U'A') == 3 && family[0].Advance(CYRILLIC_A) == 3,
+		"a merge adds the characters the other cut carries");
+
+	std::vector<std::uint8_t> altered = Build_Strike(0, 'A');
+	altered[134] = 0x40;
+	UIRasterStrike other;
+	Check(Read_Strike(altered, other), "a second cut of the same characters reads");
+
+	std::vector<UIRasterStrike> mine;
+	mine.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(mine, {other}) == 0
+		&& mine[0].Find(U'A')->Coverage[0] == 255 && mine[0].Find(U'A')->Coverage[1] == 0,
+		"the strike read first keeps a character both carry");
+
+	std::vector<UIRasterStrike> reversed;
+	reversed.push_back(other);
+	Check(UI_Merge_Raster_Strikes(reversed, {strike}) == 0
+		&& reversed[0].Find(U'A')->Coverage[0] == 0 && reversed[0].Find(U'A')->Coverage[1] == 255,
+		"which cut wins follows the order they are merged in, not which ran last");
+
+	UIRasterStrike taller;
+	Check(Read_Strike(Build_Strike(204, 0xC0, 5), taller), "a strike of another height reads");
+	std::vector<UIRasterStrike> unmatched;
+	unmatched.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(unmatched, {taller}) == 0 && unmatched.size() == 1,
+		"a cut whose height is not already there is left out rather than added beside it");
+
+	UIRasterStrike raised;
+	Check(Read_Strike(Build_Strike(204, 0xC0, 4, 2), raised), "a strike on another baseline reads");
+	std::vector<UIRasterStrike> mismatched;
+	mismatched.push_back(strike);
+	Check(UI_Merge_Raster_Strikes(mismatched, {raised}) == 0 && mismatched[0].Advance(CYRILLIC_A) == 0,
+		"a cut putting its baseline elsewhere at the same height is left out");
+
+	std::vector<UIRasterCell> cells;
+	int width = 0;
+	int height = 0;
+	Check(UI_Raster_Strike_Layout(family[0], UI_RASTER_ATLAS_LIMIT, cells, width, height)
+		&& cells.size() == family[0].Glyphs.size(), "every glyph of a strike gets a cell");
+	Check(width <= UI_RASTER_ATLAS_LIMIT && height <= UI_RASTER_ATLAS_LIMIT && height % family[0].Height == 0,
+		"the atlas stays inside the limit and is whole rows of the strike");
+
+	bool placed = true;
+	for (std::size_t index = 0; index < cells.size(); index++) {
+		placed = placed && cells[index].Code == family[0].Glyphs[index].Code
+			&& cells[index].X >= 0 && cells[index].X + cells[index].Advance <= width
+			&& cells[index].Y >= 0 && cells[index].Y + family[0].Height <= height;
+		for (std::size_t earlier = 0; earlier < index; earlier++) {
+			bool apart = cells[index].Y != cells[earlier].Y
+				|| cells[index].X + cells[index].Advance <= cells[earlier].X
+				|| cells[earlier].X + cells[earlier].Advance <= cells[index].X;
+			placed = placed && apart;
+		}
+	}
+	Check(placed, "the cells sit inside the atlas in the strike's order without overlapping");
+
+	Check(!UI_Raster_Strike_Layout(family[0], 2, cells, width, height) && cells.empty(),
+		"a strike that cannot be laid inside the limit is refused");
+
+	UIRasterStrike nothing;
+	Check(!UI_Raster_Strike_Layout(nothing, UI_RASTER_ATLAS_LIMIT, cells, width, height),
+		"a strike carrying nothing has no atlas");
+}
+
+
+void Test_Surface_Element(Rml::Context & context, RecordingRenderInterfaceClass & render, CountingSystemInterfaceClass & system)
+{
+	std::uint16_t const source[] = { 0x0000, 0xFFFF, 0xF800, 0x07E0, 0x001F, 0x8410 };
+	std::vector<std::uint8_t> rgba;
+
+	bool converted = UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(source, 6), 2, 3, 2, rgba);
+	Check(converted && rgba.size() == 2 * 3 * 4, "a 565 picture converts to four bytes a pixel");
+
+	if (converted && rgba.size() == 24) {
+		std::uint8_t const expected[24] = {
+			0, 0, 0, 255,        255, 255, 255, 255,
+			255, 0, 0, 255,      0, 255, 0, 255,
+			0, 0, 255, 255,      131, 129, 131, 255
+		};
+		Check(std::memcmp(rgba.data(), expected, sizeof(expected)) == 0, "and widens each channel by repeating its top bits");
+	}
+
+	std::uint16_t const pitched[] = { 0xF800, 0x07E0, 0x0000, 0x0000, 0x001F, 0xFFFF };
+	Check(UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(pitched, 6), 2, 2, 4, rgba)
+		&& rgba.size() == 16 && rgba[8] == 0 && rgba[10] == 255, "a pitch wider than the picture is followed");
+	Check(!UI_Hicolor_To_RGBA(std::span<std::uint16_t const>(pitched, 5), 2, 2, 4, rgba) && rgba.empty(), "a picture short of its own size converts to nothing");
+
+	int x = -1;
+	int y = -1;
+	int width = -1;
+	int height = -1;
+	Check(UI_Surface_Fit(200, 100, 100, 100, x, y, width, height) && x == 0 && y == 25 && width == 100 && height == 50, "a wide picture fits the width of its box and centers down it");
+	Check(UI_Surface_Fit(100, 200, 100, 100, x, y, width, height) && x == 25 && y == 0 && width == 50 && height == 100, "a tall picture fits the height and centers across");
+	Check(UI_Surface_Fit(50, 50, 100, 100, x, y, width, height) && x == 0 && y == 0 && width == 100 && height == 100, "a picture in proportion with its box fills it");
+	Check(UI_Surface_Fit(3, 1, 10, 10, x, y, width, height) && x == 0 && y == 3 && width == 10 && height == 3, "a picture the box does not divide fills the side that runs out and centers on the other");
+	Check(!UI_Surface_Fit(0, 10, 100, 100, x, y, width, height) && width == 0 && height == 0, "a picture of nothing is not placed");
+
+	std::uint8_t const pair[8] = { 10, 20, 30, 255, 200, 210, 220, 255 };
+	std::vector<std::uint8_t> scaled;
+	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 4, 2, scaled)
+		&& scaled.size() == 32 && scaled[0] == 10 && scaled[4] == 10 && scaled[8] == 200 && scaled[12] == 200
+		&& std::memcmp(scaled.data(), scaled.data() + 16, 16) == 0, "a picture stretches by repeating whole pixels");
+	std::uint8_t const four[16] = { 1, 0, 0, 255, 2, 0, 0, 255, 3, 0, 0, 255, 4, 0, 0, 255 };
+	Check(UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(four, 16), 4, 1, 2, 1, scaled)
+		&& scaled.size() == 8 && scaled[0] == 2 && scaled[4] == 4, "and shrinks by dropping them");
+	Check(!UI_Scale_RGBA_Nearest(std::span<std::uint8_t const>(pair, 8), 2, 1, 0, 1, scaled) && scaled.empty(),
+		"a picture is not stretched to nothing");
+
+	char const * markup =
+		"<rml><head><style>"
+		"body { width: 400px; height: 300px; }"
+		"surface { display: block; width: 120px; height: 80px; }"
+		"</style></head><body><surface id=\"picture\"/></body></rml>";
+
+	int rendered = render.Rendered;
+	int generated = render.Generated;
+	int unsupported = render.Unsupported;
+	int problems = system.Problems;
+
+	Rml::ElementDocument * document = context.LoadDocumentFromMemory(markup);
+	Check(document != nullptr, "a document holding a surface loads");
+	if (document == nullptr) {
+		return;
+	}
+
+	document->Show();
+	context.Update();
+	context.Render();
+	Check(render.Rendered == rendered && render.Generated == generated, "a surface with no picture draws nothing and makes no texture");
+
+	UIRmlSurfaceElementClass * surface = rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("picture"));
+	Check(surface != nullptr, "the surface tag instances the element the shell registered");
+
+	if (surface != nullptr) {
+		surface->Set_Image(4, 2, std::vector<std::uint8_t>(4 * 2 * 4, 255));
+		context.Update();
+		context.Render();
+		Check(render.Generated > generated, "a surface handed pixels makes a texture of them");
+		Check(render.Rendered > rendered, "and draws them");
+
+		rendered = render.Rendered;
+		surface->Set_Image(0, 0, std::vector<std::uint8_t>());
+		context.Update();
+		context.Render();
+		Check(render.Rendered == rendered, "a surface whose picture is taken away draws nothing again");
+	}
+
+	Check(render.Unsupported == unsupported, "a surface stays within the implemented render methods");
+	Check(system.Problems == problems, "a surface raises no RmlUi warning or error");
+
+	document->Close();
+	context.Update();
+}
+
+
+void Test_Effects_Documents(Rml::Context & context, RecordingRenderInterfaceClass & render, CountingSystemInterfaceClass & system)
+{
+	char const * rotated =
+		"<rml><head><style>"
+		"body { width: 400px; height: 300px; }"
+		"#box { display: block; width: 100px; height: 60px; background-color: #ffffff; transform: rotate(10deg); }"
+		"</style></head><body><div id=\"box\"/></body></rml>";
+
+	char const * rounded =
+		"<rml><head><style>"
+		"body { width: 400px; height: 300px; }"
+		"#clip { display: block; width: 100px; height: 60px; overflow: hidden; border-radius: 12px; background-color: #ffffff; }"
+		"#inner { display: block; width: 200px; height: 200px; background-color: #ff0000; }"
+		"</style></head><body><div id=\"clip\"><div id=\"inner\"/></div></body></rml>";
+
+	struct {
+		char const * Markup;
+		bool Transform;
+		char const * What;
+	} const cases[] = {
+		{ rotated, true, "a rotated element" },
+		{ rounded, false, "a rounded element that clips its content" }
+	};
+
+	for (auto const & effect : cases) {
+		int rendered = render.Rendered;
+		int unsupported = render.Unsupported;
+		int transforms = render.Transforms;
+		int masks = render.ClipMasks;
+		int problems = system.Problems;
+
+		Rml::ElementDocument * document = context.LoadDocumentFromMemory(effect.Markup);
+		std::string name = effect.What;
+		Check(document != nullptr, (name + " loads").c_str());
+		if (document == nullptr) {
+			continue;
+		}
+
+		document->Show();
+		context.Update();
+		context.Render();
+
+		Check(render.Rendered > rendered, (name + " draws geometry").c_str());
+		Check(effect.Transform ? render.Transforms > transforms : render.ClipMasks > masks,
+			  (name + " asks the renderer for the effect it needs").c_str());
+		Check(render.Unsupported == unsupported, (name + " stays within the implemented render methods").c_str());
+		Check(system.Problems == problems, (name + " raises no RmlUi warning or error").c_str());
+
+		document->Close();
+		context.Update();
+	}
+
+	Check(!render.ClipMaskEnabled, "a document that clipped leaves no mask in force behind it");
+}
+
+
+void Test_Documents(void)
+{
+	std::filesystem::path directory(OPENTS_UI_DIR);
+
+	std::filesystem::current_path(directory);
+
+	RecordingRenderInterfaceClass render;
+	CountingSystemInterfaceClass system;
+	Rml::SetRenderInterface(&render);
+	Rml::SetSystemInterface(&system);
+
+	Check(Rml::Initialise(), "RmlUi initialises with the recording interfaces");
+	std::printf("  RmlUi %s\n", Rml::GetVersion().c_str());
+
+	UI_Register_Surface_Element();
+
+	std::string shipped = (directory / "Arimo.ttf").string();
+	Check(Rml::LoadFontFace(shipped), "the shipped font loads");
+	Check(Rml::LoadFontFace(shipped, "dlg-sans", Rml::Style::FontStyle::Normal), "and stands in for the dialogs' sans family");
+	Check(Rml::LoadFontFace(shipped, "dlgsys", Rml::Style::FontStyle::Normal), "and for the bitmap family the art would supply");
+
+	Rml::Context * context = Rml::CreateContext("test", Rml::Vector2i(1280, 800));
+	Check(context != nullptr, "a context is created");
+
+	int documents = 0;
+	int templates = 0;
+	for (std::filesystem::directory_entry const & entry : std::filesystem::directory_iterator(directory)) {
+		std::filesystem::path path = entry.path();
+		std::string extension = path.extension().string();
+
+		if (extension == ".rml" || extension == ".rcss") {
+			std::string what = path.filename().string() + " names its resources by bare file name";
+			Check(References_Are_Bare(Read_Text(path)), what.c_str());
+		}
+
+		if (extension == ".rml" && Read_Text(path).find("<template") != std::string::npos) {
+			templates++;
+			continue;
+		}
+
+		if (extension != ".rml" || context == nullptr) {
+			continue;
+		}
+
+		documents++;
+		int rendered = render.Rendered;
+		int unsupported = render.Unsupported;
+		int invalid = render.Invalid;
+		int problems = system.Problems;
+		render.Scissors.clear();
+
+		std::string model = Data_Model_Name(Read_Text(path));
+		if (!model.empty()) {
+			Rml::DataModelConstructor constructor = context->CreateDataModel(model, nullptr, true);
+			constructor.BindEventCallback("queue", [](Rml::DataModelHandle, Rml::Event &, Rml::VariantList const &) {});
+		}
+
+		Rml::ElementDocument * document = context->LoadDocument(path.string());
+		std::string name = path.filename().string();
+		Check(document != nullptr, (name + " loads").c_str());
+		if (document == nullptr) {
+			continue;
+		}
+
+		document->Show();
+		context->Update();
+		context->Render();
+
+		Check(render.Rendered > rendered, (name + " draws geometry").c_str());
+		Check(render.Unsupported == unsupported, (name + " stays within the implemented render methods").c_str());
+		Check(render.Invalid == invalid, (name + " compiles whole, in-range, finite geometry").c_str());
+		Check(system.Problems == problems, (name + " raises no RmlUi warning or error").c_str());
+
+		bool clipped = true;
+		for (Rml::Rectanglei const & scissor : render.Scissors) {
+			if (!scissor.Valid() || scissor.Left() < 0 || scissor.Top() < 0 || scissor.Right() > 1280 || scissor.Bottom() > 800) {
+				clipped = false;
+			}
+		}
+		Check(clipped, (name + " scissors within the context").c_str());
+
+		document->Close();
+		context->Update();
+
+		if (!model.empty()) {
+			context->RemoveDataModel(model);
+		}
+	}
+
+	Check(documents > 0, "the ui directory holds at least one document");
+	Check(templates > 0, "and at least one template the documents are built on");
+
+	if (context != nullptr) {
+		Test_Effects_Documents(*context, render, system);
+		Test_Raster_Font();
+		Test_Surface_Element(*context, render, system);
+		Test_Skirmish_Screen(*context, system);
+		Test_Scenario_Screen(*context, system);
+		Test_Net_Browser_Screen(*context, system);
+		Test_Net_Setup_Screen(*context, system);
+		Test_Version_Screen(*context, system);
+		Test_Save_Game_Screen(*context, system);
+		Test_Game_Options_Screen(*context, system);
+		Test_Message_Box_Screen(*context, system);
+		Test_Sound_Screen(*context, system);
+		Test_Game_Controls_Screen(*context, system);
+		Test_Display_Screen(*context, system);
+		Test_Keyboard_Screen(*context, system);
+		Test_Keyboard_Navigation(*context, system, render);
+		Test_List_Scrolling(*context, system);
+		Test_Menu_Screen(*context, system);
+		Test_Main_Options_Screen(*context, system, render);
+		Test_Wait_Box_Screen(*context, system);
+	}
+
+	if (context != nullptr) {
+		Rml::RemoveContext("test");
+	}
+	Rml::Shutdown();
+
+	Check(render.ReleasedGeometry == render.Compiled, "every compiled geometry is released by shutdown");
+	Check(render.ReleasedTextures == render.Loaded + render.Generated, "every texture is released by shutdown");
+	std::printf("  %d geometries, %d generated textures, %d loaded textures\n", render.Compiled, render.Generated, render.Loaded);
+}
+
+
+void Test_Shell(void)
+{
+	ShellFixtureType fixture;
+	UIShellClass & shell = fixture.Shell;
+	TestHostClass & host = fixture.Host;
+
+	Check(shell.Init(), "the shell initializes over the injected interfaces");
+	Check(shell.Rml_Context() != nullptr, "the shell holds a context");
+	Check(!shell.Screen_Shown() && shell.Modal() == nullptr && shell.Modal_Depth() == 0, "no screen is shown at start");
+
+	{
+		UIVersionPresenterClass presenter({ "one", "two" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool shownInside = false;
+		bool consumedWhileOpening = false;
+		int presents = host.Presents;
+
+		host.OnClear = [&](void) {
+			if (host.Clears == 1) {
+				consumedWhileOpening = Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
+			}
+		};
+
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				shownInside = shell.Screen_Shown() && shell.Modal() == view.get() && shell.Modal_Depth() == 1;
+			}
+			if (passes == 3) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		host.OnClear = nullptr;
+
+		Check(result == UI_RESULT_ACCEPTED, "Enter accepts the modal");
+		Check(passes == 3, "the runner stops on the pass that produced the result");
+		Check(host.Presents - presents == 2, "the runner presents after each pass that continues");
+		Check(shownInside, "the modal is the shown screen while the service runs");
+		Check(consumedWhileOpening, "a press pumped while the screen opens is consumed");
+		Check(host.Clears == 2, "the keyboard queue is cleared at open and at close");
+		Check(host.Focuses == 1, "focus returns to the main window once");
+		Check(!shell.Screen_Shown() && shell.Modal() == nullptr, "the modal stack is empty after the close");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "escape" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(result == UI_RESULT_CANCELLED, "Escape cancels the modal");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "ended" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			passes++;
+			return(true);
+		});
+		Check(result == UI_RESULT_SESSION_ENDED && passes == 1, "a service reporting the game ended closes the modal at once");
+		Check(!shell.Screen_Shown(), "a modal ended by the game leaves nothing shown");
+	}
+
+	{
+		UIVersionPresenterClass outer({ "outer" });
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		int outerPasses = 0;
+		std::optional<UIResult> inner;
+		UIResult result = shell.Run_Modal(*outerview, [&](void) {
+			outerPasses++;
+			if (outerPasses == 1) {
+				UIMessageBoxPresenterClass presenter("inner", { "OK" }, 0);
+				std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+				inner = shell.Run_Modal(*view, [](void) { return(true); });
+				return(false);
+			}
+			return(true);
+		});
+		Check(inner.has_value() && *inner == UI_RESULT_SESSION_ENDED && result == UI_RESULT_SESSION_ENDED && outerPasses == 2, "a game ending under a nested screen closes each runner on its next pass");
+		Check(!shell.Screen_Shown() && !Send(shell, WM_KEYDOWN, VK_SPACE), "and leaves nothing shown to take the score screen's key");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "resize" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool resized = false;
+		bool unchangedInside = false;
+		bool appliedBefore = false;
+
+		fixture.Render->OnRender = [&](void) {
+			if (!resized) {
+				resized = true;
+				host.Rect.Width = 640;
+				host.Rect.Height = 400;
+				shell.On_Video_Change();
+				unchangedInside = shell.Rml_Context()->GetDimensions() == Rml::Vector2i(1280, 800);
+			}
+		};
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 2) {
+				appliedBefore = shell.Rml_Context()->GetDimensions() == Rml::Vector2i(640, 400);
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		fixture.Render->OnRender = nullptr;
+
+		Check(resized && unchangedInside, "a resize arriving inside a render is deferred");
+		Check(appliedBefore, "the deferred resize is applied before the next tick");
+
+		host.Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
+		shell.On_Video_Change();
+		Check(shell.Rml_Context()->GetDimensions() == Rml::Vector2i(1280, 800), "a resize outside a render is applied at once");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "archives" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		int released = 0;
+		int fetched = 0;
+		int lookups = 0;
+		bool dropped = false;
+		bool refetched = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				released = fixture.Render->ReleasedTextures;
+				fetched = fixture.Render->Loaded + fixture.Render->Generated;
+				lookups = UITestSheetLookups;
+				shell.On_Archives_Change();
+				dropped = fixture.Render->ReleasedTextures > released;
+			}
+			if (passes == 2) {
+				refetched = fixture.Render->Loaded + fixture.Render->Generated > fetched;
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+
+		Check(dropped, "an archive change lets the art already loaded go");
+		Check(refetched, "a document fetches its art again over the archives now mounted");
+		Check(UITestSheetLookups > lookups, "the dialog font sheets are looked for again");
+
+		int const problems = fixture.System->Problems;
+		UIVersionPresenterClass after({ "reread" });
+		std::unique_ptr<UIViewClass> afterview = UI_Version_View(after);
+		bool built = false;
+
+		shell.Run_Modal(*afterview, [&](void) {
+			Rml::ElementDocument * document = Rml(*afterview).Document();
+			built = document != nullptr && document->GetElementById("chrome") != nullptr;
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+
+		Check(built && fixture.System->Problems == problems, "a screen opened after the change still builds from its template");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "remount" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		int released = 0;
+		bool asked = false;
+		bool heldInside = false;
+		bool appliedBefore = false;
+
+		fixture.Render->OnRender = [&](void) {
+			if (!asked) {
+				asked = true;
+				released = fixture.Render->ReleasedTextures;
+				shell.On_Archives_Change();
+				heldInside = fixture.Render->ReleasedTextures == released;
+			}
+		};
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 2) {
+				appliedBefore = fixture.Render->ReleasedTextures > released;
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		fixture.Render->OnRender = nullptr;
+
+		Check(asked && heldInside, "an archive change arriving inside a render is deferred");
+		Check(appliedBefore, "the deferred archive change is applied before the next tick");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "held" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool suppressed = false;
+		bool swallowed = false;
+		bool quiet = false;
+
+		host.Down[VK_LBUTTON] = true;
+		host.Down['A'] = true;
+		UIResult result = shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				suppressed = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && shell.Input_State().Key_Owner('A') == UI_INPUT_SUPPRESSED;
+				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10)) && Send(shell, WM_KEYUP, 'A');
+				host.Down[VK_LBUTTON] = false;
+				host.Down['A'] = false;
+				quiet = !presenter.Has_Pending() && shell.Input_State().Mouse_Owner(0) == UI_INPUT_NONE && shell.Input_State().Key_Owner('A') == UI_INPUT_NONE;
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		Check(suppressed, "input held as a screen opens is suppressed");
+		Check(swallowed, "the releases of suppressed input are swallowed");
+		Check(quiet && result == UI_RESULT_ACCEPTED, "suppressed releases queue nothing and a fresh press still accepts");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "capture" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int passes = 0;
+		bool owned = false;
+		bool cancelled = false;
+		bool swallowed = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 1) {
+				Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
+				Send(shell, WM_KEYDOWN, 'A');
+				owned = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML && shell.Input_State().Key_Owner('A') == UI_INPUT_RML && host.Captured;
+				host.Captured = false;
+				Send(shell, WM_CAPTURECHANGED, 0, (LPARAM)1);
+				cancelled = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && shell.Input_State().Key_Owner('A') == UI_INPUT_RML && !host.Captured && shell.Modal() == view.get();
+				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10)) && !presenter.Has_Pending();
+				Send(shell, WM_KEYUP, 'A');
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		Check(owned, "a modal owns the presses it is given and takes the capture");
+		Check(cancelled, "losing the capture cancels the modal's held buttons and nothing else");
+		Check(swallowed, "the release of a cancelled press is swallowed");
+	}
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Score = 5;
+		state.Sound = 5;
+		state.Voice = 5;
+		state.Enabled = true;
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+		int passes = 0;
+		bool owned = false;
+		bool dropped = false;
+		bool still = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::Element * score = Rml(*view).Document()->GetElementById("score");
+			Rml::Element * bar = nullptr;
+			Rml::Element * track = nullptr;
+			if (passes == 2 && score != nullptr && Slider_Parts(score, bar, track)) {
+				LPARAM const start = Element_Point(host, bar);
+				Send(shell, WM_MOUSEMOVE, 0, start);
+				host.Down[VK_LBUTTON] = true;
+				Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, start);
+				owned = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML && host.Captured;
+
+				host.Down[VK_LBUTTON] = false;
+				Send(shell, WM_ACTIVATEAPP, 0, 0);
+				dropped = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && !host.Captured;
+				Send(shell, WM_ACTIVATEAPP, 1, 0);
+				Send(shell, WM_MOUSEMOVE, 0, Past_Track_End(host, bar, track));
+			}
+			if (passes == 3 && score != nullptr) {
+				still = presenter.State.Score == 5 && score->GetAttribute<int>("value", -1) == 5 && !presenter.Has_Pending();
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		Send(shell, WM_KEYUP, VK_ESCAPE);
+		shell.Tick();
+
+		Check(owned, "a press on a slider's bar is the document's and takes the capture");
+		Check(dropped, "losing the application cancels the held button and gives the capture back");
+		Check(still, "a pointer that comes back without the button moves the slider nowhere");
+	}
+
+	{
+		UIVersionPresenterClass outer({ "outer" });
+		UIMessageBoxPresenterClass inner("Nested", { "OK", "Cancel" }, 0);
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+		int passes = 0;
+		bool nested = false;
+		bool restored = false;
+		bool swallowed = false;
+
+		UIResult result = shell.Run_Modal(*outerview, [&](void) {
+			passes++;
+			if (passes == 1) {
+				int innerpasses = 0;
+				UIResult innerresult = shell.Run_Modal(*innerview, [&](void) {
+					innerpasses++;
+					if (innerpasses == 1) {
+						nested = shell.Modal() == innerview.get() && shell.Modal_Depth() == 2;
+						host.Down[VK_LBUTTON] = true;
+						Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
+						Send(shell, WM_KEYDOWN, VK_ESCAPE);
+					}
+					return(innerpasses >= 5);
+				});
+				restored = innerresult == UI_RESULT_CANCELLED && shell.Modal() == outerview.get() && shell.Modal_Depth() == 1 && shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED;
+				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10));
+				host.Down[VK_LBUTTON] = false;
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		Check(nested, "a nested modal is the shown screen at depth two");
+		Check(restored && result == UI_RESULT_ACCEPTED, "closing the inner modal restores the outer one, which still accepts");
+		Check(swallowed, "a press held across the inner close is swallowed by the outer");
+	}
+
+	{
+		UIVersionPresenterClass outer({ "serviced" });
+		UIMessageBoxPresenterClass inner("Under it", { "OK" }, 0);
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+		int passes = 0;
+		int innerpasses = 0;
+		bool outerseen = false;
+		bool innerseen = false;
+		bool outerback = false;
+
+		UIServiceCallback innerservice = [&](void) {
+			innerpasses++;
+			if (innerpasses == 1) {
+				innerseen = shell.Running_Service() == &innerservice;
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(innerpasses >= 4);
+		};
+		UIServiceCallback outerservice = [&](void) {
+			passes++;
+			if (passes == 1) {
+				outerseen = shell.Running_Service() == &outerservice;
+				shell.Run_Modal(*innerview, innerservice);
+				outerback = shell.Running_Service() == &outerservice;
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		};
+
+		Check(shell.Running_Service() == nullptr, "no service runs while no screen is shown");
+		shell.Run_Modal(*outerview, outerservice);
+		Send(shell, WM_KEYUP, VK_RETURN);
+		shell.Tick();
+		Check(outerseen && innerseen, "each running screen reports the service driving it");
+		Check(outerback && shell.Running_Service() == nullptr, "closing a screen hands the service back to the one below, and the last to nobody");
+	}
+
+	{
+		UIVersionPresenterClass outer({ "covered" });
+		UIMessageBoxPresenterClass inner("Over it", { "OK" }, 0);
+		std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+		std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+		int passes = 0;
+		bool shownbefore = false;
+		bool hidden = true;
+		bool shownafter = false;
+		bool stillopen = false;
+
+		shell.Run_Modal(*outerview, [&](void) {
+			passes++;
+			if (passes == 1) {
+				shownbefore = outerview->Is_Shown();
+				int innerpasses = 0;
+				shell.Run_Modal(*innerview, [&](void) {
+					innerpasses++;
+					hidden = hidden && !outerview->Is_Shown();
+					if (innerpasses == 1) {
+						Send(shell, WM_KEYDOWN, VK_RETURN);
+					}
+					return(innerpasses >= 4);
+				}, true);
+				shownafter = outerview->Is_Shown();
+				stillopen = !Rml(*outerview).Document()->IsClassSet("revealing") && !shell.Revealing_Shown();
+			}
+			if (passes == 2) {
+				Send(shell, WM_KEYDOWN, VK_RETURN);
+			}
+			return(false);
+		});
+		Check(shownbefore && shownafter, "a screen is shown before and after the one it raises over itself");
+		Check(hidden, "and is hidden for every pass that one runs");
+		Check(stillopen, "and comes back without opening again");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "messages" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		bool taken = false;
+		bool focused = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			taken = Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM(2000, 2000))
+				&& Send(shell, WM_XBUTTONDOWN, MAKEWPARAM(0, XBUTTON1), MAKELPARAM(10, 10))
+				&& Send(shell, WM_XBUTTONUP, MAKEWPARAM(0, XBUTTON1), MAKELPARAM(10, 10))
+				&& Send(shell, WM_MOUSEHWHEEL, MAKEWPARAM(0, WHEEL_DELTA), MAKELPARAM(10, 10));
+			host.Down['C'] = true;
+			Send(shell, WM_ACTIVATEAPP, 1);
+			focused = shell.Input_State().Key_Owner('C') == UI_INPUT_SUPPRESSED;
+			host.Down['C'] = false;
+			Send(shell, WM_KEYUP, 'C');
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(taken, "a modal takes moves, side buttons and the horizontal wheel");
+		Check(focused, "focus returning to a shown screen quarantines what is held");
+
+		Check(Send(shell, WM_KEYUP, VK_ESCAPE), "the release of the key that closed a screen is swallowed");
+		shell.Tick();
+		Check(!shell.Input_State().Any_Owned(), "nothing stays owned once the closing key is up and the shell has ticked");
+
+		host.Down['C'] = true;
+		Send(shell, WM_ACTIVATEAPP, 1);
+		Check(shell.Input_State().Key_Owner('C') == UI_INPUT_NONE, "focus returning to an idle shell quarantines nothing");
+		host.Down['C'] = false;
+		Check(!Send(shell, WM_KEYUP, 'Z'), "a stray release meets an idle shell and reaches the game");
+	}
+
+	{
+		class TextRecorderClass : public Rml::EventListener
+		{
+			public:
+				std::vector<Rml::String> Texts;
+
+				virtual void ProcessEvent(Rml::Event & event) override
+				{
+					Texts.push_back(event.GetParameter<Rml::String>("text", ""));
+				}
+		};
+
+		TextRecorderClass recorder;
+		UIVersionPresenterClass presenter({ "text" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+
+		shell.Run_Modal(*view, [&](void) {
+			Rml(*view).Document()->AddEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_CHAR, 0xC3);
+			Send(shell, WM_CHAR, 0xA9);
+			Rml(*view).Document()->RemoveEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(recorder.Texts.size() == 1 && recorder.Texts[0] == "\xC3\xA9", "two UTF-8 bytes on a narrow window reach the document as one character");
+	}
+
+	{
+		class TextRecorderClass : public Rml::EventListener
+		{
+			public:
+				std::vector<Rml::String> Texts;
+
+				virtual void ProcessEvent(Rml::Event & event) override
+				{
+					Texts.push_back(event.GetParameter<Rml::String>("text", ""));
+				}
+		};
+
+		TextRecorderClass recorder;
+		unsigned int page = host.CodePage;
+		host.CodePage = 1251;
+
+		UIVersionPresenterClass presenter({ "cyrillic" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+
+		shell.Run_Modal(*view, [&](void) {
+			Rml(*view).Document()->AddEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_CHAR, 0xCF);
+			Send(shell, WM_CHAR, 0xF0);
+			Send(shell, WM_CHAR, 0xE8);
+			Rml(*view).Document()->RemoveEventListener(Rml::EventId::Textinput, &recorder);
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		host.CodePage = page;
+
+		Check(recorder.Texts.size() == 3, "a code page byte each reaches the document as its own character");
+		Check(recorder.Texts.size() == 3 && recorder.Texts[0] == "\xD0\x9F" && recorder.Texts[1] == "\xD1\x80" && recorder.Texts[2] == "\xD0\xB8", "and each is the Cyrillic letter its byte names, not a replacement");
+	}
+
+	{
+		UISaveGameState state;
+		state.Mode = UI_SAVE_GAME_SAVE;
+		state.Title = "SAVE";
+		state.AcceptCaption = "Save";
+		UISaveGameEntry slot;
+		slot.Description = "[EMPTY SLOT]";
+		state.Entries.push_back(slot);
+
+		bool wide = host.Unicode;
+		host.Unicode = true;
+
+		UISaveGamePresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Save_Game_View(presenter);
+		Rml::String typed;
+
+		shell.Run_Modal(*view, [&](void) {
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::ElementFormControlInput * field = (document != nullptr)
+				? rmlui_dynamic_cast<Rml::ElementFormControlInput *>(document->GetElementById("description")) : nullptr;
+			if (field != nullptr) {
+				field->SetValue("");
+				field->Focus();
+				Send(shell, WM_CHAR, 0x041F);
+				Send(shell, WM_CHAR, 0x0440);
+				Send(shell, WM_CHAR, 0x0438);
+				Send(shell, WM_CHAR, 0x0432);
+				Send(shell, WM_CHAR, 0x0435);
+				Send(shell, WM_CHAR, 0x0442);
+				typed = field->GetValue();
+			}
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		host.Unicode = wide;
+
+		Check(typed == "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82", "Cyrillic typed on a wide window reaches the field as the letters themselves");
+	}
+
+	{
+		char const * sample = "\xC3\xA9\xE2\x82\xAC\xF0\x9F\x98\x80";
+		std::wstring wide;
+		std::string text;
+
+		std::wstring expected = { (wchar_t)0x00E9, (wchar_t)0x20AC, (wchar_t)0xD83D, (wchar_t)0xDE00 };
+		Check(UI_UTF8_To_UTF16(sample, wide) && wide == expected, "UTF-8 converts to UTF-16");
+		Check(UI_UTF16_To_UTF8(wide, text) && text == sample, "UTF-16 converts back to the same UTF-8");
+		Check(!UI_UTF8_To_UTF16("\xC0\xAF", wide), "an overlong sequence is refused, not repaired");
+		Check(!UI_UTF16_To_UTF8(std::wstring(1, (wchar_t)0xD800), text), "an unpaired surrogate is refused, not repaired");
+
+		Rml::String before;
+		fixture.System->GetClipboardText(before);
+		fixture.System->SetClipboardText(sample);
+		Rml::String after;
+		fixture.System->GetClipboardText(after);
+		Check(after == sample, "clipboard text survives a round trip");
+		fixture.System->SetClipboardText(before);
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "cursor" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		int applied = host.Applied;
+		int restored = host.Restored;
+		bool opened = false;
+		bool arrow = false;
+		bool requested = false;
+		bool shown = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			opened = host.Applied > applied && host.LastCursor == UI_CURSOR_ARROW && host.Restored == restored;
+			arrow = shell.Handle_Set_Cursor() && host.LastCursor == UI_CURSOR_ARROW;
+			fixture.System->SetMouseCursor("text");
+			requested = fixture.System->Cursor_Request() == UI_CURSOR_TEXT;
+			shown = shell.Handle_Set_Cursor() && host.LastCursor == UI_CURSOR_TEXT;
+			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			return(false);
+		});
+		Check(opened, "opening a screen puts the window's arrow on the pointer before any request");
+		Check(arrow, "WM_SETCURSOR over a shown screen is the screen's even with no request");
+		Check(requested, "a document's pointer request is kept");
+		Check(shown, "WM_SETCURSOR shows the requested shape while a screen is shown");
+		Check(host.Restored - restored == 1 && fixture.System->Cursor_Request() == UI_CURSOR_ARROW && host.LastCursor == UI_CURSOR_ARROW, "closing a screen puts the game's pointer back once and forgets the request");
+		Check(!shell.Handle_Set_Cursor(), "WM_SETCURSOR is the game's again once nothing is shown");
+	}
+
+	{
+		RecordingSoundServiceClass service;
+		UISoundState state;
+		state.Score = 5;
+		state.Sound = 5;
+		state.Voice = 5;
+		state.Enabled = true;
+		UISoundPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Sound_View(presenter);
+		int passes = 0;
+		int dragged = -1;
+		bool consumed = false;
+		bool held = false;
+		bool kept = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::Element * score = Rml(*view).Document()->GetElementById("score");
+			if (passes == 2 && score != nullptr) {
+				service.Calls.clear();
+				consumed = Drag_Slider_To_End(shell, host, score);
+				dragged = score->GetAttribute<int>("value", -1);
+			}
+			if (passes == 3 && score != nullptr) {
+				held = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
+			}
+			if (passes == 4 && score != nullptr) {
+				kept = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
+				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			}
+			return(false);
+		});
+		Send(shell, WM_KEYUP, VK_ESCAPE);
+		shell.Tick();
+
+		Check(consumed && dragged == UISoundPresenterClass::LEVELS, "a drag to the end of the music slider reaches the document and lands on the top level");
+		Check(held, "the level a drag left is what the model holds after the pass");
+		Check(kept && service.Calls.size() == 1, "the level stays put on the next pass and previews once");
+	}
+
+	{
+		UIMessageBoxPresenterClass presenter("Quarantine", { "OK", "Cancel", "" }, 0);
+		std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+		int passes = 0;
+		bool consumed = false;
+		bool unpressed = false;
+		bool answered = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementList buttons;
+			Rml(*view).Document()->GetElementsByTagName(buttons, "button");
+			if (buttons.empty()) {
+				return(true);
+			}
+			LPARAM at = Element_Point(host, buttons[0]);
+
+			if (passes == 2) {
+				host.Down[VK_LBUTTON] = true;
+				Send(shell, WM_ACTIVATEAPP, 1, 0);
+				consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+				unpressed = !buttons[0]->IsPseudoClassSet("active");
+				host.Down[VK_LBUTTON] = false;
+				Send(shell, WM_LBUTTONUP, 0, at);
+			}
+			if (passes == 3) {
+				answered = !presenter.Result.has_value();
+				Send(shell, WM_MOUSEMOVE, 0, at);
+				Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+				Send(shell, WM_LBUTTONUP, 0, at);
+			}
+			return(false);
+		});
+
+		Check(consumed, "a press quarantined by the window activating is kept from the game");
+		Check(unpressed, "that press never reaches the document, so nothing is left pressed");
+		Check(answered, "and it answers nothing");
+		Check(presenter.Result.has_value() && presenter.Choice == 0, "the next click on the same button answers normally");
+	}
+
+	{
+		for (int loss = 0; loss < 2; loss++) {
+			UIMessageBoxPresenterClass presenter("Delete it?", { "Yes", "No", "" }, 1);
+			std::unique_ptr<UIViewClass> view = UI_Message_Box_View(presenter);
+			int passes = 0;
+			bool held = false;
+			bool quiet = false;
+
+			shell.Run_Modal(*view, [&](void) {
+				passes++;
+				Rml::ElementList buttons;
+				Rml(*view).Document()->GetElementsByTagName(buttons, "button");
+				if (buttons.empty()) {
+					return(true);
+				}
+				LPARAM at = Element_Point(host, buttons[0]);
+
+				if (passes == 2) {
+					Send(shell, WM_MOUSEMOVE, 0, at);
+					host.Down[VK_LBUTTON] = true;
+					Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+					held = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML;
+
+					host.Down[VK_LBUTTON] = false;
+					if (loss == 0) {
+						Send(shell, WM_ACTIVATEAPP, 0, 0);
+						Send(shell, WM_ACTIVATEAPP, 1, 0);
+					} else {
+						Send(shell, WM_CAPTURECHANGED, 0, (LPARAM)1);
+					}
+				}
+				if (passes == 3) {
+					quiet = !presenter.Result.has_value() && !presenter.Has_Pending();
+					Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				}
+				return(false);
+			});
+
+			Check(held, loss == 0 ? "a press on the question's first button is the document's" : "and again for the capture being taken back");
+			Check(quiet, loss == 0 ? "losing the application over a held button answers nothing" : "and neither does the capture going");
+		}
+	}
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = false;
+		state.Top = 120;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
+		int passes = 0;
+		bool found = false;
+		bool refused = false;
+		bool silent = false;
+		int const clicks = host.Clicks;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::Element * sound = document->GetElementById("sound");
+			Rml::Element * display = document->GetElementById("display");
+			found = sound != nullptr && display != nullptr;
+			if (!found) {
+				return(true);
+			}
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, sound);
+			}
+			if (passes == 3) {
+				refused = !presenter.Result.has_value();
+				silent = host.Clicks == clicks;
+				Click_Through_Hook(shell, host, display);
+			}
+			return(passes > 4);
+		});
+
+		Check(found && refused && passes == 3, "a click on the refused sound button answers nothing and leaves the menu open");
+		Check(presenter.Result.has_value() && presenter.Choice == UI_MAIN_OPTIONS_DISPLAY, "a click reaches the button beneath the pointer and answers with its choice");
+		Check(silent && host.Clicks == clicks + 1, "a press sounds the dialogs' click, and a disabled button sounds nothing");
+	}
+
+	{
+		UIMainOptionsState state;
+		state.SoundEnabled = true;
+		UIMainOptionsPresenterClass presenter(state);
+		std::unique_ptr<UIViewClass> view = UI_Main_Options_View(presenter);
+
+		std::size_t const played = host.Samples.size();
+		host.Animate = true;
+
+		std::chrono::steady_clock::time_point began = std::chrono::steady_clock::now();
+		auto Waited = [&](void) {
+			return((int)std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - began).count());
+		};
+
+		int passes = 0;
+		float narrowest = 1000.0f;
+		float opened = -1.0f;
+		float chromeleft = -1.0f;
+		float chromewidth = -1.0f;
+		bool anchored = true;
+		bool stepped = true;
+		bool clipped = true;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::Element * dialog = Rml(*view).Document()->GetElementById("reveal");
+			if (dialog == nullptr) {
+				return(true);
+			}
+
+			float width = dialog->GetBox().GetSize().x;
+			if (passes > 1 && width < narrowest) {
+				narrowest = width;
+			}
+			if (passes > 2 && width - opened > 24.5f) {
+				stepped = false;
+			}
+			opened = width;
+
+			if (passes > 2 && width < 300.0f) {
+				if (fixture.Render->Unclipped > 0) {
+					clipped = false;
+				}
+				for (Rml::Rectanglei const & scissor : fixture.Render->Scissors) {
+					if (scissor.Width() > (int)width + 1) {
+						clipped = false;
+					}
+				}
+			}
+			fixture.Render->Unclipped = 0;
+			fixture.Render->Scissors.clear();
+
+			Rml::Element * chrome = Rml(*view).Document()->GetElementById("chrome");
+			if (chrome != nullptr && passes > 1) {
+				float left = chrome->GetAbsoluteOffset(Rml::BoxArea::Border).x;
+				if (chromeleft >= 0.0f && std::fabs(left - chromeleft) > 0.5f) {
+					anchored = false;
+				}
+				chromeleft = left;
+				chromewidth = chrome->GetBox().GetSize().x;
+			}
+			return(Waited() > 3000 || (passes > 2 && width >= 300.0f));
+		});
+
+		int waited = Waited();
+		host.Animate = false;
+
+		Check(narrowest > 0.0f && narrowest < 300.0f, "a screen is mostly hidden behind its band when it opens");
+		Check(anchored, "and what is inside the band holds still while the band widens around it");
+		Check(stepped, "which widens by one step a pass at most");
+		Check(clipped, "and nothing draws outside the band while it opens");
+		Check(chromewidth == 300.0f, "so the screen is uncovered rather than squeezed out to its full width");
+		Check(opened >= 300.0f && waited >= 250 && waited < 3000, "and the band has let the whole of it out in the quarter second the schedule takes");
+		Check(host.Samples.size() == played + 1 && host.Samples.back() == "EMBLEM.AUD", "opening it sounds once, as the dialog layer sounds it");
+	}
+
+	{
+		for (int hide = 0; hide < 2; hide++) {
+			UIVersionPresenterClass outer({ "opening" });
+			UIMessageBoxPresenterClass inner("Over it", { "OK", "", "" }, 0);
+			std::unique_ptr<UIViewClass> outerview = UI_Version_View(outer);
+			std::unique_ptr<UIViewClass> innerview = UI_Message_Box_View(inner);
+			int passes = 0;
+			bool opening = false;
+			bool whole = false;
+			bool stayed = false;
+
+			host.Animate = true;
+			shell.Run_Modal(*outerview, [&](void) {
+				passes++;
+				Rml::ElementDocument * document = Rml(*outerview).Document();
+				Rml::Element * dialog = document->GetElementById("reveal");
+				if (dialog == nullptr) {
+					return(true);
+				}
+
+				Rml::Element * chrome = document->GetElementById("chrome");
+				auto uncovered = [&](void) {
+					return(!document->IsClassSet("revealing") && chrome != nullptr && dialog->GetBox().GetSize().x >= chrome->GetBox().GetSize().x);
+				};
+
+				if (passes == 1) {
+					opening = shell.Revealing_Shown() && !uncovered();
+
+					int innerpasses = 0;
+					shell.Run_Modal(*innerview, [&](void) {
+						innerpasses++;
+						if (innerpasses == 1) {
+							Send(shell, WM_KEYDOWN, VK_RETURN);
+						}
+						return(false);
+					}, hide != 0);
+					whole = uncovered();
+				}
+				if (passes == 3) {
+					stayed = uncovered();
+					Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				}
+				return(false);
+			});
+			host.Animate = false;
+
+			Check(opening, hide == 0 ? "a screen still behind its band can have another raised over it" : "and can have one raised that hides it");
+			Check(whole, hide == 0 ? "which puts the screen underneath out whole" : "and so does one that hid it");
+			Check(stayed, hide == 0 ? "and leaves it out once the band it took is gone" : "and leaves a hidden one out when it comes back");
+		}
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Display_View(presenter);
+		int passes = 0;
+		bool listed = false;
+		bool marked = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			std::vector<Rml::Element *> rows = Visible_Rows(document, "modes");
+			Rml::Element * ok = document->GetElementById("ok");
+			listed = rows.size() == 3 && ok != nullptr;
+			if (!listed) {
+				return(true);
+			}
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, rows[2]);
+			}
+			if (passes == 3) {
+				marked = rows[2]->IsClassSet("selected") && !rows[1]->IsClassSet("selected");
+				Click_Through_Hook(shell, host, ok);
+			}
+			return(passes > 4);
+		});
+
+		Check(listed && marked, "clicking a mode row marks that row chosen in the document");
+		Check(presenter.State.Selected == 2 && presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "and accepting hands back the mode the row carried, not its index");
+	}
+
+	{
+		RecordingGameControlsServiceClass service;
+		UIGameControlsState state = Game_Controls_Fixture();
+		state.InGame = true;
+		state.SoundEnabled = true;
+		UIGameControlsPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Game_Controls_View(presenter);
+		int passes = 0;
+		bool found = false;
+		bool dragged = false;
+		bool quiet = false;
+		std::string named;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::Element * cameo = document->GetElementById("cameo");
+			Rml::Element * speed = document->GetElementById("speed");
+			Rml::Element * name = document->GetElementById("speed-name");
+			Rml::Element * sound = document->GetElementById("sound");
+			found = cameo != nullptr && speed != nullptr && name != nullptr && sound != nullptr;
+			if (!found) {
+				return(true);
+			}
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, cameo);
+				dragged = Drag_Slider_To_End(shell, host, speed);
+			}
+			if (passes == 3) {
+				named = name->GetInnerRML();
+				quiet = service.Calls.empty();
+				Click_Through_Hook(shell, host, sound);
+			}
+			return(passes > 4);
+		});
+
+		Check(found && dragged && presenter.State.Speed == 0 && named == "Fastest", "the speed slider runs backwards, so dragging it to the far end takes the fastest setting");
+		Check(!presenter.State.CameoText && quiet, "a switch and a slider change the screen without reaching the engine");
+		Check(service.Joined() == "speed 0; scroll 2; detail 1; cameo off; lines off; tooltips on; coasting off; edge off; difficulty 2; save", "the next-screen button applies every setting in one order and saves");
+		Check(presenter.Result.has_value() && presenter.Next == UIGameControlsPresenterClass::NEXT_SOUND, "and asks for the screen its button names");
+	}
+
+	{
+		RecordingKeyboardServiceClass service;
+		UIKeyboardPresenterClass presenter(service, Keyboard_Fixture());
+		std::unique_ptr<UIViewClass> view = UI_Keyboard_View(presenter);
+		int passes = 0;
+		bool listed = false;
+		bool focused = false;
+		bool captured = false;
+		bool modified = false;
+		bool moved = false;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			Rml::ElementDocument * document = Rml(*view).Document();
+			std::vector<Rml::Element *> rows = Keyboard_Rows(document);
+			Rml::Element * capture = document->GetElementById("capture");
+			Rml::Element * assign = document->GetElementById("assign");
+			Rml::Element * ok = document->GetElementById("ok");
+			listed = rows.size() == 4 && capture != nullptr && assign != nullptr && ok != nullptr;
+			if (!listed) {
+				return(true);
+			}
+
+			if (passes == 2) {
+				Click_Through_Hook(shell, host, rows[2]);
+			}
+			if (passes == 3) {
+				focused = shell.Rml_Context()->GetFocusElement() == capture;
+				Send(shell, WM_KEYDOWN, 'X');
+				Send(shell, WM_KEYUP, 'X');
+			}
+			if (passes == 4) {
+				captured = presenter.State.Captured == 88 && presenter.State.AssignedTo == "Scatter" && capture->GetInnerRML().find("K88") != std::string::npos;
+
+				host.Down[VK_SHIFT] = true;
+				Send(shell, WM_KEYDOWN, 'R');
+				Send(shell, WM_KEYUP, 'R');
+				host.Down[VK_SHIFT] = false;
+			}
+			if (passes == 5) {
+				modified = presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair";
+				Click_Through_Hook(shell, host, assign);
+			}
+			if (passes == 6) {
+				moved = presenter.Key_Of(3) == 338 && presenter.Key_Of(1) == 0;
+				Click_Through_Hook(shell, host, ok);
+			}
+			return(passes > 7);
+		});
+
+		Check(listed && presenter.State.Selected == 3, "a click on a command row selects the command it names");
+		Check(focused, "and moves the focus to the capture element the keys go to");
+		Check(captured, "a key sent through the hook becomes its hotkey number there and names the command holding it");
+		Check(modified, "the same key with a modifier the host reports is a different number naming a different command");
+		Check(moved, "assigning it moves the key to the selected command and off its old owner");
+		Check(service.Calls == std::vector<std::string>{ "save 0=577 2=88 3=338" }, "and accepting saves the table the edits left behind");
+	}
+
+	{
+		FakeClockClass clock;
+		UIConfirmModePresenterClass presenter(clock);
+		std::unique_ptr<UIViewClass> view = UI_Confirm_Mode_View(presenter);
+		int passes = 0;
+		int counted = -1;
+
+		shell.Run_Modal(*view, [&](void) {
+			passes++;
+			if (passes == 2) {
+				clock.Now = UIConfirmModePresenterClass::DEFAULT_TIMEOUT - 2000;
+			}
+			if (passes == 3) {
+				counted = presenter.Seconds;
+				clock.Now = UIConfirmModePresenterClass::DEFAULT_TIMEOUT;
+			}
+			return(passes > 5);
+		});
+
+		Check(counted == 2, "the confirmation counts down as the runner refreshes it");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_CANCELLED && presenter.TimedOut && presenter.Seconds == 0, "and silence closes it when the deadline passes, with no intent involved");
+	}
+
+	{
+		UIWaitBoxPresenterClass presenter("Working", false);
+		std::unique_ptr<UIViewClass> view = UI_Wait_Box_View(presenter);
+
+		int const presentsnow = host.PresentsNow;
+		Check(shell.Show_Modeless(*view), "a notice shows beside the game");
+		Check(shell.Is_Modeless_Shown(*view) && view->Is_Shown(), "the shell lists the notice while it shows");
+		Check(!shell.Screen_Shown(), "a notice is not a screen");
+
+		Check(host.PresentsNow > presentsnow, "showing a notice presents at once rather than when the interval allows");
+
+		int const hidden = host.PresentsNow;
+		shell.Hide_Modeless(*view);
+		Check(!shell.Is_Modeless_Shown(*view) && !view->Is_Shown(), "hiding the notice unlists it");
+		Check(host.PresentsNow > hidden, "and taking it away presents at once too");
+		Check(shell.Show_Modeless(*view), "the notice shows again");
+
+		shell.Shutdown();
+		Check(!shell.Is_Modeless_Shown(*view) && !view->Is_Shown(), "shutdown releases a notice still shown");
+		shell.Hide_Modeless(*view);
+	}
+
+	{
+		Check(shell.Init(), "the shell initializes for the tips");
+
+		RecordingNetServiceClass service;
+		service.Model.Kind = UI_NET_LOBBY_HOST;
+		service.Model.Host = true;
+		service.Model.Players.push_back(Net_Player("Host"));
+
+		UINetLobbyState state = service.Model;
+		UINetLobbyPresenterClass presenter(service, state);
+		std::unique_ptr<UIViewClass> view = UI_Net_Setup_View(presenter);
+		Check(shell.Show_Modeless(*view), "the lobby shows");
+		shell.Tick();
+
+		Rml::Element * tip = Rml(*view).Document()->GetElementById("tip");
+		Rml::ElementList cells;
+		Rml(*view).Document()->GetElementsByClassName(cells, "cell-house");
+		Check(tip != nullptr && !cells.empty(), "the lobby carries a tip and a country cell");
+
+		if (tip != nullptr && !cells.empty()) {
+			Check(!tip->IsClassSet("up"), "no tip shows before the pointer rests anywhere");
+
+			host.Held = true;
+			host.Now = 10000;
+			Send(shell, WM_MOUSEMOVE, 0, Element_Point(host, cells[0]));
+			shell.Tick();
+			Check(tip->GetInnerRML() == "GDI", "the tip reads the country the cell names");
+			Check(!tip->IsClassSet("up"), "the tip waits while the pointer has only just arrived");
+
+			host.Now += 999;
+			shell.Tick();
+			Check(!tip->IsClassSet("up"), "the tip is still down a moment before the second is up");
+
+			host.Now += 2;
+			shell.Tick();
+			Check(tip->IsClassSet("up"), "the tip shows once the pointer has rested a second");
+			shell.Tick();
+
+			Rml::Vector2f at = tip->GetAbsoluteOffset(Rml::BoxArea::Border);
+			Rml::Vector2f size = tip->GetBox().GetSize(Rml::BoxArea::Border);
+			Check(at.y > Center_Of(cells[0]).y, "the tip sits below the pointer");
+			Check(at.x >= 0.0f && at.y >= 0.0f && at.x + size.x <= (float)host.Rect.Width
+				&& at.y + size.y <= (float)host.Rect.Height, "the tip stays on the screen");
+
+			host.Down[VK_LBUTTON] = true;
+			Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, Element_Point(host, cells[0]));
+			host.Down[VK_LBUTTON] = false;
+			Send(shell, WM_LBUTTONUP, 0, Element_Point(host, cells[0]));
+			shell.Tick();
+			Check(!tip->IsClassSet("up"), "a press takes the tip down");
+
+			host.Now += 100;
+			Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM(host.Rect.Width / 2, host.Rect.Height / 2));
+			Send(shell, WM_MOUSEMOVE, 0, Element_Point(host, cells[0]));
+			shell.Tick();
+			host.Now += 301;
+			shell.Tick();
+			Check(tip->IsClassSet("up"), "a tip that follows one just taken down comes sooner");
+
+			Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM(host.Rect.Width - 2, host.Rect.Height - 2));
+			shell.Tick();
+			Check(!tip->IsClassSet("up"), "the tip goes once the pointer leaves the control");
+
+			Send(shell, WM_MOUSEMOVE, 0, Element_Point(host, cells[0]));
+			shell.Tick();
+			host.Now += 1001;
+			shell.Tick();
+			Check(tip->IsClassSet("up"), "the tip comes back over the country cell");
+
+			cells[0]->GetParentNode()->RemoveChild(cells[0]).reset();
+			shell.Tick();
+			Check(!tip->IsClassSet("up"), "the tip goes when its control is deleted");
+			host.Held = false;
+		}
+
+		shell.Hide_Modeless(*view);
+		shell.Shutdown();
+	}
+
+	Check(shell.Init(), "the shell initializes again after a shutdown");
+	shell.Shutdown();
+
+	Check(fixture.Render->ReleasedGeometry == fixture.Render->Compiled, "the shell releases every geometry it compiled");
+	Check(fixture.Render->ReleasedTextures == fixture.Render->Loaded + fixture.Render->Generated, "the shell releases every texture it made");
+	Check(fixture.Render->Invalid == 0, "the shell's screens compile only geometry the renderer accepts");
+	Check(fixture.System->Problems == 0, "the shell's screens raise no RmlUi warning or error");
+}
+
+}
+
+
+int main(void)
+{
+	Test_FreeType();
+	Test_ImGui();
+	Test_Coordinates();
+	Test_Display_Presenter();
+	Test_Game_Controls_Presenter();
+	Test_Keys();
+	Test_Keyboard_Presenter();
+	Test_Sound_Presenter();
+	Test_Map_Generator_Presenter();
+	Test_Reconnect_Presenter();
+	Test_Strings();
+	Test_Documents();
+	Test_Shell();
+
+	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
+	return(Failures == 0 ? 0 : 1);
+}

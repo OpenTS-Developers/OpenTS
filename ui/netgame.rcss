@@ -1,0 +1,255 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 640dp;
+	height: 391dp;
+	top: 50%;
+	margin-top: -195dp;
+}
+
+#content
+{
+	position: relative;
+	padding: 0;
+}
+
+#content > *
+{
+	position: absolute;
+}
+
+.caption
+{
+	height: 17dp;
+	line-height: 17dp;
+}
+
+#side, #color
+{
+	box-sizing: border-box;
+	margin: 0;
+	width: 116dp;
+}
+
+#cap-side { left: 27dp; top: 13dp; }
+#side { left: 108dp; top: 8dp; height: 26dp; }
+#cap-color { left: 27dp; top: 37dp; }
+
+#color { left: 108dp; top: 34dp; height: 26dp; }
+
+.guest #cap-side { left: 27dp; top: 11dp; }
+.guest #side { left: 98dp; top: 10dp; }
+.guest #cap-color { left: 27dp; top: 39dp; }
+.guest #color { left: 98dp; top: 38dp; height: 26dp; }
+.guest #color selectvalue { padding-top: 4dp; }
+
+#pick { left: 240dp; top: 8dp; width: 136dp; }
+#mapname { left: 382dp; top: 13dp; width: 230dp; }
+
+.guest #cap-map { left: 223dp; top: 11dp; }
+.guest #mapname { left: 264dp; top: 11dp; width: 349dp; }
+
+#map { left: 421dp; top: 224dp; width: 191dp; height: 120dp; }
+
+#preview { position: absolute; left: -1dp; top: -1dp; width: 190dp; height: 119dp; }
+
+#cap-players { left: 27dp; top: 67dp; }
+
+#players { left: 27dp; top: 91dp; width: 226dp; height: 110dp; }
+
+.guest #cap-players { left: 27dp; top: 68dp; }
+.guest #players { height: 111dp; }
+
+#players .item
+{
+	padding-left: 0;
+}
+
+#players .cell-mark, #players .cell-house, #players .cell-name
+{
+	display: inline-block;
+	vertical-align: top;
+}
+
+#players .cell-mark { width: 20dp; margin-left: 5dp; }
+#players .cell-house { width: 20dp; }
+
+
+#settings, #switches
+{
+	left: 0;
+	top: 0;
+	width: 640dp;
+	height: 391dp;
+	pointer-events: none;
+}
+
+#settings > .row, #switches > label
+{
+	position: absolute;
+	pointer-events: auto;
+}
+
+#settings > .row
+{
+	left: 249dp;
+	width: 190dp;
+	height: 22dp;
+	white-space: nowrap;
+}
+
+#settings > .row > .caption
+{
+	display: inline-block;
+	width: 87dp;
+	height: 17dp;
+	line-height: 17dp;
+	text-align: right;
+	vertical-align: top;
+	margin-top: 2dp;
+}
+
+#settings > #row-credits > .caption
+{
+	margin-top: 3dp;
+}
+
+#settings input[type='range']
+{
+	box-sizing: border-box;
+	margin: 0 0 0 3dp;
+	width: 52dp;
+	height: 22dp;
+	vertical-align: top;
+}
+
+#settings input[type='range'] sliderbar
+{
+	height: 20dp;
+}
+
+#settings .trough
+{
+	height: 24dp;
+	margin: 1dp 0 0 -1dp;
+	border-bottom: 4dp transparent;
+	line-height: 19dp;
+}
+
+#settings .trough-edge
+{
+	margin-top: 1dp;
+	height: 21dp;
+}
+
+#row-speed { top: 43dp; }
+#row-aiplayers { top: 69dp; }
+#row-ailevel { top: 95dp; }
+#row-units { top: 121dp; }
+#row-tech { top: 147dp; }
+#row-credits { top: 173dp; }
+
+.guest #settings > .row { left: 243dp; }
+.guest #settings > .row > .caption { width: 85dp; margin-right: 8dp; }
+
+.guest #settings > .row > .caption,
+.guest #settings .trough,
+.guest #switches > label
+{
+	color: #848a84;
+}
+
+.guest #settings .trough
+{
+	decorator: horizontal-gradient(#00000080 #00000080) padding-box,
+		image(trofl.pcx scale-none left top) border-box,
+		image(trofr.pcx scale-none right top) border-box,
+		image(trough-mid scale-none left top) border-box;
+}
+
+.guest #settings input[type='range']
+{
+	border-right-color: #484848;
+}
+
+.guest #settings input[type='range'] sliderbar
+{
+	decorator: horizontal-gradient(#00000080 #00000080) border-box,
+		image(trakgrip.pcx scale-none left top);
+}
+
+#switches > label
+{
+	left: 450dp;
+	width: 163dp;
+	height: 17dp;
+}
+
+#switch-allies { top: 41dp; }
+#switch-truce { top: 60dp; }
+#switch-bases { top: 80dp; }
+#switch-redeploy { top: 99dp; }
+#switch-fog { top: 119dp; }
+#switch-bridges { top: 138dp; }
+#switch-crates { top: 158dp; }
+#switch-short { top: 177dp; }
+#switch-engineer { top: 197dp; }
+
+.guest #switch-short { width: 127dp; }
+
+#chat { left: 27dp; top: 211dp; width: 384dp; height: 106dp; }
+
+#say
+{
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	left: 27dp;
+	top: 324dp;
+	width: 385dp;
+	height: 21dp;
+}
+
+#chat .line
+{
+	display: block;
+	margin: 0;
+	padding-left: 2dp;
+	line-height: 14dp;
+	white-space: pre-wrap;
+}
+
+#kick
+{
+	left: 27dp;
+	top: 350dp;
+	width: 31dp;
+	height: 30dp;
+	border-width: 0;
+	padding: 0;
+	background-color: transparent;
+	decorator: image(woukick.pcx scale-none left top);
+}
+
+#kick:active
+{
+	top: 350dp;
+	border-width: 0;
+	padding: 0;
+	decorator: image(wodkick.pcx scale-none left top);
+}
+
+#cancel { left: 436dp; top: 357dp; width: 80dp; }
+#go { left: 531dp; top: 357dp; width: 82dp; }
+
+.guest #cancel { left: 418dp; top: 352dp; width: 88dp; }
+#accept { left: 525dp; top: 352dp; width: 88dp; }

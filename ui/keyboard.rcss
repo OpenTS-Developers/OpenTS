@@ -1,0 +1,166 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 504dp;
+	height: 339dp;
+	top: 50%;
+	margin-top: -169dp;
+}
+
+#content
+{
+	padding: 19dp 32dp 0 33dp;
+}
+
+#title
+{
+	width: 437dp;
+	height: 18dp;
+	line-height: 17dp;
+	text-align: center;
+}
+
+#columns
+{
+	display: flex;
+	margin-top: 7dp;
+}
+
+#left
+{
+	width: 207dp;
+	margin-right: 12dp;
+}
+
+#right
+{
+	width: 220dp;
+}
+
+.caption
+{
+	display: block;
+	height: 15dp;
+	line-height: 17dp;
+}
+
+#right > .caption:first-child
+{
+	height: 13dp;
+}
+
+.caption.tall
+{
+	margin-top: 9dp;
+	height: 18dp;
+}
+
+#right > .caption.tall
+{
+	margin-top: 9dp;
+}
+
+.value
+{
+	display: block;
+	margin-top: 6dp;
+	height: 17dp;
+	line-height: 17dp;
+	overflow: hidden;
+}
+
+#categories
+{
+	display: block;
+	width: 208dp;
+	margin-top: 8dp;
+}
+
+#about
+{
+	margin-top: 9dp;
+	width: 209dp;
+	height: 86dp;
+	padding-left: 10dp;
+}
+
+#description
+{
+	height: 69dp;
+	overflow: hidden;
+}
+
+#press
+{
+	margin-top: 7dp;
+}
+
+#hotkey-row
+{
+	margin-top: 4dp;
+	height: 24dp;
+	white-space: nowrap;
+}
+
+#capture
+{
+	display: inline-block;
+	width: 121dp;
+	height: 24dp;
+	vertical-align: top;
+	white-space: nowrap;
+	overflow: hidden;
+	tab-index: auto;
+}
+
+#assign
+{
+	position: relative;
+	top: 2dp;
+	width: 76dp;
+	margin-left: 3dp;
+	vertical-align: top;
+}
+
+#capture span
+{
+	focus: none;
+}
+
+#commands
+{
+	margin-top: 10dp;
+	height: 170dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 8dp;
+}
+
+#reset
+{
+	width: 82dp;
+	margin-right: 165dp;
+}
+
+#ok
+{
+	width: 76dp;
+	margin-right: 40dp;
+}
+
+#cancel
+{
+	width: 76dp;
+}
