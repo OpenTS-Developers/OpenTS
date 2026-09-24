@@ -173,7 +173,7 @@ WWMouseClass::WWMouseClass(void) :
 	IsCaptured(false),
 	ConfiningRect(RECT_NONE),
 	ReleasedState(0),
-	CursorCacheCount(0),
+	CursorShape(NULL),
 	CursorCacheScale(0),
 	CurrentShape(NULL),
 	CurrentFrame(0),
@@ -526,11 +526,12 @@ void WWMouseClass::Get_Bounded_Position(int & x, int & y) const
 
 void WWMouseClass::Flush_Cursor_Cache(void)
 {
-	for (int index = 0; index < CursorCacheCount; index++) {
-		Platform_Destroy_Cursor(CursorCache[index].Cursor);
+	for (CachedCursor const & entry : CursorCache) {
+		Platform_Destroy_Cursor(entry.Cursor);
 	}
 
-	CursorCacheCount = 0;
+	CursorCache.clear();
+	CursorShape = NULL;
 	CurrentCursor = NULL;
 }
 
@@ -547,9 +548,11 @@ void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, in
 {
 	int scale = Cursor_Scale();
 
-	if (scale != CursorCacheScale) {
+	if (shape != CursorShape || scale != CursorCacheScale) {
 		Flush_Cursor_Cache();
+		CursorShape = shape;
 		CursorCacheScale = scale;
+		CursorCache.resize(shape->Get_Count() > 0 ? (size_t)shape->Get_Count() : 0);
 	}
 
 	CurrentShape = shape;
@@ -559,35 +562,18 @@ void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, in
 
 	PlatformCursor * cursor = NULL;
 
-	for (int index = 0; index < CursorCacheCount; index++) {
-		CursorCacheEntry & entry = CursorCache[index];
-		if (entry.Shape == shape && entry.Frame == frame) {
-			if (entry.HotX != hotx || entry.HotY != hoty) {
-				Platform_Destroy_Cursor(entry.Cursor);
-				entry.Cursor = Build_Cursor(shape, frame, hotx, hoty, scale);
-				entry.HotX = hotx;
-				entry.HotY = hoty;
-			}
-			cursor = entry.Cursor;
-			break;
+	if (frame >= 0 && frame < (int)CursorCache.size()) {
+		CachedCursor & entry = CursorCache[frame];
+		if (entry.Cursor != NULL && (entry.HotX != hotx || entry.HotY != hoty)) {
+			Platform_Destroy_Cursor(entry.Cursor);
+			entry.Cursor = NULL;
 		}
-	}
-
-	if (cursor == NULL) {
-		if (CursorCacheCount >= (int)(sizeof(CursorCache) / sizeof(CursorCache[0]))) {
-			Flush_Cursor_Cache();
-		}
-
-		cursor = Build_Cursor(shape, frame, hotx, hoty, scale);
-
-		if (cursor != NULL) {
-			CursorCacheEntry & entry = CursorCache[CursorCacheCount++];
-			entry.Shape = shape;
-			entry.Frame = frame;
+		if (entry.Cursor == NULL) {
+			entry.Cursor = Build_Cursor(shape, frame, hotx, hoty, scale);
 			entry.HotX = hotx;
 			entry.HotY = hoty;
-			entry.Cursor = cursor;
 		}
+		cursor = entry.Cursor;
 	}
 
 	CurrentCursor = cursor;
