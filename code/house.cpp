@@ -4070,7 +4070,7 @@ int HouseClass::Expert_AI(void)
 
 				for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
 					HouseClass * h = Houses[house];
-					if (h != this && !h->Class->IsMultiplayPassive && !h->IsDefeated) {
+					if (h != this && !h->Class->IsMultiplayPassive && !h->IsDefeated && !Is_Ally(h)) {
 
 						/*
 						**	Determine a priority value based on distance to the center of the

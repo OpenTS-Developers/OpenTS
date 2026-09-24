@@ -142,9 +142,9 @@ Outside a campaign, a computer house with no declared enemy picks one. On each r
 4. its country does not set `MultiplayPassive=yes`;
 5. it has a base center, which it has while at least one of its structures is on the map.
 
-The point goes to the house whose base center is nearest, counting only houses that are not defeated and whose country does not set `MultiplayPassive=yes`. The pick ignores alliances. If the nearest house is an ally, the point goes to that ally, which the choice never accepts.
+The point goes to the house whose base center is nearest, counting only houses that are not defeated, that the picking house does not count as allies, and whose country does not set `MultiplayPassive=yes`.
 
-The point then re-runs the choice, so the eligible house with the most anger becomes the declared enemy, whichever house received the point. If no other eligible house has anger above zero, the house stays without a declared enemy while that ally is nearest. After a declared enemy is defeated, other houses often still hold anger, and the first point makes the angriest of them the enemy.
+The point then re-runs the choice, so the eligible house with the most anger becomes the declared enemy, whichever house received the point. After a declared enemy is defeated, other houses often still hold anger, and the first point makes the angriest of them the enemy.
 
 :::caution[A campaign house has no enemy until its anger rises]
 A campaign house never picks a first enemy. It has no declared enemy until damage or a Make enemy trigger action raises its anger. Until then, [only defensive AI triggers can pass](/systems/ai-team-production/#defensive-teams-and-the-enemy), and the computer does not fire its ion cannon, multi-missile, chemical missile, hunter seeker or drop pods.
@@ -342,7 +342,7 @@ These rules differ between campaigns and skirmish or multiplayer games:
 
 | Behavior | Campaign | Skirmish and multiplayer |
 | --- | --- | --- |
-| Picking a first enemy | Never happens | The nearest undefeated house whose country is not passive, once the countdown expires |
+| Picking a first enemy | Never happens | The nearest undefeated house that is not an ally and whose country is not passive, once the countdown expires |
 | A damaged object with a primary weapon | Calls no one back | Calls for help like any other |
 | A candidate whose mission sets `Recruitable=no` | Rejected | Accepted; the mission's setting is not read |
 | Which houses count as human | The house under player control | Every house a human plays |
