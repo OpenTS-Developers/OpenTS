@@ -53,8 +53,8 @@ int Key_Modifiers(SDL_Keymod modifiers)
 		result |= WINDOW_MOD_ALT;
 	}
 
-	// Windows presses Left Ctrl along with AltGr, which SDL leaves out; translating the
-	// key into a character needs it.
+	// Windows presses Left Ctrl along with AltGr, which SDL leaves out; hotkeys saved under
+	// Windows recorded AltGr as Ctrl+Alt.
 	if ((modifiers & SDL_KMOD_RALT) != 0 && (GetKeyState(VK_LCONTROL) & 0x8000) != 0) {
 		result |= WINDOW_MOD_CTRL;
 	}

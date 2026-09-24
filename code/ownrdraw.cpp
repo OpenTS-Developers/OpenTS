@@ -23,6 +23,7 @@
 #include "keyboard.h"
 #include "misc.h"
 #include "mixfile.h"
+#include "platform/platform.h"
 #include "rgb.h"
 #include "srfcache.h"
 #include "surface.h"
@@ -175,58 +176,27 @@ void OwnerDraw::Prepare_Resources(void)
 }
 
 
-int Build_Hotkey_String(KeyNumType key, char * buffer)
+/// <summary>
+/// Names a hotkey for the player, as its modifiers and then its key, for example
+/// "Ctrl+Shift+A".
+/// </summary>
+std::string Build_Hotkey_String(KeyNumType key)
 {
-	char key_name[32];
-	unsigned char modifier = HIBYTE(key);
+	unsigned const code = (unsigned)key;
+	std::string name;
 
-	buffer[0] = '\0';
-
-	UINT lparam;
-
-	if ((modifier & (WWKEY_ALT_BIT >> 8)) != 0) {
-		lparam = MapVirtualKey(VK_MENU, 0) ;
-		lparam = (lparam << 16);
-		lparam |= (1 << 0);
-		lparam |= (1 << 25);
-		GetKeyNameText(lparam, key_name, sizeof(key_name));
-		strcat(buffer, key_name);
-		strcat(buffer, "+");
+	if ((code & WWKEY_ALT_BIT) != 0) {
+		name += Platform_Key_Name(VK_MENU) + "+";
+	}
+	if ((code & WWKEY_CTRL_BIT) != 0) {
+		name += Platform_Key_Name(VK_CONTROL) + "+";
+	}
+	if ((code & WWKEY_SHIFT_BIT) != 0) {
+		name += Platform_Key_Name(VK_SHIFT) + "+";
 	}
 
-	if ((modifier & (WWKEY_CTRL_BIT >> 8)) != 0) {
-		lparam = MapVirtualKey(VK_CONTROL, 0);
-		lparam = (lparam << 16);
-		lparam |= (1 << 0);
-		lparam |= (1 << 25);
-		GetKeyNameText(lparam, key_name, sizeof(key_name));
-		strcat(buffer, key_name);
-		strcat(buffer, "+");
-	}
-
-	if ((modifier & (WWKEY_SHIFT_BIT >> 8)) != 0) {
-		lparam = MapVirtualKey(VK_SHIFT, 0);
-		lparam = (lparam << 16);
-		lparam |= (1 << 0);
-		lparam |= (1 << 25);
-		GetKeyNameText(lparam, key_name, sizeof(key_name));
-		strcat(buffer, key_name);
-		strcat(buffer, "+");
-	}
-
-	lparam = MapVirtualKey(key & 0xFF, 0);
-	lparam = (lparam << 16);
-	lparam |= (1 << 0);
-	lparam |= (1 << 25);
-
-	if ((modifier & (WWKEY_RLS_BIT >> 8)) != 0) {
-		lparam |= (1 << 24);
-	}
-
-	GetKeyNameText(lparam, key_name, sizeof(key_name));
-	strcat(buffer, key_name);
-
-	return(0);
+	name += Platform_Key_Name(code & 0xFF);
+	return(name);
 }
 
 

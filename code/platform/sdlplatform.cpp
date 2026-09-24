@@ -595,6 +595,12 @@ bool Platform_Key_Toggled(int virtualkey)
 }
 
 
+std::string Platform_Key_Name(int virtualkey)
+{
+	return(Virtual_Key_Name(virtualkey));
+}
+
+
 PlatformCursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty)
 {
 	if (!_Started || pixels == nullptr || width <= 0 || height <= 0) {
