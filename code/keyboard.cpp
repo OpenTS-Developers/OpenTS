@@ -641,6 +641,9 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 		*/
 		case WINDOW_EVENT_KEY_UP:
 			Put_Key_Message((unsigned short)event.VirtualKey, true, event.Modifiers);
+
+			// A repeat's character always arrives before the key's release.
+			DropText = false;
 			return(true);
 
 		case WINDOW_EVENT_TEXT:
