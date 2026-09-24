@@ -399,12 +399,6 @@ fixed_exclusions:
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_BACKSPACE }
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_ESC }
     reason: Message editor polling, cursor placement, and text-edit termination.
-  - site: { file: code/ownrdraw.cpp, function: CtrlProc_Internal, expression: VK_TAB }
-    reason: Windows dialog focus traversal handled by the shared control procedure.
-  - sites:
-      - { file: code/ownrdraw.cpp, function: EditBoxCtrlProc, expression: VK_TAB }
-      - { file: code/ownrdraw.cpp, function: EditBoxCtrlProc, expression: VK_RETURN }
-    reason: Windows edit-control navigation handled by the shared dialog procedure.
   - sites:
       - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_MENU }
       - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_CONTROL }

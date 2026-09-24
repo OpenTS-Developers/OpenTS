@@ -564,7 +564,7 @@ int Init_Game(int , char * [])
 	Init_Commands();
 
 	// The briefing and the credits draw with the owner-draw art, colors and blend masks.
-	OwnerDraw::Prepare_Resources(MainWindow);
+	OwnerDraw::Prepare_Resources();
 
 	DebugString("Game Init Completed.\n");
 

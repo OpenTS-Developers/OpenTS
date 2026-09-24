@@ -244,7 +244,6 @@ extern int										NewMaxAheadFrame2;
 extern bool VisceroidsAsSnoBees;
 extern bool Just4Fun;
 
-extern int 							_dialog_count;
 extern int							Seed;
 extern int							CustomSeed;
 extern bool							IgnoreInput;

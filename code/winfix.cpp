@@ -35,9 +35,9 @@
 
 #include "winfix.h"
 
+#include "_xmouse.h"
 #include "ini.h"
 #include "misc.h"
-#include "ownrdraw.h"
 #include "trim.h"
 
 #include <algorithm>
