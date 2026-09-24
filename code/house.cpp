@@ -2765,7 +2765,6 @@ bool HouseClass::Place_Object(RTTIType type, Cell const & cell)
 						**	the production manager tied to this slot in the sidebar. Its job
 						**	has been completed.
 						*/
-						LastRadarEventCell = builder->Center_Coord().As_Cell();
 						factory->Completed();
 						Abandon_Production(type, -1);
 						placed = true;
