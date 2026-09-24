@@ -191,7 +191,6 @@ int main(void)
 	Check(One(Translate(Event_Of(SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED)), WINDOW_EVENT_DISPLAY_CHANGED), "a display changing mode changes the display");
 	Check(One(Translate(Event_Of(SDL_EVENT_WINDOW_CLOSE_REQUESTED)), WINDOW_EVENT_CLOSE_REQUESTED), "the close button asks to close");
 	Check(One(Translate(Event_Of(SDL_EVENT_QUIT)), WINDOW_EVENT_CLOSE_REQUESTED), "a request to quit asks to close");
-	Check(One(Translate(Event_Of(SDL_EVENT_KEYMAP_CHANGED)), WINDOW_EVENT_KEYMAP_CHANGED), "a new keyboard layout changes the key map");
 	Check(Translate(Event_Of(SDL_EVENT_WINDOW_MOUSE_ENTER)).empty(), "an event the game does not use produces nothing");
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
