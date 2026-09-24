@@ -18,7 +18,7 @@
 class Surface;
 class PaletteClass;
 
-bool Create_Main_Window(int command_show, int width, int height);
+bool Create_Main_Window(int width, int height);
 
 void Focus_Loss(void);
 void Focus_Restore(void);

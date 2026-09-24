@@ -107,6 +107,7 @@
 #include "netdlg2.h"
 #include "netglobal.h"
 #include "netshare.h"
+#include "platform/platform.h"
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
@@ -353,18 +354,7 @@ void Main_Game(int argc, char * argv[])
 	int ret = Init_Game(argc, argv);
 	if (ret) {
 		if (ret < 0) {
-			MSGBOXPARAMS params;
-			params.cbSize = sizeof(MSGBOXPARAMS);
-			params.hwndOwner = MainWindow;
-			params.hInstance = ProgramInstance;
-			params.lpszText = Fetch_String(TXT_INITGAME_FAILED);
-			params.lpszCaption = Fetch_String(TXT_SHORT_TITLE);
-			params.dwStyle = (MB_OK | MB_ICONSTOP | MB_SETFOREGROUND | MB_TOPMOST);
-			params.lpszIcon = NULL;
-			params.dwContextHelpId = NULL;
-			params.lpfnMsgBoxCallback = NULL;
-			params.dwLanguageId = MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT);
-			MessageBoxIndirect(&params);
+			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_INITGAME_FAILED));
 		}
 		return;
 	}

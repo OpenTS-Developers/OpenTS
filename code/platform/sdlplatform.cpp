@@ -390,6 +390,65 @@ bool Platform_Window_Drawable_Size(int & width, int & height)
 }
 
 
+bool Platform_Window_Minimized(void)
+{
+	return(_Window != nullptr && (SDL_GetWindowFlags(_Window) & SDL_WINDOW_MINIMIZED) != 0);
+}
+
+
+bool Platform_Window_Client_Rect(int & x, int & y, int & width, int & height)
+{
+	if (_Window == nullptr || !SDL_GetWindowPosition(_Window, &x, &y)) {
+		return(false);
+	}
+
+	float const density = Pixel_Density();
+	x = (int)std::floor((float)x * density);
+	y = (int)std::floor((float)y * density);
+	return(Platform_Window_Drawable_Size(width, height));
+}
+
+
+// A window grown about its middle can be pushed past the edges of the display, and a title
+// bar above its top edge cannot be grabbed to bring the window back.
+void Platform_Resize_Window(int width, int height)
+{
+	if (_Window == nullptr) {
+		return;
+	}
+
+	float const density = Pixel_Density();
+	int const newwidth = (int)std::lround(width / density);
+	int const newheight = (int)std::lround(height / density);
+
+	int x = 0;
+	int y = 0;
+	int oldwidth = 0;
+	int oldheight = 0;
+	SDL_GetWindowPosition(_Window, &x, &y);
+	SDL_GetWindowSize(_Window, &oldwidth, &oldheight);
+	x += (oldwidth - newwidth) / 2;
+	y += (oldheight - newheight) / 2;
+
+	int top = 0;
+	int left = 0;
+	int bottom = 0;
+	int right = 0;
+	SDL_GetWindowBordersSize(_Window, &top, &left, &bottom, &right);
+
+	SDL_Rect usable;
+	if (SDL_GetDisplayUsableBounds(SDL_GetDisplayForWindow(_Window), &usable)) {
+		if (x + newwidth + right > usable.x + usable.w) x = usable.x + usable.w - newwidth - right;
+		if (y + newheight + bottom > usable.y + usable.h) y = usable.y + usable.h - newheight - bottom;
+		if (x - left < usable.x) x = usable.x + left;
+		if (y - top < usable.y) y = usable.y + top;
+	}
+
+	SDL_SetWindowSize(_Window, newwidth, newheight);
+	SDL_SetWindowPosition(_Window, x, y);
+}
+
+
 int Platform_Window_Refresh_Rate(void)
 {
 	if (_Window == nullptr) {
@@ -614,4 +673,14 @@ void Platform_Set_Clipboard_Text(std::string const & text)
 	if (_Started) {
 		SDL_SetClipboardText(text.c_str());
 	}
+}
+
+
+void Platform_Error_Box(char const * title, char const * text)
+{
+	Platform_Begin_Native_Modal();
+	if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, text, _Window)) {
+		DebugString("SDL: the message box was not shown: %s\n", SDL_GetError());
+	}
+	Platform_End_Native_Modal();
 }
