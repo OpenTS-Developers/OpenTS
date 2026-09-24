@@ -34,6 +34,8 @@
 
 #include "tab.h"
 
+struct WindowEvent;
+
 
 class ScrollClass: public TabClass
 {
@@ -102,7 +104,7 @@ class ScrollClass: public TabClass
 
 		ActionType What_Action(Cell const & cell, ObjectClass * object, bool check_fog);
 
-		void Message_Handler(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+		void Handle_Window_Event(WindowEvent const & event);
 
 	protected:
 		virtual void Mouse_Right_Press(Point2D const & point = Point2D()) override;

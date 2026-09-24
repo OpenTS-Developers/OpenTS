@@ -223,6 +223,7 @@ target_link_libraries(OpenTS PRIVATE
     lzo
     RmlUi::Core
     imgui
+    SDL3::Headers
     comctl32
     dbghelp
     iphlpapi

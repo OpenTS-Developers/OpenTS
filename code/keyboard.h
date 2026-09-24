@@ -34,6 +34,8 @@
 #include "_xmouse.h"
 #include "win.h"
 
+struct WindowEvent;
+
 enum WWKey_Type {
 	WWKEY_SHIFT_BIT	= 0x100,
 	WWKEY_CTRL_BIT		= 0x200,
@@ -61,7 +63,7 @@ class WWKeyboardClass
 		bool Down(unsigned short key);
 
 		/* Define the main hook for the message processing loop.					*/
-		int Message_Handler(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+		bool Handle_Window_Event(WindowEvent const & event);
 
 		/* Define the public access variables which are used with the			*/
 		/*   Keyboard Class.																	*/
@@ -92,7 +94,7 @@ class WWKeyboardClass
 		bool Is_Buffer_Empty(void) const;
 		static bool Is_Mouse_Key(unsigned short key);
 		void Fill_Buffer_From_System(void);
-		bool Put_Key_Message(unsigned short vk_key, bool release = false);
+		bool Put_Key_Message(unsigned short vk_key, bool release = false, int modifiers = 0);
 		bool Put_Mouse_Message(unsigned short vk_key, int x, int y, bool release = false);
 		int Available_Buffer_Room(void) const;
 		int Noop(void) const; /// Empty routine added in a TS patch.

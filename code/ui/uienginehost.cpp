@@ -164,19 +164,6 @@ class UIEngineHostClass : public UIShellHostClass
 			}
 		}
 
-		virtual bool Screen_To_Client(int & x, int & y) const override
-		{
-			POINT point;
-			point.x = x;
-			point.y = y;
-			if (!ScreenToClient(MainWindow, &point)) {
-				return(false);
-			}
-			x = point.x;
-			y = point.y;
-			return(true);
-		}
-
 		virtual bool Key_Down(int virtualkey) const override
 		{
 			if (GetSystemMetrics(SM_SWAPBUTTON) != 0) {
@@ -208,16 +195,6 @@ class UIEngineHostClass : public UIShellHostClass
 			}
 
 			return(path);
-		}
-
-		virtual bool Window_Is_Unicode(void) const override
-		{
-			return(IsWindowUnicode(MainWindow) != FALSE);
-		}
-
-		virtual unsigned int Text_Code_Page(void) const override
-		{
-			return(GetACP());
 		}
 
 		virtual void Apply_Cursor(UICursor cursor) override

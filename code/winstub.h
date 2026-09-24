@@ -24,6 +24,9 @@ NativeWindow Win_Native_Window(HWND window);
 bool Win_Window_Drawable_Size(HWND window, int & width, int & height);
 int Win_Window_Refresh_Rate(HWND window);
 
+void Focus_Loss(void);
+void Focus_Restore(void);
+
 void Load_Title_Screen(char const * name, Surface * surface, PaletteClass * palette);
 
 unsigned int Build_Number(void);

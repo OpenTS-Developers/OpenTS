@@ -65,6 +65,8 @@
 #include "misc.h"
 #include "movie.h"
 #include "opents_version.h"
+#include "platform/platform.h"
+#include "platform/windowevent.hh"
 #include "pcx.h"
 #include "queue.h"
 #include "resource.h"
@@ -75,6 +77,7 @@
 #include "vidscale.h"
 #include "win.h"
 #include "wincursor.h"
+#include "winevent.h"
 #include "winfix.h"
 #include "wwmouse.h"
 
@@ -163,79 +166,28 @@ void Focus_Restore(void)
 extern bool InMovie;
 
 
-static bool Is_Mouse_Coordinate_Message(UINT message)
-{
-	switch (message) {
-		case WM_MOUSEMOVE:
-		case WM_LBUTTONDOWN:
-		case WM_LBUTTONUP:
-		case WM_LBUTTONDBLCLK:
-		case WM_RBUTTONDOWN:
-		case WM_RBUTTONUP:
-		case WM_RBUTTONDBLCLK:
-		case WM_MBUTTONDOWN:
-		case WM_MBUTTONUP:
-		case WM_MBUTTONDBLCLK:
-		case WM_MOUSEWHEEL:
-		case WM_XBUTTONDOWN:
-		case WM_XBUTTONUP:
-		case WM_XBUTTONDBLCLK:
-			return(true);
+static WinEventTranslatorClass _WindowEvents;
 
-		default:
-			return(false);
-	}
-}
-
-
-static LPARAM Frame_Mouse_LParam(UINT message, LPARAM lparam)
-{
-	if (MainWindow == NULL || !Is_Mouse_Coordinate_Message(message) || !Video_Scaling_Active()) {
-		return(lparam);
-	}
-
-	POINT point;
-	point.x = GET_X_LPARAM(lparam);
-	point.y = GET_Y_LPARAM(lparam);
-
-	bool const screen_space = (message == WM_MOUSEWHEEL);
-	if (screen_space) {
-		ScreenToClient(MainWindow, &point);
-	}
-
-	Window_Point_To_Game(point);
-
-	if (screen_space) {
-		Game_Point_To_Screen(point);
-	}
-
-	return(MAKELPARAM((short)point.x, (short)point.y));
-}
 
 /// <summary>
 /// Handles the Windows messages sent to the main game window.
-/// This is the window procedure registered for the main window. It offers each
-/// message to the network transport, the map and the keyboard handlers, deals with
-/// the messages the game must react to itself -- focus changes, painting, tray
-/// locking and shutdown -- and passes everything else back to Windows.
+/// This is the window procedure registered for the main window. It hands each message to the
+/// game as window events, deals with the messages only Windows needs answered -- painting,
+/// the pointer shape, window movement, the screen saver and shutdown -- and passes
+/// everything else back to Windows.
 /// </summary>
 /// <returns>Returns with the result Windows expects for the message handled.</returns>
 LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
+	WindowEvent events[4];
+	int const count = _WindowEvents.Translate(message, wParam, lParam, Win_Message_Context(hwnd, message, lParam), events, ARRAY_SIZE(events));
 
-	LPARAM client_lparam = lParam;
-	lParam = Frame_Mouse_LParam(message, lParam);
-
-	if (UIShell.Handle_Window_Message(hwnd, message, wParam, client_lparam)) {
-		return(0);
+	bool consumed = false;
+	for (int index = 0; index < count; index++) {
+		consumed = Game_Window_Handle_Event(events[index]) || consumed;
 	}
-
-	int	low_param = LOWORD(wParam);
-
-	Map.Message_Handler(hwnd, message, wParam, lParam);
-
-	if (MainWindow) {
-		GetMenu(MainWindow);
+	if (consumed) {
+		return(0);
 	}
 
 	switch ( message ) {
@@ -245,31 +197,10 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 			Exception_Wndproc_Test_Fault();
 			return(0);
 
-//		case WM_SYSKEYDOWN:
-//			Mono_Printf("wparam=%08X lparam=%08X\n", (long)wParam, (long)lParam);
-			// fall through
-
-//		case WM_MOUSEMOVE:
-//		case WM_KEYDOWN:
-//		case WM_SYSKEYUP:
-//		case WM_KEYUP:
-//		case WM_LBUTTONDOWN:
-//		case WM_LBUTTONUP:
-//		case WM_LBUTTONDBLCLK:
-//		case WM_MBUTTONDOWN:
-//		case WM_MBUTTONUP:
-//		case WM_MBUTTONDBLCLK:
-//		case WM_RBUTTONDOWN:
-//		case WM_RBUTTONUP:
-//		case WM_RBUTTONDBLCLK:
-//	 		Keyboard->Message_Handler(hwnd, message, wParam, lParam);
-//			return(0);
-
 		case WM_SHOWWINDOW:
 			return(0);
 
 		case WM_PAINT:
-			Game_Window_On_Paint(GameInFocus == true || WindowedMode == true);
 			ValidateRect(hwnd, NULL);
 			break;
 
@@ -277,38 +208,15 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 			return(1);
 
 		case WM_SETCURSOR:
-			if (LOWORD(lParam) == HTCLIENT && (UIShell.Handle_Set_Cursor() || Win_Cursor_Handle_Set_Cursor())) {
+			if (LOWORD(lParam) == HTCLIENT && Game_Window_Select_Cursor()) {
 				return(TRUE);
 			}
 			break;
 
-		case WM_SIZE:
-			if (wParam != SIZE_MINIMIZED) {
-				Video_On_Resize(LOWORD(lParam), HIWORD(lParam));
-				Video_Set_Refresh_Rate(Win_Window_Refresh_Rate(hwnd));
-				if (MouseCursor != NULL) {
-					((WWMouseClass *)MouseCursor)->Calc_Confining_Rect();
-				}
-			}
-			break;
-
-		case WM_DISPLAYCHANGE:
-			Video_Set_Refresh_Rate(Win_Window_Refresh_Rate(hwnd));
-			break;
-
-		case WM_CLOSE:
-			break;
-
 		case WM_CREATE:
-			ToolTips = new CCToolTip(hwnd);
+			ToolTips = new CCToolTip();
 			if (ToolTips) {
 				ToolTips->Set_Timer_Delay(500);
-			}
-			break;
-
-		case WM_MOVE:
-			if (WindowedMode == true && MouseCursor != NULL) {
-				((WWMouseClass *)MouseCursor)->Calc_Confining_Rect();
 			}
 			break;
 
@@ -340,38 +248,15 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 			return(0);
 
 		case WM_ACTIVATEAPP:
-			if (hwnd == MainWindow && GameInFocus != (wParam != 0)) {
-				GameInFocus = (wParam != 0);
-				if (!GameInFocus) {
-					Focus_Loss();
-					DebugString("Focus lost\n");
-				} else {
-					Focus_Restore();
-					DebugString("Focus gained\n");
-				}
-			}
 			return(0);
-
-		case WM_RBUTTONUP:
-			Game_Window_On_Right_Mouse_Up();
-			break;
 
 		case WM_MOVING:
 			return(On_WM_MOVING(hwnd, wParam, lParam));
-
-		case WM_MOUSEWHEEL:
-			Game_Window_On_Mouse_Wheel(GET_WHEEL_DELTA_WPARAM(wParam));
-			break;
 
 		case WM_SYSCOMMAND:
 			switch ( wParam ) {
 
 				case SC_CLOSE:
-					// A running game resigns rather than closing, and keeps its window: the exit
-					// is played through the queue, and the game ends itself once it arrives.
-					if (GameActive && PlayerPtr != NULL && !Session.Play) {
-						Queue_Exit();
-					}
 					return(0);
 
 				case SC_SCREENSAVE:
@@ -385,16 +270,13 @@ LRESULT CALLBACK /*_export*/ Windows_Procedure(HWND hwnd, UINT message, WPARAM w
 
 	}
 
-	/*
-	**	Pass this message through to the keyboard handler. If the message
-	**	was processed and requires no further action, then return with
-	**	this information.
-	*/
-	if (Keyboard->Message_Handler(hwnd, message, wParam, lParam)) {
-		return(0);
-	}
-
 	return(DefWindowProcW (hwnd, message, wParam, lParam));
+}
+
+
+int Platform_Window_Refresh_Rate(void)
+{
+	return(Win_Window_Refresh_Rate(MainWindow));
 }
 
 

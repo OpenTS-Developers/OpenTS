@@ -18,6 +18,8 @@
 #include "vector.h"
 #include "win.h"
 
+struct WindowEvent;
+
 class ToolTip
 {
 public:
@@ -57,12 +59,13 @@ struct ToolTipText
 class ToolTipManager
 {
 	public:
-		ToolTipManager(HWND window);
+		ToolTipManager(void);
 		virtual ~ToolTipManager(void);
 
 		void Activate(bool state);
 
-		void Message_Handler(MSG *msg);
+		void Handle_Window_Event(WindowEvent const & event);
+		void Service(void);
 
 		int Get_Timer_Delay(void);
 		void Set_Timer_Delay(int delay);
@@ -91,18 +94,16 @@ class ToolTipManager
 		void Reset_Current(void);
 
 		enum {
-			TOOLTIP_EVENT = 'TTIP',
 			TOOLTIP_DELAY = 1000, /// 1 second
 			TOOLTIP_LIFETIME = 10000, /// 10 seconds
 		};
 
 	private:
-		/*
-		 * This is the window whose tooltips this manager looks after. Mouse positions are
-		 * expressed in its client coordinates, and it is the window the hover timer is hung
-		 * off of.
-		 */
-		HWND Window;
+		void Start_Timer(int delay);
+
+		// The time Service next acts, while TimerRunning is set.
+		bool TimerRunning;
+		unsigned long TimerDue;
 
 		/*
 		 * If this manager is allowed to display tooltips, then this flag will be true. A
