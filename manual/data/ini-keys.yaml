@@ -2310,6 +2310,24 @@ Armor:
       source: code/rules.cpp
       guard: null
     level: DifficultyClass
+ArmorCrateStacks:
+  key: ArmorCrateStacks
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CrateRules
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsArmorCrateStacking
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Armory:
   key: Armory
   scopes:
@@ -8618,6 +8636,24 @@ Firepower:
     level: HouseTypeClass
   case_collides_with:
   - FirePower
+FirepowerCrateStacks:
+  key: FirepowerCrateStacks
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: CrateRules
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: RulesClass
+      member: IsFirepowerCrateStacking
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 FirestormActiveAnim:
   key: FirestormActiveAnim
   scopes:

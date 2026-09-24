@@ -1468,6 +1468,13 @@ class RulesClass
 		int SoloCrateMoney;
 
 		/*
+		 * These let an armor or firepower crate upgrade an object that a crate of the same
+		 * kind already upgraded.
+		 */
+		bool IsArmorCrateStacking;
+		bool IsFirepowerCrateStacking;
+
+		/*
 		 * This is the strength given to a terrain object that declares none of its own
 		 * -- trees, mostly.
 		 */

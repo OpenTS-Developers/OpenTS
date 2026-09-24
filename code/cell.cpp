@@ -3571,7 +3571,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 					break;
 
 				case CRATE_ARMOR:
-					if (object->ArmorBias != 1) powerup = CRATE_MONEY;
+					if (!Rule->IsArmorCrateStacking && object->ArmorBias != 1) powerup = CRATE_MONEY;
 					break;
 
 				case CRATE_SPEED:
@@ -3579,7 +3579,7 @@ bool CellClass::Goodie_Check(FootClass * object)
 					break;
 
 				case CRATE_FIREPOWER:
-					if (object->FirepowerBias != 1 || !object->Is_Weapon_Equipped()) powerup = CRATE_MONEY;
+					if ((!Rule->IsFirepowerCrateStacking && object->FirepowerBias != 1) || !object->Is_Weapon_Equipped()) powerup = CRATE_MONEY;
 					break;
 
 				case CRATE_REVEAL:
@@ -3938,7 +3938,7 @@ crate_money:
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
-					if (obj != NULL && obj->Is_Techno() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && ((TechnoClass *)obj)->ArmorBias == 1) {
+					if (obj != NULL && obj->Is_Techno() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && (Rule->IsArmorCrateStacking || ((TechnoClass *)obj)->ArmorBias == 1)) {
 						double val = ((TechnoClass *)obj)->ArmorBias * data;
 						((TechnoClass *)obj)->ArmorBias = val;
 						if (obj->Owner_HouseClass()->Is_Player_Control()) tospeak = true;
@@ -3966,7 +3966,7 @@ crate_money:
 				for (index = 0; index < DisplayClass::Layer[LAYER_GROUND].Count(); index++) {
 					ObjectClass * obj = DisplayClass::Layer[LAYER_GROUND][index];
 
-					if (obj && obj->Is_Techno() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && ((TechnoClass *)obj)->FirepowerBias == 1) {
+					if (obj && obj->Is_Techno() && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius && (Rule->IsFirepowerCrateStacking || ((TechnoClass *)obj)->FirepowerBias == 1)) {
 
 						double val = ((TechnoClass *)obj)->FirepowerBias * data;
 						((TechnoClass *)obj)->FirepowerBias = val;

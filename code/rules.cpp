@@ -172,6 +172,8 @@ RulesClass::RulesClass(void) :
 	InfantryReserve(2000),
 	InfantryBaseMult(2),
 	SoloCrateMoney(2000),
+	IsArmorCrateStacking(false),
+	IsFirepowerCrateStacking(false),
 	UnitCrateType(NULL),
 	PatrolTime(.016),
 	CloakDelay(0),
@@ -966,6 +968,8 @@ bool RulesClass::Crate_Rules(CCINIClass const & ini)
 		CrateTime = ini.Get_Float(CRATERULES, "CrateRegen", CrateTime);
 		UnitCrateType = TGet_Class(ini, CRATERULES, "UnitCrateType", UnitCrateType);
 		SoloCrateMoney = ini.Get_Int(CRATERULES, "SoloCrateMoney", SoloCrateMoney);
+		IsArmorCrateStacking = ini.Get_Bool(CRATERULES, "ArmorCrateStacks", IsArmorCrateStacking);
+		IsFirepowerCrateStacking = ini.Get_Bool(CRATERULES, "FirepowerCrateStacks", IsFirepowerCrateStacking);
 		SilverCrate = ini.Get_CrateType(CRATERULES, "SilverCrate", SilverCrate);
 		WoodCrate = ini.Get_CrateType(CRATERULES, "WoodCrate", WoodCrate);
 		//WaterCrate = ini.Get_CrateType(CRATERULES, "WaterCrate", WaterCrate);
@@ -2441,6 +2445,8 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(InfantryReserve);
 	stream.Serialize(InfantryBaseMult);
 	stream.Serialize(SoloCrateMoney);
+	stream.Serialize(IsArmorCrateStacking);
+	stream.Serialize(IsFirepowerCrateStacking);
 	stream.Serialize(TreeStrength);
 	stream.Serialize(UnitCrateType);
 	stream.Serialize(PatrolTime);

@@ -3,6 +3,7 @@ title: Crates
 summary: "Places pickup crates on the map and gives one result to the infantry or vehicle that collects each crate."
 category: maps-scenarios
 keys:
+  - ArmorCrateStacks
   - CarriesCrate
   - Crate
   - CrateGoodie
@@ -13,6 +14,7 @@ keys:
   - CrateRegen
   - CrateTrigger
   - Crates
+  - FirepowerCrateStacks
   - HealCrateSound
   - SilverCrate
   - SoloCrateMoney
@@ -194,9 +196,9 @@ Six results are then converted to money. The conversions run after the MCV overr
 | --- | --- |
 | `Unit` | the collector's house owns more than 50 vehicles |
 | `Squad` | always, in campaigns too |
-| `Armor` | the collector's armor multiplier was already changed by an earlier crate |
+| `Armor` | the collector's armor multiplier was already changed by an earlier crate, unless [`ArmorCrateStacks=yes`](/keys/armorcratestacks/) |
 | `Speed` | the collector's speed multiplier was already changed |
-| `Firepower` | the collector's firepower multiplier was already changed, or the collector has no primary weapon |
+| `Firepower` | the collector's firepower multiplier was already changed, unless [`FirepowerCrateStacks=yes`](/keys/firepowercratestacks/); or the collector has no primary weapon |
 | `Cloak` | the collector can already cloak |
 
 :::caution[The conversions check only the collector]
@@ -256,6 +258,8 @@ If the vehicle cannot be placed in either location, the crate pays money instead
 - `Armor`, `Speed` and `Firepower` each set a multiplier on the affected objects.
 
 The three multiplier results change only objects whose multiplier for that result is still exactly `1`. A second crate of the same kind therefore leaves an already-boosted object unchanged. `Speed` also skips buildings and aircraft.
+
+`ArmorCrateStacks=yes` and `FirepowerCrateStacks=yes` in `[CrateRules]` drop that check for their result, so each crate multiplies the multiplier again. `Speed` has no such setting.
 
 Each multiplier result stores its third field as written. Speed and firepower are multiplied by it, while incoming damage is divided by the armor value. An `Armor` value of `2` halves ordinary incoming damage, and `0.5` doubles it.
 
