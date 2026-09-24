@@ -549,20 +549,22 @@ bool Wheel(UIShellClass & shell, PointType at, float notches, bool horizontal)
 }
 
 
-bool Key_Down(UIShellClass & shell, int virtualkey)
+bool Key_Down(UIShellClass & shell, int virtualkey, int modifiers = 0)
 {
 	WindowEvent event;
 	event.Type = WINDOW_EVENT_KEY_DOWN;
 	event.VirtualKey = virtualkey;
+	event.Modifiers = modifiers;
 	return(Send(shell, event));
 }
 
 
-bool Key_Up(UIShellClass & shell, int virtualkey)
+bool Key_Up(UIShellClass & shell, int virtualkey, int modifiers = 0)
 {
 	WindowEvent event;
 	event.Type = WINDOW_EVENT_KEY_UP;
 	event.VirtualKey = virtualkey;
+	event.Modifiers = modifiers;
 	return(Send(shell, event));
 }
 
@@ -5059,10 +5061,9 @@ void Test_Shell(void)
 			if (passes == 4) {
 				captured = presenter.State.Captured == 88 && presenter.State.AssignedTo == "Scatter" && capture->GetInnerRML().find("K88") != std::string::npos;
 
-				host.Down[VK_SHIFT] = true;
-				Key_Down(shell, 'R');
-				Key_Up(shell, 'R');
-				host.Down[VK_SHIFT] = false;
+				// The host reports no keys held, so Shift can only come from the events.
+				Key_Down(shell, 'R', WINDOW_MOD_SHIFT);
+				Key_Up(shell, 'R', WINDOW_MOD_SHIFT);
 			}
 			if (passes == 5) {
 				modified = presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair";
@@ -5078,7 +5079,7 @@ void Test_Shell(void)
 		Check(listed && presenter.State.Selected == 3, "a click on a command row selects the command it names");
 		Check(focused, "and moves the focus to the capture element the keys go to");
 		Check(captured, "a key sent through the hook becomes its hotkey number there and names the command holding it");
-		Check(modified, "the same key with a modifier the host reports is a different number naming a different command");
+		Check(modified, "the same key with a modifier on its event is a different number naming a different command");
 		Check(moved, "assigning it moves the key to the selected command and off its old owner");
 		Check(service.Calls == std::vector<std::string>{ "save 0=577 2=88 3=338" }, "and accepting saves the table the edits left behind");
 	}

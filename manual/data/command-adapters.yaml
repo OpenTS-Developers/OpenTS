@@ -378,6 +378,11 @@ fixed_exclusions:
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_XBUTTON2 }
     reason: Platform-backend mouse button state, not controls.
   - sites:
+      - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_SHIFT }
+      - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_CONTROL }
+      - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_MENU }
+    reason: Platform-backend modifier state attached to mouse events, not controls.
+  - sites:
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_CAPITAL }
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_NUMLOCK }
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_SCROLL }

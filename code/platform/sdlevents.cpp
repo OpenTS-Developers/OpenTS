@@ -52,6 +52,12 @@ int Key_Modifiers(SDL_Keymod modifiers)
 	if ((modifiers & SDL_KMOD_ALT) != 0) {
 		result |= WINDOW_MOD_ALT;
 	}
+	if ((modifiers & SDL_KMOD_CAPS) != 0) {
+		result |= WINDOW_MOD_CAPS;
+	}
+	if ((modifiers & SDL_KMOD_NUM) != 0) {
+		result |= WINDOW_MOD_NUM;
+	}
 
 	// Windows presses Left Ctrl along with AltGr, which SDL leaves out; hotkeys saved under
 	// Windows recorded AltGr as Ctrl+Alt.

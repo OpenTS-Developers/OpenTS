@@ -34,8 +34,11 @@ SDL_Window * _Window = nullptr;
 int _NativeModals = 0;
 bool _Watching = false;
 
+// The keys held and the lock states as of the input event being dispatched. Each held
+// scancode keeps the code it was pressed as, so its release clears that code.
 bool _HeldKeys[256];
-bool _HeldKeysStale = true;
+unsigned char _PressedAs[SDL_SCANCODE_COUNT];
+SDL_Keymod _KeyModifiers = SDL_KMOD_NONE;
 
 SDL_Cursor * _SystemCursors[PLATFORM_CURSOR_COUNT];
 
@@ -88,6 +91,94 @@ float Pixel_Density(void)
 }
 
 
+// Windows also answers for each side of a modifier.
+int Side_Key(int scancode)
+{
+	switch (scancode) {
+		case SDL_SCANCODE_LSHIFT:	return(VK_LSHIFT);
+		case SDL_SCANCODE_RSHIFT:	return(VK_RSHIFT);
+		case SDL_SCANCODE_LCTRL:	return(VK_LCONTROL);
+		case SDL_SCANCODE_RCTRL:	return(VK_RCONTROL);
+		case SDL_SCANCODE_LALT:		return(VK_LMENU);
+		case SDL_SCANCODE_RALT:		return(VK_RMENU);
+		default:					return(0);
+	}
+}
+
+
+void Rebuild_Held_Keys(void)
+{
+	std::memset(_HeldKeys, 0, sizeof(_HeldKeys));
+	for (int scancode = 0; scancode < SDL_SCANCODE_COUNT; scancode++) {
+		if (_PressedAs[scancode] != 0) {
+			_HeldKeys[_PressedAs[scancode]] = true;
+			_HeldKeys[Side_Key(scancode)] = true;
+		}
+	}
+	_HeldKeys[0] = false;
+}
+
+
+void Press_Key(int scancode, int virtualkey, bool down)
+{
+	if (scancode <= SDL_SCANCODE_UNKNOWN || scancode >= SDL_SCANCODE_COUNT) {
+		return;
+	}
+	_PressedAs[scancode] = (down && virtualkey > 0 && virtualkey < 256) ? (unsigned char)virtualkey : 0;
+}
+
+
+// Starts from the keys SDL last saw held, for keys pressed before the window opened.
+void Seed_Held_Keys(void)
+{
+	std::memset(_PressedAs, 0, sizeof(_PressedAs));
+	_KeyModifiers = SDL_GetModState();
+
+	int count = 0;
+	bool const * state = SDL_GetKeyboardState(&count);
+	for (int scancode = 0; scancode < count && scancode < SDL_SCANCODE_COUNT; scancode++) {
+		if (state[scancode]) {
+			SDL_Keycode keycode = SDL_GetKeyFromScancode((SDL_Scancode)scancode, _KeyModifiers, true);
+			Press_Key(scancode, Virtual_Key_From_SDL(scancode, (unsigned int)keycode, (unsigned int)_KeyModifiers), true);
+		}
+	}
+	Rebuild_Held_Keys();
+}
+
+
+void Track_Key(SDL_KeyboardEvent const & key)
+{
+	_KeyModifiers = key.mod;
+	if (!(key.down && key.repeat)) {
+		int const virtualkey = key.down ? Virtual_Key_From_SDL((int)key.scancode, (unsigned int)key.key, (unsigned int)key.mod, (unsigned int)key.raw) : 0;
+		Press_Key((int)key.scancode, virtualkey, key.down);
+		Rebuild_Held_Keys();
+	}
+}
+
+
+int Held_Modifiers(void)
+{
+	int modifiers = 0;
+	if (_HeldKeys[VK_SHIFT]) {
+		modifiers |= WINDOW_MOD_SHIFT;
+	}
+	if (_HeldKeys[VK_CONTROL]) {
+		modifiers |= WINDOW_MOD_CTRL;
+	}
+	if (_HeldKeys[VK_MENU]) {
+		modifiers |= WINDOW_MOD_ALT;
+	}
+	if ((_KeyModifiers & SDL_KMOD_CAPS) != 0) {
+		modifiers |= WINDOW_MOD_CAPS;
+	}
+	if ((_KeyModifiers & SDL_KMOD_NUM) != 0) {
+		modifiers |= WINDOW_MOD_NUM;
+	}
+	return(modifiers);
+}
+
+
 void Dispatch(WindowEvent const & event)
 {
 	// The screen saver may start while the player is elsewhere, but not over the game.
@@ -114,9 +205,24 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 		DebugString("SDL: the system asked the game to quit\n");
 	}
 
+	if (sdlevent.type == SDL_EVENT_KEY_DOWN || sdlevent.type == SDL_EVENT_KEY_UP) {
+		Track_Key(sdlevent.key);
+	}
+
 	std::vector<WindowEvent> events;
 	Window_Events_From_SDL(sdlevent, Pixel_Density(), events);
-	for (WindowEvent const & event : events) {
+	for (WindowEvent & event : events) {
+		switch (event.Type) {
+			case WINDOW_EVENT_MOUSE_MOVE:
+			case WINDOW_EVENT_MOUSE_DOWN:
+			case WINDOW_EVENT_MOUSE_UP:
+			case WINDOW_EVENT_MOUSE_WHEEL:
+				event.Modifiers = Held_Modifiers();
+				break;
+
+			default:
+				break;
+		}
 		Dispatch(event);
 	}
 }
@@ -140,43 +246,6 @@ bool SDLCALL Watch_Window(void *, SDL_Event * sdlevent)
 	Handle_SDL_Event(*sdlevent);
 	_Watching = false;
 	return(true);
-}
-
-
-void Refresh_Held_Keys(void)
-{
-	if (!_HeldKeysStale) {
-		return;
-	}
-	_HeldKeysStale = false;
-
-	std::memset(_HeldKeys, 0, sizeof(_HeldKeys));
-
-	int count = 0;
-	bool const * state = SDL_GetKeyboardState(&count);
-	SDL_Keymod const modifiers = SDL_GetModState();
-	for (int scancode = 0; scancode < count; scancode++) {
-		if (!state[scancode]) {
-			continue;
-		}
-
-		SDL_Keycode keycode = SDL_GetKeyFromScancode((SDL_Scancode)scancode, modifiers, true);
-		int key = Virtual_Key_From_SDL(scancode, (unsigned int)keycode, (unsigned int)modifiers);
-		if (key > 0 && key < 256) {
-			_HeldKeys[key] = true;
-		}
-
-		// Windows also answers for each side of a modifier.
-		switch (scancode) {
-			case SDL_SCANCODE_LSHIFT:	_HeldKeys[VK_LSHIFT] = true; break;
-			case SDL_SCANCODE_RSHIFT:	_HeldKeys[VK_RSHIFT] = true; break;
-			case SDL_SCANCODE_LCTRL:	_HeldKeys[VK_LCONTROL] = true; break;
-			case SDL_SCANCODE_RCTRL:	_HeldKeys[VK_RCONTROL] = true; break;
-			case SDL_SCANCODE_LALT:		_HeldKeys[VK_LMENU] = true; break;
-			case SDL_SCANCODE_RALT:		_HeldKeys[VK_RMENU] = true; break;
-			default:					break;
-		}
-	}
 }
 
 
@@ -363,6 +432,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 	}
 
 	SDL_AddEventWatch(Watch_Window, nullptr);
+	Seed_Held_Keys();
 
 	SDL_ShowWindow(_Window);
 	SDL_RaiseWindow(_Window);
@@ -479,8 +549,6 @@ void Platform_Pump_Events(void)
 			Handle_SDL_Event(sdlevent);
 		}
 	}
-
-	_HeldKeysStale = true;
 }
 
 
@@ -582,18 +650,16 @@ bool Platform_Key_Down(int virtualkey)
 		return(false);
 	}
 
-	Refresh_Held_Keys();
 	return(_HeldKeys[virtualkey]);
 }
 
 
 bool Platform_Key_Toggled(int virtualkey)
 {
-	SDL_Keymod const modifiers = SDL_GetModState();
 	switch (virtualkey) {
-		case VK_CAPITAL:	return((modifiers & SDL_KMOD_CAPS) != 0);
-		case VK_NUMLOCK:	return((modifiers & SDL_KMOD_NUM) != 0);
-		case VK_SCROLL:		return((modifiers & SDL_KMOD_SCROLL) != 0);
+		case VK_CAPITAL:	return((_KeyModifiers & SDL_KMOD_CAPS) != 0);
+		case VK_NUMLOCK:	return((_KeyModifiers & SDL_KMOD_NUM) != 0);
+		case VK_SCROLL:		return((_KeyModifiers & SDL_KMOD_SCROLL) != 0);
 		default:			return(false);
 	}
 }
