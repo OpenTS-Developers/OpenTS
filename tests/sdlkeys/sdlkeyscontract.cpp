@@ -9,8 +9,8 @@
 
 // Pins the Windows virtual-key code each SDL key becomes, since saved hotkeys store those
 // codes: letters and digits by the layout, the keypad by Num Lock, and everything else by
-// its US position. It links the static SDL library the game links, so a runtime library
-// mismatch fails here too.
+// its US position. It also pins the names the keyboard screen shows for those codes. It links
+// the static SDL library the game links, so a runtime library mismatch fails here too.
 
 #include "platform/sdlkeys.h"
 
@@ -99,6 +99,16 @@ int main(void)
 		named = named && Unprinted(scancode) == 'A' + letter;
 	}
 	Check(named, "every letter key named by SDL is its letter when its layout prints none");
+
+	// With no video subsystem started, SDL names keys from its US layout.
+	Check(Virtual_Key_Name('A') == "A" && Virtual_Key_Name('7') == "7", "a letter or digit key is named by what it prints");
+	Check(Virtual_Key_Name(VK_OEM_COMMA) == ",", "a punctuation key is named by what it prints");
+	Check(Virtual_Key_Name(VK_NUMPAD7) == "Keypad 7", "a keypad digit is named as the keypad's");
+	Check(Virtual_Key_Name(VK_HOME) == "Home" && Virtual_Key_Name(VK_INSERT) == "Insert", "a navigation key is named after the main block's key");
+	Check(Virtual_Key_Name(VK_F1) == "F1" && Virtual_Key_Name(VK_F12) == "F12", "a function key is named by its number");
+	Check(Virtual_Key_Name(VK_RETURN) == "Return" && Virtual_Key_Name(VK_SPACE) == "Space", "Enter and Space have SDL's names");
+	Check(Virtual_Key_Name(VK_SHIFT) == "Shift" && Virtual_Key_Name(VK_CONTROL) == "Ctrl" && Virtual_Key_Name(VK_MENU) == "Alt", "the modifiers are named without a side");
+	Check(Virtual_Key_Name(0).empty() && Virtual_Key_Name(0xFF).empty(), "a code no key produces has no name");
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

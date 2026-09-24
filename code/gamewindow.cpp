@@ -37,6 +37,7 @@
 
 
 static bool _HandlingMouseWheel = false;
+static bool _InterfaceTookKey = false;
 
 
 static bool Is_Mouse_Event(WindowEventType type)
@@ -91,7 +92,17 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 		ToolTips->Handle_Window_Event(event);
 	}
 
-	if (UIShell.Handle_Window_Event(event)) {
+	bool const taken = UIShell.Handle_Window_Event(event);
+
+	// A character belongs with the key press that typed it, so the game gets neither when
+	// the interface took the press.
+	if (event.Type == WINDOW_EVENT_KEY_DOWN) {
+		_InterfaceTookKey = taken;
+	} else if (event.Type == WINDOW_EVENT_TEXT && _InterfaceTookKey) {
+		return(true);
+	}
+
+	if (taken) {
 		return(true);
 	}
 

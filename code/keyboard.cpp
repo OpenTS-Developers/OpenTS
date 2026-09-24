@@ -78,6 +78,19 @@ void Stop_Execution (void)
 }
 
 
+// SDL sends no text for these keys, so the queue supplies the character each one types.
+static int Control_Character(unsigned short key)
+{
+	switch (key & 0xFF) {
+		case VK_ESCAPE:	return(0x1B);
+		case VK_RETURN:	return(0x0D);
+		case VK_BACK:	return(0x08);
+		case VK_TAB:	return(0x09);
+		default:		return(0);
+	}
+}
+
+
 /***********************************************************************************************
  * WWKeyboardClass::WWKeyBoardClass -- Construction for Westwood Keyboard Class                *
  *                                                                                             *
@@ -92,10 +105,14 @@ WWKeyboardClass::WWKeyboardClass(void) :
 	MouseQX(0),
 	MouseQY(0),
 	MousePos(0,0),
+	TextSlot(-1),
+	DropText(false),
+	FetchedKey(0),
+	FetchedText(0),
 	Head(0),
 	Tail(0)
 {
-	memset(KeyState, '\0', sizeof(KeyState));
+	memset(Text, '\0', sizeof(Text));
 }
 
 
@@ -115,7 +132,10 @@ unsigned short WWKeyboardClass::Buff_Get(void)
 {
 	while (!Check()) {}					// wait for key in buffer
 
+	int const slot = Head;
 	unsigned short temp = Fetch_Element();
+	FetchedKey = temp;
+	FetchedText = Text[slot];
 	if (Is_Mouse_Key(temp)) {
 		MouseQX = Fetch_Element();
 		MouseQY = Fetch_Element();
@@ -243,7 +263,43 @@ bool WWKeyboardClass::Put_Key_Message(unsigned short vk_key, bool release, int m
 	**	Finally use the put command to enter the key into the keyboard
 	**	system.
 	*/
-	return(Put(vk_key));
+	int const slot = Tail;
+	bool const queued = Put(vk_key);
+
+	// The character a key press types arrives after it and belongs to it.
+	if (!release && !Is_Mouse_Key(vk_key)) {
+		TextSlot = (queued && Control_Character(vk_key) == 0) ? slot : -1;
+		DropText = false;
+	}
+	return(queued);
+}
+
+
+/// <summary>
+/// Queues a typed character with the key press that typed it, or as a KN_TEXT entry of its
+/// own when no queued press can take it: the press already has one, has left the queue, or
+/// is Esc, Enter, Backspace or Tab. A character typed by a repeat of a held key is dropped,
+/// as the repeat itself is.
+/// </summary>
+/// <returns>False when the character was dropped or the queue is full.</returns>
+bool WWKeyboardClass::Put_Text(char32_t code)
+{
+	if (DropText) {
+		return(false);
+	}
+
+	if (TextSlot >= 0 && Text[TextSlot] == 0) {
+		Text[TextSlot] = code;
+		TextSlot = -1;
+		return(true);
+	}
+
+	int const slot = Tail;
+	if (!Put(KN_TEXT)) {
+		return(false);
+	}
+	Text[slot] = code;
+	return(true);
 }
 
 
@@ -279,82 +335,23 @@ bool WWKeyboardClass::Put_Mouse_Message(unsigned short vk_key, int x, int y, boo
 }
 
 
-/***********************************************************************************************
- * WWKeyboardClass::To_ASCII -- Convert the key value into an ASCII representation.            *
- *                                                                                             *
- *    This routine will convert the key code specified into an ASCII value. This takes into    *
- *    consideration the language and keyboard mapping of the host Windows system.              *
- *                                                                                             *
- * INPUT:   key   -- The key code to convert into ASCII.                                       *
- *                                                                                             *
- * OUTPUT:  Returns with the key converted into ASCII. If the key has no ASCII equivalent,     *
- *          then '\0' is returned.                                                             *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/30/1996 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Gives the character a key typed, taking the keyboard layout into account.
+/// </summary>
+/// <param name="key">A key the last Get returned. Esc, Enter, Backspace and Tab give their
+/// control characters whichever entry they come from.</param>
+/// <returns>The Unicode code point, or 0 for a release or a key that typed nothing.</returns>
 int WWKeyboardClass::To_ASCII(unsigned short key)
 {
-	/*
-	**	Released keys never translate into a character.
-	*/
 	if (key & WWKEY_RLS_BIT) {
 		return(0);
 	}
 
-	/*
-	**	Set the KeyState buffer to reflect the shift bits stored in the key value.
-	*/
-	if (key & WWKEY_SHIFT_BIT) {
-		KeyState[VK_SHIFT] = 0x80;
-	}
-	if (key & WWKEY_CTRL_BIT) {
-		KeyState[VK_CONTROL] = 0x80;
-	}
-	if (key & WWKEY_ALT_BIT) {
-		KeyState[VK_MENU] = 0x80;
+	if (key == FetchedKey && FetchedText != 0) {
+		return((int)FetchedText);
 	}
 
-	/*
-	**	Ask windows to translate the key into a character.
-	*/
-	wchar_t buffer[4];
-	int result;
-//	int result = 1;
-	int scancode;
-//	int scancode = 0;
-
-	scancode = MapVirtualKey(key & 0xFF, 0);
-	result = ToUnicode((UINT)(key & 0xFF), (UINT)scancode, (PBYTE)KeyState, buffer, ARRAY_SIZE(buffer), 0);
-
-	/*
-	**	Restore the KeyState buffer back to pristine condition.
-	*/
-	if (key & WWKEY_SHIFT_BIT) {
-		KeyState[VK_SHIFT] = 0;
-	}
-	if (key & WWKEY_CTRL_BIT) {
-		KeyState[VK_CONTROL] = 0;
-	}
-	if (key & WWKEY_ALT_BIT) {
-		KeyState[VK_MENU] = 0;
-	}
-
-	if (result == 2 && IS_SURROGATE_PAIR(buffer[0], buffer[1])) {
-		return(0x10000 + ((buffer[0] - 0xD800) << 10) + (buffer[1] - 0xDC00));
-	}
-
-	/*
-	**	If Windows could not perform the translation as expected, then
-	**	return with a null character.
-	*/
-	if (result != 1) {
-		return(0);
-	}
-
-	return(buffer[0]);
+	return(Control_Character(key));
 }
 
 
@@ -398,6 +395,9 @@ unsigned short WWKeyboardClass::Fetch_Element(void)
 {
 	unsigned short val = 0;
 	if (Head != Tail) {
+		if (Head == TextSlot) {
+			TextSlot = -1;
+		}
 		val = Buffer[Head];
 
 		Head = (Head + 1) % ARRAY_SIZE(Buffer);
@@ -453,6 +453,7 @@ bool WWKeyboardClass::Put_Element(unsigned short val)
 	if (!Is_Buffer_Full()) {
 		int temp = (Tail+1) % ARRAY_SIZE(Buffer);
 		Buffer[Tail] = val;
+		Text[Tail] = 0;
 		Tail = temp;
 		return(true);
 	}
@@ -561,6 +562,7 @@ void WWKeyboardClass::Clear(void)
 	*/
 	Fill_Buffer_From_System();
 	Head = Tail;
+	TextSlot = -1;
 
 	/*
 	**	Perform a second clear to handle the rare case of the keyboard buffer being full and there
@@ -568,15 +570,16 @@ void WWKeyboardClass::Clear(void)
 	*/
 	Fill_Buffer_From_System();
 	Head = Tail;
+	TextSlot = -1;
 }
 
 
 /// <summary>
-/// Queues the key presses and releases, and the mouse button presses and releases, of an
-/// event from the main window. Mouse positions must already be in frame coordinates; they
-/// are held inside the frame as they are queued.
+/// Queues the key presses and releases, the typed characters, and the mouse button presses
+/// and releases of an event from the main window. Mouse positions must already be in frame
+/// coordinates; they are held inside the frame as they are queued.
 /// </summary>
-/// <returns>True when the event was a key or button the queue records.</returns>
+/// <returns>True when the event was one the queue records.</returns>
 bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 {
 	POINT point;
@@ -590,11 +593,18 @@ bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 				Stop_Execution();
 			} else if (!event.Repeat) {
 				Put_Key_Message((unsigned short)event.VirtualKey, false, event.Modifiers);
+			} else {
+				DropText = true;
+				TextSlot = -1;
 			}
 			return(true);
 
 		case WINDOW_EVENT_KEY_UP:
 			Put_Key_Message((unsigned short)event.VirtualKey, true, event.Modifiers);
+			return(true);
+
+		case WINDOW_EVENT_TEXT:
+			Put_Text(event.Text);
 			return(true);
 
 		case WINDOW_EVENT_MOUSE_DOWN:

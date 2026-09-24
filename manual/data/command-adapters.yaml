@@ -389,6 +389,19 @@ fixed_exclusions:
   - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
     reason: Synchronizes the backend Scroll Lock state; it does not dispatch a game command.
   - sites:
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_ESCAPE }
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_RETURN }
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_BACK }
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_TAB }
+    reason: Gives text fields the control character each key types; it does not dispatch a game command.
+  - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Text, expression: KN_TEXT }
+    reason: Queues typed text that no key press carries; it is not a key.
+  - sites:
+      - { file: code/platform/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_SHIFT }
+      - { file: code/platform/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_CONTROL }
+      - { file: code/platform/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_MENU }
+    reason: Converts modifier virtual keys to display names; it does not consume input.
+  - sites:
       - { file: code/list.cpp, function: ListClass::Action, expression: KN_UP }
       - { file: code/list.cpp, function: ListClass::Action, expression: KN_DOWN }
       - { file: code/list.h, function: Action, expression: KN_UP }
@@ -405,11 +418,6 @@ fixed_exclusions:
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_BACKSPACE }
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_ESC }
     reason: Message editor polling, cursor placement, and text-edit termination.
-  - sites:
-      - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_MENU }
-      - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_CONTROL }
-      - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_SHIFT }
-    reason: Converts modifier virtual keys to display names; it does not consume input.
   - sites:
       - { file: code/restate.cpp, function: RestateMission::User_Input, expression: KN_NONE }
       - { file: code/restate.cpp, function: RestateMission::User_Input, expression: KN_BUTTON }

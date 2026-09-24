@@ -53,9 +53,7 @@ class UIKeyboardEngineServiceClass : public UIKeyboardServiceClass
 	public:
 		virtual std::string Key_Name(int key) override
 		{
-			char buffer[128];
-			Build_Hotkey_String((KeyNumType)key, buffer);
-			return(buffer);
+			return(Build_Hotkey_String((KeyNumType)key));
 		}
 
 		virtual bool Confirm_Reset(void) override

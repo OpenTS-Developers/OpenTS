@@ -7,14 +7,26 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#pragma once
+// Stands in for the window, the platform and the frame the key queue reaches, so the queue
+// runs with no window: nothing arrives from a pump, no key is held, and every position lies
+// inside the frame.
 
-#include <string>
+#include "msgloop.h"
+#include "platform/platform.h"
+#include "vidscale.h"
 
 
-// Takes an SDL scancode, the keycode the current layout gives it, and the SDL modifier state.
-// Returns the Windows virtual-key code for the key, or 0 when the key has none.
-int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifiers);
+void Windows_Message_Handler(void)
+{
+}
 
-// Returns the layout's character or SDL's English name for a virtual-key code, or "" for none.
-std::string Virtual_Key_Name(int virtualkey);
+
+bool Platform_Key_Down(int)
+{
+	return(false);
+}
+
+
+void Clamp_To_Game(POINT &)
+{
+}

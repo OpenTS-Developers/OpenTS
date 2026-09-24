@@ -112,6 +112,7 @@ add_subdirectory(uishell)
 add_subdirectory(uilogic)
 add_subdirectory(sdlkeys)
 add_subdirectory(sdlevents)
+add_subdirectory(keyqueue)
 
 # The script reads the sources directly, so the check needs no compiler and runs in every CI
 # job's ctest step.

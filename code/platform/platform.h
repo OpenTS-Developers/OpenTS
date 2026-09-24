@@ -68,6 +68,9 @@ void Platform_Warp_Cursor(int x, int y);
 bool Platform_Key_Down(int virtualkey);
 bool Platform_Key_Toggled(int virtualkey);
 
+// The name the keyboard layout gives a key, in UTF-8, or an empty string for no key.
+std::string Platform_Key_Name(int virtualkey);
+
 // The pixels are 32-bit ARGB, top row first. Returns NULL when the cursor cannot be made.
 PlatformCursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty);
 void Platform_Destroy_Cursor(PlatformCursor * cursor);

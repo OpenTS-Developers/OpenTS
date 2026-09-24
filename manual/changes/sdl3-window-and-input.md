@@ -13,3 +13,5 @@ Tapping Alt or F10 no longer puts the window's system menu into keyboard mode, a
 A game played in a window can now be dragged onto another display or partly off the screen. It used to be held inside the primary display.
 
 The game no longer reserves Ctrl+Alt+Shift+M for itself, so other programs can use that shortcut. The messages shown when the renderer or the game cannot start now use SDL's message box, with an error icon.
+
+In-game chat, the high-score name and the older dialogs' text boxes now take the characters the keyboard layout types, including accents typed with a dead key and text from an input method. The keyboard options screen names a key by the character the layout prints on it, or by an English name such as `Home` for a key that prints none; it used to show the names Windows gives in its own language.

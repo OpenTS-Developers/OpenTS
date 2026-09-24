@@ -11,6 +11,7 @@
 
 #include "win.h"
 
+#include <SDL3/SDL_keyboard.h>
 #include <SDL3/SDL_keycode.h>
 #include <SDL3/SDL_scancode.h>
 
@@ -167,4 +168,45 @@ int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifi
 	}
 
 	return(Position_Key(code));
+}
+
+
+// Keypad keys are looked for with Num Lock on first, so a navigation key is named after the
+// main block's key and a keypad digit after the keypad's.
+static int Scancode_Of(int virtualkey)
+{
+	static SDL_Keymod const tries[] = { SDL_KMOD_NUM, SDL_KMOD_NONE };
+
+	for (SDL_Keymod modifiers : tries) {
+		for (int scancode = SDL_SCANCODE_UNKNOWN + 1; scancode < SDL_SCANCODE_COUNT; scancode++) {
+			SDL_Keycode keycode = SDL_GetKeyFromScancode((SDL_Scancode)scancode, SDL_KMOD_NONE, true);
+			if (Virtual_Key_From_SDL(scancode, (unsigned int)keycode, (unsigned int)modifiers) == virtualkey) {
+				return(scancode);
+			}
+		}
+	}
+	return(SDL_SCANCODE_UNKNOWN);
+}
+
+
+std::string Virtual_Key_Name(int virtualkey)
+{
+	if (virtualkey <= 0) {
+		return(std::string());
+	}
+
+	switch (virtualkey) {
+		case VK_SHIFT:		return("Shift");
+		case VK_CONTROL:	return("Ctrl");
+		case VK_MENU:		return("Alt");
+		default:			break;
+	}
+
+	int const scancode = Scancode_Of(virtualkey);
+	if (scancode == SDL_SCANCODE_UNKNOWN) {
+		return(std::string());
+	}
+
+	char const * name = SDL_GetKeyName(SDL_GetKeyFromScancode((SDL_Scancode)scancode, SDL_KMOD_NONE, false));
+	return((name != nullptr) ? name : "");
 }
