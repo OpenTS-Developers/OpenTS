@@ -544,8 +544,15 @@ unsigned * MapPreviewClass::Create_Paletted_Preview(int colorcount, int & size)
 /// arrives already packed, rather than being rendered from the map that is loaded.
 /// </summary>
 /// <param name="buffer">Pointer to the paletted preview block to expand.</param>
-void MapPreviewClass::Create_Preview_Surface(char * buffer)
+/// <param name="length">Number of bytes the block occupies.</param>
+/// <returns>bool; Was a preview surface created? A block whose geometry does not fit in the
+/// length given is refused and the current preview is left alone.</returns>
+bool MapPreviewClass::Create_Preview_Surface(char * buffer, int length)
 {
+	if (buffer == NULL || length < (int)(sizeof(Header) + sizeof(int))) {
+		return(false);
+	}
+
 	int * header = (int *)buffer;
 
 	int width = *header++;
@@ -553,20 +560,38 @@ void MapPreviewClass::Create_Preview_Surface(char * buffer)
 	int colorcount = *header;
 	unsigned short *palette = (unsigned short *)header;
 
+	if (width <= 0 || height <= 0) {
+		return(false);
+	}
+	if (colorcount <= 0 || colorcount > MAX_COLOR_COUNT) {
+		return(false);
+	}
+
+	int offset = (colorcount * sizeof(unsigned short)) + sizeof(Header) + sizeof(int);
+
+	// Widened because the dimensions come off the wire and their product overflows an int.
+	long long const needed = (long long)offset + (long long)width * (long long)height;
+	if (needed > (long long)length) {
+		return(false);
+	}
+
 	if (SurfacePtr != NULL) {
 		delete SurfacePtr;
 	}
 	SurfacePtr = new DSurface(width, height);
 	SurfacePtr->Fill(TBLACK);
 
-	int offset = (colorcount * sizeof(unsigned short)) + sizeof(Header) + sizeof(int);
 	unsigned char * indexptr = (unsigned char *)buffer + offset;
 	for (int y = 0; y < height; ++y) {
 		for (int x = 0; x < width; ++x) {
-			unsigned short entry = palette[*indexptr++ + 2];
+			// The palette starts two shorts past the count that precedes it.
+			int index = *indexptr++;
+			unsigned short entry = (index < colorcount) ? palette[index + 2] : 0;
 			int color = DSurface::Build_Hicolor_Pixel((entry >> 4) & 0x00F0, entry & 0x00F0, 16 * (entry & 0x000F));
 
 			SurfacePtr->Put_Pixel_Clip(Point2D(x, y), color, SurfacePtr->Get_Rect());
 		}
 	}
+
+	return(true);
 }
