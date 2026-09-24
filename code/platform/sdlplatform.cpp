@@ -25,6 +25,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <deque>
 #include <vector>
 
 
@@ -41,6 +42,18 @@ bool _Watching = false;
 bool _HeldKeys[256];
 unsigned char _PressedAs[SDL_SCANCODE_COUNT];
 SDL_Keymod _KeyModifiers = SDL_KMOD_NONE;
+
+// Right Alt presses SDL has queued and the game has not yet been handed, with whether each
+// was AltGr.
+struct RightAltPress
+{
+	Uint64 Timestamp;
+	bool AltGr;
+};
+std::deque<RightAltPress> _RightAltPresses;
+
+// Set while the Right Alt held was pressed as AltGr.
+bool _AltGr = false;
 
 SDL_Cursor * _SystemCursors[PLATFORM_CURSOR_COUNT];
 
@@ -122,6 +135,12 @@ void Rebuild_Held_Keys(void)
 		}
 	}
 	_HeldKeys[0] = false;
+
+	// Windows holds Left Ctrl down for as long as AltGr is held.
+	if (_AltGr) {
+		_HeldKeys[VK_CONTROL] = true;
+		_HeldKeys[VK_LCONTROL] = true;
+	}
 }
 
 
@@ -139,6 +158,8 @@ void Press_Key(int scancode, int virtualkey, bool down)
 void Reset_Held_Keys(void)
 {
 	std::memset(_PressedAs, 0, sizeof(_PressedAs));
+	_RightAltPresses.clear();
+	_AltGr = false;
 	_KeyModifiers = SDL_GetModState();
 	Rebuild_Held_Keys();
 }
@@ -153,12 +174,29 @@ void Refresh_Lock_Keys(void)
 }
 
 
+// Takes what Watch_Right_Alt noted when SDL queued this Right Alt press.
+bool Pressed_As_AltGr(Uint64 timestamp)
+{
+	for (size_t index = 0; index < _RightAltPresses.size(); index++) {
+		if (_RightAltPresses[index].Timestamp == timestamp) {
+			bool const altgr = _RightAltPresses[index].AltGr;
+			_RightAltPresses.erase(_RightAltPresses.begin(), _RightAltPresses.begin() + index + 1);
+			return(altgr);
+		}
+	}
+	return(false);
+}
+
+
 void Track_Key(SDL_KeyboardEvent const & key)
 {
 	_KeyModifiers = key.mod;
 	if (!(key.down && key.repeat)) {
 		int const virtualkey = key.down ? Virtual_Key_From_SDL((int)key.scancode, (unsigned int)key.key, (unsigned int)key.mod, (unsigned int)key.raw) : 0;
 		Press_Key((int)key.scancode, virtualkey, key.down);
+		if (key.scancode == SDL_SCANCODE_RALT) {
+			_AltGr = key.down && Pressed_As_AltGr(key.timestamp);
+		}
 		Rebuild_Held_Keys();
 	}
 }
@@ -250,7 +288,7 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 	}
 
 	std::vector<WindowEvent> events;
-	Window_Events_From_SDL(sdlevent, Pixel_Density(), events);
+	Window_Events_From_SDL(sdlevent, Pixel_Density(), _AltGr, events);
 	for (WindowEvent & event : events) {
 		switch (event.Type) {
 			case WINDOW_EVENT_MOUSE_MOVE:
@@ -285,6 +323,18 @@ bool SDLCALL Watch_Window(void *, SDL_Event * sdlevent)
 	_Watching = true;
 	Handle_SDL_Event(*sdlevent);
 	_Watching = false;
+	return(true);
+}
+
+
+// Windows shows the Left Ctrl it presses with AltGr only while SDL queues the Right Alt press.
+bool SDLCALL Watch_Right_Alt(void *, SDL_Event * sdlevent)
+{
+	SDL_KeyboardEvent const & key = sdlevent->key;
+	if (sdlevent->type == SDL_EVENT_KEY_DOWN && key.scancode == SDL_SCANCODE_RALT && !key.repeat) {
+		bool const altgr = (GetKeyState(VK_LCONTROL) & 0x8000) != 0 && !SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_LCTRL];
+		_RightAltPresses.push_back({ key.timestamp, altgr });
+	}
 	return(true);
 }
 
@@ -417,6 +467,7 @@ void Platform_Shutdown(void)
 
 	if (_Window != nullptr) {
 		SDL_RemoveEventWatch(Watch_Window, nullptr);
+		SDL_RemoveEventWatch(Watch_Right_Alt, nullptr);
 		RemoveWindowSubclass(Main_Window_Handle(), Watch_Capture, CaptureSubclass);
 		SDL_DestroyWindow(_Window);
 		_Window = nullptr;
@@ -472,6 +523,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 	}
 
 	SDL_AddEventWatch(Watch_Window, nullptr);
+	SDL_AddEventWatch(Watch_Right_Alt, nullptr);
 	SetWindowSubclass(Main_Window_Handle(), Watch_Capture, CaptureSubclass, 0);
 	Reset_Held_Keys();
 
