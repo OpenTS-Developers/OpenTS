@@ -192,7 +192,6 @@
 #include "vqoption.h"
 #include "wave.h"
 #include "waypoint.h"
-#include "winfix.h"
 #include "winstub.h"
 #include "wsproto.h"
 #include "wspudp.h"
@@ -574,6 +573,47 @@ int Init_Game(int , char * [])
 
 
 /// <summary>
+/// Centers a dialog over the main window, measuring the main window by the current video
+/// mode so the dialog lands centered on what the player can see. A dialog with no main
+/// window to center over is left where it is.
+/// </summary>
+static void Center_Over_Main_Window(HWND window)
+{
+	if (MainWindow == NULL) {
+		return;
+	}
+
+	RECT rcl;
+	GetClientRect(MainWindow, &rcl);
+	rcl.right = VideoModeWidth;
+	rcl.bottom = VideoModeHeight;
+
+	ClientToScreen(MainWindow, (LPPOINT)&rcl);
+	ClientToScreen(MainWindow, (LPPOINT)&rcl.right);
+	rcl.right -= rcl.left;
+	rcl.bottom -= rcl.top;
+
+	RECT rect;
+	GetClientRect(window, &rect);
+	ClientToScreen(window, (LPPOINT)&rect);
+	ClientToScreen(window, (LPPOINT)&rect.right);
+	rect.right -= rect.left;
+	rect.bottom -= rect.top;
+	int x = (rcl.right - rect.right + 1) / 2;
+	int y = (rcl.bottom - rect.bottom + 1) / 2;
+
+	if (x < 0) {
+		x = 0;
+	}
+	if (y < 0) {
+		y = 0;
+	}
+
+	SetWindowPos(window, 0, x, y, -1, -1, SWP_NOSIZE|SWP_NOZORDER);
+}
+
+
+/// <summary>
 /// Handles the messages for the rules file choice dialog.
 /// This routine lists the name of every rules file that was found, and ends the dialog
 /// with the index of the one that the player settled upon.
@@ -585,7 +625,7 @@ static INT_PTR CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPAR
 
 	switch (message) {
 		case WM_INITDIALOG: {
-			Center_Window_Within_Window(window);
+			Center_Over_Main_Window(window);
 
 			DynamicVectorClass<CCINIClass*> * rules;
 			rules = (DynamicVectorClass<CCINIClass*> *)lparam;
@@ -599,17 +639,6 @@ static INT_PTR CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPAR
 			ListBox_SetCurSel(list, 0);
 		}
 		break;
-
-		case WM_HELP:
-			On_WM_HELP(lparam);
-			break;
-
-		case WM_CONTEXTMENU:
-			On_WM_CONTEXTMENU(wparam);
-			break;
-
-		case WM_MOVING:
-			return(On_WM_MOVING(window, wparam, lparam));
 
 		case WM_COMMAND:
 			switch (LOWORD(wparam)) {

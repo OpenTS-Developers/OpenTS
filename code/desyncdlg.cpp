@@ -35,7 +35,6 @@
 #include "syncreport.h"
 #include "ui/screens/desync/uidesync.h"
 #include "win.h"
-#include "winfix.h"
 
 #include <algorithm>
 #include <cstdio>

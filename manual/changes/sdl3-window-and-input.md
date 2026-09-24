@@ -10,7 +10,7 @@ The game window, its events, and keyboard and mouse input now go through SDL 3. 
 
 Tapping Alt or F10 no longer puts the window's system menu into keyboard mode, and Alt+Space no longer opens that menu.
 
-A game played in a window can now be dragged onto another display or partly off the screen. It used to be held inside the primary display.
+A game played in a window can now be dragged onto another display or partly off the screen. It used to be held inside the primary display. The rules chooser, which appears when more than one `RULE*.INI` file is found, can be dragged the same way, and F1 or a right-click on it no longer tries to open the old help file.
 
 The game no longer reserves Ctrl+Alt+Shift+M for itself, so other programs can use that shortcut. The messages shown when the renderer or the game cannot start now use SDL's message box, with an error icon.
 
