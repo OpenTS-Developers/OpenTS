@@ -14,6 +14,12 @@
 #include "win.h"
 
 
+// Windows 10 SDKs such as 10.0.19041 lack this Windows 11 flag.
+#ifndef PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION
+#define PROCESS_POWER_THROTTLING_IGNORE_TIMER_RESOLUTION 0x4
+#endif
+
+
 // One request for the life of the process gives every timer millisecond resolution. Without
 // the opt-out, Windows 11 drops it while the window is minimized and each sleep lasts about 16 ms.
 static struct MillisecondResolutionClass
