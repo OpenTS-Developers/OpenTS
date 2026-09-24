@@ -102,6 +102,28 @@ int Button_Virtual_Key(unsigned button)
 }
 
 
+int Rml_Modifiers(int modifiers)
+{
+	int result = 0;
+	if ((modifiers & WINDOW_MOD_SHIFT) != 0) {
+		result |= Rml::Input::KM_SHIFT;
+	}
+	if ((modifiers & WINDOW_MOD_CTRL) != 0) {
+		result |= Rml::Input::KM_CTRL;
+	}
+	if ((modifiers & WINDOW_MOD_ALT) != 0) {
+		result |= Rml::Input::KM_ALT;
+	}
+	if ((modifiers & WINDOW_MOD_CAPS) != 0) {
+		result |= Rml::Input::KM_CAPSLOCK;
+	}
+	if ((modifiers & WINDOW_MOD_NUM) != 0) {
+		result |= Rml::Input::KM_NUMLOCK;
+	}
+	return(result);
+}
+
+
 bool Modifier_Key(int virtualkey)
 {
 	switch (virtualkey) {
@@ -778,7 +800,7 @@ void UIShellClass::Render_Overlay(void)
 }
 
 
-bool UIShellClass::Handle_Mouse_Move(int x, int y)
+bool UIShellClass::Handle_Mouse_Move(int x, int y, int modifiers)
 {
 	UIPointerPosition position = Pointer_Position(x, y);
 
@@ -789,7 +811,7 @@ bool UIShellClass::Handle_Mouse_Move(int x, int y)
 	}
 
 	if (Input.Has_UI_Mouse() || position.Inside) {
-		Context->ProcessMouseMove(position.X, position.Y, Key_Modifiers());
+		Context->ProcessMouseMove(position.X, position.Y, modifiers);
 		MouseInside = position.Inside;
 		Host.Mark_Overlay_Dirty();
 	} else if (MouseInside) {
@@ -802,7 +824,7 @@ bool UIShellClass::Handle_Mouse_Move(int x, int y)
 }
 
 
-bool UIShellClass::Handle_Button_Down(int button, int x, int y)
+bool UIShellClass::Handle_Button_Down(int button, int x, int y, int modifiers)
 {
 	Input.Reconcile_Cancelled_Mouse(Physical_Buttons());
 
@@ -812,7 +834,6 @@ bool UIShellClass::Handle_Button_Down(int button, int x, int y)
 	}
 
 	UIPointerPosition position = Pointer_Position(x, y);
-	int modifiers = Key_Modifiers();
 	bool haduimouse = Input.Has_UI_Mouse();
 	UIInputOwner owner = UI_INPUT_GAME;
 
@@ -849,7 +870,7 @@ bool UIShellClass::Handle_Button_Down(int button, int x, int y)
 }
 
 
-bool UIShellClass::Handle_Button_Up(int button, int x, int y)
+bool UIShellClass::Handle_Button_Up(int button, int x, int y, int modifiers)
 {
 	UIPointerPosition position = Pointer_Position(x, y);
 	UIInputOwner owner = Input.Release_Mouse((unsigned)button);
@@ -862,7 +883,6 @@ bool UIShellClass::Handle_Button_Up(int button, int x, int y)
 			UIDev_Mouse_Button(button, false);
 		}
 		if (owner == UI_INPUT_RML) {
-			int modifiers = Key_Modifiers();
 			Context->ProcessMouseMove(position.X, position.Y, modifiers);
 			Context->ProcessMouseButtonUp(button, modifiers);
 			MouseInside = position.Inside;
@@ -878,7 +898,7 @@ bool UIShellClass::Handle_Button_Up(int button, int x, int y)
 }
 
 
-bool UIShellClass::Handle_Wheel(int x, int y, float delta, bool horizontal)
+bool UIShellClass::Handle_Wheel(int x, int y, float delta, bool horizontal, int modifiers)
 {
 	UIPointerPosition position = Pointer_Position(x, y);
 
@@ -895,16 +915,15 @@ bool UIShellClass::Handle_Wheel(int x, int y, float delta, bool horizontal)
 	}
 
 	Rml::Vector2f movement = horizontal ? Rml::Vector2f(delta, 0.0f) : Rml::Vector2f(0.0f, -delta);
-	bool consumed = !Context->ProcessMouseWheel(movement, Key_Modifiers());
+	bool consumed = !Context->ProcessMouseWheel(movement, modifiers);
 	Host.Mark_Overlay_Dirty();
 	return(consumed);
 }
 
 
-bool UIShellClass::Handle_Key(bool down, int code, bool repeat)
+bool UIShellClass::Handle_Key(bool down, int code, bool repeat, int modifiers)
 {
 	unsigned virtualkey = (unsigned)(code & 0xFF);
-	int modifiers = Key_Modifiers();
 	Rml::Input::KeyIdentifier key = UI_Key_Identifier((int)virtualkey);
 
 	if (!down) {
@@ -1338,20 +1357,20 @@ bool UIShellClass::Handle_Input_Event(WindowEvent const & event)
 {
 	switch (event.Type) {
 		case WINDOW_EVENT_MOUSE_MOVE:
-			return(Handle_Mouse_Move(event.X, event.Y));
+			return(Handle_Mouse_Move(event.X, event.Y, Rml_Modifiers(event.Modifiers)));
 
 		case WINDOW_EVENT_MOUSE_DOWN:
-			return(Handle_Button_Down((int)event.Button, event.X, event.Y));
+			return(Handle_Button_Down((int)event.Button, event.X, event.Y, Rml_Modifiers(event.Modifiers)));
 
 		case WINDOW_EVENT_MOUSE_UP:
-			return(Handle_Button_Up((int)event.Button, event.X, event.Y));
+			return(Handle_Button_Up((int)event.Button, event.X, event.Y, Rml_Modifiers(event.Modifiers)));
 
 		case WINDOW_EVENT_MOUSE_WHEEL:
-			return(Handle_Wheel(event.X, event.Y, event.Wheel, event.Horizontal));
+			return(Handle_Wheel(event.X, event.Y, event.Wheel, event.Horizontal, Rml_Modifiers(event.Modifiers)));
 
 		case WINDOW_EVENT_KEY_DOWN:
 		case WINDOW_EVENT_KEY_UP:
-			return(Handle_Key(event.Type == WINDOW_EVENT_KEY_DOWN, event.VirtualKey, event.Repeat));
+			return(Handle_Key(event.Type == WINDOW_EVENT_KEY_DOWN, event.VirtualKey, event.Repeat, Rml_Modifiers(event.Modifiers)));
 
 		case WINDOW_EVENT_TEXT:
 			return(Handle_Text(event.Text));

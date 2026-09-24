@@ -103,11 +103,11 @@ class UIShellClass
 		void Uncover(UIViewClass * covered);
 		void Drain_Deferred(void);
 		bool Handle_Input_Event(WindowEvent const & event);
-		bool Handle_Mouse_Move(int x, int y);
-		bool Handle_Button_Down(int button, int x, int y);
-		bool Handle_Button_Up(int button, int x, int y);
-		bool Handle_Wheel(int x, int y, float notches, bool horizontal);
-		bool Handle_Key(bool down, int virtualkey, bool repeat);
+		bool Handle_Mouse_Move(int x, int y, int modifiers);
+		bool Handle_Button_Down(int button, int x, int y, int modifiers);
+		bool Handle_Button_Up(int button, int x, int y, int modifiers);
+		bool Handle_Wheel(int x, int y, float notches, bool horizontal, int modifiers);
+		bool Handle_Key(bool down, int virtualkey, bool repeat, int modifiers);
 		bool Handle_Text(char32_t code);
 
 		UIShellHostClass & Host;

@@ -48,6 +48,8 @@ enum WindowKeyModifier
 	WINDOW_MOD_SHIFT = 0x01,
 	WINDOW_MOD_CTRL = 0x02,
 	WINDOW_MOD_ALT = 0x04,
+	WINDOW_MOD_CAPS = 0x08,
+	WINDOW_MOD_NUM = 0x10,
 };
 
 
@@ -69,6 +71,8 @@ struct WindowEvent
 
 	// The Windows virtual-key code, which is the engine's identity for a key.
 	int VirtualKey = 0;
+
+	// The modifiers held and the locks on as of this event, on key and mouse events alike.
 	int Modifiers = 0;
 	bool Repeat = false;
 
