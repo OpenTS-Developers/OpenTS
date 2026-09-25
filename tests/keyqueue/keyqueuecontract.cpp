@@ -137,9 +137,10 @@ int main(void)
 	keyboard.Handle_Window_Event(Key(true, 'B'));
 	keyboard.Handle_Window_Event(Text('b'));
 	keyboard.Handle_Window_Event(Key(true, 'C'));
+	keyboard.Handle_Window_Event(Text('c'));
 	unsigned short first = keyboard.Get();
 	unsigned short second = keyboard.Get();
-	Check(keyboard.To_ASCII(second) == 0 && keyboard.To_ASCII(first) == 0, "only the key fetched last reads back a character");
+	Check(keyboard.To_ASCII(second) == 'c' && keyboard.To_ASCII(first) == 0, "only the key fetched last reads back a character");
 
 	keyboard.Handle_Window_Event(Key(true, 'M', WINDOW_MOD_CTRL | WINDOW_MOD_ALT));
 	key = keyboard.Get();
