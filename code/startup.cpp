@@ -659,9 +659,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 		Windows_Message_Handler();
 
-		/*
-		**	Tell our message handler to clean up.
-		*/
 		Game_Window_Begin_Shutdown();
 
 		error_code = EXIT_SUCCESS;
@@ -1042,9 +1039,6 @@ void Emergency_Exit(void)
 
 	Windows_Message_Handler();
 
-	/*
-	**	Tell our message handler to clean up.
-	*/
 	Game_Window_Begin_Shutdown();
 
 

@@ -229,7 +229,7 @@ bool WWKeyboardClass::Put(unsigned short key)
 
 
 /***********************************************************************************************
- * WWKeyboardClass::Put_Key_Message -- Translates and inserts wParam into Keyboard Buffer      *
+ * WWKeyboardClass::Put_Key_Message -- Translates and inserts a key into the Keyboard Buffer   *
  *                                                                                             *
  * INPUT:                                                                                      *
  *                                                                                             *
@@ -337,24 +337,14 @@ bool WWKeyboardClass::Put_Mouse_Message(unsigned short vk_key, int x, int y, boo
 }
 
 
-/***********************************************************************************************
- * WWKeyboardClass::To_ASCII -- Convert the key value into the character it typed.             *
- *                                                                                             *
- *    This routine will convert the key code specified into the character it typed. This       *
- *    takes into consideration the language and keyboard mapping of the host system. Only      *
- *    the key the last Get returned carries its character; Esc, Enter, Backspace and Tab       *
- *    give their control characters whichever entry they come from.                            *
- *                                                                                             *
- * INPUT:   key   -- The key code to convert; the key the last Get returned.                   *
- *                                                                                             *
- * OUTPUT:  Returns with the key converted into its Unicode character. If the key is a         *
- *          release or typed no character, then '\0' is returned.                              *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/30/1996 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Converts a key code from the queue into the character it typed. Only the key the last Get
+/// returned carries its character; Esc, Enter, Backspace and Tab give their control characters
+/// whichever entry they come from.
+/// </summary>
+/// <param name="key">The key code to convert; the key the last Get returned.</param>
+/// <returns>The Unicode character the key typed, or 0 for a release or a key that typed
+/// nothing.</returns>
 int WWKeyboardClass::To_ASCII(unsigned short key)
 {
 	/*
@@ -591,24 +581,15 @@ void WWKeyboardClass::Clear(void)
 }
 
 
-/***********************************************************************************************
- * WWKeyboardClass::Handle_Window_Event -- Process a window event as it relates to the keyboard*
- *                                                                                             *
- *    This routine will examine the window event specified. If the event relates to one that   *
- *    the keyboard input system needs to process, then it will be processed accordingly. Key   *
- *    presses, releases and typed characters are queued, and so are mouse button presses and   *
- *    releases, whose positions are held inside the frame.                                     *
- *                                                                                             *
- * INPUT:   event -- The window event to examine. Mouse positions must already be in frame     *
- *                   coordinates.                                                              *
- *                                                                                             *
- * OUTPUT:  bool; Was this keyboard event recognized and processed?                            *
- *                                                                                             *
- * WARNINGS:   none                                                                            *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *   09/30/1996 JLB : Created.                                                                 *
- *=============================================================================================*/
+/// <summary>
+/// Queues what a window event means to the keyboard: key presses, key releases and typed
+/// characters, and presses and releases of the left, right and middle mouse buttons with their
+/// positions held inside the frame. A repeat of a held key is not queued, and neither is a
+/// Scroll Lock press, which calls Stop_Execution instead.
+/// </summary>
+/// <param name="event">The window event; a mouse position must already be in frame
+/// coordinates.</param>
+/// <returns>True when the event was a key, a character or one of those mouse buttons.</returns>
 bool WWKeyboardClass::Handle_Window_Event(WindowEvent const & event)
 {
 	Point2D point(event.X, event.Y);
