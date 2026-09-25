@@ -31,7 +31,6 @@ enum PlatformCursorShape
 struct PlatformCursor;
 
 
-bool Platform_Init(void);
 void Platform_Shutdown(void);
 
 bool Platform_Create_Main_Window(bool windowed, int width, int height);

@@ -20,6 +20,7 @@
 #include "cctooltip.h"
 #include "dbgprint.h"
 #include "globals.h"
+#include "goptions.h"
 #include "gscreen.h"
 #include "init.h"
 #include "misc.h"
@@ -33,6 +34,8 @@
 #include "vidscale.h"
 #include "winstub.h"
 #include "wwmouse.h"
+
+#include <commctrl.h>
 
 
 static bool _HandlingMouseWheel = false;
@@ -79,12 +82,25 @@ static void Set_Game_Focus(bool focused)
 }
 
 
-/// <summary>
-/// Passes an event from the main window to the tooltips, the interface, the tactical map,
-/// and the key queue, in that order, and applies the game's own response to it.
-/// </summary>
-/// <returns>True when the interface took the event.</returns>
-bool Game_Window_Handle_Event(WindowEvent const & event)
+static bool Select_Cursor(void)
+{
+	return(UIShell.Handle_Set_Cursor() || (MouseCursor != NULL && ((WWMouseClass *)MouseCursor)->Show_Game_Pointer()));
+}
+
+
+// The window's arrow stays hidden while the game has hidden the pointer it released.
+static void Update_Cursor(void)
+{
+	if (Select_Cursor()) {
+		return;
+	}
+
+	bool const visible = (MouseCursor == NULL || MouseCursor->Get_Mouse_State() >= 0);
+	Platform_Set_Cursor(visible ? Platform_System_Cursor(PLATFORM_CURSOR_ARROW) : NULL);
+}
+
+
+static bool Handle_Event(WindowEvent const & event)
 {
 	if (ToolTips != NULL) {
 		ToolTips->Handle_Window_Event(event);
@@ -177,48 +193,82 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 
 
 /// <summary>
-/// Shows the pointer the interface or the game wants.
+/// Passes an event from the main window to the tooltips, the interface, the tactical map,
+/// and the key queue, in that order, and applies the game's own response to it.
 /// </summary>
-/// <returns>False when neither chose one.</returns>
-bool Game_Window_Select_Cursor(void)
+/// <returns>True when the interface took the event.</returns>
+bool Game_Window_Handle_Event(WindowEvent const & event)
 {
-	return(UIShell.Handle_Set_Cursor() || (MouseCursor != NULL && ((WWMouseClass *)MouseCursor)->Show_Game_Pointer()));
+	bool const taken = Handle_Event(event);
+
+	// Windows asked for the pointer on every mouse move; SDL leaves choosing it to the game.
+	if (event.Type == WINDOW_EVENT_MOUSE_MOVE || event.Type == WINDOW_EVENT_FOCUS_GAINED) {
+		Update_Cursor();
+	}
+	return(taken);
 }
 
 
 /// <summary>
-/// Shows the pointer the interface or the game wants, or the window's arrow when neither
-/// chooses one. The arrow stays hidden while the game has hidden the pointer it released.
+/// Opens the main window, with its tooltips and the window's arrow. A window for windowed play
+/// has the client size the WindowWidth and WindowHeight settings give, taking the frame's size
+/// for either one that is not set; otherwise the window covers the primary display.
 /// </summary>
-void Game_Window_Update_Cursor(void)
+/// <param name="width">The width of the frame.</param>
+/// <param name="height">The height of the frame.</param>
+/// <returns>False when SDL could not start or the window could not be created.</returns>
+bool Game_Window_Open(int width, int height)
 {
-	if (Game_Window_Select_Cursor()) {
-		return;
+	InitCommonControls();
+
+	int clientwidth = width;
+	int clientheight = height;
+	if (WindowedMode) {
+		if (Options.WindowWidth > 0) {
+			clientwidth = Options.WindowWidth;
+		}
+		if (Options.WindowHeight > 0) {
+			clientheight = Options.WindowHeight;
+		}
 	}
 
-	bool const visible = (MouseCursor == NULL || MouseCursor->Get_Mouse_State() >= 0);
-	Platform_Set_Cursor(visible ? Platform_System_Cursor(PLATFORM_CURSOR_ARROW) : NULL);
+	if (!Platform_Create_Main_Window(WindowedMode, clientwidth, clientheight)) {
+		return(false);
+	}
+
+	MainWindow = (HWND)Platform_Native_Window().Handle;
+
+	ToolTips = new CCToolTip();
+	ToolTips->Set_Timer_Delay(500);
+
+	Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
+	return(true);
 }
 
 
 /// <summary>
-/// Lets go of the main window at shutdown. Nothing is pumped from it afterwards, and a clean
-/// shutdown in progress is marked finished.
+/// Stops the game using the main window at shutdown: its tooltips are deleted and nothing is
+/// pumped from it afterwards. The window itself stays until Game_Window_Close.
 /// </summary>
-void Game_Window_Closed(void)
+void Game_Window_Begin_Shutdown(void)
 {
 	if (ToolTips != NULL) {
 		delete ToolTips;
 		ToolTips = NULL;
 	}
 	MainWindow = NULL;
+}
 
-	/*
-	**	If we are shutting down gracefully then flag that the message loop has finished.
-	*/
-	if (ReadyToQuit == 1) {
-		ReadyToQuit = 2;
-	}
+
+/// <summary>
+/// Destroys the main window and stops SDL, first doing what Game_Window_Begin_Shutdown does
+/// if it has not run. The renderer must have let go of the window. Calling it again does
+/// nothing.
+/// </summary>
+void Game_Window_Close(void)
+{
+	Game_Window_Begin_Shutdown();
+	Platform_Shutdown();
 }
 
 

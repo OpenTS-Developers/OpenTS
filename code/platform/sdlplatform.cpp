@@ -297,11 +297,6 @@ void Dispatch(WindowEvent const & event)
 	}
 
 	Game_Window_Handle_Event(event);
-
-	// Windows asked for the pointer on every mouse move; SDL leaves choosing it to the game.
-	if (event.Type == WINDOW_EVENT_MOUSE_MOVE || event.Type == WINDOW_EVENT_FOCUS_GAINED) {
-		Game_Window_Update_Cursor();
-	}
 }
 
 
@@ -484,12 +479,7 @@ SDL_SystemCursor System_Cursor_Of(PlatformCursorShape shape)
 }
 
 
-/// <summary>
-/// Starts SDL's video subsystem. It must run before the main window is created, and once the
-/// settings that decide how the window looks have been read.
-/// </summary>
-/// <returns>False when SDL cannot start, which leaves the game without a window.</returns>
-bool Platform_Init(void)
+static bool Start_SDL(void)
 {
 	if (_Started) {
 		return(true);
@@ -520,8 +510,8 @@ bool Platform_Init(void)
 
 
 /// <summary>
-/// Destroys the main window and stops SDL. Calling it again, or before Platform_Init, does
-/// nothing. The renderer must have let go of the window first.
+/// Destroys the main window and stops SDL. Calling it again, or before the window was created,
+/// does nothing. The renderer must have let go of the window first.
 /// </summary>
 void Platform_Shutdown(void)
 {
@@ -551,14 +541,14 @@ void Platform_Shutdown(void)
 
 
 /// <summary>
-/// Creates and shows the main window. A window for windowed play has a client area of the
-/// size given and is centered on the primary display, kept clear of its top and left edges;
-/// otherwise the window covers the display without changing its mode.
+/// Starts SDL, then creates and shows the main window. A window for windowed play has a client
+/// area of the size given and is centered on the primary display, kept clear of its top and
+/// left edges; otherwise the window covers the display without changing its mode.
 /// </summary>
-/// <returns>False when the window could not be created.</returns>
+/// <returns>False when SDL could not start or the window could not be created.</returns>
 bool Platform_Create_Main_Window(bool windowed, int width, int height)
 {
-	if (!_Started || _Window != nullptr) {
+	if (!Start_SDL() || _Window != nullptr) {
 		return(false);
 	}
 

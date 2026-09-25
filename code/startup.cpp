@@ -575,7 +575,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		VideoModeWidth = Options.ScreenWidth;
 		VideoModeHeight = Options.ScreenHeight;
 
-		if (!Create_Main_Window(Options.ScreenWidth, Options.ScreenHeight)) {
+		if (!Game_Window_Open(Options.ScreenWidth, Options.ScreenHeight)) {
 			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
@@ -655,11 +655,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		HiddenSurface->Fill(0);
 		Update_Visible_Surface(HiddenSurface);
 
-		/*
-		**	Flag that this is a clean shutdown (not killed with Ctrl-Alt-Del)
-		*/
-		ReadyToQuit = 1;
-
 		AudioEngine.End();
 
 		Windows_Message_Handler();
@@ -667,7 +662,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		/*
 		**	Tell our message handler to clean up.
 		*/
-		Game_Window_Closed();
+		Game_Window_Begin_Shutdown();
 
 		error_code = EXIT_SUCCESS;
 
@@ -1024,8 +1019,7 @@ void __cdecl Prog_End(void)
 	}
 
 	// The renderer let go of the window when the surfaces were reset above.
-	Platform_Shutdown();
-	MainWindow = NULL;
+	Game_Window_Close();
 }
 
 /***********************************************************************************************
@@ -1046,14 +1040,12 @@ void Emergency_Exit(void)
 {
 	AudioEngine.End();
 
-	ReadyToQuit = 1;
-
 	Windows_Message_Handler();
 
 	/*
 	**	Tell our message handler to clean up.
 	*/
-	Game_Window_Closed();
+	Game_Window_Begin_Shutdown();
 
 
 	if (MouseCursor) {
