@@ -662,7 +662,6 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 		AudioEngine.End();
 
-		// Deal with whatever is still waiting.
 		Windows_Message_Handler();
 
 		/*

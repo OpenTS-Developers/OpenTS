@@ -64,11 +64,10 @@ void Platform_Confine_Cursor(bool confine);
 bool Platform_Cursor_Position(int & x, int & y);
 void Platform_Warp_Cursor(int x, int y);
 
-// Keys are Windows virtual-key codes, reported as of the input event being handled.
-bool Platform_Key_Toggled(int virtualkey);
-
-// Mouse buttons report their current state, since a release outside the window may be lost.
+// Keys are Windows virtual-key codes, reported as of the input event being handled. Mouse
+// buttons report their current state, since a release outside the window may be lost.
 bool Platform_Key_Down(int virtualkey);
+bool Platform_Key_Toggled(int virtualkey);
 
 // The name the keyboard layout gives a key, in UTF-8, or an empty string for no key.
 std::string Platform_Key_Name(int virtualkey);

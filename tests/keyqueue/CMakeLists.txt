@@ -1,5 +1,4 @@
-# The key queue is compiled straight into the harness, with stubs in place of the window,
-# the platform and the frame, so events are fed to it by hand.
+# The key queue is compiled into the harness with stubs for the window, platform and frame.
 
 opents_add_test(KeyQueue
     NAME keyqueue

@@ -187,8 +187,7 @@ WWMouseClass::WWMouseClass(void) :
 
 
 /// <summary>
-/// Destroys the mouse handler and releases every cursor it built. It must go before the
-/// platform shuts down.
+/// Destroys the mouse handler and every cursor it built. Delete it before Platform_Shutdown.
 /// </summary>
 WWMouseClass::~WWMouseClass(void)
 {
@@ -536,14 +535,6 @@ void WWMouseClass::Flush_Cursor_Cache(void)
 }
 
 
-/// <summary>
-/// Selects the cursor for a shape frame, building it if it has not been seen before.
-/// </summary>
-/// <param name="shape">The shape set the frame belongs to.</param>
-/// <param name="frame">Which frame of it to show.</param>
-/// <param name="hotx">The point within the frame that does the pointing.</param>
-/// <param name="hoty">The same, vertically.</param>
-/// <param name="apply">Should the cursor be shown straight away?</param>
 void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, bool apply)
 {
 	int scale = Cursor_Scale();
@@ -584,9 +575,6 @@ void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, in
 }
 
 
-/// <summary>
-/// Shows or hides the pointer.
-/// </summary>
 void WWMouseClass::Set_Cursor_Visible(bool visible)
 {
 	CursorVisible = visible;
@@ -602,11 +590,9 @@ void WWMouseClass::Set_Cursor_Visible(bool visible)
 
 
 /// <summary>
-/// Puts the game's pointer back over the window.
+/// Shows the game's pointer over the window.
 /// </summary>
-/// <returns>bool; Was the cursor the game's to choose? It is not while the game has released
-/// the mouse, as it does when it loses the focus, or before it has built a pointer; the
-/// window then shows its arrow.</returns>
+/// <returns>False while the mouse is released or before a pointer has been built.</returns>
 bool WWMouseClass::Show_Game_Pointer(void)
 {
 	if (!Is_Captured()) {

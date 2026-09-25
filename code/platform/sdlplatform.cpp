@@ -43,8 +43,7 @@ bool _HeldKeys[256];
 unsigned char _PressedAs[SDL_SCANCODE_COUNT];
 SDL_Keymod _KeyModifiers = SDL_KMOD_NONE;
 
-// Right Alt presses SDL has queued and the game has not yet been handed, with whether each
-// was AltGr.
+// Right Alt presses queued but not yet handled, and whether each was AltGr.
 struct RightAltPress
 {
 	Uint64 Timestamp;
@@ -153,8 +152,7 @@ void Press_Key(int scancode, int virtualkey, bool down)
 }
 
 
-// No key starts held, because SDL sees no key until its window has the focus. The lock keys
-// start as SDL read them from Windows when it started.
+// SDL sees no key before its window has the focus, so only the lock keys can start set.
 void Reset_Held_Keys(void)
 {
 	std::memset(_PressedAs, 0, sizeof(_PressedAs));
@@ -165,8 +163,7 @@ void Reset_Held_Keys(void)
 }
 
 
-// SDL reads the lock keys from Windows again when the window regains the focus, and sends no
-// key event for them.
+// SDL rereads the lock keys when the window regains the focus, without a key event.
 void Refresh_Lock_Keys(void)
 {
 	SDL_Keymod const locks = SDL_KMOD_CAPS | SDL_KMOD_NUM | SDL_KMOD_SCROLL;
@@ -530,8 +527,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 	SDL_ShowWindow(_Window);
 	SDL_RaiseWindow(_Window);
 
-	// Text arrives as it is typed for as long as the window exists, as it did as characters
-	// from Windows.
+	// Typed text is always on, as characters from Windows were.
 	SDL_StartTextInput(_Window);
 
 	return(true);
@@ -627,9 +623,6 @@ int Platform_Window_Refresh_Rate(void)
 }
 
 
-/// <summary>
-/// Hands every event SDL has gathered to the game, in the order they happened.
-/// </summary>
 void Platform_Pump_Events(void)
 {
 	if (_Window == nullptr) {
@@ -731,11 +724,7 @@ void Platform_Warp_Cursor(int x, int y)
 }
 
 
-/// <summary>
-/// Reports whether a key or mouse button is held. A key is reported as of the input event being
-/// handled, or as of the last one handled between pumps. A mouse button is read from the system
-/// as it stands, and follows the player's left-handed button setting.
-/// </summary>
+// Mouse buttons follow the player's left-handed button setting.
 bool Platform_Key_Down(int virtualkey)
 {
 	switch (virtualkey) {

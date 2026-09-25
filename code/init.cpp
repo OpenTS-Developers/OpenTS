@@ -572,11 +572,7 @@ int Init_Game(int , char * [])
 }
 
 
-/// <summary>
-/// Centers a dialog over the main window, measuring the main window by the current video
-/// mode so the dialog lands centered on what the player can see. A dialog with no main
-/// window to center over is left where it is.
-/// </summary>
+// The main window is measured by the video mode, so the dialog centers on what the player sees.
 static void Center_Over_Main_Window(HWND window)
 {
 	if (MainWindow == NULL) {

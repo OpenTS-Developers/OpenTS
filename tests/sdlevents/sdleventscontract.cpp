@@ -7,10 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Pins how SDL events become the window events the game reads: positions scaled into client
-// pixels, the clicks Windows would have called double, wheel directions, key flags, typed
-// text, and the window state the game acts on. SDL is never started; the events are built
-// by hand.
+// Pins how SDL events become the window events the game reads.
 
 #include "platform/sdlevents.h"
 

@@ -7,11 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Pins the Windows virtual-key code each SDL key becomes, since saved hotkeys store those
-// codes: the main block's character keys by the layout's own codes, the keypad by Num Lock,
-// and everything else by its US position. It also pins the names the keyboard screen shows
-// for those codes. It links the static SDL library the game links, so a runtime library
-// mismatch fails here too.
+// Pins the virtual-key code each SDL key becomes, since saved hotkeys store those codes, and
+// the names the keyboard screen shows for them.
 
 #include "platform/sdlkeys.h"
 

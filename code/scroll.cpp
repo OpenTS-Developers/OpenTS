@@ -600,12 +600,9 @@ bool ScrollClass::Is_Scrolling(void) const
 
 
 /// <summary>
-/// Handles the mouse events that drive the tactical map.
-/// This routine is called for each event from the main window, with mouse positions in frame
-/// coordinates. It turns button presses and releases into tactical map actions, and takes
-/// and releases the mouse capture so that a drag survives the cursor leaving the window.
-/// Events arriving while the game is not running, or while input is being ignored, are
-/// quietly dropped.
+/// Turns mouse button events, with positions in frame coordinates, into tactical map actions.
+/// A drag keeps the mouse capture so it survives the cursor leaving the window. Events are
+/// dropped while the map is inactive or input is ignored.
 /// </summary>
 void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 {

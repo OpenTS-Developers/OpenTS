@@ -83,8 +83,7 @@ static void Set_Game_Focus(bool focused)
 /// Passes an event from the main window to the tooltips, the interface, the tactical map,
 /// and the key queue, in that order, and applies the game's own response to it.
 /// </summary>
-/// <returns>True when the interface took the event, so the window must not act on it
-/// either.</returns>
+/// <returns>True when the interface took the event.</returns>
 bool Game_Window_Handle_Event(WindowEvent const & event)
 {
 	if (ToolTips != NULL) {
@@ -154,8 +153,8 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 			}
 			break;
 
-		// A running game resigns rather than closing: the exit is played through the
-		// queue, and the game ends itself once it arrives.
+		// A running game resigns through the queue and then ends itself; otherwise the request
+		// is ignored.
 		case WINDOW_EVENT_CLOSE_REQUESTED:
 			if (GameActive && PlayerPtr != NULL && !Session.Play) {
 				Queue_Exit();
@@ -178,9 +177,9 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 
 
 /// <summary>
-/// Shows the pointer the interface or the game wants over the window.
+/// Shows the pointer the interface or the game wants.
 /// </summary>
-/// <returns>True when either of them chose a pointer.</returns>
+/// <returns>False when neither chose one.</returns>
 bool Game_Window_Select_Cursor(void)
 {
 	return(UIShell.Handle_Set_Cursor() || (MouseCursor != NULL && ((WWMouseClass *)MouseCursor)->Show_Game_Pointer()));

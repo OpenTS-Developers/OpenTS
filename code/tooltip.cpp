@@ -112,9 +112,8 @@ void ToolTipManager::Handle_Window_Event(WindowEvent const & event)
 
 
 /// <summary>
-/// Brings up the tooltip under the mouse once it has rested for the hover delay, and takes
-/// it down once its lifetime has passed. The message pump calls this after each pass, so a
-/// tooltip changes only while the game is pumping messages.
+/// Brings up the tooltip under the mouse once it has rested for the hover delay, and takes it
+/// down once its lifetime has passed. Tooltips change only when the message pump calls this.
 /// </summary>
 void ToolTipManager::Service(void)
 {
