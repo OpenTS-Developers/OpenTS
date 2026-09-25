@@ -4,7 +4,7 @@ title: Rules registration lists
 summary: Lists in the rules files that register each kind of rules type and assign countries to sides.
 kind: registry
 files:
-  - RULE*.INI
+  - RULES.INI
   - LANGRULE.INI
   - FIRESTRM.INI
   - LANGFS.INI
@@ -68,7 +68,7 @@ A later file that lists an existing side replaces that side's country list, so r
 
 ## Theaters
 
-`[Theaters]` is read once, as the game starts, and only from the selected `RULE*.INI` and from `FIRESTRM.INI`. `FIRESTRM.INI` counts whenever it is installed, even when Firestorm is not enabled; [Game data](/using/game-data/) covers what makes it count as installed. A map, the language rules files and the multiplayer rules files cannot add a theater. Saves record each theater by its position in the list, so the list has to stay the same from one game to the next.
+`[Theaters]` is read once, as the game starts, and only from `RULES.INI` and from `FIRESTRM.INI`. `FIRESTRM.INI` counts whenever it is installed, even when Firestorm is not enabled; [Game data](/using/game-data/) covers what makes it count as installed. A map, the language rules files and the multiplayer rules files cannot add a theater. Saves record each theater by its position in the list, so the list has to stay the same from one game to the next.
 
 When neither file registers a theater, the game uses the two theaters Tiberian Sun shipped, `TEMPERATE` and `SNOW`, in that order. Unmodified rules files get this list. A `[Theaters]` list that registers at least one theater replaces those two completely: it may drop `SNOW`, reorder the pair, or replace both, so a list that means to keep them has to name them.
 

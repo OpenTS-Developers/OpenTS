@@ -1153,14 +1153,8 @@ test('The deployment names the files the game reads', () => {
 
 	assert.match(
 		init,
-		/stricmp\(name\.c_str\(\), DeploymentConfig\.RulesFile\.c_str\(\)\) == 0/,
-		'the wildcard search knows the rules file by the name the deployment gives it',
-	);
-
-	assert.match(
-		init,
-		/CCFileClass file\(DeploymentConfig\.RulesFile\.c_str\(\)\);/,
-		'and the file it falls back on is that same one',
+		/CCFileClass rules_file\(DeploymentConfig\.RulesFile\.c_str\(\)\);/,
+		'the rules are read from the file the deployment names',
 	);
 
 	assert.match(

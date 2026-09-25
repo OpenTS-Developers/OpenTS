@@ -9,7 +9,7 @@ when_omitted:
 
 `Money` is where the credits slider starts on the skirmish and network setup screens. When the match begins, every player and computer house the session sets up starts with the amount the slider shows. A computer house then receives an extra share of that money, set by [`MultiplayerAICM`](/keys/multiplayeraicm/). After a player starts a skirmish match, or the host moves the credits slider on the network screen, later setup screens in the same session open at that amount instead.
 
-OpenTS reads the value once, when the program starts. It comes from the selected rules file, or from [`MPLAYER.INI`](/formats/multiplayer-rules/) when that file sets it. A map or any other rules layer can set the key, but that does not change the starting money.
+OpenTS reads the value once, when the program starts. It comes from `RULES.INI`, or from [`MPLAYER.INI`](/formats/multiplayer-rules/) when that file sets it. A map or any other rules layer can set the key, but that does not change the starting money.
 
 Each credits slider runs from `2500` to [`MaxMoney`](/keys/maxmoney/). The skirmish slider moves in steps of `250` and the network slider in steps of `100`, both counted from `2500`. Moving a slider keeps the amount inside that range. Set `Money` to a multiple of `500` in that range so that it lies on the steps of both sliders.
 

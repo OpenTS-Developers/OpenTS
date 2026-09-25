@@ -78,7 +78,7 @@ Each of the eight `Expansion` keys names the expansion's copy of the matching ba
 
 These keys change only a file's name. The game looks for each named file in the [search order](#the-order-files-are-searched-for-in) below, as it does for every other file.
 
-The game also gathers rules files by the fixed pattern `RULE*.INI`. The file `Rules` names is always read, even when its name does not match the pattern. When it is the only rules file, the game uses it. When other files in the searched folders match `RULE*.INI`, the game asks the player at startup which rules file to play with. Keep backups and other files out of that pattern, because every match is offered as a rules file.
+The game reads its rules from the one file `Rules` names. Other files matching `RULE*.INI` are not read.
 
 Campaign files are gathered by the fixed pattern `BATTLE*.INI`. Every matching file is read and adds its campaigns to the list. The file `Battle` names is read as well when its name does not match the pattern.
 

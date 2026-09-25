@@ -35,7 +35,7 @@ In every game that is not a campaign, the `155mm` weapon uses these two values u
 
 Each time a scenario loads, the game applies the rules files in this order, and a later file overrides an earlier one:
 
-1. the selected `RULE*.INI`
+1. `RULES.INI`
 2. `LANGRULE.INI`
 3. `FIRESTRM.INI`, when Firestorm is enabled
 4. `LANGFS.INI`
@@ -45,7 +45,7 @@ Each time a scenario loads, the game applies the rules files in this order, and 
 
 A scenario that sets one of these values therefore overrides both files, as it overrides every other rules file.
 
-`MultiplayerRules=` and `MultiplayerRulesExpansion=` in [`OPENTS.INI`](/formats/opents-ini/#the-files-it-reads) name the two files. The game looks for them in the same folders, in the same order, as every other file it opens. Only the named file is read: unlike `RULE*.INI`, no wildcard gathers other multiplayer rules files.
+`MultiplayerRules=` and `MultiplayerRulesExpansion=` in [`OPENTS.INI`](/formats/opents-ini/#the-files-it-reads) name the two files. The game looks for them in the same folders, in the same order, as every other file it opens. Only the named file is read; no wildcard gathers other multiplayer rules files.
 
 ## Write only keys the rules also write
 
@@ -59,16 +59,16 @@ The expansion rules and a map's overrides carry the same risk. `MPLAYER.INI` and
 
 ## What they cannot do
 
-- **Declare a theater or change its settings:** `[Theaters]` and each theater's section are read once at startup, from the selected rules file and `FIRESTRM.INI` only. [Rules registration](/formats/rules-registries/) explains why the list of theaters cannot change after that.
-- **Set `[Maximums]`:** that section is read only from the selected rules file.
-- **Add a country a player can pick:** the countries a player chooses from are read from the selected rules file alone, so a country declared only here is missing from that list. The country does exist once the scenario loads, and a map may place houses of it. `FIRESTRM.INI` has the same limit.
+- **Declare a theater or change its settings:** `[Theaters]` and each theater's section are read once at startup, from `RULES.INI` and `FIRESTRM.INI` only. [Rules registration](/formats/rules-registries/) explains why the list of theaters cannot change after that.
+- **Set `[Maximums]`:** that section is read only from `RULES.INI`.
+- **Add a country a player can pick:** the countries a player chooses from are read from `RULES.INI` alone, so a country declared only here is missing from that list. The country does exist once the scenario loads, and a map may place houses of it. `FIRESTRM.INI` has the same limit.
 - **Set the lobby's starting values from the expansion:** `[MultiplayerDefaults]` in `MPLAYER.INI` sets the starting credits, unit count, tech level and match options a host sees, because the game reads that file before the menus. `MPLAYERFS.INI` cannot change them, and neither can `FIRESTRM.INI`, because the game does not know whether Firestorm is enabled until later. The section is still read from every rules file when a scenario loads, so a key that acts during the match, such as [`BuildOffAllyAnyStructure=`](/keys/buildoffallyanystructure/), takes effect from either file.
 
 Anything else `RULES.INI` can do, these files can do. Object types that only these files declare exist in the multiplayer game and are stored in its saves, so loading such a save restores them even when the file is no longer on disk.
 
 ## Every player needs the same copy
 
-In a game hosted from the game's own network lobby, the host compares a checksum of its rules with each joining player's. The checksum covers the selected rules file and `MPLAYER.INI`, plus `FIRESTRM.INI` and `MPLAYERFS.INI` while Firestorm is enabled. A player whose copy of any of them differs is refused, including a player who has one of these files where the host does not.
+In a game hosted from the game's own network lobby, the host compares a checksum of its rules with each joining player's. The checksum covers `RULES.INI` and `MPLAYER.INI`, plus `FIRESTRM.INI` and `MPLAYERFS.INI` while Firestorm is enabled. A player whose copy of any of them differs is refused, including a player who has one of these files where the host does not.
 
 A file that is absent from every machine, or that has no sections, changes no checksum.
 
