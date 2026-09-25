@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "platform/windowevent.hh"
+#include "windowevent.hh"
 
 #include <vector>
 

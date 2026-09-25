@@ -7,13 +7,13 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "platform/platform.h"
+#include "sdl/sdlwindow.h"
 
 #include "dbgprint.h"
 #include "gamewindow.h"
-#include "platform/sdlevents.h"
-#include "platform/sdlkeys.h"
 #include "resource.h"
+#include "sdl/sdlevents.h"
+#include "sdl/sdlkeys.h"
 #include "win.h"
 
 #include <commctrl.h>
@@ -300,7 +300,7 @@ void Dispatch(WindowEvent const & event)
 }
 
 
-HWND Main_Window_Handle(void)
+HWND Window_Handle(void)
 {
 	if (_Window == nullptr) {
 		return(NULL);
@@ -513,7 +513,7 @@ static bool Start_SDL(void)
 /// Destroys the main window and stops SDL. Calling it again, or before the window was created,
 /// does nothing. The renderer must have let go of the window first.
 /// </summary>
-void Platform_Shutdown(void)
+void Main_Window_Destroy(void)
 {
 	if (!_Started) {
 		return;
@@ -529,7 +529,7 @@ void Platform_Shutdown(void)
 	if (_Window != nullptr) {
 		SDL_RemoveEventWatch(Watch_Window, nullptr);
 		SDL_RemoveEventWatch(Watch_Right_Alt, nullptr);
-		RemoveWindowSubclass(Main_Window_Handle(), Watch_Messages, WindowSubclass);
+		RemoveWindowSubclass(Window_Handle(), Watch_Messages, WindowSubclass);
 		SDL_DestroyWindow(_Window);
 		_Window = nullptr;
 	}
@@ -546,7 +546,7 @@ void Platform_Shutdown(void)
 /// left edges; otherwise the window covers the display without changing its mode.
 /// </summary>
 /// <returns>False when SDL could not start or the window could not be created.</returns>
-bool Platform_Create_Main_Window(bool windowed, int width, int height)
+bool Main_Window_Create(bool windowed, int width, int height)
 {
 	if (!Start_SDL() || _Window != nullptr) {
 		return(false);
@@ -585,7 +585,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 
 	SDL_AddEventWatch(Watch_Window, nullptr);
 	SDL_AddEventWatch(Watch_Right_Alt, nullptr);
-	SetWindowSubclass(Main_Window_Handle(), Watch_Messages, WindowSubclass, 0);
+	SetWindowSubclass(Window_Handle(), Watch_Messages, WindowSubclass, 0);
 	Reset_Held_Keys();
 
 	SDL_ShowWindow(_Window);
@@ -598,7 +598,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 }
 
 
-NativeWindow Platform_Native_Window(void)
+NativeWindow Main_Window_Native(void)
 {
 	NativeWindow window = { NATIVE_WINDOW_DEFAULT, nullptr, nullptr };
 	if (_Window != nullptr) {
@@ -608,7 +608,7 @@ NativeWindow Platform_Native_Window(void)
 }
 
 
-bool Platform_Window_Drawable_Size(int & width, int & height)
+bool Main_Window_Drawable_Size(int & width, int & height)
 {
 	if (_Window == nullptr || !SDL_GetWindowSizeInPixels(_Window, &width, &height)) {
 		return(false);
@@ -617,13 +617,13 @@ bool Platform_Window_Drawable_Size(int & width, int & height)
 }
 
 
-bool Platform_Window_Minimized(void)
+bool Main_Window_Minimized(void)
 {
 	return(_Window != nullptr && (SDL_GetWindowFlags(_Window) & SDL_WINDOW_MINIMIZED) != 0);
 }
 
 
-bool Platform_Window_Client_Rect(int & x, int & y, int & width, int & height)
+bool Main_Window_Client_Rect(int & x, int & y, int & width, int & height)
 {
 	if (_Window == nullptr || !SDL_GetWindowPosition(_Window, &x, &y)) {
 		return(false);
@@ -632,13 +632,13 @@ bool Platform_Window_Client_Rect(int & x, int & y, int & width, int & height)
 	float const density = Pixel_Density();
 	x = (int)std::floor((float)x * density);
 	y = (int)std::floor((float)y * density);
-	return(Platform_Window_Drawable_Size(width, height));
+	return(Main_Window_Drawable_Size(width, height));
 }
 
 
 // A window grown about its middle can be pushed past the edges of the display, and a title
 // bar above its top edge cannot be grabbed to bring the window back.
-void Platform_Resize_Window(int width, int height)
+void Main_Window_Resize(int width, int height)
 {
 	if (_Window == nullptr) {
 		return;
@@ -676,7 +676,7 @@ void Platform_Resize_Window(int width, int height)
 }
 
 
-int Platform_Window_Refresh_Rate(void)
+int Main_Window_Refresh_Rate(void)
 {
 	if (_Window == nullptr) {
 		return(0);
@@ -687,7 +687,7 @@ int Platform_Window_Refresh_Rate(void)
 }
 
 
-void Platform_Pump_Events(void)
+void Main_Window_Pump_Events(void)
 {
 	if (_Window == nullptr) {
 		return;
@@ -728,7 +728,7 @@ static void End_Native_Modal(void)
 }
 
 
-void Platform_Capture_Mouse(bool capture)
+void Main_Window_Capture_Mouse(bool capture)
 {
 	if (_Window == nullptr) {
 		return;
@@ -736,21 +736,21 @@ void Platform_Capture_Mouse(bool capture)
 	SDL_CaptureMouse(capture);
 
 	// SDL still records a capture Windows took away, so it does not ask for it again.
-	HWND const window = Main_Window_Handle();
+	HWND const window = Window_Handle();
 	if (capture && (SDL_GetWindowFlags(_Window) & SDL_WINDOW_MOUSE_CAPTURE) != 0 && GetCapture() != window) {
 		SetCapture(window);
 	}
 }
 
 
-bool Platform_Mouse_Captured(void)
+bool Main_Window_Mouse_Captured(void)
 {
-	HWND const window = Main_Window_Handle();
+	HWND const window = Window_Handle();
 	return(window != NULL && GetCapture() == window);
 }
 
 
-void Platform_Confine_Cursor(bool confine)
+void Main_Window_Confine_Cursor(bool confine)
 {
 	if (_Window != nullptr) {
 		SDL_SetWindowMouseGrab(_Window, confine);
@@ -760,7 +760,7 @@ void Platform_Confine_Cursor(bool confine)
 
 // The position is read from the system rather than from the last event, so it is current
 // even while the game is not pumping events.
-bool Platform_Cursor_Position(int & x, int & y)
+bool Main_Window_Cursor_Position(int & x, int & y)
 {
 	if (_Window == nullptr) {
 		return(false);
@@ -781,7 +781,7 @@ bool Platform_Cursor_Position(int & x, int & y)
 }
 
 
-void Platform_Warp_Cursor(int x, int y)
+void Main_Window_Warp_Cursor(int x, int y)
 {
 	if (_Window != nullptr) {
 		float const density = Pixel_Density();
@@ -791,7 +791,7 @@ void Platform_Warp_Cursor(int x, int y)
 
 
 // Mouse buttons follow the player's left-handed button setting.
-bool Platform_Key_Down(int virtualkey)
+bool Main_Window_Key_Down(int virtualkey)
 {
 	switch (virtualkey) {
 		case VK_LBUTTON:	return((SDL_GetGlobalMouseState(nullptr, nullptr) & SDL_BUTTON_LMASK) != 0);
@@ -811,7 +811,7 @@ bool Platform_Key_Down(int virtualkey)
 }
 
 
-bool Platform_Key_Toggled(int virtualkey)
+bool Main_Window_Key_Toggled(int virtualkey)
 {
 	switch (virtualkey) {
 		case VK_CAPITAL:	return((_KeyModifiers & SDL_KMOD_CAPS) != 0);
@@ -822,13 +822,13 @@ bool Platform_Key_Toggled(int virtualkey)
 }
 
 
-std::string Platform_Key_Name(int virtualkey)
+std::string Main_Window_Key_Name(int virtualkey)
 {
 	return(Virtual_Key_Name(virtualkey));
 }
 
 
-SDL_Cursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty)
+SDL_Cursor * Main_Window_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty)
 {
 	if (!_Started || pixels == nullptr || width <= 0 || height <= 0) {
 		return(nullptr);
@@ -845,7 +845,7 @@ SDL_Cursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int 
 }
 
 
-void Platform_Destroy_Cursor(SDL_Cursor * cursor)
+void Main_Window_Destroy_Cursor(SDL_Cursor * cursor)
 {
 	if (_Started && cursor != nullptr) {
 		SDL_DestroyCursor(cursor);
@@ -853,7 +853,7 @@ void Platform_Destroy_Cursor(SDL_Cursor * cursor)
 }
 
 
-void Platform_Set_Cursor(SDL_Cursor * cursor)
+void Main_Window_Set_Cursor(SDL_Cursor * cursor)
 {
 	if (!_Started) {
 		return;
@@ -869,7 +869,7 @@ void Platform_Set_Cursor(SDL_Cursor * cursor)
 }
 
 
-SDL_Cursor * Platform_System_Cursor(UICursor shape)
+SDL_Cursor * Main_Window_System_Cursor(UICursor shape)
 {
 	if (!_Started || shape < 0 || shape >= UI_CURSOR_COUNT) {
 		return(nullptr);
@@ -888,7 +888,7 @@ SDL_Cursor * Platform_System_Cursor(UICursor shape)
 }
 
 
-std::string Platform_Clipboard_Text(void)
+std::string Main_Window_Clipboard_Text(void)
 {
 	if (!_Started) {
 		return(std::string());
@@ -901,7 +901,7 @@ std::string Platform_Clipboard_Text(void)
 }
 
 
-void Platform_Set_Clipboard_Text(std::string const & text)
+void Main_Window_Set_Clipboard_Text(std::string const & text)
 {
 	if (_Started) {
 		SDL_SetClipboardText(text.c_str());
@@ -909,7 +909,7 @@ void Platform_Set_Clipboard_Text(std::string const & text)
 }
 
 
-void Platform_Error_Box(char const * title, char const * text)
+void Main_Window_Error_Box(char const * title, char const * text)
 {
 	Begin_Native_Modal();
 	if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, text, _Window)) {

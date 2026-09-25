@@ -64,7 +64,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "misc.h"
-#include "platform/platform.h"
+#include "sdl/sdlwindow.h"
 #include "shapeset.h"
 #include "video.h"
 #include "vidscale.h"
@@ -160,7 +160,7 @@ static SDL_Cursor * Build_Cursor(ShapeSet const * shape, int frame, int hotx, in
 	if (cursor_hotx >= width) cursor_hotx = width - 1;
 	if (cursor_hoty >= height) cursor_hoty = height - 1;
 
-	return(Platform_Create_Cursor(bits.data(), width, height, cursor_hotx, cursor_hoty));
+	return(Main_Window_Create_Cursor(bits.data(), width, height, cursor_hotx, cursor_hoty));
 }
 
 
@@ -187,11 +187,11 @@ WWMouseClass::WWMouseClass(void) :
 
 
 /// <summary>
-/// Destroys the mouse handler and every cursor it built. Delete it before Platform_Shutdown.
+/// Destroys the mouse handler and every cursor it built. Delete it before Main_Window_Destroy.
 /// </summary>
 WWMouseClass::~WWMouseClass(void)
 {
-	Platform_Set_Cursor(NULL);
+	Main_Window_Set_Cursor(NULL);
 	Flush_Cursor_Cache();
 	CurrentShape = NULL;
 }
@@ -208,7 +208,7 @@ void WWMouseClass::Calc_Confining_Rect(void)
 	int y = 0;
 	int width = 0;
 	int height = 0;
-	Platform_Window_Client_Rect(x, y, width, height);
+	Main_Window_Client_Rect(x, y, width, height);
 
 	ConfiningRect = Rect(x, y, width, height);
 	DebugString("Calc_Confining_Rect(%d,%d,%d,%d)\n", x, y, width, height);
@@ -360,7 +360,7 @@ void WWMouseClass::Capture_Mouse(void)
 		 * the window by hand while the game covers the screen.
 		 */
 		if (!WindowedMode) {
-			Platform_Confine_Cursor(true);
+			Main_Window_Confine_Cursor(true);
 		}
 
 		Show_Mouse();
@@ -395,8 +395,8 @@ void WWMouseClass::Release_Mouse(void)
 		DebugString("Release_Mouse()\n");
 		Hide_Mouse();
 		IsCaptured = false;
-		Platform_Confine_Cursor(false);
-		Platform_Capture_Mouse(false);
+		Main_Window_Confine_Cursor(false);
+		Main_Window_Capture_Mouse(false);
 		if (ReleasedState < 0) {
 			ReleasedState = 0;
 		}
@@ -493,7 +493,7 @@ void WWMouseClass::Client_To_Game(int & x, int & y) const
 // Shows the window's arrow while the released pointer's show count allows it.
 void WWMouseClass::Show_Released_Pointer(void) const
 {
-	Platform_Set_Cursor(ReleasedState >= 0 ? Platform_System_Cursor(UI_CURSOR_ARROW) : NULL);
+	Main_Window_Set_Cursor(ReleasedState >= 0 ? Main_Window_System_Cursor(UI_CURSOR_ARROW) : NULL);
 }
 
 
@@ -518,7 +518,7 @@ void WWMouseClass::Get_Bounded_Position(int & x, int & y) const
 	*/
 	x = 0;
 	y = 0;
-	Platform_Cursor_Position(x, y);
+	Main_Window_Cursor_Position(x, y);
 	Client_To_Game(x, y);
 }
 
@@ -526,7 +526,7 @@ void WWMouseClass::Get_Bounded_Position(int & x, int & y) const
 void WWMouseClass::Flush_Cursor_Cache(void)
 {
 	for (CachedCursor const & entry : CursorCache) {
-		Platform_Destroy_Cursor(entry.Cursor);
+		Main_Window_Destroy_Cursor(entry.Cursor);
 	}
 
 	CursorCache.clear();
@@ -556,7 +556,7 @@ void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, in
 	if (frame >= 0 && frame < (int)CursorCache.size()) {
 		CachedCursor & entry = CursorCache[frame];
 		if (entry.Cursor != NULL && (entry.HotX != hotx || entry.HotY != hoty)) {
-			Platform_Destroy_Cursor(entry.Cursor);
+			Main_Window_Destroy_Cursor(entry.Cursor);
 			entry.Cursor = NULL;
 		}
 		if (entry.Cursor == NULL) {
@@ -570,7 +570,7 @@ void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, in
 	CurrentCursor = cursor;
 
 	if (apply) {
-		Platform_Set_Cursor(CursorVisible ? CurrentCursor : NULL);
+		Main_Window_Set_Cursor(CursorVisible ? CurrentCursor : NULL);
 	}
 }
 
@@ -584,7 +584,7 @@ void WWMouseClass::Set_Cursor_Visible(bool visible)
 	}
 
 	if (Is_Captured()) {
-		Platform_Set_Cursor(visible ? CurrentCursor : NULL);
+		Main_Window_Set_Cursor(visible ? CurrentCursor : NULL);
 	}
 }
 
@@ -603,7 +603,7 @@ bool WWMouseClass::Show_Game_Pointer(void)
 		return(false);
 	}
 
-	Platform_Set_Cursor(CursorVisible ? CurrentCursor : NULL);
+	Main_Window_Set_Cursor(CursorVisible ? CurrentCursor : NULL);
 	return(true);
 }
 

@@ -7,9 +7,9 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "platform/sdlevents.h"
+#include "sdl/sdlevents.h"
 
-#include "platform/sdlkeys.h"
+#include "sdl/sdlkeys.h"
 #include "utf8.h"
 #include "win.h"
 

@@ -1,6 +1,6 @@
 # Checks that no engine header outside code/ui/rml/ includes a UI toolkit or renderer header,
 # that no engine source outside code/ui/ includes RmlUi or Dear ImGui, and that SDL is
-# included only by the code/platform/sdl*.cpp sources.
+# included only by the sources in code/sdl/.
 #
 # Expects OPENTS_SOURCE_DIR to be set. Run with `cmake -DOPENTS_SOURCE_DIR=<root> -P`.
 
@@ -42,7 +42,7 @@ foreach(source IN LISTS sources)
             list(APPEND violations "${source}: ${hit}")
         endforeach()
     endif()
-    if(NOT source MATCHES "^code/platform/sdl[^/]*\\.cpp$")
+    if(NOT source MATCHES "^code/sdl/")
         file(STRINGS "${OPENTS_SOURCE_DIR}/${source}" hits REGEX "${SDL_INCLUDE}")
         foreach(hit IN LISTS hits)
             list(APPEND violations "${source}: ${hit}")

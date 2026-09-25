@@ -11,7 +11,7 @@
 // which chat, edit boxes and the high-score name read back.
 
 #include "keyboard.h"
-#include "platform/windowevent.hh"
+#include "windowevent.hh"
 
 #include <cstdio>
 

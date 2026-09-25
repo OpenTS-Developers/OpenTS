@@ -9,7 +9,6 @@
 
 #include "ui/uishell.h"
 
-#include "platform/windowevent.hh"
 #include "ui/rml/rmlfontfon.h"
 #include "ui/rml/rmlimage.h"
 #include "ui/rml/rmlkeys.h"
@@ -39,6 +38,7 @@
 #include "ui/uiscreen.h"
 #include "ui/uiunicode.h"
 #include "ui/uiview.h"
+#include "windowevent.hh"
 
 #include <algorithm>
 #include <chrono>

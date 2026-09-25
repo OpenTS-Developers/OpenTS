@@ -24,7 +24,7 @@
 #include "globals.h"
 #include "goptions.h"
 #include "misc.h"
-#include "platform/platform.h"
+#include "sdl/sdlwindow.h"
 #include "surface.h"
 #include "ui/uishell.h"
 #include "videodirty.h"
@@ -308,7 +308,7 @@ static void Present(void)
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
 	}
-	if (Platform_Window_Minimized()) {
+	if (Main_Window_Minimized()) {
 		return;
 	}
 

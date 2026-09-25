@@ -371,24 +371,24 @@ fixed_exclusions:
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_RBUTTON }
     reason: Keyboard-backend classification of mouse virtual keys.
   - sites:
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_LBUTTON }
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_RBUTTON }
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_MBUTTON }
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_XBUTTON1 }
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Down, expression: VK_XBUTTON2 }
-    reason: Platform-backend mouse button state, not controls.
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_LBUTTON }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_RBUTTON }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_MBUTTON }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_XBUTTON1 }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_XBUTTON2 }
+    reason: SDL-layer mouse button state, not controls.
   - sites:
-      - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_SHIFT }
-      - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_CONTROL }
-      - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_MENU }
-    reason: Platform-backend modifier state attached to key and mouse events, not controls.
+      - { file: code/sdl/sdlwindow.cpp, function: Held_Modifiers, expression: VK_SHIFT }
+      - { file: code/sdl/sdlwindow.cpp, function: Held_Modifiers, expression: VK_CONTROL }
+      - { file: code/sdl/sdlwindow.cpp, function: Held_Modifiers, expression: VK_MENU }
+    reason: SDL-layer modifier state attached to key and mouse events, not controls.
   - sites:
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_CAPITAL }
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_NUMLOCK }
-      - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_SCROLL }
-    reason: Platform-backend lock-key state, not controls.
-  - site: { file: code/platform/sdlevents.cpp, function: Window_Events_From_SDL, expression: VK_F10 }
-    reason: Platform-backend classification of F10 as a system key, as Windows reports it; it does not dispatch a game command.
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Toggled, expression: VK_CAPITAL }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Toggled, expression: VK_NUMLOCK }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Toggled, expression: VK_SCROLL }
+    reason: SDL-layer lock-key state, not controls.
+  - site: { file: code/sdl/sdlevents.cpp, function: Window_Events_From_SDL, expression: VK_F10 }
+    reason: SDL-layer classification of F10 as a system key, as Windows reports it; it does not dispatch a game command.
   - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
     reason: Synchronizes the backend Scroll Lock state; it does not dispatch a game command.
   - sites:
@@ -400,9 +400,9 @@ fixed_exclusions:
   - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Text, expression: KN_TEXT }
     reason: Queues typed text that no key press carries; it is not a key.
   - sites:
-      - { file: code/platform/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_SHIFT }
-      - { file: code/platform/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_CONTROL }
-      - { file: code/platform/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_MENU }
+      - { file: code/sdl/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_SHIFT }
+      - { file: code/sdl/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_CONTROL }
+      - { file: code/sdl/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_MENU }
     reason: Converts modifier virtual keys to display names; it does not consume input.
   - sites:
       - { file: code/list.cpp, function: ListClass::Action, expression: KN_UP }

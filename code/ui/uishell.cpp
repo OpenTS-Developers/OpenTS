@@ -9,7 +9,6 @@
 
 #include "ui/uishell.h"
 
-#include "platform/windowevent.hh"
 #include "ui/dev/uidev.h"
 #include "ui/rml/rmlfont.h"
 #include "ui/rml/rmlkeys.h"
@@ -19,6 +18,7 @@
 #include "ui/uihost.h"
 #include "ui/uireveal.h"
 #include "ui/uiview.h"
+#include "windowevent.hh"
 
 // windowsx.h defines macros with the names of these RmlUi Element methods.
 #undef GetFirstChild

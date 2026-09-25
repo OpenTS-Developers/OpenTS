@@ -1,4 +1,4 @@
-# The key queue is compiled into the harness with stubs for the window, platform and frame.
+# The key queue is compiled into the harness with stubs for the window, the SDL layer and the frame.
 
 opents_add_test(KeyQueue
     NAME keyqueue
