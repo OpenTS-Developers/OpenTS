@@ -44,42 +44,21 @@
 
 #include "winstub.h"
 
-#include "_keyboar.h"
 #include "_map.h"
 #include "_rect.h"
-#include "_tooltip.h"
-#include "_ui.h"
 #include "audio/audioengine.h"
 #include "ccfile.h"
-#include "cctooltip.h"
-#include "conquer.h"
 #include "convert.h"
 #include "dbgprint.h"
 #include "draw.h"
-#include "dsurface.h"
-#include "except.h"
-#include "gamewindow.h"
 #include "globals.h"
-#include "goptions.h"
-#include "mainopt.h"
 #include "misc.h"
 #include "movie.h"
 #include "opents_version.h"
 #include "pcx.h"
-#include "queue.h"
-#include "resource.h"
-#include "session.h"
-#include "theme.h"
-#include "ui/uishell.h"
-#include "video.h"
-#include "vidscale.h"
 #include "win.h"
 #include "wwmouse.h"
 
-
-#include <algorithm>
-#include <commctrl.h>
-#include <windowsx.h>
 
 HWND	MainWindow;
 
