@@ -36,9 +36,9 @@
 #include "netshare.h"
 #include "nettiming.h"
 #include "newmenu.h"
-#include "platform/platform.h"
 #include "rules.h"
 #include "scenario.h"
+#include "sdl/sdlwindow.h"
 #include "sendfile.h"
 #include "srfcache.h"
 #include "stimer.h"
@@ -398,7 +398,7 @@ bool Net2_Service_Lobby(void)
 	Ipx.Service();
 	Title_Screen_Restore();
 
-	Platform_Pump_Events();
+	Main_Window_Pump_Events();
 
 	Call_Back();
 	if (_netresponse != UI_NET_NONE) {

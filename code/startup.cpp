@@ -106,13 +106,13 @@
 #include "ovrlight.h"
 #include "particle.h"
 #include "partsys.h"
-#include "platform/platform.h"
 #include "psystype.h"
 #include "ptype.h"
 #include "rules.h"
 #include "scenario.h"
 #include "scheme.h"
 #include "script.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "shapeset.h"
 #include "side.h"
@@ -576,7 +576,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		VideoModeHeight = Options.ScreenHeight;
 
 		if (!Game_Window_Open(Options.ScreenWidth, Options.ScreenHeight)) {
-			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
@@ -586,17 +586,17 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 		int drawablewidth = 0;
 		int drawableheight = 0;
-		int refreshrate = Platform_Window_Refresh_Rate();
-		NativeWindow nativewindow = Platform_Native_Window();
-		if (!Platform_Window_Drawable_Size(drawablewidth, drawableheight)
+		int refreshrate = Main_Window_Refresh_Rate();
+		NativeWindow nativewindow = Main_Window_Native();
+		if (!Main_Window_Drawable_Size(drawablewidth, drawableheight)
 			|| !Video_Init(nativewindow, drawablewidth, drawableheight, refreshrate)) {
-			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
 		VisibleSurface = DSurface::Create_Primary();
 		if (VisibleSurface == NULL) {
-			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 

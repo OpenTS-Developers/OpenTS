@@ -21,7 +21,7 @@
 #include "goptions.h"
 #include "mixfile.h"
 #include "movies.h"
-#include "platform/platform.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "unvqtblc.h"
 #include "vector.h"
@@ -46,7 +46,7 @@ intptr_t __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, l
 
 bool VQA_Message_Handler(void)
 {
-	Platform_Pump_Events();
+	Main_Window_Pump_Events();
 	return(true);
 }
 

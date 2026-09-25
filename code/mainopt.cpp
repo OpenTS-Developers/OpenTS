@@ -28,7 +28,7 @@
 #include "mixfile.h"
 #include "msgbox.h"
 #include "newmenu.h"
-#include "platform/platform.h"
+#include "sdl/sdlwindow.h"
 #include "sidebar.h"
 #include "sounddlg.h"
 #include "stimer.h"
@@ -153,7 +153,7 @@ bool Change_Display_Mode(int width, int height)
 	 */
 	if (WindowedMode && Options.WindowWidth <= 0 && Options.WindowHeight <= 0) {
 		// The window grows about its middle, so the picture stays where the player was looking.
-		Platform_Resize_Window(width, height);
+		Main_Window_Resize(width, height);
 	}
 
 	Rect temp = VisibleRect;

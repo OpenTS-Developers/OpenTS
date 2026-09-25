@@ -26,8 +26,8 @@
 #include "mixfile.h"
 #include "movies.h"
 #include "msgloop.h"
-#include "platform/platform.h"
 #include "rules.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "ui/uishell.h"
 #include "video.h"
@@ -140,26 +140,26 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual bool Take_Capture(void) override
 		{
-			if (Platform_Mouse_Captured()) {
+			if (Main_Window_Mouse_Captured()) {
 				return(false);
 			}
-			Platform_Capture_Mouse(true);
+			Main_Window_Capture_Mouse(true);
 			return(true);
 		}
 
 		virtual void Release_Capture(void) override
 		{
-			Platform_Capture_Mouse(false);
+			Main_Window_Capture_Mouse(false);
 		}
 
 		virtual bool Key_Down(int virtualkey) const override
 		{
-			return(Platform_Key_Down(virtualkey));
+			return(Main_Window_Key_Down(virtualkey));
 		}
 
 		virtual bool Key_Toggled(int virtualkey) const override
 		{
-			return(Platform_Key_Toggled(virtualkey));
+			return(Main_Window_Key_Toggled(virtualkey));
 		}
 
 		virtual std::string System_Font_Path(char const * face) const override
@@ -180,7 +180,7 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual void Apply_Cursor(UICursor cursor) override
 		{
-			Platform_Set_Cursor(Platform_System_Cursor(cursor));
+			Main_Window_Set_Cursor(Main_Window_System_Cursor(cursor));
 		}
 
 
@@ -191,18 +191,18 @@ class UIEngineHostClass : public UIShellHostClass
 				mouse->Refresh_Pointer_Scale();
 			}
 			if (mouse == NULL || !mouse->Show_Game_Pointer()) {
-				Platform_Set_Cursor(Platform_System_Cursor(UI_CURSOR_ARROW));
+				Main_Window_Set_Cursor(Main_Window_System_Cursor(UI_CURSOR_ARROW));
 			}
 		}
 
 		virtual std::string Clipboard_Text(void) const override
 		{
-			return(Platform_Clipboard_Text());
+			return(Main_Window_Clipboard_Text());
 		}
 
 		virtual void Set_Clipboard_Text(std::string const & text) override
 		{
-			Platform_Set_Clipboard_Text(text);
+			Main_Window_Set_Clipboard_Text(text);
 		}
 
 		virtual char const * String(int id) const override

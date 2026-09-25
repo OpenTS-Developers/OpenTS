@@ -10,7 +10,7 @@
 // Pins the virtual-key code each SDL key becomes, since saved hotkeys store those codes, and
 // the names the keyboard screen shows for them.
 
-#include "platform/sdlkeys.h"
+#include "sdl/sdlkeys.h"
 
 #include "win.h"
 

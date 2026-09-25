@@ -107,12 +107,12 @@
 #include "netdlg2.h"
 #include "netglobal.h"
 #include "netshare.h"
-#include "platform/platform.h"
 #include "progress.h"
 #include "queue.h"
 #include "rules.h"
 #include "savemgr.h"
 #include "scenario.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "sidebar.h"
 #include "sounddlg.h"
@@ -354,7 +354,7 @@ void Main_Game(int argc, char * argv[])
 	int ret = Init_Game(argc, argv);
 	if (ret) {
 		if (ret < 0) {
-			Platform_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_INITGAME_FAILED));
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_INITGAME_FAILED));
 		}
 		return;
 	}

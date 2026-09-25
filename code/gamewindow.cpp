@@ -25,13 +25,13 @@
 #include "init.h"
 #include "misc.h"
 #include "movies.h"
-#include "platform/platform.h"
-#include "platform/windowevent.hh"
 #include "queue.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "ui/uishell.h"
 #include "video.h"
 #include "vidscale.h"
+#include "windowevent.hh"
 #include "winstub.h"
 #include "wwmouse.h"
 
@@ -96,7 +96,7 @@ static void Update_Cursor(void)
 	}
 
 	bool const visible = (MouseCursor == NULL || MouseCursor->Get_Mouse_State() >= 0);
-	Platform_Set_Cursor(visible ? Platform_System_Cursor(UI_CURSOR_ARROW) : NULL);
+	Main_Window_Set_Cursor(visible ? Main_Window_System_Cursor(UI_CURSOR_ARROW) : NULL);
 }
 
 
@@ -138,12 +138,12 @@ static bool Handle_Event(WindowEvent const & event)
 
 		case WINDOW_EVENT_RESIZED:
 			Video_On_Resize(event.Width, event.Height);
-			Video_Set_Refresh_Rate(Platform_Window_Refresh_Rate());
+			Video_Set_Refresh_Rate(Main_Window_Refresh_Rate());
 			Recalculate_Confining_Rect();
 			break;
 
 		case WINDOW_EVENT_DISPLAY_CHANGED:
-			Video_Set_Refresh_Rate(Platform_Window_Refresh_Rate());
+			Video_Set_Refresh_Rate(Main_Window_Refresh_Rate());
 			break;
 
 		case WINDOW_EVENT_MOVED:
@@ -232,16 +232,16 @@ bool Game_Window_Open(int width, int height)
 		}
 	}
 
-	if (!Platform_Create_Main_Window(WindowedMode, clientwidth, clientheight)) {
+	if (!Main_Window_Create(WindowedMode, clientwidth, clientheight)) {
 		return(false);
 	}
 
-	MainWindow = (HWND)Platform_Native_Window().Handle;
+	MainWindow = (HWND)Main_Window_Native().Handle;
 
 	ToolTips = new CCToolTip();
 	ToolTips->Set_Timer_Delay(500);
 
-	Platform_Set_Cursor(Platform_System_Cursor(UI_CURSOR_ARROW));
+	Main_Window_Set_Cursor(Main_Window_System_Cursor(UI_CURSOR_ARROW));
 	return(true);
 }
 
@@ -268,7 +268,7 @@ void Game_Window_Begin_Shutdown(void)
 void Game_Window_Close(void)
 {
 	Game_Window_Begin_Shutdown();
-	Platform_Shutdown();
+	Main_Window_Destroy();
 }
 
 

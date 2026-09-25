@@ -41,7 +41,7 @@
 #include "_tooltip.h"
 #include "_ui.h"
 #include "cctooltip.h"
-#include "platform/platform.h"
+#include "sdl/sdlwindow.h"
 #include "vector.h"
 #include "video.h"
 #include "win.h"
@@ -73,7 +73,7 @@ void Windows_Message_Handler(void)
 	/*
 	**	Process windows messages until the message queue is exhausted.
 	*/
-	Platform_Pump_Events();
+	Main_Window_Pump_Events();
 
 	if (ToolTips != NULL) {
 		ToolTips->Service();

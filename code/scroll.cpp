@@ -55,15 +55,15 @@
 #include "inline.h"
 #include "misc.h"
 #include "overtype.h"
-#include "platform/platform.h"
-#include "platform/windowevent.hh"
 #include "rules.h"
 #include "savestream.h"
+#include "sdl/sdlwindow.h"
 #include "suprtype.h"
 #include "surface.h"
 #include "tactical.h"
 #include "vidscale.h"
 #include "waypoint.h"
+#include "windowevent.hh"
 
 #include "special.hh"
 
@@ -659,7 +659,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
 				Map.Mouse_Left_Press(point);
-				Platform_Capture_Mouse(true);
+				Main_Window_Capture_Mouse(true);
 				IsMouseDown = true;
 			}
 		}
@@ -673,7 +673,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			Resolve_Point(point, cell, coord, object, fog, shadow);
 			Map.Mouse_Left_Release(coord, cell, object, What_Action(cell, object, false));
 			IsMouseDown = false;
-			Platform_Capture_Mouse(false);
+			Main_Window_Capture_Mouse(false);
 		}
 
 	} else if (press && event.Button == WINDOW_BUTTON_RIGHT) {
@@ -684,7 +684,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 
 			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
 				Map.Mouse_Right_Press(point);
-				Platform_Capture_Mouse(true);
+				Main_Window_Capture_Mouse(true);
 				IsMouseDown = true;
 			}
 		}
@@ -694,7 +694,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			Map.Mouse_Right_Release(point);
 			BASECLASS::Abort_Drag_Select();
 			IsMouseDown = false;
-			Platform_Capture_Mouse(false);
+			Main_Window_Capture_Mouse(false);
 		}
 	}
 }
@@ -787,7 +787,7 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					if (distx + disty > 0) {
 						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
 						Game_Point_To_Window(pt);
-						Platform_Warp_Cursor(pt.X, pt.Y);
+						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}
 					break;
 
@@ -799,7 +799,7 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					if (distx + disty > 0) {
 						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
 						Game_Point_To_Window(pt);
-						Platform_Warp_Cursor(pt.X, pt.Y);
+						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}
 					break;
 			}
@@ -892,5 +892,5 @@ void ScrollClass::Abort_Drag_Select(void)
 {
 	BASECLASS::Abort_Drag_Select();
 	IsMouseDown = false;
-	Platform_Capture_Mouse(false);
+	Main_Window_Capture_Mouse(false);
 }

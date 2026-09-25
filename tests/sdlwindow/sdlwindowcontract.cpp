@@ -7,12 +7,12 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Pins what the game receives from the platform's pump: each event once and in order, with
+// Pins what the game receives from the SDL layer's pump: each event once and in order, with
 // the keys reported held as of that event, however many events one pump delivers.
 
 #include "gamewindow.h"
-#include "platform/platform.h"
-#include "platform/windowevent.hh"
+#include "sdl/sdlwindow.h"
+#include "windowevent.hh"
 
 #include "win.h"
 
@@ -39,7 +39,7 @@ void Check(bool condition, char const * what)
 
 std::vector<WindowEvent> Received;
 
-// Whether the platform reported Ctrl held while each received event was handled.
+// Whether the SDL layer reported Ctrl held while each received event was handled.
 std::vector<bool> CtrlHeld;
 
 
@@ -87,7 +87,7 @@ std::vector<Delivered> Pumped(WindowEventType type)
 {
 	Received.clear();
 	CtrlHeld.clear();
-	Platform_Pump_Events();
+	Main_Window_Pump_Events();
 
 	std::vector<Delivered> result;
 	for (size_t index = 0; index < Received.size(); index++) {
@@ -101,22 +101,22 @@ std::vector<Delivered> Pumped(WindowEventType type)
 }
 
 
-// Stands in for the game's window handler and records what the platform hands it.
+// Stands in for the game's window handler and records what the SDL layer hands it.
 bool Game_Window_Handle_Event(WindowEvent const & event)
 {
 	Received.push_back(event);
-	CtrlHeld.push_back(Platform_Key_Down(VK_CONTROL));
+	CtrlHeld.push_back(Main_Window_Key_Down(VK_CONTROL));
 	return(true);
 }
 
 
 int main(void)
 {
-	if (!Platform_Create_Main_Window(true, 64, 48)) {
+	if (!Main_Window_Create(true, 64, 48)) {
 		std::printf("the main window could not be created\n\nFAILED\n");
 		return(1);
 	}
-	Platform_Pump_Events();
+	Main_Window_Pump_Events();
 
 	Push_Key(true, SDL_SCANCODE_A, SDLK_A);
 	Push_Key(true, SDL_SCANCODE_B, SDLK_B);
@@ -127,12 +127,12 @@ int main(void)
 	Push_Key(false, SDL_SCANCODE_B, SDLK_B);
 	Pumped(WINDOW_EVENT_KEY_UP);
 
-	Check(!Platform_Key_Down(VK_CONTROL), "no key is held before one is pressed");
+	Check(!Main_Window_Key_Down(VK_CONTROL), "no key is held before one is pressed");
 	Push_Key(true, SDL_SCANCODE_LCTRL, SDLK_LCTRL, SDL_KMOD_LCTRL);
 	Push_Key(true, SDL_SCANCODE_A, SDLK_A, SDL_KMOD_LCTRL);
 	keys = Pumped(WINDOW_EVENT_KEY_DOWN);
 	Check(keys.size() == 2 && keys[1].Ctrl && (keys[1].Event.Modifiers & WINDOW_MOD_CTRL) != 0, "a key pressed after Ctrl in the same pump sees Ctrl held");
-	Check(Platform_Key_Down(VK_LCONTROL) && !Platform_Key_Down(VK_RCONTROL), "and the side it was pressed on");
+	Check(Main_Window_Key_Down(VK_LCONTROL) && !Main_Window_Key_Down(VK_RCONTROL), "and the side it was pressed on");
 
 	Push_Click();
 	std::vector<Delivered> clicks = Pumped(WINDOW_EVENT_MOUSE_DOWN);
@@ -144,7 +144,7 @@ int main(void)
 	Push_Click();
 	Received.clear();
 	CtrlHeld.clear();
-	Platform_Pump_Events();
+	Main_Window_Pump_Events();
 	bool released = false;
 	for (size_t index = 0; index < Received.size(); index++) {
 		if (Received[index].Type == WINDOW_EVENT_KEY_DOWN && Received[index].VirtualKey == 'B') {
@@ -172,7 +172,7 @@ int main(void)
 	Push_Key(false, SDL_SCANCODE_RALT, SDLK_RALT);
 	keys = Pumped(WINDOW_EVENT_KEY_DOWN);
 	Check(keys.size() == 2 && keys[1].Ctrl && keys[1].Event.Modifiers == (WINDOW_MOD_CTRL | WINDOW_MOD_ALT) && !keys[1].Event.System, "a key typed with AltGr in one pump carries AltGr's Ctrl");
-	Check(!Platform_Key_Down(VK_CONTROL), "and Ctrl is released with AltGr");
+	Check(!Main_Window_Key_Down(VK_CONTROL), "and Ctrl is released with AltGr");
 
 	Push_Key(true, SDL_SCANCODE_RALT, SDLK_RALT, SDL_KMOD_RALT);
 	Push_Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT);
@@ -185,12 +185,12 @@ int main(void)
 	SDL_SetModState(SDL_KMOD_CAPS);
 	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
 	Pumped(WINDOW_EVENT_FOCUS_GAINED);
-	Check(Platform_Key_Toggled(VK_CAPITAL), "the lock keys are read again when the window regains focus");
+	Check(Main_Window_Key_Toggled(VK_CAPITAL), "the lock keys are read again when the window regains focus");
 	SDL_SetModState(SDL_KMOD_NONE);
 	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
 	Pumped(WINDOW_EVENT_FOCUS_GAINED);
 
-	HWND const window = (HWND)Platform_Native_Window().Handle;
+	HWND const window = (HWND)Main_Window_Native().Handle;
 
 	// SDL reports no key still held after it resets the keyboard, and drops such a key's release.
 	std::memset(state, 0, sizeof(state));
@@ -199,7 +199,7 @@ int main(void)
 	SetKeyboardState(state);
 	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
 	Pumped(WINDOW_EVENT_FOCUS_GAINED);
-	Check(Platform_Key_Down(VK_SHIFT) && Platform_Key_Down(VK_LSHIFT) && !Platform_Key_Down(VK_RSHIFT), "a Shift held as the window gains the focus is held");
+	Check(Main_Window_Key_Down(VK_SHIFT) && Main_Window_Key_Down(VK_LSHIFT) && !Main_Window_Key_Down(VK_RSHIFT), "a Shift held as the window gains the focus is held");
 	Push_Click();
 	clicks = Pumped(WINDOW_EVENT_MOUSE_DOWN);
 	Push_Key(true, SDL_SCANCODE_A, SDLK_A);
@@ -212,7 +212,7 @@ int main(void)
 	SetKeyboardState(state);
 	Push_Click();
 	clicks = Pumped(WINDOW_EVENT_MOUSE_DOWN);
-	Check(clicks.size() == 1 && (clicks[0].Event.Modifiers & WINDOW_MOD_SHIFT) == 0 && !Platform_Key_Down(VK_SHIFT), "it is released when Windows releases it, though SDL reports no release");
+	Check(clicks.size() == 1 && (clicks[0].Event.Modifiers & WINDOW_MOD_SHIFT) == 0 && !Main_Window_Key_Down(VK_SHIFT), "it is released when Windows releases it, though SDL reports no release");
 
 	state[VK_SHIFT] = 0x80;
 	state[VK_LSHIFT] = 0x80;
@@ -221,7 +221,7 @@ int main(void)
 	Pumped(WINDOW_EVENT_FOCUS_GAINED);
 	Push_Window(SDL_EVENT_WINDOW_FOCUS_LOST);
 	Pumped(WINDOW_EVENT_FOCUS_LOST);
-	Check(!Platform_Key_Down(VK_SHIFT), "losing the focus releases it");
+	Check(!Main_Window_Key_Down(VK_SHIFT), "losing the focus releases it");
 
 	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
 	Pumped(WINDOW_EVENT_FOCUS_GAINED);
@@ -229,10 +229,10 @@ int main(void)
 	Pumped(WINDOW_EVENT_KEY_DOWN);
 	std::memset(state, 0, sizeof(state));
 	SetKeyboardState(state);
-	Check(Platform_Key_Down(VK_SHIFT), "once SDL reports the key, Windows no longer releases it");
+	Check(Main_Window_Key_Down(VK_SHIFT), "once SDL reports the key, Windows no longer releases it");
 	Push_Key(false, SDL_SCANCODE_LSHIFT, SDLK_LSHIFT);
 	Pumped(WINDOW_EVENT_KEY_UP);
-	Check(!Platform_Key_Down(VK_SHIFT), "and SDL's release does");
+	Check(!Main_Window_Key_Down(VK_SHIFT), "and SDL's release does");
 
 	SendMessageW(window, WM_ENTERSIZEMOVE, 0, 0);
 	state[VK_SHIFT] = 0x80;
@@ -240,7 +240,7 @@ int main(void)
 	SetKeyboardState(state);
 	SendMessageW(window, WM_EXITSIZEMOVE, 0, 0);
 	Pumped(WINDOW_EVENT_NONE);
-	Check(Platform_Key_Down(VK_SHIFT), "a Shift held through a drag of the window is held after it");
+	Check(Main_Window_Key_Down(VK_SHIFT), "a Shift held through a drag of the window is held after it");
 	std::memset(state, 0, sizeof(state));
 	SetKeyboardState(state);
 	Pumped(WINDOW_EVENT_NONE);
@@ -260,31 +260,31 @@ int main(void)
 	Push_Key(false, SDL_SCANCODE_RALT, SDLK_RALT);
 	Pumped(WINDOW_EVENT_KEY_UP);
 
-	Platform_Capture_Mouse(true);
-	bool const captured = Platform_Mouse_Captured() && GetCapture() == window;
+	Main_Window_Capture_Mouse(true);
+	bool const captured = Main_Window_Mouse_Captured() && GetCapture() == window;
 	Check(captured, "the window can take the mouse capture");
 	if (captured) {
 		SendMessageW(window, WM_CANCELMODE, 0, 0);
-		Check(!Platform_Mouse_Captured(), "a capture Windows cancels is reported gone at once");
+		Check(!Main_Window_Mouse_Captured(), "a capture Windows cancels is reported gone at once");
 		Check(Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "and reaches the game as one lost capture");
 
-		Platform_Capture_Mouse(true);
-		Check(Platform_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was cancelled");
+		Main_Window_Capture_Mouse(true);
+		Check(Main_Window_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was cancelled");
 
-		Platform_Capture_Mouse(false);
-		Check(!Platform_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
+		Main_Window_Capture_Mouse(false);
+		Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
 
 		HWND other = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 8, 8, NULL, NULL, GetModuleHandleW(NULL), NULL);
-		Platform_Capture_Mouse(true);
+		Main_Window_Capture_Mouse(true);
 		SetCapture(other);
-		Check(!Platform_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
+		Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
 		ReleaseCapture();
 		DestroyWindow(other);
-		Platform_Capture_Mouse(false);
+		Main_Window_Capture_Mouse(false);
 		Pumped(WINDOW_EVENT_CAPTURE_LOST);
 	}
 
-	Platform_Shutdown();
+	Main_Window_Destroy();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

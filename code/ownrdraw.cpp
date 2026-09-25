@@ -23,8 +23,8 @@
 #include "keyboard.h"
 #include "misc.h"
 #include "mixfile.h"
-#include "platform/platform.h"
 #include "rgb.h"
+#include "sdl/sdlwindow.h"
 #include "srfcache.h"
 #include "surface.h"
 #include "utf8.h"
@@ -186,16 +186,16 @@ std::string Build_Hotkey_String(KeyNumType key)
 	std::string name;
 
 	if ((code & WWKEY_ALT_BIT) != 0) {
-		name += Platform_Key_Name(VK_MENU) + "+";
+		name += Main_Window_Key_Name(VK_MENU) + "+";
 	}
 	if ((code & WWKEY_CTRL_BIT) != 0) {
-		name += Platform_Key_Name(VK_CONTROL) + "+";
+		name += Main_Window_Key_Name(VK_CONTROL) + "+";
 	}
 	if ((code & WWKEY_SHIFT_BIT) != 0) {
-		name += Platform_Key_Name(VK_SHIFT) + "+";
+		name += Main_Window_Key_Name(VK_SHIFT) + "+";
 	}
 
-	name += Platform_Key_Name(code & 0xFF);
+	name += Main_Window_Key_Name(code & 0xFF);
 	return(name);
 }
 

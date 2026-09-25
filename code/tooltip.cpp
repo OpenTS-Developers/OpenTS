@@ -17,9 +17,9 @@
 
 #include "data.h"
 #include "dbgprint.h"
-#include "platform/platform.h"
-#include "platform/windowevent.hh"
+#include "sdl/sdlwindow.h"
 #include "vidscale.h"
+#include "windowevent.hh"
 
 
 /// <summary>
@@ -127,7 +127,7 @@ void ToolTipManager::Service(void)
 	} else {
 		int x = 0;
 		int y = 0;
-		Platform_Cursor_Position(x, y);
+		Main_Window_Cursor_Position(x, y);
 		LastMousePos.X = x;
 		LastMousePos.Y = y;
 		Window_Point_To_Game(LastMousePos);

@@ -7,7 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-#include "platform/sdlkeys.h"
+#include "sdl/sdlkeys.h"
 
 #include "win.h"
 

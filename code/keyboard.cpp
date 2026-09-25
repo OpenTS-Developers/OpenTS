@@ -56,9 +56,9 @@
 
 #include "_xmouse.h"
 #include "msgloop.h"
-#include "platform/platform.h"
-#include "platform/windowevent.hh"
+#include "sdl/sdlwindow.h"
 #include "vidscale.h"
+#include "windowevent.hh"
 
 #include <cmath>
 
@@ -388,7 +388,7 @@ int WWKeyboardClass::To_ASCII(unsigned short key)
  *=============================================================================================*/
 bool WWKeyboardClass::Down(unsigned short key)
 {
-	return(Platform_Key_Down(key & 0xFF));
+	return(Main_Window_Key_Down(key & 0xFF));
 }
 
 

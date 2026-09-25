@@ -9,7 +9,7 @@
 
 // Pins how SDL events become the window events the game reads.
 
-#include "platform/sdlevents.h"
+#include "sdl/sdlevents.h"
 
 #include "win.h"
 
