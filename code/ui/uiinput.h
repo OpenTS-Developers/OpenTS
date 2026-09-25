@@ -87,23 +87,3 @@ class UIInputStateClass
 		std::array<UIInputOwner, KEY_COUNT> Keys {};
 		std::array<UIInputOwner, BUTTON_COUNT> Buttons {};
 };
-
-
-struct UIInputText
-{
-	std::array<char32_t, 2> Codepoints {};
-	unsigned Count = 0;
-};
-
-
-class UIUTF8DecoderClass
-{
-	public:
-		UIInputText Feed(unsigned char byte);
-		void Reset(void);
-
-	private:
-		char32_t Value = 0;
-		char32_t Minimum = 0;
-		unsigned Remaining = 0;
-};

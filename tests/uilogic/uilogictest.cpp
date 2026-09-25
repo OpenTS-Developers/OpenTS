@@ -18,7 +18,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <initializer_list>
 #include <limits>
 #include <vector>
 
@@ -34,19 +33,6 @@ void Check(bool condition, char const * what)
 	if (!condition) {
 		Failures++;
 	}
-}
-
-
-std::vector<char32_t> Decode(UIUTF8DecoderClass & decoder, std::initializer_list<unsigned char> bytes)
-{
-	std::vector<char32_t> result;
-	for (unsigned char byte : bytes) {
-		UIInputText text = decoder.Feed(byte);
-		for (unsigned index = 0; index < text.Count; index++) {
-			result.push_back(text.Codepoints[index]);
-		}
-	}
-	return(result);
 }
 
 
@@ -132,34 +118,6 @@ void Test_Reconciliation(void)
 	Check(state.Key_Owner(70) == UI_INPUT_SUPPRESSED && state.Key_Owner(71) == UI_INPUT_NONE, "only a cancelled key that is up is forgotten");
 	Check(!UI_Consumes_Input(UI_INPUT_GAME) && UI_Consumes_Input(UI_INPUT_RML) && UI_Consumes_Input(UI_INPUT_SUPPRESSED), "delivery follows the owner of the press, not the pointer's position");
 	Check(!UI_Consumes_Input(UI_INPUT_NONE), "input nobody owns is the game's");
-}
-
-
-void Test_Text(void)
-{
-	UIUTF8DecoderClass decoder;
-
-	Check(Decode(decoder, { 0x41, 0x0A }) == std::vector<char32_t> { U'A', U'\n' }, "ASCII text passes through");
-	Check(Decode(decoder, { 0xC3, 0xA9, 0xE2, 0x82, 0xAC, 0xF0, 0x9F, 0x98, 0x80 }) == std::vector<char32_t> { 0xE9, 0x20AC, 0x1F600 }, "two-, three- and four-byte sequences decode");
-	Check(decoder.Feed(0xE2).Count == 0 && decoder.Feed(0x82).Count == 0, "a partial sequence waits for its bytes");
-	UIInputText completed = decoder.Feed(0xAC);
-	Check(completed.Count == 1 && completed.Codepoints[0] == 0x20AC, "a sequence can span messages");
-	Check(decoder.Feed(0xE2).Count == 0, "a truncated prefix stays pending");
-	UIInputText repaired = decoder.Feed(0x42);
-	Check(repaired.Count == 2 && repaired.Codepoints[0] == 0xFFFD && repaired.Codepoints[1] == U'B', "a malformed prefix does not swallow the ASCII after it");
-	Check(Decode(decoder, { 0xE2, 0xC3, 0xA9 }) == std::vector<char32_t> { 0xFFFD, 0xE9 }, "a malformed prefix does not swallow the sequence after it");
-	Check(Decode(decoder, { 0xC0, 0xAF }) == std::vector<char32_t> { 0xFFFD, 0xFFFD }, "invalid lead bytes are rejected");
-	Check(Decode(decoder, { 0xE0, 0x80, 0x80 }) == std::vector<char32_t> { 0xFFFD }, "an overlong encoding is rejected");
-	Check(Decode(decoder, { 0xED, 0xA0, 0x80 }) == std::vector<char32_t> { 0xFFFD }, "an encoded surrogate is rejected");
-	Check(Decode(decoder, { 0xF4, 0x90, 0x80, 0x80 }) == std::vector<char32_t> { 0xFFFD }, "a code point past U+10FFFF is rejected");
-	Check(Decode(decoder, { 0x80, 0x41 }) == std::vector<char32_t> { 0xFFFD, U'A' }, "a stray continuation byte does not swallow the text after it");
-	decoder.Feed(0xF0);
-	decoder.Feed(0x9F);
-	decoder.Reset();
-	Check(Decode(decoder, { 0x43 }) == std::vector<char32_t> { U'C' }, "a reset drops an incomplete sequence");
-	decoder.Feed(0xE2);
-	decoder.Reset();
-	Check(Decode(decoder, { 0x82, 0xAC }) == std::vector<char32_t> { 0xFFFD, 0xFFFD }, "a reset cannot splice fragments across owners");
 }
 
 
@@ -558,7 +516,6 @@ int main(void)
 {
 	Test_Ownership();
 	Test_Reconciliation();
-	Test_Text();
 	Test_Render_Math();
 	Test_Render_Transform();
 	Test_Render_Mask();
