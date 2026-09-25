@@ -171,7 +171,6 @@ static SDL_Cursor * Build_Cursor(ShapeSet const * shape, int frame, int hotx, in
 WWMouseClass::WWMouseClass(void) :
 	MouseState(-1),
 	IsCaptured(false),
-	ConfiningRect(RECT_NONE),
 	ReleasedState(0),
 	CursorShape(NULL),
 	CursorCacheScale(0),
@@ -182,7 +181,6 @@ WWMouseClass::WWMouseClass(void) :
 	CurrentCursor(NULL),
 	CursorVisible(true)
 {
-	Calc_Confining_Rect();
 }
 
 
@@ -194,24 +192,6 @@ WWMouseClass::~WWMouseClass(void)
 	Main_Window_Set_Cursor(NULL);
 	Flush_Cursor_Cache();
 	CurrentShape = NULL;
-}
-
-
-/// <summary>
-/// Recalculates the desktop rectangle of the main window's client area, which
-/// Convert_Coordinate measures positions from. The window's move and resize handlers call
-/// this routine to keep it current.
-/// </summary>
-void WWMouseClass::Calc_Confining_Rect(void)
-{
-	int x = 0;
-	int y = 0;
-	int width = 0;
-	int height = 0;
-	Main_Window_Client_Rect(x, y, width, height);
-
-	ConfiningRect = Rect(x, y, width, height);
-	DebugString("Calc_Confining_Rect(%d,%d,%d,%d)\n", x, y, width, height);
 }
 
 
@@ -458,18 +438,21 @@ void WWMouseClass::Conditional_Show_Mouse(void)
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
- * WARNINGS:   The coordinates will be bound as well as transformed by the confining rectangle.*
+ * WARNINGS:   The coordinates will be bound as well as transformed by the window's client area. *
  *                                                                                             *
  * HISTORY:                                                                                    *
  *   03/10/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
 void WWMouseClass::Convert_Coordinate(int & x, int & y) const
 {
-	/*
-	**	Convert the mouse position to legal bounds.
-	*/
-	x -= ConfiningRect.X;
-	y -= ConfiningRect.Y;
+	int left = 0;
+	int top = 0;
+	int width = 0;
+	int height = 0;
+	Main_Window_Client_Rect(left, top, width, height);
+
+	x -= left;
+	y -= top;
 	Client_To_Game(x, y);
 }
 

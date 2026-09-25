@@ -150,10 +150,6 @@ void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, int 
 			}
 			break;
 
-		case SDL_EVENT_WINDOW_MOVED:
-			events.push_back(Window_Event(WINDOW_EVENT_MOVED));
-			break;
-
 		case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
 		case SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED:
 			events.push_back(Window_Event(WINDOW_EVENT_DISPLAY_CHANGED));

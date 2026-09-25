@@ -36,7 +36,6 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "video.h"
-#include "wwmouse.h"
 
 #include "color.hh"
 
@@ -164,10 +163,6 @@ bool Change_Display_Mode(int width, int height)
 
 	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
 	LogicalSurface = HiddenSurface;
-
-	if (MouseCursor != NULL) {
-		((WWMouseClass*)MouseCursor)->Calc_Confining_Rect();
-	}
 
 	Map.Set_View_Dimensions(temp);
 

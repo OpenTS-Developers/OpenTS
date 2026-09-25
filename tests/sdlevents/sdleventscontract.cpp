@@ -180,7 +180,6 @@ int main(void)
 	Check(Translate(Event_Of(SDL_EVENT_WINDOW_RESIZED)).empty(), "a size in window coordinates is left to the pixel size");
 
 	Check(One(Translate(Event_Of(SDL_EVENT_WINDOW_EXPOSED)), WINDOW_EVENT_EXPOSED), "an exposed window is exposed");
-	Check(One(Translate(Event_Of(SDL_EVENT_WINDOW_MOVED)), WINDOW_EVENT_MOVED), "a moved window is moved");
 	Check(One(Translate(Event_Of(SDL_EVENT_WINDOW_DISPLAY_CHANGED)), WINDOW_EVENT_DISPLAY_CHANGED), "a window moving to another display changes the display");
 	Check(One(Translate(Event_Of(SDL_EVENT_DISPLAY_CURRENT_MODE_CHANGED)), WINDOW_EVENT_DISPLAY_CHANGED), "a display changing mode changes the display");
 	Check(One(Translate(Event_Of(SDL_EVENT_WINDOW_CLOSE_REQUESTED)), WINDOW_EVENT_CLOSE_REQUESTED), "the close button asks to close");
