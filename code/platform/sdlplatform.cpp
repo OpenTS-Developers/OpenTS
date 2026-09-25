@@ -712,7 +712,9 @@ void Platform_Pump_Events(void)
 }
 
 
-void Platform_Begin_Native_Modal(void)
+// Brackets a dialog with a message loop of its own, so the focus it takes from the main
+// window is not taken for the player switching away.
+static void Begin_Native_Modal(void)
 {
 	_NativeModals++;
 }
@@ -720,7 +722,7 @@ void Platform_Begin_Native_Modal(void)
 
 // The focus changes a dialog of the game's own caused are dropped, and the current focus is
 // passed on instead, because the player never left the game.
-void Platform_End_Native_Modal(void)
+static void End_Native_Modal(void)
 {
 	if (_NativeModals == 0 || --_NativeModals != 0 || _Window == nullptr) {
 		return;
@@ -919,9 +921,9 @@ void Platform_Set_Clipboard_Text(std::string const & text)
 
 void Platform_Error_Box(char const * title, char const * text)
 {
-	Platform_Begin_Native_Modal();
+	Begin_Native_Modal();
 	if (!SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title, text, _Window)) {
 		DebugString("SDL: the message box was not shown: %s\n", SDL_GetError());
 	}
-	Platform_End_Native_Modal();
+	End_Native_Modal();
 }
