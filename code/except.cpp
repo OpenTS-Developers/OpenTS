@@ -1554,9 +1554,6 @@ static void Release_Display(void)
 {
 	ClipCursor(NULL);
 
-	while (ShowCursor(TRUE) < 0) {
-	}
-
 	if (!WindowedMode && MainWindow != NULL) {
 		// Asynchronous because the thread that owns the window is parked in the filter and
 		// will never answer a message. The dialog is topmost, so this only tidies up behind.
