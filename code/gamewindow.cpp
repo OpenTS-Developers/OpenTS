@@ -57,14 +57,6 @@ static bool Is_Mouse_Event(WindowEventType type)
 }
 
 
-static void Recalculate_Confining_Rect(void)
-{
-	if (MouseCursor != NULL) {
-		((WWMouseClass *)MouseCursor)->Calc_Confining_Rect();
-	}
-}
-
-
 static void Set_Game_Focus(bool focused)
 {
 	if (GameInFocus == focused) {
@@ -139,17 +131,10 @@ static bool Handle_Event(WindowEvent const & event)
 		case WINDOW_EVENT_RESIZED:
 			Video_On_Resize(event.Width, event.Height);
 			Video_Set_Refresh_Rate(Main_Window_Refresh_Rate());
-			Recalculate_Confining_Rect();
 			break;
 
 		case WINDOW_EVENT_DISPLAY_CHANGED:
 			Video_Set_Refresh_Rate(Main_Window_Refresh_Rate());
-			break;
-
-		case WINDOW_EVENT_MOVED:
-			if (WindowedMode == true) {
-				Recalculate_Confining_Rect();
-			}
 			break;
 
 		case WINDOW_EVENT_FOCUS_GAINED:

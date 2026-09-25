@@ -95,11 +95,6 @@ class WWMouseClass : public Mouse {
 		*/
 		virtual void Convert_Coordinate(int & x, int & y) const override;
 
-		/*
-		**	Recalculate the confining rectangle from the window.
-		*/
-		void Calc_Confining_Rect(void);
-
 		bool Show_Game_Pointer(void);
 		void Refresh_Pointer_Scale(void);
 
@@ -118,9 +113,6 @@ class WWMouseClass : public Mouse {
 		**	position.
 		*/
 		bool IsCaptured;
-
-		// The desktop rectangle of the game window's client area.
-		Rect ConfiningRect;
 
 		// The pointer's show count while the mouse is released, which hides the window's
 		// arrow while it is below zero.
