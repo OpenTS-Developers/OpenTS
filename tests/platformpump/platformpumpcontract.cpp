@@ -7,11 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Pins what the game receives from the platform's event pump: each event SDL queues reaches
-// the game once and in order, and the keys the platform reports held during an event are
-// those held as of that event, however many events one pump delivers, AltGr's Ctrl included.
-// It also pins that the lock keys are read again when the window regains focus, and that a
-// capture Windows takes away reaches the game as a lost capture.
+// Pins what the game receives from the platform's pump: each event once and in order, with
+// the keys reported held as of that event, however many events one pump delivers.
 
 #include "gamewindow.h"
 #include "platform/platform.h"

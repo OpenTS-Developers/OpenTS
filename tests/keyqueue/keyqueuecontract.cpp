@@ -7,9 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Pins the key queue the game's input loops read: which key presses and releases it keeps,
-// the modifier bits they carry, where a mouse click's position goes, and the character each
-// press typed, which is what chat, edit boxes and the high-score name read back.
+// Pins the key queue the game's input loops read, including the character each press typed,
+// which chat, edit boxes and the high-score name read back.
 
 #include "keyboard.h"
 #include "platform/windowevent.hh"

@@ -75,7 +75,7 @@ struct WindowEvent
 	int Modifiers = 0;
 	bool Repeat = false;
 
-	// Set for a key pressed with Alt held, or F10, which Windows reports as system keys.
+	// Set for keys Windows reports as system keys: those pressed with Alt but not AltGr, and F10.
 	bool System = false;
 
 	char32_t Text = 0;

@@ -646,7 +646,7 @@ enum KeyNumType {
 	KN_Y = VK_Y,
 	KN_Z = VK_Z,
 
-	// An entry carrying typed text that no queued key press produced. No key has this code.
+	// A queue entry for typed text that no key press carries; no key has this code.
 	KN_TEXT = 0xFF,
 
 	KN_SHIFT_BIT = WWKEY_SHIFT_BIT,

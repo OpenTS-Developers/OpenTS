@@ -7,9 +7,8 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
-// Stands in for the window, the platform and the frame the key queue reaches, so the queue
-// runs with no window: nothing arrives from a pump, no key is held, and every position lies
-// inside the frame.
+// Stands in for the window, platform and frame: nothing is pumped, no key is held, and every
+// position lies inside the frame.
 
 #include "msgloop.h"
 #include "platform/platform.h"

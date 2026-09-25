@@ -1,5 +1,4 @@
-# The SDL event translator and the key table are compiled straight into the harness. The
-# events are built by hand, so SDL is linked but never started.
+# The events are built by hand, so SDL is linked but never started.
 
 opents_add_test(SDLEventsContract
     NAME sdleventscontract

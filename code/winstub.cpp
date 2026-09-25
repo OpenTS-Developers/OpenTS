@@ -174,7 +174,6 @@ unsigned int Build_Number(void)
  *=============================================================================================*/
 bool Create_Main_Window(int width, int height)
 {
-	// The rules chooser and the map editor are built from the common controls.
 	InitCommonControls();
 
 	//

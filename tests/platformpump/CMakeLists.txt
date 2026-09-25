@@ -1,6 +1,5 @@
-# Runs the real SDL platform over a small main window, with the game's window handler
-# replaced by one that records what it receives, so the pump's ordering and state are checked
-# as the game sees them. The test needs a desktop session for the window.
+# Runs the real SDL platform over a small window with a recording stand-in for the game's
+# handler. The test needs a desktop session for the window.
 opents_add_test(PlatformPump
     NAME platformpump
     SOURCES platformpumpcontract.cpp platformpumpstub.cpp

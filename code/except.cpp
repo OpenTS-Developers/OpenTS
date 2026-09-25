@@ -2179,8 +2179,7 @@ void Exception_Run_Immediate_Test(void)
 }
 
 
-// Hooks the main window's procedure, which belongs to SDL, so the test fault is raised
-// inside window procedure dispatch.
+// SDL owns the window procedure, so the test hooks it to fault inside its dispatch.
 static LRESULT CALLBACK Test_Window_Procedure(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR, DWORD_PTR)
 {
 	if (message == WM_EXCEPTION_TEST) {

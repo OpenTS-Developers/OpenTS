@@ -280,10 +280,8 @@ bool WWKeyboardClass::Put_Key_Message(unsigned short vk_key, bool release, int m
 
 
 /// <summary>
-/// Queues a typed character with the key press that typed it, or as a KN_TEXT entry of its
-/// own when no queued press can take it: the press already has one, has left the queue, or
-/// is Esc, Enter, Backspace or Tab. A character typed by a repeat of a held key is dropped,
-/// as the repeat itself is.
+/// Queues a typed character with the key press that typed it, or as a KN_TEXT entry when no
+/// queued press can take it. A character typed by a held key's repeat is dropped.
 /// </summary>
 /// <returns>False when the character was dropped or the queue is full.</returns>
 bool WWKeyboardClass::Put_Text(char32_t code)
