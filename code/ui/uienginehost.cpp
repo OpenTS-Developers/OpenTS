@@ -144,7 +144,7 @@ class UIEngineHostClass : public UIShellHostClass
 				return(false);
 			}
 			Main_Window_Capture_Mouse(true);
-			return(true);
+			return(Main_Window_Mouse_Captured());
 		}
 
 		virtual void Release_Capture(void) override
@@ -182,7 +182,6 @@ class UIEngineHostClass : public UIShellHostClass
 		{
 			Main_Window_Set_Cursor(Main_Window_System_Cursor(cursor));
 		}
-
 
 		virtual void Restore_Game_Cursor(void) override
 		{
