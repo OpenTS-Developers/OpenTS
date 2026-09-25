@@ -174,6 +174,11 @@ int main(void)
 	Check(keys.size() == 2 && keys[1].Ctrl && keys[1].Event.Modifiers == (WINDOW_MOD_CTRL | WINDOW_MOD_ALT) && !keys[1].Event.System, "a key typed with AltGr in one pump carries AltGr's Ctrl");
 	Check(!Main_Window_Key_Down(VK_CONTROL), "and Ctrl is released with AltGr");
 
+	Push_Key(true, SDL_SCANCODE_LALT, SDLK_LALT, SDL_KMOD_LALT);
+	Push_Key(false, SDL_SCANCODE_LALT, SDLK_LALT);
+	keys = Pumped(WINDOW_EVENT_KEY_UP);
+	Check(keys.size() == 1 && keys[0].Event.VirtualKey == VK_MENU && keys[0].Event.System, "Alt's own release is a system key, as Windows reports it");
+
 	HWND const window = (HWND)Main_Window_Native().Handle;
 
 	// SDL reports no key still held after it resets the keyboard, and drops such a key's release.

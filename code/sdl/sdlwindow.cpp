@@ -174,6 +174,7 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 		DebugString("SDL: the system asked the game to quit\n");
 	}
 
+	int const before = _Input.Modifiers();
 	bool continued = false;
 	if (sdlevent.type == SDL_EVENT_KEY_DOWN || sdlevent.type == SDL_EVENT_KEY_UP) {
 		continued = _Input.Track_Key(sdlevent.key);
@@ -184,6 +185,11 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 	for (WindowEvent & event : events) {
 		if (event.Type == WINDOW_EVENT_KEY_DOWN && continued) {
 			event.Repeat = true;
+		}
+
+		// Windows reports the release of Alt itself as a system key too.
+		if (event.Type == WINDOW_EVENT_KEY_UP && (before & WINDOW_MOD_ALT) != 0 && (before & WINDOW_MOD_CTRL) == 0) {
+			event.System = true;
 		}
 		Dispatch(event);
 	}
