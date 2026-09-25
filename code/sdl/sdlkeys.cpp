@@ -77,9 +77,9 @@ bool Layout_Position(SDL_Scancode scancode)
 }
 
 
-HKL Layout_Or_Current(void * layout)
+HKL Layout_Or_Current(HKL layout)
 {
-	return((layout != nullptr) ? (HKL)layout : GetKeyboardLayout(0));
+	return((layout != NULL) ? layout : GetKeyboardLayout(0));
 }
 
 
@@ -162,16 +162,14 @@ int Position_Key(SDL_Scancode scancode)
 }
 
 
-int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifiers, unsigned int raw, void * layout)
+int Virtual_Key_From_SDL(SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod modifiers, Uint16 raw, HKL layout)
 {
-	SDL_Scancode const code = (SDL_Scancode)scancode;
-
-	int key = Keypad_Key(code, (SDL_Keymod)modifiers);
+	int key = Keypad_Key(scancode, modifiers);
 	if (key >= 0) {
 		return(key);
 	}
 
-	if (Layout_Position(code)) {
+	if (Layout_Position(scancode)) {
 		// Some layouts give an unused key 0xFF, which is no key.
 		if (raw != 0) {
 			key = (int)MapVirtualKeyExW(raw, MAPVK_VSC_TO_VK_EX, Layout_Or_Current(layout));
@@ -180,13 +178,13 @@ int Virtual_Key_From_SDL(int scancode, unsigned int keycode, unsigned int modifi
 			}
 		}
 
-		key = Layout_Key((SDL_Keycode)keycode);
+		key = Layout_Key(keycode);
 		if (key != 0) {
 			return(key);
 		}
 	}
 
-	return(Position_Key(code));
+	return(Position_Key(scancode));
 }
 
 
@@ -199,7 +197,7 @@ static int Scancode_Of(int virtualkey)
 	for (SDL_Keymod modifiers : tries) {
 		for (int scancode = SDL_SCANCODE_UNKNOWN + 1; scancode < SDL_SCANCODE_COUNT; scancode++) {
 			SDL_Keycode keycode = SDL_GetKeyFromScancode((SDL_Scancode)scancode, SDL_KMOD_NONE, true);
-			if (Virtual_Key_From_SDL(scancode, (unsigned int)keycode, (unsigned int)modifiers) == virtualkey) {
+			if (Virtual_Key_From_SDL((SDL_Scancode)scancode, keycode, modifiers) == virtualkey) {
 				return(scancode);
 			}
 		}
@@ -208,7 +206,7 @@ static int Scancode_Of(int virtualkey)
 }
 
 
-std::string Virtual_Key_Name(int virtualkey, void * layout)
+std::string Virtual_Key_Name(int virtualkey, HKL layout)
 {
 	if (virtualkey <= 0) {
 		return(std::string());

@@ -248,7 +248,7 @@ void Track_Key(SDL_KeyboardEvent const & key)
 {
 	_KeyModifiers = key.mod;
 	if (!(key.down && key.repeat)) {
-		int const virtualkey = key.down ? Virtual_Key_From_SDL((int)key.scancode, (unsigned int)key.key, (unsigned int)key.mod, (unsigned int)key.raw) : 0;
+		int const virtualkey = key.down ? Virtual_Key_From_SDL(key.scancode, key.key, key.mod, key.raw) : 0;
 		Press_Key((int)key.scancode, virtualkey, key.down);
 		if (key.scancode == SDL_SCANCODE_RALT) {
 			_AltGr = key.down && Pressed_As_AltGr(key.timestamp);
