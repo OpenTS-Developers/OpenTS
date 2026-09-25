@@ -96,7 +96,7 @@ static void Update_Cursor(void)
 	}
 
 	bool const visible = (MouseCursor == NULL || MouseCursor->Get_Mouse_State() >= 0);
-	Platform_Set_Cursor(visible ? Platform_System_Cursor(PLATFORM_CURSOR_ARROW) : NULL);
+	Platform_Set_Cursor(visible ? Platform_System_Cursor(UI_CURSOR_ARROW) : NULL);
 }
 
 
@@ -241,7 +241,7 @@ bool Game_Window_Open(int width, int height)
 	ToolTips = new CCToolTip();
 	ToolTips->Set_Timer_Delay(500);
 
-	Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
+	Platform_Set_Cursor(Platform_System_Cursor(UI_CURSOR_ARROW));
 	return(true);
 }
 
