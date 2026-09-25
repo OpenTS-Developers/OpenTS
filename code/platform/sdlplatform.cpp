@@ -54,11 +54,33 @@ std::deque<RightAltPress> _RightAltPresses;
 // Set while the Right Alt held was pressed as AltGr.
 bool _AltGr = false;
 
+// Set for a modifier Windows held through SDL's last keyboard reset, which is read from Windows
+// until SDL reports the key, since SDL drops its release.
+bool _Unreported[SDL_SCANCODE_COUNT];
+
+struct SideModifier
+{
+	SDL_Scancode Scancode;
+	int VirtualKey;
+	int SideKey;
+};
+
+SideModifier const SideModifiers[] = {
+	{ SDL_SCANCODE_LSHIFT, VK_SHIFT, VK_LSHIFT },
+	{ SDL_SCANCODE_RSHIFT, VK_SHIFT, VK_RSHIFT },
+	{ SDL_SCANCODE_LCTRL, VK_CONTROL, VK_LCONTROL },
+	{ SDL_SCANCODE_RCTRL, VK_CONTROL, VK_RCONTROL },
+	{ SDL_SCANCODE_LALT, VK_MENU, VK_LMENU },
+	{ SDL_SCANCODE_RALT, VK_MENU, VK_RMENU },
+};
+
 SDL_Cursor * _SystemCursors[PLATFORM_CURSOR_COUNT];
 
-// The SDL event type the main window posts when Windows takes its mouse capture away.
+// The SDL event types the main window posts when Windows takes its mouse capture away, and
+// when a window drag, a resize or the system menu ends.
 Uint32 _CaptureCancelled = 0;
-UINT_PTR const CaptureSubclass = 2;
+Uint32 _ModalLoopEnded = 0;
+UINT_PTR const WindowSubclass = 2;
 
 
 void Set_Hint(char const * name, char const * value)
@@ -149,6 +171,42 @@ void Press_Key(int scancode, int virtualkey, bool down)
 		return;
 	}
 	_PressedAs[scancode] = (down && virtualkey > 0 && virtualkey < 256) ? (unsigned char)virtualkey : 0;
+	_Unreported[scancode] = false;
+}
+
+
+bool Windows_Holds(int virtualkey)
+{
+	return((GetKeyState(virtualkey) & 0x8000) != 0);
+}
+
+
+// SDL rereads only the lock keys after it resets the keyboard.
+void Hold_Windows_Modifiers(void)
+{
+	for (SideModifier const & key : SideModifiers) {
+		if (_PressedAs[key.Scancode] == 0 && Windows_Holds(key.SideKey)) {
+			_PressedAs[key.Scancode] = (unsigned char)key.VirtualKey;
+			_Unreported[key.Scancode] = true;
+		}
+	}
+	Rebuild_Held_Keys();
+}
+
+
+void Release_Unreported_Modifiers(bool all)
+{
+	bool released = false;
+	for (SideModifier const & key : SideModifiers) {
+		if (_Unreported[key.Scancode] && (all || !Windows_Holds(key.SideKey))) {
+			_PressedAs[key.Scancode] = 0;
+			_Unreported[key.Scancode] = false;
+			released = true;
+		}
+	}
+	if (released) {
+		Rebuild_Held_Keys();
+	}
 }
 
 
@@ -156,6 +214,7 @@ void Press_Key(int scancode, int virtualkey, bool down)
 void Reset_Held_Keys(void)
 {
 	std::memset(_PressedAs, 0, sizeof(_PressedAs));
+	std::memset(_Unreported, 0, sizeof(_Unreported));
 	_RightAltPresses.clear();
 	_AltGr = false;
 	_KeyModifiers = SDL_GetModState();
@@ -225,6 +284,9 @@ void Dispatch(WindowEvent const & event)
 {
 	if (event.Type == WINDOW_EVENT_FOCUS_GAINED) {
 		Refresh_Lock_Keys();
+		Hold_Windows_Modifiers();
+	} else if (event.Type == WINDOW_EVENT_FOCUS_LOST) {
+		Release_Unreported_Modifiers(true);
 	}
 
 	// The screen saver may start while the player is elsewhere, but not over the game.
@@ -252,18 +314,31 @@ HWND Main_Window_Handle(void)
 }
 
 
-// Windows can end the capture while the window keeps the focus, for a system menu or another
-// window taking the mouse, and SDL reports neither. The window's own releases are ignored.
-LRESULT CALLBACK Watch_Capture(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR, DWORD_PTR)
+void Post_Event(Uint32 type)
 {
-	bool const cancelled = (message == WM_CANCELMODE) || (message == WM_CAPTURECHANGED && lparam != 0 && (HWND)lparam != window);
-	if (cancelled && _CaptureCancelled != 0) {
+	if (type != 0) {
 		SDL_Event event;
 		SDL_zero(event);
-		event.type = _CaptureCancelled;
+		event.type = type;
 		SDL_PushEvent(&event);
 	}
-	return(DefSubclassProc(window, message, wparam, lparam));
+}
+
+
+// Windows can end the capture while the window keeps the focus, for a system menu or another
+// window taking the mouse, and SDL reports neither. The window's own releases are ignored.
+LRESULT CALLBACK Watch_Messages(HWND window, UINT message, WPARAM wparam, LPARAM lparam, UINT_PTR, DWORD_PTR)
+{
+	if (message == WM_CANCELMODE || (message == WM_CAPTURECHANGED && lparam != 0 && (HWND)lparam != window)) {
+		Post_Event(_CaptureCancelled);
+	}
+
+	// SDL reset the keyboard when the drag, the resize or the system menu began.
+	LRESULT const result = DefSubclassProc(window, message, wparam, lparam);
+	if (message == WM_EXITSIZEMOVE || message == WM_EXITMENULOOP) {
+		Post_Event(_ModalLoopEnded);
+	}
+	return(result);
 }
 
 
@@ -276,6 +351,12 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 		return;
 	}
 
+	Release_Unreported_Modifiers(false);
+	if (_ModalLoopEnded != 0 && sdlevent.type == _ModalLoopEnded) {
+		Hold_Windows_Modifiers();
+		return;
+	}
+
 	if (sdlevent.type == SDL_EVENT_QUIT) {
 		DebugString("SDL: the system asked the game to quit\n");
 	}
@@ -285,19 +366,8 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 	}
 
 	std::vector<WindowEvent> events;
-	Window_Events_From_SDL(sdlevent, Pixel_Density(), _AltGr, events);
-	for (WindowEvent & event : events) {
-		switch (event.Type) {
-			case WINDOW_EVENT_MOUSE_MOVE:
-			case WINDOW_EVENT_MOUSE_DOWN:
-			case WINDOW_EVENT_MOUSE_UP:
-			case WINDOW_EVENT_MOUSE_WHEEL:
-				event.Modifiers = Held_Modifiers();
-				break;
-
-			default:
-				break;
-		}
+	Window_Events_From_SDL(sdlevent, Pixel_Density(), Held_Modifiers(), events);
+	for (WindowEvent const & event : events) {
 		Dispatch(event);
 	}
 }
@@ -329,7 +399,7 @@ bool SDLCALL Watch_Right_Alt(void *, SDL_Event * sdlevent)
 {
 	SDL_KeyboardEvent const & key = sdlevent->key;
 	if (sdlevent->type == SDL_EVENT_KEY_DOWN && key.scancode == SDL_SCANCODE_RALT && !key.repeat) {
-		bool const altgr = (GetKeyState(VK_LCONTROL) & 0x8000) != 0 && !SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_LCTRL];
+		bool const altgr = Windows_Holds(VK_LCONTROL) && !SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_LCTRL] && !_Unreported[SDL_SCANCODE_LCTRL];
 		_RightAltPresses.push_back({ key.timestamp, altgr });
 	}
 	return(true);
@@ -439,7 +509,11 @@ bool Platform_Init(void)
 		return(false);
 	}
 
-	_CaptureCancelled = SDL_RegisterEvents(1);
+	Uint32 const events = SDL_RegisterEvents(2);
+	if (events != 0) {
+		_CaptureCancelled = events;
+		_ModalLoopEnded = events + 1;
+	}
 	_Started = true;
 	return(true);
 }
@@ -465,7 +539,7 @@ void Platform_Shutdown(void)
 	if (_Window != nullptr) {
 		SDL_RemoveEventWatch(Watch_Window, nullptr);
 		SDL_RemoveEventWatch(Watch_Right_Alt, nullptr);
-		RemoveWindowSubclass(Main_Window_Handle(), Watch_Capture, CaptureSubclass);
+		RemoveWindowSubclass(Main_Window_Handle(), Watch_Messages, WindowSubclass);
 		SDL_DestroyWindow(_Window);
 		_Window = nullptr;
 	}
@@ -521,7 +595,7 @@ bool Platform_Create_Main_Window(bool windowed, int width, int height)
 
 	SDL_AddEventWatch(Watch_Window, nullptr);
 	SDL_AddEventWatch(Watch_Right_Alt, nullptr);
-	SetWindowSubclass(Main_Window_Handle(), Watch_Capture, CaptureSubclass, 0);
+	SetWindowSubclass(Main_Window_Handle(), Watch_Messages, WindowSubclass, 0);
 	Reset_Held_Keys();
 
 	SDL_ShowWindow(_Window);
@@ -740,6 +814,7 @@ bool Platform_Key_Down(int virtualkey)
 		return(false);
 	}
 
+	Release_Unreported_Modifiers(false);
 	return(_HeldKeys[virtualkey]);
 }
 

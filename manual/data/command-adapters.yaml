@@ -381,14 +381,12 @@ fixed_exclusions:
       - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_SHIFT }
       - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_CONTROL }
       - { file: code/platform/sdlplatform.cpp, function: Held_Modifiers, expression: VK_MENU }
-    reason: Platform-backend modifier state attached to mouse events, not controls.
+    reason: Platform-backend modifier state attached to key and mouse events, not controls.
   - sites:
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_CAPITAL }
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_NUMLOCK }
       - { file: code/platform/sdlplatform.cpp, function: Platform_Key_Toggled, expression: VK_SCROLL }
     reason: Platform-backend lock-key state, not controls.
-  - site: { file: code/platform/sdlplatform.cpp, function: Watch_Right_Alt, expression: VK_LCONTROL }
-    reason: Platform-backend detection of the Ctrl that Windows presses with AltGr, not a control.
   - site: { file: code/platform/sdlevents.cpp, function: Window_Events_From_SDL, expression: VK_F10 }
     reason: Platform-backend classification of F10 as a system key, as Windows reports it; it does not dispatch a game command.
   - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
