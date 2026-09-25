@@ -65,7 +65,6 @@
 #include "misc.h"
 #include "movie.h"
 #include "opents_version.h"
-#include "platform/platform.h"
 #include "pcx.h"
 #include "queue.h"
 #include "resource.h"
@@ -152,62 +151,6 @@ void Focus_Restore(void)
 unsigned int Build_Number(void)
 {
 	return(OPENTS_VERSION_PACKED);
-}
-
-
-/***********************************************************************************************
- * Create_Main_Window -- opens the MainWindow for C&C                                          *
- *                                                                                             *
- *    Starts SDL and opens the main window. A window for windowed play has the client size     *
- *    the WindowWidth and WindowHeight settings give, taking the frame's size for either one   *
- *    that is not set; otherwise the window covers the primary display.                        *
- *                                                                                             *
- * INPUT:    width  -- width of the frame                                                      *
- *           height -- height of the frame                                                     *
- *                                                                                             *
- * OUTPUT:   Returns false when SDL could not start or the window could not be created.        *
- *                                                                                             *
- * WARNINGS: None                                                                              *
- *                                                                                             *
- * HISTORY:                                                                                    *
- *    10/10/95 4:08PM ST : Created                                                             *
- *=============================================================================================*/
-bool Create_Main_Window(int width, int height)
-{
-	InitCommonControls();
-
-	//
-	// Register the window class
-	//
-	if (!Platform_Init()) {
-		return(false);
-	}
-
-	int clientwidth = width;
-	int clientheight = height;
-	if (WindowedMode) {
-		if (Options.WindowWidth > 0) {
-			clientwidth = Options.WindowWidth;
-		}
-		if (Options.WindowHeight > 0) {
-			clientheight = Options.WindowHeight;
-		}
-	}
-
-	//
-	// Create our main window
-	//
-	if (!Platform_Create_Main_Window(WindowedMode, clientwidth, clientheight)) {
-		return(false);
-	}
-
-	MainWindow = (HWND)Platform_Native_Window().Handle;
-
-	ToolTips = new CCToolTip();
-	ToolTips->Set_Timer_Delay(500);
-
-	Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
-	return(true);
 }
 
 

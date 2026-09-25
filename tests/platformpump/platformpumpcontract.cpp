@@ -110,14 +110,9 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 }
 
 
-void Game_Window_Update_Cursor(void)
-{
-}
-
-
 int main(void)
 {
-	if (!Platform_Init() || !Platform_Create_Main_Window(true, 64, 48)) {
+	if (!Platform_Create_Main_Window(true, 64, 48)) {
 		std::printf("the main window could not be created\n\nFAILED\n");
 		return(1);
 	}
