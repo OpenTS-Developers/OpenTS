@@ -51,11 +51,6 @@ int Platform_Window_Refresh_Rate(void);
 
 void Platform_Pump_Events(void);
 
-// Brackets a dialog with a message loop of its own, so the focus it takes from the main
-// window is not taken for the player switching away.
-void Platform_Begin_Native_Modal(void);
-void Platform_End_Native_Modal(void);
-
 void Platform_Capture_Mouse(bool capture);
 bool Platform_Mouse_Captured(void);
 void Platform_Confine_Cursor(bool confine);

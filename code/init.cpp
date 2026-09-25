@@ -145,7 +145,6 @@
 #include "obscure.h"
 #include "opents_build.h"
 #include "overlay.h"
-#include "platform/platform.h"
 #include "overtype.h"
 #include "ovrlight.h"
 #include "ownrdraw.h"
@@ -254,8 +253,6 @@ static CampaignType Choose_Campaign(void);
 static void Init_Threads(void);
 void Draw_Version_Text(Surface * surface);
 void Version_Dialog(void);
-
-INT_PTR CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 void Init_Random(void);
 
@@ -572,88 +569,6 @@ int Init_Game(int , char * [])
 }
 
 
-// The main window is measured by the video mode, so the dialog centers on what the player sees.
-static void Center_Over_Main_Window(HWND window)
-{
-	if (MainWindow == NULL) {
-		return;
-	}
-
-	RECT rcl;
-	GetClientRect(MainWindow, &rcl);
-	rcl.right = VideoModeWidth;
-	rcl.bottom = VideoModeHeight;
-
-	ClientToScreen(MainWindow, (LPPOINT)&rcl);
-	ClientToScreen(MainWindow, (LPPOINT)&rcl.right);
-	rcl.right -= rcl.left;
-	rcl.bottom -= rcl.top;
-
-	RECT rect;
-	GetClientRect(window, &rect);
-	ClientToScreen(window, (LPPOINT)&rect);
-	ClientToScreen(window, (LPPOINT)&rect.right);
-	rect.right -= rect.left;
-	rect.bottom -= rect.top;
-	int x = (rcl.right - rect.right + 1) / 2;
-	int y = (rcl.bottom - rect.bottom + 1) / 2;
-
-	if (x < 0) {
-		x = 0;
-	}
-	if (y < 0) {
-		y = 0;
-	}
-
-	SetWindowPos(window, 0, x, y, -1, -1, SWP_NOSIZE|SWP_NOZORDER);
-}
-
-
-/// <summary>
-/// Handles the messages for the rules file choice dialog.
-/// This routine lists the name of every rules file that was found, and ends the dialog
-/// with the index of the one that the player settled upon.
-/// </summary>
-/// <remarks>The dialog must be created with the vector of rules files as its parameter.</remarks>
-static INT_PTR CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	char buffer[128];
-
-	switch (message) {
-		case WM_INITDIALOG: {
-			Center_Over_Main_Window(window);
-
-			DynamicVectorClass<CCINIClass*> * rules;
-			rules = (DynamicVectorClass<CCINIClass*> *)lparam;
-
-			HWND list = GetDlgItem(window, IDC_RULES_LIST);
-
-			for (int index = 0; index < rules->Count(); index++) {
-				(*rules)[index]->Get_String("General", "Name", "", buffer, sizeof(buffer));
-				ListBox_AddString(list, buffer);
-			}
-			ListBox_SetCurSel(list, 0);
-		}
-		break;
-
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDCANCEL:
-				case IDC_RULES_OK:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						HWND list = GetDlgItem(window, IDC_RULES_LIST);
-						EndDialog(window, ListBox_GetCurSel(list));
-						DestroyWindow(window);
-					}
-					break;
-			}
-			break;
-	}
-
-	return(0);
-}
-
-
 /// <summary>
 /// Reads the campaign definitions out of the battle control files.
 /// This routine gathers every battle file it can find, along with the expansion's own,
@@ -879,21 +794,7 @@ static bool Init_Rules(void)
 		}
 	}
 
-	if (Rules.Count() == 1) {
-		RuleINI = Rules[0];
-	} else {
-		MouseCursor->Release_Mouse();
-		Platform_Begin_Native_Modal();
-		int rules_choice = DialogBoxParam(ProgramInstance, MAKEINTRESOURCE(IDD_RULES_CHOICE), MainWindow, Rules_Choice_Dialog_Proc, (LPARAM)&Rules);
-		Platform_End_Native_Modal();
-		MouseCursor->Capture_Mouse();
-
-		if (rules_choice == -1) {
-			rules_choice = 0;
-		}
-
-		RuleINI = Rules[rules_choice];
-	}
+	RuleINI = Rules[0];
 
 	Rule->Color_Schemes(*RuleINI);
 	Rule->Do_Movies(ArtINI);
