@@ -54,27 +54,27 @@ int Scanned(SDL_Scancode scancode, Uint16 raw, HKL layout, SDL_Keymod modifiers 
 }
 
 
-// The German layout, which the checks load only when the session lacks it and unload after.
-struct GermanLayout
+// A keyboard layout, which the checks load only when the session lacks it and unload after.
+struct TestLayout
 {
 	HKL Layout = NULL;
 	bool Loaded = false;
 
-	GermanLayout(void)
+	TestLayout(WORD language, wchar_t const * name)
 	{
 		HKL layouts[64];
 		int const count = GetKeyboardLayoutList(64, layouts);
 		for (int index = 0; index < count; index++) {
-			if (LOWORD((UINT_PTR)layouts[index]) == 0x0407) {
+			if (LOWORD((UINT_PTR)layouts[index]) == language) {
 				Layout = layouts[index];
 				return;
 			}
 		}
-		Layout = LoadKeyboardLayoutW(L"00000407", KLF_NOTELLSHELL);
+		Layout = LoadKeyboardLayoutW(name, KLF_NOTELLSHELL);
 		Loaded = (Layout != NULL);
 	}
 
-	~GermanLayout(void)
+	~TestLayout(void)
 	{
 		if (Loaded) {
 			UnloadKeyboardLayout(Layout);
@@ -149,7 +149,7 @@ int main(void)
 	Check(native, "a character key takes the code the active layout gives its scan code");
 
 	{
-		GermanLayout german;
+		TestLayout german(0x0407, L"00000407");
 		if (german.Layout != NULL && MapVirtualKeyExW(0x0C, MAPVK_VSC_TO_VK_EX, german.Layout) == 0xDB) {
 			Check(Scanned(SDL_SCANCODE_MINUS, 0x0C, german.Layout) == 0xDB, "on a German layout, the sharp s key keeps its own code");
 			Check(Scanned(SDL_SCANCODE_SLASH, 0x35, german.Layout) == VK_OEM_MINUS, "and the minus key keeps the minus code");
@@ -161,9 +161,17 @@ int main(void)
 		}
 	}
 
-	// With no video subsystem started, SDL names keys from its US layout.
-	Check(Virtual_Key_Name('A') == "A" && Virtual_Key_Name('7') == "7", "a letter or digit key is named by what it prints");
-	Check(Virtual_Key_Name(VK_OEM_COMMA) == ",", "a punctuation key is named by what it prints");
+	{
+		TestLayout us(0x0409, L"00000409");
+		if (us.Layout != NULL) {
+			Check(Virtual_Key_Name('A', us.Layout) == "A" && Virtual_Key_Name('7', us.Layout) == "7", "a letter or digit key is named by what it prints");
+			Check(Virtual_Key_Name(VK_OEM_COMMA, us.Layout) == ",", "a punctuation key is named by what it prints");
+		} else {
+			std::printf("%-76s %s\n", "the US layout checks", "skipped: the system has no US layout");
+		}
+	}
+
+	// A key the layout prints nothing on takes the English name SDL gives its position.
 	Check(Virtual_Key_Name(VK_NUMPAD7) == "Keypad 7", "a keypad digit is named as the keypad's");
 	Check(Virtual_Key_Name(VK_HOME) == "Home" && Virtual_Key_Name(VK_INSERT) == "Insert", "a navigation key is named after the main block's key");
 	Check(Virtual_Key_Name(VK_F1) == "F1" && Virtual_Key_Name(VK_F12) == "F12", "a function key is named by its number");

@@ -4591,6 +4591,7 @@ void Test_Shell(void)
 		Rml::String written;
 		Rml::String repeated;
 		Rml::String kept;
+		bool focused = false;
 
 		shell.Run_Modal(*view, [&](void) {
 			Rml::ElementDocument * document = Rml(*view).Document();
@@ -4620,6 +4621,7 @@ void Test_Shell(void)
 				field->SetAttribute("type", "text");
 				field->SetValue("Name");
 				field->Focus();
+				focused = document->GetContext()->GetFocusElement() == field;
 				field->Select();
 				Key_Down(shell, VK_RETURN);
 				kept = field->GetValue();
@@ -4630,7 +4632,7 @@ void Test_Shell(void)
 		});
 		Check(written == "A\nB", "Enter in a text area types a new line");
 		Check(repeated == "A\nB\n\n", "and each repeat of Enter types another");
-		Check(kept == "Name", "Enter in a one-line field leaves its selected text alone");
+		Check(focused && kept == "Name", "Enter in a one-line field leaves its selected text alone");
 	}
 
 	{

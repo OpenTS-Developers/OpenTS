@@ -150,15 +150,17 @@ int main(void)
 	CtrlHeld.clear();
 	Main_Window_Pump_Events();
 	bool released = false;
+	bool clicked = false;
 	for (size_t index = 0; index < Received.size(); index++) {
 		if (Received[index].Type == WINDOW_EVENT_KEY_DOWN && Received[index].VirtualKey == 'B') {
 			released = !CtrlHeld[index] && (Received[index].Modifiers & WINDOW_MOD_CTRL) == 0;
 		}
 		if (Received[index].Type == WINDOW_EVENT_MOUSE_DOWN) {
+			clicked = true;
 			released = released && (Received[index].Modifiers & WINDOW_MOD_CTRL) == 0;
 		}
 	}
-	Check(released, "a key or click after Ctrl's release in the same pump sees it released");
+	Check(released && clicked, "a key or click after Ctrl's release in the same pump sees it released");
 
 	Push_Key(false, SDL_SCANCODE_B, SDLK_B);
 	Pumped(WINDOW_EVENT_KEY_UP);
