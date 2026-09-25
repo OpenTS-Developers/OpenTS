@@ -6,6 +6,7 @@ opents_add_test(SDLWindow
     ENGINE
         sdl/sdlwindow.cpp
         sdl/sdlevents.cpp
+        sdl/sdlinput.cpp
         sdl/sdlkeys.cpp
         utf8.cpp
     DEFINITIONS WIN32 _WINDOWS NOMINMAX
