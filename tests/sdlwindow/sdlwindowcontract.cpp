@@ -17,6 +17,8 @@
 #include "win.h"
 
 #include <SDL3/SDL_events.h>
+#include <SDL3/SDL_hints.h>
+#include <SDL3/SDL_keyboard.h>
 
 #include <cstdio>
 #include <cstring>
@@ -112,6 +114,9 @@ bool Game_Window_Handle_Event(WindowEvent const & event)
 
 int main(void)
 {
+	// Windows keeps a program from taking the foreground from another, so the window may get
+	// no keyboard focus otherwise.
+	SDL_SetHint(SDL_HINT_FORCE_RAISEWINDOW, "1");
 	if (!Main_Window_Create(true, 64, 48)) {
 		std::printf("the main window could not be created\n\nFAILED\n");
 		return(1);
@@ -203,17 +208,6 @@ int main(void)
 	clicks = Pumped(WINDOW_EVENT_MOUSE_DOWN);
 	Check(clicks.size() == 1 && (clicks[0].Event.Modifiers & WINDOW_MOD_SHIFT) == 0 && !Main_Window_Key_Down(VK_SHIFT), "it is released when Windows releases it, though SDL reports no release");
 
-	SendMessageW(window, WM_ENTERSIZEMOVE, 0, 0);
-	state[VK_SHIFT] = 0x80;
-	state[VK_LSHIFT] = 0x80;
-	SetKeyboardState(state);
-	SendMessageW(window, WM_EXITSIZEMOVE, 0, 0);
-	Pumped(WINDOW_EVENT_NONE);
-	Check(Main_Window_Key_Down(VK_SHIFT), "a Shift held through a drag of the window is held after it");
-	std::memset(state, 0, sizeof(state));
-	SetKeyboardState(state);
-	Pumped(WINDOW_EVENT_NONE);
-
 	// SDL's first press of a key held as the window gains the focus is one Windows reports as a
 	// repeat.
 	state['A'] = 0x80;
@@ -229,28 +223,44 @@ int main(void)
 	keys = Pumped(WINDOW_EVENT_KEY_UP);
 	Check(keys.size() == 1 && !Main_Window_Key_Down('A'), "and its release reaches the game");
 
-	Main_Window_Capture_Mouse(true);
-	bool const captured = Main_Window_Mouse_Captured() && GetCapture() == window;
-	Check(captured, "the window can take the mouse capture");
-	if (captured) {
-		SendMessageW(window, WM_CANCELMODE, 0, 0);
-		Check(!Main_Window_Mouse_Captured(), "a capture Windows cancels is reported gone at once");
-		Check(Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "and reaches the game as one lost capture");
+	// The drag loop and the mouse capture need the keyboard focus.
+	if (SDL_GetKeyboardFocus() == nullptr) {
+		std::printf("%-76s %s\n", "the checks that need the keyboard focus", "not run");
+	} else {
+		SendMessageW(window, WM_ENTERSIZEMOVE, 0, 0);
+		state[VK_SHIFT] = 0x80;
+		state[VK_LSHIFT] = 0x80;
+		SetKeyboardState(state);
+		SendMessageW(window, WM_EXITSIZEMOVE, 0, 0);
+		Pumped(WINDOW_EVENT_NONE);
+		Check(Main_Window_Key_Down(VK_SHIFT), "a Shift held through a drag of the window is held after it");
+		std::memset(state, 0, sizeof(state));
+		SetKeyboardState(state);
+		Pumped(WINDOW_EVENT_NONE);
 
 		Main_Window_Capture_Mouse(true);
-		Check(Main_Window_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was cancelled");
+		bool const captured = Main_Window_Mouse_Captured() && GetCapture() == window;
+		Check(captured, "the window can take the mouse capture");
+		if (captured) {
+			SendMessageW(window, WM_CANCELMODE, 0, 0);
+			Check(!Main_Window_Mouse_Captured(), "a capture Windows cancels is reported gone at once");
+			Check(Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "and reaches the game as one lost capture");
 
-		Main_Window_Capture_Mouse(false);
-		Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
+			Main_Window_Capture_Mouse(true);
+			Check(Main_Window_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was cancelled");
 
-		HWND other = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 8, 8, NULL, NULL, GetModuleHandleW(NULL), NULL);
-		Main_Window_Capture_Mouse(true);
-		SetCapture(other);
-		Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
-		ReleaseCapture();
-		DestroyWindow(other);
-		Main_Window_Capture_Mouse(false);
-		Pumped(WINDOW_EVENT_CAPTURE_LOST);
+			Main_Window_Capture_Mouse(false);
+			Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
+
+			HWND other = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 8, 8, NULL, NULL, GetModuleHandleW(NULL), NULL);
+			Main_Window_Capture_Mouse(true);
+			SetCapture(other);
+			Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
+			ReleaseCapture();
+			DestroyWindow(other);
+			Main_Window_Capture_Mouse(false);
+			Pumped(WINDOW_EVENT_CAPTURE_LOST);
+		}
 	}
 
 	Main_Window_Destroy();
