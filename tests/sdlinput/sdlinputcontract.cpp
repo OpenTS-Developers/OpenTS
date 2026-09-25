@@ -108,7 +108,7 @@ int main(void)
 	input.Focus_Gained();
 	Check(input.Key_Down(VK_SHIFT) && input.Key_Down(VK_LSHIFT) && !input.Key_Down(VK_RSHIFT) && input.Modifiers() == WINDOW_MOD_SHIFT, "a Shift Windows holds as the window gains the focus is held");
 	Windows_Holds({});
-	input.Drop_Released_Modifiers();
+	input.Drop_Released_Keys();
 	Check(input.Modifiers() == 0, "and released for the next event once Windows releases it");
 	Windows_Holds({ VK_SHIFT, VK_LSHIFT });
 	input.Focus_Gained();
@@ -120,6 +120,7 @@ int main(void)
 	input.Focus_Lost();
 	Check(!input.Key_Down(VK_SHIFT), "losing the focus releases it");
 
+	Windows_Holds({ VK_SHIFT, VK_LSHIFT });
 	input.Focus_Gained();
 	Press(input, Key(true, SDL_SCANCODE_LSHIFT, SDLK_LSHIFT, SDL_KMOD_LSHIFT));
 	Windows_Holds({});
@@ -128,20 +129,48 @@ int main(void)
 	Check(!input.Key_Down(VK_SHIFT), "and SDL's release does");
 
 	Windows_Holds({ VK_MENU, VK_RMENU });
-	input.Hold_Windows_Modifiers();
+	input.Hold_Windows_Keys();
 	Check(input.Key_Down(VK_MENU) && input.Key_Down(VK_RMENU) && !input.Key_Down(VK_LMENU), "a modifier Windows holds after a window drag is held");
 	Windows_Holds({});
-	input.Drop_Released_Modifiers();
+	input.Drop_Released_Keys();
 
 	Windows_Holds({ VK_CONTROL, VK_LCONTROL });
 	input.Focus_Gained();
 	SDL_KeyboardEvent ralt = Key(true, SDL_SCANCODE_RALT, SDLK_RALT, SDL_KMOD_RALT);
 	input.Note_Queued_Key(ralt);
 	Windows_Holds({});
-	input.Drop_Released_Modifiers();
+	input.Drop_Released_Keys();
 	input.Track_Key(ralt);
 	Check(!input.Key_Down(VK_CONTROL) && input.Modifiers() == WINDOW_MOD_ALT, "a Right Alt pressed with a Left Ctrl held into the window is not AltGr");
 	Press(input, Key(false, SDL_SCANCODE_RALT, SDLK_RALT));
+
+	Windows_Holds({ 'A' });
+	input.Focus_Gained();
+	Check(input.Key_Down('A') && input.Modifiers() == 0, "any key Windows holds as the window gains the focus is held");
+	Windows_Holds({});
+	Check(!input.Key_Down('A'), "and released when Windows releases it");
+	Windows_Holds({ 'A' });
+	input.Focus_Gained();
+	SDL_KeyboardEvent a = Key(true, SDL_SCANCODE_A, SDLK_A);
+	input.Note_Queued_Key(a);
+	Check(input.Track_Key(a), "its first press from SDL continues the key held into the window");
+	Windows_Holds({});
+	Check(input.Key_Down('A'), "and from then on SDL reports it");
+	a = Key(false, SDL_SCANCODE_A, SDLK_A);
+	Press(input, a);
+	Check(!input.Key_Down('A'), "including its release");
+	SDL_KeyboardEvent b = Key(true, SDL_SCANCODE_B, SDLK_B);
+	input.Note_Queued_Key(b);
+	Check(!input.Track_Key(b), "a key pressed after the window gains the focus is a new press");
+	Press(input, Key(false, SDL_SCANCODE_B, SDLK_B));
+
+	Windows_Holds({ VK_SHIFT, VK_LSHIFT, VK_RSHIFT });
+	input.Focus_Gained();
+	Press(input, Key(true, SDL_SCANCODE_LSHIFT, SDLK_LSHIFT, SDL_KMOD_LSHIFT));
+	Press(input, Key(false, SDL_SCANCODE_LSHIFT, SDLK_LSHIFT));
+	Check(input.Key_Down(VK_SHIFT) && input.Key_Down(VK_RSHIFT) && !input.Key_Down(VK_LSHIFT), "releasing one Shift held into the window leaves the other held");
+	Windows_Holds({});
+	input.Drop_Released_Keys();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

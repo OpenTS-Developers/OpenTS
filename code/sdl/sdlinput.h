@@ -28,18 +28,20 @@ class SDLInputStateClass
 		// with AltGr.
 		void Note_Queued_Key(SDL_KeyboardEvent const & key);
 
-		void Track_Key(SDL_KeyboardEvent const & key);
+		// Returns true for a press of a key held since before SDL's last keyboard reset, which
+		// Windows reports as a repeat.
+		bool Track_Key(SDL_KeyboardEvent const & key);
 
 		// SDL resets the keyboard on a focus loss and when a window drag, a resize or the system
-		// menu starts; these hold again the modifiers Windows still holds.
+		// menu starts; these hold again the keys Windows still holds.
 		void Focus_Gained(void);
-		void Hold_Windows_Modifiers(void);
+		void Hold_Windows_Keys(void);
 
 		void Focus_Lost(void);
 
-		// Drops the modifiers held through a keyboard reset that Windows has since released,
-		// since SDL drops their release.
-		void Drop_Released_Modifiers(void);
+		// Drops the keys held through a keyboard reset that Windows has since released, since SDL
+		// drops their release.
+		void Drop_Released_Keys(void);
 
 		// The WINDOW_MOD_* modifiers held and locks on.
 		int Modifiers(void) const;
@@ -65,12 +67,15 @@ class SDLInputStateClass
 		// Set while the Right Alt held was pressed as AltGr.
 		bool AltGr;
 
-		// Set for a modifier held through a keyboard reset, which is read from Windows until
-		// SDL reports the key.
-		bool Unreported[SDL_SCANCODE_COUNT];
+		// Set, by virtual-key code and by side for a modifier, for a key held through a keyboard
+		// reset, which is read from Windows until SDL reports the key.
+		bool Unreported[256];
+		int UnreportedCount;
 
 		void Rebuild_Held_Keys(void);
 		void Press_Key(SDL_Scancode scancode, int virtualkey, bool down);
+		bool Unreported_Key(int virtualkey) const;
+		void Report_Key(int virtualkey);
 		bool Pressed_As_AltGr(Uint64 timestamp);
-		void Release_Unreported_Modifiers(bool all);
+		void Release_Unreported_Keys(bool all);
 };

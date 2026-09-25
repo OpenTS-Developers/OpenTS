@@ -209,6 +209,21 @@ int main(void)
 	SetKeyboardState(state);
 	Pumped(WINDOW_EVENT_NONE);
 
+	// SDL's first press of a key held as the window gains the focus is one Windows reports as a
+	// repeat.
+	state['A'] = 0x80;
+	SetKeyboardState(state);
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
+	Pumped(WINDOW_EVENT_FOCUS_GAINED);
+	Push_Key(true, SDL_SCANCODE_A, SDLK_A);
+	keys = Pumped(WINDOW_EVENT_KEY_DOWN);
+	Check(keys.size() == 1 && keys[0].Event.Repeat && Main_Window_Key_Down('A'), "a key held as the window gains the focus reaches the game as a repeat");
+	std::memset(state, 0, sizeof(state));
+	SetKeyboardState(state);
+	Push_Key(false, SDL_SCANCODE_A, SDLK_A);
+	keys = Pumped(WINDOW_EVENT_KEY_UP);
+	Check(keys.size() == 1 && !Main_Window_Key_Down('A'), "and its release reaches the game");
+
 	Main_Window_Capture_Mouse(true);
 	bool const captured = Main_Window_Mouse_Captured() && GetCapture() == window;
 	Check(captured, "the window can take the mouse capture");

@@ -45,7 +45,8 @@ void Main_Window_Confine_Cursor(bool confine);
 bool Main_Window_Cursor_Position(int & x, int & y);
 void Main_Window_Warp_Cursor(int x, int y);
 
-// Keys are Windows virtual-key codes, reported as of the input event being handled. Mouse
+// Keys are Windows virtual-key codes, reported as of the input event being handled, except that
+// a key held while the window gained the focus is read from Windows until SDL reports it. Mouse
 // buttons report their current state, since a release outside the window may be lost.
 bool Main_Window_Key_Down(int virtualkey);
 bool Main_Window_Key_Toggled(int virtualkey);
