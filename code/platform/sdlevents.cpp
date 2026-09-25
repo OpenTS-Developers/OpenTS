@@ -40,35 +40,6 @@ bool Mouse_Button(Uint8 button, WindowMouseButton & result)
 }
 
 
-int Key_Modifiers(SDL_Keymod modifiers, bool altgr)
-{
-	int result = 0;
-	if ((modifiers & SDL_KMOD_SHIFT) != 0) {
-		result |= WINDOW_MOD_SHIFT;
-	}
-	if ((modifiers & SDL_KMOD_CTRL) != 0) {
-		result |= WINDOW_MOD_CTRL;
-	}
-	if ((modifiers & SDL_KMOD_ALT) != 0) {
-		result |= WINDOW_MOD_ALT;
-	}
-	if ((modifiers & SDL_KMOD_CAPS) != 0) {
-		result |= WINDOW_MOD_CAPS;
-	}
-	if ((modifiers & SDL_KMOD_NUM) != 0) {
-		result |= WINDOW_MOD_NUM;
-	}
-
-	// Windows presses Left Ctrl along with AltGr, which SDL leaves out; hotkeys saved under
-	// Windows recorded AltGr as Ctrl+Alt.
-	if ((modifiers & SDL_KMOD_RALT) != 0 && altgr) {
-		result |= WINDOW_MOD_CTRL;
-	}
-
-	return(result);
-}
-
-
 WindowEvent Window_Event(WindowEventType type)
 {
 	WindowEvent event;
@@ -79,13 +50,14 @@ WindowEvent Window_Event(WindowEventType type)
 }
 
 
-void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, bool altgr, std::vector<WindowEvent> & events)
+void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, int modifiers, std::vector<WindowEvent> & events)
 {
 	WindowEvent event;
 
 	switch (sdlevent.type) {
 		case SDL_EVENT_MOUSE_MOTION:
 			event.Type = WINDOW_EVENT_MOUSE_MOVE;
+			event.Modifiers = modifiers;
 			event.X = Pixel(sdlevent.motion.x, pixeldensity);
 			event.Y = Pixel(sdlevent.motion.y, pixeldensity);
 			events.push_back(event);
@@ -97,6 +69,7 @@ void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, bool
 				break;
 			}
 			event.Type = sdlevent.button.down ? WINDOW_EVENT_MOUSE_DOWN : WINDOW_EVENT_MOUSE_UP;
+			event.Modifiers = modifiers;
 			event.X = Pixel(sdlevent.button.x, pixeldensity);
 			event.Y = Pixel(sdlevent.button.y, pixeldensity);
 
@@ -111,6 +84,7 @@ void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, bool
 		{
 			float direction = (sdlevent.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) ? -1.0f : 1.0f;
 			event.Type = WINDOW_EVENT_MOUSE_WHEEL;
+			event.Modifiers = modifiers;
 			event.X = Pixel(sdlevent.wheel.mouse_x, pixeldensity);
 			event.Y = Pixel(sdlevent.wheel.mouse_y, pixeldensity);
 			if (sdlevent.wheel.y != 0.0f) {
@@ -133,7 +107,7 @@ void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, bool
 				break;
 			}
 			event.Type = sdlevent.key.down ? WINDOW_EVENT_KEY_DOWN : WINDOW_EVENT_KEY_UP;
-			event.Modifiers = Key_Modifiers(sdlevent.key.mod, altgr);
+			event.Modifiers = modifiers;
 			event.Repeat = sdlevent.key.down && sdlevent.key.repeat;
 
 			// Windows treats keys pressed with Alt, but not with AltGr, as system keys, and F10.

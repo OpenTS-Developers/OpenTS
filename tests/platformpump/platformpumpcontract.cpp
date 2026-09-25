@@ -197,6 +197,74 @@ int main(void)
 
 	HWND const window = (HWND)Platform_Native_Window().Handle;
 
+	// SDL reports no key still held after it resets the keyboard, and drops such a key's release.
+	std::memset(state, 0, sizeof(state));
+	state[VK_SHIFT] = 0x80;
+	state[VK_LSHIFT] = 0x80;
+	SetKeyboardState(state);
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
+	Pumped(WINDOW_EVENT_FOCUS_GAINED);
+	Check(Platform_Key_Down(VK_SHIFT) && Platform_Key_Down(VK_LSHIFT) && !Platform_Key_Down(VK_RSHIFT), "a Shift held as the window gains the focus is held");
+	Push_Click();
+	clicks = Pumped(WINDOW_EVENT_MOUSE_DOWN);
+	Push_Key(true, SDL_SCANCODE_A, SDLK_A);
+	keys = Pumped(WINDOW_EVENT_KEY_DOWN);
+	Check(clicks.size() == 1 && (clicks[0].Event.Modifiers & WINDOW_MOD_SHIFT) != 0 && keys.size() == 1 && (keys[0].Event.Modifiers & WINDOW_MOD_SHIFT) != 0, "and a click or a key after it carries Shift");
+	Push_Key(false, SDL_SCANCODE_A, SDLK_A);
+	Pumped(WINDOW_EVENT_KEY_UP);
+
+	std::memset(state, 0, sizeof(state));
+	SetKeyboardState(state);
+	Push_Click();
+	clicks = Pumped(WINDOW_EVENT_MOUSE_DOWN);
+	Check(clicks.size() == 1 && (clicks[0].Event.Modifiers & WINDOW_MOD_SHIFT) == 0 && !Platform_Key_Down(VK_SHIFT), "it is released when Windows releases it, though SDL reports no release");
+
+	state[VK_SHIFT] = 0x80;
+	state[VK_LSHIFT] = 0x80;
+	SetKeyboardState(state);
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
+	Pumped(WINDOW_EVENT_FOCUS_GAINED);
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_LOST);
+	Pumped(WINDOW_EVENT_FOCUS_LOST);
+	Check(!Platform_Key_Down(VK_SHIFT), "losing the focus releases it");
+
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
+	Pumped(WINDOW_EVENT_FOCUS_GAINED);
+	Push_Key(true, SDL_SCANCODE_LSHIFT, SDLK_LSHIFT, SDL_KMOD_LSHIFT);
+	Pumped(WINDOW_EVENT_KEY_DOWN);
+	std::memset(state, 0, sizeof(state));
+	SetKeyboardState(state);
+	Check(Platform_Key_Down(VK_SHIFT), "once SDL reports the key, Windows no longer releases it");
+	Push_Key(false, SDL_SCANCODE_LSHIFT, SDLK_LSHIFT);
+	Pumped(WINDOW_EVENT_KEY_UP);
+	Check(!Platform_Key_Down(VK_SHIFT), "and SDL's release does");
+
+	SendMessageW(window, WM_ENTERSIZEMOVE, 0, 0);
+	state[VK_SHIFT] = 0x80;
+	state[VK_LSHIFT] = 0x80;
+	SetKeyboardState(state);
+	SendMessageW(window, WM_EXITSIZEMOVE, 0, 0);
+	Pumped(WINDOW_EVENT_NONE);
+	Check(Platform_Key_Down(VK_SHIFT), "a Shift held through a drag of the window is held after it");
+	std::memset(state, 0, sizeof(state));
+	SetKeyboardState(state);
+	Pumped(WINDOW_EVENT_NONE);
+
+	state[VK_CONTROL] = 0x80;
+	state[VK_LCONTROL] = 0x80;
+	SetKeyboardState(state);
+	Push_Window(SDL_EVENT_WINDOW_FOCUS_GAINED);
+	Pumped(WINDOW_EVENT_FOCUS_GAINED);
+	Push_Key(true, SDL_SCANCODE_RALT, SDLK_RALT, SDL_KMOD_RALT);
+	std::memset(state, 0, sizeof(state));
+	SetKeyboardState(state);
+	Push_Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT);
+	keys = Pumped(WINDOW_EVENT_KEY_DOWN);
+	Check(keys.size() == 2 && !keys[1].Ctrl && keys[1].Event.Modifiers == WINDOW_MOD_ALT, "a Right Alt pressed with a Left Ctrl held into the window is not AltGr");
+	Push_Key(false, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT);
+	Push_Key(false, SDL_SCANCODE_RALT, SDLK_RALT);
+	Pumped(WINDOW_EVENT_KEY_UP);
+
 	Platform_Capture_Mouse(true);
 	bool const captured = Platform_Mouse_Captured() && GetCapture() == window;
 	Check(captured, "the window can take the mouse capture");

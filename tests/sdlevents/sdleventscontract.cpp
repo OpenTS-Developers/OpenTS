@@ -43,10 +43,10 @@ SDL_Event Event_Of(Uint32 type)
 }
 
 
-std::vector<WindowEvent> Translate(SDL_Event const & event, float pixeldensity = 1.0f, bool altgr = false)
+std::vector<WindowEvent> Translate(SDL_Event const & event, float pixeldensity = 1.0f, int modifiers = 0)
 {
 	std::vector<WindowEvent> events;
-	Window_Events_From_SDL(event, pixeldensity, altgr, events);
+	Window_Events_From_SDL(event, pixeldensity, modifiers, events);
 	return(events);
 }
 
@@ -101,6 +101,9 @@ int main(void)
 	events = Translate(Button(true, SDL_BUTTON_LEFT, 1, 5.0f, 6.0f));
 	Check(One(events, WINDOW_EVENT_MOUSE_DOWN) && events[0].Button == WINDOW_BUTTON_LEFT && events[0].Clicks == 1 && events[0].X == 5 && events[0].Y == 6, "a left press is a single click where it happened");
 
+	events = Translate(Button(true, SDL_BUTTON_LEFT, 1, 5.0f, 6.0f), 1.0f, WINDOW_MOD_SHIFT);
+	Check(One(events, WINDOW_EVENT_MOUSE_DOWN) && events[0].Modifiers == WINDOW_MOD_SHIFT, "and carries the modifiers held");
+
 	events = Translate(Button(true, SDL_BUTTON_RIGHT, 2, 0.0f, 0.0f));
 	Check(One(events, WINDOW_EVENT_MOUSE_DOWN) && events[0].Button == WINDOW_BUTTON_RIGHT && events[0].Clicks == 2, "the second press of a run of clicks is a double click");
 
@@ -133,7 +136,7 @@ int main(void)
 	events = Translate(wheel);
 	Check(events.size() == 2 && !events[0].Horizontal && events[0].Wheel == 0.5f && events[1].Horizontal && events[1].Wheel == 1.0f, "a diagonal turn is a vertical turn and then a horizontal one");
 
-	events = Translate(Key(true, SDL_SCANCODE_A, SDLK_A, (SDL_Keymod)(SDL_KMOD_LSHIFT | SDL_KMOD_RCTRL)));
+	events = Translate(Key(true, SDL_SCANCODE_A, SDLK_A, (SDL_Keymod)(SDL_KMOD_LSHIFT | SDL_KMOD_RCTRL)), 1.0f, WINDOW_MOD_SHIFT | WINDOW_MOD_CTRL);
 	Check(One(events, WINDOW_EVENT_KEY_DOWN) && events[0].VirtualKey == 'A' && events[0].Modifiers == (WINDOW_MOD_SHIFT | WINDOW_MOD_CTRL), "a key press carries its virtual key and the modifiers held");
 	Check(events.size() == 1 && !events[0].Repeat && !events[0].System, "and is neither a repeat nor a system key");
 
@@ -143,20 +146,14 @@ int main(void)
 	events = Translate(Key(false, SDL_SCANCODE_A, SDLK_A, SDL_KMOD_NONE, true));
 	Check(One(events, WINDOW_EVENT_KEY_UP) && !events[0].Repeat, "a release is never a repeat");
 
-	events = Translate(Key(true, SDL_SCANCODE_F4, SDLK_F4, SDL_KMOD_LALT));
+	events = Translate(Key(true, SDL_SCANCODE_F4, SDLK_F4, SDL_KMOD_LALT), 1.0f, WINDOW_MOD_ALT);
 	Check(One(events, WINDOW_EVENT_KEY_DOWN) && events[0].System && events[0].Modifiers == WINDOW_MOD_ALT, "a key pressed with Alt held is a system key");
 
 	events = Translate(Key(true, SDL_SCANCODE_F10, SDLK_F10, SDL_KMOD_NONE));
 	Check(One(events, WINDOW_EVENT_KEY_DOWN) && events[0].System, "F10 is a system key on its own");
 
-	events = Translate(Key(true, SDL_SCANCODE_Q, SDLK_Q, (SDL_Keymod)(SDL_KMOD_LALT | SDL_KMOD_LCTRL)));
+	events = Translate(Key(true, SDL_SCANCODE_Q, SDLK_Q, (SDL_Keymod)(SDL_KMOD_LALT | SDL_KMOD_LCTRL)), 1.0f, WINDOW_MOD_CTRL | WINDOW_MOD_ALT);
 	Check(One(events, WINDOW_EVENT_KEY_DOWN) && !events[0].System, "a key pressed with Ctrl and Alt held is not a system key");
-
-	events = Translate(Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT), 1.0f, true);
-	Check(One(events, WINDOW_EVENT_KEY_DOWN) && events[0].Modifiers == (WINDOW_MOD_CTRL | WINDOW_MOD_ALT) && !events[0].System, "a key pressed with AltGr carries the Ctrl Windows adds");
-
-	events = Translate(Key(true, SDL_SCANCODE_Q, SDLK_Q, SDL_KMOD_RALT));
-	Check(One(events, WINDOW_EVENT_KEY_DOWN) && events[0].Modifiers == WINDOW_MOD_ALT && events[0].System, "a key pressed with a Right Alt that is not AltGr is a system key");
 
 	events = Translate(Key(true, SDL_SCANCODE_LANG1, SDLK_UNKNOWN, SDL_KMOD_NONE));
 	Check(events.empty(), "a key Windows has no code for is dropped");
