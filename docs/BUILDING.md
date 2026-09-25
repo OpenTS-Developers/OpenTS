@@ -109,6 +109,10 @@ test harnesses build into `<build directory>/test-bin/<configuration>/`, so
 `bin/` holds only what the game runs. Compiler and linker intermediates stay in
 the selected build directory.
 
+The `sdlwindow` test opens a window, so CTest needs a desktop session. When
+Windows does not give that window the keyboard focus, the test reports its
+window-drag and mouse-capture checks as not run.
+
 | Configuration | Runtime files |
 | --- | --- |
 | Debug | `GameD.exe`, `GameD.pdb`, `GameD.map`, `Language.dll`, `ui/` |
