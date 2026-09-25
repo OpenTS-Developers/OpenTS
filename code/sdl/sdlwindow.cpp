@@ -335,8 +335,8 @@ static bool Start_SDL(void)
 
 
 /// <summary>
-/// Destroys the main window and stops SDL. Calling it again, or before the window was created,
-/// does nothing. The renderer must have let go of the window first.
+/// Destroys the main window, if there is one, and stops SDL. Calling it again, or before SDL
+/// started, does nothing. The renderer must have let go of the window first.
 /// </summary>
 void Main_Window_Destroy(void)
 {
