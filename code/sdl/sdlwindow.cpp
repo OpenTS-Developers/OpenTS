@@ -301,10 +301,8 @@ SDL_SystemCursor System_Cursor_Of(UICursor shape)
 	}
 }
 
-}
 
-
-static bool Start_SDL(void)
+bool Start_SDL(void)
 {
 	if (_Started) {
 		return(true);
@@ -331,6 +329,35 @@ static bool Start_SDL(void)
 	}
 	_Started = true;
 	return(true);
+}
+
+
+// Brackets a dialog with a message loop of its own, so the focus it takes from the main
+// window is not taken for the player switching away.
+void Begin_Native_Modal(void)
+{
+	_NativeModals++;
+}
+
+
+// The focus changes a dialog of the game's own caused are dropped, and the current focus is
+// passed on instead, because the player never left the game.
+void End_Native_Modal(void)
+{
+	if (_NativeModals == 0 || --_NativeModals != 0 || _Window == nullptr) {
+		return;
+	}
+
+	SDL_PumpEvents();
+	SDL_FlushEvent(SDL_EVENT_WINDOW_FOCUS_LOST);
+	SDL_FlushEvent(SDL_EVENT_WINDOW_FOCUS_GAINED);
+
+	WindowEvent focus;
+	focus.Type = ((SDL_GetWindowFlags(_Window) & SDL_WINDOW_INPUT_FOCUS) != 0) ? WINDOW_EVENT_FOCUS_GAINED : WINDOW_EVENT_FOCUS_LOST;
+	Dispatch(focus);
+}
+
+
 }
 
 
@@ -524,32 +551,6 @@ void Main_Window_Pump_Events(void)
 			Handle_SDL_Event(sdlevent);
 		}
 	}
-}
-
-
-// Brackets a dialog with a message loop of its own, so the focus it takes from the main
-// window is not taken for the player switching away.
-static void Begin_Native_Modal(void)
-{
-	_NativeModals++;
-}
-
-
-// The focus changes a dialog of the game's own caused are dropped, and the current focus is
-// passed on instead, because the player never left the game.
-static void End_Native_Modal(void)
-{
-	if (_NativeModals == 0 || --_NativeModals != 0 || _Window == nullptr) {
-		return;
-	}
-
-	SDL_PumpEvents();
-	SDL_FlushEvent(SDL_EVENT_WINDOW_FOCUS_LOST);
-	SDL_FlushEvent(SDL_EVENT_WINDOW_FOCUS_GAINED);
-
-	WindowEvent focus;
-	focus.Type = ((SDL_GetWindowFlags(_Window) & SDL_WINDOW_INPUT_FOCUS) != 0) ? WINDOW_EVENT_FOCUS_GAINED : WINDOW_EVENT_FOCUS_LOST;
-	Dispatch(focus);
 }
 
 
