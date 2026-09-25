@@ -160,9 +160,13 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 		return;
 	}
 
-	_Input.Drop_Released_Modifiers();
+	_Input.Drop_Released_Keys();
+
+	// Windows' key state is stale once the focus has gone elsewhere.
 	if (_ModalLoopEnded != 0 && sdlevent.type == _ModalLoopEnded) {
-		_Input.Hold_Windows_Modifiers();
+		if (_Window != nullptr && (SDL_GetWindowFlags(_Window) & SDL_WINDOW_INPUT_FOCUS) != 0) {
+			_Input.Hold_Windows_Keys();
+		}
 		return;
 	}
 
@@ -170,13 +174,17 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 		DebugString("SDL: the system asked the game to quit\n");
 	}
 
+	bool continued = false;
 	if (sdlevent.type == SDL_EVENT_KEY_DOWN || sdlevent.type == SDL_EVENT_KEY_UP) {
-		_Input.Track_Key(sdlevent.key);
+		continued = _Input.Track_Key(sdlevent.key);
 	}
 
 	std::vector<WindowEvent> events;
 	Window_Events_From_SDL(sdlevent, Pixel_Density(), _Input.Modifiers(), events);
-	for (WindowEvent const & event : events) {
+	for (WindowEvent & event : events) {
+		if (event.Type == WINDOW_EVENT_KEY_DOWN && continued) {
+			event.Repeat = true;
+		}
 		Dispatch(event);
 	}
 }

@@ -387,6 +387,24 @@ fixed_exclusions:
       - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Key_Toggled, expression: VK_NUMLOCK }
       - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Key_Toggled, expression: VK_SCROLL }
     reason: SDL-layer lock-key state, not controls.
+  - sites:
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_LSHIFT }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_RSHIFT }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_LCONTROL }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_RCONTROL }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_LMENU }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_RMENU }
+    reason: SDL-layer mapping of each side of a modifier to the modifier, not controls.
+  - sites:
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_LBUTTON }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_RBUTTON }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_MBUTTON }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_XBUTTON1 }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_XBUTTON2 }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_SHIFT }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_CONTROL }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_MENU }
+    reason: SDL-layer choice of the keys read from Windows after a keyboard reset, not controls.
   - site: { file: code/sdl/sdlevents.cpp, function: Window_Events_From_SDL, expression: VK_F10 }
     reason: SDL-layer classification of F10 as a system key, as Windows reports it; it does not dispatch a game command.
   - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
