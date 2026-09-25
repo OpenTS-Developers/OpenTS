@@ -37,7 +37,7 @@ void Check(bool condition, char const * what)
 
 int Key(SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod modifiers = SDL_KMOD_NONE)
 {
-	return(Virtual_Key_From_SDL((int)scancode, (unsigned int)keycode, (unsigned int)modifiers));
+	return(Virtual_Key_From_SDL(scancode, keycode, modifiers));
 }
 
 
@@ -48,9 +48,9 @@ int Unprinted(SDL_Scancode scancode, SDL_Keymod modifiers = SDL_KMOD_NONE)
 }
 
 
-int Scanned(SDL_Scancode scancode, unsigned int raw, HKL layout, SDL_Keymod modifiers = SDL_KMOD_NONE)
+int Scanned(SDL_Scancode scancode, Uint16 raw, HKL layout, SDL_Keymod modifiers = SDL_KMOD_NONE)
 {
-	return(Virtual_Key_From_SDL((int)scancode, (unsigned int)SDLK_UNKNOWN, (unsigned int)modifiers, raw, layout));
+	return(Virtual_Key_From_SDL(scancode, SDLK_UNKNOWN, modifiers, raw, layout));
 }
 
 
