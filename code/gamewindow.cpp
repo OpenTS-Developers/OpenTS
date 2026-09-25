@@ -137,9 +137,12 @@ static bool Handle_Event(WindowEvent const & event)
 	bool const taken = UIShell.Handle_Window_Event(event);
 
 	// A character belongs with the key press that typed it, so the game gets neither when
-	// the interface took the press.
+	// the interface took the press. Text after the key's release, as from an input method,
+	// belongs to no press.
 	if (event.Type == WINDOW_EVENT_KEY_DOWN) {
 		_InterfaceTookKey = taken;
+	} else if (event.Type == WINDOW_EVENT_KEY_UP) {
+		_InterfaceTookKey = false;
 	} else if (event.Type == WINDOW_EVENT_TEXT && _InterfaceTookKey) {
 		return(true);
 	}
