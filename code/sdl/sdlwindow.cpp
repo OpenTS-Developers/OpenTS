@@ -13,6 +13,7 @@
 #include "gamewindow.h"
 #include "resource.h"
 #include "sdl/sdlevents.h"
+#include "sdl/sdlinput.h"
 #include "sdl/sdlkeys.h"
 #include "win.h"
 
@@ -24,8 +25,6 @@
 
 #include <cmath>
 #include <cstdio>
-#include <cstring>
-#include <deque>
 #include <vector>
 
 
@@ -37,42 +36,7 @@ SDL_Window * _Window = nullptr;
 int _NativeModals = 0;
 bool _Watching = false;
 
-// The keys held and the lock states as of the input event being dispatched. Each held
-// scancode keeps the code it was pressed as, so its release clears that code.
-bool _HeldKeys[256];
-unsigned char _PressedAs[SDL_SCANCODE_COUNT];
-SDL_Keymod _KeyModifiers = SDL_KMOD_NONE;
-
-// Right Alt presses queued but not yet handled, and whether each was AltGr.
-struct RightAltPress
-{
-	Uint64 Timestamp;
-	bool AltGr;
-};
-std::deque<RightAltPress> _RightAltPresses;
-
-// Set while the Right Alt held was pressed as AltGr.
-bool _AltGr = false;
-
-// Set for a modifier Windows held through SDL's last keyboard reset, which is read from Windows
-// until SDL reports the key, since SDL drops its release.
-bool _Unreported[SDL_SCANCODE_COUNT];
-
-struct SideModifier
-{
-	SDL_Scancode Scancode;
-	int VirtualKey;
-	int SideKey;
-};
-
-SideModifier const SideModifiers[] = {
-	{ SDL_SCANCODE_LSHIFT, VK_SHIFT, VK_LSHIFT },
-	{ SDL_SCANCODE_RSHIFT, VK_SHIFT, VK_RSHIFT },
-	{ SDL_SCANCODE_LCTRL, VK_CONTROL, VK_LCONTROL },
-	{ SDL_SCANCODE_RCTRL, VK_CONTROL, VK_RCONTROL },
-	{ SDL_SCANCODE_LALT, VK_MENU, VK_LMENU },
-	{ SDL_SCANCODE_RALT, VK_MENU, VK_RMENU },
-};
+SDLInputStateClass _Input;
 
 SDL_Cursor * _SystemCursors[UI_CURSOR_COUNT];
 
@@ -131,162 +95,12 @@ float Pixel_Density(void)
 }
 
 
-// Windows also answers for each side of a modifier.
-int Side_Key(int scancode)
-{
-	switch (scancode) {
-		case SDL_SCANCODE_LSHIFT:	return(VK_LSHIFT);
-		case SDL_SCANCODE_RSHIFT:	return(VK_RSHIFT);
-		case SDL_SCANCODE_LCTRL:	return(VK_LCONTROL);
-		case SDL_SCANCODE_RCTRL:	return(VK_RCONTROL);
-		case SDL_SCANCODE_LALT:		return(VK_LMENU);
-		case SDL_SCANCODE_RALT:		return(VK_RMENU);
-		default:					return(0);
-	}
-}
-
-
-void Rebuild_Held_Keys(void)
-{
-	std::memset(_HeldKeys, 0, sizeof(_HeldKeys));
-	for (int scancode = 0; scancode < SDL_SCANCODE_COUNT; scancode++) {
-		if (_PressedAs[scancode] != 0) {
-			_HeldKeys[_PressedAs[scancode]] = true;
-			_HeldKeys[Side_Key(scancode)] = true;
-		}
-	}
-	_HeldKeys[0] = false;
-
-	// Windows holds Left Ctrl down for as long as AltGr is held.
-	if (_AltGr) {
-		_HeldKeys[VK_CONTROL] = true;
-		_HeldKeys[VK_LCONTROL] = true;
-	}
-}
-
-
-void Press_Key(int scancode, int virtualkey, bool down)
-{
-	if (scancode <= SDL_SCANCODE_UNKNOWN || scancode >= SDL_SCANCODE_COUNT) {
-		return;
-	}
-	_PressedAs[scancode] = (down && virtualkey > 0 && virtualkey < 256) ? (unsigned char)virtualkey : 0;
-	_Unreported[scancode] = false;
-}
-
-
-bool Windows_Holds(int virtualkey)
-{
-	return((GetKeyState(virtualkey) & 0x8000) != 0);
-}
-
-
-// SDL rereads only the lock keys after it resets the keyboard.
-void Hold_Windows_Modifiers(void)
-{
-	for (SideModifier const & key : SideModifiers) {
-		if (_PressedAs[key.Scancode] == 0 && Windows_Holds(key.SideKey)) {
-			_PressedAs[key.Scancode] = (unsigned char)key.VirtualKey;
-			_Unreported[key.Scancode] = true;
-		}
-	}
-	Rebuild_Held_Keys();
-}
-
-
-void Release_Unreported_Modifiers(bool all)
-{
-	bool released = false;
-	for (SideModifier const & key : SideModifiers) {
-		if (_Unreported[key.Scancode] && (all || !Windows_Holds(key.SideKey))) {
-			_PressedAs[key.Scancode] = 0;
-			_Unreported[key.Scancode] = false;
-			released = true;
-		}
-	}
-	if (released) {
-		Rebuild_Held_Keys();
-	}
-}
-
-
-// SDL sees no key before its window has the focus, so only the lock keys can start set.
-void Reset_Held_Keys(void)
-{
-	std::memset(_PressedAs, 0, sizeof(_PressedAs));
-	std::memset(_Unreported, 0, sizeof(_Unreported));
-	_RightAltPresses.clear();
-	_AltGr = false;
-	_KeyModifiers = SDL_GetModState();
-	Rebuild_Held_Keys();
-}
-
-
-// SDL rereads the lock keys when the window regains the focus, without a key event.
-void Refresh_Lock_Keys(void)
-{
-	SDL_Keymod const locks = SDL_KMOD_CAPS | SDL_KMOD_NUM | SDL_KMOD_SCROLL;
-	_KeyModifiers = (SDL_Keymod)((_KeyModifiers & ~locks) | (SDL_GetModState() & locks));
-}
-
-
-// Takes what Watch_Right_Alt noted when SDL queued this Right Alt press.
-bool Pressed_As_AltGr(Uint64 timestamp)
-{
-	for (size_t index = 0; index < _RightAltPresses.size(); index++) {
-		if (_RightAltPresses[index].Timestamp == timestamp) {
-			bool const altgr = _RightAltPresses[index].AltGr;
-			_RightAltPresses.erase(_RightAltPresses.begin(), _RightAltPresses.begin() + index + 1);
-			return(altgr);
-		}
-	}
-	return(false);
-}
-
-
-void Track_Key(SDL_KeyboardEvent const & key)
-{
-	_KeyModifiers = key.mod;
-	if (!(key.down && key.repeat)) {
-		int const virtualkey = key.down ? Virtual_Key_From_SDL(key.scancode, key.key, key.mod, key.raw) : 0;
-		Press_Key((int)key.scancode, virtualkey, key.down);
-		if (key.scancode == SDL_SCANCODE_RALT) {
-			_AltGr = key.down && Pressed_As_AltGr(key.timestamp);
-		}
-		Rebuild_Held_Keys();
-	}
-}
-
-
-int Held_Modifiers(void)
-{
-	int modifiers = 0;
-	if (_HeldKeys[VK_SHIFT]) {
-		modifiers |= WINDOW_MOD_SHIFT;
-	}
-	if (_HeldKeys[VK_CONTROL]) {
-		modifiers |= WINDOW_MOD_CTRL;
-	}
-	if (_HeldKeys[VK_MENU]) {
-		modifiers |= WINDOW_MOD_ALT;
-	}
-	if ((_KeyModifiers & SDL_KMOD_CAPS) != 0) {
-		modifiers |= WINDOW_MOD_CAPS;
-	}
-	if ((_KeyModifiers & SDL_KMOD_NUM) != 0) {
-		modifiers |= WINDOW_MOD_NUM;
-	}
-	return(modifiers);
-}
-
-
 void Dispatch(WindowEvent const & event)
 {
 	if (event.Type == WINDOW_EVENT_FOCUS_GAINED) {
-		Refresh_Lock_Keys();
-		Hold_Windows_Modifiers();
+		_Input.Focus_Gained();
 	} else if (event.Type == WINDOW_EVENT_FOCUS_LOST) {
-		Release_Unreported_Modifiers(true);
+		_Input.Focus_Lost();
 	}
 
 	// The screen saver may start while the player is elsewhere, but not over the game.
@@ -346,9 +160,9 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 		return;
 	}
 
-	Release_Unreported_Modifiers(false);
+	_Input.Drop_Released_Modifiers();
 	if (_ModalLoopEnded != 0 && sdlevent.type == _ModalLoopEnded) {
-		Hold_Windows_Modifiers();
+		_Input.Hold_Windows_Modifiers();
 		return;
 	}
 
@@ -357,11 +171,11 @@ void Handle_SDL_Event(SDL_Event const & sdlevent)
 	}
 
 	if (sdlevent.type == SDL_EVENT_KEY_DOWN || sdlevent.type == SDL_EVENT_KEY_UP) {
-		Track_Key(sdlevent.key);
+		_Input.Track_Key(sdlevent.key);
 	}
 
 	std::vector<WindowEvent> events;
-	Window_Events_From_SDL(sdlevent, Pixel_Density(), Held_Modifiers(), events);
+	Window_Events_From_SDL(sdlevent, Pixel_Density(), _Input.Modifiers(), events);
 	for (WindowEvent const & event : events) {
 		Dispatch(event);
 	}
@@ -389,13 +203,10 @@ bool SDLCALL Watch_Window(void *, SDL_Event * sdlevent)
 }
 
 
-// Windows shows the Left Ctrl it presses with AltGr only while SDL queues the Right Alt press.
-bool SDLCALL Watch_Right_Alt(void *, SDL_Event * sdlevent)
+bool SDLCALL Watch_Keys(void *, SDL_Event * sdlevent)
 {
-	SDL_KeyboardEvent const & key = sdlevent->key;
-	if (sdlevent->type == SDL_EVENT_KEY_DOWN && key.scancode == SDL_SCANCODE_RALT && !key.repeat) {
-		bool const altgr = Windows_Holds(VK_LCONTROL) && !SDL_GetKeyboardState(nullptr)[SDL_SCANCODE_LCTRL] && !_Unreported[SDL_SCANCODE_LCTRL];
-		_RightAltPresses.push_back({ key.timestamp, altgr });
+	if (sdlevent->type == SDL_EVENT_KEY_DOWN) {
+		_Input.Note_Queued_Key(sdlevent->key);
 	}
 	return(true);
 }
@@ -528,7 +339,7 @@ void Main_Window_Destroy(void)
 
 	if (_Window != nullptr) {
 		SDL_RemoveEventWatch(Watch_Window, nullptr);
-		SDL_RemoveEventWatch(Watch_Right_Alt, nullptr);
+		SDL_RemoveEventWatch(Watch_Keys, nullptr);
 		RemoveWindowSubclass(Window_Handle(), Watch_Messages, WindowSubclass);
 		SDL_DestroyWindow(_Window);
 		_Window = nullptr;
@@ -584,9 +395,9 @@ bool Main_Window_Create(bool windowed, int width, int height)
 	}
 
 	SDL_AddEventWatch(Watch_Window, nullptr);
-	SDL_AddEventWatch(Watch_Right_Alt, nullptr);
+	SDL_AddEventWatch(Watch_Keys, nullptr);
 	SetWindowSubclass(Window_Handle(), Watch_Messages, WindowSubclass, 0);
-	Reset_Held_Keys();
+	_Input.Reset();
 
 	SDL_ShowWindow(_Window);
 	SDL_RaiseWindow(_Window);
@@ -802,23 +613,13 @@ bool Main_Window_Key_Down(int virtualkey)
 		default:			break;
 	}
 
-	if (virtualkey <= 0 || virtualkey >= 256 || !_Started) {
-		return(false);
-	}
-
-	Release_Unreported_Modifiers(false);
-	return(_HeldKeys[virtualkey]);
+	return(_Started && _Input.Key_Down(virtualkey));
 }
 
 
 bool Main_Window_Key_Toggled(int virtualkey)
 {
-	switch (virtualkey) {
-		case VK_CAPITAL:	return((_KeyModifiers & SDL_KMOD_CAPS) != 0);
-		case VK_NUMLOCK:	return((_KeyModifiers & SDL_KMOD_NUM) != 0);
-		case VK_SCROLL:		return((_KeyModifiers & SDL_KMOD_SCROLL) != 0);
-		default:			return(false);
-	}
+	return(_Input.Key_Toggled(virtualkey));
 }
 
 

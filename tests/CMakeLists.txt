@@ -112,6 +112,7 @@ add_subdirectory(uishell)
 add_subdirectory(uilogic)
 add_subdirectory(sdlkeys)
 add_subdirectory(sdlevents)
+add_subdirectory(sdlinput)
 add_subdirectory(keyqueue)
 add_subdirectory(sdlwindow)
 
