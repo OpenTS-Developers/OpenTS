@@ -579,13 +579,13 @@ void WWMouseClass::Set_Cursor_Visible(bool visible)
 {
 	CursorVisible = visible;
 
-	if (CurrentCursor == NULL) {
+	if (!Is_Captured()) {
 		return;
 	}
 
-	if (Is_Captured()) {
-		Main_Window_Set_Cursor(visible ? CurrentCursor : NULL);
-	}
+	// Until the game builds a pointer, the window's arrow stands in for it.
+	SDL_Cursor * cursor = (CurrentCursor != NULL) ? CurrentCursor : Main_Window_System_Cursor(UI_CURSOR_ARROW);
+	Main_Window_Set_Cursor(visible ? cursor : NULL);
 }
 
 
