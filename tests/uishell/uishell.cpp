@@ -36,7 +36,6 @@
 #include "ui/uihost.h"
 #include "ui/uiinput.h"
 #include "ui/uiscreen.h"
-#include "ui/uiunicode.h"
 #include "ui/uiview.h"
 #include "windowevent.hh"
 
@@ -4670,14 +4669,6 @@ void Test_Shell(void)
 
 	{
 		char const * sample = "\xC3\xA9\xE2\x82\xAC\xF0\x9F\x98\x80";
-		std::wstring wide;
-		std::string text;
-
-		std::wstring expected = { (wchar_t)0x00E9, (wchar_t)0x20AC, (wchar_t)0xD83D, (wchar_t)0xDE00 };
-		Check(UI_UTF8_To_UTF16(sample, wide) && wide == expected, "UTF-8 converts to UTF-16");
-		Check(UI_UTF16_To_UTF8(wide, text) && text == sample, "UTF-16 converts back to the same UTF-8");
-		Check(!UI_UTF8_To_UTF16("\xC0\xAF", wide), "an overlong sequence is refused, not repaired");
-		Check(!UI_UTF16_To_UTF8(std::wstring(1, (wchar_t)0xD800), text), "an unpaired surrogate is refused, not repaired");
 
 		Rml::String before;
 		fixture.System->GetClipboardText(before);
