@@ -946,6 +946,11 @@ bool UIShellClass::Handle_Key(bool down, int code, bool repeat, int modifiers)
 		Input.Release_Key(virtualkey);
 	}
 
+	Rml::Element * textarea = Context->GetFocusElement();
+	if (textarea != nullptr && textarea->GetTagName() != "textarea") {
+		textarea = nullptr;
+	}
+
 	UIInputOwner owner = Input.Key_Owner(virtualkey);
 	if (owner != UI_INPUT_NONE) {
 		if (owner == UI_INPUT_IMGUI) {
@@ -970,6 +975,11 @@ bool UIShellClass::Handle_Key(bool down, int code, bool repeat, int modifiers)
 		Input.Press_Key(virtualkey, owner);
 	}
 
+	// A text area takes its newline as typed text, and SDL types none for Enter.
+	if (owner == UI_INPUT_RML && key == Rml::Input::KI_RETURN && textarea != nullptr && Context->GetFocusElement() == textarea) {
+		Context->ProcessTextInput('\n');
+	}
+
 	Host.Mark_Overlay_Dirty();
 	return(UI_Consumes_Input(owner));
 }
@@ -977,10 +987,7 @@ bool UIShellClass::Handle_Key(bool down, int code, bool repeat, int modifiers)
 
 bool UIShellClass::Handle_Text(char32_t code)
 {
-	if (code == '\r') {
-		code = '\n';
-	}
-	if ((code < 32 && code != '\n') || code == 127) {
+	if (code < 32 || code == 127) {
 		return(false);
 	}
 
