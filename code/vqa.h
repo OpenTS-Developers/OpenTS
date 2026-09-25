@@ -167,4 +167,4 @@ class VQAClass
 
 }; /* VQAClass */
 
-bool VQA_Message_Handler(void);
+void VQA_Message_Handler(void);

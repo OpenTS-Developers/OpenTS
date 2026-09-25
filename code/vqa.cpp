@@ -44,10 +44,9 @@ intptr_t __cdecl VQACCFileHandler(VQAHandle * vqa, long action, void * buffer, l
 intptr_t __cdecl VQAEventHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
 intptr_t __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
 
-bool VQA_Message_Handler(void)
+void VQA_Message_Handler(void)
 {
 	Main_Window_Pump_Events();
-	return(true);
 }
 
 
