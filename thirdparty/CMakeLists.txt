@@ -181,6 +181,37 @@ target_include_directories(imgui PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/imgui")
 # same set as the implementation.
 target_compile_definitions(imgui PUBLIC IMGUI_DISABLE_OBSOLETE_FUNCTIONS)
 
+#
+# ---------------------------------------------------------
+# SDL (window, events, and input)
+# ---------------------------------------------------------
+#
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/SDL/CMakeLists.txt")
+    message(FATAL_ERROR
+        "thirdparty/SDL is empty. Fetch the submodules with:\n"
+        "  git submodule update --init --recursive")
+endif()
+
+set(SDL_SHARED OFF CACHE BOOL "" FORCE)
+set(SDL_STATIC ON CACHE BOOL "" FORCE)
+set(SDL_TEST_LIBRARY OFF CACHE BOOL "" FORCE)
+set(SDL_TESTS OFF CACHE BOOL "" FORCE)
+set(SDL_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(SDL_INSTALL OFF CACHE BOOL "" FORCE)
+
+# Only the window, its events, and the keyboard and mouse are used. miniaudio plays the
+# sound and bgfx creates its own rendering contexts on the window.
+set(SDL_VIDEO ON CACHE BOOL "" FORCE)
+foreach(subsystem AUDIO GPU RENDER CAMERA JOYSTICK HAPTIC HIDAPI POWER SENSOR DIALOG TRAY)
+    set(SDL_${subsystem} OFF CACHE BOOL "" FORCE)
+endforeach()
+set(SDL_OPENGL OFF CACHE BOOL "" FORCE)
+set(SDL_OPENGLES OFF CACHE BOOL "" FORCE)
+set(SDL_VULKAN OFF CACHE BOOL "" FORCE)
+set(SDL_OFFSCREEN OFF CACHE BOOL "" FORCE)
+
+add_subdirectory(SDL)
+
 
 #
 # ---------------------------------------------------------

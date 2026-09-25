@@ -78,6 +78,7 @@
 #include "fly.h"
 #include "fog.h"
 #include "gamedirs.h"
+#include "gamewindow.h"
 #include "globals.h"
 #include "goptions.h"
 #include "house.h"
@@ -111,6 +112,7 @@
 #include "scenario.h"
 #include "scheme.h"
 #include "script.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "shapeset.h"
 #include "side.h"
@@ -441,7 +443,7 @@ static bool Claim_Single_Instance(void)
  * HISTORY:                                                                                    *
  *   03/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
-int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_show )
+int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 {
 	int		argc;       //Command line argument count
 	char **	argv;       //Pointers to command line arguments
@@ -573,7 +575,10 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		VideoModeWidth = Options.ScreenWidth;
 		VideoModeHeight = Options.ScreenHeight;
 
-		Create_Main_Window(instance, command_show, Options.ScreenWidth, Options.ScreenHeight);
+		if (!Game_Window_Open(Options.ScreenWidth, Options.ScreenHeight)) {
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
+			exit(EXIT_FAILURE);
+		}
 
 		Exception_Run_Post_Window_Test();
 
@@ -581,17 +586,17 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 		int drawablewidth = 0;
 		int drawableheight = 0;
-		int refreshrate = Win_Window_Refresh_Rate(MainWindow);
-		NativeWindow nativewindow = Win_Native_Window(MainWindow);
-		if (!Win_Window_Drawable_Size(MainWindow, drawablewidth, drawableheight)
+		int refreshrate = Main_Window_Refresh_Rate();
+		NativeWindow nativewindow = Main_Window_Native();
+		if (!Main_Window_Drawable_Size(drawablewidth, drawableheight)
 			|| !Video_Init(nativewindow, drawablewidth, drawableheight, refreshrate)) {
-			MessageBox(MainWindow, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
 		VisibleSurface = DSurface::Create_Primary();
 		if (VisibleSurface == NULL) {
-			MessageBox(MainWindow, Fetch_String(TXT_VIDEO_ERROR), Fetch_String(TXT_SHORT_TITLE), MB_ICONWARNING);
+			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
 			exit(EXIT_FAILURE);
 		}
 
@@ -617,7 +622,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 
 		AlphaBuffer = new ABuffer(Rect(TacticalRect.X, TacticalRect.Y, 480, 480 - TacticalRect.Y));
 
-		MouseCursor = new WWMouseClass(MainWindow);
+		MouseCursor = new WWMouseClass();
 		MouseCursor->Capture_Mouse();
 
 		/*
@@ -650,25 +655,11 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int command_sho
 		HiddenSurface->Fill(0);
 		Update_Visible_Surface(HiddenSurface);
 
-		/*
-		**	Flag that this is a clean shutdown (not killed with Ctrl-Alt-Del)
-		*/
-		ReadyToQuit = 1;
-
 		AudioEngine.End();
 
-		/*
-		**	Post a message to our message handler to tell it to clean up.
-		*/
-		PostMessage(MainWindow, WM_DESTROY, 0, 0);
+		Windows_Message_Handler();
 
-		/*
-		**	Wait until the message handler has dealt with the message
-		*/
-		do
-		{
-			Windows_Message_Handler();
-		}while (ReadyToQuit == 1);
+		Game_Window_Begin_Shutdown();
 
 		error_code = EXIT_SUCCESS;
 
@@ -1023,6 +1014,9 @@ void __cdecl Prog_End(void)
 		CloseHandle(AppMutex);
 		AppMutex = NULL;
 	}
+
+	// The renderer let go of the window when the surfaces were reset above.
+	Game_Window_Close();
 }
 
 /***********************************************************************************************
@@ -1043,19 +1037,9 @@ void Emergency_Exit(void)
 {
 	AudioEngine.End();
 
-	ReadyToQuit = 1;
+	Windows_Message_Handler();
 
-	/*
-	**	Post a message to our message handler to tell it to clean up.
-	*/
-	PostMessage(MainWindow, WM_DESTROY, 0, 0);
-
-	while (MainWindow) {
-		Windows_Message_Handler();
-		if (ReadyToQuit != 1) {
-			break;
-		}
-	}
+	Game_Window_Begin_Shutdown();
 
 
 	if (MouseCursor) {
@@ -1063,8 +1047,6 @@ void Emergency_Exit(void)
 		delete MouseCursor;
 	}
 	MouseCursor = NULL;
-
-	PostQuitMessage(EXIT_SUCCESS);
 
 	Shutdown_Network();
 

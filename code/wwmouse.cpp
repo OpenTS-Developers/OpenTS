@@ -58,53 +58,140 @@
 
 #include "wwmouse.h"
 
+#include "_convert.h"
+#include "convert.h"
 #include "dbgprint.h"
+#include "globals.h"
+#include "goptions.h"
 #include "misc.h"
+#include "sdl/sdlwindow.h"
+#include "shapeset.h"
 #include "video.h"
 #include "vidscale.h"
 #include "win.h"
-#include "wincursor.h"
+
+#include <vector>
 
 
 /// <summary>
-/// Constructs the mouse handler object.
-/// The handler is bound to the game window and derives the confining rectangle from it.
-/// The mouse begins in a non-captured state.
+/// Works out how much larger than its shape the cursor should be drawn.
 /// </summary>
-/// <param name="window">Handle to the game window that the mouse is bound to.</param>
-WWMouseClass::WWMouseClass(HWND window) :
-	MouseState(-1),
-	IsCaptured(false),
-	Window(window),
-	ConfiningRect(RECT_NONE)
+/// <returns>int; A whole multiple between one and eight.</returns>
+static int Cursor_Scale(void)
 {
-	Calc_Confining_Rect();
+	if (Options.CursorScale < 0) {
+		return(1);
+	}
+
+	if (Options.CursorScale > 0) {
+		return(Options.CursorScale > 8 ? 8 : Options.CursorScale);
+	}
+
+	VideoScaleInfo const & scale = Video_Get_Scale_Info();
+	float smaller = scale.ScaleX < scale.ScaleY ? scale.ScaleX : scale.ScaleY;
+
+	int result = (int)(smaller + 0.5f);
+	if (result < 1) result = 1;
+	if (result > 8) result = 8;
+	return(result);
 }
 
 
 /// <summary>
-/// Recalculates the screen rectangle that the mouse is confined to.
-/// This routine converts the game window's client area into screen coordinates. The mouse
-/// capture logic clips the cursor to this rectangle, so the window creation and window
-/// move handlers call this routine to keep it current.
+/// Draws one shape frame into a cursor.
+/// The canvas covers the shape's whole frame rather than the trimmed part that holds
+/// pixels, so the hotspot, which is measured from the frame's corner, still lands in the
+/// right place. Palette entry zero is the transparent one.
 /// </summary>
-void WWMouseClass::Calc_Confining_Rect(void)
+/// <returns>The cursor, or NULL if it could not be built.</returns>
+static SDL_Cursor * Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, int scale)
 {
-	RECT rect;
-	GetClientRect(Window, &rect);
+	if (shape == NULL || MouseDrawer == NULL) {
+		return(NULL);
+	}
 
-	POINT point;
-	point.x = rect.left;
-	point.y = rect.top;
-	ClientToScreen(Window, &point);
+	Rect rect = shape->Get_Rect(frame);
+	unsigned char const * data = (unsigned char const *)shape->Get_Data(frame);
 
-	POINT lr;
-	lr.x = rect.right;
-	lr.y = rect.bottom;
-	ClientToScreen(Window, &lr);
+	if (!rect.Is_Valid() || data == NULL) {
+		return(NULL);
+	}
 
-	ConfiningRect = Rect(point.x, point.y, lr.x-point.x, lr.y-point.y);
-	DebugString("Calc_Confining_Rect(%d,%d,%d,%d)\n", point.x, point.y, lr.x-point.x, lr.y-point.y);
+	int width = shape->Get_Width() * scale;
+	int height = shape->Get_Height() * scale;
+
+	if (width <= 0 || height <= 0) {
+		return(NULL);
+	}
+
+	std::vector<unsigned int> bits((size_t)width * height, 0);
+
+	// The shapes are palette indices and the primary is 565, so the drawer's table is
+	// what turns one into the other.
+	unsigned short const * table = (unsigned short const *)MouseDrawer->Get_Translate_Table();
+
+	for (int y = 0; y < rect.Height; y++) {
+		for (int x = 0; x < rect.Width; x++) {
+
+			unsigned char index = data[y * rect.Width + x];
+			if (index == 0) {
+				continue;
+			}
+
+			unsigned short pixel = table[index];
+			unsigned int red = ((pixel >> 11) & 0x1F) << 3;
+			unsigned int green = ((pixel >> 5) & 0x3F) << 2;
+			unsigned int blue = (pixel & 0x1F) << 3;
+			unsigned int argb = 0xFF000000U | (red << 16) | (green << 8) | blue;
+
+			for (int suby = 0; suby < scale; suby++) {
+				unsigned int * row = bits.data() + ((rect.Y + y) * scale + suby) * width + (rect.X + x) * scale;
+				for (int subx = 0; subx < scale; subx++) {
+					row[subx] = argb;
+				}
+			}
+		}
+	}
+
+	int cursor_hotx = hotx * scale;
+	int cursor_hoty = hoty * scale;
+	if (cursor_hotx < 0) cursor_hotx = 0;
+	if (cursor_hoty < 0) cursor_hoty = 0;
+	if (cursor_hotx >= width) cursor_hotx = width - 1;
+	if (cursor_hoty >= height) cursor_hoty = height - 1;
+
+	return(Main_Window_Create_Cursor(bits.data(), width, height, cursor_hotx, cursor_hoty));
+}
+
+
+/// <summary>
+/// Constructs the mouse handler object for the main window, which must already exist.
+/// The mouse begins in a non-captured state.
+/// </summary>
+WWMouseClass::WWMouseClass(void) :
+	MouseState(-1),
+	IsCaptured(false),
+	ReleasedState(0),
+	CursorShape(NULL),
+	CursorCacheScale(0),
+	CurrentShape(NULL),
+	CurrentFrame(0),
+	CurrentHotX(0),
+	CurrentHotY(0),
+	CurrentCursor(NULL),
+	CursorVisible(true)
+{
+}
+
+
+/// <summary>
+/// Destroys the mouse handler and every cursor it built. Delete it before Main_Window_Destroy.
+/// </summary>
+WWMouseClass::~WWMouseClass(void)
+{
+	Main_Window_Set_Cursor(NULL);
+	Flush_Cursor_Cache();
+	CurrentShape = NULL;
 }
 
 
@@ -127,9 +214,7 @@ void WWMouseClass::Calc_Confining_Rect(void)
 int WWMouseClass::Get_Mouse_State(void) const
 {
 	if (!Is_Captured()) {
-		ShowCursor(FALSE);
-		int state = ShowCursor(TRUE);
-		return(state);
+		return(ReleasedState);
 	}
 	return(MouseState);
 }
@@ -160,7 +245,7 @@ int WWMouseClass::Get_Mouse_State(void) const
 void WWMouseClass::Set_Cursor(Point2D const & hotspot, ShapeSet const * cursor, int shape)
 {
 	if (cursor != NULL) {
-		Win_Cursor_Set(cursor, shape, hotspot.X, hotspot.Y, Is_Captured());
+		Select_Cursor(cursor, shape, hotspot.X, hotspot.Y, Is_Captured());
 	}
 }
 
@@ -182,11 +267,12 @@ void WWMouseClass::Set_Cursor(Point2D const & hotspot, ShapeSet const * cursor, 
 void WWMouseClass::Show_Mouse(void)
 {
 	if (!Is_Captured()) {
-		ShowCursor(TRUE);
+		ReleasedState++;
+		Show_Released_Pointer();
 	} else {
 		MouseState++;
 		if (MouseState > 0) MouseState = 0;
-		Win_Cursor_Set_Visible(!Is_Hidden());
+		Set_Cursor_Visible(!Is_Hidden());
 	}
 }
 
@@ -209,10 +295,11 @@ void WWMouseClass::Show_Mouse(void)
 void WWMouseClass::Hide_Mouse(void)
 {
 	if (!Is_Captured()) {
-		ShowCursor(FALSE);
+		ReleasedState--;
+		Show_Released_Pointer();
 	} else {
 		MouseState--;
-		Win_Cursor_Set_Visible(!Is_Hidden());
+		Set_Cursor_Visible(!Is_Hidden());
 	}
 }
 
@@ -240,22 +327,18 @@ void WWMouseClass::Capture_Mouse(void)
 		Hide_Mouse();
 		IsCaptured = true;
 
-		/*
-		 * The game's pointer is the O/S pointer, so its display count has to come
-		 * back up; it was left negative while the game drew a pointer of its own.
-		 */
-		while (ShowCursor(TRUE) < 0) {}
+		// Hide_Mouse above counted against the released pointer, which starts over for the
+		// next release.
+		if (ReleasedState < 0) {
+			ReleasedState = 0;
+		}
 
 		/*
 		 * There is no exclusive display mode any more, so the pointer is kept inside
 		 * the window by hand while the game covers the screen.
 		 */
 		if (!WindowedMode) {
-			RECT clip_rect;
-			GetClientRect(Window, &clip_rect);
-			ClientToScreen(Window, (LPPOINT)&clip_rect.left);
-			ClientToScreen(Window, (LPPOINT)&clip_rect.right);
-			ClipCursor(&clip_rect);
+			Main_Window_Confine_Cursor(true);
 		}
 
 		Show_Mouse();
@@ -290,9 +373,11 @@ void WWMouseClass::Release_Mouse(void)
 		DebugString("Release_Mouse()\n");
 		Hide_Mouse();
 		IsCaptured = false;
-		ClipCursor(NULL);
-		if (GetCapture() == Window) ReleaseCapture();
-		while (ShowCursor(TRUE) < 0) {}
+		Main_Window_Confine_Cursor(false);
+		Main_Window_Capture_Mouse(false);
+		if (ReleasedState < 0) {
+			ReleasedState = 0;
+		}
 		Show_Mouse();
 	}
 }
@@ -351,28 +436,45 @@ void WWMouseClass::Conditional_Show_Mouse(void)
  *                                                                                             *
  * OUTPUT:  none                                                                               *
  *                                                                                             *
- * WARNINGS:   The coordinates will be bound as well as transformed by the confining rectangle.*
+ * WARNINGS:   The coordinates will be bound as well as transformed by the window's client area. *
  *                                                                                             *
  * HISTORY:                                                                                    *
  *   03/10/1997 JLB : Created.                                                                 *
  *=============================================================================================*/
 void WWMouseClass::Convert_Coordinate(int & x, int & y) const
 {
-	/*
-	**	Convert the mouse position to legal bounds.
-	*/
-	POINT point;
-	point.x = x - ConfiningRect.X;
-	point.y = y - ConfiningRect.Y;
+	int left = 0;
+	int top = 0;
+	int width = 0;
+	int height = 0;
+	Main_Window_Client_Rect(left, top, width, height);
+
+	x -= left;
+	y -= top;
+	Client_To_Game(x, y);
+}
+
+
+// Converts a position in the window's client area into one held inside the frame.
+void WWMouseClass::Client_To_Game(int & x, int & y) const
+{
+	Point2D point(x, y);
 	Window_Point_To_Game(point);
 
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
-	x = point.x;
-	y = point.y;
+	x = point.X;
+	y = point.Y;
 	if (x < 0) x = 0;
 	if (y < 0) y = 0;
 	if (x >= scale.GameWidth) x = scale.GameWidth-1;
 	if (y >= scale.GameHeight) y = scale.GameHeight-1;
+}
+
+
+// Shows the window's arrow while the released pointer's show count allows it.
+void WWMouseClass::Show_Released_Pointer(void) const
+{
+	Main_Window_Set_Cursor(ReleasedState >= 0 ? Main_Window_System_Cursor(UI_CURSOR_ARROW) : NULL);
 }
 
 
@@ -395,9 +497,104 @@ void WWMouseClass::Get_Bounded_Position(int & x, int & y) const
 	/*
 	**	Get the mouse's current real cursor position
 	*/
-	POINT pt;
-	GetCursorPos(&pt);			// get the current cursor position
-	x = pt.x;
-	y = pt.y;
-	Convert_Coordinate(x, y);
+	x = 0;
+	y = 0;
+	Main_Window_Cursor_Position(x, y);
+	Client_To_Game(x, y);
+}
+
+
+void WWMouseClass::Flush_Cursor_Cache(void)
+{
+	for (CachedCursor const & entry : CursorCache) {
+		Main_Window_Destroy_Cursor(entry.Cursor);
+	}
+
+	CursorCache.clear();
+	CursorShape = NULL;
+	CurrentCursor = NULL;
+}
+
+
+void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, bool apply)
+{
+	int scale = Cursor_Scale();
+
+	if (shape != CursorShape || scale != CursorCacheScale) {
+		Flush_Cursor_Cache();
+		CursorShape = shape;
+		CursorCacheScale = scale;
+		CursorCache.resize(shape->Get_Count() > 0 ? (size_t)shape->Get_Count() : 0);
+	}
+
+	CurrentShape = shape;
+	CurrentFrame = frame;
+	CurrentHotX = hotx;
+	CurrentHotY = hoty;
+
+	SDL_Cursor * cursor = NULL;
+
+	if (frame >= 0 && frame < (int)CursorCache.size()) {
+		CachedCursor & entry = CursorCache[frame];
+		if (entry.Cursor != NULL && (entry.HotX != hotx || entry.HotY != hoty)) {
+			Main_Window_Destroy_Cursor(entry.Cursor);
+			entry.Cursor = NULL;
+		}
+		if (entry.Cursor == NULL) {
+			entry.Cursor = Build_Cursor(shape, frame, hotx, hoty, scale);
+			entry.HotX = hotx;
+			entry.HotY = hoty;
+		}
+		cursor = entry.Cursor;
+	}
+
+	CurrentCursor = cursor;
+
+	if (apply) {
+		Main_Window_Set_Cursor(CursorVisible ? CurrentCursor : NULL);
+	}
+}
+
+
+void WWMouseClass::Set_Cursor_Visible(bool visible)
+{
+	CursorVisible = visible;
+
+	if (!Is_Captured()) {
+		return;
+	}
+
+	// Until the game builds a pointer, the window's arrow stands in for it.
+	SDL_Cursor * cursor = (CurrentCursor != NULL) ? CurrentCursor : Main_Window_System_Cursor(UI_CURSOR_ARROW);
+	Main_Window_Set_Cursor(visible ? cursor : NULL);
+}
+
+
+/// <summary>
+/// Shows the game's pointer over the window.
+/// </summary>
+/// <returns>False while the mouse is released or before a pointer has been built.</returns>
+bool WWMouseClass::Show_Game_Pointer(void)
+{
+	if (!Is_Captured()) {
+		return(false);
+	}
+
+	if (CurrentCursor == NULL) {
+		return(false);
+	}
+
+	Main_Window_Set_Cursor(CursorVisible ? CurrentCursor : NULL);
+	return(true);
+}
+
+
+/// <summary>
+/// Rebuilds the pointer if the window has been resized enough to want a different size.
+/// </summary>
+void WWMouseClass::Refresh_Pointer_Scale(void)
+{
+	if (CurrentShape != NULL && Cursor_Scale() != CursorCacheScale) {
+		Select_Cursor(CurrentShape, CurrentFrame, CurrentHotX, CurrentHotY, Is_Captured());
+	}
 }

@@ -473,7 +473,6 @@ bool LogDump_Print = false;		// true = print the Log time Stuff
 /***************************************************************************
 **	Win32 specific globals
 */
-int ReadyToQuit = 0;
 
 bool TacticalActive;
 

@@ -288,7 +288,7 @@ fixed_controls:
     context: Any game window focused, with Debug_Flag enabled
     availability: *debug
     sites:
-      - { file: code/ui/uishell.cpp, function: UIShellClass::Handle_Window_Message, expression: VK_F6, guard: _DEBUG }
+      - { file: code/ui/uishell.cpp, function: UIShellClass::Handle_Window_Event, expression: VK_F6, guard: _DEBUG }
 
 fixed_exclusions:
   - site: { file: code/debug.cpp, function: Debug_Key, expression: KN_BUTTON, guard: _DEBUG }
@@ -371,17 +371,57 @@ fixed_exclusions:
       - { file: code/keyboard.cpp, function: WWKeyboardClass::Is_Mouse_Key, expression: VK_RBUTTON }
     reason: Keyboard-backend classification of mouse virtual keys.
   - sites:
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Key_Message, expression: VK_SHIFT }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Key_Message, expression: VK_CONTROL }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Key_Message, expression: VK_MENU }
-    reason: Keyboard-backend modifier-state encoding, not separate controls.
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_LBUTTON }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_RBUTTON }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_MBUTTON }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_XBUTTON1 }
+      - { file: code/sdl/sdlwindow.cpp, function: Main_Window_Key_Down, expression: VK_XBUTTON2 }
+    reason: SDL-layer mouse button state, not controls.
   - sites:
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_LBUTTON }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_RBUTTON }
-      - { file: code/keyboard.cpp, function: WWKeyboardClass::Down, expression: VK_LBUTTON+VK_RBUTTON }
-    reason: Keyboard-backend normalization for the Windows swapped-button setting.
-  - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Message_Handler, expression: VK_SCROLL }
+      - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Modifiers, expression: VK_SHIFT }
+      - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Modifiers, expression: VK_CONTROL }
+      - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Modifiers, expression: VK_MENU }
+    reason: SDL-layer modifier state attached to key and mouse events, not controls.
+  - sites:
+      - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Key_Toggled, expression: VK_CAPITAL }
+      - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Key_Toggled, expression: VK_NUMLOCK }
+      - { file: code/sdl/sdlinput.cpp, function: SDLInputStateClass::Key_Toggled, expression: VK_SCROLL }
+    reason: SDL-layer lock-key state, not controls.
+  - sites:
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_LSHIFT }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_RSHIFT }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_LCONTROL }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_RCONTROL }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_LMENU }
+      - { file: code/sdl/sdlinput.cpp, function: Generic_Key, expression: VK_RMENU }
+    reason: SDL-layer mapping of each side of a modifier to the modifier, not controls.
+  - sites:
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_LBUTTON }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_RBUTTON }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_MBUTTON }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_XBUTTON1 }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_XBUTTON2 }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_SHIFT }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_CONTROL }
+      - { file: code/sdl/sdlinput.cpp, function: Holdable_Key, expression: VK_MENU }
+    reason: SDL-layer choice of the keys read from Windows after a keyboard reset, not controls.
+  - site: { file: code/sdl/sdlevents.cpp, function: Window_Events_From_SDL, expression: VK_F10 }
+    reason: SDL-layer classification of F10 as a system key, as Windows reports it; it does not dispatch a game command.
+  - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Handle_Window_Event, expression: VK_SCROLL }
     reason: Synchronizes the backend Scroll Lock state; it does not dispatch a game command.
+  - sites:
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_ESCAPE }
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_RETURN }
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_BACK }
+      - { file: code/keyboard.cpp, function: Control_Character, expression: VK_TAB }
+    reason: Gives text fields the control character each key types; it does not dispatch a game command.
+  - site: { file: code/keyboard.cpp, function: WWKeyboardClass::Put_Text, expression: KN_TEXT }
+    reason: Queues typed text that no key press carries; it is not a key.
+  - sites:
+      - { file: code/sdl/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_SHIFT }
+      - { file: code/sdl/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_CONTROL }
+      - { file: code/sdl/sdlkeys.cpp, function: Virtual_Key_Name, expression: VK_MENU }
+    reason: Converts modifier virtual keys to display names; it does not consume input.
   - sites:
       - { file: code/list.cpp, function: ListClass::Action, expression: KN_UP }
       - { file: code/list.cpp, function: ListClass::Action, expression: KN_DOWN }
@@ -399,11 +439,6 @@ fixed_exclusions:
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_BACKSPACE }
       - { file: code/msglist.cpp, function: MessageListClass::Input, expression: KN_ESC }
     reason: Message editor polling, cursor placement, and text-edit termination.
-  - sites:
-      - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_MENU }
-      - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_CONTROL }
-      - { file: code/ownrdraw.cpp, function: Build_Hotkey_String, expression: VK_SHIFT }
-    reason: Converts modifier virtual keys to display names; it does not consume input.
   - sites:
       - { file: code/restate.cpp, function: RestateMission::User_Input, expression: KN_NONE }
       - { file: code/restate.cpp, function: RestateMission::User_Input, expression: KN_BUTTON }
@@ -430,8 +465,6 @@ fixed_exclusions:
       - { file: code/wdtsel.cpp, function: Selection::Pick_Territory, expression: KN_NONE }
       - { file: code/wdtsel.cpp, function: Selection::Pick_Territory, expression: KN_LMOUSE }
     reason: World Domination Tour territory-screen polling and hit-testing.
-  - site: { file: code/winstub.cpp, function: Create_Main_Window, expression: VK_M }
-    reason: Registers a Windows hotkey that has no WM_HOTKEY handler in the current source tree.
   - sites:
       - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_SHIFT }
       - { file: code/ui/uishell.cpp, function: UIShellClass::Key_Modifiers, expression: VK_CONTROL }
@@ -452,10 +485,6 @@ fixed_exclusions:
     reason: UI shell modifier keys kept out of press ownership, not separate controls.
   - site: { file: code/ui/uishell.cpp, function: UIShellClass::Quarantine_Held_Input, expression: VK_XBUTTON2 }
     reason: UI shell loop bound over the virtual keys past the mouse buttons, not a control.
-  - sites:
-      - { file: code/ui/uienginehost.cpp, function: <file-scope>, expression: VK_LBUTTON }
-      - { file: code/ui/uienginehost.cpp, function: <file-scope>, expression: VK_RBUTTON }
-    reason: UI shell host naming the primary and secondary buttons as the messages do when the user swapped them, not controls.
 
 launch_options:
   - id: launch:help

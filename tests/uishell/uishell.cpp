@@ -36,8 +36,8 @@
 #include "ui/uihost.h"
 #include "ui/uiinput.h"
 #include "ui/uiscreen.h"
-#include "ui/uiunicode.h"
 #include "ui/uiview.h"
+#include "windowevent.hh"
 
 #include <algorithm>
 #include <chrono>
@@ -57,6 +57,7 @@
 #include <RmlUi/Core.h>
 #include <RmlUi/Core/Elements/ElementFormControlInput.h>
 #include <RmlUi/Core/Elements/ElementFormControlSelect.h>
+#include <RmlUi/Core/Elements/ElementFormControlTextArea.h>
 #include <RmlUi/Core/Elements/ElementProgress.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -290,8 +291,6 @@ class TestHostClass : public UIShellHostClass
 	public:
 		UIFrameRect Rect = { 0, 0, 1280, 800, 1.0f, 1.0f };
 		bool Captured = false;
-		bool Unicode = false;
-		unsigned int CodePage = 65001;
 		bool Down[256] = {};
 		bool Toggled[256] = {};
 		int Presents = 0;
@@ -350,16 +349,6 @@ class TestHostClass : public UIShellHostClass
 			return(true);
 		}
 
-		virtual bool Window_Is_Unicode(void) const override
-		{
-			return(Unicode);
-		}
-
-		virtual unsigned int Text_Code_Page(void) const override
-		{
-			return(CodePage);
-		}
-
 		int Applied = 0;
 		int Restored = 0;
 		UICursor LastCursor = UI_CURSOR_ARROW;
@@ -376,9 +365,16 @@ class TestHostClass : public UIShellHostClass
 			LastCursor = UI_CURSOR_ARROW;
 		}
 
-		virtual HWND Main_Window(void) const override
+		std::string Clipboard;
+
+		virtual std::string Clipboard_Text(void) const override
 		{
-			return(nullptr);
+			return(Clipboard);
+		}
+
+		virtual void Set_Clipboard_Text(std::string const & text) override
+		{
+			Clipboard = text;
 		}
 
 		virtual UIFrameRect Frame(void) const override
@@ -442,11 +438,6 @@ class TestHostClass : public UIShellHostClass
 			Captured = false;
 		}
 
-		virtual bool Screen_To_Client(int &, int &) const override
-		{
-			return(true);
-		}
-
 		virtual char const * String(int) const override
 		{
 			return("string");
@@ -501,9 +492,105 @@ struct ShellFixtureType
 };
 
 
-bool Send(UIShellClass & shell, UINT message, WPARAM wparam = 0, LPARAM lparam = 0)
+struct PointType
 {
-	return(shell.Handle_Window_Message(nullptr, message, wparam, lparam));
+	int X;
+	int Y;
+};
+
+
+bool Send(UIShellClass & shell, WindowEvent const & event)
+{
+	return(shell.Handle_Window_Event(event));
+}
+
+
+bool Move(UIShellClass & shell, PointType at)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_MOUSE_MOVE;
+	event.X = at.X;
+	event.Y = at.Y;
+	return(Send(shell, event));
+}
+
+
+bool Press(UIShellClass & shell, WindowMouseButton button, PointType at)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_MOUSE_DOWN;
+	event.Button = button;
+	event.X = at.X;
+	event.Y = at.Y;
+	return(Send(shell, event));
+}
+
+
+bool Release(UIShellClass & shell, WindowMouseButton button, PointType at)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_MOUSE_UP;
+	event.Button = button;
+	event.X = at.X;
+	event.Y = at.Y;
+	return(Send(shell, event));
+}
+
+
+bool Wheel(UIShellClass & shell, PointType at, float notches, bool horizontal)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_MOUSE_WHEEL;
+	event.X = at.X;
+	event.Y = at.Y;
+	event.Wheel = notches;
+	event.Horizontal = horizontal;
+	return(Send(shell, event));
+}
+
+
+bool Key_Down(UIShellClass & shell, int virtualkey, int modifiers = 0)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_KEY_DOWN;
+	event.VirtualKey = virtualkey;
+	event.Modifiers = modifiers;
+	return(Send(shell, event));
+}
+
+
+bool Key_Up(UIShellClass & shell, int virtualkey, int modifiers = 0)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_KEY_UP;
+	event.VirtualKey = virtualkey;
+	event.Modifiers = modifiers;
+	return(Send(shell, event));
+}
+
+
+bool Text(UIShellClass & shell, char32_t code)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_TEXT;
+	event.Text = code;
+	return(Send(shell, event));
+}
+
+
+bool Focus(UIShellClass & shell, bool focused)
+{
+	WindowEvent event;
+	event.Type = focused ? WINDOW_EVENT_FOCUS_GAINED : WINDOW_EVENT_FOCUS_LOST;
+	return(Send(shell, event));
+}
+
+
+bool Capture_Lost(UIShellClass & shell)
+{
+	WindowEvent event;
+	event.Type = WINDOW_EVENT_CAPTURE_LOST;
+	return(Send(shell, event));
 }
 
 
@@ -513,22 +600,22 @@ Rml::Vector2f Center_Of(Rml::Element * element)
 }
 
 
-LPARAM Element_Point(TestHostClass const & host, Rml::Element * element)
+PointType Element_Point(TestHostClass const & host, Rml::Element * element)
 {
 	Rml::Vector2f center = Center_Of(element);
-	return(MAKELPARAM((int)center.x + host.Rect.X, (int)center.y + host.Rect.Y));
+	return(PointType{ (int)center.x + host.Rect.X, (int)center.y + host.Rect.Y });
 }
 
 
 void Click_Through_Hook(UIShellClass & shell, TestHostClass & host, Rml::Element * element)
 {
-	LPARAM at = Element_Point(host, element);
+	PointType at = Element_Point(host, element);
 
-	Send(shell, WM_MOUSEMOVE, 0, at);
+	Move(shell, at);
 	host.Down[VK_LBUTTON] = true;
-	Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+	Press(shell, WINDOW_BUTTON_LEFT, at);
 	host.Down[VK_LBUTTON] = false;
-	Send(shell, WM_LBUTTONUP, 0, at);
+	Release(shell, WINDOW_BUTTON_LEFT, at);
 }
 
 
@@ -550,11 +637,11 @@ bool Slider_Parts(Rml::Element * slider, Rml::Element * & bar, Rml::Element * & 
 }
 
 
-LPARAM Past_Track_End(TestHostClass const & host, Rml::Element * bar, Rml::Element * track)
+PointType Past_Track_End(TestHostClass const & host, Rml::Element * bar, Rml::Element * track)
 {
 	int const y = (int)Center_Of(bar).y + host.Rect.Y;
 	int const past = (int)(track->GetAbsoluteOffset(Rml::BoxArea::Border).x + track->GetBox().GetSize(Rml::BoxArea::Border).x) + host.Rect.X + 40;
-	return(MAKELPARAM(past, y));
+	return(PointType{ past, y });
 }
 
 
@@ -566,15 +653,15 @@ bool Drag_Slider_To_End(UIShellClass & shell, TestHostClass & host, Rml::Element
 		return(false);
 	}
 
-	LPARAM const start = Element_Point(host, bar);
-	LPARAM const end = Past_Track_End(host, bar, track);
+	PointType const start = Element_Point(host, bar);
+	PointType const end = Past_Track_End(host, bar, track);
 
-	bool consumed = Send(shell, WM_MOUSEMOVE, 0, start);
+	bool consumed = Move(shell, start);
 	host.Down[VK_LBUTTON] = true;
-	consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, start) && consumed;
-	consumed = Send(shell, WM_MOUSEMOVE, MK_LBUTTON, end) && consumed;
+	consumed = Press(shell, WINDOW_BUTTON_LEFT, start) && consumed;
+	consumed = Move(shell, end) && consumed;
 	host.Down[VK_LBUTTON] = false;
-	consumed = Send(shell, WM_LBUTTONUP, 0, end) && consumed;
+	consumed = Release(shell, WINDOW_BUTTON_LEFT, end) && consumed;
 	return(consumed);
 }
 
@@ -4039,7 +4126,7 @@ void Test_Shell(void)
 
 		host.OnClear = [&](void) {
 			if (host.Clears == 1) {
-				consumedWhileOpening = Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
+				consumedWhileOpening = Press(shell, WINDOW_BUTTON_LEFT, PointType{ 10, 10 });
 			}
 		};
 
@@ -4049,7 +4136,7 @@ void Test_Shell(void)
 				shownInside = shell.Screen_Shown() && shell.Modal() == view.get() && shell.Modal_Depth() == 1;
 			}
 			if (passes == 3) {
-				Send(shell, WM_KEYDOWN, VK_RETURN);
+				Key_Down(shell, VK_RETURN);
 			}
 			return(false);
 		});
@@ -4069,7 +4156,7 @@ void Test_Shell(void)
 		UIVersionPresenterClass presenter({ "escape" });
 		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
 		UIResult result = shell.Run_Modal(*view, [&](void) {
-			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			Key_Down(shell, VK_ESCAPE);
 			return(false);
 		});
 		Check(result == UI_RESULT_CANCELLED, "Escape cancels the modal");
@@ -4103,7 +4190,7 @@ void Test_Shell(void)
 			return(true);
 		});
 		Check(inner.has_value() && *inner == UI_RESULT_SESSION_ENDED && result == UI_RESULT_SESSION_ENDED && outerPasses == 2, "a game ending under a nested screen closes each runner on its next pass");
-		Check(!shell.Screen_Shown() && !Send(shell, WM_KEYDOWN, VK_SPACE), "and leaves nothing shown to take the score screen's key");
+		Check(!shell.Screen_Shown() && !Key_Down(shell, VK_SPACE), "and leaves nothing shown to take the score screen's key");
 	}
 
 	{
@@ -4128,7 +4215,7 @@ void Test_Shell(void)
 			passes++;
 			if (passes == 2) {
 				appliedBefore = shell.Rml_Context()->GetDimensions() == Rml::Vector2i(640, 400);
-				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
 		});
@@ -4163,7 +4250,7 @@ void Test_Shell(void)
 			}
 			if (passes == 2) {
 				refetched = fixture.Render->Loaded + fixture.Render->Generated > fetched;
-				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
 		});
@@ -4180,7 +4267,7 @@ void Test_Shell(void)
 		shell.Run_Modal(*afterview, [&](void) {
 			Rml::ElementDocument * document = Rml(*afterview).Document();
 			built = document != nullptr && document->GetElementById("chrome") != nullptr;
-			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			Key_Down(shell, VK_ESCAPE);
 			return(false);
 		});
 
@@ -4209,7 +4296,7 @@ void Test_Shell(void)
 			passes++;
 			if (passes == 2) {
 				appliedBefore = fixture.Render->ReleasedTextures > released;
-				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
 		});
@@ -4233,13 +4320,13 @@ void Test_Shell(void)
 			passes++;
 			if (passes == 1) {
 				suppressed = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && shell.Input_State().Key_Owner('A') == UI_INPUT_SUPPRESSED;
-				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10)) && Send(shell, WM_KEYUP, 'A');
+				swallowed = Release(shell, WINDOW_BUTTON_LEFT, PointType{ 10, 10 }) && Key_Up(shell, 'A');
 				host.Down[VK_LBUTTON] = false;
 				host.Down['A'] = false;
 				quiet = !presenter.Has_Pending() && shell.Input_State().Mouse_Owner(0) == UI_INPUT_NONE && shell.Input_State().Key_Owner('A') == UI_INPUT_NONE;
 			}
 			if (passes == 2) {
-				Send(shell, WM_KEYDOWN, VK_RETURN);
+				Key_Down(shell, VK_RETURN);
 			}
 			return(false);
 		});
@@ -4259,17 +4346,17 @@ void Test_Shell(void)
 		shell.Run_Modal(*view, [&](void) {
 			passes++;
 			if (passes == 1) {
-				Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
-				Send(shell, WM_KEYDOWN, 'A');
+				Press(shell, WINDOW_BUTTON_LEFT, PointType{ 10, 10 });
+				Key_Down(shell, 'A');
 				owned = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML && shell.Input_State().Key_Owner('A') == UI_INPUT_RML && host.Captured;
 				host.Captured = false;
-				Send(shell, WM_CAPTURECHANGED, 0, (LPARAM)1);
+				Capture_Lost(shell);
 				cancelled = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && shell.Input_State().Key_Owner('A') == UI_INPUT_RML && !host.Captured && shell.Modal() == view.get();
-				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10)) && !presenter.Has_Pending();
-				Send(shell, WM_KEYUP, 'A');
+				swallowed = Release(shell, WINDOW_BUTTON_LEFT, PointType{ 10, 10 }) && !presenter.Has_Pending();
+				Key_Up(shell, 'A');
 			}
 			if (passes == 2) {
-				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
 		});
@@ -4298,25 +4385,25 @@ void Test_Shell(void)
 			Rml::Element * bar = nullptr;
 			Rml::Element * track = nullptr;
 			if (passes == 2 && score != nullptr && Slider_Parts(score, bar, track)) {
-				LPARAM const start = Element_Point(host, bar);
-				Send(shell, WM_MOUSEMOVE, 0, start);
+				PointType const start = Element_Point(host, bar);
+				Move(shell, start);
 				host.Down[VK_LBUTTON] = true;
-				Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, start);
+				Press(shell, WINDOW_BUTTON_LEFT, start);
 				owned = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML && host.Captured;
 
 				host.Down[VK_LBUTTON] = false;
-				Send(shell, WM_ACTIVATEAPP, 0, 0);
+				Focus(shell, false);
 				dropped = shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED && !host.Captured;
-				Send(shell, WM_ACTIVATEAPP, 1, 0);
-				Send(shell, WM_MOUSEMOVE, 0, Past_Track_End(host, bar, track));
+				Focus(shell, true);
+				Move(shell, Past_Track_End(host, bar, track));
 			}
 			if (passes == 3 && score != nullptr) {
 				still = presenter.State.Score == 5 && score->GetAttribute<int>("value", -1) == 5 && !presenter.Has_Pending();
-				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
 		});
-		Send(shell, WM_KEYUP, VK_ESCAPE);
+		Key_Up(shell, VK_ESCAPE);
 		shell.Tick();
 
 		Check(owned, "a press on a slider's bar is the document's and takes the capture");
@@ -4343,17 +4430,17 @@ void Test_Shell(void)
 					if (innerpasses == 1) {
 						nested = shell.Modal() == innerview.get() && shell.Modal_Depth() == 2;
 						host.Down[VK_LBUTTON] = true;
-						Send(shell, WM_LBUTTONDOWN, 0, MAKELPARAM(10, 10));
-						Send(shell, WM_KEYDOWN, VK_ESCAPE);
+						Press(shell, WINDOW_BUTTON_LEFT, PointType{ 10, 10 });
+						Key_Down(shell, VK_ESCAPE);
 					}
 					return(innerpasses >= 5);
 				});
 				restored = innerresult == UI_RESULT_CANCELLED && shell.Modal() == outerview.get() && shell.Modal_Depth() == 1 && shell.Input_State().Mouse_Owner(0) == UI_INPUT_SUPPRESSED;
-				swallowed = Send(shell, WM_LBUTTONUP, 0, MAKELPARAM(10, 10));
+				swallowed = Release(shell, WINDOW_BUTTON_LEFT, PointType{ 10, 10 });
 				host.Down[VK_LBUTTON] = false;
 			}
 			if (passes == 2) {
-				Send(shell, WM_KEYDOWN, VK_RETURN);
+				Key_Down(shell, VK_RETURN);
 			}
 			return(false);
 		});
@@ -4377,7 +4464,7 @@ void Test_Shell(void)
 			innerpasses++;
 			if (innerpasses == 1) {
 				innerseen = shell.Running_Service() == &innerservice;
-				Send(shell, WM_KEYDOWN, VK_RETURN);
+				Key_Down(shell, VK_RETURN);
 			}
 			return(innerpasses >= 4);
 		};
@@ -4389,14 +4476,14 @@ void Test_Shell(void)
 				outerback = shell.Running_Service() == &outerservice;
 			}
 			if (passes == 2) {
-				Send(shell, WM_KEYDOWN, VK_RETURN);
+				Key_Down(shell, VK_RETURN);
 			}
 			return(false);
 		};
 
 		Check(shell.Running_Service() == nullptr, "no service runs while no screen is shown");
 		shell.Run_Modal(*outerview, outerservice);
-		Send(shell, WM_KEYUP, VK_RETURN);
+		Key_Up(shell, VK_RETURN);
 		shell.Tick();
 		Check(outerseen && innerseen, "each running screen reports the service driving it");
 		Check(outerback && shell.Running_Service() == nullptr, "closing a screen hands the service back to the one below, and the last to nobody");
@@ -4422,7 +4509,7 @@ void Test_Shell(void)
 					innerpasses++;
 					hidden = hidden && !outerview->Is_Shown();
 					if (innerpasses == 1) {
-						Send(shell, WM_KEYDOWN, VK_RETURN);
+						Key_Down(shell, VK_RETURN);
 					}
 					return(innerpasses >= 4);
 				}, true);
@@ -4430,7 +4517,7 @@ void Test_Shell(void)
 				stillopen = !Rml(*outerview).Document()->IsClassSet("revealing") && !shell.Revealing_Shown();
 			}
 			if (passes == 2) {
-				Send(shell, WM_KEYDOWN, VK_RETURN);
+				Key_Down(shell, VK_RETURN);
 			}
 			return(false);
 		});
@@ -4446,30 +4533,30 @@ void Test_Shell(void)
 		bool focused = false;
 
 		shell.Run_Modal(*view, [&](void) {
-			taken = Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM(2000, 2000))
-				&& Send(shell, WM_XBUTTONDOWN, MAKEWPARAM(0, XBUTTON1), MAKELPARAM(10, 10))
-				&& Send(shell, WM_XBUTTONUP, MAKEWPARAM(0, XBUTTON1), MAKELPARAM(10, 10))
-				&& Send(shell, WM_MOUSEHWHEEL, MAKEWPARAM(0, WHEEL_DELTA), MAKELPARAM(10, 10));
+			taken = Move(shell, PointType{ 2000, 2000 })
+				&& Press(shell, WINDOW_BUTTON_X1, PointType{ 10, 10 })
+				&& Release(shell, WINDOW_BUTTON_X1, PointType{ 10, 10 })
+				&& Wheel(shell, PointType{ 10, 10 }, 1.0f, true);
 			host.Down['C'] = true;
-			Send(shell, WM_ACTIVATEAPP, 1);
+			Focus(shell, true);
 			focused = shell.Input_State().Key_Owner('C') == UI_INPUT_SUPPRESSED;
 			host.Down['C'] = false;
-			Send(shell, WM_KEYUP, 'C');
-			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			Key_Up(shell, 'C');
+			Key_Down(shell, VK_ESCAPE);
 			return(false);
 		});
 		Check(taken, "a modal takes moves, side buttons and the horizontal wheel");
 		Check(focused, "focus returning to a shown screen quarantines what is held");
 
-		Check(Send(shell, WM_KEYUP, VK_ESCAPE), "the release of the key that closed a screen is swallowed");
+		Check(Key_Up(shell, VK_ESCAPE), "the release of the key that closed a screen is swallowed");
 		shell.Tick();
 		Check(!shell.Input_State().Any_Owned(), "nothing stays owned once the closing key is up and the shell has ticked");
 
 		host.Down['C'] = true;
-		Send(shell, WM_ACTIVATEAPP, 1);
+		Focus(shell, true);
 		Check(shell.Input_State().Key_Owner('C') == UI_INPUT_NONE, "focus returning to an idle shell quarantines nothing");
 		host.Down['C'] = false;
-		Check(!Send(shell, WM_KEYUP, 'Z'), "a stray release meets an idle shell and reaches the game");
+		Check(!Key_Up(shell, 'Z'), "a stray release meets an idle shell and reaches the game");
 	}
 
 	{
@@ -4490,47 +4577,62 @@ void Test_Shell(void)
 
 		shell.Run_Modal(*view, [&](void) {
 			Rml(*view).Document()->AddEventListener(Rml::EventId::Textinput, &recorder);
-			Send(shell, WM_CHAR, 0xC3);
-			Send(shell, WM_CHAR, 0xA9);
+			Text(shell, 0xE9);
 			Rml(*view).Document()->RemoveEventListener(Rml::EventId::Textinput, &recorder);
-			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			Key_Down(shell, VK_ESCAPE);
 			return(false);
 		});
-		Check(recorder.Texts.size() == 1 && recorder.Texts[0] == "\xC3\xA9", "two UTF-8 bytes on a narrow window reach the document as one character");
+		Check(recorder.Texts.size() == 1 && recorder.Texts[0] == "\xC3\xA9", "a typed character reaches the document as its UTF-8 text");
 	}
 
 	{
-		class TextRecorderClass : public Rml::EventListener
-		{
-			public:
-				std::vector<Rml::String> Texts;
-
-				virtual void ProcessEvent(Rml::Event & event) override
-				{
-					Texts.push_back(event.GetParameter<Rml::String>("text", ""));
-				}
-		};
-
-		TextRecorderClass recorder;
-		unsigned int page = host.CodePage;
-		host.CodePage = 1251;
-
-		UIVersionPresenterClass presenter({ "cyrillic" });
+		UIVersionPresenterClass presenter({ "text" });
 		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		Rml::String written;
+		Rml::String repeated;
+		Rml::String kept;
+		bool focused = false;
 
 		shell.Run_Modal(*view, [&](void) {
-			Rml(*view).Document()->AddEventListener(Rml::EventId::Textinput, &recorder);
-			Send(shell, WM_CHAR, 0xCF);
-			Send(shell, WM_CHAR, 0xF0);
-			Send(shell, WM_CHAR, 0xE8);
-			Rml(*view).Document()->RemoveEventListener(Rml::EventId::Textinput, &recorder);
-			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::ElementFormControlTextArea * area = rmlui_dynamic_cast<Rml::ElementFormControlTextArea *>(document->AppendChild(document->CreateElement("textarea")));
+			Rml::ElementFormControlInput * field = rmlui_dynamic_cast<Rml::ElementFormControlInput *>(document->AppendChild(document->CreateElement("input")));
+			if (area != nullptr && field != nullptr) {
+				area->Focus();
+				Key_Down(shell, 'A');
+				Text(shell, 'A');
+				Key_Up(shell, 'A');
+				Key_Down(shell, VK_RETURN);
+				Key_Up(shell, VK_RETURN);
+				Key_Down(shell, 'B');
+				Text(shell, 'B');
+				Key_Up(shell, 'B');
+				written = area->GetValue();
+
+				WindowEvent repeat;
+				repeat.Type = WINDOW_EVENT_KEY_DOWN;
+				repeat.VirtualKey = VK_RETURN;
+				Key_Down(shell, VK_RETURN);
+				repeat.Repeat = true;
+				Send(shell, repeat);
+				Key_Up(shell, VK_RETURN);
+				repeated = area->GetValue();
+
+				field->SetAttribute("type", "text");
+				field->SetValue("Name");
+				field->Focus();
+				focused = document->GetContext()->GetFocusElement() == field;
+				field->Select();
+				Key_Down(shell, VK_RETURN);
+				kept = field->GetValue();
+				Key_Up(shell, VK_RETURN);
+			}
+			Key_Down(shell, VK_ESCAPE);
 			return(false);
 		});
-		host.CodePage = page;
-
-		Check(recorder.Texts.size() == 3, "a code page byte each reaches the document as its own character");
-		Check(recorder.Texts.size() == 3 && recorder.Texts[0] == "\xD0\x9F" && recorder.Texts[1] == "\xD1\x80" && recorder.Texts[2] == "\xD0\xB8", "and each is the Cyrillic letter its byte names, not a replacement");
+		Check(written == "A\nB", "Enter in a text area types a new line");
+		Check(repeated == "A\nB\n\n", "and each repeat of Enter types another");
+		Check(focused && kept == "Name", "Enter in a one-line field leaves its selected text alone");
 	}
 
 	{
@@ -4541,9 +4643,6 @@ void Test_Shell(void)
 		UISaveGameEntry slot;
 		slot.Description = "[EMPTY SLOT]";
 		state.Entries.push_back(slot);
-
-		bool wide = host.Unicode;
-		host.Unicode = true;
 
 		UISaveGamePresenterClass presenter(state);
 		std::unique_ptr<UIViewClass> view = UI_Save_Game_View(presenter);
@@ -4556,39 +4655,29 @@ void Test_Shell(void)
 			if (field != nullptr) {
 				field->SetValue("");
 				field->Focus();
-				Send(shell, WM_CHAR, 0x041F);
-				Send(shell, WM_CHAR, 0x0440);
-				Send(shell, WM_CHAR, 0x0438);
-				Send(shell, WM_CHAR, 0x0432);
-				Send(shell, WM_CHAR, 0x0435);
-				Send(shell, WM_CHAR, 0x0442);
+				Text(shell, 0x041F);
+				Text(shell, 0x0440);
+				Text(shell, 0x0438);
+				Text(shell, 0x0432);
+				Text(shell, 0x0435);
+				Text(shell, 0x0442);
 				typed = field->GetValue();
 			}
-			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			Key_Down(shell, VK_ESCAPE);
 			return(false);
 		});
-		host.Unicode = wide;
-
-		Check(typed == "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82", "Cyrillic typed on a wide window reaches the field as the letters themselves");
+		Check(typed == "\xD0\x9F\xD1\x80\xD0\xB8\xD0\xB2\xD0\xB5\xD1\x82", "Cyrillic typed into a field reaches it as the letters themselves");
 	}
 
 	{
 		char const * sample = "\xC3\xA9\xE2\x82\xAC\xF0\x9F\x98\x80";
-		std::wstring wide;
-		std::string text;
-
-		std::wstring expected = { (wchar_t)0x00E9, (wchar_t)0x20AC, (wchar_t)0xD83D, (wchar_t)0xDE00 };
-		Check(UI_UTF8_To_UTF16(sample, wide) && wide == expected, "UTF-8 converts to UTF-16");
-		Check(UI_UTF16_To_UTF8(wide, text) && text == sample, "UTF-16 converts back to the same UTF-8");
-		Check(!UI_UTF8_To_UTF16("\xC0\xAF", wide), "an overlong sequence is refused, not repaired");
-		Check(!UI_UTF16_To_UTF8(std::wstring(1, (wchar_t)0xD800), text), "an unpaired surrogate is refused, not repaired");
 
 		Rml::String before;
 		fixture.System->GetClipboardText(before);
 		fixture.System->SetClipboardText(sample);
 		Rml::String after;
 		fixture.System->GetClipboardText(after);
-		Check(after == sample, "clipboard text survives a round trip");
+		Check(after == sample && host.Clipboard == sample, "clipboard text goes through the host and survives a round trip");
 		fixture.System->SetClipboardText(before);
 	}
 
@@ -4608,15 +4697,15 @@ void Test_Shell(void)
 			fixture.System->SetMouseCursor("text");
 			requested = fixture.System->Cursor_Request() == UI_CURSOR_TEXT;
 			shown = shell.Handle_Set_Cursor() && host.LastCursor == UI_CURSOR_TEXT;
-			Send(shell, WM_KEYDOWN, VK_ESCAPE);
+			Key_Down(shell, VK_ESCAPE);
 			return(false);
 		});
 		Check(opened, "opening a screen puts the window's arrow on the pointer before any request");
-		Check(arrow, "WM_SETCURSOR over a shown screen is the screen's even with no request");
+		Check(arrow, "choosing the pointer over a shown screen is the screen's even with no request");
 		Check(requested, "a document's pointer request is kept");
-		Check(shown, "WM_SETCURSOR shows the requested shape while a screen is shown");
+		Check(shown, "choosing the pointer shows the requested shape while a screen is shown");
 		Check(host.Restored - restored == 1 && fixture.System->Cursor_Request() == UI_CURSOR_ARROW && host.LastCursor == UI_CURSOR_ARROW, "closing a screen puts the game's pointer back once and forgets the request");
-		Check(!shell.Handle_Set_Cursor(), "WM_SETCURSOR is the game's again once nothing is shown");
+		Check(!shell.Handle_Set_Cursor(), "choosing the pointer is the game's again once nothing is shown");
 	}
 
 	{
@@ -4647,11 +4736,11 @@ void Test_Shell(void)
 			}
 			if (passes == 4 && score != nullptr) {
 				kept = presenter.State.Score == dragged && score->GetAttribute<int>("value", -1) == dragged;
-				Send(shell, WM_KEYDOWN, VK_ESCAPE);
+				Key_Down(shell, VK_ESCAPE);
 			}
 			return(false);
 		});
-		Send(shell, WM_KEYUP, VK_ESCAPE);
+		Key_Up(shell, VK_ESCAPE);
 		shell.Tick();
 
 		Check(consumed && dragged == UISoundPresenterClass::LEVELS, "a drag to the end of the music slider reaches the document and lands on the top level");
@@ -4674,21 +4763,21 @@ void Test_Shell(void)
 			if (buttons.empty()) {
 				return(true);
 			}
-			LPARAM at = Element_Point(host, buttons[0]);
+			PointType at = Element_Point(host, buttons[0]);
 
 			if (passes == 2) {
 				host.Down[VK_LBUTTON] = true;
-				Send(shell, WM_ACTIVATEAPP, 1, 0);
-				consumed = Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+				Focus(shell, true);
+				consumed = Press(shell, WINDOW_BUTTON_LEFT, at);
 				unpressed = !buttons[0]->IsPseudoClassSet("active");
 				host.Down[VK_LBUTTON] = false;
-				Send(shell, WM_LBUTTONUP, 0, at);
+				Release(shell, WINDOW_BUTTON_LEFT, at);
 			}
 			if (passes == 3) {
 				answered = !presenter.Result.has_value();
-				Send(shell, WM_MOUSEMOVE, 0, at);
-				Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
-				Send(shell, WM_LBUTTONUP, 0, at);
+				Move(shell, at);
+				Press(shell, WINDOW_BUTTON_LEFT, at);
+				Release(shell, WINDOW_BUTTON_LEFT, at);
 			}
 			return(false);
 		});
@@ -4714,25 +4803,25 @@ void Test_Shell(void)
 				if (buttons.empty()) {
 					return(true);
 				}
-				LPARAM at = Element_Point(host, buttons[0]);
+				PointType at = Element_Point(host, buttons[0]);
 
 				if (passes == 2) {
-					Send(shell, WM_MOUSEMOVE, 0, at);
+					Move(shell, at);
 					host.Down[VK_LBUTTON] = true;
-					Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, at);
+					Press(shell, WINDOW_BUTTON_LEFT, at);
 					held = shell.Input_State().Mouse_Owner(0) == UI_INPUT_RML;
 
 					host.Down[VK_LBUTTON] = false;
 					if (loss == 0) {
-						Send(shell, WM_ACTIVATEAPP, 0, 0);
-						Send(shell, WM_ACTIVATEAPP, 1, 0);
+						Focus(shell, false);
+						Focus(shell, true);
 					} else {
-						Send(shell, WM_CAPTURECHANGED, 0, (LPARAM)1);
+						Capture_Lost(shell);
 					}
 				}
 				if (passes == 3) {
 					quiet = !presenter.Result.has_value() && !presenter.Has_Pending();
-					Send(shell, WM_KEYDOWN, VK_ESCAPE);
+					Key_Down(shell, VK_ESCAPE);
 				}
 				return(false);
 			});
@@ -4887,7 +4976,7 @@ void Test_Shell(void)
 					shell.Run_Modal(*innerview, [&](void) {
 						innerpasses++;
 						if (innerpasses == 1) {
-							Send(shell, WM_KEYDOWN, VK_RETURN);
+							Key_Down(shell, VK_RETURN);
 						}
 						return(false);
 					}, hide != 0);
@@ -4895,7 +4984,7 @@ void Test_Shell(void)
 				}
 				if (passes == 3) {
 					stayed = uncovered();
-					Send(shell, WM_KEYDOWN, VK_ESCAPE);
+					Key_Down(shell, VK_ESCAPE);
 				}
 				return(false);
 			});
@@ -5008,16 +5097,15 @@ void Test_Shell(void)
 			}
 			if (passes == 3) {
 				focused = shell.Rml_Context()->GetFocusElement() == capture;
-				Send(shell, WM_KEYDOWN, 'X');
-				Send(shell, WM_KEYUP, 'X');
+				Key_Down(shell, 'X');
+				Key_Up(shell, 'X');
 			}
 			if (passes == 4) {
 				captured = presenter.State.Captured == 88 && presenter.State.AssignedTo == "Scatter" && capture->GetInnerRML().find("K88") != std::string::npos;
 
-				host.Down[VK_SHIFT] = true;
-				Send(shell, WM_KEYDOWN, 'R');
-				Send(shell, WM_KEYUP, 'R');
-				host.Down[VK_SHIFT] = false;
+				// The host reports no keys held, so Shift can only come from the events.
+				Key_Down(shell, 'R', WINDOW_MOD_SHIFT);
+				Key_Up(shell, 'R', WINDOW_MOD_SHIFT);
 			}
 			if (passes == 5) {
 				modified = presenter.State.Captured == 338 && presenter.State.AssignedTo == "Toggle Repair";
@@ -5033,7 +5121,7 @@ void Test_Shell(void)
 		Check(listed && presenter.State.Selected == 3, "a click on a command row selects the command it names");
 		Check(focused, "and moves the focus to the capture element the keys go to");
 		Check(captured, "a key sent through the hook becomes its hotkey number there and names the command holding it");
-		Check(modified, "the same key with a modifier the host reports is a different number naming a different command");
+		Check(modified, "the same key with a modifier on its event is a different number naming a different command");
 		Check(moved, "assigning it moves the key to the selected command and off its old owner");
 		Check(service.Calls == std::vector<std::string>{ "save 0=577 2=88 3=338" }, "and accepting saves the table the edits left behind");
 	}
@@ -5107,7 +5195,7 @@ void Test_Shell(void)
 
 			host.Held = true;
 			host.Now = 10000;
-			Send(shell, WM_MOUSEMOVE, 0, Element_Point(host, cells[0]));
+			Move(shell, Element_Point(host, cells[0]));
 			shell.Tick();
 			Check(tip->GetInnerRML() == "GDI", "the tip reads the country the cell names");
 			Check(!tip->IsClassSet("up"), "the tip waits while the pointer has only just arrived");
@@ -5128,25 +5216,25 @@ void Test_Shell(void)
 				&& at.y + size.y <= (float)host.Rect.Height, "the tip stays on the screen");
 
 			host.Down[VK_LBUTTON] = true;
-			Send(shell, WM_LBUTTONDOWN, MK_LBUTTON, Element_Point(host, cells[0]));
+			Press(shell, WINDOW_BUTTON_LEFT, Element_Point(host, cells[0]));
 			host.Down[VK_LBUTTON] = false;
-			Send(shell, WM_LBUTTONUP, 0, Element_Point(host, cells[0]));
+			Release(shell, WINDOW_BUTTON_LEFT, Element_Point(host, cells[0]));
 			shell.Tick();
 			Check(!tip->IsClassSet("up"), "a press takes the tip down");
 
 			host.Now += 100;
-			Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM(host.Rect.Width / 2, host.Rect.Height / 2));
-			Send(shell, WM_MOUSEMOVE, 0, Element_Point(host, cells[0]));
+			Move(shell, PointType{ host.Rect.Width / 2, host.Rect.Height / 2 });
+			Move(shell, Element_Point(host, cells[0]));
 			shell.Tick();
 			host.Now += 301;
 			shell.Tick();
 			Check(tip->IsClassSet("up"), "a tip that follows one just taken down comes sooner");
 
-			Send(shell, WM_MOUSEMOVE, 0, MAKELPARAM(host.Rect.Width - 2, host.Rect.Height - 2));
+			Move(shell, PointType{ host.Rect.Width - 2, host.Rect.Height - 2 });
 			shell.Tick();
 			Check(!tip->IsClassSet("up"), "the tip goes once the pointer leaves the control");
 
-			Send(shell, WM_MOUSEMOVE, 0, Element_Point(host, cells[0]));
+			Move(shell, Element_Point(host, cells[0]));
 			shell.Tick();
 			host.Now += 1001;
 			shell.Tick();

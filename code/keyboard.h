@@ -34,6 +34,8 @@
 #include "_xmouse.h"
 #include "win.h"
 
+struct WindowEvent;
+
 enum WWKey_Type {
 	WWKEY_SHIFT_BIT	= 0x100,
 	WWKEY_CTRL_BIT		= 0x200,
@@ -61,7 +63,7 @@ class WWKeyboardClass
 		bool Down(unsigned short key);
 
 		/* Define the main hook for the message processing loop.					*/
-		int Message_Handler(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam);
+		bool Handle_Window_Event(WindowEvent const & event);
 
 		/* Define the public access variables which are used with the			*/
 		/*   Keyboard Class.																	*/
@@ -73,16 +75,23 @@ class WWKeyboardClass
 	private:
 
 		/*
-		**	This is a keyboard state array that is used to aid in translating
-		**	KN_ keys into KA_ keys.
-		*/
-		unsigned char KeyState[256];
-
-		/*
 		**	This is the circular keyboard holding buffer. It holds the VK key and
 		**	the current shift state at the time the key was added to the queue.
 		*/
 		unsigned short Buffer[256];		// buffer which holds actual keypresses
+
+		// The character each queued entry typed, at the entry's position in Buffer, or 0.
+		char32_t Text[256];
+
+		// The queued key press that the next typed character belongs to, or -1.
+		int TextSlot;
+
+		// Set while a held key repeats; the characters it repeats are not queued.
+		bool DropText;
+
+		// The entry the last Get returned, and the character it typed.
+		unsigned short FetchedKey;
+		char32_t FetchedText;
 
 		unsigned short Buff_Get(void);
 		unsigned short Fetch_Element(void);
@@ -92,8 +101,9 @@ class WWKeyboardClass
 		bool Is_Buffer_Empty(void) const;
 		static bool Is_Mouse_Key(unsigned short key);
 		void Fill_Buffer_From_System(void);
-		bool Put_Key_Message(unsigned short vk_key, bool release = false);
+		bool Put_Key_Message(unsigned short vk_key, bool release = false, int modifiers = 0);
 		bool Put_Mouse_Message(unsigned short vk_key, int x, int y, bool release = false);
+		bool Put_Text(char32_t code);
 		int Available_Buffer_Room(void) const;
 		int Noop(void) const; /// Empty routine added in a TS patch.
 
@@ -635,6 +645,9 @@ enum KeyNumType {
 	KN_X = VK_X,
 	KN_Y = VK_Y,
 	KN_Z = VK_Z,
+
+	// A queue entry for typed text that no key press carries; no key has this code.
+	KN_TEXT = 0xFF,
 
 	KN_SHIFT_BIT = WWKEY_SHIFT_BIT,
 	KN_CTRL_BIT = WWKEY_CTRL_BIT,

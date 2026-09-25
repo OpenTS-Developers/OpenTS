@@ -6,4 +6,4 @@ targets: []
 credit: [Krisztiaan]
 ---
 
-The Win32 window procedure now translates paint, right-button release, and mouse-wheel messages into native-independent game callbacks. Game responses live with the callbacks, while Win32-specific validation and message decoding remain in the application shell. The video presenter accepts refresh-rate updates directly instead of handling a native display-change event. Controls and rendering configuration are unchanged.
+The game's responses to its window live apart from the code that reads the window's events: repainting, stopping scroll coasting when the right button is released, and stepping the sidebar with the mouse wheel. The video presenter takes refresh-rate updates directly instead of handling a native display-change event. Controls and rendering configuration are unchanged.

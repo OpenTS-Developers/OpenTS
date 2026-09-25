@@ -38,6 +38,7 @@
 #include "newmenu.h"
 #include "rules.h"
 #include "scenario.h"
+#include "sdl/sdlwindow.h"
 #include "sendfile.h"
 #include "srfcache.h"
 #include "stimer.h"
@@ -397,11 +398,7 @@ bool Net2_Service_Lobby(void)
 	Ipx.Service();
 	Title_Screen_Restore();
 
-	MSG msg;
-	while (PeekMessageW(&msg, NULL, 0, 0, PM_REMOVE)) {
-		TranslateMessage(&msg);
-		DispatchMessageW(&msg);
-	}
+	Main_Window_Pump_Events();
 
 	Call_Back();
 	if (_netresponse != UI_NET_NONE) {

@@ -38,7 +38,7 @@ only while Firestorm is enabled.
 They sit at the end of the rules layering, after the expansion and the
 translated rules and before the scenario:
 
-1. the selected `RULE*.INI`
+1. `RULES.INI`
 2. `LANGRULE.INI`
 3. `FIRESTRM.INI`, when Firestorm is enabled
 4. `LANGFS.INI`

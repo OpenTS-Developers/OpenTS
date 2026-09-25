@@ -10,6 +10,10 @@
 #pragma once
 
 
-void Game_Window_On_Paint(bool update_surface);
-void Game_Window_On_Right_Mouse_Up(void);
-void Game_Window_On_Mouse_Wheel(int delta);
+struct WindowEvent;
+
+bool Game_Window_Open(int width, int height);
+void Game_Window_Begin_Shutdown(void);
+void Game_Window_Close(void);
+
+void Game_Window_Handle_Event(WindowEvent const & event);

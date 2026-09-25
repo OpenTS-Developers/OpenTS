@@ -191,7 +191,6 @@
 #include "vqoption.h"
 #include "wave.h"
 #include "waypoint.h"
-#include "winfix.h"
 #include "winstub.h"
 #include "wsproto.h"
 #include "wspudp.h"
@@ -254,8 +253,6 @@ static CampaignType Choose_Campaign(void);
 static void Init_Threads(void);
 void Draw_Version_Text(Surface * surface);
 void Version_Dialog(void);
-
-INT_PTR CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam);
 
 void Init_Random(void);
 
@@ -573,62 +570,6 @@ int Init_Game(int , char * [])
 
 
 /// <summary>
-/// Handles the messages for the rules file choice dialog.
-/// This routine lists the name of every rules file that was found, and ends the dialog
-/// with the index of the one that the player settled upon.
-/// </summary>
-/// <remarks>The dialog must be created with the vector of rules files as its parameter.</remarks>
-static INT_PTR CALLBACK Rules_Choice_Dialog_Proc(HWND window, UINT message, WPARAM wparam, LPARAM lparam)
-{
-	char buffer[128];
-
-	switch (message) {
-		case WM_INITDIALOG: {
-			Center_Window_Within_Window(window);
-
-			DynamicVectorClass<CCINIClass*> * rules;
-			rules = (DynamicVectorClass<CCINIClass*> *)lparam;
-
-			HWND list = GetDlgItem(window, IDC_RULES_LIST);
-
-			for (int index = 0; index < rules->Count(); index++) {
-				(*rules)[index]->Get_String("General", "Name", "", buffer, sizeof(buffer));
-				ListBox_AddString(list, buffer);
-			}
-			ListBox_SetCurSel(list, 0);
-		}
-		break;
-
-		case WM_HELP:
-			On_WM_HELP(lparam);
-			break;
-
-		case WM_CONTEXTMENU:
-			On_WM_CONTEXTMENU(wparam);
-			break;
-
-		case WM_MOVING:
-			return(On_WM_MOVING(window, wparam, lparam));
-
-		case WM_COMMAND:
-			switch (LOWORD(wparam)) {
-				case IDCANCEL:
-				case IDC_RULES_OK:
-					if (HIWORD(wparam) == BN_CLICKED) {
-						HWND list = GetDlgItem(window, IDC_RULES_LIST);
-						EndDialog(window, ListBox_GetCurSel(list));
-						DestroyWindow(window);
-					}
-					break;
-			}
-			break;
-	}
-
-	return(0);
-}
-
-
-/// <summary>
 /// Reads the campaign definitions out of the battle control files.
 /// This routine gathers every battle file it can find, along with the expansion's own,
 /// so that added campaigns show up in the list beside the ones that shipped.
@@ -770,44 +711,16 @@ static CampaignType Choose_Campaign(void)
 
 /// <summary>
 /// Loads the rules and the art control files.
-/// This routine gathers every rules file it can find and, should there be more than one,
-/// asks the player which of them to play with. It then loads the art, expansion, multiplayer,
-/// AI and language override files, and seeds the multiplayer defaults from the rules just
-/// read. The addon is chosen later, so the multiplayer expansion file cannot seed them.
+/// This routine loads the configured rules file, then the art, expansion, multiplayer, AI and
+/// language override files, and seeds the multiplayer defaults from the rules just read. The
+/// addon is chosen later, so the multiplayer expansion file cannot seed them.
 /// </summary>
 /// <returns>bool; Were the rules loaded successfully?</returns>
 static bool Init_Rules(void)
 {
-	DynamicVectorClass<CCINIClass*> Rules;
-
-	bool found = false;
-
-	for (std::string const & name : Search_Files("RULE*.INI")) {
-		CCFileClass file(name.c_str());
-		CCINIClass * rule = new CCINIClass;
-
-		rule->Load(file, false);
-
-		if (stricmp(name.c_str(), DeploymentConfig.RulesFile.c_str()) == 0) {
-			found = true;
-			Rules.Add_Head(rule);
-		} else {
-			Rules.Add(rule);
-		}
-	}
-
-	if (!found) {
-		CCFileClass file(DeploymentConfig.RulesFile.c_str());
-		CCINIClass * rule = new CCINIClass;
-		rule->Load(file, false);
-		Rules.Add_Head(rule);
-	}
-
-	assert(Rules.Count() > 0);
-
-	if (Rules.Count() <= 0) {
-		return(false);
-	}
+	CCINIClass * rules = new CCINIClass;
+	CCFileClass rules_file(DeploymentConfig.RulesFile.c_str());
+	rules->Load(rules_file, false);
 
 	CCFileClass art_file(DeploymentConfig.ArtFile.c_str());
 
@@ -853,19 +766,7 @@ static bool Init_Rules(void)
 		}
 	}
 
-	if (Rules.Count() == 1) {
-		RuleINI = Rules[0];
-	} else {
-		MouseCursor->Release_Mouse();
-		int rules_choice = DialogBoxParam(ProgramInstance, MAKEINTRESOURCE(IDD_RULES_CHOICE), MainWindow, Rules_Choice_Dialog_Proc, (LPARAM)&Rules);
-		MouseCursor->Capture_Mouse();
-
-		if (rules_choice == -1) {
-			rules_choice = 0;
-		}
-
-		RuleINI = Rules[rules_choice];
-	}
+	RuleINI = rules;
 
 	Rule->Color_Schemes(*RuleINI);
 	Rule->Do_Movies(ArtINI);
@@ -895,12 +796,6 @@ static bool Init_Rules(void)
 		}
 
 		Rule->Addition(lang_ini);
-	}
-
-	for (int index = 0; index < Rules.Count(); index++) {
-		if (Rules[index] != RuleINI) {
-			delete Rules[index];
-		}
 	}
 
 	CCFileClass ai_file(DeploymentConfig.AIFile.c_str());

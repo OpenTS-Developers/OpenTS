@@ -31,10 +31,12 @@
 
 #pragma once
 
-#include "win.h"
 #include "xmouse.h"
 
+#include <vector>
+
 class ShapeSet;
+struct SDL_Cursor;
 
 /*
 **	Handles the mouse as it relates to the C&C game engine. It is expected that only
@@ -47,7 +49,8 @@ class WWMouseClass : public Mouse {
 		/*
 		**	Private constructor.
 		*/
-		WWMouseClass(HWND window);
+		WWMouseClass(void);
+		virtual ~WWMouseClass(void) override;
 
 		/*
 		**	Sets the game-drawn mouse imagery.
@@ -82,11 +85,7 @@ class WWMouseClass : public Mouse {
 		*/
 		virtual int Get_Mouse_State(void) const override;
 
-		/*
-		 * The position is asked of Windows on demand. There used to be a timer thread
-		 * keeping a copy fresh, but its real job was repainting a software pointer,
-		 * and the pointer is Windows' own now.
-		 */
+		// The position is asked of the system on demand.
 		virtual int Get_Mouse_X(void) const override {int x; int y; Get_Bounded_Position(x, y); return(x);}
 		virtual int Get_Mouse_Y(void) const override {int x; int y; Get_Bounded_Position(x, y); return(y);}
 		virtual Point2D Get_Mouse_Point(void) const override {int x; int y; Get_Bounded_Position(x, y); return(Point2D(x, y));}
@@ -96,10 +95,8 @@ class WWMouseClass : public Mouse {
 		*/
 		virtual void Convert_Coordinate(int & x, int & y) const override;
 
-		/*
-		**	Recalculate the confining rectangle from the window.
-		*/
-		void Calc_Confining_Rect(void);
+		bool Show_Game_Pointer(void);
+		void Refresh_Pointer_Scale(void);
 
 	private:
 
@@ -117,19 +114,37 @@ class WWMouseClass : public Mouse {
 		*/
 		bool IsCaptured;
 
-		/*
-		**	This is the window handle that is used to bind and bias the mouse
-		**	position.
-		*/
-		HWND Window;
+		// The pointer's show count while the mouse is released, which hides the window's
+		// arrow while it is below zero.
+		int ReleasedState;
 
-		/*
-		 * The screen rectangle that the mouse is confined to while it is captured.
-		 * It tracks the game window's client area.
-		 */
-		Rect ConfiningRect;
+		// The pointer is a system cursor built from the game's shapes, so moving it needs no new frame.
+		struct CachedCursor
+		{
+			int HotX;
+			int HotY;
+			SDL_Cursor * Cursor;
+		};
+
+		// One slot per frame of CursorShape, holding the cursor once the game has asked for
+		// that frame at CursorCacheScale.
+		ShapeSet const * CursorShape;
+		std::vector<CachedCursor> CursorCache;
+		int CursorCacheScale;
+
+		ShapeSet const * CurrentShape;
+		int CurrentFrame;
+		int CurrentHotX;
+		int CurrentHotY;
+		SDL_Cursor * CurrentCursor;
+		bool CursorVisible;
 
 		void Get_Bounded_Position(int & x, int & y) const;
+		void Client_To_Game(int & x, int & y) const;
+		void Show_Released_Pointer(void) const;
+		void Select_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, bool apply);
+		void Set_Cursor_Visible(bool visible);
+		void Flush_Cursor_Cache(void);
 
 		virtual bool Is_Hidden(void) const override {return(MouseState < 0);}
 };

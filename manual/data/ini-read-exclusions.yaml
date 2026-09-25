@@ -120,17 +120,6 @@ site_exclusions:
     classification: excluded
     reason: These fields configure the legacy campaign-selection UI territory map, not game or mod data.
 
-  - path: code/winfix.cpp
-    function: read_views_from_ini
-    keys: [X, Y]
-    classification: excluded
-    reason: These coordinates restore private diagnostic window positions and are not player-facing settings.
-  - path: code/init.cpp
-    function: Rules_Choice_Dialog_Proc
-    keys: [Name]
-    classification: excluded
-    reason: This lookup reads an internal rules-choice dialog label rather than an engine setting.
-
   - path: code/deploymentconfig.cpp
     function: DeploymentConfigClass::Read_INI
     keys: [SearchPaths, CarryScenarioFile, Rules, RulesExpansion, Art, ArtExpansion, AI, AIExpansion, Sound, SoundExpansion, Theme, ThemeExpansion, Battle, BattleExpansion, LanguageRules, LanguageRulesExpansion, MultiplayerRules, MultiplayerRulesExpansion, Tutorial, UI, Settings, Scheme, Game]

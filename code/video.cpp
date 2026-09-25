@@ -17,16 +17,18 @@
 
 #include "_surface.h"
 #include "_ui.h"
+#include "_xmouse.h"
 #include "bgfxbackend.h"
 #include "dbgprint.h"
 #include "dsurface.h"
 #include "globals.h"
 #include "goptions.h"
 #include "misc.h"
+#include "sdl/sdlwindow.h"
 #include "surface.h"
 #include "ui/uishell.h"
 #include "videodirty.h"
-#include "wincursor.h"
+#include "wwmouse.h"
 
 #include <cstdint>
 #include <cstdlib>
@@ -66,6 +68,14 @@ static int _PendingHeight = 0;
 
 static std::uint64_t _PresentCount = 0;
 static std::uint64_t _FrameUploadCount = 0;
+
+
+static void Refresh_Mouse_Pointer(void)
+{
+	if (MouseCursor != NULL) {
+		((WWMouseClass *)MouseCursor)->Refresh_Pointer_Scale();
+	}
+}
 
 
 /// <summary>
@@ -193,7 +203,6 @@ void Video_Shutdown(void)
 		return;
 	}
 
-	Win_Cursor_Shutdown();
 	Backend_Shutdown();
 	_Initialized = false;
 	_Dirty.Reset();
@@ -228,7 +237,7 @@ bool Video_Set_Mode(int width, int height)
 	VideoModeHeight = height;
 
 	Update_Scale_Info();
-	Win_Cursor_Refresh();
+	Refresh_Mouse_Pointer();
 	UIShell.On_Video_Change();
 	_Dirty.Invalidate_Frame();
 	return(true);
@@ -256,7 +265,7 @@ void Video_On_Resize(int drawablewidth, int drawableheight)
 	_ScaleInfo.DrawableHeight = drawableheight;
 	Backend_On_Resize(drawablewidth, drawableheight);
 	Update_Scale_Info();
-	Win_Cursor_Refresh();
+	Refresh_Mouse_Pointer();
 	UIShell.On_Video_Change();
 	Video_Mark_Overlay_Dirty();
 }
@@ -299,7 +308,7 @@ static void Present(void)
 	if (!_Initialized || _Presenting || VisibleSurface == NULL) {
 		return;
 	}
-	if (MainWindow != NULL && IsIconic(MainWindow)) {
+	if (Main_Window_Minimized()) {
 		return;
 	}
 

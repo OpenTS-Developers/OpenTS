@@ -24,6 +24,9 @@ remains under its own license and copyright notices.
 | [Dear ImGui](https://github.com/ocornut/imgui)                     | Developer overlays                        | MIT          |
 | [stb](https://github.com/nothings/stb)                             | Rectangle packing, text editing, and TrueType headers bundled with Dear ImGui | MIT or Unlicense |
 | [stb_image](https://github.com/nothings/stb)                       | PNG and TGA decoding for the UI, bundled with bimg | MIT or Unlicense |
+| [SDL](https://github.com/libsdl-org/SDL)                           | Window, events, and keyboard and mouse input | zlib      |
+| [yuv2rgb](https://github.com/descampsa/yuv2rgb)                    | YUV conversion bundled with SDL           | BSD 3-Clause |
+| [fdlibm](https://www.netlib.org/fdlibm/)                           | Math routines bundled with SDL            | fdlibm       |
 | [Arimo](https://github.com/googlefonts/arimo)                      | The UI font                               | OFL-1.1      |
 
 The source checkout keeps the license texts under `thirdparty/`. Binary

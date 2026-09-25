@@ -305,7 +305,6 @@ extern const Coord COORD_NONE;
 /************************************************************
 **	Win32 specific externs
 */
-extern int ReadyToQuit;							//Are we about to exit cleanly
 void Memory_Error_Handler(void);				//Memory error handler function
 
 extern bool TacticalActive;

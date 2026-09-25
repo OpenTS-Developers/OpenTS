@@ -21,6 +21,7 @@
 #include "goptions.h"
 #include "mixfile.h"
 #include "movies.h"
+#include "sdl/sdlwindow.h"
 #include "session.h"
 #include "unvqtblc.h"
 #include "vector.h"
@@ -43,19 +44,9 @@ intptr_t __cdecl VQACCFileHandler(VQAHandle * vqa, long action, void * buffer, l
 intptr_t __cdecl VQAEventHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
 intptr_t __cdecl VQAMemoryHandler(VQAHandle * vqa, long action, void * buffer, long nbytes);
 
-bool VQA_Message_Handler(void)
+void VQA_Message_Handler(void)
 {
-	MSG msg;
-
-	if (PeekMessageW(&msg, NULL, 0, 0, PM_NOREMOVE)) {
-		if (GetMessageW(&msg, NULL, 0, 0)) {
-			TranslateMessage(&msg);
-			DispatchMessageW(&msg);
-		} else {
-			return(false);
-		}
-	}
-	return(true);
+	Main_Window_Pump_Events();
 }
 
 

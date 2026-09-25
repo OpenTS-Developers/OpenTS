@@ -3686,10 +3686,6 @@ char const * DisplayClass::Help_Text(int id)
 /// </summary>
 void DisplayClass::Reposition_Sidebar(void)
 {
-	if (UnusedWindow) {
-		CloseWindow(UnusedWindow);
-		UnusedWindow = 0;
-	}
 }
 
 

@@ -138,61 +138,14 @@ void UIRmlSystemClass::SetMouseCursor(Rml::String const & name)
 
 void UIRmlSystemClass::SetClipboardText(Rml::String const & text)
 {
-	std::wstring wide;
-	if (!UI_UTF8_To_UTF16(text, wide)) {
-		return;
-	}
-
-	std::size_t bytes = (wide.size() + 1) * sizeof(wchar_t);
-	HGLOBAL memory = GlobalAlloc(GMEM_MOVEABLE, bytes);
-	if (memory == NULL) {
-		return;
-	}
-
-	wchar_t * buffer = (wchar_t *)GlobalLock(memory);
-	if (buffer == NULL) {
-		GlobalFree(memory);
-		return;
-	}
-	std::memcpy(buffer, wide.c_str(), bytes);
-	GlobalUnlock(memory);
-
-	if (!OpenClipboard(Host.Main_Window())) {
-		GlobalFree(memory);
-		return;
-	}
-	if (!EmptyClipboard() || SetClipboardData(CF_UNICODETEXT, memory) == NULL) {
-		GlobalFree(memory);
-	}
-	CloseClipboard();
+	Host.Set_Clipboard_Text(text);
 }
 
 
 void UIRmlSystemClass::GetClipboardText(Rml::String & text)
 {
-	text.clear();
-
-	if (!OpenClipboard(Host.Main_Window())) {
-		return;
+	text = Host.Clipboard_Text();
+	if (text.size() > UI_CLIPBOARD_MAX_BYTES) {
+		text.clear();
 	}
-
-	HANDLE memory = GetClipboardData(CF_UNICODETEXT);
-	if (memory != NULL) {
-		wchar_t const * buffer = (wchar_t const *)GlobalLock(memory);
-		std::size_t capacity = GlobalSize(memory) / sizeof(wchar_t);
-		if (buffer != NULL) {
-			if (capacity <= UI_CLIPBOARD_MAX_BYTES / sizeof(wchar_t)) {
-				std::size_t length = 0;
-				while (length < capacity && buffer[length] != L'\0') {
-					length++;
-				}
-				if (length < capacity) {
-					UI_UTF16_To_UTF8(std::wstring_view(buffer, length), text);
-				}
-			}
-			GlobalUnlock(memory);
-		}
-	}
-
-	CloseClipboard();
 }

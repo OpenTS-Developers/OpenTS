@@ -57,11 +57,13 @@
 #include "overtype.h"
 #include "rules.h"
 #include "savestream.h"
+#include "sdl/sdlwindow.h"
 #include "suprtype.h"
 #include "surface.h"
 #include "tactical.h"
 #include "vidscale.h"
 #include "waypoint.h"
+#include "windowevent.hh"
 
 #include "special.hh"
 
@@ -598,13 +600,11 @@ bool ScrollClass::Is_Scrolling(void) const
 
 
 /// <summary>
-/// Handles the mouse messages that drive the tactical map.
-/// This routine is called from the main window procedure. It turns raw button presses and
-/// releases into tactical map actions, and takes and releases the mouse capture so that a
-/// drag survives the cursor leaving the window. Messages arriving while the game is not
-/// running, or while input is being ignored, are quietly dropped.
+/// Turns mouse button events, with positions in frame coordinates, into tactical map actions.
+/// A drag keeps the mouse capture so it survives the cursor leaving the window. Events are
+/// dropped while the map is inactive or input is ignored.
 /// </summary>
-void ScrollClass::Message_Handler(HWND hwnd, UINT message, WPARAM wParam, LPARAM lParam)
+void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 {
 	if (!TacticalActive) {
 		return;
@@ -630,7 +630,7 @@ void ScrollClass::Message_Handler(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 		return;
 	}
 
-	if (IgnoreInput && message != WM_CAPTURECHANGED) {
+	if (IgnoreInput && event.Type != WINDOW_EVENT_CAPTURE_LOST) {
 		return;
 	}
 
@@ -641,67 +641,61 @@ void ScrollClass::Message_Handler(HWND hwnd, UINT message, WPARAM wParam, LPARAM
 	bool			shadow;						// is the cell in shadow or not
 	Point2D			point;						/// click position relative to the tactical view
 
-	switch (message) {
+	// The map does not act on the second press of a double click.
+	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1);
+	bool const release = (event.Type == WINDOW_EVENT_MOUSE_UP);
 
-		case WM_LBUTTONDOWN:
-			if (IsMouseDown == false) {
+	if (event.Type == WINDOW_EVENT_CAPTURE_LOST) {
+		if (IsMouseDown == true) {
+			Abort_Drag_Select();
+		}
 
-				POINTS pts = MAKEPOINTS(lParam);
-				point.X = pts.x - TacticalRect.X;
-				point.Y = pts.y - TacticalRect.Y;
+	} else if (press && event.Button == WINDOW_BUTTON_LEFT) {
+		if (IsMouseDown == false) {
 
-				if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
-					Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
-					Map.Mouse_Left_Press(point);
-					SetCapture(MainWindow);
-					IsMouseDown = true;
-				}
+			point.X = event.X - TacticalRect.X;
+			point.Y = event.Y - TacticalRect.Y;
+
+			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
+				Map.Mouse_Left_Up(cell, shadow, object, What_Action(cell, object, true));
+				Map.Mouse_Left_Press(point);
+				Main_Window_Capture_Mouse(true);
+				IsMouseDown = true;
 			}
-			break;
+		}
 
-		case WM_LBUTTONUP:
-			if (IsMouseDown == true) {
+	} else if (release && event.Button == WINDOW_BUTTON_LEFT) {
+		if (IsMouseDown == true) {
 
-				POINTS pts = MAKEPOINTS(lParam);
-				point.X = pts.x - TacticalRect.X;
-				point.Y = pts.y - TacticalRect.Y;
+			point.X = event.X - TacticalRect.X;
+			point.Y = event.Y - TacticalRect.Y;
 
-				Resolve_Point(point, cell, coord, object, fog, shadow);
-				Map.Mouse_Left_Release(coord, cell, object, What_Action(cell, object, false));
-				IsMouseDown = false;
-				ReleaseCapture();
+			Resolve_Point(point, cell, coord, object, fog, shadow);
+			Map.Mouse_Left_Release(coord, cell, object, What_Action(cell, object, false));
+			IsMouseDown = false;
+			Main_Window_Capture_Mouse(false);
+		}
+
+	} else if (press && event.Button == WINDOW_BUTTON_RIGHT) {
+		if (IsMouseDown == false) {
+
+			point.X = event.X - TacticalRect.X;
+			point.Y = event.Y - TacticalRect.Y;
+
+			if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
+				Map.Mouse_Right_Press(point);
+				Main_Window_Capture_Mouse(true);
+				IsMouseDown = true;
 			}
-			break;
+		}
 
-		case WM_RBUTTONDOWN:
-			if (IsMouseDown == false) {
-
-				POINTS pts = MAKEPOINTS(lParam);
-				point.X = pts.x - TacticalRect.X;
-				point.Y = pts.y - TacticalRect.Y;
-
-				if (Resolve_Point(point, cell, coord, object, fog, shadow)) {
-					Map.Mouse_Right_Press(point);
-					SetCapture(MainWindow);
-					IsMouseDown = true;
-				}
-			}
-			break;
-
-		case WM_RBUTTONUP:
-			if (IsMouseDown == true) {
-				Map.Mouse_Right_Release(point);
-				BASECLASS::Abort_Drag_Select();
-				IsMouseDown = false;
-				ReleaseCapture();
-			}
-			break;
-
-		case WM_CAPTURECHANGED:
-			if (((HWND &)lParam) != MainWindow && IsMouseDown == true) {
-				Abort_Drag_Select();
-			}
-			break;
+	} else if (release && event.Button == WINDOW_BUTTON_RIGHT) {
+		if (IsMouseDown == true) {
+			Map.Mouse_Right_Release(point);
+			BASECLASS::Abort_Drag_Select();
+			IsMouseDown = false;
+			Main_Window_Capture_Mouse(false);
+		}
 	}
 }
 
@@ -791,11 +785,9 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						POINT pt;
-						pt.x = RightPressPoint.X + TacticalRect.X;
-						pt.y = RightPressPoint.Y + TacticalRect.Y;
-						Game_Point_To_Screen(pt);
-						SetCursorPos(pt.x, pt.y);
+						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
+						Game_Point_To_Window(pt);
+						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}
 					break;
 
@@ -805,11 +797,9 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						POINT pt;
-						pt.x = RightPressPoint.X + TacticalRect.X;
-						pt.y = RightPressPoint.Y + TacticalRect.Y;
-						Game_Point_To_Screen(pt);
-						SetCursorPos(pt.x, pt.y);
+						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
+						Game_Point_To_Window(pt);
+						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}
 					break;
 			}
@@ -902,8 +892,5 @@ void ScrollClass::Abort_Drag_Select(void)
 {
 	BASECLASS::Abort_Drag_Select();
 	IsMouseDown = false;
-	HWND hwnd = GetCapture();
-	if (hwnd == MainWindow) {
-		ReleaseCapture();
-	}
+	Main_Window_Capture_Mouse(false);
 }

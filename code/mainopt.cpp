@@ -28,6 +28,7 @@
 #include "mixfile.h"
 #include "msgbox.h"
 #include "newmenu.h"
+#include "sdl/sdlwindow.h"
 #include "sidebar.h"
 #include "sounddlg.h"
 #include "stimer.h"
@@ -35,7 +36,6 @@
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
 #include "video.h"
-#include "wwmouse.h"
 
 #include "color.hh"
 
@@ -151,36 +151,8 @@ bool Change_Display_Mode(int width, int height)
 	 * frame is scaled into them instead.
 	 */
 	if (WindowedMode && Options.WindowWidth <= 0 && Options.WindowHeight <= 0) {
-		RECT windowrect;
-		SetRect(&windowrect, 0, 0, width, height);
-		AdjustWindowRectEx(&windowrect, GetWindowLong(MainWindow, GWL_STYLE), FALSE, GetWindowLong(MainWindow, GWL_EXSTYLE));
-
-		int newwidth = windowrect.right - windowrect.left;
-		int newheight = windowrect.bottom - windowrect.top;
-
-		/*
-		 * The window grows about its middle rather than its corner, so the picture stays
-		 * where the player was looking.
-		 */
-		RECT current;
-		GetWindowRect(MainWindow, &current);
-		int x = current.left + (((current.right - current.left) - newwidth) / 2);
-		int y = current.top + (((current.bottom - current.top) - newheight) / 2);
-
-		/*
-		 * Growing about the middle can push the window past the edges of the screen, and a
-		 * title bar above the top of it cannot be grabbed to bring the window back.
-		 */
-		MONITORINFO monitor;
-		monitor.cbSize = sizeof(monitor);
-		if (GetMonitorInfo(MonitorFromWindow(MainWindow, MONITOR_DEFAULTTONEAREST), &monitor)) {
-			if (x + newwidth > monitor.rcWork.right) x = monitor.rcWork.right - newwidth;
-			if (y + newheight > monitor.rcWork.bottom) y = monitor.rcWork.bottom - newheight;
-			if (x < monitor.rcWork.left) x = monitor.rcWork.left;
-			if (y < monitor.rcWork.top) y = monitor.rcWork.top;
-		}
-
-		SetWindowPos(MainWindow, NULL, x, y, newwidth, newheight, SWP_NOZORDER);
+		// The window grows about its middle, so the picture stays where the player was looking.
+		Main_Window_Resize(width, height);
 	}
 
 	Rect temp = VisibleRect;
@@ -191,10 +163,6 @@ bool Change_Display_Mode(int width, int height)
 
 	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
 	LogicalSurface = HiddenSurface;
-
-	if (MouseCursor != NULL) {
-		((WWMouseClass*)MouseCursor)->Calc_Confining_Rect();
-	}
 
 	Map.Set_View_Dimensions(temp);
 
