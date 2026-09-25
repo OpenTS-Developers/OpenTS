@@ -104,11 +104,10 @@ std::vector<Delivered> Pumped(WindowEventType type)
 
 
 // Stands in for the game's window handler and records what the SDL layer hands it.
-bool Game_Window_Handle_Event(WindowEvent const & event)
+void Game_Window_Handle_Event(WindowEvent const & event)
 {
 	Received.push_back(event);
 	CtrlHeld.push_back(Main_Window_Key_Down(VK_CONTROL));
-	return(true);
 }
 
 

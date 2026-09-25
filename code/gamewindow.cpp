@@ -74,6 +74,42 @@ static void Set_Game_Focus(bool focused)
 }
 
 
+static void On_Paint(bool update_surface)
+{
+	if (update_surface) {
+		if (MouseCursor != NULL && VisibleSurface != NULL && HiddenSurface != NULL && CompositeSurface != NULL) {
+			if (ScenarioActive == true) {
+				Map.Blit_Sidebar(true);
+				Update_Visible_Surface(CompositeSurface);
+			} else if (Movie_Is_Playing() == true) {
+				Movie_Update_Visible_Surface();
+			} else {
+				Update_Visible_Surface(HiddenSurface);
+			}
+		}
+	}
+	Video_Present_If_Dirty();
+}
+
+
+static void On_Right_Mouse_Up(void)
+{
+	Map.Set_Scroll_Coasting_Allowed(false);
+}
+
+
+static void On_Mouse_Wheel(int delta)
+{
+	if (_HandlingMouseWheel) {
+		return;
+	}
+
+	_HandlingMouseWheel = true;
+	Execute_Command(delta < 0 ? "SidebarDown" : "SidebarUp");
+	_HandlingMouseWheel = false;
+}
+
+
 static bool Select_Cursor(void)
 {
 	return(UIShell.Handle_Set_Cursor() || (MouseCursor != NULL && ((WWMouseClass *)MouseCursor)->Show_Game_Pointer()));
@@ -125,7 +161,7 @@ static bool Handle_Event(WindowEvent const & event)
 
 	switch (event.Type) {
 		case WINDOW_EVENT_EXPOSED:
-			Game_Window_On_Paint(GameInFocus == true || WindowedMode == true);
+			On_Paint(GameInFocus == true || WindowedMode == true);
 			break;
 
 		case WINDOW_EVENT_RESIZED:
@@ -144,13 +180,13 @@ static bool Handle_Event(WindowEvent const & event)
 
 		case WINDOW_EVENT_MOUSE_UP:
 			if (event.Button == WINDOW_BUTTON_RIGHT) {
-				Game_Window_On_Right_Mouse_Up();
+				On_Right_Mouse_Up();
 			}
 			break;
 
 		case WINDOW_EVENT_MOUSE_WHEEL:
 			if (!event.Horizontal) {
-				Game_Window_On_Mouse_Wheel(event.Wheel < 0.0f ? -1 : 1);
+				On_Mouse_Wheel(event.Wheel < 0.0f ? -1 : 1);
 			}
 			break;
 
@@ -181,16 +217,14 @@ static bool Handle_Event(WindowEvent const & event)
 /// Passes an event from the main window to the tooltips, the interface, the tactical map,
 /// and the key queue, in that order, and applies the game's own response to it.
 /// </summary>
-/// <returns>True when the interface took the event.</returns>
-bool Game_Window_Handle_Event(WindowEvent const & event)
+void Game_Window_Handle_Event(WindowEvent const & event)
 {
-	bool const taken = Handle_Event(event);
+	Handle_Event(event);
 
 	// Windows asked for the pointer on every mouse move; SDL leaves choosing it to the game.
 	if (event.Type == WINDOW_EVENT_MOUSE_MOVE || event.Type == WINDOW_EVENT_FOCUS_GAINED) {
 		Update_Cursor();
 	}
-	return(taken);
 }
 
 
@@ -254,49 +288,4 @@ void Game_Window_Close(void)
 {
 	Game_Window_Begin_Shutdown();
 	Main_Window_Destroy();
-}
-
-
-/// <summary>
-/// Updates and presents the frame when the application window needs repainting.
-/// </summary>
-void Game_Window_On_Paint(bool update_surface)
-{
-	if (update_surface) {
-		if (MouseCursor != NULL && VisibleSurface != NULL && HiddenSurface != NULL && CompositeSurface != NULL) {
-			if (ScenarioActive == true) {
-				Map.Blit_Sidebar(true);
-				Update_Visible_Surface(CompositeSurface);
-			} else if (Movie_Is_Playing() == true) {
-				Movie_Update_Visible_Surface();
-			} else {
-				Update_Visible_Surface(HiddenSurface);
-			}
-		}
-	}
-	Video_Present_If_Dirty();
-}
-
-
-/// <summary>
-/// Stops tactical scrolling from coasting after the right mouse button is released.
-/// </summary>
-void Game_Window_On_Right_Mouse_Up(void)
-{
-	Map.Set_Scroll_Coasting_Allowed(false);
-}
-
-
-/// <summary>
-/// Applies a mouse wheel step to the sidebar.
-/// </summary>
-void Game_Window_On_Mouse_Wheel(int delta)
-{
-	if (_HandlingMouseWheel) {
-		return;
-	}
-
-	_HandlingMouseWheel = true;
-	Execute_Command(delta < 0 ? "SidebarDown" : "SidebarUp");
-	_HandlingMouseWheel = false;
 }
