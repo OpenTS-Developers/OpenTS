@@ -74,7 +74,7 @@ SideModifier const SideModifiers[] = {
 	{ SDL_SCANCODE_RALT, VK_MENU, VK_RMENU },
 };
 
-SDL_Cursor * _SystemCursors[PLATFORM_CURSOR_COUNT];
+SDL_Cursor * _SystemCursors[UI_CURSOR_COUNT];
 
 // The SDL event types the main window posts when Windows takes its mouse capture away, and
 // when a window drag, a resize or the system menu ends.
@@ -461,18 +461,18 @@ SDL_Cursor * Resource_Arrow(void)
 }
 
 
-SDL_SystemCursor System_Cursor_Of(PlatformCursorShape shape)
+SDL_SystemCursor System_Cursor_Of(UICursor shape)
 {
 	switch (shape) {
-		case PLATFORM_CURSOR_TEXT:			return(SDL_SYSTEM_CURSOR_TEXT);
-		case PLATFORM_CURSOR_HAND:			return(SDL_SYSTEM_CURSOR_POINTER);
-		case PLATFORM_CURSOR_RESIZE_NS:		return(SDL_SYSTEM_CURSOR_NS_RESIZE);
-		case PLATFORM_CURSOR_RESIZE_EW:		return(SDL_SYSTEM_CURSOR_EW_RESIZE);
-		case PLATFORM_CURSOR_RESIZE_NESW:	return(SDL_SYSTEM_CURSOR_NESW_RESIZE);
-		case PLATFORM_CURSOR_RESIZE_NWSE:	return(SDL_SYSTEM_CURSOR_NWSE_RESIZE);
-		case PLATFORM_CURSOR_MOVE:			return(SDL_SYSTEM_CURSOR_MOVE);
-		case PLATFORM_CURSOR_UNAVAILABLE:	return(SDL_SYSTEM_CURSOR_NOT_ALLOWED);
-		default:							return(SDL_SYSTEM_CURSOR_DEFAULT);
+		case UI_CURSOR_TEXT:		return(SDL_SYSTEM_CURSOR_TEXT);
+		case UI_CURSOR_HAND:		return(SDL_SYSTEM_CURSOR_POINTER);
+		case UI_CURSOR_RESIZE_NS:	return(SDL_SYSTEM_CURSOR_NS_RESIZE);
+		case UI_CURSOR_RESIZE_EW:	return(SDL_SYSTEM_CURSOR_EW_RESIZE);
+		case UI_CURSOR_RESIZE_NESW:	return(SDL_SYSTEM_CURSOR_NESW_RESIZE);
+		case UI_CURSOR_RESIZE_NWSE:	return(SDL_SYSTEM_CURSOR_NWSE_RESIZE);
+		case UI_CURSOR_MOVE:		return(SDL_SYSTEM_CURSOR_MOVE);
+		case UI_CURSOR_UNAVAILABLE:	return(SDL_SYSTEM_CURSOR_NOT_ALLOWED);
+		default:					return(SDL_SYSTEM_CURSOR_DEFAULT);
 	}
 }
 
@@ -828,7 +828,7 @@ std::string Platform_Key_Name(int virtualkey)
 }
 
 
-PlatformCursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty)
+SDL_Cursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty)
 {
 	if (!_Started || pixels == nullptr || width <= 0 || height <= 0) {
 		return(nullptr);
@@ -841,19 +841,19 @@ PlatformCursor * Platform_Create_Cursor(unsigned int const * pixels, int width, 
 
 	SDL_Cursor * cursor = SDL_CreateColorCursor(surface, hotx, hoty);
 	SDL_DestroySurface(surface);
-	return((PlatformCursor *)cursor);
+	return(cursor);
 }
 
 
-void Platform_Destroy_Cursor(PlatformCursor * cursor)
+void Platform_Destroy_Cursor(SDL_Cursor * cursor)
 {
 	if (_Started && cursor != nullptr) {
-		SDL_DestroyCursor((SDL_Cursor *)cursor);
+		SDL_DestroyCursor(cursor);
 	}
 }
 
 
-void Platform_Set_Cursor(PlatformCursor * cursor)
+void Platform_Set_Cursor(SDL_Cursor * cursor)
 {
 	if (!_Started) {
 		return;
@@ -864,27 +864,27 @@ void Platform_Set_Cursor(PlatformCursor * cursor)
 		return;
 	}
 
-	SDL_SetCursor((SDL_Cursor *)cursor);
+	SDL_SetCursor(cursor);
 	SDL_ShowCursor();
 }
 
 
-PlatformCursor * Platform_System_Cursor(PlatformCursorShape shape)
+SDL_Cursor * Platform_System_Cursor(UICursor shape)
 {
-	if (!_Started || shape < 0 || shape >= PLATFORM_CURSOR_COUNT) {
+	if (!_Started || shape < 0 || shape >= UI_CURSOR_COUNT) {
 		return(nullptr);
 	}
 
 	SDL_Cursor * & cursor = _SystemCursors[shape];
 	if (cursor == nullptr) {
-		if (shape == PLATFORM_CURSOR_ARROW) {
+		if (shape == UI_CURSOR_ARROW) {
 			cursor = Resource_Arrow();
 		}
 		if (cursor == nullptr) {
 			cursor = SDL_CreateSystemCursor(System_Cursor_Of(shape));
 		}
 	}
-	return((PlatformCursor *)cursor);
+	return(cursor);
 }
 
 

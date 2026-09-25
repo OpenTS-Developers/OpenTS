@@ -10,25 +10,12 @@
 #pragma once
 
 #include "nativewindow.hh"
+#include "ui/uiinput.h"
 
 #include <string>
 
 
-enum PlatformCursorShape
-{
-	PLATFORM_CURSOR_ARROW,
-	PLATFORM_CURSOR_TEXT,
-	PLATFORM_CURSOR_HAND,
-	PLATFORM_CURSOR_RESIZE_NS,
-	PLATFORM_CURSOR_RESIZE_EW,
-	PLATFORM_CURSOR_RESIZE_NESW,
-	PLATFORM_CURSOR_RESIZE_NWSE,
-	PLATFORM_CURSOR_MOVE,
-	PLATFORM_CURSOR_UNAVAILABLE,
-	PLATFORM_CURSOR_COUNT
-};
-
-struct PlatformCursor;
+struct SDL_Cursor;
 
 
 void Platform_Shutdown(void);
@@ -68,14 +55,15 @@ std::string Platform_Key_Name(int virtualkey);
 
 // The pixels are 32-bit ARGB, top row first. Returns NULL when the cursor cannot be made.
 // The caller owns the cursor and frees it with Platform_Destroy_Cursor.
-PlatformCursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty);
-void Platform_Destroy_Cursor(PlatformCursor * cursor);
+SDL_Cursor * Platform_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty);
+void Platform_Destroy_Cursor(SDL_Cursor * cursor);
 
 // Shows the cursor over the main window, or hides the pointer there when cursor is NULL.
-void Platform_Set_Cursor(PlatformCursor * cursor);
+void Platform_Set_Cursor(SDL_Cursor * cursor);
 
-// The platform owns system cursors and frees them in Platform_Shutdown; do not destroy one.
-PlatformCursor * Platform_System_Cursor(PlatformCursorShape shape);
+// UI_CURSOR_ARROW is the window's own arrow. The platform owns these cursors and frees them in
+// Platform_Shutdown; do not destroy one.
+SDL_Cursor * Platform_System_Cursor(UICursor shape);
 
 std::string Platform_Clipboard_Text(void);
 void Platform_Set_Clipboard_Text(std::string const & text);

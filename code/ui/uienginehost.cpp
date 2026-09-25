@@ -180,37 +180,9 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual void Apply_Cursor(UICursor cursor) override
 		{
-			PlatformCursorShape shape = PLATFORM_CURSOR_ARROW;
-			switch (cursor) {
-				case UI_CURSOR_TEXT:
-					shape = PLATFORM_CURSOR_TEXT;
-					break;
-				case UI_CURSOR_HAND:
-					shape = PLATFORM_CURSOR_HAND;
-					break;
-				case UI_CURSOR_RESIZE_NS:
-					shape = PLATFORM_CURSOR_RESIZE_NS;
-					break;
-				case UI_CURSOR_RESIZE_EW:
-					shape = PLATFORM_CURSOR_RESIZE_EW;
-					break;
-				case UI_CURSOR_RESIZE_NESW:
-					shape = PLATFORM_CURSOR_RESIZE_NESW;
-					break;
-				case UI_CURSOR_RESIZE_NWSE:
-					shape = PLATFORM_CURSOR_RESIZE_NWSE;
-					break;
-				case UI_CURSOR_MOVE:
-					shape = PLATFORM_CURSOR_MOVE;
-					break;
-				case UI_CURSOR_UNAVAILABLE:
-					shape = PLATFORM_CURSOR_UNAVAILABLE;
-					break;
-				default:
-					break;
-			}
-			Platform_Set_Cursor(Platform_System_Cursor(shape));
+			Platform_Set_Cursor(Platform_System_Cursor(cursor));
 		}
+
 
 		virtual void Restore_Game_Cursor(void) override
 		{
@@ -219,7 +191,7 @@ class UIEngineHostClass : public UIShellHostClass
 				mouse->Refresh_Pointer_Scale();
 			}
 			if (mouse == NULL || !mouse->Show_Game_Pointer()) {
-				Platform_Set_Cursor(Platform_System_Cursor(PLATFORM_CURSOR_ARROW));
+				Platform_Set_Cursor(Platform_System_Cursor(UI_CURSOR_ARROW));
 			}
 		}
 

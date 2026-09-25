@@ -104,7 +104,7 @@ static int Cursor_Scale(void)
 /// right place. Palette entry zero is the transparent one.
 /// </summary>
 /// <returns>The cursor, or NULL if it could not be built.</returns>
-static PlatformCursor * Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, int scale)
+static SDL_Cursor * Build_Cursor(ShapeSet const * shape, int frame, int hotx, int hoty, int scale)
 {
 	if (shape == NULL || MouseDrawer == NULL) {
 		return(NULL);
@@ -493,7 +493,7 @@ void WWMouseClass::Client_To_Game(int & x, int & y) const
 // Shows the window's arrow while the released pointer's show count allows it.
 void WWMouseClass::Show_Released_Pointer(void) const
 {
-	Platform_Set_Cursor(ReleasedState >= 0 ? Platform_System_Cursor(PLATFORM_CURSOR_ARROW) : NULL);
+	Platform_Set_Cursor(ReleasedState >= 0 ? Platform_System_Cursor(UI_CURSOR_ARROW) : NULL);
 }
 
 
@@ -551,7 +551,7 @@ void WWMouseClass::Select_Cursor(ShapeSet const * shape, int frame, int hotx, in
 	CurrentHotX = hotx;
 	CurrentHotY = hoty;
 
-	PlatformCursor * cursor = NULL;
+	SDL_Cursor * cursor = NULL;
 
 	if (frame >= 0 && frame < (int)CursorCache.size()) {
 		CachedCursor & entry = CursorCache[frame];

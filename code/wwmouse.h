@@ -36,7 +36,7 @@
 #include <vector>
 
 class ShapeSet;
-struct PlatformCursor;
+struct SDL_Cursor;
 
 /*
 **	Handles the mouse as it relates to the C&C game engine. It is expected that only
@@ -131,7 +131,7 @@ class WWMouseClass : public Mouse {
 		{
 			int HotX;
 			int HotY;
-			PlatformCursor * Cursor;
+			SDL_Cursor * Cursor;
 		};
 
 		// One slot per frame of CursorShape, holding the cursor once the game has asked for
@@ -144,7 +144,7 @@ class WWMouseClass : public Mouse {
 		int CurrentFrame;
 		int CurrentHotX;
 		int CurrentHotY;
-		PlatformCursor * CurrentCursor;
+		SDL_Cursor * CurrentCursor;
 		bool CursorVisible;
 
 		void Get_Bounded_Position(int & x, int & y) const;
