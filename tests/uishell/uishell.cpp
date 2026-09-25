@@ -58,6 +58,7 @@
 #include <RmlUi/Core.h>
 #include <RmlUi/Core/Elements/ElementFormControlInput.h>
 #include <RmlUi/Core/Elements/ElementFormControlSelect.h>
+#include <RmlUi/Core/Elements/ElementFormControlTextArea.h>
 #include <RmlUi/Core/Elements/ElementProgress.h>
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -4583,6 +4584,54 @@ void Test_Shell(void)
 			return(false);
 		});
 		Check(recorder.Texts.size() == 1 && recorder.Texts[0] == "\xC3\xA9", "a typed character reaches the document as its UTF-8 text");
+	}
+
+	{
+		UIVersionPresenterClass presenter({ "text" });
+		std::unique_ptr<UIViewClass> view = UI_Version_View(presenter);
+		Rml::String written;
+		Rml::String repeated;
+		Rml::String kept;
+
+		shell.Run_Modal(*view, [&](void) {
+			Rml::ElementDocument * document = Rml(*view).Document();
+			Rml::ElementFormControlTextArea * area = rmlui_dynamic_cast<Rml::ElementFormControlTextArea *>(document->AppendChild(document->CreateElement("textarea")));
+			Rml::ElementFormControlInput * field = rmlui_dynamic_cast<Rml::ElementFormControlInput *>(document->AppendChild(document->CreateElement("input")));
+			if (area != nullptr && field != nullptr) {
+				area->Focus();
+				Key_Down(shell, 'A');
+				Text(shell, 'A');
+				Key_Up(shell, 'A');
+				Key_Down(shell, VK_RETURN);
+				Key_Up(shell, VK_RETURN);
+				Key_Down(shell, 'B');
+				Text(shell, 'B');
+				Key_Up(shell, 'B');
+				written = area->GetValue();
+
+				WindowEvent repeat;
+				repeat.Type = WINDOW_EVENT_KEY_DOWN;
+				repeat.VirtualKey = VK_RETURN;
+				Key_Down(shell, VK_RETURN);
+				repeat.Repeat = true;
+				Send(shell, repeat);
+				Key_Up(shell, VK_RETURN);
+				repeated = area->GetValue();
+
+				field->SetAttribute("type", "text");
+				field->SetValue("Name");
+				field->Focus();
+				field->Select();
+				Key_Down(shell, VK_RETURN);
+				kept = field->GetValue();
+				Key_Up(shell, VK_RETURN);
+			}
+			Key_Down(shell, VK_ESCAPE);
+			return(false);
+		});
+		Check(written == "A\nB", "Enter in a text area types a new line");
+		Check(repeated == "A\nB\n\n", "and each repeat of Enter types another");
+		Check(kept == "Name", "Enter in a one-line field leaves its selected text alone");
 	}
 
 	{
