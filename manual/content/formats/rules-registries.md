@@ -4,7 +4,7 @@ title: Rules registration lists
 summary: Registers named rules types and Side membership from rules-layer lists.
 kind: registry
 files:
-  - RULE*.INI
+  - RULES.INI
   - LANGRULE.INI
   - FIRESTRM.INI
   - LANGFS.INI
@@ -41,9 +41,9 @@ Every one of these registration sections except `[Sides]` is read the same way. 
 
 Registering an ID and defining it are separate passes. Registration creates the type with the built-in defaults for its kind, and the section named by the ID is read afterwards. An ID registered with no section of its own is therefore kept with those defaults rather than dropped.
 
-OpenTS processes the selected `RULE*.INI`, then `LANGRULE.INI`, then `FIRESTRM.INI` when Firestorm is enabled, then `LANGFS.INI` when present. Outside a campaign it then processes [`MPLAYER.INI`](/formats/multiplayer-rules/), and `MPLAYERFS.INI` as well when Firestorm is enabled. The scenario's own overrides come after all of them. [Game data](/using/game-data/) covers what makes Firestorm count as installed.
+OpenTS processes `RULES.INI`, then `LANGRULE.INI`, then `FIRESTRM.INI` when Firestorm is enabled, then `LANGFS.INI` when present. Outside a campaign it then processes [`MPLAYER.INI`](/formats/multiplayer-rules/), and `MPLAYERFS.INI` as well when Firestorm is enabled. The scenario's own overrides come after all of them. [Game data](/using/game-data/) covers what makes Firestorm count as installed.
 
-`[Theaters]` is read differently from the rest. A map names its theater before anything else about it is read, and the archives that theater mounts supply the rest of the load. The roster therefore has to be settled before any map is loaded. It is read once as the game starts, from the selected `RULE*.INI` and from `FIRESTRM.INI` whenever that file is installed, not only when its addon is enabled. A theater's position must not move between one game and the next, and that position is the number maps, saves and the multiplayer checksum all use. Neither a map's own rules nor the multiplayer files can add a theater, for the same reason: both are read per game, and a roster that changed with the game type would move every theater after the one it added.
+`[Theaters]` is read differently from the rest. A map names its theater before anything else about it is read, and the archives that theater mounts supply the rest of the load. The roster therefore has to be settled before any map is loaded. It is read once as the game starts, from `RULES.INI` and from `FIRESTRM.INI` whenever that file is installed, not only when its addon is enabled. A theater's position must not move between one game and the next, and that position is the number maps, saves and the multiplayer checksum all use. Neither a map's own rules nor the multiplayer files can add a theater, for the same reason: both are read per game, and a roster that changed with the game type would move every theater after the one it added.
 
 Where no rules file declares the section, the two theaters Tiberian Sun shipped are registered in their original order, which is what every unmodified rules file gets. Where the section is present it is the whole roster: it may drop `SNOW`, reorder the pair, or replace both. A roster that means to keep them has to write them out. Naming `TEMPERATE` or `SNOW` in the list does not create a second copy of that theater. It starts from the original settings, and its own section overrides what it names.
 

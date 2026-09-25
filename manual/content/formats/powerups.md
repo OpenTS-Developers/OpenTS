@@ -4,7 +4,7 @@ title: Crate powerups
 summary: Sets each crate type's share of the crate draw, the animation it plays, and the figure its effect uses.
 kind: record
 files:
-  - RULE*.INI
+  - RULES.INI
   - LANGRULE.INI
   - FIRESTRM.INI
   - LANGFS.INI

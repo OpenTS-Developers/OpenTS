@@ -57,4 +57,4 @@ These screens are documents:
 - the out-of-sync screen and the [reconnect dialog](/systems/reconnect-dialog/)
 - the message boxes, and the notices shown while a game saves or loads
 
-The score screens, the graphical main menu, the mission briefing and the sidebar are drawn by the game's older systems and are not documents. The crash report, and the box that asks which rules file to use when several `RULE*.INI` files are found, remain Windows dialogs.
+The score screens, the graphical main menu, the mission briefing and the sidebar are drawn by the game's older systems and are not documents. The crash report remains a Windows dialog.

@@ -711,44 +711,16 @@ static CampaignType Choose_Campaign(void)
 
 /// <summary>
 /// Loads the rules and the art control files.
-/// This routine gathers every rules file it can find and, should there be more than one,
-/// asks the player which of them to play with. It then loads the art, expansion, multiplayer,
-/// AI and language override files, and seeds the multiplayer defaults from the rules just
-/// read. The addon is chosen later, so the multiplayer expansion file cannot seed them.
+/// This routine loads the configured rules file, then the art, expansion, multiplayer, AI and
+/// language override files, and seeds the multiplayer defaults from the rules just read. The
+/// addon is chosen later, so the multiplayer expansion file cannot seed them.
 /// </summary>
 /// <returns>bool; Were the rules loaded successfully?</returns>
 static bool Init_Rules(void)
 {
-	DynamicVectorClass<CCINIClass*> Rules;
-
-	bool found = false;
-
-	for (std::string const & name : Search_Files("RULE*.INI")) {
-		CCFileClass file(name.c_str());
-		CCINIClass * rule = new CCINIClass;
-
-		rule->Load(file, false);
-
-		if (stricmp(name.c_str(), DeploymentConfig.RulesFile.c_str()) == 0) {
-			found = true;
-			Rules.Add_Head(rule);
-		} else {
-			Rules.Add(rule);
-		}
-	}
-
-	if (!found) {
-		CCFileClass file(DeploymentConfig.RulesFile.c_str());
-		CCINIClass * rule = new CCINIClass;
-		rule->Load(file, false);
-		Rules.Add_Head(rule);
-	}
-
-	assert(Rules.Count() > 0);
-
-	if (Rules.Count() <= 0) {
-		return(false);
-	}
+	CCINIClass * rules = new CCINIClass;
+	CCFileClass rules_file(DeploymentConfig.RulesFile.c_str());
+	rules->Load(rules_file, false);
 
 	CCFileClass art_file(DeploymentConfig.ArtFile.c_str());
 
@@ -794,7 +766,7 @@ static bool Init_Rules(void)
 		}
 	}
 
-	RuleINI = Rules[0];
+	RuleINI = rules;
 
 	Rule->Color_Schemes(*RuleINI);
 	Rule->Do_Movies(ArtINI);
@@ -824,12 +796,6 @@ static bool Init_Rules(void)
 		}
 
 		Rule->Addition(lang_ini);
-	}
-
-	for (int index = 0; index < Rules.Count(); index++) {
-		if (Rules[index] != RuleINI) {
-			delete Rules[index];
-		}
 	}
 
 	CCFileClass ai_file(DeploymentConfig.AIFile.c_str());

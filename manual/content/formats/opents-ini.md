@@ -62,7 +62,7 @@ The eight `Expansion` keys name the expansion's copy of a file, which is read ov
 
 Renaming a file does not move it. Every name here is searched for in the order the section below gives, the same as any other file the game opens.
 
-Rules and campaign files are also gathered by wildcard, as `RULE*.INI` and `BATTLE*.INI`, and those two patterns are fixed. A rules file named outside the pattern is read anyway, and it is the one the game starts from. Where the search turns up others as well, the game asks which set to play with. Campaign files add to one another, so one named outside the pattern is read alongside those inside it.
+The rules are read from the one file `Rules` names. Campaign files are also gathered by wildcard, as `BATTLE*.INI`, and that pattern is fixed. Campaign files add to one another, so one named outside the pattern is read alongside those inside it.
 
 ## The palettes it starts with
 

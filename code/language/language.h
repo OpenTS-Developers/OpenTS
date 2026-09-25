@@ -173,7 +173,6 @@
 #define TXT_CWAIT_STAR70                145
 #define TXT_CWAIT_70NUM                 146
 #define TXT_CWAIT_1170                  147
-#define IDD_RULES_CHOICE                147
 #define TXT_EASY                        148
 #define IDD_CAMPAIGN                    148
 #define TXT_NORMAL                      149
@@ -894,8 +893,6 @@
 #define IDC_EXCEPT_QUIT                 1153
 #define IDC_EXCEPT_MAINMENU             1154
 #define IDC_EXCEPT_DETAILS              1156
-#define IDC_RULES_LIST                  1187
-#define IDC_RULES_OK                    1188
 #define IDC_KEY_CATEGORY                1223
 #define IDC_KEY_COMMANDS                1224
 #define IDC_KEY_DESCRIPTION             1227
