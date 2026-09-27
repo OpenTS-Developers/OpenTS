@@ -102,6 +102,19 @@ std::vector<Delivered> Pumped(WindowEventType type)
 	return(result);
 }
 
+
+// SDL takes the capture only for the window it last saw the pointer over, and a released
+// capture can clear that until the pointer moves or a button is pressed.
+bool Point_At(SDL_Window * window)
+{
+	int width = 0;
+	int height = 0;
+	SDL_GetWindowSize(window, &width, &height);
+	SDL_WarpMouseInWindow(window, width / 2.0f, height / 2.0f);
+	Pumped(WINDOW_EVENT_NONE);
+	return(SDL_GetMouseFocus() == window);
+}
+
 }
 
 
@@ -241,16 +254,10 @@ int main(void)
 		SetKeyboardState(state);
 		Pumped(WINDOW_EVENT_NONE);
 
-		// SDL takes the capture only for the window the pointer is over.
 		SDL_Window * const sdlwindow = SDL_GetKeyboardFocus();
 		POINT pointer = {};
 		GetCursorPos(&pointer);
-		int width = 0;
-		int height = 0;
-		SDL_GetWindowSize(sdlwindow, &width, &height);
-		SDL_WarpMouseInWindow(sdlwindow, width / 2.0f, height / 2.0f);
-		Pumped(WINDOW_EVENT_NONE);
-		if (SDL_GetMouseFocus() != sdlwindow) {
+		if (!Point_At(sdlwindow)) {
 			std::printf("%-76s %s\n", "the checks that need the pointer over the window", "not run");
 		} else {
 			Main_Window_Capture_Mouse(true);
@@ -268,9 +275,12 @@ int main(void)
 				Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
 
 				HWND other = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 8, 8, NULL, NULL, GetModuleHandleW(NULL), NULL);
+				Point_At(sdlwindow);
 				Main_Window_Capture_Mouse(true);
+				Check(Main_Window_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was released");
 				SetCapture(other);
-				Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
+				Check(!Main_Window_Mouse_Captured(), "another window taking the capture is reported at once");
+				Check(Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "and reaches the game as one lost capture");
 				ReleaseCapture();
 				DestroyWindow(other);
 				Main_Window_Capture_Mouse(false);
