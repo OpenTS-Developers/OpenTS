@@ -19,6 +19,8 @@
 #include <SDL3/SDL_events.h>
 #include <SDL3/SDL_hints.h>
 #include <SDL3/SDL_keyboard.h>
+#include <SDL3/SDL_mouse.h>
+#include <SDL3/SDL_video.h>
 
 #include <cstdio>
 #include <cstring>
@@ -239,29 +241,43 @@ int main(void)
 		SetKeyboardState(state);
 		Pumped(WINDOW_EVENT_NONE);
 
-		Main_Window_Capture_Mouse(true);
-		bool const captured = Main_Window_Mouse_Captured() && GetCapture() == window;
-		Check(captured, "the window can take the mouse capture");
-		if (captured) {
-			SendMessageW(window, WM_CANCELMODE, 0, 0);
-			Check(!Main_Window_Mouse_Captured(), "a capture Windows cancels is reported gone at once");
-			Check(Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "and reaches the game as one lost capture");
-
+		// SDL takes the capture only for the window the pointer is over.
+		SDL_Window * const sdlwindow = SDL_GetKeyboardFocus();
+		POINT pointer = {};
+		GetCursorPos(&pointer);
+		int width = 0;
+		int height = 0;
+		SDL_GetWindowSize(sdlwindow, &width, &height);
+		SDL_WarpMouseInWindow(sdlwindow, width / 2.0f, height / 2.0f);
+		Pumped(WINDOW_EVENT_NONE);
+		if (SDL_GetMouseFocus() != sdlwindow) {
+			std::printf("%-76s %s\n", "the checks that need the pointer over the window", "not run");
+		} else {
 			Main_Window_Capture_Mouse(true);
-			Check(Main_Window_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was cancelled");
+			bool const captured = Main_Window_Mouse_Captured() && GetCapture() == window;
+			Check(captured, "the window can take the mouse capture");
+			if (captured) {
+				SendMessageW(window, WM_CANCELMODE, 0, 0);
+				Check(!Main_Window_Mouse_Captured(), "a capture Windows cancels is reported gone at once");
+				Check(Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "and reaches the game as one lost capture");
 
-			Main_Window_Capture_Mouse(false);
-			Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
+				Main_Window_Capture_Mouse(true);
+				Check(Main_Window_Mouse_Captured() && GetCapture() == window, "the capture can be taken again after it was cancelled");
 
-			HWND other = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 8, 8, NULL, NULL, GetModuleHandleW(NULL), NULL);
-			Main_Window_Capture_Mouse(true);
-			SetCapture(other);
-			Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
-			ReleaseCapture();
-			DestroyWindow(other);
-			Main_Window_Capture_Mouse(false);
-			Pumped(WINDOW_EVENT_CAPTURE_LOST);
+				Main_Window_Capture_Mouse(false);
+				Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).empty(), "releasing it is no lost capture");
+
+				HWND other = CreateWindowExW(0, L"STATIC", L"", WS_POPUP, 0, 0, 8, 8, NULL, NULL, GetModuleHandleW(NULL), NULL);
+				Main_Window_Capture_Mouse(true);
+				SetCapture(other);
+				Check(!Main_Window_Mouse_Captured() && Pumped(WINDOW_EVENT_CAPTURE_LOST).size() == 1, "another window taking the capture is one lost capture");
+				ReleaseCapture();
+				DestroyWindow(other);
+				Main_Window_Capture_Mouse(false);
+				Pumped(WINDOW_EVENT_CAPTURE_LOST);
+			}
 		}
+		SetCursorPos(pointer.x, pointer.y);
 	}
 
 	Main_Window_Destroy();
