@@ -161,6 +161,7 @@
 
 #include <cfloat>
 #include <lzo/lzoconf.h>
+#include <shellapi.h>
 #include <string>
 #include <vector>
 
