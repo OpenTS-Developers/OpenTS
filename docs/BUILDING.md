@@ -109,12 +109,9 @@ test harnesses build into `<build directory>/test-bin/<configuration>/`, so
 `bin/` holds only what the game runs. Compiler and linker intermediates stay in
 the selected build directory.
 
-The `sdlwindow` test opens a window, so CTest needs a desktop session. The
-test moves the pointer into that window for its mouse-capture checks and puts it
-back afterwards. When Windows does not give the window the keyboard focus, the
-test reports its window-drag and mouse-capture checks as not run. It also
-reports the mouse-capture checks as not run when the pointer does not end up
-over the window.
+The `sdlwindow` test opens a window and moves the pointer into it, so CTest
+needs a desktop session. Checks that need the keyboard focus or the pointer
+over the window are reported as not run when the window does not get them.
 
 | Configuration | Runtime files |
 | --- | --- |
