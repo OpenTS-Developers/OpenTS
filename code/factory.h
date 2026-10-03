@@ -76,7 +76,7 @@ class FactoryClass : public AbstractClass, private StageClass
 		int Completion(void);
 		TechnoClass * Get_Object(void) const;
 		int Get_Special_Item(void) const;
-		void AI(void);
+		void AI(void) override;
 		void Set(TechnoClass & object);
 		HouseClass * Get_House(void) {return(House);};
 		char const * Name(void) {return("Factory");}

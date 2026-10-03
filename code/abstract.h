@@ -128,7 +128,7 @@ class AbstractClass : public IPersistent
 		 * its place in the map or a side table while its record is still in doubt. An
 		 * implementation chains to its base first and never touches the stream.
 		 */
-		virtual void Post_Load(void);
+		virtual void Post_Load(void) override;
 
 		virtual void Init(void);
 		virtual void Detach(AbstractClass const * target, bool all = true);
