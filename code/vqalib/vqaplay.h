@@ -366,6 +366,15 @@ typedef struct _VQAHandle {
 #define VQACMD_SEEKPEEK 8
 #define VQACMD_SIZE     9
 
+/* VQACMD_SEEK and VQACMD_SEEKPEEK carry the seek origin in Buffer rather
+ * than a pointer. It comes back at pointer width before narrowing to the
+ * int origin that lseek and FileClass::Seek take.
+ */
+inline int VQA_DecodeSeekOrigin(void *buffer)
+{
+	return (int)(std::intptr_t)buffer;
+}
+
 #define VQAMEM_0		0
 #define VQAMEM_1		1
 #define VQAMEM_ALLOC	2
