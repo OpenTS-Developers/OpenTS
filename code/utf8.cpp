@@ -18,7 +18,12 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
+
+#ifdef _WIN32
 #include <windows.h>
+#else
+#include <iconv.h>
+#endif
 
 
 namespace {
@@ -208,12 +213,59 @@ int Best_Fit_Index(unsigned page, short * cache, char32_t code)
 
 	short & slot = cache[code];
 	if (slot == 0) {
+#ifdef _WIN32
 		wchar_t wide = (wchar_t)code;
 		char narrow = 0;
 		BOOL defaulted = FALSE;
 		int written = WideCharToMultiByte(page, 0, &wide, 1, &narrow, 1, NULL, &defaulted);
 		unsigned char byte = (unsigned char)narrow;
 		slot = (written == 1 && !defaulted && byte >= 0x20 && byte != 0x7F) ? (short)byte : (short)-1;
+#else
+		static iconv_t conv_oem437  = (iconv_t)-1;
+		static iconv_t conv_win1252 = (iconv_t)-1;
+
+		iconv_t conv = (iconv_t)-1;
+		switch (page) {
+			case 437:
+				if (conv_oem437 == (iconv_t)-1) {
+					conv_oem437 = iconv_open("437//TRANSLIT", "UTF32");
+				}
+				if (conv_oem437 == (iconv_t)-1) {
+					conv_oem437 = iconv_open("437", "UTF32");
+				}
+				conv = conv_oem437;
+				break;
+
+			case 1252:
+				if (conv_win1252 == (iconv_t)-1) {
+					conv_win1252 = iconv_open("WINDOWS-1252//TRANSLIT", "UTF32");
+				}
+				if (conv_win1252 == (iconv_t)-1) {
+					conv_win1252 = iconv_open("WINDOWS-1252", "UTF32");
+				}
+				conv = conv_win1252;
+				break;
+		}
+		char narrow = 0;
+		size_t ret = 0;
+
+		char *wide_ptr = reinterpret_cast<char *>(&code);
+		char *narrow_ptr = reinterpret_cast<char *>(&narrow);
+		size_t bytes_left_wide = sizeof(code);
+		size_t bytes_left_narrow = sizeof(narrow);
+
+		if (conv != (iconv_t)-1) {
+			ret = iconv(conv, &wide_ptr, &bytes_left_wide, &narrow_ptr, &bytes_left_narrow);
+
+			if ((narrow == '?' && code != '?') ||  /* BSD/Solaris fallback detection */
+			    (narrow == '*' && code != '*')) {  /* MUSL fallback detection */
+
+				ret = (size_t)-1;
+			}
+		}
+		unsigned char byte = (unsigned char)narrow;
+		slot = (ret != (size_t)-1 && bytes_left_narrow == 0 && bytes_left_wide == 0 && byte >= 0x20 && byte != 0x7F) ? (short)byte : (short)-1;
+#endif
 	}
 	return(slot);
 }
