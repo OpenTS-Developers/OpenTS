@@ -60,5 +60,4 @@ enum RejectType {
 	REJECT_BY_OWNER,                // game owner clicked "reject"
 	REJECT_DISBANDED,               // game was disbanded
 	REJECT_MISMATCH,                // "rules.ini" file mismatch.
-	REJECT_DUPLICATE_SERIAL,        /// player's serial is a duplicate
 };
