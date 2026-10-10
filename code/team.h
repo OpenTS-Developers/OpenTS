@@ -286,8 +286,8 @@ class TeamClass : public AbstractClass
 		/*
 		 * Per frame processing and teardown.
 		 */
-		void AI(void);
-		void Detach(AbstractClass const * target, bool all);
+		void AI(void) override;
+		void Detach(AbstractClass const * target, bool all) override;
 		void Took_Damage(FootClass * obj, ResultType result, TechnoClass * source);
 
 		/*
