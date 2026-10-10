@@ -34,11 +34,14 @@ function(opents_add_test target)
         target_compile_definitions(${target} PRIVATE ${TEST_DEFINITIONS})
     endif()
 
+    if(MSVC)
+        set_property(TARGET ${target} PROPERTY MSVC_RUNTIME_LIBRARY
+            "MultiThreaded$<$<CONFIG:Debug>:Debug>")
+    endif()
+
     # The option spellings and the Win32 import libraries below are MSVC's, so a harness built
     # by another compiler takes its defaults instead.
     target_compile_options(${target} PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:$<$<CONFIG:Debug>:/MTd>>
-        $<$<CXX_COMPILER_ID:MSVC>:$<$<CONFIG:Release>:/MT>>
         $<$<CXX_COMPILER_ID:MSVC>:/EHsc>
         $<$<CXX_COMPILER_ID:MSVC>:/Zc:__cplusplus>
     )
