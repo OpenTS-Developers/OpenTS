@@ -780,10 +780,9 @@ class BlitTransZRemapXlatAlphaZReadWrite : public Blitter {
 				dest = ((T *)dest) + 1;
 
 				zb++;
-				/*
-				 * `ap` is never advanced, so every pixel samples aLUT[*ap] from a_buff[0].
-				 */
 				zb = Blit_Wrap_Z_Buffer(zb);
+				ap++;
+				ap = Blit_Wrap_A_Buffer(ap);
 			}
 		}
 

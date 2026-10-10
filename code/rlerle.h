@@ -930,8 +930,7 @@ class RLEBlitTransZRemapXlatZReadWrite : public RLEBlitter
 					zs += value;
 					zp += value;
 				} else {
-					/// zs advances +2 per pixel (z-test + z-write both step it) vs zp +1; can overflow.
-					if (z_min - *zs++ < *zp) {
+					if (z_min - *zs < *zp) {
 						*dptr = TranslateTable[remapper[value]];
 						dptr++;
 						*zp = z_min - *zs;
@@ -1098,8 +1097,7 @@ class RLEBlitTransRemapDestZReadWrite : public RLEBlitter
 					zs += value;
 					zp += value;
 				} else {
-					/// zs advances +2 per pixel (z-test + z-write both step it) vs zp +1.
-					if ((z_min - (int)*zs++) < (int)*zp) {
+					if ((z_min - (int)*zs) < (int)*zp) {
 						*dptr = RemapTable[*dptr];
 						*zp = z_min - *zs;
 						zp++;
@@ -2242,7 +2240,8 @@ class RLEBlitTransLucent25ZReadWrite : public RLEBlitter
 					value = *sptr++;
 					length -= value;
 					dptr += value;
-					/// Transparent run doesn't step zp/zs, desyncing depth from dptr.
+					zs += value;
+					zp += value;
 				} else {
 					if ((z_min - (int)*zs) < (int)*zp) {
 						T qsource = (T)(((TranslateTable[value] >> 2) & Mask));
@@ -2738,11 +2737,8 @@ class RLEBlitTransLucent75ZReadWrite : public RLEBlitter
 					value = *sptr++;
 					length -= value;
 					dptr += value;
-					/// Transparent run doesn't step zp/zs, desyncing depth from dptr.
-#if 0
 					zp += value;
 					zs += value;
-#endif
 				} else {
 					if ((z_min - (int)*zs) < (int)*zp) {
 						T qsource = (T)(((TranslateTable[value] >> 2) & Mask));
