@@ -37,4 +37,4 @@ A drag that starts on the battlefield stays on it: a selection box or a coast sc
 
 ## Persistence
 
-The factor belongs to the local display. It is not stored in saved games or sent to other players. Starting or loading a mission returns it to 1x. Changing the game resolution keeps the factor when the new resolution allows it and otherwise drops to the largest factor that it does allow.
+The factor belongs to the local display. It is not stored in saved games or sent to other players. Starting or loading a mission returns it to 1x, and a game saved while zoomed loads with the view centred where the zoomed view was. The game resolution can only be changed from the main menu, where the factor is always 1x.

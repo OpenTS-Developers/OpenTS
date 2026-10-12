@@ -819,6 +819,10 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 	// what deletes it from here on.
 	tactical.release();
 
+	// The saved view origin suits the view size at save time, which differs after a zoom or a
+	// resolution change, so the view is fitted again about its saved centre.
+	TacticalMap->Set_View_Dimensions(TacticalRect);
+
 	if (!Load_Vector<HouseTypeClass>(stream)) {	/// HouseTypes
 		return(false);
 	}
