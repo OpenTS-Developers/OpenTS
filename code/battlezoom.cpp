@@ -72,14 +72,15 @@ bool Battle_Zoom_Applying(void)
 
 /// <summary>
 /// Records the frame area the battlefield occupies and returns the native view for it. The
-/// zoom factor drops to the nearest one the area allows.
+/// zoom factor drops to the nearest one the area allows, and to 1x outside a scenario, as when
+/// the main menu changes the resolution after a zoomed match.
 /// </summary>
 /// <param name="battlefield">The battlefield area in frame pixels.</param>
 /// <returns>Rect; The native tactical view, which equals the area when the battlefield is not zoomed.</returns>
 Rect Battle_Zoom_Fit_View(Rect const & battlefield)
 {
 	BattlefieldRect = battlefield;
-	_Zoom = Battle_Zoom_Nearest_Allowed(battlefield, _Zoom);
+	_Zoom = ScenarioActive ? Battle_Zoom_Nearest_Allowed(battlefield, _Zoom) : (int)BATTLE_ZOOM_MIN;
 	_Pending = _Zoom;
 
 	return(Battle_Zoom_View_Rect(battlefield, _Zoom));
