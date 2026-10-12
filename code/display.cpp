@@ -104,6 +104,7 @@
 #include "airctype.h"
 #include "animtype.h"
 #include "astar.h"
+#include "battlezoom.h"
 #include "bsurface.h"
 #include "building.h"
 #include "builtype.h"
@@ -362,7 +363,8 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 {
 	DebugString("Set_View_Dimensions(%d,%d,%d,%d)\n", dimensions.X, dimensions.Y, dimensions.Width, dimensions.Height);
 
-	TacticalRect = dimensions;
+	// The dimensions give the battlefield's frame area; a zoomed view renders a smaller part of it.
+	TacticalRect = Battle_Zoom_Fit_View(dimensions);
 
 	if (TacticalMap != NULL) {
 		TacticalMap->Set_View_Dimensions(TacticalRect);
@@ -407,23 +409,27 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		ToolTips->Add(&tooltip);
 	}
 
-	/*
-	**	For multiplayer games, initialize the inter-player message system.
-	**	Do this after loading the scenario, so the map's upper-left corner is
-	**	properly set.
-	*/
-	Session.Messages.Init(
-		TacticalRect.X, TacticalRect.Y,     // x,y for messages
-		6,                                  // max # msgs
-		MAX_MESSAGE_LENGTH-14,              // max msg length
-		7 * 2/*RESFACTOR*/,                 // font height in pixels
-		-1, -1,                             // x,y for edit line (appears above msgs)
-		0,                                  /// enable edit overflow
-		20,                                 // min,
-		MAX_MESSAGE_LENGTH - 14,            // max for trimming overflow
-		TacticalRect.Width);                // Width in pixels of buffer
+	// Messages stay at frame size over a zoomed battlefield, so a zoom change keeps them.
+	if (!Battle_Zoom_Applying()) {
 
-	Session.Messages.Set_Width(TacticalRect.Width);
+		/*
+		**	For multiplayer games, initialize the inter-player message system.
+		**	Do this after loading the scenario, so the map's upper-left corner is
+		**	properly set.
+		*/
+		Session.Messages.Init(
+			BattlefieldRect.X, BattlefieldRect.Y, // x,y for messages
+			6,                                  // max # msgs
+			MAX_MESSAGE_LENGTH-14,              // max msg length
+			7 * 2/*RESFACTOR*/,                 // font height in pixels
+			-1, -1,                             // x,y for edit line (appears above msgs)
+			0,                                  /// enable edit overflow
+			20,                                 // min,
+			MAX_MESSAGE_LENGTH - 14,            // max for trimming overflow
+			BattlefieldRect.Width);             // Width in pixels of buffer
+
+		Session.Messages.Set_Width(BattlefieldRect.Width);
+	}
 
 	DebugString("Set_View_Dimensions(exit)\n");
 }

@@ -44,6 +44,7 @@
 
 #include "_mixfile.h"
 #include "animtype.h"
+#include "battlezoom.h"
 #include "builtype.h"
 #include "cell.h"
 #include "data.h"
@@ -313,6 +314,8 @@ bool MouseClass::Override_Mouse_Shape(MouseType mouse, bool wsmall)
  *=============================================================================================*/
 void MouseClass::AI(KeyNumType &input, Point2D const & xy)
 {
+	Battle_Zoom_AI(input != KN_NONE);
+
 	MouseStruct const * control = &MouseControl[CurrentMouseShape];
 
 	if (control->FrameRate && Timer == 0) {

@@ -81,6 +81,7 @@
 #include "aitrig.h"
 #include "anim.h"
 #include "astar.h"
+#include "battlezoom.h"
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
@@ -801,7 +802,7 @@ bool Read_Scenario(char const * fname)
 	**	properly set.
 	*/
 	Session.Messages.Init(
-		TacticalRect.X, TacticalRect.Y,	// x,y for messages
+		BattlefieldRect.X, BattlefieldRect.Y,	// x,y for messages
 		6, 										// max # msgs
 		MAX_MESSAGE_LENGTH - 14,			// max msg length
 		7 * 2,									// font height in pixels
@@ -809,7 +810,7 @@ bool Read_Scenario(char const * fname)
 		0,//BG		1,							// enable edit overflow
 		20,										// min,
 		MAX_MESSAGE_LENGTH - 14,			// max for trimming overflow
-		TacticalRect.Width);					// Width in pixels of buffer
+		BattlefieldRect.Width);				// Width in pixels of buffer
 
 	Fill_In_Data();
 
@@ -1060,6 +1061,7 @@ void Clear_Scenario(void)
 {
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
+	Battle_Zoom_Reset();
 
 	int index;
 

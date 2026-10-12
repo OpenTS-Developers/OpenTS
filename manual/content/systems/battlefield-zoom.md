@@ -1,0 +1,40 @@
+---
+title: Battlefield zoom
+summary: "The mouse wheel over the tactical view magnifies the battlefield by a whole factor from 1x to 4x while the sidebar and the tab strip keep their size."
+category: interface-controls
+keys: []
+related:
+  - type: system
+    id: sidebar
+---
+
+Each wheel notch over the tactical view zooms in one step, away from the player, or out one step, toward the player. A zoomed view shows a smaller part of the map, with every map pixel drawn as a square of 2, 3 or 4 screen pixels. Over the sidebar or the tab strip the wheel scrolls the sidebar.
+
+## Available factors
+
+A factor is offered only while the part of the map it shows is at least 472 pixels wide and 524 pixels high. With the sidebar taking 168 pixels and the tab strip 16, that gives:
+
+| Game resolution | Largest factor |
+| --- | --- |
+| 1280 by 720 | 1x |
+| 1920 by 1080 | 2x |
+| 2560 by 1440 | 2x |
+| 3840 by 2160 | 4x |
+
+A wheel step past the largest factor is ignored. Rows and columns that a whole factor cannot fill are black and split evenly around the picture.
+
+## When the zoom changes
+
+The new factor takes effect on the next frame with no key press waiting and no mouse button held. The map position under the pointer when the wheel turned stays under the pointer, unless that would move the view past the edge of the map.
+
+The wheel does not zoom while the window is in the background, while a trigger or the end of a campaign mission locks the player's input, while a trigger zoom is in effect, or in the map editor. A [Zoom in](/mapping/actions/taction-zoom-in/) trigger action first returns the battlefield to 1x.
+
+## What stays at screen size
+
+The sidebar, the tab strip with its mission timer, and chat and game messages are drawn at their normal size over a zoomed battlefield. Tooltips over the battlefield are magnified with it. The radar's view box shrinks to the part of the map on screen.
+
+A drag that starts on the battlefield stays on it: a selection box or a coast scroll stops at the edge of the view when the pointer moves over the sidebar. Edge scrolling works on all four screen edges at every factor.
+
+## Persistence
+
+The factor belongs to the local display. It is not stored in saved games or sent to other players. Starting or loading a mission returns it to 1x. Changing the game resolution keeps the factor when the new resolution allows it and otherwise drops to the largest factor that it does allow.

@@ -1,0 +1,120 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+// Pins the battlefield zoom geometry: which factors each battlefield size offers, where the
+// native view and its magnified picture sit, how frame and view positions convert, and the
+// view centre that keeps the world under the cursor.
+
+#include "battlezoomlayout.h"
+
+#include <cstdio>
+
+namespace {
+
+int Failures = 0;
+
+
+void Check(bool condition, char const * what)
+{
+	std::printf("%-76s %s\n", what, condition ? "ok" : "FAILED");
+
+	if (!condition) {
+		Failures++;
+	}
+}
+
+
+bool Same(Rect const & rect, int x, int y, int w, int h)
+{
+	return(rect.X == x && rect.Y == y && rect.Width == w && rect.Height == h);
+}
+
+
+bool Same(Point2D const & point, int x, int y)
+{
+	return(point.X == x && point.Y == y);
+}
+
+
+// A world pixel under a native view position, measured the way the tactical view measures it.
+Point2D World(Point2D const & center, Rect const & view, Point2D const & point)
+{
+	return(Point2D(center.X - view.Width / 2 + (point.X - view.X), center.Y - view.Height / 2 + (point.Y - view.Y)));
+}
+
+}
+
+
+int main()
+{
+	// The battlefield areas a 1080p, 720p and 2160p frame give with the sidebar on the right.
+	Rect const hd(0, 16, 1752, 1064);
+	Rect const small(0, 16, 1112, 704);
+	Rect const uhd(0, 16, 3672, 2144);
+
+	Check(Battle_Zoom_Allowed(hd, 1) && Battle_Zoom_Allowed(small, 1), "the unzoomed view is always allowed");
+	Check(Battle_Zoom_Allowed(hd, 2) && !Battle_Zoom_Allowed(hd, 3), "1080p offers 2x but not 3x");
+	Check(!Battle_Zoom_Allowed(small, 2), "720p offers no zoom");
+	Check(Battle_Zoom_Allowed(uhd, 4), "2160p offers 4x");
+	Check(!Battle_Zoom_Allowed(hd, 0) && !Battle_Zoom_Allowed(uhd, 5), "factors outside 1 to 4 are refused");
+	Check(!Battle_Zoom_Allowed(Rect(0, 0, 0, 0), 1), "an empty battlefield allows nothing");
+
+	Check(Battle_Zoom_Nearest_Allowed(hd, 3) == 2 && Battle_Zoom_Nearest_Allowed(hd, 4) == 2, "an unavailable factor falls back to the largest allowed");
+	Check(Battle_Zoom_Nearest_Allowed(small, 2) == 1, "with no zoom available the view stays unzoomed");
+	Check(Battle_Zoom_Nearest_Allowed(uhd, 3) == 3, "an allowed factor is kept");
+
+	Check(Same(Battle_Zoom_View_Rect(hd, 1), 0, 16, 1752, 1064), "the unzoomed view is the battlefield");
+	Check(Same(Battle_Zoom_View_Rect(hd, 2), 0, 16, 876, 532), "a 2x view is half the battlefield at its corner");
+	Check(Same(Battle_Zoom_Screen_Rect(hd, 2), 0, 16, 1752, 1064), "an even battlefield is filled exactly");
+
+	Rect const odd(0, 16, 1760, 1601);
+	Check(Same(Battle_Zoom_Screen_Rect(odd, 3), 1, 17, 1758, 1599), "unfilled pixels are split around the picture");
+
+	Check(Same(Battle_Zoom_Screen_To_View(Point2D(1000, 500), hd, 1), 1000, 500), "an unzoomed position is unchanged");
+	Check(Same(Battle_Zoom_Screen_To_View(Point2D(0, 16), hd, 2), 0, 16), "the battlefield corner is the view corner");
+	Check(Same(Battle_Zoom_Screen_To_View(Point2D(3, 19), hd, 2), 1, 17), "each view pixel covers 2x2 frame pixels");
+	Check(Same(Battle_Zoom_Screen_To_View(Point2D(1751, 1079), hd, 2), 875, 547), "the far corner is the last view pixel");
+	Check(Same(Battle_Zoom_Screen_To_View(Point2D(1800, 500), hd, 2), 1800, 500), "a sidebar position is unchanged");
+	Check(Same(Battle_Zoom_Screen_To_View(Point2D(100, 5), hd, 2), 100, 5), "a tab strip position is unchanged");
+	Check(Same(Battle_Zoom_Screen_To_View(Point2D(0, 16), odd, 3), 0, 16), "an unfilled border pixel maps to the nearest view pixel");
+
+	bool roundtrip = true;
+	for (int y = 16; y < 16 + 532; y += 37) {
+		for (int x = 0; x < 876; x += 41) {
+			Point2D const view(x, y);
+			if (!(Battle_Zoom_Screen_To_View(Battle_Zoom_View_To_Screen(view, hd, 2), hd, 2) == view)) {
+				roundtrip = false;
+			}
+		}
+	}
+	Check(roundtrip, "a view position survives the trip to the frame and back");
+	Check(Same(Battle_Zoom_View_To_Screen(Point2D(1800, 500), hd, 2), 1800, 500), "a position outside the view is not converted");
+
+	Point2D const center(5000, 3000);
+	Point2D const cursor(1000, 500);
+	Rect const before = Battle_Zoom_View_Rect(hd, 1);
+	Rect const after = Battle_Zoom_View_Rect(hd, 2);
+	Point2D const before_point = Battle_Zoom_Screen_To_View(cursor, hd, 1);
+	Point2D const after_point = Battle_Zoom_Screen_To_View(cursor, hd, 2);
+	Point2D const anchored = Battle_Zoom_Anchored_Center(center, before, before_point, after, after_point);
+	Check(World(center, before, before_point) == World(anchored, after, after_point), "zooming in keeps the world pixel under the cursor");
+
+	Point2D const back = Battle_Zoom_Anchored_Center(anchored, after, after_point, before, before_point);
+	Check(World(anchored, after, after_point) == World(back, before, before_point), "and zooming out again keeps it too");
+
+	float remainder = 0.0f;
+	Check(Battle_Zoom_Wheel_Steps(remainder, 1.0f) == 1, "a wheel notch is one step");
+	Check(Battle_Zoom_Wheel_Steps(remainder, -2.0f) == -2, "notches toward the player step out");
+	Check(Battle_Zoom_Wheel_Steps(remainder, 0.4f) == 0 && Battle_Zoom_Wheel_Steps(remainder, 0.4f) == 0, "fractions wait");
+	Check(Battle_Zoom_Wheel_Steps(remainder, 0.4f) == 1, "until they add up to a step");
+	Check(Battle_Zoom_Wheel_Steps(remainder, -1.0f) == -1, "turning back drops the fraction left over");
+
+	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
+	return(Failures == 0 ? 0 : 1);
+}

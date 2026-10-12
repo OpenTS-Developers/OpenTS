@@ -54,6 +54,7 @@
 #include "_tactica.h"
 #include "_tooltip.h"
 #include "_xmouse.h"
+#include "battlezoom.h"
 #include "bench.h"
 #include "cctooltip.h"
 #include "gadget.h"
@@ -414,7 +415,10 @@ void GScreenClass::Render(void)
 	**	Draw the multiplayer message system to the Hidpage at this point.
 	**	This way, they'll Blit along with the rest of the map.
 	*/
-	Session.Messages.Draw();
+	// Over a zoomed battlefield the messages are drawn after the magnification instead.
+	if (Battle_Zoom_Factor() == 1) {
+		Session.Messages.Draw();
+	}
 	if (Session.ShowInternetDebug) {
 		Multiplayer_Debug_Print();
 	}
@@ -467,6 +471,11 @@ void GScreenClass::Blit_Display(void)
 void Update_Visible_Surface(Surface *surface, Rect *rect)
 {
 	Rect fill_rect;
+
+	if (rect == NULL && Battle_Zoom_Present(*surface)) {
+		Video_Present_If_Dirty();
+		return;
+	}
 
 	if (rect == NULL) {
 		fill_rect = surface->Get_Rect();
