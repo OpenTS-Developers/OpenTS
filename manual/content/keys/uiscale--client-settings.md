@@ -15,4 +15,6 @@ At 3840 by 2160 the automatic size is `3`. The sidebar is then 504 pixels wide, 
 
 The size is lowered one step at a time until the interface keeps at least 640 by 540 of its own pixels and the battlefield beside it keeps at least 472 by 524 pixels. A chosen `3` at 1920 by 1080 therefore draws the interface at `2`.
 
-The size is chosen when the game starts, when the resolution changes, and when a saved game is loaded. Chat and game messages, and tooltips over the battlefield, stay at their artwork size. The animated main menu from `GMENU.MIX` keeps its artwork size.
+The Display screen of the main menu's Options sets the size: each press of the Interface size button steps it from Automatic through 1x to 4x and back, and OK keeps the choice. A new size takes effect when the next mission or skirmish starts or a saved game is loaded; the in-game Options menu does not offer it.
+
+Chat and game messages are drawn at the same size as the interface. Tooltips over the battlefield are drawn at artwork size. The main menu and its screens keep their artwork size at every setting.

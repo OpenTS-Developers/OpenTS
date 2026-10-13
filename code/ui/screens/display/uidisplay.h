@@ -33,6 +33,7 @@ class UIDisplayServiceClass
 		virtual ~UIDisplayServiceClass(void) = default;
 		virtual void Set_Stretch_Movies(bool on) = 0;
 		virtual void Set_System_Cursor(bool on) = 0;
+		virtual void Set_UI_Scale(int scale) = 0;
 };
 
 
@@ -42,6 +43,10 @@ struct UIDisplayState
 	int Selected = -1;
 	bool StretchMovies = false;
 	bool SystemCursor = false;
+
+	// 0 for the automatic interface size, otherwise 1 to 4.
+	int UIScale = 0;
+	std::string UIScaleLabel;
 };
 
 

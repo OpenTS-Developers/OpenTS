@@ -11,11 +11,13 @@
 
 #include "uiscale.h"
 
+#include "_map.h"
 #include "_rect.h"
 #include "_surface.h"
 #include "_ui.h"
 #include "globals.h"
 #include "goptions.h"
+#include "init.h"
 #include "surface.h"
 #include "ui/uishell.h"
 #include "uiscalelayout.h"
@@ -54,11 +56,7 @@ int UI_Height(void)
 /// <param name="sidebar">Receives the size of the sidebar surface, in interface pixels.</param>
 void UI_Scale_Layout(Rect const & visible, Rect & battlefield, Rect & composite, Rect & sidebar)
 {
-	int const previous = _Scale;
 	_Scale = Debug_Map ? (int)UI_SCALE_MIN : UI_Scale_For(visible.Width, visible.Height, Options.UIScale);
-	if (_Scale != previous) {
-		UIShell.On_Video_Change();
-	}
 
 	battlefield = UI_Scale_Battlefield_Rect(visible.Width, visible.Height, _Scale);
 	if (!Options.IsSidebarOnRight && !Debug_Map) {
@@ -67,6 +65,53 @@ void UI_Scale_Layout(Rect const & visible, Rect & battlefield, Rect & composite,
 
 	composite = Rect(0, 0, battlefield.Width, visible.Height);
 	sidebar = Rect(0, 0, UI_SCALE_SIDEBAR_WIDTH, visible.Height / _Scale);
+}
+
+
+/// <summary>
+/// Lays the surfaces out again when the chosen interface scale differs from the current one,
+/// as after the player changes it in the display options. Call it before a scenario is read.
+/// </summary>
+void UI_Scale_Refit(void)
+{
+	int const wanted = Debug_Map ? (int)UI_SCALE_MIN : UI_Scale_For(VisibleRect.Width, VisibleRect.Height, Options.UIScale);
+	if (wanted == _Scale) {
+		return;
+	}
+
+	Rect battlefield;
+	Rect composite;
+	Rect sidebar;
+	UI_Scale_Layout(VisibleRect, battlefield, composite, sidebar);
+
+	Allocate_Surfaces(VisibleRect, composite, composite, sidebar);
+	LogicalSurface = HiddenSurface;
+	Map.Set_View_Dimensions(battlefield);
+}
+
+
+/// <summary>
+/// The scale the game's dialogs are drawn at: the interface scale during a scenario, and 1x
+/// elsewhere, where the menus sit over artwork that keeps its size.
+/// </summary>
+int UI_Dialog_Scale(void)
+{
+	return(ScenarioActive ? _Scale : (int)UI_SCALE_MIN);
+}
+
+
+/// <summary>
+/// Tells the dialog layer when the dialog scale has changed, as when a scenario starts or ends.
+/// </summary>
+void UI_Scale_Sync_Dialogs(void)
+{
+	static int _shown = UI_SCALE_MIN;
+
+	int const scale = UI_Dialog_Scale();
+	if (scale != _shown) {
+		_shown = scale;
+		UIShell.On_Video_Change();
+	}
 }
 
 

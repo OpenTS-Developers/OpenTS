@@ -11,7 +11,15 @@
 
 #include "ui/rml/rmlview.h"
 
+#include <algorithm>
+#include <string>
 #include <utility>
+
+
+static std::string UI_Scale_Label(int scale)
+{
+	return(scale <= 0 ? std::string("Interface size: Automatic") : "Interface size: " + std::to_string(scale) + "x");
+}
 
 
 UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service, UIDisplayState state) :
@@ -19,6 +27,8 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	Service(service),
 	Initial(State.Selected)
 {
+	State.UIScale = std::clamp(State.UIScale, 0, 4);
+	State.UIScaleLabel = UI_Scale_Label(State.UIScale);
 }
 
 
@@ -33,9 +43,14 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 	} else if (intent.Name == "systemcursor") {
 		State.SystemCursor = (intent.Value != 0);
 
+	} else if (intent.Name == "uiscale") {
+		State.UIScale = (State.UIScale + 1) % 5;
+		State.UIScaleLabel = UI_Scale_Label(State.UIScale);
+
 	} else if (intent.Name == "ok") {
 		Service.Set_Stretch_Movies(State.StretchMovies);
 		Service.Set_System_Cursor(State.SystemCursor);
+		Service.Set_UI_Scale(State.UIScale);
 		if (State.Selected >= 0 && State.Selected != Initial) {
 			Picked = State.Modes[State.Selected];
 		}
@@ -104,6 +119,7 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("selected");
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
+			Model.DirtyVariable("uiscalelabel");
 		}
 
 	protected:
@@ -122,7 +138,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("modes", &state.Modes)
 				&& model.Bind("selected", &state.Selected)
 				&& model.Bind("stretch", &state.StretchMovies)
-				&& model.Bind("systemcursor", &state.SystemCursor));
+				&& model.Bind("systemcursor", &state.SystemCursor)
+				&& model.Bind("uiscalelabel", &state.UIScaleLabel));
 		}
 
 	private:

@@ -64,6 +64,7 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
+#include "uiscale.h"
 #include "video.h"
 
 #include "bench.hh"
@@ -471,6 +472,8 @@ void GScreenClass::Blit_Display(void)
 void Update_Visible_Surface(Surface *surface, Rect *rect)
 {
 	Rect fill_rect;
+
+	UI_Scale_Sync_Dialogs();
 
 	if (rect == NULL && Battle_Zoom_Present(*surface)) {
 		Video_Present_If_Dirty();

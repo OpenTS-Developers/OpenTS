@@ -103,7 +103,7 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual float Interface_Scale(void) const override
 		{
-			return((float)UI_Scale());
+			return((float)UI_Dialog_Scale());
 		}
 
 		virtual int Art_Magnification(void) const override

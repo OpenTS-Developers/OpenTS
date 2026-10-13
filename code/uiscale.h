@@ -20,4 +20,9 @@ int UI_Scale(void);
 int UI_Height(void);
 
 void UI_Scale_Layout(Rect const & visible, Rect & battlefield, Rect & composite, Rect & sidebar);
+void UI_Scale_Refit(void);
+
+int UI_Dialog_Scale(void);
+void UI_Scale_Sync_Dialogs(void);
+
 void UI_Scale_Show_Sidebar(Rect const & source);
