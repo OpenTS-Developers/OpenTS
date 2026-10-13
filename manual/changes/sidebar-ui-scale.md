@@ -13,6 +13,4 @@ credit:
 - equalchance
 ---
 
-At high resolutions the sidebar, the top strip and the game's dialogs are now drawn two to four times larger, while the battlefield keeps one screen pixel per map pixel. [`UIScale`](/keys/uiscale/) chooses the size; by default it is 3x from 2160 rows and 1x below, so 1080p and 1440p look as before.
-
-The interface size follows the battlefield-only zoom of the TI Chilong Edition build of Vinifera, which draws its sidebar at 3x on 4K screens.
+At high resolutions the sidebar, the top strip, messages and the in-game dialogs are now drawn two to four times larger, while the battlefield keeps one screen pixel per map pixel. [`UIScale`](/keys/uiscale/) chooses the size; by default it is 3x from 2160 rows and 1x below, so 1080p and 1440p look as before.

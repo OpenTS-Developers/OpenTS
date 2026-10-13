@@ -11,5 +11,3 @@ credit:
 ---
 
 The radar used to draw a white frame around the whole map image as well as the white rectangle that marks the tactical view. When the view covered much of a small map, the two looked like two view outlines. The radar now draws only the view rectangle.
-
-The TI Chilong Edition build of Vinifera removes the same frame.
