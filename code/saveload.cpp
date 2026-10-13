@@ -129,6 +129,7 @@
 #include "trigtype.h"
 #include "tube.h"
 #include "tutorial.h"
+#include "uiscale.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vanim.h"
@@ -756,13 +757,12 @@ static bool Get_All(SaveStreamClass & stream, bool save_net)
 		return(false);
 	}
 
-	Rect temp = VisibleRect;
-	temp.X = ((Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH);
-	temp.Y = 16;
-	temp.Width -= SidebarClass::SIDE_WIDTH;
-	temp.Height -= 16;
+	Rect temp;
+	Rect composite;
+	Rect sidebar;
+	UI_Scale_Layout(VisibleRect, temp, composite, sidebar);
 
-	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
+	Allocate_Surfaces(VisibleRect, composite, composite, sidebar);
 
 	Map.Set_View_Dimensions(temp);
 

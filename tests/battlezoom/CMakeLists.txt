@@ -1,4 +1,4 @@
-# The geometry and pending zoom state are tested without game assets.
+# The geometry, the pending zoom state and the interface scale are tested without game assets.
 
 opents_add_test(BattleZoom
     NAME battlezoom
@@ -6,5 +6,6 @@ opents_add_test(BattleZoom
     ENGINE
         battlezoomlayout.cpp
         battlezoomstate.cpp
+        uiscalelayout.cpp
     DEFINITIONS WIN32 _WINDOWS NOMINMAX
 )

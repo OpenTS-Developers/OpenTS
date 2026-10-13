@@ -23,6 +23,8 @@
 #include "session.h"
 #include "surface.h"
 #include "tactical.h"
+#include "uiscale.h"
+#include "uiscalelayout.h"
 #include "win.h"
 
 #include <algorithm>
@@ -41,6 +43,22 @@ static bool Can_Zoom(void)
 static bool Is_Zoomed(void)
 {
 	return(_State.Factor() > BATTLE_ZOOM_MIN && ScenarioActive);
+}
+
+
+static bool Is_Scaled(void)
+{
+	return(UI_Scale() > UI_SCALE_MIN && ScenarioActive);
+}
+
+
+/// <summary>
+/// Does Battle_Zoom_Present draw the composite surface this frame? It does while the battlefield
+/// is zoomed or the interface is scaled, except during a trigger zoom.
+/// </summary>
+bool Battle_Zoom_Presents(void)
+{
+	return((Is_Zoomed() || Is_Scaled()) && VisibleSurface != NULL && TacticalMap != NULL && TacticalMap->ZoomFactor == 1.0);
 }
 
 
@@ -179,37 +197,45 @@ void Battle_Zoom_Cancel_Pending(void)
 
 /// <summary>
 /// Converts a frame position into the coordinates the game uses. A position over the zoomed
-/// battlefield becomes a native view position. A drag started there stays clamped to it;
-/// other positions are left alone.
+/// battlefield becomes a native view position, and a drag started there stays clamped to it.
+/// A position over a scaled sidebar or tab strip becomes an interface position. Other
+/// positions are left alone.
 /// </summary>
 /// <param name="point">The position to convert in place.</param>
 void Battle_Zoom_Frame_To_View(Point2D & point)
 {
-	if (!Is_Zoomed()) {
-		return;
+	if (Is_Zoomed()) {
+		if (_State.Dragging()) {
+			point.X = std::clamp(point.X, BattlefieldRect.X, BattlefieldRect.X + BattlefieldRect.Width - 1);
+			point.Y = std::clamp(point.Y, BattlefieldRect.Y, BattlefieldRect.Y + BattlefieldRect.Height - 1);
+		}
+
+		point = Battle_Zoom_Screen_To_View(point, BattlefieldRect, _State.Factor());
 	}
 
-	if (_State.Dragging()) {
-		point.X = std::clamp(point.X, BattlefieldRect.X, BattlefieldRect.X + BattlefieldRect.Width - 1);
-		point.Y = std::clamp(point.Y, BattlefieldRect.Y, BattlefieldRect.Y + BattlefieldRect.Height - 1);
+	// Battlefield positions, native or not, lie outside the areas the interface scale converts.
+	if (Is_Scaled()) {
+		point = UI_Scale_Screen_To_Interface(point, BattlefieldRect, UI_Scale());
 	}
-
-	point = Battle_Zoom_Screen_To_View(point, BattlefieldRect, _State.Factor());
 }
 
 
 /// <summary>
-/// Converts a native view position back into the frame.
+/// Converts a native view or interface position back into the frame.
 /// </summary>
-/// <returns>Point2D; The frame position, or the position unchanged when the battlefield is not
-/// zoomed or the position lies outside the native view.</returns>
+/// <returns>Point2D; The frame position, or the position unchanged when neither the zoom nor
+/// the interface scale applies to it.</returns>
 Point2D Battle_Zoom_View_To_Frame(Point2D const & point)
 {
-	if (!Is_Zoomed()) {
-		return(point);
+	if (Is_Zoomed() && TacticalRect.Is_Point_Within(point)) {
+		return(Battle_Zoom_View_To_Screen(point, BattlefieldRect, _State.Factor()));
 	}
 
-	return(Battle_Zoom_View_To_Screen(point, BattlefieldRect, _State.Factor()));
+	if (Is_Scaled()) {
+		return(UI_Scale_Interface_To_Screen(point, BattlefieldRect, UI_Scale()));
+	}
+
+	return(point);
 }
 
 
@@ -243,22 +269,20 @@ Point2D Battle_Zoom_Edge_Point(Point2D const & point)
 
 
 /// <summary>
-/// Shows the composite surface with the battlefield magnified. The tab strip is copied as it
-/// is, and chat and game messages are drawn at frame size over the magnified battlefield.
+/// Shows the composite surface with the battlefield magnified by the zoom and the tab strip
+/// enlarged by the interface scale. Chat and game messages are drawn at frame size over the
+/// battlefield.
 /// </summary>
 /// <param name="surface">The surface being presented.</param>
-/// <returns>bool; Was the surface shown here? It is not when the battlefield is not zoomed,
-/// when the surface is not the composite surface, or while a trigger zoom is in effect.</returns>
+/// <returns>bool; Was the surface shown here? It is only when Battle_Zoom_Presents allows it
+/// and the surface is the composite surface.</returns>
 bool Battle_Zoom_Present(Surface & surface)
 {
-	if (!Is_Zoomed() || &surface != CompositeSurface || VisibleSurface == NULL || TacticalMap == NULL || TacticalMap->ZoomFactor != 1.0) {
+	if (!Battle_Zoom_Presents() || &surface != CompositeSurface) {
 		return(false);
 	}
 
-	Rect strip(0, 0, std::min(surface.Get_Width(), BattlefieldRect.X + BattlefieldRect.Width), BattlefieldRect.Y);
-	if (strip.Is_Valid()) {
-		VisibleSurface->Blit_From(strip, surface, strip, false, true);
-	}
+	int const scale = UI_Scale();
 
 	// Screen shake moves the magnified picture by whole native pixels.
 	int const zoom = _State.Factor();
@@ -273,6 +297,16 @@ bool Battle_Zoom_Present(Surface & surface)
 
 	if (shown.Is_Valid()) {
 		VisibleSurface->Blit_From(dest, surface, shown, false, true);
+	}
+
+	// The tab strip is copied after the battlefield: copied first, it left the battlefield black.
+	int const strip_width = std::min(surface.Get_Width(), BattlefieldRect.X + BattlefieldRect.Width);
+	Rect const strip(0, 0, strip_width / scale, BattlefieldRect.Y / scale);
+	if (strip.Is_Valid()) {
+		if (strip.Width * scale != strip_width) {
+			VisibleSurface->Fill_Rect(Rect(0, 0, strip_width, BattlefieldRect.Y), 0);
+		}
+		VisibleSurface->Blit_From(Rect(0, 0, strip.Width * scale, strip.Height * scale), surface, strip, false, true);
 	}
 
 	Surface * oldpage = LogicalSurface;

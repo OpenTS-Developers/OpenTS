@@ -12,7 +12,7 @@ Each wheel notch over the tactical view zooms in one step, away from the player,
 
 ## Available factors
 
-Factors above 1x are offered only while the part of the map they show is at least 472 pixels wide and 524 pixels high. The 1x view remains available at every valid size. With the sidebar taking 168 pixels and the tab strip 16, that gives:
+Factors above 1x are offered only while the part of the map they show is at least 472 pixels wide and 524 pixels high. The 1x view remains available at every valid size. With the sidebar and the tab strip at the automatic [`UIScale`](/keys/uiscale/) size, that gives:
 
 | Game resolution | Largest factor |
 | --- | --- |

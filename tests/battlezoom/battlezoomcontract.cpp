@@ -13,6 +13,7 @@
 
 #include "battlezoomlayout.h"
 #include "battlezoomstate.hh"
+#include "uiscalelayout.h"
 
 #include <cstdio>
 #include <initializer_list>
@@ -215,6 +216,28 @@ int main()
 		}
 		Check(samples_match, "odd-dimension frame and view positions round-trip at each supported factor");
 	}
+
+	Check(UI_Scale_Automatic(720) == 1 && UI_Scale_Automatic(1080) == 1 && UI_Scale_Automatic(1440) == 1, "the automatic interface scale is 1x below 2160 rows");
+	Check(UI_Scale_Automatic(2160) == 3 && UI_Scale_Automatic(4320) == 4, "and 3x at 2160 rows, 4x at 4320");
+	Check(UI_Scale_For(3840, 2160, 0) == 3 && UI_Scale_For(1920, 1080, 0) == 1 && UI_Scale_For(2560, 1440, 0) == 1, "an automatic scale fits the common frames");
+	Check(UI_Scale_For(1920, 1080, 3) == 2, "a chosen scale the frame cannot fit is lowered until it fits");
+	Check(UI_Scale_For(1280, 720, 2) == 1, "the scale never drops below 1x");
+	Check(UI_Scale_For(3840, 2160, 9) == 4, "a chosen scale above 4x is held at 4x");
+
+	Rect const scaled = UI_Scale_Battlefield_Rect(3840, 2160, 3);
+	Check(Same(scaled, 0, 48, 3336, 2112), "a 3x interface leaves the battlefield beside a 504-pixel sidebar and below a 48-pixel tab strip");
+	Check(Same(UI_Scale_Battlefield_Rect(1920, 1080, 1), 0, 16, 1752, 1064), "a 1x interface keeps the stock layout");
+
+	Check(Same(UI_Scale_Screen_To_Interface(Point2D(3336 + 30, 300), scaled, 3), 3336 + 10, 100), "a sidebar position becomes a sidebar position from the battlefield's right edge");
+	Check(Same(UI_Scale_Screen_To_Interface(Point2D(300, 30), scaled, 3), 100, 10), "a tab strip position becomes a tab strip position");
+	Check(Same(UI_Scale_Screen_To_Interface(Point2D(500, 500), scaled, 3), 500, 500), "a battlefield position is left alone");
+	Check(Same(UI_Scale_Screen_To_Interface(Point2D(1800, 5), hd, 1), 1800, 5), "nothing is converted at 1x");
+
+	bool interface_roundtrip = true;
+	for (Point2D const & point : { Point2D(3336, 0), Point2D(3336 + 167, 719), Point2D(0, 0), Point2D(1111, 15) }) {
+		interface_roundtrip &= UI_Scale_Screen_To_Interface(UI_Scale_Interface_To_Screen(point, scaled, 3), scaled, 3) == point;
+	}
+	Check(interface_roundtrip, "an interface position survives the trip to the frame and back");
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

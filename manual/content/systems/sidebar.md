@@ -25,7 +25,7 @@ related:
     id: ToggleRadar
 ---
 
-The sidebar is the fixed-width panel along the right edge of the screen. From the top down it holds the credit readout, the radar pane, four mode buttons, and two strips of cameos with the power bar running down their left side. The panel stays up for the whole match. An observer gets the panel with both strips empty.
+The sidebar is the fixed-width panel along the right edge of the screen, 168 pixels wide at its artwork size and up to four times wider under [`UIScale`](/keys/uiscale/). From the top down it holds the credit readout, the radar pane, four mode buttons, and two strips of cameos with the power bar running down their left side. The panel stays up for the whole match. An observer gets the panel with both strips empty.
 
 ## What the strips list
 

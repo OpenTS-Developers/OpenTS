@@ -142,6 +142,7 @@
 #include "tag.h"
 #include "tagtype.h"
 #include "terrtype.h"
+#include "uiscale.h"
 #include "unittype.h"
 #include "vein.h"
 #include "vector3.h"
@@ -251,15 +252,10 @@ void DisplayClass::One_Time(void)
 	PlacementShapes = MFCD::Retrieve("PLACE.SHP");
 	ShadowShapes = MFCD::Retrieve("SHADOW.SHP");
 
-	Rect rect = VisibleRect;
-	if (Options.IsSidebarOnRight || Debug_Map) {
-		rect.X = 0;
-	} else {
-		rect.X = SidebarClass::SIDE_WIDTH;
-	}
-	rect.Y = 16;
-	rect.Width = rect.Width - SidebarClass::SIDE_WIDTH;
-	rect.Height = rect.Height - 16;
+	Rect rect;
+	Rect composite;
+	Rect sidebar;
+	UI_Scale_Layout(VisibleRect, rect, composite, sidebar);
 	Set_View_Dimensions(rect);
 }
 

@@ -415,8 +415,8 @@ void GScreenClass::Render(void)
 	**	Draw the multiplayer message system to the Hidpage at this point.
 	**	This way, they'll Blit along with the rest of the map.
 	*/
-	// Over a zoomed battlefield the messages are drawn after the magnification instead.
-	if (Battle_Zoom_Factor() == 1) {
+	// When Battle_Zoom_Present draws the frame, it draws the messages after the magnification.
+	if (!Battle_Zoom_Presents()) {
 		Session.Messages.Draw();
 	}
 	if (Session.ShowInternetDebug) {
