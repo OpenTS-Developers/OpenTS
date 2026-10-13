@@ -27,6 +27,7 @@ Rect Battle_Zoom_Fit_View(Rect const & battlefield);
 bool Battle_Zoom_Applying(void);
 void Battle_Zoom_Reset(void);
 void Battle_Zoom_Start(void);
+void Battle_Zoom_End(void);
 void Battle_Zoom_AI(bool input_pending);
 
 bool Battle_Zoom_Wheel(float wheel, Point2D const & frame);

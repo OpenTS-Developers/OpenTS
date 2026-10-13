@@ -89,6 +89,7 @@
 #include "anim.h"
 #include "audio/audioengine.h"
 #include "autosave.h"
+#include "battlezoom.h"
 #include "bench.h"
 #include "blight.h"
 #include "building.h"
@@ -965,6 +966,7 @@ restart:
 
 			if ((selection == SEL_NONE) && !Debug_ForceScenario) {
 				UI_Scale_End_Scenario();
+				Battle_Zoom_End();
 				if (Get_New_Menu()->MixFile) {
 					selection = New_Main_Menu();
 				} else {

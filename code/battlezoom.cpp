@@ -35,6 +35,10 @@
 static BattleZoomStateClass _State;
 static bool _Applying = false;
 
+// Set once a scenario starts or loads, until the main menu shows again, so the zoom holds while
+// the scenario is read and before it counts as active.
+static bool _Begun = false;
+
 
 static bool Can_Zoom(void)
 {
@@ -112,7 +116,7 @@ bool Battle_Zoom_Applying(void)
 Rect Battle_Zoom_Fit_View(Rect const & battlefield)
 {
 	BattlefieldRect = battlefield;
-	return(_State.Fit_View(battlefield, ScenarioActive));
+	return(_State.Fit_View(battlefield, ScenarioActive || _Begun));
 }
 
 
@@ -136,15 +140,17 @@ void Battle_Zoom_Reset(void)
 /// <summary>
 /// Sets the zoom a mission or a loaded game starts at: the interface scale, so the battlefield
 /// is shown at the same size as the sidebar, lowered to the largest factor the battlefield
-/// allows. It applies even while the mission locks the player's input. The map editor and a
-/// trigger zoom keep 1x.
+/// allows. Call it before the scenario or save is read, so the starting view is placed and
+/// clamped for the zoomed view. It applies even while the mission locks the player's input.
+/// The map editor and a trigger zoom keep 1x.
 /// </summary>
 void Battle_Zoom_Start(void)
 {
-	if (Debug_Map || TacticalMap == NULL || TacticalMap->ZoomFactor != 1.0) {
+	if (Debug_Map || (TacticalMap != NULL && TacticalMap->ZoomFactor != 1.0)) {
 		return;
 	}
 
+	_Begun = true;
 	int const before = _State.Factor();
 	_State.Start_At(BattlefieldRect, UI_Scale());
 	if (_State.Factor() != before) {
@@ -430,4 +436,14 @@ bool Battle_Zoom_Present(Surface & surface)
 	}
 
 	return(true);
+}
+
+
+/// <summary>
+/// Returns the zoom to 1x as the main menu shows again after a scenario.
+/// </summary>
+void Battle_Zoom_End(void)
+{
+	_Begun = false;
+	_State.Reset();
 }

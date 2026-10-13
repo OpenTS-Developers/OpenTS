@@ -1065,7 +1065,7 @@ void Clear_Scenario(void)
 {
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
-	Battle_Zoom_Reset();
+	Battle_Zoom_Start();
 
 	int index;
 
