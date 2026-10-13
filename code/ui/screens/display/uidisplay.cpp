@@ -10,16 +10,11 @@
 #include "ui/screens/display/uidisplay.h"
 
 #include "ui/rml/rmlview.h"
+#include "uiscalelayout.h"
 
 #include <algorithm>
 #include <string>
 #include <utility>
-
-
-static std::string UI_Scale_Label(int scale)
-{
-	return(scale <= 0 ? std::string("Interface size: Automatic") : "Interface size: " + std::to_string(scale) + "x");
-}
 
 
 UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service, UIDisplayState state) :
@@ -27,8 +22,28 @@ UIDisplayPresenterClass::UIDisplayPresenterClass(UIDisplayServiceClass & service
 	Service(service),
 	Initial(State.Selected)
 {
-	State.UIScale = std::clamp(State.UIScale, 0, 4);
-	State.UIScaleLabel = UI_Scale_Label(State.UIScale);
+	Fit_UI_Scale();
+}
+
+
+// Holds the interface size within what the selected resolution fits and names it.
+void UIDisplayPresenterClass::Fit_UI_Scale(void)
+{
+	int width = State.ScreenWidth;
+	int height = State.ScreenHeight;
+	if (State.Selected >= 0 && State.Selected < (int)State.Modes.size()) {
+		width = State.Modes[State.Selected].Width;
+		height = State.Modes[State.Selected].Height;
+	}
+
+	State.UIScaleMax = UI_Scale_For(width, height, UI_SCALE_MAX);
+	State.UIScale = std::clamp(State.UIScale, 0, State.UIScaleMax);
+
+	if (State.UIScale == 0) {
+		State.UIScaleLabel = "Auto (" + std::to_string(UI_Scale_For(width, height, 0)) + "x)";
+	} else {
+		State.UIScaleLabel = std::to_string(State.UIScale) + "x";
+	}
 }
 
 
@@ -36,6 +51,7 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "select") {
 		State.Selected = (intent.Value >= 0 && intent.Value < (int)State.Modes.size()) ? intent.Value : -1;
+		Fit_UI_Scale();
 
 	} else if (intent.Name == "stretch") {
 		State.StretchMovies = (intent.Value != 0);
@@ -44,8 +60,8 @@ void UIDisplayPresenterClass::Execute(UIIntent const & intent)
 		State.SystemCursor = (intent.Value != 0);
 
 	} else if (intent.Name == "uiscale") {
-		State.UIScale = (State.UIScale + 1) % 5;
-		State.UIScaleLabel = UI_Scale_Label(State.UIScale);
+		State.UIScale = intent.Value;
+		Fit_UI_Scale();
 
 	} else if (intent.Name == "ok") {
 		Service.Set_Stretch_Movies(State.StretchMovies);
@@ -119,6 +135,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 			Model.DirtyVariable("selected");
 			Model.DirtyVariable("stretch");
 			Model.DirtyVariable("systemcursor");
+			Model.DirtyVariable("uiscale");
+			Model.DirtyVariable("uiscalemax");
 			Model.DirtyVariable("uiscalelabel");
 		}
 
@@ -139,6 +157,8 @@ class UIDisplayViewClass : public UIRmlViewClass
 				&& model.Bind("selected", &state.Selected)
 				&& model.Bind("stretch", &state.StretchMovies)
 				&& model.Bind("systemcursor", &state.SystemCursor)
+				&& model.Bind("uiscale", &state.UIScale)
+				&& model.Bind("uiscalemax", &state.UIScaleMax)
 				&& model.Bind("uiscalelabel", &state.UIScaleLabel));
 		}
 

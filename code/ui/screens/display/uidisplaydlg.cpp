@@ -70,6 +70,8 @@ void UI_Display_State(UIDisplayState & state)
 	state.StretchMovies = Options.StretchMovies;
 	state.SystemCursor = Options.SystemCursor;
 	state.UIScale = Options.UIScale;
+	state.ScreenWidth = Options.ScreenWidth;
+	state.ScreenHeight = Options.ScreenHeight;
 
 	int * modes = EnumDisplayModes(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT);
 	if (modes == NULL) {

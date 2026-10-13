@@ -21,7 +21,7 @@
 	</div></div>
 	<label class="check" id="switch-stretch"><input type="checkbox" id="stretch" data-attrif-checked="stretch" data-event-click="queue('stretch', stretch ? 0 : 1)"/>Stretch movies to fit resolution</label>
 	<label class="check" id="switch-system-cursor"><input type="checkbox" id="system-cursor" data-attrif-checked="systemcursor" data-event-click="queue('systemcursor', systemcursor ? 0 : 1)"/>Use the system mouse pointer</label>
-	<button id="uiscale" data-event-click="queue('uiscale')">{{uiscalelabel}}</button>
+	<div class="row" id="row-uiscale"><span class="caption">Interface Size</span><input type="range" id="uiscale" min="0" data-attr-max="uiscalemax" step="1" data-attr-value="uiscale" data-event-change="queue('uiscale', ev.value)"/><span class="value">{{uiscalelabel}}</span></div>
 	<div id="buttons">
 		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>
 		<button id="cancel" data-event-click="queue('cancel')">[[TXT_CANCEL]]</button>

@@ -970,17 +970,18 @@ void Test_Display_Presenter(void)
 	{
 		RecordingDisplayServiceClass service;
 		UIDisplayPresenterClass presenter(service, Display_Fixture());
-		Check(presenter.State.UIScaleLabel == "Interface size: Automatic", "the interface size starts at its saved choice");
-		Drive(presenter, "uiscale");
-		Drive(presenter, "uiscale");
-		Check(presenter.State.UIScale == 2 && presenter.State.UIScaleLabel == "Interface size: 2x" && service.Calls.empty(), "each press steps the interface size and holds it until the player accepts");
-		Drive(presenter, "uiscale");
-		Drive(presenter, "uiscale");
-		Drive(presenter, "uiscale");
-		Check(presenter.State.UIScale == 0, "after 4x the interface size returns to automatic");
-		Drive(presenter, "uiscale");
+		Check(presenter.State.UIScale == 0 && presenter.State.UIScaleLabel == "Auto (1x)" && presenter.State.UIScaleMax == 1, "the interface size starts automatic and names the size it picks");
+		Drive(presenter, "uiscale", 3);
+		Check(presenter.State.UIScale == 1, "a size the selected resolution cannot fit is held at the largest that fits");
+		Drive(presenter, "select", 2);
+		Drive(presenter, "uiscale", 2);
+		Check(presenter.State.UIScaleMax == 2 && presenter.State.UIScale == 2 && presenter.State.UIScaleLabel == "2x" && service.Calls.empty(), "a larger resolution offers a larger size, held until the player accepts");
+		Drive(presenter, "select", 1);
+		Check(presenter.State.UIScale == 1, "picking a smaller resolution lowers the size to one it fits");
+		Drive(presenter, "select", 2);
+		Drive(presenter, "uiscale", 2);
 		Drive(presenter, "ok");
-		Check(service.Calls.back() == "ui scale 1", "accepting applies the chosen interface size");
+		Check(service.Calls.back() == "ui scale 2", "accepting applies the chosen interface size");
 	}
 
 	{

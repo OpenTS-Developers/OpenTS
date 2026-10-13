@@ -55,11 +55,32 @@
 	margin-top: 3dp;
 }
 
-#uiscale
+#row-uiscale
 {
 	display: block;
-	width: 278dp;
+	height: 25dp;
 	margin-top: 6dp;
+	white-space: nowrap;
+}
+
+#row-uiscale > .caption
+{
+	width: 86dp;
+	margin-right: 6dp;
+	line-height: 17dp;
+}
+
+#row-uiscale > input[type='range']
+{
+	width: 118dp;
+	height: 25dp;
+}
+
+#row-uiscale > .value
+{
+	width: 62dp;
+	margin-left: 6dp;
+	line-height: 17dp;
 }
 
 #buttons
