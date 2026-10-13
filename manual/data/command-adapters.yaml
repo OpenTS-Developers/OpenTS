@@ -441,9 +441,6 @@ fixed_exclusions:
       - { file: code/scroll.cpp, function: ScrollClass::Scroll_AI, expression: KN_RMOUSE }
     reason: Continuous tactical-map pointer state, not discrete command dispatch.
   - sites:
-      - { file: code/battlezoom.cpp, function: Battle_Zoom_AI, expression: KN_LMOUSE }
-      - { file: code/battlezoom.cpp, function: Battle_Zoom_AI, expression: KN_RMOUSE }
-      - { file: code/battlezoom.cpp, function: Battle_Zoom_AI, expression: KN_LMOUSE+KN_RMOUSE }
       - { file: code/mouse.cpp, function: MouseClass::AI, expression: KN_NONE }
     reason: A battlefield zoom change waits for held buttons and pending input; these are not controls.
   - sites:

@@ -161,7 +161,7 @@ static bool Handle_Event(WindowEvent const & event)
 		}
 
 		if (event.Type == WINDOW_EVENT_MOUSE_DOWN) {
-			Battle_Zoom_Mouse_Button(true, framepoint);
+			Battle_Zoom_Mouse_Button(event.Button, true, framepoint);
 		}
 
 		Point2D point = framepoint;
@@ -170,7 +170,7 @@ static bool Handle_Event(WindowEvent const & event)
 		frame.Y = point.Y;
 
 		if (event.Type == WINDOW_EVENT_MOUSE_UP) {
-			Battle_Zoom_Mouse_Button(false, framepoint);
+			Battle_Zoom_Mouse_Button(event.Button, false, framepoint);
 		}
 	}
 
@@ -193,6 +193,9 @@ static bool Handle_Event(WindowEvent const & event)
 		case WINDOW_EVENT_FOCUS_GAINED:
 		case WINDOW_EVENT_FOCUS_LOST:
 			Battle_Zoom_Release_Buttons();
+			if (event.Type == WINDOW_EVENT_FOCUS_LOST) {
+				Battle_Zoom_Cancel_Pending();
+			}
 			Set_Game_Focus(event.Type == WINDOW_EVENT_FOCUS_GAINED);
 			return(false);
 

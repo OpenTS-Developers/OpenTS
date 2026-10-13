@@ -17,6 +17,7 @@
 #include "_surface.h"
 #include "_tactica.h"
 #include "battlezoomlayout.h"
+#include "battlezoomstate.hh"
 #include "globals.h"
 #include "keyboard.h"
 #include "session.h"
@@ -27,16 +28,8 @@
 #include <algorithm>
 
 
-static int _Zoom = BATTLE_ZOOM_MIN;
-static int _Pending = BATTLE_ZOOM_MIN;
+static BattleZoomStateClass _State;
 static bool _Applying = false;
-
-static bool _HasAnchor = false;
-static Point2D _Anchor(0, 0);
-static float _WheelRemainder = 0.0f;
-
-static int _ButtonsHeld = 0;
-static bool _DragInBattlefield = false;
 
 
 static bool Can_Zoom(void)
@@ -47,7 +40,7 @@ static bool Can_Zoom(void)
 
 static bool Is_Zoomed(void)
 {
-	return(_Zoom > BATTLE_ZOOM_MIN && ScenarioActive);
+	return(_State.Factor() > BATTLE_ZOOM_MIN && ScenarioActive);
 }
 
 
@@ -57,7 +50,7 @@ static bool Is_Zoomed(void)
 /// <returns>int; 1 when the battlefield is not zoomed.</returns>
 int Battle_Zoom_Factor(void)
 {
-	return(_Zoom);
+	return(_State.Factor());
 }
 
 
@@ -80,10 +73,7 @@ bool Battle_Zoom_Applying(void)
 Rect Battle_Zoom_Fit_View(Rect const & battlefield)
 {
 	BattlefieldRect = battlefield;
-	_Zoom = ScenarioActive ? Battle_Zoom_Nearest_Allowed(battlefield, _Zoom) : (int)BATTLE_ZOOM_MIN;
-	_Pending = _Zoom;
-
-	return(Battle_Zoom_View_Rect(battlefield, _Zoom));
+	return(_State.Fit_View(battlefield, ScenarioActive));
 }
 
 
@@ -93,12 +83,9 @@ Rect Battle_Zoom_Fit_View(Rect const & battlefield)
 /// </summary>
 void Battle_Zoom_Reset(void)
 {
-	_Pending = BATTLE_ZOOM_MIN;
-	_HasAnchor = false;
-	_WheelRemainder = 0.0f;
-
-	if (_Zoom != BATTLE_ZOOM_MIN) {
-		_Zoom = BATTLE_ZOOM_MIN;
+	bool const changed = _State.Factor() != BATTLE_ZOOM_MIN;
+	_State.Reset();
+	if (changed) {
 		_Applying = true;
 		Map.Set_View_Dimensions(BattlefieldRect);
 		_Applying = false;
@@ -109,42 +96,42 @@ void Battle_Zoom_Reset(void)
 
 /// <summary>
 /// Applies a zoom change asked for by the wheel. The change waits while a key press is pending
-/// or a mouse button is held, and is dropped while the player cannot zoom. The world position
-/// under the cursor when the wheel turned stays under it.
+/// or a mouse button is held, and is dropped while the player cannot zoom. The map position at
+/// the recorded pointer location stays there when the factor changes, subject to map limits.
 /// </summary>
 /// <param name="input_pending">Is a key or button press waiting to be processed this frame?</param>
 void Battle_Zoom_AI(bool input_pending)
 {
-	if (!Can_Zoom()) {
-		_Pending = _Zoom;
-		_HasAnchor = false;
-		return;
-	}
-
 	// A release the interface took never reaches Battle_Zoom_Mouse_Button.
-	if (Keyboard == NULL || (!Keyboard->Down(KN_LMOUSE) && !Keyboard->Down(KN_RMOUSE))) {
-		Battle_Zoom_Release_Buttons();
+	unsigned held = 0;
+	if (Keyboard != nullptr) {
+		KeyNumType const keys[] = { KN_LMOUSE, KN_RMOUSE, (KeyNumType)VK_MBUTTON, (KeyNumType)VK_XBUTTON1, (KeyNumType)VK_XBUTTON2 };
+		for (int button = WINDOW_BUTTON_LEFT; button <= WINDOW_BUTTON_X2; button++) {
+			if (Keyboard->Down(keys[button])) {
+				held |= BattleZoomStateClass::Button_Mask((WindowMouseButton)button);
+			}
+		}
 	}
+	_State.Reconcile_Buttons(held);
 
-	if (_Pending == _Zoom || input_pending || _ButtonsHeld > 0) {
+	int const before_factor = _State.Factor();
+	Point2D frame;
+	if (!_State.Apply_Pending(BattlefieldRect, Can_Zoom(), input_pending, frame)) {
 		return;
 	}
 
-	Point2D frame = _HasAnchor ? _Anchor : Point2D(BattlefieldRect.X + BattlefieldRect.Width / 2, BattlefieldRect.Y + BattlefieldRect.Height / 2);
 	Rect const before_view = TacticalRect;
-	Point2D const before_point = Battle_Zoom_Screen_To_View(frame, BattlefieldRect, _Zoom);
+	Point2D const before_point = Battle_Zoom_Screen_To_View(frame, BattlefieldRect, before_factor);
 	Point2D const center = TacticalMap->Get_Tactical_Position();
 
-	_Zoom = _Pending;
 	_Applying = true;
 	Map.Set_View_Dimensions(BattlefieldRect);
 	_Applying = false;
 
-	Point2D const after_point = Battle_Zoom_Screen_To_View(frame, BattlefieldRect, _Zoom);
+	Point2D const after_point = Battle_Zoom_Screen_To_View(frame, BattlefieldRect, _State.Factor());
 	TacticalMap->Set_Tactical_Position(Battle_Zoom_Anchored_Center(center, before_view, before_point, TacticalRect, after_point));
 
 	Map.Flag_To_Redraw(GS_REDRAW_ALL);
-	_HasAnchor = false;
 }
 
 
@@ -157,24 +144,7 @@ void Battle_Zoom_AI(bool input_pending)
 /// while the player cannot zoom, is left for the sidebar.</returns>
 bool Battle_Zoom_Wheel(float wheel, Point2D const & frame)
 {
-	if (!Can_Zoom() || !BattlefieldRect.Is_Point_Within(frame)) {
-		_WheelRemainder = 0.0f;
-		return(false);
-	}
-
-	if (_ButtonsHeld > 0) {
-		_WheelRemainder = 0.0f;
-		return(true);
-	}
-
-	int steps = Battle_Zoom_Wheel_Steps(_WheelRemainder, wheel);
-	if (steps != 0) {
-		_Pending = Battle_Zoom_Nearest_Allowed(BattlefieldRect, std::clamp(_Pending + steps, (int)BATTLE_ZOOM_MIN, (int)BATTLE_ZOOM_MAX));
-		_Anchor = frame;
-		_HasAnchor = true;
-	}
-
-	return(true);
+	return(_State.Wheel(BattlefieldRect, Can_Zoom(), wheel, frame));
 }
 
 
@@ -183,17 +153,12 @@ bool Battle_Zoom_Wheel(float wheel, Point2D const & frame)
 /// battlefield is held, the pointer stays mapped onto the battlefield, so a drag that leaves
 /// it ends at the edge of the view.
 /// </summary>
+/// <param name="button">The button whose state changed.</param>
 /// <param name="down">Is this a press?</param>
 /// <param name="frame">The pointer position in frame pixels.</param>
-void Battle_Zoom_Mouse_Button(bool down, Point2D const & frame)
+void Battle_Zoom_Mouse_Button(WindowMouseButton button, bool down, Point2D const & frame)
 {
-	if (down) {
-		if (_ButtonsHeld++ == 0) {
-			_DragInBattlefield = BattlefieldRect.Is_Point_Within(frame);
-		}
-	} else if (_ButtonsHeld > 0 && --_ButtonsHeld == 0) {
-		_DragInBattlefield = false;
-	}
+	_State.Mouse_Button(button, down, BattlefieldRect, frame);
 }
 
 
@@ -202,14 +167,20 @@ void Battle_Zoom_Mouse_Button(bool down, Point2D const & frame)
 /// </summary>
 void Battle_Zoom_Release_Buttons(void)
 {
-	_ButtonsHeld = 0;
-	_DragInBattlefield = false;
+	_State.Release_Buttons();
+}
+
+
+void Battle_Zoom_Cancel_Pending(void)
+{
+	_State.Cancel_Pending();
 }
 
 
 /// <summary>
 /// Converts a frame position into the coordinates the game uses. A position over the zoomed
-/// battlefield becomes a native view position; any other position is left alone.
+/// battlefield becomes a native view position. A drag started there stays clamped to it;
+/// other positions are left alone.
 /// </summary>
 /// <param name="point">The position to convert in place.</param>
 void Battle_Zoom_Frame_To_View(Point2D & point)
@@ -218,12 +189,12 @@ void Battle_Zoom_Frame_To_View(Point2D & point)
 		return;
 	}
 
-	if (_DragInBattlefield) {
+	if (_State.Dragging()) {
 		point.X = std::clamp(point.X, BattlefieldRect.X, BattlefieldRect.X + BattlefieldRect.Width - 1);
 		point.Y = std::clamp(point.Y, BattlefieldRect.Y, BattlefieldRect.Y + BattlefieldRect.Height - 1);
 	}
 
-	point = Battle_Zoom_Screen_To_View(point, BattlefieldRect, _Zoom);
+	point = Battle_Zoom_Screen_To_View(point, BattlefieldRect, _State.Factor());
 }
 
 
@@ -238,7 +209,7 @@ Point2D Battle_Zoom_View_To_Frame(Point2D const & point)
 		return(point);
 	}
 
-	return(Battle_Zoom_View_To_Screen(point, BattlefieldRect, _Zoom));
+	return(Battle_Zoom_View_To_Screen(point, BattlefieldRect, _State.Factor()));
 }
 
 
@@ -253,7 +224,7 @@ Point2D Battle_Zoom_Edge_Point(Point2D const & point)
 		return(point);
 	}
 
-	Point2D frame = Battle_Zoom_View_To_Screen(point, BattlefieldRect, _Zoom);
+	Point2D frame = Battle_Zoom_View_To_Screen(point, BattlefieldRect, _State.Factor());
 
 	if (point.X == TacticalRect.X) {
 		frame.X = BattlefieldRect.X;
@@ -290,11 +261,12 @@ bool Battle_Zoom_Present(Surface & surface)
 	}
 
 	// Screen shake moves the magnified picture by whole native pixels.
-	Rect const screen = Battle_Zoom_Screen_Rect(BattlefieldRect, _Zoom);
-	Rect const source = TacticalRect - Point2D(Map.ScreenX / _Zoom, Map.ScreenY / _Zoom);
+	int const zoom = _State.Factor();
+	Rect const screen = Battle_Zoom_Screen_Rect(BattlefieldRect, zoom);
+	Rect const source = TacticalRect - Point2D(Map.ScreenX / zoom, Map.ScreenY / zoom);
 	Rect const shown = Intersect(source, TacticalRect);
 
-	Rect const dest(screen.X + (shown.X - source.X) * _Zoom, screen.Y + (shown.Y - source.Y) * _Zoom, shown.Width * _Zoom, shown.Height * _Zoom);
+	Rect const dest(screen.X + (shown.X - source.X) * zoom, screen.Y + (shown.Y - source.Y) * zoom, shown.Width * zoom, shown.Height * zoom);
 	if (!(dest == BattlefieldRect)) {
 		VisibleSurface->Fill_Rect(BattlefieldRect, 0);
 	}

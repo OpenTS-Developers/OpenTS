@@ -12,7 +12,7 @@ Each wheel notch over the tactical view zooms in one step, away from the player,
 
 ## Available factors
 
-A factor is offered only while the part of the map it shows is at least 472 pixels wide and 524 pixels high. With the sidebar taking 168 pixels and the tab strip 16, that gives:
+Factors above 1x are offered only while the part of the map they show is at least 472 pixels wide and 524 pixels high. The 1x view remains available at every valid size. With the sidebar taking 168 pixels and the tab strip 16, that gives:
 
 | Game resolution | Largest factor |
 | --- | --- |
@@ -25,9 +25,9 @@ A wheel step past the largest factor is ignored. Rows and columns that a whole f
 
 ## When the zoom changes
 
-The new factor takes effect on the next frame with no key press waiting and no mouse button held. The map position under the pointer when the wheel turned stays under the pointer, unless that would move the view past the edge of the map.
+The new factor takes effect on the next frame with no key press waiting and no mouse button held. The zoom change keeps the map point at the last wheel notch's pointer position in place, unless that would move the view past the edge of the map.
 
-The wheel does not zoom while the window is in the background, while a trigger or the end of a campaign mission locks the player's input, while a trigger zoom is in effect, or in the map editor. A [Zoom in](/mapping/actions/taction-zoom-in/) trigger action first returns the battlefield to 1x.
+The wheel does not zoom while the window is in the background, while a trigger or the end of a campaign mission locks the player's input, or while a trigger zoom is in effect. Any waiting wheel change is canceled in these cases. A [Zoom in](/mapping/actions/taction-zoom-in/) trigger action first returns the battlefield to 1x.
 
 ## What stays at screen size
 

@@ -12,8 +12,10 @@
 // view centre that keeps the world under the cursor.
 
 #include "battlezoomlayout.h"
+#include "battlezoomstate.hh"
 
 #include <cstdio>
+#include <initializer_list>
 
 namespace {
 
@@ -114,6 +116,105 @@ int main()
 	Check(Battle_Zoom_Wheel_Steps(remainder, 0.4f) == 0 && Battle_Zoom_Wheel_Steps(remainder, 0.4f) == 0, "fractions wait");
 	Check(Battle_Zoom_Wheel_Steps(remainder, 0.4f) == 1, "until they add up to a step");
 	Check(Battle_Zoom_Wheel_Steps(remainder, -1.0f) == -1, "turning back drops the fraction left over");
+
+	for (WindowMouseButton button : { WINDOW_BUTTON_LEFT, WINDOW_BUTTON_RIGHT, WINDOW_BUTTON_MIDDLE, WINDOW_BUTTON_X1, WINDOW_BUTTON_X2 }) {
+		BattleZoomStateClass state;
+		Point2D anchor;
+		state.Fit_View(hd, true);
+		state.Mouse_Button(button, true, hd, cursor);
+		Check(state.Wheel(hd, true, 1.0f, cursor), "a held button's wheel request is consumed by zoom");
+		state.Reconcile_Buttons(BattleZoomStateClass::Button_Mask(button));
+		Check(!state.Apply_Pending(hd, true, false, anchor) && state.Factor() == 1, "a pending zoom waits for the held button");
+		state.Mouse_Button(button, false, hd, Point2D(1800, 600));
+		Check(state.Apply_Pending(hd, true, false, anchor) && state.Factor() == 2 && anchor == cursor, "release applies the queued factor at its recorded pointer location");
+	}
+
+	BattleZoomStateClass state;
+	Point2D anchor;
+	state.Fit_View(hd, true);
+	state.Wheel(hd, true, 1.0f, cursor);
+	Check(!state.Apply_Pending(hd, true, true, anchor) && state.Factor() == 1, "pending keyboard input defers the factor change");
+	Check(state.Apply_Pending(hd, true, false, anchor) && anchor == cursor, "an idle frame applies the retained pointer anchor");
+
+	state.Reset();
+	state.Wheel(hd, true, 1.0f, cursor);
+	state.Reconcile_Buttons(BattleZoomStateClass::Button_Mask(WINDOW_BUTTON_MIDDLE));
+	Check(!state.Apply_Pending(hd, true, false, anchor), "a polled middle button blocks a request queued before its press");
+	state.Reconcile_Buttons(0);
+	Check(state.Apply_Pending(hd, true, false, anchor), "a release consumed by the interface is reconciled from live state");
+
+	state.Reset();
+	state.Mouse_Button(WINDOW_BUTTON_LEFT, true, hd, cursor);
+	state.Mouse_Button(WINDOW_BUTTON_LEFT, true, hd, cursor);
+	state.Wheel(hd, true, 1.0f, cursor);
+	state.Mouse_Button(WINDOW_BUTTON_LEFT, false, hd, cursor);
+	Check(!state.Dragging() && state.Apply_Pending(hd, true, false, anchor), "a repeated press cannot leave a phantom held button after release");
+
+	state.Reset();
+	state.Mouse_Button(WINDOW_BUTTON_LEFT, true, hd, cursor);
+	state.Mouse_Button(WINDOW_BUTTON_RIGHT, true, hd, cursor);
+	state.Wheel(hd, true, 1.0f, cursor);
+	state.Mouse_Button(WINDOW_BUTTON_LEFT, false, hd, cursor);
+	Check(!state.Dragging() && !state.Apply_Pending(hd, true, false, anchor), "releasing the drag's button ends its clamp but another hold still defers zoom");
+	state.Mouse_Button(WINDOW_BUTTON_RIGHT, false, hd, cursor);
+	Check(state.Apply_Pending(hd, true, false, anchor), "the pending change waits for the last button to release");
+
+	state.Reset();
+	state.Mouse_Button(WINDOW_BUTTON_LEFT, true, hd, Point2D(1800, 500));
+	Check(!state.Dragging(), "a sidebar press does not clamp the pointer onto the battlefield");
+	state.Release_Buttons();
+	Check(!state.Dragging(), "focus release clears the active drag");
+	state.Wheel(hd, true, 1.0f, cursor);
+	state.Cancel_Pending();
+	Check(!state.Apply_Pending(hd, true, false, anchor) && state.Factor() == 1, "focus loss cancels a pending request before focus can return");
+
+	state.Wheel(hd, true, 1.0f, cursor);
+	Check(!state.Apply_Pending(hd, false, false, anchor), "input lock or trigger zoom cancels a waiting factor");
+	Check(!state.Apply_Pending(hd, true, false, anchor), "unlocking input does not revive a cancelled request");
+	state.Wheel(hd, true, 0.6f, cursor);
+	state.Apply_Pending(hd, false, false, anchor);
+	state.Wheel(hd, true, 0.6f, cursor);
+	Check(!state.Apply_Pending(hd, true, false, anchor), "disabled zoom also discards a smooth wheel's partial step");
+
+	state.Reset();
+	Check(!state.Wheel(hd, false, 1.0f, cursor) && !state.Wheel(hd, true, 1.0f, Point2D(1800, 500)), "disabled zoom and sidebar input are returned to sidebar scrolling");
+	state.Wheel(hd, true, 0.6f, cursor);
+	state.Wheel(hd, true, 0.5f, Point2D(1800, 500));
+	state.Wheel(hd, true, 0.6f, cursor);
+	Check(!state.Apply_Pending(hd, true, false, anchor), "a wheel event outside the battlefield clears its partial step");
+
+	state.Reset();
+	state.Fit_View(uhd, true);
+	state.Wheel(uhd, true, 1.4f, cursor);
+	state.Apply_Pending(uhd, true, false, anchor);
+	state.Fit_View(uhd, true);
+	state.Wheel(uhd, true, 0.7f, cursor);
+	Check(state.Apply_Pending(uhd, true, false, anchor) && state.Factor() == 3, "applying a factor keeps a smooth wheel's unused fraction");
+	state.Fit_View(hd, true);
+	Check(state.Factor() == 2, "a smaller battlefield falls back to its largest available factor");
+	state.Wheel(hd, true, -1.0f, cursor);
+	state.Reset();
+	Check(state.Factor() == 1 && !state.Dragging() && !state.Apply_Pending(hd, true, false, anchor), "scenario and trigger resets clear the factor, gesture, and pending change");
+	state.Wheel(hd, true, 1.0f, cursor);
+	state.Apply_Pending(hd, true, false, anchor);
+	Check(Same(state.Fit_View(hd, false), hd.X, hd.Y, hd.Width, hd.Height) && state.Factor() == 1, "the menu always fits an unzoomed view after a zoomed match");
+	Check(!state.Apply_Pending(hd, true, false, anchor), "starting another scenario cannot apply the previous match's request");
+	state.Fit_View(small, true);
+	Check(state.Wheel(small, true, 1.0f, cursor) && !state.Apply_Pending(small, true, false, anchor), "a battlefield with no larger factor still consumes the wheel");
+	Check(Battle_Zoom_Allowed(Rect(0, 16, 472, 384), 1), "the supported 640x400 frame keeps its smaller unzoomed battlefield");
+
+	Rect const odd_uhd(11, 17, 3673, 2145);
+	for (int factor = 1; factor <= 4; factor++) {
+		Rect const view = Battle_Zoom_View_Rect(odd_uhd, factor);
+		bool samples_match = true;
+		for (int y = view.Y; y < view.Y + view.Height; y += 37) {
+			for (int x = view.X; x < view.X + view.Width; x += 41) {
+				Point2D const point(x, y);
+				samples_match &= Battle_Zoom_Screen_To_View(Battle_Zoom_View_To_Screen(point, odd_uhd, factor), odd_uhd, factor) == point;
+			}
+		}
+		Check(samples_match, "odd-dimension frame and view positions round-trip at each supported factor");
+	}
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

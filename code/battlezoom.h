@@ -16,6 +16,7 @@
 
 #include "point.h"
 #include "rect.h"
+#include "windowevent.hh"
 
 class Surface;
 
@@ -29,8 +30,9 @@ void Battle_Zoom_AI(bool input_pending);
 
 bool Battle_Zoom_Wheel(float wheel, Point2D const & frame);
 
-void Battle_Zoom_Mouse_Button(bool down, Point2D const & frame);
+void Battle_Zoom_Mouse_Button(WindowMouseButton button, bool down, Point2D const & frame);
 void Battle_Zoom_Release_Buttons(void);
+void Battle_Zoom_Cancel_Pending(void);
 void Battle_Zoom_Frame_To_View(Point2D & point);
 Point2D Battle_Zoom_View_To_Frame(Point2D const & point);
 Point2D Battle_Zoom_Edge_Point(Point2D const & point);
