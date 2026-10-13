@@ -2219,10 +2219,9 @@ void RadarClass::Render_Radar(void)
 				SidebarSurface->Blit_From(LastDrawRect, *RadarSurface, LastDrawRect - RadarRect.TopLeft);
 			}
 
+			// Only the view outline is drawn: a second white frame around the whole radar image
+			// read as another view outline.
 			SidebarSurface->Draw_Rect(RadarViewRect, DSurface::Build_Hicolor_Pixel(255, 255, 255));
-			Rect r = RadarRect;
-			Rect rr = Rect(r.X - 1, r.Y - 1, r.Width + 2, r.Height + 2);
-			SidebarSurface->Draw_Rect(rr, DSurface::Build_Hicolor_Pixel(255, 255, 255));
 		}
 
 		if (moved) {
