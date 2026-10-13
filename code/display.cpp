@@ -414,7 +414,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		**	properly set.
 		*/
 		Session.Messages.Init(
-			BattlefieldRect.X, BattlefieldRect.Y, // x,y for messages
+			Battle_Zoom_Message_Rect().X, Battle_Zoom_Message_Rect().Y, // x,y for messages
 			6,                                  // max # msgs
 			MAX_MESSAGE_LENGTH-14,              // max msg length
 			7 * 2/*RESFACTOR*/,                 // font height in pixels
@@ -422,9 +422,9 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 			0,                                  /// enable edit overflow
 			20,                                 // min,
 			MAX_MESSAGE_LENGTH - 14,            // max for trimming overflow
-			BattlefieldRect.Width);             // Width in pixels of buffer
+			Battle_Zoom_Message_Rect().Width);  // Width in pixels of buffer
 
-		Session.Messages.Set_Width(BattlefieldRect.Width);
+		Session.Messages.Set_Width(Battle_Zoom_Message_Rect().Width);
 	}
 
 	DebugString("Set_View_Dimensions(exit)\n");

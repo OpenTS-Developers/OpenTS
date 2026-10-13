@@ -38,4 +38,5 @@ Point2D Battle_Zoom_View_To_Frame(Point2D const & point);
 Point2D Battle_Zoom_Edge_Point(Point2D const & point);
 
 bool Battle_Zoom_Presents(void);
+Rect Battle_Zoom_Message_Rect(void);
 bool Battle_Zoom_Present(Surface & surface);

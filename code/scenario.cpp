@@ -166,6 +166,7 @@
 #include "tube.h"
 #include "tutorial.h"
 #include "ui/uishell.h"
+#include "uiscale.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -372,6 +373,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	if ((briefing == true) && (campaign != CAMPAIGN_NONE) && (Scen->Scenario == 1) && (Campaigns[Scen->Campaign]->CDNumber < 2)) {
 		Choose_Side(Campaigns[Scen->Campaign]->CDNumber);
 	}
+
+	UI_Scale_Refit();
 
 	DebugString("Reading scenario: %s\n", name);
 
@@ -802,7 +805,7 @@ bool Read_Scenario(char const * fname)
 	**	properly set.
 	*/
 	Session.Messages.Init(
-		BattlefieldRect.X, BattlefieldRect.Y,	// x,y for messages
+		Battle_Zoom_Message_Rect().X, Battle_Zoom_Message_Rect().Y,	// x,y for messages
 		6, 										// max # msgs
 		MAX_MESSAGE_LENGTH - 14,			// max msg length
 		7 * 2,									// font height in pixels
@@ -810,7 +813,7 @@ bool Read_Scenario(char const * fname)
 		0,//BG		1,							// enable edit overflow
 		20,										// min,
 		MAX_MESSAGE_LENGTH - 14,			// max for trimming overflow
-		BattlefieldRect.Width);				// Width in pixels of buffer
+		Battle_Zoom_Message_Rect().Width);				// Width in pixels of buffer
 
 	Fill_In_Data();
 

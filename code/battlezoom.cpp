@@ -18,6 +18,7 @@
 #include "_tactica.h"
 #include "battlezoomlayout.h"
 #include "battlezoomstate.hh"
+#include "bsurface.h"
 #include "globals.h"
 #include "keyboard.h"
 #include "session.h"
@@ -28,6 +29,7 @@
 #include "win.h"
 
 #include <algorithm>
+#include <memory>
 
 
 static BattleZoomStateClass _State;
@@ -53,12 +55,31 @@ static bool Is_Scaled(void)
 
 
 /// <summary>
-/// Does Battle_Zoom_Present draw the composite surface this frame? It does while the battlefield
-/// is zoomed or the interface is scaled, except during a trigger zoom.
+/// Does Battle_Zoom_Present draw the composite surface this frame? It does while the interface
+/// is scaled, and while the battlefield is zoomed outside a trigger zoom.
 /// </summary>
 bool Battle_Zoom_Presents(void)
 {
-	return((Is_Zoomed() || Is_Scaled()) && VisibleSurface != NULL && TacticalMap != NULL && TacticalMap->ZoomFactor == 1.0);
+	if (VisibleSurface == NULL || TacticalMap == NULL) {
+		return(false);
+	}
+
+	return(Is_Scaled() || (Is_Zoomed() && TacticalMap->ZoomFactor == 1.0));
+}
+
+
+/// <summary>
+/// The area chat and game messages are laid out in. A scaled interface draws them in
+/// interface pixels on a plane over the battlefield, so the area starts at that plane's corner.
+/// </summary>
+Rect Battle_Zoom_Message_Rect(void)
+{
+	int const scale = UI_Scale();
+	if (scale <= UI_SCALE_MIN) {
+		return(BattlefieldRect);
+	}
+
+	return(Rect(0, 0, BattlefieldRect.Width / scale, BattlefieldRect.Height / scale));
 }
 
 
@@ -268,10 +289,65 @@ Point2D Battle_Zoom_Edge_Point(Point2D const & point)
 }
 
 
+// The message plane's background; no message text or backdrop uses this colour.
+static unsigned short const MESSAGE_PLANE_KEY = 0xF81F;
+
+static std::unique_ptr<BSurface> _MessagePlane;
+
+
+static void Draw_Scaled_Messages(int scale)
+{
+	Rect const area = Battle_Zoom_Message_Rect();
+	if (!area.Is_Valid()) {
+		return;
+	}
+
+	if (_MessagePlane == nullptr || _MessagePlane->Get_Width() != area.Width || _MessagePlane->Get_Height() != area.Height) {
+		_MessagePlane = std::make_unique<BSurface>(area.Width, area.Height, 2);
+	}
+
+	_MessagePlane->Fill(MESSAGE_PLANE_KEY);
+	Surface * oldpage = LogicalSurface;
+	LogicalSurface = _MessagePlane.get();
+	Session.Messages.Draw();
+	LogicalSurface = oldpage;
+
+	unsigned short const * source = (unsigned short const *)_MessagePlane->Lock();
+	unsigned short * dest = (unsigned short *)VisibleSurface->Lock(BattlefieldRect.Top_Left());
+	if (source != nullptr && dest != nullptr) {
+		int const source_pitch = _MessagePlane->Stride() / 2;
+		int const dest_pitch = VisibleSurface->Stride() / 2;
+
+		for (int y = 0; y < area.Height; y++) {
+			for (int x = 0; x < area.Width; x++) {
+				unsigned short const pixel = source[y * source_pitch + x];
+				if (pixel == MESSAGE_PLANE_KEY) {
+					continue;
+				}
+
+				for (int row = 0; row < scale; row++) {
+					unsigned short * out = dest + (y * scale + row) * dest_pitch + x * scale;
+					for (int column = 0; column < scale; column++) {
+						out[column] = pixel;
+					}
+				}
+			}
+		}
+	}
+
+	if (dest != nullptr) {
+		VisibleSurface->Unlock();
+	}
+	if (source != nullptr) {
+		_MessagePlane->Unlock();
+	}
+}
+
+
 /// <summary>
-/// Shows the composite surface with the battlefield magnified by the zoom and the tab strip
-/// enlarged by the interface scale. Chat and game messages are drawn at frame size over the
-/// battlefield.
+/// Shows the composite surface with the battlefield magnified by the zoom or a trigger zoom and
+/// the tab strip enlarged by the interface scale. Chat and game messages are drawn over the
+/// battlefield, enlarged by the interface scale.
 /// </summary>
 /// <param name="surface">The surface being presented.</param>
 /// <returns>bool; Was the surface shown here? It is only when Battle_Zoom_Presents allows it
@@ -284,13 +360,26 @@ bool Battle_Zoom_Present(Surface & surface)
 
 	int const scale = UI_Scale();
 
-	// Screen shake moves the magnified picture by whole native pixels.
-	int const zoom = _State.Factor();
-	Rect const screen = Battle_Zoom_Screen_Rect(BattlefieldRect, zoom);
-	Rect const source = TacticalRect - Point2D(Map.ScreenX / zoom, Map.ScreenY / zoom);
-	Rect const shown = Intersect(source, TacticalRect);
+	Rect shown;
+	Rect dest;
+	if (TacticalMap->ZoomFactor != 1.0) {
 
-	Rect const dest(screen.X + (shown.X - source.X) * zoom, screen.Y + (shown.Y - source.Y) * zoom, shown.Width * zoom, shown.Height * zoom);
+		// A trigger zoom magnifies the middle of the view to fill the battlefield.
+		int const width = (int)(TacticalRect.Width / TacticalMap->ZoomFactor);
+		int const height = (int)(TacticalRect.Height / TacticalMap->ZoomFactor);
+		shown = Rect(TacticalRect.X + (TacticalRect.Width - width) / 2, TacticalRect.Y + (TacticalRect.Height - height) / 2, width, height);
+		dest = BattlefieldRect;
+
+	} else {
+
+		// Screen shake moves the magnified picture by whole native pixels.
+		int const zoom = _State.Factor();
+		Rect const screen = Battle_Zoom_Screen_Rect(BattlefieldRect, zoom);
+		Rect const source = TacticalRect - Point2D(Map.ScreenX / zoom, Map.ScreenY / zoom);
+		shown = Intersect(source, TacticalRect);
+		dest = Rect(screen.X + (shown.X - source.X) * zoom, screen.Y + (shown.Y - source.Y) * zoom, shown.Width * zoom, shown.Height * zoom);
+	}
+
 	if (!(dest == BattlefieldRect)) {
 		VisibleSurface->Fill_Rect(BattlefieldRect, 0);
 	}
@@ -309,10 +398,14 @@ bool Battle_Zoom_Present(Surface & surface)
 		VisibleSurface->Blit_From(Rect(0, 0, strip.Width * scale, strip.Height * scale), surface, strip, false, true);
 	}
 
-	Surface * oldpage = LogicalSurface;
-	LogicalSurface = VisibleSurface;
-	Session.Messages.Draw();
-	LogicalSurface = oldpage;
+	if (scale > UI_SCALE_MIN) {
+		Draw_Scaled_Messages(scale);
+	} else {
+		Surface * oldpage = LogicalSurface;
+		LogicalSurface = VisibleSurface;
+		Session.Messages.Draw();
+		LogicalSurface = oldpage;
+	}
 
 	return(true);
 }
