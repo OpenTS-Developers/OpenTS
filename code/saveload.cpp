@@ -62,6 +62,7 @@
 #include "alphashp.h"
 #include "anim.h"
 #include "animtype.h"
+#include "battlezoom.h"
 #include "blight.h"
 #include "building.h"
 #include "builtype.h"
@@ -1190,6 +1191,7 @@ bool Load_Game(const char *file_name)
 	Map.Complete_Radar_Refresh();
 	ScenarioActive = true;
 	TacticalActive = true;
+	Battle_Zoom_Start();
 	Sync_Recorder_Arm();
 	Sync_Report_Reset();
 	SaveManager.Autosave.Schedule(Frame);

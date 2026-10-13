@@ -217,6 +217,14 @@ int main()
 		Check(samples_match, "odd-dimension frame and view positions round-trip at each supported factor");
 	}
 
+	{
+		BattleZoomStateClass state;
+		state.Start_At(Rect(0, 48, 3336, 2112), 3);
+		Check(state.Factor() == 3, "a mission at a 3x interface starts zoomed to 3x");
+		state.Start_At(hd, 3);
+		Check(state.Factor() == 2, "a starting zoom the battlefield cannot show drops to the largest it can");
+	}
+
 	Check(UI_Scale_Automatic(720) == 1 && UI_Scale_Automatic(1080) == 1 && UI_Scale_Automatic(1440) == 1, "the automatic interface scale is 1x below 2160 rows");
 	Check(UI_Scale_Automatic(2160) == 3 && UI_Scale_Automatic(4320) == 4, "and 3x at 2160 rows, 4x at 4320");
 	Check(UI_Scale_For(3840, 2160, 0) == 3 && UI_Scale_For(1920, 1080, 0) == 1 && UI_Scale_For(2560, 1440, 0) == 1, "an automatic scale fits the common frames");

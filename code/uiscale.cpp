@@ -25,6 +25,10 @@
 
 static int _Scale = UI_SCALE_MIN;
 
+// Set from the start of a scenario, so its briefing is drawn at the interface scale, until the
+// main menu shows again.
+static bool _Starting = false;
+
 
 /// <summary>
 /// Fetches the interface scale of the current layout.
@@ -87,6 +91,8 @@ Rect UI_Scale_Battlefield(Rect const & visible)
 /// </summary>
 void UI_Scale_Refit(void)
 {
+	_Starting = true;
+
 	int const wanted = Debug_Map ? (int)UI_SCALE_MIN : UI_Scale_For(VisibleRect.Width, VisibleRect.Height, Options.UIScale);
 	if (wanted == _Scale) {
 		return;
@@ -104,12 +110,12 @@ void UI_Scale_Refit(void)
 
 
 /// <summary>
-/// The scale the game's dialogs are drawn at: the interface scale during a scenario, and 1x
+/// The scale the game's dialogs are drawn at: the interface scale while a scenario starts or runs, and 1x
 /// elsewhere, where the menus sit over artwork that keeps its size.
 /// </summary>
 int UI_Dialog_Scale(void)
 {
-	return(ScenarioActive ? _Scale : (int)UI_SCALE_MIN);
+	return(ScenarioActive || _Starting ? _Scale : (int)UI_SCALE_MIN);
 }
 
 
@@ -187,4 +193,13 @@ void UI_Scale_Show_Sidebar(Rect const & source)
 	int const left = Options.IsSidebarOnRight ? BattlefieldRect.X + BattlefieldRect.Width : 0;
 
 	UI_Scale_Copy(*VisibleSurface, Point2D(left + source.X * _Scale, source.Y * _Scale), *SidebarSurface, source, _Scale);
+}
+
+
+/// <summary>
+/// Returns the game's dialogs to 1x, as the main menu shows again after a scenario.
+/// </summary>
+void UI_Scale_End_Scenario(void)
+{
+	_Starting = false;
 }

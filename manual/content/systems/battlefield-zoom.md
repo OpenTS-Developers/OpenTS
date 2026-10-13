@@ -37,4 +37,4 @@ A drag that starts on the battlefield stays on it: a selection box or a coast sc
 
 ## Persistence
 
-The factor belongs to the local display. It is not stored in saved games or sent to other players. Starting or loading a mission returns it to 1x, and a game saved while zoomed loads with the view centred where the zoomed view was. The game resolution can only be changed from the main menu, where the factor is always 1x.
+The factor belongs to the local display. It is not stored in saved games or sent to other players. A mission or a loaded game starts at the [`UIScale`](/keys/uiscale/) size, lowered to the largest factor available, so at 3840 by 2160 with the automatic size it starts at 3x. This happens even when the mission opens with the player's input locked. A game saved while zoomed loads with the view centred where the zoomed view was. The game resolution can only be changed from the main menu, where the factor is always 1x.

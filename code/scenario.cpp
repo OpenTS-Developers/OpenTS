@@ -468,6 +468,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	ScenarioActive = true;
 	TacticalActive = true;
+	Battle_Zoom_Start();
 
 	return(true);
 }

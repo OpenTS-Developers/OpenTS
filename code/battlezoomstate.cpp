@@ -81,6 +81,15 @@ void BattleZoomStateClass::Reset(void)
 }
 
 
+// Sets the factor outright, lowered to the nearest one the battlefield allows, and drops any
+// waiting wheel change.
+void BattleZoomStateClass::Start_At(Rect const & battlefield, int zoom)
+{
+	Zoom = Battle_Zoom_Nearest_Allowed(battlefield, zoom);
+	Cancel_Pending();
+}
+
+
 unsigned BattleZoomStateClass::Button_Mask(WindowMouseButton button)
 {
 	return(button >= WINDOW_BUTTON_LEFT && button <= WINDOW_BUTTON_X2 ? 1u << button : 0u);

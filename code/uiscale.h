@@ -28,6 +28,7 @@ void UI_Scale_Refit(void);
 
 int UI_Dialog_Scale(void);
 void UI_Scale_Sync_Dialogs(void);
+void UI_Scale_End_Scenario(void);
 
 void UI_Scale_Copy(Surface & dest, Point2D const & at, Surface const & source, Rect const & from, int scale);
 void UI_Scale_Show_Sidebar(Rect const & source);

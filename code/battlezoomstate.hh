@@ -22,6 +22,7 @@ public:
 	bool Apply_Pending(Rect const & battlefield, bool can_zoom, bool input_pending, Point2D & frame);
 	void Cancel_Pending(void);
 	void Reset(void);
+	void Start_At(Rect const & battlefield, int zoom);
 
 	static unsigned Button_Mask(WindowMouseButton button);
 	void Mouse_Button(WindowMouseButton button, bool down, Rect const & battlefield, Point2D const & frame);

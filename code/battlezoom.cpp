@@ -134,6 +134,29 @@ void Battle_Zoom_Reset(void)
 
 
 /// <summary>
+/// Sets the zoom a mission or a loaded game starts at: the interface scale, so the battlefield
+/// is shown at the same size as the sidebar, lowered to the largest factor the battlefield
+/// allows. It applies even while the mission locks the player's input. The map editor and a
+/// trigger zoom keep 1x.
+/// </summary>
+void Battle_Zoom_Start(void)
+{
+	if (Debug_Map || TacticalMap == NULL || TacticalMap->ZoomFactor != 1.0) {
+		return;
+	}
+
+	int const before = _State.Factor();
+	_State.Start_At(BattlefieldRect, UI_Scale());
+	if (_State.Factor() != before) {
+		_Applying = true;
+		Map.Set_View_Dimensions(BattlefieldRect);
+		_Applying = false;
+		Map.Flag_To_Redraw(GS_REDRAW_ALL);
+	}
+}
+
+
+/// <summary>
 /// Applies a zoom change asked for by the wheel. The change waits while a key press is pending
 /// or a mouse button is held, and is dropped while the player cannot zoom. The map position at
 /// the recorded pointer location stays there when the factor changes, subject to map limits.

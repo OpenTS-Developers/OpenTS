@@ -186,6 +186,7 @@
 #include "ui/screens/version/uiversion.h"
 #include "ui/uienginehost.h"
 #include "uicontrol.h"
+#include "uiscale.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -963,6 +964,7 @@ restart:
 			}
 
 			if ((selection == SEL_NONE) && !Debug_ForceScenario) {
+				UI_Scale_End_Scenario();
 				if (Get_New_Menu()->MixFile) {
 					selection = New_Main_Menu();
 				} else {
