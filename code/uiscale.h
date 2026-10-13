@@ -13,16 +13,21 @@
 
 #pragma once
 
+#include "point.h"
 #include "rect.h"
+
+class Surface;
 
 
 int UI_Scale(void);
 int UI_Height(void);
 
 void UI_Scale_Layout(Rect const & visible, Rect & battlefield, Rect & composite, Rect & sidebar);
+Rect UI_Scale_Battlefield(Rect const & visible);
 void UI_Scale_Refit(void);
 
 int UI_Dialog_Scale(void);
 void UI_Scale_Sync_Dialogs(void);
 
+void UI_Scale_Copy(Surface & dest, Point2D const & at, Surface const & source, Rect const & from, int scale);
 void UI_Scale_Show_Sidebar(Rect const & source);

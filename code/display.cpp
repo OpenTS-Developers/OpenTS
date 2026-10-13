@@ -252,11 +252,8 @@ void DisplayClass::One_Time(void)
 	PlacementShapes = MFCD::Retrieve("PLACE.SHP");
 	ShadowShapes = MFCD::Retrieve("SHADOW.SHP");
 
-	Rect rect;
-	Rect composite;
-	Rect sidebar;
-	UI_Scale_Layout(VisibleRect, rect, composite, sidebar);
-	Set_View_Dimensions(rect);
+	// The surfaces were allocated before the settings were read, so this keeps their scale.
+	Set_View_Dimensions(UI_Scale_Battlefield(VisibleRect));
 }
 
 

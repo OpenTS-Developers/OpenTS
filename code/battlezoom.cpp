@@ -360,15 +360,16 @@ bool Battle_Zoom_Present(Surface & surface)
 
 	int const scale = UI_Scale();
 
-	Rect shown;
-	Rect dest;
+	// Whole-number enlargements are copied pixel by pixel. A GDI stretch of the tab strip wiped
+	// the battlefield already copied to the visible surface at some sizes.
 	if (TacticalMap->ZoomFactor != 1.0) {
 
-		// A trigger zoom magnifies the middle of the view to fill the battlefield.
+		// A trigger zoom magnifies the middle of the view to fill the battlefield, by a factor
+		// the rules may set to a fraction, so GDI stretches it.
 		int const width = (int)(TacticalRect.Width / TacticalMap->ZoomFactor);
 		int const height = (int)(TacticalRect.Height / TacticalMap->ZoomFactor);
-		shown = Rect(TacticalRect.X + (TacticalRect.Width - width) / 2, TacticalRect.Y + (TacticalRect.Height - height) / 2, width, height);
-		dest = BattlefieldRect;
+		Rect const shown(TacticalRect.X + (TacticalRect.Width - width) / 2, TacticalRect.Y + (TacticalRect.Height - height) / 2, width, height);
+		VisibleSurface->Blit_From(BattlefieldRect, surface, shown, false, true);
 
 	} else {
 
@@ -376,26 +377,24 @@ bool Battle_Zoom_Present(Surface & surface)
 		int const zoom = _State.Factor();
 		Rect const screen = Battle_Zoom_Screen_Rect(BattlefieldRect, zoom);
 		Rect const source = TacticalRect - Point2D(Map.ScreenX / zoom, Map.ScreenY / zoom);
-		shown = Intersect(source, TacticalRect);
-		dest = Rect(screen.X + (shown.X - source.X) * zoom, screen.Y + (shown.Y - source.Y) * zoom, shown.Width * zoom, shown.Height * zoom);
+		Rect const shown = Intersect(source, TacticalRect);
+		Rect const dest(screen.X + (shown.X - source.X) * zoom, screen.Y + (shown.Y - source.Y) * zoom, shown.Width * zoom, shown.Height * zoom);
+
+		if (!(dest == BattlefieldRect)) {
+			VisibleSurface->Fill_Rect(BattlefieldRect, 0);
+		}
+		if (shown.Is_Valid()) {
+			UI_Scale_Copy(*VisibleSurface, dest.Top_Left(), surface, shown, zoom);
+		}
 	}
 
-	if (!(dest == BattlefieldRect)) {
-		VisibleSurface->Fill_Rect(BattlefieldRect, 0);
-	}
-
-	if (shown.Is_Valid()) {
-		VisibleSurface->Blit_From(dest, surface, shown, false, true);
-	}
-
-	// The tab strip is copied after the battlefield: copied first, it left the battlefield black.
 	int const strip_width = std::min(surface.Get_Width(), BattlefieldRect.X + BattlefieldRect.Width);
 	Rect const strip(0, 0, strip_width / scale, BattlefieldRect.Y / scale);
 	if (strip.Is_Valid()) {
 		if (strip.Width * scale != strip_width) {
 			VisibleSurface->Fill_Rect(Rect(0, 0, strip_width, BattlefieldRect.Y), 0);
 		}
-		VisibleSurface->Blit_From(Rect(0, 0, strip.Width * scale, strip.Height * scale), surface, strip, false, true);
+		UI_Scale_Copy(*VisibleSurface, Point2D(0, 0), surface, strip, scale);
 	}
 
 	if (scale > UI_SCALE_MIN) {
