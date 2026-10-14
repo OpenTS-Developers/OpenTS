@@ -9,6 +9,8 @@
 
 #include "battlezoomlayout.h"
 
+#include "uiscalelayout.h"
+
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -116,6 +118,47 @@ Point2D Battle_Zoom_View_To_Screen(Point2D const & point, Rect const & battlefie
 	Rect screen = Battle_Zoom_Screen_Rect(battlefield, zoom);
 
 	return(Point2D(screen.X + (point.X - view.X) * zoom + zoom / 2, screen.Y + (point.Y - view.Y) * zoom + zoom / 2));
+}
+
+
+// Border pixels stay at the edge when division into interface or view pixels loses their offset.
+Point2D Battle_Zoom_Edge_Point(Point2D const & point, Rect const & battlefield, int zoom, Rect const & frame, int interface_scale)
+{
+	Rect const view = Battle_Zoom_View_Rect(battlefield, zoom);
+	if (zoom <= BATTLE_ZOOM_MIN || !view.Is_Point_Within(point)) {
+		Point2D screen = UI_Scale_Interface_To_Screen(point, battlefield, interface_scale);
+		if (interface_scale > UI_SCALE_MIN) {
+			int const right = battlefield.X + battlefield.Width;
+			if (point.X >= right) {
+				if (point.X >= right + (frame.Width - right - 1) / interface_scale) {
+					screen.X = frame.Width - 1;
+				}
+				if (point.Y >= (frame.Height - 1) / interface_scale) {
+					screen.Y = frame.Height - 1;
+				}
+			}
+			if (point.Y == 0) {
+				screen.Y = 0;
+			}
+			if (point.X == 0) {
+				screen.X = 0;
+			}
+		}
+		return(screen);
+	}
+
+	Point2D screen = Battle_Zoom_View_To_Screen(point, battlefield, zoom);
+	if (point.X == view.X) {
+		screen.X = battlefield.X;
+	} else if (point.X == view.X + view.Width - 1) {
+		screen.X = battlefield.X + battlefield.Width - 1;
+	}
+	if (point.Y == view.Y) {
+		screen.Y = battlefield.Y;
+	} else if (point.Y == view.Y + view.Height - 1) {
+		screen.Y = battlefield.Y + battlefield.Height - 1;
+	}
+	return(screen);
 }
 
 

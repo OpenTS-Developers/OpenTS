@@ -146,14 +146,11 @@ void Battle_Zoom_Reset(void)
 /// </summary>
 void Battle_Zoom_Start(void)
 {
-	if (Debug_Map || (TacticalMap != NULL && TacticalMap->ZoomFactor != 1.0)) {
-		return;
-	}
-
 	_Begun = true;
 	int const before = _State.Factor();
-	_State.Start_At(BattlefieldRect, UI_Scale());
-	if (_State.Factor() != before) {
+	_State.Start_At(BattlefieldRect, Debug_Map ? (int)BATTLE_ZOOM_MIN : UI_Scale(), TacticalMap != NULL && TacticalMap->ZoomFactor != 1.0);
+	// Returning to a menu resets the factor before the next scenario refits the native view.
+	if (_State.Factor() != before || !(TacticalRect == Battle_Zoom_View_Rect(BattlefieldRect, _State.Factor()))) {
 		_Applying = true;
 		Map.Set_View_Dimensions(BattlefieldRect);
 		_Applying = false;
@@ -290,31 +287,13 @@ Point2D Battle_Zoom_View_To_Frame(Point2D const & point)
 
 
 /// <summary>
-/// Converts a native view position into the frame position the edge scroll tests. A position
-/// on an edge of the native view lands on the same edge of the battlefield area, so the frame
-/// pixels a whole-number magnification leaves unfilled still count as that edge.
+/// Converts a native view or interface position for edge scrolling, preserving screen edges
+/// through whole-number zoom and interface scaling.
 /// </summary>
 Point2D Battle_Zoom_Edge_Point(Point2D const & point)
 {
-	if (!Is_Zoomed() || !TacticalRect.Is_Point_Within(point)) {
-		return(point);
-	}
-
-	Point2D frame = Battle_Zoom_View_To_Screen(point, BattlefieldRect, _State.Factor());
-
-	if (point.X == TacticalRect.X) {
-		frame.X = BattlefieldRect.X;
-	} else if (point.X == TacticalRect.X + TacticalRect.Width - 1) {
-		frame.X = BattlefieldRect.X + BattlefieldRect.Width - 1;
-	}
-
-	if (point.Y == TacticalRect.Y) {
-		frame.Y = BattlefieldRect.Y;
-	} else if (point.Y == TacticalRect.Y + TacticalRect.Height - 1) {
-		frame.Y = BattlefieldRect.Y + BattlefieldRect.Height - 1;
-	}
-
-	return(frame);
+	return(Battle_Zoom_Edge_Point(point, BattlefieldRect, Is_Zoomed() ? _State.Factor() : (int)BATTLE_ZOOM_MIN,
+		VisibleRect, Is_Scaled() ? UI_Scale() : (int)UI_SCALE_MIN));
 }
 
 

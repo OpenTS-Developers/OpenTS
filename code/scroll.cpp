@@ -417,8 +417,8 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 			Point2D p = Battle_Zoom_Edge_Point(TacticalRect.Top_Left() + point);
 			int x = p.X;
 			int y = p.Y;
-			int w = (CompositeSurface->Get_Width()+SidebarSurface->Get_Width()) - 1;
-			int h = CompositeSurface->Get_Height() - 1;
+			int w = VisibleRect.Width - 1;
+			int h = VisibleRect.Height - 1;
 
 			bool at_screen_edge = (y <= 0 || x == 0 || x >= w || y >= h);
 

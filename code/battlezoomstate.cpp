@@ -81,11 +81,10 @@ void BattleZoomStateClass::Reset(void)
 }
 
 
-// Sets the factor outright, lowered to the nearest one the battlefield allows, and drops any
-// waiting wheel change.
-void BattleZoomStateClass::Start_At(Rect const & battlefield, int zoom)
+// Trigger zooms use the full battlefield, including when restored from a save.
+void BattleZoomStateClass::Start_At(Rect const & battlefield, int zoom, bool trigger_zoom)
 {
-	Zoom = Battle_Zoom_Nearest_Allowed(battlefield, zoom);
+	Zoom = Battle_Zoom_Nearest_Allowed(battlefield, trigger_zoom ? (int)BATTLE_ZOOM_MIN : zoom);
 	Cancel_Pending();
 }
 

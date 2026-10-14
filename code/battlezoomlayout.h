@@ -35,6 +35,7 @@ Rect Battle_Zoom_Screen_Rect(Rect const & battlefield, int zoom);
 
 Point2D Battle_Zoom_Screen_To_View(Point2D const & point, Rect const & battlefield, int zoom);
 Point2D Battle_Zoom_View_To_Screen(Point2D const & point, Rect const & battlefield, int zoom);
+Point2D Battle_Zoom_Edge_Point(Point2D const & point, Rect const & battlefield, int zoom, Rect const & frame, int interface_scale);
 
 Point2D Battle_Zoom_Anchored_Center(Point2D const & center, Rect const & before_view, Point2D const & before_point, Rect const & after_view, Point2D const & after_point);
 

@@ -1065,7 +1065,6 @@ void Clear_Scenario(void)
 {
 	Stop_All_Sound_Effects();
 	Sync_Recorder_Disarm();
-	Battle_Zoom_Start();
 
 	int index;
 
@@ -1102,6 +1101,7 @@ void Clear_Scenario(void)
 
 	delete TacticalMap;
 	TacticalMap = new Tactical;
+	Battle_Zoom_Start();
 	TacticalMap->Reset_Dirty_Rectangles();
 
 	LightSourceClass::Recalc = false;

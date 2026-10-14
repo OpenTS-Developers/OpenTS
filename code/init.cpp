@@ -956,6 +956,8 @@ restart:
 		}
 
 		while (process) {
+			UI_Scale_End_Scenario();
+			Battle_Zoom_End();
 
 			/*
 			**	Display menu and fetch selection from player.
@@ -965,8 +967,6 @@ restart:
 			}
 
 			if ((selection == SEL_NONE) && !Debug_ForceScenario) {
-				UI_Scale_End_Scenario();
-				Battle_Zoom_End();
 				if (Get_New_Menu()->MixFile) {
 					selection = New_Main_Menu();
 				} else {

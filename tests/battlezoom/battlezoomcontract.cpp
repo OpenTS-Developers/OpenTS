@@ -16,7 +16,10 @@
 #include "uiscalelayout.h"
 
 #include <cstdio>
+#include <cstdlib>
 #include <initializer_list>
+
+int Test_Battle_Zoom_Tooltips(void);
 
 namespace {
 
@@ -246,6 +249,39 @@ int main()
 		interface_roundtrip &= UI_Scale_Screen_To_Interface(UI_Scale_Interface_To_Screen(point, scaled, 3), scaled, 3) == point;
 	}
 	Check(interface_roundtrip, "an interface position survives the trip to the frame and back");
+
+	for (int scale = 2; scale <= 4; scale++) {
+		Rect const frame(0, 0, 3841, 2161);
+		Rect const battlefield = UI_Scale_Battlefield_Rect(frame.Width, frame.Height, scale);
+		for (int zoom = 1; zoom <= 4; zoom++) {
+			bool edges_match = true;
+			for (Point2D const & screen : { Point2D(0, 0), Point2D(3300, 0), Point2D(3840, 0),
+				Point2D(3840, 1080), Point2D(3840, 2160), Point2D(3800, 2160), Point2D(0, 2160),
+				Point2D(0, 1080), Point2D(1200, 2160), Point2D(3800, 1500) }) {
+				Point2D const view = UI_Scale_Screen_To_Interface(Battle_Zoom_Screen_To_View(screen, battlefield, zoom), battlefield, scale);
+				Point2D const edge = Battle_Zoom_Edge_Point(view, battlefield, zoom, frame, scale);
+				edges_match &= (screen.X == 0) == (edge.X == 0) && (screen.X == 3840) == (edge.X == 3840)
+					&& (screen.Y == 0) == (edge.Y == 0) && (screen.Y == 2160) == (edge.Y == 2160);
+				edges_match &= edge.X >= 0 && edge.X < frame.Width && edge.Y >= 0 && edge.Y < frame.Height;
+				edges_match &= std::abs(edge.X - screen.X) < scale + zoom && std::abs(edge.Y - screen.Y) < scale + zoom;
+			}
+			Check(edges_match, "scaled sidebar and tab strip preserve screen edges at every zoom");
+		}
+	}
+
+	{
+		BattleZoomStateClass restored;
+		Rect const battlefield(0, 48, 3336, 2112);
+		restored.Start_At(battlefield, 3);
+		restored.Wheel(battlefield, true, 1.0f, cursor);
+		restored.Start_At(battlefield, 3, true);
+		Check(restored.Factor() == 1 && !restored.Apply_Pending(battlefield, false, false, anchor), "a loaded trigger zoom replaces the starting factor and pending wheel request");
+		Check(Same(restored.Fit_View(battlefield, true), 0, 48, 3336, 2112), "a trigger zoom fits the full battlefield before restoring its camera");
+		restored.Start_At(battlefield, 3, false);
+		Check(restored.Factor() == 3, "the next mission starts at the interface size after a trigger zoom");
+	}
+
+	Failures += Test_Battle_Zoom_Tooltips();
 
 	std::printf("\n%s\n", Failures == 0 ? "PASSED" : "FAILED");
 	return(Failures == 0 ? 0 : 1);

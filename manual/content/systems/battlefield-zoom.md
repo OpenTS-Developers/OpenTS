@@ -8,7 +8,7 @@ related:
     id: sidebar
 ---
 
-Each wheel notch over the tactical view zooms in one step, away from the player, or out one step, toward the player. A zoomed view shows a smaller part of the map, with every map pixel drawn as a square of 2, 3 or 4 screen pixels. Over the sidebar or the tab strip the wheel scrolls the sidebar.
+Rolling the mouse wheel forward over the tactical view zooms in one step per notch; rolling it backward zooms out. A zoomed view shows a smaller part of the map, with every map pixel drawn as a square of 2, 3 or 4 screen pixels. Over the sidebar or the tab strip the wheel scrolls the sidebar.
 
 ## Available factors
 
@@ -37,4 +37,4 @@ A drag that starts on the battlefield stays on it: a selection box or a coast sc
 
 ## Persistence
 
-The factor belongs to the local display. It is not stored in saved games or sent to other players. A mission or a loaded game starts at the [`UIScale`](/keys/uiscale/) size, lowered to the largest factor available, so at 3840 by 2160 with the automatic size it starts at 3x. This happens even when the mission opens with the player's input locked. A game saved while zoomed loads with the view centred where the zoomed view was. The game resolution can only be changed from the main menu, where the factor is always 1x.
+The factor belongs to the local display. It is not stored in saved games or sent to other players. A mission or a loaded game without an active trigger zoom starts at the [`UIScale`](/keys/uiscale/) size, lowered to the largest factor available, so at 3840 by 2160 with the automatic size it starts at 3x. This happens even when the mission opens with the player's input locked. A saved trigger zoom resumes at its saved magnification. A game saved while zoomed loads with the view centred where the zoomed view was. The game resolution can only be changed from the main menu, where the factor is always 1x.
