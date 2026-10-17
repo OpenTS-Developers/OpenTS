@@ -58,7 +58,7 @@ class SuperClass : public AbstractClass
 
 		virtual void Compute_CRC(CRCEngine & crc) const override;
 
-		void Detach(AbstractClass const * target, bool all);
+		void Detach(AbstractClass const * target, bool all) override;
 
 		bool Suspend(bool on);
 		bool Enable(bool onetime = false, bool player=false, bool quiet=false);
