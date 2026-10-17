@@ -33,6 +33,7 @@ class UIDisplayServiceClass
 		virtual ~UIDisplayServiceClass(void) = default;
 		virtual void Set_Stretch_Movies(bool on) = 0;
 		virtual void Set_System_Cursor(bool on) = 0;
+		virtual void Set_UI_Scale(int scale) = 0;
 };
 
 
@@ -42,6 +43,16 @@ struct UIDisplayState
 	int Selected = -1;
 	bool StretchMovies = false;
 	bool SystemCursor = false;
+
+	// The resolution in use, which applies while no row is selected.
+	int ScreenWidth = 0;
+	int ScreenHeight = 0;
+
+	// 0 for the automatic interface size, otherwise 1 up to the largest size the selected
+	// resolution fits.
+	int UIScale = 0;
+	int UIScaleMax = 1;
+	std::string UIScaleLabel;
 };
 
 
@@ -56,6 +67,8 @@ class UIDisplayPresenterClass : public UIPresenterClass
 		std::optional<UIDisplayMode> Picked;
 
 	private:
+		void Fit_UI_Scale(void);
+
 		UIDisplayServiceClass & Service;
 		int Initial;
 };

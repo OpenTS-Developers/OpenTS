@@ -81,6 +81,7 @@
 #include "aitrig.h"
 #include "anim.h"
 #include "astar.h"
+#include "battlezoom.h"
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
@@ -165,6 +166,7 @@
 #include "tube.h"
 #include "tutorial.h"
 #include "ui/uishell.h"
+#include "uiscale.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -372,6 +374,8 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 		Choose_Side(Campaigns[Scen->Campaign]->CDNumber);
 	}
 
+	UI_Scale_Refit();
+
 	DebugString("Reading scenario: %s\n", name);
 
 	if (!Read_Scenario(name)) {
@@ -464,6 +468,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	ScenarioActive = true;
 	TacticalActive = true;
+	Battle_Zoom_Start();
 
 	return(true);
 }
@@ -801,7 +806,7 @@ bool Read_Scenario(char const * fname)
 	**	properly set.
 	*/
 	Session.Messages.Init(
-		TacticalRect.X, TacticalRect.Y,	// x,y for messages
+		Battle_Zoom_Message_Rect().X, Battle_Zoom_Message_Rect().Y,	// x,y for messages
 		6, 										// max # msgs
 		MAX_MESSAGE_LENGTH - 14,			// max msg length
 		7 * 2,									// font height in pixels
@@ -809,7 +814,7 @@ bool Read_Scenario(char const * fname)
 		0,//BG		1,							// enable edit overflow
 		20,										// min,
 		MAX_MESSAGE_LENGTH - 14,			// max for trimming overflow
-		TacticalRect.Width);					// Width in pixels of buffer
+		Battle_Zoom_Message_Rect().Width);				// Width in pixels of buffer
 
 	Fill_In_Data();
 
@@ -1096,6 +1101,7 @@ void Clear_Scenario(void)
 
 	delete TacticalMap;
 	TacticalMap = new Tactical;
+	Battle_Zoom_Start();
 	TacticalMap->Reset_Dirty_Rectangles();
 
 	LightSourceClass::Recalc = false;

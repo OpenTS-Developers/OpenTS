@@ -59,6 +59,7 @@
 #include "wwmouse.h"
 
 #include "_convert.h"
+#include "battlezoom.h"
 #include "convert.h"
 #include "dbgprint.h"
 #include "globals.h"
@@ -456,7 +457,8 @@ void WWMouseClass::Convert_Coordinate(int & x, int & y) const
 }
 
 
-// Converts a position in the window's client area into one held inside the frame.
+// Converts a position in the window's client area into one held inside the frame, in native
+// view pixels over a zoomed battlefield.
 void WWMouseClass::Client_To_Game(int & x, int & y) const
 {
 	Point2D point(x, y);
@@ -469,6 +471,11 @@ void WWMouseClass::Client_To_Game(int & x, int & y) const
 	if (y < 0) y = 0;
 	if (x >= scale.GameWidth) x = scale.GameWidth-1;
 	if (y >= scale.GameHeight) y = scale.GameHeight-1;
+
+	point = Point2D(x, y);
+	Battle_Zoom_Frame_To_View(point);
+	x = point.X;
+	y = point.Y;
 }
 
 

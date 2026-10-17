@@ -15,6 +15,7 @@
 
 #include "tooltip.h"
 
+#include "battlezoom.h"
 #include "data.h"
 #include "dbgprint.h"
 #include "sdl/sdlwindow.h"
@@ -131,6 +132,7 @@ void ToolTipManager::Service(void)
 		LastMousePos.X = x;
 		LastMousePos.Y = y;
 		Window_Point_To_Game(LastMousePos);
+		Battle_Zoom_Frame_To_View(LastMousePos);
 		CurrentToolTip = Find_From_Pos(LastMousePos);
 		if (Process() == true) {
 			Start_Timer(ToolTipLifetime);
@@ -269,7 +271,7 @@ bool ToolTipManager::Find(unsigned id, ToolTip * tooltip)
 /// Finds the tooltip whose region covers the point specified.
 /// This routine is used to work out which tooltip, if any, the mouse is resting over.
 /// </summary>
-/// <param name="xy">The point, in frame coordinates, to test the regions against.</param>
+/// <param name="xy">The point, in tactical view or interface coordinates, to test the regions against.</param>
 /// <returns>Returns with a pointer to the tooltip found, or NULL if the point is bare.</returns>
 ToolTip const * ToolTipManager::Find_From_Pos(Point2D &xy)
 {

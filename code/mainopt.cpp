@@ -35,6 +35,7 @@
 #include "surface.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/mainopt/uimainopt.h"
+#include "uiscale.h"
 #include "video.h"
 
 #include "color.hh"
@@ -155,13 +156,12 @@ bool Change_Display_Mode(int width, int height)
 		Main_Window_Resize(width, height);
 	}
 
-	Rect temp = VisibleRect;
-	temp.X = ((Options.IsSidebarOnRight || Debug_Map) ? 0 : SidebarClass::SIDE_WIDTH);
-	temp.Y = 16;
-	temp.Width -= SidebarClass::SIDE_WIDTH;
-	temp.Height -= 16;
+	Rect temp;
+	Rect composite;
+	Rect sidebar;
+	UI_Scale_Layout(VisibleRect, temp, composite, sidebar);
 
-	Allocate_Surfaces(VisibleRect, Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, temp.Width, VisibleRect.Height), Rect(0, 0, SidebarClass::SIDE_WIDTH, VisibleRect.Height));
+	Allocate_Surfaces(VisibleRect, composite, composite, sidebar);
 	LogicalSurface = HiddenSurface;
 
 	Map.Set_View_Dimensions(temp);

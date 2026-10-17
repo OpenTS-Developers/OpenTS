@@ -144,6 +144,7 @@
 #include "tunnel.h"
 #include "tutorial.h"
 #include "ui/uishell.h"
+#include "uiscale.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vanim.h"
@@ -606,11 +607,12 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 		VisibleSurface->Fill(0);
 
-		Rect sidebar_rect(0,0,SidebarClass::SIDE_WIDTH,VisibleRect.Height);
-		Rect tile_rect(0,0,VisibleRect.Width-sidebar_rect.Width, sidebar_rect.Height);
-		Rect composite_rect(0,0,VisibleRect.Width-sidebar_rect.Width, sidebar_rect.Height);
+		Rect battlefield_rect;
+		Rect composite_rect;
+		Rect sidebar_rect;
+		UI_Scale_Layout(VisibleRect, battlefield_rect, composite_rect, sidebar_rect);
 
-		Allocate_Surfaces(VisibleRect, composite_rect, tile_rect, sidebar_rect, false);
+		Allocate_Surfaces(VisibleRect, composite_rect, composite_rect, sidebar_rect, false);
 		LogicalSurface = HiddenSurface;
 		Update_Visible_Surface(HiddenSurface);
 

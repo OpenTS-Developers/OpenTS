@@ -89,6 +89,7 @@
 #include "anim.h"
 #include "audio/audioengine.h"
 #include "autosave.h"
+#include "battlezoom.h"
 #include "bench.h"
 #include "blight.h"
 #include "building.h"
@@ -186,6 +187,7 @@
 #include "ui/screens/version/uiversion.h"
 #include "ui/uienginehost.h"
 #include "uicontrol.h"
+#include "uiscale.h"
 #include "unit.h"
 #include "unittype.h"
 #include "vein.h"
@@ -954,6 +956,8 @@ restart:
 		}
 
 		while (process) {
+			UI_Scale_End_Scenario();
+			Battle_Zoom_End();
 
 			/*
 			**	Display menu and fetch selection from player.

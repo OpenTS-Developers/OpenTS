@@ -51,6 +51,7 @@
 #include "_weapon.h"
 #include "anim.h"
 #include "savemgr.h"
+#include "battlezoom.h"
 #include "blight.h"
 #include "building.h"
 #include "builtype.h"
@@ -2049,6 +2050,8 @@ bool TActionClass::TAction_CENTER_VIEWPOINT(HouseClass * , ObjectClass * , Trigg
 /// </summary>
 bool TActionClass::TAction_ZOOM_IN(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
+	// The trigger zoom magnifies the full battlefield, so a wheel zoom gives way to it.
+	Battle_Zoom_Reset();
 	TacticalMap->ZoomFactor = Rule->ZoomInFactor;
 	IgnoreInput = true;
 	// Keyboard->Clear(); /// should do this too?? ZOOM_OUT does...

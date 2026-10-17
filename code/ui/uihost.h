@@ -40,6 +40,9 @@ class UIShellHostClass
 		virtual void Play_Click(void) = 0;
 		virtual bool Animate_Screens(void) const = 0;
 		virtual int Art_Magnification(void) const = 0;
+
+		// How many times larger than the frame scale alone the interface is drawn.
+		virtual float Interface_Scale(void) const { return(1.0f); }
 		virtual bool Bitmap_System_Font(void) const = 0;
 		virtual bool Developer_Keys_Armed(void) const = 0;
 		virtual void Clear_Keyboard_Queue(void) = 0;
