@@ -1778,6 +1778,7 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	DebugString("Clearing old scenario\n");
 	Clear_Scenario();
+	Scen->Special.Init();
 
 	// A generated map has no file to hold.
 	if (is_mapgen) {
@@ -1794,6 +1795,8 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 		Scen->CDifficulty = (DiffType)(DIFF_COUNT - 1 - Scen->Difficulty);
 		Scen->Special.IsFogOfWar = Session.Options.FogOfWar;
 		Special.IsFogOfWar = Session.Options.FogOfWar;
+		Special.Apply_Session_Options(Session.Options.HarvTruce, Session.Options.BridgeDestruction,
+			Session.Type == GAME_SKIRMISH);
 	}
 
 	// Outside the branch above because a campaign obeys the launch file too. A scenario
@@ -1946,12 +1949,6 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 
 	Session.Update_Progress(58);
 
-	/*
-	**
-	*/
-	if (Session.Type != GAME_NORMAL && !Session.Options.BridgeDestruction) {
-		Special.IsDestroyBridges = Session.Options.BridgeDestruction;
-	}
 	Special.Apply_To_Game();
 
 	Call_Back();

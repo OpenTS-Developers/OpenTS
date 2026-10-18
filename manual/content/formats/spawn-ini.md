@@ -136,7 +136,7 @@ A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty sett
 
 A nonzero `Seed` makes a launch repeatable: launching the same file again places every house the same way, and builds the same map from a scenario file with [`RandomMap=yes`](/keys/randommap/). In a skirmish or a campaign mission, `0` draws a new seed at each launch. In a [game against other machines](#a-game-against-other-machines), every machine uses the seed exactly as written, `0` included, so write a new seed for each match.
 
-`HarvesterTruce` applies only in a game against other machines. A skirmish ignores it, as a skirmish set up from the menu does.
+`HarvesterTruce=yes` turns on the [harvester truce](/keys/harvesterimmune/) in a skirmish and in a game against other machines.
 
 ## Automatic saves
 
