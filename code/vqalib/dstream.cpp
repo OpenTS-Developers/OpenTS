@@ -89,31 +89,30 @@ intptr_t __cdecl Disk_VQA_Stream_Handler(VQAHandle *vqa, long action, void *buff
 			error = 1;
 			break;
 
-		/* VQACMD_SEEK asks that you perform a seek relative to the current
-		 * position. NBytes is a signed number, indicating seek direction
-		 * (positive for forward, negative for backward). Buffer has no meaning
-		 * here.
+		/* VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		 * names, which is a SEEK_SET, SEEK_CUR or SEEK_END value cast to a
+		 * pointer. NBytes is the signed offset from that origin.
 		 *
 		 * Any error code returned will be remapped by VQA library into
 		 * VQAERR_SEEK.
 		 */
 		case VQACMD_SEEK:
-			error = (lseek(fh, nbytes, (int)(intptr_t)buffer) == -1);
+			error = (lseek(fh, nbytes, VQA_DecodeSeekOrigin(buffer)) == -1);
 			break;
 
 		case VQACMD_SEEKPEEK:
 			if (nbytes > 0) {
-				error = lseek(fh, nbytes - 1, (int)(intptr_t)buffer) == -1;
+				error = lseek(fh, nbytes - 1, VQA_DecodeSeekOrigin(buffer)) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
 			} else {
-				error = lseek(fh, nbytes, (int)(intptr_t)buffer) == -1;
+				error = lseek(fh, nbytes, VQA_DecodeSeekOrigin(buffer)) == -1;
 				if (error == 0) {
 					error = read(fh, &temp, 1) != 1;
 				}
 				if (error == 0) {
-					error = lseek(fh, -1, 1) == -1;
+					error = lseek(fh, -1, SEEK_CUR) == -1;
 				}
 			}
 			break;
@@ -186,24 +185,23 @@ intptr_t __cdecl Memory_VQA_Stream_Handler(VQAHandle *vqa, long action, void *bu
 			error = 1;
 			break;
 
-		/* VQACMD_SEEK asks that you perform a seek relative to the current
-		 * position. NBytes is a signed number, indicating seek direction
-		 * (positive for forward, negative for backward). Buffer has no meaning
-		 * here.
+		/* VQACMD_SEEK asks that you perform a seek from the origin Buffer
+		 * names, which is a SEEK_SET, SEEK_CUR or SEEK_END value cast to a
+		 * pointer. NBytes is the signed offset from that origin.
 		 *
 		 * Any error code returned will be remapped by VQA library into
 		 * VQAERR_SEEK.
 		 */
 		case VQACMD_SEEK:
 		case VQACMD_SEEKPEEK:
-			switch ((intptr_t)buffer) {
+			switch (VQA_DecodeSeekOrigin(buffer)) {
 
-				case 1:
+				case SEEK_CUR:
 					cache->Offset += nbytes;
 					error = 0;
 					break;
 
-				case 0:
+				case SEEK_SET:
 					p = cache->FileOffset;
 					if (nbytes >= p) {
 						cache->Offset = nbytes - p;
