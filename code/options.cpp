@@ -143,6 +143,7 @@ OptionsClass::OptionsClass(void) :
 	VSync(false),
 	Renderer(0),
 	CursorScale(0),
+	UIScale(0),
 	SystemCursor(false),
 	SoundLatency(9),
 	KeyForceMove1(KN_LALT),
@@ -435,6 +436,7 @@ void OptionsClass::Load_Settings(void)
 	DebugString("ScaleMode is %d, IntegerScaling is %s\n", ScaleMode, IntegerScaling == true ? "ON" : "OFF");
 
 	CursorScale = ConfigINI.Get_Int("Video", "CursorScale", CursorScale);
+	UIScale = ConfigINI.Get_Int("Video", "UIScale", UIScale);
 	SystemCursor = ConfigINI.Get_Bool("Video", "SystemCursor", SystemCursor);
 
 	Set_Sound_Volume(ConfigINI.Get_Float("Audio", "SoundVolume", SoundVolume), false);
@@ -506,6 +508,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Video", "VSync", VSync);
 	ConfigINI.Put_Int("Video", "Renderer", Renderer);
 	ConfigINI.Put_Int("Video", "CursorScale", CursorScale);
+	ConfigINI.Put_Int("Video", "UIScale", UIScale);
 	ConfigINI.Put_Bool("Video", "SystemCursor", SystemCursor);
 	ConfigINI.Put_Float("Audio", "SoundVolume", SoundVolume);
 	ConfigINI.Put_Float("Audio", "VoiceVolume", VoiceVolume);

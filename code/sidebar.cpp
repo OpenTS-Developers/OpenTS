@@ -117,6 +117,7 @@
 #include "surface.h"
 #include "techtype.h"
 #include "ui/uishell.h"
+#include "uiscale.h"
 #include "utf8.h"
 #include "voc.h"
 #include "vox.h"
@@ -418,10 +419,10 @@ void SidebarClass::Init_IO(void)
 {
 	BASECLASS::Init_IO();
 
-	SidebarRect.X = TacticalRect.X + TacticalRect.Width;
+	SidebarRect.X = BattlefieldRect.X + BattlefieldRect.Width;
 	SidebarRect.Y = SIDE_Y;
 	SidebarRect.Width = 641 - SidebarRect.X;
-	SidebarRect.Height = (TacticalRect.Y - SidebarRect.Y) + TacticalRect.Height;
+	SidebarRect.Height = UI_Height() - SidebarRect.Y;
 
 	/*
 	**	Add the sidebar's buttons only if we're not in editor mode.
@@ -1047,13 +1048,7 @@ void SidebarClass::Blit_Sidebar(bool complete)
 			IsToBlitSidebar = false;
 			if (Map.LastDrawRect == RECT_NONE) {
 				if (IsToRedrawCredits) {
-					VisibleSurface->Blit_From(
-						Rect((Options.IsSidebarOnRight ? TacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT),
-						*SidebarSurface,
-						Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT),
-						false,
-						true
-					);
+					UI_Scale_Show_Sidebar(Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
 					IsToRedrawCredits = false;
 				}
 				IsToBlitSidebar = false;
@@ -1064,13 +1059,13 @@ void SidebarClass::Blit_Sidebar(bool complete)
 		}
 
 		if (Map.LastDrawRect == RECT_NONE && !complete) {
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? TacticalRect.Width : 0), 0, SIDE_WIDTH, CREDITS_HEIGHT), *SidebarSurface, Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? TacticalRect.Width : 0), SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y), *SidebarSurface, Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
+			UI_Scale_Show_Sidebar(Rect(0, 0, SIDE_WIDTH, CREDITS_HEIGHT));
+			UI_Scale_Show_Sidebar(Rect(0, SIDE_BODY_Y, SIDE_WIDTH, SidebarSurface->Get_Height() - SIDE_BODY_Y));
 		} else if (!IsToBlitSidebar) {
-			VisibleSurface->Blit_From(Rect(Map.LastDrawRect.X + (Options.IsSidebarOnRight ? TacticalRect.Width : 0), Map.LastDrawRect.Y, Map.LastDrawRect.Width, Map.LastDrawRect.Height), *SidebarSurface, Map.LastDrawRect);
+			UI_Scale_Show_Sidebar(Map.LastDrawRect);
 		} else {
 			Rect sb_rect = SidebarSurface->Get_Rect();
-			VisibleSurface->Blit_From(Rect((Options.IsSidebarOnRight ? TacticalRect.Width : 0), 0, sb_rect.Width, sb_rect.Height), *SidebarSurface, Rect(0, 0, sb_rect.Width, sb_rect.Height));
+			UI_Scale_Show_Sidebar(Rect(0, 0, sb_rect.Width, sb_rect.Height));
 		}
 	}
 	IsToBlitSidebar = false;
@@ -2756,10 +2751,10 @@ void SidebarClass::Reposition_Sidebar(void)
 	/*
 	 * Position the sidebar.
 	 */
-	SidebarRect.X = Options.IsSidebarOnRight ? TacticalRect.X + TacticalRect.Width : 0;
+	SidebarRect.X = Options.IsSidebarOnRight ? BattlefieldRect.X + BattlefieldRect.Width : 0;
 	SidebarRect.Y = SIDE_Y;
 	SidebarRect.Width = SIDE_WIDTH;
-	SidebarRect.Height = TacticalRect.Height + TacticalRect.Y - SIDE_Y;
+	SidebarRect.Height = UI_Height() - SIDE_Y;
 
 	BASECLASS::Reposition_Sidebar();
 
@@ -2772,7 +2767,7 @@ void SidebarClass::Reposition_Sidebar(void)
 	/*
 	 * Position the sidebar's buttons.
 	 */
-	Background.Set_Position(SidebarRect.X + 16, TacticalRect.Y);
+	Background.Set_Position(SidebarRect.X + 16, BattlefieldRect.Y / UI_Scale());
 	Background.Flag_To_Redraw();
 
 	Repair.Set_Position(SidebarRect.X + BUTTON_ONE_X, SidebarRect.Y + BUTTON_ONE_Y);
@@ -2855,7 +2850,7 @@ void SidebarClass::Reposition_Sidebar(void)
 	int x = 0;
 	int y = RadarButton.Y + RadarButton.Height;
 	if (Options.IsSidebarOnRight) {
-		Background.Set_Position(TacticalRect.X + TacticalRect.Width, y);
+		Background.Set_Position(BattlefieldRect.X + BattlefieldRect.Width, y);
 	} else {
 		Background.Set_Position(x, y);
 	}

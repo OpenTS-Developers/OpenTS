@@ -28,6 +28,7 @@ opents_add_test(UIShell
         ui/screens/abort/uiabort.cpp
         ui/screens/campaign/uicampaign.cpp
         ui/screens/display/uidisplay.cpp
+        uiscalelayout.cpp
         ui/screens/gamectrl/uigamectrl.cpp
         ui/screens/gameopt/uigameopt.cpp
         ui/screens/keyboard/uikeyboard.cpp

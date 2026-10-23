@@ -276,7 +276,7 @@ Where several objects share one radar pixel, only one blip is drawn, and the loc
 
 Damage that has any effect makes the damaged object's blip flash for [`RadarCombatFlashTime`](/keys/radarcombatflashtime/) frames. Only the local player's objects flash. The blip switches between its normal and inverted color every [`FlashFrameTime`](/keys/flashframetime/) frames.
 
-A white rectangle marks the part of the map the tactical view is showing, and a white frame surrounds the pane. Radar events are drawn over the terrain and the blips; [radar event](/reference/enums/radar-event/) covers the kinds and their timings.
+A white rectangle marks the part of the map the tactical view is showing. Radar events are drawn over the terrain and the blips; [radar event](/reference/enums/radar-event/) covers the kinds and their timings.
 
 ### What it refuses to draw
 

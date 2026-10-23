@@ -17,6 +17,7 @@
 #include "_tooltip.h"
 #include "_ui.h"
 #include "_xmouse.h"
+#include "battlezoom.h"
 #include "cctooltip.h"
 #include "dbgprint.h"
 #include "globals.h"
@@ -154,11 +155,24 @@ static bool Handle_Event(WindowEvent const & event)
 
 	// The map and the key queue work in frame coordinates.
 	WindowEvent frame = event;
-	if (Is_Mouse_Event(event.Type) && Video_Scaling_Active()) {
-		Point2D point(event.X, event.Y);
-		Window_Point_To_Game(point);
+	Point2D framepoint(event.X, event.Y);
+	if (Is_Mouse_Event(event.Type)) {
+		if (Video_Scaling_Active()) {
+			Window_Point_To_Game(framepoint);
+		}
+
+		if (event.Type == WINDOW_EVENT_MOUSE_DOWN) {
+			Battle_Zoom_Mouse_Button(event.Button, true, framepoint);
+		}
+
+		Point2D point = framepoint;
+		Battle_Zoom_Frame_To_View(point);
 		frame.X = point.X;
 		frame.Y = point.Y;
+
+		if (event.Type == WINDOW_EVENT_MOUSE_UP) {
+			Battle_Zoom_Mouse_Button(event.Button, false, framepoint);
+		}
 	}
 
 	Map.Handle_Window_Event(frame);
@@ -179,6 +193,10 @@ static bool Handle_Event(WindowEvent const & event)
 
 		case WINDOW_EVENT_FOCUS_GAINED:
 		case WINDOW_EVENT_FOCUS_LOST:
+			Battle_Zoom_Release_Buttons();
+			if (event.Type == WINDOW_EVENT_FOCUS_LOST) {
+				Battle_Zoom_Cancel_Pending();
+			}
 			Set_Game_Focus(event.Type == WINDOW_EVENT_FOCUS_GAINED);
 			return(false);
 
@@ -189,7 +207,7 @@ static bool Handle_Event(WindowEvent const & event)
 			break;
 
 		case WINDOW_EVENT_MOUSE_WHEEL:
-			if (!event.Horizontal) {
+			if (!event.Horizontal && !Battle_Zoom_Wheel(event.Wheel, framepoint)) {
 				On_Mouse_Wheel(event.Wheel < 0.0f ? -1 : 1);
 			}
 			break;

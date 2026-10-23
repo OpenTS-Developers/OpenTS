@@ -218,6 +218,7 @@ void UIShellClass::Apply_Dimensions(void)
 	if (ratio <= 0.0f) {
 		ratio = 1.0f;
 	}
+	ratio *= Host.Interface_Scale();
 
 	Context->SetDimensions(Rml::Vector2i(frame.Width, frame.Height));
 	Context->SetDensityIndependentPixelRatio(ratio);

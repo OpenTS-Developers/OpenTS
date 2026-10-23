@@ -26,7 +26,7 @@ related:
     id: ToggleRadar
 ---
 
-The sidebar is the fixed-width panel along the right edge of the screen. From the top down it holds the credit readout, the radar pane, four mode buttons, and two strips of cameos with the power bar running down their left side. The panel stays up for the whole match. An observer gets the panel with both strips empty.
+The sidebar is the fixed-width panel along the right edge of the screen, 168 pixels wide at its artwork size and up to four times wider under [`UIScale`](/keys/uiscale/). From the top down it holds the credit readout, the radar pane, four mode buttons, and two strips of cameos with the power bar running down their left side. The panel stays up for the whole match. An observer gets the panel with both strips empty.
 
 ## What the strips list
 
@@ -162,7 +162,7 @@ Twelve commands do the same from the keyboard. Each motion has three commands: o
 | A screenful up | [Sidebar PageUp](/commands/sidebarpageup/) | [Structure List PageUp](/commands/leftsidebarpageup/) | [Unit List PageUp](/commands/rightsidebarpageup/) |
 | A screenful down | [Sidebar PageDown](/commands/sidebarpagedown/) | [Structure List PageDown](/commands/leftsidebarpagedown/) | [Unit List PageDown](/commands/rightsidebarpagedown/) |
 
-Turning the mouse wheel forward runs Sidebar Up, and turning it back runs Sidebar Down, wherever the pointer is.
+Over the sidebar or the tab strip, turning the mouse wheel forward runs Sidebar Up, and turning it back runs Sidebar Down. Over the tactical view, the wheel controls [battlefield zoom](/systems/battlefield-zoom/) when zoom is allowed, even if the resolution permits only 1x. When zoom is unavailable, the wheel scrolls the sidebar there too.
 
 :::caution[When the scroll commands play ScoldSound]
 The four both-strips commands, including the mouse wheel, play `ScoldSound` only when neither strip can move. A strip already at its end stays silent as long as the other one still moves. The eight one-strip commands never play it, although the arrow buttons for the same motion do.
