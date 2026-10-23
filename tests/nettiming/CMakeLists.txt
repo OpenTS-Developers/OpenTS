@@ -23,7 +23,3 @@ opents_add_test(NetConnection
     DEFINITIONS WIN32 _WINDOWS _MBCS NOMINMAX
     LIBRARIES winmm
 )
-
-set_source_files_properties("${CMAKE_SOURCE_DIR}/code/combuf.cpp" PROPERTIES
-    COMPILE_OPTIONS "/source-charset:437;/execution-charset:437"
-)
