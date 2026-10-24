@@ -35,8 +35,8 @@ public:
 	unsigned ID;
 
 	/*
-	 * This is the rectangle, expressed in the coordinates of the frame the game draws in,
-	 * that the mouse must come to rest within for this tooltip to appear.
+	 * The mouse must rest in this rectangle, in tactical view or interface coordinates,
+	 * for this tooltip to appear.
 	 */
 	Rect Region;
 
@@ -113,7 +113,7 @@ class ToolTipManager
 		bool IsActive;
 
 		/*
-		 * This is where the cursor was, in frame coordinates, when the hover delay expired.
+		 * The cursor position in tactical view or interface coordinates when the hover delay expired.
 		 * It decides which tooltip is chosen and where the tooltip box is placed.
 		 */
 		Point2D LastMousePos;

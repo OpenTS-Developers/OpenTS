@@ -528,7 +528,7 @@ int RadarClass::RTacticalClass::Action(unsigned flags, KeyNumType & key)
 	}
 
 
-	x -= Options.IsSidebarOnRight ? TacticalRect.Width : 0;
+	x -= Options.IsSidebarOnRight ? BattlefieldRect.Width : 0;
 
 	/*
 	**	See if the mouse is over the radar general area, but not yet
@@ -838,7 +838,7 @@ void RadarClass::Draw_Names(void)
 void RadarClass::Reposition_Sidebar(void)
 {
 	BASECLASS::Reposition_Sidebar();
-	RadarButton.Set_Position(RadX + (Options.IsSidebarOnRight ? TacticalRect.Width : 0), RadY);
+	RadarButton.Set_Position(RadX + (Options.IsSidebarOnRight ? BattlefieldRect.Width : 0), RadY);
 	RadarButton.Flag_To_Redraw();
 	FullRedraw = true;
 }
@@ -2219,10 +2219,9 @@ void RadarClass::Render_Radar(void)
 				SidebarSurface->Blit_From(LastDrawRect, *RadarSurface, LastDrawRect - RadarRect.TopLeft);
 			}
 
+			// Only the view outline is drawn: a second white frame around the whole radar image
+			// read as another view outline.
 			SidebarSurface->Draw_Rect(RadarViewRect, DSurface::Build_Hicolor_Pixel(255, 255, 255));
-			Rect r = RadarRect;
-			Rect rr = Rect(r.X - 1, r.Y - 1, r.Width + 2, r.Height + 2);
-			SidebarSurface->Draw_Rect(rr, DSurface::Build_Hicolor_Pixel(255, 255, 255));
 		}
 
 		if (moved) {

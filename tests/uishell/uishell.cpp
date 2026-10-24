@@ -921,6 +921,7 @@ class RecordingDisplayServiceClass : public UIDisplayServiceClass
 
 		virtual void Set_Stretch_Movies(bool on) override { Calls.push_back(on ? "stretch on" : "stretch off"); }
 		virtual void Set_System_Cursor(bool on) override { Calls.push_back(on ? "system cursor on" : "system cursor off"); }
+		virtual void Set_UI_Scale(int scale) override { Calls.push_back("ui scale " + std::to_string(scale)); }
 };
 
 
@@ -953,7 +954,7 @@ void Test_Display_Presenter(void)
 		Check(presenter.State.Selected == 2 && presenter.State.StretchMovies && presenter.State.SystemCursor && service.Calls.empty() && !presenter.Picked.has_value(), "display edits are held until the player accepts");
 
 		Drive(presenter, "ok");
-		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on" }, "accepting the display options applies both switches");
+		Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "ui scale 0" }, "accepting the display options applies both switches and the interface size");
 		Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "accepting with a new row hands the caller that mode to try");
 	}
 
@@ -963,7 +964,24 @@ void Test_Display_Presenter(void)
 		Drive(presenter, "select", 2);
 		Drive(presenter, "select", 1);
 		Drive(presenter, "ok");
-		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off" }, "accepting on the starting row applies the switches and tries no mode");
+		Check(presenter.Result.has_value() && !presenter.Picked.has_value() && service.Calls == std::vector<std::string>{ "stretch off", "system cursor off", "ui scale 0" }, "accepting on the starting row applies the switches and tries no mode");
+	}
+
+	{
+		RecordingDisplayServiceClass service;
+		UIDisplayPresenterClass presenter(service, Display_Fixture());
+		Check(presenter.State.UIScale == 0 && presenter.State.UIScaleLabel == "Auto (1x)" && presenter.State.UIScaleMax == 1, "the interface size starts automatic and names the size it picks");
+		Drive(presenter, "uiscale", 3);
+		Check(presenter.State.UIScale == 1, "a size the selected resolution cannot fit is held at the largest that fits");
+		Drive(presenter, "select", 2);
+		Drive(presenter, "uiscale", 2);
+		Check(presenter.State.UIScaleMax == 2 && presenter.State.UIScale == 2 && presenter.State.UIScaleLabel == "2x" && service.Calls.empty(), "a larger resolution offers a larger size, held until the player accepts");
+		Drive(presenter, "select", 1);
+		Check(presenter.State.UIScale == 1, "picking a smaller resolution lowers the size to one it fits");
+		Drive(presenter, "select", 2);
+		Drive(presenter, "uiscale", 2);
+		Drive(presenter, "ok");
+		Check(service.Calls.back() == "ui scale 2", "accepting applies the chosen interface size");
 	}
 
 	{
@@ -2423,7 +2441,7 @@ void Test_Display_Screen(Rml::Context & context, CountingSystemInterfaceClass & 
 		if (ok != nullptr) {
 			Click(context, ok);
 			presenter.Drain();
-			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on" }, "OK applies both switches");
+			Check(presenter.Result.has_value() && *presenter.Result == UI_RESULT_ACCEPTED && service.Calls == std::vector<std::string>{ "stretch on", "system cursor on", "ui scale 0" }, "OK applies both switches and the interface size");
 			Check(presenter.Picked.has_value() && presenter.Picked->Width == 1920 && presenter.Picked->Height == 1080, "OK hands the caller the picked mode");
 		}
 
@@ -2711,6 +2729,8 @@ void Test_Keyboard_Navigation(Rml::Context & context, CountingSystemInterfaceCla
 
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == cursor, "the pointer switch follows the movie switch");
+		Press(context, Rml::Input::KI_TAB);
+		Check(context.GetFocusElement() == document->GetElementById("uiscale"), "the interface size follows the pointer switch");
 		Press(context, Rml::Input::KI_TAB);
 		Check(context.GetFocusElement() == ok, "OK follows the switches");
 		Press(context, Rml::Input::KI_TAB);

@@ -47,7 +47,7 @@ bool CCToolTip::Update(ToolTipText * text)
 
 		Rect * trect;
 		if (Options.IsSidebarOnRight == true) {
-			if (text->Pos.X <= TacticalRect.X + TacticalRect.Width) {
+			if (text->Pos.X <= BattlefieldRect.X + BattlefieldRect.Width) {
 				trect = &TacticalRect;
 			} else {
 				trect = &SidebarRect;
@@ -103,7 +103,7 @@ void CCToolTip::Reset(const ToolTipText * text)
 {
 	bool redraw = false;
 	if (Options.IsSidebarOnRight == true) {
-		if (text->Pos.X >= TacticalRect.X + TacticalRect.Width) {
+		if (text->Pos.X >= BattlefieldRect.X + BattlefieldRect.Width) {
 			redraw = true;
 		}
 	} else {
@@ -150,7 +150,7 @@ void CCToolTip::Draw(const ToolTipText * text)
 	Surface * surface = NULL;
 
 	if (Options.IsSidebarOnRight == true) {
-		int offset = TacticalRect.X + TacticalRect.Width;
+		int offset = BattlefieldRect.X + BattlefieldRect.Width;
 		if (point.X + text->TextWidth <= offset) {
 			surface = CompositeSurface;
 		} else if (UseSidebarSurface == true && point.X >= offset) {

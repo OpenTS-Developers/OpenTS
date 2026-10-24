@@ -12,6 +12,7 @@
 template<class T> class TRect;
 typedef TRect<int> Rect;
 
+extern Rect BattlefieldRect;
 extern Rect SidebarRect;
 extern Rect TacticalRect;
 extern Rect VisibleRect;

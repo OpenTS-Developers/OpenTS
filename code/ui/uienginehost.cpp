@@ -31,6 +31,7 @@
 #include "session.h"
 #include "side.h"
 #include "ui/uishell.h"
+#include "uiscale.h"
 #include "video.h"
 #include "voc.h"
 #include "wwmouse.h"
@@ -100,6 +101,11 @@ class UIEngineHostClass : public UIShellHostClass
 			return(true);
 		}
 
+		virtual float Interface_Scale(void) const override
+		{
+			return((float)UI_Dialog_Scale());
+		}
+
 		virtual int Art_Magnification(void) const override
 		{
 			if (Options.ScaleMode != VIDEO_SCALE_PIXELART) {
@@ -107,7 +113,7 @@ class UIEngineHostClass : public UIShellHostClass
 			}
 
 			UIFrameRect frame = Frame();
-			float ratio = frame.ScaleX < frame.ScaleY ? frame.ScaleX : frame.ScaleY;
+			float ratio = (frame.ScaleX < frame.ScaleY ? frame.ScaleX : frame.ScaleY) * Interface_Scale();
 			if (ratio <= 1.0f) {
 				return(1);
 			}

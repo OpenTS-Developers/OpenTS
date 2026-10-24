@@ -44,6 +44,7 @@
 #include "_rules.h"
 #include "_surface.h"
 #include "_tactica.h"
+#include "battlezoom.h"
 #include "building.h"
 #include "cell.h"
 #include "dbgprint.h"
@@ -404,11 +405,11 @@ void ScrollClass::Scroll_Edge(Point2D const & point)
 		bool noscroll = false;
 
 		if (!noscroll) {
-			Point2D p = TacticalRect.Top_Left() + point;
+			Point2D p = Battle_Zoom_Edge_Point(TacticalRect.Top_Left() + point);
 			int x = p.X;
 			int y = p.Y;
-			int w = (CompositeSurface->Get_Width()+SidebarSurface->Get_Width()) - 1;
-			int h = CompositeSurface->Get_Height() - 1;
+			int w = VisibleRect.Width - 1;
+			int h = VisibleRect.Height - 1;
 
 			bool at_screen_edge = (y <= 0 || x == 0 || x >= w || y >= h);
 
@@ -776,7 +777,7 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
+						Point2D pt = Battle_Zoom_View_To_Frame(Point2D(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y));
 						Game_Point_To_Window(pt);
 						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}
@@ -788,7 +789,7 @@ void ScrollClass::Scroll_Coast(Point2D const & point)
 					distx = abs(int((double)posx * (12.0 / (double)(Options.ScrollRate + 1))));
 					disty = abs(int((double)posy * (12.0 / (double)(Options.ScrollRate + 1))));
 					if (distx + disty > 0) {
-						Point2D pt(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y);
+						Point2D pt = Battle_Zoom_View_To_Frame(Point2D(RightPressPoint.X + TacticalRect.X, RightPressPoint.Y + TacticalRect.Y));
 						Game_Point_To_Window(pt);
 						Main_Window_Warp_Cursor(pt.X, pt.Y);
 					}

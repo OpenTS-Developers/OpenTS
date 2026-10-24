@@ -210,6 +210,13 @@ class OptionsClass {
 		int CursorScale;
 
 		/*
+		 * This is how many times larger than its artwork the sidebar and the tab strip are
+		 * drawn, from 1 to 4. Zero chooses from the frame height: 1 below 2160 rows, and 3 at
+		 * 2160 rows or more. A size the frame cannot fit is lowered until it fits.
+		 */
+		int UIScale;
+
+		/*
 		 * Shows the system's arrow in place of cursor.png.
 		 */
 		bool SystemCursor;
