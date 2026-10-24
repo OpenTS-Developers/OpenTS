@@ -264,7 +264,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	PurchasePrice(0),
 	ActLike(HOUSE_NONE),
 	Cargo(),
-	Veterancy(),
+	Veterancy([this](bool notify_player) { On_Unit_Promoted(notify_player); }),
 	RadarFlashTimer(),
 	RadarPos(0,0),
 	Group(-1),
@@ -9168,4 +9168,31 @@ void TechnoClass::Set_Talker(TechnoClass * techno, TalkType bubble)
 		TalkBubbleOwner = NULL;
 		TalkBubbleTimer = 0;
 	}
+}
+
+
+/// <summary>
+/// Event callback function produced by VeterancyClass after a promotion occurs.
+/// This handles sight range changes and notifying the player for the promotion happening via sounds and visuals,
+/// if the techno being promoted is under his control.
+/// Dumbasses being promoted to rookies never notify players for their promotions.
+/// </summary>
+/// <param name="notify_player">Whether the player should be notified via sounds and visuals for the promotion of their technos.</param>
+void TechnoClass::On_Unit_Promoted(bool notify_player)
+{
+	auto new_rank = Veterancy.Get_Rank();
+
+	// force the techno to look again around itself in case sight range was changed by the promotion.
+	Look();
+	
+	if (new_rank == RANK_ROOKIE) return;
+	if (!notify_player) return;
+	if (!House->Is_Player_Control()) return;
+
+	auto sound = new_rank == RANK_ELITE ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound;
+	int flash_count = new_rank == RANK_ELITE ? Rule->EliteFlashTimer : Rule->VeteranFlashTimer;
+
+	Speak(Rule->VoxUnitPromoted);
+	Sound_Effect(sound, PositionCoord);
+	FlashCount = flash_count;	
 }

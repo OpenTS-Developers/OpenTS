@@ -886,7 +886,7 @@ void SuperClass::Drop_Pods(Cell const & cell) const
 
 		Cell nearby = Map.Nearby_Location(working_cell, SPEED_FOOT, -1, MZONE_INFANTRY, false, Point2D(1,1), false, false, false, false);
 		if (inf->Can_Enter_Cell(&Map[nearby]) == MOVE_OK) {
-			inf->Veterancy.Set_Elite(true);
+			inf->Veterancy.Set_Elite(false);
 			inf->Link_DropPod();
 			inf->PositionCoord = nearby;
 			inf->Assign_Destination(&Map[nearby]);

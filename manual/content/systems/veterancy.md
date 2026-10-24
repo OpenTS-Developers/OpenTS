@@ -7,18 +7,23 @@ keys:
   - CrateRadius
   - Elite
   - EliteAbilities
+  - EliteFlashTimer
   - IRepairRate
   - InitialVeteran
   - Trainable
+  - UpgradeEliteSound
+  - UpgradeVeteranSound
   - VeteranAbilities
   - VeteranArmor
   - VeteranCap
   - VeteranCombat
+  - VeteranFlashTimer
   - VeteranLevel
   - VeteranROF
   - VeteranRatio
   - VeteranSight
   - VeteranSpeed
+  - VoxUnitPromoted
 related:
   - type: system
     id: drop-pods
@@ -41,7 +46,7 @@ Vehicles, infantry, aircraft, and buildings each have their own experience total
 
 Objects start at rookie with `0` experience unless another setting gives them a different rank. Veteran always starts at `1` and elite at `2`. Rules can change how quickly experience is earned, but these thresholds are fixed.
 
-[`VeteranLevel=0`](/keys/veteranlevel/) gives an object `-0.25` experience, placing it below rookie. A map's [placed-object records](/formats/scenario-objects/) can also set experience directly. Below-rookie objects have no rank abilities, just like rookies. They differ in their insignia and in how crates and armories promote them, as described below.
+[`VeteranLevel=0`](/keys/veteranlevel/) gives an object `-0.25` experience, placing it below rookie. A map's [placed-object records](/formats/scenario-objects/) can also set experience directly, up to [`VeteranCap`](/keys/veterancap/). Below-rookie objects have no rank abilities, just like rookies. They differ in their insignia and in how crates and armories promote them, as described below.
 
 ## Earning experience
 
@@ -79,10 +84,10 @@ Experience does not decrease over time, and changing owners does not reset it.
 
 ### The experience ceiling
 
-After each kill that earns experience, the total is limited to [`VeteranCap`](/keys/veterancap/). Promotions from other sources ignore this limit.
+Every experience gain is limited to [`VeteranCap`](/keys/veterancap/). That covers kills, veterancy-crate steps, armory promotions, `InitialVeteran`, a reinforcement's `VeteranLevel`, the Drop Pods superweapon, the Make Elite trigger action, and experience from a map's placed-object records.
 
-:::caution[Allowing elite rank through combat]
-Set `VeteranCap` to at least `2` to allow elite rank through combat. The default limit is `1`, so kills alone can only produce veterans.
+:::caution[Allowing elite rank]
+Set `VeteranCap` to at least `2` to allow elite rank from any source. The default limit is `1`, so every promotion stops at veteran.
 :::
 
 :::caution[A low limit can demote an elite]
@@ -91,7 +96,7 @@ An object above the limit drops back to it on its next kill that earns experienc
 
 ## Promotion without kills
 
-The following sources can give an object a rank without kills. They ignore `VeteranCap`; only the veterancy crate requires `Trainable=yes`. A map's placed-object records can also set experience directly.
+The following sources can give an object a rank without kills. Every result stops at [`VeteranCap`](/keys/veterancap/); only the veterancy crate requires `Trainable=yes`. A map's placed-object records can also set experience directly.
 
 | Source | Result |
 | --- | --- |
@@ -102,6 +107,8 @@ The following sources can give an object a rank without kills. They ignore `Vete
 | [`InitialVeteran=yes`](/keys/initialveteran/) | The units and infantry drawn from the random starting selection of a skirmish or multiplayer match are created elite. |
 | [Make Elite trigger action](/mapping/actions/taction-make-elite/) | Every object the trigger is attached to is promoted to elite. |
 
+With the default limit of `1`, the rows that say elite leave the object veteran.
+
 A crate promotes each affected object one step at a time: below rookie to rookie, rookie to veteran, then veteran to elite. Elite objects stay elite. The crate's `Data` value in `[Powerups]` sets the number of steps. Fractions round up, so `2.5` gives three steps and `2` gives two. A value of `0` or less gives no promotion.
 
 The other sources set the rank directly. The armory's result depends on the infantry's current rank.
@@ -111,7 +118,7 @@ Crates also promote enemy and neutral objects within `CrateRadius`, including bu
 :::
 
 :::caution[An armory skips the veteran rank]
-Rookie and veteran infantry leave an armory as elite. Below-rookie infantry leave as veteran. Elite infantry do not get an enter cursor. Each admission uses one point of the building's [`Ammo`](/keys/ammo/), which an armory never replenishes.
+Rookie and veteran infantry leave an armory as elite, and below-rookie infantry as veteran, unless [`VeteranCap`](/keys/veterancap/) is below `2`. With the default limit of `1`, every admission leaves the infantry veteran. Elite infantry do not get an enter cursor. Each admission uses one point of the building's [`Ammo`](/keys/ammo/), which an armory never replenishes.
 :::
 
 The training time is set by [`IRepairRate`](/keys/irepairrate/), which also controls hospital treatment time.
@@ -197,7 +204,17 @@ A building upgrade that supplies a weapon takes priority over the building's own
 
 Promotion bonuses apply the next time the object fires, takes damage, or moves. The game checks its current rank and abilities whenever it calculates those effects.
 
-Extra sight reveals more terrain the next time the object reveals its surroundings. Promotion itself does not reveal the larger area.
+Extra sight reveals more terrain at once: a promotion makes the object reveal its surroundings again, so a `SIGHT` bonus uncovers the larger area immediately.
+
+## Promotion feedback
+
+The game announces a promotion with a sound, an EVA line, and a flash of the promoted object. It announces combat promotions, promotions from a veterancy crate, and promotions from an armory. The remaining sources in [Promotion without kills](#promotion-without-kills) set the rank without announcing it, and a rise from below rookie to rookie is silent.
+
+Only the local player's houses produce this feedback. Another house's promotion still changes its rank and insignia, but adds no sound, line, or flash on your machine.
+
+The rank picks the sound and the flash length: [`UpgradeVeteranSound`](/keys/upgradeveteransound/) and [`VeteranFlashTimer`](/keys/veteranflashtimer/) for a rise to veteran, and [`UpgradeEliteSound`](/keys/upgradeelitesound/) and [`EliteFlashTimer`](/keys/eliteflashtimer/) for a rise to elite, including one that skips the veteran rank. [`VoxUnitPromoted`](/keys/voxunitpromoted/) is the EVA line for either rise. With all five keys unset, a promotion makes no sound and does not flash.
+
+A flash lasts the number of frames its timer gives. The promoted object's brightness alternates while the count runs, changing every two frames. The sound plays from the object's position, so it fades with distance from the view; [Placed sounds](/systems/sound-effects/#placed-sounds) covers that. The EVA line joins the speech queue described in [EVA speech](/systems/eva-speech/).
 
 ## Carrying rank between objects
 

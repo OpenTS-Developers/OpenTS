@@ -2617,7 +2617,7 @@ bool TActionClass::TAction_MAKE_ELITE(HouseClass * , ObjectClass * , TriggerClas
 				techno->Tag != NULL &&
 				techno->Tag->Is_Trigger_Attached(trig)) {
 
-			techno->Veterancy.Set_Elite(true);
+			techno->Veterancy.Set_Elite(false);
 			success = true;
 		}
 	}

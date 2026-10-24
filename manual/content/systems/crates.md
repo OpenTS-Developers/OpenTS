@@ -257,7 +257,7 @@ If the vehicle cannot be placed in either location, the crate pays money instead
 `Cloak`, `Veteran`, `Armor`, `Speed` and `Firepower` affect objects on the ground within [`CrateRadius`](/keys/crateradius/) of the center of the crate's cell. None of them checks ownership, so enemy and neutral objects inside the radius are affected along with the collector's side.
 
 - `Cloak` makes each object able to cloak, which [cloaking and detection](/systems/cloaking/) then acts on.
-- `Veteran` promotes each object whose type sets `Trainable=yes`, as many steps as its third field says. [Promotion without kills](/systems/veterancy/#promotion-without-kills) describes the steps.
+- `Veteran` promotes each object whose type sets `Trainable=yes`, as many steps as its third field says, stopping at [`VeteranCap`](/keys/veterancap/). [Promotion without kills](/systems/veterancy/#promotion-without-kills) describes the steps.
 - `Armor`, `Speed` and `Firepower` each set a multiplier on the affected objects.
 
 [`ArmorCrateStacks=yes`](/keys/armorcratestacks/) allows armor upgrades for objects whose armor multiplier is no longer `1`. [`FirepowerCrateStacks=yes`](/keys/firepowercratestacks/) does the same for firepower. `Speed` always requires a speed multiplier of exactly `1` and also skips buildings and aircraft.

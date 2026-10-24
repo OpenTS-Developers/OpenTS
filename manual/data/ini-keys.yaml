@@ -8071,6 +8071,24 @@ EliteAbilities:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+EliteFlashTimer:
+  key: EliteFlashTimer
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: EliteFlashTimer
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 End:
   key: End
   scopes:
@@ -25042,6 +25060,42 @@ Unsellable:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+UpgradeEliteSound:
+  key: UpgradeEliteSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: UpgradeEliteSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
+UpgradeVeteranSound:
+  key: UpgradeVeteranSound
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: UpgradeVeteranSound
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Upgrades:
   key: Upgrades
   scopes:
@@ -25676,6 +25730,24 @@ VeteranCombat:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+VeteranFlashTimer:
+  key: VeteranFlashTimer
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: RulesClass
+      member: VeteranFlashTimer
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 VeteranLevel:
   key: VeteranLevel
   scopes:
@@ -25953,6 +26025,24 @@ Volume:
       source: code/themeini.cpp
       guard: null
     level: ThemeControl
+VoxUnitPromoted:
+  key: VoxUnitPromoted
+  scopes:
+  - applies_to:
+    - global rules
+    file: rules.ini
+    section:
+      kind: literal
+      name: AudioVisual
+    value_type: EVA speech
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: RulesClass
+      member: VoxUnitPromoted
+      source: code/rules.cpp
+      guard: null
+    level: RulesClass
 Voxel:
   key: Voxel
   scopes:
