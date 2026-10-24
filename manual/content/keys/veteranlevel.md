@@ -18,7 +18,7 @@ The rank applies only to members created by the [Reinforcement (team)](/mapping/
 
 Any other value leaves the member at rookie, as `1` does.
 
-[`VeteranCap`](/keys/veterancap/) does not limit the starting rank. With the default cap, kills promote an object only to veteran, but a team with `VeteranLevel=3` still arrives elite. A [`Trainable=yes`](/keys/trainable/) member above the cap [drops to it](/systems/veterancy/#the-experience-ceiling) the first time it destroys an object whose owner does not count it as an ally, even an object worth no experience.
+[`VeteranCap`](/keys/veterancap/) limits the starting rank too. With the default cap, a team with `VeteranLevel=3` arrives veteran. A [`Trainable=yes`](/keys/trainable/) member above the cap [drops to it](/systems/veterancy/#the-experience-ceiling) the first time it destroys an object whose owner does not count it as an ally, even an object worth no experience.
 
 `VeteranLevel=0` is the only team or rules setting that gives an object negative experience. A map's [placed-object records](/formats/scenario-objects/) can also give an object negative experience.
 

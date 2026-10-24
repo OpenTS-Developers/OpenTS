@@ -34,6 +34,17 @@
 
 
 #include "ability.hh"
+#include <functional>
+
+typedef enum VeterancyRankType {
+	RANK_DUMBASS,
+	RANK_ROOKIE,
+	RANK_VETERAN,
+	RANK_ELITE,
+
+	RANK_NONE = -1,
+} VeterancyRankType;
+
 
 /*
  * This class handles hero tracking.
@@ -41,10 +52,13 @@
 class VeterancyClass
 {
 	public:
+		// Event callbacks.
+		using PromotedCallback = std::function<void(bool quiet)>;
+
 		/*
 		**	Constructors, Destructors, and overloaded operators.
 		*/
-		VeterancyClass(void);
+		explicit VeterancyClass(PromotedCallback callback);
 		~VeterancyClass(void);
 
 		void Made_A_Kill(int cost, int value);
@@ -56,19 +70,17 @@ class VeterancyClass
 		bool Is_Rookie(void) const;
 		bool Is_Veteran(void) const;
 		bool Is_Elite(void) const;
-
-		/*
-		 * Modifies the value based on the current XP level (unused).
-		 */
-		double Modify(double value);
+		double Get_Experience(void) const;
+		VeterancyRankType Get_Rank() const;
 
 		/*
 		 * Sets the current XP level.
 		 */
-		void Set_Dumbass(bool set);
-		void Set_Rookie(bool set);
-		void Set_Veteran(bool set);
-		void Set_Elite(bool set);
+		void Set_Dumbass();
+		void Set_Rookie();
+		void Set_Veteran(bool notify_player = true);
+		void Set_Elite(bool notify_player = true);
+		void Set_Experience(double value, bool notify_player = true);
 
 		/*
 		 * I/O.
@@ -83,13 +95,15 @@ class VeterancyClass
 			stream.Serialize(Experience);
 		}
 
-	//private:
-
+	private:
 		/*
 		 * This keeps track of the amount of experience the unit has accumulated.
 		 * When it reaches a certain point, the unit improves.
 		 */
 		double Experience;
+
+		// Callback function for promotion events.
+		PromotedCallback On_Unit_Promoted_Callback;		
 };
 
 AbilityType Ability_From_Name(const char *name);

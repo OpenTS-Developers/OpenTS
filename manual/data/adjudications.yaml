@@ -366,6 +366,10 @@ Type:
   "SuperWeaponTypeClass::buffer": {verdict: distinct}
   "SessionClass::None": {verdict: distinct}
 
+VeteranSight:
+  "TechnoTypeClass::VeteranSightRange": {verdict: distinct}
+  "RulesClass::VeteranSight": {verdict: distinct}
+
 Volume:
   "VocClass::volume": {verdict: distinct}
   "ThemeControl::volume": {verdict: distinct}

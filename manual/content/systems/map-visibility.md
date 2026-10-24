@@ -7,6 +7,7 @@ keys:
   - AllowShroudedSubteranneanMoves
   - AllyReveal
   - AttackingAircraftSightRange
+  - EliteSight
   - FlashFrameTime
   - FogRate
   - LeptonsPerSightIncrease
@@ -65,7 +66,7 @@ The `rules.ini` settings below affect shroud, fog and the radar. The values are 
 
 ```ini title="rules.ini"
 [General]
-AircraftFogReveal=4             ; fog radius, in cells, of an airborne aircraft with Sight=0
+AircraftFogReveal=4             ; fog radius, in cells, of an airborne aircraft with no sight range
 AllowShroudedSubteranneanMoves=no
 AttackingAircraftSightRange=8   ; cells a human player's aircraft reveals when it fires near shroud
 LeptonsPerSightIncrease=25      ; leptons of height per 10 percent of extra sight
@@ -122,21 +123,29 @@ Fogging a cell walks the same cells and records the structures standing on them.
 
 ### Sight range
 
-[`Sight=`](/keys/sight/) counts cells, unlike a weapon's [`Range=`](/keys/range/), which is in leptons. An ordinary look lifts both the shroud and the fog from the cells it reaches. A vehicle, infantryman or structure with `Sight=0` makes no look at all. Only an aircraft does anything with a zero sight range, as [Who looks, and when](#who-looks-and-when) describes.
+[`Sight=`](/keys/sight/) counts cells, unlike a weapon's [`Range=`](/keys/range/), which is in leptons. An ordinary look lifts both the shroud and the fog from the cells it reaches. A vehicle, infantryman or structure with no sight range reveals nothing. Only an aircraft does anything with a zero sight range, as [Who looks, and when](#who-looks-and-when) describes.
 
-For vehicles, infantry and structures, two bonuses raise the range, in this order:
+The range starts at the value for the object's rank:
+
+- Rookies and below-rookie objects use [`Sight=`](/keys/sight/).
+- Veterans use the type's [`VeteranSight`](/keys/veteransight/#scope-aircrafttype) when it is positive, and `Sight=` otherwise.
+- Elites use the type's [`EliteSight`](/keys/elitesight/) when it is positive, then `VeteranSight` when that is positive, and `Sight=` otherwise.
+
+Vehicles, infantry and structures then apply two multipliers, in this order:
 
 1. **Height.** Sight grows by 10 percent for each whole [`LeptonsPerSightIncrease`](/keys/leptonspersightincrease/) leptons of height. Height is measured from the map's lowest level, so standing on a hill counts. One height level is 104 leptons. With the engine default of 50, each level adds two steps: an object one level up sees 20 percent further, and one four levels up sees 80 percent further.
-2. **Veterancy.** An object with the `SIGHT` [veteran ability](/systems/veterancy/#abilities) then multiplies that range by [`VeteranSight`](/keys/veteransight/) plus one.
+2. **The `SIGHT` ability.** An object whose rank grants `SIGHT` then multiplies the range by the rules-wide [`VeteranSight`](/keys/veteransight/#scope-global-rules) plus one.
 
-Each step rounds the range down to a whole number of cells. Aircraft get neither bonus.
+Each multiplication drops any fraction, so the range stays a whole number of cells.
+
+Airborne aircraft use the range for their rank and the `SIGHT` multiplier too. Their height figure is the one taken when they are placed: it counts the ground under them, and an aircraft that appears in flight at its [cruising altitude](/keys/flightlevel/) also counts that altitude. Taking off or climbing later does not raise it.
 
 :::caution[Sight range is capped at ten cells]
-A look reaches at most ten cells, whatever `Sight=`, the height bonus and the veteran bonus produce. Any range above ten has no further effect.
+A look reaches at most ten cells, whatever the range for the rank, the height bonus and the `SIGHT` multiplier produce. Any range above ten has no further effect.
 :::
 
 :::danger[Keep LeptonsPerSightIncrease above zero]
-`LeptonsPerSightIncrease=0` crashes the game with a division by zero on the next look by a vehicle, infantryman or structure.
+`LeptonsPerSightIncrease=0` crashes the game with a division by zero as soon as the first vehicle, infantryman, aircraft or structure is placed.
 :::
 
 ### The scan
@@ -158,12 +167,12 @@ Outside a campaign, the vehicles, infantry and structures of a house with [`Mult
 Regular looks happen as follows:
 
 - A vehicle or infantryman looks each time it reaches the center of a cell.
-- An infantryman looks once a second while it is moving in the air, if its `Sight=` is above zero.
-- An aircraft looks every 15 frames. It skips the playable-area test, the height bonus and the veteran bonus.
+- An infantryman looks once a second while it is moving in the air, if its sight range is above zero.
+- An aircraft looks every 15 frames. It skips the playable-area test but otherwise uses its [sight range](#sight-range).
 
-A landed aircraft sees one cell, whatever its `Sight=`.
+A landed aircraft sees one cell, whatever its sight range.
 
-An airborne aircraft whose type sets `Sight=0` lifts only the fog, within [`AircraftFogReveal`](/keys/aircraftfogreveal/) cells, and only while fog of war is on. This fog-only look works only on cells already out of the shroud. It applies the height test only while the aircraft flies below half the `[General]` [`FlightLevel`](/keys/flightlevel/#scope-global-rules), the rules-wide value, not the aircraft type's key of that name.
+An airborne aircraft with no sight range lifts only the fog, within [`AircraftFogReveal`](/keys/aircraftfogreveal/) cells, and only while fog of war is on. A positive [`VeteranSight`](/keys/veteransight/#scope-aircrafttype) or [`EliteSight`](/keys/elitesight/) for the aircraft's rank gives it a range, so it stops using this fog-only look. This fog-only look works only on cells already out of the shroud. It applies the height test only while the aircraft flies below half the `[General]` [`FlightLevel`](/keys/flightlevel/#scope-global-rules), the rules-wide value, not the aircraft type's key of that name.
 
 An object also looks at once when:
 
@@ -294,7 +303,7 @@ Whether the pane is raised at all is decided elsewhere. [Power output and drain]
 
 Discovery is recorded on each object, separately for each house. Every machine in a network game records the same marks.
 
-Only human players discover other houses' objects. Outside a campaign, every human player discovers every object as soon as it is placed on the map. In a campaign, the player discovers an object as it is placed if its cell is free of both the shroud and the fog; a structure is also discovered if its cell is completely clear of shroud. In both, an object placed outside the playable area, and an infantryman whose type has `Sight=0`, start undiscovered by every human player.
+Only human players discover other houses' objects. Outside a campaign, every human player discovers every object as soon as it is placed on the map. In a campaign, the player discovers an object as it is placed if its cell is free of both the shroud and the fog; a structure is also discovered if its cell is completely clear of shroud. In both, an object placed outside the playable area, and an infantryman with no sight range, start undiscovered by every human player.
 
 After placement, a human player discovers an object when either of these happens:
 

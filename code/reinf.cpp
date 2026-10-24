@@ -216,15 +216,15 @@ static FootClass * _Create_Group(TeamTypeClass const * teamtype)
 
 				switch (teamtype->VeteranLevel) {
 					case 0:
-						temp->Veterancy.Set_Dumbass(true);
+						temp->Veterancy.Set_Dumbass();
 						break;
 					case 1:
 						break;
 					case 2:
-						temp->Veterancy.Set_Veteran(true);
+						temp->Veterancy.Set_Veteran(false);
 						break;
 					case 3:
-						temp->Veterancy.Set_Elite(true);
+						temp->Veterancy.Set_Elite(false);
 						break;
 				}
 

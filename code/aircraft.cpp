@@ -3704,7 +3704,7 @@ void AircraftClass::Look(bool incremental, bool dont_map)
 {
 	assert(!IsInLimbo);
 
-	int sight_range = Class->SightRange;
+	int sight_range = Get_Sight_Range();
 	if (HeightAGL == 0) {
 		sight_range = 1;
 	}

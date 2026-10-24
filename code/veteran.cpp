@@ -85,7 +85,8 @@ AbilityType Ability_From_Name(const char *name)
 /// Constructor for the veterancy tracker.
 /// Every unit begins its career as a rookie with no experience to its name.
 /// </summary>
-VeterancyClass::VeterancyClass(void) :
+VeterancyClass::VeterancyClass(PromotedCallback callback) :
+	On_Unit_Promoted_Callback(std::move(callback)),
 	Experience(0)
 {
 }
@@ -100,6 +101,27 @@ VeterancyClass::~VeterancyClass(void)
 
 
 /// <summary>
+/// Sets the experience value, up to the maximum allowed experience set by VeteranCap.
+/// If this causes the unit to be promoted, produces an event call to handle changes as a result of the promotion.
+/// </summary>
+/// <param name="value">The amount of experience to set. Cannot exceed the maximum allowed experience set by VeteranCap.
+/// <param name="notify_player">Passed to the callback to determine whether the player should be notified on the promotion. This
+/// is relevant in cases where promotion occurs artificially, such as spawning an elite unit via triggers. Defaults to true.
+void VeterancyClass::Set_Experience(double value, bool notify_player)
+{
+	auto old_rank = Get_Rank();
+
+	Experience = std::min(value, Rule->VeteranCap);
+
+	auto new_rank = Get_Rank();
+
+	if (new_rank > old_rank) {
+		On_Unit_Promoted_Callback(notify_player);
+	}
+}
+
+
+/// <summary>
 /// Credits the unit with a kill.
 /// This routine is called when a trainable unit destroys something. The experience
 /// earned is weighed against what the killer itself is worth, so cheap units are
@@ -110,8 +132,8 @@ VeterancyClass::~VeterancyClass(void)
 /// <param name="value">The point value of the victim.</param>
 void VeterancyClass::Made_A_Kill(int cost, int value)
 {
-	Experience += value / (cost * Rule->VeteranRatio);
-	Experience = std::min(Experience, Rule->VeteranCap);
+	double experience_earned = value / (cost * Rule->VeteranRatio);	
+	Set_Experience(Experience + experience_earned);
 }
 
 
@@ -165,43 +187,14 @@ bool VeterancyClass::Is_Elite(void) const
 
 
 /// <summary>
-/// Fetches the multiplier this veterancy applies to a unit statistic.
-/// Callers hand over the per-rank bonus from the rules and scale whatever statistic is
-/// being adjusted -- firepower, armor and the like -- by the result. A unit with
-/// negative experience is penalized rather than rewarded.
-/// </summary>
-/// <param name="value">The bonus granted for each rank the unit has earned.</param>
-/// <returns>Returns with the multiplier to scale the statistic by.</returns>
-double VeterancyClass::Modify(double value)
-{
-	double lvl = Experience;
-	lvl = floor(lvl);
-
-	if (lvl < -0.01) {
-		return(-1.0 / (lvl - 1.0));
-	}
-
-	if (lvl > 0.01) {
-		return(1.0 + (value * lvl));
-	}
-
-	return(1.0);
-}
-
-
-/// <summary>
 /// Marks or unmarks the unit as a green recruit.
 /// A dumbass has negative experience, which makes it perform worse than a rookie.
 /// Clearing the mark restores it to plain rookie status.
 /// </summary>
 /// <param name="set">Should the unit be made a dumbass?</param>
-void VeterancyClass::Set_Dumbass(bool set)
+void VeterancyClass::Set_Dumbass()
 {
-	if (set) {
-		Experience = -.25;
-	} else {
-		Experience = 0;
-	}
+	Set_Experience(-.25);
 }
 
 
@@ -210,9 +203,9 @@ void VeterancyClass::Set_Dumbass(bool set)
 /// This routine wipes out whatever experience the unit had accumulated, putting it back
 /// where it started life.
 /// </summary>
-void VeterancyClass::Set_Rookie(bool set)
+void VeterancyClass::Set_Rookie()
 {
-	Experience = 0;
+	Set_Experience(0);
 }
 
 
@@ -221,14 +214,10 @@ void VeterancyClass::Set_Rookie(bool set)
 /// Clearing veteran status drops the unit back to rookie rather than to whatever it
 /// happened to be before.
 /// </summary>
-/// <param name="set">Should the unit be made a veteran?</param>
-void VeterancyClass::Set_Veteran(bool set)
+/// <param name="notify_player">Should the player be notified on this promotion?</param>
+void VeterancyClass::Set_Veteran(bool notify_player)
 {
-	if (set) {
-		Experience = 1;
-	} else {
-		Experience = 0;
-	}
+	Set_Experience(1, notify_player);
 }
 
 
@@ -237,14 +226,10 @@ void VeterancyClass::Set_Veteran(bool set)
 /// Clearing elite status does not merely undo the promotion -- it drops the unit all the
 /// way back to rookie.
 /// </summary>
-/// <param name="set">Should the unit be made elite?</param>
-void VeterancyClass::Set_Elite(bool set)
+/// <param name="notify_player">Should the player be notified on this promotion?</param>
+void VeterancyClass::Set_Elite(bool notify_player)
 {
-	if (set) {
-		Experience = 2;
-	} else {
-		Experience = 0;
-	}
+	Set_Experience(2, notify_player);
 }
 
 
@@ -264,9 +249,40 @@ int VeterancyClass::To_Integer(void) const
 /// Sets the veterancy from its whole number form.
 /// This is the counterpart to To_Integer, used when reading a unit's veterancy back out
 /// of a save game or a scenario file.
+/// This function is used mainly for spawning pre-placed units on the map with preset amount of experience, so it currently
+/// set to never notify players of units being promoted from this.
 /// </summary>
 /// <param name="value">The stored veterancy value to restore.</param>
 void VeterancyClass::From_Integer(int value)
 {
-	Experience = value / 100.0;
+	Set_Experience(value / 100.0, false);
+}
+
+
+/// <summary>
+/// Helper functions for fetching the current veterancy rank.
+/// </summary>
+/// <returns>Returns a VeterancyRankType enum value that specifies the veterancy rank of the techno associated with this class instance.</returns>
+VeterancyRankType VeterancyClass::Get_Rank() const
+{
+	if (Is_Elite()) {
+		return RANK_ELITE;
+	}
+	if (Is_Veteran()) {
+		return RANK_VETERAN;
+	}
+	if (Is_Rookie()) {
+		return RANK_ROOKIE;
+	}
+
+	return RANK_DUMBASS;
+}
+
+
+/// <summary>
+/// Getter for experience.
+/// </summary>
+/// <returns>Returns the current experience value.</returns>
+double VeterancyClass::Get_Experience() const {
+	return Experience;
 }

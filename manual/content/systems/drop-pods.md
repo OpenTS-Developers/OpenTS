@@ -23,7 +23,7 @@ related:
 
 ### Drop Pods superweapon
 
-The superweapon drops a squad of elite infantry around its target cell. The squad size is a random whole number from [`DropPodInfantryMinimum`](/keys/droppodinfantryminimum/) to [`DropPodInfantryMaximum`](/keys/droppodinfantrymaximum/), both included. Each soldier is an `E1` or an `E2` with equal chance. These two type names are fixed.
+The superweapon drops a squad of elite infantry around its target cell. [`VeteranCap`](/keys/veterancap/) limits their rank: with the default limit of `1`, they land veteran. The squad size is a random whole number from [`DropPodInfantryMinimum`](/keys/droppodinfantryminimum/) to [`DropPodInfantryMaximum`](/keys/droppodinfantrymaximum/), both included. Each soldier is an `E1` or an `E2` with equal chance. These two type names are fixed.
 
 The squad lands in a cluster. The first soldier is aimed at the enterable cell nearest the target. Each later soldier is aimed near an enterable cell next to the previous soldier's destination.
 

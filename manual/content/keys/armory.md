@@ -16,7 +16,7 @@ The player gets the enter cursor for their own infantry that is not yet elite, w
 - it is switched on;
 - its [`Ammo`](/keys/ammo/) count is not zero.
 
-The promotion depends on the infantry's rank when it enters. Infantry below rookie leaves as a veteran, and any other infantry leaves as elite, so a rookie skips the veteran rank. [Promotion without kills](/systems/veterancy/#promotion-without-kills) compares the armory with the other sources of rank.
+The promotion depends on the infantry's rank when it enters. Infantry below rookie leaves as a veteran, and any other infantry leaves as elite, so a rookie skips the veteran rank. [`VeteranCap`](/keys/veterancap/) limits the result: with the default limit of `1`, every admission leaves the infantry veteran. [Promotion without kills](/systems/veterancy/#promotion-without-kills) compares the armory with the other sources of rank.
 
 [Hospitals and armories](/systems/repair/#hospitals-and-armories) covers the full admission order and the servicing delay. At the default settings, the same `IRepairRate` keeps infantry in an armory about fourteen times longer than in a hospital.
 

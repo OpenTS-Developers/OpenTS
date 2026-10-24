@@ -109,7 +109,7 @@ Each draw picks, in this order:
 
 If the [placement search](#where-an-object-lands) cannot place a drawn object, the object is removed without being charged, and the house draws again.
 
-A placed object starts on guard, or on area guard for a computer house. With [`InitialVeteran`](/keys/initialveteran/) set, each placed object starts [elite](/systems/veterancy/). Neither applies to the base unit.
+A placed object starts on guard, or on area guard for a computer house. With [`InitialVeteran`](/keys/initialveteran/) set, each placed object starts [elite](/systems/veterancy/), up to [`VeteranCap`](/keys/veterancap/); with the default limit of `1`, it starts veteran. Neither applies to the base unit.
 
 ## Where an object lands
 

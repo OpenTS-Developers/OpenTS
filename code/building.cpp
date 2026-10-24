@@ -1856,7 +1856,7 @@ bool BuildingClass::Unlimbo(Coord const & coord, Dir256 dir)
 			if (o && o->Unlimbo(coord)) {
 				Map[coord].Owner = House->HeapID;
 				Transmit_Message(RADIO_OVER_OUT);
-				Map.Sight_From(coord, Class->SightRange, House);
+				Map.Sight_From(coord, Get_Sight_Range(), House);
 				Delete_Me();
 				return(true);
 			}
@@ -5144,7 +5144,7 @@ int BuildingClass::Do_MISSION_DECONSTRUCTION(void)
 							unit->Strength = std::max(unit->Strength, 1);
 							unit->ActLike = ActLike;
 							unit->Group = Group;
-							unit->Veterancy.Experience = Veterancy.Experience;
+							unit->Veterancy.Set_Experience(Veterancy.Get_Experience(), false);
 							unit->LimpetType = LimpetType;
 							unit->LimpetSpeedFactor = LimpetSpeedFactor;
 
@@ -5598,9 +5598,9 @@ int BuildingClass::Do_MISSION_REPAIR(void)
 				if (BuildingStage.Fetch_Stage() >= (Rule->IRepairRate * TICKS_PER_MINUTE)) {
 					FootClass *contact = (FootClass *)Contact_With_Whom();
 					if (contact->Veterancy.Is_Dumbass()) {
-						contact->Veterancy.Set_Veteran(true);
+						contact->Veterancy.Set_Veteran();
 					} else {
-						contact->Veterancy.Set_Elite(true);
+						contact->Veterancy.Set_Elite();
 					}
 					Exit_Object(Cargo.Detach_Object());
 					Assign_Mission(MISSION_GUARD);

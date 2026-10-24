@@ -264,7 +264,7 @@ TechnoClass::TechnoClass(HouseClass * house) :
 	PurchasePrice(0),
 	ActLike(HOUSE_NONE),
 	Cargo(),
-	Veterancy(),
+	Veterancy([this](bool notify_player) { On_Unit_Promoted(notify_player); }),
 	RadarFlashTimer(),
 	RadarPos(0,0),
 	Group(-1),
@@ -5263,7 +5263,7 @@ ResultType TechnoClass::Take_Damage(int & damage, int distance, WarheadTypeClass
 					bool retaliate = In_Range(target, which);
 					if (!retaliate) {
 						if (House->Is_Human_Player()) {
-							retaliate = ((double)(int)Distance(target->Center_Coord()) <= ((double)TClass->SightRange + 0.5) * CELL_LEPTON);
+							retaliate = ((double)(int)Distance(target->Center_Coord()) <= ((double)Get_Sight_Range() + 0.5) * CELL_LEPTON);
 						} else {
 							retaliate = true;
 						}
@@ -8061,10 +8061,7 @@ void TechnoClass::Look(bool incremental, bool dontmap)
 		}
 		SightIncrease = sight_increase;
 
-		int sight_range = TClass->SightRange * (SightIncrease * 0.01 + 1.0);
-		if (Has_Ability(ABILITY_SIGHT) && Rule->VeteranSight != 0.0) {
-			sight_range *= Rule->VeteranSight + 1;
-		}
+		int sight_range = Get_Sight_Range();
 
 		if (sight_range) {
 			Map.Sight_From(PositionCoord, sight_range, House, incremental, dontmap);
@@ -9168,4 +9165,60 @@ void TechnoClass::Set_Talker(TechnoClass * techno, TalkType bubble)
 		TalkBubbleOwner = NULL;
 		TalkBubbleTimer = 0;
 	}
+}
+
+
+/// <summary>
+/// Event callback function produced by VeterancyClass after a promotion occurs.
+/// This handles sight range changes and notifying the player for the promotion happening via sounds and visuals,
+/// if the techno being promoted is under his control.
+/// Dumbasses being promoted to rookies never notify players for their promotions.
+/// </summary>
+/// <param name="notify_player">Whether the player should be notified via sounds and visuals for the promotion of their technos.</param>
+void TechnoClass::On_Unit_Promoted(bool notify_player)
+{
+	auto new_rank = Veterancy.Get_Rank();
+
+	// force the techno to look again around itself in case sight range was changed by the promotion.
+	Look();
+	
+	if (new_rank == RANK_ROOKIE) return;
+	if (!notify_player) return;
+	if (!House->Is_Player_Control()) return;
+
+	auto sound = new_rank == RANK_ELITE ? Rule->UpgradeEliteSound : Rule->UpgradeVeteranSound;
+	int flash_count = new_rank == RANK_ELITE ? Rule->EliteFlashTimer : Rule->VeteranFlashTimer;
+
+	Speak(Rule->VoxUnitPromoted);
+	Sound_Effect(sound, PositionCoord);
+	FlashCount = flash_count;	
+}
+
+
+/// <summary>
+/// Returns the sight range of this techno after calculations.
+/// Takes into account veterancy bonuses as well height bonuses, if any.
+/// </summary>
+/// <returns>The type's sight range after all calculations.</returns>
+int TechnoClass::Get_Sight_Range() const
+{
+	int sight_range = TClass->SightRange;
+	if (Veterancy.Is_Elite()) {
+		if (TClass->EliteSightRange > 0) {
+			sight_range = TClass->EliteSightRange;
+		} else if (TClass->VeteranSightRange > 0) {
+			sight_range = TClass->VeteranSightRange;
+		}
+	} else if (Veterancy.Is_Veteran()) {
+		if (TClass->VeteranSightRange > 0) {
+			sight_range = TClass->VeteranSightRange;
+		}
+	}
+
+	sight_range *= (SightIncrease * 0.01 + 1.0);
+	if (Has_Ability(ABILITY_SIGHT) && Rule->VeteranSight != 0.0) {
+		sight_range *= Rule->VeteranSight + 1;
+	}
+
+	return sight_range;
 }

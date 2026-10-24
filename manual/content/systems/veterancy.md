@@ -7,18 +7,25 @@ keys:
   - CrateRadius
   - Elite
   - EliteAbilities
+  - EliteFlashTimer
+  - EliteSight
   - IRepairRate
   - InitialVeteran
+  - Sight
   - Trainable
+  - UpgradeEliteSound
+  - UpgradeVeteranSound
   - VeteranAbilities
   - VeteranArmor
   - VeteranCap
   - VeteranCombat
+  - VeteranFlashTimer
   - VeteranLevel
   - VeteranROF
   - VeteranRatio
   - VeteranSight
   - VeteranSpeed
+  - VoxUnitPromoted
 related:
   - type: system
     id: drop-pods
@@ -41,7 +48,7 @@ Vehicles, infantry, aircraft, and buildings each have their own experience total
 
 Objects start at rookie with `0` experience unless another setting gives them a different rank. Veteran always starts at `1` and elite at `2`. Rules can change how quickly experience is earned, but these thresholds are fixed.
 
-[`VeteranLevel=0`](/keys/veteranlevel/) gives an object `-0.25` experience, placing it below rookie. A map's [placed-object records](/formats/scenario-objects/) can also set experience directly. Below-rookie objects have no rank abilities, just like rookies. They differ in their insignia and in how crates and armories promote them, as described below.
+[`VeteranLevel=0`](/keys/veteranlevel/) gives an object `-0.25` experience, placing it below rookie. A map's [placed-object records](/formats/scenario-objects/) can also set experience directly, up to [`VeteranCap`](/keys/veterancap/). Below-rookie objects have no rank abilities, just like rookies. They differ in their insignia and in how crates and armories promote them, as described below.
 
 ## Earning experience
 
@@ -79,10 +86,10 @@ Experience does not decrease over time, and changing owners does not reset it.
 
 ### The experience ceiling
 
-After each kill that earns experience, the total is limited to [`VeteranCap`](/keys/veterancap/). Promotions from other sources ignore this limit.
+Every experience gain is limited to [`VeteranCap`](/keys/veterancap/). That covers kills, veterancy-crate steps, armory promotions, `InitialVeteran`, a reinforcement's `VeteranLevel`, the Drop Pods superweapon, the Make Elite trigger action, and experience from a map's placed-object records.
 
-:::caution[Allowing elite rank through combat]
-Set `VeteranCap` to at least `2` to allow elite rank through combat. The default limit is `1`, so kills alone can only produce veterans.
+:::caution[Allowing elite rank]
+Set `VeteranCap` to at least `2` to allow elite rank from any source. The default limit is `1`, so every promotion stops at veteran.
 :::
 
 :::caution[A low limit can demote an elite]
@@ -91,7 +98,7 @@ An object above the limit drops back to it on its next kill that earns experienc
 
 ## Promotion without kills
 
-The following sources can give an object a rank without kills. They ignore `VeteranCap`; only the veterancy crate requires `Trainable=yes`. A map's placed-object records can also set experience directly.
+The following sources can give an object a rank without kills. Every result stops at [`VeteranCap`](/keys/veterancap/); only the veterancy crate requires `Trainable=yes`. A map's placed-object records can also set experience directly.
 
 | Source | Result |
 | --- | --- |
@@ -102,6 +109,8 @@ The following sources can give an object a rank without kills. They ignore `Vete
 | [`InitialVeteran=yes`](/keys/initialveteran/) | The units and infantry drawn from the random starting selection of a skirmish or multiplayer match are created elite. |
 | [Make Elite trigger action](/mapping/actions/taction-make-elite/) | Every object the trigger is attached to is promoted to elite. |
 
+With the default limit of `1`, the rows that say elite leave the object veteran.
+
 A crate promotes each affected object one step at a time: below rookie to rookie, rookie to veteran, then veteran to elite. Elite objects stay elite. The crate's `Data` value in `[Powerups]` sets the number of steps. Fractions round up, so `2.5` gives three steps and `2` gives two. A value of `0` or less gives no promotion.
 
 The other sources set the rank directly. The armory's result depends on the infantry's current rank.
@@ -111,14 +120,14 @@ Crates also promote enemy and neutral objects within `CrateRadius`, including bu
 :::
 
 :::caution[An armory skips the veteran rank]
-Rookie and veteran infantry leave an armory as elite. Below-rookie infantry leave as veteran. Elite infantry do not get an enter cursor. Each admission uses one point of the building's [`Ammo`](/keys/ammo/), which an armory never replenishes.
+Rookie and veteran infantry leave an armory as elite, and below-rookie infantry as veteran, unless [`VeteranCap`](/keys/veterancap/) is below `2`. With the default limit of `1`, every admission leaves the infantry veteran. Elite infantry do not get an enter cursor. Each admission uses one point of the building's [`Ammo`](/keys/ammo/), which an armory never replenishes.
 :::
 
 The training time is set by [`IRepairRate`](/keys/irepairrate/), which also controls hospital treatment time.
 
 ## What a rank changes
 
-Promotion bonuses depend on the type's ability lists. A veteran with no abilities gains only a rank insignia. Elite objects can also use an elite weapon and cause other objects in their cell to scatter, as described below.
+Promotion bonuses depend on the type's ability lists and sight ranges. A veteran whose type gives it no abilities and no positive sight range gains only a rank insignia. Elite objects can also use an elite weapon and make other objects in their cell scatter, as described below.
 
 ### Abilities
 
@@ -141,7 +150,7 @@ Ability names are case-insensitive. The table lists all eighteen abilities and t
 | `FIREPOWER` | Weapon damage is multiplied by [`VeteranCombat`](/keys/veterancombat/) plus one. |
 | `SCATTER` | The object scatters from incoming fire even when the owner's units would otherwise hold position. |
 | `ROF` | Reload delay is divided by [`VeteranROF`](/keys/veteranrof/) plus one. |
-| `SIGHT` | Sight range is multiplied by [`VeteranSight`](/keys/veteransight/) plus one. |
+| `SIGHT` | The sight range for the object's rank is multiplied by the rules-wide [`VeteranSight`](/keys/veteransight/#scope-global-rules) plus one. |
 | `CLOAK` | The object cloaks and recloaks without [`Cloakable=yes`](/keys/cloakable/), and stays cloaked while immobilized. |
 | `TIBERIUM_PROOF` | Infantry take no damage from standing in Tiberium, as with [`TiberiumProof=yes`](/keys/tiberiumproof/). |
 | `VEIN_PROOF` | Veins do not damage the object, as with [`ImmuneToVeins=yes`](/keys/immunetoveins/). |
@@ -175,13 +184,19 @@ Set the five bonuses below in `rules.ini` under `[General]`. Each applies only w
 | --- | --- |
 | [`VeteranCombat`](/keys/veterancombat/) | Damage is multiplied by the value plus one, after the house and object firepower biases. |
 | [`VeteranSpeed`](/keys/veteranspeed/) | Speed is multiplied by the value plus one, after the house ground-speed bias. |
-| [`VeteranSight`](/keys/veteransight/) | Sight range is multiplied by the value plus one. |
+| [`VeteranSight`](/keys/veteransight/#scope-global-rules) | The sight range for the object's rank is multiplied by the value plus one, after the height bonus. |
 | [`VeteranArmor`](/keys/veteranarmor/) | Incoming damage is divided by the value plus one. |
 | [`VeteranROF`](/keys/veteranrof/) | Reload delay is divided by the value plus one. |
 
 `VeteranArmor=1` halves incoming damage, and `VeteranROF=1` halves reload delay. For the other three settings, `1` doubles the affected statistic. A value of `0` gives no bonus. All five default to `1`.
 
 Sonic weapons and weapons using fire particles receive no firepower bonus. Sonic weapons also receive no reload bonus, as do weapons with an attached spark, fire, or railgun particle system. The reload bonus shortens the delay after a burst, not the gaps between its shots.
+
+### Sight range
+
+A type can give its veterans and elites their own sight ranges. [`VeteranSight`](/keys/veteransight/#scope-aircrafttype) in the type's section replaces [`Sight=`](/keys/sight/) for its veterans, and [`EliteSight`](/keys/elitesight/) replaces both for its elites. Only a positive value takes effect. An elite whose type leaves `EliteSight` unset or non-positive uses the type's `VeteranSight` when that is positive, and `Sight=` otherwise.
+
+The `SIGHT` ability then multiplies whichever range applies. [Sight range](/systems/map-visibility/#sight-range) gives the full calculation and the ten-cell cap.
 
 ### The elite weapon
 
@@ -197,7 +212,17 @@ A building upgrade that supplies a weapon takes priority over the building's own
 
 Promotion bonuses apply the next time the object fires, takes damage, or moves. The game checks its current rank and abilities whenever it calculates those effects.
 
-Extra sight reveals more terrain the next time the object reveals its surroundings. Promotion itself does not reveal the larger area.
+Extra sight reveals more terrain at once: a promotion makes the object reveal its surroundings again, so a larger range for the new rank, and any `SIGHT` bonus, uncovers the wider area immediately.
+
+## Promotion feedback
+
+The game announces a promotion with a sound, an EVA line, and a flash of the promoted object. It announces combat promotions, promotions from a veterancy crate, and promotions from an armory. The remaining sources in [Promotion without kills](#promotion-without-kills) set the rank without announcing it, and a rise from below rookie to rookie is silent.
+
+Only the local player's houses produce this feedback. Another house's promotion still changes its rank and insignia, but adds no sound, line, or flash on your machine.
+
+The rank picks the sound and the flash length: [`UpgradeVeteranSound`](/keys/upgradeveteransound/) and [`VeteranFlashTimer`](/keys/veteranflashtimer/) for a rise to veteran, and [`UpgradeEliteSound`](/keys/upgradeelitesound/) and [`EliteFlashTimer`](/keys/eliteflashtimer/) for a rise to elite, including one that skips the veteran rank. [`VoxUnitPromoted`](/keys/voxunitpromoted/) is the EVA line for either rise. With all five keys unset, a promotion makes no sound and does not flash.
+
+A flash lasts the number of frames its timer gives. The promoted object's brightness alternates while the count runs, changing every two frames. The sound plays from the object's position, so it fades with distance from the view; [Placed sounds](/systems/sound-effects/#placed-sounds) covers that. The EVA line joins the speech queue described in [EVA speech](/systems/eva-speech/).
 
 ## Carrying rank between objects
 

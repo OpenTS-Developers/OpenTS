@@ -605,7 +605,12 @@ RulesClass::RulesClass(void) :
 	HunterSeekerDescendProximity(0),
 	HunterSeekerDescentSpeed(0),
 	HunterSeekerAscentSpeed(0),
-	HunterSeekerEmergeSpeed(0)
+	HunterSeekerEmergeSpeed(0),
+	UpgradeVeteranSound(VOC_NONE),
+	UpgradeEliteSound(VOC_NONE),
+	VoxUnitPromoted(VOX_NONE),
+	VeteranFlashTimer(0),
+	EliteFlashTimer(0)
 {
 	/// nothing
 }
@@ -946,6 +951,13 @@ bool RulesClass::Audio_Visual_Rules(CCINIClass const & ini)
 
 		EMPulseSparkles = TGet_Class(ini, AUDIOVISUAL, "EMPulseSparkles", EMPulseSparkles);
 		WebbedInfantry = TGet_Class(ini, AUDIOVISUAL, "WebbedInfantry", WebbedInfantry);
+
+		UpgradeVeteranSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeVeteranSound", UpgradeVeteranSound);
+		UpgradeEliteSound = ini.Get_VocType(AUDIOVISUAL, "UpgradeEliteSound", UpgradeEliteSound);
+		VoxUnitPromoted = ini.Get_VoxType(AUDIOVISUAL, "VoxUnitPromoted", VoxUnitPromoted);
+		VeteranFlashTimer = ini.Get_Int(AUDIOVISUAL, "VeteranFlashTimer", VeteranFlashTimer);		
+		EliteFlashTimer = ini.Get_Int(AUDIOVISUAL, "EliteFlashTimer", EliteFlashTimer);
+
 		return(true);
 	}
 	return(false);
@@ -2633,6 +2645,11 @@ void RulesClass::Serialize(SaveStreamClass & stream)
 	stream.Serialize(PrerequisiteNodFactory);
 	stream.Serialize(EngineerCaptureLevel);
 	stream.Serialize(EngineerDamage);
+	stream.Serialize(UpgradeVeteranSound);
+	stream.Serialize(UpgradeEliteSound);
+	stream.Serialize(VoxUnitPromoted);
+	stream.Serialize(VeteranFlashTimer);
+	stream.Serialize(EliteFlashTimer);
 }
 
 

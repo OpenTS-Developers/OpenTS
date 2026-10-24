@@ -3891,9 +3891,9 @@ crate_money:
 						((TechnoClass *)obj)->TClass->IsTrainable && Distance(Cell_Coord(), obj->Center_Coord()) < Rule->CrateRadius) {
 						for (int count = 0; count < data; count++) {
 							VeterancyClass * vet = &((TechnoClass *)obj)->Veterancy;
-							if (vet->Is_Veteran()) vet->Set_Elite(true);
-							if (vet->Is_Rookie()) vet->Set_Veteran(true);
-							if (vet->Is_Dumbass()) vet->Set_Rookie(true);
+							if (vet->Is_Veteran()) vet->Set_Elite();
+							if (vet->Is_Rookie()) vet->Set_Veteran();
+							if (vet->Is_Dumbass()) vet->Set_Rookie();
 						}
 					}
 				}

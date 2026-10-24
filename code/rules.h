@@ -2274,4 +2274,21 @@ class RulesClass
 
 		/// Unused
 		float EngineerDamage;
+
+		/*
+		 * Sounds played when a unit is promoted.
+		 */
+		VocType UpgradeVeteranSound;
+		VocType UpgradeEliteSound;
+
+		/*
+		 * EVA announcement when a unit is promoted.
+		 */
+		VoxType VoxUnitPromoted;
+
+		/*
+		 * The number of frames that a newly promoted unit will flash for.
+		 */
+		int VeteranFlashTimer;
+		int EliteFlashTimer;
 };
