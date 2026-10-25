@@ -387,11 +387,13 @@ void VoxelAnimClass::AI(void)
 						CellClass * cellptr = &Map[cell];
 						if (cellptr->Can_Tiberium_Germinate(NULL)) {
 							TiberiumClass * tiberium = Tiberiums[Which_Tiberium_Type(OVERLAY_TIBERIUM2_01)];
+							int overlay = tiberium->Overlay->HeapID;
 							if (cellptr->Ramp) {
-								new OverlayClass(OverlayTypes[tiberium->Overlay->HeapID + tiberium->Variety + 2 * cellptr->Ramp - 2 + Scen->RandomNumber(0, 1)], cellptr->CellID, HOUSE_NONE);
+								overlay += tiberium->Variety + 2 * cellptr->Ramp - 2 + Scen->RandomNumber(0, 1);
 							} else {
-								new OverlayClass(*(&OverlayTypes[Scen->RandomNumber(0, 11)] + tiberium->Overlay->HeapID), cellptr->CellID, HOUSE_NONE);
+								overlay += Scen->RandomNumber(0, 11);
 							}
+							new OverlayClass(OverlayTypes[overlay], cellptr->CellID, HOUSE_NONE);
 							tiberium->Queue_Growth(cellptr->CellID);
 							cellptr->OverlayData = 0;
 
@@ -418,11 +420,13 @@ void VoxelAnimClass::AI(void)
 				CellClass * cellptr = &Map[Get_Bounce_Coord()];
 				if (cellptr->Can_Tiberium_Germinate(NULL)) {
 					TiberiumClass * tiberium = Tiberiums[Which_Tiberium_Type(OVERLAY_TIBERIUM2_01)];
+					int overlay = tiberium->Overlay->HeapID;
 					if (cellptr->Ramp) {
-						new OverlayClass(OverlayTypes[tiberium->Overlay->HeapID + tiberium->Variety + 2 * cellptr->Ramp - 2 + Scen->RandomNumber(0, 1)], cellptr->CellID, HOUSE_NONE);
+						overlay += tiberium->Variety + 2 * cellptr->Ramp - 2 + Scen->RandomNumber(0, 1);
 					} else {
-						new OverlayClass(*(&OverlayTypes[Scen->RandomNumber(0, 11)] + tiberium->Overlay->HeapID), cellptr->CellID, HOUSE_NONE);
+						overlay += Scen->RandomNumber(0, 11);
 					}
+					new OverlayClass(OverlayTypes[overlay], cellptr->CellID, HOUSE_NONE);
 					tiberium->Queue_Growth(cellptr->CellID);
 					cellptr->OverlayData = 0;
 					cellptr->Overlay_Render_Rect();
