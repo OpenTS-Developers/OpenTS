@@ -160,6 +160,9 @@ cmake -S . -B build/clang-cl -G Ninja \
 cmake --build build/clang-cl
 ```
 
+`OPENTS_TARGET_ARCH` defaults to `x86`. For x64, add
+`-DOPENTS_TARGET_ARCH=x64` and use a separate build directory.
+
 The toolchain requires `clang-cl`, `lld-link`, `llvm-lib`, `llvm-mt`, and
 `llvm-rc` on `PATH`. It exports `compile_commands.json`; one configuration in
 `.vscode/c_cpp_properties.clang.example.json` reads that file for IntelliSense.
