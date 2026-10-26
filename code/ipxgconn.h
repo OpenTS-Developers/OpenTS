@@ -131,7 +131,7 @@ class IPXGlobalConnClass : public IPXConnClass
 
 			// Give OpenTS a new value whenever a global channel packet's layout changes, so
 			// builds that disagree on it ignore each other's games.
-			OPENTS = 0x4f01,
+			OPENTS = 0x4f02,
 		};
 
 		//.....................................................................

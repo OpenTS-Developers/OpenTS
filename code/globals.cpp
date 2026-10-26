@@ -432,7 +432,7 @@ IPXManagerClass Ipx(
 static_assert(std::max(sizeof(GlobalPacketType), sizeof(RemoteFileTransferType) - 32) + sizeof(GlobalHeaderType) <= WS_INTERNET_BUFFER_LEN, "the global channel packet outgrew the socket queue entry");
 
 // A change to either size needs a new IPXGlobalConnClass::OPENTS value before these are updated.
-static_assert(sizeof(GlobalPacketType) == 1059, "the global packet layout changed; change IPXGlobalConnClass::OPENTS");
+static_assert(sizeof(GlobalPacketType) == 1036, "the global packet layout changed; change IPXGlobalConnClass::OPENTS");
 static_assert(sizeof(RemoteFileTransferType) == 487, "the file transfer packet layout changed; change IPXGlobalConnClass::OPENTS");
 
 

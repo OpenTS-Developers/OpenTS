@@ -296,7 +296,6 @@ struct GlobalPacketType {
 			unsigned int BuildNumber;			///
 		} PlayerInfo;
 		struct {
-			char pad[0x83 - 0x2F];
 			unsigned int FileLength;			// Length of scenario file to expect from host.
 			char ShortFileName[13];				// Name of scenario file to expect from host
 			unsigned char FileDigest[32];		// Digest of scenario file to expect from host

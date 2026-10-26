@@ -932,7 +932,7 @@ TEST_CASE("a kick vote is the matched member's, and must name another current me
 
 TEST_CASE("the global packet keeps its wire size")
 {
-	CHECK(sizeof(GlobalPacketType) == 1059u);
+	CHECK(sizeof(GlobalPacketType) == 1036u);
 }
 
 
