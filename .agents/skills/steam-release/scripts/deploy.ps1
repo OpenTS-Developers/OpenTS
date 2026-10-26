@@ -1,13 +1,13 @@
 <#
 .SYNOPSIS
-Copy an OpenTS Release build into the Steam Tiberian Sun install.
+Copy an OpenTS x64 Release build into the Steam Tiberian Sun install.
 
 .DESCRIPTION
 Steam launches SUN.EXE, so Game.exe is copied under that name. Language.dll,
 Game.pdb, and ui/ are replaced as well. The original Steam files stay in
 _steam_backup.
 
-Run this after `cmake --build build --config Release`.
+Run this after `cmake --build build\x64 --config Release`.
 #>
 [CmdletBinding()]
 param(
@@ -18,17 +18,47 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+function Get-PEArchitecture {
+    param([string]$Path)
+
+    $stream = [IO.File]::OpenRead($Path)
+    try {
+        $reader = New-Object IO.BinaryReader($stream)
+        $stream.Position = 0x3C
+        $peOffset = $reader.ReadInt32()
+        $stream.Position = $peOffset + 4
+        $machine = $reader.ReadUInt16()
+    } finally {
+        $stream.Dispose()
+    }
+
+    switch ($machine) {
+        0x8664 { 'x64' }
+        0x014C { 'x86' }
+        0xAA64 { 'arm64' }
+        default { 'unknown' }
+    }
+}
+
 if (-not $RepoRoot) {
     $RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..\..\..')).Path
 }
 if (-not $BuildDir) {
-    $BuildDir = Join-Path $RepoRoot 'build\bin\Release'
+    $BuildDir = Join-Path $RepoRoot 'build\x64\bin\Release'
 }
 
 foreach ($name in 'Game.exe', 'Language.dll', 'Game.pdb', 'ui') {
     $path = Join-Path $BuildDir $name
     if (-not (Test-Path -LiteralPath $path)) {
-        throw "Missing build output: $path. Build Release first."
+        throw "Missing build output: $path. Build the x64 Release first."
+    }
+}
+
+foreach ($name in 'Game.exe', 'Language.dll') {
+    $path = Join-Path $BuildDir $name
+    $arch = Get-PEArchitecture $path
+    if ($arch -ne 'x64') {
+        throw "$path is $arch. Build the x64 Release in $BuildDir, not the Win32 build."
     }
 }
 if (-not (Test-Path -LiteralPath $SteamDir)) {
@@ -81,6 +111,7 @@ $dirty = @(git -C $RepoRoot status --short)
 Write-Output ("repo HEAD     : {0}" -f (git -C $RepoRoot log -1 --format='%h %s'))
 Write-Output ("worktree      : {0}" -f $(if ($dirty.Count -eq 0) { 'clean' } else { "$($dirty.Count) changed path(s)" }))
 Write-Output ("SUN.EXE       : {0:N0} bytes  {1}" -f $exe.Length, $exe.LastWriteTime)
+Write-Output ("arch          : {0}" -f (Get-PEArchitecture $exe.FullName))
 Write-Output ("version       : {0} {1}" -f $exe.VersionInfo.FileDescription, $exe.VersionInfo.FileVersion)
 Write-Output ("exe hash match: {0}" -f ((Get-FileHash -LiteralPath (Join-Path $BuildDir 'Game.exe')).Hash -eq (Get-FileHash -LiteralPath $exe.FullName).Hash))
 Write-Output ("lang hash     : {0}" -f ((Get-FileHash -LiteralPath (Join-Path $BuildDir 'Language.dll')).Hash -eq (Get-FileHash -LiteralPath (Join-Path $SteamDir 'Language.dll')).Hash))
