@@ -60,6 +60,27 @@ The data directory needs the original Tiberian Sun assets, for example from
 Command & Conquer The Ultimate Collection on Steam or the EA App. OpenTS ships
 only the engine, never the game data.
 
+## Setup skills
+
+`.agents/skills/` holds two Windows setup skills for coding agents. Each pairs
+a `SKILL.md` that states the workflow with a PowerShell script that performs the
+copy. Use them to get a playable folder without repeating the steps by hand.
+
+| Skill | What it does |
+| --- | --- |
+| `retail-install` | Copies Tiberian Sun data you own from retail discs, disc images, an extracted disc, or an existing Steam or GOG install into one folder, `~/Games/OpenTS` by default. `-NoMovies`, `-NoMusic`, and `-NoFirestorm` trim it, and `-WhatIf` prints the plan. |
+| `steam-release` | Rebuilds the x64 Release and deploys it to the Steam Tiberian Sun install, replacing `SUN.EXE`, `Language.dll`, `Game.pdb`, and `ui/`. A build that is not x64 is refused. |
+
+Run a script directly when the agent does not read `.agents/skills/`:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .agents\skills\retail-install\scripts\install-retail.ps1 -Source E:\
+```
+
+Neither script downloads game data. `retail-install` copies files from a copy
+of Tiberian Sun you already own, and `steam-release` writes only the engine
+build into an install that already holds the data.
+
 ## License
 
 This fork keeps the upstream license: GPL-3.0-or-later, with the additional
