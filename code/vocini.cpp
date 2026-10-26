@@ -12,6 +12,7 @@
 // shipped Tiberian Sun files playing as they did.
 
 #include "voc.h"
+#include "win.h"
 
 #include "dbgprint.h"
 #include "ini.h"

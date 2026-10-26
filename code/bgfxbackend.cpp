@@ -14,6 +14,7 @@
 
 #include "dbgprint.h"
 #include "except.h"
+#include "win.h"
 
 #include "bgfxviews.hh"
 

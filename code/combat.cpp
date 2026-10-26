@@ -75,7 +75,9 @@
 #include "mph.hh"
 
 #include <algorithm>
+#if defined(_WIN32)
 #include <windef.h>
+#endif
 
 
 /***********************************************************************************************

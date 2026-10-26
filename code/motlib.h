@@ -10,8 +10,7 @@
 #pragma once
 
 #include "matrix3d.h"
-
-#include <windows.h>
+#include "win.h"
 
 class FileClass;
 

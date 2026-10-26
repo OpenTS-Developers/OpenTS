@@ -3,6 +3,11 @@ file(GLOB_RECURSE LANG_SRC CONFIGURE_DEPENDS
     "*.h" "*.hpp" "*.hm"
 )
 
+# Resource scripts need the Windows resource compiler.
+if(NOT WIN32)
+    list(FILTER LANG_SRC EXCLUDE REGEX "\\.rc$")
+endif()
+
 add_library(Language SHARED ${LANG_SRC})
 target_compile_features(Language PRIVATE cxx_std_20)
 target_compile_definitions(Language PRIVATE NOMINMAX)

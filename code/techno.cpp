@@ -210,7 +210,9 @@
 #include "tube.hh"
 
 #include <algorithm>
+#if defined(_MSC_VER)
 #include <intrin.h>
+#endif
 
 CDTimerClass<FrameTimerClass> TechnoClass::ActionLineTimer;
 bool TechnoClass::ActionLines = true;

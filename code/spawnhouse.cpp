@@ -9,6 +9,7 @@
 
 
 #include "spawnhouse.h"
+#include "win.h"
 
 #include <cstring>
 

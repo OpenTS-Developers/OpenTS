@@ -135,11 +135,12 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#if defined(_WIN32)
 #include <direct.h>
 #include <dos.h>
-#include <fcntl.h>
 #include <io.h>
 #include <share.h>
+#endif
 #include <span>
 
 

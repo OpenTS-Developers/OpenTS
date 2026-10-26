@@ -17,7 +17,13 @@
 #include <algorithm>
 #include <cstring>
 #include <filesystem>
+#include <system_error>
+#if defined(_WIN32)
 #include <windows.h>
+#else
+#include <fnmatch.h>
+#include <strings.h>
+#endif
 
 /*
  * The directories the command line named. Empty means the game's own directory, so an
@@ -70,9 +76,19 @@ static std::string Terminate_Path(std::string const & path)
 }
 
 
+static int Compare_Names(char const * left, char const * right)
+{
+#if defined(_WIN32)
+	return(_stricmp(left, right));
+#else
+	return(strcasecmp(left, right));
+#endif
+}
+
+
 static bool Is_Same_Path(std::string const & left, std::string const & right)
 {
-	return(_stricmp(left.c_str(), right.c_str()) == 0);
+	return(Compare_Names(left.c_str(), right.c_str()) == 0);
 }
 
 
@@ -124,9 +140,25 @@ char const * Game_Directory_Error(void)
 
 static bool Is_Directory(std::string const & path)
 {
+#if defined(_WIN32)
 	DWORD attributes = GetFileAttributes(path.c_str());
 
 	return(attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+#else
+	std::error_code error;
+	return(std::filesystem::is_directory(path, error));
+#endif
+}
+
+
+static bool Make_Directory(std::string const & path)
+{
+#if defined(_WIN32)
+	return(CreateDirectory(path.c_str(), NULL) != FALSE);
+#else
+	std::error_code error;
+	return(std::filesystem::create_directory(path, error));
+#endif
 }
 
 
@@ -224,7 +256,7 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 bool Apply_Game_Directories(void)
 {
 	if (!UserDirectory.empty()) {
-		if (!Is_Directory(UserDirectory) && !CreateDirectory(UserDirectory.c_str(), NULL)) {
+		if (!Is_Directory(UserDirectory) && !Make_Directory(UserDirectory)) {
 			Report_Directory_Error("user", UserDirectory);
 			return(false);
 		}
@@ -275,7 +307,7 @@ static std::string Own_Folder_Name(char const * folder, char const * filename)
 {
 	std::string const path = UserDirectory + folder;
 
-	CreateDirectory(path.c_str(), NULL);
+	Make_Directory(path);
 
 	return(path + (char)std::filesystem::path::preferred_separator + filename);
 }
@@ -304,6 +336,7 @@ std::string Screenshot_Name(char const * filename)
 
 static void Scan_Folder(char const * prefix, char const * pattern, std::vector<std::string> & names)
 {
+#if defined(_WIN32)
 	std::string const search = std::string(prefix) + pattern;
 
 	WIN32_FIND_DATA block;
@@ -331,6 +364,34 @@ static void Scan_Folder(char const * prefix, char const * pattern, std::vector<s
 	} while (FindNextFile(handle, &block));
 
 	FindClose(handle);
+#else
+	std::error_code error;
+	std::filesystem::path const directory = prefix == nullptr || prefix[0] == '\0' ? std::filesystem::path(".") : std::filesystem::path(prefix);
+	std::filesystem::directory_iterator cursor(directory, error);
+	std::filesystem::directory_iterator const end;
+	for (; !error && cursor != end; cursor.increment(error)) {
+		if (!cursor->is_regular_file(error)) {
+			continue;
+		}
+
+		std::string const filename = cursor->path().filename().string();
+		if (filename.empty() || filename[0] == '.' || fnmatch(pattern, filename.c_str(), 0) != 0) {
+			continue;
+		}
+
+		bool present = false;
+		for (std::string const & existing : names) {
+			if (Is_Same_Path(existing, filename)) {
+				present = true;
+				break;
+			}
+		}
+
+		if (!present) {
+			names.push_back(filename);
+		}
+	}
+#endif
 }
 
 
@@ -367,7 +428,7 @@ std::vector<std::string> Search_Files(char const * pattern)
 	}
 
 	std::sort(names.begin(), names.end(), [](std::string const & left, std::string const & right) {
-		return(_stricmp(left.c_str(), right.c_str()) < 0);
+		return(Compare_Names(left.c_str(), right.c_str()) < 0);
 	});
 
 	return(names);

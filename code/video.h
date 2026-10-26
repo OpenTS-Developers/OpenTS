@@ -44,6 +44,9 @@ bool Video_Init(NativeWindow const & window, int drawablewidth, int drawableheig
 void Video_Shutdown(void);
 
 bool Video_Set_Mode(int width, int height);
+
+// The size the picture is drawn at for a chosen window size.
+void Video_Frame_Size(int width, int height, int & framewidth, int & frameheight);
 void Video_On_Resize(int drawablewidth, int drawableheight);
 void Video_Set_Refresh_Rate(int refreshrate);
 

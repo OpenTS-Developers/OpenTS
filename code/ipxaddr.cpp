@@ -46,7 +46,12 @@
 
 #include <cstdio>
 #include <cstring>
+#if defined(_WIN32)
 #include <winsock.h>
+#else
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#endif
 
 
 /***************************************************************************

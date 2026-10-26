@@ -47,7 +47,11 @@
 #include "savestream.h"
 
 #include <cstring>
+#if defined(_WIN32)
 #include <winsock.h>
+#else
+#include <arpa/inet.h>
+#endif
 
 
 /***********************************************************************************************

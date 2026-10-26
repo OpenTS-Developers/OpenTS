@@ -10,8 +10,7 @@
 #pragma once
 
 #include "point.h"
-
-#include <windows.h>
+#include "win.h"
 
 class Surface;
 class XSurface;

@@ -36,7 +36,9 @@
 
 #include "win.h"
 
+#if defined(_MSC_VER)
 #include <intrin.h>
+#endif
 #include <math.h>
 
 typedef union {

@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "autosave.h"
+#include "win.h"
 
 #include <cctype>
 #include <cstdio>

@@ -108,9 +108,11 @@ extern char ReqTag[];
  * size - Size of chunk.
  */
 typedef struct _ChunkHeader {
-	unsigned long id;
-	unsigned long size;
+	// Both fields are 4 bytes in the file. long is wider than that on some platforms.
+	unsigned int id;
+	unsigned int size;
 } ChunkHeader;
+static_assert(sizeof(ChunkHeader) == 8, "an IFF chunk header is 8 bytes on disk");
 
 
 /* ZAPHeader: ZAP audio compression header. NOTE: If the uncompressed size
@@ -722,7 +724,9 @@ typedef struct _VQAHandleP {
 	VQAMSCInfo		MSCInfo;
 	VQACodebookInfo CodebookInfo;
 	VQAPaletteInfo	PaletteInfo;
-	long			*Foff;
+	// One 4-byte FINF word per frame. long is wider than that on some platforms.
+	int				*Foff;
+	static_assert(sizeof(int) == 4, "a FINF word is 4 bytes on disk");
 	long			Max_CB_Size;
 	long			Max_Ptr_Size;
 	long			Max_Pal_Size;

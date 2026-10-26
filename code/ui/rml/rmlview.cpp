@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "ui/rml/rmlview.h"
+#include "win.h"
 
 #include "ui/uishell.h"
 

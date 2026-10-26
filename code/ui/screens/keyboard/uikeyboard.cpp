@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "ui/screens/keyboard/uikeyboard.h"
+#include "win.h"
 
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlview.h"

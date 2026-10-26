@@ -18,6 +18,7 @@ enum NativeWindowType
 
 
 // The native handles bgfx needs to present into a window supplied by the application shell.
+// Handle is an HWND on Windows and an NSWindow on macOS.
 // Display is unused on platforms where the window identifies its display by itself.
 struct NativeWindow
 {

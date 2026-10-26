@@ -10,7 +10,11 @@
 
 #pragma once
 
+#if defined(_WIN32)
 #include <sal.h>
+#else
+#define _Printf_format_string_
+#endif
 
 
 // Runs one task in place of the menu and exits with its result, showing no dialog or console

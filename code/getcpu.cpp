@@ -43,7 +43,9 @@
 #include <cstdio>
 #include <cstring>
 
+#if defined(_MSC_VER)
 #include <intrin.h>
+#endif
 
 /***********************************************************************************************
  * Get_CPU_Type -- Find out what kind of CPU we are running on                                 *
@@ -81,6 +83,7 @@ char VendorID[20] = "Not available";
 /// </summary>
 void __cdecl CPU_Id(void)
 {
+#if defined(_MSC_VER)
 	int regs[4];
 
 	char cputype = 4;
@@ -100,6 +103,10 @@ void __cdecl CPU_Id(void)
 	}
 
 	CPUType = cputype;
+#else
+	CPUType = 4;
+	std::snprintf(VendorID, sizeof(VendorID), "Apple ");
+#endif
 }
 
 

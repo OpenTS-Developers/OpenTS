@@ -79,6 +79,9 @@ bool Main_Window_Key_Toggled(int virtualkey);
 // The name the keyboard layout gives a key, in UTF-8, or an empty string for no key.
 std::string Main_Window_Key_Name(int virtualkey);
 
+// Physical pixels per window point. A cursor image is measured in points.
+float Main_Window_Pixel_Density(void);
+
 // The pixels are 32-bit ARGB, top row first. Returns NULL when the cursor cannot be made.
 // The caller owns the cursor and frees it with Main_Window_Destroy_Cursor.
 SDL_Cursor * Main_Window_Create_Cursor(unsigned int const * pixels, int width, int height, int hotx, int hoty);

@@ -186,7 +186,7 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 	int scan_frame;
 	int tocache;
 	VQA_H_FUNC handler;
-	unsigned int rc;
+	long rc;
 	int val4;
 	int fsize;
 	VQA_H_FUNC oldhandler;
@@ -197,7 +197,7 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 
 	config = &vqap->Config;
 	loader = &vqap->Loader;
-	long *foff = vqap->Foff;
+	int *foff = vqap->Foff;
 	frame = loader->CurFrameNum;
 
 
@@ -297,14 +297,14 @@ long VQA_LoadFrame(VQAHandleP *vqap, long flags)
 
 
 /* On-disk ADPCM stream-state record carried by the SN2J chunk. The fields are
- * packed (no padding) to match the 12-byte on-disk layout.
+ * packed to the 12-byte record. The predicted samples are 32-bit integers.
  */
 #pragma pack(push,1)
 struct VQASN2J {
 	short index;
-	long  predicted;
+	int predicted;
 	short index2;
-	long  predicted2;
+	int predicted2;
 };
 static_assert(sizeof(VQASN2J) == 12, "the SN2J chunk is 12 bytes on disk");
 #pragma pack(pop)
@@ -1065,7 +1065,7 @@ long VQA_SeekLoop(VQAHandleP *vqap, long framenum, long flags)
 	VQAConfig *config;
 	VQALoopCache *cache;
 	bool needs_seek = false;
-	long *foff;
+	int *foff;
 
 	cache = &vqap->LoopCache;
 	foff = vqap->Foff;
@@ -1268,7 +1268,7 @@ long VQA_SeekGroup(VQAHandleP *vqap, long framenum, long groupsize, VQABool prel
 	int bytes_per_frame;
 	int preload_frames;
 	int covered_bytes;
-	unsigned int rc;
+	long rc;
 	bool bool2;
 	int loadflags;
 	long group_end;

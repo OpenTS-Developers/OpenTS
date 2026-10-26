@@ -50,6 +50,17 @@
 #define WWINLINE __forceinline
 #else
 #define WWINLINE inline
+#define __forceinline inline
+#define __int64 long long
+#define __cdecl
+#define _cdecl
+#define IN
+#define OUT
+#define INOUT
+#define __assume(condition) do { if (!(condition)) __builtin_unreachable(); } while (0)
+#define __debugbreak() __builtin_trap()
+#define _ReturnAddress() __builtin_return_address(0)
+#define __rdtsc() __builtin_readcyclecounter()
 #endif
 
 

@@ -100,14 +100,18 @@ bool Change_Display_Mode(int width, int height)
 
 	Hide_Mouse();
 
-	if (!Video_Set_Mode(width, height)) {
+	int framewidth = width;
+	int frameheight = height;
+	Video_Frame_Size(width, height, framewidth, frameheight);
+
+	if (!Video_Set_Mode(framewidth, frameheight)) {
 		DebugString("Video_Set_Mode failed.\n");
 		Show_Mouse();
 		return(false);
 		}
 
-	VisibleRect = Rect(0, 0, width, height);
-	DebugString("VisibleRect: %dx%d\n", width, height);
+	VisibleRect = Rect(0, 0, framewidth, frameheight);
+	DebugString("VisibleRect: %dx%d\n", framewidth, frameheight);
 
 	if (VisibleSurface != NULL) {
 		delete VisibleSurface;

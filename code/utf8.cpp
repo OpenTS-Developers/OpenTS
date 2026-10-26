@@ -12,6 +12,7 @@
 
 #include <cstring>
 
+#if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -19,6 +20,7 @@
 #define NOMINMAX
 #endif
 #include <windows.h>
+#endif
 
 
 namespace {
@@ -192,6 +194,86 @@ char32_t Decode_Sequence(char const * text, std::size_t available, int & length,
 constexpr std::size_t UNBOUNDED = ~(std::size_t)0;
 
 
+#if !defined(_WIN32)
+// Unicode scalar of each code page 437 byte from 0x80 through 0xFF.
+constexpr char32_t CP437_High[128] = {
+	0x00C7, 0x00FC, 0x00E9, 0x00E2, 0x00E4, 0x00E0, 0x00E5, 0x00E7,
+	0x00EA, 0x00EB, 0x00E8, 0x00EF, 0x00EE, 0x00EC, 0x00C4, 0x00C5,
+	0x00C9, 0x00E6, 0x00C6, 0x00F4, 0x00F6, 0x00F2, 0x00FB, 0x00F9,
+	0x00FF, 0x00D6, 0x00DC, 0x00A2, 0x00A3, 0x00A5, 0x20A7, 0x0192,
+	0x00E1, 0x00ED, 0x00F3, 0x00FA, 0x00F1, 0x00D1, 0x00AA, 0x00BA,
+	0x00BF, 0x2310, 0x00AC, 0x00BD, 0x00BC, 0x00A1, 0x00AB, 0x00BB,
+	0x2591, 0x2592, 0x2593, 0x2502, 0x2524, 0x2561, 0x2562, 0x2556,
+	0x2555, 0x2563, 0x2551, 0x2557, 0x255D, 0x255C, 0x255B, 0x2510,
+	0x2514, 0x2534, 0x252C, 0x251C, 0x2500, 0x253C, 0x255E, 0x255F,
+	0x255A, 0x2554, 0x2569, 0x2566, 0x2560, 0x2550, 0x256C, 0x2567,
+	0x2568, 0x2564, 0x2565, 0x2559, 0x2558, 0x2552, 0x2553, 0x256B,
+	0x256A, 0x2518, 0x250C, 0x2588, 0x2584, 0x258C, 0x2590, 0x2580,
+	0x03B1, 0x00DF, 0x0393, 0x03C0, 0x03A3, 0x03C3, 0x00B5, 0x03C4,
+	0x03A6, 0x0398, 0x03A9, 0x03B4, 0x221E, 0x03C6, 0x03B5, 0x2229,
+	0x2261, 0x00B1, 0x2265, 0x2264, 0x2320, 0x2321, 0x00F7, 0x2248,
+	0x00B0, 0x2219, 0x00B7, 0x221A, 0x207F, 0x00B2, 0x25A0, 0x00A0,
+};
+
+
+// ASCII stand-in for a character the code page does not contain. 0 means none.
+int Best_Fit_Fallback(char32_t code)
+{
+	switch (code) {
+		case 0x2018: case 0x2019: case 0x201A: case 0x201B:
+			return('\'');
+		case 0x201C: case 0x201D: case 0x201E: case 0x201F:
+			return('"');
+		case 0x2010: case 0x2011: case 0x2012: case 0x2013: case 0x2014: case 0x2015:
+			return('-');
+		case 0x2026:
+			return('.');
+		case 0x00A9:
+			return('c');
+		case 0x00AE:
+			return('r');
+		case 0x0141:
+			return('L');
+		case 0x0142:
+			return('l');
+		default:
+			break;
+	}
+
+	if (code < 0xC0 || code > 0xFF) {
+		return(0);
+	}
+
+	// Bases for U+00C0 through U+00FF. '~' is a byte the pages already contain exactly.
+	static constexpr char Fold[] = {
+		'A', 'A', 'A', 'A', 'A', 'A', 'A', 'C', 'E', 'E', 'E', 'E', 'I', 'I', 'I', 'I',
+		'D', 'N', 'O', 'O', 'O', 'O', 'O', 'x', 'O', 'U', 'U', 'U', 'U', 'Y', 'T', 's',
+		'a', 'a', 'a', 'a', 'a', 'a', 'a', 'c', 'e', 'e', 'e', 'e', 'i', 'i', 'i', 'i',
+		'd', 'n', 'o', 'o', 'o', 'o', 'o', '~', 'o', 'u', 'u', 'u', 'u', 'y', 't', 'y',
+	};
+	char const folded = Fold[code - 0xC0];
+	return(folded == '~' ? 0 : folded);
+}
+
+
+int Exact_Page_Byte(unsigned page, char32_t code)
+{
+	if (page == 1252) {
+		return(UTF8::Windows_1252_Index(code));
+	}
+	if (page != 437) {
+		return(-1);
+	}
+	for (int index = 0; index < 128; index++) {
+		if (CP437_High[index] == code) {
+			return(0x80 + index);
+		}
+	}
+	return(-1);
+}
+#endif
+
+
 /// <summary>
 /// Returns the byte of the given code page that shows code, or -1. Drawing text asks for
 /// every glyph on every frame, so the answers are kept in the caller's cache, where 0 marks
@@ -208,12 +290,20 @@ int Best_Fit_Index(unsigned page, short * cache, char32_t code)
 
 	short & slot = cache[code];
 	if (slot == 0) {
+#if defined(_WIN32)
 		wchar_t wide = (wchar_t)code;
 		char narrow = 0;
 		BOOL defaulted = FALSE;
 		int written = WideCharToMultiByte(page, 0, &wide, 1, &narrow, 1, NULL, &defaulted);
 		unsigned char byte = (unsigned char)narrow;
 		slot = (written == 1 && !defaulted && byte >= 0x20 && byte != 0x7F) ? (short)byte : (short)-1;
+#else
+		int byte = Exact_Page_Byte(page, code);
+		if (byte < 0) {
+			byte = Best_Fit_Fallback(code);
+		}
+		slot = (byte >= 0x20 && byte != 0x7F && byte <= 0xFF) ? (short)byte : (short)-1;
+#endif
 	}
 	return(slot);
 }

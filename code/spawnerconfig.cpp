@@ -9,6 +9,7 @@
 
 
 #include "spawnerconfig.h"
+#include "win.h"
 
 #include "crc.h"
 #include "diff.hh"

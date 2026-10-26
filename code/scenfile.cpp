@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "scenfile.h"
+#include "win.h"
 
 #include <cstring>
 #include <utility>

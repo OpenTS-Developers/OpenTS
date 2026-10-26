@@ -20,7 +20,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <math.h>
-#include <new.h>
+#include <new>
 
 
 template <class T>

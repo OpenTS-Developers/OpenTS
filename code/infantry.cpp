@@ -142,7 +142,9 @@
 #include "bench.hh"
 
 #include <algorithm>
+#if defined(_MSC_VER)
 #include <intrin.h>
+#endif
 
 
 int const InfantryClass::HumanShape[32] = {7,7,6,6,6,6,5,5,5,5,4,4,4,4,3,3,3,3,2,2,2,2,1,1,1,1,0,0,0,0,7,7};

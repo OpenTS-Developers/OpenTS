@@ -347,9 +347,9 @@ void Multiplayer_Debug_Print(void);
 //...........................................................................
 static int Build_Send_Packet(void *buf, int bufsize, int frame_delay,
 	int num_cmds, int cap, int & processed);
-int Add_Uncompressed_Events(void *buf, int bufsize, int frame_delay, int size,
+static int Add_Uncompressed_Events(void *buf, int bufsize, int frame_delay, int size,
 	int cap);
-int Add_Compressed_Events(void *buf, int bufsize, int frame_delay, int size,
+static int Add_Compressed_Events(void *buf, int bufsize, int frame_delay, int size,
 	int cap,  int & processed);
 
 //...........................................................................

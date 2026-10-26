@@ -8,6 +8,7 @@
  ******************************************************************************/
 
 #include "ui/screens/mapgen/uimapgen.h"
+#include "win.h"
 
 #include "ui/rml/rmlsurface.h"
 #include "ui/rml/rmlview.h"

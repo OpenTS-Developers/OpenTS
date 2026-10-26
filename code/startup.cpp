@@ -164,7 +164,16 @@
 
 #include <cfloat>
 #include <lzo/lzoconf.h>
+#if defined(_WIN32)
 #include <shellapi.h>
+#else
+#include <mach-o/dyld.h>
+#include <unistd.h>
+
+#include <climits>
+#include <cstdio>
+#include <cstring>
+#endif
 #include <string>
 #include <vector>
 
@@ -300,6 +309,62 @@ static void RegisterClasses(void)
 	REGISTER_CLASS(AlphaShapeClass, ClassID_AlphaShapeClass);
 }
 
+#if !defined(_WIN32)
+// Copies the process arguments, with the resolved executable path as the first one.
+// The returned pointers stay valid for the rest of the process.
+static int Build_Posix_Arguments(char const * path_to_exe, int supplied_count, char ** supplied, char ** & argv)
+{
+	static std::vector<std::string> arguments;
+	static std::vector<char *> pointers;
+
+	arguments.clear();
+	pointers.clear();
+	arguments.push_back(path_to_exe);
+	for (int index = 1; index < supplied_count; index++) {
+		arguments.push_back(supplied[index] != nullptr ? supplied[index] : "");
+	}
+
+	for (std::string & argument : arguments) {
+		pointers.push_back(argument.data());
+	}
+
+	argv = pointers.data();
+	return((int)pointers.size());
+}
+
+
+// Resolves the executable path, writes its directory, and makes that directory current.
+static bool Executable_Directory(char * path_to_exe, int path_size, char * directory, int directory_size)
+{
+	uint32_t size = (uint32_t)path_size;
+	if (_NSGetExecutablePath(path_to_exe, &size) != 0) {
+		return(false);
+	}
+
+	char resolved[PATH_MAX];
+	if (realpath(path_to_exe, resolved) == nullptr) {
+		return(false);
+	}
+	if (std::snprintf(path_to_exe, (size_t)path_size, "%s", resolved) >= path_size) {
+		return(false);
+	}
+
+	char * slash = std::strrchr(path_to_exe, '/');
+	if (slash == nullptr || slash == path_to_exe) {
+		return(false);
+	}
+
+	int const length = (int)(slash - path_to_exe);
+	if (length >= directory_size) {
+		return(false);
+	}
+	std::memcpy(directory, path_to_exe, (size_t)length);
+	directory[length] = '\0';
+	return(chdir(directory) == 0);
+}
+#endif
+
+
 /// <summary>
 /// Builds the argument list the game parses from the command line the shell handed over.
 /// The shell's own quoting decides where one argument ends and the next begins, so a
@@ -309,6 +374,7 @@ static void RegisterClasses(void)
 /// argument the way a DOS program received it.</param>
 /// <param name="argv">Receives the argument array, which lasts as long as the process.</param>
 /// <returns>The number of arguments, which is never less than one.</returns>
+#if defined(_WIN32)
 static int Build_Arguments(char const * path_to_exe, char ** & argv)
 {
 	static std::vector<std::string> arguments;
@@ -342,15 +408,20 @@ static int Build_Arguments(char const * path_to_exe, char ** & argv)
 	argv = pointers.data();
 	return((int)pointers.size());
 }
+#endif
 
 
 /// <summary>
 /// Claims the mutexes that keep a second copy of the game from running.
 /// When another copy already holds them, its window is brought to the front instead.
 /// </summary>
-/// <returns>bool; Were the mutexes claimed? False means another copy is running.</returns>
+/// <returns>bool; Were the mutexes claimed? False means another copy is running.
+/// On macOS a second copy is allowed to run.</returns>
 static bool Claim_Single_Instance(void)
 {
+#if !defined(_WIN32)
+	return(true);
+#else
 	/*
 	 * Create a mutex with a unique name to TibSun in order to determine if
 	 * our app is already running.
@@ -422,6 +493,7 @@ static bool Claim_Single_Instance(void)
 	}
 
 	return(true);
+#endif
 }
 
 
@@ -442,17 +514,29 @@ static bool Claim_Single_Instance(void)
  * HISTORY:                                                                                    *
  *   03/20/1995 JLB : Created.                                                                 *
  *=============================================================================================*/
+#if defined(_WIN32)
 int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
+#else
+int main(int argc, char ** supplied_argv)
+#endif
 {
+#if defined(_WIN32)
 	int		argc;       //Command line argument count
 	char **	argv;       //Pointers to command line arguments
 	char	path_to_exe[MAX_PATH];
+#else
+	char **	argv;
+	char	path_to_exe[PATH_MAX];
+	char	path[PATH_MAX];
+#endif
 	char	buffer[512];
 
 	// First, so that everything after it is covered, including the rest of this function.
 	Install_Exception_Handler();
 
+#if defined(_WIN32)
 	ProgramInstance = instance;
+#endif
 
 	Debug_Init();
 
@@ -478,6 +562,7 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 
 	RegisterClasses();
 
+#if defined(_WIN32)
 	/*
 	**	Get the full path to the .EXE
 	*/
@@ -499,6 +584,12 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 	_splitpath(argv[0], drive, dir, NULL, NULL);
 	_makepath(path, drive, dir, NULL, NULL);
 	SetCurrentDirectory(path);
+#else
+	if (!Executable_Directory(path_to_exe, (int)sizeof(path_to_exe), path, (int)sizeof(path))) {
+		return(EXIT_FAILURE);
+	}
+	argc = Build_Posix_Arguments(path_to_exe, argc, supplied_argv, argv);
+#endif
 
 	int error_code = EXIT_FAILURE;
 
@@ -528,10 +619,17 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 		Init_Search_Folders(DeploymentConfig.SearchPaths.c_str());
 
 		std::string uidirectory = path;
+#if defined(_WIN32)
 		if (!uidirectory.empty() && uidirectory.back() != '\\' && uidirectory.back() != '/') {
 			uidirectory += '\\';
 		}
 		uidirectory += "ui\\";
+#else
+		if (!uidirectory.empty() && uidirectory.back() != '/') {
+			uidirectory += '/';
+		}
+		uidirectory += "ui/";
+#endif
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
 
 		// The recording's name was settled during static initialization, before there was
@@ -585,9 +683,12 @@ int CALLBACK WinMain ( HINSTANCE instance , HINSTANCE , char * , int )
 			Options.ScreenHeight = 480;
 		}
 
-		VisibleRect = Rect(0, 0, Options.ScreenWidth, Options.ScreenHeight);
-		VideoModeWidth = Options.ScreenWidth;
-		VideoModeHeight = Options.ScreenHeight;
+		int framewidth = Options.ScreenWidth;
+		int frameheight = Options.ScreenHeight;
+		Video_Frame_Size(Options.ScreenWidth, Options.ScreenHeight, framewidth, frameheight);
+		VisibleRect = Rect(0, 0, framewidth, frameheight);
+		VideoModeWidth = framewidth;
+		VideoModeHeight = frameheight;
 
 		if (!Game_Window_Open(Options.ScreenWidth, Options.ScreenHeight)) {
 			Main_Window_Error_Box(Fetch_String(TXT_SHORT_TITLE), Fetch_String(TXT_VIDEO_ERROR));
@@ -1025,6 +1126,7 @@ void __cdecl Prog_End(void)
 
 	Unregister_Classes();
 
+#if defined(_WIN32)
 	if (LanguageResources) {
 		FreeLibrary(LanguageResources);
 	}
@@ -1037,6 +1139,7 @@ void __cdecl Prog_End(void)
 		CloseHandle(AppMutex);
 		AppMutex = NULL;
 	}
+#endif
 
 	// The renderer let go of the window when the surfaces were reset above.
 	Game_Window_Close();

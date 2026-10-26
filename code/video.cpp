@@ -219,6 +219,23 @@ void Video_Shutdown(void)
 }
 
 
+void Video_Frame_Size(int width, int height, int & framewidth, int & frameheight)
+{
+#if defined(__APPLE__)
+	// The chosen size is the window. Half of it is still a mode, so the picture stays coarse in that window.
+	int const halfwidth = width / 2;
+	int const halfheight = height / 2;
+	if (halfwidth >= 640 && halfheight >= 400) {
+		framewidth = halfwidth;
+		frameheight = halfheight;
+		return;
+	}
+#endif
+	framewidth = width;
+	frameheight = height;
+}
+
+
 /// <summary>
 /// Moves the game to a different render resolution.
 /// The caller replaces the surfaces afterwards; this only resizes what the frame is

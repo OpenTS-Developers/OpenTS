@@ -68,9 +68,11 @@ class SHAEngine
 	private:
 
 		typedef union {
-			unsigned long Long[5];
+			// The archives store a 20-byte digest computed with 32-bit words.
+			unsigned int Long[5];
 			unsigned char Char[20];
 		} SHADigest;
+		static_assert(sizeof(SHADigest) == 20, "the SHA-1 digest is 20 bytes");
 
 		/*
 		**	This holds the calculated final result. It is cached

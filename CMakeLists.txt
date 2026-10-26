@@ -37,11 +37,16 @@ elseif(MSVC)
         message(FATAL_ERROR
             "OpenTS targets Win32 and x64. Reconfigure with -A Win32 or -A x64.")
     endif()
+elseif(APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64"
+       AND CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+    message(STATUS "Configuring the unsupported Apple Silicon experiment.")
 else()
     message(FATAL_ERROR
         "OpenTS requires the Visual Studio 2022 MSVC toolchain. "
         "For the unsupported clang-cl experiment, configure with "
-        "-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/clang-cl-msvc.cmake.")
+        "-DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/clang-cl-msvc.cmake. "
+        "For the unsupported Apple Silicon experiment, configure on an arm64 Mac "
+        "with Apple Clang.")
 endif()
 
 string(TOLOWER "${CMAKE_CXX_COMPILER_ARCHITECTURE_ID}" OPENTS_ARCH)
@@ -49,7 +54,9 @@ if(NOT OPENTS_ARCH)
     set(OPENTS_ARCH "unknown")
 endif()
 
-enable_language(RC)
+if(WIN32)
+    enable_language(RC)
+endif()
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -105,5 +112,7 @@ add_subdirectory(thirdparty)
 add_subdirectory(code)
 add_subdirectory(code/language)
 
-enable_testing()
-add_subdirectory(tests)
+if(WIN32)
+    enable_testing()
+    add_subdirectory(tests)
+endif()

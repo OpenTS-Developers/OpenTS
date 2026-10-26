@@ -8,8 +8,32 @@
  ******************************************************************************/
 
 #include "ui/rml/rmlkeys.h"
+#include "keyboard.h"
 
-#include <windows.h>
+#ifndef VK_LWIN
+#define VK_LWIN 0x5B
+#define VK_RWIN 0x5C
+#define VK_APPS 0x5D
+#define VK_LSHIFT 0xA0
+#define VK_RSHIFT 0xA1
+#define VK_LCONTROL 0xA2
+#define VK_RCONTROL 0xA3
+#define VK_LMENU 0xA4
+#define VK_RMENU 0xA5
+#define VK_OEM_1 0xBA
+#define VK_OEM_PLUS 0xBB
+#define VK_OEM_COMMA 0xBC
+#define VK_OEM_MINUS 0xBD
+#define VK_OEM_PERIOD 0xBE
+#define VK_OEM_2 0xBF
+#define VK_OEM_3 0xC0
+#define VK_OEM_4 0xDB
+#define VK_OEM_5 0xDC
+#define VK_OEM_6 0xDD
+#define VK_OEM_7 0xDE
+#define VK_OEM_8 0xDF
+#define VK_OEM_102 0xE2
+#endif
 
 
 namespace
