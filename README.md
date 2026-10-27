@@ -86,14 +86,25 @@ python3 .agents/skills/retail-install/scripts/install-retail.py \
 
 ## Windows download
 
-A published release includes `OpenTS-<tag>-x64.zip`. The executable is
-`SUN.EXE`, the name Steam and the retail install launch, alongside
-`Language.dll`, `ui`, `Game.pdb`, and the license notices. Copy `SUN.EXE`,
-`Language.dll`, `Game.pdb`, and `ui` into a Tiberian Sun folder, or run
+The x64 release is a drop-in replacement for the Steam install.
+
+> [!WARNING]
+> Back up the `Saved Games` folder before you replace `SUN.EXE`. OpenTS does
+> not load saves from the original game, and the original game does not load
+> saves OpenTS writes. There is no converter.
+
+A published release includes `OpenTS-<tag>-x64.zip`: `SUN.EXE`, `Language.dll`,
+`ui`, `Game.pdb`, and the license notices. Copy `SUN.EXE`, `Language.dll`,
+`Game.pdb`, and `ui` into the Steam Tiberian Sun folder, or run
 `SUN.EXE -DATADIR=<path>` from the unzipped folder. The Steam Deck runs this
 build under Proton 11.
 
 ## Windows Steam install
+
+> [!WARNING]
+> Back up the `Saved Games` folder before you deploy. OpenTS does not load
+> saves from the original game, and the original game does not load saves
+> OpenTS writes. There is no converter.
 
 `.agents/skills/steam-release/` rebuilds the x64 Release and copies it onto the
 Steam Tiberian Sun install on Windows, replacing `SUN.EXE`, `Language.dll`,
