@@ -62,7 +62,7 @@ class WarheadTypeClass : public AbstractTypeClass
 
 		virtual void Compute_CRC(CRCEngine &) const override;
 
-		bool Read_INI(CCINIClass const & ini);
+		bool Read_INI(CCINIClass const & ini) override;
 
 		static WarheadTypeClass *Find_Or_Make(const char *name);
 		static WarheadTypeClass *From_Name(char const * name);
