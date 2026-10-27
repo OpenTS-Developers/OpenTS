@@ -128,7 +128,7 @@ OptionsClass::OptionsClass(void) :
 	ToolTips(true),
 	AltToRally(false),
 	SimulateWhileUnfocused(false),
-	TextBackgroundColor(12),
+	TextBackgroundColor(0),
 	AutoSaveInterval(10800),
 	ScreenWidth(-1),
 	ScreenHeight(-1),

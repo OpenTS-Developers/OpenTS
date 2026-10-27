@@ -23244,7 +23244,7 @@ TextBackgroundColor:
     value_type: integer
     status: generated
     _provenance:
-      default_candidate: '12'
+      default_candidate: '0'
       declared_in: OptionsClass
       member: TextBackgroundColor
       source: code/options.cpp
