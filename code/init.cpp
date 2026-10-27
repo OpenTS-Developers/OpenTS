@@ -6114,6 +6114,7 @@ static bool Mount_Side_Mixfiles(int id, bool required)
 void Prep_For_No_Side(void)
 {
 	DebugString("Preparing Mixfiles for no side.\n");
+	Apply_Campaign_Movie_Order(CAMPAIGN_NONE);
 
 	// The sidebar and the cameos point into the side's cached archive until it is prepared again.
 	Map.Clear_For_House();

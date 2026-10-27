@@ -56,6 +56,10 @@
 #include "shastraw.h"
 #include "xstraw.h"
 
+#include <algorithm>
+#include <cstdio>
+#include <vector>
+
 
 //template<class T> int Compare(T const *obj1, T const *obj2) {
 //	if (*obj1 < *obj2) return(-1);
@@ -580,4 +584,80 @@ bool MixFileClass::Offset(char const * filename, void ** realptr, MixFileClass *
 	*/
 	assert(1);//BG
 	return(false);
+}
+
+
+static bool Movie_Mix_Name(char const * filename, char * name, int size)
+{
+	if (filename == nullptr || name == nullptr || size <= 0) {
+		return(false);
+	}
+
+	char base[_MAX_FNAME];
+	char ext[_MAX_EXT];
+	_splitpath(filename, nullptr, nullptr, base, ext);
+
+	if (strnicmp(base, "MOVIES", 6) != 0 || stricmp(ext, ".MIX") != 0) {
+		return(false);
+	}
+
+	std::snprintf(name, size, "%s%s", base, ext);
+	return(true);
+}
+
+
+/// <summary>
+/// One MOVIES archive is searched ahead of the other MOVIES archives, and behind every
+/// archive mounted before them. number is that archive's number, so 1 is MOVIES01.MIX.
+/// A number of 0 or below, or a number whose archive is not mounted, leaves the movie
+/// archives in alphabetical order.
+/// </summary>
+void MixFileClass::Order_Movie_Archives(int number)
+{
+	MixFileClass * first = nullptr;
+	std::vector<MixFileClass *> movies;
+
+	for (MixFileClass * ptr = List.First(); ptr->Is_Valid(); ptr = ptr->Next()) {
+		char name[_MAX_PATH];
+		if (!Movie_Mix_Name(ptr->Filename, name, sizeof(name))) {
+			continue;
+		}
+		if (first == nullptr) {
+			first = ptr;
+		}
+		movies.push_back(ptr);
+	}
+
+	if (movies.size() < 2) {
+		return;
+	}
+
+	std::sort(movies.begin(), movies.end(), [](MixFileClass const * left, MixFileClass const * right) {
+		char left_name[_MAX_PATH];
+		char right_name[_MAX_PATH];
+		Movie_Mix_Name(left->Filename, left_name, sizeof(left_name));
+		Movie_Mix_Name(right->Filename, right_name, sizeof(right_name));
+		return(stricmp(left_name, right_name) < 0);
+	});
+
+	if (number > 0) {
+		char wanted[_MAX_PATH];
+		std::snprintf(wanted, sizeof(wanted), "MOVIES%02d.MIX", number);
+
+		auto const preferred = std::find_if(movies.begin(), movies.end(), [&wanted](MixFileClass const * mix) {
+			char name[_MAX_PATH];
+			Movie_Mix_Name(mix->Filename, name, sizeof(name));
+			return(stricmp(name, wanted) == 0);
+		});
+		if (preferred != movies.end()) {
+			std::rotate(movies.begin(), preferred, movies.end());
+		}
+	}
+
+	// The node ahead of the first movie archive may be the list sentinel.
+	GenericNode * after = first->GenericNode::Prev();
+	for (MixFileClass * mix : movies) {
+		after->Link(mix);
+		after = mix;
+	}
 }

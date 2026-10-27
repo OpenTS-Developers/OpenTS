@@ -38,6 +38,8 @@ Startup mounts these archives in this order:
 | 13 | `SCORES.MIX`, then `SCORES01.MIX` | No | No |
 | 14 | Every `MOVIES*.MIX`, in alphabetical order | No | No |
 
+A campaign searches `MOVIES<nn>.MIX` ahead of the other movie archives, and behind every archive mounted before them. `<nn>` is the campaign's [`CD=`](/keys/cd/) plus one, written as two digits: disc `0` uses `MOVIES01.MIX` and disc `1` uses `MOVIES02.MIX`. A disc number below `0`, a game that is not a campaign, and a missing archive of that name leave the movie archives in alphabetical order.
+
 `PATCH.MIX` and the `EXPAND` archives are mounted only as loose files, never as members of another archive.
 
 If a required archive is missing or cannot be cached, the game stops during startup. An optional archive that is missing is skipped, and later lookups do not search it. A deployment can therefore keep the maps and the multiplayer content loose or in other archives.

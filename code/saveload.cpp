@@ -1167,6 +1167,8 @@ bool Load_Game(const char *file_name)
 		DebugString("Save carries %u bytes past its last record\n", stream.Size() - stream.Offset());
 	}
 
+	Apply_Campaign_Movie_Order(Scen->Campaign);
+
 	Swizzler.Resolve();
 
 	/*

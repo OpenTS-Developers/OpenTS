@@ -57,8 +57,8 @@ void Choose_Side(int side)
 	char name[16];
 	std::snprintf(name, sizeof(name), "INTR%d.VQA", side);
 
-	// Each side's intro was INTRO.VQA on its own disc, so an installation
-	// holding both has to keep them apart by name.
+	// INTR<n>.VQA overrides INTRO.VQA. Which INTRO.VQA plays is whichever
+	// movie archive is searched first.
 	if (CCFileClass(name).Is_Available()) {
 		Play_Movie(name);
 		return;

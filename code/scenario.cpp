@@ -119,6 +119,7 @@
 #include "mapgen.h"
 #include "mapsel.h"
 #include "misc.h"
+#include "mixfile.h"
 #include "mouse.h"
 #include "movie.h"
 #include "movieskip.h"
@@ -332,6 +333,21 @@ void ScenarioClass::Reset(void)
 }
 
 
+void Apply_Campaign_Movie_Order(CampaignType campaign)
+{
+	int number = 0;
+
+	if (campaign >= 0 && campaign < Campaigns.Count()) {
+		int const disc = Campaigns[campaign]->CDNumber;
+		if (disc >= 0) {
+			number = disc + 1;
+		}
+	}
+
+	MixFileClass::Order_Movie_Archives(number);
+}
+
+
 /***********************************************************************************************
  * Start_Scenario -- Starts the scenario.                                                      *
  *                                                                                             *
@@ -361,6 +377,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	}
 
 	Scen->Campaign = campaign;
+	Apply_Campaign_Movie_Order(campaign);
 
 	DebugString("\n----- Starting scnenario: %s -----\n", name);
 	DebugString("Player Count: %d\n", Session.Players.Count());
@@ -377,6 +394,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 	DebugString("Reading scenario: %s\n", name);
 
 	if (!Read_Scenario(name)) {
+		Apply_Campaign_Movie_Order(CAMPAIGN_NONE);
 		return(false);
 	}
 
