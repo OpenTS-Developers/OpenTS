@@ -103,7 +103,7 @@ class VeterancyClass
 		double Experience;
 
 		// Callback function for promotion events.
-		PromotedCallback On_Unit_Promoted_Callback;		
+		PromotedCallback On_Unit_Promoted_Callback;
 };
 
 AbilityType Ability_From_Name(const char *name);

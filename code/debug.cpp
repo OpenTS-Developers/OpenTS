@@ -348,8 +348,9 @@ void Debug_Key(unsigned input)
 			*/
 			case KN_F7:
 				if (CurrentObject.Count() && CurrentObject[0]->Is_Techno()) {
+					auto techno = (TechnoClass const *)CurrentObject[0];
 					TechnoTypeClass const * ttype = (TechnoTypeClass const *)CurrentObject[0]->Class_Of();
-					int sight = ((int)ttype->SightRange)<<8;
+					int sight = techno->Get_Sight_Range()<<8;
 					int weapon = 0;
 					if (ttype->Weapons[0].Weapon != NULL) weapon = ttype->Weapons[0].Weapon->Range;
 //					Set_Logic_Page(SeenBuff);

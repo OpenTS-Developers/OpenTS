@@ -1437,7 +1437,7 @@ void InfantryClass::AI(void)
 		}
 	}
 
-	if (Locomotion->Is_Moving_Now() && HeightAGL > 0 && Class->SightRange > 0) {
+	if (Locomotion->Is_Moving_Now() && HeightAGL > 0 && Get_Sight_Range() > 0) {
 		if (!LookTimer) {
 			Look();
 			LookTimer = TICKS_PER_SECOND;
@@ -2523,7 +2523,7 @@ bool InfantryClass::Unlimbo(Coord const & xcoord, Dir256 facing)
 		**	If there is no sight range, then this object isn't discovered by the player unless
 		**	it actually appears in a cell mapped by the player.
 		*/
-		if (Class->SightRange == 0) {
+		if (Get_Sight_Range() == 0) {
 			Forget_Human_Discovery();
 		}
 

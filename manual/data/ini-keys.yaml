@@ -8089,6 +8089,23 @@ EliteFlashTimer:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+EliteSight:
+  key: EliteSight
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: EliteSightRange
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 End:
   key: End
   scopes:
@@ -25855,6 +25872,20 @@ VeteranRatio:
 VeteranSight:
   key: VeteranSight
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: integer
+    status: reviewed
+    _provenance:
+      default_candidate: '-1'
+      declared_in: TechnoTypeClass
+      member: VeteranSightRange
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -25862,7 +25893,7 @@ VeteranSight:
       kind: literal
       name: General
     value_type: floating point
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: '1'
       declared_in: RulesClass
