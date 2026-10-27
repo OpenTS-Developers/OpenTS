@@ -1,22 +1,6 @@
 <#
 .SYNOPSIS
-Copy Tiberian Sun game data from retail discs or an existing install into one folder.
-
-.DESCRIPTION
-Reads the game files from one or more folders, such as mounted discs, mounted
-ISOs, an extracted disc, or an installed copy of the game, and copies the files
-OpenTS uses into the target folder. Movies and music are copied unless
--NoMovies or -NoMusic is given. Expansion files are copied unless -NoFirestorm
-is given.
-
-A retail disc keeps the base game archives inside INSTALL\TIBSUN.MIX. That file
-is copied as TIBSUN.MIX, the layout the Steam and First Decade installs use, and
-the game reads the archives it holds.
-
-With -BuildDir, the x64 Release build is copied beside the data so the folder
-runs on its own; the default BuildDir is build\x64\bin\Release when it exists,
-and -NoBuild skips the copy. Use -WhatIf to print the plan without writing
-anything.
+Copy Tiberian Sun game data from discs, ISOs, or an install folder into one directory.
 #>
 [CmdletBinding(SupportsShouldProcess = $true)]
 param(

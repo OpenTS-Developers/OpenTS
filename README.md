@@ -12,13 +12,16 @@ experimental Apple Silicon build so I can play the game natively on macOS.
 
 OpenTS rebuilds the Tiberian Sun engine as a standalone program instead of
 patching the retail executable. This fork keeps the upstream engine and adds a
-working arm64 macOS build on top of it. I use it to play Tiberian Sun on a Mac.
+working arm64 macOS build on top of it. I play it on Windows 11, on macOS, and
+on a Steam Deck (SteamOS, Proton 11).
 
 Everything about the project itself — what OpenTS is and is not, its status and
 roadmap, the manual, history, and license — lives in the
 [upstream README](https://github.com/OpenTS-Developers/OpenTS) and its
 [documentation](https://github.com/OpenTS-Developers/OpenTS/tree/main/docs).
-This file covers only what differs here: building and running on macOS.
+This file covers what differs here: building and running on macOS, where the
+game data comes from, and deploying the x64 Release onto the Windows Steam
+install.
 
 ## Building on macOS (Apple Silicon)
 
@@ -53,33 +56,44 @@ see the upstream
 4. Point the game at a Tiberian Sun data directory and run:
 
    ```bash
-   build/macos/bin/GameD -DATADIR=/path/to/tibsun
+   build/macos/bin/GameD -DATADIR="$HOME/Games/OpenTS"
    ```
 
-The data directory needs the original Tiberian Sun assets, for example from
-Command & Conquer The Ultimate Collection on Steam or the EA App. OpenTS ships
-only the engine, never the game data.
+## How to get the game data
 
-## Setup skills
+OpenTS ships the engine only. Download the freeware GDI, Nod, and Firestorm
+disc images from the
+[Command & Conquer Communications Center](https://cnc-comm.com/tiberian-sun/downloads/the-game):
 
-`.agents/skills/` holds two Windows setup skills for coding agents. Each pairs
-a `SKILL.md` that states the workflow with a PowerShell script that performs the
-copy. Use them to get a playable folder without repeating the steps by hand.
+| Disc | Page | File |
+| --- | --- | --- |
+| GDI | [GDI CD](https://cnc-comm.com/tiberian-sun/downloads/the-game/gdi-disc) | [TS_GDI.zip](https://downloads.cnc-comm.com/tiberian-sun/iso/TS_GDI.zip) |
+| Nod | [Nod CD](https://cnc-comm.com/tiberian-sun/downloads/the-game/nod-disc) | [TS_Nod.zip](https://downloads.cnc-comm.com/tiberian-sun/iso/TS_Nod.zip) |
+| Firestorm | [Firestorm CD](https://cnc-comm.com/tiberian-sun/downloads/the-game/firestorm-disc) | [TS_Firestorm.zip](https://downloads.cnc-comm.com/tiberian-sun/iso/TS_Firestorm.zip) |
 
-| Skill | What it does |
-| --- | --- |
-| `retail-install` | Copies Tiberian Sun data you own from retail discs, disc images, an extracted disc, or an existing Steam or GOG install into one folder, `~/Games/OpenTS` by default. `-NoMovies`, `-NoMusic`, and `-NoFirestorm` trim it, and `-WhatIf` prints the plan. |
-| `steam-release` | Rebuilds the x64 Release and deploys it to the Steam Tiberian Sun install, replacing `SUN.EXE`, `Language.dll`, `Game.pdb`, and `ui/`. A build that is not x64 is refused. |
+Ask an agent to run the `retail-install` skill, or run the script yourself.
+Pass Firestorm last. A mounted disc, an extracted disc, or an existing install
+folder is a source too. The files land in `~/Games/OpenTS`.
 
-Run a script directly when the agent does not read `.agents/skills/`:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .agents\skills\retail-install\scripts\install-retail.ps1 -Source E:\
+```bash
+python3 .agents/skills/retail-install/scripts/install-retail.py \
+  ~/Downloads/TS_GDI.zip ~/Downloads/TS_Nod.zip ~/Downloads/TS_Firestorm.zip
 ```
 
-Neither script downloads game data. `retail-install` copies files from a copy
-of Tiberian Sun you already own, and `steam-release` writes only the engine
-build into an install that already holds the data.
+`--no-movies`, `--no-music`, and `--no-firestorm` leave those groups out.
+`--dry-run` prints the plan. On Windows, run
+`.agents/skills/retail-install/scripts/install-retail.ps1` instead.
+
+## Windows Steam install
+
+`.agents/skills/steam-release/` rebuilds the x64 Release and copies it onto the
+Steam Tiberian Sun install on Windows, replacing `SUN.EXE`, `Language.dll`,
+`Game.pdb`, and `ui/`. A build that is not x64 is refused. The Steam Deck runs
+that Windows build under Proton 11.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .agents\skills\steam-release\scripts\deploy.ps1
+```
 
 ## License
 

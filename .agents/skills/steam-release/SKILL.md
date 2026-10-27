@@ -5,7 +5,9 @@ description: Rebuild the x64 Release from the current checkout and deploy it to 
 
 # Steam release deploy
 
-Use this skill when the user asks to rebuild a release and copy it to Steam.
+Use this skill when the user asks to rebuild a release and copy it to Steam on
+Windows. The Steam Deck runs that deployed build under Proton 11. Run the
+script on Windows, not on SteamOS.
 
 ## Locations
 
