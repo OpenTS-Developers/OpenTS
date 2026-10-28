@@ -462,6 +462,25 @@ fixed_exclusions:
     reason: UI shell modifier keys kept out of press ownership, not separate controls.
   - site: { file: code/ui/uishell.cpp, function: UIShellClass::Quarantine_Held_Input, expression: VK_XBUTTON2 }
     reason: UI shell loop bound over the virtual keys past the mouse buttons, not a control.
+  - sites:
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_LSHIFT, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_RSHIFT, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_SHIFT, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_LCONTROL, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_RCONTROL, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_CONTROL, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_LMENU, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_RMENU, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_MENU, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_CAPITAL, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_NUMLOCK, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_SCROLL, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_LBUTTON, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_RBUTTON, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_MBUTTON, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_XBUTTON1, guard: "!defined(_WIN32)" }
+      - { file: code/platform.cpp, function: GetKeyState, expression: VK_XBUTTON2, guard: "!defined(_WIN32)" }
+    reason: Windows GetKeyState shim that reports SDL modifier, lock-key, and mouse-button state; it is not a control.
 
 launch_options:
   - id: launch:help
