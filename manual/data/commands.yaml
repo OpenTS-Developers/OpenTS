@@ -1565,7 +1565,8 @@ registered_commands:
   kind: registered
   title: Select Same Type
   description: Selects all on-screen units of the same types as currently selected. Press twice quickly
-    to select across the whole map.
+    to select across the whole map. Double-click one of your units to select every on-screen unit of its
+    type.
   category: Selection
   audience: player
   availability:

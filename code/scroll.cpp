@@ -632,13 +632,25 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 	bool			shadow;						// is the cell in shadow or not
 	Point2D			point;						/// click position relative to the tactical view
 
-	// The map does not act on the second press of a double click.
 	bool const press = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 1);
 	bool const release = (event.Type == WINDOW_EVENT_MOUSE_UP);
+	// A double click on the player's own object selects every on-screen object of its type.
+	bool const dblclick = (event.Type == WINDOW_EVENT_MOUSE_DOWN && event.Clicks == 2);
 
 	if (event.Type == WINDOW_EVENT_CAPTURE_LOST) {
 		if (IsMouseDown == true) {
 			Abort_Drag_Select();
+		}
+
+	} else if (dblclick && event.Button == WINDOW_BUTTON_LEFT) {
+		if (IsMouseDown == false) {
+
+			point.X = event.X - TacticalRect.X;
+			point.Y = event.Y - TacticalRect.Y;
+
+			if (Resolve_Point(point, cell, coord, object, fog, shadow) && object != NULL && object->Is_Techno() && object->Class_Of()->IsSelectable && ((TechnoClass *)object)->House->Is_Player_Commanded()) {
+				Execute_Command("SelectType");
+			}
 		}
 
 	} else if (press && event.Button == WINDOW_BUTTON_LEFT) {
