@@ -9173,6 +9173,7 @@ void TechnoClass::On_Promoted(bool silent)
 	Look();
 	
 	if (new_rank == RANK_ROOKIE) return;
+	// Named backwards: true notifies the player, false stays silent.
 	if (!silent) return;
 	if (!House->Is_Player_Control()) return;
 

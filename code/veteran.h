@@ -61,6 +61,10 @@ class VeterancyClass
 		explicit VeterancyClass(PromotedCallback callback);
 		~VeterancyClass(void);
 
+		// The callback captures the owning techno, so a copy would still call the original owner.
+		VeterancyClass(VeterancyClass const &) = delete;
+		VeterancyClass & operator=(VeterancyClass const &) = delete;
+
 		void Made_A_Kill(int cost, int value);
 
 		/*
