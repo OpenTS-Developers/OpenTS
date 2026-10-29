@@ -5263,6 +5263,47 @@ class QuickLoadCommandClass : public CommandClass
 };
 
 
+class IncreaseGameSpeedCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const { return ("IncreaseGameSpeed"); }
+		virtual char const * Get_Display_Name(void) const { return (Fetch_String(TXT_INCREASE_GAME_SPEED)); }
+		virtual char const * Get_Category(void) const { return (Fetch_String((TXT_INTERFACE))); }
+		virtual char const * Get_Description(void) const { return (Fetch_String(TXT_INCREASE_GAME_SPEED_DESC)); }
+
+		virtual void Execute(void) const
+		{
+			// Not allowed in multiplayer games
+			if (Session.Is_Network_Game()) return;
+
+			int game_speed = Options.GameSpeed;
+
+			game_speed -= 1;
+			Options.Set_Game_Speed(game_speed);
+		}
+};
+
+class DecreaseGameSpeedCommandClass : public CommandClass
+{
+	public:
+		virtual char const * Get_Unique_Name(void) const { return ("DecreaseGameSpeed"); }
+		virtual char const * Get_Display_Name(void) const { return (Fetch_String(TXT_DECREASE_GAME_SPEED)); }
+		virtual char const * Get_Category(void) const { return (Fetch_String((TXT_INTERFACE))); }
+		virtual char const * Get_Description(void) const { return (Fetch_String(TXT_DECREASE_GAME_SPEED_DESC)); }
+
+		virtual void Execute(void) const
+		{
+			// Not allowed in multiplayer games
+			if (Session.Is_Network_Game()) return;
+
+			int game_speed = Options.GameSpeed;
+
+			game_speed += 1;
+			Options.Set_Game_Speed(game_speed);
+		}
+};
+
+
 class ChatToAllCommandClass : public CommandClass
 {
 	public:
@@ -5535,6 +5576,8 @@ static void Init_Commands(void)
 
 	AllCommands.Add(new QuickSaveCommandClass);
 	AllCommands.Add(new QuickLoadCommandClass);
+	AllCommands.Add(new IncreaseGameSpeedCommandClass);
+	AllCommands.Add(new DecreaseGameSpeedCommandClass);	
 
 	const CommandClass * chatallcmd = new ChatToAllCommandClass;
 	AllCommands.Add(chatallcmd);

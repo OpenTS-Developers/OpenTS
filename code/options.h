@@ -58,6 +58,7 @@ class OptionsClass {
 		int Normalize_Delay(int delay) const;
 		int Normalize_Volume(int volume) const;
 		int Get_Scroll_Method(void) const;
+		void Set_Game_Speed(int speed);
 
 		void Hotkey_Dialog(void);
 
