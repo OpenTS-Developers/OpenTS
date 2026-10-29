@@ -4706,6 +4706,10 @@ class SelectSameTypeCommandClass : public CommandClass
 				return;
 			}
 
+			// A team hotkey can leave responses off, so this command turns them on before the sweep.
+			VoicedTypes.clear();
+			AllowVoice = true;
+
 			if (widen) {
 				for (int i = 0; i < Technos.Count(); i++) {
 					TechnoClass * techno = Technos[i];
@@ -4730,11 +4734,21 @@ class SelectSameTypeCommandClass : public CommandClass
 		static void Select_Callback(ObjectClass * obj)
 		{
 			if (obj != NULL && obj->Is_Techno() && obj->IsDown && !obj->IsSelected && SoughtTypes.contains(obj->TClass) && ((TechnoClass *)obj)->House->Is_Player_Commanded()) {
-				obj->Select();
+				bool const speak = VoicedTypes.insert(obj->TClass).second;
+				// AllowVoice also gates the selected trigger, so a quiet object offers none.
+				if (!speak) {
+					AllowVoice = false;
+				}
+				bool const selected = obj->Select();
+				AllowVoice = true;
+				if (speak && !selected) {
+					VoicedTypes.erase(obj->TClass);
+				}
 			}
 		}
 
 		inline static std::unordered_set<TechnoTypeClass const *> SoughtTypes;
+		inline static std::unordered_set<TechnoTypeClass const *> VoicedTypes;
 		inline static int LastTick = -1;
 };
 
