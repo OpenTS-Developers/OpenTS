@@ -274,35 +274,24 @@ the version without one.
 
 ## Continuous integration
 
-The `Engine` workflow runs for ready pull requests and pushes to `main` when
-their changed paths match its engine and build filters. Draft pull requests do
-not build until marked ready; the workflow then builds their current commit.
+Publishing a GitHub release is the only workflow. It builds two official
+Release clients of the OpenTS engine from the tagged commit and attaches a
+siliconsun zip of each to the release:
 
-`Engine nightly` runs daily. A scheduled run cancels itself when the newest
-commit is at least 25 hours old; manually started runs always build. This keeps
-the latest successful scheduled run attached to downloadable artifacts.
+| Zip | Client |
+| --- | --- |
+| `siliconsun-<tag>-x64.zip` | Windows x64. `SUN.EXE`, `Language.dll`, `Game.pdb`, `ui/`, and the license notices. The executable is built as `Game.exe` and renamed for Steam. |
+| `siliconsun-<tag>-macos.zip` | Apple Silicon. `Game`, `ui/`, and the license notices. Strings are compiled in, so the zip has no `Language.dll`. |
 
-Both use the reusable `Engine build` workflow. It runs one job per platform and
-configuration, four by default, each on its own Windows runner with Visual
-Studio 2022. A job configures and builds its platform with the commands above,
-runs CTest, and uploads the executable, language library, symbol file, `ui/`
-directory, and license notices. Artifact names contain the platform,
-configuration, and short commit, as in `opents-x64-Release-ab12cd3`. Linker maps
-are omitted because the symbol files are sufficient. A failure on either platform
-fails the workflow.
-After a successful pull-request build, `Engine build comment` maintains one
-pull-request comment with direct nightly.link downloads.
-
-Publishing a GitHub release runs `Engine release`. It builds the release commit
-for both platforms with `-DOPENTS_OFFICIAL_BUILD=ON`, and packages each one's
-`Game.exe`, `Language.dll`, `Game.pdb`, `ui/`, and the project and third-party
-license notices in a zip named after the release tag and the platform, such as
-`OpenTS-v0.2.0-x64.zip`. It attaches both to the release, and appends notes
-generated from the manual's change records by
+The Windows job uses Visual Studio 2022 on `windows-2022`, runs CTest, and
+reads its files from `build/bin/Release/`. The macOS job uses Apple Clang and
+Ninja on the Apple Silicon runner and reads its files from `build/macos/bin/`.
+Either job failing fails the workflow. The same run appends notes generated
+from the manual's change records by
 `python manual/tools/manage.py release-notes`. See
 [Maintaining](../manual/MAINTAINING.md) for the full release procedure.
 
-CI collects the uploaded artifacts from `build/bin/<configuration>/`.
+Pull requests, ordinary pushes, and the daily schedule do not build.
 
 ## Verification boundary
 

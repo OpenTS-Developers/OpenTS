@@ -1,6 +1,6 @@
 name: Engine release
 
-# Attaches the packaged build and generated notes to a published GitHub
+# Builds the two release clients and attaches them to a published GitHub
 # release. The release procedure around this workflow is documented in
 # manual/MAINTAINING.md.
 on:
@@ -11,50 +11,120 @@ permissions:
   contents: read
 
 jobs:
-  build:
-    name: Build
-    uses: ./.github/workflows/engine-build.yml
-    with:
-      artifact-prefix: opents-release
-      configurations: '["Release"]'
-      platforms: '["x64"]'
-      official: true
+  windows:
+    name: Windows x64
+    # windows-2025 and windows-latest carry Visual Studio 2026 and have no 2022
+    # instance for this generator to find.
+    runs-on: windows-2022
+    steps:
+      - name: Check out OpenTS
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+
+      - name: Annotate compiler diagnostics
+        shell: bash
+        run: echo "::add-matcher::.github/msvc-problem-matcher.json"
+
+      - name: Configure
+        run: >
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64
+          -DOPENTS_OFFICIAL_BUILD=ON
+          -DOPENTS_DESKTOP_TESTS=ON
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Stage the client
+        shell: bash
+        run: |
+          mkdir -p artifact
+          built=build/bin/Release
+          cp "${built}/Game.exe" "${built}/Game.pdb" "${built}/Language.dll" artifact/
+          cp -r "${built}/ui" artifact/ui
+          bash .github/scripts/stage-notices.sh artifact
+
+      - name: Upload the client
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: windows-x64
+          path: artifact
+          if-no-files-found: error
+
+  macos:
+    name: macOS arm64
+    # macos-latest is an Apple Silicon runner. The client is arm64.
+    runs-on: macos-latest
+    steps:
+      - name: Check out OpenTS
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          submodules: recursive
+
+      - name: Install Ninja
+        run: brew install ninja
+
+      - name: Configure
+        run: >
+          cmake -S . -B build/macos -G Ninja
+          -DCMAKE_BUILD_TYPE=Release
+          -DOPENTS_OFFICIAL_BUILD=ON
+
+      - name: Build
+        run: cmake --build build/macos
+
+      - name: Stage the client
+        run: |
+          mkdir -p artifact
+          built=build/macos/bin
+          cp "${built}/Game" artifact/
+          cp -r "${built}/ui" artifact/ui
+          bash .github/scripts/stage-notices.sh artifact
+
+      - name: Upload the client
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: macos-arm64
+          path: artifact
+          if-no-files-found: error
 
   package:
     name: Attach the packaged build
-    needs: build
+    needs: [windows, macos]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     env:
       TAG: ${{ github.event.release.tag_name }}
     steps:
-      - name: Download the build artifacts
-        # The release build is x64 only. Its artifact is
-        # opents-release-x64-Release-<commit>.
+      - name: Download the clients
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          pattern: opents-release-*-Release-*
           path: artifact
 
-      - name: Package the x64 release zip
+      - name: Package the release zips
         run: |
-          for dir in artifact/opents-release-*-Release-*; do
-            # Artifacts are named <prefix>-<platform>-<configuration>-<commit>, and the
-            # prefix itself contains a hyphen, so count the fields from the end.
-            # Steam and the retail install launch SUN.EXE. Game.pdb keeps its name
-            # because that is the symbol file the linker records.
-            platform="$(basename "${dir}" | awk -F- '{print $(NF-2)}')"
-            mv "${dir}/Game.exe" "${dir}/SUN.EXE"
-            ( cd "${dir}" && zip -r "${GITHUB_WORKSPACE}/OpenTS-${TAG}-${platform}.zip" \
-                SUN.EXE Game.pdb Language.dll ui \
-                LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES )
-          done
+          set -euo pipefail
+          win=artifact/windows-x64
+          mac=artifact/macos-arm64
+          # Steam and the retail install launch SUN.EXE. Game.pdb keeps its name
+          # because that is the symbol file the linker records.
+          mv "${win}/Game.exe" "${win}/SUN.EXE"
+          ( cd "${win}" && zip -r "${GITHUB_WORKSPACE}/siliconsun-${TAG}-x64.zip" \
+              SUN.EXE Game.pdb Language.dll ui \
+              LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES )
+          chmod +x "${mac}/Game"
+          ( cd "${mac}" && zip -r "${GITHUB_WORKSPACE}/siliconsun-${TAG}-macos.zip" \
+              Game ui \
+              LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES )
 
       - name: Attach the zips to the release
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" OpenTS-"$TAG"-*.zip --clobber --repo "$GITHUB_REPOSITORY"
+        run: gh release upload "$TAG" siliconsun-"$TAG"-*.zip --clobber --repo "$GITHUB_REPOSITORY"
 
   notes:
     name: Append generated release notes

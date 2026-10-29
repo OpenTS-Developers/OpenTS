@@ -1,8 +1,8 @@
-# OpenTS on macOS
+# siliconsun
 
-A personal fork of [OpenTS](https://github.com/OpenTS-Developers/OpenTS), the
-open-source reconstruction of *Command & Conquer: Tiberian Sun*, with an
-experimental Apple Silicon build so I can play the game natively on macOS.
+siliconsun publishes a 64-bit Windows client and an Apple Silicon client of
+*Command & Conquer: Tiberian Sun*. The engine is
+[OpenTS](https://github.com/OpenTS-Developers/OpenTS).
 
 <img src="menu.png" alt="Tiberian Sun main menu running on Apple Silicon" width="900">
 
@@ -11,17 +11,16 @@ experimental Apple Silicon build so I can play the game natively on macOS.
 ## What this is
 
 OpenTS rebuilds the Tiberian Sun engine as a standalone program instead of
-patching the retail executable. This fork keeps the upstream engine and adds a
-working arm64 macOS build on top of it. I play it on Windows 11, on macOS, and
-on a Steam Deck (SteamOS, Proton 11).
+patching the retail executable. siliconsun keeps that engine, adds an arm64
+macOS build, and ships both clients from a tagged release. I play it on
+Windows 11, on macOS, and on a Steam Deck (SteamOS, Proton 11).
 
-Everything about the project itself — what OpenTS is and is not, its status and
+Everything about the engine — what OpenTS is and is not, its status and
 roadmap, the manual, history, and license — lives in the
 [upstream README](https://github.com/OpenTS-Developers/OpenTS) and its
 [documentation](https://github.com/OpenTS-Developers/OpenTS/tree/main/docs).
-This file covers what differs here: building and running on macOS, where the
-game data comes from, and deploying the x64 Release onto the Windows Steam
-install.
+This file covers what siliconsun adds: building and running on macOS, where the
+game data comes from, and the two release clients.
 
 ## Building on macOS (Apple Silicon)
 
@@ -61,7 +60,7 @@ see the upstream
 
 ## How to get the game data
 
-OpenTS ships the engine only. Download the freeware GDI, Nod, and Firestorm
+siliconsun ships the engine only. Download the freeware GDI, Nod, and Firestorm
 disc images from the
 [Command & Conquer Communications Center](https://cnc-comm.com/tiberian-sun/downloads/the-game):
 
@@ -93,11 +92,26 @@ The x64 release is a drop-in replacement for the Steam install.
 > not load saves from the original game, and the original game does not load
 > saves OpenTS writes. There is no converter.
 
-A published release includes `OpenTS-<tag>-x64.zip`: `SUN.EXE`, `Language.dll`,
+A published release includes `siliconsun-<tag>-x64.zip`: `SUN.EXE`, `Language.dll`,
 `ui`, `Game.pdb`, and the license notices. Copy `SUN.EXE`, `Language.dll`,
 `Game.pdb`, and `ui` into the Steam Tiberian Sun folder, or run
 `SUN.EXE -DATADIR=<path>` from the unzipped folder. The Steam Deck runs this
 build under Proton 11.
+
+## macOS download
+
+A published release includes `siliconsun-<tag>-macos.zip`: `Game`, `ui`, and the
+license notices. It is an unsigned arm64 binary. `ui` has to stay beside
+`Game`. After unzipping, clear quarantine and point the binary at the game
+data:
+
+```bash
+xattr -dr com.apple.quarantine .
+./Game -DATADIR="$HOME/Games/OpenTS"
+```
+
+Run that from the unzipped folder. The shell expands `$HOME` before the game
+sees the path. The folder has to exist already.
 
 ## Windows Steam install
 

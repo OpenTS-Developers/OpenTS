@@ -1,7 +1,7 @@
 """Git pre-push hook that runs the manual check without the site build.
 
-The check runs only when the pushed commits touch a path that starts the Manual
-workflow on a push.  It reads the working tree, not the pushed commits.
+The check runs only when the pushed commits touch a watched path.  It reads
+the working tree, not the pushed commits.
 """
 
 from pathlib import Path
@@ -9,13 +9,20 @@ import re
 import subprocess
 import sys
 
-from io_utils import load_yaml
-
 
 ROOT = Path(__file__).resolve().parents[2]
-WORKFLOW = ROOT / ".github" / "workflows" / "manual-pages.yml"
 MANAGE = ROOT / "manual" / "tools" / "manage.py"
 NULL_REVISION = re.compile(r"0+")
+WATCHED = (
+    "manual/**",
+    "README.md",
+    "CONTRIBUTING.md",
+    "AGENTS.md",
+    "LICENSE.md",
+    "docs/**",
+    "code/**",
+    "CMakeLists.txt",
+)
 
 
 def git(*arguments):
@@ -27,13 +34,6 @@ def git(*arguments):
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
     )
-
-
-def workflow_paths(workflow=WORKFLOW):
-    data = load_yaml(Path(workflow).read_text(encoding="utf-8"))
-    # YAML 1.1 reads the bare key "on" as true.
-    triggers = data.get("on", data.get(True))
-    return triggers["push"]["paths"]
 
 
 def path_pattern(pattern):
@@ -59,8 +59,8 @@ def is_commit(revision):
 def pushed_paths(remote, local_sha, remote_sha):
     """Return the files the push changes and the revision to compare against.
 
-    An update compares against the remote's previous commit, as the workflow
-    does.  A new branch lists every commit the remote lacks and compares
+    An update compares against the remote's previous commit.  A new branch
+    lists every commit the remote lacks and compares
     against its fork point from the remote's default branch, or against HEAD
     when that branch is unknown.
     """
@@ -82,7 +82,7 @@ def pushed_paths(remote, local_sha, remote_sha):
 
 def main(arguments, updates):
     remote = arguments[0] if arguments else "origin"
-    patterns = workflow_paths()
+    patterns = WATCHED
     head = git("rev-parse", "HEAD").stdout.strip()
 
     relevant = []
@@ -96,7 +96,7 @@ def main(arguments, updates):
             relevant.append((local_sha, base))
 
     if not relevant:
-        print("manual check skipped: the push changes no path the Manual workflow watches")
+        print("manual check skipped: the push changes no watched path")
         return 0
 
     local_sha, base = next(

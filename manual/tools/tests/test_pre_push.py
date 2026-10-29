@@ -1,6 +1,5 @@
 from pathlib import Path
 import sys
-import tempfile
 import unittest
 
 
@@ -25,23 +24,9 @@ class PrePushPathTests(unittest.TestCase):
             ["README.md", "code/rules.cpp", "manual/data/ini-keys.yaml"])
         self.assertEqual(pre_push.matching_paths(paths, ["docs/**"]), ["docs/README.md"])
 
-    def test_push_filter_is_read_through_the_yaml_boolean_on_key(self):
-        with tempfile.TemporaryDirectory() as folder:
-            workflow = Path(folder) / "workflow.yml"
-            workflow.write_text(
-                "on:\n"
-                "  pull_request:\n"
-                "    paths: [\"other/**\"]\n"
-                "  push:\n"
-                "    paths:\n"
-                "      - \"manual/**\"\n"
-                "      - \"code/**\"\n",
-                encoding="utf-8")
-            self.assertEqual(pre_push.workflow_paths(workflow), ["manual/**", "code/**"])
-
-    def test_repository_workflow_watches_the_manual(self):
+    def test_watched_paths_include_the_manual(self):
         self.assertTrue(pre_push.matching_paths(
-            ["manual/tools/manage.py"], pre_push.workflow_paths()))
+            ["manual/tools/manage.py"], pre_push.WATCHED))
 
 
 if __name__ == "__main__":

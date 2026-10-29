@@ -90,7 +90,8 @@ links to site pages that do not exist, pages that fail to render, and the
 render, search, and link checks of the built pages. CI still runs those.
 
 The opt-in pre-push hook runs `check --skip-build` when the pushed commits
-change a path that starts the Manual workflow on a push. It checks the working
+change the manual, the engine source, the top-level project documents, or
+`CMakeLists.txt`. It checks the working
 tree, including uncommitted changes. It compares against the commit the remote
 branch had. For a new branch, it compares against the commit where the branch
 left the remote's default branch, or against `HEAD` when Git does not know
