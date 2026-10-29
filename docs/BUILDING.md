@@ -286,9 +286,8 @@ siliconsun zip of each to the release:
 The Windows job uses Visual Studio 2022 on `windows-2022`, runs CTest, and
 reads its files from `build/bin/Release/`. The macOS job uses Apple Clang and
 Ninja on the Apple Silicon runner and reads its files from `build/macos/bin/`.
-Either job failing fails the workflow. The same run appends notes generated
-from the manual's change records by
-`python manual/tools/manage.py release-notes`. See
+Either job failing fails the workflow. The workflow attaches the zips and
+does not edit the release notes. See
 [Maintaining](../manual/MAINTAINING.md) for the full release procedure.
 
 Pull requests, ordinary pushes, and the daily schedule do not build.

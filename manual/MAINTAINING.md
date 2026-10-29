@@ -123,10 +123,8 @@ To publish a release:
    be tagged contains everything it ships.
 2. Create and publish the GitHub release from a `v<version>` tag on that
    commit. The `Engine release` workflow builds the Windows x64 Release and
-   the Apple Silicon Release, attaches `siliconsun-<tag>-x64.zip` and
-   `siliconsun-<tag>-macos.zip`, and appends
-   `python manual/tools/manage.py release-notes <version>` output to the release
-   body.
+   the Apple Silicon Release, and attaches `siliconsun-<tag>-x64.zip` and
+   `siliconsun-<tag>-macos.zip`. It does not edit the release notes.
 3. Tag before opening the next development cycle. The tagged commit's CMake
    version must still name the release.
 
