@@ -60,3 +60,6 @@ manual/data/.manual-generate-*/
 
 # Owner-local documents (untracked adjudication material)
 /docs/local/
+
+# macOS Finder metadata
+.DS_Store
