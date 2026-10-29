@@ -593,6 +593,32 @@ int Main_Window_Refresh_Rate(void)
 }
 
 
+// A mode is either pixels or points. On macOS, dividing by the desktop density lists the point size.
+static std::pair<int, int> Mode_Size(SDL_DisplayMode const * mode, float screen)
+{
+	float const density = mode->pixel_density > 0.0f ? mode->pixel_density : 1.0f;
+#if defined(__APPLE__)
+	float const scale = screen > 0.0f ? density / screen : 1.0f;
+#else
+	(void)screen;
+	float const scale = density;
+#endif
+	return(std::pair<int, int>((int)std::lround(mode->w * scale), (int)std::lround(mode->h * scale)));
+}
+
+
+static float Primary_Screen_Density(SDL_DisplayID display)
+{
+#if defined(__APPLE__)
+	SDL_DisplayMode const * desktop = SDL_GetCurrentDisplayMode(display);
+	return((desktop != nullptr && desktop->pixel_density > 0.0f) ? desktop->pixel_density : 1.0f);
+#else
+	(void)display;
+	return(1.0f);
+#endif
+}
+
+
 std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void)
 {
 	std::vector<std::pair<int, int>> sizes;
@@ -608,26 +634,46 @@ std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void)
 		return(sizes);
 	}
 
-#if defined(__APPLE__)
-	// A mode is either pixels or points. Dividing the pixel size by the screen density lists the point size.
-	SDL_DisplayMode const * desktop = SDL_GetCurrentDisplayMode(display);
-	float const screen = (desktop != nullptr && desktop->pixel_density > 0.0f) ? desktop->pixel_density : 1.0f;
-#endif
+	float const screen = Primary_Screen_Density(display);
 
 	for (int index = 0; index < count; index++) {
-		float const density = modes[index]->pixel_density > 0.0f ? modes[index]->pixel_density : 1.0f;
-#if defined(__APPLE__)
-		float const scale = density / screen;
-#else
-		float const scale = density;
-#endif
-		sizes.emplace_back((int)std::lround(modes[index]->w * scale), (int)std::lround(modes[index]->h * scale));
+		sizes.push_back(Mode_Size(modes[index], screen));
 	}
 	SDL_free(modes);
 
 	std::sort(sizes.begin(), sizes.end());
 	sizes.erase(std::unique(sizes.begin(), sizes.end()), sizes.end());
 	return(sizes);
+}
+
+
+bool Main_Window_Desktop_Size(int & width, int & height)
+{
+	if (!_Started) {
+		return(false);
+	}
+
+	SDL_DisplayID const display = SDL_GetPrimaryDisplay();
+	SDL_DisplayMode const * desktop = SDL_GetCurrentDisplayMode(display);
+	if (desktop == nullptr) {
+		return(false);
+	}
+
+	std::pair<int, int> const size = Mode_Size(desktop, Primary_Screen_Density(display));
+	width = size.first;
+	height = size.second;
+	return(width > 0 && height > 0);
+}
+
+
+float Main_Window_Content_Scale(void)
+{
+	if (!_Started) {
+		return(1.0f);
+	}
+
+	float const scale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+	return(scale > 0.0f ? scale : 1.0f);
 }
 
 

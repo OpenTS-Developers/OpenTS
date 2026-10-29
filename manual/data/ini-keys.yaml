@@ -4379,6 +4379,24 @@ CameraRange:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+CampaignIntroMovie:
+  key: CampaignIntroMovie
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: CampaignIntroMovie
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 Capturable:
   key: Capturable
   scopes:
@@ -7491,6 +7509,24 @@ DoorStages:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
+DoubleClickSelectType:
+  key: DoubleClickSelectType
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: DoubleClickSelectType
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 DoubleOwned:
   key: DoubleOwned
   scopes:

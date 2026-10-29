@@ -613,7 +613,7 @@ void Assign_Houses(void);
 void Post_Load_Game(void);
 bool End_Game(void);
 bool Read_Scenario(char const * root);
-// A campaign searches its own MOVIES archive before the other MOVIES archives. With no campaign, alphabetical order is restored.
+// While CampaignIntroMovie is on, a campaign searches its own MOVIES archive first. With the setting off, or with no campaign, the movie archives stay in alphabetical order.
 void Apply_Campaign_Movie_Order(CampaignType campaign);
 bool Start_Scenario(char const * name, bool briefing, CampaignType campaign);
 HousesType Select_House(void);

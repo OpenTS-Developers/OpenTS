@@ -54,6 +54,12 @@ int Main_Window_Refresh_Rate(void);
 // The primary display's mode sizes in pixels, sorted and without repeats.
 std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void);
 
+// The primary display's current size in the same pixels as Main_Window_Fullscreen_Sizes.
+bool Main_Window_Desktop_Size(int & width, int & height);
+
+// The scale Windows asks content to be drawn at on the primary display. One leaves sizes alone.
+float Main_Window_Content_Scale(void);
+
 void Main_Window_Pump_Events(void);
 
 // Requests made before a pump reach the game as one WINDOW_EVENT_EXPOSED.

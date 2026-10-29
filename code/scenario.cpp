@@ -337,6 +337,11 @@ void Apply_Campaign_Movie_Order(CampaignType campaign)
 {
 	int number = 0;
 
+	if (!Options.CampaignIntroMovie) {
+		MixFileClass::Order_Movie_Archives(0);
+		return;
+	}
+
 	if (campaign >= 0 && campaign < Campaigns.Count()) {
 		int const disc = Campaigns[campaign]->CDNumber;
 		if (disc >= 0) {

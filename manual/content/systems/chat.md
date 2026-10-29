@@ -67,4 +67,4 @@ The message list sits at the top of the tactical view and shows up to six rows. 
 
 Each row added to the list plays [`IncomingMessage`](/keys/incomingmessage/) and stays on screen for [`MessageDelay`](/keys/messagedelay/) minutes.
 
-[`TextBackgroundColor`](/keys/textbackgroundcolor/) draws a color behind every glyph of the list and of the editor.
+[`TextBackgroundColor`](/keys/textbackgroundcolor/) draws a palette index behind every glyph of the list and of the editor. `0` draws none.

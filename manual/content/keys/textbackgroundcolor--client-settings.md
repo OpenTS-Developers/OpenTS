@@ -8,11 +8,13 @@ when_omitted:
   value: "0"
 ---
 
-`TextBackgroundColor` is the palette index drawn behind every character of the in-game message list and of the line being typed. `0` draws no background; `12` is black. [In-game chat](/systems/chat/) describes the message list.
+`TextBackgroundColor` is the palette index drawn behind every character of the in-game message list and of the line being typed. `0` draws no background. `12` is black. A missing key is `0`. [In-game chat](/systems/chat/) describes the message list.
 
-No dialog offers the setting, but saving the options writes it back to `sun.ini` unchanged, so a value set by hand is kept.
+Any other index is drawn as written. A saved `SUN.INI` that still has `TextBackgroundColor=12` keeps that black box. Set the key to `0` for no background.
+
+No dialog offers the setting. Leaving the options menu writes the index in force, so a value set by hand is kept.
 
 ```ini title="sun.ini"
 [Options]
-TextBackgroundColor=12
+TextBackgroundColor=0
 ```

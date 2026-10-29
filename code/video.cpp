@@ -30,6 +30,8 @@
 #include "videodirty.h"
 #include "wwmouse.h"
 
+#include <algorithm>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <utility>
@@ -447,8 +449,45 @@ std::uint64_t Video_Frame_Upload_Count(void)
 }
 
 
+static void Offer_Scaled_Mode(std::vector<std::pair<int, int>> & sizes, int width, int height, int minwidth, int minheight, int maxwidth, int maxheight)
+{
+	if (width < minwidth || width > maxwidth || height < minheight || height > maxheight) {
+		return;
+	}
+	sizes.emplace_back(width, height);
+}
+
+
+// Whole fractions of the desktop stay in the list so a 1280 by 800 panel offers 640 by 400,
+// and a 3840 by 2160 panel offers 1920 by 1080. Windows also offers the size its scaling uses.
+static void Offer_Desktop_Scales(std::vector<std::pair<int, int>> & sizes, int minwidth, int minheight, int maxwidth, int maxheight)
+{
+	int desktopw = 0;
+	int desktoph = 0;
+	if (!Main_Window_Desktop_Size(desktopw, desktoph)) {
+		return;
+	}
+
+	for (int factor = 2; factor <= 6; factor++) {
+		Offer_Scaled_Mode(sizes, desktopw / factor, desktoph / factor, minwidth, minheight, maxwidth, maxheight);
+	}
+
+#if defined(_WIN32)
+	float const scale = Main_Window_Content_Scale();
+	if (scale > 1.01f) {
+		Offer_Scaled_Mode(sizes,
+			(int)std::lround((double)desktopw / (double)scale),
+			(int)std::lround((double)desktoph / (double)scale),
+			minwidth, minheight, maxwidth, maxheight);
+	}
+#endif
+}
+
+
 /// <summary>
 /// Collects the primary display's mode sizes within the given bounds, smallest first.
+/// Whole fractions of that display are included when they stay inside the bounds, and on
+/// Windows so is the size the display's scaling corresponds to.
 /// </summary>
 /// <param name="minwidth">The narrowest mode to report.</param>
 /// <param name="minheight">The shortest mode to report.</param>
@@ -459,6 +498,9 @@ std::uint64_t Video_Frame_Upload_Count(void)
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight)
 {
 	std::vector<std::pair<int, int>> sizes = Main_Window_Fullscreen_Sizes();
+	Offer_Desktop_Scales(sizes, minwidth, minheight, maxwidth, maxheight);
+	std::sort(sizes.begin(), sizes.end());
+	sizes.erase(std::unique(sizes.begin(), sizes.end()), sizes.end());
 	std::erase_if(sizes, [&](std::pair<int, int> const & size) {
 		return(size.first < minwidth || size.first > maxwidth || size.second < minheight || size.second > maxheight);
 	});

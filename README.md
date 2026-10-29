@@ -1,62 +1,64 @@
 # siliconsun
 
-siliconsun publishes a 64-bit Windows client and an Apple Silicon client of
-*Command & Conquer: Tiberian Sun*. The engine is
-[OpenTS](https://github.com/OpenTS-Developers/OpenTS).
+siliconsun is an Apple Silicon client of *Command & Conquer: Tiberian Sun*,
+and a modern Windows x64 client of the same engine - [OpenTS](https://github.com/OpenTS-Developers/OpenTS).
 
-<img src="menu.png" alt="Tiberian Sun main menu running on Apple Silicon" width="900">
-
-<img src="gameplay.png" alt="Tiberian Sun in-game on Apple Silicon" width="900">
-
-## What this is
+### What this is
 
 OpenTS rebuilds the Tiberian Sun engine as a standalone program instead of
 patching the retail executable. siliconsun keeps that engine, adds an arm64
-macOS build, and ships both clients from a tagged release. I play it on
-Windows 11, on macOS, and on a Steam Deck (SteamOS, Proton 11).
+macOS build, and adds some QoL fixes.
 
 Everything about the engine — what OpenTS is and is not, its status and
 roadmap, the manual, history, and license — lives in the
 [upstream README](https://github.com/OpenTS-Developers/OpenTS) and its
 [documentation](https://github.com/OpenTS-Developers/OpenTS/tree/main/docs).
-This file covers what siliconsun adds: building and running on macOS, where the
-game data comes from, and the two release clients.
+This file covers the macOS build, the Windows x64 build, where the game data
+comes from, and the settings siliconsun adds.
 
-## Building on macOS (Apple Silicon)
+---
 
-The macOS build is experimental and unsupported. It builds with Apple Clang and
-Ninja on arm64. Windows with Visual Studio 2022 is still the supported target;
-see the upstream
-[BUILDING.md](https://github.com/OpenTS-Developers/OpenTS/blob/main/docs/BUILDING.md).
+> a very proud screenshot of the first successful menu build on MacBook Air M5 (macOS 27)
 
-1. Install CMake and Ninja:
+<img src="menu.png" alt="Tiberian Sun main menu running on Apple Silicon" width="900">
 
-   ```bash
-   brew install cmake ninja
-   ```
+> Tiberian Sun - GDI Mission 1 (Reinforce Phoenix Base)
+<img src="gameplay.png" alt="Tiberian Sun in-game on Apple Silicon" width="900">
 
-2. Fetch the submodules:
+## siliconsun settings
 
-   ```bash
-   git submodule update --init --recursive
-   ```
+Player options live in `SUN.INI`. 
+The game writes that file beside the executable, or in the user directory when `-USERDIR` names one. 
 
-3. Configure and build a Debug binary:
+siliconsun reads its own keys from a `[siliconsun]` section in that file. 
+Each key defaults to `yes`. A missing key, or a missing section, leaves the feature on.
+`no`, `false`, and `0` turn that one feature off. 
+Leaving the options menu writes the section back out.
 
-   ```bash
-   cmake -S . -B build/macos -G Ninja \
-     -DCMAKE_BUILD_TYPE=Debug \
-     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
-   cmake --build build/macos
-   ```
+```ini
+[siliconsun]
+DoubleClickSelectType=yes
+CampaignIntroMovie=yes
+```
 
-   The binary is `build/macos/bin/GameD`.
+`DoubleClickSelectType=yes` selects every on-screen unit of one type when you
+double-click one of your own, the same selection as Select Same Type.
 
-4. Point the game at a Tiberian Sun data directory and run:
+`CampaignIntroMovie=yes` plays each campaign's own introduction when that
+introduction plays at all: the first mission of a campaign whose disc number
+is below 2, and not on a restart. Disc 0 prefers `MOVIES01.MIX` and disc 1
+prefers `MOVIES02.MIX`, so Nod plays the Nod introduction when both campaigns
+are installed.
 
-   ```bash
-   build/macos/bin/GameD -DATADIR="$HOME/Games/OpenTS"
-   ```
+In-game messages have no background when `TextBackgroundColor` under
+`[Options]` is missing or `0`.
+
+```ini
+[Options]
+TextBackgroundColor=0
+```
+
+---
 
 ## How to get the game data
 
@@ -95,8 +97,8 @@ The x64 release is a drop-in replacement for the Steam install.
 A published release includes `siliconsun-<tag>-x64.zip`: `SUN.EXE`, `Language.dll`,
 `ui`, `Game.pdb`, and the license notices. Copy `SUN.EXE`, `Language.dll`,
 `Game.pdb`, and `ui` into the Steam Tiberian Sun folder, or run
-`SUN.EXE -DATADIR=<path>` from the unzipped folder. The Steam Deck runs this
-build under Proton 11.
+`SUN.EXE -DATADIR=<path>` from the unzipped folder. The Steam Deck and the
+Victus both run this build. On the Deck, use Proton 11.
 
 ## macOS download
 
@@ -128,6 +130,52 @@ that Windows build under Proton 11.
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .agents\skills\steam-release\scripts\deploy.ps1
 ```
+
+---
+
+---
+
+## Building on macOS (Apple Silicon)
+
+The macOS build is the one I develop with. It builds with Apple Clang and
+Ninja on arm64.
+
+1. Install CMake and Ninja:
+
+   ```bash
+   brew install cmake ninja
+   ```
+
+2. Fetch the submodules:
+
+   ```bash
+   git submodule update --init --recursive
+   ```
+
+3. Configure and build a Debug binary:
+
+   ```bash
+   cmake -S . -B build/macos -G Ninja \
+     -DCMAKE_BUILD_TYPE=Debug \
+     -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+   cmake --build build/macos
+   ```
+
+   The binary is `build/macos/bin/GameD`.
+
+4. Point the game at a Tiberian Sun data directory and run:
+
+   ```bash
+   build/macos/bin/GameD -DATADIR="$HOME/Games/OpenTS"
+   ```
+
+---
+
+## Building on Windows
+
+The Windows client published here is 64-bit (x64).
+[BUILDING.md](docs/BUILDING.md) is the Visual Studio 2022 procedure; configure
+the x64 target.
 
 ## License
 

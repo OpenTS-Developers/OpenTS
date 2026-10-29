@@ -102,6 +102,15 @@ static int Cursor_Scale(void)
 	}
 #endif
 
+#if defined(_WIN32)
+	// Windows reports sizes in physical pixels and asks for a larger pointer through the
+	// display scale. A picture that is not already enlarged that far still gets it.
+	float const content = Main_Window_Content_Scale();
+	if (content > smaller) {
+		smaller = content;
+	}
+#endif
+
 	int result = (int)(smaller + 0.5f);
 	if (result < 1) result = 1;
 	if (result > 8) result = 8;

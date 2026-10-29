@@ -642,7 +642,7 @@ void ScrollClass::Handle_Window_Event(WindowEvent const & event)
 			Abort_Drag_Select();
 		}
 
-	} else if (dblclick && event.Button == WINDOW_BUTTON_LEFT) {
+	} else if (dblclick && Options.DoubleClickSelectType && event.Button == WINDOW_BUTTON_LEFT) {
 		if (IsMouseDown == false) {
 
 			point.X = event.X - TacticalRect.X;
