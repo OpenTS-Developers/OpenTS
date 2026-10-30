@@ -9,12 +9,10 @@ OpenTS rebuilds the Tiberian Sun engine as a standalone program instead of
 patching the retail executable. siliconsun keeps that engine, adds an arm64
 macOS build, and adds some QoL fixes.
 
-Everything about the engine — what OpenTS is and is not, its status and
-roadmap, the manual, history, and license — lives in the
-[upstream README](https://github.com/OpenTS-Developers/OpenTS) and its
-[documentation](https://github.com/OpenTS-Developers/OpenTS/tree/main/docs).
-This file covers the macOS build, the Windows x64 build, where the game data
-comes from, and the settings siliconsun adds.
+What the engine runs, and how its Windows build works, is in the
+[OpenTS guide](https://opents-developers.github.io/OpenTS/).
+This file covers the Apple Silicon build, the two release clients, the
+freeware install, and the settings siliconsun adds.
 
 ---
 
@@ -27,8 +25,10 @@ comes from, and the settings siliconsun adds.
 
 ## siliconsun settings
 
-Player options live in `SUN.INI`. 
-The game writes that file beside the executable, or in the user directory when `-USERDIR` names one. 
+Player options live in `SUN.INI`. Where that file is written is on the guide's
+[configuration files](https://opents-developers.github.io/OpenTS/using/configuration-files/)
+and [game data](https://opents-developers.github.io/OpenTS/using/game-data/#keeping-the-data-somewhere-else)
+pages.
 
 siliconsun reads its own keys from a `[siliconsun]` section in that file. 
 Each key defaults to `yes`. A missing key, or a missing section, leaves the feature on.
@@ -51,7 +51,10 @@ prefers `MOVIES02.MIX`, so Nod plays the Nod introduction when both campaigns
 are installed.
 
 In-game messages have no background when `TextBackgroundColor` under
-`[Options]` is missing or `0`.
+`[Options]` is missing or `0`. The guide's
+[TextBackgroundColor](https://opents-developers.github.io/OpenTS/keys/textbackgroundcolor/)
+page still treats a missing value as `12`, the black box. Here a missing
+value is `0`. A saved file that still has `12` keeps that box; set it to `0`.
 
 ```ini
 [Options]
@@ -62,6 +65,8 @@ TextBackgroundColor=0
 
 ## How to get the game data
 
+The guide's [game data](https://opents-developers.github.io/OpenTS/using/game-data/)
+page is for a developer build that reads an existing install from `Run/`.
 siliconsun ships the engine only. Download the freeware GDI, Nod, and Firestorm
 disc images from the
 [Command & Conquer Communications Center](https://cnc-comm.com/tiberian-sun/downloads/the-game):
@@ -90,9 +95,10 @@ python3 .agents/skills/retail-install/scripts/install-retail.py \
 The x64 release is a drop-in replacement for the Steam install.
 
 > [!WARNING]
-> Back up the `Saved Games` folder before you replace `SUN.EXE`. OpenTS does
-> not load saves from the original game, and the original game does not load
-> saves OpenTS writes. There is no converter.
+> Back up the `Saved Games` folder before you replace `SUN.EXE`. OpenTS and
+> the original game do not load each other's saves.
+> [Compatibility and save games](https://opents-developers.github.io/OpenTS/using/compatibility-and-saves/)
+> covers that, and there is no converter.
 
 A published release includes `siliconsun-<tag>-x64.zip`: `SUN.EXE`, `Language.dll`,
 `ui`, `Game.pdb`, and the license notices. Copy `SUN.EXE`, `Language.dll`,
@@ -117,10 +123,8 @@ sees the path. The folder has to exist already.
 
 ## Windows Steam install
 
-> [!WARNING]
-> Back up the `Saved Games` folder before you deploy. OpenTS does not load
-> saves from the original game, and the original game does not load saves
-> OpenTS writes. There is no converter.
+Back up `Saved Games` before you deploy, for the same reason as the Windows
+download.
 
 `.agents/skills/steam-release/` rebuilds the x64 Release and copies it onto the
 Steam Tiberian Sun install on Windows, replacing `SUN.EXE`, `Language.dll`,
@@ -138,7 +142,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .agents\skills\steam-release
 ## Building on macOS (Apple Silicon)
 
 The macOS build is the one I develop with. It builds with Apple Clang and
-Ninja on arm64.
+Ninja on arm64. The guide's
+[build and run](https://opents-developers.github.io/OpenTS/using/build-and-run/)
+page is Visual Studio on Windows, and it has no arm64 macOS path.
 
 1. Install CMake and Ninja:
 
@@ -173,9 +179,9 @@ Ninja on arm64.
 
 ## Building on Windows
 
-The Windows client published here is 64-bit (x64).
-[BUILDING.md](docs/BUILDING.md) is the Visual Studio 2022 procedure; configure
-the x64 target.
+The Windows client published here is 64-bit (x64). Follow the guide's
+[build and run](https://opents-developers.github.io/OpenTS/using/build-and-run/)
+page and pass `-A x64`.
 
 ## License
 
