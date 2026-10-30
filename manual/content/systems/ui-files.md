@@ -21,7 +21,7 @@ The `ui` directory sits beside the executable and holds everything the screens a
 | `side-<name>.rcss` | Rules every screen takes while that side is the player's, such as `side-gdi.rcss` and `side-nod.rcss` |
 | `glow.png` | The glow the template draws around a screen |
 | `cursor.png` | The arrow pointer shown over the screens, with its tip at the top-left pixel. [`SystemCursor`](/keys/systemcursor/) replaces it with the Windows pointer |
-| `icon.png` | Optional replacement for the running game's window icon |
+| `icon.png` | The running game's window icon. On macOS it is also the Dock icon while the game is running |
 | `Arimo.ttf` | The face a font family uses when its own face is missing, with its license in `OFL.txt` |
 
 ## The dialog kit
@@ -48,11 +48,11 @@ To give each side its own version of a picture or font, put a copy in each side'
 
 ## Window icon
 
-Put `icon.png` in the `ui` directory beside the executable to replace the running game's window and Alt+Tab icon. Use a square PNG with transparency, such as 256×256 pixels. No image is bundled, and no INI key is needed. The executable's icon in Explorer and pinned shortcut icons stay unchanged. The Debug Console keeps its own icon, and Windows may still show the built-in icon for a grouped taskbar button.
+The build ships `icon.png` in the `ui` directory. The game uses it as the window icon. On Windows that is also the Alt+Tab icon, and on macOS it is the Dock icon while the game is running. To replace it, use a square PNG with transparency, such as 256×256 pixels. No INI key is needed. Replacing `icon.png` leaves the executable's icon in Explorer and pinned shortcut icons unchanged. The Debug Console keeps its own icon, and Windows may still show the built-in icon for a grouped taskbar button.
 
 The game uses the first loose `icon.png` found in [its file search order](/formats/opents-ini/#the-order-files-are-searched-for-in), so a copy in a higher-priority folder overrides the one in `ui`. The icon loads before the window is shown and before MIX archives are mounted, so an archive cannot supply it.
 
-A missing, unreadable or corrupt image keeps the embedded icon. A corrupt first match does not cause the game to try a later copy. Restart the game after replacing or removing the image.
+A missing, unreadable or corrupt image keeps the embedded icon on Windows. On macOS the Dock then shows the system's icon for the executable. A corrupt first match does not cause the game to try a later copy. Restart the game after replacing or removing the image.
 
 ## Side style sheets
 
