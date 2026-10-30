@@ -145,6 +145,7 @@
 #include "netdlg.h"
 #include "netdlg2.h"
 #include "newmenu.h"
+#include "nowplaying.h"
 #include "obscure.h"
 #include "opents_build.h"
 #include "overlay.h"
@@ -4619,9 +4620,13 @@ static void Step_Theme(int step)
 		// Stopping first keeps the queue from fading the current track out or refusing the request while one is pending.
 		Theme.Stop();
 		Theme.Queue_Song(theme);
-		char buffer[128];
-		snprintf(buffer, sizeof(buffer), Fetch_String(TXT_NOW_PLAYING), Theme.Full_Name(theme));
-		Session.Messages.Add_Message(NULL, 0, buffer, PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+		if (Options.NowPlaying && ScenarioActive) {
+			Now_Playing_Announce();
+		} else {
+			char buffer[128];
+			snprintf(buffer, sizeof(buffer), Fetch_String(TXT_NOW_PLAYING), Theme.Full_Name(theme));
+			Session.Messages.Add_Message(NULL, 0, buffer, PlayerPtr->Scheme, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), TICKS_PER_SECOND * 4);
+		}
 		return;
 	}
 }

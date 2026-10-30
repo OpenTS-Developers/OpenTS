@@ -131,6 +131,7 @@ OptionsClass::OptionsClass(void) :
 	TextBackgroundColor(0),
 	DoubleClickSelectType(true),
 	CampaignIntroMovie(true),
+	NowPlaying(false),
 	AutoSaveInterval(10800),
 	ScreenWidth(-1),
 	ScreenHeight(-1),
@@ -422,6 +423,9 @@ void OptionsClass::Load_Settings(void)
 	CampaignIntroMovie = ConfigINI.Get_Bool("siliconsun", "CampaignIntroMovie", CampaignIntroMovie);
 	DebugString("CampaignIntroMovie is %s\n", CampaignIntroMovie == true ? "ON" : "OFF");
 
+	NowPlaying = ConfigINI.Get_Bool("siliconsun", "NowPlaying", NowPlaying);
+	DebugString("NowPlaying is %s\n", NowPlaying == true ? "ON" : "OFF");
+
 	TextBackgroundColor = ConfigINI.Get_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	DebugString("TextBackgroundColor = %d\n", TextBackgroundColor);
 
@@ -503,6 +507,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("Options", "SimulateWhileUnfocused", SimulateWhileUnfocused);
 	ConfigINI.Put_Bool("siliconsun", "DoubleClickSelectType", DoubleClickSelectType);
 	ConfigINI.Put_Bool("siliconsun", "CampaignIntroMovie", CampaignIntroMovie);
+	ConfigINI.Put_Bool("siliconsun", "NowPlaying", NowPlaying);
 	ConfigINI.Put_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	ConfigINI.Put_Int("Options", "AutoSaveInterval", AutoSaveInterval);
 	ConfigINI.Put_Int("Video", "ScreenWidth", ScreenWidth);

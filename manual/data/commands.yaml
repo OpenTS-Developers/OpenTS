@@ -2186,6 +2186,34 @@ fixed_controls:
   _provenance:
     source: code/wdtsel.cpp
     guard: null
+- id: fixed:next-track
+  route_id: fixed-next-track
+  kind: fixed
+  title: Next track
+  description: Plays the next music track, as the next track command does. The key does this while NowPlaying=yes
+    under [siliconsun] in SUN.INI.
+  audience: player
+  availability: *id001
+  bindings:
+  - Media next track
+  context: Game window focused
+  _provenance:
+    source: code/nowplaying.cpp
+    guard: null
+- id: fixed:previous-track
+  route_id: fixed-previous-track
+  kind: fixed
+  title: Previous track
+  description: Plays the previous music track, as the previous track command does. The key does this while
+    NowPlaying=yes under [siliconsun] in SUN.INI.
+  audience: player
+  availability: *id001
+  bindings:
+  - Media previous track
+  context: Game window focused
+  _provenance:
+    source: code/nowplaying.cpp
+    guard: null
 - id: fixed:debug-benchmark-overlay
   route_id: fixed-debug-benchmark-overlay
   kind: fixed

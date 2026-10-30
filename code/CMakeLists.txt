@@ -154,6 +154,8 @@ if(APPLE)
 		VERBATIM
 	)
 	target_sources(OpenTS PRIVATE "${OPENTS_LANGUAGE_STRINGS}")
+	target_sources(OpenTS PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/nowplaying_mac.mm")
+	target_link_libraries(OpenTS PRIVATE "-framework MediaPlayer" "-framework Foundation")
 endif()
 
 target_compile_options(OpenTS PRIVATE ${OPENTS_COMPILE_OPTIONS})

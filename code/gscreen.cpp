@@ -59,6 +59,7 @@
 #include "gadget.h"
 #include "goptions.h"
 #include "keyboard.h"
+#include "nowplaying.h"
 #include "savestream.h"
 #include "session.h"
 #include "surface.h"
@@ -415,6 +416,7 @@ void GScreenClass::Render(void)
 	**	This way, they'll Blit along with the rest of the map.
 	*/
 	Session.Messages.Draw();
+	Now_Playing_Draw();
 	if (Session.ShowInternetDebug) {
 		Multiplayer_Debug_Print();
 	}

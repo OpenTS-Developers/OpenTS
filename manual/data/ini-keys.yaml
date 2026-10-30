@@ -15792,6 +15792,24 @@ Normalized:
       source: code/vanimtype.cpp
       guard: null
     level: VoxelAnimTypeClass
+NowPlaying:
+  key: NowPlaying
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: NowPlaying
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 NukeDown:
   key: NukeDown
   scopes:

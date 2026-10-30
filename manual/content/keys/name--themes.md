@@ -9,7 +9,7 @@ when_omitted:
   note: An empty name, which leaves the track's row in the track list without a title.
 ---
 
-`Name=` sets the track's title as players see it. The title appears in the sound options track list, beside the track's [`Length`](/keys/length/), and in the on-screen message that the [next track](/commands/nexttheme/) and [previous track](/commands/prevtheme/) commands show. The value is shown exactly as written, not looked up as a translatable string. Only the first 63 characters are kept.
+`Name=` sets the track's title as players see it. The title appears in the sound options track list, beside the track's [`Length`](/keys/length/), in the on-screen message that the [next track](/commands/nexttheme/) and [previous track](/commands/prevtheme/) commands show, and on the now-playing line while [`NowPlaying=yes`](/keys/nowplaying/). The value is shown exactly as written, not looked up as a translatable string. Only the first 63 characters are kept.
 
 ```ini title="theme.ini"
 [DUSKHOUR]

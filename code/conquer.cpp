@@ -102,6 +102,7 @@
 #include "msgbox.h"
 #include "movie.h"
 #include "movieskip.h"
+#include "nowplaying.h"
 #include "mplayer.h"
 #include "msgloop.h"
 #include "netdlg.h"
@@ -538,6 +539,8 @@ void Call_Back(void)
 		Theme.AI();
 		Speak_AI();
 	}
+
+	Now_Playing_AI();
 
 	/*
 	 * Network game maintenance.

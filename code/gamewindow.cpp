@@ -25,6 +25,7 @@
 #include "init.h"
 #include "misc.h"
 #include "movies.h"
+#include "nowplaying.h"
 #include "queue.h"
 #include "sdl/sdlwindow.h"
 #include "session.h"
@@ -133,6 +134,10 @@ static void Update_Cursor(void)
 
 static bool Handle_Event(WindowEvent const & event)
 {
+	if (event.Type == WINDOW_EVENT_KEY_DOWN && Now_Playing_Key(event.VirtualKey, event.Repeat)) {
+		return(true);
+	}
+
 	if (ToolTips != NULL) {
 		ToolTips->Handle_Window_Event(event);
 	}

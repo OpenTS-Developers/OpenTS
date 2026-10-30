@@ -157,6 +157,12 @@ class OptionsClass {
 		bool CampaignIntroMovie;
 
 		/*
+		 * If the playing track is named at the bottom left of the battlefield, and the
+		 * media keys change tracks, then this flag will be true.
+		 */
+		bool NowPlaying;
+
+		/*
 		 * Frames between automatic saves of a game started from the menu, or zero for none.
 		 * A launch file's own interval takes its place.
 		 */

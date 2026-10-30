@@ -261,6 +261,24 @@ fixed_controls:
     availability: *all
     sites:
       - { file: code/wdtsel.cpp, function: Selection::Check_For_Breakout, expression: VK_ESCAPE }
+  - id: fixed:next-track
+    title: Next track
+    description: Plays the next music track, as the next track command does. The key does this while NowPlaying=yes under [siliconsun] in SUN.INI.
+    audience: player
+    bindings: [Media next track]
+    context: Game window focused
+    availability: *all
+    sites:
+      - { file: code/nowplaying.cpp, function: Now_Playing_Key, expression: VK_MEDIA_NEXT_TRACK }
+  - id: fixed:previous-track
+    title: Previous track
+    description: Plays the previous music track, as the previous track command does. The key does this while NowPlaying=yes under [siliconsun] in SUN.INI.
+    audience: player
+    bindings: [Media previous track]
+    context: Game window focused
+    availability: *all
+    sites:
+      - { file: code/nowplaying.cpp, function: Now_Playing_Key, expression: VK_MEDIA_PREV_TRACK }
   - id: fixed:debug-benchmark-overlay
     title: Toggle the benchmark overlay
     description: Shows or hides the Dear ImGui frame benchmark window drawn over the game and its menus.

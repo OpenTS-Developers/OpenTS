@@ -127,6 +127,7 @@
 #include "language/language.h"
 #include "logic.h"
 #include "mixfile.h"
+#include "nowplaying.h"
 #include "overtype.h"
 #include "palette.h"
 #include "queue.h"
@@ -424,6 +425,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		TacticalRect.Width);                // Width in pixels of buffer
 
 	Session.Messages.Set_Width(TacticalRect.Width);
+	Now_Playing_Set_View(TacticalRect);
 
 	DebugString("Set_View_Dimensions(exit)\n");
 }
