@@ -163,6 +163,39 @@ class OptionsClass {
 		bool NowPlaying;
 
 		/*
+		 * If the skirmish setup screen restores the setup it had when the game last ran,
+		 * then this flag will be true. The last setup is stored in the [Skirmish] section
+		 * of SUN.INI.
+		 */
+		bool PersistSkirmishSettings;
+
+		/*
+		 * If a skirmish with no saved setup to restore starts from the SkirmishDefault*
+		 * values below instead of the engine's built-in defaults, then this flag will be
+		 * true.
+		 */
+		bool OverrideSkirmishDefaults;
+
+		/*
+		 * These are the skirmish setup defaults used when OverrideSkirmishDefaults is on and
+		 * nothing is saved to restore. They are read from SUN.INI so a deployment can choose
+		 * its own starting values.
+		 */
+		int SkirmishDefaultCredits;
+		int SkirmishDefaultUnitCount;
+		int SkirmishDefaultTechLevel;
+		int SkirmishDefaultGameSpeed;
+		int SkirmishDefaultAIPlayers;
+		int SkirmishDefaultAILevel;
+		bool SkirmishDefaultBases;
+		bool SkirmishDefaultCrates;
+		bool SkirmishDefaultFog;
+		bool SkirmishDefaultBridges;
+		bool SkirmishDefaultRedeploy;
+		bool SkirmishDefaultShortGame;
+		bool SkirmishDefaultMultiEngineer;
+
+		/*
 		 * Frames between automatic saves of a game started from the menu, or zero for none.
 		 * A launch file's own interval takes its place.
 		 */

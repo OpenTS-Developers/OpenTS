@@ -60,6 +60,7 @@
 #include "deploymentconfig.h"
 #include "gamedirs.h"		// for Search_Files.
 #include "globals.h"
+#include "goptions.h"
 #include "ipxmgr.h"
 #include "language/language.h"
 #include "msgloop.h"
@@ -931,6 +932,106 @@ void SessionClass::Write_MultiPlayer_Settings(void)
 		ConfigINI.Save(file, false);
 	}
 }
+
+
+/// <summary>
+/// Restores the skirmish setup from SUN.INI.
+/// The setup keeps the engine defaults, then the siliconsun defaults when the override is on,
+/// and finally the [Skirmish] section when persistence is on and the section holds a saved
+/// setup. Every numeric value ends inside the range the skirmish screen offers. A saved map
+/// that is no longer available falls back to the first scenario.
+/// </summary>
+void SessionClass::Read_Skirmish_Settings(void)
+{
+	Options.ScenarioIndex = 0;
+
+	if (::Options.OverrideSkirmishDefaults) {
+		Options.Credits = ::Options.SkirmishDefaultCredits;
+		Options.UnitCount = ::Options.SkirmishDefaultUnitCount;
+		BuildLevel = ::Options.SkirmishDefaultTechLevel;
+		Options.GameSpeed = ::Options.SkirmishDefaultGameSpeed;
+		Options.AIPlayers = ::Options.SkirmishDefaultAIPlayers;
+		Options.AIDifficulty = (DiffType)::Options.SkirmishDefaultAILevel;
+		Options.Bases = ::Options.SkirmishDefaultBases;
+		Options.Goodies = ::Options.SkirmishDefaultCrates;
+		Options.FogOfWar = ::Options.SkirmishDefaultFog;
+		Options.BridgeDestruction = ::Options.SkirmishDefaultBridges;
+		Options.MCVRedeploy = ::Options.SkirmishDefaultRedeploy;
+		Options.ShortGame = ::Options.SkirmishDefaultShortGame;
+		Options.CrapEngineers = ::Options.SkirmishDefaultMultiEngineer;
+	}
+
+	if (::Options.PersistSkirmishSettings) {
+		Options.Credits = ConfigINI.Get_Int("Skirmish", "Credits", Options.Credits);
+		Options.UnitCount = ConfigINI.Get_Int("Skirmish", "UnitCount", Options.UnitCount);
+		BuildLevel = ConfigINI.Get_Int("Skirmish", "TechLevel", BuildLevel);
+		Options.GameSpeed = ConfigINI.Get_Int("Skirmish", "GameSpeed", Options.GameSpeed);
+		Options.AIPlayers = ConfigINI.Get_Int("Skirmish", "AIPlayers", Options.AIPlayers);
+		Options.AIDifficulty = (DiffType)ConfigINI.Get_Int("Skirmish", "AIDifficulty", (int)Options.AIDifficulty);
+		Options.Bases = ConfigINI.Get_Bool("Skirmish", "Bases", Options.Bases);
+		Options.Goodies = ConfigINI.Get_Bool("Skirmish", "Crates", Options.Goodies);
+		Options.FogOfWar = ConfigINI.Get_Bool("Skirmish", "FogOfWar", Options.FogOfWar);
+		Options.BridgeDestruction = ConfigINI.Get_Bool("Skirmish", "BridgeDestroy", Options.BridgeDestruction);
+		Options.MCVRedeploy = ConfigINI.Get_Bool("Skirmish", "MCVRedeploy", Options.MCVRedeploy);
+		Options.ShortGame = ConfigINI.Get_Bool("Skirmish", "ShortGame", Options.ShortGame);
+		Options.CrapEngineers = ConfigINI.Get_Bool("Skirmish", "MultiEngineer", Options.CrapEngineers);
+
+		char name[_MAX_PATH];
+		ConfigINI.Get_String("Skirmish", "Map", "", name, sizeof(name));
+		for (int index = 0; index < Scenarios.Count(); index++) {
+			if (name[0] != '\0' && stricmp(Scenarios[index]->Get_Filename(), name) == 0
+				&& CCFileClass(name).Is_Available()) {
+				Options.ScenarioIndex = index;
+				break;
+			}
+		}
+	}
+
+	// Keep every value inside the range the skirmish screen offers.
+	Options.Credits = std::clamp(Options.Credits, 0, Rule->MPMaxMoney);
+	Options.UnitCount = std::clamp(Options.UnitCount, CountMin[1], CountMax[1]);
+	BuildLevel = std::clamp(BuildLevel, 1, MPLAYER_BUILD_LEVEL_MAX);
+	Options.GameSpeed = std::clamp(Options.GameSpeed, 0, OptionsClass::MAX_SPEED_SETTING - 1);
+	Options.AIPlayers = std::clamp(Options.AIPlayers, 1, MAX_PLAYERS - 1);
+	Options.AIDifficulty = (DiffType)std::clamp((int)Options.AIDifficulty, (int)DIFF_EASY, (int)DIFF_HARD);
+}
+
+
+/// <summary>
+/// Saves the current skirmish setup to SUN.INI.
+/// The [Skirmish] section records the setup the skirmish screen last held, so the next launch
+/// can restore it. Nothing is written while PersistSkirmishSettings is off.
+/// </summary>
+void SessionClass::Write_Skirmish_Settings(void)
+{
+	if (!::Options.PersistSkirmishSettings) {
+		return;
+	}
+
+	CDFileClass file(DeploymentConfig.SettingsFile.c_str());
+	{
+		ConfigINI.Put_Int("Skirmish", "Credits", Options.Credits);
+		ConfigINI.Put_Int("Skirmish", "UnitCount", Options.UnitCount);
+		ConfigINI.Put_Int("Skirmish", "TechLevel", BuildLevel);
+		ConfigINI.Put_Int("Skirmish", "GameSpeed", Options.GameSpeed);
+		ConfigINI.Put_Int("Skirmish", "AIPlayers", Options.AIPlayers);
+		ConfigINI.Put_Int("Skirmish", "AIDifficulty", (int)Options.AIDifficulty);
+		ConfigINI.Put_Bool("Skirmish", "Bases", Options.Bases);
+		ConfigINI.Put_Bool("Skirmish", "Crates", Options.Goodies);
+		ConfigINI.Put_Bool("Skirmish", "FogOfWar", Options.FogOfWar);
+		ConfigINI.Put_Bool("Skirmish", "BridgeDestroy", Options.BridgeDestruction);
+		ConfigINI.Put_Bool("Skirmish", "MCVRedeploy", Options.MCVRedeploy);
+		ConfigINI.Put_Bool("Skirmish", "ShortGame", Options.ShortGame);
+		ConfigINI.Put_Bool("Skirmish", "MultiEngineer", Options.CrapEngineers);
+
+		if (Options.ScenarioIndex >= 0 && Options.ScenarioIndex < Scenarios.Count()) {
+			ConfigINI.Put_String("Skirmish", "Map", Scenarios[Options.ScenarioIndex]->Get_Filename());
+		}
+
+		ConfigINI.Save(file, false);
+	}
+}
+
 
 /***************************************************************************
  * SessionClass::Read_Scenario_Descriptions -- reads scen. descriptions    *

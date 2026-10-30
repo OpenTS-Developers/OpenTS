@@ -16,4 +16,4 @@ credit:
 - fjlaubscher
 ---
 
-`NowPlaying=yes` under `[siliconsun]` in `SUN.INI` prints the playing track's title at the bottom left of the battlefield for the same time as an alert. While that setting is on, the media next-track and previous-track keys run the next track and previous track commands.
+`NowPlaying=yes` under `[siliconsun]` in `SUN.INI` prints the playing track's title at the bottom left of the battlefield for the same time as an alert. While that setting is on, the media next-track and previous-track keys run the next track and previous track commands. The line is on by default.

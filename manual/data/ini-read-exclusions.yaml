@@ -159,3 +159,9 @@ site_exclusions:
     keys: [AIDifficulty, AIPlayers, AlliesAllowed, AttackNeutralUnits, AutoDeployMCV, AutoSaveGame, AutoSurrender, Bases, BridgeDestroy, BuildOffAlly, CampaignID, CoachMode, ConnTimeout, Crates, Credits, DifficultyBasedAINames, DifficultyModeComputer, DifficultyModeHuman, Firestorm, FogOfWar, GameID, GameSpeed, HarvesterTruce, Host, IsSinglePlayer, LoadSaveGame, MCVRedeploy, MultiEngineer, NextSPAutoSaveId, NextSkirmishAutoSaveId, PlayMoviesInMultiplayer, Port, QuickMatch, ReconnectTimeout, ScrapMetal, Seed, SharedControl, ShortGame, SkipScoreScreen, TechLevel, UnitCount, WriteStatistics]
     classification: excluded
     reason: The CnCNet client writes these per launch to describe one match, so they are not part of the authored game-data key catalog.
+
+  - path: code/session.cpp
+    function: SessionClass::Read_Skirmish_Settings
+    keys: [AIDifficulty, AIPlayers, Bases, BridgeDestroy, Crates, Credits, FogOfWar, GameSpeed, Map, MCVRedeploy, MultiEngineer, ShortGame, TechLevel, UnitCount]
+    classification: excluded
+    reason: The [Skirmish] section records the setup the engine wrote when the skirmish screen last closed; it is saved state, not an authored setting.

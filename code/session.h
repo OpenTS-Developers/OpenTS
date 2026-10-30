@@ -496,6 +496,8 @@ class SessionClass
 		//.....................................................................
 		void Read_MultiPlayer_Settings (void);
 		void Write_MultiPlayer_Settings (void);
+		void Read_Skirmish_Settings (void);
+		void Write_Skirmish_Settings (void);
 		void Read_Scenario_Descriptions (void);
 		void Free_Scenario_Descriptions(void);
 

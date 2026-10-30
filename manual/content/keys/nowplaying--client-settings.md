@@ -6,7 +6,7 @@ summary: Names the current music track at the bottom left of the battlefield.
 see_also: [MessageDelay, TextBackgroundColor, Name]
 when_omitted:
   kind: value
-  value: "no"
+  value: "yes"
 ---
 
 `NowPlaying=yes` prints `Now Playing: ` and the track title at the bottom left of the battlefield while a scenario is under way. The line uses the player's color, the same lettering as the alerts at the top left, and the alert background from [`TextBackgroundColor`](/keys/textbackgroundcolor/).

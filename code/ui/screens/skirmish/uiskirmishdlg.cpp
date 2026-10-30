@@ -75,16 +75,31 @@ static void Remember_Preferences(UISkirmishState const & state)
 }
 
 
-static void Commit(UISkirmishState const & state)
+static void Commit_Options(UISkirmishState const & state)
 {
-	Remember_Preferences(state);
-
 	Session.Options.UnitCount = state.UnitCount;
 	BuildLevel = state.TechLevel;
 	Session.Options.Credits = state.Credits;
 	Session.Options.AIDifficulty = (DiffType)state.AILevel;
 	Session.Options.AIPlayers = state.AIPlayers;
 	Session.Options.GameSpeed = 6 - state.GameSpeed;
+
+	Session.Options.Bases = state.Bases;
+	Session.Options.Goodies = state.Crates;
+	Session.Options.FogOfWar = state.Fog;
+	Session.Options.BridgeDestruction = state.Bridges;
+	Session.Options.MCVRedeploy = state.Redeploy;
+	Session.Options.ShortGame = state.ShortGame;
+	Session.Options.HarvTruce = false;
+	Session.Options.CrapEngineers = state.MultiEngineer;
+}
+
+
+static void Commit(UISkirmishState const & state)
+{
+	Remember_Preferences(state);
+	Commit_Options(state);
+
 	Options.GameSpeed = Session.Options.GameSpeed;
 
 	NodeNameType * who = new NodeNameType;
@@ -95,15 +110,6 @@ static void Commit(UISkirmishState const & state)
 		who->Player.ProcessTime = -1;
 		Session.Players.Add(who);
 	}
-
-	Session.Options.Bases = state.Bases;
-	Session.Options.Goodies = state.Crates;
-	Session.Options.FogOfWar = state.Fog;
-	Session.Options.BridgeDestruction = state.Bridges;
-	Session.Options.MCVRedeploy = state.Redeploy;
-	Session.Options.ShortGame = state.ShortGame;
-	Session.Options.HarvTruce = false;
-	Session.Options.CrapEngineers = state.MultiEngineer;
 
 	delete MultiplayerMapPreview;
 	MultiplayerMapPreview = NULL;
@@ -216,8 +222,10 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.ShortGame = Session.Options.ShortGame;
 	state.MultiEngineer = Session.Options.CrapEngineers;
 
-	Set_Scenario_Info_From_Index(0);
-	Session.Options.ScenarioIndex = 0;
+	if (!Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex)) {
+		Session.Options.ScenarioIndex = 0;
+		Set_Scenario_Info_From_Index(0);
+	}
 	state.MapName = Session.Options.ScenarioDescription;
 
 	Clear_Vector(&Session.Players);
@@ -244,6 +252,7 @@ bool UI_Skirmish_Dialog(void)
 
 	if (result != UI_RESULT_ACCEPTED || presenter.Choice != UI_SKIRMISH_START) {
 		Remember_Preferences(presenter.State);
+		Commit_Options(presenter.State);
 		return(false);
 	}
 

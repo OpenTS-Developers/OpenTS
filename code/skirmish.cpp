@@ -36,6 +36,8 @@ bool Skirmish_Mode_Dialog(void)
 	Draw_Menu_Background();
 	Show_Mouse();
 
+	Session.Read_Skirmish_Settings();
+
 	bool started = UI_Skirmish_Dialog();
 
 	if (MultiplayerMapPreview != NULL) {
@@ -44,6 +46,7 @@ bool Skirmish_Mode_Dialog(void)
 	}
 
 	Session.Write_MultiPlayer_Settings();
+	Session.Write_Skirmish_Settings();
 
 	if (!started) {
 		Hide_Mouse();

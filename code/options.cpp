@@ -131,7 +131,22 @@ OptionsClass::OptionsClass(void) :
 	TextBackgroundColor(0),
 	DoubleClickSelectType(true),
 	CampaignIntroMovie(true),
-	NowPlaying(false),
+	NowPlaying(true),
+	PersistSkirmishSettings(true),
+	OverrideSkirmishDefaults(true),
+	SkirmishDefaultCredits(5000),
+	SkirmishDefaultUnitCount(1),
+	SkirmishDefaultTechLevel(MPLAYER_BUILD_LEVEL_MAX),
+	SkirmishDefaultGameSpeed(3),
+	SkirmishDefaultAIPlayers(1),
+	SkirmishDefaultAILevel(0),
+	SkirmishDefaultBases(true),
+	SkirmishDefaultCrates(true),
+	SkirmishDefaultFog(false),
+	SkirmishDefaultBridges(true),
+	SkirmishDefaultRedeploy(false),
+	SkirmishDefaultShortGame(true),
+	SkirmishDefaultMultiEngineer(false),
 	AutoSaveInterval(10800),
 	ScreenWidth(-1),
 	ScreenHeight(-1),
@@ -426,6 +441,26 @@ void OptionsClass::Load_Settings(void)
 	NowPlaying = ConfigINI.Get_Bool("siliconsun", "NowPlaying", NowPlaying);
 	DebugString("NowPlaying is %s\n", NowPlaying == true ? "ON" : "OFF");
 
+	PersistSkirmishSettings = ConfigINI.Get_Bool("siliconsun", "PersistSkirmishSettings", PersistSkirmishSettings);
+	DebugString("PersistSkirmishSettings is %s\n", PersistSkirmishSettings == true ? "ON" : "OFF");
+
+	OverrideSkirmishDefaults = ConfigINI.Get_Bool("siliconsun", "OverrideSkirmishDefaults", OverrideSkirmishDefaults);
+	DebugString("OverrideSkirmishDefaults is %s\n", OverrideSkirmishDefaults == true ? "ON" : "OFF");
+
+	SkirmishDefaultCredits = ConfigINI.Get_Int("siliconsun", "SkirmishDefaultCredits", SkirmishDefaultCredits);
+	SkirmishDefaultUnitCount = ConfigINI.Get_Int("siliconsun", "SkirmishDefaultUnitCount", SkirmishDefaultUnitCount);
+	SkirmishDefaultTechLevel = ConfigINI.Get_Int("siliconsun", "SkirmishDefaultTechLevel", SkirmishDefaultTechLevel);
+	SkirmishDefaultGameSpeed = ConfigINI.Get_Int("siliconsun", "SkirmishDefaultGameSpeed", SkirmishDefaultGameSpeed);
+	SkirmishDefaultAIPlayers = ConfigINI.Get_Int("siliconsun", "SkirmishDefaultAIPlayers", SkirmishDefaultAIPlayers);
+	SkirmishDefaultAILevel = ConfigINI.Get_Int("siliconsun", "SkirmishDefaultAILevel", SkirmishDefaultAILevel);
+	SkirmishDefaultBases = ConfigINI.Get_Bool("siliconsun", "SkirmishDefaultBases", SkirmishDefaultBases);
+	SkirmishDefaultCrates = ConfigINI.Get_Bool("siliconsun", "SkirmishDefaultCrates", SkirmishDefaultCrates);
+	SkirmishDefaultFog = ConfigINI.Get_Bool("siliconsun", "SkirmishDefaultFog", SkirmishDefaultFog);
+	SkirmishDefaultBridges = ConfigINI.Get_Bool("siliconsun", "SkirmishDefaultBridges", SkirmishDefaultBridges);
+	SkirmishDefaultRedeploy = ConfigINI.Get_Bool("siliconsun", "SkirmishDefaultRedeploy", SkirmishDefaultRedeploy);
+	SkirmishDefaultShortGame = ConfigINI.Get_Bool("siliconsun", "SkirmishDefaultShortGame", SkirmishDefaultShortGame);
+	SkirmishDefaultMultiEngineer = ConfigINI.Get_Bool("siliconsun", "SkirmishDefaultMultiEngineer", SkirmishDefaultMultiEngineer);
+
 	TextBackgroundColor = ConfigINI.Get_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	DebugString("TextBackgroundColor = %d\n", TextBackgroundColor);
 
@@ -508,6 +543,21 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("siliconsun", "DoubleClickSelectType", DoubleClickSelectType);
 	ConfigINI.Put_Bool("siliconsun", "CampaignIntroMovie", CampaignIntroMovie);
 	ConfigINI.Put_Bool("siliconsun", "NowPlaying", NowPlaying);
+	ConfigINI.Put_Bool("siliconsun", "PersistSkirmishSettings", PersistSkirmishSettings);
+	ConfigINI.Put_Bool("siliconsun", "OverrideSkirmishDefaults", OverrideSkirmishDefaults);
+	ConfigINI.Put_Int("siliconsun", "SkirmishDefaultCredits", SkirmishDefaultCredits);
+	ConfigINI.Put_Int("siliconsun", "SkirmishDefaultUnitCount", SkirmishDefaultUnitCount);
+	ConfigINI.Put_Int("siliconsun", "SkirmishDefaultTechLevel", SkirmishDefaultTechLevel);
+	ConfigINI.Put_Int("siliconsun", "SkirmishDefaultGameSpeed", SkirmishDefaultGameSpeed);
+	ConfigINI.Put_Int("siliconsun", "SkirmishDefaultAIPlayers", SkirmishDefaultAIPlayers);
+	ConfigINI.Put_Int("siliconsun", "SkirmishDefaultAILevel", SkirmishDefaultAILevel);
+	ConfigINI.Put_Bool("siliconsun", "SkirmishDefaultBases", SkirmishDefaultBases);
+	ConfigINI.Put_Bool("siliconsun", "SkirmishDefaultCrates", SkirmishDefaultCrates);
+	ConfigINI.Put_Bool("siliconsun", "SkirmishDefaultFog", SkirmishDefaultFog);
+	ConfigINI.Put_Bool("siliconsun", "SkirmishDefaultBridges", SkirmishDefaultBridges);
+	ConfigINI.Put_Bool("siliconsun", "SkirmishDefaultRedeploy", SkirmishDefaultRedeploy);
+	ConfigINI.Put_Bool("siliconsun", "SkirmishDefaultShortGame", SkirmishDefaultShortGame);
+	ConfigINI.Put_Bool("siliconsun", "SkirmishDefaultMultiEngineer", SkirmishDefaultMultiEngineer);
 	ConfigINI.Put_Int("Options", "TextBackgroundColor", TextBackgroundColor);
 	ConfigINI.Put_Int("Options", "AutoSaveInterval", AutoSaveInterval);
 	ConfigINI.Put_Int("Video", "ScreenWidth", ScreenWidth);

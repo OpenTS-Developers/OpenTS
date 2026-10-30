@@ -15804,7 +15804,7 @@ NowPlaying:
     value_type: boolean
     status: generated
     _provenance:
-      default_candidate: 'no'
+      default_candidate: 'yes'
       declared_in: OptionsClass
       member: NowPlaying
       source: code/options.cpp
@@ -16101,6 +16101,24 @@ OptionsChanged:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+OverrideSkirmishDefaults:
+  key: OverrideSkirmishDefaults
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: OverrideSkirmishDefaults
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 Overrides:
   key: Overrides
   scopes:
@@ -16488,6 +16506,24 @@ PercentBuilt:
       source: code/base.cpp
       guard: null
     level: BaseClass
+PersistSkirmishSettings:
+  key: PersistSkirmishSettings
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: PersistSkirmishSettings
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 PhysicalSize:
   key: PhysicalSize
   scopes:
@@ -20622,6 +20658,240 @@ SkipScore:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+SkirmishDefaultAILevel:
+  key: SkirmishDefaultAILevel
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '0'
+      declared_in: OptionsClass
+      member: SkirmishDefaultAILevel
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultAIPlayers:
+  key: SkirmishDefaultAIPlayers
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: OptionsClass
+      member: SkirmishDefaultAIPlayers
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultBases:
+  key: SkirmishDefaultBases
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: SkirmishDefaultBases
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultBridges:
+  key: SkirmishDefaultBridges
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: SkirmishDefaultBridges
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultCrates:
+  key: SkirmishDefaultCrates
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: SkirmishDefaultCrates
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultCredits:
+  key: SkirmishDefaultCredits
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '5000'
+      declared_in: OptionsClass
+      member: SkirmishDefaultCredits
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultFog:
+  key: SkirmishDefaultFog
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: SkirmishDefaultFog
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultGameSpeed:
+  key: SkirmishDefaultGameSpeed
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '3'
+      declared_in: OptionsClass
+      member: SkirmishDefaultGameSpeed
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultMultiEngineer:
+  key: SkirmishDefaultMultiEngineer
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: SkirmishDefaultMultiEngineer
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultRedeploy:
+  key: SkirmishDefaultRedeploy
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'no'
+      declared_in: OptionsClass
+      member: SkirmishDefaultRedeploy
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultShortGame:
+  key: SkirmishDefaultShortGame
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: SkirmishDefaultShortGame
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultTechLevel:
+  key: SkirmishDefaultTechLevel
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: OptionsClass
+      member: SkirmishDefaultTechLevel
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
+SkirmishDefaultUnitCount:
+  key: SkirmishDefaultUnitCount
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: OptionsClass
+      member: SkirmishDefaultUnitCount
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 SlopeSetPieces:
   key: SlopeSetPieces
   scopes:
