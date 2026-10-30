@@ -7370,6 +7370,24 @@ Disableable:
       source: code/techtype.cpp
       guard: null
     level: TechnoTypeClass
+DiscordPresence:
+  key: DiscordPresence
+  scopes:
+  - applies_to:
+    - client settings
+    file: sun.ini
+    section:
+      kind: literal
+      name: siliconsun
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: 'yes'
+      declared_in: OptionsClass
+      member: DiscordPresence
+      source: code/options.cpp
+      guard: null
+    level: OptionsClass
 Disguise:
   key: Disguise
   scopes:

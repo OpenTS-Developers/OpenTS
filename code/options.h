@@ -163,6 +163,11 @@ class OptionsClass {
 		bool NowPlaying;
 
 		/*
+		 * If the local Discord client shows the current activity, then this flag will be true.
+		 */
+		bool DiscordPresence;
+
+		/*
 		 * If the skirmish setup screen restores the setup it had when the game last ran,
 		 * then this flag will be true. The last setup is stored in the [Skirmish] section
 		 * of SUN.INI.

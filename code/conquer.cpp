@@ -85,6 +85,7 @@
 #include "dbgprint.h"
 #include "audio/audioengine.h"
 #include "desyncdlg.h"
+#include "discordpresence.h"
 #include "gamedirs.h"
 #include "gamedlg.h"
 #include "globals.h"
@@ -500,6 +501,8 @@ void Main_Game(int argc, char * argv[])
 			Show_Mouse();
 		}
 	}
+
+	Discord_Presence_Shutdown();
 
 	if (MouseCursor != NULL) {
 		MouseCursor->Release_Mouse();

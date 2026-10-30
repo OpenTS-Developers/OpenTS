@@ -71,6 +71,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
+#include "discordpresence.h"
 #include "empulse.h"
 #include "enviro.h"
 #include "factory.h"
@@ -1189,6 +1190,7 @@ bool Load_Game(const char *file_name)
 	Map.Complete_Radar_Refresh();
 	ScenarioActive = true;
 	TacticalActive = true;
+	Discord_Presence_Show_Match();
 	Sync_Recorder_Arm();
 	Sync_Report_Reset();
 	SaveManager.Autosave.Schedule(Frame);

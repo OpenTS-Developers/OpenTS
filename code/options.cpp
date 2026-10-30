@@ -132,6 +132,7 @@ OptionsClass::OptionsClass(void) :
 	DoubleClickSelectType(true),
 	CampaignIntroMovie(true),
 	NowPlaying(true),
+	DiscordPresence(true),
 	PersistSkirmishSettings(true),
 	OverrideSkirmishDefaults(true),
 	SkirmishDefaultCredits(5000),
@@ -441,6 +442,9 @@ void OptionsClass::Load_Settings(void)
 	NowPlaying = ConfigINI.Get_Bool("siliconsun", "NowPlaying", NowPlaying);
 	DebugString("NowPlaying is %s\n", NowPlaying == true ? "ON" : "OFF");
 
+	DiscordPresence = ConfigINI.Get_Bool("siliconsun", "DiscordPresence", DiscordPresence);
+	DebugString("DiscordPresence is %s\n", DiscordPresence == true ? "ON" : "OFF");
+
 	PersistSkirmishSettings = ConfigINI.Get_Bool("siliconsun", "PersistSkirmishSettings", PersistSkirmishSettings);
 	DebugString("PersistSkirmishSettings is %s\n", PersistSkirmishSettings == true ? "ON" : "OFF");
 
@@ -543,6 +547,7 @@ void OptionsClass::Save_Settings (void)
 	ConfigINI.Put_Bool("siliconsun", "DoubleClickSelectType", DoubleClickSelectType);
 	ConfigINI.Put_Bool("siliconsun", "CampaignIntroMovie", CampaignIntroMovie);
 	ConfigINI.Put_Bool("siliconsun", "NowPlaying", NowPlaying);
+	ConfigINI.Put_Bool("siliconsun", "DiscordPresence", DiscordPresence);
 	ConfigINI.Put_Bool("siliconsun", "PersistSkirmishSettings", PersistSkirmishSettings);
 	ConfigINI.Put_Bool("siliconsun", "OverrideSkirmishDefaults", OverrideSkirmishDefaults);
 	ConfigINI.Put_Int("siliconsun", "SkirmishDefaultCredits", SkirmishDefaultCredits);

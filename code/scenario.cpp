@@ -96,6 +96,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
+#include "discordpresence.h"
 #include "egos.h"
 #include "empulse.h"
 #include "enviro.h"
@@ -489,6 +490,7 @@ bool Start_Scenario(char const * name, bool briefing, CampaignType campaign)
 
 	ScenarioActive = true;
 	TacticalActive = true;
+	Discord_Presence_Show_Match();
 
 	return(true);
 }

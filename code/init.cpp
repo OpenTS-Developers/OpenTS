@@ -105,6 +105,7 @@
 #include "data.h"
 #include "dbgprint.h"
 #include "deploymentconfig.h"
+#include "discordpresence.h"
 #include "dialog.h"
 #include "dsurface.h"
 #include "egos.h"
@@ -963,6 +964,7 @@ restart:
 		}
 
 		while (process) {
+			Discord_Presence_Show_Menu();
 
 			/*
 			**	Display menu and fetch selection from player.

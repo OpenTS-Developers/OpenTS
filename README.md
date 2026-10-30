@@ -36,7 +36,7 @@ in the table. A `[Skirmish]` key is absent until the skirmish screen writes
 it, and a missing one keeps the value already chosen. `yes`, `true`, and `1`
 turn a switch on. `no`, `false`, and `0` turn it off. `off` leaves the
 default in place. Double-click select, campaign intros, the now-playing line,
-skirmish persistence, and the skirmish-default override start on.
+Discord status, skirmish persistence, and the skirmish-default override start on.
 
 Leaving the options menu writes the `[siliconsun]` keys, `TextBackgroundColor`,
 and `CursorScale` back, with a switch stored as `yes` or `no`. Closing the
@@ -56,6 +56,7 @@ level from 0 to 2.
 | `[siliconsun]` `DoubleClickSelectType` | `yes` | Double-clicking one of your own units selects every on-screen unit of that type, the same selection as Select Same Type. The first click still selects only that unit. A double-click on an enemy, on empty ground, or under fog stays an ordinary click. | A double-click stays an ordinary click. |
 | `[siliconsun]` `CampaignIntroMovie` | `yes` | A campaign introduction plays from that campaign's movie archive. Disc 0 prefers `MOVIES01.MIX` and disc 1 prefers `MOVIES02.MIX`. It still plays only when the first mission starts, not on a restart, and only when that campaign's disc number is below 2. `INTR<n>.VQA` plays when that file is present; otherwise `INTRO.VQA` plays. | With both campaigns installed, Nod plays the GDI introduction. Every campaign takes `INTRO.VQA` from the first movie archive. |
 | `[siliconsun]` `NowPlaying` | `yes` | While a scenario is running, the bottom left shows `Now Playing:` and the track title for the same time as an alert, in your color. On macOS, while the window is focused, the media next and previous keys skip tracks and the system shows that title. Those keys do the same on Windows when the game receives them. `no` leaves the line off and leaves the media keys unused. | There is no now-playing line, and the media keys do nothing. |
+| `[siliconsun]` `DiscordPresence` | `yes` | While the Discord desktop client is running on this machine, your profile shows the menus, a skirmish, a campaign mission, or a multiplayer game. A scenario adds the map name. GDI or Nod is shown for those sides, and a skirmish also shows how many AI opponents it has. The clock runs from when that activity started. The large image is the art asset `logo`. `no` does not contact Discord. If Discord is not running, the game continues and shows no error. Under Proton, the Linux Discord client usually cannot see the Windows build. | There is no Discord status. |
 | `[siliconsun]` `PersistSkirmishSettings` | `yes` | The skirmish screen reopens on the map and options it held when it last closed, including when you back out. Those values are the `[Skirmish]` keys. A saved map that is gone falls back to the first scenario. `no` opens from the defaults every time and does not write `[Skirmish]`. | The screen opens from the engine defaults every time. The setup is not kept in `SUN.INI`. |
 | `[siliconsun]` `OverrideSkirmishDefaults` | `yes` | A skirmish with nothing saved starts from the `SkirmishDefault*` values. A saved setup still wins while persistence is on. `no` uses the engine defaults. | The screen starts from the engine defaults. There is no override key. |
 | `[siliconsun]` `SkirmishDefaultCredits` | `5000` | Starting credits when the override is on and nothing is saved. | The screen starts from `[MultiplayerDefaults] Money` in the rules. The engine uses 3000 when that key is absent. |
@@ -213,6 +214,24 @@ page is Visual Studio on Windows, and it has no arm64 macOS path.
    ```
 
 ---
+
+## Discord status
+
+The game talks to the Discord desktop client on this computer over that
+client's local IPC channel. There is no server, no Discord library in the
+build, and the application ID is public. The release zips do not add a
+runtime file for it.
+
+A normal build and a release build use application ID `1565832094893211698`.
+That number is the CMake cache variable `SILICONSUN_DISCORD_APPLICATION_ID`.
+CMake remembers a value you pass, so a later configure keeps it. A configure
+that does not pass the variable uses this ID. Set the variable to `0` and the
+game never contacts Discord, even when `DiscordPresence=yes`. A build
+directory configured while the variable was `0` keeps that cached value until
+you configure again.
+
+The large image is the Rich Presence art asset whose key is `logo`. Discord
+stores that key in lowercase.
 
 ## Building on Windows
 

@@ -230,6 +230,7 @@ set_property(SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/ui/rml/rmltexture.cpp" APPEND P
 message(STATUS "${PROJECT_NAME}: Adding compilier definitions...")
 target_compile_definitions(OpenTS PRIVATE
     NOMINMAX
+    SILICONSUN_DISCORD_APPLICATION_ID=${SILICONSUN_DISCORD_APPLICATION_ID}ULL
 )
 if(WIN32)
     target_compile_definitions(OpenTS PRIVATE
