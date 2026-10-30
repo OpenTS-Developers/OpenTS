@@ -24,7 +24,6 @@
 #include "house.h"
 #include "init.h"
 #include "language/language.h"
-#include "platform.h"
 #include "rules.h"
 #include "scheme.h"
 #include "stimer.h"
