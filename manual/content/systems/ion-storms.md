@@ -198,7 +198,7 @@ A jumpjet on the ground cannot take off during a storm. Move orders route surviv
 
 ### Radar
 
-The player loses the radar for the whole storm, whatever their power and radar buildings. When the storm ends, the radar returns if [power and a radar building](/systems/power/#radar) would otherwise provide it. A player given the whole map keeps the radar during a storm; [observers and coach mode](/systems/observers/) owns that rule.
+The player loses the radar for the whole storm, whatever their power and radar buildings. When the storm ends, the radar returns if the [radar test](/systems/power/#radar) would otherwise provide it. A player given the whole map keeps the radar during a storm; [observers and coach mode](/systems/observers/) owns that rule.
 
 ### Weapons, production, and repair
 

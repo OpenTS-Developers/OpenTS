@@ -9436,6 +9436,24 @@ FreeRadar:
       source: code/scenario.cpp
       guard: null
     level: ScenarioClass
+FreeRadarOnLowPower:
+  key: FreeRadarOnLowPower
+  scopes:
+  - applies_to:
+    - scenarios
+    file: map file
+    section:
+      kind: literal
+      name: Basic
+    value_type: boolean
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: ScenarioClass
+      member: IsFreeRadarOnLowPower
+      source: code/scenario.cpp
+      guard: null
+    level: ScenarioClass
 FreeUnit:
   key: FreeUnit
   scopes:

@@ -12,4 +12,4 @@ A computer house tests a [`Prerequisite=RADAR`](/keys/prerequisite/) against thi
 
 Outside these three decisions a computer house [ignores prerequisites](/systems/production/#computer-houses), including when it follows [a map plan](/systems/ai-base-building/#where-the-plan-comes-from). The sidebar resolves `RADAR` through [`PrerequisiteRadar`](/keys/prerequisiteradar/) instead.
 
-Nothing else reads the list. Whether a house has a radar map depends on the [`Radar=yes`](/keys/radar/) structures it owns.
+Nothing else reads the list. Whether the player's house gets a radar map is decided by [the radar test](/systems/power/#radar).

@@ -11,6 +11,7 @@ keys:
   - ConditionYellow
   - DamageDelay
   - FreeRadar
+  - FreeRadarOnLowPower
   - Immune
   - IsPowered
   - LaserFencePost
@@ -207,19 +208,15 @@ A [`Powered=yes`](/keys/powered/) structure that [produces cash](/systems/produc
 
 ### Radar
 
-Only the local player's house can lose its radar map. The radar is up while all of these hold:
+Only the local player's house can lose its radar map. The map is up while no ion storm is running and any one of these holds:
 
-- no ion storm is running;
-- the house is not short of power;
-- **Any of:**
-  - the scenario sets [`FreeRadar=yes`](/keys/freeradar/);
-  - the house owns a [`Radar=yes`](/keys/radar/) structure that is **All of:** switched on, out of limbo, on the map, and not being sold.
+- the map sets [`FreeRadar=yes`](/keys/freeradar/) and [`FreeRadarOnLowPower=yes`](/keys/freeradaronlowpower/), whatever the house's power;
+- the map sets `FreeRadar=yes` and the house is not short of power;
+- the map does not set `FreeRadar`; the house is not short of power and owns a [`Radar=yes`](/keys/radar/) structure that is **All of:** switched on, out of limbo, on the map, and not being sold.
 
-In a campaign game, a radar structure the player has not discovered does not count. A player who has been given the whole map keeps the radar whatever these tests say; [observers and coach mode](/systems/observers/) covers that rule.
+In a campaign game, a radar structure the player has not discovered does not count. The house tests its radar structures one after another and skips a stunned one, so a working structure supplies the map even when another radar structure is stunned.
 
-:::caution[A stunned radar can block a working one]
-The house checks its radar structures in the order they were created and stops at the first one that passes the tests above. That structure supplies the radar only if it is not stunned. A stunned radar found first therefore keeps the map dark even while a second, working radar stands beside it.
-:::
+A player who has been given the whole map keeps the radar whatever these tests say; [observers and coach mode](/systems/observers/) covers that rule.
 
 ### Superweapons
 
