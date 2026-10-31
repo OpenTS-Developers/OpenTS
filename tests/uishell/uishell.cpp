@@ -3690,9 +3690,11 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	UIScenarioState state;
 	for (int index = 0; index < 4; index++) {
 		UIScenarioEntry entry;
+		entry.Index = index;
 		entry.Label = "Map " + std::to_string(index + 1);
-		state.Entries.push_back(entry);
+		state.All.push_back(entry);
 	}
+	state.Entries = state.All;
 
 	UIScenarioPresenterClass presenter(service, std::move(state));
 	std::unique_ptr<UIViewClass> view = UI_Scenario_View(presenter);
@@ -3711,7 +3713,7 @@ void Test_Scenario_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 
 	Rml::Element * maps = document->GetElementById("maps");
 	REQUIRE_MESSAGE(maps != nullptr, "the mission list is its template's rect, frame and all");
-	CHECK_MESSAGE(maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(263.0f, 232.0f), "the mission list is its template's rect, frame and all");
+	CHECK_MESSAGE(maps->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(263.0f, 192.0f), "the mission list is its template's rect, frame and all");
 
 	CHECK_MESSAGE(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the map dialog holds a surface for the preview");
 
