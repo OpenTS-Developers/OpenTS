@@ -10,7 +10,7 @@ related:
     id: mix
 ---
 
-The `ui` directory sits beside the executable and holds everything the screens are built from. The build places it where `Language.dll` is written, and the release package carries it.
+The `ui` directory sits beside the executable and holds everything the screens are built from. The build places it where `Language.dll` is written, and the release package carries it. In a macOS application bundle it is `Contents/Resources/ui`.
 
 | File | Role |
 | --- | --- |

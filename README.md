@@ -146,18 +146,36 @@ Victus both run this build. On the Deck, use Proton 11.
 
 ## macOS download
 
-A published release includes `siliconsun-<tag>-macos.zip`: `Game`, `ui`, and the
-license notices. It is an unsigned arm64 binary. `ui` has to stay beside
-`Game`. After unzipping, clear quarantine and point the binary at the game
-data:
+A published release includes `siliconsun-<tag>-macos.zip`: `siliconsun.app` and
+the license notices. It is an arm64 application. Finder shows the siliconsun
+icon, and the Dock shows that icon while the game is running.
+
+Gatekeeper opens a notarized app. It blocks an ad-hoc signed app until the
+quarantine attribute is removed:
 
 ```bash
-xattr -dr com.apple.quarantine .
-./Game -DATADIR="$HOME/Games/OpenTS"
+xattr -dr com.apple.quarantine siliconsun.app
+open siliconsun.app
 ```
 
-Run that from the unzipped folder. The shell expands `$HOME` before the game
-sees the path. The folder has to exist already.
+Run those commands from the unzipped folder.
+
+Game data is read from `~/Games/OpenTS`. That folder has to exist already; the
+retail install script puts it there. Settings and saves go to
+`~/Library/Application Support/siliconsun`, and saves are in `Saved Games`
+inside it. Replacing the app leaves that folder in place.
+
+The `ui` directory is `siliconsun.app/Contents/Resources/ui`. Debug logs and
+crash reports are written under `siliconsun.app/Contents/MacOS`. Replacing
+the app removes those logs and reports.
+
+To point this launch at other folders:
+
+```bash
+open siliconsun.app --args -DATADIR="$HOME/Games/OpenTS" -USERDIR="$HOME/Library/Application Support/siliconsun"
+```
+
+The shell expands `$HOME` before the game sees the paths.
 
 ## Windows Steam install
 

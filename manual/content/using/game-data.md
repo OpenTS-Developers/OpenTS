@@ -35,6 +35,8 @@ The game offers Firestorm only when it finds `FIRESTRM.INI`, either as a loose f
 
 [`-USERDIR=<path>`](/using/command-line/#user-directory) names the user data directory, which receives every file the game writes, including settings, saved games, recordings and downloaded maps. Without it, the game writes these files beside the executable. The exceptions are the debug log, [out-of-sync reports](/using/out-of-sync-reports/) and [crash reports](/using/crash-reports/), which always go into folders beside the executable.
 
+A macOS game launched from an application bundle, with neither option set, reads its data from the home directory's `Games/OpenTS` folder and writes the player's files to the home directory's `Library/Application Support/siliconsun` folder. An option that is passed still names its own directory. The data directory still has to exist already. Any other launch keeps the directories above.
+
 When the game looks for a file, it checks the user data directory first, so a player's copy is read ahead of a shipped copy with the same name. One copy of the data can therefore serve several players, each with a user data directory that holds their own settings and saves. [`OPENTS.INI`](/formats/opents-ini/#the-order-files-are-searched-for-in) gives the full search order and the files it does not apply to.
 
 [Saved games](/formats/save-games/) are kept in a `Saved Games` folder in the user data directory, and [screen captures](/commands/screencapture/) in a `Screenshots` folder beside it. The game lists and loads saves only from that folder, and never looks in either folder for any other file.

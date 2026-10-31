@@ -178,6 +178,55 @@ void Set_User_Directory(char const * path)
 }
 
 
+bool Is_MacOS_App_Executable(char const * path)
+{
+	if (path == NULL) {
+		return(false);
+	}
+
+	std::string const text = path;
+	std::string const marker = ".app/Contents/MacOS/";
+	std::string::size_type const at = text.rfind(marker);
+	if (at == std::string::npos) {
+		return(false);
+	}
+
+	return(text.find('/', at + marker.length()) == std::string::npos);
+}
+
+
+bool MacOS_Bundle_Directories(char const * home, std::string & data, std::string & user)
+{
+	if (home == NULL || home[0] == '\0') {
+		return(false);
+	}
+
+	std::string root = home;
+	while (!root.empty() && (root.back() == '/' || root.back() == '\\')) {
+		root.pop_back();
+	}
+	if (root.empty()) {
+		return(false);
+	}
+
+	// Creating the user directory must not invent the data directory, so the two paths differ.
+	data = root + "/Games/OpenTS";
+	user = root + "/Library/Application Support/siliconsun";
+	return(true);
+}
+
+
+void Apply_Unnamed_Directories(char const * data, char const * user)
+{
+	if (data != NULL && DataDirectory.empty()) {
+		Set_Data_Directory(data);
+	}
+	if (user != NULL && UserDirectory.empty()) {
+		Set_User_Directory(user);
+	}
+}
+
+
 /// <summary>
 /// Splits a configured folder list into the folders it names.
 /// Folders are separated by commas, since a semicolon opens a comment in the file the list

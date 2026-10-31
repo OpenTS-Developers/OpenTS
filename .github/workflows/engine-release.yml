@@ -83,18 +83,28 @@ jobs:
         run: cmake --build build/macos
 
       - name: Stage the client
+        env:
+          APPLE_CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
         run: |
-          mkdir -p artifact
-          built=build/macos/bin
-          cp "${built}/Game" artifact/
-          cp -r "${built}/ui" artifact/ui
-          bash .github/scripts/stage-notices.sh artifact
+          version=$(sed -n 's/^project(OpenTS VERSION \([0-9.]*\).*/\1/p' CMakeLists.txt)
+          test -n "$version"
+          bash .github/scripts/package-macos-release.sh \
+            build/macos/bin/Game \
+            build/macos/bin/ui \
+            code/resources/app-icon/siliconsun.png \
+            "$version" \
+            artifact \
+            "${GITHUB_WORKSPACE}/siliconsun-macos.zip"
 
       - name: Upload the client
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: macos-arm64
-          path: artifact
+          path: siliconsun-macos.zip
           if-no-files-found: error
 
   package:
@@ -115,17 +125,16 @@ jobs:
         run: |
           set -euo pipefail
           win=artifact/windows-x64
-          mac=artifact/macos-arm64
           # Steam and the retail install launch SUN.EXE. Game.pdb keeps its name
           # because that is the symbol file the linker records.
           mv "${win}/Game.exe" "${win}/SUN.EXE"
           ( cd "${win}" && zip -r "${GITHUB_WORKSPACE}/siliconsun-${TAG}-x64.zip" \
               SUN.EXE Game.pdb Language.dll ui \
               LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES )
-          chmod +x "${mac}/Game"
-          ( cd "${mac}" && zip -r "${GITHUB_WORKSPACE}/siliconsun-${TAG}-macos.zip" \
-              Game ui \
-              LICENSE.md THIRD_PARTY_NOTICES.md OpenTS_THIRD_PARTY_LICENSES )
+          # The macOS job already zipped the application bundle.
+          mac_zip=artifact/macos-arm64/siliconsun-macos.zip
+          test -f "${mac_zip}"
+          cp "${mac_zip}" "${GITHUB_WORKSPACE}/siliconsun-${TAG}-macos.zip"
 
       - name: Attach the zips to the release
         env:

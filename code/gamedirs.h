@@ -21,6 +21,14 @@
 void Set_Data_Directory(char const * path);
 void Set_User_Directory(char const * path);
 
+/*
+ * Recognizes a macOS application executable and names the data and user directories a
+ * double-clicked launch uses. A directory the command line already named is left as it is.
+ */
+bool Is_MacOS_App_Executable(char const * path);
+bool MacOS_Bundle_Directories(char const * home, std::string & data, std::string & user);
+void Apply_Unnamed_Directories(char const * data, char const * user);
+
 bool Apply_Game_Directories(void);
 
 /*

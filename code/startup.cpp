@@ -172,6 +172,7 @@
 
 #include <climits>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #endif
 #include <string>
@@ -602,6 +603,17 @@ int main(int argc, char ** supplied_argv)
 	}
 #endif
 
+#if !defined(_WIN32)
+	// A double-clicked app gets no -DATADIR, and its own directory is inside the bundle.
+	if (Is_MacOS_App_Executable(path_to_exe)) {
+		std::string bundle_data;
+		std::string bundle_user;
+		if (MacOS_Bundle_Directories(std::getenv("HOME"), bundle_data, bundle_user)) {
+			Apply_Unnamed_Directories(bundle_data.c_str(), bundle_user.c_str());
+		}
+	}
+#endif
+
 	if (parsed && Headless::Check_Request() && Apply_Game_Directories()) {
 
 		if (!Debug_MultipleInstances && !Headless::Is_Active() && !Claim_Single_Instance()) {
@@ -625,10 +637,17 @@ int main(int argc, char ** supplied_argv)
 		}
 		uidirectory += "ui\\";
 #else
+		// Contents/MacOS can hold only the program, so the bundle keeps ui in Contents/Resources.
+		std::string chosen = std::string(path) + "/ui";
+		char resolved_ui[PATH_MAX];
+		std::string const bundled = std::string(path) + "/../Resources/ui";
+		if (Is_MacOS_App_Executable(path_to_exe) && realpath(bundled.c_str(), resolved_ui) != nullptr) {
+			chosen = resolved_ui;
+		}
+		uidirectory = chosen;
 		if (!uidirectory.empty() && uidirectory.back() != '/') {
 			uidirectory += '/';
 		}
-		uidirectory += "ui/";
 #endif
 		CDFileClass::Add_Search_Drive(uidirectory.c_str());
 

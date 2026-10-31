@@ -281,11 +281,14 @@ siliconsun zip of each to the release:
 | Zip | Client |
 | --- | --- |
 | `siliconsun-<tag>-x64.zip` | Windows x64. `SUN.EXE`, `Language.dll`, `Game.pdb`, `ui/`, and the license notices. The executable is built as `Game.exe` and renamed for Steam. |
-| `siliconsun-<tag>-macos.zip` | Apple Silicon. `Game`, `ui/`, and the license notices. Strings are compiled in, so the zip has no `Language.dll`. |
+| `siliconsun-<tag>-macos.zip` | Apple Silicon. `siliconsun.app` and the license notices. Developer ID signed and notarized when the Apple signing secrets in [Maintaining](../manual/MAINTAINING.md#macos-signing) are set; otherwise ad-hoc signed. Strings are compiled in, so the zip has no `Language.dll`. |
 
 The Windows job uses Visual Studio 2022 on `windows-2022`, runs CTest, and
 reads its files from `build/bin/Release/`. The macOS job uses Apple Clang and
-Ninja on the Apple Silicon runner and reads its files from `build/macos/bin/`.
+Ninja on the Apple Silicon runner, reads its files from `build/macos/bin/`,
+and packs them into `siliconsun.app` before zipping. With the Apple signing
+secrets set, that job notarizes the app.
+
 Either job failing fails the workflow. The workflow attaches the zips and
 does not edit the release notes. See
 [Maintaining](../manual/MAINTAINING.md) for the full release procedure.

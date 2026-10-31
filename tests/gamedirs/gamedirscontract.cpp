@@ -115,6 +115,39 @@ void Reset(void)
 }
 
 
+TEST_CASE("a macOS application path is recognized")
+{
+	CHECK_MESSAGE(Is_MacOS_App_Executable("/Users/me/siliconsun.app/Contents/MacOS/Game"), "the release bundle executable is recognized");
+	CHECK_MESSAGE(!Is_MacOS_App_Executable("/Users/me/build/macos/bin/GameD"), "a loose binary is not an application bundle");
+	CHECK_MESSAGE(!Is_MacOS_App_Executable("/Users/me/Contents/MacOS/Game"), "Contents/MacOS without an .app directory is not a bundle");
+	CHECK_MESSAGE(!Is_MacOS_App_Executable("/Users/me/Game.app/Contents/MacOS/Helpers/tool"), "a nested helper is not the bundle executable");
+	CHECK_MESSAGE(!Is_MacOS_App_Executable(nullptr), "a missing path is not a bundle");
+	CHECK_MESSAGE(!Is_MacOS_App_Executable(""), "an empty path is not a bundle");
+}
+
+
+TEST_CASE("bundle directories are under the home directory")
+{
+	std::string data;
+	std::string user;
+
+	CHECK_MESSAGE(MacOS_Bundle_Directories("/Users/me", data, user), "a home directory names both folders");
+	CHECK_MESSAGE(data == "/Users/me/Games/OpenTS", "game data is Games/OpenTS");
+	CHECK_MESSAGE(user == "/Users/me/Library/Application Support/siliconsun", "player files are in Application Support");
+
+	data = "keep";
+	user = "keep";
+	CHECK_MESSAGE(!MacOS_Bundle_Directories(nullptr, data, user), "a missing home directory names nothing");
+	CHECK_MESSAGE(data == "keep" && user == "keep", "a missing home directory leaves the outputs alone");
+	CHECK_MESSAGE(!MacOS_Bundle_Directories("", data, user), "an empty home directory names nothing");
+	CHECK_MESSAGE(!MacOS_Bundle_Directories("///", data, user), "a home directory of only slashes names nothing");
+	CHECK_MESSAGE(data == "keep" && user == "keep", "a rejected home directory leaves the outputs alone");
+
+	CHECK_MESSAGE(MacOS_Bundle_Directories("/Users/me/", data, user), "a trailing slash is dropped");
+	CHECK_MESSAGE(data == "/Users/me/Games/OpenTS", "a trailing slash is dropped");
+}
+
+
 bool Make_Root(void);
 void Remove_Root(void);
 
@@ -133,6 +166,28 @@ struct RootFixture
 		Remove_Root();
 	}
 };
+
+
+TEST_CASE_FIXTURE(RootFixture, "unnamed directories take the bundle defaults and named ones stay")
+{
+	Reset();
+	Apply_Unnamed_Directories("D:\\Data", "D:\\User");
+	CHECK_MESSAGE(Data_Directory() == "D:\\Data\\", "an unnamed data directory takes the default");
+	CHECK_MESSAGE(CDFileClass::User_Path() != nullptr, "an unnamed user directory takes the default");
+	CHECK_MESSAGE(std::string(CDFileClass::User_Path()) == "D:\\User\\", "an unnamed user directory takes the default");
+
+	Reset();
+	Set_Data_Directory("D:\\Keep");
+	Apply_Unnamed_Directories("D:\\Data", "D:\\User");
+	CHECK_MESSAGE(Data_Directory() == "D:\\Keep\\", "a data directory named on the command line stays");
+	CHECK_MESSAGE(std::string(CDFileClass::User_Path()) == "D:\\User\\", "an unnamed user directory still takes the default");
+
+	Reset();
+	Set_User_Directory("D:\\Keep");
+	Apply_Unnamed_Directories("D:\\Data", "D:\\User");
+	CHECK_MESSAGE(Data_Directory() == "D:\\Data\\", "an unnamed data directory still takes the default");
+	CHECK_MESSAGE(std::string(CDFileClass::User_Path()) == "D:\\Keep\\", "a user directory named on the command line stays");
+}
 
 
 TEST_CASE_FIXTURE(RootFixture, "a folder list keeps its order, drops whitespace and repeats, and passes over the game's own directory")

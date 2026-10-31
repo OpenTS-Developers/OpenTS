@@ -128,6 +128,32 @@ To publish a release:
 3. Tag before opening the next development cycle. The tagged commit's CMake
    version must still name the release.
 
+## macOS signing
+
+The macOS job ad-hoc signs `siliconsun.app`. Set the secrets below and it signs
+with a Developer ID Application certificate, submits the app to Apple's notary
+service, and staples the ticket. A stapled app opens without clearing the
+quarantine attribute. A partial set fails the job. The job does not print the
+secret values.
+
+Create the certificate under Certificates, Identifiers & Profiles as Developer
+ID Application. Export it from Keychain Access as a password-protected `.p12`,
+base64-encode that file, and store the text in `APPLE_CERTIFICATE_P12`. Store
+the `.p12` password in `APPLE_CERTIFICATE_PASSWORD`.
+
+Create an App Store Connect API key with the Developer role. `APPLE_API_KEY`
+is the text of the downloaded `.p8` file, including its begin and end lines.
+`APPLE_API_KEY_ID` is the key id. `APPLE_API_ISSUER` is the issuer id on that
+page.
+
+| Secret | Holds |
+| --- | --- |
+| `APPLE_CERTIFICATE_P12` | Base64 of the Developer ID Application `.p12` |
+| `APPLE_CERTIFICATE_PASSWORD` | Password for that `.p12` |
+| `APPLE_API_KEY` | Contents of the App Store Connect API `.p8` file |
+| `APPLE_API_KEY_ID` | Key id |
+| `APPLE_API_ISSUER` | Issuer id |
+
 `release-notes` writes one release's change records as Markdown to standard
 output. Breaking changes and their migration steps come first, followed by the
 remaining records grouped by category. It reads the records validated by the
