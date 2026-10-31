@@ -138,10 +138,12 @@ TEST_CASE("bundle directories are under the home directory")
 	data = "keep";
 	user = "keep";
 	CHECK_MESSAGE(!MacOS_Bundle_Directories(nullptr, data, user), "a missing home directory names nothing");
-	CHECK_MESSAGE(data == "keep" && user == "keep", "a missing home directory leaves the outputs alone");
+	CHECK_MESSAGE(data == "keep", "a missing home directory leaves the data directory alone");
+	CHECK_MESSAGE(user == "keep", "a missing home directory leaves the user directory alone");
 	CHECK_MESSAGE(!MacOS_Bundle_Directories("", data, user), "an empty home directory names nothing");
 	CHECK_MESSAGE(!MacOS_Bundle_Directories("///", data, user), "a home directory of only slashes names nothing");
-	CHECK_MESSAGE(data == "keep" && user == "keep", "a rejected home directory leaves the outputs alone");
+	CHECK_MESSAGE(data == "keep", "a rejected home directory leaves the data directory alone");
+	CHECK_MESSAGE(user == "keep", "a rejected home directory leaves the user directory alone");
 
 	CHECK_MESSAGE(MacOS_Bundle_Directories("/Users/me/", data, user), "a trailing slash is dropped");
 	CHECK_MESSAGE(data == "/Users/me/Games/OpenTS", "a trailing slash is dropped");

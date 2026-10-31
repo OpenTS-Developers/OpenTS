@@ -142,6 +142,33 @@ void Set_Hints(void)
 }
 
 
+#if defined(__APPLE__)
+// An icon passed to SDL stays square in the Dock. Pixels outside the application-icon squircle are made transparent.
+void Clear_Icon_Corners(std::vector<unsigned char> & pixels, int width, int height)
+{
+	float const exponent = 5.0f;
+	float const halfwidth = width * 0.5f;
+	float const halfheight = height * 0.5f;
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			float const nx = std::fabs((x + 0.5f - halfwidth) / halfwidth);
+			float const ny = std::fabs((y + 0.5f - halfheight) / halfheight);
+			float const field = std::pow(nx, exponent) + std::pow(ny, exponent);
+			float const gx = (nx > 0.0f) ? exponent * std::pow(nx, exponent - 1.0f) / halfwidth : 0.0f;
+			float const gy = (ny > 0.0f) ? exponent * std::pow(ny, exponent - 1.0f) / halfheight : 0.0f;
+			float const gradient = std::sqrt(gx * gx + gy * gy);
+			float coverage = 1.0f;
+			if (gradient > 0.0f) {
+				coverage = std::clamp(0.5f + (1.0f - field) / gradient, 0.0f, 1.0f);
+			}
+			size_t const alpha = ((size_t)y * (size_t)width + (size_t)x) * 4 + 3;
+			pixels[alpha] = (unsigned char)std::lround(pixels[alpha] * coverage);
+		}
+	}
+}
+#endif
+
+
 void Set_Window_Icon(MainWindowIcon const & icon)
 {
 	if (icon.Width <= 0 || icon.Height <= 0 || icon.Width > std::numeric_limits<int>::max() / 4) {
@@ -153,8 +180,14 @@ void Set_Window_Icon(MainWindowIcon const & icon)
 		return;
 	}
 
-	SDL_Surface * surface = SDL_CreateSurfaceFrom(icon.Width, icon.Height, SDL_PIXELFORMAT_RGBA32,
-		(void *)icon.Pixels.data(), (int)pitch);
+#if defined(__APPLE__)
+	std::vector<unsigned char> rounded(icon.Pixels.begin(), icon.Pixels.begin() + pitch * (size_t)icon.Height);
+	Clear_Icon_Corners(rounded, icon.Width, icon.Height);
+	void * source = rounded.data();
+#else
+	void * source = (void *)icon.Pixels.data();
+#endif
+	SDL_Surface * surface = SDL_CreateSurfaceFrom(icon.Width, icon.Height, SDL_PIXELFORMAT_RGBA32, source, (int)pitch);
 	if (surface == nullptr) {
 		DebugString("SDL: the window icon surface was not created: %s\n", SDL_GetError());
 		return;

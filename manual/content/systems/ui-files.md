@@ -48,7 +48,7 @@ To give each side its own version of a picture or font, put a copy in each side'
 
 ## Window icon
 
-The build ships `icon.png` in the `ui` directory. The game uses it as the window icon. On Windows that is also the Alt+Tab icon, and on macOS it is the Dock icon while the game is running. To replace it, use a square PNG with transparency, such as 256×256 pixels. No INI key is needed. Replacing `icon.png` leaves the executable's icon in Explorer and pinned shortcut icons unchanged. The Debug Console keeps its own icon, and Windows may still show the built-in icon for a grouped taskbar button.
+The build ships `icon.png` in the `ui` directory. The game uses it as the window icon. On Windows that is also the Alt+Tab icon. On macOS the Dock shows it with rounded corners while the game is running. To replace it, use a square PNG with transparency, such as 256×256 pixels. No INI key is needed. Replacing `icon.png` leaves the executable's icon in Explorer and pinned shortcut icons unchanged. The Debug Console keeps its own icon, and Windows may still show the built-in icon for a grouped taskbar button.
 
 The game uses the first loose `icon.png` found in [its file search order](/formats/opents-ini/#the-order-files-are-searched-for-in), so a copy in a higher-priority folder overrides the one in `ui`. The icon loads before the window is shown and before MIX archives are mounted, so an archive cannot supply it.
 
