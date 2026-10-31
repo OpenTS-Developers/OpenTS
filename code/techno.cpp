@@ -5469,7 +5469,8 @@ void TechnoClass::Do_Uncloak(bool silent)
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(-1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			VocType uncloak_sound = TClass->UncloakSound != VOC_NONE ? TClass->UncloakSound : Rule->CloakSound;
+			Sound_Effect(uncloak_sound, PositionCoord);
 		}
 	}
 }
@@ -5498,7 +5499,8 @@ void TechnoClass::Do_Cloak(bool silent)
 		CloakingDevice.Set_Rate(TClass->CloakingSpeed);
 		CloakingDevice.Set_Step(1);
 		if (!silent) {
-			Sound_Effect(Rule->CloakSound, PositionCoord);
+			VocType cloak_sound = TClass->CloakSound != VOC_NONE ? TClass->CloakSound : Rule->CloakSound;
+			Sound_Effect(cloak_sound, PositionCoord);
 		}
 	}
 }

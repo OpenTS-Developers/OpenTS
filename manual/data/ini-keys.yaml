@@ -4983,6 +4983,20 @@ CloakRadiusInCells:
 CloakSound:
   key: CloakSound
   scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: reviewed
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: CloakSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
   - applies_to:
     - global rules
     file: rules.ini
@@ -4990,7 +5004,7 @@ CloakSound:
       kind: literal
       name: AudioVisual
     value_type: sound
-    status: generated
+    status: reviewed
     _provenance:
       default_candidate: none
       declared_in: RulesClass
@@ -24883,6 +24897,23 @@ URepairRate:
       source: code/rules.cpp
       guard: null
     level: RulesClass
+UncloakSound:
+  key: UncloakSound
+  scopes:
+  - applies_to: *id003
+    file: rules.ini
+    section:
+      kind: identifier
+      source: object-type
+    value_type: sound
+    status: generated
+    _provenance:
+      default_candidate: none
+      declared_in: TechnoTypeClass
+      member: UncloakSound
+      source: code/techtype.cpp
+      guard: null
+    level: TechnoTypeClass
 UndeploySound:
   key: UndeploySound
   scopes:

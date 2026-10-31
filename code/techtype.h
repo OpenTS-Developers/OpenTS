@@ -750,6 +750,16 @@ class TechnoTypeClass : public ObjectTypeClass
 		 */
 		std::string Description;
 
+		/*
+		 * This is the sound effect to play when the unit is cloaking.
+		 */
+		VocType CloakSound;
+
+		/*
+		 * This is the sound effect to play when the unit is decloaking.
+		 */
+		VocType UncloakSound;
+
 		//--------------------------------------------------------------------
 		TechnoTypeClass(char const * ininame, SpeedType speed);
 		virtual ~TechnoTypeClass() override;
