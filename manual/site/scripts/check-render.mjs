@@ -53,7 +53,7 @@ const cases = [
 	['mapping/actions/taction-change-house/index.html', ['Change House', 'Hands every infantry, vehicle, aircraft and structure']],
 	['mapping/actions/taction-play-anim/index.html', ['Parameters', 'Animation', 'Waypoint', 'INI example', '[Actions]', '&lt;TriggerID&gt;=1,41,0,&lt;Animation&gt;']],
 	['mapping/missions/tmission-play-anim/index.html', ['Animation', 'Loop count']],
-	['mapping/events/tevent-near-waypoint/index.html', ['Comes near waypoint', 'within five cells of the named waypoint', 'INI example', '&lt;TriggerID&gt;=1,34,0,&lt;Waypoint&gt;']],
+	['mapping/events/tevent-near-waypoint/index.html', ['Comes near waypoint', 'within the distance set by ComesNearWaypointDistance', 'INI example', '&lt;TriggerID&gt;=1,34,0,&lt;Waypoint&gt;']],
 	['mapping/missions/tmission-loop/index.html', ['Jump to line', 'one-based']],
 	['internals/class-hierarchy/index.html', ['Object and type system', 'Primary runtime hierarchy', 'Type-definition hierarchy', 'AbstractTypeClass', 'code/abstype.h']],
 	['internals/radio/index.html', ['Radio contact protocol', 'Contact state', 'Messages and responses', 'Compute_CRC', 'code/radio.cpp']],

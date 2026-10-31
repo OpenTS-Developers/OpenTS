@@ -2291,4 +2291,9 @@ class RulesClass
 		 */
 		int VeteranFlashTimer;
 		int EliteFlashTimer;
+
+		/*
+		 * Distance to consider "close enough" for TEVENT_NEAR_WAYPOINT.
+		 */
+		int ComesNearWaypointDistance;
 };
