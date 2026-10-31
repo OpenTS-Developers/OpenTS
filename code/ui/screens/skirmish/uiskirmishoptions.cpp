@@ -52,6 +52,8 @@ void UISkirmishOptionsPresenterClass::Execute(UIIntent const & intent)
 		State.Redeploy = intent.Value != 0;
 	} else if (intent.Name == "engineer") {
 		State.MultiEngineer = intent.Value != 0;
+	} else if (intent.Name == "paranoid") {
+		State.Paranoid = intent.Value != 0;
 	} else if (intent.Name == "units") {
 		State.UnitCount = Clamp(intent.Value, State.UnitCountMin, State.UnitCountMax);
 	} else if (intent.Name == "credits") {
@@ -95,6 +97,7 @@ class UISkirmishOptionsViewClass : public UIRmlViewClass
 			Model.DirtyVariable("redeploy");
 			Model.DirtyVariable("shortgame");
 			Model.DirtyVariable("engineer");
+			Model.DirtyVariable("paranoid");
 			Model.DirtyVariable("units");
 			Model.DirtyVariable("credits");
 			Model.DirtyVariable("tech");
@@ -112,6 +115,7 @@ class UISkirmishOptionsViewClass : public UIRmlViewClass
 				&& model.Bind("redeploy", &state.Redeploy)
 				&& model.Bind("shortgame", &state.ShortGame)
 				&& model.Bind("engineer", &state.MultiEngineer)
+				&& model.Bind("paranoid", &state.Paranoid)
 				&& model.Bind("units", &state.UnitCount)
 				&& model.Bind("unitsmin", &state.UnitCountMin)
 				&& model.Bind("unitsmax", &state.UnitCountMax)

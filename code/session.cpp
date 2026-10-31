@@ -185,6 +185,7 @@ SessionClass::SessionClass(void)
 	Options.ScrapMetal = false;
 	Options.SharedControl = false;
 	Options.AIDifficulty = DIFF_NORMAL;
+	ComputerParanoid = false;
 
 	UniqueID = 0;
 
@@ -961,7 +962,10 @@ void SessionClass::Read_Skirmish_Settings(void)
 		Options.CrapEngineers = ::Options.SkirmishDefaultMultiEngineer;
 	}
 
+	ComputerParanoid = false;
+
 	if (::Options.PersistSkirmishSettings) {
+		ComputerParanoid = ConfigINI.Get_Bool("Skirmish", "Paranoid", ComputerParanoid);
 		Options.Credits = ConfigINI.Get_Int("Skirmish", "Credits", Options.Credits);
 		Options.UnitCount = ConfigINI.Get_Int("Skirmish", "UnitCount", Options.UnitCount);
 		BuildLevel = ConfigINI.Get_Int("Skirmish", "TechLevel", BuildLevel);
@@ -1023,6 +1027,7 @@ void SessionClass::Write_Skirmish_Settings(void)
 		ConfigINI.Put_Bool("Skirmish", "MCVRedeploy", Options.MCVRedeploy);
 		ConfigINI.Put_Bool("Skirmish", "ShortGame", Options.ShortGame);
 		ConfigINI.Put_Bool("Skirmish", "MultiEngineer", Options.CrapEngineers);
+		ConfigINI.Put_Bool("Skirmish", "Paranoid", ComputerParanoid);
 
 		if (Options.ScenarioIndex >= 0 && Options.ScenarioIndex < Scenarios.Count()) {
 			ConfigINI.Put_String("Skirmish", "Map", Scenarios[Options.ScenarioIndex]->Get_Filename());

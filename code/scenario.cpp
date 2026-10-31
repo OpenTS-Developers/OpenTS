@@ -148,6 +148,7 @@
 #include "session.h"
 #include "smudge.h"
 #include "spawnhouse.h"
+#include "spawner.h"
 #include "stats.h"
 #include "surface.h"
 #include "swizzle.h"
@@ -2196,6 +2197,11 @@ ScenarioState Read_Scenario_INI(CCINIClass const & ini, bool is_mapgen)
 				Rule->Addition(mini);
 			}
 		}
+	}
+
+	// A skirmish from the menu, and any match a launch file starts, replaces the rules value.
+	if (Session.Type == GAME_SKIRMISH || (Session.Type != GAME_NORMAL && Spawner_Is_Active())) {
+		Rule->IsComputerParanoid = Session.ComputerParanoid;
 	}
 
 	Session.Update_Progress(82);

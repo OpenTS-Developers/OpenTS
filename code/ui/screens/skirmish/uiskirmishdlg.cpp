@@ -93,6 +93,7 @@ static void Commit_Options(UISkirmishState const & state)
 	Session.Options.ShortGame = state.ShortGame;
 	Session.Options.HarvTruce = false;
 	Session.Options.CrapEngineers = state.MultiEngineer;
+	Session.ComputerParanoid = state.Paranoid;
 }
 
 
@@ -179,6 +180,7 @@ static void Configure_Options(UISkirmishState & state)
 	bool const redeploy = state.Redeploy;
 	bool const shortgame = state.ShortGame;
 	bool const engineer = state.MultiEngineer;
+	bool const paranoid = state.Paranoid;
 	int const units = state.UnitCount;
 	int const credits = state.Credits;
 	int const tech = state.TechLevel;
@@ -196,6 +198,7 @@ static void Configure_Options(UISkirmishState & state)
 		state.Redeploy = redeploy;
 		state.ShortGame = shortgame;
 		state.MultiEngineer = engineer;
+		state.Paranoid = paranoid;
 		state.UnitCount = units;
 		state.Credits = credits;
 		state.TechLevel = tech;
@@ -299,6 +302,7 @@ void UI_Skirmish_State(UISkirmishState & state)
 	state.Redeploy = Session.Options.MCVRedeploy;
 	state.ShortGame = Session.Options.ShortGame;
 	state.MultiEngineer = Session.Options.CrapEngineers;
+	state.Paranoid = Session.ComputerParanoid;
 
 	if (!Set_Scenario_Info_From_Index(Session.Options.ScenarioIndex)) {
 		Session.Options.ScenarioIndex = 0;

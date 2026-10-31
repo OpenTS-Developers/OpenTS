@@ -234,6 +234,7 @@ static void Spawner_Bind_Options(void)
 	Session.Options.AttackNeutralUnits = SpawnConfig.AttackNeutralUnits;
 	Session.Options.ScrapMetal = SpawnConfig.ScrapMetal;
 	Session.Options.SharedControl = SpawnConfig.SharedControl;
+	Session.ComputerParanoid = SpawnConfig.Paranoid;
 
 	// AutoSurrender=no hands a departing player's base to the computer.
 	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;

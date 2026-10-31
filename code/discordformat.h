@@ -12,7 +12,7 @@
 #include <cstdint>
 
 
-// What the profile is showing. A menu has no map, side, or AI count.
+// What the profile is showing. A menu has no map or side.
 enum DiscordPresenceMode {
 	DISCORD_PRESENCE_MENU = 0,
 	DISCORD_PRESENCE_SKIRMISH,
@@ -21,15 +21,23 @@ enum DiscordPresenceMode {
 };
 
 
-// The fields of one activity. A null map or faction is an empty one. A negative
-// AICount is omitted. A StartedAt of zero omits the elapsed-time clock.
+// The fields of one activity. A null map, faction, title, or kind is an empty one.
+// A menu, or an activity with no title or kind, uses the mode label alone.
+// A StartedAt of zero omits the elapsed-time clock.
 struct DiscordPresenceFields {
 	int Mode;
+	char const * Title;
+	char const * Kind;
 	char const * Map;
 	char const * Faction;
-	int AICount;
 	std::int64_t StartedAt;
 };
+
+
+// Writes the side list for the houses given, such as "2v2", "2v1v1", or "1v1v1".
+// allies[i] bit j means house i counts house j as an ally. A side is mutual.
+// Fewer than two houses, or one side among them, writes an empty string.
+void Discord_Presence_Match_Label(char * dest, int capacity, std::uint64_t const * allies, int count);
 
 
 // Discord's IPC opcodes. A frame is a little-endian opcode, a little-endian

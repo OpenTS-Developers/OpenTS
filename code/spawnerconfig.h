@@ -116,6 +116,7 @@ class SpawnerConfigClass
 		bool AttackNeutralUnits = false;
 		bool ScrapMetal = false;
 		bool SharedControl = false;
+		bool Paranoid = false;
 		bool PlayMoviesInMultiplayer = false;
 		std::array<bool, GLOBAL_FLAG_COUNT> GlobalFlags = {};
 

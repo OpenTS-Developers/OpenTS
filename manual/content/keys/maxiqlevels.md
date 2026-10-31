@@ -11,4 +11,4 @@ Outside a campaign game, every computer opponent plays at exactly this [`IQ`](/k
 
 A scenario's `IQ=` for a house is limited to this value. A larger figure is replaced by `1`, not by this value.
 
-The level also triggers computer paranoia. When a computer house at exactly this IQ is defeated and [`Paranoid=yes`](/keys/paranoid/), every surviving computer house allies with the other computer houses and turns hostile to every human player. In a campaign, this happens only when the [Destroy all of...](/mapping/actions/taction-house-destroy-all/) trigger action defeats a house whose `IQ=` equals this value.
+The level also triggers computer paranoia. When a computer house at exactly this IQ is defeated and [`Paranoid=yes`](/keys/paranoid/), every surviving computer house that did not start the match allied with a human house still in the game allies with the other such computer houses and turns hostile to every human player. In a campaign, this happens only when the [Destroy all of...](/mapping/actions/taction-house-destroy-all/) trigger action defeats a house whose `IQ=` equals this value.

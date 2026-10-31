@@ -164,6 +164,7 @@ TEST_CASE("a file naming nothing at all still describes a playable game")
 	CHECK_MESSAGE(!config.BuildOffAlly, "nobody builds off an ally unless the file asks for it");
 	CHECK_MESSAGE(!config.AutoDeployMCV, "a starting base unit waits to be deployed by hand");
 	CHECK_MESSAGE(!config.AttackNeutralUnits, "a target scan passes over a neutral house unasked");
+	CHECK_MESSAGE(!config.Paranoid, "computer houses stay apart unless the file says otherwise");
 
 	bool any = false;
 	for (bool flag : config.GlobalFlags) {
@@ -279,6 +280,16 @@ TEST_CASE("deploying the starting base unit is asked for by the file alone")
 	config = Read(spelled, sizeof(spelled) - 1);
 
 	CHECK_MESSAGE(config.AutoDeployMCV, "the option is read whichever way it spells yes");
+}
+
+
+TEST_CASE("computer houses stay apart when the file says so")
+{
+	char const off[] =
+		"[Settings]\n"
+		"Paranoid=no\n";
+	SpawnerConfigClass config = Read(off, sizeof(off) - 1);
+	CHECK_MESSAGE(!config.Paranoid, "Paranoid=no leaves the computer houses apart");
 }
 
 
@@ -485,6 +496,10 @@ TEST_CASE("two machines handed the same match agree on its identity")
 	SpawnerConfigClass neutrals = Read(_Skirmish, sizeof(_Skirmish) - 1);
 	neutrals.AttackNeutralUnits = !neutrals.AttackNeutralUnits;
 	CHECK_MESSAGE(one.Session_Identity_CRC() != neutrals.Session_Identity_CRC(), "scanning a neutral house moves the identity");
+
+	SpawnerConfigClass paranoid = Read(_Skirmish, sizeof(_Skirmish) - 1);
+	paranoid.Paranoid = !paranoid.Paranoid;
+	CHECK_MESSAGE(one.Session_Identity_CRC() != paranoid.Session_Identity_CRC(), "computer houses closing ranks moves the identity");
 
 	SpawnerConfigClass waits = Read(_Skirmish, sizeof(_Skirmish) - 1);
 	waits.ConnTimeout = one.ConnTimeout + 60;

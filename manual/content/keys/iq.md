@@ -14,7 +14,7 @@ Three `[IQ]` entries do not compare against this value:
 - [`SellBack`](/keys/sellback/) compares against the house's tech level.
 - [`ContentScan`](/keys/contentscan/) and [`Aircraft`](/keys/aircraft/) have no effect.
 
-With [`Paranoid`](/keys/paranoid/) on, a computer house whose `IQ` equals [`MaxIQLevels`](/keys/maxiqlevels/) makes the surviving computer houses ally with each other and declare war on the human houses when the [Destroy all of...](/mapping/actions/taction-house-destroy-all/) action defeats it.
+With [`Paranoid`](/keys/paranoid/) on, a computer house whose `IQ` equals [`MaxIQLevels`](/keys/maxiqlevels/) makes the surviving computer houses ally with each other and declare war on the human houses when the [Destroy all of...](/mapping/actions/taction-house-destroy-all/) action defeats it. A computer house that started allied with a human house still in the game is left out.
 
 Keep the value at or below [`MaxIQLevels`](/keys/maxiqlevels/). A larger value is replaced by `1`, not by the maximum, so it turns nearly every behavior off.
 

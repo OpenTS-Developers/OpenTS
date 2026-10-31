@@ -10,4 +10,4 @@ credit:
 - fjlaubscher
 ---
 
-`DiscordPresence=yes` under `[siliconsun]` in `SUN.INI` shows the current activity on the local Discord desktop client: the menus, a skirmish, a campaign mission, or a multiplayer game, with the map name, GDI or Nod, the skirmish AI count, and the elapsed time. It is on by default. `no` does not contact Discord.
+`DiscordPresence=yes` under `[siliconsun]` in `SUN.INI` shows the current activity on the local Discord desktop client. In a game the first line names Tiberian Sun or Tiberian Sun - Firestorm and the match, such as Campaign, 2v2, or 1v1v1, and the second line names the side and the scenario. It is on by default. `no` does not contact Discord.

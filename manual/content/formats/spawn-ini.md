@@ -117,6 +117,7 @@ These `[Settings]` keys set the rules of a skirmish or a game against other mach
 | `AttackNeutralUnits` | `yes` or `no` | `no` |
 | `ScrapMetal` | `yes` or `no` | `no` |
 | `SharedControl` | `yes` or `no` | `no` |
+| `Paranoid` | `yes` or `no` | `no` |
 | `PlayMoviesInMultiplayer` | `yes` or `no` | `no` |
 
 A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty settings](/systems/difficulty/#from-the-setting-to-a-slot) describes, unless its seat sets its own difficulty under [Who is playing](#who-is-playing).
@@ -130,6 +131,8 @@ A computer player plays at the slot opposite `AIDifficulty`, as [Difficulty sett
 `ScrapMetal=yes` makes a wreck leave the animations its type gives [`ScrapExplosion`](/keys/scrapexplosion/) instead of [`Explosion`](/keys/explosion/). The animation is drawn with the shared random number generator, so every file needs the same value.
 
 `SharedControl=yes` lets a player give an ally command of their units; [shared control](/systems/shared-control/) owns how. Every machine checks each grant, so every file needs the same value.
+
+`Paranoid=yes` makes the computer houses close ranks against the human players, and replaces [`Paranoid`](/keys/paranoid/) from the rules for that match. `no` leaves them on the alliances they already have. Every machine reads its own file, so every file needs the same value.
 
 `AutoDeployMCV=yes` deploys every house's starting base unit as the match opens; [starting forces](/systems/starting-forces/#the-base-unit) owns what that leaves on the map.
 
@@ -219,7 +222,7 @@ A seat with no start position, or one outside `0` to `7`, gets one from the game
 
 An alliance entry works one way: to make two seats allies, list each in the other's section, as the example does.
 
-The file's alliances are made before the first frame. `AlliesAllowed=no` does not prevent them; it only stops players from changing alliances during play. No message announces the file's alliances, and the computer players keep them instead of [closing ranks](/keys/paranoid/) as they do against a side that allies during play.
+The file's alliances are made before the first frame. `AlliesAllowed=no` does not prevent them; it only stops players from changing alliances during play. No message announces the file's alliances. A computer house the file allied with a human house keeps that alliance while the human house is still in the game. The other computer houses [close ranks](/keys/paranoid/) when a computer house is defeated.
 
 A seat that watches holds no alliances: its own entries and any entries naming it are ignored. [Observers and coach mode](/systems/observers/) owns what a watching seat is shown and how the match treats it.
 

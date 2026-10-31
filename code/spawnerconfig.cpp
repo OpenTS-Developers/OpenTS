@@ -265,6 +265,7 @@ int SpawnerConfigClass::Session_Identity_CRC(void) const
 	crc(AttackNeutralUnits);
 	crc(ScrapMetal);
 	crc(SharedControl);
+	crc(Paranoid);
 	crc(CoachMode);
 	crc(PlayMoviesInMultiplayer);
 
@@ -522,6 +523,7 @@ void SpawnerConfigClass::Read_INI(INIClass const & ini)
 	AttackNeutralUnits = ini.Get_Bool(SETTINGS, "AttackNeutralUnits", AttackNeutralUnits);
 	ScrapMetal = ini.Get_Bool(SETTINGS, "ScrapMetal", ScrapMetal);
 	SharedControl = ini.Get_Bool(SETTINGS, "SharedControl", SharedControl);
+	Paranoid = ini.Get_Bool(SETTINGS, "Paranoid", Paranoid);
 	PlayMoviesInMultiplayer = ini.Get_Bool(SETTINGS, "PlayMoviesInMultiplayer", PlayMoviesInMultiplayer);
 	CustomLoadScreen = Read_Text(ini, SETTINGS, "CustomLoadScreen", CustomLoadScreen);
 	DifficultyName = Read_Text(ini, SETTINGS, "DifficultyName", DifficultyName);

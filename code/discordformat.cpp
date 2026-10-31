@@ -118,14 +118,20 @@ char const * Mode_Label(int mode)
 }
 
 
+bool Named(char const * text)
+{
+	return(text != nullptr && text[0] != '\0');
+}
+
+
 void Format_Details(char * dest, int capacity, DiscordPresenceFields const & fields)
 {
-	if (fields.Mode == DISCORD_PRESENCE_MENU || fields.Map == nullptr || fields.Map[0] == '\0') {
+	if (fields.Mode == DISCORD_PRESENCE_MENU || !Named(fields.Title) || !Named(fields.Kind)) {
 		Copy_Limited(dest, capacity, Mode_Label(fields.Mode));
 		return;
 	}
 	char combined[Field_Limit + 64];
-	std::snprintf(combined, sizeof(combined), "%s: %s", Mode_Label(fields.Mode), fields.Map);
+	std::snprintf(combined, sizeof(combined), "%s (%s)", fields.Title, fields.Kind);
 	Copy_Limited(dest, capacity, combined);
 }
 
@@ -138,23 +144,101 @@ void Format_State(char * dest, int capacity, DiscordPresenceFields const & field
 		}
 		return;
 	}
-	bool has_faction = fields.Faction != nullptr && fields.Faction[0] != '\0';
-	bool has_ai = fields.AICount >= 0;
-	if (has_faction && has_ai) {
-		char combined[Field_Limit + 32];
-		std::snprintf(combined, sizeof(combined), "%s, %d AI", fields.Faction, fields.AICount);
+	bool has_faction = Named(fields.Faction);
+	bool has_map = Named(fields.Map);
+	if (has_faction && has_map) {
+		char combined[Field_Limit * 2 + 8];
+		std::snprintf(combined, sizeof(combined), "%s - %s", fields.Faction, fields.Map);
 		Copy_Limited(dest, capacity, combined);
 	} else if (has_faction) {
 		Copy_Limited(dest, capacity, fields.Faction);
-	} else if (has_ai) {
-		char combined[32];
-		std::snprintf(combined, sizeof(combined), "%d AI", fields.AICount);
-		Copy_Limited(dest, capacity, combined);
+	} else if (has_map) {
+		Copy_Limited(dest, capacity, fields.Map);
 	} else if (capacity > 0) {
 		dest[0] = '\0';
 	}
 }
 
+}
+
+
+void Discord_Presence_Match_Label(char * dest, int capacity, std::uint64_t const * allies, int count)
+{
+	if (dest == nullptr || capacity <= 0) {
+		return;
+	}
+	dest[0] = '\0';
+	if (allies == nullptr || count < 2 || count > 64) {
+		return;
+	}
+
+	int parent[64];
+	for (int index = 0; index < count; index++) {
+		parent[index] = index;
+	}
+	auto find = [&](int index) {
+		while (parent[index] != index) {
+			parent[index] = parent[parent[index]];
+			index = parent[index];
+		}
+		return(index);
+	};
+
+	for (int i = 0; i < count; i++) {
+		for (int j = i + 1; j < count; j++) {
+			bool mutual = (allies[i] & (1ULL << j)) != 0 && (allies[j] & (1ULL << i)) != 0;
+			if (!mutual) {
+				continue;
+			}
+			int a = find(i);
+			int b = find(j);
+			if (a != b) {
+				parent[b] = a;
+			}
+		}
+	}
+
+	int size[64] = {};
+	int teams = 0;
+	for (int index = 0; index < count; index++) {
+		int root = find(index);
+		if (size[root] == 0) {
+			teams++;
+		}
+		size[root]++;
+	}
+	if (teams <= 1) {
+		return;
+	}
+
+	int sizes[64];
+	int n = 0;
+	for (int index = 0; index < count; index++) {
+		if (size[index] > 0) {
+			sizes[n++] = size[index];
+		}
+	}
+	for (int i = 1; i < n; i++) {
+		int value = sizes[i];
+		int j = i;
+		while (j > 0 && sizes[j - 1] < value) {
+			sizes[j] = sizes[j - 1];
+			j--;
+		}
+		sizes[j] = value;
+	}
+
+	char combined[96];
+	int used = 0;
+	combined[0] = '\0';
+	for (int i = 0; i < n; i++) {
+		int wrote = std::snprintf(combined + used, sizeof(combined) - (size_t)used, i == 0 ? "%d" : "v%d", sizes[i]);
+		if (wrote < 0 || used + wrote >= (int)sizeof(combined)) {
+			break;
+		}
+		used += wrote;
+	}
+	Copy_Limited(dest, capacity, combined);
 }
 
 

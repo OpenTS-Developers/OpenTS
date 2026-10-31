@@ -688,6 +688,12 @@ class SessionClass
 		 */
 		bool OutOfSync;
 
+		/*
+		 * Whether computer houses close ranks against the human players. A skirmish from the
+		 * menu and a launch file set it; a campaign leaves the rules value alone.
+		 */
+		bool ComputerParanoid;
+
 		unsigned int PlayingAgainstVersion;		// Negotiated version number
 
 		//.....................................................................

@@ -91,7 +91,8 @@ TEST_CASE("a menu names the menus and the logo")
 	fields.Mode = DISCORD_PRESENCE_MENU;
 	fields.Map = "Should Not Show";
 	fields.Faction = "GDI";
-	fields.AICount = 4;
+	fields.Title = "Tiberian Sun";
+	fields.Kind = "Campaign";
 	fields.StartedAt = 1'700'000'000;
 	unsigned char frame[1024];
 	int size = Discord_Presence_Activity_Frame(fields, 7, 42, frame, (int)sizeof(frame));
@@ -110,54 +111,57 @@ TEST_CASE("a menu names the menus and the logo")
 }
 
 
-TEST_CASE("a skirmish names the map, the side, and the AI count")
+TEST_CASE("a skirmish names the game, the sides, and the map")
 {
 	DiscordPresenceFields fields = {};
 	fields.Mode = DISCORD_PRESENCE_SKIRMISH;
+	fields.Title = "Tiberian Sun - Firestorm";
+	fields.Kind = "2v2";
 	fields.Map = "Reinforcements";
 	fields.Faction = "GDI";
-	fields.AICount = 3;
 	fields.StartedAt = 50;
 	unsigned char frame[1024];
 	int size = Discord_Presence_Activity_Frame(fields, 1, 9, frame, (int)sizeof(frame));
 	std::string payload = Payload(frame, size);
-	CHECK(payload.find("\"details\":\"Skirmish: Reinforcements\"") != std::string::npos);
-	CHECK(payload.find("\"state\":\"GDI, 3 AI\"") != std::string::npos);
-	CHECK(Brace_Balance(payload) == 0);
-}
-
-
-TEST_CASE("a campaign names the map and the side")
-{
-	DiscordPresenceFields fields = {};
-	fields.Mode = DISCORD_PRESENCE_CAMPAIGN;
-	fields.Map = "Reinforce Phoenix Base";
-	fields.Faction = "Nod";
-	fields.AICount = -1;
-	fields.StartedAt = 50;
-	unsigned char frame[1024];
-	int size = Discord_Presence_Activity_Frame(fields, 1, 9, frame, (int)sizeof(frame));
-	std::string payload = Payload(frame, size);
-	CHECK(payload.find("\"details\":\"Campaign: Reinforce Phoenix Base\"") != std::string::npos);
-	CHECK(payload.find("\"state\":\"Nod\"") != std::string::npos);
+	CHECK(payload.find("\"details\":\"Tiberian Sun - Firestorm (2v2)\"") != std::string::npos);
+	CHECK(payload.find("\"state\":\"GDI - Reinforcements\"") != std::string::npos);
 	CHECK(payload.find(" AI") == std::string::npos);
 	CHECK(Brace_Balance(payload) == 0);
 }
 
 
-TEST_CASE("multiplayer keeps the AI count off the profile")
+TEST_CASE("a campaign names the game, the side, and the mission")
+{
+	DiscordPresenceFields fields = {};
+	fields.Mode = DISCORD_PRESENCE_CAMPAIGN;
+	fields.Title = "Tiberian Sun";
+	fields.Kind = "Campaign";
+	fields.Map = "Reinforce Phoenix Base";
+	fields.Faction = "Nod";
+	fields.StartedAt = 50;
+	unsigned char frame[1024];
+	int size = Discord_Presence_Activity_Frame(fields, 1, 9, frame, (int)sizeof(frame));
+	std::string payload = Payload(frame, size);
+	CHECK(payload.find("\"details\":\"Tiberian Sun (Campaign)\"") != std::string::npos);
+	CHECK(payload.find("\"state\":\"Nod - Reinforce Phoenix Base\"") != std::string::npos);
+	CHECK(Brace_Balance(payload) == 0);
+}
+
+
+TEST_CASE("a three-way match names the sides and leaves the clock off when it has not started")
 {
 	DiscordPresenceFields fields = {};
 	fields.Mode = DISCORD_PRESENCE_MULTIPLAYER;
+	fields.Title = "Tiberian Sun";
+	fields.Kind = "1v1v1";
 	fields.Map = "Arctic";
 	fields.Faction = "GDI";
-	fields.AICount = -1;
 	fields.StartedAt = 0;
 	unsigned char frame[1024];
 	int size = Discord_Presence_Activity_Frame(fields, 1, 9, frame, (int)sizeof(frame));
 	std::string payload = Payload(frame, size);
-	CHECK(payload.find("\"details\":\"Multiplayer: Arctic\"") != std::string::npos);
-	CHECK(payload.find("\"state\":\"GDI\"") != std::string::npos);
+	CHECK(payload.find("\"details\":\"Tiberian Sun (1v1v1)\"") != std::string::npos);
+	CHECK(payload.find("\"state\":\"GDI - Arctic\"") != std::string::npos);
 	CHECK(payload.find("timestamps") == std::string::npos);
 	CHECK(Brace_Balance(payload) == 0);
 }
@@ -167,16 +171,76 @@ TEST_CASE("a quote in the map name stays inside its string")
 {
 	DiscordPresenceFields fields = {};
 	fields.Mode = DISCORD_PRESENCE_SKIRMISH;
+	fields.Title = "Tiberian Sun";
+	fields.Kind = "1v1";
 	fields.Map = "Say \"Hi\"\\now";
 	fields.Faction = "";
-	fields.AICount = 1;
 	fields.StartedAt = 0;
 	unsigned char frame[1024];
 	int size = Discord_Presence_Activity_Frame(fields, 1, 9, frame, (int)sizeof(frame));
 	std::string payload = Payload(frame, size);
 	CHECK(payload.find("Say \\\"Hi\\\"\\\\now") != std::string::npos);
-	CHECK(payload.find("\"state\":\"1 AI\"") != std::string::npos);
+	CHECK(payload.find("\"state\":\"Say \\\"Hi\\\"\\\\now\"") != std::string::npos);
 	CHECK(Brace_Balance(payload) == 0);
+}
+
+
+TEST_CASE("the side list follows mutual alliances")
+{
+	char label[32];
+	std::uint64_t solo[] = { 1ULL << 0, 1ULL << 1, 1ULL << 2, 1ULL << 3 };
+	Discord_Presence_Match_Label(label, (int)sizeof(label), solo, 4);
+	CHECK(std::string(label) == "1v1v1v1");
+
+	std::uint64_t three[] = { 1ULL << 0, 1ULL << 1, 1ULL << 2 };
+	Discord_Presence_Match_Label(label, (int)sizeof(label), three, 3);
+	CHECK(std::string(label) == "1v1v1");
+
+	std::uint64_t duel[] = { 1ULL << 0, 1ULL << 1 };
+	Discord_Presence_Match_Label(label, (int)sizeof(label), duel, 2);
+	CHECK(std::string(label) == "1v1");
+
+	std::uint64_t paired[] = {
+		(1ULL << 0) | (1ULL << 1),
+		(1ULL << 1) | (1ULL << 0),
+		(1ULL << 2) | (1ULL << 3),
+		(1ULL << 3) | (1ULL << 2)
+	};
+	Discord_Presence_Match_Label(label, (int)sizeof(label), paired, 4);
+	CHECK(std::string(label) == "2v2");
+
+	std::uint64_t split[] = {
+		(1ULL << 0) | (1ULL << 1),
+		(1ULL << 1) | (1ULL << 0),
+		1ULL << 2,
+		1ULL << 3
+	};
+	Discord_Presence_Match_Label(label, (int)sizeof(label), split, 4);
+	CHECK(std::string(label) == "2v1v1");
+
+	std::uint64_t triples[] = {
+		(1ULL << 0) | (1ULL << 1),
+		(1ULL << 1) | (1ULL << 0),
+		(1ULL << 2) | (1ULL << 3),
+		(1ULL << 3) | (1ULL << 2),
+		(1ULL << 4) | (1ULL << 5),
+		(1ULL << 5) | (1ULL << 4)
+	};
+	Discord_Presence_Match_Label(label, (int)sizeof(label), triples, 6);
+	CHECK(std::string(label) == "2v2v2");
+
+	std::uint64_t uneven[] = {
+		(1ULL << 0) | (1ULL << 1) | (1ULL << 2),
+		(1ULL << 1) | (1ULL << 0) | (1ULL << 2),
+		(1ULL << 2) | (1ULL << 0) | (1ULL << 1),
+		1ULL << 3
+	};
+	Discord_Presence_Match_Label(label, (int)sizeof(label), uneven, 4);
+	CHECK(std::string(label) == "3v1");
+
+	std::uint64_t one_way[] = { (1ULL << 0) | (1ULL << 1), 1ULL << 1 };
+	Discord_Presence_Match_Label(label, (int)sizeof(label), one_way, 2);
+	CHECK(std::string(label) == "1v1");
 }
 
 

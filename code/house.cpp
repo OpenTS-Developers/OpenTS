@@ -5930,15 +5930,31 @@ bool HouseClass::Is_Allowed_To_Ally(HouseClass const * house) const
  * HISTORY:                                                                                    *
  *   09/23/1996 JLB : Created.                                                                 *
  *=============================================================================================*/
+// True when this house began the match allied with a human who is still playing.
+// Control.Allies is that starting set; an alliance formed later is not in it.
+static bool Keeps_Starting_Human_Side(HouseClass const * house)
+{
+	for (HousesType index = HOUSE_FIRST; index < Houses.Count(); index++) {
+		HouseClass * human = Houses[index];
+		if (human != NULL && human != house && !human->IsDefeated && human->Is_Human_Player()
+			&& house->Control.Allies[human]) {
+			return(true);
+		}
+	}
+	return(false);
+}
+
+
 void HouseClass::Computer_Paranoid(void)
 {
 	/*
 	**	Loop through every computer controlled house and make allies with all other computer
 	**	controlled houses and then make enemies with all other human controlled houses.
 	*/
+	// A computer that started allied with a human still playing is left on that side.
 	for (HousesType house = HOUSE_FIRST; house < Houses.Count(); house++) {
 		HouseClass * hptr = Houses[house];
-		if (hptr != NULL && !hptr->IsDefeated && !hptr->Is_Human_Player()) {
+		if (hptr != NULL && !hptr->IsDefeated && !hptr->Is_Human_Player() && !Keeps_Starting_Human_Side(hptr)) {
 			hptr->IsParanoid = true;
 
 			/*
@@ -5950,7 +5966,7 @@ void HouseClass::Computer_Paranoid(void)
 				if (hptr2 != NULL && !hptr2->IsDefeated) {
 					if (hptr2->Is_Human_Player()) {
 						hptr->Make_Enemy(hptr2);
-					} else {
+					} else if (!Keeps_Starting_Human_Side(hptr2)) {
 						hptr->Make_Ally(hptr2);
 					}
 				}

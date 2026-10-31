@@ -15,6 +15,10 @@
 #include "discordformat.h"
 #include "goptions.h"
 #include "headless.h"
+#include "addon.h"
+#include "globals.h"
+#include "house.h"
+#include "houstype.h"
 #include "scenario.h"
 #include "session.h"
 #include "side.hh"
@@ -61,9 +65,10 @@ std::uint64_t const Application_Id = (std::uint64_t)SILICONSUN_DISCORD_APPLICATI
 // The game thread only hands this thread a new activity, so a missing client cannot stall a frame.
 struct Desired {
 	int Mode = DISCORD_PRESENCE_MENU;
+	std::string Title;
+	std::string Kind;
 	std::string Map;
 	std::string Faction;
-	int AI = -1;
 	std::int64_t Started = 0;
 	unsigned Generation = 0;
 };
@@ -386,9 +391,10 @@ bool Send_Activity(Pipe & pipe, Desired const & desired, unsigned nonce)
 	unsigned char frame[1024];
 	DiscordPresenceFields fields;
 	fields.Mode = desired.Mode;
+	fields.Title = desired.Title.c_str();
+	fields.Kind = desired.Kind.c_str();
 	fields.Map = desired.Map.c_str();
 	fields.Faction = desired.Faction.c_str();
-	fields.AICount = desired.AI;
 	fields.StartedAt = desired.Started;
 #if defined(_WIN32)
 	long pid = (long)GetCurrentProcessId();
@@ -495,10 +501,16 @@ bool May_Run(void)
 }
 
 
-void Publish(int mode, char const * map, char const * faction, int ai, bool restart_clock)
+void Publish(int mode, char const * title, char const * kind, char const * map, char const * faction, bool restart_clock)
 {
 	if (!May_Run()) {
 		return;
+	}
+	if (title == nullptr) {
+		title = "";
+	}
+	if (kind == nullptr) {
+		kind = "";
 	}
 	if (map == nullptr) {
 		map = "";
@@ -512,16 +524,18 @@ void Publish(int mode, char const * map, char const * faction, int ai, bool rest
 	}
 	bool same = Worker.joinable()
 		&& Pending.Mode == mode
+		&& Pending.Title == title
+		&& Pending.Kind == kind
 		&& Pending.Map == map
-		&& Pending.Faction == faction
-		&& Pending.AI == ai;
+		&& Pending.Faction == faction;
 	if (same && !restart_clock) {
 		return;
 	}
 	Pending.Mode = mode;
+	Pending.Title = title;
+	Pending.Kind = kind;
 	Pending.Map = map;
 	Pending.Faction = faction;
-	Pending.AI = ai;
 	Pending.Started = (std::int64_t)std::time(nullptr);
 	Pending.Generation += 1;
 	if (!Worker.joinable()) {
@@ -579,9 +593,41 @@ void Map_Label(char * dest, int capacity)
 }
 
 
+static void Match_Kind(char * dest, int capacity)
+{
+	if (Session.Type == GAME_NORMAL) {
+		Copy_Trimmed(dest, capacity, "Campaign");
+		return;
+	}
+
+	HouseClass * playing[64];
+	int count = 0;
+	for (int index = 0; index < Houses.Count() && count < 64; index++) {
+		HouseClass * house = Houses[index];
+		if (house == nullptr || house->IsObserver || house->IsDefeated || house->Class->IsMultiplayPassive) {
+			continue;
+		}
+		playing[count++] = house;
+	}
+
+	std::uint64_t allies[64] = {};
+	for (int i = 0; i < count; i++) {
+		for (int j = 0; j < count; j++) {
+			if (playing[i]->Is_Ally(playing[j])) {
+				allies[i] |= 1ULL << j;
+			}
+		}
+	}
+	Discord_Presence_Match_Label(dest, capacity, allies, count);
+	if (dest[0] == '\0') {
+		Copy_Trimmed(dest, capacity, Session.Type == GAME_SKIRMISH ? "Skirmish" : "Multiplayer");
+	}
+}
+
+
 void Discord_Presence_Show_Menu(void)
 {
-	Publish(DISCORD_PRESENCE_MENU, "", "", -1, false);
+	Publish(DISCORD_PRESENCE_MENU, "", "", "", "", false);
 }
 
 
@@ -606,11 +652,10 @@ void Discord_Presence_Show_Match(void)
 		}
 	}
 
-	int ai = -1;
-	if (mode == DISCORD_PRESENCE_SKIRMISH) {
-		ai = Session.Options.AIPlayers;
-	}
-	Publish(mode, map, faction, ai, true);
+	char kind[64];
+	Match_Kind(kind, (int)sizeof(kind));
+	char const * title = Addon_Enabled(ADDON_FIRESTORM) ? "Tiberian Sun - Firestorm" : "Tiberian Sun";
+	Publish(mode, title, kind, map, faction, true);
 }
 
 

@@ -43,9 +43,4 @@ When a house is defeated in a skirmish or multiplayer game, or by the [Destroy a
 
 Alliances from the map take effect without the alliance announcement. They also skip two things that happen when an alliance forms during play: the house's units drop targets that are now friendly, and, with [`AllyReveal`](/keys/allyreveal/) on, a house that allies with the local player reveals the terrain around all its objects at once.
 
-With [`Paranoid`](/keys/paranoid/) on, every computer house breaks its alliances with every human house, including those the map or the launch file declared, when either of these happens:
-
-- A human house forms an alliance during play.
-- A computer house whose IQ equals [`MaxIQLevels`](/keys/maxiqlevels/) is defeated. Every computer player in a skirmish or multiplayer game has that IQ.
-
-`Paranoid=no` in `[AI]` is the only setting that keeps a cooperative map's alliances between human and computer houses intact. Leaving `AlliesAllowed` at `no` in the launch file's [`[Settings]`](/formats/spawn-ini/#the-options-every-house-plays-under) stops only the alliances players form during play.
+With [`Paranoid`](/keys/paranoid/) on, the computer houses close ranks when a human house forms an alliance during play, and when a computer house whose IQ equals [`MaxIQLevels`](/keys/maxiqlevels/) is defeated. Every computer player in a skirmish or multiplayer game has that IQ. A computer house that was allied with a human house when the scenario was set up keeps that alliance while the human house is still in the game. An alliance a computer house forms after the match has started is broken. `Paranoid=no` stops the computer houses from closing ranks. Leaving `AlliesAllowed` at `no` in the launch file's [`[Settings]`](/formats/spawn-ini/#the-options-every-house-plays-under) stops only the alliances players form during play.
