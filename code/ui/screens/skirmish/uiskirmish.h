@@ -34,6 +34,7 @@ class UISkirmishServiceClass
 	public:
 		virtual ~UISkirmishServiceClass(void) = default;
 		virtual void Pick_Map(UISkirmishState & state) = 0;
+		virtual void Configure_Options(UISkirmishState & state) = 0;
 		virtual bool Can_Start(UISkirmishState const & state) = 0;
 };
 
@@ -43,6 +44,16 @@ struct UISkirmishOption
 	std::string Label;
 	int Value = 0;
 	std::string Color;
+};
+
+
+// One computer opponent. -1 leaves the country or colour to the game's random pick.
+struct UISkirmishAISlot
+{
+	int Side = -1;  // HouseTypes index of the country, or -1 for the game's choice
+	int Color = -1; // colour index, or -1 for the game's choice
+	int Level = 1;  // difficulty on the AI Level scale: 0 Easy, 1 Normal, 2 Hard
+	int Team = 0;   // 0 for no team, 1..4 for the team this seat allies with
 };
 
 
@@ -79,6 +90,10 @@ struct UISkirmishState
 	int AIPlayers = 1;
 	int AIPlayersMax = 7;
 	int GameSpeed = 0;
+
+	int Team = 0;
+
+	std::vector<UISkirmishAISlot> AI;
 };
 
 

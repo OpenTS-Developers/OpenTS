@@ -18,38 +18,26 @@
 
 #content
 {
-	padding: 19dp 32dp 0 33dp;
-}
-
-#columns
-{
 	display: flex;
-}
-
-#left
-{
-	width: 394dp;
-	margin-right: 14dp;
-}
-
-#right
-{
-	width: 167dp;
+	flex-direction: column;
+	box-sizing: border-box;
+	height: 100%;
+	padding: 14dp 32dp 0 33dp;
 }
 
 #top
 {
+	flex: 0 0 auto;
 	display: flex;
 }
 
-#identity
+#player
 {
-	width: 118dp;
-	height: 178dp;
-	margin-right: 24dp;
+	width: 180dp;
+	margin-right: 14dp;
 }
 
-#identity > .caption
+#player > .caption
 {
 	display: block;
 	height: 14dp;
@@ -58,150 +46,209 @@
 
 #handle
 {
-	width: 116dp;
+	width: 168dp;
 	box-sizing: border-box;
-	height: 26dp;
+	height: 24dp;
 	font-family: dlgsys;
 	line-height: 17dp;
-	padding: 4dp 1dp 0 2dp;
-	margin-top: 5dp;
+	padding: 4dp 0 0 2dp;
+	margin-top: 12dp;
 	margin-left: 0;
-}
-
-#cap-side
-{
-	margin-top: 9dp;
+	background-color: #00000094;
 }
 
 #side
 {
-	width: 118dp;
-	margin-top: 1dp;
-}
-
-#cap-color
-{
-	margin-top: 8dp;
+	width: 170dp;
+	margin-top: 2dp;
 }
 
 #color
 {
-	width: 118dp;
+	width: 170dp;
 	margin-top: 2dp;
 }
 
-#cap-map
+#team
 {
-	height: 17dp;
-	margin-top: 1dp;
-}
-
-#mapname
-{
-	width: 403dp;
-	height: 17dp;
-	margin-top: 9dp;
-}
-
-#switches
-{
-	width: 252dp;
-	height: 158dp;
-	padding: 14dp 0 0 8dp;
-}
-
-#switches > label:nth-child(even)
-{
-	margin-top: 1dp;
+	width: 170dp;
+	margin-top: 2dp;
 }
 
 #map
 {
+	flex: 1 1 auto;
+	min-width: 0;
+}
+
+#map-head
+{
+	display: flex;
+	height: 24dp;
+}
+
+#mapname
+{
+	flex: 1 1 auto;
+	min-width: 0;
+	height: 17dp;
+	line-height: 17dp;
+	padding-top: 4dp;
+	white-space: nowrap;
+	overflow: hidden;
+}
+
+#changemap
+{
+	width: 104dp;
+}
+
+#mapframe
+{
 	position: relative;
-	width: 324dp;
-	height: 174dp;
-	margin-top: 1dp;
+	height: 140dp;
+	margin-top: 2dp;
 }
 
 #preview
 {
 	position: absolute;
-	left: -1dp;
-	top: -1dp;
-	width: 323dp;
-	height: 173dp;
+	left: 0;
+	top: 0;
+	right: 0;
+	bottom: 0;
 }
 
-#preview-caption
+#ai
 {
-	position: absolute;
-	left: -1dp;
-	top: 70dp;
-	width: 323dp;
+	flex: 1 1 auto;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	margin-top: 10dp;
+}
+
+#ai-head
+{
+	flex: 0 0 auto;
+	display: flex;
 	height: 22dp;
-	padding-right: 1dp;
+}
+
+#ai-title
+{
+	flex: 1 1 auto;
+	height: 17dp;
 	line-height: 17dp;
+}
+
+#ai-count
+{
+	flex: 0 0 auto;
+	display: flex;
+}
+
+#aisub, #aiadd
+{
+	width: 22dp;
+}
+
+#aiplayers
+{
+	display: block;
+	width: 30dp;
+	line-height: 17dp;
+	padding-top: 3dp;
 	text-align: center;
 }
 
-#settings
+#ai-cols
 {
-	width: 167dp;
-	height: 297dp;
-	padding: 9dp 0 0 5dp;
+	flex: 0 0 auto;
+	display: flex;
+	height: 16dp;
 }
 
-.setting > .caption
+#ai-cols > span
+{
+	font-family: dlg-sans;
+	font-size: 13dp;
+	line-height: 16dp;
+	color: #4eb6dc;
+}
+
+#aislots
+{
+	flex: 1 1 auto;
+	min-height: 0;
+}
+
+#aislots select
+{
+	font-family: dlgsys;
+}
+
+#aislots .ai-row
+{
+	display: flex;
+	align-items: center;
+	height: 25dp;
+}
+
+.c-num
 {
 	display: block;
-	height: 14dp;
-	line-height: 17dp;
+	width: 22dp;
+	margin-right: 4dp;
+	font-family: dlg-sans;
+	font-size: 13dp;
+	line-height: 16dp;
+	text-align: center;
 }
 
-.setting > .row
+.c-side
 {
-	height: 23dp;
-	white-space: nowrap;
+	display: block;
+	width: 128dp;
+	margin-right: 4dp;
 }
 
-.setting input[type='range']
+.c-color
 {
-	width: 100dp;
-	height: 23dp;
+	display: block;
+	width: 128dp;
+	margin-right: 4dp;
 }
 
-.setting .trough, .setting .trough-edge
+.c-level
 {
-	height: 24dp;
+	display: block;
+	width: 128dp;
+	margin-right: 4dp;
 }
 
-.setting .trough
+.c-team
 {
-	line-height: 23dp;
+	display: block;
+	width: 128dp;
 }
 
-#setting-units { height: 47dp; }
-#setting-units > .row { margin-top: 5dp; }
-#setting-credits { height: 47dp; }
-#setting-credits > .row { margin-top: 6dp; }
-#setting-tech { height: 48dp; }
-#setting-tech > .row { margin-top: 6dp; }
-#setting-ailevel { height: 47dp; }
-#setting-ailevel > .row { margin-top: 6dp; }
-#setting-aiplayers { height: 48dp; }
-#setting-aiplayers > .row { margin-top: 5dp; }
-#setting-speed > .row { margin-top: 5dp; }
-
-#pick
+#bottom
 {
-	width: 166dp;
-	margin-top: 5dp;
+	flex: 0 0 auto;
+	display: flex;
+	margin-top: 10dp;
+}
+
+#options
+{
+	width: 104dp;
 }
 
 #buttons
 {
 	display: flex;
-	margin-top: 3dp;
+	margin-left: auto;
 }
 
 #ok

@@ -14,6 +14,7 @@
 
 #include <RmlUi/Core/Element.h>
 #include <RmlUi/Core/ElementDocument.h>
+#include <cstdlib>
 #include <utility>
 
 
@@ -33,6 +34,21 @@ static int Clamp(int value, int low, int high)
 }
 
 
+// Keeps one computer slot per AI player. New slots start at the session difficulty.
+static void Resize_AI(UISkirmishState & state)
+{
+	if ((int)state.AI.size() < state.AIPlayers) {
+		while ((int)state.AI.size() < state.AIPlayers) {
+			UISkirmishAISlot slot;
+			slot.Level = Clamp(state.AILevel, 0, 2);
+			state.AI.push_back(slot);
+		}
+	} else if ((int)state.AI.size() > state.AIPlayers) {
+		state.AI.resize(state.AIPlayers);
+	}
+}
+
+
 void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 {
 	if (intent.Name == "handle") {
@@ -45,41 +61,32 @@ void UISkirmishPresenterClass::Execute(UIIntent const & intent)
 		if (intent.Value >= 0 && intent.Value < (int)State.Colors.size()) {
 			State.Color = intent.Value;
 		}
-	} else if (intent.Name == "bases") {
-		State.Bases = intent.Value != 0;
-
-		if (!State.Bases) {
-			State.ShortGame = false;
+	} else if (intent.Name == "team") {
+		State.Team = Clamp(intent.Value, 0, 4);
+	} else if (intent.Name == "aiadd") {
+		State.AIPlayers = Clamp(State.AIPlayers + 1, 1, State.AIPlayersMax);
+		Resize_AI(State);
+	} else if (intent.Name == "aisub") {
+		State.AIPlayers = Clamp(State.AIPlayers - 1, 1, State.AIPlayersMax);
+		Resize_AI(State);
+	} else if (intent.Name == "aiside" || intent.Name == "aicolor" || intent.Name == "aidiff" || intent.Name == "aiteam") {
+		int slot = intent.Value;
+		if (slot >= 0 && slot < (int)State.AI.size()) {
+			int value = std::atoi(intent.Text.c_str());
+			if (intent.Name == "aiside") {
+				State.AI[slot].Side = value;
+			} else if (intent.Name == "aicolor") {
+				State.AI[slot].Color = Clamp(value, -1, (int)State.Colors.size() - 1);
+			} else if (intent.Name == "aidiff") {
+				State.AI[slot].Level = Clamp(value, 0, 2);
+			} else {
+				State.AI[slot].Team = Clamp(value, 0, 4);
+			}
 		}
-	} else if (intent.Name == "short") {
-		State.ShortGame = intent.Value != 0;
-		if (State.ShortGame) {
-			State.Bases = true;
-		}
-	} else if (intent.Name == "crates") {
-		State.Crates = intent.Value != 0;
-	} else if (intent.Name == "fog") {
-		State.Fog = intent.Value != 0;
-	} else if (intent.Name == "bridges") {
-		State.Bridges = intent.Value != 0;
-	} else if (intent.Name == "redeploy") {
-		State.Redeploy = intent.Value != 0;
-	} else if (intent.Name == "engineer") {
-		State.MultiEngineer = intent.Value != 0;
-	} else if (intent.Name == "units") {
-		State.UnitCount = Clamp(intent.Value, State.UnitCountMin, State.UnitCountMax);
-	} else if (intent.Name == "credits") {
-		State.Credits = Clamp(intent.Value, State.CreditsMin, State.CreditsMax);
-	} else if (intent.Name == "tech") {
-		State.TechLevel = Clamp(intent.Value, 1, State.TechLevelMax);
-	} else if (intent.Name == "ailevel") {
-		State.AILevel = Clamp(intent.Value, 0, 2);
-	} else if (intent.Name == "aiplayers") {
-		State.AIPlayers = Clamp(intent.Value, 1, State.AIPlayersMax);
-	} else if (intent.Name == "speed") {
-		State.GameSpeed = Clamp(intent.Value, 0, 6);
 	} else if (intent.Name == "map") {
 		Service.Pick_Map(State);
+	} else if (intent.Name == "options") {
+		Service.Configure_Options(State);
 	} else if (intent.Name == "ok") {
 		if (Service.Can_Start(State)) {
 			Choice = UI_SKIRMISH_START;
@@ -115,19 +122,10 @@ class UISkirmishViewClass : public UIRmlViewClass
 			Model.DirtyVariable("handle");
 			Model.DirtyVariable("side");
 			Model.DirtyVariable("color");
-			Model.DirtyVariable("bases");
-			Model.DirtyVariable("crates");
-			Model.DirtyVariable("fog");
-			Model.DirtyVariable("bridges");
-			Model.DirtyVariable("redeploy");
-			Model.DirtyVariable("shortgame");
-			Model.DirtyVariable("engineer");
-			Model.DirtyVariable("units");
-			Model.DirtyVariable("credits");
-			Model.DirtyVariable("tech");
-			Model.DirtyVariable("ailevel");
+			Model.DirtyVariable("team");
+			Model.DirtyVariable("mapname");
 			Model.DirtyVariable("aiplayers");
-			Model.DirtyVariable("speed");
+			Model.DirtyVariable("ai");
 
 			Show_Preview();
 		}
@@ -136,41 +134,31 @@ class UISkirmishViewClass : public UIRmlViewClass
 		virtual bool Bind(Rml::DataModelConstructor & model) override
 		{
 			Rml::StructHandle<UISkirmishOption> option = model.RegisterStruct<UISkirmishOption>();
-			if (!option) {
+			Rml::StructHandle<UISkirmishAISlot> ai = model.RegisterStruct<UISkirmishAISlot>();
+			if (!option || !ai) {
 				return(false);
 			}
 			option.RegisterMember("label", &UISkirmishOption::Label);
 			option.RegisterMember("value", &UISkirmishOption::Value);
 			option.RegisterMember("color", &UISkirmishOption::Color);
 
+			ai.RegisterMember("side", &UISkirmishAISlot::Side);
+			ai.RegisterMember("color", &UISkirmishAISlot::Color);
+			ai.RegisterMember("level", &UISkirmishAISlot::Level);
+			ai.RegisterMember("team", &UISkirmishAISlot::Team);
+
 			UISkirmishState & state = Data.State;
 			return(model.RegisterArray<std::vector<UISkirmishOption>>()
+				&& model.RegisterArray<std::vector<UISkirmishAISlot>>()
 				&& model.Bind("handle", &state.Handle)
 				&& model.Bind("sides", &state.Sides)
 				&& model.Bind("side", &state.Side)
 				&& model.Bind("colors", &state.Colors)
 				&& model.Bind("color", &state.Color)
+				&& model.Bind("team", &state.Team)
 				&& model.Bind("mapname", &state.MapName)
-				&& model.Bind("bases", &state.Bases)
-				&& model.Bind("crates", &state.Crates)
-				&& model.Bind("fog", &state.Fog)
-				&& model.Bind("bridges", &state.Bridges)
-				&& model.Bind("redeploy", &state.Redeploy)
-				&& model.Bind("shortgame", &state.ShortGame)
-				&& model.Bind("engineer", &state.MultiEngineer)
-				&& model.Bind("units", &state.UnitCount)
-				&& model.Bind("unitsmin", &state.UnitCountMin)
-				&& model.Bind("unitsmax", &state.UnitCountMax)
-				&& model.Bind("credits", &state.Credits)
-				&& model.Bind("creditsmin", &state.CreditsMin)
-				&& model.Bind("creditsmax", &state.CreditsMax)
-				&& model.Bind("creditsstep", &state.CreditsStep)
-				&& model.Bind("tech", &state.TechLevel)
-				&& model.Bind("techmax", &state.TechLevelMax)
-				&& model.Bind("ailevel", &state.AILevel)
 				&& model.Bind("aiplayers", &state.AIPlayers)
-				&& model.Bind("aiplayersmax", &state.AIPlayersMax)
-				&& model.Bind("speed", &state.GameSpeed));
+				&& model.Bind("ai", &state.AI));
 		}
 
 	private:

@@ -1,0 +1,100 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+#reveal
+{
+	width: 560dp;
+	height: 300dp;
+	top: 50%;
+	margin-top: -150dp;
+}
+
+#content
+{
+	padding: 19dp 32dp 0 33dp;
+}
+
+#columns
+{
+	display: flex;
+}
+
+#switches
+{
+	width: 268dp;
+	padding: 14dp 0 0 8dp;
+}
+
+#switches > label:nth-child(even)
+{
+	margin-top: 1dp;
+}
+
+#settings
+{
+	width: 216dp;
+	padding: 9dp 0 0 5dp;
+}
+
+.setting > .caption
+{
+	display: block;
+	height: 14dp;
+	line-height: 17dp;
+}
+
+.setting > .row
+{
+	height: 24dp;
+	white-space: nowrap;
+}
+
+.setting input[type='range']
+{
+	width: 100dp;
+	height: 23dp;
+}
+
+.setting .trough, .setting .trough-edge
+{
+	height: 24dp;
+}
+
+.setting .trough
+{
+	line-height: 23dp;
+}
+
+.setting
+{
+	height: 47dp;
+}
+
+.setting > .row
+{
+	margin-top: 6dp;
+}
+
+#buttons
+{
+	display: flex;
+	margin-top: 16dp;
+}
+
+#ok
+{
+	width: 76dp;
+	margin-right: 300dp;
+}
+
+#cancel
+{
+	width: 76dp;
+}

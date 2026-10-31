@@ -33,6 +33,7 @@
 #include "ui/screens/savegame/uisavegame.h"
 #include "ui/screens/scenario/uiscenario.h"
 #include "ui/screens/skirmish/uiskirmish.h"
+#include "ui/screens/skirmish/uiskirmishoptions.h"
 #include "ui/screens/sound/uisound.h"
 #include "ui/screens/version/uiversion.h"
 #include "ui/screens/waitbox/uiwaitbox.h"
@@ -4280,6 +4281,7 @@ class RecordingSkirmishServiceClass : public UISkirmishServiceClass
 {
 	public:
 		int Picked = 0;
+		int Options = 0;
 		bool Startable = true;
 		int Asked = 0;
 
@@ -4287,6 +4289,11 @@ class RecordingSkirmishServiceClass : public UISkirmishServiceClass
 		{
 			Picked++;
 			state.MapName = "Picked map";
+		}
+
+		virtual void Configure_Options(UISkirmishState &) override
+		{
+			Options++;
 		}
 
 		virtual bool Can_Start(UISkirmishState const &) override
@@ -4414,12 +4421,8 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 		state.Colors.push_back(color);
 	}
 	state.MapName = "Grand Canyon (2-4)";
-	state.UnitCountMax = 10;
-	state.CreditsMin = 2500;
-	state.CreditsMax = 10000;
-	state.CreditsStep = 250;
-	state.Credits = 5000;
-	state.TechLevelMax = 10;
+	state.AIPlayers = 2;
+	state.AI.assign(state.AIPlayers, UISkirmishAISlot());
 	state.Preview.Width = 4;
 	state.Preview.Height = 2;
 	state.Preview.Pixels.assign(4 * 2 * 4, 200);
@@ -4441,32 +4444,35 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	REQUIRE_MESSAGE(dialog != nullptr, "the setup is the size its template comes to");
 	CHECK_MESSAGE(dialog->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(640.0f, 391.0f), "the setup is the size its template comes to");
 
-	Rml::Element * switches = document->GetElementById("switches");
-	REQUIRE_MESSAGE(switches != nullptr, "the switch frame is its rect and the pixel the layer adds");
-	CHECK_MESSAGE(switches->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(252.0f, 158.0f), "the switch frame is its rect and the pixel the layer adds");
-
-	Rml::Element * settings = document->GetElementById("settings");
-	REQUIRE_MESSAGE(settings != nullptr, "the setting frame is its rect and the pixel the layer adds");
-	CHECK_MESSAGE(settings->GetBox().GetSize(Rml::BoxArea::Border) == Rml::Vector2f(167.0f, 297.0f), "the setting frame is its rect and the pixel the layer adds");
-
+	CHECK_MESSAGE(document->GetElementById("aislots") != nullptr, "the setup lists the AI opponents inline");
 	CHECK_MESSAGE(rmlui_dynamic_cast<UIRmlSurfaceElementClass *>(document->GetElementById("preview")) != nullptr, "the setup holds a surface for the map preview");
 
-	presenter.State.Bases = false;
-	presenter.State.ShortGame = false;
-	Drive(presenter, "short", 1);
-	CHECK_MESSAGE(presenter.State.ShortGame, "asking for a short game brings bases back");
-	CHECK_MESSAGE(presenter.State.Bases, "asking for a short game brings bases back");
-	Drive(presenter, "bases", 0);
-	CHECK_MESSAGE(!presenter.State.Bases, "taking bases away ends the short game");
-	CHECK_MESSAGE(!presenter.State.ShortGame, "taking bases away ends the short game");
+	Drive(presenter, "aiadd");
+	CHECK_MESSAGE(presenter.State.AIPlayers == 3, "adding an opponent raises the count");
+	CHECK_MESSAGE(presenter.State.AI.size() == 3, "and adds a slot");
+	Drive(presenter, "aisub");
+	CHECK_MESSAGE(presenter.State.AIPlayers == 2, "removing an opponent lowers the count");
+	CHECK_MESSAGE(presenter.State.AI.size() == 2, "and drops the slot");
 
-	Drive(presenter, "credits", 99999);
-	CHECK_MESSAGE(presenter.State.Credits == 10000, "a reading past its bound is held at it");
+	Drive(presenter, "aiside", 1, "1");
+	CHECK_MESSAGE(presenter.State.AI[1].Side == 1, "a slot takes the side chosen for it");
+	Drive(presenter, "aicolor", 1, "0");
+	CHECK_MESSAGE(presenter.State.AI[1].Color == 0, "and its colour");
+	Drive(presenter, "aidiff", 1, "2");
+	CHECK_MESSAGE(presenter.State.AI[1].Level == 2, "and its difficulty");
+	Drive(presenter, "aiteam", 1, "3");
+	CHECK_MESSAGE(presenter.State.AI[1].Team == 3, "and its team");
+
+	Drive(presenter, "team", 2);
+	CHECK_MESSAGE(presenter.State.Team == 2, "the player takes the team chosen for it");
 
 	Drive(presenter, "map");
 	REQUIRE_MESSAGE(!presenter.Result.has_value(), "the map button runs the map dialog over the setup, which stays open");
 	CHECK_MESSAGE(service.Picked == 1, "the map button runs the map dialog over the setup, which stays open");
 	CHECK_MESSAGE(presenter.State.MapName == "Picked map", "and the setup takes the map that came back");
+
+	Drive(presenter, "options");
+	CHECK_MESSAGE(service.Options == 1, "the options button runs the options dialog over the setup");
 
 	service.Startable = false;
 	Drive(presenter, "ok");
@@ -4476,6 +4482,50 @@ void Test_Skirmish_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Drive(presenter, "ok");
 	REQUIRE_MESSAGE(presenter.Result.has_value(), "and one that can starts the game");
 	CHECK_MESSAGE(presenter.Choice == UI_SKIRMISH_START, "and one that can starts the game");
+
+	view->Release();
+	context.Update();
+}
+
+
+void Test_Skirmish_Options(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	int problems = system.Problems;
+
+	UISkirmishState state;
+	state.UnitCountMin = 0;
+	state.UnitCountMax = 10;
+	state.UnitCount = 4;
+	state.CreditsMin = 2500;
+	state.CreditsMax = 10000;
+	state.CreditsStep = 250;
+	state.Credits = 5000;
+	state.TechLevelMax = 10;
+	state.TechLevel = 5;
+
+	UISkirmishOptionsPresenterClass presenter(state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_Options_View(presenter);
+
+	CHECK_MESSAGE(Rml(*view).Prepare(context), "the options view prepares against the test context");
+	view->Show(false);
+	view->Sync();
+	context.Update();
+	context.Render();
+	CHECK_MESSAGE(system.Problems == problems, "the options screen raises no RmlUi warning or error");
+
+	Drive(presenter, "short", 1);
+	CHECK_MESSAGE(state.ShortGame, "asking for a short game brings bases back");
+	CHECK_MESSAGE(state.Bases, "asking for a short game brings bases back");
+	Drive(presenter, "bases", 0);
+	CHECK_MESSAGE(!state.Bases, "taking bases away ends the short game");
+	CHECK_MESSAGE(!state.ShortGame, "taking bases away ends the short game");
+
+	Drive(presenter, "credits", 99999);
+	CHECK_MESSAGE(state.Credits == 10000, "a reading past its bound is held at it");
+
+	Drive(presenter, "ok");
+	REQUIRE_MESSAGE(presenter.Result.has_value(), "OK accepts the options");
+	CHECK_MESSAGE(*presenter.Result == UI_RESULT_ACCEPTED, "OK accepts the options");
 
 	view->Release();
 	context.Update();
@@ -5248,6 +5298,12 @@ TEST_CASE_FIXTURE(DocumentFixture, "the surface element converts and draws a pic
 TEST_CASE_FIXTURE(DocumentFixture, "the skirmish screen")
 {
 	Test_Skirmish_Screen(*context, system);
+}
+
+
+TEST_CASE_FIXTURE(DocumentFixture, "the skirmish options screen")
+{
+	Test_Skirmish_Options(*context, system);
 }
 
 

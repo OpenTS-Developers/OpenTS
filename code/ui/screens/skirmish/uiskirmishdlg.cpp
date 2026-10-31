@@ -24,6 +24,7 @@
 #include "rules.h"
 #include "session.h"
 #include "ui/screens/skirmish/uiskirmish.h"
+#include "ui/screens/skirmish/uiskirmishoptions.h"
 #include "ui/uienginehost.h"
 #include "ui/uipreview.h"
 #include "ui/uishell.h"
@@ -111,6 +112,40 @@ static void Commit(UISkirmishState const & state)
 		Session.Players.Add(who);
 	}
 
+	// A seat's -1 house and colour mean the game picks; the handicap inverts the level to the
+	// slot Assign_Houses reads.
+	for (UISkirmishAISlot const & slot : state.AI) {
+		NodeNameType * seat = new NodeNameType;
+		seat->Player.House = slot.Side >= 0 && slot.Side < HouseTypes.Count() ? slot.Side : -1;
+		seat->Player.Color = slot.Color >= 0 && slot.Color < (int)state.Colors.size() ? slot.Color : -1;
+		seat->Player.Handicap = 2 - slot.Level;
+		Session.Computers.Add(seat);
+	}
+
+	// A seat's mask names the seats it allies with; every seat sharing a team allies the rest.
+	int const seats = 1 + (int)state.AI.size();
+	std::vector<int> teams(seats, 0);
+	teams[0] = state.Team;
+	for (int index = 0; index < (int)state.AI.size(); index++) {
+		teams[index + 1] = state.AI[index].Team;
+	}
+	for (int seat = 0; seat < seats; seat++) {
+		if (teams[seat] == 0) {
+			continue;
+		}
+		unsigned mask = 0;
+		for (int ally = 0; ally < seats; ally++) {
+			if (ally != seat && teams[ally] == teams[seat]) {
+				mask |= (1u << ally);
+			}
+		}
+		if (seat == 0) {
+			Session.Players[0]->Player.AlliesMask = mask;
+		} else {
+			Session.Computers[seat - 1]->Player.AlliesMask = mask;
+		}
+	}
+
 	delete MultiplayerMapPreview;
 	MultiplayerMapPreview = NULL;
 }
@@ -135,6 +170,40 @@ static void Pick_Map(UISkirmishState & state)
 }
 
 
+static void Configure_Options(UISkirmishState & state)
+{
+	bool const bases = state.Bases;
+	bool const crates = state.Crates;
+	bool const fog = state.Fog;
+	bool const bridges = state.Bridges;
+	bool const redeploy = state.Redeploy;
+	bool const shortgame = state.ShortGame;
+	bool const engineer = state.MultiEngineer;
+	int const units = state.UnitCount;
+	int const credits = state.Credits;
+	int const tech = state.TechLevel;
+	int const speed = state.GameSpeed;
+
+	UISkirmishOptionsPresenterClass presenter(state);
+	std::unique_ptr<UIViewClass> view = UI_Skirmish_Options_View(presenter);
+
+	UIResult result = UI_Run_Modal(*view, true);
+	if (result != UI_RESULT_ACCEPTED || !presenter.Accepted) {
+		state.Bases = bases;
+		state.Crates = crates;
+		state.Fog = fog;
+		state.Bridges = bridges;
+		state.Redeploy = redeploy;
+		state.ShortGame = shortgame;
+		state.MultiEngineer = engineer;
+		state.UnitCount = units;
+		state.Credits = credits;
+		state.TechLevel = tech;
+		state.GameSpeed = speed;
+	}
+}
+
+
 namespace
 {
 
@@ -144,6 +213,11 @@ class UISkirmishEngineServiceClass : public UISkirmishServiceClass
 		virtual void Pick_Map(UISkirmishState & state) override
 		{
 			::Pick_Map(state);
+		}
+
+		virtual void Configure_Options(UISkirmishState & state) override
+		{
+			::Configure_Options(state);
 		}
 
 		virtual bool Can_Start(UISkirmishState const & state) override
@@ -211,6 +285,10 @@ void UI_Skirmish_State(UISkirmishState & state)
 
 	state.AIPlayersMax = 7;
 	state.AIPlayers = Session.Options.AIPlayers > 1 ? Session.Options.AIPlayers : 1;
+	state.AI.assign(state.AIPlayers, UISkirmishAISlot());
+	for (UISkirmishAISlot & slot : state.AI) {
+		slot.Level = state.AILevel;
+	}
 
 	state.GameSpeed = 6 - Session.Options.GameSpeed;
 
