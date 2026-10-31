@@ -23,7 +23,7 @@
 			<label class="check"><input type="checkbox" data-attrif-checked="redeploy" data-event-click="queue('redeploy', redeploy ? 0 : 1)"/>Re-Deployable MCV</label>
 			<label class="check"><input type="checkbox" data-attrif-checked="shortgame" data-event-click="queue('short', shortgame ? 0 : 1)"/>Short Game</label>
 			<label class="check"><input type="checkbox" data-attrif-checked="engineer" data-event-click="queue('engineer', engineer ? 0 : 1)"/>Multi Engineer</label>
-			<label class="check"><input type="checkbox" data-attrif-checked="paranoid" data-event-click="queue('paranoid', paranoid ? 0 : 1)"/>Paranoid</label>
+			<label class="check"><input type="checkbox" data-attrif-checked="paranoid" data-event-click="queue('paranoid', paranoid ? 0 : 1)"/>Paranoid AI</label>
 		</div>
 		<div id="settings" class="frame">
 			<div class="setting">
