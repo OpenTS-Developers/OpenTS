@@ -15,11 +15,26 @@
 </head>
 <body template="dialog" data-model="scenario">
 	<p id="title">Select Multiplayer Map</p>
+	<div id="filters">
+		<input type="text" id="find" placeholder="Search" data-value="query" data-event-change="queue('find', ev.value)"/>
+		<select id="players" data-event-change="queue('players', ev.value)">
+			<option data-for="option : players" data-attr-value="option.value" data-attrif-selected="option.value == player">{{option.label}}</option>
+		</select>
+		<select id="theater" data-event-change="queue('theater', ev.value)">
+			<option data-for="option : theaters" data-attr-value="option.value" data-attrif-selected="option.value == theater">{{option.label}}</option>
+		</select>
+		<select id="source" data-event-change="queue('source', ev.value)">
+			<option data-for="option : sources" data-attr-value="option.value" data-attrif-selected="option.value == source">{{option.label}}</option>
+		</select>
+	</div>
 	<div id="columns">
 		<div id="maps" class="list"><div class="rows">
-			<div class="item" data-for="entry : entries" data-class-selected="it_index == selected" data-event-click="queue('select', it_index)">{{entry.label}}</div>
+			<div class="item" data-for="entry : entries" data-class-selected="entry.index == selected" data-event-click="queue('select', entry.index)">{{entry.label}}</div>
 		</div></div>
-		<div id="map" class="frame"><surface id="preview"/></div>
+		<div id="detail">
+			<div id="map" class="frame"><surface id="preview"/></div>
+			<span id="meta">{{meta}}</span>
+		</div>
 	</div>
 	<div id="buttons">
 		<button id="ok" data-event-click="queue('ok')">[[TXT_OK]]</button>

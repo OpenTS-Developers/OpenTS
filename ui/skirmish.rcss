@@ -59,8 +59,11 @@
 #handle
 {
 	width: 116dp;
-	height: 18dp;
-	padding: 0 1dp 1dp 0;
+	box-sizing: border-box;
+	height: 26dp;
+	font-family: dlgsys;
+	line-height: 17dp;
+	padding: 4dp 1dp 0 2dp;
 	margin-top: 5dp;
 	margin-left: 0;
 }

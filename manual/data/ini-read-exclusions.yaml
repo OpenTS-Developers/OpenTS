@@ -165,3 +165,16 @@ site_exclusions:
     keys: [AIDifficulty, AIPlayers, Bases, BridgeDestroy, Crates, Credits, FogOfWar, GameSpeed, Map, MCVRedeploy, MultiEngineer, ShortGame, TechLevel, UnitCount]
     classification: excluded
     reason: The [Skirmish] section records the setup the engine wrote when the skirmish screen last closed; it is saved state, not an authored setting.
+
+  - path: code/ui/screens/scenario/uiscenariodlg.cpp
+    function: Read_Map_Section
+    keys: [Theater]
+    classification: duplicate
+    canonical_key: Theater
+    reason: The map chooser reads the map's own Theater to label the row, the same setting the scenario reader already extracts.
+  - path: code/ui/screens/scenario/uiscenariodlg.cpp
+    function: Read_Map_Section
+    keys: [Size]
+    classification: duplicate
+    canonical_key: Size
+    reason: The map chooser reads the map's own Size to label the row, the same setting the map reader already extracts.

@@ -29,17 +29,63 @@
 	text-align: center;
 }
 
+#filters
+{
+	display: flex;
+	align-items: center;
+	margin-top: 4dp;
+}
+
+#find, #players, #theater, #source
+{
+	box-sizing: border-box;
+	height: 26dp;
+}
+
+#find
+{
+	width: 116dp;
+	font-family: dlgsys;
+	line-height: 17dp;
+	padding: 4dp 1dp 0 2dp;
+	margin-right: 6dp;
+}
+
+#players
+{
+	width: 96dp;
+	margin-right: 6dp;
+}
+
+#theater
+{
+	width: 100dp;
+	margin-right: 6dp;
+}
+
+#source
+{
+	width: 118dp;
+}
+
 #columns
 {
 	display: flex;
-	margin-top: 3dp;
+	margin-top: 4dp;
 }
 
 #maps
 {
 	width: 263dp;
-	height: 232dp;
+	height: 192dp;
 	margin-right: 17dp;
+}
+
+#detail
+{
+	display: flex;
+	flex-direction: column;
+	width: 195dp;
 }
 
 #map
@@ -47,7 +93,6 @@
 	position: relative;
 	width: 195dp;
 	height: 132dp;
-	margin-top: 54dp;
 }
 
 #preview
@@ -57,6 +102,20 @@
 	top: -1dp;
 	width: 194dp;
 	height: 131dp;
+}
+
+#meta
+{
+	display: block;
+	width: 195dp;
+	height: 16dp;
+	margin-top: 4dp;
+	font-family: dlg-sans;
+	font-size: 13dp;
+	line-height: 16dp;
+	text-align: center;
+	white-space: nowrap;
+	overflow: hidden;
 }
 
 #buttons

@@ -41,14 +41,40 @@ class UIScenarioServiceClass
 
 struct UIScenarioEntry
 {
+	int Index = 0;
 	std::string Label;
+	int Players = 0;
+	std::string Theater;
+	int Width = 0;
+	int Height = 0;
+	bool Official = true;
+	std::string Meta;
+};
+
+
+struct UIScenarioOption
+{
+	std::string Label;
+	int Value = 0;
 };
 
 
 struct UIScenarioState
 {
+	std::vector<UIScenarioEntry> All;
 	std::vector<UIScenarioEntry> Entries;
-	int Selected = 0;
+	int Selected = -1;
+	std::string Query;
+	std::string Meta;
+
+	std::vector<UIScenarioOption> Players;
+	int Player = 0;
+	std::vector<std::string> TheaterNames;
+	std::vector<UIScenarioOption> Theaters;
+	int Theater = 0;
+	std::vector<UIScenarioOption> Sources;
+	int Source = 0;
+
 	UIMapPreviewImage Preview;
 };
 
@@ -64,6 +90,9 @@ class UIScenarioPresenterClass : public UIPresenterClass
 		UIScenarioChoice Choice = UI_SCENARIO_CANCEL;
 
 	private:
+		void Select(int index);
+		void Apply_Filter(void);
+
 		UIScenarioServiceClass & Service;
 };
 
