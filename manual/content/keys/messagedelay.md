@@ -12,7 +12,7 @@ It sets how long these messages stay visible:
 
 - the low power warning;
 - alliance and defeat announcements;
-- text shown by a trigger action;
+- text shown by a [Text Trigger](/mapping/actions/taction-text-trigger/) action that does not set a positive display time;
 - notices about saving the game, such as the autosave announcement;
 - the difficulty announcement at the start of a campaign mission;
 - notices during network play, such as a player leaving or changing the game speed;
