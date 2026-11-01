@@ -36,13 +36,41 @@ The kit gives every layout size in `dp`, RmlUi's scaled pixel, so a screen match
 
 A screen opens the way the original dialogs did: it slides out from the middle behind a pair of side bars, with the dialog sound once as it starts. Put `reveal="none"` on a document's `<body>` for a screen that should appear at once instead. Of the screens shown beside a running game, only the [diplomacy panel](/systems/diplomacy/) slides in; the reconnect dialog and the save and load notices appear at once.
 
+## Game fonts
+
+Six font families draw text in the fonts the game prints with, read from the font files in its mix archives:
+
+| Family | Font file | Height |
+| --- | --- | --- |
+| `wwfont-kia6pt` | `KIA6PT.FNT` | 9 |
+| `wwfont-6point` | `6POINT.FNT` | 10 |
+| `wwfont-8point` | `8POINT.FNT` | 11 |
+| `wwfont-editfnt` | `EDITFNT.FNT` | 8 |
+| `wwfont-grad6fnt` | `GRAD6FNT.FNT` | 16 |
+| `wwfont-12metfnt` | `12METFNT.FNT` | 16 |
+
+Set `font-size` to the height in `dp` to draw one font pixel per `dp`, such as `font-family: wwfont-kia6pt; font-size: 9dp;`. Letters are spaced as the game spaces them. A character the font has no glyph for draws as a question mark. If a font file is missing or cannot be read, its family is not available and the debug log names it.
+
+Each pixel of a glyph is drawn as text, shadow, outline or shade. The text pixels take the `color` property. The shadow and outline pixels are not drawn unless a style sheet colors them. The shade pixels take the text color in `wwfont-editfnt`, `wwfont-grad6fnt` and `wwfont-12metfnt`, as the game prints those fonts, and are not drawn in the other families.
+
+These font effects color the pixels of a game font:
+
+| Effect | Colors |
+| --- | --- |
+| `ww-shadow(<color>)` | The shadow pixels |
+| `ww-outline(<color>)` | The outline pixels |
+| `ww-gradient(<color>)` | Every shade pixel |
+| `ww-role(<index> <color>)` | The pixels of one pixel value from 2 to 15: 2 is the shadow, 3 the outline, and 4 to 15 the shades |
+
+Where two effects color the same pixels, the later one in the list is used. For example, `font-effect: ww-shadow(#000000), ww-outline(#000000);` draws the font with a black shadow and outline. The ww- effects change nothing on any other font. A `shadow(...)` effect on a game font draws every visible pixel of the text in the shadow's color.
+
 ## How a file is found
 
 A document names every file it uses by bare file name, and the game adds the `ui` directory to its search folders at startup. Those names then resolve in [the order the game searches](/formats/opents-ini/#the-order-files-are-searched-for-in): a loose copy found earlier in that order wins, and a copy inside a mix archive is used only where no loose file of that name exists. To replace a shipped document, style sheet or picture, put a file of the same name in a folder the game reaches first.
 
 If a required document, template, style sheet or `Arimo.ttf` fails to load, the screen does not open. Opening a menu or modal dialog shows a native error message with the loading failure and instructions to restore the `ui` folder supplied with the build. The debug log records the failure. The classic main menu exits after the message is dismissed; other menus return without a choice.
 
-Outside a match the game mounts the no-side archives. When a scenario is read or a saved game loads, it replaces them with the archives of the player's side, and it mounts the no-side archives again when the match ends and the menus return. [MIX archives](/formats/mix/#theater-side-and-speech-archives) names both sets. After each change the game reads the pictures and the dialog font again: a screen opened after it uses the copies the mounted archives supply, and a screen already on show keeps what it was built with. These archives are searched after every loose file and every archive mounted at startup, so their copy of a name is used only when none of those holds it. They cannot replace a shipped document or style sheet.
+Outside a match the game mounts the no-side archives. When a scenario is read or a saved game loads, it replaces them with the archives of the player's side, and it mounts the no-side archives again when the match ends and the menus return. [MIX archives](/formats/mix/#theater-side-and-speech-archives) names both sets. After each change the game reads the pictures, the dialog font and the game fonts again: a screen opened after it uses the copies the mounted archives supply, and a screen already on show keeps what it was built with. These archives are searched after every loose file and every archive mounted at startup, so their copy of a name is used only when none of those holds it. They cannot replace a shipped document or style sheet.
 
 To give each side its own version of a picture or font, put a copy in each side's `SIDEC<nn>.MIX` or `SIDENC<nn>.MIX`, and a neutral copy for the menus in `SIDEC00.MIX` or `SIDENC00.MIX`. Keep the name out of the `ui` directory and the archives mounted at startup; a copy there is used everywhere instead.
 

@@ -455,6 +455,26 @@ static char const * const UI_PRINT_FONT_FAMILY = "fullfnt";
 static char const * const UI_PRINT_FONT_FILE = "arial.ttf";
 static char const * const UI_SHIPPED_FONT_FILE = "Arimo.ttf";
 
+struct UIGameFontType
+{
+	char const * File;
+	char const * Family;
+	int Spacing;
+	bool Outlined;
+	bool Gradient;
+};
+
+// The spacing and outline settings the game loads each font with, and whether its text
+// printing colors the font's shade values.
+static UIGameFontType const UI_GAME_FONTS[] = {
+	{ "KIA6PT.FNT", "wwfont-kia6pt", 1, false, false },
+	{ "6POINT.FNT", "wwfont-6point", 1, true, false },
+	{ "8POINT.FNT", "wwfont-8point", 1, true, false },
+	{ "EDITFNT.FNT", "wwfont-editfnt", 1, true, true },
+	{ "GRAD6FNT.FNT", "wwfont-grad6fnt", 2, true, true },
+	{ "12METFNT.FNT", "wwfont-12metfnt", 1, false, true },
+};
+
 static char const * const UI_REVEAL_SOUND = "EMBLEM.AUD";
 static const float UI_REVEAL_VOLUME = 64.0f / 255.0f;
 
@@ -473,6 +493,23 @@ bool UIShellClass::Load_Sheet_Font(char const * family)
 	}
 
 	return(Fonts->Load_Sheets(family, indexsheet, alphasheet));
+}
+
+
+void UIShellClass::Load_Game_Fonts(void)
+{
+	for (UIGameFontType const & type : UI_GAME_FONTS) {
+		std::vector<unsigned char> bytes;
+		UIFntFont font;
+		if (!UI_Read_Game_File(type.File, bytes)) {
+			Log("UI: %s is not in the game's art, so %s is not available\n", type.File, type.Family);
+			continue;
+		}
+		if (!UI_Read_Fnt(std::span<std::uint8_t const>(bytes.data(), bytes.size()), font)
+			|| !Fonts->Load_Fnt(type.Family, font, type.Spacing, type.Outlined, type.Gradient)) {
+			Log("UI: %s could not be read, so %s is not available\n", type.File, type.Family);
+		}
+	}
 }
 
 
@@ -557,6 +594,7 @@ void UIShellClass::Ensure_Dialog_Font(void)
 	}
 
 	DialogFontTried = true;
+	Load_Game_Fonts();
 	if (!Load_Sheet_Font(UI_SHEET_FONT_FAMILY)) {
 		Log("UI: the %s sheets are not in the game's art, so %s stays the shipped face\n", UI_SHEET_FONT_FAMILY, UI_SHEET_FONT_FAMILY);
 	}
@@ -646,6 +684,7 @@ bool UIShellClass::Init(void)
 	Apply_Dimensions();
 
 	UI_Register_Surface_Element();
+	UI_Register_Fnt_Effects();
 	Register_Fonts();
 
 	Ready = true;
@@ -741,8 +780,9 @@ void UIShellClass::On_Video_Change(void)
 
 
 /// <summary>
-/// Drops the pictures, style sheets, templates and dialog font read from the archives. A
-/// screen already shown keeps what it was built with; the next one opened is built anew.
+/// Drops the pictures, style sheets, templates and fonts read from the archives. A screen
+/// already shown keeps its layout and style sheets but draws its pictures and text from the
+/// copies read again; the next one opened is built anew.
 /// </summary>
 void UIShellClass::On_Archives_Change(int side)
 {

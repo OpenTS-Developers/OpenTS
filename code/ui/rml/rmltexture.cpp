@@ -87,6 +87,13 @@ bool UI_Read_File(char const * path, std::vector<unsigned char> & bytes)
 }
 
 
+// Reads a file the game can open, from a loose file or a loaded mix.
+bool UI_Read_Game_File(char const * name, std::vector<unsigned char> & bytes)
+{
+	return(name != NULL && Read_Whole_File(name, bytes));
+}
+
+
 bool UI_Load_Indexed_Image(char const * name, UIImageIndexed & image)
 {
 	image = UIImageIndexed();

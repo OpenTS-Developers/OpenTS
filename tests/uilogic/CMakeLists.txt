@@ -8,9 +8,11 @@ opents_add_test(UILogic
     ENGINE
         hsv.cpp
         rgb.cpp
+        utf8.cpp
         ui/uiinput.cpp
         ui/uireveal.cpp
         ui/rml/rmlimage.cpp
+        ui/rml/rmlfontfnt.cpp
         ui/rml/rmlfontsheet.cpp
         ui/rml/rmlrendermath.cpp
         videodirty.cpp

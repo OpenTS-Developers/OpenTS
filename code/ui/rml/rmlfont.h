@@ -9,16 +9,19 @@
 
 #pragma once
 
+#include "ui/rml/rmlfontfnt.h"
 #include "ui/rml/rmlfontfon.h"
 #include "ui/rml/rmlfontsheet.h"
 
 #include <RmlUi/Core/FontEngineInterface.h>
+#include <array>
 #include <memory>
 #include <vector>
 
 
 class UISheetFaceClass;
 class UIRasterFaceClass;
+class UIFntFaceClass;
 
 
 static const int UI_SHEET_FONT_NOMINAL_SIZE = 16;
@@ -32,6 +35,7 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 
 		bool Load_Sheets(Rml::String const & family, UIImageIndexed const & index, UIImageIndexed const & alpha);
 		bool Load_Strikes(Rml::String const & family, std::vector<UIRasterStrike> const & strikes);
+		bool Load_Fnt(Rml::String const & family, UIFntFont const & font, int spacing, bool outlined, bool gradient);
 		void Set_Reference_Scale(float scale) { Reference = (scale > 0.0f) ? scale : 1.0f; }
 
 		void Set_Use_Strikes(bool use) { UseStrikes = use; }
@@ -66,6 +70,18 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 			std::vector<UIRasterStrike> Strikes;
 		};
 
+		struct FntFamily
+		{
+			Rml::String Name;
+			UIFntFont Font;
+			int Advance = 0;
+			int LineHeight = 0;
+			bool Gradient = false;
+			std::vector<UIFntCell> Cells;
+			int AtlasWidth = 0;
+			int AtlasHeight = 0;
+		};
+
 		struct Shadow
 		{
 			Rml::Vector2f Offset;
@@ -76,6 +92,8 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		{
 			std::vector<Shadow> Back;
 			std::vector<Shadow> Front;
+			std::array<bool, UI_FNT_ROLES> RoleSet {};
+			std::array<Rml::Colourb, UI_FNT_ROLES> Roles {};
 			std::vector<std::size_t> Fingerprints;
 		};
 
@@ -83,6 +101,9 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		RasterFamily const * Find_Raster_Family(Rml::String const & family) const;
 		UISheetFaceClass * Find_Face(Rml::FontFaceHandle handle) const;
 		UIRasterFaceClass * Find_Raster_Face(Rml::FontFaceHandle handle) const;
+		FntFamily const * Find_Fnt_Family(Rml::String const & family) const;
+		UIFntFaceClass * Find_Fnt_Face(Rml::FontFaceHandle handle) const;
+		int Generate_Fnt(UIFntFaceClass & face, Rml::RenderManager & manager, EffectSet const * set, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied color, float opacity, Rml::TexturedMeshList & meshes);
 
 		Rml::FontEngineInterface * Fallback;
 		int Magnification = 1;
@@ -92,5 +113,10 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		std::vector<std::unique_ptr<UISheetFaceClass>> Faces;
 		std::vector<std::unique_ptr<RasterFamily>> RasterFamilies;
 		std::vector<std::unique_ptr<UIRasterFaceClass>> RasterFaces;
+		std::vector<std::unique_ptr<FntFamily>> FntFamilies;
+		std::vector<std::unique_ptr<UIFntFaceClass>> FntFaces;
 		std::vector<EffectSet> EffectSets;
 };
+
+
+void UI_Register_Fnt_Effects(void);

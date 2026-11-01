@@ -132,6 +132,7 @@ class UIShellClass
 		void Ensure_Dialog_Font(void);
 		void Apply_Font_Policy(void);
 		bool Load_Sheet_Font(char const * family);
+		void Load_Game_Fonts(void);
 		bool Advance_Reveal(UIViewClass & view, float full, int start, float & shown);
 		void Advance_Shown_Reveal(UIViewClass & view);
 
