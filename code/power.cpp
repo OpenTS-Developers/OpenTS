@@ -51,7 +51,6 @@
 #include "bench.h"
 #include "building.h"
 #include "builtype.h"
-#include "cctooltip.h"
 #include "data.h"
 #include "draw.h"
 #include "globals.h"
@@ -60,6 +59,7 @@
 #include "mixfile.h"
 #include "savestream.h"
 #include "surface.h"
+#include "uitooltip.h"
 
 #include "bench.hh"
 

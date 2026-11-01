@@ -11,40 +11,39 @@
 
 #include "tooltip.h"
 
-#include "dialog.hh"
+#include <memory>
+#include <string>
+
+class UIGameTipPresenterClass;
+class UIViewClass;
 
 
-class CCToolTip : public ToolTipManager
+class UIToolTip : public ToolTipManager
 {
 		typedef ToolTipManager BASECLASS;
 
 	public:
-		CCToolTip(void) :
-			BASECLASS(),
-			UseSidebarSurface(false),
-			Style(TPF_MAP)
-		{
-		}
-
-		virtual ~CCToolTip() override {}
+		UIToolTip(void);
+		virtual ~UIToolTip() override;
 
 		virtual bool Update(ToolTipText *text) override;
-		virtual void Reset(const ToolTipText *text);
+		virtual void Reset(const ToolTipText *text) override;
 		virtual void Draw_Current(bool sidebar = false) override;
 		virtual void Draw(const ToolTipText *text) override;
 		virtual const char *ToolTip_Text(int id) override;
 
-	protected:
-		/*
-		 * If the draw in progress is destined for the sidebar surface, then this flag will
-		 * be true. A tooltip that falls upon the sidebar is only drawn when it is set, so
-		 * that the tactical pass never paints onto the sidebar's surface.
-		 */
-		bool UseSidebarSurface;
+	private:
+		bool Open(void);
+		void Close(void);
+		void Take_Down(void);
 
-		/*
-		 * This is the text style the tooltip is printed in. It also picks the font that
-		 * the tooltip box is measured against.
-		 */
-		TextPrintType Style;
+		std::unique_ptr<UIGameTipPresenterClass> Presenter;
+		std::unique_ptr<UIViewClass> View;
+		std::string Sheet;
+		bool OpenFailed;
+
+		// The tactical view or the sidebar, whichever the tooltip came up over, in frame coordinates.
+		Rect Region;
+
+		bool Drawn;
 };

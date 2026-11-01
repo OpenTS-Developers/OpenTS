@@ -82,6 +82,12 @@ The game uses the first loose `icon.png` found in [its file search order](/forma
 
 A missing, unreadable or corrupt image keeps the embedded icon. A corrupt first match does not cause the game to try a later copy. Restart the game after replacing or removing the image.
 
+## Game tooltips
+
+`gametip.rml` draws the tooltips over the sidebar and the tactical view, and `gametip.rcss` styles them. The tooltip is the element with `id="gametip"`, drawn by default in `wwfont-kia6pt` in the colors and frame the game drew it in. A style sheet can change its font, colors, border and padding.
+
+The game places the box and limits its width. The box opens below the pointer and stays inside the sidebar or the tactical view, whichever the pointer is over: it moves left to fit, and moves above the pointer when there is no room below. Its text wraps to the width of that area, and an at sign (`@`) or a line break in the text starts a new line. The pointer passes through the tooltip to whatever is under it.
+
 ## Side style sheets
 
 While a side is the player's, every screen also takes the rules in `side-<name>.rcss`, where `<name>` is the side's name from `[Sides]` in lower case. The sheet is applied after the screen's own style sheets, so its rule wins over a shipped rule with an equally specific selector. A side with no such file keeps the shipped look. The game ships `side-gdi.rcss` and `side-nod.rcss`, which color the objectives screen's text green and red.
@@ -107,6 +113,7 @@ These screens are documents:
 - the in-game options, the abort question and the objectives screen
 - the out-of-sync screen, the [reconnect dialog](/systems/reconnect-dialog/) and the [diplomacy panel](/systems/diplomacy/)
 - the message boxes, and the notices shown while a game saves or loads
+- the tooltips over the sidebar and the tactical view
 
 The score screens, the graphical main menu, the campaign map and the sidebar are drawn by the game's older systems and are not documents. The crash report remains a Windows dialog.
 

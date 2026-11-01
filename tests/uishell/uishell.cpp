@@ -21,6 +21,7 @@
 #include "ui/screens/diplomacy/uidiplomacy.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/screens/gamectrl/uigamectrl.h"
+#include "ui/screens/gametip/uigametip.h"
 #include "ui/screens/gameopt/uigameopt.h"
 #include "ui/screens/keyboard/uikeyboard.h"
 #include "ui/screens/mainopt/uimainopt.h"
@@ -3586,6 +3587,78 @@ void Test_Main_Options_Screen(Rml::Context & context, CountingSystemInterfaceCla
 }
 
 
+void Test_Game_Tip_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
+{
+	CHECK_MESSAGE(UI_Game_Tip_Text("Power@Low") == "Power\nLow", "an at sign breaks the line");
+	CHECK_MESSAGE(UI_Game_Tip_Text("a\rb\r\nc\nd") == "a\nb\nc\nd", "a return, a return and line feed, and a line feed each break the line once");
+	CHECK_MESSAGE(UI_Game_Tip_Text("50% <b>&amp;") == "50% <b>&amp;", "other text is kept as written");
+
+	UIGameTipPlacement placement;
+	placement.PointerX = 100.0f;
+	placement.PointerY = 100.0f;
+	placement.Below = 16.0f;
+	placement.Left = 0.0f;
+	placement.Top = 20.0f;
+	placement.Right = 300.0f;
+	placement.Bottom = 400.0f;
+
+	float x = 0.0f;
+	float y = 0.0f;
+	UI_Place_Game_Tip(placement, 50.0f, 20.0f, x, y);
+	CHECK_MESSAGE((x == 100.0f && y == 116.0f), "a tooltip with room sits below the pointer");
+	UI_Place_Game_Tip(placement, 250.0f, 20.0f, x, y);
+	CHECK_MESSAGE(x == 50.0f, "a tooltip that would cross the right edge moves left to meet it");
+	placement.PointerY = 390.0f;
+	UI_Place_Game_Tip(placement, 50.0f, 20.0f, x, y);
+	CHECK_MESSAGE(y == 370.0f, "a tooltip that would cross the bottom edge sits above the pointer");
+	placement.PointerY = 100.0f;
+	placement.Bottom = 150.0f;
+	UI_Place_Game_Tip(placement, 50.0f, 120.0f, x, y);
+	CHECK_MESSAGE(y == 20.0f, "a tooltip too tall for either side is held at the top edge");
+
+	int problems = system.Problems;
+	UIGameTipPresenterClass presenter;
+	std::unique_ptr<UIViewClass> view = UI_Game_Tip_View(presenter);
+
+	REQUIRE_MESSAGE(Rml(*view).Prepare(context), "the tooltip view prepares against the test context");
+	view->Show(false);
+	context.Update();
+	CHECK_MESSAGE(!view->Is_Shown(), "the tooltip stays hidden until there is a tooltip to show");
+
+	presenter.Text = "Ion Cannon@Ready <b>";
+	presenter.Placement.PointerX = 600.0f;
+	presenter.Placement.PointerY = 300.0f;
+	presenter.Placement.Below = 16.0f;
+	presenter.Placement.Right = 640.0f;
+	presenter.Placement.Bottom = 800.0f;
+	presenter.Wanted = true;
+	view->Sync();
+	context.Update();
+	CHECK_MESSAGE(!view->Is_Shown(), "a tooltip is not shown before it is placed");
+	view->Placed();
+	context.Update();
+	context.Render();
+	CHECK_MESSAGE(view->Is_Shown(), "a placed tooltip is shown");
+	CHECK_MESSAGE(system.Problems == problems, "the tooltip raises no RmlUi warning or error");
+
+	Rml::Element * box = Rml(*view).Document()->GetElementById("gametip");
+	REQUIRE_MESSAGE(box != nullptr, "the tooltip document holds its box");
+	CHECK_MESSAGE(box->GetNumChildren() == 1, "the text is one text node");
+	CHECK_MESSAGE(box->GetInnerRML().find("<b>") == std::string::npos, "markup in the text is not parsed");
+	Rml::Vector2f offset = box->GetAbsoluteOffset(Rml::BoxArea::Border);
+	Rml::Vector2f size = box->GetBox().GetSize(Rml::BoxArea::Border);
+	CHECK_MESSAGE(offset.x + size.x <= 640.0f + 0.5f, "the placed box stays inside its region");
+	CHECK_MESSAGE(offset.y == 316.0f, "the placed box sits below the pointer");
+
+	presenter.Wanted = false;
+	view->Sync();
+	CHECK_MESSAGE(!view->Is_Shown(), "a tooltip taken down is hidden at once");
+
+	view->Release();
+	context.Update();
+}
+
+
 void Test_Wait_Box_Screen(Rml::Context & context, CountingSystemInterfaceClass & system)
 {
 	int problems = system.Problems;
@@ -5131,6 +5204,7 @@ struct DocumentFixture
 		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "dlg-sans", Rml::Style::FontStyle::Normal), "and stands in for the dialogs' sans family");
 		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "dlgsys", Rml::Style::FontStyle::Normal), "and for the bitmap family the art would supply");
 		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "fullfnt", Rml::Style::FontStyle::Normal), "and for the family the old menu font's screens use");
+		REQUIRE_MESSAGE(Rml::LoadFontFace(shipped, "wwfont-kia6pt", Rml::Style::FontStyle::Normal), "and for the tooltip font the archives would supply");
 
 		context = Rml::CreateContext("test", Rml::Vector2i(1280, 800));
 		REQUIRE_MESSAGE(context != nullptr, "a context is created");
@@ -5350,6 +5424,12 @@ TEST_CASE_FIXTURE(DocumentFixture, "the main menu")
 TEST_CASE_FIXTURE(DocumentFixture, "the options menu")
 {
 	Test_Main_Options_Screen(*context, system, render);
+}
+
+
+TEST_CASE_FIXTURE(DocumentFixture, "the game tooltip")
+{
+	Test_Game_Tip_Screen(*context, system);
 }
 
 
