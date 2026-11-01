@@ -15,12 +15,11 @@
 </head>
 <body data-model="install">
 	<div id="panel">
-		<div id="logo"></div>
 		<div id="flow" data-if="!installed">
 			<p id="notice" data-if="!busy">{{notice}}</p>
+			<p id="license" data-if="!busy">{{license}}</p>
 			<p id="source" data-if="!busy">{{source}}</p>
 			<div class="divider" data-if="!busy"></div>
-			<p class="hint" data-if="!busy">Click a line to include or skip that part.</p>
 			<div id="choices" data-if="!busy">
 				<div class="option active">
 					<span class="name">Tiberian Sun: game data and music</span>
@@ -43,6 +42,7 @@
 					<span class="size">{{totalsize}}</span>
 				</div>
 			</div>
+			<p class="hint" data-if="!busy">Click a line to include or skip that part.</p>
 			<p id="status" data-if="busy">{{status}}</p>
 			<progress id="bar" data-if="busy" max="100" direction="right" data-attr-value="percent"/>
 			<p id="error" data-if="haserror">{{error}}</p>

@@ -10,46 +10,59 @@
 
 body
 {
+	display: flex;
+	align-items: center;
+	justify-content: center;
 	background-color: #1a1d24;
+	decorator: image(installer-background.png cover);
 }
 
 #panel
 {
 	position: relative;
 	box-sizing: border-box;
+	display: flex;
+	flex-direction: column;
 	width: 520dp;
-	height: 400dp;
-	top: 50%;
-	margin: -200dp auto 0 auto;
-	padding: 16dp 28dp 0 28dp;
+	padding: 20dp 28dp;
+	background-color: #0c0f14e6;
 }
 
-#logo
-{
-	width: 112dp;
-	height: 112dp;
-	margin: 0 auto 10dp auto;
-	decorator: image(icon.png);
-}
-
-#notice, #status, #error, #done-text
+#status, #error, #done-text
 {
 	line-height: 16dp;
 	white-space: pre-wrap;
 	font-size: 12dp;
+	color: #c9d1d9;
 }
 
 #notice
 {
-	height: 32dp;
+	margin-bottom: 4dp;
+	line-height: 18dp;
+	white-space: pre-wrap;
+	font-size: 14dp;
+	font-weight: bold;
+	text-transform: uppercase;
+	color: #f2f5f7;
+}
+
+#license
+{
+	margin-bottom: 4dp;
+	line-height: 16dp;
+	white-space: pre-wrap;
+	font-size: 12dp;
+	color: #c9d1d9;
 }
 
 #source
 {
-	line-height: 14dp;
+	line-height: 12dp;
 	white-space: pre-wrap;
-	font-size: 10dp;
-	height: 14dp;
+	font-size: 9dp;
+	height: 12dp;
+	color: #8c98a4;
 }
 
 .divider
@@ -61,11 +74,12 @@ body
 
 .hint
 {
+	margin-top: 6dp;
 	line-height: 14dp;
 	white-space: pre-wrap;
 	font-size: 10dp;
 	height: 14dp;
-	color: #109010;
+	color: #8c98a4;
 }
 
 #choices
@@ -79,7 +93,7 @@ body
 	align-items: center;
 	height: 22dp;
 	font-size: 12dp;
-	color: #109010;
+	color: #c9d1d9;
 }
 
 .option.active
@@ -96,6 +110,12 @@ body
 {
 	width: 84dp;
 	text-align: right;
+	color: #8c98a4;
+}
+
+.option.active .size, .option.total .size
+{
+	color: #70ff00;
 }
 
 .option.sub
@@ -132,6 +152,7 @@ body
 {
 	height: 32dp;
 	margin-top: 4dp;
+	color: #ff7b72;
 }
 
 #actions, #cancel-row, #done-actions

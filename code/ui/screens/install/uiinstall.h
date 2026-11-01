@@ -44,6 +44,7 @@ class UIInstallPresenterClass : public UIPresenterClass
 		bool Restart = false;
 		int Percent = 0;
 		std::string Notice;
+		std::string License;
 		std::string Source;
 		std::string BaseSize;
 		std::string TsMoviesSize;
