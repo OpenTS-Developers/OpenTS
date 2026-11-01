@@ -64,18 +64,20 @@ Proton 11.
 `siliconsun-<tag>-macos.zip` holds `siliconsun.app` and the license notices.
 It is an arm64 application. Finder and the Dock show the siliconsun icon.
 
-Gatekeeper opens a notarized app. It blocks an ad-hoc signed app until the
-quarantine attribute is removed:
+The published app is signed with a Developer ID and notarized, so Gatekeeper
+opens it normally. A copy that carries an ad-hoc signature, such as a local
+build you share with someone, stays blocked until you run the commands below
+from the folder that holds the app:
 
 ```bash
 xattr -dr com.apple.quarantine siliconsun.app
 open siliconsun.app
 ```
 
-Run those commands from the unzipped folder. The app reads game data from
-`~/Games/OpenTS`, and an interactive launch creates that folder when it is
-missing. Settings and saves go to `~/Library/Application Support/siliconsun`.
-Replacing the app leaves both folders in place. To use other folders:
+The app reads game data from `~/Games/OpenTS`, and an interactive launch
+creates that folder when it is missing. Settings and saves go to
+`~/Library/Application Support/siliconsun`. Replacing the app leaves both
+folders in place. To use other folders:
 
 ```bash
 open siliconsun.app --args -DATADIR="$HOME/Games/OpenTS" -USERDIR="$HOME/Library/Application Support/siliconsun"
