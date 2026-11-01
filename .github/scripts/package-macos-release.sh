@@ -64,7 +64,7 @@ if [[ -n "${APPLE_CERTIFICATE_P12:-}" ]]; then
 	security create-keychain -p "$keychain_password" "$keychain"
 	security set-keychain-settings -lut 21600 "$keychain"
 	security unlock-keychain -p "$keychain_password" "$keychain"
-	security import "$p12" -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
+	security import "$p12" -f pkcs12 -k "$keychain" -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign -T /usr/bin/security
 	security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain"
 	if [[ ${#previous[@]} -gt 0 ]]; then
 		security list-keychains -d user -s "$keychain" "${previous[@]}"
