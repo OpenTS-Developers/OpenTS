@@ -1,0 +1,152 @@
+/*******************************************************************************
+ *                                O P E N  T S
+ *******************************************************************************
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ * Copyright 2026 OpenTS contributors
+ *
+ * See LICENSE.md for applicable additional terms and warranty disclaimers.
+ ******************************************************************************/
+
+
+body
+{
+	background-color: #1a1d24;
+}
+
+#panel
+{
+	position: relative;
+	box-sizing: border-box;
+	width: 520dp;
+	height: 400dp;
+	top: 50%;
+	margin: -200dp auto 0 auto;
+	padding: 16dp 28dp 0 28dp;
+}
+
+#logo
+{
+	width: 112dp;
+	height: 112dp;
+	margin: 0 auto 10dp auto;
+	decorator: image(icon.png);
+}
+
+#notice, #status, #error, #done-text
+{
+	line-height: 16dp;
+	white-space: pre-wrap;
+	font-size: 12dp;
+}
+
+#notice
+{
+	height: 32dp;
+}
+
+#source
+{
+	line-height: 14dp;
+	white-space: pre-wrap;
+	font-size: 10dp;
+	height: 14dp;
+}
+
+.divider
+{
+	height: 1dp;
+	margin-top: 6dp;
+	background-color: #4eb6dc;
+}
+
+.hint
+{
+	line-height: 14dp;
+	white-space: pre-wrap;
+	font-size: 10dp;
+	height: 14dp;
+	color: #109010;
+}
+
+#choices
+{
+	margin-top: 6dp;
+}
+
+.option
+{
+	display: flex;
+	align-items: center;
+	height: 22dp;
+	font-size: 12dp;
+	color: #109010;
+}
+
+.option.active
+{
+	color: #70ff00;
+}
+
+.option .name
+{
+	flex: 1;
+}
+
+.option .size
+{
+	width: 84dp;
+	text-align: right;
+}
+
+.option.sub
+{
+	padding-left: 16dp;
+}
+
+.option.total
+{
+	margin-top: 4dp;
+	color: #70ff00;
+}
+
+#status
+{
+	height: 36dp;
+	margin-top: 8dp;
+}
+
+#bar
+{
+	width: 100%;
+	height: 22dp;
+	margin-top: 6dp;
+}
+
+#bar fill
+{
+	background-color: #70ff00;
+	decorator: horizontal-gradient(#70ff0040 #70ff00);
+}
+
+#error
+{
+	height: 32dp;
+	margin-top: 4dp;
+}
+
+#actions, #cancel-row, #done-actions
+{
+	display: flex;
+	justify-content: space-between;
+	margin-top: 10dp;
+}
+
+#cancel-row
+{
+	justify-content: center;
+}
+
+#actions button, #cancel-row button, #done-actions button
+{
+	width: 110dp;
+}

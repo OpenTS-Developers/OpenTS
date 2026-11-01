@@ -31,21 +31,35 @@ opents_test_compile_options(OpenTSDoctestMain)
 # and Release runs the executable that `ctest -C` selects.
 function(opents_discover_doctest target name)
     set(list_base "${CMAKE_CURRENT_BINARY_DIR}/${target}_tests")
+
+    # A multi-config generator writes one list per configuration and ctest -C selects it. A
+    # single-config generator writes one list, named by CMAKE_BUILD_TYPE, because ctest then has
+    # no configuration to pass. GENERATOR_IS_MULTI_CONFIG is used rather than
+    # CMAKE_CONFIGURATION_TYPES, which the engine forces to Debug and Release on every generator.
+    get_property(is_multi_config GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
+    if(is_multi_config)
+        set(discover_config "$<CONFIG>")
+        set(discover_lookup "\${CTEST_CONFIGURATION_TYPE}")
+    else()
+        set(discover_config "${CMAKE_BUILD_TYPE}")
+        set(discover_lookup "${CMAKE_BUILD_TYPE}")
+    endif()
+
     add_custom_command(TARGET ${target} POST_BUILD
         COMMAND "${CMAKE_COMMAND}"
             -D "TEST_EXECUTABLE=$<TARGET_FILE:${target}>"
             -D "TEST_WORKING_DIR=${CMAKE_CURRENT_BINARY_DIR}"
             -D "TEST_PREFIX=${name}."
             -D "TEST_LIST=${target}_TESTS"
-            -D "CTEST_FILE=${list_base}-$<CONFIG>.cmake"
+            -D "CTEST_FILE=${list_base}-${discover_config}.cmake"
             -P "${CMAKE_SOURCE_DIR}/thirdparty/doctest/scripts/cmake/doctestAddTests.cmake"
         VERBATIM
     )
 
     set(include_file "${CMAKE_CURRENT_BINARY_DIR}/${target}_include.cmake")
     file(WRITE "${include_file}"
-        "if(EXISTS \"${list_base}-\${CTEST_CONFIGURATION_TYPE}.cmake\")\n"
-        "    include(\"${list_base}-\${CTEST_CONFIGURATION_TYPE}.cmake\")\n"
+        "if(EXISTS \"${list_base}-${discover_lookup}.cmake\")\n"
+        "    include(\"${list_base}-${discover_lookup}.cmake\")\n"
         "else()\n"
         "    add_test(${name}_NOT_BUILT ${name}_NOT_BUILT)\n"
         "endif()\n"
@@ -118,6 +132,15 @@ function(opents_add_test target)
         add_test(NAME ${TEST_NAME} COMMAND ${target})
     endif()
 endfunction()
+
+# The content install check compiles only pure C++ and runs on the Apple Silicon experiment
+# as well as Windows. The remaining harnesses reach the Windows engine, so nothing after this
+# point is registered off Windows.
+add_subdirectory(contentinstall)
+
+if(NOT WIN32)
+    return()
+endif()
 
 add_subdirectory(actionids)
 add_subdirectory(cpudetect)

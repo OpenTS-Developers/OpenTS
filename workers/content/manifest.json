@@ -1,0 +1,26 @@
+{
+  "files": [
+    { "name": "MULTI.MIX", "size": 11960308, "sha256": "d1512284ffb8186f499bc11af7874d8ebc7af5047ccdd52854fed1f966cc1b72", "part": "base" },
+    { "name": "patch.mix", "size": 606836, "sha256": "ef0f70fe7d7ac002d73ed413b8d52923383ba4b9c80519aeed84b6860cc1d462", "part": "base" },
+    { "name": "MAPS01.MIX", "size": 3668236, "sha256": "bdfb431276a84ab33ea6d49dfd66504ca96654d84a4ab92bb1fdc9910fbec608", "part": "base" },
+    { "name": "MAPS02.MIX", "size": 3503740, "sha256": "4805410c63dabea61e237798fa6096826b947b67fb744c439fa02afbc8cd551d", "part": "base" },
+    { "name": "SIDECD01.MIX", "size": 12304212, "sha256": "7ee166720d1a37e5d540bf3ae0bf3389b6de11c0ed748cdda46c2ca8f63e529f", "part": "base" },
+    { "name": "SIDECD02.MIX", "size": 11141636, "sha256": "1565f74dced0abebcbda10610f429419fde3588613364057e22442889906a50a", "part": "base" },
+    { "name": "SCORES.MIX", "size": 51332268, "sha256": "52b01c40b49ad406d7c39ebff6f7ffcf2c7de33edb5e875a8ec29439a0bd8dab", "part": "base" },
+    { "name": "e01scd01.mix", "size": 350116, "sha256": "43f8e07cdb7590ab1434c0525381e908de8bf117af64e131a482cfdb317acfcf", "part": "firestorm" },
+    { "name": "e01scd02.mix", "size": 275012, "sha256": "eba1c52243879f25e66c32de9ecc68886b0caf8a4a2b56fffad9bbd7bd2c349f", "part": "firestorm" },
+    { "name": "expand01.mix", "size": 36972996, "sha256": "f1f37a7a9c14bc32dcd308474dcfa9ab7736d57b2a7cbf6e6be1d4d298af6cec", "part": "firestorm" },
+    { "name": "expand02.mix", "size": 88146260, "sha256": "42e1d13748a05076bbedc5991e952a8b81ec60d5bb176303f787c1d82f4ce823", "part": "firestorm" },
+    { "name": "expand03.mix", "size": 466084477, "sha256": "8bbfae4e2638f3f41c9cc54981f45d0b8e436558b8a9264be71712372d6b841f", "part": "firestorm" },
+    { "name": "GMENU.MIX", "size": 3911452, "sha256": "52ffd2e6c92799576dbb78857885e75d45723c8fcf7de8001e72908a8750e728", "part": "firestorm" },
+    { "name": "maps03.mix", "size": 3714132, "sha256": "a915c125f68a6a293e6badfd1badedc33f54c1792e83ce29fb832eb3d1b790f2", "part": "firestorm" },
+    { "name": "SCORES01.MIX", "size": 20079580, "sha256": "7d1113f96deb60f4903410a9202c32453ab07d0d6dcba0353585b6d4e0725e97", "part": "firestorm" },
+    { "name": "wdt.mix", "size": 11806764, "sha256": "3e3624c097939050ceba92af4762895e77c28cafc166130c4b3839be8b29b82f", "part": "firestorm" },
+    { "name": "wdtvox.mix", "size": 2800932, "sha256": "444e0b8773a2b24e2d041c04638c64c1434ccb2d7a9593d47fdec5f253282267", "part": "firestorm" },
+    { "name": "MOVIES01.MIX", "size": 489980956, "sha256": "e34eb5d34caa0084b95ba04380ff0a9aa9f7906936833ca0e1d6f2b943ebd1f2", "part": "movies" },
+    { "name": "MOVIES02.MIX", "size": 490656380, "sha256": "64543f6afaf850f8fb7584e3813ece5ad92f2cab4f48613b349931506dd98462", "part": "movies" },
+    { "name": "SIZZLE1.VQA", "size": 11340738, "sha256": "2cea6ee021945dbc18caa4d22dc23ccda48c63f69888f450ba38594205ef203b", "part": "movies" },
+    { "name": "movies03.mix", "size": 462369668, "sha256": "fb481dbd306e448fb911357d3cd5ae946ab9171381c40b48286fd6616c9f0c26", "part": "firestorm-movies" },
+    { "name": "TIBSUN.MIX", "size": 75094736, "sha256": "23431290b211cd039315095e1987f1c411ecd3b6440861c4874572c92e5f6b2a", "part": "base" }
+  ]
+}

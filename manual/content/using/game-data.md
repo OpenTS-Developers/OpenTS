@@ -6,6 +6,8 @@ source_files:
   - README.md
   - code/addon.cpp
   - code/gamedirs.cpp
+  - code/contentcatalog.cpp
+  - code/contentinstall.cpp
   - docs/BUILDING.md
   - Run/place_steam_build_here
 related:
@@ -23,6 +25,12 @@ related:
 
 The repository holds the engine source and build inputs. It holds no maps, movies, audio or other proprietary game assets.
 
+## Setup screen
+
+When the data directory has no `TIBSUN.MIX` of at least 10 MB, and the launch is not headless or spawned, the game shows a setup screen before it mounts the archives. Tiberian Sun game data and music are included. The campaign cinematics of each game are optional, and so are Firestorm's game data and music. Choosing the Firestorm cinematics includes Firestorm, and clearing Firestorm clears its cinematics. The screen shows the size of each choice. While a file is transferring it shows how much of that file has arrived and the current speed.
+
+A file already in the data directory is kept when its size and checksum match, and skipped. One that is present but does not match is left in place and setup stops. A partial download is kept and resumed. A download that finishes with the wrong checksum is removed. Choosing a folder copies the same selection from that folder, or from an `INSTALL` folder inside it. Quitting before the transfer starts writes none of the freeware files. A finished setup offers to restart the game or quit, and the next launch starts the game with the installed content. Once `TIBSUN.MIX` is at least 10 MB, later launches do not show the screen.
+
 Copy the data from a legitimately owned copy of Tiberian Sun into `Run/`. Git ignores everything in `Run/` except the tracked `Run/place_steam_build_here` marker.
 
 Keep the data in `Run/`, not in the CMake build directory. A build writes its output only to `build/bin/<configuration>/` and copies nothing into `Run/`. [Build and run](/using/build-and-run/) shows how to launch a build with `Run/` as its data directory.
@@ -31,11 +39,11 @@ The game offers Firestorm only when it finds `FIRESTRM.INI`, either as a loose f
 
 ## Keeping the data somewhere else
 
-[`-DATADIR=<path>`](/using/command-line/#data-directory) names the game data directory, which the game reads its data from and never writes to. Without it, the game reads its data from the directory that holds the executable.
+[`-DATADIR=<path>`](/using/command-line/#data-directory) names the game data directory. The setup screen writes the freeware files there when `TIBSUN.MIX` is missing. The rest of the game reads that directory and does not write to it. Without the option, the game reads its data from the directory that holds the executable.
 
 [`-USERDIR=<path>`](/using/command-line/#user-directory) names the user data directory, which receives every file the game writes, including settings, saved games, recordings and downloaded maps. Without it, the game writes these files beside the executable. The exceptions are the debug log, [out-of-sync reports](/using/out-of-sync-reports/) and [crash reports](/using/crash-reports/), which always go into folders beside the executable.
 
-A macOS game launched from an application bundle, with neither option set, reads its data from the home directory's `Games/OpenTS` folder and writes the player's files to the home directory's `Library/Application Support/siliconsun` folder. An option that is passed still names its own directory. The data directory still has to exist already. Any other launch keeps the directories above.
+A macOS game launched from an application bundle, with neither option set, reads its data from the home directory's `Games/OpenTS` folder and writes the player's files to the home directory's `Library/Application Support/siliconsun` folder. An option that is passed still names its own directory. An interactive launch creates a missing `Games/OpenTS` folder. A headless or spawned run does not show the setup screen, and then that folder has to exist already. Any other launch keeps the directories above.
 
 When the game looks for a file, it checks the user data directory first, so a player's copy is read ahead of a shipped copy with the same name. One copy of the data can therefore serve several players, each with a user data directory that holds their own settings and saves. [`OPENTS.INI`](/formats/opents-ini/#the-order-files-are-searched-for-in) gives the full search order and the files it does not apply to.
 

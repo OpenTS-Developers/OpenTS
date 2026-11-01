@@ -77,12 +77,14 @@
 #include "factory.h"
 #include "fly.h"
 #include "fog.h"
+#include "contentinstall.h"
 #include "gamedirs.h"
 #include "gamewindow.h"
 #include "globals.h"
 #include "goptions.h"
 #include "headless.h"
 #include "house.h"
+#include "ui/screens/install/uiinstall.h"
 #include "houstype.h"
 #include "hover.h"
 #include "infantry.h"
@@ -168,6 +170,7 @@
 #include <shellapi.h>
 #else
 #include <mach-o/dyld.h>
+#include <spawn.h>
 #include <unistd.h>
 
 #include <climits>
@@ -498,6 +501,53 @@ static bool Claim_Single_Instance(void)
 }
 
 
+/// <summary>
+/// Starts a fresh copy of the game on the command line this one was started with.
+/// The install screen offers this after the data lands; the caller is expected to exit.
+/// </summary>
+/// <returns>bool; Was the new process started?</returns>
+static bool Restart_Game(char const * path_to_exe, int argc, char ** argv)
+{
+#if defined(_WIN32)
+	(void)path_to_exe;
+	(void)argc;
+	(void)argv;
+
+	// The new copy claims these mutexes on the way in and refuses to run while this copy holds them.
+	if (AutoPlayMutex != nullptr) {
+		CloseHandle(AutoPlayMutex);
+		AutoPlayMutex = nullptr;
+	}
+	if (AppMutex != nullptr) {
+		CloseHandle(AppMutex);
+		AppMutex = nullptr;
+	}
+
+	STARTUPINFOW startup;
+	ZeroMemory(&startup, sizeof(startup));
+	startup.cb = sizeof(startup);
+	PROCESS_INFORMATION info;
+	if (!CreateProcessW(nullptr, GetCommandLineW(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &startup, &info)) {
+		DebugString("Restart_Game: CreateProcess failed with %lu.\n", GetLastError());
+		return(false);
+	}
+	CloseHandle(info.hProcess);
+	CloseHandle(info.hThread);
+	return(true);
+#else
+	std::vector<char *> arguments(argv, argv + argc);
+	arguments.push_back(nullptr);
+	extern char ** environ;
+	pid_t pid = 0;
+	int error = posix_spawn(&pid, path_to_exe, nullptr, nullptr, arguments.data(), environ);
+	if (error != 0) {
+		DebugString("Restart_Game: posix_spawn failed with %d.\n", error);
+	}
+	return(error == 0);
+#endif
+}
+
+
 /***********************************************************************************************
  * main -- Initial startup routine (preps library systems).                                    *
  *                                                                                             *
@@ -614,7 +664,10 @@ int main(int argc, char ** supplied_argv)
 	}
 #endif
 
-	if (parsed && Headless::Check_Request() && Apply_Game_Directories()) {
+	bool const directories = parsed && Headless::Check_Request()
+		&& (Headless::Is_Active() || Spawner_Is_Requested() || Create_Unnamed_Data_Directory())
+		&& Apply_Game_Directories();
+	if (directories) {
 
 		if (!Debug_MultipleInstances && !Headless::Is_Active() && !Claim_Single_Instance()) {
 			return(EXIT_SUCCESS);
@@ -793,7 +846,17 @@ int main(int argc, char ** supplied_argv)
 
 		DebugString("Main_Game\n");
 
-		Main_Game(argc, argv);
+		bool play = true;
+		if (!Headless::Is_Active() && !Spawner_Is_Requested() && !Content_Data_Present()) {
+			UIInstallResult const install = UI_Install_Dialog();
+			play = install != UI_INSTALL_QUIT && install != UI_INSTALL_RESTART;
+			if (install == UI_INSTALL_RESTART) {
+				Restart_Game(path_to_exe, argc, argv);
+			}
+		}
+		if (play) {
+			Main_Game(argc, argv);
+		}
 
 		HiddenSurface->Fill(0);
 		Update_Visible_Surface(HiddenSurface);

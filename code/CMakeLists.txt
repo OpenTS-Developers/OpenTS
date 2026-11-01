@@ -154,8 +154,11 @@ if(APPLE)
 		VERBATIM
 	)
 	target_sources(OpenTS PRIVATE "${OPENTS_LANGUAGE_STRINGS}")
-	target_sources(OpenTS PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/nowplaying_mac.mm")
-	target_link_libraries(OpenTS PRIVATE "-framework MediaPlayer" "-framework Foundation")
+	target_sources(OpenTS PRIVATE
+		"${CMAKE_CURRENT_SOURCE_DIR}/nowplaying_mac.mm"
+		"${CMAKE_CURRENT_SOURCE_DIR}/contentnet_mac.mm"
+	)
+	target_link_libraries(OpenTS PRIVATE "-framework MediaPlayer" "-framework Foundation" "-framework AppKit")
 endif()
 
 target_compile_options(OpenTS PRIVATE ${OPENTS_COMPILE_OPTIONS})
@@ -276,6 +279,8 @@ if(WIN32)
         psapi
         version
         winmm
+        winhttp
+        ole32
         ws2_32
         kernel32 user32 gdi32 winspool comdlg32 advapi32 shell32
         odbc32 odbccp32

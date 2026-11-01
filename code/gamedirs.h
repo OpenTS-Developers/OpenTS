@@ -13,8 +13,9 @@
 #include <vector>
 
 /*
- * The directories the game keeps its files in. The data directory holds what a deployment
- * ships and is never written to. The user directory holds what a player's game writes.
+ * The directories the game keeps its files in. The data directory holds the game data.
+ * The setup screen writes the freeware files there when they are missing. The rest of
+ * the game does not write to it. The user directory holds what a player's game writes.
  * Either one unnamed means the game's own directory.
  */
 
@@ -28,6 +29,12 @@ void Set_User_Directory(char const * path);
 bool Is_MacOS_App_Executable(char const * path);
 bool MacOS_Bundle_Directories(char const * home, std::string & data, std::string & user);
 void Apply_Unnamed_Directories(char const * data, char const * user);
+
+/*
+ * Creates the unnamed default data directory when it is missing. A directory named with
+ * -DATADIR is left alone, missing or not.
+ */
+bool Create_Unnamed_Data_Directory(void);
 
 bool Apply_Game_Directories(void);
 

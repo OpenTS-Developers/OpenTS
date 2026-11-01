@@ -207,8 +207,17 @@ cmake -S . -B build/macos-release -G Ninja \
 cmake --build build/macos-release
 ```
 
-The test tree is added only for a Windows configure, so this build reports the
-game target. The configure writes `compile_commands.json` into the build
+This build also registers the `contentinstall` test harness, which checks the
+freeware catalog against the worker manifest, so that consistency is caught
+locally instead of in Windows CI. Build and run it with:
+
+```bash
+cmake --build build/macos --target ContentInstall
+ctest --test-dir build/macos -R contentinstall
+```
+
+The remaining test harnesses reach the Windows engine, so they are not
+registered here. The configure writes `compile_commands.json` into the build
 directory. Point `-DATADIR=` at a Tiberian Sun data directory:
 
 ```bash

@@ -92,7 +92,10 @@ class UIEngineHostClass : public UIShellHostClass
 
 		virtual void Play_Click(void) override
 		{
-			Sound_Effect(Rule->GenericClick);
+			// The setup screen is shown before the rules, and their click sound, are loaded.
+			if (Rule != nullptr) {
+				Sound_Effect(Rule->GenericClick);
+			}
 		}
 
 		virtual bool Animate_Screens(void) const override

@@ -31,6 +31,7 @@
  */
 static std::string DataDirectory;
 static std::string UserDirectory;
+static bool CreateMissingDataDirectory = false;
 
 /*
  * The folder saved games are kept in, under whichever directory the player's own files go.
@@ -165,6 +166,7 @@ static bool Make_Directory(std::string const & path)
 void Set_Data_Directory(char const * path)
 {
 	DataDirectory = Terminate_Path(Trim_Path(path != NULL ? path : ""));
+	CreateMissingDataDirectory = false;
 }
 
 
@@ -220,6 +222,7 @@ void Apply_Unnamed_Directories(char const * data, char const * user)
 {
 	if (data != NULL && DataDirectory.empty()) {
 		Set_Data_Directory(data);
+		CreateMissingDataDirectory = true;
 	}
 	if (user != NULL && UserDirectory.empty()) {
 		Set_User_Directory(user);
@@ -295,11 +298,27 @@ std::vector<std::string> Parse_Search_Folders(char const * list)
 }
 
 
+bool Create_Unnamed_Data_Directory(void)
+{
+	if (!CreateMissingDataDirectory || DataDirectory.empty() || Is_Directory(DataDirectory)) {
+		return(true);
+	}
+
+	std::error_code error;
+	std::filesystem::create_directories(DataDirectory, error);
+	if (error || !Is_Directory(DataDirectory)) {
+		Report_Directory_Error("data", DataDirectory);
+		return(false);
+	}
+	return(true);
+}
+
+
 /// <summary>
 /// Makes the directories the command line named usable.
 /// The user directory is created when it is not there yet, because it is the game's own to
-/// write. A named data directory must already exist, a missing one being reported here
-/// rather than as the missing files it would become later.
+/// write. A data directory named with -DATADIR must already exist. An unnamed default may
+/// be created first by Create_Unnamed_Data_Directory.
 /// </summary>
 /// <returns>bool; Can the game run with the directories it was given?</returns>
 bool Apply_Game_Directories(void)

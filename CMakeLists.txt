@@ -127,7 +127,9 @@ add_subdirectory(thirdparty)
 add_subdirectory(code)
 add_subdirectory(code/language)
 
-if(WIN32)
+# The Apple Silicon experiment registers the content install check, which compiles only pure
+# C++, so the catalog and manifest consistency is caught locally instead of in Windows CI.
+if(WIN32 OR (APPLE AND CMAKE_SYSTEM_PROCESSOR STREQUAL "arm64" AND CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang"))
     enable_testing()
     add_subdirectory(tests)
 endif()

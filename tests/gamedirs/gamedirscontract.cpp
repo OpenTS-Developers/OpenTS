@@ -267,7 +267,23 @@ TEST_CASE_FIXTURE(RootFixture, "a data directory that exists is accepted")
 
 	Reset();
 	Set_Data_Directory((Root + "\\Missing").c_str());
+	CHECK_MESSAGE(Create_Unnamed_Data_Directory(), "a named data directory is not created when it is missing");
 	CHECK_MESSAGE(!Apply_Game_Directories(), "a data directory that is not there is refused");
+}
+
+
+TEST_CASE_FIXTURE(RootFixture, "an unnamed data directory is created when it is missing")
+{
+	Reset();
+	std::string const missing = Root + "\\Games\\OpenTS";
+	Apply_Unnamed_Directories(missing.c_str(), (Root + "\\User").c_str());
+
+	CHECK_MESSAGE(Create_Unnamed_Data_Directory(), "an unnamed data directory is created when it is missing");
+	CHECK_MESSAGE(Apply_Game_Directories(), "an unnamed data directory is created when it is missing");
+
+	DWORD attributes = GetFileAttributes(missing.c_str());
+	CHECK_MESSAGE(attributes != INVALID_FILE_ATTRIBUTES, "the created path is a directory");
+	CHECK_MESSAGE((attributes & FILE_ATTRIBUTE_DIRECTORY) != 0, "the created path is a directory");
 }
 
 

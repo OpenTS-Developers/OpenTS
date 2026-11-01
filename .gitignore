@@ -51,6 +51,12 @@ cmake_install.cmake
 __pycache__/
 *.pyc
 
+# Worker local state
+node_modules/
+.wrangler/
+.dev.vars
+workers/content/worker-configuration.d.ts
+
 # Manual tooling temp snapshots (interrupted manage.py runs)
 manual/data/.manual-check-*/
 manual/data/.manual-generate-*/

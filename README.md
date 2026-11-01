@@ -105,8 +105,14 @@ between 640 by 400 and 4096 by 4096.
 
 The guide's [game data](https://opents-developers.github.io/OpenTS/using/game-data/)
 page is for a developer build that reads an existing install from `Run/`.
-siliconsun ships the engine only. Download the freeware GDI, Nod, and Firestorm
-disc images from the
+siliconsun ships the engine only. On a first launch with no Tiberian Sun data,
+the setup screen downloads the freeware files, or copies them from a folder.
+The files are Electronic Arts' freeware release and are not covered by the
+siliconsun license. [Game data](https://opents-developers.github.io/OpenTS/using/game-data/)
+describes the choices and where the files are written. A directory that already
+holds `TIBSUN.MIX` is left as it is.
+
+The same freeware discs are hosted by the
 [Command & Conquer Communications Center](https://cnc-comm.com/tiberian-sun/downloads/the-game):
 
 | Disc | Page | File |
