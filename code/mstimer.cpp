@@ -28,6 +28,7 @@ static struct MillisecondResolutionClass
 {
 	MillisecondResolutionClass(void)
 	{
+#if defined(_WIN32)
 		using SetProcessInformationType = BOOL (WINAPI *)(HANDLE, PROCESS_INFORMATION_CLASS, LPVOID, DWORD);
 		auto set_process_information = reinterpret_cast<SetProcessInformationType>(
 			GetProcAddress(GetModuleHandleW(L"kernel32.dll"), "SetProcessInformation"));
@@ -38,6 +39,7 @@ static struct MillisecondResolutionClass
 			state.StateMask = 0;
 			set_process_information(GetCurrentProcess(), ProcessPowerThrottling, &state, sizeof(state));
 		}
+#endif
 		timeBeginPeriod(1);
 	}
 	~MillisecondResolutionClass(void) { timeEndPeriod(1); }
