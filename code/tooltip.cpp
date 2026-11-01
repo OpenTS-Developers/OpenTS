@@ -330,7 +330,7 @@ bool ToolTipManager::Process(void)
 
 		if (str != NULL && strlen(str) > 0) {
 
-			strncpy(CurrentToolTipInfo.Text, str, sizeof(CurrentToolTipInfo.Text));
+			CurrentToolTipInfo.Text = str;
 
 			CurrentToolTipInfo.Pos.X = LastMousePos.X;
 			CurrentToolTipInfo.Pos.Y = LastMousePos.Y;
@@ -386,7 +386,7 @@ void ToolTipManager::Draw_Current(bool refresh)
 /// <param name="text">The tooltip text and placement to render.</param>
 void ToolTipManager::Draw(const ToolTipText *text)
 {
-	DebugString("ToolTip: %s\n", text->Text);
+	DebugString("ToolTip: %s\n", text->Text.c_str());
 }
 
 

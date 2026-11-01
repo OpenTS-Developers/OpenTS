@@ -37,9 +37,9 @@ bool CCToolTip::Update(ToolTipText * text)
 {
 	if (Get_Mouse_State() >= 0) {
 		FontClass *font = Font_From_TPF(Style);
-		char *string = text->Text;
+		char *string = text->Text.data();
 		Rect rect;
-		font->String_Pixel_Bounds(text->Text, rect);
+		font->String_Pixel_Bounds(text->Text.c_str(), rect);
 		rect.Width += 4;
 		rect.Height += 3;
 		text->TextWidth = std::max(rect.Width, text->TextWidth);
@@ -65,7 +65,7 @@ bool CCToolTip::Update(ToolTipText * text)
 		if (trect != NULL) {
 			if (text->TextWidth >= trect->Width) {
 				Format_Window_String(string, font, trect->Width - 4, text->TextWidth, text->TextHeight);
-				font->String_Pixel_Bounds(text->Text, rect);
+				font->String_Pixel_Bounds(text->Text.c_str(), rect);
 				rect.Width += 4;
 				rect.Height += 3;
 				text->TextWidth = std::max(rect.Width, text->TextWidth);
@@ -175,7 +175,7 @@ void CCToolTip::Draw(const ToolTipText * text)
 		surface->Draw_Rect(drawrect, DSurface::Build_Hicolor_Pixel(0, 255, 0));
 		point.X = 2;
 		point.Y = 1;
-		Fancy_Text_Print(text->Text, *surface, drawrect, point, Fetch_Scheme_By_Name("Green"), TBLACK, Style);
+		Simple_Text_Print(text->Text.c_str(), *surface, drawrect, point, Fetch_Scheme_By_Name("Green"), TBLACK, Style, PURPLE);
 	}
 }
 

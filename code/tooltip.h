@@ -18,6 +18,8 @@
 #include "rect.h"
 #include "vector.h"
 
+#include <string>
+
 struct WindowEvent;
 
 class ToolTip
@@ -53,7 +55,7 @@ struct ToolTipText
 	Point2D Pos;
 	int TextWidth;
 	int TextHeight;
-	char Text[256];
+	std::string Text;
 };
 
 class ToolTipManager
