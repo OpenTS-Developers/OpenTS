@@ -90,7 +90,7 @@ class TeamTypeClass : public AbstractTypeClass
 		*/
 		TeamClass * Create_One_Of(HouseClass *house=NULL) const;
 		void Destroy_All_Of(void) const;
-		void Detach(AbstractClass const * target, bool all=true);
+		void Detach(AbstractClass const * target, bool all=true) override;
 
 		/*
 		**	Utility routines

@@ -73,7 +73,7 @@ class WeaponTypeClass : public AbstractTypeClass
 		static WeaponTypeClass *Find_Or_Make(const char * name);
 
 		char const * Name(void) const {return(IniName);}
-		bool Read_INI(CCINIClass const & ini);
+		bool Read_INI(CCINIClass const & ini) override;
 		ThreatType Allowed_Threats(void) const;
 		bool Is_Wall_Destroyer(void) const;
 

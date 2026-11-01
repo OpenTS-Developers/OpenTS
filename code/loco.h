@@ -100,7 +100,7 @@ class LocomotionClass : public IPersistent, public ILocomotion
 		 * record has been checked, so a locomotor never takes its place while its record
 		 * is still in doubt.
 		 */
-		virtual void Post_Load(void);
+		virtual void Post_Load(void) override;
 
 	protected:
 

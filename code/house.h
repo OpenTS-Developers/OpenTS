@@ -949,7 +949,7 @@ class HouseClass : public AbstractClass
 		/*
 		**	Special house actions.
 		*/
-		void Detach(AbstractClass const * target, bool all);
+		void Detach(AbstractClass const * target, bool all) override;
 
 		/*
 		 * These are the three loadouts the player fills in on the dropship screen; a dropship
