@@ -73,8 +73,7 @@ open siliconsun.app --args -DATADIR="$HOME/Games/OpenTS" -USERDIR="$HOME/Library
 ## siliconsun settings
 
 Player options live in `SUN.INI`. [SETTINGS.md](SETTINGS.md) lists the keys this
-client adds or changes, with their defaults and how each differs from vanilla
-Tiberian Sun.
+client adds or changes, with their defaults and what each does.
 
 ## Steam install
 
