@@ -458,8 +458,9 @@ static void Offer_Scaled_Mode(std::vector<std::pair<int, int>> & sizes, int widt
 }
 
 
-// Whole fractions of the desktop stay in the list so a 1280 by 800 panel offers 640 by 400,
-// and a 3840 by 2160 panel offers 1920 by 1080. Windows also offers the size its scaling uses.
+// The display's own size and its whole fractions stay in the list, so every mode either
+// fills the display or scales it by an exact factor. A 1280 by 800 panel offers 640 by 400,
+// and a 3840 by 2160 panel offers 1920 by 1080 and 960 by 540.
 static void Offer_Desktop_Scales(std::vector<std::pair<int, int>> & sizes, int minwidth, int minheight, int maxwidth, int maxheight)
 {
 	int desktopw = 0;
@@ -468,26 +469,20 @@ static void Offer_Desktop_Scales(std::vector<std::pair<int, int>> & sizes, int m
 		return;
 	}
 
+	Offer_Scaled_Mode(sizes, desktopw, desktoph, minwidth, minheight, maxwidth, maxheight);
+
 	for (int factor = 2; factor <= 6; factor++) {
+		if ((desktopw % factor) != 0 || (desktoph % factor) != 0) {
+			continue;
+		}
 		Offer_Scaled_Mode(sizes, desktopw / factor, desktoph / factor, minwidth, minheight, maxwidth, maxheight);
 	}
-
-#if defined(_WIN32)
-	float const scale = Main_Window_Content_Scale();
-	if (scale > 1.01f) {
-		Offer_Scaled_Mode(sizes,
-			(int)std::lround((double)desktopw / (double)scale),
-			(int)std::lround((double)desktoph / (double)scale),
-			minwidth, minheight, maxwidth, maxheight);
-	}
-#endif
 }
 
 
 /// <summary>
-/// Collects the primary display's mode sizes within the given bounds, smallest first.
-/// Whole fractions of that display are included when they stay inside the bounds, and on
-/// Windows so is the size the display's scaling corresponds to.
+/// Collects the primary display's own size and its whole fractions within the given bounds,
+/// smallest first. A fraction is included only when both dimensions divide exactly.
 /// </summary>
 /// <param name="minwidth">The narrowest mode to report.</param>
 /// <param name="minheight">The shortest mode to report.</param>
@@ -497,7 +492,7 @@ static void Offer_Desktop_Scales(std::vector<std::pair<int, int>> & sizes, int m
 /// when nothing matched.</returns>
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight)
 {
-	std::vector<std::pair<int, int>> sizes = Main_Window_Fullscreen_Sizes();
+	std::vector<std::pair<int, int>> sizes;
 	Offer_Desktop_Scales(sizes, minwidth, minheight, maxwidth, maxheight);
 	std::sort(sizes.begin(), sizes.end());
 	sizes.erase(std::unique(sizes.begin(), sizes.end()), sizes.end());
@@ -517,4 +512,46 @@ int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight)
 	modes[sizes.size() * 2] = 0;
 	modes[sizes.size() * 2 + 1] = 0;
 	return(modes);
+}
+
+
+/// <summary>
+/// Chooses the size a first run uses: the largest whole fraction of the primary display
+/// whose frame stays within 960 by 540 and at least 640 by 400, or the display's own size
+/// when no fraction does.
+/// </summary>
+/// <param name="width">Receives the chosen size's width.</param>
+/// <param name="height">Receives the chosen size's height.</param>
+/// <returns>False when the primary display's size is unknown, and then nothing is written.</returns>
+bool Video_Default_Screen_Size(int & width, int & height)
+{
+	int desktopwidth = 0;
+	int desktopheight = 0;
+	if (!Main_Window_Desktop_Size(desktopwidth, desktopheight)) {
+		return(false);
+	}
+
+	constexpr int MAX_WIDTH = 960;
+	constexpr int MAX_HEIGHT = 540;
+	constexpr int MIN_WIDTH = 640;
+	constexpr int MIN_HEIGHT = 400;
+
+	for (int factor = 1; factor <= 6; factor++) {
+		int const chosenwidth = desktopwidth / factor;
+		int const chosenheight = desktopheight / factor;
+		int framewidth = chosenwidth;
+		int frameheight = chosenheight;
+		Video_Frame_Size(chosenwidth, chosenheight, framewidth, frameheight);
+
+		if (framewidth >= MIN_WIDTH && framewidth <= MAX_WIDTH
+			&& frameheight >= MIN_HEIGHT && frameheight <= MAX_HEIGHT) {
+			width = chosenwidth;
+			height = chosenheight;
+			return(true);
+		}
+	}
+
+	width = desktopwidth;
+	height = desktopheight;
+	return(true);
 }

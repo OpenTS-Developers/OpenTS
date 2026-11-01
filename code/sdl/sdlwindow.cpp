@@ -713,7 +713,7 @@ std::vector<std::pair<int, int>> Main_Window_Fullscreen_Sizes(void)
 
 bool Main_Window_Desktop_Size(int & width, int & height)
 {
-	if (!_Started) {
+	if (!Start_SDL()) {
 		return(false);
 	}
 

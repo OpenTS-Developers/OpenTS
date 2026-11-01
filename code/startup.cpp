@@ -750,9 +750,13 @@ int main(int argc, char ** supplied_argv)
 			}
 		}
 
+		// A first run takes a whole fraction of the display, so the frame scales by an exact
+		// factor instead of landing between two.
 		if (Options.ScreenWidth == -1 || Options.ScreenHeight == -1) {
-			Options.ScreenWidth = 640;
-			Options.ScreenHeight = 480;
+			if (!Video_Default_Screen_Size(Options.ScreenWidth, Options.ScreenHeight)) {
+				Options.ScreenWidth = 640;
+				Options.ScreenHeight = 480;
+			}
 		}
 
 		int framewidth = Options.ScreenWidth;

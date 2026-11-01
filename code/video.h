@@ -65,3 +65,7 @@ std::uint64_t Video_Present_Count(void);
 std::uint64_t Video_Frame_Upload_Count(void);
 
 int * EnumDisplayModes(int minwidth, int minheight, int maxwidth, int maxheight);
+
+// The screen size a first run uses, picked from the primary display's whole fractions.
+// Returns false when the display's size is unknown, and then writes nothing.
+bool Video_Default_Screen_Size(int & width, int & height);

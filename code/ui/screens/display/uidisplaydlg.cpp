@@ -12,6 +12,7 @@
 #include "_ui.h"
 #include "globals.h"
 #include "goptions.h"
+#include "sdl/sdlwindow.h"
 #include "ui/screens/display/uidisplay.h"
 #include "ui/uienginehost.h"
 #include "ui/uishell.h"
@@ -65,6 +66,10 @@ void UI_Display_State(UIDisplayState & state)
 	state.StretchMovies = Options.StretchMovies;
 	state.SystemCursor = Options.SystemCursor;
 
+	int desktopwidth = 0;
+	int desktopheight = 0;
+	bool const desktopsized = Main_Window_Desktop_Size(desktopwidth, desktopheight);
+
 	int * modes = EnumDisplayModes(MIN_WIDTH, MIN_HEIGHT, MAX_WIDTH, MAX_HEIGHT);
 	if (modes == NULL) {
 		return;
@@ -76,7 +81,16 @@ void UI_Display_State(UIDisplayState & state)
 		mode.Height = entry[1];
 
 		char buffer[64];
-		std::snprintf(buffer, sizeof(buffer), "%d x %d", mode.Width, mode.Height);
+		if (desktopsized && mode.Width == desktopwidth && mode.Height == desktopheight) {
+			std::snprintf(buffer, sizeof(buffer), "%d x %d (native)", mode.Width, mode.Height);
+		} else if (desktopsized && mode.Width > 0 && mode.Height > 0
+			&& (desktopwidth % mode.Width) == 0 && (desktopheight % mode.Height) == 0
+			&& (desktopwidth / mode.Width) > 1
+			&& (desktopwidth / mode.Width) == (desktopheight / mode.Height)) {
+			std::snprintf(buffer, sizeof(buffer), "%d x %d (1/%d)", mode.Width, mode.Height, desktopwidth / mode.Width);
+		} else {
+			std::snprintf(buffer, sizeof(buffer), "%d x %d", mode.Width, mode.Height);
+		}
 		mode.Label = buffer;
 
 		if (mode.Width == Options.ScreenWidth && mode.Height == Options.ScreenHeight) {

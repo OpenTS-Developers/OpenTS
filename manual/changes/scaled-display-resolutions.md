@@ -7,4 +7,4 @@ credit:
 - fjlaubscher
 ---
 
-The display options now list each whole fraction of the primary display that is still at least 640 by 400, and on Windows the size that display's scaling corresponds to. A 1280 by 800 panel includes 640 by 400, and a 3840 by 2160 panel at 200% includes 1920 by 1080. Choosing one of those sizes renders the picture at that size.
+The display options now list only the primary display's own size and its exact whole fractions: the width and height divided by 2 through 6, kept only when both divide exactly and the result is still at least 640 by 400. A 1280 by 800 panel includes 640 by 400, and a 3840 by 2160 panel includes 1920 by 1080 and 960 by 540. Each entry is marked `(native)` or `(1/2)` and so on. Sizes the display reports besides its own size, and the size Windows display scaling corresponds to, are no longer offered. Choosing one of those sizes renders the picture at that size.

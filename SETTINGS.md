@@ -62,9 +62,14 @@ back on uses that section again.
 | `[Options]` `TextBackgroundColor` | `0` | Palette index drawn behind in-game messages and the now-playing line. `0` draws none and `12` is black. OpenTS uses `12` when the key is missing, so set `0` to remove the box. |
 | `[Video]` `CursorScale` | `0` | `0` grows the pointer with the picture. On Windows, a larger display scale overrides that growth, so a 3840 by 2160 picture at 200% gets a double-size pointer. A positive number is a fixed multiple up to 8; a negative number keeps the artwork's size. |
 
-The display options also list the primary display's width and height divided
-by 2, 3, 4, 5, and 6 when that size is still at least 640 by 400, and on
-Windows, when the display scale is above 1, the size that scale corresponds
-to. Choosing one renders at that size and writes `ScreenWidth` and
-`ScreenHeight` under `[Video]`. The sizes sit on top of the modes the display
-reports, and a mode still has to fall between 640 by 400 and 4096 by 4096.
+The display options list the primary display's own size and its whole
+fractions: the width and height divided by 2, 3, 4, 5, and 6, kept only when
+both divide exactly and the result is still at least 640 by 400. Each entry is
+marked `(native)` or `(1/2)` and so on, and a mode still has to fall between
+640 by 400 and 4096 by 4096. Choosing one renders at that size and writes
+`ScreenWidth` and `ScreenHeight` under `[Video]`.
+
+A first launch with either key missing or set to `-1` chooses the largest
+whole fraction whose picture fits within 960 by 540, or the display's own size
+when none does. A 1920 by 1080 or 3840 by 2160 display therefore opens at 960
+by 540, and a 1280 by 800 display at 640 by 400.
