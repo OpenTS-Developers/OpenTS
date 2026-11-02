@@ -6,6 +6,7 @@ opents_add_test(UILogic
     NAME uilogic
     SOURCES uilogictest.cpp
     ENGINE
+        gametext.cpp
         hsv.cpp
         rgb.cpp
         utf8.cpp

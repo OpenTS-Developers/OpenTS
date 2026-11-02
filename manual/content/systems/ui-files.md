@@ -86,7 +86,7 @@ A missing, unreadable or corrupt image keeps the embedded icon. A corrupt first 
 
 `gametip.rml` draws the tooltips over the sidebar and the tactical view, and `gametip.rcss` styles them. The tooltip is the element with `id="gametip"`, drawn by default in `wwfont-kia6pt` in the colors and frame the game drew it in. A style sheet can change its font, colors, border and padding.
 
-The game places the box and limits its width. The box opens below the pointer and stays inside the sidebar or the tactical view, whichever the pointer is over: it moves left to fit, and moves above the pointer when there is no room below. Its text wraps to the width of that area, and an at sign (`@`) or a line break in the text starts a new line. The pointer passes through the tooltip to whatever is under it.
+The game places the box and limits its width. The box opens below the pointer and stays inside the sidebar or the tactical view, whichever the pointer is over: it moves left to fit, and moves above the pointer when there is no room below. Its text wraps to the width of that area. A line break in the text or an at sign (`@`) starts a new line; [Line breaks in text](/formats/ini-syntax/#line-breaks-in-text) gives the escapes. The pointer passes through the tooltip to whatever is under it.
 
 ## Side style sheets
 

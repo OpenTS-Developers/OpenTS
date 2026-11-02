@@ -7,6 +7,7 @@
  * See LICENSE.md for applicable additional terms and warranty disclaimers.
  ******************************************************************************/
 
+#include "gametext.h"
 #include "ui/rml/rmlfontfnt.h"
 #include "ui/rml/rmlfontsheet.h"
 #include "ui/rml/rmlimage.h"
@@ -903,6 +904,21 @@ TEST_CASE("a font's atlas gives every glyph its own cell and colors each pixel v
 
 	std::vector<UIFntCell> fewer(cells.begin(), cells.end() - 1);
 	CHECK_MESSAGE(!UI_Fnt_Atlas(font, fewer, width, height, palette, rgba), "cells that do not match the font are refused");
+}
+
+
+TEST_CASE("game text breaks its lines at an at sign, and a backslash writes an at sign or a backslash as written")
+{
+	CHECK_MESSAGE(Game_Text_Lines("Power@Low") == "Power\nLow", "an at sign breaks the line");
+	CHECK_MESSAGE(Game_Text_Lines("mail\\@example") == "mail@example", "a backslash and an at sign give an at sign");
+	CHECK_MESSAGE(Game_Text_Lines("C:\\\\@next") == "C:\\\nnext", "two backslashes give one, and the at sign after them still breaks the line");
+	CHECK_MESSAGE(Game_Text_Lines("C:\\GAME\\") == "C:\\GAME\\", "any other backslash, a trailing one included, is kept");
+	CHECK_MESSAGE(Game_Text_Lines("a\nb") == "a\nb", "a newline is kept");
+
+	char text[] = "mail\\@a@b\\\\c\\d\\";
+	Game_Text_Lines_In_Place(text);
+	CHECK_MESSAGE(std::strcmp(text, "mail@a\nb\\c\\d\\") == 0, "the in-place form gives the same text");
+	Game_Text_Lines_In_Place(nullptr);
 }
 
 }

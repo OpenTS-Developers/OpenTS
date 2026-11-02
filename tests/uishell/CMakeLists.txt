@@ -12,6 +12,7 @@ opents_add_test(UIShell
         ui/uiinput.cpp
         ui/uishell.cpp
         ui/uireveal.cpp
+        gametext.cpp
         utf8.cpp
         hsv.cpp
         rgb.cpp

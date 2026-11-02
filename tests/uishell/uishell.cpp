@@ -1680,6 +1680,11 @@ TEST_CASE("the briefing breaks at @ and newlines, drops the spaces after a break
 	REQUIRE_MESSAGE(presenter.Pages.size() == 1, "the briefing breaks at @ and newlines, drops the spaces after a break, and wraps whole words");
 	CHECK_MESSAGE(presenter.Pages[0] == expected, "the briefing breaks at @ and newlines, drops the spaces after a break, and wraps whole words");
 
+	UIRestatePresenterClass escaped(service, clock, "Meet at CP\\@3@Go", false);
+	escaped.Lay_Out(Ten_Per_Character, 200, 14);
+	REQUIRE_MESSAGE(escaped.Pages.size() == 1, "an escaped at sign in a briefing is printed and does not break the line");
+	CHECK_MESSAGE(escaped.Pages[0] == std::vector<std::string>({ "Meet at CP@3", "Go" }), "an escaped at sign in a briefing is printed and does not break the line");
+
 	UIRestatePresenterClass edge(service, clock, "abcd efghi jk", false);
 	edge.Lay_Out(Ten_Per_Character, 100, 14);
 	REQUIRE_MESSAGE(edge.Pages.size() == 1, "a word stays on its line when only its last letter crosses the width");
@@ -3592,6 +3597,7 @@ void Test_Game_Tip_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	CHECK_MESSAGE(UI_Game_Tip_Text("Power@Low") == "Power\nLow", "an at sign breaks the line");
 	CHECK_MESSAGE(UI_Game_Tip_Text("a\rb\r\nc\nd") == "a\nb\nc\nd", "a return, a return and line feed, and a line feed each break the line once");
 	CHECK_MESSAGE(UI_Game_Tip_Text("50% <b>&amp;") == "50% <b>&amp;", "other text is kept as written");
+	CHECK_MESSAGE(UI_Game_Tip_Text("mail\\@example\r") == "mail@example\n", "an escaped at sign stays an at sign, and a return still breaks the line");
 
 	UIGameTipPlacement placement;
 	placement.PointerX = 100.0f;

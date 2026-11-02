@@ -9,6 +9,7 @@
 
 #include "ui/screens/gametip/uigametip.h"
 
+#include "gametext.h"
 #include "ui/rml/rmlview.h"
 
 #include <RmlUi/Core/Context.h>
@@ -31,20 +32,21 @@ void UIGameTipPresenterClass::Refresh(void)
 
 
 /// <summary>
-/// Gives a tooltip's text with every line break the game prints written as a newline: an at
-/// sign, a carriage return, or a carriage return and line feed together.
+/// Gives a tooltip's text as Game_Text_Lines does, with a carriage return, or a carriage
+/// return and line feed together, also written as one newline.
 /// </summary>
 std::string UI_Game_Tip_Text(std::string const & text)
 {
+	std::string const escaped = Game_Text_Lines(text);
 	std::string lines;
-	lines.reserve(text.size());
+	lines.reserve(escaped.size());
 
-	for (std::size_t index = 0; index < text.size(); index++) {
-		char const c = text[index];
-		if (c == '\r' && index + 1 < text.size() && text[index + 1] == '\n') {
+	for (std::size_t index = 0; index < escaped.size(); index++) {
+		char const c = escaped[index];
+		if (c == '\r' && index + 1 < escaped.size() && escaped[index + 1] == '\n') {
 			continue;
 		}
-		lines.push_back((c == '@' || c == '\r') ? '\n' : c);
+		lines.push_back((c == '\r') ? '\n' : c);
 	}
 
 	return(lines);
