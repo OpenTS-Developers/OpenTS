@@ -10,11 +10,11 @@
 #include "ui/uishell.h"
 
 #include "ui/dev/uidev.h"
-#include "ui/rml/rmlfont.h"
 #include "ui/rml/rmlkeys.h"
 #include "ui/rml/rmlrender.h"
 #include "ui/rml/rmlsystem.h"
 #include "ui/rml/rmltexture.h"
+#include "ui/uifonts.h"
 #include "ui/uihost.h"
 #include "ui/uireveal.h"
 #include "ui/uiview.h"
@@ -152,7 +152,7 @@ UIShellClass::UIShellClass(UIShellHostClass & host, std::unique_ptr<UIRmlSystemC
 	System(std::move(system)),
 	File(std::move(file)),
 	Render(std::move(render)),
-	Fonts(std::make_unique<UIFontEngineClass>())
+	Fonts(std::make_unique<UIFontRegistryClass>(host))
 {
 }
 
@@ -222,9 +222,7 @@ void UIShellClass::Apply_Dimensions(void)
 	Context->SetDimensions(Rml::Vector2i(frame.Width, frame.Height));
 	Context->SetDensityIndependentPixelRatio(ratio);
 
-	Fonts->Set_Reference_Scale(ratio);
-	PixelRatio = ratio;
-	Apply_Font_Policy();
+	Fonts->Set_Scale(ratio);
 
 	int magnification = Host.Art_Magnification();
 	if (magnification != ArtMagnification) {
@@ -243,8 +241,8 @@ void UIShellClass::Drop_Cached_Files(void)
 	Rml::Factory::ClearStyleSheetCache();
 	Rml::Factory::ClearTemplateCache();
 
-	DialogFontTried = false;
-	Ensure_Dialog_Font();
+	Fonts->Forget_Game_Fonts();
+	Fonts->Load_Game_Fonts();
 
 	UIReentryGuardClass updating(InContext);
 	Rml::ReleaseFontResources();
@@ -440,165 +438,10 @@ void UIShellClass::Drain_Deferred(void)
 }
 
 
-static char const * const UI_SHEET_FONT_FAMILY = "dlgsys";
-static char const * const UI_SANS_FONT_FAMILY = "dlg-sans";
-static char const * const UI_SANS_RASTER_FILES[] = {
-	"sserife.fon",		// Western
-	"sserifee.fon",		// Central European
-	"sserifer.fon",		// Cyrillic
-	"sserifeg.fon",		// Greek
-	"sserifet.fon",		// Turkish
-	"ssee1257.fon",		// Baltic
-};
-static char const * const UI_SANS_FONT_FILE = "micross.ttf";
-static char const * const UI_PRINT_FONT_FAMILY = "fullfnt";
-static char const * const UI_PRINT_FONT_FILE = "arial.ttf";
-static char const * const UI_SHIPPED_FONT_FILE = "Arimo.ttf";
-
-struct UIGameFontType
-{
-	char const * File;
-	char const * Family;
-	int Spacing;
-	bool Outlined;
-	bool Gradient;
-};
-
-// The spacing and outline settings the game loads each font with, and whether its text
-// printing colors the font's shade values.
-static UIGameFontType const UI_GAME_FONTS[] = {
-	{ "KIA6PT.FNT", "wwfont-kia6pt", 1, false, false },
-	{ "6POINT.FNT", "wwfont-6point", 1, true, false },
-	{ "8POINT.FNT", "wwfont-8point", 1, true, false },
-	{ "EDITFNT.FNT", "wwfont-editfnt", 1, true, true },
-	{ "GRAD6FNT.FNT", "wwfont-grad6fnt", 2, true, true },
-	{ "12METFNT.FNT", "wwfont-12metfnt", 1, false, true },
-};
-
 static char const * const UI_REVEAL_SOUND = "EMBLEM.AUD";
 static const float UI_REVEAL_VOLUME = 64.0f / 255.0f;
 
 static char const * const UI_REVEAL_DONE = "UI: %s opened over %d passes in %d ms\n";
-
-
-bool UIShellClass::Load_Sheet_Font(char const * family)
-{
-	std::string index = std::string(family) + "i.pcx";
-	std::string alpha = std::string(family) + "a.pcx";
-
-	UIImageIndexed indexsheet;
-	UIImageIndexed alphasheet;
-	if (!UI_Load_Indexed_Image(index.c_str(), indexsheet) || !UI_Load_Indexed_Image(alpha.c_str(), alphasheet)) {
-		return(false);
-	}
-
-	return(Fonts->Load_Sheets(family, indexsheet, alphasheet));
-}
-
-
-void UIShellClass::Load_Game_Fonts(void)
-{
-	for (UIGameFontType const & type : UI_GAME_FONTS) {
-		std::vector<unsigned char> bytes;
-		UIFntFont font;
-		if (!UI_Read_Game_File(type.File, bytes)) {
-			Log("UI: %s is not in the game's art, so %s is not available\n", type.File, type.Family);
-			continue;
-		}
-		if (!UI_Read_Fnt(std::span<std::uint8_t const>(bytes.data(), bytes.size()), font)
-			|| !Fonts->Load_Fnt(type.Family, font, type.Spacing, type.Outlined, type.Gradient)) {
-			Log("UI: %s could not be read, so %s is not available\n", type.File, type.Family);
-		}
-	}
-}
-
-
-void UIShellClass::Register_Fonts(void)
-{
-	Fonts->Set_Fallback(Rml::GetFontEngineInterface());
-	Rml::SetFontEngineInterface(Fonts.get());
-
-	bool sansloaded = false;
-	std::vector<UIRasterStrike> strikes;
-	for (char const * const name : UI_SANS_RASTER_FILES) {
-		std::string path = Host.System_Font_Path(name);
-		std::vector<std::uint8_t> bytes;
-		if (path.empty() || !UI_Read_File(path.c_str(), bytes)) {
-			continue;
-		}
-
-		std::vector<UIRasterStrike> cut;
-		if (!UI_Read_Raster_Font(std::span<std::uint8_t const>(bytes.data(), bytes.size()), cut)) {
-			continue;
-		}
-
-		if (strikes.empty()) {
-			strikes = std::move(cut);
-			Log("UI: %s answers for %s with %d strikes\n", name, UI_SANS_FONT_FAMILY, (int)strikes.size());
-			continue;
-		}
-
-		int added = UI_Merge_Raster_Strikes(strikes, cut);
-		if (added > 0) {
-			Log("UI: %s adds %d characters to %s\n", name, added, UI_SANS_FONT_FAMILY);
-		}
-	}
-
-	if (!strikes.empty()) {
-		sansloaded = Fonts->Load_Strikes(UI_SANS_FONT_FAMILY, strikes);
-	}
-
-	std::string sans = Host.System_Font_Path(UI_SANS_FONT_FILE);
-	if (!sans.empty() && UI_Read_File(sans.c_str(), SystemFontData)) {
-		sansloaded = Rml::LoadFontFace(Rml::Span<const Rml::byte>(SystemFontData.data(), SystemFontData.size()), UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal) || sansloaded;
-	}
-
-	// Stands in for FULLFNT3.SHP, which resembles Arial.
-	std::string print = Host.System_Font_Path(UI_PRINT_FONT_FILE);
-	if (!print.empty() && UI_Read_File(print.c_str(), PrintFontData)
-		&& Rml::LoadFontFace(Rml::Span<const Rml::byte>(PrintFontData.data(), PrintFontData.size()), UI_PRINT_FONT_FAMILY, Rml::Style::FontStyle::Normal)) {
-		Log("UI: %s answers for %s\n", UI_PRINT_FONT_FILE, UI_PRINT_FONT_FAMILY);
-	} else {
-		Log("UI: %s is not on this machine, so %s is the shipped face\n", UI_PRINT_FONT_FILE, UI_PRINT_FONT_FAMILY);
-	}
-
-	FontLoaded = Rml::LoadFontFace(UI_SHIPPED_FONT_FILE);
-	if (!FontLoaded) {
-		Log("UI: %s did not load, so no document can be shown\n", UI_SHIPPED_FONT_FILE);
-		return;
-	}
-
-	if (!sansloaded) {
-		Log("UI: neither %s nor %s is on this machine, so %s is the shipped face\n",
-			UI_SANS_RASTER_FILES[0], UI_SANS_FONT_FILE, UI_SANS_FONT_FAMILY);
-	}
-
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
-
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_PRINT_FONT_FAMILY, Rml::Style::FontStyle::Normal);
-
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SHEET_FONT_FAMILY, Rml::Style::FontStyle::Normal);
-}
-
-
-void UIShellClass::Apply_Font_Policy(void)
-{
-	Fonts->Set_Use_Strikes(Host.Bitmap_System_Font() && std::abs(PixelRatio - 1.0f) < 0.001f);
-}
-
-
-void UIShellClass::Ensure_Dialog_Font(void)
-{
-	if (DialogFontTried || !Ready) {
-		return;
-	}
-
-	DialogFontTried = true;
-	Load_Game_Fonts();
-	if (!Load_Sheet_Font(UI_SHEET_FONT_FAMILY)) {
-		Log("UI: the %s sheets are not in the game's art, so %s stays the shipped face\n", UI_SHEET_FONT_FAMILY, UI_SHEET_FONT_FAMILY);
-	}
-}
 
 
 bool UIShellClass::Advance_Reveal(UIViewClass & view, float full, int start, float & shown)
@@ -684,8 +527,7 @@ bool UIShellClass::Init(void)
 	Apply_Dimensions();
 
 	UI_Register_Surface_Element();
-	UI_Register_Fnt_Effects();
-	Register_Fonts();
+	Fonts->Register();
 
 	Ready = true;
 	Log("UI: RmlUi %s ready over a %dx%d frame at %.2f pixels per dp\n",
@@ -728,7 +570,7 @@ void UIShellClass::Shutdown(void)
 
 	Rml::Shutdown();
 	Render->Shutdown();
-	FontLoaded = false;
+	Fonts->Shutdown();
 }
 
 
@@ -1125,7 +967,7 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 		Report_Open_Error(view, "The interface system did not start.");
 		return(UI_RESULT_FAILED_TO_OPEN);
 	}
-	if (!FontLoaded) {
+	if (!Fonts->Shipped_Face_Loaded()) {
 		Log("UI: %s needs %s, which did not load\n", view.Name(), UI_SHIPPED_FONT_FILE);
 		Report_Open_Error(view, "Arimo.ttf did not load.");
 		return(UI_RESULT_FAILED_TO_OPEN);
@@ -1138,8 +980,8 @@ UIResult UIShellClass::Run_Modal(UIViewClass & view, UIServiceCallback const & s
 
 	RevealShown = 0.0f;
 	RevealStart = Clock().Milliseconds();
-	Ensure_Dialog_Font();
-	Apply_Font_Policy();
+	Fonts->Load_Game_Fonts();
+	Fonts->Apply_Policy();
 
 	if (!Prepare_View(view)) {
 		Report_Open_Error(view, Render->Error()[0] != '\0' ? Render->Error() : System->First_Error().c_str());
@@ -1306,12 +1148,12 @@ void UIShellClass::Report_Open_Error(UIViewClass const & view, char const * reas
 /// <returns>False when the screen could not be opened, and nothing is shown.</returns>
 bool UIShellClass::Show_Modeless(UIViewClass & view, bool reveal)
 {
-	if (!Ready || !FontLoaded || InContext) {
+	if (!Ready || !Fonts->Shipped_Face_Loaded() || InContext) {
 		return(false);
 	}
 
-	Ensure_Dialog_Font();
-	Apply_Font_Policy();
+	Fonts->Load_Game_Fonts();
+	Fonts->Apply_Policy();
 
 	if (!Prepare_View(view)) {
 		return(false);

@@ -10,6 +10,7 @@ opents_add_test(UIShell
     ENGINE
         ui/uiscreen.cpp
         ui/uiinput.cpp
+        ui/uifonts.cpp
         ui/uishell.cpp
         ui/uireveal.cpp
         gametext.cpp
