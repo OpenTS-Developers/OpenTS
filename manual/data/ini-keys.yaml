@@ -2980,7 +2980,7 @@ BehavesLike:
       source: code/ptype.cpp
       guard: null
     level: ParticleTypeClass
-  - applies_to: &id023
+  - applies_to: &id022
     - ParticleSystemType
     file: rules.ini
     section:
@@ -4281,7 +4281,7 @@ C4Warhead:
 CD:
   key: CD
   scopes:
-  - applies_to: &id021
+  - applies_to: &id020
     - Campaign
     file: battle.ini
     section:
@@ -4470,7 +4470,7 @@ CarryOverMoney:
 Carryall:
   key: Carryall
   scopes:
-  - applies_to: &id019
+  - applies_to: &id024
     - AircraftType
     file: rules.ini
     section:
@@ -5168,7 +5168,7 @@ Color:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
-  - applies_to: &id020
+  - applies_to: &id019
     - Tiberium
     file: rules.ini
     section:
@@ -6132,23 +6132,6 @@ CursorScale:
       source: code/options.cpp
       guard: null
     level: OptionsClass
-CustomRotor:
-  key: CustomRotor
-  scopes:
-  - applies_to: *id019
-    file: art.ini
-    section:
-      kind: image
-      fallback: object-type
-    value_type: boolean
-    status: generated
-    _provenance:
-      default_candidate: 'no'
-      declared_in: AircraftTypeClass
-      member: IsRotorCustom
-      source: code/airctype.cpp
-      guard: null
-    level: AircraftTypeClass
 Cyborg:
   key: Cyborg
   scopes:
@@ -6449,7 +6432,7 @@ DeathFrames:
 Debris:
   key: Debris
   scopes:
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -7011,7 +6994,7 @@ Description:
       source: code/suprtype.cpp
       guard: null
     level: SuperWeaponTypeClass
-  - applies_to: *id021
+  - applies_to: *id020
     file: battle.ini
     section:
       kind: identifier
@@ -8675,7 +8658,7 @@ FinalDamageState:
 FinalMovie:
   key: FinalMovie
   scopes:
-  - applies_to: *id021
+  - applies_to: *id020
     file: battle.ini
     section:
       kind: identifier
@@ -8729,7 +8712,7 @@ FireAngle:
   scopes:
   - applies_to: *id003
     file: art.ini
-    section: &id022
+    section: &id021
       kind: image
       fallback: object-type
     value_type: angle
@@ -8748,7 +8731,7 @@ FireAngle:
       value_type: integer
       applies_to: *id003
     - file: art.ini
-      section: *id022
+      section: *id021
       value_type: angle
       applies_to: *id003
     precedence: read more than once -- the art.ini value is applied last and overrides the others
@@ -10035,7 +10018,7 @@ Group:
 Growth:
   key: Growth
   scopes:
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -10052,7 +10035,7 @@ Growth:
 GrowthPercentage:
   key: GrowthPercentage
   scopes:
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -10579,7 +10562,7 @@ High:
 HighRadarBrightness:
   key: HighRadarBrightness
   scopes:
-  - applies_to: &id024
+  - applies_to: &id023
     - Theater
     file: rules.ini
     section:
@@ -10597,7 +10580,7 @@ HighRadarBrightness:
 HoldsWhat:
   key: HoldsWhat
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -11276,7 +11259,7 @@ Image:
       source: code/objtype.cpp
       guard: null
     level: ObjectTypeClass
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -11309,7 +11292,7 @@ Image:
 ImageLetter:
   key: ImageLetter
   scopes:
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -12310,7 +12293,7 @@ IsAnimatedTiberium:
 IsArctic:
   key: IsArctic
   scopes:
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -12457,7 +12440,7 @@ IsFlammable:
 IsIceGrowthEnabled:
   key: IsIceGrowthEnabled
   scopes:
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -12926,7 +12909,7 @@ IsWebImmune:
 IsoRoot:
   key: IsoRoot
   scopes:
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -12994,7 +12977,7 @@ Land:
 Landable:
   key: Landable
   scopes:
-  - applies_to: *id019
+  - applies_to: *id024
     file: rules.ini
     section:
       kind: identifier
@@ -13061,7 +13044,7 @@ LargeVisceroid:
 Laser:
   key: Laser
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -13078,7 +13061,7 @@ Laser:
 LaserColor:
   key: LaserColor
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -13315,7 +13298,7 @@ Level:
 Lifetime:
   key: Lifetime
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -13400,7 +13383,7 @@ LightRedTint:
 LightSize:
   key: LightSize
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -13695,7 +13678,7 @@ Lose:
 LowRadarBrightness:
   key: LowRadarBrightness
   scopes:
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -13748,7 +13731,7 @@ MMRampBase:
 MMSuffix:
   key: MMSuffix
   scopes:
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -14776,7 +14759,7 @@ MovementLineThick:
 MovementPerturbationCoefficient:
   key: MovementPerturbationCoefficient
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -15980,7 +15963,7 @@ OnTransOnly:
 OneFrameLight:
   key: OneFrameLight
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -16225,7 +16208,7 @@ Particle:
 ParticleCap:
   key: ParticleCap
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -16242,7 +16225,7 @@ ParticleCap:
 ParticlesPerCoord:
   key: ParticlesPerCoord
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -16804,7 +16787,7 @@ PoseDir:
 PositionPerturbationCoefficient:
   key: PositionPerturbationCoefficient
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -16853,7 +16836,7 @@ Power:
       source: code/builtype.cpp
       guard: null
     level: BuildingTypeClass
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -18822,7 +18805,7 @@ RequiredAddOn:
 RequiredAddon:
   key: RequiredAddon
   scopes:
-  - applies_to: *id021
+  - applies_to: *id020
     file: battle.ini
     section:
       kind: identifier
@@ -19014,7 +18997,7 @@ RollAngle:
 Root:
   key: Root
   scopes:
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -19061,10 +19044,231 @@ Rotates:
       source: code/bullettype.cpp
       guard: null
     level: BulletTypeClass
+Rotor1Anim:
+  key: Rotor1Anim
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor1File
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor1FLH:
+  key: Rotor1FLH
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor1FLH
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor1TiltedAnims:
+  key: Rotor1TiltedAnims
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: tiltednames
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor2Anim:
+  key: Rotor2Anim
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor2File
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor2FLH:
+  key: Rotor2FLH
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor2FLH
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor2TiltedAnims:
+  key: Rotor2TiltedAnims
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: tiltednames
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor3Anim:
+  key: Rotor3Anim
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor3File
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor3FLH:
+  key: Rotor3FLH
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor3FLH
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor3TiltedAnims:
+  key: Rotor3TiltedAnims
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: tiltednames
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor4Anim:
+  key: Rotor4Anim
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor4File
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor4FLH:
+  key: Rotor4FLH
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: point (x,y,z)
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: Rotor4FLH
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+Rotor4TiltedAnims:
+  key: Rotor4TiltedAnims
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: string
+    status: generated
+    _provenance:
+      default_candidate: null
+      declared_in: AircraftTypeClass
+      member: tiltednames
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
+RotorCount:
+  key: RotorCount
+  scopes:
+  - applies_to: *id024
+    file: art.ini
+    section:
+      kind: image
+      fallback: object-type
+    value_type: integer
+    status: generated
+    _provenance:
+      default_candidate: '1'
+      declared_in: AircraftTypeClass
+      member: RotorCount
+      source: code/airctype.cpp
+      guard: null
+    level: AircraftTypeClass
 Rotors:
   key: Rotors
   scopes:
-  - applies_to: *id019
+  - applies_to: *id024
     file: art.ini
     section:
       kind: image
@@ -19308,7 +19512,7 @@ ScatterSound:
 Scenario:
   key: Scenario
   scopes:
-  - applies_to: *id021
+  - applies_to: *id020
     file: battle.ini
     section:
       kind: identifier
@@ -20607,7 +20811,7 @@ SlopeSetPieces2:
 Slowdown:
   key: Slowdown
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -20868,7 +21072,7 @@ Soylent:
 SparkSpawnFrames:
   key: SparkSpawnFrames
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -20933,7 +21137,7 @@ SpawnCount:
 SpawnCutoff:
   key: SpawnCutoff
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -20950,7 +21154,7 @@ SpawnCutoff:
 SpawnDirection:
   key: SpawnDirection
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -20967,7 +21171,7 @@ SpawnDirection:
 SpawnFrames:
   key: SpawnFrames
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -20984,7 +21188,7 @@ SpawnFrames:
 SpawnRadius:
   key: SpawnRadius
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -21001,7 +21205,7 @@ SpawnRadius:
 SpawnSparkPercentage:
   key: SpawnSparkPercentage
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -21018,7 +21222,7 @@ SpawnSparkPercentage:
 SpawnTranslucencyCutoff:
   key: SpawnTranslucencyCutoff
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -21049,7 +21253,7 @@ Spawns:
       source: code/animtype.cpp
       guard: null
     level: AnimTypeClass
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -21656,7 +21860,7 @@ SpeedType:
 SpiralDeltaPerCoord:
   key: SpiralDeltaPerCoord
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -21673,7 +21877,7 @@ SpiralDeltaPerCoord:
 SpiralRadius:
   key: SpiralRadius
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
@@ -21847,7 +22051,7 @@ Spread:
       source: code/warhead.cpp
       guard: null
     level: WarheadTypeClass
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -21864,7 +22068,7 @@ Spread:
 SpreadPercentage:
   key: SpreadPercentage
   scopes:
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -22343,7 +22547,7 @@ Suffix:
       source: code/houstype.cpp
       guard: null
     level: HouseTypeClass
-  - applies_to: *id024
+  - applies_to: *id023
     file: rules.ini
     section:
       kind: identifier
@@ -25396,7 +25600,7 @@ VSync:
 Value:
   key: Value
   scopes:
-  - applies_to: *id020
+  - applies_to: *id019
     file: rules.ini
     section:
       kind: identifier
@@ -25662,7 +25866,7 @@ Velocity:
 VelocityPerturbationCoefficient:
   key: VelocityPerturbationCoefficient
   scopes:
-  - applies_to: *id023
+  - applies_to: *id022
     file: rules.ini
     section:
       kind: identifier
