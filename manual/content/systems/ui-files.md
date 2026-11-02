@@ -89,9 +89,9 @@ A document names every file it uses by bare file name, and the game adds the `ui
 
 If a required document, template, style sheet or `Arimo.ttf` fails to load, the screen does not open. Opening a menu or modal dialog shows a native error message with the loading failure and instructions to restore the `ui` folder supplied with the build. The debug log records the failure. The classic main menu exits after the message is dismissed; other menus return without a choice.
 
-Outside a match the game mounts the no-side archives. When a scenario is read or a saved game loads, it replaces them with the archives of the player's side, and it mounts the no-side archives again when the match ends and the menus return. [MIX archives](/formats/mix/#theater-side-and-speech-archives) names both sets. After each change the game reads the pictures, the dialog font and the game fonts again: a screen opened after it uses the copies the mounted archives supply, and a screen already on show keeps what it was built with. These archives are searched after every loose file and every archive mounted at startup, so their copy of a name is used only when none of those holds it. They cannot replace a shipped document or style sheet.
+When a scenario is read or a saved game loads, the game mounts the archives of the player's side. They stay mounted after the match ends, until the next scenario or saved game replaces them. A side's copy is used only for a name that no loose file and no archive mounted at startup holds, so it cannot replace a shipped document or style sheet. [MIX archives](/formats/mix/#theater-side-and-speech-archives) covers which archive answers for a name.
 
-To give each side its own version of a picture or font, put a copy in each side's `SIDEC<nn>.MIX` or `SIDENC<nn>.MIX`, and a neutral copy for the menus in `SIDEC00.MIX` or `SIDENC00.MIX`. Keep the name out of the `ui` directory and the archives mounted at startup; a copy there is used everywhere instead.
+The game reads the pictures, the dialog font and the game fonts again when it mounts a side's archives and when a match ends. Every screen then draws with the copies the mounted archives supply, including a screen already on show, which keeps its layout and style sheets.
 
 ## Window icon
 

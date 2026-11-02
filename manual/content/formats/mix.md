@@ -65,8 +65,6 @@ A campaign that finds neither CD archive still starts. The stock CD archives hol
 - A score picture or score movie that is not found is left out.
 - Map selection between missions cannot open without its artwork and palettes. The game reports "Unable to initiate Map Selection!" and replays the mission just won, unless that mission sets [`SkipMapSelect=yes`](/keys/skipmapselect/).
 
-Outside a match the game mounts the no-side archives in the same place: `E99SC00.MIX` down to `E00SC00.MIX` and `SIDEC00.MIX`, cached, then `E99SNC00.MIX` down to `E00SNC00.MIX` and `SIDENC00.MIX`, not cached. The expansion copies are mounted only while an expansion is enabled, and every one of these archives is optional. They are mounted at startup, give way to the player's side when a scenario or saved game loads, and are mounted again when a match ends and the menus return. [UI files](/systems/ui-files/#how-a-file-is-found) describes how a mod uses them for side-dependent interface files.
-
 If a required side archive is missing, the game mounts the first side's archives instead. If those are missing too, the scenario or saved game fails to load, and a scenario reports that it cannot be read.
 
 Speech archives follow the same pattern for the player's side, or in a campaign for the mission's [`SpeechSide`](/keys/speechside/): `E<xx>VOX<nn>.MIX` for each enabled expansion, then `SPEECH<nn>.MIX`, which is required. A missing `SPEECH<nn>.MIX` falls back to the first side's in the same way. None of the speech archives is cached.

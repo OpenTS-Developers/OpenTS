@@ -188,13 +188,6 @@ void PowerClass::Init_For_House(void)
 }
 
 
-void PowerClass::Clear_For_House(void)
-{
-	PowerPipShape = NULL;
-	BASECLASS::Clear_For_House();
-}
-
-
 /***********************************************************************************************
  * PowerClass::Flash_Power -- Flag the power bar to flash.                                     *
  *                                                                                             *
