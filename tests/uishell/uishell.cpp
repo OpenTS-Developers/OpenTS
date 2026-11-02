@@ -5333,7 +5333,10 @@ TEST_CASE_FIXTURE(FontEngineFixture, "a style sheet's @font-face loads a font fi
 	CHECK_MESSAGE(Rml::LoadFontFace("Arimo.ttf", "overlap", Rml::Style::FontStyle::Normal, Rml::Style::FontWeight::Normal), "one weight of a font loads into a family");
 	CHECK_MESSAGE(Rml::LoadFontFace("Arimo.ttf", "overlap", Rml::Style::FontStyle::Normal), "every weight of the same font then loads past the weight already there");
 	CHECK_MESSAGE(!Rml::LoadFontFace("missing.ttf", "absent", Rml::Style::FontStyle::Normal), "a font file that is not there loads nothing");
-	CHECK_MESSAGE(system.Problems == 1, "only the missing file is reported");
+
+	engine.Reserve_Family("dlg-sans");
+	CHECK_MESSAGE(!Rml::LoadFontFace("Arimo.ttf", "DLG-Sans", Rml::Style::FontStyle::Normal), "a reserved family takes no font file, whatever its case");
+	CHECK_MESSAGE(system.Problems == 2, "the missing file and the reserved family are each reported once");
 }
 
 

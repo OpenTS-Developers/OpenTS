@@ -42,6 +42,7 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		void Set_Use_Strikes(bool use) { UseStrikes = use; }
 		void Set_Fallback(Rml::FontEngineInterface * fallback) { Fallback = fallback; }
 		bool Has_Family(Rml::String const & family) const;
+		void Reserve_Family(Rml::String const & family);
 		void Set_Magnification(int factor);
 		virtual void Initialize(void) override;
 		virtual void Shutdown(void) override;
@@ -122,6 +123,7 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		// from that file still read it, so the engine keeps the bytes itself until shutdown.
 		std::vector<std::unique_ptr<std::vector<Rml::byte>>> FontFiles;
 		std::map<Rml::String, bool> FileRequests;
+		std::vector<Rml::String> Reserved;
 };
 
 

@@ -64,6 +64,25 @@ These font effects color the pixels of a game font:
 
 Where two effects color the same pixels, the later one in the list is used. For example, `font-effect: ww-shadow(#000000), ww-outline(#000000);` draws the font with a black shadow and outline. The ww- effects change nothing on any other font. A `shadow(...)` effect on a game font draws every visible pixel of the text in the shadow's color.
 
+## Your own fonts
+
+A style sheet loads a TrueType or OpenType font with an `@font-face` block, and any document can then name its family:
+
+```css
+@font-face {
+	font-family: mod-title;
+	src: modtitle.ttf;
+}
+
+#gametip { font-family: mod-title; font-size: 13dp; }
+```
+
+`src` names the font file by bare file name, and the file is [found like any other file here](#how-a-file-is-found). Without `font-weight`, every weight in the file is loaded. `font-weight: bold` or a number such as `600` loads the face as that weight, and `font-style: italic` loads it as italic. A family that has no face loaded draws no text, and a missing font file is named in the debug log.
+
+A face is loaded when the first document that uses the style sheet opens, and it stays loaded until the game exits. Declare the face in every style sheet that uses it; a repeated declaration does not read the file again. A later declaration with the same family, weight and style keeps the first file's face, even when the player's side changes. To give each side its own font, give each side's face its own family name in that side's `side-<name>.rcss`.
+
+The game's own family names cannot be declared: `wwfont-kia6pt`, `wwfont-6point`, `wwfont-8point`, `wwfont-editfnt`, `wwfont-grad6fnt`, `wwfont-12metfnt`, `dlgsys`, `dlg-sans` and `fullfnt`. A block that names one loads nothing, and the debug log records a warning.
+
 ## How a file is found
 
 A document names every file it uses by bare file name, and the game adds the `ui` directory to its search folders at startup. Those names then resolve in [the order the game searches](/formats/opents-ini/#the-order-files-are-searched-for-in): a loose copy found earlier in that order wins, and a copy inside a mix archive is used only where no loose file of that name exists. To replace a shipped document, style sheet or picture, put a file of the same name in a folder the game reaches first.

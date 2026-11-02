@@ -650,6 +650,16 @@ bool UIFontEngineClass::Has_Family(Rml::String const & family) const
 }
 
 
+/// <summary>
+/// Refuses every later font file load into a family, so a style sheet cannot replace or add
+/// to one of the game's own families. Loads from memory are not affected.
+/// </summary>
+void UIFontEngineClass::Reserve_Family(Rml::String const & family)
+{
+	Reserved.push_back(Rml::StringUtilities::ToLower(family));
+}
+
+
 UIFontEngineClass::FntFamily const * UIFontEngineClass::Find_Fnt_Family(Rml::String const & family) const
 {
 	Rml::String wanted = Rml::StringUtilities::ToLower(family);
@@ -761,6 +771,7 @@ void UIFontEngineClass::Shutdown(void)
 
 	FileRequests.clear();
 	FontFiles.clear();
+	Reserved.clear();
 }
 
 
@@ -772,6 +783,11 @@ void UIFontEngineClass::Shutdown(void)
 bool UIFontEngineClass::Load_File_Face(Rml::String const & filename, int faceindex, Rml::String const & family, Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackface)
 {
 	if (Fallback == nullptr) {
+		return(false);
+	}
+
+	if (std::find(Reserved.begin(), Reserved.end(), Rml::StringUtilities::ToLower(family)) != Reserved.end()) {
+		Rml::Log::Message(Rml::Log::LT_WARNING, "Font face from %s was not loaded: %s is one of the game's font families.", filename.c_str(), family.c_str());
 		return(false);
 	}
 

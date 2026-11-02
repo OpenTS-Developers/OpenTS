@@ -158,6 +158,13 @@ void UIFontRegistryClass::Register(void)
 		printface ? Rml::Style::FontWeight::Bold : Rml::Style::FontWeight::Auto);
 
 	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SHEET_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+
+	for (char const * const family : { UI_SHEET_FONT_FAMILY, UI_SANS_FONT_FAMILY, UI_PRINT_FONT_FAMILY }) {
+		Engine->Reserve_Family(family);
+	}
+	for (UIGameFontType const & type : UI_GAME_FONTS) {
+		Engine->Reserve_Family(type.Family);
+	}
 }
 
 
