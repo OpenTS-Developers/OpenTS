@@ -121,15 +121,19 @@ void UIFontRegistryClass::Register(void)
 		sansloaded = Engine->Load_Strikes(UI_SANS_FONT_FAMILY, strikes);
 	}
 
+	bool sansface = false;
 	std::string sans = Host.System_Font_Path(UI_SANS_FONT_FILE);
 	if (!sans.empty() && UI_Read_File(sans.c_str(), SystemFontData)) {
-		sansloaded = Rml::LoadFontFace(Rml::Span<const Rml::byte>(SystemFontData.data(), SystemFontData.size()), UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal) || sansloaded;
+		sansface = Rml::LoadFontFace(Rml::Span<const Rml::byte>(SystemFontData.data(), SystemFontData.size()), UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+		sansloaded = sansface || sansloaded;
 	}
 
 	// Stands in for FULLFNT3.SHP, which resembles Arial.
+	bool printface = false;
 	std::string print = Host.System_Font_Path(UI_PRINT_FONT_FILE);
 	if (!print.empty() && UI_Read_File(print.c_str(), PrintFontData)
 		&& Rml::LoadFontFace(Rml::Span<const Rml::byte>(PrintFontData.data(), PrintFontData.size()), UI_PRINT_FONT_FAMILY, Rml::Style::FontStyle::Normal)) {
+		printface = true;
 		Log("UI: %s answers for %s\n", UI_PRINT_FONT_FILE, UI_PRINT_FONT_FAMILY);
 	} else {
 		Log("UI: %s is not on this machine, so %s is the shipped face\n", UI_PRINT_FONT_FILE, UI_PRINT_FONT_FAMILY);
@@ -146,9 +150,12 @@ void UIFontRegistryClass::Register(void)
 			UI_SANS_RASTER_FILES[0], UI_SANS_FONT_FILE, UI_SANS_FONT_FAMILY);
 	}
 
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal);
-
-	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_PRINT_FONT_FAMILY, Rml::Style::FontStyle::Normal);
+	// Where a system face loaded, the shipped face adds only its bold weight, which the system
+	// faces lack, since a weight loaded twice keeps the first face.
+	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SANS_FONT_FAMILY, Rml::Style::FontStyle::Normal,
+		sansface ? Rml::Style::FontWeight::Bold : Rml::Style::FontWeight::Auto);
+	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_PRINT_FONT_FAMILY, Rml::Style::FontStyle::Normal,
+		printface ? Rml::Style::FontWeight::Bold : Rml::Style::FontWeight::Auto);
 
 	Rml::LoadFontFace(UI_SHIPPED_FONT_FILE, UI_SHEET_FONT_FAMILY, Rml::Style::FontStyle::Normal);
 }

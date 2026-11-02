@@ -13,10 +13,13 @@
 #include "utf8.h"
 
 #include <RmlUi/Core/CallbackTexture.h>
+#include <RmlUi/Core/Core.h>
 #include <RmlUi/Core/Factory.h>
+#include <RmlUi/Core/FileInterface.h>
 #include <RmlUi/Core/FontEffect.h>
 #include <RmlUi/Core/FontEffectInstancer.h>
 #include <RmlUi/Core/FontGlyph.h>
+#include <RmlUi/Core/Log.h>
 #include <RmlUi/Core/Mesh.h>
 #include <RmlUi/Core/MeshUtilities.h>
 #include <RmlUi/Core/PropertyDefinition.h>
@@ -755,18 +758,72 @@ void UIFontEngineClass::Shutdown(void)
 		Fallback->Shutdown();
 		Fallback = nullptr;
 	}
+
+	FileRequests.clear();
+	FontFiles.clear();
+}
+
+
+/// <summary>
+/// Loads a TrueType or OpenType file through RmlUi's file interface, as RmlUi's own loader
+/// does, but keeps the file's bytes until shutdown. A request already made with the same
+/// file, family, style, weight and options returns its first result without reading again.
+/// </summary>
+bool UIFontEngineClass::Load_File_Face(Rml::String const & filename, int faceindex, Rml::String const & family, Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackface)
+{
+	if (Fallback == nullptr) {
+		return(false);
+	}
+
+	Rml::String const key = Rml::StringUtilities::ToLower(filename) + '|' + std::to_string(faceindex) + '|' + Rml::StringUtilities::ToLower(family)
+		+ '|' + std::to_string((int)style) + '|' + std::to_string((int)weight) + (fallbackface ? "|fallback" : "");
+	auto const request = FileRequests.find(key);
+	if (request != FileRequests.end()) {
+		return(request->second);
+	}
+
+	Rml::FileInterface * files = Rml::GetFileInterface();
+	Rml::FileHandle handle = (files != nullptr) ? files->Open(filename) : 0;
+	if (handle == 0) {
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to load font face from %s, could not open file.", filename.c_str());
+		return(false);
+	}
+
+	std::vector<Rml::byte> bytes(files->Length(handle));
+	bytes.resize(files->Read(bytes.data(), bytes.size(), handle));
+	files->Close(handle);
+
+	// A file several families name is kept once.
+	std::vector<Rml::byte> const * kept = nullptr;
+	for (std::unique_ptr<std::vector<Rml::byte>> const & file : FontFiles) {
+		if (*file == bytes) {
+			kept = file.get();
+			break;
+		}
+	}
+	if (kept == nullptr) {
+		FontFiles.push_back(std::make_unique<std::vector<Rml::byte>>(std::move(bytes)));
+		kept = FontFiles.back().get();
+	}
+
+	bool const loaded = Fallback->LoadFontFace(Rml::Span<const Rml::byte>(kept->data(), kept->size()), faceindex, family, style, weight, fallbackface);
+	if (!loaded) {
+		Rml::Log::Message(Rml::Log::LT_ERROR, "Failed to load font face from %s.", filename.c_str());
+	}
+	FileRequests[key] = loaded;
+	return(loaded);
 }
 
 
 bool UIFontEngineClass::LoadFontFace(Rml::String const & filename, int faceindex, bool fallbackface, Rml::Style::FontWeight weight)
 {
-	return(Fallback != nullptr && Fallback->LoadFontFace(filename, faceindex, fallbackface, weight));
+	return(Load_File_Face(filename, faceindex, Rml::String(), Rml::Style::FontStyle::Normal, weight, fallbackface));
 }
 
 
 bool UIFontEngineClass::LoadFontFace(Rml::String const & filename, int faceindex, Rml::String const & family, Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackface)
 {
-	return(Fallback != nullptr && Fallback->LoadFontFace(filename, faceindex, family, style, weight, fallbackface));
+	return(Load_File_Face(filename, faceindex, family, style, weight, fallbackface));
 }
 
 

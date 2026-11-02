@@ -5276,6 +5276,67 @@ struct DocumentFixture
 };
 
 
+// RmlUi with the game's font engine installed over the library's own, as the shell installs it.
+// The engine outlives the shutdown, which still reads the faces it loaded.
+struct FontEngineFixture
+{
+	UIFontEngineClass engine;
+	RecordingRenderInterfaceClass render;
+	CountingSystemInterfaceClass system;
+	Rml::Context * context = nullptr;
+
+	FontEngineFixture(void)
+	{
+		std::filesystem::current_path(std::filesystem::path(OPENTS_UI_DIR));
+
+		Rml::SetRenderInterface(&render);
+		Rml::SetSystemInterface(&system);
+		REQUIRE_MESSAGE(Rml::Initialise(), "RmlUi initialises with the recording interfaces");
+
+		engine.Set_Fallback(Rml::GetFontEngineInterface());
+		Rml::SetFontEngineInterface(&engine);
+
+		context = Rml::CreateContext("fonts", Rml::Vector2i(640, 480));
+		REQUIRE_MESSAGE(context != nullptr, "a context is created");
+	}
+
+	~FontEngineFixture(void)
+	{
+		Rml::RemoveContext("fonts");
+		Rml::Shutdown();
+	}
+};
+
+
+TEST_CASE_FIXTURE(FontEngineFixture, "a style sheet's @font-face loads a font file for its documents, and a repeated or overlapping load stays sound")
+{
+	char const * const markup =
+		"<rml><head><style>"
+		"@font-face { font-family: modface; src: Arimo.ttf; }"
+		"body { font-family: modface; font-size: 13px; }"
+		"</style></head><body><p id='text'>Mod font</p></body></rml>";
+
+	Rml::ElementDocument * document = context->LoadDocumentFromMemory(markup);
+	REQUIRE_MESSAGE(document != nullptr, "a document declaring its own face loads");
+	context->Update();
+	CHECK_MESSAGE(document->GetElementById("text")->GetFontFaceHandle() != 0, "its text finds the face the style sheet declared");
+	document->Close();
+	context->Update();
+
+	Rml::ElementDocument * again = context->LoadDocumentFromMemory(markup);
+	REQUIRE_MESSAGE(again != nullptr, "the same declaration parsed again loads");
+	context->Update();
+	CHECK_MESSAGE(again->GetElementById("text")->GetFontFaceHandle() != 0, "and still finds the face");
+	again->Close();
+	context->Update();
+
+	CHECK_MESSAGE(Rml::LoadFontFace("Arimo.ttf", "overlap", Rml::Style::FontStyle::Normal, Rml::Style::FontWeight::Normal), "one weight of a font loads into a family");
+	CHECK_MESSAGE(Rml::LoadFontFace("Arimo.ttf", "overlap", Rml::Style::FontStyle::Normal), "every weight of the same font then loads past the weight already there");
+	CHECK_MESSAGE(!Rml::LoadFontFace("missing.ttf", "absent", Rml::Style::FontStyle::Normal), "a font file that is not there loads nothing");
+	CHECK_MESSAGE(system.Problems == 1, "only the missing file is reported");
+}
+
+
 TEST_CASE_FIXTURE(DocumentFixture, "every UI document names its resources by bare file name, loads, and draws cleanly within the context")
 {
 	std::filesystem::path directory(OPENTS_UI_DIR);

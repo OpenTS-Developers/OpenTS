@@ -15,6 +15,7 @@
 
 #include <RmlUi/Core/FontEngineInterface.h>
 #include <array>
+#include <map>
 #include <memory>
 #include <vector>
 
@@ -103,6 +104,7 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		UIRasterFaceClass * Find_Raster_Face(Rml::FontFaceHandle handle) const;
 		FntFamily const * Find_Fnt_Family(Rml::String const & family) const;
 		UIFntFaceClass * Find_Fnt_Face(Rml::FontFaceHandle handle) const;
+		bool Load_File_Face(Rml::String const & filename, int faceindex, Rml::String const & family, Rml::Style::FontStyle style, Rml::Style::FontWeight weight, bool fallbackface);
 		int Generate_Fnt(UIFntFaceClass & face, Rml::RenderManager & manager, EffectSet const * set, Rml::StringView string, Rml::Vector2f position, Rml::ColourbPremultiplied color, float opacity, Rml::TexturedMeshList & meshes);
 
 		Rml::FontEngineInterface * Fallback;
@@ -116,6 +118,10 @@ class UIFontEngineClass : public Rml::FontEngineInterface
 		std::vector<std::unique_ptr<FntFamily>> FntFamilies;
 		std::vector<std::unique_ptr<UIFntFaceClass>> FntFaces;
 		std::vector<EffectSet> EffectSets;
+		// RmlUi frees a font file it was handed when the face is a duplicate, while other faces
+		// from that file still read it, so the engine keeps the bytes itself until shutdown.
+		std::vector<std::unique_ptr<std::vector<Rml::byte>>> FontFiles;
+		std::map<Rml::String, bool> FileRequests;
 };
 
 
