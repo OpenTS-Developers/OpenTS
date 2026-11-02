@@ -89,9 +89,11 @@ A document names every file it uses by bare file name, and the game adds the `ui
 
 If a required document, template, style sheet or `Arimo.ttf` fails to load, the screen does not open. Opening a menu or modal dialog shows a native error message with the loading failure and instructions to restore the `ui` folder supplied with the build. The debug log records the failure. The classic main menu exits after the message is dismissed; other menus return without a choice.
 
-When a scenario is read or a saved game loads, the game mounts the archives of the player's side. They stay mounted after the match ends, until the next scenario or saved game replaces them. A side's copy is used only for a name that no loose file and no archive mounted at startup holds, so it cannot replace a shipped document or style sheet. [MIX archives](/formats/mix/#theater-side-and-speech-archives) covers which archive answers for a name.
+When a scenario is read or a saved game loads, the game mounts the archives of the player's side. During the match, a side's copy of a name is used over the copy in the game's own archives, but a loose file and a copy in a patch or expansion archive are used over the side's. A side's archives cannot replace a shipped document or style sheet, because those are loose files in the `ui` directory. When the match ends and the menus return, the side's archives move behind the archives mounted at startup, so the menus use those archives' copies again. [MIX archives](/formats/mix/#theater-side-and-speech-archives) gives the full order.
 
 The game reads the pictures, the dialog font and the game fonts again when it mounts a side's archives and when a match ends. Every screen then draws with the copies the mounted archives supply, including a screen already on show, which keeps its layout and style sheets.
+
+To give each side its own version of a picture or font, put a copy in each side's `SIDEC<nn>.MIX` or `SIDENC<nn>.MIX`, and keep the copy for the menus in an archive searched after them, such as `LOCAL.MIX`. Keep the name out of the `ui` directory and the patch and expansion archives; a copy there is used everywhere instead.
 
 ## Window icon
 

@@ -850,6 +850,9 @@ bool Select_Game(bool )
 	Show_Mouse();
 
 restart:
+	// A scenario that failed to start returns here with its side's archives still searched first.
+	Prep_For_No_Side();
+
 	gameloaded = false;
 	process = true;
 
@@ -1025,6 +1028,7 @@ restart:
 						process = false;
 						gameloaded = true;
 					} else {
+						Prep_For_No_Side();
 						selection = SEL_NONE;
 					}
 
@@ -6009,6 +6013,38 @@ void Init_Theater(TheaterType theater)
 }
 
 
+// The side's archives in the order they were mounted, which is also their search order.
+static std::vector<MFCD *> SideMixfiles;
+static bool SideMixfilesFirst = false;
+
+
+/// <summary>
+/// Mounts a side archive so that it is searched after the patch and expansion archives
+/// mounted at startup and before every other archive, behind the side archives mounted
+/// before it.
+/// </summary>
+static MFCD * Mount_Side_Mixfile(char const * name)
+{
+	MFCD * anchor = NULL;
+	for (int index = (int)SideMixfiles.size() - 1; anchor == NULL && index >= 0; index--) {
+		if (SideMixfiles[index]->Is_Valid()) {
+			anchor = SideMixfiles[index];
+		}
+	}
+	for (int index = ExpandMix.Count() - 1; anchor == NULL && index >= 0; index--) {
+		if (ExpandMix[index]->Is_Valid()) {
+			anchor = ExpandMix[index];
+		}
+	}
+
+	MFCD * mix = new MFCD(name, &FastKey);
+	mix->Search_After(anchor);
+	SideMixfiles.push_back(mix);
+	SideMixfilesFirst = true;
+	return(mix);
+}
+
+
 /// <summary>
 /// Prepares the art and data mixfiles for the specified side.
 /// This routine is called whenever the side being played changes. It releases the previous
@@ -6024,6 +6060,8 @@ bool Prep_For_Side(SideType side)
 	int index;
 
 	DebugString("Preparing Mixfiles for Side %02d.\n", side);
+
+	SideMixfiles.clear();
 
 	if (SideCMix != NULL) {
 		DebugString("     Releasing %s\n", SideCMix->Filename);
@@ -6057,7 +6095,7 @@ bool Prep_For_Side(SideType side)
 			if (CCFileClass(name).Is_Available()) {
 
 				DebugString("     Initializing %s\n", name);
-				MFCD * mix = new MFCD(name, &FastKey);
+				MFCD * mix = Mount_Side_Mixfile(name);
 				ExpandSideMix.Add(mix);
 				mix->Cache();
 			}
@@ -6068,7 +6106,7 @@ bool Prep_For_Side(SideType side)
 	DebugString("     Initializing %s\n", name);
 
 	if (CCFileClass(name).Is_Available()) {
-		SideCMix = new MFCD(name, &FastKey);
+		SideCMix = Mount_Side_Mixfile(name);
 	}
 
 	if (SideCMix == NULL) {
@@ -6085,7 +6123,7 @@ bool Prep_For_Side(SideType side)
 			if (CCFileClass(name).Is_Available()) {
 
 				DebugString("     Initializing %s\n", name);
-				MFCD *mix = new MFCD(name, &FastKey);
+				MFCD * mix = Mount_Side_Mixfile(name);
 				ExpandSideMix.Add(mix);
 			}
 		}
@@ -6095,7 +6133,7 @@ bool Prep_For_Side(SideType side)
 	DebugString("     Initializing %s\n", name);
 
 	if (CCFileClass(name).Is_Available()) {
-		SideNCMix = new MFCD(name, &FastKey);
+		SideNCMix = Mount_Side_Mixfile(name);
 	}
 
 	if (Session.Type == GAME_NORMAL) {
@@ -6105,7 +6143,7 @@ bool Prep_For_Side(SideType side)
 
 			DebugString("     Initializing %s\n", name);
 			if (CCFileClass(name).Is_Available()) {
-				SideCDMix = new MFCD(name, &FastKey);
+				SideCDMix = Mount_Side_Mixfile(name);
 			}
 		}
 
@@ -6115,7 +6153,7 @@ bool Prep_For_Side(SideType side)
 
 			DebugString("     Initializing %s\n", name);
 			if (CCFileClass(name).Is_Available()) {
-				SideCDMix = new MFCD(name, &FastKey);
+				SideCDMix = Mount_Side_Mixfile(name);
 			}
 		}
 
@@ -6134,11 +6172,22 @@ bool Prep_For_Side(SideType side)
 
 
 /// <summary>
-/// Clears the player's side when a match ends, so the interface drops the side's style sheet
-/// and reads its files again. The side's archives stay mounted until the next side is prepared.
+/// Clears the player's side when a match ends or a scenario fails to start. The side's archives
+/// stay mounted until the next side is prepared, but move behind every archive mounted so far,
+/// and the interface drops the side's style sheet and reads its files again. Does nothing when
+/// no side's archives are searched first.
 /// </summary>
 void Prep_For_No_Side(void)
 {
+	if (!SideMixfilesFirst) {
+		return;
+	}
+	SideMixfilesFirst = false;
+
+	for (MFCD * mix : SideMixfiles) {
+		mix->Search_Last();
+	}
+
 	UIControls.Read_INI_File(DeploymentConfig.UIFile.c_str(), true);
 	UI_On_Archives_Change(SIDE_NONE);
 }
