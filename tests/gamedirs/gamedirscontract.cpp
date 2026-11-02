@@ -115,14 +115,14 @@ void Reset(void)
 }
 
 
-TEST_CASE("a macOS application path is recognized")
+TEST_CASE("an application bundle executable is recognized")
 {
-	CHECK_MESSAGE(Is_MacOS_App_Executable("/Users/me/siliconsun.app/Contents/MacOS/Game"), "the release bundle executable is recognized");
-	CHECK_MESSAGE(!Is_MacOS_App_Executable("/Users/me/build/macos/bin/GameD"), "a loose binary is not an application bundle");
-	CHECK_MESSAGE(!Is_MacOS_App_Executable("/Users/me/Contents/MacOS/Game"), "Contents/MacOS without an .app directory is not a bundle");
-	CHECK_MESSAGE(!Is_MacOS_App_Executable("/Users/me/Game.app/Contents/MacOS/Helpers/tool"), "a nested helper is not the bundle executable");
-	CHECK_MESSAGE(!Is_MacOS_App_Executable(nullptr), "a missing path is not a bundle");
-	CHECK_MESSAGE(!Is_MacOS_App_Executable(""), "an empty path is not a bundle");
+	CHECK_MESSAGE(Is_Darwin_App_Executable("/Users/me/siliconsun.app/Contents/MacOS/Game"), "the release bundle executable is recognized");
+	CHECK_MESSAGE(!Is_Darwin_App_Executable("/Users/me/build/macos/bin/GameD"), "a loose binary is not an application bundle");
+	CHECK_MESSAGE(!Is_Darwin_App_Executable("/Users/me/Contents/MacOS/Game"), "Contents/MacOS without an .app directory is not a bundle");
+	CHECK_MESSAGE(!Is_Darwin_App_Executable("/Users/me/Game.app/Contents/MacOS/Helpers/tool"), "a nested helper is not the bundle executable");
+	CHECK_MESSAGE(!Is_Darwin_App_Executable(nullptr), "a missing path is not a bundle");
+	CHECK_MESSAGE(!Is_Darwin_App_Executable(""), "an empty path is not a bundle");
 }
 
 
@@ -131,21 +131,21 @@ TEST_CASE("bundle directories are under the home directory")
 	std::string data;
 	std::string user;
 
-	CHECK_MESSAGE(MacOS_Bundle_Directories("/Users/me", data, user), "a home directory names both folders");
+	CHECK_MESSAGE(Darwin_Bundle_Directories("/Users/me", data, user), "a home directory names both folders");
 	CHECK_MESSAGE(data == "/Users/me/Games/OpenTS", "game data is Games/OpenTS");
 	CHECK_MESSAGE(user == "/Users/me/Library/Application Support/siliconsun", "player files are in Application Support");
 
 	data = "keep";
 	user = "keep";
-	CHECK_MESSAGE(!MacOS_Bundle_Directories(nullptr, data, user), "a missing home directory names nothing");
+	CHECK_MESSAGE(!Darwin_Bundle_Directories(nullptr, data, user), "a missing home directory names nothing");
 	CHECK_MESSAGE(data == "keep", "a missing home directory leaves the data directory alone");
 	CHECK_MESSAGE(user == "keep", "a missing home directory leaves the user directory alone");
-	CHECK_MESSAGE(!MacOS_Bundle_Directories("", data, user), "an empty home directory names nothing");
-	CHECK_MESSAGE(!MacOS_Bundle_Directories("///", data, user), "a home directory of only slashes names nothing");
+	CHECK_MESSAGE(!Darwin_Bundle_Directories("", data, user), "an empty home directory names nothing");
+	CHECK_MESSAGE(!Darwin_Bundle_Directories("///", data, user), "a home directory of only slashes names nothing");
 	CHECK_MESSAGE(data == "keep", "a rejected home directory leaves the data directory alone");
 	CHECK_MESSAGE(user == "keep", "a rejected home directory leaves the user directory alone");
 
-	CHECK_MESSAGE(MacOS_Bundle_Directories("/Users/me/", data, user), "a trailing slash is dropped");
+	CHECK_MESSAGE(Darwin_Bundle_Directories("/Users/me/", data, user), "a trailing slash is dropped");
 	CHECK_MESSAGE(data == "/Users/me/Games/OpenTS", "a trailing slash is dropped");
 }
 

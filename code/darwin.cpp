@@ -9,7 +9,9 @@
 
 #if !defined(_WIN32)
 
-#include "platform.h"
+#include "darwin.h"
+
+#include "utf8.h"
 
 #include <cerrno>
 #include <cstdlib>
@@ -292,6 +294,154 @@ int Standard_Index(DWORD which)
 	if (which == STD_OUTPUT_HANDLE) return(1);
 	if (which == STD_ERROR_HANDLE) return(2);
 	return(-1);
+}
+
+
+std::wstring Widen_Utf8(char const * text)
+{
+	std::wstring wide;
+	if (text == nullptr) return(wide);
+	while (*text != '\0') {
+		wide.push_back((wchar_t)UTF8::Decode(text));
+	}
+	return(wide);
+}
+
+
+// SDL scancodes of the keys whose Windows scan code depends on the layout, and that code.
+struct LayoutScan
+{
+	SDL_Scancode Scancode;
+	UINT Windows;
+};
+
+
+LayoutScan const Layout_Scans[] = {
+	{ SDL_SCANCODE_1, 0x02 },
+	{ SDL_SCANCODE_2, 0x03 },
+	{ SDL_SCANCODE_3, 0x04 },
+	{ SDL_SCANCODE_4, 0x05 },
+	{ SDL_SCANCODE_5, 0x06 },
+	{ SDL_SCANCODE_6, 0x07 },
+	{ SDL_SCANCODE_7, 0x08 },
+	{ SDL_SCANCODE_8, 0x09 },
+	{ SDL_SCANCODE_9, 0x0A },
+	{ SDL_SCANCODE_0, 0x0B },
+	{ SDL_SCANCODE_MINUS, 0x0C },
+	{ SDL_SCANCODE_EQUALS, 0x0D },
+	{ SDL_SCANCODE_Q, 0x10 },
+	{ SDL_SCANCODE_W, 0x11 },
+	{ SDL_SCANCODE_E, 0x12 },
+	{ SDL_SCANCODE_R, 0x13 },
+	{ SDL_SCANCODE_T, 0x14 },
+	{ SDL_SCANCODE_Y, 0x15 },
+	{ SDL_SCANCODE_U, 0x16 },
+	{ SDL_SCANCODE_I, 0x17 },
+	{ SDL_SCANCODE_O, 0x18 },
+	{ SDL_SCANCODE_P, 0x19 },
+	{ SDL_SCANCODE_LEFTBRACKET, 0x1A },
+	{ SDL_SCANCODE_RIGHTBRACKET, 0x1B },
+	{ SDL_SCANCODE_A, 0x1E },
+	{ SDL_SCANCODE_S, 0x1F },
+	{ SDL_SCANCODE_D, 0x20 },
+	{ SDL_SCANCODE_F, 0x21 },
+	{ SDL_SCANCODE_G, 0x22 },
+	{ SDL_SCANCODE_H, 0x23 },
+	{ SDL_SCANCODE_J, 0x24 },
+	{ SDL_SCANCODE_K, 0x25 },
+	{ SDL_SCANCODE_L, 0x26 },
+	{ SDL_SCANCODE_SEMICOLON, 0x27 },
+	{ SDL_SCANCODE_APOSTROPHE, 0x28 },
+	{ SDL_SCANCODE_GRAVE, 0x29 },
+	{ SDL_SCANCODE_BACKSLASH, 0x2B },
+	{ SDL_SCANCODE_Z, 0x2C },
+	{ SDL_SCANCODE_X, 0x2D },
+	{ SDL_SCANCODE_C, 0x2E },
+	{ SDL_SCANCODE_V, 0x2F },
+	{ SDL_SCANCODE_B, 0x30 },
+	{ SDL_SCANCODE_N, 0x31 },
+	{ SDL_SCANCODE_M, 0x32 },
+	{ SDL_SCANCODE_COMMA, 0x33 },
+	{ SDL_SCANCODE_PERIOD, 0x34 },
+	{ SDL_SCANCODE_SLASH, 0x35 },
+	{ SDL_SCANCODE_NONUSBACKSLASH, 0x56 },
+};
+
+
+int Position_Virtual_Key(SDL_Scancode scancode)
+{
+	if (scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_Z) {
+		return((int)(scancode - SDL_SCANCODE_A) + 'A');
+	}
+	if (scancode >= SDL_SCANCODE_1 && scancode <= SDL_SCANCODE_9) {
+		return((int)(scancode - SDL_SCANCODE_1) + '1');
+	}
+
+	switch (scancode) {
+		case SDL_SCANCODE_0:				return('0');
+		case SDL_SCANCODE_MINUS:			return(VK_OEM_MINUS);
+		case SDL_SCANCODE_EQUALS:			return(VK_OEM_PLUS);
+		case SDL_SCANCODE_LEFTBRACKET:		return(VK_OEM_4);
+		case SDL_SCANCODE_RIGHTBRACKET:		return(VK_OEM_6);
+		case SDL_SCANCODE_BACKSLASH:		return(VK_OEM_5);
+		case SDL_SCANCODE_SEMICOLON:		return(VK_OEM_1);
+		case SDL_SCANCODE_APOSTROPHE:		return(VK_OEM_7);
+		case SDL_SCANCODE_GRAVE:			return(VK_OEM_3);
+		case SDL_SCANCODE_COMMA:			return(VK_OEM_COMMA);
+		case SDL_SCANCODE_PERIOD:			return(VK_OEM_PERIOD);
+		case SDL_SCANCODE_SLASH:			return(VK_OEM_2);
+		case SDL_SCANCODE_NONUSBACKSLASH:	return(VK_OEM_102);
+		default:							return(0);
+	}
+}
+
+
+// shortcut: U+00DF, U+00F6, U+00FC and U+00E4 take the codes a German layout gives them; any other symbol keeps the US key's code. Extend the table when a saved hotkey must match Windows for another layout.
+int Layout_Virtual_Key(SDL_Scancode scancode)
+{
+	SDL_Keycode const key = SDL_GetKeyFromScancode(scancode, SDL_KMOD_NONE, true);
+	if (key >= 'a' && key <= 'z') return((int)(key - 'a') + 'A');
+	if (key >= 'A' && key <= 'Z') return((int)key);
+	if (key >= '0' && key <= '9') return((int)key);
+
+	switch (key) {
+		case 0x00DF:	return(VK_OEM_4);
+		case 0x00F6:
+		case 0x00D6:	return(VK_OEM_3);
+		case 0x00FC:
+		case 0x00DC:	return(VK_OEM_1);
+		case 0x00E4:
+		case 0x00C4:	return(VK_OEM_7);
+		case ',':		return(VK_OEM_COMMA);
+		case '.':		return(VK_OEM_PERIOD);
+		case '-':		return(VK_OEM_MINUS);
+		case '=':
+		case '+':		return(VK_OEM_PLUS);
+		case ';':		return(VK_OEM_1);
+		case '/':		return(VK_OEM_2);
+		case '`':		return(VK_OEM_3);
+		case '[':		return(VK_OEM_4);
+		case '\\':		return(VK_OEM_5);
+		case ']':		return(VK_OEM_6);
+		case '\'':		return(VK_OEM_7);
+		case '<':
+			return(VK_OEM_102);
+		default:		return(Position_Virtual_Key(scancode));
+	}
+}
+
+
+UINT Character_For_Virtual_Key(UINT virtualkey)
+{
+	if (virtualkey >= 'A' && virtualkey <= 'Z') return(virtualkey);
+	if (virtualkey >= '0' && virtualkey <= '9') return(virtualkey);
+
+	for (LayoutScan const & item : Layout_Scans) {
+		if ((UINT)Layout_Virtual_Key(item.Scancode) != virtualkey) continue;
+		SDL_Keycode const key = SDL_GetKeyFromScancode(item.Scancode, SDL_KMOD_NONE, true);
+		if (key > 0 && key <= 0xFFFF) return((UINT)key);
+	}
+	return(0);
 }
 
 }
@@ -980,11 +1130,7 @@ wchar_t const * GetCommandLineW(void)
 		char ** argv = *_NSGetArgv();
 		for (int index = 0; index < argc; index++) {
 			if (index != 0) line.push_back(L' ');
-			char const * text = argv[index] != nullptr ? argv[index] : "";
-			while (*text != '\0') {
-				line.push_back((unsigned char)*text);
-				text++;
-			}
+			line += Widen_Utf8(argv[index]);
 		}
 		ready = true;
 	}
@@ -998,13 +1144,7 @@ wchar_t ** CommandLineToArgvW(wchar_t const *, int * count)
 	char ** argv = *_NSGetArgv();
 	auto * list = new ArgumentList;
 	for (int index = 0; index < argc; index++) {
-		std::wstring wide;
-		char const * text = argv[index] != nullptr ? argv[index] : "";
-		while (*text != '\0') {
-			wide.push_back((unsigned char)*text);
-			text++;
-		}
-		list->Storage.push_back(std::move(wide));
+		list->Storage.push_back(Widen_Utf8(argv[index]));
 	}
 	for (std::wstring & item : list->Storage) {
 		list->Pointers.push_back(item.data());
@@ -1449,8 +1589,29 @@ HKL GetKeyboardLayout(DWORD)
 }
 
 
-UINT MapVirtualKeyExW(UINT, UINT, HKL)
+// macOS has one active input source, which SDL already reflects, so the layout handle is unused.
+UINT MapVirtualKeyExW(UINT code, UINT map_type, HKL)
 {
+	if (map_type == MAPVK_VK_TO_CHAR) {
+		return(Character_For_Virtual_Key(code));
+	}
+	if (map_type == MAPVK_VSC_TO_VK_EX) {
+		for (LayoutScan const & item : Layout_Scans) {
+			if (item.Windows == code) {
+				int const key = Layout_Virtual_Key(item.Scancode);
+				return(key > 0 ? (UINT)key : 0);
+			}
+		}
+	}
+	return(0);
+}
+
+
+UINT Windows_Scan_Code(int sdl_scancode)
+{
+	for (LayoutScan const & item : Layout_Scans) {
+		if ((int)item.Scancode == sdl_scancode) return(item.Windows);
+	}
 	return(0);
 }
 
@@ -1461,6 +1622,8 @@ wchar_t * CharUpperW(wchar_t * text)
 	for (wchar_t * cursor = text; *cursor != L'\0'; cursor++) {
 		if (*cursor >= L'a' && *cursor <= L'z') {
 			*cursor = (wchar_t)(*cursor - L'a' + L'A');
+		} else if ((*cursor >= 0x00E0 && *cursor <= 0x00F6) || (*cursor >= 0x00F8 && *cursor <= 0x00FE)) {
+			*cursor = (wchar_t)(*cursor - 0x20);
 		}
 	}
 	return(text);

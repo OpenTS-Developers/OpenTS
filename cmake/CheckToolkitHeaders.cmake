@@ -62,8 +62,8 @@ foreach(source IN LISTS sources)
             list(APPEND violations "${source}: ${hit}")
         endforeach()
     endif()
-    # code/platform.cpp implements the macOS GetKeyState by reading SDL.
-    if(NOT source MATCHES "^code/sdl/" AND NOT source STREQUAL "code/platform.cpp")
+    # code/darwin.cpp implements the macOS GetKeyState by reading SDL.
+    if(NOT source MATCHES "^code/sdl/" AND NOT source STREQUAL "code/darwin.cpp")
         file(STRINGS "${OPENTS_SOURCE_DIR}/${source}" hits REGEX "${SDL_INCLUDE}")
         foreach(hit IN LISTS hits)
             list(APPEND violations "${source}: ${hit}")

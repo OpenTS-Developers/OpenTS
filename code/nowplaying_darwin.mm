@@ -11,7 +11,7 @@
 #import <Foundation/Foundation.h>
 #import <MediaPlayer/MediaPlayer.h>
 
-#include "platform.h"
+#include "darwin.h"
 
 #include <cstring>
 #include <dlfcn.h>

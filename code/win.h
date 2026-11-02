@@ -43,7 +43,7 @@
 #include <winnt.h>
 #include <winuser.h>
 #else
-#include "platform.h"
+#include "darwin.h"
 #endif
 
 extern HINSTANCE	ProgramInstance;

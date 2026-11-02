@@ -102,7 +102,7 @@ void Window_Events_From_SDL(SDL_Event const & sdlevent, float pixeldensity, int 
 
 		case SDL_EVENT_KEY_DOWN:
 		case SDL_EVENT_KEY_UP:
-			event.VirtualKey = Virtual_Key_From_SDL(sdlevent.key.scancode, sdlevent.key.key, sdlevent.key.mod, sdlevent.key.raw);
+			event.VirtualKey = Virtual_Key_From_SDL(sdlevent.key.scancode, sdlevent.key.key, sdlevent.key.mod, Layout_Scan_Code(sdlevent.key.scancode, sdlevent.key.raw));
 			if (event.VirtualKey == 0) {
 				break;
 			}

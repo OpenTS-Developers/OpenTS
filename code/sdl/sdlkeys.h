@@ -20,5 +20,17 @@
 // code or 0, and a null layout is the thread's current one.
 int Virtual_Key_From_SDL(SDL_Scancode scancode, SDL_Keycode keycode, SDL_Keymod modifiers, Uint16 raw = 0, HKL layout = NULL);
 
+// The Windows scan code of a key. SDL stores that code in raw on Windows and a Mac key code on macOS.
+inline Uint16 Layout_Scan_Code(SDL_Scancode scancode, Uint16 raw)
+{
+#if defined(_WIN32)
+	(void)scancode;
+	return(raw);
+#else
+	(void)raw;
+	return((Uint16)Windows_Scan_Code((int)scancode));
+#endif
+}
+
 // Returns the layout's character or SDL's English name for a virtual-key code, or "" for none.
 std::string Virtual_Key_Name(int virtualkey, HKL layout = NULL);

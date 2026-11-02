@@ -155,8 +155,8 @@ if(APPLE)
 	)
 	target_sources(OpenTS PRIVATE "${OPENTS_LANGUAGE_STRINGS}")
 	target_sources(OpenTS PRIVATE
-		"${CMAKE_CURRENT_SOURCE_DIR}/nowplaying_mac.mm"
-		"${CMAKE_CURRENT_SOURCE_DIR}/contentnet_mac.mm"
+		"${CMAKE_CURRENT_SOURCE_DIR}/nowplaying_darwin.mm"
+		"${CMAKE_CURRENT_SOURCE_DIR}/contentnet_darwin.mm"
 	)
 	target_link_libraries(OpenTS PRIVATE "-framework MediaPlayer" "-framework Foundation" "-framework AppKit")
 endif()

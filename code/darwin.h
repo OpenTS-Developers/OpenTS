@@ -975,6 +975,8 @@ inline DWORD FormatMessage(DWORD flags, void const * source, DWORD message, DWOR
 }
 HKL GetKeyboardLayout(DWORD thread);
 UINT MapVirtualKeyExW(UINT code, UINT map_type, HKL layout);
+// The Windows scan code of an SDL scancode, or 0 when that key has none.
+UINT Windows_Scan_Code(int sdl_scancode);
 wchar_t * CharUpperW(wchar_t * text);
 int WideCharToMultiByte(UINT codepage, DWORD flags, wchar_t const * wide, int wide_count, char * buffer, int buffer_size, char const * fallback, int * used_fallback);
 

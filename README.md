@@ -144,7 +144,7 @@ fork. The main ones:
 | Path | Owner |
 | --- | --- |
 | `workers/`, `.agents/skills/`, `README.md`, `SETTINGS.md`, `.github/workflows/engine-release.yml` | this fork |
-| `code/content*`, `code/discord*`, `code/nowplaying*`, `code/platform.*`, `code/ui/screens/install/`, `code/resources/app-icon/siliconsun.*` | this fork |
+| `code/content*`, `code/discord*`, `code/nowplaying*`, `code/darwin.*`, `code/ui/screens/install/`, `code/resources/app-icon/siliconsun.*` | this fork |
 | `manual/`, `docs/`, `tests/`, the other `.github/workflows/` | upstream |
 
 ## License

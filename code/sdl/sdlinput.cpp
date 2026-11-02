@@ -112,7 +112,7 @@ bool SDLInputStateClass::Track_Key(SDL_KeyboardEvent const & key)
 		return(false);
 	}
 
-	int const virtualkey = key.down ? Virtual_Key_From_SDL(key.scancode, key.key, key.mod, key.raw) : 0;
+	int const virtualkey = key.down ? Virtual_Key_From_SDL(key.scancode, key.key, key.mod, Layout_Scan_Code(key.scancode, key.raw)) : 0;
 	bool const continued = key.down && (Unreported_Key(Side_Key(key.scancode)) || Unreported_Key(virtualkey));
 	Report_Key(Side_Key(key.scancode));
 	Report_Key(virtualkey);

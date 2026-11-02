@@ -138,6 +138,11 @@ endfunction()
 # point is registered off Windows.
 add_subdirectory(contentinstall)
 
+# The command-line and key-name shims exist only in the macOS build.
+if(APPLE)
+    add_subdirectory(darwinargs)
+endif()
+
 if(NOT WIN32)
     return()
 endif()

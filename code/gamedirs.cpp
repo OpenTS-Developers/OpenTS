@@ -180,7 +180,7 @@ void Set_User_Directory(char const * path)
 }
 
 
-bool Is_MacOS_App_Executable(char const * path)
+bool Is_Darwin_App_Executable(char const * path)
 {
 	if (path == NULL) {
 		return(false);
@@ -197,7 +197,7 @@ bool Is_MacOS_App_Executable(char const * path)
 }
 
 
-bool MacOS_Bundle_Directories(char const * home, std::string & data, std::string & user)
+bool Darwin_Bundle_Directories(char const * home, std::string & data, std::string & user)
 {
 	if (home == NULL || home[0] == '\0') {
 		return(false);

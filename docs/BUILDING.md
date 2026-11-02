@@ -207,13 +207,14 @@ cmake -S . -B build/macos-release -G Ninja \
 cmake --build build/macos-release
 ```
 
-This build also registers the `contentinstall` test harness, which checks the
-freeware catalog against the worker manifest, so that consistency is caught
-locally instead of in Windows CI. Build and run it with:
+This build also registers the `contentinstall` harness, which checks the
+freeware catalog against the worker manifest, and the `darwin-args`
+harness, which checks a non-ASCII `-DATADIR` argument and the current
+layout's key names. Build and run them with:
 
 ```bash
-cmake --build build/macos --target ContentInstall
-ctest --test-dir build/macos -R contentinstall
+cmake --build build/macos --target ContentInstall DarwinArgs
+ctest --test-dir build/macos -R 'contentinstall|darwin-args'
 ```
 
 The remaining test harnesses reach the Windows engine, so they are not

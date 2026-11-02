@@ -655,10 +655,10 @@ int main(int argc, char ** supplied_argv)
 
 #if !defined(_WIN32)
 	// A double-clicked app gets no -DATADIR, and its own directory is inside the bundle.
-	if (Is_MacOS_App_Executable(path_to_exe)) {
+	if (Is_Darwin_App_Executable(path_to_exe)) {
 		std::string bundle_data;
 		std::string bundle_user;
-		if (MacOS_Bundle_Directories(std::getenv("HOME"), bundle_data, bundle_user)) {
+		if (Darwin_Bundle_Directories(std::getenv("HOME"), bundle_data, bundle_user)) {
 			Apply_Unnamed_Directories(bundle_data.c_str(), bundle_user.c_str());
 		}
 	}
@@ -694,7 +694,7 @@ int main(int argc, char ** supplied_argv)
 		std::string chosen = std::string(path) + "/ui";
 		char resolved_ui[PATH_MAX];
 		std::string const bundled = std::string(path) + "/../Resources/ui";
-		if (Is_MacOS_App_Executable(path_to_exe) && realpath(bundled.c_str(), resolved_ui) != nullptr) {
+		if (Is_Darwin_App_Executable(path_to_exe) && realpath(bundled.c_str(), resolved_ui) != nullptr) {
 			chosen = resolved_ui;
 		}
 		uidirectory = chosen;
