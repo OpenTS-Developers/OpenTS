@@ -54,21 +54,41 @@ std::string UI_Game_Tip_Text(std::string const & text)
 
 
 /// <summary>
-/// Places a tooltip box the way the game placed it: below the pointer, moved left to keep
-/// it inside its region's right edge, and moved above the pointer where it would cross the
-/// region's bottom edge. A box taller than the space above the pointer is held at the
-/// region's top edge.
+/// Places a tooltip box inside the placement's edges. Beside a control, the box sits against
+/// the control's side that faces the middle of the edges. It is centered on the control's
+/// height, or level with the pointer on an upright control, and never starts above the
+/// control's top. Otherwise it sits below the pointer as the game placed it: moved left to
+/// fit, and above the pointer where it would cross the bottom edge. Either way the box then
+/// moves to fit the edges, and one taller than the space is held at the top edge.
 /// </summary>
 void UI_Place_Game_Tip(UIGameTipPlacement const & placement, float width, float height, float & x, float & y)
 {
-	x = placement.PointerX;
+	if (placement.Beside) {
+		bool const left = placement.ControlLeft + placement.ControlRight > placement.Left + placement.Right;
+		x = left ? placement.ControlLeft - width : placement.ControlRight;
+
+		float const low = placement.ControlTop + height * 0.5f;
+		float const high = placement.ControlBottom - height * 0.5f;
+		float const middle = (placement.Upright && low <= high)
+			? std::clamp(placement.PointerY, low, high)
+			: (placement.ControlTop + placement.ControlBottom) * 0.5f;
+		y = std::max(middle - height * 0.5f, placement.ControlTop);
+		if (y + height > placement.Bottom) {
+			y = placement.Bottom - height;
+		}
+	} else {
+		x = placement.PointerX;
+		y = placement.PointerY + placement.Below;
+		if (y + height > placement.Bottom) {
+			y = placement.PointerY - height;
+		}
+	}
+
 	if (x + width > placement.Right) {
 		x = placement.Right - width;
 	}
-
-	y = placement.PointerY + placement.Below;
-	if (y + height > placement.Bottom) {
-		y = placement.PointerY - height;
+	if (x < placement.Left) {
+		x = placement.Left;
 	}
 	if (y < placement.Top) {
 		y = placement.Top;
@@ -114,12 +134,6 @@ class UIGameTipViewClass : public UIRmlViewClass
 				box->AppendChild(document->CreateTextNode(text));
 				Shown = text;
 			}
-
-			float const width = std::max(Data.Placement.Right - Data.Placement.Left, 0.0f);
-			if (width != Width) {
-				box->SetProperty(Rml::PropertyId::MaxWidth, Rml::Property(width, Rml::Unit::PX));
-				Width = width;
-			}
 		}
 
 		virtual void Placed(void) override
@@ -155,7 +169,6 @@ class UIGameTipViewClass : public UIRmlViewClass
 	private:
 		UIGameTipPresenterClass & Data;
 		std::string Shown;
-		float Width = -1.0f;
 };
 
 }

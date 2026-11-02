@@ -41,9 +41,5 @@ class UIToolTip : public ToolTipManager
 		std::unique_ptr<UIViewClass> View;
 		std::string Sheet;
 		bool OpenFailed;
-
-		// The tactical view or the sidebar, whichever the tooltip came up over, in frame coordinates.
-		Rect Region;
-
 		bool Drawn;
 };

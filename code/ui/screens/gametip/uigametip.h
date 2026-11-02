@@ -20,10 +20,16 @@ class UIViewClass;
 // Where a game tooltip may sit, in overlay pixels.
 struct UIGameTipPlacement
 {
+	bool Beside = false;	// beside the control, rather than under the pointer
+	bool Upright = false;	// the control is taller than it is wide
 	float PointerX = 0.0f;
 	float PointerY = 0.0f;
 	float Below = 0.0f;	// how far under the pointer the box starts
-	float Left = 0.0f;
+	float ControlLeft = 0.0f;
+	float ControlTop = 0.0f;
+	float ControlRight = 0.0f;
+	float ControlBottom = 0.0f;
+	float Left = 0.0f;	// the edges the box stays inside
 	float Top = 0.0f;
 	float Right = 0.0f;
 	float Bottom = 0.0f;

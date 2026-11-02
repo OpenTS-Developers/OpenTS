@@ -3622,6 +3622,42 @@ void Test_Game_Tip_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	UI_Place_Game_Tip(placement, 50.0f, 120.0f, x, y);
 	CHECK_MESSAGE(y == 20.0f, "a tooltip too tall for either side is held at the top edge");
 
+	UIGameTipPlacement beside;
+	beside.Beside = true;
+	beside.PointerY = 345.0f;
+	beside.ControlLeft = 1100.0f;
+	beside.ControlTop = 300.0f;
+	beside.ControlRight = 1160.0f;
+	beside.ControlBottom = 350.0f;
+	beside.Right = 1280.0f;
+	beside.Bottom = 800.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE((x == 950.0f && y == 305.0f), "a short control's tooltip sits against its side facing the middle, centered on it wherever the pointer is");
+	UI_Place_Game_Tip(beside, 150.0f, 200.0f, x, y);
+	CHECK_MESSAGE(y == 300.0f, "a tooltip taller than its control starts level with the control's top");
+	beside.ControlLeft = 40.0f;
+	beside.ControlRight = 100.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(x == 100.0f, "a control's tooltip on the left of the screen sits against its right side");
+
+	beside.Upright = true;
+	beside.ControlTop = 100.0f;
+	beside.ControlBottom = 700.0f;
+	beside.PointerY = 400.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 380.0f, "an upright control's tooltip is level with the pointer");
+	beside.PointerY = 105.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 100.0f, "and stays alongside the control near its top");
+	beside.PointerY = 699.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 660.0f, "and near its bottom");
+
+	beside.ControlTop = 770.0f;
+	beside.ControlBottom = 800.0f;
+	UI_Place_Game_Tip(beside, 150.0f, 40.0f, x, y);
+	CHECK_MESSAGE(y == 760.0f, "a control's tooltip that would cross the bottom edge moves up to meet it");
+
 	int problems = system.Problems;
 	UIGameTipPresenterClass presenter;
 	std::unique_ptr<UIViewClass> view = UI_Game_Tip_View(presenter);
@@ -3655,6 +3691,19 @@ void Test_Game_Tip_Screen(Rml::Context & context, CountingSystemInterfaceClass &
 	Rml::Vector2f size = box->GetBox().GetSize(Rml::BoxArea::Border);
 	CHECK_MESSAGE(offset.x + size.x <= 640.0f + 0.5f, "the placed box stays inside its region");
 	CHECK_MESSAGE(offset.y == 316.0f, "the placed box sits below the pointer");
+
+	float const shortheight = size.y;
+	presenter.Text.clear();
+	for (int index = 0; index < 20; index++) {
+		presenter.Text += "Long description test, ";
+	}
+	view->Sync();
+	context.Update();
+	view->Placed();
+	context.Update();
+	size = box->GetBox().GetSize(Rml::BoxArea::Border);
+	CHECK_MESSAGE((size.x <= 360.5f && size.x > 300.0f), "long text wraps at the style sheet's 360dp width");
+	CHECK_MESSAGE(size.y > shortheight, "and the box grows taller instead");
 
 	presenter.Wanted = false;
 	view->Sync();

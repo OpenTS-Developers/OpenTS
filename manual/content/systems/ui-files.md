@@ -84,9 +84,14 @@ A missing, unreadable or corrupt image keeps the embedded icon. A corrupt first 
 
 ## Game tooltips
 
-`gametip.rml` draws the tooltips over the sidebar and the tactical view, and `gametip.rcss` styles them. The tooltip is the element with `id="gametip"`, drawn by default in `wwfont-kia6pt` in the colors and frame the game drew it in. A style sheet can change its font, colors, border and padding.
+`gametip.rml` draws the tooltips over the sidebar and the tactical view, and `gametip.rcss` styles them. The tooltip is the element with `id="gametip"`, drawn by default in `wwfont-kia6pt` in the colors and frame the game drew it in. A style sheet can change its font, colors, border and padding, and the width at which long text wraps.
 
-The game places the box and limits its width. The box opens below the pointer and stays inside the sidebar or the tactical view, whichever the pointer is over: it moves left to fit, and moves above the pointer when there is no room below. Its text wraps to the width of that area. A line break in the text or an at sign (`@`) starts a new line; [Line breaks in text](/formats/ini-syntax/#line-breaks-in-text) gives the escapes. The pointer passes through the tooltip to whatever is under it.
+The game places the box:
+
+- A tooltip of a sidebar cameo, button or other control sits beside the control, on the side facing the middle of the screen. It is centered on the control's height, but a box taller than the control starts level with the control's top. Beside a control taller than it is wide, such as the power bar, it is level with where the pointer was when the tooltip opened, and stays alongside the control. It moves up when it would cross the bottom of the screen.
+- A tooltip over the battlefield opens below the pointer and stays inside the battlefield. It moves left to fit, and moves above the pointer when there is no room below.
+
+Text wraps at the box's `max-width`, which `gametip.rcss` sets to `360dp`, or at the width of the screen when that is narrower. A line break in the text or an at sign (`@`) starts a new line; [Line breaks in text](/formats/ini-syntax/#line-breaks-in-text) gives the escapes. The pointer passes through the tooltip to whatever is under it.
 
 ## Side style sheets
 

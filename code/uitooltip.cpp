@@ -12,10 +12,8 @@
 #include "uitooltip.h"
 
 #include "_map.h"
-#include "_rect.h"
 #include "_ui.h"
 #include "_xmouse.h"
-#include "goptions.h"
 #include "ui/screens/gametip/uigametip.h"
 #include "ui/uishell.h"
 #include "ui/uiview.h"
@@ -30,7 +28,6 @@ static const int UI_TOOLTIP_BELOW_POINTER = 16;
 UIToolTip::UIToolTip(void) :
 	BASECLASS(),
 	OpenFailed(false),
-	Region(0, 0, 0, 0),
 	Drawn(false)
 {
 }
@@ -42,21 +39,11 @@ UIToolTip::~UIToolTip()
 }
 
 
-/// <summary>
-/// Chooses the region the tooltip stays inside: the sidebar when the pointer is over it, and
-/// the tactical view otherwise.
-/// </summary>
 /// <returns>bool; Is the tooltip fit to be shown? A hidden mouse suppresses it.</returns>
-bool UIToolTip::Update(ToolTipText * text)
+bool UIToolTip::Update(ToolTipText *)
 {
 	if (Get_Mouse_State() < 0) {
 		return(false);
-	}
-
-	if (Options.IsSidebarOnRight == true) {
-		Region = (text->Pos.X <= TacticalRect.X + TacticalRect.Width) ? TacticalRect : SidebarRect;
-	} else {
-		Region = (text->Pos.X <= SidebarRect.X + SidebarRect.Width) ? SidebarRect : TacticalRect;
 	}
 
 	return(Open());
@@ -97,26 +84,43 @@ void UIToolTip::Draw(const ToolTipText * text)
 	}
 
 	VideoScaleInfo const & scale = Video_Get_Scale_Info();
+	auto overlay = [&scale](int x, int y) {
+		Point2D point(x, y);
+		Game_Point_To_Window(point);
+		return(Point2D(point.X - scale.DestX, point.Y - scale.DestY));
+	};
 
-	Point2D pointer = text->Pos;
-	Point2D topleft(Region.X, Region.Y);
-	Point2D bottomright(Region.X + Region.Width, Region.Y + Region.Height);
-	Point2D below(0, UI_TOOLTIP_BELOW_POINTER);
-	Point2D origin(0, 0);
-	Game_Point_To_Window(pointer);
-	Game_Point_To_Window(topleft);
-	Game_Point_To_Window(bottomright);
-	Game_Point_To_Window(below);
-	Game_Point_To_Window(origin);
+	Point2D const pointer = overlay(text->Pos.X, text->Pos.Y);
+	Point2D const below = overlay(0, UI_TOOLTIP_BELOW_POINTER);
+	Point2D const origin = overlay(0, 0);
 
 	UIGameTipPlacement & placement = Presenter->Placement;
-	placement.PointerX = (float)(pointer.X - scale.DestX);
-	placement.PointerY = (float)(pointer.Y - scale.DestY);
+	placement.PointerX = (float)pointer.X;
+	placement.PointerY = (float)pointer.Y;
 	placement.Below = (float)(below.Y - origin.Y);
-	placement.Left = (float)(topleft.X - scale.DestX);
-	placement.Top = (float)(topleft.Y - scale.DestY);
-	placement.Right = (float)(bottomright.X - scale.DestX);
-	placement.Bottom = (float)(bottomright.Y - scale.DestY);
+
+	// A control's tooltip sits beside the control anywhere on the screen; one that tracks the
+	// pointer stays inside its own region.
+	Rect const & region = Current_Tool_Tip()->Region;
+	Point2D const topleft = overlay(region.X, region.Y);
+	Point2D const bottomright = overlay(region.X + region.Width, region.Y + region.Height);
+	placement.Beside = !Current_Tool_Tip()->TracksPointer;
+	if (placement.Beside) {
+		placement.ControlLeft = (float)topleft.X;
+		placement.ControlTop = (float)topleft.Y;
+		placement.ControlRight = (float)bottomright.X;
+		placement.ControlBottom = (float)bottomright.Y;
+		placement.Upright = region.Height > region.Width;
+		placement.Left = 0.0f;
+		placement.Top = 0.0f;
+		placement.Right = (float)scale.DestWidth;
+		placement.Bottom = (float)scale.DestHeight;
+	} else {
+		placement.Left = (float)topleft.X;
+		placement.Top = (float)topleft.Y;
+		placement.Right = (float)bottomright.X;
+		placement.Bottom = (float)bottomright.Y;
+	}
 
 	Presenter->Text = text->Text;
 	Presenter->Wanted = true;

@@ -13,4 +13,4 @@ credit:
 - ZivDero
 ---
 
-The tooltips over the sidebar and the tactical view are now drawn from `gametip.rml` in the `ui` directory, in the game's tooltip font, colors and frame and in the same place beside the pointer. A mod can restyle them in `gametip.rcss`, including drawing them in any of the game's other fonts.
+The tooltips over the sidebar and the tactical view are now drawn from `gametip.rml` in the `ui` directory, in the game's tooltip font, colors and frame. A mod can restyle them in `gametip.rcss`, including drawing them in any of the game's other fonts.

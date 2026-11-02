@@ -22,6 +22,7 @@ body
 	position: absolute;
 	box-sizing: border-box;
 	display: block;
+	max-width: 360dp;
 	padding: 0 1dp 1dp 1dp;
 	font-family: wwfont-kia6pt;
 	font-size: 9dp;

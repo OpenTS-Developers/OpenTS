@@ -403,6 +403,7 @@ void DisplayClass::Set_View_Dimensions(Rect const & dimensions)
 		tooltip.ID = 500;
 		tooltip.Text = TXT_NONE;
 		tooltip.Region = TacticalRect;
+		tooltip.TracksPointer = true;
 		ToolTips->Remove(500);
 		ToolTips->Add(&tooltip);
 	}
