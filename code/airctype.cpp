@@ -329,13 +329,6 @@ bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 			const int ROTOR_DIRECTION_COUNT = 8;	// Number of directions expected in list
 			const int ROTOR_FILENAME_LENGTH = 15;
 
-			char const* tiltedKeys[ROTOR_COUNT] = {
-				"Rotor1TiltedAnims",
-				"Rotor2TiltedAnims",
-				"Rotor3TiltedAnims",
-				"Rotor4TiltedAnims"
-			};
-
 			char(*tiltedFiles[ROTOR_COUNT])[ROTOR_FILENAME_LENGTH + 1] = {
 				Rotor1TiltedFiles,
 				Rotor2TiltedFiles,
@@ -343,7 +336,8 @@ bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 				Rotor4TiltedFiles
 			};
 
-			char tiltednames[ROTOR_DIRECTION_COUNT * ROTOR_FILENAME_LENGTH + (ROTOR_DIRECTION_COUNT - 1) + 1
+			char tiltednames[
+				ROTOR_DIRECTION_COUNT * ROTOR_FILENAME_LENGTH + (ROTOR_DIRECTION_COUNT - 1) + 1
 			];
 
 			for (int rotor = 0; rotor < ROTOR_COUNT; ++rotor) {
@@ -352,15 +346,26 @@ bool AircraftTypeClass::Read_INI(CCINIClass const& ini)
 				}
 				tiltednames[0] = '\0';
 
-				ArtINI.Get_String(
-					Graphic_Name(),
-					tiltedKeys[rotor],
-					"",
-					tiltednames,
-					sizeof(tiltednames)
-				);
-
 				int direction = 0;
+				switch (rotor) {
+					case 0:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor1TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 1:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor2TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 2:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor3TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+					case 3:
+						ArtINI.Get_String(
+							Graphic_Name(), "Rotor4TiltedAnims", "", tiltednames, sizeof(tiltednames));
+						break;
+				}
+
 				char* filename = tiltednames;
 
 				while (*filename != '\0' && direction < ROTOR_DIRECTION_COUNT) {
