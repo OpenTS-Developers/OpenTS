@@ -45,9 +45,42 @@ class AircraftTypeClass : public TechnoTypeClass
 		bool IsRotorEquipped;	// Is a rotor attached?
 
 		/*
-		**	Is there a custom rotor animation stage set for each facing of the aircraft?
+		**	How many rotors does the aircraft have?
 		*/
-		bool IsRotorCustom;	// Custom rotor sets for each facing?
+		int RotorCount;
+
+		/*
+		**	This is the shape to display for the rotor anim if the aircraft is not tilted.
+		*/
+		char Rotor1File[15 + 1];
+		char Rotor2File[15 + 1];
+		char Rotor3File[15 + 1];
+		char Rotor4File[15 + 1];
+		void const* Rotor1Data;
+		void const* Rotor2Data;
+		void const* Rotor3Data;
+		void const* Rotor4Data;
+
+		/*
+		**	This is the rotor shape to display for each facing, starting with the north facing
+		**  and rotating clockwise around the 8 facings, similar to muzzle flash anim behavior.
+		*/
+		char Rotor1TiltedFiles[8][15 + 1];
+		char Rotor2TiltedFiles[8][15 + 1];
+		char Rotor3TiltedFiles[8][15 + 1];
+		char Rotor4TiltedFiles[8][15 + 1];
+		void const* Rotor1TiltedData[8];  
+		void const* Rotor2TiltedData[8];  
+		void const* Rotor3TiltedData[8];  
+		void const* Rotor4TiltedData[8];  
+
+		/*
+		**  This is the FLH for each rotor.
+		*/
+		TPoint3D<int> Rotor1FLH;
+		TPoint3D<int> Rotor2FLH;
+		TPoint3D<int> Rotor3FLH;
+		TPoint3D<int> Rotor4FLH;
 
 		/*
 		**	Can this aircraft land?  If it can land it is presumed to be controllable by the player.
@@ -79,4 +112,7 @@ class AircraftTypeClass : public TechnoTypeClass
 
 		static void const * LRotorData;
 		static void const * RRotorData;
+
+	private:
+		void Load_Rotor_Assets(void);
 };
