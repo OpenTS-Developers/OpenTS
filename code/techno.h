@@ -605,6 +605,7 @@ class TechnoClass :	public RadioClass,
 		virtual WeaponDataStruct const * Get_Class_Weapon_Data(int which=0) const;
 		virtual bool Is_Turret_Equipped(void) const;
 		int Get_Sight_Bonus(Coord const & coord);
+		int Get_Sight_Range() const;
 		static void Remove_Target(AbstractClass * target);
 		bool Has_Ability(AbilityType ability) const;
 		bool Should_Use_High_Arc(int which) const;
