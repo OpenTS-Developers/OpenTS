@@ -11,7 +11,7 @@
 | --- | --- |
 | Host | Windows |
 | Target platforms | 32-bit (`Win32`) and 64-bit (`x64`) |
-| Processor | SSE2, so a Pentium 4 or Athlon 64 onward; the `x64` build needs a 64-bit processor and Windows |
+| Processor | SSE4.2, so an Intel Core i3, i5, or i7 or an AMD FX (Bulldozer) onward; the `x64` build needs a 64-bit processor and Windows |
 | Generator and compiler | Visual Studio 2022 MSVC 19.30 or newer |
 | Windows SDK | A Visual Studio-installed Windows SDK |
 | CMake | 3.23 or newer |
@@ -20,6 +20,10 @@
 
 Other generators, compilers, architectures, and configurations are currently
 unsupported.
+
+The processor requirement comes from bgfx's `bx` library, which sets SSE4.2 as
+its minimum and uses SSE4.1 instructions without checking for them at run time.
+The `/arch:SSE2` compiler option does not lower the requirement.
 
 Install Visual Studio 2022 with the **Desktop development with C++** workload,
 a Windows SDK, and CMake 3.23 or newer. Git for Windows is needed to clone the
