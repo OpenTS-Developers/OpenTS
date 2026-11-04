@@ -8196,7 +8196,7 @@ void HouseClass::Recalc_Power_Drain(void)
 
 
 /// <summary>
-/// Determines whether the radar map should be available.
+/// Checks if the radar map can be used and toggles it on or off accordingly.
 /// This routine is called after anything that might switch the radar on or off -- a change
 /// in power, an ion storm, or the loss of the radar structure itself. The tactical map is
 /// told to raise or lower the radar to suit. Only the player's house has a radar to manage.
@@ -8206,32 +8206,58 @@ void HouseClass::Recalc_Radar_Availability(void)
 	RecalcRadar = false;
 
 	if (this == PlayerPtr) {
-		// A player given the whole map keeps the radar through storms, blackouts and losses.
-		bool radar_on = Session.ObiWan != 0;
-
-		if (!radar_on && !IonStormClass::Is_Ion_Storm_Active() && Power >= Drain) {
-			if (Scen->IsFreeRadar) {
-				radar_on = true;
-			} else {
-				for (int i = 0; i < Buildings.Count(); i++) {
-					BuildingClass * b = Buildings[i];
-					if (b && b->House == this && b->IsOn && b->Class->IsRadar && !b->IsInLimbo && b->IsDown) {
-						if (Is_Player_Control() && !b->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
-						if (b->CurrentMission != MISSION_DECONSTRUCTION && b->MissionQueue != MISSION_DECONSTRUCTION) {
-							if (b->StunDuration == 0) {
-								radar_on = true;
-							}
-							break;
-						}
-					}
-				}
-			}
-		}
+		bool radar_on = Can_Use_Radar();
 
 		if (Map.Is_Radar_Existing() != radar_on) {
 			Map.Toggle_Radar(radar_on);
 		}
 	}
+}
+
+
+/// <summary>
+/// Determines whether the radar map can be used by the house.
+/// The checks start from checking the global game state, narrowing down to player state to buildings state.
+/// The first check that triggers defines whether the player would have radar or not.
+/// </summary>
+bool HouseClass::Can_Use_Radar(void) {
+	// A player given the whole map keeps the radar through storms, blackouts and losses.
+	if (Session.ObiWan != 0) {
+		return true;
+	}
+
+	// An Ion Storm prevents using the radar in any other case except ObiWans.
+	if (IonStormClass::Is_Ion_Storm_Active()) {
+		return false;
+	}
+
+	if (Scen->IsFreeRadar && Scen->IsFreeRadarOnLowPower) {
+		return true;
+	}
+
+	bool is_in_low_power = Drain > Power;
+	if (is_in_low_power) {
+		return false;
+	}
+
+	if (Scen->IsFreeRadar) {
+		return true;
+	}
+
+	// Check for a valid building that can provide a radar.
+	for (int i = 0; i < Buildings.Count(); i++) {
+		BuildingClass * building = Buildings[i];
+		if (building && building->House == this && building->IsOn && building->Class->IsRadar && !building->IsInLimbo && building->IsDown) {
+			if (Is_Player_Control() && !building->DiscoveredBy[PlayerPtr] && Session.Type == GAME_NORMAL) continue;
+			if (building->CurrentMission != MISSION_DECONSTRUCTION && building->MissionQueue != MISSION_DECONSTRUCTION) {
+				if (building->StunDuration == 0) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
 }
 
 
