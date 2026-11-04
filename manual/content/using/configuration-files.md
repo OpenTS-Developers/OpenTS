@@ -25,7 +25,7 @@ The game reads its configuration from these files:
 
 - `SUN.INI` stores the player's options.
 - [`KEYBOARD.INI`](/formats/keyboard-ini/) assigns keys to command names.
-- [`UI.INI`](/formats/ui-ini/), which a mod or deployment may ship, sets how order lines and the sighting laser are drawn.
+- [`UI.INI`](/formats/ui-ini/), which a mod or deployment may ship, sets how order lines, the sighting laser, control group numbers and health bars are drawn.
 - Rules, art, sound, theme, and scenario files supply game and mod data.
 
 A deployment can rename these files in [`OPENTS.INI`](/formats/opents-ini/#the-files-it-reads): the settings file, `UI.INI`, the tutorial file, and the rules, language rules, multiplayer rules, art, AI, sound, theme, and campaign list files together with their expansion copies. `KEYBOARD.INI` and scenario files cannot be renamed.

@@ -1579,13 +1579,13 @@ void TechnoClass::Draw_Health_Bar(Point2D const & xpoint, Rect const & cliprect)
 			if (IsSelected) {
 				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)ObjectTypeClass::SelectShapes, powerup ? 6 : 2, xpoint, cliprect, ShapeFlags_Type(SHAPE_ALPHA|SHAPE_WIN_REL|SHAPE_CENTER));
 			}
-			offset = Point2D(-5, -24);
+			offset = UIControls.InfantryHealthBarPosOffset;
 			health_bar_count = 8;
 		} else {
 			if (IsSelected) {
 				Draw_Shape(*LogicalSurface, *NormalDrawer, (ShapeSet const *)ObjectTypeClass::SelectShapes, (LimpetType.Any() ? 8 : 0) + (powerup ? 4 : 0) + 3, xpoint, cliprect, ShapeFlags_Type(SHAPE_ALPHA|SHAPE_WIN_REL|SHAPE_CENTER));
 			}
-			offset = Point2D(-15, -25);
+			offset = UIControls.UnitHealthBarPosOffset;
 			health_bar_count = 17;
 		}
 
