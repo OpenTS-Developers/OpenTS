@@ -104,6 +104,7 @@
 
 #include <cstdio>
 #include <limits>
+#include <scheme.h>
 
 DynamicVectorClass<TActionClass *> Actions;
 
@@ -1160,10 +1161,20 @@ bool TActionClass::TAction_ALL_CHANGE_HOUSE(HouseClass * house, ObjectClass * , 
 /// </summary>
 bool TActionClass::TAction_TEXT_TRIGGER(HouseClass * , ObjectClass * , TriggerClass * , Cell const & )
 {
-	/*
-	**	Display a text message overlayed onto the tactical map.
-	*/
-	Session.Messages.Add_Message(NULL, 0, TutorialText.Fetch(Data.Value), 0, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), Rule->MessageDelay * TICKS_PER_MINUTE);
+	int duration = TriggerRect.Y;
+	duration = std::max(0, duration);
+	if (duration == 0) {
+		duration = Rule->MessageDelay * TICKS_PER_MINUTE;
+	} else {
+		duration *= TIMER_SECOND;
+	}
+
+	int color = TriggerRect.X * 2;
+	if (color < 0 || color >= ColorSchemes.Count()) {
+		color = PlayerPtr->Scheme;
+	}
+
+	Session.Messages.Add_Message(NULL, 0, TutorialText.Fetch(Data.Value), color, TextPrintType(TPF_6PT_GRAD|TPF_USE_GRAD_PAL|TPF_FULLSHADOW), duration);
 	return(true);
 }
 
