@@ -78,7 +78,9 @@
 #include "xstraw.h"
 
 #include <algorithm>
+#include <chrono>
 #include <ctime> // for station ID computation
+#include <thread>
 #include <dos.h> // for station ID computation
 #include <winsock.h> // for ntohl
 
@@ -1559,7 +1561,7 @@ void SessionClass::Update_Progress(int percent)
 				Call_Back();
 
 				while (Ipx.Global_Num_Send() > 5 && timer > 0) {
-					Sleep(20);
+					std::this_thread::sleep_for(std::chrono::milliseconds(20));
 					Windows_Message_Handler();
 					Call_Back();
 				}

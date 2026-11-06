@@ -28,7 +28,9 @@
 #include "color.hh"
 
 #include <algorithm>
+#include <chrono>
 #include <climits>
+#include <thread>
 
 
 /// <summary>
@@ -377,7 +379,7 @@ void MSEngine::Wait_Delay(int delay)
 				timer.Start();
 			}
 
-			Sleep(0);
+			std::this_thread::yield();
 
 		} while (timer.Value() > 0);
 
@@ -406,7 +408,7 @@ void MSEngine::Wait_For_Focus(void)
 
 		while (!GameInFocus) {
 			DebugString("MSEngine - Sleeping\n");
-			Sleep(500);
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 			Windows_Message_Handler();
 		}
 
