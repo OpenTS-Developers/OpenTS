@@ -1461,7 +1461,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 		*/
 		if (stricmp("/?", string) == 0 || stricmp("-?", string) == 0 || stricmp("-h", string) == 0 || stricmp("/h", string) == 0) {
 #ifdef _DEBUG
-			Debug_Init_Console();
+			Debug_Enable_Console();
 #endif
 
 			/*
@@ -1677,8 +1677,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 					 * Enable debug output to a console.
 					 */
 					case 'C':
-						Debug_Console = true;
-						Debug_Init_Console();
+						/* Argument already processed by dbgprint module. */
 						break;
 
 					/*
@@ -1690,7 +1689,7 @@ bool Parse_Command_Line(int argc, char * argv[])
 
 					default:
 #ifdef _DEBUG
-						Debug_Init_Console();
+						Debug_Enable_Console();
 #endif
 						puts(Fetch_String(TXT_INVALID));
 						return(false);
