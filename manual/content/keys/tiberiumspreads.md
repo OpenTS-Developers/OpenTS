@@ -5,7 +5,7 @@ see_also: ["system:tiberium", "TiberiumGrowthEnabled", "SpreadPercentage"]
 when_omitted:
   kind: value
   value: "yes"
-  note: The special options are initialized with this built-in default when the game starts.
+  note: Each scenario starts with this built-in default.
 ---
 
 With `TiberiumSpreads=no`, Tiberium cells still grow but never [spread](/systems/tiberium/#spread) onto neighboring cells. Blossom trees are not affected and still seed the ground around them; [other sources of Tiberium](/systems/tiberium/#other-sources-of-tiberium) covers them.

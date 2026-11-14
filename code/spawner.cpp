@@ -234,7 +234,6 @@ static void Spawner_Bind_Options(void)
 	// AutoSurrender=no hands a departing player's base to the computer.
 	Session.Options.AITakeover = !SpawnConfig.AutoSurrender;
 
-	// Only a network match applies the truce; a skirmish records it and ignores it.
 	Session.Options.HarvTruce = SpawnConfig.HarvesterTruce;
 
 	Options.GameSpeed = SpawnConfig.GameSpeed;

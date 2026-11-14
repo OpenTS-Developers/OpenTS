@@ -52,6 +52,16 @@ class SpecialClass
 		void Read_INI(CCINIClass const & ini);
 		void Write_INI(CCINIClass & ini) const;
 
+		// A network game keeps the fast Tiberium growth its pregame setup turned on.
+		void Apply_Session_Options(bool truce, bool bridges, bool skirmish)
+		{
+			IsHarvesterImmune = truce;
+			IsDestroyBridges = bridges;
+			if (skirmish) {
+				IsTGrowth = false;
+			}
+		}
+
 		/*
 		**	If the shroud should regenerated, then this flag will be true.
 		*/

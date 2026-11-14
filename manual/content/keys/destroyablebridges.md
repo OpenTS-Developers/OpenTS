@@ -5,7 +5,7 @@ see_also: [BridgeStrength, IonCannonWarhead, C4Warhead]
 when_omitted:
   kind: value
   value: "yes"
-  note: The special options are initialized with this built-in default when the game starts.
+  note: Each scenario starts with this built-in default.
 ---
 
 With `DestroyableBridges=no`, no blast can damage a bridge span. With `yes`, a blast from a warhead with [`Wall=yes`](/keys/wall/#scope-warheadtype) can damage the span in its cell. [`BridgeStrength`](/keys/bridgestrength/) sets the chance that each such blast succeeds, and the ion cannon's warhead skips that roll.
