@@ -56,8 +56,8 @@ bool UIControlsClass::Read_INI(CCINIClass const & ini)
 	NavComQueueLineColor = ini.Get_RGBClass(INGAME, "NavComQueueLineColor", NavComQueueLineColor);
 	NavComQueueLineDropShadowColor = ini.Get_RGBClass(INGAME, "NavComQueueLineDropShadowColor", NavComQueueLineDropShadowColor);
 
-	InfantryHealthBarPosOffset = ini.Get_Point(INGAME, "InfantryHealthBarPos", InfantryHealthBarPosOffset);
-	UnitHealthBarPosOffset = ini.Get_Point(INGAME, "UnitHealthBarPos", UnitHealthBarPosOffset);
+	InfantryHealthBarPos = ini.Get_Point(INGAME, "InfantryHealthBarPos", InfantryHealthBarPos);
+	UnitHealthBarPos = ini.Get_Point(INGAME, "UnitHealthBarPos", UnitHealthBarPos);
 
 	UnitGroupNumberOffset = ini.Get_Point(PIPS, "UnitGroupNumberOffset", UnitGroupNumberOffset);
 	InfantryGroupNumberOffset = ini.Get_Point(PIPS, "InfantryGroupNumberOffset", InfantryGroupNumberOffset);

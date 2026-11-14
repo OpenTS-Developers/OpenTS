@@ -85,7 +85,6 @@ class UIControlsClass
 		Point2D BuildingWithPipGroupNumberOffset = Point2D(-4, -8);
 		Point2D AircraftWithPipGroupNumberOffset = Point2D(-4, -8);
 
-		// Health bar drawing positions
-		Point2D InfantryHealthBarPosOffset = Point2D(-5, -24);
-		Point2D UnitHealthBarPosOffset = Point2D(-15, -25);
+		Point2D InfantryHealthBarPos = Point2D(-5, -24);
+		Point2D UnitHealthBarPos = Point2D(-15, -25);
 };

@@ -11575,7 +11575,7 @@ InfantryHealthBarPos:
     _provenance:
       default_candidate: null
       declared_in: UIControlsClass
-      member: InfantryHealthBarPosOffset
+      member: InfantryHealthBarPos
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass
@@ -25070,7 +25070,7 @@ UnitHealthBarPos:
     _provenance:
       default_candidate: null
       declared_in: UIControlsClass
-      member: UnitHealthBarPosOffset
+      member: UnitHealthBarPos
       source: code/uicontrol.cpp
       guard: null
     level: UIControlsClass

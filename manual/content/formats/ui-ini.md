@@ -77,6 +77,8 @@ A structure, and a vehicle with [`IsCoreDefender=yes`](/keys/iscoredefender/#sco
 
 Each value is two whole numbers, a horizontal and a vertical offset in pixels, separated by a comma. Positive values move the row right and down, while negative values move it left and up. The offset is measured from the object's position on screen. The first pip is centered on that offset point, and each later pip is two pixels further right, so the offset moves the whole row. A value that does not start with two comma-separated numbers keeps the default, and anything after the second number is ignored.
 
+Vinifera reads the same two keys with the vertical offset first, so swap the two numbers when reusing a Vinifera file: `InfantryHealthBarPos=-24,-5` becomes `InfantryHealthBarPos=-5,-24`. Vinifera also moves the vehicle row one pixel left by default; set `UnitHealthBarPos=-16,-25` to match it.
+
 ## When the file is read
 
 The game reads the file at startup, after it registers the game archives. It reads the file again each time a scenario or saved game loads, after mounting the archives of the player's side, so a copy inside a side's archive applies to games played as that side. It reads the file once more when a match ends and the menus return, after the side's archives [move behind the other archives](/formats/mix/#theater-side-and-speech-archives). Each read starts from the defaults, so only the keys in the copy read last take effect.
