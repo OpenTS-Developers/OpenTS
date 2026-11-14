@@ -103,7 +103,7 @@ class MapClass: public GScreenClass
 		**	as it relates to the map - not what the cell contains.
 		*/
 		void Fresh_Map(void);
-		void Sight_From(Coord const & coord, int sightrange, HouseClass * house, bool incremental=false, bool=false, bool=false, bool=true);
+		void Sight_From(Coord const & xcoord, int sightrange, HouseClass * house, bool incremental = false, bool dont_map = false, bool unfog = false, bool byheight = true);
 		bool In_Radar(Cell const & cell) const;
 		bool In_Radar(Coord const & coord) const;
 		void Place_Down(Cell const & cell, ObjectClass * object);

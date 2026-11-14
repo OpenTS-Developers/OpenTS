@@ -68,7 +68,7 @@ AllowShroudedSubteranneanMoves=no
 AttackingAircraftSightRange=8   ; cells a human player's aircraft reveals when it fires near shroud
 LeptonsPerSightIncrease=25      ; leptons of height per 10 percent of extra sight
 RevealByHeight=yes
-RevealTriggerRadius=7           ; cells the Reveal around waypoint action uncovers
+RevealTriggerRadius=7           ; default radius in cells for the Reveal around waypoint action
 VeteranSight=.5                 ; a SIGHT veteran's sight range is multiplied by one more than this
 FlashFrameTime=4                ; frames between flashes of a damaged object's radar blip
 RadarCombatFlashTime=30         ; frames a damaged object's radar blip keeps flashing
@@ -197,7 +197,7 @@ The mark is recomputed from the spied house's remaining radar structures when a 
 
 These trigger actions and this team mission reveal ground for every human player:
 
-- [Reveal around waypoint...](/mapping/actions/taction-reveal-some/) reveals [`RevealTriggerRadius`](/keys/revealtriggerradius/) cells around a waypoint, with the height test.
+- [Reveal around waypoint...](/mapping/actions/taction-reveal-some/) reveals a radius of cells around a waypoint. The action line can set the radius and skip the height test; when it leaves the radius at `0` or below, the action uses [`RevealTriggerRadius`](/keys/revealtriggerradius/).
 - [Reveal zone of waypoint...](/mapping/actions/taction-reveal-zone/) reveals two cells around every playable-area cell that shares the waypoint's crusher [movement zone](/glossary/#movement-zone), with the height test.
 - [Reveal all map](/mapping/actions/taction-reveal-all/) lifts both covers from every cell of the playfield.
 - [Reveal map](/mapping/missions/tmission-reveal/) lifts the shroud only and leaves the fog.
