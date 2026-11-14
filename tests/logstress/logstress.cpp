@@ -85,7 +85,7 @@ TEST_CASE("the logger keeps up with many threads and writes every record whole, 
 	// stays shut until they are done.
 	Debug_Init();
 
-	std::string const log = Debug_Log_File_Name();
+	std::filesystem::path const log = Debug_Log_File_Path();
 	REQUIRE_MESSAGE(!log.empty(), "the log file opened");
 
 	// A record assembled from several calls must come out as one stamped line.
@@ -175,7 +175,11 @@ TEST_CASE("the logger keeps up with many threads and writes every record whole, 
 	CHECK_MESSAGE(p999_us <= 50000.0, "contended p99.9 call latency within 50 ms");
 
 	// Every line must have survived intact, and every message must be present.
+#ifdef _WIN32
+	FILE * handle = _wfopen(log.c_str(), L"rb");
+#else
 	FILE * handle = std::fopen(log.c_str(), "rb");
+#endif
 	REQUIRE_MESSAGE(handle != NULL, "the log is readable while the game holds it open");
 
 	int intact = 0;
@@ -244,23 +248,23 @@ TEST_CASE("the logger keeps up with many threads and writes every record whole, 
 
 
 // Pruning must leave a file that is younger than the threshold alone.
-TEST_CASE("pruning keeps a recent log and refuses an absurd age or a null directory")
+TEST_CASE("pruning keeps a recent log and refuses a null directory")
 {
-	std::string const directory = Log_Directory();
-	CreateDirectoryA(directory.c_str(), NULL);
+	std::filesystem::path const directory = Log_Directory();
+	CreateDirectoryW(directory.c_str(), NULL);
 
-	std::string const keep = directory + "\\DEBUG_keepme.LOG";
-	FILE * young = std::fopen(keep.c_str(), "wb");
+	std::filesystem::path const keep = directory / u8"DEBUG_keepme.LOG";
+	FILE * young = _wfopen(keep.c_str(), L"wb");
 	if (young != NULL) {
 		std::fputs("young\n", young);
 		std::fclose(young);
 	}
-	Delete_Files_Older_Than(directory.c_str(), "DEBUG_*.LOG", 14);
-	CHECK(GetFileAttributesA(keep.c_str()) != INVALID_FILE_ATTRIBUTES);
-	DeleteFileA(keep.c_str());
+	Delete_Files_Older_Than(directory, "DEBUG_.*\\.LOG", 14);
+	CHECK(GetFileAttributesW(keep.c_str()) != INVALID_FILE_ATTRIBUTES);
+	DeleteFileW(keep.c_str());
 
-	CHECK_MESSAGE(!Delete_Files_Older_Than(directory.c_str(), "DEBUG_*.LOG", 91), "an absurd age is refused");
-	CHECK_MESSAGE(!Delete_Files_Older_Than(NULL, "DEBUG_*.LOG", 14), "a null directory is refused");
+	CHECK_MESSAGE(Delete_Files_Older_Than(directory, "DEBUG_.*\\.LOG", 9001), "an absurd age should not be refused anymore");
+	CHECK_MESSAGE(!Delete_Files_Older_Than("", "DEBUG_.*\\.LOG", 14), "a null directory is refused");
 }
 
 
@@ -269,7 +273,8 @@ TEST_CASE("the console sink allocates a console with its close button disabled")
 {
 	// A console subsystem program already owns a console, which would turn AllocConsole away.
 	FreeConsole();
-	Debug_Init_Console();
+	Debug_Init();
+	Debug_Enable_Console();
 	DebugString("the console sink is reachable\n");
 
 	HWND const console = GetConsoleWindow();

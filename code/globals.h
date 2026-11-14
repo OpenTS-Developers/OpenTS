@@ -122,7 +122,6 @@ extern bool Debug_Check_Map;
 extern bool Debug_Playtest;
 extern bool Debug_Trap_Check_Heap;
 extern bool Debug_Print_Events;
-extern bool Debug_Console;
 extern bool Debug_MultipleInstances;
 
 extern ParticleSystemClass *GasSystem;

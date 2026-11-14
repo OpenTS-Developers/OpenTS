@@ -70,7 +70,11 @@ std::string Save_Bytes(INIClass const & ini)
 // diagnostics a load produced by taking the count before and after it.
 int Log_Lines(char const * needle)
 {
-	FILE * handle = std::fopen(Debug_Log_File_Name(), "rb");
+#ifdef _WIN32
+	FILE * handle = _wfopen(Debug_Log_File_Path().c_str(), L"rb");
+#else
+	FILE * handle = std::fopen(Debug_Log_File_Path().c_str(), "rb");
+#endif
 	if (handle == NULL) {
 		return(0);
 	}
