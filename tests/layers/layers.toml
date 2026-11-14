@@ -1,0 +1,120 @@
+# A proposed assignment of every engine source file to a layer, with the layers each may use.
+# README.md explains it; check_layers.py reports the references that point against it.
+# A file is named by its stem, without directory or extension.
+
+# Directories built as their own project.
+exclude = ["language", "vqalib"]
+
+# Sources under these directories take the layer named here unless a files list says otherwise.
+[directories]
+audio = "audio"
+sdl = "platform"
+ui = "ui"
+
+# Files, streams, compression, INI, timers, math, and the save stream.
+[layers.core]
+uses = []
+files = [
+    "_bench", "_milsectmr", "_mixfile", "_mono", "_pk", "_rand", "_rect", "_timer", "ahtoi",
+    "b64pipe", "b64straw", "base64", "bench", "bfiofile", "blowfish", "blowpipe", "blwstraw",
+    "buff", "buffer", "ccfile", "ccini", "cdfile", "classfactory", "classids", "counter", "crc",
+    "crcpipe", "crcstraw", "cstraw", "data", "dbgprint", "file", "file_posix", "file_win",
+    "gamedirs", "gametext", "gametime", "ini", "int", "jshell", "lcw", "lcwpipe", "lcwstraw",
+    "link", "load", "lzopipe", "lzostraw", "matrix3d", "milsectmr", "mixfile", "mono", "mpmath",
+    "mpu", "mstimer", "obscure", "pipe", "pk", "pkpipe", "pkstraw", "quat", "ramfile", "random",
+    "rawfile", "rndstraw", "savefile", "savestream", "savever", "sha", "shapipe", "shastraw",
+    "stbuffer", "stimer", "straw", "swizzle", "trim", "utf8", "version", "wstring", "xpipe",
+    "xstraw",
+]
+
+# Window, input, sockets, and the crash handler.
+[layers.platform]
+uses = ["core"]
+files = [
+    "_keyboar", "_xmouse", "delay", "except", "gamewindow", "getcpu", "keyboard", "msgloop",
+    "netsocket_null", "netsocket_posix", "netsocket_win32", "winstub", "wwmouse",
+]
+
+# Surfaces, blitters, palettes, shapes, fonts, voxels, and video decoding.
+[layers.gfx]
+uses = ["core", "platform"]
+files = [
+    "_alpha", "_convert", "_font", "_palette", "_surface", "_voxel", "_zbuffer", "abuffer",
+    "alphalighting", "alphashp", "animfile", "bgfxbackend", "blit", "colorops", "convert", "draw",
+    "dsurface", "effects", "hicolor", "hsv", "lightcalc", "lightcon", "motlib", "palette", "pcx",
+    "polygon", "rgb", "rle", "scheme", "sprite", "unvqdec", "unvqtblc", "video", "videodirty",
+    "vidscale", "voxdrsys", "voxel", "voxlib", "voxpal", "voxqueue", "vqa", "writepcx", "writepng",
+    "wwfont", "xsurface", "zbuffer",
+]
+
+# The mixer, decoders, streams, and output device.
+[layers.audio]
+uses = ["core", "platform"]
+files = [
+    "_audio", "soscodec",
+]
+
+# Transport, packets, and timing.
+[layers.net]
+uses = ["core", "platform"]
+files = [
+    "_wsproto", "combuf", "connect", "field", "ipxaddr", "ipxconn", "ipxgconn", "ipxmgr",
+    "netadmit", "netglobal", "netpacket", "netreader", "nettime", "nettiming", "packet", "sendfile",
+    "wsproto", "wspudp",
+]
+
+# Everything deterministic: objects, types, houses, rules, map cells, logic, triggers.
+[layers.sim]
+uses = ["core"]
+files = [
+    "_astar", "_event", "_isotile", "_logic", "_map", "_mission", "_rtti", "_rules", "_script",
+    "_source", "_syncrec", "_theater", "_vanim", "_warhead", "_weapon", "abstract", "abstype",
+    "addon", "aircraft", "airctype", "aitrig", "ambient", "anim", "animtype", "astar", "base",
+    "blight", "bounce", "brain", "building", "builtype", "bullet", "bullettype", "campaign",
+    "cargo", "carry", "category", "cell", "combat", "const", "coord", "crate", "desync", "drive",
+    "droppod", "dropship", "egos", "emember", "empulse", "enviro", "event", "expand", "facing",
+    "factory", "findpath", "flasher", "fly", "fog", "foot", "fuse", "globals", "house", "houstype",
+    "hover", "infantry", "infatype", "ion", "ionblast", "isotile", "isotype", "jumpjet", "laser",
+    "layer", "levitate", "light", "loco", "logic", "map", "mapgen", "mech", "missile", "mission",
+    "object", "objtype", "options", "overlay", "overtype", "ovrlight", "particle", "partsys",
+    "psystype", "ptype", "quarry", "queue", "radio", "reinf", "revent", "rules", "scenario",
+    "scenfile", "script", "side", "smartdeform", "smudge", "smudtype", "special", "storage",
+    "super", "suprtype", "syncrec", "syncrechook", "syncreport", "taction", "tag", "tagtype",
+    "target", "taskforc", "team", "teamtype", "techno", "techtype", "teleport", "terrain",
+    "terrtype", "tevent", "theater", "tiberium", "tmission", "tracker", "trigger", "trigtype",
+    "tube", "tunnel", "tutorial", "unit", "unittype", "utracker", "vanim", "vanimtype", "vein",
+    "veteran", "walk", "warhead", "wave", "waypoint", "weapon",
+]
+
+# RmlUi screens and the inherited gadgets, dialogs, and menus.
+[layers.ui]
+uses = ["core", "platform", "gfx", "audio", "sim"]
+files = [
+    "_desyncdlg", "_ui", "_uicontrol", "bar", "checkbox", "cheklist", "colrlist", "control",
+    "desyncdlg", "dial8", "dialog", "drop", "edit", "gadget", "gamedlg", "gauge", "goptions",
+    "grphmenu", "grphmimg", "grphmitm", "grphmsct", "grphmver", "list", "loaddlg", "mainopt",
+    "mapsel", "msanim", "mschoice", "msengine", "msfont", "msgbox", "mssfx", "netdlg", "netdlg2",
+    "netshare", "newmenu", "ownrdraw", "shapebtn", "slider", "sounddlg", "statbtn", "textbtn",
+    "toggle", "txtlabel", "uicontrol", "uitooltip", "vqoption", "wdtcampaign", "wdtconflict", "wdtgameoptions",
+    "wdthistory", "wdtmap", "wdtnet", "wdtprops", "wdtsel", "wdtstate", "wdtterr", "wdtvoice",
+    "worlddom",
+]
+
+# The in-game screen: tactical view, display stack, sidebar, radar, sound cues, movies.
+[layers.view]
+uses = ["core", "platform", "gfx", "audio", "sim", "ui"]
+files = [
+    "_command", "_tactica", "_tooltip", "actionline", "chat", "credits", "display", "ending",
+    "gscreen", "intro", "mapcapture", "mapedit", "mouse", "movie", "movies", "movieskip", "mpscore",
+    "msglist", "power", "preview", "progress", "radar", "restate", "score", "scroll", "sidebar",
+    "tab", "tactical", "theme", "themeini", "tooltip", "voc", "vocini", "vox",
+]
+
+# Startup, the main loop, session setup, the save manager, and headless tasks.
+[layers.app]
+uses = ["core", "platform", "gfx", "audio", "net", "sim", "ui", "view"]
+files = [
+    "_deploymentconfig", "_savemgr", "autosave", "conquer", "debug", "deploymentconfig", "headless",
+    "init", "mainloop", "mplayer", "mpload", "saveload", "savemgr", "session", "skirmish",
+    "spawner", "spawnerconfig", "spawnhouse", "startup", "stats",
+]
