@@ -1,13 +1,13 @@
 ---
 key: ComesNearWaypointDistance
-summary: Distance in leptons from a waypoint at which the Comes near waypoint trigger event is satisfied.
+summary: Distance in leptons from a waypoint within which the Comes near waypoint trigger event is satisfied.
 when_omitted:
   kind: value
   value: "1280"
   note: Five cells.
 ---
 
-`ComesNearWaypointDistance` sets how near the tagged object must come to the named waypoint for the [Comes near waypoint](/mapping/events/tevent-near-waypoint/) trigger event to be satisfied. An object closer to the waypoint than this distance satisfies it; one that is farther away does not. Raising the value satisfies the event from farther away, and lowering it requires the object to come closer.
+`ComesNearWaypointDistance` sets how near the tagged object must come to the named waypoint for the [Comes near waypoint](/mapping/events/tevent-near-waypoint/) trigger event to be satisfied. An object at this distance or nearer satisfies it; one farther away does not. Raising the value satisfies the event from farther away, and lowering it requires the object to come closer.
 
 ```ini title="rules.ini"
 [General]

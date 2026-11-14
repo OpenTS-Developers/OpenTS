@@ -2293,7 +2293,7 @@ class RulesClass
 		int EliteFlashTimer;
 
 		/*
-		 * Distance to consider "close enough" for TEVENT_NEAR_WAYPOINT.
+		 * Distance in leptons to consider "close enough" for TEVENT_NEAR_WAYPOINT.
 		 */
 		int ComesNearWaypointDistance;
 };
