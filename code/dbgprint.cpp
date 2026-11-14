@@ -193,7 +193,7 @@ void DebugPrint::Debug_Command_Line_Parse(int argc, const T * argv[])
 		return;
 	}
 
-	bool requested = false;
+	bool console_requested = false;
 	std::basic_string<T> full_cmdline;
 	std::basic_string<T> user_dir;
 
@@ -204,7 +204,7 @@ void DebugPrint::Debug_Command_Line_Parse(int argc, const T * argv[])
 		if (token[0] == L'-' && (token[1] == L'X' || token[1] == L'x')) {
 			for (T const * code = token + 2; *code != L'\0'; code++) {
 				if (*code == L'C' || *code == L'c') {
-					ArgsConsoleRequested = true;
+					console_requested = true;
 					break;
 				}
 			}
@@ -244,7 +244,7 @@ void DebugPrint::Debug_Command_Line_Parse(int argc, const T * argv[])
 	if (!user_dir.empty()) {
 		Assign_Arg_String(ArgsUserDirectory, user_dir, u8"");
 	}
-	if (requested) {
+	if (console_requested) {
 		ArgsConsoleRequested = true;
 	}
 }
