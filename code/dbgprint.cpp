@@ -44,6 +44,7 @@
 #include <optional>
 #include <regex>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <vector>
 
@@ -328,7 +329,12 @@ bool Delete_Files_Older_Than(const std::filesystem::path & directory, const std:
 	std::vector<std::filesystem::path> to_remove;
 	bool dir_searched = false;
 
-	for (auto const & dir_entry : std::filesystem::directory_iterator {directory}) {
+	std::error_code ec;
+	for (auto iter = std::filesystem::directory_iterator {directory, ec}; iter != end(iter); iter.increment(ec)) {
+		if (ec) {
+			break;
+		}
+		const std::filesystem::directory_entry & dir_entry = *iter;
 		const std::u8string fname = dir_entry.path().filename().u8string();
 		const std::string_view fname_cast((const char *)fname.data(), fname.size());
 
@@ -339,7 +345,7 @@ bool Delete_Files_Older_Than(const std::filesystem::path & directory, const std:
 		dir_searched = true;
 	}
 	for (auto const & path : to_remove) {
-		std::filesystem::remove(path);
+		std::filesystem::remove(path, ec);
 	}
 
 	return dir_searched;
@@ -479,20 +485,14 @@ void DebugPrint::Init_Locked(void)
 	const auto now_local_sec = std::chrono::time_point_cast<std::chrono::seconds>(now_local);
 	Directory = Get_Logging_Directory();
 
-	bool have_dir = false;
-	if (!Directory.empty()) {
-		try {
-			std::filesystem::create_directories(Directory);
-			have_dir = true;
-		} catch (const std::filesystem::filesystem_error & e) {
-			have_dir = false;
-		}
-	}
 	if (File != NULL) {
 		fclose(File);
 		File = NULL;
 	}
-	if (!have_dir) {
+
+	std::error_code ec;
+	std::filesystem::create_directories(Directory, ec);
+	if (ec) {
 		Directory.clear();
 	} else {
 		Delete_Files_Older_Than(Directory, "DEBUG_.*\\.LOG", DEBUG_LOG_MAX_AGE_DAYS);
@@ -670,7 +670,9 @@ void DebugPrint::Write_Message_Locked(char const * buffer, size_t length, bool w
 static std::string Get_PLIST_Version(const char * plist_path)
 {
 	// Explicit check to avoid warning on stderr from libxml2
-	if (!std::filesystem::exists(std::filesystem::path {(const char8_t *)plist_path})) {
+	std::error_code ec;
+	bool file_exists = std::filesystem::exists(std::filesystem::path {(const char8_t *)plist_path}, ec);
+	if (ec || !file_exists) {
 		return std::string();
 	}
 
