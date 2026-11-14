@@ -12,7 +12,7 @@ when_omitted:
 CloakSound=CLOAK5 ; the shipped sound, defined in SOUND.INI
 ```
 
-The rules-wide sound plays at an object's position as it starts to hide and as it starts to reappear. That includes objects a [cloaking field](/systems/cloaking/#cloaking-fields) hides: vehicles, infantrymen and aircraft on a covered cell, and structures whose center cell the field covers.
+The rules-wide sound plays at an object's position as it starts to hide and as it starts to reappear. It plays for objects of every house. That includes objects a [cloaking field](/systems/cloaking/#cloaking-fields) hides: vehicles, infantrymen and aircraft on a covered cell, and structures whose center cell the field covers.
 
 A name that matches no [registered sound](/formats/sound-ini/) is ignored; with no sound already set, nothing plays.
 

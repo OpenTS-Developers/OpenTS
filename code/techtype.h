@@ -751,13 +751,10 @@ class TechnoTypeClass : public ObjectTypeClass
 		std::string Description;
 
 		/*
-		 * This is the sound effect to play when the unit is cloaking.
+		 * These are the sounds this type plays as it starts to cloak and to uncloak.
+		 * VOC_NONE plays the rules-wide CloakSound in either case.
 		 */
 		VocType CloakSound;
-
-		/*
-		 * This is the sound effect to play when the unit is decloaking.
-		 */
 		VocType UncloakSound;
 
 		//--------------------------------------------------------------------
