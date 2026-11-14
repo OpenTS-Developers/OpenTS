@@ -547,9 +547,9 @@ void DebugPrint::Init_Locked(void)
 /// The string buffer must be zero-terminated for OutputDebugString() to work correctly.
 /// When the text ends with a newline, the output buffers are flushed, so that the latest
 /// record is available in case of an imminent crash.
+/// </summary>
 /// <param name="text">String buffer to write. Must be zero-terminated.</param>
 /// <param name="length">Number of bytes in text to write.</param>
-/// </summary>
 void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 {
 	if (text == NULL || length == 0) {
@@ -612,11 +612,11 @@ void DebugPrint::Write_Text_Locked(char const * text, size_t length)
 /// the logging lock. The string buffer must be zero-terminated for OutputDebugString()
 /// to work correctly. In the event that Debug_Init() had not yet been called, the message
 /// is recorded for processing at a later time.
+/// </summary>
 /// <param name="buffer">String buffer to write. Must be zero-terminated.</param>
 /// <param name="length">Length of the string in the provided buffer.</param>
 /// <param name="with_prefix">Whether or not to stamp the message.</param>
 /// <param name="msg_ts">Optional timestamp associated with the message.</param>
-/// </summary>
 void DebugPrint::Write_Message_Locked(char const * buffer, size_t length, bool with_prefix, const system_time_point * msg_ts)
 {
 	if (length == 0 || buffer == NULL) {
@@ -665,8 +665,8 @@ void DebugPrint::Write_Message_Locked(char const * buffer, size_t length, bool w
 #if defined(__APPLE__)
 /// <summary>
 /// Retrieves a string identifying the operating system version from a PLIST file.
-/// <param name="plist_path">Filesystem path to the SystemVersion.plist file.</param>
 /// </summary>
+/// <param name="plist_path">Filesystem path to the SystemVersion.plist file.</param>
 static std::string Get_PLIST_Version(const char * plist_path)
 {
 	// Explicit check to avoid warning on stderr from libxml2
@@ -786,8 +786,8 @@ static std::string Get_PLIST_Version(const char * plist_path)
 /// and escape sequences, so it shouldn't be used for data that will be further processed,
 /// though it should be sufficient for displaying text to the user where potential
 /// formatting errors are inconsequential.
-/// <param name="input">Quoted string to be copied without outer quotes.</param>
 /// </summary>
+/// <param name="input">Quoted string to be copied without outer quotes.</param>
 static std::string Strip_Quotes(const std::string_view & input)
 {
 	std::string ret;
@@ -821,8 +821,8 @@ static std::string Strip_Quotes(const std::string_view & input)
 /// <summary>
 /// Retrieves a string identifying the operating system version from an os-release(5) file.
 /// This is applicable for Linux and various other systems like FreeBSD.
-/// <param name="path">Filesystem path to the os-release file.</param>
 /// </summary>
+/// <param name="path">Filesystem path to the os-release file.</param>
 static std::string Get_OS_Release_Version(const std::filesystem::path & path)
 {
 	std::ifstream file(path);
@@ -1037,6 +1037,7 @@ R"ART(
 /// Takes the logging lock and reports one finished message. Can be called before Debug_Init(),
 /// but the messages will only be logged after Debug_Init() is called. The string buffer
 /// must be zero-terminated for OutputDebugString() to work correctly.
+/// </summary>
 /// <param name="buffer">String buffer to write. Must be zero-terminated.</param>
 /// <param name="length">Length of the string in the provided buffer.</param>
 /// <param name="with_prefix">Whether or not to stamp the message.</param>
